@@ -23,6 +23,14 @@ from carry_forecast import risk_adjusted_carry as _risk_adjusted_carry_pure
 from notional_sizing import contract_delta as _contract_delta_pure
 from notional_sizing import target_contracts as _target_contracts_pure
 from contract_roll import roll_orders as _roll_orders_pure
+# Pure pending-order netting (#23962). The `roll` branch of `_rebalance` and
+# tests/test_open_order_netting.py share the rule.
+from open_order_netting import CANCEL as _NETTING_CANCEL
+from open_order_netting import NET as _NETTING_NET
+from open_order_netting import OpenOrder as _OpenOrder
+from open_order_netting import open_order_remainder as _open_order_remainder_pure
+from open_order_netting import reconcile_orders as _reconcile_orders_pure
+from open_order_netting import would_resubmit as _would_resubmit_pure
 # endregion
 
 
@@ -245,6 +253,22 @@ class CarverThirteen(QCAlgorithm):
         # (positions kept to expiry) and fills tagged as a margin call.
         self.roll = (self.get_parameter("roll") or "on") == "on"
         self._roll_stats = {"rolls": 0, "expiry_liquidations": 0, "margin_calls": 0}
+        # #23962: the gap was computed on holdings only, so an order still
+        # open at the next rebalance was sent again. `orders=net` (default)
+        # subtracts the remainder of the live orders of every contract of
+        # the instrument; `orders=cancel` cancels them, then sends the gap
+        # computed on holdings; `orders=off` replays the #23841 path order
+        # for order. Effective with `fix=on`: with `roll=on` on every
+        # contract of the instrument, with `roll=off` on the mapped contract
+        # alone (stale contracts are kept to expiry there). Passive counters:
+        # orders the holdings-only gap would send while a live order of the
+        # same sign is open on the contract (`would_resend`), resends the
+        # netting suppressed (`avoided`), contracts whose live orders were
+        # cancelled (`cancelled`).
+        self._orders_mode = (self.get_parameter("orders") or "net").lower()
+        if self._orders_mode not in ("net", "cancel", "off"):
+            raise ValueError(f"orders must be net, cancel or off, got {self._orders_mode!r}")
+        self._netting_stats = {"would_resend": 0, "avoided": 0, "cancelled": 0}
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         # 18 liquid continuous futures, diversified across asset classes.
@@ -892,7 +916,13 @@ class CarverThirteen(QCAlgorithm):
                     # its contracts; stale contracts are closed and the
                     # target is carried by the mapped one (contract_roll.py).
                     holdings = self._instrument_holdings(sym)
-                    for contract, qty in _roll_orders_pure(target_qty, holdings, order_sym):
+                    # #23962: the gap on holdings alone ignores the orders
+                    # still open on the instrument's contracts; the live set
+                    # is read for every contract, the mapped one included.
+                    live = self._instrument_open_orders(sym)
+                    naive = _roll_orders_pure(target_qty, holdings, order_sym)
+                    planned = self._net_open_orders(target_qty, holdings, order_sym, live, naive)
+                    for contract, qty in planned:
                         self.market_order(contract, qty)
                         set_holdings_issued_this_call = True
                         if contract != order_sym:
@@ -901,8 +931,14 @@ class CarverThirteen(QCAlgorithm):
                 # Futures quantities are integral on QC: the holding is
                 # rounded, never truncated (see notional_sizing.py).
                 delta = _contract_delta_pure(target_qty, current_holding)
-                if delta != 0:
-                    self.market_order(order_sym, delta)
+                # #23962: same rule, on the mapped contract alone. This path
+                # keeps stale contracts to expiry, so their live orders are
+                # left alone, like their positions.
+                live = [o for o in self._instrument_open_orders(sym) if o.contract == order_sym]
+                naive = [(order_sym, delta)] if delta != 0 else []
+                held = {order_sym: current_holding} if current_holding != 0 else {}
+                for contract, qty in self._net_open_orders(target_qty, held, order_sym, live, naive):
+                    self.market_order(contract, qty)
                     set_holdings_issued_this_call = True
                 continue
             sign_change = (current_holding > 0 and target_weight < 0) or (
@@ -947,6 +983,43 @@ class CarverThirteen(QCAlgorithm):
             if quantity != 0:
                 holdings[symbol] = quantity
         return holdings
+
+    def _instrument_open_orders(self, continuous):
+        """#23962: live orders on every contract of a future.
+
+        Same canonical-symbol lookup as `_instrument_holdings`; the
+        remainder of each order is its quantity minus what has filled.
+        """
+        live = []
+        for ticket in self.transactions.get_open_order_tickets():
+            symbol = ticket.symbol
+            if symbol.security_type != SecurityType.FUTURE or symbol == continuous:
+                continue
+            if symbol.canonical != continuous:
+                continue
+            live.append(_OpenOrder(symbol, ticket.quantity, ticket.quantity_filled))
+        return live
+
+    def _net_open_orders(self, target_qty, holdings, mapped, live, naive):
+        """#23962: orders to send once the live orders are accounted for.
+
+        `naive` is the holdings-only plan, counted against the live orders
+        (`would_resend`) and sent unchanged with `orders=off`. Otherwise the
+        pure rule (open_order_netting.py) nets the remainders (`net`) or
+        lists the contracts whose live orders are cancelled first (`cancel`).
+        """
+        for contract, qty in naive:
+            if _would_resubmit_pure(qty, _open_order_remainder_pure(live, contract)):
+                self._netting_stats["would_resend"] += 1
+        if self._orders_mode == "off":
+            return naive
+        mode = _NETTING_CANCEL if self._orders_mode == "cancel" else _NETTING_NET
+        decision = _reconcile_orders_pure(target_qty, holdings, mapped, live, mode)
+        for contract in decision.cancels:
+            self.transactions.cancel_open_orders(contract)
+            self._netting_stats["cancelled"] += 1
+        self._netting_stats["avoided"] += decision.resubmissions_avoided
+        return decision.orders
 
     def on_order_event(self, order_event):
         """#23841: count fills of engine-generated liquidations by their tag."""
@@ -994,6 +1067,12 @@ class CarverThirteen(QCAlgorithm):
             "roll",
             f"{'on' if self.roll else 'off'} rolls={rs['rolls']} "
             f"expiry={rs['expiry_liquidations']} margin={rs['margin_calls']}",
+        )
+        ns = self._netting_stats
+        self.set_runtime_statistic(
+            "orders",
+            f"{self._orders_mode} would_resend={ns['would_resend']} "
+            f"avoided={ns['avoided']} cancelled={ns['cancelled']}",
         )
         # REPAIR-9 c.1117: log the instrumentation tally so the QC backtest
         # output carries the diagnostic discriminators that allow the

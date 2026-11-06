@@ -232,3 +232,90 @@ def test_guard_does_not_fire_when_msg_tactic_already_set_by_earlier_run():
     assert fired is False
     # And msg.tactic is preserved (VerifyExecutor path will consume it).
     assert msg.tactic == "rfl"
+
+
+# --- cycle-29 (#1453): the forced-rehandoff compile must not pay a full
+# Mathlib build for unchanged content. Founder case (DEMO 45 local,
+# 2026-11-04 13:44Z): a frozen TacticAgent called compile() 4x between
+# guard escalations with the target file unchanged, ~600 s of build each
+# time, for verdicts that were never consumed. TacticTools.compile() now
+# keys its force flag on the file's content hash: first compile of new
+# content stays forced, identical repeats are served from the verifier's
+# cache, and a timed-out verdict is never re-served (a timeout is
+# load-dependent, not content-deterministic). -------------------------------
+
+
+def _make_tactic_tools(tmp_path):
+    from prover.state import ProofState
+    from prover.tools import TacticTools
+
+    f = tmp_path / "Conway" / "Demo.lean"
+    f.parent.mkdir()
+    f.write_text("theorem demo : True := by trivial\n", encoding="utf-8")
+    return TacticTools(ProofState(), filepath=str(f))
+
+
+def _patch_compile_deps(monkeypatch, verifier):
+    """Isolate compile() from lake: fake module resolution + verifier."""
+    from prover import tools as tools_mod
+    import prover.verifier as verifier_mod
+
+    monkeypatch.setattr(tools_mod, "resolve_lake_module",
+                        lambda p: ("/proj", "Mod"))
+    monkeypatch.setattr(verifier_mod, "get_verifier",
+                        lambda project_dir: verifier)
+
+
+def test_compile_first_call_forced_repeats_served_from_cache(tmp_path, monkeypatch):
+    forces = []
+
+    class _FakeVerifier:
+        def verify_project_file(self, relative_path, force=True):
+            forces.append(force)
+            return {"raw_output": "", "success": True, "cached": not force,
+                    "wall_clock_timeout": False, "timeout_s": None}
+
+    _patch_compile_deps(monkeypatch, _FakeVerifier())
+    tt = _make_tactic_tools(tmp_path)
+    tt.compile()
+    tt.compile()  # same content, guard re-handoff: NOT another forced build
+    tt.compile()
+    assert forces == [True, False, False]
+
+
+def test_compile_forces_again_after_content_changes(tmp_path, monkeypatch):
+    forces = []
+
+    class _FakeVerifier:
+        def verify_project_file(self, relative_path, force=True):
+            forces.append(force)
+            return {"raw_output": "", "success": True, "cached": not force,
+                    "wall_clock_timeout": False, "timeout_s": None}
+
+    _patch_compile_deps(monkeypatch, _FakeVerifier())
+    tt = _make_tactic_tools(tmp_path)
+    tt.compile()
+    path = tmp_path / "Conway" / "Demo.lean"
+    path.write_text("theorem demo2 : True := by trivial\n", encoding="utf-8")
+    tt.compile()
+    assert forces == [True, True]
+
+
+def test_compile_never_reserves_a_timed_out_verdict(tmp_path, monkeypatch):
+    forces = []
+    state = {"n": 0}
+
+    class _TimeoutThenOkVerifier:
+        def verify_project_file(self, relative_path, force=True):
+            forces.append(force)
+            state["n"] += 1
+            timed_out = state["n"] == 1
+            return {"raw_output": "", "success": not timed_out,
+                    "cached": False, "wall_clock_timeout": timed_out,
+                    "timeout_s": 600 if timed_out else None}
+
+    _patch_compile_deps(monkeypatch, _TimeoutThenOkVerifier())
+    tt = _make_tactic_tools(tmp_path)
+    tt.compile()  # times out
+    tt.compile()  # same content, but a timeout verdict is never re-served
+    assert forces == [True, True]

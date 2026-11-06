@@ -43,6 +43,13 @@ TASK_NAME = r"CoursIA\prune_merged_worktrees"
 THIS_FILE = Path(__file__).resolve()
 LOG_DIR = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local"))) / "CoursIA" / "prune_task" / "logs"
 
+# Meme correction que le controleur des runners : une tache planifiee qui
+# lance directement python.exe fait clignoter une console (le planificateur
+# alloue une console neuve au binaire console). Le lanceur VBS passe par
+# wscript.exe avec SW_HIDE : rien ne clignote, et `WScript.Quit rc` rend le
+# code retour de la commande (mesure 2026-11-04, Maintenance#75).
+LAUNCHER_NAME = "prune-launcher.vbs"
+
 # Marqueurs du fix #14476/#14481 dans le script cible -- voir garde ci-dessus.
 # Alignes sur le contenu REEL merge par #14481 (voie 1 : resolution par
 # numero ; voie 2 : egalite normalisee du sujet via _normalize). Le marqueur
@@ -90,13 +97,15 @@ def task_command(repo: Path) -> list[str]:
     return [sys.executable, str(THIS_FILE), "--run", "--repo", str(repo)]
 
 
-def build_schtasks_install(cmd: list[str], time: str) -> list[str]:
+def build_schtasks_install(launcher: Path, time: str) -> list[str]:
     """Ligne schtasks /Create : quotidienne, contexte utilisateur courant
-    (gh auth vit au niveau utilisateur), fenêtre masquee."""
-    # Quoter chaque element, jamais la ligne entiere : un /TR "python.exe script.py
-    # --run" enregistre la ligne comme NOM d'executable, et la tache echoue
-    # a chaque tour avec 0x80070002 (fichier introuvable) sans rien journaliser.
-    tr = subprocess.list2cmdline(cmd)
+    (gh auth vit au niveau utilisateur), fenetre masquee.
+
+    `/TR` porte le lanceur VBS, pas la commande : le planificateur alloue une
+    console a un binaire console, et elle clignote (mesure 2026-11-04). Le
+    guillement reste sur chaque element de la commande, qui vit DANS le VBS.
+    """
+    tr = f'wscript.exe //B //Nologo "{launcher}"'
     return [
         "schtasks", "/Create", "/F",
         "/TN", TASK_NAME,
@@ -104,6 +113,35 @@ def build_schtasks_install(cmd: list[str], time: str) -> list[str]:
         "/ST", time,
         "/TR", tr,
     ]
+
+
+def launcher_path() -> Path:
+    """Le lanceur cache que la tache planifiee execute."""
+    return LOG_DIR.parent / LAUNCHER_NAME
+
+
+def _vbs_literal(text: str) -> str:
+    """Un litteral VBS : chaque guillemet du texte est double ("" -> ")."""
+    return text.replace('"', '""')
+
+
+def launcher_vbs(cmd: list[str]) -> str:
+    """Le lanceur VBS : la commande, sans fenetre, avec son code retour.
+
+    `sh.Run(commande, 0, True)` : style SW_HIDE (rien ne clignote) et
+    attente ; le rc de la commande est rendu par `WScript.Quit rc`, donc la
+    tache planifiee porte toujours le rc de l'organe (le journal du run
+    reste lisible par la lane).
+    """
+    command_line = subprocess.list2cmdline(cmd)
+    return (
+        "' Genere par scripts/ci/install_prune_task.py -- ne pas editer a la main.\r\n"
+        "Option Explicit\r\n"
+        "Dim sh, rc\r\n"
+        'Set sh = CreateObject("WScript.Shell")\r\n'
+        f'rc = sh.Run("{_vbs_literal(command_line)}", 0, True)\r\n'
+        "WScript.Quit rc\r\n"
+    )
 
 
 def log_path_for(day: _dt.date | None = None) -> Path:
@@ -121,12 +159,19 @@ def cmd_install(repo: Path, time: str, dry_run: bool = False) -> int:
         print(f"REFUSE : {msg}", file=sys.stderr)
         return 2
     print(f"garde OK : {msg}")
-    command = build_schtasks_install(task_command(repo), time)
+    launcher = launcher_path()
+    command = build_schtasks_install(launcher, time)
     if dry_run:
+        print(f"lanceur : {launcher}")
+        print(f"lanceur VBS :\n{launcher_vbs(task_command(repo))}")
         print(f"schtasks argv : {command!r}")
         print(f"schtasks commande : {subprocess.list2cmdline(command)}")
         return 0
     LOG_DIR.mkdir(parents=True, exist_ok=True)
+    # Le lanceur est ecrit AVANT la tache : une tache installee dont le
+    # lanceur manque echoue a chaque tour, sans rien journaliser.
+    launcher.parent.mkdir(parents=True, exist_ok=True)
+    launcher.write_text(launcher_vbs(task_command(repo)), encoding="utf-8", newline="")
     proc = _run(command)
     if proc.returncode != 0:
         print(f"schtasks /Create echoue (rc={proc.returncode}) : "
@@ -160,7 +205,14 @@ def cmd_uninstall(dry_run: bool = False) -> int:
         print(f"suppression echouee : {proc.stdout.strip()} "
               f"{proc.stderr.strip()}", file=sys.stderr)
         return 2
+    # Le lanceur part avec la tache : il ne sert plus a rien et pointerait vers
+    # une tache absente. Il est regenere par le prochain --install.
+    launcher = launcher_path()
+    existed = launcher.is_file()
+    launcher.unlink(missing_ok=True)
     print(f"tache supprimee : {TASK_NAME}")
+    if existed:
+        print(f"lanceur supprime : {launcher}")
     return 0
 
 
