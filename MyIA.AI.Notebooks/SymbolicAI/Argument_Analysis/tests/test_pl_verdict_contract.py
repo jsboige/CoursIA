@@ -13,6 +13,10 @@
 #   - integration : le VRAI solveur Tweety (marquee, sautee sans les jars)
 #   - regression #23671 : un belief set de taille reelle (~22 atomes) rend
 #     un verdict, pas un OOM JVM muet (SimplePlReasoner enumere les mondes)
+#   - regression #23120 : (a) `R1 -> R2` est reecrit en `R1 => R2` avant
+#     l'appel ET avant la cle du registre ; (b) une ligne prose (phrase en
+#     langage naturel) rend CONTENT_ERROR AVANT l'appel au solveur — le
+#     parseur Tweety l'acceptait comme conjonction d'atomes-mots
 #
 # semantic_kernel n'est pas une dependance dure de la shim : on installe le
 # meme mock minimal que `test_state_manager_plugin.py`.
@@ -291,6 +295,79 @@ class TestPLReasonerPlugin:
         log_id = guard.log_query_result(bs_id, "q", verdict)
         assert not log_id.startswith("FUNC_ERROR")
         assert state.query_log[0]["raw_result"].startswith(ACCEPTED + ":")
+
+
+# --- Regression #23120 : implication ASCII et garde anti-prose --------------------
+
+
+class TestImplicationNormalization:
+    def test_arrow_rewritten_before_engine_and_registry(self, state):
+        engine = FakeEngine(entails=True)
+        plugin = PLReasonerPlugin(state, engine=engine)
+        bs_id = state.add_belief_set("Propositional", "p -> q\np")
+        verdict = plugin.pl_query(bs_id, "p -> q")
+        # l'appel au moteur voit la forme canonique...
+        assert engine.calls == [(("p => q", "p"), "p => q")]
+        # ...et la cle du registre est la meme formule que celle interrogee
+        assert registry_for(state).get(bs_id, "p => q") == verdict
+        assert registry_for(state).get(bs_id, "p -> q") is None
+
+    def test_verdict_string_carries_the_canonical_form(self, state):
+        plugin = PLReasonerPlugin(state, engine=FakeEngine(entails=True))
+        bs_id = state.add_belief_set("Propositional", "p => q\np")
+        verdict = plugin.pl_query(bs_id, "p -> q")
+        assert "p => q" in verdict
+        assert "p -> q" not in verdict
+
+
+class TestProseContentGuard:
+    def test_prose_belief_set_refused_without_engine_call(self, state):
+        # mesure #23120 (28/10, regime « phrases ») : le belief set capturé
+        # était une phrase en langage naturel acceptée par PlParser
+        engine = FakeEngine()
+        plugin = PLReasonerPlugin(state, engine=engine)
+        bs_id = state.add_belief_set(
+            "Propositional",
+            "Les energies renouvelables sont essentielles pour lutter "
+            "contre le changement climatique.",
+        )
+        result = plugin.pl_query(bs_id, "renewables_essential")
+        assert result.startswith("CONTENT_ERROR")
+        assert engine.calls == []  # refus AVANT l'appel au solveur
+
+    def test_clean_belief_set_with_connectives_passes(self, state):
+        engine = FakeEngine(entails=True)
+        plugin = PLReasonerPlugin(state, engine=engine)
+        bs_id = state.add_belief_set(
+            "Propositional",
+            "france_committed => requires_massive_investment\nfrance_committed",
+        )
+        verdict = plugin.pl_query(bs_id, "requires_massive_investment")
+        assert verdict.startswith(ACCEPTED + ":")
+        assert len(engine.calls) == 1
+
+    def test_prose_query_refused(self, state):
+        engine = FakeEngine()
+        plugin = PLReasonerPlugin(state, engine=engine)
+        bs_id = state.add_belief_set("Propositional", "p => q")
+        result = plugin.pl_query(bs_id, "la France doit investir")
+        assert result.startswith("CONTENT_ERROR")
+        assert engine.calls == []
+
+    def test_punctuated_atom_refused(self, state):
+        engine = FakeEngine()
+        plugin = PLReasonerPlugin(state, engine=engine)
+        bs_id = state.add_belief_set("Propositional", "p,\nq")
+        result = plugin.pl_query(bs_id, "q")
+        assert result.startswith("CONTENT_ERROR")
+        assert engine.calls == []
+
+    def test_negation_and_parentheses_are_not_prose(self, state):
+        engine = FakeEngine(entails=True)
+        plugin = PLReasonerPlugin(state, engine=engine)
+        bs_id = state.add_belief_set("Propositional", "!p => (q || r)\n!(p && q)")
+        verdict = plugin.pl_query(bs_id, "!p => (q || r)")
+        assert verdict.startswith(ACCEPTED + ":")
 
 
 # --- Integration avec le VRAI solveur --------------------------------------------

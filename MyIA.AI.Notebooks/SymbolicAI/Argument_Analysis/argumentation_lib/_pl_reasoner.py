@@ -31,11 +31,29 @@
 # `_pl_handler.py` (Sat4jRunner : "linear -- distinct from
 # SimplePlReasoner (model enumeration, 2^n, OOM-prone)"). Mesure comparative
 # graduee des deux raisonners dans le body de la PR.
+#
+# Incident #23120 (mesures 28/10 et 06/11) : deux defauts de CONTENU
+# subsistaient, independants du raisonner. (a) `PlParser` ACCEPTe une
+# phrase en langage naturel (chaque mot devient un atome, conjonction
+# implicite) : le solveur rendait alors un verdict sur des atomes-mots
+# sans sens -- et avec l'ancien raisonner, la conversion CNF explosait en
+# OOM (les runs 1-2 du 28/10 : belief sets en phrases). La courbe du
+# 06/11 (chaines de biconditionnels propres) montre en outre que la
+# validation de contenu seule n'aurait pas sauve la phase : le raisonner
+# ET le contenu devaient etre repares tous les deux. (b) l'agent ecrit
+# spontanement l'implication `R1 -> R2` ; `PlParser` REFUSE `->`
+# ("General parsing error"), la consignation etait refusee par le garde.
+# Remedes ici : reecriture `->` en `=>` AVANT l'appel au solveur et
+# avant la cle du registre (la formule consignee est celle interrogee),
+# et garde de contenu propositionnel AVANT l'appel -- une ligne prose
+# rend une erreur de contenu diagnostiquable (CONTENT_ERROR), pas un
+# OOM qui emporte la phase.
 
 from __future__ import annotations
 
 import logging
 import os
+import re
 from typing import Any, List, Optional, Sequence
 
 from semantic_kernel.functions import kernel_function
@@ -73,7 +91,10 @@ def split_formulas(content: str) -> List[str]:
 
     Format attendu : une formule par ligne, ou des formules separees par
     `;`. Les lignes vides sont ignorees ; tout le reste est renvoye tel quel
-    — la validation est fait par le VRAI parseur du moteur, pas ici.
+    — la SYNTAXE est validee par le VRAI parseur du moteur (PlParser refuse
+    `->`, les connecteurs inconnus) ; la garde anti-prose de ce module
+    (`non_propositional_line`) intercepte en amont ce que le parseur
+    accepte a tort (les phrases en langage naturel, mesure #23120).
     """
     if not content:
         return []
@@ -83,6 +104,62 @@ def split_formulas(content: str) -> List[str]:
         if line:
             candidates.append(line)
     return candidates
+
+
+#: Connecteurs et parentheses de la syntaxe PL acceptee par PlParser.
+_PL_CONNECTIVES = {"!", "&&", "||", "=>", "<=>", "(", ")"}
+
+#: Un atome propositionnel : identifiant lettres/chiffres/`_`, sans espaces
+#: ni ponctuation (PL_SYNTAX_HINT).
+_ATOM_PATTERN = re.compile(r"[A-Za-z0-9_]+")
+
+
+def _bare_atom(token: str) -> str:
+    """Noyau d'un token : negations et parentheses collees retirees."""
+    core = token
+    while core.startswith(("(", "!")):
+        core = core[1:]
+    while core.endswith(")"):
+        core = core[:-1]
+    return core
+
+
+def normalize_implication(formula: str) -> str:
+    """Reecrit l'implication ASCII `->` en `=>`, attendu par `PlParser`.
+
+    Mesure #23120 (28/10) : l'agent ecrit spontanement `R1 -> R2` ; le
+    parseur Tweety REFUSE `->` ("General parsing error") alors que la
+    semantique est evidente. La reecriture se fait AVANT l'appel au
+    solveur ET avant la cle du registre, pour que la formule consignee
+    soit exactement celle qui a ete interrogee.
+    """
+    return str(formula).replace("->", "=>")
+
+
+def non_propositional_line(lines: Sequence[str]) -> Optional[str]:
+    """Premiere ligne qui n'est pas une formule propositionnelle, sinon None.
+
+    Mesure #23120 (28/10) : `PlParser` ACCEPTe une phrase en langage
+    naturel — chaque mot devient un atome, conjonction implicite — et le
+    solveur rend alors un verdict sur des atomes-mots sans sens. Un belief
+    set propositionnel = des atomes sans espaces ni ponctuation relies par
+    des connecteurs EXPLICITES. Deux motifs sont refuses :
+    - deux atomes adjacents separes par un espace sans connecteur (prose) ;
+    - un token qui n'est pas un identifiant (ponctuation, accents, etc.).
+    """
+    for line in lines:
+        prev_was_atom = False
+        for token in str(line).split():
+            if token in _PL_CONNECTIVES:
+                prev_was_atom = False
+                continue
+            core = _bare_atom(token)
+            if not core or not _ATOM_PATTERN.fullmatch(core):
+                return line
+            if prev_was_atom:
+                return line
+            prev_was_atom = True
+    return None
 
 
 class TweetyPLEngine:
@@ -223,6 +300,9 @@ class PLReasonerPlugin:
     )
     def pl_query(self, belief_set_id: str, query: str) -> str:
         """Verdict du solveur sur (belief_set, query)."""
+        # #23120 : la reecriture precede TOUT — l'appel au solveur, la
+        # chaine de verdict ET la cle du registre voient la meme formule.
+        query = normalize_implication(query)
         content = self._belief_set_content(belief_set_id)
         if content is None:
             known = list(getattr(self._state, "belief_sets", {}).keys())
@@ -230,11 +310,30 @@ class PLReasonerPlugin:
                 f"FUNC_ERROR: belief set inconnu '{belief_set_id}' "
                 f"(disponibles : {known})"
             )
-        formulas = split_formulas(content)
+        formulas = [normalize_implication(f) for f in split_formulas(content)]
         if not formulas:
             return (
                 f"FUNC_ERROR: le belief set '{belief_set_id}' est vide ; "
                 "appelez d'abord add_belief_set avec une formule par ligne."
+            )
+        # #23120 : garde de contenu AVANT l'appel — une phrase en langage
+        # naturel rend une erreur diagnostiquable, pas un verdict sans sens
+        # (ou, sous l'ancien raisonner, un OOM qui emportait la phase).
+        bad_line = non_propositional_line(formulas)
+        if bad_line is not None:
+            return (
+                f"CONTENT_ERROR: le belief set '{belief_set_id}' contient "
+                f"une ligne qui n'est pas une formule propositionnelle "
+                f"({bad_line[:80]!r}) ; une phrase n'est pas une formule. "
+                "Ecrivez des atomes sans espaces ni ponctuation, relies "
+                f"par des connecteurs explicites. {PL_SYNTAX_HINT}"
+            )
+        bad_query = non_propositional_line([query])
+        if bad_query is not None:
+            return (
+                f"CONTENT_ERROR: la requete {query[:80]!r} n'est pas une "
+                "formule propositionnelle ; une phrase n'est pas une "
+                f"formule. {PL_SYNTAX_HINT}"
             )
         try:
             engine = self._get_engine()
