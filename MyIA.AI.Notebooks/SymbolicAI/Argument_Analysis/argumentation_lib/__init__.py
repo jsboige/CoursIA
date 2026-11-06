@@ -248,6 +248,19 @@ def get_verdict_registry_symbol():
     return VerdictRegistry, registry_for
 
 
+# -- Traduction texte->PL exposee aux agents (#18390) --
+def get_nl_to_logic_plugin_symbol():
+    """Lazy import du plugin de traduction texte->PL (adaptateur #18390).
+
+    Adaptateur minimal sur `_text_to_pl` : le LLM traduit, le parseur
+    valide, le solveur decide. L'amont `NLToLogicPlugin` exigeait un
+    service `NLToLogicTranslator` absent ; cet adaptateur le remplace.
+    """
+    from argumentation_lib._nl_to_logic_plugin import NLToLogicPlugin
+
+    return NLToLogicPlugin
+
+
 # -- FOL Handler (JPype singleton, SK-coupled upstream, prover9_runner dep) --
 def get_fol_handler_symbol():
     """Lazy import for the FOLHandler class symbol.

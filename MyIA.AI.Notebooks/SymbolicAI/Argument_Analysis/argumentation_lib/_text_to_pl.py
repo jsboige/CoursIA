@@ -31,7 +31,9 @@
 #    fonctions libres.
 # 4. La validation syntaxique par Tweety est injectee aussi (`parse_fn`) :
 #    `validate_with_parser` separe acceptees / rejetees sans lever, pour que le
-#    notebook puisse MONTRER un rejet (l'argument pedagogique de #18392).
+#    notebook puisse MONTRER un rejet (l'argument pedagogique de #18392). Seule
+#    une panne d'environnement explicitee par `fatal_exceptions` remonte : un
+#    moteur injoignable n'est pas un rejet de syntaxe (revue de #24951).
 # =============================================================================
 
 """Champ texte -> PL : prompts, extraction JSON, filtres, partition par le parseur.
@@ -198,14 +200,23 @@ def parse_query_response(raw: str) -> List[str]:
 
 
 def validate_with_parser(
-    formulas: List[str], parse_fn: Callable[[str], object]
+    formulas: List[str],
+    parse_fn: Callable[[str], object],
+    fatal_exceptions: Tuple[type, ...] = (),
 ) -> Tuple[List[str], List[dict]]:
     """Partitionne les formules en (acceptees, rejetees) via le VRAI parseur.
 
     `parse_fn` est typiquement `parser.parseFormula` (Tweety PlParser) : toute
-    exception est capturee et raportee, jamais masquee — le rejet est une
-    information pedagogique (#18392 : montrer un echec de traduction), pas une
-    panne.
+    exception de PARSING est capturee et rapportee, jamais masquee — le rejet
+    est une information pedagogique (#18392 : montrer un echec de traduction),
+    pas une panne.
+
+    `fatal_exceptions` separe les deux especes (P1 de la revue de #24951) :
+    une panne d'environnement (`EngineUnavailableError` : JVM ou jars absents)
+    n'est PAS un refus de syntaxe. Elle est relancee telle quelle, sinon elle
+    se presente comme « le parseur a refuse vos formules », c'est-a-dire comme
+    une faute de traduction du LLM. Un appelant qui ne passe rien garde le
+    comportement historique (partition sans lever).
     """
     accepted: List[str] = []
     rejected: List[dict] = []
@@ -213,6 +224,8 @@ def validate_with_parser(
         try:
             parse_fn(formula)
             accepted.append(formula)
+        except fatal_exceptions:
+            raise
         except Exception as exc:  # jpype leve des types Java : catch large assumé
             rejected.append({"formula": formula, "error": str(exc).strip()[:160]})
     return accepted, rejected
