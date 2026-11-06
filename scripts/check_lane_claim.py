@@ -177,7 +177,9 @@ _OPEN_PRS_MEMO: list[dict] | None = None
 # memoisee par `_OPEN_PRS_MEMO`, donc l'identite est stable pendant un
 # tirage). Sans cet index, la jambe IMPLICIT rescannait tous les bodies
 # pour chaque candidat (~0,6 s x 150 = ~105 s mesures).
-_OPEN_PRS_INDEX_MEMO: tuple[list[dict], dict[int, list[dict]]] | None = None
+_OPEN_PRS_INDEX_MEMO: (
+    tuple[list[dict], int, dict[int, list[dict]]] | None
+) = None
 
 # --- markers -----------------------------------------------------------------
 
@@ -2260,6 +2262,49 @@ _PR_ISSUE_REF_RE = re.compile(
     r"#(\d+)\b|\B#(\d+)\b"
 )
 
+# --- #24788 -- « mentionner » n'est pas « travailler sur » ---------------------
+#
+# La jambe IMPLICIT (#14300) lit une correspondance TEXTUELLE sur le corps
+# ENTIER de la PR : tout numero cite occupe l'issue. Une PR qui ENUMERE des
+# numeros -- la liste des issues ecartees du tapis, livrable legitime destine
+# a l'urne de l'adjoint -- declarait donc occupees TOUTES les issues listees.
+# Mesure du 2026-11-05 (corps de #24482) : 172 numeros cites, 162 encore
+# ouverts, soit 162 des 595 issues ouvertes du depot (27 %) declarees occupees
+# par une PR qui n'y travaille pas.
+#
+# Remede = les DEUX formes que l'issue dit combinables. Elles ne se compensent
+# pas : elles s'appliquent a des populations de corps differentes.
+#
+#   - corps ORDINAIRE (<= seuil de numeros DISTINCTS cites) : predicat
+#     inchange. C'est ce qui preserve #14300 SANS cout -- une PR qui travaille
+#     une issue sans la fermer continue de la proteger (le corps de l'incident
+#     fondateur #14259 ne portait qu'un `See #14259`, un seul numero).
+#   - corps ENUMERATIF (> seuil) : seules les references FORTES occupent --
+#     verbe de livraison (`Closes`/`Fixes`/`Resolves`, qui ferment l'issue) ou
+#     marqueur de lane sur la MEME ligne que le numero. La forme 1 appliquee
+#     partout aurait le cout que l'issue decrit ; appliquee aux seuls corps
+#     enumeratifs, elle rend la jambe exacte la ou l'enumeration l'aveuglait.
+#
+# Le seuil est un parametre, pas une observation : `--enum-threshold` ou
+# `CHECK_LANE_CLAIM_ENUM_THRESHOLD`. Il ne change RIEN a un corps ordinaire.
+_ENUM_DISTINCT_ISSUES_DEFAULT = 10
+
+# Le verbe de livraison doit preceder IMMEDIATEMENT la reference (regle de
+# syntaxe sure de `git-workflow.md` : tout ce qui s'intercale entre les deux
+# fait de la phrase du texte). D'ou `[ \t]+` et non `\s+` : meme ligne, rien
+# d'autre que des espaces.
+_STRONG_DELIVERY_REF_RE = re.compile(
+    r"(?i)\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)[ \t]+#(\d+)\b"
+)
+
+# Marqueurs qui affirment une occupation ou une livraison. Volontairement plus
+# etroit que `_MARKER_RE` : `[DONE]` ferme un cycle, il ne dit pas « cette PR
+# travaille cette issue ». Non ancre en debut de ligne -- dans un corps de PR
+# le marqueur vit souvent au milieu d'une phrase (`[DELIVERED] lane X -- PR #N`).
+_STRONG_MARKER_RE = re.compile(
+    r"(?i)\[\s*(CLAIMED-AMEND|CLAIMED|DELIVERED|RELEASED)\s*\]"
+)
+
 
 def _pr_body_references_issue(body: str, issue_number: int) -> bool:
     """True when `body` carries any reference form of `issue_number`."""
@@ -2275,14 +2320,87 @@ def _pr_body_references_issue(body: str, issue_number: int) -> bool:
     return False
 
 
+def _enumeration_threshold() -> int:
+    """Seuil de numeros DISTINCTS au-dela duquel un corps est une enumeration.
+
+    Env `CHECK_LANE_CLAIM_ENUM_THRESHOLD` pour le diagnostic et les tests ; le
+    defaut est la valeur que #24788 propose (« N a fixer, 10 par exemple »).
+    Une valeur illisible retombe sur le defaut : un seuil de mesure ne doit
+    jamais changer le verdict par accident de transport.
+    """
+    raw = os.environ.get("CHECK_LANE_CLAIM_ENUM_THRESHOLD")
+    if raw is None or not raw.strip():
+        return _ENUM_DISTINCT_ISSUES_DEFAULT
+    try:
+        value = int(raw.strip())
+    except ValueError:
+        return _ENUM_DISTINCT_ISSUES_DEFAULT
+    return value if value > 0 else _ENUM_DISTINCT_ISSUES_DEFAULT
+
+
+def _referenced_issue_numbers(body: str) -> set[int]:
+    """Tous les numeros cites par `body` -- le predicat de #14300, inchange."""
+    out: set[int] = set()
+    for m in _PR_ISSUE_REF_RE.finditer(body):
+        captured = m.group(1) or m.group(2)
+        if captured is None:
+            continue
+        try:
+            out.add(int(captured))
+        except ValueError:
+            continue
+    return out
+
+
+def _strong_reference_numbers(body: str) -> set[int]:
+    """Numeros portes par une reference FORTE (#24788, forme 1).
+
+    Forte = verbe de livraison immediatement devant le numero, ou numero sur
+    une ligne qui porte un marqueur d'occupation/livraison de lane. Un
+    `See #N` isole, un `Part of #N` et une enumeration nue restent des
+    mentions : ils ne prouvent pas que la PR travaille l'issue.
+    """
+    out: set[int] = set()
+    for m in _STRONG_DELIVERY_REF_RE.finditer(body):
+        try:
+            out.add(int(m.group(1)))
+        except ValueError:
+            continue
+    for line in body.splitlines():
+        if _STRONG_MARKER_RE.search(line) is None:
+            continue
+        out |= _referenced_issue_numbers(line)
+    return out
+
+
+def _occupying_issue_numbers(
+    body: str, threshold: int | None = None,
+) -> set[int]:
+    """Les numeros que ce corps OCCUPE, apres la garde d'enumeration.
+
+    Sous le seuil (corps ordinaire) : tout numero cite occupe -- #14300 est
+    preserve sans cout. Au-dessus : seules les references fortes occupent, la
+    ou l'enumeration rendait la jambe aveugle. La frontiere est INCLUSIVE
+    (exactement `threshold` numeros = corps ordinaire) : un corps n'est pas
+    declare enumeratif pour etre tombe pile sur la valeur.
+    """
+    cited = _referenced_issue_numbers(body)
+    limit = _ENUM_DISTINCT_ISSUES_DEFAULT if threshold is None else threshold
+    if len(cited) <= limit:
+        return cited
+    return cited & _strong_reference_numbers(body)
+
+
 # #14300 -- the implicit-occupation finder (issue mode, no --paths). The
 # claim record only sees [CLAIMED] markers; the incident the issue documents
 # (#14259, 2026-09-02) had two lanes converging on one file with ZERO
 # markers posted -- the organ said CLEAR and was "right": nobody had
 # claimed. The strongest signal of occupation -- an OPEN PR of another lane
 # already referencing the issue -- lived one `gh pr list` away.
-def _open_prs_by_referenced_issue(prs: list[dict]) -> dict[int, list[dict]]:
-    """Indexe, en UNE passe, les PRs ouvertes par numero d'issue cite.
+def _open_prs_by_referenced_issue(
+    prs: list[dict], threshold: int | None = None,
+) -> dict[int, list[dict]]:
+    """Indexe, en UNE passe, les PRs ouvertes par numero d'issue OCCUPEE.
 
     #22983 -- la jambe IMPLICIT (#14300) demandait, pour CHAQUE candidat, un
     balayage de TOUS les bodies de PRs ouvertes : mesure du 27/10, ~0,6 s par
@@ -2291,34 +2409,31 @@ def _open_prs_by_referenced_issue(prs: list[dict]) -> dict[int, list[dict]]:
     tapis. L'index remplace N balayages par UN : on extrait tous les numeros
     cites une seule fois, puis on consulte un dict.
 
-    Le predicat reste le meme (`_PR_ISSUE_REF_RE`), donc la correspondance
-    des numeros est identique : c'est le meme regex, sur le meme corps, au
-    meme moment. Seule la repetitions change.
+    #24788 -- l'index porte desormais les numeros **occupes**, pas les numeros
+    **cites** : pour un corps ordininaire c'est le meme ensemble, pour un
+    corps enumeratif seules les references fortes restent (cf
+    `_occupying_issue_numbers`). Le predicat de lecture (`_PR_ISSUE_REF_RE`)
+    est inchange ; c'est le SEUIL qui decide de la forme retenue.
     """
     global _OPEN_PRS_INDEX_MEMO
     index: dict[int, list[dict]] = {}
+    limit = _enumeration_threshold() if threshold is None else threshold
     memo = _OPEN_PRS_INDEX_MEMO
-    # La memo porte la LISTE elle-meme (pas son `id()`) : la liste reste
-    # vivante, donc l'identite ne peut pas etre reattribuee par le
-    # collecteur a une autre liste.
-    if memo is not None and memo[0] is prs:
-        return memo[1]
+    # La memo porte la LISTE elle-meme (pas son `id()`) et le SEUIL : la liste
+    # reste vivante, donc l'identite ne peut pas etre reattribuee par le
+    # collecteur a une autre liste, et un index calcule sous un seuil ne se
+    # sert pas sous un autre.
+    if memo is not None and memo[0] is prs and memo[1] == limit:
+        return memo[2]
     for pr in prs:
         # #19971 -- meme lecture defensive du transport qu'a l'entree des
         # commentaires : un body de PR piege en payload JSON cache le `lane`
         # et la reference `#N` exactement de la meme facon (instance fondatrice
         # #17270, mesuree sur un body de PR).
         body = _unwrap_trapped_body(pr.get("body") or "")
-        for m in _PR_ISSUE_REF_RE.finditer(body):
-            captured = m.group(1) or m.group(2)
-            if captured is None:
-                continue
-            try:
-                number = int(captured)
-            except ValueError:
-                continue
+        for number in _occupying_issue_numbers(body, limit):
             index.setdefault(number, []).append(pr)
-    _OPEN_PRS_INDEX_MEMO = (prs, index)
+    _OPEN_PRS_INDEX_MEMO = (prs, limit, index)
     return index
 
 
@@ -2326,6 +2441,7 @@ def _find_open_prs_referencing_issue(
     issue_number: int,
     my_lane: str,
     prs: list[dict] | None = None,
+    threshold: int | None = None,
 ) -> list[dict]:
     """Open PRs of OTHER lanes whose body references `issue_number`.
 
@@ -2335,18 +2451,25 @@ def _find_open_prs_referencing_issue(
     None != my_lane): fail-closed, mirroring `--paths`, where an
     unreadable lane tag also counts as a collision. Sorted by PR number
     (deterministic verdict order). Test injection: pass `prs` to avoid the
-    `gh` round-trip.
+    `gh` round-trip; pass `threshold` to pin the enumeration guard (#24788).
+
+    #24788 -- the index now answers « quelles PRs OCCUPENT ce numero », not
+    « lesquelles le citent ». `enumerative`/`cited_issues` travel with the
+    finding so the verdict can say WHY a delivery-verb reference inside a long
+    list still occupies, instead of leaving the reader to guess.
     """
+    limit = _enumeration_threshold() if threshold is None else threshold
     if prs is None:
         prs = _gh_open_prs_with_files()
     out: list[dict] = []
-    for pr in _open_prs_by_referenced_issue(prs).get(issue_number, []):
+    for pr in _open_prs_by_referenced_issue(prs, limit).get(issue_number, []):
         body = _unwrap_trapped_body(pr.get("body") or "")
         lane = extract_lane(body)
         if lane == my_lane:
             continue
         files = [f.get("path") for f in (pr.get("files") or [])
                  if f.get("path")]
+        cited = len(_referenced_issue_numbers(body))
         out.append({
             "number": pr.get("number"),
             "lane": lane,
@@ -2354,6 +2477,8 @@ def _find_open_prs_referencing_issue(
             "files": files,
             "additions": pr.get("additions"),
             "deletions": pr.get("deletions"),
+            "enumerative": cited > limit,
+            "cited_issues": cited,
         })
     out.sort(key=lambda d: d["number"] or 0)
     return out
@@ -4827,10 +4952,17 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             if pr.get("additions") is not None:
                 delta = f"{pr['additions']}+/{pr['deletions'] or 0}-, "
             lane = pr.get("lane") or "lane ILLISIBLE"
+            # #24788 -- un corps enumeratif ne retient que les references
+            # fortes ; le dire evite de lire l'occupation comme un simple
+            # `#N` perdu dans une liste.
+            why = ""
+            if pr.get("enumerative"):
+                why = (f" (corps enumeratif : {pr.get('cited_issues')} "
+                       f"numeros cites, reference forte retenue)")
             lines.append(
                 f"IMPLICIT: lane {lane} a une PR ouverte "
                 f"(#{pr.get('number')}, {delta}sur {shown or 'fichiers inconnus'}) "
-                f"sans [CLAIMED] pose."
+                f"sans [CLAIMED] pose.{why}"
             )
         print("\n" + "\n".join(lines))
         print(
