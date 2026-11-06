@@ -52,6 +52,6 @@ Le saut de la porte 06 (tournoi de stratégies : on observe le comportement de l
 | [`RepeatedGames`](../game_theory_lean/RepeatedGames.lean) | Marches 01-02 : grim trigger certifié sans `sorry` ; Folk complet ouvert (`Folk.lean`) |
 | [`ProgramGames/Bounded`](../game_theory_lean/ProgramGames/Bounded.lean) | Marches 05-06 : bornes sur les agents à programme (`import ProgramGames.Bounded` dans les deux 06f d'origine) |
 | [`ProgramGames/FairBot`](../game_theory_lean/ProgramGames/FairBot.lean) | **Marche 04b** : le vrai FairBot, **importé et exécuté** par `Dynamics-04b` (coopération mutuelle prouvée par Löb) — la pièce trouve sa marche ; le résidu #20379 (le 06e jouait avec des `_toy` heuristiques) est comblé |
-| [`Abstraction`](../game_theory_lean/Abstraction/Basic.lean) | **Module orphelin** : le consommateur naturel est le carnet 19 « Abstraction à dette » (Metajeux-03), qui n'appelle rien — à câbler (See #20380) |
+| [`Abstraction`](../game_theory_lean/Abstraction/Basic.lean) | **Branché** : le carnet 19 « Abstraction à dette » importe le module et fait élaborer `raffinement_aggrave_la_dette` par le compilateur ; le 03e le présente aussi en section « Preuve formelle » (#20380, clos) |
 
 La table des lakes de la série, dans le [README racine](../README.md#formalisations-lean), reprend ces deux groupes. L'inventaire complet (toolchains, `sorry` résiduels) vit dans [LEAN_INVENTORY.md](../LEAN_INVENTORY.md).

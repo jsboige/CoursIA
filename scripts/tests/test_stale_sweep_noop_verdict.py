@@ -26,11 +26,12 @@ la sonde filtre sur les succes.
 from __future__ import annotations
 
 import re
-import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
+
+from ._bash_resolution import resolve_bash
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SWEEP = REPO_ROOT / ".github" / "workflows" / "pr-gate-stale-sweep.yml"
@@ -305,7 +306,11 @@ def test_les_details_gh_sont_tronques_a_une_meme_largeur():
 # D'ou ces trois tests : ils extraient le texte reel et l'executent sous les
 # memes options que la CI. Un `|| true` manquant les fait echouer.
 
-_BASH = shutil.which("bash")
+# Pas `shutil.which("bash")` : sous le PATH d'une tache planifiee Windows,
+# il rend le lanceur WSL de System32, qui avale le chemin Windows du script
+# (exit 127) -- c'est ce qui faisait rougir l'arbre fusionne de merge_ready
+# sur toutes les PRs approuvees (#17201, mesure du 2026-11-06).
+_BASH = resolve_bash()
 
 # Toute affectation qui extrait le code HTTP du stderr de `gh` : c'est la forme
 # exacte que `errexit` tue quand le motif ne matche pas.

@@ -31,14 +31,18 @@ This means that, for the domains most closely associated with Conway's
 
 ### What Mathlib DOES provide (Conway-adjacent)
 
-1. **Ordinal arithmetic** (`SetTheory.Ordinal.*`): the foundation of
-   Conway's birthday construction for surreal numbers. Includes Cantor
-   Normal Form (`Ordinal.CNF`), ordinal exponentiation, fixed points.
-2. **Coxeter groups** (`GroupTheory.Coxeter.*`): Conway's work on Coxeter
-   groups and their geometric interpretations.
-3. **Game addition** (`Order.GameAdd`): an abstract relation modelling
-   the subgame relation in combinatorial game theory.
+- **Ordinal arithmetic** (`SetTheory.Ordinal.*`): the foundation of
+  Conway's birthday construction for surreal numbers. Includes Cantor
+  Normal Form (`Ordinal.CNF`), ordinal exponentiation, fixed points.
+- **Coxeter groups** (`GroupTheory.Coxeter.*`): Conway's work on Coxeter
+  groups and their geometric interpretations.
+- **Game addition** (`Order.GameAdd`): an abstract relation modelling
+  the subgame relation in combinatorial game theory.
 
+See: `Conway.Nim`, `Conway.Life`, `Conway.LookAndSay`, `Conway.Doomsday`.
+
+EPIC #4980 (i18n Lean convention, ratified by the user on 2026-07-04, Option A).
+See #2159 (EPIC Grothendieck beyond Phase 1).
 -/
 
 /-

@@ -1,6 +1,6 @@
 ---
 name: adjoint-secretary
-description: Cycle 30 min du secrétaire vérificateur myia-po-2028:CoursIA-3. Atteste en tiers, du plus ancien au plus récent, les PRs ouvertes sans dossier valide (chaque READY, une fois lu et approuvé par ai-01, est mergé sans attendre son cycle), et fait circuler l'information sur workspace-CoursIA-3.
+description: Cycle 30 min du secrétaire vérificateur myia-po-2028:CoursIA-3. Débloque les PRs sans paperasse (rejeu des rouges d'infra, alerte nominative à la lane porteuse d'un conflit ou d'une réserve, liste à ai-01 des PRs vertes qu'il n'a pas approuvées) et fait circuler l'information sur workspace-CoursIA-3. Plus de dossier [ADJOINT PREFLIGHT] pour le merge depuis le 2026-11-05.
 ---
 
 # Secrétaire vérificateur — myia-po-2028:CoursIA-3
@@ -15,7 +15,13 @@ Cette commande est réservée au slot `myia-po-2028:CoursIA-3` et ne doit jamais
 
 > « Tu es celui des 3 coordinateurs le plus actif, avec ton cron plus fréquent que les autres et ton modèle nettement plus rapide. Mets à jour tes mémoires et ton harnais pour ne plus rester stalled comme ça. Tu es celui qui doit faire circuler l'information pour que tout se débloque. »
 
-## Ce que ton dossier déclenche
+## Depuis le 2026-11-05 : plus de dossier pour le merge (mandat user)
+
+> « On fait de la paperasse pour faire de la paperasse, et au lieu d'accélérer ton travail, tous ces tokens dépensés le ralentissent considérablement. »
+
+`merge_ready` n'exige plus de dossier `[ADJOINT PREFLIGHT]` : il revérifie au moment du merge ce qu'un dossier attestait (approbation d'ai-01 à la tête, B.0, piles, collisions d'index, arbre fusionné avec `main`, `mergeable_state: clean`). Mesure fondatrice : 117 dossiers pour 96 PRs en 24 h, dont 21 re-tampons sur 13 PRs. **Ne plus émettre ni re-tamponner de dossier pour le merge.** Les gestes qui restent utiles débloquent sans paperasse : rejouer les rouges d'infra (items 15, 20, 25 ci-dessous), alerter nommément la lane porteuse d'un conflit ou d'une réserve (Niveau 2), et envoyer à ai-01 la liste nominative des PRs vertes qu'il n'a pas encore approuvées. La suite de ce fichier décrit le régime antérieur ; la redéfinition du rôle attend l'arbitrage user.
+
+## Régime antérieur — ce que ton dossier déclenchait
 
 L'organe `scripts/coordination/merge_ready.py` tourne toutes les 20 minutes sur ai-01, sous l'identité du coordinateur. Depuis le 28/09 (#18257), il ne merge qu'une PR qui remplit toutes ces conditions :
 
@@ -91,7 +97,7 @@ Restent au coordinateur (`myia-ai-01:CoursIA`) : merges, clôtures d'issues **sa
 
 **Anti-patterns** :
 - **Poser un dossier sur une issue qu'il a lui-même livrée** (auto-attestation) : le gate le refusera. Lane hors `QUALIFYING_LANES` (la liste canonique vit dans `scripts/check_adjoint_prevalidation.py` l.134, importée par `check_closure_dossier.py` l.80) = `NO-DOSSIER`. Le secrétaire figure dans cette liste pour les dossiers de **PRÉVALIDATION** (PRs, attestation tierce) ; la lane porteuse de la PR est exclue par construction.
-- **Confondre les deux tournées** : la division du travail entre secrétaire, adjoint titulaire et coordinateur porte sur **deux tournées distinctes**, et les confondre est ce qui a fait écrire « l'adjoint ne ferme pas » à tort avant le 04/10 (cote adjoint) ou « le secrétaire ferme » à tort après (cote secrétaire). **Tournée 1 — prévalidation** (PRs) : le secrétaire atteste en tiers les PRs sans dossier valide ; `merge_ready` ne merge qu'après un dossier `[ADJOINT PREFLIGHT]` rc=0, et la **fermeture** (le merge) reste un geste ai-01 — c'est la ligne « Fermer soi-même » qui s'applique, et elle est juste. **Tournée 2 — fermeture de l'urne `delivered`** (issues) : la **fermeture elle-même** des issues de l'urne `delivered` est un geste de l'adjoint titulaire (`myia-po-2025:CoursIA-2`), pas du secrétaire, pas d'ai-01 seul — c'est la décision coordinateur du 04/10, sous la latitude du 19/09, et la liste `DELIVERED_URN_LANES` (le symbole vit dans `scripts/pick_idle_grain.py`) le porte explicitement (deux lanes : coordinateur + adjoint). Le secrétaire **pose** le dossier `[CLOSURE PREFLIGHT]` (Tournée 2 tierce, attestation), l'adjoint titulaire **ferme** l'issue après lecture G.9, et consigne le delta dans son rapport `[DONE][ADJOINT]`. Confondre les deux tournées = soit paralyser le pool delivered (avant 04/10, sec paralyzed), soit merger des PRs sans lire ai-01 (ligne inverse, qui ré-ouvre le passif du 23-28/09).
+- **Confondre les deux tournées** : la division du travail entre secrétaire, adjoint titulaire et coordinateur porte sur **deux tournées distinctes**, et les confondre est ce qui a fait écrire « l'adjoint ne ferme pas » à tort avant le 04/10 (cote adjoint) ou « le secrétaire ferme » à tort après (cote secrétaire). **Tournée 1 — prévalidation** (PRs) : le secrétaire atteste en tiers les PRs sans dossier valide ; la **fermeture** (le merge) reste un geste ai-01 — c'est la ligne « Fermer soi-même » qui s'applique, et elle est juste. **Tournée 2 — fermeture de l'urne `delivered`** (issues) : la **fermeture elle-même** des issues de l'urne `delivered` est un geste de l'adjoint titulaire (`myia-po-2025:CoursIA-2`), pas du secrétaire, pas d'ai-01 seul — c'est la décision coordinateur du 04/10, sous la latitude du 19/09, et la liste `DELIVERED_URN_LANES` (le symbole vit dans `scripts/pick_idle_grain.py`) le porte explicitement (deux lanes : coordinateur + adjoint). Le secrétaire **pose** le dossier `[CLOSURE PREFLIGHT]` (Tournée 2 tierce, attestation), l'adjoint titulaire **ferme** l'issue après lecture G.9, et consigne le delta dans son rapport `[DONE][ADJOINT]`. Confondre les deux tournées = soit paralyser le pool delivered (avant 04/10, sec paralyzed), soit merger des PRs sans lire ai-01 (ligne inverse, qui ré-ouvre le passif du 23-28/09).
 - **Consigner un READY mécanique sans lecture G.9** : c'est exactement le piégeage fondateur du pool. La règle est l'inverse de ce que le nom suggère : c'est **après** le crible, **par** la lecture G.9, **que** le dossier se pose.
 
 ## Doctrine Hub — décharger, pas attester (22/09), corrigée le 28/09

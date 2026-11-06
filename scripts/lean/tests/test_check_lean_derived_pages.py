@@ -13,7 +13,11 @@ Les cas couverts :
   * un generateur absent, une page absente : « je n'ai pas pu lire » n'est pas
     « c'est conforme » ;
   * un generateur qui expire est traite comme une divergence, pas comme un
-    succes.
+    succes ;
+  * sur un clone **shallow**, la mesure est `non_mesurable` pour les
+    generateurs qui lisent l'historique -- et pour eux seuls (mesure du
+    2026-11-05 : la page et sa verification partagent la troncature, donc le
+    `--check` local s'auto-confirme pendant que la porte CI rougit).
 
 Usage :
     python scripts/lean/tests/test_check_lean_derived_pages.py
@@ -26,6 +30,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -113,6 +118,112 @@ def test_un_generateur_qui_expire_est_signale_sans_bloquer(tmp_path):
     assert got["status"] == "expiree"
     assert got["drifted"] is False
     assert "expiree" in got["detail"]
+
+
+# --- le prealable d'historique : un clone shallow ne mesure rien -------------
+
+IMMUNE = "scripts/lean/lean_theorem_duplicates.py"
+
+
+def _git(cwd: Path, *args: str) -> None:
+    subprocess.run(["git", "-C", str(cwd), *args], capture_output=True,
+                   text=True, encoding="utf-8", errors="replace", check=True)
+
+
+def _git_repo_with_history(tmp_path: Path, name: str = "origin") -> Path:
+    """Un depot git a deux commits (donc clonable en profondeur 1)."""
+    ident = ("-c", "user.email=test@example.invalid", "-c", "user.name=test")
+    repo = tmp_path / name
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _git(repo, *ident, "commit", "-q", "--allow-empty", "-m", "premier")
+    (repo / "trace.txt").write_text("x\n", encoding="utf-8")
+    _git(repo, "add", "trace.txt")
+    _git(repo, *ident, "commit", "-q", "-m", "second")
+    return repo
+
+
+def _shallow_clone(origin: Path, dest: Path) -> Path:
+    subprocess.run(["git", "clone", "--depth", "1", "-q",
+                    origin.as_uri(), str(dest)],
+                   capture_output=True, text=True, encoding="utf-8",
+                   errors="replace", check=True)
+    return dest
+
+
+def _write_page_pair(root: Path, generator: str, rc: int = 0) -> None:
+    gen = root / generator
+    gen.parent.mkdir(parents=True, exist_ok=True)
+    gen.write_text("import sys\nsys.exit(%d)\n" % rc, encoding="utf-8")
+    page = root / dict(mod.PAGES)[generator]
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text("page de test\n", encoding="utf-8")
+
+
+def test_un_clone_shallow_rend_la_mesure_non_mesurable(tmp_path):
+    """Mesure du 2026-11-05 : une page regeneree sur un clone shallow portait
+    35 fois la date de frontiere a la place des vraies dates de naissance, et
+    le `--check` local rendait CONFORME -- le generateur et la page partageaient
+    la troncature. Le garde doit refuser de conclure, et nommer la reparation
+    (reparer l'historique, pas regenerer la page)."""
+    origin = _git_repo_with_history(tmp_path)
+    assert mod.shallow_clone_detail(origin) is None, \
+        "un historique complet ne doit pas etre declare tronque"
+    shallow = _shallow_clone(origin, tmp_path / "shallow")
+    assert mod.shallow_clone_detail(shallow) is not None
+
+    by_gen = {r["generator"]: r for r in
+              mod.check_all(timeout=30, repo_root=shallow)}
+    assert mod.READS_HISTORY, "au moins un generateur lit l'historique"
+    for generator in mod.READS_HISTORY:
+        got = by_gen[generator]
+        assert got["status"] == "non_mesurable"
+        assert got["drifted"] is True, "« je n'ai pas pu mesurer » bloque"
+        assert "unshallow" in got["detail"], \
+            "le motif doit nommer la reparation"
+
+
+def test_un_clone_shallow_ne_bloque_que_les_generateurs_qui_lisent_l_historique(
+        tmp_path):
+    """La troncature ne rend fausse que la lecture de `git log` : un generateur
+    qui ne lit que `git ls-files` reste mesurable et ne doit pas etre bloque --
+    le garde ne dit jamais plus fort que ce qu'il a mesure."""
+    origin = _git_repo_with_history(tmp_path)
+    shallow = _shallow_clone(origin, tmp_path / "shallow")
+    _write_page_pair(shallow, IMMUNE, rc=0)
+    _write_page_pair(shallow, "scripts/lean/lean_material_map.py", rc=0)
+
+    by_gen = {r["generator"]: r for r in
+              mod.check_all(timeout=30, repo_root=shallow)}
+    assert by_gen[IMMUNE]["status"] == "conforme"
+    assert by_gen[IMMUNE]["drifted"] is False
+    assert by_gen["scripts/lean/lean_material_map.py"]["status"] == \
+        "non_mesurable"
+
+
+def test_un_depot_non_git_laisse_les_generateurs_conclure(tmp_path):
+    """« je n'ai pas pu lire l'historique » n'est pas « l'historique est
+    tronque » : hors depot git, la mesure revient aux generateurs."""
+    repo = _fake_repo(tmp_path, rc=0)
+    assert mod.shallow_clone_detail(repo) is None
+
+
+def test_le_verdict_d_un_historique_tronque_n_accuse_pas_la_page():
+    """Le verdict doit dire ce qui a ete mesure. « DIVERGENCE » accuserait la
+    page d'un defaut dont la seule cause mesuree est la troncature -- et le
+    geste `--write` enverrait la lane ecrire des dates fabriquees."""
+    tronquee = [{"generator": "scripts/lean/lean_material_map.py",
+                 "page": "docs/reference/lean-material-map.md",
+                 "status": "non_mesurable", "drifted": True, "rc": None,
+                 "duration_s": 0.0,
+                 "detail": "historique TRONQUE : clone shallow -- `git fetch "
+                           "--unshallow`, puis regenere la page."}]
+    rc, out, err = _run_main([], tronquee)
+    assert rc == 1
+    assert "VERDICT: NON MESURABLE" in out
+    assert "DIVERGENCE" not in out
+    assert "--write" not in out, "ne jamais envoyer la lane regenerer ici"
+    assert "unshallow" in out
 
 
 def test_le_garde_couvre_les_pages_attendues():
