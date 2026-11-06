@@ -1,0 +1,278 @@
+"""GRAMMAIRE de l'etat de livraison d'une issue -- source UNIQUE (#24461).
+
+Pourquoi ce module existe
+-------------------------
+Deux organes lisaient la meme grammaire, chacun de son cote :
+
+- le **tapis** (`scripts/pick_idle_grain.py`) : il decidait qu'une issue
+  portant un marqueur de livraison etait **ecartee** du tirage des lanes
+  workers ;
+- le **poseur de label** (`scripts/candidate_delivered.py`) : il decidait
+  qu'une issue livree **portait le label** `candidate-delivered`, et c'est
+  ce LABEL qui rend le filtre du tapis gratuit.
+
+Les deux grammaires divergeaient, et la divergence etait **structurelle** :
+l'attestation d'une lane -- `[INFO] candidate-delivered`, la forme que le
+protocole prescrit de poser en rendant la main -- armait l'etat du tapis
+mais **n'arme jamais** le label, parce que `classify()` ne CLASSAIT le label
+que sur une PR mergee portant `Closes`/`Fixes` (`partial` sinon) et sans
+commentaire posterieur au merge. Resultat mesure le 2026-11-03 (#24461) :
+**165 issues ouvertes portaient un marqueur vivant, 1 seule portait le
+label**. Le tapis, lui, ecarte ces issues par une **sonde par issue**, donc
+par un budget de sondes : quand le budget ou le mur de temps est atteint, le
+tapis rend `fail-OPEN` et sert l'issue comme un grain neuf -- 37 des 120
+grains servis par un tirage worker portaient un marqueur vivant.
+
+Ce module est donc l'unique definition de la grammaire, et les deux organes
+l'IMPORTENT. Il ne depend d'aucun module du depot hormis
+`released_covers` (extrait de `pick_idle_grain` par #24082, sans dependance)
+et `check_closure_dossier` (l'organe canonique du dossier de cloture,
+charge paresseusement : son absence ne doit pas faire echouer l'import).
+
+Ce qui est EXPORTE
+------------------
+- `DELIVERED_MARKER_RE`, `DELIVERED_MARKER_REVOKED_RE`,
+  `ATTESTATION_MARKER_RE` / `CONTAINER_DELIVERY_MARKER_RE` : les grammaires
+  de marqueurs, a l'identique de celles du tapis (memes regex, meme
+  lookahead anti-`-revoked` / `-partial`).
+- `delivery_state(bodies, *, lane_marker, dossier)` : l'etat du FIL apres le
+  DERNIER evenement de livraison -- `"attested"` / `"revoked"` / `"none"`.
+- `delivered_state(bodies)` : le booleen historique du tapis (grammaire
+  large).
+- `attestation_state(bodies, *, dossier)` : l'etat du fil pour le POSEUR DE
+  LABEL (grammaire etroite).
+
+L'ordre des evenements est celui du transport et il est CHRONOLOGIQUE :
+l'appelant passe les corps dans l'ordre de l'API. Aucun tri n'est fait ici
+-- en ajouter un ferait dependre le sens d'un champ que le transport REST ne
+porte pas.
+"""
+
+from __future__ import annotations
+
+import re
+
+# --- Les formes de marqueur de livraison --------------------------------------
+#
+# 1. `[INFO] candidate-delivered`      (canonique, fermante `]`)
+# 2. `[INFO candidate-delivered]`      (espace au lieu de `]`)
+# 3. `[INFO] lane <machine:workspace> -- <sujet> -- candidate-delivered <suite>`
+#                                      (annonce, le mot n'est pas immediatement
+#                                      apres `[INFO` mais sur la meme ligne)
+#
+# La forme etroite : la 3e alternative exige `candidate-delivered` complete sur
+# la MEME ligne qu'un `[INFO]` en tete, et un discriminant de classe
+# (`lane <m:w>`, `signal`, `livre(e)`, `verification first-hand`) SUR LA MEME
+# LIGNE -- sinon une mention discursive du mecanisme serait classee a tort
+# comme marqueur de livraison.
+#
+# Ancrage en debut de ligne (`^\s*` + MULTILINE) : evite les mentions
+# incidentes du type "sans [INFO] candidate-delivered". Le prefixe de TITRE
+# markdown (`#{1,6}` + espaces optionnels) est tolere : un commentaire
+# structure en sections ecrit couramment `## [INFO] candidate-delivered -- ...`.
+#
+# #20008 : la fermeture est un LOOKAHEAD `(?![-_\w])`, jamais un `\b`. Un `\b`
+# pose apres `delivered` ne separe PAS `candidate-delivered` de
+# `candidate-delivered-partial` (le tiret est un non-mot).
+#
+# La forme `[DELIVERED] lane <machine:workspace> -- PR #N` (c.15069) est une
+# cloture explicite de LIVRAISON DE GRAIN : elle exige la forme canonique
+# (`\s+lane\b`), et l'ancrage debut de ligne tient les citations
+# `> [DELIVERED] lane` hors du match.
+DELIVERED_MARKER_RE = re.compile(
+    r"(?:"
+    r"^\s*(?:#{1,6}\s*)?\[DELIVERED\]\s+lane\b"
+    r"|"
+    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered(?![-_\w])"
+    r"|"
+    r"^\s*(?:#{1,6}\s*)?\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
+    r"|"
+    r"^\s*(?:#{1,6}\s*)?\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
+    r"verification first-hand)[^\n]*\bcandidate-delivered(?![-_\w])"
+    r")",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+# Retractation du marqueur (mesure du 12/10 : sur 80 issues marquees livrees,
+# 20 l'etaient partiellement). Deux formes, l'une et l'autre en TETE de ligne :
+# une mention en prose (« ...et non [NOT-DELIVERED] dans ce fil ») ne retracte
+# rien. La forme `[INFO] candidate-delivered-revoked` ne se relit PAS comme
+# une livraison : le lookahead `(?![-_\w])` ferme `candidate-delivered` devant
+# `-revoked`. Le sens est porte par l'ORDRE : une retractation defait les
+# marqueurs posterieurs a elle, un marqueur repose apres elle rearme.
+DELIVERED_MARKER_REVOKED_RE = re.compile(
+    r"(?:"
+    r"^\s*(?:#{1,6}\s*)?\[NOT-DELIVERED\]"
+    r"|"
+    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered-revoked"
+    r")",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+# L'ATTESTATION DE LIVRAISON PROPRE : les trois formes
+# `[INFO] candidate-delivered`. C'est l'idiome que le protocole prescrit de
+# poser en rendant la main -- « les criteres sont couverts, la main est
+# rendue », verifie first-hand par la lane.
+#
+# La forme `[DELIVERED] lane X -- PR #N` en est VOLONTAIREMENT absente : elle
+# dit « la lane X a livre SON GRAIN », ce qui sur une issue a plusieurs
+# tranches ne dit rien de l'issue elle-meme. Mesure #24461 (2026-11-03) :
+# #23778 porte `[DELIVERED] lane myia-po-2027:CoursIA-2 -- PR #23830` ET une
+# Concern du user -- l'issue n'etait pas livree. Un label arme sur cette
+# forme aurait efface du tapis une issue dont le travail restait A FAIRE.
+#
+# C'est aussi, mot pour mot, le marqueur de CONTENEUR du tapis : sur une
+# umbrella, `[INFO] candidate-delivered` dit « le CONTENEUR est livre ».
+ATTESTATION_MARKER_RE = re.compile(
+    r"(?:"
+    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered(?![-_\w])"
+    r"|"
+    r"^\s*(?:#{1,6}\s*)?\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
+    r"|"
+    r"^\s*(?:#{1,6}\s*)?\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
+    r"verification first-hand)[^\n]*\bcandidate-delivered(?![-_\w])"
+    r")",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+# Le marqueur de CONTENEUR du tapis : le meme jeu de formes. Alias, pas copie
+# (une seule definition, deux organes).
+#
+# Note de suivi de la revue Hermes (2026-11-03) : sur une UMBRELLA,
+# `[INFO] candidate-delivered` dit « le CONTENEUR est livre », et le labeler
+# classe alors par la branche `container` (exclusion ahead, testee) -- les
+# deux noms pointeront donc toujours la meme regex, et les scinder
+# casseraient la parite verifiee par test. Le comment est la, pour le
+# lecteur futur qui aurait l'idee de les separer.
+CONTAINER_DELIVERY_MARKER_RE = ATTESTATION_MARKER_RE
+
+# --- Les trois etats d'un fil --------------------------------------------------
+
+ATTESTED = "attested"   # le fil porte une attestation VIVANTE
+REVOKED = "revoked"     # le fil porte une attestation RETIRACEE (la derniere)
+NONE = "none"           # le fil ne porte aucune attestation
+
+
+def closure_dossier_close(body: str) -> bool:
+    """Vrai si le corps porte un dossier `[CLOSURE PREFLIGHT]` de verdict CLOSE.
+
+    L'organe canonique est `scripts/check_closure_dossier.py` : on l'IMPORTE,
+    on n'en recopie pas la grammaire. Un dossier qui ne parse pas (champ
+    manquant, ligne malformee, marqueur fermant absent) n'est PAS un signal :
+    il est ignore (fail-OPEN), plutot que devine.
+
+    Import paresseux et tolerant : l'organe peut etre absent du checkout
+    reduit du cron (le sparse-checkout ne le declare pas) ; son absence ne
+    doit pas faire echouer l'import du module.
+    """
+    if not body or "[CLOSURE PREFLIGHT]" not in body:
+        return False
+    try:
+        from check_closure_dossier import parse_dossier
+    except Exception:  # noqa: BLE001 - organe absent -> pas de signal
+        return False
+    try:
+        dossier, errors = parse_dossier(body, 0, "", "")
+    except Exception:  # noqa: BLE001 - parseur en faute -> pas de signal
+        return False
+    if dossier is None or errors:
+        return False
+    return (dossier.fields.get("verdict") or "").strip().upper() == "CLOSE"
+
+
+def _released_covers_acceptance(body: str) -> bool:
+    """`[RELEASED] ... acceptance deja couverte` -- une livraison au sens du tapis.
+
+    Le predicat est importe de `released_covers` (extrait du picker par
+    #24082, module sans dependance) : `[RELEASED]` a DEUX sens -- une lane
+    rend la main sur une barriere reelle (rien n'a ete livre, l'item reste
+    servable) ou elle signale l'acceptance deja couverte (l'item est livre).
+    Reecrire cette distinction ici serait la deriver une deuxieme fois.
+    """
+    try:
+        from released_covers import _released_covers_acceptance as predicate
+    except Exception:  # noqa: BLE001 - module absent -> pas de signal
+        return False
+    return bool(predicate(body or ""))
+
+
+def delivery_state(bodies: list[str], *, lane_marker: bool = True,
+                   dossier: bool = True) -> str:
+    """L'etat du FIL apres le DERNIER evenement de livraison.
+
+    Un `any(...)` rendrait le marqueur permanent : une retractation
+    posterieure ne pourrait plus remettre une issue partiellement livree sur
+    le tapis (mesure du 12/10 : 20 des 80 issues marquees livrees etaient
+    partielles). Ici le marqueur est un ETAT, et chaque corps est un
+    evenement -- un marqueur de livraison rearme, une forme de retractation
+    desarme ; c'est l'etat apres le DERNIER evenement qui est rendu. Un corps
+    portant les deux est contradictoire et la retractation l'emporte (c'est
+    le geste delibere, et c'est elle que cette machine d'etat doit rendre
+    effective).
+
+    Evenements d'arming :
+    - `[INFO] candidate-delivered` (et ses variantes de forme) ;
+    - `[DELIVERED] lane <machine:workspace> -- PR #N` -- **seulement si
+      ``lane_marker``** (c'est une livraison de GRAIN, pas d'issue) ;
+    - un dossier `[CLOSURE PREFLIGHT]` de verdict CLOSE (``dossier=True``) ;
+    - `[RELEASED] ... acceptance deja couverte`.
+
+    Evenements de desarming : `[NOT-DELIVERED]` et
+    `[INFO] candidate-delivered-revoked`.
+
+    Rend `"attested"`, `"revoked"` ou `"none"`.
+
+    Le parametre ``dossier`` existe pour une raison de COHERENCE, pas de
+    commodite : l'organe qui parse le dossier (`check_closure_dossier`)
+    depend de `check_adjoint_prevalidation`, qui n'est pas dans le
+    sparse-checkout du cron `candidate-delivered` (#23762 : le checkout
+    reduit ne peut pas hosting l'organe). Si le labeler l'utilisait, le
+    balayage local armerait le label d'un dossier CLOSE et le balayage CI
+    non -- deux comportements pour le meme depot. Le labeler passe donc
+    ``dossier=False`` : le dossier reste le signal de l'adjoint, et le
+    tapis -- qui, lui, tourne sur le depot complet -- continue de le lire.
+    """
+    state = NONE
+    for body in bodies or []:
+        text = body or ""
+        if DELIVERED_MARKER_REVOKED_RE.search(text):
+            state = REVOKED
+        elif DELIVERED_MARKER_RE.search(text):
+            # La forme `[DELIVERED] lane ... -- PR #N` : « la lane X a livre
+            # SON grain ». Elle arme l'etat du TAPIS (qui ecarte l'issue de
+            # son tirage), mais elle n'arme PAS le label : sur une issue a
+            # plusieurs tranches, elle ne dit rien de l'issue (cf. #23778,
+            # mesure #24461).
+            if lane_marker or ATTESTATION_MARKER_RE.search(text):
+                state = ATTESTED
+        elif dossier and closure_dossier_close(text):
+            state = ATTESTED
+        elif _released_covers_acceptance(text):
+            state = ATTESTED
+    return state
+
+
+def delivered_state(bodies: list[str], *, dossier: bool = True) -> bool:
+    """Le booleen historique du tapis : le fil atteste-t-il une livraison ?
+
+    Raccourci : `delivery_state(bodies, dossier=dossier) == ATTESTED`.
+    """
+    return delivery_state(bodies, dossier=dossier) == ATTESTED
+
+
+def attestation_state(bodies: list[str], *, dossier: bool = True) -> str:
+    """L'etat du fil pour le POSEUR DE LABEL.
+
+    Grammaire ETROITE : seule la forme `[INFO] candidate-delivered` (et ses
+    variantes) arme l'etat. La forme `[DELIVERED] lane ... -- PR #N` en est
+    exclue : elle dit « la lane X a livre SON grain », pas « l'issue est
+    livree » (mesure #24461 : #23778 porte ce marqueur ET une Concern du
+    user).
+
+    Le predicat `released_covers_acceptance` reste inclus : `[RELEASED] ...
+    acceptance deja couverte` est un verdict de LIVRAISON (« les criteres
+    sont couverts »), la ou `[RELEASED] ... barriere` ne l'est pas.
+
+    Rend `"attested"`, `"revoked"` ou `"none"`.
+    """
+    return delivery_state(bodies, lane_marker=False, dossier=dossier)
