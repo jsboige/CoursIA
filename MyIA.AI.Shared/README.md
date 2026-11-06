@@ -206,10 +206,11 @@ wrapper Aricie expose — la base de connaissances `PLKbInfo` devient
 | `PlParser` | syntaxe du chapitre 7 d'AIMA : `~` `&` `\|` `=>` `<=>`, plus `!` `->` `<->` ; erreur positionnée, jamais de formule approximative |
 | `PlCnf` | mise sous forme normale conjonctive (élimination, négation normalisée, distribution), clauses tautologiques écartées |
 | `PlKnowledgeBase` | phrases, clauses, satisfaction |
-| `PlInference` | les six procédures : `TTEntails`, `Resolve`, `DPLLEntails`, `DPLLSatisfiable`, `WalkSatKb`, `WalkSatPredicate` |
+| `PlInference` | les sept procédures : `TTEntails`, `Resolve`, `PLFCEntails`, `DPLLEntails`, `DPLLSatisfiable`, `WalkSatKb`, `WalkSatPredicate` |
 
 Chaque procédure publie son **coût mesuré** et son **unité** (`lignes de table de
-verite`, `resolvantes derivees`, `tentatives de branchement DPLL`, `flips`) : c'est ce qui les rend
+verite`, `resolvantes derivees`, `symboles inferes`, `tentatives de branchement DPLL`,
+`flips`) : c'est ce qui les rend
 falsifiables entre elles, et pas seulement correctes. Une conséquence mesurée : sur
 une base insatisfiable, `DPLLEntails` ne prend **aucune** décision quand
 `DPLLSatisfiable` en prend, parce que la négation de la requête est elle-même une
@@ -217,11 +218,23 @@ clause unitaire qui propage. `WalkSAT` rend `Unknown` et jamais `No` quand il é
 une recherche locale qui n'aboutit pas ne prouve pas l'insatisfiabilité.
 
 **Hors de cette tranche**, et pour des raisons écrites dans #23584 : FOL (point de
-décision n°1 de #21909), `Probability.cs` (n°2), `Neural.cs` (n°3), et `PLFCEntails`
-dont la sémantique derrière `aima-core.dll` n'est pas établie.
+décision n°1 de #21909), `Probability.cs` (n°2), `Neural.cs` (n°3). `PLFCEntails` y
+était aussi reportée — sa sémantique derrière `aima-core.dll` n'était pas établie.
+Elle est livrée depuis (#21909) : la lecture du wrapper Aricie
+(`Libraries/AI/Logic.cs`, l.126-127) montre l'appel
+`new PLFCEntails().plfcEntails(kb, new PropositionSymbol(predicate))`, ce qui fixe la
+requête à **un symbole** et le rendu à un booléen. Le port suit la fig. 7.15 d'AIMA
+(agenda + compteurs de prémisses), publie son coût en `symboles inferes`, et déclare
+son domaine au lieu de conclure hors de lui : sur clauses définies il est complet
+(verdict `Yes`/`No` prouvés), et une clause sans littéral positif (contrainte) ou à
+plusieurs positifs fait lever la procédure.
 
 Vérification locale du 2026-11-01 : `dotnet test MyIA.AI.Shared.Tests` —
 **436/436 PASS** sur la suite complète, dont 39 témoins pour cette tranche.
+
+Vérification locale du 2026-11-06 : `dotnet test MyIA.AI.Shared.Tests` —
+**487/487 PASS** sur la suite complète, dont 30 témoins `PlInferenceTests`
+(10 pour `PLFCEntails`).
 
 ## B2-T2 — Noyau du premier ordre FOL (#7265, #24320)
 
