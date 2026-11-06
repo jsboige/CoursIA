@@ -53,12 +53,16 @@ Bump 2026-11-05 (fournée avec la resync #24508)
 ------------------------------------------------
 
 Le gitlink avance de `a3ab8720` à **`4332d26aeceee66d49073f4936d3b6f47f14287c`**
-(23 commits amont : i18n DNN, docs du site, perf des gardes amont #2138).
+(23 commits amont : i18n DNN, docs du site, perf des gardes amont #2138) — le
+chemin passe par `a57a5ec7c792064cfbc0a6f5c539a00e59e7f45f`, le pin que `main`
+portait déjà (bump #24499, 8 commits amont), puis 15 commits de plus jusqu'à
+`4332d26aec`.
 Bump **pur** : les quatre blobs consommés de ce jeu de copies sont
 **inchangés** sur cet intervalle — mesuré par
 `git diff a3ab8720 4332d26aec -- « Cards/Fallacies/Argumentum Fallacies -
 Taxonomy.csv » « Cards/Fallacies/Argumentum Virtues - Taxonomy.csv »
-docs/ontology/argumentum.owl docs/ontology/argumentum_virtues.owl` = vide :
+docs/ontology/argumentum.owl docs/ontology/argumentum_virtues.owl` = vide (et
+`git diff a57a5ec7 4332d26aec -- <les 4 chemins>` = vide également) :
 sophismes `f519331c`, vertus `acc47393`, ontologies `0ddd7042` / `a9f5b7ec`,
 identiques aux deux pins. Aucune recopie de ce fichier n'est due. Le manifeste
 `data/argumentum_snapshot.json` a été régénéré par son organ au nouveau pin,
