@@ -192,7 +192,7 @@ l'**horizon** des strates hautes.*
 
 **Ce que cette table ne place pas encore.** Cinq documents de la phase
 [#5726](https://github.com/jsboige/CoursIA/issues/5726) restent hors carte :
-`ICT-Life-SubstratCertifie`, `ICT-32-StratificationCausaleLife-Python` et `ICT-33-SoupCollisions-Python` portent sur le
+`ICT-Life-SubstratCertifie-Python`, `ICT-32-StratificationCausaleLife-Python` et `ICT-33-SoupCollisions-Python` portent sur le
 substrat GOL et **appellent un barreau** — question **ouverte**, explicitement *non* tranchée en
 [#13908](https://github.com/jsboige/CoursIA/issues/13908) (l'automate cellulaire dont la correction est certifiée en Lean est le substrat *le
 plus transparent* de la série : l'insérer demande de décider s'il précède S1 ou constitue

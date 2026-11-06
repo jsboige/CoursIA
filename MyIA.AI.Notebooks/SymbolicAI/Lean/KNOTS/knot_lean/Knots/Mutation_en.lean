@@ -210,7 +210,7 @@ theorem mutateWindow_reattachWindow_comm (cs : List PDCrossing) (i j : Nat)
 crossings in window [i, j) (the interior tangle), then re-attachment of the
 interior occurrences of the boundary labels by σ. Outside the window,
 nothing changes. This is the complete combinatorial translation of the
-cut / half-turn / reglue gesture. -/
+cut / 180° turn / reglue gesture. -/
 def sphereMutate (cs : List PDCrossing) (i j : Nat) (ρ : KleinRot) (σ : Nat → Nat) :
     List PDCrossing :=
   reattachWindow (mutateWindow cs i j ρ) i j σ
@@ -355,7 +355,7 @@ depths.
 NOTE update 3 (link 8, 2bis — ai-01 arbitration of 2026-10-19, #2874
 c.6261930038): the σ amendment is applied. `AreMutantDiagrams` now quantifies
 over the full sphere mutation (`sphereMutate`: window + rotation ρ +
-involution re-attachment σ), a form faithful to the cut / half-turn / reglue
+involution re-attachment σ), a form faithful to the cut / 180° turn / reglue
 gesture; the bare-window notion measured above keeps its own name
 (`AreWindowMutantDiagrams`) and all its lemmas. The depth-0 witness (C, M)
 under the new definition is `areMutantDiagrams_conway_conwayMutant`

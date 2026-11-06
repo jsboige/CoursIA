@@ -417,10 +417,9 @@ def encodeMsg {n : Nat} (t : LTree n) : List (Fin n) → Option (List Bool)
       | none => none
       | some p => (encodeMsg t rest).map (fun r => p ++ r)
 
-/-- Translating a list of words into a list of symbols: each word is looked up
-by `labelAt`. The walk is structural on the list of words, so it composes with
-the structural walk of the fold-2 decoder; `none` anywhere fails the whole
-message. -/
+/-- Translating a list of words into a list of symbols: explicit failure as soon
+as a word does not end on a leaf. Written by structural recursion rather than
+by `List.mapM`, so that the `labelAll_cons` step is proved by reduction. -/
 def labelAll {n : Nat} (t : LTree n) : List (List Bool) → Option (List (Fin n))
   | [] => some []
   | w :: ws =>
@@ -436,7 +435,7 @@ theorem labelAll_cons {n : Nat} (t : LTree n) {w : List Bool} {s : Fin n}
   simp only [labelAll, hw]
   rfl
 
-/-- Labelled decoding: the fold-2 decoder yields the words, `labelAt`
+/-- Labelled decoding: the fold-2 decoder yields the words, `labelAll`
 translates them back into symbols. The `bind` carries failure end to end: a
 word of the stream that does not end on a leaf fails the whole message. -/
 def decodeL {n : Nat} (t : LTree n) (bits : List Bool) : Option (List (Fin n)) :=
