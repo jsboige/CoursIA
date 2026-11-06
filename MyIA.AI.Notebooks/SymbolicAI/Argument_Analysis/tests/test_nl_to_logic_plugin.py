@@ -10,7 +10,8 @@ import json
 import os
 import sys
 from types import ModuleType, SimpleNamespace
-from unittest.mock import AsyncMock
+
+import pytest
 
 # Make `argumentation_lib` importable
 _TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -163,13 +164,12 @@ def test_generate_queries():
 
 
 def test_plugin_construction_requires_service_and_parser():
-    """Plugin raises without llm_service or parse_fn."""
-    try:
-        NLToLogicPlugin(llm_service=None, parse_fn=None)
-    except Exception:
-        pass  # construction with None is allowed at init, fails at first call
-    # The plugin should be constructible (lazy init pattern) but fail loudly
-    # on first use if service is None.
+    """Missing collaborators are refused before an agent can use the plugin."""
+    with pytest.raises(ValueError, match="llm_service"):
+        NLToLogicPlugin(llm_service=None, parse_fn=_fake_parse_ok)
+    with pytest.raises(TypeError, match="parse_fn"):
+        NLToLogicPlugin(llm_service=FakeChatService([]), parse_fn=None)
+
     service = FakeChatService([_TRANSLATION_RESPONSE])
     plugin = NLToLogicPlugin(llm_service=service, parse_fn=_fake_parse_ok)
     assert plugin._llm_service is service

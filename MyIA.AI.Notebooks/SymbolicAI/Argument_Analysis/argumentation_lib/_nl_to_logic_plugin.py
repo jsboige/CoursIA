@@ -81,6 +81,10 @@ class NLToLogicPlugin:
         kernel: Any = None,
         execution_settings: Optional[dict] = None,
     ) -> None:
+        if llm_service is None:
+            raise ValueError("llm_service est obligatoire")
+        if not callable(parse_fn):
+            raise TypeError("parse_fn doit etre appelable")
         self._llm_service = llm_service
         self._parse_fn = parse_fn
         self._kernel = kernel

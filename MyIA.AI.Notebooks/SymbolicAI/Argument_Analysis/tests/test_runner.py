@@ -225,6 +225,9 @@ def _install_sk_mock():
         def add_message(self, message):
             self.messages.append(message)
 
+        def add_user_message(self, content):
+            self.messages.append(content)
+
     mod_hist.ChatHistory = ChatHistory
 
     # wire attributes + register every module path Python may resolve
@@ -282,7 +285,10 @@ from argumentation_lib._shared_state import RhetoricalAnalysisState  # noqa: E40
 # Fixtures / helpers
 # ---------------------------------------------------------------------------
 def _kernel():
-    return sys.modules["semantic_kernel"].Kernel()
+    kernel = sys.modules["semantic_kernel"].Kernel()
+    # Les outils NLToLogic exigent un service injecte, comme en production.
+    kernel.add_service(SimpleNamespace(service_id="svc"))
+    return kernel
 
 
 def _state(text="Le chat est sur le paillasson. Donc le chat est a l'interieur."):
@@ -507,6 +513,7 @@ def test_informal_builder_registers_plugin_when_absent():
 # ---------------------------------------------------------------------------
 def test_runner_init_stores_attributes():
     k, s = _kernel(), _state()
+    k.add_service(SimpleNamespace(service_id="my-svc"))
     runner = AnalysisRunner(k, "my-svc", s, max_turns=8)
     assert runner.kernel is k
     assert runner.llm_service_id == "my-svc"
