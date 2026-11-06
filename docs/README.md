@@ -340,6 +340,14 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 | [research/percolation-04-sharpness-results.md](research/percolation-04-sharpness-results.md) | Résultats du palier 04 sharpness (#19494, c.1108) — queue supérieure `Ψ(n) = P(|C_o| ≥ n)` sur tores finis supercritiques. Verdict **honnête** : la décroissance exponentielle n'est pas visible dans la fenêtre de seuils accessible à `L ≤ 512` ; trois causes identifiées, plan #19494 clos par ce palier. |
 | [research/cooperation-llm-16h-protocole.md](research/cooperation-llm-16h-protocole.md) | Mémo de gel du protocole `GameTheory-16h` (coopération LLM sur IPD, #20884, carnet livré par #21021) — ce qui est figé avant le premier appel d'agent (payoffs, 4 hétérogénéités, seeds `{0,1,7,42,99}`, seuils H0/H1, modèle nul, contrôle négatif), les chiffres tels que les sorties du carnet les portent, et **ce qu'ils ne disent pas** (proxy scripté ⇒ les 1,0000 sont un point fixe trivial). c.2344 |
 
+## Captures de rendu (docs/captures/)
+
+Preuves visuelles attachées à un chantier : elles ne vivent pas dans `transients/` parce qu'elles portent les images elles-mêmes (captures au canvas du scanner — 980×552 par défaut — et planches de comparaison), pas un compte rendu.
+
+| Fichier | Description |
+|---------|-------------|
+| [captures/22286/README.md](captures/22286/README.md) | Preuve de rendu des classes `dense-list` / `xl-dense` / `img-fit` sur les decks 02, 06, S3 et S8 (#22286) — sélection par le DOM rendu, capture au canvas du scanner (980×552), comparaison à l'original PPTX par titre, scan de composition |
+
 ## Audit sémantique cross-famille (docs/audit/)
 
 Cadrage **méthodologique** de l'audit sémantique (grade B-méthodologique, EPIC #4208 + #8052). Les **comptes-rendus** de cycle et les **findings** ne vivent pas ici : dashboard RooSync pour l'éphémère, issue GitHub pour l'actionnable (règle HARD [audit-cross-source-distillation.md](../.claude/rules/audit-cross-source-distillation.md)).
