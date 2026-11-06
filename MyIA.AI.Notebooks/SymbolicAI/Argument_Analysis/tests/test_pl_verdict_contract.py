@@ -59,6 +59,7 @@ from argumentation_lib._pl_reasoner import (  # noqa: E402
     EngineUnavailableError,
     FormulaSyntaxError,
     PLReasonerPlugin,
+    TweetyPLEngine,
     split_formulas,
 )
 from argumentation_lib._pl_verdict import (  # noqa: E402
@@ -289,6 +290,28 @@ class TestPLReasonerPlugin:
         log_id = guard.log_query_result(bs_id, "q", verdict)
         assert not log_id.startswith("FUNC_ERROR")
         assert state.query_log[0]["raw_result"].startswith(ACCEPTED + ":")
+
+
+# --- Initialisation du parseur direct ---------------------------------------------
+
+
+def test_direct_parse_initializes_engine_before_using_parser(monkeypatch):
+    """NLToLogic injects ``_parse`` directly; it must initialize lazily."""
+    engine = TweetyPLEngine()
+    ready_calls = []
+
+    def fake_ready():
+        ready_calls.append(True)
+        engine._parser = type(
+            "FakeParser",
+            (),
+            {"parseFormula": lambda self, formula: f"parsed:{formula}"},
+        )()
+        engine._ready = True
+
+    monkeypatch.setattr(engine, "_ensure_ready", fake_ready)
+    assert engine._parse("p => q") == "parsed:p => q"
+    assert ready_calls == [True]
 
 
 # --- Integration avec le VRAI solveur --------------------------------------------
