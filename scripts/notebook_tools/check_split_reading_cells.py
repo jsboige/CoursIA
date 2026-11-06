@@ -543,11 +543,11 @@ def is_credited_example_code(cells: list[dict], idx: int) -> bool:
     exercice pose apres un code quelconque, qui ne partage pas l'en-tete
     credite.
 
-    Mesure du 2026-11-04 sur le depot (1 751 carnets, 22 575 cellules de
-    code, 168 en-tetes credites, 18 sections multi-code) : la regle de
-    section blanchit 189 cellules contre 168 sous la regle de lien --
-    strictement superset, 21 cellules gagnees, aucune perdue ; 15 de ces
-    21 sont suivies d'une lecture (le cas ou le faux positif EXERCISE_READING
+    Mesure du 2026-11-06 au head (1 751 carnets, 22 575 cellules de
+    code, 168 en-tetes credites, 16 sections multi-code) : la regle de
+    section blanchit 187 cellules contre 168 sous la regle de lien --
+    strictement superset, 19 cellules gagnees, aucune perdue ; 14 de ces
+    19 sont suivies d'une lecture (le cas ou le faux positif EXERCISE_READING
     se produisait). Le role du code se lit par SECTION, pas par lien : c'est
     ce que la mesure porte.
     """
