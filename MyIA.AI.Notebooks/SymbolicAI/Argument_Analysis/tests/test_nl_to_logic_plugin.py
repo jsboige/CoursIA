@@ -10,6 +10,14 @@ Trois familles de tests :
 - la cohabitation avec `test_runner.py` dans un meme processus (B2) : ce
   fichier installe un mock SK minimal, `test_runner.py` un mock complet, et
   l'ordre de collecte pytest ne doit pas casser la collecte de l'autre.
+
+Incident CI (gate de #24951, 2026-11-06) : `importorskip("semantic_kernel")`
+passait TOUJOURS dans ce processus — le mock de `_ensure_sk_importable`
+satisfait l'import — alors que la probe du contrat reel execute un
+sous-processus propre ou le vrai paquet est absent du runner CPU
+(`ModuleNotFoundError`). La disponibilite se sonde desormais dans un
+sous-processus propre avant la probe : skip honnete la ou l'outil est absent
+(meme garde que `_tweety_jars_present` pour le solveur), echec reel ailleurs.
 """
 from __future__ import annotations
 
@@ -386,7 +394,32 @@ def test_real_sk_contract_settings_is_an_instance():
     `sys.modules` partage. C'est la verification que B1 demandait — un helper
     qui rendrait `{service_id: settings}` echoue ici a l'assertion d'instance.
     """
-    pytest.importorskip("semantic_kernel")
+    # `importorskip` ne suffit pas ici : ce processus mocke SK
+    # (`_ensure_sk_importable`), donc l'import reussit meme sans le vrai
+    # paquet — alors que la probe ci-dessous l'exige, VRAI. La disponibilite
+    # se sonde dans un sous-processus propre (meme garde que
+    # `_tweety_jars_present` pour le solveur : le contrat reel ne se joue
+    # que la ou l'outil est reellement installe).
+    _probe_env = dict(os.environ)
+    _probe_env["PYTHONPATH"] = os.pathsep.join(
+        filter(None, [_ARG_ANALYSIS_DIR, _probe_env.get("PYTHONPATH")])
+    )
+    _availability = subprocess.run(
+        [sys.executable, "-c", "import semantic_kernel"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        cwd=_ARG_ANALYSIS_DIR,
+        env=_probe_env,
+        timeout=120,
+    )
+    if _availability.returncode != 0:
+        pytest.skip(
+            "vrai semantic_kernel absent de cet environnement (sonde en "
+            "sous-processus propre, hors mock) : le contrat settings= ne peut "
+            "pas etre verifie contre le vrai paquet ici"
+        )
     env = dict(os.environ)
     env["PYTHONPATH"] = os.pathsep.join(
         filter(None, [_ARG_ANALYSIS_DIR, env.get("PYTHONPATH")])
