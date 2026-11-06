@@ -64,14 +64,15 @@ sous-série avait une seule entrée de chaîne.
   chiffres identiques (509/484 Kio, ec_gain 3.438…) ; deux nouveaux flux
   `UserWarning` de `sae_traces.py:131` (évolution du module depuis la
   dernière exécution — traces legacy sans champ `instrument`).
-- **Environnement de la ré-exécution, un cran sous le run précédent.**
-  La ré-exécution du 03/11 a tourné sur `numpy 2.3.5` / `python 3.13.3`,
-  là où l'exécution antérieure (2026-09-25) portait `numpy 2.4.6` /
-  `python 3.13.15` : la ligne de version de l'artefact **descend**, sur un
-  carnet dit « convergé canon ». Le `Kernel drift guard` couvre la
-  transition et les valeurs citées par le corps sont toutes présentes au
-  head, mais la remontée d'environnement reste due au prochain passage de
-  cette série.
+- **Environnement de la ré-exécution, remonté au-dessus du run précédent.**
+  La ré-exécution du 03/11 avait tourné sur `numpy 2.3.5` / `python 3.13.3`,
+  sous l'exécution antérieure (2026-09-25, `numpy 2.4.6` / `python 3.13.15`).
+  Le kernel `python3` canon de po-2023 a été réparé entre-temps (env conda
+  dédiée) et la série re-ré-exécutée le 06/11 sous `numpy 2.5.2` /
+  `python 3.13.16` : la ligne de version de l'artefact **remonte** au-dessus
+  des deux runs précédents, et le smoke GPU d'ICT-21 est rejoué en direct
+  (`SMOKE OK`, pipeline Qwen3.5-9B + SAE sur RTX 3090) au lieu du message
+  de repli.
 - **Liens croisés hors série réparés** : `2.9-Grokking` et
   `3.5-Phenomenes-de-Generalisation` (ML) pointaient vers ICT-21 à plat ;
   `docs/ict/cadrage-trajectoires-representations.md` et
