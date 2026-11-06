@@ -37,32 +37,32 @@ open Set LinearMap Pointwise
   Cone-closed kernel for Bondareva-Farkas (TUGame-free) — EN sibling
   ==============================================================
   English mirror of `CooperativeGames/ConeKernel.lean` (FR-first canonical).
-  Convention i18n Lean ratifiée par ai-01 (2026-07-04, #4980 comment-4881909354) :
-  fichiers `.lean` distincts FR + EN siblings dans le même lake, les deux compilent.
-  Drift-CI detectable : contenu non-docstring byte-identique entre siblings.
-  Namespace sibling : `BondarevaCone_en` (le FR canonique reste `BondarevaCone`).
-  Pas une traduction destructive : le fichier source EN historique est préservé ici
-  verbatim depuis `914817a1e` (pre-canonicalisation FR ConeKernel tranche 2) ; seule la
-  ligne `namespace` diffère pour éviter la collision de declaration top-level.
+  Lean i18n convention ratified by ai-01 (2026-07-04, #4980 comment-4881909354):
+  distinct FR + EN sibling `.lean` files in the same lake, both compile.
+  CI-detectable drift: non-docstring content byte-identical between siblings.
+  Sibling namespace: `BondarevaCone_en` (the FR canonical stays `BondarevaCone`).
+  Not a destructive translation: the historical EN source file is preserved here
+  verbatim since `914817a1e` (pre-canonicalisation FR ConeKernel tranche 2); only the
+  `namespace` line differs, to avoid a top-level declaration collision.
   See #4980. Part of #4208 (axe E).
 
-  Addendum c.523 (2026-07-15, audit po-2023) — ordre des lemmes
+  Addendum c.523 (2026-07-15, audit po-2023) — lemma ordering
   ==============================================================
-  Les **corps de lemmes** (signatures, tactiques, preuves, commentaires intra-preuve)
-  sont byte-identiques modulo l'**ordre** entre FR canonique (L491-L618) et EN (L497).
-  La position de `separatingFunctional_none_neg` diffère : FR L618 (après
-  `gen_apply_linear`) vs EN L497 (après `augCone_dual_iff`). Cette divergence est
-  **structurelle-légitime** (analogue à C521-L3 ★★★ namespace-induced qualifier
-  divergence) : introduite par la PR #6575 (po-2023, port 6 lemmas manquants) qui
-  a inséré `separatingFunctional_none_neg` au site d'insertion EN, sans réordonner
-  le reste. **Aucun forward-reference cassé** : `separatingFunctional_none_neg` n'est
-  référencée qu'à sa propre déclaration et depuis `exists_preimputation_strict_core`
-  (EN L703, FR L717 — toutes deux situées après). Le `check_i18n_siblings.py`
-  signalera donc un DRIFT résiduel sur ce pair (diff de position), whitelistée
-  manuellement par doctrine C521-L3 ★★★. Body-substance byte-identity préservée.
-  Réordonnancer pour byte-id strict = modifier 2 sites sans gain de substance,
-  risque de casser le build si une reference implicite (`have` chain interne) dépend
-  de l'ordre — non tenté.
+  The **lemma bodies** (signatures, tactics, proofs, intra-proof comments)
+  are byte-identical modulo **ordering** between the FR canonical (L491-L618) and
+  EN (L497). The position of `separatingFunctional_none_neg` differs: FR L618 (after
+  `gen_apply_linear`) vs EN L497 (after `augCone_dual_iff`). This divergence is
+  **structurally-legitimate** (analogous to C521-L3 ★★★ namespace-induced qualifier
+  divergence): introduced by PR #6575 (po-2023, port of 6 missing lemmas), which
+  inserted `separatingFunctional_none_neg` at the EN insertion site, without
+  reordering the rest. **No broken forward-reference**: `separatingFunctional_none_neg`
+  is referenced only at its own declaration and from `exists_preimputation_strict_core`
+  (EN L703, FR L717 — both located after it). `check_i18n_siblings.py` will therefore
+  report a residual DRIFT on this pair (a position diff), manually whitelisted by the
+  C521-L3 ★★★ doctrine. Body-substance byte-identity is preserved. Reordering for
+  strict byte-identity = touching 2 sites with no substance gain, and a risk of
+  breaking the build if an implicit reference (an internal `have` chain) depends on
+  the ordering — not attempted.
 -/
 
 namespace BondarevaCone_en

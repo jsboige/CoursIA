@@ -1013,3 +1013,32 @@ def test_21816_declared_interactive_fallback_stays_out():
         got = scan(nb(cell(src, out)))
         assert got["TOOL_FAILURE"] == [], out
         assert len(got["DECLARED_FALLBACK"]) == 1, out
+
+
+def test_24490_comfyui_replacement_banner_is_tool_failure():
+    """#24490 : le bandeau de repli LTX-2 (02-5) doit etre classe TOOL_FAILURE.
+
+    Mesure de la revue Hermes du 05/11 sur #24645 : le bandeau ne matchait
+    AUCUN motif de l'organe. Le mutant (sorties reelles remplacees par le
+    bandeau) rendait `TOOL_FAILURE 0 -> 0`, `DECLARED_FALLBACK 0 -> 0`,
+    `regressed: false` -- une re-execution sur un poste sans le conteneur
+    `comfyui-video` aurait commute son repli en silence, la CI serait
+    restee verte. Le motif porte sur le MARQUEUR en majuscules, pas sur le
+    type d'exception (les cinq variantes reelles etaient silencieuses).
+    """
+    src = ("print(f\"GENERATION NON EXECUTEE - stack ComfyUI indisponible "
+           "({e})\")\n")
+    out = ("GENERATION NON EXECUTEE - stack ComfyUI indisponible "
+           "(URLError : <urlopen error [Errno 11001]>)\n")
+    got = scan(nb(cell(src, out)))
+    assert got["TOOL_FAILURE"], got
+    assert any("GENERATION NON EXECUTEE" in hit for _, hit in got["TOOL_FAILURE"])
+    assert not got["DECLARED_FALLBACK"], got
+
+
+def test_24490_french_sentence_stays_silent():
+    # Controle negatif : la forme francaise d'un carnet n'est pas un bandeau
+    # machine -- le motif est epingle sur le marqueur en majuscules.
+    out = "La generation n'a pas ete executee sur ce poste.\n"
+    got = scan(nb(cell("print('ok')\n", out)))
+    assert got["TOOL_FAILURE"] == [], out

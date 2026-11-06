@@ -40,7 +40,7 @@ les précédentes — le contrôle est le même, et il est vert.
 | Répertoire | Devenir |
 |-----------|---------|
 | ~~`cooperative_games_lean`~~ | **Supprimé** (rm #6587) → [`game_theory_lean/CooperativeGames/`](game_theory_lean/CooperativeGames/) |
-| ~~`social_choice_lean`~~ | Absorbé (#6058, 2026-07-11) → [`game_theory_lean/SocialChoice/`](game_theory_lean/SocialChoice/) — ne subsistent que 4 markdown tombstone |
+| ~~`social_choice_lean`~~ | Absorbé (#6058, 2026-07-11) → [`game_theory_lean/SocialChoice/`](game_theory_lean/SocialChoice/) — ne subsistent que 3 markdown tombstone |
 | ~~`repeated_games_lean`~~ | Absorbé (#6146) → [`game_theory_lean/RepeatedGames/`](game_theory_lean/RepeatedGames/) — coquille retirée du disque (#4362) |
 
 Note : `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) est un exemple pédagogique, pas du code de production. `asymmetric_information_lean` porte 2 *naive* sorry (prose/docstrings) pour 0 vrai sorry de code.
@@ -123,7 +123,7 @@ MechanismDesign, SortedListCounting) ont été absorbés byte-identique dans
 [`game_theory_lean/SocialChoice/`](game_theory_lean/SocialChoice/) (FR canonique + miroirs
 `_en.lean` Pattern A #4980). **Ce répertoire n'est plus un lake** — la coquille technique
 (`lakefile.lean`, `lean-toolchain`, `lake-manifest.json`) a été retirée ; ne subsistent que
-4 markdown (`README`, `STATUS`, `NOTICE`, `LEAN_PREREQUISITES`) conservés comme tombstone.
+3 markdown (`README`, `STATUS`, `LEAN_PREREQUISITES`) conservés comme tombstone.
 
 **Statut (historique, préservé dans le home canonique)** : COMPLET, 0 sorry — impossibilité
 d'Arrow (Geanakoplos 2005), paradoxe libéral de Sen, électeur médian / Split Cycle / clones,

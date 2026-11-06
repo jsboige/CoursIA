@@ -793,6 +793,13 @@ class TacticTools:
         # read by the session supervisor if its reasoning deadline cancels the
         # workflow before it drains (provers._deadline_keeps_latched_proof).
         self.proof_latched: bool = False
+        # #24545: the latch is BOUND to the sorry it proved. A session may
+        # prove sorry A and then work on sorry B (SorryContext.sorry_line is
+        # frozen at session start and never updated -- workflow.py:1216), so a
+        # bare boolean would report "proof found" for a sorry that is still
+        # `sorry` on disk. ``proof_latched_for_line`` is the 1-based line of
+        # the sorry the latch was taken for; None = no latch.
+        self.proof_latched_for_line: Optional[int] = None
         self._best_content: Optional[str] = None
         self._best_sorry_count: int = 999
         self._original_sorry_count: int = 999
@@ -928,6 +935,52 @@ class TacticTools:
             "type_class": ["aesop", "infer_instance", "apply_instance"],
             "sieve": ["aesop", "exact", "simp", "ext"],
         }
+
+    def latch_proof(self, sorry_line: int) -> None:
+        """#24545: record a verified, persisted proof AND the sorry it proves.
+
+        The latch alone was not enough: a session may prove sorry A and then
+        work on sorry B (``SorryContext.sorry_line`` is frozen at session
+        start and never updated -- workflow.py:1216). A bare boolean would
+        then report "proof found" for a sorry that is still ``sorry`` on disk.
+        Binding the latch to its line lets the deadline branch check the
+        sorry it actually proved.
+        """
+        self.proof_latched = True
+        self.proof_latched_for_line = int(sorry_line)
+
+    def clear_proof_latch(self) -> None:
+        """#24545: drop the latch (and its target) — the proof is no longer
+        the one the session is about to report."""
+        self.proof_latched = False
+        self.proof_latched_for_line = None
+
+    def note_edit_target(self, edited_line: int) -> None:
+        """#24545: reset the latch when the session moves on to another sorry.
+
+        The latch is bound to the sorry it proved. A session that proved
+        sorry A and then edits sorry B must not keep reporting A's proof as
+        the session's outcome: the deadline branch would then say "proof
+        found" while B is still ``sorry`` on disk.
+
+        Called from the edit tools with the line the edit touched. The latch
+        is dropped when the edit lands on a DIFFERENT line than the latched
+        one — an edit on the latched line is the continuation of that very
+        proof and keeps the latch.
+        """
+        if not self.proof_latched:
+            return
+        latched = self.proof_latched_for_line
+        if latched is None or int(edited_line) == int(latched):
+            return
+        if self._trace:
+            self._trace.log(
+                agent="TacticTools", role="proof_latch_reset",
+                content=(f"latch for line {latched} dropped: the session "
+                         f"moved on to line {edited_line}"),
+                duration_s=0.0,
+            )
+        self.clear_proof_latch()
 
     def _check_tool_loop(self, tool_name: str, args_key: str) -> Optional[str]:
         """Detect consecutive identical tool calls (loop pattern).
@@ -1672,6 +1725,11 @@ class TacticTools:
             old_lines = lines[start - 1:end] if end <= len(lines) else lines[start - 1:]
             old_text = "\n".join(old_lines)
 
+            # #24545: a range edit that lands on a different sorry than the
+            # latched one means the session moved on -- drop the latch so the
+            # deadline branch cannot report the previous sorry's proof.
+            self.note_edit_target(start)
+
             new_lines = new_content.split("\n")
 
             # Comment preservation guard (Cycle 25 ai-01 trace fix):
@@ -2042,6 +2100,12 @@ class TacticTools:
                     return json.dumps({"error": f"Line {sorry_line} doesn't contain 'sorry' and no sorry found nearby: {sorry_text[:80]}"})
 
             indent = len(sorry_text) - len(sorry_text.lstrip())
+
+            # #24545: the session may move on to another sorry. If the latch
+            # belongs to a DIFFERENT line, drop it now -- the deadline branch
+            # must not report the previous sorry's proof as this session's
+            # outcome (the new sorry is still `sorry` on disk).
+            self.note_edit_target(sorry_line)
 
             # #12658 — DEF_BODY_SORRY edit guard: refuse to author a
             # definition body. A sorry that IS the body of a

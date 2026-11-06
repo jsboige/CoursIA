@@ -340,6 +340,14 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 | [research/percolation-04-sharpness-results.md](research/percolation-04-sharpness-results.md) | Résultats du palier 04 sharpness (#19494, c.1108) — queue supérieure `Ψ(n) = P(|C_o| ≥ n)` sur tores finis supercritiques. Verdict **honnête** : la décroissance exponentielle n'est pas visible dans la fenêtre de seuils accessible à `L ≤ 512` ; trois causes identifiées, plan #19494 clos par ce palier. |
 | [research/cooperation-llm-16h-protocole.md](research/cooperation-llm-16h-protocole.md) | Mémo de gel du protocole `GameTheory-16h` (coopération LLM sur IPD, #20884, carnet livré par #21021) — ce qui est figé avant le premier appel d'agent (payoffs, 4 hétérogénéités, seeds `{0,1,7,42,99}`, seuils H0/H1, modèle nul, contrôle négatif), les chiffres tels que les sorties du carnet les portent, et **ce qu'ils ne disent pas** (proxy scripté ⇒ les 1,0000 sont un point fixe trivial). c.2344 |
 
+## Captures de rendu (docs/captures/)
+
+Preuves visuelles attachées à un chantier : elles ne vivent pas dans `transients/` parce qu'elles portent les images elles-mêmes (captures au canvas du scanner — 980×552 par défaut — et planches de comparaison), pas un compte rendu.
+
+| Fichier | Description |
+|---------|-------------|
+| [captures/22286/README.md](captures/22286/README.md) | Preuve de rendu des classes `dense-list` / `xl-dense` / `img-fit` sur les decks 02, 06, S3 et S8 (#22286) — sélection par le DOM rendu, capture au canvas du scanner (980×552), comparaison à l'original PPTX par titre, scan de composition |
+
 ## Audit sémantique cross-famille (docs/audit/)
 
 Cadrage **méthodologique** de l'audit sémantique (grade B-méthodologique, EPIC #4208 + #8052). Les **comptes-rendus** de cycle et les **findings** ne vivent pas ici : dashboard RooSync pour l'éphémère, issue GitHub pour l'actionnable (règle HARD [audit-cross-source-distillation.md](../.claude/rules/audit-cross-source-distillation.md)).
@@ -378,6 +386,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/12204-ict-chantier-1-a8.md](ledgers/12204-ict-chantier-1-a8.md) | Chantier 1 — tranche A8 : rétro-équipement des conditions de rétrogradation — une condition de sortie exécutable par entrée TABLE (12 écrites, aucune entrée non falsifiable) |
 | [ledgers/12204-ict-chantier-1-a9.md](ledgers/12204-ict-chantier-1-a9.md) | Chantier 1 — tranche A9 : seconde attestation in-repo de l'op 2 « Abstraire à dette bornée » (Frontieres-11, plus court chemin) — promotion proposée |
 | [ledgers/12204-ict-chantier-1-a10.md](ledgers/12204-ict-chantier-1-a10.md) | Chantier 1 — tranche A10 : statuation de la promotion de l'op 2 « Abstraire à dette bornée » au format d'admission (deux témoins re-mesurés + condition de rétrogradation) — verdict TABLE |
+| [ledgers/12204-ict-chantier-1-a11.md](ledgers/12204-ict-chantier-1-a11.md) | Chantier 1 — tranche A11 : statuation des opérations 3 « Quotienter/fibrer » et 5 « Recoller » au format d'admission — la table numérotée du premier jet est complète et instruite |
 | [ledgers/13746-tests-eclates-dissipation.md](ledgers/13746-tests-eclates-dissipation.md) | EPIC #13746 — Ledger dissipation câblage tests éclatés |
 | [ledgers/14169-g1-recouvrement.md](ledgers/14169-g1-recouvrement.md) | Ledger G1 — Recouvrement 28 PRs amont endjin/Z3.Linq vs fork MyIntelligenceAgency/Z3.Linq |
 | [ledgers/14169-z3linq-upstream-overlap.md](ledgers/14169-z3linq-upstream-overlap.md) | Z3.Linq — recouvrement fork / amont |

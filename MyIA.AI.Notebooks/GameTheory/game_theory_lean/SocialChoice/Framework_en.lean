@@ -1,4 +1,17 @@
 /-
+  Social Choice Framework — Shared Abstractions
+  ==============================================
+
+  Common definitions for social choice theory: preference profiles,
+  social welfare functions, Arrow's axioms, and preference manipulation
+  helpers. Extracted from Arrow.lean so that Sen.lean and Voting.lean
+  can import these without depending on Arrow's proof machinery.
+
+  Reference: Amartya Sen, "Collective Choice and Social Welfare" (1970)
+  Reference: John Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005)
+-/
+
+/-
   Convention i18n : fichier EN sibling — preserve le verbatim historique
   =====================================================================
 
@@ -21,19 +34,6 @@
 
   Source EN verbatim : aaaf0c52a (parent du commit c.219 FR-first).
   Resolution #4980 (2026-07-04) : supersede de l'Option A FR-only in-place.
--/
-
-/-
-  Social Choice Framework — Shared Abstractions
-  ==============================================
-
-  Common definitions for social choice theory: preference profiles,
-  social welfare functions, Arrow's axioms, and preference manipulation
-  helpers. Extracted from Arrow.lean so that Sen.lean and Voting.lean
-  can import these without depending on Arrow's proof machinery.
-
-  Reference: Amartya Sen, "Collective Choice and Social Welfare" (1970)
-  Reference: John Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005)
 -/
 
 import SocialChoice.Basic_en

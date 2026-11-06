@@ -206,7 +206,8 @@ on:
       # installe ci-dessous. Miroir sous pull_request: ci-dessous.
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
   pull_request:
-    branches: [main]
+    # #19426 option (b) : pas de branches: sur pull_request quand paths: scope
+    # deja (precedent #19381) — le retarget d'une PR empilee reste capte.
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'scripts/**'
@@ -916,6 +917,18 @@ jobs:
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$ARGUMENT_ANALYSIS_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR)."
+
+      - name: Plancher explicite des tests @requires_jvm (#23542)
+        # Aucun workflow n'installe jpype et les jars Tweety sont gitignores :
+        # tous les tests @requires_jvm de cette suite sont SAUTES en CI. Le
+        # plancher de collecte ci-dessus ne peut pas voir ce trou -- un test
+        # saute est un test collecte. Ce census statique rougit si le trou
+        # grandit sans declaration, ou si un marqueur disparait (perte de
+        # couverture). Bumper --declared dans le meme geste que le test ajoute,
+        # et le dire dans le body de la PR.
+        if: always()
+        run: |
+          python scripts/ci/check_jvm_test_census.py --declared 8
 
       # #18981 : garde anti-recidive #18888 -- un test_*.py pose a la racine
       # d'un module (scripts/notebook_tools/, scripts/lean/, etc.) n'est

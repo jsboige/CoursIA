@@ -405,8 +405,64 @@ def _deadline_keeps_latched_proof(tactic_tools) -> bool:
     still requires ``final_build_ok`` from the mandatory final verify, and the
     statement-mutation guard still runs: the latch cannot turn an unverified
     edit into a success, it only stops the deadline from erasing a real one.
+
+    #24545: the latch no longer decides anything on its own -- it now DECIDES.
+    A session may prove sorry A and then work on sorry B (the target line is
+    frozen at session start and never updated -- workflow.py:1216), so a bare
+    boolean reported "proof found" for a sorry that was still ``sorry`` on
+    disk. The decision is now made against the FILE:
+
+      * the latch must name the sorry it proved (``proof_latched_for_line``);
+      * that line must hold no ``sorry`` on disk NOW (the proof survived);
+      * the real-sorry count on disk must be strictly below the session-start
+        count -- the same oracle the in-place latch uses (workflow.py:1249),
+        which distinguishes "a sorry was proved" from "lines merely shifted".
+
+    A latch that fails any of these is dropped: the deadline then reports the
+    honest outcome (the run did not prove the sorry it was working on).
     """
-    return bool(getattr(tactic_tools, "proof_latched", False))
+    if not bool(getattr(tactic_tools, "proof_latched", False)):
+        return False
+
+    latched_line = getattr(tactic_tools, "proof_latched_for_line", None)
+    if latched_line is None:
+        # A latch without a target cannot be checked against the file. Drop it
+        # rather than report a proof we cannot locate.
+        return False
+
+    filepath = getattr(tactic_tools, "_filepath", None)
+    if not filepath:
+        return False
+
+    try:
+        from pathlib import Path as _LatchPath
+        from .lean_utils import count_real_sorries as _count_real_sorries
+        current = _LatchPath(filepath).read_text(encoding="utf-8")
+    except Exception:
+        # The file is unreadable: we cannot confirm the proof survived, so the
+        # latch cannot be honoured. Report the honest outcome.
+        return False
+
+    lines = current.split("\n")
+    line = int(latched_line)
+    if not (1 <= line <= len(lines)) or "sorry" in lines[line - 1]:
+        # The latched sorry is back on disk (or the line no longer exists):
+        # the proof did not survive.
+        return False
+
+    # The latched line is clear. That is only a proof if the sorry COUNT
+    # dropped below the session baseline -- otherwise the lines merely
+    # shifted (a sorry was rewritten elsewhere, count unchanged).
+    baseline = getattr(tactic_tools, "_original_sorry_count", None)
+    if baseline is None or baseline <= 0:
+        return False
+    try:
+        if _count_real_sorries(current) >= int(baseline):
+            return False
+    except Exception:
+        return False
+
+    return True
 
 
 def _stmt_mutation_guard(final_sorry: int, original_sorry_count: int,

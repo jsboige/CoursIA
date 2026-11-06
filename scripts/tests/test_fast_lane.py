@@ -2213,6 +2213,35 @@ def test_tranche28_paths_are_reproduced_and_absorbed():
             "en plus produirait un second emetteur")
 
 
+def test_tranche39_cell_order_gate_est_absorbe_avec_sa_semantique():
+    """#22209 : le Cell-order gate (bloquant, >= 800 runs/7 j) rejoint la voie
+    rapide. La semantique de REGRESSION seule est portee par le detecteur
+    (--base-ref) ; le perimetre doit COUVRIR le declencheur retire (garde de
+    migration #12567 : sinon le garde cesse d'etre selectionne sur les
+    fichiers qu'il surveillait)."""
+    from fast_lane_registry import TRANCHE39
+
+    assert len(TRANCHE39) == 1, "la tranche 39 porte le seul Cell-order gate"
+    g = TRANCHE39[0]
+    assert g.absorbed, "le garde doit porter absorbed=True (blocage reel)"
+    assert g.blocking, "le gate source est bloquant : ne pas le bloquer changerait sa semantique"
+    assert g.needs_base, "le gate compare base vs tete : sans base, pas de regression mesurable"
+    assert g.iterates_paths, "le gate source boucle par carnet change"
+    assert g.iterate_paths == ["MyIA.AI.Notebooks/**/*.ipynb"], (
+        "l'iteration doit etre restreinte au glob d'actifs de la boucle "
+        "d'origine (le detecteur .py du declencheur ne doit pas y passer, #13220)")
+    assert "--base-ref" in g.argv and "{base_ref}" in g.argv
+    assert "{changed_paths}" in g.argv
+    for p in ("MyIA.AI.Notebooks/**/*.ipynb",
+              "scripts/notebook_tools/scan_cell_ordering.py",
+              "scripts/notebook_tools/cell_order_ci.py"):
+        assert p in g.paths, (
+            f"le declencheur retire couvrait {p} : Guard.paths doit le "
+            "reprendre, sinon le garde perd ces fichiers (garde #12567)")
+    assert any("test_scan_cell_ordering.py" in tok for tok in g.pre_argv), (
+        "pre_argv doit prouver que le scanner tire (lecon #11685/#12817)")
+
+
 def test_every_commenter_header_is_a_known_bot_sticky():
     """Le marqueur doit etre reconnu par le dossier de prevalidation.
 

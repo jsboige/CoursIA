@@ -41,6 +41,8 @@ from pathlib import Path
 
 import pytest
 
+from ._bash_resolution import resolve_bash
+
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / ".github" / "actions" / "heal-worktree" / "heal_worktree.sh"
 ACTION = ROOT / ".github" / "actions" / "heal-worktree" / "action.yml"
@@ -87,7 +89,11 @@ EXPECTED_WORKFLOWS = (
     "variation-light-genre.yml",
 )
 
-BASH = shutil.which("bash")
+# Pas `shutil.which("bash")` : sous le PATH d'une tache planifiee Windows,
+# il rend le lanceur WSL de System32, qui avale le chemin Windows du script
+# (exit 127) -- c'est ce qui faisait rougir l'arbre fusionne de merge_ready
+# sur toutes les PRs approuvees (#17201, mesure du 2026-11-06).
+BASH = resolve_bash()
 
 
 def run_heal(workspace, extra_path=None):
@@ -181,6 +187,20 @@ def test_probe_muet_emet_un_warning(warm_repo, tmp_path):
         newline="\n",
     )
     shim.chmod(0o755)
+    # Le wrapper Git `bin\bash.exe` (repli de resolve_bash hors PATH Git)
+    # replace `/mingw64/bin:/usr/bin` DEVANT le PATH herite : le shim serait
+    # contourne et le test rougirait sans que le soin soit en cause. On mesure
+    # la propriete plutot que de deviner l'hote.
+    probe_env = dict(os.environ)
+    probe_env["PATH"] = shim_dir.as_posix() + os.pathsep + probe_env.get("PATH", "")
+    probe = subprocess.run(
+        [BASH, "-c", "command -v git"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        env=probe_env, timeout=30,
+    )
+    if "shim" not in probe.stdout:
+        pytest.skip("ce bash reordonne le PATH (wrapper Git bin\\bash.exe) : "
+                    "un shim prepose y est contourne")
 
     res = run_heal(_workspace(warm_repo), extra_path=shim_dir.as_posix())
 
