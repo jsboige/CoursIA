@@ -38,9 +38,16 @@ Pieges pedagogiques que le module expose, mesures :
    differents (0.81 / 1.05 / 0.22 sur le monde par defaut) -- cf.
    ``effet_backdoor_depuis_aretes``.
 5. **alpha de PC est un vrai compromis** : sur ce monde, alpha = 0.05
-   perd la v-structure environ 1 seed sur 4 (un test de vraie
-   independance rejete au niveau 5 % ; mesure : 15/20 seeds canoniques
-   a 0.05, 20/20 a 0.01).
+   perd la v-structure 2 seeds sur 20 a n = 2000 (un test de vraie
+   independance rejete au niveau 5 %) et la fragilite croit quand les
+   donnees se rarefient : 5 seeds sur 20 perdus a n = 500 (mesure :
+   15/20 seeds canoniques a 0.05) ; alpha = 0.01 rend le CPDAG
+   canonique 20 fois sur 20.
+6. **un contre-resultat sans rival mesure n'est pas un resultat** :
+   « LiNGAM rend un DAG complet et faux » se lit differemment selon
+   qu'on le compare au hasard ou a l'ordre trivial des colonnes. Le
+   module fournit la metrique commune (SHD) et les baselines
+   (``baseline_ordre``, ``baseline_aleatoire``, ``classer_par_shd``).
 
 Fonctions exposees
 ------------------
@@ -65,6 +72,16 @@ Fonctions exposees
   des hypotheses, pas des donnees seules).
 - ``comparer_au_dag_vrai(resultat)`` -- squelette / orientations correctes
   / inverses / parasites / manquantes contre ``ARETES_DAG_VRAI``.
+- ``distance_structurelle(resultat)`` -- le SHD (distance de Hamming
+  structurelle) : la METRIQUE unique, partagee par le moteur et les
+  baselines -- chaque arete fausse compte une fois.
+- ``baseline_ordre(ordre, complet)`` -- la baseline triviale « l'ordre
+  d'acquisition est l'ordre causal » (chaine) ou « tout precede tout »
+  (DAG complet compatible avec l'ordre).
+- ``baseline_aleatoire(n_tirages, seed)`` -- le plancher de la
+  comparaison : des ordres tires au sort (RandomState LOCAL).
+- ``classer_par_shd(resultats)`` -- le classement par SHD croissant, qui
+  rend la comparaison lisible (et deterministe).
 - ``effet_backdoor_depuis_aretes(donnees, aretes, traitement, resultat)``
   -- le pont dowhy : identifie + estime l'effet backdoor sur le DAG
   fourni (decouvert ou suppose), expose l'ensemble d'ajustement choisi.
@@ -133,8 +150,9 @@ BRUIT_M: float = 0.5
 BRUIT_Y: float = 0.5
 BRUIT_Z: float = 0.5
 # alpha par defaut de PC : le standard causal-learn. Sur CE monde, la
-# v-structure est fragile a 0.05 (15/20 seeds canoniques) et robuste a
-# 0.01 (20/20) -- le notebook motive le choix, l'exercice 2 le mesure.
+# v-structure est fragile a 0.05 (18/20 seeds canoniques a n = 2000,
+# 15/20 a n = 500) et robuste a 0.01 (20/20) -- le notebook motive le
+# choix, l'exercice 2 le mesure.
 ALPHA_PC_DEFAUT: float = 0.05
 SEUIL_COEF_LINGAM: float = 0.1
 
@@ -263,9 +281,9 @@ def executer_pc(
         Les colonnes utilisees sont ``labels`` (defaut : ``ORDRE_COLONNES``).
     alpha : float, default 0.05
         Seuil des tests d'independance. Compromis mesure sur le monde
-        par defaut : 0.05 -> v-structure perdue ~1 seed sur 4 ;
-        0.01 -> 20/20 canonique (au prix de la puissance sur signaux
-        faibles -- il n'y a pas d'alpha gratuit).
+        par defaut : 0.05 -> v-structure perdue 2 seeds sur 20 (n = 2000 ;
+        5/20 a n = 500) ; 0.01 -> 20/20 canonique (au prix de la puissance
+        sur signaux faibles -- il n'y a pas d'alpha gratuit).
     labels : list[str], optional
         Noms de colonnes dans l'ordre de la matrice passee a PC.
 
@@ -538,6 +556,7 @@ def comparer_au_dag_vrai(
     Dict avec cles :
         ``squelette_trouvees`` -- "k/K" aretes vraies presentes (orientees
         ou non) ;
+        ``squelette_trouvees_nb`` -- le meme compte en entier (K trouvees) ;
         ``oriente_comme_vrai`` -- arets orientees dans le bon sens ;
         ``oriente_inverse`` -- aretes orientees a l'envers du DAG vrai ;
         ``non_orientees_parmi_vraies`` -- vraies arets laissees ambigues ;
@@ -565,12 +584,242 @@ def comparer_au_dag_vrai(
     manquantes = sorted(vraies_skel - squelette_detecte)
     return {
         "squelette_trouvees": f"{len(vraies_skel) - len(manquantes)}/{len(vraies_skel)}",
+        "squelette_trouvees_nb": len(vraies_skel) - len(manquantes),
         "oriente_comme_vrai": oriente_comme_vrai,
         "oriente_inverse": inversees,
         "non_orientees_parmi_vraies": non_or_vraies,
         "parasites": parasites,
         "manquantes": manquantes,
     }
+
+
+# ---------------------------------------------------------------------------
+# Metrique d'erreur commune et baselines triviales
+# ---------------------------------------------------------------------------
+def distance_structurelle(
+    resultat: ResultatDecouverte,
+    aretes_vraies: Optional[List[Tuple[str, str]]] = None,
+) -> Dict[str, object]:
+    """Distance de Hamming structurelle (SHD) d'un graphe appris contre le DAG vrai.
+
+    La METRIQUE est unique et partagee : elle s'applique au moteur (PC, GES,
+    LiNGAM) ET aux baselines triviales. Sans metrique commune, la comparaison
+    n'a pas de sens -- on comparerait deux grandeurs de nature differente
+    (un nombre d'aretes rendues a un SHD, par exemple).
+
+    Chaque arete fausse compte UNE fois :
+
+    - ``manquantes`` : arete vraie absente du graphe appris ;
+    - ``inverses``   : arete presente mais orientee a l'envers ;
+    - ``parasites``  : arete presente et absente du DAG vrai (sens quelconque) ;
+    - ``ambigues``  : arete vraie laissee NON orientee (CPDAG).
+
+    ``shd`` = len(manquantes) + len(inverses) + len(parasites) + len(ambigues).
+    Un SHD de 0 signifie : le graphe appris EST le DAG vrai -- meme
+    squelette, memes orientations, aucune arete parasite.
+
+    Parametrisation
+    ---------------
+    resultat : ResultatDecouverte
+        Sortie d'un executeur, ou d'une baseline (:func:`baseline_ordre`,
+        :func:`baseline_aleatoire`).
+    aretes_vraies : list[tuple[str, str]], optional
+        Defaut : ``ARETES_DAG_VRAI``.
+
+    Return
+    ------
+    Dict avec cles ``shd``, ``squelette``, ``squelette_texte``,
+    ``orientees_correctes``, ``inverses``, ``ambigues``, ``parasites``,
+    ``manquantes``.
+
+    ``squelette`` est un **entier** (nombre d'aretes vraies du squelette
+    trouvees) ; la forme textuelle ``"k/K"`` est portee par la cle
+    ``squelette_texte``. Le dict ne melange donc plus des entiers et une
+    chaine : tout consommateur peut faire ``d["squelette"] - 0``.
+    """
+    comp = comparer_au_dag_vrai(resultat, aretes_vraies)
+    shd = (
+        len(comp["oriente_inverse"])
+        + len(comp["non_orientees_parmi_vraies"])
+        + len(comp["parasites"])
+        + len(comp["manquantes"])
+    )
+    return {
+        "shd": shd,
+        "squelette": comp["squelette_trouvees_nb"],
+        "squelette_texte": comp["squelette_trouvees"],
+        "orientees_correctes": len(comp["oriente_comme_vrai"]),
+        "inverses": list(comp["oriente_inverse"]),
+        "ambigues": list(comp["non_orientees_parmi_vraies"]),
+        "parasites": list(comp["parasites"]),
+        "manquantes": list(comp["manquantes"]),
+    }
+
+
+def baseline_ordre(ordre: List[str], complet: bool = False) -> ResultatDecouverte:
+    """Baseline triviale : le graphe compatible avec un ORDRE de variables.
+
+    Deux engagements possibles, tous deux gratuits -- aucune donnee n'est
+    lue, seule l'ordre des colonnes est utilise :
+
+    - ``complet=False`` (defaut) : chaine consecutive -- l'engagement
+      MINIMAL d'un ordre ("l'ordre d'acquisition est l'ordre causal") ;
+    - ``complet=True`` : DAG complet compatible avec l'ordre -- l'engagement
+      MAXIMAL ("tout ce qui precede cause tout ce qui suit").
+
+    Ces baselines ne sont pas des caricatures : ce sont les hypotheses que le
+    praticien peut deja proposer SANS regarder les donnees. Un moteur qui
+    les bat n'a pas appris grand-chose ; un moteur qui les perd n'a pas
+    appris ce qu'il pretend.
+
+    Parametrisation
+    ---------------
+    ordre : list[str]
+        Un ordre sur les variables. La chaine suit cet ordre ; le DAG
+        complet oriente toute paire anterieure vers toute paire posterieure.
+    complet : bool, default False
+        Vrai : DAG complet compatible avec l'ordre. Faux : chaine consecutive.
+
+    Return
+    ------
+    ResultatDecouverte(methode="BASELINE_ORDRE") -- sans arete non
+    orientee (un ordre est une orientation complete) et avec
+    ``ordre_causal`` = l'ordre lui-meme.
+    """
+    aretes: List[Tuple[str, str]] = []
+    if complet:
+        for i, u in enumerate(ordre):
+            for v in ordre[i + 1:]:
+                aretes.append((u, v))
+    else:
+        for u, v in zip(ordre, ordre[1:]):
+            aretes.append((u, v))
+    return ResultatDecouverte(
+        methode="BASELINE_ORDRE",
+        aretes_orientees=sorted(aretes),
+        aretes_non_orientees=[],
+        ordre_causal=list(ordre),
+        n=0,
+        details={"complet": bool(complet), "ordre": list(ordre)},
+    )
+
+
+def baseline_aleatoire(
+    n_tirages: int = 20,
+    seed: int = 0,
+    labels: Optional[List[str]] = None,
+    complet: bool = True,
+) -> List[ResultatDecouverte]:
+    """Baseline triviale : n tirages d'un ordre ALEATOIRE des variables.
+
+    C'est le PLANCHER de la comparaison : une methode qui ne vaut pas mieux
+    qu'un tirage au sort n'a rien appris. Le tirage utilise un RandomState
+    LOCAL (doctrine du module) -- la baseline est reproductible, et donc
+    opposable a quiconque veut la recomputer.
+
+    Parametrisation
+    ---------------
+    n_tirages : int, default 20
+        Nombre d'ordres tires.
+    seed : int, default 0
+        Graine du RandomState LOCAL.
+    labels : list[str], optional
+        Variables tirees. Defaut : ``ORDRE_COLONNES``.
+    complet : bool, default True
+        Vrai : chaque tirage rend un DAG complet compatible avec l'ordre tire
+        (le graphe aleatoire le plus « dense »). Faux : chaine consecutive.
+
+    Return
+    ------
+    Liste de ``n_tirages`` ResultatDecouverte(methode="BASELINE_ALEATOIRE").
+    """
+    cols = list(labels) if labels is not None else ORDRE_COLONNES
+    rng = np.random.RandomState(seed)
+    resultats: List[ResultatDecouverte] = []
+    for _ in range(n_tirages):
+        ordre = [str(x) for x in rng.permutation(cols)]
+        res = baseline_ordre(ordre, complet=complet)
+        res.methode = "BASELINE_ALEATOIRE"
+        res.details["tirage"] = True
+        resultats.append(res)
+    return resultats
+
+
+def classer_par_shd(
+    resultats: Dict[str, ResultatDecouverte],
+    aretes_vraies: Optional[List[Tuple[str, str]]] = None,
+) -> List[Tuple[str, Dict[str, object]]]:
+    """Classe des graphes appris (moteur ET baselines) par SHD croissant.
+
+    Le classement est ce qui rend la comparaison lisible : deux methodes ne
+    se comparent pas par leurs qualites intrinsiques, mais par leur ECART a
+    un rival nomme. A SHD egal, l'ordre alphabétique departage -- le
+    classement est deterministe, donc verifiable.
+
+    Parametrisation
+    ---------------
+    resultats : dict[str, ResultatDecouverte]
+        Nom lisible -> graphe appris. Melange libre : moteur et baselines
+        passent par la meme fonction.
+    aretes_vraies : list[tuple[str, str]], optional
+        Defaut : ``ARETES_DAG_VRAI``.
+
+    Return
+    ------
+    Liste de couples ``(nom, resume)``, triee par ``shd`` croissant. Le
+    meilleur graphe (SHD le plus bas) est en tete.
+    """
+    lignes = [(nom, distance_structurelle(res, aretes_vraies))
+              for nom, res in resultats.items()]
+    lignes.sort(key=lambda l: (l[1]["shd"], l[0]))
+    return lignes
+
+
+def tableau_classement(
+    resultats: Dict[str, ResultatDecouverte],
+    aretes_vraies: Optional[List[Tuple[str, str]]] = None,
+    titre: str = "",
+) -> str:
+    """Le classement par SHD, rendu en tableau texte pret a imprimer.
+
+    Colonnes : methode, SHD, aretes rendues, squelette trouve, orientations
+    correctes, inverses, parasites, manquantes.
+
+    Le nombre d'aretes rendues est affiche PARCE QUE le SHD penalise la
+    densite : une methode qui rend plus d'aretes a plus d'occasions de se
+    tromper, et le lecteur doit le voir. Sans cette colonne, un classement
+    SHD pourrait confondre "mauvais ciblage" et "trop bavard".
+
+    Parametrisation
+    ---------------
+    resultats : dict[str, ResultatDecouverte]
+        Nom lisible -> graphe appris.
+    aretes_vraies : list[tuple[str, str]], optional
+        Defaut : ``ARETES_DAG_VRAI``.
+    titre : str
+        Ligne d'en-tete du tableau (regime, hypothese, etc.).
+
+    Return
+    ------
+    Une chaine multi-lignes. Le classement vient de ``classer_par_shd`` :
+    l'ordre est donc deterministe et verifiable.
+    """
+    lignes = classer_par_shd(resultats, aretes_vraies)
+    entete = (f"{'methode':38s} {'SHD':>4s} {'aretes':>7s} {'squelette':>10s} "
+              f"{'correctes':>10s} {'inverses':>9s} {'parasites':>10s} {'manquantes':>11s}")
+    corps = []
+    for nom, d in lignes:
+        n_aretes = len(resultats[nom].aretes_orientees)
+        corps.append(
+            f"{nom:38s} {d['shd']:4d} {n_aretes:7d} {d['squelette_texte']:>10s} "
+            f"{d['orientees_correctes']:10d} {len(d['inverses']):9d} "
+            f"{len(d['parasites']):10d} {len(d['manquantes']):11d}")
+    blocs = []
+    if titre:
+        blocs.append(titre)
+    blocs.append(entete)
+    blocs.extend(corps)
+    return "\n".join(blocs)
 
 
 # ---------------------------------------------------------------------------
