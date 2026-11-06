@@ -42,12 +42,20 @@ delta = _load(_DELTA_PATH, "check_harness_weight_delta")
 mah = _load(_ORGAN_PATH, "measure_autoloaded_harness")
 
 
-def _instantane(total: int, rules=(), root_file=None, complete: bool = True) -> dict:
+def _instantane(total: int, rules=(), root_file=None, complete: bool = True,
+                gated=(), hashes=None) -> dict:
     """Un instantane au schema de l'organe canonique."""
+    hashes = hashes or {}
+
+    def _sha(nom):
+        return hashes.get(nom, "sha-" + nom)
+
     return {
         "autoloaded_total_bytes": total,
-        "autoloaded_rules": [{"name": n, "bytes": b} for n, b in rules],
-        "path_gated_rules": [],
+        "autoloaded_rules": [{"name": n, "bytes": b, "sha256": _sha(n)}
+                             for n, b in rules],
+        "path_gated_rules": [{"name": n, "bytes": b, "sha256": _sha(n)}
+                             for n, b in gated],
         "root_file": root_file,
         "measurement_complete": complete,
         "ratio_bytes_per_token": 2.25,
@@ -135,6 +143,82 @@ def test_une_regle_path_gatee_qui_disparait_de_la_surface_reduit_le_total():
     assert delta.compare(base, head)["verdict"] == "OK"
 
 
+# --- la suppression : ni la croissance, ni la disparition muette ------------
+
+
+def test_une_regle_supprimee_du_depot_est_refusee():
+    """Le cliquet refuse aussi la DISPARITION, pas seulement la croissance.
+
+    Une regle supprimee fait baisser le total : le delta seul la laisserait
+    passer, en vert, sans que personne n'ait demande la suppression.
+    """
+    base = _instantane(1000, rules=[("r.md", 900)],
+                       root_file={"name": "CLAUDE.md", "bytes": 100})
+    head = _instantane(100, rules=[],
+                       root_file={"name": "CLAUDE.md", "bytes": 100})
+    resultat = delta.compare(base, head)
+    assert resultat["verdict"] == "SUPPRESSION"
+    assert resultat["surfaces_supprimees"] == ["r.md"]
+
+
+def test_le_claude_md_racine_supprime_est_refuse():
+    base = _instantane(1000, rules=[("r.md", 900)],
+                       root_file={"name": "CLAUDE.md", "bytes": 100})
+    head = _instantane(900, rules=[("r.md", 900)], root_file=None)
+    resultat = delta.compare(base, head)
+    assert resultat["verdict"] == "SUPPRESSION"
+    assert "CLAUDE.md" in resultat["surfaces_supprimees"]
+
+
+def test_un_renommage_nest_pas_une_suppression():
+    """Une regle renommee garde son contenu, donc son empreinte.
+
+    Sans l'appariment par `sha256`, le comparateur verrait une surface
+    disparue et une surface apparue -- et accuserait a tort la PR.
+    """
+    base = _instantane(1000, rules=[("avant.md", 900)],
+                       root_file={"name": "CLAUDE.md", "bytes": 100},
+                       hashes={"avant.md": "sha-identique"})
+    head = _instantane(1000, rules=[("apres.md", 900)],
+                       root_file={"name": "CLAUDE.md", "bytes": 100},
+                       hashes={"apres.md": "sha-identique"})
+    resultat = delta.compare(base, head)
+    assert resultat["verdict"] == "OK"
+    assert resultat["surfaces_supprimees"] == []
+
+
+def test_une_migration_vers_path_gated_nest_pas_une_suppression():
+    """Le levier A du mandat : la regle sort du chemin auto-charge, sans
+    disparaitre. Elle reste listee, donc elle n'est pas une suppression."""
+    base = _instantane(1000, rules=[("r.md", 900)],
+                       root_file={"name": "CLAUDE.md", "bytes": 100})
+    head = _instantane(100, rules=[],
+                       root_file={"name": "CLAUDE.md", "bytes": 100},
+                       gated=[("r.md", 900)])
+    resultat = delta.compare(base, head)
+    assert resultat["verdict"] == "OK"
+    assert resultat["surfaces_supprimees"] == []
+
+
+def test_le_ratio_vient_de_linstantane_et_non_dune_constante():
+    """Le ratio est emis par l'organe : le comparateur ne le redouble pas.
+
+    Deux sources pour un meme nombre deriveient des que l'une change ; un
+    instantane sans ratio est donc un instantane incomplet (rc=2).
+    """
+    base = _instantane(100, rules=[("r.md", 60)])
+    head = _instantane(100, rules=[("r.md", 60)])
+    base["ratio_bytes_per_token"] = 3.5
+    head["ratio_bytes_per_token"] = 3.5
+    resultat = delta.compare(base, head)
+    assert resultat["bytes_per_token"] == 3.5
+    assert resultat["base_tokens_derived"] == round(100 / 3.5)
+
+    sans_ratio = _instantane(100, rules=[("r.md", 60)])
+    del sans_ratio["ratio_bytes_per_token"]
+    assert "ratio_bytes_per_token" in delta.REQUIRED_KEYS
+
+
 # --- les incidents : verdict inconnu, jamais un quitus -----------------------
 
 
@@ -206,6 +290,55 @@ def test_controle_positif_mesure_reelle_accepte_la_baisse(tmp_path):
     resultat = delta.compare(base, head)
     assert resultat["verdict"] == "OK"
     assert resultat["delta_bytes"] == -300
+
+
+def test_controle_positif_mesure_reelle_detecte_la_suppression(tmp_path):
+    """Fin de bout en bout : une regle SUPPRIMEE du depot est refusee.
+
+    Le cas que la seule arithmetique ne voit pas : le total baisse, le delta
+    est negatif -- et la surface a disparu. C'est la mesure reelle qui
+    apporte l'information (la surface disparue du catalogue), pas le calcul.
+    """
+    root = _arbre(tmp_path)
+    base = mah.measure(root)
+    (root / ".claude" / "rules" / "grande.md").unlink()
+    head = mah.measure(root)
+
+    resultat = delta.compare(base, head)
+    assert resultat["verdict"] == "SUPPRESSION"
+    assert "grande.md" in resultat["surfaces_supprimees"]
+
+
+def test_controle_positif_mesure_reelle_accepte_le_renommage(tmp_path):
+    """Fin de bout en bout : une regle RENOMMEE n'est pas une suppression."""
+    root = _arbre(tmp_path)
+    base = mah.measure(root)
+    (root / ".claude" / "rules" / "grande.md").rename(
+        root / ".claude" / "rules" / "grosse.md")
+    head = mah.measure(root)
+
+    resultat = delta.compare(base, head)
+    assert resultat["verdict"] == "OK"
+    assert resultat["surfaces_supprimees"] == []
+
+
+def test_controle_positif_mesure_reelle_accepte_le_gating(tmp_path):
+    """Fin de bout en bout : le levier A (gating) reste accepte.
+
+    La regle passe de la surface auto-chargee a la surface path-gatee : le
+    total baisse de sa taille exacte, la regle reste listee, et le cliquet
+    passe.
+    """
+    root = _arbre(tmp_path)
+    base = mah.measure(root)
+    _ecrire(root, "grande.md",
+            "---\npaths: a/**/*.ipynb\n---\n\n# grande\n\n" + "x" * 400)
+    head = mah.measure(root)
+
+    resultat = delta.compare(base, head)
+    assert resultat["verdict"] == "OK"
+    assert resultat["surfaces_supprimees"] == []
+    assert resultat["delta_bytes"] < 0
 
 
 def test_une_regle_non_gatee_est_comptee_dans_la_surface(tmp_path):
