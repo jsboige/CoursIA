@@ -99,7 +99,7 @@ def violations(series_dir: Path, prefix: str = "GameTheory") -> list[dict]:
 
     Le chiffre unique se lit dans le numero rendu par le parseur du canon
     (#15489) : ``GameTheory-3a`` livre ``number="3"`` (un chiffre), ``GameTheory-22``
-    livre ``"26"``, ``GameTheory-04c`` livre ``"04"``. La regle porte sur la
+    livre ``"22"``, ``GameTheory-04c`` livre ``"04"``. La regle porte sur la
     LONGUEUR du numero et non sur un motif du nom complet -- un motif local
     re-encode la grammaire du canon, et deux encodages divergent au premier cas
     limite (c'est ce que #15489 corrige).
