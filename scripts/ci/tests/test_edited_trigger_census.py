@@ -79,7 +79,12 @@ def test_le_census_ignore_un_workflow_sans_declencheur_edited(rows):
 @pytest.mark.parametrize(
     "workflow",
     [
-        ".github/workflows/lean-knot.yml",
+        # lean-knot.yml : retire de la liste a sa migration matricielle
+        # (#13751) -- le wrapper est supprime, et c'est lean-ci-matrix.yml
+        # qui porte desormais le declencheur `edited` du lake (types:
+        # [opened, synchronize, edited, reopened], le pattern qui a corrige
+        # #15652 a l'origine SUR ce fichier). Le pin matriciel vit dans
+        # test_axiom_matrix_wiring.py ; conway reste le temoin wrapper.
         ".github/workflows/lean-conway.yml",
     ],
 )

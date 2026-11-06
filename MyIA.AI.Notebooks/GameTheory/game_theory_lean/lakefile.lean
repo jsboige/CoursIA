@@ -30,8 +30,9 @@ require mathlib from git
 -- SocialChoice.lean) deplaces byte-identique depuis `social_choice_lean/`
 -- vers `game_theory_lean/SocialChoice/`. La coquille technique du lake source
 -- `social_choice_lean/` (lakefile + toolchain + manifest) a été retirée en
--- follow-up (#4365) : ce dossier n'est plus un lake, seuls ses 4 markdown
--- (README/STATUS/NOTICE/LEAN_PREREQUISITES) subsistent comme tombstone.
+-- follow-up (#4365) : ce dossier n'est plus un lake, seuls ses 3 markdown
+-- (README/STATUS/LEAN_PREREQUISITES) subsistent comme tombstone ; la NOTICE
+-- vit dans `game_theory_lean/SocialChoice/NOTICE.md` (#24183, T1).
 -- Prochaine absorption prevue : `social_choice_lean_peters` (v4.27 -> v4.31,
 -- INTRINSIC documente si port depasse budget cf sota-not-workaround).
 --
@@ -149,6 +150,24 @@ lean_lib ProgramGames where
 @[default_target]
 lean_lib StackelbergBilevel where
   globs := #[`StackelbergBilevel.*]
+
+-- Grain #24423 (po-2023, critere 4 de #21927) : ajout `lean_lib
+-- CongestionGames` — borne elementaire 2x du prix de l'anarchie pour
+-- l'equilibre minimisant le potentiel de Rosenthal d'un jeu de
+-- congestion atomique lineaire, entier sur `Nat` (potentiel double
+-- Phi' = sum a_e x_e (x_e+1), chaine C <= Phi' <= 2C via x^2 <= x(x+1)
+-- <= 2x^2). Identite d'exactitude `potential_exchange` (le facteur 2
+-- vient du potentiel double exact des deviations unilaterales),
+-- `minPotential_isNash`, `cost_minPotential_le_two`. Deux temoins par
+-- `decide` : ratio exactement 2 (2 joueurs, 3 aretes emboitees) et
+-- 15/7 > 2 (3 joueurs — la borne couvre l'equilibre potentiel-minimal,
+-- pas tous les equilibres ; le 5/2 affine de Christodoulou-Koutsoupias
+-- 2005 est hors scope). Compagnon Lean du carnet
+-- GameTheory-04h-Routing-PriceOfAnarchy (Python, non-atomique 4/3).
+-- 9ᵉ cohorte `lean_lib` du même package. 0 sorry, 0 axiome ad hoc.
+@[default_target]
+lean_lib CongestionGames where
+  globs := #[`CongestionGames.*]
 
 -- Tranche L2 (po-2025) : `ProgramGames/FairBot.lean` (+ sibling `_en`) —
 -- EPIC #15062, FairBot par le théorème de Löb. Interface

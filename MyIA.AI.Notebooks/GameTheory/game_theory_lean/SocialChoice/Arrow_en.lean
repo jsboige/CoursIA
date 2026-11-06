@@ -17,6 +17,13 @@
   2. Pivot existence: Every alternative has a pivotal individual
   3. Dictatorial extension: Pivots become dictators over pairs
   4. Complete dictatorship: Partial dictator becomes full dictator
+
+  Convention i18n (Option A ratified by ai-01, Epic #4980) :
+  section headers, definition/theorem docstrings, lemma comments and PROOF
+  SKETCH are **English-first** in this EN sibling ; the FR canonical
+  Arrow.lean keeps the French-first convention. The Lean tactical code
+  (tactic names, Mathlib lemmas, identifiers) stays in English, the canonical
+  language of Lean/Mathlib. Reference: option A ratified by ai-01.
 -/
 
 import SocialChoice.Framework_en

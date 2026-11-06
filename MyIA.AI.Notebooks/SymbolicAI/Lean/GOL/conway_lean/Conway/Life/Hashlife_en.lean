@@ -308,7 +308,7 @@ against a reach of `2^level` generations: the ratio is **tight** (close
 to 1), not "more than enough" as the naive `2^(level-2)` reach would
 suggest. The theorem `no_padding_depth_suffices` (see `JumpCapture.lean`)
 formalizes this: `marginToResultWindow k p < jumpReach k p`, the margin
-remaining strictly below the speed-of-light cone's reach, the gap being
+remaining strictly below the reach of the speed-of-light cone (level 1), the gap being
 the `2^(k-1)` clip.
 
 The result's offset equals the original offset (the centered result of
@@ -849,8 +849,8 @@ def evolveHashlifeFastAtN (n : Nat) (g : Grid) : Grid :=
 def evolveHashlife : Nat -> Grid -> Grid
   | 0,     g => g
   | n + 1, g =>
-    -- Build a MacroCell. If the bounding box fits in a level-2 window
-    -- (i.e. the live region spans at most a few cells), the Hashlife
+    -- Build a MacroCell. If the bounding box fits in a
+    -- level-2 window (i.e. the live region spans at most a few cells), the Hashlife
     -- base case `step4x4` can be used; otherwise round-trip via
     -- `Conway.Life.step`. We always at least exercise the MacroCell
     -- representation as a sanity check.
@@ -907,11 +907,11 @@ specific 4x4 inputs.
 #eval evolveHashlife 2 toad == evolve 2 toad
 
 -- Direct recursive Hashlife on a level-3 input (exercises the
--- recursive `hashlifeResult` for k = 3). Builds a level-3 (8x8)
--- MacroCell containing the glider near its center, then calls
+-- recursive `hashlifeResult` for k = 3). Builds a
+-- level-3 (8x8) MacroCell containing the glider near its center, then calls
 -- `hashlifeResult`; this returns a level-2 cell representing the
--- glider 2 generations later, but only over the centered 4x4 window.
--- We therefore compare against `evolve 2 glider` *filtered* to the
+-- glider 2 generations later, but only over the centered
+-- 4x4 window. We therefore compare against `evolve 2 glider` *filtered* to the
 -- centered window.
 #eval
   let off : Int × Int := (-2, -2)
