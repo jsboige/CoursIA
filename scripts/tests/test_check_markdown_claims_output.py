@@ -333,6 +333,180 @@ class TestFuzzyPresent:
         assert not _fuzzy_present("7", "0.2385")
 
 
+class TestIssue22910Table:
+    """The five rows of the #22910 table, turned into tests.
+
+    The table measured `_fuzzy_present` and `_rounds_to_claim` on five
+    (claim, output) pairs: three were false positives (a neighbouring or a
+    coarser value accepted), one was a genuine rounding, and the last was a
+    negative witness.
+
+    The fix: clause (c) now opens on the comma signal alone (the thousands
+    separator), and clause (a) no longer accepts a prefix shorter than the
+    claim unless the dropped tail is zeros ('2.40' against '2.4' is the same
+    number).
+
+    Measured note: the second row of the table did not come from clause (c)
+    but from clause (a) -- the prefix '1.7' occurs in the output '1.7' with
+    nothing after it, which clause (a) accepted. Measured here, not assumed.
+    """
+
+    def test_neighbour_value_not_matched(self):
+        """Row 1: '1.75' against '1.7565' -- the neighbouring value (1.7565
+        rounds to 1.76) does not support the claim."""
+        assert not _fuzzy_present("1.75", "1.7565")
+        assert not _rounds_to_claim("1.75", "1.7565")
+
+    def test_coarser_output_not_matched(self):
+        """Row 2: '1.75' against '1.7' -- an output coarser than the claim
+        cannot support it."""
+        assert not _fuzzy_present("1.75", "1.7")
+        assert not _rounds_to_claim("1.75", "1.7")
+
+    def test_neighbour_value_two_decimals_not_matched(self):
+        """Row 3: '2.40' against '2.4067' -- same family as row 1, on a
+        two-decimal claim."""
+        assert not _fuzzy_present("2.40", "2.4067")
+        assert not _rounds_to_claim("2.40", "2.4067")
+
+    def test_genuine_rounding_still_matched(self):
+        """Row 4: the genuine rounding -- '1.75' is the two-decimal
+        rounding of '1.7465' quoted from a results table."""
+        assert _fuzzy_present("1.75", "SA  1.7465  12.8907  17.2632")
+        assert _rounds_to_claim("1.75", "SA  1.7465  12.8907  17.2632")
+
+    def test_negative_witness_still_refused(self):
+        """Row 5: the negative witness -- '9.9999' must not be found in an
+        output that contains '1.7565'."""
+        assert not _fuzzy_present("9.9999", "SA  1.7565  12.8907")
+        assert not _rounds_to_claim("9.9999", "SA  1.7565  12.8907")
+
+    def test_zero_padded_claim_still_matched(self):
+        """Non-regression: a claim padded with zeros is the same number
+        ('2.40' == '2.4')."""
+        assert _fuzzy_present("2.40", "2.4 Go")
+
+    def test_magnitude_with_thousands_separator_still_matched(self):
+        """Non-regression: clause (c) keeps its legitimate case -- a
+        magnitude against a large number grouped by commas."""
+        assert _fuzzy_present("3.1", "3,145,728")
+
+    def test_truncation_refused_even_when_output_carries_a_comma(self):
+        """Robustness of the veto: a comma elsewhere in the output (a
+        grouped integer in a results table) must not re-enable the digit
+        run for a comma-less value that the prose has TRUNCATED."""
+        assert not _fuzzy_present("1.75", "SA  1,024 rows  1.7565  12.8907")
+        assert not _rounds_to_claim("1.75", "SA  1,024 rows  1.7565  12.8907")
+
+
+class TestFrancophoneNotation:
+    """The same defect in the notation this repository uses predominantly.
+
+    The francophone decimal comma ('1,7565') is a COMMA, so the
+    thousands-gate of clause (c) used to open on it -- and the truncation
+    veto used to skip every comma token, so it could not see the very
+    decimal it had to judge. The measured consequence: the claim '1.75'
+    was ACCEPTED against the output 'SA 1,7565 12,8907' -- the exact
+    false positive the issue closes, in the notation the notebooks of
+    this repository actually print.
+    """
+
+    def test_francophone_truncation_is_refused(self):
+        """The reproduced false positive: '1.75' against 'SA 1,7565
+        12,8907' was accepted (the digit run '17565128907' contains
+        '175')."""
+        assert not _fuzzy_present("1.75", "SA 1,7565 12,8907")
+
+    def test_francophone_truncation_two_decimals(self):
+        """The same, on a two-decimal claim: '2.40' against '2,4067'."""
+        assert not _fuzzy_present("2.40", "SA 2,4067 3,8912")
+
+    def test_francophone_genuine_rounding_still_matched(self):
+        """Non-regression: a genuine francophone rounding -- '1.75' is the
+        two-decimal rounding of '1,7465' -- must still be supported."""
+        assert _fuzzy_present("1.75", "SA 1,7465 12,8907")
+
+    def test_francophone_decimal_is_not_a_magnitude(self):
+        """A francophone decimal is not a thousands grouping: the clause
+        must not treat '1,7565' as the magnitude context it exists to
+        serve ('3,145,728' is)."""
+        assert not _fuzzy_present("3.1", "1,7565")
+
+    def test_grouped_magnitude_still_matched(self):
+        """Non-regression: the legitimate thousands grouping -- several
+        comma groups of exactly three digits -- still opens the clause."""
+        assert _fuzzy_present("3.1", "3,145,728")
+        assert _fuzzy_present("3.1", "SA 3,145,728 unites")
+
+    def test_english_and_french_notations_agree(self):
+        """The two notations must give the SAME verdict on the same
+        numbers -- otherwise the organ's verdict depends on the notation
+        the notebook happens to print."""
+        for english, french in (
+            ("1.7565 12.8907", "1,7565 12,8907"),
+            ("1.7465 12.8907", "1,7465 12,8907"),
+            ("2.4067 3.8912", "2,4067 3,8912"),
+        ):
+            assert _fuzzy_present("1.75", english) == _fuzzy_present("1.75", french)
+            assert _fuzzy_present("2.40", english) == _fuzzy_present("2.40", french)
+
+
+class TestMagnitudeVersusTruncation:
+    """Where the claim's digits must lie to read as a MAGNITUDE.
+
+    Clause (c) used to strip every non-digit of the output into ONE digit
+    run and look for the claim's digits anywhere inside it. Two defects
+    came with that: the digits could straddle the output's decimal point
+    ('1.75' in '1.7565' -- a truncation, not a magnitude) and they could
+    span TWO numbers ('1.75' in '17.2632' -- a coincidence of digits).
+    Gating the clause on the mere presence of a comma was the francophone
+    counterpart of the same defect: a decimal comma is a comma.
+
+    The rule now: the claim's digits must be a PREFIX of the INTEGER PART
+    of one number of the output. A magnitude has all its significant
+    digits in the integer part ('1750000'); a truncation straddles the
+    point ('1.7565' has integer part '1'). The notation does not enter the
+    decision -- which is what makes the two readings separable.
+    """
+
+    def test_magnitude_without_separator_is_matched(self):
+        """The legitimate magnitude written WITHOUT a separator:
+        '1.75' against '1750000' (1.75M). The former gate on a thousands
+        group refused it; the reserve asked for this case to be pinned."""
+        assert _fuzzy_present("1.75", "1750000")
+        assert _fuzzy_present("1.75", "SA 1750000 items")
+
+    def test_claim_digits_must_lie_in_the_integer_part(self):
+        """The structural rule itself, on the two shapes that differ only
+        by where the point stands."""
+        assert not _fuzzy_present("1.75", "1.7565")      # straddles the point
+        assert _fuzzy_present("1.75", "1750000")          # inside the integer part
+
+    def test_claim_digits_may_not_span_two_numbers(self):
+        """The digit run '172632' contains '175'? no -- but the pair
+        ('1' from one number, '75' from the next) could: the run must
+        not be read across a boundary."""
+        assert not _fuzzy_present("1.75", "17.2632")
+        assert not _fuzzy_present("1.75", "SA 17.2632 12.8907")
+
+    def test_contradiction_veto_still_applies_over_a_magnitude(self):
+        """The veto keeps its scope: a magnitude elsewhere in the output
+        does not license a claim the output also contradicts."""
+        assert not _fuzzy_present("1.75", "1750000 1.7565")
+
+    def test_grouped_magnitude_with_a_decimal_part(self):
+        """A grouped integer carrying a decimal point ('1,234,567.89') is
+        a magnitude: the point arbitrates the comma as a separator."""
+        assert _fuzzy_present("1.23", "1,234,567.89")
+
+    def test_single_comma_group_stays_a_decimal_not_a_magnitude(self):
+        """Without a point to arbitrate, a bare three-digit group keeps its
+        francophone decimal reading ('1,024' is 1.024), so it is a
+        precision context and never a magnitude."""
+        assert not _fuzzy_present("3.1", "1,024")
+        assert not _fuzzy_present("3.1", "SA 1,024 rows")
+
+
 class TestRoundsToClaim:
     """Bounds of the rounding predicate itself (clause b), both directions."""
 

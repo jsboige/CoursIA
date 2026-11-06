@@ -57,6 +57,14 @@ on:
 permissions:
   contents: read
 
+# Partage du pool `ubuntu-latest` avec roo-extensions (proposition du 03/11,
+# dashboard global) : sur une PR, un run depasse par un push plus recent rend
+# sa place au lieu de garder la file. Sur `push` (main), le groupe porte le SHA :
+# chaque commit a son propre groupe, rien n'est annule ni mis en attente.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   assert:
     name: Composition vs RAM VM

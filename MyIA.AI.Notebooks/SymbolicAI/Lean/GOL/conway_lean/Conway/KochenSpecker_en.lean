@@ -92,7 +92,7 @@ without internal `---`, as in c.376-c.391).
 - 9/9 `conway_lein` Phase 1+ sub-modules done after c.392 (rollout
   Phase 1+ COMPLETE): MathlibMap c.377 + LookAndSay c.378 + Fractran
   c.379 + Doomsday c.380 + Nim c.384 + CollatzLike c.385 + FreeWillTheorem
-  c.386 + Angel c.391 + **KochenSpecker c.392** (this PR).
+  c.386 + Angel c.391 + **KochenSpecker c.392** (MERGED — #6250).
 - Post-c.392 rollout Phase 1+ `conway_lein` ACHIEVED: backlog c.393+
   switch to `grothendieck_lein` Phase 2+ (15 remaining sub-modules:
   Calibration, Subcanonical, SieveLattice, CategoryAndSites, DenseTopology,

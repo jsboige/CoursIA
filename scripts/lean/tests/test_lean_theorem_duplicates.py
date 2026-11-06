@@ -153,17 +153,31 @@ def test_le_monomere_ne_produit_pas_de_paire():
     assert pairs == []
 
 
-def test_page_generee_suivant_l_arbre():
-    """`--check` passe sur la page commitee (pas de derive)."""
+def test_la_page_ne_cite_aucun_numero_de_ligne():
+    """La page derivee est **independante des numeros de ligne**.
+
+    C'est l'invariant qui rend la page stable : un `git mv` ou une insertion
+    dans un `.lean` decale toutes les lignes qui suivent, et la page
+    derivait alors pour une PR qui n'avait rien a voir avec elle. La page
+    cite le **fichier** et le **nom de la declaration** -- les deux perdurent
+    quand la ligne bouge.
+
+    Le predicat de DERIVE (la page suit-elle l'arbre ?) n'est plus verifie
+    ici : il est porte par le garde dedie
+    `scripts/lean/check_lean_derived_pages.py`, cable sur les PRs qui
+    touchent l'arbre Lean, les generateurs ou les pages. Le garder dans la
+    suite globale rendait ROUGE toute PR de la flotte qui touche `scripts/`
+    -- mesure du 2026-11-03 : 22 PRs de la lane `myia-ai-01:CoursIA-2`
+    bloquees le meme jour, sans qu'aucune n'ait touche l'arbre Lean. Une
+    porte qui accuse une PR d'un defaut qu'elle ne peut pas causer n'est pas
+    une porte, c'est un bruit.
+    """
     assert mod.PAGE.is_file(), "page absente : %s" % mod.PAGE
-    decls = mod.collect()
-    df = mod.document_frequency(decls)
-    ndf = mod.name_frequency(decls)
-    pairs = mod.find_duplicates(decls, mod.DEFAULT_DF_MAX, mod.DEFAULT_CONTAINMENT,
-                                df=df, ndf=ndf)
-    expected = mod.render_page(pairs, mod.DEFAULT_DF_MAX, mod.DEFAULT_CONTAINMENT)
     current = mod.PAGE.read_text(encoding="utf-8")
-    assert current == expected, "la page regeneree differe de l'arbre"
+    cites = re.findall(r"\.lean:\d+", current)
+    assert not cites, (
+        "la page cite des numeros de ligne, qui derivent a chaque commit "
+        "Lean : %s" % sorted(set(cites))[:5])
 
 
 def test_le_nom_du_script_nomme_est_le_fichier_lui_meme():

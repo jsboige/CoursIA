@@ -238,6 +238,11 @@ important_names = [
     "execute_tool search_mathlib_lemmas", "execute_tool compile",
     "executor.process verify_executor",
 ]
+# Un span `chat <modele>` porte le nom du modele servi : un changement de modele
+# par defaut (glm-5.1 -> glm-5.3) ferait disparaitre sa ligne en silence. On
+# ajoute donc chaque span `chat` observe dans les traces et absent de la liste.
+important_names += sorted(
+    n for n in name_durations if n.startswith("chat ") and n not in important_names)
 
 print(f"\n{'Span Type':<55} {'Count':>6} {'Median':>10} {'P95':>10} {'Max':>10}")
 print("-"*95)

@@ -1,6 +1,7 @@
 """Configuration, providers, and demo theorems."""
 
 import os
+import platform
 from pathlib import Path
 from dotenv import load_dotenv
 from agent_framework_openai import OpenAIChatCompletionClient
@@ -47,13 +48,32 @@ def _workspace_relative(rel: str) -> Path | None:
         return None
     return _WORKSPACE_ROOT.joinpath(*rel.split("/"))
 
+
+def _claudish_machine_tag() -> str:
+    """Tag d'attribution envoye a claudish dans ``X-Claudish-Machine``.
+
+    ``CLAUDISH_MACHINE_TAG`` l'emporte. Sinon le tag ne se derive que d'un nom
+    d'hote de la flotte (``myia-ai-01`` -> ``ai-01-prover``) : dans un conteneur,
+    ``platform.node()`` rend un identifiant qui change a chaque recreation et se
+    lirait comme une machine reelle. Hors flotte, le tag vaut ``unknown-prover``,
+    visible dans les comptes de claudish.
+    """
+    explicit = os.getenv("CLAUDISH_MACHINE_TAG", "").strip()
+    if explicit:
+        return explicit
+    node = platform.node().lower()
+    if node.startswith("myia-"):
+        return node.removeprefix("myia-") + "-prover"
+    return "unknown-prover"
+
+
 PROVIDERS = {
     "zai": {
         "base_url": os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/coding/paas/v4"),
         "api_key": os.getenv("ZAI_API_KEY", ""),
         "models": {
-            "reasoning": os.getenv("ZAI_CHAT_MODEL_ID", "glm-5.1"),
-            "fast": os.getenv("ZAI_FAST_MODEL_ID", "glm-5.1"),
+            "reasoning": os.getenv("ZAI_CHAT_MODEL_ID", "glm-5.3"),
+            "fast": os.getenv("ZAI_FAST_MODEL_ID", "glm-5.3"),
         }
     },
     "local": {
@@ -95,6 +115,23 @@ PROVIDERS = {
         "models": {
             "reasoning": os.getenv("MISTRAL_CHAT_MODEL_ID", "labs-leanstral-1-5"),
             "fast": os.getenv("MISTRAL_FAST_MODEL_ID", "labs-leanstral-1-5"),
+        }
+    },
+    # claudish : un seul point d'entree OpenAI-compatible devant les modeles
+    # de la flotte (z.ai GLM, DeepSeek, MiniMax, Qwen, Codex, Anthropic) --
+    # demande du user du 2026-11-03 : passer par le hub avant de chercher des
+    # cles par fournisseur. Le proxy authentifie la cle CLAUDISH_PROXY_KEY en
+    # Bearer (canari du 2026-11-04 : modele inconnu -> 400 apres admission,
+    # `zai@glm-5.3` -> 200). L'identifiant de modele porte le prefixe de route
+    # de claudish (`zai@glm-5.3`). L'en-tete X-Claudish-Machine attribue la
+    # consommation au harnais, machine par machine.
+    "claudish": {
+        "base_url": os.getenv("CLAUDISH_BASE_URL", ""),
+        "api_key": os.getenv("CLAUDISH_PROXY_KEY", ""),
+        "headers": {"X-Claudish-Machine": _claudish_machine_tag()},
+        "models": {
+            "reasoning": os.getenv("CLAUDISH_CHAT_MODEL_ID", "zai@glm-5.3"),
+            "fast": os.getenv("CLAUDISH_FAST_MODEL_ID", "zai@glm-5.3"),
         }
     },
 }
@@ -405,6 +442,7 @@ def create_client(provider: str = "zai", model_key: str = "reasoning",
         base_url=cfg["base_url"],
         timeout=request_timeout_s,
         max_retries=max_retries,
+        default_headers=cfg.get("headers") or None,
     )
     return OpenAIChatCompletionClient(
         model=cfg["models"][model_key],

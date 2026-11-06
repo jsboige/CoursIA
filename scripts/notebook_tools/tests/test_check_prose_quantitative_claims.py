@@ -118,7 +118,7 @@ def test_artifact_exemptions_are_motivated_and_point_at_real_files():
             "compilées en 1154 s, 0 sorry/0 axiom)",
         ),
         (
-            "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/scripts/README.md",
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/README.md",
             "fabriquée : la v1 du gun, 36 cellules fausses, passait le check de règle) ;",
         ),
     ],
@@ -158,7 +158,7 @@ def test_artifact_exemption_on_incident_narrative_is_a_span_not_a_blanket():
 
     Sans ce temoin, l'exemption pourrait se transformer en couperet par fichier
     sans qu'aucun test ne rougisse."""
-    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/scripts/README.md"
+    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/README.md"
     exempte = "fabriquée : la v1 du gun, 36 cellules fausses, passait le check de règle) ;"
     assert cqc._findings_in_text(exempte, path, {"artifact"}) == []
     out = cqc._findings_in_text(
