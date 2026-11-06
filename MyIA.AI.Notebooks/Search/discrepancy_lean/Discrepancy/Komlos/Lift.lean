@@ -290,12 +290,12 @@ lemma sum_smul_snoc {d : ℕ} {ι : Type*} (s : Finset ι)
       simp only [Fin.snoc_castSucc, Finset.sum_apply, Pi.smul_apply]
 
 /-- **Commutation du transport avec l'embedding** : `toReal ∘ liftUp =
-snoc ∘ (toReal × hauteur)` — la partie spatiale est transportée par
+snoc ∘ (toReal × height)` — la partie spatiale est transportée par
 `toReal` (k2.3), la hauteur `Bool` devient le réel `{0, 1}`.
 
 C'est ce qui referme le carré avec `toRealProd` (k2.4) : l'image
 transportée du support poussé dans `Fin (d+1) → ℝ` est la lecture
-`(y.1, hauteur y.2)` de l'embedding produit — l'endroit exact où la
+`(y.1, height y.2)` de l'embedding produit — l'endroit exact où la
 conclusion d'induction à la dimension `d+1` nourrit le `pullback` de
 k2.4, énoncé dans `(Fin d → ℝ) × ℝ`. -/
 lemma toReal_liftUp {d : ℕ} (y : (Fin d → ℤ) × Bool) :

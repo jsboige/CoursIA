@@ -34,7 +34,7 @@ four identities consumed by k2 : the re-indexing by translation
 **non-vacuity** of the new hypothesis (`supportContained_biUnion`).
 
 Bricks k1.2/k1.4/k1.5/k1.6 remain in place (their statements are true) ; this
-module **adds** the consumable statements. The detailed state lives in
+module **adds** the consumable statements, plus the consumable form of the splitting-bit identity (`splitBit_eq_of_support`). The detailed state lives in
 `FORMAL_STATUS.md`.
 -/
 
