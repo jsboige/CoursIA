@@ -93,9 +93,12 @@ RC_INCIDENT = 2
 
 #: Exclusions du perimetre i18n (cf `.claude/rules/code-style.md`, EPIC #4980).
 #: Les fragments portent leurs deux separateurs : sans le `/` de tete, un
-#: repertoire exclu **a la racine mesuree** (`--root _peters`) passait au
-#: travers, et le fragment n'etait alors qu'un sous-chemin chanceux.
-EXCLUDED_FRAGMENTS = ("/.lake/packages/", "/_peters/", "/reference_docs/")
+#: repertoire exclu **a la racine mesuree** (`--root social_choice_lean_peters`)
+#: passait au travers, et le fragment n'etait alors qu'un sous-chemin chanceux.
+#: Le lake externe de la regle vit sous `GameTheory/SocialChoice/` : le
+#: fragment historique `/_peters/` ne matchait AUCUN segment de ce chemin
+#: (exclusion morte, point 4 de la review Hermes de #24032).
+EXCLUDED_FRAGMENTS = ("/.lake/packages/", "/social_choice_lean_peters/", "/reference_docs/")
 
 DECL_RE = re.compile(
     r"^\s*(?:@\[[^\]]*\]\s*)?"

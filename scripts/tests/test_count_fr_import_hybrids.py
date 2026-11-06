@@ -82,11 +82,14 @@ def _write(path: Path, text: str) -> Path:
 
 def test_in_scope_excludes_vendored_fragments():
     assert not mod.in_scope(Path("x/.lake/packages/mathlib/Foo_en.lean"))
-    assert not mod.in_scope(Path("x/_peters/Foo_en.lean"))
     assert not mod.in_scope(Path("x/reference_docs/Foo_en.lean"))
+    # Lake externe de la regle i18n : chemin reel sous GameTheory/SocialChoice/
+    # (point 4 de la review Hermes de #24032 -- le fragment `/_peters/`
+    # d'origine ne matchait AUCUN segment de ce chemin).
+    assert not mod.in_scope(Path("MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/Choice_en.lean"))
     # Un repertoire exclu **a la racine mesuree** : sans son `/` de tete, le
-    # fragment `/_peters/` ne matchait pas et le perimetre fuyait.
-    assert not mod.in_scope(Path("_peters/Foo_en.lean"))
+    # fragment ne matchait pas et le perimetre fuyait.
+    assert not mod.in_scope(Path("social_choice_lean_peters/Foo_en.lean"))
     assert mod.in_scope(Path("x/conway_lean/Conway/Nim_en.lean"))
 
 
