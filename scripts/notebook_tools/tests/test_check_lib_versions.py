@@ -1348,6 +1348,152 @@ def test_checksum_declared_for_another_artifact_does_not_lift_the_finding(tmp_pa
     assert found[0]["library"] == "Autre.dll"
 
 
+def _archive_directive(
+    *,
+    artifact: str = "archive/QuikGraph.dll",
+    entry: str = "lib/netstandard2.0/QuikGraph.dll",
+    checksum: str = "2cde56fdd6e3b10eb89b2ee90a7c4cb39af446e6f0f6fee09268a48e9ea9731f",
+) -> str:
+    """Directive archive du témoin QuikGraph, sans télécharger le paquet."""
+    return (
+        "<!-- reproduction: "
+        + json.dumps(
+            {
+                "kind": "archive",
+                "artifact": artifact,
+                "url": (
+                    "https://api.nuget.org/v3-flatcontainer/quikgraph/2.5.0/"
+                    "quikgraph.2.5.0.nupkg"
+                ),
+                "version": "2.5.0",
+                "entry": entry,
+                "sha256": checksum,
+            },
+            separators=(",", ":"),
+        )
+        + " -->"
+    )
+
+
+def _notebook_with_reproduction(load: str, directive: str) -> dict:
+    payload = _notebook([load])
+    payload["cells"].append(
+        {"cell_type": "markdown", "source": [directive], "metadata": {}}
+    )
+    return payload
+
+
+def test_archive_entry_and_checksum_satisfy_the_reproduction_gate(tmp_path):
+    """Le nom du paquet ne se substitue pas à l'entrée DLL extraite (#24943)."""
+    root = _repo_with(tmp_path, [])
+    payload = _notebook_with_reproduction(
+        '#r "./_deps/QuikGraph.dll"', _archive_directive()
+    )
+    assert clv.binary_findings("series/nb.ipynb", payload, root) == []
+
+
+def test_archive_without_checksum_is_still_reported(tmp_path):
+    root = _repo_with(tmp_path, [])
+    payload = _notebook_with_reproduction(
+        '#r "./_deps/QuikGraph.dll"', _archive_directive(checksum="")
+    )
+    found = clv.binary_findings("series/nb.ipynb", payload, root)
+    assert [item["kind"] for item in found] == ["binary_sans_empreinte"]
+    assert "archive exige URL, version, entree et empreinte" in found[0]["reason"]
+
+
+def test_archive_checksum_of_another_entry_does_not_lift_the_finding(tmp_path):
+    """L'empreinte reste attachée à l'artefact ET au basename de l'entrée."""
+    root = _repo_with(tmp_path, [])
+    payload = _notebook_with_reproduction(
+        '#r "./_deps/QuikGraph.dll"',
+        _archive_directive(entry="lib/netstandard2.0/Autre.dll"),
+    )
+    found = clv.binary_findings("series/nb.ipynb", payload, root)
+    assert [item["kind"] for item in found] == ["binary_sans_empreinte"]
+
+
+def test_archive_requires_a_valid_sha256(tmp_path):
+    root = _repo_with(tmp_path, [])
+    payload = _notebook_with_reproduction(
+        '#r "./_deps/QuikGraph.dll"', _archive_directive(checksum="abc123")
+    )
+    found = clv.binary_findings("series/nb.ipynb", payload, root)
+    assert [item["kind"] for item in found] == ["binary_sans_empreinte"]
+
+
+def _build_directive(project: str) -> str:
+    return (
+        "<!-- reproduction: "
+        + json.dumps(
+            {
+                "kind": "build",
+                "artifact": "build/MyIA.AI.Shared.dll",
+                "command": f"dotnet build {project} -c Release",
+                "project": project,
+            },
+            separators=(",", ":"),
+        )
+        + " -->"
+    )
+
+
+def test_build_recipe_with_tracked_project_satisfies_the_gate(tmp_path):
+    """Le projet versionné atteste la présence de la recette après un clone."""
+    root = _repo_with(tmp_path, [])
+    project = "MyIA.AI.Shared/MyIA.AI.Shared.csproj"
+    _touch(root, project, track=True)
+    payload = _notebook_with_reproduction(
+        '#r "../../../MyIA.AI.Shared/bin/Release/net9.0/MyIA.AI.Shared.dll"',
+        _build_directive(project),
+    )
+    assert clv.binary_findings("series/sub/nb.ipynb", payload, root) == []
+
+
+def test_build_recipe_with_untracked_project_is_still_reported(tmp_path):
+    """Une commande qui nomme un fichier absent du clone n'est pas une preuve."""
+    root = _repo_with(tmp_path, [])
+    project = "MyIA.AI.Shared/MyIA.AI.Shared.csproj"
+    _touch(root, project, track=False)
+    payload = _notebook_with_reproduction(
+        '#r "../../../MyIA.AI.Shared/bin/Release/net9.0/MyIA.AI.Shared.dll"',
+        _build_directive(project),
+    )
+    found = clv.binary_findings("series/sub/nb.ipynb", payload, root)
+    assert [item["kind"] for item in found] == ["binary_sans_empreinte"]
+    assert "projet suivi par git" in found[0]["reason"]
+
+
+def test_build_recipe_cannot_escape_the_repository(tmp_path):
+    root = _repo_with(tmp_path, [])
+    payload = _notebook_with_reproduction(
+        '#r "./MyIA.AI.Shared.dll"',
+        _build_directive("../ailleurs/MyIA.AI.Shared.csproj"),
+    )
+    found = clv.binary_findings("series/nb.ipynb", payload, root)
+    assert [item["kind"] for item in found] == ["binary_sans_empreinte"]
+
+
+def test_malformed_reproduction_directive_fails_closed(tmp_path):
+    root = _repo_with(tmp_path, [])
+    payload = _notebook_with_reproduction(
+        '#r "./QuikGraph.dll"',
+        '<!-- reproduction: {"kind":"archive","artifact":"archive/QuikGraph.dll" -->',
+    )
+    found = clv.binary_findings("series/nb.ipynb", payload, root)
+    assert [item["kind"] for item in found] == ["binary_non_versionne"]
+
+
+def test_archive_url_does_not_accidentally_match_the_legacy_url_form(tmp_path):
+    """Un .nupkg n'est pas la DLL : sans empreinte, l'archive reste signalée."""
+    root = _repo_with(tmp_path, [])
+    payload = _notebook_with_reproduction(
+        '#r "./_deps/QuikGraph.dll"', _archive_directive(checksum="")
+    )
+    found = clv.binary_findings("series/nb.ipynb", payload, root)
+    assert found[0]["library"] == "QuikGraph.dll"
+
+
 @pytest.mark.parametrize(
     "line, form",
     [
