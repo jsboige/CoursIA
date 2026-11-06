@@ -1538,6 +1538,10 @@ TRANCHE10: list[Guard] = [
         blocking=True,
         needs_base=True,
         absorbed=True,
+        # #23068 : un perimetre PR non evaluable (sonde git en echec, rc 2)
+        # emet en NEUTRAL "incident du garde" -- pas un rouge bloquant qui
+        # accuserait la PR, pas un vert silencieux non plus.
+        warn_rc=(2,),
     ),
 ]
 
