@@ -1032,7 +1032,7 @@ toujours le cas en pratique :
 3. **Modèle mal spécifié** : si la relation n'est pas lineaire, l'ARD peut deconcentrer
    ses poids pour compenser, donnant une fausse impression de pertinence partout.
 ",,,,,,,,1021efa5f4d460f3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,86efa4f0,markdown,fr,899040c5a777d6a3,"### Exercice 2 : ARD avec 5 variables (3 non pertinentes)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,86efa4f0,markdown,fr,fb4dfe2453d5d3ed,"### Exercice 2 : ARD avec 5 variables (3 non pertinentes)
 
 Etendez le modèle ARD ci-dessus a un problème avec **5 variables** dont seules 2 sont pertinentes. Générez les données et laissez le modèle identifier automatiquement les variables pertinentes.
 
@@ -1063,8 +1063,8 @@ variables non pertinentes doivent être centrées près de 0, et leur `alpha` mo
 
 ### Aller plus loin
 
-Une variante interessante : un prior *horseshoe* (à **queues infiniment lourdes**) au lieu de Gamma + Normal, qui pénalise moins les petits coefficients et réduit le risque de faux negatifs (variables faiblement pertinentes eliminees a tort). Ce prior n'est **pas** dans PyMC (`pm.HorseShoe` n'existe pas) : il vient du paquet `pymc-extras`, qui n'est pas installé ici. Sans ce paquet, l'effet peut s'approcher en **durcissant le prior hyper** sur la précision — mais c'est un `beta` **plus petit** qu'il faut poser dans `pm.Gamma('alpha', alpha=1, beta=1)`, et non un `beta` plus grand. Ici `alpha` est la précision des poids (`tau = alpha`, donc `sigma_w = 1/sqrt(alpha)`), et l'hyperprior `Gamma(shape=1, rate=beta)` a pour moyenne `1/beta` : un `beta` plus grand tire `alpha` vers 0 et **relâche** le prior des poids au lieu de le resserrer. Mesure sur le prior compilé (PyMC 6.3.2, graine 42) : `beta` = 0.5 -> `sigma_w` 0.70 ; `beta` = 1 -> 0.99 ; `beta` = 10 -> 3.13 ; `beta` = 100 -> 9.90.
-",,,,,,,,899040c5a777d6a3,,,,,,,,,,,,,,,
+Une variante interessante : un prior *horseshoe* (à **queues infiniment lourdes**) au lieu de Gamma + Normal, qui pénalise moins les petits coefficients et réduit le risque de faux negatifs (variables faiblement pertinentes eliminees a tort). Ce prior n'est **pas** dans PyMC (`pm.HorseShoe` n'existe pas) : il vient du paquet `pymc-extras`, qui n'est pas installé ici. Sans ce paquet, l'effet peut s'approcher en **durcissant le prior hyper** sur la précision — mais c'est un `beta` **plus petit** qu'il faut poser dans `pm.Gamma('alpha', alpha=1, beta=1)`, et non un `beta` plus grand. Ici `alpha` est la précision des poids (`tau = alpha`, donc `sigma_w = 1/sqrt(alpha)`), et l'hyperprior `Gamma(shape=1, rate=beta)` a pour moyenne `1/beta` : un `beta` plus grand tire `alpha` vers 0 et **relâche** le prior des poids au lieu de le resserrer. Au point `alpha = 1/beta` (la moyenne de l'hyperprior), `sigma_w` = `1/sqrt(alpha)` vaut 0.71 / 1.00 / 3.16 / 10.00 pour `beta` = 0.5 / 1 / 10 / 100 — c'est-à-dire `sqrt(beta)`. La moyenne de `sigma_w` **sur le prior échantillonné** est plus élevée (1.27 / 1.80 / 5.68 / 17.97 pour les mêmes `beta`, PyMC 6.3.2, graine 42) : `1/sqrt(alpha)` est convexe, donc la moyenne de la sigma_w dépasse sa valeur au point alpha = 1/beta.
+",,,,,,,,fb4dfe2453d5d3ed,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,fc71ff76,code,fr,375e2dec00ac0467,"# Exercice 2 : ARD avec 5 variables dont 3 non pertinentes
 # Generez des donnees avec 5 features et laissez le modele ARD
 # identifier automatiquement lesquelles sont pertinentes
@@ -1138,7 +1138,7 @@ print(""=== TABLE LOO (valeurs reelles de ce run) ==="")
 print(f""{'Modele':<14}{'elpd':<10}{'se':<8}{'p':<8}"")
 for name, loo_obj in [(""1-gaussien"", loo_1g), (""2-gaussien"", loo_2g), (""ARD"", loo_ard)]:
     print(f""{name:<14}{float(loo_obj.elpd):<10.2f}{float(loo_obj.se):<8.2f}{float(loo_obj.p):<8.2f}"")",,,,,,,,32706f605c29ebc5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,add4cdf6,markdown,fr,f71b3b0afc6a4274,"### Interpretation des résultats LOO
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,add4cdf6,markdown,fr,8c188c83ac80b301,"### Interpretation des résultats LOO
 
 Les valeurs LOO viennent de la table réelle du run ci-dessus (objets `az.loo`, non transcrites) et permettent de comparer la complexité effective des modèles :
 
@@ -1148,11 +1148,11 @@ Les valeurs LOO viennent de la table réelle du run ci-dessus (objets `az.loo`, 
 | 2-gaussien | unimodales (50) | p_loo un peu plus élevé (2 mu + 2 sigma + 1 poids) | pénalité modérée, n'apporte rien ici |
 | ARD | ARD (100) | p_loo le plus élevé (3 poids + 3 alpha + 1 sigma) | le plus complexe |
 
-**Ces trois `elpd` ne sont pas comparables entre eux** : les deux modèles à gaussienne sont ajustés sur le jeu **unimodal** (50 observations), le modèle ARD sur son propre jeu de **100** observations. L'elpd est une **somme** sur les observations : l'écart de ~25 unités entre l'ARD (`-63.81`) et la 1-gaussienne (`-89.23`) mesure d'abord le **doublement du nombre d'observations**, pas une meilleure capacité prédictive — comparer des `elpd` bruts entre deux tailles d'échantillon n'a pas de sens. `p_loo`, lui, ne s'additionne pas sur les observations comme `elpd` : c'est un nombre effectif de paramètres, pas une somme — c'est donc la seule colonne comparable ligne à ligne. Il n'est pas invariant en `n` pour autant : rejoué sur le même modèle 1-gaussien (graine 42, ArviZ 1.3.0), `p_loo` passe de 1.39 (n = 20) à 1.82 (n = 400).
+**Ces trois `elpd` ne sont pas comparables entre eux** : les deux modèles à gaussienne sont ajustés sur le jeu **unimodal** (50 observations), le modèle ARD sur son propre jeu de **100** observations. L'elpd est une **somme** sur les observations : l'écart de ~25 unités entre l'ARD (`-63.81`) et la 1-gaussienne (`-89.23`) mesure d'abord le **doublement du nombre d'observations**, pas une meilleure capacité prédictive — comparer des `elpd` bruts entre deux tailles d'échantillon n'a pas de sens. `p_loo`, lui, s'additionne aussi sur les observations (`p_loo = Σ(lppd_i − elpd_i)`), mais il estime un **nombre effectif de paramètres** : sa somme croît **sous-linéairement** en `n`, alors que `elpd` croît proportionnellement au nombre d'observations. C'est ce décalage de croissance, et non une absence de somme, qui rend `p_loo` comparable d'une ligne à l'autre. Il n'est pas invariant en `n` pour autant : rejoué sur le même modèle 1-gaussien (graine 42, ArviZ 1.3.0, 500 tirages × 2 chaînes), `p_loo` passe de 1.39 (n = 20) à 1.82 (n = 400) — ×1,31 quand `n` est multiplié par 20, contre ×20,5 pour `elpd` (−26,80 → −549,38).
 
 Le **paramètre effectif p_loo** indique combien de paramètres contribuent réellement à l'ajustement. Un p_loo nettement inférieur au nombre nominal de paramètres signale qu'un prior contraint efficacement le modèle (cas ARD).
 
-Le diagnostique Pareto k (ci-dessous) vérifie la qualité de l'approximation PSIS-LOO : si tous les k sont inférieurs à 0.7, l'approximation est fiable.",,,,,,,,f71b3b0afc6a4274,,,,,,,,,,,,,,,
+Le diagnostique Pareto k (ci-dessous) vérifie la qualité de l'approximation PSIS-LOO : si tous les k sont inférieurs à 0.7, l'approximation est fiable.",,,,,,,,8c188c83ac80b301,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,c1d2e3f0,code,fr,d143b9b777051b83,"# Diagnostique Pareto k (qualite de l'approximation LOO)
 # k < 0.7 = bonne approximation, k > 0.7 = probleme potentiel
 print(""Diagnostique Pareto k :"")
