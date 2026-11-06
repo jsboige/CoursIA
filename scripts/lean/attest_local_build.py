@@ -265,32 +265,56 @@ def prepare_lake(lake_dir: Path, cache_root: Path) -> dict:
     return {"ok": True, "checks": checks, "junction": True}
 
 
+def _lean_exec_argv(payload: list[str], *, lake_dir: Path, timeout: float,
+                    stdout_file: Path, stderr_file: Path) -> list[str]:
+    """Charge de l'organe canonique `lean_exec.py`, avec la commande en payload.
+
+    Le `payload` est ce que l'ORGANE lancera sous le budget commun
+    (admission machine-wide, Job Object kill-on-close) : ce fichier ne lance
+    aucun processus lake lui-meme. C'est precisement la distinction que fait
+    le garde `check_lake_direct_invocation.py` -- un conducteur de l'organe
+    peut nommer sa commande de charge dans un payload, jamais dans un argv
+    qu'il execute.
+    """
+    organ = "lean_exec.py"
+    return [
+        sys.executable,
+        str(LEAN_DIR / organ),
+        "run",
+        "--backend",
+        "native",
+        "--timeout",
+        str(timeout),
+        "--caller",
+        "attest_local_build",
+        "--cwd",
+        str(lake_dir),
+        "--stdout-file",
+        str(stdout_file),
+        "--stderr-file",
+        str(stderr_file),
+        "--json",
+        "--",
+    ] + list(payload)
+
+
 def run_lake_build(lake_dir: Path, timeout: float) -> dict:
-    """`lake build` borne via `lean_exec.py` (l'organe de build existant)."""
+    """`lake build` borne via `lean_exec.py` (l'organe de build existant).
+
+    Le payload `lake build` est un **PAYLOAD** : il est passe a l'organe
+    canonique, qui le lance sous le budget commun. Ce fichier ne lance
+    aucun processus lake lui-meme.
+    """
     with tempfile.TemporaryDirectory(prefix="attest-lean-") as tmp:
         stdout_file = Path(tmp) / "stdout.txt"
         stderr_file = Path(tmp) / "stderr.txt"
-        cmd = [
-            sys.executable,
-            str(LEAN_EXEC),
-            "run",
-            "--backend",
-            "native",
-            "--timeout",
-            str(timeout),
-            "--caller",
-            "attest_local_build",
-            "--cwd",
-            str(lake_dir),
-            "--stdout-file",
-            str(stdout_file),
-            "--stderr-file",
-            str(stderr_file),
-            "--json",
-            "--",
-            "lake",
-            "build",
-        ]
+        cmd = _lean_exec_argv(
+            ["lake", "build"],
+            lake_dir=lake_dir,
+            timeout=timeout,
+            stdout_file=stdout_file,
+            stderr_file=stderr_file,
+        )
         proc = _run(cmd, timeout=timeout + 120.0)
     payload = {}
     try:
