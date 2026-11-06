@@ -24,7 +24,7 @@ class LSTMForecasting(QCAlgorithm):
     - StandardScaler pre-processing in a Pipeline
     - Monthly re-training on a 252-day rolling window
 
-    Features (20 per symbol):
+    Features (18 per symbol):
     - Lag returns: 1, 2, 3, 5, 10, 20 days
     - Rolling vol: 5, 10, 20 days
     - RSI-like: 14-day normalised
@@ -124,7 +124,7 @@ class LSTMForecasting(QCAlgorithm):
 
     def _build_features(self, returns_list):
         """
-        Build a 20-element feature vector from a returns list.
+        Build an 18-element feature vector from a returns list.
         Returns None if not enough data.
         """
         if len(returns_list) < self._lookback + 5:

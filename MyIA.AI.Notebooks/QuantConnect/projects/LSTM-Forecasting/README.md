@@ -11,7 +11,7 @@ Malgré son nom, le projet n'utilise pas de LSTM. Chaque ETF a son propre percep
 
 - **Univers :** SPY, QQQ, IWM, EFA, TLT, GLD, IEF, en données journalières.
 - **Rendements :** indicateur ROC sur une séance par ETF, amorcé au démarrage sur 342 jours calendaires d'historique (252 + 60 + 30).
-- **Variables (20 par ETF) :** rendements décalés de 1, 2, 3, 5, 10 et 20 séances ; volatilités sur 5, 10 et 20 séances ; un indicateur de type RSI sur 14 séances, ramené entre 0 et 1 ; momentums cumulés sur 5, 10 et 20 séances ; autocorrélations aux décalages 1, 2 et 5 ; rendements moyens sur 5 et 10 séances.
+- **Variables (18 par ETF) :** rendements décalés de 1, 2, 3, 5, 10 et 20 séances ; volatilités sur 5, 10 et 20 séances ; un indicateur de type RSI sur 14 séances, ramené entre 0 et 1 ; momentums cumulés sur 5, 10 et 20 séances ; autocorrélations aux décalages 1, 2 et 5 ; rendements moyens sur 5 et 10 séances.
 - **Étiquette :** 1 si le rendement de la séance suivante est positif, 0 sinon.
 - **Entraînement :** au premier rééquilibrage de chaque mois, un modèle par ETF sur les 252 derniers rendements (`random_state=42`, arrêt précoce sur 15 % de validation, 300 itérations au plus). Un ETF dont l'échantillon ne contient qu'une seule classe n'est pas entraîné.
 - **Rééquilibrage :** chaque lundi, 30 minutes après l'ouverture.
