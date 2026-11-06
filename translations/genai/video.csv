@@ -580,10 +580,25 @@ if dependencies.get('moviepy', False) and test_video_path.exists():
     check.close()
 else:
     print(""moviepy ou video de test indisponible - exercice saute"")",,,,,,,,6e798b8e1dc69554,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1-Video-Operations-Basics.ipynb,cell-8,markdown,fr,60c9f89d7d2f7ab4,"### Lecture du résultat — exemple guidé 1 (fondu enchaîné)
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1-Video-Operations-Basics.ipynb,cell-8,markdown,fr,5c5b6a17aa5b75ba,"### Lecture du résultat — exemple guidé 1 (fondu enchaîné)
 
 - **Durée `4.00s` et non `5.00s`** : trois segments de 1,667 s mis bout à bout font 5 s, mais chaque fondu fait **chevaucher** deux segments pendant 0,5 s. Avec 2 fondus, on perd 2 × 0,5 = 1 s — la signature du chevauchement (`padding=-0.5`) plutôt qu'un simple enchaînement. Cette durée est celle de la **composition en mémoire** ; plus bas, l'analyse comparative de la Section 3 **re-sonde le fichier écrit** (`ffmpeg.probe` sur `crossfade.mp4` → `4.0` s). C'est cette seconde lecture, indépendante de moviepy, qui ferme la vérification : les deux mesures concordent.
-- **La figure du milieu montre deux cercles semi-transparents** : c'est le fondu enchaîné lui-même — la fin du segment 1 (cercle à droite) et le début du segment 2 (cercle à gauche) sont visibles en même temps, chacun à ~50 % d'opacité. Un simple `FadeOut`/`FadeIn` aurait au contraire fait passer l'image par le noir.",,,,,,,,60c9f89d7d2f7ab4,,,,,,,,,,,,,,,
+- **La figure du milieu montre deux cercles semi-transparents** : c'est le fondu enchaîné lui-même — la fin du segment 1 (cercle à droite) et le début du segment 2 (cercle à gauche) sont visibles en même temps, chacun à ~50 % d'opacité. Un simple `FadeOut`/`FadeIn` aurait au contraire fait passer l'image par le noir.
+
+**Les manipulations moviepy, en un coup d'œil**
+
+| Opération | Méthode | Description |
+|-----------|---------|-------------|
+| Trimming | `clip.subclipped(start, end)` | Extrait un segment temporel (moviepy 2.x) |
+| Concatenation | `concatenate_videoclips([a, b])` | Joint bout a bout plusieurs clips |
+| Overlay texte | `CompositeVideoClip([clip, txt])` | Superpose des éléments visuels |
+| Ecriture | `clip.write_videofile(path)` | Encode et sauvegarde le résultat |
+
+**Points clés** :
+1. moviepy travaille de maniere paresseuse (lazy) : les frames ne sont calculees qu'a l'ecriture
+2. Toujours fermer les clips avec `.close()` pour liberer les handles FFmpeg
+3. Dans moviepy 2.x, `TextClip(text=..., font=chemin_ttf, ...)` rend le texte via Pillow : il faut un fichier de police TTF (ici DejaVuSans, embarquee avec matplotlib)
+",,,,,,,,5c5b6a17aa5b75ba,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1-Video-Operations-Basics.ipynb,cell-9,code,fr,63cd4a40d4ca61e5,"# Analyse des metadonnees video avec ffmpeg-python
 if enable_ffmpeg_probe and dependencies.get('ffmpeg-python', False) and test_video_path.exists():
     import ffmpeg
@@ -6244,9 +6259,11 @@ run_img2vid = True                 # Tester image-to-video
 save_as_mp4 = True                 # Sauvegarder en MP4
 save_results = True
 ",,,,,,,,aa62658284702950,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,ca225672,markdown,fr,76752511c3ed728f,"## Setup de l'environnement
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,ca225672,markdown,fr,dddf3d189678c2fb,"## Setup de l'environnement
 
-Vérification des dépendances, chargement de la configuration depuis le fichier `.env` (recherche dans les dossiers parents), et vérification de la disponibilité du GPU.",,,,,,,,76752511c3ed728f,,,,,,,,,,,,,,,
+Vérification des dépendances, chargement de la configuration depuis le fichier `.env` (recherche dans les dossiers parents), et vérification de la disponibilité du GPU.
+
+Deux modes d'exécution existent (`notebook_mode` : `interactive` ou `batch`) ; ce carnet a été rejoué en **batch** : les widgets d'interaction sont désactivés et les sorties affichées sont celles du mode batch — la cellule interactive de fin de carnet affichera simplement « Mode batch - Interface interactive desactivee ». La configuration est lue depuis le `.env` du répertoire `GenAI/`, jamais affiché en chemin absolu : la sortie reste identique d'une machine à l'autre.",,,,,,,,dddf3d189678c2fb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-2,code,fr,b5dcb9f0dfdbc611,"# Setup environnement et imports
 import os
 import sys
@@ -6310,7 +6327,7 @@ print(f""LTX-Video - Generation Video Rapide et Legere"")
 print(f""Date : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
 print(f""Mode : {notebook_mode}"")
 print(f""Frames : {num_frames}, Steps : {num_inference_steps}, CFG : {guidance_scale}"")",,,,,,,,b5dcb9f0dfdbc611,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,l5yxeky5zub,markdown,fr,40ff54fd815de964,"Les imports Python sont établis et `.env` est chargé. La cellule suivante vérifie la disponibilité du GPU et des dépendances. Cette étape détermine si la génération sera exécutée localement ou basculera en mode pédagogique, sans génération vidéo.",,,,,,,,40ff54fd815de964,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,l5yxeky5zub,markdown,fr,0f52198f70abe98c,"La sortie confirme le socle : `.env` chargé depuis `GenAI/.env`, helpers GenAI importés, et la configuration effective récapitulée — **mode batch**, **25 frames**, **20 steps**, **CFG 7.5**. Avec la résolution 704×480 et 8 fps définis en tête de carnet, chaque génération produira ~3 secondes de vidéo. La cellule suivante vérifie la disponibilité du GPU et des dépendances : c'est elle qui détermine si la génération sera exécutée localement ou basculera en mode pédagogique, sans génération vidéo.",,,,,,,,0f52198f70abe98c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-3,code,fr,19a52f35694c690f,"# Chargement .env et verification GPU
 # Chargement variables d'environnement
 from dotenv import load_dotenv
@@ -6514,10 +6531,13 @@ if run_generation:
 else:
     print(""Chargement pipeline desactive"")
 ",,,,,,,,07e8cd9cd0fca166,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-6,markdown,fr,659bfc3c7859a7cc,"## Section 2 : Generation text-to-video
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-6,markdown,fr,14ba7342fcdbd9c1,"## Section 2 : Generation text-to-video
 
 LTX-Video excelle dans la generation rapide de videos courtes a partir de prompts textuels.
-Son architecture legere permet des itérations plus rapides que HunyuanVideo.",,,,,,,,659bfc3c7859a7cc,,,,,,,,,,,,,,,
+Son architecture legere permet des itérations plus rapides que HunyuanVideo.
+
+
+La cellule suivante fait tout en un appel : prompt, 20 étapes de débruitage, guidance 7.5 — puis extrait quelques frames pour l'inspection visuelle et sauvegarde la vidéo complète en MP4 dans le dossier d'export.",,,,,,,,14ba7342fcdbd9c1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-7,code,fr,1b638fce93d4fb3c,"# Generation text-to-video
 print(""\n--- GENERATION TEXT-TO-VIDEO ---"")
 print(""="" * 40)
@@ -7141,7 +7161,7 @@ if run_generation and pipe_t2v is not None:
     #     print(f""  {priority}: {rec['label']}"")
 else:
     print(""Benchmark désactivé (pipeline non disponible)"")",,,,,,,,753b50473793f791,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,omgz5rmv8zc,markdown,fr,017cd6a1572d5578,"Le test de génération valide le fonctionnement du pipeline. À vous d'implémenter dans la cellule suivante la logique de recommandation automatique : elle doit sélectionner la meilleure configuration selon le cas d'usage (rapidité, qualité ou équilibre).",,,,,,,,017cd6a1572d5578,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,omgz5rmv8zc,markdown,fr,0d9344aa5796f597,"La cellule précédente a préparé quatre configurations de génération — `Rapide` (10 steps, CFG 5.0), `Standard` (20, 7.5), `Qualité` (30, 7.5) et `CFG élevé` (20, 9.0) — sans les exécuter : les appels à `benchmark_ltx_configs()` y sont laissés en commentaire, en attente de l'implémentation des deux cellules suivantes.",,,,,,,,0d9344aa5796f597,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,fn1wu7uxfo6,code,fr,cf3d41701323aa56,"import pandas as pd
 
 # Exercice: Fonction pour recommander la meilleure configuration
@@ -7162,7 +7182,7 @@ def recommend_config(df_results: pd.DataFrame, priority: str = ""balanced"") -> 
     #   - ""quality"" : maximiser quality_score
     #   - ""balanced"" : maximiser quality_score / time
     pass",,,,,,,,cf3d41701323aa56,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,r77ytreg2hq,markdown,fr,1a4d91b891dfccb9,"La logique de recommandation doit établir quand privilégier vitesse ou qualité. À vous d'écrire dans la cellule suivante le benchmark systématique qui mesurera les temps de génération, pour valider ces recommandations.",,,,,,,,1a4d91b891dfccb9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,r77ytreg2hq,markdown,fr,8b34d209f1b58791,"La fonction `recommend_config()` (cellule précédente) et la fonction `benchmark_ltx_configs()` (cellule suivante) forment un couple : la seconde produit le DataFrame de mesures — étiquette, steps, CFG, temps, pic VRAM, score de qualité —, la première en déduit la recommandation selon la priorité choisie.",,,,,,,,8b34d209f1b58791,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,z9exy9o8q6,code,fr,859ee4bbfc833066,"# Exercice: Fonction de benchmark de configurations LTX-Video
 def benchmark_ltx_configs(prompt: str, configs: List[Dict]) -> pd.DataFrame:
     """"""
@@ -7197,7 +7217,7 @@ def benchmark_ltx_configs(prompt: str, configs: List[Dict]) -> pd.DataFrame:
     
     # Exercice: Convertir en DataFrame pandas
     pass",,,,,,,,859ee4bbfc833066,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,j2pdq622ti,markdown,fr,93ba34ea74bc50c9,"La fonction `benchmark_ltx_configs()` reste à compléter (exercice 4, cellule ci-dessus). La cellule suivante est le mode interactif : elle n'est exécutée que si `notebook_mode` vaut `interactive` et `skip_widgets` est faux. Elle demande alors un prompt par `input()` et génère une vidéo avec la graine 123. Sinon, elle affiche « Mode batch - Interface interactive desactivee ».",,,,,,,,93ba34ea74bc50c9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,j2pdq622ti,markdown,fr,5b0b328bebcd06b1,"La cellule suivante est le mode interactif : elle n'est exécutée que si `notebook_mode` vaut `interactive` et `skip_widgets` est faux. Elle demande alors un prompt par `input()` et génère une vidéo avec la graine 123. Sinon, elle affiche « Mode batch - Interface interactive desactivee ».",,,,,,,,5b0b328bebcd06b1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-13,code,fr,c5b80928e92f5e78,"# Mode interactif
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""\n--- MODE INTERACTIF ---"")
@@ -7250,7 +7270,9 @@ if notebook_mode == ""interactive"" and not skip_widgets:
             print(""Passage a la suite du notebook"")
 else:
     print(""\nMode batch - Interface interactive desactivee"")",,,,,,,,c5b80928e92f5e78,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,hjxi4njdt5u,markdown,fr,768c8a18de607674,"Les fonctions d'exercice ci-dessus sont des squelettes à compléter : la cellule suivante ne les appelle pas. Elle résume la session : paramètres, pic de VRAM (14.1 GB à l'exécution enregistrée), fichiers produits et prochaines étapes.",,,,,,,,768c8a18de607674,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,hjxi4njdt5u,markdown,fr,482e98ba46fecde1,"### Lecture du résultat : mode batch
+
+La sortie « Mode batch - Interface interactive desactivee » indique que ce carnet a été exécuté en mode batch : la branche interactive n'a pas été empruntée, aucun prompt utilisateur n'a été demandé, aucune vidéo supplémentaire n'a été générée. C'est le comportement attendu en exécution automatisée (Papermill) : les cellules d'interaction sont conçues pour rester inertes.",,,,,,,,482e98ba46fecde1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-14,code,fr,74c4462b92cdbd39,"# Statistiques de session et prochaines etapes
 print(""\n--- STATISTIQUES DE SESSION ---"")
 print(""="" * 40)
@@ -7570,7 +7592,7 @@ print(f""\n{'='*50}"")
 print(f""Generation activee : {run_generation}"")
 print(f""Backend pret : {generation_ready}"")
 print(f""{'='*50}"")",,,,,,,,f329d66d3c6214de,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,735a80be,markdown,fr,bff7994e3e05ec99,"## Section 1 : Architecture Wan 2.1/2.2
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,735a80be,markdown,fr,e91d88edae9dfd77,"## Section 1 : Architecture Wan 2.1/2.2
 
 Wan est une famille de modèles de generation video developpes par Alibaba. La serie 2.1/2.2
 se distingue par sa comprehension multilingue et son contrôle fin du mouvement.
@@ -7602,7 +7624,12 @@ se distingue par sa comprehension multilingue et son contrôle fin du mouvement.
 | Coherence temporelle | Bonne | Très bonne |
 | Motion control | Basique | Camera paths avancees |
 | Resolutions | 480p-720p | 480p-1080p |
-| VRAM (1.3B) | ~8 GB | ~8 GB |",,,,,,,,bff7994e3e05ec99,,,,,,,,,,,,,,,
+| VRAM (1.3B) | ~8 GB | ~8 GB |
+
+### Nombre de frames réalisables
+
+Le VAE temporel de Wan compresse l'axe du temps par un facteur 4 : seuls les nombres de frames de la forme **4k+1** (1, 5, 9, 13, 17, …) sont réalisables. Un nombre demandé hors de cette série (ici 16) est arrondi par le bas à la plus grande valeur légale inférieure ou égale — d'où 13 images pour une demande de 16 (mécanisme détaillé dans l'interprétation de la section 2).
+",,,,,,,,e91d88edae9dfd77,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,cb5c8f19,code,fr,430e2c4f86a9772c,"# Fonction de generation unifiee (API ou Local)
 import imageio
 
@@ -7855,7 +7882,7 @@ def enrich_prompt(prompt: str) -> str:
 test_prompt = ""a cat on a sofa""
 print(f""Prompt original : {test_prompt}"")
 print(""Exercice a completer"")",,,,,,,,4f558d980cdae88b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,a0045a37,markdown,fr,08c26330cc5ca13c,"### Interpretation : Prompts multilingues
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,a0045a37,markdown,fr,558947a09b8a7d4a,"### Interpretation : Prompts multilingues
 
 Wan 2.1 utilise le text encoder UMT5-XXL (une variante de T5) qui a ete entraine sur de multiples langues.
 Le carnet ne teste que le français et l'anglais, sur un seul couple de prompts.
@@ -7871,11 +7898,11 @@ Le carnet ne teste que le français et l'anglais, sur un seul couple de prompts.
 
 **Durée et nombre de frames** (sorties de la section 2) :
 - 130,1 s pour le prompt FR, premier appel de génération de la session, contre 28,6 s pour le prompt EN, avec les mêmes paramètres et le même seed. L'écart ne se lit pas comme un effet de la langue : le premier appel peut porter un coût que le second n'a pas (hypothèse, non mesurée dans ce carnet).
-- Les planches portent « Frame x/13 » alors que la cellule de paramètres et les statistiques de session annoncent 16 frames. Le clip rendu compte 13 images ; le carnet n'explique pas cet écart.
+- Les planches portent « Frame x/13 » alors que la cellule de paramètres et les statistiques de session annoncent 16 frames. Le clip rendu compte 13 images, et c'est attendu : le VAE temporel de Wan compresse l'axe du temps par un facteur 4, de sorte que seuls les nombres de frames de la forme 4k+1 (1, 5, 9, 13, 17, …) sont réalisables. Le nœud ComfyUI qui taille le tenseur latent calcule `(longueur − 1) // 4 + 1` frames latentes ; pour 16 frames demandées, `(16 − 1) // 4 + 1 = 4` frames latentes, que le VAE décode en 13 images (4 × 4 − 3). La demande est donc arrondie par le bas à la plus grande valeur légale inférieure ou égale à 16 — ici 13, jamais 17.
 
 **Comparaison des modes** :
 - **API ComfyUI** : pas de gestion GPU côté client ; c'est le mode du run committé. La comparaison de vitesse avec le mode local n'est pas mesurée dans ce carnet.
-- **Local diffusers** : Plus de contrôle (debug, personnalisation), necessite GPU",,,,,,,,08c26330cc5ca13c,,,,,,,,,,,,,,,
+- **Local diffusers** : Plus de contrôle (debug, personnalisation), necessite GPU",,,,,,,,558947a09b8a7d4a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,55fb18ee,markdown,fr,ad1dac2b956e68cd,"## Section 3 : Contrôle de mouvement et camera
 
 Wan permet de contrôler le mouvement de la camera a travers des mots-cles spécifiques dans le prompt.",,,,,,,,ad1dac2b956e68cd,,,,,,,,,,,,,,,
@@ -8767,17 +8794,17 @@ if run_generation and pipe is not None:
         print(f""  MP4 sauvegarde : {mp4_path.name}"")
 else:
     print(""\nGeneration desactivee"")",,,,,,,,70f3a43cbf70807b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,cell-8,markdown,fr,9d2a1071f69d3b11,"### Interpretation : Première animation SVD
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,cell-8,markdown,fr,d1b97654efedd11c,"### Interpretation : Première animation SVD
 
-Le notebook **exécute réellement** Stable Video Diffusion. La cellule `cell-5` a
+Le notebook **exécute réellement** Stable Video Diffusion. La cellule de chargement du pipeline SVD (Section 1) a
 chargé le pipeline `stable-video-diffusion-img2vid-xt` (fp16) sur RTX 3090 (kernel
-`bonsai-gpu`, diffusers 0.38), et la cellule `cell-7` a généré une vidéo de 25 frames à partir de l'image
+`bonsai-gpu`, diffusers 0.38), et la cellule de création des images de test et de première animation (Section 2) a généré une vidéo de 25 frames à partir de l'image
 synthétique « Paysage avec montagnes » :
 
 | Aspect | Valeur mesurée | Signification |
 |--------|---------------|---------------|
-| **Temps de génération** | 101.3 s (sortie de `cell-7`) | 25 frames, 25 étapes de débruitage (`num_inference_steps = 25` dans `cell-1`) |
-| **VRAM pic** | 10.9 GB (sortie de `cell-7`) | Plus léger que HunyuanVideo (~18 GB, non mesuré ici) |
+| **Temps de génération** | 101.3 s (sortie de la cellule de première animation, Section 2) | 25 frames, 25 étapes de débruitage (`num_inference_steps = 25` dans la cellule de paramètres Papermill) |
+| **VRAM pic** | 10.9 GB (sortie de la cellule de première animation, Section 2) | Plus léger que HunyuanVideo (~18 GB, non mesuré ici) |
 | **Frames générées** | 25 (variante XT) | 25 / 7 fps ≈ 3.6 s |
 | **Fidélité frame 0** | proche de l'image d'entrée (non mesuré ici) | SVD conditionne la vidéo sur la source |
 
@@ -8796,14 +8823,14 @@ chunks de frames gère déjà la VRAM du décodeur.
 | **LTX-Video** | Text/Img/Vid | 14.1 GB (mesuré dans 02-2) | Rapide | Prototypage rapide |
 | **Wan** | Text-to-video | ~10 GB (non mesuré dans la série) | Moyenne | Prompts multilingues |
 
-Seule la ligne SVD est mesurée dans ce carnet (sortie de `cell-7` : « VRAM pic : 10.9 GB »). La valeur LTX-Video provient de la sortie committée de `02-2-LTX-Video-Lightweight.ipynb` (« VRAM pic : 14.1 GB », `cell-7`). Les valeurs HunyuanVideo et Wan sont des ordres de grandeur que les sorties de la série ne mesurent pas : `02-1` et `02-3` n'affichent que « VRAM pic : 0.0 GB » (backend ComfyUI distant).
+Seule la ligne SVD est mesurée dans ce carnet (sortie de la cellule de première animation, Section 2 : « VRAM pic : 10.9 GB »). La valeur LTX-Video provient de la sortie committée de `02-2-LTX-Video-Lightweight.ipynb` (« VRAM pic : 14.1 GB », mesuré dans le carnet 02-2). Les valeurs HunyuanVideo et Wan sont des ordres de grandeur que les sorties de la série ne mesurent pas : `02-1` et `02-3` n'affichent que « VRAM pic : 0.0 GB » (backend ComfyUI distant).
 
 **Licence** : Stable Video Diffusion Community License — aucune exclusion
 territoriale, l'utilisateur possède les outputs (détails dans la cellule licence
 ci-dessus). À contraster avec MiniMax H3 (notebook 02-6) dont la licence exclut
 l'UE, le Royaume-Uni, la Corée du Sud et les États-Unis : deux modèles vidéo de
 qualité comparable, une conformité radicalement différente.
-",,,,,,,,9d2a1071f69d3b11,,,,,,,,,,,,,,,
+",,,,,,,,d1b97654efedd11c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,cell-9,code,fr,2c5eb04353922c82,"# Test de differentes valeurs de motion_bucket_id
 if run_generation and pipe is not None:
     print(""\n--- CONTROLE MOTION BUCKET ---"")
@@ -8914,7 +8941,7 @@ else:
     print(""  0-60   : Mouvement tres subtil (ideal pour portraits)"")
     print(""  80-150  : Mouvement modere (usage general)"")
     print(""  150-255 : Mouvement fort (scenes dynamiques)"")",,,,,,,,2c5eb04353922c82,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,cell-10,markdown,fr,88aa77262a79276c,"## Section 3 : Contrôle du mouvement avec motion_bucket_id
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,cell-10,markdown,fr,f3c2af79bad566fe,"## Section 3 : Contrôle du mouvement avec motion_bucket_id
 
 Le paramètre `motion_bucket_id` contrôle l'intensité du mouvement généré. La cellule
 précédente a exécuté SVD **trois fois** sur la **même image source texturée** (un
@@ -8928,7 +8955,7 @@ moyenne mesure la réponse réelle du modèle :
 | **127 (normal)** | 13.30 | 104.7 s | 10.9 GB |
 | **200 (fort)** | 11.37 | 102.3 s | 10.9 GB |
 
-Valeurs reprises à la précision imprimée du récapitulatif de `cell-9`.
+Valeurs reprises à la précision imprimée du récapitulatif de la cellule de balayage de `motion_bucket_id` (Section 3).
 
 **Lecture honnête du résultat.** Sur cette réalisation unique (seed 42), la diff
 inter-frames est **non monotone** : le bucket intermédiaire (127) produit le mouvement
@@ -8942,8 +8969,8 @@ directe que **caractériser l'effet d'un paramètre génératif exige de moyenne
 graines**, pas de lire une seule réalisation.
 
 **Pourquoi malgré tout une image texturée ?** Sur une image synthétique lisse (gradient
-uniforme), la réponse est **très faible** : 0.32 pour le paysage synthétique (`cell-11`, Section 4,
-avec `motion_bucket_id` = 127 défini dans `cell-1`), car SVD n'a aucune texture
+uniforme), la réponse est **très faible** : 0.32 pour le paysage synthétique (cellule d'animation multi-images, Section 4,
+avec `motion_bucket_id` = 127 défini dans la cellule de paramètres Papermill), car SVD n'a aucune texture
 haute-fréquence à déformer. L'image texturée donne au moins au modèle une *matière* à
 animer : la diff inter-frames vaut 11.37 à 13.30 dans le tableau ci-dessus. Le mouvement
 est réel et mesurable ; sa *pilothabilité* fine par `motion_bucket_id` sur une seule
@@ -8961,7 +8988,7 @@ stochasticité.
 **Code pour reproduire** : la cellule précédente est le code canonique. Points clés :
 `StableVideoDiffusionPipeline` sans `enable_vae_slicing` (absente en diffusers 0.38+),
 `decode_chunk_size=8` pour la VRAM, `motion_bucket_id` varie, seed et image fixes.
-",,,,,,,,88aa77262a79276c,,,,,,,,,,,,,,,
+",,,,,,,,f3c2af79bad566fe,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,cell-11,code,fr,553f5ae60ee1ce1c,"# Animation de differents types d'images
 if run_generation and pipe is not None:
     print(""\n--- ANIMATION MULTI-IMAGES ---"")
@@ -9369,10 +9396,10 @@ source_texture = str(GENAI_ROOT / 'Video' / '02-Advanced' / 'assets' / 'svd_sour
 resultat_demo = pipeline_animation_svd(source_texture)
 if resultat_demo is not None:
     print(f""Pipeline complet : motion_bucket_id optimal = {resultat_demo['best']['bucket_id']}"")",,,,,,,,88a16cff117719ad,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,cell-14,markdown,fr,afe161d9c1e739fd,"## Section 4 : Animation de différents types d'images
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,cell-14,markdown,fr,256986d64da2f1b4,"## Section 4 : Animation de différents types d'images
 
-La cellule d'animation multi-images (`cell-11`, plus haut dans le carnet, avant les exercices) a animé les **trois images synthétiques** de test avec SVD
-(même `motion_bucket_id` = 127, même seed 42) et mesuré le mouvement réalisé. Résultat réel (sortie de `cell-11`) :
+La cellule d'animation multi-images (plus haut dans le carnet, avant les exercices) a animé les **trois images synthétiques** de test avec SVD
+(même `motion_bucket_id` = 127, même seed 42) et mesuré le mouvement réalisé. Résultat réel (sortie de la cellule d'animation multi-images) :
 
 | Image source | Temps | Mouvement moy. | Mouvement max |
 |--------------|-------|----------------|---------------|
@@ -9382,9 +9409,9 @@ La cellule d'animation multi-images (`cell-11`, plus haut dans le carnet, avant 
 
 **Lecture : le contenu pilote le mouvement.** Deux des trois images (paysage, coucher
 de soleil) produisent un mouvement **quasi nul** (0.32) — ce sont des **dégradés
-lisses** générés procéduralement (`create_test_image`, `cell-7`), sans détail haute-fréquence : SVD n'a aucune texture
+lisses** générés procéduralement (`create_test_image`, dans la cellule de création des images de test, Section 2), sans détail haute-fréquence : SVD n'a aucune texture
 à déformer, donc rien ne bouge. Seule la silhouette portrait (cercles, polygones, bords
-franchs) donne au modèle des contours à animer (3.11, soit environ 9.7 fois plus : 3.11 / 0.32).
+francs) donne au modèle des contours à animer (3.11, soit environ 9.7 fois plus : 3.11 / 0.32).
 
 **C'est le même phénomène qu'à la Section 3** : un gradient lisse est un cas
 **dégénéré** pour SVD — c'est précisément pourquoi la Section 3 utilise une image
@@ -9406,7 +9433,7 @@ détail (feuillage, textures, mouvement naturel potentiel). Une image trop lisse
 simple reste statique. C'est ce que l'**Exercice 1** (`compare_image_categories`)
 explore : comparer l'amplitude de mouvement générée sur des catégories d'images de
 textures croissantes.
-",,,,,,,,afe161d9c1e739fd,,,,,,,,,,,,,,,
+",,,,,,,,256986d64da2f1b4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-00,markdown,fr,33e0c98ad4ba9c0a,"# LTX-2 - Generation Audiovisuelle Conjointe (Video + Audio)
 
 **Module :** 02-Video-Advanced
@@ -10399,7 +10426,9 @@ guidance_scale = 6.0               # Valeur par defaut informative (CFG classiqu
 run_benchmark = True               # Executer le benchmark
 save_as_mp4 = True                 # Conserver les MP4 telecharges cote notebook
 save_results = True",,,,,,,,94ab717dcd847deb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,v9rfo38sg48,markdown,fr,693f9e47189797b9,"On importe ensuite toutes les bibliotheques necessaires : diffusers pour les modèles de generation, numpy et PIL pour la manipulation des frames, et les outils de mesure de performance.",,,,,,,,693f9e47189797b9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,v9rfo38sg48,markdown,fr,129324d5cad7acf1,"On importe ensuite toutes les bibliotheques necessaires : diffusers pour les modèles de generation, numpy et PIL pour la manipulation des frames, et les outils de mesure de performance.
+
+Ou vit chaque dependance dans ce carnet : la generation ne se fait **pas** ici -- elle passe par le serveur ComfyUI, et les imports servent la **mesure** du resultat plus que sa production. `numpy` alimente les metriques sur les frames (coherence temporelle, nettete), `PIL` compose les grilles comparatives, `imageio` extrait les frames des MP4 telecharges, `matplotlib` trace les courbes. La sortie ci-dessus le confirme d'entree : ce qui s'affiche apres les imports, c'est la configuration du banc (`Mode : batch`, `Modeles a tester : ['hunyuan', 'wan']`), pas un chargement de poids. Concretement, le role client se joue en quatre gestes que les cellules suivantes deroulent : construire le **workflow** ComfyUI (le graphe de noeuds parametre par modele, tire du `MODEL_REGISTRY`), le poster au serveur, attendre la fin de la generation en interrogeant l'etat, puis telecharger le MP4 produit. Chaque metrique du carnet nait de ce que l'etape finale ramene : des frames extraites d'un fichier que le serveur a calcule.",,,,,,,,129324d5cad7acf1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,cell-setup,code,fr,ce5d4cc3b3943713,"# Setup environnement et imports
 import os
 import sys
@@ -10462,7 +10491,9 @@ print(f""Mode : {notebook_mode}"")
 print(f""Modeles a tester : {models_to_test}"")
 print(f""Prompt : {benchmark_prompt[:60]}..."")
 print(f""Frames : {num_frames}, Steps : {num_inference_steps}, CFG : {guidance_scale}"")",,,,,,,,ce5d4cc3b3943713,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,yyzfrjhaq3,markdown,fr,0258896467614006,Les variables d'environnement et les cles API sont chargees depuis le fichier `.env`. On verifie également la disponibilite du GPU avant de lancer les modèles.,,,,,,,,0258896467614006,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,yyzfrjhaq3,markdown,fr,93d396123af5cb7e,"Les variables d'environnement et les cles API sont chargees depuis le fichier `.env`. On verifie également la disponibilite du GPU avant de lancer les modèles.
+
+L'architecture est **client/serveur**, et la sortie ci-dessus l'assume : `CUDA non disponible localement (la generation passe par le serveur ComfyUI)` n'est pas un echec mais le plan de travail -- le carnet est le client qui orchestre, le container GPU porte les modeles. Ce que la verification cherche donc n'est pas un GPU local mais un **backend joignable** : l'URL ComfyUI lue dans le `.env`, et le bon container (celui du video) repond. C'est aussi pourquoi ce carnet est executable sur une machine sans GPU : tout ce qui est lourd est deplace. La verification affiche aussi le GPU local a titre purement informatif : le carnet distingue ce que la machine cliente a (rien d'impose) de ce que le serveur doit avoir (le container GPU et ses poids).",,,,,,,,93d396123af5cb7e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,cell-env,code,fr,7e6afbd9484d993c,"# Chargement .env et verification backend ComfyUI
 # Chargement robuste de la configuration .env
 from dotenv import load_dotenv
@@ -11002,7 +11033,9 @@ else:
     print(""-"" * 42)
     print(f""  {'HunyuanVideo':<18} {'60-180s':<12} {'Haute':<12}"")
     print(f""  {'Wan 2.1':<18} {'30-90s':<12} {'Haute':<12}"")",,,,,,,,7440cd1a8bfb207c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,2iwh9m6z4sr,markdown,fr,6b97286b03059c60,"En mode interactif, l'utilisateur peut saisir un prompt personnalise pour lancer un benchmark a la demande. En mode automatique (Papermill), cette section est ignoree.",,,,,,,,6b97286b03059c60,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,2iwh9m6z4sr,markdown,fr,62d4750d21b87d64,"En mode interactif, l'utilisateur peut saisir un prompt personnalise pour lancer un benchmark a la demande. En mode automatique (Papermill), cette section est ignoree.
+
+Pourquoi cette section est **griee** : un `input()` bloque une execution automatisee -- Papermill ou CI attendrait indefiniment une saisie que personne ne fera. La garde `notebook_mode == ""interactive"" and not skip_widgets` la neutralise en batch, et la sortie le dit proprement : `Mode batch - Interface interactive desactivee`. Le meme garde-fou revient dans chaque carnet de la serie : le banc reste rejouable sans interaction humaine, l'option interactive est un confort, jamais une dependance.",,,,,,,,62d4750d21b87d64,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,cell-interactive,code,fr,4f3dedf8bd7be1fe,"# Mode interactif : benchmark avec un prompt utilisateur
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""\n--- MODE INTERACTIF ---"")
@@ -11219,14 +11252,18 @@ Implémenter une nouvelle métrique de qualité pour évaluer la cohérence temp
 - Les keypoints (ex: ORB, SIFT) suivent des points d'intérêt spécifiques
 
 ***",,,,,,,,39b8e7e1c07cdcee,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,1pcngxtxaey,markdown,fr,8f6f663b42a4d215,"### Critères de succès - Métrique Personnalisée
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,1pcngxtxaey,markdown,fr,b3d544eba2187ce7,"### Critères de succès - Métrique Personnalisée
 
 - [ ] Analyse critique des métriques existantes documentée
 - [ ] Nouvelle métrique justifiée théoriquement (approche choisie)
 - [ ] Implémentation fonctionnelle de `my_custom_coherence_metric()`
 - [ ] Tests sur cas simples (mouvement uniforme, bruit aléatoire)
 - [ ] Comparaison avec `measure_temporal_coherence()` sur les mêmes frames
-- [ ] Documentation claire de la métrique dans le docstring",,,,,,,,8f6f663b42a4d215,,,,,,,,,,,,,,,
+- [ ] Documentation claire de la métrique dans le docstring
+
+L'ordre des criteres dit la methode : on **valide la mesure avant de mesurer**. Les frames synthetiques de l'exercice -- cercle en mouvement uniforme, bruit aleatoire -- sont des cas ou la vraie valeur est connue par construction (coherence elevee attendue pour l'un, basse pour l'autre). Une metrique qui rend l'inverse sur ces cas est defectueuse, et aucun resultat sur les modeles ne la racheterait. C'est la contrepartie mesurable de la grille de criteres ci-dessus : la justification theorique se prouve sur des cas de reference avant d'etre croisee avec la table du benchmark.
+
+Deux pieges separent ensuite une metrique utilisable d'une metrique qui valide tout. Le premier est la **plage utile** : rendre 0,97 sur le mouvement uniforme et 0,85 sur le bruit separe techniquement les deux cas, mais sur un intervalle si compresse que deux generations reelles y paraitront identiques -- la discrimination se juge sur l'ecart entre les cas extremes, pas sur l'ordre seul. Le second est le **desaccord croise** : si votre metrique et `measure_temporal_coherence()` classent differemment deux generations reelles, les cas synthetiques ont deja tranche que chacune est correcte sur sa definition -- le desaccord dit alors qu'elles mesurent deux choses differentes (structure globale contre difference pixel a pixel), et le documenter est le resultat attendu, pas un bug a corriger.",,,,,,,,b3d544eba2187ce7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,l1vuomjpe9e,code,fr,69cf4c30c9403458,"# TODO: Tester sur des frames synthétiques simples
 # Ex: cercle qui se déplace uniformément (score élevé attendu)
 # Ex: bruit aléatoire (score bas attendu)
@@ -11258,7 +11295,9 @@ def create_random_noise_frames(n_frames=8, img_size=64):
 
 # TODO: Comparer avec measure_temporal_coherence() sur les mêmes frames
 # Comparez les scores et interprétez les différences",,,,,,,,69cf4c30c9403458,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,2vvbaevi31f,markdown,fr,f770c860bfc989c8,"Après avoir valide la metrique sur des cas simples, on peut implementer la version complete qui s'integre dans le framework de benchmark existant.",,,,,,,,f770c860bfc989c8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,2vvbaevi31f,markdown,fr,4a1b82eef421bcdc,"Après avoir valide la metrique sur des cas simples, on peut implementer la version complete qui s'integre dans le framework de benchmark existant.
+
+Le passage en deux temps de l'exercice : (1) prouver la metrique sur des cas a verite connue, (2) l'**integrer au framework** -- la version complete doit se brancher dans le harnais de mesure du banc, pas vivre dans une cellule isolee. La raison est la comparabilite : une metrique qui ne tourne que separement ne s'applique pas aux memes frames, aux memes conditions, au meme moment que les metriques integrees -- la ligne qu'elle ajouterait au tableau recapitulatif ne serait pas comparable aux autres.",,,,,,,,4a1b82eef421bcdc,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,c7eb8we82ni,code,fr,1cf4fdd8f3ec8e05,"# TODO: Implémenter une métrique de cohérence temporelle personnalisée
 def my_custom_coherence_metric(frames: List) -> Dict[str, float]:
     """"""
@@ -11298,14 +11337,16 @@ def my_custom_coherence_metric(frames: List) -> Dict[str, float]:
         ""score"": 0.0,
         ""details"": ""TODO: implémenter la métrique""
     }",,,,,,,,1cf4fdd8f3ec8e05,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,ri86dggd9ci,markdown,fr,16d92366c5d5d319,"### Critères de succès - Benchmark Personnalisé
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,ri86dggd9ci,markdown,fr,d299ab9d947b1074,"### Critères de succès - Benchmark Personnalisé
 
 - [ ] Prompt spécifique avec justification claire du choix
 - [ ] 3 modèles sélectionnés avec critères de choix explicites
 - [ ] Benchmark exécuté avec succès (ou simulation documentée)
 - [ ] Visualisation comparative personnalisée créée
 - [ ] Score composite calculé et interprété
-- [ ] Recommandation argumentée pour le cas d'usage choisi",,,,,,,,16d92366c5d5d319,,,,,,,,,,,,,,,
+- [ ] Recommandation argumentée pour le cas d'usage choisi
+
+Ce qui rend un benchmark **defendable** tient en une phrase : une seule variable varie. Le banc de la Section 2 fixe tout le reste -- meme prompt (`a cat walking gracefully...`), meme resolution `512x320`, meme budget `25 steps`, meme `Seed : 42` -- si bien que la colonne qui differe entre les lignes du tableau recapitulatif est le modele, et rien d'autre. Les criteres ci-dessus en sont la traduction pour l'exercice : justifier le prompt, expliciter les criteres de selection, documenter toute simulation -- un ecart non documente a l'un de ces fixes rend la comparaison ininterpretable sans que le tableau ait l'air faux.",,,,,,,,d299ab9d947b1074,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,x5a4lb8946,code,fr,85fad8ce89cac269,"# TODO: Exécuter le benchmark personnalisé
 # Note: Assurez-vous que run_benchmark=True et que les services sont disponibles
 
@@ -11326,7 +11367,11 @@ MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison
 # Quel modèle recommandez-vous pour votre cas d'usage? Pourquoi?
 
 print(""Exercice a completer : benchmark personnalise"")",,,,,,,,85fad8ce89cac269,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,l70jsq3wm2,markdown,fr,669584aa25d1ef22,"La configuration du benchmark personnalise permet de définir les paramètres spécifiques a votre cas d'usage : prompt, modèles cibles et metriques a privilegier.",,,,,,,,669584aa25d1ef22,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,l70jsq3wm2,markdown,fr,ed1e56bd4ca3e606,"La configuration du benchmark personnalise permet de définir les paramètres spécifiques a votre cas d'usage : prompt, modèles cibles et metriques a privilegier.
+
+La cellule de configuration qui suit est le moment ou l'etudiant devient l'experimentateur : le choix du prompt est un choix de **difficulte** (un plan statique sur un decor simple mettra tous les modeles a egalite ; un mouvement articule, des reflets ou une occlusion les differenciera), et la justification demandee (`my_rationale`) est la preuve que ce choix est deliberate plutot que la premiere phrase venue.
+
+Deux decisions de cette configuration ne se verront qu'au tableau final. La premiere est le **budget de temps** : la table d'estimation prevoit jusqu'a 180 s pour HunyuanVideo et 90 s pour Wan, trois modeles font donc un banc de plusieurs minutes -- un banc interrompu a mi-course produit un tableau tronque dont la ligne manquante se lira comme un score. Estimer avant de lancer, c'est decider ce que le tableau contiendra. La seconde est **l'argument qui arbitre** : la recommandation demandee par le dernier critere depend entierement de la ponderation des criteres -- un cas d'usage temps reel est gagne par le modele le plus rapide, une diffusion de contenu travaillee par le plus net. Une recommandation qui ne cite pas sa ponderation est un classement sans regle.",,,,,,,,ed1e56bd4ca3e606,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,vtj98gm66qr,code,fr,7c7c2aa12b29afc4,"# Configuration du benchmark personnalisé
 
 # TODO: Choisir un prompt spécifique et justifier
@@ -11499,7 +11544,8 @@ MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration
 - Notebook 03-1 complete : il benchmarke HunyuanVideo et Wan 2.1 via l'API ComfyUI, dont les modèles tournent côté serveur. Ce notebook-ci charge SVD et LTX-Video localement avec diffusers (et SDXL pour l'image en mode local) : il exige donc une GPU locale.
 - Packages : `diffusers>=0.32`, `transformers`, `torch`, `accelerate`, `imageio`, `imageio-ffmpeg`, `openai`, `Pillow`
 
-**Navigation :** [<< 03-1](03-1-Multi-Model-Video-Comparison.ipynb) | [Index](../README.md) | [Suivant >>](03-3-ComfyUI-Video-Workflows.ipynb)",,,,,,,,f39ce693788b7277,,,,,,,,,,,,,,,
+**Navigation :** [<< 03-1](03-1-Multi-Model-Video-Comparison.ipynb) | [Index](../README.md) | [Suivant >>](03-3-ComfyUI-Video-Workflows.ipynb)
+",,,,,,,,f39ce693788b7277,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,cell-params,code,fr,e6cc213482f33969,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -11526,7 +11572,10 @@ run_pipeline = True                # Executer les pipelines
 save_as_mp4 = True                 # Sauvegarder en MP4
 save_results = True
 ",,,,,,,,e6cc213482f33969,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,b4kiwvgw3bt,markdown,fr,31bb98a43aeabaf7,"La cellule de setup importe NumPy, Pillow et matplotlib, et charge la configuration `.env`. diffusers et torch sont importés dans la cellule de vérification de l'environnement, plus bas dans ce notebook ; les fonctions de pipeline réimportent diffusers à leur appel. L'export MP4 passe par `export_to_video` de diffusers.",,,,,,,,31bb98a43aeabaf7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,b4kiwvgw3bt,markdown,fr,5738baca33877d84,"La cellule de setup importe NumPy, Pillow et matplotlib, et charge la configuration `.env`. diffusers et torch sont importés dans la cellule de vérification de l'environnement, plus bas dans ce notebook ; les fonctions de pipeline réimportent diffusers à leur appel. L'export MP4 passe par `export_to_video` de diffusers.
+
+Le découpage des imports suit le **coût de chargement** : NumPy, Pillow et matplotlib pèsent quelques dizaines de mégaoctets et servent partout ; `diffusers` et `torch` pèsent des centaines et ne sont chargés qu'à la cellule de vérification, au moment où leur présence est réellement testée. Les fonctions de pipeline vont jusqu'à **réimporter** `diffusers` localement — une redondance apparente qui garantit qu'aucune fonction ne dépend d'un état d'import global : chaque pipeline est exécutable tel quel, même si l'ordre des cellules change.
+",,,,,,,,5738baca33877d84,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,cell-setup,code,fr,f738fa70944ff88e,"# Setup environnement et imports
 import os
 import sys
@@ -11609,7 +11658,10 @@ def placer_pipeline(pipe, seuil_libre_gb=16.0):
             return pipe
     return pipe.to(device)
 ",,,,,,,,f738fa70944ff88e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,3ajwg1tb8zy,markdown,fr,afae7a464b807e54,Les variables d'environnement et les cles API sont chargees depuis le fichier `.env`. On verifie également la disponibilite du GPU et des services video avant d'executer les pipelines.,,,,,,,,afae7a464b807e54,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,3ajwg1tb8zy,markdown,fr,1e5f8a7b9fa6aa68,"Les variables d'environnement et les clés API sont chargées depuis le fichier `.env`. On vérifie également la disponibilité du GPU et des services vidéo avant d'exécuter les pipelines.
+
+Ce que la vérification établit avant la moindre génération : la présence de `OPENAI_API_KEY` (le backend API de gpt-image-1) et l'état du GPU (le backend local de SVD/LTX). Le carnet orchestre **deux familles de backends** — distants facturés à l'appel, locaux limités par la VRAM — et c'est cette coexistence qui rend la vérification utile : la sortie nomme ce qui est disponible, et le pipeline suivant choisit sa route en conséquence plutôt que d'échouer à mi-chemin.
+",,,,,,,,1e5f8a7b9fa6aa68,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,cell-env,code,fr,d634da2098f160ea,"# Chargement .env et verification GPU
 # Chargement robuste de la configuration .env
 from dotenv import load_dotenv
@@ -11691,7 +11743,7 @@ if not deps_ok:
 
 print(f""\nDevice : {device}"")
 print(f""Pipeline active : {run_pipeline}"")",,,,,,,,d634da2098f160ea,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,cell-section1-intro,markdown,fr,ea25477f621eacc0,"## Section 1 : Pipeline Text -> Image -> Video
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,cell-section1-intro,markdown,fr,e1c722004b5f34ce,"## Section 1 : Pipeline Text -> Image -> Video
 
 Ce premier pipeline combine un modèle de generation d'images (gpt-image-1 ou SDXL)
 avec un modèle d'animation (SVD) pour créer des videos a partir de descriptions textuelles.
@@ -11710,7 +11762,8 @@ Texte (prompt) --> [gpt-image-1 / SDXL] --> Image haute qualite
 | Contrôle visuel | Eleve (image intermediaire) | Faible |
 | Qualite première frame | Excellente (gpt-image-1) | Variable |
 | Flexibilite | Choix indépendant image/video | Lie au modèle |
-| Cout VRAM | Séquentiel (un modèle a la fois) | Un seul modèle |",,,,,,,,ea25477f621eacc0,,,,,,,,,,,,,,,
+| Coût VRAM | Séquentiel (un modèle à la fois) | Un seul modèle |
+",,,,,,,,e1c722004b5f34ce,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,v1de032o,markdown,fr,3f1002ddcf696487,"Le diagramme ci-dessous rend ce pipeline texte -> image -> video sous forme de graphe.
 
 ```mermaid
@@ -11964,7 +12017,8 @@ Texte --> [LTX-Video] --> Video basse resolution
                                |
                                v
                          [Interpolation] --> Video fluide HD
-```",,,,,,,,e0ced40814023b90,,,,,,,,,,,,,,,
+```
+",,,,,,,,e0ced40814023b90,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,cell-pipeline2,code,fr,fdbb213fc4bda939,"# Pipeline 2 : Text -> Video -> Upscale -> Interpolation
 print(""\n--- PIPELINE TEXT -> VIDEO -> UPSCALE ---"")
 print(""="" * 50)
@@ -12171,7 +12225,8 @@ generation ne prend que quelques secondes (voir le batch ci-dessous).
 
 ## Section 3 : Generation batch multi-prompts
 
-Nous allons generer plusieurs videos en batch pour simuler un workflow de production.",,,,,,,,6f11cb272e7dbce6,,,,,,,,,,,,,,,
+Nous allons generer plusieurs videos en batch pour simuler un workflow de production.
+",,,,,,,,6f11cb272e7dbce6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,cell-batch,code,fr,5cb85002c5be7309,"# Generation batch multi-prompts
 print(""\n--- GENERATION BATCH ---"")
 print(""="" * 40)
@@ -12302,7 +12357,8 @@ MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration
 |----------|-------|-----------|-------------|
 | Text->Image->Video | Controle, qualite premiere frame | 2 modeles, plus lent | Production soignee |
 | Text->Video->Upscale | Pipeline bout-en-bout | Upscale par frame (pas temporel) | Amelioration qualite |
-| Batch multi-prompts | Efficace pour N videos | Pipeline unique | Production en serie |",,,,,,,,21813fd27d15a5b3,,,,,,,,,,,,,,,
+| Batch multi-prompts | Efficace pour N videos | Pipeline unique | Production en serie |
+",,,,,,,,21813fd27d15a5b3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,cell-interactive,code,fr,3457c9bca39c9f4f,"# Mode interactif : pipeline personnalise
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""\n--- MODE INTERACTIF ---"")
@@ -12370,7 +12426,7 @@ if notebook_mode == ""interactive"" and not skip_widgets:
             print(""Passage a la suite du notebook"")
 else:
     print(""\nMode batch - Interface interactive desactivee"")",,,,,,,,3457c9bca39c9f4f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,cell-conclusion,markdown,fr,d00b634f4a699b14,"## Bonnes pratiques d'orchestration
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,cell-conclusion,markdown,fr,264e09e02b9b3bda,"## Bonnes pratiques d'orchestration
 
 ### Guide de choix de pipeline
 
@@ -12388,7 +12444,8 @@ MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration
 | **Pipeline hybride** | Combiner gpt-image-1 (cloud) + SVD (local) pour le meilleur des deux |
 | **Cache intermediaire** | Sauvegarder les images/videos intermediaires pour re-generation partielle |
 | **Parallelisation** | Generer les images en parallele (API), animer sequentiellement (GPU) |
-| **Validation automatique** | Verifier la qualite avant l'étape suivante (seuil de nettete) |",,,,,,,,d00b634f4a699b14,,,,,,,,,,,,,,,
+| **Validation automatique** | Vérifier la qualité avant l'étape suivante (seuil de netteté) |
+",,,,,,,,264e09e02b9b3bda,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,zn9s0fh0xrk,markdown,fr,2015e0fc3649ac2e,"***
 
 ## Exercice : Pipeline Personnalisé
@@ -12464,7 +12521,8 @@ Optimiser un pipeline de génération batch pour maximiser le débit (videos/heu
 - Les générations d'images (DALL-E) sont indépendantes : paralléliser
 - Les intermédiaires peuvent être compressés (JPEG pour images, CRF bas pour vidéo)
 
-***",,,,,,,,33cd680729943000,,,,,,,,,,,,,,,
+***
+",,,,,,,,33cd680729943000,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,bmr0w0pn7th,markdown,fr,dcb6218e8c7a0166,"### Critères de succès - Optimisation Batch
 
 - [ ] Analyse du pipeline existant avec mesures documentées
@@ -12473,7 +12531,8 @@ MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration
 - [ ] Benchmark comparatif (avant/après) sur plusieurs tailles de batch
 - [ ] Gain de performance quantifié (>30% attendu)
 - [ ] Analyse des trade-offs et limites de l'approche
-- [ ] Code documenté et réutilisable",,,,,,,,dcb6218e8c7a0166,,,,,,,,,,,,,,,
+- [ ] Code documenté et réutilisable
+",,,,,,,,dcb6218e8c7a0166,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,hsmx5t4hwbp,code,fr,3ba7f43c924fb961,"# TODO: Benchmark version optimisée vs version basique
 # Comparer sur différents nombres de prompts : 10, 50, 100
 
@@ -12519,7 +12578,10 @@ def benchmark_batch_pipelines(prompts: List[str], basic_pipeline, optimized_pipe
 # - Impact sur la qualité (comparaison visuelle)
 
 print(""TODO: Implémenter le benchmark comparatif"")",,,,,,,,3ba7f43c924fb961,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,iuz776i6l7r,markdown,fr,00965e1fcba8d7c1,"Une fois le benchmark realise, on peut implementer la version optimisee du pipeline batch en exploitant les enseignements du benchmark précédent.",,,,,,,,00965e1fcba8d7c1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,iuz776i6l7r,markdown,fr,c3e6778e753f3137,"Une fois le benchmark realise, on peut implementer la version optimisee du pipeline batch en exploitant les enseignements du benchmark précédent.
+
+Cette cellule arrive après le benchmark, et l'ordre est la leçon : **mesurer avant d'optimiser**. Le benchmark compare la version basique et la version optimisée sur 10, 50 et 100 prompts — trois tailles, parce qu'une optimisation de chargement de modèle ne rapporte presque rien à trois vidéos et beaucoup à cent. Sans ce point de mesure préalable, la classe optimisée qui suit serait une collection d'intuitions : on ne saurait pas laquelle des trois optimisations porte le gain, ni à partir de quelle échelle elle commence à payer.
+",,,,,,,,c3e6778e753f3137,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,rqovhiqv1sj,code,fr,850c9848cb91ef84,"# TODO: Implémenter un pipeline batch optimisé
 class OptimizedBatchPipeline:
     """"""
@@ -12636,7 +12698,8 @@ MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration
 - [ ] Exécution réussie sur 2 prompts différents
 - [ ] Temps et VRAM mesurés pour chaque étape
 - [ ] Analyse de qualité visuelle documentée
-- [ ] Propositions d'optimisation concrètes",,,,,,,,2d58320d7f37d0b5,,,,,,,,,,,,,,,
+- [ ] Propositions d'optimisation concrètes
+",,,,,,,,2d58320d7f37d0b5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,klycb3l10k,code,fr,cb21159fbe5752d2,"# TODO: Tester votre pipeline personnalisé sur 2 prompts
 
 # Définir 2 prompts de test différents (même cas d'usage)
@@ -12669,7 +12732,7 @@ my_test_prompts = [
 # - Quelle étape est la plus lente?
 # - Où se trouve la consommation VRAM maximale?
 # - Quelles optimisations seraient possibles?",,,,,,,,cb21159fbe5752d2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,b5bab22c,markdown,fr,81969e7f6be8ae44,"***
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,b5bab22c,markdown,fr,93764eef60c92bb6,"***
 
 ## Exercice : Gestion d'Erreurs et Recovery
 
@@ -12706,7 +12769,8 @@ En production, les pipelines video sont longs (parfois plusieurs minutes par vid
 
 - Utiliser `json` pour les metadonnees et `PIL.Image.save()` pour les images
 - Le checkpoint contient : nom de l'étape, timestamp, chemin vers les données
-- `should_skip_step` doit verifier l'existence du fichier ET sa validite (taille > 0)",,,,,,,,81969e7f6be8ae44,,,,,,,,,,,,,,,
+- `should_skip_step` doit vérifier l'existence du fichier ET sa validité (taille > 0)
+",,,,,,,,93764eef60c92bb6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,1080cd65,code,fr,83351660aaa05e57,"# TODO: Implementer le systeme de checkpointing et pipeline robuste
 
 def save_checkpoint(step_name: str, data: Dict, output_dir: Path) -> Path:
@@ -12816,7 +12880,10 @@ def robust_pipeline(prompt: str, output_dir: Path, force_redo: bool = False) -> 
 # print(f""Etapes: {[s['name'] for s in result['steps']]}"")
 
 print(""Exercice a completer : gestion d'erreurs et recovery pipeline"")",,,,,,,,83351660aaa05e57,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,a8yjhq7ki7d,markdown,fr,93ca537106524322,"Après avoir valide les tests sur des cas concrets, on peut implementer la classe du pipeline personnalise avec ses étapes configurables et ses metriques de suivi.",,,,,,,,93ca537106524322,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,a8yjhq7ki7d,markdown,fr,247d34dae0494643,"Après avoir valide les tests sur des cas concrets, on peut implementer la classe du pipeline personnalise avec ses étapes configurables et ses metriques de suivi.
+
+La classe de pipeline personnalisé n'est pas une seconde version du pipeline 1 : c'est la **généralisation** — des étapes configurables, des métriques de suivi, un ordre choisi par l'appelant. Le critère de succès de l'exercice (trois étapes minimum) force la question de l'orchestration elle-même : quelles étapes sont nécessaires, lesquelles sont optionnelles, et où placer les points de mesure pour que chaque étape soit jugée sur sa propre sortie plutôt que sur la vidéo finale.
+",,,,,,,,247d34dae0494643,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,w4ukcv7no2,code,fr,0cd022d33ed50331,"# TODO: Définir votre pipeline personnalisé avec 3+ étapes
 def my_custom_pipeline(prompt: str, seed: int = 42) -> Dict:
     """"""
@@ -12917,7 +12984,10 @@ Limites: ...
 
 print(""Pipeline personnalisé défini - TODO: implémenter les étapes"")
 print(pipeline_description)",,,,,,,,0cd022d33ed50331,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,9nt0hetdjfc,markdown,fr,56378b7785991bb3,"Une fois le pipeline personnalise défini, on collecte les statistiques de session pour evaluer les temps d'exécution et preparer les prochaines étapes du projet.",,,,,,,,56378b7785991bb3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,9nt0hetdjfc,markdown,fr,09988af4044e885c,"Une fois le pipeline personnalise défini, on collecte les statistiques de session pour evaluer les temps d'exécution et preparer les prochaines étapes du projet.
+
+Ce que les statistiques de session doivent permettre de conclure : où passe le temps, où passe la VRAM, et quelle étape limitante apparaît à quelle échelle. Les sorties des sections précédentes en donnent les ordres de grandeur, chacune lue dans la cellule qui la produit — l'image API à 49,4 s (section 1) ; les 21,5 s de l'étape vidéo brute, qui portent aussi le chargement du modèle LTX puisque 21,5 + 6,9 + 2,0 = 30,4 s pour un total annoncé de 30,3 s (section 2) ; la VRAM libre restée stable entre 6,9 et 6,2 GB pendant le batch (section 3), puis rapportée à 0,0 GB par les statistiques de session, tous pipelines terminés. C'est en les alignant qu'on répond à la question d'orchestration : enchaînement séquentiel ou batch, selon que le coût dominant est le chargement ou la génération.
+",,,,,,,,09988af4044e885c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb,cell-stats,code,fr,5dd09b323ed776fe,"# Statistiques de session et prochaines etapes
 print(""\n--- STATISTIQUES DE SESSION ---"")
 print(""="" * 40)
@@ -14049,7 +14119,7 @@ for p in my_prompts:
         print(f""Variante non soumise (submit_and_monitor non complete ou ComfyUI non disponible): {p[:50]}..."")
     else:
         print(f""Variante - Resultat: {result_alt['success']}, Temps: {result_alt.get('elapsed', 0):.1f}s"")",,,,,,,,1227013b9f5f87b2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,dz11mxjao7v,markdown,fr,16a6c7206181243c,"Pour exposer diffusers comme un node ComfyUI, il faut un proxy qui traduit les paramètres du workflow JSON en appels Python. La cellule suivante donne le squelette de ce node : sa méthode `generate` est encore vide (`pass`), à vous de la compléter.",,,,,,,,16a6c7206181243c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,dz11mxjao7v,markdown,fr,21b4471c7d261363,"Pour exposer diffusers comme un node ComfyUI, il faut un proxy qui traduit les paramètres du workflow JSON en appels Python. La cellule suivante donne le squelette de ce node : sa méthode `generate` est encore vide (`pass`), à vous de la compléter. L'impédance est le vrai sujet de ce node : un graphe déclaratif dit *quoi* calculer, diffusers attend des appels *impératifs* avec un pipeline instancié, un device et un dtype tenus en mémoire entre deux invocations — un proxy sans état ne peut pas fonctionner, et c'est exactement ce que le squelette de la cellule suivante laisse à compléter.",,,,,,,,21b4471c7d261363,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,tw14kk40jo,code,fr,33f6384f8859f089,"# TODO: Créer un custom node ComfyUI pour diffusers
 class DiffusersProxyNode:
     """"""
@@ -14204,7 +14274,7 @@ param_grid = {
 # Identifier les 4 meilleures combinaisons et afficher leurs frames
 
 print(""Exercice a completer : exploration et comparaison de parametres workflow"")",,,,,,,,92c307b3b0f3783b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,van3ww30v5,markdown,fr,1897b8e220b53974,"La cellule de statistiques résume la session : état de ComfyUI, paramètres de la génération, durée et nombre d'images obtenues, puis la liste des fichiers écrits dans le dossier de sortie.",,,,,,,,1897b8e220b53974,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,van3ww30v5,markdown,fr,7c7d956d05a8cb63,"La cellule de statistiques résume la session : état de ComfyUI, paramètres de la génération, durée et nombre d'images obtenues, puis la liste des fichiers écrits dans le dossier de sortie. Ce résumé est aussi le contrôle de réalité du carnet : un workflow peut se soumettre sans erreur et ne rien produire — un serveur qui accuse réception mais écrit zéro fichier est un faux succès. La liste des fichiers écrits dans le dossier de sortie, à côté du nombre d'images obtenues, est la seule preuve que la génération a eu lieu.",,,,,,,,7c7d956d05a8cb63,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-stats,code,fr,f5e079b67b764684,"# Statistiques de session et prochaines etapes
 print(""\n--- STATISTIQUES DE SESSION ---"")
 print(""="" * 40)
@@ -15251,7 +15321,8 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipyn
 - Packages : `moviepy`, `Pillow`, `numpy`, `scipy`, `matplotlib`, `librosa`, `soundfile`
 - Optionnel : `diffusers`, `torch` pour le transfert de style IA
 
-**Navigation** : [<< 04-1 Educational Video](04-1-Educational-Video-Generation.ipynb) | [04-3 Sora API >>](04-3-Sora-API-Cloud-Video.ipynb)",,,,,,,,ee38962422b6a633,,,,,,,,,,,,,,,
+**Navigation** : [<< 04-1 Educational Video](04-1-Educational-Video-Generation.ipynb) | [04-3 Sora API >>](04-3-Sora-API-Cloud-Video.ipynb)
+",,,,,,,,ee38962422b6a633,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-1,code,fr,cd18f45a55ebfa32,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -15274,7 +15345,10 @@ enable_color_grading = True        # Activer le color grading
 enable_text_animation = True       # Activer les animations de texte
 save_results = True                # Sauvegarder les resultats
 ",,,,,,,,cd18f45a55ebfa32,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,nlxrsij0ys9,markdown,fr,75bf6565b1916b2e,"La cellule suivante importe les bibliotheques de base (numpy, Pillow, matplotlib, python-dotenv). Les bibliotheques propres a une section sont importees dans la cellule qui les utilise : moviepy pour la verification et l'export video, librosa et soundfile pour l'analyse audio du clip musical.",,,,,,,,75bf6565b1916b2e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,nlxrsij0ys9,markdown,fr,c17452085a20ba6d,"La cellule suivante importe les bibliotheques de base (numpy, Pillow, matplotlib, python-dotenv). Les bibliotheques propres a une section sont importees dans la cellule qui les utilise : moviepy pour la verification et l'export video, librosa et soundfile pour l'analyse audio du clip musical.
+
+La séparation n'est pas cosmétique : les imports de base (numpy, Pillow, matplotlib, dotenv) sont chargés pour tout le carnet, les autres sont **déclarés par la section qui les consomme** — `moviepy` seulement quand il y a une vidéo à vérifier ou à exporter, `librosa`/`soundfile` seulement pour l'analyse audio du clip musical. Conséquence pratique, à lire exactement — les trois dépendances ne se comportent pas pareil : `moviepy` et `imageio` sont vérifiés **sous garde** dans la cellule de dépendances (absents : message `NON INSTALLE (pip install ...)` et la vérification continue) ; l'export mux de la section rythmique dégrade **conditionnellement** (`mux_available = False`, l'export est sauté avec un message) ; mais `librosa` et `soundfile` sont importés **sans garde** dans leur cellule — si l'un manque, cette cellule lève une `ImportError` brute et l'exécution s'arrête là. La séparation retarde l'échec à la cellule qui consomme (le carnet ne tombe plus à la cellule de base), elle ne le rend pas gracieux partout : c'est un échec retardé, pas la dégradation propre à message nominatif de chaque section.
+",,,,,,,,c17452085a20ba6d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-2,code,fr,cceaca5c13cf3f7c,"# Setup environnement et imports
 import os
 import sys
@@ -15336,7 +15410,10 @@ print(f""Date : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
 print(f""Mode : {notebook_mode}"")
 print(f""Video : {video_width}x{video_height} @ {video_fps}fps, {video_duration}s"")
 print(f""Sortie : {OUTPUT_DIR.relative_to(GENAI_ROOT)}"")",,,,,,,,cceaca5c13cf3f7c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,hppnin5reea,markdown,fr,d1dc70263c2906a0,"Les variables d'environnement sont ensuite chargees (`.env`, s'il existe). La cellule suivante verifie quatre dependances : moviepy, imageio, scipy et diffusers, ce dernier optionnel (transfert de style IA, GPU). OpenCV n'est pas utilise dans ce carnet et n'est pas verifie. librosa et soundfile ne sont pas verifies non plus : ils sont importes sans garde dans la section sur le clip musical.",,,,,,,,d1dc70263c2906a0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,hppnin5reea,markdown,fr,bef0da18fa986604,"Les variables d'environnement sont ensuite chargées (`.env`, s'il existe). La cellule suivante vérifie quatre dépendances : moviepy, imageio, scipy et diffusers, ce dernier optionnel (transfert de style IA, GPU). OpenCV n'est pas utilisé dans ce carnet et n'est pas vérifié. librosa et soundfile ne sont pas vérifiés non plus : ils sont importés sans garde dans la section sur le clip musical.
+
+Ce que la vérification mesure vraiment : quatre dépendances, chacune pour un usage précis — `moviepy`+`imageio` pour l'export, `scipy` pour les filtres et le signal, `diffusers` **optionnel** (transfert de style neuronal, GPU). Deux absences sont délibérées et documentées : OpenCV n'est pas utilisé ici (les filtres sont Pillow) et n'est donc pas testé ; `librosa`/`soundfile` ne sont vérifiés qu'au moment du clip musical. Un `.env` absent produit un `WARNING` et le carnet continue sur les variables d'environnement — l'absence de clé dégrade la qualité des médias, pas l'exécution.
+",,,,,,,,bef0da18fa986604,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-3,code,fr,355c81395e41d623,"# Chargement .env et verification des dependances
 from dotenv import load_dotenv
 import os
@@ -15443,13 +15520,18 @@ for i in range(n_frames):
 
 print(f""Video source generee : {len(source_frames)} frames"")
 print(f""Resolution : {video_width}x{video_height} @ {video_fps}fps"")",,,,,,,,355c81395e41d623,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-4,markdown,fr,c88b5b7715d7c826,"## Section 1 : Transfert de style video
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-4,markdown,fr,7d6deb0338136434,"## Section 1 : Transfert de style video
 
 Le transfert de style consiste a appliquer le style visuel d'une image de reference
 a chaque frame d'une video. Ce carnet execute l'approche CPU, avec trois filtres Pillow
 (couleurs, flou, contours). L'approche GPU, un transfert neuronal par img2img avec un modele
 de diffusion (diffusers), n'est pas executee ici : la cellule de dependances ne fait que
-detecter diffusers, et son usage est decrit dans les points cles.",,,,,,,,c88b5b7715d7c826,,,,,,,,,,,,,,,
+detecter diffusers, et son usage est decrit dans les points cles.
+
+Ce que fait l'approche CPU, exactement : trois filtres Pillow appliqués **frame par frame, indépendamment** — médian + quantification pour l'huile, flou + saturation pour l'aquarelle, contours pour le croquis. Chaque frame ne connaît que ses pixels : rien ne garantit la cohérence temporelle (un détail qui scintille scintille après traitement), et c'est le compromis assumé du chemin rapide. L'approche GPU (img2img avec un modèle de diffusion) partage au contraire le même modèle entre les frames — plus lente, mais son style est **appris** plutôt que filtré. La sortie le chiffre : `Style applique en 3.18s (45 fps)` sur 144 frames.
+
+L'ordre des filtres n'est pas neutre non plus : appliquer le flou avant la saturation étale des couleurs déjà adoucies, l'inverse durcit des contours que le flou aurait effacés — un pipeline de filtres ne commute pas, et la séquence fait partie du style autant que les filtres eux-mêmes.
+",,,,,,,,7d6deb0338136434,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-5,code,fr,8954c7fd4dca9a6d,"# Transfert de style video
 if enable_style_transfer:
     print(""\n--- TRANSFERT DE STYLE VIDEO ---"")
@@ -15537,7 +15619,7 @@ if enable_style_transfer:
         print(f""Video sauvegardee : {styled_path.name} ({styled_path.stat().st_size / 1024:.0f} KB)"")
 else:
     print(""Transfert de style desactive"")",,,,,,,,8954c7fd4dca9a6d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-6,markdown,fr,617eeabdebc408ee,"### Interpretation : Transfert de style
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-6,markdown,fr,7a0f44e4f5c993bf,"### Interpretation : Transfert de style
 
 | Style | Technique | Temps/frame | Usage ideal |
 |-------|-----------|-------------|-------------|
@@ -15550,11 +15632,14 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipyn
 2. Pour un vrai transfert de style neuronal, utiliser diffusers img2img (GPU requis)
 3. La coherence temporelle est un defi : chaque frame est traitee independamment
 
+Lecture du coût : `~22 ms` par frame (3.18 s / 144) rend le chemin CPU viable sur des clips courts — mais il faut le projeter, pas le célébrer. À 30 fps, une minute représente 1 800 frames, soit environ 40 s de traitement pour ce seul filtre, et dix minutes environ 6 min 40 s (18 000 × 22 ms ≈ 396 s) : un filtre isolé tourne aux deux tiers du temps réel. La frontière du GPU se joue sur la chaîne, pas sur le filtre : ce carnet enchaîne cinq techniques sur les mêmes frames ; si chacune coûtait les ~22 ms mesurés pour l'aquarelle — la seule chronométrée —, dix minutes de vidéo demanderaient environ 33 minutes de traitement (18 000 × 5 × 22 ms). La décision se prend sur la durée cible et le nombre d'effets, pas sur la beauté du résultat.
+
 ## Section 2 : Creation de clip musical
 
 La creation d'un clip musical synchronise implique de detecter le rythme (BPM)
 et de placer des coupes, effets et transitions sur les temps forts.
-Ici, nous simulons un signal audio rythmique et synchronisons les effets video.",,,,,,,,617eeabdebc408ee,,,,,,,,,,,,,,,
+Ici, nous simulons un signal audio rythmique et synchronisons les effets vidéo.
+",,,,,,,,7a0f44e4f5c993bf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-9,code,fr,4f01313494597b6f,"# Effet stop-motion
 if enable_stop_motion:
     print(""\n--- EFFET STOP-MOTION ---"")
@@ -15676,7 +15761,8 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipyn
 - `# Étape 1` : Calculer la différence absolue moyenne (MAE) par canal RGB
 - `# Étape 2` : Calculer la distance euclidienne moyenne par pixel
 - `# Étape 3` : Retourner un dictionnaire classe par intensite de transformation
-- `# Indice` : Utilisez `np.mean(np.abs(original.astype(float) - transformed.astype(float)))` pour le MAE",,,,,,,,6301b526ec83ccc7,,,,,,,,,,,,,,,
+- `# Indice` : Utilisez `np.mean(np.abs(original.astype(float) - transformed.astype(float)))` pour le MAE
+",,,,,,,,6301b526ec83ccc7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,8ff47b66,code,fr,facfd40ceaa7edd3,"def compare_styles_quantitatively(original: np.ndarray,
                                    styled_frames: dict) -> dict:
     """"""
@@ -15714,7 +15800,8 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipyn
 ## Section 4 : Collages video et animations de texte
 
 Les compositions video permettent d'afficher plusieurs flux simultanement.
-Les animations de texte ajoutent un impact visuel pour les titres et generiques.",,,,,,,,1ae80db09335be58,,,,,,,,,,,,,,,
+Les animations de texte ajoutent un impact visuel pour les titres et generiques.
+",,,,,,,,1ae80db09335be58,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-11,code,fr,4b7e35cd70074840,"# Collage video : grille 2x2 avec differents styles
 print(""\n--- COLLAGE VIDEO ET ANIMATIONS ---"")
 print(""="" * 45)
@@ -15795,7 +15882,12 @@ if dependencies.get('imageio', False) and save_results:
         writer.append_data(f)
     writer.close()
     print(f""Video sauvegardee : {grid_path.name} ({grid_path.stat().st_size / 1024:.0f} KB)"")",,,,,,,,4b7e35cd70074840,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,3d645r7kemr,markdown,fr,9daf33c3da57f838,Les techniques de collage multi-fenêtres et d'animation de texte permettent de composer des sequences plus complexes en combinant plusieurs sources visuelles dans une même frame.,,,,,,,,9daf33c3da57f838,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,3d645r7kemr,markdown,fr,618b2a2a711c9ed9,"Les techniques de collage multi-fenêtres et d'animation de texte permettent de composer des séquences plus complexes en combinant plusieurs sources visuelles dans une même frame.
+
+Collage et animation de texte sont des **primitives de composition**, pas de génération : elles assemblent ce que les sections précédentes ont produit. La grille 2x2 combine plusieurs sources **spatialement** (chaque frame de sortie contient quatre frames d'entrée redimensionnées), l'animation de texte compose **temporellement** (la même frame, un texte qui change d'état à chaque tick). Les deux augmentent le coût en pixels, mais pas au même endroit. La grille 2x2 de cette section assemble quatre cellules de 320x240 séparées par une bordure de 4 pixels : la cellule ci-dessus imprime une résolution de grille de 652x492, soit 1,04 fois la surface d'une frame source 640x480 — parce que chaque source est d'abord **réduite** à la taille de cellule. Une grille qui conserverait la pleine résolution des sources donnerait 1280x960, quatre fois la surface à écrire par frame ; c'est ce coût-là qu'une composition en production paie, et c'est pourquoi elle choisit la taille de cellule avant de choisir la grille.
+
+Le même calcul vaut pour l'animation de texte : le coût est linéaire en nombre de frames, mais chaque frame re-rend le texte complet avant de le composer — un rendu de police par frame, là où un cache de glyphes le paierait une seule fois. Ces deux primitives sont exactement là où une optimisation de production commence. Composer, ici, c'est choisir où et quand, jamais fabriquer.
+",,,,,,,,618b2a2a711c9ed9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-12,code,fr,880fe886bd5ac0ae,"# Animations de texte creatives
 if enable_text_animation:
     print(""\n--- ANIMATIONS DE TEXTE ---"")
@@ -15880,7 +15972,7 @@ if enable_text_animation:
     print(f""Styles d'animation disponibles : {', '.join(anim_styles)}"")
 else:
     print(""Animations de texte desactivees"")",,,,,,,,880fe886bd5ac0ae,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-13,markdown,fr,d524d98bb07589f8,"### Interpretation : Collages et animations
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-13,markdown,fr,c77f7a8bd76d5fe9,"### Interpretation : Collages et animations
 
 | Technique | Complexite | Usage |
 |-----------|-----------|-------|
@@ -15904,7 +15996,10 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipyn
 | Stop-motion | Rapide | Non | Facile |
 | Color grading | Rapide | Non | Moyen |
 | Collage video | Moyen | Non | Facile |
-| Animation texte | Rapide | Non | Moyen |",,,,,,,,d524d98bb07589f8,,,,,,,,,,,,,,,
+| Animation texte | Rapide | Non | Moyen |
+
+Lecture de la table : chaque ligne ajoute une dimension de composition. La grille 2x2 multiplie la surface (quatre sources par frame), les trois styles de texte sont des fonctions du temps — 'typewriter' rend le préfixe de longueur croissante, 'slide_in' translate une position, 'fade_in' interpole une opacité — toutes linéaires en nombre de frames. Le coût total d'une composition est donc le produit des deux axes (pixels x frames), et c'est ce produit qui décide ce qui tient dans une boucle d'export interactive.
+",,,,,,,,c77f7a8bd76d5fe9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-14,code,fr,1996df25a5f670c6,"# Mode interactif - Choix du style
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""\n--- MODE INTERACTIF ---"")
@@ -15948,7 +16043,10 @@ if notebook_mode == ""interactive"" and not skip_widgets:
             print(f""Erreur : {error_type}"")
 else:
     print(""Mode batch - Interface interactive desactivee"")",,,,,,,,1996df25a5f670c6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,0gmukylca18,markdown,fr,a0f2aeaddfa20479,"La cellule suivante resume la session : techniques activees, fichiers video generes avec leur taille, et dependances detectees. Elle n'imprime pas de duree par technique : la seule duree de traitement mesuree dans le carnet est celle du transfert de style aquarelle, imprimee par sa cellule.",,,,,,,,a0f2aeaddfa20479,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,0gmukylca18,markdown,fr,f1cf29f331ae75c6,"La cellule suivante résume la session : techniques activées, fichiers vidéo générés avec leur taille, et dépendances détectées. Elle n'imprime pas de durée par technique : la seule durée de traitement mesurée dans le carnet est celle du transfert de style aquarelle, imprimée par sa cellule.
+
+Ce que ce résumé dit, et ce qu'il tait : il liste les techniques activées, les fichiers produits avec leur taille, et les dépendances détectées — pas de durée par technique, parce qu'une seule a été chronométrée dans le carnet (le transfert de style aquarelle, dont la cellule de la section 1 imprime la durée). C'est une instrumentation honnête : on n'affiche pas une colonne de temps qu'on n'a pas mesurée. La taille des fichiers est le proxy du travail effectué — un MP4 de quelques centaines de Ko prouve que les frames ont été écrites, là où un fichier absent signale une section sautée. Il compte aussi les frames source : c'est le dénominateur commun à toutes les techniques du carnet, et le repère qui permet de comparer leurs coûts.
+",,,,,,,,f1cf29f331ae75c6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-15,code,fr,1a17ffee82d60310,"# Statistiques de session
 print(""\n--- STATISTIQUES DE SESSION ---"")
 print(""="" * 40)
@@ -16113,7 +16211,10 @@ def create_music_video(audio_path: str, style: str) -> Dict:
 # TODO: Creer les variations de style
 # Comparer 3 styles sur le meme audio
 ",,,,,,,,7bf7c424bd3c25e5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,icrl9t3wcp,markdown,fr,0485b57d7a224b0a,"Le moteur de templates video generalise l'approche en proposant des structures preconstruites pour différents genres : reportage, publicite, court-metrage artistique.",,,,,,,,0485b57d7a224b0a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,icrl9t3wcp,markdown,fr,ee96de78579a6515,"Le moteur de templates video generalise l'approche en proposant des structures preconstruites pour différents genres : reportage, publicite, court-metrage artistique.
+
+Ce que le moteur de templates généralise : les structures par genre (reportage, publicité, court-métrage) sont des **contraintes pré-câblées** — durée, rythme de coupe, place du texte — qui retirent des décisions au lieu d'en ajouter. Le gain est la vitesse (on ne re-décide pas la forme à chaque vidéo), le prix est la ressemblance entre productions d'un même genre. C'est le même arbitrage que dans tout outillage de production vidéo : un template encode une compétence une fois, et la rend ensuite indisponible à la remise en cause.
+",,,,,,,,ee96de78579a6515,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,5fbfczwdpk,code,fr,65bf219bb1f7f382,"# TODO: Moteur de templates video
 class VideoTemplateEngine:
     """"""
@@ -17510,7 +17611,9 @@ enable_assembly = True             # Assembler le tout
 use_mock_api = True                # Utiliser des reponses simulees si API indisponible
 save_results = True                # Sauvegarder les resultats
 ",,,,,,,,13f7e8848310593f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,elqzn5r84gc,markdown,fr,37a3b155ea84b426,"On importe ensuite toutes les bibliotheques du pipeline de production : client OpenAI pour le LLM et le TTS, moviepy pour l'assemblage video, et PIL pour la manipulation des images.",,,,,,,,37a3b155ea84b426,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,elqzn5r84gc,markdown,fr,ca5cafbb9cddc167,"On importe ensuite toutes les bibliotheques du pipeline de production : client OpenAI pour le LLM et le TTS, moviepy pour l'assemblage video, et PIL pour la manipulation des images.
+
+Chaque import de cette cellule est une **étape du pipeline** qui se déclare : `openai` fournit à la fois le LLM qui écrit le script et le TTS qui le met en voix ; `PIL` sert au rendu d'images de repli et à la fabrication des frames d'animation ; `moviepy`/`imageio` assemblent et exportent la vidéo finale ; `pydub` manipule l'audio produit ; `diffusers` est l'option locale de génération d'images (SDXL sur GPU) quand on ne passe pas par DALL-E. La cellule de vérification des dépendances, deux cellules plus loin (après le chargement du `.env`), testera cette topologie en la pratiquant : cinq dépendances, chacune nommée pour le rôle qu'elle tient. Noter aussi le `GPU: True` que la vérification affichera à côté de `diffusers` : la voie locale de génération d'images est **vivante** sur cette machine, pas théorique — le choix DALL-E (API, facturée à l'image) ou SDXL (local, facturé en VRAM et en temps) est un vrai arbitrage de production que le carnet laisse ouvert.",,,,,,,,ca5cafbb9cddc167,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-2,code,fr,88294d3e09ee9292,"# Setup environnement et imports
 import os
 import sys
@@ -17577,7 +17680,9 @@ print(f""Mode : {notebook_mode}"")
 print(f""Sujet : {video_topic}"")
 print(f""Video : {video_width}x{video_height} @ {video_fps}fps"")
 print(f""Sortie : {PIPELINE_DIR}"")",,,,,,,,88294d3e09ee9292,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,a7cibtkc1m,markdown,fr,647fe934fb7292e0,"Les variables d'environnement sont ensuite chargees : cles OpenAI pour le LLM et le TTS, chemins de sortie, et indicateurs d'activation des étapes du pipeline (generation, animation, narration).",,,,,,,,647fe934fb7292e0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,a7cibtkc1m,markdown,fr,f26d38936544e0d5,"Les variables d'environnement sont ensuite chargees : cles OpenAI pour le LLM et le TTS, chemins de sortie, et indicateurs d'activation des étapes du pipeline (generation, animation, narration).
+
+Un seul `.env` pour toute la série, cherché en remontant jusqu'à la racine `GenAI/` (convention du dépôt : la clé n'est jamais dans le carnet). Ce qu'il pilote ici : la clé OpenAI (script LLM + TTS), les chemins de sortie, et les drapeaux d'activation de chaque étape. La sortie suivante porte la ligne `Mode mock : True` — sans clé, le pipeline se déroule quand même de bout en bout avec des médias de démonstration : la clé change la **qualité** des médias produits, jamais la **structure** du pipeline, et c'est exactement ce que la sortie `Dependances disponibles : 5/5` vérifie.",,,,,,,,f26d38936544e0d5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-3,code,fr,43a2e7755d1d1513,"# Chargement .env et verification des dependances
 from dotenv import load_dotenv
 import os
@@ -17666,13 +17771,15 @@ print(f""Mode mock : {use_mock_api or not api_available}"")
 available_count = sum(dependencies.values())
 total_count = len(dependencies)
 print(f""Dependances disponibles : {available_count}/{total_count}"")",,,,,,,,43a2e7755d1d1513,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-4,markdown,fr,2fdbed9bf24eb3f6,"## 1. Generation du script video avec LLM
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-4,markdown,fr,79e8384acfa0b2dd,"## 1. Generation du script video avec LLM
 
 Le pipeline commence par la generation d'un script structure.
 Un LLM (GPT-4 ou equivalent) produit une liste de scenes avec :
 - Description visuelle (pour la generation d'images)
 - Texte de narration (pour le TTS)
-- Instructions de camera (pour l'animation)",,,,,,,,2fdbed9bf24eb3f6,,,,,,,,,,,,,,,
+- Instructions de camera (pour l'animation)
+
+Le script est le **contrat** du pipeline : la liste de scènes produite ici est l'interface que chaque étape aval consomme champ par champ (`visual_description` pour les images, `camera_motion` pour l'animation, `narration` pour le TTS et les sous-titres). La sortie mesure `Script genere : 0 scenes` — l'exercice est à compléter — et montre une propriété volontaire du carnet : chaque étape vérifie son entrée et se dégrade proprement (message explicite, pas d'exception), le pipeline déroule toutes ses étapes à vide. Compter les scènes non nulles sera le premier témoin de réussite de l'exercice. Pourquoi un LLM pour cette étape plutôt qu'un gabarit : un script tient par sa **causalité narrative** — accroche, développement, chute — et cette structure doit être réinventée pour chaque sujet ; un gabarit remplirait les mêmes cases avec le même squelette pour n'importe quel topic, un LLM produit une dramaturgie propre au sujet demandé. C'est la seule étape du pipeline où la décision de contenu est déléguée au modèle.",,,,,,,,79e8384acfa0b2dd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-5,code,fr,674a175db996bd98,"# Etape 1 : Generation du script
 print(""\n--- ETAPE 1 : GENERATION DU SCRIPT ---"")
 print(""="" * 45)
@@ -17761,11 +17868,13 @@ else:
     plt.suptitle(""Images des scenes du pipeline"", fontsize=13, fontweight='bold')
     plt.tight_layout()
     plt.show()",,,,,,,,e0cf000b0014267f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-8,markdown,fr,be9f20631054c363,"## 3. Animation des images
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-8,markdown,fr,0458709605e7dc5c,"## 3. Animation des images
 
 Chaque image statique est transformee en sequence animee avec un mouvement
 de camera cinematographique : zoom avant/arriere, panoramique gauche/droite.
-Ces effets, connus sous le nom d'""effets Ken Burns"", donnent vie aux images fixes.",,,,,,,,be9f20631054c363,,,,,,,,,,,,,,,
+Ces effets, connus sous le nom d'""effets Ken Burns"", donnent vie aux images fixes.
+
+Ce que l'animation achète : chaque image fixe devient `duration x fps` frames, et le `camera_motion` déplace la fenêtre de recadrage au fil des frames — `zoom_in` resserre la fenêtre vers le centre, `pan` la translate. C'est l'effet Ken Burns, le procédé classique des documentaires qui donne vie à une image fixe sans générer de vidéo. La sortie `Total frames animees : 0` est cohérente : cette étape est une fonction pure de la sortie de l'étape 2, zéro image en entrée donne zéro frame animée — l'échec se lit en amont, pas ici.",,,,,,,,0458709605e7dc5c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-9,code,fr,cd24839d797f0bfe,"# Etape 3 : Animation des images avec effets camera
 if enable_animation:
     print(""\n--- ETAPE 3 : ANIMATION DES IMAGES ---"")
@@ -17802,11 +17911,14 @@ else:
         static = [np.array(image)] * (scene_duration * video_fps) if image is not None else []
         animated_scenes.append(static)
     print(""Animation desactivee - frames statiques"")",,,,,,,,cd24839d797f0bfe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-10,markdown,fr,4a1f0139b337d110,"## 4. Generation de la narration TTS
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-10,markdown,fr,a9c69282aae7b444,"## 4. Generation de la narration TTS
 
 La narration vocale est generee a partir du texte de chaque scene avec OpenAI TTS.
-En mode demonstration, nous generons un signal audio synthetique (ton sinusoidal)
-de la bonne duree pour simuler la narration.",,,,,,,,4a1f0139b337d110,,,,,,,,,,,,,,,
+En mode demonstration, l'objectif de l'exercice est un signal audio synthetique (ton
+sinusoidal) de la bonne duree pour simuler la narration -- tant que `generate_tts_audio`
+reste a completer, aucun signal n'est produit.
+
+Pourquoi l'audio mène : la durée de la narration fixe celle de la scène. On règle la vidéo sur la voix, jamais l'inverse — sinon la voix est coupée ou le plan traîne. **Objectif de l'exercice** : une fois `generate_tts_audio` complété, chaque scène reçoit en mode démonstration un signal sinusoïdal de la durée de sa narration — un placeholder mesurable, la contrainte de durée est respectée même sans TTS réel — et en production, l'appel OpenAI produit la vraie voix. **État actuel du carnet (stub à compléter)** : la sortie commitée montre `Audio total : 0.0s` et `Echantillons : 0` — aucun signal n'existe encore. Le `44100 Hz` qu'elle affiche est le taux d'échantillonnage **configuré** — la constante déclarée du contrat audio — pas la mesure d'un audio produit.",,,,,,,,a9c69282aae7b444,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-11,code,fr,b831079aeee3d35f,"# Etape 4 : Generation de la narration TTS
 if enable_tts:
     print(""\n--- ETAPE 4 : GENERATION NARRATION TTS ---"")
@@ -17865,11 +17977,13 @@ else:
     narration_audio = []
     narration_texts = [s['narration'] for s in script_scenes]
     print(""TTS desactive"")",,,,,,,,b831079aeee3d35f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-12,markdown,fr,f34a32f0910e5a6f,"## 5. Sous-titres et assemblage final
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-12,markdown,fr,552ae09b71afc09c,"## 5. Sous-titres et assemblage final
 
 Les sous-titres sont generes a partir du texte de narration avec un timing
 synchronise sur chaque scene. L'assemblage final combine video + audio + sous-titres
-en un seul fichier MP4.",,,,,,,,f34a32f0910e5a6f,,,,,,,,,,,,,,,
+en un seul fichier MP4.
+
+Le format SRT est minimal et séquentiel : un index, une plage `debut --> fin`, une ligne de texte — assez pour qu'un lecteur vidéo synchronise les sous-titres sans autre métadonnée. La sortie montre `Sous-titres sauvegardes : subtitles.srt` même avec zéro scène : le fichier se génère depuis le même contrat de scènes que les autres étapes, et sa structure ne dépend pas du contenu. L'assemblage qui suit incruste (burn-in) ces sous-titres directement dans les frames, pour que le fichier MP4 exporté les porte avec lui sur n'importe quel lecteur.",,,,,,,,552ae09b71afc09c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-13,code,fr,f76a350ac2107f03,"# Etape 5 : Sous-titres et assemblage final
 print(""\n--- ETAPE 5 : SOUS-TITRES ET ASSEMBLAGE ---"")
 print(""="" * 50)
@@ -18000,7 +18114,9 @@ for scene_idx, (scene_frames, scene_data) in enumerate(zip(animated_scenes, scri
 
 print(f""Frames finales : {len(final_frames)}"")
 print(f""Duree video : {len(final_frames) / video_fps:.1f}s"")",,,,,,,,f76a350ac2107f03,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,4ad1g6y57qo,markdown,fr,056986986bf85046,"Une fois l'assemblage avec sous-titres termine, on exporte le fichier video final en MP4 avec les paramètres de codec et de qualite adaptes a la distribution.",,,,,,,,056986986bf85046,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,4ad1g6y57qo,markdown,fr,0df9738a6b658925,"Une fois l'assemblage avec sous-titres termine, on exporte le fichier video final en MP4 avec les paramètres de codec et de qualite adaptes a la distribution.
+
+L'export est **conditionnel**, et la sortie le dit honnêtement : `Export differe : completer les exercices ... ou imageio absent`. Deux raisons de refuser d'écrire : rien à exporter (frames vides), ou outil manquant. C'est un choix de production — ne jamais écrire un fichier vidéo vide ni échouer à moitié. Le codec `libx264` (H.264) est le standard de distribution : lu partout, bon compromis qualité/poids pour la diffusion.",,,,,,,,0df9738a6b658925,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-14,code,fr,bf9093d39c3fe5e5,"# Export de la video finale
 print(""\n--- EXPORT VIDEO FINALE ---"")
 print(""="" * 40)
@@ -18117,7 +18233,9 @@ if notebook_mode == ""interactive"" and not skip_widgets:
             print(f""Erreur : {error_type}"")
 else:
     print(""Mode batch - Interface interactive desactivee"")",,,,,,,,1fdf1ff624ea188a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,zf193mwllte,markdown,fr,9579b4e05a0a78ae,"Les statistiques de session enregistrent les temps d'exécution de chaque étape du pipeline, les tailles des fichiers produits et les ressources GPU consommees.",,,,,,,,9579b4e05a0a78ae,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,zf193mwllte,markdown,fr,41d2a2fc4e79a8a0,"Les statistiques de session résument l'état du pipeline : compteurs de scènes et de frames, format de sortie, étapes activées, fichiers produits avec leur taille, et dépendances effectivement utilisées.
+
+Ce que ces statistiques vérifient, et pourquoi elles sont la preuve de fin d'exercice : un seul artefact écrit (`subtitles.srt`, 0.0 KB) — la chaîne s'est arrêtée avant la première scène. La sortie montre `Scenes : 0` et `Frames finales : 0` — l'état cohérent d'un pipeline non complété, chaque compteur à zéro pour la même raison de chaîne. Une fois l'exercice `generate_script_with_llm` complété, ces mêmes compteurs non nuls (scènes, images, frames, durée, taille du MP4) constitueront la trace mesurable du pipeline réel. La table ne chronomètre pas les étapes et ne mesure pas la VRAM : elle dit quels organes ont tourné (`activee` par étape, `utilisee` par dépendance) et combien ils ont produit. Le `GPU: True` de la sortie appartient à la vérification des dépendances (cellule 3), pas à cette table : il atteste que la voie locale `diffusers` est **disponible** — et le `5/5` des dépendances ne prouve que l'importabilité des modules, pas le comportement du pipeline — les optimisations (cache des images, TTS en parallèle, export en résolution réduite) supposent d'ajouter un chronomètre par étape, que cette table ne porte pas.",,,,,,,,41d2a2fc4e79a8a0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-17,code,fr,97f4107410bebab3,"# Statistiques de session
 print(""\n--- STATISTIQUES DE SESSION ---"")
 print(""="" * 40)
@@ -18339,7 +18457,9 @@ for case in test_cases:
     # print(f""  Video: {result['video_path']}"")
     # print(f""  Cout: ${result['cost']:.2f}, Temps: {result['time']:.0f}s"")
 ",,,,,,,,430fdf2e570b80ac,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,pjaff2luigp,markdown,fr,6c98d8651d4d10b5,Le système de A/B testing permet de comparer deux approches de generation video sur les mêmes prompts et de mesurer objectivement la qualite percue par des metriques automatiques.,,,,,,,,6c98d8651d4d10b5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,pjaff2luigp,markdown,fr,59e7358a8c194c5c,"Le système de A/B testing permet de comparer deux approches de generation video sur les mêmes prompts et de mesurer objectivement la qualite percue par des metriques automatiques.
+
+Ce que le A/B testing teste : deux approches de génération sur les **mêmes prompts** — une seule variable d'écart entre les deux branches, tout le reste tenu égal. Les métriques automatiques d'engagement jouent le rôle du jury : l'ossature de l'expérience contrôlée (une variable, des mesures, une décision) appliquée à la génération vidéo, là où l'œil nu comparerait deux vidéos différentes pour dix raisons à la fois.",,,,,,,,59e7358a8c194c5c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,0jxokv9u7zii,code,fr,96fc6fc3b4606fd0,"# TODO: Exercice Avance - Systeme de A/B Testing Video
 class VideoABTestPlatform:
     """"""
@@ -19326,7 +19446,7 @@ try:
     print(f""[versions] imageio {imageio.__version__}"")
 except ImportError:
     print(""[versions] imageio MANQUANT"")",,,,,,,,a1e3e00d5db8ca01,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,5a13f912,markdown,fr,d78daad507f498f3,"## 3. Architecture de CogVideoX
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,5a13f912,markdown,fr,d3eff8789ea0f6ed,"## 3. Architecture de CogVideoX
 
 CogVideoX est un modele de diffusion **video** developpe par **THUDM** (Tsinghua University). Le depot HuggingFace `THUDM/CogVideoX-2b` fournit une variante a **2 milliards de parametres** (la ""petite"" de la famille ; `CogVideoX-5b` existe aussi mais necessite >24 GB VRAM).
 
@@ -19336,7 +19456,7 @@ CogVideoX est un modele de diffusion **video** developpe par **THUDM** (Tsinghua
 |---|---|
 | Type | Diffusion video latente (3D VAE + transformer) |
 | Parametres | 2 B |
-| Resolution | 480 x 720 (ratio 9:16 vertical, ou redimensionnable) |
+| Resolution | 720 x 480 (paysage 3:2 — `width = 720`, `height = 480` ; redimensionnable) |
 | Fps natif | 8 fps |
 | Duree native | 6 secondes (49 frames) ; c'est la longueur utilisee dans ce notebook (cf cell-1) |
 | Conditionnement | Texte uniquement (T5-XXL encoder pour le prompt) |
@@ -19361,10 +19481,12 @@ CogVideoX est un **complement direct** a :
 - **02-4 SVD** : image-to-video (besoin d'une image source), pas text-to-video
 - **02-6 MiniMax H3** : modele *le plus puissant* de la serie, mais `INTRINSIC` (licence exclut UE)
 
-CogVideoX-2b est le **chainon manquant** : qualite correcte, VRAM raisonnable, **et licence permissive**.",,,,,,,,d78daad507f498f3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,be4cc7ea,markdown,fr,9cd30a286aa3fb19,"## 4. Chargement du pipeline CogVideoX
+CogVideoX-2b est le **chainon manquant** : qualite correcte, VRAM raisonnable, **et licence permissive**.
+",,,,,,,,d3eff8789ea0f6ed,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,be4cc7ea,markdown,fr,84ddc603ffab7708,"## 4. Chargement du pipeline CogVideoX
 
-Le chargement prend ~30s-2min selon la bande passante disque et la taille du cache HF. Le premier telechargement recupere ~5 GB de poids (bf16).",,,,,,,,9cd30a286aa3fb19,,,,,,,,,,,,,,,
+Le chargement prend ~30s-2min selon la bande passante disque et la taille du cache HF. Le premier telechargement recupere **~14 GB** au total (releve sur le depot HuggingFace : ~9.5 GB d'encodeur T5-XXL, ~3.4 GB de transformer, ~0.9 GB de VAE).
+",,,,,,,,84ddc603ffab7708,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,17d391b1,code,fr,5559cd1f9cc7ea4b,"# Chargement du pipeline CogVideoX-2b
 from diffusers import CogVideoXPipeline
 
@@ -19579,7 +19701,7 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,4ea
 
 **Verdict observe sur CETTE execution (cell-11)** : sur les 4 generations courtes avec deux graines par prompt, la mesure `profil_mouvement` (intensite + derive barycentre vertical) a conclu NO DISCRIMINATION MESUREE (lintensite moyenne pour prompt_a chute reste dans la meme fourchette que lintensite pour prompt_b statique, et la derive verticale pour prompt_a est non positive : prompt_a ne descend pas plus que prompt_b). Visuellement la grille peut suggerer des trajectoires differentes mais la mesure falsifiable ne confirme pas la discrimination comportementale. Cela valide pedagogiquement la these : un modele video 2B peut generer une scene plausible sans encoder laction demandee par le prompt.
 **Limite** : 49 frames a 8 fps = 6 secondes, c'est la duree native maximale de CogVideoX-2b. Au-dela, le modele ne tient plus la coherence temporelle.",,,,,,,,7060b8566c9fafaf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,f09ad300,markdown,fr,350c241f7bad3d15,"## 8. Bonnes pratiques CogVideoX et comparaison Module 02
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,f09ad300,markdown,fr,b1ccc24c476ae1a7,"## 8. Bonnes pratiques CogVideoX et comparaison Module 02
 
 > **Conseils d'usage :**
 
@@ -19593,7 +19715,7 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,f09
 
 | Modele | Type | VRAM | Qualite | Licence | Use case |
 |---|---|---|---|---|---|
-| HunyuanVideo (02-1) | t2v | ~18 GB | tres haute | TENSEurope (?) | Qualite cinema |
+| HunyuanVideo (02-1) | t2v | ~18 GB | tres haute | Tencent Hunyuan Community (hors UE/UK/Coree du Sud) | Qualite cinema |
 | LTX-Video (02-2) | t2v + i2v | ~8 GB | moyenne | permissive | Rapidite / prototypage |
 | Wan 2.1/2.2 (02-3) | t2v | ~10 GB | haute | permissive | Multilingue (FR OK) |
 | SVD 1.1 XT (02-4) | i2v | ~10 GB | bonne | StabAI Comm. | Animer une image |
@@ -19601,7 +19723,8 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,f09
 | MiniMax H3 (02-6) | omni-modal + audio | (24+ GB) | #1 benchmark | **INTRINSIC UE** | (descriptif) |
 | **CogVideoX-2b (02-7)** | **t2v** | **~16 GB** | **bonne** | **Apache-2.0** | **Open weights propre** |
 
-CogVideoX-2b est le choix **defaut** quand on veut : (a) un modele vraiment open-weights sans clause, (b) VRAM raisonnable, (c) resultats corrects sans optimisation a outrance.",,,,,,,,350c241f7bad3d15,,,,,,,,,,,,,,,
+CogVideoX-2b est le choix **defaut** quand on veut : (a) un modele vraiment open-weights sans clause, (b) VRAM raisonnable, (c) resultats corrects sans optimisation a outrance.
+",,,,,,,,b1ccc24c476ae1a7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,dddd5984,markdown,fr,2eaccdcc7a09eb45,"## Exercice 1 : Ajuster le nombre de frames et observer l'impact
 
 **Objectif** : comprendre comment la duree de la video affecte la memoire GPU et la fluidite de la sequence.
@@ -19708,15 +19831,15 @@ def safe_generate(pipe, prompt, num_frames=16, height=480, width=720, **kwargs):
 #         print(f""Refuse : {e}"")
 print(""Exercice 3 - safe_generate a completer (stub)."")
 ",,,,,,,,b09aed1accd463e5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,3b86d58b,markdown,fr,5036fbcecd5285f1,"## 9. Resume materiel (cost metadata)
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,3b86d58b,markdown,fr,1fb1dd774e45ef3d,"## 9. Resume materiel (cost metadata)
 
 Cette execution a ete realisee sur :
 - **Machine** : `myia-po-2023` (worker po-2023 du cluster CoursIA, Windows 11, RTX 3090 24GB)
 - **GPU** : NVIDIA GeForce RTX 3090, 24 GB VRAM, CUDA 12.4
-- **Wall-clock** : 4 generations (49 frames chacune, 25 etapes) en **~573 s total** (~145 s par generation ; runtime *machine-dep*, decomposition ci-dessous)
-- **VRAM peak** : **9.6 GB** (sur 25.8 GB disponibles, soit 37% d'utilisation)
+- **Wall-clock** : 4 generations (49 frames chacune, 25 etapes) en **~573 s total** (~143 s par generation ; runtime *machine-dep*, decomposition ci-dessous)
+- **VRAM peak** : **9.6 GB** (sur ~25.8 GB rapportes par le driver, soit 37 % d'utilisation)
 - **Licence** : Apache-2.0 (THUDM, verifiee cell-3 par lecture firsthand de LICENSE)
-- **Cout estime pour reproduire** : ~10 minutes de GPU + 14 GB de telechargement initial
+- **Cout estime pour reproduire** : ~10 minutes de GPU + ~14 GB de telechargement initial
 
 ### Decomposition du wall-clock (Prong B)
 
@@ -19727,10 +19850,10 @@ Cette execution a ete realisee sur :
 | 3 | pomme immobile (apple sitting still) | 42 | 49 | ~142 | 9.6 |
 | 4 | pomme immobile (apple sitting still) | 1337 | 49 | ~142 | 9.6 |
 
-**Observation pedagogique** : les 4 generations presentent un wall-clock et une empreinte VRAM tres homogenes (variation < 5%). C'est le signe que le modele est bien conditionne par le pipeline  +  ; les micro-variations proviennent du scheduler DPM++ et du determinisme de la graine. Pour une discussion du couple discriminant (action vs graine), voir cell-13 (grille 4x4) et cell-14 (interpretation).
+**Observation pedagogique** : les 4 generations presentent un wall-clock et une empreinte VRAM tres homogenes (variation < 5%). C'est le signe que le cout depend de la charge (49 frames, 25 etapes) et non de la graine ; les micro-variations proviennent du scheduler DPM++ et du determinisme de la graine. Pour une discussion du couple discriminant (action vs graine), voir cell-13 (grille 4x4) et cell-14 (interpretation).
 
-Ces informations sont reportees dans `metadata.cost` du notebook pour permettre au lecteur d'estimer le cout avant de lancer.
-",,,,,,,,5036fbcecd5285f1,,,,,,,,,,,,,,,
+Ces informations sont reportees dans `metadata.cost` du notebook, qui decrit **ce meme run** : 49 frames, 4 generations, 572.9 s de generation, 9.6 GB de VRAM pic. Le run complet sous Papermill dure 643.4 s (`metadata.papermill.duration`) : l'ecart avec les 572.9 s est le chargement du modele et les imports, pas la generation. Chaque nombre ci-dessus est donc retrouvable dans un bloc lisible par machine.
+",,,,,,,,1fb1dd774e45ef3d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,417b8527,markdown,fr,2fd166c13407895d,"## References
 
 - **Modele** : <https://huggingface.co/THUDM/CogVideoX-2b> (Apache-2.0)
@@ -21630,14 +21753,15 @@ La liste « utilisables en UE » ne retient pas HunyuanVideo. Sa licence, la *Te
 Pour le cas « vidéo + audio natif », la sortie « Alternatives UE » retient LTX-2 et OpenAI Sora. Sora est une API fermée (`open_weights` vaut `False` dans `MODELES`) : seul LTX-2 est donc une alternative UE en poids ouverts.",,,,,,,,b9234273c617e6e5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-1-Educational-Video-Generation.ipynb,lect-deps,markdown,fr,68042a87882485d7,"**Lecture.** La sortie appelle deux remarques. Cote configuration, aucun `.env` n'a ete trouve : le notebook l'annonce (`WARNING: .env non trouve`) et continue avec les variables d'environnement, ce qui suffit ici puisque le pipeline n'appelle aucune API. Cote dependances, les quatre paquets sont disponibles : `moviepy 2.1.2`, `imageio`, `diffusers` (`GPU: False` sur cette machine) et `openai`, soit `Dependances disponibles : 4/4`. Etre disponible ne veut pas dire etre utilise : seul `imageio` sert a l'encodage plus loin.",,,,,,,,68042a87882485d7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-1-Educational-Video-Generation.ipynb,lect-overlays,markdown,fr,2fbb8405a848a34b,"**Lecture.** Sur l'execution committee (CPU seul, `GPU: False`), les overlays couvrent les 1380 frames en 6.95 s (`Overlays appliques en 6.95s`), soit 199 frames/s (`Vitesse : 199 frames/s`). Ce cout vient de la facon dont le code travaille : pour chaque frame, `add_progress_bar` copie la frame entiere (`frame.copy()`) et `add_chapter_indicator` la convertit en image Pillow puis de nouveau en tableau (`Image.fromarray`, `np.array`), alors que les overlays ne modifient qu'une bande de 6 pixels en bas et un cadre de 190x45 pixels en haut a droite. La cellule d'export de la Section 5 chronometre l'encodage sur la meme execution, ce qui permet de comparer les deux etapes.",,,,,,,,2fbb8405a848a34b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-beats-md,markdown,fr,5cf9de75e120faca,"### Clip musical : synchronisation sur des beats reellement detectes
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-beats-md,markdown,fr,ea63dfce3dba94ac,"### Clip musical : synchronisation sur des beats reellement detectes
 
 Une grille fixe, avec un BPM saisi a la main (`bpm = 120`), fait suivre aux effets une cadence
 reguliere, pas la musique. Ici la piste audio est **connue par construction** (clicks synthetiques
 a 96 BPM, volontairement different de 120) puis **reellement analysee** : `librosa` estime le tempo
 et suit les beats, les effets sont indexes sur les evenements detectes, et un **bras temoin** garde
 la grille fixe a 120 BPM pour rendre l'ecart mesurable. Un cas perturbe (accelerando + silence
-central) complete la demonstration : la grille fixe derive, et le detecteur d'onsets suit chaque clic.",,,,,,,,5cf9de75e120faca,,,,,,,,,,,,,,,
+central) complète la démonstration : la grille fixe dérive, et le détecteur d'onsets suit chaque clic.
+",,,,,,,,ea63dfce3dba94ac,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-beats-a,code,fr,51577f0d39503bc5,"# Creation de clip musical : analyse audio REELLE (librosa) sur une piste controlee
 if enable_music_video:
     print(""--- CLIP MUSICAL : ANALYSE AUDIO REELLE ---"")
@@ -21916,7 +22040,8 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipyn
   **Choisir son detecteur selon la musique** : tempo stable -> `beat_track` (grille musicale propre,
   tempo exploitable), tempo variable ou declenchements eventuels -> `onset_detect`.
 
-## Section 3 : Effets stop-motion et color grading",,,,,,,,d3e03997467f2dc2,,,,,,,,,,,,,,,
+## Section 3 : Effets stop-motion et color grading
+",,,,,,,,d3e03997467f2dc2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,9c7fe07f,markdown,fr,4f58e1f30d5682a2,"### Exemple guidé — Les contrôles de la mesure (pourquoi le PNG ne mesure rien)
 
 L'exercice 2 exige une mesure sur les échantillons ; les deux contrôles qui le prouvent sont joués ici sur des **signaux synthétiques locaux** (aucun service, aucune clé, aucun réseau) :
@@ -21972,8 +22097,16 @@ for tag, figsize, dpi in ((""A"", (8, 2), 100), (""B"", (4, 1.2), 200)):
           f""  (statistique d'image : le dessin change)"")
 print(f""  mesures sur échantillons (source PCM) : {stats_pcm(sig)}"")
 print(""  -> identiques quel que soit le rendu : la mesure ne lit jamais le dessin."")",,,,,,,,e5e2a5ec99198876,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,6db27ef8,markdown,fr,796a380885ebe465,"**Lecture chiffree — le verdict OK atteste une generation reelle, pas une extrapolation.** Le JSON commite rend `""actual_status"": 200`, un task_id `""431137218855159""`, `""status_code"": 0` et `""verdict"": ""OK""` : la sonde a debite exactement une generation sur le quota journalier consenti — la cle etait disponible au setup et le parametre de depense leve la garde no_post. La section precedente decrit le regime sans cle (verdict structurel, rien de debite) ; cette sortie-ci est l'autre regime, execute : le verdict est firsthand, c'est la reponse du service, pas une lecture de sa documentation.
-",,,,,,,,796a380885ebe465,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,6db27ef8,markdown,fr,926280c1db5aeddd,"**Lecture chiffree — le verdict OK atteste une generation reelle, pas une extrapolation.** Le JSON commite rend `""actual_status"": 200`, un task_id `""431137218855159""`, `""status_code"": 0` et `""verdict"": ""OK""` : la sonde a debite exactement une generation sur le quota journalier consenti — la cle etait disponible au setup et le parametre de depense leve la garde no_post. La section precedente decrit le regime sans cle (verdict structurel, rien de debite) ; cette sortie-ci est l'autre regime, execute : le verdict est firsthand, c'est la reponse du service, pas une lecture de sa documentation.
+
+**Et le mode descriptif ?** Tant que `MINIMAX_GENAI_API_KEY` n'est pas livree, le notebook reste **execut-able SANS cle** et rend un verdict structurel (`DESCRIPTIF_STUB`) sur la forme des requetes/responses. C'est la **meme posture cle que 04-5** : key-gated skeleton.
+
+Trois garanties portees par ce mode descriptif :
+
+- **0 generation reelle debit** — la sonde ne POST jamais sans `no_post=False` ET cle ET quota=1. Plafond=1 du cycle 196 preserve.
+- **Verdict structurel reproductible** — la sortie de la sonde est deterministe (meme payload, meme verdict). Permet de tester les exercices sans dependre d'un service externe.
+- **Migration vers mode generation triviale** : passer `MINIMAX_SPEND_QUOTA=1`, livrer `MINIMAX_GENAI_API_KEY`, appeler `probe_minimax_video(payload=..., no_post=False)`. La sonde bascule en mode reel sans autre changement de code.
+",,,,,,,,926280c1db5aeddd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,a9897507,markdown,fr,d48b9c35e4e9eacb,"# Bonus Slideshow Vidéo - Générateur de Slideshow (Optionnel)
 
 **Navigation** : [<< Précédent (01-1)](01-1-Video-Operations-Basics.ipynb) | [Index](../../README.md) | [Suivant >> (01-2)](01-2-GPT-5-Video-Understanding.ipynb)
@@ -22342,3 +22475,17 @@ print(f""2. Combiner upscaling + generation pour des videos haute qualite"")
 print(f""3. Module 02 : Modeles generatifs video avances"")
 
 print(f""\nNotebook 01-4 Video Enhancement termine - {datetime.now().strftime('%H:%M:%S')}"")",,,,,,,,909a287275bf352e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1-Video-Operations-Basics.ipynb,cell-sec3-ffmpeg,markdown,fr,6820487531051c1a,"## Section 3 : Analyse des metadonnees avec ffmpeg-python
+
+ffmpeg-python permet d'interroger les metadonnees d'un fichier video sans le decoder entierement.
+C'est beaucoup plus rapide que de charger la video complete.
+",,,,,,,,6820487531051c1a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,a29l0601,markdown,fr,73e5ee9ce80ae5bb,"### Lecture du résultat : l'environnement vérifié d'un coup
+
+La sortie confirme une **NVIDIA GeForce RTX 4090** — 24.0 GB de VRAM entièrement libres, CUDA 12.6 — puis valide les **six** dépendances de la chaîne text-to-video avec leurs versions : `diffusers` 0.39.0 (le pipeline `LTXPipeline`), `transformers` 5.13.0 (l'encodeur de texte T5-XXL), `sentencepiece` 0.2.2 et `protobuf` 7.35.1 — indispensables pour reconstruire le tokenizer du T5 depuis le binaire `spiece.model` —, enfin `imageio` 2.37.4 et `imageio-ffmpeg` 0.6.0 pour l'export MP4. Le drapeau final `Device : cuda` et les deux autorisations (`Generation activee : True`, `Image-to-video activee : True`) disent que ce carnet s'exécutera en **mode réel** : les vidéos des sections suivantes sont de vraies générations mesurées, pas des illustrations préchargées.",,,,,,,,73e5ee9ce80ae5bb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,a29l0802,markdown,fr,6066922c219ebf75,"### Lecture du résultat : 13.3 GB résidents, 16 secondes de chargement
+
+Le pipeline vient du Hub (`Lightricks/LTX-Video`) : les barres de progression de la sortie couvrent **cinq** composants — dont les fichiers de poids répartis en deux shards de checkpoint, le plus volumineux étant l'encodeur T5-XXL. Sur cette RTX 4090 à 24 GB, le code prend la branche **placement direct** : l'offload CPU (échange des couches GPU ↔ RAM) n'est activé que sous 16 GB de VRAM. À l'issue du chargement, **13.3 GB** résident en VRAM — le reste de la carte couvrira le pic de génération, mesuré à 14.1 GB en fin de session. Le VAE est découpé par lots (`pipe.vae.enable_slicing()`, forme courante de l'API depuis diffusers 0.33) pour borner la mémoire du décodage des frames ; la résolution de travail est 704×480.",,,,,,,,6066922c219ebf75,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,a29l3403,markdown,fr,af0b8eb60a2fb60f,"### Lecture du résultat : le bilan de session
+
+Le pic VRAM de la session est de **14.1 GB** — à peine 0.8 GB au-dessus des 13.3 GB du pipeline résident : la génération elle-même est presque gratuite en mémoire. Les trois artefacts produits pèsent ensemble moins de 130 Ko : `ltx_demo.mp4` (**33.1 KB**), `ltx_img2vid.mp4` (**92.6 KB**) et l'image de test (2.7 KB) — à mettre en regard des ~13 GB de poids du modèle : c'est la compression vidéo, pas le réseau, qui fixe la taille des fichiers. La VRAM est explicitement libérée (`torch.cuda.empty_cache()`) avant la conclusion.",,,,,,,,af0b8eb60a2fb60f,,,,,,,,,,,,,,,
