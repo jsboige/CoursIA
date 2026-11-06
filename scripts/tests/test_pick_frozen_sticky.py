@@ -287,8 +287,22 @@ def test_l_adjoint_titulaire_ferme_bien_un_gel_de_commentaire(monkeypatch, lane)
 
 def test_la_lane_habilitee_est_celle_du_delivered_urn(monkeypatch):
     """Le filtre d'autorite suit le meme modele que l'urne `delivered`
-    (dispatch c2764) : les deux listes portent les memes lanes."""
-    assert pig.FROZEN_UNFROZEN_LANES == pig.DELIVERED_URN_LANES
+    (dispatch c2764), mais il est **plus etroit** : lever un gel est un
+    sous-ensemble de la fermeture d'une issue livree (#24884, point 3).
+    Le secretaire ferme ; il ne leve pas le gel d'une EPIC."""
+    assert pig.FROZEN_UNFROZEN_LANES <= pig.DELIVERED_URN_LANES
+
+
+def test_le_secretaire_ferme_mais_ne_leve_pas_le_gel(monkeypatch):
+    """Controle NEGATIF de l'inclusion : le secretaire ferme les issues
+    livrees (Q167 b) mais son `[UNFROZEN]` ne leve **pas** le gel d'une
+    EPIC -- ce droit reste au coordinateur (#24884, point 3). Sans ce
+    test, une relation d'inclusion vide passerait aussi bien."""
+    _install(monkeypatch, [
+        {"body": "[FROZEN] accord de coordination -- ai-01"},
+        {"body": "[UNFROZEN] gel leve -- lane myia-po-2028:CoursIA-3"},
+    ])
+    assert pig.has_recent_delivery_marker(19309) is True
 
 
 # --- (C) ce qui ne change pas ----------------------------------------------

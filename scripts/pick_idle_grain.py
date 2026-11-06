@@ -1608,6 +1608,11 @@ URN_NAMES = {"grain", "umbrella", "delivered"}
 DELIVERED_URN_LANES = frozenset({
     "myia-ai-01:CoursIA",       # coordinateur
     "myia-po-2025:CoursIA-2",   # adjoint (preflight #13605, #13883)
+    # Secretariat (Q167 b, mandat user 2026-09-07 valide le 2026-11-05,
+    # issue #24884) : le secretaire ferme les issues livrees. Il ne leve
+    # PAS le gel d'une EPIC -- voir `FROZEN_UNFROZEN_LANES` plus bas, qui
+    # reste un sous-ensemble de cette liste.
+    "myia-po-2028:CoursIA-3",
 })
 
 
@@ -1778,6 +1783,12 @@ _UNFROZEN_HEADER_RE = re.compile(
 #: tiers qui ecrit `[UNFROZEN]` sous le login partage ne leve rien.
 #:
 #: Coordinateur, 2026-11-04 (dispatch c2764, point 2).
+#:
+#: L'autorite de **lever un gel** est un **sous-ensemble** de l'autorite de
+#: **fermer une issue livree** (`DELIVERED_URN_LANES`) : on peut fermer ce
+#: que l'on peut aussi bloquer, pas l'inverse. Le secretaire
+#: (`myia-po-2028:CoursIA-3`, Q167 b) ferme ; le gel d'une EPIC reste au
+#: coordinateur (#24884, point 3).
 FROZEN_UNFROZEN_LANES = frozenset({
     "myia-ai-01:CoursIA",       # coordinateur
     "myia-po-2025:CoursIA-2",   # adjoint titulaire
