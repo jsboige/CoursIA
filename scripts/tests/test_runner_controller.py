@@ -289,6 +289,37 @@ def test_task_install_writes_the_launcher_the_xml_points_at(prof, monkeypatch):
     assert str(launcher) in installed
 
 
+def test_task_xml_carries_the_run_level_in_principals(prof):
+    """Le niveau d'execution est une propriete du PRINCIPAL de la tache : il doit
+    voyager dans l'XML des la creation. Le porter apres coup par
+    `schtasks /Change /RL HIGHEST` fait reclamer le mot de passe du compte et
+    suspend une session elevee non interactive (mesure 2026-11-04, #24700).
+
+    `UserId` est volontairement absent : le principal par defaut est le compte
+    appelant, ce qui garde le script independant de la machine."""
+    root = ET.fromstring(ctl.task_xml(prof))
+    principals = root.find("{" + TASK_NS + "}Principals")
+    assert principals is not None, "un XML sans <Principals> ne porte aucun RunLevel"
+    principal = principals.find("{" + TASK_NS + "}Principal")
+    assert principal is not None and principal.get("id") == "Author"
+    run_level = principal.find("{" + TASK_NS + "}RunLevel")
+    assert run_level is not None and run_level.text == "HighestAvailable"
+    assert principal.find("{" + TASK_NS + "}UserId") is None
+
+
+def test_task_install_never_asks_schtasks_to_change_the_run_level(prof, monkeypatch):
+    """Le `/Change /RL HIGHEST` posterieur a la creation est le blocage : il ne
+    doit plus exister dans le chemin d'installation, quelle que soit la forme."""
+    monkeypatch.setattr(ctl, "_is_elevated", lambda: True)
+    fake = FakeRun()
+    ctl.apply_task_install(prof, fake)
+    schtasks = [" ".join(str(a) for a in c[0]) for c in fake.calls
+                if str(c[0][0]) == "schtasks"]
+    assert schtasks, "l'installation doit appeler schtasks au moins une fois"
+    assert not [c for c in schtasks if "/Change" in c], schtasks
+    assert [c for c in schtasks if "/Create" in c and "/XML" in c], schtasks
+
+
 def test_task_xml_malformed_is_caught_before_elevation(prof, monkeypatch):
     """La garde d'elevation passait AVANT la construction de l'XML : un dry-run
     non-eleve ne pouvait donc structurellement pas voir un document malforme.

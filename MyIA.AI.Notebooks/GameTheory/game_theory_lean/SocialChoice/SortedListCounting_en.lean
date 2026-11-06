@@ -68,7 +68,7 @@ variable {α : Type*}
 /-- For a list `l` sorted with `(· ≤ ·)` and pivot `l[k]`, the number of
     elements strictly less than `l[k]` is at most `k`.
 
-    PROOF SKETCH (TODO po-2026 Track 2):
+    PROOF SKETCH:
     - Decompose `l = l.take k ++ l.drop k` via `List.take_append_drop`.
     - `(l.take k).length = k` by `List.length_take` (using `hk : k < l.length`).
     - `(l.drop k).head = l[k]` by indexing.
@@ -111,7 +111,7 @@ theorem countP_lt_kth_le_half [LinearOrder α]
     Dual of `countP_lt_kth_le_half`, giving a lower bound on the
     "right side" of the pivot.
 
-    PROOF SKETCH (TODO po-2026 Track 2):
+    PROOF SKETCH:
     - Decompose `l = l.take k ++ l.drop k`.
     - `(l.drop k).length = l.length - k` by `List.length_drop`.
     - All elements of `l.drop k` are `≥ l[k]` (head + sortedness).

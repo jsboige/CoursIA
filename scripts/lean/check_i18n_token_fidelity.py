@@ -164,6 +164,32 @@ _I18N_CONVENTION = re.compile(
     re.I | re.MULTILINE,
 )
 
+# The `EN sibling of `X.lean`` form of the same declaration: the EN header
+# names the file it mirrors and carries metadata the FR header has no
+# counterpart for (ratification date, issue ids, method note). It is a
+# mirror header in the same sense as `English mirror of `X.lean`` -- but
+# unlike that form, it may ALSO translate the FR header, so excluding it
+# unconditionally would hide a real loss (see `compare_files`).
+_SIBLING_DECLARATION = re.compile(
+    r"\b(?:EN|english)\s+sibling\s+of\b", re.I)
+
+
+def declares_sibling_mirror(fr_body: str, en_body: str) -> bool:
+    """True when the EN body declares itself the sibling of the FR file.
+
+    The FR body is checked too: when BOTH sides declare the sibling, they
+    are two metadata headers and comparing them is meaningful.
+    """
+    return (bool(_SIBLING_DECLARATION.search(en_body))
+            and not _SIBLING_DECLARATION.search(fr_body))
+
+
+def drops_fr_token(findings: list) -> bool:
+    """True when the findings report a token the FR side carries and the EN
+    side does not -- a real loss of translation."""
+    return any(f.get("severity") == HARD and f.get("side") == "FR"
+               for f in findings)
+
 
 def is_i18n_convention_block(body: str) -> bool:
     """True when ``body`` is, or embeds, a `### i18n` convention note.
@@ -828,14 +854,41 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
             is_header = (is_mirror_metadata_header(fr_body, en_body)
                          or is_i18n_convention_block(fr_body)
                          or is_i18n_convention_block(en_body))
+            sibling = False
+            pair_excluded = False
             if fr_body and en_body:
-                if is_header:
-                    excluded += 1
-                    findings = []
-                else:
-                    compared += 1
+                sibling = declares_sibling_mirror(fr_body, en_body)
+                # The findings are needed only when the pair is COMPARED, or
+                # to decide whether a `sibling` header drops a FR token. A
+                # plain mirror header (excluded by design) never needs them:
+                # computing them for every excluded header doubled the work
+                # over the whole `--all` corpus (188 excluded pairs out of
+                # 9541, measured on the repository; review of #24591).
+                if sibling or not is_header:
                     findings = compare_bodies(fr_body, en_body, decls,
-                                               is_module=is_module)
+                                              is_module=is_module)
+                    # A `EN sibling of `X`` header is a mirror header too, but
+                    # only when it drops NOTHING the FR side carries: a
+                    # header that also translates the FR summary and loses a
+                    # token holds a real loss, and stays compared.
+                    # The sibling branch is evaluated FIRST, so a body
+                    # carrying BOTH declarations and dropping a FR token is
+                    # reported rather than excluded: the exclusion must
+                    # never hide a real loss (review of #24591).
+                    if sibling and drops_fr_token(findings):
+                        compared += 1
+                    elif is_header or sibling:
+                        excluded += 1
+                        findings = []
+                        pair_excluded = True
+                    else:
+                        compared += 1
+                else:
+                    # Plain mirror header: excluded by design, no comparison
+                    # performed.
+                    findings = []
+                    excluded += 1
+                    pair_excluded = True
             else:
                 findings = []
             pair = {
@@ -845,7 +898,7 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
                 "en_line": en_line,
                 "fr_kind": fr_kind,
                 "en_kind": en_kind,
-                "excluded": is_header,
+                "excluded": pair_excluded,
                 "findings": findings,
             }
             pairs.append(pair)
@@ -862,6 +915,7 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
         # A mirror header has no FR counterpart by design: it is a header,
         # not an orphan comment. A `### i18n` note is metadata, same reason.
         if (_MIRROR_DECLARATION.search(body)
+                or _SIBLING_DECLARATION.search(body)
                 or is_i18n_convention_block(body)):
             continue
         unpaired.append({"severity": ADVISORY, "kind": "unpaired-comment",

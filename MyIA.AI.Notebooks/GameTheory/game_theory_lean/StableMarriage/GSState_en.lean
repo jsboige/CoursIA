@@ -3,14 +3,17 @@
   ==============================================
 
   English mirror of `StableMarriage/GSState.lean` (FR-first canonical).
-  Convention i18n Lean ratifiée par ai-01 (2026-07-04, #4980 comment-4881909354) :
-  fichiers `.lean` distincts FR + EN siblings dans le même lake, les deux compilent.
-  Drift-CI detectable : contenu non-docstring byte-identique entre siblings.
-  Namespace sibling : `StableMarriage_en` (le FR canonique reste `StableMarriage`).
-  Convention observée : imports intra-lake restent sur fichiers FR canoniques.
-  Pas une traduction destructive : manual translation FR-first-from-origin
-  (pas d'historique EN pré-Option A pour ce fichier) ; code tactique Lean
-  byte-identique préservé verbatim, prose traduite. Pattern identique
+  Intermediate state for the Gale-Shapley deferred acceptance algorithm.
+  Uses a partial matching based on `Option` while the algorithm runs,
+  converted into a total bijective matching at termination.
+
+  i18n convention (cf #4980): headers, sections, docstrings and intra-proof
+  comments are in English in this mirror; Lean symbol names, lemma statements
+  and tactics are preserved in English (Mathlib compatibility).
+  Convention observed: intra-lake imports stay on the FR canonical files.
+  Not a destructive translation: manual translation FR-first-from-origin
+  (no pre-Option A EN history for this file); Lean tactic code
+  byte-identical, preserved verbatim; prose translated. Same pattern as
   c.238.2/#5362 (RepeatedGames), c.238.3/#5363 (Minimax), c.238.4/#5419 (Shapley).
 
   Adapté de / Adapted from: https://github.com/mmaaz-git/stable-marriage-lean (v4.25.0)
@@ -134,8 +137,8 @@ noncomputable def gsStep (σ : GSState prof) : GSState prof :=
 
 end GSDefs
 
--- Ces définitions utilisent le paramètre explicite `prof` pour éviter la duplication
--- des variables de section.
+-- These definitions use the explicit `prof` parameter to avoid duplicating
+-- the section variables.
 noncomputable def gsRunSteps (prof : PrefProfile n) (k : Nat) : GSState prof :=
   match k with
   | 0 => gsInitial prof
@@ -146,9 +149,9 @@ def gsProposalBound (n : Nat) [NeZero n] : Nat := n * n
 noncomputable def gsGaleShapley (prof : PrefProfile n) : GSMatching n :=
   (gsRunSteps prof (gsProposalBound n)).matching
 
-/-! ## Lemmes auxiliaires pour `gsChooseMax` -/
+/-! ## Auxiliary lemmas for `gsChooseMax` -/
 
-/-- La candidate maximale choisie appartient à l'ensemble des candidates. -/
+/-- The chosen maximal candidate belongs to the set of candidates. -/
 lemma gsChooseMax_mem (prof : PrefProfile n) (σ : GSState prof) (m : Fin n)
     (h : (gsCandidates prof σ m).Nonempty) :
     gsChooseMax prof σ m h ∈ gsCandidates prof σ m := by
@@ -174,13 +177,13 @@ lemma gsChooseMax_maximal (prof : PrefProfile n) (σ : GSState prof) (m : Fin n)
   obtain ⟨-, hmax⟩ := Classical.choose_spec (Finset.exists_maximal h)
   have htri := Nat.lt_trichotomy (prof.menPref m w) (prof.menPref m c)
   rcases htri with (hlt | heq | hgt)
-  · -- `choose` est préférée à `w` : `choose ≤ w`, donc `hmax` donne `w ≤ choose`
+  · -- `choose` is preferred to `w`: `choose ≤ w`, hence `hmax` gives `w ≤ choose`
     have hle : c ≤ w := Or.inr hlt
     exact hmax hw hle
-  · -- Préférence égale : l'injectivité donne `w = c`
+  · -- Equal preference: injectivity gives `w = c`
     left
     exact (prof.menPref_bijective m).injective (Fin.ext heq)
-  · -- `w` est préférée à `choose` : direct
+  · -- `w` is preferred to `choose`: direct
     right
     exact hgt
 

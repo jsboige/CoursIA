@@ -1,4 +1,17 @@
 /-
+  Social Choice Theory - Basic Definitions
+  =========================================
+
+  Port of asouther4/lean-social-choice to Lean 4
+  Original: https://github.com/asouther4/lean-social-choice
+
+  Core definitions for social choice theory:
+  - Strict preference (P) and indifference (I)
+  - Preference orders and quasi-orders
+  - Choice sets and maximal elements
+-/
+
+/-
   Convention i18n : fichier EN sibling — preserve le verbatim historique
   =====================================================================
 
@@ -16,19 +29,6 @@
 
   Source EN verbatim : aaaf0c52a (parent du commit c.218 FR-first).
   Resolution #4980 (2026-07-04) : supersede de l'Option A FR-only in-place.
--/
-
-/-
-  Social Choice Theory - Basic Definitions
-  =========================================
-
-  Port of asouther4/lean-social-choice to Lean 4
-  Original: https://github.com/asouther4/lean-social-choice
-
-  Core definitions for social choice theory:
-  - Strict preference (P) and indifference (I)
-  - Preference orders and quasi-orders
-  - Choice sets and maximal elements
 -/
 
 import Mathlib.Data.Finset.Basic

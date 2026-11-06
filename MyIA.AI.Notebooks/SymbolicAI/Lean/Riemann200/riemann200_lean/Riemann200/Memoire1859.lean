@@ -16,14 +16,29 @@ d'Euler (1737) dont le mémoire hérite.
 
 ## Grounding mesuré (convention de la série)
 
-- Mathlib **ne porte pas** la fonction ζ ni la ligne critique : aucun
-  `RiemannZeta` dans l'arbre (v4.33.0, greppé au grain).
-- Mathlib **porte** : les p-séries et le test de condensation
+Mesuré au pin Mathlib du lake (`db584cd6d4`, greppé dans
+`.lake/packages/mathlib`) :
+
+- Mathlib **porte** la fonction ζ, son prolongement et son équation
+  fonctionnelle : `def riemannZeta := hurwitzZetaEven 0`
+  (`Mathlib.NumberTheory.LSeries.RiemannZeta:121`),
+  `differentiableAt_riemannZeta` hors de `s = 1` (l.139) et
+  `riemannZeta_one_sub` (l.178), qui énonce
+  `ζ(1 − s) = 2 · (2π)^(−s) · Γ(s) · cos(πs/2) · ζ(s)`.
+- Mathlib **porte** un début de zérologie : les zéros triviaux
+  (`riemannZeta_neg_two_mul_nat_add_one`, l.173) et l'ensemble
+  `riemannZetaZeros`, fermé, discret, d'intersection finie avec tout compact
+  (`Mathlib.NumberTheory.LSeries.ZetaZeros`, l.35-66). Elle **énonce**
+  l'hypothèse de Riemann (`def RiemannHypothesis`, l.185) sans la prouver :
+  la localisation des zéros sur la droite critique reste ouverte.
+- Mathlib **porte** aussi : les p-séries et le test de condensation
   (`Mathlib.Analysis.PSeries`) ; la divergence de la somme des inverses des
   premiers (`Mathlib.NumberTheory.SumPrimeReciprocals`).
-- Le prolongement, l'équation fonctionnelle et les zéros restent hors
-  Mathlib : ce sont les carnets R-01/R-02 de la série qui les rendent
-  **calculables** (`mpmath.zetazero`), pas formels.
+- Ce que ce module apporte n'est donc pas l'existence formelle de ζ : c'est
+  le **fil du mémoire** — le pôle en `s = 1`, le fait d'Euler de 1737, et
+  leurs ré-exports commentés. Les carnets R-01/R-02 rendent les zéros
+  **calculables** (`mpmath.zetazero`) ; ils ne sont pas seuls à les rendre
+  formels.
 -/
 
 import Mathlib.Analysis.PSeries

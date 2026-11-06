@@ -312,6 +312,11 @@ def task_xml(profile: Profile) -> str:
       <Enabled>true</Enabled>
     </TimeTrigger>
   </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <RunLevel>HighestAvailable</RunLevel>
+    </Principal>
+  </Principals>
   <Settings>
     <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
     <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
@@ -347,13 +352,18 @@ def apply_task_install(profile: Profile, run: CommandRunner) -> dict:
     launcher = task_launcher_path(profile)
     launcher.parent.mkdir(parents=True, exist_ok=True)
     launcher.write_text(task_launcher(profile), encoding="ascii")
-    for args in (
+    # Un seul appel : le niveau d'execution est porte par `<Principals>` dans le
+    # XML (voir task_xml). Le `schtasks /Change /TN ... /RL HIGHEST` qui suivait
+    # la creation exige le mot de passe du compte des lors que le principal
+    # differe de l'appelant, donc il **bloque une session elevee non
+    # interactive** sur une invite que personne ne verra (mesure 2026-11-04 :
+    # processus suspendus > 180 s, fenetre UAC utilisateur consommee pour rien).
+    completed = run(
         ["schtasks", "/Create", "/TN", TASK_NAME, "/XML", str(xml_file), "/F"],
-        ["schtasks", "/Change", "/TN", TASK_NAME, "/RL", "HIGHEST"],
-    ):
-        completed = run(args, capture_output=True, text=True, encoding="utf-8", check=False)
-        if completed.returncode != 0:
-            raise Broken(f"schtasks failed: {(completed.stderr or '').strip()[:200]}")
+        capture_output=True, text=True, encoding="utf-8", check=False,
+    )
+    if completed.returncode != 0:
+        raise Broken(f"schtasks failed: {(completed.stderr or '').strip()[:200]}")
     return {"action": "task-installed", "task": TASK_NAME, "launcher": str(launcher)}
 
 

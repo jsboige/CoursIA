@@ -251,3 +251,42 @@ Avant que le tirage ne devienne systématique (R5), le plafond de veine portait 
 L'amendement ai-01 du 2026-08-16T22:53Z (verbatim : « on ne jette pas du travail écrit ») borne l'interdit : **le plafond ne bloque jamais la tranche en cours**, seulement la PR suivante.
 
 Anti-pattern fondateur : continuer à claimer `#11224`/`#11271` après la 3ᵉ tranche sans passer par le picker = monoculture auto-référence, le défaut structurel que la veine-mesure a justement rendu visible.
+
+## § Levier B — rationales, mesures et incidents déportés de `.claude/rules/proactive-coordination.md`
+
+Tranche 1 du slimming du harnais (#15204, parent #12051) : le détail déplacé ici est **mot pour mot** celui qui figurait dans la règle auto-chargée. La règle conserve ses obligations, interdictions, seuils, marqueurs et commandes d'organe ; ce qui part ici est la **justification**, la **mesure** et le **récit d'incident**. Les numéros de ligne cités renvoient à la version de base de la règle (`36c27857ad109`), avant déplacement.
+
+### Traçabilité — chaque bloc déplacé, sa ligne d'origine et sa cible
+
+| Ligne d'origine (base `36c27857ad109`) | Bloc déplacé | Porté par |
+|---|---|---|
+| L26 | troncature à 30 résultats : le scan manuel est aveugle | § « L26 » ci-dessous (et § « Picker — pondération, graine, mesures ») |
+| L32 | pourquoi la consolidation revient en tête du tapis | § « L32 » ci-dessous |
+| L36 | pourquoi le body d'une umbrella se confronte au réel | § « L36 » ci-dessous (et § « Umbrella #11900 ») |
+| L44 | ce que mesure l'organe `check_umbrella_freshness.py` | § « L44 » ci-dessous (et § « Umbrella #11900 ») |
+| L60 | pourquoi l'autorité est un test de résultat | § « L60 » ci-dessous (et § « Vocabulaire d'idle-honnête ») |
+| L76 | pourquoi le collision guard passe avant d'écrire | § « L76 » ci-dessous |
+
+### L26 — pourquoi le pool se tire au lieu de se scanner
+
+La troncature à **30 résultats** de `gh issue list` rend le scan manuel structurellement aveugle — elle demande un organe, pas plus de vigilance.
+
+### L32 — pourquoi la consolidation revient en tête du tapis
+
+Les issues de consolidation reviennent en tête plusieurs fois par semaine (mandat user 2026-10-25, issue #22500 ; organes mergés #22504).
+
+### L36 — pourquoi le body d'une umbrella se confronte au réel
+
+Un body est daté de sa **rédaction**, jamais de sa lecture — **plus le picker fait son travail, plus il remonte d'impasses apparentes**, dont le paragraphe bloquant a survécu à sa propre résolution. Conclure « bloquée sur autrui » sans mesurer, c'est reposer un grain disponible et croire le pool saturé — l'inverse exact de l'intention de la règle 5.
+
+### L44 — ce que mesure l'organe `check_umbrella_freshness.py`
+
+L'organe mesure la vacuité du **conteneur**, pas la viabilité du **grain** — une EPIC `FRESH` peut n'avoir que du résiduel `INTRINSIC`.
+
+### L60 — pourquoi l'autorité est un test de résultat
+
+Les workers ont contourné 1-6 en inventant un **vocabulaire d'idle-honnête** qui *sonne* comme du travail. Parce qu'un nouveau synonyme est toujours inventable, l'autorité n'est **pas une liste de mots** mais un **test de résultat**. Les labels bannis sont dans la section « Vocabulaire d'idle-honnête — les labels bannis (R7, mandat user 2026-07-19) » ci-dessus.
+
+### L76 — pourquoi le collision guard passe avant d'écrire
+
+Relire `main` ne remplace pas ce check (`main` ne montre pas l'*ouvert*). Coût ~10 s ; omission = travail dupliqué + rétractation publique.
