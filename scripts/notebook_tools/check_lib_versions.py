@@ -674,27 +674,30 @@ def _tracked_paths(repo_root: Path, relatives: list[str]) -> set[str]:
     return {line.strip().replace("\\", "/") for line in out.splitlines() if line.strip()}
 
 
-def _declared_reproduction(payload: dict) -> tuple[set[str], bool]:
-    """Artefacts nommes par une URL declaree, et presence d'une empreinte.
+def _declared_reproduction(payload: dict) -> dict[str, bool]:
+    """Artefacts nommes par une URL declaree, avec empreinte PAR ARTEFACT.
 
     Le mecanisme de reproduction (#23103, point 3) est « URL + version +
     checksum ». Le nom de l'artefact est la queue de l'URL ; la version vient
     de l'URL elle-meme (`.../1.28/x.jar`) ou de la ligne qui la porte.
+
+    L'empreinte est portee par l'artefact, pas par le carnet (reserve Hermes,
+    #24520) : elle doit apparaitre dans LA cellule qui declare l'URL de
+    l'artefact -- une empreinte declaree ailleurs dans le carnet ne leve pas
+    le constat d'un artefact different.
     """
-    names: set[str] = set()
-    has_checksum = False
+    declarations: dict[str, bool] = {}
     for cell in payload.get("cells", []) or []:
         if (cell.get("cell_type") or "") not in ("code", "markdown"):
             continue
         text = _cell_text(cell)
-        if _CHECKSUM_RE.search(text):
-            has_checksum = True
+        has_checksum = bool(_CHECKSUM_RE.search(text))
         for match in _URL_RE.finditer(text):
             url = match.group(0).rstrip(".,;:")
             tail = url.rsplit("/", 1)[-1].split("?", 1)[0].split("#", 1)[0]
             if tail:
-                names.add(tail)
-    return names, has_checksum
+                declarations[tail] = declarations.get(tail, False) or has_checksum
+    return declarations
 
 
 @dataclass
@@ -778,7 +781,7 @@ def binary_findings(
     loads = binary_loads(notebook, payload, repo_root)
     if not loads:
         return []
-    declared_names, has_checksum = _declared_reproduction(payload)
+    declared_names = _declared_reproduction(payload)
     findings: list[dict] = []
     seen: set[tuple] = set()
     for load in loads:
@@ -786,6 +789,7 @@ def binary_findings(
             continue
         name = load.resolved.rsplit("/", 1)[-1] or load.path
         declared = name in declared_names
+        has_checksum = declared_names.get(name, False)
         if declared and has_checksum:
             # Mecanisme de reproduction declare : rien a signaler.
             continue

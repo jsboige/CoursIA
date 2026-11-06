@@ -1326,6 +1326,28 @@ def test_declared_download_without_checksum_is_still_reported(tmp_path):
     assert [item["kind"] for item in found] == ["binary_sans_empreinte"]
 
 
+def test_checksum_declared_for_another_artifact_does_not_lift_the_finding(tmp_path):
+    """Cas croise (reserve Hermes, #24520) : l'empreinte est par ARTEFACT.
+
+    Deux artefacts sont declares, un seul porte une empreinte : le constat de
+    l'autre doit rester. Avant le fix, `has_checksum` etait un booleen par
+    carnet -- l'empreinte de Tweety.dll levait aussi le constat de Autre.dll.
+    """
+    root = _repo_with(tmp_path, [])
+    _touch(root, "series/libs/Tweety.dll", track=False)
+    _touch(root, "series/libs/Autre.dll", track=False)
+    payload = _notebook(
+        [
+            '#r "libs/Tweety.dll"\n#r "libs/Autre.dll"',
+            'URL = "https://exemple/builds/Tweety.dll"\nSHA256 = "abc123"',
+            'URL = "https://exemple/builds/Autre.dll"',
+        ]
+    )
+    found = clv.binary_findings("series/nb.ipynb", payload, root)
+    assert [item["kind"] for item in found] == ["binary_sans_empreinte"]
+    assert found[0]["library"] == "Autre.dll"
+
+
 @pytest.mark.parametrize(
     "line, form",
     [
