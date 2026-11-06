@@ -37,20 +37,19 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 
 **L'index fait foi dans [docs/README.md](docs/README.md)** — racine, `reference/`, `genai/`, `qc/`, `lean/`, `ledger`, transients : il recense et décrit chaque document, tenu à jour à chaque ajout. **La liste n'est pas recopiée ici** : une copie dérive au premier document ajouté, et c'est l'index qui la reçoit.
 
-Un document n'existe que s'il est **référencé depuis l'index et depuis la règle, le carnet ou le script qui le consomme** : la description du fichier vit à côté de son entrée d'index, la prescription vit dans le harnais — jamais l'inverse.
-
 Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](GradeBookApp/configs/README.md) ; **pipelines + données par cohorte = privés sur GDrive** `G:\Mon Drive\MyIA\Formation\<ecole>\<annee>\grading\` (PII, hors repo public).
 
 ## Règles modulaires `.claude/rules/`
 
 **Les règles sans frontmatter `paths:` sont auto-chargées** : leur contenu est déjà en contexte, les ré-énumérer ici le dupliquerait. **Celles qui portent un frontmatter `paths:`** ne se chargent que si la session touche les fichiers visés. Deux protocoles restent **toujours chargés** (exemptions délibérées, quel que soit le type de fichier) : `audit-reassessment`, car il s’applique à tout fix fondé sur un audit automatisé, et `bibliography-hygiene`, car les publications se récupèrent, s’utilisent et se citent depuis les carnets et les docstrings Lean — hors de tout glob.
 
-**Ce qu'un lecteur doit savoir sans avoir chargé les règles path-gatées** — le tableau complet, domaine par domaine, avec la liste des règles de chaque famille, vit dans [claude-code-config.md §Ce que porte chaque famille](docs/reference/claude-code-config.md). Les prescriptions qui tiennent en une ligne restent ici :
+**Ce qu'un lecteur doit savoir sans avoir chargé les règles path-gatées** — le tableau complet, domaine par domaine, vit dans [claude-code-config.md §Ce que porte chaque famille](docs/reference/claude-code-config.md). Les prescriptions qui tiennent en une ligne restent ici, avec les noms des règles de chaque famille :
 
-- **Notebooks** : un notebook **ne se renomme pas sans un argument pédagogique écrit** ; un finding d'audit automatisé **se re-vérifie avant tout fix** (~60 % de faux positifs) ; la **sortie** d'un audit va au dashboard, jamais dans l'arbre.
-- **Catalogue & README** : **le catalogue appartient à l'automatisation** — `COURSE_CATALOG.generated.*` et les blocs `CATALOG-STATUS` ne se régénèrent JAMAIS à la main sur une branche feature, byte-identique à `main` ; toute prose de doc ajoutée ou réécrite est en français.
-- **Artefacts** : nouveau fichier de `scripts/results/` **> 512 Ko = bloqué par CI** (#15890) — committer l'agrégé falsifiable, les séries complètes hors dépôt avec le chemin cité dans le body.
-- **Lean** : docstrings FR par défaut, jumeau `_en` byte-identique hors commentaires. **Python** : un commentaire `# codeql[rule-id]` est **inerte** ici (default setup) — ne pas en ajouter, ne pas en déplacer.
+- **Notebooks** (`notebook-conventions` · `cell-interpretation-ordering` · `exercise-example-labeling` · `three-exercises-per-notebook` · `consecutive-code-cells` · `audit-cross-source-distillation` · `notebook-accretion-numbering`) : un notebook **ne se renomme pas sans un argument pédagogique écrit** ; un finding d'audit automatisé **se re-vérifie avant tout fix** (~60 % de faux positifs) ; la **sortie** d'un audit va au dashboard, jamais dans l'arbre.
+- **Catalogue & README** (`catalog-pr-hygiene` · `readme-french-first`) : **le catalogue appartient à l'automatisation** — `COURSE_CATALOG.generated.*` et les blocs `CATALOG-STATUS` ne se régénèrent JAMAIS à la main sur une branche feature, byte-identique à `main` ; toute prose de doc ajoutée ou réécrite est en français.
+- **Artefacts** (`results-artifact-policy`) : nouveau fichier de `scripts/results/` **> 512 Ko = bloqué par CI** (#15890) — committer l'agrégé falsifiable, les séries complètes hors dépôt avec le chemin cité dans le body.
+- **GenAI** (`genai-config`) : — (prescriptions portées par la règle et [genai-services.md](docs/genai/genai-services.md)).
+- **Lean / GameTheory** (`wsl-kernels` · `lean-merge-discipline`) : docstrings FR par défaut, jumeau `_en` byte-identique hors commentaires. **Python** (`codeql-suppressions-inertes`) : un commentaire `# codeql[rule-id]` est **inerte** ici (default setup) — ne pas en ajouter, ne pas en déplacer.
 
 **Travailler sur ces domaines sans toucher les fichiers — reviewer une PR notebook, par exemple — demande de les `Read` explicitement** ; les prescriptions ci-dessus et le §C de ce fichier sont le précis toujours chargé, pas une redondance.
 
