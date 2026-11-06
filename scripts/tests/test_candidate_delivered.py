@@ -550,7 +550,12 @@ def test_attestation_info_ne_compte_pas_comme_activite():
     refs = [{"pr_number": 15858, "merged_at": "2026-09-14T00:00:00Z",
              "body": "Closes #15689."}]
     verdict, _ = classify(issue, refs)
-    assert verdict == "candidate"
+    # #24461 -- l'attestation ne compte toujours PAS comme une activite, mais
+    # elle PORTE DESORMAIS le verdict : c'est elle qui arme le label. Le
+    # verdict `attested` est la forme renforcee de `candidate` -- le label
+    # est pose sur une attestation, la ou l'ancien chemin merged+silence le
+    # faisait sur une PR mergee.
+    assert verdict == "attested"
 
 
 def test_commentaire_ordinaire_post_merge_reste_actif():
@@ -616,7 +621,9 @@ def test_released_avec_motif_de_couverture_ne_compte_pas_comme_activite():
     refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
              "body": "Grain: MED/guard\n\n`Closes #20078`. `Part of #19093`."}]
     verdict, _ = classify(issue, refs)
-    assert verdict == "candidate"
+    # #24461 -- l'acceptance deja couverte est une attestation : elle arme
+    # le label.
+    assert verdict == "attested"
 
 
 def test_released_nu_compte_comme_activite():
@@ -704,6 +711,10 @@ def test_marqueur_delivered_ne_compte_pas_comme_activite():
     refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
              "body": "Closes #20078."}]
     verdict, _ = classify(issue, refs)
+    # #24461 -- la cloture explicite `[DELIVERED] lane` dit « la lane X a
+    # livre SON grain », PAS « l'issue est livree » : elle n'arme donc PAS
+    # le label, et l'issue reste classable par l'heuristique de references.
+    # Témoin : #23778 porte ce marqueur ET une Concern du user.
     assert verdict == "candidate"
 
 
@@ -1060,3 +1071,168 @@ def test_list_open_issues_transmet_le_plafond_a_gh(monkeypatch):
 
     args = seen[0]
     assert args[args.index("--limit") + 1] == "777"
+
+
+# --- #24461 : l'attestation arme le LABEL, la retraction le retire ---------
+#
+# Le defaut mesure le 2026-11-03 : 165 issues ouvertes portaient un marqueur
+# de livraison VIVANT, et UNE SEULE portait le label `candidate-delivered`.
+# Le label est ce que le tapis lit SANS payer une sonde par issue ; le
+# marqueur se paie en sondes, et quand le budget de sondes ou le mur de
+# temps est atteint, la sonde rend fail-OPEN et l'issue est servie comme un
+# grain neuf -- 37 des 120 grains d'un tirage worker.
+#
+# Ces tests ferment la boucle : l'attestation d'une lane ARME le label, une
+# retraction le RETIRE, et les deux organes disent la meme chose.
+
+
+def test_attestation_vivante_arme_le_label():
+    issue = _issue(title="x", number=20078, created_at="2026-10-01T00:00:00Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-10-20T00:00:00Z",
+         "[INFO] candidate-delivered -- preuve first-hand, la main est rendue"),
+    )
+    refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
+             "body": "See #20078."}]
+    verdict, why = classify(issue, refs)
+    assert verdict == "attested"
+    assert "attestation" in why
+
+
+def test_retractation_retire_le_label():
+    """Une retraction POSTERIEURE a l'attestation la desarme.
+
+    Elle passe aussi devant l'heuristique de references : une PR mergee
+    porteuse de `Closes` ne doit pas rearmer un label que le fil a retire.
+    """
+    issue = _issue(title="x", number=20078, created_at="2026-10-01T00:00:00Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-10-20T00:00:00Z", "[INFO] candidate-delivered"),
+        ("2026-10-21T00:00:00Z", "[NOT-DELIVERED] la preuve ne tient pas"),
+    )
+    refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
+             "body": "Closes #20078."}]
+    verdict, why = classify(issue, refs)
+    assert verdict == "attestation_revoked"
+    assert "retractation" in why
+
+
+def test_marqueur_posterieur_a_la_retractation_rearme():
+    """L'ordre est porte par le FIL, pas par la forme : une attestation
+    reposee apres une retraction rearme l'etat."""
+    issue = _issue(title="x", number=20078, created_at="2026-10-01T00:00:00Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-10-20T00:00:00Z", "[NOT-DELIVERED] retour"),
+        ("2026-10-21T00:00:00Z", "[INFO] candidate-delivered"),
+    )
+    refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
+             "body": "See #20078."}]
+    assert classify(issue, refs)[0] == "attested"
+
+
+def test_retractation_humaine_prime_sur_l_attestation():
+    """Un verdict HUMAIN reste le plus fort (#14307), meme devant une
+    attestation vivante : le retrait du label par un humain tient."""
+    raw = [
+        {"event": "labeled", "label": {"name": "candidate-delivered"},
+         "actor": {"login": _BOT}, "created_at": "2026-10-25T06:01:00Z"},
+        {"event": "unlabeled", "label": {"name": "candidate-delivered"},
+         "actor": {"login": "jsboige"}, "created_at": "2026-10-26T07:00:00Z"},
+    ]
+    events = _parse_label_events(raw, "candidate-delivered")
+    issue = _issue(title="x", number=20078, created_at="2026-10-01T00:00:00Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-10-20T00:00:00Z", "[INFO] candidate-delivered"),
+    )
+    refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
+             "body": "Closes #20078."}]
+    assert classify(issue, refs, events)[0] == "retracted"
+
+
+def test_un_conteneur_atteste_reste_exclu():
+    """La forme d'exclusion prime sur l'attestation : un conteneur
+    d'audit-partition n'est jamais un candidat a la fermeture."""
+    issue = _issue(title="[Audit #17073] Serie GameTheory -- partition Hermes",
+                   number=17073, created_at="2026-10-01T00:00:00Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-10-20T00:00:00Z", "[INFO] candidate-delivered"),
+    )
+    refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
+             "body": "Closes #17073."}]
+    assert classify(issue, refs)[0] == "container"
+
+
+def test_parite_de_la_grammaire_avec_le_tapis():
+    """Les deux organes lisent la MEME grammaire (#24461).
+
+    Le labeler et le tapis ne doivent jamais diverger sur le meme fil : si
+    le tapis ecarte une issue que le labeler arme, le label est un badge
+    faux ; si le labeler retire le label d'une issue que le tapis ecarte
+    encore, l'exclusion redevient payante en sondes.
+    """
+    import pick_idle_grain as pig
+    from delivery_grammar import ATTESTED, REVOKED, attestation_state
+
+    corps = [
+        "[INFO] candidate-delivered",
+        "[NOT-DELIVERED] retour",
+        "[INFO] candidate-delivered",
+    ]
+    assert pig._delivered_state(corps) is True
+    assert attestation_state(corps) == ATTESTED
+    assert attestation_state(corps[:2]) == REVOKED
+    assert attestation_state(["une discussion ordinaire"]) != ATTESTED
+
+
+def test_le_marqueur_delivered_lane_arme_le_tapis_mais_pas_le_label():
+    """Les deux grammaires ne sont PAS identiques, et l'ecart est MESURE.
+
+    `[DELIVERED] lane X -- PR #N` arme l'etat du tapis (l'issue sort de son
+    tirage), mais pas le label : sur une issue a plusieurs tranches, il dit
+    « la lane X a livre SON grain ». Le label, lui, se pose sur une issue
+    entiere, et sa retraction par le protocole (`[NOT-DELIVERED]`) est le
+    geste qui la rend a nouveau servable.
+
+    Témoin réel : #23778 porte ce marqueur ET une Concern du user.
+    """
+    import pick_idle_grain as pig
+    from delivery_grammar import ATTESTED, attestation_state
+
+    corps = ["[DELIVERED] lane myia-po-2027:CoursIA-2 -- PR #23830"]
+    assert pig._delivered_state(corps) is True
+    assert attestation_state(corps) != ATTESTED
+
+
+def test_sans_commentaires_pas_d_attestation_voyait():
+    """CONTRAT du payload : l'attestation est lue DANS ``issue["comments"]``.
+
+    Note de suivi de la revue Hermes (2026-11-03) : la branche attestation
+    lit les commentaires charges par l'appelant ; un payload qui ne les
+    porte pas ne voit donc aucune attestation vivante, et l'issue retombe
+    sur l'heuristique de references. Ce n'est pas un defaut aujourd'hui
+    (`main` charge les commentaires), mais le contrat etait IMPLICIT : il
+    est desormais ecrit dans la docstring de `classify` et verrouille ici.
+
+    Le test est une assertion de CONTRAT, pas un comportement voulu : il
+    dit ce qui se passe si un appelant change, pour que le changement soit
+    visible et non subi.
+    """
+    refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
+             "body": "See #20078."}]
+
+    avec_fil = _issue(title="x", number=20078, created_at="2026-10-01T00:00:00Z")
+    avec_fil["comments"] = _comments_with_bodies(
+        ("2026-10-20T00:00:00Z",
+         "[INFO] candidate-delivered -- preuve first-hand, la main est rendue"),
+    )
+    assert classify(avec_fil, refs)[0] == "attested"
+
+    # Meme issue, payload SANS le fil : l'attestation n'est plus visible.
+    sans_fil = _issue(title="x", number=20078, created_at="2026-10-01T00:00:00Z")
+    sans_fil["comments"] = []
+    verdict, _why = classify(sans_fil, refs)
+    assert verdict != "attested", (
+        "le contrat a change : les commentaires ne sont plus lus dans le "
+        "payload -- verifier les deux organes avant de l'accepter")
+    assert verdict == "partial", (
+        "sans le fil, l'issue doit retomber sur l'heuristique de references")
