@@ -1945,12 +1945,16 @@ def test_tranche25_added_axioms_cliquet_guard_is_wired():
     )
 
 
-def test_tranche25_cliquet_detector_tire_sur_une_ancre_nommee_et_rie_tient_sur_un_example(tmp_path):
-    """Controle de bout en bout du detecteur **via sa CLI**, dans les deux
-    sens : une ancre `native_decide` ajoutee dans un `theorem` nomme doit
-    faire sortir rc=1 (rouge), une ancre dans un `example` rc=0 (vert --
-    la pile #18706 ne doit pas rougir), et une base qui ne resout pas rc=2
-    (incident d'entree, fail-closed)."""
+def test_tranche25_cliquet_detector_rougit_toute_ancre_non_declaree_meme_en_example(tmp_path):
+    """Controle de bout en bout du detecteur **via sa CLI**, dans les quatre
+    sens du cliquet declaratif #21387 : une ancre `native_decide` ajoutee
+    dans un `theorem` nomme NON declaree fait sortir rc=1 (rouge), une ancre
+    dans un `example` NON declaree rougit AUSSI (residu #21387 : check_axioms
+    est aveugle aux examples par construction, le rouge declaratif est la
+    seule gate qui les voit), la MEME ancre declaree par une ligne
+    [LEAN-ANCHOR-DECLARED] du corps passe rc=0 (le jugement du motif reste
+    au reviewer), et une base qui ne resout pas rc=2 (incident d'entree,
+    fail-closed)."""
     repo = tmp_path / "repo"
     repo.mkdir()
 
@@ -1971,13 +1975,20 @@ def test_tranche25_cliquet_detector_tire_sur_une_ancre_nommee_et_rie_tient_sur_u
     detector = (Path(__file__).resolve().parents[2] / "scripts" / "lean"
                 / "check_added_axioms_cliquet.py")
 
-    def _run(base):
+    def _run(base, declared=None):
+        cmd = ["python", str(detector), "--base", base, "--head", "HEAD"]
+        if declared is not None:
+            body_path = repo / "body.md"
+            body_path.write_text(
+                chr(10).join(
+                    "[LEAN-ANCHOR-DECLARED] " + d for d in declared) + chr(10),
+                encoding="utf-8")
+            cmd += ["--body-file", str(body_path)]
         return subprocess.run(
-            ["python", str(detector), "--base", base, "--head", "HEAD"],
-            cwd=repo, capture_output=True, text=True, encoding="utf-8",
+            cmd, cwd=repo, capture_output=True, text=True, encoding="utf-8",
         ).returncode
 
-    # 1. ancre dans une declaration NOMMEE -> rc=1 (rouge)
+    # 1. ancre dans une declaration NOMMEE, non declaree -> rc=1 (rouge)
     (repo / "Base.lean").write_text(
         "theorem base_ok : True := by trivial" + chr(10)
         + "theoremAdded : True := by native_decide" + chr(10), encoding="utf-8")
@@ -1985,15 +1996,23 @@ def test_tranche25_cliquet_detector_tire_sur_une_ancre_nommee_et_rie_tient_sur_u
     _git("commit", "-q", "-m", "named anchor")
     assert _run("HEAD~1") == 1, "une ancre dans un theorem nomme doit rougir"
 
-    # 2. ancre dans un `example` -> rc=0 (vert) : la pile #18706 ne rougit pas
+    # 2. ancre dans un `example`, non declaree -> rc=1 : le residu #21387 --
+    # check_axioms ne voit pas les examples, le rouge declaratif est la
+    # seule gate qui les voit.
     (repo / "Base.lean").write_text(
         "theorem base_ok : True := by trivial" + chr(10)
         + "example : True := by native_decide" + chr(10), encoding="utf-8")
     _git("add", "-A")
     _git("commit", "-q", "-m", "example anchor")
-    assert _run("HEAD~1") == 0, "une ancre dans un example doit rester verte"
+    assert _run("HEAD~1") == 1, "une ancre dans un example doit rougir sans declaration"
 
-    # 3. base qui ne resout pas -> rc=2 (fail-closed, jamais un vert)
+    # 3. la MEME ancre, declaree dans le corps -> rc=0 : la declaration
+    # l'acquitte, le jugement du motif reste au reviewer.
+    assert _run(
+        "HEAD~1", declared=["Base.lean:example -- motif de test"]) == 0, (
+        "une ancre declaree par une ligne [LEAN-ANCHOR-DECLARED] doit passer")
+
+    # 4. base qui ne resout pas -> rc=2 (fail-closed, jamais un vert)
     assert _run("ref-qui-nexiste-pas") == 2, "une base non resolue doit sortir 2"
 
 
