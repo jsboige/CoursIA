@@ -75,7 +75,14 @@ be supplied), but the full proof is three lines, established by probing:
 `0 ≤ r → r < 1 → Summable fun n => r ^ n`) composed via `Summable.mul_right`,
 plus the pointwise step `mul_le_mul_of_nonneg_left h (pow_nonneg hγ₁.le n)`.
 Real class: P2 low — the terrain keeps its value as a "trivially reachable
-proof" yardstick, it is no longer a difficulty target. -/
+proof" yardstick, it is no longer a difficulty target.
+
+Complementary probing (2026-11-06), at the PR head: the direct proof compiles
+as written, and it also compiles **without** the hypothesis `0 ≤ μ₁` — Lean
+then reports `hμ₁` as an unused variable. The hypothesis is therefore
+superfluous for the monotonicity; it is kept because it carries the economic
+meaning of the terrain (a reward mean is nonnegative), not because the proof
+needs it. A prover that reads it as noise is logically right. -/
 theorem panel_constant_stream_monotone {γ μ₁ μ₀ : ℝ} (hγ₁ : 0 < γ) (hγ₂ : γ < 1)
     (hμ₁ : 0 ≤ μ₁) (h : μ₁ ≤ μ₀) :
     ∑' n : ℕ, γ ^ n * μ₁ ≤ ∑' n : ℕ, γ ^ n * μ₀ := by

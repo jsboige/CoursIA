@@ -74,7 +74,15 @@ la preuve complète fait trois lignes, établie en sondage :
 `0 ≤ r → r < 1 → Summable fun n => r ^ n`) composé par `Summable.mul_right`,
 plus le point-à-point `mul_le_mul_of_nonneg_left h (pow_nonneg hγ₁.le n)`.
 Classe réelle : P2 bas — le terrain garde sa valeur d'étalon « preuve
-triviale à atteindre », il n'est plus un objectif de difficulté. -/
+triviale à atteindre », il n'est plus un objectif de difficulté.
+
+Sondage complémentaire (2026-11-06), à la tête de la PR : la preuve directe
+compile telle quelle, et elle compile **aussi sans** l'hypothèse `0 ≤ μ₁` —
+Lean signale alors `hμ₁` comme variable inutilisée. L'hypothèse est donc
+superflue pour la monotonie ; elle est conservée parce qu'elle porte le sens
+économique du terrain (une moyenne de récompense est positive), pas parce que
+la preuve en a besoin. Un prover qui la voit comme du bruit a raison sur le
+plan logique. -/
 theorem panel_constant_stream_monotone {γ μ₁ μ₀ : ℝ} (hγ₁ : 0 < γ) (hγ₂ : γ < 1)
     (hμ₁ : 0 ≤ μ₁) (h : μ₁ ≤ μ₀) :
     ∑' n : ℕ, γ ^ n * μ₁ ≤ ∑' n : ℕ, γ ^ n * μ₀ := by
