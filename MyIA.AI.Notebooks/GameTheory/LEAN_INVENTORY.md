@@ -163,7 +163,7 @@ modules sources (`Stage`, `Discounting`, `GrimTrigger`, `Folk`) ont été absorb
 byte-identique dans [`game_theory_lean/RepeatedGames/`](game_theory_lean/RepeatedGames/).
 Ce répertoire est conservé comme **coquille archive** : `package`, `require mathlib`,
 manifest et documentation restent présents, mais la `lean_lib` est neutralisée dans le
-`lakefile.lean` (ses globs matchaient 0 fichier depuis le déménagement). Certification et
+`lakefile.lean` (ses globs ne matchaient plus aucun fichier depuis le déménagement). Certification et
 build repris par `game_theory_lean` (`.github/workflows/lean-ci-matrix.yml`, clé `gametheory`).
 
 **Statut (historique, préservé dans le home canonique)** : `grim_trigger_sustains_iff`
