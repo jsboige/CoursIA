@@ -1,8 +1,8 @@
 import Mathlib
-import Perceptron.Data
-import Perceptron.Perceptron
-import Perceptron.Convergence
-import Perceptron.Tightness
+import Perceptron.Data_en
+import Perceptron.Perceptron_en
+import Perceptron.Convergence_en
+import Perceptron.Tightness_en
 
 /-!
 # learning_theory_lean — perceptron convergence (Novikoff's theorem)

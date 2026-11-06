@@ -1,13 +1,13 @@
 import Mathlib
-import PacLearning.BernoulliMGF
-import PacLearning.Concentration
-import PacLearning.Data
-import PacLearning.Hoeffding
-import PacLearning.MGF
-import PacLearning.PacFiniteBound
-import PacLearning.Sample
-import PacLearning.SampleExpect
-import PacLearning.UnionBound
+import PacLearning.BernoulliMGF_en
+import PacLearning.Concentration_en
+import PacLearning.Data_en
+import PacLearning.Hoeffding_en
+import PacLearning.MGF_en
+import PacLearning.PacFiniteBound_en
+import PacLearning.Sample_en
+import PacLearning.SampleExpect_en
+import PacLearning.UnionBound_en
 
 /-!
 # PacLearning — PAC theory (Valiant 1984), finite class module, Lean 4
