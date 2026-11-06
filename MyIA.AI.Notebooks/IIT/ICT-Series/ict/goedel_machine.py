@@ -189,8 +189,11 @@ class LeverWorld:
     axioms: Tuple[str, ...] = ("world",)  # ordre de GETAX
     label: str = "A"
     # Etat explicite au cycle t1 (mondes de continuation, gate G4) ; si absent,
-    # l'etat est re-simule en executant current_policy depuis le cycle 1 --
-    # correct pour les mondes A/B ou e(1) = 'keep' presse sans effet.
+    # l'etat est re-simule en executant e(1) = 'press' (l'action de 'keep')
+    # depuis le cycle 1 -- c'est la politique INITIALE du jouet, qui ne
+    # configure jamais. Cette reconstruction n'est donc valide que pour un
+    # monde dont la politique ne configure pas (A, B, current_policy='keep') ;
+    # un monde dont current_policy differe doit fournir state_at_t1.
     state_at_t1: Optional[Tuple[str, int]] = None
 
     # -- dynamique -----------------------------------------------------------
@@ -545,21 +548,30 @@ def g2_bogus_exhaustive() -> Dict[str, object]:
     out_bogus = run_technique(w_bogus, world, DEFAULT_TABLE, budget=None)
     # Variante maximale : meme a budget infini, aucune technique contenant
     # BOGUS ne peut feuter en citant le faux u.
-    cheats = [
-        w
-        for w, o in (
-            (w, run_technique(w, world, DEFAULT_TABLE, budget=None))
-            for w, _c in enumerate_techniques()
-        )
-        if 3 in w and o.fired and o.bogus_used
+    # Decomposition honnete du pourquoi : le squelette qui feutre est
+    # GETAX, RULE, SETSW, RULE, CHECK -- soit les L_MAX = 5 places de
+    # l'espace. Une technique qui contient en plus BOGUS en exigerait 6 :
+    # elle est donc EXCLUE DE L'ESPACE, non repousse par la garde. On
+    # mesure les deux faits separement pour ne pas attribuer a la garde
+    # un resultat que c'est la borne qui produit.
+    outcomes = [
+        (w, run_technique(w, world, DEFAULT_TABLE, budget=None))
+        for w, _c in enumerate_techniques()
     ]
+    cheats = [w for w, o in outcomes if 3 in w and o.fired and o.bogus_used]
+    with_bogus = [w for w, _o in outcomes if 3 in w]
+    firing = [w for w, o in outcomes if o.fired]
     return {
         "biops": res,
         "bogus_fires_in_biops": res.bogus_fires,
         "w_bogus_fires": out_bogus.fired,
         "w_bogus_outcome": out_bogus.outcome,
+        "techniques_with_bogus": len(with_bogus),
         "techniques_with_bogus_that_fire": len(cheats),
-        "space_size": len(enumerate_techniques()),
+        "firing_techniques": firing,
+        "firing_lengths": sorted({len(w) for w in firing}),
+        "firing_techniques_with_bogus": [w for w in firing if 3 in w],
+        "space_size": len(outcomes),
     }
 
 
@@ -606,8 +618,19 @@ def g4_greedy_global() -> Dict[str, object]:
         u = world.simulate(pol, world.t1, mode, setups)
         candidates.append((pol, u))
     best_pol, best_u = max(candidates, key=lambda pu: pu[1])
+    # La marge prouvee vaut u(switch) - u(keep) : on la rebasit pour
+    # obtenir l'UTILITE du switch feutre, puis on compare des UTILITES.
+    # Comparer la marge a best_u comparerait deux grandeurs differentes
+    # (un ecart et une valeur) -- les deux ne coincident que si u(keep) = 0,
+    # ce qui est un accident du monde A, pas une propriete du predicat.
+    u_keep = world.simulate("keep", world.t1, mode, setups)
+    u_switch = res.margin + u_keep if res.margin is not None else None
     # Le switch feutre doit etre l'argmax strict parmi les candidats.
-    is_argmax = res.switchprog == best_pol and res.margin == best_u
+    is_argmax = (
+        res.switchprog is not None
+        and res.switchprog == best_pol
+        and u_switch == best_u
+    )
     # Continuation : le monde avance jusqu'a la fin du setup du levier
     # (cycles 5..t1+k sous 'lever', mode ready a partir de t1+k+1... en fait
     # pret des la fin du cycle t1+k). Etat explicite : (ready, k).
@@ -625,6 +648,9 @@ def g4_greedy_global() -> Dict[str, object]:
         "biops": res,
         "candidates": candidates,
         "best": (best_pol, best_u),
+        "u_keep": u_keep,
+        "u_switch": u_switch,
+        "best_u": best_u,
         "fired_is_argmax": is_argmax,
         "continuation_world": after,
         "second_switch_fires": res_after.fired,
