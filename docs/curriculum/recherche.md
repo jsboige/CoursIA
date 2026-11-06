@@ -52,7 +52,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 21 | [GameTheory 4c - Theoreme d'Existence de Nash (Python)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb) | BETA | Non |
 | 22 | [GameTheory-04d-Marchandage-Asymetrique-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04d-Marchandage-Asymetrique-Python.ipynb) | ALPHA | Oui |
 | 23 | [GameTheory 04e — Oracles réflexifs, décision causale et…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04e-Reflective-Oracles-Python.ipynb) | BETA | Oui |
-| 24 | [GameTheory 04f — Théories de la décision face à un…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04f-Theories-Decision-Predicteur-Python.ipynb) | BETA | Oui |
+| 24 | [DecInfer 11 — Théories de la décision face à un…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-11-Theories-Decision-Predicteur-Python.ipynb) | BETA | Oui |
 | 25 | [GameTheory 04g — Supermodularité et treillis des…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04g-Supermodularite-Python.ipynb) | BETA | Oui |
 | 26 | [GameTheory-04h — Jeux de routage / congestion & Price…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) | BETA | Oui |
 | 27 | [GameTheory-04i — Utilité espérée et aversion au risque](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04i-Utilite-Esperee-Risque-Python.ipynb) | BETA | Oui |
@@ -125,7 +125,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 94 | [GameTheory 20b : Le temoin d'impossibilite](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb) | BETA | Oui |
 | 95 | [GameTheory 20c : Le chemin minimal sur un second…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb) | BETA | Oui |
 | 96 | [GameTheory-21 : Capstone — la sous-série SocialChoice…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-21-Capstone-Choix-Social-Python.ipynb) | BETA | Oui |
-| 97 | [GameTheory-26 : Jeux stochastiques — la valeur d'un jeu…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-26-Jeux-Stochastiques-Shapley-Python.ipynb) | BETA | Oui |
+| 97 | [GameTheory-22 : Jeux stochastiques — la valeur d'un jeu…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) | BETA | Oui |
 
 ## GameTheory/Coalitions (5 notebooks)
 

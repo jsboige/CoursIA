@@ -18,9 +18,16 @@ dans le carnet R-12.
 
 ## Grounding mesuré (convention de la série)
 
-- Mathlib **ne porte pas** la fonction ζ ni ses zéros (v4.33.0, greppé au
-  grain 1) : le théorème A lui-même est hors de portée formelle ici, et
-  ce module ne le prétend pas.
+- Mathlib **porte** la fonction ζ et un début de zérologie formelle au pin
+  du lake (`db584cd6d4`) : `def riemannZeta`, sa dérivabilité hors de `s = 1`
+  et l'équation fonctionnelle (`Mathlib.NumberTheory.LSeries.RiemannZeta`) ;
+  les zéros triviaux, et l'ensemble `riemannZetaZeros` fermé, discret,
+  d'intersection finie avec tout compact
+  (`Mathlib.NumberTheory.LSeries.ZetaZeros`).
+- Le **théorème A** d'Alpöge–Furman, lui, reste hors de portée formelle ici :
+  Mathlib n'énonce pas la proportion de zéros simples sur la droite critique
+  (l'hypothèse de Riemann n'y figure que comme `Prop`,
+  `def RiemannHypothesis`), et ce module ne le prétend pas.
 - Mathlib **porte** : `Filter.liminf` et ses caractérisations
   (`Mathlib.Order.LiminfLimsup` — `le_liminf_iff`, `eventually_lt_of_lt_liminf`,
   dont les hypothèses de bornitude sont celles que ce module expose telles

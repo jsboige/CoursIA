@@ -74,6 +74,11 @@ def _reasons(report: dict) -> list[str]:
     return [f["reason"].split(":")[0] for f in report["findings"]]
 
 
+def _header(day: str) -> str:
+    """The perennial marking for a given revision date."""
+    return "> REFERENCE — vivante — dernière révision {d}".format(d=day)
+
+
 # ---------------------------------------------------------------------------
 # Tree mode: marker + floor only (survives the squash)
 # ---------------------------------------------------------------------------
@@ -178,12 +183,127 @@ def test_pr_mode_flags_touched_doc_with_unrefreshed_header(git_tree: Path) -> No
 
 
 def test_git_failure_is_a_find_not_a_pass(tmp_path: Path) -> None:
-    # Not a git repo: reading the changed set fails -> finding, never a pass.
+    # Not a git repo: reading the PR's own commits fails -> finding, never a
+    # pass. (The finding is GIT_LOG_FAILED since the rework: the PR's own
+    # commits -- not a diff -- are what the date check reads.)
     (tmp_path / "docs" / "reference").mkdir(parents=True)
     _write(tmp_path, "docs/reference/doc.md", f"{HEADER}\n# Reference\n")
     report = ref.run(root=tmp_path, baseline=1, base="main")
     assert report["verdict"] == "VIOLATION"
-    assert "GIT_DIFF_FAILED" in _reasons(report)
+    assert "GIT_LOG_FAILED" in _reasons(report)
+
+
+# ---------------------------------------------------------------------------
+# PR mode: the PR's OWN commits -- the coordinator's arbitration (2026-11-04)
+# ---------------------------------------------------------------------------
+#
+# The organ used to compare each touched doc's header with its last commit
+# ON THE BRANCH (``git log -1 -- <file>``). That commit is not necessarily
+# the PR's: on a stacked PR, or after an update-branch, it can be a commit
+# of the base branch or of main -- whose date says nothing about the header
+# the PR's author was supposed to refresh. Measured on the real tree: 16 of
+# the 33 marked docs have a header that differs from their last commit on
+# main (the squash shape: a commit dated at merge time, header untouched).
+
+
+def test_stacked_pr_does_not_redden_on_a_doc_modified_in_the_base_only(
+    git_tree: Path,
+) -> None:
+    """A stacked PR is answerable only for the docs ITS OWN commits touch.
+
+    This is the false positive of #24482: the PR is stacked on a base branch
+    that is behind ``main``, and ``main`` had touched a doc (the squash
+    shape -- a commit dated at merge time, header untouched). The PR never
+    modified that doc, yet the guard compared its header with main's commit
+    and reddened. The base ref here is the PR's base (the stack), and the
+    commits ``main`` brought in through the merge are not the PR's.
+    """
+    doc = "docs/reference/doc.md"
+    _write(git_tree, doc, f"{_header('2026-10-25')}\n# Reference\n")
+    _commit(git_tree)  # 2026-10-25, tagged base0
+
+    # the base branch of the stacked PR (created before main moved)
+    _git(git_tree, "checkout", "-q", "-b", "stack")
+    _write(git_tree, "docs/reference/base.md", f"{_header('2026-10-26')}\n# Base\n")
+    _commit(git_tree, when="2026-10-26 12:00:00 +0000")
+
+    # main moves: a commit dated 2026-10-28 that touches the doc WITHOUT
+    # refreshing its header (the squash shape, measured on 16 of the 33
+    # marked docs of the real tree)
+    _git(git_tree, "checkout", "-q", "main")
+    _write(git_tree, doc, f"{_header('2026-10-25')}\n# Reference\n\nmain\n")
+    _commit(git_tree, when="2026-10-28 12:00:00 +0000")
+
+    # the PR branches off the STACK (not off main: a PR is cut from its own
+    # base branch) and touches ANOTHER doc
+    _git(git_tree, "checkout", "-q", "-b", "pr", "stack")
+    _write(git_tree, "docs/reference/other.md", f"{_header('2026-10-27')}\n# Other\n")
+    _commit(git_tree, when="2026-10-27 12:00:00 +0000")
+
+    # the PR merges main (update-branch shape): main's commit becomes
+    # reachable from the PR's head WITHOUT being the PR's own commit
+    env = os.environ.copy()
+    env["GIT_AUTHOR_DATE"] = "2026-10-29 12:00:00 +0000"
+    env["GIT_COMMITTER_DATE"] = "2026-10-29 12:00:00 +0000"
+    _git(git_tree, "merge", "-q", "--no-ff", "-m", "merge main", "main", env=env)
+
+    report = ref.run(root=git_tree, baseline=3, base="stack")
+    assert report["verdict"] == "CONFORME", report["findings"]
+    assert report["date_checked"] == 1  # only the doc the PR itself touched
+
+
+def test_merge_of_main_into_the_branch_does_not_redden(git_tree: Path) -> None:
+    """An update-branch must not make main's docs the PR's business.
+
+    The PR did everything right: it revised the doc and refreshed the
+    header to its own commit date. But ``main`` had touched the same doc
+    (the squash shape) and the branch merged ``main`` -- the guard compared
+    the header with main's commit and reddened a correct PR.
+    """
+    doc = "docs/reference/doc.md"
+    _write(git_tree, doc, f"{_header('2026-10-25')}\n# Reference\n")
+    _commit(git_tree)  # 2026-10-25, tagged base0
+
+    # the PR revises the doc and refreshes the header to ITS OWN date
+    _git(git_tree, "checkout", "-q", "-b", "pr")
+    _write(git_tree, doc, f"{_header('2026-10-27')}\n# Reference\n")
+    _commit(git_tree, when="2026-10-27 12:00:00 +0000")
+
+    # main moves: a commit dated 2026-10-28 that touches the doc WITHOUT
+    # refreshing its header (the squash shape) -- it appends, it does not
+    # touch the header line, so the merge below stays clean
+    _git(git_tree, "checkout", "-q", "main")
+    _write(git_tree, doc, f"{_header('2026-10-25')}\n# Reference\n\nmain\n")
+    _commit(git_tree, when="2026-10-28 12:00:00 +0000")
+    _git(git_tree, "tag", "main0")  # the base ref the CI passes: origin/<base_ref>
+
+    # the PR merges main (update-branch shape); the two edits touch
+    # different lines, so the merge is clean
+    _git(git_tree, "checkout", "-q", "pr")
+    env = os.environ.copy()
+    env["GIT_AUTHOR_DATE"] = "2026-10-29 12:00:00 +0000"
+    env["GIT_COMMITTER_DATE"] = "2026-10-29 12:00:00 +0000"
+    _git(git_tree, "merge", "-q", "--no-ff", "-m", "merge main", "main", env=env)
+
+    report = ref.run(root=git_tree, baseline=1, base="main0")
+    assert report["verdict"] == "CONFORME", report["findings"]
+    assert report["date_checked"] == 1
+
+
+def test_positive_control_still_reddens(git_tree: Path) -> None:
+    """The signal the organ exists for is untouched by the rework: the PR
+    revises a doc in its OWN commit and leaves the header at the old date.
+    """
+    doc = "docs/reference/doc.md"
+    _write(git_tree, doc, f"{_header('2026-10-25')}\n# Reference\n")
+    _commit(git_tree)  # 2026-10-25, tagged base0
+    _git(git_tree, "checkout", "-q", "-b", "pr")
+    _write(git_tree, doc, f"{_header('2026-10-25')}\n# Reference\n\nrevu\n")
+    _commit(git_tree, when="2026-10-27 12:00:00 +0000")
+    report = ref.run(root=git_tree, baseline=1, base="base0")
+    assert report["verdict"] == "VIOLATION"
+    assert _reasons(report) == ["STALE_DATE"]
+    assert report["date_checked"] == 1
 
 
 # ---------------------------------------------------------------------------

@@ -1538,6 +1538,10 @@ TRANCHE10: list[Guard] = [
         blocking=True,
         needs_base=True,
         absorbed=True,
+        # #23068 : un perimetre PR non evaluable (sonde git en echec, rc 2)
+        # emet en NEUTRAL "incident du garde" -- pas un rouge bloquant qui
+        # accuserait la PR, pas un vert silencieux non plus.
+        warn_rc=(2,),
     ),
 ]
 
@@ -3610,5 +3614,101 @@ TRANCHE36: list[Guard] = [
         diff_bounded=True,
         absorbed=True,
         warn_rc=(2,),            # 2 = base injoignable : UNKNOWN, pas un rouge
+    ),
+]
+
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 38 (#22012, bascule graduelle option 4, sign-off user 2026-11-02) --
+# premiere bascule ADVISORY -> BLOQUANT du scanner md-hierarchy : la classe
+# HINT-AS-HEADING seule devient verrou, les autres classes (H1-DEEP,
+# MULTI-H1, HEADING-IN-LIST, COLLAPSED-MARKDOWN) restent advisory via le
+# commenter absorbe (always-on-guards.yml). Le scanner porte le routage de
+# sortie (--fail-kinds -> rc=4 ; rc=2 reste advisory) et le sucre --base-ref
+# qui compose --name-status + --reference-base (#12735 / #13315) : le drift
+# mesure est imputable au diff de la PR, jamais a la derive heritee de main.
+# La classe etait a zero corpus au re-seed (PR #22222, Supermodularite absent
+# de la baseline) ; ce garde l y maintient.
+#
+# Le nom du garde ET le `name:` du workflow source ne portent PAS le marqueur
+# "advisory" : pr_gate.py rule 6 lit les deux et jugerait sinon le rouge
+# non-bloquant, lui oterait ses dents.
+#
+# `pre_argv` : la suite 8 tests (test_scan_md_hierarchy_fail_kinds.py) est le
+# controle par faux negatif du critere d'acceptance 3 de #22012 -- injecter
+# un indice-en-titre -> rouge (rc=4) ; le corriger en gras -> vert.
+#
+# Numero : TRANCHE38. TRANCHE36 est reserve a la PR #24063 (garde des chemins
+# machine), en vol sur une autre lane (cf note numero TRANCHE37).
+# ---------------------------------------------------------------------------
+TRANCHE38: list[Guard] = [
+    Guard(
+        name="MD hierarchy HINT-AS-HEADING (base vs PR, bloquant)",
+        source="scan-md-hierarchy-drift.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/scan_md_hierarchy.py",
+            "scripts/notebook_tools/md_hierarchy_baseline.json",
+        ],
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/tests/test_scan_md_hierarchy_fail_kinds.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/scan_md_hierarchy.py",
+            "MyIA.AI.Notebooks/", "--baseline", "--diff",
+            "--fail-kinds", "HINT-AS-HEADING",
+            "--base-ref", "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+]
+
+
+# TRANCHE 39 (#22209, garde bloquant) -- absorption du Cell-order gate (Epic
+# #3240, workflow cell-order-gate.yml). Mesure du 2026-11-06 : >= 800 runs /
+# 7 jours (plafond de pagination atteint, borne inferieure), chacun un
+# checkout `fetch-depth: 0` du depot 2,1 Go pour quelques secondes de scan
+# par carnet -- le SLOT de runner, pas la minute-CPU, est la ressource rare
+# (constat fondateur #14057). Semantique conservée EXACTE :
+#   - REGRESSION seule : HIGH findings presents dans la tete et absents de
+#     la base ; le residu #3240 des carnets legacy ne bloque pas (Epic ouverte) ;
+#   - nouveau carnet (blob absent de la base) = base vide = chaque HIGH compte
+#     (semantique NONE de la boucle d'origine, portee par --base-ref) ;
+#   - fichiers supprimes par la PR : le moteur filtre les chemins inexistants
+#     avant l'iteration, meme skip que `[ -f "$nb" ] || continue`.
+# Le detecteur gagne `--base-ref <ref>` (la voie rapide fournit
+# `{base_ref}` = origin/<branche>, la boucle d'origine faisait
+# `git show "$BASE:$nb"`) ; `--base/--head` (chemins) reste pour la
+# re-mesure manuelle `workflow_dispatch` et les tests unitaires.
+# `pre_argv` : la suite pytest du scanner est le controle par faux negatif
+# (lecon #11685/#12817 -- un detecteur qui ne prouve pas qu'il tire est
+# indiscernable d'un detecteur debranche).
+TRANCHE39: list[Guard] = [
+    Guard(
+        name="No cell-ordering regression in changed notebooks",
+        source="cell-order-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/scan_cell_ordering.py",
+            "scripts/notebook_tools/cell_order_ci.py",
+        ],
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/notebook_tools/tests/test_scan_cell_ordering.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/cell_order_ci.py",
+            "--base-ref", "{base_ref}",
+            "--head", "{changed_paths}",
+        ],
+        blocking=True,
+        needs_base=True,
+        iterates_paths=True,
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        absorbed=True,
     ),
 ]

@@ -286,9 +286,9 @@ theorem window_cheb_cone_in_domain (k : Nat) (p q : Int × Int)
     (0 : Int) ≤ q.1 ∧ q.1 < 2^(k+2) ∧ (0 : Int) ≤ q.2 ∧ q.2 < 2^(k+2) := by
   -- Le rayon de Chebyshev borne directement chaque coordonnée (pas de pont Manhattan).
   obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q (2^k) hc
-  -- `coord_bound_of_chebDist_le` type ses bornes comme `Nat` (`Int.natAbs ... ≤
-  -- 2^k`) ; les hypothèses de fenêtre ci-dessous utilisent du `(2^k : Int)` natif
-  -- (`HPower`). On ponte la borne `Nat` vers une borne typée `Int.abs` (miroir
+  -- `coord_bound_of_chebDist_le` type ses bornes comme `Nat` (`Int.natAbs ... ≤ 2^k`) ;
+  -- les hypothèses de fenêtre ci-dessous utilisent du `(2^k : Int)` natif (`HPower`).
+  -- On ponte la borne `Nat` vers une borne typée `Int.abs` (miroir
   -- de la sortie `manhattan_deviation` de l'analogue lâche, déjà typée Int),
   -- puis on unifie les atomes via `Nat.cast_pow`.
   have hk_pow : (↑((2:Nat)^k) : Int) = (2^k : Int) := Nat.cast_pow 2 k

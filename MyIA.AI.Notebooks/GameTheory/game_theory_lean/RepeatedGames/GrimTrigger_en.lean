@@ -8,12 +8,12 @@ import RepeatedGames.Discounting_en
   =============================================
 
   English mirror of `RepeatedGames/GrimTrigger.lean` (FR-first canonical).
-  Convention i18n Lean ratifiée par ai-01 (2026-07-04, #4980 comment-4881909354) :
-  fichiers `.lean` distincts FR + EN siblings dans le même lake, les deux compilent.
-  Drift-CI detectable : contenu non-docstring byte-identique entre siblings.
+  Convention i18n Lean ratified by ai-01 (2026-07-04, #4980 comment-4881909354):
+  distinct `.lean` files FR + EN siblings in the same lake, both compile.
+  Drift-CI detectable: non-docstring content byte-identical between siblings.
 
-  Note méthodologique : traduction manuelle du FR canonique (pas de source
-  EN historique pré-Option A à recover, fichier FR-first depuis origin).
+  Methodological note: manual translation of the FR canonical (no historical
+  pre-Option-A EN source to recover; FR-first file since origin).
 
   This module formalizes two building blocks of grim trigger in the
   infinitely repeated Prisoner's Dilemma:

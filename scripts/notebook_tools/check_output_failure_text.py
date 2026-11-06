@@ -214,6 +214,39 @@ TOOL_FAILURE_PATTERNS = (
     re.compile(r"workflow execution failed", re.IGNORECASE),
     re.compile(r"erreur generation image", re.IGNORECASE),
     re.compile(r"illustration indisponible", re.IGNORECASE),
+    # Bandeau de repli du carnet LTX-2 (02-5) -- meme famille ComfyUI que
+    # #21816, meme regime : DUR. La cellule attrape toute exception de
+    # soumission / polling / recuperation et imprime un bandeau en MAJUSCULES
+    # a la place de la sortie reelle (le MP4). Ce bandeau ne portait aucun
+    # marqueur reconnu par l'organe : une re-execution faite sur un poste
+    # sans le conteneur `comfyui-video` committerait le repli en silence et
+    # la CI resterait verte.
+    #
+    # Mesure (revue Hermes du 05/11 sur #24645) : le mutant du head -- sorties
+    # reelles remplacees par ce bandeau -- rend `TOOL_FAILURE 0 -> 0`,
+    # `DECLARED_FALLBACK 0 -> 0`, `capability_downgrades: []`,
+    # `regressed: false`. Les cinq variantes d'exception realistes
+    # (URLError / connection refused / TimeoutError / HTTPError 401 / timeout
+    # de polling / RuntimeError de validation de graphe) etaient toutes
+    # silencieuses : le motif doit porter sur le MARQUEUR, pas sur le type
+    # d'exception.
+    #
+    # Le motif est epingle au marqueur en MAJUSCULES, SANS IGNORECASE : c'est
+    # un marqueur machine, et la forme francaise accentuee
+    # (`generation non executee` dans une prose) ne doit pas le declencher.
+    #
+    # ECART ASSUME ET TRACE (#24780, critere 5) : la forme francaise GENERALE
+    # `<service> indisponible` n'est PAS couverte par ce motif. Mesure : le
+    # mot `indisponible` apparait dans 125 carnets du depot, dont des replis
+    # declares legitimes (`non configuree`, `non disponible`) qui ne doivent
+    # pas devenir du bruit -- la rendre bloquante transformerait une
+    # famille de replis assumes en rouge de flotte. Le motif couvre donc la
+    # forme BANNERE (marqueur en majuscules, une par cellule), pas la forme
+    # MOT (n'importe quelle prose ou sortie qui cite un service indisponible).
+    # La forme a couvrir est tracee et assumee ici ; la voie complementaire --
+    # un jeton porte par le carnet lui-meme -- est suivie cote carnet dans
+    # #24786.
+    re.compile(r"GENERATION NON EXECUTEE"),
 )
 
 # Witnesses: real strings observed in committed outputs. The self-test asserts
@@ -238,6 +271,13 @@ _PATTERN_WITNESSES = (
     "ERROR:BarbieVsAne:Erreur generation image: Workflow execution failed "
     "(server reported error)",
     "WARNING:BarbieVsAne:Illustration indisponible pour cette replique",
+    # #24490 : le bandeau de repli du carnet LTX-2 (02-5), tel que la cellule
+    # l'imprime -- prefixe en majuscules + type d'exception. La chaine vient
+    # de la SOURCE de la branche de la PR (le `print` de la cellule), pas
+    # d'une sortie commitee : c'est la seule surface ou elle apparait, et
+    # c'est celle qu'une re-execution ratée produirait.
+    "GENERATION NON EXECUTEE - stack ComfyUI indisponible "
+    "(URLError : <urlopen error [Errno 11001]>)",
 )
 
 # --- benign banners: matched above, and NOT a tool failure -----------------
@@ -1088,6 +1128,33 @@ def self_test(cwd=None):
     def _one(text):
         return scan({"cells": [{"cell_type": "code", "outputs": [
             {"output_type": "stream", "text": text}]}]})["TOOL_FAILURE"]
+
+    # #24490 : le bandeau de repli LTX-2 doit etre classe TOOL_FAILURE (dur).
+    # Sans ce cas, un motif ajoute sans temoin fait mentir le jeu de motifs.
+    _ltx_banner_out = ("GENERATION NON EXECUTEE - stack ComfyUI indisponible "
+                       "(URLError : <urlopen error [Errno 11001]>)\n")
+    _ltx_banner = scan({"cells": [{"cell_type": "code",
+                                    "source": "print(f\"GENERATION NON EXECUTEE - "
+                                              "stack ComfyUI indisponible ({e})\")\n",
+                                    "outputs": [{"output_type": "stream",
+                                                 "name": "stdout",
+                                                 "text": _ltx_banner_out}]}],
+                         "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
+    if not _ltx_banner.get("TOOL_FAILURE"):
+        failures.append("bandeau de repli LTX-2 non classe TOOL_FAILURE : "
+                        + repr(_ltx_banner))
+    # La forme francaise, elle, ne declenche pas : c'est un marqueur machine
+    # en majuscules, pas une formule de prose.
+    _ltx_prose = scan({"cells": [{"cell_type": "code",
+                                  "source": "print('ok')\n",
+                                  "outputs": [{"output_type": "stream",
+                                               "name": "stdout",
+                                               "text": "La generation n'a pas ete "
+                                                       "executee sur ce poste.\n"}]}],
+                        "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
+    if _ltx_prose.get("TOOL_FAILURE"):
+        failures.append("prose francaise classee TOOL_FAILURE : "
+                        + repr(_ltx_prose))
 
     if _one(_banner):
         failures.append("benign transformers fast-path banner still fires")
