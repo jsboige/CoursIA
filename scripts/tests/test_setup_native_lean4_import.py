@@ -216,3 +216,41 @@ def test_status_clean_table_passes(monkeypatch):
     monkeypatch.setattr(setup, "REPL_TOOLCHAIN_TAGS", {"v4.32.1": "repl-4.32.1"})
     assert setup.cmd_status() == 0
 
+
+
+# --- #24913 : les sous-commandes tournent aussi hors Windows ---------------
+
+import os  # noqa: E402
+
+import pytest  # noqa: E402
+
+
+@pytest.mark.skipif(os.name == "nt", reason="chemin natif : hotes Linux et macOS")
+def test_wsl_runs_a_native_bash_outside_windows():
+    """`build-repl`, `status` et `install` passaient tous par wsl.exe, absent
+    sous Linux : la meme commande passe par un bash natif."""
+    r = setup._wsl("echo native-$((20 + 22))", timeout=30)
+    assert r.returncode == 0
+    assert r.stdout.strip() == "native-42"
+
+
+@pytest.mark.skipif(os.name == "nt", reason="chemin natif : hotes Linux et macOS")
+def test_shell_path_is_unchanged_outside_windows():
+    """Le chemin d'un fichier temporaire de l'hote n'est pas reecrit en /mnt/."""
+    assert setup._shell_path("/tmp/x/_patcher.py") == "/tmp/x/_patcher.py"
+
+
+def test_shell_path_maps_a_windows_drive_under_wsl(monkeypatch):
+    monkeypatch.setattr(setup.os, "name", "nt")
+    assert setup._shell_path(r"C:\Users\u\AppData\Local\Temp\p.py") == \
+        "/mnt/c/Users/u/AppData/Local/Temp/p.py"
+
+
+def test_installer_pins_the_fork_tag_of_the_setup_script():
+    """`setup_wsl_lean4.sh` installe le fork que nomment FORK_URL / FORK_TAG
+    (sa source de verite declaree), et le remplace s'il est deja installe."""
+    installer = (Path(__file__).resolve().parents[2] / "MyIA.AI.Notebooks"
+                 / "GameTheory" / "scripts" / "setup_wsl_lean4.sh").read_text(encoding="utf-8")
+    url = setup.FORK_URL.replace("git+", "", 1)
+    assert f'LEAN4_JUPYTER_SPEC="lean4_jupyter @ git+{url}@{setup.FORK_TAG}"' in installer
+    assert 'pip install --force-reinstall --no-deps "$LEAN4_JUPYTER_SPEC"' in installer

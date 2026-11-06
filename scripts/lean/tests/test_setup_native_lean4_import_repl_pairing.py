@@ -144,3 +144,183 @@ def test_launch_does_not_swallow_the_pairing_error(organ):
     assert "except Lean4ReplWrapper.ReplPairingError:" in template
     assert template.index("except Lean4ReplWrapper.ReplPairingError:") < \
         template.index("except Exception:")
+
+
+def test_pairing_error_suggests_the_build_repl_tag_with_its_v(fork, home, tmp_path):
+    """`build-repl` n'accepte que les tags de REPL_TOOLCHAIN_TAGS, qui portent
+    leur `v` : la commande suggeree doit etre recevable telle quelle."""
+    _write_repl(home / ".elan" / "bin" / "repl", b"4.29.0")
+    lake = tmp_path / "lake"
+    lake.mkdir()
+    (lake / "lean-toolchain").write_text("leanprover/lean4:v4.30.0\n", encoding="utf-8")
+
+    with pytest.raises(fork.ReplPairingError) as excinfo:
+        fork._repl_for_toolchain(str(lake))
+    assert "build-repl v4.30.0" in str(excinfo.value)
+
+
+# --------------------------------------------------------------------------
+# #24913 -- tag compare exactement, binaire apparie par le wrapper
+# --------------------------------------------------------------------------
+
+def test_rc_lake_is_not_served_the_release_repl(fork, home, tmp_path):
+    """Une comparaison par sous-chaine faisait servir `repl-4.33.0` a un lake
+    en `v4.33.0-rc1` (`'v4.33.0' in 'leanprover/lean4:v4.33.0-rc1'`)."""
+    _write_repl(home / ".elan" / "bin" / "repl-4.33.0", b"4.33.0")
+    _write_repl(home / ".elan" / "bin" / "repl-4.33.0-rc1", b"4.33.0")
+    lake = tmp_path / "lake"
+    lake.mkdir()
+    (lake / "lean-toolchain").write_text(
+        "leanprover/lean4:v4.33.0-rc1\n", encoding="utf-8")
+
+    chosen = fork._repl_for_toolchain(str(lake))
+    assert os.path.basename(chosen) == "repl-4.33.0-rc1"
+
+
+def test_rc_lake_without_its_repl_is_refused(fork, home, tmp_path):
+    """Temoin du precedent : sans `repl-4.33.0-rc1`, le lake rc1 ne retombe
+    pas en silence sur le binaire de la release."""
+    _write_repl(home / ".elan" / "bin" / "repl-4.33.0", b"4.33.0")
+    _write_repl(home / ".elan" / "bin" / "repl", b"4.33.0")
+    lake = tmp_path / "lake"
+    lake.mkdir()
+    (lake / "lean-toolchain").write_text(
+        "leanprover/lean4:v4.33.0-rc1\n", encoding="utf-8")
+
+    with pytest.raises(fork.ReplPairingError):
+        fork._repl_for_toolchain(str(lake))
+
+
+def test_template_table_follows_repl_toolchain_tags(organ):
+    """La table inlinee du gabarit suit REPL_TOOLCHAIN_TAGS : c'est ce qui part
+    dans la fourche, et une table en retard sert le REPL par defaut."""
+    assert organ._extract_repl_table(organ.REPL_PY_PATCH) == organ.REPL_TOOLCHAIN_TAGS
+
+
+def test_repo_anchors_have_a_build_repl_tag(organ):
+    """Chaque toolchain qu'epingle un `lean-toolchain` de carnet est un tag que
+    `build-repl` accepte (v4.30.0 et v4.33.0-rc1 manquaient)."""
+    root = REPO_ROOT / "MyIA.AI.Notebooks"
+    pins = set()
+    for tc in root.rglob("lean-toolchain"):
+        parts = tc.relative_to(root).parts
+        if ".lake" in parts or "reference_docs" in parts:
+            continue
+        for line in tc.read_text(encoding="utf-8").split("leanprover/lean4:"):
+            line = line.strip()
+            if line:
+                pins.add(line)
+    assert pins, "aucun lean-toolchain trouve"
+    assert pins <= set(organ.REPL_TOOLCHAIN_TAGS), sorted(pins - set(organ.REPL_TOOLCHAIN_TAGS))
+
+
+class _FakePexpect:
+    """Enregistre les appels a `pexpect.spawn` du gabarit."""
+
+    def __init__(self):
+        self.calls = []
+
+    def spawn(self, command, **kwargs):
+        self.calls.append((command, kwargs))
+        return ("spawned", command)
+
+
+@pytest.fixture
+def launching_fork(organ):
+    """La classe de la fourche avec un `pexpect` factice, pour `launch()`."""
+    fake = _FakePexpect()
+    source = ("class Lean4ReplWrapper:\n"
+              + textwrap.indent(organ.REPL_PY_PATCH, "    "))
+    namespace = {"os": os, "re": re, "pexpect": fake}
+    exec(compile(source, "<repl.py fork>", "exec"), namespace)
+    return namespace["Lean4ReplWrapper"], fake
+
+
+def test_from_caller_returns_the_exported_binary(launching_fork, home, monkeypatch):
+    cls, _ = launching_fork
+    repl = _write_repl(home / ".elan" / "bin" / "repl-4.30.0", b"4.30.0")
+    monkeypatch.setenv("LEAN4_JUPYTER_REPL", str(repl))
+    assert cls._repl_from_caller() == str(repl)
+
+
+def test_from_caller_ignores_an_absent_binary(launching_fork, home, monkeypatch):
+    cls, _ = launching_fork
+    monkeypatch.setenv("LEAN4_JUPYTER_REPL", str(home / "nope"))
+    assert cls._repl_from_caller() is None
+    monkeypatch.delenv("LEAN4_JUPYTER_REPL")
+    assert cls._repl_from_caller() is None
+
+
+def test_launch_outside_a_lake_runs_the_paired_binary(launching_fork, home,
+                                                      tmp_path, monkeypatch):
+    """Hors lake, `lake env repl` lancerait ~/.elan/bin/repl (le PATH de
+    `lake env` le met en tete) : le binaire apparie est lance directement."""
+    cls, fake = launching_fork
+    _write_repl(home / ".elan" / "bin" / "repl", b"4.33.0")
+    paired = _write_repl(home / ".elan" / "bin" / "repl-4.30.0", b"4.30.0")
+    series = tmp_path / "series"
+    series.mkdir()
+    (series / "lean-toolchain").write_text("leanprover/lean4:v4.30.0\n", encoding="utf-8")
+    monkeypatch.chdir(series)
+    monkeypatch.setenv("LEAN4_JUPYTER_REPL", str(paired))
+
+    cls.launch()
+    command, kwargs = fake.calls[-1]
+    assert command == str(paired)
+    assert kwargs["env"]["PATH"].split(":")[0] == os.path.expanduser("~/.elan/bin")
+
+
+def test_launch_inside_a_lake_runs_the_paired_binary(launching_fork, home,
+                                                     tmp_path, monkeypatch):
+    """Dans un lake, le binaire apparie prime sur la table de la fourche, et
+    garde le LEAN_PATH que donne `lake env`."""
+    import subprocess
+
+    cls, fake = launching_fork
+    _write_repl(home / ".elan" / "bin" / "repl-4.30.0-rc2", b"4.30.0")
+    paired = _write_repl(home / ".elan" / "bin" / "repl-4.30.0", b"4.30.0")
+    lake = tmp_path / "lake"
+    lake.mkdir()
+    (lake / "lakefile.toml").write_text("name = 'probe'\n", encoding="utf-8")
+    (lake / "lean-toolchain").write_text("leanprover/lean4:v4.30.0\n", encoding="utf-8")
+    monkeypatch.chdir(lake)
+    monkeypatch.setenv("LEAN4_JUPYTER_REPL", str(paired))
+
+    class _Done:
+        stdout = "/sysroot/lib/lean:/lake/.lake/build/lib/lean\n"
+
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: _Done())
+
+    cls.launch()
+    command, kwargs = fake.calls[-1]
+    assert command == str(paired)
+    assert kwargs["env"]["LEAN_PATH"] == "/sysroot/lib/lean:/lake/.lake/build/lib/lean"
+
+
+def test_launch_outside_a_lake_without_caller_keeps_lake_env(launching_fork, home,
+                                                             tmp_path, monkeypatch):
+    """Sans binaire exporte (lancement hors wrapper), le comportement de la
+    fourche reste `lake env repl`."""
+    cls, fake = launching_fork
+    series = tmp_path / "series"
+    series.mkdir()
+    monkeypatch.chdir(series)
+    monkeypatch.delenv("LEAN4_JUPYTER_REPL", raising=False)
+
+    cls.launch()
+    assert fake.calls[-1][0] == "lake env repl"
+
+
+def test_repl_lean_version_keeps_the_rc_suffix(fork, tmp_path):
+    repl = _write_repl(tmp_path / "repl", b"4.33.0-rc1")
+    assert fork._repl_lean_version(str(repl)) == "4.33.0-rc1"
+
+
+def test_rc_default_repl_is_refused_for_a_release_lake(fork, home, tmp_path):
+    _write_repl(home / ".elan" / "bin" / "repl", b"4.33.0-rc1")
+    lake = tmp_path / "lake"
+    lake.mkdir()
+    (lake / "lean-toolchain").write_text("leanprover/lean4:v4.33.0\n", encoding="utf-8")
+
+    with pytest.raises(fork.ReplPairingError):
+        fork._repl_for_toolchain(str(lake))
