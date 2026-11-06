@@ -51,6 +51,8 @@ Un README de série se lit à plusieurs vitesses : le parcours par les numéros 
 
 ## Parcours principal
 
+Durée totale estimée : **~4-5 h** pour l'ensemble du parcours. Kernel Python 3 ; les carnets agentiques demandent une clé `OPENAI_API_KEY` (voir [Prérequis](#prérequis)).
+
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|----------|--------------------|--------|------------------|
 | 00 | [Setup Tweety](Argumentation-00-Setup-Tweety-Python.ipynb) | Configurer Python, JPype, un JDK portable et les JAR Tweety ; démarrer la JVM et vérifier la connexion sans simuler le solveur | Découverte | — |
