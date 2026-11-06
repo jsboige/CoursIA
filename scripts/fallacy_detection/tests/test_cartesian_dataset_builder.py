@@ -287,11 +287,12 @@ def test_committed_manifest_declares_builder_licence():
 
 # --- ancrage cote depot (mesure po-2023 du 2026-10-08 sur #17578) -----------
 #
-# Le manifeste epingle le pin AMONT (0ab05d66) ; le gitlink du sous-module a
-# derive depuis (65af9c38 le 06/10, puis edb39554). La reproductibilite doit se
-# lire depuis un commit que le depot atteint : le commit du build (dont le
-# gitlink etait encore le pin amont) et la copie verbatim in-repo que le
-# constructeur lit effectivement -- pas le sous-module vivant.
+# Le manifeste epingle le pin AMONT ; le gitlink du sous-module derive en
+# continu (0ab05d66 -> 65af9c38 -> ... -> 9038690 a la resynchronisation du
+# 2026-11-03). La reproductibilite doit se lire depuis un commit que le depot
+# atteint : le commit de `main` dont l'arbre porte le gitlink epingle, et la
+# copie verbatim in-repo que le constructeur lit effectivement -- pas le
+# sous-module vivant.
 
 @pytest.mark.skipif(not (PHASE2 / "manifest.json").exists(), reason="manifeste absent")
 def test_manifest_names_repo_side_pins():

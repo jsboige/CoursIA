@@ -69,8 +69,8 @@ correctly, so the door stays silent), and ignores re-trigger subjects. A
 measurement it cannot complete removes the door and says so on stderr; it
 never fabricates a refusal. `--stack-index` prints what the door reads.
 Because `derive_verdict` is also reached by `refute_ready_verdict`, the door
-covers the path the merge organ takes (`merge_ready.run_gate` shells out to
-this gate), not only the emitting lane's: what it prevents is a MERGE, and a
+covers the path the merge organ takes (since 2026-11-05 `merge_ready` calls
+`stack_reasons` in process), not only the emitting lane's: what it prevents is a MERGE, and a
 gate that only guarded emission would have let the founding incident through.
 
 Exit codes -- dossier INTEGRITY and PR MERGEABILITY are two questions, and
