@@ -25,9 +25,10 @@ binaire sur `ℓᵢ` bits d'un compteur :
 Tout l'appareil arithmétique vit dans `ℕ`, à l'échelle `2 ^ L` (où `L` majore
 toutes les longueurs) : l'hypothèse de Kraft s'écrit `mass L ls ≤ 2 ^ L`, et
 l'invariant de la récurrence est `Inv L ℓ c queue` — le compteur et toute la
-masse restante tiennent dans `2 ^ L`. C'est exactement le partage du gâteau
-binaire du carnet 01 : chaque mot consomme sa part, et la contrainte de Kraft
-est ce qui garantit qu'aucun compteur ne déborde.
+masse restante tiennent dans `2 ^ L`. C'est exactement le partage du
+budget binaire que le carnet 01 pose en § 3 (inégalité de Kraft) : chaque
+mot consomme sa part, et la contrainte de Kraft est ce qui garantit qu'aucun
+compteur ne déborde.
 
 Contenu :
 

@@ -147,9 +147,12 @@ def _kernelspecs_at(ref: str, paths: list[str]) -> dict[str, str | None]:
     requêtes remplirait le tampon stdin pendant que git remplit stdout —
     interblocage.
 
-    Zéro blob lu pour une liste non vide = protocole rompu : on lève au lieu
-    d'écrire un inventaire vide (un résultat sans mesure n'est pas un
-    résultat).
+    Deux causes distinctes pour un kernelspec `None` partout (cf #23655) :
+    zéro blob lu = protocole rompu, on lève au lieu d'écrire un inventaire
+    vide (un résultat sans mesure n'est pas un résultat) ; blobs lus mais
+    aucun kernelspec trouvé = révision d'archives (JSON sans
+    `metadata.kernelspec`), inventaire légitime publié avec kernel `None`
+    partout, signalé sur stderr.
     """
     if not paths:
         return {}
@@ -176,6 +179,7 @@ def _kernelspecs_at(ref: str, paths: list[str]) -> dict[str, str | None]:
     writer = threading.Thread(target=_feed, daemon=True)
     writer.start()
     specs: dict[str, str | None] = {}
+    blobs_lus = 0
     try:
         for p in paths:
             header = proc.stdout.readline()
@@ -192,6 +196,7 @@ def _kernelspecs_at(ref: str, paths: list[str]) -> dict[str, str | None]:
             size = int(parts[2])
             data = proc.stdout.read(size)
             proc.stdout.read(1)  # séparateur
+            blobs_lus += 1
             specs[p] = _kernelspec_bytes(data)
     finally:
         try:
@@ -199,10 +204,15 @@ def _kernelspecs_at(ref: str, paths: list[str]) -> dict[str, str | None]:
         finally:
             proc.wait()
     lus = sum(1 for v in specs.values() if v is not None)
-    if paths and not lus:
+    if paths and blobs_lus == 0:
         raise RuntimeError(
             "git cat-file --batch : aucun blob lu pour %d chemin(s) dans %s "
             "-- protocole rompu, aucun inventaire produit" % (len(paths), ref))
+    if blobs_lus and not lus:
+        sys.stderr.write(
+            "note: %d blob(s) lu(s) mais aucun kernelspec dans %s "
+            "-- inventaire publie avec kernel None partout "
+            "(revision d'archives ? cf #23655)\n" % (blobs_lus, ref))
     return specs
 
 
@@ -328,11 +338,24 @@ def _index_zero_padded(stem: str) -> bool | None:
     ET pour `7-Foo`). On la recalcule ici à partir du stem brut, sans
     toucher au parseur partagé du voisin (cf #15488 : « Le parseur doit
     partager sa grammaire avec les gardes de #5081 »).
+
+    La LETTRE D'ACCRETION fait partie de l'index (`03b_`, `09e_`, `01b-`) :
+    la tête reste zéro-padée. L'ancien motif exigeait un séparateur
+    immédiatement après les chiffres et rendait donc `None` — classé
+    `ambigu` — sur 14 carnets réels de `main` (`03b_Typed_Decisions_System1`,
+    `09e_Production_Exploitation`, `01b-Lean-SocialChoice-Formal`, ...).
+    Mesure du 2026-11-05 (#24678) : le bucket `ambigu` passe de 40 à 26,
+    sans qu'un seul nom du dépôt change.
+
+    Le lookahead est celui de `INDEX_RE` (#22059) : une lettre suivie d'un
+    niveau numérique (`3D-04`, `3d-01`) est la queue d'un PRÉFIXE de série,
+    pas une lettre d'accrétion — sans lui, `3d-01` deviendrait « index nu
+    non zéro-padé », donc `rename_proposed` sur un nom correct.
     """
-    m = re.match(r"^(0[1-9])[._\-\s]", stem)
+    m = re.match(r"^(0[1-9])(?:[a-z](?![.\-]\d)|(?=[._\-\s]))[._\-\s]", stem)
     if m:
         return True
-    m = re.match(r"^([1-9])[._\-\s]", stem)
+    m = re.match(r"^([1-9])(?:[a-z](?![.\-]\d)|(?=[._\-\s]))[._\-\s]", stem)
     if m:
         return False
     return None
@@ -521,6 +544,26 @@ _CASES = [
     # la conjonction est nécessaire — un suffixe non
     # pair (`-Rust`) seul peut signaler un single-rendering sans twin.
     ("3.1-Retropropagation-Rust.ipynb", _CLASSIF_AMBIGU, "kernel-inconnu-xyz", "3.1"),
+    # --- fixtures du critere 3 de #24678 --------------------------------
+    # Les quatre familles nommees par l'issue, epinglees sur le comportement
+    # MESURE du 2026-11-05 : prefixe a chiffre suivi d'un suffixe de langue,
+    # prefixe alphabetique, tete nue, et un non-parse reel (kernel LU
+    # inconnu => ambigu legitime). Aucun de ces noms n'est renomme.
+    ("Z3-01-Introduction-Python.ipynb", _CLASSIF_CONFORME, "python3", None),
+    ("GameTheory-03-Cooperative-Solution.ipynb", _CLASSIF_CONFORME,
+     "python3", None),
+    ("01-Foo.ipynb", _CLASSIF_CONFORME, "python3", "1"),
+    ("Freeform-Notes.ipynb", _CLASSIF_AMBIGU, "kernel-inconnu-xyz", None),
+    # Lettre d'accretion : la tete `03` / `09` EST zero-padee. L'ancien motif
+    # rendait None => ambigu sur 14 carnets reels (#24678).
+    ("03b_Typed_Decisions_System1.ipynb", _CLASSIF_CONFORME, "python3", "3b"),
+    ("09e_Production_Exploitation.ipynb", _CLASSIF_CONFORME, "python3", "9e"),
+    ("01b-Lean-SocialChoice-Formal.ipynb", _CLASSIF_CONFORME, "lean4", "1b"),
+    # Controle negatif : sans zero-pad, la meme forme reste a renommer.
+    ("3b-Typed-Decisions.ipynb", _CLASSIF_RENAME, "python3", "3b"),
+    # Controle negatif du lookahead : `3d-01` est un prefixe de serie mixte,
+    # pas un index -- il ne doit pas basculer en rename_proposed (#22059).
+    ("3d-01-Some-Notebook.ipynb", _CLASSIF_CONFORME, "python3", None),
 ]
 
 

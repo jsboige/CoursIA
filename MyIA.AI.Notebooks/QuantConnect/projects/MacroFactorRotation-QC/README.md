@@ -283,12 +283,103 @@ de moyennes journalieres -0.6 bp, p 0.977) avec moins de volatilite.
 Le verdict v3 reste l'histoire de la mesure du 2026-10-18 (capitalisation
 non reconstruite) ; le verdict courant est celui-ci.
 
+## Mesure sur la fenetre de l'article 18049 (QC Cloud, 2026-11-05, #24311)
+
+L'article QC research 18049 (Derek Melchin) reprend la
+decision de la baseline et publie, de janvier 2017 a septembre 2024, un
+Sharpe de 0.794 contre 0.564 pour SPY detenu. Protocole, controle de
+reproduction et predictions ecrits dans #24311 avant le premier backtest.
+Code de `main` sans modification (empreintes de `main.py` et
+`asg_helpers.py` verifiees apres envoi), projet de mesure neuf 38941913,
+compilation `afd2f686c6c21d5cdba725c4b82fde66-1158cb83922599abf473ad0182149513`.
+Parametres `start_date=20170101`, `end_date=20240930`, sans
+`trading_start`, brokerage par defaut, 100 000 USD. L'article ne publie
+pas le jour exact de debut et de fin : ces bornes sont un choix declare.
+Les trois bras tournent le meme jour.
+
+| Metrique (QC) | baseline | SPY detenu | 60/40 detenu |
+|----------|----------|------------|--------------|
+| Backtest | `97aa8e22aa5747513479c45f23894e1f` | `ef9bab9fb8528cea2f76263ef6efd234` | `436888c5847df16466153128abed07e0` |
+| Sharpe Ratio | 0.708 | 0.575 | 0.486 |
+| CAGR | 20.672 % | 14.705 % | 9.677 % |
+| Max Drawdown | 42.000 % | 33.700 % | 22.000 % |
+| Profit net total | 329.254 % | 189.677 % | 104.637 % |
+| Ordres | 291 | 1 | 160 |
+| PSR | 12.460 % | 6.269 % | 3.744 % |
+
+**Controle de reproduction : tenu.** Seuils ecrits dans #24311 : baseline
+a 0.10 ou moins de 0.794, SPY detenu a 0.05 ou moins de 0.564. Mesure :
+0.708 (ecart 0.086) et 0.575 (ecart 0.011), Sharpe calcule par QC avec
+son taux sans risque, comme dans l'article. La sonde FRED rend aux trois
+dates de controle les lectures de v3 (VIXCLS 13.54, 40.11, 53.54) ;
+`FRED same-day` 49/94, `Max gross target` 1.600.
+
+**Controle de serie : tenu.** Chaque trace `shadow` couvre 1948 seances,
+du 2017-01-03 au 2024-09-30. Les plus fortes variations tombent toutes en
+mars 2020 : baseline -13.33 % le 2020-03-13, SPY detenu -10.92 % le
+2020-03-17 et -9.55 % le 2020-03-13, 60/40 -7.82 % le 2020-03-13. La
+trace est prise a l'ouverture, donc la variation datee d'un jour porte la
+seance precedente : SPY cloture a -9.6 % le 12/03 et a -10.9 % le 16/03.
+La valeur de la baseline, reconstruite depuis son journal d'ordres (SPY,
+BND et BTCUSD detenus en mars 2020) et les clotures ajustees, suit la
+trace sur les douze seances relevees du mois, avec un decalage de 0.7 %
+a 4.4 %. La
+reconstruction est approchee : le cours de BTCUSD est pris a 00:00 UTC,
+la trace a l'ouverture de SPY. Aucun saut isole ne porte la valeur finale.
+
+Significativite : `Paradox46Benchmarks/significance.py` sur la trace
+`shadow` (1948 seances), taux sans risque nul, correction de Holm sur les
+six p-valeurs.
+
+| Comparaison | Sharpe du bras | Sharpe de la reference | Ecart | p Ledoit-Wolf | p bootstrap (unilaterale) | p de Holm (Ledoit-Wolf) |
+|-------------|------|------|------|------|------|------|
+| baseline vs SPY detenu | 0.952 | 0.835 | +0.117 | 0.599 | 0.307 | 1.000 |
+| baseline vs 60/40 | 0.952 | 0.860 | +0.092 | 0.675 | 0.348 | 1.000 |
+
+Les intervalles de confiance a 95 % du bootstrap contiennent zero dans les
+deux cas (contre SPY : -0.32 a +0.55). L'ecart de moyennes journalieres
+(+2.4 bp contre SPY, +4.6 bp contre le 60/40) a une p brute de 0.028
+contre le 60/40, et de 0.165 apres Holm.
+
+**Lecture hors protocole : l'avantage tient a 2017.** Cette lecture n'est
+pas prevue par #24311 et ne porte pas le verdict. Annee par annee sur la
+trace, la baseline rend +63 % en 2017 contre +21 % pour SPY detenu, puis
+moins que SPY en 2020 et 2021. Sans 2017 (du 2018-01-03 au
+2024-09-30), son Sharpe ombre tombe a 0.735 contre 0.757 pour SPY detenu,
+au niveau de la fenetre v3 (0.734 contre 0.761, #21329). Le resultat de
+l'article depend donc de son annee de depart. La part de BTCUSD dans
+l'annee 2017 n'est pas isolee ici.
+
+| Rendement annuel (trace) | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 | 2023 | 2024 (au 30/09) |
+|---|---|---|---|---|---|---|---|---|
+| baseline | +63 % | -5 % | +38 % | +4 % | +16 % | -10 % | +38 % | +36 % |
+| SPY detenu | +21 % | -5 % | +31 % | +18 % | +29 % | -18 % | +27 % | +21 % |
+| 60/40 detenu | +14 % | -3 % | +22 % | +15 % | +16 % | -16 % | +18 % | +15 % |
+
+## Verdict sur la fenetre de l'article : baseline INCONCLUSIVE
+
+Meme regle que v3 (#21329). L'ecart de Sharpe est positif contre les deux
+references, mais la p de Holm (Ledoit-Wolf) vaut 1.000 : ni `BEATS`, ni
+`NO BEATS` (le Sharpe ponctuel depasse celui de SPY detenu). Les deux
+predictions de #24311 sont tenues : reproduction tenue pour SPY detenu,
+et verdict `INCONCLUSIVE`. La baseline reproduit aussi le chiffre de
+l'article a 0.086 pres.
+
+L'affirmation centrale de l'article (0.794 contre 0.564) se reproduit
+donc en valeur ponctuelle, mais elle n'est pas significative sur 7.75 ans
+de seances. Elle ne tient pas non plus quand on retire l'annee 2017, et
+le drawdown maximal de la baseline (42.0 %) depasse celui de SPY detenu
+(33.7 %). Le verdict courant du projet reste celui de v4 sur sa propre
+fenetre : baseline NO BEATS.
+
 ## How to Run
 
 **Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/MacroFactorRotation-QC"`
 **QC Cloud :** copier `main.py` + `asg_helpers.py` dans un projet Py, puis
 lancer quatre backtests avec les parametres `mode=baseline|asg|spy|6040`,
 `start_date=20070101`, `end_date=20250101`, `trading_start=20180101`.
+Fenetre de l'article 18049 (#24311) : bras `baseline`, `spy` et `6040`,
+`start_date=20170101`, `end_date=20240930`, sans `trading_start`.
 **Significativite :** telecharger le graphique `shadow` de chaque backtest,
 puis, depuis `Paradox46Benchmarks/` :
 `python significance.py --strategy baseline.json --bench spy=spy.json --bench 6040=6040.json`
@@ -307,4 +398,5 @@ dossier du projet.
 - [QC research #21132 - Sizing Market Exposure With Aggregate Sales Growth](https://www.quantconnect.com/research/21132/sizing-market-exposure-with-aggregate-sales-growth/)
 - Garfinkel, Hribar & Hsiao (2025), Aggregate Sales Growth and Stock Market Returns, SSRN 5066654
 - [QC Strategy Library #72 - Monthly Macro Factor Cross-Asset Rotation](https://www.quantconnect.com/strategies/72)
+- [QC research #18049 - Reimagining the 60-40 Portfolio in an Era of AI and Falling Rates](https://www.quantconnect.com/research/18049/reimagining-the-60-40-portfolio-in-an-era-of-ai-and-falling-rates/) (mesure sur sa fenetre : #24311)
 - Issue #14722 (verdict CONSOLIDATION, label quantconnect-research)

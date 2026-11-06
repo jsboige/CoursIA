@@ -164,7 +164,7 @@ Les **symboles** sont cités plutôt que des numéros de ligne : un numéro de l
 
 ### B.1 — pourquoi pas `grep -c sorry` (mesure 2026-08-14)
 
-Sur les 21 lakes : **484 faux `sorry` pour 21 réels (23×)** — `grep -c sorry` compte la prose (docstrings, `-- commentaires`, feuilles de route). **9 lakes à 0 réel** affichent des comptes naïfs positifs ; ex. `grothendieck_lean` : 68 naïfs, 0 réel — un reviewer appliquant `grep` à la lettre exigerait la justification de 68 `sorry` qui n'existent pas. L'instrument : `python scripts/lean/count_code_sorry.py --json`, champ `distinct_code_sorry` (la même mesure que le gate CI `sorry-filter-mode: real` de `lean-axiom.yml`).
+Sur les 21 lakes : **484 faux `sorry` pour 21 réels (23×)** — `grep -c sorry` compte la prose (docstrings, `-- commentaires`, feuilles de route). **9 lakes à 0 réel** affichent des comptes naïfs positifs ; ex. `grothendieck_lean` : 68 naïfs, 0 réel — un reviewer appliquant `grep` à la lettre exigerait la justification de 68 `sorry` qui n'existent pas. L'instrument : `python scripts/lean/count_code_sorry.py --json`, champ `distinct_code_sorry` (la même mesure que le gate CI `sorry-filter-mode: real` de `lean-axiom.yml`). Le gate CI mesure déjà juste (`sorry-filter-mode: real`) : c'est le texte de la règle qui pointait le mauvais instrument — un reviewer qui voit `sorry-filter-mode: real` inconnu n'a pas à soupçonner l'organe.
 
 ### D.6 — récurrences du ratchet `Output-failure`
 
@@ -219,3 +219,77 @@ Sur #10761 (récit complet ci-dessus), le « traitement » des deux nits du 2026
 Sur #16670, un commentaire fut posté dont le **corps entier** était `@C:\Users\jsboi\AppData\Local\Temp/a16670.md` — la trace visible de `gh ... --body "@$TEMP/a16670.md"` là où `--body-file` était voulu (`gh` n'expande pas `@file`, il poste la chaîne littérale). Le harnais de merge lut ce corps comme un **waiver DWELL L3** et nourrit une escalade de merge avec. Mais le fichier visé vit sur **une machine tierce** : aucun lecteur de la PR — ni ai-01, ni un bot, ni un contributeur — ne peut l'ouvrir. Le signal ne porte aucun contenu vérifiable ; tout son sens tient dans le *nom du fichier*. **Une autorisation que personne ne peut relire est une autorisation fabriquée.**
 
 La convention est tranchée par écrit (#16780) : **un waiver par pointeur est interdit**. Si un waiver compte pour un merge, sa **substance** est sur la PR — une phrase qui dit ce qui est levé et pourquoi. Le scratchpad garde le détail, la PR porte la décision. Le garde `scripts/check_local_path_waivers.py` (check advisory câblé dans `local-path-waiver-guard.yml`) rougit sur tout commentaire dont le corps est un chemin seul ou contient un segment de profil Windows `[A-Za-z]:[\/]Users[\/]` — contrôle positif : le corps #16670 exact, rejoué en test unitaire (le commentaire original a été supprimé par le user).
+
+## § Levier B — rationales, mesures et incidents déportés de `.claude/rules/pr-review-discipline.md`
+
+Tranche 1 du slimming du harnais (#15204, parent #12051) : le détail déplacé ici est **mot pour mot** celui qui figurait dans la règle auto-chargée. La règle conserve ses obligations, interdictions, seuils, marqueurs et commandes d'organe ; ce qui part ici est la **justification**, la **mesure** et le **récit d'incident**. Les numéros de ligne cités renvoient à la version de base de la règle (`36c27857ad109`), avant déplacement.
+
+### Traçabilité — chaque bloc déplacé, sa ligne d'origine et sa cible
+
+| Ligne d'origine (base `36c27857ad109`) | Bloc déplacé | Porté par |
+|---|---|---|
+| L13 | filet B.0 élargi aux mots de prose — sur-accusation x5 | § « Émission du verdict — instance fondatrice et mesure (#14682) » (déjà présent) |
+| L17 | mesure fondatrice du seuil `DIAG-LOOP` (#14821) | § « L17 » ci-dessous |
+| L25 | `statusCheckRollup` non trié — rouges périmés (#16765) | § « L25 » ci-dessous |
+| L44 | coût d'une PR par PR, pas par ligne (Q162 b) | § « L44 » ci-dessous |
+| L55 | mesure `grep -c sorry` vs `distinct_code_sorry` | § « B.1 — pourquoi pas `grep -c sorry` » (déjà présent) |
+| L60 | valeur du cliquet « rougir sur tout nouveau nom » | § « L60 » ci-dessous |
+| L62 | `proof-integrity` antérieur au 2026-07-28 (parser aveugle, #8740) | § « B.3 — le gate `proof-integrity` était structurellement aveugle au `native_decide` » (déjà présent) |
+| L64 | B.3 « non applicable » — deux cas à écrire tel quel | § « L64 » ci-dessous |
+| L68 | sigma ne suffit pas ; `linear` n'est pas la jambe de la conjonction | § « L68 » ci-dessous |
+| L70 | les trois contre-exemples ML qui fondent (3) | § « C — les trois contre-exemples ML inscrits » (déjà présent) |
+| L80 | la position d'un bloc d'interprétation ne se vérifie pas automatiquement | § « L80 » ci-dessous |
+| L81 | SC-09 — un carnet qui raconte sa propre correction | § « L81 » ci-dessous |
+| L84 | une issue fille ne repeint pas une cause réparable | § « L84 » ci-dessous |
+| L86 | récurrences du ratchet `Output-failure` (#3473, #11685, #13517) | § « D.6 — récurrences du ratchet `Output-failure` » (déjà présent) |
+| L88 | contre-exemple fondateur de l'effondrement de sortie (#15209) | § « D.7 — #15209 » (déjà présent) |
+| L90 | perte de source invisible aux ratchets de sortie (#15862, #16097) | § « D.8 — #15862 / #16097 » (déjà présent) |
+| L92 | récit de l'advisory `.NET` (#5214) | § « D — #5214 » (déjà présent) |
+| L98 | origine de la règle des totaux de README (#17029, #9377, #17636, #17645) | § « L98 » ci-dessous et § « E — #5345 » (déjà présent) |
+| L112 | un verdict `INTRINSIC` se vérifie à la source (#21121) | § « L112 » ci-dessous |
+
+### L17 — le seuil `DIAG-LOOP` et sa mesure fondatrice (#14821)
+
+PR #14821 : 31 commentaires et 68 101 caractères d'infra-diagnostic sur 5 jours (25/28 sans action attachée), pour un livrable qui n'avait pas bougé depuis le commit du premier jour. Le commentaire de diagnostic pur coûte une lecture à chaque lane et ne fait pas avancer la PR : c'est une pompe, pas un apport. D'où le seuil porté par la règle : **plus de 3 `[DIAG]` consécutifs sans `[ACTION]` intercalé** = `DIAG-LOOP`.
+
+### L25 — `statusCheckRollup` est une liste plate non triée (#16765)
+
+Les rouges périmés restent dans la liste : **12/160 PRs mesurées**, dont les fondateurs #16232 / #16499 / #16579 — six rouges tous supersedés sur le même head. Symétriquement, une jambe rouge **résiduelle** d'une suite distincte a déjà bloqué une PR verte (#11532, CodeQL) : c'est ce que le helper rend sous `residual_reds`.
+
+### L44 — le coût d'une PR se paie par PR, pas par ligne (Q162 b)
+
+Mesure du 2026-11-03 sur **2 075 PRs** : 8 commentaires et reviews en moyenne pour un diff de quelques lignes, contre 15 pour un diff de grande taille. Le saucissonnage coûte plus cher que le travail.
+
+### L60 — pourquoi la whitelist des axiomes interdit les wildcards
+
+Le cliquet qui fait rougir sur tout nouveau nom est **toute la valeur du gate** : c'est ce comportement, et non la liste blanche, qui empêche l'introduction d'un `Classical.choice` non vetted.
+
+### L64 — B.3 « non applicable » : deux cas à écrire tel quel
+
+(a) le job n'est pas câblé sur le lake de la PR (#8677) ; (b) il l'est, mais ses `target-modules` n'atteignent pas le module modifié (#8782) — un vert hors-cible est **indiscernable** d'un vert sur cible dans le rollup (job advisory `target-coverage`).
+
+### L68 — pourquoi sigma seul ne suffit pas, et pourquoi `linear` n'est pas la jambe
+
+Sigma mesure la **dispersion inter-seeds**, pas la significativité. `loss_fn="linear"` est un **contrôle de biais**, jamais la jambe de la conjonction : il est aveugle à la dispersion, si bien qu'un modèle plus précis peut « perdre » face à une baseline plus biaisée (#10961, CE1).
+
+### L80 — la position d'un bloc d'interprétation ne se vérifie pas automatiquement
+
+Aucun check automatique ne vérifie la position d'un `### Lecture du résultat` / `### Interprétation` (~99 % de FP) : **le regard humain est l'organe**.
+
+### L81 — SC-09 : un carnet qui raconte sa propre correction
+
+Cas fondateur : environ un tiers du carnet en récit de cycle, **mergé avec toutes les gates vertes** — les gates mesurent la mécanique, pas la prose.
+
+### L84 — une issue fille ne repeint pas une cause réparable
+
+Un verdict `CAUSE_DOCUMENTED_ONLY` sur une cause réparable par la flotte, même accompagné d'une issue fille, est une « jambe de bois repeinte » : la cause reste réparable, donc elle doit être réparée.
+
+### L98 — l'origine de la règle des totaux de README
+
+Périmètre des statistiques visées par la règle : total de notebooks, comptes par langage ou par sous-dossier, comptes de cellules, bandeaux « N notebooks ».
+
+Arbitrage user 2026-09-24 (#17029 revertée) ; mandat user du 2026-08-04 (#9377) ; durcissement du check-run `prose-counts` par #17636 puis #17645 (bloquant sur les lignes ajoutées). Le cas de la liste laissée périmée plus bas est dans la section « E — #5345 Probas » ci-dessus.
+
+### L112 — un verdict `INTRINSIC` se vérifie à la source (#21121)
+
+**#21121** : TorchLean déclaré « non public » — il l'était depuis cinq mois. Une grille de verdicts remplie sur une prémisse non vérifiée n'est pas une preuve : le reviewer vérifie lui-même que l'outil existe, qu'il est public et installable.

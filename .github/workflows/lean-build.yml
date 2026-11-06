@@ -10,7 +10,7 @@ name: Lean Build (reusable)
 #     ci:
 #       uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
 #       with:
-#         project-path:      MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean
+#         project-path:      MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean
 #         display-name:      grothendieck_lean
 #         sorry-baseline:    "0"
 #         sorry-filter-mode: prose-header   # raw | prose-header | standalone-tactic
@@ -251,14 +251,32 @@ jobs:
       # (runs of 2026-08-09). This swap step stays as cheap insurance against a
       # future cache-miss peak; it is no longer the only mitigation. The same
       # commit elaborates clean on WSL (`lake build` exit 0) — the ceiling was
-      # the runner's 16 GB RAM, not the proof. /mnt on ubuntu-latest carries
-      # ~70 GB free, so 32 G is affordable; `df -h /mnt` keeps that auditable.
+      # the runner's 16 GB RAM, not the proof. /mnt sits on /dev/root, so the
+      # swap is sized from its free space, capped at 32 G (2026-11-04).
       run: |
-        df -h /mnt
-        sudo fallocate -l 32G /mnt/lean-swap
-        sudo chmod 600 /mnt/lean-swap
-        sudo mkswap /mnt/lean-swap
-        sudo swapon /mnt/lean-swap
+        df -h /mnt / || true
+        # Size the swap from the free space really left on its filesystem.
+        # /mnt sits on /dev/root on hosted runners (145G, 84G free measured
+        # 2026-11-04): a fixed 32G fallocate starved runners with less room,
+        # which died "No space left on device" a minute in. Keep 30G for the
+        # toolchain, the Mathlib cache and the build; cap the swap at 32G.
+        avail_g=$(df --output=avail -BG /mnt 2>/dev/null | tail -n 1 | tr -dc '0-9' || true)
+        if [ -z "$avail_g" ]; then
+          echo "::warning title=Lean swap skipped::df could not read the free space on /mnt"
+        else
+          swap_g=$(( avail_g - 30 ))
+          if [ "$swap_g" -gt 32 ]; then swap_g=32; fi
+          if [ "$swap_g" -lt 4 ]; then
+            echo "::warning title=Lean swap skipped::${avail_g}G free on /mnt, under 34G (4G swap + 30G build reserve)"
+          elif sudo fallocate -l "${swap_g}G" /mnt/lean-swap; then
+            sudo chmod 600 /mnt/lean-swap
+            sudo mkswap /mnt/lean-swap
+            sudo swapon /mnt/lean-swap
+          else
+            sudo rm -f /mnt/lean-swap
+            echo "::warning title=Lean swap skipped::fallocate of ${swap_g}G failed on /mnt"
+          fi
+        fi
         free -h
 
     - name: Authenticate lake's git clones
