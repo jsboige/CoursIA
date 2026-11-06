@@ -23,15 +23,15 @@ export PATH="$DOTNET_ROOT:$DOTNET_ROOT/tools:$PATH"   # à reporter dans ~/.bash
 brew install --cask dotnet-sdk
 
 # dotnet-interactive (même commande que Windows, cross-OS)
-dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 
 # Vérification
-dotnet interactive --version   # 1.0.617701 (pin, cf kernels-runtime.md)
+dotnet interactive --version   # 1.0.712001 (canon, cf kernels-runtime.md)
 jupyter kernelspec list | grep ".net"   # .net-csharp, .net-fsharp
 ```
 
-Le pin de version **1.0.617701** s'applique cross-OS. La casse de `#!import` sous 1.0.712001, constatée sur ai-01, n'est pas reproduite partout : ni sur po-2024, ni sous Linux (Ubuntu 24.04, `#!import` exécuté sous les deux versions, [#17654](https://github.com/jsboige/CoursIA/issues/17654)). Le pin reste le standard tant que le dé-pin n'est pas décidé ([kernels-runtime.md](kernels-runtime.md)).
+La version canon **1.0.712001** s'applique cross-OS ([décision #18766](https://github.com/jsboige/CoursIA/issues/18766), [kernels-runtime.md](kernels-runtime.md)). Ce build tourne sur .NET 10 (`tools/net10.0` dans le paquet de l'outil) : le canal 10.0 installé ci-dessus est donc nécessaire, pas seulement pour `dotnet restore`. La casse de `#!import` autrefois constatée sur une machine sous ce build n'a été reproduite nulle part ailleurs, ni sous Linux (Ubuntu 24.04, `#!import` exécuté sous les deux versions, [#17654](https://github.com/jsboige/CoursIA/issues/17654)).
 
 ## Python 3.10+ + Conda
 
