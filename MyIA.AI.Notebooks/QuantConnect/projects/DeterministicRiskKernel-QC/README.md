@@ -1,0 +1,141 @@
+# DeterministicRiskKernel-QC — le noyau de risque de Steward dans LEAN
+
+Portage LEAN du noyau de risque déterministe décrit par Feng et al. (*Governed Self-Evolution for Autonomous Investing*, arXiv:2610.30557, section 5.5, table 11). C'est l'étape 2 de l'issue #24698. L'étape 1 est le carnet `QuantConnect/Python/QC-Py-45-Noyau-Risque-Deterministe.ipynb` (PR #24728), qui mesure ce noyau avec un moteur vectorisé sur les données yfinance.
+
+Ce projet sert de **vérification indépendante** du carnet sur son chemin momentum. Le carnet et l'algorithme partagent les règles, mais ni les données, ni le moteur d'exécution : ici, ce sont les données QuantConnect et le modèle d'exécution de LEAN.
+
+## Règles
+
+Chaque premier jour de bourse de la semaine, l'algorithme retient les 10 ETF au plus fort momentum (rendement sur 126 séances, en sautant les 5 dernières), signal pris sur la clôture précédente, ordres `MarketOnOpen`. L'univers compte 23 ETF en quatre groupes : actions US, actions hors US, obligations, matières premières et immobilier.
+
+Le noyau ajoute quatre règles, avec les paramètres du papier, sans ajustement :
+
+- **stop** à 2 ATR(14) sous le prix d'entrée, fixé à l'ouverture de la position. C'est un ordre `StopMarket` natif. Une position stoppée reste à plat jusqu'au rebalancement suivant ;
+- **plafond de 40 % par groupe**, réduction au prorata ;
+- **exposition d'au plus 90 %**, soit 9 % par position au lieu de 10 % ;
+- **coupe-circuit** après une séance du portefeuille à −3 % ou pire.
+
+Frais de 5 points de base par côté (`ProportionalFeeModel`), départ à 100 000 USD.
+
+## Variantes
+
+Le paramètre `mode` choisit la variante, avec les mêmes noms que la table `VARIANTES` du carnet :
+
+| `mode` | Poids par position | Stops | Plafond de groupe | Coupe-circuit |
+|---|---|---|---|---|
+| `nokernel` | 10 % | non | non | non |
+| `exposure90` | 9 % | non | non | non |
+| `kernel_nocb` | 9 % | oui | oui | non |
+| `kernel` (défaut) | 9 % | oui | oui | oui |
+| `spy` | SPY acheté une fois et conservé | — | — | — |
+
+Les paramètres `start_date` et `end_date` (format `AAAA-MM-JJ`) bornent la fenêtre.
+
+## Résultats
+
+Projet QC 38955440, espace sponsorisé ESGF_School, backtests du 2026-11-05. Fenêtre du 2015-01-02 au 2026-07-31 : l'espace ESGF_School coupe les données à J−90 sans erreur, d'où la date de fin. Le carnet a été relancé sur la même fenêtre pour la comparaison.
+
+Le Sharpe affiché par QC inclut un taux sans risque. Pour comparer au carnet, le Sharpe « sans taux » est recalculé depuis la trace `shadow` de chaque backtest : valeur du portefeuille à l'ouverture de chaque séance de SPY, répartie sur les séries e0 à e4 (contrat #18923), soit 2911 dates. Rendements journaliers, `moyenne / écart-type × √252`, taux nul.
+
+| Variante | Backtest | CAGR | Sharpe (taux nul) | Sharpe QC | Drawdown max | Stops | Coupures |
+|---|---|---|---|---|---|---|---|
+| Sans noyau | `5272a10ad58c578d457ad657a04f1385` | +7,08 % | 0,59 | 0,28 | −29,4 % | 0 | 0 |
+| Exposition 90 % seule | `80e96d5e1366fd1f670ec6e933875445` | +6,45 % | 0,59 | 0,25 | −26,7 % | 0 | 0 |
+| Noyau sans coupe-circuit | `eb99dd2511fe8d52d70df9b8f45fc794` | +7,71 % | 0,83 | 0,40 | −13,0 % | 444 | 0 |
+| Noyau complet | `0ce2bb3f21753fd513e75daf07ad12f1` | +7,35 % | 0,79 | 0,37 | −15,7 % | 453 | 6 |
+| SPY (référence) | `7249213e4250c71919e3a090511c01e5` | +13,57 % | 0,81 | 0,55 | −33,8 % | — | — |
+
+Le carnet, sur la même fenêtre, liquidités à 0 % comme dans LEAN (entre parenthèses : liquidités rémunérées au rendement de BIL, réglage du carnet) :
+
+| Variante | CAGR | Sharpe | Drawdown max |
+|---|---|---|---|
+| Sans noyau | +7,15 % | 0,60 | −29,3 % |
+| Exposition 90 % seule | +6,50 % (+6,71 %) | 0,60 (0,62) | −26,7 % |
+| Noyau sans coupe-circuit | +7,13 % (+7,60 %) | 0,78 (0,83) | −13,4 % (−13,3 %) |
+| Noyau complet | +6,83 % (+7,31 %) | 0,75 (0,80) | −14,2 % (−14,1 %) |
+| SPY | +13,69 % | 0,82 | −33,7 % |
+
+### Lecture
+
+LEAN retrouve l'ordre du carnet sur ce chemin :
+
+- le noyau divise le drawdown maximal par deux environ (−29,4 % sans noyau, −15,7 % avec, −13,0 % sans coupe-circuit) à CAGR comparable, et le Sharpe à taux nul passe de 0,59 à 0,79-0,83 ;
+- l'exposition à 90 % seule ne fait presque rien : c'est le contrôle à exposition égale ;
+- le coupe-circuit n'apporte rien sur ce chemin : sans lui, le CAGR et le drawdown sont tous deux meilleurs.
+
+**Aucun verdict ici.** Ces chiffres portent sur un seul chemin d'entrées. Le verdict du carnet (BEATS sur le drawdown) repose sur l'ablation à 50 graines d'entrées aléatoires, que ce projet ne rejoue pas. Ce projet dit seulement qu'un moteur d'exécution indépendant, sur d'autres données, reproduit les lectures du carnet sur le chemin momentum.
+
+### D'où vient l'écart de CAGR entre LEAN et le carnet
+
+Le CAGR de LEAN dépasse celui du carnet à liquidités nulles de 0,5 à 0,6 point pour les deux variantes à stops. `mesure_ecart_carnet.py` rejoue le moteur du carnet et lui ajoute, une par une, les deux différences d'exécution de LEAN décrites plus bas (même fenêtre, liquidités à 0 %, Sharpe à taux nul, données yfinance du 2026-11-06) :
+
+| Variante | Réglage du moteur du carnet | CAGR | Sharpe | Drawdown max | Stops | Coupures |
+|---|---|---|---|---|---|---|
+| Noyau sans coupe-circuit | carnet | +7,13 % | 0,78 | −13,4 % | 466 | — |
+| | pas de stop le jour où la ligne est ouverte | +7,27 % | 0,79 | −13,6 % | 462 | — |
+| | pas de stop le jour d'un ordre sur la ligne | +7,77 % | 0,83 | −12,8 % | 448 | — |
+| | *backtest LEAN* | *+7,71 %* | *0,83* | *−13,0 %* | *444* | — |
+| Noyau complet | carnet | +6,83 % | 0,75 | −14,2 % | 481 | 4 |
+| | coupe-circuit le lendemain | +6,78 % | 0,75 | −13,8 % | 482 | 4 |
+| | pas de stop le jour d'un ordre sur la ligne | +7,03 % | 0,76 | −17,2 % | 462 | 5 |
+| | les deux réglages | +7,26 % | 0,78 | −16,5 % | 457 | 6 |
+| | *backtest LEAN* | *+7,35 %* | *0,79* | *−15,7 %* | *453* | *6* |
+
+Ce que la table montre :
+
+- **la cause principale est l'absence de stop le jour de chaque ordre.** `main.py` annule le stop d'une ligne avant tout ordre `MarketOnOpen` sur elle, et le repose à l'exécution. La ligne n'a donc pas de stop le jour de son ouverture, ni le jour d'un rebalancement qui la redimensionne. Les lignes redimensionnées pèsent le plus : les seules ouvertures font +0,14 point de CAGR, tous les ordres +0,64 point (noyau sans coupe-circuit) ;
+- **le coupe-circuit au lendemain, seul, ne change presque rien** (−0,05 point de CAGR), mais il interagit avec le réglage des stops ;
+- **les six coupures au lieu de quatre ne sont pas une troisième cause.** Le moteur du carnet les retrouve avec les deux réglages, sur les séances du 2020-03-09, du 2020-03-12, du 2025-04-03, du 2026-01-30, du 2026-03-03 et du 2026-06-05 ;
+- **le gain de CAGR se paie en drawdown pour le noyau complet** : −16,5 % avec les deux réglages, contre −14,2 % dans le carnet ;
+- **l'écart résiduel au backtest LEAN** est de −0,06 point de CAGR (noyau sans coupe-circuit) et −0,09 point (noyau complet). Les données et les quantités entières de LEAN en sont des causes possibles, non mesurées.
+
+Garder le stop actif sur une ligne redimensionnée, en modifiant la quantité du ticket au lieu de l'annuler, rapprocherait LEAN du carnet. Ce n'est pas fait dans ce projet.
+
+## Écarts déclarés au carnet
+
+Les données journalières de LEAN imposent des écarts que le carnet n'a pas :
+
+| Point | Carnet QC-Py-45 | Ce projet |
+|---|---|---|
+| Liquidités | rendement de BIL | 0 % |
+| Stop | actif tous les jours où la position est détenue, y compris le jour d'un ordre | annulé avant chaque ordre sur la ligne et reposé à son exécution, au même niveau : pas de stop le jour où la ligne est ouverte, ni le jour où un rebalancement la redimensionne. Effet mesuré plus haut |
+| Coupe-circuit | liquidation à la clôture de la séance à −3 %, retour à l'ouverture suivante | séance connue à la clôture, liquidation `MarketOnOpen` le lendemain, retour le surlendemain |
+| Compte | sans emprunt par construction | compte sur marge par défaut. La variante sans noyau emprunte un peu : liquidités minimales négatives, exposition maximale 1,05. Cause probable, non mesurée : les ordres sont dimensionnés sur la clôture de la veille et exécutés à l'ouverture, frais en plus, sans réserve sous les 10 % par position |
+| Plafond de groupe | mesuré après rebalancement | tenu au rebalancement. Le poids de groupe mesuré chaque jour monte jusqu'à 0,4198 par dérive des prix entre deux rebalancements |
+| Exécution | moteur vectorisé, prix yfinance ajustés | modèle d'exécution de LEAN, données QuantConnect |
+| Trace | valeur en fin de séance | valeur à l'ouverture, au dernier prix connu, c'est-à-dire la clôture précédente |
+
+## Contrôles
+
+Statistiques d'exécution publiées par l'algorithme :
+
+| Variante | Stops au plus bas de l'ouverture et du stop | Ordres invalides | Exposition max | Poids de groupe max |
+|---|---|---|---|---|
+| Sans noyau | — | 0 | 1,0517 | 0,9003 |
+| Exposition 90 % seule | — | 0 | 0,9321 | — |
+| Noyau sans coupe-circuit | 444 sur 444 | 0 | 0,9047 | 0,4198 |
+| Noyau complet | 453 sur 453 | 0 | 0,9137 | 0,4198 |
+
+Le premier contrôle vérifie la règle d'exécution du papier : chaque stop s'exécute au plus bas de l'ouverture et du niveau du stop. C'est le modèle d'exécution natif de LEAN qui l'applique, sans code ajouté.
+
+Contrôle de série, avant toute lecture : la plus forte variation journalière de chaque trace a été relevée. −8,0 % le 2020-03-10 (sans noyau), −7,2 % le même jour (exposition 90 %), +4,5 % le 2025-04-10 (les deux variantes à noyau), −11,0 % le 2020-03-17 pour SPY, soit la clôture du 16 mars. Toutes correspondent à des séances connues, sans date en double dans les traces.
+
+## Pourquoi des ordres stop et pas un `RiskManagementModel`
+
+L'étape 1 annonçait un portage en `RiskManagementModel` du framework LEAN. Le portage a pris une autre forme, pour trois raisons :
+
+- en données journalières, un modèle de risque n'agit que sur la tranche de données de la clôture. Il ne peut pas exécuter un stop au plus bas de l'ouverture et du stop. L'ordre `StopMarket` natif le fait, et le contrôle ci-dessus le vérifie sur chaque stop ;
+- `MaximumDrawdownPercentPortfolio` mesure le drawdown depuis le plus haut du portefeuille, pas une séance à −3 % ;
+- `MaximumSectorExposureRiskManagementModel` groupe les titres par le code d'industrie de leurs données fondamentales (`company_reference.industry_template_code`, source LEAN lue le 2026-11-05) et lève une exception si aucun titre de l'univers n'en porte. Les quatre groupes du papier sont une partition d'ETF par classe d'actifs, que ce code ne représente pas.
+
+Le framework reste un outil parmi d'autres, pas un passage obligé : le noyau tient en une classe d'algorithme.
+
+## Fichiers
+
+- `main.py` : l'algorithme, un seul fichier.
+- `mesure_ecart_carnet.py` : copie déclarée du moteur du carnet QC-Py-45, avec deux réglages qui rejouent les écarts d'exécution de LEAN ; produit la table de décomposition ci-dessus. Lancer : `python mesure_ecart_carnet.py` (numpy, pandas, yfinance).
+
+## Liens
+
+- Issue #24698 (étape 1 : carnet QC-Py-45 ; étape 2 : ce projet).
+- Article archivé : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\2026 - Feng Dai Pan Lau Xu Liu - Governed Self-Evolution for Autonomous Investing, Steward (arXiv 2610.30557).pdf`.
