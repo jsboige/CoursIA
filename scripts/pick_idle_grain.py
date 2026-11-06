@@ -10322,6 +10322,28 @@ def _lane_record_bucket() -> dict:
             "prs": []}
 
 
+def _open_prs_needed(args) -> bool:
+    """La CHARGE EN VOL (PRs ouvertes) doit-elle etre mesuree ?
+
+    #21067 tranche 1 : elle n'est consommee que par le plafond du tapis
+    (`--belt`) et par l'ardoise publiee (tableau ecrit ou exporte). Dans
+    les autres modes, l'enumeration complete des PRs ouvertes serait une
+    source reseau payee pour rien -- et un chemin que les tests n'ont pas
+    a simuler (rouge CI du 2026-11-06 : 9 tests du picker en echec sur
+    `gh repo view`, la sentinelle `forbid_shell_escape` nommant la
+    commande refusee).
+
+    Le mode nu garde la mesure MERGEE (`epic_lane_delivery_counts`), qui ne
+    coute aucune requete : la charge en vol y est sous-informee, et
+    `open_prs_measured: false` le dit.
+    """
+    return bool(
+        getattr(args, "belt", False)
+        or getattr(args, "board_write", False)
+        or getattr(args, "board_export", False)
+    )
+
+
 def lane_delivery_record(lane: str, prs: list[dict] | None, *,
                          open_prs: list[dict] | None = None,
                          now: dt.datetime | None = None,
@@ -11843,15 +11865,26 @@ def main(argv: list[str] | None = None) -> int:
         # lieu de la repayer. Echec d'enumeration -> `open_prs = None` : la
         # charge ne compte alors que les merges (fail-OPEN) et l'ardoise le
         # dit (`open_prs_measured: false`).
+        #
+        # L'enumeration n'est faite que si la charge en vol est CONSOMMEE :
+        # par le plafond #21067 (arme dans le tapis, `--belt`) et par
+        # l'ardoise publiee (tableau ecrit ou exporte). En mode texte nu,
+        # la mesure ne sert a rien -- et la payer quand meme introduisait
+        # une source reseau dans un chemin que les tests n'ont pas a
+        # simuler (rouge CI du 2026-11-06 : 9 tests du picker en echec sur
+        # `gh repo view`). On ne paie pas une enumeration complete de PRs
+        # pour un simple rappel de board.
         open_prs = None
-        try:
-            open_prs = _complete_open_prs()
-        except Exception as exc:  # noqa: BLE001 - un echec de transport ne
-            # doit pas faire echouer le tirage : le garde reste sous-informe
-            # et le DIT.
-            print(f"[PR-OUVERTES] enumeration impossible "
-                  f"({type(exc).__name__}: {exc}) : la charge en vol ne compte "
-                  f"que les livraisons mergees (fail-OPEN).", file=sys.stderr)
+        if _open_prs_needed(args):
+            try:
+                open_prs = _complete_open_prs()
+            except Exception as exc:  # noqa: BLE001 - un echec de transport ne
+                # doit pas faire echouer le tirage : le garde reste sous-informe
+                # et le DIT.
+                print(f"[PR-OUVERTES] enumeration impossible "
+                      f"({type(exc).__name__}: {exc}) : la charge en vol ne "
+                      f"compte que les livraisons mergees (fail-OPEN).",
+                      file=sys.stderr)
         lane_record = lane_delivery_record(
             args.lane, record_prs, open_prs=open_prs, error=record_err,
             truncated=record_err is None

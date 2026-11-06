@@ -5601,3 +5601,31 @@ def test_run_bounded_propagates_the_timeout(monkeypatch):
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
     with pytest.raises(pig.subprocess.TimeoutExpired):
         pig._run_bounded(["gh", "pr", "list"], timeout=2)
+
+
+def test_le_mode_nu_ne_declenche_pas_l_enumeration_des_prs_ouvertes(
+        monkeypatch, capsys):
+    """#21067 tranche 1 -- controle POSITIF : le mode nu ne touche pas au reseau.
+
+    L'enumeration complete des PRs ouvertes passe par le lecteur
+    `check_lane_claim`, donc par un processus. La sentinelle
+    `forbid_shell_escape` du module le refuse : c'est elle qui a fait
+    rougir 9 tests de ce fichier le 2026-11-06 (`gh repo view`). Ce test
+    enonce la regle au lieu de la laisser emerger d'un rouge de CI.
+
+    Le tapis (`--belt`), lui, MESURE la charge en vol -- c'est le
+    consommateur du plafond #21067.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_pr(9, "myia-po-2026:CoursIA", 30)], {9: red})
+    calls = []
+
+    def _boom():
+        calls.append(1)
+        raise AssertionError(
+            "le mode nu ne doit pas enumerer les PRs ouvertes")
+
+    monkeypatch.setattr(pig, "_complete_open_prs", _boom)
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    assert rc == 0
+    assert calls == [], "l'enumeration des PRs ouvertes a ete declenchee"

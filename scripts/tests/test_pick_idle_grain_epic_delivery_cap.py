@@ -386,3 +386,32 @@ def test_le_temoin_la_lane_refusee_recoit_un_grain():
     items = [_belt_item(16334, "umbrella"), _belt_item(7, "grain")]
     kept = draw_belt(items, _args(), epic_deliveries={16334: 2})
     assert [it["number"] for it in kept] == [7]
+
+
+# --- quand la charge en vol est-elle mesuree ? ---------------------------
+
+
+def test_la_charge_en_vol_ne_se_measure_que_si_el_est_consommee():
+    """#21067 tranche 1 : la mesure a un CONSOMMATEUR, sinon elle est un cout.
+
+    La charge en vol (PRs ouvertes) n'est lue que par le plafond du tapis
+    (`--belt`) et par l'ardoise publiee. La payer dans les autres modes
+    introduisait une source reseau dans un chemin que les tests n'ont pas
+    a simuler -- rouge CI du 2026-11-06 : 9 tests du picker en echec sur
+    `gh repo view`.
+    """
+    nu = types.SimpleNamespace(belt=False, board_write=False,
+                                board_export=False)
+    assert pig._open_prs_needed(nu) is False
+    assert pig._open_prs_needed(
+        types.SimpleNamespace(belt=True, board_write=False,
+                              board_export=False)) is True
+    assert pig._open_prs_needed(
+        types.SimpleNamespace(belt=False, board_write=True,
+                              board_export=False)) is True
+    assert pig._open_prs_needed(
+        types.SimpleNamespace(belt=False, board_write=False,
+                              board_export=True)) is True
+    # Un objet sans les attributs ne doit pas lever : le predicat est
+    # fail-OPEN (il demande, il ne refuse pas).
+    assert pig._open_prs_needed(types.SimpleNamespace()) is False
