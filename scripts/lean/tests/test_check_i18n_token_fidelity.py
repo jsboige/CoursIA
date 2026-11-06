@@ -314,6 +314,82 @@ def test_the_mirror_header_is_recognized_by_the_bodies():
     )
 
 
+def test_the_sibling_and_companion_headers_are_recognized():
+    # "sibling of" / "companion to" name the canonical .lean file; the EN body
+    # declares the mirror, the FR body does not -> the pair is a metadata
+    # header (review of #24143: examples/*, differential_lean/*).
+    assert is_mirror_metadata_header(
+        "le lemme `arcPartition`",
+        "English sibling of `basic_logic.lean` (i18n #4980): docstrings",
+    )
+    assert is_mirror_metadata_header(
+        "le lemme `arcPartition`",
+        "English companion to `DifferentialTour.lean` (FR canonical) "
+        "per the i18n #4980 sibling-pair convention",
+    )
+
+
+def test_a_bare_sibling_tag_is_not_a_mirror_declaration():
+    # Control negative: the "(EN sibling)" tag on a title line names no .lean
+    # file, so it is too weak to single out a metadata header; the comparison
+    # stays meaningful (the broadened marker must not over-trigger).
+    assert not is_mirror_metadata_header(
+        "le lemme `arcPartition`",
+        "Lean Examples - Basic Logic (EN sibling)",
+    )
+
+
+def test_ok_consumer_sibling_is_excluded_wholesale(tmp_path):
+    # OK-CONSUMER sibling: the EN file imports the FR canonical and reuses its
+    # declarations (the proven Lattice shape). The FR per-declaration docstrings
+    # then have no EN counterpart by design, so comparing them positionally
+    # would publish a false HARD finding for each. The exclusion reuses the
+    # sibling organ's "OK-CONSUMER" verdict (check_i18n_siblings.check_pair)
+    # and skips the comparison: the report is flagged and carries no findings.
+    fr = tmp_path / "Lattice.lean"
+    en = tmp_path / "Lattice_en.lean"
+    fr.write_text(
+        "namespace StableMarriage\n"
+        "def joinSpouse (x : Nat) : Nat := x + 1\n"
+        "def meetSpouse (x : Nat) : Nat := x - 1\n"
+        "theorem join_comm (x : Nat) : joinSpouse x = joinSpouse x := rfl\n"
+        "end StableMarriage\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "import StableMarriage.Lattice\n"
+        "namespace StableMarriage_en\n"
+        "open StableMarriage\n"
+        "theorem join_comm (x : Nat) : joinSpouse x = joinSpouse x := rfl\n"
+        "end StableMarriage_en\n",
+        encoding="utf-8",
+    )
+    rep = compare_files(fr, en)
+    assert rep["ok_consumer"] is True
+    assert rep["findings"] == []
+
+
+def test_redeclaring_en_is_not_ok_consumer(tmp_path):
+    # Control: an EN mirror that redeclares (no import of the FR module) is
+    # DRIFT, not OK-CONSUMER, so the comparison runs and the flag is not set.
+    fr = tmp_path / "Cone.lean"
+    en = tmp_path / "Cone_en.lean"
+    fr.write_text(
+        "namespace Cone\n"
+        "def a (x : Nat) : Nat := x + 1\n"
+        "end Cone\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "namespace Cone_en\n"
+        "def a (x : Nat) : Nat := x + 2\n"
+        "end Cone_en\n",
+        encoding="utf-8",
+    )
+    rep = compare_files(fr, en)
+    assert rep.get("ok_consumer") is not True
+
+
 def test_i18n_convention_block_is_recognized():
     # Control Conway/Doomsday.lean (review of #24148): a `### i18n` convention
     # note documents the sibling-pair convention (here an option-A exception);
@@ -324,6 +400,42 @@ def test_i18n_convention_block_is_recognized():
     assert is_i18n_convention_block("voir le bloc ### i18n ci-dessus")
     assert not is_i18n_convention_block(
         "le lemme `arcPartition` fait le lien")
+
+
+def test_i18n_convention_block_plain_heading_is_recognized():
+    # The sibling-pair convention is also written as a plain heading, without
+    # the `### ` marker: 45 `_en.lean` files open on it (e.g.
+    # GameTheory/SocialChoice/{Framework,Basic}_en.lean). Its metadata numbers
+    # (dates, `#4980`, commit shas) were compared against the FR canonical
+    # header and reported as HARD losses that no translation could fix.
+    assert is_i18n_convention_block(
+        "Convention i18n : fichier EN sibling -- preserve le verbatim\n"
+        "Convention i18n Lean ratifiee par ai-01 (2026-07-04, issue #4980)")
+    assert is_i18n_convention_block(
+        "English sibling of `Conway.lean` per the i18n convention EPIC #4980")
+
+
+def test_a_bare_prose_mention_of_the_convention_does_not_exempt_the_comment():
+    # NanoClaw review of #24765, point 3: under the original any-position
+    # motif, translatable prose that merely MENTIONED the convention silenced
+    # the whole comment it lived in. The exemption classifies a note ABOUT the
+    # convention, not every sentence citing its name: the plain spelling must
+    # head a line or carry the EPIC citation, otherwise the comment is
+    # compared like any other translatable prose.
+    assert not is_i18n_convention_block(
+        "Aucun `sorry`. Ce fichier suit la convention i18n du depot.")
+    assert not is_i18n_convention_block(
+        "The module follows the i18n convention used across the series.")
+    # The two metadata shapes the corpus actually writes stay exempt: the
+    # citation form (control ApprovalPayment.lean:56, Containment.lean:6,
+    # ReidemeisterCombinatorial.lean:52 and :976) ...
+    assert is_i18n_convention_block(
+        "Aucun `sorry`. Convention i18n #4980 : ce fichier porte le namespace")
+    assert is_i18n_convention_block(
+        "corps byte-identique (convention i18n EPIC #4980).")
+    # ... and the `###` title that names it (control KochenSpecker.lean:78).
+    assert is_i18n_convention_block(
+        "### Hommage MathOverflow + Mathlib i18n convention #4980")
 
 
 def test_best_shift_aligns_a_constant_offset():
@@ -431,6 +543,35 @@ def test_compare_files_excludes_an_unpaired_i18n_block(tmp_path=None):
     unpaired_bodies = " ".join(u["body"] for u in report["unpaired"])
     assert "i18n" not in unpaired_bodies
     assert "une note propre au fichier FR" in unpaired_bodies
+
+
+# --- fenced code blocks ---------------------------------------------------
+
+def test_a_fenced_block_does_not_swallow_the_prose_after_it():
+    """A fence carries an ODD number of backticks: the scanner must not pair
+    its closing backtick with the next opening one and read the prose in
+    between as a code span.  Measured: 130 HARD findings on a mirror pair
+    that is faithful (review of #24143, ``Knots/Invariant``)."""
+    body = (
+        "Intro\n"
+        "```\n"
+        "theorem bar : True := trivial\n"
+        "```\n"
+        "Le lemme `bar` existe et vaut 3.\n"
+    )
+    assert code_spans(body) == ["bar"]
+
+
+def test_a_divergence_after_a_fenced_block_is_still_reported():
+    """Dropping the fenced block must not blind the comparison to the prose
+    that follows it."""
+    findings = compare_bodies(
+        "```\ntheorem bar : True := trivial\n```\nle compte est 22 aretes",
+        "```\ntheorem bar : True := trivial\n```\nthe set has edges",
+        set(),
+    )
+    hard = [f for f in findings if f["severity"] == HARD]
+    assert [f["token"] for f in hard] == ["22"]
 
 
 # --- the repository itself ------------------------------------------------
