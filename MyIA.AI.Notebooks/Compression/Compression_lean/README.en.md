@@ -18,7 +18,8 @@ canonical Huffman). Decision **D4** of EPIC
 3. **`kraft_le_one`** — **Kraft's inequality** over exact rationals:
    `kraftSum t ≤ 1`. A node divides every weight by `2` (`kraftSum_node`),
    so every level of the tree shares the same unit budget — the binary
-   "cake-sharing" of notebook 01.
+   sharing of the budget that notebook 01 sets out in § 3 (Kraft's
+   inequality).
 4. **`kraft_full`** — the complete tree of depth `k` carries `2 ^ k` leaves
    (`length_leafWords_full`) and **saturates the bound exactly**:
    `kraftSum (full k) = 1`. Executable anchors `#eval`: the fixed 2-bit code
