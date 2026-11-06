@@ -47,8 +47,8 @@ DIR_MAP = {
     "03-Deep-Learning": "03-Deep-Learning",
     "04-Vision": "04-Vision",
     "05-Wavelet-Scattering": "05-Wavelet-Scattering",
-    "Track1-LangChain": "06-Agents-LangChain",
-    "Track2-GoogleADK": "07-Agents-GoogleADK",
+    "06-Data-Agents": "06-Agents-LangChain",
+    "07-Agent-Orchestration": "07-Agents-GoogleADK",
 }
 
 # Niveau a aplatir : ces prefixes voient leur segment "notebooks/" retire.
@@ -265,7 +265,7 @@ def build_plan(only: str | None = None) -> tuple[list[tuple[str, str]], list[str
                 # fichier a la racine du hub (README.md etc.) : suit la racine
                 pass
             if (rel.endswith(".ipynb")
-                    and not rel.startswith(("Track1-LangChain/", "Track2-GoogleADK/"))
+                    and not rel.startswith(("06-Data-Agents/", "07-Agent-Orchestration/"))
                     and not est_archive(rel)):
                 # Les Labs des Tracks suivent T4 (option retenue : deplacement de
                 # repertoire seulement, notebooks intacts -- table c.5786704244) :

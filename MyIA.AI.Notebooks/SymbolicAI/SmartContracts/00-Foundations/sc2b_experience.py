@@ -74,7 +74,7 @@ import time
 from pathlib import Path
 
 # --- chemins Track2 (ConversationRunner C1b, AdkOrchestrator C4, runtime) ----
-TRACK2 = Path(__file__).resolve().parents[3] / "ML" / "DataScienceWithAgents" / "Track2-GoogleADK"
+TRACK2 = Path(__file__).resolve().parents[3] / "ML" / "DataScienceWithAgents" / "07-Agent-Orchestration"
 sys.path.insert(0, str(TRACK2))
 sys.path.insert(0, str(TRACK2 / "utils"))
 

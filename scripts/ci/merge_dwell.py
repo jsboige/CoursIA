@@ -1037,7 +1037,7 @@ def _default_branch(repo: str, fetch=_gh_json) -> str:
 #: pull_request, tous deux filtres par la MEME liste de chemins -- les deux
 #: incluent `tests/**`, `pytest.ini`, `.github/workflows/**` et une poignee
 #: de sujets hors `scripts/` (registre d'attributions, `conway_lean/**`,
-#: `prosody_lab/syllable_pitch.py`, `Track2-GoogleADK/**`, ...). Une PR qui
+#: `prosody_lab/syllable_pitch.py`, `07-Agent-Orchestration/**`, ...). Une PR qui
 #: ne touche AUCUN de ces chemins ne le declenche sur aucun des deux. #19069
 #: corrige ici deux mentions erronees successives : « pas de trigger
 #: pull_request » (version initiale) puis « une PR hors `scripts/**` », qui

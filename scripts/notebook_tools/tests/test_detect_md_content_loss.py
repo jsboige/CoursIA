@@ -530,9 +530,9 @@ class TestNavLinkDistinctLiveTargets:
         # (VIVANT aussi : existe depuis 7e69518092, 2026-07-21 -- verifie
         # `git cat-file -e` origin/main et merge-base #17392 ; re-audite par
         # l'adjoint 2026-09-23, corrige ici).
-        lab6 = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Labs" / "Lab6-First-Agent"
+        lab6 = tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "Labs" / "Lab6-First-Agent"
         lab6.mkdir(parents=True)
-        (tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "README.md").write_text(
+        (tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "README.md").write_text(
             "day3", encoding="utf-8")
         (tmp_path / "README.md").write_text("serie", encoding="utf-8")
         nb = lab6 / "Lab6-First-Agent.ipynb"
@@ -600,7 +600,7 @@ class TestNavLinkDistinctLiveTargets:
         # garde un lien (perte PARTIELLE : le regime LOST_NAV_LINKS, pas le
         # LOST_MOTIF de la disparition totale).
         nb = self._lab6_fixture(tmp_path)
-        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras = tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "Extras"
         extras.mkdir()
         (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
         base = _nb(_md("[Extras](../../Extras/Extras.ipynb) [Index](../../README.md)"))
@@ -618,7 +618,7 @@ class TestNavLinkDistinctLiveTargets:
         # cible vivante -> seule la vivante compte, la morte est listee comme
         # reparee (audit) dans le finding.
         nb = self._lab6_fixture(tmp_path)
-        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras = tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "Extras"
         extras.mkdir()
         (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
         base = _nb(_md("[Mort](../../Old/README.md) [Vivant](../../Extras/Extras.ipynb) [Index](../../README.md)"))
@@ -638,7 +638,7 @@ class TestNavLinkDistinctLiveTargets:
         # etiquette, ce n'est pas une perte (cf. note NAV_LINK_RE : re-cible
         # notebook -> README de serie, convention majoritaire).
         nb = self._lab6_fixture(tmp_path)
-        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras = tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "Extras"
         extras.mkdir()
         (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
         base = _nb(_md("[Index](../../README.md) [Notes](../../Extras/Extras.ipynb)"))
@@ -655,7 +655,7 @@ class TestNavLinkDistinctLiveTargets:
         # cible n'a pas change, ce n'est pas un deplacement. La perte de la
         # cible vivante reste signalee (frontiere option a, ai-01 2026-09-24).
         nb = self._lab6_fixture(tmp_path)
-        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras = tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "Extras"
         extras.mkdir()
         (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
         base = _nb(_md("[Index](../../Extras/Extras.ipynb) [Index](../../README.md)"))
@@ -673,7 +673,7 @@ class TestNavLinkDistinctLiveTargets:
         # tete une cible NOUVELLE pour lui (appariement change) -> deplacement
         # REEL, excuse e2.
         nb = self._lab6_fixture(tmp_path)
-        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras = tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "Extras"
         extras.mkdir()
         (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
         base = _nb(_md("[Index](../../Extras/Extras.ipynb)"))
@@ -701,11 +701,11 @@ class TestNavLinkDistinctLiveTargets:
         # 1 gagnee -> ROUGE. L'ancien `if gained: continue` non borne
         # laissait ce cas propre (moins detecteur que le garde d'origine).
         nb = self._lab6_fixture(tmp_path)
-        day3 = tmp_path / "Track1-LangChain" / "Day3-Data-Agents"
+        day3 = tmp_path / "06-Data-Agents" / "Day3-Data-Agents"
         extras = day3 / "Extras"
         extras.mkdir()
         (extras / "E.ipynb").write_text("{}", encoding="utf-8")
-        lab5 = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Labs" / "Lab5-Viz-ML"
+        lab5 = tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "Labs" / "Lab5-Viz-ML"
         lab5.mkdir()
         (lab5 / "Lab5-Viz-ML.ipynb").write_text("{}", encoding="utf-8")
         base = _nb(_md("[Prev](../../README.md) [Next](../../Extras/E.ipynb) "
@@ -725,7 +725,7 @@ class TestNavLinkDistinctLiveTargets:
         # (e3) au pair : 1 cible vivante perdue, 1 cible nouvelle gagnee ->
         # la barre est reconstruite a l'identique -> vert.
         nb = self._lab6_fixture(tmp_path)
-        day3 = tmp_path / "Track1-LangChain" / "Day3-Data-Agents"
+        day3 = tmp_path / "06-Data-Agents" / "Day3-Data-Agents"
         extras = day3 / "Extras"
         extras.mkdir()
         (extras / "E.ipynb").write_text("{}", encoding="utf-8")

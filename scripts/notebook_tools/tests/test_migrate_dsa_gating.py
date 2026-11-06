@@ -291,9 +291,9 @@ def test_only_inconnu_est_refuse():
 def test_only_accepte_le_nom_cible():
     """Le nom cible designe la meme tranche que le nom courant."""
     # Le mecanisme d'alias (valeur -> cle) se temoigne sur une tranche ou
-    # courant et cible different encore : Track1-LangChain -> 06-Agents-LangChain.
-    assert migration.resolve_only("06-Agents-LangChain") == "Track1-LangChain"
-    assert migration.resolve_only("Track1-LangChain") == "Track1-LangChain"
+    # courant et cible different encore : 06-Data-Agents -> 06-Agents-LangChain.
+    assert migration.resolve_only("06-Agents-LangChain") == "06-Data-Agents"
+    assert migration.resolve_only("06-Data-Agents") == "06-Data-Agents"
     # Depuis le renommage in-place (#23541), 05-Wavelet-Scattering est cle ET
     # valeur : les deux faces designent la meme tranche.
     assert migration.resolve_only("05-Wavelet-Scattering") == SUB_WS
