@@ -31,7 +31,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean` | 7 | 6 | declare | couverte | 1 hors site (2 carnets) | - | 2026-09-19 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean` | 7 | 6 | declare | couverte | ok (2) | - | 2026-08-15 |
 | `MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean` | 6 | 6 | declare | couverte | ok (2) | - | 2026-08-26 |
-| `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 6 | 6 | declare | couverte | non consomme | 0 / 1 | 2026-06-10 |
+| `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 6 | 6 | declare | couverte | non consomme | 1 / 1 | 2026-06-10 |
 | `MyIA.AI.Notebooks/QuantConnect/kelly_lean` | 6 | 5 | declare | couverte | ok (1) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/Sudoku/sudoku_lean` | 6 | 5 | declare | couverte | ok (13) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean` | 6 | 5 | declare | couverte | ok (4) | 0 / 2 | 2026-05-29 |
@@ -119,7 +119,7 @@ La colonne « nature » compare la **formulation**, pas le resultat, et cet éca
 | `fairBot_unexploitable` | `game_theory_lean`, `formal_logic_lean` | 3 | 0 | game_theory_lean 0/2, formal_logic_lean 0/1 | formulation differente | non declare |
 | `fairBot_vs_defectBot` | `game_theory_lean`, `formal_logic_lean` | 3 | 0 | game_theory_lean 0/2, formal_logic_lean 0/1 | formulation differente | non declare |
 | `nimSum_single` | `conway_lean`, `calibration_lean` | 4 | 0 | conway_lean 0/2, calibration_lean 0/2 | formulation identique | non declare |
-| `sen_impossibility` | `game_theory_lean`, `lean_game_defs` | 4 | 3 | game_theory_lean 2/2, lean_game_defs 1/2 | formulation differente | non declare |
+| `sen_impossibility` | `game_theory_lean`, `lean_game_defs` | 4 | 4 | game_theory_lean 2/2, lean_game_defs 2/2 | formulation differente | declare |
 
 **Cet inventaire sous-compte, et c'est mesure.** La detection est par nom : un meme resultat prouve sous deux noms differents lui echappe. Le controle negatif est `Arrow`, declare des deux cotes (`game_theory_lean/SocialChoice/Arrow.lean` : `arrow` ; `lean_game_defs/SocialChoice.lean` : `arrow_impossibility`), et absent de la table ci-dessus. Un verdict « 0 doublon » ne se lit donc jamais comme « aucun resultat n'est prouve deux fois ». La table ne tranche pas davantage l'identite mathematique : elle compare des formulations, et une « formulation differente » peut etre le meme theoreme encode deux fois — le cas se rencontre dans ce depot, ou une maison abstraite et une maison specialisee prouvent le meme resultat a des generalites differentes. L'organe qui tranche est celui de #24183 (tranche T0) ; cette page en est l'inventaire, pas le juge.
 
