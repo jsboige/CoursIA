@@ -37,6 +37,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PAGE = REPO_ROOT / "docs" / "reference" / "lean-material-map.md"
 CI_LAKES = REPO_ROOT / "scripts" / "lean" / "ci_lakes.json"
+BIRTHS = REPO_ROOT / "scripts" / "lean" / "lean_births.json"
 COVERAGE = REPO_ROOT / "scripts" / "lean" / "check_axiom_gate_coverage.py"
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 
@@ -227,10 +228,53 @@ def _ci_surfaces(lakes: list[str]) -> dict[str, list[str]]:
     return out
 
 
-def _birth(lakefile: str) -> str:
-    """Date (AAAA-MM-JJ) du commit qui a ajoute ce lakefile ; vide si inconnue."""
-    out = _git("log", "-1", "--diff-filter=A", "--format=%cs", "--", lakefile).strip()
-    return out.splitlines()[-1] if out else ""
+def _pinned_births() -> dict[str, str]:
+    """Les naissances epinglees de `lean_births.json`, indexees par lac."""
+    try:
+        raw = json.loads(BIRTHS.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    lakes = raw.get("lakes") if isinstance(raw, dict) else None
+    if not isinstance(lakes, dict):
+        return {}
+    return {
+        str(k).replace("\\", "/").rstrip("/"): str(v)
+        for k, v in lakes.items()
+        if isinstance(v, str) and v
+    }
+
+
+def _git_birth(lakefile: str) -> str:
+    """Premier ajout **visible** du lakefile ; vide si l'histoire n'en montre aucun.
+
+    `--reverse` + premiere ligne, et non `-1` : `-1` rend le *dernier* ajout
+    visible, donc un mass-add tardif -- ou une histoire tronquee (clone
+    shallow, greffe) -- deplace la date. Le premier ajout, lui, ne bouge pas
+    quand l'histoire s'allonge. Il reste borne par ce que le clone contient :
+    c'est pourquoi `lean_births.json` prime (cf. `_birth`).
+    """
+    out = _git("log", "--diff-filter=A", "--format=%cs", "--reverse", "--", lakefile)
+    lines = [line.strip() for line in out.splitlines() if line.strip()]
+    return lines[0] if lines else ""
+
+
+def _birth(lake: str, lakefile: str, pinned: dict[str, str] | None = None) -> str:
+    """Date (AAAA-MM-JJ) de naissance du lac ; vide si inconnue.
+
+    L'epingle committée prime sur git : sans elle, la colonne dependrait de
+    l'histoire **visible** du clone, et deux sieges sur la meme histoire
+    pouvaient rendre deux pages differentes (issue #24538). Un lac nouveau
+    n'est pas epingle : il retombe sur git jusqu'a ce que son epingle soit
+    ajoutee, geste explicite et visible en revue.
+
+    ``pinned`` est injectable : ``collect()`` charge la table une fois pour
+    tous les lacs (deux lectures par lac sinon, une par lakefile) ; les
+    appels directs conservent le chargement implicite -- c'est aussi ce qui
+    garde les tests libres de monkeypatcher ``BIRTHS`` sans cache interpose.
+    """
+    if pinned is None:
+        pinned = _pinned_births()
+    return pinned.get(lake.replace("\\", "/").rstrip("/")) or _git_birth(lakefile)
 
 
 def _owner_of(path: str, lake_dirs: list[str]) -> str | None:
@@ -378,6 +422,7 @@ def collect(with_sorry: bool = False) -> dict:
     matrix = set(coverage.get("matrix_lakes") or [])
     ungated = set(coverage.get("matrix_lakes_without_gate") or [])
     sorry = _sorry_by_lake() if with_sorry else {}
+    pinned = _pinned_births()  # une seule lecture pour tous les lacs
 
     by_lake: dict[str, dict] = {}
     for lakefile in lakefiles:
@@ -397,7 +442,7 @@ def collect(with_sorry: bool = False) -> dict:
         )
         # Un lac peut porter deux lakefiles (lean + toml) : la naissance est la
         # plus ancienne des deux, c'est celle du lac.
-        born = _birth(lakefile)
+        born = _birth(lake, lakefile, pinned)
         if born and (not entry["birth"] or born < entry["birth"]):
             entry["birth"] = born
 
