@@ -391,11 +391,14 @@ def detect_regimes_hmm(
         backtracking, but it does **not** make the labels known-at-t:
         the Baum-Welch fit estimates mu/sig/A/pi on the **whole window
         passed in**, so those parameters see the future and past labels
-        move when the window grows. Measured on the built dataset
-        builder's own probe (issue #21054, 2026-11-04): decoding the
-        same 400-day prefix with a 400-point fit vs an 800-point fit
-        leaves 162/400 states identical — i.e. the parameters, not the
-        decode, carry the remaining dependence.
+        move when the window grows. Probed on the built dataset
+        builder's own check (issue #21054, 2026-11-04): decoding the
+        same 400-day prefix with a 400-point fit vs an 800-point fit,
+        the number of identical labels varies with the (unseeded) fit
+        draw — across 30 re-runs (review re-verification, 2026-11-06)
+        it ranges from 73/400 to 392/400, mean 282. The count is a
+        probe reading, not a bound; the conclusion it supports is that
+        the parameters, not the decode, carry the remaining dependence.
 
         The known-at-t contract therefore requires the fit to happen
         **inside each fold** (sliding fit). ``build_dataset_v2`` records
