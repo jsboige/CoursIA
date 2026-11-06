@@ -21,7 +21,10 @@ l'autorite qui relie l'identifiant au fichier. Sans ce crosswalk, le controle
 doublon (cas mesure : `2401.05375`).
 
 Aucun fichier du gisement n'est modifie : le catalogue est un CSV additif,
-date, ecrit a la racine du gisement.
+date, ecrit **hors du gisement** -- par defaut dans le dossier des travaux,
+frere du gisement (`Bibliographie-travaux/`). La racine du gisement ne porte
+que des publications : un fichier de travail ecrit dedans la salit (regle
+`bibliography-hygiene.md`).
 
 Usage:
   python scripts/build_bibliography_identifier_catalog.py
@@ -31,7 +34,8 @@ Usage:
 
 Options:
   --root PATH        Racine du gisement (defaut G:/Mon Drive/MyIA/IA/Bibliographie IA)
-  --out PATH         CSV de sortie (defaut <root>/IDENTIFIANTS-catalogue-YYYY-MM-DD.csv)
+  --out PATH         CSV de sortie (defaut <travaux>/IDENTIFIANTS-catalogue-YYYY-MM-DD.csv,
+                     ou <travaux> = G:/Mon Drive/MyIA/IA/Bibliographie-travaux)
   --pages N          Nombre de premieres pages lues par PDF (defaut 2 : couverture + page de titre)
   --max-seconds S    Budget global ; arret propre entre deux fichiers (defaut 600)
   --a1-csv PATH      CSV A1 a joindre ; rend pour chaque identifiant son verdict A1
@@ -60,6 +64,11 @@ from datetime import date
 from pathlib import Path
 
 DEFAULT_ROOT = "G:/Mon Drive/MyIA/IA/Bibliographie IA"
+
+#: Nom du dossier des fichiers de travail, FRERE du gisement. La racine du
+#: gisement ne porte que des publications : un catalogue d'identifiants est un
+#: fichier de travail, il vit donc a cote, jamais dedans.
+NOM_TRAVAUX = "Bibliographie-travaux"
 
 #: Source d'extraction du crosswalk A1 : l'identifiant ne vient ni du nom de
 #: fichier ni de la premiere page, mais de la **resolution A1** qui relie
@@ -450,13 +459,27 @@ def ecrire_csv(catalogue: list[dict], sortie: Path) -> None:
                                "contexte": ligne["contexte"]})
 
 
+def chemin_sortie(root: Path, out: str | None = None,
+                 jour: str | None = None) -> Path:
+    """Chemin du catalogue identifiants.
+
+    Par defaut il est ecrit **hors de la racine du gisement**, dans le dossier
+    des travaux qui en est le frere : la racine ne porte que des publications.
+    """
+    if out:
+        return Path(out)
+    stamp = jour or date.today().isoformat()
+    return root.parent / NOM_TRAVAUX / ("IDENTIFIANTS-catalogue-%s.csv" % stamp)
+
+
 def main() -> int:
     _force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--root", default=DEFAULT_ROOT, help="racine du gisement")
     ap.add_argument("--out", default=None,
-                    help="CSV de sortie (defaut <root>/IDENTIFIANTS-catalogue-YYYY-MM-DD.csv)")
+                    help="CSV de sortie (defaut <frere du root>/Bibliographie-travaux/"
+                         "IDENTIFIANTS-catalogue-YYYY-MM-DD.csv)")
     ap.add_argument("--pages", type=int, default=2,
                     help="premieres pages lues par PDF (defaut 2)")
     ap.add_argument("--max-seconds", type=float, default=600.0, help="budget global")
@@ -504,8 +527,7 @@ def main() -> int:
         rapport["crosswalk_a1"] = crosswalk
         rapport.setdefault("par_source", {})[SOURCE_CROSSWALK] = crosswalk["appliques"]
 
-    sortie = Path(args.out) if args.out else \
-        root / ("IDENTIFIANTS-catalogue-%s.csv" % date.today().isoformat())
+    sortie = chemin_sortie(root, args.out)
     ecrire_csv(catalogue, sortie)
 
     print("Catalogue ecrit : %s" % sortie)

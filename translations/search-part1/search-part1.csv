@@ -33945,7 +33945,7 @@ précisément ce que personne n'écrit.
 
 **Navigation** : [<< Search-03e — optimalité de A\*](Search-03e-AStar-Optimality.ipynb) | [Index](README.md) | [retour au parent Search-03 (A\*) ↑](Search-03-Informed.ipynb)
 ",,,,,,,,2902f889faaf6d30,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05b-NaturalEvolutionStrategies.ipynb,dc958fcc,markdown,fr,c0ac3c1b2ae8f3fd,"# Search-5b : Natural Evolution Strategies (NES)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05b-NaturalEvolutionStrategies.ipynb,dc958fcc,markdown,fr,c6a5982a5f381223,"# Search-5b : Natural Evolution Strategies (NES)
 
 **Navigation** : [<< Search-5 Algorithmes génétiques](Search-05-GeneticAlgorithms.ipynb) | [Index](../README.md) | [CSP-1 Fundamentals >>](../Part2-CSP/CSP-1-Fundamentals.ipynb)
 
@@ -33953,7 +33953,7 @@ Le carnet Search-5 faisait évoluer une **population** d'individus. Une stratég
 
 > D. Wierstra, T. Schaul, T. Glasmachers, Y. Sun, J. Peters, J. Schmidhuber, « Natural Evolution Strategies », *Journal of Machine Learning Research* 15 (2014), p. 949-980.
 
-Copie lue intégralement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\2014 - Wierstra et al - Natural Evolution Strategies.pdf` (sha256 préfixe `80ec8495`, hors dépôt).
+Copie lue intégralement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\Optimization, Federated Learning and Theory\2014 - Wierstra et al - Natural Evolution Strategies.pdf` (sha256 préfixe `80ec8495`, hors dépôt).
 
 ## Objectifs d'apprentissage
 
@@ -33968,7 +33968,7 @@ Copie lue intégralement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearnin
 - Search-5 (algorithmes génétiques) et Search-4 (recherche locale).
 - Python 3.10+, numpy, scipy, matplotlib, et la bibliothèque `cma` (référence CMA-ES de N. Hansen, `pip install cma`).
 
-### Durée estimée : 50 minutes",,,,,,,,c0ac3c1b2ae8f3fd,,,,,,,,,,,,,,,
+### Durée estimée : 50 minutes",,,,,,,,c6a5982a5f381223,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05b-NaturalEvolutionStrategies.ipynb,f86bacb8,markdown,fr,365fa980769dfd37,"## 1. Mise en place
 
 Tout le carnet tourne sur CPU. Les graines utilisées pour les comparaisons sont `{0, 1, 7, 42}`, et chaque comparaison rapporte la médiane, le minimum et le maximum sur ces quatre tirages.",,,,,,,,365fa980769dfd37,,,,,,,,,,,,,,,
@@ -34290,7 +34290,7 @@ def rosenbrock(x):
     return 0.0
 
 print(""Exercice a completer : comparer xNES, SNES et CMA-ES sur x -> rosenbrock(R @ x)"")",,,,,,,,051afc629a299a0b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05b-NaturalEvolutionStrategies.ipynb,869a8445,markdown,fr,6ad9cb6f08c6c805,"## 8. Conclusion
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05b-NaturalEvolutionStrategies.ipynb,869a8445,markdown,fr,797527504a7edfca,"## 8. Conclusion
 
 Les six affirmations de l'article confrontées aux mesures de ce carnet :
 
@@ -34313,7 +34313,7 @@ Trois idées à retenir :
 
 Pour aller plus loin, on peut ajouter à xNES la **taille de population adaptative** et l'**échantillonnage d'adaptation** (§5.2, xNES-as), ou passer à CMA-ES, dont le carnet a montré la parenté au premier ordre.
 
-**Référence** : D. Wierstra *et al.*, « Natural Evolution Strategies », *JMLR* 15 (2014) 949-980. Copie : `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\2014 - Wierstra et al - Natural Evolution Strategies.pdf` (sha256 préfixe `80ec8495`).",,,,,,,,6ad9cb6f08c6c805,,,,,,,,,,,,,,,
+**Référence** : D. Wierstra *et al.*, « Natural Evolution Strategies », *JMLR* 15 (2014) 949-980. Copie : `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\Optimization, Federated Learning and Theory\2014 - Wierstra et al - Natural Evolution Strategies.pdf` (sha256 préfixe `80ec8495`).",,,,,,,,797527504a7edfca,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb,d4895e8f,markdown,fr,c6f0adb102ab2f36,"# Search-09c — Discrépance combinatoire : colorier ±1 sans déséquilibrer
 
 > **Partie 1 — Fondations.**
