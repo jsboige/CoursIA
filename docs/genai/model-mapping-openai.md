@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-10-31
+> REFERENCE — vivante — dernière révision 2026-11-06
 
 # Mapping des modèles OpenAI — génération courante (tranche 1, #14755)
 
@@ -101,6 +101,27 @@ Le « 5.6 principal » se traduit donc par **`gpt-5.6-sol`** (flagship), et le �
 - **Config** : `MyIA.AI.Notebooks/GenAI/.env` porte `OPENAI_CHAT_MODEL_ID="gpt-5.2"`. Comme il n'existe pas de `gpt-5.6` nu, la migration config (tranche 5) visera `gpt-5.2` → `gpt-5.6-sol` (ou `gpt-5.6-terra`), à confirmer avec le coordinateur.
 - **Conservations délibérées** : les notebooks qui **enseignent explicitement un modèle historique** (comparatif d'époques, exercice sur les limites de GPT-3.5) se conservent tels quels et se **déclarent** dans leur PR de tranche — la substitution n'y est pas mécanique (contrainte de l'issue).
 - **Budget provider** : les re-exécutions (tranches 2-4) consomment un budget ; annoncer chaque tranche sur le dashboard avant de lancer (contrainte de l'issue). Trois clés étaient invalides/épuisées au 2026-09-05 (Mistral 402, Qwen 401, OpenRouter ~0,2 %) — vérifier l'état des clés avant chaque tranche.
+
+## Conservations délibérées — inventaire (état main, 2026-11-06)
+
+Le périmètre **exécuté** de la migration est **complet** : l'organe `scripts/notebook_tools/check_obsolete_chat_model.py`, passé sur l'arbre suivi (hors `.tmp/`), ne signale **aucun appel de chat live** ciblant un modèle obsolète — le seul `finding` d'exécution est dans `_archive/` (gelé, non live). Le résidu (27 citations dans 25 fichiers, classées DOCUMENTATION par l'organe) est constitué de **conservations délibérées** : chaque nom ancien cité ci-dessous est volontaire, pas un défaut en attente de migration. C'est la liste que l'issue #14755 demande (« les conservations délibérées sont listées avec leur raison »).
+
+> Chemins : les carnets sont relatifs à `MyIA.AI.Notebooks/` ; les scripts, à la racine du dépôt.
+
+| Classe | Raison | Fichiers |
+|---|---|---|
+| **A. Expérience épinglée** | `MODEL_ID = "gpt-4o-mini"` est la **variable de contrôle** du pilote d'évaluation (docstring « modèle EPINGLE … aucune sonde ne bascule ») : changer le modèle changerait l'expérience, ce n'est pas un défaut | `GenAI/SemanticKernel/eval-pilots/` (8 pilotes) · `ML/DataScienceWithAgents/Track2-GoogleADK/eval-pilots/adk_handoff_pilot.py` |
+| **B. Panneau de vetting** | **jeu de comparaison délibéré** de modèles à vérifier (`gpt-4o`, `gpt-4o-mini`, `gpt-3.5-turbo`, `o3`, `o4-mini`, `gpt-4`) : retirer des noms réduirait la couverture du panneau | `GenAI/SemanticKernel/semantic-fleet/` : `model_tester/api_utils.py`, `model_tester/transparent_model_test.py`, `tools/verification/vetting/multi_connector_vetting_test_fixed.py`, `tools/verification/vetting/run_vetting_tests.py` |
+| **C. Catalogue / routing** | documentation du **paysage de modèles** (catalogue + table d'état des endpoints, dict modèle→route), pas « le modèle utilisé » | `GenAI/00-GenAI-Environment/00-3-API-Endpoints-Configuration.ipynb` · `GenAI/Security/Oversight/oversight_llm_cachegen.py` |
+| **D. Recherche comparative** | les noms anciens sont **le sujet** de l'étude (scaling laws, comparaison de tailles) | `GenAI/Security/Oversight/Oversight-Scaling-Laws-Nim.ipynb` |
+| **E. Pédagogie / exemple d'atelier** | matériel d'enseignement citant un modèle historique **à titre d'exemple** (contrainte de l'issue : se conserve et se déclare) | `GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb` · `GenAI/Vibe-Coding/Roo-Code/04-creation-contenu/multimedia/retouche_image.py` · `GenAI/Vibe-Coding/Roo-Code/Corrections/corriges-ateliers-roo/ateliers-avances/03-generation-dc/generation_dc.py` |
+| **F. Documentation (advisory)** | mention documentaire ; le modèle réel est résolu par `os.getenv` (classe H) | `SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb` |
+| **G. Fixture de test** | chaîne de modèle **arbitraire** servant de fixture (le test porte sur la logique de parsing, pas sur le modèle) : la changer serait du churn sans valeur | `SymbolicAI/Argument_Analysis/tests/test_argumentation_state.py` · `scripts/secrets/tests/test_render_settings_json.py` |
+| **H. Classifieur / config par env** | classifieur de **familles** de modèles, ou valeur résolue par `.env` ; le repli littéral `gpt-4o-mini` de `llm_client.py` relève du **périmètre config (tranche 5)**, pas d'une substitution de chat | `scripts/audit/extract_claims_vs_outputs.py` · `SymbolicAI/Argument_Analysis/argumentation_lib/budget_variance_study.py` · `GenAI/Audio/04-Applications/v4/llm_client.py` |
+
+**Lecture de la mesure.** Les 56 sites `unresolved` de l'organe sont de même nature : l'argument `model` y est une **variable résolue au point d'appel** (env, config, catalogue) — aucun ne porte un littéral obsolète. Ils sortent du périmètre de substitution par construction.
+
+**Ce qui reste ouvert pour #14755** : le **périmètre config (tranche 5)** — `.env` → `gpt-5.6-sol` (cf. note ci-dessus, à confirmer avec le coordinateur) — et la **réexécution** des carnets dont la source a migré (C.2), à router vers une machine où le MCP Jupyter est vivant (RECOVERABLE-MACHINE ; mort sur po-2028 depuis le 02/11).
 
 ## Voir aussi
 
