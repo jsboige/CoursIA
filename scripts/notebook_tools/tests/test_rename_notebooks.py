@@ -297,6 +297,144 @@ class TestBareStemReference(unittest.TestCase):
             del before
 
 
+class TestStemIsNotADirectoryComponent(unittest.TestCase):
+    """D1 (#24807) : la forme NUE du stem ne recoiffe pas un COMPOSANT DE
+    DOSSIER. Cas mesure : le stem ancien `ICT-12-ValenceFieldsAndAnimats`
+    coincide avec le dossier cree par une AUTRE ligne du registre, et le
+    reecrire fabriquait 541 chemins morts sur iit.csv."""
+
+    OLD_D1 = ("MyIA.AI.Notebooks/ICT-Series/"
+              "ICT-12-ValenceFieldsAndAnimats.ipynb")
+    NEW_D1 = ("MyIA.AI.Notebooks/ICT-Series/"
+              "ICT-12-ValenceFieldsAndAnimats-Python.ipynb")
+
+    def _forms_d1(self) -> list[rn.RefForms]:
+        return [rn.ref_forms(self.OLD_D1, self.NEW_D1)]
+
+    def test_stem_followed_by_path_separator_is_left_alone(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            body = ("MyIA.AI.Notebooks/ICT-Series/ICT-12-ValenceFieldsAndAnimats/"
+                    "ICT-12d-InhibitedActionAnimat-Python.ipynb\n")
+            p = _write(repo, "translations/iit/iit.csv", body)
+            rn.rewrite_file(p, self._forms_d1())
+            after = p.read_text(encoding="utf-8")
+            # Le dossier du meme nom survit : le chemin reste valide.
+            self.assertIn("ICT-12-ValenceFieldsAndAnimats/"
+                          "ICT-12d-InhibitedActionAnimat-Python.ipynb", after)
+            self.assertNotIn("ICT-12-ValenceFieldsAndAnimats-Python/", after)
+
+    def test_bare_stem_as_plain_reference_is_still_rewritten(self):
+        # Garde anti-surrestriction : la frontiere droite ne doit tuer QUE le
+        # composant de dossier, pas la mention nue en prose.
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            p = _write(repo, "docs/x.md",
+                       "L'ancien carnet ICT-12-ValenceFieldsAndAnimats est cite.")
+            rn.rewrite_file(p, self._forms_d1())
+            after = p.read_text(encoding="utf-8")
+            self.assertIn("ICT-12-ValenceFieldsAndAnimats-Python est cite", after)
+
+    def test_filename_with_extension_in_relative_path_still_rewritten(self):
+        # Garde du commentaire de build_patterns : un referent EMBARQUE dans
+        # un chemin relatif reste un referent quand il porte son extension.
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            p = _write(repo, "docs/y.md",
+                       "Voir [l'ancien](sub/S-01-Alpha.ipynb) et le suivant.")
+            rn.rewrite_file(p, _forms())
+            after = p.read_text(encoding="utf-8")
+            self.assertIn("(sub/S-01-Alpha-Python.ipynb)", after)
+
+
+class TestRenameDocumentationLine(unittest.TestCase):
+    """D2 (#24807) : la prose qui DOCUMENTE un renommage garde son membre
+    ancien -- le reecrire ferait `nouveau -> nouveau`. Cas mesure :
+    PARITY-INVENTORY.md, 21 remplacements, `X -> Y` devenus `Y -> Y`."""
+
+    def test_arrow_line_keeps_its_old_member(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            p = _write(repo, "docs/PARITY-INVENTORY.md",
+                       "DecInfer-02-Lean-ExpectedUtility -> "
+                       "DecInfer-01b-Lean-ExpectedUtility\n")
+            forms = [rn.ref_forms(
+                "MyIA.AI.Notebooks/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb",
+                "MyIA.AI.Notebooks/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb")]
+            rn.rewrite_file(p, forms)
+            after = p.read_text(encoding="utf-8")
+            self.assertIn("DecInfer-02-Lean-ExpectedUtility -> "
+                          "DecInfer-01b-Lean-ExpectedUtility", after)
+
+    def test_unicode_arrow_and_deviant_verbs_are_protected_too(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            forms = [rn.ref_forms(
+                "MyIA.AI.Notebooks/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb",
+                "MyIA.AI.Notebooks/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb")]
+            for motif in ("A → B", "A devient B"):
+                body = motif.replace(
+                    "A", "DecInfer-02-Lean-ExpectedUtility").replace(
+                    "B", "DecInfer-01b-Lean-ExpectedUtility")
+                p = _write(repo, f"docs/{abs(hash(motif))}.md", body + "\n")
+                rn.rewrite_file(p, forms)
+                self.assertIn(body, p.read_text(encoding="utf-8"))
+
+    def test_same_reference_without_documentation_context_is_rewritten(self):
+        # La protection est POSITIONNELLE : le meme stem, hors contexte de
+        # documentation, reste un referent perime a reecrire.
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            p = _write(repo, "docs/nav.md",
+                       "Precedent : DecInfer-02-Lean-ExpectedUtility, voir aussi la suite.")
+            forms = [rn.ref_forms(
+                "MyIA.AI.Notebooks/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb",
+                "MyIA.AI.Notebooks/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb")]
+            rn.rewrite_file(p, forms)
+            after = p.read_text(encoding="utf-8")
+            self.assertIn("Precedent : DecInfer-01b-Lean-ExpectedUtility", after)
+
+    def test_preserved_occurrence_does_not_count_as_a_replacement(self):
+        # Le compte rendu est celui des remplacements EFFECTUES : une
+        # occurrence gardee par le contexte de documentation est un match de
+        # `subn` sans ecriture (reserve NanoClaw sur la review de #24819).
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            p = _write(repo, "docs/PARITY-INVENTORY.md",
+                       "DecInfer-02-Lean-ExpectedUtility -> "
+                       "DecInfer-01b-Lean-ExpectedUtility\n"
+                       "Precedent : DecInfer-02-Lean-ExpectedUtility\n")
+            forms = [rn.ref_forms(
+                "MyIA.AI.Notebooks/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb",
+                "MyIA.AI.Notebooks/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb")]
+            self.assertEqual(rn.rewrite_file(p, forms), 1)
+            after = p.read_text(encoding="utf-8")
+            self.assertIn("DecInfer-02-Lean-ExpectedUtility -> "
+                          "DecInfer-01b-Lean-ExpectedUtility", after)
+            self.assertIn("Precedent : DecInfer-01b-Lean-ExpectedUtility", after)
+
+    @unittest.expectedFailure
+    def test_dossier_mention_in_prose_is_the_known_limit(self):
+        # LIMITE CONNUE, marquee `expectedFailure` et non figee : sans
+        # separateur, une mention du DOSSIER en prose reste indistinguable
+        # d'un referent de fichier et est recoiffee. Le jour ou un index des
+        # dossiers du corpus permet de la proteger, ce test passe au vert
+        # inattendu et signale qu'il faut le retourner. Le cas mesure (chemin
+        # CSV, avec slash) est couvert par TestDossierComponentNotRewritten.
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            body = ("le dossier DecInfer-02-Lean-ExpectedUtility "
+                    "contient trois carnets\n")
+            p = _write(repo, "docs/nav.md", body)
+            forms = [rn.ref_forms(
+                "MyIA.AI.Notebooks/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb",
+                "MyIA.AI.Notebooks/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb")]
+            # Comportement ATTENDU (aujourd'hui faux) : la mention du dossier
+            # n'est pas un referent de fichier et ne doit pas etre reecrite.
+            self.assertEqual(rn.rewrite_file(p, forms), 0)
+            self.assertEqual(p.read_text(encoding="utf-8"), body)
+
+
 class TestCodeCellNeverRewritten(unittest.TestCase):
     """Defaut 6 : une reference dans une CELLULE DE CODE avait ete reecrite,
     forgeant une source que plus personne n'a executee (C.2). Invariant I2 :

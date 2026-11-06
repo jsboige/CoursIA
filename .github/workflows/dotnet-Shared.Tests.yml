@@ -70,6 +70,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # B2-T2 (#24320) : MyIA.AI.Shared reference les binaires .deploy du
+      # sous-module Z3.Linq (HintPath du csproj) -- le checkout nu ne les
+      # embarque pas (MSB3245 -> CS0246, run 41534501950). Init ciblee du
+      # seul sous-module concerne ; les autres restent non tires.
+      - name: Init Z3.Linq submodule (.deploy binaries for the FOL bridge)
+        shell: bash
+        run: git submodule update --init MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq
+
+      # Le .deploy n'embarque que le natif Windows (libz3.dll) ; le wrapper
+      # Microsoft.Z3 5.1.0 importe le nom nu "libz3", resolu en libz3.so sous
+      # Linux. Canal officiel : le nupkg Microsoft.Z3 5.1.0 (release GitHub
+      # Z3Prover). L'image ubuntu-latest n'embarque plus pwsh (constate :
+      # "pwsh: command not found", exit 127, job 125595762529), le geste de
+      # scripts/Install-Z3Package.ps1 du sous-module est donc replique en bash
+      # a pin identique (URL + SHA-256 = la source unique de la verite reste
+      # le script ; l'apt du runner livre un 4.13 qui ne correspond PAS au
+      # wrapper, cf la doc du fork). Extraction du natif linux-x64 du nupkg,
+      # expose via LD_LIBRARY_PATH.
+      - name: Provide libz3.so for Linux (pinned Microsoft.Z3 5.1.0)
+        shell: bash
+        run: |
+          NUPKG=Microsoft.Z3.5.1.0.nupkg
+          EXPECTED=D808E6BD31D96895ECA446ECEB37E90DD24480B0D9B5F513113F3E2FD312ABF2
+          curl -fsSL -o "$RUNNER_TEMP/$NUPKG" \
+            "https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/$NUPKG"
+          ACTUAL=$(sha256sum "$RUNNER_TEMP/$NUPKG" | awk '{print toupper($1)}')
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error::Hash mismatch for $NUPKG - expected $EXPECTED, got $ACTUAL."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/z3-native"
+          unzip -o -j "$RUNNER_TEMP/$NUPKG" "runtimes/linux-x64/native/libz3.so" \
+            -d "$RUNNER_TEMP/z3-native"
+          echo "LD_LIBRARY_PATH=$RUNNER_TEMP/z3-native${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+
       # Le pool auto-heberge tourne en uid 1001, sans sudo ni dpkg :
       # `setup-dotnet` y echoue sur son repertoire d'installation par
       # defaut ("mkdir: cannot create directory '/usr/share/dotnet':
@@ -130,6 +165,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # B2-T2 (#24320) : memes binaires .deploy du sous-module Z3.Linq que la
+      # jambe Linux -- sous Windows, le natif libz3.dll est copie au sortie par
+      # le csproj, aucun telechargement supplementaire n'est necessaire.
+      - name: Init Z3.Linq submodule (.deploy binaries for the FOL bridge)
+        shell: bash
+        run: git submodule update --init MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq
 
       - uses: actions/setup-dotnet@v4
         with:
