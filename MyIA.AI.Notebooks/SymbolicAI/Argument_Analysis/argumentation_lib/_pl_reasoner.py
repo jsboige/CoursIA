@@ -245,6 +245,9 @@ class TweetyPLEngine:
         return bool(self._reasoner.query(belief_set, parsed_query))
 
     def _parse(self, formula: str):
+        # La traduction texte->PL utilise ce point d'entree directement,
+        # sans passer par entails() : initialiser ici aussi le parseur.
+        self._ensure_ready()
         try:
             return self._parser.parseFormula(formula)
         except Exception as exc:  # jpype leve des exceptions Java

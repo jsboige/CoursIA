@@ -624,6 +624,12 @@ def _patch_belt_network(monkeypatch, prs, red_state):
                         lambda nums: {18844: {"count": 1, "authors": [],
                                               "verdict": None, "verdict_surface": None}} if prs else {})
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
+    # #21067 tranche 1 : la charge EN VOL compte les PRs OUVERTES de la lane
+    # a cote des livraisons mergees. L'enumeration complete des PRs ouvertes
+    # (GraphQL pagine) est une surface reseau comme les autres : elle est
+    # stubee ici, sinon le tapis atteint un `gh` reel -- ce que la garde
+    # `_no_real_gh` interdit.
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: list(prs))
     monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
     # Le tapis fait un check_claims : on rend toujours FREE.
     monkeypatch.setattr(pig, "check_claims",
@@ -1618,6 +1624,39 @@ def test_le_rapport_marqueur_est_muet_sans_lecture_ratee(capsys):
     pig.print_marker_unread_report([], "myia-ai-01:CoursIA-2")
     pig.print_marker_unread_report(None, "myia-ai-01:CoursIA-2")
     assert capsys.readouterr().out == ""
+
+
+def test_le_rapport_gel_rend_la_trace_visible(capsys):
+    """Le rendu du pendant du GEL : un gel non lu doit etre DIT, comme les
+    trois autres lectures non lues (#24516).
+
+    Le gel est un veto transversal : un gel non lu laisse passer un
+    candidat que le gel aurait ecarte. L'operateur doit donc voir le
+    numero ET la nature de l'incertitude.
+    """
+    pig.print_frozen_unread_report([19309], "myia-ai-01:CoursIA-2")
+    out = capsys.readouterr().out
+    assert "GEL NON LU" in out
+    assert "#19309" in out
+    assert "FROZEN" in out
+
+
+def test_le_rapport_gel_est_muet_sans_lecture_ratee(capsys):
+    """Controle negatif du rendu : aucun bruit quand tout s'est bien passe."""
+    pig.print_frozen_unread_report([], "myia-ai-01:CoursIA-2")
+    pig.print_frozen_unread_report(None, "myia-ai-01:CoursIA-2")
+    assert capsys.readouterr().out == ""
+
+
+def test_le_rapport_gel_deduplique_les_numeros(capsys):
+    """Meme contrat que les autres rapports : un numero mesure deux fois
+    n'est annonce qu'une fois."""
+    pig.print_frozen_unread_report([19309, 19309, 19001],
+                                    "myia-ai-01:CoursIA-2")
+    out = capsys.readouterr().out
+    assert out.count("#19309") == 1
+    assert "#19001" in out
+    assert "2 candidat(s)" in out
 
 
 def test_belt_marker_KO_and_budget_epuise_ne_sert_pas_silencieusement():
@@ -2980,6 +3019,9 @@ def test_main_runs_the_repair_phase_inside_its_own_deadline(monkeypatch):
 
     monkeypatch.setattr(pig, "red_backlog", fake_red_backlog)
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **kw: ([], None))
+    # #21067 tranche 1 : la charge en vol compte aussi les PRs ouvertes
+    # (surface reseau comme le reste -- cf _patch_belt_network).
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: [])
     monkeypatch.setattr(pig.gh_identity, "pin_gh_token", lambda: None)
     pig._BELT_DEADLINE[0] = None
     previous_budget = nits.NITS_PASS_BUDGET_S
