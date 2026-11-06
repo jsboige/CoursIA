@@ -86,6 +86,20 @@ _quarto.yml text eol=lf
 # commit CRLF, diff vs main gonfle 22x (2483/2483 au lieu de 114/114 reelles).
 # Meme motif que `*.lean text eol=lf` ci-dessus.
 slides/**/*.md text eol=lf
+# Docs Markdown : meme motif "L268", et cabble sur la garde eol-blob-guard
+# (#23547). Mesure #22988 (revue du 2026-10-27, head 643f8c12) : sans
+# regle, docs/README.md reecrit par un outil Windows portait 499 CRLF et
+# un diff +499/-499 pour une seule ligne de contenu reel ; renormalise,
+# le meme diff tombe a +10/-16 -- 705 lignes de bruit EOL sur 715. La
+# garde eol-blob-guard ne rougissait RIEN de cette classe : elle ne voit
+# que les blobs sous attribut text|lf, donc docs/ en etait exclu -- cette
+# regle EST le cablage. Mesure 2026-11-04 sur origin/main : 60 blobs .md
+# CRLF sur 588 sous docs/ (docs/archive/ledgers-reviews/ pour l'essentiel),
+# tous attr/ vide (aucun CRLF revendique : aucun eol=crlf, aucun -text
+# sous docs/) -- leur renormalisation part en PR de fournée SEPARÉE
+# (l'attribut et la garde d'abord, la fournée ensuite), sinon les 60
+# fichiers polluent le diff de cablage.
+docs/**/*.md text eol=lf
 # Git LFS tracking for model files referenced by notebooks
 *.pt filter=lfs diff=lfs merge=lfs -text
 *.pkl filter=lfs diff=lfs merge=lfs -text
