@@ -624,6 +624,12 @@ def _patch_belt_network(monkeypatch, prs, red_state):
                         lambda nums: {18844: {"count": 1, "authors": [],
                                               "verdict": None, "verdict_surface": None}} if prs else {})
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
+    # #21067 tranche 1 : la charge EN VOL compte les PRs OUVERTES de la lane
+    # a cote des livraisons mergees. L'enumeration complete des PRs ouvertes
+    # (GraphQL pagine) est une surface reseau comme les autres : elle est
+    # stubee ici, sinon le tapis atteint un `gh` reel -- ce que la garde
+    # `_no_real_gh` interdit.
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: list(prs))
     monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
     # Le tapis fait un check_claims : on rend toujours FREE.
     monkeypatch.setattr(pig, "check_claims",
@@ -3013,6 +3019,9 @@ def test_main_runs_the_repair_phase_inside_its_own_deadline(monkeypatch):
 
     monkeypatch.setattr(pig, "red_backlog", fake_red_backlog)
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **kw: ([], None))
+    # #21067 tranche 1 : la charge en vol compte aussi les PRs ouvertes
+    # (surface reseau comme le reste -- cf _patch_belt_network).
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: [])
     monkeypatch.setattr(pig.gh_identity, "pin_gh_token", lambda: None)
     pig._BELT_DEADLINE[0] = None
     previous_budget = nits.NITS_PASS_BUDGET_S
