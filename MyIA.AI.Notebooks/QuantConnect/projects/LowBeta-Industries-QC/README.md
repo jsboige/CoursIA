@@ -169,8 +169,8 @@ Limites :
 
 ## Références
 
-- Asness, C., Frazzini, A., Pedersen, L. H. (2014). *Low-Risk Investing without Industry Bets*. Financial Analysts Journal 70(4), 24-41. `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\2014 - Asness Frazzini Pedersen - Low-Risk Investing without Industry Bets.pdf`
-- Frazzini, A., Pedersen, L. H. (2014). *Betting Against Beta*. Journal of Financial Economics 111(1), 1-25 (version du 2013-05-10). `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\2014 - Frazzini Pedersen - Betting Against Beta (JFE 111(1), version 2013-05-10).pdf`
-- Frazzini, A., Pedersen, L. H. (2010). *Betting Against Beta*. NBER Working Paper 16601. `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\2010 - Frazzini Pedersen - Betting Against Beta (NBER w16601).pdf`
-- Ledoit, O., Wolf, M. (2008). *Robust Performance Hypothesis Testing with the Sharpe Ratio*. Journal of Empirical Finance 15(5) ; version IEW Working Paper 320 (janvier 2008). `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\2008 - Ledoit Wolf - Robust Performance Hypothesis Testing with the Sharpe Ratio (IEW WP 320).pdf`
+- Asness, C., Frazzini, A., Pedersen, L. H. (2014). *Low-Risk Investing without Industry Bets*. Financial Analysts Journal 70(4), 24-41. `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\Asset Pricing, Factors and Anomalies\2014 - Asness Frazzini Pedersen - Low-Risk Investing without Industry Bets.pdf`
+- Frazzini, A., Pedersen, L. H. (2014). *Betting Against Beta*. Journal of Financial Economics 111(1), 1-25 (version du 2013-05-10). `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\Asset Pricing, Factors and Anomalies\2014 - Frazzini Pedersen - Betting Against Beta (JFE 111(1), version 2013-05-10).pdf`
+- Frazzini, A., Pedersen, L. H. (2010). *Betting Against Beta*. NBER Working Paper 16601. `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\Asset Pricing, Factors and Anomalies\2010 - Frazzini Pedersen - Betting Against Beta (NBER w16601).pdf`
+- Ledoit, O., Wolf, M. (2008). *Robust Performance Hypothesis Testing with the Sharpe Ratio*. Journal of Empirical Finance 15(5) ; version IEW Working Paper 320 (janvier 2008). `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\Asset Pricing, Factors and Anomalies\2008 - Ledoit Wolf - Robust Performance Hypothesis Testing with the Sharpe Ratio (IEW WP 320).pdf`
 - Melchin, D. (2024). *Low Beta Portfolios Across Industries*. QuantConnect Research 18469.
