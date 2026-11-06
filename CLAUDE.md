@@ -49,7 +49,7 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 - **Catalogue & README** (`catalog-pr-hygiene` · `readme-french-first`) : **le catalogue appartient à l'automatisation** — `COURSE_CATALOG.generated.*` et les blocs `CATALOG-STATUS` ne se régénèrent JAMAIS à la main sur une branche feature, byte-identique à `main` ; toute prose de doc ajoutée ou réécrite est en français.
 - **Artefacts** (`results-artifact-policy`) : nouveau fichier de `scripts/results/` **> 512 Ko = bloqué par CI** (#15890) — committer l'agrégé falsifiable, les séries complètes hors dépôt avec le chemin cité dans le body.
 - **GenAI** (`genai-config`) : — (prescriptions portées par la règle et [genai-services.md](docs/genai/genai-services.md)).
-- **Lean / GameTheory** (`wsl-kernels` · `lean-merge-discipline`) : docstrings FR par défaut, jumeau `_en` byte-identique hors commentaires. **Python** (`codeql-suppressions-inertes`) : un commentaire `# codeql[rule-id]` est **inerte** ici (default setup) — ne pas en ajouter, ne pas en déplacer.
+- **Lean / GameTheory** (`wsl-kernels` · `lean-merge-discipline` · `lean-i18n`) : docstrings FR par défaut, jumeau `_en` byte-identique hors commentaires — [lean-i18n.md](.claude/rules/lean-i18n.md). **Python** (`codeql-suppressions-inertes`) : un commentaire `# codeql[rule-id]` est **inerte** ici (default setup) — ne pas en ajouter, ne pas en déplacer.
 
 **Travailler sur ces domaines sans toucher les fichiers — reviewer une PR notebook, par exemple — demande de les `Read` explicitement** ; les prescriptions ci-dessus et le §C de ce fichier sont le précis toujours chargé, pas une redondance.
 
