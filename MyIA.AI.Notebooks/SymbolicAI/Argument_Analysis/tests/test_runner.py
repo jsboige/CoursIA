@@ -37,10 +37,26 @@ if _ARG_ANALYSIS_DIR not in sys.path:
 # Comprehensive semantic_kernel mock (must cover _runner + _state_manager_plugin)
 # ---------------------------------------------------------------------------
 def _install_sk_mock():
-    if "semantic_kernel" in sys.modules and getattr(
-        sys.modules["semantic_kernel"], "_coursia_mock", False
+    existing = sys.modules.get("semantic_kernel")
+    if (
+        existing is not None
+        and getattr(existing, "_coursia_mock", False)
+        # Le drapeau seul ne suffit pas : un mock PARTIEL installe par un autre
+        # fichier de test le porte aussi, et le laisser passer cassait la
+        # collecte (`from semantic_kernel import Kernel`). On exige la
+        # completude (B2 de la revue de #24951).
+        and hasattr(existing, "Kernel")
     ):
-        return  # already installed by a prior test in this process
+        return  # comprehensive mock already installed by a prior test in this process
+
+    # Purge les sous-modules du VRAI SK eventuellement importes avant nous.
+    # Sans cela, le mock ne regne pas sur le processus : un import garde-fou
+    # comme `connectors.ai.function_choice_behavior` (absent du mock, ou le
+    # repli `fcb = None` est justement teste) reussirait contre le vrai paquet
+    # et passerait un `function_choice_behavior` que le stub refuse — 37 tests
+    # rouges mesures en collectant test_nl_to_logic_plugin avant ce fichier.
+    for _stale in [n for n in sys.modules if n.startswith("semantic_kernel.")]:
+        del sys.modules[_stale]
 
     sk = ModuleType("semantic_kernel")
     sk._coursia_mock = True

@@ -402,13 +402,17 @@ def _ensure_nl_to_logic_plugin(
 
     service = _resolve_service(kernel, llm_service_id)
     engine = TweetyPLEngine()
-    settings = _execution_settings_for(kernel, llm_service_id)
+    # `_execution_settings_for` rend la forme attendue par `KernelArguments`
+    # (`{service_id: instance}`) ; le service de chat attend l'INSTANCE seule.
+    # Passer le dict faisait echouer tout appel (`'dict' object has no attribute
+    # 'pack_extension_data'`) — B1 de la revue de #24951.
+    settings_map = _execution_settings_for(kernel, llm_service_id)
     kernel.add_plugin(
         NLToLogicPlugin(
             llm_service=service,
             parse_fn=engine._parse,
             kernel=kernel,
-            execution_settings=settings,
+            execution_settings=settings_map.get(llm_service_id) if settings_map else None,
         ),
         plugin_name="NLToLogic",
     )

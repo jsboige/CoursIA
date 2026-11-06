@@ -41,11 +41,13 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Mapping
 from typing import Any, Callable, List, Optional
 
 from semantic_kernel.contents.chat_history import ChatHistory
 from semantic_kernel.functions import kernel_function
 
+from argumentation_lib._pl_reasoner import EngineUnavailableError
 from argumentation_lib._text_to_pl import (
     PROMPT_GEN_QUERIES,
     PROMPT_TEXT_TO_PL,
@@ -72,6 +74,11 @@ class NLToLogicPlugin:
     Le parseur `parse_fn(formula)` est injecte aussi (typiquement le
     `_parse` de `TweetyPLEngine`). Sans l'un ni l'autre, le plugin leve
     a la construction — pas de degrade silencieux.
+
+    `execution_settings` est une INSTANCE de `PromptExecutionSettings` (ou
+    `None` : elle est alors construite depuis la fabrique du service). Ce
+    n'est PAS le dict `{service_id: settings}` de `KernelArguments` — un dict
+    est refuse a la construction (cf B1 de la revue de #24951).
     """
 
     def __init__(
@@ -79,29 +86,66 @@ class NLToLogicPlugin:
         llm_service: Any,
         parse_fn: Callable[[str], Any],
         kernel: Any = None,
-        execution_settings: Optional[dict] = None,
+        execution_settings: Any = None,
     ) -> None:
         if llm_service is None:
             raise ValueError("llm_service est obligatoire")
         if not callable(parse_fn):
             raise TypeError("parse_fn doit etre appelable")
+        if isinstance(execution_settings, Mapping):
+            # La forme {service_id: settings} est celle de `KernelArguments`
+            # (AIServiceSelector indexe par service). Un service SK attend, lui,
+            # UNE instance : passe un dict, `get_chat_message_contents` leve
+            # `'dict' object has no attribute 'pack_extension_data'` (B1 de la
+            # revue de #24951). Le refus est explicite pour que le contrat ne
+            # se re-perde pas.
+            raise TypeError(
+                "execution_settings doit etre une INSTANCE de "
+                "PromptExecutionSettings ; la forme {service_id: settings} est "
+                "celle de KernelArguments, pas celle de "
+                "get_chat_message_contents(settings=...)"
+            )
         self._llm_service = llm_service
         self._parse_fn = parse_fn
         self._kernel = kernel
-        self._execution_settings = execution_settings or {}
+        self._execution_settings = execution_settings
         self._logger = logger
 
-    async def _chat(self, prompt: str) -> str:
-        """Appel LLM synchrone-en-apparence (async en realite).
+    def _settings(self) -> Any:
+        """Reglages a passer a `get_chat_message_contents` : une INSTANCE.
 
-        Utilise `get_chat_message_contents` du service SK injecte.
-        Le kernel est necessaire pour SK >= 1.30 (function-calling).
+        Trois sources, dans cet ordre : l'instance injectee, la fabrique du
+        service resolu (`get_prompt_execution_settings_class`), puis les
+        reglages par defaut de SK. Sans SK importable (test a mock minimal), il
+        n'y a pas de service reel en face : on rend `None` et l'appel omet le
+        parametre.
+        """
+        if self._execution_settings is not None:
+            return self._execution_settings
+        factory = getattr(self._llm_service, "get_prompt_execution_settings_class", None)
+        if callable(factory):
+            return factory()()
+        try:
+            from semantic_kernel.connectors.ai.prompt_execution_settings import (
+                PromptExecutionSettings,
+            )
+        except Exception:  # pragma: no cover - SK absent, donc service factice
+            return None
+        return PromptExecutionSettings()
+
+    async def _chat(self, prompt: str) -> str:
+        """Appel LLM sur le service SK injecte.
+
+        `settings` est un parametre OBLIGATOIRE de
+        `get_chat_message_contents(chat_history, settings, **kwargs)` en SK
+        1.44 : il recoit toujours une instance (cf `_settings`).
         """
         history = ChatHistory()
         history.add_user_message(prompt)
         kwargs: dict = {"chat_history": history}
-        if self._execution_settings:
-            kwargs["settings"] = self._execution_settings
+        settings = self._settings()
+        if settings is not None:
+            kwargs["settings"] = settings
         if self._kernel is not None:
             kwargs["kernel"] = self._kernel
         response = await self._llm_service.get_chat_message_contents(**kwargs)
@@ -126,7 +170,9 @@ class NLToLogicPlugin:
         raw = await self._chat(prompt)
         propositions, formulas = parse_translation_response(raw)
         formulas = filter_formulas(formulas, propositions)
-        accepted, rejected = validate_with_parser(formulas, self._parse_fn)
+        accepted, rejected = validate_with_parser(
+            formulas, self._parse_fn, fatal_exceptions=(EngineUnavailableError,)
+        )
         return json.dumps(
             {
                 "propositions": propositions,
