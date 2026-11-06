@@ -175,13 +175,16 @@ code le 2026-11-02 (#24193) ; il en reste trois ici.
 | `STATUS.md` | instantané historique du lake (toolchain, table des sources, historique des commits) | aucune | **absorbable** — l'état actif est tenu par `game_theory_lean/` (README du lake, et §3 de [`LEAN_INVENTORY.md`](../LEAN_INVENTORY.md)) |
 | `LEAN_PREREQUISITES.md` | trois parcours progressifs Lean 4 / Mathlib (débutant, intermédiaire, avancé), durées et prérequis par module | [`docs/curriculum/symbolic-formalization.md`](../../../docs/curriculum/symbolic-formalization.md) (liens de parcours) | **non absorbable en l'état** — destination déjà désignée par l'inventaire du 2026-09-02 ([entrée #8](../../../docs/transients/2026-09-02-curriculum-inventory.md), mention « RELOCATE », vers `docs/curriculum/symbolic-formalization.md`) |
 | `README.md` | choix de design, sources académiques, tableau de reprise depuis Lean 3, structure historique | [`game_theory_lean/README.md`](../game_theory_lean/README.md) §« Voir aussi » et entrée de navigation du site (`_quarto.yml`) | **non absorbable en l'état** — contenu unique, et deux liens vivants pointent vers ce fichier |
+| `scripts/validate_lean_setup.py` (`check_social_choice_lean()`) | un check de setup qui vérifie l'existence de `social_choice_lean/lakefile.lean` | appelé par l'entrée du validateur de setup | **dépendance code** — cherche encore `social_choice_lean/lakefile.lean`, retiré depuis #4365 (le check échoue déjà sur main) ; à corriger avant le retrait de la coquille |
 
 **Conséquence pour T3.** La coquille **ne peut pas être retirée aujourd'hui** : deux des trois
 documents restants portent un contenu qui n'existe nulle part ailleurs et sont atteints par des
 liens actifs. Le retrait suppose, dans l'ordre : (a) la relocation de `LEAN_PREREQUISITES.md`
 vers le curriculum symbolique (destination déjà nommée par l'inventaire du 2026-09-02) ; (b)
 l'absorption du contenu propre de ce `README.md` — sections « Choix de design » et « Sources
-académiques » ; (c) la reprise des liens entrants (README du lake, navigation du site).
+académiques » ; (c) la reprise des liens entrants (README du lake, navigation du site) ;
+(d) la correction de la dépendance code — `check_social_choice_lean()` cherche encore
+`social_choice_lean/lakefile.lean`, retiré depuis #4365.
 `STATUS.md` peut partir seul : son contenu est un instantané déjà tenu ailleurs. Jusque-là, les
 trois documents sont **conservés à titre de tombstone** — la
 [NOTICE canonique](../game_theory_lean/SocialChoice/NOTICE.md) porte la date du déplacement.
