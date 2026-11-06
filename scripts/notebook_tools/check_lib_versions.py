@@ -558,6 +558,9 @@ _CHECKSUM_RE = re.compile(
     re.IGNORECASE,
 )
 _SHA256_HEX_RE = re.compile(r"^[0-9a-fA-F]{64}$")
+# Meme digest, mais cherche dans le texte libre d'une cellule (la forme
+# historique #24520 le declare a cote de l'URL, pas dans un champ JSON).
+_SHA256_DIGEST_RE = re.compile(r"(?<![0-9a-fA-F])[0-9a-fA-F]{64}(?![0-9a-fA-F])")
 _REPRODUCTION_DIRECTIVE_RE = re.compile(
     r"<!--\s*reproduction\s*:\s*(\{.*?\})\s*-->", re.DOTALL
 )
@@ -686,7 +689,11 @@ def _declared_reproduction(payload: dict) -> dict[str, dict]:
     Trois formes coexistent, toutes rendues par clé de nom d'artefact :
 
     - URL dont la queue nomme l'artefact, avec empreinte dans la même cellule
-      (contrat de #24520) ;
+      (contrat de #24520). Cette forme historique exige désormais **les deux** :
+      un marqueur de mécanisme (``sha256``, ``Get-FileHash``, ``hashlib.sha256``,
+      ``--checksum``) **et** un digest de 64 hexadécimaux. Sans le digest, un
+      ``SHA256 = "abc123"`` satisfaisait la forme faible et court-circuitait la
+      directive ``archive``, qui exige un SHA-256 valide (#24943) ;
     - directive ``<!-- reproduction: {...} -->`` de type ``archive`` : URL,
       version, ``entry`` et SHA-256 de l'entrée extraite ;
     - directive de type ``build`` : ``command`` et ``project`` versionné.
@@ -701,7 +708,13 @@ def _declared_reproduction(payload: dict) -> dict[str, dict]:
         if (cell.get("cell_type") or "") not in ("code", "markdown"):
             continue
         text = _cell_text(cell)
-        has_checksum = bool(_CHECKSUM_RE.search(text))
+        # Forme historique (#24520) : le marqueur seul ne suffit pas, il doit
+        # etre accompagne d'un digest. `SHA256 = "abc123"` declarait sinon une
+        # empreinte sans en porter une, et la forme faible contournait la
+        # directive `archive` qui, elle, exige 64 hexadecimaux (#24943).
+        has_checksum = bool(_CHECKSUM_RE.search(text)) and bool(
+            _SHA256_DIGEST_RE.search(text)
+        )
         for match in _URL_RE.finditer(text):
             url = match.group(0).rstrip(".,;:")
             tail = url.rsplit("/", 1)[-1].split("?", 1)[0].split("#", 1)[0]

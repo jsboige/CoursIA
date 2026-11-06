@@ -35,6 +35,10 @@ import check_lib_versions as clv  # noqa: E402
 
 MANIFEST_PATH = TOOLS_DIR / "lib_versions_manifest.json"
 
+# Digest de 64 hexadecimaux : la forme historique (#24520) exige desormais le
+# marqueur ET le digest, un `SHA256 = "abc123"` ne suffit plus (#24943).
+SHA256_DIGEST = "2cde56fdd6e3b10eb89b2ee90a7c4cb39af446e6f0f6fee09268a48e9ea9731f"
+
 
 # --------------------------------------------------------------------------
 # Helpers
@@ -1309,10 +1313,49 @@ def test_declared_download_with_checksum_satisfies_the_reproduction_gate(tmp_pat
     payload = _notebook(
         [
             '#r "libs/Tweety.dll"',
-            'URL = "https://exemple/builds/Tweety.dll"\nSHA256 = "abc123"',
+            f'URL = "https://exemple/builds/Tweety.dll"\nSHA256 = "{SHA256_DIGEST}"',
         ]
     )
     assert clv.binary_findings("series/nb.ipynb", payload, root) == []
+
+
+def test_declared_download_with_a_placeholder_checksum_is_still_reported(tmp_path):
+    """Reserve NanoClaw (#24943) : `SHA256 = "abc123"` n'est pas une empreinte.
+
+    La forme historique acceptait le seul marqueur `sha256`, si bien qu'une
+    valeur bidon satisfaisait le contrat faible et court-circuitait la
+    directive `archive`, qui exige un digest valide. Le marqueur doit
+    desormais s'accompagner d'un digest de 64 hexadecimaux.
+    """
+    root = _repo_with(tmp_path, [])
+    _touch(root, "series/libs/Tweety.dll", track=False)
+    payload = _notebook(
+        [
+            '#r "libs/Tweety.dll"',
+            'URL = "https://exemple/builds/Tweety.dll"\nSHA256 = "abc123"',
+        ]
+    )
+    found = clv.binary_findings("series/nb.ipynb", payload, root)
+    assert [item["kind"] for item in found] == ["binary_sans_empreinte"]
+
+
+def test_a_digest_without_a_checksum_marker_is_not_a_checksum(tmp_path):
+    """Un digest seul ne declare pas un mecanisme de verification.
+
+    Le contrat est la conjonction : marqueur de mecanisme (`sha256`,
+    `Get-FileHash`, ...) **et** digest. Un identifiant de 64 hexadecimaux sans
+    marqueur peut etre autre chose qu'une empreinte de fichier.
+    """
+    root = _repo_with(tmp_path, [])
+    _touch(root, "series/libs/Tweety.dll", track=False)
+    payload = _notebook(
+        [
+            '#r "libs/Tweety.dll"',
+            f'URL = "https://exemple/builds/Tweety.dll"\nID = "{SHA256_DIGEST}"',
+        ]
+    )
+    found = clv.binary_findings("series/nb.ipynb", payload, root)
+    assert [item["kind"] for item in found] == ["binary_sans_empreinte"]
 
 
 def test_declared_download_without_checksum_is_still_reported(tmp_path):
@@ -1339,7 +1382,7 @@ def test_checksum_declared_for_another_artifact_does_not_lift_the_finding(tmp_pa
     payload = _notebook(
         [
             '#r "libs/Tweety.dll"\n#r "libs/Autre.dll"',
-            'URL = "https://exemple/builds/Tweety.dll"\nSHA256 = "abc123"',
+            f'URL = "https://exemple/builds/Tweety.dll"\nSHA256 = "{SHA256_DIGEST}"',
             'URL = "https://exemple/builds/Autre.dll"',
         ]
     )
