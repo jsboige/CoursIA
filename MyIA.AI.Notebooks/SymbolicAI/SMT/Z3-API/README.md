@@ -17,7 +17,7 @@ L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimi
 
 ## Ouvrage de référence
 
-**Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)** — l'ouvrage-ancrage de la série. Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT, organisé en chapitres thématiques (théories, tactiques, optimisation, puzzles, UNSAT cores, bit-vectors, arithmétique réelle, etc.) qui correspondent chapitre par chapitre aux notebooks de cette série. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`).
+**Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)** — l'ouvrage-ancrage de la série. Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT, organisé en chapitres thématiques (théories, tactiques, optimisation, puzzles, UNSAT cores, bit-vectors, arithmétique réelle, etc.) qui correspondent chapitre par chapitre aux notebooks de cette série. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`).
 
 ### Index chapitré (série Z3-API ↔ Yurichev)
 
@@ -239,7 +239,7 @@ La série manipule un vocabulaire précis (SMT, tactiques, MaxSAT, théories) h�
 
 ## Ouvrages-ancrage
 
-Issue de référence : #19278. L'ouvrage-ancrage de la série est le Yurichev décrit en tête de fichier (section « Ouvrage de référence », avec l'index chapitré série ↔ livre) — la présente section y renvoie et n'en duplique pas l'entrée. La copie archivée (`G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf`) a été lue le 27/10/2026 sur ses 666 pages : les folios de l'index ci-dessus sont ancrés firsthand sur cette lecture.
+Issue de référence : #19278. L'ouvrage-ancrage de la série est le Yurichev décrit en tête de fichier (section « Ouvrage de référence », avec l'index chapitré série ↔ livre) — la présente section y renvoie et n'en duplique pas l'entrée. La copie archivée (`G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf`) a été lue le 27/10/2026 sur ses 666 pages : les folios de l'index ci-dessus sont ancrés firsthand sur cette lecture.
 
 ### Mapping carnet ↔ livre (mapping de l'issue #19278 pour les carnets Z3-Linq2Z3 ; confirmation due à la tranche R2)
 

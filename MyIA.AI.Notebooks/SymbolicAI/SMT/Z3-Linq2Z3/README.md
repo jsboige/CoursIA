@@ -16,7 +16,7 @@ Le binding Z3.Linq traduit des requêtes LINQ C# en formules SMT — on décrit 
 
 ## Ouvrage de référence
 
-**Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)** — l'ouvrage-ancrage de la série sœur Z3-API et un manuel de référence pour cette série Z3-Linq2Z3. Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT, organisé en chapitres thématiques (théories, tactiques, optimisation, puzzles, UNSAT cores, bit-vectors, arithmétique réelle, etc.). Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`).
+**Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)** — l'ouvrage-ancrage de la série sœur Z3-API et un manuel de référence pour cette série Z3-Linq2Z3. Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT, organisé en chapitres thématiques (théories, tactiques, optimisation, puzzles, UNSAT cores, bit-vectors, arithmétique réelle, etc.). Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`).
 
 L'attribution chapitrée pour Z3-Linq2Z3 (carnets ci-dessous) cite les sections correspondantes du livre, en miroir de la table d'index chapitré publiée dans la [série sœur Z3-API](../Z3-API/README.md#ouvrage-de-référence). Les notebooks qui reprennent un exemple numéroté du livre créditent la source dans leur cellule d'introduction.
 
@@ -297,7 +297,7 @@ La série manipule un vocabulaire précis (SMT, théorie des tableaux, standard 
 
 Issue de référence : #19278. Cette série s'ancre principalement sur un livre-ancrage pratique, partagé avec la série sœur [Z3-API](../Z3-API/README.md#ouvrages-ancrage) :
 
-- **Yurichev, D., *SAT/SMT by Example* (édition publique, 12 février 2023, 666 pages)** — déposé à `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (identité vérifiée sur page de titre, 2026-10-05). Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT.
+- **Yurichev, D., *SAT/SMT by Example* (édition publique, 12 février 2023, 666 pages)** — déposé à `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (identité vérifiée sur page de titre, 2026-10-05). Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT.
 
 **Avertissement — défaut biblio au 2026-10-05** : le PDF Yurichev sur la machine worker po-2026 a une structure interne invalide (`fitz.open()` rend 0 page extractible, idem OR94, Multiagent 2009, 5 PDFs du gisement Automata). Le livre est référencé en tant que tel (titre, auteur, année, dépot GDrive vérifié), mais les détails de chapitre ou d'exemple spécifique ne sont pas ancrés firsthand tant qu'une copie lisible n'est pas réacquise. Issue de suivi à ouvrir par le mainteneur (hors périmètre worker — c'est un geste bibliothèque, pas un geste de code).
 
