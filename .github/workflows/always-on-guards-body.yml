@@ -93,7 +93,25 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     # Les cinq organes de body coutent quelques secondes : le plafond n'est
     # qu'un garde-fou contre un blocage de `gh`.
-    timeout-minutes: 10
+    #
+    # 2026-11-06 (mesure po-2024, #24959) : ces quelques secondes ne sont pas
+    # ce que la borne doit couvrir. Le job paie D'ABORD un checkout sur le parc
+    # local, et ce checkout a consomme la totalite du budget deux fois de
+    # suite, sur deux runners differents (myia-ai-01-wsl-2 : 9 min 55 s ;
+    # myia-po-2024-linux-persist-6 : 9 min 49 s), dans l'unique commande
+    # `git checkout --force refs/pull/<N>/merge` qui suit un
+    # `git sparse-checkout disable` -- 8 min 57 s sans une ligne de log, puis
+    # annulation : les cinq organes sont restes `skipped` et la jambe a rougi
+    # sans avoir lu le body. Controle : sur le meme workflow et la meme
+    # fenetre, les runs dont le work dir n'est pas en etat sparse concluent
+    # leur checkout en 30 s (run 42251363137).
+    #
+    # 15 min = meme borne que #24122 (5 -> 15 sur deux workflows, mesure
+    # « checkout seul = 286 s sur 300 »). La cause structurelle -- un work dir
+    # laisse en etat sparse force la materialisation de l'arbre entier -- est
+    # du ressort de l'ombrelle CI #22937 ; cette borne ne fait que donner au
+    # checkout de quoi aboutir pendant qu'elle est tranchee.
+    timeout-minutes: 15
 
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
