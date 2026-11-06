@@ -120,9 +120,9 @@ Ingrédient analytique de la borne générale `bernoulli_mgf_le` (prouvée ci-de
 
 La borne `φ'' ≤ 1/4` est le **cœur analytique** de Hoeffding (toute la difficulté de la
 concentration réside là : la variance d'une v.a. bornée dans [0,1] est ≤ (plage/2)² = 1/4).
-La borne finale `MGF ≤ exp(t²/8)` suit par convexité/Taylor (K(t) := φ(t) − tμ a K(0)=K'(0)=0
-et K'' = φ'' ≤ 1/4 ⟹ K(t) ≤ t²/8) — prouvée via la méthode de l'écart dans
-`bernoulli_mgf_le` (le pas Taylor/convexité reste non formalisé).
+La borne finale `MGF ≤ exp(t²/8)` suit par convexité/Taylor (`K(t) := φ(t) − tμ` a
+`K(0)=K'(0)=0` et `K'' = φ'' ≤ 1/4` ⟹ `K(t) ≤ t²/8`) — prouvée via la méthode de l'écart
+dans `bernoulli_mgf_le` (le pas Taylor/convexité reste non formalisé).
 -/
 
 /-- **Positivité du dénominateur du log-MGF** : pour `μ ∈ [0,1]` et tout `t`,
