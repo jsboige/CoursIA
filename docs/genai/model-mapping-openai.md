@@ -104,7 +104,7 @@ Le « 5.6 principal » se traduit donc par **`gpt-5.6-sol`** (flagship), et le �
 
 ## Conservations délibérées — inventaire (état main, 2026-11-06)
 
-Le périmètre **exécuté** de la migration est **complet** : l'organe `scripts/notebook_tools/check_obsolete_chat_model.py`, passé sur l'arbre suivi (hors `.tmp/`), ne signale **aucun appel de chat live** ciblant un modèle obsolète — le seul `finding` d'exécution est dans `_archive/` (gelé, non live). Le résidu (27 citations dans 25 fichiers, classées DOCUMENTATION par l'organe) est constitué de **conservations délibérées** : chaque nom ancien cité ci-dessous est volontaire, pas un défaut en attente de migration. C'est la liste que l'issue #14755 demande (« les conservations délibérées sont listées avec leur raison »).
+Le périmètre **exécuté** de la migration est **complet** : l'organe `scripts/notebook_tools/check_obsolete_chat_model.py`, passé sur l'arbre suivi (hors `.tmp/`), ne signale **aucun appel de chat live** ciblant un modèle obsolète — le seul `finding` d'exécution est dans `_archive/` (gelé, non live). Le résidu (citations résiduelles classées DOCUMENTATION par l'organe) est constitué de **conservations délibérées** : chaque nom ancien cité ci-dessous est volontaire, pas un défaut en attente de migration. C'est la liste que l'issue #14755 demande (« les conservations délibérées sont listées avec leur raison »).
 
 > Chemins : les carnets sont relatifs à `MyIA.AI.Notebooks/` ; les scripts, à la racine du dépôt.
 
