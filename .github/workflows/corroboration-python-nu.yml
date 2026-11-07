@@ -39,6 +39,13 @@ on:
           - observed
           - negative-control
 
+# Permissions minimales : le job ne lit pas le depot (pas de checkout, bash pur
+# + $GITHUB_STEP_SUMMARY) ; contents: read couvre tout usage futur du contenu
+# sans jamais ouvrir GITHUB_TOKEN au-dela. Reponse au thread CodeQL #24950
+# (« Workflow does not contain permissions »).
+permissions:
+  contents: read
+
 jobs:
   corroboration:
     # Les labels du pool po-2026 : un job a ces labels n'est tire QUE par un
