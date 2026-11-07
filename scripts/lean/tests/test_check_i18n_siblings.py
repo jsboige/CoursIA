@@ -555,9 +555,12 @@ def test_real_grothendieck_godement_pairs_are_not_half_done():
     They must no longer be reported."""
     groth = (REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GROTH"
              / "grothendieck_lean" / "Grothendieck")
+    # Nine pairs, two of them nested: the ninth lives in the SheafCohomology
+    # sub-folder, so entries carry their relative path when it differs (#24161).
     names = ["Godement", "GodementAcyclicity", "GodementCanonicalDiff",
              "GodementComplex", "GodementExactness", "GodementFunctor",
-             "GodementMono", "GodementResolution"]
+             "GodementMono", "GodementResolution",
+             "SheafCohomology/Godement"]
     for name in names:
         fr = groth / f"{name}.lean"
         en = groth / f"{name}_en.lean"

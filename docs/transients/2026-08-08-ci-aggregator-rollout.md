@@ -1,3 +1,5 @@
+> RAPPORT — 2026-08-08 — rollout Step 2 de l'agrégateur CI (flip `required_status_checks = ["PR gate"]` appliqué, Step 1 #9822 mergée, décision `enforce_admins` rendue) — figé
+
 # CI aggregator — rollout Step 2 (issue #9819)
 
 > **Statut au 2026-08-08.** Étape 1 LIVRÉE par **PR #9822 MERGED**

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -18,6 +18,7 @@ from coordination.measure_consolidation_density import (
     measure_window,
     render_markdown,
 )
+from coordination import measure_consolidation_density as mcd
 
 START = datetime(2026, 9, 10, tzinfo=UTC)
 END = datetime(2026, 9, 17, tzinfo=UTC)
@@ -149,3 +150,45 @@ def test_replay_and_outputs(tmp_path):
     result = json.loads(json_out.read_text(encoding="utf-8"))
     assert result["verdict"] == "INCREASE"
     assert result["after"]["services"] == 1
+
+
+def test_window_over_1000_prs_is_split_and_deduplicated(monkeypatch):
+    """Une fenetre saturee (>= 1000 hits) se bissecte ; l'union est dedupliquee."""
+    mid = START + timedelta(days=3, hours=12)
+
+    def fake_run_json(argv):
+        query = argv[argv.index("--search") + 1]
+        start_s, end_s = query.removeprefix("merged:").split("..")
+        s, e = mcd.parse_iso(start_s), mcd.parse_iso(end_s)
+        if e - s >= timedelta(days=6):
+            # fenetre mere saturee : le plafond gh de 1000 resultats est atteint
+            return [{"number": i, "mergedAt": start_s} for i in range(1000)]
+        if e <= mid:
+            return (
+                [{"number": i, "mergedAt": "2026-09-11T00:00:00Z"} for i in range(0, 600)]
+                + [{"number": 700, "mergedAt": "2026-09-12T00:00:00Z"}]
+            )
+        return (
+            [{"number": i, "mergedAt": "2026-09-15T00:00:00Z"} for i in range(600, 1000)]
+            + [{"number": 700, "mergedAt": "2026-09-16T00:00:00Z"}]
+            + [{"number": 9999, "mergedAt": "2026-09-20T00:00:00Z"}]
+        )
+
+    monkeypatch.setattr(mcd, "run_json", fake_run_json)
+    prs = mcd.fetch_merged_prs("jsboige/CoursIA", START, END)
+    numbers = sorted(pr["number"] for pr in prs)
+    # 700 apparait dans les deux moities (un seul exemplaire retenu) et 9999,
+    # merge hors de la sous-fenetre qui l'a retourne, est filtre par les bornes.
+    assert numbers == list(range(1000))
+
+
+def test_saturated_subsecond_window_fails_closed(monkeypatch):
+    """Si la bissection ne converge pas, l'organe raise au lieu de tronquer."""
+
+    def fake_run_json(argv):
+        return [{"number": i, "mergedAt": "2026-09-10T00:00:00Z"} for i in range(1000)]
+
+    monkeypatch.setattr(mcd, "run_json", fake_run_json)
+    end = START + timedelta(milliseconds=500)
+    with pytest.raises(RuntimeError, match="fenetre encore tronquee"):
+        mcd.fetch_merged_prs("jsboige/CoursIA", START, end)
