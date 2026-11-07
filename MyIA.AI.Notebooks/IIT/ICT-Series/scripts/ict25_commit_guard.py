@@ -129,26 +129,48 @@ def _windows_status() -> CommitStatus | None:
     return CommitStatus(int(status.ullAvailPageFile), plafond)
 
 
-def _linux_status_from_text(text: str) -> CommitStatus | None:
+# Valeur de ``vm.overcommit_memory`` sous laquelle le noyau REFUSE une
+# allocation qui ferait passer ``Committed_AS`` au-dessus de ``CommitLimit``.
+# Sous 0 (heuristique, defaut du noyau) et 1 (toujours accepter), ``CommitLimit``
+# est un chiffre de comptabilite que rien n'applique : ``Committed_AS`` le
+# depasse couramment sans qu'aucune allocation n'echoue (#24800).
+_STRICT_OVERCOMMIT = 2
+
+
+def _linux_status_from_text(text: str,
+                            overcommit_mode: int | None = None
+                            ) -> CommitStatus | None:
     """Statut de commit depuis le contenu de ``/proc/meminfo``.
 
-    Lit ``CommitLimit`` / ``Committed_AS`` -- la comptabilite du commit du
-    noyau, la meme grandeur que ``ullTotalPageFile`` / ``ullAvailPageFile``
-    sous Windows. La lecture precedente (``MemAvailable`` + ``SwapFree``)
-    mesurait la memoire recuperable, pas le commit : ``MemAvailable`` inclut
-    le cache, donc la garde aurait ete plus genereuse que son contrat calibre
-    sur le CSV commit-pressure de po-2027 (review #24711, point 1).
+    La grandeur lue depend du mode ``vm.overcommit_memory`` du noyau, parce que
+    la limite qui tue un run n'est pas la meme :
 
-    Repli : un noyau sans comptabilite de commit (rare) retombe sur
-    l'estimation par memoire disponible -- grandeur differente, plus
-    permissive, assumee comme telle plutot que maquillee en commit.
+    - **mode 2 (strict)** : le noyau refuse toute allocation au-dela de
+      ``CommitLimit``. La marge est ``CommitLimit - Committed_AS``, la meme
+      grandeur que ``ullAvailPageFile`` sous Windows (review #24711, point 1).
+    - **modes 0 et 1, ou mode inconnu** : ``CommitLimit`` n'est applique par
+      personne. Mesure du 05/11 sur la VM WSL des runners d'ai-01, en mode 1 :
+      ``Committed_AS`` 107,6 Gio contre ``CommitLimit`` 94,9 Gio, avec
+      ``MemAvailable`` 64,8 Gio. La lecture par le commit y rendait une marge
+      nulle sur une machine saine, et rougissait ``Scripts Tests (CPU)`` sur
+      ``main`` (#24800). Ce qui manque en premier, dans ces modes, c'est la
+      memoire physique et le swap (l'OOM killer) : la marge est
+      ``MemAvailable + SwapFree``, sur un plafond ``MemTotal + SwapTotal``.
+      ``MemAvailable`` compte le cache recuperable, et c'est voulu : c'est
+      l'estimation du noyau de ce qu'une allocation neuve peut obtenir sans
+      faire swapper.
+
+    Un mode inconnu (``/proc/sys/vm/overcommit_memory`` illisible) se lit comme
+    le defaut du noyau, le mode 0 : supposer un mode strict que rien ne prouve
+    rendrait la garde aveugle par exces de prudence, comme ici.
     """
     valeurs: dict[str, list[str]] = {}
     for ligne in text.splitlines():
         cle, sep, reste = ligne.partition(":")
         if sep:
             valeurs[cle] = reste.split()
-    if "CommitLimit" in valeurs and "Committed_AS" in valeurs:
+    if (overcommit_mode == _STRICT_OVERCOMMIT
+            and "CommitLimit" in valeurs and "Committed_AS" in valeurs):
         try:
             limite = int(valeurs["CommitLimit"][0]) * 1024
             engage = int(valeurs["Committed_AS"][0]) * 1024
@@ -175,13 +197,23 @@ def _linux_status_from_text(text: str) -> CommitStatus | None:
     return CommitStatus(disponible, total or None)
 
 
+def _linux_overcommit_mode() -> int | None:
+    """Mode ``vm.overcommit_memory`` du noyau, ou ``None`` s'il est illisible."""
+    try:
+        with open("/proc/sys/vm/overcommit_memory", encoding="ascii") as fh:
+            return int(fh.read().strip())
+    except (OSError, ValueError):
+        return None
+
+
 def _linux_status() -> CommitStatus | None:
-    """Marge et plafond de commit Linux (/proc/meminfo)."""
+    """Marge et plafond de commit Linux (/proc/meminfo + mode d'overcommit)."""
     try:
         with open("/proc/meminfo", encoding="ascii") as fh:
-            return _linux_status_from_text(fh.read())
+            texte = fh.read()
     except OSError:
         return None
+    return _linux_status_from_text(texte, _linux_overcommit_mode())
 
 
 def commit_status() -> CommitStatus | None:

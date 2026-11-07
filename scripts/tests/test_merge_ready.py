@@ -2,7 +2,11 @@
 
 Toutes les commandes passent par un runner scripte : le module sous test
 est charge par importlib (meme convention que test_check_adjoint_prevalidation)
-et ses sous-processus ne quittent jamais le processus de test.
+et ses sous-processus ne quittent jamais le processus de test. La porte STACK
+(etape 3, en processus depuis le retrait du dossier du 2026-11-05) est
+injectee de la meme facon : un fixture autouse remplace
+``gate.default_stack_index`` par un index vide, pour qu'aucun test ne lance
+de git reel.
 """
 
 import importlib.util
@@ -10,6 +14,8 @@ import json
 import re
 import sys
 from pathlib import Path
+
+import pytest
 
 HERE = Path(__file__).resolve().parent
 MERGE_READY_PATH = HERE.parent / "coordination" / "merge_ready.py"
@@ -24,6 +30,21 @@ TOKEN = "tok-myia-ai-01-fake"
 GRAIN_MED = "Grain: MED/guard -- lane myia-po-2026:CoursIA -- prev: MED/guard #1"
 GRAIN_DEEP = "Grain: DEEP/lean -- lane myia-po-2026:CoursIA -- prev: MED/guard #1"
 BASE = "ba5eba5eba5eba5eba5eba5eba5eba5eba5eba5e"
+#: Jambes nominales du chemin `unstable` (#25059) : la porte verte, un check
+#: vert, et une jambe ANNULEE d'un run remplace dont le nom a ete repris par
+#: une jambe verte plus recente -- le cas mesure sur #24116 (run annule puis
+#: run vert pour les memes noms).
+DEFAULT_CHECK_RUNS = "\n".join(
+    json.dumps(row)
+    for row in (
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "Scripts Tests (CPU)", "conclusion": "success",
+         "status": "completed", "started_at": "2026-11-07T10:00:00Z", "id": 5},
+        {"name": "Scripts Tests (CPU)", "conclusion": "cancelled",
+         "status": "completed", "started_at": "2026-11-07T09:00:00Z", "id": 3},
+    )
+)
 # Sentinelle : « pas precise » n'est pas « aucune approbation ». Par defaut une
 # vue porte l'approbation du coordinateur a la tete (le chemin nominal depuis
 # Q67) ; une vue dont les reviews sont fournies explicitement n'en recoit que si
@@ -31,38 +52,25 @@ BASE = "ba5eba5eba5eba5eba5eba5eba5eba5eba5eba5e"
 _DEFAULT = object()
 
 
-def dossier_body(b0: str = "clear") -> str:
-    """Un corps de dossier valide pour parse_dossier (seul le champ b0 varie)."""
-    return "\n".join(
-        [
-            "[ADJOINT PREFLIGHT]",
-            "schema: 1",
-            "lane: myia-po-2025:CoursIA-2",
-            "pr: 123",
-            f"head: {HEAD}",
-            "complete: true",
-            "body: read",
-            "comments-reviewed: 1",
-            "reviews-reviewed: 0",
-            "threads-reviewed: 0",
-            "threads-unresolved: 0",
-            "surfaces-sha256: " + "a" * 64,
-            "diff-files: 1",
-            "diff-additions: 1",
-            "diff-deletions: 0",
-            "checks: latest-wins-green",
-            f"b0: {b0}",
-            "scope: pass",
-            "domain: pass",
-            "verdict: READY",
-            "[/ADJOINT PREFLIGHT]",
-        ]
-    )
+def _index_de_pile_vide() -> dict:
+    """Index de pile vide : porte MESUREE, aucune PR partenaire, aucune
+    raison -- et surtout aucun appel git (la construction reelle de l'index
+    lance ``git`` en sous-processus)."""
+    return {}
 
 
-def rest_comments(b0: str = "clear") -> list[dict]:
-    """Forme REST de gh api issues/N/comments (user.login, pas author.login)."""
-    return [{"user": {"login": "jsboige"}, "body": dossier_body(b0)}]
+@pytest.fixture(autouse=True)
+def _porte_stack_mesuree(monkeypatch):
+    """Porte STACK injectee : index de pile vide, porte MESUREE, aucun git.
+
+    Depuis le retrait du dossier (2026-11-05), l'etape 3 appelle la porte du
+    gate EN PROCESSUS (``gate.default_stack_index`` puis
+    ``gate.stack_reasons``) : sans injection, chaque test lancerait le git
+    reel de la construction de l'index. Le defaut est un index vide -- porte
+    mesuree, aucune PR partenaire, aucune raison. Les tests de la porte
+    surchargent ce defaut par leur propre ``monkeypatch.setattr``.
+    """
+    monkeypatch.setattr(mr.gate, "default_stack_index", _index_de_pile_vide)
 
 
 def default_view(
@@ -99,7 +107,7 @@ def default_view(
         "changedFiles": len(files),
         "comments": comments
         if comments is not None
-        else [{"body": dossier_body()}],
+        else [{"body": "un commentaire de lane ordinaire"}],
         "reviews": rows,
     }
 
@@ -137,7 +145,8 @@ def coordinator_review(
 
 class ScriptedRunner:
     """Runner fake : dispatch par contenu de commande. Defauts = chemin nominal
-    (une PR unique prete au merge, gate READY, b0 clear, B.0 clear, clean)."""
+    (une PR unique prete au merge, B.0 clear, clean). La porte STACK n'y
+    figure pas : elle est injectee en processus par le fixture autouse."""
 
     def __init__(
         self,
@@ -146,17 +155,13 @@ class ScriptedRunner:
         token_rc: int = 0,
         prs: tuple[int, ...] = (123,),
         views: dict[int, dict] | None = None,
-        gate_rc: int = 0,
-        # #22066 : etat de la porte STACK tel que le gate le publie
-        # (#22005) : measured | unmeasured | not-run. Plus les incidents de
-        # mesure, quand la porte a ete exercee sans aboutir.
-        stack: str = "measured",
-        stack_incidents: list[str] | None = None,
-        comments: list[dict] | None = None,
+        # Echec de ``gh pr view`` (toutes les vues) : sert a simuler une
+        # erreur de portee generale (jeton refuse) au milieu du balayage.
+        view_rc: int = 0,
+        view_stderr: str = "",
         nits_rc: int = 0,
         pulls: list[dict] | None = None,
         merge_rc: int = 0,
-        gate_stderr: str = "",
         fetch_rc: int = 0,
         twin_rc: int = 0,
         twin_stdout: str = "",
@@ -173,21 +178,27 @@ class ScriptedRunner:
         auto_tree: str | None = None,
         base_search: dict[str, list[dict]] | None = None,
         base_search_rc: int = 0,
+        # Etape 5quinquies : tests d'integrite sur l'arbre fusionne. Vert par
+        # defaut, pour que les tests historiques gardent leur chemin nominal.
+        combined_rc: int = 0,
+        combined_stdout: str = '{"verdict": "GREEN", "failed": []}',
+        # #25059 : etape 6 bis, lecture des jambes de check. Valeur = stdout
+        # du ``gh api .../check-runs`` (une ligne JSON par jambe). Defaut :
+        # le jeu nominal vert.
+        check_runs: str | None = None,
     ):
+        self.combined_rc = combined_rc
+        self.combined_stdout = combined_stdout
+        self.check_runs = check_runs if check_runs is not None else DEFAULT_CHECK_RUNS
         self.token = token
         self.token_rc = token_rc
         self.prs = list(prs)
         self.views = views or {}
-        self.gate_rc = gate_rc
-        self.stack = stack
-        self.stack_incidents = stack_incidents
-        self.comments = comments
+        self.view_rc = view_rc
+        self.view_stderr = view_stderr
         self.nits_rc = nits_rc
         self.pulls = pulls or [{"mergeable_state": "clean", "head": {"sha": HEAD}}]
         self.merge_rc = merge_rc
-        # stderr du gate : c'est lui qui porte un motif de portee generale
-        # (jeton refuse, quota) quand le gate echoue POUR TOUTE la passe.
-        self.gate_stderr = gate_stderr
         self.fetch_rc = fetch_rc
         self.twin_rc = twin_rc
         # stdout de l'organe twin : porte le JSON classifie quand twin_rc=1.
@@ -248,6 +259,8 @@ class ScriptedRunner:
                 0, json.dumps([{"number": n} for n in self.prs]), ""
             )
         if c[:3] == ["gh", "pr", "view"]:
+            if self.view_rc != 0:
+                return mr.RunResult(self.view_rc, "", self.view_stderr)
             pr = int(c[3])
             view = self.views.get(pr, default_view(pr=pr))
             return mr.RunResult(0, json.dumps(view), "")
@@ -255,9 +268,11 @@ class ScriptedRunner:
             if self.merge_rc == 0:
                 return mr.RunResult(0, "", "")
             return mr.RunResult(self.merge_rc, "", "merge refused")
-        if c[:2] == ["gh", "api"] and "/comments" in c[2]:
-            rows = self.comments if self.comments is not None else rest_comments()
-            return mr.RunResult(0, json.dumps(rows), "")
+        if c[:2] == ["gh", "api"] and "/check-runs" in c[2]:
+            # #25059 : etape 6 bis. La branche est AVANT celle des commits :
+            # l'URL des check-runs porte `/commits/` et serait capturee par
+            # elle (le SHA extrait serait `check-runs?per_page=100`).
+            return mr.RunResult(0, self.check_runs, "")
         if c[:2] == ["gh", "api"] and "/commits/" in c[2]:
             sha = c[2].rsplit("/", 1)[-1]
             if sha not in self.commits:
@@ -272,19 +287,6 @@ class ScriptedRunner:
         if c[:2] == ["gh", "api"] and "/pulls/" in c[2]:
             row = self.pulls.pop(0) if len(self.pulls) > 1 else self.pulls[0]
             return mr.RunResult(0, json.dumps(row), "")
-        if len(c) > 1 and "check_adjoint_prevalidation.py" in c[1]:
-            payload = {
-                "pr": int(c[2]),
-                "head": HEAD,
-                "ready": self.gate_rc == 0,
-                "verdict": "READY" if self.gate_rc == 0 else "NO_DOSSIER",
-                "errors": [],
-                # #22005 : la porte STACK nommee dans le verdict du gate.
-                "stack": self.stack,
-            }
-            if self.stack_incidents:
-                payload["stack_incidents"] = list(self.stack_incidents)
-            return mr.RunResult(self.gate_rc, json.dumps(payload), self.gate_stderr)
         if len(c) > 1 and "check_unaddressed_nits.py" in c[1]:
             return mr.RunResult(self.nits_rc, "", "")
         if c[:1] == ["git"] and "fetch" in c:
@@ -295,6 +297,8 @@ class ScriptedRunner:
             return mr.RunResult(self.claims_rc, self.claims_stdout, "")
         if len(c) > 1 and "check_slot_reservation.py" in c[1]:
             return mr.RunResult(self.slot_rc, self.slot_stdout, "")
+        if len(c) > 1 and "premerge_combined_check.py" in c[1]:
+            return mr.RunResult(self.combined_rc, self.combined_stdout, "")
         raise AssertionError("commande non scriptee : " + " ".join(c))
 
     def sleep(self, seconds: float) -> None:
@@ -319,18 +323,24 @@ def test_skip_draft(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
     assert lines[-1]["verdict"] == "skipped" and lines[-1]["reason"] == "draft"
-    # le gate couteux n'est jamais appele sur un brouillon
-    assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
+    # les organes couteux ne sont jamais appeles sur un brouillon
+    assert not any("check_unaddressed_nits.py" in flat for flat in runner.flat())
 
 
-def test_skip_no_dossier_comment(tmp_path):
-    runner = ScriptedRunner(
-        views={123: default_view(comments=[{"body": "un commentaire ordinaire"}])}
-    )
-    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+def test_pr_sans_aucun_dossier_comment_merges(tmp_path):
+    """Retrait du dossier (2026-11-05) : une PR SANS AUCUN commentaire
+    ``[ADJOINT PREFLIGHT]``, avec l'approbation ``myia-ai-01`` a la tete et
+    toutes les portes vertes, rend ``would-merge`` -- le dossier n'est plus
+    une condition d'entree, chaque fait qu'il attestait est revifie au
+    merge."""
+    view = default_view(comments=[{"body": "un commentaire de lane ordinaire"}])
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner)  # dry-run : would-merge
     assert rc == 0
-    assert lines[-1]["reason"] == "no-adjoint-preflight-comment"
-    assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
+    assert lines[-1]["verdict"] == "would-merge"
+    assert lines[-1]["reason"] is None
+    assert lines[-1]["stack"] == "measured"
+    assert "stack_incidents" not in lines[-1]
 
 
 def test_skip_file_under_claude_dir(tmp_path):
@@ -363,7 +373,7 @@ def test_skip_frozen_umbrella_in_title(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
     assert lines[-1]["reason"] == "frozen:#11601(veto #17040)"
-    assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
+    assert not any("check_unaddressed_nits.py" in flat for flat in runner.flat())
     assert not any(" merge " in f" {flat} " for flat in runner.flat())
 
 
@@ -469,33 +479,6 @@ def test_skip_grain_light_passe_le_filtre(tmp_path):
     assert lines[-1]["verdict"] == "merged" and lines[-1]["merged"] is True
 
 
-def test_skip_gate_not_ready(tmp_path):
-    for gate_rc, expected in (
-        (1, "gate:no-dossier"),
-        (2, "gate:unknown"),
-        (3, "gate:blocked"),
-    ):
-        runner = ScriptedRunner(gate_rc=gate_rc)
-        rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
-        assert rc == 0, gate_rc
-        assert lines[-1]["reason"] == expected, gate_rc
-        # pas d'organe B.0 ni de merge apres un gate non-ready
-        assert not any("check_unaddressed_nits.py" in flat for flat in runner.flat())
-        assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
-
-
-def test_skip_dossier_b0_blocked(tmp_path):
-    # Le gate dit ready mais le dossier porte b0: blocked -- l'organe
-    # controle lui-meme le champ declaratif (ceinture et bretelles : le
-    # gate actuel refuse deja un READY sans b0 clear, le mandat demande le
-    # controle explicite).
-    runner = ScriptedRunner(comments=rest_comments(b0="blocked"))
-    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
-    assert rc == 0
-    assert lines[-1]["reason"] == "dossier-b0-blocked"
-    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
-
-
 def test_skip_b0_organ_rc1(tmp_path):
     runner = ScriptedRunner(nits_rc=1)
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
@@ -505,7 +488,10 @@ def test_skip_b0_organ_rc1(tmp_path):
 
 
 def test_skip_mergeable_state_not_clean(tmp_path):
-    for state in ("dirty", "unstable", "blocked", "has_hooks"):
+    # `unstable` n'est plus dans cette liste : il a son etage a lui (#25059,
+    # les quatre tests juste apres) -- il se decide sur les jambes, pas sur
+    # le seul libelle de l'etat.
+    for state in ("dirty", "blocked", "has_hooks"):
         runner = ScriptedRunner(
             pulls=[{"mergeable_state": state, "head": {"sha": HEAD}}]
         )
@@ -515,9 +501,87 @@ def test_skip_mergeable_state_not_clean(tmp_path):
         assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
 
 
+# --- etape 6 bis : `unstable` (#25059) -------------------------------------------
+
+
+def _legs(*rows: dict) -> str:
+    """stdout du `gh api .../check-runs` : une ligne JSON par jambe."""
+    return "\n".join(json.dumps(row) for row in rows)
+
+
+def _unstable_runner(check_runs: str) -> ScriptedRunner:
+    return ScriptedRunner(
+        pulls=[{"mergeable_state": "unstable", "head": {"sha": HEAD}}],
+        check_runs=check_runs,
+    )
+
+
+def test_unstable_latest_wins_vert_est_accepte(tmp_path):
+    # Pli vert partout : la PR passe, et le journal dit pourquoi elle passait
+    # (`unstable-accepted:<n>`) -- un merge mu n'apporte aucune preuve.
+    runner = _unstable_runner(DEFAULT_CHECK_RUNS)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged"
+    assert lines[-1]["reason"].startswith("unstable-accepted:")
+    assert any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_unstable_une_jambe_non_advisory_rouge_saute_nomme(tmp_path):
+    legs = _legs(
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "Scripts Tests (CPU)", "conclusion": "failure",
+         "status": "completed", "started_at": "2026-11-07T10:00:00Z", "id": 5},
+    )
+    runner = _unstable_runner(legs)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == (
+        "mergeable-state:unstable:Scripts Tests (CPU):failure"
+    )
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_unstable_un_rouge_advisory_seul_est_accepte(tmp_path):
+    # Un check advisory ne bloque pas le gate (#15548) : il ne doit pas
+    # bloquer l'organe de merge non plus.
+    legs = _legs(
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "CJK residue advisory (label, non-blocking)",
+         "conclusion": "failure", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 5},
+    )
+    runner = _unstable_runner(legs)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged"
+    assert lines[-1]["reason"].startswith("unstable-accepted:")
+
+
+def test_unstable_une_jambe_en_vol_sans_jambe_terminee_saute(tmp_path):
+    # Une jambe en vol dont le nom n'a AUCUNE jambe terminee : rien n'a ete
+    # mesure pour ce nom, donc rien n'est acquis -- saut nomme.
+    legs = _legs(
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "Scripts Tests (CPU)", "conclusion": "",
+         "status": "in_progress", "started_at": "2026-11-07T10:00:00Z",
+         "id": 5},
+    )
+    runner = _unstable_runner(legs)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == (
+        "mergeable-state:unstable:Scripts Tests (CPU):no-completed-leg"
+    )
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
 def test_skip_head_moved(tmp_path):
-    # mergeable_state clean mais la tete REST n'est plus celle que le gate
-    # a evaluee : le dossier est perime, skip nomme.
+    # mergeable_state clean mais la tete REST n'est plus celle de la vue,
+    # celle que l'approbation couvre : skip nomme.
     runner = ScriptedRunner(
         pulls=[{"mergeable_state": "clean", "head": {"sha": HEAD_MOVED}}]
     )
@@ -563,8 +627,9 @@ def test_dry_run_merges_rien(tmp_path):
     runner = ScriptedRunner()
     rc, lines, _ = run_organ(tmp_path, runner, extra=())  # pas de --apply
     assert rc == 0
-    # tous les controles lecture-only sont passes...
-    assert any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
+    # tous les controles lecture-only sont passes (la porte STACK est
+    # exercee en processus -- son etat est journalise)...
+    assert lines[-1]["stack"] == "measured"
     assert any("check_unaddressed_nits.py" in flat for flat in runner.flat())
     # ...mais AUCUN merge
     assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
@@ -599,15 +664,16 @@ def test_max_arrete_le_run(tmp_path):
 
 def test_erreur_de_portee_generale_arrete_le_run(tmp_path):
     # #17672 point 3 : le fail-closed est PRESERVE pour ce qui frappe toute la
-    # passe -- ici un jeton refuse dans le gate (marqueur « bad credentials »).
-    # rc 5 du gate : hors codes documents {0,1,2,3} -> arret, exit 1, et la PR
-    # suivante n'est pas touchee : la repeter ne dirait rien de plus.
+    # passe -- ici un jeton refuse (marqueur « bad credentials ») sur la
+    # lecture de la vue de la PREMIERE PR. Arret, exit 1, et la PR suivante
+    # n'est pas touchee : la repeter ne dirait rien de plus.
     runner = ScriptedRunner(
-        prs=(201, 202), gate_rc=5, gate_stderr="gh: Bad credentials (HTTP 401)"
+        prs=(201, 202), view_rc=1, view_stderr="gh: Bad credentials (HTTP 401)"
     )
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 1
     assert lines[-1]["verdict"] == "run-error"
+    assert "Bad credentials" in lines[-1]["reason"]
     assert not any("202" in flat for flat in runner.flat())
 
 
@@ -648,7 +714,7 @@ def test_is_pass_wide_classe_par_le_texte_de_l_outil():
         mr.UnexpectedError("gh pr list rc=1 : could not resolve host: api.github.com")
     )
     assert not mr.is_pass_wide(
-        mr.UnexpectedError("gate PR 9 rc=5 hors contrat : (sans message)")
+        mr.UnexpectedError("gh api pulls/9 rc=7 hors contrat : (sans message)")
     )
     assert not mr.is_pass_wide(
         mr.UnexpectedError("gh pr view 9 : la reponse n'est pas un objet")
@@ -689,16 +755,21 @@ def test_journal_ligne_par_pr(tmp_path):
     assert [row["pr"] for row in lines] == [401, 402]  # ancienne d'abord
 
 
-# --- porte STACK (#22066) ----------------------------------------------------------
+# --- porte STACK en processus (#20251, retrait du dossier 2026-11-05) -------------
 #
-# Le gate nomme l'etat de sa porte STACK depuis #22005 : `measured` |
-# `unmeasured` | `not-run`. La porte est fail-open -- un incident de mesure
-# ne fabrique aucun refus -- mais l'absence de mesure doit etre VISIBLE
-# la ou l'on lit les merges. Ces tests verrouillent les trois etats.
+# Depuis le retrait du dossier, l'etape 3 exerce la porte STACK du gate EN
+# PROCESSUS : ``gate.default_stack_index()`` (index cache dans le module,
+# injecte par le fixture autouse) puis ``gate.stack_reasons(pr, index)``.
+# Deux etats journalises : ``measured`` | ``unmeasured`` (``null`` = la porte
+# n'a pas ete atteinte, skip en amont). La porte est fail-open -- un incident
+# de mesure ne fabrique aucun refus -- mais l'absence de mesure doit etre
+# VISIBLE la ou l'on lit les merges (#22066).
 
 
 def test_stack_measured_est_journalise(tmp_path):
-    runner = ScriptedRunner(prs=(601,), stack="measured")
+    """Defaut du fixture : index vide, porte mesuree, aucune parente -- le
+    chemin nominal journalise ``stack: measured`` sans incidents."""
+    runner = ScriptedRunner(prs=(601,))
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
     assert lines[-1]["stack"] == "measured"
@@ -706,13 +777,44 @@ def test_stack_measured_est_journalise(tmp_path):
     assert lines[-1]["merged"] is True
 
 
-def test_stack_unmeasured_est_journalise_sans_changer_la_decision(tmp_path, capsys):
-    """La porte STACK n'a pas pu etre mesuree : la ligne de journal le dit,
-    le resume humain le dit, et le merge a lieu quand meme (fail-open)."""
-    runner = ScriptedRunner(
-        prs=(602,), stack="unmeasured",
-        stack_incidents=["tete de PR inatteignable: #9999"],
+def test_stack_reasons_non_vides_skip_stack_top(tmp_path, monkeypatch):
+    """Un sommet de pile perime (la PR partage des commits avec une PR
+    ouverte qui porte des corrections absentes ici) : skip court nommant la
+    PR partenaire, porte ``measured``, et aucun organe en aval n'est paye."""
+    monkeypatch.setattr(
+        mr.gate, "default_stack_index", lambda: {124: "entree-de-la-partenaire"}
     )
+    monkeypatch.setattr(
+        mr.gate,
+        "stack_reasons",
+        lambda target, index: [
+            (
+                "stack top: shares 2 commit(s) with OPEN #124, which carries "
+                "1 commit(s) absent here -- merging this one first would land "
+                "the earlier version on main (e.g. 'Fix: correctif ulterieur')"
+            )
+        ],
+    )
+    runner = ScriptedRunner(prs=(123,))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "stack-top:124"
+    assert lines[-1]["stack"] == "measured"
+    assert not any("check_unaddressed_nits.py" in flat for flat in runner.flat())
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_stack_index_none_fail_open_unmeasured(tmp_path, monkeypatch, capsys):
+    """Index de pile illisible (``None``) : fail-open assume -- le merge a
+    lieu, mais la ligne de journal porte ``unmeasured`` et les incidents de
+    mesure, et le resume humain le signale."""
+    monkeypatch.setattr(mr.gate, "default_stack_index", lambda: None)
+    monkeypatch.setitem(
+        mr.gate._STACK_INDEX_CACHE, "incidents",
+        ["tete de PR inatteignable: #9999"],
+    )
+    runner = ScriptedRunner(prs=(602,))
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     out = capsys.readouterr().out
     assert rc == 0
@@ -725,20 +827,8 @@ def test_stack_unmeasured_est_journalise_sans_changer_la_decision(tmp_path, caps
     assert "tete de PR inatteignable: #9999" in out
 
 
-def test_stack_not_run_est_journalise_sans_mention(tmp_path, capsys):
-    """Porte non exercee : elle ne s'est pas exercee, elle n'a pas echoue --
-    aucune mention d'incident dans le resume."""
-    runner = ScriptedRunner(prs=(603,), stack="not-run")
-    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
-    out = capsys.readouterr().out
-    assert rc == 0
-    assert lines[-1]["stack"] == "not-run"
-    assert "stack_incidents" not in lines[-1]
-    assert "STACK non mesure" not in out
-
-
-def test_le_skip_avant_le_gate_ne_porte_pas_d_etat_stack(tmp_path):
-    """Un skip decide avant le gate ne sait rien de la porte STACK : la
+def test_le_skip_avant_la_porte_stack_ne_porte_pas_d_etat_stack(tmp_path):
+    """Un skip decide avant la porte STACK ne sait rien de son etat : la
     ligne porte ``null``, elle n'invente pas un etat."""
     runner = ScriptedRunner(views={123: default_view(draft=True)})
     rc, lines, _ = run_organ(tmp_path, runner)
@@ -777,7 +867,7 @@ def test_jeton_irresolu_exit_2(tmp_path):
     assert len(runner.calls) == 1
 
 
-# --- garde de troncature et pre-controle du dossier (revue ai-01) -------------
+# --- garde de troncature de la liste de fichiers (revue ai-01) ----------------
 
 
 def test_skip_files_truncated_fail_closed(tmp_path):
@@ -789,7 +879,7 @@ def test_skip_files_truncated_fail_closed(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
     assert lines[-1]["reason"] == "files-truncated:1/150"
-    assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
+    assert not any("check_unaddressed_nits.py" in flat for flat in runner.flat())
 
 
 def test_skip_changed_files_absent_fail_closed(tmp_path):
@@ -798,38 +888,6 @@ def test_skip_changed_files_absent_fail_closed(tmp_path):
     runner = ScriptedRunner(views={123: view})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert lines[-1]["reason"].startswith("files-truncated:")
-
-
-def test_precheck_dossier_tete_perimee_sans_gate(tmp_path):
-    # Le dernier dossier vise HEAD, la PR a ete poussee depuis : le gate
-    # refuserait ; le pre-controle le dit sans payer le gate.
-    view = default_view()
-    view["headRefOid"] = HEAD_MOVED
-    runner = ScriptedRunner(views={123: view})
-    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
-    assert rc == 0
-    assert lines[-1]["reason"] == "dossier-head-stale"
-    assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
-
-
-def test_precheck_dossier_b0_blocked_sans_gate(tmp_path):
-    runner = ScriptedRunner(
-        views={123: default_view(comments=[{"body": dossier_body(b0="blocked")}])}
-    )
-    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
-    assert lines[-1]["reason"] == "dossier-b0-not-clear:blocked"
-    assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
-
-
-def test_precheck_dossier_illisible_laisse_decider_le_gate(tmp_path):
-    # Un dossier que le pre-controle ne sait pas lire n'est PAS refuse ici :
-    # la decision reste au gate (qui, dans ce scenario, rend ready).
-    runner = ScriptedRunner(
-        views={123: default_view(comments=[{"body": "[ADJOINT PREFLIGHT]"}])}
-    )
-    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
-    assert any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
-    assert lines[-1]["verdict"] == "merged"
 
 
 def test_wt_vibe_prefix_lifted_with_13410_reopening():
@@ -845,16 +903,17 @@ def test_wt_vibe_prefix_lifted_with_13410_reopening():
     assert mr.frozen_umbrella_exclusion("fix(x): ordinaire", None, None) is None
 
 
-def test_skip_frozen_umbrella_before_gate(tmp_path):
-    # Le skip de perimetre precede le gate : la PR gelee n'y est pas passee.
-    # (Forme branche wt/vibe-* levee avec la reouverture de #13410, 2026-10-07.)
+def test_skip_frozen_umbrella_avant_les_organes(tmp_path):
+    # Le skip de perimetre precede les organes : la PR gelee n'y est pas
+    # passee. (Forme branche wt/vibe-* levee avec la reouverture de #13410,
+    # 2026-10-07.)
     view = default_view(title="enrich(qc,#11601): densite QC-Py-07")
     view["headRefName"] = "feature/densite-qc-7"
     runner = ScriptedRunner(views={123: view})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
     assert lines[-1]["reason"] == "frozen:#11601(veto #17040)"
-    assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
+    assert not any("check_unaddressed_nits.py" in flat for flat in runner.flat())
 
 
 # --- retenues du coordinateur (hold.txt) ----------------------------------------
@@ -862,7 +921,7 @@ def test_skip_frozen_umbrella_before_gate(tmp_path):
 
 def test_hold_skips_before_any_pr_call(tmp_path):
     # La retenue est lue a cote du journal ; la PR retenue n'est ni vue, ni
-    # passee au gate, ni mergee -- la PR suivante suit le chemin nominal.
+    # passee aux organes, ni mergee -- la PR suivante suit le chemin nominal.
     (tmp_path / "hold.txt").write_text(
         "# retenues ai-01\n\n16808  # rebase sur #17521 d'abord\n", encoding="utf-8"
     )
@@ -1087,7 +1146,7 @@ def test_twin_collision_skips(tmp_path):
     assert lines[0]["reason"] == "twin-index-collision"
 
 
-def test_twin_clean_merges_and_compares_the_gated_head(tmp_path):
+def test_twin_clean_merges_and_compares_the_view_head(tmp_path):
     view = default_view(files=(TWIN_FILE,))
     runner = ScriptedRunner(views={123: view}, twin_rc=0)
     rc, lines, _ = run_organ(tmp_path, runner)
@@ -1322,7 +1381,8 @@ def test_slot_clean_merges(tmp_path):
     assert "--exclude-pr 123" in slot_cmd
     assert "--json" in slot_cmd
     assert "--base origin/main" in slot_cmd
-    # La tete passee est celle du gate (post-merge), pas celle de la vue.
+    # La tete passee est celle de la vue -- celle que l'approbation couvre
+    # et que l'etape 6 epingle au merge.
     assert f"--head {HEAD}" in slot_cmd
 
 
@@ -1446,13 +1506,14 @@ def refresh_topology(*, tree: str | None = "7ee0", head_parents=None) -> dict:
     }
 
 
-def test_sans_approbation_du_coordinateur_skip_avant_le_gate(tmp_path):
+def test_sans_approbation_du_coordinateur_skip_avant_les_organes(tmp_path):
     runner = ScriptedRunner(views={123: default_view(coordinator=None)})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
     assert lines[-1]["reason"] == "no-coordinator-approval"
     assert lines[-1]["merged"] is False
-    assert not any("check_adjoint_prevalidation.py" in f for f in runner.flat())
+    # une PR non lue ne paie ni la porte STACK ni les organes
+    assert not any("check_unaddressed_nits.py" in f for f in runner.flat())
 
 
 def test_approbation_d_un_autre_login_ne_compte_pas(tmp_path):
@@ -1546,7 +1607,7 @@ def test_commit_de_contenu_apres_l_approbation_perime_la_lecture(tmp_path):
 def test_skip_2ter_porte_review_ready_en_disposition(tmp_path):
     """#17672 point 2 : quand une PR skip a l'etape 2ter (approbation
     coordinateur), toutes les portes delegables en amont sont vertes
-    (prefiltre, perimetre, dossier precheck). La disposition portee est
+    (perimetre, tag Grain, parapluie gele). La disposition portee est
     ``review-ready`` -- le dashboard coordinateur distingue alors « PR qui
     n'attend que sa relecture » de « PR qui a un autre probleme »."""
     view = default_view(coordinator=HEAD_MOVED)
@@ -1593,25 +1654,15 @@ def test_base_absente_fail_closed(tmp_path):
     assert lines[-1]["reason"] == "coordinator-approval-unverifiable:no-base"
 
 
-def test_tete_du_gate_differente_de_la_tete_lue(tmp_path):
-    """L'approbation est jugee a la tete de la vue ; si le gate evalue une autre
-    tete, ce jugement ne la couvre pas."""
-    body = dossier_body().replace(HEAD, HEAD_MOVED)
-    view = default_view(
-        head=HEAD_MOVED, coordinator=HEAD_MOVED, comments=[{"body": body}]
-    )
-    _, lines, _ = run_organ(tmp_path, ScriptedRunner(views={123: view}))
-    assert lines[-1]["reason"] == "head-moved"
-
-
 # --- #19002 : defense en profondeur sur la base -----------------------------
-# Le gate refuse deja READY si la base n'est pas `main` (cf test_base_*
-# dans test_check_adjoint_prevalidation.py). Merge_ready verifie
-# independamment : un rc 0 accidente du gate, un gate anterieur a #19002,
-# ou un chemin futur qui court-circuiterait le gate ne doit pas suffire
-# a merger dans une branche morte. Trois tests : temoin positif (base
-# main, chemin nominal inchange), temoin negatif sur une base de feature
-# ouverte (#18985/#18967), temoin negatif sur une base morte (#18819).
+# Le gate refusait READY si la base n'est pas `main` (cf test_base_* dans
+# test_check_adjoint_prevalidation.py) ; depuis le retrait du dossier
+# (2026-11-05), merge_ready porte seul ce controle et verifie
+# independamment : un chemin futur qui court-circuiterait la verification
+# ne doit pas suffire a merger dans une branche morte. Trois tests :
+# temoin positif (base main, chemin nominal inchange), temoin negatif sur
+# une base de feature ouverte (#18985/#18967), temoin negatif sur une
+# base morte (#18819).
 
 
 def test_base_main_does_not_change_merge_ready_outcome(tmp_path):
@@ -1621,8 +1672,8 @@ def test_base_main_does_not_change_merge_ready_outcome(tmp_path):
     runner = ScriptedRunner(views={123: default_view()})
     assert runner.views[123]["baseRefName"] == "main"
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
-    # Le verdict par defaut d'un ScriptedRunner est would-merge (gate_rc=0
-    # et tous les autres controles passent). Ce qui compte ici : aucune
+    # Le verdict par defaut d'un ScriptedRunner est would-merge (tous les
+    # controles passent). Ce qui compte ici : aucune
     # ligne ne porte le motif `base-not-main:` (le champ reason est None
     # sur les merges reussis, donc on teste avec get(..., "")).
     for line in lines:
@@ -1634,9 +1685,7 @@ def test_base_feature_open_triggers_base_live_not_main_skip(tmp_path):
     """Temooin negatif (#19014) : PR empilee sur une branche de feature
     encore ouverte. merge_ready distingue ce cas d'une base morte : le
     motif `base-live-not-main:<branche>` dit a la lane d'attendre le merge
-    de la PR porteuse (cf. git-workflow.md L898 collision guard). Le gate
-    est simule a rc=0 READY (comme si une version anterieure du gate
-    avait ete deployee) ; seul le check merge_ready arrete la machine.
+    de la PR porteuse (cf. git-workflow.md L898 collision guard).
     Le ScriptedRunner repond a `gh pr list --search head:<base>` avec une
     PR OPEN pour signifier que la base est vivante."""
     view = default_view()
@@ -1686,8 +1735,8 @@ def test_base_not_main_unreadable_fail_closed(tmp_path):
     echoue (rc non nul, reponse non list, ou reseau), merge_ready ne
     declare pas une liveness qu'il n'a pas mesuree. Il emet
     `base-not-main-unreadable:<branche>` -- la lane ne recoit pas un
-    message confiant, mais l'organe refuse le merge par defaut. Le gate
-    refusera de toute facon, mais l'echec doit etre visible."""
+    message confiant, mais l'organe refuse le merge par defaut : l'echec
+    doit etre visible."""
     view = default_view()
     view["baseRefName"] = "feature/inconnu"  # PR qui n'existe pas
     runner = ScriptedRunner(
@@ -1947,3 +1996,85 @@ def test_stacked_on_main_self_reference_is_explicit(tmp_path):
     # Aucun appel supplementaire : la PR courante est deja chargee.
     pr_view_calls = [c[3] for c in runner.cmds() if c[:3] == ["gh", "pr", "view"]]
     assert pr_view_calls == ["123"], pr_view_calls
+
+
+# --- 5quinquies : tests d'integrite sur l'arbre fusionne (2026-11-05) ----------
+
+
+def _combined_calls(runner):
+    return [c for c in runner.cmds()
+            if len(c) > 1 and "premerge_combined_check.py" in c[1]]
+
+
+def test_combined_green_merges_and_judges_the_view_head(tmp_path):
+    runner = ScriptedRunner(views={123: default_view()})
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge", lines[0]
+    calls = _combined_calls(runner)
+    assert len(calls) == 1
+    assert calls[0][calls[0].index("--pr") + 1] == "123"
+    assert calls[0][calls[0].index("--head") + 1] == HEAD
+
+
+def test_combined_red_skips_and_names_the_first_red_test(tmp_path):
+    stdout = json.dumps({"verdict": "RED",
+                         "failed": ["scripts/x/test_a.py::test_u", "b::c"]})
+    runner = ScriptedRunner(views={123: default_view()}, combined_rc=1,
+                            combined_stdout=stdout)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "combined-tree-red:scripts/x/test_a.py::test_u"
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_combined_conflict_skips(tmp_path):
+    runner = ScriptedRunner(views={123: default_view()}, combined_rc=1,
+                            combined_stdout='{"verdict": "CONFLICT"}')
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "combined-tree-conflict"
+
+
+def test_combined_unreadable_is_fail_closed(tmp_path):
+    runner = ScriptedRunner(views={123: default_view()}, combined_rc=2,
+                            combined_stdout='{"verdict": "UNREADABLE", "reason": "timeout"}')
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "combined-tree-unreadable:timeout"
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_combined_garbage_output_is_fail_closed(tmp_path):
+    runner = ScriptedRunner(views={123: default_view()}, combined_rc=0,
+                            combined_stdout="pas du json")
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "combined-tree-unreadable:rc-0"
+
+
+def test_combined_is_not_paid_by_a_pr_the_stack_door_refuses(
+    tmp_path, monkeypatch
+):
+    """L'ordre des etapes est porteur : une PR refusee par la porte STACK
+    (etape 3) n'atteint jamais l'organe couteux de l'arbre fusionne
+    (etape 5quinquies)."""
+    monkeypatch.setattr(
+        mr.gate, "default_stack_index", lambda: {124: "entree-de-la-partenaire"}
+    )
+    monkeypatch.setattr(
+        mr.gate, "stack_reasons",
+        lambda target, index: [
+            "stack top: shares 1 commit(s) with OPEN #124, which carries "
+            "2 commit(s) absent here -- merging this one first would land "
+            "the earlier version on main"
+        ],
+    )
+    runner = ScriptedRunner(views={123: default_view()})
+    run_organ(tmp_path, runner)
+    assert _combined_calls(runner) == []
+
+
+def test_combined_operator_rollback_env(tmp_path, monkeypatch):
+    monkeypatch.setenv("MERGE_READY_COMBINED_CHECK", "0")
+    runner = ScriptedRunner(views={123: default_view()}, combined_rc=1,
+                            combined_stdout='{"verdict": "RED", "failed": ["a::b"]}')
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+    assert _combined_calls(runner) == []

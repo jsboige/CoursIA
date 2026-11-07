@@ -138,6 +138,16 @@ import issue_containers
 # `released_covers`, a dependency-free module, because this file runs in CI
 # from a sparse-checkout that cannot host `pick_idle_grain` (#23762).
 from released_covers import _released_covers_acceptance
+# #24461 -- la grammaire de l'etat de livraison est source UNIQUE, dans
+# `delivery_grammar`, lue par le tapis (`pick_idle_grain.py`) comme par ce
+# poseur de label. Sans ce partage, l'attestation d'une lane armait l'etat
+# du tapis et JAMAIS le label -- et le tapis, qui paie sa lecture issue par
+# issue, laissait passer l'issue quand son budget de sondes etait epuise.
+from delivery_grammar import (  # noqa: E402
+    ATTESTED,
+    REVOKED,
+    attestation_state,
+)
 
 LABEL_DEFAULT = "candidate-delivered"
 LABEL_COLOR = "5319e7"  # purple -- "delivered, awaiting close triage"
@@ -231,7 +241,10 @@ def _is_bot(actor: str) -> bool:
 # ``issue_containers`` branch below invokes for itself).
 #
 #   `[INFO] candidate-delivered`         attestation -- the label's own idiom
-#   `[DELIVERED] lane ... -- PR #N`      attestation -- closes the item
+#   `[DELIVERED] lane ... -- PR #N`      attestation for the BELT (it closes the
+#                                        item on the tapis); it does **not**
+#                                        arm the LABEL -- #24461, cf.
+#                                        `delivery_grammar.attestation_state`
 #   `[RELEASED] lane ... -- <coverage>`  attestation -- delivered, per picker
 #   `[RELEASED] lane ... -- <barrier>`   ACTIVITY -- nothing was delivered;
 #                                        the item becomes servable again
@@ -322,6 +335,15 @@ def classify(
                       (the default) means "not consulted" and preserves the
                       pre-#14307 behaviour, so existing callers are unaffected.
 
+    Contract -- ``issue["comments"]`` must carry the THREAD of the issue.
+    The attestation branch reads it (and only it): a payload fetched
+    without its comments therefore sees no living attestation, and the
+    issue falls back to the reference heuristic. This is not a bug today
+    (``main`` loads the comments), but it was an IMPLICIT contract: it is
+    written down here, and pinned by
+    ``test_sans_commentaires_pas_d_attestation_voyait`` (review Hermes,
+    2026-11-03, note de suivi).
+
     Returns:
         ``(verdict, detail)`` where verdict is one of:
         ``"epic"``         -- excluded (EPIC by title/label)
@@ -339,6 +361,21 @@ def classify(
                               a tranche is not a delivery (#23762)
         ``"active"``       -- a comment landed after the latest merge
         ``"candidate"``    -- delivered + silent: pose the label
+        ``"attested"``     -- the thread carries a LIVING attestation:
+                              the `[INFO] candidate-delivered` forms, or
+                              `[RELEASED] ... acceptance deja couverte`.
+                              Grammaire **ETROITE** : la forme
+                              `[DELIVERED] lane X -- PR #N` et le dossier
+                              `[CLOSURE PREFLIGHT]` de verdict CLOSE
+                              n'arment **pas** le label (cf.
+                              `delivery_grammar.attestation_state`, qui
+                              exclut la premiere et que le labeler
+                              interroge avec `dossier=False`) : pose the
+                              label (#24461)
+        ``"attestation_revoked"`` -- the thread carries a RETRACTED
+                              attestation (`[NOT-DELIVERED]` /
+                              `[INFO] candidate-delivered-revoked`): remove
+                              the label, and let no other path arm it (#24461)
     """
     title = issue.get("title", "")
     labels = issue.get("labels", []) or []
@@ -363,6 +400,40 @@ def classify(
         who = retraction.get("actor") or "unknown"
         when = retraction.get("created_at") or "?"
         return ("retracted", f"label removed by {who} on {when}; verdict stands")
+
+    # #24461 -- l'ATTESTATION d'une lane arme le LABEL, et une RETRACTATION
+    # le retire. L'etat du fil se lit avec la MEME grammaire que le tapis
+    # (`delivery_grammar`, source unique) : une attestation VIVANTE dit
+    # « les criteres sont couverts, rend la main », une retractation dit
+    # « ce n'est pas livre ».
+    #
+    # Pourquoi cela change la donne : le tapis ecarte deja ces issues, mais
+    # il le fait par une SONDE par issue, donc par un budget de sondes --
+    # epuise, la sonde rend fail-OPEN et l'issue est servie comme un grain
+    # neuf (mesure #24461 : 37 des 120 grains servis portaient un marqueur
+    # vivant, contre 1 issue sur 165 portant le label). Le LABEL, lui, est
+    # dans le payload du pool : il rend l'exclusion gratuite.
+    #
+    # La branche se place APRES la retraction humaine (un verdict humain
+    #prime sur tout, #14307) et AVANT l'heuristique de references : une
+    # attestation vivante EST une livraison, et une retraction doit
+    # empecher l'heuristique de re-armer un label que le fil a retire.
+    # `dossier=False` : l'organe qui parse le dossier `[CLOSURE PREFLIGHT]`
+    # n'est pas dans le sparse-checkout de ce cron (#23762), donc le poser
+    # ici armerait le label en local et pas en CI -- deux comportements pour
+    # le meme depot. Le dossier reste le signal de l'adjoint, et le tapis
+    # (qui tourne sur le depot complet) continue de le lire.
+    attestation = attestation_state(
+        [c.get("body") or "" for c in (issue.get("comments") or [])],
+        dossier=False)
+    if attestation == ATTESTED:
+        return ("attested",
+                "attestation de livraison vivante dans le fil "
+                "(meme grammaire que le tapis)")
+    if attestation == REVOKED:
+        return ("attestation_revoked",
+                "retractation de l'attestation dans le fil "
+                "([NOT-DELIVERED] / candidate-delivered-revoked)")
 
     # #11100: an OPEN PR referencing the issue is work in flight -- the
     # multi-phase rollout shape (e.g. #10984, referenced by open #10986 plus
@@ -772,7 +843,8 @@ def main(argv: list[str] | None = None) -> int:
     issues = _rotate_window(list_open_issues(repo), args.offset, args.limit)
 
     counts = {"candidate": 0, "active": 0, "in_flight": 0, "no_delivery": 0,
-              "epic": 0, "retracted": 0}
+              "epic": 0, "retracted": 0, "attested": 0, "attestation_revoked": 0,
+              "container": 0}
     title_only_issues = 0
     print(f"[candidate-delivered] repo={repo} mode={'dry-run' if args.dry_run else 'apply'} "
           f"open_issues={len(issues)} label={args.label}")
@@ -809,6 +881,23 @@ def main(argv: list[str] | None = None) -> int:
             if not labeled:
                 apply_label(repo, number, args.label, args.dry_run)
             print(f"  #{number:<6} CANDIDATE  {why}")
+        elif verdict == "attested":
+            # #24461 -- une attestation VIVANTE arme le label. Le label est
+            # ce que le tapis lit sans payer une sonde par issue.
+            if not labeled:
+                apply_label(repo, number, args.label, args.dry_run)
+                print(f"  #{number:<6} ATTESTED  {why}  (label pose)")
+            else:
+                print(f"  #{number:<6} ATTESTED  {why}")
+        elif verdict == "attestation_revoked":
+            # Une attestation RETIRACEE : le label s'en va, et l'heuristique
+            # de references ne peut pas le rearmer (la branche a ete prise
+            # avant elle).
+            if labeled:
+                remove_label(repo, number, args.label, args.dry_run)
+                print(f"  #{number:<6} revoked   {why}  (label retracted)")
+            else:
+                print(f"  #{number:<6} revoked   {why}")
         elif verdict == "active":
             if labeled:  # became active again -- retract the label (idempotent)
                 remove_label(repo, number, args.label, args.dry_run)

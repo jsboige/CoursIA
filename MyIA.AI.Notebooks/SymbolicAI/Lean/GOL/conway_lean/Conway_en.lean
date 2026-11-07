@@ -7,8 +7,18 @@
     pair: this file is the canonical EN twin, aggregated via
     `globs := #[.submodules `Conway, `Conway_en]` in `lakefile.lean`).
 
-  * Tribute to John Horton Conway (1937-2020), accessible formalizations
-    of lesser-known results:
+  * Tribute to John Horton Conway (1937-2020), who died of COVID-19 on
+    April 11, 2020. This workspace formalizes some of his elegant
+    lesser-known results:
+
+  * Nut 1: the Doomsday algorithm (day-of-week calculation)
+  * Nut 2: the Look-and-Say sequence (audioactive decay)
+  * Nut 3: the FRACTRAN universal machine (encodes any program as a list
+    of fractions; the running time is the numerator)
+  * Nut 4: the Game of Life (2D cellular automaton, families of structures:
+    oscillators, gliders, guns; fast computation via Hashlife)
+
+  * Accessible formalizations of lesser-known results:
     - `Conway.Doomsday` + `Conway.DoomsdayLemmas` — Doomsday algorithm
       (1973 *Tomorrow is the Day After Doomsday*) for mental day-of-week
       calculation on any Gregorian calendar date.
@@ -53,9 +63,21 @@
     `Conway.DoomsdayLemmas` and `Conway.LookAndSayLemmas`).
 
   * Convention: `namespace Conway`, proofs and theorem statements in
-    English (Mathlib 4 / tactic DSL compatibility); this `_en` mirror
-    carries the English documentation strings and prose comments
-    (cf EPIC #4980 ratified 2026-07-04).
+    English (Mathlib / tactic DSL compatibility); this `_en` mirror
+    carries the English documentation strings and prose comments (cf. the
+    sibling-pair convention).
+
+  * This workspace is a pedagogical tribute to an extraordinarily fertile
+    and creative mathematician. Not all the `sorry` are filled in — most
+    are intentional scaffolds for the multi-agent prover (cf. Epic #1453).
+
+  * i18n convention (EPIC #4980 ratified by the user on 2026-07-04): this
+    file is the canonical EN twin of the root aggregator. The FR mirror
+    lives in the sibling file `Conway.lean` (sibling pair pattern, cf. PR
+    #6682 `Knots.lean` ↔ `Knots_en.lean` for knot_lean). The substantial
+    modules live in the sibling files `Conway.X` (FR) and `Conway.X_en`
+    (EN), auto-discovered by the lakefile's `globs := #[.submodules
+    `Conway, `Conway_en]`.
 -/
 
 import Conway.Doomsday_en

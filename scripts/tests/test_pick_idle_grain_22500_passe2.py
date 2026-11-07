@@ -350,24 +350,41 @@ def test_le_mur_de_temps_ne_tombe_pas_sur_une_consolidation():
     Consequence mesuree : le tirage entier rendait ZERO grain, et la
     classe `consolidation` (le mandat user du 25/10) n'etait jamais servie.
 
-    Le comportement attendu quand le temps est epuise : fail-OPEN -- aucune
-    sonde lue, AUCUN marqueur neutralise, le candidat reste servable."""
+    #22983 -- le contrat du mur est INVERSE. Il ne rendait pas fail-OPEN
+    (le candidat restait servable malgre une lecture non faite) ; il rend
+    fail-CLOSED : le candidat dont une lecture n'a pas pu etre emise est
+    ECARTE, avec la raison nommee. Ce qui reste de #22500 -- et c'est le
+    point : le mur ne fait plus CRASHER la boucle, et le verdict reste
+    DECOMPOSABLE (un triplet, jamais un booleen nu).
+    """
     item = _consol(7001, visit_h=72)
     picks, withheld, _state = _run(
         [item], event_probe=lambda n: (True, True, _iso(72)),
         time_budget_s=0)
-    assert [p["number"] for p in picks] == [7001], (
-        "mur de temps atteint : rien n'est neutralise, le candidat reste "
-        f"servable (withheld={[w[1] for w in withheld]})")
+    assert [p["number"] for p in picks] == [], (
+        "mur de temps atteint : le candidat n'a pas ete lu, il ne doit pas "
+        f"etre servi (withheld={[w[1] for w in withheld]})")
+    assert [w[0]["number"] for w in withheld] == [7001]
+    assert "mur de temps atteint" in withheld[0][1], (
+        "la raison de l'ecarte doit etre NOMMEE : "
+        f"{withheld[0][1]!r}")
+    assert "sonde non emise" in withheld[0][1]
 
 
 def test_le_mur_de_temps_ne_tombe_pas_non_plus_sur_un_grain_ordinaire():
     """Le meme mur, hors classe consolidation : le filtre recent ne doit pas
     non plus lever une exception (il renvoie un booleen, il le decompose
-    normalement -- le test verrouille le voisinage)."""
+    normalement -- le test verrouille le voisinage).
+
+    #22983 -- meme contrat que la consolidation : fail-CLOSED. Le filtre
+    recent n'est pas appele (sa lecture est RESSEAU et le mur est
+    atteint), et le candidat est ecarte plutot que servi.
+    """
     item = _item(7002, visit_h=72)
     picks, withheld, _state = _run(
         [item], recent_marker_probe=lambda n: True, time_budget_s=0)
-    assert [p["number"] for p in picks] == [7002], (
-        f"mur de temps atteint sur un grain ordinaire (withheld="
-        f"{[w[1] for w in withheld]})")
+    assert [p["number"] for p in picks] == [], (
+        "mur de temps atteint sur un grain ordinaire : le candidat n'a pas "
+        f"ete lu (withheld={[w[1] for w in withheld]})")
+    assert [w[0]["number"] for w in withheld] == [7002]
+    assert "mur de temps atteint" in withheld[0][1]

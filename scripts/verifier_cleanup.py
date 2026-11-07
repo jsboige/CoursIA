@@ -62,6 +62,7 @@ import subprocess
 import sys
 from typing import Any
 
+import candidate_delivered
 import issue_containers
 
 LABEL = "candidate-delivered"
@@ -161,6 +162,20 @@ def get_issue_body(repo: str, number: int) -> str:
     row = _gh_json([
         "issue", "view", str(number), "--repo", repo,
         "--json", "body",
+    ])
+    if isinstance(row, dict) and isinstance(row.get("body"), str):
+        return row["body"]
+    return ""
+
+
+def get_pr_body(repo: str, number: int) -> str:
+    """Body of the merged PR used to distinguish tranche from full delivery.
+
+    ``gh pr view --json body`` returns a JSON object; its ``body`` key is
+    extracted in Python (raw ``--jq`` output is not JSON).
+    """
+    row = _gh_json([
+        "pr", "view", str(number), "--repo", repo, "--json", "body",
     ])
     if isinstance(row, dict) and isinstance(row.get("body"), str):
         return row["body"]
@@ -272,10 +287,27 @@ def classify_one(repo: str, issue: dict) -> dict:
             "reason": f"{len(merged_prs)} merged PRs reference the issue -- multi-phase?",
         }
 
+    # #23815: split READY by the merged PR body's marker CLASS. The labeler
+    # (#23801) already separates CLOSING forms (Closes/Fixes/Resolves = complete
+    # delivery) from PARTIAL ones (See/Part of/Refs = delivered tranche). A
+    # merged tranche followed by silence used to surface READY and sent the
+    # verifier to read a closure dossier for an issue only partially delivered
+    # (measured: #23140 and #22938). PARTIAL_TRANCHE reads like IN_FLIGHT: the
+    # issue waits its next turn in the belt, no dossier to close.
+    pr_number = merged_prs[0]["pr_number"]
+    pr_body = get_pr_body(repo, pr_number)
+    if not candidate_delivered.closing_marker(pr_body, number):
+        return {
+            "number": number, "title": title, "verdict": "PARTIAL_TRANCHE",
+            "evidence": evidence,
+            "reason": f"single merged PR #{pr_number} at {latest_merge} carries no "
+                      f"closing marker for #{number} (See/Part of = tranche, #23801)",
+        }
+
     return {
         "number": number, "title": title, "verdict": "READY",
         "evidence": evidence,
-        "reason": f"single merged PR #{merged_prs[0]['pr_number']} at {latest_merge}",
+        "reason": f"single merged PR #{pr_number} at {latest_merge} with closing marker",
     }
 
 
