@@ -61,6 +61,14 @@ def test_g2_bogus_jamais_feu():
     assert m["w_bogus_outcome"] == "end"
     assert m["techniques_with_bogus_that_fire"] == 0
     assert m["space_size"] == 9331
+    # Decomposition du pourquoi : le vide vient de la BORNE DE LONGUEUR, pas
+    # de la force de la garde -- le squelette qui feutre (GETAX, RULE, SETSW,
+    # RULE, CHECK) occupe les L_MAX places de l'espace, donc une technique
+    # qui contient en plus BOGUS en exige 6 et n'y figure pas.
+    assert m["techniques_with_bogus"] == 5425
+    assert m["firing_techniques"] == [W_LEVER]
+    assert m["firing_lengths"] == [L_MAX]
+    assert m["firing_techniques_with_bogus"] == []
 
 
 def test_g3_th51_ecart_de_phases_exact():
@@ -85,6 +93,13 @@ def test_g4_greedy_est_global_et_stationnaire():
     assert m["fired_is_argmax"] is True
     assert dict(m["candidates"]) == {"keep": 0, "lever": 14, "setup_forever": 0}
     assert m["best"] == ("lever", 14)
+    # Le predicat compare des UTILITES : u(switch) est rebasit depuis la
+    # marge prouvee (u(switch) - u(keep)). Ici u(keep) = 0, donc la marge
+    # et l'utilite coincident -- le test verifie la reconstruction, pas la
+    # coincidence.
+    assert m["u_keep"] == 0
+    assert m["u_switch"] == 14
+    assert m["u_switch"] == m["best_u"]
     assert m["second_switch_fires"] is False
 
 

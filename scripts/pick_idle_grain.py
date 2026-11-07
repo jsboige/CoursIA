@@ -4241,6 +4241,46 @@ def print_marker_unread_report(unread, lane: str | None = None) -> None:
     print("   `[INFO] candidate-delivered`) : verifier avant d'editer.")
 
 
+def print_frozen_unread_report(unread, lane: str | None = None) -> None:
+    """Rend compte des etats de GEL NON LUS (#24516).
+
+    Quatrieme pendant de `print_claim_unread_report`,
+    `print_container_unread_report` et `print_marker_unread_report` : la
+    sonde de GEL (`has_frozen_marker`) rend `None` sur echec de lecture --
+    et ce `None` est **indistinguable d'un « pas de gel »** pour
+    l'operateur qui lit la sortie.
+
+    Le gel est un veto TRANSVERSAL : il ecarte le candidat de TOUTES les
+    classes. Un gel non lu laisse donc passer un candidat que le gel aurait
+    ecarte -- c'est le fail-OPEN le plus costly du tapis, parce que l'item
+    est alors servi par une lane qui ne sait pas qu'il est gele.
+
+    Ce que la sonde lit : le corps de l'issue (regle A) et le fil (regle B).
+    L'echec de lecture vient soit du reseau (403, payload illisible), soit
+    d'une surface absente du cache local (corps non porte par le pool, fil
+    hors de l'instantane de la passe).
+
+    Meme doctrine que les trois autres rapports : le fail-OPEN est assume
+    (le tirage est maintenu), mais le **silence** ne l'est pas. Ce rapport
+    existe aussi pour une raison de COHERENCE : sur `main`, l'etat de gel
+    non lu etait publie dans le JSON (`frozen_signal.unread`) sans jamais
+    etre dit en texte -- alors que les cinq lectures voisines ont chacune
+    leur rapport `!! ... NON LU`.
+    """
+    numbers = sorted(set(unread or []))
+    if not numbers:
+        return
+    joined = ", ".join(f"#{num}" for num in numbers)
+    print(f"!! etat de GEL NON LU sur {joined} "
+          f"({len(numbers)} candidat(s)) : le gel n'a pas pu etre lu")
+    print("   (reseau, 403, payload illisible, ou surface absente du cache "
+          "local). Le tirage est")
+    print("   MAINTENU (fail-OPEN assume) -- mais le candidat peut PORTER un "
+          "gel du coordinateur")
+    print("   (`[FROZEN]` dans le corps ou dans le fil) : verifier avant "
+          "d'editer.")
+
+
 def print_belt_budget_report(budget_hit: bool) -> None:
     """Rend compte de l'epuisement du budget de sondes de livraison (#19969).
 
@@ -8291,6 +8331,12 @@ UMBRELLA_VISIT_CAP_DAYS = 7
 # `vein_cap`). 0 desactive le garde (kill switch), et le tapis NOMME toujours
 # ce qu'il ecarte -- un plafond silencieux se lirait comme une famine.
 EPIC_LANE_DELIVERY_CAP_DEFAULT = 2
+# #21067 tranche 1 -- le seuil de la FAMILLE (l'EPIC parent de l'item servi).
+# Arbitrage coordinateur 2026-11-06T12:14Z : deux cles, deux seuils. La
+# cle « item » garde K=2 (le cap de veine applique a la main) ; la cle
+# « famille » est plus large, donc son seuil l'est aussi (K=4) -- une lane
+# n'est pas sortie d'une famille entiere apres deux livraisons.
+EPIC_FAMILY_DELIVERY_CAP_DEFAULT = 4
 # Les PRs de ce depot citent leur issue en trois familles (git-workflow.md :
 # `Closes #N` ferme, `See #N` / `Part of #N` lient sans fermer, `Refs` tolere
 # en heritage). La forme est celle des corps reels, pas une grammaire ideale :
@@ -8522,54 +8568,136 @@ def epic_lane_delivery_counts(
     return counts
 
 
+def _lane_cited_issues(pr: dict, lane: str) -> set[int]:
+    """Issues citees par une PR **de `lane`** (tag de lane + motif de citation).
+
+    Le tag de lane (`parse_grain_tag`, l'extracteur PARTAGE avec
+    variation-tag-guard) fait foi, jamais `--author` : le compte GitHub est
+    partage sur ce depot. Une PR sans tag lisible n'est attribuee a personne.
+    """
+    tag = parse_grain_tag(pr.get("body") or "")
+    if not tag or tag.get("lane") != lane:
+        return set()
+    return {int(x) for x in _DELIVERY_CITED_RE.findall(pr.get("body") or "")}
+
+
+def epic_lane_load_counts(
+    prs: list[dict] | None,
+    lane: str,
+    *,
+    open_prs: list[dict] | None = None,
+    now: dt.datetime | None = None,
+    days: int | None = None,
+) -> dict[int, int]:
+    """``{numero d'issue: CHARGE EN VOL de `lane`}`` -- ouvertes + mergees.
+
+    #21067 tranche 1 (arbitrage coordinateur 2026-11-06T12:14Z) : le garde
+    compte la **charge en vol**, c'est-a-dire les PRs **ouvertes** de la lane
+    sur l'EPIC PLUS ses livraisons **mergees** sur 7 jours.
+
+    Pourquoi le merge ne suffit plus : la saturation est une SALVE de PRs
+    ouvertes en meme temps. Un garde qui ne lit que des PRs mergees voit la
+    salve avec tout le retard du merge -- mesure du 2026-11-06 : dans 17
+    couples (lane, EPIC) sur 18 a >= K, aucune PR de la salve n'avait ete
+    ouverte avec un compte deja au seuil. Le compte mergé etait en retard de
+    toute la latence de merge, donc il ne pouvait pas dire non.
+
+    Les PRs ouvertes n'ont pas de fenetre : une PR ouverte est en vol, quelle
+    que soit son age. Elle est comptee une fois par issue citee (le meme
+    PR qui cite deux fois l'EPIC ne compte qu'une fois).
+
+    Fonction PURE (aucune requete) : elle lit deux corpus deja payes --
+    les PRs mergees de l'ardoise et l'enumeration complete des PRs
+    ouvertes. Un corpus absent rend un dict vide : l'appelant laisse alors
+    le garde INACTIF plutot que de lire « aucune charge » la ou rien n'a ete
+    mesure (fail-OPEN).
+    """
+    counts = dict(epic_lane_delivery_counts(prs, lane, now=now, days=days))
+    for pr in open_prs or []:
+        for n in _lane_cited_issues(pr, lane):
+            counts[n] = counts.get(n, 0) + 1
+    return counts
+
+
 def epic_lane_delivery_cause(
     it: dict,
-    deliveries: dict[int, int] | None,
+    load: dict[int, int] | None,
     cap: int,
     lane: str | None,
+    *,
+    family_cap: int | None = None,
 ) -> str | None:
-    """#21067 correctif 1 -- EPIC deja livre `cap` fois par CETTE lane.
+    """#21067 -- deux cles, deux seuils sur la CHARGE EN VOL de CETTE lane.
 
-    Rend la cause de refus quand l'item est une umbrella (hors classe
-    `consolidation`, dont c'est le travail de revenir) et que la lane y a
-    livre au moins `cap` grains sur la fenetre. ``None`` sinon : `cap <= 0`
-    desactive le garde, `deliveries` absent ou `lane` absente le laisse
-    inactif (fail-OPEN -- jamais un refus sur une mesure qu'on n'a pas).
+    Arbitrage coordinateur 2026-11-06T12:14Z :
+
+    - sur l'**item servi**, K = 2 (ouvertes et mergees comprises) : c'est le
+      cap de veine que les lanes appliquent deja a la main ;
+    - sur la **famille** (l'EPIC parent de l'item servi), K = 4. La cle est
+      plus large, le seuil l'est aussi : une lane n'est pas sortie d'une
+      famille entiere apres deux livraisons, et dans 14 livraisons sur 38
+      l'EPIC parent n'est pas l'item servi.
 
     Le refus porte sur la LANE, pas sur l'EPIC : les autres lanes le voient
     toujours. C'est la difference avec le plafond de visites (#22500), qui
     est global pendant 7 jours.
+
+    ``None`` sinon : ``cap <= 0`` desactive la cle « item », ``family_cap <=
+    0`` desactive la cle « famille », ``load`` absent ou ``lane`` absente
+    laissent le garde inactif (fail-OPEN -- jamais un refus sur une mesure
+    qu'on n'a pas). Les EPICs de consolidation sont exemptes : c'est
+    precisement leur travail de revenir souvent.
+
+    Le parent de l'item est lu sur l'item (``parent``, pose par
+    `parent_issue` a la construction du pool) : sans lui, la cle « famille »
+    est aveugle et le garde retombe sur la seule cle « item ».
     """
-    if cap <= 0 or not lane or not deliveries:
+    if not lane or not load:
         return None
-    if it.get("klass") != "umbrella" or is_consolidation(it):
+    if is_consolidation(it):
         return None
-    count = int(deliveries.get(it["number"], 0))
-    if count < cap:
-        return None
-    return (f"PLAFOND LIVRAISONS EPIC (#21067) : {count} livraison(s) de "
-            f"{lane} sur {LANE_RECORD_WINDOW_DAYS} j (>= {cap}) -- le tapis "
-            f"rend la tete suivante a cette lane ; l'EPIC reste tirable par "
-            f"les autres.")
+    number = it.get("number")
+    if cap > 0 and number is not None:
+        count = int(load.get(number, 0))
+        if count >= cap:
+            return (f"PLAFOND LIVRAISONS EPIC (#21067) : {count} livraison(s) "
+                    f"en vol de {lane} sur l'item #{number} (>= {cap}) -- le "
+                    f"tapis rend la tete suivante a cette lane ; l'item reste "
+                    f"tirable par les autres.")
+    if family_cap and family_cap > 0:
+        parent = it.get("parent")
+        if parent:
+            count = int(load.get(int(parent), 0))
+            if count >= family_cap:
+                return (f"PLAFOND FAMILLE EPIC (#21067) : {count} livraison(s) "
+                        f"en vol de {lane} sur la famille #{parent} (>= "
+                        f"{family_cap}) -- le tapis rend la tete suivante a "
+                        f"cette lane ; la famille reste tirable par les "
+                        f"autres.")
+    return None
 
 
 def epic_delivery_cap_state(
     lane_record: dict | None,
     lane: str | None,
 ) -> tuple[str, dict[int, int]]:
-    """#21067 correctif 2 -- l'etat du plafond, en TROIS cas et non deux.
+    """#21067 -- l'etat du plafond, en TROIS cas et non deux.
 
-    ``epic_deliveries == {}`` veut dire deux choses opposees qu'un booleen
-    confondait :
+    ``charge == {}`` veut dire deux choses opposees qu'un booleen confondait :
 
-    - ``measured``   : la lecture de l'ardoise a abouti et la lane n'a livre
-      aucun EPIC sur la fenetre. Le garde EST evalue ; il n'ecarte rien.
-      Publier « non mesurees » ici etait faux, et ``active: false`` dans le
-      JSON faisait lire un garde inactif la ou il avait tourne.
+    - ``measured``   : la lecture de l'ardoise a abouti et la lane n'a
+      aucune charge en vol sur la fenetre. Le garde EST evalue ; il n'ecarte
+      rien. Publier « non mesurees » ici etait faux, et ``active: false``
+      dans le JSON faisait lire un garde inactif la ou il avait tourne.
     - ``unmeasured`` : la lecture a echoue. Le garde doit rester inactif --
-      fail-OPEN, jamais un refus sur une absence de mesure.
+      fail-OPEN, jamais un refus sur une absence de measure.
     - ``not-applicable`` : pas de lane. Le plafond est par lane ; sans lane
       il n'a pas d'objet.
+
+    La charge rendue est la **charge en vol** (`epic_load` : PRs ouvertes +
+    livraisons mergees sur 7 jours). Un instantane produit par une version
+    anterieure ne porte que `epic_deliveries` : il est lu tel quel (repli),
+    et la cle « famille » y reste aveugle plutot que de le faire refuser.
 
     Le discriminant existe deja dans l'ardoise elle-meme
     (``lane_record["measured"] = error is None``) : le plafond le lisait
@@ -8579,7 +8707,10 @@ def epic_delivery_cap_state(
         return "not-applicable", {}
     if not lane_record.get("measured"):
         return "unmeasured", {}
-    return "measured", dict(lane_record.get("epic_deliveries") or {})
+    load = lane_record.get("epic_load")
+    if load is None:
+        load = lane_record.get("epic_deliveries") or {}
+    return "measured", dict(load)
 
 
 def apply_child_visits(pool: list[dict], targets: list[dict]) -> dict[int, str]:
@@ -9063,6 +9194,7 @@ def belt_filter(
     urns: set[str] | None = None,
     epic_deliveries: dict[int, int] | None = None,
     drops: list[tuple[dict, str]] | None = None,
+    notes: list[str] | None = None,
 ) -> list[dict]:
     """Filtre le pool admissible pour le mode --belt.
 
@@ -9076,6 +9208,16 @@ def belt_filter(
     toujours ; relire ``args.urns`` brut rendrait l'urne ``delivered``
     (presente par defaut) a une lane worker, qui ne doit jamais la recevoir.
     ``None`` garde la lecture de ``args.urns`` pour les appels sans lane.
+
+    ``epic_deliveries`` : la CHARGE EN VOL de la lane (PRs ouvertes +
+    livraisons mergees sur 7 jours), pas le seul corpus merge. Le plafond
+    s'applique en DERNIER -- apres les autres filtres, pour que le rapport
+    nomme une cause qui aurait vraiment ete servie -- et son refus
+    REDIRIGE : il ne doit jamais vider le tapis pour cette lane. Quand le
+    refus viderait le pool admissible, le garde s'auto-suspend et le dit
+    (`notes`) : arbitrer une famine n'est pas le role du garde
+    (#21067, arbitrage du 2026-11-06T12:14Z : « un refus redirige, il ne
+    freine pas ; le tirage rend la tete suivante du tapis, jamais un vide »).
     """
     excluded_issues_set = {int(v) for v in _csv_values(args.exclude_issue)}
     required_labels_set = set(_csv_values(args.require_label))
@@ -9085,7 +9227,7 @@ def belt_filter(
     else:
         selected_urns_set = {v.casefold() for v in urns}
 
-    def _keep(item: dict) -> bool:
+    def _keep_others(item: dict) -> bool:
         n = item["number"]
         if n in excluded_issues_set:
             return False
@@ -9105,21 +9247,42 @@ def belt_filter(
         urn = item.get("klass") or "grain"
         if urn not in selected_urns_set:
             return False
-        # #21067 correctif 1 : l'EPIC deja livre `cap` fois par cette lane
-        # sort du tirage POUR ELLE (les autres lanes le voient). Applique
-        # apres les autres filtres pour que le rapport nomme une cause qui
-        # aurait vraiment ete servie.
-        cause = epic_lane_delivery_cause(
-            item, epic_deliveries,
-            getattr(args, "epic_delivery_cap", 0) or 0,
-            getattr(args, "lane", None))
-        if cause:
-            if drops is not None:
-                drops.append((item, cause))
-            return False
         return True
 
-    return [it for it in admitted if _keep(it)]
+    kept = [it for it in admitted if _keep_others(it)]
+
+    # #21067 tranche 1 -- le plafond de charge en vol, sur DEUX cles : l'item
+    # servi (K=2) et sa famille, l'EPIC parent (K=4). Applique apres les
+    # autres filtres pour que le rapport nomme une cause qui aurait
+    # vraiment ete servie.
+    cap = getattr(args, "epic_delivery_cap", 0) or 0
+    family_cap = getattr(args, "epic_family_cap", None)
+    if family_cap is None:
+        family_cap = EPIC_FAMILY_DELIVERY_CAP_DEFAULT
+    lane = getattr(args, "lane", None)
+    kept_with_cap: list[dict] = []
+    dropped_by_cap: list[tuple[dict, str]] = []
+    for item in kept:
+        cause = epic_lane_delivery_cause(item, epic_deliveries, cap, lane,
+                                          family_cap=family_cap)
+        if cause:
+            dropped_by_cap.append((item, cause))
+        else:
+            kept_with_cap.append(item)
+
+    if kept and not kept_with_cap:
+        # Le refus viderait le tapis pour cette lane : le garde s'auto-
+        # suspend (fail-OPEN) plutot que de lui servir une famine.
+        if notes is not None:
+            notes.append(
+                "PLAFOND SUSPENDU (#21067) : le refus de charge viderait le "
+                "tapis pour cette lane -- garde auto-suspendu, le candidat "
+                "est servi (un refus ne doit jamais produire un vide).")
+        return kept
+
+    if drops is not None:
+        drops.extend(dropped_by_cap)
+    return kept_with_cap
 
 
 def draw_belt(
@@ -9128,6 +9291,7 @@ def draw_belt(
     *,
     epic_deliveries: dict[int, int] | None = None,
     drops: list[tuple[dict, str]] | None = None,
+    notes: list[str] | None = None,
 ) -> list[dict]:
     """Mode --belt : trie le pool admissible et tire `args.grains` candidats.
 
@@ -9160,7 +9324,7 @@ def draw_belt(
     que le prochain le fasse sans rouvrir le trou.
     """
     filtered = belt_filter(admitted, args, epic_deliveries=epic_deliveries,
-                           drops=drops)
+                           drops=drops, notes=notes)
     filtered.sort(key=belt_sort_key)
     return filtered[:args.grains]
 
@@ -9329,6 +9493,13 @@ BOARD_ITEM_KEYS: tuple[tuple[str, str], ...] = (
     ("last_delivery_stamp", "d"),
     ("last_claim_stamp", "m"),
     ("last_child_stamp", "h"),
+    # #21067 tranche 1 : le PARENT de l'item (l'EPIC famille). Sans lui, la
+    # cle « famille » du plafond est aveugle sur la voie de l'instantane --
+    # le consommateur ne verrait que la cle « item ». Le decodeur rend les
+    # champs absents par defaut (`belt_filter` lit par `.get`), donc un
+    # instantane anterieur reste lisible : la cle famille y est simplement
+    # inoperative (fail-OPEN), jamais une erreur.
+    ("parent", "p"),
 )
 
 #: Verdicts de claim qui laissent le candidat consommable par cette lane.
@@ -10202,7 +10373,30 @@ def _lane_record_bucket() -> dict:
             "prs": []}
 
 
+def _open_prs_needed(args) -> bool:
+    """La CHARGE EN VOL (PRs ouvertes) doit-elle etre mesuree ?
+
+    #21067 tranche 1 : elle n'est consommee que par le plafond du tapis
+    (`--belt`) et par l'ardoise publiee (tableau ecrit ou exporte). Dans
+    les autres modes, l'enumeration complete des PRs ouvertes serait une
+    source reseau payee pour rien -- et un chemin que les tests n'ont pas
+    a simuler (rouge CI du 2026-11-06 : 9 tests du picker en echec sur
+    `gh repo view`, la sentinelle `forbid_shell_escape` nommant la
+    commande refusee).
+
+    Le mode nu garde la mesure MERGEE (`epic_lane_delivery_counts`), qui ne
+    coute aucune requete : la charge en vol y est sous-informee, et
+    `open_prs_measured: false` le dit.
+    """
+    return bool(
+        getattr(args, "belt", False)
+        or getattr(args, "board_write", False)
+        or getattr(args, "board_export", False)
+    )
+
+
 def lane_delivery_record(lane: str, prs: list[dict] | None, *,
+                         open_prs: list[dict] | None = None,
                          now: dt.datetime | None = None,
                          error: str | None = None,
                          truncated: bool = False) -> dict:
@@ -10271,6 +10465,17 @@ def lane_delivery_record(lane: str, prs: list[dict] | None, *,
         # absence de mesure.
         "epic_deliveries": ({} if error is not None
                             else epic_lane_delivery_counts(prs, lane, now=now)),
+        # #21067 tranche 1 : la CHARGE EN VOL (PRs ouvertes + livraisons
+        # mergees sur 7 jours). C'est elle que le garde du tapis lit : la
+        # saturation est une salve de PRs OUVERTES, et un compte qui ne voit
+        # que les merges la voit avec tout le retard du merge. Quand
+        # l'enumeration des PRs ouvertes a echoue, la charge ne compte que
+        # les merges (fail-OPEN) et `open_prs_measured` le dit -- un garde
+        # sous-informe qui se dit sous-informe, jamais un garde muet.
+        "epic_load": ({} if error is not None
+                      else epic_lane_load_counts(prs, lane, open_prs=open_prs,
+                                                  now=now)),
+        "open_prs_measured": open_prs is not None,
     }
 
 
@@ -11336,12 +11541,22 @@ def main(argv: list[str] | None = None) -> int:
                          f"(defaut {DWELL_HOURS_DEFAULT:.0f} h ; 0 desactive le garde)")
     ap.add_argument("--epic-delivery-cap", type=int,
                     default=EPIC_LANE_DELIVERY_CAP_DEFAULT, metavar="K",
-                    help="#21067 correctif 1 : une umbrella sur laquelle cette "
-                         "lane a livre K grains (PRs mergees citant l'EPIC) sur "
-                         f"{LANE_RECORD_WINDOW_DAYS} j sort du tirage POUR ELLE "
-                         f"(defaut {EPIC_LANE_DELIVERY_CAP_DEFAULT} ; 0 "
-                         "desactive le garde). Les autres lanes la voient "
-                         "toujours, et le tapis nomme ce qu'il ecarte.")
+                    help="#21067 tranche 1 : l'ITEM servi sur lequel cette "
+                         "lane a K livraisons EN VOL (PRs ouvertes citant "
+                         "l'item + PRs mergees sur "
+                         f"{LANE_RECORD_WINDOW_DAYS} j) sort du tirage POUR "
+                         f"ELLE (defaut {EPIC_LANE_DELIVERY_CAP_DEFAULT} ; 0 "
+                         "desactive la cle « item »). Les autres lanes le "
+                         "voient toujours, et le tapis nomme ce qu'il ecarte.")
+    ap.add_argument("--epic-family-cap", type=int,
+                    default=EPIC_FAMILY_DELIVERY_CAP_DEFAULT, metavar="K",
+                    help="#21067 tranche 1 : la FAMILLE (l'EPIC parent de "
+                         "l'item servi) sur laquelle cette lane a K livraisons "
+                         "en vol sort du tirage POUR ELLE (defaut "
+                         f"{EPIC_FAMILY_DELIVERY_CAP_DEFAULT} ; 0 desactive "
+                         "la cle « famille »). La cle est plus large que "
+                         "l'item, le seuil l'est aussi : deux livraisons "
+                         "n'evacuent pas une famille entiere.")
     ap.add_argument("--delivery-boost-max", type=float, default=0.0,
                     help="#15491 Phase 1 : plafond du facteur d'age de derniere "
                          "livraison des umbrellas (defaut 0 = inactif, kill "
@@ -11691,8 +11906,38 @@ def main(argv: list[str] | None = None) -> int:
             cache_mode=effective_cache_mode,
             cache_status=cache_status,
         )
+        # #21067 tranche 1 : la charge EN VOL se compte aussi sur les PRs
+        # OUVERTES de la lane -- la saturation est une salve de PRs ouvertes
+        # en meme temps, et un garde qui ne lit que les merges la voit avec
+        # tout le retard du merge (mesure du 2026-11-06 : 17 couples sur 18
+        # a >= K n'avaient aucune PR de salve ouverte avec un compte deja au
+        # seuil). L'enumeration des PRs ouvertes est MEMOISEE
+        # (`_complete_open_prs`) : la passe de claims qui suit la partage au
+        # lieu de la repayer. Echec d'enumeration -> `open_prs = None` : la
+        # charge ne compte alors que les merges (fail-OPEN) et l'ardoise le
+        # dit (`open_prs_measured: false`).
+        #
+        # L'enumeration n'est faite que si la charge en vol est CONSOMMEE :
+        # par le plafond #21067 (arme dans le tapis, `--belt`) et par
+        # l'ardoise publiee (tableau ecrit ou exporte). En mode texte nu,
+        # la mesure ne sert a rien -- et la payer quand meme introduisait
+        # une source reseau dans un chemin que les tests n'ont pas a
+        # simuler (rouge CI du 2026-11-06 : 9 tests du picker en echec sur
+        # `gh repo view`). On ne paie pas une enumeration complete de PRs
+        # pour un simple rappel de board.
+        open_prs = None
+        if _open_prs_needed(args):
+            try:
+                open_prs = _complete_open_prs()
+            except Exception as exc:  # noqa: BLE001 - un echec de transport ne
+                # doit pas faire echouer le tirage : le garde reste sous-informe
+                # et le DIT.
+                print(f"[PR-OUVERTES] enumeration impossible "
+                      f"({type(exc).__name__}: {exc}) : la charge en vol ne "
+                      f"compte que les livraisons mergees (fail-OPEN).",
+                      file=sys.stderr)
         lane_record = lane_delivery_record(
-            args.lane, record_prs, error=record_err,
+            args.lane, record_prs, open_prs=open_prs, error=record_err,
             truncated=record_err is None
             and len(record_prs) >= LANE_RECORD_FETCH_LIMIT)
 
@@ -12022,6 +12267,7 @@ def main(argv: list[str] | None = None) -> int:
         _epic_cap_state, _epic_deliveries = epic_delivery_cap_state(
             lane_record, args.lane)
         _epic_drops: list[tuple[dict, str]] = []
+        _epic_notes: list[str] = []
         if _epic_cap_state == "unmeasured":
             _belt_phase("plafond livraisons EPIC: INACTIF (mesure de la lane "
                         "en echec -- aucun refus sur une absence de mesure)")
@@ -12029,15 +12275,18 @@ def main(argv: list[str] | None = None) -> int:
             _belt_phase("plafond livraisons EPIC: INACTIF (pas de lane -- le "
                         "plafond est par lane)")
         elif not _epic_deliveries:
-            _belt_phase("plafond livraisons EPIC: MESURE, aucune livraison de "
-                        "la lane sur la fenetre (rien a ecarter)")
+            _belt_phase("plafond livraisons EPIC: MESURE, aucune charge en "
+                        "vol de la lane sur la fenetre (rien a ecarter)")
         else:
             _belt_phase(f"plafond livraisons EPIC: MESURE, "
-                        f"{sum(_epic_deliveries.values())} livraison(s) sur "
-                        f"{len(_epic_deliveries)} EPIC(s)")
+                        f"{sum(_epic_deliveries.values())} livraison(s) en vol "
+                        f"sur {len(_epic_deliveries)} EPIC(s) "
+                        f"(ouvertes + mergees)")
         belt_pool = belt_filter(admitted, args, urns=selected_urns,
                                 epic_deliveries=_epic_deliveries,
-                                drops=_epic_drops)
+                                drops=_epic_drops, notes=_epic_notes)
+        for _note in _epic_notes:
+            _belt_phase(_note)
         # #24373 -- parcage des EPICs Origami dont le pli suivant n'est pas
         # deplie. Le depliage est un geste du COORDINATEUR : aucune lane
         # worker ne peut le lever, donc le tapis qui les ressertait epuisait
@@ -12364,6 +12613,13 @@ def main(argv: list[str] | None = None) -> int:
             # `None` etait indiscernable d'un « pas de marqueur ».
             print_marker_unread_report(
                 belt_pick_state.get("marker_unread"), args.lane)
+            # #24516 : meme doctrine pour la SONDE DE GEL. Le gel est un veto
+            # transversal : un gel non lu laisse passer un candidat que le
+            # gel aurait ecarte, et l'operateur n'apprendait l'echec que par
+            # le JSON (`frozen_signal.unread`) -- jamais en texte, alors que
+            # les quatre lectures voisines ont chacune leur rapport.
+            print_frozen_unread_report(
+                belt_pick_state.get("frozen_unread"), args.lane)
             print_belt_budget_report(belt_probe_budget_hit[0])
             if belt_time_budget_hit[0]:
                 print("   Mur de temps du tapis atteint (#21436) : la boucle a")
@@ -13061,6 +13317,11 @@ def main(argv: list[str] | None = None) -> int:
     # taisait.
     print_claim_unread_report((delivered_state or {}).get("claim_unread"),
                               args.lane)
+    # #24516 : meme doctrine pour le gel, sur le chemin `delivered` aussi --
+    # la sonde de gel y est cablee (elle y produit `frozen_unread`), mais
+    # l'echec de lecture n'etait dit par aucun rapport texte.
+    print_frozen_unread_report((delivered_state or {}).get("frozen_unread"),
+                               args.lane)
     print_empty_draw_notice(withheld, picks, args.include_delivered)
     print()
     print_unattributed_blocked(backlog)
