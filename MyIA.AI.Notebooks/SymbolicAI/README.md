@@ -243,7 +243,7 @@ Deux points d'attention :
 ### .NET — les notebooks C#
 
 ```bash
-dotnet tool install -g Microsoft.dotnet-interactive
+dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 ```
 
