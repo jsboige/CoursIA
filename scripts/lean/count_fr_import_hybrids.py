@@ -100,8 +100,13 @@ import tomllib
 RC_OK = 0
 RC_INCIDENT = 2
 
-#: Selecteur de modules d'un lac : ("one", "A.B") = le module A.B exactement ;
-#: ("sub", "A") = `A.*`, soit A et tous ses sous-modules.
+#: Selecteur de modules d'un lac, tel que Lake le lit :
+#:   ("one", "A.B") = `A.B` (Glob.one) : le module exactement ; forme nue
+#:       `` `A.B `` dans une liste `globs`, ou `.one `A.B`, ou `"A.B"` en toml ;
+#:   ("all", "A")   = `` `A.* `` (DSL) ou `"A.*"` (toml), ou `.andSubmodules `A` :
+#:       A et ses sous-modules ;
+#:   ("sub", "A")   = `` `A.+ `` (DSL) ou `"A.+"` (toml), ou `.submodules `A` :
+#:       les sous-modules seuls, A exclu.
 Selector = tuple[str, str]
 
 #: Exclusions du perimetre i18n (cf `.claude/rules/code-style.md`, EPIC #4980).
@@ -159,17 +164,50 @@ class LakefileError(ValueError):
 LIB_HEAD_RE = re.compile(r"\blean_lib\s+(?:«([^»]+)»|([A-Za-z_][\w']*))")
 ROOTS_DSL_RE = re.compile(r"\broots\s*:=\s*#\[([^\]]*)\]")
 GLOBS_DSL_RE = re.compile(r"\bglobs\s*:=\s*#\[([^\]]*)\]")
-GLOB_ITEM_DSL_RE = re.compile(r"\.(one|submodules|andSubmodules)\s+`([A-Za-z0-9_.']+)")
+#: Element d'un tableau Lean `#[...]` : `` `X `` ou `` `X.* `` ou `` `X.+ ``,
+#: precede eventuellement de `.one` / `.submodules` / `.andSubmodules`.
+GLOB_ITEM_DSL_RE = re.compile(
+    r"(?:\.(one|submodules|andSubmodules)\s+)?"
+    r"`([A-Za-z0-9_']+(?:\.[A-Za-z0-9_']+)*(?:\.[*+])?)"
+)
 NAME_ITEM_DSL_RE = re.compile(r"`([A-Za-z0-9_.']+)")
 MODULE_NAME_RE = re.compile(r"[A-Za-z0-9_.']+")
+DSL_KIND_PREFIX = {None: "one", "one": "one", "submodules": "sub", "andSubmodules": "all"}
+
+
+def _suffixed_selector(name: str) -> Selector:
+    """`A.*` -> ("all", A) ; `A.+` -> ("sub", A) ; sinon ("one", name)."""
+    if name.endswith(".*"):
+        return ("all", name[:-2])
+    if name.endswith(".+"):
+        return ("sub", name[:-2])
+    return ("one", name)
+
+
+TOML_GLOB_RE = re.compile(r"[A-Za-z0-9_']+(?:\.[A-Za-z0-9_']+)*(?:\.[*+])?")
 
 
 def _glob_to_selector(glob: str) -> Selector:
-    if glob.endswith(".*"):
-        return ("sub", glob[:-2])
-    if MODULE_NAME_RE.fullmatch(glob):
-        return ("one", glob)
-    raise LakefileError(f"glob non reconnu : {glob!r}")
+    if not TOML_GLOB_RE.fullmatch(glob):
+        raise LakefileError(f"glob non reconnu : {glob!r}")
+    return _suffixed_selector(glob)
+
+
+def _globs_dsl(path: Path, name: str, raw: str, key: str) -> list[Selector]:
+    """Elements d'un tableau Lean. Un element non reconnu leve LakefileError (fail-closed)."""
+    leftover = GLOB_ITEM_DSL_RE.sub("", raw)
+    if leftover.strip(" \t\r\n,"):
+        raise LakefileError(
+            f"{path} : `{key}` non reconnu pour {name} : {leftover.strip()[:80]!r}"
+        )
+    selectors: list[Selector] = []
+    for prefix, item in GLOB_ITEM_DSL_RE.findall(raw):
+        if prefix:
+            # Forme `.one` / `.submodules` / `.andSubmodules` : le nom est pris tel quel.
+            selectors.append((DSL_KIND_PREFIX[prefix], item))
+        else:
+            selectors.append(_suffixed_selector(item))
+    return selectors
 
 
 def _selectors_toml(path: Path) -> list[Selector]:
@@ -182,9 +220,10 @@ def _selectors_toml(path: Path) -> list[Selector]:
         name = lib.get("name")
         if not isinstance(name, str):
             raise LakefileError(f"{path} : [[lean_lib]] sans `name`")
-        # Defauts Lake : `roots` vaut `[name]` ; `roots` et `globs` sont
+        # Defauts (hypothese, non verifiee sans Lake) : `roots` vaut `[name]` seulement
+        # si ni `roots` ni `globs` ne sont declares ; sinon `roots` et `globs` sont
         # compiles ensemble, on prend leur union.
-        roots = lib.get("roots", [name])
+        roots = lib.get("roots", [] if "globs" in lib else [name])
         globs = lib.get("globs", [])
         for key, value in (("roots", roots), ("globs", globs)):
             if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
@@ -208,32 +247,20 @@ def _selectors_dsl(path: Path) -> list[Selector]:
         end = heads[index + 1].start() if index + 1 < len(heads) else len(text)
         block = text[head.end():end]
         roots_match = ROOTS_DSL_RE.search(block)
-        if roots_match:
-            items = NAME_ITEM_DSL_RE.findall(roots_match.group(1))
-            if len(items) != roots_match.group(1).count("`"):
-                raise LakefileError(f"{path} : `roots` non reconnu pour {name}")
-            selectors += [("one", item) for item in items]
-        elif re.search(r"\broots\b", block):
-            # Clause presente mais de forme non reconnue : ne jamais retomber
-            # silencieusement sur le defaut `[name]`.
-            raise LakefileError(f"{path} : `roots` non reconnu pour {name}")
-        else:
-            selectors.append(("one", name))
         globs_match = GLOBS_DSL_RE.search(block)
+        # Clause presente mais de forme non reconnue : jamais de retour silencieux
+        # au defaut, jamais de mesure sur une lecture partielle.
+        if not roots_match and re.search(r"\broots\b", block):
+            raise LakefileError(f"{path} : `roots` non reconnu pour {name}")
         if not globs_match and re.search(r"\bglobs\b", block):
             raise LakefileError(f"{path} : `globs` non reconnu pour {name}")
+        if roots_match:
+            selectors += _globs_dsl(path, name, roots_match.group(1), "roots")
         if globs_match:
-            raw = globs_match.group(1)
-            items = GLOB_ITEM_DSL_RE.findall(raw)
-            if len(items) != raw.count("`"):
-                raise LakefileError(f"{path} : `globs` non reconnu pour {name}")
-            for kind, module in items:
-                if kind == "one":
-                    selectors.append(("one", module))
-                else:
-                    if kind == "andSubmodules":
-                        selectors.append(("one", module))
-                    selectors.append(("sub", module))
+            selectors += _globs_dsl(path, name, globs_match.group(1), "globs")
+        if not roots_match and not globs_match:
+            # Defaut Lake (hypothese, non verifiee sans Lake) : racine `[name]`.
+            selectors.append(("one", name))
     return selectors
 
 
@@ -252,9 +279,9 @@ def lake_selectors(lake: Path) -> list[Selector]:
 
 def _selected(module: str, selectors: list[Selector]) -> bool:
     for kind, name in selectors:
-        if module == name:
+        if kind in ("one", "all") and module == name:
             return True
-        if kind == "sub" and module.startswith(name + "."):
+        if kind in ("all", "sub") and module.startswith(name + "."):
             return True
     return False
 

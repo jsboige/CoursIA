@@ -473,6 +473,110 @@ def test_missing_root_is_reported_not_silent():
     assert "Alpha.Ghost" in mod.render(report, show_list=False)
 
 
+# Formes reelles relevees sur le depot complet (#24666, point 1 de la reserve
+# coordinateur) : copie verbatim des blocs `lean_lib` de trois lakefiles du depot
+# (GameTheory/assignment_lean, SymbolicAI/Lean/differential_lean,
+# Compression/Compression_lean), reunis dans un seul fichier de test.
+_REAL_SHAPES_LAKEFILE = """import Lake
+open Lake DSL
+
+package «fixture» where
+  leanOptions := #[⟨`pp.unicode.fun, true⟩]
+
+@[default_target]
+lean_lib Assignment where
+  globs := #[`Assignment.*, `Assignment_en]
+
+lean_lib «PrefixCodes» where
+  -- Module plat (fichiers racine, aucune arborescence `PrefixCodes/`).
+  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `SymbolCodec_en]
+
+lean_lib «Differential» where
+  -- `Poincare` et `Poincare_en` suivent la meme regle.
+  globs := #[
+    `DifferentialTour, `DifferentialTour_en,
+    `Poincare, `Poincare_en]
+"""
+
+
+def test_backtick_glob_forms_are_read_dsl():
+    """`X`, `X.*`, `X.+` et les `.one/.submodules/.andSubmodules` (#24666)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = _lake(tmp, "forms_lean")
+        (lake / "lakefile.toml").unlink()
+        _write(
+            lake / "lakefile.lean",
+            "import Lake\nopen Lake DSL\n\npackage forms\n\n"
+            "lean_lib «Forms» where\n  globs := #[`Alpha.*, `Alpha_en, `Beta.+]\n\n"
+            "lean_lib «Kinds» where\n"
+            "  globs := #[.submodules `Gamma, .andSubmodules `Delta, .one `Eps]\n",
+        )
+        _write(lake / "Beta" / "Hidden_en.lean", _HYBRID_HIDDEN)
+        _write(lake / "Beta_en.lean", "namespace Beta_en\n\nend Beta_en\n")
+        selectors = mod.lake_selectors(lake)
+        _, reach, _ = mod.lake_reachable(lake, [lake])
+    assert selectors == [
+        ("all", "Alpha"),
+        ("one", "Alpha_en"),
+        ("sub", "Beta"),
+        ("sub", "Gamma"),
+        ("all", "Delta"),
+        ("one", "Eps"),
+    ], selectors
+    reached = {p.relative_to(lake).as_posix() for p in reach}
+    # `Beta.+` = sous-modules seuls : Beta/Hidden_en est atteint, Beta_en (la racine) non.
+    assert "Beta/Hidden_en.lean" in reached, reached
+    assert "Beta_en.lean" not in reached, reached
+
+
+def test_toml_glob_suffixes_are_read():
+    assert mod._glob_to_selector("Foo") == ("one", "Foo")
+    assert mod._glob_to_selector("Foo.*") == ("all", "Foo")
+    assert mod._glob_to_selector("Foo.+") == ("sub", "Foo")
+    try:
+        mod._glob_to_selector("Foo bar")
+    except mod.LakefileError:
+        pass
+    else:
+        raise AssertionError("forme inconnue doit lever LakefileError (fail-closed)")
+
+
+def test_real_repo_shapes_are_read_not_incident():
+    """Non-regression : les formes relevees dans le depot complet sont lues (aucun incident)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = Path(tmp) / "shapes_lean"
+        lake.mkdir()
+        _write(lake / "lakefile.lean", _REAL_SHAPES_LAKEFILE)
+        selectors = mod.lake_selectors(lake)
+    assert selectors == [
+        ("all", "Assignment"),
+        ("one", "Assignment_en"),
+        ("one", "PrefixCodes"),
+        ("one", "PrefixCodes_en"),
+        ("one", "Decode"),
+        ("one", "SymbolCodec_en"),
+        ("one", "DifferentialTour"),
+        ("one", "DifferentialTour_en"),
+        ("one", "Poincare"),
+        ("one", "Poincare_en"),
+    ], selectors
+
+
+def test_lib_with_globs_has_no_default_root():
+    """Une lib qui declare `globs` n'ajoute pas la racine `[name]` (Planning, Kelly du depot)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = Path(tmp) / "planning_lean"
+        lake.mkdir()
+        _write(
+            lake / "lakefile.lean",
+            "lean_lib «Planning» where\n  globs := #[.submodules `Planning]\n",
+        )
+        selectors = mod.lake_selectors(lake)
+        report = mod.census(lake)
+    assert selectors == [("sub", "Planning")], selectors
+    assert report["missing_roots"] == [], report["missing_roots"]
+
+
 def main() -> int:
     tests = [
         (name, obj)
