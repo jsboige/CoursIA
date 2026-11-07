@@ -114,8 +114,10 @@ class TestDeclarationFreeLakes:
     resterait rouge a perpetuite. Le census doit le dire, pas le compter BARE.
 
     Le verdict se mesure avec l'enumerateur du GATE, jamais avec un lexique
-    local : la premiere version de `axiom_coverage.py` comptait les `example`
-    et rendait `mathlib_examples` cablable la ou le gate enumere zero.
+    local. `mathlib_examples` contenait initialement seulement des `example`
+    anonymes, mais LinearAlgebra.lean (#24857) y ajoute des declarations
+    nommees : le census doit maintenant le compter BARE tant que le manifeste
+    ne cable pas ces declarations.
     """
 
     def test_comment_only_lake_is_not_applicable(self, repo):
@@ -139,6 +141,15 @@ class TestDeclarationFreeLakes:
         write([{"lake": "e", "project-path": "p/e", "display-name": "e"}])
         r = cov.coverage_report()
         assert r["lakes"][0]["verdict"] == "NOT-APPLICABLE"
+
+    def test_real_mathlib_examples_with_named_declarations_remains_bare(self):
+        """Le lake contient aussi LinearAlgebra.lean, ajoute apres la decision
+        sans-gate : ses theoremes et definitions nommes sont enumerables."""
+        r = cov.coverage_report()
+        by_name = {row["display-name"]: row for row in r["lakes"]}
+        row = by_name["mathlib_examples"]
+        assert row["verdict"] == "BARE"
+        assert row["declaration_count"] > 0
 
     def test_lake_with_one_declaration_stays_bare(self, repo):
         """Un lake qui declare reste un cable MANQUANT : le verdict ne doit
@@ -184,14 +195,15 @@ class TestDeclarationFreeLakes:
         ])
         assert cov.main(["--require-covered"]) == 1
 
-    def test_real_manifest_matches_the_written_decision(self):
-        """Controle positif sur l'arbre reel : les deux lakes declares « sans
-        gate » par #22519 §4.1 sont exactement ceux que le census mesure
-        NOT-APPLICABLE, et aucun autre."""
+    def test_real_manifest_matches_the_census_for_declaration_free_lakes(self):
+        """Controle positif sur l'arbre reel : conway reste sans declaration,
+        tandis que mathlib_examples est devenu gateable avec les ajouts
+        nommes de LinearAlgebra.lean."""
         r = cov.coverage_report()
         by_name = {row["display-name"]: row for row in r["lakes"]}
         assert by_name["conway_cgt_lean"]["verdict"] == "NOT-APPLICABLE"
-        assert by_name["mathlib_examples"]["verdict"] == "NOT-APPLICABLE"
-        assert r["counts"].get("NOT-APPLICABLE") == 2
-        assert r["counts"].get("BARE", 0) == 0
+        assert by_name["mathlib_examples"]["verdict"] == "BARE"
+        assert by_name["mathlib_examples"]["declaration_count"] > 0
+        assert r["counts"].get("NOT-APPLICABLE") == 1
+        assert r["counts"].get("BARE") == 1
 
