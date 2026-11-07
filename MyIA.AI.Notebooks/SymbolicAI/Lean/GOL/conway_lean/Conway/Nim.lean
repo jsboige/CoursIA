@@ -58,7 +58,17 @@ theorem nimSum_nil : nimSum [] = 0 := rfl
 theorem isWinningNim_345 : isWinningNim [3, 4, 5] = true := by
   decide
 
-/-- CALIBRATION (unfold + zero_xor) : un tas unique a un nim-sum égal à sa taille. -/
+/-- CALIBRATION (unfold + zero_xor) : un tas unique a un nim-sum égal à sa taille.
+    Preuve alternative déclarée : `calibration_lean/Calibration/Nim.lean`
+    déclare le même théorème et le prouve par dépliage structurel du `foldl`
+    (`List.foldl_cons`, `List.foldl_nil`) plutôt que par lemme pivot. Maison
+    canonique de l'énoncé : ce lac `conway_lean`, où vit la théorie de Nim
+    (Bouton 1901). Comparaison : ici `simp [nimSum, Nat.zero_xor]` — une
+    tactique, le lemme pivot fait tout le travail ; là, deux tactiques montrent
+    la mécanique du fold à l'œil nu. Même énoncé, même généralité (`n : Nat`
+    universel) ; ce que chaque stratégie enseigne : le réflexe du lemme
+    `Nat.zero_xor` d'un côté, la lecture du pliage de l'autre. Axiomes
+    atteints : propext, Quot.sound. -/
 theorem nimSum_single (n : Nat) : nimSum [n] = n := by
   simp [nimSum, Nat.zero_xor]
 
