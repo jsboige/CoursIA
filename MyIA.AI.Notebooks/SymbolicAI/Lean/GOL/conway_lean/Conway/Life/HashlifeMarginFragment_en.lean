@@ -3874,7 +3874,7 @@ theorem hashlife_correct_margin_of_spaceship_formation (c : MacroCell) (k : Nat)
 Links 2 to 5 close L3 for unions of **two** parts. The n-ary generalization
 follows the same scheme: a finite family `L` of pairwise distinct grids
 (`L.Nodup` — a duplicate cannot be "separated from itself"), mutually
-3-separated at every phase, with common period `T`, has a union (`L.join`) that
+3-separated at every phase, with common period `T`, has a union (`L.flatten`) that
 is T-periodic and captured at every horizon. The splitting proof is an
 induction on the list whose step is exactly `mem_evolve_union_sep`: the head
 plays `g₁`, the joined tail plays `g₂`, and head-tail separation is inherited
@@ -3894,14 +3894,14 @@ theorem evolve_nil (m : Nat) : evolve m ([] : Grid) = [] := by
     If every pair of **distinct** members of the family `L` stays 3-separated
     **at every instant** of their own trajectories, then the evolution of the
     union follows member by member the union of the evolutions, at every
-    instant: `q ∈ evolve s L.join ↔ ∃ g ∈ L, q ∈ evolve s g`. Induction on
+    instant: `q ∈ evolve s L.flatten ↔ ∃ g ∈ L, q ∈ evolve s g`. Induction on
     `L`: emptiness is preserved (`evolve_nil`), and the head-tail step is link
     2 (`mem_evolve_union_sep`) — head-tail separation follows from pairwise
     separability via the induction hypothesis on the tail. -/
 theorem mem_evolve_join_sep : ∀ (L : List Grid) (_ : L.Nodup),
     (∀ s g h, g ∈ L → h ∈ L → g ≠ h →
       ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r) →
-    ∀ s q, q ∈ evolve s L.join ↔ ∃ g ∈ L, q ∈ evolve s g := by
+    ∀ s q, q ∈ evolve s L.flatten ↔ ∃ g ∈ L, q ∈ evolve s g := by
   intro L
   induction L with
   | nil => intro _ _ s q; simp [evolve_nil]
@@ -3911,13 +3911,13 @@ theorem mem_evolve_join_sep : ∀ (L : List Grid) (_ : L.Nodup),
         ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s h₁, 3 ≤ chebDist p r :=
       fun s g₁ h₁ hg₁ hh₁ hne =>
         hsep s g₁ h₁ (List.mem_cons_of_mem _ hg₁) (List.mem_cons_of_mem _ hh₁) hne
-    have hsplit : ∀ p ∈ evolve s g, ∀ r ∈ evolve s L'.join, 3 ≤ chebDist p r := by
+    have hsplit : ∀ p ∈ evolve s g, ∀ r ∈ evolve s L'.flatten, 3 ≤ chebDist p r := by
       intro p hp r hr
       obtain ⟨h, hmem, hr'⟩ := (ih hnd' hsep' s r).mp hr
       exact hsep s g h (List.Mem.head _) (List.mem_cons_of_mem _ hmem)
         (hg' h hmem) p hp r hr'
-    rw [show (g :: L').join = g ++ L'.join from rfl,
-      mem_evolve_union_sep g L'.join hsplit s q, ih hnd' hsep' s q]
+    rw [show (g :: L').flatten = g ++ L'.flatten from rfl,
+      mem_evolve_union_sep g L'.flatten hsplit s q, ih hnd' hsep' s q]
     constructor
     · rintro (hq | ⟨h, hmem, hq⟩)
       · exact ⟨g, List.Mem.head _, hq⟩
@@ -3936,8 +3936,8 @@ theorem mem_evolve_join_sep : ∀ (L : List Grid) (_ : L.Nodup),
 theorem evolve_period_join {T : Nat} (hT : 0 < T) (L : List Grid) (hnd : L.Nodup)
     (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
       ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r)
-    (hfix : ∀ g ∈ L, evolve T g = g) (hcan : Canonical L.join) :
-    evolve T L.join = L.join := by
+    (hfix : ∀ g ∈ L, evolve T g = g) (hcan : Canonical L.flatten) :
+    evolve T L.flatten = L.flatten := by
   apply Canonical.ext (canonical_evolve_of_pos hT _) hcan
   intro p
   rw [mem_evolve_join_sep L hnd hsep T p, List.mem_join]
@@ -3958,13 +3958,13 @@ theorem hcap_of_union_periodic_family {T : Nat} (hT : 0 < T) (L : List Grid)
     (hnd : L.Nodup)
     (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
       ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r)
-    (hfix : ∀ g ∈ L, evolve T g = g) (hcan : Canonical L.join) (t : Nat)
-    (hdiv : T ∣ 2 ^ (gridToMacroCellWithOffset (evolve t L.join)).2.level) :
-    jumpCapturedF (gridToMacroCellWithOffset (evolve t L.join)).2 = true := by
-  have hperU : evolve T L.join = L.join := evolve_period_join hT L hnd hsep hfix hcan
-  have hperm : evolve T (evolve t L.join) = evolve t L.join :=
+    (hfix : ∀ g ∈ L, evolve T g = g) (hcan : Canonical L.flatten) (t : Nat)
+    (hdiv : T ∣ 2 ^ (gridToMacroCellWithOffset (evolve t L.flatten)).2.level) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t L.flatten)).2 = true := by
+  have hperU : evolve T L.flatten = L.flatten := evolve_period_join hT L hnd hsep hfix hcan
+  have hperm : evolve T (evolve t L.flatten) = evolve t L.flatten :=
     evolve_phase_fix _ hperU t
-  have hgcan : Canonical (evolve t L.join) := by
+  have hgcan : Canonical (evolve t L.flatten) := by
     cases t with
     | zero => exact hcan
     | succ m => exact canonical_evolve_of_pos (by omega) _
@@ -3983,18 +3983,18 @@ theorem hcap_of_union_periodic_family_low {T : Nat} (hT4 : T = 1 ∨ T = 2 ∨ T
     (L : List Grid) (hnd : L.Nodup)
     (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
       ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r)
-    (hfix : ∀ g ∈ L, evolve T g = g) (hcan : Canonical L.join)
-    (hne : L.join ≠ []) (t : Nat) :
-    jumpCapturedF (gridToMacroCellWithOffset (evolve t L.join)).2 = true := by
+    (hfix : ∀ g ∈ L, evolve T g = g) (hcan : Canonical L.flatten)
+    (hne : L.flatten ≠ []) (t : Nat) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t L.flatten)).2 = true := by
   have hT : 0 < T := by rcases hT4 with rfl | rfl | rfl <;> omega
-  have hperU : evolve T L.join = L.join :=
+  have hperU : evolve T L.flatten = L.flatten :=
     evolve_period_join hT L hnd hsep hfix hcan
-  have hne_t : evolve t L.join ≠ [] :=
-    evolve_ne_of_period_ne hT L.join hperU hne t
-  have hlvl2 : 2 ≤ (gridToMacroCellWithOffset (evolve t L.join)).2.level := by
-    have hN := gridToMacroCellWithOffsetN_level_gt_n 2 (evolve t L.join) hne_t
+  have hne_t : evolve t L.flatten ≠ [] :=
+    evolve_ne_of_period_ne hT L.flatten hperU hne t
+  have hlvl2 : 2 ≤ (gridToMacroCellWithOffset (evolve t L.flatten)).2.level := by
+    have hN := gridToMacroCellWithOffsetN_level_gt_n 2 (evolve t L.flatten) hne_t
     rw [gridToMacroCellWithOffsetN_le_two_eq 2 _ (by omega)] at hN
-    cases hL : (gridToMacroCellWithOffset (evolve t L.join)).2.level with
+    cases hL : (gridToMacroCellWithOffset (evolve t L.flatten)).2.level with
     | zero => rw [hL] at hN; exact absurd hN (by decide)
     | succ m =>
       cases m with
@@ -4003,12 +4003,12 @@ theorem hcap_of_union_periodic_family_low {T : Nat} (hT4 : T = 1 ∨ T = 2 ∨ T
   refine hcap_of_union_periodic_family hT L hnd hsep hfix hcan t ?_
   rcases hT4 with rfl | rfl | rfl
   · exact Nat.one_dvd _
-  · obtain ⟨j, hj⟩ : ∃ j, (gridToMacroCellWithOffset (evolve t L.join)).2.level
-        = j + 2 := ⟨(gridToMacroCellWithOffset (evolve t L.join)).2.level - 2, by omega⟩
+  · obtain ⟨j, hj⟩ : ∃ j, (gridToMacroCellWithOffset (evolve t L.flatten)).2.level
+        = j + 2 := ⟨(gridToMacroCellWithOffset (evolve t L.flatten)).2.level - 2, by omega⟩
     rw [hj, pow_succ, pow_succ]
     exact ⟨2 ^ j * 2, by ring⟩
-  · obtain ⟨j, hj⟩ : ∃ j, (gridToMacroCellWithOffset (evolve t L.join)).2.level
-        = j + 2 := ⟨(gridToMacroCellWithOffset (evolve t L.join)).2.level - 2, by omega⟩
+  · obtain ⟨j, hj⟩ : ∃ j, (gridToMacroCellWithOffset (evolve t L.flatten)).2.level
+        = j + 2 := ⟨(gridToMacroCellWithOffset (evolve t L.flatten)).2.level - 2, by omega⟩
     rw [hj, pow_succ, pow_succ]
     exact ⟨2 ^ j, by ring⟩
 
@@ -4022,11 +4022,11 @@ theorem hcap_of_union_periodic_family_low {T : Nat} (hT4 : T = 1 ∨ T = 2 ∨ T
     covered alone already was, the whole family was not. -/
 theorem hashlife_correct_margin_of_union_periodic_family (c : MacroCell) (k : Nat)
     (h_central : centralCorrect c k) {T : Nat} (hT4 : T = 1 ∨ T = 2 ∨ T = 4)
-    (L : List Grid) (hsplit : c.toGrid (0, 0) = L.join) (hnd : L.Nodup)
+    (L : List Grid) (hsplit : c.toGrid (0, 0) = L.flatten) (hnd : L.Nodup)
     (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
       ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r)
-    (hfix : ∀ g ∈ L, evolve T g = g) (hcan : Canonical L.join)
-    (hne : L.join ≠ []) :
+    (hfix : ∀ g ∈ L, evolve T g = g) (hcan : Canonical L.flatten)
+    (hne : L.flatten ≠ []) :
     evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
   refine hashlife_correct_margin_of_hcap c k h_central ?_
   intro t _
