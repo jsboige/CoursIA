@@ -1049,6 +1049,51 @@ def test_claim_visit_stamp_counts_every_lane():
     assert pig.claim_visit_stamp(comments) == "2026-10-04T09:00:00Z"
 
 
+# --- #22687 constat 1 : la visite rend sa DATE **et** son MARQUEUR ----------
+
+def test_claim_visit_pair_names_the_event_that_produced_the_date():
+    """La paire ne peut pas designer deux evenements differents.
+
+    `claim_visit_stamp` ne disait que QUAND une lane avait servi l'issue ; la
+    cause du plafond EPIC en deduisait « claim », donc un `[RELEASED]` etait
+    lu comme une prise (#22687). La paire sort du MEME evenement.
+    """
+    comments = [
+        _claim("2026-10-04T09:00:00Z",
+               "[CLAIMED] lane myia-po-2027:CoursIA -- T1"),
+        _claim("2026-10-04T12:00:00Z",
+               "[RELEASED] lane myia-po-2027:CoursIA -- T1 rendue"),
+    ]
+    assert pig.claim_visit(comments) == ("2026-10-04T12:00:00Z", "RELEASED")
+    # Le stamp public reste la moitie-date, inchangee.
+    assert pig.claim_visit_stamp(comments) == "2026-10-04T12:00:00Z"
+
+
+def test_claim_visit_without_any_lane_marker_is_a_measure_not_a_guess():
+    assert pig.claim_visit([_claim("2026-10-04T09:00:00Z",
+                                   "commentaire ordinaire")]) == (None, None)
+    assert pig.claim_visit([]) == (None, None)
+
+
+def test_marker_label_never_falls_back_to_claim():
+    """Le repli ne doit pas etre le mot que #22687 retire."""
+    assert pig.marker_label("CLAIMED") == "prise"
+    assert pig.marker_label("RELEASED") == "rendu de main"
+    assert pig.marker_label(None) == "marqueur de lane"
+    assert pig.marker_label("") == "marqueur de lane"
+    # Un code que l'organe ne produit pas se cite tel quel, entre crochets.
+    assert pig.marker_label("SOMETHINGELSE") == "marqueur [SOMETHINGELSE]"
+
+
+def test_every_marker_keyword_of_the_organ_has_a_translation():
+    """La table suit `_KEYWORDS` de l'organe : un code lu par lui sans
+    traduction serait un trou, et ce test le voit avant une lane."""
+    from check_lane_claim import _KEYWORDS
+
+    missing = [k for k in _KEYWORDS if k not in pig._MARKER_LABELS]
+    assert not missing, f"marqueurs de l'organe sans traduction : {missing}"
+
+
 def test_belt_released_issue_stays_behind_7742_scenario():
     """Bout en bout, cas mesure #7742 : prise le 31/08, rendue le 19/09 apres
     deux tranches mergees. Lue a la prise seule, elle repassait devant une
@@ -2147,6 +2192,37 @@ def test_fetch_latest_claim_stamps_bulk_parity_with_latest_claim_stamp(monkeypat
     assert pig.latest_claim_stamp(10) == bulk_map[10]
     assert pig.latest_claim_stamp(11) == bulk_map[11]
     assert pig.latest_claim_stamp(12) is None
+
+
+def test_fetch_latest_claim_stamps_bulk_carries_the_marker_with_the_date(monkeypatch):
+    """#22687 : la charge bulk porte le marqueur, pas seulement la date.
+
+    Une date sans marqueur obligeait la cause du plafond EPIC a inventer un
+    verbe -- « claim » sur un `[RELEASED]`. Le marqueur voyage dans la MEME
+    requete : couter une seconde sonde pour nommer la visite serait payer un
+    aller-retour par EPIC plafonne.
+    """
+    issue_payloads = {
+        20: [_claim("2026-10-04T09:00:00Z",
+                    "[CLAIMED] lane myia-po-2027:CoursIA -- T1"),
+             _claim("2026-10-04T12:00:00Z",
+                    "[RELEASED] lane myia-po-2027:CoursIA -- T1 rendue")],
+        21: [_claim("2026-10-05T10:00:00Z", "aucun marqueur")],
+    }
+
+    def fake_run(cmd, *a, **k):
+        class _R:
+            stdout = json.dumps(_graphql_payload_for(issue_payloads))
+        return _R()
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+    markers: dict[int, str | None] = {}
+    stamps, err = pig.fetch_latest_claim_stamps_bulk([20, 21],
+                                                     markers_out=markers)
+    assert err is None, err
+    assert stamps == {20: "2026-10-04T12:00:00Z", 21: None}
+    assert markers == {20: "RELEASED", 21: None}, markers
 
 
 def test_fetch_latest_claim_stamps_bulk_falls_back_on_subprocess_error(monkeypatch):
