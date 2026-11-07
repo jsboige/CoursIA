@@ -174,7 +174,7 @@ Sorties reelles mesurees sur `myia-po-2028` le 2026-10-20 (20 coeurs
 logiques, 36 Go RAM disponibles, 673 Go libres, aucun run en cours) :
 
 ```text
-$ python scripts/lean/lean_exec.py dry-run --cwd MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+$ python scripts/lean/lean_exec.py dry-run --cwd MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean
 start dir: MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean
 lake root: C:\dev\CoursIA-2\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean
 backend: demande=auto epingle=None disponibles=['native']
@@ -261,7 +261,7 @@ citation : c'est exactement ce qui distingue ce detecteur d'un `grep -c`.
 
 ```bash
 python scripts/lean/check_public_anchor.py <fichier.lean> [...]
-python scripts/lean/check_public_anchor.py --lake MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+python scripts/lean/check_public_anchor.py --lake MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean
 python scripts/lean/check_public_anchor.py --lake <dir> --json
 python scripts/lean/check_public_anchor.py --lake <dir> --fail-on-unanchored
 ```
@@ -326,7 +326,7 @@ Cela ne flaggue **pas** `a = True` (equation, le caractere avant `True` est `=`)
 python scripts/lean/count_code_sorry.py
 
 # Un seul lake
-python scripts/lean/count_code_sorry.py --lake MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+python scripts/lean/count_code_sorry.py --lake MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean
 
 # JSON machine (CI / generation de body PR)
 python scripts/lean/count_code_sorry.py --json
@@ -413,8 +413,8 @@ QuantConnect/kelly_lean
 Search/search_lean
 Sudoku/sudoku_lean
 SymbolicAI/Lean/calibration_lean
-SymbolicAI/Lean/conway_lean
-SymbolicAI/Lean/grothendieck_lean
+SymbolicAI/Lean/GOL/conway_lean
+SymbolicAI/Lean/GROTH/grothendieck_lean
 SymbolicAI/Lean/KNOTS/knot_lean
 SymbolicAI/Lean/mathlib_examples
 SymbolicAI/Lean/sensitivity_lean

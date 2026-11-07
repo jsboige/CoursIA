@@ -714,8 +714,6 @@ Le **capstone SL-11** est l'un des rares pipelines neuro-symboliques bout-en-bou
 | [Lean](../Lean/README.md) | Preuves formelles | L'arbre de preuve EBL est analogue aux arbres de preuve Lean 4 |
 | Lecture transversale | [La mer qui monte](../../../docs/cadrage/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de représentation, certification A/B/C |
 
-**Version 1.4.0** — Septembre 2026 — ajout SL-13 (diagnostic DISCOVER / TPR, EPIC #14366 grain G6) : table de pioche 55 exercices, phase 5 étendue au versant structurel (TPR approximative vs exacte), parenté cross-lane complétée. Décomptes : catalogue généré (réconcilié par le catalog-cron). EPIC #3975 tranche symboliclearning.
-
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris
@@ -745,3 +743,7 @@ La thèse de la série, posée dès l'introduction et démontrée par le capston
 ### Le fil rouge
 
 L'apprentissage symbolique est l'art de **réussir là où les données seules échouent** — non pas en ignorant la connaissance, mais en l'écrivant explicitement, en l'induisant des exemples, puis en la réconciliant avec le connexionnisme. Le geste profond de la série : transformer une théorie du domaine (une détermination, une preuve, une ontologie) en un programme qui apprend — et prouver, au capstone, que l'on peut tenir les deux bouts, LLM et logique, dans une même boucle où chacun corrige l'autre.
+
+## Historique des versions
+
+**Version 1.4.0** — Septembre 2026 — ajout SL-13 (diagnostic DISCOVER / TPR, EPIC #14366 grain G6) : table de pioche 55 exercices, phase 5 étendue au versant structurel (TPR approximative vs exacte), parenté cross-lane complétée. Décomptes : catalogue généré (réconcilié par le catalog-cron).

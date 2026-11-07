@@ -1,24 +1,27 @@
 # All-Weather Portfolio Strategy
 
-Portfolio multi-asset inspiré de Ray Dalio (Bridgewater Associates).
+Portfolio multi-asset inspiré de l'All-Weather de Ray Dalio (Bridgewater Associates).
 
 ## Résumé
 
 | Paramètre | Valeur |
 |-----------|--------|
-| **Type** | Multi-Asset |
-| **Rebalancement** | Trimestriel |
-| **Classes d'actifs** | Actions, Bonds, Or, Commodities |
+| **Type** | Multi-Asset, allocation fixe (v5.0) |
+| **Allocation** | SPY 30 %, IEF 30 %, GLD 30 %, XLP 10 % |
+| **Rebalancement** | Trimestriel (janvier, avril, juillet, octobre), plus un contrôle de dérive à 3 points au début de chaque mois |
+| **Classes d'actifs** | Actions US, obligations du Trésor intermédiaires, or, consommation de base (XLP) |
 | **Objectif** | Stabilité dans tous les environnements |
 
 ## Allocation Dalio originelle (baseline v1.0)
 
-Cette allocation fixe est le point de départ historique du projet — le mode
-`standard` de `main.py` (docstring : « v1.0 … Dalio static ») et la baseline du
-notebook de recherche (« allocation statique Dalio originale », Sharpe 0,691 sur
-2016-2026). Les figures ci-dessous montrent ce que les variantes en tirent :
-Risk Parity (0,718) puis overlay tactique SMA200 à 50 % (0,858) dominent la
-baseline.
+Cette allocation fixe est le point de départ historique du projet. `main.py` ne
+l'implémente pas : sa docstring ne la cite que dans l'historique de conception
+(« v1.0 … Dalio static »), et le code ne porte que l'allocation v5.0 décrite plus bas.
+Elle reste la baseline du notebook de recherche (« Static Dalio », Sharpe 0,691 sur
+2015-01-02 → 2025-12-31). Dans ce carnet, la parité de risque (0,718) et l'overlay
+tactique SMA200 à 50 % (0,744) la dominent. Le Sharpe de 0,858 souvent cité est celui
+de l'overlay à 50 % appliqué aux poids « Gold Heavy » (SPY 30 %, TLT 35 %, IEF 15 %,
+GLD 20 %, rebalancement mensuel), pas aux poids Dalio.
 
 | Actif | Allocation | ETF | Rôle |
 |-------|------------|-----|------|
@@ -71,95 +74,93 @@ l'exploration H1-H4.
 
 ## Figures du notebook de recherche
 
-Le notebook [`research.ipynb`](research.ipynb) déroule l'analyse complète : exploration des rendements et volatilités par actif, puis quatre hypothèses testées (static vs risk parity vs tactical, rôle de DBC, fréquence de rebalancement, overlay SMA200), synthèse par comparaison des configurations et exploration de la grille de paramètres. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
+Le notebook [`research.ipynb`](research.ipynb) (prix yfinance, 2015-01-02 → 2025-12-31) déroule l'analyse : rendement, volatilité et corrélations de chaque actif, puis quatre hypothèses (statique vs parité de risque vs tactique, remplacement de DBC, fréquence de rebalancement, overlay SMA200) et une synthèse qui compare l'allocation d'origine, la configuration optimisée et la combinaison parité de risque + tactique. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
 
-**Exploration.** L'analyse commence par les rendements et volatilités annualisés de chaque actif — la base sur laquelle toute allocation se construit :
+Le moteur `backtest_portfolio` du carnet applique les poids cibles aux rendements de chaque jour, sans les laisser dériver entre deux rebalancements : il revient à rebalancer chaque jour. La fréquence de rebalancement n'y change donc que les dates où une fonction de poids **variable** (parité de risque, overlay SMA200) est réévaluée ; pour des poids fixes, elle ne change rien.
+
+**Exploration.** L'analyse commence par le rendement annualisé, la volatilité, le Sharpe et le drawdown maximal de chaque actif, puis par la matrice de corrélation des cinq actifs de la baseline :
 
 <p align="center">
-  <img src="assets/readme/aw-exploration.png" alt="Matrice de corrélation 5×5 des sous-jacents AllWeather (SPY/TLT/IEF/GLD/DBC) — heatmap divergente bleu-rouge (-1,00 bleu → +1,00 rouge), valeurs cellulaires lisibles : TLT↔SPY -0,18 (décorrélation actions/obligations long-terme), TLT↔IEF +0,92 (corrélation fortes obligations long/mid-terme), DBC↔SPY +0,35 (matières premières/actions modérément corrélées)." width="420"/><br>
-  <em>Exploration — rendements &amp; volatilité annualisés par actif.</em>
+  <img src="assets/readme/aw-exploration.png" alt="Matrice de corrélation 5×5 des sous-jacents de la baseline (SPY/TLT/IEF/GLD/DBC), rendements journaliers 2015-2025 — heatmap divergente bleu-rouge (-1,00 bleu → +1,00 rouge), valeurs cellulaires lisibles : TLT↔SPY -0,18 (décorrélation actions/obligations long terme), TLT↔IEF +0,92 (forte corrélation des obligations long et moyen terme), DBC↔SPY +0,35 (matières premières et actions modérément corrélées)." width="420"/><br>
+  <em>Exploration — matrice de corrélation des cinq actifs de la baseline.</em>
 </p>
 
-**H1 — Static vs Risk Parity vs Tactical.** Trois schémas d'allocation sont confrontés : poids fixes, parité de risque, et allocation tactique :
+**H1 — Static vs Risk Parity vs Tactical.** Trois schémas sur les cinq actifs de la baseline : poids Dalio fixes, parité de risque par volatilité inverse sur 60 jours, et overlay SMA200 (le poids d'un actif passé sous sa moyenne à 200 jours est réduit de moitié, la part retirée reste en cash) :
 
 <p align="center">
-  <img src="assets/readme/aw-h1-parity.png" alt="Dual-panel « H1: Static vs Risk Parity vs Tactical » — panel haut = equity 2016-2026 (Static Dalio trimestriel S=0,691 DD=-23,37% en bleu ; Risk Parity 60j rolling S=0,718 DD=-18,43% en orange ; Tactical SMA200 S=0,744 DD=-15,47% en vert — Tactical domine), panel bas = drawdowns superposés (-25% min en 2022 commun aux 3 stratégies)." width="420"/><br>
+  <img src="assets/readme/aw-h1-parity.png" alt="Dual-panel « H1: Static vs Risk Parity vs Tactical » — panel haut = valeur normalisée 2015-2026 : Static Dalio S=0,691 DD=-23,37 % en bleu, qui finit le plus haut (CAGR 5,71 %) ; Risk Parity 60 j S=0,718 DD=-18,43 % en orange et Tactical SMA200 S=0,744 DD=-15,47 % en vert, qui finissent tous deux plus bas (CAGR 4,92 % et 4,89 %) — Tactical a le meilleur Sharpe et le drawdown le plus faible. Panel bas = drawdowns superposés, creux le plus profond fin 2022 pour les trois, vers -23 % pour Static Dalio." width="420"/><br>
   <em>H1 — Static vs Risk Parity vs Tactical.</em>
 </p>
 
-**H3 — Fréquence de rebalancement.** L'impact de la fréquence (mensuelle, trimestrielle, annuelle) sur la performance et le coût de transaction :
+**H3 — Fréquence de rebalancement.** Mensuelle, trimestrielle et semestrielle, sur l'allocation retenue en H2 (« Gold Heavy »). Les trois courbes sont confondues : avec des poids fixes, le moteur décrit plus haut rend la fréquence sans effet par construction. H3 ne mesure donc pas l'effet de la fréquence sur la stratégie :
 
 <p align="center">
-  <img src="assets/readme/aw-h3-rebalance.png" alt="Dual-panel « H3: Rebalancing Frequency Comparison » — panel haut = equity 2016-2026 avec 3 fréquences superposées (Monthly/Quarterly/Semi-Annual, toutes S=0,817 DD=-23,9% identiques, seul le vert Semi-Annual visible car courbes indiscernables), panel bas = drawdowns -25% min en 2022. Résultat : la fréquence de rebalancement n'a pas d'impact mesurable sur cette stratégie — invariance temporelle du Static Dalio." width="420"/><br>
-  <em>H3 — fréquence de rebalancement.</em>
+  <img src="assets/readme/aw-h3-rebalance.png" alt="Dual-panel « H3: Rebalancing Frequency Comparison » — panel haut = valeur normalisée 2015-2026 de l'allocation Gold Heavy rebalancée chaque mois, chaque trimestre et chaque semestre, toutes S=0,817 DD=-23,9 % : les trois courbes sont confondues, seule la verte (semestrielle) est visible. Panel bas = drawdowns confondus, creux vers -24 % fin 2022. Les poids étant fixes et appliqués chaque jour par le moteur du carnet, l'identité des trois courbes vient du moteur, pas de la stratégie." width="420"/><br>
+  <em>H3 — fréquence de rebalancement (courbes confondues par construction du moteur).</em>
 </p>
 
-**H4 — Overlay tactique SMA200.** Un overlay SMA200 réduit l'exposition lors des tendances baissières :
+**H4 — Overlay tactique SMA200.** Sur les poids Gold Heavy réévalués chaque mois, le poids d'un actif passé sous sa moyenne à 200 jours est réduit de 0 %, 25 %, 50 %, 75 % ou 100 %, la part retirée restant en cash :
 
 <p align="center">
-  <img src="assets/readme/aw-h4-sma200.png" alt="Dual-panel « H4: SMA200 Tactical Overlay – Reduction Factors » — panel haut = equity 2016-2026 avec 5 niveaux de réduction tactique (No overlay 0% S=0,817 DD=-23,9% en bleu ; red=25% S=0,846 DD=-20,1% en orange ; red=50% S=0,858 DD=-16,2% en vert OPTIMAL ; red=75% S=0,834 DD=-13,6% en rouge ; red=100% S=0,763 DD=-11,6% en violet), panel bas = drawdowns -25% min en 2022. Sweet-spot 50% maximise le Sharpe tout en divisant le DD par ~1,5×." width="420"/><br>
-  <em>H4 — overlay tactique SMA200.</em>
+  <img src="assets/readme/aw-h4-sma200.png" alt="Dual-panel « H4: SMA200 Tactical Overlay – Reduction Factors » — panel haut = valeur normalisée 2015-2026 des poids Gold Heavy avec 5 niveaux de réduction (No overlay 0 % S=0,817 DD=-23,9 % en bleu ; red=25 % S=0,846 DD=-20,1 % en orange ; red=50 % S=0,858 DD=-16,2 % en vert, meilleur Sharpe ; red=75 % S=0,834 DD=-13,04 % en rouge ; red=100 % S=0,763 DD=-11,01 % en violet), panel bas = drawdowns. La réduction à 50 % maximise le Sharpe et ramène le drawdown maximal de -23,9 % à -16,2 %." width="420"/><br>
+  <em>H4 — overlay tactique SMA200 sur les poids Gold Heavy.</em>
 </p>
 
-**Synthèse.** La comparaison des configurations par Sharpe et drawdown résume les trade-offs entre rendement ajusté du risque et profondeur des replis :
+**Compromis Sharpe / drawdown (H4).** Le même résultat en nuage de points, un point par facteur de réduction :
 
 <p align="center">
-  <img src="assets/readme/aw-comparison.png" alt="Scatter Pareto « H4: Risk-Return Tradeoff by SMA200 Reduction Factor » — 5 points labellés axe X Max Drawdown % (axe inversé : better right = DD plus faible à droite) vs axe Y Sharpe Ratio : 100% violet (S=0,763 DD≈11%) bas-gauche, 75% rouge (S=0,834 DD≈13%) centre-gauche, 50% vert (S=0,858 DD≈16%) centre-haut OPTIMAL, 25% orange (S=0,846 DD≈20%) centre-droite, 0% bleu (S=0,817 DD≈24%) droite. Le 50% domine en Sharpe avec DD modéré — la reduction 100% minimise le DD mais avec Sharpe dégradé." width="420"/><br>
-  <em>Comparaison — Sharpe &amp; drawdown par configuration.</em>
+  <img src="assets/readme/aw-comparison.png" alt="Scatter Pareto « H4: Risk-Return Tradeoff by SMA200 Reduction Factor » — 5 points labellés axe X Max Drawdown % (axe inversé : better right = DD plus faible à droite) vs axe Y Sharpe Ratio : 100% violet (S=0,763 DD≈11%) bas-gauche, 75% rouge (S=0,834 DD≈13%) centre-gauche, 50% vert (S=0,858 DD≈16%) centre-haut OPTIMAL, 25% orange (S=0,846 DD≈20%) centre-droite, 0% bleu (S=0,817 DD≈24%) droite. Le 50% domine en Sharpe avec DD modéré — la réduction 100% minimise le DD mais avec Sharpe dégradé." width="420"/><br>
+  <em>H4 — Sharpe et drawdown maximal par facteur de réduction SMA200.</em>
 </p>
 
-**Grille de paramètres.** Enfin, l'exploration de la grille des paramètres identifie la zone optimale :
+**Synthèse — Sharpe glissant sur un an.** La synthèse du carnet compare l'allocation Dalio d'origine (Sharpe 0,691, drawdown maximal -23,37 %), la configuration optimisée Gold Heavy + overlay SMA200 à 50 % (0,858, -16,20 %) et la combinaison parité de risque + tactique (0,814, -13,88 %), puis trace leur Sharpe glissant sur 252 séances :
 
 <p align="center">
   <img src="assets/readme/aw-grid-optimal.png" alt="Rolling 1-Year Sharpe Ratio 2016-2026 — 3 stratégies (Original Static Dalio trimestriel bleu ; Optimized Static+Tactical orange ; RP+Tactical Combo vert) : courbes fortement corrélées sur toute la période, pic commun ~3,5 en 2020, dip commun ~-2 en 2022-2023, recovery ~2,5 en 2025-2026, ligne pointillée horizontale Sharpe=0. Les 3 stratégies partagent les mêmes cycles macro (post-COVID recovery 2020, bear market 2022-2023) mais l'Optimized devance Original en fin de période post-2023." width="420"/><br>
-  <em>Grille optimale — exploration des paramètres.</em>
+  <em>Synthèse — Sharpe glissant sur un an des trois configurations.</em>
 </p>
 
 ## Fichiers
 
 ```
 AllWeather/
-├── main.py              # Portfolio standard + Risk Parity + Tactical
-├── research.ipynb       # Analyse corrélations, backtest allocations
+├── main.py              # Allocation v5.0 (SPY/IEF/GLD/XLP), rebalancement trimestriel + dérive 3 points
+├── config.json          # Identifiant local du projet QC
+├── research.ipynb       # Recherche H1-H4 sur prix yfinance : corrélations, variantes d'allocation
+├── quantbook.ipynb      # Modèle de portefeuille sur prix QC natifs (QuantBook)
+├── assets/readme/       # Figures de ce README et leur MANIFEST.md
 └── README.md            # Ce fichier
 ```
 
-## Variantes Incluses
+## Ce que `main.py` implémente
 
-### 1. Standard All-Weather
-- Allocation fixe (30/40/15/7.5/7.5) — la baseline Dalio ci-dessus
-- Rebalancement trimestriel
-- Seuil de drift 5%
+`main.py` (classe `AllWeatherPortfolio`) ne porte qu'une allocation, la v5.0 :
 
-### 2. Risk Parity
-- Pondération par volatilité inverse
-- Contribution égale au risque
-- Favorise les bonds (faible vol)
+- poids fixes SPY 30 %, IEF 30 %, GLD 30 %, XLP 10 % : TLT et DBC de la baseline sont sortis ;
+- rebalancement au début de chaque trimestre civil (janvier, avril, juillet, octobre), 30 minutes après l'ouverture ;
+- les autres mois, contrôle de dérive au même moment : rebalancement si le poids d'un actif s'écarte de plus de 3 points de sa cible ;
+- paramètre QC `brokerage` : par défaut, un modèle de courtage sur compte sur marge (frais et règles d'ordre) ; `none` le désactive.
 
-### 3. Tactical Overlay
-- Réduit l'allocation si prix < SMA 200
-- Augmente le cash en période de stress
-- Trade-off: moins de drawdown, moins de return
+La parité de risque (volatilité inverse sur 60 jours) et l'overlay tactique SMA200 ne vivent plus que dans [`research.ipynb`](research.ipynb) (H1, H4). Ils ont existé dans `main.py` : la version du 2026-02-02 (commit `4fe6218498`, allocation Dalio 30/40/15/7,5/7,5) portait les classes `RiskParityAllWeather` et `TacticalAllWeather`. Elles disparaissent le 2026-03-04 (`df4178cce7`), et la parité de risque devient le lendemain le projet séparé [`RiskParity`](../RiskParity/) (`4d26fccdff`). Ces commits ne sont pas des ancêtres de la branche `main` actuelle, où l'historique de ce fichier commence le 2026-09-27 : on les lit avec `git log --all`. La docstring cite des versions antérieures (v2.0 « Gold Heavy + SMA50% », v2.2 « SMA25% ») comme historique de conception seulement.
 
 ## Configuration
 
 ```python
-# Allocations cibles
+# Allocations cibles (v5.0)
 self.target_allocations = {
-    "SPY": 0.30,   # 30% Actions
-    "TLT": 0.40,   # 40% Bonds long-terme
-    "IEF": 0.15,   # 15% Bonds intermédiaires
-    "GLD": 0.075,  # 7.5% Or
-    "DBC": 0.075   # 7.5% Commodities
+    "SPY": 0.30,   # 30% Actions US
+    "IEF": 0.30,   # 30% Obligations intermediaires
+    "GLD": 0.30,   # 30% Or
+    "XLP": 0.10,   # 10% Consumer Staples
 }
 
-# Paramètres
-self.rebalance_threshold = 0.05  # Rebalancer si drift > 5%
+# Rebalancer hors trimestre si un poids derive de plus de 3 points
+self.rebalance_threshold = 0.03
 ```
 
 ## Philosophie
 
-L'All-Weather est conçu pour performer dans 4 environnements :
+L'All-Weather de Dalio (la baseline v1.0) est conçu pour performer dans 4 environnements :
 
 | Environnement | Actifs performants |
 |---------------|-------------------|
@@ -168,16 +169,19 @@ L'All-Weather est conçu pour performer dans 4 environnements :
 | Inflation ↑ | Or, Commodities |
 | Inflation ↓ | Bonds |
 
+La v5.0 de `main.py` s'écarte de ce schéma : sans TLT ni DBC, elle confie la protection
+contre l'inflation à l'or seul et ajoute XLP comme actif défensif.
+
 ## Risques
 
-- **Sous-performance en bull market**: Trop de bonds dilue les gains
+- **Sous-performance en bull market**: 60 % du portefeuille hors actions (IEF et GLD) dilue les gains quand les actions montent
 - **Sensibilité aux taux**: Bonds souffrent quand les taux montent
 - **Corrélations instables**: En crise, tout peut baisser ensemble
-- **Commodities roll yield**: Contango érode les returns long-terme
+- **Commodities roll yield**: le contango érode le rendement des contrats à terme sur matières premières ; le risque porte sur DBC de la baseline v1.0, la v5.0 n'en détient pas
 
 ## Améliorations Possibles
 
-- Ajouter TIPS (Treasury Inflation-Protected Securities)
+- Ajouter TIPS (Treasury Inflation-Protected Securities) — testé en H2 du carnet à la place de DBC : Sharpe 0,667, sous la baseline (0,691)
 - Diversification géographique (VEA, VWO)
 - Dynamic risk targeting
 - Factor tilts (Value, Momentum)
@@ -186,4 +190,4 @@ L'All-Weather est conçu pour performer dans 4 environnements :
 
 - Ray Dalio: "Principles" (chapitre sur l'All-Weather)
 - Bridgewater Associates: "The All Weather Story"
-- Notebook: QC-Py-08-Multi-Asset-Strategies.ipynb
+- Notebook : [QC-Py-08-Multi-Asset-Strategies.ipynb](../../Python/QC-Py-08-Multi-Asset-Strategies.ipynb)

@@ -302,6 +302,40 @@ def test_summarize_claim_machine_codes():
     assert code == pig.CLAIM_CODE_ERROR
 
 
+def test_summarize_claim_free_names_what_was_measured():
+    """#23500 -- le libellé FREE nomme ce que le tirage mesure.
+
+    Un candidat sans claim n'est PAS « libre » (qui se lit « personne ne
+    travaille dessus ») : seule l'absence de claim est mesurée. Le code
+    machine FREE ne change pas ; seule la phrase humaine doit cesser de
+    prétendre à l'absence d'activité. Le mot « libre » disparaît du
+    libellé FREE (et du FREE_STALE, qui partageait l'abus tout en nommant
+    le claim périmé qu'il mesure).
+    """
+    free_json = ('{"blocking_lanes": [], "my_active_claim": false,'
+                '"stale_claims": []}')
+    code, human = pig._summarize_claim(free_json + "\n", 0)
+    assert code == pig.CLAIM_CODE_FREE
+    assert human == pig.CLAIM_HUMAN_FREE
+    assert "libre" not in human
+
+    # FREE_STALE : l'abus « libre » était partagé ; le claim périmé reste
+    # nommé (c'est un fait mesuré), l'absence d'activité ne l'est pas.
+    stale_json = ('{"blocking_lanes": [], "my_active_claim": false,'
+                  '"stale_claims": [42]}')
+    code, human = pig._summarize_claim(stale_json + "\n", 0)
+    assert code == pig.CLAIM_CODE_FREE_STALE
+    assert "libre" not in human
+    assert "42" in human
+
+    # Jambée batch (#19643) : même libellé, même absence de « libre ».
+    batch = {"results": {"42": {"code": "FREE", "human": "x"}}}
+    code, human = pig._summarize_claim_from_batch(batch, 42)
+    assert code == pig.CLAIM_CODE_FREE
+    assert human == pig.CLAIM_HUMAN_FREE
+    assert "libre" not in human
+
+
 def test_belt_head_of_queue_free_surfaces_as_pick_one(monkeypatch):
     """Le scenario fondateur du steer coordinateur : la tete de file est
     ``libre``, le tapis DOIT la sortir en pick #1 (et pas les positions 9+
@@ -590,6 +624,12 @@ def _patch_belt_network(monkeypatch, prs, red_state):
                         lambda nums: {18844: {"count": 1, "authors": [],
                                               "verdict": None, "verdict_surface": None}} if prs else {})
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
+    # #21067 tranche 1 : la charge EN VOL compte les PRs OUVERTES de la lane
+    # a cote des livraisons mergees. L'enumeration complete des PRs ouvertes
+    # (GraphQL pagine) est une surface reseau comme les autres : elle est
+    # stubee ici, sinon le tapis atteint un `gh` reel -- ce que la garde
+    # `_no_real_gh` interdit.
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: list(prs))
     monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
     # Le tapis fait un check_claims : on rend toujours FREE.
     monkeypatch.setattr(pig, "check_claims",
@@ -1586,6 +1626,39 @@ def test_le_rapport_marqueur_est_muet_sans_lecture_ratee(capsys):
     assert capsys.readouterr().out == ""
 
 
+def test_le_rapport_gel_rend_la_trace_visible(capsys):
+    """Le rendu du pendant du GEL : un gel non lu doit etre DIT, comme les
+    trois autres lectures non lues (#24516).
+
+    Le gel est un veto transversal : un gel non lu laisse passer un
+    candidat que le gel aurait ecarte. L'operateur doit donc voir le
+    numero ET la nature de l'incertitude.
+    """
+    pig.print_frozen_unread_report([19309], "myia-ai-01:CoursIA-2")
+    out = capsys.readouterr().out
+    assert "GEL NON LU" in out
+    assert "#19309" in out
+    assert "FROZEN" in out
+
+
+def test_le_rapport_gel_est_muet_sans_lecture_ratee(capsys):
+    """Controle negatif du rendu : aucun bruit quand tout s'est bien passe."""
+    pig.print_frozen_unread_report([], "myia-ai-01:CoursIA-2")
+    pig.print_frozen_unread_report(None, "myia-ai-01:CoursIA-2")
+    assert capsys.readouterr().out == ""
+
+
+def test_le_rapport_gel_deduplique_les_numeros(capsys):
+    """Meme contrat que les autres rapports : un numero mesure deux fois
+    n'est annonce qu'une fois."""
+    pig.print_frozen_unread_report([19309, 19309, 19001],
+                                    "myia-ai-01:CoursIA-2")
+    out = capsys.readouterr().out
+    assert out.count("#19309") == 1
+    assert "#19001" in out
+    assert "2 candidat(s)" in out
+
+
 def test_belt_marker_KO_and_budget_epuise_ne_sert_pas_silencieusement():
     """Le COUPLE de fail-OPEN, mesure par la session jumelle `coursia-2-25`
     (2026-10-26, #17528) : deux verifications ratees qui se COMBINENT.
@@ -1739,6 +1812,57 @@ def test_container_marker_read_failure_is_none(monkeypatch):
 def test_container_marker_without_comment_is_false(monkeypatch):
     """Aucun commentaire : pas de marqueur (False, pas None)."""
     _stub_last_comment(monkeypatch, "")
+    assert pig.has_recent_container_delivery_marker(17528) is False
+
+
+def _stub_comments(monkeypatch, bodies):
+    """Force le transport : le fil porte `bodies`, dans cet ordre."""
+    payload = json.dumps({"comments": [{"body": b} for b in bodies]})
+
+    def fake_run(cmd, *args, **kwargs):
+        assert cmd[:3] == ["gh", "issue", "view"], f"transport : {cmd}"
+        return subprocess.CompletedProcess(cmd, 0, stdout=payload, stderr="")
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+
+def test_container_marker_survit_a_un_released_de_queue(monkeypatch):
+    """#24590 -- un `[RELEASED]` de queue sans marqueur ne masque plus le
+    `[INFO] candidate-delivered` qu'il suit.
+
+    Sur une umbrella, ce masquage rendait le conteneur « non livre » : l'issue
+    redevenait servable alors qu'elle etait close. C'est exactement le defaut
+    que #24516 avait corrige sur la sonde de livraison, et qui restait ouvert
+    ici -- les deux filtres lisent le meme octet, ils doivent sauter le meme
+    commentaire.
+
+    Mesure du 2026-11-04 sur #19309 : 46 commentaires, **40** commencant par
+    `[RELEASED]`, **aucun** porteur d'un marqueur d'etat.
+    """
+    _stub_comments(monkeypatch, [
+        "[INFO] candidate-delivered — les cinq arcs sont clos.",
+        "[RELEASED] lane myia-po-2028:CoursIA -- barriere reelle : EPIC gelee",
+    ])
+    assert pig.has_recent_container_delivery_marker(17528) is True
+
+
+def test_container_marker_lit_un_released_qui_porte_un_marqueur(monkeypatch):
+    """Controle negatif : le saut ne porte pas sur l'EN-TETE seul.
+
+    Un `[RELEASED]` dont le corps porte lui-meme un marqueur d'etat est un
+    evenement : il reste le dernier commentaire LU, et ce qu'il dit compte.
+    Ce controle discrimine les deux lectures -- si le `[RELEASED]` etait saute
+    sur son en-tete, la sonde remonterait au `[INFO] candidate-delivered` de
+    tete et rendrait True ; en lisant le corps de queue, elle rend False.
+    """
+    _stub_comments(monkeypatch, [
+        "[INFO] candidate-delivered -- les cinq arcs sont clos.",
+        chr(10).join([
+            "[RELEASED] lane myia-po-2028:CoursIA -- EPIC rouverte",
+            "",
+            "[DELIVERED] lane myia-po-2028:CoursIA -- PR #21212",
+        ]),
+    ])
     assert pig.has_recent_container_delivery_marker(17528) is False
 
 
@@ -2895,6 +3019,9 @@ def test_main_runs_the_repair_phase_inside_its_own_deadline(monkeypatch):
 
     monkeypatch.setattr(pig, "red_backlog", fake_red_backlog)
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **kw: ([], None))
+    # #21067 tranche 1 : la charge en vol compte aussi les PRs ouvertes
+    # (surface reseau comme le reste -- cf _patch_belt_network).
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: [])
     monkeypatch.setattr(pig.gh_identity, "pin_gh_token", lambda: None)
     pig._BELT_DEADLINE[0] = None
     previous_budget = nits.NITS_PASS_BUDGET_S
@@ -3133,3 +3260,209 @@ def test_belt_disarms_on_the_report_exit(monkeypatch):
             "l'echeance fuit apres la sortie --report (#23340 point 1)")
     finally:
         pig._BELT_DEADLINE[0] = None
+
+
+def test_belt_deadline_keeps_the_marker_filter_when_the_read_is_local(monkeypatch):
+    """Le mur de temps arrete le RESEAU ; il n'a aucune raison d'arreter une
+    lecture deja en memoire.
+
+    Defaut mesure le 2026-11-03 (draw `32e6c570269a`, lane
+    `myia-po-2027:CoursIA`) : les deux filtres de marqueur (recent, conteneur)
+    etaient sautes des que `expired()` rendait vrai, alors que l'instantane
+    de la passe avait deja lu les commentaires de la fenetre (36 stamps sur
+    36 servis sans une seule requete). Le tapis a servi 4 candidats sur 4
+    portant chacun un marqueur de livraison dans leur dernier commentaire, et
+    la lane recevait « ACTION REQUISE : poser [CLAIMED] sur #19694 » pour une
+    issue livree depuis le 20/10.
+
+    Ici `30201` a ses commentaires en memoire et porte un marqueur : il doit
+    etre ECARTE malgre l'echeance. `30202` n'a pas d'entree locale : sa sonde
+    reste sautee (comportement d'avant, fail-OPEN rapporte).
+    """
+    _patched_clock(monkeypatch)
+    local = _make_item(30201, age_days=100, idle=9, last=None)
+    remote = _make_item(30202, age_days=99, idle=9, last=None)
+    monkeypatch.setattr(
+        pig, "_snapshot_comments",
+        lambda n: ([{"body": "[INFO] candidate-delivered -- lane x",
+                     "createdAt": "2026-11-03T10:00:00Z"}]
+                   if n == 30201 else None))
+    calls = []
+
+    def marker(n):
+        calls.append(n)
+        return n == 30201
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [local, remote], {}, _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=marker,
+        time_budget_s=0.0)
+
+    assert calls == [30201], (
+        "seul un candidat dont la lecture est LOCALE est filtre apres le mur")
+    assert [p["number"] for p in picks] == [30202]
+    assert [w[0]["number"] for w in withheld] == [30201]
+    assert "LIVRAISON (recent)" in withheld[0][1]
+    assert state["time_budget_hit"] is True
+
+
+def test_belt_deadline_still_skips_the_marker_filter_without_local_read(monkeypatch):
+    """Controle negatif : sans instantane, le filtre coute une requete et
+    reste soumis au mur. Le correctif ne rallume pas le reseau apres
+    l'echeance."""
+    _patched_clock(monkeypatch)
+    a = _make_item(30211, age_days=100, idle=9, last=None)
+    b = _make_item(30212, age_days=99, idle=9, last=None)
+    monkeypatch.setattr(pig, "_snapshot_comments", lambda n: None)
+    calls = []
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [a, b], {}, _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=lambda n: calls.append(n) or True,
+        time_budget_s=0.0)
+
+    assert calls == [], "aucune sonde de marqueur ne part apres le mur"
+    assert [p["number"] for p in picks] == [30211, 30212]
+    assert withheld == []
+
+
+# Corps reel d'un dossier de cloture CLOSE (grammaire canonique de
+# `check_closure_dossier.py` -- meme fixture que test_pick_closure_reopened).
+DOSSIER_CLOSE_24505 = """[CLOSURE PREFLIGHT]
+schema: 1
+lane: myia-po-2025:CoursIA
+issue: 40003
+verdict: CLOSE
+acceptance:
+  - "criteres confrontes a main avec preuve citee"
+residue: none
+open-prs: 0
+comments-reviewed: 3
+[/CLOSURE PREFLIGHT]"""
+
+
+def test_belt_deadline_skips_the_marker_filter_on_closure_dossier(monkeypatch):
+    """Reserve review #24505, reproduite par execution : un dossier de
+    cloture en dernier commentaire rallume le RESEAU meme apres le mur.
+
+    Le corps CLOSE declenche dans `has_recent_delivery_marker` la regle de
+    reouverture (#24250) -> `_reopen_events` -> une requete REST du timeline.
+    Le predicat `marker_read_is_local` d'avant la correction repondait
+    « True » des que l'instantane existait : le filtre de marqueur passait,
+    et la requete timeline partait au-dela de l'echeance (reproduit par
+    Hermes sur un dossier CLOSE valide ET sur l'annonce en prose : appels
+    `gh api --paginate ... issues/<N>/timeline` malgre le mur).
+
+    Apres correction, les deux classes dans le meme tirage : le porteur du
+    dossier n'est PAS sonde (lecture non locale -> filtre saute, fail-OPEN
+    historique, silence rapporte) ; le porteur d'un marqueur ordinaire reste
+    filtre comme avant le mur -- le correctif ne dessert pas la classe que
+    la mesure fondatrice (#21436) couvrait."""
+    _patched_clock(monkeypatch)
+    dossier = _make_item(30301, age_days=100, idle=9, last=None)
+    ordinary = _make_item(30302, age_days=99, idle=9, last=None)
+    bodies = {
+        30301: [{"body": DOSSIER_CLOSE_24505,
+                 "createdAt": "2026-11-03T10:00:00Z"}],
+        30302: [{"body": "[INFO] candidate-delivered -- lane x",
+                 "createdAt": "2026-11-03T10:00:00Z"}],
+    }
+    monkeypatch.setattr(pig, "_snapshot_comments", lambda n: bodies.get(n))
+    calls = []
+
+    def marker(n):
+        calls.append(n)
+        return True
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [dossier, ordinary], {}, _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=marker,
+        time_budget_s=0.0)
+
+    assert calls == [30302], (
+        "seul le marqueur ordinaire (lecture locale) est sonde apres le mur ; "
+        "le dossier CLOSE ne doit pas y rattacher une requete timeline")
+    assert [p["number"] for p in picks] == [30301], (
+        "le porteur du dossier reste servi : filtre saute (fail-OPEN)")
+    assert [w[0]["number"] for w in withheld] == [30302]
+    assert "LIVRAISON (recent)" in withheld[0][1]
+    assert state["time_budget_hit"] is True
+
+
+def test_belt_deadline_skips_marker_filter_on_prose_close_announcement(
+        monkeypatch):
+    """Meme reserve #24505, seconde classe reproduite par Hermes : l'annonce
+    de fermeture EN PROSE (« Fermeture sur dossier ... verdict CLOSE »)-
+    declenche la meme regle de reouverture qu'un dossier qui parse. Le
+    predicat doit la traiter pareil : lecture non locale -> filtre saute
+    apres le mur, aucune sonde."""
+    _patched_clock(monkeypatch)
+    annonce = _make_item(30311, age_days=100, idle=9, last=None)
+    body = ("Fermeture sur dossier `[CLOSURE PREFLIGHT]` (verdict CLOSE, "
+            "gate `check_closure_dossier.py` rc=0, commentaire ci-dessus).")
+    monkeypatch.setattr(
+        pig, "_snapshot_comments",
+        lambda n: ([{"body": body, "createdAt": "2026-11-03T10:00:00Z"}]
+                   if n == 30311 else None))
+    calls = []
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [annonce], {}, _belt_args(grains=1), probe_budget=4,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=lambda n: calls.append(n) or True,
+        time_budget_s=0.0)
+
+    assert calls == [], (
+        "l'annonce en prose ne doit pas rattacher une sonde apres le mur")
+    assert [p["number"] for p in picks] == [30311]
+    assert withheld == []
+    assert state["time_budget_hit"] is True
+
+
+def test_un_RELEASED_de_queue_ne_masque_plus_le_DELIVERED_quil_suit(monkeypatch):
+    """#24590 -- la position du dernier commentaire n'est pas un etat.
+
+    Le `[DELIVERED]` est bien dans le fil, suivi d'un `[RELEASED]` de la meme
+    lane sur une barriere. Lire `comments[-1]` rendait « pas de marqueur » :
+    l'item repartait en tete du tapis comme s'il n'avait jamais ete rendu.
+    """
+    delivered = {"body": "[INFO] candidate-delivered -- livree, PR #24000",
+                 "createdAt": "2026-11-04T08:00:00Z"}
+    released = {"body": "[RELEASED] lane myia-po-2024:CoursIA -- barriere reelle",
+                "createdAt": "2026-11-04T09:00:00Z"}
+    monkeypatch.setattr(pig, "_issue_comments", lambda n: ([delivered, released], ""))
+    monkeypatch.setattr(pig, "_issue_body", lambda n: "")
+    assert pig.has_recent_delivery_marker(24590) is True
+
+
+def test_un_fil_sans_marqueur_reste_servable_malgre_les_RELEASED(monkeypatch):
+    """Controle negatif du saut : un fil qui ne porte QUE des `[RELEASED]` ne
+    declare aucune cloture -- le saut ne doit pas fabriquer un marqueur."""
+    released = {"body": "[RELEASED] lane myia-po-2024:CoursIA -- barriere reelle",
+                "createdAt": "2026-11-04T09:00:00Z"}
+    monkeypatch.setattr(pig, "_issue_comments", lambda n: ([released], ""))
+    monkeypatch.setattr(pig, "_issue_body", lambda n: "")
+    assert pig.has_recent_delivery_marker(24590) is False
+
+
+def test_un_RELEASED_qui_porte_un_marqueur_plus_bas_nest_pas_saute(monkeypatch):
+    """Le saut porte sur l'en-tete SEUL : un corps qui commence par
+    `[RELEASED]` et porte plus bas un marqueur d'etat EST un evenement, et le
+    sauter rendrait cette declaration invisible."""
+    mixed = {"body": ("[RELEASED] lane myia-po-2024:CoursIA\n\n"
+                      "[INFO] candidate-delivered -- livree, PR #24000"),
+             "createdAt": "2026-11-04T09:00:00Z"}
+    monkeypatch.setattr(pig, "_issue_comments", lambda n: ([mixed], ""))
+    monkeypatch.setattr(pig, "_issue_body", lambda n: "")
+    assert pig.has_recent_delivery_marker(24590) is True

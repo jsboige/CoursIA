@@ -422,3 +422,110 @@ def test_17713_cli_head_ref_arg_propagates():
         assert "17713" in verdict["reason"]
     finally:
         fixture.unlink(missing_ok=True)
+
+
+# --- #23605 : exemption « TP relayée » (PR de TP relayée par l'enseignant) --
+#
+# Les groupes qui n'ouvrent pas leur PR eux-mêmes se font relayer par
+# l'enseignant, depuis une branche de l'enseignant -- pas de préfixe
+# contraignable, donc l'exemption tient sur la déclaration explicite du
+# corps seule (option 1 de l'issue, tranchée au dispatch c2772). Avant
+# elle, toute PR de TP relayée échouait l'organe PAR CONSTRUCTION (mesure
+# #22969, job 122392394402 : « Grain tag absent » sur un body qui
+# déclarait pourtant la convention en prose).
+
+
+def test_23605_tp_relayee_declaration_is_exempt():
+    """Body sans Grain qui déclare « PR de TP relayée » -> required_pass True.
+
+    Le cas fondateur : le body de #22969 disait « Comme pour toute PR de TP,
+    le tag Grain et les checklists internes ne s'appliquent pas » -- la
+    convention existait en prose, pas dans le code.
+    """
+    body = (
+        "TP1 MIS G01, rendu du groupe.\n\n"
+        "Comme pour toute PR de TP relayée par l'enseignant, le tag Grain et "
+        "les checklists internes ne s'appliquent pas.\n"
+    )
+    v = vtr.check(body)
+    assert v["required_pass"] is True
+    assert "23605" in v["reason"]
+    assert v["tier"] is None
+    assert v["lane"] is None
+
+
+@pytest.mark.parametrize(
+    "marker",
+    [
+        "TP relayée",  # canonique (la PR)
+        "TP relayee",  # accent perdu (clavier/CI)
+        "TP relayé",  # le rendu, masculin
+        "TP relaye",  # les deux à la fois
+        "PR de TP relayée",  # préfixe le plus naturel
+    ],
+)
+def test_23605_variantes_orthographiques_exemptent(marker):
+    """Les formes fléchies couvertes par `TP\\s+relay[eé]` exemptent toutes."""
+    v = vtr.check(f"Rendu de {marker} par l'enseignant.\n")
+    assert v["required_pass"] is True, f"marqueur {marker!r} devrait exempter"
+    assert "23605" in v["reason"]
+
+
+def test_23605_body_tp_sans_declaration_reste_bloque():
+    """Un body de TP SANS la déclaration explicite reste bloqué.
+
+    L'exemption est une DÉCLARATION, pas une détection du sujet : « rendu du
+    TP1 du groupe G01 » seul n'exempte pas -- sinon tout body mentionnant un
+    TP s'affranchirait du tag sans le dire.
+    """
+    body = "Rendu du TP1 du groupe G01. Aucune déclaration de relais.\n"
+    v = vtr.check(body)
+    assert v["required_pass"] is False
+    assert "tag" in v["reason"].lower() or "grain" in v["reason"].lower()
+
+
+def test_23605_marqueur_ne_casse_pas_un_body_tague():
+    """Marqueur + Grain tag valides ensemble : la PR passe (l'exemption
+    court-circuite avant le parse ; le verdict consommé est le même)."""
+    body = (
+        "Grain: MED/guard -- lane myia-po-2027:CoursIA\n\n"
+        "Le body mentionne aussi une PR de TP relayée voisine (#22969).\n"
+    )
+    v = vtr.check(body)
+    assert v["required_pass"] is True
+
+
+def test_23605_cli_body_file_exempt_exit_zero():
+    """End-to-end CLI : body-file « TP relayée » sans --head-ref -> exit 0.
+
+    Le relais part d'une branche de l'enseignant : aucun argument de
+    branche n'est requis, contrairement à #17713.
+    """
+    fixture = Path(__file__).resolve().parent / "_vtr_fixture_23605.md"
+    fixture.write_text(
+        "TP2 SYP G03 -- PR de TP relayée par l'enseignant.\n",
+        encoding="utf-8",
+    )
+    try:
+        proc = subprocess.run(
+            [
+                sys.executable,
+                "scripts/ci/variation_tag_required.py",
+                "--body-file",
+                str(fixture),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            encoding="utf-8",
+            errors="replace",
+        )
+        assert proc.returncode == 0, (
+            f"expected exit 0 (exempt TP relayée), got {proc.returncode}; "
+            f"stderr={proc.stderr!r}"
+        )
+        verdict = json.loads(proc.stdout)
+        assert verdict["required_pass"] is True
+        assert "23605" in verdict["reason"]
+    finally:
+        fixture.unlink(missing_ok=True)

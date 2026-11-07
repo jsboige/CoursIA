@@ -9,6 +9,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from check_i18n_siblings import (  # noqa: E402
@@ -28,9 +30,12 @@ from check_i18n_siblings import (  # noqa: E402
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+# Le lake a descendu sous `Lean/GOL/` (#23164). Ce chemin est en dur : s'il
+# n'est pas suivi, la garde ne trouve plus le lake et se tait (cf. le `skip`
+# explicite du test conway ci-dessous, qui rend cette disparition visible).
 CONWAY_DIR = (
     REPO_ROOT
-    / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "conway_lean" / "Conway"
+    / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GOL" / "conway_lean" / "Conway"
 )
 
 
@@ -371,7 +376,10 @@ def test_find_en_files_skips_excluded(tmp_path):
 def test_real_conway_pairs_are_byte_identical():
     """The merged conway_lean rollout must stay clean — regression guard."""
     if not CONWAY_DIR.is_dir():
-        return  # tree not present in this checkout; skip silently
+        # Un `return` muet fait passer la garde pour verte alors qu'elle n'a
+        # rien regarde : si le lake bouge encore, on veut le voir dans le
+        # rapport, pas un PASS qui ne mesure rien.
+        pytest.skip(f"lake conway absente de ce checkout : {CONWAY_DIR}")
     en_files = find_en_files([CONWAY_DIR])
     assert en_files, "expected conway_lean *_en.lean pairs to exist"
     failures = []
@@ -545,7 +553,7 @@ def test_real_grothendieck_godement_pairs_are_not_half_done():
     ``Godement*_en`` mirrors are OK-CONSUMER siblings whose module docstring is
     translated; the HALF-DONE hit came from the shared licence header alone.
     They must no longer be reported."""
-    groth = (REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean"
+    groth = (REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GROTH"
              / "grothendieck_lean" / "Grothendieck")
     names = ["Godement", "GodementAcyclicity", "GodementCanonicalDiff",
              "GodementComplex", "GodementExactness", "GodementFunctor",

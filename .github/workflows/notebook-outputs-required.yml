@@ -64,6 +64,10 @@ jobs:
     outputs:
       notebooks: ${{ steps.detect.outputs.notebooks }}
       has_notebooks: ${{ steps.detect.outputs.has_notebooks }}
+    # #23349 : borne explicite. Mesure du 2026-11-04 sur les 3 derniers
+    # runs verts de ce job : max 0.22 min. Marge large (le defaut
+    # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -78,7 +82,7 @@ jobs:
             NOTEBOOKS="${{ github.event.inputs.notebook_paths }}"
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
             NOTEBOOKS=$(git diff --name-only --diff-filter=ACM \
-              origin/${{ github.base_ref }} HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+              origin/${{ github.base_ref }}...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
           else
             # push to main : scan complet via git ls-tree du tree courant.
             NOTEBOOKS=$(git ls-tree -r --name-only HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
@@ -106,6 +110,10 @@ jobs:
     needs: detect-changes
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.detect-changes.outputs.has_notebooks > 0
 
+    # #23349 : borne explicite. Mesure du 2026-11-04 sur les 3 derniers
+    # runs verts de ce job : max 3.13 min. Marge large (le defaut
+    # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -199,31 +207,52 @@ jobs:
             }
             core.info(summary);
 
-            // Post/update the PR comment. Wrap in try/catch : un 403 sur
-            // createComment ne doit JAMAIS rougir la gate (cf. lecon
-            // notebook-execution-required -- un cosmetic step ne rougit
+            // #15511 -- le SUCCES ne parle plus. Le resume part dans un
+            // FICHIER ; l'etape suivante decide : section ecrite si
+            // l'organe a quelque chose a signaler, section RETIREE (et rien
+            // ecrit si elle n'existe pas) sur un run vert.
+            // L'echec de cette ecriture ne doit JAMAIS rougir la gate (lecon
+            // notebook-execution-required : un step cosmique ne rougit
             // jamais une execution-verdict step).
             try {
-              if (context.eventName === 'pull_request') {
-                const { data: comments } = await github.rest.issues.listComments({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number,
-                });
-                const marker = 'Notebook outputs-required (H.4 schema):';
-                const existing = comments.find(c =>
-                  c.user.type === 'Bot' && c.body.includes(marker));
-                if (existing) {
-                  await github.rest.issues.updateComment({
-                    owner: context.repo.owner, repo: context.repo.repo,
-                    comment_id: existing.id, body: summary,
-                  });
-                } else {
-                  await github.rest.issues.createComment({
-                    owner: context.repo.owner, repo: context.repo.repo,
-                    issue_number: context.issue.number, body: summary,
-                  });
-                }
-              }
+              fs.writeFileSync('/tmp/outputs_required_summary.md', summary);
+              fs.writeFileSync(
+                '/tmp/outputs_required_state',
+                (status === 'PASS' ? 'success' : 'advisory'));
             } catch (e) {
-              core.warning('Could not post outputs-required summary comment: ' + e.message);
+              core.warning('Could not stage outputs-required summary: ' + e.message);
             }
+
+      # #15511 -- UN SEUL commentaire collant par PR, une section par
+      # organe (`scripts/ci/advisory_sticky.py`). Le succes ne cree aucun
+      # commentaire : il retire sa section, ou ne fait rien s'il n'y en a
+      # pas. Le signal BLOQUANT reste dans le check-run rouge de l'etape
+      # "Run outputs-required check" : ce commentaire n'en est qu'un
+      # recapitulatif, jamais son canal.
+      - name: Publish (or retract) the outputs-required advisory section
+        if: always() && github.event_name == 'pull_request'
+        # #24441 -- la publication est COSMETIQUE : elle ne porte ni le
+        # verdict outputs (qui reste dans le check-run rouge de l'etape
+        # "Run outputs-required check") ni aucun canal de blocage. Une
+        # erreur d'API ici (quota, 5xx, PR fermee entre-temps) ne doit
+        # donc JAMAIS rougir la gate -- c'est le contrat que le commentaire
+        # :206-208 pose pour l'ecriture du resume, et l'etape qui publie
+        # ce resume portait l'inverse. Motif maison : `continue-on-error`
+        # (cf. always-on-guards.yml, always-on-metadata-guards.yml).
+        # `if: always()` reste : un verdict ROUGE doit toujours pouvoir
+        # publier son recapitulatif.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -e
+          if [ ! -f /tmp/outputs_required_state ]; then
+            echo "::warning::outputs-required: no staged summary (validator did not run)."
+            exit 0
+          fi
+          if [ "$(cat /tmp/outputs_required_state)" = "success" ]; then
+            python3 scripts/ci/advisory_sticky.py --pr "$PR" --organ notebook-outputs-required --clear
+          else
+            python3 scripts/ci/advisory_sticky.py --pr "$PR" --organ notebook-outputs-required --body-file /tmp/outputs_required_summary.md
+          fi

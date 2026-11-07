@@ -1,6 +1,6 @@
 name: Lean Conway CI
 
-# CI for conway_lean (SymbolicAI/Lean/conway_lean).
+# CI for conway_lean (SymbolicAI/Lean/GOL/conway_lean).
 # Conway's Game of Life formalization (Hashlife, Kochen-Specker, Free Will).
 # Rule lean-merge-discipline: lake build SUCCESS local OBLIGATOIRE avant merge.
 #
@@ -63,10 +63,10 @@ on:
   push:
     branches: [main]
     paths:
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
       - '.github/workflows/lean-conway.yml'
       # The gate's own implementation: a change to it must re-run the gate.
       # knot lists it already; conway did not (added with #8951's startup break).
@@ -79,10 +79,10 @@ on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
     paths:
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
       - '.github/workflows/lean-conway.yml'
       # The gate's own implementation: a change to it must re-run the gate.
       # knot lists it already; conway did not (added with #8951's startup break).
@@ -113,7 +113,7 @@ jobs:
     # dans la meme PR. Precedent en depot : lean-ci-matrix.yml:390.
     uses: ./.github/workflows/lean-build.yml
     with:
-      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean
       display-name: conway_lean
       # PR #17756 reprise (ai-01 review 2026-09-26) : la pseudo-declaration
       # `angel_k_ge_2_wins_devil : ∀ k : ℕ, k ≥ 2 → True := by sorry` a été
@@ -159,7 +159,7 @@ jobs:
     # #23247 : reference locale, meme raison que la jambe `ci` ci-dessus.
     uses: ./.github/workflows/lean-axiom.yml
     with:
-      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean
       display-name: conway_lean
       target-modules: "Conway.KochenSpecker,Conway.FreeWillTheorem"
       allow-axioms: "Classical.choice,propext,funext,Quot.lift,Quot.mk,Quot.sound"
@@ -215,7 +215,7 @@ jobs:
     # #23247 : reference locale, meme raison que la jambe `ci` ci-dessus.
     uses: ./.github/workflows/lean-axiom.yml
     with:
-      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean
       # #8848: the advisory (fail-on-sorry: false) job carries the ' (audit)' suffix
       # so it is distinguishable from the blocking proof-integrity job above in the
       # CI check rollup ("Proof integrity (conway_lean (audit))" vs "(conway_lean)").
@@ -395,7 +395,7 @@ jobs:
       - name: Advisory target-coverage delta
         run: |
           python3 scripts/lean/check_target_coverage.py \
-            --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean \
+            --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean \
             --from-workflow .github/workflows/lean-conway.yml \
             --lib-root Conway \
             --name conway_lean

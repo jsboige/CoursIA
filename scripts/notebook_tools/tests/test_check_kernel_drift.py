@@ -575,14 +575,79 @@ def test_canonical_transition_scoped_series_does_not_leak_outside():
          "kernelspec_name": "coursia-ml-training"}
     b = {"language_version": "3.13.14",
          "kernelspec_name": "coursia-ml-training"}
+    # Le chemin GameTheory-19b figurait ici jusqu'a la portee SERIE
+    # GameTheory (#23384) : la serie a desormais ses deux directions, et
+    # c'est le carnet jumeau ``GameTheory-annexe/`` qui garde la frontiere
+    # du prefixe -- ``GameTheory-annexe/`` n'est pas ``GameTheory/``.
     for path in (
         "MyIA.AI.Notebooks/Complexity/"
         "Complexity-07-KolmogorovBornee-Sequences-Python.ipynb",
-        "MyIA.AI.Notebooks/GameTheory/"
-        "GameTheory-19b-Bilevel-PPO-Python.ipynb",
+        "MyIA.AI.Notebooks/GameTheory-annexe/x.ipynb",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours-autre/x.ipynb",
     ):
         assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+
+
+# --- #23384 : portee SERIE GameTheory --------------------------------------
+# Le canon de la serie GameTheory est 3.13 : 92 des 142 carnets y tournent
+# deja sous kernel ``python3`` (releve du 2026-11-05 par lecture des
+# METADONNEES). Sous le kernelspec PARTAGE ``coursia-ml-training``, la serie
+# n'a que quatre carnets, dont trois deja en 3.13.x (13e 3.13.14, 19b
+# converge par #24836, 13b et 15c rejoues par cette PR). DEUX directions,
+# parce que les deux sont mesurees : 13b part de 3.12.15, 15c de 3.11.16.
+
+
+def test_canonical_transition_scoped_series_gametheory_311_accepted():
+    # Positif : GameTheory-15c, base 3.11.16 -> tete 3.13.15.
+    a = {"language_version": "3.11.16",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15",
+         "kernelspec_name": "coursia-ml-training"}
+    path = ("MyIA.AI.Notebooks/GameTheory/"
+            "GameTheory-15c-CooperativeGames-Python.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+    # Sans chemin, la derive reste rouge : aucune entree GLOBALE pour ce
+    # kernelspec (reserve #22979, ~30 carnets hors serie).
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_scoped_series_gametheory_312_accepted():
+    # Positif, seconde direction : GameTheory-13b, base 3.12.15.
+    a = {"language_version": "3.12.15",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15",
+         "kernelspec_name": "coursia-ml-training"}
+    path = ("MyIA.AI.Notebooks/GameTheory/"
+            "GameTheory-13b-Safe-Subgame-Solving-Python.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_scoped_series_gametheory_other_kernels_red():
+    # La portee est (prefixe, kernelspec, direction) : les AUTRES kernels de
+    # la serie ne sont pas couverts -- ``gametheory-wsl`` (1 carnet en
+    # 3.11.9) et ``python3-wsl`` (1 en 3.12.3) gardent leur direction rouge.
+    # ``python3`` n'est pas dans cette liste : sa direction 3.11 -> 3.13 est
+    # couverte GLOBALEMENT (canon d'execution de la flotte), pas par cette
+    # portee de serie.
+    for ks in ("gametheory-wsl", "python3-wsl"):
+        a = {"language_version": "3.11.9", "kernelspec_name": ks}
+        b = {"language_version": "3.13.15", "kernelspec_name": ks}
+        assert ckd.accepted_canonical_transition(
+            a, b,
+            nb_path=("MyIA.AI.Notebooks/GameTheory/"
+                     "GameTheory-01-NormalFormGames-Python.ipynb"),
+        ) is False
+    # Et la direction inverse reste rouge sous la portee GameTheory.
+    a = {"language_version": "3.13.15",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.11.16",
+         "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(
+        a, b,
+        nb_path=("MyIA.AI.Notebooks/GameTheory/"
+                 "GameTheory-15c-CooperativeGames-Python.ipynb"),
+    ) is False
 
 
 def test_canonical_transition_scoped_series_reverse_still_refused():
