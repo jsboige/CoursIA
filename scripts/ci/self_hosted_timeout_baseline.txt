@@ -6,11 +6,17 @@
 # STATIQUES. Les 12 jobs HYBRIDES (#22461), eux, sont bornes par la PR
 # qui a introduit ce cliquet -- la forme hybride n'a AUCUNE tolerance.
 # Retirer une ligne des que son job est borne.
+#
+# 2026-11-04 (#23349, tranche 1) : retirees les trois cles dont le job est
+# desormais borne -- lean-conway.yml:target-coverage (360 min),
+# lean-i18n-drift.yml:i18n-drift (5 min), validation-matrix.yml:validate
+# (10 min). Une cle laissee sur un job borne n'est pas inerte : elle compte
+# le job comme « baseline » et absorbe silencieusement toute regression qui
+# retirerait sa borne. lean-formal-logic.yml:target-coverage reste : le
+# fichier n'existe plus, la cle ne couvre donc aucun site vivant, et la
+# laisser ne peut masquer aucune borne.
 bare-cross-dir-load-gate.yml:bare-cross-dir-load
 base-not-main-advisory.yml:signal
-bash-syntax-advisory.yml:runner-script-tests
-bash-syntax-advisory.yml:shebang-dry-run-advisory
-bash-syntax-advisory.yml:syntax-check
 candidate-delivered-advisory.yml:sweep
 catalog-cron.yml:regen
 check-resync-only.yml:resync-only-advisory
@@ -26,11 +32,7 @@ exercises-advisory.yml:exercises-advisory
 fabricated-output-gate.yml:fabricated-output
 grain-orphans-sweep.yml:sweep
 lane-claim-epic-wide-advisory.yml:sweep
-lane-claim-guard.yml:check-lane-claim-advisory
-lane-claim-guard.yml:check-lane-claim-required
-lean-conway.yml:target-coverage
 lean-formal-logic.yml:target-coverage
-lean-i18n-drift.yml:i18n-drift
 lean-visibility-advisory.yml:lean-visibility-advisory
 live-read-freshness.yml:freshness
 machine-dep-timing-advisory.yml:machine-dep-timing
@@ -43,8 +45,6 @@ mermaid-fill-color-advisory.yml:mermaid-fill-color-advisory
 notebook-output-collapse-ratchet.yml:ratchet
 notebook-output-failure-ratchet.yml:ratchet
 notebook-output-flood-ratchet.yml:ratchet
-notebook-outputs-required.yml:detect-changes
-notebook-outputs-required.yml:validate
 orphan-branch-scan.yml:sweep
 outputs-text-fragmentation-advisory.yml:outputs-text-fragmentation-advisory
 pedagogy-density-advisory.yml:pedagogy-density-advisory
@@ -57,15 +57,7 @@ review-coverage-advisory.yml:sweep
 source-output-ratchet.yml:ratchet
 split-reading-advisory.yml:split-reading-advisory
 stale-base-warning.yml:check-base-age
-svg-broken-geometry-gate.yml:svg-broken-geometry
-svg-decimal-comma-gate.yml:svg-decimal-comma
-svg-empty-display-gate.yml:svg-empty-display
-svg-offscreen-flat-gate.yml:svg-offscreen-flat
-translation-guard.yml:guard
 translation-hot-drift-advisory.yml:advisory
-translation-parity.yml:parity
-translation-sync.yml:translation-sync
 twin-parity-cron.yml:twin-parity-cron
 twin-parity-drift-audit.yml:drift-audit
-validation-matrix.yml:validate
 variation-light-genre.yml:check-light-genre-signals

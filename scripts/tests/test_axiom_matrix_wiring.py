@@ -193,19 +193,34 @@ def test_guard_double_trigger_allowlist_is_empty():
 # --- #22453 : la porte d'axiomes doit voir les freres i18n `_en` -------
 
 def test_knot_gate_opts_in_the_i18n_siblings():
-    """knot_lean's proof-integrity job must opt in explicitly.
+    """knot_lean's axiom gate must opt in explicitly -- via its manifest
+    entry since the matrix migration (#13751) deleted lean-knot.yml.
 
     The `'*'` derivation enumerates every module `lake build` compiles; the
     FR-only filter then drops the `_en` siblings. Measured locally, without
     Lean: 48 modules discovered on knot_lean, 24 inspected, 751 declarations
     carried by the 24 excluded siblings. conway and mimo already pass
-    `include-i18n-siblings: "true"`; knot did not (#22453)."""
-    doc = yaml.safe_load(
-        (REPO / ".github/workflows/lean-knot.yml").read_text(encoding="utf-8"))
-    job = doc["jobs"]["proof-integrity"]
-    assert job["with"]["target-modules"] == "*"
-    assert job["with"]["include-i18n-siblings"] == "true", (
+    `include-i18n-siblings: "true"`; knot did not (#22453). The wrapper pin
+    moved to the manifest at migration: the matrix step interpolates
+    `matrix.axiom-include-i18n-siblings || 'false'` -- a dropped key would
+    silently re-exclude the 24 siblings."""
+    entry = next(e for e in _manifest()["lakes"] if e["lake"] == "knot")
+    assert entry["axiom-target-modules"] == "*"
+    assert entry["axiom-include-i18n-siblings"] == "true", (
         "knot_lean garde ses 24 freres `_en` hors de la porte d'axiomes")
+    # Les 8 sorries reconnus (distinct_code_sorry mesure) sont rapportes
+    # has_sorry, non gates : fail-on-sorry false, exact contrat du wrapper.
+    assert entry["axiom-fail-on-sorry"] == "false"
+    assert entry["sorry-baseline"] == "8"
+
+
+def test_knot_historical_wrapper_is_gone():
+    """lean-knot.yml was knot_lean's PRE-migration gate. With knot in the
+    manifest it is a DOUBLE trigger (wrapper + matrix leg build the lake
+    twice). The migration contract: a manifest lake keeps no wrapper
+    (#17336, #17374)."""
+    assert not (REPO / ".github/workflows/lean-knot.yml").exists(), (
+        "le wrapper historique de knot_lean est revenu -- double build")
 
 
 def test_composites_trigger_on_the_axiom_step_program():
@@ -213,8 +228,11 @@ def test_composites_trigger_on_the_axiom_step_program():
     workflow in #17336). It was missing from the composites' `on.paths`
     while `lean_server.py` and `check_target_coverage.py` were listed: a
     change to the rule could ship without the gate ever running on it --
-    the #8712 lesson applied one layer down (#22453)."""
-    for wf in ("lean-knot", "lean-conway"):
+    the #8712 lesson applied one layer down (#22453). lean-knot.yml left
+    this loop at its matrix migration (#13751): the dispatcher's own
+    self-cover (test_axiom_gate_files_are_self_covered) carries the rule
+    for matrix lakes."""
+    for wf in ("lean-conway",):
         doc = yaml.safe_load(
             (REPO / f".github/workflows/{wf}.yml").read_text(encoding="utf-8"))
         on = doc.get("on") or doc.get(True)

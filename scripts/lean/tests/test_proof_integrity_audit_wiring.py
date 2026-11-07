@@ -367,7 +367,7 @@ def test_blocking_and_audit_are_complementary():
 # unnoticed by the ratchet: the test subject (allow-list footprint) would
 # shift, but no workflow would run on the diff, and the rouge from the new
 # `native_decide` would only land on the NEXT lane to edit any script.
-# The fix in PR #11495 wired `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**
+# The fix in PR #11495 wired `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**
 # *.lean` (+ lakefile + lean-toolchain) into BOTH `push:` and `pull_request:`
 # `paths:` of `scripts-tests.yml`. This test is the **structural pin**: it
 # greps the YAML to ensure both push and pr trigger blocks still carry those
@@ -391,10 +391,10 @@ SCRIPTS_TESTS_WF = REPO / ".github" / "workflows" / "scripts-tests.yml"
 # a `.lean` file in conway_lean/ should trigger scripts-tests.yml, which runs
 # test_audit_allowlists_native_decide_axioms above.
 _CONWAY_LEAN_TRIGGER_PATHS = [
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean",
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean",
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml",
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
 ]
 
 
@@ -417,7 +417,7 @@ def test_workflow_scripts_tests_exists():
 
 def test_native_decide_ratchet_wired_on_conway_lean_paths():
     """#11349 / PR #11495: scripts-tests.yml MUST carry the four
-    `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**` paths (or any glob
+    `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**` paths (or any glob
     form that catches them: e.g. `conway_lean/**.lean` with the bare
     `MyIA.AI.Notebooks/SymbolicAI/Lean/` prefix inferred by the workflow
     runtime root, OR `**` at the workflow root -- a future maintainer

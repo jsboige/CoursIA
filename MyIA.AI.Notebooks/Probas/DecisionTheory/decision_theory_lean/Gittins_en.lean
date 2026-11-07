@@ -1,6 +1,7 @@
 import Gittins.Basic
 import Gittins.Discount
 import Gittins.GittinsTheorem
+import Gittins.Panel_en
 
 /-!
 # Gittins Index — Formal Verification
@@ -12,6 +13,7 @@ for multi-armed bandits with geometric discounting.
 - `Gittins.Basic`: Bandit arm types, policy, value function
 - `Gittins.Discount`: Geometric discount identities (proved)
 - `Gittins.GittinsTheorem`: Gittins Index definition and optimality (sorry)
+- `Gittins.Panel`: prover program #1453 terrains (documented sorries)
 
 ## Status
 - Proved lemmas: geometric convergence, present value, discount monotonicity

@@ -124,7 +124,7 @@ elles passent par des points critiques (changement d'état), donc des
 catastrophes.
 
 **Usage ICT strate 6.** Les **régimes discursifs** de
-[ICT-Argumentation-BeliefTrajectories](ICT-Argumentation-BeliefTrajectories.ipynb)
+[ICT-Argumentation-BeliefTrajectories-Python](ICT-Argumentation-BeliefTrajectories-Python.ipynb)
 — régimes structurels synthétiques (anneau délibératif, cascade populiste),
 deux fables La Fontaine en codage manuel (Loup et l'Agneau n=7, Loup et le
 Chien n=9), paire appariée de témoins Chaplin 1940 — sont des **espèces**
@@ -1376,7 +1376,7 @@ extension, pas une redite.
   — Gray-Scott S4, mesure espace de champ.
 - [ICT-24](ICT-24-WorkspaceIgnition-Python.ipynb)
   — workspace $W$ (Gates 22-23 livrés, dissociation documentée).
-- [ICT-Argumentation-BeliefTrajectories](ICT-Argumentation-BeliefTrajectories.ipynb)
+- [ICT-Argumentation-BeliefTrajectories-Python](ICT-Argumentation-BeliefTrajectories-Python.ipynb)
   — 5 classes Argumentum (espèces thomiennes).
 
 ### Documents de synthèse

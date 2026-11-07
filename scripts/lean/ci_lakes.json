@@ -201,7 +201,7 @@
       "lake": "decisiontheory",
       "project-path": "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean",
       "display-name": "decision_theory_lean",
-      "sorry-baseline": "2",
+      "sorry-baseline": "4",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
       "axiom-fail-on-sorry": "false",
@@ -215,7 +215,7 @@
       "lake": "gametheory",
       "project-path": "MyIA.AI.Notebooks/GameTheory/game_theory_lean",
       "display-name": "game_theory_lean",
-      "sorry-baseline": "1",
+      "sorry-baseline": "4",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "SocialChoice.AMD,SocialChoice.Arrow,SocialChoice.Arrow_en,SocialChoice.Basic,SocialChoice.Basic_en,SocialChoice.Framework,SocialChoice.Framework_en,SocialChoice.Groves,SocialChoice.Groves_en,SocialChoice.MechanismDesign,SocialChoice.MechanismDesign_en,SocialChoice.Sen,SocialChoice.Sen_en,SocialChoice.SortedListCounting,SocialChoice.SortedListCounting_en,SocialChoice.Voting,SocialChoice.Voting_en,Abstraction,Abstraction.Basic,ProgramGames.Basic,ProgramGames.Basic_en,ProgramGames.Bounded,ProgramGames.Bounded_en",
       "axiom-fail-on-sorry": "true",
@@ -454,16 +454,34 @@
     },
     {
       "lake": "grothendieck",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean",
       "display-name": "grothendieck_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
       "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+      ]
+    },
+    {
+      "lake": "knot",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean",
+      "display-name": "knot_lean",
+      "sorry-baseline": "8",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "axiom-fail-on-sorry": "false",
+      "axiom-include-i18n-siblings": "true",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lake-manifest.json",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
       ]

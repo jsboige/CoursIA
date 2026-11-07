@@ -746,3 +746,85 @@ class Test21277ContextualCure:
         rac.cure_markdown(md, write=True)
         out = md.read_text(encoding="utf-8")
         assert "representation of the precedence" in out
+
+
+class Test21277SecondFournee:
+    """#21277, deuxieme fournee : residu mesure sur `SymbolicAI/Planners`.
+
+    Le triage est dans le corps de la PR. Ce qui est verrouille ici :
+      - les formes retenues sont curees en contexte francais ;
+      - elles ne sont PAS curees en contexte anglais (la table de detection
+        reste fermee, la cure contextuelle s'applique seule) ;
+      - les homographes francais sont EXCLUS -- une forme dont la graphie
+        desaccentuee est un mot francais valide ne doit jamais etre curee
+        (« il charge » ne devient pas « il chargé »).
+    """
+
+    def test_contextual_extension_cures_french_cell(self, tmp_path):
+        nb = _nb([("markdown", "Cet etat du probleme montre la complexite de la "
+                               "modelisation et la qualite des predicats ; la "
+                               "duree de la precondition depend du depart.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        for form in ["état", "problème", "complexité", "modélisation",
+                     "qualité", "prédicats", "durée", "précondition", "départ"]:
+            assert form in src, form
+        assert res["cures"] >= 9
+
+    def test_contextual_extension_spares_english_cell(self, tmp_path):
+        # La cellule porte reellement les graphies desaccentuees : c'est le
+        # contexte anglais qui doit les proteger, pas leur absence.
+        nb = _nb([("markdown", "The etat of the probleme shows the complexite of "
+                               "the modelisation, and the qualite of the predicats "
+                               "depends on the duree.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        # `probleme` (singulier) est DEJA dans `ACCENT_PAIRS` depuis la table
+        # d'origine : il est cure partout, contexte anglais compris. Ce qui est
+        # verrouille ici, c'est que la fournee n'ajoute aucune forme a ce
+        # regime -- `problemes` (pluriel) reste contextuel.
+        for form in ["etat", "complexite", "qualite", "predicats", "duree",
+                     "modelisation"]:
+            assert form in src, form
+
+    def test_french_homographs_stay_out_of_the_table(self):
+        # (a) du triage : aucune de ces formes n'entre dans l'une ou l'autre
+        # table -- leur graphie desaccentuee EST un mot francais valide, ou la
+        # forme accentuee hesite entre participe et present.
+        traps = ("trouve", "calcule", "charge", "passe", "fixe", "donne",
+                 "ferme", "vise", "assemble", "execute", "explore", "explores",
+                 "instancie", "simplifie", "tranche", "degenere", "pondere",
+                 "invoque", "allume", "ajoutes", "enfile", "aveuglement")
+        for w in traps:
+            assert w not in rac.ACCENT_PAIRS, w
+            assert w not in rac.CONTEXTUAL_PAIRS, w
+
+    def test_homograph_sentence_not_cured(self, tmp_path):
+        # Controle positif du piege : la phrase reste intacte.
+        nb = _nb([("markdown", "Il charge le modele et calcule la tranche, puis "
+                               "il trouve la passe et fixe la donne.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        for form in ["Il charge", "calcule", "tranche", "trouve", "passe", "fixe"]:
+            assert form in src, form
+
+    def test_contextual_uncured_is_not_reported_as_hors_table(self, tmp_path):
+        # Un titre francais sans mot-outil (donc sans preuve FR cellule) garde
+        # sa forme : le rapport doit dire « contexte FR non etabli », PAS
+        # « la table ne sait pas la curer ».
+        # Deux cellules : le titre seul (aucun mot-outil, donc pas de preuve FR)
+        # et une cellule francaise qui fournit le temoin accentue exige par le
+        # detecteur (controle positif interne, cf #14613 point 1).
+        nb = _nb([("markdown", "### 2.3 Problemes Block World"),
+                  ("markdown", "Les problèmes sont poses ici, avec leurs données.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        assert "problemes" in res.get("contextual_uncured", {})
+        assert "problemes" not in res.get("hors_table", {})

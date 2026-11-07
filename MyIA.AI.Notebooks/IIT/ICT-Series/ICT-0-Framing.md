@@ -461,7 +461,7 @@ n'apparaissait jusqu'ici dans aucune des deux cartes. Leur nature se lit pourtan
 
 | Document | Nature | Axe |
 |---|---|---|
-| [ICT-Life-SubstratCertifie](ICT-Life-SubstratCertifie.ipynb) | calibration du substrat GOL (B3/S23, correction certifiée en Lean) | vertical — substrat |
+| [ICT-Life-SubstratCertifie-Python](ICT-Life-SubstratCertifie-Python.ipynb) | calibration du substrat GOL (B3/S23, correction certifiée en Lean) | vertical — substrat |
 | [ICT-32-StratificationCausaleLife-Python](ICT-32-StratificationCausaleLife-Python.ipynb) | apportionment de Hoel **sur** ce substrat | vertical — substrat |
 | [ICT-33-SoupCollisions-Python](ICT-33-SoupCollisions-Python.ipynb) | ensembles ouverts et bruit macro **sur** ce substrat | vertical — substrat |
 | [ICT-31-ContrasteTroisSubstrats-Python](ICT-31-ContrasteTroisSubstrats-Python.ipynb) | contraste mesuré **entre** bistable, Gray-Scott et GOL | transverse — cross-substrat |

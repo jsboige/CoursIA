@@ -79,20 +79,21 @@ DEFAULT_SCENARII = (
 
 # Copie verbatim de `Cards/Scenarii/Argumentum Scenarii - Cards.csv` au commit
 # epingle du sous-module Argumentum (cf NOTICE-SCENARII).
-SCENARII_UPSTREAM_COMMIT = "0ab05d66576a1007c3952a67e2dd1eaf8f9b502c"
-SCENARII_BLOB_SHA1 = "9f20eb808a1d22c9c1a5dd1b96460b0d6a23db60"
+SCENARII_UPSTREAM_COMMIT = "9038690dd8a329dadfc2fdea587f1b87130cf861"
+SCENARII_BLOB_SHA1 = "640d868fa902c0614733f49b698d7c012baedc49"
 
-# Ancrage cote depot (mesure po-2023 du 2026-10-08 sur #17578) : le gitlink du
-# sous-module Argumentum a derive APRES le build (0ab05d66 -> 65af9c38 le
-# 06/10 -> edb39554), et la reproductibilite ne doit plus se lire depuis un pin
-# amont que le depot ne pointe plus. Elle se lit depuis le commit du depot ou
-# le dataset est entre sur main : a ce commit, le gitlink etait encore le pin
-# amont. Ce sont des constantes de provenance, pas des valeurs capturees au
-# vol -- un manifeste qui dependrait du commit courant casserait le test de
+# Ancrage cote depot (mesure po-2023 du 2026-10-08 sur #17578, rejoue a chaque
+# resynchronisation) : la reproductibilite ne se lit pas depuis le sous-module
+# vivant, dont le gitlink derive, mais depuis un commit que le depot atteint.
+# Elle se lit ici depuis le commit de `main` qui epingle le pin amont copie :
+# son arbre porte le gitlink `BUILD_GITLINK_COMMIT`, d'ou la copie verbatim a
+# ete extraite. Ce sont des constantes de provenance, pas des valeurs capturees
+# au vol -- un manifeste qui dependrait du commit courant casserait le test de
 # regeneration bit-identique. La resynchronisation (cf NOTICE) les met a jour.
 SCENARII_COPY_REPO_PATH = "MyIA.AI.Notebooks/GenAI/FallacyDetection/data/argumentum_scenarii_cards.csv"
-BUILD_REPO_COMMIT = "4e0f5a103f404dba5ed27d3e9a1cd0b982de7cfe"
-BUILD_GITLINK_COMMIT = "0ab05d66576a1007c3952a67e2dd1eaf8f9b502c"
+# 0dd7c8557cb (2026-10-31) : bump du gitlink a88947e5 -> 9038690 (i18n zh/ar/fa).
+BUILD_REPO_COMMIT = "0dd7c8557cb5e6dd98db43cf89a8dc7e0dcf7c8c"
+BUILD_GITLINK_COMMIT = "9038690dd8a329dadfc2fdea587f1b87130cf861"
 ARGUMENTUM_SUBMODULE_PATH = "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"
 
 LANGS = tuple(ALL_LANGS)

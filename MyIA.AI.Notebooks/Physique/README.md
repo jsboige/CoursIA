@@ -31,14 +31,18 @@ Au terme de la série, un lecteur sait :
   l'étale ou le décale est reconnu faux sans discussion ;
 - **calculer une intégrale définie ou impropre** par voie analytique et par voie
   numérique, puis confronter les deux — l'écart est le résultat, pas un défaut à
-  masquer.
+  masquer ;
+- **énoncer une loi comme une tâche possible ou impossible** (théorie du
+  constructeur), et lire la conservation comme l'impossibilité d'une tâche — le
+  changement de point de vue qui relie `Constructeur/` au théorème de Noether de
+  `Jauge/`.
 
 L'objectif commun est une habitude de lecture : devant un nombre produit par un
 solveur, chercher d'abord **contre quoi** il peut être vérifié.
 
-## Trois sous-séries
+## Quatre sous-séries
 
-Les carnets vivent dans trois dossiers, chacun avec son propre `README.md` qui présente
+Les carnets vivent dans quatre dossiers, chacun avec son propre `README.md` qui présente
 ses carnets un par un.
 
 ### `Jauge/` — symétries et théories de jauge
@@ -68,6 +72,14 @@ détecté sans ambiguïté.
 Le versant calculatoire : intégrales définies et impropres, méthodes analytiques et
 vérification numérique croisée. Ces carnets viennent de la série Probas, où ils
 servaient d'outils ; ils sont ici chez eux.
+
+### `Constructeur/` — les lois comme tâches possibles / impossibles
+
+Le versant conceptuel : la théorie du constructeur (Deutsch 2013 ; Deutsch & Marletto
+2015) énonce les lois fondamentales comme des énoncés sur les transformations possibles
+et impossibles, plutôt que comme des équations de mouvement. Le carnet-01 distille ce
+changement de point de vue et le relie à `Jauge/` (Noether), à la localité (causal
+bridges) et à l'hybridation quantique (gravité).
 
 ## Ce que la série suppose acquis
 

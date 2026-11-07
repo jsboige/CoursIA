@@ -180,7 +180,7 @@ class ArtifactExemption(NamedTuple):
 
 ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
         motif=re.compile(r"Gosper Glider Gun \(36 cellules vivantes"),
         raison=(
             "« 36 cellules » = cellules VIVANTES du canon de Gosper dans le Jeu "
@@ -189,7 +189,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
         motif=re.compile(r"Pulsar \(48 cellules\)"),
         raison=(
             "« 48 cellules » = periode-3 Pulsar du Jeu de la Vie, cite comme cas "
@@ -197,7 +197,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.en.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.en.md",
         motif=re.compile(r"Pulsar \(48 cells\)"),
         raison=(
             "Sibling anglais du README precedent : meme Pulsar, memes cellules de "
@@ -292,6 +292,48 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "Index README de la page de mesure DarkSnail : meme inventaire du "
             "clone externe fige a 043c9d26 (exemption detaillee ci-dessus), "
             "resume en une ligne d'index."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/README.md",
+        motif=re.compile(r"la v1 du gun, 36 cellules fausses"),
+        raison=(
+            "« 36 cellules » = population d'une transcription FABRIQUEE du canon "
+            "de Gosper, citee comme temoin d'echec du self-check d'identite. Le "
+            "nombre appartient au recit de l'incident (la v1 fausse), pas a un "
+            "etat du depot : il ne derive pas avec CoursIA, il ne doit pas etre "
+            "mis a jour."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GameTheory/assets/readme/MANIFEST.md",
+        motif=re.compile(r"4 cellules 2×2"),
+        raison=(
+            "« 4 cellules 2×2 » = les quatre cases de la MATRICE DE GAINS "
+            "dessinee dans la figure (Cooperer/Defaire x Cooperer/Defaire), pas "
+            "des cellules de carnet. Le nombre decrit l'image ; il est fige par "
+            "le SHA de l'asset cite sur la meme entree, pas par l'etat du depot "
+            "(meme classe que les « 36 cellules vivantes » du canon de Gosper)."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GameTheory/SocialChoice/assets/readme/MANIFEST.md",
+        motif=re.compile(r"\*\*9 cellules totales\*\*"),
+        raison=(
+            "« 9 cellules totales » = la grille 3 panneaux x 3 barres de la "
+            "figure du theoreme d'Arrow (Borda / Pluralite / Dictature x Pareto "
+            "/ IIA / Non-dictature), pas des cellules de carnet. Le nombre est "
+            "une propriete de l'image, fige par le SHA de l'asset."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GameTheory/SocialChoice/assets/readme/MANIFEST.md",
+        motif=re.compile(r"3 lignes de convergence"),
+        raison=(
+            "« 3 lignes de convergence » = les trois courbes tracees dans la "
+            "figure du modele de Downs (parti de gauche, parti de droite, "
+            "electeur median), pas des lignes de fichier. Description d'une "
+            "image figee par son SHA, pas une mesure du depot."
         ),
     ),
 )
@@ -586,13 +628,38 @@ def _findings_in_text(
     return out
 
 
-def scan_all(root: Path, classes: set[str]) -> list[tuple[str, str, str]]:
+# Racine du depot PORTANT cet organe : les exemptions de ``ARTIFACT_EXEMPTIONS``
+# sont ecrites depuis cette racine-la, pas depuis le perimetre scanne (#24587).
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _scan_rel(path: Path, root: Path, repo_root: Path | None) -> str:
+    """Chemin rendu par le scan : relatif au DEPOT quand il y est rattachable.
+
+    Les exemptions declarees par ``ArtifactExemption.path`` sont ecrites depuis la
+    racine du depot. Sous ``--root <sous-arbre>``, un chemin relatif a la racine
+    *scannee* n'apparie donc plus aucune entree : l'exemption vivante ne
+    s'appliquait plus, et le compteur pourtant arbitre etait re-signale (#24587).
+    Le chemin rendu est donc celui du depot, et le chemin relatif au scan ne sert
+    que de repli pour un arbre qui n'appartient pas au depot (fixture, copie).
+    """
+    if repo_root is not None and repo_root != root:
+        try:
+            return path.resolve().relative_to(repo_root).as_posix()
+        except (OSError, ValueError):
+            pass
+    return path.relative_to(root).as_posix()
+
+
+def scan_all(
+    root: Path, classes: set[str], repo_root: Path | None = None
+) -> list[tuple[str, str, str]]:
     findings: list[tuple[str, str, str]] = []
 
     for nb in root.rglob("*.ipynb"):
         if _skipped(nb):
             continue
-        rel = nb.relative_to(root).as_posix()
+        rel = _scan_rel(nb, root, repo_root)
         # stochastic : un carnet seme est reproductible -> on ne signale pas
         # cette classe pour lui (les autres classes restent actives).
         eff_classes = set(classes)
@@ -604,7 +671,7 @@ def scan_all(root: Path, classes: set[str]) -> list[tuple[str, str, str]]:
     for md in root.rglob("*.md"):
         if _skipped(md):
             continue
-        rel = md.relative_to(root).as_posix()
+        rel = _scan_rel(md, root, repo_root)
         try:
             text = md.read_text(encoding="utf-8")
         except OSError:
@@ -869,19 +936,36 @@ def _emit_legacy(findings: list[tuple[str, str, str]], strict: bool) -> int:
     return 1 if strict else 0
 
 
-def _exemption_audit(root: Path) -> tuple[list[tuple[ArtifactExemption, int]], list[ArtifactExemption]]:
+def _exemption_audit(
+    root: Path, repo_root: Path | None = None
+) -> tuple[list[tuple[ArtifactExemption, int]], list[ArtifactExemption]]:
     """Rend (exemptions vivantes avec le nombre de compteurs couverts, perimees).
 
     « Vivante » veut dire : le motif matche encore ET il couvre au moins un
     compteur que COUNT_RE aurait flague. Un motif qui matche sans couvrir de
     compteur ne protege rien non plus : il est perime au meme titre.
+
+    ``root`` est le perimetre SCANNE, pas forcement le depot. Sous
+    ``--root <sous-arbre>``, ``root / exemption.path`` ne designe aucun fichier
+    de l'allowlist (les chemins sont ecrits depuis la racine du depot) : les 12
+    entrees se lisaient perimees, avec pour consigne de les retirer -- 100 % de
+    faux positifs (#24587). Une declaration se juge donc contre le fichier
+    qu'elle NOMME : ``root`` d'abord (depot entier, arbre de test), puis
+    ``repo_root`` quand le scan est borne. Un fichier introuvable dans les deux
+    reste perime : c'est la seule peremption que cet audit puisse conclure.
     """
     live: list[tuple[ArtifactExemption, int]] = []
     stale: list[ArtifactExemption] = []
+    bases = [root] if repo_root in (None, root) else [root, repo_root]
     for exemption in ARTIFACT_EXEMPTIONS:
-        try:
-            text = (root / exemption.path).read_text(encoding="utf-8")
-        except OSError:
+        text: str | None = None
+        for base in bases:
+            try:
+                text = (base / exemption.path).read_text(encoding="utf-8")
+            except OSError:
+                continue
+            break
+        if text is None:
             stale.append(exemption)
             continue
         covered = 0
@@ -901,16 +985,17 @@ def _exemption_audit(root: Path) -> tuple[list[tuple[ArtifactExemption, int]], l
     return live, stale
 
 
-def _report_exemptions(root: Path) -> None:
+def _report_exemptions(root: Path, repo_root: Path | None = None) -> None:
     """Restitue l'allowlist en ``--all`` : ce qu'elle couvre, et ce qui est mort.
 
     Jamais un echec : le stock ne fait rougir aucune PR (#17636). Ce qui est
     rendu visible, c'est la DECISION -- et son eventuelle peremption, qui sans
-    cette ligne se lirait comme une exemption encore vivante.
+    cette ligne se lirait comme une exemption encore vivante. La peremption se
+    juge contre le fichier nomme, jamais contre le perimetre scanne (#24587).
     """
     if not ARTIFACT_EXEMPTIONS:
         return
-    live, stale = _exemption_audit(root)
+    live, stale = _exemption_audit(root, repo_root)
     if live:
         total = sum(n for _exemption, n in live)
         print(
@@ -948,9 +1033,10 @@ def main() -> int:
     args = ap.parse_args()
 
     classes, structural_only = _resolve_classes(args.klass)
+    scan_root = Path(args.root).resolve()
 
     if args.all:
-        findings = scan_all(Path(args.root).resolve(), classes)
+        findings = scan_all(scan_root, classes, repo_root=_REPO_ROOT)
     else:
         try:
             findings = scan_diff(args.diff, classes)
@@ -971,7 +1057,7 @@ def main() -> int:
     # L'allowlist ne se relit qu'en inventaire : en mode --diff, un fichier non
     # touche par la PR n'est pas "perime", il est simplement hors champ.
     if args.all and "artifact" in classes:
-        _report_exemptions(Path(args.root).resolve())
+        _report_exemptions(scan_root, repo_root=_REPO_ROOT)
 
     return rc
 

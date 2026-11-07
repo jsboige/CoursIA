@@ -16,6 +16,17 @@ Usage:
     python scripts/check_docs_links.py --orphans              # Also report orphan docs
     python scripts/check_docs_links.py --expect-broken 1      # Positive control (see below)
 
+Code-comment citations (#24410)
+-------------------------------
+``--code`` runs a second pass over the comments of `.py`, `.lean` and `.cs`
+files: a doc path cited there (`docs/...md`) is invisible to the markdown scan
+whether it is alive or dead. It is a SEPARATE mode, not an addition: `main`
+already carries broken markdown links the baseline does not excuse, and merging
+the two counts would make a code finding indistinguishable from that red. All
+the differential machinery applies unchanged -- ``--check --base REF`` excuses a
+citation already dead at REF, and ``--expect-broken N`` arms the positive
+control on THIS pass.
+
 Positive control
 ----------------
 ``--expect-broken N`` arms an in-band control: the scan must find AT LEAST ``N``
@@ -39,13 +50,19 @@ Exit codes:
 """
 
 import argparse
+import ast
+import io
 import json
+import os
 import posixpath
 import re
 import subprocess
 import sys
+import tokenize
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 from urllib.parse import unquote
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -113,10 +130,23 @@ SKIP_DIRS = {
     ".mypy_cache", ".pytest_cache", ".ruff_cache",
     "custom_nodes",  # Third-party ComfyUI plugins, not ours to fix
     "_site",  # Quarto build artifact -- gitignored, not source
+    # Agent scratch (fleet rule: throwaway artefacts live in the workspace's
+    # gitignored `.tmp/`). Same defect class as `_site`: not source, gitignored,
+    # hence never checked out in CI. Measured on 2026-11-03 -- the README sweep
+    # below is repo-wide, so three scratch worktrees under `.tmp/` supplied 29
+    # of the 31 "broken links" the organ reported locally, against 2 real ones
+    # (#24410). A verdict that depends on what a lane happens to have scratched
+    # is not a verdict, and it buries the real defects in noise.
+    ".tmp",
 }
 
 # Baseline file location
 BASELINE_PATH = REPO_ROOT / "scripts" / "tests" / "baseline_docs_links.json"
+
+# The code-citation pass (#24410) keeps its own baseline: the two instruments
+# answer different questions, and sharing one file would make `--baseline` in
+# one mode silently rewrite the other's frozen state.
+CODE_BASELINE_PATH = REPO_ROOT / "scripts" / "tests" / "baseline_docs_code_citations.json"
 
 
 def _load_submodule_paths() -> set[str]:
@@ -306,6 +336,326 @@ def scan_file(filepath: Path) -> list[LinkRef]:
     return scan_content(content, rel_source)
 
 
+# ---------------------------------------------------------------------------
+# Code-comment citation pass (#24410)
+# ---------------------------------------------------------------------------
+#
+# The markdown scan above never opens a `.py`, `.lean` or `.cs` file, so a doc
+# path cited in a code comment is invisible to this organ whether it is alive or
+# dead. Measured on `origin/main` 2026-11-03: four citations point at a path that
+# no longer exists (the target moved), across three languages -- the same hole,
+# one fix.
+#
+# A naive extension is worthless: scanning every `docs/...md`-shaped string in
+# code yields 118 absent paths, and only a minority are citations. The three
+# noise families are excluded BY CONSTRUCTION below, not by an allow/deny list
+# that rots on the next rename:
+#
+#   1. test fixtures (a path in a test tree is a value, not a claim about the
+#      repo) -- `_is_test_tree`;
+#   2. generated-output positions (`--out`, `open(..., "w")`, `write_text`) --
+#      `_is_output_position`: write the path down is not cite it;
+#   3. third-party repo paths (`lean/docs/132.md` belongs to openai/math) --
+#      `_is_scoped_doc_citation`: a citation must be anchored at a top-level
+#      entry of OUR tree, otherwise it does not resolve against it at all.
+
+CODE_SCAN_SUFFIXES = (".py", ".lean", ".cs")
+
+# Directories whose contents are test data. Matched on whole path segments, so
+# `scripts/tests/...` and `.../tests/...` are both excluded while a source file
+# that merely has "test" in its name is not.
+TEST_TREE_PARTS = {"tests", "test", "__tests__", "testdata", "fixtures"}
+
+# A citation must carry at least one `/` and end in `.md`. A bare `README.md` in
+# a comment names no resolvable file (which directory?), so it is not a
+# citation; the `\b` keeps `.mdx` from matching as `.md`. Every segment must
+# START with a letter, digit or underscore (one leading dot allowed for
+# `.claude/`), so a shape such as `docs/...md` -- how prose describes the pattern
+# rather than citing a page -- does not match.
+_SEGMENT = r"\.?[A-Za-z0-9_][A-Za-z0-9_.\-]*"
+DOC_CITATION_PATTERN = re.compile(
+    rf"(?<![\w./~-])((?:\.\.?/)*(?:{_SEGMENT}/)+{_SEGMENT}\.md)\b"
+)
+
+# Position markers that make the following text an OUTPUT of a command or a
+# write call rather than a reference to a document that should exist.
+_OUTPUT_MARKER_RE = re.compile(
+    r"(?:--out(?:put|-dir)?|(?<![\w-])-o\s|(?<![-=])>(?!>)|>>|"
+    r"open\(|write_text\(|write_bytes\(|savefig\(|to_csv\(|to_json\(|\.write\()",
+    re.IGNORECASE,
+)
+
+# Line-comment / block-comment syntax per language. Lean nests its block
+# comments (`/- /- -/ -/`), C# does not; getting this wrong on Lean would end a
+# comment at the first inner `-/` and scan the rest of the block as code.
+COMMENT_SYNTAX: dict[str, tuple[str, str, str, bool]] = {
+    ".lean": ("--", "/-", "-/", True),
+    ".cs": ("//", "/*", "*/", False),
+}
+
+
+def _is_test_tree(path: Path) -> bool:
+    """Whether ``path`` lives in a test tree (fixtures are values, not claims)."""
+    try:
+        rel = path.relative_to(REPO_ROOT)
+    except ValueError:
+        return True
+    if any(part.lower() in TEST_TREE_PARTS for part in rel.parts[:-1]):
+        return True
+    name = rel.name.lower()
+    return name.startswith("test_") or name.endswith("_test.py")
+
+
+def _repo_top_level() -> set[str]:
+    """Names present at the repository root, recomputed per call.
+
+    Recomputed rather than cached so a tmp-tree test that rebinds ``REPO_ROOT``
+    gets its own answer instead of this machine's.
+    """
+    try:
+        return {p.name for p in REPO_ROOT.iterdir()}
+    except OSError:
+        return set()
+
+
+def _is_scoped_doc_citation(path: str, top_level: set[str]) -> bool:
+    """Whether ``path`` is a citation of OUR tree, not of a third-party one.
+
+    ``lean/docs/132.md`` is anchored at `lean`, which is not a top-level entry
+    here -- it belongs to the upstream project the comment talks about, so it is
+    out of scope. A `./`/`../` path is in scope: it resolves against the citing
+    file, which is exactly what ``check_link`` will do.
+    """
+    first = path.split("/", 1)[0]
+    if first in (".", ".."):
+        return True
+    return first in top_level
+
+
+def _is_output_position(prefix: str) -> bool:
+    """Whether the text before a path marks it as an output/write position."""
+    return _OUTPUT_MARKER_RE.search(prefix) is not None
+
+
+def _generic_comment_spans(
+    content: str, line_marker: str, block_open: str, block_close: str,
+    nestable: bool,
+) -> list[tuple[int, str]]:
+    """Comment text of a C-family/Lean source, as ``(line, text)`` pairs.
+
+    A line marker preceded by an ODD number of `"` sits inside a string literal
+    (`let s := "--"`), so it is not a comment. That guard is a heuristic, not a
+    lexer; it covers the case that actually occurs and is documented as such.
+    """
+    spans: list[tuple[int, str]] = []
+    depth = 0
+    for lineno, line in enumerate(content.splitlines(), 1):
+        buf: list[str] = []
+        i = 0
+        while i < len(line):
+            if depth == 0:
+                if line.startswith(block_open, i):
+                    depth = 1
+                    i += len(block_open)
+                    continue
+                if line.startswith(line_marker, i) and line[:i].count('"') % 2 == 0:
+                    spans.append((lineno, line[i + len(line_marker):]))
+                    break
+                i += 1
+                continue
+            if nestable and line.startswith(block_open, i):
+                depth += 1
+                i += len(block_open)
+                continue
+            if line.startswith(block_close, i):
+                depth -= 1
+                i += len(block_close)
+                continue
+            buf.append(line[i])
+            i += 1
+        if buf:
+            spans.append((lineno, "".join(buf)))
+    return spans
+
+
+def _python_comment_spans(content: str) -> list[tuple[int, str]]:
+    """`#` comments (via ``tokenize``) plus module/class/function docstrings.
+
+    ``tokenize`` is the only way to tell a `#` comment from a `#` inside a
+    string literal; ``ast`` is the only way to tell a docstring from an
+    arbitrary string expression. Both are stdlib and exact, which is why Python
+    does not go through ``_generic_comment_spans``.
+    """
+    spans: list[tuple[int, str]] = []
+    # A source that the interpreter would warn about (invalid escape sequences
+    # in a legacy regex string, say) is still a source we must read. Parsing it
+    # here must not spray SyntaxWarning on the organ's own output: the verdict
+    # is a link report, not a lint of unrelated files.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", SyntaxWarning)
+        try:
+            for tok in tokenize.generate_tokens(io.StringIO(content).readline):
+                if tok.type == tokenize.COMMENT:
+                    spans.append((tok.start[0], tok.string))
+        except (tokenize.TokenError, IndentationError, SyntaxError):
+            pass
+
+        try:
+            tree = ast.parse(content)
+        except (SyntaxError, ValueError):
+            return spans
+    owners = (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
+    for node in ast.walk(tree):
+        body = getattr(node, "body", None)
+        if not isinstance(node, owners) or not body:
+            continue
+        first = body[0]
+        if not (isinstance(first, ast.Expr)
+                and isinstance(first.value, ast.Constant)
+                and isinstance(first.value.value, str)):
+            continue
+        for offset, doc_line in enumerate(first.value.value.splitlines()):
+            spans.append((first.lineno + offset, doc_line))
+    return spans
+
+
+def _comment_spans(suffix: str, content: str) -> list[tuple[int, str]]:
+    """Comment text of ``content`` according to the language of ``suffix``."""
+    if suffix == ".py":
+        return _python_comment_spans(content)
+    syntax = COMMENT_SYNTAX.get(suffix)
+    if syntax is None:
+        return []
+    return _generic_comment_spans(content, *syntax)
+
+
+def _git_tracked_code_files() -> list[str] | None:
+    """Repo-relative code files git tracks, or None when git cannot be asked.
+
+    The scope of this organ is what the REPOSITORY ships, not what a machine
+    happens to have under its working tree: an unpruned walk of a developer
+    checkout enumerated 93 876 `*.py|*.lean|*.cs` files against 4 339 tracked
+    ones (measured 2026-11-04), i.e. it spent its time on installed packages.
+    ``None`` keeps a tmp-tree test working: it rebuilds the engine over the
+    pruned walk instead of reporting an empty scope.
+    """
+    proc = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return None
+    return [p for p in proc.stdout.split("\0") if p.endswith(CODE_SCAN_SUFFIXES)]
+
+
+def find_code_files() -> list[Path]:
+    """Every scannable code file: tracked, non-test, outside skipped trees.
+
+    Pruned at DIRECTORY level when git is unavailable rather than filtered
+    afterwards: `.lake/` holds a full Mathlib checkout, so an unpruned
+    ``rglob`` would enumerate thousands of files only to discard them.
+    """
+    tracked = _git_tracked_code_files()
+    if tracked is not None:
+        return [
+            REPO_ROOT / rel for rel in sorted(tracked)
+            if (REPO_ROOT / rel).is_file()
+            and not _should_skip(REPO_ROOT / rel)
+            and not _is_test_tree(REPO_ROOT / rel)
+        ]
+
+    files: list[Path] = []
+    for dirpath, dirnames, filenames in os.walk(REPO_ROOT):
+        rel_dir = Path(dirpath).relative_to(REPO_ROOT).as_posix()
+        kept: list[str] = []
+        for name in dirnames:
+            if name in SKIP_DIRS or name.lower() in TEST_TREE_PARTS:
+                continue
+            child = name if rel_dir == "." else f"{rel_dir}/{name}"
+            if any(child == sm or child.startswith(sm + "/") for sm in SUBMODULE_PATHS):
+                continue
+            kept.append(name)
+        dirnames[:] = kept
+        for name in filenames:
+            if not name.endswith(CODE_SCAN_SUFFIXES):
+                continue
+            path = Path(dirpath) / name
+            if _should_skip(path) or _is_test_tree(path):
+                continue
+            files.append(path)
+    files.sort()
+    return files
+
+
+def _citation_exists(target: str, source_rel: str) -> bool:
+    """Whether a code-comment citation resolves, under EITHER anchoring.
+
+    A comment in `MyIA.AI.Notebooks/IIT/ICT-Series/ict/foo.py` writes
+    `docs/ict/<page>.md` meaning the REPOSITORY ROOT; `check_link` resolves against
+    the citing file's directory and calls every such citation dead (measured
+    2026-11-04: 224 "broken" against 6 alive, while the issue's line-by-line
+    reading found 30 dead of ~275). Both conventions are in use in this repo, so
+    a citation is dead only when NEITHER anchor finds it. An explicit
+    `./`/`../` path names one anchor only, and is not re-anchored at the root.
+    """
+    if check_link(target, REPO_ROOT / source_rel, root=REPO_ROOT):
+        return True
+    if target.startswith(("./", "../")):
+        return False
+    # A dummy source directly under REPO_ROOT makes check_link's `parent` the
+    # root itself, reusing its decoding, submodule and Quarto rules verbatim
+    # instead of growing a second existence oracle that could diverge. `root` is
+    # passed explicitly: the default argument is bound at import time and would
+    # not follow a rebound REPO_ROOT in tests.
+    return check_link(target, REPO_ROOT / "__root_anchor__", root=REPO_ROOT)
+
+
+def scan_code_content(content: str, rel_source: str) -> list[LinkRef]:
+    """Doc paths cited in the comments of ``content`` (repo-relative source).
+
+    Returns one ``LinkRef`` per distinct ``(line, target)``: the same path cited
+    twice on one line is one citation, and a path repeated across the file keeps
+    one occurrence per line so the report points at every place to fix.
+    """
+    # Cheap pre-filter before the lexers: a file without a single `.md` cannot
+    # hold a doc citation, and tokenize+ast over 3 000 files costs ~70 s.
+    if ".md" not in content:
+        return []
+    top_level = _repo_top_level()
+    suffix = Path(rel_source).suffix.lower()
+    seen: set[tuple[int, str]] = set()
+    refs: list[LinkRef] = []
+    for lineno, text in _comment_spans(suffix, content):
+        for match in DOC_CITATION_PATTERN.finditer(text):
+            target = match.group(1)
+            if not _is_scoped_doc_citation(target, top_level):
+                continue
+            if _is_output_position(text[:match.start()]):
+                continue
+            key = (lineno, target)
+            if key in seen:
+                continue
+            seen.add(key)
+            refs.append(LinkRef(
+                source=rel_source, target=target, line=lineno, text="doc citation",
+            ))
+    return refs
+
+
+def scan_code_file(filepath: Path) -> list[LinkRef]:
+    """Doc paths cited in the comments of a code file on disk."""
+    try:
+        content = filepath.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, PermissionError, OSError):
+        return []
+    try:
+        rel_source = filepath.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        rel_source = str(filepath)
+    return scan_code_content(content, rel_source)
+
+
 def _is_quarto_render_target(html_path: Path, root: Path) -> bool:
     """Return whether Quarto generates ``html_path`` from a listed notebook."""
     notebook = html_path.with_suffix(".ipynb")
@@ -422,7 +772,22 @@ def _link_exists_in_tree(target: str, source_rel: str, files: set[str],
     return False
 
 
-def preexisting_broken(broken_refs: list[LinkRef], rev: str) -> set[tuple[str, str]] | None:
+def _citation_exists_in_tree(target: str, source_rel: str, files: set[str],
+                             dirs: set[str], quarto_yml: str | None) -> bool:
+    """``_link_exists_in_tree`` under both anchors, as ``_citation_exists``."""
+    if _link_exists_in_tree(target, source_rel, files, dirs, quarto_yml):
+        return True
+    if target.startswith(("./", "../")):
+        return False
+    # An empty dirname makes ``posixpath.join`` yield the target unchanged, i.e.
+    # resolved against the repository root -- the second anchor.
+    return _link_exists_in_tree(target, "__root_anchor__", files, dirs, quarto_yml)
+
+
+def preexisting_broken(broken_refs: list[LinkRef], rev: str,
+                       scanner: Callable[[str, str], list[LinkRef]] = scan_content,
+                       exists_in_tree: Callable[..., bool] = _link_exists_in_tree,
+                       ) -> set[tuple[str, str]] | None:
     """Among ``broken_refs``, those already broken at ``rev``.
 
     Only the sources carrying a broken link at HEAD are read at ``rev``: the
@@ -455,9 +820,9 @@ def preexisting_broken(broken_refs: list[LinkRef], rev: str) -> set[tuple[str, s
         content = _git_show(rev, source)
         if content is None:
             continue
-        base_targets = {r.target for r in scan_content(content, source)}
+        base_targets = {r.target for r in scanner(content, source)}
         for target in targets:
-            if target in base_targets and not _link_exists_in_tree(
+            if target in base_targets and not exists_in_tree(
                 target, source, tree, dirs, quarto_yml
             ):
                 preexisting.add((source, target))
@@ -493,28 +858,40 @@ def find_orphan_docs(scanned_files: list[Path], all_refs: list[LinkRef]) -> list
     return orphans
 
 
-def run_scan(report_orphans: bool = False) -> ScanResult:
-    """Run a full link scan across the repository."""
+def run_scan(report_orphans: bool = False, code: bool = False) -> ScanResult:
+    """Run a full scan across the repository.
+
+    ``code=True`` runs the code-comment citation pass (#24410) INSTEAD of the
+    markdown pass -- not in addition to it. The two verdicts are kept apart on
+    purpose: `main` already carries broken markdown links that the frozen
+    baseline does not excuse (measured 2026-11-03), so folding a new signal into
+    the same count would make a code finding indistinguishable from that
+    pre-existing red, which is exactly what #24410 warns against.
+    """
     result = ScanResult()
-    files = find_scan_files()
+    files = find_code_files() if code else find_scan_files()
     result.scanned_files = len(files)
 
     all_refs = []
     for filepath in files:
-        refs = scan_file(filepath)
+        refs = scan_code_file(filepath) if code else scan_file(filepath)
         all_refs.extend(refs)
 
     result.total_links = len(all_refs)
 
     for ref in all_refs:
-        source_path = REPO_ROOT / ref.source
-        if check_link(ref.target, source_path):
-            result.valid.append(ref)
+        if code:
+            ok = _citation_exists(ref.target, ref.source)
         else:
-            result.broken.append(ref)
+            ok = check_link(ref.target, REPO_ROOT / ref.source)
+        (result.valid if ok else result.broken).append(ref)
 
-    if report_orphans:
+    if report_orphans and not code:
         result.orphans = find_orphan_docs(files, all_refs)
+    # In code mode `--orphans` is meaningless (orphan detection asks which PAGE
+    # links to a doc; a comment is not a page) and leaves `orphans` empty --
+    # main() refuses the combination rather than printing "0 orphans", which
+    # would read as a clean result from an unscanned question.
 
     return result
 
@@ -598,17 +975,19 @@ def format_generated_excuses(refs: list[LinkRef]) -> str:
     return "\n".join(lines)
 
 
-def format_report(result: ScanResult, show_orphans: bool = False) -> str:
+def format_report(result: ScanResult, show_orphans: bool = False,
+                  code: bool = False) -> str:
     """Format scan results as a human-readable report."""
     lines = []
-    lines.append(f"Scanned {result.scanned_files} files, {result.total_links} links")
+    noun = "doc citations in code comments" if code else "links"
+    lines.append(f"Scanned {result.scanned_files} files, {result.total_links} {noun}")
 
     if result.broken:
-        lines.append(f"\nBroken links ({len(result.broken)}):")
+        lines.append(f"\nBroken {noun} ({len(result.broken)}):")
         for ref in sorted(result.broken, key=lambda r: (r.source, r.line)):
             lines.append(f"  {ref.source}:{ref.line} -> {ref.target}")
     else:
-        lines.append("\nNo broken links found.")
+        lines.append(f"\nNo broken {noun} found.")
 
     if show_orphans and result.orphans:
         lines.append(f"\nOrphan docs ({len(result.orphans)}) [WARN, non-blocking]:")
@@ -632,6 +1011,12 @@ def main():
                              "(e.g. origin/main) is not a regression")
     parser.add_argument("--orphans", action="store_true",
                         help="Also report orphan docs")
+    parser.add_argument("--code", action="store_true",
+                        help="Scan doc paths cited in CODE COMMENTS (.py/.lean/"
+                             ".cs) instead of markdown links. Kept separate so a "
+                             "code finding is never confused with a markdown "
+                             "one; --check/--base/--baseline/--expect-broken all "
+                             "apply to the selected pass (#24410).")
     parser.add_argument("--quiet", action="store_true",
                         help="Minimal output")
     parser.add_argument("--expect-broken", metavar="N", type=int, default=None,
@@ -640,8 +1025,16 @@ def main():
                              "indistinguishable from a dead detection path.")
     args = parser.parse_args()
 
+    if args.code and args.orphans:
+        print("Error: --orphans is meaningless with --code -- orphan detection "
+              "asks which PAGE links to a doc, and a code comment is not a page.",
+              file=sys.stderr)
+        sys.exit(2)
+
+    baseline_path = CODE_BASELINE_PATH if args.code else BASELINE_PATH
+
     try:
-        result = run_scan(report_orphans=args.orphans)
+        result = run_scan(report_orphans=args.orphans, code=args.code)
 
         # The positive control is evaluated BEFORE any mode branch, so it is
         # never silently ignored by --check/--baseline.
@@ -663,28 +1056,37 @@ def main():
             sys.exit(2)
 
         if args.baseline:
-            write_baseline(result)
+            write_baseline(result, path=baseline_path)
             if not args.quiet:
-                print(f"Baseline written to {BASELINE_PATH}")
-                print(format_report(result, show_orphans=True))
+                print(f"Baseline written to {baseline_path}")
+                print(format_report(result, show_orphans=not args.code,
+                                    code=args.code))
             return
 
         if args.check:
             preexisting = None
             if args.base:
-                preexisting = preexisting_broken(result.broken, args.base)
+                if args.code:
+                    preexisting = preexisting_broken(
+                        result.broken, args.base,
+                        scanner=scan_code_content,
+                        exists_in_tree=_citation_exists_in_tree,
+                    )
+                else:
+                    preexisting = preexisting_broken(result.broken, args.base)
                 if preexisting is None and not args.quiet:
                     print(f"WARNING: {args.base!r} is not readable, comparing against the "
                           f"frozen baseline only.", file=sys.stderr)
 
-            baseline = load_baseline()
+            baseline = load_baseline(path=baseline_path)
             if baseline is None and preexisting is None:
                 if not args.quiet:
-                    print("No baseline found. Run with --baseline first.")
+                    print(f"No baseline found at {baseline_path}. Run with "
+                          f"--baseline first.")
                 # Nothing can excuse a broken link: every one is a regression
                 if result.broken:
                     if not args.quiet:
-                        print(format_report(result))
+                        print(format_report(result, code=args.code))
                     sys.exit(1)
                 sys.exit(0)
 
@@ -708,7 +1110,7 @@ def main():
 
         # Default: full scan
         if not args.quiet:
-            print(format_report(result, show_orphans=args.orphans))
+            print(format_report(result, show_orphans=args.orphans, code=args.code))
 
         if result.broken:
             sys.exit(1)
