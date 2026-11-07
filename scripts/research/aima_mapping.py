@@ -999,16 +999,32 @@ def cmd_map(args) -> int:
         "etapes": sum(len(p.steps) for p in phases),
         "sections_3e": len(sections_3e),
         "sections_4e": len(sections_4e),
-        "sections_couvertes_4e": sum(1 for r in couverture_4e if r["couvert"] == "oui"),
-        "sections_couvertes_3e": sum(1 for r in couverture_3e if r["couvert"] == "oui"),
+        # Les lignes de couverture portent des sections ET des chapitres :
+        # un compteur nomme "sections" ne doit en compter que les sections.
+        "sections_couvertes_4e": sum(
+            1 for r in couverture_4e if r["couvert"] == "oui" and r["niveau"] == "section"),
+        "sections_couvertes_3e": sum(
+            1 for r in couverture_3e if r["couvert"] == "oui" and r["niveau"] == "section"),
+        "chapitres_couverts_4e": sum(
+            1 for r in couverture_4e if r["couvert"] == "oui" and r["niveau"] == "chapter"),
+        "chapitres_couverts_3e": sum(
+            1 for r in couverture_3e if r["couvert"] == "oui" and r["niveau"] == "chapter"),
         "chapitres_apparies": len(chapter_map),
         "sections_communes_entre_editions": sum(1 for r in correspondance if r["statut"] == "commun"),
         "sections_renommees": sum(1 for r in correspondance if r["statut"] == "renomme"),
         "sections_regroupees": sum(1 for r in correspondance if r["statut"] == "regroupe"),
         "sections_absentes_de_la_3e": sum(1 for r in correspondance if r["statut"] == "absent_de_la_3e"),
+        # Un chapitre sans pendant est un chapitre dont la liste de pendants 3e est
+        # VIDE : la presence dans la table ne suffit pas a dire qu'il a un jumeau.
         "chapitres_4e_sans_pendant_3e": sorted(
-            num for num in chapters_4e
-            if num not in chapter_map and any(r["chapitre_4e"] == num for r in correspondance)),
+            (num for num in chapters_4e
+             if not chapter_map.get(num, {}).get("chapitres_3e")
+             and any(r["chapitre_4e"] == num for r in correspondance)),
+            key=lambda n: int(n)),
+        "chapitres_3e_sans_pendant_4e": sorted(
+            (num for num in chapters_3e
+             if not any(num in entry.get("chapitres_3e", []) for entry in chapter_map.values())),
+            key=lambda n: int(n)),
     }
     (args.out_dir / "aima-mapping-resume.json").write_text(
         json.dumps(resume, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
