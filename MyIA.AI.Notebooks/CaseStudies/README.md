@@ -133,7 +133,7 @@ pip install -r requirements.txt
 
 Dépendances principales : numpy, pandas, matplotlib, seaborn, z3-solver, pyro-ppl, ortools
 
-## Acquis d'apprentissage
+## Objectifs d'apprentissage
 
 À l'issue de cette série, l'étudiant est capable de :
 

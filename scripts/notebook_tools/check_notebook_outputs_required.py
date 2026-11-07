@@ -36,13 +36,22 @@ Detection discriminants (3, without which the detector lies):
 Exit codes:
     0 -- every code cell carries an `outputs: list` key (PASS)
     1 -- at least one code cell is missing or mis-typed `outputs` (FAIL)
-    2 -- error (unreadable notebook, bad arguments)
+    2 -- error (unreadable notebook, bad arguments, or PR perimeter
+         unevaluable -- sonde git en echec, cf `pr_diff_files`)
 
 Usage:
     python check_notebook_outputs_required.py                    # whole repo
     python check_notebook_outputs_required.py --path FILE        # single notebook
     python check_notebook_outputs_required.py --pr-diff BASE HEAD  # PR diff scope
     python check_notebook_outputs_required.py --json             # JSON output
+
+PR perimeter (#23068, residu de la famille #10403) : `--pr-diff BASE HEAD`
+resoud `git diff --name-only BASE...HEAD` (merge-base..HEAD), PAS la forme
+en deux points -- sur une PR empilee dont la base a gagne des commits depuis
+le fork, deux points liste aussi les carnets modifies cote main et la garde
+imputait a la PR des defauts de carnets etrangers. Une sonde git en echec
+(merge-base indeterminable) rend rc 2 "non evalue" -- jamais une liste vide
+lue comme "aucun carnet touche" (faux quitus vert).
 """
 import argparse
 import json
@@ -92,12 +101,30 @@ def iter_repo_notebooks():
         yield p
 
 
-def pr_diff_files(base: str, head: str) -> list[Path]:
-    proc = subprocess.run(
-        ["git", "diff", "--name-only", base, head],
-        cwd=REPO_ROOT, capture_output=True, text=True, check=True,
-        encoding="utf-8", errors="replace",
-    )
+def pr_diff_files(base: str, head: str) -> list[Path] | None:
+    """Notebooks du seul apport de la PR : `git diff --name-only base...head`.
+
+    Trois points et non deux (#23068, residu de la famille #10403) : la forme
+    en deux points compare deux arbres, donc sur une PR empilee dont la base
+    (`{base_ref}` = origin/main) a gagne des commits depuis le point de fork,
+    elle liste AUSSI les notebooks modifies cote main -- l'organe auditait
+    des carnets etrangers a la PR et leur imputait des defauts. La forme en
+    trois points ne rend que l'apport de la PR (merge-base..head), meme
+    convention que `check_cell_source_parses._diff_range`.
+
+    Rend None si la sonde git echoue (merge-base indeterminable, clone
+    superficiel, ref absente) : l'appelant doit alors rendre "non evalue"
+    (rc 2), jamais une liste vide lue comme "aucun carnet touche" -- ce
+    serait un faux quitus vert.
+    """
+    try:
+        proc = subprocess.run(
+            ["git", "diff", "--name-only", f"{base}...{head}"],
+            cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace",
+        )
+    except subprocess.CalledProcessError:
+        return None
     # A path the diff names but the working tree lacks (renamed or deleted
     # since base -- e.g. a rename landed on main after the branch point) has
     # nothing to scan at HEAD; scanning it crashed an earlier guard with
@@ -112,7 +139,7 @@ def main(argv=None) -> int:
     scope = p.add_mutually_exclusive_group()
     scope.add_argument("--path", metavar="FILE", help="single notebook")
     scope.add_argument("--pr-diff", nargs=2, metavar=("BASE", "HEAD"),
-                       help="notebooks changed in BASE..HEAD")
+                       help="notebooks changed in BASE...HEAD (merge-base)")
     p.add_argument("--json", action="store_true", help="JSON output")
     args = p.parse_args(argv)
 
@@ -120,6 +147,15 @@ def main(argv=None) -> int:
         targets = [Path(args.path)]
     elif args.pr_diff:
         targets = pr_diff_files(*args.pr_diff)
+        if targets is None:
+            print(
+                "notebook-outputs-required: perimetre PR non evalue -- sonde "
+                "git en echec (merge-base indeterminable, ref absente ?) sur "
+                f"{args.pr_diff[0]}...{args.pr_diff[1]} ; aucune conclusion "
+                "n'est emise, ni verte ni rouge",
+                file=sys.stderr,
+            )
+            return 2
     else:
         targets = list(iter_repo_notebooks())
 

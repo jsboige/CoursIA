@@ -624,6 +624,12 @@ def _patch_belt_network(monkeypatch, prs, red_state):
                         lambda nums: {18844: {"count": 1, "authors": [],
                                               "verdict": None, "verdict_surface": None}} if prs else {})
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
+    # #21067 tranche 1 : la charge EN VOL compte les PRs OUVERTES de la lane
+    # a cote des livraisons mergees. L'enumeration complete des PRs ouvertes
+    # (GraphQL pagine) est une surface reseau comme les autres : elle est
+    # stubee ici, sinon le tapis atteint un `gh` reel -- ce que la garde
+    # `_no_real_gh` interdit.
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: list(prs))
     monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
     # Le tapis fait un check_claims : on rend toujours FREE.
     monkeypatch.setattr(pig, "check_claims",
@@ -1620,6 +1626,39 @@ def test_le_rapport_marqueur_est_muet_sans_lecture_ratee(capsys):
     assert capsys.readouterr().out == ""
 
 
+def test_le_rapport_gel_rend_la_trace_visible(capsys):
+    """Le rendu du pendant du GEL : un gel non lu doit etre DIT, comme les
+    trois autres lectures non lues (#24516).
+
+    Le gel est un veto transversal : un gel non lu laisse passer un
+    candidat que le gel aurait ecarte. L'operateur doit donc voir le
+    numero ET la nature de l'incertitude.
+    """
+    pig.print_frozen_unread_report([19309], "myia-ai-01:CoursIA-2")
+    out = capsys.readouterr().out
+    assert "GEL NON LU" in out
+    assert "#19309" in out
+    assert "FROZEN" in out
+
+
+def test_le_rapport_gel_est_muet_sans_lecture_ratee(capsys):
+    """Controle negatif du rendu : aucun bruit quand tout s'est bien passe."""
+    pig.print_frozen_unread_report([], "myia-ai-01:CoursIA-2")
+    pig.print_frozen_unread_report(None, "myia-ai-01:CoursIA-2")
+    assert capsys.readouterr().out == ""
+
+
+def test_le_rapport_gel_deduplique_les_numeros(capsys):
+    """Meme contrat que les autres rapports : un numero mesure deux fois
+    n'est annonce qu'une fois."""
+    pig.print_frozen_unread_report([19309, 19309, 19001],
+                                    "myia-ai-01:CoursIA-2")
+    out = capsys.readouterr().out
+    assert out.count("#19309") == 1
+    assert "#19001" in out
+    assert "2 candidat(s)" in out
+
+
 def test_belt_marker_KO_and_budget_epuise_ne_sert_pas_silencieusement():
     """Le COUPLE de fail-OPEN, mesure par la session jumelle `coursia-2-25`
     (2026-10-26, #17528) : deux verifications ratees qui se COMBINENT.
@@ -1773,6 +1812,57 @@ def test_container_marker_read_failure_is_none(monkeypatch):
 def test_container_marker_without_comment_is_false(monkeypatch):
     """Aucun commentaire : pas de marqueur (False, pas None)."""
     _stub_last_comment(monkeypatch, "")
+    assert pig.has_recent_container_delivery_marker(17528) is False
+
+
+def _stub_comments(monkeypatch, bodies):
+    """Force le transport : le fil porte `bodies`, dans cet ordre."""
+    payload = json.dumps({"comments": [{"body": b} for b in bodies]})
+
+    def fake_run(cmd, *args, **kwargs):
+        assert cmd[:3] == ["gh", "issue", "view"], f"transport : {cmd}"
+        return subprocess.CompletedProcess(cmd, 0, stdout=payload, stderr="")
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+
+def test_container_marker_survit_a_un_released_de_queue(monkeypatch):
+    """#24590 -- un `[RELEASED]` de queue sans marqueur ne masque plus le
+    `[INFO] candidate-delivered` qu'il suit.
+
+    Sur une umbrella, ce masquage rendait le conteneur « non livre » : l'issue
+    redevenait servable alors qu'elle etait close. C'est exactement le defaut
+    que #24516 avait corrige sur la sonde de livraison, et qui restait ouvert
+    ici -- les deux filtres lisent le meme octet, ils doivent sauter le meme
+    commentaire.
+
+    Mesure du 2026-11-04 sur #19309 : 46 commentaires, **40** commencant par
+    `[RELEASED]`, **aucun** porteur d'un marqueur d'etat.
+    """
+    _stub_comments(monkeypatch, [
+        "[INFO] candidate-delivered — les cinq arcs sont clos.",
+        "[RELEASED] lane myia-po-2028:CoursIA -- barriere reelle : EPIC gelee",
+    ])
+    assert pig.has_recent_container_delivery_marker(17528) is True
+
+
+def test_container_marker_lit_un_released_qui_porte_un_marqueur(monkeypatch):
+    """Controle negatif : le saut ne porte pas sur l'EN-TETE seul.
+
+    Un `[RELEASED]` dont le corps porte lui-meme un marqueur d'etat est un
+    evenement : il reste le dernier commentaire LU, et ce qu'il dit compte.
+    Ce controle discrimine les deux lectures -- si le `[RELEASED]` etait saute
+    sur son en-tete, la sonde remonterait au `[INFO] candidate-delivered` de
+    tete et rendrait True ; en lisant le corps de queue, elle rend False.
+    """
+    _stub_comments(monkeypatch, [
+        "[INFO] candidate-delivered -- les cinq arcs sont clos.",
+        chr(10).join([
+            "[RELEASED] lane myia-po-2028:CoursIA -- EPIC rouverte",
+            "",
+            "[DELIVERED] lane myia-po-2028:CoursIA -- PR #21212",
+        ]),
+    ])
     assert pig.has_recent_container_delivery_marker(17528) is False
 
 
@@ -2929,6 +3019,9 @@ def test_main_runs_the_repair_phase_inside_its_own_deadline(monkeypatch):
 
     monkeypatch.setattr(pig, "red_backlog", fake_red_backlog)
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **kw: ([], None))
+    # #21067 tranche 1 : la charge en vol compte aussi les PRs ouvertes
+    # (surface reseau comme le reste -- cf _patch_belt_network).
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: [])
     monkeypatch.setattr(pig.gh_identity, "pin_gh_token", lambda: None)
     pig._BELT_DEADLINE[0] = None
     previous_budget = nits.NITS_PASS_BUDGET_S
@@ -3335,3 +3428,41 @@ def test_belt_deadline_skips_marker_filter_on_prose_close_announcement(
     assert [p["number"] for p in picks] == [30311]
     assert withheld == []
     assert state["time_budget_hit"] is True
+
+
+def test_un_RELEASED_de_queue_ne_masque_plus_le_DELIVERED_quil_suit(monkeypatch):
+    """#24590 -- la position du dernier commentaire n'est pas un etat.
+
+    Le `[DELIVERED]` est bien dans le fil, suivi d'un `[RELEASED]` de la meme
+    lane sur une barriere. Lire `comments[-1]` rendait « pas de marqueur » :
+    l'item repartait en tete du tapis comme s'il n'avait jamais ete rendu.
+    """
+    delivered = {"body": "[INFO] candidate-delivered -- livree, PR #24000",
+                 "createdAt": "2026-11-04T08:00:00Z"}
+    released = {"body": "[RELEASED] lane myia-po-2024:CoursIA -- barriere reelle",
+                "createdAt": "2026-11-04T09:00:00Z"}
+    monkeypatch.setattr(pig, "_issue_comments", lambda n: ([delivered, released], ""))
+    monkeypatch.setattr(pig, "_issue_body", lambda n: "")
+    assert pig.has_recent_delivery_marker(24590) is True
+
+
+def test_un_fil_sans_marqueur_reste_servable_malgre_les_RELEASED(monkeypatch):
+    """Controle negatif du saut : un fil qui ne porte QUE des `[RELEASED]` ne
+    declare aucune cloture -- le saut ne doit pas fabriquer un marqueur."""
+    released = {"body": "[RELEASED] lane myia-po-2024:CoursIA -- barriere reelle",
+                "createdAt": "2026-11-04T09:00:00Z"}
+    monkeypatch.setattr(pig, "_issue_comments", lambda n: ([released], ""))
+    monkeypatch.setattr(pig, "_issue_body", lambda n: "")
+    assert pig.has_recent_delivery_marker(24590) is False
+
+
+def test_un_RELEASED_qui_porte_un_marqueur_plus_bas_nest_pas_saute(monkeypatch):
+    """Le saut porte sur l'en-tete SEUL : un corps qui commence par
+    `[RELEASED]` et porte plus bas un marqueur d'etat EST un evenement, et le
+    sauter rendrait cette declaration invisible."""
+    mixed = {"body": ("[RELEASED] lane myia-po-2024:CoursIA\n\n"
+                      "[INFO] candidate-delivered -- livree, PR #24000"),
+             "createdAt": "2026-11-04T09:00:00Z"}
+    monkeypatch.setattr(pig, "_issue_comments", lambda n: ([mixed], ""))
+    monkeypatch.setattr(pig, "_issue_body", lambda n: "")
+    assert pig.has_recent_delivery_marker(24590) is True

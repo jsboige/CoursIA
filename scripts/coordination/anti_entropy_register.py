@@ -211,16 +211,54 @@ REGISTRE: tuple[Entree, ...] = (
         # l'instrument aura sept jours : la reference sera alors relue
         # dans le commentaire publie, avec l'identite a cote de la valeur.
         # TROISIEME rebasage (2026-11-02, correctif UTF-8 #23175) : le
-        # correctif a de nouveau touche l'instrument LUI-MEME (735ada5ba),
-        # meme raison que le second -- l'identite portee par la reference
-        # (6144b71eb) n'etait plus celle de l'instrument courant, et la
-        # comparaison serait tombee sur « reference transverse refusee ».
+        # correctif a de nouveau touche l'instrument LUI-MEME, meme raison
+        # que le second -- l'identite portee par la reference (6144b71eb)
+        # n'etait plus celle de l'instrument courant, et la comparaison
+        # serait tombee sur « reference transverse refusee ».
         # Correctif d'encodage seul, sans effet sur le classement : la
-        # valeur est 39 avant et apres sur le meme arbre aligne.
-        reference=Reference(39.0, "2026-11-02", "issue #23175",
+        # valeur est 39 avant et apres sur le meme arbre aligne. Il ne
+        # produit donc pas un point de serie distinct : sa mesure est celle
+        # du 2026-10-31 (39, instrument 6144b71eb), et le sha de branche
+        # qu'il declarait n'est pas un ancetre de `main` (cf `historique`).
+        #
+        # QUATRIEME rebasage (2026-11-05, #24678) -- et le premier qui
+        # change la GRANDEUR, pas seulement l'instrument :
+        # `_index_zero_padded` lit la lettre d'accretion, donc 14 carnets
+        # zero-pades (`03b_`, `09e_`, `01b-`) sortent du bucket `ambigu`.
+        # Comparer 26 a 39 fabriquerait un AVANCE qui ne dit rien du depot :
+        # exactement ce que la doctrine de ce module interdit, et ce qui a
+        # produit le verdict « AVANCE » fabrique de #23193. L'entree repart
+        # donc d'une reference NEUVE, comme le demande le critere 2 de
+        # l'issue. Le point d'avant le correctif reste dans la serie
+        # (`historique`, valeur 40).
+        #
+        # L'instrument declare est le commit de branche du correctif
+        # (687bb25856a) : il ne survivra pas au squash, et c'est prevu --
+        # `instrument_inchange` compare la SOURCE du script, et
+        # `reference_comparable` retombe sur l'identite derivee a la fin du
+        # jour de la reference. C'est ce qui manquait aux trois rebasages
+        # precedents, chacun n'ayant tenu que jusqu'a la fusion suivante.
+        #
+        # CINQUIEME rebasage (2026-11-06, #23655) : le correctif du protocole
+        # `_kernelspecs_at` (compter les blobs lus, pas les kernelspec
+        # trouves) touche l'instrument LUI-MEME, meme raison que le
+        # troisieme -- l'identite portee par la reference (687bb25856a)
+        # n'est plus celle de l'instrument courant, et la comparaison
+        # tomberait sur « reference transverse refusee ». Correctif de
+        # protocole seul, sans effet sur la grandeur : `ambigu` vaut 26
+        # avant et apres sur le meme arbre aligne (`origin/main` a
+        # a284df8293f). Il ne produit donc pas un point de serie distinct :
+        # sa mesure reste celle du 2026-11-05 (26, instrument 687bb25856a).
+        # Meme mecanique d'instrument declare que le quatrieme : le sha de
+        # branche (18c887da79d) ne survivra pas au squash, la comparaison
+        # tiendra par la SOURCE du script puis par l'identite derivee a la
+        # fin du jour de la reference.
+        reference=Reference(26.0, "2026-11-06",
+                            "issue #23655, re-mesure du 2026-11-06 sur "
+                            "l'arbre a284df8293f",
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
-                                        "@735ada5ba11cd900dee9649c71fedb38fd6fe52c")),
+                                        "@18c887da79de8dcb3f59e7c62800e8c8c242e957")),
         # Les points anterieurs de la serie, avec leur SOURCE et
         # l'IDENTITE de l'instrument qui les a produits. L'identite
         # declaree est celle du PRODUISANT : c'est elle qui fait le
@@ -252,14 +290,31 @@ REGISTRE: tuple[Entree, ...] = (
                                   "@d818b008b5558d9a755c81d3d05e29ac23a9f823")),
             # La reference precedente (39), mesuree le 2026-10-31 sur
             # l'arbre aligne a f798021d4 avec l'instrument 6144b71eb.
-            # Point de mesure reel : le correctif UTF-8 (735ada5ba) ne
-            # change pas la valeur sur le meme arbre -- 39 avant et apres.
+            # Point de mesure reel : le correctif UTF-8 ne change pas la
+            # valeur sur le meme arbre -- 39 avant et apres.
+            #
+            # Le 3e rebasage (2026-11-02) ne fait donc PAS un point de plus :
+            # meme valeur, meme instrument. Le sha de branche qu'il declarait
+            # (735ada5ba) n'est pas un ancetre de `main` -- mesure du
+            # 2026-11-05, `compare/735ada5ba...main` rend « diverged » -- et
+            # le declarer dans la serie rejouerait exactement le defaut que ce
+            # correctif retire : une identite de branche, morte au squash.
             Reference(39.0, "2026-10-31",
                       "issue #23175, reference rebasee precedente (arbre "
                       "aligne a f798021d4, instrument 6144b71eb)",
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
                                   "@6144b71ebfcd588d5347e16e7d2ba984dd6af2e5")),
+            # Mesure du 2026-11-05 sur l'arbre 536cf434700, AVANT le
+            # correctif de la lettre d'accretion : 40. C'est le point qui
+            # documente la croissance de l'arbre depuis 39 (et non une
+            # derive de l'instrument). Identite resolvable sur `main`.
+            Reference(40.0, "2026-11-05",
+                      "issue #24678, mesure du 2026-11-05 sur l'arbre "
+                      "536cf434700, avant le correctif",
+                      instrument=("scripts/notebook_tools/"
+                                  "inventory_notebook_names.py"
+                                  "@30c90b42b6b19ead9d2872495cba9547d6bf1c58")),
         ),
         note="`ambigu` = nom non parsé ou kernel non verifie.",
         # L'instrument prend sa LISTE de carnets dans `origin/main` et lit
@@ -441,7 +496,13 @@ def _identite(commande, au: str | None) -> str:
     script = _script_de_la_commande(commande)
     if not script:
         return "git:" + " ".join(str(m) for m in commande)
-    for ref in ("origin/main", "HEAD"):
+    # HEAD d'abord : c'est le code qui TOURNE. `origin/main` ne decrit le
+    # script execute que si le checkout est sur la branche par defaut, ce
+    # qui n'est vrai ni sur une branche de PR, ni sur un clone en retard
+    # (le clone principal de ce depot l'est de plus de mille commits). Une
+    # identite qui nomme un autre fichier que celui qui tourne est une
+    # identite fausse, meme quand les deux se ressemblent aujourd'hui.
+    for ref in ("HEAD", "origin/main"):
         if au:
             cmd = ("git", "log", "-1", "--format=%H",
                    f"--before={_borne_de(au)}",
@@ -451,6 +512,16 @@ def _identite(commande, au: str | None) -> str:
         code, out, _ = _run(cmd)
         sha = out.strip()
         if code == 0 and sha:
+            # L'identite doit decrire le code qui TOURNE. Un script modifie
+            # dans l'arbre de travail n'est pas le script du sha : le
+            # declarer identique fabrique un verdict sur une mesure que
+            # personne ne peut reproduire depuis le depot. Mesure du
+            # 2026-11-05 (#24678) : instrument edite non commite => le
+            # registre rendait `AVANCE` 39 -> 26, un progres fabrique par
+            # l'edition elle-meme. Sale = identite inconnue, donc refus.
+            statut, modifs, _ = _run(("git", "status", "--porcelain", "--", script))
+            if statut == 0 and modifs.strip():
+                return ""
             return f"{script}@{sha}"
     return ""
 
@@ -463,6 +534,70 @@ def comparables(identite: str, identite_reference: str) -> bool:
     permet pas de comparer, donc elle ne vaut pas comparaison.
     """
     return bool(identite) and bool(identite_reference) and identite == identite_reference
+
+
+def _blob_du_script(identite: str) -> str:
+    """Blob du script nomme par une identite `<script>@<sha>`, ou "".
+
+    C'est le CONTENU de l'instrument, pas son sha : deux fusions differentes
+    qui posent le meme contenu designent le meme instrument.
+    """
+    if "@" not in identite:
+        return ""
+    script, sha = identite.rsplit("@", 1)
+    if not script or not sha:
+        return ""
+    code, out, _ = _run(("git", "rev-parse", "%s:%s" % (sha, script)))
+    return out.strip() if code == 0 else ""
+
+
+def instrument_inchange(identite: str, identite_reference: str) -> bool:
+    """Les deux identites designent-elles le MEME instrument (meme source) ?
+
+    L'egalite des shas est un PROXY de « meme instrument », et ce proxy se
+    casse a chaque fusion : une PR mergee en squash laisse sur `main` un sha
+    different de celui de sa branche, donc une reference qui declare le sha
+    de la branche n'est plus jamais comparable une fois mergee. C'est ce qui
+    a rendu `padding-nommage` `INSTRUMENT ILLEGIBLE` sur `main` (mesure du
+    2026-11-05, #24678) apres trois rebasages successifs -- et ce qui a fait
+    passer le controle pour vert, la constante de test recopiant la meme
+    identite que le registre.
+
+    La grandeur qui compte est le contenu du script. Aucune presomption :
+    un blob introuvable des deux cotes ne rend pas `True`.
+    """
+    if not identite or not identite_reference:
+        return False
+    blob_reference = _blob_du_script(identite_reference)
+    blob_courant = _blob_du_script(identite)
+    return bool(blob_reference) and blob_reference == blob_courant
+
+
+def reference_comparable(commande, identite: str, ref: "Reference") -> bool:
+    """La reference est-elle comparable a la mesure du jour ?
+
+    Trois voies, de la plus stricte a la plus toleree, aucune n'etant une
+    presomption :
+
+      1. egalite des identites -- le meme sha, donc le meme instrument ;
+      2. MEME SOURCE du script (`instrument_inchange`) : une fusion en
+         squash reecrit le sha sans changer le contenu ;
+      3. identite derivee a la FIN du jour de la reference (l'instrument tel
+         qu'il etait dans `main` ce jour-la) : couvre le sha de branche dont
+         l'objet n'existe plus dans le clone apres la fusion.
+
+    Deux shas introuvables ne rendent jamais `True`.
+    """
+    if comparables(identite, ref.instrument):
+        return True
+    if instrument_inchange(identite, ref.instrument):
+        return True
+    if ref.mesure_le:
+        derivee = identite_instrument_a(commande, ref.mesure_le + "T23:59:59")
+        if derivee and (comparables(identite, derivee)
+                        or instrument_inchange(identite, derivee)):
+            return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -1409,7 +1544,7 @@ def mesurer_tout(registre: tuple[Entree, ...] = REGISTRE,
             # conditions decrirait un melange de deux arbres.
             non_comparable = f"mesure refusee : {motif_alignement}"
             ref = None
-        elif ref is not None and not comparables(identite, ref.instrument):
+        elif ref is not None and not reference_comparable(entree.commande, identite, ref):
             # La reference vient d'une publication qui n'a pas ete mesuree
             # par l'instrument courant : la comparer fabriquerait un verdict
             # qui ne dit rien du depot. Elle est refusee, et le motif est
@@ -1421,7 +1556,7 @@ def mesurer_tout(registre: tuple[Entree, ...] = REGISTRE,
                 f"l instrument courant est `{identite or 'instrument d identite inconnue'}`")
             ref = None
         if ref is None and aligne and entree.reference is not None:
-            if comparables(identite, entree.reference.instrument):
+            if reference_comparable(entree.commande, identite, entree.reference):
                 ref = entree.reference
                 origine_reference = "rebase"
             elif not non_comparable:

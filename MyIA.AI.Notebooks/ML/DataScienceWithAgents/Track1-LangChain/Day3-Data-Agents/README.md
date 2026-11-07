@@ -13,6 +13,16 @@ La **Journée 3** clôt le track LangChain : les agents deviennent capables de *
 | [Lab 6 — First Agent](Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | construire son premier agent LangChain | les 4 composants : LLM, Outils, Prompt, Exécuteur |
 | [Lab 7 — Data Analysis Agent](Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | agent répondant en langage naturel sur un DataFrame | l'agent comme interface d'analyse |
 
+## Enchaînement
+
+Les quatre labs de la journée se suivent, et chacun part de ce que le précédent a construit :
+
+| Depuis | Vers | Ce qui est repris |
+|---|---|---|
+| Lab 4 — Data Wrangling | [Lab 5 — Viz & ML](Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | le DataFrame nettoyé, que l'on explore visuellement puis sur lequel on entraîne un modèle |
+| Lab 5 — Viz & ML | [Lab 6 — First Agent](Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | l'analyse écrite à la main, que l'agent va orchestrer (les outils qui l'encapsulent) |
+| Lab 6 — First Agent | [Lab 7 — Data Analysis Agent](Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | les quatre composants de l'agent, appliqués à un DataFrame |
+
 ## Prérequis
 
 - Avoir suivi la [Journée 2](../Day2-Document-Agents/README.md) (analyse documentaire agentique).
