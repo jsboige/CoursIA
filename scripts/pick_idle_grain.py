@@ -9363,8 +9363,8 @@ def resolve_belt_families(pool: list[dict], issue_to_family: dict | None,
 BANDIT_WINDOW_DAYS = 14
 CONSOLIDATION_PRIOR = 3.0
 DELIVERED_URN_PRIOR = 2.5
-AUDIT_Q170_PRIOR = 2.0
-AUDIT_Q170_MARKER = "[Audit #17073]"
+AUDIT_17073_PRIOR = 2.0
+AUDIT_17073_MARKER = "[Audit #17073]"
 #: Le seuil du veto de creation : au-dessus, le grain d'expansion (carnet
 #: neuf) est d'autant plus streme que le pool s'en eloigne.
 EXPANSION_VETO_THRESHOLD = 400
@@ -9436,8 +9436,8 @@ def consolidation_prior(item: dict) -> tuple[float, str]:
     factors: list[tuple[float, str]] = []
     if item.get("klass") == "delivered":
         factors.append((DELIVERED_URN_PRIOR, "delivered"))
-    if AUDIT_Q170_MARKER.lower() in (item.get("title") or "").lower():
-        factors.append((AUDIT_Q170_PRIOR, "audit_q170"))
+    if AUDIT_17073_MARKER.lower() in (item.get("title") or "").lower():
+        factors.append((AUDIT_17073_PRIOR, "audit_17073"))
     if is_consolidation(item):
         factors.append((CONSOLIDATION_PRIOR, "consolidation"))
     if not factors:
@@ -9462,20 +9462,25 @@ def expansion_factor(open_count: int) -> float:
 
 def belt_score(item: dict, thetas: dict[str, float], mean_theta: float,
                open_count: int) -> dict:
-    """Le score de service d'un grain : un RANG (le prior) et un POT (le
-    bandit).
+    """Le score de service d'un grain : un POT UNIQUE.
 
-    Les deux sont SEPARES, et c'est la le point du mandat : le prior de
-    consolidation est « independant de la famille ». Multiplier les deux
-    (score = bandit x prior) annulerait le prior dans une zone qui ne ferme
-    pas -- le grain de consolidation d'une zone sterile aurait recu un poids
-    inferieur a celui d'un grain neutre d'une zone qui ferme. Le prior
-    est donc un RANG (le grain prioritaire passe devant), et le bandit un
-    POT a l'interieur du rang.
+    `bucket = round(log2(rel) + log2(prior) + log2(expansion))` : le prior
+    de consolidation pese en POTS (x3 ~ +1,6 pot, x2 = +1 pot), pas en rang
+    lexicographique. Un rang dur (tout grain prioritaire devant tout grain
+    neutre, quelle que soit la zone) vidait la tete de sa variete -- 45/50
+    grains de tier 0 au rejeu du 07/11 : le mandat demande la consolidation
+    ET la variete. Avec le pot unique, le grain de consolidation d'une zone
+    sterile peut passer derriere un grain neutre d'une zone qui ferme
+    nettement mieux : c'est le bandit qui fait son travail, et c'est voulu
+    (#25082, revue du 07/11 -- « independante de la famille » voulait dire
+    « ne depend pas de la resolution de zone pour agir », pas un rang dur).
+    La consolidation DUE garde son garde-fou : `legacy[0]` en tete de cle,
+    borne par CONSOLIDATION_LAG_H.
 
     Le bandit est un RELATIF : theta ramene a la moyenne des bras du pool,
     pour qu'une zone qui ferme bien soit devant la moyenne sans que le
-    niveau absolu des poids deplace l'ensemble du tirage.
+    niveau absolu des poids deplace l'ensemble du tirage. La variete vient
+    de l'echantillonnage de Thompson ; a pot egal, la ligne de temps tranche.
     """
     arm = bandit_arm(item)
     theta = float(thetas.get(arm, 0.0))
@@ -9483,36 +9488,34 @@ def belt_score(item: dict, thetas: dict[str, float], mean_theta: float,
     prior, classe = consolidation_prior(item)
     expansion = expansion_factor(open_count)
     mult = expansion if item.get("polarity") == EXPANSION else 1.0
-    bucket = int(round(math.log2(max(rel, 1e-6))))
-    if item.get("polarity") == EXPANSION:
-        bucket += int(round(math.log2(max(mult, 1e-6))))
+    bucket = int(round(math.log2(max(rel, 1e-6))
+                       + math.log2(max(prior, 1e-6))
+                       + math.log2(max(mult, 1e-6))))
     return {"arm": arm, "theta": round(theta, 4), "rel": round(rel, 4),
             "prior": prior, "classe": classe, "expansion": mult,
-            "tier": 0 if prior > 1.0 else 1, "bucket": bucket,
+            "bucket": bucket,
             "score": round(max(rel, 1e-6) * prior * mult, 4)}
 
 
 def belt_weight_key(it: dict, detail: dict, *, now=None) -> tuple:
     """La cle de tri ponderee du tapis.
 
-    Le RANG d'abord (le grain prioritaire -- consolidation, delivered,
-    audit -- passe devant), puis la CLASSE et le RANG du tapis (le grain
-    borne avant le conteneur dans la classe des consolidations dues), puis
-    le POT, puis la ligne de temps.
+    La CLASSE et le RANG du tapis d'abord (le grain borne avant le
+    conteneur dans la classe des consolidations dues -- `legacy[0]`, le
+    garde-fou de fraicheur #22500), puis le POT UNIQUE (bandit + prior +
+    expansion, cf. `belt_score`), puis la ligne de temps.
 
-    Le pot est un entier de `log2(rel)` : un ecart d'un pot vaut un
-    doublement de poids, et la LIGNE DE TEMPS reste decisive entre deux
-    grains de meme pot (le moins visite d'abord).
+    Le pot est un entier de log2 : un ecart d'un pot vaut un doublement de
+    poids, et la LIGNE DE TEMPS reste decisive entre deux grains de meme
+    pot (le moins visite d'abord).
 
     C'est ce qui rend la repondersion lisible : le tapis ne se met pas a
     tirer au hasard, il se met a peser, et le temps tranche les ex aequo.
     """
     moment = now or NOW
     legacy = belt_sort_key(it, now=moment)
-    detail = detail or {}
-    tier = int(detail.get("tier", 1))
-    bucket = int(detail.get("bucket", 0))
-    return (tier, legacy[0], legacy[1], -bucket, legacy[2], legacy[3])
+    bucket = int((detail or {}).get("bucket", 0))
+    return (legacy[0], legacy[1], -bucket, legacy[2], legacy[3])
 
 
 def fetch_closed_issues(window_days: int = BANDIT_WINDOW_DAYS, *,
@@ -9606,18 +9609,21 @@ def belt_order_composition(items: list[dict]) -> dict:
     Les trois classes du prior de consolidation sont comptees, et leur
     somme donne le taux de « grains prioritaires » -- c'est la mesure que
     l'acceptance 2 de #25082 lit (au moins 15 % des 50 tirages en
-    `consolidation` ou `delivered`).
+    `consolidation` ou `delivered`). Le nombre de BRAS distincts dit la
+    variete servie : une tete mono-bras est le symptome du rang dur que la
+    revue du 07/11 a retire (45/50 grains de tier 0).
     """
     total = len(items)
     consolidation = sum(1 for it in items if is_consolidation(it))
     delivered = sum(1 for it in items if it.get("klass") == "delivered")
     q170 = sum(1 for it in items
-               if AUDIT_Q170_MARKER.lower() in (it.get("title") or "").lower())
+               if AUDIT_17073_MARKER.lower() in (it.get("title") or "").lower())
     priority = consolidation + delivered
     return {"total": total, "consolidation": consolidation,
-            "delivered": delivered, "audit_q170": q170,
+            "delivered": delivered, "audit_17073": q170,
             "priority": priority,
-            "ratio": round(priority / total, 3) if total else None}
+            "ratio": round(priority / total, 3) if total else None,
+            "arms": len({bandit_arm(it) for it in items}) if total else 0}
 
 
 def apply_belt_weights(pool: list[dict], *, rng: random.Random,
@@ -9655,7 +9661,7 @@ def apply_belt_weights(pool: list[dict], *, rng: random.Random,
         thetas[arm] = rng.betavariate(closed_n + 1.0, visited_n + 1.0)
     mean_theta = (sum(thetas.values()) / len(thetas)) if thetas else 0.0
     scores: dict[int, dict] = {}
-    classes = {"consolidation": 0, "delivered": 0, "audit_q170": 0}
+    classes = {"consolidation": 0, "delivered": 0, "audit_17073": 0}
     for it in pool or []:
         detail = belt_score(it, thetas, mean_theta, open_count)
         scores[int(it["number"])] = detail
@@ -12859,7 +12865,7 @@ def main(argv: list[str] | None = None) -> int:
                         f"pondu(s), {belt_weight_signal['arms']} bras(s) -- "
                         f"consolidation {belt_weight_signal['classes']['consolidation']}"
                         f", delivered {belt_weight_signal['classes']['delivered']}"
-                        f", audit-q170 {belt_weight_signal['classes']['audit_q170']}")
+                        f", audit-17073 {belt_weight_signal['classes']['audit_17073']}")
         # #22983 -- la fenetre des CLAIMS couvre la fenetre que la boucle de
         # service va parcourir (`belt_service_window`), pas seulement la
         # tete. La boucle ne declenche alors AUCUNE verification unitaire :
