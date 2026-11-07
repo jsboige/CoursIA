@@ -101,7 +101,9 @@ def generate_regime_labels(
     # CAUTION (#21054): default HMM decode is Viterbi = retrospective
     # (label at t depends on observations after t) — training a classifier
     # on these labels carries look-ahead into the training set; decode_mode
-    # ="filter" gives causal known-at-t labels.
+    # ="filter" makes the decode forward-only (label at t uses observations
+    # up to t only). The HMM parameters are still fit on the whole window —
+    # the labels are not known-at-t; see the CAUTION in regime_detector.py.
     result = detect_regimes_hmm(mean_price, n_states=n_states)
 
     # Align: HMM labels may have leading zeros for warmup
