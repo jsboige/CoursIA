@@ -311,23 +311,129 @@ class TestResolutionDeLaBrancheParDefaut(unittest.TestCase):
 
 
 class TestCasTrivialDeLaBrancheParDefaut(unittest.TestCase):
-    """Le cas trivial : la branche par defaut est un ancetre d'elle-meme."""
+    """Le cas trivial : la branche par defaut est un ancetre d'elle-meme.
 
-    def test_la_branche_par_defaut_est_classee_p_avant_toute_mesure(self):
-        """Reproduit l'ordre du classement : P l'emporte sur D.
+    Ces tests exercent `classe_branche` -- la fonction reelle, celle que
+    `main()` appelle. Un test qui re-implemente la decision dans son propre
+    corps est un couple auto-coherent : il passe quoi que fasse le code, et
+    ne prouve donc rien. La reserve du relecteur sur ce point (review
+    structurelle du 07/11) est levee par l'appel direct.
+    """
 
-        `main` n'a aucune PR exploitable et sa tete est un ancetre de
-        `main` : sans l'exclusion, elle tombait en D.
-        """
-        defaut = "main"
-        nom, sha = "main", "aaa"
-        prs = []
-        if nom == defaut:
-            classe, retenue = organ.CLASSE_PROTEGEE, None
-        else:
-            classe, retenue = "D", None
+    TETE = "a" * 40
+
+    def test_la_branche_par_defaut_est_classee_p(self):
+        """`main` est P, meme quand sa tete est un ancetre de `main`."""
+        classe, retenue, note = organ.classe_branche(
+            "main", self.TETE, [], "main", lambda: True)
         self.assertEqual(classe, "P")
         self.assertIsNone(retenue)
+        self.assertEqual(note, "branche_par_defaut")
+
+    def test_la_branche_par_defaut_est_p_meme_avec_des_prs(self):
+        """L'exclusion P prime sur toute PR : elle passe avant le classement."""
+        prs = [pr("OPEN", 1, oid=self.TETE)]
+        classe, retenue, note = organ.classe_branche(
+            "main", self.TETE, prs, "main", lambda: True)
+        self.assertEqual(classe, "P")
+        self.assertIsNone(retenue)
+
+    def test_la_branche_par_defaut_ne_suit_pas_la_forme_du_repli(self):
+        """Le repli (`origin/main` -> `main`) reste un nom de branche.
+
+        Un nom de ref complet (`refs/remotes/origin/main`) ne correspond a
+        aucune branche du lot : il ne doit donc pas etre compare tel quel.
+        """
+        self.assertEqual(organ.repli_branche_par_defaut("origin/main"), "main")
+        self.assertEqual(
+            organ.repli_branche_par_defaut("refs/remotes/origin/main"), "main")
+
+
+class TestClasseBrancheExercee(unittest.TestCase):
+    """`classe_branche` est la decision : elle est exercee, pas re-implementee."""
+
+    TETE = "a" * 40
+    VIEUX = "b" * 40
+
+    @staticmethod
+    def _mesure(valeur):
+        return lambda: valeur
+
+    def test_une_pr_ouverte_a_la_tete_donne_a(self):
+        prs = [pr("OPEN", 7, oid=self.TETE)]
+        classe, retenue, _ = organ.classe_branche(
+            "f", self.TETE, prs, "main", self._mesure(False))
+        self.assertEqual(classe, "A")
+        self.assertEqual(retenue["number"], 7)
+
+    def test_une_pr_mergee_a_la_tete_donne_b(self):
+        prs = [pr("MERGED", 8, oid=self.TETE, merge_oid="c" * 40)]
+        classe, retenue, _ = organ.classe_branche(
+            "f", self.TETE, prs, "main", self._mesure(False))
+        self.assertEqual(classe, "B")
+        self.assertEqual(retenue["number"], 8)
+
+    def test_une_pr_fermee_donne_c(self):
+        prs = [pr("CLOSED", 9, oid=self.TETE)]
+        classe, retenue, _ = organ.classe_branche(
+            "f", self.TETE, prs, "main", self._mesure(False))
+        self.assertEqual(classe, "C")
+        self.assertEqual(retenue["number"], 9)
+
+    def test_le_verrou_ouvert_prime_sur_une_pr_mergee_a_la_tete(self):
+        """Le cas de coin signale par le relecteur.
+
+        La branche porte une PR OUVERTE a une tete ANCIENNE et une PR
+        MERGEE a la tete COURANTE. L'ancienne version ne faisait voter le
+        verrou OUVERT qu'en repli : la PR mergee gagnait, la branche
+        tombait en B (candidate), et la PR vivante disparaitait de la
+        decision.
+        """
+        prs = [pr("OPEN", 10, oid=self.VIEUX), pr("MERGED", 11, oid=self.TETE)]
+        classe, retenue, _ = organ.classe_branche(
+            "f", self.TETE, prs, "main", self._mesure(False))
+        self.assertEqual(classe, "A")
+        self.assertEqual(retenue["number"], 10)
+        self.assertEqual(retenue["state"], "OPEN")
+
+    def test_une_pr_fermee_puis_mergee_reste_b(self):
+        """La regle historique tient : une PR fermee n'emporte pas."""
+        prs = [pr("CLOSED", 12, oid=self.VIEUX), pr("MERGED", 13, oid=self.TETE)]
+        classe, retenue, _ = organ.classe_branche(
+            "f", self.TETE, prs, "main", self._mesure(False))
+        self.assertEqual(classe, "B")
+        self.assertEqual(retenue["number"], 13)
+
+    def test_sans_pr_un_contenu_sur_main_donne_d(self):
+        classe, retenue, note = organ.classe_branche(
+            "f", self.TETE, [], "main", self._mesure(True))
+        self.assertEqual(classe, "D")
+        self.assertIsNone(retenue)
+        self.assertEqual(note, "ancestor_of_main")
+
+    def test_sans_pr_un_contenu_absent_donne_e_inconnu(self):
+        classe, _, note = organ.classe_branche(
+            "f", self.TETE, [], "main", self._mesure(None))
+        self.assertEqual(classe, "E")
+        self.assertEqual(note, "head_absent_du_clone")
+
+    def test_sans_pr_un_contenu_non_livre_donne_e(self):
+        classe, _, note = organ.classe_branche(
+            "f", self.TETE, [], "main", self._mesure(False))
+        self.assertEqual(classe, "E")
+        self.assertEqual(note, "not_ancestor_of_main")
+
+    def test_la_mesure_du_contenu_nest_appellee_quavec_des_prs(self):
+        """Une branche avec une PR exploitable ne se mesure pas sur son contenu."""
+        appels = []
+
+        def mesure():
+            appels.append(1)
+            return False
+
+        prs = [pr("MERGED", 14, oid=self.TETE)]
+        organ.classe_branche("f", self.TETE, prs, "main", mesure)
+        self.assertEqual(appels, [])
 
 
 class TestContrainteDeClasse(unittest.TestCase):

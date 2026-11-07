@@ -18,6 +18,9 @@ Les classes, par ordre de contraigance decroissante :
 Une branche peut porter PLUSIEURS PRs (nom reutilise dans le temps). La classe
 est celle de l'etat le plus contraignant : OPEN > MERGED > CLOSED. Une branche
 qui a eu une PR fermee puis une PR mergee reste B : son contenu EST sur main.
+En revanche, une PR **ouverte** l'emporte toujours, meme si sa tete est
+ancienne : c'est un travail vivant sur ce nom de branche, et une PR mergee
+qui porterait la tete courante ne peut pas le faire disparaitre.
 
 Usage :
     python scripts/ci/build_branch_cleanup_manifest.py --out <fichier.tsv>
@@ -196,6 +199,54 @@ def tete_sur_main(repo: Path, sha: str, main: str) -> bool | None:
     return None
 
 
+def classe_branche(nom: str, sha: str, prs: list[dict], defaut: str,
+                   mesure_contenu) -> tuple[str, dict | None, str]:
+    """La classe d'UNE branche, et sa preuve.
+
+    Fonction **pure** : tout ce qu'elle decide est decide ici, et les tests
+    peuvent l'exercer sans reseau ni jeton. C'est la fonction que `main()`
+    appelle, et elle n'a pas de version parallele : un test qui la
+    n'exercerait pas laisserait la decision de suppression hors de portee.
+
+    `mesure_contenu` est un callable sans argument rendu True / False /
+    None -- None signifiant « tete absente du clone », donc inconnu.
+
+    Retourne `(classe, retenue, note)`.
+    """
+    # La branche par defaut est PROTEGEE : elle ne peut ni etre candidate,
+    # ni etre mesuree comme telle. Sans cette exclusion, elle tombait en D
+    # (ancetre de `main` -- trivial), et un passage automatise aurait tente
+    # de supprimer le depot.
+    if nom == defaut:
+        return (CLASSE_PROTEGEE, None, "branche_par_defaut")
+
+    # La PR qui decrit la TETE COURANTE est celle dont le headRefOid vaut
+    # la tete distante. Les autres PRs du meme nom decrivent un etat
+    # passe : elles ne disent rien de ce qui serait supprime.
+    tete = sha.lower()
+    candidates = [p for p in prs if p["oid"] == tete]
+    # Le verrou OUVERT porte sur TOUTES les PRs de la branche, et non sur
+    # le seul repli. Une PR ouverte dont la tete a bouge represente un
+    # travail VIVANT sur ce nom de branche : si une PR mergee porte la
+    # tete courante, elle ne peut pas faire disparaitre le verrou, sinon
+    # un passage automatise supprimerait une branche sur laquelle une PR
+    # ouverte existe encore.
+    ouvertes = [p for p in prs if p["state"] == "OPEN"]
+    if ouvertes:
+        candidates = candidates + ouvertes
+    if candidates:
+        retenue = min(candidates, key=lambda p: (RANG[p["state"]], p["number"]))
+        return (CLASSE[retenue["state"]], retenue, "")
+
+    # Aucune PR exploitable : le statut devient une MESURE du contenu.
+    sur_main = mesure_contenu()
+    if sur_main is True:
+        return ("D", None, "ancestor_of_main")
+    if sur_main is None:
+        return ("E", None, "head_absent_du_clone")
+    return ("E", None, "not_ancestor_of_main")
+
+
 def main() -> int:
     parseur = argparse.ArgumentParser(description=__doc__)
     parseur.add_argument("--repo", default=str(Path(__file__).resolve().parents[2]))
@@ -215,40 +266,11 @@ def main() -> int:
     inconnus: list[str] = []
     for nom, sha in distant.items():
         prs = par_branche.get(nom) or []
-        # La branche par defaut est PROTEGEE : elle ne peut ni etre
-        # candidate, ni etre mesuree comme telle. Sans cette exclusion,
-        # elle tombait en D (ancetre de `main` -- trivial), et un passage
-        # automatise aurait tente de supprimer le depot.
-        if nom == defaut:
-            classes[nom] = (CLASSE_PROTEGEE, prs, sha, None, "branche_par_defaut")
-            continue
-        # La PR qui decrit la TETE COURANTE est celle dont le headRefOid vaut
-        # la tete distante. Les autres PRs du meme nom decrivent un etat
-        # passe : elles ne disent rien de ce qui serait supprime.
-        tete = sha.lower()
-        candidates = [p for p in prs if p["oid"] == tete]
-        if not candidates:
-            # Aucune PR ne porte la tete actuelle : soit la branche a avance
-            # depuis sa derniere PR, soit aucune PR ne l'a recouverte.
-            # Une PR OUVERTE reste bloquante (travail en cours) meme si la
-            # tete a bouge depuis.
-            ouvertes = [p for p in prs if p["state"] == "OPEN"]
-            if ouvertes:
-                candidates = [min(ouvertes, key=lambda p: p["number"])]
-        if candidates:
-            retenue = min(candidates, key=lambda p: (RANG[p["state"]], p["number"]))
-            classes[nom] = (CLASSE[retenue["state"]], prs, sha, retenue, "")
-            continue
-        # Aucune PR exploitable : le statut devient une MESURE du contenu.
-        sur_main = tete_sur_main(repo, sha, args.main)
-        if sur_main is True:
-            classes[nom] = ("D", prs, sha, None, "ancestor_of_main")
-            continue
-        if sur_main is None:
+        mesure = (lambda s: (lambda: tete_sur_main(repo, s, args.main)))(sha)
+        classe, retenue, note = classe_branche(nom, sha, prs, defaut, mesure)
+        classes[nom] = (classe, prs, sha, retenue, note)
+        if note == "head_absent_du_clone":
             inconnus.append(nom)
-            classes[nom] = ("E", prs, sha, None, "head_absent_du_clone")
-            continue
-        classes[nom] = ("E", prs, sha, None, "not_ancestor_of_main")
 
     # Preuve de contenu pour les classes C et E : la tete est-elle un ancetre
     # de `main` ? Un « oui » dit que le contenu EST sur main ; un « non » dit
