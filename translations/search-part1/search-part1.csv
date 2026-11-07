@@ -39512,10 +39512,12 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ip
 // mémoire avant de lancer la construction.
 // TODO etudiant
 Console.WriteLine(""Exercice 4 à compléter : partition 5-5-5."");",,,,,,,,b59c9eea3b612b18,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,4196bf40,markdown,fr,7a5a745e765bafe9,"### Exercice 5 — Max vs somme : combiner des PDB non additives
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,4196bf40,markdown,fr,6fe9b6c899e5b0ee,"### Exercice 5 — Max vs somme : combiner des PDB non additives
 
-Le PDB de l'**exemple guidé 1** (groupes 6-6-3) est **additif** (les groupes sont disjoints : la somme reste admissible). Construisez maintenant deux PDB **non additives** sur des groupes qui se chevauchent (par exemple {1..8} et {8..15} : la tuile 8 appartient aux deux), et combinez-les par `Math.Max`. Expliquez pourquoi la **somme** de ces deux tables casserait l'admissibilité (un coup de la tuile 8 serait compté deux fois) alors que le max reste sûr, et mesurez quelle combinaison guide le mieux.
-",,,,,,,,7a5a745e765bafe9,,,,,,,,,,,,,,,
+Le PDB de l'**exemple guidé 1** (groupes 6-6-3) est **additif** (les groupes sont disjoints : la somme reste admissible). Construisez maintenant deux PDB **non additives** sur des groupes qui se chevauchent (par exemple **{1,2,3,4} et {4,5,6,7}** : la tuile 4 appartient aux deux), et combinez-les par `Math.Max`. Expliquez pourquoi la **somme** de ces deux tables casserait l'admissibilité (un coup de la tuile 4 serait compté deux fois) alors que le max reste sûr, et mesurez quelle combinaison guide le mieux.
+
+**Pourquoi des groupes de 4 tuiles, et pas de 8.** La table d'un groupe de `k` tuiles occupe `P(16,k) * (16-k)` octets, et `BuildAdditivePdb` calcule cette taille en `int`. Pour `k = 8`, on obtient `P(16,8) * 8 = 4 151 347 200` états, **au-delà** de `int.MaxValue` (2 147 483 647) : en arithmétique `int` non contrôlée, la taille devient négative et `new byte[size]` échoue. Un groupe de 4 tuiles tient : `P(16,4) * 12 = 524 160` octets, exactement la taille de la PDB simple de la section 5. C'est le même plafond que la partition 6-6-6-7 de l'exemple guidé 1, mais ici **par addition** : au-delà de 7 tuiles par groupe, l'organe ne peut plus être appelé tel quel.
+",,,,,,,,6fe9b6c899e5b0ee,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,633ecc26,code,fr,bcdfd4ff34b4a8b8,"// Exercice 5 — à compléter : PDB non additives combinées par Max
 // Indice : réutilisez BuildAdditivePdb sur des groupes qui se chevauchent
 // — la table reste une vraie PDB (elle vérifie h(s) <= dist(s, but) par
