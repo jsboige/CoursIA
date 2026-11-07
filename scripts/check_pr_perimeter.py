@@ -458,6 +458,50 @@ _NEG_COUNT_UNIVERSALITY = re.compile(r"^\s*(?:seulement|juste|que|only)\b", re.I
 # FN du fondateur -- le closer nie « le cas », pas le compte qui suit).
 _NEG_COUNT_CLAUSE_BREAK = re.compile(r"[:;]")
 _PR_NUM_REF = re.compile(r"#\d+")
+_LANGUAGE_VARIANT_CUE = re.compile(
+    r"\b(?:fr|en|français|francaise|francais|anglais|anglaise|french|english)\b",
+    re.IGNORECASE,
+)
+_BOTH_FILE_VARIANTS = re.compile(
+    r"\b(?:dans\s+les\s+(?:deux|2)|in\s+both)\s+fichiers?\b",
+    re.IGNORECASE,
+)
+
+
+def _count_is_language_variant_reference(line: str, m: re.Match) -> bool:
+    """#25091: skip a count that describes FR/EN variants of one file.
+
+    The language cue must be local to the count and tied either to an explicit
+    variant/twin term or to a phrase such as « anglais dans les deux fichiers ».
+    This keeps an unrelated FR/EN mention elsewhere from laundering a real
+    perimeter assertion.
+    """
+    start = max(line.rfind("\n", 0, m.start()), line.rfind(";", 0, m.start()),
+                line.rfind("!", 0, m.start()), line.rfind("?", 0, m.start())) + 1
+    ends = [pos for token in ("\n", ";", "!", "?")
+            if (pos := line.find(token, m.end())) >= 0]
+    end = min(ends, default=len(line))
+    context_start = max(start, m.start() - 120)
+    context_end = min(end, m.end() + 120)
+    context = line[context_start:context_end]
+    if _has_strong_scope(context.lower()):
+        return False
+    if not _LANGUAGE_VARIANT_CUE.search(context):
+        return False
+    return bool(
+        re.search(r"\b(?:jumeaux?|twins?|variantes?|variants?)\b", context, re.I)
+        or _BOTH_FILE_VARIANTS.search(context)
+    )
+
+
+def _word_form_is_language_variant_reference(line: str) -> bool:
+    """Word-form counterpart of the #25091 per-occurrence digit filter."""
+    low = line.lower()
+    return any(
+        (m := trig.search(low)) is not None
+        and _count_is_language_variant_reference(line, m)
+        for _word, _n, trig in WORD_FORM_TRIGGERS
+    )
 
 
 def _count_is_negated(line: str, m: re.Match) -> bool:
@@ -605,6 +649,8 @@ def check_assertion(
     # by a name range, is reported speech, not a claim at all.
     scan_target = _fence_mask(assertion)
     word_count = None if guard_self else _word_form_count(scan_target)
+    if word_count is not None and _word_form_is_language_variant_reference(scan_target):
+        word_count = None
     count_claim = None
     if not guard_self:
         count_claim = next(
@@ -617,6 +663,7 @@ def check_assertion(
                 and not _count_is_out_of_scope_annotation(scan_target, mm)
                 and not _count_is_negated(scan_target, mm)
                 and not _count_is_other_pr(scan_target, mm)
+                and not _count_is_language_variant_reference(scan_target, mm)
             ),
             None,
         )
@@ -721,9 +768,11 @@ def check_assertion(
     # ce garde, la sonde --assert de l'issue resterait rouge avec un second
     # message apres la disparition du mismatch.
     non_claim_count = any(
-        _count_is_negated(scan_target, mm) or _count_is_other_pr(scan_target, mm)
+        _count_is_negated(scan_target, mm)
+        or _count_is_other_pr(scan_target, mm)
+        or _count_is_language_variant_reference(scan_target, mm)
         for mm in COUNT_CLAIM.finditer(scan_target)
-    )
+    ) or _word_form_is_language_variant_reference(scan_target)
     if (
         not count_claim and word_count is None and not exclusive
         and not guard_self and not non_claim_count
@@ -1452,10 +1501,12 @@ def _additive_line_sum(line: str) -> int:
         and not _count_is_out_of_scope_annotation(line, m)
         and not _count_is_negated(line, m)
         and not _count_is_other_pr(line, m)
+        and not _count_is_language_variant_reference(line, m)
     )
     low = line.lower()
     for _word, n, trig in WORD_FORM_TRIGGERS:
-        if trig.search(low):
+        m = trig.search(low)
+        if m and not _count_is_language_variant_reference(line, m):
             return total + n
     return total
 
