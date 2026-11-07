@@ -600,11 +600,11 @@ theorem reidemeister3Determined_satisfiable :
     -- the underlying `List.Perm` on `List Nat`, which IS decidable.
     exact by unfold PDCrossing.isSlotPermOf; decide
   · -- surgery, left arm: d₂.crossings = d₁.crossings.set 0 ⟨1,3,2,4⟩.
-    -- `d₁.crossings` and `d₂.crossings` are concrete literals (`simp only
-    -- [List.set]` unfolds both and reduces `set 0` on `[_, _]` to the
-    -- defeq goal `[c', b] = [c', b]`). No `DecidableEq (List PDCrossing)`
-    -- instance needed (absent ; `decide` would fail with `failed to
-    -- synthesize Decidable`).
+    -- `d₁.crossings` and `d₂.crossings` are concrete literals
+    -- (`simp only [List.set]` unfolds both and reduces `set 0` on
+    -- `[_, _]` to the defeq goal `[c', b] = [c', b]`). No
+    -- `DecidableEq (List PDCrossing)` instance needed (absent ; `decide`
+    -- would fail with `failed to synthesize Decidable`).
     exact Or.inl (by simp only [List.set])
   · -- d₁.wf = true (each of {1,2,3,4} appears exactly twice)
     exact by decide
@@ -717,7 +717,7 @@ theorem Reidemeister3Connected.numEdges_eq {d₁ d₂ : KnotDiagram}
 /-! #### Inverse direction — the Y → X move
 
 The bijection φ⁻¹ is also Sat-preserving (validation #11486, Part C:
-both bijections found are mutually inverse at equal Sat). The inverse
+the 2 bijections found are mutually inverse at equal Sat). The inverse
 surgery — each arc x of the X triangle receives the concrete label
 carried by the arc φ(x) of the Y triangle — rewrites the Y triangle
 `⟨a₃,b₃,g₃,g₁⟩, ⟨g₃,a₁,b₂,g₂⟩, ⟨g₁,g₂,a₂,b₁⟩` into the X triangle
