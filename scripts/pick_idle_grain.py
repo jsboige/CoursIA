@@ -9547,12 +9547,22 @@ def fetch_closed_issues(window_days: int = BANDIT_WINDOW_DAYS, *,
 
 def _arm_of_issue(issue: dict, issue_to_family: dict | None,
                   families, zones=None) -> str:
-    """Le bras d'une issue qui n'est plus dans le pool (fermee)."""
+    """Le bras d'une issue qui n'est plus dans le pool (fermee).
+
+    Les labels sont normalises en NOMS avant d'etre lus : `gh issue list`
+    rend des objets `{name, ...}`, la ou le pool du picker porte des
+    chaines. `infer_genre` concatene les labels -- un objet la fait
+    echouer, et l'echec tuait le tirage entier sur une issue fermee sans
+    zone (mesure du 07/11, premier rejeu du bandit).
+    """
     fam = resolve_family(issue, issue_to_family or {}, tuple(families or ()),
                          zones)
     if fam:
         return "zone:" + str(fam)
-    genre = infer_genre(issue.get("title") or "", issue.get("labels") or [])
+    labels = issue.get("labels") or []
+    names = [lab.get("name") if isinstance(lab, dict) else str(lab)
+             for lab in labels]
+    genre = infer_genre(issue.get("title") or "", names)
     return "genre:" + (genre or "inconnu")
 
 

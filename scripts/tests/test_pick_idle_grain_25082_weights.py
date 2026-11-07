@@ -112,6 +112,16 @@ def test_une_pr_sans_declaration_ne_compte_pas_comme_une_visite():
     assert arms == {}
 
 
+def test_une_issue_fermee_sans_zone_ne_tue_pas_le_tirage():
+    """`gh issue list` rend des labels OBJETS (`{name: ...}`), la ou le pool
+    du picker porte des chaines. `infer_genre` concatene les labels : sans
+    normalisation, une seule issue fermee sans zone faisait echouer le
+    tirage entier (mesure du 07/11, rejeu du bandit)."""
+    issue = {"number": 25190, "title": "un titre sans zone", "body": "",
+             "labels": [{"name": "audit"}]}
+    assert pig._arm_of_issue(issue, {}, [], None).startswith("genre:")
+
+
 # --- A : l'echantillon de Thompson -------------------------------------------
 
 
