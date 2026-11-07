@@ -7334,6 +7334,141 @@ def test_implicit_multiple_prs_all_named(monkeypatch, capsys):
     assert [e["number"] for e in data["implicit_occupation"]] == [14293, 14301]
 
 
+# --- #24788 : « mentionner » n'est pas « travailler sur » --------------------
+#
+# La jambe IMPLICIT (#14300) correspond TEXTUELLEMENT sur le corps entier :
+# tout numero cite occupait l'issue. Une PR qui ENUMERE des numeros -- la
+# liste des issues ecartees du tapis, livrable legitime pour l'urne de
+# l'adjoint -- declarait donc occupees toutes les issues listees. Mesure du
+# 2026-11-05 sur le corps de #24482 : 172 numeros cites, 162 ouverts, soit
+# 27 % des issues ouvertes du depot declarees occupees par une PR qui n'y
+# travaille pas.
+#
+# Remede retenu = les DEUX formes que l'issue dit combinables, appliquees a
+# des populations de corps differentes : sous le seuil, predicat INCHANGE
+# (#14300 preserve sans cout) ; au-dessus, seules les references fortes
+# occupent. Les trois premiers tests sont le rejeu de l'instance, les deux
+# suivants sont la non-regression et la frontiere.
+
+def _enum_body(*numbers, trailer=""):
+    """Corps ENUMERATIF au gabarit de #24482 : une liste d'issues ecartees."""
+    lines = ["Grain: MED/tooling — lane myia-ai-01:CoursIA-2 — prev: LIGHT/docs #1",
+             "",
+             "## La liste, issue par issue (pour l'urne de l'adjoint)",
+             "",
+             "Ecartees pour livraison entiere :",
+             ""]
+    lines += [f"- #{n} -- ecartee, deja livree sur main" for n in numbers]
+    return "\n".join(lines) + ("\n\n" + trailer if trailer else "")
+
+
+_ENUM_NUMBERS = (23495,) + tuple(range(30001, 30015))  # 16 numeros, > seuil
+
+
+def test_implicit_enumeration_body_stops_occupying(monkeypatch, capsys):
+    # REJEU de l'instance #24788 : le corps de #24482 cite #23495 dans une
+    # liste, sans aucun verbe de livraison ni marqueur. Avant : IMPLICIT a
+    # exit 3. Attendu : CLEAR a exit 0, le grain est libre.
+    pr = dict(_PR_14293, number=24482, body=_enum_body(*_ENUM_NUMBERS))
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [pr])
+    p = payload(number=23495)
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2", check_open_pr_paths=True)
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "IMPLICIT" not in captured.out
+    assert "CLEAR" in captured.out
+
+
+def test_implicit_enumeration_keeps_a_delivery_verb(monkeypatch, capsys):
+    # Forme 1 DANS une enumeration : le corps liste 16 issues ET ferme
+    # #23495. Une PR qui ferme une issue travaille dessus -- l'occupation
+    # est retenue, et le verdict dit pourquoi (corps enumeratif).
+    pr = dict(_PR_14293, number=24482,
+              body=_enum_body(*_ENUM_NUMBERS, trailer="Closes #23495"))
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [pr])
+    rc = clc._run_check(payload(number=23495), "myia-po-2023:CoursIA-2",
+                        check_open_pr_paths=True)
+    assert rc == 3
+    captured = capsys.readouterr()
+    assert "#24482" in captured.out
+    assert "corps enumeratif" in captured.out
+
+
+def test_implicit_enumeration_keeps_a_marker_line(monkeypatch, capsys):
+    # Forme 1, seconde branche : un marqueur de lane sur la MEME ligne que le
+    # numero affirme l'occupation, meme au milieu d'une liste.
+    pr = dict(_PR_14293, number=24482,
+              body=_enum_body(*_ENUM_NUMBERS,
+                              trailer="[DELIVERED] lane myia-ai-01:CoursIA-2 "
+                                      "-- PR #24490 traite #23495"))
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [pr])
+    rc = clc._run_check(payload(number=23495), "myia-po-2023:CoursIA-2",
+                        check_open_pr_paths=True)
+    assert rc == 3
+    assert "IMPLICIT" in capsys.readouterr().out
+
+
+def test_implicit_ordinary_body_keeps_the_lenient_mention(monkeypatch, capsys):
+    # NON-REGRESSION #14300, la contrainte que l'issue pose en toutes lettres :
+    # un corps ORDINAIRE (peu de numeros) garde le predicat d'origine. Une PR
+    # qui cite l'issue par `See #N` -- sans la fermer -- continue de la
+    # proteger. C'est ce que la forme 1 appliquee PARTOUT aurait casse.
+    pr = dict(_PR_14293, number=24482,
+              body=("Grain: x — lane myia-ai-01:CoursIA-2 — prev: x #1\n\n"
+                    "See #23495 et #23496"))
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [pr])
+    rc = clc._run_check(payload(number=23495), "myia-po-2023:CoursIA-2",
+                        check_open_pr_paths=True)
+    assert rc == 3
+    captured = capsys.readouterr()
+    assert "IMPLICIT" in captured.out
+    assert "corps enumeratif" not in captured.out
+
+
+def test_occupying_numbers_threshold_is_inclusive_and_pinned():
+    # La frontiere se lit sur la fonction, pas sur un corps de PR : exactement
+    # `seuil` numeros = corps ordinaire (tous occupent) ; un de plus = corps
+    # enumeratif (aucune reference forte, donc plus rien n'occupe).
+    ordinary = " ".join(f"#{n}" for n in range(100, 110))          # 10 numeros
+    over = ordinary + " #110"                                       # 11 numeros
+    assert clc._occupying_issue_numbers(ordinary, 10) == set(range(100, 110))
+    assert clc._occupying_issue_numbers(over, 10) == set()
+
+
+def test_occupying_numbers_strong_forms_only():
+    # Un `See #N` isole, un `Part of #N` et une enumeration nue restent des
+    # mentions ; le verbe de livraison et le marqueur de ligne occupent.
+    over = " ".join(f"#{n}" for n in range(100, 111))     # 11 numeros
+    assert clc._occupying_issue_numbers(over + "\nSee #200", 10) == set()
+    assert clc._occupying_issue_numbers(over + "\nRefs #200", 10) == set()
+    assert clc._occupying_issue_numbers(over + "\nPart of #200", 10) == set()
+    assert clc._occupying_issue_numbers(over + "\nFixes #200", 10) == {200}
+    assert clc._occupying_issue_numbers(over + "\nResolved #200", 10) == {200}
+    assert clc._occupying_issue_numbers(
+        over + "\n[CLAIMED] lane a:b -- paths: x/** sur #201", 10) == {201}
+
+
+def test_enum_threshold_env_falls_back_on_garbage(monkeypatch):
+    # Un seuil de mesure ne change pas de verdict par accident de transport :
+    # une valeur illisible retombe sur le defaut, elle ne vaut pas 0.
+    monkeypatch.setenv("CHECK_LANE_CLAIM_ENUM_THRESHOLD", "pas-un-entier")
+    assert clc._enumeration_threshold() == clc._ENUM_DISTINCT_ISSUES_DEFAULT
+    monkeypatch.setenv("CHECK_LANE_CLAIM_ENUM_THRESHOLD", "0")
+    assert clc._enumeration_threshold() == clc._ENUM_DISTINCT_ISSUES_DEFAULT
+    monkeypatch.setenv("CHECK_LANE_CLAIM_ENUM_THRESHOLD", "3")
+    assert clc._enumeration_threshold() == 3
+
+
+def test_index_memo_is_keyed_by_threshold():
+    # L'index est memoise par (liste, seuil) : un index calcule sous un seuil
+    # ne se sert pas sous un autre, sinon le remede dependrait de l'ordre des
+    # appels dans le processus.
+    prs = [{"number": 1, "body": _enum_body(*_ENUM_NUMBERS)}]
+    assert clc._open_prs_by_referenced_issue(prs, 10).get(23495) is None
+    assert clc._open_prs_by_referenced_issue(prs, 100).get(23495) == [prs[0]]
+    assert clc._open_prs_by_referenced_issue(prs, 10).get(23495) is None
+
+
 # --- #19971 : payload JSON comme corps -- lecture defensive du transport ------
 #
 # La classe de transport #16866/#17270 publie parfois le payload COMPLET
