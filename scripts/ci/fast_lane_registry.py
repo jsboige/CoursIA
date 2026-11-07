@@ -73,6 +73,20 @@ def live_read_source_paths(registry_path: Path | None = None) -> list[str]:
         if not source:
             raise RuntimeError(
                 f"registre live-read : entree sans champ 'source' : {cell}")
+        if cell.get("source_kind", "repo") == "external":
+            # La source d'une lecture EXTERNE (clone Lake amont epingle par un
+            # tag) n'est PAS un fichier du depot : la revision qui peut
+            # invalider la declaration est celle qui touche le CARNET -- la
+            # sortie commitee y vit -- et non celle du fichier amont, que
+            # personne ne peut modifier ici. Declarer le chemin amont comme
+            # declencheur rendrait le garde eteint en silence sur ce carnet.
+            notebook = cell.get("notebook")
+            if not notebook:
+                raise RuntimeError(
+                    f"registre live-read : entree externe sans champ "
+                    f"'notebook' : {cell}")
+            sources.append(notebook)
+            continue
         sources.append(source)
     return sources
 
