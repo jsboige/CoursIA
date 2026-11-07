@@ -1,6 +1,9 @@
 """Scan du referencement des images des decks slides/ (EPIC #11508, lot L4).
 
-Mesure, par deck, dans quelle classe tombe chaque fichier de ``<deck>/images/`` :
+Mesure, par deck, dans quelle classe tombe chaque fichier d'image du deck. Les
+deux emplacements sont enumeres : ``<deck>/images/`` et ``<deck>/public/images/``
+(layout Slidev servant les visuels sous ``/images/``). Un deck peut porter les
+deux ; l'union est comptee, dedoublonnee par nom de fichier.
 
   ACTIVE          reference dans un .md Slidev (hors ``slides.marp.md``) sur une
                   ligne NON commentee -- l'image est rendue par le deck actif
@@ -21,8 +24,9 @@ mesure, il ne qualifie pas.
 Heuristique de commentaire : ligne dont le contenu, espaces de tete retires,
 commence par ``<!--``. Un commentaire multi-lignes ouvre par ``<!--`` mais les
 refs sont comptees par ligne ; les decks existants utilisent des commentaires
-mono-ligne ``<!-- Image: images/img_089.png -->`` (verifie sur les 12 decks
-porteurs). ``COURSE_RECAP_*`` est exclu (notes de session, pas un deck).
+mono-ligne ``<!-- Image: images/img_089.png -->`` (verifie sur les 13 decks
+porteurs, dont 01-introduction et son layout ``public/images/``). ``COURSE_RECAP_*``
+est exclu (notes de session, pas un deck).
 
 Usage:
   python scan_slides_image_refs.py --repo <racine>            # table lisible
@@ -64,10 +68,21 @@ def _refs_by_class(files: list[Path]) -> tuple[set[str], set[str]]:
     return active, trapped
 
 
+def _image_dirs(deck_dir: Path) -> list[Path]:
+    """Dossiers d'images d'un deck : ``images/`` et ``public/images/`` (layout Slidev).
+
+    L'enumeration d'un seul des deux omettait silencieusement les decks ranges sous
+    ``public/images/`` -- 01-introduction, 38 fichiers, invisible du scan L4 jusqu'au
+    2026-11-01 alors que le zero 669/669 le certifiait solde.
+    """
+    return [d for d in (deck_dir / "images", deck_dir / "public" / "images") if d.is_dir()]
+
+
 def scan_deck(deck_dir: Path) -> dict:
     images = {
         f.name
-        for f in (deck_dir / "images").iterdir()
+        for d in _image_dirs(deck_dir)
+        for f in d.iterdir()
         if f.is_file() and f.suffix.lower() in IMAGE_EXTS
     }
     all_md = [p for p in deck_dir.glob("*.md") if "RECAP" not in p.name]
@@ -98,7 +113,7 @@ def scan_slides_dir(slides_dir: Path) -> list[dict]:
     decks = sorted(
         d
         for d in slides_dir.iterdir()
-        if d.is_dir() and (d / "images").is_dir()
+        if d.is_dir() and _image_dirs(d)
     )
     return [scan_deck(d) for d in decks]
 
@@ -117,8 +132,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.deck:
         deck_dir = slides_dir / args.deck
-        if not (deck_dir / "images").is_dir():
-            print(f"ERREUR: {deck_dir} sans dossier images/", file=sys.stderr)
+        if not _image_dirs(deck_dir):
+            print(f"ERREUR: {deck_dir} sans dossier images/ ni public/images/", file=sys.stderr)
             return 2
         results = [scan_deck(deck_dir)]
     else:
