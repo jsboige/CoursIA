@@ -77,8 +77,9 @@ python scripts/research/aima_mapping.py check --out-dir docs/curriculum/aima-map
 ```
 
 `toc` extrait et vérifie les deux tables des matières, `map` produit la
-correspondance et la couverture, `check` rejoue les ancres et contrôle que
-chaque ligne de couverture renvoie à une section présente dans la table.
+correspondance et la couverture, `check` contrôle la cohérence interne — que
+chaque ligne de couverture renvoie à une section présente dans la table —
+sans rouvrir les PDF (la re-vérification des ancres est le rôle de `toc`).
 Les PDF sont lus depuis `G:\Mon Drive\MyIA\IA\Bibliographie IA\AI` (option
 `--bib-dir` pour un autre emplacement).
 

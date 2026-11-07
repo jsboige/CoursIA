@@ -10,8 +10,10 @@ Grain #24997 (EPIC #24993). Trois livrables, tous reproductibles :
    produire la correspondance section -> phase -> carnets -> competences, la liste des
    sections sans couverture, les ecarts entre editions, et le contenu qui depasse le
    livre.
-3. `check`: rejoue les ancres contre les PDF et verifie que les CSV produits restent
-   coherents avec les sources (garde anti-drift).
+3. `check`: controle la coherence interne des CSV produits (les lignes de TOC
+   conservent leur marque de verification, et chaque ligne de couverture renvoie
+   a une section presente dans la table) ; ne rouvre pas les PDF, dont la
+   re-verification des ancres est le role de `toc` (garde anti-drift).
 
 Regles appliquees :
 - les PDF ne sont jamais copies dans le depot ; seule l'ancre (numero de page) sort ;
@@ -1033,7 +1035,11 @@ def cmd_map(args) -> int:
 
 
 def cmd_check(args) -> int:
-    """Rejoue les ancres contre les PDF et verifie la coherence des CSV produits."""
+    """Controle la coherence interne des CSV produits (TOC vers couverture).
+
+    Ne rouvre pas les PDF : la re-verification des ancres contre les pages est
+    le role de `toc`.
+    """
     rc = 0
     for name, pdf_name in (("aima3e-toc.csv", PDF_3E), ("aima4e-toc.csv", PDF_4E)):
         path = args.out_dir / name
