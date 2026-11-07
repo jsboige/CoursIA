@@ -231,7 +231,6 @@ ancien	nouveau	date	lane
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb	2026-10-03	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb	2026-10-04	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09d-Lean-Discrepancy-Komlos.ipynb	MyIA.AI.Notebooks/Search/Discrepancy/Discrepancy-02-Komlos-Lean.ipynb	2026-10-04	myia-po-2027:CoursIA
-
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb	2026-10-04	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb	MyIA.AI.Notebooks/RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/RL/rl_1b_bitwise_logic_synthesis.ipynb	MyIA.AI.Notebooks/RL/RL-01b-Synthese-Logique-Bitwise-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
@@ -321,7 +320,6 @@ MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb	MyIA.AI.Notebooks/II
 MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb	MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb	MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/GameTheory/GameTheory-23a-Biens-Publics-Plan-Deformation-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb	2026-10-11	myia-po-2023:CoursIA-2
-
 MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction.ipynb	2026-10-10	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
@@ -456,4 +454,13 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie.ipynb	MyIA.AI.Noteboo
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb	2026-11-04	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb	2026-11-04	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb	2026-11-04	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb	MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb	2026-11-05	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-02b-Lean-Coherence.ipynb	MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01c-Lean-Coherence.ipynb	2026-11-05	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-03-Utility-Money.ipynb	MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-02-Utility-Money.ipynb	2026-11-05	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-04-Multi-Attribute.ipynb	MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-03-Multi-Attribute.ipynb	2026-11-05	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-05-Decision-Networks.ipynb	MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-04-Decision-Networks.ipynb	2026-11-05	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Value-Information.ipynb	MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-05-Value-Information.ipynb	2026-11-05	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-07-Expert-Systems.ipynb	MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Expert-Systems.ipynb	2026-11-05	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Sequential.ipynb	MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-07-Sequential.ipynb	2026-11-05	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb	MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb	2026-11-05	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/GameTheory/GameTheory-04f-Theories-Decision-Predicteur-Python.ipynb	MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-11-Theories-Decision-Predicteur-Python.ipynb	2026-11-05	myia-po-2025:CoursIA
