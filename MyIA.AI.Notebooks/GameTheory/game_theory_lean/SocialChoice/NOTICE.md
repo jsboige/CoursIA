@@ -8,8 +8,11 @@ It is derived from multiple open-source projects and academic work.
 > [#4365](https://github.com/jsboige/CoursIA/issues/4365), 2026-07-11), les sept modules
 > (`Basic`, `Framework`, `Arrow`, `Sen`, `Voting`, `MechanismDesign`, `SortedListCounting`)
 > ont été absorbés **byte-identique** dans ce répertoire. La notice les a suivis le
-> 2026-11-02 (#24183, T1) ; son ancien emplacement `social_choice_lean/` n'en garde qu'un
-> pointeur d'une ligne, qui disparaîtra avec le reste du dossier en T3.
+> 2026-11-02 (#24183, T1) ; son ancien emplacement `social_choice_lean/` n'en garde plus que
+> **trois documents** (`README`, `STATUS`, `LEAN_PREREQUISITES`), dont la preuve de préservation
+> est livrée dans le [README de la coquille](../../social_choice_lean/README.md) (§« Preuve de
+> préservation ») : deux d'entre eux portent un contenu unique et des liens entrants actifs, si
+> bien que le dossier **ne peut pas** être retiré avant leur relocation (tranche T3 de #24183).
 >
 > **Depuis le 2026-11-02 (#24183, T1), deux formalisations indépendantes d'Arrow et de Sen
 > coexistent, et le rôle de chacune est explicite :**

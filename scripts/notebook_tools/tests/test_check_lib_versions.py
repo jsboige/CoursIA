@@ -21,6 +21,7 @@ l'allowlist (une entree sans motif ecrit est refusee).
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -1205,3 +1206,235 @@ def test_le_recensement_compte_les_epinglages_flottants():
     assert by_library["Google.OrTools"]["floating_notebooks"], (
         "le corpus contient des epinglages OrTools sans version"
     )
+
+
+# --------------------------------------------------------------------------
+# #23103 -- artefacts charges depuis un chemin (binaires et sources)
+# --------------------------------------------------------------------------
+def _git_repo(tmp_path: Path) -> Path:
+    """Depot git minimal : `_tracked_paths` interroge git, pas le disque."""
+    root = tmp_path.resolve() / "depot"
+    root.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        ["git", "init", "-q"], cwd=root, check=True, capture_output=True
+    )
+    return root
+
+
+def _repo_with(tmp_path: Path, cells: list[str], submodules: list[str] | None = None) -> Path:
+    root = _git_repo(tmp_path)
+    if submodules:
+        root.joinpath(".gitmodules").write_text(
+            "".join(
+                f'[submodule "{path}"]\n\tpath = {path}\n\turl = https://exemple/{i}\n'
+                for i, path in enumerate(submodules)
+            ),
+            encoding="utf-8",
+        )
+    return root
+
+
+def _touch(root: Path, relative: str, track: bool) -> None:
+    target = root / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(b"artefact")
+    if track:
+        subprocess.run(
+            ["git", "add", "-f", "--", relative],
+            cwd=root,
+            check=True,
+            capture_output=True,
+        )
+
+
+def test_binary_detector_distinguishes_path_from_assembly_name():
+    """`#r "System.Text.Json"` n'est pas un chargement depuis un chemin."""
+    assert not clv._looks_like_a_path("System.Text.Json")
+    assert clv._looks_like_a_path("./libs/Tweety.jar")
+    assert clv._looks_like_a_path("Tweety.dll")
+    assert not clv._looks_like_a_path("")
+
+
+def test_package_reference_is_not_a_binary_load(tmp_path):
+    """`#r "nuget: X, v"` est un epinglage de paquet, pas un chemin."""
+    payload = _notebook(['#r "nuget: IKVM, 8.15.0"'])
+    root = _repo_with(tmp_path, [])
+    assert clv.binary_loads("series/nb.ipynb", payload, root) == []
+
+
+def test_binary_outside_the_repository_is_reported(tmp_path):
+    """Chemin absolu hors depot : absent apres un clone (point 1)."""
+    root = _repo_with(tmp_path, ['#r "/opt/ailleurs/Tweety.jar"'])
+    found = clv.binary_findings("series/nb.ipynb", _notebook(['#r "/opt/ailleurs/Tweety.jar"']), root)
+    assert [item["kind"] for item in found] == ["binary_hors_depot"]
+    assert found[0]["library"] == "Tweety.jar"
+
+
+def test_relative_path_escaping_the_repository_is_reported(tmp_path):
+    """Un `../..` qui sort du depot est exactement le cas a voir (point 1)."""
+    payload = _notebook(['#load "../../../evade/Tweety.jar"'])
+    root = _repo_with(tmp_path, [])
+    found = clv.binary_findings("series/sub/nb.ipynb", payload, root)
+    assert [item["kind"] for item in found] == ["binary_hors_depot"]
+
+
+def test_binary_from_a_submodule_is_legitimate(tmp_path):
+    """Cas legitime (a) : le binaire est produit par un sous-module du depot."""
+    payload = _notebook(['#r "libs/MetaGeneticSharp.Domain.dll"'])
+    root = _repo_with(tmp_path, [], submodules=["series/libs"])
+    assert clv.binary_findings("series/nb.ipynb", payload, root) == []
+
+
+def test_binary_versioned_in_the_repository_is_legitimate(tmp_path):
+    """Cas legitime (b) : l'artefact est versionne, donc present apres un clone."""
+    root = _repo_with(tmp_path, [])
+    _touch(root, "series/libs/Tweety.dll", track=True)
+    payload = _notebook(['#r "libs/Tweety.dll"'])
+    assert clv.binary_findings("series/nb.ipynb", payload, root) == []
+
+
+def test_binary_ignored_by_git_is_reported(tmp_path):
+    """Dans le depot mais ignore par git : absent apres un clone (point 1)."""
+    root = _repo_with(tmp_path, [])
+    _touch(root, "series/libs/Tweety.dll", track=False)
+    payload = _notebook(['#r "libs/Tweety.dll"'])
+    found = clv.binary_findings("series/nb.ipynb", payload, root)
+    assert [item["kind"] for item in found] == ["binary_non_versionne"]
+
+
+def test_declared_download_with_checksum_satisfies_the_reproduction_gate(tmp_path):
+    """Point 3 : URL + empreinte declarees, le constat disparait."""
+    root = _repo_with(tmp_path, [])
+    _touch(root, "series/libs/Tweety.dll", track=False)
+    payload = _notebook(
+        [
+            '#r "libs/Tweety.dll"',
+            'URL = "https://exemple/builds/Tweety.dll"\nSHA256 = "abc123"',
+        ]
+    )
+    assert clv.binary_findings("series/nb.ipynb", payload, root) == []
+
+
+def test_declared_download_without_checksum_is_still_reported(tmp_path):
+    """Un telechargement sans empreinte ne rend pas la version reproductible."""
+    root = _repo_with(tmp_path, [])
+    _touch(root, "series/libs/Tweety.dll", track=False)
+    payload = _notebook(
+        ['#r "libs/Tweety.dll"', 'URL = "https://exemple/builds/Tweety.dll"']
+    )
+    found = clv.binary_findings("series/nb.ipynb", payload, root)
+    assert [item["kind"] for item in found] == ["binary_sans_empreinte"]
+
+
+def test_checksum_declared_for_another_artifact_does_not_lift_the_finding(tmp_path):
+    """Cas croise (reserve Hermes, #24520) : l'empreinte est par ARTEFACT.
+
+    Deux artefacts sont declares, un seul porte une empreinte : le constat de
+    l'autre doit rester. Avant le fix, `has_checksum` etait un booleen par
+    carnet -- l'empreinte de Tweety.dll levait aussi le constat de Autre.dll.
+    """
+    root = _repo_with(tmp_path, [])
+    _touch(root, "series/libs/Tweety.dll", track=False)
+    _touch(root, "series/libs/Autre.dll", track=False)
+    payload = _notebook(
+        [
+            '#r "libs/Tweety.dll"\n#r "libs/Autre.dll"',
+            'URL = "https://exemple/builds/Tweety.dll"\nSHA256 = "abc123"',
+            'URL = "https://exemple/builds/Autre.dll"',
+        ]
+    )
+    found = clv.binary_findings("series/nb.ipynb", payload, root)
+    assert [item["kind"] for item in found] == ["binary_sans_empreinte"]
+    assert found[0]["library"] == "Autre.dll"
+
+
+@pytest.mark.parametrize(
+    "line, form",
+    [
+        ('#r "./libs/Tweety.dll"', "#r"),
+        ('#load "./libs/Tweety.dll"', "#load"),
+        ("%classpath add jar ./libs/Tweety.jar", "%classpath"),
+        ("Add-Type -Path ./libs/Tweety.dll", "Add-Type"),
+        ('clr.AddReference("./libs/Tweety.dll")', "clr.AddReference"),
+        ('Assembly.LoadFrom("./libs/Tweety.dll")', "Assembly.Load"),
+        ("pip install ./dist/Tweety-1.0.whl", "pip-fichier"),
+    ],
+)
+def test_every_load_form_is_scanned(line: str, form: str):
+    """Le balayage couvre toutes les formes, pas seulement `#r` (scope note)."""
+    payload = _notebook([line])
+    loads = clv.binary_loads("series/nb.ipynb", payload, Path.cwd())
+    assert [load.form for load in loads] == [form]
+
+
+def test_markdown_prose_citing_a_load_form_is_not_a_finding(tmp_path):
+    """Une forme ecrite en markdown est de la prose, pas une ligne executee."""
+    payload = {
+        "cells": [
+            {"cell_type": "markdown", "source": ['#r "/opt/ailleurs/Tweety.jar"']},
+        ],
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    root = _repo_with(tmp_path, [])
+    assert clv.binary_findings("series/nb.ipynb", payload, root) == []
+
+
+def test_source_file_load_is_labelled_as_source_not_binary(tmp_path):
+    """`#load "./Init.csx"` charge une source : le motif ne dit pas « binaire »."""
+    root = _repo_with(tmp_path, [])
+    payload = _notebook(['#load "../Init.csx"'])
+    found = clv.binary_findings("series/sub/nb.ipynb", payload, root)
+    assert [item["kind"] for item in found] == ["binary_non_versionne"]
+    assert "le fichier source est dans le depot mais ignore par git" in found[0]["reason"]
+
+
+def test_census_exposes_binary_findings(tmp_path):
+    """Le recensement porte la section, avec la cellule et le chemin."""
+    root = _repo_with(tmp_path, [])
+    notebook = _write_notebook(root, "nb.ipynb", ['#r "/opt/ailleurs/Tweety.jar"'])
+    subprocess.run(
+        ["git", "add", "-f", "--", "nb.ipynb"], cwd=root, check=True, capture_output=True
+    )
+    assert notebook.exists()
+    report = clv.run_census(root, _manifest_with(tmp_path, []))
+    assert [item["kind"] for item in report["binary_findings"]] == ["binary_hors_depot"]
+
+
+# --- Imputation du constat binaire au delta (#23103) ---------------------
+#
+# Un chargement hors depot deja present dans la base n'est pas impute a la PR :
+# c'est l'etat du carnet, il se lit au recensement. Sans ce delta, toucher un
+# carnet deja fautif rendrait la PR rouge pour un defaut qu'elle n'a pas cree.
+
+
+def test_binary_finding_present_in_the_base_is_not_imputed_to_the_pr(tmp_path):
+    """Meme chargement en base et a la tete : la PR ne porte pas le constat."""
+    root = _repo_with(tmp_path, [])
+    cell = '#r "/opt/ailleurs/Tweety.jar"'
+    base_payload = _notebook([cell])
+    head_payload = _notebook([cell, "print(1)"])
+    assert (
+        clv.delta_binary_findings("nb.ipynb", base_payload, head_payload, root) == []
+    )
+
+
+def test_binary_load_added_by_the_pr_is_imputed(tmp_path):
+    """Chargement ajoute par la PR : le constat tombe sur la PR."""
+    root = _repo_with(tmp_path, [])
+    base_payload = _notebook(["print(1)"])
+    head_payload = _notebook(["print(1)", '#r "/opt/ailleurs/Tweety.jar"'])
+    found = clv.delta_binary_findings("nb.ipynb", base_payload, head_payload, root)
+    assert [item["kind"] for item in found] == ["binary_hors_depot"]
+    # `path` porte le chemin resolu, qui suit la racine du disque courant sous
+    # Windows : on assertit sur le nom de l'artefact, pas sur le prefixe.
+    assert found[0]["library"].endswith("Tweety.jar")
+
+
+def test_new_notebook_reports_all_its_binary_findings(tmp_path):
+    """Carnet neuf : il n'y a pas de base, donc tout constat lui est impute."""
+    root = _repo_with(tmp_path, [])
+    head_payload = _notebook(['#r "/opt/ailleurs/Tweety.jar"'])
+    found = clv.delta_binary_findings("nb.ipynb", None, head_payload, root)
+    assert [item["kind"] for item in found] == ["binary_hors_depot"]

@@ -1,0 +1,82 @@
+# Sonde d'API courante -- moteur adk
+# generee le 2026-11-04 par current_api_probe.py --engine adk
+# aucune requete LLM, aucune cle API ; environnement de mesure dedie
+VERSION google-adk=2.13.0
+VERSION google-genai=2.34.0
+DEPRECATIONS_A_L_IMPORT 0
+SYMBOLES_PUBLICS 1565
+CONTROLE NEGATIF INTER-MOTEURS (doivent etre NON importables)
+  NEGATIF absent OK  semantic_kernel
+  NEGATIF absent OK  agent_framework
+CAPACITE runner_session
+  POSITIF PRESENT OK  google.adk.runners.Runner  (ok)
+  POSITIF PRESENT OK  google.adk.sessions.InMemorySessionService  (ok)
+  SYMBOLE BaseSessionService (google.adk.agents.invocation_context)
+  SYMBOLE PerAgentDatabaseSessionService (google.adk.cli.utils.local_storage)
+  SYMBOLE VertexAiSessionService (google.adk.sessions)
+CAPACITE agents_outils
+  SYMBOLE AgentTool (google.adk.cli.agent_graph)
+  SYMBOLE AgentToolConfig (google.adk.tools.agent_tool)
+  SYMBOLE AuthenticatedFunctionTool (google.adk.tools.authenticated_function_tool)
+  SYMBOLE DataAgentToolConfig (google.adk.tools.data_agent)
+  SYMBOLE DataAgentToolset (google.adk.tools.data_agent)
+  SYMBOLE FunctionTool (google.adk.agents.llm_agent)
+  SYMBOLE FunctionToolDefinition (google.adk.telemetry._experimental_semconv)
+  SYMBOLE GoogleSearchAgentTool (google.adk.tools.google_search_agent_tool)
+  SYMBOLE LlmAgent (google.adk.agents)
+  SYMBOLE LlmAgentConfig (google.adk.agents)
+  SYMBOLE LlmAgentMode (google.adk.utils._agent_mode)
+  SYMBOLE LongRunningFunctionTool (google.adk.tools)
+  SYMBOLE ... (+10 autres)
+CAPACITE reprise_app
+  SYMBOLE App (google.adk.apps.app)
+  SYMBOLE AppDetails (google.adk.evaluation.app_details)
+  SYMBOLE AppInfo (google.adk.cli.api_server)
+  SYMBOLE ApplicationIntegrationToolset (google.adk.tools.application_integration_tool)
+  SYMBOLE ListAppsResponse (google.adk.cli.api_server)
+  SYMBOLE Mapping (google.adk.agents.base_agent)
+  SYMBOLE MappingProxyType (google.adk.agents.readonly_context)
+  SYMBOLE MutableMapping (google.adk.agents.invocation_context)
+  SYMBOLE ResumabilityConfig (google.adk.agents.invocation_context)
+  SYMBOLE append_default_efficiency_metrics (google.adk.evaluation.eval_config)
+  SYMBOLE apply_confirmation_gate (google.adk.flows.llm_flows.tools._caller)
+  SYMBOLE apply_confirmation_resume (google.adk.workflow._function_node)
+  SYMBOLE ... (+9 autres)
+CAPACITE observabilite
+  SYMBOLE AfterAgentCallback (google.adk.agents.base_agent)
+  SYMBOLE AfterModelCallback (google.adk.agents.llm_agent)
+  SYMBOLE AfterToolCallback (google.adk.agents.llm_agent)
+  SYMBOLE BeforeAgentCallback (google.adk.agents.base_agent)
+  SYMBOLE BeforeModelCallback (google.adk.agents.llm_agent)
+  SYMBOLE BeforeToolCallback (google.adk.agents.llm_agent)
+  SYMBOLE CallbackContext (google.adk.agents.base_agent)
+  SYMBOLE OnModelErrorCallback (google.adk.agents.llm_agent)
+  SYMBOLE OnToolErrorCallback (google.adk.agents.llm_agent)
+  SYMBOLE PluginCallbackName (google.adk.plugins.plugin_manager)
+  SYMBOLE ProcessArtifactCallback (google.adk.tools.load_artifacts_tool)
+  SYMBOLE TraceFlags (google.adk.telemetry.sqlite_span_exporter)
+  SYMBOLE ... (+16 autres)
+CAPACITE comptage_tokens
+  SYMBOLE get_all_usage_metadata (google.adk.evaluation._efficiency_evaluators)
+CAPACITE endpoint_local
+  SYMBOLE OpenAIGenerateContentConfig (google.adk.integrations.openai)
+  SYMBOLE OpenAIReasoningEffort (google.adk.integrations.openai._openai_common)
+  SYMBOLE enforce_strict_openai_schema (google.adk.integrations.openai._openai_schema)
+  SYMBOLE targets_default_openai_host (google.adk.integrations.openai._openai_common)
+CAPACITE comptage_tokens (CHAMPS de classe, pas symboles)
+  CHAMPS PRESENT OK  google.adk.events.Event
+      champ usage_metadata
+  CHAMPS PRESENT OK  google.genai.types.GenerateContentResponseUsageMetadata
+      champ cache_tokens_details
+      champ cached_content_token_count
+      champ candidates_token_count
+      champ candidates_tokens_details
+      champ prompt_token_count
+      champ prompt_tokens_details
+      champ thoughts_token_count
+      champ tool_use_prompt_token_count
+      champ tool_use_prompt_tokens_details
+      champ total_token_count
+CONSTRUCTION (sans requete)
+  CONSTRUCTION OK InMemorySessionService()
+SONDE FIN adk
