@@ -8399,8 +8399,16 @@ def umbrella_visit_cause(it: dict, *, now=None) -> str | None:
     moment = now or NOW
     window_h = UMBRELLA_VISIT_CAP_DAYS * 24
     recent: list[tuple[float, str]] = []
+    # #22687 constat 1 : le marqueur retenu SE NOMME. Mesure fondatrice --
+    # sur l'EPIC #16334 le marqueur retenu etait un `[RELEASED]` du
+    # 2026-10-26 et la cause affichait « claim pose sur l'EPIC » : un rendu
+    # de main lu comme une prise. `last_claim_marker` n'est pas toujours
+    # connu (chemins qui ne portent que la date) ; `marker_label(None)` dit
+    # alors « marqueur de lane », jamais « claim ».
     for key, what in ((("last_child_stamp"), "sous-issue creee"),
-                      (("last_claim_stamp"), "claim pose sur l'EPIC")):
+                      (("last_claim_stamp"),
+                       f"{marker_label(it.get('last_claim_marker'))} "
+                       f"sur l'EPIC")):
         age = _visit_age_hours(it.get(key), moment)
         if age is not None and age < window_h:
             recent.append((age, what))
@@ -8629,8 +8637,8 @@ def apply_child_visits(pool: list[dict], targets: list[dict]) -> dict[int, str]:
     return latest
 
 
-def claim_visit_stamp(comments: list[dict]) -> str | None:
-    """``createdAt`` serveur du plus recent marqueur de claim attribue a une lane.
+def _claim_visit_event(comments: list[dict]) -> Any | None:
+    """Marqueur de lane le plus recent du fil, avec sa grammaire d'organe.
 
     Lecture deleguee a l'organe des claims (#19147, reserve tierce) :
     ``_sort_events`` lit les marqueurs avec sa grammaire (decorations markdown
@@ -8641,9 +8649,37 @@ def claim_visit_stamp(comments: list[dict]) -> str | None:
     """
     from check_lane_claim import _sort_events
 
-    stamps = [ev.created_at for ev in _sort_events({"comments": comments})
+    cs = [c for c in comments if isinstance(c, dict)]
+    events = [ev for ev in _sort_events({"comments": cs})
               if ev.lane and ev.created_at]
-    return max(stamps) if stamps else None
+    return max(events, key=lambda ev: ev.created_at) if events else None
+
+
+def claim_visit_stamp(comments: list[dict]) -> str | None:
+    """``createdAt`` serveur du plus recent marqueur de claim attribue a une lane.
+
+    Voir `_claim_visit_event` pour la selection. ``None`` = aucune visite de
+    lane dans ce fil.
+    """
+    ev = _claim_visit_event(comments)
+    return ev.created_at if ev else None
+
+
+def claim_visit(comments: list[dict]) -> tuple[str | None, str | None]:
+    """Paire ``(date, marqueur)`` de la visite de lane la plus recente.
+
+    ``claim_visit_stamp`` ne rend que la moitie de ce qu'un appelant sait : la
+    date dit QUAND une lane a servi l'issue, pas CE QU'elle a fait. Une cause
+    de plafond EPIC qui n'avait que la date affirmait « claim » sur un
+    ``[RELEASED]`` (#22687, constat 1) -- un rendu de main lu comme une prise.
+
+    La paire sort du MEME evenement, donc elle ne peut pas se contredire : le
+    marqueur est celui de la date rendue. ``(None, None)`` = aucune visite.
+    """
+    ev = _claim_visit_event(comments)
+    if ev is None:
+        return None, None
+    return ev.created_at, ((ev.get("marker") or "").upper() or None)
 
 
 def delivered_info_stamp(comments: list[dict]) -> str | None:
@@ -8727,6 +8763,63 @@ def latest_claim_stamp(issue_number: int) -> str | None:
     return max(stamps) if stamps else None
 
 
+#: Marqueur rendu par `_sort_events` -> ce qu'il dit en francais. Le message
+#: de refus d'un EPIC plafonne nommait « claim » TOUS les marqueurs, y compris
+#: un `[RELEASED]` : un rendu de main n'est pas une prise, et la lane lisait
+#: une cause fausse (#22687, constat 1).
+#: La liste suit `_KEYWORDS` de `check_lane_claim` : un code qui n'est pas lu
+#: par l'organe ne peut pas arriver ici, et en inventer un donnerait une
+#: traduction qui ne correspond a aucun marqueur reel.
+_MARKER_LABELS: dict[str, str] = {
+    "CLAIMED": "prise",
+    "CLAIMED-AMEND": "amendement",
+    "RELEASED": "rendu de main",
+    "CANCELLED": "annulation",
+    "ABANDONED": "abandon",
+    "DONE": "cloture",
+    "OVERRIDE": "override",
+    "DELIVERED": "livraison",
+}
+#: Etiquette du marqueur rendu par `delivered_info_stamp`, qui ne passe pas par
+#: la grammaire des claims.
+_INFO_DELIVERED_LABEL = "livraison (candidate-delivered)"
+
+
+def marker_label(marker: str | None) -> str:
+    """Ce que dit un marqueur, en clair. Un marqueur inconnu SE NOMME.
+
+    Le repli n'est pas « claim » : c'est precisement le mot que #22687 retire,
+    parce qu'il affirme une prise la ou un rendu de main a eu lieu. Un
+    marqueur que ce module ne sait pas traduire se cite tel quel, entre
+    crochets -- mieux vaut un code brut qu'une affirmation fausse.
+    """
+    if not marker:
+        return "marqueur de lane"
+    return _MARKER_LABELS.get(marker, f"marqueur [{marker}]")
+
+
+def _claim_visit_from_comments(
+        comments: list[dict]) -> tuple[str | None, str | None]:
+    """(stamp, marqueur) du plus recent marqueur de visite -- sans reseau.
+
+    Meme selection que ``latest_claim_stamp`` (marqueur de lane attribue le
+    plus recent, ou ``[INFO] candidate-delivered`` s'il est plus tardif), mais
+    rend AUSSI le marqueur retenu : la date seule ne permet pas de dire si
+    l'issue a ete prise ou rendue, et le message de plafond EPIC l'affirmait
+    a tort (#22687).
+
+    ``(None, None)`` = aucun marqueur de visite dans ce fil, ce qui est une
+    mesure ; une lecture reseau en echec rend ce meme couple a un autre
+    niveau, ou l'appelant sait qu'il n'a pas lu.
+    """
+    cs = [c for c in comments if isinstance(c, dict)]
+    stamp, marker = claim_visit(cs)
+    info = delivered_info_stamp(cs)
+    if info and (stamp is None or info > stamp):
+        return info, _INFO_DELIVERED_LABEL
+    return stamp, (marker or None)
+
+
 def _claim_stamp_from_comments(comments: list[dict]) -> str | None:
     """Stamp canonique d'une liste de commentaires -- sans appel reseau.
 
@@ -8734,14 +8827,12 @@ def _claim_stamp_from_comments(comments: list[dict]) -> str | None:
     en argument : c'est ce que ``fetch_latest_claim_stamps_bulk`` branche
     apres son unique aller-retour GraphQL. Sortie : ISO 8601 UTC ou ``None``.
     """
-    cs = [c for c in comments if isinstance(c, dict)]
-    stamps = [s for s in (claim_visit_stamp(cs), delivered_info_stamp(cs)) if s]
-    return max(stamps) if stamps else None
+    return _claim_visit_from_comments(comments)[0]
 
 
 def _claim_stamps_from_snapshot(
     numbers: list[int],
-) -> tuple[dict[int, str | None], list[int]]:
+) -> tuple[dict[int, str | None], dict[int, str | None], list[int]]:
     """Stamps de visite servis par l'instantane local, et numeros non servis.
 
     #22983 -- le tapis ne doit plus interroger GitHub pour savoir QUAND une
@@ -8751,18 +8842,22 @@ def _claim_stamps_from_snapshot(
     perimee) est rendu a part : l'appelant le passe au transport historique
     plutot que de fabriquer un « pas de marqueur ».
 
-    Rend `(stamps, non_servis)`. Un stamp `None` est une **mesure** (aucun
-    marqueur de visite dans ce fil), l'absence de la cle est un **non-dit**.
+    Rend `(stamps, marqueurs, non_servis)`. Un stamp `None` est une
+    **mesure** (aucun marqueur de visite dans ce fil), l'absence de la cle est
+    un **non-dit**. Les marqueurs suivent la meme regle : c'est l'instantane
+    qui les porte, sans appel GitHub, parce qu'il porte deja les
+    commentaires dont `_claim_visit_from_comments` les tire (#22687).
     """
     served: dict[int, str | None] = {}
+    markers: dict[int, str | None] = {}
     missing: list[int] = []
     for n in numbers:
         comments = _snapshot_comments(n)
         if comments is None:
             missing.append(n)
             continue
-        served[n] = _claim_stamp_from_comments(comments)
-    return served, missing
+        served[n], markers[n] = _claim_visit_from_comments(comments)
+    return served, markers, missing
 
 
 def validate_picks_live(
@@ -8904,6 +8999,7 @@ def fetch_latest_claim_stamps_bulk(
     cache: PayloadCache | None = None,
     cache_mode: str = "off",
     cache_status: dict[str, dict[str, Any]] | None = None,
+    markers_out: dict[int, str | None] | None = None,
 ) -> tuple[dict[int, str | None], str | None]:
     """Stamp canonique par issue, une seule requete GraphQL multiplexee.
 
@@ -8932,7 +9028,11 @@ def fetch_latest_claim_stamps_bulk(
         return {}, None
 
     sorted_nums = sorted({int(n) for n in issue_numbers})
-    identity = ["claim_stamps_bulk"] + [str(n) for n in sorted_nums]
+    # `_v2` : la charge porte desormais le marqueur en plus de la date
+    # (#22687). Changer l'identite plutot que decoder l'ancienne forme evite
+    # qu'un cache chaud rende des dates sans marqueur, ce qui afficherait
+    # « marqueur de lane » la ou le marqueur est connue.
+    identity = ["claim_stamps_bulk_v2"] + [str(n) for n in sorted_nums]
 
     def fetch_raw() -> dict[str, str | None]:
         # Les alias GraphQL doivent etre des identifiers valides. On utilise
@@ -8962,14 +9062,15 @@ def fetch_latest_claim_stamps_bulk(
         except json.JSONDecodeError as exc:
             raise RuntimeError(f"GraphQL decode failed: {exc}") from exc
         repo = data.get("data", {}).get("repository") or {}
-        out_map: dict[str, str | None] = {}
+        out_map: dict[str, dict[str, str | None] | None] = {}
         for n in sorted_nums:
             node = repo.get(f"i{n}")
             if not node:
                 out_map[str(n)] = None
                 continue
             comments = (node.get("comments") or {}).get("nodes") or []
-            out_map[str(n)] = _claim_stamp_from_comments(comments)
+            stamp, marker = _claim_visit_from_comments(comments)
+            out_map[str(n)] = {"s": stamp, "m": marker}
         return out_map
 
     try:
@@ -8986,7 +9087,16 @@ def fetch_latest_claim_stamps_bulk(
         return {}, f"{type(exc).__name__}: {exc}"
     # La cache rend des cles str ; on remet en `int` pour matcher les
     # `issue["number"]` du `belt_pool` (et la cle `int -> str | None` du JSON).
-    int_map: dict[int, str | None] = {int(k): v for k, v in result.items()}
+    # Une charge d'avant #22687 (date seule) reste lisible : elle se lit
+    # comme une date sans marqueur, jamais comme un marqueur invente.
+    int_map: dict[int, str | None] = {}
+    for k, v in result.items():
+        if isinstance(v, dict):
+            int_map[int(k)] = v.get("s")
+            if markers_out is not None:
+                markers_out[int(k)] = v.get("m")
+        else:
+            int_map[int(k)] = v
     return int_map, None
 
 
@@ -12304,9 +12414,12 @@ def main(argv: list[str] | None = None) -> int:
             # la cible : c'est la meme reduction que la voie reseau
             # (`_claim_stamp_from_comments`), sans appel GitHub. Seuls les
             # numeros NON SERVIS passent par le bulk GraphQL.
-            snapshot_stamps, stamp_missing = _claim_stamps_from_snapshot(
-                bulk_targets)
+            snapshot_stamps, snapshot_markers, stamp_missing = (
+                _claim_stamps_from_snapshot(bulk_targets))
             bulk_stamps: dict[int, str | None] = dict(snapshot_stamps)
+            # #22687 : le marqueur voyage avec la date. Il sert au message de
+            # plafond EPIC, qui nommait « claim » un `[RELEASED]`.
+            bulk_markers: dict[int, str | None] = dict(snapshot_markers)
             bulk_err = None
             if stamp_missing:
                 net_stamps, bulk_err = fetch_latest_claim_stamps_bulk(
@@ -12314,6 +12427,7 @@ def main(argv: list[str] | None = None) -> int:
                     cache=payload_cache,
                     cache_mode=effective_cache_mode,
                     cache_status=cache_status,
+                    markers_out=bulk_markers,
                 )
                 bulk_stamps.update(net_stamps)
             _belt_phase(f"stamps: {len(bulk_stamps)} servis "
@@ -12335,6 +12449,16 @@ def main(argv: list[str] | None = None) -> int:
 
                 settle_belt_head(belt_pool, belt_check_window, _probe,
                                  max_probes=belt_check_window * 3 + 12)
+                # #22687 : le marqueur n'est pose que sur les items dont la
+                # DATE vient du bulk. Un numero servi par la sonde unitaire
+                # de repli porte une date sans marqueur (elle coute une
+                # requete de plus pour le nommer) -- `marker_label(None)` le
+                # dit honnetement au lieu d'affirmer une prise.
+                for it in belt_pool:
+                    n = it.get("number")
+                    stamp = bulk_markers.get(n)
+                    if stamp and it.get("last_claim_stamp") == bulk_stamps.get(n):
+                        it["last_claim_marker"] = stamp
                 _belt_phase(f"settle_belt_head fait: "
                             f"{len(fallback_used)} fallback(s) unitaire(s)")
                 if fallback_used:
