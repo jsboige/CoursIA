@@ -59,6 +59,11 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parents[1]
 REPO_ROOT = SCRIPTS.parent
 
+# Conserver la semantique de checks de l'organe canonique.
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+from check_run_state import RED  # noqa: E402
+
 DEFAULT_REPO = "jsboige/CoursIA"
 DEFAULT_APPROVER = "myia-ai-01"
 PAGE_SIZE = 40
@@ -262,7 +267,7 @@ def probe_checks(pr: int, head: str) -> dict:
     latest = data.get("latest") or {}
     reds = sorted(
         name for name, leg in latest.items()
-        if (leg or {}).get("conclusion") != "success"
+        if (leg or {}).get("conclusion") in RED
     )
     residual = data.get("residual_reds") or []
     reds += sorted(

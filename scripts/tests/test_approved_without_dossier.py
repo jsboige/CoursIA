@@ -131,6 +131,33 @@ def test_checks_rouges_rend_waiting_avec_les_jambes():
     assert "A,B,C" in causes[0], "au plus trois jambes nommees"
 
 
+def test_probe_checks_compte_uniquement_failure_et_timed_out(monkeypatch):
+    latest = {
+        "Build": {"conclusion": "failure"},
+        "Deploy": {"conclusion": "timed_out"},
+        "Quarto": {"conclusion": "skipped"},
+        "Pages": {"conclusion": "neutral"},
+        "Gitleaks": {"conclusion": "success"},
+        # Les noms de controles inconnus restent observes : leur verdict
+        # failure doit aussi etre rendu, sans liste blanche de checks.
+        "Nouveau controle obligatoire": {"conclusion": "failure"},
+        # Un verdict inconnu suit la classification canonique : il n'est pas
+        # promu rouge et la jambe reste presente dans l'entree latest.
+        "Controle a verdict inconnu": {"conclusion": "action_required"},
+    }
+    payload = {"head": HEAD, "latest": latest, "residual_reds": []}
+    monkeypatch.setattr(awd, "_run_json", lambda _args: payload)
+
+    result = awd.probe_checks(7, HEAD)
+
+    assert result == {
+        "green": False,
+        "reds": ["Build", "Deploy", "Nouveau controle obligatoire"],
+    }
+    assert "Nouveau controle obligatoire" in payload["latest"]
+    assert "Controle a verdict inconnu" in payload["latest"]
+
+
 def test_merge_state_non_clean_rend_waiting():
     status, causes = awd.classify(_pr(merge_state="BLOCKED"), GREEN_PROBES)
     assert status == "WAITING"
