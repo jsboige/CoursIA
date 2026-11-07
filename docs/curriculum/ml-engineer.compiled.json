@@ -421,7 +421,7 @@
         },
         {
           "path": "ML/DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb",
-          "title": "2.8b - Theorie PAC en Lean : l'arc du lake learning_theory_lean",
+          "title": "2.8b - Théorie PAC en Lean : l'arc du lake learning_theory_lean",
           "duration_minutes": 30,
           "kernel": "Lean 4 (WSL)",
           "execution_constraints": {
@@ -521,7 +521,7 @@
         },
         {
           "path": "ML/DataScienceWithAgents/03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb",
-          "title": "3.9c — Pruning from scratch : magnitude, structured, Lottery Ticket",
+          "title": "3.9c — Pruning from scratch sur CPU : le compagnon léger de 3.9b",
           "duration_minutes": 45,
           "kernel": "Python 3",
           "execution_constraints": {
@@ -533,22 +533,9 @@
           }
         },
         {
-          "path": "ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb",
-          "title": "3.9d — Compression par distillation : transférer le savoir, pas les poids",
-          "duration_minutes": 45,
-          "kernel": "Python 3 (coursia-ml-training)",
-          "execution_constraints": {
-            "requires_api": false,
-            "requires_gpu": true,
-            "requires_cloud": false,
-            "requires_wsl": false,
-            "executable_locally": false
-          }
-        },
-        {
           "path": "ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb",
-          "title": "3.9e — Quantification SOTA : la même INT8, par l'écosystème torch.ao",
-          "duration_minutes": 45,
+          "title": "3.9e — Compression SOTA : quantization et élagage par l'écosystème PyTorch",
+          "duration_minutes": 60,
           "kernel": "Python 3",
           "execution_constraints": {
             "requires_api": false,
@@ -560,15 +547,15 @@
         },
         {
           "path": "ML/DataScienceWithAgents/03-Deep-Learning/3.7-Distillation-Maitre-Eleve.ipynb",
-          "title": "3.7 — Distillation maître-élève : quand le savoir se transfère par des cibles molles",
-          "duration_minutes": 30,
-          "kernel": "coursia-ml-training",
+          "title": "3.7 — Distillation maître-élève : transférer le savoir, pas les poids",
+          "duration_minutes": 60,
+          "kernel": "Python 3 (coursia-ml-training)",
           "execution_constraints": {
             "requires_api": false,
-            "requires_gpu": false,
+            "requires_gpu": true,
             "requires_cloud": false,
             "requires_wsl": false,
-            "executable_locally": true
+            "executable_locally": false
           }
         }
       ]
@@ -742,8 +729,69 @@
           }
         }
       ]
+    },
+    {
+      "id": "prerequis-python-data-science",
+      "kind": "accretions",
+      "prerequisites": [
+        "donnees"
+      ],
+      "notebooks": [
+        {
+          "path": "ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.1-Python_pour_la_Data_Science.ipynb",
+          "title": "1.1 - Python pour la Data Science",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.4-Visualisation_Matplotlib_Seaborn.ipynb",
+          "title": "1.4 - Visualisation : Matplotlib puis Seaborn",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb",
+          "title": "1.5 - Exploration et nettoyage de données réelles",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.6-Statistiques_Descriptives.ipynb",
+          "title": "1.6 - Statistiques descriptives",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
     }
   ],
-  "duration_minutes": 1800,
-  "known_duration_minutes": 1800
+  "duration_minutes": 1965,
+  "known_duration_minutes": 1965
 }

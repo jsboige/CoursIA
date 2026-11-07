@@ -192,21 +192,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-6-Audiobook-Pipeline.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3_en.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation"
     },
@@ -377,12 +362,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-22-LLMSubstrat-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-23-PersonaCatastrophe-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
     {
