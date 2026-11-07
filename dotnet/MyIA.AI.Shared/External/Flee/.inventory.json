@@ -79,7 +79,7 @@
   "FleePredicateBuilderTests": {
    "expected_count": 8,
    "expected_status": "8/8 vert post-port (substance Prong-B proof, lie au notebook #10161)",
-   "path": "MyIA.AI.Shared.Tests/FleePredicateBuilderTests.cs",
+   "path": "dotnet/MyIA.AI.Shared.Tests/FleePredicateBuilderTests.cs",
    "discovered_cycle": "c.1041",
    "count_scope": "per_file (recompte firsthand c.1057)"
   }

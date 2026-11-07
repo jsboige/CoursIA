@@ -45,8 +45,8 @@ GradeBookApp/
 ### Pipeline Python
 
 ```bash
-# Exécution avec configuration par défaut
-python GradeBookApp/gradebook.py
+# Exécution avec configuration par défaut (depuis la racine du dépôt)
+python dotnet/GradeBookApp/gradebook.py
 
 # Exécution pour un cours spécifique (config sur GDrive, cf configs/README.md)
 cd "G:\Mon Drive\MyIA\Formation\EPF\2026\grading"
@@ -57,10 +57,10 @@ python epf_2026_genai.py
 
 ```bash
 # Compilation
-dotnet build GradeBookApp/GradeBookApp.csproj
+dotnet build dotnet/GradeBookApp/GradeBookApp.csproj
 
 # Execution avec fichiers de donnees
-dotnet run --project GradeBookApp "chemin/inscriptions.csv" "chemin/evaluations.csv"
+dotnet run --project dotnet/GradeBookApp "chemin/inscriptions.csv" "chemin/evaluations.csv"
 ```
 
 ## Configuration
@@ -108,7 +108,7 @@ pip install pandas numpy openpyxl rapidfuzz unidecode
 ### .NET
 
 ```bash
-dotnet restore GradeBookApp/GradeBookApp.csproj
+dotnet restore dotnet/GradeBookApp/GradeBookApp.csproj
 ```
 
 ## Tests

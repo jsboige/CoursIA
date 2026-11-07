@@ -4,7 +4,7 @@
        Skeleton initial (506f7ae93, 02/07/2026) net6.0 + HintPaths vers DLLs externes
        Aricie (external/AIMA/aima-core.dll, external/IKVM/IKVM.OpenJDK.Core.dll) qui ne
        sont PAS dans ce repo (0 .cs dans le projet, HintPaths casses => ne compilait pas).
-       Fix : alignement net9.0 (convention repo, cf GradeBookApp/MyIA.AI.Notebooks) +
+       Fix : alignement net9.0 (convention repo, cf dotnet/GradeBookApp et MyIA.AI.Notebooks) +
        HintPaths casses deplaces en commentaire (ils ciblent du patrimoine a recuperer
        via #7265 B1-AIMA / IKVM Java-bridge, pas des refs vivantes). Les modules A-E
        ameneront leurs propres refs quand ils atterrissent (cf #7265 ordre A->E).
