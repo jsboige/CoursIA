@@ -2319,12 +2319,13 @@ TRANCHE24: list[Guard] = [
 #
 # Garde NATIF : aucun workflow d'origine. L'organe
 # `scripts/lean/check_added_axioms_cliquet.py` lit le DIFF base/head et
-# signale les lignes ajoutees qui introduisent un de ces tokens dans une
-# declaration nommee (`theorem`/`lemma`/`def`). Les ancres en `example`
-# restent vertes : elles sont invisibles a `check_axioms` par construction,
-# ce n'est pas un defaut de preuve.
+# signale les lignes ajoutees qui introduisent un de ces tokens -- dans une
+# declaration nommee (`theorem`/`lemma`/`def`), dans un `example` ou en
+# top-level (#21387 : les ancres en `example` rougissent AUSSI sans
+# declaration ; elles etaient auparavant exemptees, ce qui laissait le
+# cliquet muet sur une classe d'ancres reellement ajoutees).
 #
-# Codes de retour : 0 = propre, 1 = ancre dans une declaration nommee
+# Codes de retour : 0 = propre, 1 = ancre ajoutee non declaree
 # (BLOQUANT), 2 = la base ou la tete ne resout pas (incident d'entree).
 # Le rc=2 n'est PAS lu comme un vert : `warn_rc` est vide, donc tout rc non
 # nul produit une conclusion `failure` et `blocking_failed` (cf
