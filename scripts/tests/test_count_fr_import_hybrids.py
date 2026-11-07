@@ -514,7 +514,7 @@ def test_backtick_glob_forms_are_read_dsl():
         _write(lake / "Beta" / "Hidden_en.lean", _HYBRID_HIDDEN)
         _write(lake / "Beta_en.lean", "namespace Beta_en\n\nend Beta_en\n")
         selectors = mod.lake_selectors(lake)
-        _, reach, _ = mod.lake_reachable(lake, [lake])
+        _, reach, _ = mod.lake_reachable(lake, mod.find_lakes(lake))
     assert selectors == [
         ("all", "Alpha"),
         ("one", "Alpha_en"),
