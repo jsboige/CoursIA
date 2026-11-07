@@ -895,7 +895,7 @@ jobs:
         env:
           GRADEBOOK_TESTS_FLOOR: 15
         run: |
-          N=$(python -m pytest GradeBookApp --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          N=$(python -m pytest dotnet/GradeBookApp --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$GRADEBOOK_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$GRADEBOOK_TESTS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$GRADEBOOK_TESTS_FLOOR)."
