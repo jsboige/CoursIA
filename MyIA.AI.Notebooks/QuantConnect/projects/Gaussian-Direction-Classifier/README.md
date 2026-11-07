@@ -34,5 +34,5 @@ Le même jour, le code d'avant #23301 (projet 39006302) et un rejeu dans le proj
 ## Fichiers
 
 - `main.py` : la stratégie (v2.0), avec ses résultats mesurés dans le docstring.
-- `research.ipynb` : carnet de recherche autonome (données yfinance 2014-2025, GaussianNB de sklearn). Il valide le classifieur en walk-forward sur 5 plis avec les graines 0, 7, 42 et 99, frais de 10 points de base, contre un achat-conservation à poids égaux des mêmes titres.
+- `research.ipynb` : carnet de recherche autonome (données yfinance 2014-2024, GaussianNB de sklearn). 5 plis × 4 graines (0, 7, 42, 99), frais de 10 points de base, contre un achat-conservation à poids égaux des mêmes titres. **Verdict committé : NO BEATS** — Sharpe 0.96 contre 1.29 pour le témoin, edge −0.32, et les 4 graines rendent des résultats identiques (le calcul est déterministe). Le carnet documente donc une **absence** d'edge de cette famille de variables, pas une validation. Ses plis découpent la matrice empilée titre par titre : ils séparent des titres plutôt que des périodes, si bien que le walk-forward annoncé par le carnet n'en est pas un (défaut antérieur, signalé dans #23315).
 - `_generate_research.py` : script qui génère `research.ipynb`.
