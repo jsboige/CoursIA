@@ -126,6 +126,14 @@ def test_env_default_flagged():
     ('urllib.request.urlopen(urllib.request.Request('
      'f"{base}/chat/completions", '
      'data=json.dumps(payload)))'),
+    ('urllib.request.urlopen(urllib.request.Request('
+     'url=f"{base}/chat/completions", '
+     'data=json.dumps(payload).encode("utf-8")))'),
+    ('urllib.request.urlopen(url=f"{base}/chat/completions", '
+     'data=json.dumps(payload).encode("utf-8"))'),
+    ('requests.post(url=f"{base}/chat/completions", json=payload)'),
+    ('httpx.post(url="https://example.test/v1/chat/completions", '
+     'json=payload)'),
 ])
 def test_raw_http_chat_payload_alias_and_env_default_flagged(client_call):
     """Les clients HTTP bruts consomment le champ model du payload JSON."""

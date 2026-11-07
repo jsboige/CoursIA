@@ -271,9 +271,11 @@ def classify_chat_call(call: ast.Call, dspy_imported: bool) -> tuple[str, bool] 
         return "dspy.LM", True
     if (parts == ["requests", "post"] or parts == ["httpx", "post"]
             or parts == ["urllib", "request", "urlopen"]):
-        url = call.args[0] if call.args else None
+        url = call.args[0] if call.args else next(
+            (kw.value for kw in call.keywords if kw.arg == "url"), None)
         if isinstance(url, ast.Call) and attr_chain(url.func)[-1:] == ["Request"]:
-            url = url.args[0] if url.args else None
+            url = url.args[0] if url.args else next(
+                (kw.value for kw in url.keywords if kw.arg == "url"), None)
         if targets_chat_completions(url):
             return f"{'.'.join(parts)} (HTTP)", False
     return None
@@ -692,9 +694,22 @@ class NotebookScanner:
         if payload_node is None:
             return None
         if isinstance(payload_node, ast.Call):
-            # Forme urllib courante : data=json.dumps({"model": model, ...}).
-            if attr_chain(payload_node.func)[-2:] == ["json", "dumps"] \
-                    and payload_node.args:
+            # Forme urllib courante : json.dumps(payload).encode("utf-8").
+            if (isinstance(payload_node.func, ast.Attribute)
+                    and payload_node.func.attr == "encode"
+                    and isinstance(payload_node.func.value, ast.Call)
+                    and attr_chain(payload_node.func.value.func)[-2:]
+                    == ["json", "dumps"]
+                    and payload_node.func.value.args
+                    and not payload_node.keywords
+                    and (not payload_node.args
+                         or (len(payload_node.args) == 1
+                             and isinstance(payload_node.args[0], ast.Constant)
+                             and payload_node.args[0].value.lower()
+                             in ("utf-8", "utf8")))):
+                payload_node = payload_node.func.value.args[0]
+            elif (attr_chain(payload_node.func)[-2:] == ["json", "dumps"]
+                  and payload_node.args):
                 payload_node = payload_node.args[0]
             else:
                 return None
