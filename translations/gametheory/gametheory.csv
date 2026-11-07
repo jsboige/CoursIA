@@ -11308,11 +11308,11 @@ La théorie coopérative sépare **équité** (Shapley) et **stabilité** (core)
 
 **Twin C# .NET Interactive** du notebook Python `GameTheory-15-CooperativeGames-Python.ipynb`. Implémentation from-scratch (BCL .NET 9, 0 NuGet) — marathon [#4956](https://github.com/jsboige/CoursIA/issues/4956), registre SOTA [#3801](https://github.com/jsboige/CoursIA/issues/3801).
 ",,,,,,,,87425fc7d93a17bb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,f67145d5,markdown,fr,5d246f54f7a85923,"# GameTheory-15-CooperativeGames-Python
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,f67145d5,markdown,fr,5d429e0fe2d038c4,"# GameTheory-15-CooperativeGames-Python
 
 **Navigation** : [<< 14-DifferentialGames](GameTheory-14-DifferentialGames-Python.ipynb) | [Index](README.md) | [16-MechanismDesign >>](GameTheory-16-MechanismDesign-Python.ipynb)
 
-**Side tracks** : [15b-Lean-CooperativeGames](GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) | [15c-CooperativeGames-Python](GameTheory-15c-CooperativeGames-Python.ipynb)
+**Side tracks** : [15b-Lean-CooperativeGames](GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) | [15c-CooperativeGames-Python](GameTheory-15c-CooperativeGames-Python.ipynb) | [SC-06b-Mobius-Coalitions](SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb) | [15d-Shapley-Groupes](GameTheory-15d-Shapley-Groupes-Python.ipynb)
 
 ***
 
@@ -11325,8 +11325,8 @@ Ce notebook introduit les **jeux cooperatifs** avec utilite transferable (TU gam
 1. Maitriser la **fonction caractéristique** et la formation de coalitions
 2. Calculer la **valeur de Shapley** - contribution marginale moyenne
 3. Comprendre le **Core** - allocations stables que personne ne peut bloquer
-4. Analyser les **jeux d'assistance** - Paperclip Game et Off-Switch Game (AIMA)
-5. Appliquer les jeux cooperatifs a la **politique reelle** (coalition de gauche francaise 2024)
+4. *(Annexe A)* Analyser les **jeux d'assistance** - Paperclip Game et Off-Switch Game (AIMA)
+5. *(Annexe B)* Appliquer les jeux cooperatifs a la **politique reelle** (coalition de gauche francaise 2024)
 
 ### Prerequis
 
@@ -11347,7 +11347,7 @@ Dans les **jeux cooperatifs** :
 - Les gains sont **transferables** entre membres
 - La question centrale : **comment repartir le gain de la coalition ?**
 
-Dans les **jeux d'assistance** (Section 4) :
+Dans les **jeux d'assistance** (Annexe A) :
 - Un agent (robot) maximise l'utilite d'un autre agent (humain)
 - Le robot a une **incertitude** sur les préférences de l'humain
 - Cette incertitude rend le robot plus **sur** et **deferent**
@@ -11361,7 +11361,7 @@ Cette transition est naturelle après les jeux differentiels (notebook 14) ou l'
 **Assistance Games (Russell & Norvig, AIMA 4th Ed., §18.2.5)** est une **application a l'AI Safety** developpee par Stuart Russell a Berkeley. Le resultat central -- un robot incertain est plus sur qu'un robot certain -- est contre-intuitif et revele pourquoi la course a l'IA sure ne peut pas etre une simple course a la performance, mais doit inclure **l'incertitude sur les objectifs** comme invariant de conception.
 
 **Pourquoi ce notebook en Python et pas en Lean ?** : la dimension algorithmique (calcul de Shapley exact O(2^n), Monte Carlo O(samples * n), visualisation matplotlib 3D du Core sur le simplexe) est le cœur pedagogique. La formalisation Lean des memes concepts est dans le **side-track** [GT-15b-Lean-CooperativeGames](GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) et le jumeau Python avance [GT-15c-CooperativeGames-Python](GameTheory-15c-CooperativeGames-Python.ipynb) (avec implementations optimisees et benchmarks). Les trois notebooks se completent : **15 (algorithmique) + 15b (verification formelle) + 15c (performance)**.
-",,,,,,,,5d246f54f7a85923,,,,,,,,,,,,,,,
+",,,,,,,,5d429e0fe2d038c4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,a5c8b76a,code,fr,24109996e6ba2142,"# Imports et configuration
 import numpy as np
 import pandas as pd
@@ -11690,12 +11690,12 @@ def visualize_marginal_contributions(game):
     plt.show()
 
 visualize_marginal_contributions(majority_game)",,,,,,,,87db0c9042296b79,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,5d63b0e9,markdown,fr,640455192309cd43,"### Complexité du calcul de Shapley
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,5d63b0e9,markdown,fr,aaf8044ed0069292,"### Complexité du calcul de Shapley
 
 - **Exact** : $O(n! \cdot n)$ ou $O(2^n \cdot n)$ - seulement pour $n \leq 10$
 - **Monte Carlo** : $O(\text{samples} \cdot n)$ - pour grands $n$
 
-Le calcul exact devient impraticable pour de grands ensembles de joueurs, ce qui explique pourquoi la valeur de Shapley est rarement utilisée en pratique politique (voir section 5).
+Le calcul exact devient impraticable pour de grands ensembles de joueurs, ce qui explique pourquoi la valeur de Shapley est rarement utilisée en pratique politique (voir Annexe B).
 
 ### Complexite exacte vs approximation
 
@@ -11712,7 +11712,7 @@ Le calcul exact de Shapley est **#P-complet** pour des classes generales de jeux
 ### Influence sampling
 
 Une technique recente (**Castro et al. 2009**) utilise l'**influence sampling** pour accelerer le Monte Carlo : on ne tire pas des permutations uniformes, mais des permutations **biaisees** vers les ordres ou la contribution marginale est grande. La convergence est plus rapide, parfois d'un facteur 10x sur les jeux de vote.
-",,,,,,,,640455192309cd43,,,,,,,,,,,,,,,
+",,,,,,,,aaf8044ed0069292,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,1e8e02fe,code,fr,28a474abd6434431,"# Comparaison exact vs Monte Carlo
 # Jeu plus grand : 8 actionnaires
 
@@ -11948,9 +11948,9 @@ def visualize_core_3d(game):
     plt.show()
 
 visualize_core_3d(scale_game)",,,,,,,,459590d0a945c41b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,5f67210d,markdown,fr,affdb2caf2248b14,"***
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,5f67210d,markdown,fr,b7c20a8265ff6216,"***
 
-## 4. Jeux d'assistance (Assistance Games) - AI Safety
+## Annexe A — Jeux d'assistance (Assistance Games) - AI Safety
 
 ### Différence fondamentale avec les jeux cooperatifs classiques
 
@@ -11994,7 +11994,7 @@ L'approche PBAI formalise une intuition philosophique ancienne (Kant, Turing) : 
 
 **Critique** : PBAI suppose que l'humain peut **signaler** ses preferences de maniere fiable. En realite, les signaux peuvent etre bruites, contradictoires, ou manipules. Le modele est une **idealisation** qui eclaire le probleme sans le resoudre completement.
 
-### Lien avec le Off-Switch Game (cellule 26)
+### Lien avec le Off-Switch Game
 
 Le **Off-Switch Game** de **Hadfield-Menell et al. 2017** *The Off-Switch Game* (AAAI/IJCAI Workshop) etend le formalisme au cas ou l'humain peut **eteindre** le robot. Resultat central : un robot incertain accepte plus facilement d'etre eteint qu'un robot certain. C'est la base de la **corrigeabilite** (corrigibility) comme invariant de securite.
 
@@ -12003,7 +12003,7 @@ Le **Off-Switch Game** de **Hadfield-Menell et al. 2017** *The Off-Switch Game* 
 - **Waymo / Cruise / Tesla** : les systemes de conduite autonome integrent une forme d'incertitude via le ""human-on-the-loop"" -- le passager peut reprendre le controle.
 - **GPT-4 / Claude** : les modeles de langage sont entraines avec **RLHF** (Reinforcement Learning from Human Feedback) qui implemente une forme simplifiee d'inference des preferences humaines.
 - **Recommandation Netflix / YouTube** : l'incertitude sur les preferences de l'utilisateur est modelisee pour equilibrer exploration (decouvrir de nouveaux interets) et exploitation (satisfaction immediate).
-",,,,,,,,affdb2caf2248b14,,,,,,,,,,,,,,,
+",,,,,,,,b7c20a8265ff6216,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,e6b151f6,code,fr,517209e6f96b3b55,"# Le Paperclip Game - L'exemple seminal des jeux d'assistance
 # Source: AIMA 4th Edition, Section 18.2.5
 
@@ -12252,9 +12252,9 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,4c0c5dd
 | **Application** | Coalitions politiques, vote | AI Safety, robots assistants |
 
 **Insight cle** : Dans les jeux d'assistance, l'**incertitude** sur les préférences n'est pas un problème a eliminer - c'est une **feature de securite** qui rend les robots plus surs et plus deferents.",,,,,,,,7bb887aa3597bae8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,c239c530,markdown,fr,3b9844cc44c9545e,"***
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,c239c530,markdown,fr,08ef069ab2f1b3f4,"***
 
-## 5. Application : La coalition de gauche française (2024)
+## Annexe B — Cas d'application : la coalition de gauche française (2024)
 
 ### Contexte politique
 
@@ -12303,7 +12303,7 @@ Dans une coalition a 4 partis inegaux (LFI > PS > EELV > PCF), les resultats Sha
 ### Limites pedagogiques
 
 La Shapley n'est qu'un **outil descriptif**. Elle dit : ""voici la contribution marginale moyenne dans le modele specifie"". Elle ne dit pas : ""voici comment la coalition doit evoluer"". Les acteurs politiques prennent leurs decisions sur d'autres bases (alliances, electeurs, medias). L'analyse Shapley est **complementaire**, pas prescriptive.
-",,,,,,,,3b9844cc44c9545e,,,,,,,,,,,,,,,
+",,,,,,,,08ef069ab2f1b3f4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,fa289f74,code,fr,a313d6482c75eb45,"# Données officielles des législatives 2024
 from cooperative_games.french_politics import get_2024_legislative_data, PARTIES_2024
 
@@ -12498,7 +12498,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,7aed9fa
 
 Le **binôme** Python + Lean est la methode recommandee pour enseigner une theorie mathematique : Python pour l'intuition et l'experimentation, Lean pour la verification et la rigueur. Les notebooks se completent et couvrent les deux faces de la medaille.
 ",,,,,,,,ea951389bf09315d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,02a2ec83,markdown,fr,cac688bbc7e5513e,"***
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,02a2ec83,markdown,fr,07e2ef2ee2b31010,"***
 
 ## Résumé
 
@@ -12520,16 +12520,16 @@ Ce notebook a couvert :
 
 1. **Jeux cooperatifs classiques** (sections 1-3) : fonction caracteristique, valeur de Shapley, Core. La theorie de Shapley est le fondement mathematique de l'economie des alliances et de l'analyse politique du pouvoir.
 
-2. **Jeux d'assistance** (sections 4-5) : Paperclip Game, Off-Switch Game, design SUR. Cette branche recente de l'AI Safety montre comment l'incertitude sur les preferences humaines est un invariant de securite pour les systemes d'IA deployes.
+2. **Jeux d'assistance** (annexe A) : Paperclip Game, Off-Switch Game, design SUR. Cette branche recente de l'AI Safety montre comment l'incertitude sur les preferences humaines est un invariant de securite pour les systemes d'IA deployes.
 
-3. **Application politique** (section 5) : la coalition NFP francaise 2024 illustre les forces et limites de l'application de la Shapley a des cas reels.
+3. **Application politique** (Annexe B) : la coalition NFP francaise 2024 illustre les forces et limites de l'application de la Shapley a des cas reels.
 
 ### Pour aller plus loin
 
 - **GT-15b-Lean-CooperativeGames** : verification formelle des memes concepts en Lean 4 (0 sorry).
 - **GT-15c-CooperativeGames-Python** : implementation optimisee, benchmarks, jeux plus grands.
 - **GT-16-MechanismDesign** : passage du partage (cooperatif) a la conception de mecanismes (non-cooperatif).
-- **GT-22-Coalition-Formation** : algorithmes de formation de coalition (merge-and-split, hedonic games).
+- **Coalition-Formation** : algorithmes de formation de coalition (merge-and-split, hedonic games).
 - **Litterature recommandee** : Peleg & Sudholter 2007 *Introduction to the theory of cooperative games* (Springer), Chalkiadakis et al. 2011 *Computational Aspects of Cooperative Game Theory* (Morgan & Claypool), Aumann & Hart 1992 *Handbook of Game Theory with Economic Applications* Vol 1-2 (North-Holland).
 
 ### Methodologie recommandee pour l'etudiant
@@ -12543,7 +12543,7 @@ Pour bien integrer ce notebook, on recommande de :
 5. **Pousser jusqu'au jumeau Python optimise** pour les benchmarks de performance.
 
 L'objectif n'est pas seulement de comprendre la Shapley, mais de developper l'intuition pour les **questions de partage equitable** qui se posent dans toute negociation, alliance, ou cooperation.
-",,,,,,,,cac688bbc7e5513e,,,,,,,,,,,,,,,
+",,,,,,,,07e2ef2ee2b31010,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb,61a25b33,markdown,fr,929eee500d3d4c93,"# GameTheory 15b - Jeux Cooperatifs en Lean : Formalisation de Shapley
 
 **Navigation** : [<< 15-CooperativeGames (track principal)](GameTheory-15-CooperativeGames-Python.ipynb)) | [Index](README.md)
@@ -37647,7 +37647,7 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb,a
 result = None  # TODO etudiant : remplacer par votre implementation
 print(""Exercice a completer : Profil de preferences paradoxaux"")
 ",,,,,,,,7b81472d4a6b66f3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb,accc1188,markdown,fr,028a9e98bafe3ac8,"## Conclusion
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb,accc1188,markdown,fr,dd54e0797ff03cc0,"## Conclusion
 
 Ce notebook a illustre le **theoreme d'impossibilite d'Arrow** par la simulation empirique, en parallele de la preuve formelle en Lean.
 
@@ -37673,8 +37673,8 @@ L'IIA est l'axiome le plus difficile a satisfaire : Borda et Pluralite accumulen
 - Arrow, K.J. (1950). A Difficulty in the Concept of Social Welfare. Journal of Political Economy 58(4):328-346.
 - Arrow, K.J. (1951). Social Choice and Individual Values. Cowles Commission Monograph 12, Wiley (2nd ed. Yale University Press, 1963).
 - Borda, J.-C. de (1781). Memoire sur les elections au scrutin. Histoire de l'Academie Royale des Sciences, Paris.
-- Brandt, F., Conitzer, V., Endriss, U., Lang, J., Procaccia, A. D. (2016). *Handbook of Computational Social Choice*. Cambridge University Press. ISBN 978-1-107-06043-2. **Ancrage ch. 1-2** (theorie du vote, theoremes d'impossibilite, fonction de choix social). Source biblio cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf`.
-",,,,,,,,028a9e98bafe3ac8,,,,,,,,,,,,,,,
+- Brandt, F., Conitzer, V., Endriss, U., Lang, J., Procaccia, A. D. (2016). *Handbook of Computational Social Choice*. Cambridge University Press. ISBN 978-1-107-06043-2. **Ancrage ch. 1-2** (theorie du vote, theoremes d'impossibilite, fonction de choix social). Source biblio cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Social Choice, Voting and Welfare\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf`.
+",,,,,,,,dd54e0797ff03cc0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,e412b143,markdown,fr,de2ea714a6792015,"# SocialChoice 01b - Choix Social Formel en Lean 4
 
 **Navigation** : [<< 01-Arrow-Impossibility-Theorem.ipynb](01-Arrow-Impossibility-Theorem.ipynb) | [02-Stable-Marriage-Gale-Shapley.ipynb >>](02-Stable-Marriage-Gale-Shapley.ipynb) | [Index](../README.md)
@@ -39183,7 +39183,7 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb,e9ccfdde,markd
 La fonction `condorcet_winner()` generalise `condorcet_winner_single_peaked()` : elle fonctionne pour **tout** profil, pas seulement les préférences unimodales. Quand aucun gagnant n'existe (cycle), elle retourne `None`.
 
 Le **graphe oriente** (tournoi) construit avec networkx montre clairement les relations de domination pairwise. Un cycle dans ce graphe = paradoxe de Condorcet.",,,,,,,,c707209ec324e526,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb,f69d8ad3,code,fr,5ce71902e6e2e831,"def condorcet_winner(profile_or_list, alternatives=None):
+MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb,f69d8ad3,code,fr,53a58ffc60e06612,"def condorcet_winner(profile_or_list, alternatives=None):
     """"""Trouve le gagnant de Condorcet pour un profil quelconque.
     
     Version generale : fonctionne pour tout profil, pas seulement
@@ -39253,7 +39253,11 @@ plt.tight_layout()
 plt.show()
 
 cycles = list(nx.simple_cycles(G))
-print(f""Cycle detecte par networkx : {cycles}"")",,,,,,,,5ce71902e6e2e831,,,,,,,,,,,,,,,
+# Rotation canonique : chaque cycle est imprime depuis son plus petit element,
+# pour que la sortie ne depende pas de l'ordre interne d'iteration de networkx
+# (['C', 'A', 'B'] et ['B', 'C', 'A'] decrivent le MEME cycle de Condorcet).
+cycles = sorted(c[c.index(min(c)):] + c[:c.index(min(c))] for c in cycles)
+print(f""Cycle detecte par networkx : {cycles}"")",,,,,,,,53a58ffc60e06612,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb,af65ef13,markdown,fr,52469e7fae599f63,"***
 
 ## 2. Comparaison des Règles de Vote
@@ -39675,7 +39679,7 @@ print(f""Choix de l'electeur median : {median_choice}"")
 condorcet = condorcet_winner_single_peaked(profile_sp, alternatives)
 print(f""Gagnant de Condorcet : {condorcet}"")
 print(f""\n=> Theoreme verifie : {median_choice == condorcet}"")",,,,,,,,1715a394e45f05a8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb,3ad6e6ff,markdown,fr,eb19a3327cfd1dcc,"### Interpretation : Théorème de l'électeur median vérifié
+MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb,3ad6e6ff,markdown,fr,32c1f030199d1bd1,"### Interpretation : Théorème de l'électeur median vérifié
 
 **Résultat** : L'alternative 4 est à la fois le choix de l'électeur median (pic=5, donc préfère 4) ET le gagnant de Condorcet.
 
@@ -39689,7 +39693,9 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb,3ad6e6ff,markd
 - L'alternative 4 bat toute alternative <4 (majorité des électeurs 4-7)
 - L'alternative 4 bat toute alternative >4 (majorité des électeurs 1-4)
 
-> **Note théorique** : Ce résultat (Black, 1948; Downs, 1957) est un cas particulier important où le vote majoritaire est cohérent et stable, contrairement au cas général de Condorcet.",,,,,,,,eb19a3327cfd1dcc,,,,,,,,,,,,,,,
+> **Note théorique** : Ce résultat (Black, 1948; Downs, 1957) est un cas particulier important où le vote majoritaire est cohérent et stable, contrairement au cas général de Condorcet.
+
+Le mécanisme général du théorème : avec des préférences **unimodales**, chaque électeur ordonne les alternatives par distance croissante à son pic ; l'électeur médian divise l'électorat en deux moitiés égales, et toute alternative plus proche du médian bat toute alternative plus éloignée à la majorité — d'où le gagnant de Condorcet systématiquement au pic médian.",,,,,,,,32c1f030199d1bd1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb,bbd9eb1f,markdown,fr,420fbafe7ad923da,"### Interpretation des résultats
 
 Le theoreme de l'electeur median est verifie empiriquement : l'alternative **4** (la plus proche du pic median 5) est bien le **gagnant de Condorcet**.
@@ -40158,7 +40164,7 @@ print(""Exercice a completer : Theoreme d Arrow et proprietes d agregation"")
 MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb,2fbfc213,markdown,fr,2a6ab705e5120789,"
 > **Lien avec la formalisation Lean** : Les concepts de ce notebook — cycles de Condorcet, règles de vote (pluralite, Borda, Copeland), critères d'agregation (Pareto, IIA, non-dictature), préférences unimodales et theoreme de l'electeur median — sont formalises dans [`game_theory_lean/SocialChoice/Voting.lean`](../game_theory_lean/SocialChoice/Voting.lean) (0 sorry). On y trouve les definitions de `margin`, `condorcet_winner`, `condorcet_loser`, le type `SCC` (Social Choice Correspondence), les critères de Condorcet et de monotonicite, ainsi que le theoreme `median_voter_theorem_strict` (préférences unimodales). Les axiomes d'Arrow (Pareto, IIA, non-dictature) sont définis dans [`Framework.lean`](../game_theory_lean/SocialChoice/Framework.lean) (0 sorry) comme `weak_pareto`, `ind_of_irr_alts`, `is_dictatorship`. Le theoreme de Sen (liberte minimale + Pareto + transitivite) est prouve dans [`Sen.lean`](../game_theory_lean/SocialChoice/Sen.lean) (0 sorry).
 ",,,,,,,,2a6ab705e5120789,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb,cad1728e,markdown,fr,1d47c85e3df3a89a,"***
+MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb,cad1728e,markdown,fr,7a86211f69aaa82b,"***
 
 ## Resume
 
@@ -40191,8 +40197,8 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb,cad1728e,markd
 - Sen, A.K. (1970). The Impossibility of a Paretian Liberal. Journal of Political Economy 78(1):152-157.
 - Downs, A. (1957). An Economic Theory of Political Action in a Democracy. Journal of Political Economy 65(2):135-150.
 - Copeland, A.H. (1951). A 'Reasonable' Social Welfare Function. Seminar on Applications of Mathematics to the Social Sciences, University of Michigan (mimeographie).
-- Brandt, F., Conitzer, V., Endriss, U., Lang, J., Procaccia, A. D. (2016). *Handbook of Computational Social Choice*. Cambridge University Press. ISBN 978-1-107-06043-2. **Ancrage ch. 2 (Zwicker, voting rules)** — les regles de vote polynomiales (pluralite, Borda, Copeland, IRV, approbation) sont systematisees dans le ch. 2 du Handbook. Le **trou conceptuel du cluster** : Kemeny (ch. 2.7, 4.1-4.2), ranked pairs (Tideman, ch. 2.4 / 3), Dodgson (ch. 5.3 winner-NP-dur) — regles ou la determination du gagnant est couteuse, grain d'extension prevu par #19263. Source biblio cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf`.
-",,,,,,,,1d47c85e3df3a89a,,,,,,,,,,,,,,,
+- Brandt, F., Conitzer, V., Endriss, U., Lang, J., Procaccia, A. D. (2016). *Handbook of Computational Social Choice*. Cambridge University Press. ISBN 978-1-107-06043-2. **Ancrage ch. 2 (Zwicker, voting rules)** — les regles de vote polynomiales (pluralite, Borda, Copeland, IRV, approbation) sont systematisees dans le ch. 2 du Handbook. Le **trou conceptuel du cluster** : Kemeny (ch. 2.7, 4.1-4.2), ranked pairs (Tideman, ch. 2.4 / 3), Dodgson (ch. 5.3 winner-NP-dur) — regles ou la determination du gagnant est couteuse, grain d'extension prevu par #19263. Source biblio cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Social Choice, Voting and Welfare\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf`.
+",,,,,,,,7a86211f69aaa82b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb,35fbfe8e,markdown,fr,94fbc4c9583166ad,"# SocialChoice 04 : Agregation Computationnelle - SAT et DPLL (twin C# .NET)
 
 > **Twin C# .NET de `GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb`** (Python, PySAT + Z3).
@@ -42424,7 +42430,7 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ip
 # Exercice: Explorez differentes configurations de paires de liberte.
 # Le resultat est-il toujours UNSAT ?
 print(""Exercice a completer"")",,,,,,,,963236da8860ae43,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb,319435e3,markdown,fr,509517008a09986e,"### Resume et perspectives
+MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb,319435e3,markdown,fr,879a2b5a5aa6d5a8,"### Resume et perspectives
 
 Ce notebook a demontre comment les solveurs SAT et SMT permettent de verifier mecaniquement les théorèmes d'impossibilité du choix social. En encodant les axiomes d'Arrow (Pareto, IIA, non-dictature) et de Sen (liberté minimale, Pareto, transitivité) sous forme de clauses CNF ou de contraintes entières, nous avons obtenu des résultats UNSAT qui constituent des preuves formelles de ces theorems. L'approche SAT (PySAT) avec ses variables booléennes et ses milliers de clauses offre un encodage exhaustif mais verbeux, tandis que l'approche SMT (Z3) avec ses variables entières representant les rangs sociaux produit un encodage plus compact et plus lisible, capable en prime de trouver des modèles SAT quand le théorème ne s'applique pas (cas a 2 alternatives).
 
@@ -42442,9 +42448,9 @@ Les techniques presentees ici ouvrent la voie a des applications plus larges de 
 - Tseitin, G.S. (1968). On the Complexity of Derivations in the Propositional Calculus. In: Slisenko (ed.), Structures in Constructive Mathematics and Mathematical Logic, Part II, pp. 115-125. Nauka, Leningrad.
 - de Moura, L. & Bjorner, N. (2008). Z3: An Efficient SMT Solver. In: TACAS 2008, LNCS 4963:337-340.
 - Ignatiev, A., Morgado, A. & Marques-Silva, J. (2018). PySAT: A Python Toolkit for Prototyping with SAT Oracles. In: SAT 2018, LNCS 10929:428-437.
-- Brandt, F., Conitzer, V., Endriss, U., Lang, J., Procaccia, A. D. (2016). *Handbook of Computational Social Choice*. Cambridge University Press. ISBN 978-1-107-06043-2. **Ancrage §1.4.5 « Computer-Assisted Theorem Proving in Social Choice » (p. 14-15)** — encodage SAT/Z3 des theoremes d'impossibilite (Arrow, Sen) comme instances de logique propositionnelle resolues par moteur CDCL. Le ch. 6 (« Barriers to Manipulation in Voting », Conitzer et Walsh) traite la complexite comme barriere a la manipulation (cf. carnet 05 sur Gibbard-Satterthwaite). Source biblio cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf`.
+- Brandt, F., Conitzer, V., Endriss, U., Lang, J., Procaccia, A. D. (2016). *Handbook of Computational Social Choice*. Cambridge University Press. ISBN 978-1-107-06043-2. **Ancrage §1.4.5 « Computer-Assisted Theorem Proving in Social Choice » (p. 14-15)** — encodage SAT/Z3 des theoremes d'impossibilite (Arrow, Sen) comme instances de logique propositionnelle resolues par moteur CDCL. Le ch. 6 (« Barriers to Manipulation in Voting », Conitzer et Walsh) traite la complexite comme barriere a la manipulation (cf. carnet 05 sur Gibbard-Satterthwaite). Source biblio cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Social Choice, Voting and Welfare\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf`.
 
-**Ce que l'approche mécanique a apporte ici.** Le notebook a transforme deux théorèmes d'impossibilité (Arrow, Sen) en instances finies resolues par des moteurs independants : verdicts convergents, relaxation systematique montrant la minimality de l'ensemble d'axiomes, et frontière exacte du cas 2 alternatives. La limite est le mur combinatoire — 4 alternatives deja hors de portée de l'enumeration complete — et c'est precisement cette limite qui justifie la formalisation Lean generale referencee ci-dessous.",,,,,,,,509517008a09986e,,,,,,,,,,,,,,,
+**Ce que l'approche mécanique a apporte ici.** Le notebook a transforme deux théorèmes d'impossibilité (Arrow, Sen) en instances finies resolues par des moteurs independants : verdicts convergents, relaxation systematique montrant la minimality de l'ensemble d'axiomes, et frontière exacte du cas 2 alternatives. La limite est le mur combinatoire — 4 alternatives deja hors de portée de l'enumeration complete — et c'est precisement cette limite qui justifie la formalisation Lean generale referencee ci-dessous.",,,,,,,,879a2b5a5aa6d5a8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb,aaf5be7b,markdown,fr,11ed29aa074305a5,"
 > **Lien avec la formalisation Lean** : Les mêmes théorèmes d'impossibilité (Arrow, Sen) vérifiés par SAT/SMT dans ce notebook sont prouves **constructivement** dans la serie Lean du choix social ([`game_theory_lean/`](../game_theory_lean/)). L'encodage SAT traduit les axiomes en clauses CNF booléennes ; l'encodage SMT utilise des variables entières pour les rangs. La formalisation Lean, elle, définit les mêmes concepts ([`Framework.lean`](../game_theory_lean/SocialChoice/Framework.lean) : `Profile`, `SWF`, `weak_pareto`, `ind_of_irr_alts`, `is_dictatorship`) et prouve les théorèmes pour **tous** les paramètres, pas seulement les instances finies : [`Arrow.lean`](../game_theory_lean/SocialChoice/Arrow.lean) (0 sorry) et [`Sen.lean`](../game_theory_lean/SocialChoice/Sen.lean) (0 sorry). Les trois approches (SAT, SMT, Lean) sont complementaires : SAT fournit une vérification exhaustive sur petites instances, SMT un encodage compact avec modèles, Lean une preuve universelle certifiee.
 ",,,,,,,,11ed29aa074305a5,,,,,,,,,,,,,,,
@@ -49651,12 +49657,12 @@ pd.DataFrame(
     },
     index=[f""Actionnaire {i+1}"" for i in range(8)],
 )",,,,,,,,d21caec746ec041d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,f6265a81,markdown,fr,8fa354481bff2b10,"### Lecture de la complexite : exact vs Monte Carlo
-La cellule compare le calcul exact ($O(2^n)$) et Monte Carlo ($O(\text{samples} \times n)$) sur un jeu de 8 actionnaires. Le verdict est sans appel : pour n=8, les deux methodes sont rapides (exact : $2^8 = 256$ coalitions, soit $256 \times 8 = 2048$ evaluations marginales ; Monte Carlo : $10000 \times 8 = 80000$ evaluations). A ce petit n, **Monte Carlo gagne en temps** (0.159s contre 0.451s pour l'exact) ; l'exact se rattrape sur la precision (erreur max 0.0081).
-*Mesure runtime de cette execution* : exact = 0.451s, Monte Carlo = 0.159s, erreur max = 0.0081. Ces durees dependent de la machine et de la charge du moment (cache, ordre des iterations NumPy) : elles se comparent au sein d'une meme execution, pas d'une execution a l'autre.
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,f6265a81,markdown,fr,22dfe2a913e828e7,"### Lecture de la complexite : exact vs Monte Carlo
+La cellule compare le calcul exact ($O(2^n)$) et Monte Carlo ($O(\text{samples} \times n)$) sur un jeu de 8 actionnaires. Le verdict est sans appel : pour n=8, les deux methodes sont rapides (exact : $2^8 = 256$ coalitions, soit $256 \times 8 = 2048$ evaluations marginales ; Monte Carlo : $10000 \times 8 = 80000$ evaluations). A ce petit n, **Monte Carlo gagne en temps** (les deux restent de l'ordre de la seconde, Monte Carlo nettement plus rapide) ; l'exact se rattrape sur la precision (erreur max 0.0081).
+*Mesure runtime de cette execution* : les deux temps sont de l'ordre de la seconde et dependent de la machine et de la charge du moment (cache, ordre des iterations NumPy) : ils se comparent au sein d'une meme execution, pas d'une execution a l'autre. L'erreur max, elle, est deterministe (graine 42, reproductible) : 0.0081.
 **Seuil de crossover** : le calcul exact devient impraticable autour de n=20 ($2^{20} \times 20 \approx 2 \times 10^7$ evaluations). Pour n=30, il est strictement impossible en temps raisonnable. Monte Carlo avec samples=10000 reste rapide jusqu'a n=100 environ.
 **Verdict pratique** : pour les problemes reels d'analyse politique (n <= 30 typiquement), le calcul exact est preferable. Pour les applications en IA / ML avec des milliers d'agents, Monte Carlo est la seule option.
-**Reference** : **Maleki et al. 2013** *Bounding the Estimation Error of Sampling-based Shapley Value Approximation* propose des bornes de confiance rigoureuses sur l'approximation Monte Carlo.",,,,,,,,8fa354481bff2b10,,,,,,,,,,,,,,,
+**Reference** : **Maleki et al. 2013** *Bounding the Estimation Error of Sampling-based Shapley Value Approximation* propose des bornes de confiance rigoureuses sur l'approximation Monte Carlo.",,,,,,,,22dfe2a913e828e7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,12146876,code,fr,1160b0aaad7edd87,"# Le Core est vide pour le jeu de majorité à 3 joueurs
 core_exists, core_point = compute_core(majority_game)
 
@@ -49771,11 +49777,11 @@ $p = 0.95$ — le cas que les cellules précédentes classaient en *danger*. La 
 est donc complémentaire du seuil fixe $0.9$ : là où le seuil fixe modélise le robot
 non-corrigible, $\sigma$ modélise le robot qui sait qu'il ne connaît pas son objectif.
 ",,,,,,,,64d8009b394ffd3e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,8d051d26,markdown,fr,36af40b2f632cda9,"### §4.4 Assistance Games 2026 — POLA (Provably Optimal Learning Algorithms)
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,8d051d26,markdown,fr,e6b15ca3ea9be73d,"### Assistance Games 2026 — POLA (Provably Optimal Learning Algorithms)
 
 En 2026, **Ananthakrishnan, Bedaywi, Jordan, Russell & Haghtalab** (UC Berkeley) publient le premier algorithme d'apprentissage **prouvablement optimal** pour les jeux d'assistance répétés : **POLA**, qui atteint un **assistance regret** en $\tilde{O}(T^{3/4})$ (décentralisé) ou $\tilde{O}(T^{1/2})$ (pseudo-décentralisé), avec une garantie d'approximation $(1 - 1/e)$.
 
-**Source archivée** : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2026 - Ananthakrishnan et al - Provably Optimal Learning Algorithms for Assistance Games (arXiv 2607.08012).pdf` (sha8 `EFD6BC8D`, 31 pages, identité vérifiée sur la première page via pypdf — auteurs, affiliation UC Berkeley, arXiv:2607.08012, titre exact).
+**Source archivée** : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Cooperation, Institutions and LLM Agents\2026 - Ananthakrishnan et al - Provably Optimal Learning Algorithms for Assistance Games (arXiv 2607.08012).pdf` (sha8 `EFD6BC8D`, 31 pages, identité vérifiée sur la première page via pypdf — auteurs, affiliation UC Berkeley, arXiv:2607.08012, titre exact).
 
 **Modèle** (binary-action setting, shared reward $R(a_H, a_R) = \mathbb{1}[a_H = a_R]$) :
 - **Human** (informed) : observe le paramètre latent $\theta \in [0, 1]$ (probabilité qu'il joue $a_H = 1$). Tire $a_H \sim \mathrm{Bernoulli}(\theta)$.
@@ -49783,7 +49789,7 @@ En 2026, **Ananthakrishnan, Bedaywi, Jordan, Russell & Haghtalab** (UC Berkeley)
 - **Reward** partagé : 1 si $a_H = a_R$, 0 sinon. Les deux veulent la même chose — le conflit est informationnel, pas utilitaire.
 
 **Mesure attendue** : pour $T = 1000$ rounds et $\theta = 0.7$, le regret d'assistance de POLA doit être $\approx 0.4$ au-dessus du regret Greedy oracle, et $\ll$ regret Random. Le robot converge vers l'action Stackelberg-optimale en $O(\sqrt{T})$ rounds.
-",,,,,,,,36af40b2f632cda9,,,,,,,,,,,,,,,
+",,,,,,,,e6b15ca3ea9be73d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,97d34111,code,fr,4c0bab2f40b68e29,"# POLA smoke test : un seul seed pour valider l'instrument
 import sys
 sys.path.insert(0, 'MyIA.AI.Notebooks/GameTheory')
@@ -49913,31 +49919,28 @@ plt.tight_layout()
 plt.savefig('assistance_games_2026_convergence.png', dpi=100, bbox_inches='tight')
 plt.show()
 ",,,,,,,,e1b68de5d144d4aa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,3d2ef9c2,markdown,fr,e3e2e256f62e4f48,"### Lecture du résultat POLA vs Greedy vs Random
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,3d2ef9c2,markdown,fr,a62628b2690940fe,"### Lecture du résultat POLA vs Greedy vs Random
 
-**Verdict factuel** (Tell c.c.c.d.G.2 ★★★★ métriques honnêtes) :
+**Verdict factuel** :
 
 | Politique | Regret moyen | Cum reward | SB prob @T | Verdict |
 |-----------|-------------|------------|------------|---------|
-| **POLA** (apprenant, arXiv 2607.08012) | ≈ +1.40 (T=1000) | 698.6 | 1.00 | proche de l'oracle, suit la borne $\tilde{O}(\sqrt{T})$ |
-| **Greedy** (oracle, upper bound) | +1.00 (T=1000) | 699.0 | 1.00 | borne inférieure théorique |
+| **POLA** (apprenant, arXiv 2607.08012) | ≈ +1.40 (T=1000) | 698.6 | 1.00 | proche de l'oracle, regret sous la référence $4\sqrt{T}$ sur les six horizons (cellule 48) |
+| **Greedy** (oracle — borne sup. du cum reward) | +1.00 (T=1000) | 699.0 | 1.00 | borne inf. du regret (minimum atteignable) |
 | **Random** (baseline) | +187.80 (T=1000) | 512.2 | 0.60 | 134× pire que POLA (= 187.80 / 1.40) |
 
 **Trois observations** :
 
-1. **POLA est presque oracle** : à T=1000, son regret moyen n'est que 0.40 au-dessus du Greedy oracle. À T=5000, **les trois politiques** voient leur cum_reward dépasser optimal_reward environ une fois sur deux par variance binomiale (POLA -8.6, Greedy -9.0, Random ≥ 0) — c'est un **effet de variance sur horizon fini**, commun à toute politique, et non un mécanisme d'apprentissage propre à POLA. Le « regret négatif » n'est donc pas une prouesse du posterior Beta, mais un artefact statistique.
-2. **Random est 134× moins bon** : le regret de Random croît linéairement en T ($\approx 0.2 \cdot T$), tandis que POLA croît en $\sqrt{T}$ (ici $\approx 1.4 = 0.045 \sqrt{T}$). Le ratio POLA/Random = 134× pour T=1000 (= 187.80 / 1.40).
-3. **Convergence prouvable** : la Stackelberg probability au round final est 1.00 pour POLA sur les 5 seeds (toutes les trajectoires convergent vers l'action 1, qui matche $\theta = 0.7$). POLA converge en $O(\sqrt{T})$ rounds.
-
-**Implication pour AI Safety** : un robot qui apprend en ligne la préférence humaine **atteint** la performance oracle à $\sqrt{T}$. C'est le fondement mathématique du « robot humble qui défère ». Sans apprentissage, le robot certain fait des erreurs catastrophiques (cf §4.2 Off-Switch Game).
-
+1. **POLA est presque oracle** : à T=1000, son regret moyen n'est que 0.40 au-dessus du Greedy oracle. À T=5000, **POLA et Greedy** voient leur cum_reward dépasser optimal_reward par variance binomiale (visible sur la figure de la cellule 48) — c'est un **effet de variance sur horizon fini**, commun à toute politique, et non un mécanisme d'apprentissage propre à POLA. Le « regret négatif » n'est donc pas une prouesse du posterior Beta, mais un artefact statistique.
+2. **Random est 134× moins bon** : le regret de Random croît linéairement en T ($\approx 0.2 \cdot T$), tandis que celui de POLA **ne croît pas** : sur les six horizons de la figure de la cellule 48, il oscille autour de zéro (alternativement négatif et positif selon l'horizon) plutôt que de suivre une loi en $\sqrt{T}$. Le ratio POLA/Random = 134× pour T=1000 (= 187.80 / 1.40).
+3. **Convergence empirique** : la Stackelberg probability au round final est 1.00 pour POLA sur les 5 seeds (toutes les trajectoires convergent vers l'action 1, qui matche $\theta = 0.7$). Sur les six horizons de la figure de la cellule 48, le regret de POLA reste sous la courbe de référence $4\sqrt{T}$ et ne se distingue pas de celui de l'oracle Greedy (Mann-Whitney p = 0.9161 à T = 1000). C'est une observation sur 5 seeds, pas une borne démontrée (cf. limites ci-dessous).
+**Implication pour AI Safety** : un robot qui apprend en ligne la préférence humaine **suit** l'oracle : à T = 1000 son regret d'assistance n'est que de 0.40 au-dessus de celui de Greedy (cellule 47), et les deux courbes se superposent sur les six horizons de la figure de la cellule 48 (T = 100 à 5000, 5 seeds). C'est le fondement *empirique* du « robot humble qui défère » ; la garantie à $\sqrt{T}$ du papier n'est pas démontrée ici (cf. limites ci-dessous).
 **Reproductibilité** : `seeds = [0, 1, 7, 42, 99]`, `theta_true = 0.7`, `T = 1000`. Toute variation de ces paramètres change la mesure ; le code est seedé et déterministe.
 
 **Limites assumées (sota-not-workaround §F INTRINSIC)** :
 - Setting binaire (2 actions) — le papier original couvre N actions via no-regret learners ; notre implémentation se limite au cas binaire pour la lisibilité pédagogique.
 - Reward partagée (alignment parfait) — le setting le plus simple du cadre assistance games ; les settings adversariaux (assistance games multi-principal) sont hors scope.
-- Pas de convergence prouvable dans notre implémentation : on observe la borne empirique mais on ne démontre pas la borne théorique (l'analyse du papier original utilise une décomposition information-théorique).
-",,,,,,,,e3e2e256f62e4f48,,,,,,,,,,,,,,,
+- Pas de convergence prouvable dans notre implémentation : on observe la borne empirique mais on ne démontre pas la borne théorique (l'analyse du papier original utilise une décomposition information-théorique).",,,,,,,,a62628b2690940fe,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,dd55154a,markdown,fr,3a176cdba66bc67d,"### Données officielles des législatives 2024
 
 Résultats du premier tour des élections législatives de 2024 pour les partis du
@@ -49974,11 +49977,11 @@ La cellule presente plusieurs definitions alternatives de $v(S)$ pour la coaliti
 
 **Limite** : tous ces modeles sont des idealisations. La politique reelle inclut des dimensions non-quantifiables (charisme, communication, opportunites historiques). La Shapley est un **outil** parmi d'autres, pas une verite absolue.
 ",,,,,,,,732daee2d3d7d850,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,b69729d5,markdown,fr,2dc7940bc7dbc4a3,"## References
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,b69729d5,markdown,fr,17b284afa2f3f88b,"## References
 
-* Maschler, M., Solan, E. & Zamir, S. (2013). *Game Theory*. Cambridge University Press. -- ch. 15 *The Shapley Value* et ch. 17 *The Core* sont les chapitres centraux pour ce carnet. **Ancrage a confirmer** sur l'ouvrage, le PDF n'etant pas acquis sur la machine worker ; les theoremes de ce carnet (valeur de Shapley, cone, Bondareva-Shapley) relevent du meme socle axiomatique.
+* Maschler, M., Solan, E. & Zamir, S. (2013). *Game Theory*. Cambridge University Press. -- ch. 18 *The Shapley Value* et ch. 17 *The Core* sont les chapitres centraux pour ce carnet. Chapitres verifies sur la table des matieres editeur (controle coordinateur, Crossref) ; le PDF reste hors gisement ; les theoremes de ce carnet (valeur de Shapley, cone, Bondareva-Shapley) relevent du meme socle axiomatique.
 
-",,,,,,,,2dc7940bc7dbc4a3,,,,,,,,,,,,,,,
+",,,,,,,,17b284afa2f3f88b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Python.ipynb,23ef45a6,markdown,fr,97af5d3d7518dfe7,"**Lecture de la sortie — l'instrument s'installe avant de jouer.** La ligne « Fonction shapley_value_exact definie. » n'affiche aucun resultat : la cellule pose l'outil, pas encore son usage. Ce que le contrat installe : le calcul exact par enumeration des n! permutations (chaque ordre d'arrivee des joueurs, contribution marginale moyenne), exact au sens ou aucune variance de sondage ne s'y glisse — a la difference des estimations Monte Carlo qu'on rencontre dans d'autres series du depot. La section suivante l'appliquera aussitot au jeu de gants : la premiere valeur chiffree viendra de la, pas d'ici.
 ",,,,,,,,97af5d3d7518dfe7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Python.ipynb,d260abdb,markdown,fr,1ffa7330b2bb8b75,"**Lire la sortie d'un exercice non rempli.** « Exercice a completer » avec `Total: 0.0000` : le squelette `exercice_shapley_glove_etendu` rend l'etat vide, la ligne Total etant le format d'affichage attendu, pas un resultat. Le contrat, pose par l'enonce ci-dessus : etendre le jeu de gants de 3 a 4 joueurs (deux gants gauches L1, L2, deux droits R1, R2 selon le meme schema de gains) et recalculer les valeurs de Shapley exactes. La sortie remplie affichera quatre allocations sommant a v(N), et la question interessante de lecture : la rarete change-t-elle de camp quand les deux cotes passent a deux detenteurs ? L'indice de l'enonce oriente sans reveler.
@@ -50641,3 +50644,109 @@ Dans l'exécution commitée, z3 établit **UNSAT jusqu'à 4 alternatives pour 2 
 - **la pente** : de 3×2 à 3×3, le nombre de profils est multiplié par six et l'encodage passe de 108 à 648 variables ; l'augmentation du coût observée doit donc se lire avec la croissance de l'encodage, pas avec le seul décompte des profils ;
 - **la frontière** : ce n'est pas la largeur seule mais la profondeur du profil qui referme l'approche mécanique — pour 4 alternatives × 3 électeurs, soit 13 824 profils, le budget de résolution configuré est épuisé dans la sortie ci-dessus ;
 - **SAT contre SMT** : sur le même cas 4×2, les deux encodages établissent UNSAT, mais leurs représentations diffèrent fortement — clauses booléennes spécialisées côté PySAT, rangs entiers plus déclaratifs côté z3. Les mesures des cellules correspondantes permettent de comparer leur coût observé sans transformer ce rapport en propriété stable des moteurs.",,,,,,,,e50c4350a7ac3ee5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,444eb763,markdown,fr,948a75e40ff35bed,"## Comment lire ce carnet
+
+Ce carnet suit **un seul fil** : un jeu coopératif est une fonction qui dit ce que vaut
+chaque coalition ; deux questions en découlent — **comment partager** le gain que la coalition
+peut obtenir, et **comment empêcher qu'une sous-coalition bloque** ce partage.
+
+| Étape | Ce qu'elle apporte |
+|---|---|
+| **1. Le jeu et ses coalitions** | la fonction caractéristique, le jeu de vote pondéré `[4; 3, 2, 1]`, et sa **figure d'ouverture** |
+| **2. Le partage** | la valeur de Shapley, les contributions marginales qui la définissent, le coût du calcul |
+| **3. La stabilité** | le core : ce qu'un partage stable doit satisfaire, et ce qu'il advient quand il est vide |
+
+Deux approfondissements sont **en annexe**, et le fil principal n'en a pas besoin :
+
+- **Annexe A — Jeux d'assistance et AI Safety** : le robot qui doit aider un humain dont il
+  ignore les préférences, l'Off-Switch Game, le mécanisme de méta-incertitude et le
+  protocole POLA ;
+- **Annexe B — Cas d'application : la coalition de gauche (2024)** : le jeu de la coalition
+  NFP, et ce que le partage y dit — et ce qu'il n'y dit pas.
+
+Après le fil viennent les **exercices**, la comparaison avec la preuve Lean du même objet,
+et le résumé.
+",,,,,,,,948a75e40ff35bed,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,5f7c1ce9,markdown,fr,0600fcac951a940d,"### Une vue d'ensemble des coalitions
+
+Avant de parler de partage, on regarde **l'objet** : quelles coalitions existent, lesquelles
+gagnent, et lesquelles suffisent. Les deux lignes imprimées ci-dessus répondent déjà à la
+question — la figure les rend visibles.
+",,,,,,,,0600fcac951a940d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,62f4fe0a,code,fr,a3b869b6fbfcf943,"# Figure d'ouverture : les coalitions du jeu de vote pondere [4; 3, 2, 1]
+# Avant toute theorie du partage, voici l'objet du carnet : un quota, des poids,
+# et l'ensemble des coalitions que ces poids rendent gagnantes.
+from matplotlib.patches import Patch
+
+coalitions = sorted(
+    board_game.all_coalitions(),
+    key=lambda c: (-sum(board_game.weights[i] for i in c), len(c)),
+)
+coalitions = [c for c in coalitions if len(c) > 0]
+poids = [sum(board_game.weights[i] for i in c) for c in coalitions]
+minimales = [set(m) for m in board_game.minimal_winning_coalitions()]
+
+fig, ax = plt.subplots(figsize=(10, 4.5))
+couleurs = []
+for c in coalitions:
+    if set(c) in minimales:
+        couleurs.append(""#2e7d32"")
+    elif board_game.is_winning(set(c)):
+        couleurs.append(""#c62828"")
+    else:
+        couleurs.append(""#bdbdbd"")
+bars = ax.bar(range(len(coalitions)), poids, color=couleurs)
+quota_line = ax.axhline(board_game.quota, color=""#1565c0"", linestyle=""--"",
+                        linewidth=1.5, label=""quota = 4 voix"")
+ax.set_xticks(range(len(coalitions)))
+ax.set_xticklabels(["" + "".join(board_game.player_names[i] for i in c) for c in coalitions],
+                   rotation=20, ha=""right"")
+ax.set_ylabel(""Poids de la coalition (nombre de voix)"")
+ax.set_title(""Jeu de vote pondere [4; 3, 2, 1] : coalitions gagnantes et coalitions minimales"")
+ax.set_ylim(0, max(poids) + 1.0)
+for bar in bars:
+    ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.06,
+            f""{bar.get_height():.0f}"", ha=""center"", fontsize=9)
+legende_couleurs = [
+    Patch(facecolor=""#2e7d32"", label=""gagnante minimale""),
+    Patch(facecolor=""#c62828"", label=""gagnante non minimale""),
+    Patch(facecolor=""#bdbdbd"", label=""perdante""),
+]
+ax.legend(handles=[quota_line] + legende_couleurs,
+          loc=""upper right"", framealpha=0.95, fontsize=9)
+plt.tight_layout()
+plt.show()
+",,,,,,,,a3b869b6fbfcf943,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,bd80eeb1,markdown,fr,878d1ce80d616b66,"### Lecture de la figure d'ouverture
+
+Trois lectures, sur la figure :
+
+- **Les barres grises** sont les coalitions qui n'atteignent pas le quota : elles ne peuvent
+  rien décider à elles seules. Aucun joueur n'y gagne seul — le seuil de 4 voix l'exclut :
+  il faut réunir au moins deux voix.
+- **Les barres rouges** atteignent le quota mais ne sont pas *minimales* : on peut en retirer
+  un joueur et rester gagnant. Ici, la coalition complète n'est que cela.
+- **Les barres vertes** sont les **coalitions minimales gagnantes** : `{PDG + Directeur}`
+  (4 voix) et `{PDG + DG}` (5 voix). Ce sont les seules coalitions qui décident, et chacune
+  est déjà le plus petit groupe possible pour décider.
+
+La structure du jeu est donc celle d'un **seuil** : le poids formel du PDG (3 voix) dépasse
+celui du DG (2 voix). La question de la section suivante est de savoir si ce *poids de vote*
+décrit bien le *pouvoir réel* de décision.
+
+La légende de l'image reprend ces trois couleurs, et le quota en pointillé.
+",,,,,,,,878d1ce80d616b66,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,0421d15a,markdown,fr,8a03954b782c324b,"### Deux approfondissements, en option
+
+Le fil s'arrête ici : un jeu coopératif, un partage (Shapley), une condition de stabilité
+(core). Deux questions restent ouvertes, et chacune a son annexe :
+
+- **qui aide, et sous quelle incertitude ?** — le robot qui doit agir dans l'intérêt d'un
+  humain dont il ne connaît pas les préférences : l'**Annexe A** (jeux d'assistance,
+  Off-Switch Game, méta-incertitude, POLA) ;
+- **que dit le partage sur une coalition réelle ?** — le cas de la **coalition de gauche
+  (2024)** : l'**Annexe B**, où l'on voit aussi les limites de l'approche.
+
+Les **exercices** — qui viennent apres les deux annexes — traitent du fil principal ;
+les annexes, elles, sont facultatives.
+",,,,,,,,8a03954b782c324b,,,,,,,,,,,,,,,
