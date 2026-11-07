@@ -13,6 +13,7 @@ Les classes, par ordre de contraigance decroissante :
 | C | uniquement des PRs FERMEES sans merge | candidat, lecture L576 requise |
 | D | aucune PR, mais la tete est un ancetre de `main` | candidat |
 | E | aucune PR, tete absente de `main` | candidat, lecture L576 requise |
+| P | la BRANCHE PAR DEFAUT du depot | garder, jamais candidate |
 
 Une branche peut porter PLUSIEURS PRs (nom reutilise dans le temps). La classe
 est celle de l'etat le plus contraignant : OPEN > MERGED > CLOSED. Une branche
@@ -37,6 +38,13 @@ RANG = {"OPEN": 0, "MERGED": 1, "CLOSED": 2}
 CLASSE = {"OPEN": "A", "MERGED": "B", "CLOSED": "C"}
 COLONNES = ("branch", "sha", "class", "pr_number", "pr_state", "note")
 
+# La branche par defaut n'est JAMAIS un candidat : la supprimer, meme
+# « trivially ancetre de main », detruirait le depot. Elle porte donc sa
+# propre classe P, hors de l'ensemble des candidats.
+CLASSE_PROTEGEE = "P"
+CLASSES_CANDIDATES = ("B", "C", "D", "E")
+CLASSES_NON_CANDIDATES = ("A", CLASSE_PROTEGEE)
+
 
 def sh(args, cwd=None, check=True):
     p = subprocess.run(args, cwd=cwd, capture_output=True, text=True, encoding="utf-8")
@@ -51,6 +59,38 @@ def branches_distantes(repo: Path) -> dict[str, str]:
         sha, ref = ligne.split("\t")
         distant[ref[len("refs/heads/"):]] = sha
     return distant
+
+
+def repli_branche_par_defaut(main_ref: str) -> str:
+    """Le nom de branche deduit de `main_ref` (`origin/main` -> `main`).
+
+    Repli employe quand le remote ne publie pas `refs/remotes/origin/HEAD`.
+    """
+    return main_ref.split("/", 1)[1] if "/" in main_ref else main_ref
+
+
+def branche_par_defaut(repo: Path, main_ref: str) -> str:
+    """Le nom de la branche par defaut du depot.
+
+    Deux sources, dans cet ordre :
+
+    1. `git symbolic-ref refs/remotes/origin/HEAD` -- la reference
+       symbolique que le remote publie pour sa branche par defaut ;
+    2. a defaut, le nom de `main_ref` deduit de sa forme habituelle
+       (`origin/main` -> `main`).
+
+    Cette branche ne doit JAMAIS entrer dans le lot de suppression : elle
+    est trivially un ancetre de `main`, et le classifieur la retiendrait donc
+    comme candidate alors que la supprimer detruit le depot.
+    """
+    p = subprocess.run(
+        ["git", "symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"],
+        cwd=str(repo), capture_output=True, text=True, encoding="utf-8",
+        errors="replace")
+    sortie = (p.stdout or "").strip()
+    if p.returncode == 0 and sortie:
+        return sortie[len("refs/remotes/"):] if sortie.startswith("refs/remotes/") else sortie
+    return repli_branche_par_defaut(main_ref)
 
 
 def etats_par_branche(repo: Path) -> dict[str, list[dict]]:
@@ -130,11 +170,19 @@ def main() -> int:
     distant = branches_distantes(repo)
     par_branche = etats_par_branche(repo)
     commits_main = commits_de_main(repo, args.main)
+    defaut = branche_par_defaut(repo, args.main)
 
     classes: dict[str, tuple] = {}
     inconnus: list[str] = []
     for nom, sha in distant.items():
         prs = par_branche.get(nom) or []
+        # La branche par defaut est PROTEGEE : elle ne peut ni etre
+        # candidate, ni etre mesuree comme telle. Sans cette exclusion,
+        # elle tombait en D (ancetre de `main` -- trivial), et un passage
+        # automatise aurait tente de supprimer le depot.
+        if nom == defaut:
+            classes[nom] = (CLASSE_PROTEGEE, prs, sha, None, "branche_par_defaut")
+            continue
         # La PR qui decrit la TETE COURANTE est celle dont le headRefOid vaut
         # la tete distante. Les autres PRs du meme nom decrivent un etat
         # passe : elles ne disent rien de ce qui serait supprime.
@@ -189,6 +237,9 @@ def main() -> int:
         elif classe == "D":
             etat, numero = "NONE", "-"
             note = "ancestor_of_main"
+        elif classe == CLASSE_PROTEGEE:
+            etat, numero = "NONE", "-"
+            note = "branche_par_defaut;jamais_candidate"
         else:
             etat, numero = retenue["state"], retenue["number"]
             note = "+".join(f"{k.lower()}:{v}" for k, v in sorted(etats.items()))
@@ -227,9 +278,11 @@ def main() -> int:
 
     compteur = Counter(c[0] for c in classes.values())
     print(f"remote : {len(distant)} branches")
-    for classe in "ABCDE":
+    for classe in ("A", "B", "C", "D", "E", CLASSE_PROTEGEE):
         if compteur.get(classe):
             print(f"  classe {classe} : {compteur[classe]}")
+    if compteur.get(CLASSE_PROTEGEE):
+        print(f"  branche par defaut protegee : {defaut}")
     if inconnus:
         print(f"  dont tete absente du clone (INCONNU, jamais presume effacable) : {len(inconnus)}")
     contenu = Counter(c[4] for c in classes.values() if c[0] in ("C", "E"))

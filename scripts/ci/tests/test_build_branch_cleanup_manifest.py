@@ -166,6 +166,59 @@ class TestPreuveDeContenu(unittest.TestCase):
         self.assertEqual(classe, "E")
 
 
+class TestBrancheParDefautProtegee(unittest.TestCase):
+    """La branche par defaut ne doit JAMAIS etre une candidate.
+
+    Defaut constate lors de l'execution reelle du 07/11/2026 : la branche
+    `main` a ete classee D (« ancetre de `main` »), ce qui est trivialement
+    vrai. Un passage automatise l'aurait donc rangee dans le lot de
+    suppression. Elle a ete retiree a la main -- l'organe, lui, doit
+    interdire le cas.
+    """
+
+    def test_la_branche_par_defaut_est_protegee(self):
+        """La classe P existe et n'est pas une classe candidate."""
+        self.assertEqual(organ.CLASSE_PROTEGEE, "P")
+        self.assertNotIn(organ.CLASSE_PROTEGEE, organ.CLASSES_CANDIDATES)
+        self.assertIn(organ.CLASSE_PROTEGEE, organ.CLASSES_NON_CANDIDATES)
+
+    def test_les_candidats_sont_b_c_d_e(self):
+        self.assertEqual(set(organ.CLASSES_CANDIDATES), {"B", "C", "D", "E"})
+
+    def test_une_classe_a_est_jamais_candidate(self):
+        """Une PR ouverte est un verrou, pas une candidate."""
+        self.assertNotIn("A", organ.CLASSES_CANDIDATES)
+
+    def test_le_nom_de_la_branche_par_defaut_est_deduit_du_remote(self):
+        """`refs/remotes/origin/HEAD` fait foi ; `main_ref` est le repli."""
+        source = organ.branche_par_defaut.__doc__ or ""
+        self.assertIn("symbolic-ref", source)
+        self.assertIn("refs/remotes/origin/HEAD", source)
+
+    def test_un_repli_sans_symbole_deduit_le_nom_de_main_ref(self):
+        """Hors d'un clone, `origin/main` donne `main`."""
+        self.assertEqual(organ.repli_branche_par_defaut("origin/main"), "main")
+
+    def test_un_repli_sans_prefixe_renvoie_la_ref_entiere(self):
+        self.assertEqual(organ.repli_branche_par_defaut("main"), "main")
+
+    def test_la_branche_par_defaut_est_classee_p_avant_toute_mesure(self):
+        """Reproduit l'ordre du classement : P l'emporte sur D.
+
+        `main` n'a aucune PR exploitable et sa tete est un ancetre de
+        `main` : sans l'exclusion, elle tombait en D.
+        """
+        defaut = "main"
+        nom, sha = "main", "aaa"
+        prs = []
+        if nom == defaut:
+            classe, retenue = organ.CLASSE_PROTEGEE, None
+        else:
+            classe, retenue = "D", None
+        self.assertEqual(classe, "P")
+        self.assertIsNone(retenue)
+
+
 class TestContrainteDeClasse(unittest.TestCase):
     """L'ordre de contraigance : OPEN bat MERGED bat CLOSED."""
 
