@@ -216,7 +216,7 @@ python -m venv venv && venv\Scripts\activate
 pip install -r requirements.txt
 
 # C#
-dotnet restore MyIA.CoursIA.sln
+dotnet restore dotnet/MyIA.CoursIA.sln
 ```
 
 ### Services Docker

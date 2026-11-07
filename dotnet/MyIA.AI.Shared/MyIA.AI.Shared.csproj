@@ -39,19 +39,19 @@
        l'arbre du sous-module, elles ne sont pas recopiees dans ce depot-ci. -->
   <ItemGroup>
     <Reference Include="Z3.Linq">
-      <HintPath>..\MyIA.AI.Notebooks\SymbolicAI\SMT\Z3.Linq\.deploy\Z3.Linq.dll</HintPath>
+      <HintPath>..\..\MyIA.AI.Notebooks\SymbolicAI\SMT\Z3.Linq\.deploy\Z3.Linq.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Z3">
-      <HintPath>..\MyIA.AI.Notebooks\SymbolicAI\SMT\Z3.Linq\.deploy\Microsoft.Z3.dll</HintPath>
+      <HintPath>..\..\MyIA.AI.Notebooks\SymbolicAI\SMT\Z3.Linq\.deploy\Microsoft.Z3.dll</HintPath>
     </Reference>
     <Reference Include="ExpressionUtils">
-      <HintPath>..\MyIA.AI.Notebooks\SymbolicAI\SMT\Z3.Linq\.deploy\ExpressionUtils.dll</HintPath>
+      <HintPath>..\..\MyIA.AI.Notebooks\SymbolicAI\SMT\Z3.Linq\.deploy\ExpressionUtils.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
     <!-- libz3.dll : binaire natif du solveur, copie a cote des assemblies pour
          que le chargement reussisse dans les tests comme dans les notebooks. -->
-    <None Include="..\MyIA.AI.Notebooks\SymbolicAI\SMT\Z3.Linq\.deploy\libz3.dll"
+    <None Include="..\..\MyIA.AI.Notebooks\SymbolicAI\SMT\Z3.Linq\.deploy\libz3.dll"
           CopyToOutputDirectory="PreserveNewest"
           Link="libz3.dll"
           Visible="false" />

@@ -7,7 +7,7 @@
   "clone_type": "shallow, local, hors depot"
  },
  "shallow_clone_path": "../../Dev/probe19197-portalkeeper/",
- "target_in_repo": "MyIA.AI.Shared/External/Aifh/",
+ "target_in_repo": "dotnet/MyIA.AI.Shared/External/Aifh/",
  "inventory_date": "2026-10-08T22:02Z",
  "lane": "myia-po-2024:CoursIA",
  "issue": 19197,
