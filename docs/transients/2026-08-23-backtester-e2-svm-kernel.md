@@ -1,3 +1,5 @@
+> RAPPORT — 2026-08-23 — substitution du SVM à noyau Accord.NET dans le port E2 du Backtester Aricie (verdict SOTA-OK #12545 consommé, disposition upstream CalibrateComplexity codifiée #14370) — figé
+
 # Substitution du SVM à noyau — port E2 du Backtester Aricie
 
 > **Source :** #7357 (EPIC E2, grain « substitution du SVM à noyau » prescrit par le body du 2026-08-20) · #7265 (EPIC parent patrimoine Aricie) · #12541 (cadrage Option C, doc `backtester-e2-cadrage.md`) · [sota-not-workaround.md](../../.claude/rules/sota-not-workaround.md).

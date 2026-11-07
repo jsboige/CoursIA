@@ -3,13 +3,13 @@
   ======================================================
 
   English mirror of `StableMarriage/GaleShapley.lean` (FR-first canonical).
-  Convention i18n Lean ratifiée par ai-01 (2026-07-04, #4980 comment-4881909354) :
-  fichiers `.lean` distincts FR + EN siblings dans le même lake, les deux compilent.
-  Drift-CI detectable : contenu non-docstring byte-identique entre siblings.
-  Namespace sibling : `StableMarriage_en` (le FR canonique reste `StableMarriage`).
-  Pas une traduction destructive : le fichier source EN historique est préservée ici
-  verbatim depuis `b80d2c7ba` (post-merge #5321 GSState i18n) ; seule la ligne
-  `namespace` diffère pour éviter la collision de declaration.
+  Lean i18n convention ratified by ai-01 (2026-07-04, #4980 comment-4881909354):
+  distinct `.lean` FR + EN sibling files in the same lake; both compile.
+  Drift-CI detectable: non-docstring content byte-identical between siblings.
+  Sibling namespace: `StableMarriage_en` (the FR canonical stays `StableMarriage`).
+  Not a destructive translation: the historical EN source file is preserved here
+  verbatim from `b80d2c7ba` (post-merge #5321 GSState i18n); only the `namespace`
+  line differs, to avoid a declaration collision.
 
   See #4980. Part of #4208 (axe E).
 

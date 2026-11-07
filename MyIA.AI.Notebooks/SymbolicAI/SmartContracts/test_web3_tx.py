@@ -29,6 +29,7 @@ SERIES_ROOT = Path(__file__).resolve().parent
 # l'organe. Les carnets non listes ici ne sont pas (encore) contraints : la
 # garde s'elargit a mesure que la conversion avance, elle ne se referme jamais.
 GUARDED_NOTEBOOKS = [
+    "00-Foundations/SC-02-Setup-Web3py-Python.ipynb",
     "01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb",
     "01-Solidity-Foundation/SC-04-Functions-State-Python.ipynb",
     "01-Solidity-Foundation/SC-05-Inheritance-Python.ipynb",

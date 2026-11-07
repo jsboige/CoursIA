@@ -2,8 +2,10 @@ namespace MyIA.AI.Shared.Search.Logic.Propositional;
 
 /// <summary>Procedure d'inference propositionnelle.</summary>
 /// <remarks>
-/// Les six procedures que le wrapper <c>PLKbInferProcedureInfo</c> du patrimoine
-/// Aricie expose (EPIC #7265, volet B2 tranche 1, issue #23584).
+/// Les procedures que le wrapper <c>PLKbInferProcedureInfo</c> du patrimoine
+/// Aricie expose (EPIC #7265, volet B2 tranche 1, issue #23584 ; la septieme,
+/// <see cref="PLFCEntails"/>, reportee par #23584 puis etablie par la lecture du
+/// wrapper, arrivee avec #21909).
 /// </remarks>
 public enum PlInferProcedure
 {
@@ -12,6 +14,9 @@ public enum PlInferProcedure
 
     /// <summary>Refutation par resolution. Complete.</summary>
     Resolve,
+
+    /// <summary>Chainage avant sur clauses definies (AIMA ch. 7, fig. 7.15). Complet sur son domaine, refuse les autres bases.</summary>
+    PLFCEntails,
 
     /// <summary>Deduction par DPLL : insatisfiabilite de la base jointe a la negation de la requete.</summary>
     DPLLEntails,
@@ -62,7 +67,7 @@ public sealed record PlInferenceResult(
 }
 
 /// <summary>
-/// Les six procedures d'inference propositionnelle.
+/// Les procedures d'inference propositionnelle.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -167,6 +172,154 @@ public static class PlInference
             refuted ? PlVerdict.Yes : PlVerdict.No,
             derived,
             "resolvantes derivees");
+    }
+
+    /// <summary>
+    /// Chainage avant sur clauses definies (AIMA ch. 7, fig. 7.15) : agenda de symboles
+    /// et compteurs de premices, jusqu'a stabilite de l'agenda.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Port de la septieme procedure du wrapper Aricie : le patrimoine
+    /// <c>Libraries/AI/Logic.cs</c> appelle <c>new PLFCEntails().plfcEntails(kb,
+    /// new PropositionSymbol(predicate))</c> -- la requete y est un symbole
+    /// propositionnel, et le rendu un booleen. Ce port garde la meme entree (un
+    /// atome) et rend le verdict <see cref="PlVerdict.Yes"/> ou
+    /// <see cref="PlVerdict.No"/> : sur les clauses definies, la procedure est
+    /// complete, l'agenda vide sans deduction est une preuve de non-implication.
+    /// </para>
+    /// <para>
+    /// Le domaine est declare plutot que silencieux : une clause sans litteral
+    /// positif (contrainte) ou a plusieurs litteraux positifs n'est pas une clause
+    /// definie, et la procedure refuse la base entiere au lieu de conclure hors de
+    /// son domaine de completude. Pour une base generale, utiliser
+    /// <see cref="TtEntails"/>, <see cref="Resolve"/> ou <see cref="DpllEntails"/>.
+    /// </para>
+    /// </remarks>
+    public static PlInferenceResult PLFCEntails(PlKnowledgeBase knowledgeBase, PlFormula query)
+    {
+        ArgumentNullException.ThrowIfNull(knowledgeBase);
+        ArgumentNullException.ThrowIfNull(query);
+
+        if (query is not PlAtom symbol)
+        {
+            throw new InvalidOperationException(
+                "PLFCEntails interroge un symbole propositionnel (AIMA ch. 7, fig. 7.15 ; " +
+                $"le wrapper Aricie forge un PropositionSymbol). Requete recue : {query}. " +
+                "Pour une formule composee, utiliser TTEntails, Resolve ou DPLLEntails.");
+        }
+
+        // Clauses definies de la base : corps (litteraux negatifs) -> tete (unique litteral positif).
+        List<(string Head, List<string> Premises)> rules = new();
+        Queue<string> agenda = new();
+
+        // Table inferred de la fig. 7.15 : un symbole n'entre dans l'agenda qu'une
+        // fois, au fait initial ou au declenchement de sa regle.
+        HashSet<string> enqueued = new(StringComparer.Ordinal);
+
+        foreach (PlClause clause in knowledgeBase.ToClauses())
+        {
+            string? head = null;
+            List<string> premises = new();
+
+            foreach (PlLiteral literal in clause.Literals)
+            {
+                if (literal.Negated)
+                {
+                    premises.Add(literal.Name);
+                }
+                else if (head is null)
+                {
+                    head = literal.Name;
+                }
+                else
+                {
+                    throw new InvalidOperationException(
+                        $"La clause {clause} porte plusieurs litteraux positifs : ce n'est pas " +
+                        "une clause definie, PLFCEntails ne s'applique pas a cette base. " +
+                        "Utiliser TTEntails, Resolve ou DPLLEntails.");
+                }
+            }
+
+            if (head is null)
+            {
+                throw new InvalidOperationException(
+                    $"La clause {clause} ne porte aucun litteral positif (contrainte) : " +
+                    "ce n'est pas une clause definie, PLFCEntails ne s'applique pas a cette base. " +
+                    "Utiliser TTEntails, Resolve ou DPLLEntails.");
+            }
+
+            if (premises.Count == 0)
+            {
+                // Fait : la tete est connue d'emblee (fig. 7.15, agenda initial).
+                if (enqueued.Add(head))
+                {
+                    agenda.Enqueue(head);
+                }
+            }
+            else
+            {
+                rules.Add((head, premises));
+            }
+        }
+
+        // count[c] : nombre de premices de la regle c pas encore inferes (fig. 7.15).
+        int[] pending = rules.Select(rule => rule.Premises.Count).ToArray();
+        Dictionary<string, List<int>> rulesByPremise = new(StringComparer.Ordinal);
+
+        for (int index = 0; index < rules.Count; index++)
+        {
+            foreach (string premise in rules[index].Premises)
+            {
+                if (!rulesByPremise.TryGetValue(premise, out List<int>? fired))
+                {
+                    rulesByPremise[premise] = fired = new List<int>();
+                }
+
+                fired.Add(index);
+            }
+        }
+
+        int inferred = 0;
+
+        while (agenda.Count > 0)
+        {
+            string current = agenda.Dequeue();
+
+            inferred++;
+
+            if (current == symbol.Name)
+            {
+                return new PlInferenceResult(
+                    PlInferProcedure.PLFCEntails,
+                    "KB |= requete",
+                    PlVerdict.Yes,
+                    inferred,
+                    "symboles inferes");
+            }
+
+            if (!rulesByPremise.TryGetValue(current, out List<int>? consuming))
+            {
+                continue;
+            }
+
+            foreach (int index in consuming)
+            {
+                pending[index]--;
+
+                if (pending[index] == 0 && enqueued.Add(rules[index].Head))
+                {
+                    agenda.Enqueue(rules[index].Head);
+                }
+            }
+        }
+
+        return new PlInferenceResult(
+            PlInferProcedure.PLFCEntails,
+            "KB |= requete",
+            PlVerdict.No,
+            inferred,
+            "symboles inferes");
     }
 
     /// <summary>Deduction par DPLL : insatisfiabilite de la base jointe a la negation de la requete.</summary>
@@ -747,6 +900,7 @@ public sealed class PlKbInferProcedureInfo
         {
             PlInferProcedure.TTEntails => PlInference.TtEntails(knowledgeBase, predicate),
             PlInferProcedure.Resolve => PlInference.Resolve(knowledgeBase, predicate),
+            PlInferProcedure.PLFCEntails => PlInference.PLFCEntails(knowledgeBase, predicate),
             PlInferProcedure.DPLLEntails => PlInference.DpllEntails(knowledgeBase, predicate),
             PlInferProcedure.DPLLSatisfiable => PlInference.DpllSatisfiable(knowledgeBase),
             PlInferProcedure.WalkSatKb => PlInference.WalkSatKb(knowledgeBase, MaxFlips, Seed),
