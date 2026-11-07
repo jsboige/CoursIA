@@ -30336,49 +30336,257 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ip
 Remplacez la partition 4-4-4-3 par **6-6-3** (Korf & Felner 2002). Combien d'états
 par PDB (`P(16,6)×10`, `P(16,3)×13`) ? Mesurez le speedup supplémentaire sur les
 instances du banc d'essai. Attention au temps de construction des groupes de 6.",,,,,,,,7fbf6fb694cb9ca5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,9572540d,code,fr,8369c35a17ae33bb,"// Exercice 1 — à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,9572540d,code,fr,c3699634f1780f65,"// Exercice 1 — Partition plus fine (6-6-3), Korf & Felner 2002
 int[][] GROUPS_663 = { new[]{1,2,3,4,5,6}, new[]{7,8,9,10,11,12}, new[]{13,14,15} };
+
+// Étape 0 : la partition doit être EXACTEMENT disjointe et couvrir les 15 tuiles
+// (sinon un même coup est compté dans deux tables -> admissibilité cassée).
+var tiles663 = GROUPS_663.SelectMany(g => g).OrderBy(t => t).ToArray();
+Console.WriteLine($""Partition disjointe et complète : {tiles663.SequenceEqual(Enumerable.Range(1, 15))}"");
+foreach (var g in GROUPS_663)
+    Console.WriteLine($""  groupe ({string.Join("","", g)}) : P(16,{g.Length}) x {16 - g.Length} = {P(16, g.Length) * (16 - g.Length):N0} états attendus"");
 
 // Indice : réutilisez BuildAdditivePdb sur chaque groupe.
 //   Étape 1 : construisez la liste des tables (var tbls663 = GROUPS_663.Select(g => BuildAdditivePdb(g).table).ToArray();).
 //   Étape 2 : attention, un groupe de 6 -> P(16,6)*10 ~ 57M états (~57 Mo) ; le BFS prend ~1-2 min.
-// int HAdditive663(int[] state) => tbls663.Zip(GROUPS_663).Sum(p => PdbLookup(state, p.First, p.Second));
-// TODO etudiant
-Console.WriteLine(""Exercice 1 à compléter : partition 6-6-3 (Korf & Felner 2002) + speedup."");",,,,,,,,8369c35a17ae33bb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,1cfd59c7,markdown,fr,9d8b5f5b7f2bc904,"### Exercice 2 — PDB symétrique gratuit (Felner et al. 2004)
+sw.Restart();
+var tbls663 = new byte[GROUPS_663.Length][];
+for (int i = 0; i < GROUPS_663.Length; i++) {
+    var swG = System.Diagnostics.Stopwatch.StartNew();
+    var (tbl, nSeen663) = BuildAdditivePdb(GROUPS_663[i]);
+    swG.Stop();
+    tbls663[i] = tbl;
+    int dm663 = tbl.Where(v => v < 255).Max();
+    Console.WriteLine($""  groupe ({string.Join("","", GROUPS_663[i])}) : {nSeen663:N0} états, dist max = {dm663}, {swG.Elapsed.TotalSeconds:F1}s"");
+}
+sw.Stop();
+Console.WriteLine($""PDB additives 6-6-3 construites en {sw.Elapsed.TotalSeconds:F1}s"");
 
-Le 15-puzzle possède une symétrie : refléter la grille (miroir vertical) **et**
-renverser les numéros (`t -> 16 - t`) laisse le puzzle invariant. Construisez la
-transformation `Reflect(state)`, vérifiez qu'elle préserve la résolubilité et que
-`HAdditive(state) == HAdditive(Reflect(state))`. En déduire une seconde PDB
-*gratuite* et combinez-la par `Math.Max`.",,,,,,,,9d8b5f5b7f2bc904,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,1de07836,code,fr,91d15e3b198aef29,"// Exercice 2 — à compléter
-// int[] Reflect(int[] state) {
-//     // Indice : miroir vertical de la grille 4x4, puis renversement des numéros
-//     // t -> 16 - t pour t != 0 (le vide reste le vide).
-//     //   Étape 1 : reshape en 4x4, retournez les colonnes, aplatissez.
-//     //   Étape 2 : mappez chaque tuile t -> 16-t (sauf 0).
-//     return null; // TODO etudiant
-// }
-// Indice : vérifiez Reflect(Reflect(s)).SequenceEqual(s) et HAdditive(s) == HAdditive(Reflect(s)).
-// TODO etudiant
-Console.WriteLine(""Exercice 2 à compléter : PDB symétrique gratuit (Felner et al. 2004)."");",,,,,,,,91d15e3b198aef29,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,s03b-attendus-ex2,markdown,fr,66e39a3a2103fca1,"### Attendus — Exercice 2 (PDB symétrique)
+// Heuristique additive 6-6-3 : somme des 3 tables (groupes disjoints).
+int HAdditive663(int[] state) => tbls663.Zip(GROUPS_663).Sum(p => PdbLookup(state, p.First, p.Second));
 
-La symétrie du 15-puzzle (miroir vertical + renversement des numéros) transforme toute instance en une instance joker : vous obtenez une **seconde heuristique sans nouveau BFS**. L'usage correct est le max des deux vues — admissible car chacune l'est, et strictement meilleur dès qu'une des deux voit mieux. Si vous obtenez exactement les mêmes valeurs qu'avant, votre `Reflect` est probablement l'identité déguisée (indices : le miroir échange les colonnes, et le renversement remappe les numéros t vers 16 − t).",,,,,,,,66e39a3a2103fca1,,,,,,,,,,,,,,,
+// Étape 3 : vérifications (mêmes protocoles qu'au §8).
+var (s663easy, _) = IdaStar(easy, HAdditive663);
+Console.WriteLine($""Convergence : 6-6-3 optimal={s663easy} == Manhattan optimal={sm}"");
+
+var rngAdm663 = new Random(7); int checked663 = 0, viol663 = 0, dom663 = 0;
+for (int i = 0; i < 40; i++) {
+    int[] st = Scramble(GOAL, 14, seed: rngAdm663.Next(0, 1_000_000_000));
+    var (opt, _) = IdaStar(st, Manhattan);
+    if (!opt.HasValue) continue;
+    if (HAdditive663(st) > opt.Value) viol663++;
+    if (HAdditive663(st) >= HAdditive(st)) dom663++;
+    checked663++;
+}
+Console.WriteLine($""Admissibilité : h_663 <= optimal tient {checked663 - viol663}/{checked663} fois"");
+Console.WriteLine($""h_663 >= h_4443 sur {dom663}/{checked663} instances (pas de dominance garantie : 6-6-3 n'affine pas 4-4-4-3)"");
+Console.WriteLine($""Instance de démo : Manhattan={Manhattan(INST)}, h_4443={HAdditive(INST)}, h_663={HAdditive663(INST)}"");
+
+// Étape 4 : banc d'essai — on réutilise les mesures Manhattan / 4-4-4-3 de `bench` (§9).
+Console.WriteLine();
+Console.WriteLine($""{""Instance"",-20} {""opt"",-4} {""h M/4443/663"",-14} {""Manhattan"",-11} {""4-4-4-3"",-10} {""6-6-3"",-10} {""vs 4443"",-9} {""vs Manh."",-9}"");
+Console.WriteLine(new string('-', 92));
+foreach (var r in bench) {
+    int[] st = INSTANCES[r.name];
+    sw.Restart(); var (sol663, n663) = IdaStar(st, HAdditive663); sw.Stop();
+    string nmS = r.mSolved ? r.nm.ToString(""N0"") : "">= 2M"";
+    string naS = r.aSolved ? r.na.ToString(""N0"") : "">= 2M"";
+    string n6S = sol663.HasValue ? n663.ToString(""N0"") : "">= 2M"";
+    double vs4443 = (r.aSolved && sol663.HasValue) ? (double)r.na / n663 : double.NaN;
+    double vsM = (r.mSolved && sol663.HasValue) ? (double)r.nm / n663 : double.NaN;
+    string hS = $""{r.mh}/{r.ha}/{HAdditive663(st)}"";
+    Console.WriteLine($""{r.name,-20} {sol663,-4} {hS,-14} {nmS,-11} {naS,-10} {n6S,-10} {(""x"" + vs4443.ToString(""F1"")),-9} {(""x"" + vsM.ToString(""F1"")),-9}"");
+}
+",,,,,,,,c3699634f1780f65,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,1cfd59c7,markdown,fr,fb00d07b31a139a2,"### Exercice 2 — PDB symétrique : attention, toutes les symétries ne se valent pas (Felner et al. 2004)
+
+Une transformation $\sigma$ des états donne une seconde heuristique **gratuite** si elle vérifie **deux** conditions :
+1. **préserver les distances** : $\text{dist}(s, g) = \text{dist}(\sigma(s), \sigma(g))$ pour tous $s, g$ ;
+2. **laisser le but invariant** : $\sigma(g_{\text{but}}) = g_{\text{but}}$ — sinon $h(\sigma(s)) = \text{dist}(\sigma(s), g_{\text{but}})$ n'est pas la distance vers le vrai but, et l'heuristique peut **surestimer**.
+
+La transformation « miroir vertical + renommage $t \to 16 - t$ » de l'énoncé initial est réversible mais viole la condition 2 : le but transformé n'est pas le but. Le contre-exemple mesuré plus bas (sur la grille **déjà résolue**, $h$ doit valoir $0$ et renvoie $51$) montre qu'elle n'est **pas admissible**. Un test sur quelques instances ne prouve pas l'admissibilité en général — c'est ici la condition 2, vérifiable algébriquement, qui la réfute.
+
+La **réflexion diagonale** de Felner et al. (la transposée de la grille) vérifie les deux conditions : le but symétrique reste le but, et le renommage se fait **par position dans le but** (chaque tuile est remplacée par la tuile qui occupe la position miroir de sa position-cible), ce qui préserve exactement les distances de Manhattan et celles de la PDB.
+
+Implémentez la réflexion diagonale `Reflect(state)` (avec ce renommage par position-cible), vérifiez qu'elle laisse le but inchangé et que `HAdditive(state) == HAdditive(Reflect(state))`. Combinez par `Math.Max`. Le contre-exemple de la méthode 1 (miroir + $t \to 16-t$) est conservé dans la solution : il illustre pourquoi la condition 2 n'est pas optionnelle.",,,,,,,,fb00d07b31a139a2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,1de07836,code,fr,d42c2df098c2e77e,"// ---------- Méthode 1 : la transformation de l'énoncé (miroir vertical + t -> 16 - t) ----------
+Console.WriteLine(""=== Méthode 1 (énoncé : miroir vertical + t -> 16 - t) ==="");
+
+int[] Reflect1(int[] state)
+{
+    int[] result = new int[state.Length];
+
+    // Miroir vertical
+    for (int r = 0; r < N; r++)
+    {
+        for (int c = 0; c < N; c++)
+        {
+            int source = r * N + c;
+            int destination = r * N + (N - 1 - c);
+            result[destination] = state[source];
+        }
+    }
+
+    // Renversement des numéros
+    for (int i = 0; i < result.Length; i++)
+    {
+        if (result[i] != 0)
+        {
+            result[i] = 16 - result[i];
+        }
+    }
+    return result;
+}
+
+// Vérification : Reflect1 est son propre inverse
+int[] reflected1 = Reflect1(INST);
+int[] reflectedTwice1 = Reflect1(reflected1);
+
+Console.WriteLine(
+    $""Reflect1(Reflect1(s)) == s : {reflectedTwice1.SequenceEqual(INST)}""
+);
+
+// Vérification de l'heuristique
+int hOriginal = HAdditive(INST);
+int hReflected1 = HAdditive(Reflect1(INST));
+
+Console.WriteLine($""HAdditive(s) = {hOriginal}"");
+Console.WriteLine($""HAdditive(Reflect1(s)) = {hReflected1}"");
+Console.WriteLine($""Égalité = {hOriginal == hReflected1}"");
+
+// PDB symétrique
+int HSymmetric1(int[] state)
+{
+    return Math.Max(
+        HAdditive(state),
+        HAdditive(Reflect1(state))
+    );
+}
+
+// Test final
+Console.WriteLine($""HSymmetric1(INST) = {HSymmetric1(INST)}"");
+
+// Vérifications de la symétrie
+Console.WriteLine($""Reflect1(GOAL) == GOAL : {Reflect1(GOAL).SequenceEqual(GOAL)}"");      // False : le but n'est pas conservé
+Console.WriteLine($""HSymmetric1(GOAL) = {HSymmetric1(GOAL)} (attendu 0)"");              // > 0 : surestimation
+Console.WriteLine($""Manhattan(s) == Manhattan(Reflect1(s)) : {Manhattan(INST) == Manhattan(Reflect1(INST))}""); // False
+
+// ---------- Méthode 2 : réflexion par rapport à la diagonale (Felner et al.) ----------
+Console.WriteLine();
+Console.WriteLine(""=== Méthode 2 (réflexion diagonale, Felner et al.) ==="");
+
+int[] Reflect2(int[] state)
+{
+    int[] result = new int[state.Length];
+    for (int r = 0; r < N; r++)
+    {
+        for (int c = 0; c < N; c++)
+        {
+            int t = state[r * N + c];
+            // La tuile t a pour place (gr, gc) dans le but ; elle est renommée en la tuile
+            // dont la place est (gc, gr). La case vide reste la case vide.
+            int renamed = (t == 0) ? 0 : ((t - 1) % N) * N + (t - 1) / N + 1;
+            result[c * N + r] = renamed;   // miroir par rapport à la diagonale
+        }
+    }
+    return result;
+}
+
+// Vérification : Reflect2 est son propre inverse
+int[] reflected2 = Reflect2(INST);
+int[] reflectedTwice2 = Reflect2(reflected2);
+
+Console.WriteLine(
+    $""Reflect2(Reflect2(s)) == s : {reflectedTwice2.SequenceEqual(INST)}""
+);
+
+// Vérification de l'heuristique
+int hReflected2 = HAdditive(Reflect2(INST));
+
+Console.WriteLine($""HAdditive(s) = {hOriginal}"");
+Console.WriteLine($""HAdditive(Reflect2(s)) = {hReflected2}"");
+Console.WriteLine($""Égalité = {hOriginal == hReflected2}"");
+
+// PDB symétrique
+int HSymmetric2(int[] state)
+{
+    return Math.Max(
+        HAdditive(state),
+        HAdditive(Reflect2(state))
+    );
+}
+
+// Test final
+Console.WriteLine($""HSymmetric2(INST) = {HSymmetric2(INST)}"");
+
+// Vérifications de la symétrie
+Console.WriteLine($""Reflect2(GOAL) == GOAL : {Reflect2(GOAL).SequenceEqual(GOAL)}"");      // doit afficher True
+Console.WriteLine($""HSymmetric2(GOAL) = {HSymmetric2(GOAL)} (attendu 0)"");
+Console.WriteLine($""Manhattan(s) == Manhattan(Reflect2(s)) : {Manhattan(INST) == Manhattan(Reflect2(INST))}""); // True",,,,,,,,d42c2df098c2e77e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,s03b-attendus-ex2,markdown,fr,af62bc8e6b782bdb,"### Attendus — Exercice 2 (PDB symétrique)
+
+La réflexion diagonale (transposée de la grille, renommage par position-cible) vérifie les deux conditions d'une symétrie utile : distances préservées **et** but invariant. Vous obtenez une **seconde heuristique sans nouveau BFS**, combinée par `Math.Max` — admissible car chacune l'est, strictement meilleure dès qu'une des deux voit mieux.
+
+Si votre `Reflect` laisse le but transformé différent du but (par exemple avec un renommage arbitraire des numéros comme $t \to 16 - t$), l'heuristique combinée surestime sur certaines instances — sur la grille résolue $h$ doit valoir $0$ ; toute autre valeur trahit une transformation qui ne fixe pas le but. Le contre-exemple mesuré dans la solution (méthode 1) illustre ce piège.",,,,,,,,af62bc8e6b782bdb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,b644cc24,markdown,fr,b7b5510676be59f3,"### Exercice 3 — Généralisation au 24-puzzle
 
 Le **24-puzzle** (5×5) est le vrai défi : Manhattan y est désespérément faible et
 seules les PDB additives rendent la résolution optimale envisageable. Adaptez ce
 notebook (25 cellules, partition 6-6-6-7) et résolvez une instance. Que
 constatez-vous sur le rapport construction/qualité ?",,,,,,,,b7b5510676be59f3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,599c98a5,code,fr,64fa8dc2dd9d00ff,"// Exercice 3 — à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,599c98a5,code,fr,7a29bd5220a7a28a,"// Exercice 3 — Généralisation au 24-puzzle (5x5)
 // Indice : la structure est inchangée ; changent la taille (N=5), le but (1..24,0),
 // et la partition.
 //   Étape 1 : redéfinissez GOAL24 et Neighbors pour N=5.
 //   Étape 2 : attention à l'explosion de P(25, k) — restez sur des groupes <= 6.
-// TODO etudiant
-Console.WriteLine(""Exercice 3 à compléter : généralisation au 24-puzzle (5x5, partition 6-6-6-7)."");",,,,,,,,64fa8dc2dd9d00ff,,,,,,,,,,,,,,,
+
+// ---------- Étape 1 : le 24-puzzle (5x5) ----------
+const int N5 = 5;              // côté de la grille
+const int CELLS5 = N5 * N5;    // 25 cases
+
+int[] GOAL24 = Enumerable.Range(1, 24).Append(0).ToArray();   // tuiles 1..24, case vide en bas à droite
+
+int[] Neighbors24(int cell) {
+    int r = cell / N5, c = cell % N5;
+    var res = new List<int>();
+    if (r > 0) res.Add(cell - N5);
+    if (r < N5 - 1) res.Add(cell + N5);
+    if (c > 0) res.Add(cell - 1);
+    if (c < N5 - 1) res.Add(cell + 1);
+    return res.ToArray();
+}
+// Voisins précalculés une fois pour toutes (la recherche les consulte des millions de fois).
+int[][] NEIGH24 = Enumerable.Range(0, CELLS5).Select(c => Neighbors24(c)).ToArray();
+
+int Manhattan24(int[] state) {
+    int h = 0;
+    for (int cell = 0; cell < CELLS5; cell++) {
+        int t = state[cell];
+        if (t == 0) continue;
+        int goalCell = t - 1;   // dans GOAL24, la tuile t est rangée en case t-1
+        h += Math.Abs(goalCell / N5 - cell / N5) + Math.Abs(goalCell % N5 - cell % N5);
+    }
+    return h;
+}
+
+// Même marche aléatoire que Scramble (section 3.b), sur la grille 5x5 (Move est réutilisé tel quel).
+int[] Scramble24(int nSteps, int seed) {
+    var rng = new Random(seed);
+    int[] s = (int[])GOAL24.Clone();
+    int[] prev = null;
+    for (int i = 0; i < nSteps; i++) {
+        int b = Array.IndexOf(s, 0);
+        var cands = NEIGH24[b].Where(n => !Move(s, b, n).SequenceEqual(prev ?? Array.Empty<int>())).ToList();
+        int nxt = cands[rng.Next(cands.Count)];
+        prev = (int[])s.Clone();
+        s = Move(s, b, nxt);
+    }
+    return s;
+}
+
+Console.WriteLine($""But 24 : Manhattan = {Manhattan24(GOAL24)} ; voisins coin = {NEIGH24[0].Length}, bord = {NEIGH24[2].Length}, centre = {NEIGH24[12].Length}"");
+var demo24 = Scramble24(30, 1);
+Console.WriteLine($""Instance 5x5 (30 pas, seed 1) : ({string.Join("", "", demo24)}) ; Manhattan = {Manhattan24(demo24)}"");",,,,,,,,7a29bd5220a7a28a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,s03b-attendus-ex3,markdown,fr,524ca6f337d0a518,"### Attendus — Exercice 3 (24-puzzle)
 
 Au 24-puzzle (5 × 5), Manhattan est désespérément loose : les instances aléatoires moyennes exigent ~100 coups, et IDA* sous Manhattan explose au-delà de tout budget raisonnable. La structure du code est inchangée (N=5, but 1..24,0) mais les tailles explosent : un groupe de 6 tuiles dans 25 cases donne P(25,6) × 19 = 2 422 728 000, soit ~2,4 milliards d'états — la table ne tient plus en mémoire sans encodage compact. C'est précisément pourquoi Korf & Felner ont poussé les partitions avec symétries et la compression : au 24-puzzle, la PDB n'est plus une optimisation, c'est la condition d'entrée.
@@ -39027,3 +39235,305 @@ public static int? MinimaxLimite<TEtat>(IJeuSommeNulle<TEtat> jeu, TEtat etat, i
 
 // TODO etudiant : tournoi MinimaxLimite (profondeurs 2, 4, 6) contre AlphaBeta, avec Chrono
 Console.WriteLine(""Exercice 4 a completer : IA a profondeur limitee contre Alpha-Beta complet (voir indices ci-dessus)."");",,,,,,,,46fa0aae285b6dca,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,afd66b36,markdown,fr,39c66ead33fb3bc0,"### Conclusion — Exercice 1
+
+6-6-3 : 2 × 57 657 600 + 43 680 états, 5 min de construction (contre quelques secondes pour la 4-4-4-3). L'heuristique reste admissible (40/40). Speedup par rapport à 4-4-4-3 : ×2,8 (I1), ×2,7 (I2), ×9,5 (I3). On paie beaucoup plus de mémoire et de temps de construction, mais la recherche devient nettement plus courte, surtout sur l'instance la plus dure.
+
+***
+
+Exemple guide credite — resolution originale : **EmmaLehec**, PR etudiante [#24987](https://github.com/jsboige/CoursIA/pull/24987). Resolution reprise telle quelle ; seule la mise en forme est harmonisee avec les sections voisines.
+",,,,,,,,39c66ead33fb3bc0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,98a14462,markdown,fr,c044b51fba357731,"### Conclusion — Exercice 2
+
+- **Méthode 1 (énoncé : miroir vertical + t → 16 − t)** : elle est réversible, mais elle ne laisse pas le but inchangé (`Reflect1(GOAL) ≠ GOAL`). `HSymmetric1(GOAL) = 51` sur une grille déjà résolue : elle surestime, donc elle n'est **pas admissible**.
+- **Méthode 2 (réflexion diagonale, Felner et al.)** : le but reste inchangé (`HSymmetric2(GOAL) = 0`) et Manhattan est conservé. On obtient une seconde heuristique admissible **sans nouveau BFS**, combinée par `Math.Max`.
+- Être réversible ne suffit pas : une symétrie utile doit aussi laisser le but inchangé.
+
+***
+
+Exemple guide credite — resolution originale : **EmmaLehec**, PR etudiante [#24987](https://github.com/jsboige/CoursIA/pull/24987). Resolution reprise telle quelle ; seule la mise en forme est harmonisee avec les sections voisines.
+",,,,,,,,c044b51fba357731,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,f0d2349c,code,fr,55faff0b6b5c56a4,"// ---------- Étape 2 : l'explosion de P(25, k) ----------
+// Même formule qu'au 15-puzzle : P(25,k) placements des k tuiles × (25-k) positions de la case vide.
+// On calcule en long : dès k = 6 le résultat dépasse la capacité d'un int.
+long PLong(int n, int k) { long r = 1; for (int i = 0; i < k; i++) r *= (n - i); return r; }
+long PdbSize24(int k) => PLong(CELLS5, k) * (CELLS5 - k);
+
+Console.WriteLine(""Taille d'une PDB du 24-puzzle (1 octet par état abstrait) :"");
+foreach (int k in new[] { 3, 4, 5, 6, 7 })
+    Console.WriteLine($"" groupe de {k} tuiles : P(25,{k}) x {CELLS5 - k,2} = {PdbSize24(k),18:N0} états ≈ {PdbSize24(k) / 1e9,6:F2} Go"");
+
+long total6667 = 3 * PdbSize24(6) + PdbSize24(7);
+Console.WriteLine($""Partition 6-6-6-7 demandée : {total6667:N0} états ≈ {total6667 / 1e9:F1} Go de RAM"");
+Console.WriteLine($""Plus grand tableau autorisé par .NET : Array.MaxLength = {Array.MaxLength:N0} cases"");
+Console.WriteLine($""=> un seul groupe de 6 ({PdbSize24(6):N0} états) dépasse déjà cette limite : 6-6-6-7 est infaisable tel quel sur un PC."");
+Console.WriteLine(""=> on garde la structure du notebook mais avec des groupes plus petits (3, 4, voire 5 tuiles), et on mesure le compromis."");",,,,,,,,55faff0b6b5c56a4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,0b548008,code,fr,218164202533b7fa,"// ---------- Étape 3 : construire les PDB additives du 24-puzzle ----------
+
+// Rang compact SANS allocation (PermRank/RankAbstract créent des listes à chaque appel : trop lent
+// pour des millions d'états). Même principe : chiffre i = position de la i-ème tuile parmi les cases
+// encore libres (base 25-i), dernier chiffre = case vide parmi les 25-k cases restantes.
+long Rank24(int[] pos, int k, int blank) {
+    long r = 0;
+    for (int i = 0; i < k; i++) {
+        int smaller = 0;
+        for (int j = 0; j < i; j++) if (pos[j] < pos[i]) smaller++;
+        r = r * (CELLS5 - i) + (pos[i] - smaller);
+    }
+    int blankSmaller = 0;
+    for (int j = 0; j < k; j++) if (pos[j] < blank) blankSmaller++;
+    return r * (CELLS5 - k) + (blank - blankSmaller);
+}
+
+// Test exhaustif pour k = 3 : chaque état abstrait doit recevoir un rang distinct dans [0, taille).
+{
+    var seenRank = new bool[PdbSize24(3)]; int collisions = 0, horsBornes = 0, nb = 0;
+    for (int a = 0; a < CELLS5; a++) for (int b = 0; b < CELLS5; b++) for (int c = 0; c < CELLS5; c++) for (int v = 0; v < CELLS5; v++) {
+        if (a == b || a == c || b == c || v == a || v == b || v == c) continue;
+        long rk = Rank24(new[] { a, b, c }, 3, v); nb++;
+        if (rk < 0 || rk >= seenRank.Length) { horsBornes++; continue; }
+        if (seenRank[rk]) collisions++; else seenRank[rk] = true;
+    }
+    Console.WriteLine($""Rang24 : {nb:N0} états abstraits (k=3), {collisions} collision, {horsBornes} hors bornes (attendu 0 et 0)"");
+}
+
+// Un état abstrait (positions des k tuiles + case vide) tient dans un long : 5 bits par case (0..24).
+long Pack24(int[] pos, int k, int blank) { long c = blank; for (int i = 0; i < k; i++) c |= (long)pos[i] << (5 * (i + 1)); return c; }
+int Unpack24(long code, int[] pos, int k) { for (int i = 0; i < k; i++) pos[i] = (int)((code >> (5 * (i + 1))) & 31); return (int)(code & 31); }
+
+// 0-1 BFS rétrograde, comme BuildAdditivePdb : déplacer une tuile du groupe coûte 1, déplacer la
+// case vide à travers un joker coûte 0. Traitement couche par couche : ""cur"" = distance d, ""next"" = d+1.
+// Si un état est retrouvé plus tard avec un coût plus faible, on le corrige (vrai plus court chemin).
+byte[] BuildPdb24(int[] group) {
+    int k = group.Length;
+    long size = PdbSize24(k);
+    if (size > Array.MaxLength)
+        throw new InvalidOperationException($""Groupe de {k} tuiles : {size:N0} états, trop gros pour un tableau .NET."");
+    var dist = new byte[size];
+    Array.Fill(dist, (byte)255);                      // 255 = pas encore atteint
+    int[] pos = group.Select(t => Array.IndexOf(GOAL24, t)).ToArray();
+    int blank = Array.IndexOf(GOAL24, 0);
+    dist[Rank24(pos, k, blank)] = 0;
+    var cur = new Queue<long>();
+    var next = new Queue<long>();
+    cur.Enqueue(Pack24(pos, k, blank));
+    int d = 0;
+    while (cur.Count > 0) {
+        while (cur.Count > 0) {
+            int b = Unpack24(cur.Dequeue(), pos, k);
+            if (dist[Rank24(pos, k, b)] != d) continue;   // entrée périmée : déjà atteinte moins cher
+            foreach (int n in NEIGH24[b]) {
+                int ti = Array.IndexOf(pos, n);            // la case n contient-elle une tuile du groupe ?
+                int w = ti >= 0 ? 1 : 0;
+                if (ti >= 0) pos[ti] = b;                  // la tuile glisse dans l'ancienne case vide
+                long rk = Rank24(pos, k, n);
+                if (d + w < dist[rk]) {
+                    dist[rk] = (byte)(d + w);
+                    (w == 0 ? cur : next).Enqueue(Pack24(pos, k, n));
+                }
+                if (ti >= 0) pos[ti] = n;                  // on annule avant de tester le voisin suivant
+            }
+        }
+        (cur, next) = (next, cur);
+        d++;
+    }
+    return dist;
+}
+
+// Heuristique additive : somme des tables (groupes disjoints => admissible, cf. section 6).
+int[] POS_OF24 = new int[CELLS5];
+int[] PAT_BUF24 = new int[8];
+int HAdditive24(int[] state, int[][] groups, byte[][] tables) {
+    for (int c = 0; c < CELLS5; c++) POS_OF24[state[c]] = c;
+    int h = 0;
+    for (int g = 0; g < groups.Length; g++) {
+        int k = groups[g].Length;
+        for (int i = 0; i < k; i++) PAT_BUF24[i] = POS_OF24[groups[g][i]];
+        h += tables[g][Rank24(PAT_BUF24, k, POS_OF24[0])];
+    }
+    return h;
+}
+
+// Partitions (groupes compacts, en blocs sur la grille du but) :
+//    1  2  3  4  5
+//    6  7  8  9 10
+//   11 12 13 14 15
+//   16 17 18 19 20
+//   21 22 23 24  _
+int[][] GROUPS24_3 = { new[]{1,2,6}, new[]{3,4,5}, new[]{7,8,9}, new[]{10,15,20}, new[]{11,12,16}, new[]{13,14,19}, new[]{17,18,22}, new[]{21,23,24} };
+int[][] GROUPS24_4 = { new[]{1,2,6,7}, new[]{3,4,8,9}, new[]{5,10,15,20}, new[]{11,12,16,17}, new[]{13,14,18,19}, new[]{21,22,23,24} };
+int[][] GROUPS24_5 = { new[]{1,2,3,6,7}, new[]{4,5,8,9,10}, new[]{11,12,16,17,21}, new[]{13,14,15,18,19}, new[]{20,22,23,24} };
+// Bonus : la partition 5-5-5-5-4 demande ~0,5 Go de RAM et plusieurs minutes de construction.
+bool AVEC_5 = true;
+
+bool IsPartition24(int[][] groups) => groups.SelectMany(g => g).OrderBy(t => t).SequenceEqual(Enumerable.Range(1, 24));
+
+var partitions24 = new List<(string name, int[][] groups)> { (""3x8"", GROUPS24_3), (""4x6"", GROUPS24_4) };
+if (AVEC_5) partitions24.Add((""5-5-5-5-4"", GROUPS24_5));
+
+var PDB24 = new List<(string name, int[][] groups, byte[][] tables, long states, double sec)>();
+foreach (var (name, groups) in partitions24) {
+    if (!IsPartition24(groups)) throw new InvalidOperationException($""{name} n'est pas une partition disjointe de 1..24"");
+    var swB = System.Diagnostics.Stopwatch.StartNew();
+    byte[][] tables = groups.Select(g => BuildPdb24(g)).ToArray();
+    swB.Stop();
+    long states = groups.Sum(g => PdbSize24(g.Length));
+    bool complet = tables.All(t => Array.IndexOf(t, (byte)255) < 0);
+    PDB24.Add((name, groups, tables, states, swB.Elapsed.TotalSeconds));
+    Console.WriteLine($""PDB {name,-10}: {states,13:N0} états (~{states / 1e6:F0} Mo), construite en {swB.Elapsed.TotalSeconds,6:F1} s, "" +
+                      $""dist max par groupe = [{string.Join("", "", tables.Select(t => t.Max()))}], tous les états atteints : {complet}, h(but) = {HAdditive24(GOAL24, groups, tables)}"");
+}",,,,,,,,218164202533b7fa,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,686a1d7b,code,fr,f9c57e8a55a1aa14,"// ---------- Étape 4 : IDA* sur le 24-puzzle et résolution d'instances ----------
+// Même IDA* qu'en section 7, adapté au 5x5 : l'état est modifié sur place (échange puis annulation)
+// au lieu d'être recopié, et on interdit seulement de défaire le coup précédent (un long ne peut
+// plus encoder 25 cases × 5 bits pour l'ensemble ""path"").
+(int? cost, long nodes) IdaStar24(int[] start, Func<int[], int> heuristic, long nodeLimit = 5_000_000) {
+    int[] s = (int[])start.Clone();
+    long nodes = 0;
+    int found = -1;
+    const int FOUND = -1;
+
+    int Dfs(int g, int threshold, int blank, int prevBlank) {
+        int h = heuristic(s);
+        int f = g + h;
+        if (f > threshold) return f;
+        if (h == 0 && s.SequenceEqual(GOAL24)) { found = g; return FOUND; }
+        if (nodes >= nodeLimit) return int.MaxValue;
+        nodes++;
+        int nextT = int.MaxValue;
+        foreach (int n in NEIGH24[blank]) {
+            if (n == prevBlank) continue;             // ne pas défaire le coup qu'on vient de jouer
+            (s[blank], s[n]) = (s[n], s[blank]);
+            int t = Dfs(g + 1, threshold, n, blank);
+            (s[blank], s[n]) = (s[n], s[blank]);
+            if (t == FOUND) return FOUND;
+            if (t < nextT) nextT = t;
+            if (nodes >= nodeLimit) return nextT;
+        }
+        return nextT;
+    }
+
+    int th = heuristic(s);
+    int blank0 = Array.IndexOf(s, 0);
+    while (true) {
+        int t = Dfs(0, th, blank0, -1);
+        if (t == FOUND) return (found, nodes);
+        if (t == int.MaxValue || nodes >= nodeLimit) return (null, nodes);
+        th = t;
+    }
+}
+
+// Admissibilité empirique (comme en section 8) : h_additive <= optimal sur des instances faciles.
+{
+    var rngAdm24 = new Random(7); int nbOk = 0, viol = 0;
+    for (int i = 0; i < 30; i++) {
+        int[] s = Scramble24(16, rngAdm24.Next(0, 1_000_000_000));
+        var (opt, _) = IdaStar24(s, Manhattan24);
+        if (!opt.HasValue) continue;
+        foreach (var p in PDB24) if (HAdditive24(s, p.groups, p.tables) > opt.Value) viol++;
+        nbOk++;
+    }
+    Console.WriteLine($""Admissibilité : {nbOk} instances x {PDB24.Count} partitions, {viol} violation (attendu 0)"");
+}
+
+// Banc d'essai : de plus en plus mélangé. Budget : 5 millions de nœuds par résolution.
+var INSTANCES24 = new (string name, int[] s)[] {
+    (""J1 (30 pas, seed 1)"",  Scramble24(30, 1)),
+    (""J2 (60 pas, seed 2)"",  Scramble24(60, 2)),
+    (""J3 (80 pas, seed 3)"",  Scramble24(80, 3)),
+    (""J4 (70 pas, seed 7)"",  Scramble24(70, 7)),
+    (""J5 (100 pas, seed 5)"", Scramble24(100, 5)),
+};
+
+var heuristics24 = new List<(string name, Func<int[], int> h)> { (""Manhattan"", (Func<int[], int>)Manhattan24) };
+foreach (var p in PDB24) { var pp = p; heuristics24.Add(($""PDB {pp.name}"", (Func<int[], int>)(st => HAdditive24(st, pp.groups, pp.tables)))); }
+
+var bench24 = new List<(string inst, string heur, int h0, int? opt, long nodes, double sec)>();
+foreach (var (iname, s) in INSTANCES24) {
+    Console.WriteLine($""{iname} :"");
+    foreach (var (hname, h) in heuristics24) {
+        var swI = System.Diagnostics.Stopwatch.StartNew();
+        var (opt, nodes) = IdaStar24(s, h);
+        swI.Stop();
+        bench24.Add((iname, hname, h(s), opt, nodes, swI.Elapsed.TotalSeconds));
+        string res = opt.HasValue ? $""optimal = {opt,3}, {nodes,12:N0} nœuds"" : $""NON RÉSOLU, budget de {nodes:N0} nœuds épuisé"";
+        Console.WriteLine($""   {hname,-15} h(départ) = {h(s),3} | {res} ({swI.Elapsed.TotalSeconds:F1} s)"");
+    }
+}",,,,,,,,f9c57e8a55a1aa14,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,55971043,markdown,fr,a6e84147116e5251,"### Réponse — Exercice 3
+
+- **6-6-6-7 est infaisable** : environ 51 Go de RAM, et un seul groupe de 6 dépasse déjà la taille max d'un tableau .NET. On a donc comparé des partitions plus petites.
+- **Les PDB rendent résoluble ce qui ne l'était pas** : Manhattan échoue sur J3 et J4 ; la PDB 4x6 les résout à l'optimum (J3 : 250 655 nœuds, J4 : 3 413 193).
+- **Rapport construction/qualité** : chaque palier multiplie la mémoire totale par 13 à 16 (3x8 : 2,4 Mo → 4x6 : 38 Mo → 5-5-5-5-4 : 0,5 Go). Le gain en nœuds est fort de 3x8 à 4x6 (×15 sur J3), puis irrégulier et plus faible que le coût de 4x6 à 5-5-5-5-4 : ×7,5 sur J2, mais seulement ×1,5 sur J3 et ×1,2 sur J4.
+- **Limite** : J5 (100 pas) n'est résolue par aucune version. Une vraie instance aléatoire du 24-puzzle demande des tables bien plus grosses et beaucoup plus de calcul.
+
+***
+
+Exemple guide credite — resolution originale : **EmmaLehec**, PR etudiante [#24987](https://github.com/jsboige/CoursIA/pull/24987). Resolution reprise telle quelle ; seule la mise en forme est harmonisee avec les sections voisines.
+",,,,,,,,a6e84147116e5251,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,finition-03b-csharp-a-retenir,markdown,fr,69b3f285aaaa5333,"## À retenir
+
+1. **Une PDB échange du calcul contre une table** : 524 160 entrées pour un groupe de 4 tuiles (P(16,4) = 43 680 motifs × 12 positions de la case vide), construites en 2,4 s ; 43 680 pour le groupe de 3. La table n'est pas une estimation : c'est l'optimum d'un problème plus facile, calculé une fois.
+2. **L'admissibilité vient du relâchement, la somme de la partition de coûts** : chaque coup ne déplace qu'une tuile, donc ne coûte que dans une seule table — HAdditive = somme des quatre tables reste une borne inférieure, et HMax = 11 ≤ HAdditive = 28 sur l'instance de démonstration.
+3. **La PDB additive repousse la frontière du résolvable** : sur I1 (opt 24) elle explore 732 nœuds contre 2 114 pour Manhattan (×2,9) ; sur I2 (opt 45) et I3 (opt 53), Manhattan dépasse 2 M de nœuds sans conclure quand la PDB additive résout à l'optimum (299 773 et 392 168 nœuds).
+4. **« speedup NaN » est une réponse, pas un bug** : le facteur n'existe que si les deux heuristiques terminent ; quand Manhattan est hors budget, la comparaison se lit en « résolu / non résolu », pas en rapport de nœuds.
+5. **La mécanique ne dépend pas du langage** : tables `byte[]`, encodage de rang injectif (19 975 états abstraits testés, 0 collision), construction des quatre tables en 5,1 s — la même structure qu'en Python, à la vitesse près.",,,,,,,,69b3f285aaaa5333,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,finition-03b-csharp-verifiez,markdown,fr,eeff85ff4525bd81,"## Vérifiez votre compréhension
+
+1. Une table de groupe de 4 tuiles compte 524 160 entrées alors que P(16,4) vaut 43 680. D'où vient le facteur 12, et pourquoi la case vide doit-elle figurer dans l'état abstrait ?
+2. Pourquoi HAdditive = somme des quatre tables reste-t-il admissible, alors qu'aucune table ne connaît la position des autres groupes ?
+3. Sur I2 et I3, le tableau affiche « speedup NaN ». Que faut-il lire à la place du facteur, et pourquoi le carnet refuse-t-il d'inventer un nombre ?
+4. L'encodage de rang est testé sur 19 975 états abstraits avec 0 collision. Quel défaut produirait une collision sur la table, et pourquoi le test est-il placé à la construction plutôt qu'à l'usage ?
+
+<details><summary>Réponses</summary>
+
+1. Un motif de 4 tuiles admet P(16,4) = 43 680 placements ; les coups applicables dépendent de la case vide, donc l'état abstrait est (placement du motif, case vide parmi les douze cases restantes) : × 12 = 524 160 — la cellule de lecture du carnet écrit exactement « 524 160 = P(16,4) × 12 ». Sans elle, le parcours rétrograde ne saurait pas quels mouvements existent.
+2. Chaque coup déplace exactement une tuile, donc appartient à un seul groupe : le coût total se partage sans recouvrement entre les tables, chacune minore sa part, donc la somme minore le total — c'est la version C# du partage de coûts (section 6b), qui rend HMax ≤ HAdditive toujours vrai (la vérification des sorties rend `True`).
+3. On lit « non résolu dans le budget » contre « résolu à l'optimum » : NaN signale que le dénominateur manque — Manhattan n'a pas conclu —, pas une mesure nulle ni une erreur. Inventer un facteur sur une heuristique qui n'a pas terminé serait un chiffre fabriqué ; le carnet préfère une case vide à un nombre faux.
+4. Une collision ferait correspondre deux états abstraits distincts à la même entrée : l'un des deux lirait la distance de l'autre, et l'heuristique pourrait surestimer — un IDA* qui rend une solution sous-optimale sans le signaler. Testé à la construction, le défaut est attrapé avant tout usage en recherche (0 collision sur 19 975 états).
+
+</details>",,,,,,,,eeff85ff4525bd81,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,finition-03b-csharp-plus-loin,markdown,fr,13b3f9846edcba5d,"## Pour aller plus loin
+
+- **Jumeau Python** : [Search-03b-PatternDatabases](Search-03b-PatternDatabases.ipynb) — la même technique en Python, avec ses propres mesures (×8,4 à ×20,6 sur ses trois instances) et ses sections sur les quotients (information mutuelle, dette Ruzsa).
+- **Carnet voisin** : [Search-03c-LimitedDiscrepancySearch-CSharp](Search-03c-LimitedDiscrepancySearch-CSharp.ipynb) — borner l'exploration par la structure du problème plutôt que par une meilleure estimation.
+- **Dans la même série** : [Search-03-Informed-CSharp](Search-03-Informed-CSharp.ipynb) — la dominance des heuristiques, dont HAdditive ≥ HMax est une instance mesurée ici.
+- **Exercices du carnet** : exercice 1 (partition 6-6-3), exercice 2 (PDB symétrique, Felner et al. 2004), exercice 3 (généralisation au 24-puzzle).
+- **Lectures** : Korf & Felner (2002), *Disjoint Pattern Database Heuristics* — la partition 4-4-4-3 et la combinaison additive viennent de là.",,,,,,,,13b3f9846edcba5d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,76db16e0,markdown,fr,65ccb23b831a22a7,"### Exercice 4 — Partition 5-5-5 (trois groupes équilibrés)
+
+Construisez la partition **5-5-5** et comparez-la à la 6-6-3 : coût mémoire de chaque table ($P(16,5) \times 11$ états attendus par groupe), temps de construction, admissibilité (40/40), et qualité de la guidance (nombre de nœuds explorés sur les 40 instances de la section 7). La 6-6-3 déséquilibre les groupes (un groupe de 6 est bien plus coûteux) — la 5-5-5 équilibre le compromis mémoire/guidance autrement. Où se situe l'optimum pratique ?
+",,,,,,,,65ccb23b831a22a7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,4c26d338,code,fr,b59c9eea3b612b18,"// Exercice 4 — à compléter : partition 5-5-5 et confrontation 6-6-3
+// Indice : la structure de l'exercice 1 est inchangée — GROUPS_555 =
+// { new[]{1,2,3,4,5}, new[]{6,7,8,9,10}, new[]{11,12,13,14,15} }, puis
+// réutilisez BuildAdditivePdb sur chaque groupe et le même protocole de
+// mesure (admissibilité 40/40 + nœuds explorés) que la section 7.
+// Attention : trois tables de P(16,5) x 11 états chacune — vérifiez la
+// mémoire avant de lancer la construction.
+// TODO etudiant
+Console.WriteLine(""Exercice 4 à compléter : partition 5-5-5."");",,,,,,,,b59c9eea3b612b18,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,4196bf40,markdown,fr,57c256199048969e,"### Exercice 5 — Max vs somme : combiner des PDB non additives
+
+Les PDB des exercices précédents sont **additives** (les groupes sont disjoints : la somme reste admissible). Construisez maintenant deux PDB **non additives** sur des groupes qui se chevauchent (par exemple {1..8} et {8..15} : la tuile 8 appartient aux deux), et combinez-les par `Math.Max`. Expliquez pourquoi la **somme** de ces deux tables casserait l'admissibilité (un coup de la tuile 8 serait compté deux fois) alors que le max reste sûr, et mesurez quelle combinaison guide le mieux.
+",,,,,,,,57c256199048969e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,633ecc26,code,fr,bcdfd4ff34b4a8b8,"// Exercice 5 — à compléter : PDB non additives combinées par Max
+// Indice : réutilisez BuildAdditivePdb sur des groupes qui se chevauchent
+// — la table reste une vraie PDB (elle vérifie h(s) <= dist(s, but) par
+// groupe), seule la COMBINAISON change : max sûr, somme fausse.
+// Mesurez : h_max non-additive vs h_somme additive 4-4-4-3 sur les 40
+// instances. Lequel explore le moins de nœuds à mémoire égale ?
+// TODO etudiant
+Console.WriteLine(""Exercice 5 à compléter : combinaison max de PDB non additives."");",,,,,,,,bcdfd4ff34b4a8b8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,b93e733b,markdown,fr,4a5d83c7189cd71c,"### Exercice 6 — Base de motifs sur un autre problème : les tours de Hanoï
+
+La technique PDB ne se limite pas au taquin. Construisez une petite base de motifs pour les **tours de Hanoï** à 3 piquets et 5 disques : l'état abstrait retient la position de 2 disques choisis (les 3 autres sont « n'importe où »), la table stocke le nombre de coups restants vers l'état but. Vérifiez l'admissibilité de la table sur 20 états aléatoires (comparés au coût réel d'un BFS complet), puis mesurez la guidance : combien de nœuds A* explore-t-il avec cette table contre une heuristique triviale ?
+",,,,,,,,4a5d83c7189cd71c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,b46cf117,code,fr,e1a802cf560a3896,"// Exercice 6 — à compléter : PDB pour les tours de Hanoi (3 piquets, 5 disques)
+// Indice : espace complet = 3^5 = 243 états — trivial à BFSer en entier.
+// L'abstraction retient la position des disques 4 et 5 (les plus grands),
+// les disques 1-3 sont projetes (n'importe quel piquet) : 3^2 = 9 entrees.
+// Vérifiez h_abstraite <= dist_reelle sur 20 états (admissibilité), puis
+// A* avec cette table vs A* avec h=0 : comptez les nœuds développés.
+// TODO etudiant
+Console.WriteLine(""Exercice 6 à compléter : PDB tours de Hanoi."");",,,,,,,,e1a802cf560a3896,,,,,,,,,,,,,,,
