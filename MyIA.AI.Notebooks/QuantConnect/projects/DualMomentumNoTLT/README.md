@@ -180,3 +180,8 @@ Le projet embarque **deux implémentations** de la même stratégie :
 - **Momentum rotation vs safe-haven switch** : comparer le drawdown de cette stratégie (21.5 %, rotation pure) à celui du Trend-Following (15 %, avec bascule safe-haven) isole la valeur de l'overlay défensif.
 - **Probabilistic Sharpe Ratio (PSR)** : un Sharpe positif ≠ skill statistiquement significative (1.4 % ici).
 - **Variante Framework vs standalone** : un même énoncé de stratégie peut donner des métriques différentes selon le harnais QC. Ici, un insight `FLAT` sans poids, ignoré par le modèle de construction de portefeuille, faisait porter au compte jusqu'à 1.7 fois sa valeur nette ; une fois corrigé, il reste l'écart de turnover dû au re-ciblage quotidien.
+
+## Références
+
+- Antonacci (2014), *Dual Momentum Investing* — le cadre du momentum dual (filtre absolu + classement relatif) porté par ce projet, déjà cité dans la Description et « Concepts enseignés ».
+- Miroir anglais : [README.en.md](README.en.md), dont cette section reprend l'entrée References.

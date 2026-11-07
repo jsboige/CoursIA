@@ -150,7 +150,7 @@ if command -v dotnet >/dev/null 2>&1; then
     write_check ".NET Interactive" "OK" "Installé globalement"
   else
     write_check ".NET Interactive" "WARNING" "Non installé globalement"
-    RECOMMENDATIONS+=("Installer .NET Interactive: dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.617701")
+    RECOMMENDATIONS+=("Installer .NET Interactive: dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001")
     TOTAL_WARNINGS=$((TOTAL_WARNINGS + 1))
   fi
 else
