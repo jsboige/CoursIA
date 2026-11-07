@@ -117,6 +117,16 @@ jobs:
                   print("::notice title=Lean derived pages::%d page(s) derivee(s) conforme(s) a l'arbre Lean." % len(pages))
               sys.exit(0)
 
+          if expired:
+              # Une page non mesuree reste non mesuree, meme quand une autre
+              # diverge : la nommer evite qu'un vert partiel se lise comme
+              # une verification complete.
+              print("::warning title=Lean derived pages non mesurees::%d page(s) n'ont pas pu etre verifiees dans le delai de la machine." % len(expired))
+              for p in expired:
+                  print("- %s" % p.get("page"))
+                  if p.get("detail"):
+                      print("  %s" % p["detail"])
+
           print("::error title=Lean derived pages divergeantes::%d page(s) derivee(s) ne suivent plus l'arbre Lean de cette revision." % len(drifted))
           for p in drifted:
               print("- %s" % p.get("page"))
