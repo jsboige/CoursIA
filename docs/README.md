@@ -276,6 +276,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [transients/2026-09-02-curriculum-inventory.md](transients/2026-09-02-curriculum-inventory.md) | Inventaire des embryons de parcours — Phase 0 de l'EPIC #13844. **Fichier de travail tenu à la main** (statut `MANUEL`, non régénéré) : recense ce qui existe déjà en germe avant d'écrire de nouveaux parcours |
 | [curriculum/aima-walk-competences.md](curriculum/aima-walk-competences.md) | « Recherche et Corpus » au prisme des référentiels de compétences en IA — pilote #17982 |
 | [curriculum/aima-walk.md](curriculum/aima-walk.md) | Recherche et Corpus (AIMA-inspired) — lire le dépôt comme un corpus de recherche |
+| [curriculum/aima-mapping/README.md](curriculum/aima-mapping/README.md) | AIMA : tables des matières 3e et 4e en données (ancre PDF par ligne), correspondance section → phase → carnets → compétences, sections sans couverture, ce qui dépasse le livre, et écarts de découpage entre les deux éditions |
 | [curriculum/genai-rush.md](curriculum/genai-rush.md) | Accéléré vers GenAI |
 | [curriculum/symbolic-formalization.md](curriculum/symbolic-formalization.md) | IA Symbolique et Formalisation |
 | [curriculum/ia-hybride.md](curriculum/ia-hybride.md) | IA hybride — LLM + solveurs + vérificateurs (manuel, EPIC #13844) |
