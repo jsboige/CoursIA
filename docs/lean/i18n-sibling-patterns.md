@@ -45,7 +45,7 @@ Les deux qualifieurs **doivent** différer pour que **chacun** compile. Un check
 
 Une **quatrième situation** n'est pas une forme de paire : c'est un **cas particulier** du lake `grothendieck_lean`, où le sibling `_en` est un **miroir de la prose** — docstring et commentaires traduits — **sans aucune déclaration Lean**. Le checker classe ces fichiers `OK` / `OK-CONSUMER` : il ne signale **aucun** drift, et c'est le comportement correct.
 
-Le cas a été ouvert par [#23676](https://github.com/jsboige/CoursIA/issues/23676) (« sept jumeaux `_en` sans contenu formel »), qui demandait de trancher entre **formaliser** (790 lignes de Lean dupliqué) et **documenter l'exception**. La question est tranchée ici en faveur de la documentation, pour trois raisons mesurées.
+Le cas a été ouvert par [#23676](https://github.com/jsboige/CoursIA/issues/23676) (« sept jumeaux `_en` sans contenu formel »), qui demandait de trancher entre **formaliser** (du Lean dupliqué) et **documenter l'exception**. La question est tranchée ici en faveur de la documentation, pour trois raisons mesurées.
 
 **1. Ce que sont réellement ces fichiers** (mesure sur `origin/main` `d073b073e6`, `scripts/lean/check_i18n_siblings.py` sur le lake) :
 
@@ -60,13 +60,13 @@ Le cas a été ouvert par [#23676](https://github.com/jsboige/CoursIA/issues/236
 | `ExceptionalTriple_en.lean` | 166 | 0 | 6 (Mathlib + `Grothendieck.ExceptionalDirect_en`) | 170 | 0 | `OK` |
 | `MathlibMap_en.lean` | 134 | 0 | 7 (Mathlib seul) | 140 | 0 | `OK` |
 
-Total mesuré : **1 086 lignes EN** contre **2 276 lignes FR**, **0 déclaration** de part et d'autre sur deux des paires, et **80 blocs de déclaration FR** réutilisés par import sur les six autres.
+Total mesuré : le volume EN est **bien moindre** que le FR, **0 déclaration** de part et d'autre sur deux des paires, et **80 blocs de déclaration FR** réutilisés par import sur les six autres.
 
-> **Correction de périmètre.** L'issue #23676 liste **sept** fichiers ; la mesure en trouve **huit** : `SheafCohomology/Godement_en.lean` (123 lignes, 0 déclaration, `import Grothendieck.SheafCohomology.Godement`) est le même cas, classé `OK-CONSUMER` par le checker (9 blocs FR réutilisés). Il est de la même classe et relève de la même règle.
+> **Correction de périmètre.** L'issue #23676 liste **sept** fichiers ; la mesure en trouve **huit** : `SheafCohomology/Godement_en.lean` (0 déclaration, `import Grothendieck.SheafCohomology.Godement`) est le même cas, classé `OK-CONSUMER` par le checker (9 blocs FR réutilisés). Il est de la même classe et relève de la même règle.
 
 **2. Formaliser les six miroirs `OK-CONSUMER` casserait le build.** Ces six fichiers importent leur jumeau FR et réutilisent ses définitions ; les **redéclarer** côté EN les *shadow* face aux définitions importées → `lake build` **FAIL**. C'est exactement l'incident fondateur [#6717](https://github.com/jsboige/CoursIA/issues/6717) (`StableMarriage/Lattice_en.lean`), dont la règle est écrite plus haut : « un jumeau consommateur qui compile est déjà conforme » ; la parade était de **ne rien réintroduire**. L'option « formaliser » n'est donc pas seulement coûteuse sur ces six fichiers — elle est **fausse**.
 
-**3. Formaliser les deux miroirs `OK` (`ExceptionalTriple_en`, `MathlibMap_en`) reviendrait à écrire de la mathématique neuve**, pas à traduire : leur jumeau FR ne déclare rien non plus (170 et 140 lignes de prose). Ce n'est pas un travail d'i18n, c'est un travail de recherche — hors périmètre d'un miroir de traduction.
+**3. Formaliser les deux miroirs `OK` (`ExceptionalTriple_en`, `MathlibMap_en`) reviendrait à écrire de la mathématique neuve**, pas à traduire : leur jumeau FR ne déclare rien non plus (de la prose seulement). Ce n'est pas un travail d'i18n, c'est un travail de recherche — hors périmètre d'un miroir de traduction.
 
 **Règle de report.** Un sibling `_en` **sans aucune déclaration** n'est pas un « gap i18n » à combler : c'est un miroir de prose. Il se formalise **au moment où un consommateur EN apparaît** — c'est-à-dire quand un module EN importe `Grothendieck.<X>_en` et a besoin de `Grothendieck_en.<X>` : à cet instant la redéclaration devient *portante* et l'invariant `OK-CONSUMER` doit céder la place à la Forme 1 (miroir auto-contenu), Parts de l'amas qui touchent cette Part.
 
