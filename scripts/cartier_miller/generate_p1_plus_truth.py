@@ -22,10 +22,11 @@ For each of the 92 primes p in [7, 499] :
   coherence with prefix_values[(p-1)//4].
 
 Output :
-- ``example_results/p1_plus_python_validation.json`` (schema compatible
-  with upstream ``harvey_validation.json`` : status / checks / metadata).
-- ``example_results/p1_plus_python_truth.csv`` : one row per prime with
-  counts of stopping indices, exact_binomial_checks, and
+- ``scripts/results/cartier_miller/p1_plus_python_validation.json`` (schema
+  compatible with upstream ``harvey_validation.json`` : status / checks /
+  metadata).
+- ``scripts/results/cartier_miller/p1_plus_python_truth.csv`` : one row per
+  prime with counts of stopping indices, exact_binomial_checks, and
   quarter_cross_checks.
 
 Usage::
@@ -45,6 +46,13 @@ import sys
 from datetime import datetime, timezone
 from math import isqrt
 from pathlib import Path
+
+
+# The repository root, resolved from this file's location: the default output
+# directory must not depend on the current working directory, otherwise running
+# the script from anywhere else recreates the old root-level ``example_results/``
+# directory (the layout this move removes from the repository root).
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 # ----------------------------- Vendored upstream (verbatim from pin 37a9b72) ---
@@ -353,8 +361,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
         "--out-dir",
-        default="example_results",
-        help="Output directory for JSON and CSV (default: example_results)",
+        default=str(REPO_ROOT / "scripts" / "results" / "cartier_miller"),
+        help=(
+            "Output directory for JSON and CSV (default: "
+            "scripts/results/cartier_miller, resolved from the repository root)"
+        ),
     )
     parser.add_argument(
         "--verify-counts",
