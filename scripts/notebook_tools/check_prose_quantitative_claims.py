@@ -774,12 +774,18 @@ class DiffUnreadable(RuntimeError):
 def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
     """Ne juge que les lignes AJOUTEES : le stock existant ne fait pas echouer.
 
+    ``--ignore-cr-at-eol`` (#25090) : un diff EOL-pur (renormalisation
+    CRLF -> LF d'un fichier existant) reecrit chaque ligne du fichier, et
+    git les rend toutes comme ajoutees -- le garde jugerait alors des
+    compteurs PRE-EXISTANTS comme s'ils venaient d'etre ecrits. Le drapeau
+    rend le diff neutre en contenu invisible, ce qu'il est.
+
     Leve :class:`DiffUnreadable` quand git ne resout pas la plage -- l'echec
     d'infrastructure ne se confond pas avec un diff propre.
     """
     try:
         proc = subprocess.run(
-            ["git", "diff", "--unified=0", diff_range],
+            ["git", "diff", "--unified=0", "--ignore-cr-at-eol", diff_range],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=180, check=False,
         )
