@@ -43,7 +43,23 @@ concurrency:
 jobs:
   legibility:
     name: "Poster la separation rouge merite/emprunte de main (advisory)"
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Runner HEBERGE, pas auto-heberge : le job n'a besoin de RIEN qui n'existe
+    # que sur le parc local (il lit le rollup via `gh` et ecrit UN commentaire ;
+    # aucun outil natif, aucun cache, aucun artefact volumineux). C'est la
+    # doctrine Q35 etape 2 / #17397 : un workflow sans besoin local n'a pas a
+    # occuper un slot du parc, dont la congestion etait mesuree.
+    #
+    # Deux contraintes de `scripts/ci/check_self_hosted_runner_policy.py` (#12704)
+    # sont donc retirees au passage : une jambe auto-hebergee doit (a) figurer
+    # dans `SELF_HOSTED_WORKFLOW_ALLOWLIST` -- une liste d'approbation
+    # proprietaire, que cette lane n'a pas a elargir -- et (b) porter un
+    # `timeout-minutes` au niveau du job (#22954), sans quoi elle peut retenir
+    # son slot six heures. Sur un runner heberge, les deux sont hors sujet.
+    runs-on: ubuntu-latest
+    # Garde-fou de duree : le job lit l'API et ecrit un commentaire ; dix
+    # minutes suffisent largement, et un job gele sur un runner heberge est
+    # bien moins grave qu'un slot local retente.
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
