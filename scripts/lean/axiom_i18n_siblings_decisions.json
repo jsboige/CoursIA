@@ -128,10 +128,10 @@
     {
       "lake": "decisiontheory",
       "decision": "true",
-      "reason": "opt-in sur : la surface `_en` (14 modules, 99 declarations) ne porte aucun ancrage qui ferait rougir la porte ; les `sorry` y sont rapportes, non gates (la porte ne gate pas sur sorryAx pour ce lake)",
+      "reason": "opt-in sur : la surface `_en` (14 modules, 101 declarations) ne porte aucun ancrage qui ferait rougir la porte ; les `sorry` y sont rapportes, non gates (la porte ne gate pas sur sorryAx pour ce lake)",
       "mode": "WILDCARD",
       "i18n-modules": 14,
-      "i18n-declarations": 99
+      "i18n-declarations": 101
     },
     {
       "lake": "gametheory",
