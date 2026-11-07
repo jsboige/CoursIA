@@ -351,8 +351,9 @@ jobs:
       # 0102d652b3...` emis PENDANT le fetch, etape rendue verte malgre tout.
       # Le depot reste alors ni shallow ni complet, et tout `git log --raw` /
       # `git rev-list` ulterieur casse -- ce qui fait rougir un check REQUIS
-      # sur une panne d'infrastructure, jamais sur du fond. On repart d'un
-      # clone neuf des que l'etat est shallow ou le graphe troue.
+      # sur une panne d'infrastructure, jamais sur du fond. On tente donc un
+      # unshallow explicite et verifie avant de laisser actions/checkout agir;
+      # seul un fetch en echec ou un graphe toujours incomplet impose le clone neuf.
       # ------------------------------------------------------------------
       - name: "Purger un work dir reutilise au graphe incomplet (#15387)"
         shell: bash
@@ -363,7 +364,12 @@ jobs:
             exit 0
           fi
           if [ -f .git/shallow ]; then
-            echo "::notice::[heal] work dir SHALLOW reutilise -- purge avant unshallow"
+            echo "::notice::[heal] work dir SHALLOW reutilise -- tentative d'unshallow explicite"
+            if git fetch --unshallow origin && [ ! -f .git/shallow ] && git rev-list --all --count >/dev/null 2>&1; then
+              echo "[heal] unshallow explicite reussi -- graphe complet reutilise"
+              exit 0
+            fi
+            echo "::notice::[heal] unshallow impossible ou graphe incomplet -- purge du work dir"
             rm -rf .git
             exit 0
           fi
