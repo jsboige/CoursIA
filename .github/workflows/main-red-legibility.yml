@@ -1,0 +1,118 @@
+name: Main Red Legibility
+
+# La moitie « lisible » de #22088, rendue durable et recurrente.
+#
+# #22088 a mesure que le `statusCheckRollup` de `main` lisait FAILURE sur la
+# moitie des commits, et que, sur la grande majorite, les seules jambes
+# non vertes etaient CANCELLED -- une annulation, pas un echec. L'organe
+# `scripts/ci/check_cancelled_only_commits.py` (#24079) nomme deja, commit par
+# commit, si un rouge est MERITE (une jambe a vraiment echoue) ou EMPRUNTE
+# (annulation seule). Rien ne mettait ce verdict a l'endroit ou un humain lit
+# reellement `main` -- c'est precisement « la rendre lisible comme telle ».
+#
+# Ce balayage planifie lance l'organe sur une fenetre glissante de `main` et
+# poste la separation merite/emprunte en commentaire ROULEUR (find-or-update,
+# un seul commentaire, marque d'un sentinelle) sur l'issue #22088 -- celle ou
+# vit la discussion. Le mainteneur qui ouvre #22088 voit, mis a jour chaque
+# jour, quels rouges de `main` sont merites et quels rouges ne sont que le
+# build Quarto annule.
+#
+# Advisory, jamais bloquant (memes contrat que candidate-delivered-advisory) :
+#   - Le job sort TOUJOURS 0. Le payload est le commentaire, PAS la conclusion.
+#   - Il ne FAIT QUE lire le rollup et ecrire UN commentaire ; il ne touche
+#     aucun code.
+#   - L'organe est la source UNIQUE du verdict (pas re-implimente ici) ; ce
+#     workflow n'est que la surface de lecture.
+#   - Un echec de post est loggue, jamais fatal : une note de lisibilite ne
+#     doit pas rougir l'advisory.
+
+on:
+  schedule:
+    # Quotidien, minute hors :00 (anti-stampede). 06:43 UTC.
+    - cron: '43 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: main-red-legibility
+  cancel-in-progress: false
+
+jobs:
+  legibility:
+    name: "Poster la separation rouge merite/emprunte de main (advisory)"
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            .github/workflows/main-red-legibility.yml
+            scripts/ci/check_cancelled_only_commits.py
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Lancer l'organe puis poster le commentaire rouleau
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -u
+          # 1) le verdict, depuis l'organe (source unique de la mesure)
+          if ! python scripts/ci/check_cancelled_only_commits.py --commits 20 \
+               > legibility.txt 2> legibility.err; then
+            echo "::warning::organe non concluant : $(cat legibility.err | head -3)"
+            exit 0
+          fi
+          # 2) le rendre lisible : commentaire rouleau sur #22088 (find-or-update)
+          python - <<'PY'
+          import json, os, subprocess, datetime, tempfile
+          issue, repo = 22088, "jsboige/CoursIA"
+          sentinel = "<!-- main-red-legibility:rolling -->"
+          try:
+              report = open("legibility.txt", encoding="utf-8").read().strip()
+          except Exception as e:
+              print("::warning::legibility.txt illisible:", e); raise SystemExit(0)
+          when = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+          body = (f"{sentinel}\n\n"
+                  f"**Main red legibility** — auto, {when}\n\n"
+                  f"La croix rouge sur `main` est le plus souvent une annulation "
+                  f"du build Quarto, pas un echec. Separation merite / emprunte "
+                  f"sur la fenetre glissante :\n\n```\n{report}\n```\n")
+          def gh(*a):
+              return subprocess.run(["gh", *a], capture_output=True, text=True)
+          def post():
+              try:
+                  lst = gh("api", f"repos/{repo}/issues/{issue}/comments?per_page=100")
+                  comments = json.loads(lst.stdout or "[]")
+              except Exception as e:
+                  print("::warning::lecture des commentaires en echec:", e); return
+              hit = next((c for c in comments if sentinel in c.get("body", "")), None)
+              with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False,
+                                               encoding="utf-8") as tf:
+                  json.dump({"body": body}, tf, ensure_ascii=False)
+                  payload = tf.name
+              try:
+                  if hit:
+                      r = gh("api", f"repos/{repo}/issues/comments/{hit['id']}",
+                             "-X", "PATCH", "--input", payload)
+                      print("commentaire rouleau mis a jour", hit["id"])
+                  else:
+                      r = gh("api", f"repos/{repo}/issues/{issue}/comments",
+                             "-X", "POST", "--input", payload)
+                      print("commentaire rouleau cree")
+                  if r.returncode != 0:
+                      print("::warning::post en echec:", (r.stderr or "").strip()[:300])
+              finally:
+                  os.unlink(payload)
+          try:
+              post()
+          except Exception as e:
+              print("::warning::post en echec:", e)
+          # advisory : le code de sortie est toujours 0
+          PY
