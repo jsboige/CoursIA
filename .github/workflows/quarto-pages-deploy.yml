@@ -374,7 +374,11 @@ jobs:
               SUBDIR="$dir/$stem"
             fi
             echo "----- slidev build: $rel -> /slides/$SUBDIR/ -----"
-            if ( cd slides && npx slidev build "$rel" --base "${BASE_PREFIX}/slides/${SUBDIR}/" --out "../site-slides/${SUBDIR}" ); then
+            # --out ABSOLU : slidev resout un --out relatif au PROJECT ROOT
+            # (slides/), pas au cwd -- un "../site-slides" y reste sous slides/
+            # (mesure run 42318273926 : 19/19 builds OK, tous ecrits dans
+            # slides/site-slides/, site-slides/ du worktree jamais cree).
+            if ( cd slides && npx slidev build "$rel" --base "${BASE_PREFIX}/slides/${SUBDIR}/" --out "${GITHUB_WORKSPACE}/site-slides/${SUBDIR}" ); then
               echo "OK: $rel -> site-slides/$SUBDIR"
               OK_LIST="${OK_LIST}${SUBDIR}\n"
             else
@@ -387,6 +391,9 @@ jobs:
           echo "Built: $(( ${#TARGETS[@]} - FAILURES ))/${#TARGETS[@]} decks ($FAILURES failed, see warnings)."
 
           # ---- Index /slides/ : liste des decks reellement construits ----
+          # mkdir defensif : l'index doit exister meme a 19/19 fail-soft
+          # (0 deck construit -> assemble publie le site Quarto + index honnete).
+          mkdir -p site-slides
           {
             echo '<!DOCTYPE html>'
             echo '<html lang="fr"><head><meta charset="utf-8">'
