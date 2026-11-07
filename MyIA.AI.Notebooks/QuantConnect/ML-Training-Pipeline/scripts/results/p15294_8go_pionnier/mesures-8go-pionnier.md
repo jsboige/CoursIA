@@ -98,3 +98,22 @@ La série VRAM du §3 se collecte en **concomitance** du run `smoke` : l'échant
 ```powershell
 python scripts/probe_15099_vram_sampler.py --out "<racine>/vram_smoke_seed0.jsonl" --interval 1.0 --gpu 0 --stop-file "<racine>/STOP"
 ```
+
+## 6. Le classement 2B > 0,8 B se rejoue-t-il à l'étage 8 Go ?
+
+Le verdict de paire 2B > 0,8 B (`../../docs/P15294_SMALL_MODEL_RL_DATASETS.md`, acceptances 2-3 closes) a été établi avec le 0,8 B sur l'étage 16 Go et le 2 B **déjà sur une 3070 à 8 Go** : les manifestes 2 B existaient à l'étage pionnier, mais hors de ce dossier. Cette section les relie à l'étage.
+
+**Le 2 B a tourné en run complet à l'étage 8 Go** — chaîne détachée sur le 3070, manifestes `../p15294_hermes_grpo/minicpm5_seed{0,1}.json`, mode `run` 100 steps, même recette (GRPO+QLoRA non-thinking, complétion ≤ 384, held-out 40 prompts × 4 générations) :
+
+| seed | pre | post | Δ | wallclock |
+|---|---:|---:|---:|---:|
+| 0 | 0,2125 | 0,64375 | **+0,43125** | 10 656,5 s |
+| 1 | 0,2500 | 0,68125 | **+0,43125** | 7 687,7 s |
+
+Provenance de la carte : le doc de référence écrit « en chaîne détachée sur le 3070 » (§ verdict de paire) et l'observation `obs-a97fc8fc7aea275b` du ledger GPU la précise (« les seeds 0/1 viennent de la 3070 de po-2024 »). Les manifestes ne portent pas de champ carte — l'attestation est **croisée sur ces deux sources**, pas auto-portée par les artefacts.
+
+**Énoncé d'étage** :
+
+1. **Le classement ne se déplace pas par inaccessibilité** : les deux backbones de la paire s'exécutent à l'étage 8 Go — le 2 B en run complet (2 seeds, 100 steps, contrôle de dégénérescence du doc de référence : signature inverse du no-op `m19`), le 0,8 B en critère d'accessibilité + boucle smoke (§1-§2).
+2. **Il se rejoue en tendance** : à 8 Go, le 2 B complet gagne **+0,43125 sur 2 seeds** (Δ identique au 5ᵉ décimal) pendant que le 0,8 B n'y montre qu'un smoke de 3 steps au Δ dans le bruit (+0,0625, §2) — sens cohérent avec le verdict de référence.
+3. **Limite, dite plutôt que tuée** : la paire stricte même-carte (0,8 B **complet** à 8 Go, ≥ 2 seeds, `summarize`) n'a pas été produite. Le Δ 0,8 B de référence (+0,2500 ± 0,1875 sur étage 16 Go, 47 050 s / 23 666 s par seed) n'est pas transposé tel quel ; au débit relatif mesuré au §3 (× 1,9 plus lent sur 8 Go), son équivalent complet à 8 Go extrapolerait à ~12 à 25 h par seed. Cette page énonce donc « le classement se rejoue en tendance et rien ne le déplace », pas « le classement est confirmé à 8 Go » — la paire stricte reste à produire si la coordination la demande.

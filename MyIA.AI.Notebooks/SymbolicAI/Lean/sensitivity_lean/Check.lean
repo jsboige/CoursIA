@@ -2,7 +2,7 @@ import Sensitivity.MainTheorem
 import Sensitivity.Sens2026
 
 /-!
-# Point d'entree de verification pour le carnet ANALYSE-06
+# Point d'entree de verification pour le carnet ANALYSE-06-Sensibilite-2026-Lean-Python
 
 Ce fichier n'est PAS compile par `lake build` (hors globs de la lib) : il sert
 au carnet `../ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python.ipynb`, qui

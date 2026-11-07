@@ -57,7 +57,7 @@ Le mouvement est net : d'un **point dans un espace de signaux** vers un **état 
 
 ### Garde-fou 1 — Continuité conceptuelle, pas expérimentale
 
-L'audit GitHub cross-notebooks **ne trouve aucun transport formel** de `p̂` vers les features SAE (ICT-21) ou la J-lens (ICT-SAE-JLens-TeteATete). Ce qu'on a, c'est une **continuité conceptuelle** (chaque maillon répond à une insuffisance du précédent) et une **continuité numérique** (les grandeurs mesurées ICT-10/12/14 sont les mêmes). Mais le passage `p̂` → état causal (ICT-17) ne se fait pas par démonstration formelle : il se fait par **monstration successive**, chaque maillon fermant une objection locale sans nier les objections globales. **À présenter comme généalogie, pas comme théorie unifiée.**
+L'audit GitHub cross-notebooks **ne trouve aucun transport formel** de `p̂` vers les features SAE (ICT-21) ou la J-lens (ICT-SAE-JLens-TeteATete-Python). Ce qu'on a, c'est une **continuité conceptuelle** (chaque maillon répond à une insuffisance du précédent) et une **continuité numérique** (les grandeurs mesurées ICT-10/12/14 sont les mêmes). Mais le passage `p̂` → état causal (ICT-17) ne se fait pas par démonstration formelle : il se fait par **monstration successive**, chaque maillon fermant une objection locale sans nier les objections globales. **À présenter comme généalogie, pas comme théorie unifiée.**
 
 ### Garde-fou 2 — Le global workspace n'est PAS une version structurée de `p̂`
 

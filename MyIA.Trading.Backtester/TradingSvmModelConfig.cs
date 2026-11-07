@@ -18,7 +18,7 @@ namespace MyIA.Trading.Backtester
     //
     // Substitution : AUCUNE. Le SVM a noyau du fork tourne tel quel sur net9.0 avec
     // Accord.NET 3.8.2-alpha (la version du fork) — restore + build + execution
-    // verifies (voir docs/reference/backtester-e2-svm-kernel.md et le corps de la PR).
+    // verifies (voir docs/transients/2026-08-23-backtester-e2-svm-kernel.md et le corps de la PR).
     // C'est la resolution de l'hypothese « Accord -> ML.NET/sklearn » du commentaire
     // de tranche 3 : ML.NET n'a pas de SVM a noyau, et il n'a pas eu a en fournir un.
     //
@@ -366,8 +366,8 @@ namespace MyIA.Trading.Backtester
         /// et l'absence de modele est traitee explicitement au lieu d'etre masquee par une NRE.
         /// Le defaut est signale a l'amont : voir
         /// https://github.com/MyIntelligenceAgency/Lean/issues/40 (et la section « Disposition
-        /// upstream » de docs/reference/backtester-e2-svm-kernel.md pour la decision et la
-        /// table de mesure cote a cote).
+        /// upstream » de docs/transients/2026-08-23-backtester-e2-svm-kernel.md pour la decision
+        /// et la table de mesure cote a cote).
         /// </remarks>
         public double CalibrateComplexity(TradingTrainTestData objTrainingData, IKernel objKernel)
         {

@@ -219,8 +219,23 @@ def board(belt: dict, lanes: list[str], previous: dict | None, now: datetime,
             "arc": plate["arc"] if plate else None,
             "recette": rec,
         }
+    # #24373 : les EPICs Origami dont le pli suivant n'est pas deplie ne sont
+    # pas servis aux lanes. Le tableau les montre : c'est la que le
+    # coordinateur voit ce qui attend SON geste.
+    origami = belt.get("origami_parking") or {}
+    parked = []
+    for item in origami.get("details") or []:
+        if item.get("parked"):
+            parked.append({"number": item.get("epic"),
+                           "title": item.get("title"),
+                           "next_pli": item.get("next_pli"),
+                           "reason": item.get("reason")})
     return {"drawn": len(belt.get("picks", [])), "families": group_picks(picks, now), "lanes": out_lanes,
             "previous_at": previous["assigned_at"] if previous else None,
+            "origami_parked": parked,
+            "origami_parking": {"measured": bool(origami.get("measured")),
+                                "reason": origami.get("reason"),
+                                "count": len(parked)},
             "unreadable": incidents}
 
 
@@ -240,6 +255,18 @@ def render_board(b: dict) -> str:
         rec = info["recette"] or {}
         rec_txt = f" | recette {rec.get('verdict')}" + (f" #{rec['issue']}" if rec.get("verdict") == "DUE" else "")
         lines.append(f"  {lane} : {served}/{info['assigned']} rendues, assiette {rest}{rec_txt if rec else ''}")
+    # #24373 : ce qui attend le geste du coordinateur (depliage d'un pli).
+    parked = b.get("origami_parked") or []
+    origami = b.get("origami_parking") or {}
+    lines += ["", "# Origami en attente de depliage"]
+    if not origami.get("measured"):
+        lines.append(f"  (non mesure : {origami.get('reason') or 'inconnu'})")
+    elif not parked:
+        lines.append("  (aucun)")
+    else:
+        for item in parked:
+            next_pli = f" -- pli {item['next_pli']}" if item.get("next_pli") else ""
+            lines.append(f"  #{item['number']}{next_pli} {item.get('title') or ''}")
     unreadable = b.get("unreadable") or []
     if unreadable:
         lines += ["", "# Lectures impossibles (la mesure a echoue pour ces la)"]

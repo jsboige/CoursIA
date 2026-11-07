@@ -2163,6 +2163,25 @@ def _student_solution_verbatim():
     }
 
 
+def _stub_exercise_lean():
+    """Stub d'exercice signale par son JETON de source (`-- Exercice N` /
+    `# TODO`), SANS aucune sortie « a completer ».
+
+    C'est ce qui le distingue de `_stub_exercise` : la classification ne
+    court-circuite PAS par la sortie litterale, elle depend du carve-out
+    d'exemple credite -- donc de `_section_header`. C'est le cas reel du
+    body (Lean-13 / Lean-16c) que le test negatif doit epingler.
+    """
+    return {
+        "cell_type": "code",
+        "source": ["-- Exercice 2 - un enonce a demontrer  # TODO\n"
+                   "def preuve : Prop := sorry"],
+        "outputs": [{"name": "stdout", "output_type": "stream",
+                     "text": ["ok"]}],
+        "execution_count": 1,
+    }
+
+
 def test_carveout_exemple_credite_nest_pas_signale_exercise_reading():
     """POSITIF : la lecture d'un exemple guide CREDITE n'est pas signalee.
 
@@ -2251,11 +2270,21 @@ def test_carveout_en_tete_credite_par_metadata():
     assert is_exercise_cell(cells[1], cells, 1) is False
 
 
-def test_carveout_code_avant_titre_ne_rattache_pas():
-    """NEGATIF : une cellule de CODE interrompt la remontee vers l'en-tete.
+from check_split_reading_cells import (  # noqa: E402
+    _governing_header,
+    _section_header,
+)
 
-    Le lien de section est rompu : on ne rattache pas une cellule a un titre
-    qui precede une autre section de code.
+
+def test_carveout_code_avant_titre_ne_rattache_pas():
+    """REQUALIFIE (#23397) : deux regles cohabitent, aux perimetres clairs.
+
+    - Regle de LIEN (`_governing_header`), intacte : une cellule de code
+      ROMP le lien -- une cellule placee apres la deuxieme cellule de code
+      d'une section n'est rattachee a AUCUN titre qui la precede.
+    - Regle de SECTION (`_section_header`), perimetre du carve-out : une
+      cellule de code n'interrompt PAS la remontee -- la deuxieme cellule
+      de code d'un exemple CREDITE est blanchie comme la premiere.
     """
     cells = [
         _credited_example_header(),
@@ -2263,6 +2292,92 @@ def test_carveout_code_avant_titre_ne_rattache_pas():
         code("print('autre section')"),
         _student_solution_verbatim(),
     ]
+    # Regle de lien : intacte -- le code rompt le lien, la cellule 3
+    # n'est rattachee a aucun titre.
+    assert _governing_header(cells, 3) is None
+    # Regle de section : la section reste ouverte jusqu'au prochain TITRE
+    # -- l'en-tete credite commande les deux cellules de code de l'exemple.
+    assert _section_header(cells, 3) is cells[0]
+    assert is_exercise_cell(cells[3], cells, 3) is False
+
+
+def test_carveout_section_multi_code_credite_nest_pas_signale():
+    """POSITIF (#23397) : un exemple CREDITE multi-code, bout en bout.
+
+    La lecture posee apres la DEUXIEME cellule de code de l'exemple n'est
+    pas signalee : les deux cellules de code sont sous l'en-tete credite
+    (une cellule de code intermediaire ne ferme pas la section). Echee sous
+    l'ancienne regle de lien : la deuxieme cellule etait hors carve-out et
+    la lecture etait signalee EXERCISE_READING (le faux positif mesure sur
+    le corpus : 15 cellules suivies d'une lecture).
+    """
+    base = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+    )
+    head = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+        _credited_example_header(),
+        _student_solution_verbatim(),
+        code("print('deuxieme code de l'exemple')"),
+        _student_solution_verbatim(),
+        md("### Lecture du resultat : egalite sur les classements\n\n"
+           + "Les deux collections contiennent les memes points."),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == [], findings
+
+
+def test_carveout_section_sans_credit_reste_exercice():
+    """NEGATIF (#23397) : la regle de section SANS credit n'est pas un
+    carve-out.
+
+    La meme forme multi-code sous un `### Exemple` SANS attribution : la
+    remontee est elargie de la meme facon, mais l'en-tete ne dit rien du
+    role du code -- la deuxieme cellule de code reste classee « exercice »
+    et la lecture posee apres elle est signalee.
+    """
+    base = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+    )
+    head = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+        md("### Exemple guide 3 - Comparer deux modeles\n\nSans attribution."),
+        _student_solution_verbatim(),
+        code("print('deuxieme code')"),
+        _student_solution_verbatim(),
+        md("### Lecture du resultat : egalite sur les classements\n\n"
+           + "Les deux collections contiennent les memes points."),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["EXERCISE_READING"], findings
+
+
+def test_carveout_exercice_apres_separateur_reste_exercice():
+    """NEGATIF (#23397) : un TITRE d'exercice pose APRES un separateur `***`
+    ferme la section -- le stub qui le suit reste classe « exercice ».
+
+    C'est le cas reel du body (Lean-13-Kochen-Specker cell 37, Lean-16c-
+    Conway cell 44) : la cellule markdown qui ouvre la section d'exercice
+    porte `***` + ligne vide AVANT le `### Exercice ...`. L'ancienne regle
+    (premiere ligne seulement) ne le voyait pas comme un titre ; la remontee
+    de `_section_header` passait au-dessus et rattachait le stub a l'en-tete
+    credite deux cellules plus haut. Le stub etait blanchi, et la mesure du
+    body le comptait a tort dans les « gagnees ».
+    """
+    cells = [
+        _credited_example_header(),
+        _student_solution_verbatim(),
+        md("***\n\n### Exercice 2 - Un second passage\n\nUn enonce."),
+        _stub_exercise_lean(),
+    ]
+    # Le stub (cellule 3) est sous le TITRE d'exercice de la cellule 2, pas
+    # sous l'en-tete credite de la cellule 0 : la section est fermee par le
+    # titre pose apres le separateur.
+    assert _section_header(cells, 3) is cells[2]
     assert is_exercise_cell(cells[3], cells, 3) is True
 
 

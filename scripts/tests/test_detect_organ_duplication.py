@@ -38,10 +38,10 @@ def _write(tmp_path: Path, name: str, text: str) -> Path:
     return p
 
 
-GREFFE2_PATCH = """diff --git a/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable.ipynb b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable.ipynb
+GREFFE2_PATCH = """diff --git a/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb
 new file mode 100644
 --- /dev/null
-+++ b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable.ipynb
++++ b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb
 @@ -0,0 +1,9 @@
 +{
 + "cells": [

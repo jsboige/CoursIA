@@ -1037,6 +1037,159 @@ _CANVAS_CHECKSUM_JS = """
 }
 """
 
+# --- Critere 2 (#15604) : l'audio est REELLEMENT produit ---------------------
+#
+# Le critere demande une assertion sur le contexte Web Audio, pas une
+# deduction. Un WAV exporte prouve un rendu OFFLINE (OfflineAudioContext),
+# pas que le moteur a joue en direct : un pattern correct exporte un WAV
+# parfaitement valide alors que le lecteur live est reste muet.
+#
+# Deux mesures, prises DANS la page :
+# - l'horloge du contexte LIVE avance entre deux lectures : un contexte
+#   suspendu ou jamais demarre ne bouge pas, quel que soit le pattern ;
+# - le niveau RMS de la sortie, quand on a pu s'y brancher — le script
+#   d'init detourne `connect(destination)` vers un AnalyserNode, faute de
+#   quoi un contexte running mais muet passerait pour un succes.
+#
+# Le script d'init doit etre pose AVANT la navigation : les constructeurs
+# AudioContext sont captures au chargement de la page strudel.
+
+AUDIO_RMS_FLOOR = 1e-4         # -80 dBFS : au-dessus du bruit numerique
+AUDIO_CLOCK_ADVANCE_S = 0.05   # avance minimale de l'horloge pendant la sonde
+AUDIO_PROBE_WINDOW_MS = 250    # fenetre de mesure de l'horloge et du niveau
+
+AUDIO_PROBE_INIT_JS = """
+(() => {
+  if (window.__coursiaAudioProbe) return;
+  const probe = { contexts: [], taps: 0, patched: false };
+  window.__coursiaAudioProbe = probe;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  const wrapCtor = (Orig) => new Proxy(Orig, {
+    construct(target, args) {
+      const ctx = Reflect.construct(target, args, target);
+      probe.contexts.push({ ctx: ctx, analyser: null });
+      return ctx;
+    },
+  });
+  window.AudioContext = wrapCtor(AC);
+  if (window.webkitAudioContext) window.webkitAudioContext = window.AudioContext;
+  if (typeof AudioNode === 'undefined') return;
+  const origConnect = AudioNode.prototype.connect;
+  AudioNode.prototype.connect = function (dest) {
+    const res = origConnect.apply(this, arguments);
+    try {
+      if (dest && dest instanceof AudioDestinationNode) {
+        const rec = probe.contexts.find((r) => r.ctx === dest.context);
+        if (rec) {
+          if (!rec.analyser) {
+            rec.analyser = rec.ctx.createAnalyser();
+            rec.analyser.fftSize = 2048;
+          }
+          origConnect.call(this, rec.analyser);
+          rec.tap = true;
+          probe.taps += 1;
+        }
+      }
+    } catch (e) { /* niveau = mesure best-effort, jamais un motif d'echec */ }
+    return res;
+  };
+  probe.patched = true;
+})();
+"""
+
+AUDIO_PROBE_JS = """
+async (windowMs) => {
+  const state = window.__coursiaAudioProbe;
+  if (!state) return { hasProbe: false, patched: false, contexts: [], taps: 0 };
+  const recs = state.contexts || [];
+  const before = recs.map((r) => r.ctx.currentTime);
+  await new Promise((res) => setTimeout(res, windowMs));
+  const out = [];
+  for (let i = 0; i < recs.length; i++) {
+    const ctx = recs[i].ctx;
+    let rms = null;
+    if (recs[i].analyser) {
+      const buf = new Float32Array(recs[i].analyser.fftSize);
+      recs[i].analyser.getFloatTimeDomainData(buf);
+      let acc = 0;
+      for (let k = 0; k < buf.length; k++) acc += buf[k] * buf[k];
+      rms = Math.sqrt(acc / buf.length);
+    }
+    out.push({
+      state: ctx.state,
+      sampleRate: ctx.sampleRate,
+      clockAdvance: Math.max(0, ctx.currentTime - before[i]),
+      rms: rms,
+      tapped: !!recs[i].analyser,
+    });
+  }
+  return { hasProbe: true, patched: !!state.patched, contexts: out, taps: state.taps || 0 };
+}
+"""
+
+
+def audio_verdict(probe: Optional[Dict[str, object]]) -> Tuple[bool, str]:
+    """Juge une sonde Web Audio et rend ``(produit, motif)``.
+
+    Le motif accompagne TOUJOURS le verdict : un « non » sans sa cause
+    mesurable ne se diagnostique pas, et un « oui » muet ne prouve rien.
+    Les cas de refus, dans l'ordre ou ils se tranchent :
+
+    - sonde absente (script d'init non pose, page rechargee hors du
+      contexte Playwright) — rien n'a ete mesure, ce n'est pas un succes ;
+    - aucun ``AudioContext`` cree — le pattern n'a jamais demarre ;
+    - aucun contexte a l'etat ``running`` — play non effectif, ou contexte
+      suspendu faute de user gesture ;
+    - horloge figee — le contexte tourne mais le moteur ne produit rien ;
+    - niveau mesure et quasi nul — le graphe tourne a vide.
+    """
+    if not isinstance(probe, dict) or not probe.get("hasProbe"):
+        return False, (
+            "sonde Web Audio absente de la page -- script d'init non pose ou "
+            "page rechargee hors du contexte Playwright : rien n'a ete mesure"
+        )
+    contexts = probe.get("contexts") or []
+    if not contexts:
+        return False, (
+            "aucun AudioContext cree dans la page -- le pattern n'a jamais "
+            "demarre (play non clique, ou page qui n'a pas charge le REPL)"
+        )
+    running = [c for c in contexts if c.get("state") == "running"]
+    if not running:
+        states = ", ".join(sorted({str(c.get("state")) for c in contexts}))
+        return False, (
+            f"aucun AudioContext a l'etat 'running' ({states}) -- clic play non "
+            "effectif ou contexte suspendu faute de user gesture"
+        )
+    advance = max(float(c.get("clockAdvance") or 0.0) for c in running)
+    if advance < AUDIO_CLOCK_ADVANCE_S:
+        return False, (
+            f"horloge audio figee ({advance:.3f} s d'avance sur "
+            f"{AUDIO_PROBE_WINDOW_MS} ms) -- contexte running mais moteur arrete"
+        )
+    levels = [
+        float(c["rms"]) for c in running if isinstance(c.get("rms"), (int, float))
+    ]
+    if levels:
+        level = max(levels)
+        if level < AUDIO_RMS_FLOOR:
+            return False, (
+                f"sortie audio quasi silencieuse (RMS {level:.2e} < "
+                f"{AUDIO_RMS_FLOOR:.0e} sur {len(levels)} contexte(s) branche(s)) "
+                "-- horloge en marche, aucun signal"
+            )
+        return True, (
+            f"audio produit : {len(running)} contexte(s) running, horloge "
+            f"+{advance:.3f} s, RMS {level:.4f}"
+        )
+    return True, (
+        f"audio produit : {len(running)} contexte(s) running, horloge "
+        f"+{advance:.3f} s (niveau non mesure : aucun noeud branche sur la "
+        "destination, la mesure porte sur l'horloge seule)"
+    )
+
+
 # Recorder in-page : captureStream(30) sur le canvas REPL + MediaRecorder vp9,
 # retourne le webm en base64. Le canvas doit ETRE anime (visuals declares) —
 # captureStream n'emets aucune frame sur un canvas immobile (mesure c.580 :
@@ -1395,7 +1548,9 @@ def capture_repl_session(
     2. clic ``play`` (geste trusted, headed requis : un clic JS n'est pas
        un user gesture et l'AudioContext live reste suspendu) ;
     3. les visuals declares (``.pianoroll()``/``.scope()`` dans le code)
-       animent le canvas — gate par checksum avant l'enregistrement ;
+       animent le canvas — gate par checksum avant l'enregistrement ; et
+       l'``AudioContext`` live tourne reellement (critere 2) : horloge qui
+       avance + niveau RMS mesure, ``RuntimeError`` sinon ;
     4. capture video : ``capture_mode="page"`` (DEFAUT, fix critere 5a) —
        ``record_video`` du contexte Playwright filme la page ENTIERE
        (editeur de code a gauche + canvas a droite, disposition native du
@@ -1415,7 +1570,8 @@ def capture_repl_session(
 
     Retourne un dict : ``video_webm``, ``audio_wav``, ``final_mp4``,
     ``video_bytes``, ``wav_bytes``, ``mp4_bytes``, ``cycles``,
-    ``capture_mode``.
+    ``capture_mode``, ``audio_probe`` (mesure brute du contexte Web Audio),
+    ``audio_reason`` (motif du verdict, lisible dans les logs de session).
     """
     import base64
 
@@ -1433,6 +1589,8 @@ def capture_repl_session(
     final_mp4 = output_dir / "capture_final.mp4"
     url = build_repl_url(pattern)
     trim_start: Optional[float] = None
+    audio_probe: Dict[str, object] = {}
+    audio_reason = ""
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=headless)
@@ -1451,6 +1609,9 @@ def capture_repl_session(
             context = None
             page = browser.new_page(viewport={"width": 1280, "height": 1024})
             video = None
+        # Sonde audio : posee AVANT la navigation, les constructeurs
+        # AudioContext sont captures au chargement de la page strudel.
+        page.add_init_script(AUDIO_PROBE_INIT_JS)
         try:
             page.goto(url)
             page.wait_for_timeout(5000)
@@ -1464,6 +1625,18 @@ def capture_repl_session(
                 raise RuntimeError(
                     "canvas REPL immobile apres play — visuals absents du "
                     "pattern (compose_strudel(visuals=True)) ou play non effectif"
+                )
+
+            # Critere 2 (#15604) : l'audio est REELLEMENT produit. Le WAV
+            # exporte plus bas ne prouve RIEN sur ce point -- il vient d'un
+            # rendu offline du moteur et sort identique meme si la lecture
+            # live est muette. La mesure porte donc sur le contexte live.
+            audio_probe = page.evaluate(AUDIO_PROBE_JS, AUDIO_PROBE_WINDOW_MS)
+            audio_ok, audio_reason = audio_verdict(audio_probe)
+            if not audio_ok:
+                raise RuntimeError(
+                    f"audio non produit apres play (critere 2, #15604) : "
+                    f"{audio_reason} — sonde : {audio_probe}"
                 )
 
             if capture_mode == "page":
@@ -1528,6 +1701,8 @@ def capture_repl_session(
         "cycles": cycles,
         "capture_mode": capture_mode,
         "trim_start": trim_start,
+        "audio_probe": audio_probe,
+        "audio_reason": audio_reason,
     }
 
 

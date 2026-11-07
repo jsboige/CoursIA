@@ -111,6 +111,16 @@ def find_lean_project(project_name: str) -> Path:
             candidate = current / project_name
             if candidate.exists() and (candidate / "lakefile.lean").exists():
                 return candidate.resolve()
+            # Descente en sous-serie (#23164) : un lake peut vivre dans un
+            # sous-dossier de la serie (GROTH/grothendieck_lean, GOL/conway_lean) ;
+            # le walker remonte par les parents, il descend aussi d'un niveau.
+            try:
+                for child in sorted(current.iterdir()):
+                    sub = child / project_name
+                    if sub.exists() and (sub / "lakefile.lean").exists():
+                        return sub.resolve()
+            except OSError:
+                pass
             current = current.parent
             if current == current.parent:
                 break
