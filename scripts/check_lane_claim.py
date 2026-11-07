@@ -4134,20 +4134,26 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
     calls["pool"] = 1
     if pool_error:
         errors.append(f"pool: {pool_error}")
-    targets = [
-        {
+    targets: list[dict] = []
+    for epic, body in capped:
+        comments = [c for c in (body.get("comments") or [])
+                    if isinstance(c, dict)]
+        # Date ET marqueur sortent du MEME evenement (`picker.claim_visit`) :
+        # la cause du plafond nomme ce que la lane a fait (prise, rendu de
+        # main, livraison...) au lieu d'appeler « claim » un `[RELEASED]`
+        # (#22687 constat 1). Deux appels separes pourraient designer deux
+        # evenements differents.
+        stamp, marker = picker.claim_visit(comments)
+        targets.append({
             "number": epic,
             "title": body.get("title"),
             "labels": body.get("labels"),
             # `klass` est la cle que lit `umbrella_visit_cause` ; `_is_umbrella_issue`
             # vient de la trancher, donc la valeur est celle de l'organe.
             "klass": "umbrella",
-            "last_claim_stamp": picker.claim_visit_stamp(
-                [c for c in (body.get("comments") or []) if isinstance(c, dict)]
-            ),
-        }
-        for epic, body in capped
-    ]
+            "last_claim_stamp": stamp,
+            "last_claim_marker": marker,
+        })
     if pool:
         # N ne compte pas parmi les filles visitees (demande explicite).
         daughters = [c for c in pool if c.get("number") != number]
