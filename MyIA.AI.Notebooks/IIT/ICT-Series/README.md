@@ -82,7 +82,7 @@ Les **traces pré-extraites** (fixtures `.npz` dans `traces/`) supportent les no
 
 Quand un palier de consolidation regroupe plusieurs carnets autour d'un même sujet, ils descendent dans une **sous-série**, et cette sous-série porte un nom. La convention est `ICT-<NN>-<Sujet>/` : `<NN>` est le numéro que porte **aujourd'hui** le carnet de tête dans la série principale — celui que le lecteur voit sur la marche de l'escalier — et `<Sujet>` reprend le sujet de ce carnet de tête, sans le suffixe `-Python`. Un numéro nu n'est pas un nom de répertoire : il sert d'index dans un ledger progressif, jamais de substitut au sujet qu'on redescend ([#22949](https://github.com/jsboige/CoursIA/issues/22949)). Toute sous-série future naît nommée.
 
-Chaque marche ci-dessous descend vers le carnet de tête de sa sous-série ; en retour, la convention est que chaque sous-série remonte vers cette page depuis son dernier carnet. Trois des quatre la tiennent déjà (12e, 14b, 19b) ; ICT-15 est la dernière à ne pas l'avoir posée — sa navigation est interne (15l → 15j), sans lien vers ce README.
+Chaque marche ci-dessous descend vers le carnet de tête de sa sous-série ; en retour, la convention est que chaque sous-série remonte vers cette page depuis son dernier carnet. Les quatre la tiennent : 12e, 14b, 19b et 15l.
 
 | Sous-série | Ce qu'on y redescend | Carnets |
 |---|---|---|
