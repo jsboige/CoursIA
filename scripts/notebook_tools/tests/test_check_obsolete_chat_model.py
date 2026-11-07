@@ -181,6 +181,16 @@ def test_raw_http_query_and_unrelated_payload_do_not_create_chat_finding():
     assert report["unresolved"] == []
 
 
+def test_urllib_non_string_encode_argument_stays_unresolved():
+    report = _analyze(nb(code(
+        'payload = {"model": "gpt-4o-mini"}\n'
+        'urllib.request.urlopen(urllib.request.Request('
+        '"https://example.test/v1/chat/completions", '
+        'data=json.dumps(payload).encode(123)))')))
+    assert report["findings"] == []
+    assert len(report["unresolved"]) == 1
+
+
 def test_function_default_param_flagged():
     """04-1 : defaut de parametre consomme par l'appel chat."""
     report = _analyze(nb(code(

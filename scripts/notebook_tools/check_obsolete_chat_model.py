@@ -705,6 +705,7 @@ class NotebookScanner:
                     and (not payload_node.args
                          or (len(payload_node.args) == 1
                              and isinstance(payload_node.args[0], ast.Constant)
+                             and isinstance(payload_node.args[0].value, str)
                              and payload_node.args[0].value.lower()
                              in ("utf-8", "utf8")))):
                 payload_node = payload_node.func.value.args[0]
