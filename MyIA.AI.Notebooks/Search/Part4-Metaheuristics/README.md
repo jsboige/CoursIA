@@ -139,7 +139,7 @@ La campagne oppose la bibliothèque à **mealpy 3.0.2** (Python/NumPy) sur un pr
 
 ## Configuration requise
 
-Le kernel `dotnet-interactive` **charge nativement les assemblies `net9.0`** du fork : vérifié sur la version épinglée du dépôt (**1.0.617701**, cf. [kernels-runtime.md](../../../docs/reference/kernels-runtime.md)) avec MGS-01 et MGS-06 sous Linux, et auparavant sur 1.0.707101 avec MGS-6, MGS-18, MGS-19 et MGS-21. Tous les chargements `#r` sont relatifs (`../MetaGeneticSharp/src/...`) et visent des DLL `net9.0` produites par un `dotnet build` du fork :
+Le kernel `dotnet-interactive` **charge nativement les assemblies `net9.0`** du fork : vérifié sur **1.0.617701**, alors version épinglée du dépôt (canon actuel : [kernels-runtime.md](../../../docs/reference/kernels-runtime.md)), avec MGS-01 et MGS-06 sous Linux, et auparavant sur 1.0.707101 avec MGS-6, MGS-18, MGS-19 et MGS-21. Tous les chargements `#r` sont relatifs (`../MetaGeneticSharp/src/...`) et visent des DLL `net9.0` produites par un `dotnet build` du fork :
 
 - `src/MetaGeneticSharp.Domain/bin/Debug/net9.0/` — `MetaGeneticSharp.Domain`, `Infrastructure` et `GeneticSharp` ;
 - `src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/` — les mêmes, plus `MetaGeneticSharp.Extensions`, SkiaSharp et `System.Drawing.Common`, pour les notebooks graphiques ;
@@ -148,11 +148,11 @@ Le kernel `dotnet-interactive` **charge nativement les assemblies `net9.0`** du 
 Règle : pas de contournement, installer l'environnement complet :
 
 ```bash
-# 1. .NET SDK 9.0 (cible du fork)
+# 1. .NET SDK 9.0 (cible du fork) et .NET 10 (hôte de dotnet-interactive 1.0.712001)
 dotnet --version
 
 # 2. dotnet-interactive, à la version épinglée du dépôt
-dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 
 # 3. Sous-module, depuis la racine du dépôt (--recursive : il contient GeneticSharp), puis build

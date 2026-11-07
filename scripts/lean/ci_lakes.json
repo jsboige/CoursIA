@@ -201,7 +201,7 @@
       "lake": "decisiontheory",
       "project-path": "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean",
       "display-name": "decision_theory_lean",
-      "sorry-baseline": "5",
+      "sorry-baseline": "4",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
       "axiom-fail-on-sorry": "false",
