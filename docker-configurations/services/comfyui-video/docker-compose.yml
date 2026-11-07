@@ -27,6 +27,13 @@ services:
     ports:
       - "127.0.0.1:${COMFYUI_VIDEO_PORT:-8189}:8188"
 
+    # Maintenance#303 bounds: mem_limit = memswap_limit = 12g (swap disabled),
+    # pids_limit 512. Measured 2026-11-07: 834 MiB idle / 63 PIDs; video
+    # generation peaks well above idle but stays under 12g on this host.
+    mem_limit: 12g
+    memswap_limit: 12g
+    pids_limit: 512
+
     volumes:
       - type: bind
         source: ${COMFYUI_WORKSPACE_PATH:-./workspace}
@@ -129,6 +136,11 @@ services:
     working_dir: /app
 
     command: ["python", "comfyui_idle_monitor.py"]
+
+    # Maintenance#303 bounds (sidecar): measured 17 MiB / 2 PIDs.
+    mem_limit: 256m
+    memswap_limit: 256m
+    pids_limit: 64
 
     depends_on:
       comfyui-video:
