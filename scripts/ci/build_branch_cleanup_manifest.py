@@ -53,9 +53,9 @@ def sh(args, cwd=None, check=True):
     return p.stdout or ""
 
 
-def branches_distantes(repo: Path) -> dict[str, str]:
+def branches_distantes(repo: Path, remote: str = "origin") -> dict[str, str]:
     distant = {}
-    for ligne in sh(["git", "ls-remote", "--heads", "origin"], cwd=str(repo)).splitlines():
+    for ligne in sh(["git", "ls-remote", "--heads", remote], cwd=str(repo)).splitlines():
         sha, ref = ligne.split("\t")
         distant[ref[len("refs/heads/"):]] = sha
     return distant
@@ -64,32 +64,70 @@ def branches_distantes(repo: Path) -> dict[str, str]:
 def repli_branche_par_defaut(main_ref: str) -> str:
     """Le nom de branche deduit de `main_ref` (`origin/main` -> `main`).
 
-    Repli employe quand le remote ne publie pas `refs/remotes/origin/HEAD`.
+    Repli employe quand ni le remote ni le clone local ne nomment la branche
+    par defaut.
     """
+    for prefixe in ("refs/remotes/", "refs/heads/"):
+        if main_ref.startswith(prefixe):
+            main_ref = main_ref[len(prefixe):]
+            break
+    # `origin/main` -> `main` : le premier segment est le nom du remote.
     return main_ref.split("/", 1)[1] if "/" in main_ref else main_ref
 
 
-def branche_par_defaut(repo: Path, main_ref: str) -> str:
+def branche_par_defaut_distant(repo: Path, remote: str) -> str:
+    """La branche par defaut, lue sur le remote lui-meme.
+
+    `git ls-remote --symref <remote> HEAD` repond une ligne
+    `ref: refs/heads/<branche>` suivie de la tete. C'est la source
+    autoritative : elle repond meme quand le clone local n'a pas de
+    `refs/remotes/<remote>/HEAD`.
+    """
+    p = subprocess.run(
+        ["git", "ls-remote", "--symref", remote, "HEAD"],
+        cwd=str(repo), capture_output=True, text=True, encoding="utf-8",
+        errors="replace")
+    for ligne in (p.stdout or "").splitlines():
+        # La ligne reelle est `ref: refs/heads/<branche>\tHEAD` : le nom de
+        # la branche s'arrete a la tabulation.
+        ref = ligne.split("\t", 1)[0].strip()
+        if ref.startswith("ref: "):
+            ref = ref[len("ref: "):].strip()
+        if ref.startswith("refs/heads/"):
+            return ref[len("refs/heads/"):]
+    return ""
+
+
+def branche_par_defaut(repo: Path, main_ref: str, remote: str = "origin") -> str:
     """Le nom de la branche par defaut du depot.
 
-    Deux sources, dans cet ordre :
+    Trois sources, dans cet ordre :
 
-    1. `git symbolic-ref refs/remotes/origin/HEAD` -- la reference
-       symbolique que le remote publie pour sa branche par defaut ;
-    2. a defaut, le nom de `main_ref` deduit de sa forme habituelle
+    1. `git ls-remote --symref <remote> HEAD` -- le remote nomme lui-meme
+       sa branche par defaut ;
+    2. `git symbolic-ref refs/remotes/<remote>/HEAD` -- la reference
+       symbolique locale. Le prefixe a retirer est
+       `refs/remotes/<remote>/` : le nom du remote fait partie du ref, et
+       le conserver produirait `origin/main` au lieu de `main` -- c'est-a-dire
+       un nom qui ne correspond a aucune branche du lot ;
+    3. a defaut, le nom de `main_ref` deduit de sa forme habituelle
        (`origin/main` -> `main`).
 
     Cette branche ne doit JAMAIS entrer dans le lot de suppression : elle
     est trivially un ancetre de `main`, et le classifieur la retiendrait donc
     comme candidate alors que la supprimer detruit le depot.
     """
+    nom = branche_par_defaut_distant(repo, remote)
+    if nom:
+        return nom
+    prefixe = f"refs/remotes/{remote}/"
     p = subprocess.run(
-        ["git", "symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"],
+        ["git", "symbolic-ref", "--quiet", f"refs/remotes/{remote}/HEAD"],
         cwd=str(repo), capture_output=True, text=True, encoding="utf-8",
         errors="replace")
     sortie = (p.stdout or "").strip()
-    if p.returncode == 0 and sortie:
-        return sortie[len("refs/remotes/"):] if sortie.startswith("refs/remotes/") else sortie
+    if p.returncode == 0 and sortie.startswith(prefixe):
+        return sortie[len(prefixe):]
     return repli_branche_par_defaut(main_ref)
 
 
@@ -164,13 +202,14 @@ def main() -> int:
     parseur.add_argument("--out", required=True, help="fichier TSV a ecrire")
     parseur.add_argument("--gzip", action="store_true", help="compresser la sortie")
     parseur.add_argument("--main", default="origin/main")
+    parseur.add_argument("--remote", default="origin")
     args = parseur.parse_args()
 
     repo = Path(args.repo)
-    distant = branches_distantes(repo)
+    distant = branches_distantes(repo, args.remote)
     par_branche = etats_par_branche(repo)
     commits_main = commits_de_main(repo, args.main)
-    defaut = branche_par_defaut(repo, args.main)
+    defaut = branche_par_defaut(repo, args.main, args.remote)
 
     classes: dict[str, tuple] = {}
     inconnus: list[str] = []

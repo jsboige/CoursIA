@@ -30,6 +30,8 @@ from __future__ import annotations
 import os
 import sys
 import unittest
+from pathlib import Path
+from unittest import mock
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 # scripts/ci/tests/ -> scripts/ci/ -> scripts/ -> racine du depot
@@ -190,10 +192,11 @@ class TestBrancheParDefautProtegee(unittest.TestCase):
         self.assertNotIn("A", organ.CLASSES_CANDIDATES)
 
     def test_le_nom_de_la_branche_par_defaut_est_deduit_du_remote(self):
-        """`refs/remotes/origin/HEAD` fait foi ; `main_ref` est le repli."""
+        """Le remote fait foi ; `main_ref` est le repli."""
         source = organ.branche_par_defaut.__doc__ or ""
         self.assertIn("symbolic-ref", source)
-        self.assertIn("refs/remotes/origin/HEAD", source)
+        self.assertIn("ls-remote", source)
+        self.assertIn("refs/remotes/<remote>/HEAD", source)
 
     def test_un_repli_sans_symbole_deduit_le_nom_de_main_ref(self):
         """Hors d'un clone, `origin/main` donne `main`."""
@@ -201,6 +204,114 @@ class TestBrancheParDefautProtegee(unittest.TestCase):
 
     def test_un_repli_sans_prefixe_renvoie_la_ref_entiere(self):
         self.assertEqual(organ.repli_branche_par_defaut("main"), "main")
+
+    def test_un_repli_sur_une_ref_pleine_retire_le_prefixe(self):
+        """`refs/remotes/origin/main` donne `main`, comme `refs/heads/main`."""
+        self.assertEqual(
+            organ.repli_branche_par_defaut("refs/remotes/origin/main"), "main")
+        self.assertEqual(
+            organ.repli_branche_par_defaut("refs/heads/main"), "main")
+
+
+class TestResolutionDeLaBrancheParDefaut(unittest.TestCase):
+    """Le nom resolu doit etre un NOM DE BRANCHE, pas une ref.
+
+    Defaut refute par le run de production du 07/11/2026 : le prefixe
+    `refs/remotes/` etait tranche a la volee, ce qui laissait le nom du
+    remote dans le resultat (`origin/main` au lieu de `main`). La branche
+    `main` n'etait donc jamais reconnue, et le manifeste la classait E --
+    c'est-a-dire CANDIDATE. Un passage automatise l'aurait supprimee.
+    """
+
+    @staticmethod
+    def _run_simule(reponses: dict):
+        """Un `subprocess.run` simule, repondant par motif de commande."""
+        def faux_run(args, **kwargs):
+            sortie = reponses.get(args[0], "")
+            class Reponse:
+                returncode = 0 if sortie else 1
+                stdout = sortie
+                stderr = ""
+            return Reponse()
+        return faux_run
+
+    def test_le_nom_du_remote_est_retire_du_ref_symbolique(self):
+        """`refs/remotes/origin/main` rend `main`, jamais `origin/main`."""
+        faux = self._run_simule({
+            "git": "refs/remotes/origin/main\n",
+        })
+        with mock.patch.object(organ.subprocess, "run", new=faux):
+            nom = organ.branche_par_defaut(Path("."), "origin/main", "origin")
+        self.assertEqual(nom, "main")
+        self.assertNotEqual(nom, "origin/main")
+
+    def test_le_remote_nomme_lui_meme_sa_branche_par_defaut(self):
+        """`git ls-remote --symref origin HEAD` est la source autoritative.
+
+        La ligne reelle est `ref: refs/heads/<branche>\\tHEAD` : le nom de la
+        branche s'arrete a la tabulation. Une ligne sans tabulation passerait
+        le test et échouerait en production.
+        """
+        faux = self._run_simule({
+            "git": "ref: refs/heads/main\tHEAD\n988d7412e549c15ace5513b8a746326e5d1fb6eb\tHEAD\n",
+        })
+        with mock.patch.object(organ.subprocess, "run", new=faux):
+            nom = organ.branche_par_defaut(Path("."), "origin/main", "origin")
+            direct = organ.branche_par_defaut_distant(Path("."), "origin")
+        self.assertEqual(nom, "main")
+        # La source autoritative, lue seule, rend le nom NU : ni le prefixe
+        # `ref: `, ni la tabulation qui suit.
+        self.assertEqual(direct, "main")
+
+    def test_le_remote_non_nomme_replique_sur_le_ref_symbolique(self):
+        """Sans reponse du remote, le ref symbolique local suffit."""
+        def faux_run(args, **kwargs):
+            class Reponse:
+                returncode = 0
+                stdout = "refs/remotes/origin/main\n"
+                stderr = ""
+            if "--symref" in args:
+                Reponse.returncode = 1
+                Reponse.stdout = ""
+            return Reponse()
+        with mock.patch.object(organ.subprocess, "run", new=faux_run):
+            nom = organ.branche_par_defaut(Path("."), "origin/main", "origin")
+        self.assertEqual(nom, "main")
+
+    def test_hors_de_toute_source_le_repli_donne_main(self):
+        """Ni remote ni ref symbolique : le repli sur `main_ref`."""
+        def faux_run(args, **kwargs):
+            class Reponse:
+                returncode = 1
+                stdout = ""
+                stderr = ""
+            return Reponse()
+        with mock.patch.object(organ.subprocess, "run", new=faux_run):
+            nom = organ.branche_par_defaut(Path("."), "origin/main", "origin")
+        self.assertEqual(nom, "main")
+
+    def test_le_resolu_est_toujours_un_nom_de_branche_du_lot(self):
+        """Le nom resolu doit exister parmi les branches distantes.
+
+        C'est le test qui aurait attrape le defaut : `origin/main` n'est
+        dans le lot sous aucun nom, et `main` si.
+        """
+        def faux_run(args, **kwargs):
+            class Reponse:
+                returncode = 0
+                stdout = "refs/remotes/origin/main\n"
+                stderr = ""
+            if "--symref" in args:
+                Reponse.returncode = 1
+                Reponse.stdout = ""
+            return Reponse()
+        with mock.patch.object(organ.subprocess, "run", new=faux_run):
+            nom = organ.branche_par_defaut(Path("."), "origin/main", "origin")
+        self.assertIn(nom, {"main", "master", "trunk"})
+
+
+class TestCasTrivialDeLaBrancheParDefaut(unittest.TestCase):
+    """Le cas trivial : la branche par defaut est un ancetre d'elle-meme."""
 
     def test_la_branche_par_defaut_est_classee_p_avant_toute_mesure(self):
         """Reproduit l'ordre du classement : P l'emporte sur D.
