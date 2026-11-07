@@ -153,3 +153,22 @@ def test_tag_verdict_borne():
     trace, verdict = cb.tag_evolve("1" * 50, max_steps=50)
     assert verdict in ("unbounded", "cycle", "halted")
     assert len(trace) <= 51
+
+
+# ---------------------------------------------------------------------------
+# parse_ski : jetons B et C (decomposes en S/K, comme le promet le docstring)
+# ---------------------------------------------------------------------------
+
+
+def test_parse_ski_b_decompose():
+    """B se decompose en S/K : B f g x se reduit en f (g x), pas en Var libre."""
+    nf, steps, _ = cb.reduce_term(cb.parse_ski("B f g x"))
+    assert cb.to_str(nf) == "f (g x)"
+    assert steps > 0
+
+
+def test_parse_ski_c_decompose():
+    """C se decompose en S/K : C f x y se reduit en f y x, pas en Var libre."""
+    nf, steps, _ = cb.reduce_term(cb.parse_ski("C f x y"))
+    assert cb.to_str(nf) == "f y x"
+    assert steps > 0

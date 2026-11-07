@@ -110,6 +110,12 @@ I = Var("I")
 # Le terme omega : S I I (S I I) se reduit en lui-meme -- divergence pure.
 OMEGA = App(App(App(S, I), I), App(App(S, I), I))
 
+# Composition et echange, decomposes en S/K (le docstring de parse_ski les
+# promet) : B f g x = f (g x) et C f x y = f y x. Les decompositions sont
+# les formes closes standard en S/K, verifiees par les tests dedies.
+B = App(App(S, App(K, S)), K)
+C = App(App(S, App(App(S, App(K, B)), S)), App(K, K))
+
 
 def parse_ski(text: str) -> Term:
     """Parse une chaine d'applications ``"S K K x"`` (association a gauche).
@@ -166,12 +172,17 @@ def parse_ski(text: str) -> Term:
 
 
 def _atom(tok: str) -> Term:
+    """Mappe un jeton a son terme ; ``B`` et ``C`` se decomposent en S/K."""
     if tok == "S":
         return S
     if tok == "K":
         return K
     if tok == "I":
         return I
+    if tok == "B":
+        return B
+    if tok == "C":
+        return C
     return Var(tok)
 
 
