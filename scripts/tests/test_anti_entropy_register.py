@@ -62,10 +62,22 @@ PADDING_REFERENCE = 776.0
 # lui-meme, et l'ecart 38 -> 39 vient de l'ARBRE, pas de l'instrument --
 # mesure sur le meme arbre, l'ancien instrument (d818b008b) rend 39 lui
 # aussi.
-PADDING_REFERENCE_REBASE = 39.0
-# L'identite de l'instrument au moment du rebasage. Troisieme rebasage
-# (2026-11-02) : le correctif UTF-8 a touche l'instrument -- valeur
-# inchangee (39) sur le meme arbre, l'encodage ne classe pas les carnets.
+# Quatrieme rebasage (2026-11-05, #24678) : la GRANDEUR change, pas
+# seulement l'instrument -- `_index_zero_padded` lit la lettre d'accretion,
+# donc 14 carnets zero-pades sortent du bucket `ambigu` (40 -> 26, mesure
+# sur l'arbre 536cf434700). La reference ne se compare donc PAS aux points
+# precedents (39, 40) : ils restent dans `historique`, avec l'identite de
+# l'instrument qui les a produits.
+# Cinquieme rebasage (2026-11-06, #23655) : instrument seul, comme le
+# troisieme -- le correctif `_kernelspecs_at` ne change pas la grandeur
+# (26 avant et apres, mesure sur l'arbre a284df8293f) : pas de point de
+# serie neuf, seule l'identite de l'instrument change.
+PADDING_REFERENCE_REBASE = 26.0
+# Fixture de sha pour les tests qui simulent `git log` : ce n'est plus une
+# identite attendue du registre (c'etait le faux vert de #24678 -- la
+# constante de test et la donnee etaient la meme chaine, donc le test ne
+# pouvait pas voir la derive de sha qui a rendu l'entree `INSTRUMENT
+# ILLEGIBLE` sur `main`).
 INSTRUMENT_PADDING = ("scripts/notebook_tools/inventory_notebook_names.py"
                        "@735ada5ba11cd900dee9649c71fedb38fd6fe52c")
 
@@ -384,12 +396,19 @@ def test_la_reference_du_padding_est_celle_de_l_issue():
     `comparables`), et c'est ce qui produisait le verdict « AVANCE »
     fabrique sur l'entree « padding et nommage »."""
     e = entree("padding-nommage")
-    assert e.reference.source == "issue #23175"
-    assert e.reference.mesure_le == "2026-11-02"
+    assert e.reference.source.startswith("issue #23655")
+    assert e.reference.mesure_le == "2026-11-06"
     assert e.reference.valeur == PADDING_REFERENCE_REBASE
-    assert e.reference.instrument == INSTRUMENT_PADDING
-    # Et la reference rebasee est comparable a l'instrument courant.
-    assert aer.comparables(INSTRUMENT_PADDING, e.reference.instrument)
+    # Le 4e rebasage change la grandeur : les points d'avant le correctif
+    # restent dans la serie, ils ne servent plus de reference.
+    assert e.reference.valeur not in {39.0, 40.0}
+    assert {r.valeur for r in e.historique} >= {39.0, 40.0}
+    # Et la reference rebasee est comparable a l'instrument courant : par le
+    # sha, par la SOURCE du script ou par la date -- quel que soit le chemin
+    # que la fusion laissera (une fusion en squash reecrit le sha sans
+    # toucher au contenu, c'est le cas qui rendait la comparaison morte).
+    assert aer.reference_comparable(
+        e.commande, aer.identite_instrument(e.commande), e.reference)
 
 
 def test_le_cliquet_lit_l_etat_des_verdicts():
@@ -1186,13 +1205,24 @@ def test_l_identite_derivee_a_la_date_est_celle_des_points_declares():
     un ancetre, ou qui porte un autre script, est un mensonge : c'est ce
     que le controle refuse.
 
+    La derivation est epinglee a la FIN du jour du point (`T23:59:59`), la
+    meme convention que `reference_comparable`. Sans cette epingle, git
+    remplit l'heure manquante avec celle de l'horloge : une serie dont
+    deux points tombent le meme jour a des heures differentes passait le
+    matin et echouait le soir, sur le meme arbre et sans qu'aucune donnee
+    ait bouge. Mesure : au 2026-10-31 la serie porte 38 (instrument
+    `d818b008`, 20:42 la veille) puis 39 (instrument `6144b71e`, 05:18) ;
+    derivee a `01:00` elle rend `d818b008`, donc 39 n'a plus d'ancetre et
+    le controle rougit a tort. Epinglee a `23:59:59`, elle rend
+    `6144b71e` et chaque point retrouve son producteur.
+
     Le test est ignore sur un clone superficiel : l'historique de
     l'instrument n'y existe pas, et une identite non etablie ne prouve
     rien (c'est le principe que l'organe applique partout ailleurs).
     """
     e = _entree_padding()
     for h in e.historique:
-        derivee = aer.identite_instrument_a(e.commande, h.mesure_le)
+        derivee = aer.identite_instrument_a(e.commande, h.mesure_le + "T23:59:59")
         if not derivee:
             pytest.skip("historique de l'instrument indisponible "
                         "(clone superficiel)")
@@ -1341,3 +1371,68 @@ def test_l_instrument_reel_rend_encore_une_valeur():
     valeur, erreur, _ = aer.mesurer(variante)
     assert erreur == "", f"l instrument reel ne rend plus de valeur : {erreur}"
     assert valeur is not None and valeur >= 0
+
+
+# ---------------------------------------------------------------------------
+# Comparabilite par SOURCE, pas par sha (#24678)
+# ---------------------------------------------------------------------------
+#
+# L'egalite des shas est un proxy de « meme instrument » qui se casse a
+# chaque fusion en squash : la reference declaree avec le sha de sa branche
+# n'est plus jamais comparable une fois mergee. Mesure du 2026-11-05 sur
+# `main` : `padding-nommage` rendait `INSTRUMENT ILLEGIBLE` alors que
+# l'instrument n'avait pas change de contenu, et le test du registre restait
+# vert parce qu'il recopiait la meme identite que la donnee (faux vert).
+
+def test_instrument_inchange_compare_la_source_pas_le_sha(monkeypatch):
+    """Deux shas differents, meme contenu de script => meme instrument."""
+    monkeypatch.setattr(aer, "_blob_du_script",
+                        lambda identite: {"a@1": "blob-x", "a@2": "blob-x",
+                                          "a@3": "blob-y"}.get(identite, ""))
+    assert aer.instrument_inchange("a@2", "a@1") is True
+    assert aer.instrument_inchange("a@3", "a@1") is False
+    # Aucune presomption : un blob illisible ne rend pas « comparable ».
+    assert aer.instrument_inchange("a@9", "a@1") is False
+    assert aer.instrument_inchange("", "a@1") is False
+
+
+def test_reference_comparable_par_la_fin_du_jour_de_la_reference(monkeypatch):
+    """Le sha de branche disparu apres fusion est retrouve par la DATE.
+
+    Troisieme voie de `reference_comparable` : l'instrument tel qu'il etait
+    dans `main` a la fin du jour de la reference.
+    """
+    reference = aer.Reference(26.0, "2026-11-05", "test", instrument="a@branche")
+    monkeypatch.setattr(aer, "_blob_du_script", lambda identite: "")
+    monkeypatch.setattr(aer, "identite_instrument_a",
+                        lambda commande, au: "a@fusion")
+    monkeypatch.setattr(aer, "instrument_inchange",
+                        lambda identite, ref: identite == "a@fusion")
+    assert aer.reference_comparable(("python", "x.py"), "a@fusion", reference) is True
+    assert aer.reference_comparable(("python", "x.py"), "a@autre", reference) is False
+
+
+def test_un_instrument_modifie_dans_l_arbre_de_travail_est_d_identite_inconnue(monkeypatch):
+    """Le sha vient de `origin/main`, mais le code qui TOURNE est l'arbre de
+    travail : un script modifie non commite n'est pas ce sha. Le declarer
+    identique a fabrique un `AVANCE` 39 -> 26 le 2026-11-05 (#24678)."""
+    def faux_run(cmd, timeout=600):
+        if "log" in cmd:
+            return 0, "deadbeef\n", ""
+        if "status" in cmd:
+            return 0, " M scripts/notebook_tools/inventory_notebook_names.py\n", ""
+        return 1, "", ""
+    monkeypatch.setattr(aer, "_run", faux_run)
+    assert aer.identite_instrument(
+        ("python", "scripts/notebook_tools/inventory_notebook_names.py")) == ""
+
+    def propre(cmd, timeout=600):
+        if "log" in cmd:
+            return 0, "deadbeef\n", ""
+        if "status" in cmd:
+            return 0, "", ""
+        return 1, "", ""
+    monkeypatch.setattr(aer, "_run", propre)
+    assert aer.identite_instrument(
+        ("python", "scripts/notebook_tools/inventory_notebook_names.py")) == (
+            "scripts/notebook_tools/inventory_notebook_names.py@deadbeef")

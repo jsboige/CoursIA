@@ -111,6 +111,11 @@ jobs:
               print("- %s" % p.get("page"))
               if p.get("detail"):
                   print("  %s" % p["detail"])
-              print("  geste : python %s --write" % p.get("generator"))
+              if p.get("status") == "non_mesurable":
+                  # Historique tronque : regenerer ici ecrirait des dates
+                  # fabriquees. La reparation est `git fetch --unshallow`.
+                  print("  geste : reparer l'historique, PAS regenerer")
+              else:
+                  print("  geste : python %s --write" % p.get("generator"))
           sys.exit(1)
           PY

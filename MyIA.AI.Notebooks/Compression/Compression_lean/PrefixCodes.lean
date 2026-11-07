@@ -29,8 +29,8 @@ dédié `Compression_lean`, mathlib seule). Contenu distillé :
    rationnels exacts. Preuve : une feuille isolée pèse `1` ; un `node l r`
    divise chaque poids par `2` (un bit de plus par mot), donc
    `kraftSum (node l r) = kraftSum l / 2 + kraftSum r / 2 ≤ 1`. Chaque étage
-   de l'arbre partage le même budget total — exactement le « partage du
-   gâteau » binaire illustré par le diagramme en bâtons du carnet 01.
+   de l'arbre partage le même budget total — exactement le partage
+   binaire du budget que le carnet 01 pose en § 3 (inégalité de Kraft).
 4. **Arbre complet** (`full k`) : l'arbre équilibré de profondeur `k` porte
    `2 ^ k` feuilles (`length_leafWords_full`) toutes de longueur `k`, et sa
    somme de Kraft vaut exactement `1` (`kraft_full`) : le code à longueur
@@ -207,7 +207,9 @@ theorem kraft_full (k : ℕ) : kraftSum (full k) = 1 := by
 def fixed2 : CodeTree := full 2
 
 /-- Le code des longueurs `(1, 2, 3, 3)` — lettres `a=0, b=10, c=110,
-d=111` du carnet 01 (Shannon–Fano sur la distribution `1/2, 1/4, 1/8, 1/8`). -/
+d=111` du carnet 02 (son « code jouet » : comptages `8, 4, 2, 2`, forme
+canonique) ; c'est aussi le code Shannon–Fano de la distribution dyadique
+`1/2, 1/4, 1/8, 1/8`. -/
 def sf4 : CodeTree := .node .leaf (.node .leaf (.node .leaf .leaf))
 
 /-- Ancre : le code fixe 2 bits sature exactement Kraft. -/

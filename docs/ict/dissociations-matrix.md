@@ -93,7 +93,7 @@ Conventions :
 | **ICT-15** | Φ/F/K convergent sur le banc cross-substrat | `s` ✓, `q` ○, `W` ○ | Φ, F, K mesurés indépendamment | Substrats témoins (random, persistance) | 4-5 substrats | speculative_hypothesis | **Spéculatif** | **Verdict honnête : Φ et F covarient, K diverge** ; le triplet **ne converge pas** universellement ; ICT-15b (sensitivity) et ICT-15c (meta-proxy obstruction) creusent |
 | **ICT-15b** | La sensibilité locale `s_max` borne le degré global `deg_proxy` : transpose du théorème de Huang 2019 (`s(f) ≥ √deg(f)`) au zoo ICT | `s` ✓ | `boolean_sensitivity`, `multilinear_degree`, `s_max` vs `√deg_proxy` | Borne spectrale Huang (A² = n·Id, entrelacement Cauchy) | fonctions OR/ET/MAJ/parité (exemples guide) | established_external + reproduced_in_toy_model | **Fortement soutenu** | Théorème de Huang **établi** (externe, 2 pages) ; la borne globale ICT `s_max ≥ √deg_proxy` est **conjecturale** (candidate). Fonctions symétriques usuelles satisfont largement ; cas tendus = fonctions spécialisées (*tribes*) non testées ici. See [#7288](https://github.com/jsboige/CoursIA/issues/7288) |
 | **ICT-15c** | Le **motif de désaccord** entre proxys est stable cross-substrat = obstruction informative (≠ dispersion d'échelle) | `s` ✓ | Vecteur d'obstruction `(a−b)/(\|a\|+\|b\|+ε)`, `mean_norm_L2`, verdict `STABLE`/`NOISE` | `f(x)=x%2` saturait (artefact plafonné) → `f(x)=x` (identité) restaure un panel non-plafonné | 4 substrats (Gray-Scott, Axelrod, Grokking, May) | proxy_interpretation | **Spéculatif** | **Candidat obstruction** (régime 2, *pas* érigé en obstruction cohomologique régime 3 — cf garde-fou A2). Verdict falsifiable `STABLE` si `mean_norm_L2 ≤ 0.05`. See [#7395](https://github.com/jsboige/CoursIA/issues/7395) |
-| **ICT-15d** | La cochaîne de Čech pondérée discriminate les substrats (`NON_TRIVIAL` = les proxys ne se recollent pas en 1D) | `s` ✓ | `mean_coboundary`, `s2_over_s1`, `effective_rank`, verdict `TRIVIAL`/`NON_TRIVIAL` | Sanity check + 4 substrats ICT-15c | 4 substrats × 3 proxys × fenêtrage | reproduced_in_toy_model | **Spéculatif** *(réserve de non-discrimination — voir [§ ICT-15d-corr](#note-ict-15d-corr--requalification-2026-08-21))* | 4/4 substrats `NON_TRIVIAL` sur la mesure courante ; l'« honnête négatif 0/4 » de la version précédente mesurait un `sensitivity.py` défectueux (réparé par [#9792](https://github.com/jsboige/CoursIA/pull/9792)). **Réserve** : la sortie reste dominée par la SVD (`s2_over_s1`, `effective_rank`) ; le contre-exemple `axelrod` (`mean_cocycle=0`, `obstruction_ratio=0`, `sign_consistency=0`) ne consulte ni le nerf ni H¹. Le verdict **ne porte pas** l'énoncé « Čech discrimine les substrats ». Issue [#7744](https://github.com/jsboige/CoursIA/issues/7744) closed-archived. |
+| **ICT-15d** | La cochaîne de Čech pondérée discriminate les substrats (`NON_TRIVIAL` = les proxys ne se recollent pas en 1D) | `s` ✓ | `mean_cocycle`, `obstruction_ratio`, `sign_consistency` (mesures décisionnelles) ; `mean_coboundary`, `s2_over_s1`, `effective_rank` (témoins de forme) ; verdict `TRIVIAL`/`NON_TRIVIAL`/`INCONCLUSIVE` | Sanity check + 4 substrats ICT-15c | 4 substrats × 3 proxys × fenêtrage | reproduced_in_toy_model | **Spéculatif** *(discrimination portée par le cocycle depuis [#20361](https://github.com/jsboige/CoursIA/pull/20361) — voir [§ ICT-15d-corr](#note-ict-15d-corr--requalification-2026-08-21))* | 3/4 substrats `NON_TRIVIAL` sur la mesure de tête ; `axelrod` est le **témoin négatif** : dimensionnalité maximale (`s2_over_s1 = 1.0000`, rang 3) mais `mean_cocycle = 0.0000` → `TRIVIAL`, là où l'ancienne règle « rang ≥ 2 donc obstruction » le déclarait `NON_TRIVIAL`. Le verdict se déclenche désormais sur `mean_cocycle` / `obstruction_ratio` / `sign_consistency` ; la SVD n'est plus qu'un témoin de forme. Deux mesures antérieures de cette rangée sont **périmées et datées** : l'« honnête négatif 0/4 » (instrument `sensitivity.py` défectueux, réparé par [#9792](https://github.com/jsboige/CoursIA/pull/9792)) et le « 4/4 » (verdict alors porté par la SVD, remplacé par [#20361](https://github.com/jsboige/CoursIA/pull/20361)). La discrimination par le **nerf / H¹**, que la réserve précédente demandait, est livrée séparément : `ICT-15j-NerveDiscriminant` (invocation `gudhi` réelle). Issue [#7744](https://github.com/jsboige/CoursIA/issues/7744) closed-archived. |
 | **ICT-15e** | La trajectoire de réparation **est** un signal distinct d'un random walk calibré (recouvrabilité = agentivité, ≠ simple gain) | `s` ✓, `q` ○, `π` ○ | Distance de Mahalanobis sur signature 5-D, seuil p95 par permutation null | Random walk calibré sur mêmes extrema + 1 contrôle structural ; conjecture pré-enregistrée | 3 configs Gray-Scott (pearl/spots/seed=7) | reproduced_in_toy_model | **Fortement soutenu** | `CONFIRMED` sur substrats à dynamique réaction-diffusion informative (signature `slope_ratio` élevé) ; `FALSIFIED` sinon (random walk reproduit la structure) — verdict nuancé honnête, *pas* universel. See [#8077](https://github.com/jsboige/CoursIA/issues/8077) |
 | **ICT-15g** (banc appris) | Sur l'hypercube **vrai** (degré de Fourier-Walsh RÉEL des tables réalisées, ≠ proxy de masse #9771), le ratio s_max/√deg des fonctions apprises par petits réseaux **chevauche** la bande des fonctions aléatoires de même degré ; l'entraînement adversarial discret (pire voisin Hamming-1, λ=0,5) ne produit **aucune baisse de s_max ni du ratio** dans les paires qualifiées de ce banc à 3-4 bits — critère **déclaré** (Δs_max, **proxy** de la quantité de l'issue) : 28 paires appariées, 27 Δs_max=0, 1 Δ>0, 0 Δ<0, médiane 0 → **FAIL** ; complément post-revue sur le ratio : 26 Δratio=0, 2 >0, 0 <0, médiane 0 (descriptif, sans critère déclaré) | `s` ✓ | ratio s_max/√deg avec s_max exact sur Q_n (définition de Huang, **distinct** de la sensibilité sur graphe de transition observé du banc hérité) ; Δratio apparié mesuré explicitement (post-revue) | Réseau non entraîné (même init) + bande aléatoire appariée en degré (n=3 exhaustive : 256/256 ; n=4 : 3000 tirages) ; garde anti-constance comptée honnêtement (17/80 = 21,2 % dégénérés, sous le seuil 1/3) | 4 RNG-seeds (0/1/7/42) × 5 cibles (OR/AND/MAJ/PAR/TRI_bal) × 2 régimes × n ∈ {3, 4} — plan d'analyse **déclaré** avec amendements de calibration documentés sur graines disjointes {11, 22} (pas d'horodatage indépendant externe) | reproduced_in_toy_model | **TESTÉ (FAIL du critère déclaré Δs_max, sans re-seuillage ; pas de déplacement du ratio détecté non plus)** | CPU 3-4 bits, MLP 16 cachées, 75 % couverture, budget fixe 400 étapes. La borne Huang **vérifiée mécaniquement** (0/118 tables réalisées, 256/256 à l'exhaustif n=3) — c'est le déplacement adversarial qui est non détecté, pas la borne qui tombe. **Grille λ testée : {0 (= normal), 0,5, 1}** : à λ=1 le terme adversarial bloque l'apprentissage (λ écarté à la calibration sur graines disjointes {11, 22} ; taux de dégénérés non conservé dans une sortie committée), à λ=0,5 aucun déplacement détecté ; les valeurs intermédiaires (0,5 < λ < 1) **non testées**. Chevauchement de bande **≠** indistinguabilité statistique (aucun test formel). Δs_max = 0 n'implique pas même table : une paire (n=4, TRI_bal_4, graine 7) garde s_max = 4 mais passe de deg 4 à deg 3 (Δratio = +0,309). Lecture bornée aux régimes testés, ne généralise pas aux grands n. Le statut « transposition conjecturale » du banc hérité (graphes de transition) est conservé. See [#17977](https://github.com/jsboige/CoursIA/issues/17977) |
 | **ICT-16** | `F` = partie résiduelle de `K` + bosse complexité-entropie | `s` ✓ | MDL two-part code | Modèles témoins sans bosse | RNG multi-source | established_external | **Établi** | Bosse Crutchfield-Feldman 1998 mesurée à H* ≈ 1.99 bits/symbole ; cave emptor : **un seul couple (modèle, famille de sources)** dans la figure rendue |
@@ -134,44 +134,44 @@ Conventions :
 
 #### Note ICT-15d-corr — requalification (2026-08-21)
 
-La rangée ci-dessus porte désormais **trois temps**, pas un verdict. Cette section les explicite et les ancre.
+La rangée ci-dessus porte **trois temps** mesurés, pas un verdict unique. Cette section les explicite, les date, et dit ce que chacun mesurait.
 
-##### 1. Mesure courante (commit `4cf9df047`, post-[#9792](https://github.com/jsboige/CoursIA/pull/9792))
+##### 1. Mesure de tête (commit `659c57d7ba`, [#20361](https://github.com/jsboige/CoursIA/pull/20361))
 
-Outputs des cellules 6 et 8 de `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15d-CechObstruction-Python.ipynb` :
-
-```
-   substrat |   s2/s1 |     cob | rank |     verdict
----------------------------------------------------------
-  gray_scott |  0.1939 |  0.3418 |    2 | NON_TRIVIAL
-     axelrod |  0.5508 |  0.5976 |    2 | NON_TRIVIAL
-    grokking |  0.5624 |  0.7649 |    3 | NON_TRIVIAL
-         may |  0.4081 |  0.5992 |    3 | NON_TRIVIAL
-Substrats NON_TRIVIAL : 4/4
-```
-
-##### 2. Péremption datée et sa cause
-
-L'ancienne rangée affichait « **Verdict honnête négatif : 0/4 substrats `NON_TRIVIAL`** » (tous `TRIVIAL`, `s2/s1=0`, `rank=1`). Cause remontée par `git log` : un seul commit sur le notebook depuis le 06/08 —
+Outputs des cellules 10 et 13 de `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15d-CechObstruction-Python.ipynb`, recopiés tels qu'imprimés :
 
 ```
-4cf9df047 fix(ict,#9764): re-execute ICT-15c/15d after sensitivity.py fixes
-                       (#9770/#9766/#9776)  (PR #9792)
+Récapitulatif :
+    substrat |  cocycle |   ratio |   sign |   s2/s1 |     verdict
+--------------------------------------------------------------------------
+  gray_scott |   0.6081 |  1.7791 | 0.6333 |  0.1939 | NON_TRIVIAL
+     axelrod |   0.0000 |  0.0000 | 0.0000 |  1.0000 |     TRIVIAL
+    grokking |   0.2263 |  0.2959 | 0.7000 |  0.5624 | NON_TRIVIAL
+         may |   0.5633 |  0.9402 | 0.5333 |  0.4081 | NON_TRIVIAL
+
+Substrats NON_TRIVIAL : 3/4
+Rappel : le verdict porte sur le cocycle ; s2/s1 est un temoin de forme.
 ```
 
-— qui a corrigé un `sensitivity.py` défectueux puis a relancé le banc. La mesure du 04/08 (`rank=1`, `s2/s1=0`) provenait donc d'un instrument défectueux : le rang plafonné à 1 était l'artefact du bug, pas une propriété des substrats. Cause C.4 `(d)` régression de dépendance corrigée en amont, jamais répercutée en aval — `CAUSE_FIXED` côté notebook, `CAUSE_DOCUMENTED_ONLY` côté matrice (corrigé par cette note).
+Le banc de contrôle de la cellule 3 (construit, à vérité terrain connue) sépare lui aussi les deux régimes sur **8/8 seeds** : le recollement affine rend `TRIVIAL` (`cocycle = 0.0000`), le recollement multi-proxy rend `NON_TRIVIAL` (`cocycle` de 0.8662 à 1.2109, `sign` de 0.5000 à 0.5500). Ce que cela soutient : la règle de verdict **reconnaît un cas de contrôle négatif** et ne se contente pas de réagir à la dimensionnalité. Ce que cela ne soutient pas : la généralité de la claim sur les substrats réels — le banc synthétique est construit pour cela, il n'est pas une preuve indépendante.
 
-##### 3. Réserve de non-discrimination
+##### 2. Trois temps de la rangée, et ce que chacun mesurait
 
-Bascule du verdict en « 4/4, claim Čech tient » serait une **seconde erreur**, de signe opposé. Le verdict se déclenche sur les quatre substrats — dont `axelrod`, qui affiche trois zéros exacts :
+La rangée a porté **trois** états successifs, pas un verdict :
 
-| Métrique              | axelrod |
-| --------------------- | ------- |
-| `mean_cocycle`        | 0.0000  |
-| `obstruction_ratio`   | 0.0000  |
-| `sign_consistency`    | 0.0000  |
+| Temps | Ce qui était imprimé | Ce que ça mesurait |
+| --- | --- | --- |
+| Avant le 06/08 | « **Verdict honnête négatif : 0/4** » — tous `TRIVIAL`, `s2/s1 = 0`, `rank = 1` | un instrument défectueux : le rang plafonné à 1 était l'artefact du bug `sensitivity.py`, pas une propriété des substrats |
+| Post-[#9792](https://github.com/jsboige/CoursIA/pull/9792) (`4cf9df047`) | « 4/4 `NON_TRIVIAL` », sur `s2/s1` / `rank` | un verdict **porté par la SVD** : `axelrod` passait `NON_TRIVIAL` avec un cocycle exactement nul |
+| Post-[#20361](https://github.com/jsboige/CoursIA/pull/20361) (`659c57d7ba`) | « 3/4 `NON_TRIVIAL` », sur `mean_cocycle` / `obstruction_ratio` / `sign_consistency` | le verdict **porte sur le cocycle** ; `axelrod` tombe `TRIVIAL` et devient le témoin négatif |
 
-Un verdict qui se déclenche sur un substrat dont le cocycle est exactement nul ne soutient pas l'énoncé « la cochaîne **discrimine** les substrats » : il est dominé par la SVD (`s2_over_s1`, `effective_rank`) et ne consulte jamais la grandeur qui porterait la discrimination. Le verdict `NON_TRIVIAL` actuel **ne suffit pas** à valider la claim « Čech discrimine ». La claim reste **spéculative** ; la discrimination reste à fournir par une grandeur qui consulte le nerf ou H¹ — chantier tracké en [#12257](https://github.com/jsboige/CoursIA/issues/12257) (suite directe à la micro-nit Hermes de PR #12248).
+Le premier temps est une cause C.4 `(d)` — régression de dépendance corrigée en amont, jamais répercutée en aval (`CAUSE_FIXED` côté notebook, `CAUSE_DOCUMENTED_ONLY` côté matrice, corrigé par cette note). Le deuxième temps était une **sur-correction** de cette matrice : elle a enregistré « 4/4 » sans voir que la grandeur décisionnelle restait la SVD.
+
+##### 3. Réserve de non-discrimination — levée, et son reliquat
+
+La réserve inscrite ici jusqu'au 2026-11-04 demandait une grandeur qui consulte le **cocycle** plutôt que la SVD, `axelrod` (trois zéros exacts) étant le contre-exemple qui la motivait. Cette demande est satisfaite : `cech_obstruction_verdict()` décide sur `mean_cocycle` et `obstruction_ratio`, avec `sign_consistency` comme contrôle de direction, et `axelrod` rend bien `TRIVIAL` — la contre-épreuve se comporte désormais comme une contre-épreuve.
+
+Le reliquat est distinct et ne se referme pas avec elle : `3/4` sur **quatre substrats d'une même série** ne soutient pas l'énoncé « Čech discrimine les substrats » au sens d'une propriété générale — il soutient « le verdict discrimine sur ce panel ». La claim reste donc **Spéculative**, statut inchangé. La discrimination par le **nerf / H¹** est livrée à part, en `ICT-15j-NerveDiscriminant` (invocation `gudhi` réelle) : [#12257](https://github.com/jsboige/CoursIA/issues/12257) est **close (COMPLETED)** et son contenu a atterri dans ce carnet, elle ne s'annonce plus comme un chantier ouvert.
 
 ##### Acceptation éditoriale
 
@@ -533,7 +533,7 @@ R_cross(TOPO) ∈ [0.25, 0.75]
 | **Attention courante** | Case 5 — AST | « Où mon attention porte-t-elle ? » | `R_attn = propa(q(attention)) / propa(q(objet))` |
 | **Géométrie de la frontière** | Case 6 — boundary | « Où s'arrête l'unité intégrée ? » | `R_cross = propa(cross) / propa(within)` |
 
-Cases 4-5 mesurent le **contenu** des self-représentations sur substrat LLM SAE ; case 6 mesure la **géométrie** de l'unité intégrée sur substrat de phase — observable et substrat distincts, falsifiable indépendamment. **Anti-confusion vs ICT-15d** : ICT-15d testait l'obstruction Čech au **recollement des proxys** (verdict courant 4/4 `NON_TRIVIAL`, mais **réserve de non-discrimination** : sortie dominée par la SVD, contre-exemple `axelrod` à cocycle/obstruction/sign_consistency tous nuls — voir [§ ICT-15d-corr](#note-ict-15d-corr--requalification-2026-08-21)) ; case 6 teste la **coïncidence** frontière topologique / frontière fonctionnelle — même famille local→global, observable différente ; le verdict 15d — quel que soit son signe — ne préjuge rien de case 6.
+Cases 4-5 mesurent le **contenu** des self-représentations sur substrat LLM SAE ; case 6 mesure la **géométrie** de l'unité intégrée sur substrat de phase — observable et substrat distincts, falsifiable indépendamment. **Anti-confusion vs ICT-15d** : ICT-15d testait l'obstruction Čech au **recollement des proxys** (verdict de tête 3/4 `NON_TRIVIAL`, porté par le cocycle depuis [#20361](https://github.com/jsboige/CoursIA/pull/20361) ; `axelrod` est le témoin négatif, cocycle nul face à une dimensionnalité maximale — voir [§ ICT-15d-corr](#note-ict-15d-corr--requalification-2026-08-21)) ; case 6 teste la **coïncidence** frontière topologique / frontière fonctionnelle — même famille local→global, observable différente ; le verdict 15d — quel que soit son signe — ne préjuge rien de case 6.
 
 #### Hook grade C — discipline
 

@@ -65,17 +65,38 @@ WAITER_LABELS = {
     "self-hosted",
     "coursia-waiter",
 }
-# Dedicated label set for the specialised Lean pool (#14337, po-2024): elan +
+# RETIRED label set -- the specialised Lean pool (#14337, po-2024): elan +
 # toolchain baked in a dedicated image (Dockerfile.lean), .lake kept warm in
 # the per-slot work volume. A lean slot never carries coursia-linux -- the
 # distinct label is the routing guarantee (a pure-Python guard must not land
 # on a lean slot, and a lake build must not land on the minimal image).
-LEAN_RUNNER_LABELS = {
+#
+# The pool is EXTINCT: `gh api repos/jsboige/CoursIA/actions/runners` measured
+# on 2026-11-04 renders 48 runners and ZERO carrier of `coursia-lean`; the
+# extinction had already been measured by the repository's own probe on
+# 2026-10-23 (.github/workflows/runner-starvation-advisory.yml, lines 26-30:
+# "LE LABEL `coursia-lean` N'EXISTE PLUS"), which also notes that the Lean
+# legs moved to [self-hosted, coursia-ephemeral, coursia-linux].
+#
+# Keeping the set in DEDICATED_LABEL_SETS was a fail-open hole: the guard
+# certified a routing that no runner can serve, and the job then waited in the
+# queue forever. The rule is now written down: a pool that leaves the fleet
+# leaves the authorisation list, and a set that is not in service is refused
+# rather than admitted.
+#
+# The constant is kept, renamed, so the knowledge survives the removal. To
+# re-admit it: re-deploy the pool, measure that the runners carry the label,
+# then move the set back into DEDICATED_LABEL_SETS -- never silently.
+RETIRED_LEAN_RUNNER_LABELS = {
     "self-hosted",
     "coursia-ephemeral",
     "coursia-lean",
 }
-DEDICATED_LABEL_SETS = (REQUIRED_LABELS, LINUX_RUNNER_LABELS, WAITER_LABELS, LEAN_RUNNER_LABELS)
+# Label sets that are NOT authorised any more. A retired set must never be
+# re-admitted silently; the re-admission requires a fresh measurement of the
+# fleet, as the comment above spells out.
+RETIRED_LABEL_SETS = (RETIRED_LEAN_RUNNER_LABELS,)
+DEDICATED_LABEL_SETS = (REQUIRED_LABELS, LINUX_RUNNER_LABELS, WAITER_LABELS)
 # Owner-approved additions must cite the lane that owns the runner deployment:
 # - pr-gate-stale-sweep.yml: schedule-mutualized re-aggregation (pre-existing).
 # - windows-self-hosted-tests.yml: workflow_dispatch-ONLY vehicle for the 9
@@ -165,7 +186,12 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "ict-tests.yml",
     "lean-conway.yml",
     "lean-i18n-drift.yml",
-    "lean-knot.yml",
+    # lean-knot.yml : workflow SUPPRIME par la migration matricielle de
+    #   knot_lean (#13751 -- entree `knot` au manifeste ci_lakes.json, wrapper
+    #   retire). Entree d'allowlist retiree dans le meme commit, comme
+    #   lean-planning.yml avant lui (#23467) : une entree pointant un
+    #   workflow inexistant serait une reference morte. Les jobs planning de
+    #   la famille (c) vivent desormais dans lean-ci-matrix.yml, deja declare.
     # tranche 3c (#14283, meme decision, meme owner) : jobs individuels d'un
     #   workflow dont les autres jobs restent sur ubuntu-latest.
     #   Exclus deliberement : ml-tests (torch retelecharge a chaque run, pas de
@@ -750,8 +776,8 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # absente ou != 'true'), chaque job resout sur ubuntu-latest : l'etat du
     # 27/10 est conserve, et l'entree d'allowlist ne rend le pool local
     # atteignable QUE si un operateur bascule la variable.
-    # Les six autres workflows de la famille (lean-conway, lean-i18n-drift,
-    # lean-knot, quarto-pages-deploy, slides-build-advisory,
+    # Les cinq autres workflows de la famille (lean-conway, lean-i18n-drift,
+    # quarto-pages-deploy, slides-build-advisory,
     # slides-composition-pr-relay) etaient DEJA declares plus haut : seul
     # l'absent est ajoute ici.
     # `lean-planning.yml` n'est PAS declare : le workflow a ete SUPPRIME sur
@@ -760,7 +786,9 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # entree d'allowlist pointant un workflow inexistant serait une reference
     # morte ; la forme hybride de la famille (c) s'applique donc a
     # `lean-ci-matrix.yml`, qui porte les jobs planning_lean depuis la
-    # migration.
+    # migration. Meme geste pour `lean-knot.yml` (supprime par la migration
+    # matricielle de knot_lean, #13751) : ses jobs vivent dans
+    # lean-ci-matrix.yml, et son entree d'allowlist est retiree au bloc 3a.
     # Exceptions nommees, laissees hebergees : quarto-pages-deploy `build`
     # (OOM mesure sur le pool, #15202) et `deploy` (push-only, deploy-pages +
     # OIDC/PAGES). Rollback = revert de la PR (l'entree disparait de
@@ -1837,13 +1865,33 @@ def scan_workflows(
                     "runner groups are unavailable for this personal-account repository",
                 ))
 
+            # Un jeu retire est refuse pour une raison qui lui est propre :
+            # le dire evite d envoyer le developpeur vers un autre pool
+            # ("missing: coursia-fast-guards") alors que le vrai motif est
+            # l'extinction du pool vise.
+            retired_set = next(
+                (retired for retired in RETIRED_LABEL_SETS if set(labels) == retired),
+                None,
+            )
             if any(set(labels) == allowed for allowed in DEDICATED_LABEL_SETS):
                 missing: list[str] = []
                 unexpected: list[str] = []
+            elif retired_set is not None:
+                missing = []
+                unexpected = []
             else:
                 missing = sorted(REQUIRED_LABELS - labels)
                 unexpected = sorted(labels - REQUIRED_LABELS)
-            if missing or unexpected:
+            if retired_set is not None:
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "RUNNER_LABELS",
+                    "retired pool -- this label set is out of service "
+                    "(cf. RETIRED_LABEL_SETS); re-admission requires a fresh "
+                    "measurement of the fleet, not an edit of this guard",
+                ))
+            elif missing or unexpected:
                 detail = []
                 if missing:
                     detail.append(f"missing: {', '.join(missing)}")
