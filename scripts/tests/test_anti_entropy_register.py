@@ -68,6 +68,10 @@ PADDING_REFERENCE = 776.0
 # sur l'arbre 536cf434700). La reference ne se compare donc PAS aux points
 # precedents (39, 40) : ils restent dans `historique`, avec l'identite de
 # l'instrument qui les a produits.
+# Cinquieme rebasage (2026-11-06, #23655) : instrument seul, comme le
+# troisieme -- le correctif `_kernelspecs_at` ne change pas la grandeur
+# (26 avant et apres, mesure sur l'arbre a284df8293f) : pas de point de
+# serie neuf, seule l'identite de l'instrument change.
 PADDING_REFERENCE_REBASE = 26.0
 # Fixture de sha pour les tests qui simulent `git log` : ce n'est plus une
 # identite attendue du registre (c'etait le faux vert de #24678 -- la
@@ -392,8 +396,8 @@ def test_la_reference_du_padding_est_celle_de_l_issue():
     `comparables`), et c'est ce qui produisait le verdict « AVANCE »
     fabrique sur l'entree « padding et nommage »."""
     e = entree("padding-nommage")
-    assert e.reference.source.startswith("issue #24678")
-    assert e.reference.mesure_le == "2026-11-05"
+    assert e.reference.source.startswith("issue #23655")
+    assert e.reference.mesure_le == "2026-11-06"
     assert e.reference.valeur == PADDING_REFERENCE_REBASE
     # Le 4e rebasage change la grandeur : les points d'avant le correctif
     # restent dans la serie, ils ne servent plus de reference.
