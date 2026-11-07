@@ -1,6 +1,6 @@
 # Contexte enseignement - calendrier, écoles, agents
 
-Documentation transversale sur l'organisation de l'enseignement annuel : calendrier, scope par école, mapping agents cluster. Pour le **moteur de notation** : cf [GradeBookApp/configs/README.md](../../GradeBookApp/configs/README.md) (pipelines + données par cohorte = privés sur GDrive). Pour le **mapping cluster machines** (au-delà des rôles enseignement) : cf [docs/cluster-agents.md](cluster-agents.md).
+Documentation transversale sur l'organisation de l'enseignement annuel : calendrier, scope par école, mapping agents cluster. Pour le **moteur de notation** : cf [dotnet/GradeBookApp/configs/README.md](../../dotnet/GradeBookApp/configs/README.md) (pipelines + données par cohorte = privés sur GDrive). Pour le **mapping cluster machines** (au-delà des rôles enseignement) : cf [docs/cluster-agents.md](cluster-agents.md).
 
 ## Date de fraîcheur
 
@@ -94,7 +94,7 @@ Voir [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-review
 
 ## Pointeurs cross-doc
 
-- Pipeline notation et bonus CC : moteur [GradeBookApp/configs/README.md](../../GradeBookApp/configs/README.md) ; détail par cohorte privé sur GDrive `Formation\<école>\2027\grading\` (cycle courant 2026-2027)
+- Pipeline notation et bonus CC : moteur [dotnet/GradeBookApp/configs/README.md](../../dotnet/GradeBookApp/configs/README.md) ; détail par cohorte privé sur GDrive `Formation\<école>\2027\grading\` (cycle courant 2026-2027)
 - Mapping cluster machines (au-delà enseignement) : [docs/cluster-agents.md](cluster-agents.md)
 - Slides Slidev EPITA : `MyIA.AI.Notebooks/SymbolicAI/<série>/slides/` (workflow Slidev verify, cf [.claude/rules/](../../.claude/rules/))
 - QuantConnect (partenaire) : [docs/qc/quantconnect.md](../qc/quantconnect.md)

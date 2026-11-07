@@ -37,7 +37,7 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 
 **L'index fait foi dans [docs/README.md](docs/README.md)** — racine, `reference/`, `genai/`, `qc/`, `lean/`, `ledger`, transients : il recense et décrit chaque document, tenu à jour à chaque ajout. **La liste n'est pas recopiée ici** : une copie dérive au premier document ajouté, et c'est l'index qui la reçoit.
 
-Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](GradeBookApp/configs/README.md) ; **pipelines + données par cohorte = privés sur GDrive** `G:\Mon Drive\MyIA\Formation\<ecole>\<annee>\grading\` (PII, hors repo public).
+Notation étudiants : moteur générique = [dotnet/GradeBookApp/configs/README.md](dotnet/GradeBookApp/configs/README.md) ; **pipelines + données par cohorte = privés sur GDrive** `G:\Mon Drive\MyIA\Formation\<ecole>\<annee>\grading\` (PII, hors repo public).
 
 ## Règles modulaires `.claude/rules/`
 
@@ -212,7 +212,7 @@ MyIA.AI.Notebooks/          # Séries pédagogiques : GenAI/{Image,Audio,Video,T
 scripts/notebook_tools/     # CLI multi-famille (validate/execute/skeleton/analyze)
 scripts/genai-stack/        # GenAI Docker + validation
 .claude/{agents,skills,rules}/
-GradeBookApp/               # Notation étudiants (pipelines/données privés GDrive)
+dotnet/GradeBookApp/               # Notation étudiants (pipelines/données privés GDrive)
 docker-configurations/      # ComfyUI + Qwen Docker
 docs/                       # Documentation déportée de ce fichier
 ```
