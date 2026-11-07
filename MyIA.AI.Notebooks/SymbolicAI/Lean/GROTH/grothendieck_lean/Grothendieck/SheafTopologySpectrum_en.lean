@@ -6,7 +6,8 @@ Alexandre Grothendieck (1928-2014).
 Extension Phase 2 (#2159, Epic #1646).
 
 The driving question: **for which topologies is a given presheaf a sheaf?**
-Part 63 (`SheafCondition.lean`) characterized the equalizer condition for a
+Part 65 (`SheafConditionCharacterization.lean`) characterized the equalizer
+condition for a
 FIXED topology; Part 7 (`SheafBasics.lean`) showed that `IsSheaf` descends
 along `J₁ ≤ J₂` (`isSheaf_of_le`). This module turns the question onto the
 topology coordinate — the "spectrum" `Spec(P) = {J | P is a sheaf for J}`:
