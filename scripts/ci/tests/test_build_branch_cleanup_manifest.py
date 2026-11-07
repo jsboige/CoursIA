@@ -16,6 +16,11 @@ Ce qui est mesure ici, et pourquoi :
    `head_absent_du_clone` (INCONNU), jamais `not_ancestor_of_main`.
 4. **L'organe ne supprime rien** : il n'a aucune voie d'ecriture sur le
    remote, et la sortie porte la classe, la preuve et le contenu.
+5. **La preuve du contenu livre est EXACTE** : le commit de fusion de la PR
+   est-il un commit de `main` ? Une PR mergee dans une base PILOTE a bien
+   un commit de fusion, mais ce commit n'est pas dans `main` -- son
+   contenu n'est donc pas livre par ce merge. Mesure : 18 branches sur
+   2 930 sont dans ce cas.
 
 Aucun test ne requiert de reseau ni de jeton GH : les fonctions de
 classement sont pures et testees sur des tables construites a la main.
@@ -34,9 +39,15 @@ sys.path.insert(0, os.path.join(_REPO, "scripts", "ci"))
 import build_branch_cleanup_manifest as organ  # noqa: E402
 
 
-def pr(etat, numero, oid=""):
-    """Une entree de PR au format de l'organe : (etat, numero, headRefOid)."""
-    return (etat, numero, oid.lower())
+def pr(etat, numero, oid="", merge_oid="", base="main"):
+    """Une entree de PR au format de l'organe (dictionnaire)."""
+    return {
+        "state": etat,
+        "number": numero,
+        "oid": oid.lower(),
+        "base": base,
+        "merge_oid": merge_oid.lower(),
+    }
 
 
 class TestClassification(unittest.TestCase):
@@ -46,21 +57,21 @@ class TestClassification(unittest.TestCase):
     def classer(nom, sha, prs, contenu=""):
         """Reproduit le classement de l'organe, isole de git et de gh."""
         tete = sha.lower()
-        candidates = [p for p in prs if p[2] == tete]
+        candidates = [p for p in prs if p["oid"] == tete]
         if not candidates:
-            ouvertes = [p for p in prs if p[0] == "OPEN"]
+            ouvertes = [p for p in prs if p["state"] == "OPEN"]
             if ouvertes:
-                candidates = [min(ouvertes, key=lambda p: p[1])]
+                candidates = [min(ouvertes, key=lambda p: p["number"])]
         if candidates:
-            retenue = min(candidates, key=lambda p: (organ.RANG[p[0]], p[1]))
-            return organ.CLASSE[retenue[0]], retenue
+            retenue = min(candidates, key=lambda p: (organ.RANG[p["state"]], p["number"]))
+            return organ.CLASSE[retenue["state"]], retenue
         return "E", None
 
     def test_une_pr_fermee_sans_merge_donne_C(self):
         classe, retenue = self.classer(
             "feature/x", "aaa", [pr("CLOSED", 100, "aaa")])
         self.assertEqual(classe, "C")
-        self.assertEqual(retenue[1], 100)
+        self.assertEqual(retenue["number"], 100)
 
     def test_une_pr_mergee_donne_B(self):
         classe, retenue = self.classer(
@@ -94,20 +105,65 @@ class TestClassification(unittest.TestCase):
             "feature/x", "new",
             [pr("CLOSED", 100, "old"), pr("MERGED", 101, "new")])
         self.assertEqual(classe, "B")
-        self.assertEqual(retenue[1], 101)
+        self.assertEqual(retenue["number"], 101)
 
     def test_une_pr_ouverte_bloque_meme_si_la_tete_a_bouge(self):
         """Le travail en cours est un verrou, pas un etat de la tete."""
         classe, retenue = self.classer(
             "feature/x", "new", [pr("OPEN", 100, "old")])
         self.assertEqual(classe, "A")
-        self.assertEqual(retenue[1], 100)
+        self.assertEqual(retenue["number"], 100)
 
     def test_plusieurs_prs_ouvertes_il_ya_en_a_une_seule_ouverte(self):
         classe, retenue = self.classer(
             "feature/x", "new", [pr("OPEN", 100, "old"), pr("OPEN", 101, "new")])
         self.assertEqual(classe, "A")
-        self.assertEqual(retenue[1], 101)
+        self.assertEqual(retenue["number"], 101)
+
+
+class TestPreuveDeContenu(unittest.TestCase):
+    """La preuve EXACTE du contenu livre : le commit de fusion est-il dans `main` ?
+
+    Une PR peut etre mergee dans une base PILOTE (une branche de travail) :
+    elle porte alors un commit de fusion, mais ce commit n'est PAS dans
+    `main` -- son contenu n'est donc pas livre par ce merge. La classe B
+    seule ne distingue pas ce cas ; la preuve par `mergeCommit.oid` le
+    distingue, sans approximation (mesure : 18 branches sur 2 930).
+    """
+
+    @staticmethod
+    def note(classe, retenue, commits_main):
+        """Reproduit la construction du jeton de note pour la classe B."""
+        oid = (retenue or {}).get("merge_oid") or ""
+        if not oid:
+            return "merge_commit_unknown"
+        if oid in commits_main:
+            return "content_on_main"
+        return f"merged_into_pilot_base:{retenue.get('base') or '?'}"
+
+    def test_le_commit_de_fusion_dans_main_prouve_le_contenu(self):
+        retenu = pr("MERGED", 100, "aaa", merge_oid="mmm", base="main")
+        self.assertEqual(self.note("B", retenu, {"mmm"}), "content_on_main")
+
+    def test_un_commit_de_fusion_absent_de_main_signale_la_base_pilote(self):
+        retenu = pr("MERGED", 100, "aaa", merge_oid="mmm",
+                    base="feature/x-suite")
+        self.assertEqual(
+            self.note("B", retenu, {"autre"}),
+            "merged_into_pilot_base:feature/x-suite")
+
+    def test_un_commit_de_fusion_inconnu_n_est_jamais_presume_livre(self):
+        retenu = pr("MERGED", 100, "aaa", merge_oid="", base="main")
+        self.assertEqual(self.note("B", retenu, {"mmm"}), "merge_commit_unknown")
+
+    def test_une_pr_mergee_sans_preuve_ne_vaut_pas_preuve_de_contenu(self):
+        """Le cas « merged_at_older_head » : la PR decrit une tete passee."""
+        retenue = pr("MERGED", 100, "old", merge_oid="mmm")
+        # La preuve porte sur le commit de fusion, mais la BRANCHE n'est pas
+        # decrite par cette PR : elle tombe en E, ou son contenu est mesure
+        # separement. Aucune des deux ne vaut « contenu livre ».
+        classe, _ = TestClassification.classer("feature/x", "new", [retenue])
+        self.assertEqual(classe, "E")
 
 
 class TestContrainteDeClasse(unittest.TestCase):

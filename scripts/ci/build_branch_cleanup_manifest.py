@@ -53,7 +53,7 @@ def branches_distantes(repo: Path) -> dict[str, str]:
     return distant
 
 
-def etats_par_branche(repo: Path) -> dict[str, list[tuple[str, int, str]]]:
+def etats_par_branche(repo: Path) -> dict[str, list[dict]]:
     """Toutes les PRs du depot, indexees sur `headRefName`.
 
     `gh pr list --state all` rapporte l'etat `MERGED` pour une PR mergee et
@@ -65,17 +65,40 @@ def etats_par_branche(repo: Path) -> dict[str, list[tuple[str, int, str]]]:
     PR) : c'est lui qui rattache une PR a l'etat courant de la branche. Un
     nom de branche est reutilisable, et une PR fermee sans merge ne dit rien
     de la tete qui a pu naitre apres elle.
+
+    `mergeCommit.oid` et `baseRefName` sont conserves pour la preuve de
+    contenu : une PR peut etre mergee dans une base PILOTE (une branche de
+    travail), auquel cas son contenu n'est pas sur `main` -- et la classe B
+    ne doit pas couvrir ce cas.
     """
     brut = sh([
         "gh", "pr", "list", "--repo", "jsboige/CoursIA", "--state", "all",
-        "--limit", "30000", "--json", "headRefName,number,state,headRefOid",
+        "--limit", "30000", "--json",
+        "headRefName,number,state,headRefOid,baseRefName,mergeCommit",
     ], cwd=str(repo))
     documents = json.loads(brut)
     par_branche = defaultdict(list)
     for pr in documents:
-        par_branche[pr["headRefName"]].append(
-            (pr["state"], pr["number"], (pr.get("headRefOid") or "").lower()))
+        oid = ((pr.get("mergeCommit") or {}).get("oid") or "").lower()
+        par_branche[pr["headRefName"]].append({
+            "state": pr["state"],
+            "number": pr["number"],
+            "oid": (pr.get("headRefOid") or "").lower(),
+            "base": pr.get("baseRefName") or "",
+            "merge_oid": oid,
+        })
     return par_branche
+
+
+def commits_de_main(repo: Path, main: str) -> set[str]:
+    """L'ensemble des commits de la branche principale.
+
+    Un commit de fusion y figure <=> le contenu de la PR est sur `main`.
+    Un test d'appartenance suffit : mesurer `merge-base --is-ancestor`
+    branche par branche serait 2 930 appels de processus.
+    """
+    sortie = sh(["git", "rev-list", main], cwd=str(repo))
+    return set(sortie.split())
 
 
 def tete_sur_main(repo: Path, sha: str, main: str) -> bool | None:
@@ -106,6 +129,7 @@ def main() -> int:
     repo = Path(args.repo)
     distant = branches_distantes(repo)
     par_branche = etats_par_branche(repo)
+    commits_main = commits_de_main(repo, args.main)
 
     classes: dict[str, tuple] = {}
     inconnus: list[str] = []
@@ -115,18 +139,18 @@ def main() -> int:
         # la tete distante. Les autres PRs du meme nom decrivent un etat
         # passe : elles ne disent rien de ce qui serait supprime.
         tete = sha.lower()
-        candidates = [p for p in prs if p[2] == tete]
+        candidates = [p for p in prs if p["oid"] == tete]
         if not candidates:
             # Aucune PR ne porte la tete actuelle : soit la branche a avance
             # depuis sa derniere PR, soit aucune PR ne l'a recouverte.
             # Une PR OUVERTE reste bloquante (travail en cours) meme si la
             # tete a bouge depuis.
-            ouvertes = [p for p in prs if p[0] == "OPEN"]
+            ouvertes = [p for p in prs if p["state"] == "OPEN"]
             if ouvertes:
-                candidates = [min(ouvertes, key=lambda p: p[1])]
+                candidates = [min(ouvertes, key=lambda p: p["number"])]
         if candidates:
-            retenue = min(candidates, key=lambda p: (RANG[p[0]], p[1]))
-            classes[nom] = (CLASSE[retenue[0]], prs, sha, retenue, "")
+            retenue = min(candidates, key=lambda p: (RANG[p["state"]], p["number"]))
+            classes[nom] = (CLASSE[retenue["state"]], prs, sha, retenue, "")
             continue
         # Aucune PR exploitable : le statut devient une MESURE du contenu.
         sur_main = tete_sur_main(repo, sha, args.main)
@@ -155,9 +179,10 @@ def main() -> int:
             classes[nom] = (classe, prs, sha, retenue, "not_ancestor_of_main")
 
     lignes = []
+    repliables = 0
     for nom in sorted(classes):
         classe, prs, sha, retenue, contenu = classes[nom]
-        etats = Counter(e for e, _, _ in prs)
+        etats = Counter(p["state"] for p in prs)
         if classe == "E":
             etat, numero = "NONE", "-"
             note = "orphan_no_pr"
@@ -165,7 +190,7 @@ def main() -> int:
             etat, numero = "NONE", "-"
             note = "ancestor_of_main"
         else:
-            etat, numero = retenue[0], retenue[1]
+            etat, numero = retenue["state"], retenue["number"]
             note = "+".join(f"{k.lower()}:{v}" for k, v in sorted(etats.items()))
             note += {"A": ";keep_open_pr", "B": ";merged", "C": ";closed_unmerged"}[classe]
         if classe in ("C", "E"):
@@ -176,6 +201,19 @@ def main() -> int:
             # « branche avec des commits jamais fusionnes ».
             if etats.get("MERGED"):
                 note += ";merged_at_older_head"
+        if classe == "B":
+            # Preuve EXACTE du contenu livre : le commit de fusion de la PR
+            # est-il un commit de `main` ? Une PR mergee dans une base
+            # PILOTE a un commit de fusion, mais ce commit n'est pas dans
+            # `main` : son contenu n'est donc PAS livre par ce merge.
+            oid = retenue.get("merge_oid") or ""
+            if oid and oid in commits_main:
+                note += ";content_on_main"
+                repliables += 1
+            elif oid:
+                note += f";merged_into_pilot_base:{retenue.get('base') or '?'}"
+            else:
+                note += ";merge_commit_unknown"
         lignes.append(f"{nom}\t{sha}\t{classe}\t{numero}\t{etat}\t{note}")
 
     sortie = Path(args.out)
