@@ -420,6 +420,37 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "session passee, meme classe que l'entree « 11 cells » ci-dessus."
         ),
     ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GameTheory/assets/readme/MANIFEST.md",
+        motif=re.compile(r"4 cellules 2×2"),
+        raison=(
+            "« 4 cellules 2×2 » = les quatre cases de la MATRICE DE GAINS "
+            "dessinee dans la figure (Cooperer/Defaire x Cooperer/Defaire), pas "
+            "des cellules de carnet. Le nombre decrit l'image ; il est fige par "
+            "le SHA de l'asset cite sur la meme entree, pas par l'etat du depot "
+            "(meme classe que les « 36 cellules vivantes » du canon de Gosper)."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GameTheory/SocialChoice/assets/readme/MANIFEST.md",
+        motif=re.compile(r"\*\*9 cellules totales\*\*"),
+        raison=(
+            "« 9 cellules totales » = la grille 3 panneaux x 3 barres de la "
+            "figure du theoreme d'Arrow (Borda / Pluralite / Dictature x Pareto "
+            "/ IIA / Non-dictature), pas des cellules de carnet. Le nombre est "
+            "une propriete de l'image, fige par le SHA de l'asset."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GameTheory/SocialChoice/assets/readme/MANIFEST.md",
+        motif=re.compile(r"3 lignes de convergence"),
+        raison=(
+            "« 3 lignes de convergence » = les trois courbes tracees dans la "
+            "figure du modele de Downs (parti de gauche, parti de droite, "
+            "electeur median), pas des lignes de fichier. Description d'une "
+            "image figee par son SHA, pas une mesure du depot."
+        ),
+    ),
 )
 
 # ----------------------------------------------------------------------------
