@@ -33,6 +33,7 @@
 | 04 | **04d** — Secrétaire matroïdal | Sahil Singla (conjecture 2007) | Banc P[accept \| e ∈ OPT], garantie 1/4 |
 | 05 | **05b** — La permanente, frontière quantique | Scott Aaronson & Alex Arkhipov (2011) | BosonSampling, TV vs loi $\lvert\mathrm{perm}\rvert^2$ |
 | 06 | **06b** — Aaronson–Gottesman 2004 | Scott Aaronson & Daniel Gottesman (*Improved Simulation of Stabilizer Circuits*) | Formalisme stabilisateur, port CHP, banc discriminant Clifford |
+| 06 | **06d** — Aaronson–Ambainis, la variable influente | Scott Aaronson & Andris Ambainis (*The Need for Structure in Quantum Speedups*, 2014) ; David Turturean / Physical Superintelligence (preuve formalisée en Lean 4, 2026) | Influences, degré $2T$ des probabilités d'acceptation, rangées minimales par programmation linéaire, chaîne en 4 maillons mesurée en ombres, algorithme C |
 
 ## Règles de fabrication
 
