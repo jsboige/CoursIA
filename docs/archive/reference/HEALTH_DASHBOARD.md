@@ -1,28 +1,28 @@
 # Tableau de santé du dépôt — snapshot dérivé du catalogue
 
-> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-11-02**).
+> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-11-07**).
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
-**1609** notebooks référencés au catalogue.
+**1617** notebooks référencés au catalogue.
 
 ## État global
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 1388 | 86.3% |
-| DEMO | 219 | 13.6% |
+| READY | 1395 | 86.3% |
+| DEMO | 220 | 13.6% |
 | BROKEN | 2 | 0.1% |
 
 ## Exigences d'environnement (badges)
 
 | Exigence | Notebooks concernés |
 |----------|---------------------|
-| **local** (exécutable sans GPU/cloud/WSL) | 950 |
-| WSL requis | 197 |
-| GPU requis | 210 |
-| Cloud requis (QC / GenAI Docker) | 127 |
-| API key requise | 222 |
+| **local** (exécutable sans GPU/cloud/WSL) | 951 |
+| WSL requis | 200 |
+| GPU requis | 211 |
+| Cloud requis (QC / GenAI Docker) | 128 |
+| API key requise | 224 |
 
 ## Distribution par série
 
@@ -31,28 +31,28 @@
 | CaseStudies | 6 | 0 | 0 | 6 | 100% |
 | Complexity | 20 | 2 | 0 | 22 | 91% |
 | Compression | 8 | 0 | 0 | 8 | 100% |
-| GameTheory | 138 | 2 | 0 | 140 | 99% |
-| GenAI | 163 | 140 | 2 | 305 | 53% |
-| IIT | 104 | 7 | 0 | 111 | 94% |
+| GameTheory | 139 | 2 | 0 | 141 | 99% |
+| GenAI | 164 | 141 | 2 | 307 | 53% |
+| IIT | 105 | 7 | 0 | 112 | 94% |
 | ML | 116 | 21 | 0 | 137 | 85% |
 | NLP | 11 | 0 | 0 | 11 | 100% |
 | Physique | 8 | 0 | 0 | 8 | 100% |
-| Probas | 91 | 1 | 0 | 92 | 99% |
-| QuantConnect | 89 | 34 | 0 | 123 | 72% |
+| Probas | 92 | 1 | 0 | 93 | 99% |
+| QuantConnect | 90 | 34 | 0 | 124 | 73% |
 | RL | 33 | 5 | 0 | 38 | 87% |
 | Search | 165 | 0 | 0 | 165 | 100% |
 | Sudoku | 38 | 1 | 0 | 39 | 97% |
-| SymbolicAI | 397 | 5 | 0 | 402 | 99% |
+| SymbolicAI | 399 | 5 | 0 | 404 | 99% |
 | cross-series | 1 | 1 | 0 | 2 | 50% |
 
 ## Kernels
 
 | Kernel | Count |
 |--------|-------|
-| Python 3 | 1060 |
+| Python 3 | 1066 |
 | .NET (C#) | 274 |
-| Python 3 (ipykernel) | 72 |
-| Lean 4 (WSL) | 64 |
+| Python 3 (ipykernel) | 73 |
+| Lean 4 (WSL) | 65 |
 | Python (coursia-ml-training) | 21 |
 | Python 3 (coursia-ml-training) | 15 |
 | coursia-ml-training | 11 |
@@ -81,6 +81,7 @@
 | Python 3 (PyTorch) | 1 |
 | Python 3 (coursia-sae) | 1 |
 | Python 3 (venv) | 1 |
+| Ict-Py313 | 1 |
 | Python 3 (py310-gpu) | 1 |
 | Python 3 (pyphi) | 1 |
 | pyphi | 1 |
@@ -90,7 +91,6 @@
 | Python 3 (PyMC 3.11) | 1 |
 | Python 3 (CoursIA-2) | 1 |
 | Foundation-Py-Default | 1 |
-| Python 3.10.18 (mcp-jupyter-py310) | 1 |
 | .venv (3.14.3) | 1 |
 | Python 3.13 (coursia-py313, argumentation) | 1 |
 | Lean 4 (WSL, grothendieck-16200) | 1 |
@@ -107,7 +107,7 @@
 
 | Série | Notebook | Maturité | Dernière validation |
 |-------|----------|----------|---------------------|
-| GenAI | Notebook de travail | TEMPLATE | 2026-07-30 |
+| GenAI | Notebook de travail | TEMPLATE | 2026-11-04 |
 | GenAI | Notebook de travail | TEMPLATE | 2026-07-30 |
 
 ## Voir aussi
