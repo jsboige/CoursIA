@@ -69,6 +69,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import posixpath
 import re
 import subprocess
 import sys
@@ -556,6 +557,14 @@ _CHECKSUM_RE = re.compile(
     r"sha-?256|sha256|Get-FileHash|hashlib\.(?:sha256|sha1|md5)|--checksum",
     re.IGNORECASE,
 )
+_SHA256_HEX_RE = re.compile(r"^[0-9a-fA-F]{64}$")
+# Meme digest, mais cherche dans le texte libre d'une cellule (la forme
+# historique #24520 le declare a cote de l'URL, pas dans un champ JSON).
+_SHA256_DIGEST_RE = re.compile(r"(?<![0-9a-fA-F])[0-9a-fA-F]{64}(?![0-9a-fA-F])")
+_REPRODUCTION_DIRECTIVE_RE = re.compile(
+    r"<!--\s*reproduction\s*:\s*(\{.*?\})\s*-->", re.DOTALL
+)
+_REPRODUCTION_ARTIFACT_RE = re.compile(r"^[^\s/]+/[^\s]+$")
 
 _SUBMODULE_CACHE: dict[str, list[str]] = {}
 
@@ -674,30 +683,127 @@ def _tracked_paths(repo_root: Path, relatives: list[str]) -> set[str]:
     return {line.strip().replace("\\", "/") for line in out.splitlines() if line.strip()}
 
 
-def _declared_reproduction(payload: dict) -> dict[str, bool]:
-    """Artefacts nommes par une URL declaree, avec empreinte PAR ARTEFACT.
+def _declared_reproduction(payload: dict) -> dict[str, dict]:
+    """Déclarations de reproduction, avec empreinte par artefact.
 
-    Le mecanisme de reproduction (#23103, point 3) est « URL + version +
-    checksum ». Le nom de l'artefact est la queue de l'URL ; la version vient
-    de l'URL elle-meme (`.../1.28/x.jar`) ou de la ligne qui la porte.
+    Trois formes coexistent, toutes rendues par clé de nom d'artefact :
 
-    L'empreinte est portee par l'artefact, pas par le carnet (reserve Hermes,
-    #24520) : elle doit apparaitre dans LA cellule qui declare l'URL de
-    l'artefact -- une empreinte declaree ailleurs dans le carnet ne leve pas
-    le constat d'un artefact different.
+    - URL dont la queue nomme l'artefact, avec empreinte dans la même cellule
+      (contrat de #24520). Cette forme historique exige désormais **les deux** :
+      un marqueur de mécanisme (``sha256``, ``Get-FileHash``, ``hashlib.sha256``,
+      ``--checksum``) **et** un digest de 64 hexadécimaux. Sans le digest, un
+      ``SHA256 = "abc123"`` satisfaisait la forme faible et court-circuitait la
+      directive ``archive``, qui exige un SHA-256 valide (#24943) ;
+    - directive ``<!-- reproduction: {...} -->`` de type ``archive`` : URL,
+      version, ``entry`` et SHA-256 de l'entrée extraite ;
+    - directive de type ``build`` : ``command`` et ``project`` versionné.
+
+    ``artifact`` vaut ``<classe>/<nom>`` : ``archive/QuikGraph.dll`` ou
+    ``build/MyIA.AI.Shared.dll``. Cette clé explicite évite d'apparier une
+    archive par la queue de son URL. Une directive mal formée ne rend jamais
+    l'artefact reproductible.
     """
-    declarations: dict[str, bool] = {}
+    declarations: dict[str, dict] = {}
     for cell in payload.get("cells", []) or []:
         if (cell.get("cell_type") or "") not in ("code", "markdown"):
             continue
         text = _cell_text(cell)
-        has_checksum = bool(_CHECKSUM_RE.search(text))
+        # Forme historique (#24520) : le marqueur seul ne suffit pas, il doit
+        # etre accompagne d'un digest. `SHA256 = "abc123"` declarait sinon une
+        # empreinte sans en porter une, et la forme faible contournait la
+        # directive `archive` qui, elle, exige 64 hexadecimaux (#24943).
+        has_checksum = bool(_CHECKSUM_RE.search(text)) and bool(
+            _SHA256_DIGEST_RE.search(text)
+        )
         for match in _URL_RE.finditer(text):
             url = match.group(0).rstrip(".,;:")
             tail = url.rsplit("/", 1)[-1].split("?", 1)[0].split("#", 1)[0]
             if tail:
-                declarations[tail] = declarations.get(tail, False) or has_checksum
+                declarations[tail] = {
+                    "kind": "url",
+                    "declared": True,
+                    "checksum": declarations.get(tail, {}).get("checksum", False)
+                    or has_checksum,
+                    "reproducible": has_checksum
+                    or declarations.get(tail, {}).get("reproducible", False),
+                }
+        for match in _REPRODUCTION_DIRECTIVE_RE.finditer(text):
+            try:
+                directive = json.loads(match.group(1))
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(directive, dict):
+                continue
+            kind = directive.get("kind")
+            key = directive.get("artifact", "")
+            if kind not in ("archive", "build") or not _REPRODUCTION_ARTIFACT_RE.fullmatch(key):
+                continue
+            declared = False
+            reproducible = False
+            command = ""
+            project = ""
+            if kind == "archive":
+                url = directive.get("url", "")
+                entry = directive.get("entry", "")
+                checksum = directive.get("sha256", "")
+                declared = bool(
+                    isinstance(url, str)
+                    and url.startswith(("https://", "http://"))
+                    and isinstance(entry, str)
+                    and entry
+                    and directive.get("version")
+                )
+                reproducible = bool(
+                    declared
+                    and isinstance(checksum, str)
+                    and _SHA256_HEX_RE.fullmatch(checksum)
+                    and key.rsplit("/", 1)[-1] == entry.rsplit("/", 1)[-1]
+                )
+            else:
+                command = directive.get("command", "")
+                project = directive.get("project", "")
+                declared = bool(command and project)
+                # Le suivi par git est vérifié dans binary_findings, qui
+                # connaît repo_root ; une recette hors du dépôt n'est jamais
+                # une preuve de reproductibilité.
+                reproducible = declared
+            previous = declarations.get(key, {})
+            # Une recette incomplète postérieure ne doit pas casser une preuve
+            # complète déjà lue ; dans le cas inverse, la nouvelle preuve gagne.
+            if not previous.get("reproducible", False) or reproducible:
+                declarations[key] = {
+                    "kind": kind,
+                    "declared": declared or previous.get("declared", False),
+                    "checksum": reproducible or previous.get("checksum", False),
+                    "reproducible": reproducible
+                    or previous.get("reproducible", False),
+                    "project": project if kind == "build" else "",
+                    "directive": directive,
+                }
     return declarations
+
+
+def _reproduction_matches(
+    name: str, declarations: dict[str, dict], tracked: set[str]
+) -> tuple[bool, bool]:
+    """Retourne ``(déclaré, reproductible)`` sans confondre les classes."""
+    direct = declarations.get(name)
+    if direct and direct.get("reproducible", False):
+        return True, True
+    for prefix in ("archive", "build"):
+        key = f"{prefix}/{name}"
+        candidate = declarations.get(key)
+        if not candidate:
+            continue
+        if prefix == "build":
+            project = candidate.get("project", "")
+            normalized = posixpath.normpath(project).strip("/")
+            if normalized.startswith("../") or normalized not in tracked:
+                return True, False
+        return candidate.get("declared", False), candidate.get("reproducible", False)
+    if direct:
+        return direct.get("declared", False), False
+    return False, False
 
 
 @dataclass
@@ -782,29 +888,50 @@ def binary_findings(
     if not loads:
         return []
     declared_names = _declared_reproduction(payload)
+    # Les recettes nomment un projet qui doit être versionné. Il n'est pas
+    # nécessairement chargé par le carnet : cette liste complète donc les
+    # chemins de chargement utilisés plus haut.
+    projects = [
+        value.get("project", "")
+        for key, value in declared_names.items()
+        if key.startswith("build/") and value.get("project")
+    ]
+    tracked_projects = _tracked_paths(repo_root, projects)
     findings: list[dict] = []
     seen: set[tuple] = set()
     for load in loads:
         if load.scope in ("sous-module", "versionne"):
             continue
         name = load.resolved.rsplit("/", 1)[-1] or load.path
-        declared = name in declared_names
-        has_checksum = declared_names.get(name, False)
-        if declared and has_checksum:
+        declared, reproducible = _reproduction_matches(
+            name, declared_names, tracked_projects
+        )
+        if declared and reproducible:
             # Mecanisme de reproduction declare : rien a signaler.
             continue
+        reproduction_hint = (
+            "declarer une URL et l'empreinte de l'artefact, ou une directive "
+            "structuree : URL + version + entree + empreinte pour une archive, "
+            "commande + projet suivi par git pour un build"
+        )
+        incomplete_reason = (
+            f"une reproduction de `{name}` est declaree, mais sa preuve est "
+            "incomplete : une archive exige URL, version, entree et empreinte "
+            "de cette entree ; un build exige une commande et son projet suivi "
+            "par git ; l'ancienne forme exige une URL et une empreinte dans la "
+            "meme cellule"
+        )
         if load.scope == "hors-depot":
             kind = "binary_hors_depot" if not declared else "binary_sans_empreinte"
             reason = (
                 f"chargement depuis `{load.resolved}` par `{load.form}` : hors du "
                 f"depot, le {_artifact_label(name)} n'existe pas apres un clone et la "
-                "re-execution n'est pas reproductible ; aucun sous-module ne le porte, "
-                "et le carnet ne declare ni URL ni empreinte de l'artefact"
+                f"re-execution n'est pas reproductible ; aucun sous-module ne le porte, "
+                f"et il faut {reproduction_hint}"
                 if not declared
                 else (
-                    f"chargement depuis `{load.resolved}` par `{load.form}` : un "
-                    f"telechargement de `{name}` est declare, mais sans empreinte "
-                    "-- la version obtenue peut changer sans que rien ne le signale"
+                    f"chargement depuis `{load.resolved}` par `{load.form}` : "
+                    f"{incomplete_reason}"
                 )
             )
         else:
@@ -812,11 +939,11 @@ def binary_findings(
             reason = (
                 f"chargement depuis `{load.relative}` par `{load.form}` : le "
                 f"{_artifact_label(name)} est dans le depot mais ignore par git, donc "
-                "absent apres un clone ; versionner l'artefact, ou declarer URL + empreinte"
+                f"absent apres un clone ; versionner l'artefact, ou {reproduction_hint}"
                 if not declared
                 else (
-                    f"chargement depuis `{load.relative}` par `{load.form}` : un "
-                    f"telechargement de `{name}` est declare, mais sans empreinte"
+                    f"chargement depuis `{load.relative}` par `{load.form}` : "
+                    f"{incomplete_reason}"
                 )
             )
         key = (kind, load.resolved or load.path, load.form)
