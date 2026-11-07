@@ -17,8 +17,31 @@ from prover.provers import _deadline_keeps_latched_proof
 from prover.state import SorryContext
 
 
-def _tools():
-    return SimpleNamespace(proof_latched=False, reset_stagnation=lambda: None)
+def _tools(filepath=None, baseline=None):
+    """A TacticTools-shaped double.
+
+    #24545 changed the latch contract: it is now BOUND to the sorry it
+    proved (``proof_latched_for_line``), and the deadline branch decides
+    against the FILE (the latched line must hold no ``sorry`` and the
+    real-sorry count must be below the session baseline). This double
+    mirrors that contract so the assertions below keep their meaning; the
+    multi-sorry behaviour itself is covered by
+    ``test_proof_latch_multisorry.py``.
+    """
+    tools = SimpleNamespace(
+        proof_latched=False,
+        proof_latched_for_line=None,
+        _filepath=filepath,
+        _original_sorry_count=baseline,
+        reset_stagnation=lambda: None,
+    )
+
+    def _latch_proof(line):
+        tools.proof_latched = True
+        tools.proof_latched_for_line = int(line)
+
+    tools.latch_proof = _latch_proof
+    return tools
 
 
 def _kb(tmp_path):
@@ -54,9 +77,20 @@ def test_real_tactic_tools_starts_unlatched(tmp_path):
     assert _deadline_keeps_latched_proof(tt) is False
 
 
-def test_deadline_helper_keeps_a_latched_proof():
-    tools = _tools()
-    tools.proof_latched = True
+def test_deadline_helper_keeps_a_latched_proof(tmp_path):
+    """#24545: the deadline branch DECIDES against the file. A latch is kept
+    only when the sorry it names is gone from disk AND the sorry count
+    dropped below the session baseline."""
+    f = tmp_path / "T.lean"
+    f.write_text("theorem t (n : Nat) : 0 + n = n := by sorry\n",
+                 encoding="utf-8")
+    tools = _tools(filepath=str(f), baseline=1)
+    tools.latch_proof(1)
+    # the sorry is still on disk -> the latch cannot be honoured
+    assert _deadline_keeps_latched_proof(tools) is False
+
+    f.write_text("theorem t (n : Nat) : 0 + n = n := by exact Nat.zero_add n\n",
+                 encoding="utf-8")
     assert _deadline_keeps_latched_proof(tools) is True
 
 
@@ -81,6 +115,8 @@ def test_verify_success_latches_the_proof(tmp_path, monkeypatch):
 
     assert msg.proof_found is True
     assert tools.proof_latched is True, "the deadline must be able to see the proof"
+    assert tools.proof_latched_for_line == 1, (
+        "the latch must name the sorry it proved (#24545)")
     ctx.yield_output.assert_awaited_once()
 
 

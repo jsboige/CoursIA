@@ -2,7 +2,7 @@
 
 Le comparateur ne mesure rien : il compare deux instantanes produits par
 l'organe canonique `scripts/audit/measure_autoloaded_harness.py`. Deux
-fautes distinctes sont donc a.watch :
+fautes distinctes sont donc a surveiller :
 
 - **le comparateur ne detecte pas une croissance** -- verdict vert sur une PR
   qui ajoute du contexte a toutes les sessions. Le controle positif
@@ -349,6 +349,58 @@ def test_une_regle_non_gatee_est_comptee_dans_la_surface(tmp_path):
     assert "grande.md" in noms
     assert "gated.md" not in noms
     assert mesure["root_file"]["name"] == "CLAUDE.md"
+
+
+# --- le cableage dans la voie rapide ----------------------------------------
+
+
+def test_le_cliquet_est_cable_dans_la_voie_rapide():
+    """Le comparateur ne sert a rien s'il n'est branche.
+
+    Le numero de tranche n'est pas une convention : deux tranches peuvent
+    porter le meme numero si deux PRs le reservent en meme temps (mesure du
+    2026-11-07 : la tranche 39 du Cell-order gate et celle du cliquet de
+    poids se sont quitteagees, et le merge a produit un conflit). Ce test
+    epingle donc le *contenu* du garde -- son nom et sa semantique -- plutot
+    qu'un simple compte de tranches.
+    """
+    import inspect
+    import sys
+
+    ci_dir = _REPO / "scripts" / "ci"
+    if str(ci_dir) not in sys.path:
+        sys.path.insert(0, str(ci_dir))
+    import fast_lane
+    from fast_lane_registry import TRANCHE40
+
+    assert len(TRANCHE40) == 1, "la tranche du cliquet porte un seul garde"
+    g = TRANCHE40[0]
+    assert g.name == "Harness autoloaded weight ratchet (base vs PR, bloquant)"
+    assert g.blocking, "le cliquet est bloquant : en advisory il n'arreterait rien"
+    assert g.needs_base, "le cliquet compare la base a la tete"
+    assert g.diff_bounded, "le garde est rejoue sur les seuls fichiers du diff"
+    assert g.argv == ["python", "scripts/audit/measure_autoloaded_harness.py",
+                      "--json"], (
+        "la mesure doit venir de l'organe canonique, pas d'un recomptage")
+    assert g.delta_argv == ["python", "scripts/ci/check_harness_weight_delta.py",
+                            "{base_json}", "{head_json}"]
+    assert g.swap_paths == ["CLAUDE.md", ".claude/rules"], (
+        "la bascule base/tete ne porte que sur les surfaces mesurees")
+
+    # Le moteur doit importer la tranche ET la lister dans la liste effective
+    # des gardes : un registre qui la declare sans que le moteur la liste ne
+    # la Selectionne jamais (defaut de cableage, invisible dans les tests
+    # d'algorithme).
+    assert getattr(fast_lane, "TRANCHE40", None) is TRANCHE40, (
+        "le moteur doit importer la tranche du cliquet")
+    source = inspect.getsource(fast_lane.main)
+    assert "TRANCHE40" in source, (
+        "la liste effective des gardes ne cite pas la tranche du cliquet : "
+        "le garde ne sera jamais selectionne")
+    assert fast_lane.guard_applies(g, ["CLAUDE.md"]), (
+        "le cliquet doit etre selectionne par le chemin qu'il surveille")
+    assert fast_lane.guard_applies(g, [".claude/rules/git-workflow.md"]), (
+        "le cliquet doit etre selectionne par une regle auto-chargee")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,267 @@
+#region imports
+from AlgorithmImports import *
+#endregion
+# Noyau de risque deterministe de Steward (Feng et al., arXiv:2610.30557, section 5.5,
+# table 11), porte dans LEAN. Etape 2 de #24698 : verification independante du carnet
+# QuantConnect/Python/QC-Py-45 sur le chemin momentum, avec les donnees et le modele
+# d'execution de LEAN au lieu du moteur vectorise du carnet.
+#
+# Entrees : chaque premier jour de bourse de la semaine, les 10 ETF au plus fort momentum
+# sur 126 seances en sautant les 5 dernieres, signal pris sur la cloture precedente,
+# ordres MarketOnOpen. Le noyau ajoute quatre regles :
+#   - stop a 2 ATR(14) sous le prix d'entree, fixe a l'ouverture de la ligne ; une ligne
+#     stoppee reste a plat jusqu'au rebalancement suivant ;
+#   - plafond de 40 % par groupe d'actifs, reduction au prorata ;
+#   - exposition d'au plus 90 % (9 % par ligne) ;
+#   - coupe-circuit apres une seance a -3 % ou pire.
+# Les ecarts au carnet imposes par des donnees journalieres sont decrits dans le README.
+
+GROUPS = {
+    "actions_us": ["XLB", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY", "IWM"],
+    "actions_hors_us": ["EFA", "EEM", "EWJ", "VGK"],
+    "obligations": ["TLT", "IEF", "LQD", "HYG", "TIP"],
+    "matieres_immobilier": ["GLD", "SLV", "DBC", "VNQ"],
+}
+
+# mode : (poids par ligne, stops, plafond de groupe, coupe-circuit) -- memes variantes
+# que la table VARIANTES du carnet QC-Py-45.
+MODES = {
+    "nokernel": (0.10, False, False, False),
+    "exposure90": (0.09, False, False, False),
+    "kernel_nocb": (0.09, True, True, False),
+    "kernel": (0.09, True, True, True),
+}
+
+FEE_RATE = 0.0005      # 5 points de base par cote
+STOP_ATR_MULT = 2.0
+GROUP_CAP = 0.40
+CB_THRESHOLD = -0.03
+TOP_N = 10
+
+
+class ProportionalFeeModel(FeeModel):
+    """Frais proportionnels a la valeur de l'ordre, comme dans le carnet."""
+
+    def get_order_fee(self, parameters):
+        value = abs(parameters.order.quantity) * parameters.security.price
+        return OrderFee(CashAmount(FEE_RATE * value, "USD"))
+
+
+class DeterministicRiskKernelAlgorithm(QCAlgorithm):
+
+    def initialize(self):
+        self._mode = self.get_parameter("mode", "kernel").lower()
+        if self._mode not in MODES and self._mode != "spy":
+            raise ValueError(f"unknown mode parameter: {self._mode} "
+                             f"({' | '.join(list(MODES) + ['spy'])})")
+
+        start = self.get_parameter("start_date", "2015-01-02")
+        end = self.get_parameter("end_date", "2026-07-31")
+        self.set_start_date(datetime.strptime(start, "%Y-%m-%d"))
+        self.set_end_date(datetime.strptime(end, "%Y-%m-%d"))
+        self.set_cash(100000)
+
+        self._spy = self.add_equity("SPY", Resolution.DAILY).symbol
+        self.securities[self._spy].set_fee_model(ProportionalFeeModel())
+        self._symbols = []
+        self._group = {}
+        self._closes = {}
+        self._atr = {}
+        for group, tickers in GROUPS.items():
+            for ticker in tickers:
+                security = self.add_equity(ticker, Resolution.DAILY)
+                security.set_fee_model(ProportionalFeeModel())
+                symbol = security.symbol
+                self._symbols.append(symbol)
+                self._group[symbol] = group
+                self._closes[symbol] = RollingWindow[float](132)
+                self._atr[symbol] = self.atr(symbol, 14, MovingAverageType.SIMPLE, Resolution.DAILY)
+        self.set_warm_up(timedelta(days=200))
+
+        if self._mode == "spy":
+            self._weight, self._use_stops, self._use_cap, self._use_cb = 1.0, False, False, False
+        else:
+            self._weight, self._use_stops, self._use_cap, self._use_cb = MODES[self._mode]
+
+        self._lines = []
+        self._stopped = set()
+        self._stop_level = {}
+        self._stop_tickets = {}
+        self._atr_signal = {}
+        self._last_week = None
+        self._cb_pending = False
+        self._reentry = False
+        self._prev_close_value = None
+        self._spy_bought = False
+
+        # Compteurs de controle, publies en statistiques d'execution.
+        self._n_stops = 0
+        self._n_stops_rule = 0      # stops executes au plus bas de l'ouverture et du stop
+        self._n_cuts = 0
+        self._n_invalid = 0
+        self._n_logged = 0
+        self._exposure_max = 0.0
+        self._cash_min = float("inf")
+        self._group_max = 0.0
+
+        # Decisions avant l'ouverture, sur la cloture de la veille.
+        self.schedule.on(self.date_rules.every_day(self._spy),
+                         self.time_rules.before_market_open(self._spy, 60),
+                         self._before_open)
+        # Trace journaliere `shadow` (contrat #18923) : valeur du portefeuille a l'ouverture
+        # de chaque seance de SPY, repartie sur e0..e4.
+        self._trace_count = 0
+        self.schedule.on(self.date_rules.every_day(self._spy),
+                         self.time_rules.after_market_open(self._spy, 0),
+                         self._trace)
+
+    # ------------------------------------------------------------------ donnees
+
+    def on_data(self, slice):
+        for symbol in self._symbols:
+            bar = slice.bars.get(symbol)
+            if bar is not None:
+                self._closes[symbol].add(float(bar.close))
+        if self.is_warming_up or self._mode == "spy":
+            return
+        value = self.portfolio.total_portfolio_value
+        held = sum(abs(self.portfolio[s].holdings_value) for s in self._symbols)
+        self._exposure_max = max(self._exposure_max, held / value)
+        self._cash_min = min(self._cash_min, float(self.portfolio.cash))
+        for group in GROUPS:
+            weight = sum(self.portfolio[s].holdings_value for s in self._symbols
+                         if self._group[s] == group) / value
+            self._group_max = max(self._group_max, weight)
+        invested = held > 0
+        if (self._use_cb and invested and self._prev_close_value is not None
+                and value / self._prev_close_value - 1 <= CB_THRESHOLD):
+            # Seance a -3 % ou pire : en donnees journalieres la cloture n'est connue
+            # qu'apres coup, la liquidation part donc a l'ouverture suivante.
+            for symbol in self._symbols:
+                self._cancel_stop(symbol)
+                self._stop_level.pop(symbol, None)
+                quantity = self.portfolio[symbol].quantity
+                if quantity != 0:
+                    self.market_on_open_order(symbol, -quantity, tag="coupe-circuit")
+            self._cb_pending = True
+            self._n_cuts += 1
+        self._prev_close_value = value
+
+    # ------------------------------------------------------------------ decisions
+
+    def _before_open(self):
+        if self.is_warming_up:
+            return
+        if self._mode == "spy":
+            if not self._spy_bought and self.securities[self._spy].price > 0:
+                quantity = int(0.999 * self.portfolio.total_portfolio_value
+                               / self.securities[self._spy].price)
+                self.market_on_open_order(self._spy, quantity, tag="spy")
+                self._spy_bought = True
+            return
+
+        week = self.time.isocalendar()[:2]
+        new_week = week != self._last_week
+        self._last_week = week
+        if new_week:
+            self._lines = self._select()
+            self._stopped.clear()
+        if self._cb_pending:
+            # La liquidation du coupe-circuit s'execute a cette ouverture ; retour a la
+            # suivante, avec les lignes de la semaine.
+            self._cb_pending = False
+            self._reentry = True
+            return
+        if new_week or self._reentry:
+            self._reentry = False
+            self._atr_signal = {s: self._atr[s].current.value for s in self._symbols}
+            self._rebalance_to(self._target_weights(self._lines))
+
+    def _select(self):
+        scores = {}
+        for symbol in self._symbols:
+            window = self._closes[symbol]
+            if window.is_ready and window[131] > 0:
+                scores[symbol] = window[5] / window[131] - 1
+        return sorted(scores, key=scores.get, reverse=True)[:TOP_N]
+
+    def _target_weights(self, lines):
+        weights = {symbol: self._weight for symbol in lines}
+        if self._use_cap:
+            for group in GROUPS:
+                members = [s for s in weights if self._group[s] == group]
+                total = sum(weights[s] for s in members)
+                if total > GROUP_CAP + 1e-12:
+                    for symbol in members:
+                        weights[symbol] *= GROUP_CAP / total
+        for symbol in self._stopped:
+            weights[symbol] = 0.0
+        return weights
+
+    def _rebalance_to(self, weights):
+        value = self.portfolio.total_portfolio_value
+        for symbol in self._symbols:
+            price = self.securities[symbol].price
+            if price <= 0:
+                continue
+            target = int(weights.get(symbol, 0.0) * value / price)
+            delta = target - self.portfolio[symbol].quantity
+            if delta != 0:
+                # Le stop est repose a l'execution, sur la nouvelle quantite.
+                self._cancel_stop(symbol)
+                self.market_on_open_order(symbol, delta, tag="rebalancement")
+
+    def _cancel_stop(self, symbol):
+        ticket = self._stop_tickets.pop(symbol, None)
+        if ticket is not None and ticket.status not in (OrderStatus.FILLED, OrderStatus.CANCELED):
+            ticket.cancel()
+
+    # ------------------------------------------------------------------ executions
+
+    def on_order_event(self, order_event):
+        if order_event.status == OrderStatus.INVALID:
+            self._n_invalid += 1
+            return
+        if order_event.status != OrderStatus.FILLED:
+            return
+        symbol = order_event.symbol
+        if symbol == self._spy or not self._use_stops:
+            return
+        order = self.transactions.get_order_by_id(order_event.order_id)
+        if order.type == OrderType.STOP_MARKET:
+            level = self._stop_level.pop(symbol, None)
+            self._stop_tickets.pop(symbol, None)
+            self._stopped.add(symbol)
+            self._n_stops += 1
+            security = self.securities[symbol]
+            if level is not None and abs(order_event.fill_price - min(security.open, level)) < 0.005:
+                self._n_stops_rule += 1
+            if self._n_logged < 15 and level is not None:
+                self._n_logged += 1
+                self.log(f"stop {symbol.value} niveau={level:.4f} execution={order_event.fill_price:.4f} "
+                         f"ouverture={security.open:.4f} plus_bas={security.low:.4f}")
+            return
+        quantity = self.portfolio[symbol].quantity
+        if quantity <= 0:
+            self._stop_level.pop(symbol, None)
+            return
+        if symbol not in self._stop_level:
+            # Ligne ouverte : stop fixe une fois pour toutes, sous le prix d'entree.
+            self._stop_level[symbol] = order_event.fill_price - STOP_ATR_MULT * self._atr_signal[symbol]
+        self._stop_tickets[symbol] = self.stop_market_order(symbol, -quantity,
+                                                            self._stop_level[symbol], tag="stop")
+
+    # ------------------------------------------------------------------ traces
+
+    def _trace(self):
+        self.plot("shadow", f"e{self._trace_count % 5}", self.portfolio.total_portfolio_value)
+        self._trace_count += 1
+
+    def on_end_of_algorithm(self):
+        self.set_runtime_statistic("Stops", str(self._n_stops))
+        self.set_runtime_statistic("Stops au min(ouverture, stop)", str(self._n_stops_rule))
+        self.set_runtime_statistic("Coupures", str(self._n_cuts))
+        self.set_runtime_statistic("Ordres invalides", str(self._n_invalid))
+        self.set_runtime_statistic("Exposition max", f"{self._exposure_max:.4f}")
+        self.set_runtime_statistic("Liquidites min", f"{self._cash_min:.2f}")
+        self.set_runtime_statistic("Poids de groupe max", f"{self._group_max:.4f}")

@@ -4198,7 +4198,15 @@ class _Completed:
 
 
 def test_api_usage_counter_separates_the_two_buckets(monkeypatch):
-    """`gh api graphql` paie le bucket partage, tout le reste le bucket core."""
+    """Le bucket partage est celui de GraphQL — y compris les appels `--json`.
+
+    #17315 (correction de classification, 06/11) : `gh pr view --json` passe
+    par l'API **GraphQL** (la CLI construit une requete GraphQL), donc par le
+    BUCKET PARTAGE de la flotte. Le compter comme du REST sous-reportait la
+    consommation du bucket que le levier 4 cherche a reduire. La regle
+    classee est desormais : `api graphql` et `pr|issue ... --json` = GraphQL ;
+    les endpoints `api repos/...` = REST.
+    """
     monkeypatch.setattr(
         mod.subprocess, "run", lambda *a, **k: _Completed('{"ok": true}')
     )
@@ -4208,8 +4216,9 @@ def test_api_usage_counter_separates_the_two_buckets(monkeypatch):
     mod.gh_json(["api", "repos/o/r/pulls/1"])
     mod.gh_json(["api", "repos/o/r/commits/deadbeef/check-runs"])
     mod.gh_json(["pr", "view", "1", "--json", "state"])
+    mod.gh_json(["pr", "list", "--json", "number"])
 
-    assert mod.API_USAGE == {"rest": 3, "graphql": 1}
+    assert mod.API_USAGE == {"rest": 2, "graphql": 3}
 
 
 def test_api_usage_is_published_in_json_and_on_stderr(monkeypatch, capsys):

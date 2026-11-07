@@ -37,11 +37,12 @@ Cible Lidman:81 — `unknotting_11n102_upper` — **n'est pas rendue accessible 
 ce module** (statut corrigé le 2026-10-09, #18611). La route envisagée était :
 exhiber une `MoveSequence` reliant
 `(changeCrossingAt c₁ (changeCrossingAt c₂ knot_11n102)).diagram` au
-`unknotDiagram`, et sceller l'implication par `verifyMoves_sound`. Deux mesures
-la contredisent : (a) la recherche bornée de #18611 (excursions ≤ +2 croisements,
-diagrammes ≤ 13 croisements ; 138 623 états explorés depuis les 67 diagrammes
-n-changés) n'atteint `unknotDiagram` depuis aucun d'entre eux, et `min_crossings`
-reste à 11 pour chacun ; (b) le
+`unknotDiagram`, et sceller l'implication par `verifyMoves_sound` — **prouvé sur
+ce module** par les passes du prouveur (#19890/#20000 ; voir le bloc de statut
+ci-dessous). Deux mesures la contredisent : (a) la recherche bornée de #18611
+(excursions ≤ +2 croisements, diagrammes ≤ 13 croisements ; 138 623 états
+explorés depuis les 67 diagrammes n-changés) n'atteint `unknotDiagram` depuis
+aucun d'entre eux, et `min_crossings` reste à 11 pour chacun ; (b) le
 théorème de plancher conditionné (`Knots.ReidemeisterMoves` §8) montre qu'une
 suite dont **tous** les mouvements préservent `allFourDistinct` ne peut pas faire
 décroître le nombre de croisements — un certificat pour 11n102 devrait donc
