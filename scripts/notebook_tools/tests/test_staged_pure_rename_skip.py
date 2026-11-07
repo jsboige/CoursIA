@@ -257,3 +257,61 @@ def test_hook_scripts_stay_importable_under_python39():
     src = (REPO_ROOT / "scripts" / "git_index_renames.py").read_text(
         encoding="utf-8")
     assert "from __future__ import annotations" in src
+
+
+# ---------------------------------------------------------------------------
+# Un git qui ne repond pas comme git (mesure #25032 en CI)
+# ---------------------------------------------------------------------------
+
+def test_a_misbehaving_git_cannot_break_the_probe(monkeypatch):
+    """Une reponse de `rev-parse` qui n'est pas un repertoire ne doit JAMAIS
+    devenir un chemin.
+
+    Mesure (CI Linux, #25032) : la sonde `git_out` etant remplacee par un
+    payload `--name-status -z` (il contient des NUL), `repo_root()` le
+    transformait en chemin ; `Path(...).resolve()` levait alors
+    `ValueError: embedded null byte` et la garde TOMBAIT au lieu de scanner.
+    Le meme test passait sur Windows (l'appel systeme y tolere le NUL) :
+    un vert local qui ne prouve rien (cf. le controle positif ci-dessous)."""
+    payload = _staged("R100", "old/a.py", "new/a.py")
+    monkeypatch.setattr(git_index_renames, "git_out", lambda *a: payload)
+    monkeypatch.setattr(git_index_renames, "_TOPLEVEL", {})
+
+    root = git_index_renames.repo_root()          # ne doit pas lever
+    assert root == git_index_renames.REPO_ROOT, (
+        "une reponse inutilisable doit se replier sur la racine du module")
+    assert git_index_renames.staged_pure_renames() == {"new/a.py"}
+    kept, skipped = git_index_renames.skip_pure_renames(["new/a.py"])
+    assert skipped == ["new/a.py"]
+    assert kept == []
+
+
+def test_a_misbehaving_git_does_not_poison_the_root_cache(monkeypatch):
+    """Le CACHE de racine est memorise par repertoire courant : une racine
+    inutilisable memorisee pollue tous les appelants suivants du meme
+    repertoire (mesure : un test pre-existant de `check_encoding_corruption`,
+    qui n'a rien a voir avec la sonde, echouait sur la racine polluee)."""
+    payload = _staged("R100", "old/a.py", "new/a.py")
+    monkeypatch.setattr(git_index_renames, "git_out", lambda *a: payload)
+    monkeypatch.setattr(git_index_renames, "_TOPLEVEL", {})
+    git_index_renames.repo_root()
+
+    # git redevient correct : la racine doit redevenir la vraie racine.
+    monkeypatch.setattr(git_index_renames, "git_out", lambda *a: "")
+    monkeypatch.setattr(git_index_renames, "_TOPLEVEL", {})
+    root = git_index_renames.repo_root()
+    assert root == git_index_renames.REPO_ROOT
+    assert (root / "scripts").is_dir()
+
+
+def test_the_comparison_key_is_the_same_on_every_platform():
+    """La CLE de comparaison doit etre identique sur les deux plateformes.
+
+    Sur Windows, `Path.as_posix()` convertit les antislashs ; sur POSIX, un
+    antislash est un caractere legal de nom de fichier et la conversion n'a
+    jamais lieu -- les memes appels produisaient donc deux cles differentes,
+    et le skip ne mordait que sur la machine Windows (vert local, rouge en
+    CI). La conversion est desormais explicite."""
+    key = git_index_renames.repo_relative("dossier\\sous\\fichier.ipynb")
+    assert key == "dossier/sous/fichier.ipynb"
+    assert git_index_renames.repo_relative("dossier/sous/fichier.ipynb") == key

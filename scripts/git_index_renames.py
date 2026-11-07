@@ -81,7 +81,27 @@ def repo_root() -> Path:
     if cached is not None:
         return cached
     out = git_out("rev-parse", "--show-toplevel")
-    root = Path(out.strip()) if out and out.strip() else REPO_ROOT
+    root = REPO_ROOT
+    if out:
+        candidate = out.strip()
+        # `git rev-parse --show-toplevel` answers with a SINGLE directory
+        # path: never a NUL byte, never a missing directory. An answer that
+        # breaks that contract means the probe is not talking to git (a
+        # stub, a corrupted stdout, a test double) -- and turning it into a
+        # Path defers the failure to `Path(...).resolve()`, which raises
+        # `ValueError: embedded null byte` on POSIX and takes the guard
+        # DOWN instead of letting it scan. Such an answer is rejected, and
+        # the probe falls back to the module's root: fail-open toward
+        # scanning, never an exception.
+        #
+        # The rejection also protects the CACHE: an unusable root memoised
+        # for a cwd would poison every later caller of that cwd (measured in
+        # CI on #25032: the cache handed a NUL-laden path to a later test
+        # that ran in the same working directory).
+        if candidate and "\0" not in candidate:
+            path = Path(candidate)
+            if path.is_dir():
+                root = path
     _TOPLEVEL[cwd] = root
     return root
 
@@ -216,18 +236,36 @@ def repo_relative(path: str) -> str:
     without any error, which is the failure mode this helper removes. The
     comparison key must be identical on both sides, so it is computed here,
     once, for every caller.
+
+    The separator conversion is made EXPLICIT, because the platform does not
+    do it for us: on Windows `Path.as_posix()` turns the backslashes into
+    forward slashes, on POSIX a backslash is a legal character in a file
+    name and the conversion NEVER happens -- so the same call produced two
+    different keys on the two platforms, and the Windows run was green by
+    accident while the CI run (Linux) missed every rename (measured on
+    #25032). The key is now the same everywhere.
+
+    A root that cannot be resolved (unusable `rev-parse` answer, path
+    outside the tree) never raises: the caller keeps scanning the file --
+    an absolute path outside the tree cannot be an index entry anyway.
     """
-    p = Path(path)
-    root = repo_root().resolve()
-    if not p.is_absolute():
-        p = root / p
+    normalised = path.replace("\\", "/")
+    p = Path(normalised)
     try:
-        return p.resolve().relative_to(root).as_posix()
+        root = repo_root().resolve()
     except (ValueError, OSError):
-        # Outside the repo (or an unresolvable path): the caller keeps
-        # scanning it -- an absolute path outside the tree cannot be an
-        # index entry anyway.
+        root = None
+    if root is not None:
+        try:
+            if not p.is_absolute():
+                p = root / p
+            return p.resolve().relative_to(root).as_posix()
+        except (ValueError, OSError):
+            pass
+    try:
         return p.as_posix()
+    except ValueError:
+        return normalised
 
 
 def skip_pure_renames(paths: Iterable[str]) -> tuple[list[str], list[str]]:
