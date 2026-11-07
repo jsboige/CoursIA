@@ -157,10 +157,37 @@ def test_le_garde_live_read_declenche_sur_la_seule_source_lue():
     propres fichiers : la revision #21899, qui reecrivait `Pillars.lean`
     sans toucher un carnet, ne declenchait rien.
     """
-    sources = [cell["source"] for cell in _live_read_cells()]
+    sources = [cell["source"] for cell in _live_read_cells()
+               if cell.get("source_kind", "repo") != "external"]
     assert sources, "registre live-read vide : l'invariant ne serait pas epingle"
     for source in sources:
         assert fast_lane.guard_applies(LIVE_READ_GUARD, [source]), source
+
+
+def test_une_source_externe_declenche_le_garde_sur_le_carnet(tmp_path):
+    """Une lecture EXTERNE (clone Lake amont epingle) n'a pas de fichier a
+    surveiller dans le depot : le declencheur est le CARNET, ou vit la sortie
+    commitee. Declarer le chemin amont comme declencheur rendrait le garde
+    eteint en silence sur ce carnet (#23499)."""
+    registre = tmp_path / "registre.json"
+    registre.write_text(json.dumps({"version": 1, "cells": [
+        {"notebook": "MyIA.AI.Notebooks/Serie/Carnet.ipynb", "cell_id": "abc",
+         "source": "DifferentialGeometry/Topology/ThreeManifold/Poincare.lean",
+         "source_kind": "external", "pin": "amont@v0.1.3", "sha256": "a" * 64}]}),
+        encoding="utf-8")
+    assert live_read_source_paths(registre) == [
+        "MyIA.AI.Notebooks/Serie/Carnet.ipynb"]
+
+
+def test_une_entree_externe_sans_notebook_echoue_ferme(tmp_path):
+    """Fail-closed : une entree externe sans carnet ne peut pas dire ce que le
+    garde doit surveiller -- elle leve plutot que de rendre le garde muet."""
+    registre = tmp_path / "registre.json"
+    registre.write_text(json.dumps({"version": 1, "cells": [
+        {"cell_id": "abc", "source": "amont/Poincare.lean",
+         "source_kind": "external"}]}), encoding="utf-8")
+    with pytest.raises(RuntimeError):
+        live_read_source_paths(registre)
 
 
 def test_controle_positif_le_controle_negatif_un_lean_voisin_non_declare():
