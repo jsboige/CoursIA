@@ -12,7 +12,9 @@ Les trois categories de #22783 et ce que l'organe en fait :
 
   EXECUTION     un appel chat (``*.chat.completions.create`` / ``.parse``,
                 ``*.responses.create``, ``*ChatCompletion.create`` legacy,
-                ``dspy.LM(...)``, ``ChatOpenAI(...)``) dont l'argument
+                ``dspy.LM(...)``, ``ChatOpenAI(...)`` ou un POST HTTP de
+                ``requests`` / ``httpx`` / ``urllib`` vers
+                ``*/chat/completions``) dont l'argument ou le payload
                 ``model`` resout vers un identifiant obsolete -> FINDING,
                 exit 1.
   DOCUMENTATION une mention en CHAINE LITTERALE de code NON consommee par
@@ -81,8 +83,9 @@ LIMITES DECLAREES (pas de pretention d'analyse dynamique exhaustive) :
     d'appel. Un modele dynamique (f-string, calcul, retour de fonction)
     est rapporte ``unresolved``, jamais accuse.
   * Dictionnaires : seule la CLE DIRECTE d'un dictionnaire litteral plat
-    (valeurs chaines) resout ; les dictionnaires imbriques ne sont pas
-    suivis. La LISTE DE DICTIONNAIRES (``BATTERY = [{...}, {...}]``) est
+    (valeur chaine ou alias/default statiquement resolu) resout ; les
+    dictionnaires imbriques ne sont pas suivis. La LISTE DE DICTIONNAIRES
+    (``BATTERY = [{...}, {...}]``) est
     suivie depuis #23387 : ``BATTERY[i]["cle"]`` et ``for cfg in BATTERY:``
     puis ``cfg["cle"]`` resolvent chaque entree, et une entree obsolete est
     ACCUSEE (la boucle l'execute, donc le site est atteignable) ; seul
@@ -110,6 +113,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from urllib.parse import urlsplit
 
 # ---------------------------------------------------------------------------
 # Constantes de la regle
@@ -265,7 +269,36 @@ def classify_chat_call(call: ast.Call, dspy_imported: bool) -> tuple[str, bool] 
         return "dspy.LM", True
     if len(parts) == 1 and parts == ["LM"] and dspy_imported:
         return "dspy.LM", True
+    if (parts == ["requests", "post"] or parts == ["httpx", "post"]
+            or parts == ["urllib", "request", "urlopen"]):
+        url = call.args[0] if call.args else None
+        if isinstance(url, ast.Call) and attr_chain(url.func)[-1:] == ["Request"]:
+            url = url.args[0] if url.args else None
+        if targets_chat_completions(url):
+            return f"{'.'.join(parts)} (HTTP)", False
     return None
+
+
+def targets_chat_completions(node: ast.AST | None) -> bool:
+    """Retourne vrai si l'URL contient explicitement la route chat.
+
+    Pour les f-strings, seule la partie litterale est examinee :
+    ``f"{base}/chat/completions"`` est reconnu, alors qu'un endpoint
+    dynamique sans cette route reste hors perimetre.
+    """
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        parts = [urlsplit(node.value).path]
+    elif isinstance(node, ast.JoinedStr):
+        # Les segments litteraux d'une f-string sont independants des parties
+        # dynamiques ; retirer query/fragment evite de prendre une URL de
+        # modele nonchat pour une route chat citee dans sa query.
+        parts = [value.value.split("?", 1)[0].split("#", 1)[0]
+                 for value in node.values if isinstance(value, ast.Constant)
+                 and isinstance(value.value, str)]
+    else:
+        return False
+    return any(part.rstrip("/").endswith("/chat/completions")
+               for part in parts)
 
 
 def model_arg_node(call: ast.Call, positional: bool) -> ast.AST | None:
@@ -623,12 +656,63 @@ class NotebookScanner:
         label, positional = site
         self.stats["chat_sites"] += 1
         cell_id = self._cell_id(ctx.cell_index)
+        if label.endswith(" (HTTP)"):
+            payload = self._http_payload_model(call, ctx)
+            if isinstance(payload, ast.AST):
+                self.resolve_model_expr(payload, label, call, ctx,
+                                        defer_self=True)
+            elif isinstance(payload, Binding):
+                self._evaluate(payload, label, ctx, call)
+            else:
+                self.unresolved.append(self._site(
+                    ctx, cell_id, call, label,
+                    "payload HTTP sans champ model statiquement resolu"))
+            return
         arg = model_arg_node(call, positional)
         if arg is None:
             self.unresolved.append(self._site(ctx, cell_id, call, label,
                                               "sans argument model"))
             return
         self.resolve_model_expr(arg, label, call, ctx, defer_self=True)
+
+    def _http_payload_model(self, call: ast.Call, ctx: Ctx
+                            ) -> ast.AST | Binding | None:
+        """Extrait ``model`` du payload JSON/dictionnaire d'un appel HTTP."""
+        parts = attr_chain(call.func)
+        request = call.args[0] if call.args else None
+        if (parts == ["urllib", "request", "urlopen"]
+                and isinstance(request, ast.Call)
+                and attr_chain(request.func)[-1:] == ["Request"]):
+            payload_call = request
+        else:
+            payload_call = call
+
+        payload_node = next((kw.value for kw in payload_call.keywords
+                             if kw.arg in ("json", "data")), None)
+        if payload_node is None:
+            return None
+        if isinstance(payload_node, ast.Call):
+            # Forme urllib courante : data=json.dumps({"model": model, ...}).
+            if attr_chain(payload_node.func)[-2:] == ["json", "dumps"] \
+                    and payload_node.args:
+                payload_node = payload_node.args[0]
+            else:
+                return None
+        if isinstance(payload_node, ast.Dict):
+            for key, value in zip(payload_node.keys, payload_node.values):
+                if isinstance(key, ast.Constant) and key.value == "model":
+                    return value
+            return None
+        if isinstance(payload_node, ast.Name):
+            name = payload_node.id
+            if name in ctx.local_dicts:
+                return ctx.local_dicts[name].get("model")
+            if name in ctx.locals or (ctx.func_params is not None
+                                      and name in ctx.func_params):
+                return None
+            if name in self.dict_values:
+                return self.dict_values[name].get("model")
+        return None
 
     def resolve_model_expr(self, node: ast.AST, label: str, call: ast.Call,
                            ctx: Ctx, defer_self: bool) -> None:
@@ -869,13 +953,14 @@ class NotebookScanner:
             return None
         table: dict[str, Binding] = {}
         for key, value in zip(node.keys, node.values):
-            if (isinstance(key, ast.Constant) and isinstance(key.value, str)
-                    and isinstance(value, ast.Constant)
-                    and isinstance(value.value, str)):
-                table[key.value] = Binding(
-                    value.value, "literal",
-                    f'cle "{key.value}" du dictionnaire (cell {ctx.cell_index})',
-                    id(value))
+            if isinstance(key, ast.Constant) and isinstance(key.value, str):
+                binding = self.bind_value(value, ctx)
+                if binding.kind != "unresolved":
+                    table[key.value] = Binding(
+                        binding.value, binding.kind,
+                        f'cle "{key.value}" du dictionnaire (cell '
+                        f'{ctx.cell_index}) <- {binding.origin}',
+                        binding.node_id)
         return table or None
 
     def list_dict_literal(self, node: ast.AST,
