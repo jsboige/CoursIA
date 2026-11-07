@@ -30322,20 +30322,21 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ip
 - **Généralité.** La même technique résout le Rubik's Cube (Korf 1997), la Tour de
   Hanoï, tout puzzle de permutation. C'est l'archétype du compromis
   *mémoire contre qualité d'heuristique*.",,,,,,,,a65792da85f20f60,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,s03b-attendus-ex1,markdown,fr,e8c572c67706a8b9,"### Attendus — Exercice 1 (partition 6-6-3)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,s03b-attendus-ex1,markdown,fr,20336ef4d39ef004,"### Attendus — Exemple guidé 1 (partition 6-6-3)
 
-Ce que vous devez observer si votre implémentation est juste : deux PDB de P(16,6) = 5 765 760 arrangements × 10 = 57 657 600 états chacune, une de P(16,3) × 13 = 43 680 — le temps de construction passe de ~4 s à plusieurs dizaines de secondes (d'où l'avertissement de l'énoncé), les distances max par groupe montent (un groupe de 6 est plus mal plaçable qu'un groupe de 4), et h_additive resserre encore : attendez-vous à ce que I1 descende nettement sous les 732 nœuds de la 4-4-4-3. Anti-piège : la partition doit rester **exactement** disjointe (15 tuiles = 6+6+3) ; réutiliser une tuile dans deux groupes compte ses coups deux fois et casse l'admissibilité — la cellule de vérification du §8 doit rester 40/40.",,,,,,,,e8c572c67706a8b9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,3d651408,markdown,fr,7fbf6fb694cb9ca5,"> Rappel (convention de la série) : un exercice est un **squelette à compléter**.
-> Les stubs s'exécutent sans erreur (`// TODO etudiant` + garde le code compilable) ;
-> à vous de les remplir. Ne supprimez pas les `// Indice` / `// Étape N`.
+Ce que vous devez observer si votre implémentation est juste : deux PDB de P(16,6) = 5 765 760 arrangements × 10 = 57 657 600 états chacune, une de P(16,3) × 13 = 43 680 — le temps de construction passe de ~4 s à plusieurs dizaines de secondes (d'où l'avertissement de l'énoncé), les distances max par groupe montent (un groupe de 6 est plus mal plaçable qu'un groupe de 4), et h_additive resserre encore : attendez-vous à ce que I1 descende nettement sous les 732 nœuds de la 4-4-4-3. Anti-piège : la partition doit rester **exactement** disjointe (15 tuiles = 6+6+3) ; réutiliser une tuile dans deux groupes compte ses coups deux fois et casse l'admissibilité — la cellule de vérification du §8 doit rester 40/40.",,,,,,,,20336ef4d39ef004,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,3d651408,markdown,fr,caa6880700f78030,"## 12. Exemples guidés — les trois résolutions créditées
 
-## 12. Exercices
+Les trois sections qui suivent sont des **exemples guidés** : ce sont les
+résolutions créditées de la PR étudiante [#24987](https://github.com/jsboige/CoursIA/pull/24987)
+(auteure : **EmmaLehec**), reprises telles quelles. Elles montrent la méthode
+sur trois sujets déjà résolus ; les **exercices à faire** sont en section 13.
 
-### Exercice 1 — Partition plus fine (6-6-3)
-
-Remplacez la partition 4-4-4-3 par **6-6-3** (Korf & Felner 2002). Combien d'états
-par PDB (`P(16,6)×10`, `P(16,3)×13`) ? Mesurez le speedup supplémentaire sur les
-instances du banc d'essai. Attention au temps de construction des groupes de 6.",,,,,,,,7fbf6fb694cb9ca5,,,,,,,,,,,,,,,
+Les exemples guidés 1 à 3 sont les **exercices 1 à 3 d'origine**, désormais
+résolus : le code de l'étudiante y est conservé tel quel, en-tête « Exercice N »
+compris. L'énoncé de chaque exercice résolu est reproduit avant la solution,
+pour que le lecteur puisse reconnaître le problème avant d'en lire la réponse.
+",,,,,,,,caa6880700f78030,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,9572540d,code,fr,c3699634f1780f65,"// Exercice 1 — Partition plus fine (6-6-3), Korf & Felner 2002
 int[][] GROUPS_663 = { new[]{1,2,3,4,5,6}, new[]{7,8,9,10,11,12}, new[]{13,14,15} };
 
@@ -30398,9 +30399,11 @@ foreach (var r in bench) {
     Console.WriteLine($""{r.name,-20} {sol663,-4} {hS,-14} {nmS,-11} {naS,-10} {n6S,-10} {(""x"" + vs4443.ToString(""F1"")),-9} {(""x"" + vsM.ToString(""F1"")),-9}"");
 }
 ",,,,,,,,c3699634f1780f65,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,1cfd59c7,markdown,fr,fb00d07b31a139a2,"### Exercice 2 — PDB symétrique : attention, toutes les symétries ne se valent pas (Felner et al. 2004)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,1cfd59c7,markdown,fr,cde1677b73fd661e,"### Exemple guidé 2 — PDB symétrique : attention, toutes les symétries ne se valent pas (Felner et al. 2004) (crédité #24987 — EmmaLehec)
 
-Une transformation $\sigma$ des états donne une seconde heuristique **gratuite** si elle vérifie **deux** conditions :
+> Résolution originale : **EmmaLehec**, PR étudiante [#24987](https://github.com/jsboige/CoursIA/pull/24987). Reprise telle quelle ; seule la mise en forme est harmonisée avec les sections voisines.
+
+**Énoncé de l'exercice résolu** — Une transformation $\sigma$ des états donne une seconde heuristique **gratuite** si elle vérifie **deux** conditions :
 1. **préserver les distances** : $\text{dist}(s, g) = \text{dist}(\sigma(s), \sigma(g))$ pour tous $s, g$ ;
 2. **laisser le but invariant** : $\sigma(g_{\text{but}}) = g_{\text{but}}$ — sinon $h(\sigma(s)) = \text{dist}(\sigma(s), g_{\text{but}})$ n'est pas la distance vers le vrai but, et l'heuristique peut **surestimer**.
 
@@ -30408,7 +30411,7 @@ La transformation « miroir vertical + renommage $t \to 16 - t$ » de l'énoncé
 
 La **réflexion diagonale** de Felner et al. (la transposée de la grille) vérifie les deux conditions : le but symétrique reste le but, et le renommage se fait **par position dans le but** (chaque tuile est remplacée par la tuile qui occupe la position miroir de sa position-cible), ce qui préserve exactement les distances de Manhattan et celles de la PDB.
 
-Implémentez la réflexion diagonale `Reflect(state)` (avec ce renommage par position-cible), vérifiez qu'elle laisse le but inchangé et que `HAdditive(state) == HAdditive(Reflect(state))`. Combinez par `Math.Max`. Le contre-exemple de la méthode 1 (miroir + $t \to 16-t$) est conservé dans la solution : il illustre pourquoi la condition 2 n'est pas optionnelle.",,,,,,,,fb00d07b31a139a2,,,,,,,,,,,,,,,
+La solution implémente la réflexion diagonale `Reflect(state)` (avec ce renommage par position-cible) : elle vérifie que la transformation laisse le but inchangé et que `HAdditive(state) == HAdditive(Reflect(state))`, puis combine les deux heuristiques par `Math.Max`. Le contre-exemple de la méthode 1 (miroir + $t \to 16-t$) est conservé dans la solution : il illustre pourquoi la condition 2 n'est pas optionnelle.",,,,,,,,cde1677b73fd661e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,1de07836,code,fr,d42c2df098c2e77e,"// ---------- Méthode 1 : la transformation de l'énoncé (miroir vertical + t -> 16 - t) ----------
 Console.WriteLine(""=== Méthode 1 (énoncé : miroir vertical + t -> 16 - t) ==="");
 
@@ -30523,17 +30526,19 @@ Console.WriteLine($""HSymmetric2(INST) = {HSymmetric2(INST)}"");
 Console.WriteLine($""Reflect2(GOAL) == GOAL : {Reflect2(GOAL).SequenceEqual(GOAL)}"");      // doit afficher True
 Console.WriteLine($""HSymmetric2(GOAL) = {HSymmetric2(GOAL)} (attendu 0)"");
 Console.WriteLine($""Manhattan(s) == Manhattan(Reflect2(s)) : {Manhattan(INST) == Manhattan(Reflect2(INST))}""); // True",,,,,,,,d42c2df098c2e77e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,s03b-attendus-ex2,markdown,fr,af62bc8e6b782bdb,"### Attendus — Exercice 2 (PDB symétrique)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,s03b-attendus-ex2,markdown,fr,930327d9660300ab,"### Attendus — Exemple guidé 2 (PDB symétrique)
 
 La réflexion diagonale (transposée de la grille, renommage par position-cible) vérifie les deux conditions d'une symétrie utile : distances préservées **et** but invariant. Vous obtenez une **seconde heuristique sans nouveau BFS**, combinée par `Math.Max` — admissible car chacune l'est, strictement meilleure dès qu'une des deux voit mieux.
 
-Si votre `Reflect` laisse le but transformé différent du but (par exemple avec un renommage arbitraire des numéros comme $t \to 16 - t$), l'heuristique combinée surestime sur certaines instances — sur la grille résolue $h$ doit valoir $0$ ; toute autre valeur trahit une transformation qui ne fixe pas le but. Le contre-exemple mesuré dans la solution (méthode 1) illustre ce piège.",,,,,,,,af62bc8e6b782bdb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,b644cc24,markdown,fr,b7b5510676be59f3,"### Exercice 3 — Généralisation au 24-puzzle
+Si votre `Reflect` laisse le but transformé différent du but (par exemple avec un renommage arbitraire des numéros comme $t \to 16 - t$), l'heuristique combinée surestime sur certaines instances — sur la grille résolue $h$ doit valoir $0$ ; toute autre valeur trahit une transformation qui ne fixe pas le but. Le contre-exemple mesuré dans la solution (méthode 1) illustre ce piège.",,,,,,,,930327d9660300ab,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,b644cc24,markdown,fr,e9edf50a8452121e,"### Exemple guidé 3 — Généralisation au 24-puzzle (crédité #24987 — EmmaLehec)
 
-Le **24-puzzle** (5×5) est le vrai défi : Manhattan y est désespérément faible et
+> Résolution originale : **EmmaLehec**, PR étudiante [#24987](https://github.com/jsboige/CoursIA/pull/24987). Reprise telle quelle ; seule la mise en forme est harmonisée avec les sections voisines.
+
+**Énoncé de l'exercice résolu** — Le **24-puzzle** (5×5) est le vrai défi : Manhattan y est désespérément faible et
 seules les PDB additives rendent la résolution optimale envisageable. Adaptez ce
-notebook (25 cellules, partition 6-6-6-7) et résolvez une instance. Que
-constatez-vous sur le rapport construction/qualité ?",,,,,,,,b7b5510676be59f3,,,,,,,,,,,,,,,
+notebook (partition 6-6-6-7) et résolvez une instance. Que
+constatez-vous sur le rapport construction/qualité ?",,,,,,,,e9edf50a8452121e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,599c98a5,code,fr,7a29bd5220a7a28a,"// Exercice 3 — Généralisation au 24-puzzle (5x5)
 // Indice : la structure est inchangée ; changent la taille (N=5), le but (1..24,0),
 // et la partition.
@@ -30587,12 +30592,12 @@ int[] Scramble24(int nSteps, int seed) {
 Console.WriteLine($""But 24 : Manhattan = {Manhattan24(GOAL24)} ; voisins coin = {NEIGH24[0].Length}, bord = {NEIGH24[2].Length}, centre = {NEIGH24[12].Length}"");
 var demo24 = Scramble24(30, 1);
 Console.WriteLine($""Instance 5x5 (30 pas, seed 1) : ({string.Join("", "", demo24)}) ; Manhattan = {Manhattan24(demo24)}"");",,,,,,,,7a29bd5220a7a28a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,s03b-attendus-ex3,markdown,fr,524ca6f337d0a518,"### Attendus — Exercice 3 (24-puzzle)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,s03b-attendus-ex3,markdown,fr,dae469c71221328b,"### Attendus — Exemple guidé 3 (24-puzzle)
 
 Au 24-puzzle (5 × 5), Manhattan est désespérément loose : les instances aléatoires moyennes exigent ~100 coups, et IDA* sous Manhattan explose au-delà de tout budget raisonnable. La structure du code est inchangée (N=5, but 1..24,0) mais les tailles explosent : un groupe de 6 tuiles dans 25 cases donne P(25,6) × 19 = 2 422 728 000, soit ~2,4 milliards d'états — la table ne tient plus en mémoire sans encodage compact. C'est précisément pourquoi Korf & Felner ont poussé les partitions avec symétries et la compression : au 24-puzzle, la PDB n'est plus une optimisation, c'est la condition d'entrée.
 
-**L'arc du notebook** : représenter (permutations), abstraire (sous-espaces), précalculer (BFS rétrograde), sommer (disjonction), vérifier (admissibilité et dominance), mesurer (frontière du résoluble). Ce pipeline est transposable à tout domaine où l'on peut payer du calcul préliminaire pour accélérer des requêtes répétées.",,,,,,,,524ca6f337d0a518,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,08e76387,markdown,fr,1217f2d1eba70249,"## Conclusion
+**L'arc du notebook** : représenter (permutations), abstraire (sous-espaces), précalculer (BFS rétrograde), sommer (disjonction), vérifier (admissibilité et dominance), mesurer (frontière du résoluble). Ce pipeline est transposable à tout domaine où l'on peut payer du calcul préliminaire pour accélérer des requêtes répétées.",,,,,,,,dae469c71221328b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,08e76387,markdown,fr,74e0724983035c58,"## Conclusion
 
 La **base de données de motifs** illustre un principe central de la recherche
 heuristique avancée : **investir du calcul en amont** (précalculer des tables une
@@ -30601,7 +30606,7 @@ cheap**. Sur le 15-puzzle, la PDB *additive* (4-4-4-3) explore ~3 à 10x moins d
 nœuds que Manhattan sur les instances résolubles, et — c'est le point décisif —
 **résout à l'optimum des instances intermédiaires (optimal ~45-53 coups) où
 Manhattan dépasse le budget**. Les partitions plus fines (6-6-3 puis 7-8 avec
-symétries, cf exercices et Korf & Felner 2002) poussent cette frontière encore
+symétries, cf exemples guidés et Korf & Felner 2002) poussent cette frontière encore
 plus loin, jusqu'aux instances à ~66 coups de la littérature.
 
 Les trois ingrédients de la technique :
@@ -30639,7 +30644,7 @@ construction amorti sur des millions de requêtes.
 ← [Search-3 — Recherche informée](../Part1-Foundations/Search-03-Informed.ipynb)
 
 | ↑ [Search (racine)](../README.md) | [Partie 4 — Métaheuristiques →](../Part4-Metaheuristics/README.md)
-| 🐍 [Version Python](Search-03b-PatternDatabases.ipynb)",,,,,,,,1217f2d1eba70249,,,,,,,,,,,,,,,
+| 🐍 [Version Python](Search-03b-PatternDatabases.ipynb)",,,,,,,,74e0724983035c58,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-b69788eb,markdown,fr,fa4057898b7438f3,"# Search-03b — Bases de données de motifs (Pattern Databases) pour le 15-puzzle
 
 > **Partie 3 — Recherche avancée.** Ce notebook ouvre la Partie 3 : techniques de
@@ -39235,24 +39240,16 @@ public static int? MinimaxLimite<TEtat>(IJeuSommeNulle<TEtat> jeu, TEtat etat, i
 
 // TODO etudiant : tournoi MinimaxLimite (profondeurs 2, 4, 6) contre AlphaBeta, avec Chrono
 Console.WriteLine(""Exercice 4 a completer : IA a profondeur limitee contre Alpha-Beta complet (voir indices ci-dessus)."");",,,,,,,,46fa0aae285b6dca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,afd66b36,markdown,fr,39c66ead33fb3bc0,"### Conclusion — Exercice 1
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,afd66b36,markdown,fr,418df3a3c87ed6bb,"### Conclusion — Exemple guidé 1
 
 6-6-3 : 2 × 57 657 600 + 43 680 états, 5 min de construction (contre quelques secondes pour la 4-4-4-3). L'heuristique reste admissible (40/40). Speedup par rapport à 4-4-4-3 : ×2,8 (I1), ×2,7 (I2), ×9,5 (I3). On paie beaucoup plus de mémoire et de temps de construction, mais la recherche devient nettement plus courte, surtout sur l'instance la plus dure.
-
-***
-
-Exemple guide credite — resolution originale : **EmmaLehec**, PR etudiante [#24987](https://github.com/jsboige/CoursIA/pull/24987). Resolution reprise telle quelle ; seule la mise en forme est harmonisee avec les sections voisines.
-",,,,,,,,39c66ead33fb3bc0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,98a14462,markdown,fr,c044b51fba357731,"### Conclusion — Exercice 2
+",,,,,,,,418df3a3c87ed6bb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,98a14462,markdown,fr,669dc683bf97e26c,"### Conclusion — Exemple guidé 2
 
 - **Méthode 1 (énoncé : miroir vertical + t → 16 − t)** : elle est réversible, mais elle ne laisse pas le but inchangé (`Reflect1(GOAL) ≠ GOAL`). `HSymmetric1(GOAL) = 51` sur une grille déjà résolue : elle surestime, donc elle n'est **pas admissible**.
 - **Méthode 2 (réflexion diagonale, Felner et al.)** : le but reste inchangé (`HSymmetric2(GOAL) = 0`) et Manhattan est conservé. On obtient une seconde heuristique admissible **sans nouveau BFS**, combinée par `Math.Max`.
 - Être réversible ne suffit pas : une symétrie utile doit aussi laisser le but inchangé.
-
-***
-
-Exemple guide credite — resolution originale : **EmmaLehec**, PR etudiante [#24987](https://github.com/jsboige/CoursIA/pull/24987). Resolution reprise telle quelle ; seule la mise en forme est harmonisee avec les sections voisines.
-",,,,,,,,c044b51fba357731,,,,,,,,,,,,,,,
+",,,,,,,,669dc683bf97e26c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,f0d2349c,code,fr,55faff0b6b5c56a4,"// ---------- Étape 2 : l'explosion de P(25, k) ----------
 // Même formule qu'au 15-puzzle : P(25,k) placements des k tuiles × (25-k) positions de la case vide.
 // On calcule en long : dès k = 6 le résultat dépasse la capacité d'un int.
@@ -39460,17 +39457,13 @@ foreach (var (iname, s) in INSTANCES24) {
         Console.WriteLine($""   {hname,-15} h(départ) = {h(s),3} | {res} ({swI.Elapsed.TotalSeconds:F1} s)"");
     }
 }",,,,,,,,f9c57e8a55a1aa14,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,55971043,markdown,fr,a6e84147116e5251,"### Réponse — Exercice 3
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,55971043,markdown,fr,cba804418042edc6,"### Réponse — Exemple guidé 3
 
 - **6-6-6-7 est infaisable** : environ 51 Go de RAM, et un seul groupe de 6 dépasse déjà la taille max d'un tableau .NET. On a donc comparé des partitions plus petites.
 - **Les PDB rendent résoluble ce qui ne l'était pas** : Manhattan échoue sur J3 et J4 ; la PDB 4x6 les résout à l'optimum (J3 : 250 655 nœuds, J4 : 3 413 193).
 - **Rapport construction/qualité** : chaque palier multiplie la mémoire totale par 13 à 16 (3x8 : 2,4 Mo → 4x6 : 38 Mo → 5-5-5-5-4 : 0,5 Go). Le gain en nœuds est fort de 3x8 à 4x6 (×15 sur J3), puis irrégulier et plus faible que le coût de 4x6 à 5-5-5-5-4 : ×7,5 sur J2, mais seulement ×1,5 sur J3 et ×1,2 sur J4.
 - **Limite** : J5 (100 pas) n'est résolue par aucune version. Une vraie instance aléatoire du 24-puzzle demande des tables bien plus grosses et beaucoup plus de calcul.
-
-***
-
-Exemple guide credite — resolution originale : **EmmaLehec**, PR etudiante [#24987](https://github.com/jsboige/CoursIA/pull/24987). Resolution reprise telle quelle ; seule la mise en forme est harmonisee avec les sections voisines.
-",,,,,,,,a6e84147116e5251,,,,,,,,,,,,,,,
+",,,,,,,,cba804418042edc6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,finition-03b-csharp-a-retenir,markdown,fr,69b3f285aaaa5333,"## À retenir
 
 1. **Une PDB échange du calcul contre une table** : 524 160 entrées pour un groupe de 4 tuiles (P(16,4) = 43 680 motifs × 12 positions de la case vide), construites en 2,4 s ; 43 680 pour le groupe de 3. La table n'est pas une estimation : c'est l'optimum d'un problème plus facile, calculé une fois.
@@ -39493,17 +39486,23 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ip
 4. Une collision ferait correspondre deux états abstraits distincts à la même entrée : l'un des deux lirait la distance de l'autre, et l'heuristique pourrait surestimer — un IDA* qui rend une solution sous-optimale sans le signaler. Testé à la construction, le défaut est attrapé avant tout usage en recherche (0 collision sur 19 975 états).
 
 </details>",,,,,,,,eeff85ff4525bd81,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,finition-03b-csharp-plus-loin,markdown,fr,13b3f9846edcba5d,"## Pour aller plus loin
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,finition-03b-csharp-plus-loin,markdown,fr,0f0544c713159708,"## Pour aller plus loin
 
 - **Jumeau Python** : [Search-03b-PatternDatabases](Search-03b-PatternDatabases.ipynb) — la même technique en Python, avec ses propres mesures (×8,4 à ×20,6 sur ses trois instances) et ses sections sur les quotients (information mutuelle, dette Ruzsa).
 - **Carnet voisin** : [Search-03c-LimitedDiscrepancySearch-CSharp](Search-03c-LimitedDiscrepancySearch-CSharp.ipynb) — borner l'exploration par la structure du problème plutôt que par une meilleure estimation.
 - **Dans la même série** : [Search-03-Informed-CSharp](Search-03-Informed-CSharp.ipynb) — la dominance des heuristiques, dont HAdditive ≥ HMax est une instance mesurée ici.
-- **Exercices du carnet** : exercice 1 (partition 6-6-3), exercice 2 (PDB symétrique, Felner et al. 2004), exercice 3 (généralisation au 24-puzzle).
-- **Lectures** : Korf & Felner (2002), *Disjoint Pattern Database Heuristics* — la partition 4-4-4-3 et la combinaison additive viennent de là.",,,,,,,,13b3f9846edcba5d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,76db16e0,markdown,fr,65ccb23b831a22a7,"### Exercice 4 — Partition 5-5-5 (trois groupes équilibrés)
+- **Exemples guidés du carnet** : exemple guidé 1 (partition 6-6-3), exemple guidé 2 (PDB symétrique, Felner et al. 2004), exemple guidé 3 (généralisation au 24-puzzle) — résolutions créditées, section 12.
+- **Exercices du carnet** : exercice 4 (partition 5-5-5), exercice 5 (max vs somme sur PDB non additives), exercice 6 (base de motifs sur les tours de Hanoï).
+- **Lectures** : Korf & Felner (2002), *Disjoint Pattern Database Heuristics* — la partition 4-4-4-3 et la combinaison additive viennent de là.",,,,,,,,0f0544c713159708,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,76db16e0,markdown,fr,29f31f75dbc1b4ab,"### Exercice 4 — Partition 5-5-5 (trois groupes équilibrés)
 
 Construisez la partition **5-5-5** et comparez-la à la 6-6-3 : coût mémoire de chaque table ($P(16,5) \times 11$ états attendus par groupe), temps de construction, admissibilité (40/40), et qualité de la guidance (nombre de nœuds explorés sur les 40 instances de la section 7). La 6-6-3 déséquilibre les groupes (un groupe de 6 est bien plus coûteux) — la 5-5-5 équilibre le compromis mémoire/guidance autrement. Où se situe l'optimum pratique ?
-",,,,,,,,65ccb23b831a22a7,,,,,,,,,,,,,,,
+
+**Indice.** Reprenez la structure de l'**exemple guidé 1** (section 12) : un groupe de
+tuiles contiguës, `BuildAdditivePdb` par groupe, puis la mesure d'admissibilité et la
+mesure de guidance de la section 7. Ici, seul le découpage change : trois groupes de
+cinq au lieu de 6-6-3.
+",,,,,,,,29f31f75dbc1b4ab,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,4c26d338,code,fr,b59c9eea3b612b18,"// Exercice 4 — à compléter : partition 5-5-5 et confrontation 6-6-3
 // Indice : la structure de l'exercice 1 est inchangée — GROUPS_555 =
 // { new[]{1,2,3,4,5}, new[]{6,7,8,9,10}, new[]{11,12,13,14,15} }, puis
@@ -39513,10 +39512,10 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ip
 // mémoire avant de lancer la construction.
 // TODO etudiant
 Console.WriteLine(""Exercice 4 à compléter : partition 5-5-5."");",,,,,,,,b59c9eea3b612b18,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,4196bf40,markdown,fr,57c256199048969e,"### Exercice 5 — Max vs somme : combiner des PDB non additives
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,4196bf40,markdown,fr,7a5a745e765bafe9,"### Exercice 5 — Max vs somme : combiner des PDB non additives
 
-Les PDB des exercices précédents sont **additives** (les groupes sont disjoints : la somme reste admissible). Construisez maintenant deux PDB **non additives** sur des groupes qui se chevauchent (par exemple {1..8} et {8..15} : la tuile 8 appartient aux deux), et combinez-les par `Math.Max`. Expliquez pourquoi la **somme** de ces deux tables casserait l'admissibilité (un coup de la tuile 8 serait compté deux fois) alors que le max reste sûr, et mesurez quelle combinaison guide le mieux.
-",,,,,,,,57c256199048969e,,,,,,,,,,,,,,,
+Le PDB de l'**exemple guidé 1** (groupes 6-6-3) est **additif** (les groupes sont disjoints : la somme reste admissible). Construisez maintenant deux PDB **non additives** sur des groupes qui se chevauchent (par exemple {1..8} et {8..15} : la tuile 8 appartient aux deux), et combinez-les par `Math.Max`. Expliquez pourquoi la **somme** de ces deux tables casserait l'admissibilité (un coup de la tuile 8 serait compté deux fois) alors que le max reste sûr, et mesurez quelle combinaison guide le mieux.
+",,,,,,,,7a5a745e765bafe9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,633ecc26,code,fr,bcdfd4ff34b4a8b8,"// Exercice 5 — à compléter : PDB non additives combinées par Max
 // Indice : réutilisez BuildAdditivePdb sur des groupes qui se chevauchent
 // — la table reste une vraie PDB (elle vérifie h(s) <= dist(s, but) par
@@ -39537,3 +39536,23 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ip
 // A* avec cette table vs A* avec h=0 : comptez les nœuds développés.
 // TODO etudiant
 Console.WriteLine(""Exercice 6 à compléter : PDB tours de Hanoi."");",,,,,,,,e1a802cf560a3896,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,s03b-exercices,markdown,fr,5248233f11513782,"## 13. Exercices
+
+> Rappel (convention de la série) : un exercice est un **squelette à compléter**.
+> Les stubs s'exécutent sans erreur (`// TODO etudiant` + garde le code compilable) ;
+> à vous de les remplir. Ne supprimez pas les `// Indice` / `// Étape N`.
+
+Les trois exercices qui suivent sont **neufs** : ils ne sont pas issus des
+résolutions créditées de la section 12, et aucune solution n'en est publiée. Les
+exemples guidés 1 à 3 montrent la méthode sur trois sujets déjà résolus ; ces
+trois exercices en sont la contrepartie non résolue.
+",,,,,,,,5248233f11513782,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,s03b-exemple-guide-1,markdown,fr,aa24ae3520ea1263,"### Exemple guidé 1 — Partition plus fine (6-6-3) (crédité #24987 — EmmaLehec)
+
+> Résolution originale : **EmmaLehec**, PR étudiante [#24987](https://github.com/jsboige/CoursIA/pull/24987). Reprise telle quelle ; seule la mise en forme est harmonisée avec les sections voisines.
+
+**Énoncé de l'exercice résolu** — Remplacez la partition 4-4-4-3 par **6-6-3**
+(Korf & Felner 2002). Combien d'états par PDB (`P(16,6)×10`, `P(16,3)×13`) ?
+Mesurez le speedup supplémentaire sur les instances du banc d'essai. Attention
+au temps de construction des groupes de 6.
+",,,,,,,,aa24ae3520ea1263,,,,,,,,,,,,,,,
