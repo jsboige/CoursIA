@@ -199,19 +199,72 @@ def test_le_tableau_dit_quand_l_adherence_n_est_pas_measurable():
 
 def test_le_journal_de_tirage_alimente_la_provenance_tapis(monkeypatch):
     """La provenance 2 vient du journal de tirage de la lane : `mode=belt`
-    seulement (un tirage pondere n'est pas un tirage au tapis)."""
+    seulement (un tirage pondere n'est pas un tirage au tapis), et l'issue
+    RETENUE seulement -- pas les candidates montrees (#25082, revue du
+    07/11 : le tapis montre jusqu'a 50 issues, la lane n'en prend qu'une)."""
 
     class _Rec:
-        def __init__(self, lane, candidates, mode):
-            self.lane, self.candidates, self.mode = lane, candidates, mode
+        def __init__(self, lane, candidates, mode, retained=None):
+            self.lane, self.candidates = lane, candidates
+            self.mode, self.retained = mode, retained
 
+    monkeypatch.setattr(bq, "_local_machine", lambda: "myia-ai-01")
     monkeypatch.setattr(bq.tj, "read_journal", lambda *a, **k: [
-        _Rec(A, [77, 78], "belt"),
-        _Rec(A, [99], "weighted"),
-        _Rec(B, [55], "belt"),
+        _Rec(A, [77, 78], "belt", retained=78),
+        _Rec(A, [99], "weighted", retained=99),
+        _Rec(A, [88], "belt", retained=None),
     ])
-    assert bq.belt_draw_numbers(A) == {77, 78}
-    assert bq.belt_draw_numbers(B) == {55}
+    # 78 retenue seulement : 77 (montree) et 99 (tirage pondere) ne comptent
+    # pas ; 88 n'a rien retenu.
+    assert bq.belt_draw_numbers(A) == {78}
+
+
+def test_une_issue_montree_mais_non_retenue_ne_compte_pas_comme_tapis():
+    """Un tirage dont `candidates` contient l'issue de la PR et `retained`
+    une AUTRE issue : la PR est hors_tapis, pas tapis (#25082, revue)."""
+    prs = [_pr(101, title="Fix(x,#77): x")]
+    out = bq.measure_adherence(PREV, [A], open_prs=prs, belt_draws={A: {78}})
+    lane = out["lanes"][A]
+    assert lane["prs"]["hors_tapis"] == [101]
+    assert lane["self_drawn"] == 0
+
+
+def test_une_lane_d_une_autre_machine_n_est_pas_mesuree_localement(monkeypatch):
+    """Le journal de tirage est par machine : pour une lane distante, la
+    provenance tapis est NON MESUREE (None), jamais un zero -- et ses PRs
+    hors file tombent dans non_mesure, pas dans hors_tapis (#25082, revue)."""
+    monkeypatch.setattr(bq, "_local_machine", lambda: "myia-ai-01")
+    monkeypatch.setattr(bq.tj, "read_journal", lambda *a, **k: [])
+    # B vit sur myia-po-2023 : le journal local d'ai-01 ne peut pas la voir.
+    assert bq.belt_draw_numbers(B) is None
+
+    prs = [_pr(201, lane=B, title="Fix(x,#55): x"),   # hors file, tapis ?
+           _pr(202, lane=B, title="Fix(x,#20): x")]   # issue de SA file
+    out = bq.measure_adherence(PREV, [A, B], open_prs=prs, belt_draws={
+        A: set(), B: None})
+    lane = out["lanes"][B]
+    assert lane["assigned"] == 1
+    assert lane["self_drawn"] is None
+    assert lane["off_belt"] == 0
+    assert lane["non_mesure"] == 1
+    assert lane["prs"]["non_mesure"] == [201]
+    assert lane["adherence"] is None
+
+
+def test_le_rendu_d_une_lane_distante_reserve_le_tapis_au_journal_local():
+    """`tapis 0/n (journal local)` : la reserve est dans la ligne, le zero
+    nu interdit -- le tableau ne dit pas « la lane n'a rien fait du tapis »
+    quand il ne peut pas le savoir."""
+    prs = [_pr(201, lane=B, title="Fix(x,#55): x")]
+    board = bq.board({"picks": []}, [A, B], PREV, NOW,
+                     fetch_issue=lambda n: {"number": n, "state": "OPEN",
+                                            "comments": []},
+                     open_prs=prs, belt_draws={A: set(), B: None})
+    texte = bq.render_board(board)
+    assert "journal local" in texte
+    assert "tapis 0/1 (journal local)" in texte
+    # le zero nu de l'ancienne forme ne doit plus apparaitre pour cette lane
+    assert "tapis 0 /" not in texte
 
 
 def test_un_journal_illisible_ne_leve_pas(monkeypatch):
@@ -222,6 +275,7 @@ def test_un_journal_illisible_ne_leve_pas(monkeypatch):
     def _boom(*a, **k):
         raise _json.JSONDecodeError("x", "y", 0)
 
+    monkeypatch.setattr(bq, "_local_machine", lambda: "myia-ai-01")
     monkeypatch.setattr(bq.tj, "read_journal", _boom)
     assert bq.belt_draw_numbers(A) == set()
 
@@ -230,6 +284,7 @@ def test_un_journal_illisible_ne_leve_pas(monkeypatch):
     (bq.ADHERENCE_ASSIGNED, "file"),
     (bq.ADHERENCE_SELF_DRAWN, "tapis"),
     (bq.ADHERENCE_OFF_BELT, "hors_tapis"),
+    (bq.ADHERENCE_NON_MEASURED, "non_mesure"),
 ])
-def test_les_trois_provenances_sont_nommees(provenance, attendu):
+def test_les_quatre_provenances_sont_nommees(provenance, attendu):
     assert provenance == attendu

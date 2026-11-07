@@ -208,8 +208,25 @@ def error_label(exc: BaseException) -> str:
 ADHERENCE_ASSIGNED = "file"
 ADHERENCE_SELF_DRAWN = "tapis"
 ADHERENCE_OFF_BELT = "hors_tapis"
+# 4e provenance (#25082, revue du 07/11) : le journal de tirage est PAR
+# MACHINE ; pour une lane d'une autre machine, la part tapis/hors d'une PR
+# hors file est NON MESURABLE localement. Ces PRs tombent dans ce seau --
+# jamais dans hors_tapis, qui se lirait « la lane n'a rien fait du tapis »
+# alors que c'est la lecture qui est impossible.
+ADHERENCE_NON_MEASURED = "non_mesure"
 ADHERENCE_PROVENANCES = (ADHERENCE_ASSIGNED, ADHERENCE_SELF_DRAWN,
-                          ADHERENCE_OFF_BELT)
+                          ADHERENCE_OFF_BELT, ADHERENCE_NON_MEASURED)
+
+
+def _local_machine() -> str:
+    """La machine locale, au format du segment machine d'une lane.
+
+    Reutilise la normalisation de ``gh_identity.machine_hostname``
+    (``COMPUTERNAME`` prime sur Windows, cf #17418) -- une fonction locale
+    substituable en test plutot qu'un appel direct a l'import.
+    """
+    import gh_identity as ghi
+    return ghi.machine_hostname()
 
 
 def gh_open_prs() -> list[dict]:
@@ -268,13 +285,23 @@ def pr_lane(pr: dict) -> str | None:
     return tag.get("lane") or None
 
 
-def belt_draw_numbers(lane: str) -> set[int]:
-    """Les issues que la lane a TIREES elle-meme au tapis (journal de tirage).
+def belt_draw_numbers(lane: str) -> set[int] | None:
+    """Les issues que la lane a RETENUES d'un tirage au tapis (journal local).
+
+    La provenance « tiree par la lane » est l'issue RETENUE du tirage
+    (``retained``), pas les candidates montrees : le tapis montre jusqu'a 50
+    issues par tour, la lane n'en prend qu'une. Compter les candidates
+    gonflerait l'adherence -- toute PR traitant une issue simplement MONTREE
+    par un tirage passerait pour du tapis (#25082, revue du 07/11).
 
     Le journal est PAR MACHINE (`%LOCALAPPDATA%/CoursIA/tirage_journal`) :
-    une mesure prise sur ai-01 ne voit que les tirages d'ai-01. C'est une
-    limite de PORTEE, pas une absence de mesure : l'appelant la nomme.
+    une mesure prise sur ai-01 ne voit que les tirages d'ai-01. Pour une
+    lane dont la machine n'est pas la machine locale, on retourne donc
+    ``None`` (non mesure) -- jamais un ensemble vide, qui se lirait « la
+    lane n'a rien tire » alors que c'est la lecture qui est impossible.
     """
+    if lane.split(":", 1)[0] != _local_machine():
+        return None
     try:
         records = tj.read_journal()
     except (OSError, json.JSONDecodeError):
@@ -283,13 +310,14 @@ def belt_draw_numbers(lane: str) -> set[int]:
     for rec in records:
         if rec.lane != lane or rec.mode != "belt":
             continue
-        out.update(int(c) for c in (rec.candidates or []))
+        if rec.retained is not None:
+            out.add(int(rec.retained))
     return out
 
 
 def measure_adherence(previous: dict | None, lanes: list[str], *,
                        open_prs: list[dict] | None = None,
-                       belt_draws: dict[str, set[int]] | None = None,
+                       belt_draws: dict[str, set[int] | None] | None = None,
                        measured: bool = True) -> dict:
     """La part des PRs d'une lane qui traite une issue de SON tapis.
 
@@ -298,7 +326,12 @@ def measure_adherence(previous: dict | None, lanes: list[str], *,
     n'entre pas dans la mesure : elle est comptee a part, jamais imputee.
 
     Trois provenances disjointes, chacune Named (cf. les constantes) :
-    `file`, `tapis`, `hors_tapis`. Le taux d'adherence est
+    `file`, `tapis`, `hors_tapis` -- plus `non_mesure` : le journal de
+    tirage est PAR MACHINE ; quand ``belt_draws[lane]`` vaut ``None``, la
+    part tapis/hors des PRs hors file de cette lane est inconnue ICI.
+    Elles tombent dans ce seau (jamais dans `hors_tapis`, qui se lirait
+    « la lane n'a rien fait du tapis »), `self_drawn` rend ``None`` et
+    l'adherence n'est pas calculee. Le taux d'adherence est
     `(file + tapis) / total` : il dit si une lane travaille le tapis ou
     autre chose, sans pretendre que le tapis lui-meme est bien oriente.
     """
@@ -312,6 +345,10 @@ def measure_adherence(previous: dict | None, lanes: list[str], *,
         for lane, info in (previous.get("lanes") or {}).items()
     }
     draws = belt_draws or {}
+    # None (cle absente comprise) = le journal local ne couvre pas la
+    # machine de la lane : echec-clos sur la non-mesure, jamais un zero
+    # qui se lirait « la lane n'a rien tire au tapis ».
+    journal_covers = {lane: draws.get(lane) is not None for lane in lanes}
     buckets: dict[str, dict[str, list[int]]] = {}
     sans_lane: list[int] = []
     for pr in open_prs or []:
@@ -329,6 +366,8 @@ def measure_adherence(previous: dict | None, lanes: list[str], *,
         drawn = draws.get(lane) or set()
         if refs & queue:
             kind = ADHERENCE_ASSIGNED
+        elif not journal_covers.get(lane, False):
+            kind = ADHERENCE_NON_MEASURED
         elif refs & drawn:
             kind = ADHERENCE_SELF_DRAWN
         else:
@@ -338,14 +377,16 @@ def measure_adherence(previous: dict | None, lanes: list[str], *,
     for lane in lanes:
         b = buckets.get(lane) or {k: [] for k in ADHERENCE_PROVENANCES}
         total = sum(len(v) for v in b.values())
+        covers = journal_covers.get(lane, False)
         adhere = (len(b[ADHERENCE_ASSIGNED]) + len(b[ADHERENCE_SELF_DRAWN]))
         out[lane] = {
             "measured": measured,
             "assigned": len(b[ADHERENCE_ASSIGNED]),
-            "self_drawn": len(b[ADHERENCE_SELF_DRAWN]),
+            "self_drawn": len(b[ADHERENCE_SELF_DRAWN]) if covers else None,
             "off_belt": len(b[ADHERENCE_OFF_BELT]),
+            "non_mesure": len(b[ADHERENCE_NON_MEASURED]),
             "total": total,
-            "adherence": round(adhere / total, 3) if total else None,
+            "adherence": round(adhere / total, 3) if (total and covers) else None,
             "prs": b,
         }
     return {"measured": measured, "since": since, "lanes": out,
@@ -440,9 +481,19 @@ def render_board(b: dict) -> str:
         if adh and adh.get("total"):
             pct = adh.get("adherence")
             pct_txt = "n/a" if pct is None else f"{round(pct * 100)} %"
+            if adh.get("self_drawn") is None:
+                # Journal de tirage local : pour une lane d'une autre
+                # machine, la part tapis de ses PRs hors file n'est pas
+                # mesurable ici. Rendu n/m avec la reserve nommee -- jamais
+                # un zero nu qui se lirait « la lane n'a rien fait du
+                # tapis » (#25082, revue du 07/11).
+                tapis_txt = (f"tapis 0/{adh.get('non_mesure', 0)} "
+                             f"(journal local)")
+            else:
+                tapis_txt = f"tapis {adh.get('self_drawn', 0)}"
             lines.append(
                 f"      adherence : file {adh.get('assigned', 0)} / "
-                f"tapis {adh.get('self_drawn', 0)} / "
+                f"{tapis_txt} / "
                 f"hors {adh.get('off_belt', 0)} "
                 f"(= {pct_txt} sur {adh.get('total')} PR(s))")
         elif adh and not adh.get("measured"):
