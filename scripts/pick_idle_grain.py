@@ -4151,6 +4151,12 @@ def print_delivered_signal_report(
               "(commentaire + PR couvrante) est atteint, la fin de l'urne "
               "n'a pas ete verifiee. Les candidats")
         print("   non sondes sont CONSERVES (fail-open).")
+        # #16589 (releve po-2025 du 2026-11-03) : quand un plafond a coupe
+        # la sonde, un `withheld` vide N'EST PAS un etat propre -- c'est un
+        # etat inconnu. Les ecartes deja listes sont une borne inferieure.
+        print("   Les ecartes listes ci-dessus sont une BORNE INFERIEURE : "
+              "d'autres livraisons non")
+        print("   sondees peuvent rester dans l'urne servie.")
     if (dropped or dropped_full or failed or cover_failed or inprogress
             or state.get("budget_hit")):
         print()
@@ -12915,6 +12921,13 @@ def main(argv: list[str] | None = None) -> int:
                 "delivered_signal": {
                     "withheld": [it["number"] for it, c in belt_withheld
                                  if c.startswith("LIVRAISON")],
+                    # #16589 (releve po-2025 du 2026-11-03) : quand un
+                    # plafond a coupe la sonde, `withheld` est une borne
+                    # INFERIEURE, jamais un etat propre -- sans cette cle,
+                    # un `[]` se lit « rien a signaler » alors que la fin
+                    # d'urne n'a pas ete verifiee.
+                    "withheld_complete": not (belt_probe_budget_hit[0]
+                                              or belt_time_budget_hit[0]),
                     # #19768 : les exclusions du filtre recent sont HORS
                     # budget -- les nommer separement, sinon la distinction
                     # « ecarte sans consommer de sonde » disparait du JSON.
@@ -13254,6 +13267,10 @@ def main(argv: list[str] | None = None) -> int:
                 "cover_probes_failed": sorted(
                     set(delivered_state.get("cover_failures") or [])),
                 "budget_hit": delivered_state["budget_hit"],
+                # #16589, pendant pondere de la cle belt : `withheld`
+                # (niveau racine) est complet seulement si aucun plafond
+                # n'a coupe la sonde.
+                "withheld_complete": not delivered_state["budget_hit"],
                 "max_probes": DELIVERED_SIGNAL_MAX_PROBES,
             },
             # Pendant du volet livraison, meme doctrine (#20265) :
@@ -13437,6 +13454,23 @@ def main(argv: list[str] | None = None) -> int:
     print_delivered_resolved_lines(withheld)
     # #19309 : le gel a sa ligne a lui (veto du coordinateur, pas livraison).
     print_frozen_resolved_lines(withheld)
+    # #16589 demande 1c (volet pondere, 2026-11-08) : le rapport de sondage
+    # -- y compris l'annonce « fin d'urne NON SONDEE » -- se lit AVANT le
+    # tableau de tirage, comme sur la voie tapis. Le lecteur doit savoir,
+    # en choisissant un candidat servi, lesquels n'ont pas ete verifies ;
+    # l'emettre apres le tableau enterait l'information sous les picks.
+    print_delivered_signal_report(withheld, delivered_state,
+                                  args.include_delivered)
+    # #20265 : juxtapose au signal de livraison -- les deux lectures ratees
+    # se lisent ensemble, la ou le defaut etait precisement que l'une se
+    # taisait.
+    print_claim_unread_report((delivered_state or {}).get("claim_unread"),
+                              args.lane)
+    # #24516 : meme doctrine pour le gel, sur le chemin `delivered` aussi --
+    # la sonde de gel y est cablee (elle y produit `frozen_unread`), mais
+    # l'echec de lecture n'etait dit par aucun rapport texte.
+    print_frozen_unread_report((delivered_state or {}).get("frozen_unread"),
+                               args.lane)
     header = (f"{'urne':<10} {'issue':<8} {'age':>5} {'inact':>6} {'vus':>4}  "
               f"{'genre':<16} {'p':>5}  titre")
     print(header)
@@ -13486,18 +13520,6 @@ def main(argv: list[str] | None = None) -> int:
                         f"citant sur {LONG_VISITS_WINDOW_DAYS} j -- veine deja")
             print(pad + "ouverte, pas un grain delaisse. Une tranche de plus ne solde")
             print(pad + "rien : prendre un sous-grain ailleurs, sauf steer explicite.")
-    print_delivered_signal_report(withheld, delivered_state,
-                                  args.include_delivered)
-    # #20265 : juxtapose au signal de livraison -- les deux lectures ratees
-    # se lisent ensemble, la ou le defaut etait precisement que l'une se
-    # taisait.
-    print_claim_unread_report((delivered_state or {}).get("claim_unread"),
-                              args.lane)
-    # #24516 : meme doctrine pour le gel, sur le chemin `delivered` aussi --
-    # la sonde de gel y est cablee (elle y produit `frozen_unread`), mais
-    # l'echec de lecture n'etait dit par aucun rapport texte.
-    print_frozen_unread_report((delivered_state or {}).get("frozen_unread"),
-                               args.lane)
     print_empty_draw_notice(withheld, picks, args.include_delivered)
     print()
     print_unattributed_blocked(backlog)

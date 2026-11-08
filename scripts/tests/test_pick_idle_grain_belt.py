@@ -3622,3 +3622,58 @@ def test_un_RELEASED_qui_porte_un_marqueur_plus_bas_nest_pas_saute(monkeypatch):
     monkeypatch.setattr(pig, "_issue_comments", lambda n: ([mixed], ""))
     monkeypatch.setattr(pig, "_issue_body", lambda n: "")
     assert pig.has_recent_delivery_marker(24590) is True
+
+
+def test_belt_json_withheld_complete_reflects_probe_ceilings(
+        monkeypatch, capsys):
+    """#16589 (releve po-2025 du 2026-11-03) : quand un plafond a coupe la
+    sonde (budget de sondes OU mur de temps), `delivered_signal.withheld`
+    est une borne inferieure -- la cle `withheld_complete` le dit, sinon un
+    `[]` se lit « rien a signaler » alors que la fin d'urne n'a pas ete
+    verifiee."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    pool = [_make_item(19155, age_days=50, idle=5, last=None)]
+    monkeypatch.setattr(pig, "fetch_pool", lambda **k: (list(pool), None))
+    monkeypatch.setattr(pig, "fetch_latest_claim_stamps_bulk",
+                        lambda *a, **k: ({}, None))
+    monkeypatch.setattr(pig, "has_delivered_signal", lambda n, lane=None: False)
+    monkeypatch.setattr(pig, "merged_pr_signal", lambda n, lane=None: False)
+    monkeypatch.setattr(pig, "has_recent_delivery_marker", lambda n: False)
+
+    def fake_belt_pick(belt_pool, belt_claims, a, probe_budget, *rest, **kw):
+        item = dict(pool[0])
+        item.update({"klass": "grain", "genre": "guard", "weight": 1.0,
+                     "visits": 0, "visits_long": 0})
+        state = {"budget_hit": True, "time_budget_hit": True,
+                 "failures": [], "cover_failures": [], "claim_unread": [],
+                 "gpu_target_unresolved": [], "recent_filtered": 0}
+        return [item], [], state
+
+    monkeypatch.setattr(pig, "belt_pick_with_replacements", fake_belt_pick)
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    sig = payload["delivered_signal"]
+    assert sig["budget_hit"] is True
+    assert sig["time_budget_hit"] is True
+    assert sig["withheld_complete"] is False, (
+        "un plafond coupe : withheld est une borne inferieure, la cle doit "
+        "dire INCOMPLET, pas laisser un [] se lire « propre »")
+
+    # Sans plafond coupe : la liste est complete, la cle le dit.
+    def fake_belt_pick_clean(belt_pool, belt_claims, a, probe_budget,
+                             *rest, **kw):
+        item = dict(pool[0])
+        item.update({"klass": "grain", "genre": "guard", "weight": 1.0,
+                     "visits": 0, "visits_long": 0})
+        state = {"budget_hit": False, "time_budget_hit": False,
+                 "failures": [], "cover_failures": [], "claim_unread": [],
+                 "gpu_target_unresolved": [], "recent_filtered": 0}
+        return [item], [], state
+
+    monkeypatch.setattr(pig, "belt_pick_with_replacements",
+                        fake_belt_pick_clean)
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["delivered_signal"]["withheld_complete"] is True
