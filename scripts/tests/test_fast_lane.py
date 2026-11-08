@@ -157,10 +157,37 @@ def test_le_garde_live_read_declenche_sur_la_seule_source_lue():
     propres fichiers : la revision #21899, qui reecrivait `Pillars.lean`
     sans toucher un carnet, ne declenchait rien.
     """
-    sources = [cell["source"] for cell in _live_read_cells()]
+    sources = [cell["source"] for cell in _live_read_cells()
+               if cell.get("source_kind", "repo") != "external"]
     assert sources, "registre live-read vide : l'invariant ne serait pas epingle"
     for source in sources:
         assert fast_lane.guard_applies(LIVE_READ_GUARD, [source]), source
+
+
+def test_une_source_externe_declenche_le_garde_sur_le_carnet(tmp_path):
+    """Une lecture EXTERNE (clone Lake amont epingle) n'a pas de fichier a
+    surveiller dans le depot : le declencheur est le CARNET, ou vit la sortie
+    commitee. Declarer le chemin amont comme declencheur rendrait le garde
+    eteint en silence sur ce carnet (#23499)."""
+    registre = tmp_path / "registre.json"
+    registre.write_text(json.dumps({"version": 1, "cells": [
+        {"notebook": "MyIA.AI.Notebooks/Serie/Carnet.ipynb", "cell_id": "abc",
+         "source": "DifferentialGeometry/Topology/ThreeManifold/Poincare.lean",
+         "source_kind": "external", "pin": "amont@v0.1.3", "sha256": "a" * 64}]}),
+        encoding="utf-8")
+    assert live_read_source_paths(registre) == [
+        "MyIA.AI.Notebooks/Serie/Carnet.ipynb"]
+
+
+def test_une_entree_externe_sans_notebook_echoue_ferme(tmp_path):
+    """Fail-closed : une entree externe sans carnet ne peut pas dire ce que le
+    garde doit surveiller -- elle leve plutot que de rendre le garde muet."""
+    registre = tmp_path / "registre.json"
+    registre.write_text(json.dumps({"version": 1, "cells": [
+        {"cell_id": "abc", "source": "amont/Poincare.lean",
+         "source_kind": "external"}]}), encoding="utf-8")
+    with pytest.raises(RuntimeError):
+        live_read_source_paths(registre)
 
 
 def test_controle_positif_le_controle_negatif_un_lean_voisin_non_declare():
@@ -1945,12 +1972,16 @@ def test_tranche25_added_axioms_cliquet_guard_is_wired():
     )
 
 
-def test_tranche25_cliquet_detector_tire_sur_une_ancre_nommee_et_rie_tient_sur_un_example(tmp_path):
-    """Controle de bout en bout du detecteur **via sa CLI**, dans les deux
-    sens : une ancre `native_decide` ajoutee dans un `theorem` nomme doit
-    faire sortir rc=1 (rouge), une ancre dans un `example` rc=0 (vert --
-    la pile #18706 ne doit pas rougir), et une base qui ne resout pas rc=2
-    (incident d'entree, fail-closed)."""
+def test_tranche25_cliquet_detector_rougit_toute_ancre_non_declaree_meme_en_example(tmp_path):
+    """Controle de bout en bout du detecteur **via sa CLI**, dans les quatre
+    sens du cliquet declaratif #21387 : une ancre `native_decide` ajoutee
+    dans un `theorem` nomme NON declaree fait sortir rc=1 (rouge), une ancre
+    dans un `example` NON declaree rougit AUSSI (residu #21387 : check_axioms
+    est aveugle aux examples par construction, le rouge declaratif est la
+    seule gate qui les voit), la MEME ancre declaree par une ligne
+    [LEAN-ANCHOR-DECLARED] du corps passe rc=0 (le jugement du motif reste
+    au reviewer), et une base qui ne resout pas rc=2 (incident d'entree,
+    fail-closed)."""
     repo = tmp_path / "repo"
     repo.mkdir()
 
@@ -1971,13 +2002,20 @@ def test_tranche25_cliquet_detector_tire_sur_une_ancre_nommee_et_rie_tient_sur_u
     detector = (Path(__file__).resolve().parents[2] / "scripts" / "lean"
                 / "check_added_axioms_cliquet.py")
 
-    def _run(base):
+    def _run(base, declared=None):
+        cmd = ["python", str(detector), "--base", base, "--head", "HEAD"]
+        if declared is not None:
+            body_path = repo / "body.md"
+            body_path.write_text(
+                chr(10).join(
+                    "[LEAN-ANCHOR-DECLARED] " + d for d in declared) + chr(10),
+                encoding="utf-8")
+            cmd += ["--body-file", str(body_path)]
         return subprocess.run(
-            ["python", str(detector), "--base", base, "--head", "HEAD"],
-            cwd=repo, capture_output=True, text=True, encoding="utf-8",
+            cmd, cwd=repo, capture_output=True, text=True, encoding="utf-8",
         ).returncode
 
-    # 1. ancre dans une declaration NOMMEE -> rc=1 (rouge)
+    # 1. ancre dans une declaration NOMMEE, non declaree -> rc=1 (rouge)
     (repo / "Base.lean").write_text(
         "theorem base_ok : True := by trivial" + chr(10)
         + "theoremAdded : True := by native_decide" + chr(10), encoding="utf-8")
@@ -1985,15 +2023,23 @@ def test_tranche25_cliquet_detector_tire_sur_une_ancre_nommee_et_rie_tient_sur_u
     _git("commit", "-q", "-m", "named anchor")
     assert _run("HEAD~1") == 1, "une ancre dans un theorem nomme doit rougir"
 
-    # 2. ancre dans un `example` -> rc=0 (vert) : la pile #18706 ne rougit pas
+    # 2. ancre dans un `example`, non declaree -> rc=1 : le residu #21387 --
+    # check_axioms ne voit pas les examples, le rouge declaratif est la
+    # seule gate qui les voit.
     (repo / "Base.lean").write_text(
         "theorem base_ok : True := by trivial" + chr(10)
         + "example : True := by native_decide" + chr(10), encoding="utf-8")
     _git("add", "-A")
     _git("commit", "-q", "-m", "example anchor")
-    assert _run("HEAD~1") == 0, "une ancre dans un example doit rester verte"
+    assert _run("HEAD~1") == 1, "une ancre dans un example doit rougir sans declaration"
 
-    # 3. base qui ne resout pas -> rc=2 (fail-closed, jamais un vert)
+    # 3. la MEME ancre, declaree dans le corps -> rc=0 : la declaration
+    # l'acquitte, le jugement du motif reste au reviewer.
+    assert _run(
+        "HEAD~1", declared=["Base.lean:example -- motif de test"]) == 0, (
+        "une ancre declaree par une ligne [LEAN-ANCHOR-DECLARED] doit passer")
+
+    # 4. base qui ne resout pas -> rc=2 (fail-closed, jamais un vert)
     assert _run("ref-qui-nexiste-pas") == 2, "une base non resolue doit sortir 2"
 
 
@@ -2171,6 +2217,11 @@ _TRANCHE33_PATHS = {
         "scripts/tests/test_check_stale_claims.py",
         "scripts/check_factual_mislabel.py",
         "scripts/tests/test_check_factual_mislabel.py",
+        # #23394 : le quatrieme detecteur frere vit dans le meme job, donc son
+        # propre code et ses tests elargissent le perimetre du garde -- epingle
+        # ici pour que l'elargissement reste confronte au declencheur.
+        "scripts/check_listing_coherence.py",
+        "scripts/tests/test_check_listing_coherence.py",
         ".github/workflows/markdown-claims-output-advisory.yml",
     ],
     "Organ-duplication advisory (non-blocking)": [
@@ -2206,6 +2257,35 @@ def test_tranche28_paths_are_reproduced_and_absorbed():
         assert guard.argv == [], (
             f"{guard.name} : le verdict est rendu par `commenters` ; un argv "
             "en plus produirait un second emetteur")
+
+
+def test_tranche39_cell_order_gate_est_absorbe_avec_sa_semantique():
+    """#22209 : le Cell-order gate (bloquant, >= 800 runs/7 j) rejoint la voie
+    rapide. La semantique de REGRESSION seule est portee par le detecteur
+    (--base-ref) ; le perimetre doit COUVRIR le declencheur retire (garde de
+    migration #12567 : sinon le garde cesse d'etre selectionne sur les
+    fichiers qu'il surveillait)."""
+    from fast_lane_registry import TRANCHE39
+
+    assert len(TRANCHE39) == 1, "la tranche 39 porte le seul Cell-order gate"
+    g = TRANCHE39[0]
+    assert g.absorbed, "le garde doit porter absorbed=True (blocage reel)"
+    assert g.blocking, "le gate source est bloquant : ne pas le bloquer changerait sa semantique"
+    assert g.needs_base, "le gate compare base vs tete : sans base, pas de regression mesurable"
+    assert g.iterates_paths, "le gate source boucle par carnet change"
+    assert g.iterate_paths == ["MyIA.AI.Notebooks/**/*.ipynb"], (
+        "l'iteration doit etre restreinte au glob d'actifs de la boucle "
+        "d'origine (le detecteur .py du declencheur ne doit pas y passer, #13220)")
+    assert "--base-ref" in g.argv and "{base_ref}" in g.argv
+    assert "{changed_paths}" in g.argv
+    for p in ("MyIA.AI.Notebooks/**/*.ipynb",
+              "scripts/notebook_tools/scan_cell_ordering.py",
+              "scripts/notebook_tools/cell_order_ci.py"):
+        assert p in g.paths, (
+            f"le declencheur retire couvrait {p} : Guard.paths doit le "
+            "reprendre, sinon le garde perd ces fichiers (garde #12567)")
+    assert any("test_scan_cell_ordering.py" in tok for tok in g.pre_argv), (
+        "pre_argv doit prouver que le scanner tire (lecon #11685/#12817)")
 
 
 def test_every_commenter_header_is_a_known_bot_sticky():
@@ -2380,7 +2460,12 @@ def test_abstention_sans_merge_base_ne_lance_pas_le_detecteur(monkeypatch):
                         lambda repo, pr, header, body, dry: bodies.append(body))
     rc, _, failures = fast_lane.run_effects(guard, ctx, dry_run=True)
     assert rc == 0 and not failures
-    assert len(bodies) == 3, "un sticky par detecteur, meme en abstention"
+    # #23394 : quatre detecteurs de prose partagent ce job depuis l'arrivee de
+    # `listing-coherence`. L'assertion porte sur le NOMBRE DE DETECTEURS, pas
+    # sur un 4 litteral : elle se lit contre le registre.
+    assert len(bodies) == len(guard.commenters), (
+        "un sticky par detecteur, meme en abstention")
+    assert len(bodies) == 4, "les quatre detecteurs de prose de la tranche 1b"
     for body in bodies:
         assert "abstained" in body, f"corps d'abstention attendu, vu {body[:60]!r}"
 

@@ -4898,7 +4898,7 @@ et ce qu'elles laissent faire évoluer.
 | **Coût d'inférence** | 1 modèle | 1 modèle | 1 modèle | N modèles + classifieur |
 | **VRAM** | × 1 | × 1 | × 1 | × N (ou offloading) |
 | **Latence** | 1 forward pass | 1 forward pass | 1 forward pass | 1 forward pass + classification |
-| **Entraînement additionnel** | 0 | 0 | 0 | Classifieur léger (~5 min) |
+| **Entraînement additionnel** | 0 | 0 | 0 | Classifieur léger (50 époques) |
 | **Gestion des inputs hybrides** | Mauvaise (perte par moyennage) | Mauvaise (perte par moyennage) | Meilleure (dropout aléatoire) | Excellente (soft-routing) |
 | **Flexibilité** | Fixe au merge | Fixe au merge | Fixe au merge | Dynamique (ajout d'experts) |
 | **Outils** | Mergekit | Mergekit | Mergekit | Custom / vLLM |
@@ -4992,7 +4992,7 @@ the domains, not the number of experts:**
 
 Nothing in this notebook ranks the three merges against each other: that is a
 literature choice, to be revalidated on a benchmark with perplexity.
-",,,,,,,a2e720832e347355,a73bae4160c66d20,,,,,,,,,,,,,,
+",,,,,,,3173fda3dfbc2b26,a73bae4160c66d20,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,095833db,markdown,fr,671380ffe72bc3ea,"### Interpretation : Comparaison finale
 
 **Résultats attendus (hypothèses qualitatives — aucun classement mesuré, cf. Hypothèse à tester ci-dessous)** :
@@ -6174,8 +6174,10 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,5f
 `VRAM libre : 14.3 Go` après suppression des references et `empty_cache()`. Sur les ~17,2 Go vus en section 1, l'entraînement LoRA complet n'avait donc occupe qu'une fraction visible de la carte. Cette cellule n'est pas de la decoration : dans un notebook suivant, le premier reflexe est de rendre la VRAM avant de charger le prochain modèle -- sinon l'`OutOfMemoryError` arrive a la cellule d'après, très loin de sa vraie cause.","### Reading the result: memory handed back
 
 `VRAM libre : 15.1 Go` after deleting the references and calling `empty_cache()`. Of the ~17.2 GB seen in section 1, the complete LoRA training had therefore occupied only a visible fraction of the card. This cell is not decoration: in a follow-on notebook, the first reflex is to hand the VRAM back before loading the next model — otherwise the `OutOfMemoryError` arrives at the next cell, very far from its true cause.",,,,,,,1f697dae7737f999,279d9a08f616c6f3,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,f06e6861,markdown,fr,47a8dac517c66ce8,"# FT-04 : RLHF et Alignement — Préférences Humaines et DPO
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,f06e6861,markdown,fr,f37eb83dcd5ea216,"# FT-04 : RLHF et Alignement — Préférences Humaines et DPO
 **Navigation** : [Index](README.md) | [<< 03 — SFT](FT-03-Supervised-FineTuning-SFT-Python.ipynb) | [05 — Fusion et routage >>](FT-05-ModelMerging-Routing-Python.ipynb)
+
+**Version anglaise** : [FT-04 — RLHF et Alignement (en)](FT-04-RLHF-DPO-Python_en.ipynb)
 
 **Objectif** : Comprendre comment les préférences humaines permettent d'aligner un LLM, du Reward Model au DPO (Direct Préférence Optimization).
 
@@ -6220,7 +6222,7 @@ de la valeur RLHF/DPO. Partie 4 (reward model) = référence, pas le
 cœur pédagogique.
 
 **Exercices** : 3 stubs (#25-#30 = Exercice 1/2/3). Chacun ~30 min.
-",,,,,,,,47a8dac517c66ce8,,,,,,,,,,,,,,,
+",,,,,,,,f37eb83dcd5ea216,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,aab72a6a,markdown,fr,06059b2cecc25b05,"## 1. Pourquoi le SFT ne suffit pas
 
 Le FT-03 nous a montre comment transformer un modèle de base en modèle instruct via le SFT. Mais le SFT a des limites fondamentales :
@@ -7231,21 +7233,21 @@ print(f""{'from scratch r=4 (FT-00a)':<30}{FT00A_LORA_ACC:>11.4f}{FT00A_LORA_PAR
 print(f""{'full 2 couches (FT-00a)':<30}{FT00A_FULL_ACC:>11.4f}{FT00A_FULL_PARAMS:>13}""
       f""{'7.6':>7}s{'2':>5}{'aucun':>25}"")
 print(""="" * 100)",,,,,,,,40afac9f825c66da,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb,cell-17,markdown,fr,18e9499b2ea8ff56,"### Lecture du résultat : pourquoi le from scratch, quand le SOTA
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb,cell-17,markdown,fr,247dba98459dcaab,"### Lecture du résultat : pourquoi le from scratch, quand le SOTA
 
 - **Exactitude** : les trois adaptations (peft, from scratch, full) récupèrent le même ordre de grandeur. Le full fine-tuning des mêmes couches reste devant — 6,5× plus de paramètres libres achètent quelques points.
 - **Budget** : `peft` et le from scratch libèrent **exactement** les mêmes 3 752 paramètres (11 % du réseau) — la librairie n'ajoute rien au budget, elle le garantit.
 - **LOC** : des lignes à écrire, tester et maintenir — c'est le coût de fabrication contre le coût d'abstraction.
-- **Temps** : 28,9 s mesurées ici (CPU) contre 7,9 s committées pour le from scratch (GPU) — les deux runs ne partagent ni device ni build : ce rapport ne mesure **pas** un surcoût `peft`. L'adaptateur ajoute certes par couche ciblée des noyaux supplémentaires (ici `lora_A` conv 3×3 + `lora_B` conv 1×1) et une indirection de module, mais cet effet est invisible sur cette paire de runs ; sur un LLM, il est de toute façon noyé dans le coût du forward du backbone.
+- **Temps** : le run CPU mesuré ici est plusieurs fois plus lent que les 7,9 s committées pour le from scratch (GPU) — la cellule de mesure en imprime la valeur exacte ; les deux runs ne partagent ni device ni build, ce rapport ne mesure donc **pas** un surcoût `peft`. L'adaptateur ajoute certes par couche ciblée des noyaux supplémentaires (ici `lora_A` conv 3×3 + `lora_B` conv 1×1) et une indirection de module, mais cet effet est invisible sur cette paire de runs ; sur un LLM, il est de toute façon noyé dans le coût du forward du backbone.
 - **Écosystème** : c'est la vraie ligne de fracture. L'adaptateur `peft` est un **artefact portable** (section 5) : quelques kilo-octets sérialisables, rechargeables sur toute copie de la base, fusionnables — et compatibles avec `transformers.Trainer`, `accelerate`, l'export. La classe maison de FT-00a n'a aucun de ces rails.
 - Le from scratch reste irremplaçable pour **comprendre et déboguer** : quand un adaptateur `peft` se comporte mal (rang trop petit, `alpha` mal calibré), le diagnostic exige de savoir ce qui vit sous la config.","### Reading the result: why from scratch, when SOTA
 
 - **Accuracy**: the three adaptations (peft, from scratch, full) recover the same order of magnitude. The full fine-tuning of the same layers stays ahead — 6.5x more free parameters buy a few points.
 - **Budget**: `peft` and the from-scratch version free **exactly** the same 3,752 parameters (11% of the network) — the library adds nothing to the budget, it guarantees it.
 - **LOC**: lines to write, test and maintain — that is the manufacturing cost versus the abstraction cost.
-- **Time**: 28.9 s measured here (CPU) against 7.9 s committed for the from-scratch version (GPU) — the two runs share neither device nor build: this ratio does **not** measure a `peft` overhead. The adapter does add, per targeted layer, extra kernels (here `lora_A` 3x3 conv + `lora_B` 1x1 conv) and a module indirection, but this effect is invisible on this pair of runs; on an LLM it is anyway drowned in the cost of the backbone's forward.
+- **Time**: the CPU run measured here is several times slower than the 7.9 s committed for the from-scratch version (GPU) — the measurement cell prints the exact value; the two runs share neither device nor build, so this ratio does **not** measure a `peft` overhead. The adapter does add, per targeted layer, extra kernels (here `lora_A` 3x3 conv + `lora_B` 1x1 conv) and a module indirection, but this effect is invisible on this pair of runs; on an LLM it is anyway drowned in the cost of the backbone's forward.
 - **Ecosystem**: that is the real dividing line. The `peft` adapter is a **portable artifact** (section 5): a few serializable kilobytes, reloadable on any copy of the base, mergeable — and compatible with `transformers.Trainer`, `accelerate`, export. FT-00a's home-made class has none of these rails.
-- From scratch remains irreplaceable for **understanding and debugging**: when a `peft` adapter misbehaves (rank too small, miscalibrated `alpha`), the diagnosis requires knowing what lives under the config.",,,,,,,18e9499b2ea8ff56,1cff3ed7b6683511,,,,,,,,,,,,,,
+- From scratch remains irreplaceable for **understanding and debugging**: when a `peft` adapter misbehaves (rank too small, miscalibrated `alpha`), the diagnosis requires knowing what lives under the config.",,,,,,,247dba98459dcaab,7c2260dd171e56e7,,,,,,,247dba98459dcaab,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb,cell-18,markdown,fr,1c2f3f6d2fbaa215,"## 5. L'écosystème : `save_pretrained`, `PeftModel.from_pretrained`, `merge_and_unload`
 
 Trois gestes industriels que la classe maison de FT-00a n'offre pas :
@@ -7752,8 +7754,8 @@ is stable — early minimum, climb afterwards — a fixed budget of fifteen epoc
 optimal for every draw. The only rule that adapts to the draw is a stopping criterion:
 measure the retained perplexity at every epoch and stop when it no longer improves. This
 is exactly what exercise 2 builds.",,,,,,,27392cca5572d0b9,3e42a356a36f2384,,,,,,,27392cca5572d0b9,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,e8428cff,markdown,fr,2b5256410d872908,"# FT-06 : LoRA vision-langage — fine-tune du décodeur de Qwen3.5-0.8B
-**Navigation** : [Index](README.md) | [<< 05 — Fusion et routage](FT-05-ModelMerging-Routing-Python.ipynb)
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,e8428cff,markdown,fr,3a9e5a3a92e19477,"# FT-06 : LoRA vision-langage — fine-tune du décodeur de Qwen3.5-0.8B
+**Navigation** : [Index](README.md) | [<< 05 — Fusion et routage](FT-05-ModelMerging-Routing-Python.ipynb) | [07 — Anatomie mémoire >>](FT-07-Anatomie-Memoire-Entrainement-Parallelismes-Python.ipynb)
 
 **Version anglaise** : [FT-06 — LoRA vision-langage (en)](FT-06-Vision-Language-LoRA-Python_en.ipynb)
 
@@ -7782,7 +7784,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,e8428
 **Durée estimée** : 45-60 minutes
 
 **Parcours** : nous chargeons d'abord le modèle multimodal et son processor (section 1), construisons un dataset d'images synthétiques entièrement déterministe — dessinées par PIL, donc reproductibles au pixel près sans aucun téléchargement de données (section 2), mesurons le modèle de base sur un contrat qu'il n'a jamais vu (section 3), greffons des adaptateurs LoRA sur les seules couches du décodeur (section 4), entraînons (section 5), puis comparons chiffres en main base contre LoRA sur les mêmes images held-out (section 6). La section 7 justifie le choix « décodeur seulement » ; trois exercices prolongent : une forme nouvelle, un champ de contrat en plus, et le ciblage de la vision elle-même.","# FT-06: Vision-language LoRA — fine-tuning the decoder of Qwen3.5-0.8B
-**Navigation**: [Index](README.md) | [<< 05 — Fusion and routing](FT-05-ModelMerging-Routing-Python.ipynb)
+**Navigation**: [Index](README.md) | [<< 05 — Fusion and routing](FT-05-ModelMerging-Routing-Python.ipynb) | [07 — Memory anatomy >>](FT-07-Anatomie-Memoire-Entrainement-Parallelismes-Python.ipynb)
 
 **French version**: [FT-06 — LoRA vision-langage](FT-06-Vision-Language-LoRA-Python.ipynb)
 
@@ -7810,7 +7812,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,e8428
 
 **Estimated duration**: 45–60 minutes
 
-**Path**: we first load the multimodal model and its processor (section 1), build a fully deterministic synthetic image dataset — drawn with PIL, therefore reproducible to the exact pixel without any data download (section 2), measure the base model on a contract it has never seen (section 3), graft LoRA adapters onto only the decoder layers (section 4), train (section 5), then compare base versus LoRA with numbers in hand on the same held-out images (section 6). Section 7 justifies the “decoder only” choice; three exercises extend it: a new shape, an additional contract field, and targeting vision itself.",,,,,,,2b5256410d872908,ea2309b11c9a3cf4,,,,,,,2b5256410d872908,,,,,,,
+**Path**: we first load the multimodal model and its processor (section 1), build a fully deterministic synthetic image dataset — drawn with PIL, therefore reproducible to the exact pixel without any data download (section 2), measure the base model on a contract it has never seen (section 3), graft LoRA adapters onto only the decoder layers (section 4), train (section 5), then compare base versus LoRA with numbers in hand on the same held-out images (section 6). Section 7 justifies the “decoder only” choice; three exercises extend it: a new shape, an additional contract field, and targeting vision itself.",,,,,,,3a9e5a3a92e19477,40bfabf09ae92bbf,,,,,,,3a9e5a3a92e19477,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,15bf4e35,code,fr,52f7cb04710e14fb,"import warnings
 
 # Filtres poses AVANT les autres imports (issue #11725) : ils evitent que les

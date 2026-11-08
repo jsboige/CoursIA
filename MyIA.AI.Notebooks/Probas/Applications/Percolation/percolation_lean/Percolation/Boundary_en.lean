@@ -209,8 +209,8 @@ theorem boundary_card_C3 : ∀ A : Finset (Fin 3), A.Nonempty → A ≠ Finset.u
     #(boundary C3 full3 A) = 2 := by
   decide
 
-/-- **`C₃` lower bound**: `2 ≤ #(∂A)` for every nonempty proper subset of the triangle (the
-`≥ 2` component of the profile). -/
+/-- **`C₃` lower bound**: `2 ≤ #(∂A)` for every nonempty proper subset of the
+triangle (the “≥ 2” component of the profile). -/
 theorem two_le_boundary_C3 : ∀ A : Finset (Fin 3), A.Nonempty → A ≠ Finset.univ →
     2 ≤ #(boundary C3 full3 A) := by
   intro A hne hproper

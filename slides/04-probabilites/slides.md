@@ -1434,7 +1434,7 @@ layout: section
 
 <img src="./images/img_076.png" alt="Agent fondé sur l'utilité : sélection d'action par utilité espérée" style="display:block; width:100%; max-height:110px; object-fit:contain; margin:6px auto;">
 
-*Notebooks : [DecInfer-01-Utility-Foundations](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb) (axiomes, fondements) · [DecInfer-03-Utility-Money](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-03-Utility-Money.ipynb) (utilité monétaire, aversion au risque) · [DecInfer-05-Decision-Networks](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-05-Decision-Networks.ipynb) (réseaux de décision).*
+*Notebooks : [DecInfer-01-Utility-Foundations](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb) (axiomes, fondements) · [DecInfer-02-Utility-Money](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-02-Utility-Money.ipynb) (utilité monétaire, aversion au risque) · [DecInfer-04-Decision-Networks](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-04-Decision-Networks.ipynb) (réseaux de décision).*
 
 
 
@@ -1953,8 +1953,8 @@ layout: section
 - **Réseaux bayésiens**: `Probas/Infer/Infer-04-Bayesian-Networks.ipynb`, `Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb`
 - **Inférence**: `Probas/Infer/Infer-03-Factor-Graphs.ipynb`, `Probas/PyMC/PyMC-03-Factor-Graphs.ipynb`
 - **HMM et séries temporelles**: `Probas/Infer/Infer-14-Sequences.ipynb`, `Probas/PyMC/PyMC-14-Sequences.ipynb`, `Probas/Infer/Infer-17-Kalman-Filter.ipynb`
-- **Décision et utilité**: `Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb`, `DecInfer-05-Decision-Networks.ipynb`, `DecInfer-06-Value-Information.ipynb`
-- **MDP, bandits et POMDP**: `Probas/DecisionTheory/DecInfer/DecInfer-08-Sequential.ipynb`, `DecInfer-08b-Lean-Gittins.ipynb`, `DecInfer-10-Thompson-Sampling.ipynb`
+- **Décision et utilité**: `Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb`, `DecInfer-04-Decision-Networks.ipynb`, `DecInfer-05-Value-Information.ipynb`
+- **MDP, bandits et POMDP**: `Probas/DecisionTheory/DecInfer/DecInfer-07-Sequential.ipynb`, `DecInfer-07b-Lean-Gittins.ipynb`, `DecInfer-10-Thompson-Sampling.ipynb`
 
 <!-- Liens vers notebooks dans MyIA.AI.Notebooks/ -->
 

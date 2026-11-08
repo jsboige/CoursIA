@@ -248,6 +248,37 @@ def get_verdict_registry_symbol():
     return VerdictRegistry, registry_for
 
 
+# -- Traduction texte->PL exposee aux agents (#18390) --
+def get_nl_to_logic_plugin_symbol():
+    """Lazy import du plugin de traduction texte->PL (adaptateur #18390).
+
+    Adaptateur minimal sur `_text_to_pl` : le LLM traduit, le parseur
+    valide, le solveur decide. L'amont `NLToLogicPlugin` exigeait un
+    service `NLToLogicTranslator` absent ; cet adaptateur le remplace.
+    """
+    from argumentation_lib._nl_to_logic_plugin import NLToLogicPlugin
+
+    return NLToLogicPlugin
+
+
+# -- Operateurs logiques PL/FOL/Modaux exposes aux agents (#18390) --
+def get_logic_agent_plugin_symbol():
+    """Lazy import du plugin d'opérations logiques (adaptateur #18390).
+
+    Moitié verdict de la phase formelle : les fonctions PL
+    (parse_pl_formula, execute_pl_query, check_pl_consistency,
+    validate_formula/propositionnelle) décident par le VRAI solveur
+    (`TweetyPLEngine`, SatReasoner) ; les fonctions FOL/Modales rendent
+    une erreur honnête tant que les handlers amont ne sont pas
+    importables dans ce checkout. L'amont `LogicAgentPlugin` exigeait le
+    `TweetyBridge` complet (non vendorable au pin actuel) ; cet
+    adaptateur route sur les organes réels de la série.
+    """
+    from argumentation_lib._logic_agent_plugin import LogicAgentPlugin
+
+    return LogicAgentPlugin
+
+
 # -- FOL Handler (JPype singleton, SK-coupled upstream, prover9_runner dep) --
 def get_fol_handler_symbol():
     """Lazy import for the FOLHandler class symbol.
@@ -589,6 +620,8 @@ __all__ = [
     "get_pl_handler_symbol",
     "get_pl_reasoner_symbol",
     "get_verdict_registry_symbol",
+    "get_nl_to_logic_plugin_symbol",
+    "get_logic_agent_plugin_symbol",
     "get_fol_handler_symbol",
     "get_modal_handler_symbol",
     "get_adf_handler_symbol",

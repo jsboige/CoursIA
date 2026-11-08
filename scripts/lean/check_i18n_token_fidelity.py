@@ -24,7 +24,7 @@ This checker measures it, comment by comment:
   ``ALLCAPS``) -- a translation may legitimately rephrase such a mention, so
   these are ADVISORY.
 
-Five mechanisms keep the measure from drowning in false positives:
+Six mechanisms keep the measure from drowning in false positives:
 
 * the ``_en`` anti-collision suffix is collapsed **symmetrically** on both
   sides (the convention's two validated variants name the same entity ``Foo``
@@ -50,6 +50,11 @@ Five mechanisms keep the measure from drowning in false positives:
   the other side carries a full date too. The mere presence of a year
   somewhere in the body excuses nothing: that exemption hid 29 findings of
   the repository, among them plain arc counts.
+* an **OK-CONSUMER** sibling is excluded wholesale, on the verdict of the
+  sibling organ (``check_i18n_siblings.check_pair``): when the ``_en`` file
+  ``import``s its FR canonical and reuses the declarations, the FR
+  per-declaration docstrings have no EN counterpart by design, and comparing
+  them would publish a false HARD finding for each one.
 
 Every file reports its **coverage**: how many comment pairs were compared, how
 many were excluded as headers, how many were repaired by alignment, and how
@@ -83,6 +88,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from check_i18n_siblings import (  # noqa: E402
+    check_pair,
     find_en_files,
     fr_sibling,
 )
@@ -96,6 +102,22 @@ _EN_SUFFIX = re.compile(r"\b(\w+)_en\b")
 # typographic choice, the reference is the same).
 _CODE_SPAN = re.compile(r"`([^`]{1,600})`")
 
+# A fenced code block (``` ... ```) inside a comment. The fence carries an
+# ODD number of backticks, so the inline scanner above pairs its closing
+# fence with the NEXT opening one and swallows the prose in between: on a
+# faithful mirror pair this manufactured 130 HARD findings (measured, review
+# of #24143 -- ``Knots/Invariant``). A fenced block is CODE, not prose: the
+# Lean code it carries is bound by the byte-identity contract of
+# ``check_i18n_siblings``, and its comments are translated on purpose (five
+# mirror pairs translate the comment inside the fence). It is therefore
+# removed from the prose comparison.
+_FENCED_BLOCK = re.compile(r"```.*?```", re.S)
+
+
+def prose_only(body: str) -> str:
+    """``body`` without its fenced code blocks."""
+    return _FENCED_BLOCK.sub(" ", body)
+
 # A numeric group: a digit run possibly made of several parts separated by a
 # decimal/thousand/date separator (``2026-10-27``, ``27/10/2026``, ``1.5``).
 _NUMBER_GROUP = re.compile(r"\d+(?:[.,/\-]\d+)*")
@@ -106,12 +128,18 @@ _NUMBER_GROUP = re.compile(r"\d+(?:[.,/\-]\d+)*")
 # date.
 _DATE_GROUP = re.compile(r"\d+(?:\s*[.,/\-]\s*\d+)*")
 
-# The mirror declaration of an EN header: it says it is the mirror of a
-# canonical file. Such a comment has no FR counterpart BY DESIGN -- the FR
-# file carries its own (translated) docstring at the same code position --
-# so comparing them would report every metadata token of one side as the
-# loss of the other. This is the marker that tells the two apart.
-_MIRROR_DECLARATION = re.compile(r"\b(?:mirror\s+of|miroir\s+de)\b", re.I)
+# The mirror declaration of an EN header: it says it is the mirror/sibling/
+# companion of a canonical file. Such a comment has no FR counterpart BY
+# DESIGN -- the FR file carries its own (translated) docstring at the same
+# code position -- so comparing them would report every metadata token of
+# one side as the loss of the other. This is the marker that tells the two
+# apart. "sibling of" / "companion to" are recognized only when they name a
+# .lean file: a bare "sibling" (e.g. the "(EN sibling)" tag on the title
+# line) is too weak to single out a metadata header.
+_MIRROR_DECLARATION = re.compile(
+    r"\b(?:mirror\s+of|miroir\s+de)\b"
+    r"|\b(?:sibling|companion)\s+(?:of|to)\s+[`\"']?[A-Za-z0-9_./\\-]*\.lean",
+    re.I)
 
 # A `### i18n` convention note: a comment (or a section of one) that documents
 # the sibling-pair convention itself -- e.g. an option-A bilingual-inline
@@ -119,11 +147,57 @@ _MIRROR_DECLARATION = re.compile(r"\b(?:mirror\s+of|miroir\s+de)\b", re.I)
 # metadata about the file, not translatable content: the EN mirror owes it
 # nothing, so it is excluded from the comparison (a false "loss" / "orphan"
 # otherwise, control Conway/Doomsday.lean, review of #24148).
-_I18N_CONVENTION = re.compile(r"###\s*i18n\b", re.I)
+#
+# Position-restricted (NanoClaw review of #24765): the plain-spelling phrase
+# must HEAD a line -- the labeled note form (`Convention i18n (EPIC #4980,
+# ...) : ...`, `i18n convention (EPIC #4980, ...): this root ...`) that 45+
+# `_en.lean` files open on. A translatable prose line that merely MENTIONS the
+# convention mid-sentence (`... docstrings traduites -- convention i18n #4980
+# pattern A.`) no longer exempts the whole comment: under the old any-position
+# motif it would silence a comment it never intended to classify. The `###`
+# marker form stays any-position: a marked section header is explicit metadata.
+_I18N_CONVENTION = re.compile(
+    r"###\s*i18n\b"                                   # marked section header
+    r"|^[^\S\n]*(?:--|/-!)?[^\S\n]*"                  # label form, heading a line
+    r"(?:convention\s+i18n|i18n\s+convention)\b"
+    r"|(?:convention\s+i18n|i18n\s+convention)\b[^\n]{0,20}?#4980",  # citation
+    re.I | re.MULTILINE,
+)
+
+# The `EN sibling of `X.lean`` form of the same declaration: the EN header
+# names the file it mirrors and carries metadata the FR header has no
+# counterpart for (ratification date, issue ids, method note). It is a
+# mirror header in the same sense as `English mirror of `X.lean`` -- but
+# unlike that form, it may ALSO translate the FR header, so excluding it
+# unconditionally would hide a real loss (see `compare_files`).
+_SIBLING_DECLARATION = re.compile(
+    r"\b(?:EN|english)\s+sibling\s+of\b", re.I)
+
+
+def declares_sibling_mirror(fr_body: str, en_body: str) -> bool:
+    """True when the EN body declares itself the sibling of the FR file.
+
+    The FR body is checked too: when BOTH sides declare the sibling, they
+    are two metadata headers and comparing them is meaningful.
+    """
+    return (bool(_SIBLING_DECLARATION.search(en_body))
+            and not _SIBLING_DECLARATION.search(fr_body))
+
+
+def drops_fr_token(findings: list) -> bool:
+    """True when the findings report a token the FR side carries and the EN
+    side does not -- a real loss of translation."""
+    return any(f.get("severity") == HARD and f.get("side") == "FR"
+               for f in findings)
 
 
 def is_i18n_convention_block(body: str) -> bool:
-    """True when ``body`` is, or embeds, a `### i18n` convention note."""
+    """True when ``body`` is, or embeds, a `### i18n` convention note.
+
+    The plain-spelling phrase counts only in heading position (it starts a
+    line of the comment); a mid-prose mention of the convention does not
+    exempt the comment from the comparison.
+    """
     return bool(_I18N_CONVENTION.search(body))
 
 
@@ -364,7 +438,7 @@ def code_spans(body: str) -> list[str]:
     the reference.
     """
     out: list[str] = []
-    for m in _CODE_SPAN.finditer(body):
+    for m in _CODE_SPAN.finditer(prose_only(body)):
         span = " ".join(m.group(1).split())
         if span:
             out.append(span)
@@ -385,7 +459,7 @@ def number_parts(body: str) -> list[str]:
     the decimal made ``1.5`` and ``5.1`` compare equal, because the parts
     of both are ``{1, 5}`` (measured, review of #24148).
     """
-    stripped = _CODE_SPAN.sub(" ", body)
+    stripped = _CODE_SPAN.sub(" ", prose_only(body))
     parts: list[str] = []
     for m in _NUMBER_GROUP.finditer(stripped):
         raw = m.group(0)
@@ -411,7 +485,7 @@ def date_groups(body: str) -> list[list[str]]:
     #24148).
     """
     out: list[list[str]] = []
-    stripped = _CODE_SPAN.sub(" ", body)
+    stripped = _CODE_SPAN.sub(" ", prose_only(body))
     for m in _DATE_GROUP.finditer(stripped):
         pieces = [p.strip() for p in re.split(r"[.,/\-]", m.group(0)) if p.strip()]
         if len(pieces) >= 2 and any(len(p) == 4 for p in pieces):
@@ -490,7 +564,7 @@ def number_is_carried_elsewhere(part: str, other_body: str,
 
 def technical_identifiers(body: str) -> set[str]:
     """The technical identifiers mentioned in ``body`` outside code spans."""
-    stripped = _CODE_SPAN.sub(" ", body)
+    stripped = _CODE_SPAN.sub(" ", prose_only(body))
     out: set[str] = set()
     for m in _WORD.finditer(stripped):
         word = m.group(0)
@@ -715,6 +789,31 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
     """Compare the FR canonical and its EN mirror; return a pair report."""
     fr_src = fr_path.read_text(encoding="utf-8", errors="replace")
     en_src = en_path.read_text(encoding="utf-8", errors="replace")
+
+    # OK-CONSUMER sibling: the EN file ``import``s the FR module and reuses its
+    # declarations instead of redeclaring them, so the FR canonical's
+    # per-declaration docstrings have **no EN counterpart by design**. Paired
+    # positionally, the organ would report every one of them as a loss -- a
+    # wall of HARD findings that is an artefact of the shape, not a translation
+    # gap. The sibling organ (``check_i18n_siblings.check_pair``) already
+    # classifies exactly this shape as ``"OK-CONSUMER"``; we reuse that verdict
+    # (single source of truth) and skip the comparison for such a pair.
+    if check_pair(fr_path, en_path)[0] == "OK-CONSUMER":
+        return {
+            "fr": str(fr_path),
+            "en": str(en_path),
+            "ok_consumer": True,
+            "fr_comments": 0,
+            "en_comments": 0,
+            "anchor_shift": 0,
+            "pairs_repaired": 0,
+            "pairs_compared": 0,
+            "pairs_excluded": 0,
+            "pairs": [],
+            "unpaired": [],
+            "findings": [],
+        }
+
     fr_comments = scan_comments(fr_src)
     en_comments = scan_comments(en_src)
     decls = declaration_names(fr_src) | declaration_names(en_src)
@@ -755,14 +854,41 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
             is_header = (is_mirror_metadata_header(fr_body, en_body)
                          or is_i18n_convention_block(fr_body)
                          or is_i18n_convention_block(en_body))
+            sibling = False
+            pair_excluded = False
             if fr_body and en_body:
-                if is_header:
-                    excluded += 1
-                    findings = []
-                else:
-                    compared += 1
+                sibling = declares_sibling_mirror(fr_body, en_body)
+                # The findings are needed only when the pair is COMPARED, or
+                # to decide whether a `sibling` header drops a FR token. A
+                # plain mirror header (excluded by design) never needs them:
+                # computing them for every excluded header doubled the work
+                # over the whole `--all` corpus (188 excluded pairs out of
+                # 9541, measured on the repository; review of #24591).
+                if sibling or not is_header:
                     findings = compare_bodies(fr_body, en_body, decls,
-                                               is_module=is_module)
+                                              is_module=is_module)
+                    # A `EN sibling of `X`` header is a mirror header too, but
+                    # only when it drops NOTHING the FR side carries: a
+                    # header that also translates the FR summary and loses a
+                    # token holds a real loss, and stays compared.
+                    # The sibling branch is evaluated FIRST, so a body
+                    # carrying BOTH declarations and dropping a FR token is
+                    # reported rather than excluded: the exclusion must
+                    # never hide a real loss (review of #24591).
+                    if sibling and drops_fr_token(findings):
+                        compared += 1
+                    elif is_header or sibling:
+                        excluded += 1
+                        findings = []
+                        pair_excluded = True
+                    else:
+                        compared += 1
+                else:
+                    # Plain mirror header: excluded by design, no comparison
+                    # performed.
+                    findings = []
+                    excluded += 1
+                    pair_excluded = True
             else:
                 findings = []
             pair = {
@@ -772,7 +898,7 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
                 "en_line": en_line,
                 "fr_kind": fr_kind,
                 "en_kind": en_kind,
-                "excluded": is_header,
+                "excluded": pair_excluded,
                 "findings": findings,
             }
             pairs.append(pair)
@@ -789,6 +915,7 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
         # A mirror header has no FR counterpart by design: it is a header,
         # not an orphan comment. A `### i18n` note is metadata, same reason.
         if (_MIRROR_DECLARATION.search(body)
+                or _SIBLING_DECLARATION.search(body)
                 or is_i18n_convention_block(body)):
             continue
         unpaired.append({"severity": ADVISORY, "kind": "unpaired-comment",

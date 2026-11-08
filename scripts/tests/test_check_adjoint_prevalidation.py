@@ -1793,7 +1793,7 @@ def test_fingerprint_refusal_names_the_live_surface_landscape():
 # le gel se mesure sur #11601, seul parapluie gele en vie.
 FROZEN_TITLE = "enrich(qc,#11601): densite QC-Py-06b"
 REDRESSEMENT_TITLE = (
-    "fix(semanticweb,#17066): redressement critique de SW-4-CSharp-SPARQL "
+    "fix(semanticweb,#17066): redressement critique de SW-04-SPARQL-CSharp "
     "-- reference de campagne"
 )
 
@@ -3851,17 +3851,89 @@ def test_queue_run_block_reports_the_cost():
 
 
 def test_stack_index_builds_the_same_entries_in_parallel(monkeypatch):
-    """#22938 : la mesure pile est la MEME, seule l'ordonnancement change."""
-    monkeypatch.setattr(mod, "gh_lines", lambda args: ["1", "2", "3"])
+    """#22938 : la mesure pile est la MEME, seule l'ordonnancement change.
+
+    #23100 -- l'enumeration rend des lignes ``[number, head.ref, base.ref]``
+    (meme appel, aucun cout supplementaire) : les noms atterrissent sur
+    l'entree, et une ligne courte (champ absent) degrade en noms vides sans
+    casser la passe.
+    """
+    monkeypatch.setattr(mod, "gh_lines", lambda args: [
+        '[1, "feature/a", "main"]',
+        '[2, "feature/b", "feature/a"]',
+        '[3]',
+    ])
     monkeypatch.setattr(mod, "_fetch_pr_heads", lambda numbers: (list(numbers), []))
     monkeypatch.setattr(
         mod, "_git",
         lambda args, check=True: subprocess.CompletedProcess(args, 0, "", ""),
     )
+    # Ce test porte sur l'enumeration parallele, pas sur la garde shallow
+    # (qui a ses propres tests sur clone jetable) : le clone hote peut porter
+    # des racines shallow vivantes sans que ce soit un defaut de la passe.
+    monkeypatch.setattr(mod, "_base_history_truncated", lambda: False)
     index, incidents = mod.build_stack_index()
     assert incidents == []
     assert sorted(index) == [1, 2, 3]
     assert all(entry.ref.startswith(mod.STACK_REF_PREFIX) for entry in index.values())
+    assert index[1].head_name == "feature/a"
+    assert index[1].base_name == "main"
+    assert index[2].base_name == "feature/a"
+    assert index[3].head_name == "" and index[3].base_name == ""
+
+
+def test_stack_index_degrades_a_malformed_line_without_killing_the_pass(monkeypatch):
+    """#23100 (reserve NanoClaw 2026-11-05) : ligne non-JSON = une PR sort de
+    la passe, pas la porte entiere.
+
+    Avant : le ``json.loads`` vivait sous le seul ``try`` de l'enumeration --
+    une ligne bruitee (warning gh interleve, troncature) rendait l'index
+    ``None`` et eteignait la porte STACK pour TOUTES les PRs du cycle. Apres :
+    la PR de la ligne fautive sort de la passe (ni porte ni exemption pour
+    elle seule), les autres gardent porte ET exemption, et l'incident se dit
+    sans fabriquer de refus.
+    """
+    monkeypatch.setattr(mod, "gh_lines", lambda args: [
+        '[1, "feature/a", "main"]',
+        "warning: request timed out, retrying",  # ligne malformee
+        '[2, "feature/b", "feature/a"]',
+    ])
+    monkeypatch.setattr(mod, "_fetch_pr_heads", lambda numbers: (list(numbers), []))
+    monkeypatch.setattr(
+        mod, "_git",
+        lambda args, check=True: subprocess.CompletedProcess(args, 0, "", ""),
+    )
+    monkeypatch.setattr(mod, "_base_history_truncated", lambda: False)
+    index, incidents = mod.build_stack_index()
+    assert sorted(index) == [1, 2]
+    assert index[2].base_name == "feature/a"  # exemption preservee pour les valides
+    assert len(incidents) == 1
+    assert "ligne d'enumeration ignoree" in incidents[0]
+
+
+def test_stack_index_reports_head_name_collision_as_incident(monkeypatch):
+    """#23100 (reserve NanoClaw 2026-11-05) : deux entrees de meme ``head_name``
+    s'ecrasent silencieusement dans le ``by_head`` de ``_is_stack_descendant``.
+
+    L'incident rend la collision OBSERVABLE (les deux numeros cites) ; le
+    verdict ne change pas -- le gagnant des remontees depend de l'ordre
+    parallele de l'index, exactement comme avant l'incident.
+    """
+    monkeypatch.setattr(mod, "gh_lines", lambda args: [
+        '[1, "feature/a", "main"]',
+        '[2, "feature/a", "main"]',  # head_name duplique
+    ])
+    monkeypatch.setattr(mod, "_fetch_pr_heads", lambda numbers: (list(numbers), []))
+    monkeypatch.setattr(
+        mod, "_git",
+        lambda args, check=True: subprocess.CompletedProcess(args, 0, "", ""),
+    )
+    monkeypatch.setattr(mod, "_base_history_truncated", lambda: False)
+    index, incidents = mod.build_stack_index()
+    assert sorted(index) == [1, 2]
+    assert len(incidents) == 1
+    assert "feature/a" in incidents[0]
+    assert "#1" in incidents[0] and "#2" in incidents[0]
 
 
 def test_default_stack_index_builds_once_under_concurrency(monkeypatch):
@@ -4126,7 +4198,15 @@ class _Completed:
 
 
 def test_api_usage_counter_separates_the_two_buckets(monkeypatch):
-    """`gh api graphql` paie le bucket partage, tout le reste le bucket core."""
+    """Le bucket partage est celui de GraphQL — y compris les appels `--json`.
+
+    #17315 (correction de classification, 06/11) : `gh pr view --json` passe
+    par l'API **GraphQL** (la CLI construit une requete GraphQL), donc par le
+    BUCKET PARTAGE de la flotte. Le compter comme du REST sous-reportait la
+    consommation du bucket que le levier 4 cherche a reduire. La regle
+    classee est desormais : `api graphql` et `pr|issue ... --json` = GraphQL ;
+    les endpoints `api repos/...` = REST.
+    """
     monkeypatch.setattr(
         mod.subprocess, "run", lambda *a, **k: _Completed('{"ok": true}')
     )
@@ -4136,8 +4216,9 @@ def test_api_usage_counter_separates_the_two_buckets(monkeypatch):
     mod.gh_json(["api", "repos/o/r/pulls/1"])
     mod.gh_json(["api", "repos/o/r/commits/deadbeef/check-runs"])
     mod.gh_json(["pr", "view", "1", "--json", "state"])
+    mod.gh_json(["pr", "list", "--json", "number"])
 
-    assert mod.API_USAGE == {"rest": 3, "graphql": 1}
+    assert mod.API_USAGE == {"rest": 2, "graphql": 3}
 
 
 def test_api_usage_is_published_in_json_and_on_stderr(monkeypatch, capsys):
@@ -4349,10 +4430,12 @@ def _synthetic_git(ancestor_pairs=()):
     return fake
 
 
-def _stack_entry(pr, subjects):
+def _stack_entry(pr, subjects, head_name="", base_name=""):
     # #20641 -- `author_ref` est rendu egal a `ref` par defaut : les
     # tests qui n'ont pas besoin d'exercer le saut content-free
     # preservent l'ancien comportement sans modifier chaque call site.
+    # #23100 -- `head_name`/`base_name` vides par defaut : l'exemption
+    # enfant est inerte et les tests existants gardent la porte d'avant.
     ref = f"{mod.STACK_REF_PREFIX}{pr}"
     return mod.StackEntry(
         number=pr,
@@ -4360,6 +4443,8 @@ def _stack_entry(pr, subjects):
         commits=list(subjects),
         subjects=dict(subjects),
         author_ref=ref,
+        head_name=head_name,
+        base_name=base_name,
     )
 
 
@@ -4425,6 +4510,97 @@ def test_stack_bottom_linear_stays_ready(monkeypatch):
     )
     assert verdict == mod.VERDICT_READY, reasons
     assert reasons == []
+
+
+# --- #23100 : partenaire enfant (la cible est le bas d'une vraie pile) -----
+
+
+def test_stack_parent_of_delayed_child_stays_ready(monkeypatch):
+    """#23100 (controle positif) -- enfant retarde : la porte se tait sur le parent.
+
+    Topologie #22741 x #22811 : l'enfant a pour BASE la tete de la cible
+    (`base.ref == headRefName`), mais il a ete bat AVANT que le parent
+    n'avance -- aucune des deux tetes n'est ancetre de l'autre. Pre-fix,
+    la porte voyait « commits partages + commits absents » et bloquait le
+    seul merge executable de la paire. Merger le parent d'abord est
+    l'ordre correct d'une pile : aucune raison.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(
+            22741, {"a": "A", "b": "B"},
+            head_name="feature/22733-theorem-rewriters",
+        ),
+        _stack_entry(
+            22811, {"a": "A", "b": "B", "c": "C: apport propre de l'enfant"},
+            head_name="feature/22740-portage",
+            base_name="feature/22733-theorem-rewriters",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 22741
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_parent_exempt_through_grandchild(monkeypatch):
+    """#23100 -- l'exemption remonte la chaine des liens base -> head.
+
+    Pile de trois (l'instance fondatrice #19548 -> #19556 -> #19567 est une
+    pile de trois) : le petit-enfant a pour base la tete de l'enfant, pas
+    celle de la cible. Sans la remontee, la porte bloquerait le parent via
+    le petit-enfant -- exactement le defaut #23100 transpose d'un niveau.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(1, {"a": "A"}, head_name="feature/parent"),
+        _stack_entry(
+            2, {"a": "A", "b": "B"}, head_name="feature/child",
+            base_name="feature/parent",
+        ),
+        _stack_entry(
+            3, {"a": "A", "b": "B", "c": "C"},
+            base_name="feature/child",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 1
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_rebased_sister_with_names_still_blocked(monkeypatch):
+    """#23100 (controle negatif) -- la soeur rebassee reste bloquante.
+
+    Les noms de branches sont presents (l'exemption est armee) mais la base
+    de la soeur est `main`, pas la tete de la cible : ce n'est pas un enfant,
+    c'est la soeur qui porte les corrections -- le cas que la porte existe
+    pour attraper. Le motif `stack top` reste rendu.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(
+            19548, {"a": "A", "b": "B"},
+            head_name="feature/19548-old-version",
+        ),
+        _stack_entry(
+            19556, {"a": "A", "b": "B", "d": "D: correctif absent du bas"},
+            head_name="feature/19556-rebuilt", base_name="main",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
 
 
 # --- #20641 : rafraichissement content-free de la base d'une pile ----------
@@ -4946,7 +5122,10 @@ def test_stack_door_is_measured_after_a_rewritten_pr_head(tmp_path, monkeypatch)
     assert head != old_sha
 
     # Et la porte STACK est MESUREE, pas desactivee.
-    monkeypatch.setattr(mod, "gh_lines", lambda args: ["42"])
+    # #23100 -- l'enumeration rend des lignes [number, head.ref, base.ref].
+    monkeypatch.setattr(
+        mod, "gh_lines", lambda args: ['[42, "feature/rewritten", "main"]']
+    )
     monkeypatch.setattr(mod, "default_stack_index", _REAL_DEFAULT_STACK_INDEX)
     monkeypatch.setattr(
         mod, "_STACK_INDEX_CACHE",

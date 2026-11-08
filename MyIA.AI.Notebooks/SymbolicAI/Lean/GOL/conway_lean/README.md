@@ -18,15 +18,15 @@ flowchart LR
 
 ## Statut
 
-- **Toolchain** : v4.32.1 (v4.31.0-rc1 → v4.32.0 via #11307, puis bump soundness → v4.32.1 via #11325, cf #11256)
+- **Toolchain** : `leanprover/lean4:v4.33.0` à la tête courante (cf `lean-toolchain`, qui fait foi ; migration v4.32.1 → v4.33.0 posée par `d0111fbd79`, #16341). Historique : `v4.31.0-rc1` → v4.32.0 (#11307) → v4.32.1 (#11325, cf #11256), puis v4.33.0.
 
 - **Compte de sorry** : **1 distinct** au sens `count_code_sorry.py` (code-level, FR canonique — décompte post-split #9883/#9884 ; `HashlifeCorrectness.lean`, plus le socle `HashlifeCorrectness/Foundation.lean`, reste la cible prover unique, recherche-HOLD). **P4 : 0 sorry** (pas inductif double-nine PROUVÉ post-split — `p4_succ_membership` sorry-free, consommé par `hashlifeResult_central_correct` via `p4_ext_bridge`) + **P5 grand-n : 1 distinct sorry** (`hashlife_correct_margin` `HashlifeMarginFragment.lean` L158/sorry L167 — l'agrégateur `p5_large_n_jumpN` L6749 est prouvé sorry-free depuis la re-signature b3', 2026-08-15). Le `grep` brut sur-compte (~23 hits dans le seul agrégateur) via la prose des docstrings ; décompte canonique code-level via strip des docstrings `/- … -/` + commentaires `--`. Les anciens comptes « 8 sorry / P4 : 5 / P5 : 3 » et les line numbers `L2893-3706` ci-dessous datent du **monolithe pré-split** et sont **obsolètes** — les évolutions c.95/c.1035/b3' ont depuis modifié le fichier post-split.
 
   Voir § « État honnête du verrou HashlifeCorrectness » pour la déclaration-par-déclaration post-split. **Audit N1 (PR #5853, ai-01 2026-07-09)** : le frame sub-claim initial (`BoxAssezGrand` ∩ `n ≥ jumpSize`) est **vacuous sur grilles non vides** (`p5_large_n_hyps_unsat` : padding 2 de `gridFrame` ∧ `lvl ≥ 3` ⇒ `n ≤ 2 ∧ js ≥ 8`) — c'est pourquoi `hashlife_correct` (agrégateur L6373) est prouvé via `p5_inductive_step` mais reste *vacuous* au régime grand-n, et pourquoi l'énoncé N-aware `hashlife_correctN` + le jump `p5_large_n_jumpN` (le genuine P5.2, alors open sorry — clos depuis b3' 2026-08-15) ont été posés. **Design gate ai-01 (#3846, 2026-07-10)** : redesigner `gridFrame` pour padding dépendant de `n`, porter l'état `(off, mc)` à travers la boucle de `evolveHashlifeFastAux` sans re-framing intermédiaire, restater l'invariant « marge ≥ n restant, préservé par jump ». La dette de preuve (#3846) reste la cible du BG-prover et du redesign architectural coordonné.
 
-- **Build** : `lake build Conway` — SUCCESS
+- **Build** : CI `lean-conway.yml` sur `main` — dernier run **SUCCESS** au 2026-11-04T08:39:14Z, sur `9c4c35fc36` (le commit qui a descendu le lake vers `GOL/`), donc **au pin v4.33.0**.
 
-- **Dépendances** : Mathlib4
+- **Dépendances** : Mathlib4 — pin `v4.33.0` (`lakefile.lean:16`), rev `db584cd6d46c92f209a44c0f1c829460d327499d` au `lake-manifest.json`. Sans le `@ "v4.33.0"` explicite, lake résoudrait la require sur `master` et émettrait un `manifest out of date` à chaque build (cf commentaire `lakefile.lean:10-14`).
 
 - **Couverture i18n (EPIC #4980)** : **32 paires FR/EN** OK au checker canonique `check_i18n_siblings.py` (32/32 byte-identiques). Sans sibling `_en`, par design : la machinerie prover EN-first recherche — `HashlifeCorrectness.lean`, `HashlifeCorrectness/Foundation.lean`, `Walls/{NE,NW,SE,SW}.lean`, `JumpCapture.lean`. Phase 1 : **10/10** ; Phase 2 : **tous les modules listés** + satellites (`AdversarialBattery`, `DecideProbe`, `Novelty`, `PatternTour`, `HashlifeMarginFragment`, …) ; Phase 3 : **2/2**. Rollout complet (c.290-#6439 + cycles c.421-c.423 merged).
 

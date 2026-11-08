@@ -73,11 +73,12 @@ and `FlasqueExact_en.lean`).
 Epic #1646, Phase 2 (#2159). All `sorry`s eliminated at creation.
 -/
 
-import Grothendieck.Flasque
+import Grothendieck.Flasque_en
 
 namespace Grothendieck.FlasqueExact_en
 
 open CategoryTheory CategoryTheory.Limits Opposite
+open Grothendieck.Flasque_en
 
 universe u v
 
@@ -157,6 +158,7 @@ theorem exists_isAmalgamation_of_isFlasque_generate_singleton
     exact Presieve.isAmalgamation_sieveExtend _ _ h0⟩
 
 open TopCat.Sheaf.IsFlasque in
+open Grothendieck.Flasque_en in
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
 /-- **Godement II.3 read on the sieve side**: for a short exact sequence of
