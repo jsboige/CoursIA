@@ -86,6 +86,69 @@ Le dénominateur a crû de **deux** carnets en trois jours — `ICT-46b-BancUniq
 
 Zéro fantôme : les 68 entrées du ledger correspondent toutes à un carnet présent sur `main` (normalisation `-Python`), et la liste des 33 se recalcule, elle ne se recopie pas.
 
+## Recompte de couverture — 2026-11-08
+
+Mesure rejouée à la tête `7c4e261ad16` de `origin/main` avec la méthode décrite plus haut, en corrigeant un point de protocole : **les deux côtés se lisent sur la même référence**. Les carnets sont listés par `git ls-tree -r origin/main -- MyIA.AI.Notebooks/IIT/ICT-Series`, le ledger est lu par `git show origin/main:docs/ledgers/11690-ict-consolidation.md`. Un ledger lu depuis le répertoire de travail d'un arbre en retard fausse le compte — mesuré ici : 62 couverts au lieu de 68 sur un arbre partagé en retard de 1 638 commits, alors que le dénominateur, lui, venait déjà de `origin/main`.
+
+| Mesure | 2026-10-30 | 2026-11-02 | **2026-11-08** |
+|---|---|---|---|
+| Carnets ICT sur `main` | 99 | 101 | **103** |
+| Sections de carnet au ledger | 62 | 68 | **68** |
+| Non couverts | 37 | 33 | **35** |
+| Taux de couverture | 63 % | 67 % | **66 %** |
+
+Le dénominateur a crû de deux carnets depuis la mesure du 2026-11-02 et aucun des deux n'a de section : le taux perd un point par simple accroissement de la série, pas par perte de contenu. Zéro fantôme : les 68 entrées correspondent toutes à un carnet présent sur `main`.
+
+### Les 35 non couverts, recalculés
+
+```
+ICT-20-FeatureCatastrophes
+ICT-25b-StratificationInterTailles
+ICT-32-StratificationCausaleLife
+ICT-33-SoupCollisions
+ICT-34-BancRecollementLectures
+ICT-35-HumorCausalProbe-Pilot
+ICT-35b-HumorCausalPairs-SAE
+ICT-35c-HumorDepthProfile-SAE
+ICT-35d-HumorTypologyBreakdown-SAE
+ICT-36-FLens-FactoredGeometry
+ICT-36b-RuzsaOnFactorGeometry
+ICT-36c-FLens-HiguchiBridge
+ICT-36d-FLens-DecorrelationTemporelle
+ICT-36e-FLens-SNR
+ICT-37-FLens-BeliefState
+ICT-38-SLens-SelfLocation
+ICT-39-CompositionRegards
+ICT-40a-TriangulationCausale
+ICT-40b-AnalogCognitionWaves
+ICT-43-Calibration-MultiEchelle
+ICT-46-Strate7-FreeCoordinates
+ICT-46b-BancUnique-Strate7
+ICT-47-PainAxisDistillation
+ICT-47b-PainAxisInstrument
+ICT-48-Onset9B-Aggregate
+ICT-48-WolframClasses-ThermoSignature
+ICT-49-MachinesDeGoedel
+ICT-50-WolframRule30Aleatoire-Rule110Universelle
+ICT-51-CombinateursSKI-TagDePost
+ICT-Argumentation-Capstone
+ICT-Argumentation-QBFAcceptance
+ICT-Argumentation-TruthMaintenance
+ICT-Dissociation-DehaeneF2-SelfReport
+ICT-Greffe5-AttributionCausale
+ICT-MUH-FibreTegmark
+```
+
+Le bloc que la mesure du 2026-10-30 nommait prioritaire — les deux familles FLens `ICT-36`/`ICT-37` — compte **six** carnets et non cinq : `ICT-36d-FLens-DecorrelationTemporelle` s'y est ajouté depuis. Il reste le plus gros bloc contigu, suivi de l'axe douleur (`ICT-35`/`35b`/`35c`/`35d` et `ICT-47`/`47b`, six carnets), de `ICT-40a`/`40b`, de `ICT-46`/`46b` et de la paire `ICT-48` ci-dessous. Le reste est une traîne d'unités et quatre carnets hors numérotation (`Argumentation` ×3, `Dissociation`, `Greffe5`, `MUH`).
+
+### Finding — deux carnets portent le numéro 48
+
+`ICT-48-Onset9B-Aggregate-Python.ipynb` et `ICT-48-WolframClasses-ThermoSignature-Python.ipynb` coexistent dans le même dossier de `main`, et c'est la **seule collision numérique de la série** — regroupement sur le préfixe `ICT-<n><suffixe>`, une seule clé porte deux carnets.
+
+Les deux sont arrivés le **même jour**, le 2026-10-10, par deux PRs distinctes : #19853 (`feat(ict,#1454)`, agrégat 4 graines onset 9B Qwen3.5-Base) et #19807 (`feat(iit,#19796)`, carnet Origami Wolfram, quatre classes contre thermodynamique). Ce n'est donc pas une renumérotation ratée : c'est un numéro attribué deux fois dans la même journée par deux chantiers qui ne se sont pas vus.
+
+Conséquence pour la case 1 de l'acceptance : le dénominateur compte deux carnets là où la numérotation en annonce un, et ni l'un ni l'autre n'a de section. Le choix de place revient à l'arbitrage de la case 3 ; ce ledger ne renumérote pas, conformément à la réserve posée au §4.3.
+
 ## Passe d'arbitrage du mainteneur — séance du 2026-10-11 (case 3 de l'acceptance)
 
 Séance de relecture tenue avec le mainteneur le 2026-10-11 ; décisions consignées par la lane `myia-ai-01:CoursIA` ([#11690 c.6103450933](https://github.com/jsboige/CoursIA/issues/11690#issuecomment-6103450933)). Le mainteneur a accepté les recommandations du dossier de séance et posé un cadre élargi pour la suite (#20298–#20301, #17545, #5081). Conformément à la réserve 2 (péremption), chaque correction décidée invalide la ligne correspondante au moment de son exécution.
