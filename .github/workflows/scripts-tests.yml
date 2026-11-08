@@ -478,6 +478,12 @@ jobs:
           # Without it the 6 tests fail on ModuleNotFoundError instead of
           # exercising the script.
           pip install pypdf
+          # RDF catalog export: test_generate_curriculum_rdf imports rdflib
+          # at collection time and validates the produced graph with pyshacl.
+          # The test is included by scripts/notebook_tools/tests below, so
+          # these are job dependencies, not optional notebook extras.
+          # Match the SemanticWeb series' supported RDF stack.
+          pip install "rdflib>=7.0.0,<8.0.0" "pyshacl>=0.27.0"
           # open_spiel: coeur du service Kernel Gateway CFR (GameTheory/gateway,
           # #21104 / pli 0 de l'Epic #19571). La roue 2.0.2 manylinux_2_27
           # x86_64 existe pour le python 3.11 de ce job ; sans le paquet, la
