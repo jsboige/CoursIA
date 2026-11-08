@@ -231,8 +231,12 @@ def test_composites_trigger_on_the_axiom_step_program():
     the #8712 lesson applied one layer down (#22453). lean-knot.yml left
     this loop at its matrix migration (#13751): the dispatcher's own
     self-cover (test_axiom_gate_files_are_self_covered) carries the rule
-    for matrix lakes."""
-    for wf in ("lean-conway",):
+    for matrix lakes. lean-conway.yml -- the LAST autonomous wrapper with
+    an axiom gate -- left it at its own matrix migration (2026-11-08,
+    #13751 axe workflows, lane myia-ai-01:CoursIA-2): the loop is EMPTY
+    since, every manifest lake rides the dispatcher's self-cover. A future
+    autonomous wrapper born with an axiom gate MUST add itself back here."""
+    for wf in ():
         doc = yaml.safe_load(
             (REPO / f".github/workflows/{wf}.yml").read_text(encoding="utf-8"))
         on = doc.get("on") or doc.get(True)
