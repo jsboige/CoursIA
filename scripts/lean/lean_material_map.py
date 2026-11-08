@@ -37,8 +37,25 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PAGE = REPO_ROOT / "docs" / "reference" / "lean-material-map.md"
 CI_LAKES = REPO_ROOT / "scripts" / "lean" / "ci_lakes.json"
+BIRTHS = REPO_ROOT / "scripts" / "lean" / "lean_births.json"
 COVERAGE = REPO_ROOT / "scripts" / "lean" / "check_axiom_gate_coverage.py"
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
+
+# Budget de l'organe de couverture. Mesure du 2026-11-07 sur ai-01 : 634 s
+# puis 658 s (deux passes) -- le seuil de 300 s etait SOUS la duree reelle.
+# L'echec etait alors avale en silence (cf `_coverage`) et la page rendue
+# disait `hors matrice` pour les 41 lacs, alors que la couverture mesuree
+# en donne 34 gated / 35 matrice / 2 sans gate. Regeneree avec une couverture
+# reellement mesuree, la page est IDENTIQUE octet pour octet a la page
+# commitee : la page est saine, le seuil etait le defaut.
+COVERAGE_TIMEOUT = 1800
+
+# Code de sortie conventionnel des generateurs : « je n'ai pas pu mesurer ».
+# Distinct de 1 (`PERIMEE`) : la page peut etre parfaitement saine, c'est la
+# machine qui n'a pas repondu a l'organe amont. Le garde des pages derivees
+# (`scripts/lean/check_lean_derived_pages.py`) classifie ce code
+# explicitement au lieu de le lire comme une divergence de l'arbre.
+UNMEASURABLE_RC = 2
 
 GENERATED_HEADER = (
     "<!-- fichier genere par scripts/lean/lean_material_map.py -- "
@@ -140,8 +157,24 @@ def _declared_lakes() -> dict[str, dict]:
     return out
 
 
+class CoverageUnavailable(RuntimeError):
+    """L'organe de couverture n'a pas repondu : la page ne peut pas etre certifiee."""
+
+
 def _coverage() -> dict:
-    """Le verdict du gate d'axiomes, s'il est joignable ; sinon un verdict neutre."""
+    """Le verdict du gate d'axiomes.
+
+    Fail-closed. Un organe amont injoignable ne rend pas un « verdict neutre » :
+    il rend une page **FAUSSE**. Rendre `{}` faisait dire `hors matrice` a
+    tous les lacs, le `--check` qui suivait rendait alors `A JOUR` sur cette
+    page fausse, et le `--write` ecracait une page correcte par une page
+    fausse -- sans qu'aucune erreur ne soit levee. Mesure du 2026-11-07 : le
+    seuil de 300 s etait sous la duree reelle de l'organe (634-658 s), donc
+    l'echec etait **deterministe** sur cette machine, pas aleatoire.
+
+    L'echec est donc remonte : le generateur refuse d'ecrire et refuse de
+    declarer la page a jour.
+    """
     try:
         r = subprocess.run(
             [sys.executable, "-I", str(COVERAGE), "--ref", "HEAD", "--json"],
@@ -150,13 +183,22 @@ def _coverage() -> dict:
             encoding="utf-8",
             errors="replace",
             cwd=str(REPO_ROOT),
-            timeout=300,
+            timeout=COVERAGE_TIMEOUT,
         )
-        if r.returncode == 0 and r.stdout.strip():
-            return json.loads(r.stdout)
-    except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
-        pass
-    return {}
+    except subprocess.TimeoutExpired:
+        raise CoverageUnavailable(
+            "timeout de %d s sur %s" % (COVERAGE_TIMEOUT, COVERAGE.name))
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise CoverageUnavailable(
+            "appel impossible de %s : %s" % (COVERAGE.name, exc))
+    if r.returncode != 0:
+        raise CoverageUnavailable(
+            "rc=%d sur %s" % (r.returncode, COVERAGE.name))
+    try:
+        return json.loads(r.stdout)
+    except json.JSONDecodeError as exc:
+        raise CoverageUnavailable(
+            "sortie illisible de %s : %s" % (COVERAGE.name, exc))
 
 
 def _sorry_by_lake() -> dict[str, int]:
@@ -227,10 +269,53 @@ def _ci_surfaces(lakes: list[str]) -> dict[str, list[str]]:
     return out
 
 
-def _birth(lakefile: str) -> str:
-    """Date (AAAA-MM-JJ) du commit qui a ajoute ce lakefile ; vide si inconnue."""
-    out = _git("log", "-1", "--diff-filter=A", "--format=%cs", "--", lakefile).strip()
-    return out.splitlines()[-1] if out else ""
+def _pinned_births() -> dict[str, str]:
+    """Les naissances epinglees de `lean_births.json`, indexees par lac."""
+    try:
+        raw = json.loads(BIRTHS.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    lakes = raw.get("lakes") if isinstance(raw, dict) else None
+    if not isinstance(lakes, dict):
+        return {}
+    return {
+        str(k).replace("\\", "/").rstrip("/"): str(v)
+        for k, v in lakes.items()
+        if isinstance(v, str) and v
+    }
+
+
+def _git_birth(lakefile: str) -> str:
+    """Premier ajout **visible** du lakefile ; vide si l'histoire n'en montre aucun.
+
+    `--reverse` + premiere ligne, et non `-1` : `-1` rend le *dernier* ajout
+    visible, donc un mass-add tardif -- ou une histoire tronquee (clone
+    shallow, greffe) -- deplace la date. Le premier ajout, lui, ne bouge pas
+    quand l'histoire s'allonge. Il reste borne par ce que le clone contient :
+    c'est pourquoi `lean_births.json` prime (cf. `_birth`).
+    """
+    out = _git("log", "--diff-filter=A", "--format=%cs", "--reverse", "--", lakefile)
+    lines = [line.strip() for line in out.splitlines() if line.strip()]
+    return lines[0] if lines else ""
+
+
+def _birth(lake: str, lakefile: str, pinned: dict[str, str] | None = None) -> str:
+    """Date (AAAA-MM-JJ) de naissance du lac ; vide si inconnue.
+
+    L'epingle committée prime sur git : sans elle, la colonne dependrait de
+    l'histoire **visible** du clone, et deux sieges sur la meme histoire
+    pouvaient rendre deux pages differentes (issue #24538). Un lac nouveau
+    n'est pas epingle : il retombe sur git jusqu'a ce que son epingle soit
+    ajoutee, geste explicite et visible en revue.
+
+    ``pinned`` est injectable : ``collect()`` charge la table une fois pour
+    tous les lacs (deux lectures par lac sinon, une par lakefile) ; les
+    appels directs conservent le chargement implicite -- c'est aussi ce qui
+    garde les tests libres de monkeypatcher ``BIRTHS`` sans cache interpose.
+    """
+    if pinned is None:
+        pinned = _pinned_births()
+    return pinned.get(lake.replace("\\", "/").rstrip("/")) or _git_birth(lakefile)
 
 
 def _owner_of(path: str, lake_dirs: list[str]) -> str | None:
@@ -378,6 +463,7 @@ def collect(with_sorry: bool = False) -> dict:
     matrix = set(coverage.get("matrix_lakes") or [])
     ungated = set(coverage.get("matrix_lakes_without_gate") or [])
     sorry = _sorry_by_lake() if with_sorry else {}
+    pinned = _pinned_births()  # une seule lecture pour tous les lacs
 
     by_lake: dict[str, dict] = {}
     for lakefile in lakefiles:
@@ -397,7 +483,7 @@ def collect(with_sorry: bool = False) -> dict:
         )
         # Un lac peut porter deux lakefiles (lean + toml) : la naissance est la
         # plus ancienne des deux, c'est celle du lac.
-        born = _birth(lakefile)
+        born = _birth(lake, lakefile, pinned)
         if born and (not entry["birth"] or born < entry["birth"]):
             entry["birth"] = born
 
@@ -794,7 +880,26 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--with-sorry", action="store_true", help="ajoute la dette formelle")
     args = parser.parse_args(argv)
 
-    data = collect(with_sorry=args.with_sorry)
+    try:
+        data = collect(with_sorry=args.with_sorry)
+    except CoverageUnavailable as exc:
+        # Ni `--write` ni `--check` ne s'executent : la page sur disque n'est
+        # pas touchee (elle peut etre saine), et le verdict ne porte pas sur
+        # une page que l'on n'a pas reellement mesuree.
+        print("COUVERTURE INJOIGNABLE : la page derivee ne peut pas etre certifiee.")
+        print(
+            "Ni --write ni --check ne sont executes : la page sur disque n'est"
+            " pas modifiee."
+        )
+        print(
+            "Ce n'est pas une divergence de l'arbre : c'est la machine qui n'a"
+            " pas repondu. NE PAS regenerer ici."
+        )
+        # La cause est en DERNIER : le garde des pages derivees lit la derniere
+        # ligne du generateur pour nommer le defaut.
+        print("Cause : %s" % exc)
+        return UNMEASURABLE_RC
+
     rows = data["lakes"]
     orphans = data["orphans"]
     if args.json:

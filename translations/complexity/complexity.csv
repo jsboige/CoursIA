@@ -1166,19 +1166,19 @@ for n in tailles:
     print(f""{n:>3} | {n * n:>5} | {2 ** n:>12}"")
 assert all(n * n <= 2 ** n for n in tailles)
 ",,,,,,,,527c8f18e333496a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,budgets-reading,markdown,fr,a54ed3fb85809528,"**Lecture du résultat.** Les coûts s'ordonnent pour les tailles affichées : à n = 32, le budget n² vaut 1 024 pas contre 4 294 967 296 pour 2ⁿ — l'écart se creuse à chaque taille. Pour conclure qu'une classe possède un problème absent de l'autre, il faudrait écarter **tous** les algorithmes au petit budget. La table numérique ne le fait pas.
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,budgets-reading,markdown,fr,240a7880911eeb9a,"**Lecture du résultat.** Les coûts s'ordonnent pour les tailles affichées : à n = 32, le budget n² vaut 1 024 pas contre 4 294 967 296 pour 2ⁿ — l'écart est nul à n = 2 et n = 4 (4 contre 4, 16 contre 16) et ne s'ouvre qu'à partir de n = 8 (64 contre 256). Pour conclure qu'une classe possède un problème absent de l'autre, il faudrait écarter **tous** les algorithmes au petit budget. La table numérique ne le fait pas.
 
 ## 2. L'idée de diagonalisation
 
 Énumérons quelques machines candidates. À la ligne i, la construction D choisit l'opposé de la réponse de la machine numéro i sur l'entrée i. D diffère donc de chaque machine listée sur au moins une entrée. La liste ci-dessous n'est qu'une expérience **finie** : elle ne représente pas toutes les machines possibles.
 
-La diagonalisation inverse le sens de la question : au lieu de chercher un algorithme rapide, on construit un problème D qui contredit chaque machine candidate sur son propre terrain — l'entrée i. Contre une liste finie, cela marche ; contre l'infinité des machines, il faudrait une construction et une borne universelles, ce que la section 4 discute.","**Reading the result.** The costs are ordered for the sizes shown: at n = 32, the n² budget is worth 1,024 steps against 4,294,967,296 for 2ⁿ — the gap widens at every size. To conclude that one class has a problem absent from the other, one would have to rule out **all** algorithms within the smaller budget. The numerical table does not do that.
+La diagonalisation inverse le sens de la question : au lieu de chercher un algorithme rapide, on construit un problème D qui contredit chaque machine candidate sur son propre terrain — l'entrée i. Contre une liste finie, cela marche ; contre l'infinité des machines, il faudrait une construction et une borne universelles, ce que la section 4 discute.","**Reading the result.** The costs are ordered for the sizes shown: at n = 32, the n² budget is worth 1,024 steps against 4,294,967,296 for 2ⁿ — the gap is zero at n = 2 and n = 4 (4 against 4, 16 against 16) and only opens from n = 8 (64 against 256). To conclude that one class has a problem absent from the other, one would have to rule out **all** algorithms within the smaller budget. The numerical table does not do that.
 
 ## 2. The diagonalization idea
 
 Let us enumerate a few candidate machines. At row i, construction D chooses the opposite of machine number i's answer on input i. D therefore differs from every listed machine on at least one input. The list below is only a **finite** experiment: it does not represent all possible machines.
 
-Diagonalization reverses the direction of the question: instead of looking for a fast algorithm, one builds a problem D that contradicts each candidate machine on its own ground — input i. Against a finite list, this works; against the infinity of machines, one would need a universal construction and bound, which section 4 discusses.",,,,,,,a54ed3fb85809528,0eadf9a219a091ae,,,,,,,,,,,,,,
+Diagonalization reverses the direction of the question: instead of looking for a fast algorithm, one builds a problem D that contradicts each candidate machine on its own ground — input i. Against a finite list, this works; against the infinity of machines, one would need a universal construction and bound, which section 4 discusses.",,,,,,,240a7880911eeb9a,4543de7af8e4c3a0,,,,,,,240a7880911eeb9a,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,diagonal-code,code,fr,0ce92530bf6bc66d,"machines = (
     lambda i: i % 2 == 0,
     lambda i: i < 2,

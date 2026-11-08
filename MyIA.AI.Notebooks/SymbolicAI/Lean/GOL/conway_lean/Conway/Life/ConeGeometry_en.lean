@@ -190,9 +190,9 @@ theorem window_cheb_cone_in_domain (k : Nat) (p q : Int × Int)
     (0 : Int) ≤ q.1 ∧ q.1 < 2^(k+2) ∧ (0 : Int) ≤ q.2 ∧ q.2 < 2^(k+2) := by
   -- Chebyshev radius bounds each coordinate directly (no manhattan bridge).
   obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q (2^k) hc
-  -- `coord_bound_of_chebDist_le` types its bounds as `Nat` (`Int.natAbs ... ≤
-  -- 2^k`); the window hypotheses below use native-Int `(2^k : Int)` (`HPower`).
-  -- Bridge the Nat-bound to an `Int.abs`-typed bound (mirroring the loose
+  -- `coord_bound_of_chebDist_le` types its bounds as `Nat` (`Int.natAbs ... ≤ 2^k`);
+  -- the window hypotheses below use native-Int `(2^k : Int)` (`HPower`).
+  -- Bridge the `Nat`-bound to an `Int.abs`-typed bound (mirroring the loose
   -- analog's `manhattan_deviation` output, which is already Int-typed), then
   -- unify the atoms via `Nat.cast_pow`.
   have hk_pow : (↑((2:Nat)^k) : Int) = (2^k : Int) := Nat.cast_pow 2 k
@@ -201,8 +201,9 @@ theorem window_cheb_cone_in_domain (k : Nat) (p q : Int × Int)
   have hq2' : |q.2 - p.2| ≤ (2^k : Int) := by
     rw [hk_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq2
   -- Power facts in pure `Nat`, lifted to `Int` (linarith reads the atoms),
-  -- factored into the named lemmas `pow_two_add_one_int`/`pow_two_add_two_int`
-  -- above (shared with `window_cone_in_domain` in `HashlifeCorrectness`).
+  -- factored into the named lemmas
+  -- `pow_two_add_one_int`/`pow_two_add_two_int` above (shared with
+  -- `window_cone_in_domain` in `HashlifeCorrectness`).
   have hpe1 : (2^(k+1) : Int) = 2 * (2^k : Int) := pow_two_add_one_int k
   have hpe2 : (2^(k+2) : Int) = 4 * (2^k : Int) := pow_two_add_two_int k
   -- `Int.abs` bound unpacked into a two-sided `Int` clamp on `q.i - p.i`.

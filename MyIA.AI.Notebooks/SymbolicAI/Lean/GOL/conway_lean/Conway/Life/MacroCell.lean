@@ -24,11 +24,9 @@ Nous utilisons la meme convention de coordonnees que `Conway.Life` :
 Ainsi, au niveau le plus haut, un noeud `node nw ne sw se` de niveau
 `n+1` couvre une region de taille `2^(n+1) x 2^(n+1)` partitionnee en :
 
-```
-nw | ne
----+---
-sw | se
-```
+    nw | ne
+    ---+---
+    sw | se
 
 ou chaque quadrant est `2^n x 2^n`. Si la region entiere a son coin
 haut-gauche en `(row0, col0)`, alors :
@@ -38,8 +36,8 @@ haut-gauche en `(row0, col0)`, alors :
 - `sw` couvre `[row0 + 2^n,     row0 + 2^(n+1))      x [col0,           col0 + 2^n)`
 - `se` couvre `[row0 + 2^n,     row0 + 2^(n+1))      x [col0 + 2^n,    col0 + 2^(n+1))`
 
-Ce module est entierement prouve (aucun trou). Il fournit seulement la
-structure de donnees et les conversions. L'algorithme Hashlife vit dans
+Ce module est entierement prouve (aucun trou) : il fournit seulement la structure
+de donnees et les conversions. L'algorithme Hashlife vit dans
 `Conway.Life.Hashlife`.
 -/
 

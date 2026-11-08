@@ -82,7 +82,7 @@ jobs:
             NOTEBOOKS="${{ github.event.inputs.notebook_paths }}"
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
             NOTEBOOKS=$(git diff --name-only --diff-filter=ACM \
-              origin/${{ github.base_ref }} HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+              origin/${{ github.base_ref }}...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
           else
             # push to main : scan complet via git ls-tree du tree courant.
             NOTEBOOKS=$(git ls-tree -r --name-only HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)

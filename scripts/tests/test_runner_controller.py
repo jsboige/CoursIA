@@ -4,6 +4,7 @@ import dataclasses
 import importlib.util
 import json
 import os
+import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -288,6 +289,37 @@ def test_task_install_writes_the_launcher_the_xml_points_at(prof, monkeypatch):
     assert str(launcher) in installed
 
 
+def test_task_xml_carries_the_run_level_in_principals(prof):
+    """Le niveau d'execution est une propriete du PRINCIPAL de la tache : il doit
+    voyager dans l'XML des la creation. Le porter apres coup par
+    `schtasks /Change /RL HIGHEST` fait reclamer le mot de passe du compte et
+    suspend une session elevee non interactive (mesure 2026-11-04, #24700).
+
+    `UserId` est volontairement absent : le principal par defaut est le compte
+    appelant, ce qui garde le script independant de la machine."""
+    root = ET.fromstring(ctl.task_xml(prof))
+    principals = root.find("{" + TASK_NS + "}Principals")
+    assert principals is not None, "un XML sans <Principals> ne porte aucun RunLevel"
+    principal = principals.find("{" + TASK_NS + "}Principal")
+    assert principal is not None and principal.get("id") == "Author"
+    run_level = principal.find("{" + TASK_NS + "}RunLevel")
+    assert run_level is not None and run_level.text == "HighestAvailable"
+    assert principal.find("{" + TASK_NS + "}UserId") is None
+
+
+def test_task_install_never_asks_schtasks_to_change_the_run_level(prof, monkeypatch):
+    """Le `/Change /RL HIGHEST` posterieur a la creation est le blocage : il ne
+    doit plus exister dans le chemin d'installation, quelle que soit la forme."""
+    monkeypatch.setattr(ctl, "_is_elevated", lambda: True)
+    fake = FakeRun()
+    ctl.apply_task_install(prof, fake)
+    schtasks = [" ".join(str(a) for a in c[0]) for c in fake.calls
+                if str(c[0][0]) == "schtasks"]
+    assert schtasks, "l'installation doit appeler schtasks au moins une fois"
+    assert not [c for c in schtasks if "/Change" in c], schtasks
+    assert [c for c in schtasks if "/Create" in c and "/XML" in c], schtasks
+
+
 def test_task_xml_malformed_is_caught_before_elevation(prof, monkeypatch):
     """La garde d'elevation passait AVANT la construction de l'XML : un dry-run
     non-eleve ne pouvait donc structurellement pas voir un document malforme.
@@ -316,3 +348,110 @@ def test_task_remove_real_error_refuses(prof, monkeypatch):
     fake = FakeRun(schtasks_error="ERROR: Access is denied.")
     with pytest.raises(ctl.Broken, match="schtasks /Delete failed"):
         ctl.apply_task_remove(prof, fake)
+
+
+# ---------------------------------------------------------------------------
+# Le journal porte la raison de l'echec (Maintenance#75, mesure du 04/11)
+# ---------------------------------------------------------------------------
+
+PWSH = shutil.which("pwsh.exe") or shutil.which("pwsh")
+WINDOWS = sys.platform == "win32"
+
+
+def test_task_action_redirige_tout_le_flux_vers_le_journal(prof):
+    """Le corps ecrit SA sortie ET la raison de son echec dans controller.log.
+
+    La redirection shell `*>>` ne portait que la DERNIERE instruction : un
+    echec preparatoire partait vers la sortie invisible de la tache, et le
+    journal restait absent ou vide alors que le code retour portait 1
+    (mesure 2026-11-04 : controller.log vide a 17:57, res=1).
+    """
+    body = ctl.task_action(prof)
+    assert "*>>" not in body, "la redirection shell ne couvre que la derniere instruction"
+    assert "[IO.File]::AppendAllText($log," in body
+    assert "$out = & " in body and "2>&1 | Out-String" in body
+    assert "$code = $LASTEXITCODE;" in body
+    # un executable introuvable ne met pas `$LASTEXITCODE` a jour : `$null`
+    # ne doit pas pouvoir passer pour un succes (`exit $null` rend 0)
+    assert "if ($null -eq $code)" in body
+    assert "exit $code" in body
+    # le chemin d'echec ecrit la raison, puis rend un code non nul
+    assert "} catch {" in body
+    assert "ERREUR" in body
+    assert "exit 1" in body
+
+
+@pytest.mark.skipif(not (WINDOWS and PWSH), reason="pwsh absent (poste Windows requis)")
+def test_echec_preparatoire_ecrit_la_raison_dans_le_journal(prof):
+    """Execution reelle : le fichier de mot de passe manque -> le corps echoue,
+    le code retour vaut 1 ET le journal existe avec la raison de l'echec.
+
+    Temoin du defaut : avant ce correctif, le meme corps rendait 1 avec un
+    journal ABSENT (l'erreur partait vers la sortie invisible de la tache).
+    """
+    body = ctl.task_action(prof)
+    completed = subprocess.run(
+        [PWSH, "-NoProfile", "-NonInteractive", "-Command", body],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
+    )
+    log = prof.root.parent / "logs" / "controller.log"
+    assert completed.returncode == 1
+    assert log.is_file(), "le journal doit exister meme quand le corps echoue"
+    text = log.read_text(encoding="utf-8")
+    assert text.strip(), "le journal ne doit pas etre vide"
+    assert "runner_pwd.txt" in text, "le journal doit nommer la cause"
+
+
+@pytest.mark.skipif(not (WINDOWS and PWSH), reason="pwsh absent (poste Windows requis)")
+def test_le_code_retour_de_l_organe_traverse_le_corps(prof):
+    """La commande lancee rend 3 -> le corps rend 3, et sa sortie est journalisee.
+
+    `command` remplace la commande du controleur : le test ne peut pas lancer
+    `ensure --apply` (il enregistre un runner sur GitHub).
+    """
+    secrets = prof.root.parent / "secrets" / "runner_pwd.txt"
+    secrets.parent.mkdir(parents=True, exist_ok=True)
+    secrets.write_text("mot-de-passe\n", encoding="utf-8")
+    body = ctl.task_action(
+        prof,
+        command=[sys.executable, "-c", "import sys; print('sortie organe'); sys.exit(3)"],
+    )
+    completed = subprocess.run(
+        [PWSH, "-NoProfile", "-NonInteractive", "-Command", body],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
+    )
+    log = prof.root.parent / "logs" / "controller.log"
+    assert completed.returncode == 3, "le code retour de l'organe doit traverser"
+    assert "sortie organe" in log.read_text(encoding="utf-8")
+
+
+@pytest.mark.skipif(not (WINDOWS and PWSH), reason="pwsh absent (poste Windows requis)")
+def test_un_executable_introuvable_ne_rend_pas_un_code_nul(prof):
+    """Un executable introuvable rend 1, et le journal nomme la cause.
+
+    Mesure sur les deux moteurs du poste (pwsh 7 et Windows PowerShell 5.1) :
+    l'exception « commande introuvable » est **terminante** pour le `try` du
+    corps -- elle est donc attrapee par le `catch`, qui ecrit la raison dans
+    le journal et rend 1. Le rc ne ment donc pas sur ce chemin.
+
+    Ce temoin verrouille ce comportement, et non pas une correction : le
+    controle negatif (garde du corps retiree) le laisse VERT, parce que le
+    `catch` couvre deja le cas. Il deviendrait ROUGE le jour ou l'exception
+    cesserait d'etre terminante -- le `$LASTEXITCODE` resterait `$null`,
+    `exit $null` rendrait 0, et le journal serait vide.
+    """
+    secrets = prof.root.parent / "secrets" / "runner_pwd.txt"
+    secrets.parent.mkdir(parents=True, exist_ok=True)
+    secrets.write_text("mot-de-passe\n", encoding="utf-8")
+    absent = prof.root.parent / "absent" / "command_inexistante.exe"
+    body = ctl.task_action(prof, command=[str(absent)])
+    completed = subprocess.run(
+        [PWSH, "-NoProfile", "-NonInteractive", "-Command", body],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
+    )
+    log = prof.root.parent / "logs" / "controller.log"
+    assert completed.returncode == 1, "un executable introuvable ne doit pas rendre 0"
+    assert log.is_file(), "le journal doit porter la raison de l'echec"
+    text = log.read_text(encoding="utf-8")
+    assert text.strip(), "le journal ne doit pas etre vide"
+    assert "command_inexistante" in text, "le journal doit nommer la commande absente"

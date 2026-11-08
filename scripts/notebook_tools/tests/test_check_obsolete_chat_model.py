@@ -153,6 +153,89 @@ def test_nested_dict_subscript_bounded_unresolved():
     assert len(report["unresolved"]) >= 1
 
 
+def test_battery_for_loop_obsolete_entry_flagged():
+    """Liste de dictionnaires (batterie de modeles) : la boucle execute
+    chaque entree, donc une entree obsolete est un site atteignable."""
+    report = _analyze(nb(
+        code('BATTERY = [\n'
+             '    {"model": "gpt-5.6-luna", "label": "mini"},\n'
+             '    {"model": "gpt-4o-mini", "label": "ancien"},\n'
+             ']'),
+        code('for cfg in BATTERY:\n'
+             '    client.chat.completions.create(model=cfg["model"],\n'
+             '                                   messages=[])')))
+    assert len(report["findings"]) == 1
+    f = report["findings"][0]
+    assert f["model"] == "gpt-4o-mini"
+    assert "entree 1" in f["via"]  # localise l'entree fautive
+
+
+def test_battery_all_current_silent():
+    report = _analyze(nb(
+        code('BATTERY = [{"model": "gpt-5.6-luna"}, {"model": "gpt-5.6-sol"}]'),
+        code('for cfg in BATTERY:\n'
+             '    client.chat.completions.create(model=cfg["model"],\n'
+             '                                   messages=[])')))
+    assert report["findings"] == []
+
+
+def test_battery_indexed_entry_flagged():
+    """``BATTERY[0]["cle"]`` : entree designee par un index litteral."""
+    report = _analyze(nb(
+        code('BATTERY = [{"model": "gpt-4o-mini"}, {"model": "gpt-5.6-sol"}]'),
+        code('client.chat.completions.create(model=BATTERY[0]["model"],\n'
+             '                               messages=[])')))
+    assert len(report["findings"]) == 1
+    assert report["findings"][0]["model"] == "gpt-4o-mini"
+
+
+def test_battery_displayed_not_flagged():
+    """Temoin negatif : une batterie seulement AFFICHEE (aucun appel chat)
+    reste silencieuse -- c'est la forme des configurations du 00-3."""
+    report = _analyze(nb(
+        code('TEST_MODELS = [{"model": "gpt-4o-mini", "api": "openai"}]\n'
+             'for cfg in TEST_MODELS:\n'
+             '    print(cfg["model"])')))
+    assert report["findings"] == []
+
+
+def test_battery_dynamic_index_unresolved():
+    """Index dynamique : non resolu, jamais accuse."""
+    report = _analyze(nb(
+        code('BATTERY = [{"model": "gpt-4o-mini"}]'),
+        code('for i in range(1):\n'
+             '    client.chat.completions.create(model=BATTERY[i]["model"],\n'
+             '                                   messages=[])')))
+    assert report["findings"] == []
+    assert len(report["unresolved"]) >= 1
+
+
+def test_battery_with_dynamic_entry_not_followed():
+    """Une entree non resoluble fait retomber la batterie entiere en non
+    suivie : aucune resolution partielle devinee."""
+    report = _analyze(nb(
+        code('import os\n'
+             'BATTERY = [{"model": "gpt-4o-mini"},\n'
+             '           {"model": os.environ["OTHER_MODEL"]}]'),
+        code('for cfg in BATTERY:\n'
+             '    client.chat.completions.create(model=cfg["model"],\n'
+             '                                   messages=[])')))
+    assert report["findings"] == []
+    assert len(report["unresolved"]) >= 1
+
+
+def test_local_battery_does_not_pollute_module():
+    """Une batterie locale (corps de fonction) ne sort pas de son scope."""
+    report = _analyze(nb(
+        code('def build():\n'
+             '    BATTERY = [{"model": "gpt-4o-mini"}]\n'
+             '    return BATTERY'),
+        code('for cfg in BATTERY:\n'
+             '    client.chat.completions.create(model=cfg["model"],\n'
+             '                                   messages=[])')))
+    assert report["findings"] == []
+
+
 def test_provider_prefix_flagged():
     report = _analyze(nb(code(
         'lm = dspy.LM("openai/gpt-4o-mini")')))

@@ -12,7 +12,7 @@ Despite extreme simplicity, the rule supports universal computation
 
 This file is the FOUNDATIONS module of the Phase 2 tribute (Epic #1647):
 - Game state encoded as a `List (Int × Int)` of live cells (sorted, unique)
-- Step function implementing the B3/S23 rule via list operations
+- `step` function implementing the B3/S23 rule via list operations
 - Iterated `evolve`
 - Predicates `IsStillLife`, `IsOscillator`, `IsSpaceship`
 - Witnesses for the canonical small patterns
@@ -130,9 +130,10 @@ def lexLe (a b : Int × Int) : Bool :=
     a byte-identical canonical list — the comparators agree on all distinct
     pairs and ties are *equal values*. -/
 def sortDedup (l : List (Int × Int)) : List (Int × Int) :=
-  -- `insertionSort` (Mathlib) takes a Prop comparator; Lean core `mergeSort`
-  -- takes a Bool comparator. We lift `lexLe : → Bool` to `→ Prop` via
-  -- `= true` so the two comparators decide identically.
+  -- `insertionSort` (Mathlib) takes a `Prop` comparator; Lean core
+  -- `mergeSort` takes a `Bool` comparator. We lift
+  -- `lexLe : → Bool` to `→ Prop` via `= true` so the two
+  -- comparators decide identically.
   (List.insertionSort (fun a b => lexLe a b = true) l).dedup
 
 /-- `sortDedup` preserves membership. -/
