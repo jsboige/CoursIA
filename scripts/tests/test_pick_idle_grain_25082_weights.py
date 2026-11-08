@@ -289,7 +289,8 @@ def test_le_prior_ne_se_laisse_pas_annuler_par_une_zone_sterile():
     rang lexicographique (tout prioritaire devant tout neutre) vidait la
     tete de sa variete : 45/50 grains de tier 0 au rejeu du 07/11."""
     sterile = _item(1, family=ZONE_A)
-    neutre_bon = _item(2, family=ZONE_B)
+    neutre_bon = _item(2, family=ZONE_B,
+                       last_visit="2026-11-06T00:00:00Z")
     # visites recentes (< 48 h) : NON dues, la garde legacy[0] ne tranche
     # pas -- c'est le POT qui decide, sinon le test mesurerait #22500.
     consolidation_sterile = _item(3, family=ZONE_A, labels=["consolidation"],
@@ -300,6 +301,8 @@ def test_le_prior_ne_se_laisse_pas_annuler_par_une_zone_sterile():
                                 labels=["consolidation"],
                                 last_visit="2026-11-07T00:00:00Z")
     thetas = {"zone:" + ZONE_A: 0.05, "zone:" + ZONE_B: 0.9}
+    assert pig.belt_sort_key(neutre_bon, now=NOW)[0] == \
+        pig.belt_sort_key(consolidation_sterile, now=NOW)[0] == 2
     # (a) la zone qui ferme 18x mieux fait passer son neutre devant la
     # consolidation sterile : le pot (log2 rel + log2 prior) le permet.
     assert pig.belt_weight_key(neutre_bon, _detail(neutre_bon, thetas),
@@ -322,15 +325,18 @@ def test_changer_le_facteur_change_l_ordre():
     tranche. Si le facteur ne changeait plus l'ordre, il serait decoratif."""
     consolidation = _item(1, family=ZONE_A, labels=["consolidation"],
                           last_visit="2026-11-07T00:00:00Z")
-    neutre = _item(2, family=ZONE_B, created="2020-01-01T00:00:00Z")
+    neutre = _item(2, family=ZONE_B,
+                   last_visit="2026-11-06T00:00:00Z")
     thetas = {"zone:" + ZONE_A: 0.25, "zone:" + ZONE_B: 0.5}
+    assert pig.belt_sort_key(neutre, now=NOW)[0] == \
+        pig.belt_sort_key(consolidation, now=NOW)[0] == 2
     # rel_A/rel_B = 0.5 : le neutre vaut +1 pot de zone ; le prior x3
     # (~+1,58 pot) met la consolidation devant.
     assert pig.belt_weight_key(consolidation, _detail(consolidation, thetas),
                                now=NOW) < \
         pig.belt_weight_key(neutre, _detail(neutre, thetas), now=NOW)
     # Le meme pool sous un prior x2 : +1 pot exactement, l'egalite rend la
-    # main a la ligne de temps -- le neutre, plus ancien non visite, passe.
+    # main a la ligne de temps -- le neutre, visite plus anciennement, passe.
     orig = pig.CONSOLIDATION_PRIOR
     try:
         pig.CONSOLIDATION_PRIOR = 2.0
@@ -428,3 +434,16 @@ def test_la_tete_contient_les_neutres_de_la_zone_qui_ferme():
     assert zones_b, "la tete doit contenir les neutres de la zone qui ferme"
     assert consolidations, "et la consolidation reste servie (pot favorable)"
     assert signal["weighted_head"]["arms"] >= 2
+
+
+def test_les_classes_de_fraicheur_priment_sur_les_poids():
+    """Un poids extreme ne change pas l'ordre des classes de visite."""
+    recent = _item(1, family=ZONE_A, created="2026-11-06T00:00:00Z")
+    visite = _item(2, family=ZONE_A, last_visit="2026-11-07T00:00:00Z")
+    ancien = _item(3, family=ZONE_B, created="2020-01-01T00:00:00Z")
+    thetas = {"zone:" + ZONE_A: 0.05, "zone:" + ZONE_B: 0.9}
+    keys = [pig.belt_weight_key(item, _detail(item, thetas), now=NOW)
+            for item in (recent, visite, ancien)]
+    assert [key[0] for key in keys] == [1, 2, 3]
+    assert keys[0] < keys[1] < keys[2]
+    assert _detail(ancien, thetas)["bucket"] > _detail(visite, thetas)["bucket"]
