@@ -139,10 +139,10 @@
       "ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb",
       "ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb"
     ],
-    "ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star": [
-      "ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb",
-      "ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb",
-      "ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12d-Token-Usage.ipynb"
+    "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star": [
+      "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb",
+      "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb",
+      "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb"
     ],
     "ML/ML.Net": [
       "ML/ML.Net/ML-01-Introduction-Python.ipynb",
@@ -316,8 +316,8 @@
     ],
     "SymbolicAI/SemanticWeb": [
       "SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb",
-      "SymbolicAI/SemanticWeb/SW-14-Python-Coup-Ontologique.ipynb",
-      "SymbolicAI/SemanticWeb/SW-15-Python-Coup-Argumentatif.ipynb"
+      "SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-Python.ipynb",
+      "SymbolicAI/SemanticWeb/SW-15-Coup-Argumentatif-Python.ipynb"
     ],
     "SymbolicAI/SymbolicLearning": [
       "SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb",
