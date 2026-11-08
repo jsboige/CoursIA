@@ -35,7 +35,7 @@ l'identité de scission de bit (`splitBit_eq_of_support`). Le module démontre
 aussi la **non-vacuité** de la nouvelle hypothèse (`supportContained_biUnion`).
 
 Les briques k1.2/k1.4/k1.5/k1.6 restent en place (leurs énoncés sont vrais) ;
-ce module **ajoute** les énoncés consommables. L'état détaillé vit dans
+ce module **ajoute** les énoncés consommables, ainsi que la forme consommable de l'identité du bit de scission (`splitBit_eq_of_support`). L'état détaillé vit dans
 `FORMAL_STATUS.md`.
 -/
 
