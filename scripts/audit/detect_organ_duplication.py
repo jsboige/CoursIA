@@ -245,7 +245,7 @@ def parse_patch(patch_text: str, owners: dict, symbol_owners: dict):
             content, csharp_block_comment = _mask_csharp_line(
                 line[1:], csharp_block_comment
             )
-            matches = [CSHARP_TYPE_RE.search(content)]
+            matches = list(CSHARP_TYPE_RE.finditer(content))
         else:
             matches = list(DEF_RE.finditer(line[1:]))
         for sym_m in matches:

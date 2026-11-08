@@ -303,12 +303,14 @@ def test_csharp_inline_namespace_class_remains_detected(tmp_path, capsys):
 --- a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
 +++ b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
 @@ -0,0 +1,1 @@
-+namespace N { public class VettingLevel { } }
++namespace N { public class VettingLevel { } public enum Fallacy { None } }
 """)
     rc = mod.main(["--patch", str(patch), "--index", str(INDEX), "--check"])
     out = capsys.readouterr().out
     assert rc == 1
     assert "-> semantic-fleet (VettingLevel)" in out
+    assert "-> Argumentum (Fallacy)" in out
+    assert out.count("[retour amont manquant -- #13902]") == 2
     assert "[retour amont manquant -- #13902]" in out
 
 
