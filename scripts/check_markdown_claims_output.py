@@ -754,7 +754,107 @@ def _is_input_specification(prose: str, match_pos: int, match_end: int) -> bool:
         _is_math_parameter_definition(prose, match_pos, match_end)
         or _is_numeric_list_literal(prose, match_pos, match_end)
         or _is_labeled_enumeration_value(prose, match_pos, match_end)
+        or _is_prose_input_specification(prose, match_pos, match_end)
     )
+
+
+_INPUT_LABEL_RE = re.compile(
+    r"(?i)\b(?:param[eè]tre(?:s)?(?:\s+de\s+configuration)?|"
+    r"hyperparam[eè]tre(?:s)?|taille\s+(?:de\s+grille|du\s+batch|de\s+lot)|"
+    r"valeur\s+(?:par\s+d[eé]faut|initiale)|seuil(?:\s+de\s+[\w-]+)?|"
+    r"taux\s+d['’]apprentissage|learning\s+rate|graine|seed|pas\s+de\s+temps)\b"
+)
+_INPUT_ASSIGNMENT_RE = re.compile(
+    r"(?i)(?:\b(?:fix[eé]e?s?|choisi[eé]s?|d[eé]fini[eé]s?|initialis[eé]s?|"
+    r"configur[eé]s?|vaut|est|sera|utilis[eé]s?)\s+(?:[àa]\s+|de\s+)?|"
+    r"\s*(?:=|:)\s*|\s+de\s+)\s*$"
+)
+_RESULT_CONTEXT_RE = re.compile(
+    r"(?i)\b(?:observ[eé]|mesur[eé]|calcul[eé]|obtenu[eé]s?|atteint[eé]s?|"
+    r"r[eé]sultat|sortie|essai|exp[eé]rience)\w*\b"
+)
+
+
+def _is_prose_input_specification(prose: str, match_pos: int, match_end: int) -> bool:
+    """Recognize a narrowly stated configuration value in ordinary prose.
+
+    Both a configuration label and an assignment/declaration immediately
+    before the number are required. This leaves measurements such as
+    « le taux d'apprentissage observé est 0.8 » eligible unless explicitly
+    described as a configured input.
+    """
+    # Match the exact numeric occurrence when a line repeats the same token.
+    line_start = prose.rfind("\n", 0, match_pos) + 1
+    prefix = prose[line_start:match_pos]
+    if not _INPUT_LABEL_RE.search(prefix):
+        return False
+    if _RESULT_CONTEXT_RE.search(prefix):
+        return False
+    return bool(_INPUT_ASSIGNMENT_RE.search(prefix))
+
+
+_DERIVED_CONTEXT_RE = re.compile(
+    r"(?i)\b(?:\u00e9cart\s+entre|diff[eé]rence\s+entre|delta\s+entre|"
+    r"variation\s+entre|(?:ratio|proportion|pourcentage|taux|moyenne|"
+    r"m[eé]diane|arrondi|conversion)\w*.{0,40}\b(?:calcul[eé]|d[eé]riv[eé]|"
+    r"obtenu[eé]?|issu[eé]?|produit[eé]?)|d[eé]riv[eé]\w*\s+(?:de|du|des|"
+    r"[àa]\s+partir\s+de))\b"
+)
+_OUTPUT_NUMBER_RE = re.compile(r"(?<![\d.,])\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:[.,]\d+)?(?![\d])")
+
+
+def _output_line_numbers(out_text: str) -> list[list[Decimal]]:
+    """Return finite numeric values grouped by output line for bounded proofs."""
+    rows: list[list[Decimal]] = []
+    for line in out_text.splitlines():
+        values: list[Decimal] = []
+        for match in _OUTPUT_NUMBER_RE.finditer(line):
+            token = match.group(0)
+            if "," in token and "." in token:
+                token = token.replace(",", "")
+            elif token.count(",") > 1 and all(len(part) == 3 for part in token.split(",")[1:]):
+                token = token.replace(",", "")
+            else:
+                token = token.replace(",", ".")
+            try:
+                values.append(Decimal(token))
+            except Exception:
+                continue
+        if len(values) >= 2:
+            rows.append(values[:20])
+    return rows
+
+
+def _derived_value_proven(norm: str, prose: str, match_pos: int, match_end: int, out_text: str) -> bool:
+    """Prove a simple rate or difference from numbers on the same output row.
+
+    The relation must be named in the same markdown line. Candidate operands
+    are limited to one output line, and only a named percentage/rate or
+    difference is evaluated; arbitrary arithmetic combinations are not tried.
+    """
+    line_start = prose.rfind("\n", 0, match_pos) + 1
+    line_end = prose.find("\n", match_end)
+    line = prose[line_start:line_end if line_end >= 0 else len(prose)]
+    if not _DERIVED_CONTEXT_RE.search(line):
+        return False
+    try:
+        claimed = Decimal(norm)
+    except Exception:
+        return False
+    places = len(norm.partition(".")[2]) if "." in norm else 0
+    tolerance = Decimal("0.5") * (Decimal(10) ** -places)
+    is_rate = bool(re.search(r"(?i)%|\b(?:ratio|proportion|pourcentage|taux)\w*\b", line))
+    is_difference = bool(re.search(r"(?i)\b(?:\u00e9cart|diff[eé]rence|delta|variation|gain|perte)\w*\b", line))
+    for row in _output_line_numbers(out_text):
+        for left, right in zip(row, row[1:]):
+            candidates: list[Decimal] = []
+            if is_rate and right != 0:
+                candidates.append(left / right * Decimal(100))
+            if is_difference:
+                candidates.append(abs(left - right))
+            if any(abs(value - claimed) <= tolerance for value in candidates):
+                return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -1112,6 +1212,7 @@ def check_notebook(path: Path) -> dict:
 
     cells = nb.get("cells", []) or []
     findings: list[dict] = []
+    derived_claims: list[dict] = []
     relational_claims: list[dict] = []
     skipped_lit = 0
     skipped_no_prev = 0
@@ -1227,15 +1328,29 @@ def check_notebook(path: Path) -> dict:
                 continue
             # Search the normalized form in the output text (plus adjacent
             # variants: e.g. "0.24" present in "0.2385")
-            if norm not in out_text and not _fuzzy_present(norm, raw_out_text):
-                findings.append({
+            if norm in out_text or _fuzzy_present(norm, raw_out_text):
+                continue
+            if _DERIVED_CONTEXT_RE.search(_line_around(prose, match_pos, match_end)):
+                if _derived_value_proven(norm, prose, match_pos, match_end, raw_out_text):
+                    continue
+                derived_claims.append({
                     "markdown_cell": idx,
                     "code_cell": prev_code_idxs[0],
                     "window": prev_code_idxs,
                     "raw": raw,
                     "normalized": norm,
                     "context": _excerpt(src, raw),
+                    "status": "UNPROVEN_DERIVATION",
                 })
+                continue
+            findings.append({
+                "markdown_cell": idx,
+                "code_cell": prev_code_idxs[0],
+                "window": prev_code_idxs,
+                "raw": raw,
+                "normalized": norm,
+                "context": _excerpt(src, raw),
+            })
 
     relational_counts = {
         status: sum(1 for claim in relational_claims if claim["status"] == status)
@@ -1245,7 +1360,7 @@ def check_notebook(path: Path) -> dict:
         verdict = "FABRICATION_DETECTED"
     elif relational_counts["CONTRADICTED"]:
         verdict = "CONTRADICTION_DETECTED"
-    elif relational_counts["UNPROVEN"]:
+    elif relational_counts["UNPROVEN"] or derived_claims:
         verdict = "CLAIM_UNPROVEN"
     else:
         verdict = "CLEAN"
@@ -1253,12 +1368,14 @@ def check_notebook(path: Path) -> dict:
         "path": str(path),
         "verdict": verdict,
         "findings": findings,
+        "derived_claims": derived_claims,
         "relational_claims": relational_claims,
         "stats": {
             "skipped_literature": skipped_lit,
             "skipped_no_prev_code": skipped_no_prev,
             "skipped_no_output": skipped_no_output,
             "relational_claims": relational_counts,
+            "derived_claims_unproven": len(derived_claims),
         },
     }
 
