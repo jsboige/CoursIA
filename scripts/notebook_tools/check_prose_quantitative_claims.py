@@ -144,6 +144,63 @@ COUNT_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Quantites d'un modele de domaine, pas compteurs d'artefacts du depot.
+# Ces motifs sont volontairement relationnels : le nombre doit etre lie a la
+# grille ou a la matrice de couverture, et l'exemption porte sur cette seule
+# occurrence. « 81 cellules de code » et « 729 lignes dans le notebook »
+# restent des compteurs d'artefacts, meme dans une phrase qui parle aussi du
+# Sudoku.
+DOMAIN_GRID_CELLS_RE = re.compile(
+    r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+"
+    r"(?:cellules?|cells?))\s+"
+    r"(?:de\s+la\s+grille(?:\s+de\s+sudoku)?|du\s+sudoku|"
+    r"of\s+(?:the\s+)?(?:9\s*[x×]\s*9\s+)?(?:sudoku\s+)?grid)"
+    r"(?![\w-])",
+    re.IGNORECASE,
+)
+DOMAIN_COVERAGE_FACTOR_RE = re.compile(
+    r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+lignes?)\*{0,2}"
+    r"(?:\s+(?:maximum|max))?\s*=\s*"
+    r"(?P<dimensions>\d{1,6}\s+(?:lignes?|positions?)\s*[x×]\s*"
+    r"\d{1,6}\s+(?:colonnes?|valeurs?)"
+    r"(?:\s*[x×]\s*\d{1,6}\s+valeurs?)?)\b",
+    re.IGNORECASE,
+)
+DOMAIN_COVERAGE_MATRIX_DIMENSION_RE = re.compile(
+    r"\b\d{1,6}\s+colonnes?\s*[x×]\s*"
+    r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+lignes?)\*{0,2}"
+    r"(?:\s+(?:maximum|max))?\b",
+    re.IGNORECASE,
+)
+DOMAIN_COVERAGE_PAIR_RE = re.compile(
+    r"\b(?:matrice|matrix)\b.{0,100}"
+    r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+"
+    r"(?:lignes?|lines?))\*{0,2}(?:\s+(?:maximum|max))?"
+    r"\s*[,(:]?\s*(?:une\s+par\s+couple\s+cellule[-–]valeur|"
+    r"one\s+for\s+each\s+cell[-–]value\s+pair)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_domain_model_quantity(line: str, count: re.Match[str]) -> bool:
+    """Dit si cette occurrence décrit explicitement un modèle mathématique."""
+    span = count.span()
+    patterns = (
+        DOMAIN_GRID_CELLS_RE,
+        DOMAIN_COVERAGE_FACTOR_RE,
+        DOMAIN_COVERAGE_MATRIX_DIMENSION_RE,
+        DOMAIN_COVERAGE_PAIR_RE,
+    )
+    for pattern in patterns:
+        for match in pattern.finditer(line):
+            if match.span("count") == span:
+                return True
+            if "dimensions" in match.re.groupindex:
+                start, end = match.span("dimensions")
+                if start <= span[0] and span[1] <= end:
+                    return True
+    return False
+
 # ----------------------------------------------------------------------------
 # Allowlist MOTIVEE de la classe « artifact » (#23111)
 # ----------------------------------------------------------------------------
@@ -777,6 +834,8 @@ def _findings_in_text(
         if "artifact" in classes:
             exempt = _exempt_spans(target, line)
             for m in COUNT_RE.finditer(line):
+                if _is_domain_model_quantity(line, m):
+                    continue
                 if any(start <= m.start() and m.end() <= end for start, end in exempt):
                     continue
                 out.append((location, "artifact", m.group(0).strip()))
