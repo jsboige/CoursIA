@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -39,6 +40,28 @@ def _spec_argv0(spec: Any) -> str | None:
     return argv[0] if isinstance(argv, list) and argv and isinstance(argv[0], str) else None
 
 
+def _valid_probe_data(data: Any) -> bool:
+    """N'accepter que les champs et les états produits par la sonde Python."""
+    if not isinstance(data, dict):
+        return False
+    required = {"python_version", "executable", "numpy_version", "numpy_status"}
+    if not required <= data.keys() or data.keys() - (required | {"numpy_error_type"}):
+        return False
+    def nonempty(value: Any) -> bool:
+        return isinstance(value, str) and bool(value.strip())
+
+    if not nonempty(data["python_version"]) or not nonempty(data["executable"]):
+        return False
+    status = data["numpy_status"]
+    if status == "ok":
+        return nonempty(data["numpy_version"]) and "numpy_error_type" not in data
+    if status == "absent":
+        return data["numpy_version"] is None and "numpy_error_type" not in data
+    if status == "error":
+        return data["numpy_version"] is None and nonempty(data.get("numpy_error_type"))
+    return False
+
+
 def _probe_kernel(name: str, timeout: float, manager_factory=None) -> dict[str, Any]:
     """Démarre uniquement le kernelspec demandé et renvoie sa mesure effective."""
     if manager_factory is None:
@@ -56,7 +79,18 @@ def _probe_kernel(name: str, timeout: float, manager_factory=None) -> dict[str, 
         started = True
         client = manager.client()
         client.start_channels()
-        client.wait_for_ready(timeout=timeout)
+        try:
+            client.wait_for_ready(timeout=timeout)
+        except RuntimeError as exc:
+            # jupyter_client signale son délai par RuntimeError, comme la mort
+            # du noyau. Ne reconnaître que ses messages précis de délai.
+            if re.fullmatch(
+                r"Kernel didn't respond (?:to heartbeats )?in \d+ seconds(?: and timed out)?",
+                str(exc),
+            ):
+                return {"status": "timeout", "error_type": "TimeoutError",
+                        "stage": "readiness"}
+            raise
         info_id = client.kernel_info()
         deadline = __import__("time").monotonic() + timeout
         while True:
@@ -109,6 +143,9 @@ def _probe_kernel(name: str, timeout: float, manager_factory=None) -> dict[str, 
                         except (ValueError, TypeError):
                             return {"status": "invalid_probe_output",
                                     "error_type": "JSONDecodeError"}
+                        if not _valid_probe_data(data):
+                            return {"status": "invalid_probe_output",
+                                    "error_type": "InvalidProbeData"}
                         return {"status": "ok", "kernel_language": language, **data}
                 return {"status": "probe_output_missing",
                         "error_type": "MissingProbeOutput", "kernel_language": language}

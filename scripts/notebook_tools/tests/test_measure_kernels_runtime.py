@@ -3,6 +3,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import measure_kernels_runtime as collector  # noqa: E402
 
@@ -110,4 +112,74 @@ def test_kernel_python_silencieux_est_signale_comme_echec_sonde():
     assert result == {"status": "probe_output_missing",
                       "error_type": "MissingProbeOutput",
                       "kernel_language": "python"}
+    assert manager.shutdowns == 1
+
+
+@pytest.mark.parametrize("payload", [
+    {},
+    {"python_version": "3.12", "executable": "/python", "numpy_version": None,
+     "numpy_status": "absent", "status": "ok"},
+    {"python_version": 3, "executable": "/python", "numpy_version": None,
+     "numpy_status": "absent"},
+    {"python_version": "3.12", "executable": "/python", "numpy_version": None,
+     "numpy_status": "ok"},
+    [],
+])
+def test_sortie_incomplete_ou_incoherente_est_rejetee(payload):
+    manager = FakeManager(events=[
+        _msg("stream", {"text": "COURSIA_KERNEL_RUNTIME=" + json.dumps(payload) + "\n"}),
+        _msg("status", {"execution_state": "idle"}),
+    ])
+    assert collector._probe_kernel("demo", 5, manager_factory=lambda **_: manager) == {
+        "status": "invalid_probe_output", "error_type": "InvalidProbeData"
+    }
+    assert manager.shutdowns == 1
+
+
+@pytest.mark.parametrize("numpy_fields", [
+    {"numpy_version": None, "numpy_status": "absent"},
+    {"numpy_version": None, "numpy_status": "error", "numpy_error_type": "ImportError"},
+])
+def test_sonde_valide_sans_numpy_charge(numpy_fields):
+    payload = {"python_version": "3.12", "executable": "/python", **numpy_fields}
+    manager = FakeManager(events=[
+        _msg("stream", {"text": "COURSIA_KERNEL_RUNTIME=" + json.dumps(payload) + "\n"}),
+        _msg("status", {"execution_state": "idle"}),
+    ])
+    assert collector._probe_kernel("demo", 5, manager_factory=lambda **_: manager) == {
+        "status": "ok", "kernel_language": "python", **payload,
+    }
+
+
+@pytest.mark.parametrize("code,expected", [
+    ("import time; time.sleep(30)", "timeout"),
+    ("raise SystemExit(1)", "startup_error"),
+])
+def test_readiness_noyau_reel_silencieux_ou_mort(tmp_path, code, expected):
+    from jupyter_client import KernelManager
+    from jupyter_client.kernelspec import KernelSpecManager
+
+    spec_dir = tmp_path / "test-kernel"
+    spec_dir.mkdir()
+    (spec_dir / "kernel.json").write_text(json.dumps({
+        "argv": [sys.executable, "-c", code, "{connection_file}"],
+        "display_name": "Test", "language": "python",
+    }), encoding="utf-8")
+    specs = KernelSpecManager(kernel_dirs=[str(tmp_path)], ensure_native_kernel=False)
+    manager = KernelManager(kernel_name="test-kernel", kernel_spec_manager=specs)
+    result = collector._probe_kernel("test-kernel", 1, manager_factory=lambda **_: manager)
+    assert result["status"] == expected
+    assert not manager.is_alive()
+
+
+def test_autre_runtime_error_readiness_n_est_pas_un_timeout():
+    class ErrorClient(FakeClient):
+        def wait_for_ready(self, timeout):
+            raise RuntimeError("unexpected private error")
+
+    manager = FakeManager()
+    manager.client = lambda: ErrorClient([])
+    assert collector._probe_kernel("demo", 1, manager_factory=lambda **_: manager) == {
+        "status": "startup_error", "error_type": "RuntimeError"
+    }
     assert manager.shutdowns == 1
