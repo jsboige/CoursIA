@@ -512,3 +512,90 @@ def test_une_cellule_hors_socle_rougit_l_organe(monkeypatch):
         {"notebook": "MyIA.AI.Notebooks/Serie/Nouveau.ipynb",
          "cell_id": "neuf", "literals": ["Modele.lean"]}])
     assert organe.main(["--check-declarations"]) == 1
+
+
+# ---------------------------------------------------------------------------
+# Source EXTERNE au depot (#23499 -- Pli 2 de l'EPIC #18205)
+# ---------------------------------------------------------------------------
+SHA = "a" * 64
+PIN = "qinz1yang/differential-geometry@v0.1.3"
+CHEMIN_AMONT = "DifferentialGeometry/Topology/ThreeManifold/Poincare.lean"
+
+
+def _external_entry(**extra) -> dict:
+    entry = {"notebook": "nb.ipynb", "cell_id": "c1", "source": CHEMIN_AMONT,
+             "source_kind": "external", "pin": PIN, "sha256": SHA}
+    entry.update(extra)
+    return entry
+
+
+def _external_run(tmp_path, monkeypatch, output: str, entry: dict) -> dict:
+    """Joue l'organe sur une declaration de source externe."""
+    import check_live_read_freshness as mod
+
+    nb = {"cells": [_cell("c1", "print(1)\n", output)], "metadata": {}}
+    (tmp_path / "nb.ipynb").write_text(json.dumps(nb), encoding="utf-8")
+    (tmp_path / "reg.json").write_text(
+        json.dumps({"version": 1, "cells": [entry]}), encoding="utf-8")
+    monkeypatch.setattr(mod, "REGISTRY", tmp_path / "reg.json")
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+    return mod.run()
+
+
+def test_source_externe_echellee_par_son_empreinte(tmp_path, monkeypatch):
+    """Cas nominal : la cellule imprime le sha256 du fichier epingle qu'elle a lu.
+
+    Le fichier lu est IMPUABLE (un tag ne bouge pas) : la fraicheur est
+    deleguee au pin, et le lien entre la sortie commitee et le fichier lu est
+    ferme par l'empreinte. Le verdict est FRESH, sans lecture du fichier.
+    """
+    report = _external_run(tmp_path, monkeypatch,
+                           f"sha256: {SHA}\n", _external_entry())
+    assert report["stale"] == 0
+    assert report["rows"][0]["verdict"] == "FRESH"
+
+
+def test_source_externe_sans_empreinte_rougit(tmp_path, monkeypatch):
+    """Une source externe sans sha256 n'atteste rien : elle rougit."""
+    entry = _external_entry()
+    entry.pop("sha256")
+    report = _external_run(tmp_path, monkeypatch, "Poincare.lean -- 23 lignes\n",
+                           entry)
+    assert report["stale"] == 1
+    assert report["rows"][0]["verdict"] == "EXTERNAL_SANS_EMPREINTE"
+
+
+def test_source_externe_sans_pin_rougit(tmp_path, monkeypatch):
+    """Sans pin, la fraicheur serait deleguee a rien : elle rougit."""
+    entry = _external_entry()
+    entry.pop("pin")
+    report = _external_run(tmp_path, monkeypatch, f"sha256: {SHA}\n", entry)
+    assert report["stale"] == 1
+    assert report["rows"][0]["verdict"] == "EXTERNAL_NON_ECINGLE"
+
+
+def test_source_externe_empreinte_absente_de_la_sortie_rougit(tmp_path, monkeypatch):
+    """La cellule doit prouver qu'elle a lu le fichier epingle : l'empreinte
+    attendue doit apparaitre dans la sortie commitee."""
+    report = _external_run(tmp_path, monkeypatch,
+                           "Poincare.lean -- 23 lignes\n", _external_entry())
+    assert report["stale"] == 1
+    assert report["rows"][0]["verdict"] == "EXTERNAL_EMPREINTE_ABSENTE"
+
+
+def test_une_entree_sans_source_kind_reste_repo(tmp_path, monkeypatch):
+    """Le defaut reste la source du depot : une entree legacy ne change pas."""
+    import check_live_read_freshness as mod
+
+    nb = {"cells": [_cell("c1", "print(1)\n", "Modele.lean -- 3 lignes\n")],
+          "metadata": {}}
+    (tmp_path / "nb.ipynb").write_text(json.dumps(nb), encoding="utf-8")
+    (tmp_path / "reg.json").write_text(json.dumps({"version": 1, "cells": [
+        {"notebook": "nb.ipynb", "cell_id": "c1",
+         "source": "Modele.lean"}]}), encoding="utf-8")
+    monkeypatch.setattr(mod, "REGISTRY", tmp_path / "reg.json")
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+
+    report = mod.run()
+
+    assert report["rows"][0]["verdict"] == "SOURCE_MISSING"

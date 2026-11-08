@@ -238,12 +238,27 @@ REGISTRE: tuple[Entree, ...] = (
         # `reference_comparable` retombe sur l'identite derivee a la fin du
         # jour de la reference. C'est ce qui manquait aux trois rebasages
         # precedents, chacun n'ayant tenu que jusqu'a la fusion suivante.
-        reference=Reference(26.0, "2026-11-05",
-                            "issue #24678, mesure du 2026-11-05 sur "
-                            "l'arbre 536cf434700",
+        #
+        # CINQUIEME rebasage (2026-11-06, #23655) : le correctif du protocole
+        # `_kernelspecs_at` (compter les blobs lus, pas les kernelspec
+        # trouves) touche l'instrument LUI-MEME, meme raison que le
+        # troisieme -- l'identite portee par la reference (687bb25856a)
+        # n'est plus celle de l'instrument courant, et la comparaison
+        # tomberait sur « reference transverse refusee ». Correctif de
+        # protocole seul, sans effet sur la grandeur : `ambigu` vaut 26
+        # avant et apres sur le meme arbre aligne (`origin/main` a
+        # a284df8293f). Il ne produit donc pas un point de serie distinct :
+        # sa mesure reste celle du 2026-11-05 (26, instrument 687bb25856a).
+        # Meme mecanique d'instrument declare que le quatrieme : le sha de
+        # branche (18c887da79d) ne survivra pas au squash, la comparaison
+        # tiendra par la SOURCE du script puis par l'identite derivee a la
+        # fin du jour de la reference.
+        reference=Reference(26.0, "2026-11-06",
+                            "issue #23655, re-mesure du 2026-11-06 sur "
+                            "l'arbre a284df8293f",
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
-                                        "@687bb25856abdae7a4b5053e609e23493f97c59c")),
+                                        "@18c887da79de8dcb3f59e7c62800e8c8c242e957")),
         # Les points anterieurs de la serie, avec leur SOURCE et
         # l'IDENTITE de l'instrument qui les a produits. L'identite
         # declaree est celle du PRODUISANT : c'est elle qui fait le

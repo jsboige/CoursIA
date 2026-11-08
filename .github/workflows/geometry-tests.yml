@@ -40,7 +40,8 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/**'
       - '.github/workflows/geometry-tests.yml'
   pull_request:
-    branches: [main]
+    # #19426 option (b) : pas de branches: sur pull_request quand paths: scope
+    # deja (precedent #19381) — le retarget d'une PR empilee reste capte.
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/**'

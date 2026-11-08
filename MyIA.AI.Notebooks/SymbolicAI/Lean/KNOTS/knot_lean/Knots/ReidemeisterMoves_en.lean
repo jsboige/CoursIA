@@ -659,7 +659,7 @@ The #18611 diagnosis establishes that the surgery of connected moves is
 in R3 (a triple `List.set`): an original crossing is never removed, it is
 rewritten (R1/R2 at index `i`, R3 at three consecutive indices) or appended. The
 mechanical measurement (a Python replica faithful to the definitions, plus a
-provenance run bounded by 14: 400,000 states per orbit, 0 violation,
+provenance run bounded by 14: 400 000 states per orbit, 0 violation,
 `min_crossings = 11`) confirms it on the 11n102 diagram.
 
 What the kernel can establish, and **under which condition**, is the content of

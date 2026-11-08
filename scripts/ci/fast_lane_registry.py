@@ -73,6 +73,20 @@ def live_read_source_paths(registry_path: Path | None = None) -> list[str]:
         if not source:
             raise RuntimeError(
                 f"registre live-read : entree sans champ 'source' : {cell}")
+        if cell.get("source_kind", "repo") == "external":
+            # La source d'une lecture EXTERNE (clone Lake amont epingle par un
+            # tag) n'est PAS un fichier du depot : la revision qui peut
+            # invalider la declaration est celle qui touche le CARNET -- la
+            # sortie commitee y vit -- et non celle du fichier amont, que
+            # personne ne peut modifier ici. Declarer le chemin amont comme
+            # declencheur rendrait le garde eteint en silence sur ce carnet.
+            notebook = cell.get("notebook")
+            if not notebook:
+                raise RuntimeError(
+                    f"registre live-read : entree externe sans champ "
+                    f"'notebook' : {cell}")
+            sources.append(notebook)
+            continue
         sources.append(source)
     return sources
 
@@ -1538,6 +1552,10 @@ TRANCHE10: list[Guard] = [
         blocking=True,
         needs_base=True,
         absorbed=True,
+        # #23068 : un perimetre PR non evaluable (sonde git en echec, rc 2)
+        # emet en NEUTRAL "incident du garde" -- pas un rouge bloquant qui
+        # accuserait la PR, pas un vert silencieux non plus.
+        warn_rc=(2,),
     ),
 ]
 
@@ -2315,12 +2333,13 @@ TRANCHE24: list[Guard] = [
 #
 # Garde NATIF : aucun workflow d'origine. L'organe
 # `scripts/lean/check_added_axioms_cliquet.py` lit le DIFF base/head et
-# signale les lignes ajoutees qui introduisent un de ces tokens dans une
-# declaration nommee (`theorem`/`lemma`/`def`). Les ancres en `example`
-# restent vertes : elles sont invisibles a `check_axioms` par construction,
-# ce n'est pas un defaut de preuve.
+# signale les lignes ajoutees qui introduisent un de ces tokens -- dans une
+# declaration nommee (`theorem`/`lemma`/`def`), dans un `example` ou en
+# top-level (#21387 : les ancres en `example` rougissent AUSSI sans
+# declaration ; elles etaient auparavant exemptees, ce qui laissait le
+# cliquet muet sur une classe d'ancres reellement ajoutees).
 #
-# Codes de retour : 0 = propre, 1 = ancre dans une declaration nommee
+# Codes de retour : 0 = propre, 1 = ancre ajoutee non declaree
 # (BLOQUANT), 2 = la base ou la tete ne resout pas (incident d'entree).
 # Le rc=2 n'est PAS lu comme un vert : `warn_rc` est vide, donc tout rc non
 # nul produit une conclusion `failure` et `blocking_failed` (cf
@@ -3659,6 +3678,52 @@ TRANCHE38: list[Guard] = [
         ],
         blocking=True,
         needs_base=True,
+        absorbed=True,
+    ),
+]
+
+
+# TRANCHE 39 (#22209, garde bloquant) -- absorption du Cell-order gate (Epic
+# #3240, workflow cell-order-gate.yml). Mesure du 2026-11-06 : >= 800 runs /
+# 7 jours (plafond de pagination atteint, borne inferieure), chacun un
+# checkout `fetch-depth: 0` du depot 2,1 Go pour quelques secondes de scan
+# par carnet -- le SLOT de runner, pas la minute-CPU, est la ressource rare
+# (constat fondateur #14057). Semantique conservée EXACTE :
+#   - REGRESSION seule : HIGH findings presents dans la tete et absents de
+#     la base ; le residu #3240 des carnets legacy ne bloque pas (Epic ouverte) ;
+#   - nouveau carnet (blob absent de la base) = base vide = chaque HIGH compte
+#     (semantique NONE de la boucle d'origine, portee par --base-ref) ;
+#   - fichiers supprimes par la PR : le moteur filtre les chemins inexistants
+#     avant l'iteration, meme skip que `[ -f "$nb" ] || continue`.
+# Le detecteur gagne `--base-ref <ref>` (la voie rapide fournit
+# `{base_ref}` = origin/<branche>, la boucle d'origine faisait
+# `git show "$BASE:$nb"`) ; `--base/--head` (chemins) reste pour la
+# re-mesure manuelle `workflow_dispatch` et les tests unitaires.
+# `pre_argv` : la suite pytest du scanner est le controle par faux negatif
+# (lecon #11685/#12817 -- un detecteur qui ne prouve pas qu'il tire est
+# indiscernable d'un detecteur debranche).
+TRANCHE39: list[Guard] = [
+    Guard(
+        name="No cell-ordering regression in changed notebooks",
+        source="cell-order-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/scan_cell_ordering.py",
+            "scripts/notebook_tools/cell_order_ci.py",
+        ],
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/notebook_tools/tests/test_scan_cell_ordering.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/cell_order_ci.py",
+            "--base-ref", "{base_ref}",
+            "--head", "{changed_paths}",
+        ],
+        blocking=True,
+        needs_base=True,
+        iterates_paths=True,
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
         absorbed=True,
     ),
 ]

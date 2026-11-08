@@ -113,6 +113,13 @@ jobs:
           sparse-checkout: |
             .github/workflows/candidate-delivered-advisory.yml
             scripts/candidate_delivered.py
+            # #24461 -- grammaire de l'etat de livraison, source UNIQUE partagee
+            # avec le tapis (`scripts/pick_idle_grain.py`). Module sans
+            # dependance : il n'importe que `released_covers` (deja present) et
+            # `check_closure_dossier` (ABSENT ici, et volontairement : le labeler
+            # lit les marqueurs avec `dossier=False`, pour que le balayage local
+            # et le balayage CI-armee se comportent pareil).
+            scripts/delivery_grammar.py
             scripts/check_run_state.py
             scripts/gh_identity.py
             scripts/gh_payload_cache.py

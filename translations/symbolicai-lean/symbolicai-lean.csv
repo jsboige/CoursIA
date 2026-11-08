@@ -31617,7 +31617,7 @@ d'arrivée naturel. Une noix de plus à grignoter.
 
 **Prérequis pour rejouer** : WSL avec `elan`/`lake` (build de `galois_lean`, Mathlib v4.33
 via cache), Python 3 avec `sympy`. Durée d'exécution : ~2 min une fois le lake construit.",,,,,,,,b299a0b24b412c2e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb,85857942,markdown,fr,1891ed9734f58522,"# Lean-23 : ERC-20 sous Lean 4 — l'invariant de conservation prouvé
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb,85857942,markdown,fr,93203061d07d99a3,"# Lean-23 : ERC-20 sous Lean 4 — l'invariant de conservation prouvé
 
 **Navigation** : [Index](README.md) | [Lean-22 (Galois) <<](GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb) | [SC-7 SmartContract (Solidity ERC-20) >>](../SmartContracts/02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb)
 
@@ -31631,7 +31631,7 @@ Le scénario pédagogique complet : dans `[SC-07-Token-Standards-Python.ipynb](.
 | `ERC20/Ops.lean` | `mint`, `burn`, `transfer` (les 3 transitions gardées) |
 | `ERC20/Invariant.lean` | `mint_preserves_supply`, `burn_preserves_supply`, `transfer_preserves_supply`, `reachable_preserves_invariant` |
 
-Comme dans les notebooks Lean-20 et Lean-21, nous procédons en deux registres : une **simulation Python** qui vérifie numériquement l'invariant sur une grille d'états complets à deux adresses, puis une **lecture directe des sources du lac** (regex sur les `.lean` de `erc20_lean`, code 2.1) -- les énoncés affichés sont recopiés depuis un lac que le compilateur Lean 4 a élaboré au `lake build` (gate `proof-integrity` en CI) ; la commande `lake env lean` reste l'option locale pour rejouer ces `#check`.",,,,,,,,1891ed9734f58522,,,,,,,,,,,,,,,
+Comme dans les notebooks Lean-20 et Lean-21, nous procédons en deux registres : une **simulation Python** qui vérifie numériquement l'invariant sur une grille d'états complets à deux adresses, puis une **lecture directe des sources du lac** (regex sur les `.lean` de `erc20_lean`, code 2.1) -- les énoncés affichés sont recopiés depuis un lac que le compilateur Lean 4 a élaboré au `lake build` (gate `proof-integrity` en CI) ; la commande `lake env lean` reste l'option locale pour rejouer ces `#check`.",,,,,,,,93203061d07d99a3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb,82d5c749,markdown,fr,dba72f0487168d1b,"## 1. L'invariant et la machine à états
 
 Un jeton ERC-20 est une machine à états très simple :
@@ -32070,17 +32070,18 @@ Ce notebook a présenté la formalisation complète de l'invariant de conservati
 3. **Pont SmartContract × erc20_lean** (section 3) — la même propriété encodée en Solidity (`SC-7`) et en Lean (`erc20_lean`), une triple vérification : spec EIP-20 / runtime anvil / preuve mécanique.
 
 **Le livrable n'est pas un algorithme**, c'est une preuve : la garantie que la propriété foncière d'un jeton fongible (les tokens ne sont ni créés ni détruits par les transferts) tient **sur n'importe quelle exécution atteignable**. C'est la valeur ajoutée des méthodes formelles au-delà du testing : on n'a pas observé 10 000 cas, on a **démontré tous les cas** par induction sur la trace.",,,,,,,,6180be1dcc9dc8ff,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb,5e1ba4e1,markdown,fr,8c4a10cd11f9e5a9,"## Références
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb,5e1ba4e1,markdown,fr,9b3cbc463295ad39,"## Références
 
 - **Issue #4047** — Epic source du lake `erc20_lean` (phase 1 livrée : scaffolding, modèle, transitions gardées, préservation de l'invariant, absence de `sorry`).
 - **Issue #4038** — Roadmap SmartContracts du dépot.
 - **EIP-20** (F. Vogelsteller, V. Buterin, 2015) — *ERC-20 Token Standard*, Ethereum.
-- **K. Bhargavan et al.**, *Formal Verification of Smart Contracts*, WPCE 2016 — l'usage pionnier des méthodes formelles sur les smart contracts Bitcoin/Ethereum.
+- **K. Bhargavan et al.**, *Formal Verification of Smart Contracts: Short Paper*, **PLAS@CCS 2016** (Vienna, 24/10/2016, p. 91-96, DOI 10.1145/2993600.2993611) — l'usage pionnier des méthodes formelles sur les smart contracts Bitcoin/Ethereum.
 - **`SC-07-Token-Standards-Python.ipynb`** (`SmartContracts/02-Solidity-Advanced/`) — le pendant Solidity : déploiement réel sur anvil, mécanisme d'allowance (`approve` + `transferFrom`), patterns OpenZeppelin.
 - **Lake `erc20_lean`** (`MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/`) — la version Lean 4 + Mathlib : `ERC20/State.lean` (modèle), `ERC20/Ops.lean` (transitions), `ERC20/Invariant.lean` (préservation).
 - **EPIC #4980** — convention i18n Lean (aggrégateur bilingue inline FR-EN dans `ERC20.lean`, sibling pair dans `ERC20_en.lean`).
 - **Rule C.6** (mandat user 2026-08-19) — préférence pour un compagnon kernel `lean4-wsl` à côté du notebook Python ; le pattern actuel (subprocess `lake env lean`) reste mergeable, le kernel Lean natif est une suite à explorer.
-- Notebooks associés : `[Lean-22 (Galois)](GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb)`, `[Lean-21 (MIMO)](MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb)`, `[Lean-20 (PFR)](ANALYSE/ANALYSE-03-PFR-Lean.ipynb)`, `[Lean-13 (Kochen-Specker)](Lean-13-Kochen-Specker.ipynb)`, `[A* Optimalite (Search-03e)](../../Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb)`.",,,,,,,,8c4a10cd11f9e5a9,,,,,,,,,,,,,,,
+- Notebooks associés : `[Lean-22 (Galois)](GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb)`, `[Lean-21 (MIMO)](MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb)`, `[Lean-20 (PFR)](ANALYSE/ANALYSE-03-PFR-Lean.ipynb)`, `[Lean-13 (Kochen-Specker)](Lean-13-Kochen-Specker.ipynb)`, `[A* Optimalite (Search-03e)](../../Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb)`.
+",,,,,,,,9b3cbc463295ad39,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-06-Mathlib-Essentials-Lean.ipynb,enr6_01,markdown,fr,1aeee3c42aa30e4f,"### Pourquoi ces imports ouvrent toute la bibliothèque
 
 Le bloc de gauche **documente** les espaces de noms qu'un projet Mathlib importerait : `Mathlib.Tactic` (les tactiques `ring`, `linarith`, `field_simp`...), `Mathlib.Data.Nat.Basic` (lemmes sur `Nat`), `Mathlib.Algebra` (structures algébriques). **Ce notebook-ci ne les importe pas** : il tourne sous `lean4_jupyter` sans Mathlib, et les exemples Mathlib n'y sont que documentés. En Lean 4, **un import n'est pas un `#include` C** : c'est la déclaration qu'on veut accéder à un module compilé. Dans un projet Lake équipé, `ring` n'existe pas sans `Mathlib.Tactic`, et des lemmes comme `Nat.add_comm` doivent être prouvés à la main sans `Mathlib.Data.Nat`.
