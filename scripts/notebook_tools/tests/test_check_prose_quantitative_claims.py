@@ -135,6 +135,43 @@ def test_artifact_exemptions_cover_the_named_lean_occurrences(path, line):
     assert cqc._findings_in_text(line, path, {"artifact"}) == []
 
 
+@pytest.mark.parametrize(
+    "path, line",
+    [
+        # « Tranche 4 » (v5, 2026-11-07) du manifeste de preservation #14238
+        # (PR #25120) : comptes de lignes figes de la curation de la version.
+        (
+            "docs/reference/branch-cleanup-manifest.README.md",
+            "Le manifeste passe de **10 259** à **13 187** lignes ;",
+        ),
+        (
+            "docs/reference/branch-cleanup-manifest.README.md",
+            "les 2 930 lignes nouvelles s'y ajoutent",
+        ),
+        (
+            "docs/reference/branch-cleanup-manifest.README.md",
+            "`branch-cleanup-manifest.tsv.gz` (compressé gzip, 575 Ko, "
+            "décompressé 1.65 Mo, **13 187 lignes**) — 6 colonnes",
+        ),
+        (
+            "docs/reference/branch-cleanup-manifest.README.md",
+            "- Selection reellement poussee (2 927 lignes)",
+        ),
+        (
+            "docs/reference/branch-cleanup-manifest.README.md",
+            "- Refus motives (9 lignes)",
+        ),
+    ],
+)
+def test_artifact_exemptions_cover_branch_cleanup_manifest_counts(path, line):
+    """Les comptes de lignes du manifeste de preservation #14238 (section
+    « Tranche 4 », v5) ne sont plus signales : ce sont des faits FIGES de la
+    curation de cette version, re-mesurables a la commande de la section
+    « Verification », pas un etat du depot qui deriverait a chaque ajout.
+    Les supprimer reecrirait la preuve du geste (angle-mort du guard)."""
+    assert cqc._findings_in_text(line, path, {"artifact"}) == []
+
+
 def test_artifact_exemption_is_a_span_not_a_file_blanket():
     """L'exemption couvre le compteur sous son motif, PAS la ligne ou le fichier.
 
