@@ -4306,6 +4306,78 @@ def test_15973_artefact_rebase_ne_masque_pas_un_vrai_refus():
     assert res["rewind_artifacts"] == []
 
 
+# --- #20066 piste 2 complete : survie des symboles au-dela du blob ---------
+#
+# Instance fondatrice de l'issue : le commit rembobine introduit
+# `fetch_latest_claim_stamps_bulk` + ses tests, la PR CONTINUE de travailler
+# le meme fichier (blob differ), mais la substance citee par la levee est
+# intacte a la tete. La survie complete des symboles transforme le refus en
+# artefact non bloquant ; un symbole disparu garde le refus, NOMME.
+
+def test_20066_symboles_survivants_conservent_la_levee():
+    """Blob different (la PR a continue) mais tous les symboles introduits
+    par le commit rembobine existent a la tete : artefact symbols_survive,
+    levee conservée, non bloquant."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("scripts/pick_idle_grain.py",
+                                  BLOB_NB, "modified", "")]},
+              _head_blobs={"scripts/pick_idle_grain.py": BLOB_NB2},
+              _absent_sha_symbols={
+                  "2d6e4c3642": {"verdict": "all_survive", "checked": 4,
+                                 "files": 2}})
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+    assert [(a["sha"], a["reason"]) for a in res["rewind_artifacts"]] == \
+        [("2d6e4c3642", "symbols_survive")]
+
+
+def test_20066_symbole_disparu_garde_le_refus_en_le_nommant():
+    """Le commit rembobine a introduit un symbole qui n'existe plus a la
+    tete : le fond a VRAIMENT disparu, le refus reste et le resultat porte
+    le nom du symbole disparu."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("scripts/pick_idle_grain.py",
+                                  BLOB_NB, "modified", "")]},
+              _head_blobs={"scripts/pick_idle_grain.py": BLOB_NB2},
+              _absent_sha_symbols={
+                  "2d6e4c3642": {"verdict": "missing",
+                                 "missing": ["fetch_latest_claim_stamps_bulk"],
+                                 "checked": 4}})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+    assert res["voided_lifts"][0]["symbols"]["missing"] == \
+        ["fetch_latest_claim_stamps_bulk"]
+    assert res["rewind_artifacts"] == []
+
+
+def test_20066_sans_carte_de_symboles_comportement_inchange():
+    """Compatibilite : sans `_absent_sha_symbols` (audit retro, resolution
+    impossible), le refus `differs` de la piste 1 reste exactement le
+    meme -- fail-closed, la piste 2 ne desserre rien par defaut."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("scripts/pick_idle_grain.py",
+                                  BLOB_NB, "modified", "")]},
+              _head_blobs={"scripts/pick_idle_grain.py": BLOB_NB2})
+    assert res["blocked"] is True
+    assert res["voided_lifts"][0]["blob_state"] == mod._BLOB_DIFFERS
+    assert res["voided_lifts"][0].get("symbols") is None
+
+
 def test_13641_ref_par_prefixe_ne_compte_pas():
     """NanoClaw c.702 sur #13641 : le substring check `any(f"#{n}" in message)`
     matchait `#13639` dans un message contenant `#136390` (ticket adjacent
