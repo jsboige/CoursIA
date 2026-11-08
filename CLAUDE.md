@@ -45,6 +45,8 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 
 **Ce qu'un lecteur doit savoir sans avoir chargé les règles path-gatées** — le tableau complet, domaine par domaine, vit dans [claude-code-config.md §Ce que porte chaque famille](docs/reference/claude-code-config.md). Les prescriptions qui tiennent en une ligne restent ici, avec les noms des règles de chaque famille :
 
+Ce précis par domaine est une **vue** ; la commande fait foi : `grep -l '^paths:' .claude/rules/*.md`.
+
 - **Notebooks** (`notebook-conventions` · `cell-interpretation-ordering` · `exercise-example-labeling` · `three-exercises-per-notebook` · `consecutive-code-cells` · `audit-cross-source-distillation` · `notebook-accretion-numbering`) : un notebook **ne se renomme pas sans un argument pédagogique écrit** ; un finding d'audit automatisé **se re-vérifie avant tout fix** (~60 % de faux positifs) ; la **sortie** d'un audit va au dashboard, jamais dans l'arbre.
 - **Catalogue & README** (`catalog-pr-hygiene` · `readme-french-first`) : **le catalogue appartient à l'automatisation** — `COURSE_CATALOG.generated.*` et les blocs `CATALOG-STATUS` ne se régénèrent JAMAIS à la main sur une branche feature, byte-identique à `main` ; toute prose de doc ajoutée ou réécrite est en français.
 - **Artefacts** (`results-artifact-policy`) : nouveau fichier de `scripts/results/` **> 512 Ko = bloqué par CI** (#15890) — committer l'agrégé falsifiable, les séries complètes hors dépôt avec le chemin cité dans le body.
