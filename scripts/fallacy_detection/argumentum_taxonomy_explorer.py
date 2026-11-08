@@ -44,7 +44,7 @@ operations on the real 1408-node tree.
 
 ``reduction_measure`` (#13573) bridges this module to the Planners series'
 search-space-reduction thesis (``Planners/04-NeuroSymbolic/
-Planners-10b-LLM-Space-Reducer.ipynb``): the same structural question -- how
+Planners-10b-LLM-Space-Reducer-Python.ipynb``): the same structural question -- how
 much reading does a guide that decides WHERE to descend save over a
 systematic scan -- answered deterministically on the taxonomy (naive vs
 oracle vs first-child bounds; no LLM call, see the method's docstring).

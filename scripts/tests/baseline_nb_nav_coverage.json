@@ -305,8 +305,8 @@
       "SymbolicAI/Lean/Serre100/30-fonction-partition-nombres-pentagonaux.ipynb"
     ],
     "SymbolicAI/Planners/02-Classical": [
-      "SymbolicAI/Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb",
-      "SymbolicAI/Planners/02-Classical/Planners-5c-Differentiel-Atteignabilite.ipynb"
+      "SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+      "SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb"
     ],
     "SymbolicAI/SMT/Z3-Linq2Z3": [
       "SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb",
