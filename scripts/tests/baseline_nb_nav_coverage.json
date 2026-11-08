@@ -139,10 +139,10 @@
       "ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb",
       "ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb"
     ],
-    "ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star": [
-      "ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb",
-      "ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb",
-      "ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12d-Token-Usage.ipynb"
+    "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star": [
+      "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb",
+      "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb",
+      "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb"
     ],
     "ML/ML.Net": [
       "ML/ML.Net/ML-01-Introduction-Python.ipynb",
