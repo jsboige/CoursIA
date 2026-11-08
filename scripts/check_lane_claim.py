@@ -2307,7 +2307,23 @@ _STRONG_MARKER_RE = re.compile(
 
 
 def _pr_body_references_issue(body: str, issue_number: int) -> bool:
-    """True when `body` carries any reference form of `issue_number`."""
+    """True when `body` carries any reference form of `issue_number`.
+
+    ATTENTION -- deux lecteurs de « reference » coexistent, et ils ne sont PAS
+    interchangeables :
+
+    - ce predicat : « le corps mentionne l'issue », sans seuil. Il reste appele
+      par `_lane_open_prs_referencing` (« la lane bouge-t-elle encore ? », ou
+      un faux positif ne coute rien) et par l'appariement `--release` /
+      `[DELIVERED]` (#24788, review Hermes du 2026-11-08) ;
+    - `_occupying_issue_numbers` : « la PR travaille cette issue », avec le
+      seuil d'enumeration. C'est lui qui decide d'une OCCUPATION, donc d'un
+      BLOCKED pour une autre lane.
+
+    Sur un corps enumeratif, le premier rend `True` pour CHACUN des numeros
+    cites : l'employer la ou l'on veut « cette PR occupe-t-elle cette issue »
+    rouvrirait exactement le defaut que #24788 ferme.
+    """
     for m in _PR_ISSUE_REF_RE.finditer(body):
         captured = m.group(1) or m.group(2)
         if captured is None:

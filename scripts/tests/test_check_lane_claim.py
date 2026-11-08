@@ -7448,6 +7448,30 @@ def test_occupying_numbers_strong_forms_only():
         over + "\n[CLAIMED] lane a:b -- paths: x/** sur #201", 10) == {201}
 
 
+def test_enumeration_threshold_residual_cost_is_pinned():
+    # Cout RESIDUEL du seuil, mesure sur une instance vivante (review Hermes du
+    # 2026-11-08 sur #24788, PR #25002 de la lane myia-ai-01:CoursIA-2).
+    #
+    # #25002 ne travaille qu'UNE issue (#24989) mais cite 20 numeros dans un
+    # tableau de mesure ; sa seule declaration de perimetre est un `See #24989`
+    # final. Sous le seuil elle occupait #24989, au-dessus elle ne l'occupe
+    # plus : c'est exactement le prix que #24788 decrit pour la forme « 1 seule
+    # reference », et il tombe sur le cas que #14300 existe pour attraper.
+    #
+    # Ce test PIN le cout plutot que de le laisser se decouvrir au hasard. Il
+    # n'exige pas la correction : passer `See` isole en reference forte est un
+    # arbitrage de #24788 (un `See #N` sert aussi de simple renvoi croise, et
+    # l'elargir rendrait la jambe sensible aux mentions). Si la semantique
+    # change, ce test tombe et le changement est vu.
+    table = "\n".join(f"| #{n} | mesure |" for n in range(300, 319))   # 19
+    body = "| PR | constat |\n|---|---|\n" + table + "\n\nSee #24989\n"  # 19+1 = 20
+    assert len(clc._referenced_issue_numbers(body)) == 20
+    assert clc._occupying_issue_numbers(body, 10) == set()
+    # Le predicat de base, lui, la voit toujours : les deux lecteurs de
+    # « reference » coexistent, ils ne repondent pas a la meme question.
+    assert clc._pr_body_references_issue(body, 24989) is True
+
+
 def test_enum_threshold_env_falls_back_on_garbage(monkeypatch):
     # Un seuil de mesure ne change pas de verdict par accident de transport :
     # une valeur illisible retombe sur le defaut, elle ne vaut pas 0.
