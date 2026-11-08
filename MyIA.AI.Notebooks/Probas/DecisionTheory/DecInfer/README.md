@@ -2,11 +2,29 @@
 
 [← Série Probas](../../README.md) | [↑ Arc Théorie de la Décision](../README.md) | [Corpus bayésien Infer (C#) →](../../Infer/README.md) | [Lake Lean `decision_theory_lean` →](../decision_theory_lean/)
 
-Arc autonome de **théorie de la décision bayésienne** en Infer.NET : les notebooks 1-10 et l'accrétion Lean 2b prolongent la modélisation probabiliste (le corpus bayésien [`../../Infer/`](../../Infer/README.md)) jusqu'au **choix d'action sous incertitude**. Un posterior n'est pas une fin — c'est l'**input** d'une politique optimale. Cette série formalise ce passage, de l'utilité espérée aux processus markoviens, jusqu'à la **preuve formelle Lean 4** de l'indice de Gittins.
+Arc autonome de **théorie de la décision bayésienne** en Infer.NET : les notebooks 1-11 et les accrétions Lean prolongent la modélisation probabiliste (le corpus bayésien [`../../Infer/`](../../Infer/README.md)) jusqu'au **choix d'action sous incertitude**. Un posterior n'est pas une fin — c'est l'**input** d'une politique optimale. Cette série formalise ce passage, de l'utilité espérée aux processus markoviens, jusqu'à la **preuve formelle Lean 4** de l'indice de Gittins, puis aux **théories de la décision face à un prédicteur** (EDT, CDT, UDT — notebook 11, venu de GameTheory).
 
 **Prérequis** : le corpus bayésien [`../../Infer/`](../../Infer/README.md) (notamment [Infer-04-Bayesian-Networks](../../Infer/Infer-04-Bayesian-Networks.ipynb), [Infer-07-Skills-IRT](../../Infer/Infer-07-Skills-IRT.ipynb) pour les posteriors Beta). Aucun prérequis en théorie de la décision : les axiomes de Von Neumann-Morgenstern sont introduits ex nihilo.
 
-**Stack** : Infer.NET (.NET 9.0 + dotnet-interactive), EP/VMP par défaut. Les notebooks companions (2, 2b, 8b) utilisent le **kernel Lean 4** (WSL) et le lake [`decision_theory_lean`](../decision_theory_lean/).
+**Stack** : Infer.NET (.NET 9.0 + dotnet-interactive), EP/VMP par défaut. Les notebooks companions (2, 2b, 8b) utilisent le **kernel Lean 4** (WSL) et le lake [`decision_theory_lean`](../decision_theory_lean/) ; le notebook 11 (descendu de GameTheory) utilise le **kernel Python**.
+
+> **Paires jumelles (Infer.NET ↔ PyMC, théorie de la décision)** — déclaration de maintenance (issue #24197, section C) : `DecInfer/` et `DecPyMC/` enseignent le *même plan* — 7 étapes communes — sur *deux moteurs* (message passing compilé vs échantillonnage MCMC) ; ce ne sont pas des doublons. Un changement pédagogique commun (une étape ajoutée, retirée ou renvoyée de l'une à l'autre) se porte **dans les deux** : si tu modifies l'une, vérifie l'autre.
+
+**Paire symétrique, sans canonique** : les deux arcs ont le même statut — aucun n'est le port de l'autre, et chacun porte des carnets que l'autre n'a pas. La déclaration porte donc sur l'**invariant de maintenance** ci-dessus et sur les exceptions ci-dessous, pas sur une hiérarchie.
+
+**Le plan commun, et ses numéros divergents** — le titre fait foi, pas le numéro :
+
+| Étape | `DecInfer` | `DecPyMC` |
+|---|---|---|
+| Fondements axiomatiques (VNM) | `01-Utility-Foundations` | `01-Utility-Foundations` |
+| Utilité de l'argent, aversion au risque | `03-Utility-Money` | `02-Utility-Money` |
+| Utilité multi-attributs | `04-Multi-Attribute` | `03-Multi-Attribute` |
+| Réseaux de décision | `05-Decision-Networks` | `04-Decision-Networks` |
+| Valeur de l'information | `06-Value-Information` | `05-Value-Information` |
+| Systèmes experts, décisions robustes | `07-Expert-Systems` | `06-Expert-Systems` |
+| MDPs, bandits, POMDPs | `08-Sequential` (+ `10-Thompson-Sampling`) | `07-Sequential` |
+
+**Sans jumeau de l'autre côté** : côté Infer, les trois companions formels Lean 4 — `02-Lean-ExpectedUtility`, `02b-Lean-Coherence`, `08b-Lean-Gittins` — n'ont pas d'équivalent Python, et l'étape « MDPs, bandits, POMDPs » y est **découpée** en `08` + `10`. Côté PyMC, `08-Actuariat-Capstone` ouvre la sous-série [`Actuariat/`](../Actuariat/README.md) (T1-T5) et n'a pas de jumeau Infer.
 
 ## Pourquoi un arc autonome
 
@@ -27,8 +45,9 @@ Jusqu'à la restructuration de la série, la théorie de la décision était imb
 | 8 | [DecInfer-08-Sequential](DecInfer-08-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique |
 | 08b | [DecInfer-08b-Lean-Gittins](DecInfer-08b-Lean-Gittins.ipynb) | 45 min | Preuves formelles Lean 4, indice de Gittins, SFABP |
 | 10 | [DecInfer-10-Thompson-Sampling](DecInfer-10-Thompson-Sampling.ipynb) | 60 min | Thompson Sampling bayésien, posterior Beta-Bernoulli par le moteur, regret vs ε-greedy/UCB1 |
+| 11 | [DecInfer-11-Theories-Decision-Predicteur](DecInfer-11-Theories-Decision-Predicteur-Python.ipynb) | 75 min | EDT, CDT, CCDT, UDT/FDT sur Newcomb et la lésion de Fisher dans un cadre générique ; 2TDT-1CDT ; inattention rationnelle (Blahut-Arimoto) |
 
-**Durée totale** : ~8h
+**Durée totale** : ~9h15
 
 ## Progression Pédagogique
 
@@ -39,17 +58,18 @@ flowchart TD
     C["<b>Valeur & robustesse</b> (6-7)<br/>EVPI/EVSI · Minimax/regret"]
     D["<b>Séquentiel</b> (8)<br/>MDPs · Bellman"]
     E["<b>Preuve & bandits</b> (9-10)<br/>Gittins (Lean) · Thompson Sampling"]
+    F["<b>Palier terminal</b> (11)<br/>EDT/CDT/UDT face à un prédicteur"]
     BAY["Corpus bayésien<br/>../Infer/ (posteriors)"]
     LAKE["Lake decision_theory_lean<br/>(companions 2, 2b, 8b)"]
     BAY -->|"posterior = input"| A
-    A --> B --> C --> D --> E
+    A --> B --> C --> D --> E --> F
     E -.->|"formalisation"| LAKE
     %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ne pas harmoniser le ton avec le stroke (libelle sinon illisible)
     classDef lean fill:#fff3cd,stroke:#856404,stroke-width:2px,color:#856404;
     class LAKE lean;
 ```
 
-Le socle des **fondations** (1-3) pose les axiomes de rationalité et la notion d'aversion au risque ; les notebooks 4-5 étendent aux décisions multi-critères et aux réseaux de décision (nœuds de chance/décision/utilité) ; 6-7 mesurent la valeur de l'information et la robustesse sous incertitude sévère ; 8 introduit le séquentiel (MDPs, équation de Bellman) ; 9-10 clôturent par les **bandits bayésiens** (Thompson Sampling calculé par le moteur Infer.NET) et la **preuve formelle Lean 4** de l'indice de Gittins.
+Le socle des **fondations** (1-3) pose les axiomes de rationalité et la notion d'aversion au risque ; les notebooks 4-5 étendent aux décisions multi-critères et aux réseaux de décision (nœuds de chance/décision/utilité) ; 6-7 mesurent la valeur de l'information et la robustesse sous incertitude sévère ; 8 introduit le séquentiel (MDPs, équation de Bellman) ; 9-10 clôturent par les **bandits bayésiens** (Thompson Sampling calculé par le moteur Infer.NET) et la **preuve formelle Lean 4** de l'indice de Gittins ; le palier terminal (11) change de question : non plus *quelle action choisir sous incertitude*, mais *que faut-il compter comme conséquence de mon choix* quand un prédicteur est corrélé à lui — EDT, CDT, UDT.
 
 ## Détail des notebooks
 
@@ -127,6 +147,12 @@ Le **bandit multi-bras** vu comme un programme probabiliste Infer.NET : le moteu
 
 Applications : A/B testing adaptatif, recommandation en ligne, essais cliniques séquentiels.
 
+### DecInfer-11 : Théories de la décision face à un prédicteur
+
+**Durée** : 75 min | **Kernel** : Python | **Prérequis** : [GT-04e Oracles réflexifs](../../../GameTheory/GameTheory-04e-Reflective-Oracles-Python.ipynb) (inter-séries — l'écart CDT/EDT), probabilités conditionnelles
+
+**Palier terminal de l'arc**, descendu de GameTheory (où il portait le numéro 04f) : les théories de la décision relèvent de l'arc décision, non de la théorie des équilibres. La question n'est plus *quelle action maximise l'utilité espérée* mais **que faut-il compter comme conséquence de mon choix** quand un autre agent ou la nature est corrélé à ce choix. EDT (l'acte comme indice), CDT (l'acte comme intervention), CCDT (Edgington), UDT/FDT (une politique choisie avant toute observation) sont évaluées **dans un seul cadre générique** — sans coder les verdicts à la main — sur le problème de Newcomb, la lésion de Fisher et le 2TDT-1CDT de Wei Dai, avec seuils exacts en `fractions.Fraction` recoupés par simulation et par un modèle causal ajusté (`dowhy`). L'inattention rationnelle (Sims) clôt le notebook par l'algorithme de Blahut-Arimoto. Le notebook ne tranche pas entre les théories : il mesure ce que chacune recommande et ce que cette recommandation rapporte.
+
 ## Ponts inter-series
 
 | Série | Lien | Relation |
@@ -134,11 +160,11 @@ Applications : A/B testing adaptatif, recommandation en ligne, essais cliniques 
 | [Corpus bayésien Infer](../../Infer/README.md) | Posteriors (Beta, gaussianes) | Le posterior est l'input de la politique de décision |
 | [PyMC](../DecPyMC/README.md) | DecPyMC-01 à DecPyMC-07 | Même arc décision en Python/NUTS (Thompson MCMC, diagnostics ArviZ) |
 | [Lake `decision_theory_lean`](../decision_theory_lean/) | Companions 2, 2b, 8b | Preuves formelles Lean 4 (vNM, de Finetti, Gittins) |
-| [GameTheory](../../../GameTheory/README.md) | Décision sous incertitude | Miroir : adversaire rationnel vs processus stochastique |
+| [GameTheory](../../../GameTheory/README.md) | Décision sous incertitude | Miroir : adversaire rationnel vs processus stochastique ; [GT-04e Oracles réflexifs](../../../GameTheory/GameTheory-04e-Reflective-Oracles-Python.ipynb), prérequis de DecInfer-11, et le palier 04 de GameTheory renvoient ici
 | [RL](../../../RL/README.md) | MDPs (DecInfer-08) | L'agent apprend la politique par interaction |
 
 ## Conclusion
 
-La théorie de la décision bayésienne ferme la boucle ouverte par le corpus bayésien : un posterior n'est utile que s'il informe une **action**. De l'**utilité espérée** (DecInfer-01) aux **MDPs** (DecInfer-08), cet arc montre que décider sous incertitude est un calcul rigoureux — et les companions Lean 4 (DecInfer-02, DecInfer-02b, DecInfer-08b) ancrent ce calcul dans la **preuve formelle** : l'indice de Gittins n'est pas une heuristique, c'est un théorème.
+La théorie de la décision bayésienne ferme la boucle ouverte par le corpus bayésien : un posterior n'est utile que s'il informe une **action**. De l'**utilité espérée** (DecInfer-01) aux **MDPs** (DecInfer-08) et aux **théories de la décision face à un prédicteur** (DecInfer-11), cet arc montre que décider sous incertitude est un calcul rigoureux — et les companions Lean 4 (DecInfer-02, DecInfer-02b, DecInfer-08b) ancrent ce calcul dans la **preuve formelle** : l'indice de Gittins n'est pas une heuristique, c'est un théorème.
 
 Bonne exploration de la théorie de la décision bayésienne !

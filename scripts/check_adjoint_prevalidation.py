@@ -371,10 +371,18 @@ def _gh_invoke(args: list[str]) -> str:
         ["gh", *args], capture_output=True, text=True, encoding="utf-8"
     )
     # Compteur REST/GraphQL (#17315) : tout l'organe paie ici, la mesure aussi.
-    # GraphQL (`api graphql`) consomme le bucket partage de la flotte ; tout le
-    # reste (REST `api`, `pr view`, ...) paie le bucket core. Publie par
-    # ``--json`` (cle ``api_usage``) et sur stderr en fin d'invocation.
-    if len(args) >= 2 and args[0] == "api" and args[1] == "graphql":
+    # `api graphql` consomme le bucket partage de la flotte ; les endpoints
+    # REST (`api repos/...`) payent le bucket core. Publie par ``--json``
+    # (cle ``api_usage``) et sur stderr en fin d'invocation.
+    #
+    # #17315 (correction de classification, 06/11) : `pr view --json`,
+    # `pr list --json` et `issue view --json` sont de l'API **GraphQL** -- la
+    # CLI passe par GraphQL, donc par le BUCKET PARTAGE. Les compter comme du
+    # REST sous-reportait la consommation du bucket que le levier 4 cherche a
+    # reduire. La regle de classification est desormais unique et explicite.
+    if (len(args) >= 2 and args[0] == "api" and args[1] == "graphql") or (
+        args and args[0] in ("pr", "issue") and "--json" in args
+    ):
         _count_api_call("graphql")
     else:
         _count_api_call("rest")

@@ -2115,8 +2115,7 @@ theorem foldl_proj_max_attained (ps : Grid) (proj : Int × Int → Int) (acc : I
     · right; exact ⟨p, by simp [hp], hval⟩
 
 /-- The row maximum of a non-empty grid is *attained* by a live cell.
-    Row twin of `gridRowMax_mem`'s column siblings of `gridRowMin_mem`
-    (MacroCell L590). -/
+    Column-row twin of `gridRowMin_mem` (MacroCell L590). -/
 theorem gridRowMax_mem (g : Grid) (hg : g ≠ []) :
     ∃ p ∈ g, p.1 = gridRowMax g := by
   cases g with

@@ -24,6 +24,13 @@ Ce garde porte le predicat **la ou il est causable** :
 des paires (c'est un signal, pas un verdict -- la decision de retirer ou
 fusionner une preuve est humaine).
 
+**Prealable : l'historique doit etre complet.** Un generateur qui lit
+`git log` rend une valeur fausse sur un clone **shallow**, et il la rend
+plausible : la page et sa verification partagent la troncature, donc
+`--check` s'auto-confirme en local pendant que la porte CI (`fetch-depth: 0`)
+rougit. Le garde mesure donc l'historique avant de conclure, et rend
+`non_mesurable` -- bloquant, sans accuser la page -- quand il est tronque.
+
 Usage :
     python scripts/lean/check_lean_derived_pages.py            # verdict humain
     python scripts/lean/check_lean_derived_pages.py --json     # verdict machine
@@ -41,6 +48,14 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
+# Code de sortie conventionnel d'un generateur qui n'a pas pu MESURER (il le
+# dit lui-meme : ni `--write` ni `--check` n'ont ete executes, la page sur
+# disque n'a pas ete touchee). Distinct de 1 (`divergente`) : la page peut
+# etre parfaitement saine, c'est la machine qui n'a pas repondu a l'organe
+# amont. Convention posee par `scripts/lean/lean_material_map.py`
+# (`UNMEASURABLE_RC`).
+GENERATOR_UNMEASURABLE_RC = 2
+
 # (generateur, page). Le generateur est l'organe qui possede la page : il
 # sait la regenerer (`--write`) et la verifier (`--check`). Le garde ne
 # reimplementerait ni l'un ni l'autre -- il les **interroge**.
@@ -50,6 +65,22 @@ PAGES: tuple[tuple[str, str], ...] = (
     ("scripts/lean/lean_material_map.py",
      "docs/reference/lean-material-map.md"),
 )
+
+# Les generateurs qui lisent l'HISTORIQUE (`git log`, `rev-list`, `blame`), par
+# opposition a ceux qui ne lisent que l'ARBRE (`git ls-files`). La distinction
+# n'est pas cosmetique : un clone **shallow** tronque l'historique, donc ces
+# generateurs rendent une valeur fausse -- et ils la rendent **plausible**, ce
+# qui est precisement ce qui les rend dangereux.
+#
+# `lean_material_map.py` calcule sa colonne « Naissance » avec
+# `git log -1 --diff-filter=A` : sur un historique tronque, tout lac anterieur a
+# la frontiere rend la date de la frontiere (mesure du 2026-11-05 : 35 fois
+# `2026-10-17` la ou `main` n'en porte aucune).
+# `lean_theorem_duplicates.py` ne lit que `git ls-files` : insensible a la
+# troncature, il n'a pas a etre bloque pour elle.
+READS_HISTORY: frozenset[str] = frozenset({
+    "scripts/lean/lean_material_map.py",
+})
 
 
 def _run_check(generator: str, timeout: int, repo_root: Path | None = None) -> dict:
@@ -97,6 +128,21 @@ def _run_check(generator: str, timeout: int, repo_root: Path | None = None) -> d
         # Un generateur qui sort en erreur SANS rien dire n'est pas un verdict
         # muet : le garde doit pouvoir nommer la page et le geste.
         detail = "le generateur a rendu rc=%d sans message" % proc.returncode
+    if proc.returncode == GENERATOR_UNMEASURABLE_RC:
+        # Le generateur a declare sa mesure IMPOSSIBLE : ce n'est pas un
+        # verdict sur la page, c'est l'etat de la machine qui interdit de
+        # conclure. La page sur disque n'a PAS ete modifiee, donc la regeneree
+        # serait un piege : elle y ecrirait une mesure degradee. On bloque
+        # (comme le clone shallow) mais en nommant le bon geste.
+        return {
+            "generator": generator,
+            "page": str(page),
+            "status": "mesure_impossible",
+            "drifted": True,
+            "rc": proc.returncode,
+            "duration_s": round(time.monotonic() - start, 1),
+            "detail": detail or "le generateur n'a pas pu mesurer la page",
+        }
     return {
         "generator": generator,
         "page": str(page),
@@ -108,9 +154,75 @@ def _run_check(generator: str, timeout: int, repo_root: Path | None = None) -> d
     }
 
 
+def shallow_clone_detail(repo_root: Path | None = None) -> str | None:
+    """Rend le motif si l'historique est tronque (clone shallow), sinon `None`.
+
+    **Pourquoi ce prealable existe** (mesure du 2026-11-05). Une page regeneree
+    sur un clone shallow a ecrit 35 fois la date de frontiere a la place des
+    vraies dates de naissance, et le `--check` **local** rendait CONFORME : le
+    generateur et la page partageaient la meme troncature, donc la verification
+    se confirmait elle-meme. La porte CI, elle, tourne sur `fetch-depth: 0` et
+    a rougi. Un verdict local sur un historique tronque ne mesure donc rien, et
+    il se trompe dans les **deux** sens : faux vert sur une page corrompue par
+    la troncature, faux rouge sur une page saine regeneree sur un historique
+    complet. C'est pourquoi il bloque au lieu de passer.
+
+    Un repertoire qui n'est pas un depot git n'est pas concerne : la mesure
+    revient alors aux generateurs, qui diront ce qu'ils ne peuvent pas lire.
+    """
+    root = Path(repo_root) if repo_root is not None else REPO_ROOT
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--is-shallow-repository"],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode != 0:
+        return None
+    if (proc.stdout or "").strip() != "true":
+        return None
+    boundary = ""
+    try:
+        shallow_file = root / ".git" / "shallow"
+        if shallow_file.is_file():
+            head = shallow_file.read_text(encoding="utf-8").split()
+            if head:
+                boundary = " (frontiere %s)" % head[0][:10]
+    except OSError:
+        boundary = ""
+    return (
+        "historique TRONQUE : clone shallow%s -- les generateurs qui lisent "
+        "`git log` rendent la date de la frontiere au lieu de la vraie, et le "
+        "verdict local s'auto-confirme. Repare par `git fetch --unshallow`, "
+        "puis regenere la page." % boundary)
+
+
 def check_all(timeout: int = 900, repo_root: Path | None = None) -> list[dict]:
-    """Verifie toutes les pages derivees. Rend la liste des verifications."""
-    return [_run_check(gen, timeout, repo_root) for gen, _ in PAGES]
+    """Verifie toutes les pages derivees. Rend la liste des verifications.
+
+    Le statut `non_mesurable` (clone shallow) est BLOQUANT, mais il se nomme
+    pour ce qu'il est : ce n'est pas un verdict sur la page, c'est l'etat du
+    depot qui interdit de conclure. Le regenerer ici serait exactement le
+    piege -- la page ressortirait avec des dates fabriquees.
+    """
+    root = Path(repo_root) if repo_root is not None else REPO_ROOT
+    truncated = shallow_clone_detail(root)
+    results: list[dict] = []
+    for gen, page in PAGES:
+        if truncated is not None and gen in READS_HISTORY:
+            results.append({
+                "generator": gen,
+                "page": str(root / page),
+                "status": "non_mesurable",
+                "drifted": True,
+                "rc": None,
+                "duration_s": 0.0,
+                "detail": truncated,
+            })
+            continue
+        results.append(_run_check(gen, timeout, root))
+    return results
 
 
 def main(argv: list | None = None) -> int:
@@ -124,12 +236,16 @@ def main(argv: list | None = None) -> int:
     results = check_all(args.timeout)
     drifted = [r for r in results if r["drifted"]]
     expired = [r for r in results if r["status"] == "expiree"]
+    unmeasurable = [r for r in results if r["status"] == "non_mesurable"]
+    impossible = [r for r in results if r["status"] == "mesure_impossible"]
 
     if args.json:
         print(json.dumps({
             "pages": results,
             "drifted": bool(drifted),
             "expired": bool(expired),
+            "non_mesurable": bool(unmeasurable),
+            "mesure_impossible": bool(impossible),
             "n_pages": len(results),
         }, indent=2, sort_keys=True))
     else:
@@ -138,8 +254,20 @@ def main(argv: list | None = None) -> int:
                   % (r["status"].upper(), r["page"], r["duration_s"]))
             if r["drifted"]:
                 print("   %s" % (r["detail"] or "la page ne suit pas l'arbre"))
-                print("   regenere par : python %s --write"
-                      % r["generator"])
+                if r["status"] == "non_mesurable":
+                    # Nommer `--write` ici enverrait la lane droit dans le
+                    # piege : la page ressortirait avec des dates fabriquees.
+                    print("   geste : reparer l'historique, PAS regenerer")
+                elif r["status"] == "mesure_impossible":
+                    # Meme piege, autre cause : la page n'a pas ete mesuree,
+                    # elle n'est pas pour autant fausse. Regenerer ici
+                    # ecrirait une mesure degradee (la colonne de couverture
+                    # tomberait a `hors matrice` pour tous les lacs).
+                    print("   geste : la machine n'a pas repondu -- NE PAS"
+                          " regenerer ici ; rejouer ou elargir le budget")
+                else:
+                    print("   regenere par : python %s --write"
+                          % r["generator"])
             elif r["status"] == "expiree":
                 print("   %s -- NON BLOQUANT (contrainte de temps, pas un "
                       "defaut de la page)" % r["detail"])
@@ -154,9 +282,20 @@ def main(argv: list | None = None) -> int:
     # deux pages suivaient l'arbre, mais la sortie melangeait JSON et texte.
     stream = sys.stderr if args.json else sys.stdout
     if drifted:
-        print("VERDICT: DIVERGENCE (%d page(s) sur %d)" % (len(drifted),
-                                                           len(results)),
-              file=stream)
+        if len(unmeasurable) == len(drifted):
+            # Rien n'a ete mesure : dire « DIVERGENCE » accuserait la page
+            # d'un defaut dont la seule cause mesuree est la troncature.
+            print("VERDICT: NON MESURABLE (%d page(s) sur %d -- clone "
+                  "shallow)" % (len(drifted), len(results)), file=stream)
+        elif len(impossible) == len(drifted):
+            # Meme raison, autre cause : la machine n'a pas repondu a l'organe
+            # amont. La page n'est pas accusee a tort -- elle n'est pas
+            # certifiable ici.
+            print("VERDICT: MESURE IMPOSSIBLE (%d page(s) sur %d -- la machine "
+                  "n'a pas repondu)" % (len(drifted), len(results)), file=stream)
+        else:
+            print("VERDICT: DIVERGENCE (%d page(s) sur %d)"
+                  % (len(drifted), len(results)), file=stream)
         return 1
     print("VERDICT: CONFORME (%d page(s))" % len(results), file=stream)
     return 0

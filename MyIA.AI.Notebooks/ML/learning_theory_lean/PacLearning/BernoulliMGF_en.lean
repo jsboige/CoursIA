@@ -16,13 +16,14 @@ This brick (2b/5) bounds that closed form:
 for `μ ∈ [0, 1]` and `t ∈ ℝ`. This is **Hoeffding's lemma** (Bernoulli form) — the
 hard analytic result required to close the concentration argument. We establish here
 the **proven ingredients** (Bernoulli variance `≤ 1/4`, positivity, normalization, and
-the **symmetric case `μ = 1/2`** via `cosh x ≤ exp(x²/2)`), and document the general
-bound as OPEN with its variational proof sketch (Donsker–Varadhan + Pinsker).
+the **symmetric case `μ = 1/2`** via `cosh x ≤ exp(x²/2)`), and **prove the general bound**
+via the gap method `g(t) = t²/8 − K(t) ≥ 0` (monotonicity of `g'`).
 
-## Why the general bound is OPEN (honest, G.3)
+## Three proof routes for the general bound (alternative approaches, not retained)
 
 The bound `μ·exp(t(1−μ)) + (1−μ)·exp(−tμ) ≤ exp(t²/8)` is the real analytic content of
-Hoeffding. Three proof routes, all heavy outside Mathlib's Measure framework:
+Hoeffding. It is **proven here** by the gap method; the three routes below are
+**alternative approaches, not retained** (all heavy outside Mathlib's Measure framework):
 
 1. **Second-deriv + Taylor**: `K(t) = ln(E[exp(t(ind−μ))])` satisfies `K(0) = K'(0) = 0`
    and `K''(t) ≤ 1/4` (variance of the **tilted** Bernoulli). Then `K(t) ≤ t²/8` via Taylor
@@ -58,7 +59,7 @@ stub.
     `convexOn_univ_of_deriv2_nonneg` / `deriv^[2]` machinery, which timeouts on `simp`).
 - 3/5 product independence (MGF of a sum = product of MGFs) — OPEN
 - 4/5 optimization `t = 4ε` — OPEN
-- 5/5 two-sided concentration — OPEN
+- 5/5 two-sided concentration — **proven** (gap method)
 
 **Pedagogical ℝ-weight style** (no `ℝ≥0∞` / `Measure`), consistent with `Data.lean`.
 
@@ -131,7 +132,7 @@ The bound `φ'' ≤ 1/4` is the **analytic core** of Hoeffding (all the difficul
 concentration lives here: the variance of a r.v. bounded in [0,1] is ≤ (range/2)² = 1/4).
 The final bound `MGF ≤ exp(t²/8)` follows by convexity/Taylor-style monotonicity
 (`K(t) := φ(t) − tμ` has `K(0)=K'(0)=0` and `K'' = φ'' ≤ 1/4` ⟹ `K(t) ≤ t²/8`) —
-proven via the gap method in `bernoulli_mgf_le`.
+proven via the gap method in `bernoulli_mgf_le` (the Taylor/convexity step remains unformalized).
 -/
 
 /-- **Positivity of the log-MGF denominator**: for `μ ∈ [0,1]` and all `t`,

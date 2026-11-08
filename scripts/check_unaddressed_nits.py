@@ -3527,16 +3527,88 @@ def _nits_budget_exhausted() -> bool:
     return now > _NITS_PASS_DEADLINE
 
 
+# #17315 -- compteur REST/GraphQL de B.0.
+#
+# Le gate (`scripts/check_adjoint_prevalidation.py`) publie deja ce compteur ;
+# B.0, qui interroge le meme bucket partage de la flotte, ne le publishait pas :
+# sa consommation etait invisible. Deux corrections, pas une.
+#
+# 1. Le gate classe `pr view --json` comme du REST. C'est faux : la CLI passe
+#    par l'API GraphQL, donc par le BUCKET GRAPHIQL. Compter ces appels comme
+#    du REST sous-reportait la consommation du bucket partage -- le compte que
+#    le levier 4 doit reduire etait justement celui qui ne les voyait pas.
+#    La classification de reference est donc : `api graphql`, `pr view --json`,
+#    `pr list --json`, `issue view --json` = GraphQL ; `api repos/...` = REST.
+# 2. B.0 publie desormais son propre compte, sur stderr et dans la sortie
+#    JSON de l'audit retro.
+API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0}
+
+
+def _count_api_call(args: list[str]) -> None:
+    """Classe un appel `gh` : GraphQL (bucket partage) ou REST (bucket core).
+
+    `api graphql` est GraphQL par construction. `pr view --json`,
+    `pr list --json` et `issue view --json` le sont AUSSI : la CLI passe par
+    l'API GraphQL. Seuls les endpoints REST (`api repos/...`, `api user`, ...)
+    payent le bucket core.
+    """
+    if not args:
+        API_USAGE["rest"] += 1
+        return
+    if args[0] == "api" and len(args) >= 2 and args[1] == "graphql":
+        API_USAGE["graphql"] += 1
+        return
+    if args[0] in ("pr", "issue") and "--json" in args:
+        API_USAGE["graphql"] += 1
+        return
+    API_USAGE["rest"] += 1
+
+
 def gh_json(args: list[str]) -> object:
     if _nits_budget_exhausted():
         raise NitsBudgetExhausted(
             f"budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s depasse -- "
             "PR rendue absente (non evaluee, #18829), #21882 Option C")
+    _count_api_call(args)
     out = subprocess.run(
         ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
         timeout=GH_CALL_TIMEOUT_S,
     ).stdout
     return json.loads(out)
+
+
+def _pr_commits_rest(pr: int) -> list[dict]:
+    """Commits d'une PR en REST, normalises a la forme que `analyse` attend.
+
+    #17315 : l'audit retro payait UN appel GraphQL par candidat
+    (`gh pr view --json commits`) pour une information de triage
+    (`code_pushed_after`). L'API REST rend les memes donnees pour le bucket
+    core : `sha` = `oid`, `commit.committer.date` = `committedDate`.
+
+    Equivalence verifiee sur 3 commits reels d'une PR a 3 commits, dont un
+    ou `author.date != committer.date` : les deux dates de la forme GraphQL
+    (`authoredDate`, `committedDate`) sont reproduites a l'identique.
+    """
+    raw = gh_json([
+        "api", f"repos/{REPO}/pulls/{pr}/commits", "--paginate", "--slurp",
+    ])
+    pages = raw if isinstance(raw, list) else []
+    flat: list[dict] = []
+    for page in pages:
+        if isinstance(page, list):
+            flat.extend(page)
+        elif isinstance(page, dict):
+            flat.append(page)
+    out: list[dict] = []
+    for c in flat:
+        commit = (c.get("commit") or {}) if isinstance(c, dict) else {}
+        out.append({
+            "oid": c.get("sha") or "",
+            "committedDate": (commit.get("committer") or {}).get("date"),
+            "authoredDate": (commit.get("author") or {}).get("date"),
+        })
+    return out
+
 
 
 # #14218 — la voie 3 de B.0 a besoin de 4 conditions, pas 1. Une seule
@@ -5923,9 +5995,12 @@ def audit(limit: int, search: str | None = None) -> int:
                        issue_info=gh_issue_info)["blocked"]:
             continue
         try:
-            p["commits"] = gh_json(
-                ["pr", "view", str(p["number"]), "--repo", REPO, "--json", "commits"]
-            )["commits"]
+            # #17315 : REST, pas `gh pr view --json commits`. L'ecriture
+            # GraphQL de cet appel payait le BUCKET PARTAGE pour une
+            # information de triage ; la meme information se lit en REST
+            # (bucket core). Forme normalisee, identique a celle que
+            # `analyse` attendait.
+            p["commits"] = _pr_commits_rest(p["number"])
         except subprocess.CalledProcessError:
             p["commits"] = []
         # Ce 2e passage rend le MEME verdict `blocked` que le pre-filtre — un
@@ -5946,6 +6021,9 @@ def audit(limit: int, search: str | None = None) -> int:
         "oldest_merged": min((p["mergedAt"] for p in prs if p.get("mergedAt")), default=None),
         "newest_merged": max((p["mergedAt"] for p in prs if p.get("mergedAt")), default=None),
         "flagged": len(findings),
+        # #17315 : la consommation de l'audit, rendue visible (bucket partage
+        # GraphQL vs bucket core REST).
+        "api_usage": dict(API_USAGE),
         "findings": findings,
     }, indent=1, ensure_ascii=False))
     return 0
@@ -5968,10 +6046,17 @@ def main() -> int:
     args = ap.parse_args()
     try:
         if args.audit:
-            return audit(args.limit, args.search)
-        if args.pr is None:
+            rc = audit(args.limit, args.search)
+        elif args.pr is None:
             ap.error("fournir un numero de PR, ou --audit")
-        return gate(args.pr, args.json)
+            return 1
+        else:
+            rc = gate(args.pr, args.json)
+        # #17315 : la consommation sort sur stderr, comme le fait le gate --
+        # un compteur publie n'est lu par personne s'il reste dans le JSON.
+        print(f"API-USAGE (#17315) : rest={API_USAGE['rest']} "
+              f"graphql={API_USAGE['graphql']}", file=sys.stderr)
+        return rc
     except subprocess.TimeoutExpired as exc:
         # #19643 (residu) : gh n'a pas repondu dans sa borne -- aucun verdict.
         # Non-CLEAN (rc=1, fail-closed), jamais un rc=0 ni une trace nue.
