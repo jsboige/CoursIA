@@ -38,7 +38,7 @@ Le moteur traite, sur les étudiants évalués :
 | Catégorie | Exemples (fictifs) | Origine |
 |-----------|--------------------|---------|
 | **Identité** | prénom, nom | Liste d'étudiants (roster) |
-| **Coordonnées** | adresse e-mail (collectée via le formulaire d'évaluation) | Google Forms |
+| **Coordonnées** | adresse e-mail (collectée via le formulaire d'évaluation ; le roster peut aussi en fournir une pour un rapprochement) | Google Forms / roster privé |
 | **Contexte pédagogique** | groupe, sujet de projet libre | Formulaire / roster |
 | **Évaluation par les pairs** | notes par critère, points positifs, points négatifs, recommandations | Google Forms |
 | **Métadonnées** | horodatage de la réponse | Google Forms |
@@ -113,6 +113,16 @@ utilise une **correspondance floue** (`rapidfuzz`). Deux seuils sont en vigueur 
 > ci-dessus. L'inclusion exige désormais que le reliquat commence sur une frontière de
 > token (séparateur), ce qui préserve le cas visé (« projet alpha » ⊂ « projet alpha -
 > groupe 3 ») et ferme la confusion de noms.
+
+**Proposition soumise à arbitrage mainteneur (#24357).** Le modèle Python peut porter
+une adresse de roster facultative ; si le nom historique ne reconnaît pas l'évaluateur,
+une adresse présente dans les deux sources est comparée exactement après `strip()` et
+`lower()`. Une adresse absente, vide ou non textuelle n'est jamais une identité. Les
+adresses partagées dans le roster, ou un désaccord entre le nom reconnu et une adresse
+qui désigne un autre inscrit, sont refusés et ajoutés au journal d'ambiguïtés sous forme
+de condensés pseudonymisés, sans adresse ni nom en clair. Les appels historiques sans
+adresse conservent leur rapprochement nominal. Cette proposition n'autorise pas
+l'activation sur des cohortes ou données réelles avant arbitrage et validation humaine.
 
 ## 7. Conservation et suppression en fin de semestre
 
