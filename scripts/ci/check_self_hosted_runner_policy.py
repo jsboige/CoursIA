@@ -111,6 +111,9 @@ DEDICATED_LABEL_SETS = (REQUIRED_LABELS, LINUX_RUNNER_LABELS, WAITER_LABELS)
 #   `skipped` as OK). Routed to the containerized Linux leg to relieve the
 #   GitHub-hosted queue. Rollback = revert of the routing PR.
 SELF_HOSTED_WORKFLOW_ALLOWLIST = {
+    # Issue #25136 / PR #25168 (owner jsboige): CPU-only notebook ID ratchet;
+    # same-repository PR guard, read-only contents permission, no secrets.
+    "notebook-cell-id-ratchet.yml",
     # tranche 3d (#14283) : premier consommateur GitHub-hosted du depot une
     # fois secret-scan bascule -- 2650 runs same-repo du 2026-08-28 au
     # 2026-09-02, timeout 25 min, aucun filtre `paths:`.

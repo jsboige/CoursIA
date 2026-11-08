@@ -13,12 +13,12 @@ from pathlib import Path
 ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
-def invalid_count(text: str) -> int:
-    """Compte les défauts du schéma id sur le JSON brut."""
+def invalid_count(text: str) -> int | None:
+    """Compte les défauts d'id; None signifie que le format ne les exige pas."""
     doc = json.loads(text)
     version = (doc.get("nbformat", 0), doc.get("nbformat_minor", 0))
     if version < (4, 5):
-        return 0
+        return None
     cells = doc.get("cells")
     if not isinstance(cells, list):
         raise ValueError("propriété cells absente ou invalide")
@@ -45,7 +45,12 @@ def changed_notebooks(base: str) -> list[str]:
     return result.stdout.splitlines()
 
 
-def compare(base_count: int, head_count: int) -> bool:
+def compare(base_count: int | None, head_count: int | None) -> bool:
+    """Autorise les carnets legacy inchangés, jamais un downgrade depuis 4.5+."""
+    if base_count is None:
+        return head_count is None or head_count == 0
+    if head_count is None:
+        return False
     return head_count <= base_count
 
 

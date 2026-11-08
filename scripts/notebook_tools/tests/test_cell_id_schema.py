@@ -143,6 +143,22 @@ def test_ratchet_allows_clean_base_corruption_and_improvement():
     assert compare(2, 2)      # base historique inchangée
 
 
+def test_ratchet_preserves_legacy_contract_but_rejects_format_downgrade():
+    legacy = json.loads(_notebook([_cell(id_line=None)]))
+    legacy["nbformat_minor"] = 4
+    legacy_text = json.dumps(legacy)
+    modern_clean = _notebook([_cell(id_line='"ok000001"')])
+    modern_invalid = _notebook([_cell(id_line=None)])
+
+    assert invalid_count(legacy_text) is None
+    assert compare(None, None)  # ancien carnet non migré
+    assert compare(None, 0)      # migration valide vers un format à ids
+    assert not compare(None, 1)  # migration sans ids conformes
+    assert not compare(0, None)  # retour 4.5 -> 4.4 ne contourne pas le ratchet
+    assert compare(0, invalid_count(modern_clean))
+    assert not compare(0, invalid_count(modern_invalid))
+
+
 def test_ratchet_cli_compares_each_changed_notebook_to_its_git_base(tmp_path, monkeypatch):
     def git(*args):
         subprocess.run(["git", *args], cwd=tmp_path, check=True,
