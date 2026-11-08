@@ -5098,17 +5098,46 @@ def test_recent_delivery_marker_absent_false(monkeypatch):
     assert pig.has_recent_delivery_marker(12345) is False
 
 
-def test_recent_delivery_marker_uniquement_dans_commentaires_anciens(monkeypatch):
-    """#19768 : un marqueur sur un ANCIEN commentaire ne suffit pas.
-
-    Seule la position dans le DERNIER commentaire compte -- un marqueur
-    enfoui au milieu du fil est signe d'un ancien etat, pas d'une
-    cloture recente. Le filtre recent regarde le DERNIER, pas tous.
-    """
+def test_recent_delivery_marker_survit_a_un_commentaire_neutre(monkeypatch):
+    """Un commentaire neutre posterieur ne revoque pas une livraison."""
     monkeypatch.setattr(pig.subprocess, "run",
                         _FakeRecentComments([
-                            {"body": "[DELIVERED] (vieux, mais conteste)"},
-                            {"body": "Reouverture suite a un autre signal."},
+                            {"body": "[DELIVERED] lane myia-po-2025:CoursIA -- PR #21537"},
+                            {"body": "Question de suivi sans marqueur de protocole."},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is True
+
+
+def test_recent_delivery_marker_retracte_redevient_servable(monkeypatch):
+    """La retractation explicite annule un marqueur historique."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "[DELIVERED] lane myia-po-2025:CoursIA -- PR #21537"},
+                            {"body": "[NOT-DELIVERED] verification first-hand : livraison partielle."},
+                            {"body": "Question neutre posterieure."},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_markers_cites_dans_une_fence_ne_modifient_pas_etat(monkeypatch):
+    """Un marqueur documente dans une fence n'est pas emis par le fil."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "`````\n[DELIVERED] lane myia-po-2025:CoursIA -- PR #21537\n`````"},
+                            {"body": "Question de suivi sans marqueur de protocole."},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_released_cite_dans_un_claim_n_est_pas_une_livraison(monkeypatch):
+    """Le texte d'un claim qui explique `[RELEASED]` ne le pose pas."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": ("[CLAIMED] lane myia-po-2028:CoursIA -- "
+                                      "la consigne est d'ecrire `[RELEASED]` "
+                                      "avec acceptance deja couverte")},
+                            {"body": ("`````\n[RELEASED] lane myia-po-2028:CoursIA "
+                                      "-- acceptance deja couverte\n`````")},
                         ]).run)
     assert pig.has_recent_delivery_marker(12345) is False
 

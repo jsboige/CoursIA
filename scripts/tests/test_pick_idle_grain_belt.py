@@ -91,6 +91,12 @@ def _make_item(number, age_days, idle, klass="grain", last=None,
     }
 
 
+def test_belt_delivery_status_distinguishes_delivered_and_free_grains():
+    assert pig._belt_delivery_status({"klass": "delivered"}) == "livre"
+    assert pig._belt_delivery_status({"klass": "grain"}) == "libre"
+    assert pig._belt_delivery_status({"klass": "umbrella"}) == "servable"
+
+
 class _FakeArgs:
     """Args minimum pour draw_belt / belt_sort_key / belt_filter."""
 
@@ -1924,13 +1930,9 @@ def test_container_marker_survit_a_un_released_de_queue(monkeypatch):
 
 
 def test_container_marker_lit_un_released_qui_porte_un_marqueur(monkeypatch):
-    """Controle negatif : le saut ne porte pas sur l'EN-TETE seul.
+    """Un marqueur de grain n'annule pas la livraison du conteneur.
 
-    Un `[RELEASED]` dont le corps porte lui-meme un marqueur d'etat est un
-    evenement : il reste le dernier commentaire LU, et ce qu'il dit compte.
-    Ce controle discrimine les deux lectures -- si le `[RELEASED]` etait saute
-    sur son en-tete, la sonde remonterait au `[INFO] candidate-delivered` de
-    tete et rendrait True ; en lisant le corps de queue, elle rend False.
+    Seule une retractation explicite change l'etat du marqueur de conteneur.
     """
     _stub_comments(monkeypatch, [
         "[INFO] candidate-delivered -- les cinq arcs sont clos.",
@@ -1940,7 +1942,7 @@ def test_container_marker_lit_un_released_qui_porte_un_marqueur(monkeypatch):
             "[DELIVERED] lane myia-po-2028:CoursIA -- PR #21212",
         ]),
     ])
-    assert pig.has_recent_container_delivery_marker(17528) is False
+    assert pig.has_recent_container_delivery_marker(17528) is True
 
 
 # Retractation du marqueur, cote TAPIS : la sonde que `main` injecte dans

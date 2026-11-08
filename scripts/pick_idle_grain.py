@@ -693,22 +693,27 @@ def _delivered_state(comment_bodies: list[str]) -> bool:
     """
     delivered = False
     for body in comment_bodies:
-        if _DELIVERED_MARKER_REVOKED_RE.search(body or ""):
+        # Un marqueur cite pour documenter le protocole n'est pas un acte.
+        # Retirer les fences et spans avant de reduire l'historique.
+        body_plain = _strip_code(body or "")
+        if _DELIVERED_MARKER_REVOKED_RE.search(body_plain):
             delivered = False
-        elif _DELIVERED_MARKER_RE.search(body or ""):
+        elif _DELIVERED_MARKER_RE.search(body_plain):
             delivered = True
-        elif _closure_dossier_verdict(body or "") == "CLOSE":
+        elif _closure_dossier_verdict(body_plain) == "CLOSE":
             # Dossier de cloture CLOSE : l'issue est RESOLUE au sens du
             # depot. C'est un evenement d'arming comme les autres -- une
             # retractation posterieure le desarme, un marqueur plus recent le
             # rearme -- mais il n'EXPIRE PAS (la terminalite est portee par
             # `_delivery_event_from_comments`, qui rend `stamp=None`).
             delivered = True
-        elif _released_covers_acceptance(body or ""):
+        elif _released_covers_acceptance(body_plain):
             # #20351 : `[RELEASED]` + « acceptance deja couverte » est une
             # livraison au sens du tapis. Reste un EVENEMENT comme les autres :
             # une retractation posterieure la desarme, un marqueur plus
             # recent la rearme.
+            delivered = True
+        elif _closure_announced_close(body_plain):
             delivered = True
     return delivered
 
@@ -2573,25 +2578,20 @@ def belt_snapshot_prime_inert(repo: str, numbers: list[int]) -> None:
 
 
 def has_recent_delivery_marker(issue_number: int) -> bool | None:
-    """Le DERNIER commentaire PORTEUR D'ETAT porte-t-il un marqueur de cloture ?
+    """L'historique porte-t-il encore un marqueur de cloture ?
 
-    La lecture ne porte pas sur `comments[-1]` brut mais sur le dernier
-    commentaire qui porte un etat (`_last_state_comment`) : un `[RELEASED]`
-    de queue dont le corps ne porte aucun marqueur d'etat est saute, parce
-    qu'il MASQUERAIT le `[DELIVERED]` qu'il suit (#24590). Le contrat ecrit
-    suit donc le code.
+    Le fil se reduit chronologiquement : un commentaire neutre ou un
+    `[RELEASED]` de barriere ne desarme pas une livraison ; seule une
+    retractation explicite le fait.
 
     TRI-ETAT (cf. `has_delivered_signal`) :
     - ``True``  : l'item est **GEL** (regle A : le BODY porte la ligne
       `[FROZEN] ...` ; regle B : un en-tete `[FROZEN]` dans le FIL), ou le
-      dernier commentaire a un en-tete `[DELIVERED]` ou `[FROZEN]`, ou porte
-      un marqueur de livraison
+      fil porte encore un marqueur de livraison
       ``[INFO] candidate-delivered`` (grammaire `_DELIVERED_MARKER_RE`).
       Le candidat doit etre ecarte SANS
       appeler la sonde pleine -- c'est le filtre bon marche de #19768 ;
-    - ``False`` : aucun marqueur de cloture dans le dernier commentaire
-      porteur d'etat -- les `[RELEASED]` de queue sans marqueur d'etat ne
-      sont pas lus (`_last_state_comment`).
+    - ``False`` : aucun marqueur de cloture vivant dans le fil.
       L'appelant peut proceder a la sonde pleine. C'est le cas d'un
       en-tete `[RELEASED]` : une main rendue sur une barriere reelle
       laisse l'item SERVABLE (#21721), et une main rendue parce que le
@@ -2662,36 +2662,23 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     if _issue_is_frozen(body_of_issue, comments) is not None:
         return True
 
-    last = _last_state_comment(comments)
-    body = last.get("body") or ""
-    if not isinstance(body, str):
-        body = ""
-    if not body:
+    # Le filtre rapide lisait le dernier commentaire porteur d'etat. Un
+    # commentaire neutre posterieur effacait une livraison encore vivante.
+    # L'instantane est chronologique : le reducteur conserve l'etat a travers
+    # les commentaires neutres, puis laisse une retractation explicite
+    # l'annuler.
+    if not _delivered_state([
+            (c.get("body") or "") if isinstance(c, dict) else ""
+            for c in comments]):
         return False
-    # #24250 -- une decision de cloture REPRISE par une reouverture du user
-    # n'ecarte plus rien. La lecture du timeline n'est faite que dans ce cas
-    # (le dossier est rare) : un marqueur ordinaire ne coute rien de plus.
-    if (_closure_dossier_verdict(body) == "CLOSE"
-            or _closure_announced_close(body)):
-        if _delivery_voided_by_reopen(issue_number, [last]):
+    # Une reouverture posterieure a une decision de cloture reste prioritaire.
+    # Les marqueurs ordinaires ne declenchent aucune lecture supplementaire.
+    if any(_closure_dossier_verdict(_strip_code(c.get("body") or "")) == "CLOSE"
+           or _closure_announced_close(_strip_code(c.get("body") or ""))
+           for c in comments if isinstance(c, dict)):
+        if _delivery_voided_by_reopen(issue_number, comments):
             return False
-    # Deux grammaires, un seul verdict : les en-tetes de cloture ci-dessus,
-    # PLUS le marqueur de livraison `[INFO] candidate-delivered` (mesure
-    # 2026-10-17 : une issue rendue au coordinateur par ce marqueur et
-    # repostee ainsi en DERNIER commentaire restait servie en boucle par le
-    # tapis -- la sonde de tete ne l'atteignait pas, le budget de la sonde
-    # pleine non plus). Grammaire reutilisee de la sonde pleine
-    # (`_DELIVERED_MARKER_RE`, lookahead anti-`-revoked`/`-partial`) : tout
-    # ce que ce filtre attrape, la sonde pleine l'aurait ecarte aussi -- il
-    # n'introduit aucun verdict nouveau, il avance le meme.
-    # Le code **documente** un marqueur, il ne le **pose** pas : une fence
-    # qui recopie la ligne canonique ne clot rien (mesure : revue Hermes
-    # du 2026-11-03 sur #24523).
-    body_plain = _strip_code(body)
-    return bool(_RECENT_DELIVERY_MARKER_RE.search(body_plain)
-                or _DELIVERED_MARKER_RE.search(body_plain)
-                or _closure_dossier_verdict(body) == "CLOSE"
-                or _closure_announced_close(body))
+    return True
 
 
 def _issue_is_frozen(issue_body: str | None,
@@ -2915,13 +2902,13 @@ def _last_comment_body(issue_number: int) -> str | None:
 
 
 def has_recent_container_delivery_marker(issue_number: int) -> bool | None:
-    """Le DERNIER commentaire dit-il que le CONTENEUR est livre ?
+    """Le fil porte-t-il encore un marqueur de livraison du CONTENEUR ?
 
     TRI-ETAT :
-    - ``True``  : le dernier commentaire porte le marqueur de conteneur
+    - ``True``  : le dernier evenement de livraison porte le marqueur de conteneur
       `[INFO] candidate-delivered` (les trois formes de
       `_CONTAINER_DELIVERY_MARKER_RE`) ;
-    - ``False`` : aucun marqueur de conteneur (ou une retraction
+    - ``False`` : aucun marqueur de conteneur vivant (ou une retraction
       `[NOT-DELIVERED]` / `[INFO] candidate-delivered-revoked` ;
     - ``None``  : lecture en echec -- fail-OPEN, l'appelant le dit.
 
@@ -2944,16 +2931,19 @@ def has_recent_container_delivery_marker(issue_number: int) -> bool | None:
     Cout : **1 requete** `gh issue view --json comments`, comme le filtre
     recent -- et HORS budget de sonde.
     """
-    body = _last_comment_body(issue_number)
-    if body is None:
+    comments, _fetched_body = _issue_comments(issue_number)
+    if comments is None:
         return None
-    if not body:
-        return False
-    # Une retraction posteriore annule le marqueur : l'ordre est porte par
-    # le texte (cf `_delivered_state`).
-    if _DELIVERED_MARKER_REVOKED_RE.search(body):
-        return False
-    return bool(_CONTAINER_DELIVERY_MARKER_RE.search(body))
+    delivered = False
+    for comment in comments:
+        if not isinstance(comment, dict):
+            continue
+        body = _strip_code(comment.get("body") or "")
+        if _DELIVERED_MARKER_REVOKED_RE.search(body):
+            delivered = False
+        elif _CONTAINER_DELIVERY_MARKER_RE.search(body):
+            delivered = True
+    return delivered
 
 
 # #22500 point 1 -- l'HEURE du dernier evenement de cloture.
@@ -3049,11 +3039,12 @@ def _delivery_event_from_comments(
         body = c.get("body") or ""
         if not isinstance(body, str):
             continue
+        body_plain = _strip_code(body)
         created = c.get("createdAt")
-        if _DELIVERED_MARKER_REVOKED_RE.search(body):
+        if _DELIVERED_MARKER_REVOKED_RE.search(body_plain):
             state, stamp = False, None
             closed = False
-        elif _closure_dossier_verdict(body) == "CLOSE":
+        elif _closure_dossier_verdict(body_plain) == "CLOSE":
             # Dossier de cloture CLOSE : signal TERMINAL. `stamp` reste
             # `None` -> `_visit_age_hours(None)` rend `None` -> la regle des
             # 48 h (#22500) ne peut pas l'expirer, et la consolidation
@@ -3062,10 +3053,10 @@ def _delivery_event_from_comments(
             # expire, dossier CLOSE du 02/11 invisible).
             state, stamp = True, None
             closed = True
-        elif (_DELIVERED_MARKER_RE.search(body)
-              or _released_covers_acceptance(body)):
+        elif (_DELIVERED_MARKER_RE.search(body_plain)
+              or _released_covers_acceptance(body_plain)):
             state, stamp = True, created
-        elif _RECENT_DELIVERY_MARKER_RE.search(body):
+        elif _RECENT_DELIVERY_MARKER_RE.search(body_plain):
             # `[FROZEN]` et consorts : le filtre recent les voit, la sonde
             # pleine non. L'HEURE compte quand meme pour la regle des 48 h.
             stamp = created
@@ -3073,11 +3064,12 @@ def _delivery_event_from_comments(
     last_body = last.get("body") if isinstance(last, dict) else ""
     if not isinstance(last_body, str):
         last_body = ""
-    recent = bool(_RECENT_DELIVERY_MARKER_RE.search(last_body)
-                  or _DELIVERED_MARKER_RE.search(last_body)
+    last_body_plain = _strip_code(last_body)
+    recent = bool(_RECENT_DELIVERY_MARKER_RE.search(last_body_plain)
+                  or _DELIVERED_MARKER_RE.search(last_body_plain)
                   or closed
-                  or _closure_dossier_verdict(last_body) == "CLOSE"
-                  or _closure_announced_close(last_body))
+                  or _closure_dossier_verdict(last_body_plain) == "CLOSE"
+                  or _closure_announced_close(last_body_plain))
     if closed and state:
         # La terminalite PRIME sur l'heure : un dossier CLOSE n'expire pas,
         # meme si un marqueur plus recent a reecrit `stamp`.
@@ -11390,6 +11382,16 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         _BELT_DEADLINE[0] = _previous_belt_deadline
 
 
+def _belt_delivery_status(item: dict) -> str:
+    """Statut court affiche sur chaque ligne servie par le tapis."""
+    klass = item.get("klass", "grain")
+    if klass == "delivered":
+        return "livre"
+    if klass == "grain":
+        return "libre"
+    return "servable"
+
+
 def creation_budget_gate(pool: list[dict]) -> dict[int, str]:
     """#23174 -- les grains de creation a ecarter, avec la cause nommee.
 
@@ -12805,7 +12807,10 @@ def main(argv: list[str] | None = None) -> int:
                     "dropped": [{"number": n, "reason": c}
                                 for n, c in belt_dropped_validate],
                 },
-                "picks": belt_picks,
+                "picks": [
+                    {**it, "delivery_status": _belt_delivery_status(it)}
+                    for it in belt_picks
+                ],
                 # #24373 : les EPICs Origami parques (le pli suivant n'est pas
                 # deplie -- geste reserve au coordinateur). Ils ne sont pas
                 # servis aux lanes ; le tableau du coordinateur les affiche
@@ -12946,12 +12951,13 @@ def main(argv: list[str] | None = None) -> int:
             # Sortie texte : un tableau compact, aligne sur la volee
             # ponderee. Meme format de colonnes : urn, age, inact, vus,
             # genre, p, titre.
-            header = (f"{'urne':<10} {'age':>4} {'inact':>5} {'vus':>4} "
-                      f"{'genre':<14} {'p':>5}  titre")
+            header = (f"{'urne':<10} {'statut':<9} {'age':>4} {'inact':>5} "
+                      f"{'vus':>4} {'genre':<14} {'p':>5}  titre")
             print(header)
             print("-" * len(header))
             for it in belt_picks:
                 urn = it.get("klass", "grain")
+                delivery_status = _belt_delivery_status(it)
                 age = int(it.get("age", 0))
                 inact = int(it.get("idle", 0))
                 vus = visits.get(it["number"], 0)
@@ -12962,7 +12968,8 @@ def main(argv: list[str] | None = None) -> int:
                 # sous-issue) : c'est elle que la file remonte en tete.
                 marker = "[NEVER] " if stamp is None else ""
                 title = it.get("title", "")[:60]
-                print(f"{urn:<10} {age:>4}j {inact:>5}j {vus:>4} "
+                print(f"{urn:<10} {delivery_status:<9} {age:>4}j "
+                      f"{inact:>5}j {vus:>4} "
                       f"{genre:<14} {'-':>5}  {marker}{title}")
             print()
             print("Belt : pool trie par date de derniere visite -- merge, "
