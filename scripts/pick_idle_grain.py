@@ -2535,6 +2535,39 @@ def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
               f"les sondes gardent leur transport historique", file=sys.stderr)
 
 
+def _belt_reprime_claims_delta(belt_check_nums: list[int]) -> None:
+    """#22983 -- re-prime les numeros que les TRIS du pool ont fait entrer
+    en fenetre de claims APRES le priming initial.
+
+    Mesure du 08/11 (ce siege, pool de 414) : entre le priming
+    (`_belt_snapshot_prime` sur ``belt_pool[:70]`` pre-tri) et la lecture
+    de la fenetre de claims (``belt_pool[:70]`` post-tri), le pool est
+    re-trie EN PLACE deux fois -- ``settle_belt_head`` (stamps de claims
+    frais) puis ``apply_belt_weights`` (poids du bandit, qui changent
+    l'ordre de service par conception). La fenetre finale divergeait de la
+    fenetre primee sur **56 des 70 numeros** : STRICT refusait alors des
+    numeros que le priming n'avait jamais rafraichis (fail-CLOSED total,
+    0 grain servi), sans aucun echec de lecture -- les stamps des 70
+    numeros reels restaient a 68-96 min sur le disque pendant que la
+    fenetre primee, elle, etait fraiche.
+
+    Le re-prime ne paie que le DELTA : ``ensure_comments`` est incremental,
+    les numeros communs aux deux fenetres sont deja frais et ne declenchent
+    aucune lecture. Quand la fenetre de claims est couverte (pool a une
+    seule tete, tris sans effet), le delta est vide et la passe « UNE seule
+    fois » du priming initial est preservee (contrat du temoin
+    ``test_belt_main_injects_the_real_snapshot_prime``).
+    """
+    global _BELT_PRIMED_WINDOW
+    delta = [n for n in belt_check_nums if n not in _BELT_PRIMED_WINDOW]
+    if not delta:
+        return
+    print(f"[22983] re-prime claims delta: {len(delta)} numero(s) entre(s) "
+          "en fenetre par les tris post-priming", file=sys.stderr, flush=True)
+    _belt_snapshot_prime(REPO, delta)
+    _BELT_PRIMED_WINDOW |= set(delta)
+
+
 def _belt_pr_prefetches(numbers: list[int], lane: str | None,
                         cache_path: str | None) -> tuple[int, int]:
     """PHASE RESEAU : ce que la lecture des claims ne devra PAS demander.
@@ -13025,14 +13058,24 @@ def main(argv: list[str] | None = None) -> int:
         belt_check_nums = [it["number"] for it in belt_pool[:belt_claim_window]]
         _belt_phase(f"claims start: {len(belt_check_nums)} numeros "
                     f"(fenetre de service={belt_claim_window})")
+        # #22983 -- le pool a ete RE-TRIE en place (settle_belt_head, puis
+        # apply_belt_weights) DEPUIS le priming : la fenetre ci-dessus est
+        # lue sur l'ordre FINAL et peut contenir des numeros que le priming
+        # n'a jamais rafraichis. On re-prime le delta AVANT la phase STRICT
+        # (garde en miroir du priming initial : merge-only ne prime pas).
+        if not args.belt_merge_only:
+            _belt_reprime_claims_delta(belt_check_nums)
         # #22983 -- PHASE RESEAU, avant le tirage : le cache des PRs
         # ouvertes est enumere UNE fois, et les etats des PRs citees par les
         # marqueurs `[DELIVERED]` sont lus en UN appel groupe. Apres ce
         # bloc, `check_claims(..., strict_snapshot=True)` ne peut que
         # repondre « instantane absent » : il ne complete pas a la volee.
-        # L'instantane lui-meme a deja ete rafraichi plus haut, sur la
-        # fenetre de SERVICE -- dont la fenetre de claims est un prefixe :
-        # un second rafraichissement serait du travail refait.
+        # L'instantane lui-meme a ete rafraichi plus haut, sur la fenetre
+        # de SERVICE PRE-TRIS, puis complete ci-dessus sur le DELTA des
+        # numeros que les tris (settle, repondersion) ont fait entrer en
+        # fenetre : la fenetre de claims n'est PAS un prefixe de la
+        # fenetre primee -- c'etait l'hypothese fausse du refus
+        # intermittent STRICT (mesure du 08/11 : 56/70 hors fenetre).
         global _BELT_OPEN_PRS_CACHE
         if "PYTEST_CURRENT_TEST" not in os.environ:
             _BELT_OPEN_PRS_CACHE = _build_open_prs_cache_for_belt(args.lane)

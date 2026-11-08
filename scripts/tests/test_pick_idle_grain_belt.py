@@ -894,14 +894,59 @@ def test_belt_main_injects_the_real_snapshot_prime(monkeypatch, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["mode"] == "belt"
     assert primed, "main n'a pas branche le rafraichissement d'instantane"
-    # #22983 -- UNE seule passe. La fenetre de claims est un sous-ensemble
-    # de la fenetre de service : le repli qui rafraichissait la fenetre de
-    # claims NE DOIT PAS partir quand le premier rafraichissement a deja
-    # servi la fenetre. Le spy installe l'instantane que le vrai
-    # rafraichissement aurait ecrit -- sans quoi il simulerait un
-    # rafraichissement rate, et le repli partirait legitimement.
+    # #22983 -- UNE seule passe QUAND LA FENETRE EST COUVERTE. Sur un pool
+    # a une seule tete, les tris post-priming (settle, repondersion) ne
+    # font entrer AUCUN numero en fenetre : le delta de re-prime est vide
+    # et la seconde passe NE DOIT PAS partir. Le spy installe l'instantane
+    # que le vrai rafraichissement aurait ecrit -- sans quoi il simulerait
+    # un rafraichissement rate, et le repli partirait legitimement.
     assert primed == [[19101]], (
         f"une seule passe, sur les candidats tires (got {primed})")
+
+
+def test_belt_reprime_claims_delta_primes_only_the_entrants(monkeypatch):
+    """#22983 -- les numeros ENTRES en fenetre par les tris sont re-primes.
+
+    Mesure du 08/11 : le pool est re-trie EN PLACE entre le priming et la
+    lecture de la fenetre de claims (settle_belt_head, puis
+    apply_belt_weights) ; 56 des 70 numeros de la fenetre finale n'etaient
+    pas dans la fenetre primee, et STRICT refusait des numeros jamais
+    rafraichis -- fail-CLOSED total, 0 grain servi, sans aucun echec de
+    lecture. Le re-prime ne doit cibler QUE les entrants (les communs sont
+    deja frais), et les declarer primés pour la garde de la boucle.
+    """
+    monkeypatch.setattr(pig, "_BELT_PRIMED_WINDOW", {1, 2, 3})
+    seen: list[list[int]] = []
+    monkeypatch.setattr(
+        pig, "_belt_snapshot_prime",
+        lambda repo, numbers: seen.append(list(numbers)))
+    # 9 et 7 entrent en fenetre par le tri ; 2 et 3 etaient deja primes ;
+    # 1 est sorti de la fenetre -- il ne doit PAS etre re-lu.
+    pig._belt_reprime_claims_delta([9, 2, 7, 3])
+    assert seen == [[9, 7]], (
+        f"seuls les entrants sont re-primes (got {seen})")
+    assert pig._BELT_PRIMED_WINDOW == {1, 2, 3, 7, 9}, (
+        "la garde de la boucle (`wanted subset _BELT_PRIMED_WINDOW`) doit "
+        f"voir les entrants declares primés (got {sorted(pig._BELT_PRIMED_WINDOW)})")
+
+
+def test_belt_reprime_claims_delta_noop_when_covered(monkeypatch):
+    """#22983 -- fenetre couverte : aucune seconde passe.
+
+    C'est le contrat « UNE seule passe » du temoin main : quand les tris
+    post-priming ne font entrer aucun numero (fenetre stable, pool a tete
+    unique), le delta est vide et le re-prime ne doit RIEN faire -- ni
+    appel, ni evenement de phase.
+    """
+    monkeypatch.setattr(pig, "_BELT_PRIMED_WINDOW", {11, 12})
+    seen: list[list[int]] = []
+    monkeypatch.setattr(
+        pig, "_belt_snapshot_prime",
+        lambda repo, numbers: seen.append(list(numbers)))
+    pig._belt_reprime_claims_delta([12, 11])
+    assert seen == [], (
+        f"aucune seconde passe quand la fenetre est couverte (got {seen})")
+    assert pig._BELT_PRIMED_WINDOW == {11, 12}
 
 
 def test_non_belt_json_red_still_emits_standalone_repair(monkeypatch, capsys):
