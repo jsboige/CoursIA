@@ -172,7 +172,7 @@ L'EPIC n'est **pas terminée** par l'échec de Pli 2. Pli 3 (et indirectement Pl
 **Lean 2.1 est livré.** Le sub-grain Lean 2.1 de l'EPIC #21310 — cloner la totalité d'`OcclusionTriad.lean` et de ses dépendances, `lake build` témoin, mesure des axiomes sur tous les théorèmes-têtes, journal cité — est tenu par la PR #23302, **mergée le 2026-10-31T18:10:48Z**, qui committe le journal complet dans [`build-evidence-2026-10-31/`](build-evidence-2026-10-31/) :
 
 - **build** : SUCCESS, 3007 jobs, cibles explicites — `lake-build-output.txt` ;
-- **axiomes** : 67 requêtes `#print axioms` sur les théorèmes-têtes, 62 « depends on axioms » + 5 « does not depend on any axioms » ; profil axiomatique Mathlib standard (`propext`, `Quot.sound`, `Classical.choice`) ; **0 `sorryAx`, 0 `native_decide`, 0 ligne d'erreur** — `Axioms.query`, `lake-axioms-output.txt`, décomptes recalculés dans `coherence.txt` ;
+- **axiomes** : 67 requêtes `#print axioms` sur les théorèmes-têtes, 62 « depends on axioms » + 5 « does not depend on any axioms » ; profil axiomatique Mathlib standard (`propext`, `Quot.sound`, `Classical.choice`) ; **0 `sorryAx`, 0 `native_decide`, aucune ligne d'erreur** — `Axioms.query`, `lake-axioms-output.txt`, décomptes recalculés dans `coherence.txt` ;
 - **rejeu par un tiers** : environnement épinglé par `lean-toolchain`, `lake-manifest.json` (révision Mathlib résolue), `sources.sha256` (empreintes et blobs des deux sources réellement compilées), `versions.txt`.
 
 Le code amont n'est pas livré ici : ce répertoire ne porte que la requête, la réponse de Lean, la sortie de build et l'épinglage.
