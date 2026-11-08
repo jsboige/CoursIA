@@ -45,7 +45,12 @@ def test_graph_exports_bilingual_skos_concepts_prerequisites_and_live_notebook_l
         for citation in concept["citations"]:
             source = URIRef("https://github.com/jsboige/CoursIA/blob/main/" + citation["notebook"])
             assert (subject, DCTERMS.source, source) in graph
-            assert (subject, VOCAB.taughtInCell, Literal(citation["cell_id"])) in graph
+            matches = {
+                node for node in graph.objects(subject, VOCAB.hasCellCitation)
+                if (node, DCTERMS.source, source) in graph
+                and (node, VOCAB.cellId, Literal(citation["cell_id"])) in graph
+            }
+            assert len(matches) == 1
 
 
 def test_unknown_prerequisite_is_rejected():
