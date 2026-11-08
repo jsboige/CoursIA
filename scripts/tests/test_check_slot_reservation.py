@@ -997,10 +997,10 @@ class ScanMainCollisionTests(unittest.TestCase):
                         "_same_item_scan doit reconnaitre le compose")
 
     def test_same_item_scan_matches_kernel_in_middle(self):
-        # SW-10-CSharp-RDFStar et SW-10-Python-RDFStar : le kernel
+        # SW-10-RDFStar-CSharp et SW-10-RDFStar-Python : le kernel
         # (`CSharp` / `Python`) est en milieu de nom, pas en suffixe.
-        a = "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-CSharp-RDFStar.ipynb"
-        b = "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb"
+        a = "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb"
+        b = "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb"
         self.assertTrue(csr._same_item_scan(a, b),
                         "le kernel en milieu de nom doit etre neutralise")
 

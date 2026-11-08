@@ -38,16 +38,16 @@ fields, toposes — well beyond classical topological spaces.
 
 Epic #1646, Phase 2 (#2159). All `sorry`s eliminated at creation.
 
-### Calibration harness tribute + Phase 2+ rollout of grothendieck_lein (#4980)
+### Calibration harness tribute + Phase 2+ rollout of grothendieck_lean (#4980)
 
-9th sub-module of the `grothendieck_lein` Phase 2+ rollout — direct structural
+9th sub-module of the `grothendieck_lean` Phase 2+ rollout — direct structural
 analogue of c.388 `SieveOps` (5th, lattice ⊥ ≤ J ≤ ⊤, 9 theorems) + c.389
 `CanonicalProps` (6th, canonical topology, 8 theorems) + c.390 `SieveGenerate`
 (7th, Galois insertion + idempotence, 7 theorems) + c.393 `SieveLattice` (8th,
-functorial pullback axioms, 4 theorems) = continuity of the `grothendieck_lein`
+functorial pullback axioms, 4 theorems) = continuity of the `grothendieck_lean`
 Phase 2+ register opened post-c.390 = **4th R6 Sustained intra-R6 cycle on the
-`grothendieck_lein` register post-c.391** = return to Phase 2+ post-c.392
-ACHEVÉ 9/9 `conway_lein` Phase 1+.
+`grothendieck_lean` register post-c.391** = return to Phase 2+ post-c.392
+ACHEVÉ 9/9 `conway_lean` Phase 1+.
 
 ### Real substance — underlying categories + Grothendieck topology axioms (SGA 4 II §1-3)
 
@@ -109,32 +109,32 @@ sieves of SGA 4 II §1-3) + Mathlib i18n convention #4980 ratified by the user
 on 2026-07-04 (pragmatic Option A: two distinct top-level `/` blocks, without
 an internal `---`, as in c.366-c.393).
 
-### Cycle L335 anti-monoculture Sustained — c.394 = 4th R6 Sustained intra-R6 cycle `grothendieck_lein` ≠ `conway_lein` ≠ `knot_lein` post-c.391
+### Cycle L335 anti-monoculture Sustained — c.394 = 4th R6 Sustained intra-R6 cycle `grothendieck_lean` ≠ `conway_lean` ≠ `knot_lean` post-c.391
 
-- c.388 = 1st R6 Sustained intra-R6 cycle on the `grothendieck_lein` register
-  ≠ `conway_lein` ≠ `knot_lein` post-c.387
-- c.389 = 2nd R6 Sustained intra-R6 cycle on the `grothendieck_lein` register
-  ≠ `conway_lein` ≠ `knot_lein` post-c.388
-- c.390 = 3rd R6 Sustained intra-R6 cycle on the `grothendieck_lein` register
-  ≠ `conway_lein` ≠ `knot_lein` post-c.389 = c.391 = strict PIVOT mandated
+- c.388 = 1st R6 Sustained intra-R6 cycle on the `grothendieck_lean` register
+  ≠ `conway_lean` ≠ `knot_lean` post-c.387
+- c.389 = 2nd R6 Sustained intra-R6 cycle on the `grothendieck_lean` register
+  ≠ `conway_lean` ≠ `knot_lean` post-c.388
+- c.390 = 3rd R6 Sustained intra-R6 cycle on the `grothendieck_lean` register
+  ≠ `conway_lean` ≠ `knot_lean` post-c.389 = c.391 = strict PIVOT mandated
   R5.4b MUST anti-tunneling
 - c.391 = strict PIVOT mandated R5.4b MUST anti-tunneling post-c.388-c.390 =
-  return to the `conway_lein` Phase 1+ satellites = 1st R6 Sustained intra-R6
-  cycle `conway_lein` ≠ `grothendieck_lein` ≠ `knot_lein` post-c.386
-- c.392 = 2nd R6 Sustained intra-R6 cycle on the `conway_lein` register ≠
-  `grothendieck_lein` ≠ `knot_lein` post-c.391 = Phase 1+ rollout ACHEVÉ 9/9
-  `conway_lein`
-- c.393 = 3rd R6 Sustained intra-R6 cycle on the `grothendieck_lein` register
-  ≠ `conway_lein` ≠ `knot_lein` post-c.391 = return to the Phase 2+ register
-  opened post-c.390 = 8th sub-module of the `grothendieck_lein` Phase 2+
+  return to the `conway_lean` Phase 1+ satellites = 1st R6 Sustained intra-R6
+  cycle `conway_lean` ≠ `grothendieck_lean` ≠ `knot_lean` post-c.386
+- c.392 = 2nd R6 Sustained intra-R6 cycle on the `conway_lean` register ≠
+  `grothendieck_lean` ≠ `knot_lean` post-c.391 = Phase 1+ rollout ACHEVÉ 9/9
+  `conway_lean`
+- c.393 = 3rd R6 Sustained intra-R6 cycle on the `grothendieck_lean` register
+  ≠ `conway_lean` ≠ `knot_lean` post-c.391 = return to the Phase 2+ register
+  opened post-c.390 = 8th sub-module of the `grothendieck_lean` Phase 2+
   rollout
-- **c.394 = 4th R6 Sustained intra-R6 cycle on the `grothendieck_lein`
+- **c.394 = 4th R6 Sustained intra-R6 cycle on the `grothendieck_lean`
   register** = continuation of the Phase 2+ register opened post-c.393 =
-  coherence with post-c.392 ACHEVÉ 9/9 `conway_lein` Phase 1+ = **9th
-  sub-module of the `grothendieck_lein` Phase 2+ rollout = `CategoryAndSites`**
+  coherence with post-c.392 ACHEVÉ 9/9 `conway_lean` Phase 1+ = **9th
+  sub-module of the `grothendieck_lean` Phase 2+ rollout = `CategoryAndSites`**
   = SGA 4 II §1-3 underlying categories + canonical topology axioms + lattice
   of topologies.
-- Post-c.394 backlog c.395+: the other `grothendieck_lein` Phase 2+ modules
+- Post-c.394 backlog c.395+: the other `grothendieck_lean` Phase 2+ modules
   remaining (13 after c.394: Calibration, Subcanonical, DenseTopology,
   CoverageGen, SheafHom, SheafCohomology/{MayerVietoris,Basic}, ConstantSheaf,
   ZariskiSite, Conservative, MayerVietorisSquare, SitePoints, SchemesTour,
