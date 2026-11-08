@@ -7294,8 +7294,9 @@ def test_implicit_keeps_own_collision_and_processes_more_than_100_paths(
     assert findings[0]["files"] == own_paths
 
 
+@pytest.mark.parametrize("resolution", ["PR merge resolution\n", "left side\n"])
 def test_implicit_keeps_content_introduced_only_by_merge_commit(
-        tmp_path, monkeypatch):
+        tmp_path, monkeypatch, resolution):
     repo = tmp_path / "repo"
     repo.mkdir()
 
@@ -7340,7 +7341,7 @@ def test_implicit_keeps_content_introduced_only_by_merge_commit(
     # own tree content is its alternative conflict resolution in the merge.
     git("checkout", "-b", "pr", left)
     merge_conflict(right)
-    shared.write_text("PR merge resolution\n", encoding="utf-8")
+    shared.write_text(resolution, encoding="utf-8")
     git("add", "shared.txt")
     git("commit", "-m", "PR merge resolution")
     head = git("rev-parse", "HEAD")

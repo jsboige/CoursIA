@@ -2469,7 +2469,15 @@ def _pr_files_against_main(pr: dict) -> list[str] | None:
                     main_parents.append(parent)
                 elif is_main_ancestor.returncode != 1:
                     return None
-            comparison_parents = main_parents or [parents[0]]
+            # Several parents can already be on main while this merge
+            # deliberately chooses an older parent's content (e.g. ours).
+            # Matching one ancestor is not proof of inheriting main's tree.
+            # Compare with current main in this ambiguous case; this can
+            # conservatively retain later main paths, never release work.
+            comparison_parents = (
+                [main_oid] if len(main_parents) > 1
+                else main_parents or [parents[0]]
+            )
             merge_contribution: set[str] | None = None
             for parent in comparison_parents:
                 merge_diff = subprocess.run(
@@ -2482,9 +2490,9 @@ def _pr_files_against_main(pr: dict) -> list[str] | None:
                     path.decode("utf-8")
                     for path in merge_diff.stdout.split(b"\0") if path
                 }
-                # If the merge result matches ANY parent already on main for a
-                # path, that path came from main's history rather than a new
-                # resolution in this merge.
+                # Compare against the selected main reference; a merge
+                # resolution matching an old ancestor still occupies a path
+                # when current main carries another resolution.
                 merge_contribution = (
                     changed_from_parent if merge_contribution is None
                     else merge_contribution & changed_from_parent
