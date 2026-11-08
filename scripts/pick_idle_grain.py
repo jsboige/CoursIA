@@ -2466,8 +2466,16 @@ _BELT_SNAPSHOT: dict | None = None
 _BELT_PRIMED_WINDOW: set[int] = set()
 
 
-def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
+def _belt_snapshot_prime(repo: str, numbers: list[int],
+                         seed: dict | None = None) -> None:
     """Rafraichit UNE FOIS l'instantane pour les candidats tires (#22630, #22983).
+
+    ``seed`` (re-prime du delta, #22983) : instantane memoire du priming
+    PRECEDENT. Sans lui, ce deuxieme appel rechargerait le DISQUE -- et
+    perdrait les lectures fraiches que le premier appel n'a pu ecrire qu'en
+    memoire (repli `SnapshotLockTimeout`, verrou tenu par une autre lane).
+    `ensure_comments` etant incremental, seeder ne relit pas les numeros
+    deja frais : seul le delta paie une lecture.
 
     #22983 -- ce priming est la **phase reseau** du tirage. Apres lui, le
     tirage lui-meme ne doit plus emettre aucun appel GitHub : chaque sonde
@@ -2505,7 +2513,14 @@ def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
         # lanes de la machine épuisaient leurs 120 s d'attente et
         # retombaient sur le disque périmé -- fail-CLOSED muet (mesure du
         # 08/11 : deux tirages bloqués pendant le priming du coordinateur).
-        snapshot = gh_snapshot.load_snapshot(repo)
+        # #22983 -- re-prime : partir du SEED memoire du priming precedent
+        # quand il existe, pas du disque. Le cas pathologique : le premier
+        # appel a subi un lock-timeout -> ses lectures fraiches ne vivent
+        # qu'en memoire (_BELT_SNAPSHOT) ; recharger le disque ici les
+        # perdrait, et STRICT retrouverait un refus fail-CLOSED que la
+        # re-prime etait censee clore.
+        snapshot = (seed if seed is not None
+                    else gh_snapshot.load_snapshot(repo))
         snapshot, _calls, _stats = gh_snapshot.ensure_comments(
             repo, numbers, snapshot)
         try:
@@ -2557,6 +2572,11 @@ def _belt_reprime_claims_delta(belt_check_nums: list[int]) -> None:
     seule tete, tris sans effet), le delta est vide et la passe « UNE seule
     fois » du priming initial est preservee (contrat du temoin
     ``test_belt_main_injects_the_real_snapshot_prime``).
+
+    Le re-prime SEED le priming avec l'instantane memoire du premier appel :
+    si celui-ci a subi un lock-timeout, ses lectures fraiches ne vivent
+    qu'en memoire, et un rechargement disque les perdrait -- STRICT
+    retrouverait un refus que la re-prime etait censee clore.
     """
     global _BELT_PRIMED_WINDOW
     delta = [n for n in belt_check_nums if n not in _BELT_PRIMED_WINDOW]
@@ -2564,7 +2584,10 @@ def _belt_reprime_claims_delta(belt_check_nums: list[int]) -> None:
         return
     print(f"[22983] re-prime claims delta: {len(delta)} numero(s) entre(s) "
           "en fenetre par les tris post-priming", file=sys.stderr, flush=True)
-    _belt_snapshot_prime(REPO, delta)
+    # Capture AVANT l'appel : `_belt_snapshot_prime` remet `_BELT_SNAPSHOT`
+    # a None en tete, le seed doit partir de l'etat memoire du priming.
+    seed = _BELT_SNAPSHOT if isinstance(_BELT_SNAPSHOT, dict) else None
+    _belt_snapshot_prime(REPO, delta, seed=seed)
     _BELT_PRIMED_WINDOW |= set(delta)
 
 

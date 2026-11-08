@@ -919,7 +919,7 @@ def test_belt_reprime_claims_delta_primes_only_the_entrants(monkeypatch):
     seen: list[list[int]] = []
     monkeypatch.setattr(
         pig, "_belt_snapshot_prime",
-        lambda repo, numbers: seen.append(list(numbers)))
+        lambda repo, numbers, seed=None: seen.append(list(numbers)))
     # 9 et 7 entrent en fenetre par le tri ; 2 et 3 etaient deja primes ;
     # 1 est sorti de la fenetre -- il ne doit PAS etre re-lu.
     pig._belt_reprime_claims_delta([9, 2, 7, 3])
@@ -942,11 +942,122 @@ def test_belt_reprime_claims_delta_noop_when_covered(monkeypatch):
     seen: list[list[int]] = []
     monkeypatch.setattr(
         pig, "_belt_snapshot_prime",
-        lambda repo, numbers: seen.append(list(numbers)))
+        lambda repo, numbers, seed=None: seen.append(list(numbers)))
     pig._belt_reprime_claims_delta([12, 11])
     assert seen == [], (
         f"aucune seconde passe quand la fenetre est couverte (got {seen})")
     assert pig._BELT_PRIMED_WINDOW == {11, 12}
+
+
+def test_belt_reprime_claims_delta_seeds_from_memory(monkeypatch):
+    """#22983 -- la re-prime part de l'instantane MEMOIRE, pas du disque.
+
+    Cas pathologique nomme en rectification (08/11) : le priming initial
+    a subi un lock-timeout -> ses lectures fraiches ne vivent qu'en
+    memoire (`_BELT_SNAPSHOT`). Un second appel qui rechargerait le
+    disque les perdrait, et STRICT retrouverait un refus fail-CLOSED
+    que la re-prime etait censee clore. Le helper doit SEED le prime
+    avec l'etat memoire -- et passer None quand il n'y en a pas.
+    """
+    seeds: list = []
+    monkeypatch.setattr(pig, "_BELT_PRIMED_WINDOW", {1})
+    monkeypatch.setattr(
+        pig, "_belt_snapshot_prime",
+        lambda repo, numbers, seed=None: seeds.append(seed))
+    mem = {"meta": {"comment_stamps": {"1": "2026-11-08T20:00:00Z"}}}
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", mem)
+    pig._belt_reprime_claims_delta([7, 1])
+    assert seeds == [mem], (
+        f"la re-prime doit partir de l'instantane memoire du priming "
+        f"precedent (got {seeds})")
+    # Sans etat memoire (premier appel totalement echoue) : seed None,
+    # le prime repart du disque comme avant.
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", None)
+    monkeypatch.setattr(pig, "_BELT_PRIMED_WINDOW", {1})
+    pig._belt_reprime_claims_delta([7, 1])
+    assert seeds == [mem, None], (
+        f"sans instantane memoire, le seed doit etre None (got {seeds})")
+
+
+def test_belt_snapshot_prime_lock_timeout_names_cause(monkeypatch, capsys):
+    """#22983 volet 3 : le repli lock-timeout du priming NOMME sa cause.
+
+    Mesure fondatrice (08/11, c.6719023627) : le priming tenait
+    `refresh.lock` pendant toute sa phase reseau (~7 min) ; les autres
+    lanes de la machine epuisaient leurs 120 s d'attente et retombaient
+    sur un repli MUET -- ni `fetch_failures`, ni message, alors que le
+    quota REST paraissait sain. Le repli doit ecrire sur stderr POURQUOI
+    il est parti, pour qu'un fail-CLOSED eventuel se lise au premier
+    coup d'oeil.
+
+    Divergence assumee avec le spec initial de #25217 : l'issue ecrivait
+    « repli sur l'instantane disque » ; le volet 4 (#25224, arbitrage
+    option 2, c.6719405401) a deplace la phase reseau HORS verrou -- le
+    repli sert desormais les lectures fraiches EN MEMOIRE de CE tirage
+    (ses stamps couvrent NOTRE fenetre, pas celle de la lane qui tient
+    le verrou). Le temoin suit le contrat du code actuel.
+    """
+    class _LockTimeout(Exception):
+        pass
+
+    calls = {"save": 0}
+    in_memory = _mini_snapshot([4242])
+    stale_disk = _mini_snapshot([1111])
+
+    class _RaisingLock:
+        def __enter__(self):
+            raise _LockTimeout(
+                "verrou refresh.lock non obtenu apres 120 s")
+
+        def __exit__(self, *exc):
+            return False
+
+    class _FakeGhSnapshot:
+        SnapshotLockTimeout = _LockTimeout
+
+        @staticmethod
+        def load_snapshot(repo):
+            return dict(stale_disk)
+
+        @staticmethod
+        def ensure_comments(repo, numbers, snapshot):
+            return dict(in_memory), 0, {}
+
+        @staticmethod
+        def snapshot_lock(repo):
+            return _RaisingLock()
+
+        @staticmethod
+        def merge_snapshots(disk, mem, numbers):
+            raise AssertionError(
+                "la fusion ne doit pas courir : le verrou a leve avant")
+
+        @staticmethod
+        def save_snapshot(repo, merged):
+            calls["save"] += 1
+            raise AssertionError("l'ecriture disque doit etre reportee")
+
+    monkeypatch.setitem(sys.modules, "coordination.gh_snapshot",
+                        _FakeGhSnapshot)
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    # Restauration automatique du global par monkeypatch en teardown.
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", pig._BELT_SNAPSHOT)
+
+    pig._belt_snapshot_prime("jsboige/CoursIA", [4242])
+
+    err = capsys.readouterr().err
+    assert "[22983] priming ecarte" in err, (
+        f"le repli doit NOMMER sa cause sur stderr (got: {err!r})")
+    assert "verrou refresh.lock non obtenu apres 120 s" in err, (
+        f"le message doit porter la cause exacte du repli (got: {err!r})")
+    assert calls["save"] == 0, (
+        "l'ecriture disque est reportee au prochain priming, pas tentee")
+    # Le repli sert les lectures fraiches EN MEMOIRE de CE tirage (volet
+    # 4), pas l'instantane disque dont les stamps couvrent l'AUTRE lane.
+    stamps = pig._BELT_SNAPSHOT["meta"]["comment_stamps"]
+    assert "4242" in stamps and "1111" not in stamps, (
+        f"le repli doit servir la fenetre de CE tirage (got stamps: "
+        f"{sorted(stamps)})")
 
 
 def test_non_belt_json_red_still_emits_standalone_repair(monkeypatch, capsys):
