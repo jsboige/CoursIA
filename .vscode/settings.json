@@ -1,5 +1,13 @@
 {
     "files.autoSave": "afterDelay",
+    "files.exclude": {
+        "**/.lake": true,
+        ".tmp": true
+    },
+    "files.watcherExclude": {
+        "**/.lake/**": true,
+        ".tmp/**": true
+    },
     "workbench.colorCustomizations": {
         "activityBar.activeBackground": "#fa1b49",
         "activityBar.background": "#fa1b49",

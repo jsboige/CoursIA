@@ -157,3 +157,122 @@ def test_contrat_booleen_de_15973_inchange():
     assert mod._rebase_preserved_by_path([("a", "x", "modified", "")], {"a": "x"}) is True
     assert mod._rebase_preserved_by_path([("a", "x", "modified", "")], {"a": "y"}) is False
     assert mod._rebase_preserved_by_path([], {"a": "x"}) is False
+
+
+# --- residuel de #20066, piste 2 COMPLETE : la survie des SYMBOLES ----------
+#
+# Quand `blob_state == differs` (la PR a continue de travailler les memes
+# fichiers), le fond de la levee reste verifiable : les def/class INTRODUITS
+# par le commit rembobine existent-ils encore a la tete ? Survie complete =
+# artefact non bloquant ; symbole absent = refus NOMME ; donnee manquante =
+# refus `differs` courant (fail-closed, contrat de l'issue).
+
+def test_introduced_symbols_extrait_defs_et_classes_des_lignes_ajoutees():
+    """Seules les lignes AJOUTEES comptent : contexte et deletions ne
+    produisent rien, async def et class sont extraits, ordre preserve."""
+    patch = ("\n"
+             " def contexte():\n"
+             "     pass\n"
+             "-def ancienne():\n"
+             "+def nouvelle_fonction():\n"
+             "+    pass\n"
+             "+class NouvelleClasse:\n"
+             "+    pass\n"
+             "+    async def methode_async(self):\n"
+             "+        pass\n")
+    out = mod._introduced_symbols({"scripts/p.py": patch})
+    assert out == {"scripts/p.py": ["nouvelle_fonction", "NouvelleClasse",
+                                    "methode_async"]}
+
+
+def test_introduced_symbols_ignore_non_python_et_vides():
+    """Markdown, notebooks et patches absents ne donnent rien a verifier."""
+    out = mod._introduced_symbols(
+        {"docs/a.md": "+def f():\n+    pass\n",
+         "nb/x.ipynb": "+def g():\n",
+         "scripts/vide.py": "",
+         "scripts/rien.py": "-def h():\n"})
+    assert out == {}
+
+
+def test_symbols_survive_head_tous_presents():
+    """Le fichier de tete porte chaque symbole : all_survive + compte."""
+    introduced = {"scripts/p.py": ["foo", "Bar"]}
+    head = {"scripts/p.py": "blob1"}
+    fetch = lambda sha: "class Bar:\n    pass\n\ndef foo():\n    return 1\n"
+    res = mod._symbols_survive_head(introduced, head, fetch)
+    assert res["verdict"] == "all_survive"
+    assert res["checked"] == 2
+    assert res["files"] == 1
+
+
+def test_symbols_survive_head_symbole_manquant_nomme():
+    """Un symbole disparu de la tete : verdict missing, le nom cite."""
+    introduced = {"scripts/p.py": ["foo", "baz"]}
+    head = {"scripts/p.py": "blob1"}
+    fetch = lambda sha: "def foo():\n    return 1\n"  # baz parti
+    res = mod._symbols_survive_head(introduced, head, fetch)
+    assert res["verdict"] == "missing"
+    assert res["missing"] == ["baz"]
+    assert res["checked"] == 2
+
+
+def test_symbols_survive_head_fichier_parti_de_la_tete():
+    """Fichier absent de la tete : ses symboles sont manquants, sans fetch."""
+    introduced = {"scripts/p.py": ["foo"]}
+    def fetch(sha):
+        raise AssertionError("aucun fetch ne doit avoir lieu pour un chemin absent")
+    res = mod._symbols_survive_head(introduced, {}, fetch)
+    assert res["verdict"] == "missing"
+    assert res["missing"] == ["foo"]
+
+
+def test_symbols_survive_head_blob_illisible_fail_closed():
+    """Blob de tete illisible : no_data, jamais permissif."""
+    def fetch(sha):
+        raise RuntimeError("api down")
+    res = mod._symbols_survive_head({"scripts/p.py": ["foo"]},
+                                    {"scripts/p.py": "blob1"}, fetch)
+    assert res["verdict"] == "no_data"
+    assert res["reason"] == "blob_unreadable"
+
+
+def test_libelle_artefact_symboles_survivants(capsys):
+    """L'artefact symbols_survive est une ligne [i] non bloquante et dit la
+    mesure : blobs modifies, symboles presents."""
+    result = {"rewind_artifacts": [
+        {"author": "jsboige", "at": "2026-10-07T02:18:00+00:00",
+         "sha": "9621e67216", "reason": "symbols_survive"}]}
+    out = _sortie(capsys, result)
+    assert out.splitlines()[0].startswith("  [i] levee de jsboige")
+    assert "symboles introduits par la levée tous présents à la tête" in out
+
+
+def test_libelle_refus_nomme_les_symboles_absents(capsys):
+    """Le refus avec symboles manquants est le SEUL qui parle de reserve :
+    il nomme ce qui a disparu, mesure a l'appui."""
+    result = {"voided_lifts": [
+        {"author": "jsboige", "at": "2026-10-07T02:18:00+00:00",
+         "sha": "9621e67216", "tree_differs": True,
+         "blob_state": mod._BLOB_DIFFERS,
+         "symbols": {"verdict": "missing",
+                     "missing": ["fetch_latest_claim_stamps_bulk"],
+                     "checked": 3}}]}
+    out = _sortie(capsys, result)
+    assert out.splitlines()[0].startswith("  [!] NON LEVE")
+    assert "ABSENT(s) de la tête" in out
+    assert "fetch_latest_claim_stamps_bulk" in out
+    assert FORMULE_BLOB not in out
+
+
+def test_libelle_refus_sans_verdict_symboles_garde_la_formule_mesuree(capsys):
+    """no_data / pas de carte : rien n'a ete mesure sur le fond, la formule
+    de la piste 1 reste celle qui decrit honnetement la mesure."""
+    result = {"voided_lifts": [
+        {"author": "jsboige", "at": "2026-10-07T02:18:00+00:00",
+         "sha": "9621e67216", "tree_differs": True,
+         "blob_state": mod._BLOB_DIFFERS,
+         "symbols": {"verdict": "no_data", "reason": "blob_unreadable"}}]}
+    out = _sortie(capsys, result)
+    assert FORMULE_BLOB in out
+    assert "ABSENT(s)" not in out
