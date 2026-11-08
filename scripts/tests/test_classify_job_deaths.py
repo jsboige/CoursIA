@@ -445,6 +445,18 @@ def test_git_object_missing_reads_promisor_transfer_failure_from_job_log():
     )
 
 
+def test_named_test_failure_beats_promisor_teardown_failure():
+    """Un fetch interrompu en teardown ne blanchit pas un test nomme rouge."""
+    log_text = (
+        "short test summary info\nFAILED tests/test_content.py::test_proof\n"
+        "fatal: early EOF\n"
+        "fatal: could not fetch " + "a" * 40 + " from promisor remote\n"
+    )
+    assert _classified(
+        _step_failure_job(), ANN_EXIT_128_TESTS, log_text=log_text
+    ) == "REAL_STEP_FAILURE"
+
+
 def test_truncated_transfer_without_promisor_sha_stays_content_failure():
     """Un EOF seul ne suffit pas à transformer un échec en incident Git."""
     log_text = "fatal: early EOF\nfatal: fetch-pack: invalid index-pack output\n"

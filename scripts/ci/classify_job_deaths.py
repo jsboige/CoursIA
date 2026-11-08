@@ -194,6 +194,8 @@ def git_object_missing_from_log(log_text: str) -> bool:
     if not log_text or not GIT_PROMISOR_FETCH_RE.search(log_text):
         return False
     lowered = log_text.lower()
+    if TEST_SUMMARY_MARKER in lowered:
+        return False  # un test nomme en echec garde priorite sur le teardown
     return any(
         needle in lowered for needle in GIT_PROMISOR_TRANSFER_FAILURE_NEEDLES
     )
