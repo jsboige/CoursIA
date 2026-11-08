@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from uuid import UUID
 
-from rdflib import Graph, Literal, Namespace, RDF, RDFS, URIRef
+from rdflib import BNode, Graph, Literal, Namespace, RDF, RDFS, URIRef
 from rdflib.namespace import DCTERMS, OWL, SKOS, XSD
 
 
@@ -169,7 +169,10 @@ def build_graph(data: dict) -> Graph:
     graph.add((VOCAB.requiresConcept, RDF.type, OWL.ObjectProperty))
     graph.add((VOCAB.requiresConcept, RDFS.domain, VOCAB.CurriculumConcept))
     graph.add((VOCAB.requiresConcept, RDFS.range, VOCAB.CurriculumConcept))
-    graph.add((VOCAB.taughtInCell, RDF.type, OWL.DatatypeProperty))
+    graph.add((VOCAB.hasCellCitation, RDF.type, OWL.ObjectProperty))
+    graph.add((VOCAB.CellCitation, RDF.type, OWL.Class))
+    graph.add((VOCAB.cellId, RDF.type, OWL.DatatypeProperty))
+    graph.add((VOCAB.cellId, RDFS.domain, VOCAB.CellCitation))
     graph.add((VOCAB.path, RDF.type, OWL.DatatypeProperty))
     graph.add((VOCAB.decimalPath, RDF.type, OWL.DatatypeProperty))
     graph.add((VOCAB.depth, RDF.type, OWL.DatatypeProperty))
@@ -204,7 +207,11 @@ def build_graph(data: dict) -> Graph:
         for citation in concept["citations"]:
             notebook_uri = URIRef("https://github.com/jsboige/CoursIA/blob/main/" + citation["notebook"])
             graph.add((uri, DCTERMS.source, notebook_uri))
-            graph.add((uri, VOCAB.taughtInCell, Literal(citation["cell_id"])))
+            citation_uri = BNode()
+            graph.add((uri, VOCAB.hasCellCitation, citation_uri))
+            graph.add((citation_uri, RDF.type, VOCAB.CellCitation))
+            graph.add((citation_uri, DCTERMS.source, notebook_uri))
+            graph.add((citation_uri, VOCAB.cellId, Literal(citation["cell_id"])))
     return graph
 
 

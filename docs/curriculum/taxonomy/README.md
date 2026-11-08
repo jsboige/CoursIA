@@ -12,6 +12,6 @@ python scripts/notebook_tools/curriculum_taxonomy.py \
   --owl-output /tmp/compression.owl
 ```
 
-Les sources des concepts sont exportées en liens GitHub vers les vrais carnets ; l'identifiant de cellule reste attaché comme provenance `cursus:taughtInCell` et est contrôlé contre le notebook local.
+Les sources des concepts sont exportées en liens GitHub vers les vrais carnets. Chaque relation `cursus:hasCellCitation` regroupe le lien du carnet et son `cursus:cellId`, contrôlé contre le notebook local.
 
 L'export des concepts reste un graphe à part de l'export catalogue afin que chaque forme garde sa validation dédiée. Un consommateur peut les unir dans un même graphe RDF en chargeant les deux Turtle, par exemple `graph.parse("catalogue.ttl", format="turtle")` puis `graph.parse("compression.ttl", format="turtle")`.
