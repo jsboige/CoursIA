@@ -280,8 +280,9 @@ def _build_count_patterns(units: str) -> tuple[re.Pattern, re.Pattern]:
     nombre lui-meme, la borne gauche refuse la reprise apres separateur.
 
     Les nombres groupes par une espace, une espace insecable, une espace
-    fine insecable ou une virgule (format anglais) sont lus comme un entier
-    unique, dans la prose comme dans le stream. La regex exige des groupes
+    fine insecable sont lus comme un entier
+    unique, dans la prose comme dans le stream. Une virgule reste ambigue
+    avec une valeur decimale francaise et reste exclue. La regex exige des groupes
     de trois chiffres pour eviter de fusionner des nombres voisins.
     La faute la plus grave (une valeur lue comme un compte, donc une
     contradiction FABRIQUEE) est, elle, fermee.
@@ -295,7 +296,7 @@ def _build_count_patterns(units: str) -> tuple[re.Pattern, re.Pattern]:
     grammaire de liste, pas une garde de lookahead : c'est une suite, pas
     un correctif de ce cycle.
     """
-    grouped_integer = r"\d{1,3}(?:[ \u00a0\u202f,]\d{3})+|\d{1,5}"
+    grouped_integer = r"\d{1,3}(?:[ \u00a0\u202f]\d{3})+|\d{1,5}"
     return (
         re.compile(rf"(?i)(?<![\d.,])\b({grouped_integer})(?!\d*[.,]\d)\s*({units})\b"),
         re.compile(rf"(?i)\b({units})(?:[ \t]*[:=][ \t]*|[ \t]{{2,}})({grouped_integer})(?!\d*[.,]\d)\b"),
@@ -304,7 +305,7 @@ def _build_count_patterns(units: str) -> tuple[re.Pattern, re.Pattern]:
 
 def _parse_count(text: str) -> int:
     """Convertit un compte a groupes de milliers en entier."""
-    return int(re.sub(r"[ \u00a0\u202f,]", "", text))
+    return int(re.sub(r"[ \u00a0\u202f]", "", text))
 
 
 # ---------------------------------------------------------------------------
@@ -387,7 +388,7 @@ def _build_broad_patterns(units: str) -> tuple[re.Pattern, re.Pattern]:
     `strict` reste inchange.
     """
     words = "|".join(sorted(NUMBER_WORDS, key=len, reverse=True))
-    grouped_integer = r"\d{1,3}(?:[ \u00a0\u202f,]\d{3})+|\d{1,5}"
+    grouped_integer = r"\d{1,3}(?:[ \u00a0\u202f]\d{3})+|\d{1,5}"
     return (
         re.compile(rf"(?i)(?<![\w.,-]){DETERMINERS}\s+({words})\s+({units})\b"),
         re.compile(rf"(?i)(?<![\w.,-])({grouped_integer})(?!\d*[.,]\d)\s+({units})\b"),
