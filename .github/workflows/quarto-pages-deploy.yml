@@ -478,9 +478,12 @@ jobs:
   deploy:
     # Garde explicite : actions/deploy-pages ne doit PAS tourner sur PR
     # (refs/pull/.../merge rejete par la protection env github-pages).
-    # Boucle avec `if: github.event_name == 'push'` sur `build` : deploy
-    # herite par needs, mais la garde ici est defensive. #11616 rouge 1.
-    if: github.event_name == 'push'
+    # `always()` casse le success() implicite de la chaine needs : sans lui,
+    # un echec du job build-slides (npm, decouverte vide, timeout) fait
+    # SAUTER deploy et le site Quarto n'est plus deploie -- le site reste
+    # donc servi meme si les decks echouent, assemble-pages restant exigee.
+    # Correctif ai-01 08/11 (reserve #25021). #11616 rouge 1.
+    if: always() && github.event_name == 'push' && needs.assemble-pages.result == 'success'
     name: Deploy to GitHub Pages
     # L5 #11508 : deploy suit desormais assemble-pages (qui herite de build et
     # build-slides) -- le site deploye est le site COMPOSE, Quarto + decks.
