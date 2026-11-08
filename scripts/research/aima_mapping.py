@@ -40,12 +40,6 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-try:
-    import pymupdf
-except ImportError:  # pragma: no cover - dependance absente = repair, jamais contourner
-    sys.stderr.write("pymupdf absent : `pip install pymupdf` (regle F : reparer, pas contourner)\n")
-    raise
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 DEFAULT_BIB_DIR = Path(r"G:\Mon Drive\MyIA\IA\Bibliographie IA\AI")
@@ -118,6 +112,18 @@ def _title_on_page(page_text: str, title: str, number: str = "") -> bool:
 
 # --------------------------------------------------------------------------- TOC
 
+def _require_pymupdf() -> None:
+    """Charge PyMuPDF uniquement pour les commandes qui lisent les PDF."""
+    global pymupdf
+    try:
+        import pymupdf
+    except ImportError as exc:  # dependance requise par `toc`, pas par `map` ou `check`
+        sys.stderr.write(
+            "pymupdf absent : installez-le avec `pip install pymupdf` pour la commande toc\n"
+        )
+        raise SystemExit(1) from exc
+
+
 @dataclass
 class Entry:
     kind: str
@@ -131,6 +137,7 @@ class Entry:
 
 
 def extract_3e(pdf_path: Path) -> list[Entry]:
+    _require_pymupdf()
     doc = pymupdf.open(pdf_path)
     try:
         entries: list[Entry] = []
@@ -188,6 +195,7 @@ def _find_part_in_printed_toc(doc, entry) -> int:
 
 
 def verify_3e(pdf_path: Path, entries: list[Entry]) -> None:
+    _require_pymupdf()
     doc = pymupdf.open(pdf_path)
     try:
         for e in entries:
@@ -231,6 +239,7 @@ def verify_3e(pdf_path: Path, entries: list[Entry]) -> None:
 
 
 def parse_4e_toc(pdf_path: Path) -> list[Entry]:
+    _require_pymupdf()
     doc = pymupdf.open(pdf_path)
     try:
         lines: list[str] = []
@@ -294,6 +303,7 @@ def anchor_4e(pdf_path: Path, entries: list[Entry]) -> None:
     avancees dans l'ordre, page par page, ce qui rend l'ancre non ambigue. Un repli
     « souple » (titre present dans le texte sans ligne isolee) est note comme tel.
     """
+    _require_pymupdf()
     doc = pymupdf.open(pdf_path)
     try:
         cursor = 0
@@ -326,6 +336,7 @@ def anchor_4e(pdf_path: Path, entries: list[Entry]) -> None:
 
 
 def verify_4e(pdf_path: Path, entries: list[Entry]) -> None:
+    _require_pymupdf()
     doc = pymupdf.open(pdf_path)
     try:
         for e in entries:

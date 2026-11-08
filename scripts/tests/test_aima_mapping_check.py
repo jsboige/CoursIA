@@ -16,6 +16,21 @@ FILES = (
     "aima-hors-livre.csv",
     "aima-mapping-resume.json",
 )
+BLOCK_PYMUPDF_IMPORT = """
+import importlib.abc
+import runpy
+import sys
+
+class BlockPyMuPDF(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "pymupdf" or fullname.startswith("pymupdf."):
+            raise ModuleNotFoundError("PyMuPDF import blocked by test")
+
+sys.meta_path.insert(0, BlockPyMuPDF())
+script, *arguments = sys.argv[1:]
+sys.argv = [script, *arguments]
+runpy.run_path(script, run_name="__main__")
+"""
 
 
 def _copy_artifacts(destination: Path) -> dict[str, bytes]:
@@ -34,6 +49,26 @@ def _run_check(out_dir: Path) -> subprocess.CompletedProcess[str]:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        check=False,
+    )
+
+
+def _run_without_pymupdf(command: str, out_dir: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            BLOCK_PYMUPDF_IMPORT,
+            str(SCRIPT),
+            command,
+            "--out-dir",
+            str(out_dir),
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
         check=False,
     )
 
@@ -53,6 +88,22 @@ def test_check_replays_map_and_reports_artifact_drift(tmp_path: Path) -> None:
     assert "-ligne ajoutee" in drift.stderr
 
     assert {name: (ARTIFACT_DIR / name).read_bytes() for name in FILES} == snapshots
+
+
+def test_check_does_not_import_pymupdf(tmp_path: Path) -> None:
+    _copy_artifacts(tmp_path)
+
+    result = _run_without_pymupdf("check", tmp_path)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_toc_reports_missing_pymupdf_clearly(tmp_path: Path) -> None:
+    result = _run_without_pymupdf("toc", tmp_path)
+
+    assert result.returncode == 1
+    assert "pymupdf absent" in result.stderr
+    assert "commande toc" in result.stderr
 
 
 @pytest.mark.parametrize(
