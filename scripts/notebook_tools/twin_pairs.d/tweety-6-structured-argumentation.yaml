@@ -31,3 +31,14 @@
       Python pour leur exécution. Cette complémentarité, déjà portée par
       known_differences, reste intacte ; le nouvel opener et le déplacement de
       provenance ne changent aucun contenu calculé.
+    - >-
+      Audit firsthand 2026-11-08 (claude-cloud-hors-flotte) : relecture des
+      deux carnets et de leurs sorties enregistrées. Python JPype et C# IKVM
+      retrouvent cinq arguments, deux attaques symétriques entre d et !d et
+      l'extension grounded des arguments pour b, c et a ; le moteur C# manuel
+      concorde sur cet exemple et reste limité au rebut de conclusion sommitale.
+      Python illustre aussi DeLP, ABA, déductif et ASP ; ces quatre formalismes
+      sont conceptuels côté C#. Le seul changement depuis l'audit précédent est
+      la conversion du séparateur Markdown de la note finale C# de --- en *** ;
+      sa provenance et ses liens restent intacts. Code et sorties inchangés,
+      aucune nouvelle exécution ni modification des formalismes ou valeurs.
