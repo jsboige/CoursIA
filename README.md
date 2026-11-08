@@ -518,7 +518,7 @@ s'installent directement via leur `requirements.txt`.
 | QuantConnect | `QuantConnect/Python/QC-Py-01-Setup.ipynb` | `requirements.txt` |
 | Lean | `SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb` | `SymbolicAI/Lean/scripts/setup_wsl_python.sh`, `SymbolicAI/Lean/scripts/validate_lean_setup.py` |
 | Planners | `SymbolicAI/Planners/00-Environment/Planners-0-Setup.ipynb` | `requirements.txt` ; `SymbolicAI/scripts/install_clingo.py` |
-| SemanticWeb | `SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb` | kernel .NET Interactive |
+| SemanticWeb | `SymbolicAI/SemanticWeb/SW-01-Setup-CSharp.ipynb` | kernel .NET Interactive |
 | SmartContracts | `SymbolicAI/SmartContracts/00-Foundations/SC-01-Setup-Foundry-Python.ipynb`, `SC-02-Setup-Web3py-Python.ipynb` | `SymbolicAI/SmartContracts/setup_env.py`, `SymbolicAI/SmartContracts/scripts/setup_wsl_smartcontracts.sh` |
 | Tweety | `SymbolicAI/Tweety/Tweety-01-Setup-Python.ipynb` | `tweety_init.py` (JDK auto-télécharge) |
 | Argument Analysis | `SymbolicAI/Argument_Analysis/Argumentation-08c-UI-Configuration-Python.ipynb` | `install_jdk_portable.py` |
