@@ -2500,11 +2500,27 @@ def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
                 snapshot, _calls, _stats = gh_snapshot.ensure_comments(
                     repo, numbers, snapshot)
                 gh_snapshot.save_snapshot(repo, snapshot)
-        except gh_snapshot.SnapshotLockTimeout:
+        except gh_snapshot.SnapshotLockTimeout as exc:
             # Une autre lane de la machine rafraichit : on consomme SON
             # instantane plutot que de le concurrencer. La lecture reste
             # correcte (les entrees fraiches sont servies), la performance
             # est celle de la lane qui a paye le rafraichissement.
+            # #22983 -- SAUF que la fenetre primee par l'autre lane n'est
+            # pas forcement la notre : les stamps frais couvrent SA
+            # fenetre, et le refus STRICT qui suit (« l'instantane local ne
+            # peut pas servir la fenetre de claims ») etait MUET -- aucun
+            # ``fetch_failures`` n'est ecrit par ce repli, le quota paraît
+            # sain. Mesure du 08/11 : verrou tenu ~7 min par le priming du
+            # coordinateur (phase reseau sous verrou, ecriture de 50 Mo),
+            # deux tirages fail-CLOSED 07:45Z/07:50Z, tiers servi a 07:56Z
+            # apres liberation. Ce repli se NOMME, comme tous les chemins
+            # None de la mission.
+            print(
+                f"[22983] priming ecarte : {exc} -- repli sur l'instantane "
+                "disque, dont les stamps couvrent la fenetre de l'AUTRE "
+                "lane, pas celle de ce tirage (cause du fail-CLOSED si le "
+                "refus STRICT suit)",
+                file=sys.stderr)
             snapshot = gh_snapshot.load_snapshot(repo)
         _BELT_SNAPSHOT = snapshot
     except Exception as exc:  # noqa: BLE001 - l'instantane est un confort, pas un gate

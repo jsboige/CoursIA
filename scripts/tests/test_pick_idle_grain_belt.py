@@ -3622,3 +3622,56 @@ def test_un_RELEASED_qui_porte_un_marqueur_plus_bas_nest_pas_saute(monkeypatch):
     monkeypatch.setattr(pig, "_issue_comments", lambda n: ([mixed], ""))
     monkeypatch.setattr(pig, "_issue_body", lambda n: "")
     assert pig.has_recent_delivery_marker(24590) is True
+
+
+def test_belt_snapshot_prime_lock_timeout_names_cause(monkeypatch, capsys):
+    """#22983 volet 3 : le repli ``SnapshotLockTimeout`` se NOMME.
+
+    Le repli consomme l'instantane disque tel quel -- ses stamps couvrent la
+    fenetre de l'AUTRE lane, pas celle de ce tirage. Avant le fix, le refus
+    STRICT qui suivait etait muet (aucun ``fetch_failures`` ecrit, le quota
+    paraissait sain). Mesure du 08/11 : deux tirages fail-CLOSED pendant la
+    detention du verrou par le priming du coordinateur, tiers servi apres
+    liberation. Le repli imprime maintenant sa cause sur stderr, comme tous
+    les chemins None de la mission.
+    """
+    import contextlib
+
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", None)
+
+    class _FakeSnapshotLockTimeout(TimeoutError):
+        pass
+
+    disk_snapshot = {"meta": {"comment_stamps": {}}, "comments": {},
+                     "issues": {}}
+
+    class _FakeGhSnapshot:
+        SnapshotLockTimeout = _FakeSnapshotLockTimeout
+
+        @contextlib.contextmanager
+        def snapshot_lock(self, repo, timeout=120.0):
+            raise _FakeSnapshotLockTimeout(
+                f"verrou de l'instantane non obtenu apres {timeout:g} s")
+            yield  # pragma: no cover - jamais atteint
+
+        def load_snapshot(self, repo):
+            return disk_snapshot
+
+        def save_snapshot(self, repo, snapshot):  # pragma: no cover
+            raise AssertionError("save_snapshot atteint hors verrou")
+
+        def ensure_comments(self, repo, numbers, snapshot):  # pragma: no cover
+            raise AssertionError("ensure_comments atteint hors verrou")
+
+    fake = _FakeGhSnapshot()
+    monkeypatch.setattr(pig, "_gh_snapshot_module", lambda: fake)
+
+    pig._belt_snapshot_prime("jsboige/CoursIA", [1, 2, 3])
+
+    err = capsys.readouterr().err
+    assert "[22983] priming ecarte" in err
+    assert "verrou de l'instantane non obtenu apres 120 s" in err
+    assert "l'AUTRE lane" in err
+    # Le repli rend bien l'instantane disque : le tirage continue dessus.
+    assert pig._BELT_SNAPSHOT is disk_snapshot
