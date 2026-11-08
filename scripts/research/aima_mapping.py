@@ -1041,7 +1041,7 @@ def cmd_check(args) -> int:
     le role de `toc`.
     """
     rc = 0
-    for name, pdf_name in (("aima3e-toc.csv", PDF_3E), ("aima4e-toc.csv", PDF_4E)):
+    for name in ("aima3e-toc.csv", "aima4e-toc.csv"):
         path = args.out_dir / name
         if not path.exists():
             sys.stderr.write(f"absent : {path}\n")
