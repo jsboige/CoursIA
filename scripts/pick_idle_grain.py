@@ -9290,6 +9290,59 @@ def belt_filter(
     return kept_with_cap
 
 
+def resolve_belt_families(pool: list[dict], issue_to_family: dict | None,
+                           series: dict | None, *,
+                           measured: bool = True) -> dict:
+    """Zone de chaque grain du tapis : resolue, comptee, et nommee si absente.
+
+    La resolution de famille vivait dans `weight()` -- donc dans la voie
+    PONDEREE. Le tapis (`--belt`) trie et retient sans passer par `weight()` :
+    la zone restait absente de chaque pick, et le facteur de saturation (le
+    seul endroit ou la polarite `consolidation` pese -- une zone saturee a
+    besoin de son REMEDE, pas d'une instance de plus) ne jouait donc jamais
+    en mode tapis.
+
+    Mesure du 2026-11-07 (issue #25082, mesure 4) : `family` valait `null`
+    sur 50 tirages sur 50, et le facteur de saturation etait inerte sur la
+    totalite de la surface tiree.
+
+    Cet instrument ne change AUCUN tirage : il resout et il compte. La
+    repondersion qui consommera ces zones (points A et B de l'issue) est une
+    autre PR ; celle-ci n'eprouve que la mesure, et elle la rend lisible.
+
+    Trois etats sont distingues, parce que « zone nulle » veut dire trois
+    choses differentes qu'il ne faut pas confondre :
+
+    - **mesure faite, zone trouvee** : la zone est nommee ;
+    - **mesure faite, zone absente** : le grain ne porte aucune zone
+      (issue hors serie, ou zone jamais renommee dans le texte) ;
+    - **mesure NON faite** : la saturation n'a pas ete mesuree (echec de
+      l'organe amont). La zone est alors absente PARCE QUE RIEN n'a ete
+      mesure -- pas parce que le grain n'en porte pas. Les deux se
+      confondent dans un `null`, et cette confusion est exactement ce que la
+      mesure 4 reprochait a l'organe.
+    """
+    families = tuple(series or ())
+    resolved = 0
+    for it in pool:
+        fam = resolve_family(it, issue_to_family or {}, families, series or {})
+        it["family"] = fam
+        it["family_new_notebooks"] = (
+            ((series or {}).get(fam) or {}).get("new_notebooks", 0)
+            if fam else 0
+        )
+        if fam:
+            resolved += 1
+    total = len(pool)
+    return {
+        "measured": bool(measured),
+        "resolved": resolved,
+        "total": total,
+        "ratio": round(resolved / total, 3) if total else None,
+        "zones": sorted({it["family"] for it in pool if it.get("family")}),
+    }
+
+
 def draw_belt(
     admitted: list[dict],
     args,
@@ -12361,6 +12414,20 @@ def main(argv: list[str] | None = None) -> int:
                         + (f" (+{len(_origami_parked) - 8})"
                            if len(_origami_parked) > 8 else ""))
         belt_pool.sort(key=belt_sort_key)
+        # #25082 point C -- la zone de chaque grain, resolue et COMPTEE.
+        # La resolution vivait dans `weight()` (voie ponderee) : le tapis ne
+        # passe pas par elle, donc la zone restait absente de chaque pick et
+        # le facteur de saturation ne jouait jamais. Mesure du 2026-11-07 :
+        # `family` valait `null` sur 50 tirages sur 50.
+        belt_family_signal = resolve_belt_families(
+            belt_pool, issue_to_family, series, measured=series_err is None)
+        if not belt_family_signal["measured"]:
+            _belt_phase("zone des grains: NON MESUREE (l'organe de saturation "
+                        "n'a pas repondu -- l'absence de zone ici ne dit rien "
+                        "sur le grain)")
+        else:
+            _belt_phase(f"zone des grains: {belt_family_signal['resolved']}"
+                        f"/{belt_family_signal['total']} resolue(s)")
         _belt_phase(f"pool charge: {len(belt_pool)} candidates "
                     f"(apres belt_filter)")
         if _epic_drops:
@@ -12806,6 +12873,11 @@ def main(argv: list[str] | None = None) -> int:
                                 for n, c in belt_dropped_validate],
                 },
                 "picks": belt_picks,
+                # #25082 point C -- l'etat de la resolution de zone, sur le
+                # tirage lui-meme. `measured: false` se distingue de
+                # `resolved: 0` : le premier dit « l'organe amont n'a pas
+                # repondu », le second dit « le grain ne porte aucune zone ».
+                "family_signal": belt_family_signal,
                 # #24373 : les EPICs Origami parques (le pli suivant n'est pas
                 # deplie -- geste reserve au coordinateur). Ils ne sont pas
                 # servis aux lanes ; le tableau du coordinateur les affiche
