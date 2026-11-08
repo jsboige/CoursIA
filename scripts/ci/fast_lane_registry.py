@@ -3727,3 +3727,47 @@ TRANCHE39: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 40 -- garde NATIVE (#20188, critere 2) : single-source du PCM par
+# poches. Aucun workflow d'origine a absorber : la garde nee ici.
+#
+# Le module canonique MultiStrategyPouchesPCM vit dans
+# projects/SharedPCM/pouches_pcm.py (#21134, #21140) ; les copies embarquees
+# de la famille MultiStrategyPCM qui restent sont des exceptions DECLAREES
+# dans projects/SharedPCM/embedded_copies.json (gel delibere #18923,
+# kit partenaire, cellules d'enseignement). Le manifeste figure dans
+# `paths` : une revision qui declare -- ou retire -- une copie rejoue la
+# garde dont elle change la portee (meme raison que
+# slot_reservations.json).
+#
+# pre_argv : le self-test est le CONTROLE POSITIF exige par le critere 2 --
+# une copie volontairement modifiee doit faire rougir la garde (scenario
+# S1-drift-positive-control). La garde ne rend son verdict que si son propre
+# controle positif vient de passer : un detecteur qui ne prouve pas qu'il
+# tire est indiscernable d'un detecteur debranche (#11685, #12817).
+#
+# Pas de needs_base : le verdict est un ETAT de l'arbre (pas un delta), un
+# rouge ne peut pas heriter de main.
+# ---------------------------------------------------------------------------
+TRANCHE40: list[Guard] = [
+    Guard(
+        name="PCM single-source (copies declarees)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/QuantConnect/**",
+            "scripts/ci/check_pcm_single_source.py",
+            "MyIA.AI.Notebooks/QuantConnect/projects/SharedPCM/embedded_copies.json",
+            "MyIA.AI.Notebooks/QuantConnect/projects/SharedPCM/pouches_pcm.py",
+        ],
+        pre_argv=[
+            "python", "scripts/ci/check_pcm_single_source.py",
+            "--selftest",
+        ],
+        argv=[
+            "python", "scripts/ci/check_pcm_single_source.py",
+        ],
+        blocking=True,
+        shadow_reason=PILOT_SHADOW_NATIF,
+    ),
+]

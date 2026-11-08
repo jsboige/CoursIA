@@ -68,3 +68,14 @@ canonique sur ce projet — séries d'équité identiques bit pour bit, Sharpe n
 changement de résultat. S'y ajoutent
 `partner-course-quant-trading/kit-transitoire` et la cellule pédagogique du
 notebook `QC-Py-14` (déclarée copie d'enseignement).
+
+## Garde CI : copies embarquées déclarées
+
+Cette duplication restante est **mesurée** : le manifeste
+[`embedded_copies.json`](embedded_copies.json) déclare chaque copie embarquée
+(empreinte sha256 du bloc de classe + motif), et la garde
+`scripts/ci/check_pcm_single_source.py` rougit sur copie non déclarée, copie
+déclarée modifiée sans re-déclaration, doublon de la classe canonique hors de
+ce dossier, ou déclaration périmée. Modifier volontairement une copie
+declared = mettre à jour son empreinte (`--emit`) **et** son motif dans la
+même PR — c'est le contrôle du critère 2 de #20188.

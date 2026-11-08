@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "canonical": "MyIA.AI.Notebooks/QuantConnect/projects/SharedPCM/pouches_pcm.py",
+  "note": "Registre des copies embarquees declarees de la famille MultiStrategyPCM (critere 2 de #20188). La garde scripts/ci/check_pcm_single_source.py rougit sur copie non declaree (UNDECLARED), copie declaree modifiee sans re-declaration (DRIFT -- une copie volontairement modifiee DOIT rougir : re-emettre l'empreinte via --emit et documenter le motif dans la meme PR), declaration perimee (STALE) et doublon du canonique hors SharedPCM (CANONICAL_DUPLICATE).",
+  "copies": [
+    {
+      "path": "MyIA.AI.Notebooks/QuantConnect/projects/TrendWeatherPointInTime/portfolio_construction.py",
+      "class": "MultiStrategyPCM",
+      "sha256": "ab04d848b9d96c49a8b4f1fc4755f95a1179e7f9746e0053f34ea732282b1993",
+      "motif": "gel delibere : la candidate tw-pit de la campagne d'ombre #18923 epingle l'empreinte du fichier (6c325cd73df0) ; equivalence au canonique mesuree le 2026-11-04 dans #24631 (series d'equite identiques bit pour bit). Deduplication possible a la fin de la campagne.",
+      "declared_in": "#21134"
+    },
+    {
+      "path": "MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/main.py",
+      "class": "MultiStrategyPCM",
+      "sha256": "f2c60ab9cf46a868d1c3f50b94ebc06cb872dc9462066d4da0778124bb5f9208",
+      "motif": "kit transitoire du cours partenaire : livrable autonome hors bibliotheque QC, variante F du constat initial (mode base, sans intent), mesuree par #20236.",
+      "declared_in": "#20188"
+    },
+    {
+      "path": "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.ipynb",
+      "class": "MultiStrategyPCM",
+      "sha256": "b199f71ccda9a6ff367a3d63f91aa0e2fc143f7142b5a9bf3a0cd9ecfb085823",
+      "motif": "cellule pedagogique du notebook QC-Py-14 : copie d'enseignement declaree (README SharedPCM), le notebook presente la construction pas a pas avant l'abstraction.",
+      "declared_in": "#21134"
+    },
+    {
+      "path": "MyIA.AI.Notebooks/QuantConnect/projects/_docs/SESSION5_PATTERNS.md",
+      "class": "MultiStrategyPCM",
+      "sha256": "d5d6af6938a74b5479d568d39b2bd58df30584551ec1066c6743d3e727463370",
+      "motif": "doc de session Phase 1 (2026-03-14) anterieure a l'extraction : le pattern y est enseigne comme extrait de code, pas comme module vivant.",
+      "declared_in": "#20188"
+    }
+  ]
+}
