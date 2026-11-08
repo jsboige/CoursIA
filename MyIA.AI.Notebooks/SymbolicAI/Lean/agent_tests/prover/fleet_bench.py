@@ -140,7 +140,8 @@ def _otel_metrics(stdout: str) -> dict:
 
 
 def _prover_command(demo_id: int, provider: str, iterations: int,
-                    workflow_timeout_s: int) -> list[str]:
+                    workflow_timeout_s: int,
+                    lock_owner_pid: int | None = None) -> list[str]:
     """Construit la commande du lanceur racine, dont la CLI est positional."""
     return [
         sys.executable, "-u", str(RUNNER), str(demo_id),
@@ -149,6 +150,9 @@ def _prover_command(demo_id: int, provider: str, iterations: int,
         "--provider", provider, "--local-provider", provider,
         "--coordinator-provider", provider, "--tactic-provider", provider,
         "--search-provider", provider, "--critic-provider", provider,
+        "--diagnosis-provider", provider, "--director-provider", provider,
+        *(["--reuse-lock-pid", str(lock_owner_pid)]
+          if lock_owner_pid is not None else []),
     ]
 
 
@@ -177,15 +181,92 @@ def _validate_demo_target(demo_id: int) -> Path:
     return _demo_file(demo_id, DEMOS)
 
 
+def _run_arms_with_restore(target: Path, run_baseline, run_fleet) -> tuple[dict, dict]:
+    """Relance le second bras depuis les bytes d’origine et restaure toujours."""
+    original = target.read_bytes()
+    try:
+        baseline = run_baseline()
+        target.write_bytes(original)
+        fleet = run_fleet()
+        return baseline, fleet
+    finally:
+        target.write_bytes(original)
+
+
+def _execute_comparison(args, endpoint: str, token: str | None,
+                        payload: dict) -> None:
+    target = _validate_demo_target(args.demo_id)
+    if str(AGENT_TESTS_DIR) not in sys.path:
+        sys.path.insert(0, str(AGENT_TESTS_DIR))
+    from prover.tree_lock import (
+        acquire_tree_lock, find_lean_project_root, release_tree_lock,
+    )
+    tree_root = find_lean_project_root(target)
+    if tree_root is None:
+        raise BenchError("DEMO_PROJECT_UNAVAILABLE",
+                         f"Aucun projet Lean ne contient {target}.")
+    lock_path, lock_message = acquire_tree_lock(tree_root, args.demo_id)
+    if lock_path is None:
+        raise BenchError("PROVER_TREE_LOCKED", lock_message)
+    try:
+        def baseline_run():
+            result = _launch_arm(
+                "baseline", args.demo_id, args.baseline_provider,
+                args.iterations, args.timeout_s, lock_owner_pid=os.getpid(),
+            )
+            payload["arms"].append(result)
+            if not result["success"]:
+                diagnostic = result.get("diagnostic")
+                message = "La baseline n’a pas fourni une preuve vérifiée."
+                if diagnostic:
+                    message += f" Diagnostic: {diagnostic}"
+                raise BenchError(result.get("error_code") or "BASELINE_FAILED", message)
+            return result
+
+        def fleet_run():
+            probe_endpoint(endpoint, token, args.probe_timeout_s)
+            result = _launch_arm(
+                "fleet", args.demo_id, "claudish", args.iterations,
+                args.timeout_s, endpoint, token, lock_owner_pid=os.getpid(),
+            )
+            payload["arms"].append(result)
+            return result
+
+        baseline, fleet = _run_arms_with_restore(target, baseline_run, fleet_run)
+        payload["comparison"] = {
+            "status": "measured" if fleet["success"] else "inconclusive",
+            "same_demo": True, "same_iteration_budget": True,
+            "same_seed_applied": False,
+            "same_original_file_bytes": True,
+            "proof_parity": baseline["proof_success"] == fleet["proof_success"],
+            "latency_delta_s_fleet_minus_baseline": round(
+                fleet["elapsed_s"] - baseline["elapsed_s"], 3),
+            "latency_improved": fleet["elapsed_s"] < baseline["elapsed_s"],
+            "cost_delta_usd_fleet_minus_baseline": None,
+            "cost_limitation": "Le harnais ne fournit pas de coût vérifiable.",
+        }
+        if not fleet["success"]:
+            diagnostic = fleet.get("diagnostic")
+            message = "Le bras fleet n’a pas fourni une preuve vérifiée."
+            if diagnostic:
+                message += f" Diagnostic: {diagnostic}"
+            raise BenchError(fleet.get("error_code") or "FLEET_RUN_FAILED", message)
+    finally:
+        # The canonical prover lock remains held while bytes are restored.
+        release_tree_lock(lock_path)
+
+
 def _launch_arm(arm: str, demo_id: int, provider: str, iterations: int,
                 timeout_s: float, endpoint: str | None = None,
-                token: str | None = None) -> dict:
+                token: str | None = None,
+                lock_owner_pid: int | None = None) -> dict:
     env = os.environ.copy()
     if arm == "fleet":
         provider = "claudish"
         env["CLAUDISH_BASE_URL"] = endpoint or ""
         env["CLAUDISH_PROXY_KEY"] = token or ""
-    command = _prover_command(demo_id, provider, iterations, int(timeout_s))
+    command = _prover_command(demo_id, provider, iterations, int(timeout_s),
+                              lock_owner_pid)
     started = time.monotonic()
     try:
         completed = subprocess.run(command, cwd=PROVER_DIR.parent, env=env,
@@ -362,39 +443,7 @@ def main(argv: list[str] | None = None) -> int:
         "arms": [], "comparison": {"status": "incomplete"},
     }
     try:
-        _validate_demo_target(args.demo_id)
-        # Baseline d'abord : un endpoint absent produit tout de même un rapport
-        # partiel avec la mesure baseline si son backend est disponible.
-        baseline = _launch_arm("baseline", args.demo_id, args.baseline_provider,
-                               args.iterations, args.timeout_s)
-        payload["arms"].append(baseline)
-        if not baseline["success"]:
-            diagnostic = baseline.get("diagnostic")
-            message = "La baseline n’a pas fourni une preuve vérifiée."
-            if diagnostic:
-                message += f" Diagnostic: {diagnostic}"
-            raise BenchError(baseline.get("error_code") or "BASELINE_FAILED", message)
-        probe_endpoint(endpoint, token, args.probe_timeout_s)
-        fleet = _launch_arm("fleet", args.demo_id, "claudish", args.iterations,
-                            args.timeout_s, endpoint, token)
-        payload["arms"].append(fleet)
-        payload["comparison"] = {
-            "status": "measured" if fleet["success"] else "inconclusive",
-            "same_demo": True, "same_iteration_budget": True,
-            "same_seed_applied": False,
-            "proof_parity": baseline["proof_success"] == fleet["proof_success"],
-            "latency_delta_s_fleet_minus_baseline": round(
-                fleet["elapsed_s"] - baseline["elapsed_s"], 3),
-            "latency_improved": fleet["elapsed_s"] < baseline["elapsed_s"],
-            "cost_delta_usd_fleet_minus_baseline": None,
-            "cost_limitation": "Le harnais ne fournit pas de coût vérifiable.",
-        }
-        if not fleet["success"]:
-            diagnostic = fleet.get("diagnostic")
-            message = "Le bras fleet n’a pas fourni une preuve vérifiée."
-            if diagnostic:
-                message += f" Diagnostic: {diagnostic}"
-            raise BenchError(fleet.get("error_code") or "FLEET_RUN_FAILED", message)
+        _execute_comparison(args, endpoint, token, payload)
     except BenchError as exc:
         payload["error"] = {"code": exc.code, "message": str(exc)}
         try:

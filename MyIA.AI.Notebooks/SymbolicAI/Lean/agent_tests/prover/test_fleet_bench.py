@@ -1,5 +1,6 @@
 """Contrats conservateurs du driver fleet; aucun appel de provider n'est lancé."""
 import json
+import os
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -114,7 +115,7 @@ def test_demo_config_requires_a_materialized_lean_file(tmp_path):
 
 
 def test_arguments_match_real_outer_prover_parser(monkeypatch):
-    command = fleet_bench._prover_command(0, "claudish", 2, 30)
+    command = fleet_bench._prover_command(0, "claudish", 2, 30, 12345)
     monkeypatch.setattr(sys, "argv", [command[2], *command[3:]])
     args = prover_launcher.parse_args()
     assert args.demo_id == 0
@@ -123,6 +124,42 @@ def test_arguments_match_real_outer_prover_parser(monkeypatch):
     assert args.workflow_timeout == 30
     assert args.coordinator_provider == args.tactic_provider == "claudish"
     assert args.search_provider == args.critic_provider == "claudish"
+    assert args.diagnosis_provider == args.director_provider == "claudish"
+    assert args.reuse_lock_pid == 12345
+    assert set(prover_launcher._effective_agent_providers(args).values()) == {"claudish"}
+
+
+def test_between_arms_and_finally_restore_exact_original_bytes(tmp_path):
+    target = tmp_path / "target.lean"
+    original = b"theorem original : True := by\n  sorry\n"
+    target.write_bytes(original)
+    seen_by_fleet = []
+
+    def baseline():
+        target.write_bytes(b"baseline mutation")
+        return {"success": True}
+
+    def fleet():
+        seen_by_fleet.append(target.read_bytes())
+        target.write_bytes(b"fleet mutation")
+        raise RuntimeError("fleet arm failed")
+
+    with pytest.raises(RuntimeError, match="fleet arm failed"):
+        fleet_bench._run_arms_with_restore(target, baseline, fleet)
+    assert seen_by_fleet == [original]
+    assert target.read_bytes() == original
+
+
+def test_runner_reuses_only_the_live_parent_tree_lock(tmp_path):
+    from prover.tree_lock import acquire_tree_lock, release_tree_lock
+
+    lock_path, _message = acquire_tree_lock(tmp_path, demo_id=0)
+    assert lock_path is not None
+    try:
+        assert prover_launcher._parent_lock_is_valid(tmp_path, os.getpid())
+        assert not prover_launcher._parent_lock_is_valid(tmp_path, os.getpid() + 1)
+    finally:
+        release_tree_lock(lock_path)
 
 
 def test_result_success_alone_does_not_claim_proof_without_zero_sorry(tmp_path):
