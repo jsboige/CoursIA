@@ -258,3 +258,12 @@ def test_chronologie_conteneur():
 def test_dossier_keep_survit_aux_neutres_et_aux_tranches():
     assert dg.recent_delivery_state([_dossier("KEEP"), TRANCHE, "suivi"])
     assert not dg.recent_delivery_state([_dossier("KEEP"), "[NOT-DELIVERED]", TRANCHE])
+
+
+def test_tranche_sans_lane_ne_change_pas_l_etat_du_fil():
+    for tranche in ("[DELIVERED] -- paths: a.py", "[DELIVERED] paths: a.py"):
+        assert not dg.recent_delivery_state([tranche, "suivi"])
+        assert dg.recent_delivery_state([EPIC_WIDE, tranche])
+        assert not dg.recent_delivery_state([EPIC_WIDE, "[NOT-DELIVERED]", tranche])
+    assert dg.recent_delivery_state(["[DELIVERED] -- travail termine"])
+    assert dg.recent_delivery_state(["[DELIVERED] -- travail termine\npaths: a.py"])

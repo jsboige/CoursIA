@@ -159,6 +159,10 @@ DELIVERED_LANE_MARKER_RE = re.compile(
 
 PATHS_CLAUSE_RE = re.compile(r"\bpaths\s*:", re.IGNORECASE)
 
+# Compatibilite du filtre rapide avec les en-tetes sans lane.
+_RECENT_DELIVERED_RE = re.compile(
+    r"^\s*(?:#{1,6}\s*)?\[DELIVERED\](?=\s|:|$)", re.MULTILINE)
+
 # --- Les trois etats d'un fil --------------------------------------------------
 
 ATTESTED = "attested"   # le fil porte une attestation VIVANTE
@@ -267,7 +271,7 @@ def is_tranche_marker(body: str) -> bool:
         return False
     seen = False
     for line in body.splitlines():
-        if DELIVERED_LANE_MARKER_RE.match(line):
+        if _RECENT_DELIVERED_RE.match(line):
             seen = True
             if not PATHS_CLAUSE_RE.search(line):
                 return False
@@ -494,9 +498,6 @@ def strip_code(text: str) -> str:
     return _INLINE_CODE_RE.sub(" ", stripped)
 
 
-# Le filtre rapide accepte aussi les anciens en-tetes DELIVERED sans lane.
-_RECENT_DELIVERED_RE = re.compile(
-    r"^\s*(?:#{1,6}\s*)?\[DELIVERED\](?=\s|:|$)", re.MULTILINE)
 CLOSURE_ANNOUNCEMENT_RE = re.compile(
     r"^\s*(?:#{1,6}\s*)?Fermeture sur dossier\b[^\n]*?\bverdict\s+CLOSE\b",
     re.IGNORECASE | re.MULTILINE)

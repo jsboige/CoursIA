@@ -5152,6 +5152,9 @@ def test_recent_delivery_marker_survit_au_commentaire_neutre(monkeypatch):
 def test_recent_delivery_marker_ignore_tranche_et_respecte_retractation(monkeypatch):
     tranche = "[DELIVERED] lane po:CoursIA -- PR #1 -- paths: scripts/**"
     for bodies, expected in [([tranche, "neutre"], False),
+                             (["[DELIVERED] -- paths: a.py", "neutre"], False),
+                             (["[DELIVERED] paths: a.py"], False),
+                             (["[DELIVERED] -- termine\npaths: a.py"], True),
                              (["[INFO] candidate-delivered", tranche], True),
                              (["[INFO] candidate-delivered", "[NOT-DELIVERED]", tranche], False)]:
         monkeypatch.setattr(pig.subprocess, "run", _FakeRecentComments(
