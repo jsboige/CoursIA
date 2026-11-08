@@ -68,8 +68,19 @@ def check(base_ref: str, paths: list[str]) -> int:
         try:
             head_data = (REPO_ROOT / path).read_bytes()
         except FileNotFoundError:
-            print(f"OK {path}: carnet supprime dans HEAD")
-            continue
+            # Un checkout sparse peut omettre un carnet encore present dans
+            # HEAD. Seule l'absence dans l'arbre Git prouve une suppression.
+            try:
+                head_data = git_blob("HEAD", path)
+            except RuntimeError as exc:
+                print(f"::error file={path}::HEAD: {exc}")
+                return 2
+            if head_data is None:
+                print(f"OK {path}: carnet supprime dans HEAD")
+                continue
+        except OSError as exc:
+            print(f"::error file={path}::lecture HEAD: {exc}")
+            return 2
         try:
             head_defects = defects_from_bytes(head_data, path)
         except (OSError, ValueError) as exc:

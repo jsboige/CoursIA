@@ -69,3 +69,19 @@ def test_git_base_legacy_count_is_tolerated_but_growth_fails(tmp_path, monkeypat
     assert "temoin.ipynb" in report
     assert "1 -> 2" in report
     assert "cellules fautives: 0 (outputs), 1 (execution_count)" in report
+
+    # Le meme mauvais HEAD ne doit pas etre lu comme une suppression quand
+    # le checkout sparse n'a pas materialise le fichier suivi.
+    subprocess.run(["git", "add", path], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "regression commitee"],
+                   cwd=tmp_path, check=True)
+    notebook_path.unlink()
+    assert ratchet.check(base, [path]) == 1
+    assert "1 -> 2" in capsys.readouterr().out
+
+    # Une vraie suppression commitee, elle, reste acceptee.
+    subprocess.run(["git", "rm", "--cached", path], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "suppression du carnet"],
+                   cwd=tmp_path, check=True)
+    assert ratchet.check(base, [path]) == 0
+    assert "supprime dans HEAD" in capsys.readouterr().out
