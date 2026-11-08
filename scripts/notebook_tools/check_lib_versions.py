@@ -80,6 +80,38 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MANIFEST = Path(__file__).resolve().parent / "lib_versions_manifest.json"
 
+# Racine des series de carnets. Une canonique **par serie** s'ecrit
+# relative a ce prefixe (`RL`, `ML/DataScienceWithAgents/04-Vision`) : le
+# lecteur ne repetera pas le long prefixe a chaque entree.
+NOTEBOOKS_ROOT = "MyIA.AI.Notebooks"
+
+
+def series_path(notebook_relative: str) -> str:
+    """Chemin d'un carnet (ou d'un prefixe de serie) relatif aux series.
+
+    Un prefixe ecrit avec la racine des series (`MyIA.AI.Notebooks/RL`) et
+    un prefixe ecrit sans (`RL`) designent la meme serie : la normalisation
+    les ramene au meme etat.
+    """
+    prefix = NOTEBOOKS_ROOT + "/"
+    if notebook_relative.startswith(prefix):
+        return notebook_relative[len(prefix):]
+    return notebook_relative
+
+
+def _series_covers(series_key: str, notebook_relative: str) -> bool:
+    """Vrai si le prefixe de serie couvre le carnet, a la frontiere d'un segment.
+
+    `RL` couvre `RL/RL-06-DQN-Policy-Gradient-Python.ipynb` et
+    `RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb` ; il ne couvre pas
+    `RLance/...` -- la frontiere est un segment, pas un prefixe de chaines.
+    """
+    key = series_path(notebook_relative)
+    entry = series_key.strip("/")
+    if not entry:
+        return True
+    return key == entry or key.startswith(entry + "/")
+
 # Epinglages NuGet : `#r "nuget: IKVM, 8.15.0"`. La virgule peut suivre sans
 # espace (`nuget:pythonnet,3.1.0`) : le motif l'accepte.
 NUGET_PIN_RE = re.compile(
@@ -220,6 +252,98 @@ class Library:
     note: str = ""
     # Ecarts classes : version -> {decision, reason}
     divergences: dict[str, dict] = field(default_factory=dict)
+    # Canonique **PAR SERIE** : la version attendue peut differer d'une serie
+    # a l'autre (une serie epingle torch==2.14.0, une autre converge vers
+    # 2.13). Chaque entree porte un prefixe de chemin de serie, et la
+    # **plus longue** correspondance gagne -- un prefixe long decrit une
+    # sous-serie plus fine que son parent.
+    canonical_by_series: list[dict] = field(default_factory=list)
+    # Observer la version **reellement chargee** dans les sorties commitees.
+    # C'est un opt-in : seules les bibliotheques dont la version n'est
+    # portee par aucun epinglage (torch, numpy) sont relevees ainsi -- voir
+    # `observed_versions_from_payload`.
+    observe_outputs: bool = False
+
+    def resolve_series_canonicals(
+        self, repo_root: Path
+    ) -> tuple[list[tuple[str, str | None]], list[str]]:
+        """Resout les canoniques par serie : (liste (prefixe, version), erreurs).
+
+        Chaque prefixe est resolu **une fois** : un artefact de serie est lu
+        au runtime, et le relire par carnet multiplierait les lectures sans
+        changer le resultat.
+        """
+        resolved: list[tuple[str, str | None]] = []
+        errors: list[str] = []
+        for entry in self.canonical_by_series:
+            key = series_path(entry.get("series", "")).strip("/")
+            source = entry.get("canonical_source", "manifest")
+            if source == "artifact":
+                value, error = self._read_artifact(repo_root, entry)
+                if error:
+                    errors.append(f"{self.id} [{key}] : {error}")
+            else:
+                value, error = entry.get("canonical"), None
+            resolved.append((key, value))
+        return resolved, errors
+
+    def resolve_canonical_for(
+        self, repo_root: Path, notebook_relative: str
+    ) -> tuple[str | None, str | None]:
+        """Canonique applicable a UN carnet : la serie prime sur le defaut.
+
+        Une bibliotheque sans `canonical_by_series` garde le comportement
+        d'avant -- la canonique unique du manifeste. Une bibliotheque qui en
+        declare des series resout la **plus longue** correspondance, puis
+        retombe sur la canonique unique si aucune serie ne couvre le carnet.
+        """
+        if not self.canonical_by_series:
+            return self.resolve_canonical(repo_root)
+        entries, errors = self.resolve_series_canonicals(repo_root)
+        best: tuple[str, str | None] | None = None
+        for key, value in entries:
+            if not _series_covers(key, notebook_relative):
+                continue
+            if best is None or len(key) > len(best[0]):
+                best = (key, value)
+        if best is None:
+            return self.resolve_canonical(repo_root)
+        if best[1] is None:
+            detail = next(
+                (error for error in errors if f"[{best[0]}]" in error), ""
+            )
+            return None, detail or f"canonique de serie non resolue : {best[0]}"
+        return best[1], None
+
+    def _read_artifact(
+        self, repo_root: Path, entry: dict
+    ) -> tuple[str | None, str | None]:
+        """Lit la version epinglee dans un artefact de serie (`id==version`).
+
+        L'artefact est lu au runtime : le manifeste ne recopie pas la valeur,
+        il pointe vers le fichier qui la porte -- deux surfaces qui recopient
+        la meme valeur finissent par diverger, ce que l'organe existe pour
+        empecher.
+        """
+        rel = entry.get("organ_path", "")
+        artifact = repo_root / rel
+        if not artifact.is_file():
+            return None, f"artefact introuvable : {rel}"
+        try:
+            text = artifact.read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:
+            return None, f"artefact illisible : {rel} ({exc})"
+        pattern = re.compile(
+            rf"^\s*{re.escape(self.id)}\s*(==|>=)\s*([0-9][^\s#;]*)",
+            re.MULTILINE | re.IGNORECASE,
+        )
+        match = pattern.search(text)
+        if not match:
+            return None, (
+                f"contrainte {self.id}== ou {self.id}>= introuvable dans {rel} "
+                f"(serie {entry.get('series', '')})"
+            )
+        return match.group(2), None
 
     def resolve_canonical(self, repo_root: Path) -> tuple[str | None, str | None]:
         """Retourne (version canonique, erreur)."""
@@ -279,6 +403,17 @@ def load_manifest(path: Path) -> Manifest:
             local_symbol=entry.get("local_symbol", ""),
             foreign_provisioning=list(entry.get("foreign_provisioning", [])),
             note=entry.get("note", ""),
+            canonical_by_series=[
+                {
+                    "series": item.get("series", ""),
+                    "canonical": item.get("canonical"),
+                    "canonical_source": item.get("canonical_source", "manifest"),
+                    "organ_path": item.get("organ_path", ""),
+                    "note": item.get("note", ""),
+                }
+                for item in entry.get("canonical_by_series", [])
+            ],
+            observe_outputs=bool(entry.get("observe_outputs", False)),
             divergences={
                 d["version"]: {
                     "decision": d.get("decision", "to_converge"),
@@ -1199,6 +1334,78 @@ def _version_mentions(text: str, version: str) -> bool:
     return re.search(pattern, text) is not None
 
 
+# Version **chargee** relevee dans une sortie : au moins TROIS composantes
+# numeriques. La notation scientifique (`2.22e-16`) et les metriques (`0.4014`)
+# ne sont pas des versions : exiger trois composantes les ecarte, la ou un
+# motif plus permissif les aurait confondues avec des versions -- cas mesure
+# sur `3.2-Optimisateurs.ipynb` (`ecart max apres 1 pas NumPy vs torch =
+# 2.22e-16`) et `3.3-Regularisation.ipynb` (`numpy=0.4014 | torch=0.4007`).
+_OBSERVED_VERSION = r"(\d+\.\d+\.\d+(?:\.\d+)*(?:\+[0-9A-Za-z][0-9A-Za-z.+-]*)?)"
+
+
+def _observed_version_re(library_id: str) -> re.Pattern:
+    """Motif de releve de la version chargee d'une bibliotheque.
+
+    Le nom peut etre suivi de `_version` (forme JSON
+    `"torch_version": "2.14.0+cu126"`), d'un separateur (`torch 2.13.0`,
+    `torch=2.8.0`, `torch : 2.6.0`) ou d'une fin de ligne. Le nom doit
+    etre un mot entier : `torchvision` et `pytorch` ne sont pas `torch`.
+    """
+    return re.compile(
+        r"(?<![A-Za-z0-9_])"
+        + re.escape(library_id)
+        + r"(?:[_-]?version)?"
+        + r"[\"']?\s*(?::|=){0,2}\s*[\"']?"
+        + _OBSERVED_VERSION,
+        re.IGNORECASE,
+    )
+
+
+def _base_version(version: str) -> str:
+    """Version sans le tag de construction local (`+cu126`).
+
+    `2.14.0+cu126` est la **memere** release que `2.14.0`, pas une version
+    inferieure : le comparateur de versions traite un suffixe `+` comme un
+    marqueur de pre-publication, ce qui classerait `2.14.0+cu126` en dessous
+    de `2.14.0` -- un faux recul.
+    """
+    return version.split("+", 1)[0]
+
+
+def observed_versions_from_payload(
+    payload: dict, manifest: Manifest
+) -> dict[str, list[tuple[int, str, str]]]:
+    """Versions **chargees** relevees dans les sorties commitees.
+
+    Certaines bibliotheques n'apparaitrent dans aucune ligne d'epinglage :
+    la serie RL declare `torch>=2.0` dans son `requirements.txt`, jamais dans
+    une cellule, et la version reellement chargee ne se lit que dans les
+    sorties commitees. L'observation est un **opt-in** (`observe_outputs`) :
+    seules les bibliotheques declarees observees sont relevees.
+
+    Les sorties seules sont balayees : une version ecrite dans la SOURCE est
+    une intention, la mesure, c'est ce que le kernel a charge.
+
+    Retourne, par bibliotheque, la liste des triplets `(cellule, ligne,
+    version)` -- la ligne etant celle qui porte la version.
+    """
+    observed: dict[str, list[tuple[int, str, str]]] = {}
+    for lib_id, lib in manifest.libraries.items():
+        if not lib.observe_outputs:
+            continue
+        pattern = _observed_version_re(lib.id)
+        occurrences: list[tuple[int, str, str]] = []
+        for index, cell in enumerate(payload.get("cells", []) or []):
+            for text in _output_texts(cell):
+                for line in text.splitlines():
+                    for match in pattern.finditer(line):
+                        version = _base_version(_norm_version(match.group(1)))
+                        occurrences.append((index, line.strip(), version))
+        if occurrences:
+            observed[lib_id] = occurrences
+    return observed
+
+
 def _mention_finding(
     notebook: str,
     library: str,
@@ -1462,11 +1669,163 @@ def resolve_canonicals(
     return canonicals, errors
 
 
+class CanonicalResolver:
+    """Resout la canonique **applicable a un carnet**.
+
+    Une bibliotheque sans `canonical_by_series` garde sa canonique unique.
+    Une bibliotheque qui en declare resout la **plus longue** correspondance
+    de prefixe de serie -- un prefixe long decrit une sous-serie plus fine
+    que son parent -- puis retombe sur la canonique unique si aucune serie
+    ne couvre le carnet.
+
+    Les artefacts de serie sont lus **une fois** a la construction : le
+    resultat ne depend pas du carnet, et le relire par carnet serait un
+    gaspillage de lectures.
+    """
+
+    def __init__(self, manifest: Manifest, repo_root: Path):
+        self.manifest = manifest
+        self.repo_root = repo_root
+        self.flat, self.errors = resolve_canonicals(manifest, repo_root)
+        self._series: dict[str, list[tuple[str, str | None]]] = {}
+        for lib_id, lib in manifest.libraries.items():
+            if not lib.canonical_by_series:
+                continue
+            entries, errors = lib.resolve_series_canonicals(repo_root)
+            self._series[lib_id] = entries
+            self.errors.extend(errors)
+
+    def for_notebook(self, lib_id: str, relative: str) -> str | None:
+        """Canonique applicable au carnet `relative` (chemin relatif au depot)."""
+        entries = self._series.get(lib_id)
+        if not entries:
+            return self.flat.get(lib_id)
+        key = series_path(relative)
+        best: tuple[str, str | None] | None = None
+        for prefix, value in entries:
+            if prefix and not (key == prefix or key.startswith(prefix + "/")):
+                continue
+            if best is None or len(prefix) > len(best[0]):
+                best = (prefix, value)
+        if best is None:
+            return self.flat.get(lib_id)
+        return best[1]
+
+    def series_for(self, lib_id: str, relative: str) -> str:
+        """Prefixe de serie qui gouverne le carnet (vide si aucun)."""
+        entries = self._series.get(lib_id)
+        if not entries:
+            return ""
+        key = series_path(relative)
+        best = ""
+        for prefix, _value in entries:
+            if prefix and not (key == prefix or key.startswith(prefix + "/")):
+                continue
+            if len(prefix) > len(best):
+                best = prefix
+        return best
+
+
+def observed_findings(
+    notebook: str,
+    payload: dict,
+    manifest: Manifest,
+    resolver: CanonicalResolver,
+) -> list[dict]:
+    """Constats sur la version **reellement chargee** d'une bibliotheque.
+
+    L'epinglage declare ce que le carnet *demande* ; la sortie commitee dit
+    ce que le kernel a *charge*. Les deux peuvent diverger -- c'est exactement
+    le recul que #23941 a laisse passer : le carnet RL-01c a ete re-execute
+    sous torch 2.9.0 sans qu'aucune garde ne le voie, parce que torch n'etait
+    pas au manifeste.
+
+    Le constat porte sur la **sortie** ; une version ecrite dans la source
+    n'est pas une mesure de ce qui a ete charge.
+    """
+    findings: list[dict] = []
+    observed = observed_versions_from_payload(payload, manifest)
+    for lib_id, occurrences in sorted(observed.items()):
+        lib = manifest.libraries[lib_id]
+        canonical = resolver.for_notebook(lib_id, notebook)
+        if canonical is None:
+            # Aucune canonique pour cette serie : l'organe constate la
+            # version, il ne la juge pas.
+            continue
+        for cell, line, version in occurrences:
+            # La canonique d'une serie **observee** est un **plancher** : la
+            # serie tourne legitimement sous plusieurs versions voisines (2.13
+            # et 2.14 dans la serie RL, 2.13 a 2.14.1 dans 04-Vision), et elle
+            # converge vers le haut. Seul une version **inferieure** au
+            # plancher est un recul ; une version superieure n'est pas un
+            # defaut, c'est une serie qui avance.
+            if compare_versions(version, canonical) >= 0:
+                continue
+            if _allowlisted(manifest, lib_id, version, notebook):
+                continue
+            kind = "downgrade"
+            divergence = lib.divergences.get(version)
+            reason = (divergence or {}).get("reason", "")
+            if divergence and divergence.get("decision") == "justified":
+                kind = "divergence"
+            findings.append(
+                {
+                    "notebook": notebook,
+                    "library": lib_id,
+                    "kind": kind,
+                    "version": version,
+                    "canonical": canonical,
+                    "cell": cell,
+                    "line": line[:160],
+                    "reason": reason
+                    or (
+                        f"version chargee relevee dans les sorties commitees "
+                        f"({version}) differente de la canonique de la serie "
+                        f"({canonical})"
+                    ),
+                }
+            )
+    return findings
+
+
+def delta_observed_findings(
+    notebook: str,
+    base_payload: dict | None,
+    head_payload: dict,
+    manifest: Manifest,
+    resolver: CanonicalResolver,
+) -> list[dict]:
+    """Versions chargees **introduites** par la PR.
+
+    Meme semantique que les epinglages : une version deja chargee en base et
+    non touchee par la PR est une derive historique -- le recensement la
+    rapporte, la convergence la traite, la PR ne la porte pas. Seul compte
+    le constat sur une version que la base ne portait pas.
+    """
+    head = observed_findings(notebook, head_payload, manifest, resolver)
+    if base_payload is None:
+        return head
+    base_observed = observed_versions_from_payload(base_payload, manifest)
+    base_versions = {
+        lib_id: {version for _cell, _line, version in occurrences}
+        for lib_id, occurrences in base_observed.items()
+    }
+    return [
+        finding
+        for finding in head
+        if finding["version"]
+        not in base_versions.get(finding["library"], set())
+    ]
+
+
 def run_census(repo_root: Path, manifest: Manifest) -> dict:
     """Recensement repo-wide : table de dispersion + classement des ecarts."""
-    canonicals, errors = resolve_canonicals(manifest, repo_root)
+    resolver = CanonicalResolver(manifest, repo_root)
+    canonicals, errors = resolver.flat, resolver.errors
     dispersion: dict[str, dict[str, list[str]]] = {}
     floating: dict[str, list[str]] = {}
+    observed_dispersion: dict[str, dict[str, list[str]]] = {}
+    below_canonical: list[dict] = []
     unreadable: list[str] = []
     binaries: list[dict] = []
     for notebook in tracked_notebooks(repo_root):
@@ -1496,6 +1855,33 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
             bucket.setdefault(pin.version, [])
             if relative not in bucket[pin.version]:
                 bucket[pin.version].append(relative)
+        # Versions **chargees** (torch, numpy) : elles ne sont pas declarees
+        # par une ligne d'epinglage, elles se lisent dans les sorties
+        # commitees. Le recensement les range par version ET signale les
+        # carnets **en dessous** de la canonique de leur serie.
+        for lib_id, occurrences in observed_versions_from_payload(
+            payload, manifest
+        ).items():
+            canonical = resolver.for_notebook(lib_id, relative)
+            series = resolver.series_for(lib_id, relative)
+            bucket_o = observed_dispersion.setdefault(lib_id, {})
+            for _cell, _line, version in occurrences:
+                bucket_o.setdefault(version, [])
+                if relative not in bucket_o[version]:
+                    bucket_o[version].append(relative)
+                if canonical is None:
+                    continue
+                if compare_versions(version, canonical) >= 0:
+                    continue
+                below_canonical.append(
+                    {
+                        "notebook": relative,
+                        "library": lib_id,
+                        "version": version,
+                        "canonical": canonical,
+                        "series": series,
+                    }
+                )
 
     table = []
     phantoms: list[dict] = []
@@ -1545,6 +1931,31 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
                 "canonical": canonical,
                 "canonical_source": lib.canonical_source,
                 "versions": rows,
+                "observed": [
+                    {
+                        "version": version,
+                        "notebooks": sorted(notebooks),
+                        "count": len(notebooks),
+                    }
+                    for version, notebooks in sorted(
+                        observed_dispersion.get(lib_id, {}).items(),
+                        key=lambda item: version_key(item[0]),
+                    )
+                ],
+                "canonical_by_series": [
+                    {
+                        "series": series_path(
+                            entry.get("series", "")
+                        ).strip("/"),
+                        "canonical": entry.get("canonical"),
+                        "canonical_source": entry.get(
+                            "canonical_source", "manifest"
+                        ),
+                        "organ_path": entry.get("organ_path", ""),
+                        "note": entry.get("note", ""),
+                    }
+                    for entry in lib.canonical_by_series
+                ],
                 "note": lib.note,
                 "multiple_versions": len(rows) > 1,
                 "floating_notebooks": sorted(floating.get(lib_id, [])),
@@ -1558,13 +1969,15 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
         "phantom_divergences": phantoms,
         "unreadable_notebooks": sorted(unreadable),
         "binary_findings": binaries,
+        "below_canonical": below_canonical,
     }
 
 
 def render_census(report: dict) -> str:
     lines = ["# Recensement des versions de bibliotheques", ""]
     for lib in report["libraries"]:
-        if not lib["versions"]:
+        observed = lib.get("observed") or []
+        if not lib["versions"] and not observed:
             continue
         canonical = lib["canonical"]
         source = "organe de serie" if lib["canonical_source"] == "organ" else "manifeste"
@@ -1573,23 +1986,71 @@ def render_census(report: dict) -> str:
         if lib.get("note"):
             lines.append(lib["note"])
             lines.append("")
-        lines.append("| version | carnets | classement | motif |")
-        lines.append("|---|---|---|---|")
-        for row in lib["versions"]:
-            motif = row["reason"].replace("|", "\\|")
+        for entry in lib.get("canonical_by_series") or []:
+            origin = entry.get("canonical_source", "manifest")
+            if origin == "artifact":
+                origin = f"artefact de serie ({entry.get('organ_path', '')})"
             lines.append(
-                f"| {row['version']} | {row['count']} | {row['decision']} | {motif} |"
+                f"- canonique de la serie **{entry['series'] or '(racine)'}** : "
+                f"`{entry['canonical']}` -- {origin}"
             )
-        if lib.get("floating_notebooks"):
+            if entry.get("note"):
+                lines.append(f"  - {entry['note']}")
+        if lib.get("canonical_by_series"):
+            lines.append("")
+        if lib["versions"]:
+            lines.append("| version | carnets | classement | motif |")
+            lines.append("|---|---|---|---|")
+            for row in lib["versions"]:
+                motif = row["reason"].replace("|", "\\|")
+                lines.append(
+                    f"| {row['version']} | {row['count']} | {row['decision']} | {motif} |"
+                )
+            if lib.get("floating_notebooks"):
+                lines.append(
+                    f"| (non versionne) | {len(lib['floating_notebooks'])} "
+                    f"| pin flottant | {FLOATING_PIN_REASON} |"
+                )
+            lines.append("")
+            for row in lib["versions"]:
+                if row["decision"] in ("canonique", "justified"):
+                    continue
+                lines.append(f"- **{row['version']}** : " + ", ".join(row["notebooks"]))
+            lines.append("")
+        if observed:
             lines.append(
-                f"| (non versionne) | {len(lib['floating_notebooks'])} "
-                f"| pin flottant | {FLOATING_PIN_REASON} |"
+                "Versions **chargeees** relevees dans les sorties commitees "
+                "(aucune ligne d'epinglage ne les porte) :"
             )
+            lines.append("")
+            lines.append("| version | carnets |")
+            lines.append("|---|---|")
+            for row in observed:
+                lines.append(f"| {row['version']} | {row['count']} |")
+            lines.append("")
+            for row in observed:
+                lines.append(
+                    f"- **{row['version']}** : " + ", ".join(row["notebooks"])
+                )
+            lines.append("")
+    below = report.get("below_canonical") or []
+    if below:
+        lines.append("## Carnets en dessous de la canonique de leur serie")
         lines.append("")
-        for row in lib["versions"]:
-            if row["decision"] in ("canonique", "justified"):
-                continue
-            lines.append(f"- **{row['version']}** : " + ", ".join(row["notebooks"]))
+        lines.append(
+            "La version chargee, lue dans les sorties commitees, est inferieure "
+            "a la canonique de la serie du carnet. Ces carnets sont a "
+            "re-executer sous la version cible."
+        )
+        lines.append("")
+        lines.append("| carnet | bibliotheque | serie | version chargee | canonique |")
+        lines.append("|---|---|---|---|---|")
+        for item in below:
+            lines.append(
+                f"| {item['notebook']} | {item['library']} "
+                f"| {item['series'] or '(racine)'} | {item['version']} "
+                f"| {item['canonical']} |"
+            )
         lines.append("")
     if report.get("phantom_divergences"):
         lines.append("## Divergences declarees mais absentes du depot")
@@ -1740,7 +2201,8 @@ def main(argv: list[str] | None = None) -> int:
             print(render_census(report))
         return 0
 
-    canonicals, errors = resolve_canonicals(manifest, repo_root)
+    resolver = CanonicalResolver(manifest, repo_root)
+    canonicals, errors = resolver.flat, list(resolver.errors)
     errors.extend(allowlist_errors(manifest))
     if errors:
         for error in errors:
@@ -1782,6 +2244,11 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
             pins = pins_from_payload(payload, manifest)
             findings.extend(state_findings(relative, pins, manifest, canonicals))
+            # Version **chargeee** : elle ne se lit dans aucune ligne
+            # d'epinglage, mais dans les sorties commitees.
+            findings.extend(
+                observed_findings(relative, payload, manifest, resolver)
+            )
             # Le chargement hors depot est signale sur l'ETAT : son dommage se
             # produit a l'execution, pas a l'edition (meme regle que le
             # provisionnement etranger).
@@ -1822,6 +2289,9 @@ def main(argv: list[str] | None = None) -> int:
                 findings.extend(
                     state_findings(relative, head_pins, manifest, canonicals)
                 )
+                findings.extend(
+                    observed_findings(relative, head_payload, manifest, resolver)
+                )
                 if not args.no_mentions:
                     findings.extend(
                         mention_findings(
@@ -1844,6 +2314,14 @@ def main(argv: list[str] | None = None) -> int:
                 findings.extend(
                     delta_findings(
                         relative, base_pins, head_pins, manifest, canonicals
+                    )
+                )
+                # Version **chargeee** introduite par la PR : c'est le cas
+                # d'un carnet re-execute sous une version inferieure a celle
+                # que la base portait (cf #23941).
+                findings.extend(
+                    delta_observed_findings(
+                        relative, base_payload, head_payload, manifest, resolver
                     )
                 )
                 findings.extend(
