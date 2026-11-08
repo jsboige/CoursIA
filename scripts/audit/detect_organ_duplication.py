@@ -57,8 +57,7 @@ DEFAULT_INDEX = Path(__file__).resolve().parent / "organ_api_index.yaml"
 
 DEF_RE = re.compile(r"(?:^|[\s\"'(])(?:def|class)\s+([A-Za-z_][A-Za-z0-9_]*)")
 CSHARP_TYPE_RE = re.compile(
-    r"^\s*(?:\[[^\]\n]*\]\s*)*"
-    r"(?:(?:public|internal|private|protected|static|abstract|sealed|"
+    r"\b(?:(?:public|internal|private|protected|static|abstract|sealed|"
     r"partial|readonly|file|new|unsafe|ref)\s+)*"
     r"(?:class|struct|enum|record(?:\s+(?:class|struct))?)\s+"
     r"@?([A-Za-z_][A-Za-z0-9_]*)\b"
@@ -227,7 +226,17 @@ def parse_patch(patch_text: str, owners: dict, symbol_owners: dict):
             continue
         if current_file is None or current_file in SELF_FIXTURE_FILES:
             continue
-        if not line.startswith("+") or line.startswith("+++"):
+        if line.startswith("+++"):
+            continue
+        if current_file.endswith(".cs"):
+            if line.startswith(" "):
+                _, csharp_block_comment = _mask_csharp_line(
+                    line[1:], csharp_block_comment
+                )
+                continue
+            if not line.startswith("+"):
+                continue
+        elif not line.startswith("+"):
             continue
         content = line[1:].lstrip()
         if content.startswith("#"):
@@ -236,7 +245,7 @@ def parse_patch(patch_text: str, owners: dict, symbol_owners: dict):
             content, csharp_block_comment = _mask_csharp_line(
                 line[1:], csharp_block_comment
             )
-            matches = [CSHARP_TYPE_RE.match(content)]
+            matches = [CSHARP_TYPE_RE.search(content)]
         else:
             matches = list(DEF_RE.finditer(line[1:]))
         for sym_m in matches:

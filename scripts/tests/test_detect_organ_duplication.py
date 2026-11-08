@@ -296,6 +296,22 @@ def test_csharp_record_and_enum_collisions_require_payback(tmp_path, capsys):
     assert capsys.readouterr().out.count("[retour amont declare]") == 2
 
 
+def test_csharp_inline_namespace_class_remains_detected(tmp_path, capsys):
+    """Une classe inline dans un namespace reste reconnue comme avant."""
+    mod = _load_detector()
+    patch = _write(tmp_path, "inline-class.cs.diff", """diff --git a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+--- a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
++++ b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+@@ -0,0 +1,1 @@
++namespace N { public class VettingLevel { } }
+""")
+    rc = mod.main(["--patch", str(patch), "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "-> semantic-fleet (VettingLevel)" in out
+    assert "[retour amont manquant -- #13902]" in out
+
+
 def test_csharp_types_ignore_comments_strings_and_unindexed_names(tmp_path, capsys):
     """Le parseur ne traite comme declarations ni prose, ni commentaires, ni noms hors index."""
     mod = _load_detector()
@@ -310,6 +326,25 @@ def test_csharp_types_ignore_comments_strings_and_unindexed_names(tmp_path, caps
 +var example = "public record VettingLevel(int Value);";
 +public record LocalMeasurement(int Value);
 +public enum LocalKind { None }
+""")
+    rc = mod.main(["--patch", str(patch), "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "CLEAN" in out and "0 collision" in out
+
+
+def test_csharp_context_block_comment_masks_added_declaration(tmp_path, capsys):
+    """Le contexte du diff initialise l'état lexer pour les ajouts suivants."""
+    mod = _load_detector()
+    patch = _write(tmp_path, "context-comment.cs.diff", """diff --git a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+--- a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
++++ b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+@@ -1,4 +1,5 @@
+ namespace N {
+ /*
++public enum Fallacy { None }
+ */
+ }
 """)
     rc = mod.main(["--patch", str(patch), "--index", str(INDEX), "--check"])
     out = capsys.readouterr().out
