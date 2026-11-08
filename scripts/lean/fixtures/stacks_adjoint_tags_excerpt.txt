@@ -1,0 +1,8 @@
+# Extrait littéral d'AxiomMath/Stacks/StacksCore/CategoryTheory/AdjointFunctors.lean
+# Commit: 5ed82d14634e8d9576bb844c7bd4e3da66d450e7
+# Lecture: 2026-11-08 ; licence du dépôt: Apache-2.0 (LICENSE au commit cité).
+add_to_stacks 0037 "constructor using the hom-isomorphism definition" Adjunction.mkOfHomEquiv
+add_to_stacks 0039 "implies 0039 for left adjoints with `PreservesColimits.preservesFiniteColimits`"
+  Adjunction.leftAdjoint_preservesColimits
+add_to_stacks 0039 "implies 0039 for right adjoints with `PreservesLimits.preservesFiniteLimits`"
+  Adjunction.rightAdjoint_preservesLimits
