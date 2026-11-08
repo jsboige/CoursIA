@@ -1,6 +1,6 @@
 # QC MCP Lite
 
-Lightweight MCP server for QuantConnect API — ~10 tools, <5k tokens schema.
+Lightweight MCP server for QuantConnect API — 12 tools, <5k tokens schema.
 
 Replaces the heavy `quantconnect/mcp-server` Docker container (~40k tokens) for standard backtesting workflows.
 
@@ -16,6 +16,7 @@ Replaces the heavy `quantconnect/mcp-server` Docker container (~40k tokens) for 
 | `read_backtest` | Read backtest results (Sharpe, CAGR, MaxDD) |
 | `read_backtest_chart` | Écrit un graphique de backtest (equity, exposition, rotation, graphique personnalisé) dans un fichier JSON ; rend le nombre de points par série, jamais les valeurs |
 | `list_backtests` | List backtests for a project |
+| `create_project` | Create a new QC project (paramètre optionnel `organization_id` pour choisir l'organisation, #19760) |
 | `list_projects` | List all QC projects |
 | `read_project` | Read project details and files (liste lue via `/files/read`) |
 | `read_file` | Read file(s) from a project |
