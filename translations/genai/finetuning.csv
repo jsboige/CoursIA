@@ -7752,8 +7752,8 @@ is stable — early minimum, climb afterwards — a fixed budget of fifteen epoc
 optimal for every draw. The only rule that adapts to the draw is a stopping criterion:
 measure the retained perplexity at every epoch and stop when it no longer improves. This
 is exactly what exercise 2 builds.",,,,,,,27392cca5572d0b9,3e42a356a36f2384,,,,,,,27392cca5572d0b9,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,e8428cff,markdown,fr,2b5256410d872908,"# FT-06 : LoRA vision-langage — fine-tune du décodeur de Qwen3.5-0.8B
-**Navigation** : [Index](README.md) | [<< 05 — Fusion et routage](FT-05-ModelMerging-Routing-Python.ipynb)
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,e8428cff,markdown,fr,3a9e5a3a92e19477,"# FT-06 : LoRA vision-langage — fine-tune du décodeur de Qwen3.5-0.8B
+**Navigation** : [Index](README.md) | [<< 05 — Fusion et routage](FT-05-ModelMerging-Routing-Python.ipynb) | [07 — Anatomie mémoire >>](FT-07-Anatomie-Memoire-Entrainement-Parallelismes-Python.ipynb)
 
 **Version anglaise** : [FT-06 — LoRA vision-langage (en)](FT-06-Vision-Language-LoRA-Python_en.ipynb)
 
@@ -7782,7 +7782,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,e8428
 **Durée estimée** : 45-60 minutes
 
 **Parcours** : nous chargeons d'abord le modèle multimodal et son processor (section 1), construisons un dataset d'images synthétiques entièrement déterministe — dessinées par PIL, donc reproductibles au pixel près sans aucun téléchargement de données (section 2), mesurons le modèle de base sur un contrat qu'il n'a jamais vu (section 3), greffons des adaptateurs LoRA sur les seules couches du décodeur (section 4), entraînons (section 5), puis comparons chiffres en main base contre LoRA sur les mêmes images held-out (section 6). La section 7 justifie le choix « décodeur seulement » ; trois exercices prolongent : une forme nouvelle, un champ de contrat en plus, et le ciblage de la vision elle-même.","# FT-06: Vision-language LoRA — fine-tuning the decoder of Qwen3.5-0.8B
-**Navigation**: [Index](README.md) | [<< 05 — Fusion and routing](FT-05-ModelMerging-Routing-Python.ipynb)
+**Navigation**: [Index](README.md) | [<< 05 — Fusion and routing](FT-05-ModelMerging-Routing-Python.ipynb) | [07 — Memory anatomy >>](FT-07-Anatomie-Memoire-Entrainement-Parallelismes-Python.ipynb)
 
 **French version**: [FT-06 — LoRA vision-langage](FT-06-Vision-Language-LoRA-Python.ipynb)
 
@@ -7810,7 +7810,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,e8428
 
 **Estimated duration**: 45–60 minutes
 
-**Path**: we first load the multimodal model and its processor (section 1), build a fully deterministic synthetic image dataset — drawn with PIL, therefore reproducible to the exact pixel without any data download (section 2), measure the base model on a contract it has never seen (section 3), graft LoRA adapters onto only the decoder layers (section 4), train (section 5), then compare base versus LoRA with numbers in hand on the same held-out images (section 6). Section 7 justifies the “decoder only” choice; three exercises extend it: a new shape, an additional contract field, and targeting vision itself.",,,,,,,2b5256410d872908,ea2309b11c9a3cf4,,,,,,,2b5256410d872908,,,,,,,
+**Path**: we first load the multimodal model and its processor (section 1), build a fully deterministic synthetic image dataset — drawn with PIL, therefore reproducible to the exact pixel without any data download (section 2), measure the base model on a contract it has never seen (section 3), graft LoRA adapters onto only the decoder layers (section 4), train (section 5), then compare base versus LoRA with numbers in hand on the same held-out images (section 6). Section 7 justifies the “decoder only” choice; three exercises extend it: a new shape, an additional contract field, and targeting vision itself.",,,,,,,3a9e5a3a92e19477,40bfabf09ae92bbf,,,,,,,3a9e5a3a92e19477,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,15bf4e35,code,fr,52f7cb04710e14fb,"import warnings
 
 # Filtres poses AVANT les autres imports (issue #11725) : ils evitent que les
