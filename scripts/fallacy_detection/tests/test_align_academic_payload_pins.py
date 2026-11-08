@@ -227,12 +227,16 @@ def test_les_adjudications_partial_sont_a_jour_sur_la_table_commise():
 
     table = load_table(COMMITTED_CSV)
     assert PARTIAL_ADJUDICATIONS, "la table d'adjudications est vide"
-    for label, (expected_node, rationale) in PARTIAL_ADJUDICATIONS.items():
+    for label, (expected_famille, expected_node, rationale) in PARTIAL_ADJUDICATIONS.items():
         row = table.get(norm(label))
         assert row is not None, f"adjudication orpheline : {label!r} absent de la table"
         assert row["verdict"] == "PARTIAL", (
             f"{label} n'est plus PARTIAL ({row['verdict']}) : adjudication a "
             f"requalifier ou a retirer"
+        )
+        assert row["best_famille"] == expected_famille, (
+            f"{label} : adjudication perimee -- famille attendue {expected_famille!r}, "
+            f"table {row['best_famille']!r}"
         )
         assert row["best_name"] == expected_node, (
             f"{label} : adjudication perimee -- attendu {expected_node!r}, "

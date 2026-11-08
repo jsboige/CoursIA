@@ -243,3 +243,35 @@ def test_adjudication_perimee_est_exclue(tmp_path):
     assert "Appel à la terreur" in reason
     assert "Référencement pléthorique" in reason
 
+
+def test_adjudication_perimee_par_changement_de_famille(tmp_path):
+    """Temoin de changement de famille : le nom reste, la famille bouge.
+
+    La ligne reelle « Appeal to fear » porte un candidat d'une autre famille
+    dans sa colonne candidates (50, Insuffisance, 0.08) : un recalibrage de
+    l'aligneur peut faire changer la meilleure famille sans toucher au nom.
+    Si l'adjudication ne comparait que le nom, la paire entrerait sous un
+    noeud « Insuffisance/Appel a la terreur » qui n'existe pas dans
+    Argumentum. Les deux etats temoignent : A (famille adjugee) la paire
+    entre ; B (seule la famille change) l'adjudication est perimee et le
+    motif nomme les DEUX couples famille/noeud.
+    """
+    records = [_gold_with("Si tu sors, il t'arrivera malheur.", "appeal to fear")]
+    # Etat A : la table telle qu'adjugee -- la paire entre.
+    corpus_a, report_a = _run(tmp_path, records, rows=[PARTIAL_ADJUDGED])
+    pairs_a = [json.loads(l) for l in corpus_a.read_text(encoding="utf-8").splitlines()]
+    assert len(pairs_a) == 1
+    assert pairs_a[0]["node"] == "Influence/Appel à la terreur"
+    assert report_a["pairs_total"] == 1
+    # Etat B : seul best_famille change (le candidat 50 passe en tete).
+    state_b = tmp_path / "etat_b"
+    state_b.mkdir()
+    moved = dict(PARTIAL_ADJUDGED, best_famille="Insuffisance")
+    corpus_b, report_b = _run(state_b, records, rows=[moved])
+    assert corpus_b.read_text(encoding="utf-8") == ""
+    assert report_b["pairs_total"] == 0
+    reason = report_b["label_stats"]["appeal to fear"]["reason"]
+    assert "adjudication perimee" in reason
+    assert "Influence/Appel à la terreur" in reason
+    assert "Insuffisance/Appel à la terreur" in reason
+

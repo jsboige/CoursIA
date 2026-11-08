@@ -26,12 +26,16 @@ ne produisent jamais de paire : verdict sans noeud cible.
 **Regle des PARTIAL (ecart mecanique n°3 de #10355 §4, c.6344505010).** Une
 ligne ``PARTIAL`` ne porte qu'un chevauchement lexical : elle ne prouve pas
 l'identite du noeud. Elle n'entre donc dans le corpus que si son couple
-(label -> noeud) est **adjuge** dans ``PARTIAL_ADJUDICATIONS``, avec sa
-justification ; une ligne PARTIAL non adjugee est exclue avec son motif, pas
-promue en silence. Le seuil n'est pas un score : la mesure du 2026-11-08
+(label -> famille/noeud) est **adjuge** dans ``PARTIAL_ADJUDICATIONS``, avec
+sa justification ; une ligne PARTIAL non adjugee est exclue avec son motif,
+pas promue en silence. Le seuil n'est pas un score : la mesure du 2026-11-08
 montre que le score ne separe pas le vrai du faux (un 0,08 correct voisine un
 0,09 qui visait un noeud d'une autre famille -- corrige par la normalisation
-du cognate, pas par un plancher).
+du cognate, pas par un plancher). L'adjudication epingle le **couple
+famille/noeud**, pas le nom seul : la ligne reelle « Appeal to fear » porte un
+candidat d'une autre famille dans sa colonne candidates (50, Insuffisance,
+0.08), et un recalibrage de l'aligneur peut faire changer la meilleure
+famille sans toucher au nom -- le temoin vit dans les tests du builder.
 
 Le rapport ``join_report.json`` consigne, par label : le nombre de spans, la
 classe de correspondance, le pont utilise le cas echeant, et pour les exclus
@@ -83,20 +87,26 @@ EXCLUSIONS: dict[str, str] = {
     "false dilemma": "aucune entree L2 dans la table (mesure)",
 }
 
-# Adjudications de lignes PARTIAL : academic_label de la table -> (noeud attendu,
-# justification). Une ligne PARTIAL absente de cette table est exclue du corpus
-# (motif consigne dans join_report.json) : le verdict PARTIAL dit « chevauchement
-# lexical », pas « meme noeud » -- l'identite se juge, elle ne se lit pas dans un
-# score (ecart mecanique n°3 de #10355 §4). Ajouter une entree = assumer
-# l'identite par ecrit ; la retirer = exclure la paire, sans casser le build.
-PARTIAL_ADJUDICATIONS: dict[str, tuple[str, str]] = {
+# Adjudications de lignes PARTIAL : academic_label de la table -> (famille
+# attendue, noeud attendu, justification). Une ligne PARTIAL absente de cette
+# table est exclue du corpus (motif consigne dans join_report.json) : le
+# verdict PARTIAL dit « chevauchement lexical », pas « meme noeud » --
+# l'identite se juge, elle ne se lit pas dans un score (ecart mecanique n°3 de
+# #10355 §4). Le couple epingle est famille/noeud, pas le nom seul : la
+# colonne candidates de la table porte des noeuds d'autres familles a quelques
+# centiemes du meilleur, et le nom ne voit pas ce qui bouge dans la famille.
+# Ajouter une entree = assumer l'identite par ecrit ; la retirer = exclure la
+# paire, sans casser le build.
+PARTIAL_ADJUDICATIONS: dict[str, tuple[str, str, str]] = {
     "Appeal to fear": (
+        "Influence",
         "Appel à la terreur",
         "identite semantique : « appeal to fear » et « Appel a la terreur » nomment "
         "le meme sophisme ; le score lexical est bas (0.12) parce que les deux "
         "langues disent la meme emotion par des mots differents (peur / terreur)",
     ),
     "Circular reasoning": (
+        "Erreur de raisonnement",
         "Argument circulaire",
         "identite semantique : « circular reasoning » et « Argument circulaire » "
         "nomment le meme sophisme ; score 0.08 = plancher du chevauchement, la "
@@ -188,12 +198,12 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 excluded[label] += 1
                 continue
-            expected_node, _rationale = adjudication
-            if row["best_name"] != expected_node:
+            expected_famille, expected_node, _rationale = adjudication
+            if row["best_famille"] != expected_famille or row["best_name"] != expected_node:
                 entry["excluded"] += 1
                 entry["reason"] = (
-                    f"adjudication perimee : noeud attendu {expected_node}, "
-                    f"table {row['best_name']}"
+                    f"adjudication perimee : noeud attendu {expected_famille}/{expected_node}, "
+                    f"table {row['best_famille']}/{row['best_name']}"
                 )
                 excluded[label] += 1
                 continue
