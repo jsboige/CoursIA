@@ -73,7 +73,7 @@ Intelligence Artificielle -- VI
 
 # Agent Apprenant
 
-- **4 modules** : performance, apprentissage, critique, générateur de problemes
+- **Modules** : performance, apprentissage, critique, générateur de problemes
 - Le module d'apprentissage ameliore le composant de performance a partir du feedback du critique
 - Le générateur de problemes suggere de nouvelles expériences pour enrichir l'apprentissage
 
