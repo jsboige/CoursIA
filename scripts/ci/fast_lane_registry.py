@@ -3727,11 +3727,11 @@ TRANCHE38: list[Guard] = [
 # pas un incident d'entree comme le base injoignable d'un garde de delta. La
 # garde le declare donc en rouge : un manifeste casse est une garde debranchee.
 #
-# Numero : TRANCHE39. TRANCHE38 est pris par le md-hierarchy HINT-AS-HEADING
-# (bascule #22012, sur main) ; collision d'index levez en re-allocant cette
-# garde au premier slot libre.
+# Numero : TRANCHE40. TRANCHE38 est pris par le md-hierarchy HINT-AS-HEADING
+# (bascule #22012, sur main) et TRANCHE39 par la garde cell-ordering (sur main) ;
+# collision d'index levez en re-allocant cette garde au premier slot libre.
 # ---------------------------------------------------------------------------
-TRANCHE39: list[Guard] = [
+TRANCHE40: list[Guard] = [
     Guard(
         name="pcm-single-source-guard",
         source=FAST_LANE_NATIVE,
