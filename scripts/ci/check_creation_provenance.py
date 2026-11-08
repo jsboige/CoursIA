@@ -227,11 +227,16 @@ def new_notebooks(files: list[dict]) -> tuple[list[str], list[str], list[str]]:
         path = f.get("filename") or ""
         if not path.endswith(".ipynb"):
             continue
-        if (f.get("status") == "renamed"
-                and (f.get("previous_filename") or "").endswith(".ipynb")):
-            demenages.append(path)
-            continue
-        if f.get("status") != "added":
+        statut = f.get("status")
+        if statut == "renamed":
+            ancien_path = f.get("previous_filename") or ""
+            if ancien_path.endswith(".ipynb"):
+                demenages.append(path)
+                continue
+            # Sans ancien chemin de carnet, le statut renommé ne prouve
+            # pas un déplacement de carnet : garder le fichier visible
+            # comme création (ou carnet de langue) plutôt que l'ignorer.
+        elif statut != "added":
             continue
         nom = path.rsplit("/", 1)[-1]
         if lang_suffix(nom):

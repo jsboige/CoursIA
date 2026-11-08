@@ -114,6 +114,25 @@ def test_statut_renamed_avec_previous_filename_reste_un_demenagement():
     assert demenages == ["nouveau/Serie.ipynb"]
 
 
+@pytest.mark.parametrize("previous_filename", [None, "ancien/Serie.txt"])
+def test_renamed_sans_ancien_carnet_est_classe_neuf(previous_filename):
+    details = ({"previous_filename": previous_filename}
+               if previous_filename is not None else {})
+    neufs, demenages, langues = cp.new_notebooks([
+        fichier("nouveau/Serie.ipynb", "renamed", **details)])
+    assert neufs == ["nouveau/Serie.ipynb"]
+    assert demenages == []
+    assert langues == []
+
+
+def test_renamed_sans_ancien_carnet_garde_la_classe_langue():
+    neufs, demenages, langues = cp.new_notebooks([
+        fichier("nouveau/Serie_en.ipynb", "renamed")])
+    assert neufs == []
+    assert demenages == []
+    assert langues == ["nouveau/Serie_en.ipynb"]
+
+
 def test_sha_identique_reconnait_un_demenagement_meme_si_basename_change():
     neufs, demenages, _ = cp.new_notebooks([
         fichier("ancienne/Serie-v1.ipynb", "removed", sha="blob-identique"),
@@ -534,7 +553,9 @@ def test_un_renamed_ne_declenche_rien(monkeypatch, capsys):
     ni VETO_ACTIVE ne s'appliquent a un carnet qui change de place."""
     _pr_fichiers(monkeypatch, [
         {"filename": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/"
-                     "App-1-NQueens.ipynb", "status": "renamed"}])
+                     "App-1-NQueens.ipynb", "status": "renamed",
+         "previous_filename": "MyIA.AI.Notebooks/Search/Applications/"
+                              "App-1-NQueens.ipynb"}])
     monkeypatch.setenv(cp.VETO_VAR, "400")
     monkeypatch.setattr(cp, "open_issue_count", lambda: 651)
 
