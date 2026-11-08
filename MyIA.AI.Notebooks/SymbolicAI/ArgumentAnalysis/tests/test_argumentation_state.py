@@ -2,7 +2,7 @@
 Tests pour le shim `argumentation_lib` (Argumentum, #2137 Phase B).
 
 `argumentation_lib` est la couche vendoree qui decouple les notebooks
-Argument_Analysis des internals EPITA. Elle expose une API publique
+ArgumentAnalysis des internals EPITA. Elle expose une API publique
 (LibConfig, paths, JVM compat, RhetoricalAnalysisState, UnifiedAnalysisState)
 et doit s'importer SANS JVM, SANS semantic_kernel, SANS le package EPITA
 (lazy imports).
@@ -30,7 +30,7 @@ from pathlib import Path
 
 import pytest
 
-# Ajoute Argument_Analysis/ au path pour importer le package argumentation_lib.
+# Ajoute ArgumentAnalysis/ au path pour importer le package argumentation_lib.
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import argumentation_lib as al  # noqa: E402
@@ -137,7 +137,7 @@ class TestPaths:
         assert P.LIB_DIR.parent == P.ARGUMENT_ANALYSIS_DIR
         assert P.ARGUMENT_ANALYSIS_DIR.parent == P.SYMBOLIC_AI_DIR
 
-    def test_standard_subdirs_under_argument_analysis(self):
+    def test_standard_subdirs_under_argumentanalysis(self):
         from argumentation_lib import _paths as P
         for getter, name in [
             (P.get_ontology_dir, "ontologies"),

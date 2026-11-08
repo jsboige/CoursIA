@@ -6,7 +6,7 @@
 #
 # CoursIA modification : le prefixe d'import `argumentation_analysis.services.ai_shield` est reecrit en `argumentation_lib.ai_shield` (le shim du depot resout les imports amont ; cf `argumentation_lib/_paths.py`). Aucune autre ligne n'est modifiee.
 #
-# Portage dans le cadre de l'issue #23163 (serie Argument_Analysis completee sur
+# Portage dans le cadre de l'issue #23163 (serie ArgumentAnalysis completee sur
 # CoursIA) — le depot EPITA reste le cadre experimental, pas la destination.
 # Registre des copies verbatim : `argumentation_lib/NOTICE-EPITA`.
 """Output filter layer — prevents sensitive information leaks in LLM output.

@@ -3,7 +3,7 @@
 # Source file: argumentation_analysis/agents/core/logic/propositional_logic_agent.py
 # Upstream commit: ecfd9b9c (SHA cite par l'issue #18392)
 # Source LICENSE: MIT (Copyright (c) 2025 jsboigeEpita)
-# CoursIA NOTICE: see ./NOTICE-EPITA — section "Argument_Analysis volet texte->PL".
+# CoursIA NOTICE: see ./NOTICE-EPITA — section "ArgumentAnalysis volet texte->PL".
 #
 # ROLE DANS CoursIA (#18392)
 # --------------------------

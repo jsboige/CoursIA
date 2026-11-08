@@ -171,7 +171,7 @@ CoursIA submodule pointer
 -------------------------
 
 The Argumentum submodule at
-`MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum/`
+`MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum/`
 is pinned to commit **4332d26aeceee66d49073f4936d3b6f47f14287c**
 (gitlink de `main` au 2026-11-05 ; le sous-module suit `master`).
 Re-syncing this data file against a newer submodule commit
@@ -193,7 +193,7 @@ not in the data file.
 See also
 --------
 
-- EPIC #4960 — `[EPIC] Argument_Analysis v3 — submodule Argumentum +
+- EPIC #4960 — `[EPIC] ArgumentAnalysis v3 — submodule Argumentum +
   remontées moteur + landing essence multidimensionnelle EPITA-IS`
 - PR (this verbatim copy): see `See #4960` reference in PR body
 - Sister NOTICE: `data/NOTICE` (Fallacies verbatim copy, PR #5183)

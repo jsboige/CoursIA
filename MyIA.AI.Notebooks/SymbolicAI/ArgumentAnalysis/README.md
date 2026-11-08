@@ -1,9 +1,9 @@
-# Argument_Analysis - Analyse Argumentative avec Agents IA
+# ArgumentAnalysis - Analyse Argumentative avec Agents IA
 
 <!-- CATALOG-STATUS
-series: SymbolicAI-Argument_Analysis
+series: SymbolicAI-ArgumentAnalysis
 pedagogical_count: 38
-breakdown: Argument_Analysis=38
+breakdown: ArgumentAnalysis=38
 maturity: BETA=36, ALPHA=1, DRAFT=1
 -->
 
@@ -295,7 +295,7 @@ jupyter notebook Argumentation-00-Setup-Tweety-Python.ipynb
 ## Structure des fichiers
 
 ```text
-Argument_Analysis/
+ArgumentAnalysis/
 ├── *.ipynb                    # notebooks pédagogiques (pipeline agentique + Dung)
 ├── .env / .env.example        # Configuration
 ├── install_jdk_portable.py    # Installation JDK
@@ -344,15 +344,15 @@ Le pipeline génère un rapport JSON dans `output/analysis_report.json` :
 
 **3 outils d'infrastructure MCP** (cohérent avec cycles 19-30 hubs) :
 
-1. **MCP Jupyter (`mcp__jupyter-papermill__*`)** — note bug #5211 (mode async ignore `kernel_name`, re-exec = `nbconvert --execute --ExecutePreprocessor.kernel_name=python3 --timeout=600`). Argument_Analysis utilise **kernel Python 3 uniquement** (Semantic Kernel = package Python, pas de kernel .NET natif requis ; JDK 17 portable est un exécutable subprocess, pas un kernel Jupyter).
-2. **Validation pre-commit** (`.pre-commit-config.yaml`) — `gitleaks` détecte les secrets inline (clé OpenAI, mnemonic wallet, paths absolus) ; le validateur notebook `validate_pr_notebooks.py` enforce C.1 (stubs sans `NotImplementedError`) et C.2 (notebooks commités AVEC outputs, `execution_count != null`). **Note spécifique Argument_Analysis** : le fichier `.env` (`OPENAI_API_KEY`, `GLOBAL_LLM_SERVICE`, `BATCH_MODE`) doit vivre dans `.gitignore`, jamais en clair dans un notebook ou une cellule — la clé OpenAI est particulièrement sensible (compte facturé).
-3. **MCP QC Cloud (`mcp__qc-mcp-lite__*`)** — backtest QuantConnect partagé. Argument_Analysis n'utilise pas QC Cloud directement, mais partage avec QC la même doctrine **anti-théâtre** : la matrice `Formal_Richness_Matrix` classifie les solveurs en 4 verdicts (substantive / honest-absent / unavailable / théâtre), doctrine symétrique au principe QuantConnect « pas de backtest sans Sharpe/CAGR/MaxDD reportés ». Les deux convergent : **un résultat non vérifié n'est pas un résultat**.
+1. **MCP Jupyter (`mcp__jupyter-papermill__*`)** — note bug #5211 (mode async ignore `kernel_name`, re-exec = `nbconvert --execute --ExecutePreprocessor.kernel_name=python3 --timeout=600`). ArgumentAnalysis utilise **kernel Python 3 uniquement** (Semantic Kernel = package Python, pas de kernel .NET natif requis ; JDK 17 portable est un exécutable subprocess, pas un kernel Jupyter).
+2. **Validation pre-commit** (`.pre-commit-config.yaml`) — `gitleaks` détecte les secrets inline (clé OpenAI, mnemonic wallet, paths absolus) ; le validateur notebook `validate_pr_notebooks.py` enforce C.1 (stubs sans `NotImplementedError`) et C.2 (notebooks commités AVEC outputs, `execution_count != null`). **Note spécifique ArgumentAnalysis** : le fichier `.env` (`OPENAI_API_KEY`, `GLOBAL_LLM_SERVICE`, `BATCH_MODE`) doit vivre dans `.gitignore`, jamais en clair dans un notebook ou une cellule — la clé OpenAI est particulièrement sensible (compte facturé).
+3. **MCP QC Cloud (`mcp__qc-mcp-lite__*`)** — backtest QuantConnect partagé. ArgumentAnalysis n'utilise pas QC Cloud directement, mais partage avec QC la même doctrine **anti-théâtre** : la matrice `Formal_Richness_Matrix` classifie les solveurs en 4 verdicts (substantive / honest-absent / unavailable / théâtre), doctrine symétrique au principe QuantConnect « pas de backtest sans Sharpe/CAGR/MaxDD reportés ». Les deux convergent : **un résultat non vérifié n'est pas un résultat**.
 
-**Table parenté cross-lane 6 colonnes** (Argument_Analysis se situe au croisement de plusieurs séries du dépôt) :
+**Table parenté cross-lane 6 colonnes** (ArgumentAnalysis se situe au croisement de plusieurs séries du dépôt) :
 
-| Notebook Argument_Analysis | Série parente | Pont conceptuel |
+| Notebook ArgumentAnalysis | Série parente | Pont conceptuel |
 |---------------------------|---------------|-----------------|
-| `02` (taxonomie, 7 familles de sophismes) + `05` (Tweety) | [Tweety](../Tweety/) (JPype, sémantiques Dung, FOL, Modal) | TweetyProject = solveur formel unique, JPype = pont Python/Java ; Argument_Analysis consomme les API Tweety comme backend de validation |
+| `02` (taxonomie, 7 familles de sophismes) + `05` (Tweety) | [Tweety](../Tweety/) (JPype, sémantiques Dung, FOL, Modal) | TweetyProject = solveur formel unique, JPype = pont Python/Java ; ArgumentAnalysis consomme les API Tweety comme backend de validation |
 | `05` (PL/FOL/Modal/Dung) | [Lean](../Lean/) (preuves formelles, tactiques) | Formalisation logique = même paradigme que tactiques Lean ; frontière informel/formel analogue à proof/script |
 | `03`, `03c` | [Tweety](../Tweety/) (Tweety-5 argumentation abstraite) + [GameTheory](../../GameTheory/) (`game_theory_lean/SocialChoice/` Voting.lean) | Sémantiques de Dung (grounded/preferred/stable) = même fondement mathématique que Voting (Banks sets, monotonie STV) |
 | `Value_Based_AF` | [GameTheory](../../GameTheory/) (`game_theory_lean/SocialChoice/`) + [Tweety-9](../Tweety/Tweety-09-Preferences-Python.ipynb) (préférences) | Audiences VAF = ordres de préférence sur les valeurs : agréger plusieurs audiences = problème de choix social (Condorcet, Arrow), pont direct vers la théorie du vote |
@@ -361,9 +361,9 @@ Le pipeline génère un rapport JSON dans `output/analysis_report.json` :
 | `05b`, `05c` (sentinelle anti-théâtre) | [Search](../../Search/) (CSP/SMT/Z3) + [SemanticWeb](../SemanticWeb/) (OWL/SHACL raisonneurs) | Routage multi-solveur avec sentinelle « décider ou échouer bruyamment » analogue à CSP marathon EPIC #4956 ; classification 4-verdicts symétrique aux solveurs OWL (consistent / inconsistent / unknown / timeout) |
 | `06` (JTMS — Truth Maintenance System) | [Lean](../Lean/) (logique constructive) + [SemanticWeb](../SemanticWeb/) (incohérence OWL détection) | JTMS = raisonnement non-monotone étiquetage IN/OUT, analogue à propagation de contraintes Lean + détection d'incohérence SHACL |
 
-**Paragraphe « effet de composition — Argument_Analysis = carrefour informel/formel anti-théâtre »** :
+**Paragraphe « effet de composition — ArgumentAnalysis = carrefour informel/formel anti-théâtre »** :
 
-Là où Planners (cycle 29) est le carrefour **simulation/proof intra-série** (Python ⇄ Lean 4 sur l'admissibilité d'heuristique, cycle 29) et SmartContracts (cycle 30) est le carrefour **trust/privacy inter-séries** (confiance + confidentialité + décision collective), Argument_Analysis est le carrefour **informel/formel anti-théâtre inter-couches** : la **lecture de texte** (couche LLM, floue/contextuelle), la **formalisation logique** (couche PL/FOL/Modal, médium), et la **vérification formelle** (couche Tweety/Lean, tranchante/certaine) doivent collaborer SANS que l'une simule ce que l'autre fait réellement. Cette doctrine — incarnée par `Restitution_3_Actes` (scaffold déterministe + LLM *gated*), `Multi_Backend_Routing` (sentinelle « décider ou échouer bruyamment »), `Formal_Richness_Matrix` (4 classes de verdict anti-théâtre), et le mode fail-loud de `05` — est **la doctrine anti-théâtre du dépôt** : aucun notebook ne fait passer une simulation pour un résultat, aucune sortie n'est maquée pour embellir un échec.
+Là où Planners (cycle 29) est le carrefour **simulation/proof intra-série** (Python ⇄ Lean 4 sur l'admissibilité d'heuristique, cycle 29) et SmartContracts (cycle 30) est le carrefour **trust/privacy inter-séries** (confiance + confidentialité + décision collective), ArgumentAnalysis est le carrefour **informel/formel anti-théâtre inter-couches** : la **lecture de texte** (couche LLM, floue/contextuelle), la **formalisation logique** (couche PL/FOL/Modal, médium), et la **vérification formelle** (couche Tweety/Lean, tranchante/certaine) doivent collaborer SANS que l'une simule ce que l'autre fait réellement. Cette doctrine — incarnée par `Restitution_3_Actes` (scaffold déterministe + LLM *gated*), `Multi_Backend_Routing` (sentinelle « décider ou échouer bruyamment »), `Formal_Richness_Matrix` (4 classes de verdict anti-théâtre), et le mode fail-loud de `05` — est **la doctrine anti-théâtre du dépôt** : aucun notebook ne fait passer une simulation pour un résultat, aucune sortie n'est maquée pour embellir un échec.
 
 La série — tout notebook du répertoire, dont une part encore non cataloguée (rattrapage par le cron `catalog-cron.yml`) — aligne l'évolution paradigmatique de l'argumentation computationnelle (1995 Dung AF → 2019 framework hybrides LLM + solveur) sur la **frontière de vérifiabilité** (extraction brute → taxonomie → formalisation → validation SAT → restitution grounded). Chaque notebook est un maillon de la chaîne *lire → formaliser → vérifier → restituer honnêtement*.
 
@@ -371,7 +371,7 @@ La série — tout notebook du répertoire, dont une part encore non cataloguée
 
 ### Ce que vous avez appris
 
-Argument_Analysis est la série-pivot du dépôt : celle où le langage naturel rencontre le formel, médié par un LLM. En suivant le pipeline, vous avez appris à découper un texte argumentatif en couches de rigueur croissante :
+ArgumentAnalysis est la série-pivot du dépôt : celle où le langage naturel rencontre le formel, médié par un LLM. En suivant le pipeline, vous avez appris à découper un texte argumentatif en couches de rigueur croissante :
 
 - **L'extraction informelle** : un LLM isole prémisses, conclusions, transitions, et confronte chaque passage suspect à la taxonomie des sophismes (7 familles). C'est le versant *vrai mais approximatif* — rapide, contextuel, mais sans garantie.
 - **La formalisation** : les arguments informels deviennent un belief set propositionnel. Le texte fluide cède la place à des énoncés booléens que l'on peut *interroger*.
@@ -483,7 +483,7 @@ Cette section consigne la proposition d'analyse reçue du workspace partenaire `
 > | notebooks à mnémonique : aucune renum | inchangé |
 > | « Collision slot 2 — décision owner requise » (plus bas) | **résolue par l'archivage** : `Argument_Analysis_Agentic-2-pl_agent` quitte la racine de la série ; le slot 2 n'est plus porté que par `Argumentation-05-Formal-Verification-Python.ipynb` |
 >
-> La proposition `*` → `b` n'est **pas** rejetée sur le fond : elle est devenue sans objet pour ces quatre carnets. Le paragraphe « Indépendant de la renumérotation » (headings) et la mesure repo-wide hors Argument_Analysis restent valides tels quels.
+> La proposition `*` → `b` n'est **pas** rejetée sur le fond : elle est devenue sans objet pour ces quatre carnets. Le paragraphe « Indépendant de la renumérotation » (headings) et la mesure repo-wide hors ArgumentAnalysis restent valides tels quels.
 
 ### Verdict par branche
 
@@ -519,7 +519,7 @@ Indépendamment de toute décision de renum, **trois classes de défauts** se co
 
 Ce lot est **distinct** de la renumérotation et peut partir seul, sans attendre l'arbitrage owner du slot 2.
 
-### Mesure repo-wide (hors Argument_Analysis)
+### Mesure repo-wide (hors ArgumentAnalysis)
 
 Le garde de collision du merge-gate (`check_duplicate_notebook_index.py:_INDEX_RE`) exclut la convention dominante du cours (`ID_IN_NAME_RE` accepte `<Préfixe>-<num><lettre?>-`, `_INDEX_RE` exige l'index en tête). Mesure au 2026-09-06 sur l'ensemble des notebooks du dépôt (hors `_archive`/checkpoints/`.lake`) :
 
@@ -527,14 +527,14 @@ Le garde de collision du merge-gate (`check_duplicate_notebook_index.py:_INDEX_R
 - vus par `_INDEX_RE` : 224
 - écart : des notebooks entiers identifiés comme invisibles pour le garde de collision (l'écart mesuré ci-dessus)
 
-L'écart n'est pas propre à Argument_Analysis — contrôle positif sur les voisines : `Sudoku` 0/37, `Tweety` 0/34, `GameTheory` 8/94. Ce périmètre mériterait sa propre issue, mais elle appartient à l'owner de l'organe. **Elle n'est pas déposée depuis cette section** — la présente consignation se limite à la série Argument_Analysis.
+L'écart n'est pas propre à ArgumentAnalysis — contrôle positif sur les voisines : `Sudoku` 0/37, `Tweety` 0/34, `GameTheory` 8/94. Ce périmètre mériterait sa propre issue, mais elle appartient à l'owner de l'organe. **Elle n'est pas déposée depuis cette section** — la présente consignation se limite à la série ArgumentAnalysis.
 
 ## Provenance
 
 Les versions successives de ce README (1.2.1 → 1.2.5, 2026-09-09 → 2026-09-25) sont conservées dans l'historique Git :
 
 ```
-git log --oneline MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/README.md
+git log --oneline MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/README.md
 ```
 
 Chaque PR listée par `git log` (intégrations `Gouvernance_Multi_Agents`, audits fichier-entier, décisions owner `EPIC #5081`) reste traçable et auditable par le diff, sans raconter la livraison dans le README courant.

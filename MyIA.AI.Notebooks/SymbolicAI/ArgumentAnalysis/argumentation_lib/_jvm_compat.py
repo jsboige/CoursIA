@@ -21,7 +21,7 @@ _jvm_initialized: bool = False
 def initialize_jvm(verbose: bool = False) -> bool:
     """Initialize the JVM via CoursIA's Tweety infrastructure.
 
-    Robust, self-contained entry point for Argument_Analysis notebooks:
+    Robust, self-contained entry point for ArgumentAnalysis notebooks:
     resolves the Tweety directory, stages ``sys.path`` (so
     ``Tweety.tweety_init`` is importable) and ``chdir`` to the Tweety
     directory before calling ``init_tweety`` — which locates ``libs/`` and
@@ -45,7 +45,7 @@ def initialize_jvm(verbose: bool = False) -> bool:
         # The Tweety runtime lives canonically at SymbolicAI/Tweety: it holds
         # tweety_init.py, libs/*.jar and jdk-17-portable/. Resolve it directly
         # rather than via get_tweety_jar_dir() — whose first candidate
-        # (Argument_Analysis/libs) is jar-less, so its parent has no
+        # (ArgumentAnalysis/libs) is jar-less, so its parent has no
         # tweety_init.py and would silently skip the chdir below if a stray
         # jar ever landed there.
         tweety_dir = SYMBOLIC_AI_DIR / "Tweety"

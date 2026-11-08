@@ -7,12 +7,12 @@
 // Verbatim port of Argumentum.AssetConverter.Ontology (C# .NET), commit
 //   ac33f607a4889d8a982093c413804ed25bef3dc0
 // from the Argumentum submodule at
-//   MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum
+//   MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum
 //   Generation/Converters/Argumentum.AssetConverter/Ontology/OwlAdapter.cs
 //
 // Modifications (disclosed in NOTICE, summary):
 //   1. Namespace Argumentum.AssetConverter.Ontology
-//        -> CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.Ontology
+//        -> CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.Ontology
 //   2. Logger.LogProblem(...) (internal Argumentum utility, not public)
 //        -> _logger.LogProblem(...) against a private field initialised to
 //           NullLegacyLogger.Instance (see ILegacyLogger.cs in this directory).
@@ -39,7 +39,7 @@ using RDFSharp.Model;
 using VDS.RDF;
 using VDS.RDF.Parsing;
 
-namespace CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.Ontology
+namespace CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.Ontology
 {
     /// <summary>
     /// Types de documentation SKOS

@@ -76,8 +76,8 @@ def _tweety_libs_available() -> bool:
     The lookup goes through the library's own finder
     (`argumentation_lib._paths.get_tweety_jar_dir`), NOT through a private
     re-implementation of a single path. The finder searches
-    `Argument_Analysis/libs/` first and `Tweety/libs/` second, and
-    `.gitignore` provisions the first one (`Argument_Analysis/libs/*.jar`):
+    `ArgumentAnalysis/libs/` first and `Tweety/libs/` second, and
+    `.gitignore` provisions the first one (`ArgumentAnalysis/libs/*.jar`):
     a jar sitting there is where the organ actually looks for it, and a
     guard hard-coded on `Tweety/libs` alone would report "absent" while the
     organ works — the six semantic assertions would then be skipped with a

@@ -7,7 +7,7 @@ Verbatim port from Argumentum.AssetConverter.Ontology (C# .NET)
 Upstream source   : Argumentum.AssetConverter / Ontology/OwlAdapter.cs
 Upstream commit   : ac33f607a4889d8a982093c413804ed25bef3dc0
 Upstream URL      : https://github.com/Argumentum/Argumentum
-                    (submodule: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum)
+                    (submodule: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum)
 Source path       : Generation/Converters/Argumentum.AssetConverter/Ontology/OwlAdapter.cs
 Port date         : 2026-07-03
 Port commit       : (this CoursIA commit)
@@ -22,7 +22,7 @@ modifications limited to:
 
   1. Namespace change
      `Argumentum.AssetConverter.Ontology`
-       -> `CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.Ontology`
+       -> `CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.Ontology`
 
   2. TargetFramework
      `net9.0-windows` (Argumentum global, UseWindowsForms=true) -> `net9.0`

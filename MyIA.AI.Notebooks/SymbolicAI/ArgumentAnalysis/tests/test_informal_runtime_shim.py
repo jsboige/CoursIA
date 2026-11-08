@@ -24,9 +24,9 @@ Les criteres d'acceptance de l'issue, un test par case :
    Avec le vrai SK installe (regle F, machine locale), la chaine a ete
    mesuree bout-en-bout : voir NOTICE-EPITA section #23633.
 6. La deviation declaree de `_epita_paths.py` fait son office : l'import ne
-   recree PAS `Argument_Analysis/libs/` (retire par l'arbitrage #23109).
+   recree PAS `ArgumentAnalysis/libs/` (retire par l'arbitrage #23109).
 7. La **seconde** deviation declaree (2) de `_epita_paths.py` fait son office :
-   `DATA_DIR` vise `Argument_Analysis/data` (la taxonomie suivie), donc
+   `DATA_DIR` vise `ArgumentAnalysis/data` (la taxonomie suivie), donc
    `get_taxonomy_path()` rend le CSV du depot **sans appel reseau** et sans creer
    `argumentation_lib/data/`. Defaut mesure sur la PR #23669 par `myia-ai-01` :
    avec la valeur amont, ce chemin telecharge la taxonomie depuis la branche
@@ -331,14 +331,14 @@ def test_temoin_negatif_sans_shim_le_bris_revient(informal_shim_env):
 # ---------------------------------------------------------------------------
 def test_import_epita_paths_ne_recree_pas_libs():
     # Test isole (hors fixture) : l'import de _epita_paths ne doit PAS creer
-    # Argument_Analysis/libs/ -- la deviation NOT-VERBATIM declaree supprime
+    # ArgumentAnalysis/libs/ -- la deviation NOT-VERBATIM declaree supprime
     # l'appel module-level ensure_directories_exist() (arbitrage #23109).
     if _ARG_ANALYSIS_DIR not in sys.path:
         sys.path.insert(0, _ARG_ANALYSIS_DIR)
     importlib.import_module("argumentation_lib._epita_paths")
     libs_dir = os.path.join(_ARG_ANALYSIS_DIR, "libs")
     assert not os.path.exists(libs_dir), (
-        "L'import de _epita_paths.py a recree Argument_Analysis/libs/ "
+        "L'import de _epita_paths.py a recree ArgumentAnalysis/libs/ "
         "(retire par l'arbitrage #23109) -- la deviation declaree est cassee"
     )
 
@@ -351,11 +351,11 @@ def test_data_dir_pointe_la_racine_application(informal_shim_env):
     from argumentation_analysis.paths import DATA_DIR
 
     # Deviation #23633 (2) : DATA_DIR = PROJECT_ROOT_DIR/"data" =
-    # Argument_Analysis/data, la ou CoursIA SUIT sa taxonomie. La valeur amont
+    # ArgumentAnalysis/data, la ou CoursIA SUIT sa taxonomie. La valeur amont
     # (argumentation_lib/data) fait tomber les deux consommateurs du chargeur sur
     # un repertoire absent, et get_taxonomy_path() part alors en telechargement
     # non epingle (voir test_get_taxonomy_path_ne_telecharge_pas).
-    assert str(DATA_DIR).replace("\\", "/").endswith("Argument_Analysis/data"), (
+    assert str(DATA_DIR).replace("\\", "/").endswith("ArgumentAnalysis/data"), (
         f"DATA_DIR = {DATA_DIR} : la deviation declaree (2) de _epita_paths.py "
         "n'est pas appliquee"
     )

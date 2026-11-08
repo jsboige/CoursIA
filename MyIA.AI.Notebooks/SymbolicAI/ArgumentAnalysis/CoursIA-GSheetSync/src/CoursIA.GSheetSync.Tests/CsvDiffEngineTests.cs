@@ -6,17 +6,17 @@
 //
 // Modifications from upstream (LGPL-3.0 NOTICE per section 5):
 //   - Namespace: Argumentum.AssetConverter.Tests.GSheetSync
-//            ->  CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.Tests.GSheetSync
+//            ->  CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.Tests.GSheetSync
 //   - using directive: Argumentum.AssetConverter.GSheetSync
-//                  ->  CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.GSheetSync
+//                  ->  CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.GSheetSync
 //   - Target framework: net9.0-windows -> net9.0
 //   - Behaviour, test cases, and assertions: UNCHANGED (10 [Fact] tests preserved 1:1).
 
-using CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.GSheetSync;
+using CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.GSheetSync;
 using FluentAssertions;
 using Xunit;
 
-namespace CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.Tests.GSheetSync
+namespace CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.Tests.GSheetSync
 {
     public class CsvDiffEngineTests
     {

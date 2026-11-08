@@ -3,9 +3,9 @@
 # Source file : argumentation_analysis/services/jtms/atms_core.py
 # Source SHA1 : 70651a707a7ff37e6cd7502796300907a90d9783 (242L @ 713927e1)
 # Source LICENSE: MIT (Copyright (c) 2025 jsboigeEpita)
-# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/_atms_core.py
+# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_atms_core.py
 # Copy LICENSE : MIT (inherited from upstream)
-# Issue de pilotage #23163 (serie Argument_Analysis complete) -- See EPIC #23163
+# Issue de pilotage #23163 (serie ArgumentAnalysis complete) -- See EPIC #23163
 #
 # VERBATIM SANS MODIFICATION : le fichier amont n'importe que la bibliotheque
 # standard, donc aucun prefixe `argumentation_analysis.*` n'a a etre reecrit et

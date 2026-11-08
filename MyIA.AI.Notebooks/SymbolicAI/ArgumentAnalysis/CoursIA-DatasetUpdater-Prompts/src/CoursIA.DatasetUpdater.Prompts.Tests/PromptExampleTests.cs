@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Xunit;
 
-namespace CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.DatasetUpdater.Tests;
+namespace CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.DatasetUpdater.Tests;
 
 public class PromptExampleTests
 {

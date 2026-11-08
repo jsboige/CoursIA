@@ -25,7 +25,7 @@ from pathlib import Path
 
 import pytest
 
-# Ajoute Argument_Analysis/ au path pour importer le package argumentation_lib.
+# Ajoute ArgumentAnalysis/ au path pour importer le package argumentation_lib.
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from argumentation_lib.sat_handler import (  # noqa: E402

@@ -23,15 +23,15 @@
 #
 # (1) L'appel module-level amont `ensure_directories_exist()` (derniere ligne du
 #     fichier upstream) est DESACTIVE dans cette copie : il recreerait
-#     `Argument_Analysis/libs/tweety` (repertoire retire par l'arbitrage #23109) et six
+#     `ArgumentAnalysis/libs/tweety` (repertoire retire par l'arbitrage #23109) et six
 #     autres repertoires vides a CHAQUE import de argumentation_lib via le shim. La
 #     FONCTION reste byte-identique et invoquable ; seul l'appel automatique a l'import
 #     est coupe.
 #
-# (2) `DATA_DIR` pointe la racine APPLICATION (`Argument_Analysis/data`) et non le
+# (2) `DATA_DIR` pointe la racine APPLICATION (`ArgumentAnalysis/data`) et non le
 #     paquet (`argumentation_lib/data`). Motif mesure : la taxonomie suivie de CoursIA
-#     est `Argument_Analysis/data/argumentum_fallacies_taxonomy.csv`. Avec la valeur
-#     amont, `_taxonomy_loader.TAXONOMY_FILE` (= `Argument_Analysis/` / DATA_DIR, ou
+#     est `ArgumentAnalysis/data/argumentum_fallacies_taxonomy.csv`. Avec la valeur
+#     amont, `_taxonomy_loader.TAXONOMY_FILE` (= `ArgumentAnalysis/` / DATA_DIR, ou
 #     l'operande absolu l'emporte) et `_informal_definitions.DEFAULT_TAXONOMY_PATH`
 #     tombent dans `argumentation_lib/data/`, absent du disque : `get_taxonomy_path()`
 #     cree ce dossier et telecharge la taxonomie depuis la branche `master`

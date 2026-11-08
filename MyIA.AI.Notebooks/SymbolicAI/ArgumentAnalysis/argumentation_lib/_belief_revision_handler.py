@@ -3,7 +3,7 @@
 # Source file : argumentation_analysis/agents/core/logic/belief_revision_handler.py
 # Source SHA1 : 2b02bd64800e9b8c47489cba94ba03cd42b8948d (158L @ a8025f60)
 # Source LICENSE: MIT (Copyright (c) 2025 jsboigeEpita)
-# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/_belief_revision_handler.py
+# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_belief_revision_handler.py
 # Copy LICENSE : MIT (inherited from upstream)
 # Volet B etape 4 sub-tranche C186e -- See EPIC #4960
 #

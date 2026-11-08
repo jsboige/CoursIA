@@ -3,9 +3,9 @@
 # Source file : argumentation_analysis/evaluation/opaque_id.py
 # Source SHA1 : 60933b0904a86a77eb9a5017069b43e4b6fac0bc (65L @ 2e2a1c3c)
 # Source LICENSE: MIT (Copyright (c) 2025 jsboigeEpita)
-# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/_opaque_id.py
+# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_opaque_id.py
 # Copy LICENSE : MIT (inherited from upstream)
-# Issue de pilotage #23163 (serie Argument_Analysis complete) -- See EPIC #23163
+# Issue de pilotage #23163 (serie ArgumentAnalysis complete) -- See EPIC #23163
 #
 # VERBATIM SANS MODIFICATION : le corps ci-dessous est byte-for-byte identique
 # a l'amont aux fins de ligne pres. Seule cette entete de provenance est

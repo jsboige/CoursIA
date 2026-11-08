@@ -5,7 +5,7 @@
 # Source LICENSE: MIT (Copyright (c) 2025 jsboigeEpita)
 # Verbatim integrity: body SHA1=7341823ac37aaa83e8b77c54ccd2d4dfd133ee76
 #
-# CoursIA NOTICE: see ../../../../SymbolicAI/Argument_Analysis/argumentation_lib/NOTICE-EPITA
+# CoursIA NOTICE: see ../../../../SymbolicAI/ArgumentAnalysis/argumentation_lib/NOTICE-EPITA
 #                 section "Volet B etape 4 sub-tranche C186b (pl_handler + fol_handler)".
 #
 # DEPENDENCY NOTICE (G.9 honest caveat):

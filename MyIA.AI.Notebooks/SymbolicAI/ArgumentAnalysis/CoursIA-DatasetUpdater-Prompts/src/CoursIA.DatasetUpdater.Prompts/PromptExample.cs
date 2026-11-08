@@ -9,13 +9,13 @@
 // version. See <https://www.gnu.org/licenses/lgpl-3.0.html>.
 //
 // Modifications from upstream: namespace moved from `Argumentum.AssetConverter`
-// to `CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.DatasetUpdater` (LGPL
+// to `CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.DatasetUpdater` (LGPL
 // v3 §5 modification log). No other changes — the lazy file-read cache is
 // preserved verbatim, byte-for-byte.
 
 using System.IO;
 
-namespace CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.DatasetUpdater;
+namespace CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.DatasetUpdater;
 
 public class PromptExample
 {

@@ -3,7 +3,7 @@
 # Source file : argumentation_analysis/agents/core/logic/probabilistic_handler.py
 # Source SHA1 : 069b33d5911dde5f48afbcd594e60a8ccf11abff (152L @ a8025f60)
 # Source LICENSE: MIT (Copyright (c) 2025 jsboigeEpita)
-# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/_probabilistic_handler.py
+# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_probabilistic_handler.py
 # Copy LICENSE : MIT (inherited from upstream)
 # Volet B etape 4 sub-tranche C186e -- See EPIC #4960
 #

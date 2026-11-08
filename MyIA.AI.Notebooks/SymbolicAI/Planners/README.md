@@ -793,7 +793,7 @@ L'infrastructure du dépôt fournit trois familles d'outils MCP qui soutiennent 
 | `Planners-5b-Lean-Relaxation` | [Lean math](../Lean/) (et `planning_lean/` local) | Admissibilité $h^{+}$ prouvée formellement (lake 0-sorry) ; companion natif = pont intra-série simulation/proof |
 | `Planners-7-OR-Tools` | [Search](../../Search/) (CSP-1/2/6/8/9 marathon #4956) | CP-SAT = même moteur que CSP ; planification = CSP avec variables = actions |
 | `Planners-9-HTN` | [SmartContracts](../SmartContracts/) (planification déterministe d'opérations) | HTN/SHOP2 = décomposition hiérarchique ; Smart Contracts = décomposition vérifiable de transactions |
-| `Planners-10-LLM-Planning` | [Argument_Analysis](../Argument_Analysis/) (Semantic Kernel orchestration) | LLM-Planning via SK : prompting structuré → génération de plan → validation par solveur |
+| `Planners-10-LLM-Planning` | [ArgumentAnalysis](../ArgumentAnalysis/) (Semantic Kernel orchestration) | LLM-Planning via SK : prompting structuré → génération de plan → validation par solveur |
 | `Planners-11-Unified-Planning` | [Lean](../Lean/) + [SemanticWeb](../SemanticWeb/) (ontologies de domaine) | Modèle PDDL ↔ ontologie OWL/SHACL : un domaine PDDL peut être annoté sémantiquement |
 | `Planners-12-LOOP` | [Probas](../../Probas/) (PyMC, Infer.NET) + [ML](../../ML/) (parité Python/.NET #4956) | Apprentissage par renforcement / imitation sur politiques de planification |
 

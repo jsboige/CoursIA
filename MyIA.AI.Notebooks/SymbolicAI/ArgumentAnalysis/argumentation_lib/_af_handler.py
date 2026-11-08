@@ -3,7 +3,7 @@
 # Source file : argumentation_analysis/agents/core/logic/af_handler.py
 # Source SHA1 : c8c468eff25256c625ddc2d4dace4f995ba3a79e (234L @ a8025f60)
 # Source LICENSE: MIT (Copyright (c) 2025 jsboigeEpita)
-# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/_af_handler.py
+# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_af_handler.py
 # Copy LICENSE : MIT (inherited from upstream)
 # Volet B etape 4 sub-tranche C186d — See EPIC #4960
 #

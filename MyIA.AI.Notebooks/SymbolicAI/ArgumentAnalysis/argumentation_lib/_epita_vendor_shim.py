@@ -181,7 +181,7 @@ __all__ = ["install_epita_vendor_shim", "VENDOR_MAP"]
 #
 # `_epita_paths.py` porte une deviation NOT-VERBATIM declaree (appel
 # module-level `ensure_directories_exist()` desactive : il recreerait
-# `Argument_Analysis/libs/tweety` retire par l'arbitrage #23109).
+# `ArgumentAnalysis/libs/tweety` retire par l'arbitrage #23109).
 
 INFORMAL_RUNTIME_MAP: list[tuple[str, str]] = [
     # 1) helpers amont vendoes (bootstrap : taxonomy_loader importe paths)

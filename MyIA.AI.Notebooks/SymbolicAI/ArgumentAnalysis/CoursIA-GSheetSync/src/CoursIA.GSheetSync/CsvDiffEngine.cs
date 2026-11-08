@@ -6,7 +6,7 @@
 //
 // Modifications from upstream (LGPL-3.0 NOTICE per section 5):
 //   - Namespace: Argumentum.AssetConverter.GSheetSync
-//            ->  CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.GSheetSync
+//            ->  CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.GSheetSync
 //   - Target framework: net9.0-windows -> net9.0 (cross-platform; CsvHelper is OS-agnostic)
 //   - Behaviour, public API, and assertions: UNCHANGED.
 //
@@ -23,7 +23,7 @@ using System.Text;
 using CsvHelper;
 using CsvHelper.Configuration;
 
-namespace CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.GSheetSync
+namespace CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.GSheetSync
 {
 	public class CellChange
 	{

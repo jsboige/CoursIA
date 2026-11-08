@@ -23,7 +23,7 @@ Le parametre ``seed`` de l'API OpenAI n'est PAS injecte : le phenomene
 mesure est la variance naturelle run-to-run de l'echantillonnage LLM,
 conformement au protocole de l'issue (mesure originelle : « 5 runs »).
 
-Usage (depuis ``Argument_Analysis/``, cle dans ``.env``) ::
+Usage (depuis ``ArgumentAnalysis/``, cle dans ``.env``) ::
 
     python -m argumentation_lib.budget_variance_study \
         --seeds 0,1,7,42,99 --out etude_budget.json
@@ -45,7 +45,7 @@ from typing import Any, Dict, List, Optional
 
 @functools.lru_cache(maxsize=1)
 def _load_env() -> bool:
-    """Charge ``Argument_Analysis/.env`` (cle LLM) une fois, avant toute lecture.
+    """Charge ``ArgumentAnalysis/.env`` (cle LLM) une fois, avant toute lecture.
 
     Sans cet appel explicite, ``_resolve_chat_model_id()`` s'execute AVANT le
     ``load_dotenv`` de ``_build_runner`` : le premier run et l'en-tete du
@@ -131,7 +131,7 @@ def _resolve_chat_model_id() -> str:
     if not configured:
         raise RuntimeError(
             "OPENAI_CHAT_MODEL_ID absent : aucun modele n'est configure. "
-            "Renseigner la variable (voir Argument_Analysis/.env.example) "
+            "Renseigner la variable (voir ArgumentAnalysis/.env.example) "
             "plutot que de laisser la serie appeler un identifiant par defaut."
         )
     return OBSOLETE_MODEL_SUBSTITUTIONS.get(configured.strip(), configured)

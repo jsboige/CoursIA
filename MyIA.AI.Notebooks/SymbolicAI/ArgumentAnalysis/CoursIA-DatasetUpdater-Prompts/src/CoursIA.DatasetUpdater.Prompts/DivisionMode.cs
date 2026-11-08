@@ -9,11 +9,11 @@
 // version. See <https://www.gnu.org/licenses/lgpl-3.0.html>.
 //
 // Modifications from upstream: namespace moved from `Argumentum.AssetConverter`
-// to `CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.DatasetUpdater` (LGPL
+// to `CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.DatasetUpdater` (LGPL
 // v3 §5 modification log). No other changes — the enum surface is preserved
 // verbatim, byte-for-byte.
 
-namespace CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.DatasetUpdater;
+namespace CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.DatasetUpdater;
 
 public enum DivisionMode
 {

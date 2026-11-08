@@ -3,7 +3,7 @@
 # Source file : argumentation_analysis/agents/core/logic/dialogue_handler.py
 # Source SHA1 : 4a54ff9dda76a310d5eecc5499ef9b23cd2fd731 (153L @ a8025f60)
 # Source LICENSE: MIT (Copyright (c) 2025 jsboigeEpita)
-# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/_dialogue_handler.py
+# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_dialogue_handler.py
 # Copy LICENSE : MIT (inherited from upstream)
 # Volet B etape 4 sub-tranche C186e -- See EPIC #4960
 #

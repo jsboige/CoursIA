@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-# Ajoute Argument_Analysis/ au path pour importer l'organe vendored.
+# Ajoute ArgumentAnalysis/ au path pour importer l'organe vendored.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import governance_methods as gm  # noqa: E402
 

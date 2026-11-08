@@ -4,9 +4,9 @@
 # Source file : tests/unit/coursia/privacy_mining/test_privacy_mining_roundtrip.py
 # Source SHA1 : 9752c075af56ec2de5be7c93b2a716ac1148cdcf (470L @ 2e2a1c3c)
 # Source LICENSE: MIT (Copyright (c) 2025 jsboigeEpita)
-# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/tests/test_privacy_mining_roundtrip.py
+# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/tests/test_privacy_mining_roundtrip.py
 # Copy LICENSE : MIT (inherited from upstream)
-# Issue de pilotage #23163 (serie Argument_Analysis complete) -- See EPIC #23163
+# Issue de pilotage #23163 (serie ArgumentAnalysis complete) -- See EPIC #23163
 #
 # ADAPTATIONS DECLAREES (le corps de test amont est repris tel quel) :
 #   1. prefixes d'import : `argumentation_analysis.evaluation.X` ->

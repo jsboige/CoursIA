@@ -1,4 +1,4 @@
-# `_archive/` — chaîne legacy `*_agent` de la série Argument_Analysis
+# `_archive/` — chaîne legacy `*_agent` de la série ArgumentAnalysis
 
 Registre de décisions (convention `_archive/`, cf [`docs/reference/_archive-convention.md`](../../../../docs/reference/_archive-convention.md)).
 Ces carnets ne sont **pas** une poubelle : chaque ligne dit ce qui les a supplantés et où le verdict est enregistré.

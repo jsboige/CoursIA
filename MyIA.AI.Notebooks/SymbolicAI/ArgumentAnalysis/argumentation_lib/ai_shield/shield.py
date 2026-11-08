@@ -6,7 +6,7 @@
 #
 # CoursIA modification : AUCUNE. Le fichier ci-dessous est identique octet pour octet a la copie amont (aucun import EPITA dans ce fichier).
 #
-# Portage dans le cadre de l'issue #23163 (serie Argument_Analysis completee sur
+# Portage dans le cadre de l'issue #23163 (serie ArgumentAnalysis completee sur
 # CoursIA) — le depot EPITA reste le cadre experimental, pas la destination.
 # Registre des copies verbatim : `argumentation_lib/NOTICE-EPITA`.
 """AI Shield — main shield class with configurable layer pipeline.

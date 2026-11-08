@@ -9,7 +9,7 @@
 
 ## Pourquoi ce registre
 
-L'open-courseware CoursIA héberge **~25 datasets pédagogiques** (CSV, ZIP, binaires) répartis sur 9 familles thématiques : ML/ML.Net, ML/DataScienceWithAgents, Probas/Infer, Probas/PyMC, QuantConnect/datasets, SymbolicAI/Argument_Analysis, SemanticWeb, RL, CaseStudies. Sans registre structuré :
+L'open-courseware CoursIA héberge **~25 datasets pédagogiques** (CSV, ZIP, binaires) répartis sur 9 familles thématiques : ML/ML.Net, ML/DataScienceWithAgents, Probas/Infer, Probas/PyMC, QuantConnect/datasets, SymbolicAI/ArgumentAnalysis, SemanticWeb, RL, CaseStudies. Sans registre structuré :
 
 1. **L'étudiant fork le repo et reproduit en aveugle** → les données ont peut-être été modifiées depuis la dernière publication, le notebook calcule sur des chiffres divergents, le claim devient faux.
 2. **Le coordinateur ne peut pas vérifier** la cohérence disque ↔ checksum avant publication open-courseware — impossible de garantir la reproductibilité d'un exercice.
@@ -114,12 +114,12 @@ Chaque ligne du registre respecte le schéma :
 
 > **Note QC.** Le répertoire `QuantConnect/datasets/yfinance/crypto_panier/` contient les fichiers du panier (BTC, ETH, ADA, AVAX, DOT, LINK, LTC, MATIC, SOL, XRP). Tous sont **référencés** ci-dessus avec leur SHA256 vérifié firsthand (c.798, 2026-07-23) ; ils sont **isomorphes** (même format yfinance OHLCV), licence identique (CC-BY-4.0).
 
-### SymbolicAI / Argument_Analysis (2)
+### SymbolicAI / ArgumentAnalysis (2)
 
 | Chemin | Taille (B) | SHA256 (16 hex) | Licence | Catégorie | Usage | Card |
 |--------|----------:|-----------------|---------|-----------|-------|------|
-| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv` | 4 139 986 | `457ca19a40d5587…` | ODbL-1.0 | vocabulaire-ontologie | Taxonomie sophismes Argumentum | — |
-| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_virtues_taxonomy.csv` | 921 641 | `fb3b0bbc5b1e3f2…` | ODbL-1.0 | vocabulaire-ontologie | Taxonomie vertus Argumentum | — |
+| `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/argumentum_fallacies_taxonomy.csv` | 4 139 986 | `457ca19a40d5587…` | ODbL-1.0 | vocabulaire-ontologie | Taxonomie sophismes Argumentum | — |
+| `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/argumentum_virtues_taxonomy.csv` | 921 641 | `fb3b0bbc5b1e3f2…` | ODbL-1.0 | vocabulaire-ontologie | Taxonomie vertus Argumentum | — |
 
 ### SymbolicAI / SemanticWeb (1)
 

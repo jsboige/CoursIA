@@ -164,12 +164,12 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 
 ### EPITA — IA Symbolique (19)
 
-<!-- MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis -->
+<!-- MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis -->
 
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-00-Setup-Tweety-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05-Formal-Verification-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01-Toulmin-Model-Python.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Tweety -->
 
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb`
@@ -271,25 +271,25 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 
 ### EPITA — IA Symbolique (60)
 
-<!-- MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis -->
+<!-- MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis -->
 
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07-Orchestration-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08-Capstone-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08e-Argument-Profile-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02b-Argumentum-Cards-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05c-Formal-Richness-Matrix-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05b-Multi-Backend-Routing-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03c-Ranking-Semantics-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08c-UI-Configuration-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03b-Value-Based-AF-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07-Orchestration-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08e-Argument-Profile-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02b-Argumentum-Cards-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08b-Executor-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05c-Formal-Richness-Matrix-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05b-Multi-Backend-Routing-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Ontology_AIF.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Ontology_CrossLinks.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Ontology_Virtues.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03c-Ranking-Semantics-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08c-UI-Configuration-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03b-Value-Based-AF-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Tweety -->
 
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Aspic-CSharp.ipynb`

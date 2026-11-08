@@ -3,9 +3,9 @@
 # Source file : argumentation_analysis/evaluation/sanitize_state.py
 # Source SHA1 : 236f5290f869cc8f1e76f9b76a15e17cd2321fba (1131L @ 2e2a1c3c)
 # Source LICENSE: MIT (Copyright (c) 2025 jsboigeEpita)
-# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/_sanitize_state.py
+# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_sanitize_state.py
 # Copy LICENSE : MIT (inherited from upstream)
-# Issue de pilotage #23163 (serie Argument_Analysis complete) -- See EPIC #23163
+# Issue de pilotage #23163 (serie ArgumentAnalysis complete) -- See EPIC #23163
 #
 # PREFIXE D'IMPORT SEUL : l'unique import `argumentation_analysis.*` du
 # fichier (l.61) est reecrit en `argumentation_lib._opaque_id` (le module

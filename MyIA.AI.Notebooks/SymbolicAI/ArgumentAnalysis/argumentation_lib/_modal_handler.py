@@ -3,7 +3,7 @@
 # Source file : argumentation_analysis/agents/core/logic/modal_handler.py
 # Source SHA1 : ea424fff87cccd77c322d5a97ff0c516190f0f54 (327L @ a8025f60)
 # Source LICENSE: MIT (Copyright (c) 2025 jsboigeEpita)
-# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/_modal_handler.py
+# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_modal_handler.py
 # Copy LICENSE : MIT (inherited from upstream)
 # Volet B etape 4 sub-tranche C186c — See EPIC #4960
 #

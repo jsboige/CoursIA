@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Pytest suite for `SymbolicAI/Argument_Analysis/install_jdk_portable.py`.
+"""Pytest suite for `SymbolicAI/ArgumentAnalysis/install_jdk_portable.py`.
 
-Co-located with the module under `Argument_Analysis/`. CPU-only, no network,
+Co-located with the module under `ArgumentAnalysis/`. CPU-only, no network,
 no real JDK download, no real JDK install. The module imports only stdlib at
 top level (os, platform, pathlib, subprocess, zipfile, urllib.request, logging,
 sys) and lazily imports `tarfile` inside the Linux/MacOS extraction branch, so
@@ -33,7 +33,7 @@ from types import SimpleNamespace
 
 import pytest
 
-# Load the module by path (lives under Argument_Analysis/, stdlib-only at import
+# Load the module by path (lives under ArgumentAnalysis/, stdlib-only at import
 # time -> no sys.path manipulation, no package-relative imports).
 _MODULE_PATH = Path(__file__).resolve().parent / "install_jdk_portable.py"
 _spec = importlib.util.spec_from_file_location("install_jdk_portable", _MODULE_PATH)

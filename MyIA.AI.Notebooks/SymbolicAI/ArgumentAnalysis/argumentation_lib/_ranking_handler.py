@@ -3,7 +3,7 @@
 # Source file : argumentation_analysis/agents/core/logic/ranking_handler.py
 # Source SHA1 : da43f9777805bbaac40a7d7335b92cf7019bbd5b (120L @ a8025f60)
 # Source LICENSE: MIT (Copyright (c) 2025 jsboigeEpita)
-# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/_ranking_handler.py
+# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_ranking_handler.py
 # Copy LICENSE : MIT (inherited from upstream)
 # Volet B etape 4 sub-tranche C186d — See EPIC #4960
 #

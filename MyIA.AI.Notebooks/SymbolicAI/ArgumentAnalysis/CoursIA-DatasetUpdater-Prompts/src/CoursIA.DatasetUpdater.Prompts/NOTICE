@@ -41,7 +41,7 @@ Modifications from upstream (LGPL v3 §5 disclosure)
 
 1. Namespace: every ported class moved from
    `Argumentum.AssetConverter` to
-   `CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.DatasetUpdater`
+   `CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.DatasetUpdater`
    to follow the CoursIA convention `SymbolicAI/<sous-projet>/`.
 
 2. Target framework: Argumentum targets `net9.0-windows` due to a
@@ -117,7 +117,7 @@ CSV/JSON adapters) is also NOT in this port: that class lives in
 Why this scope (the "pédagogical bridge" rationale)
 ---------------------------------------------------
 
-EPIC #4960 is the "Argument_Analysis v3" landing in CoursIA, with
+EPIC #4960 is the "ArgumentAnalysis v3" landing in CoursIA, with
 three documented sub-deliverables:
 
   A. CsvDiffEngine (delivered, MERGED via PR #5161, 2026-07-03)

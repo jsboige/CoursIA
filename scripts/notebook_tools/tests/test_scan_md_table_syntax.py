@@ -1018,7 +1018,7 @@ class TestOutOfScopeExclusion:
         assert "transcript" in reason
 
     def test_argumentum_generated_report_excluded(self):
-        p = "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum/Documentation/Git_Archeology_Report.md"
+        p = "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum/Documentation/Git_Archeology_Report.md"
         excluded, reason = _is_out_of_scope(p)
         assert excluded is True
         assert "generated report" in reason

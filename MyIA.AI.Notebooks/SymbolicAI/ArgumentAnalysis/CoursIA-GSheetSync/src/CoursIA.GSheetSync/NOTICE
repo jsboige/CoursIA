@@ -24,7 +24,7 @@ License:
 Scope of the port (tranche A, EPIC #4960 volet A):
   - This CoursIA namespace hosts the verbatim .NET 9 port of CsvDiffEngine
     and its unit tests. No semantic change beyond:
-      (a) Namespace change: Argumentum.AssetConverter.GSheetSync -> CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.GSheetSync
+      (a) Namespace change: Argumentum.AssetConverter.GSheetSync -> CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.GSheetSync
       (b) License header preservation (LGPL-3.0 NOTICE)
       (c) Target framework downgrade: net9.0-windows -> net9.0 (cross-platform; CsvHelper is OS-agnostic)
       (d) Removed `UseWindowsForms=true` (Argumentum-wide flag, not relevant to this file)
@@ -34,7 +34,7 @@ Scope of the port (tranche A, EPIC #4960 volet A):
                       + CsvDiffEngineEdgeCaseTests.cs (not yet ported in tranche A)
 
 Why LGPL-3.0 NOTICE matters here:
-  The C# source under CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.GSheetSync
+  The C# source under CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.GSheetSync
   is a DERIVATIVE of LGPL-3.0-licensed source. LGPL v3, section 5 (Conveying
   Modified Source Versions) requires prominent notice of changes and
   preservation of the licensing indication. The header comment on every

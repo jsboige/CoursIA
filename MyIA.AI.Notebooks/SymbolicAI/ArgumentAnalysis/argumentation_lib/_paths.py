@@ -10,7 +10,7 @@ import pathlib
 from typing import Optional
 
 
-# Base directory = parent of argumentation_lib/ = Argument_Analysis/
+# Base directory = parent of argumentation_lib/ = ArgumentAnalysis/
 LIB_DIR = pathlib.Path(__file__).parent.resolve()
 ARGUMENT_ANALYSIS_DIR = LIB_DIR.parent
 SYMBOLIC_AI_DIR = ARGUMENT_ANALYSIS_DIR.parent
@@ -20,7 +20,7 @@ def get_tweety_jar_dir() -> Optional[pathlib.Path]:
     """Find the directory containing Tweety JAR files.
 
     Only the sibling series directory holds JARs. The former first candidate,
-    ``Argument_Analysis/libs/``, was removed with the #23109 arbitration: it
+    ``ArgumentAnalysis/libs/``, was removed with the #23109 arbitration: it
     carried the duplicated native libraries and no JAR at all (measured at base
     ``7e1b735ab``: six ``native/*`` entries, zero ``*.jar``), so its ``*.jar``
     guard never matched -- a pointer that looked alive and resolved to nothing.
@@ -53,7 +53,7 @@ def get_ext_tools_dir() -> pathlib.Path:
 
     Resolution order:
     1. SymbolicAI/ext_tools/ (shared, canonical)
-    2. Argument_Analysis/ext_tools/ (local, fallback for a checkout that
+    2. ArgumentAnalysis/ext_tools/ (local, fallback for a checkout that
        does not carry the shared directory)
 
     Returns the local path when neither exists, so callers keep a writable

@@ -4,7 +4,7 @@
 // depended on. Mirrors the same pattern used in `CoursIA.OwlAdapter` (tranche B
 // of EPIC #4960, MERGED via PR #5167) for consistency across the Argumentum port.
 
-namespace CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.DatasetUpdater;
+namespace CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.DatasetUpdater;
 
 /// <summary>
 /// Local abstraction for the upstream <c>Argumentum.Logger.Log(string)</c> static helper,

@@ -3,9 +3,9 @@
 # Source file : argumentation_analysis/reporting/restitution/native_dung.py
 # Source SHA1 : c2976b6f200de307698a8bf3f9ed5e6527fade97 (411L @ 2e2a1c3c)
 # Source LICENSE: MIT (Copyright (c) 2025 jsboigeEpita)
-# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/_native_dung.py
+# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_native_dung.py
 # Copy LICENSE : MIT (inherited from upstream)
-# Issue de pilotage #23163 (serie Argument_Analysis complete) -- See EPIC #23163
+# Issue de pilotage #23163 (serie ArgumentAnalysis complete) -- See EPIC #23163
 #
 # VERBATIM SANS MODIFICATION : le corps ci-dessous est byte-for-byte identique
 # a l'amont aux fins de ligne pres. Seule cette entete de provenance est

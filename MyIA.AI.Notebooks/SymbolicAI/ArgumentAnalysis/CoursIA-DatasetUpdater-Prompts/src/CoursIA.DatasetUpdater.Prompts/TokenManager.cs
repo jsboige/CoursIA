@@ -10,7 +10,7 @@
 //
 // Modifications from upstream (LGPL v3 §5 modification log):
 //   - Namespace moved from `Argumentum.AssetConverter` to
-//     `CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.DatasetUpdater`.
+//     `CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.DatasetUpdater`.
 //   - SharpToken dependency stripped: `GptEncoding.GetEncodingForModel(model)`
 //     replaced by an abstract `ITokenCounter` interface (in this file).
 //     Rate-limit algorithm preserved verbatim (concurrent timestamp queue,
@@ -26,7 +26,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.DatasetUpdater;
+namespace CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.DatasetUpdater;
 
 /// <summary>
 /// Rate-limiting helper for LLM token consumption. Verbatim port of the upstream

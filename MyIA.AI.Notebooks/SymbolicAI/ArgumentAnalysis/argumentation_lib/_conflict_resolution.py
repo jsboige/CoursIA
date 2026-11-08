@@ -3,9 +3,9 @@
 # Source file : argumentation_analysis/services/jtms/conflict_resolution.py
 # Source SHA1 : dd8a00391c2fe5fda77165e33a014fbb142e5d7e (305L @ 713927e1)
 # Source LICENSE: MIT (Copyright (c) 2025 jsboigeEpita)
-# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/_conflict_resolution.py
+# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_conflict_resolution.py
 # Copy LICENSE : MIT (inherited from upstream)
-# Issue de pilotage #23163 (serie Argument_Analysis complete) -- See EPIC #23163
+# Issue de pilotage #23163 (serie ArgumentAnalysis complete) -- See EPIC #23163
 #
 # VERBATIM SANS MODIFICATION : le fichier amont n'importe que la bibliotheque
 # standard, donc aucun prefixe `argumentation_analysis.*` n'a a etre reecrit et

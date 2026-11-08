@@ -8,12 +8,12 @@
 using System;
 using System.IO;
 using System.Linq;
-using CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.Ontology;
+using CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.Ontology;
 using FluentAssertions;
 using RDFSharp.Model;
 using Xunit;
 
-namespace CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.Tests.Ontology
+namespace CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.Tests.Ontology
 {
     /// <summary>
     /// Regression / characterization tests for <see cref="OwlAdapter"/> — dispatch #204 (primaire, cont.).

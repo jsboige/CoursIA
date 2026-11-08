@@ -10,7 +10,7 @@
 //
 // Modifications from upstream (LGPL v3 §5 modification log):
 //   - Namespace moved from `Argumentum.AssetConverter` to
-//     `CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.DatasetUpdater`.
+//     `CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.DatasetUpdater`.
 //   - OpenAI SDK stripped: the lazy `_openAIClient` / `_chatClient` fields,
 //     the `Send(CancellationToken, Action<string>)` async dispatch, and the
 //     reflection-based `CallFunction(string, string)` helper are all removed.
@@ -25,7 +25,7 @@
 
 using System.Collections.Generic;
 
-namespace CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.DatasetUpdater;
+namespace CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.DatasetUpdater;
 
 /// <summary>
 /// Verbatim port of the upstream <c>Argumentum.AssetConverter.Prompt</c> POCO surface:

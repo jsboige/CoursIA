@@ -26,7 +26,7 @@ cle, aucun resultat non deterministe dans les sorties commitees.
 Point d'extension : le jour ou un fournisseur est cable dans CoursIA, c'est
 **ce seul fichier** qu'il faut modifier ; la couche amont reste intacte.
 
-Portage dans le cadre de l'issue #23163 (serie `Argument_Analysis` completee sur
+Portage dans le cadre de l'issue #23163 (serie `ArgumentAnalysis` completee sur
 CoursIA). Licence amont : MIT (Copyright (c) 2025 jsboigeEpita) — voir
 `argumentation_lib/NOTICE-EPITA`.
 """

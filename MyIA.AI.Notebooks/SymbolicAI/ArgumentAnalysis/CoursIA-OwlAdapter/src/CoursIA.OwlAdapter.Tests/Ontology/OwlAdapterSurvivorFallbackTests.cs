@@ -6,13 +6,13 @@
 // Modifications disclosed: namespace change only.
 
 using System.Linq;
-using CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.Ontology;
+using CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.Ontology;
 using FluentAssertions;
 using OWLSharp.Ontology;
 using RDFSharp.Model;
 using Xunit;
 
-namespace CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.Tests.Ontology
+namespace CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.Tests.Ontology
 {
     /// <summary>
     /// Unit-isolation regression suite for the OWL2XML round-trip SURVIVOR fallback in

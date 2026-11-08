@@ -187,7 +187,7 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 ## Caveats
 
-- La classification **n'est pas parfaite** : les couches anti-FP (c.1272 contexte bayésien, c.1275 Argument_Analysis) couvrent les patterns connus, mais des FPs restent possibles (par exemple, une valeur dans une cellule de résultat précédente que le classifieur pourrait classer ENV-DEP par contexte).
+- La classification **n'est pas parfaite** : les couches anti-FP (c.1272 contexte bayésien, c.1275 ArgumentAnalysis) couvrent les patterns connus, mais des FPs restent possibles (par exemple, une valeur dans une cellule de résultat précédente que le classifieur pourrait classer ENV-DEP par contexte).
 - Le ratio STRUCTUREL/DRAINABLE est élevé (~92%) — la majorité des valeurs quantitatives en prose sont des **constants pédagogiques** (ordres de grandeur, ratios fixes, paramètres théoriques) qui ne dériveront pas.
 - Une re-exécution produira le même décompte modulo le contenu des cellules markdown ajoutées/modifiées depuis ce run.
 - Le décompte par famille est calculé sur le **premier composant du chemin** (`MyIA.AI.Notebooks/<FAMILY>/...`) — les notebooks en dehors de cette taxonomie sont classés en `OTHER` (RL principalement, 24 notebooks).
@@ -208,5 +208,5 @@ Options utiles : `--check` (exit 1 si ≥ 1 drainable, pour CI), `--limit N` (te
 - PR #9800 (scan_quant_classify.py triage 4-classes — outillage)
 - PR #9813 (anti-FP bayesian context)
 - PR #9820 (retire `}`cii typo + apprentissage trop large)
-- PR #9838 (anti-FP Argument_Analysis c.1275)
+- PR #9838 (anti-FP ArgumentAnalysis c.1275)
 - PR #9958 (item 4 C.5 codification de la ligne de partage — MERGED)

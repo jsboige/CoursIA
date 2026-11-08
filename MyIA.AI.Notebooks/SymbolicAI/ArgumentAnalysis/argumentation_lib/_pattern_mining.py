@@ -3,9 +3,9 @@
 # Source file : argumentation_analysis/evaluation/pattern_mining.py
 # Source SHA1 : 0176c88bfaf7c82184dd69e6fda85a0dae8c2e02 (512L @ 2e2a1c3c)
 # Source LICENSE: MIT (Copyright (c) 2025 jsboigeEpita)
-# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/_pattern_mining.py
+# CoursIA copy: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_pattern_mining.py
 # Copy LICENSE : MIT (inherited from upstream)
-# Issue de pilotage #23163 (serie Argument_Analysis complete) -- See EPIC #23163
+# Issue de pilotage #23163 (serie ArgumentAnalysis complete) -- See EPIC #23163
 #
 # PREFIXE D'IMPORT SEUL : l'unique import `argumentation_analysis.*` du
 # fichier (l.91, LAZY, a l'interieur de `DungTopologyDetector.detect`) est

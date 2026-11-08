@@ -100,7 +100,7 @@ from argumentation_lib._reporting_noop import (
 # eager registration below therefore degrades gracefully — without jpype the
 # AF layer is already unavailable, but the rest of the package (and the test
 # modules that import it) must stay importable. Regression observed on
-# `Scripts Tests (CPU)`: six Argument_Analysis modules failed at collection
+# `Scripts Tests (CPU)`: six ArgumentAnalysis modules failed at collection
 # with `ModuleNotFoundError: No module named 'jpype'`.
 try:
     from argumentation_lib import _tweety_initializer as _tweety_initializer_module

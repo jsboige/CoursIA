@@ -115,7 +115,7 @@ remplacée par le titre RU réel).
 
 **Preservation rationale** (per EPIC #4960, Volet B étape 1):
 - The upstream taxonomy underpins the multi-language (FR/EN/RU/PT/AR/ES/ZH/FA)
-  argumentation card dataset and is consumed by the Argument_Analysis notebook
+  argumentation card dataset and is consumed by the ArgumentAnalysis notebook
   series in CoursIA.
 - CoursIA had previously vendored an outdated copy of this CSV
   (commit c0242d92b, last touched 2025-10-03, initial import 2025-06-02,
@@ -149,7 +149,7 @@ CoursIA submodule pointer
 -------------------------
 
 The Argumentum submodule at
-`MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum/`
+`MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum/`
 is pinned to commit **4332d26aeceee66d49073f4936d3b6f47f14287c**
 (gitlink de `main` au 2026-11-05 ; le sous-module suit `master`).
 Re-syncing this data file against a newer submodule commit
@@ -171,7 +171,7 @@ not in the data file.
 See also
 --------
 
-- EPIC #4960 — `[EPIC] Argument_Analysis v3 — submodule Argumentum +
+- EPIC #4960 — `[EPIC] ArgumentAnalysis v3 — submodule Argumentum +
   remontées moteur + landing essence multidimensionnelle EPITA-IS`
 - PR (this verbatim copy): see `See #4960` reference in PR body
 - Argumentum LICENSE (LGPL-3.0) at pinned commit 4332d26aec

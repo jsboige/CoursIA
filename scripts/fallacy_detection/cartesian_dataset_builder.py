@@ -70,7 +70,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "translation"))
 from check_perimeter import ALL_LANGS  # noqa: E402
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-_ARG_DATA = _REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data"
+_ARG_DATA = _REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data"
 DEFAULT_FALLACIES = _ARG_DATA / "argumentum_fallacies_taxonomy.csv"
 DEFAULT_VIRTUES = _ARG_DATA / "argumentum_virtues_taxonomy.csv"
 DEFAULT_SCENARII = (
@@ -94,7 +94,7 @@ SCENARII_COPY_REPO_PATH = "MyIA.AI.Notebooks/GenAI/FallacyDetection/data/argumen
 # 0dd7c8557cb (2026-10-31) : bump du gitlink a88947e5 -> 9038690 (i18n zh/ar/fa).
 BUILD_REPO_COMMIT = "0dd7c8557cb5e6dd98db43cf89a8dc7e0dcf7c8c"
 BUILD_GITLINK_COMMIT = "9038690dd8a329dadfc2fdea587f1b87130cf861"
-ARGUMENTUM_SUBMODULE_PATH = "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"
+ARGUMENTUM_SUBMODULE_PATH = "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum"
 
 LANGS = tuple(ALL_LANGS)
 LANG_NAMES = {

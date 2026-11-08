@@ -9,7 +9,7 @@
 // becomes `_logger.LogProblem(...)` against a private field initialised to
 // `NullLegacyLogger.Instance` by default).
 
-namespace CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.Ontology
+namespace CoursIA.SymbolicAI.ArgumentAnalysis.AssetConverter.Ontology
 {
     /// <summary>
     /// Minimal logger interface that mirrors the upstream

@@ -32,7 +32,7 @@ import pytest
 
 # --- Make argumentation_lib importable regardless of pytest CWD -----------------
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-_ARGUMENT_ANALYSIS_DIR = os.path.dirname(_THIS_DIR)  # .../Argument_Analysis/
+_ARGUMENT_ANALYSIS_DIR = os.path.dirname(_THIS_DIR)  # .../ArgumentAnalysis/
 if _ARGUMENT_ANALYSIS_DIR not in sys.path:
     sys.path.insert(0, _ARGUMENT_ANALYSIS_DIR)
 
