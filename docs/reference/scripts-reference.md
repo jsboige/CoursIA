@@ -19,10 +19,28 @@ Les scripts `scripts/fix_*.py` / `scripts/recycle_*.py` à la racine sont des on
 |--------|-------|
 | `wsl_papermill.py` | **Papermill INSIDE WSL** pour kernels GameTheory/Lean Python (`execute` / `batch` / `check-env`) — cf [.claude/rules/wsl-kernels.md](../../.claude/rules/wsl-kernels.md) |
 | `batch_reexecute.py` | Re-exécution Papermill en lot |
+| `kernel_gateway_service.py` | Pré-vol puis démarrage d'un notebook annoté en mode officiel `notebook-http`; sonde optionnelle d'une route enregistrée via OpenAPI et requête HTTP réelle sur loopback |
 | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py` | Exécution .NET Interactive : moteur cell-by-cell canonique (`dotnet_executor.py`), wrapper CLI historique (`exec_dotnet_persist.py`) et exécution ciblée |
 | `execute_qcpy_docker.py`, `qc_quantbook_execute.py` | Exécution QuantConnect (Quantbooks via Docker/QC Cloud) |
 | `merge_executed_outputs.py` | Fusion des sorties d'un carnet exécuté ailleurs (QC Cloud) dans le carnet de la branche, refus si le code diffère ([routes](../qc/quantbook-execution-routes.md)) |
 | `_exec_bdd_csharp.py` | **Archivé** 2026-10-01 (palier 1 #18153) — voir `scripts/notebook_tools/_archive/README.md` |
+
+#### `kernel_gateway_service.py` — démarrer un notebook annoté
+
+```bash
+python scripts/notebook_tools/kernel_gateway_service.py chemin/vers/notebook.ipynb --check-only
+python scripts/notebook_tools/kernel_gateway_service.py chemin/vers/notebook.ipynb --port 8899
+python scripts/notebook_tools/kernel_gateway_service.py chemin/vers/notebook.ipynb \
+  --port 8899 --probe-path /route-annote --probe-json '{"entree": "exemple"}'
+```
+
+Le carnet reste la source de l'API : ses annotations `# GET /...` et
+`# POST /...` sont transmises telles quelles au Kernel Gateway officiel.
+Le pré-vol vérifie le notebook, le paquet PyPI `jupyter_kernel_gateway` et le
+kernelspec déclaré. La sonde attend l'enregistrement de la méthode et de la
+route dans `/_api/spec/swagger.json`, appelle l'endpoint une seule fois en
+loopback et exige une réponse JSON avec statut 2xx. Elle arrête ensuite le
+processus ; sans sonde, le serveur reste au premier plan.
 
 #### `notebook_tools.py execute` — Options avancées
 
