@@ -243,10 +243,71 @@ def _read_json(path: Path, default: Any) -> Any:
 def _write_json(path: Path, payload: Any) -> None:
     """Ecriture atomique : un lecteur concurrent ne voit jamais un fichier tronque."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    # #22983 volet 4 -- le tmp porte le pid : deux processus ecrivant le
+    # meme fichier (phase reseau hors verrou) ne se marchent pas dessus.
+    tmp = path.with_suffix(f"{path.suffix}.{os.getpid()}.tmp")
     tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=1),
                    encoding="utf-8")
     os.replace(tmp, path)
+
+
+def merge_snapshots(base: dict, fresh: dict, numbers: list[int]) -> dict:
+    """Fusion d'un instantane relu sous verrou avec des lectures fraiches.
+
+    #22983 volet 4 (arbitrage coordinateur, option 2) : la phase reseau est
+    HORS verrou ; sous verrou, on relit le disque puis on fusionne. La regle
+    est PAR NUMERO : pour chaque numero que `fresh` vient de lire, son entree
+    (commentaires + metadonnees + stamp) ne remplace celle du disque que si
+    son stamp est plus recent. Tout le reste vient du disque relu -- c'est ce
+    qui garantit qu'une entree fraiche ecrite par une AUTRE lane entre le
+    chargement initial et la relecture survit a notre ecriture (acceptance 3 :
+    aucune perte a la fusion).
+
+    Les echecs de lecture (``meta.fetch_failures``) fusionnent par union, la
+    plus recente gagnant par cle : ils sont diagnostiques, jamais tranches.
+    """
+    merged = {k: v for k, v in base.items()
+              if k not in ("comments", "issues", "meta")}
+    meta_b = dict(base.get("meta") or {})
+    meta_f = dict(fresh.get("meta") or {})
+    stamps_b = dict(meta_b.get("comment_stamps") or {})
+    stamps_f = dict(meta_f.get("comment_stamps") or {})
+    comments = dict(base.get("comments") or {})
+    issues = dict(base.get("issues") or {})
+    comments_f = fresh.get("comments") or {}
+    issues_f = fresh.get("issues") or {}
+    stamps = dict(stamps_b)
+    for n in numbers:
+        key = str(int(n))
+        stamp_f = stamps_f.get(key)
+        stamp_b = stamps_b.get(key)
+        if not isinstance(stamp_f, (int, float)):
+            continue  # rien de frais pour ce numero : le disque reste
+        if isinstance(stamp_b, (int, float)) and stamp_f < stamp_b:
+            continue  # le disque relu est PLUS RECENT (une autre lane a
+            # ecrit apres notre lecture) : son entree gagne
+        if key in comments_f:
+            comments[key] = comments_f[key]
+        if key in issues_f:
+            issues[key] = issues_f[key]
+        stamps[key] = stamp_f
+    meta = dict(meta_b)
+    meta["comment_stamps"] = stamps
+    fails_b = dict(meta_b.get("fetch_failures") or {})
+    fails_f = dict(meta_f.get("fetch_failures") or {})
+    fails = dict(fails_b)
+    for key, val in fails_f.items():
+        cur = fails.get(key)
+        if (not isinstance(cur, dict)
+                or (isinstance(val, dict)
+                    and val.get("at", 0) >= cur.get("at", 0))):
+            fails[key] = val
+    if fails:
+        meta["fetch_failures"] = fails
+    merged["comments"] = comments
+    merged["issues"] = issues
+    merged["meta"] = meta
+    return merged
 
 
 def load_snapshot(repo: str) -> dict:

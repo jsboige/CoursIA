@@ -28577,7 +28577,7 @@ def kl_T(ref, T):
 
 print(""Exercice a completer : minimiser KL(T) par balayage — attendu en T = 1."")
 ",,,,,,,,9aac515c64ed6aae,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.0-Theorie-Information.ipynb,c28-contresens-info-3.0,markdown,fr,fae6f989b81e9ab7,"## Contre-sens usuels sur la théorie de l'information
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.0-Theorie-Information.ipynb,7b8ed9fd,markdown,fr,fae6f989b81e9ab7,"## Contre-sens usuels sur la théorie de l'information
 
 Six confusions revenaient dans le carnet 3.0 et qu'il vaut mieux trancher net :
 
@@ -29019,7 +29019,7 @@ y_ex = 1.0
 dL_dx = None  # TODO etudiant : vecteur (1, 2), a verifier composante par composante par difference finie
 print(""Exercice a completer : dL/dx via produits vecteur-Jacobien + verification numerique < 1e-7"")
 ",,,,,,,,a595e4b6affb1d63,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.1-Retropropagation.ipynb,c28-contresens-retro-3.1,markdown,fr,d2242a752321cc89,"## Contre-sens usuels sur la rétropropagation
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.1-Retropropagation.ipynb,d65ccdd3,markdown,fr,d2242a752321cc89,"## Contre-sens usuels sur la rétropropagation
 
 Six confusions revenaient dans le carnet 3.1 et qu'il vaut mieux trancher net :
 
@@ -32730,7 +32730,7 @@ Quatre lectures :
 
 Rappel de périmètre : ce classement vaut pour un surapprentissage **d'origine annotation**. Un autre type de bruit (géométrie complexe, distribution décalée) re-classe les mécanismes — l'exercice 3 en donne le protocole.
 ",,,,,,,,70af7773107a795c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.3-Regularisation.ipynb,c24-contresens-regul-3.3,markdown,fr,286c4ee8a89abd4c,"### 5.5 Contre-sens usuels sur la régularisation
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.3-Regularisation.ipynb,49befa38,markdown,fr,286c4ee8a89abd4c,"### 5.5 Contre-sens usuels sur la régularisation
 
 Six confusions revenaient dans le carnet 3.3 et qu'il vaut mieux trancher net :
 
@@ -34121,7 +34121,7 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4-Attention-Transf
 resultat_exo3 = None  # TODO etudiant : [(config, params, perte_val, temps), ...]
 
 print(""Exercice a completer (remplacez les TODO)."")",,,,,,,,24ec4f0103c62959,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb,c40-contresens-attn-3.4,markdown,fr,0ffcfcbc8e9211ee,"### 8.5 Contre-sens usuels sur l'attention et le Transformer
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb,ed57920d,markdown,fr,0ffcfcbc8e9211ee,"### 8.5 Contre-sens usuels sur l'attention et le Transformer
 
 Six confusions revenaient dans le carnet 3.4 et qu'il vaut mieux trancher net :
 
