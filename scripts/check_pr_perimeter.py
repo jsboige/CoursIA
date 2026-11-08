@@ -470,7 +470,7 @@ _BOTH_FILE_VARIANTS = re.compile(
 
 def _files_contain_fr_en_pair(files: list[dict]) -> bool:
     """True when the changed-file list contains a canonical/`_en` pair."""
-    paths = {str(item.get("path", "")).lower() for item in files}
+    paths = {str(item.get("path", "")) for item in files}
     for path in paths:
         stem, dot, suffix = path.rpartition(".")
         if dot and stem.endswith("_en") and f"{stem[:-3]}.{suffix}" in paths:

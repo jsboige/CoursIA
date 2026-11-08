@@ -4201,6 +4201,20 @@ def test_25306_language_variant_phrase_requires_changed_fr_en_pair():
     assert any("pretend 2 fichier(s)" in problem for problem in problems)
 
 
+def test_25306_language_variant_pair_match_respects_path_case():
+    case_mismatched_files = [
+        {"path": "x/Foo.lean"},
+        {"path": "x/foo_en.lean"},
+        {"path": "x/a.py"},
+        {"path": "x/b.py"},
+        {"path": "x/c.py"},
+    ]
+
+    problems = check_assertion(case_mismatched_files, "anglais dans les deux fichiers")
+
+    assert any("pretend 2 fichier(s)" in problem for problem in problems)
+
+
 # ---------------------------------------------------------------------------
 # #17262-classe (3e surface) — un quota d'API epuise est une NON-MESURE, pas
 # une contradiction de perimetre.
