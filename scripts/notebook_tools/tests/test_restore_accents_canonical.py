@@ -94,6 +94,35 @@ class TestLinkTargetProtection:
         # le ](...) "title" ) entier est un span ; la cible reste intacte
         assert "Model-Selection.ipynb" in cured
 
+    def test_filename_label_not_accented(self):
+        # #17222 : un libelle qui NOMME le fichier cible reste byte-identique
+        # au fichier. Mesure : la serie PyMC rendait
+        # [PyMC-10-Model-Sélection](PyMC-10-Model-Selection.ipynb).
+        line = "[PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb)"
+        cured, n = rac._cure_line(line)
+        assert cured == line
+        assert n == 0
+        assert "Sélection" not in cured
+
+    def test_filename_label_not_accented_in_puce(self):
+        line = "- Theme connexe : [PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb) (selection bayesienne)."
+        cured, n = rac._cure_line(line)
+        assert "[PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb)" in cured
+        assert "Sélection" not in cured
+
+    def test_partial_reference_label_not_accented(self):
+        # libelle abrege du meme fichier : sous-chaine de la cible
+        line = "Voir [PyMC-10](PyMC-10-Model-Selection.ipynb) pour la selection."
+        cured, n = rac._cure_line(line)
+        assert "[PyMC-10](PyMC-10-Model-Selection.ipynb)" in cured
+
+    def test_prose_label_still_cured(self):
+        # contre-temoin : un libelle de PROSE garde sa cure, la cible reste intacte
+        line = "Voir [les modeles](PyMC-10-Model-Selection.ipynb)."
+        cured, n = rac._cure_line(line)
+        assert "modèles" in cured
+        assert "](PyMC-10-Model-Selection.ipynb)" in cured
+
 
 # ---------------------------------------------------------------------------
 # 3. preservation casse + dictionnaire conservateur

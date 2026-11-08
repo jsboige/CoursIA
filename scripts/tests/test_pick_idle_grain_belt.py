@@ -3633,13 +3633,8 @@ def test_un_RELEASED_qui_porte_un_marqueur_plus_bas_nest_pas_saute(monkeypatch):
 def test_belt_snapshot_prime_lock_timeout_names_cause(monkeypatch, capsys):
     """#22983 volet 3 : le repli ``SnapshotLockTimeout`` se NOMME.
 
-    Le repli consomme l'instantane disque tel quel -- ses stamps couvrent la
-    fenetre de l'AUTRE lane, pas celle de ce tirage. Avant le fix, le refus
-    STRICT qui suivait etait muet (aucun ``fetch_failures`` ecrit, le quota
-    paraissait sain). Mesure du 08/11 : deux tirages fail-CLOSED pendant la
-    detention du verrou par le priming du coordinateur, tiers servi apres
-    liberation. Le repli imprime maintenant sa cause sur stderr, comme tous
-    les chemins None de la mission.
+    Le volet 4 lit le reseau hors verrou : si le verrou expire, le tirage
+    conserve ses lectures fraiches en memoire et reporte leur ecriture.
     """
     import contextlib
 
@@ -3649,8 +3644,11 @@ def test_belt_snapshot_prime_lock_timeout_names_cause(monkeypatch, capsys):
     class _FakeSnapshotLockTimeout(TimeoutError):
         pass
 
-    disk_snapshot = {"meta": {"comment_stamps": {}}, "comments": {},
+    disk_snapshot = {"meta": {"comment_stamps": {"9": 1}}, "comments": {},
                      "issues": {}}
+    fresh_snapshot = {"meta": {"comment_stamps": {"1": 2}}, "comments": {},
+                      "issues": {}}
+    calls = []
 
     class _FakeGhSnapshot:
         SnapshotLockTimeout = _FakeSnapshotLockTimeout
@@ -3667,8 +3665,9 @@ def test_belt_snapshot_prime_lock_timeout_names_cause(monkeypatch, capsys):
         def save_snapshot(self, repo, snapshot):  # pragma: no cover
             raise AssertionError("save_snapshot atteint hors verrou")
 
-        def ensure_comments(self, repo, numbers, snapshot):  # pragma: no cover
-            raise AssertionError("ensure_comments atteint hors verrou")
+        def ensure_comments(self, repo, numbers, snapshot):
+            calls.append((repo, numbers, snapshot))
+            return fresh_snapshot, 1, {}
 
     fake = _FakeGhSnapshot()
     monkeypatch.setattr(pig, "_gh_snapshot_module", lambda: fake)
@@ -3678,9 +3677,9 @@ def test_belt_snapshot_prime_lock_timeout_names_cause(monkeypatch, capsys):
     err = capsys.readouterr().err
     assert "[22983] priming ecarte" in err
     assert "verrou de l'instantane non obtenu apres 120 s" in err
-    assert "l'AUTRE lane" in err
-    # Le repli rend bien l'instantane disque : le tirage continue dessus.
-    assert pig._BELT_SNAPSHOT is disk_snapshot
+    assert "ecriture reportee" in err
+    assert calls == [("jsboige/CoursIA", [1, 2, 3], disk_snapshot)]
+    assert pig._BELT_SNAPSHOT is fresh_snapshot
 
 def test_belt_json_withheld_complete_reflects_probe_ceilings(
         monkeypatch, capsys):
