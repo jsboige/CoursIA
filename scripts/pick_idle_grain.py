@@ -4957,10 +4957,29 @@ def _claims_in_process(
                         _manque.append(str(n))
                     elif (time.time() - stamp) > gh_snapshot.DEFAULT_TTL_SECONDS:
                         _perime.append(str(n))
+                # #22983 (v2) -- manquant/perime est un SYMPTOME : quand le
+                # fetch de la phase reseau a echoue sur quota REST, c'est la
+                # CAUSE, et elle ne se soigne pas comme un TTL (recycler les
+                # stamps peres ne repand pas un quota). Les echecs sont deja
+                # nommes dans l'instantane (``meta.fetch_failures``) -- on
+                # les releve au lieu de les reinventer. Borne a 1 h pour ne
+                # pas citer un exhaust ancien comme cause du refus present.
+                _fails = ((snapshot.get("meta") or {})
+                          .get("fetch_failures") or {})
+                _quota = sorted(
+                    k for k, v in _fails.items()
+                    if isinstance(v, dict)
+                    and "rate limit" in str(v.get("error") or "").lower()
+                    and isinstance(v.get("at"), (int, float))
+                    and (time.time() - v["at"]) < 3600.0)
+                _quota_note = (f" ; echecs quota REST < 1 h : {len(_quota)}"
+                               + (f" (ex : {', '.join('#' + k for k in _quota[:3])})"
+                                  if _quota else ""))
                 return _claims_none(
                     f"instantane STRICT ne sert pas les numeros "
                     f"(manquants: {', '.join(_manque) or '-'} ; "
-                    f"perimes: {', '.join(_perime) or '-'})")
+                    f"perimes: {', '.join(_perime) or '-'})"
+                    + _quota_note)
             # `serves` garantit les commentaires ; le LECTEUR a besoin du
             # PAYLOAD. Un payload absent le ferait retomber sur
             # `gh issue view` -- un appel reseau pendant le tirage.
