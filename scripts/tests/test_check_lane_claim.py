@@ -7294,6 +7294,72 @@ def test_implicit_keeps_own_collision_and_processes_more_than_100_paths(
     assert findings[0]["files"] == own_paths
 
 
+def test_implicit_keeps_content_introduced_only_by_merge_commit(
+        tmp_path, monkeypatch):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=repo, check=True, capture_output=True,
+            text=True,
+        ).stdout.strip()
+
+    def merge_conflict(branch: str) -> None:
+        proc = subprocess.run(
+            ["git", "merge", "--no-commit", branch], cwd=repo,
+            capture_output=True, text=True,
+        )
+        assert proc.returncode == 1, proc.stdout + proc.stderr
+
+    git("init", "-b", "main")
+    git("config", "user.name", "Local test")
+    git("config", "user.email", "test@example.invalid")
+    shared = repo / "shared.txt"
+    shared.write_text("base\n", encoding="utf-8")
+    git("add", "shared.txt")
+    git("commit", "-m", "base")
+    base = git("rev-parse", "HEAD")
+
+    git("checkout", "-b", "right", base)
+    shared.write_text("right side\n", encoding="utf-8")
+    git("commit", "-am", "right side")
+    right = git("rev-parse", "HEAD")
+
+    git("checkout", "main")
+    shared.write_text("left side\n", encoding="utf-8")
+    git("commit", "-am", "left side")
+    left = git("rev-parse", "HEAD")
+    merge_conflict("right")
+    shared.write_text("main resolution\n", encoding="utf-8")
+    git("add", "shared.txt")
+    git("commit", "-m", "main merge resolution")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+
+    # Both non-merge parents are already reachable from main. This PR's only
+    # own tree content is its alternative conflict resolution in the merge.
+    git("checkout", "-b", "pr", left)
+    merge_conflict(right)
+    shared.write_text("PR merge resolution\n", encoding="utf-8")
+    git("add", "shared.txt")
+    git("commit", "-m", "PR merge resolution")
+    head = git("rev-parse", "HEAD")
+    monkeypatch.chdir(repo)
+    pr = dict(_PR_14293, number=24484, headRefOid=head,
+              files=[{"path": "shared.txt"}])
+
+    nonmerge_paths = subprocess.run(
+        ["git", "log", "--first-parent", "--no-merges", "--format=",
+         "--name-only", "-z", f"origin/main..{head}", "--"],
+        check=True, capture_output=True,
+    ).stdout
+    assert nonmerge_paths == b""
+    assert clc._pr_files_against_main(pr) == ["shared.txt"]
+    findings = clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr])
+    assert len(findings) == 1
+    assert findings[0]["files"] == ["shared.txt"]
+
+
 def test_implicit_provenance_failure_keeps_legacy_occupation():
     # Impossible SHA: provenance cannot be proved, so inherited-looking API
     # paths remain a blocker instead of being released on an error.

@@ -2397,13 +2397,15 @@ def _pr_files_against_main(pr: dict) -> list[str] | None:
     The PR-files API describes the branch diff against its declared base. For a
     stacked branch that has absorbed main, this can include files changed only
     by main. The head commit is supplied by GraphQL; a missing local object is
-    fetched by its pull ref. The first-parent, non-merge log lists paths changed
-    by PR-line commits absent from main, without a 100-file API ceiling.
+    fetched by its pull ref. The first-parent, non-merge log lists ordinary PR
+    commits absent from main; merge commits are compared with a main ancestor
+    parent so their conflict resolutions and additions are retained without
+    counting files simply imported from main. Git has no 100-file API ceiling.
 
     ``None`` means provenance could not be established. Callers then retain
     the API paths (fail-closed); an unavailable ref or Git error must never
     release an implicit occupation. An empty list means there is no path
-    touched by a non-merge first-parent commit absent from main.
+    touched by an ordinary first-parent commit or contributed by a merge.
     """
     head = pr.get("headRefOid")
     number = pr.get("number")
@@ -2430,17 +2432,65 @@ def _pr_files_against_main(pr: dict) -> list[str] | None:
             if (fetched_head.returncode != 0
                     or fetched_head.stdout.strip().lower() != head.lower()):
                 return None
-        has_main = git("rev-parse", "--verify", "origin/main")
-        if has_main.returncode != 0:
+        main = git("rev-parse", "--verify", "origin/main")
+        if main.returncode != 0:
             return None
-        diff = subprocess.run(
+        main_oid = main.stdout.strip()
+        commits = subprocess.run(
             ["git", "log", "--first-parent", "--no-merges", "--format=",
              "--name-only", "-z", f"origin/main..{head}", "--"],
             capture_output=True, check=False, timeout=_GH_OPEN_PRS_TIMEOUT_S,
         )
-        if diff.returncode != 0:
+        if commits.returncode != 0:
             return None
-        return sorted({path.decode("utf-8") for path in diff.stdout.split(b"\0") if path})
+        paths = {path.decode("utf-8") for path in commits.stdout.split(b"\0") if path}
+
+        # A merge commit can carry the PR's only change (conflict resolution,
+        # an `ours` choice, or a file created during resolution). For each
+        # first-parent merge outside main, diff its tree against a parent that
+        # is already on main. This includes the merge's own tree contribution
+        # while ignoring files merely imported from that main parent.
+        merges = git("rev-list", "--first-parent", "--merges",
+                     f"origin/main..{head}")
+        if merges.returncode != 0:
+            return None
+        for merge in merges.stdout.splitlines():
+            ancestry = git("rev-list", "--parents", "-n", "1", merge)
+            if ancestry.returncode != 0:
+                return None
+            commits_and_parents = ancestry.stdout.split()
+            parents = commits_and_parents[1:]
+            if len(parents) < 2 or commits_and_parents[0] != merge:
+                return None
+            main_parents = []
+            for parent in parents:
+                is_main_ancestor = git("merge-base", "--is-ancestor", parent, main_oid)
+                if is_main_ancestor.returncode == 0:
+                    main_parents.append(parent)
+                elif is_main_ancestor.returncode != 1:
+                    return None
+            comparison_parents = main_parents or [parents[0]]
+            merge_contribution: set[str] | None = None
+            for parent in comparison_parents:
+                merge_diff = subprocess.run(
+                    ["git", "diff", "--name-only", "-z", parent, merge, "--"],
+                    capture_output=True, check=False, timeout=_GH_OPEN_PRS_TIMEOUT_S,
+                )
+                if merge_diff.returncode != 0:
+                    return None
+                changed_from_parent = {
+                    path.decode("utf-8")
+                    for path in merge_diff.stdout.split(b"\0") if path
+                }
+                # If the merge result matches ANY parent already on main for a
+                # path, that path came from main's history rather than a new
+                # resolution in this merge.
+                merge_contribution = (
+                    changed_from_parent if merge_contribution is None
+                    else merge_contribution & changed_from_parent
+                )
+            paths.update(merge_contribution or set())
+        return sorted(paths)
     except (OSError, UnicodeDecodeError, subprocess.SubprocessError):
         return None
 
