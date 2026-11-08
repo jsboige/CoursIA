@@ -380,5 +380,70 @@
         "4e9e363c-b184-4c88-bc6e-0474a62f3e2e"
       ]
     }
+  ],
+  "notebook_tree": [
+    {
+      "level": "series",
+      "path": "Compression",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Compression"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Compression-01 — Codes préfixes : de Shannon-Fano à Huffman",
+      "repository_path": "MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-02-HuffmanCanonique-Python.ipynb",
+      "decimal_path": "1.2",
+      "depth": 1,
+      "label_fr": "Compression-02 — Huffman canonique : des longueurs aux tables de décodage",
+      "repository_path": "MyIA.AI.Notebooks/Compression/Compression-02-HuffmanCanonique-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-03-LZ77-Python.ipynb",
+      "decimal_path": "1.3",
+      "depth": 1,
+      "label_fr": "Compression-03 — LZ77 : compresser par références dans une fenêtre glissante",
+      "repository_path": "MyIA.AI.Notebooks/Compression/Compression-03-LZ77-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-04-ANS-Python.ipynb",
+      "decimal_path": "1.4",
+      "depth": 1,
+      "label_fr": "Compression 04 — Codage entropique ANS (rANS et tANS)",
+      "repository_path": "MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+      "decimal_path": "1.5",
+      "depth": 1,
+      "label_fr": "Compression 04b — Codecs SOTA : le front de Pareto vitesse x taux",
+      "repository_path": "MyIA.AI.Notebooks/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-05-MLCompression-Python.ipynb",
+      "decimal_path": "1.6",
+      "depth": 1,
+      "label_fr": "Compression-05 — Compression des modèles : quantifier, élaguer, distiller",
+      "repository_path": "MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-06-MDL-Kolmogorov-Python.ipynb",
+      "decimal_path": "1.7",
+      "depth": 1,
+      "label_fr": "Compression-06 — MDL : décrire le modèle autant que les données",
+      "repository_path": "MyIA.AI.Notebooks/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb"
+    }
   ]
 }

@@ -1,6 +1,6 @@
 # Taxonomie pédagogique
 
-Cette tranche pilote couvre les sept carnets racine de la série Compression recensés dans `COURSE_CATALOG.generated.md` (le carnet compagnon Lean reste dans sa sous-série distincte). Elle part des concepts nommés dans les cellules de titre et d'exposé ; chaque rattachement pointe vers le chemin du carnet et son identifiant de cellule. Les UUID des concepts sont opaques et ne changent pas lorsque leurs chemins taxonomiques évoluent.
+Cette tranche pilote matérialise le nœud de série et les sept carnets racine de Compression recensés dans `COURSE_CATALOG.generated.md` (le carnet compagnon Lean reste dans sa sous-série distincte). Ces carnets n'ont pas de sous-série dans le catalogue. Elle part des concepts nommés dans les cellules de titre et d'exposé ; chaque rattachement pointe vers le chemin du carnet et son identifiant de cellule. Les UUID des concepts sont opaques et ne changent pas lorsque leurs chemins taxonomiques évoluent.
 
 Le format conserve les trois colonnes de repérage d'Argumentum : `path`, `decimal_path` et `depth`. La hiérarchie pédagogique réserve aussi les niveaux `example` et `exercise` sous le carnet ; ils ne sont pas peuplés dans cette première tranche. Les prérequis reprennent les prérequis déclarés dans les introductions des carnets. Le validateur vérifie les références, les cellules, la couverture des sept carnets, les prérequis inconnus et les cycles.
 
