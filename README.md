@@ -91,18 +91,20 @@ Le graphe ci-dessus lit le dépôt par **objectif** — ce qu'on veut construire
 flowchart LR
     A1(["1 · Search<br/>exploration, heuristiques"]) --> A2(["2 · Sudoku<br/>satisfaction de contraintes"])
     A2 --> A3(["3 · SymbolicAI<br/>connaissances, logique, planification"])
-    A3 --> A4(["4 · Probas<br/>incertitude, décision"])
-    A4 --> A5(["5 · GameTheory<br/>décision multi-agent"])
+    A3 --> A4(["4 · Probas<br/>incertitude, modèles graphiques"])
+    A4 --> A4b(["5 · Décision<br/>théorie de la décision"])
+    A4b --> A5(["6 · GameTheory<br/>décision multi-agent"])
     A1 -.-> AP(["Apprentissage<br/>ML · RL"])
     A2 -.-> AP
     A3 -.-> AP
     A4 -.-> AP
+    A4b -.-> AP
     A5 -.-> AP
 
     %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
     classDef stage fill:#f5f5f5,stroke:#333,stroke-width:1px,color:#333;
     classDef learn fill:#eef4ff,stroke:#333,stroke-width:1px,stroke-dasharray:4 3,color:#333;
-    class A1,A2,A3,A4,A5 stage;
+    class A1,A2,A3,A4,A4b,A5 stage;
     class AP learn;
 ```
 
@@ -111,11 +113,12 @@ flowchart LR
 | Recherche (*Part II — Problem-solving*) | **Search** | « introduit l'exploration et les heuristiques » |
 | Satisfaction de contraintes (*Part II*, chapitre 6) | **Sudoku** | [`Sudoku-06-AIMA-CSP`](MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-Python.ipynb) porte le nom du cadre ; la série « compare plusieurs paradigmes sur un problème constant » |
 | Connaissances et raisonnement (*Part III — Knowledge, Reasoning, and Planning*) | **SymbolicAI** | « relie logique, graphes de connaissances, planification, solveurs SMT et preuves Lean » |
-| Raisonnement dans l'incertain (*Part IV — Uncertain Knowledge and Reasoning*) | **Probas** | « apprend à représenter l'incertitude et à décider » |
-| Décision multi-agent | **GameTheory** | « ajoute des agents dont les choix dépendent les uns des autres » |
+| Raisonnement dans l'incertain (*Part IV — Uncertain Knowledge and Reasoning*) | **Probas** | « apprend à représenter l'incertitude — réseaux bayésiens, modèles graphiques, causalité » |
+| Théorie de la décision (*Part IV*, chapitres 16-17) | **Probas/DecisionTheory** | « transforme un posterior quantifié en la meilleure action — utilité espérée, valeur de l'information, MDP » |
+| Décision multi-agent (*Part IV*, chapitre 18) | **GameTheory** | « ajoute des agents dont les choix dépendent les uns des autres » |
 | Apprentissage, à chaque étage | **ML**, **RL** | « transforme ces bases en pipeline d'apprentissage supervisé » ; « ces stratégies peuvent être apprises par l'expérience » |
 
-L'apprentissage n'est pas une sixième étape : c'est une **couche disponible à chaque étage** — d'où les liens pointillés. On apprend une heuristique de recherche, un modèle d'incertitude ou une stratégie de jeu sans changer d'étage. Les deux lectures ne se concurrencent pas : la première répond à « par où commencer, avec les moyens dont je dispose », la seconde à « comment ces séries s'emboîtent conceptuellement ».
+L'apprentissage n'est pas une septième étape : c'est une **couche disponible à chaque étage** — d'où les liens pointillés. On apprend une heuristique de recherche, un modèle d'incertitude ou une stratégie de jeu sans changer d'étage. Les deux lectures ne se concurrencent pas : la première répond à « par où commencer, avec les moyens dont je dispose », la seconde à « comment ces séries s'emboîtent conceptuellement ».
 
 ---
 
@@ -306,7 +309,7 @@ Chaque modalité (Image, Audio, Video) suit la même montée en quatre niveaux -
 
 Côté **mémoire des agents**, la sous-série [RAG et Mémoire Sémantique](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/README.md) est devenue un cursus complet : retrieval avancé, embeddings et tokenisation reconstruits depuis zéro, stockage vectoriel, puis Kernel Memory en processus, en Python, en recherche hybride et multimodale. Qdrant en est le backend opérationnel pour ancrer les agents de codage dans l'historique des conversations et le code des dépôts.
 
-**[Aspire](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/README.md) -- la pile IA inattendue : C#/.NET** -- Une sous-série à contre-courant : décrire modèles, bases vectorielles, services, secrets, santé et télémétrie dans un **AppHost** compilé et typé plutôt que dans un assemblage de Compose et de scripts. Partie de l'orchestration GPU et multi-machines, elle couvre désormais observabilité OpenTelemetry, streaming d'agents par Channels, tests d'intégration avec conteneurs éphémères, garde-fous Roslyn exécutés dans le build et flotte sémantique multi-connecteurs. Deux axes vivent en hub dédié [Integrations-DotNet](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/) : [EF Core](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/EFCore/) fait du compilateur un garde-fou jusque dans les requêtes et le [SDK GitHub Copilot](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CopilotSDK/) pilote depuis C# un agent en streaming avec des endpoints typés.
+**[Aspire](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/README.md) -- la pile IA inattendue : C#/.NET** -- Une sous-série à contre-courant : décrire modèles, bases vectorielles, services, secrets, santé et télémétrie dans un **AppHost** compilé et typé plutôt que dans un assemblage de Compose et de scripts. Partie de l'orchestration GPU et multi-machines, elle couvre désormais observabilité OpenTelemetry, streaming d'agents par Channels, tests d'intégration avec conteneurs éphémères, garde-fous Roslyn exécutés dans le build et flotte sémantique multi-connecteurs. Deux axes vivent en hub dédié [Integrations-DotNet](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/) : [EF Core](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/01-EFCore-Requetes-Compilees.ipynb) fait du compilateur un garde-fou jusque dans les requêtes et le [SDK GitHub Copilot](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CopilotSDK/) pilote depuis C# un agent en streaming avec des endpoints typés.
 
 **[Vibe-Coding](MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md)** -- Le développement assisté par agents IA : ateliers progressifs sur Claude Code et Roo Code, compétences, sous-agents, MCP et hooks, complétés par les agents conteneurisés Claw-Systems et le proxy multi-provider Claudish. La question directrice est celle qui suit naturellement l'écriture assistée : *si un agent produit le code, qui le relit et quelles garanties restent indépendantes de lui ?* L'analyseur Roslyn **MyIA.AgentSafetyAnalyzer** compile ces garde-fous dans le build : règles de sécurité, correction automatique des secrets codés en dur, registre de suppressions et tests. Il est distinct d'**AgentGuard.Analyzers**, le volet Roslyn de la sous-série Aspire. Un second chantier branche un REPL C# sur un processus .NET vivant pour l'observer et le corriger sans l'arrêter.
 
@@ -472,9 +475,9 @@ pip install jupyter ipykernel python-dotenv
 python -m ipykernel install --user --name=coursia --display-name "Python (CoursIA)"
 
 # 4. Kernel .NET Interactive (notebooks C#)
-# Préciser --version : le dernier build publié casse #!import (15 notebooks C#).
-# Version vérifiée compatible : cf docs/reference/kernels-runtime.md
-dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701
+# Préciser --version : le dépôt épingle un build canon, vérifié sur toute la flotte
+# (cf docs/reference/kernels-runtime.md) ; ce build tourne sur .NET 10.
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 dotnet restore MyIA.CoursIA.sln
 
@@ -566,7 +569,7 @@ cp MyIA.AI.Notebooks/GenAI/.env.example MyIA.AI.Notebooks/GenAI/.env
 | Famille | Kernels requis par le dépôt | Séries principales | Installation canonique |
 |---------|-------------------------------|-------------------|----------------------|
 | **Python** | `python3`, `python3-wsl`, `mcp-jupyter`, `mcp-jupyter-py310`, `coursia-ml-training`, `coursia-sae`, `epita_symbolic_ai`, `pyphi`, `smartcontracts` | GenAI, QuantConnect, Search, ML, IIT | `pip install ipykernel` + `python -m ipykernel install --user --name=<kernel>` (kernel de base) ; voir `docs/reference/kernels-runtime.md` pour les envs conda dédiés |
-| **.NET Interactive** | `.net-csharp`, `.net-fsharp`, `.net-powershell` | Sudoku, Search, Probas, ML.NET, SemanticWeb | `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701` puis `dotnet interactive jupyter install` |
+| **.NET Interactive** | `.net-csharp`, `.net-fsharp`, `.net-powershell` | Sudoku, Search, Probas, ML.NET, SemanticWeb | `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` puis `dotnet interactive jupyter install` |
 | **Lean 4** | `lean4`, `lean4-wsl` | Lean, GameTheory (notebooks Lean) | `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_kernel.ps1` + `setup_lean4_native.sh` (elan) |
 
 Pour la **liste exhaustive et à jour** (versions épinglées, historique, dépendances conda), consulter [`docs/reference/kernels-runtime.md`](docs/reference/kernels-runtime.md), qui prime sur tout inventaire figé. Pour vérifier l'état local à tout moment : `jupyter kernelspec list`.

@@ -1,13 +1,25 @@
-name: MD Hierarchy Drift Advisory
+name: MD Hierarchy Drift
+# Le `name:` ci-dessus ne porte plus le marqueur "advisory" depuis la bascule
+# graduelle #22012 : pr_gate.py rule 6 le lit (avec le nom du job) pour classer
+# le verrou bloquant `hint-blocking` -- un "Advisory" ici lui oterait ses dents.
+# Le commenter advisory, lui, porte le marqueur dans son NOM DE JOB
+# (`scan_md_hierarchy drift (advisory)`), ce qui reste exact.
 
 # #11831 (EPIC #11829) : une PR qui introduit de nouveaux defauts de rendu
 # markdown (headings geants dans des listes, hints-as-heading, ...) ne doit
 # plus passer inapercue parce qu'un autre notebook de la meme PR brule
 # l'equivalent ailleurs (cas fondateur : PR #11823, 6 hits, CI vert).
 #
-# Mode ADVISORY au premier tour (mandat de l'issue) : le job reste VERT, un
-# commentaire nomme chaque (notebook, kind, delta). Le passage en bloquant
-# sera decide ulterieurement une fois le scan stabilise.
+# Deux organes depuis la bascule graduelle #22012 (sign-off user 2026-11-02,
+# option 4) : (1) le commenter advisory ci-dessous, INCHANGE, qui continue de
+# nommer chaque (notebook, kind, delta) pour TOUTES les classes ; (2) le verrou
+# bloquant `MD hierarchy HINT-AS-HEADING (base vs PR, bloquant)` (job
+# `hint-blocking` ci-dessous + voie rapide via scripts/ci/fast_lane_registry.py),
+# qui fait echouer le check sur un drift HINT-AS-HEADING imputable au diff de
+# la PR. Le nom du garde bloquant ne porte PAS le marqueur "advisory" :
+# pr_gate.py rule 6 jugerait sinon son rouge non-bloquant et lui oterait ses
+# dents. Les classes H1-DEEP / MULTI-H1 / HEADING-IN-LIST / COLLAPSED-MARKDOWN
+# restent advisory jusqu a leur assainissement (44 / 5 occurrences dispersees).
 #
 # La baseline (scripts/notebook_tools/md_hierarchy_baseline.json) est un
 # artefact d'automatisation : elle est re-seedee dans le MEME commit que toute
@@ -22,10 +34,17 @@ name: MD Hierarchy Drift Advisory
 # manuelle (`workflow_dispatch`). Retour arriere = restaurer le bloc `on:`
 # documente ci-dessous et retirer le garde du registre.
 # Ancien declencheur (a restaurer pour un retour arriere) :
-#   pull_request: [opened, synchronize, edited, reopened] sur main,
-#   paths: MyIA.AI.Notebooks/**/*.ipynb, le scanner, la baseline.
+#   declencheur pull_request (opened, synchronize, edited, reopened) sur main,
+#   chemins MyIA.AI.Notebooks/**/*.ipynb, le scanner, la baseline. Le mot
+#   s'ecrit sans deux-points ici : test_absorbed_guards_sources_never_fire_on
+#   _pull_request interdit le litteral YAML dans tout fichier source absorbe.
 on:
   workflow_dispatch:
+    inputs:
+      base_ref:
+        description: 'Base ref for the manual re-measure (default origin/main)'
+        required: false
+        default: 'origin/main'
 
 permissions:
   pull-requests: write
@@ -140,3 +159,33 @@ jobs:
           else
             echo "No drift: every per-notebook delta <= 0."
           fi
+
+  # Verrou bloquant de la bascule graduelle #22012 (sign-off user 2026-11-02) :
+  # porte par la voie rapide (fast-lane-shadow via scripts/ci/fast_lane_registry.py,
+  # entry "MD hierarchy HINT-AS-HEADING (base vs PR, bloquant)"). Ce job
+  # dispatch-only porte le NOM CANONIQUE du check (contrat
+  # check_absorbed_check_run_identity.py) et sert de chemin de re-mesure
+  # manuelle -- il ne tourne PAS sur pull_request.
+  hint-blocking:
+    name: MD hierarchy HINT-AS-HEADING (base vs PR, bloquant)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Blocking drift check (HINT-AS-HEADING only)
+        # Hardening injection (DM ai-01 05/11) : l'input dispatch base_ref ne
+        # s'interpole JAMAIS dans run: -- il passe par env: et le shell lit la
+        # variable (guidance GitHub script-injection ; dispatch-only donc risque
+        # faible, mais la forme canonique est gratuite).
+        env:
+          INPUT_BASE_REF: ${{ github.event.inputs.base_ref }}
+        run: |
+          BASE="${INPUT_BASE_REF:-origin/main}"
+          python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ \
+            --baseline --diff --fail-kinds HINT-AS-HEADING --base-ref "$BASE"

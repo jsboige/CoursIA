@@ -829,10 +829,36 @@ garde -- ici c'est la **mesure** du noyau qui parle, pas le garde) ; et
 ou un `nr_periods` illisible ne rendent **ni** « passe » **ni** alerte : une
 panne d'instrument ne se confond pas avec une absence de throttling.
 
-Les sept cas du temoin sont exerces dans `ai-01/test-dryrun-sizing-control.sh`
-(section L) : cumul faible, depassement de la borne superieure, depassement
-entre les deux bornes, seuil abaisse (controle negatif du seuil reellement
-lu), `cpu.stat` absent, `nr_periods` illisible.
+Le temoin cumule garde un defaut de sensibilite (#23051, point 2) : son seuil
+est proportionnel a l age de la slice, donc une rafale de 60 s survenue
+aujourd hui passe sous le seuil d une slice de plusieurs semaines. La section
+**4bis-ter** ajoute donc un temoin **par delta** : la lecture precedente est
+datee et conservee hors depot (`COURSIA_DRYRUN_STATE`, sinon
+`%LOCALAPPDATA%\CoursIA`, sinon `/var/lib/coursia`), et le delta des deux
+lectures est confronte a l allocation de la fenetre **exacte** entre elles --
+aucune borne a encadrer, donc un verdict certain dans les deux sens. Trois
+etats egalement : `passe` ; `ALERTE CERTAINE` (sortie 3, elle aussi) ;
+`INDETERMINE` (premiere lecture, etat illisible, horloge non monotone, ou
+compteurs remis a zero : la slice a ete recreee, le delta n a pas de sens). Le
+cumule reste imprime comme borne de long terme ; aucun des deux temoins ne
+remplace l autre. C est le seul fichier que le script ecrit hors de son bundle
+-- il ne configure rien, il date une lecture.
+
+Le refus de surcharge de la section 7 a change de fondement (#23051, point 1) :
+il ne se deduit plus de l ordre lexicographique des noms de drop-ins mais de la
+**valeur effective** mesuree en section 1, attribuee a son fichier. Un drop-in
+lu apres la cible mais ne portant aucune directive de la proposition ne fait
+plus refuser le controle ; un drop-in qui fournit la valeur effective, lui,
+fait toujours refuser -- avec son nom et la valeur mesuree. L attribution
+impossible (valeur effective sans origine relevee, drop-in liste mais
+illisible) reste un refus : fail-closed.
+
+Les cas des temoins sont exerces dans `ai-01/test-dryrun-sizing-control.sh`
+(section L pour le cumule : cumul faible, depassement de la borne superieure,
+depassement entre les deux bornes, seuil abaisse, `cpu.stat` absent,
+`nr_periods` illisible ; section M pour le delta : premiere lecture, alerte,
+controle negatif, compteurs remis a zero, etat corrompu reecrit ; section S
+pour l attribution des surcharges).
 
 ### Le pin du wrapper
 

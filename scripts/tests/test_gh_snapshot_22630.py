@@ -504,50 +504,95 @@ def test_voie_en_processus_rend_les_memes_codes_que_la_voie_cli(monkeypatch):
     assert verdicts[202][0] == solo[202][0]
 
 
-def test_voie_en_processus_rend_none_si_le_lecteur_manque(monkeypatch):
+def test_voie_en_processus_rend_none_si_le_lecteur_manque(monkeypatch, capsys):
+    """#22983 -- le None n'est plus muet : sa cause est nommee sur stderr."""
     def _absent():
         raise RuntimeError("lecteur introuvable")
     monkeypatch.setattr(pig, "_claim_reader_module", _absent)
     assert pig._claims_in_process([1], "lane") is None
+    err = capsys.readouterr().err
+    assert "[22983]" in err
+    assert "RuntimeError" in err
+    assert "lecteur introuvable" in err
 
 
-def test_check_claims_retombe_sur_la_voie_historique_si_none(monkeypatch):
-    """Si la voie en processus rend None, `check_claims` garde son chemin."""
+def test_voie_en_processus_nomme_une_exception_du_chemin_batch(
+        monkeypatch, capsys):
+    """#22983 -- une exception avalee dans la voie batch (hypothese (a) du
+    dispatch c2788) doit etre nommee, pas reduite a un None muet : le refus
+    fail-CLOSED intermittent du tapis devient diagnosticable."""
+    class _ClcQuiExplose:
+        def set_snapshot(self, _snap):
+            pass
+        def check_issues_batch(self, *_a, **_kw):
+            raise ValueError("cache des PRs ouvertes illisible")
+    class _SnapQuiMarche:
+        def refresh(self, _repo, issue_numbers=None):
+            return {"issues": {}, "prs": {}}
+    monkeypatch.setattr(pig, "_claim_reader_module", lambda: _ClcQuiExplose())
+    monkeypatch.setattr(pig, "_gh_snapshot_module", lambda: _SnapQuiMarche())
+    assert pig._claims_in_process([101, 202], "lane") is None
+    err = capsys.readouterr().err
+    assert "[22983]" in err
+    assert "ValueError" in err
+    assert "cache des PRs ouvertes illisible" in err
+
+
+def test_voie_en_processus_nomme_linstantane_strict_perime(
+        monkeypatch, capsys):
+    """#22983 -- en mode STRICT, un stamp servi plus tot puis expire
+    (hypothese (b) : TTL 1800 s) doit etre nomme PERIME, distinct d'un
+    numero jamais lu (MANQUANT) : les deux ne se soignent pas pareil."""
+    n_frais, n_perime, n_manquant = 101, 202, 303
+    stamps = {str(n_frais): time.time(),
+              str(n_perime): time.time() - gs.DEFAULT_TTL_SECONDS - 60}
+    snap = {"issues": {str(n_frais): {"number": n_frais, "title": "T",
+                                      "labels": []}},
+            "prs": {},
+            "meta": {"comment_stamps": stamps}}
+    fake = types.ModuleType("coordination.gh_snapshot")
+    fake.load_snapshot = lambda _repo: snap
+    fake.serves = gs.serves
+    fake.DEFAULT_TTL_SECONDS = gs.DEFAULT_TTL_SECONDS
+    _redirige_gh_snapshot(monkeypatch, fake)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", snap)
+    monkeypatch.setattr(pig, "_claim_reader_module", lambda: clc)
+    assert pig._claims_in_process(
+        [n_frais, n_perime, n_manquant], "lane", local_only=True) is None
+    err = capsys.readouterr().err
+    assert "[22983]" in err
+    assert "STRICT" in err
+    assert "manquants: 303" in err
+    assert "perimes: 202" in err
+
+
+def test_check_claims_rend_error_si_la_voie_en_processus_echoue(monkeypatch):
+    """Plus de repli : hors STRICT, l'indisponibilite rend `ERROR`.
+
+    C'etait la meme classe que l'echec du transport historique retire, et
+    jamais `FREE` : un grain dont le claim n'a pas ete lu ne doit pas
+    pouvoir passer pour libre.
+    """
     monkeypatch.setattr(pig, "_claims_in_process",
-                        lambda numbers, lane, cache=None: None)
-    captured: dict = {}
-
-    def _legacy(numbers, lane):
-        captured["numbers"] = list(numbers)
-        return {n: (pig.CLAIM_CODE_ERROR, "legacy") for n in numbers}
-
-    # On shunte le sous-processus reel : on veut seulement verifier que le
-    # chemin historique est PRIS, pas qu'il reussit.
+                        lambda numbers, lane, cache=None, **kw: None)
     monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt",
                         lambda lane: None)
-    monkeypatch.setattr(pig, "_run_bounded",
-                        lambda cmd, timeout=None, env=None: types.SimpleNamespace(
-                            returncode=0,
-                            stdout=json.dumps(
-                                {"results": {str(n): {"code": "ERROR",
-                                                      "human": "legacy"}
-                                             for n in cmd[-2:]}}),
-                            stderr=""))
+
     verdicts = pig.check_claims([301, 302], "lane")
-    assert verdicts[301][1] == "legacy"
+
+    for code, _ in verdicts.values():
+        assert code == pig.CLAIM_CODE_ERROR
 
 
-def test_check_claims_en_processus_quand_le_cache_de_passe_est_actif(monkeypatch):
-    """Controle positif du gate : cache active => voie en processus, zero
-    sous-processus.
+def test_check_claims_en_processus_sans_cache_de_passe(monkeypatch):
+    """Controle positif : la voie en processus est la SEULE source.
 
-    Sans cache de passe (`_PASS_SNAPSHOT` a None), `check_claims` garde le
-    transport historique -- c'est le seam que simulent les appelants directs
-    (cf. le test precedent et les trois tests mono-issue du fichier belt).
-    Avec cache, la voie en processus doit reprendre, sinon le correctif
-    d'hermeticite aurait simplement supprime l'optimisation en production.
+    #22983 -- le transport `subprocess` est retire : `check_claims` passe
+    par la voie en processus meme sans cache de passe (`_PASS_SNAPSHOT` a
+    None). Le gate `_pass_snapshot_enabled()` ne protege plus l'appel
+    direct de `check_claims` : il protege le cache de REPARATION, qui
+    n'a rien a voir avec les claims.
     """
-    _active_repair(monkeypatch)
     snap = {"issues": {"101": _payload_sans_claim(101)}, "prs": {}}
     fake = types.ModuleType("coordination.gh_snapshot")
     fake.refresh = lambda repo, issue_numbers=None, ttl_seconds=600: snap

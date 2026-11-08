@@ -344,6 +344,57 @@ CONTEXTUAL_PAIRS = {
     "precedence": "précédence",
     "evaluation": "évaluation",
     "evaluations": "évaluations",
+    # #21277, deuxieme fournee : residu mesure sur la serie temoin
+    # (`SymbolicAI/Planners`, 891 occurrences hors table sur `main`). Ces formes
+    # ne sont PAS des mots anglais -- elles restent neanmoins hors de
+    # `ACCENT_PAIRS` parce que la detection s'en servirait pour signaler des
+    # carnets anglais qu'elles traversent occasionnellement (noms propres,
+    # citations, `std::cout`). Cure seulement sur preuve de contexte FR.
+    # Critere d'entree ici : la graphie desaccentuee n'est PAS un mot francais
+    # valide (sinon la cure fabrique un homographe : `trouve`, `calcule`,
+    # `charge`, `passe`, `fixe`, `donne`, `ferme`, `vise`, `assemble`,
+    # `execute`, `explore`, `instancie`, `simplifie`, `tranche` sont EXCLUS pour
+    # cette raison) et la forme accentuee est unique (`degenere`, `pondere`
+    # hesitent entre participe et present : exclus aussi).
+    "etat": "état",
+    "etats": "états",
+    "cout": "coût",
+    "couts": "coûts",
+    "predicat": "prédicat",
+    "predicats": "prédicats",
+    "problemes": "problèmes",
+    "optimalite": "optimalité",
+    "precondition": "précondition",
+    "preconditions": "préconditions",
+    "deplacer": "déplacer",
+    "admissibilite": "admissibilité",
+    "complexite": "complexité",
+    "pedagogique": "pédagogique",
+    "modelisation": "modélisation",
+    "modeliser": "modéliser",
+    "qualite": "qualité",
+    "duree": "durée",
+    "resoudre": "résoudre",
+    "decomposer": "décomposer",
+    "depot": "dépôt",
+    "hypothese": "hypothèse",
+    "depart": "départ",
+    "litterature": "littérature",
+    "necessaire": "nécessaire",
+    "eviter": "éviter",
+    "simultanement": "simultanément",
+    "tetes": "têtes",
+    "negatifs": "négatifs",
+    "cooperatifs": "coopératifs",
+    "competitifs": "compétitifs",
+    "capacite": "capacité",
+    "naif": "naïf",
+    "reel": "réel",
+    "verifier": "vérifier",
+    "independamment": "indépendamment",
+    "parallelisme": "parallélisme",
+    "reduit": "réduit",
+    "booleennes": "booléennes",
 }
 
 
@@ -630,11 +681,23 @@ def cure_notebook(path: Path, write: bool, check_scope: bool = False):
         import detect_markdown_deaccent as dmd
         shadow = {"cells": shadow_cells}
         auto = dmd.find_candidates(shadow).get("auto") or {}
+        # #21277 : une forme de `CONTEXTUAL_PAIRS` restee non curee ne dit PAS
+        # « la table ne sait pas la curer » -- elle dit « le contexte FR de
+        # cette cellule n'a pas ete etabli » (titre, ligne de tableau). Les deux
+        # cas sont donc rapportes separement : sans cette distinction, la
+        # deuxieme fournee se serait annoncee « incomplete » sur des formes
+        # qu'elle cure des qu'une preuve FR existe.
         hors_table = {w: c for w, c in auto.items()
-                      if w.lower() not in ACCENT_PAIRS}
+                      if w.lower() not in ACCENT_PAIRS
+                      and w.lower() not in CONTEXTUAL_PAIRS}
+        contextual_uncured = {w: c for w, c in auto.items()
+                              if w.lower() in CONTEXTUAL_PAIRS}
         if hors_table:
             result["hors_table"] = hors_table
             result["hors_table_total"] = sum(hors_table.values())
+        if contextual_uncured:
+            result["contextual_uncured"] = contextual_uncured
+            result["contextual_uncured_total"] = sum(contextual_uncured.values())
     except Exception:
         pass  # le rapport est un service, jamais un bloqueur de cure
     return result
@@ -707,6 +770,13 @@ def main(argv=None) -> int:
             print(f"  ATTENTION: {res['hors_table_total']} forme(s) hors table — "
                   f"le detecteur les voit encore, la table ne les cure pas "
                   f"(cures incompletes, pas un succes) : {detail}")
+        if res.get("contextual_uncured"):
+            detail = ", ".join(f"{w} (x{c})" for w, c
+                               in sorted(res["contextual_uncured"].items(),
+                                         key=lambda kv: -kv[1]))
+            print(f"  INFO: {res['contextual_uncured_total']} forme(s) en cure "
+                  f"contextuelle, contexte FR non etabli sur cette cellule "
+                  f"(titre, ligne de tableau) : {detail}")
 
     if args.check:
         if res["cures"] > 0 or (args.scope and res.get("code_hits", 0) > 0):

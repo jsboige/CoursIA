@@ -125,9 +125,15 @@ def test_forbidden_axiom_flagged(verifier):
     r = verifier.reward("1 + 1 = 2", "by native_decide")
     assert r.reward == 0.0
     assert r.compiles is True  # compile, mais avec axiomes interdits
-    # Les axiomes natifs (hors whitelist coeur) sont flaggues.
+    # Les axiomes natifs (hors whitelist coeur) sont flaggues. Le nom
+    # materiel derive de la version Lean (drift mesure : v4.34 materialise
+    # ``rlvr_task._native.native_decide.ax_1_1``) — l'oracle (reward 0 +
+    # flags non vides) est la garantie, pas le nom exact.
     assert r.hack_flags  # non vide
-    assert "Lean.ofReduceBool" in r.hack_flags
+    assert any(
+        "native" in f.lower() or "ofReduceBool" in f or "trustCompiler" in f
+        for f in r.hack_flags
+    ), f"axiome natif attendu, pas {r.hack_flags}"
 
 
 @skip_no_lean
@@ -147,3 +153,88 @@ def test_timeout_returns_zero(verifier, monkeypatch):
     assert r.reward == 0.0
     assert r.compiles is False
     assert "timeout" in r.hack_flags
+
+
+# -- contrat de la migration vers l'organe confine (#23054) ------------------
+#
+# Tests deterministes du contrat de delegation (stub du client partage) :
+# les tests de controle ci-dessus restent a execution REELLE (elan/lake) —
+# ici on verifie la FORME de la delegation, pas le moteur Lean.
+
+
+def test_run_lean_delegates_to_organ(monkeypatch, tmp_path):
+    """Chaque rollout passe par l'organe confine (stdin_file), pas un spawn direct."""
+    from pathlib import Path
+
+    calls = {}
+
+    class _StubNbu:
+        @staticmethod
+        def _organ_run(project_path, cmd_args, timeout, stdin_file=None, organ=None):
+            calls["args"] = (project_path, list(cmd_args), timeout, stdin_file, organ)
+            # Contenu capture AU MOMENT de l'appel : _run_lean supprime le
+            # fichier dans son finally avant que le test ne le relise.
+            calls["stdin"] = (
+                Path(stdin_file).read_text(encoding="utf-8")
+                if stdin_file else None)
+            return (0, "ok stdout", "")
+
+    monkeypatch.setattr(
+        "verifiers.lean_rlvr_verifier._get_lean_notebook_utils",
+        lambda: _StubNbu)
+    fake_organ = tmp_path / "lean_exec.py"
+    fake_organ.write_text("# stub", encoding="utf-8")
+    monkeypatch.setattr(
+        "verifiers.lean_rlvr_verifier._find_lean_exec",
+        lambda: fake_organ)
+
+    verifier = LeanRLVRVerifier(timeout=30.0)  # warmup via stub (echecs avales)
+    out = verifier._run_lean("theorem x : True := by trivial")
+    project_path, cmd_args, timeout, stdin_file, organ = calls["args"]
+    assert cmd_args[1:] == ["env", "lean", "--stdin"]
+    # NOM NU, jamais un chemin resolu : l'organe execute l'enfant via bash
+    # (un chemin Windows y est une commande introuvable — mesure 2026-11-03).
+    assert cmd_args[0] == "lake"
+    assert calls["stdin"] == "theorem x : True := by trivial"
+    assert isinstance(timeout, int) and timeout > 0
+    assert organ == fake_organ
+    assert project_path == str(verifier.project_dir)
+    assert "ok stdout" in out
+
+
+def test_organ_refusal_zero_reward(monkeypatch, tmp_path):
+    """Refus de l'organe (admission/budget) -> reward 0.0 + organ_refused, pas un hang."""
+    class _StubNbu:
+        @staticmethod
+        def _organ_run(project_path, cmd_args, timeout, stdin_file=None, organ=None):
+            return (-2, "", "insufficient: cap machine epuise")
+
+    monkeypatch.setattr(
+        "verifiers.lean_rlvr_verifier._get_lean_notebook_utils",
+        lambda: _StubNbu)
+
+    verifier = LeanRLVRVerifier(timeout=30.0)  # warmup avale l'OrganRefusedError
+    r = verifier.reward("1 + 1 = 2", "by rfl")
+    assert r.reward == 0.0
+    assert r.compiles is False
+    assert r.hack_flags == ["organ_refused"]
+    assert "insufficient" in r.raw_output
+
+
+def test_organ_timeout_maps_to_timeout_flag(monkeypatch, tmp_path):
+    """Timeout remonte par l'organe (rc -1) -> meme verdict qu'un timeout direct."""
+    class _StubNbu:
+        @staticmethod
+        def _organ_run(project_path, cmd_args, timeout, stdin_file=None, organ=None):
+            return (-1, "", "TIMEOUT after 30s")
+
+    monkeypatch.setattr(
+        "verifiers.lean_rlvr_verifier._get_lean_notebook_utils",
+        lambda: _StubNbu)
+
+    verifier = LeanRLVRVerifier(timeout=30.0)  # warmup avale le TimeoutExpired
+    r = verifier.reward("1 + 1 = 2", "by rfl")
+    assert r.reward == 0.0
+    assert r.compiles is False
+    assert r.hack_flags == ["timeout"]
+    assert r.raw_output.startswith("<timeout after")

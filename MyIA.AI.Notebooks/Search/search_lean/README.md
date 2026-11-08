@@ -157,7 +157,7 @@ consistante : la frontière de `f` ne recule jamais, donc **aucun nœud n'est ja
 ré-expansé** — par contraste avec une heuristique admissible (mais non consistante) qui
 garantit l'optimalité (phase 1) mais autorise des ré-expansions.
 
-**Preuve** (0 `sorry`, axiomes `[propext, Classical.choice, Quot.sound]`, 1 ligne) :
+**Preuve** (0 `sorry`, axiomes `[propext, Classical.choice, Quot.sound]`) :
 `g n' + h n' = g n + edge n n' + h n' ≥ g n + h n` par consistance
 (`h n ≤ edge n n' + h n'`), donc `linarith` après réécriture de `g n'`.
 
@@ -213,7 +213,7 @@ prouvés** ; le module ancre ce qui, lui, se vérifie mécaniquement :
 ## Construction
 
 ```bash
-lake exe cache get   # récupère les .olean de Mathlib (v4.31.0-rc1)
+lake exe cache get   # récupère les .olean de Mathlib (pin db584cd6)
 lake build Astar     # build de la librairie
 ```
 

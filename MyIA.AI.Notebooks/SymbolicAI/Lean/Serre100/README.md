@@ -50,7 +50,7 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 
 ## Voie décorélée
 
-L'EPIC #16334 comporte aussi une voie décorélée du programme de l'anniversaire (pont Serre–Grothendieck avec le lake `SymbolicAI/Lean/grothendieck_lean`) : cohomologie de Čech calculée, Yoneda calculé, `SerreMap.lean`.
+L'EPIC #16334 comporte aussi une voie décorélée du programme de l'anniversaire (pont Serre–Grothendieck avec le lake `SymbolicAI/Lean/GROTH/grothendieck_lean`) : cohomologie de Čech calculée, Yoneda calculé, `SerreMap.lean`.
 
 
 ## Sources primaires

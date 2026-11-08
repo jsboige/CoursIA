@@ -7,7 +7,8 @@ Une PR peut porter la **disposition de merge** (une review `APPROVED` de
 `myia-ai-01` a la tete exacte) et l'**etat de merge** (rollup vert, B.0 clair,
 `mergeStateStatus: CLEAN`) sans qu'aucun organe ne la voie :
 
-- `merge_ready.py` ne merge que sur dossier `[ADJOINT PREFLIGHT]` valide ;
+- `merge_ready.py` ne mergeait que sur dossier `[ADJOINT PREFLIGHT]` valide
+  (jusqu'au 2026-11-05 ; depuis, il n'exige plus de dossier) ;
 - la file du coordinateur part des dossiers recus ;
 - une chaine lancee a la main expire au bout de 4 h.
 

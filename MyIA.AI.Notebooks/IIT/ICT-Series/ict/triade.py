@@ -1,7 +1,7 @@
 """Capstone strate 5 -- triade d'evenements temporels (Epic #4588, See #7259).
 
 Axe *derivee temporelle* du capstone ICT : la triade fondatrice Phi/F/K est
-**statique**. ICT-Synthese-CrossSubstrat (cf Gate 5 irreversibilite) a isole un
+**statique**. ICT-Synthese-CrossSubstrat-Python (cf Gate 5 irreversibilite) a isole un
 axe orthogonal : les **evenements de transition**, pas les niveaux. Ce module
 formalise la **triade temporelle** que le capstone teste :
 
