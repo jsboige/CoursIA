@@ -253,15 +253,15 @@
           "mesures": {
             "exercices": 3,
             "cellules_code": 10,
-            "cellules_md": 13,
-            "prose_chars": 7500,
-            "densite": 750,
+            "cellules_md": 19,
+            "prose_chars": 12176,
+            "densite": 1217,
             "densite_plancher": 1200,
             "kernel": "Python 3",
             "exigences": {
               "api": false,
-              "cloud": false,
               "gpu": false,
+              "cloud": false,
               "wsl": false
             }
           }

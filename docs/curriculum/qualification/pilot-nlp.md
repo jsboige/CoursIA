@@ -39,10 +39,8 @@ pourquoi cette dimension recherche) et renvoie au manifeste pour les nombres.
   à la charge de l'étudiant — le modèle spaCy `fr_core_news_sm` (01) et les
   données `punkt`/`punkt_tab` de NLTK (02) — c'est ce que note le critère
   d'outillage `O3`.
-- **Une seule densité sous le plancher** (carnet 09, cf. manifeste) : c'est un
-  défaut d'enrichissement à traiter par l'Epic #13410, pas une
-  requalification. L'organe le signale en avertissement et ne fait échouer
-  aucune vérification.
+- **Aucune densité sous le plancher** : le carnet 09, seul à y être, a été
+  enrichi (#24930) et repasse au-dessus du plancher de densité.
 
 ## Les onze qualifications
 
@@ -138,7 +136,6 @@ Mesures : [manifest.json](manifest.json) porte les compteurs du carnet (exercice
 
 | Geste | Nature |
 |---|---|
-| Enrichir le carnet 09 (seul sous le plancher de densité) | Epic #13410 — enrichissement, pas requalification |
 | Étendre la qualification aux autres séries | grain à faire ; le manifeste accepte une série par entrée |
 | Crocher le générateur sur les deux champs | suite de #24994 (le fichier `generate_catalog.py` est claimé par une autre lane) |
 
