@@ -60,7 +60,7 @@ options mesurées :
   consommateur est mesuré : `Komlos/SignedSums.lean` l.54
   (`rw [mean_split, sum_smul_inl, ...]`) ;
 - `toReal_liftUp` — la commutation `toReal ∘ liftUp = snoc ∘ (toReal ×
-  hauteur)` : le carré de diagramme avec le `toRealProd` de k2.4 se
+  (if · then 1 else 0))` : le carré de diagramme avec le `toRealProd` de k2.4 se
   referme, et c'est ainsi que l'assemblage k2.6 nourrira `pullback`
   (k2.4) depuis l'hypothèse d'induction énoncée à la dimension agrandie.
 
@@ -290,7 +290,7 @@ lemma sum_smul_snoc {d : ℕ} {ι : Type*} (s : Finset ι)
       simp only [Fin.snoc_castSucc, Finset.sum_apply, Pi.smul_apply]
 
 /-- **Commutation du transport avec l'embedding** : `toReal ∘ liftUp =
-snoc ∘ (toReal × height)` — la partie spatiale est transportée par
+snoc ∘ (toReal × (if · then 1 else 0))` — la partie spatiale est transportée par
 `toReal` (k2.3), la hauteur `Bool` devient le réel `{0, 1}`.
 
 C'est ce qui referme le carré avec `toRealProd` (k2.4) : l'image
