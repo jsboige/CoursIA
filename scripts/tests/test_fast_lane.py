@@ -593,6 +593,16 @@ def test_advisory_flags_match_the_source_workflows():
     assert by_name["self-hosted-runner-policy"].blocking is True
 
 
+def test_perimeter_registry_stays_on_its_dedicated_workflow():
+    """The registry route must remain tied to the live, body-aware owner."""
+    guard = {g.name: g for g in PILOT}["perimeter-review-guard"]
+    assert guard.source == "perimeter-review-guard.yml"
+    assert guard.paths == []
+    assert guard.blocking is True
+    assert "scripts/check_pr_perimeter.py" in guard.argv
+    assert "--scan-thread" in guard.argv
+
+
 def test_check_nav_chain_argv_carries_the_pr_diff_scope_issue_20303():
     """#20303 : la garde absorbee doit garder la portee de son workflow d'origine.
 
