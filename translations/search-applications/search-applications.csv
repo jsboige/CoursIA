@@ -27295,7 +27295,7 @@ déterministe — elle se branche sans état sur n'importe quelle source de prog
 
 *Hommage 2/3 : [1/3 — lake assignment_lean](https://github.com/jsboige/CoursIA/issues/12598) ·
 3/3 — Lean-19-Munkres-Tribute (topologie 18.901, [issue](https://github.com/jsboige/CoursIA/issues/12600)).*",,,,,,,,b9036012d67788d0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,ab8f7d4c,markdown,fr,ef172cb79ae852a2,"# App-22 — Sélection empirique d'algorithmes : trois jeux, 13 familles conceptuelles, 14 étiquettes mesurées
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,ab8f7d4c,markdown,fr,dbe14430c7ee86eb,"# App-22 — Sélection empirique d'algorithmes : trois jeux, 13 familles conceptuelles, 14 étiquettes mesurées
 
 [← Search](../README.md) | [↑ Applications](../README.md) | [<< App-21 VoiceLeading](App-21-VoiceLeading.ipynb) | [App-23 PRESENT >>](App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) | [App-34 15-puzzle >>](App-34-15Puzzle-Admissible-Astar-Python.ipynb)
 
@@ -27305,7 +27305,7 @@ Ce notebook distille et replace dans un **cadre plus large** le *Benchmark cross
 
 Son geste intellectuel : faire **courir ensemble** — sur un protocole commun et avec des métriques uniformes — des paradigmes de résolution hétérogènes (recherche exacte, CSP/CP-SAT, SAT/SMT, métaheuristique, recherche adversariale, théorie de l'information) sur trois jeux : **Sudoku**, **Puissance 4** et **Wordle**. Le défi n'est pas d'aligner trois solveurs sur un même problème, mais de comparer ce qui, par construction, **ne se compare pas directement** : un nœud de Dancing Links, une décision CP-SAT, une évaluation de solution génétique et une partie de MCTS ne sont pas la même unité de travail.
 
-Le cadre que ce notebook ajoute : le **problème de sélection d'algorithmes** de **Rice (1976)** et le théorème **No Free Lunch** de **Wolpert & Macready (1997)**, au croisement de trois arcs déjà enseignés dans CoursIA : comparer honnêtement des solveurs ([Sudoku-18/18b](../../Sudoku/Sudoku-18-Comparison-Python.ipynb)), caractériser puis sélectionner ([MGS-15](../Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb) → [MGS-16](../Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb)), et décider sous plusieurs attributs ([DecInfer-04](../../Probas/DecisionTheory/DecInfer/DecInfer-04-Multi-Attribute.ipynb)). Ici, ils deviennent un **cas d'application vivant** : trois terrains, des familles qui ne partagent ni leur représentation, ni leur unité de coût, ni leur définition du succès. La carte complète est donc **instance → représentation → algorithme → configuration/budget → métrique → décision**.
+Le cadre que ce notebook ajoute : le **problème de sélection d'algorithmes** de **Rice (1976)** et le théorème **No Free Lunch** de **Wolpert & Macready (1997)**, au croisement de trois arcs déjà enseignés dans CoursIA : comparer honnêtement des solveurs ([Sudoku-18/18b](../../Sudoku/Sudoku-18-Comparison-Python.ipynb)), caractériser puis sélectionner ([MGS-15](../Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb) → [MGS-16](../Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb)), et décider sous plusieurs attributs ([DecInfer-03](../../Probas/DecisionTheory/DecInfer/DecInfer-03-Multi-Attribute.ipynb)). Ici, ils deviennent un **cas d'application vivant** : trois terrains, des familles qui ne partagent ni leur représentation, ni leur unité de coût, ni leur définition du succès. La carte complète est donc **instance → représentation → algorithme → configuration/budget → métrique → décision**.
 
 > **Attribution et licence.** Les trois CSV historiques (`{sudoku,connect_four,wordle}_results.csv`) viennent de Théodore Deguest et sont copiés depuis `results/` de sa PR #42, sous **licence MIT** (copyright 2026, « The 2026-Epita-Intelligence-Symbolique contributors »). Le quatrième CSV (`wordle_repeated_results.csv`) est une **dérivation CoursIA** obtenue en rejouant son code inchangé selon le protocole documenté dans `SOURCE.md`. Toute l'analyse de ce notebook est nouvelle. Aucun solveur étudiant n'est recopié : ils restent dans le dépôt source, référencé et testé.
 
@@ -27313,12 +27313,12 @@ Le cadre que ce notebook ajoute : le **problème de sélection d'algorithmes** d
 
 - [Sudoku-18b](../../Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb) (comparaison statistique honnête).
 - [MGS-15](../Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb) puis [MGS-16](../Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb) (caractérisation, sélection, No Free Lunch).
-- [DecInfer-04](../../Probas/DecisionTheory/DecInfer/DecInfer-04-Multi-Attribute.ipynb) (décision multicritère et sensibilité des poids).
+- [DecInfer-03](../../Probas/DecisionTheory/DecInfer/DecInfer-03-Multi-Attribute.ipynb) (décision multicritère et sensibilité des poids).
 - `pandas`, `numpy`, `matplotlib` (déjà présents dans `Search/requirements.txt`).
 
 ## Durée
 
-~45 min. Le notebook ne régénère **aucun** benchmark : il ré-analyse des résultats précalculés (**offline**, aucun appel API, aucun réseau, aucun GPU).",,,,,,,,ef172cb79ae852a2,,,,,,,,,,,,,,,
+~45 min. Le notebook ne régénère **aucun** benchmark : il ré-analyse des résultats précalculés (**offline**, aucun appel API, aucun réseau, aucun GPU).",,,,,,,,dbe14430c7ee86eb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,266b3899,markdown,fr,16a5c93dd4a4a900,"## 1. Transmission : ce qui vient de l'étudiant, ce qui vient de CoursIA
 
 L'hommage ne consiste pas à recopier le travail, mais à **le faire briller en l'associant à un cadre plus grand**. Pour cela, distinguer explicitement l'origine de chaque brique.
@@ -27630,14 +27630,14 @@ def pareto_3d(df, use_memory=True):
 # f3 = pareto_3d(profiles[""sudoku""])
 # print(f3[[""paradigm"",""success_rate"",""mean_time"",""mean_mem""]].round(3).to_string(index=False))
 print(""Exercice 2 (stub) — à compléter pour un front de Pareto à trois objectifs."")",,,,,,,,f85417804ceee5dd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,78e2776f,markdown,fr,cf1d17484c6237c0,"## 5. Sélection sous préférences : le coût du choix
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,78e2776f,markdown,fr,58470c9324aab3b6,"## 5. Sélection sous préférences : le coût du choix
 
 Le front de Pareto restreint les candidats, mais ne **décide pas** : il faut **arbitrer**. C'est le cœur du problème de **Rice** — à un ensemble d'instances et un choix d'objectifs, on associe l'algorithme qui **satisfait le mieux les préférences** du décideur.
 
-Cette pondération est une version simplifiée de la décision multi-attribut de [DecInfer-04](../../Probas/DecisionTheory/DecInfer/DecInfer-04-Multi-Attribute.ipynb) : modèle additif, poids explicites, normalisation et analyse de sensibilité. Elle suppose notamment que les critères sont suffisamment indépendants et **compensables** — hypothèses qu'un score numérique ne rend pas vraies par magie. [DecInfer-06](../../Probas/DecisionTheory/DecInfer/DecInfer-06-Value-Information.ipynb) ajoute une autre question : caractériser une instance ou lancer un probe n'a de valeur que si le meilleur choix obtenu rembourse le **coût de cette information**.
+Cette pondération est une version simplifiée de la décision multi-attribut de [DecInfer-03](../../Probas/DecisionTheory/DecInfer/DecInfer-03-Multi-Attribute.ipynb) : modèle additif, poids explicites, normalisation et analyse de sensibilité. Elle suppose notamment que les critères sont suffisamment indépendants et **compensables** — hypothèses qu'un score numérique ne rend pas vraies par magie. [DecInfer-05](../../Probas/DecisionTheory/DecInfer/DecInfer-05-Value-Information.ipynb) ajoute une autre question : caractériser une instance ou lancer un probe n'a de valeur que si le meilleur choix obtenu rembourse le **coût de cette information**.
 
 On normalise chaque objectif *dans* son jeu (0 = pire, 1 = meilleur), puis on pondère selon 4 profils de préférence. Le **gagnant change** selon les poids : il n'existe pas de solveur universellement meilleur (écho du **No Free Lunch**).
-",,,,,,,,cf1d17484c6237c0,,,,,,,,,,,,,,,
+",,,,,,,,58470c9324aab3b6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,1e08415e,code,fr,7ec18c98545545e0,"def norm01(s, direction='max'):
     s = s.astype(float)
     lo, hi = s.min(), s.max()
@@ -27717,11 +27717,11 @@ print(""Wordle — gagnant selon le poids accordé au nombre de coups :"")
 print(sensitivity.groupby(""gagnant"")[""poids_qualite""].agg([""min"", ""max"", ""count""]).to_string())
 print(""\nPoints de bascule :"")
 print(sensitivity.loc[sensitivity[""gagnant""].ne(sensitivity[""gagnant""].shift())].to_string(index=False))",,,,,,,,f87b5b87047b86a4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,589e9f39,markdown,fr,907db5894a9fe969,"**Interprétation.** Le point de bascule n'est pas une propriété naturelle de Wordle : il dépend de la normalisation et des proportions retenues entre succès, vitesse et mémoire. C'est précisément pourquoi [DecInfer-04](../../Probas/DecisionTheory/DecInfer/DecInfer-04-Multi-Attribute.ipynb) enseigne l'élicitation et la sensibilité des poids, et pourquoi le score doit rester une décision documentée plutôt qu'un podium.
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,589e9f39,markdown,fr,b8709b58522809b2,"**Interprétation.** Le point de bascule n'est pas une propriété naturelle de Wordle : il dépend de la normalisation et des proportions retenues entre succès, vitesse et mémoire. C'est précisément pourquoi [DecInfer-03](../../Probas/DecisionTheory/DecInfer/DecInfer-03-Multi-Attribute.ipynb) enseigne l'élicitation et la sensibilité des poids, et pourquoi le score doit rester une décision documentée plutôt qu'un podium.
 
 ### Exercice 3 (stub) — sélecteur leave-one-family-out
 Tester la **robustesse** du choix : si on **retire** une famille du banc, le gagnant change-t-il ? Un sélecteur qui dépend d'un seul « outsider » est fragile.
-",,,,,,,,907db5894a9fe969,,,,,,,,,,,,,,,
+",,,,,,,,b8709b58522809b2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,ae776f8c,code,fr,26fb42d6055fd07b,"# INDICE :
 #  - `profiles[g]` est un DataFrame avec une ligne par paradigme.
 #  - retirer une famille = exclure ses lignes puis relancer `weighted_ranking`.
@@ -27738,7 +27738,7 @@ def leave_one_family_out(pr, weights, quality_dir='max', family=None):
 # alt = leave_one_family_out(profiles[""wordle""], weight_sets[""rapidité""], ""min"", family=""entropy"")
 # print(""Gagnant 'rapidité' sans entropy :"", alt)
 print(""Exercice 3 (stub) — à compléter pour un sélecteur leave-one-family-out."")",,,,,,,,26fb42d6055fd07b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,717a2696,markdown,fr,0d85127c1a7fb978,"## Annexe D — Mesurer, choisir, certifier : trois questions différentes
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,717a2696,markdown,fr,737c69cfa97a5a9e,"## Annexe D — Mesurer, choisir, certifier : trois questions différentes
 
 Le benchmark empirique répond à **« que s'est-il passé sur ces instances, avec cette machine et ce protocole ? »**. Il ne prouve ni la correction générale d'un solveur ni son optimalité. CoursIA permet de situer précisément ces niveaux :
 
@@ -27748,11 +27748,11 @@ Le benchmark empirique répond à **« que s'est-il passé sur ces instances, av
 | **Correction / invariants** | Une étape de propagation conserve-t-elle les solutions ? | [Sudoku-19-Lean-Propagation-Lean](../../Sudoku/Sudoku-19-Lean-Propagation-Lean.ipynb) | Formalise des invariants de propagation ; **ne vérifie pas** les implémentations de Théodore. |
 | **Optimalité conditionnelle** | Sous quelles hypothèses une stratégie est-elle optimale ? | [Search-03e-AStar-Optimality](../Part1-Foundations/Search-03e-AStar-Optimality.ipynb) | Prouve une optimalité sous hypothèses (heuristique admissible, modèle formel) ; ne transforme pas un chrono en théorème. |
 | **Valeur d'un jeu adverse** | Comment relier valeur minimax et stratégie ? | [GameTheory-05b-Lean-Minimax-Lean](../../GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb) | Donne les fondations formelles de minimax ; ne certifie ni le moteur Puissance 4 ni ses performances. |
-| **Décision** | Comment arbitrer entre attributs et coût d'information ? | [DecInfer-02-Lean-ExpectedUtility](../../Probas/DecisionTheory/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb), [DecInfer-06](../../Probas/DecisionTheory/DecInfer/DecInfer-06-Value-Information.ipynb) | Formalise le langage du choix ; les poids et distributions restent à justifier empiriquement. |
+| **Décision** | Comment arbitrer entre attributs et coût d'information ? | [DecInfer-01b-Lean-ExpectedUtility](../../Probas/DecisionTheory/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb), [DecInfer-05](../../Probas/DecisionTheory/DecInfer/DecInfer-05-Value-Information.ipynb) | Formalise le langage du choix ; les poids et distributions restent à justifier empiriquement. |
 
 Cette séparation évite deux confusions symétriques : **un solveur rapide n'est pas, pour cette raison, prouvé correct** ; **un algorithme prouvé correct ou optimal sous hypothèses n'est pas, pour cette raison, le plus rapide ici**. Le prolongement naturel serait un pipeline où une preuve borne l'espace des candidats admissibles, puis où la sélection empirique arbitre entre les candidats certifiés.
-",,,,,,,,0d85127c1a7fb978,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,57326d35,markdown,fr,583483b4fff59b20,"## Annexe E — Limites honnêtes
+",,,,,,,,737c69cfa97a5a9e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,57326d35,markdown,fr,e7d6bef317d66670,"## 7. Limites honnêtes
 
 Un hommage ne maquille pas les faiblesses : il les expose, car elles font partie de l'apport.
 
@@ -27810,7 +27810,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ip
         ""Performance, correction et optimalité restent trois niveaux distincts"",
     ],
 })
-print(trace.to_string(index=False))",,,,,,,,678b674708c5ec1f,,,,,,,,,,,,,,,
+print(trace.to_string(index=False))",,,,,,,,075be2ddb4a0f86e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,7eca19cf,markdown,fr,d5e5277831377016,"## Conclusion
 
 Le benchmark de **Théodore Deguest** est plus qu'un comparatif : c'est un **appareil de mesure de la sélection d'algorithmes**. Quatre leçons s'en dégagent quand on l'associe au cadre de **Rice** et au **No Free Lunch** :
@@ -27822,6 +27822,23 @@ Le benchmark de **Théodore Deguest** est plus qu'un comparatif : c'est un **app
 
 **À retenir de l'hommage :** le geste étudiant (faire courir ensemble des paradigmes hétérogènes sur un protocole honnête) est conservé, attribué, reproduit et **élevé** en cas d'application du problème de sélection d'algorithmes. Il ne s'agit pas de « mentionner » le travail : il s'agit de le **faire travailler** dans un cadre plus grand, sans lui attribuer les extensions statistiques ni les preuves formelles de CoursIA.
 ",,,,,,,,d5e5277831377016,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,arc18703-sources,markdown,fr,89d1941898291678,"## Annexe F — Sources
+
+- **Travail distillé** : Théodore Deguest, *« Benchmark cross-paradigme de solveurs de jeux »* — sujet L4, cours Intelligence Symbolique, EPITA SCIA. PR [#42](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/pull/42), projet [L4-Benchmark-Cross-Paradigm](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/tree/main/L4-Benchmark-Cross-Paradigm). Dépôt source sous **licence MIT** (copyright 2026, *The 2026-Epita-Intelligence-Symbolique contributors*). Données : `results/{sudoku,connect_four,wordle}_results.csv`.
+- **Cadre théorique** :
+  - **Rice, J. R. (1976)** — *« The Algorithm Selection Problem »*, Advances in Computers 15, pp. 65-118.
+  - **Wolpert, D. H. & Macready, W. G. (1997)** — *« No Free Lunch Theorems for Optimization »*, IEEE Trans. on Evolutionary Computation 1(1), pp. 67-82.
+- **Arc sélection et représentation** :
+  - [MGS-15-LandscapeAnalysis](../Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb) → [MGS-16-AlgorithmSelection](../Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb) → [MGS-21-Representation-vs-Algorithme](../Part4-Metaheuristics/MGS-21-Representation-vs-Algorithme.ipynb).
+  - [App-10-Portfolio](App-10-Portfolio.ipynb), [App-18-HyperparameterTuning](App-18-HyperparameterTuning.ipynb) et [MGS-17-ParameterControl](../Part4-Metaheuristics/MGS-17-ParameterControl.ipynb) — portfolio, configuration et contrôle ne sont pas la même question.
+- **Arc expérimental et décision** :
+  - [Sudoku-18-Comparison-Python](../../Sudoku/Sudoku-18-Comparison-Python.ipynb) / [Sudoku-18b-Statistical-Comparison-Python](../../Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb) — comparaison, répétitions et incertitude.
+  - [DecInfer-03-Multi-Attribute](../../Probas/DecisionTheory/DecInfer/DecInfer-03-Multi-Attribute.ipynb) / [DecInfer-05-Value-Information](../../Probas/DecisionTheory/DecInfer/DecInfer-05-Value-Information.ipynb) — score multi-attribut et coût d'information.
+- **Terrains applicatifs** :
+  - [App-20-SudokuBenchmark-Python](App-20-SudokuBenchmark-Python.ipynb), [App-12b-ConnectFour](App-12b-ConnectFour.ipynb), [App-14-ConnectFour-Adversarial](App-14-ConnectFour-Adversarial.ipynb), [App-7-Wordle](App-7-Wordle.ipynb).
+- **Ponts formels, sans certification du code étudiant** :
+  - [Sudoku-19-Lean-Propagation-Lean](../../Sudoku/Sudoku-19-Lean-Propagation-Lean.ipynb), [Search-03e-AStar-Optimality](../Part1-Foundations/Search-03e-AStar-Optimality.ipynb), [GameTheory-05b-Lean-Minimax-Lean](../../GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb), [DecInfer-01b-Lean-ExpectedUtility](../../Probas/DecisionTheory/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb).
+",,,,,,,,89d1941898291678,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb,3f6f24b3,markdown,fr,17eb0f84f1a5ba10,"# App-23 — Cryptanalyse différentielle de PRESENT par SAT
 
 > **Navigation** : [Applications Search](../README.md) · [IA symbolique](../../SymbolicAI/README.md) · [SMT / Z3](../../SymbolicAI/SMT/README.md)
