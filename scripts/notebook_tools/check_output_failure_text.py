@@ -154,7 +154,27 @@ TOOL_FAILURE_PATTERNS = (
     re.compile(r"add a path to .{0,20} to the path", re.IGNORECASE),
     re.compile(r"executablenotfound", re.IGNORECASE),
     re.compile(r"modulenotfounderror", re.IGNORECASE),
-    re.compile(r"filenotfound(error|exception)", re.IGNORECASE),
+    # FileNotFoundError (#24051), meme regime que ImportError ci-dessous : la
+    # FORME d'une exception levee, pas le mot nu. La prose pedagogique cite la
+    # classe -- « Attraper des exceptions precises (except FileNotFoundError:)
+    # plutot qu'un except Exception nu » -- et cette citation a ete mesuree en
+    # delta 0 -> 1 sur une re-execution de 01-Claude-CLI-Bases (grain #24049,
+    # reponse LLM stochastique). Trois gardes, dont deux suffisent chacune :
+    #   - un nom entre backticks est une citation (`(?<!`)) ;
+    #   - un nom precede du mot-cle `except` est un extrait de code : une levee
+    #     reelle n'est jamais precedee de `except` (PEP 8 impose une seule
+    #     espace, d'ou les deux largeurs epinglees) ;
+    #   - il faut un message apres les deux-points (`: ` + jeton), ou une
+    #     derniere ligne de trace qui ne porte que le nom. La prose mesuree
+    #     s'arrete sur `:)`, sans espace apres le deux-points.
+    # `search` saute une citation et rend la levee qui la suit dans le meme
+    # flux : la troisieme garde n'absout pas le reste du texte.
+    re.compile(r"(?<!`)(?<!except )(?<!except\t)"
+               r"fileNotFound(?:Error|Exception)"
+               r"(?:\x1b\[[0-9;]*m)*:[ \t]+\S+"
+               r"|^[ \t]*(?:\x1b\[[0-9;]*m)*fileNotFound(?:Error|Exception)"
+               r"(?:\x1b\[[0-9;]*m)*[ \t\r]*$",
+               re.IGNORECASE | re.MULTILINE),
     re.compile(r"command not found", re.IGNORECASE),
     re.compile(r"is not recognized as an internal or external command",
                re.IGNORECASE),
@@ -259,6 +279,11 @@ _PATTERN_WITNESSES = (
     'and add a path to "dot" to the PATH',
     "Le fichier specifie est introuvable.",
     "ModuleNotFoundError: No module named 'simanneal'",
+    # #24051 : la levee reelle, en forme Windows. Aucun motif voisin ne la
+    # couvre -- ni « no such file », ni « fichier ... est introuvable » -- donc
+    # elle epingle le motif FileNotFoundError lui-meme, et pas son voisinage.
+    "FileNotFoundError: [WinError 3] Le chemin d'acces specifie est "
+    "introuvable: 'D:" + BS + "dev" + BS + "CoursIA'",
     "graphviz.backend.ExecutableNotFound",
     "bash: dot: command not found",
     "simanneal non disponible",
@@ -1030,12 +1055,34 @@ def self_test(cwd=None):
                    "lancement depuis `sample_project/` ; ne pas introduire "
                    "d'imports relatifs |",
                    "Voir `ImportError: cannot import name 'X'` dans la doc.",
-                   "Le module peut lever ImportError pendant l'import."):
+                   "Le module peut lever ImportError pendant l'import.",
+                   # Citation de FileNotFoundError par une reponse de LLM
+                   # (#24051) : la prose mesuree sur 01-Claude-CLI-Bases telle
+                   # quelle, la meme citation dans un extrait de code, et la
+                   # forme complete entre backticks. Un extrait de code et une
+                   # citation sont des donnees, pas une levee.
+                   "Attraper des exceptions precises (except FileNotFoundError:) "
+                   "plutot qu'un except Exception nu...",
+                   "Utiliser `except FileNotFoundError: pass` plutot qu'un "
+                   "`except Exception` nu.",
+                   "`FileNotFoundError: [Errno 2] ...` est la forme complete."):
         hit = ([p.pattern for p in TOOL_FAILURE_PATTERNS if p.search(benign)]
                + [p.pattern for p in MACHINE_PATH_PATTERNS if p.search(benign)])
         if hit:
             failures.append("benign text matched " + str(hit) + ": "
                             + repr(benign))
+
+    # #24051 : dans le meme flux, la citation est sautee et la levee qui la
+    # suit continue de tirer -- une exemption qui ne prouve que son silence est
+    # indiscernable d'un trou. La levee porte volontairement un message sans
+    # motif voisin, sinon ce serait le voisin qui tirerait a sa place.
+    _cite_then_raise = scan({"cells": [{"cell_type": "code", "outputs": [
+        {"output_type": "error", "traceback": [
+            "Conseil: (except FileNotFoundError:) plutot qu'un except nu",
+            "FileNotFoundError: impossible de lire x.csv"]}]}]})
+    if len(_cite_then_raise["TOOL_FAILURE"]) != 1:
+        failures.append("citation swallowed the real raise (#24051): "
+                        + repr(_cite_then_raise))
 
     # URL controls (#18567): a cited web page under /home/<user>/ is silent,
     # while a local-server URL, a file:// URL and a bare path sitting next to
