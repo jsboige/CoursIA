@@ -82,7 +82,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 Twenty-one Tier-1 entries re-run live via MCP qc-mcp (project native period, IBKR margin
 brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog values:
 
-> **Note (#25264).** Le code de la copie HighBookToMarketFScore (projet 32732820), lu le 2026-11-08, ne déclare pas de modèle de courtier : pour cette ligne, l'écart ne vient pas d'un changement de frais. Son 2.09 est le Sharpe OOS d'un an de la fiche de bibliothèque, mesuré sur une autre fenêtre que le 0.41.
+> **Note (#25264).** Le code de la copie HighBookToMarketFScore (projet 32732820), lu le 2026-11-08, ne déclare pas de modèle de courtier : pour cette ligne, l'écart ne vient pas d'un changement de frais. Ce code, relancé le 2026-11-08 sur 2018-2025, rend exactement le run du dépôt (Sharpe 0.32) : le recul depuis le 0.41 de juin vient des données, pas du modèle de courtier. Son 2.09 est le Sharpe OOS d'un an de la fiche de bibliothèque, mesuré sur une autre fenêtre que le 0.41.
 
 | Strategy | QC project | Catalog Sharpe | **Verified Sharpe** | Delta | Real status |
 |----------|-----------|---------------|---------------------|-------|-------------|
