@@ -84,17 +84,17 @@ Convention locale : suffixe kernel en **position médiane** (`SW-N-CSharp-X` / `
 
 | Paire | Verdict |
 |---|---|
-| `SW-2-CSharp-RDFBasics` ↔ `SW-2b-Python-RDFBasics` | compagnon-b (b côté Python ici) |
-| `SW-3-CSharp-GraphOperations` ↔ `SW-3b-Python-…` | compagnon-b |
-| `SW-4-CSharp-SPARQL` ↔ `SW-4b-Python-SPARQL` | compagnon-b |
-| `SW-5-CSharp-LinkedData` ↔ `SW-5b-Python-…` | compagnon-b |
-| `SW-6-CSharp-RDFS` ↔ `SW-6b-Python-RDFS` | compagnon-b |
-| `SW-7-CSharp-OWL` ↔ `SW-7b-Python-OWL` | compagnon-b |
-| `SW-8-CSharp-SHACL` ↔ `SW-8-Python-SHACL` | alignée |
-| `SW-9-CSharp-JSONLD` ↔ `SW-9-Python-JSONLD` | alignée |
-| `SW-10-CSharp-RDFStar` ↔ `SW-10-Python-RDFStar` | alignée |
+| `SW-02-RDFBasics-CSharp` ↔ `SW-02b-RDFBasics-Python` | compagnon-b (b côté Python ici) |
+| `SW-03-GraphOperations-CSharp` ↔ `SW-3b-Python-…` | compagnon-b |
+| `SW-04-SPARQL-CSharp` ↔ `SW-04b-SPARQL-Python` | compagnon-b |
+| `SW-05-LinkedData-CSharp` ↔ `SW-5b-Python-…` | compagnon-b |
+| `SW-06-RDFS-CSharp` ↔ `SW-06b-RDFS-Python` | compagnon-b |
+| `SW-07-OWL-CSharp` ↔ `SW-07b-OWL-Python` | compagnon-b |
+| `SW-08-SHACL-CSharp` ↔ `SW-08-SHACL-Python` | alignée |
+| `SW-09-JSONLD-CSharp` ↔ `SW-09-JSONLD-Python` | alignée |
+| `SW-10-RDFStar-CSharp` ↔ `SW-10-RDFStar-Python` | alignée |
 | `SW-11-CSharp-KnowledgeGraphs` ↔ `SW-11-Python-…` | alignée |
-| `SW-13-Reasoners-CSharp` ↔ `SW-13-Python-Reasoners` | alignée (suffixes en position **finale**, incohérence d'ordre de position annotée) |
+| `SW-13-Reasoners-CSharp` ↔ `SW-13-Reasoners-Python` | alignée (suffixes en position **finale**, incohérence d'ordre de position annotée) |
 
 ### SymbolicAI/Planners — 9 paires, toutes alignées, toutes enregistrées (énumération **récursive** des sous-dossiers : la racine ne porte aucun `.ipynb`)
 
@@ -130,7 +130,7 @@ Hors périmètre nominal, même constat : `Probas/Applications/Percolation/Perco
 - **Sudoku** : `Sudoku-00-Environment-CSharp` (setup, cité en prose dans `sudoku-02-dancinglinks.yaml`), `Sudoku-12b-Z3-Linq2Z3-CSharp`, `Sudoku-16-NeuralNetwork-Python`, `Sudoku-17-LLM-Python`, `Sudoku-18b-Statistical-Comparison-Python`, `Sudoku-19-Lean-Propagation-Lean`.
 - **GameTheory racine** : `01-Setup-Python` ; compagnons Lean `02b-Lean-Definitions`, `04b`, `05b`, `06b/06d–06k`, `08b`, `08d`, `11b`, `15b`, `16b–16k` (hors `16f` pairé §1), `17c`, `17d` ; Python `02e`, `03b–03f`, `04d–04j`, `05c`, `06e`, `09b–09d`, `11d`, `13d–13h`, `15d–15g`, `17e/17f`, `18/18b/18c`, `19/19b`, `20/20b/20c`, `21` ; `02d` (cité en prose dans `gametheory-2-normalform.yaml`) ; `gateway/openspiel-cfr-service.ipynb`.
 - **SocialChoice** : `01b-Lean-SocialChoice-Formal`, `05` à `10` (Python).
-- **SemanticWeb** : `SW-1-CSharp-Setup`, `SW-12-Python-GraphRAG`, `SW-14-Python-Coup-Ontologique`, `SW-15-Python-Coup-Argumentatif`, `SW-16-Python-ProofCarryingOntologies` ; `RDF.Net-Legacy/RDF.Net.ipynb`.
+- **SemanticWeb** : `SW-01-Setup-CSharp`, `SW-12-GraphRAG-Python`, `SW-14-Coup-Ontologique-Python`, `SW-15-Coup-Argumentatif-Python`, `SW-16-ProofCarryingOntologies-Python` ; `RDF.Net-Legacy/RDF.Net.ipynb`.
 - **Planners** : `Planners-00-Setup-Python`, `5b-Lean-Relaxation` et `10–12` (exclus explicitement dans `_schema.yaml`), `5c`, `Planners-13-Mesure-Qualite-Plans-Python` (cité en prose dans `planners-9-htn.yaml`).
 
 Familles du périmètre **sans aucune paire** : `GameTheory/Dynamics/` (1 carnet Python), `Search/Part4-Metaheuristics` et `Part5-Frontieres` (séries MGS/Frontieres sans jumeaux inter-kernels).
