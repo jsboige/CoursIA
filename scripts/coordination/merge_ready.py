@@ -119,10 +119,12 @@ Comportement :
 - Ordre : PR la plus ancienne d'abord (par numero).
 - Retenues : ``hold.txt`` a cote du journal (surchargeable
   ``--hold-file``), une PR par ligne -- ``<numero> [motif]`` ; lignes
-  vides et commentaires ``# ...`` ignores. Une PR listee est sautee
-  (``hold:<motif>``) AVANT tout appel gh. Fichier absent = aucune
-  retenue ; fichier illisible ou ligne malformee -> exit 2 (on ne merge
-  pas sans savoir ce qui est retenu).
+  vides et commentaires ``# ...`` ignores. La sentinelle reserve le numero
+  0 pour l'etat de ``Scripts Tests (CPU)`` du SHA courant de ``main`` : rouge
+  -> retenue globale, vert -> retrait de sa seule ligne. Une PR listee est
+  sautee (``hold:<motif>``) AVANT tout appel gh. Fichier absent = aucune
+  retenue utilisateur ; fichier illisible ou ligne malformee -> exit 2 (on
+  ne merge pas sans savoir ce qui est retenu).
 - Review : deux lectures distinctes. La disposition journalisee (champ
   ``review``) est CLASSEE a la tete que la ligne declare
   (``approved-exact-head`` / ``approval-not-on-head`` / ``no-approval``,
@@ -429,6 +431,9 @@ def default_journal_path() -> Path:
 # vivaient dans un hold.txt de scratchpad de SESSION, que cet organe ne
 # lisait pas -- un run --apply, ou la tache planifiee, les aurait ignorees.
 HOLD_LINE = re.compile(r"^(\d+)(?:\s+(.*))?$")
+MAIN_RED_HOLD_PREFIX = "main-red-sentinel "
+MAIN_RED_HOLD_NUMBER = 0  # identifiant global reserve, jamais un numero de PR
+SCRIPTS_TESTS_CHECK = "Scripts Tests (CPU)"
 
 
 def default_hold_path(journal_path: Path) -> Path:
@@ -465,6 +470,93 @@ def load_holds(path: Path) -> dict[int, str]:
         reason = (match.group(2) or "").strip().lstrip("#-").strip()
         holds[int(match.group(1))] = reason or "hold.txt"
     return holds
+
+
+def refresh_main_red_hold(
+    runner: Runner, gh_env: dict[str, str], hold_path: Path
+) -> None:
+    """Actualise la retenue globale depuis les checks du SHA courant de main.
+
+    Une absence de mesure, un check en cours ou un resultat illisible arrete
+    le run (CannotRunError). Le check rouge est retenu avec son SHA et le
+    premier test cite dans sa sortie. La ligne possedee par cette sentinelle
+    est la seule que le chemin vert peut retirer.
+    """
+    sha_result = runner.run(
+        ["gh", "api", f"repos/{REPO}/commits/main", "--jq", ".sha"],
+        env=gh_env,
+    )
+    if sha_result.returncode != 0:
+        raise CannotRunError("lecture de main impossible pour la sentinelle CI")
+    sha = (sha_result.stdout or "").strip().strip('"')
+    if not re.fullmatch(r"[0-9a-fA-F]{7,40}", sha):
+        raise CannotRunError("SHA de main absent ou illisible pour la sentinelle CI")
+    checks_result = runner.run(
+        [
+            "gh", "api", f"repos/{REPO}/commits/{sha}/check-runs?per_page=100",
+            "--paginate", "--jq",
+            ".check_runs[] | {name, conclusion, status, started_at, output, details_url} | tojson",
+        ],
+        env=gh_env,
+    )
+    if checks_result.returncode != 0:
+        raise CannotRunError("lecture des checks de main impossible")
+    try:
+        checks = [
+            json.loads(line) for line in (checks_result.stdout or "").splitlines()
+            if line.strip()
+        ]
+    except ValueError as exc:
+        raise CannotRunError("reponse des checks de main non JSON") from exc
+    scripts_checks = [row for row in checks if row.get("name") == SCRIPTS_TESTS_CHECK]
+    if not scripts_checks:
+        raise CannotRunError(
+            f"check {SCRIPTS_TESTS_CHECK!r} absent sur main@{sha}; refus fail-closed"
+        )
+    check = max(scripts_checks, key=lambda row: str(row.get("started_at") or ""))
+    conclusion = str(check.get("conclusion") or "").lower()
+    status = str(check.get("status") or "").lower()
+    if conclusion not in {"success", "failure", "cancelled", "timed_out", "action_required"}:
+        raise CannotRunError(
+            f"check {SCRIPTS_TESTS_CHECK!r} non termine ({status or 'sans statut'})"
+        )
+
+    lines = hold_path.read_text(encoding="utf-8-sig").splitlines() if hold_path.exists() else []
+    owned = [line for line in lines if line.strip().startswith(f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}")]
+    retained = [line for line in lines if line not in owned]
+    if conclusion == "success":
+        updated = retained
+    else:
+        summary = str((check.get("output") or {}).get("summary") or "")
+        test_match = re.search(r"(?:FAILED|ERROR)\s+([^\s<]+(?:\s*::\s*[^\s<]+)*)", summary)
+        test_name = test_match.group(1) if test_match else ""
+        # Le check-run natif Actions contient souvent un resume sans le detail
+        # pytest. Dans ce cas, lire le log d'echec du run associe au check.
+        if not test_name:
+            details_url = str(check.get("details_url") or "")
+            run_match = re.search(r"/actions/runs/(\d+)(?:/|$)", details_url)
+            if run_match:
+                log_result = runner.run(
+                    ["gh", "run", "view", run_match.group(1), "--repo", REPO, "--log-failed"],
+                    env=gh_env,
+                )
+                if log_result.returncode == 0:
+                    test_match = re.search(
+                        r"(?:FAILED|ERROR)\s+([^\s<]+(?:\s*::\s*[^\s<]+)*)",
+                        log_result.stdout or "",
+                    )
+                    test_name = test_match.group(1) if test_match else ""
+        test_name = test_name or "test-non-identifie-dans-le-check"
+        reason = (
+            f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}sha={sha} "
+            f"check={SCRIPTS_TESTS_CHECK} conclusion={conclusion} test={test_name}"
+        )
+        updated = [*retained, reason]
+    if updated != lines:
+        hold_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = hold_path.with_name(hold_path.name + ".tmp")
+        tmp_path.write_text("\n".join(updated) + ("\n" if updated else ""), encoding="utf-8")
+        tmp_path.replace(hold_path)
 
 
 def scope_exclusion(path: str) -> str | None:
@@ -1649,6 +1741,8 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     try:
         holds = load_holds(hold_path)
         token = resolve_token(active_runner)
+        refresh_main_red_hold(active_runner, {**os.environ, "GH_TOKEN": token}, hold_path)
+        holds = load_holds(hold_path)
     except CannotRunError as exc:
         print(f"merge_ready : impossible de demarrer -- {exc}", file=sys.stderr)
         return 2
@@ -1674,8 +1768,9 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
         if merged_count >= args.max:
             stopped_reason = "max-merges-reached"
             break
-        if pr in holds:
-            held = PRVerdict(pr, None, "skipped", f"hold:{holds[pr]}", False)
+        if MAIN_RED_HOLD_NUMBER in holds or pr in holds:
+            reason = holds.get(MAIN_RED_HOLD_NUMBER, holds.get(pr, "hold.txt"))
+            held = PRVerdict(pr, None, "skipped", f"hold:{reason}", False)
             results.append(held)
             try:
                 append_journal(journal_path, held)

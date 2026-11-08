@@ -12,6 +12,7 @@ de git reel.
 import importlib.util
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -186,10 +187,18 @@ class ScriptedRunner:
         # du ``gh api .../check-runs`` (une ligne JSON par jambe). Defaut :
         # le jeu nominal vert.
         check_runs: str | None = None,
+        main_check_runs: str | None = None,
+        main_sha: str = "a" * 40,
     ):
         self.combined_rc = combined_rc
         self.combined_stdout = combined_stdout
         self.check_runs = check_runs if check_runs is not None else DEFAULT_CHECK_RUNS
+        self.main_check_runs = main_check_runs if main_check_runs is not None else json.dumps([
+            {"name": "Scripts Tests (CPU)", "conclusion": "success",
+             "status": "completed", "started_at": "2026-11-08T10:00:00Z",
+             "output": {"summary": "21 000 passed"}}
+        ])
+        self.main_sha = main_sha
         self.token = token
         self.token_rc = token_rc
         self.prs = list(prs)
@@ -268,6 +277,12 @@ class ScriptedRunner:
             if self.merge_rc == 0:
                 return mr.RunResult(0, "", "")
             return mr.RunResult(self.merge_rc, "", "merge refused")
+        if c[:2] == ["gh", "api"] and "/commits/main" in c[2]:
+            return mr.RunResult(0, self.main_sha + "\n", "")
+        if c[:2] == ["gh", "api"] and f"/commits/{self.main_sha}/check-runs" in c[2]:
+            return mr.RunResult(0, "\n".join(
+                json.dumps(row) for row in json.loads(self.main_check_runs)
+            ), "")
         if c[:2] == ["gh", "api"] and "/check-runs" in c[2]:
             # #25059 : etape 6 bis. La branche est AVANT celle des commits :
             # l'URL des check-runs porte `/commits/` et serait capturee par
@@ -980,6 +995,58 @@ def test_hold_file_override(tmp_path):
     )
     assert rc == 0
     assert lines[-1]["reason"] == "hold:ordre de stack"
+
+
+def test_main_rouge_pose_hold_nommee_et_bloque_tout_merge(tmp_path):
+    disposable = tmp_path / "repo-jetable"
+    disposable.mkdir()
+    subprocess.run(["git", "init", "-b", "main"], cwd=disposable, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=disposable, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=disposable, check=True)
+    (disposable / "preuve.txt").write_text("main\n", encoding="utf-8")
+    subprocess.run(["git", "add", "preuve.txt"], cwd=disposable, check=True)
+    subprocess.run(["git", "commit", "-m", "commit rouge simule"], cwd=disposable, check=True, capture_output=True)
+    main_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=disposable, check=True,
+        capture_output=True, text=True,
+    ).stdout.strip()
+    journal = tmp_path / "journal.jsonl"
+    hold = tmp_path / "hold.txt"
+    hold.write_text("16808 attente utilisateur\n", encoding="utf-8")
+    red = ScriptedRunner(
+        main_check_runs=json.dumps([
+            {"name": "Scripts Tests (CPU)", "conclusion": "failure",
+             "status": "completed", "started_at": "2026-11-08T11:00:00Z",
+             "output": {"summary": "FAILED scripts/tests/test_guard.py::test_case - assertion"}}
+        ]),
+        main_sha=main_sha,
+    )
+    rc = mr.run(["--journal", str(journal), "--hold-file", str(hold), "--apply"], runner=red)
+    rows = [json.loads(row) for row in journal.read_text(encoding="utf-8").splitlines()]
+    assert rc == 0
+    assert rows[0]["reason"].startswith("hold:main-red-sentinel sha=" + red.main_sha)
+    assert "test=scripts/tests/test_guard.py::test_case" in rows[0]["reason"]
+    assert not any("gh pr view" in cmd or "gh pr merge" in cmd for cmd in red.flat())
+    assert hold.read_text(encoding="utf-8").splitlines() == [
+        "16808 attente utilisateur",
+        "0 main-red-sentinel sha=" + red.main_sha
+        + " check=Scripts Tests (CPU) conclusion=failure test=scripts/tests/test_guard.py::test_case",
+    ]
+
+    # Le vert retire uniquement la ligne appartenant a la sentinelle.
+    green = ScriptedRunner(main_sha=main_sha)
+    rc = mr.run(["--journal", str(journal), "--hold-file", str(hold), "--apply"], runner=green)
+    assert rc == 0
+    assert hold.read_text(encoding="utf-8") == "16808 attente utilisateur\n"
+    assert any("gh pr merge 123" in cmd for cmd in green.flat())
+
+
+def test_main_check_absent_fail_closed(tmp_path):
+    runner = ScriptedRunner(main_check_runs="[]")
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 2
+    assert lines == []
+    assert not any("gh pr merge" in cmd for cmd in runner.flat())
 
 
 # --- disposition de review classee a la tete evaluee (point 1 de #17672) ---------
