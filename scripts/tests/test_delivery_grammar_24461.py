@@ -253,3 +253,8 @@ def test_chronologie_conteneur():
     assert dg.container_delivery_state([attestation, tranche, 'neutre'])
     assert not dg.container_delivery_state([attestation, '[NOT-DELIVERED]'])
     assert not dg.container_delivery_state(['```\n' + attestation + '\n```'])
+
+
+def test_dossier_keep_survit_aux_neutres_et_aux_tranches():
+    assert dg.recent_delivery_state([_dossier("KEEP"), TRANCHE, "suivi"])
+    assert not dg.recent_delivery_state([_dossier("KEEP"), "[NOT-DELIVERED]", TRANCHE])

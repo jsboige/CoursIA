@@ -4134,3 +4134,28 @@ def test_le_refus_strict_est_par_fenetre_et_non_par_numero(monkeypatch, capsys):
         assert code == pig.CLAIM_CODE_BLOCKED, (
             f"le numero {numero} devrait etre refuse avec la fenetre "
             f"(verdict: {verdicts[numero]!r})")
+
+@pytest.mark.parametrize("as_json", [False, True])
+def test_belt_public_output_carries_delivery_status(monkeypatch, capsys, as_json):
+    """Les deux sorties exposent les statuts des urnes effectivement servies."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    items = [_make_item(4101, 50, 5, klass="grain"),
+             _make_item(4102, 50, 5, klass="delivered"),
+             _make_item(4103, 50, 5, klass="umbrella")]
+    monkeypatch.setattr(pig, "belt_pick_with_replacements",
+                        lambda *a, **k: (items, [],
+                                         {"failures": [], "budget_hit": False}))
+    argv = ["--lane", "myia-po-2024:CoursIA-2", "--belt", "--belt-validate", "off"]
+    if as_json:
+        argv.append("--json")
+    assert pig.main(argv) == 0
+    out = capsys.readouterr().out
+    if as_json:
+        picks = json.loads(out)["picks"]
+        assert [(p["number"], p["delivery_status"]) for p in picks] == [
+            (4101, "libre"), (4102, "livre"), (4103, "servable")]
+    else:
+        assert "statut" in out
+        for klass, status in [("grain", "libre"), ("delivered", "livre"),
+                              ("umbrella", "servable")]:
+            assert any(klass in line and status in line for line in out.splitlines())
