@@ -18,9 +18,22 @@ from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 PROVER_DIR = Path(__file__).resolve().parent
-RUNNER = PROVER_DIR / "run_prover_bg.py"
-SUMMARY_RE = re.compile(r"^Summary:\s*(.+?)\s*$", re.MULTILINE)
+AGENT_TESTS_DIR = PROVER_DIR.parent
+RUNNER = AGENT_TESTS_DIR / "run_prover_bg.py"
 OTEL_RE = re.compile(r"^\s*\[OTEL\] spans -> (.+?)\s*$", re.MULTILINE)
+TRACE_RE = re.compile(r"^Trace saved:\s*(.+?)\s+\(\d+ entries\)\s*$", re.MULTILINE)
+RESULT_RE = re.compile(r"^\[BG\] RESULT_SUCCESS (True|False)\s*$", re.MULTILINE)
+ALREADY_RE = re.compile(r"^\[BG\] RESULT_ALREADY_SOLVED (True|False)\s*$", re.MULTILINE)
+PRE_SORRY_RE = re.compile(r"^\[BG\] PRE_FILE_SORRY_COUNT (-?\d+)\s*$", re.MULTILINE)
+POST_SORRY_RE = re.compile(r"^\[BG\] POST_FILE_SORRY_COUNT (-?\d+)\s*$", re.MULTILINE)
+ITERATIONS_RE = re.compile(r"^\[BG\] RESULT_ITERATIONS (None|\d+)\s*$", re.MULTILINE)
+FINAL_RE = re.compile(
+    r"^\[BG\] FINAL ok=(True|False) kind=([^\s]+) "
+    r"sorry_after=([^\s]+) elapsed=([0-9.]+)\s*$",
+    re.MULTILINE,
+)
+EXIT_RE = re.compile(r"^\[BG\] EXIT code=(\d+)\s*$", re.MULTILINE)
+FILE_RE = re.compile(r"^\[BG\] FILE\s+(.+?)\s*$", re.MULTILINE)
 
 
 class BenchError(RuntimeError):
@@ -126,21 +139,53 @@ def _otel_metrics(stdout: str) -> dict:
     }
 
 
+def _prover_command(demo_id: int, provider: str, iterations: int,
+                    workflow_timeout_s: int) -> list[str]:
+    """Construit la commande du lanceur racine, dont la CLI est positional."""
+    return [
+        sys.executable, "-u", str(RUNNER), str(demo_id),
+        "--max-iter", str(iterations),
+        "--workflow-timeout", str(workflow_timeout_s),
+        "--provider", provider, "--local-provider", provider,
+        "--coordinator-provider", provider, "--tactic-provider", provider,
+        "--search-provider", provider, "--critic-provider", provider,
+    ]
+
+
+def _demo_file(demo_id: int, demos: dict) -> Path:
+    demo = demos.get(demo_id)
+    file_value = demo.get("file") if isinstance(demo, dict) else None
+    if not isinstance(file_value, str) or not file_value.strip():
+        raise BenchError("DEMO_TARGET_UNAVAILABLE",
+                         f"DEMO {demo_id} ne référence aucun fichier Lean.")
+    path = Path(file_value).expanduser().resolve()
+    if not path.is_file():
+        raise BenchError("DEMO_TARGET_UNAVAILABLE",
+                         f"Le fichier Lean du DEMO {demo_id} n’est pas matérialisé: {path}.")
+    return path
+
+
+def _validate_demo_target(demo_id: int) -> Path:
+    """Charge la config réelle pour refuser un DEMO sparse avant tout appel LLM."""
+    if str(AGENT_TESTS_DIR) not in sys.path:
+        sys.path.insert(0, str(AGENT_TESTS_DIR))
+    try:
+        from prover.config import DEMOS
+    except Exception as exc:
+        raise BenchError("PROVER_BACKEND_IMPORT_FAILED",
+                         f"Import de la configuration prouveur impossible ({type(exc).__name__}).") from exc
+    return _demo_file(demo_id, DEMOS)
+
+
 def _launch_arm(arm: str, demo_id: int, provider: str, iterations: int,
                 timeout_s: float, endpoint: str | None = None,
                 token: str | None = None) -> dict:
     env = os.environ.copy()
-    roles = ["--provider", provider, "--local-provider", provider,
-             "--coordinator-provider", provider, "--tactic-provider", provider,
-             "--search-provider", provider, "--critic-provider", provider]
     if arm == "fleet":
         provider = "claudish"
-        for index in (1, 3, 5, 7, 9, 11):
-            roles[index] = provider
         env["CLAUDISH_BASE_URL"] = endpoint or ""
         env["CLAUDISH_PROXY_KEY"] = token or ""
-    command = [sys.executable, "-u", str(RUNNER), "--demo", str(demo_id),
-               "--mode", "multi", "--iterations", str(iterations), *roles]
+    command = _prover_command(demo_id, provider, iterations, int(timeout_s))
     started = time.monotonic()
     try:
         completed = subprocess.run(command, cwd=PROVER_DIR.parent, env=env,
@@ -155,31 +200,72 @@ def _launch_arm(arm: str, demo_id: int, provider: str, iterations: int,
                 "proof_success": False, "original_sorry": None,
                 "final_sorry": None, "tokens": None, "routing": {}}
     elapsed = time.monotonic() - started
-    match = SUMMARY_RE.search(completed.stdout)
-    summary = None
-    if match:
-        try:
-            loaded = json.loads(Path(match.group(1)).read_text(encoding="utf-8"))
-            summary = loaded if isinstance(loaded, dict) else None
-        except (OSError, json.JSONDecodeError):
-            pass
-    if summary is None:
+    stdout = completed.stdout
+    gate = "PROVIDER_GATE refusing to launch" in stdout
+    lock = "[BG] LOCKED " in stdout
+    exit_match = EXIT_RE.search(stdout)
+    if gate:
+        return {"arm": arm, "provider": provider, "status": "runner_error",
+                "success": False, "error_code": "PROVIDER_UNCONFIGURED",
+                "elapsed_s": round(elapsed, 3), "iterations_budget": iterations,
+                "actual_iterations": None, "proof_success": False,
+                "original_sorry": None, "final_sorry": None, "tokens": None,
+                "routing": {}, "diagnostic": stdout[-2000:]}
+    file_match = FILE_RE.search(stdout)
+    if file_match and "no file" in file_match.group(1).lower():
+        return {"arm": arm, "provider": provider, "status": "runner_error",
+                "success": False, "error_code": "DEMO_TARGET_UNAVAILABLE",
+                "elapsed_s": round(elapsed, 3), "iterations_budget": iterations,
+                "actual_iterations": None, "proof_success": False,
+                "original_sorry": None, "final_sorry": None, "tokens": None,
+                "routing": {}, "diagnostic": file_match.group(1)}
+    if not (FINAL_RE.search(stdout) and exit_match and int(exit_match.group(1)) == 0):
         diagnostic = completed.stdout[-2000:]
-        error_code = ("PROVIDER_UNCONFIGURED" if "[GATE] refusing to launch" in completed.stdout
-                      else "PROVER_TREE_LOCKED" if "[LOCKED]" in completed.stdout
-                      else "PROVER_RESULT_MISSING")
+        error_code = ("PROVIDER_UNCONFIGURED" if gate else
+                      "PROVER_TREE_LOCKED" if lock else
+                      "PROVER_FAILED")
         return {"arm": arm, "provider": provider, "status": "runner_error",
                 "success": False, "error_code": error_code,
                 "elapsed_s": round(elapsed, 3), "iterations_budget": iterations,
                 "actual_iterations": None, "proof_success": False,
                 "original_sorry": None, "final_sorry": None, "tokens": None,
                 "routing": {}, "diagnostic": diagnostic}
-    result = summary.get("result")
-    provider_gate = summary.get("result_kind") == "provider_gate"
-    proof_success = (isinstance(result, dict) and result.get("success") is True
-                     and summary.get("final_sorry") == 0)
-    trace_metrics = _trace_metrics(summary.get("trace_file"))
-    otel_metrics = _otel_metrics(completed.stdout)
+    final_match = FINAL_RE.search(stdout)
+    success_match = RESULT_RE.search(stdout)
+    already_match = ALREADY_RE.search(stdout)
+    pre_match = PRE_SORRY_RE.search(stdout)
+    post_match = POST_SORRY_RE.search(stdout)
+    iterations_match = ITERATIONS_RE.search(stdout)
+    if not (success_match and already_match and pre_match and post_match and final_match):
+        return {"arm": arm, "provider": provider, "status": "runner_error",
+                "success": False, "error_code": "PROVER_RESULT_INCOMPLETE",
+                "elapsed_s": round(elapsed, 3), "iterations_budget": iterations,
+                "actual_iterations": None, "proof_success": False,
+                "original_sorry": None, "final_sorry": None, "tokens": None,
+                "routing": {}, "diagnostic": stdout[-2000:]}
+    backend_success = success_match.group(1) == "True"
+    final_success = final_match.group(1) == "True"
+    already_solved = already_match.group(1) == "True"
+    original_sorry = int(pre_match.group(1))
+    final_sorry = int(post_match.group(1))
+    if (backend_success != final_success
+            or final_match.group(3) != str(final_sorry)
+            or original_sorry < 0 or final_sorry < 0):
+        return {"arm": arm, "provider": provider, "status": "runner_error",
+                "success": False, "error_code": "PROVER_RESULT_INCONSISTENT",
+                "elapsed_s": round(elapsed, 3), "iterations_budget": iterations,
+                "actual_iterations": None, "proof_success": False,
+                "original_sorry": None, "final_sorry": None, "tokens": None,
+                "routing": {}, "diagnostic": stdout[-2000:]}
+    # MultiAgentSorryProver.success is only true after its mandatory final
+    # verification build (provers.py final_build_ok gate). A proof also has to
+    # eliminate a real pre-run sorry in the target; already-solved/structural
+    # outcomes are not proof successes for this comparison.
+    proof_success = (backend_success and original_sorry > final_sorry
+                     and final_sorry == 0 and not already_solved)
+    trace_match = TRACE_RE.search(stdout)
+    trace_metrics = _trace_metrics(trace_match.group(1) if trace_match else None)
+    otel_metrics = _otel_metrics(stdout)
     metrics = {
         "tokens": otel_metrics["tokens"] or trace_metrics["tokens"],
         "routing": otel_metrics["routing"] or trace_metrics["routing"],
@@ -190,17 +276,22 @@ def _launch_arm(arm: str, demo_id: int, provider: str, iterations: int,
         "arm": arm, "provider": provider,
         "status": "completed" if completed.returncode == 0 else "runner_error",
         "success": completed.returncode == 0 and proof_success,
-        "error_code": ("PROVIDER_UNCONFIGURED" if provider_gate else
-                       None if completed.returncode == 0 else "PROVER_FAILED"),
+        "error_code": None if completed.returncode == 0 and proof_success else "PROOF_NOT_VERIFIED",
         "elapsed_s": round(elapsed, 3), "iterations_budget": iterations,
-        "actual_iterations": summary.get("actual_iterations"),
-        "proof_success": proof_success, "result_kind": summary.get("result_kind"),
-        "original_sorry": summary.get("original_sorry"),
-        "final_sorry": summary.get("final_sorry"), "tokens": metrics["tokens"],
+        "prover_elapsed_s": float(final_match.group(4)),
+        "actual_iterations": (int(iterations_match.group(1))
+                              if iterations_match and iterations_match.group(1) != "None" else None),
+        "proof_success": proof_success, "build_verified": backend_success,
+        "result_kind": final_match.group(2),
+        "original_sorry": original_sorry,
+        "final_sorry": final_sorry, "tokens": metrics["tokens"],
         "cost_usd": None,
         "routing": metrics["routing"], "routing_evidence": metrics["evidence"],
-        "summary_file": match.group(1).strip(), "returncode": completed.returncode,
-        "diagnostic": (result.get("reason") if provider_gate and isinstance(result, dict) else None),
+        "trace_file": trace_match.group(1).strip() if trace_match else None,
+        "otel_file": (OTEL_RE.search(stdout).group(1).strip()
+                      if OTEL_RE.search(stdout) else None),
+        "returncode": completed.returncode,
+        "diagnostic": None if proof_success else stdout[-2000:],
     }
 
 
@@ -271,6 +362,7 @@ def main(argv: list[str] | None = None) -> int:
         "arms": [], "comparison": {"status": "incomplete"},
     }
     try:
+        _validate_demo_target(args.demo_id)
         # Baseline d'abord : un endpoint absent produit tout de même un rapport
         # partiel avec la mesure baseline si son backend est disponible.
         baseline = _launch_arm("baseline", args.demo_id, args.baseline_provider,

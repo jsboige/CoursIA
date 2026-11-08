@@ -8,6 +8,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import fleet_bench
+sys.path.insert(0, str(fleet_bench.AGENT_TESTS_DIR))
+import run_prover_bg as prover_launcher
 
 
 def test_endpoint_requires_absolute_http_url():
@@ -82,12 +84,68 @@ def test_otel_metrics_records_observed_model_and_usage(tmp_path):
 def test_provider_gate_is_reported_as_unconfigured():
     completed = fleet_bench.subprocess.CompletedProcess(
         args=[], returncode=5,
-        stdout="[GATE] provider credentials missing\n[GATE] refusing to launch\n")
+        stdout="[BG] PROVIDER_GATE missing credentials\n"
+        "[BG] PROVIDER_GATE refusing to launch\n[BG] EXIT code=5\n")
     with patch.object(fleet_bench.subprocess, "run", return_value=completed):
         arm = fleet_bench._launch_arm("baseline", 0, "local", 1, 1)
     assert arm["success"] is False
     assert arm["proof_success"] is False
     assert arm["error_code"] == "PROVIDER_UNCONFIGURED"
+
+
+def test_unmaterialized_demo_target_cannot_be_reported_as_a_proof():
+    completed = fleet_bench.subprocess.CompletedProcess(
+        args=[], returncode=0,
+        stdout="[BG] FILE  (no file — synthetic theorem demo)\n")
+    with patch.object(fleet_bench.subprocess, "run", return_value=completed):
+        arm = fleet_bench._launch_arm("baseline", 0, "local", 1, 10)
+    assert arm["success"] is False
+    assert arm["proof_success"] is False
+    assert arm["error_code"] == "DEMO_TARGET_UNAVAILABLE"
+
+
+def test_demo_config_requires_a_materialized_lean_file(tmp_path):
+    lean_file = tmp_path / "Smoke.lean"
+    lean_file.write_text("theorem smoke : True := trivial\n", encoding="utf-8")
+    assert fleet_bench._demo_file(0, {0: {"file": str(lean_file)}}) == lean_file
+    with pytest.raises(fleet_bench.BenchError) as error:
+        fleet_bench._demo_file(0, {0: {"file": ""}})
+    assert error.value.code == "DEMO_TARGET_UNAVAILABLE"
+
+
+def test_arguments_match_real_outer_prover_parser(monkeypatch):
+    command = fleet_bench._prover_command(0, "claudish", 2, 30)
+    monkeypatch.setattr(sys, "argv", [command[2], *command[3:]])
+    args = prover_launcher.parse_args()
+    assert args.demo_id == 0
+    assert args.provider == args.local_provider == "claudish"
+    assert args.max_iter == 2
+    assert args.workflow_timeout == 30
+    assert args.coordinator_provider == args.tactic_provider == "claudish"
+    assert args.search_provider == args.critic_provider == "claudish"
+
+
+def test_result_success_alone_does_not_claim_proof_without_zero_sorry(tmp_path):
+    trace = tmp_path / "trace.json"
+    trace.write_text("[]", encoding="utf-8")
+    completed = fleet_bench.subprocess.CompletedProcess(
+        args=[], returncode=0,
+        stdout=(
+            f"[OTEL] spans -> {tmp_path / 'spans.jsonl'}\n"
+            f"Trace saved: {trace} (0 entries)\n"
+            "[BG] PRE_FILE_SORRY_COUNT 1\n"
+            "[BG] POST_FILE_SORRY_COUNT 1\n"
+            "[BG] RESULT_SUCCESS True\n"
+            "[BG] RESULT_ALREADY_SOLVED False\n"
+            "[BG] RESULT_ITERATIONS 1\n"
+            "[BG] FINAL ok=True kind=structural_only sorry_after=1 elapsed=2.0\n"
+            "[BG] EXIT code=0\n"
+        ))
+    with patch.object(fleet_bench.subprocess, "run", return_value=completed):
+        arm = fleet_bench._launch_arm("baseline", 0, "local", 1, 10)
+    assert arm["build_verified"] is True
+    assert arm["proof_success"] is False
+    assert arm["success"] is False
 
 
 def test_timeout_is_failure_without_proof_or_invented_measurements():
