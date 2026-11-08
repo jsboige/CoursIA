@@ -27319,6 +27319,32 @@ Le cadre que ce notebook ajoute : le **problème de sélection d'algorithmes** d
 ## Durée
 
 ~45 min. Le notebook ne régénère **aucun** benchmark : il ré-analyse des résultats précalculés (**offline**, aucun appel API, aucun réseau, aucun GPU).",,,,,,,,dbe14430c7ee86eb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,arc18703-guide,markdown,fr,d0fdc90027e0222e,"## Comment lire ce carnet
+
+Ce carnet fait deux choses à la fois : il **ré-analyse** un benchmark étudiant (l'hommage est juste au-dessus) et il en **tire une méthode de sélection d'algorithmes**. Les deux se lisent dans cet ordre.
+
+**Le chemin de lecture** — quatre jalons, chacun bâti sur le précédent :
+
+1. **§2 — Le contrat expérimental** : ce que contiennent les données, et ce qu'elles ne comparent pas d'emblée.
+2. **§3 — Les profils intra-jeu** : ce que chaque famille optimise réellement, jeu par jeu.
+3. **§4 — Les frontières de Pareto** : pourquoi un podium unique serait un choix caché — et la figure qui rend le compromis visible.
+4. **§5 — La sélection sous préférences** : le point de bascule entre deux préférences, mesuré.
+
+**§6** referme avec la **traçabilité** : la question étudiante, l'appareil construit, le résultat reproduit ici. Les **trois exercices** sont posés en §3, §4 et §5, chacun juste après la lecture de son résultat.
+
+### Les annexes
+
+Les approfondissements sont **démontrés** — pas résumés — mais ils n'ont pas leur place dans le fil : ils sont rejetés en fin de carnet.
+
+- **Annexe A — Objectifs et compétences visées** : le contrat pédagogique, d'un coup d'œil.
+- **Annexe B — Une moyenne n'est pas une preuve** : les deux niveaux d'incertitude (bootstrap inter-instance, répétition multi-seed).
+- **Annexe C — `nodes_explored`** : pourquoi cette colonne ne compte pas la même chose d'une famille à l'autre.
+- **Annexe D — Mesurer, choisir, certifier** : ce que le benchmark empirique ne prouve pas, et les ponts formels qui le disent.
+- **Annexe E — Limites honnêtes** : ce que l'hommage doit aussi montrer.
+- **Annexe F — Sources** : les références complètes.
+
+Le §1 reste au fil : il dit d'où viennent les données, ce qui est de l'étudiant et ce que CoursIA y a ajouté.
+",,,,,,,,d0fdc90027e0222e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,266b3899,markdown,fr,16a5c93dd4a4a900,"## 1. Transmission : ce qui vient de l'étudiant, ce qui vient de CoursIA
 
 L'hommage ne consiste pas à recopier le travail, mais à **le faire briller en l'associant à un cadre plus grand**. Pour cela, distinguer explicitement l'origine de chaque brique.
@@ -27392,99 +27418,6 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ip
         diffs = grp[""difficulty""].unique()
         print(f""  {fam:24s} n={len(grp):3d}  difficultés={sorted(map(str, diffs))}"")
     print()",,,,,,,,80d0e3f607141264,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,6ab493da,markdown,fr,116432e81dd24b62,"## Annexe B — Une moyenne n'est pas une preuve : deux niveaux d'incertitude
-
-[Sudoku-18b](../../Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb) distingue le bruit du système, la variance entre puzzles, l'intervalle bootstrap et les tests appariés. Appliquons cette discipline aux données de Théodore.
-
-### B.1 — Incertitude inter-instance dans les CSV historiques
-
-Les CSV contiennent une mesure par couple `paradigm × instance_id`, mais les **mêmes instances** sont bien partagées : 30 pour tous les solveurs Sudoku, 40 pour Wordle, et au moins 6 pour Puissance 4 (les solveurs profonds s'arrêtent plus tôt). Nous pouvons donc bootstrapper les **instances** pour quantifier l'incertitude sur ce panel. Cet intervalle ne mesure pas le bruit runtime d'une même instance et ne crée pas artificiellement des répétitions.
-",,,,,,,,116432e81dd24b62,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,1502cb01,code,fr,15b05d8c203451f3,"def bootstrap_ci(values, stat=np.mean, n_boot=4000, seed=2026):
-    # Intervalle percentile déterministe sur l'échantillon d'instances.
-    x = np.asarray(values, dtype=float)
-    rng = np.random.default_rng(seed)
-    boots = [stat(rng.choice(x, size=len(x), replace=True)) for _ in range(n_boot)]
-    return float(stat(x)), float(np.percentile(boots, 2.5)), float(np.percentile(boots, 97.5))
-
-print(""Couverture et IC bootstrap 95 % inter-instance (médiane du temps, taux de succès) :"")
-for game in games:
-    print(f""\n===== {game} ====="")
-    df = frames[game]
-    common = set.intersection(*(
-        set(grp[""instance_id""].astype(str)) for _, grp in df.groupby(""paradigm"")
-    ))
-    print(f""instances communes à toutes les familles : {len(common)}"")
-    for paradigm, grp in df.groupby(""paradigm""):
-        med, lo_t, hi_t = bootstrap_ci(grp[""time_seconds""], stat=np.median)
-        suc, lo_s, hi_s = bootstrap_ci(grp[""success""].astype(float), stat=np.mean)
-        print(f""  {paradigm:24s} n={len(grp):2d} | succès={suc:.2f} [{lo_s:.2f}; {hi_s:.2f}]""
-              f"" | temps médian={med:.4g} [{lo_t:.4g}; {hi_t:.4g}]"")",,,,,,,,15b05d8c203451f3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,f3574ced,markdown,fr,94a0772f59a5eba6,"**Lecture honnête.** Les intervalles se resserrent quand les résultats sont homogènes et s'élargissent quand les instances discriminent davantage. Sur Puissance 4, les effectifs inégaux rendent la comparaison plus fragile : un test apparié à quatre familles devrait se limiter aux **6 instances communes**, et ne répondrait qu'à ce sous-panel. Nous n'en fabriquons pas ici un verdict universel.
-
-### B.2 — Répétition fraîche multi-seed sur Wordle
-
-Pour compléter les CSV historiques, CoursIA a rejoué le **code étudiant inchangé** sous WSL/Linux le 24 août 2026 : 3 instances de longueur 5 (`sample_instances(..., seed=42)`), 3 solveurs, 5 graines, soit **45 mesures**. Le cache du premier coup entropique a été vidé avant chaque mesure : sans cela, un run froid suivi de runs chauds aurait produit une fausse accélération. Le protocole exact et la provenance sont consignés dans `data/app22-cross-paradigm/SOURCE.md`.
-
-Cette petite expérience mesure deux choses distinctes : la variabilité **entre graines** pour les solveurs qui utilisent un RNG, et la variabilité **entre instances**. Elle n'est pas un nouveau benchmark exhaustif et ne remplace pas le corpus historique de mesures.
-",,,,,,,,94a0772f59a5eba6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,a1aab604,code,fr,d09e04c797b5ec7e,"repeated = pd.read_csv(DATA / ""wordle_repeated_results.csv"")
-assert len(repeated) == 45
-assert repeated.groupby([""paradigm"", ""instance_id""]).size().eq(5).all()
-
-# Bootstrap hiérarchique : ré-échantillonner les instances, puis les graines en leur sein.
-def hierarchical_ci(df, value, n_boot=4000, seed=2026):
-    rng = np.random.default_rng(seed)
-    ids = df[""instance_id""].unique()
-    observed = float(df[value].mean())
-    draws = []
-    for _ in range(n_boot):
-        sampled_ids = rng.choice(ids, size=len(ids), replace=True)
-        vals = []
-        for instance_id in sampled_ids:
-            pool = df.loc[df[""instance_id""] == instance_id, value].to_numpy(float)
-            vals.extend(rng.choice(pool, size=len(pool), replace=True))
-        draws.append(np.mean(vals))
-    return observed, float(np.percentile(draws, 2.5)), float(np.percentile(draws, 97.5))
-
-print(""Wordle frais — 3 instances × 5 graines par solveur (IC hiérarchique 95 %) :"")
-for paradigm, grp in repeated.groupby(""paradigm""):
-    q, lo_q, hi_q = hierarchical_ci(grp, ""solution_quality"")
-    per_instance_sd = grp.groupby(""instance_id"")[""solution_quality""].std()
-    print(f""  {paradigm:24s} succès={grp['success'].mean():.2f} | coups={q:.2f} [{lo_q:.2f}; {hi_q:.2f}]""
-          f"" | écart-type inter-seed médian={per_instance_sd.median():.2f}"")
-
-print(""\nContrôle déterminisme par instance (nombre de qualités distinctes sur 5 graines) :"")
-print(repeated.groupby([""paradigm"", ""instance_id""])[""solution_quality""].nunique().unstack().to_string())",,,,,,,,d09e04c797b5ec7e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,c94c5519,markdown,fr,64dd40541cc94b44,"**Résultat reproductible, limite conservée.** Les 45 runs réussissent. L'entropie est déterministe à instance fixée (une qualité distincte pour chaque instance) ; l'élimination bayésienne et le CSP varient avec la graine. Avec seulement trois mots, les intervalles restent volontairement larges : ils démontrent la **dispersion**, pas une supériorité générale. Une étude confirmatoire devrait augmenter le nombre d'instances, isoler chaque processus, multiplier les machines ou répéter les temps après warm-up selon la question posée.
-",,,,,,,,64dd40541cc94b44,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,56492f1d,markdown,fr,523692ef821b935b,"## Annexe C — `nodes_explored` : la même colonne, des unités différentes
-
-Le piège le plus visible est la colonne `nodes_explored` : même nom, même type numérique… et **aucune commune mesure**. Un « nœud » n'est pas un nœud selon la famille :
-
-- **Backtracking / MRV** et **Dancing Links** : un *nœud d'arbre de recherche* (case affectée / étape de couverture exacte). Comparables *entre eux*.
-- **CP-SAT** : le solveur travaille par **propagation de contraintes et analyse de conflits** — les « nœuds » qu'il rapporte sont une **unité interne au solveur** (≈55 en moyenne ici), **pas** une énumération d'affectations. Cette valeur ne se compare à aucun nœud d'arbre.
-- **SMT** : un *nombre de décisions* dans la procédure de décision.
-- **GA / recuit simulé** : une *évaluation de fonction-objectif* (individu / état visité).
-- **MCTS** : une *simulation de partie complète*.
-- **Mot** (Wordle, élimination bayésienne / entropie) : un *candidat évalué* ; **CSP** (Wordle) : **`0`** (résolution par satisfaisabilité de contraintes, pas d'énumération).
-
-On juxtapose la colonne brute, puis on s'interdit de la classer globalement.",,,,,,,,523692ef821b935b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,ac049658,code,fr,45c28222ffbffdf0,"sud = frames[""sudoku""]
-nodes_pivot = sud.pivot_table(index=""paradigm"", values=""nodes_explored"", aggfunc=""mean"") \
-                  .sort_values(""nodes_explored"")
-nodes_pivot.columns = [""nodes_explored (moy.)""]
-print(""Sudoku — `nodes_explored` moyen par famille :"")
-print(nodes_pivot.round(1).to_string())
-print()
-print(""Lecture : le CP-SAT rapporte ~55 'nœuds' internes (propagation/conflits),"")
-print(""le Wordle-CSP en rapporte 0, le backtracking ~804k d'énumération d'affectations,"")
-print(""le GA ~400k d'évaluations. Aucune de ces valeurs ne compte le même travail."")
-print(""La colonne ne mesure PAS le même travail d'une famille à l'autre."")",,,,,,,,45c28222ffbffdf0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,20eaa877,markdown,fr,19f3394f86c1672e,"**Conséquence immédiate** : il est **mathématiquement invalide** de trier les 14 étiquettes de paradigme sur `nodes_explored`, ou de conclure « le solveur qui explore le moins est le meilleur ». Le notebook de l'étudiant le souligne déjà ; nous le formalisons ici comme un cas d'école du problème de **Rice** : les **attributs** d'une instance ne sont pas homogènes entre **espaces d'algorithmes**.
-
-La **même** prudence vaut pour `time_seconds` (un solveur en pur Python vs un binding C++ natif) et pour `solution_quality` (voir §3). Toute normalisation doit donc être **intra-jeu** — jamais inter-jeu, jamais inter-famille de manière naïve.
-",,,,,,,,19f3394f86c1672e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,a5fca94c,markdown,fr,77ad5ab0204c8214,"## 3. Profils intra-jeu : succès, coût relatif, qualité, répétitions
 
 On agrège par famille **dans chaque jeu**, pour faire apparaître ce que chaque paradigme optimise réellement. Les durées absolues dépendent de la machine d'exécution du benchmark (état Unix) ; on parle donc surtout en **ratios** (`rel_time`, `rel_mem` : 1 = meilleur de son jeu) et en **taux**, jamais en secondes dans la prose.
@@ -27612,6 +27545,8 @@ plt.grid(alpha=0.3)
 plt.legend()
 plt.tight_layout()
 plt.show()",,,,,,,,dcab12fd6e281348,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,arc18703-figure,markdown,fr,bb6abaa5f268f0f5,"La figure ne fait qu'**illustrer** le tableau précédent : le tracé rouge est le front non dominé, les autres points sont dominés sur le couple (succès, temps). Une frontière qui ne contient qu'un point signifie qu'aucun compromis n'existe sur ce jeu — c'est un résultat, pas un podium. C'est précisément ce que l'exercice suivant demande de généraliser.
+",,,,,,,,bb6abaa5f268f0f5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,824e707d,markdown,fr,fbf8ad48ba9c0c3f,"### Exercice 2 (stub) — Pareto à trois objectifs
 Étendre la comparaison à **3 objectifs** (succès, temps, mémoire) et retourner le front en 3D. Le code ci-dessus ne gère que 2 objectifs ; généralisez-le.
 ",,,,,,,,fbf8ad48ba9c0c3f,,,,,,,,,,,,,,,
@@ -27738,36 +27673,6 @@ def leave_one_family_out(pr, weights, quality_dir='max', family=None):
 # alt = leave_one_family_out(profiles[""wordle""], weight_sets[""rapidité""], ""min"", family=""entropy"")
 # print(""Gagnant 'rapidité' sans entropy :"", alt)
 print(""Exercice 3 (stub) — à compléter pour un sélecteur leave-one-family-out."")",,,,,,,,26fb42d6055fd07b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,717a2696,markdown,fr,737c69cfa97a5a9e,"## Annexe D — Mesurer, choisir, certifier : trois questions différentes
-
-Le benchmark empirique répond à **« que s'est-il passé sur ces instances, avec cette machine et ce protocole ? »**. Il ne prouve ni la correction générale d'un solveur ni son optimalité. CoursIA permet de situer précisément ces niveaux :
-
-| Niveau | Question | Pont CoursIA | Ce que le pont établit — et n'établit pas |
-|---|---|---|---|
-| **Performance empirique** | Quel solveur réussit, à quel coût observé ? | [Sudoku-18](../../Sudoku/Sudoku-18-Comparison-Python.ipynb), [Sudoku-18b](../../Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb) | Comparaison et incertitude sur un protocole ; aucune preuve universelle. |
-| **Correction / invariants** | Une étape de propagation conserve-t-elle les solutions ? | [Sudoku-19-Lean-Propagation-Lean](../../Sudoku/Sudoku-19-Lean-Propagation-Lean.ipynb) | Formalise des invariants de propagation ; **ne vérifie pas** les implémentations de Théodore. |
-| **Optimalité conditionnelle** | Sous quelles hypothèses une stratégie est-elle optimale ? | [Search-03e-AStar-Optimality](../Part1-Foundations/Search-03e-AStar-Optimality.ipynb) | Prouve une optimalité sous hypothèses (heuristique admissible, modèle formel) ; ne transforme pas un chrono en théorème. |
-| **Valeur d'un jeu adverse** | Comment relier valeur minimax et stratégie ? | [GameTheory-05b-Lean-Minimax-Lean](../../GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb) | Donne les fondations formelles de minimax ; ne certifie ni le moteur Puissance 4 ni ses performances. |
-| **Décision** | Comment arbitrer entre attributs et coût d'information ? | [DecInfer-01b-Lean-ExpectedUtility](../../Probas/DecisionTheory/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb), [DecInfer-05](../../Probas/DecisionTheory/DecInfer/DecInfer-05-Value-Information.ipynb) | Formalise le langage du choix ; les poids et distributions restent à justifier empiriquement. |
-
-Cette séparation évite deux confusions symétriques : **un solveur rapide n'est pas, pour cette raison, prouvé correct** ; **un algorithme prouvé correct ou optimal sous hypothèses n'est pas, pour cette raison, le plus rapide ici**. Le prolongement naturel serait un pipeline où une preuve borne l'espace des candidats admissibles, puis où la sélection empirique arbitre entre les candidats certifiés.
-",,,,,,,,737c69cfa97a5a9e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,57326d35,markdown,fr,e7d6bef317d66670,"## 7. Limites honnêtes
-
-Un hommage ne maquille pas les faiblesses : il les expose, car elles font partie de l'apport.
-
-1. **Collecte Unix uniquement.** Le paquet `benchmark` importe `resource` et utilise `SIGALRM` pour les timeouts → la collecte des résultats **échoue sous Windows natif** (les 20 tests du dépôt passent sous WSL/Linux). Les CSV livrés ont donc été produits sous **Unix**. C'est une **limite de portabilité** assumée, pas un défaut caché.
-2. **Une seule observation historique par solveur × instance.** Les trois CSV étudiants permettent d'étudier la variabilité **entre instances**, pas le bruit d'exécution à instance fixée. Les IC bootstrap de l'Annexe B.1 ré-échantillonnent les instances ; ils ne doivent pas être lus comme des répétitions runtime.
-3. **Répétition fraîche volontairement petite.** L'extension CoursIA Wordle porte sur 3 instances × 5 graines × 3 solveurs. Elle satisfait l'objectif de rendre la dispersion visible, mais trois mots ne suffisent pas pour une conclusion confirmatoire. Le cache entropique a été vidé avant chaque répétition afin de conserver un état froid comparable ; un protocole warm-cache répondrait à une autre question.
-4. **Effectifs inégaux sur Puissance 4.** Les familles couvrent 6 à 10 instances ; les quatre ne partagent que **6 `instance_id`**. Les taux et moyennes sont donc fragiles, et une comparaison appariée globale devrait se restreindre à ce sous-panel.
-5. **Métriques hétérogènes.** `nodes_explored`, `solution_quality` et même `time_seconds` ne comparent pas la même chose d'une famille à l'autre (§3 et Annexe C). Les profils sont donc **intra-jeu**.
-6. **Mémoire `ru_maxrss`.** Le pic mémoire est le `ru_maxrss` du **processus**, pas une allocation fine ; le GA/recuit allouent beaucoup et gonflent ce chiffre. À interpréter avec prudence.
-7. **Stochasticité partiellement caractérisée.** Le multi-seed Wordle montre que l'entropie est déterministe à instance fixée, tandis que l'élimination bayésienne et le CSP varient. GA, recuit et MCTS restent décrits par une seule observation historique par instance : leur variance inter-seed n'est pas estimée ici.
-8. **Sous-ensemble de familles.** Le README étudiant précise : **6 paradigmes Sudoku** sur **17 possibles** (choix représentatif de chaque famille — recherche exacte, CSP/SAT, métaheuristique) ; **Choco** et les solveurs **neuronaux/LLM** ne sont pas implémentés (mentionnés en perspective). Le benchmark compare donc un **échantillon**, pas l'espace complet.
-9. **Pas de généralisation universelle ni de certification implicite.** Les succès/échecs sont spécifiques à ces terrains, ces instances et ce protocole. Le No Free Lunch interdit d'en déduire un dominateur universel ; les ponts Lean de l'Annexe D éclairent des propriétés formelles distinctes, sans vérifier le code étudiant.
-
-Ces limites **renforcent** le propos : la comparabilité se **construit** (provenance, schéma, normalisation, Pareto) — elle n'est jamais donnée.
-",,,,,,,,583483b4fff59b20,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,a2e770a5,markdown,fr,da1ce9c1a4e62d01,"## 6. Traçabilité : de la question étudiante au cadre pédagogique
 
 Le tableau ci-dessous relie **la question que se posait l'étudiant**, **l'appareil** qu'il a construit, **le résultat que ce notebook reproduit**, et **l'extension pédagogique** que CoursIA en tire.
@@ -27810,7 +27715,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ip
         ""Performance, correction et optimalité restent trois niveaux distincts"",
     ],
 })
-print(trace.to_string(index=False))",,,,,,,,075be2ddb4a0f86e,,,,,,,,,,,,,,,
+print(trace.to_string(index=False))",,,,,,,,678b674708c5ec1f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,7eca19cf,markdown,fr,d5e5277831377016,"## Conclusion
 
 Le benchmark de **Théodore Deguest** est plus qu'un comparatif : c'est un **appareil de mesure de la sélection d'algorithmes**. Quatre leçons s'en dégagent quand on l'associe au cadre de **Rice** et au **No Free Lunch** :
@@ -27822,6 +27727,139 @@ Le benchmark de **Théodore Deguest** est plus qu'un comparatif : c'est un **app
 
 **À retenir de l'hommage :** le geste étudiant (faire courir ensemble des paradigmes hétérogènes sur un protocole honnête) est conservé, attribué, reproduit et **élevé** en cas d'application du problème de sélection d'algorithmes. Il ne s'agit pas de « mentionner » le travail : il s'agit de le **faire travailler** dans un cadre plus grand, sans lui attribuer les extensions statistiques ni les preuves formelles de CoursIA.
 ",,,,,,,,d5e5277831377016,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,arc18703-annexe-a,markdown,fr,1e80503698c3eef6,"## Annexe A — Objectifs et compétences visées
+
+1. **Reconnaître** un appareil de mesure expérimental étudiant (protocole commun, métriques uniformes, timeouts, checkpoints).
+2. **Établir** la provenance et le schéma des données avant toute analyse.
+3. **Démontrer** que `nodes_explored`, `time_seconds` et `solution_quality` ne sont **pas commensurables** entre familles (**Annexe C**).
+4. **Quantifier** la dispersion inter-instance et multi-seed, sans confondre ces deux sources d'incertitude (**Annexe B**).
+5. **Calculer** des profils et des **frontières de Pareto** intra-jeu, sans podium global fallacieux (**§3** et **§4**).
+6. **Relier** la sélection de solveur au cadre de **Rice** et à la décision multi-attribut, puis tester la sensibilité aux préférences (**§5**).
+7. **Séparer** performance empirique et garantie formelle grâce à des ponts Lean ciblés (**Annexe D**).
+",,,,,,,,1e80503698c3eef6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,6ab493da,markdown,fr,116432e81dd24b62,"## Annexe B — Une moyenne n'est pas une preuve : deux niveaux d'incertitude
+
+[Sudoku-18b](../../Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb) distingue le bruit du système, la variance entre puzzles, l'intervalle bootstrap et les tests appariés. Appliquons cette discipline aux données de Théodore.
+
+### B.1 — Incertitude inter-instance dans les CSV historiques
+
+Les CSV contiennent une mesure par couple `paradigm × instance_id`, mais les **mêmes instances** sont bien partagées : 30 pour tous les solveurs Sudoku, 40 pour Wordle, et au moins 6 pour Puissance 4 (les solveurs profonds s'arrêtent plus tôt). Nous pouvons donc bootstrapper les **instances** pour quantifier l'incertitude sur ce panel. Cet intervalle ne mesure pas le bruit runtime d'une même instance et ne crée pas artificiellement des répétitions.
+",,,,,,,,116432e81dd24b62,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,1502cb01,code,fr,15b05d8c203451f3,"def bootstrap_ci(values, stat=np.mean, n_boot=4000, seed=2026):
+    # Intervalle percentile déterministe sur l'échantillon d'instances.
+    x = np.asarray(values, dtype=float)
+    rng = np.random.default_rng(seed)
+    boots = [stat(rng.choice(x, size=len(x), replace=True)) for _ in range(n_boot)]
+    return float(stat(x)), float(np.percentile(boots, 2.5)), float(np.percentile(boots, 97.5))
+
+print(""Couverture et IC bootstrap 95 % inter-instance (médiane du temps, taux de succès) :"")
+for game in games:
+    print(f""\n===== {game} ====="")
+    df = frames[game]
+    common = set.intersection(*(
+        set(grp[""instance_id""].astype(str)) for _, grp in df.groupby(""paradigm"")
+    ))
+    print(f""instances communes à toutes les familles : {len(common)}"")
+    for paradigm, grp in df.groupby(""paradigm""):
+        med, lo_t, hi_t = bootstrap_ci(grp[""time_seconds""], stat=np.median)
+        suc, lo_s, hi_s = bootstrap_ci(grp[""success""].astype(float), stat=np.mean)
+        print(f""  {paradigm:24s} n={len(grp):2d} | succès={suc:.2f} [{lo_s:.2f}; {hi_s:.2f}]""
+              f"" | temps médian={med:.4g} [{lo_t:.4g}; {hi_t:.4g}]"")",,,,,,,,15b05d8c203451f3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,f3574ced,markdown,fr,94a0772f59a5eba6,"**Lecture honnête.** Les intervalles se resserrent quand les résultats sont homogènes et s'élargissent quand les instances discriminent davantage. Sur Puissance 4, les effectifs inégaux rendent la comparaison plus fragile : un test apparié à quatre familles devrait se limiter aux **6 instances communes**, et ne répondrait qu'à ce sous-panel. Nous n'en fabriquons pas ici un verdict universel.
+
+### B.2 — Répétition fraîche multi-seed sur Wordle
+
+Pour compléter les CSV historiques, CoursIA a rejoué le **code étudiant inchangé** sous WSL/Linux le 24 août 2026 : 3 instances de longueur 5 (`sample_instances(..., seed=42)`), 3 solveurs, 5 graines, soit **45 mesures**. Le cache du premier coup entropique a été vidé avant chaque mesure : sans cela, un run froid suivi de runs chauds aurait produit une fausse accélération. Le protocole exact et la provenance sont consignés dans `data/app22-cross-paradigm/SOURCE.md`.
+
+Cette petite expérience mesure deux choses distinctes : la variabilité **entre graines** pour les solveurs qui utilisent un RNG, et la variabilité **entre instances**. Elle n'est pas un nouveau benchmark exhaustif et ne remplace pas le corpus historique de mesures.
+",,,,,,,,94a0772f59a5eba6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,a1aab604,code,fr,d09e04c797b5ec7e,"repeated = pd.read_csv(DATA / ""wordle_repeated_results.csv"")
+assert len(repeated) == 45
+assert repeated.groupby([""paradigm"", ""instance_id""]).size().eq(5).all()
+
+# Bootstrap hiérarchique : ré-échantillonner les instances, puis les graines en leur sein.
+def hierarchical_ci(df, value, n_boot=4000, seed=2026):
+    rng = np.random.default_rng(seed)
+    ids = df[""instance_id""].unique()
+    observed = float(df[value].mean())
+    draws = []
+    for _ in range(n_boot):
+        sampled_ids = rng.choice(ids, size=len(ids), replace=True)
+        vals = []
+        for instance_id in sampled_ids:
+            pool = df.loc[df[""instance_id""] == instance_id, value].to_numpy(float)
+            vals.extend(rng.choice(pool, size=len(pool), replace=True))
+        draws.append(np.mean(vals))
+    return observed, float(np.percentile(draws, 2.5)), float(np.percentile(draws, 97.5))
+
+print(""Wordle frais — 3 instances × 5 graines par solveur (IC hiérarchique 95 %) :"")
+for paradigm, grp in repeated.groupby(""paradigm""):
+    q, lo_q, hi_q = hierarchical_ci(grp, ""solution_quality"")
+    per_instance_sd = grp.groupby(""instance_id"")[""solution_quality""].std()
+    print(f""  {paradigm:24s} succès={grp['success'].mean():.2f} | coups={q:.2f} [{lo_q:.2f}; {hi_q:.2f}]""
+          f"" | écart-type inter-seed médian={per_instance_sd.median():.2f}"")
+
+print(""\nContrôle déterminisme par instance (nombre de qualités distinctes sur 5 graines) :"")
+print(repeated.groupby([""paradigm"", ""instance_id""])[""solution_quality""].nunique().unstack().to_string())",,,,,,,,d09e04c797b5ec7e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,c94c5519,markdown,fr,64dd40541cc94b44,"**Résultat reproductible, limite conservée.** Les 45 runs réussissent. L'entropie est déterministe à instance fixée (une qualité distincte pour chaque instance) ; l'élimination bayésienne et le CSP varient avec la graine. Avec seulement trois mots, les intervalles restent volontairement larges : ils démontrent la **dispersion**, pas une supériorité générale. Une étude confirmatoire devrait augmenter le nombre d'instances, isoler chaque processus, multiplier les machines ou répéter les temps après warm-up selon la question posée.
+",,,,,,,,64dd40541cc94b44,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,56492f1d,markdown,fr,523692ef821b935b,"## Annexe C — `nodes_explored` : la même colonne, des unités différentes
+
+Le piège le plus visible est la colonne `nodes_explored` : même nom, même type numérique… et **aucune commune mesure**. Un « nœud » n'est pas un nœud selon la famille :
+
+- **Backtracking / MRV** et **Dancing Links** : un *nœud d'arbre de recherche* (case affectée / étape de couverture exacte). Comparables *entre eux*.
+- **CP-SAT** : le solveur travaille par **propagation de contraintes et analyse de conflits** — les « nœuds » qu'il rapporte sont une **unité interne au solveur** (≈55 en moyenne ici), **pas** une énumération d'affectations. Cette valeur ne se compare à aucun nœud d'arbre.
+- **SMT** : un *nombre de décisions* dans la procédure de décision.
+- **GA / recuit simulé** : une *évaluation de fonction-objectif* (individu / état visité).
+- **MCTS** : une *simulation de partie complète*.
+- **Mot** (Wordle, élimination bayésienne / entropie) : un *candidat évalué* ; **CSP** (Wordle) : **`0`** (résolution par satisfaisabilité de contraintes, pas d'énumération).
+
+On juxtapose la colonne brute, puis on s'interdit de la classer globalement.",,,,,,,,523692ef821b935b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,ac049658,code,fr,45c28222ffbffdf0,"sud = frames[""sudoku""]
+nodes_pivot = sud.pivot_table(index=""paradigm"", values=""nodes_explored"", aggfunc=""mean"") \
+                  .sort_values(""nodes_explored"")
+nodes_pivot.columns = [""nodes_explored (moy.)""]
+print(""Sudoku — `nodes_explored` moyen par famille :"")
+print(nodes_pivot.round(1).to_string())
+print()
+print(""Lecture : le CP-SAT rapporte ~55 'nœuds' internes (propagation/conflits),"")
+print(""le Wordle-CSP en rapporte 0, le backtracking ~804k d'énumération d'affectations,"")
+print(""le GA ~400k d'évaluations. Aucune de ces valeurs ne compte le même travail."")
+print(""La colonne ne mesure PAS le même travail d'une famille à l'autre."")",,,,,,,,45c28222ffbffdf0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,20eaa877,markdown,fr,19f3394f86c1672e,"**Conséquence immédiate** : il est **mathématiquement invalide** de trier les 14 étiquettes de paradigme sur `nodes_explored`, ou de conclure « le solveur qui explore le moins est le meilleur ». Le notebook de l'étudiant le souligne déjà ; nous le formalisons ici comme un cas d'école du problème de **Rice** : les **attributs** d'une instance ne sont pas homogènes entre **espaces d'algorithmes**.
+
+La **même** prudence vaut pour `time_seconds` (un solveur en pur Python vs un binding C++ natif) et pour `solution_quality` (voir §3). Toute normalisation doit donc être **intra-jeu** — jamais inter-jeu, jamais inter-famille de manière naïve.
+",,,,,,,,19f3394f86c1672e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,717a2696,markdown,fr,737c69cfa97a5a9e,"## Annexe D — Mesurer, choisir, certifier : trois questions différentes
+
+Le benchmark empirique répond à **« que s'est-il passé sur ces instances, avec cette machine et ce protocole ? »**. Il ne prouve ni la correction générale d'un solveur ni son optimalité. CoursIA permet de situer précisément ces niveaux :
+
+| Niveau | Question | Pont CoursIA | Ce que le pont établit — et n'établit pas |
+|---|---|---|---|
+| **Performance empirique** | Quel solveur réussit, à quel coût observé ? | [Sudoku-18](../../Sudoku/Sudoku-18-Comparison-Python.ipynb), [Sudoku-18b](../../Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb) | Comparaison et incertitude sur un protocole ; aucune preuve universelle. |
+| **Correction / invariants** | Une étape de propagation conserve-t-elle les solutions ? | [Sudoku-19-Lean-Propagation-Lean](../../Sudoku/Sudoku-19-Lean-Propagation-Lean.ipynb) | Formalise des invariants de propagation ; **ne vérifie pas** les implémentations de Théodore. |
+| **Optimalité conditionnelle** | Sous quelles hypothèses une stratégie est-elle optimale ? | [Search-03e-AStar-Optimality](../Part1-Foundations/Search-03e-AStar-Optimality.ipynb) | Prouve une optimalité sous hypothèses (heuristique admissible, modèle formel) ; ne transforme pas un chrono en théorème. |
+| **Valeur d'un jeu adverse** | Comment relier valeur minimax et stratégie ? | [GameTheory-05b-Lean-Minimax-Lean](../../GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb) | Donne les fondations formelles de minimax ; ne certifie ni le moteur Puissance 4 ni ses performances. |
+| **Décision** | Comment arbitrer entre attributs et coût d'information ? | [DecInfer-01b-Lean-ExpectedUtility](../../Probas/DecisionTheory/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb), [DecInfer-05](../../Probas/DecisionTheory/DecInfer/DecInfer-05-Value-Information.ipynb) | Formalise le langage du choix ; les poids et distributions restent à justifier empiriquement. |
+
+Cette séparation évite deux confusions symétriques : **un solveur rapide n'est pas, pour cette raison, prouvé correct** ; **un algorithme prouvé correct ou optimal sous hypothèses n'est pas, pour cette raison, le plus rapide ici**. Le prolongement naturel serait un pipeline où une preuve borne l'espace des candidats admissibles, puis où la sélection empirique arbitre entre les candidats certifiés.
+",,,,,,,,737c69cfa97a5a9e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,57326d35,markdown,fr,583483b4fff59b20,"## Annexe E — Limites honnêtes
+
+Un hommage ne maquille pas les faiblesses : il les expose, car elles font partie de l'apport.
+
+1. **Collecte Unix uniquement.** Le paquet `benchmark` importe `resource` et utilise `SIGALRM` pour les timeouts → la collecte des résultats **échoue sous Windows natif** (les 20 tests du dépôt passent sous WSL/Linux). Les CSV livrés ont donc été produits sous **Unix**. C'est une **limite de portabilité** assumée, pas un défaut caché.
+2. **Une seule observation historique par solveur × instance.** Les trois CSV étudiants permettent d'étudier la variabilité **entre instances**, pas le bruit d'exécution à instance fixée. Les IC bootstrap de l'Annexe B.1 ré-échantillonnent les instances ; ils ne doivent pas être lus comme des répétitions runtime.
+3. **Répétition fraîche volontairement petite.** L'extension CoursIA Wordle porte sur 3 instances × 5 graines × 3 solveurs. Elle satisfait l'objectif de rendre la dispersion visible, mais trois mots ne suffisent pas pour une conclusion confirmatoire. Le cache entropique a été vidé avant chaque répétition afin de conserver un état froid comparable ; un protocole warm-cache répondrait à une autre question.
+4. **Effectifs inégaux sur Puissance 4.** Les familles couvrent 6 à 10 instances ; les quatre ne partagent que **6 `instance_id`**. Les taux et moyennes sont donc fragiles, et une comparaison appariée globale devrait se restreindre à ce sous-panel.
+5. **Métriques hétérogènes.** `nodes_explored`, `solution_quality` et même `time_seconds` ne comparent pas la même chose d'une famille à l'autre (§3 et Annexe C). Les profils sont donc **intra-jeu**.
+6. **Mémoire `ru_maxrss`.** Le pic mémoire est le `ru_maxrss` du **processus**, pas une allocation fine ; le GA/recuit allouent beaucoup et gonflent ce chiffre. À interpréter avec prudence.
+7. **Stochasticité partiellement caractérisée.** Le multi-seed Wordle montre que l'entropie est déterministe à instance fixée, tandis que l'élimination bayésienne et le CSP varient. GA, recuit et MCTS restent décrits par une seule observation historique par instance : leur variance inter-seed n'est pas estimée ici.
+8. **Sous-ensemble de familles.** Le README étudiant précise : **6 paradigmes Sudoku** sur **17 possibles** (choix représentatif de chaque famille — recherche exacte, CSP/SAT, métaheuristique) ; **Choco** et les solveurs **neuronaux/LLM** ne sont pas implémentés (mentionnés en perspective). Le benchmark compare donc un **échantillon**, pas l'espace complet.
+9. **Pas de généralisation universelle ni de certification implicite.** Les succès/échecs sont spécifiques à ces terrains, ces instances et ce protocole. Le No Free Lunch interdit d'en déduire un dominateur universel ; les ponts Lean de l'Annexe D éclairent des propriétés formelles distinctes, sans vérifier le code étudiant.
+
+Ces limites **renforcent** le propos : la comparabilité se **construit** (provenance, schéma, normalisation, Pareto) — elle n'est jamais donnée.
+",,,,,,,,583483b4fff59b20,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,arc18703-sources,markdown,fr,89d1941898291678,"## Annexe F — Sources
 
 - **Travail distillé** : Théodore Deguest, *« Benchmark cross-paradigme de solveurs de jeux »* — sujet L4, cours Intelligence Symbolique, EPITA SCIA. PR [#42](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/pull/42), projet [L4-Benchmark-Cross-Paradigm](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/tree/main/L4-Benchmark-Cross-Paradigm). Dépôt source sous **licence MIT** (copyright 2026, *The 2026-Epita-Intelligence-Symbolique contributors*). Données : `results/{sudoku,connect_four,wordle}_results.csv`.
@@ -43591,65 +43629,6 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1b-NQueens-CSharp.ipynb,1607082
 
 La sortie `Synthèse affichée ci-dessus (tableau markdown).` renvoie au tableau comparatif de la cellule markdown précédente, support de lecture de cette synthèse.
 ",,,,,,,,05259ac2a47286d0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,arc18703-guide,markdown,fr,d0fdc90027e0222e,"## Comment lire ce carnet
-
-Ce carnet fait deux choses à la fois : il **ré-analyse** un benchmark étudiant (l'hommage est juste au-dessus) et il en **tire une méthode de sélection d'algorithmes**. Les deux se lisent dans cet ordre.
-
-**Le chemin de lecture** — quatre jalons, chacun bâti sur le précédent :
-
-1. **§2 — Le contrat expérimental** : ce que contiennent les données, et ce qu'elles ne comparent pas d'emblée.
-2. **§3 — Les profils intra-jeu** : ce que chaque famille optimise réellement, jeu par jeu.
-3. **§4 — Les frontières de Pareto** : pourquoi un podium unique serait un choix caché — et la figure qui rend le compromis visible.
-4. **§5 — La sélection sous préférences** : le point de bascule entre deux préférences, mesuré.
-
-**§6** referme avec la **traçabilité** : la question étudiante, l'appareil construit, le résultat reproduit ici. Les **trois exercices** sont posés en §3, §4 et §5, chacun juste après la lecture de son résultat.
-
-### Les annexes
-
-Les approfondissements sont **démontrés** — pas résumés — mais ils n'ont pas leur place dans le fil : ils sont rejetés en fin de carnet.
-
-- **Annexe A — Objectifs et compétences visées** : le contrat pédagogique, d'un coup d'œil.
-- **Annexe B — Une moyenne n'est pas une preuve** : les deux niveaux d'incertitude (bootstrap inter-instance, répétition multi-seed).
-- **Annexe C — `nodes_explored`** : pourquoi cette colonne ne compte pas la même chose d'une famille à l'autre.
-- **Annexe D — Mesurer, choisir, certifier** : ce que le benchmark empirique ne prouve pas, et les ponts formels qui le disent.
-- **Annexe E — Limites honnêtes** : ce que l'hommage doit aussi montrer.
-- **Annexe F — Sources** : les références complètes.
-
-Le §1 reste au fil : il dit d'où viennent les données, ce qui est de l'étudiant et ce que CoursIA y a ajouté.
-",,,,,,,,d0fdc90027e0222e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,arc18703-figure,markdown,fr,bb6abaa5f268f0f5,"La figure ne fait qu'**illustrer** le tableau précédent : le tracé rouge est le front non dominé, les autres points sont dominés sur le couple (succès, temps). Une frontière qui ne contient qu'un point signifie qu'aucun compromis n'existe sur ce jeu — c'est un résultat, pas un podium. C'est précisément ce que l'exercice suivant demande de généraliser.
-",,,,,,,,bb6abaa5f268f0f5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,arc18703-annexe-a,markdown,fr,1e80503698c3eef6,"## Annexe A — Objectifs et compétences visées
-
-1. **Reconnaître** un appareil de mesure expérimental étudiant (protocole commun, métriques uniformes, timeouts, checkpoints).
-2. **Établir** la provenance et le schéma des données avant toute analyse.
-3. **Démontrer** que `nodes_explored`, `time_seconds` et `solution_quality` ne sont **pas commensurables** entre familles (**Annexe C**).
-4. **Quantifier** la dispersion inter-instance et multi-seed, sans confondre ces deux sources d'incertitude (**Annexe B**).
-5. **Calculer** des profils et des **frontières de Pareto** intra-jeu, sans podium global fallacieux (**§3** et **§4**).
-6. **Relier** la sélection de solveur au cadre de **Rice** et à la décision multi-attribut, puis tester la sensibilité aux préférences (**§5**).
-7. **Séparer** performance empirique et garantie formelle grâce à des ponts Lean ciblés (**Annexe D**).
-",,,,,,,,1e80503698c3eef6,,,,,,,,,,,,,,,
-
-- **Travail distillé** : Théodore Deguest, *« Benchmark cross-paradigme de solveurs de jeux »* — sujet L4, cours Intelligence Symbolique, EPITA SCIA. PR [#42](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/pull/42), projet [L4-Benchmark-Cross-Paradigm](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/tree/main/L4-Benchmark-Cross-Paradigm). Dépôt source sous **licence MIT** (copyright 2026, *The 2026-Epita-Intelligence-Symbolique contributors*). Données : `results/{sudoku,connect_four,wordle}_results.csv`.
-- **Cadre théorique** :
-  - **Rice, J. R. (1976)** — *« The Algorithm Selection Problem »*, Advances in Computers 15, pp. 65-118.
-  - **Wolpert, D. H. & Macready, W. G. (1997)** — *« No Free Lunch Theorems for Optimization »*, IEEE Trans. on Evolutionary Computation 1(1), pp. 67-82.
-- **Arc sélection et représentation** :
-  - [MGS-15-LandscapeAnalysis](../Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb) → [MGS-16-AlgorithmSelection](../Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb) → [MGS-21-Representation-vs-Algorithme](../Part4-Metaheuristics/MGS-21-Representation-vs-Algorithme.ipynb).
-  - [App-10-Portfolio](App-10-Portfolio.ipynb), [App-18-HyperparameterTuning](App-18-HyperparameterTuning.ipynb) et [MGS-17-ParameterControl](../Part4-Metaheuristics/MGS-17-ParameterControl.ipynb) — portfolio, configuration et contrôle ne sont pas la même question.
-- **Arc expérimental et décision** :
-  - [Sudoku-18-Comparison-Python](../../Sudoku/Sudoku-18-Comparison-Python.ipynb) / [Sudoku-18b-Statistical-Comparison-Python](../../Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb) — comparaison, répétitions et incertitude.
-  - [DecInfer-04-Multi-Attribute](../../Probas/DecisionTheory/DecInfer/DecInfer-04-Multi-Attribute.ipynb) / [DecInfer-06-Value-Information](../../Probas/DecisionTheory/DecInfer/DecInfer-06-Value-Information.ipynb) — score multi-attribut et coût d'information.
-- **Terrains applicatifs** :
-  - [App-20-SudokuBenchmark-Python](App-20-SudokuBenchmark-Python.ipynb), [App-12b-ConnectFour](App-12b-ConnectFour.ipynb), [App-14-ConnectFour-Adversarial](App-14-ConnectFour-Adversarial.ipynb), [App-7-Wordle](App-7-Wordle.ipynb).
-- **Ponts formels, sans certification du code étudiant** :
-  - [Sudoku-19-Lean-Propagation-Lean](../../Sudoku/Sudoku-19-Lean-Propagation-Lean.ipynb), [Search-03e-AStar-Optimality](../Part1-Foundations/Search-03e-AStar-Optimality.ipynb), [GameTheory-05b-Lean-Minimax-Lean](../../GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb), [DecInfer-02-Lean-ExpectedUtility](../../Probas/DecisionTheory/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb).
-",,,,,,,,a9e849d96927582e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2b-GraphColoring-CSharp.ipynb,lect-2b-c2,markdown,fr,ce04f6aaa5276bfe,"### Lecture du résultat
-
-Les deux lignes affichées confirment que le socle est chargé : la classe `Graph` (dictionnaire d'adjacence `adj[v]` = voisins de `v`) et les cinq constructeurs canoniques — `Complete` (K_n, χ=n), `Cycle` (C_n, χ=2 ou 3), `Petersen` (χ=3), `CompleteBipartite` (K_{m,n}, χ=2) et `Mycielski` (χ croissant, triangle-free). Ce sont ces graphes à χ connu qui serviront d'étalons dans toute la suite : une heuristique sera jugée sur sa capacité à retrouver exactement ces χ de référence, pas sur un graphe ad hoc dont on ne saurait pas dire si le résultat est bon.
-
-En clair, la seconde ligne énumère les étalons chargés : « K_n(χ=n), C_n(χ=2 ou 3), Petersen(χ=3), K_{m,n}(χ=2), Mycielski(χ croissant, triangle-free) ». Dès lors, chaque section pourra se contenter de comparer le résultat de son heuristique à ce χ connu, sans avoir à le recalculer à la main.",,,,,,,,ce04f6aaa5276bfe,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2b-GraphColoring-CSharp.ipynb,lect-2b-c4,markdown,fr,32c5112f32693435,"### Lecture du résultat
 
 Sur le graphe de Petersen (χ attendu = 3), la sortie montre que les trois ordres de parcours testés — **degré décroissant**, **degré croissant** et **aléatoire** (seed 42) — produisent tous « 3 couleurs » : le glouton atteint ici l'optimum quel que soit l'ordre. Ce n'est pas un acquis général : la qualité du Greedy dépend de l'ordre de parcours, et le benchmark de la section 4 exhibera un cas (C6, ordre aléatoire) où il dépasse χ.
