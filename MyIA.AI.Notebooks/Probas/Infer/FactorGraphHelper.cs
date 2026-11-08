@@ -169,7 +169,7 @@ public static class FactorGraphHelper
         return list.ToArray();
     }
 
-    public static string GetLatestFactorGraphHtml(int maxWidth = 800)
+    public static string GetLatestFactorGraphHtml(int maxWidth = 800, string? modelScope = null)
     {
         var gvFiles = GetFactorGraphSearchDirectories()
             .SelectMany(d => SafeEnumerateFiles(d, "Model_*.gv"))
@@ -180,26 +180,31 @@ public static class FactorGraphHelper
             .Distinct()
             .ToArray();
 
-        // Prefere reconvertir le .gv le plus recent (la source de verite produite
-        // par la derniere inference) quand Graphviz est disponible, pour que le
-        // graphe affiche corresponde au modele courant et non a un .svg perime
-        // ou issu d'un autre modele (bug #3473 stale-pick).
+        // Prefere reconvertir le .gv (la source de verite produite par la
+        // derniere inference) quand Graphviz est disponible, pour que le graphe
+        // affiche corresponde au modele courant et non a un .svg perime ou issu
+        // d'un autre modele (bug #3473 stale-pick). La portee est transmise :
+        // un .gv unique dans la portee est choisi, l'ambiguite est nommee
+        // (defaut #25276).
         if (gvFiles.Length > 0 && IsGraphvizAvailable())
         {
-            return ConvertAndGetLatestGvHtml(maxWidth);
+            return ConvertAndGetLatestGvHtml(maxWidth, modelScope);
         }
 
         // Sinon (Graphviz absent, ou seulement un .svg pre-rendu disponible),
-        // reutiliser le .svg le plus recent s'il existe.
+        // reutiliser le .svg de la portee s'il existe — selection unique,
+        // jamais par mtime global.
         if (svgFiles.Length > 0)
         {
-            var latestSvg = svgFiles
-                .OrderByDescending(f => new FileInfo(f).LastWriteTime)
-                .First();
-            return GetSvgFileHtml(latestSvg, maxWidth);
+            var chosenSvg = SelectFactorGraphFile(svgFiles, modelScope, out int svgRemaining);
+            if (chosenSvg == null)
+            {
+                return FormatGraphUnavailable(svgRemaining, modelScope, "svg");
+            }
+            return GetSvgFileHtml(chosenSvg, maxWidth);
         }
 
-        return ConvertAndGetLatestGvHtml(maxWidth);
+        return ConvertAndGetLatestGvHtml(maxWidth, modelScope);
     }
 
     private static IEnumerable<string> SafeEnumerateFiles(string dir, string pattern)
@@ -212,6 +217,72 @@ public static class FactorGraphHelper
         {
             return Array.Empty<string>();
         }
+    }
+
+    /// <summary>
+    /// Selectionne UNIQUEMENT un fichier de graphe parmi une liste de candidats,
+    /// sans jamais trancher par <c>LastWriteTime</c> global quand l'ensemble est
+    /// ambiguo (defaut #25276 : deux carnets du meme dossier <c>Probas/Infer/</c>
+    /// s'echangent mutuellement leur graphe car le "plus recent" global est une
+    /// course d'horodatage, pas une portee par carnet).
+    ///
+    /// Regle de selection :
+    /// <list type="bullet">
+    /// <item><c>scope</c> non nul : ne garder que les candidats dont le chemin
+    /// contient <c>scope</c> (le nom de modele du carnet appelant, transmis par
+    /// celui-ci) ;</item>
+    /// <item>exactement <b>1</b> candidat restant : il est choisi (deterministe,
+    /// pas de course) ;</item>
+    /// <item><b>0</b> ou <b>plusieurs</b> candidats restants : <b>pas</b> de
+    /// selection — le caller rend un message qui nomme l'ambiguite (ou l'absence)
+    /// plutot qu'un choix silencieux.</item>
+    /// </list>
+    ///
+    /// Fonction pure (aucun acces disque) : testable en isolation.
+    /// </summary>
+    /// <param name="candidates">Fichiers candidats (deja distincts).</param>
+    /// <param name="scope">Cle de portee optionnelle (sous-chaine du chemin), ou null.</param>
+    /// <param name="remaining">Nombre de candidats apres le filtre de portee :
+    /// 0 = aucun, 1 = selection, &gt;1 = ambiguo.</param>
+    /// <returns>Le fichier choisi, ou null (aucun, ou ambiguo).</returns>
+    internal static string? SelectFactorGraphFile(
+        IReadOnlyCollection<string> candidates, string? scope, out int remaining)
+    {
+        var kept = candidates
+            .Where(f => string.IsNullOrEmpty(scope)
+                || f.Contains(scope, StringComparison.OrdinalIgnoreCase))
+            .Distinct()
+            .ToList();
+        remaining = kept.Count;
+        return kept.Count == 1 ? kept[0] : null;
+    }
+
+    /// <summary>
+    /// Rend le HTML d'information quand aucun graphe ne peut etre selectionne de
+    /// facon non-ambigue : soit aucun fichier n'existe (<c>remaining == 0</c>),
+    /// soit plusieurs coexistent (<c>remaining &gt; 1</c>, ambiguite nommee —
+    /// on refuse un choix par mtime global, cf #25276).
+    /// </summary>
+    private static string FormatGraphUnavailable(int remaining, string? scope, string ext)
+    {
+        if (remaining == 0)
+        {
+            var scopeNote = string.IsNullOrEmpty(scope)
+                ? ""
+                : $", pour la portee <code>{scope}</code>";
+            return $@"<div style='padding: 10px; border: 1px solid #d9534f; background: #f2dede; border-radius: 5px;'>
+                Aucun fichier .{ext} trouve{scopeNote}.<br/>
+                Activez <code>ShowFactorGraph = true</code> sur le moteur d'inference.
+            </div>";
+        }
+        return $@"<div style='padding: 10px; border: 1px solid #f0ad4e; background: #fcf8e3; border-radius: 5px;'>
+            <strong>Grille de facteurs ambigue : {remaining} fichiers .{ext} en cours.</strong><br/>
+            Plusieurs carnets ont ecrit des <code>Model_*.{ext}</code> au meme endroit ;
+            choisir le plus recent global serait un choix silencieux (defaut #25276).<br/>
+            Passez la portee du carnet a <code>GetLatestFactorGraphHtml</code>
+            (argument <code>modelScope</code> = nom de modele distinctif) pour afficher
+            le bon graphe.
+        </div>";
     }
 
     /// <summary>
@@ -295,9 +366,16 @@ public static class FactorGraphHelper
     }
 
     /// <summary>
-    /// Trouve et convertit le dernier fichier .gv, retourne le HTML
+    /// Trouve et convertit le .gv de la portee demandee, retourne le HTML.
+    ///
+    /// <paramref name="modelScope"/> (optionnel) borne la selection aux
+    /// candidats dont le chemin contient cette cle (le nom de modele du carnet
+    /// appelant). Sans portee, un seul candidat dans tout l'espace de recherche
+    /// est choisi ; plusieurs candidats = ambiguite nommee, jamais un choix par
+    /// <c>LastWriteTime</c> global (defaut #25276 : les carnets de
+    /// <c>Probas/Infer/</c> s'echangent mutuellement leur graphe).
     /// </summary>
-    public static string ConvertAndGetLatestGvHtml(int maxWidth = 800)
+    public static string ConvertAndGetLatestGvHtml(int maxWidth = 800, string? modelScope = null)
     {
         var gvFiles = GetFactorGraphSearchDirectories()
             .SelectMany(d => SafeEnumerateFiles(d, "Model_*.gv"))
@@ -306,17 +384,16 @@ public static class FactorGraphHelper
 
         if (gvFiles.Length == 0)
         {
-            return @"<div style='padding: 10px; border: 1px solid #d9534f; background: #f2dede; border-radius: 5px;'>
-                Aucun fichier .gv trouve.<br/>
-                Activez <code>ShowFactorGraph = true</code> sur le moteur d'inference.
-            </div>";
+            return FormatGraphUnavailable(0, modelScope, "gv");
         }
 
-        var latestGv = gvFiles
-            .OrderByDescending(f => new FileInfo(f).LastWriteTime)
-            .First();
+        var chosen = SelectFactorGraphFile(gvFiles, modelScope, out int remaining);
+        if (chosen == null)
+        {
+            return FormatGraphUnavailable(remaining, modelScope, "gv");
+        }
 
-        return ConvertAndGetGvHtml(latestGv, maxWidth);
+        return ConvertAndGetGvHtml(chosen, maxWidth);
     }
 
     /// <summary>
