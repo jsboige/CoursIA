@@ -4133,10 +4133,17 @@ FOUNDER_25091_LINE = (
     "- `Lift` (2) : la formule porte `height` des deux côtés "
     "(énoncé de théorème, anglais dans les deux fichiers)"
 )
+FR_EN_PAIR_FILES_25306 = [
+    {"path": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Containment.lean"},
+    {"path": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Containment_en.lean"},
+    {"path": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Grid_en.lean"},
+    {"path": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Lift.lean"},
+    {"path": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Pullback_en.lean"},
+]
 
 
 def test_25091_two_language_variants_are_not_a_perimeter_claim():
-    files = [{"path": f"f{i}.lean"} for i in range(5)]
+    files = FR_EN_PAIR_FILES_25306
     assert check_assertion(files, FOUNDER_25091_LINE) == []
     assert _additive_line_sum(FOUNDER_25091_LINE) == 0
     body = FOUNDER_25091_LINE + "\n\n5 fichiers, 9+/10-, **comment-only**"
@@ -4167,10 +4174,31 @@ def test_25091_explicit_wrong_perimeter_stays_blocking_with_language_cue():
 
 
 def test_25091_digit_variant_count_and_existing_16162_guards():
+    assert check_assertion(
+        FR_EN_PAIR_FILES_25306, "Two files: the EN variant of one FR file."
+    ) == []
     files = [{"path": f"f{i}.lean"} for i in range(5)]
-    assert check_assertion(files, "Two files: the EN variant of one FR file.") == []
     assert check_assertion(files, FOUNDER_16147_LINE) == []
     assert check_assertion(files, FOUNDER_16157_LINE) == []
+
+
+def test_25306_explicit_false_perimeter_stays_blocking_with_real_fr_en_pair():
+    assertion = (
+        "Périmètre : seulement deux fichiers modifiés : le canonique FR et "
+        "son miroir EN."
+    )
+
+    problems = check_assertion(FR_EN_PAIR_FILES_25306, assertion)
+
+    assert any("pretend 2 fichier(s)" in problem for problem in problems)
+
+
+def test_25306_language_variant_phrase_requires_changed_fr_en_pair():
+    unrelated_files = [{"path": f"scripts/module_{index}.py"} for index in range(5)]
+
+    problems = check_assertion(unrelated_files, "anglais dans les deux fichiers")
+
+    assert any("pretend 2 fichier(s)" in problem for problem in problems)
 
 
 # ---------------------------------------------------------------------------
