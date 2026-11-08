@@ -3903,16 +3903,17 @@ theorem mem_evolve_join_sep : ∀ (L : List Grid) (_ : L.Nodup),
   induction L with
   | nil => intro _ _ s q; simp [evolve_nil]
   | cons g L' ih =>
-    rintro ⟨hg', hnd'⟩ hsep s q
+    rintro hnd hsep s q
+    obtain ⟨hg', hnd'⟩ := List.nodup_cons.mp hnd
     have hsep' : ∀ s g₁ h₁, g₁ ∈ L' → h₁ ∈ L' → g₁ ≠ h₁ →
         ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s h₁, 3 ≤ chebDist p r :=
       fun s g₁ h₁ hg₁ hh₁ hne =>
         hsep s g₁ h₁ (List.mem_cons_of_mem _ hg₁) (List.mem_cons_of_mem _ hh₁) hne
-    have hsplit : ∀ p ∈ evolve s g, ∀ r ∈ evolve s L'.flatten, 3 ≤ chebDist p r := by
-      intro p hp r hr
+    have hsplit : ∀ s, ∀ p ∈ evolve s g, ∀ r ∈ evolve s L'.flatten, 3 ≤ chebDist p r := by
+      intro s p hp r hr
       obtain ⟨h, hmem, hr'⟩ := (ih hnd' hsep' s r).mp hr
       exact hsep s g h (List.Mem.head _) (List.mem_cons_of_mem _ hmem)
-        (hg' h hmem) p hp r hr'
+        (fun heq => hg' (heq ▸ hmem)) p hp r hr'
     rw [show (g :: L').flatten = g ++ L'.flatten from rfl,
       mem_evolve_union_sep g L'.flatten hsplit s q, ih hnd' hsep' s q]
     constructor
@@ -3929,7 +3930,7 @@ theorem mem_evolve_join_sep : ∀ (L : List Grid) (_ : L.Nodup),
     forme une union `T`-périodique au sens fort de l'égalité de listes —
     même pont membres→égalité que `evolve_period_union` : les deux membres de
     l'égalité sont canoniques et ont les mêmes cellules par
-    `mem_evolve_join_sep` et `List.mem_join`. -/
+    `mem_evolve_join_sep` et `List.mem_flatten`. -/
 theorem evolve_period_join {T : Nat} (hT : 0 < T) (L : List Grid) (hnd : L.Nodup)
     (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
       ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r)
@@ -3937,12 +3938,12 @@ theorem evolve_period_join {T : Nat} (hT : 0 < T) (L : List Grid) (hnd : L.Nodup
     evolve T L.flatten = L.flatten := by
   apply Canonical.ext (canonical_evolve_of_pos hT _) hcan
   intro p
-  rw [mem_evolve_join_sep L hnd hsep T p, List.mem_join]
+  rw [mem_evolve_join_sep L hnd hsep T p, List.mem_flatten]
   apply exists_congr
   intro g
   constructor
-  · rintro ⟨hg, hp⟩; exact ⟨hg, by rw [hfix g hg]; exact hp⟩
   · rintro ⟨hg, hp⟩; exact ⟨hg, by rw [← hfix g hg]; exact hp⟩
+  · rintro ⟨hg, hp⟩; exact ⟨hg, by rw [hfix g hg]; exact hp⟩
 
 /-- **hcap des familles périodiques — le maillon 6.** Pour une famille finie
     de membres de même période `T`, deux à deux distincts et mutuellement
