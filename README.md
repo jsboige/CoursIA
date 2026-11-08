@@ -570,7 +570,7 @@ cp MyIA.AI.Notebooks/GenAI/.env.example MyIA.AI.Notebooks/GenAI/.env
 |---------|-------------------------------|-------------------|----------------------|
 | **Python** | `python3`, `python3-wsl`, `mcp-jupyter`, `mcp-jupyter-py310`, `coursia-ml-training`, `coursia-sae`, `epita_symbolic_ai`, `pyphi`, `smartcontracts` | GenAI, QuantConnect, Search, ML, IIT | `pip install ipykernel` + `python -m ipykernel install --user --name=<kernel>` (kernel de base) ; voir `docs/reference/kernels-runtime.md` pour les envs conda dédiés |
 | **.NET Interactive** | `.net-csharp`, `.net-fsharp`, `.net-powershell` | Sudoku, Search, Probas, ML.NET, SemanticWeb | `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` puis `dotnet interactive jupyter install` |
-| **Lean 4** | `lean4`, `lean4-wsl` | Lean, GameTheory (notebooks Lean) | `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_kernel.ps1` + `setup_lean4_native.sh` (elan) |
+| **Lean 4** | `lean4`, `lean4-wsl` | Lean, GameTheory (notebooks Lean) | `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh` (Linux/macOS natif ou WSL) ; `setup_lean4_kernel.ps1` pour l'enregistrement Windows |
 
 Pour la **liste exhaustive et à jour** (versions épinglées, historique, dépendances conda), consulter [`docs/reference/kernels-runtime.md`](docs/reference/kernels-runtime.md), qui prime sur tout inventaire figé. Pour vérifier l'état local à tout moment : `jupyter kernelspec list`.
 
