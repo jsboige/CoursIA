@@ -4,6 +4,8 @@ Lightweight MCP server for QuantConnect API — ~10 tools, <5k tokens schema.
 
 Replaces the heavy `quantconnect/mcp-server` Docker container (~40k tokens) for standard backtesting workflows.
 
+> **Trois voies d'accès MCP.** Ce serveur REST-lite est la voie canonique de la flotte ; le conteneur Docker officiel reste disponible (section « Reverting to Full MCP ») ; le **MCP distant officiel** (`https://www.quantconnect.com/api/v2/mcp`) existe mais exige un nœud assistant payant (A1-1 minimum, $24/mo) et n'est pas qualifié — état mesuré le 2026-11-08 (#24679) : [docs/qc/quantconnect.md](../../docs/qc/quantconnect.md).
+
 ## Tools
 
 | Tool | Description |
