@@ -2832,7 +2832,7 @@ def _issue_comments(issue_number: int) -> tuple[list[dict] | None, str | None]:
     if snapshot_comments is not None:
         return snapshot_comments, None
     if isinstance(globals().get("_BELT_LOCAL_PROBES"), dict):
-        raise BeltProbeUnavailable("comments:absent_ou_perimes")
+        raise BeltProbeUnavailable("comments:absents_ou_perimes")
     try:
         out = subprocess.run(
             ["gh", "issue", "view", str(issue_number), "--repo", REPO,
@@ -11419,7 +11419,13 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                         deadline_unprobed.add(n)
                         verdict = (False, False, None)
                     else:
-                        verdict = user_delivery_event_probe(n)
+                        try:
+                            verdict = user_delivery_event_probe(n)
+                        except BeltProbeUnavailable as exc:
+                            belt_withheld.append((it,
+                                "SONDE DE SECURITE INDISPONIBLE (" + exc.reason
+                                + "). Candidat ecarte faute de snapshot local complet."))
+                            continue
                     if verdict is None:
                         # Lecture en echec : fail-OPEN, rien n'est neutralise --
                         # mais l'echec est PUBLIE (mesure #17528, 2026-10-26 :
@@ -11447,7 +11453,13 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                         deadline_unprobed.add(n)
                         recent_flag = False
                     else:
-                        recent_flag = user_recent_marker_probe(n)
+                        try:
+                            recent_flag = user_recent_marker_probe(n)
+                        except BeltProbeUnavailable as exc:
+                            belt_withheld.append((it,
+                                "SONDE DE SECURITE INDISPONIBLE (" + exc.reason
+                                + "). Candidat ecarte faute de snapshot local complet."))
+                            continue
                     if recent_flag is None:
                         # Meme traitement que ci-dessus : le fail-OPEN reste
                         # assume, le SILENCE ne l'est pas. La sonde du marqueur
@@ -11515,7 +11527,13 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                     deadline_unprobed.add(n)
                     recent = False
                 else:
-                    recent = user_container_marker_probe(n)
+                    try:
+                        recent = user_container_marker_probe(n)
+                    except BeltProbeUnavailable as exc:
+                        belt_withheld.append((it,
+                            "SONDE DE SECURITE INDISPONIBLE (" + exc.reason
+                            + "). Candidat ecarte faute de snapshot local complet."))
+                        continue
                 if recent is None:
                     # La lecture a ECHOUE (reseau, 403, payload illisible) : l'etat
                     # de livraison du CONTENEUR est INCONNU, pas « libre ». Le

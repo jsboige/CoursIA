@@ -5506,6 +5506,18 @@ def test_belt_local_probe_loop_forbids_gh_and_fails_closed(monkeypatch):
         item, probe=pig.has_delivered_signal,
         merged_pr_probe=pig.merged_pr_signal)
     assert "comments:absents_ou_perimes" in reason
+    monkeypatch.setattr(pig, "_OPEN_PRS_ENUM_MEMO", [])
+    picks, withheld, _state = pig.belt_pick_with_replacements(
+        [item], {12345: (pig.CLAIM_CODE_FREE, "claim local libre")}, args, 10,
+        delivered_probe=pig.has_delivered_signal,
+        merged_pr_probe=pig.merged_pr_signal,
+        cover_probe=pig.open_cover_signal_complete,
+        recent_marker_probe=pig.has_recent_delivery_marker,
+        delivery_event_probe=pig.delivery_event,
+        frozen_probe=pig.frozen_probe_inert,
+    )
+    assert picks == []
+    assert "comments:absents_ou_perimes" in withheld[0][1]
 
 
 def test_belt_timeline_is_preloaded_and_unavailable_is_named(monkeypatch):
