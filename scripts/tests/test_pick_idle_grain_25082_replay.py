@@ -160,21 +160,25 @@ def test_export_refuse_si_le_snapshot_canonique_ne_couvre_pas_tout_le_pool():
 
 def test_snapshot_capture_apres_horloge_tirage_garde_le_meme_ordre():
     base = _replay_input()
-    captured_at = datetime.now(timezone.utc).replace(microsecond=0)
-    draw_at = captured_at - timedelta(seconds=1)
-    captured_iso = captured_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+    draw_at = datetime.now(timezone.utc).replace(microsecond=0) - timedelta(seconds=1)
+    refreshed_moment = draw_at + timedelta(milliseconds=300)
+    claim_moment = draw_at + timedelta(milliseconds=400)
+    captured_at = draw_at + timedelta(milliseconds=700)
+    captured_iso = captured_at.isoformat(timespec="microseconds").replace(
+        "+00:00", "Z")
     draw_iso = draw_at.strftime("%Y-%m-%dT%H:%M:%SZ")
-    refreshed_at = draw_iso
+    refreshed_at = refreshed_moment.isoformat(timespec="microseconds").replace(
+        "+00:00", "Z")
     base["draw_at"] = draw_iso
     base["source"]["computed_at"] = captured_iso
     base["source"]["gh_snapshot_refreshed_at"] = refreshed_at
     base["source"]["claim_comment_stamps"] = {
-        str(item["number"]): draw_at.timestamp() for item in base["pool"]}
+        str(item["number"]): claim_moment.timestamp() for item in base["pool"]}
     snapshot = {
         "meta": {"version": 1, "repo": pig.REPO,
                  "refreshed_at": refreshed_at,
                  "comment_stamps": {
-                     str(item["number"]): captured_at.timestamp() - 1
+                     str(item["number"]): claim_moment.timestamp()
                      for item in base["pool"]}},
         "issues": {},
         "comments": {str(item["number"]): [] for item in base["pool"]},
@@ -190,6 +194,9 @@ def test_snapshot_capture_apres_horloge_tirage_garde_le_meme_ordre():
     )
     assert prepared["draw_at"] == draw_iso
     assert prepared["source"]["computed_at"] == captured_iso
+    assert refreshed_moment > draw_at
+    assert claim_moment > refreshed_moment
+    assert captured_at > claim_moment
     replay = pig.replay_belt_weights(prepared, captured_iso, head=10)
     original_order = pig.replay_belt_weights(base, captured_iso, head=10)["picks"]
     assert replay["picks"] == original_order
@@ -201,6 +208,9 @@ def test_snapshot_capture_apres_horloge_tirage_garde_le_meme_ordre():
      "horodatage de commentaire"),
     (lambda data: data["source"]["claim_comment_stamps"].update(
         {"26000": float("nan")}), "horodatage de claim invalide"),
+    (lambda data: data["source"]["claim_comment_stamps"].update(
+        {"26000": datetime.fromisoformat(AS_OF.replace("Z", "+00:00"))
+         .timestamp() + 0.1}), "claim perime"),
     (lambda data: data["source"].update(
         gh_snapshot_refreshed_at="2026-11-08T12:00:00+02:00"), "en UTC"),
     (lambda data: data["source"].update(gh_snapshot_refreshed_at="2026-11-07T00:00:00Z"),

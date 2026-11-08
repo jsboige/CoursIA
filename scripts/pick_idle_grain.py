@@ -9998,8 +9998,10 @@ def build_belt_replay_input(*, pool: list[dict], family_signal: dict,
         claim_payloads[key] = payload
     computed_iso = computed_at.astimezone(dt.timezone.utc).strftime(
         "%Y-%m-%dT%H:%M:%SZ")
-    capture_iso = (captured_at or dt.datetime.now(dt.timezone.utc)).astimezone(
-        dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    capture_iso = ((captured_at or dt.datetime.now(dt.timezone.utc))
+                   .astimezone(dt.timezone.utc)
+                   .isoformat(timespec="microseconds")
+                   .replace("+00:00", "Z"))
     replay_input = {
         "schema": BELT_REPLAY_SCHEMA,
         "repo": REPO,
