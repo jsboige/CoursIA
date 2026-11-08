@@ -8,3 +8,26 @@
   known_differences:
     - "Socle commun : argumentation structuree (ASPIC+, construction d'arguments a partir de regles)."
     - "Parite native-both (PR #10385, 2026-08-11) : les deux cotes chargent la vraie lib Tweety (org.tweetyproject.arg.aspic.*) -- le Python via JPype (cell 4.2.1), le C# via le pont IKVM (tranche 2, #r org.tweetyproject.tweety-aspic.dll + AspicArgumentationTheory.asDungTheory()). Parite 3-voies PROUVEE firsthand : C# from-scratch (tranche 1) <=> C# IKVM (tranche 2) <=> Python JPype convergent sur le meme AAF (5 args, 2 attaques symetriques b=>d vs a=>!d, meme extension fondee). Le C# conserve sa tranche 1 from-scratch pedagogique EN PLUS de la tranche 2 lib (gabarit Tweety-05-CSharp) -> `native-both`."
+    - >-
+      Audit firsthand 2026-11-08 (claude-cloud-hors-flotte, commit 1fd293669) :
+      le drift C# ne touche qu’au Markdown de la cellule 0 et à l’ajout d’une
+      note de provenance en cellule finale ; aucun code, output, execution_count
+      ni metadata d’exécution ne change. Cellule 0 : le premier paragraphe
+      présente désormais l’implémentation ASPIC+ sous .NET Interactive ; la
+      note de parité conserve les différences et le pied porte EPIC #4956 et
+      issue #3801. La paire a 27 cellules côté Python et 31 côté C#.
+      Parité pédagogique relue sur les deux carnets : ils partagent le sujet
+      ASPIC+, les mêmes faits b,c, règles b,c=>a, b=>d, a=>!d et le même
+      raisonnement vers l’AF de Dung ; l’extension grounded retient b, c et
+      l’argument pour a, tandis que d et !d se rebutent. Différence déjà
+      assumée : Python exécute par JPype TweetyProject pour ASPIC+, DeLP, ABA,
+      argumentation déductive et ASP, avec exemples et sorties pour les cinq.
+      C# enseigne d’abord la construction d’arguments et le rebut symétrique
+      from-scratch en BCL, puis rejoue l’exemple ASPIC+ par IKVM contre la vraie
+      bibliothèque Tweety. Le moteur manuel couvre le rebut sur conclusion
+      sommitale ; undermine/undercut ne font pas partie de cette implémentation
+      (undercut est proposé comme exercice). Les quatre autres formalismes
+      restent conceptuels côté C# faute d’équivalent BCL, et renvoient au jumeau
+      Python pour leur exécution. Cette complémentarité, déjà portée par
+      known_differences, reste intacte ; le nouvel opener et le déplacement de
+      provenance ne changent aucun contenu calculé.
