@@ -151,7 +151,7 @@ Problèmes du monde réel adaptés de projets étudiants, en dossier plat. Chaqu
 | 12 | [App-19-ProceduralGeneration-WFC](Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
 | 12 (C#) | [App-19-ProceduralGeneration-WFC-CSharp](Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb) | ~45 min | Twin C# du 12 : WFC from-scratch (entropie de Shannon + propagation AC-3 + backtracking) (See #4956) | Marathon |
 | 13 | [App-20-SudokuBenchmark-Python](Part3-Cas-pratiques/App-20-SudokuBenchmark-Python.ipynb) | ~50 min | Benchmark 4 solveurs Sudoku (backtracking naïf → optimisé → contraintes) sur banc Easy/Medium/Hard : dénombrement du travail | Synthèse série |
-| 13 (C#) | [App-20b-SudokuBenchmark-CSharp](Part3-Cas-pratiques/App-20b-SudokuBenchmark-CSharp.ipynb) | ~50 min | Twin C# du 13 : mêmes solveurs from-scratch en .NET, comparaison des écosystèmes | Jumeau .NET |
+| 13 (C#) | [App-20-SudokuBenchmark-CSharp](Part3-Cas-pratiques/App-20-SudokuBenchmark-CSharp.ipynb) | ~50 min | Twin C# du 13 : mêmes solveurs from-scratch en .NET, comparaison des écosystèmes | Jumeau .NET |
 | 16 | [Frontieres-05-CoveringArrays-Guarantee-Audit-Python](Part5-Frontieres/Frontieres-05-CoveringArrays-Guarantee-Audit-Python.ipynb) | ~55 min | Covering Arrays : oracle constraint-aware, set cover CP-SAT exact, bornes et baselines IPOG/AETG-like — distillation PrCon H4 (Valérian Pichot) | Projet étudiant (PrCon PR #58) |
 
 Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseScheduling, JobShop, Timetabling, Minesweeper, Wordle, MiniZinc, Picross, SportsScheduling) suivent le même principe : ré-implémentation .NET du notebook Python de référence, solveurs from-scratch ou OR-Tools natif selon le sujet (marathon #4956).
@@ -161,17 +161,17 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
 | 1 | [App-9-EdgeDetection](Part3-Cas-pratiques/App-9-EdgeDetection.ipynb) | ~40 min | Détection de bords par GA : PyGAD, filtres de convolution | Existant (refonte) |
-| 2 | [App-9b-EdgeDetection-CSharp](Part3-Cas-pratiques/App-9b-EdgeDetection-CSharp.ipynb) | ~35 min | Side track C# : GeneticSharp pour detection de bords | Existant |
+| 2 | [App-9-EdgeDetection-CSharp](Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb) | ~35 min | Side track C# : GeneticSharp pour detection de bords | Existant |
 | 3 | [App-10-Portfolio](Part3-Cas-pratiques/App-10-Portfolio.ipynb) | ~40 min | Optimisation de portefeuille : frontière de Pareto, multi-objectif | Existant (refonte) |
-| 4 | [App-10b-Portfolio-CSharp](Part3-Cas-pratiques/App-10b-Portfolio-CSharp.ipynb) | ~30 min | Side track C# : GeneticSharp pour portefeuille | Existant |
+| 4 | [App-10-Portfolio-CSharp](Part3-Cas-pratiques/App-10-Portfolio-CSharp.ipynb) | ~30 min | Side track C# : GeneticSharp pour portefeuille | Existant |
 | 5 | [App-13-TSP-Metaheuristics](Part3-Cas-pratiques/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
-| 6 | [App-13b-TSP-Metaheuristics-CSharp](Part3-Cas-pratiques/App-13b-TSP-Metaheuristics-CSharp.ipynb) | ~45 min | **Jumeau C#** — SA, GA, ACO from-scratch sur le même TSP, parité #4956 | Jumeau .NET |
+| 6 | [App-13-TSP-Metaheuristics-CSharp](Part3-Cas-pratiques/App-13-TSP-Metaheuristics-CSharp.ipynb) | ~45 min | **Jumeau C#** — SA, GA, ACO from-scratch sur le même TSP, parité #4956 | Jumeau .NET |
 | 7 | [App-17-VRP-Logistics](Part3-Cas-pratiques/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet étudiant |
-| 8 | [App-17b-VRP-Logistics-CSharp](Part3-Cas-pratiques/App-17b-VRP-Logistics-CSharp.ipynb) | ~55 min | **Jumeau C#** — VRP métaheuristiques .NET, parité #4956 | Jumeau .NET |
-| 8b | [App-17b-VRP-Logistics-Python](Part3-Cas-pratiques/App-17b-VRP-Logistics-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
+| 8 | [App-17-VRP-Logistics-CSharp](Part3-Cas-pratiques/App-17-VRP-Logistics-CSharp.ipynb) | ~55 min | **Jumeau C#** — VRP métaheuristiques .NET, parité #4956 | Jumeau .NET |
+| 8b | [App-17-VRP-Logistics-Python](Part3-Cas-pratiques/App-17-VRP-Logistics-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
 | 9 | [App-18-HyperparameterTuning](Part3-Cas-pratiques/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
-| 10 | [App-18b-HyperparameterTuning-CSharp](Part3-Cas-pratiques/App-18b-HyperparameterTuning-CSharp.ipynb) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
-| 11 | [App-18b-HyperparameterTuning-Python](Part3-Cas-pratiques/App-18b-HyperparameterTuning-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
+| 10 | [App-18-HyperparameterTuning-CSharp](Part3-Cas-pratiques/App-18-HyperparameterTuning-CSharp.ipynb) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
+| 11 | [App-18-HyperparameterTuning-Python](Part3-Cas-pratiques/App-18-HyperparameterTuning-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
 | 12 | [App-22-AlgorithmSelection-Python](Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux, 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité + Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
 
 ### Applications de recherche informée mono-agent (`Applications/Informed/`)
