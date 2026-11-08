@@ -172,7 +172,7 @@ export OPENAI_MODEL='nom-du-modele'
 uvicorn structured_outputs_service:app --host 127.0.0.1 --port 8000
 ```
 
-`OPENAI_BASE_URL` et `OPENAI_MODEL` sont facultatifs. En leur absence, le SDK OpenAI utilise son URL par défaut et le cœur choisit `gpt-5-mini`. Une valeur présente mais invalide pour la clé, l'URL ou le modèle produit une erreur explicite ; aucune clé ne doit figurer dans le corps HTTP. Le serveur d'exemple écoute sur `127.0.0.1` ; choisissez explicitement un contrôle d'accès avant tout bind sur une interface réseau.
+`OPENAI_BASE_URL` et `OPENAI_MODEL` sont facultatifs. En leur absence, le SDK OpenAI utilise son URL par défaut et le cœur choisit `gpt-5-mini`. Une valeur présente mais invalide pour la clé, l'URL ou le modèle provoque une erreur ; aucune clé ne doit figurer dans le corps HTTP. Le serveur d'exemple écoute sur `127.0.0.1` ; choisissez explicitement un contrôle d'accès avant tout bind sur une interface réseau.
 
 Contrat de la requête :
 
@@ -195,9 +195,11 @@ Contrat de la requête :
 
 ```json
 {"status": "ok", "data": {"score": 88, "commentaire": "Réponse validée."}}
-{"status": "invalid", "error": "prompt doit être une chaîne non vide"}
-{"status": "error", "error": "échec API (APIConnectionError)"}
+{"status": "invalid", "error": "entrée invalide : vérifiez prompt, schema et model"}
+{"status": "error", "error": "échec de l'extraction structurée"}
 ```
+
+Les messages HTTP restent génériques pour ne pas exposer les détails des exceptions ou du contenu fourni. Le cœur Python conserve ses exceptions détaillées pour les usages locaux.
 
 Les tests du cœur injectent un client OpenAI-compatible déterministe. Le test loopback lance Uvicorn et fait une vraie requête HTTP locale, mais ne contacte aucun LLM : il vérifie le transport et le contrat seulement. Le test d'inférence réelle et l'intégration au carnet restent à faire avec une API disponible.
 

@@ -33,14 +33,10 @@ def create_app(client: Any | None = None) -> FastAPI:
     async def request_validation_error_handler(
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
-        del request
-        details = "; ".join(
-            f"{'.'.join(str(part) for part in error['loc'][1:]) or 'body'} : {error['msg']}"
-            for error in exc.errors()
-        )
+        del request, exc
         return JSONResponse(
             status_code=422,
-            content={"status": "invalid", "error": f"corps invalide : {details}"},
+            content={"status": "invalid", "error": "corps invalide : vérifiez prompt, schema et model"},
         )
 
     @app.post("/texte/extract")
@@ -57,22 +53,22 @@ def create_app(client: Any | None = None) -> FastAPI:
             if isinstance(data, BaseModel):
                 data = data.model_dump(mode="json")
             return JSONResponse(status_code=200, content={"status": "ok", "data": data})
-        except StructuredInputError as exc:
+        except StructuredInputError:
             return JSONResponse(
                 status_code=422,
-                content={"status": "invalid", "error": str(exc)},
+                content={"status": "invalid", "error": "entrée invalide : vérifiez prompt, schema et model"},
             )
-        except StructuredExtractionError as exc:
+        except StructuredExtractionError:
             return JSONResponse(
                 status_code=502,
-                content={"status": "error", "error": str(exc)},
+                content={"status": "error", "error": "échec de l'extraction structurée"},
             )
-        except Exception as exc:
+        except Exception:
             # Dernière barrière HTTP : le contrat ne renvoie jamais de trace
             # ni de détail d'exception imprévu au client.
             return JSONResponse(
                 status_code=502,
-                content={"status": "error", "error": f"échec interne ({type(exc).__name__})"},
+                content={"status": "error", "error": "échec de l'extraction structurée"},
             )
 
     return app

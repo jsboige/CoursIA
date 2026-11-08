@@ -23,6 +23,7 @@ from structured_outputs_core import (
     StructuredInputError,
     extract_structured,
 )
+import structured_outputs_service
 from structured_outputs_service import create_app
 
 
@@ -231,7 +232,37 @@ def test_rest_contract_covers_success_invalid_and_upstream_error() -> None:
     assert key_in_body.json()["status"] == "invalid"
 
     assert failed.status_code == 502
-    assert failed.json() == {"status": "error", "error": "échec API (RuntimeError)"}
+    assert failed.json() == {"status": "error", "error": "échec de l'extraction structurée"}
+
+
+def test_rest_errors_do_not_expose_untrusted_details(monkeypatch: pytest.MonkeyPatch) -> None:
+    secret = "secret-internal-123"
+
+    async def post(app: Any, body: dict[str, Any]) -> httpx.Response:
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://testserver"
+        ) as http:
+            return await http.post("/texte/extract", json=body)
+
+    body = {"prompt": "test", "schema": SCHEMA}
+    invalid_schema = {"type": "object", "properties": {"x": {"type": secret}}}
+    responses = [
+        asyncio.run(post(create_app(FakeClient()), {"prompt": "test", "schema": invalid_schema})),
+        asyncio.run(post(create_app(FakeClient()), {**body, secret: "value"})),
+        asyncio.run(post(create_app(FakeClient(error=RuntimeError(secret))), body)),
+        asyncio.run(post(create_app(FakeClient(content=secret)), body)),
+    ]
+    for exception_type in (StructuredInputError, StructuredExtractionError, type(secret, (Exception,), {})):
+        def fail(**kwargs: Any) -> None:
+            raise exception_type(secret)
+
+        monkeypatch.setattr(structured_outputs_service, "extract_structured", fail)
+        responses.append(asyncio.run(post(create_app(FakeClient()), body)))
+
+    assert [response.status_code for response in responses] == [422, 422, 502, 502, 422, 502, 502]
+    assert all(secret not in response.text for response in responses)
+    assert responses[0].json()["error"] == "entrée invalide : vérifiez prompt, schema et model"
+    assert responses[1].json()["error"] == "corps invalide : vérifiez prompt, schema et model"
 
 
 def test_loopback_http_request_reaches_endpoint() -> None:
