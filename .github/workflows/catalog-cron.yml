@@ -140,8 +140,8 @@ jobs:
       # PyYAML is required by generate_catalog.py's editorial-review registry
       # loader (_load_editorial_registry, added in #8345). Without it the
       # generator crashes: ModuleNotFoundError: No module named 'yaml'.
-      - name: Install PyYAML
-        run: pip install pyyaml
+      - name: Install catalogue dependencies
+        run: pip install pyyaml rdflib pyshacl
 
       - name: Regenerate catalog (.json + .md) + README markers
         run: |
@@ -149,6 +149,8 @@ jobs:
           # No --json-only here: refresh BOTH root artifacts (.json AND .md).
           # --git-tracked-only keeps CI output deterministic (ignores untracked).
           python scripts/notebook_tools/generate_catalog.py --git-tracked-only
+          # Le graphe du cursus est un artefact dérivé du catalogue, validé par SHACL.
+          python scripts/notebook_tools/generate_curriculum_rdf.py --output CURRICULUM.generated.ttl
           python scripts/notebook_tools/expand_catalog_markers.py
           # Health dashboard (#4210 acceptance #4): derive
           # docs/archive/reference/HEALTH_DASHBOARD.md from the freshly-regenerated
@@ -176,7 +178,7 @@ jobs:
         run: |
           set -euo pipefail
           BRANCH="chore/catalog-refresh-pending"
-          git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md docs/archive/reference/HEALTH_DASHBOARD.md _quarto.yml translations/translation_golden_set.json
+          git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md CURRICULUM.generated.ttl docs/archive/reference/HEALTH_DASHBOARD.md _quarto.yml translations/translation_golden_set.json
           # Stage the 5 generated curriculum (parcours) pages if they drifted.
           mapfile -t changed_parcours < <(git ls-files -m -- 'docs/curriculum/*.md')
           if [ "${#changed_parcours[@]}" -gt 0 ]; then
