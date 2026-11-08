@@ -58,6 +58,47 @@ try
     var singleSvg = FactorGraphHelper.GetLatestFactorGraphHtml();
     Require(singleSvg.Contains("SameA", StringComparison.Ordinal), "Un unique SVG doit rester affichable quel que soit son timestamp.");
 
+    var originalPath = Environment.GetEnvironmentVariable("PATH");
+    var graphvizCacheField = typeof(FactorGraphHelper).GetField(
+        "_graphvizAvailable",
+        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
+        ?? throw new InvalidOperationException("Le cache Graphviz attendu est introuvable.");
+    var previousGraphvizCache = graphvizCacheField.GetValue(null);
+    try
+    {
+        var emptyPath = Path.Combine(testDirectory, "empty-path");
+        Directory.CreateDirectory(emptyPath);
+        Environment.SetEnvironmentVariable("PATH", emptyPath);
+        graphvizCacheField.SetValue(null, false);
+
+        var sourceModel = Path.Combine(testDirectory, "Model_Source.gv");
+        var foreignSvg = Path.Combine(testDirectory, "Model_Foreign.svg");
+        File.WriteAllText(sourceModel, "digraph { source [label=\"SourceModel\"] }");
+        File.WriteAllText(foreignSvg, "<svg><text>ForeignModel</text></svg>");
+
+        var mismatched = FactorGraphHelper.GetLatestFactorGraphHtml();
+        Require(mismatched.Contains("aucun SVG ne correspond", StringComparison.OrdinalIgnoreCase), "Sans Graphviz, un SVG d'un autre modele doit etre refuse.");
+        Require(mismatched.Contains(sourceModel, StringComparison.Ordinal), "Le diagnostic doit nommer le .gv sans cache correspondant.");
+        Require(mismatched.Contains(foreignSvg, StringComparison.Ordinal), "Le diagnostic doit nommer le SVG sans correspondance.");
+        Require(!mismatched.Contains("ForeignModel", StringComparison.Ordinal), "Le contenu d'un SVG sans correspondance ne doit pas etre affiche.");
+
+        File.Delete(foreignSvg);
+        var matchingSvg = Path.ChangeExtension(sourceModel, ".svg");
+        File.WriteAllText(matchingSvg, "<svg><text>MatchingSourceModel</text></svg>");
+        var matched = FactorGraphHelper.GetLatestFactorGraphHtml();
+        Require(matched.Contains("MatchingSourceModel", StringComparison.Ordinal), "Sans Graphviz, le cache SVG au chemin correspondant doit rester utilisable.");
+
+        File.Delete(sourceModel);
+        File.Delete(matchingSvg);
+        var legacySvg = FactorGraphHelper.GetLatestFactorGraphHtml();
+        Require(legacySvg.Contains("SameA", StringComparison.Ordinal), "Sans source .gv, un SVG unique conserve le fallback legacy.");
+    }
+    finally
+    {
+        Environment.SetEnvironmentVariable("PATH", originalPath);
+        graphvizCacheField.SetValue(null, previousGraphvizCache);
+    }
+
     Console.WriteLine("FactorGraphHelper selection checks passed.");
 }
 finally

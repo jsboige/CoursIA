@@ -195,7 +195,24 @@ public static class FactorGraphHelper
             return ConvertAndGetGvHtml(gvFiles[0], maxWidth);
         }
 
-        // Sans Graphviz, reutiliser le SVG seulement si sa source est unique.
+        // Sans Graphviz, un SVG ne sert de cache que s'il partage le chemin et
+        // le nom de base du .gv unique. Un SVG seul conserve le fallback legacy.
+        if (gvFiles.Length == 1)
+        {
+            var matchingSvg = Path.ChangeExtension(gvFiles[0], ".svg");
+            var matchingSvgFile = svgFiles.FirstOrDefault(path =>
+                string.Equals(Path.GetFullPath(path), Path.GetFullPath(matchingSvg), StringComparison.OrdinalIgnoreCase));
+            if (matchingSvgFile != null)
+            {
+                return GetSvgFileHtml(matchingSvgFile, maxWidth);
+            }
+
+            if (svgFiles.Length > 0)
+            {
+                return GetMismatchedGraphHtml(gvFiles[0], svgFiles);
+            }
+        }
+
         if (svgFiles.Length > 0)
         {
             if (svgFiles.Length > 1)
@@ -337,6 +354,18 @@ public static class FactorGraphHelper
             Plusieurs graphes {extension} sont disponibles. Aucun n'a ete choisi, car leur carnet d'origine est ambigu.<br/>
             Selectionnez explicitement le fichier voulu avec <code>ConvertAndGetGvHtml(chemin)</code> ou <code>GetSvgFileHtml(chemin)</code> :<br/>
             {candidates}
+        </div>";
+    }
+
+    private static string GetMismatchedGraphHtml(string gvFile, IEnumerable<string> svgFiles)
+    {
+        var source = $"<code>{WebUtility.HtmlEncode(gvFile)}</code>";
+        var candidates = string.Join("<br/>", svgFiles
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .Select(path => $"<code>{WebUtility.HtmlEncode(path)}</code>"));
+        return $@"<div style='padding: 10px; border: 1px solid #f0ad4e; background: #fcf8e3; border-radius: 5px;'>
+            Graphviz est indisponible et aucun SVG ne correspond au chemin du graphe source. Aucun SVG n'a ete choisi.<br/>
+            Source .gv : {source}<br/>SVG disponibles :<br/>{candidates}
         </div>";
     }
 
