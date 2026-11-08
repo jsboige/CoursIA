@@ -263,8 +263,10 @@ on:
       # dernier per-lake, #13751 axe workflows). Baseline "1" = compte reel
       # distinct_code_sorry mesure au move (98 fichiers, naive 200 -> 1 reel :
       # HashlifeMarginFragment.lean, framework sorry documente). Le profil
-      # axiom porte le MODELE du wrapper : target "*" + allow-axioms @fichier
-      # (79 native_decide, liste explicite #21905) + fail-on-sorry false
+      # axiom porte le MODELE du wrapper : target "*" + fail-on-sorry false
+      # allow-axioms: 79 native_decide axioms via @allow_axioms_conway.txt
+      # (liste explicite, source de verite #21905 -- le compte de ce
+      # commentaire est mesure contre le fichier par test_axiom_allow_file)
       # (advisory -- le gate sorry bloquant, lui, vit dans sorry-baseline
       # bidirectionnel) + i18n true (les _en sont des modules compiles).
       # build-threads "1" herite du #23247 : OOM d'elaboration sans cap.
@@ -522,8 +524,10 @@ on:
       # dernier per-lake, #13751 axe workflows). Baseline "1" = compte reel
       # distinct_code_sorry mesure au move (98 fichiers, naive 200 -> 1 reel :
       # HashlifeMarginFragment.lean, framework sorry documente). Le profil
-      # axiom porte le MODELE du wrapper : target "*" + allow-axioms @fichier
-      # (79 native_decide, liste explicite #21905) + fail-on-sorry false
+      # axiom porte le MODELE du wrapper : target "*" + fail-on-sorry false
+      # allow-axioms: 79 native_decide axioms via @allow_axioms_conway.txt
+      # (liste explicite, source de verite #21905 -- le compte de ce
+      # commentaire est mesure contre le fichier par test_axiom_allow_file)
       # (advisory -- le gate sorry bloquant, lui, vit dans sorry-baseline
       # bidirectionnel) + i18n true (les _en sont des modules compiles).
       # build-threads "1" herite du #23247 : OOM d'elaboration sans cap.
