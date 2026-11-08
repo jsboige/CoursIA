@@ -31,6 +31,11 @@ class Evaluation(BaseModel):
     commentaire: str
 
 
+class OptionalEvaluation(BaseModel):
+    score: int
+    note: str | None = None
+
+
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -88,6 +93,18 @@ def test_extract_structured_supports_pydantic_model() -> None:
     assert result.score == 88
 
 
+def test_pydantic_extra_ignored_by_model_is_rejected_by_strict_schema() -> None:
+    content = '{"score": 88, "commentaire": "valide", "extra": true}'
+
+    with pytest.raises(StructuredExtractionError, match="validation JSON Schema"):
+        extract_structured("Évalue.", Evaluation, client=FakeClient(content))
+
+
+def test_pydantic_optional_field_is_required_by_strict_schema() -> None:
+    with pytest.raises(StructuredExtractionError, match="validation JSON Schema"):
+        extract_structured("Évalue.", OptionalEvaluation, client=FakeClient('{"score": 88}'))
+
+
 @pytest.mark.parametrize("prompt", ["", "  ", None, 12])
 def test_empty_or_non_string_prompt_is_rejected(prompt: Any) -> None:
     with pytest.raises(StructuredInputError, match="prompt"):
@@ -118,6 +135,43 @@ def test_response_violating_schema_is_an_extraction_error() -> None:
             SCHEMA,
             client=FakeClient('{"score": 101, "commentaire": "hors limite"}'),
         )
+
+
+def test_response_with_extra_property_is_rejected_by_the_sent_strict_schema() -> None:
+    # Le schéma d'origine autorise les propriétés supplémentaires par défaut.
+    # Le mode strict envoyé au fournisseur les interdit; la validation locale
+    # doit appliquer ce même contrat.
+    content = '{"score": 88, "commentaire": "valide", "extra": true}'
+
+    with pytest.raises(StructuredExtractionError, match="validation JSON Schema"):
+        extract_structured("prompt", SCHEMA, client=FakeClient(content))
+
+
+def test_response_must_include_property_optional_in_the_original_schema() -> None:
+    schema = {
+        "type": "object",
+        "properties": {
+            "score": {"type": "integer"},
+            "note": {"type": ["string", "null"]},
+        },
+        "required": ["score"],
+    }
+
+    with pytest.raises(StructuredExtractionError, match="validation JSON Schema"):
+        extract_structured("prompt", schema, client=FakeClient('{"score": 88}'))
+
+
+def test_external_schema_reference_is_rejected_before_call() -> None:
+    schema = {
+        "type": "object",
+        "properties": {"entry": {"$ref": "https://example.invalid/entry.json"}},
+        "required": ["entry"],
+    }
+    client = FakeClient()
+
+    with pytest.raises(StructuredInputError, match="références.*locales"):
+        extract_structured("prompt", schema, client=client)
+    assert client.request is None
 
 
 def test_provider_failure_is_a_bounded_extraction_error() -> None:

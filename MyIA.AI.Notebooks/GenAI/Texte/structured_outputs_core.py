@@ -26,6 +26,23 @@ class StructuredExtractionError(RuntimeError):
     """Échec de configuration, d'appel API, de décodage ou de validation."""
 
 
+def _reject_external_refs(schema: dict[str, Any]) -> None:
+    """Refuse les références qui feraient sortir la validation du schéma fourni."""
+    pending: list[Any] = [schema]
+    while pending:
+        node = pending.pop()
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key in {"$ref", "$dynamicRef", "$recursiveRef"}:
+                    if not isinstance(value, str) or not value.startswith("#"):
+                        raise StructuredInputError(
+                            "les références du schéma JSON doivent être locales au document (#...)"
+                        )
+                pending.append(value)
+        elif isinstance(node, list):
+            pending.extend(node)
+
+
 def _strict_schema(schema: dict[str, Any]) -> dict[str, Any]:
     """Copie le schéma et applique les contraintes strictes utilisées au cours."""
     result = copy.deepcopy(schema)
@@ -76,6 +93,7 @@ def _schema_for(schema_or_model: dict[str, Any] | type[ModelT]) -> tuple[dict[st
         Draft202012Validator.check_schema(schema)
     except SchemaError as exc:
         raise StructuredInputError(f"schéma JSON invalide : {exc.message}") from exc
+    _reject_external_refs(schema)
     if schema.get("type") != "object":
         raise StructuredInputError("le schéma racine doit déclarer type=object")
     return schema, model_class
@@ -122,6 +140,7 @@ def extract_structured(
         Draft202012Validator.check_schema(strict_schema)
     except SchemaError as exc:
         raise StructuredInputError(f"schéma incompatible avec le mode strict : {exc.message}") from exc
+    strict_validator = Draft202012Validator(strict_schema)
 
     if model is None:
         configured_model = os.getenv("OPENAI_MODEL")
@@ -162,9 +181,9 @@ def extract_structured(
         if not isinstance(content, str) or not content.strip():
             raise StructuredExtractionError("la réponse du modèle ne contient pas de JSON")
         data = json.loads(content)
+        strict_validator.validate(data)
         if model_class is not None:
             return model_class.model_validate(data)
-        Draft202012Validator(original_schema).validate(data)
         return data
     except StructuredExtractionError:
         raise

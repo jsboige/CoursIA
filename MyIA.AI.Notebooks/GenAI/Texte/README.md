@@ -159,7 +159,7 @@ Le carnet **24** descend d'un cran dans l'échelle après le service du tier 8 :
 
 ### Service REST local Structured Outputs
 
-Le cœur [`structured_outputs_core.py`](structured_outputs_core.py) reprend l'extraction de la §5 du carnet 3 : il accepte un JSON Schema racine objet ou une classe Pydantic v2, prépare le schéma pour le mode strict, appelle un endpoint OpenAI-compatible puis valide la réponse avant de la retourner. Le service [`structured_outputs_service.py`](structured_outputs_service.py) expose ce même cœur sur `POST /texte/extract`.
+Le cœur [`structured_outputs_core.py`](structured_outputs_core.py) reprend l'extraction de la §5 du carnet 3 : il accepte un JSON Schema racine objet ou une classe Pydantic v2, prépare le schéma pour le mode strict, appelle un endpoint OpenAI-compatible puis valide la réponse contre le schéma strict envoyé avant de la retourner. Le mode strict rend obligatoires toutes les propriétés déclarées, même celles qui étaient optionnelles dans le schéma d'origine ; si une propriété peut être absente, déclarez-la nullable et attendez une valeur `null`. Les références `$ref` externes sont rejetées pour que la validation reste autonome. Le service [`structured_outputs_service.py`](structured_outputs_service.py) expose ce même cœur sur `POST /texte/extract`.
 
 Depuis le répertoire `MyIA.AI.Notebooks/GenAI/Texte`, installez les dépendances propres au service, puis démarrez-le sur la boucle locale :
 
