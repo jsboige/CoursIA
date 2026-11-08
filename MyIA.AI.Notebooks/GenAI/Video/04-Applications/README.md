@@ -33,11 +33,11 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
   <em>Sortie du notebook <a href="04-1-Educational-Video-Generation.ipynb">04-1</a> : les 4 premiers slides du deck pédagogique « Introduction au Machine Learning » (titre/définition/types/pipeline) — la chaîne script → prompts → slides → vidéo a produit ce rendu visuellement cohérent à partir d'un script textuel.</em>
 </p>
 
-**[04-2](04-2-Creative-Video-Workflows.ipynb) — Workflows créatifs (moviepy, diffusers).** Deux compositions illustrant la souplesse du workflow créatif : une séquence narrative complète, puis une variante explorant une composition différente à partir des mêmes briques moviepy :
+**[04-2](04-2-Creative-Video-Workflows.ipynb) — Workflows créatifs (moviepy, diffusers).** Deux compositions illustrant la souplesse du workflow créatif : des effets audio-réactifs synchronisés sur les beats détectés du morceau, puis un collage comparant quatre styles visuels sur le même clip :
 
 <p align="center">
-  <a href="04-2-Creative-Video-Workflows.ipynb"><img src="assets/readme/vid4-creative.png" alt="Grille 2×3 « Effets synchronisés sur les beats (120 BPM) » — frames originales (haut, beat 1/2/3 à frame 0/12/24) vs frames transformées par effet audio-réactif (bas), carré cyan et cercle orange se déplaçant sur fond dégradé bleu-violet-rose" width="460"/></a><br>
-  <em>Sortie du notebook <a href="04-2-Creative-Video-Workflows.ipynb">04-2</a> (cellule 9) : effets audio-réactifs synchronisés sur les battements à 120 BPM — le pipeline numpy/moviepy déplace les formes géométriques (carré + cercle) à chaque beat, transformant le clip original en version réactive.</em>
+  <a href="04-2-Creative-Video-Workflows.ipynb"><img src="assets/readme/vid4-creative.png" alt="Grille 2×3 « Effets synchronisés sur les beats détectés (vrai tempo 96 BPM) » — rangée du haut : frames originales aux beats 1/2/3 (frames 13/27/42) ; rangée du bas : mêmes frames avec effet audio-réactif (flash/zoom) appliqué à chaque beat détecté" width="460"/></a><br>
+  <em>Sortie du notebook <a href="04-2-Creative-Video-Workflows.ipynb">04-2</a> (cellule 11) : effets audio-réactifs synchronisés sur les beats <strong>détectés</strong> — le tempo réel du morceau (96 BPM, période 0.625 s) diffère du témoin (120 BPM), et le pipeline numpy/moviepy applique un effet flash ou zoom à chaque beat détecté (frames 13/27/42).</em>
 </p>
 
 <p align="center">
@@ -45,24 +45,9 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
   <em>Sortie du notebook <a href="04-2-Creative-Video-Workflows.ipynb">04-2</a> (cellule 15) : mosaïque 2×2×3 comparant 4 styles visuels (Original / Aquarelle / Dessin / Teal & Orange) appliqués au même clip à 3 timestamps — illustre la flexibilité du pipeline moviepy pour explorer rapidement des directions artistiques différentes sur un même contenu.</em>
 </p>
 
-**[04-3](04-3-Sora-API-Cloud-Video.ipynb) — Workflow cloud Sora (en simulation).** Côté cloud cette fois : le notebook illustre le workflow de génération vidéo via l'API Sora d'OpenAI. L'accès Sora réel étant restreint (clé et quota côté utilisateur), il en produit une **simulation disciplinée** — deux séquences de frames synthétiques, chacune auto-étiquetée « Sora API - Simulation » dans l'image, représentant le rendu attendu (déplacement d'un objet sur un décor prompt-dépendant). Aucun GPU ni accès API réel requis :
+**[04-3](04-3-Sora-API-Cloud-Video.ipynb) — Workflow cloud Sora (en simulation).** Côté cloud cette fois : le notebook illustre le workflow de génération vidéo via l'API Sora d'OpenAI. L'accès Sora réel étant restreint (clé et quota côté utilisateur), il en produit une **simulation disciplinée** — deux séquences de frames synthétiques, chacune auto-étiquetée « Sora API - Simulation » dans l'image, représentant le rendu attendu (déplacement d'un objet sur un décor prompt-dépendant). Aucun GPU ni accès API réel requis. Les figures README qui illustraient autrefois ce workflow ont été retirées (#24395) : aucune sortie committée du notebook 04-3 ne leur correspond plus — le notebook lui-même reste la référence visuelle.
 
-<p align="center">
-  <a href="04-3-Sora-API-Cloud-Video.ipynb"><img src="assets/readme/vid4-sora.png" alt="Simulation du workflow Sora (API cloud) — frames auto-étiquetées Simulation" width="460"/></a><br>
-  <em>Sortie du notebook <a href="04-3-Sora-API-Cloud-Video.ipynb">04-3</a> (cellule 9) : panorama de frames <strong>simulées</strong> illustrant le workflow Sora (API cloud) — la sortie porte le filigrane « Sora API - Simulation ».</em>
-</p>
-
-<p align="center">
-  <a href="04-3-Sora-API-Cloud-Video.ipynb"><img src="assets/readme/vid4-sora2.png" alt="Séquence « Image → Video (effet Ken Burns) » — 5 frames d'un zoom progressif sur une image source statique (montagnes + soleil + horizon herbe) entre t=0.0s et t=5.0s : la caméra se rapproche graduellement sans aucun objet en mouvement interne au clip" width="460"/></a><br>
-  <em>Sortie du notebook <a href="04-3-Sora-API-Cloud-Video.ipynb">04-3</a> (cellule 11) : zoom progressif de type <strong>Ken Burns</strong> sur une image fixe (montagnes + soleil + horizon herbe) — illustre un autre mode de génération à partir d'images, complémentaire à la simulation text→vidéo illustrée par vid4-sora.png.</em>
-</p>
-
-**[04-4](04-4-Production-Video-Pipeline.ipynb) — Pipeline de production.** Le notebook assemble la chaîne bout-en-bout : le panorama ci-dessous montre les frames issues du pipeline orchestré complet, aboutissement de la série :
-
-<p align="center">
-  <a href="04-4-Production-Video-Pipeline.ipynb"><img src="assets/readme/vid4-pipeline.png" alt="« Images des scènes du pipeline » — 5 vignettes côte-à-côte des scènes vidéo générées bout-en-bout : Scene 1 Introduction (bulles bleues sur fond bleu), Scene 2 Origines historiques (bulles ocres sur fond marron), Scene 3 Fonctionnement (bulles vertes sur fond vert forêt), Scene 4 Applications (bulles magenta sur fond violet), Scene 5 Perspectives (bulles bleues pâles sur fond bleu nuit). Chaque scène porte une constellation filaire reliant ses bulles." width="520"/></a><br>
-  <em>Sortie du notebook <a href="04-4-Production-Video-Pipeline.ipynb">04-4</a> : les 5 scènes générées par le pipeline bout-en-bout — Introduction / Origines historiques / Fonctionnement / Applications / Perspectives, chacune avec fond coloré distinct + constellation filaire reliant ses bulles.</em>
-</p>
+**[04-4](04-4-Production-Video-Pipeline.ipynb) — Pipeline de production.** Le notebook assemble la chaîne bout-en-bout (script → scènes → vidéo finale orchestrée), aboutissement de la série. Ses sorties s'exécutent dans le notebook ; aucune figure README n'est committée pour ce pipeline (retrait #24395, même motif de provenance).
 
 **[04-5](04-5-MiniMax-H3-Cloud-Video.ipynb) — Service cloud Hailuo (MiniMax H3), key-gated.** Ce notebook invoque le service cloud Hailuo pour produire de la vidéo HD/2K avec **audio stéréo natif synchronisé** — une capacité inaccessible en auto-hébergement UE (la *Community License* des poids exclut l'UE, voir [`02-6`](../02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb)). Il contraste avec [`02-2`](../02-Advanced/02-2-LTX-Video-Lightweight.ipynb) (LTX-Video, licence ouverte, local léger mais muet). Le loader est **idempotent** (`MINIMAX_SPEND_QUOTA=1` déclenche la génération, sinon l'artefact commité est chargé) pour ne jamais rebrûler le quota de 5 générations/jour. La sortie réelle est **key-gated** (`MINIMAX_GENAI_API_KEY`) : à la provision de la clé, les artefacts (keyframes + forme d'onde audio + sidecar `task_id`) sont commités comme preuve d'exécution.
 

@@ -465,9 +465,15 @@ def test_native_decide_ratchet_wired_on_conway_lean_paths():
         "the #11349 ratchet would not catch PRs from contributors"
     )
 
-    # Slice the push: and pull_request: blocks separately. A push-only or
-    # pr-only rewire would otherwise mask a regression in the other trigger.
+    # Slice the push: and pull_request: blocks separately. #24828 makes main
+    # pushes unfiltered so every commit gets a verdict; that is stronger than
+    # enumerating this path and must stay explicit. PRs remain scoped and must
+    # retain a trigger for the audited source.
     push_block, pr_block = _split_push_pr_blocks(on_block)
+    assert "branches: [main]" in push_block, "main push trigger must stay scoped to main"
+    assert "paths:" not in push_block, (
+        "#24828 main-red sentinel requires Scripts Tests (CPU) on every main push"
+    )
 
     # Substring pin per path, per block. The test does not attempt glob
     # semantics: a future maintainer who moves the path under a different
@@ -483,7 +489,7 @@ def test_native_decide_ratchet_wired_on_conway_lean_paths():
         #     unnecessary and some refactors drop it)
         quoted_exact = path
         quoted_no_prefix = path[len("MyIA.AI.Notebooks/SymbolicAI/Lean/"):]
-        for block, label in [(push_block, "push:"), (pr_block, "pull_request:")]:
+        for block, label in [(pr_block, "pull_request:")]:
             ok = (
                 quoted_exact in block
                 or quoted_no_prefix in block

@@ -519,3 +519,27 @@ def test_missing_pytest_pin_is_detected(tmp_path: Path) -> None:
     problems = check_namespace_option(tmp_path)
     assert len(problems) == 1
     assert "pytest>=8" in problems[0]
+
+
+def test_scripts_workflow_triggers_native_decide_changes_without_scoping_main_pushes() -> None:
+    """The Conway ratchet must run for its own source changes on PRs and main.
+
+    Main pushes are intentionally unfiltered for #24828's red-main sentinel;
+    pull requests retain the scoped trigger, including the native_decide subject.
+    """
+    yaml = __import__("pytest").importorskip("yaml")
+    wf_path = REPO_ROOT / ".github/workflows/scripts-tests.yml"
+    with wf_path.open(encoding="utf-8") as fh:
+        workflow = yaml.load(fh, Loader=yaml.BaseLoader)
+
+    triggers = workflow["on"]
+    assert "paths" not in triggers["push"]
+    pr_paths = triggers["pull_request"]["paths"]
+    assert "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean" in pr_paths
+    # Keep both the original ADK contracts tree and the #25201 refactor target.
+    assert "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**" in pr_paths
+    assert "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/**" in pr_paths
+
+    job = workflow["jobs"]["scripts-tests"]
+    assert job["name"] == "Scripts Tests (CPU)"
+    assert job["runs-on"] == ["self-hosted", "coursia-ephemeral", "coursia-linux"]

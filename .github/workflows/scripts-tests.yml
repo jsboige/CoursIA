@@ -80,6 +80,8 @@ on:
       - '.github/workflows/**'
       # #15058 ADK contracts (mirror of the push path above).
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**'
+      # #25201 : le refactor ADK a déplacé une suite de contrat hors Track2.
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/**'
       # #17580 fallacy-detection snapshot guard (mirror of the push path above).
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/**'
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/**'
