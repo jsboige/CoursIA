@@ -529,7 +529,7 @@
       "axiom-target-modules": "*",
       "axiom-allow-axioms": "@scripts/lean/allow_axioms_conway.txt",
       "axiom-fail-on-sorry": "false",
-      "axiom-include-i18n-siblings": "false",
+      "axiom-include-i18n-siblings": "true",
       "build-threads": "1",
       "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean",
