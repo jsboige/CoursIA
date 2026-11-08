@@ -31,6 +31,7 @@ from semantic_kernel.functions.kernel_arguments import KernelArguments
 from argumentation_lib._shared_state import RhetoricalAnalysisState
 from argumentation_lib._guarded_state import GuardedStateManagerPlugin
 from argumentation_lib._pl_reasoner import PLReasonerPlugin
+from argumentation_lib._nl_to_logic_plugin import NLToLogicPlugin
 from argumentation_lib._state_manager_plugin import StateManagerPlugin
 from argumentation_lib._llm_settings import apply_reasoning_none_for_function_tools
 from argumentation_lib._verdict import (
@@ -398,6 +399,38 @@ def _ensure_reasoner_plugin(kernel: Kernel, state: RhetoricalAnalysisState) -> N
     kernel.add_plugin(PLReasonerPlugin(state), plugin_name="Reasoner")
 
 
+def _ensure_nl_to_logic_plugin(
+    kernel: Kernel, llm_service_id: str
+) -> None:
+    """Expose la traduction texte->PL aux agents (plugin `NLToLogic`).
+
+    Le LLM traduit le texte en formules PL ; le parseur Tweety valide.
+    Sans ce plugin, le LogicAgent devait encoder les formules lui-meme —
+    c'est exactement le pattern "le LLM pilote un raisonneur deterministe"
+    du tronc EPITA (#18390).
+    """
+    if "NLToLogic" in [p.name for p in kernel.plugins.values()]:
+        return
+    from argumentation_lib._pl_reasoner import TweetyPLEngine
+
+    service = _resolve_service(kernel, llm_service_id)
+    engine = TweetyPLEngine()
+    # `_execution_settings_for` rend la forme attendue par `KernelArguments`
+    # (`{service_id: instance}`) ; le service de chat attend l'INSTANCE seule.
+    # Passer le dict faisait echouer tout appel (`'dict' object has no attribute
+    # 'pack_extension_data'`) — B1 de la revue de #24951.
+    settings_map = _execution_settings_for(kernel, llm_service_id)
+    kernel.add_plugin(
+        NLToLogicPlugin(
+            llm_service=service,
+            parse_fn=engine._parse,
+            kernel=kernel,
+            execution_settings=settings_map.get(llm_service_id) if settings_map else None,
+        ),
+        plugin_name="NLToLogic",
+    )
+
+
 def create_pm_agent(
     kernel: Kernel,
     llm_service_id: str,
@@ -511,6 +544,10 @@ def create_logic_agent(
     # dans la liste de ses fonctions (#22981).
     _ensure_reasoner_plugin(kernel, state)
 
+    # La traduction texte->PL est exposee aussi : le LLM traduit, le
+    # parseur valide, le solveur decide (#18390).
+    _ensure_nl_to_logic_plugin(kernel, llm_service_id)
+
     logic_instructions = PROMPT_LOGIC_ANALYSIS
     if task_id:
         logic_instructions += _task_instructions(task_id, "analyse formelle")
@@ -605,6 +642,10 @@ class AnalysisRunner:
         # Le solveur propositionnel est expose des la construction du runner :
         # c'est le SEUL chemin d'obtention d'un verdict de moteur (#22981).
         _ensure_reasoner_plugin(kernel, state)
+
+        # La traduction texte->PL est exposee aussi : le LLM traduit, le
+        # parseur valide, le solveur decide (#18390).
+        _ensure_nl_to_logic_plugin(kernel, llm_service_id)
 
     # ------------------------------------------------------------------
     # Contrat tâche / réponse (#23726)

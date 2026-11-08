@@ -37,10 +37,26 @@ if _ARG_ANALYSIS_DIR not in sys.path:
 # Comprehensive semantic_kernel mock (must cover _runner + _state_manager_plugin)
 # ---------------------------------------------------------------------------
 def _install_sk_mock():
-    if "semantic_kernel" in sys.modules and getattr(
-        sys.modules["semantic_kernel"], "_coursia_mock", False
+    existing = sys.modules.get("semantic_kernel")
+    if (
+        existing is not None
+        and getattr(existing, "_coursia_mock", False)
+        # Le drapeau seul ne suffit pas : un mock PARTIEL installe par un autre
+        # fichier de test le porte aussi, et le laisser passer cassait la
+        # collecte (`from semantic_kernel import Kernel`). On exige la
+        # completude (B2 de la revue de #24951).
+        and hasattr(existing, "Kernel")
     ):
-        return  # already installed by a prior test in this process
+        return  # comprehensive mock already installed by a prior test in this process
+
+    # Purge les sous-modules du VRAI SK eventuellement importes avant nous.
+    # Sans cela, le mock ne regne pas sur le processus : un import garde-fou
+    # comme `connectors.ai.function_choice_behavior` (absent du mock, ou le
+    # repli `fcb = None` est justement teste) reussirait contre le vrai paquet
+    # et passerait un `function_choice_behavior` que le stub refuse — 37 tests
+    # rouges mesures en collectant test_nl_to_logic_plugin avant ce fichier.
+    for _stale in [n for n in sys.modules if n.startswith("semantic_kernel.")]:
+        del sys.modules[_stale]
 
     sk = ModuleType("semantic_kernel")
     sk._coursia_mock = True
@@ -225,6 +241,9 @@ def _install_sk_mock():
         def add_message(self, message):
             self.messages.append(message)
 
+        def add_user_message(self, content):
+            self.messages.append(content)
+
     mod_hist.ChatHistory = ChatHistory
 
     # wire attributes + register every module path Python may resolve
@@ -282,7 +301,10 @@ from argumentation_lib._shared_state import RhetoricalAnalysisState  # noqa: E40
 # Fixtures / helpers
 # ---------------------------------------------------------------------------
 def _kernel():
-    return sys.modules["semantic_kernel"].Kernel()
+    kernel = sys.modules["semantic_kernel"].Kernel()
+    # Les outils NLToLogic exigent un service injecte, comme en production.
+    kernel.add_service(SimpleNamespace(service_id="svc"))
+    return kernel
 
 
 def _state(text="Le chat est sur le paillasson. Donc le chat est a l'interieur."):
@@ -563,6 +585,7 @@ def test_informal_builder_registers_plugin_when_absent():
 # ---------------------------------------------------------------------------
 def test_runner_init_stores_attributes():
     k, s = _kernel(), _state()
+    k.add_service(SimpleNamespace(service_id="my-svc"))
     runner = AnalysisRunner(k, "my-svc", s, max_turns=8)
     assert runner.kernel is k
     assert runner.llm_service_id == "my-svc"

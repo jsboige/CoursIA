@@ -30,6 +30,21 @@ TOKEN = "tok-myia-ai-01-fake"
 GRAIN_MED = "Grain: MED/guard -- lane myia-po-2026:CoursIA -- prev: MED/guard #1"
 GRAIN_DEEP = "Grain: DEEP/lean -- lane myia-po-2026:CoursIA -- prev: MED/guard #1"
 BASE = "ba5eba5eba5eba5eba5eba5eba5eba5eba5eba5e"
+#: Jambes nominales du chemin `unstable` (#25059) : la porte verte, un check
+#: vert, et une jambe ANNULEE d'un run remplace dont le nom a ete repris par
+#: une jambe verte plus recente -- le cas mesure sur #24116 (run annule puis
+#: run vert pour les memes noms).
+DEFAULT_CHECK_RUNS = "\n".join(
+    json.dumps(row)
+    for row in (
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "Scripts Tests (CPU)", "conclusion": "success",
+         "status": "completed", "started_at": "2026-11-07T10:00:00Z", "id": 5},
+        {"name": "Scripts Tests (CPU)", "conclusion": "cancelled",
+         "status": "completed", "started_at": "2026-11-07T09:00:00Z", "id": 3},
+    )
+)
 # Sentinelle : « pas precise » n'est pas « aucune approbation ». Par defaut une
 # vue porte l'approbation du coordinateur a la tete (le chemin nominal depuis
 # Q67) ; une vue dont les reviews sont fournies explicitement n'en recoit que si
@@ -167,9 +182,14 @@ class ScriptedRunner:
         # defaut, pour que les tests historiques gardent leur chemin nominal.
         combined_rc: int = 0,
         combined_stdout: str = '{"verdict": "GREEN", "failed": []}',
+        # #25059 : etape 6 bis, lecture des jambes de check. Valeur = stdout
+        # du ``gh api .../check-runs`` (une ligne JSON par jambe). Defaut :
+        # le jeu nominal vert.
+        check_runs: str | None = None,
     ):
         self.combined_rc = combined_rc
         self.combined_stdout = combined_stdout
+        self.check_runs = check_runs if check_runs is not None else DEFAULT_CHECK_RUNS
         self.token = token
         self.token_rc = token_rc
         self.prs = list(prs)
@@ -248,6 +268,11 @@ class ScriptedRunner:
             if self.merge_rc == 0:
                 return mr.RunResult(0, "", "")
             return mr.RunResult(self.merge_rc, "", "merge refused")
+        if c[:2] == ["gh", "api"] and "/check-runs" in c[2]:
+            # #25059 : etape 6 bis. La branche est AVANT celle des commits :
+            # l'URL des check-runs porte `/commits/` et serait capturee par
+            # elle (le SHA extrait serait `check-runs?per_page=100`).
+            return mr.RunResult(0, self.check_runs, "")
         if c[:2] == ["gh", "api"] and "/commits/" in c[2]:
             sha = c[2].rsplit("/", 1)[-1]
             if sha not in self.commits:
@@ -463,7 +488,10 @@ def test_skip_b0_organ_rc1(tmp_path):
 
 
 def test_skip_mergeable_state_not_clean(tmp_path):
-    for state in ("dirty", "unstable", "blocked", "has_hooks"):
+    # `unstable` n'est plus dans cette liste : il a son etage a lui (#25059,
+    # les quatre tests juste apres) -- il se decide sur les jambes, pas sur
+    # le seul libelle de l'etat.
+    for state in ("dirty", "blocked", "has_hooks"):
         runner = ScriptedRunner(
             pulls=[{"mergeable_state": state, "head": {"sha": HEAD}}]
         )
@@ -471,6 +499,84 @@ def test_skip_mergeable_state_not_clean(tmp_path):
         assert rc == 0, state
         assert lines[-1]["reason"] == f"mergeable-state:{state}", state
         assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+# --- etape 6 bis : `unstable` (#25059) -------------------------------------------
+
+
+def _legs(*rows: dict) -> str:
+    """stdout du `gh api .../check-runs` : une ligne JSON par jambe."""
+    return "\n".join(json.dumps(row) for row in rows)
+
+
+def _unstable_runner(check_runs: str) -> ScriptedRunner:
+    return ScriptedRunner(
+        pulls=[{"mergeable_state": "unstable", "head": {"sha": HEAD}}],
+        check_runs=check_runs,
+    )
+
+
+def test_unstable_latest_wins_vert_est_accepte(tmp_path):
+    # Pli vert partout : la PR passe, et le journal dit pourquoi elle passait
+    # (`unstable-accepted:<n>`) -- un merge mu n'apporte aucune preuve.
+    runner = _unstable_runner(DEFAULT_CHECK_RUNS)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged"
+    assert lines[-1]["reason"].startswith("unstable-accepted:")
+    assert any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_unstable_une_jambe_non_advisory_rouge_saute_nomme(tmp_path):
+    legs = _legs(
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "Scripts Tests (CPU)", "conclusion": "failure",
+         "status": "completed", "started_at": "2026-11-07T10:00:00Z", "id": 5},
+    )
+    runner = _unstable_runner(legs)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == (
+        "mergeable-state:unstable:Scripts Tests (CPU):failure"
+    )
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_unstable_un_rouge_advisory_seul_est_accepte(tmp_path):
+    # Un check advisory ne bloque pas le gate (#15548) : il ne doit pas
+    # bloquer l'organe de merge non plus.
+    legs = _legs(
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "CJK residue advisory (label, non-blocking)",
+         "conclusion": "failure", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 5},
+    )
+    runner = _unstable_runner(legs)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged"
+    assert lines[-1]["reason"].startswith("unstable-accepted:")
+
+
+def test_unstable_une_jambe_en_vol_sans_jambe_terminee_saute(tmp_path):
+    # Une jambe en vol dont le nom n'a AUCUNE jambe terminee : rien n'a ete
+    # mesure pour ce nom, donc rien n'est acquis -- saut nomme.
+    legs = _legs(
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "Scripts Tests (CPU)", "conclusion": "",
+         "status": "in_progress", "started_at": "2026-11-07T10:00:00Z",
+         "id": 5},
+    )
+    runner = _unstable_runner(legs)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == (
+        "mergeable-state:unstable:Scripts Tests (CPU):no-completed-leg"
+    )
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
 
 
 def test_skip_head_moved(tmp_path):
