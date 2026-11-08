@@ -2554,14 +2554,7 @@ def _open_prs_by_issue_and_lane(
     for pr in prs:
         body = _unwrap_trapped_body(pr.get("body") or "")
         lane = extract_lane(body)
-        for match in _PR_ISSUE_REF_RE.finditer(body):
-            captured = match.group(1) or match.group(2)
-            if captured is None:
-                continue
-            try:
-                issue_number = int(captured)
-            except ValueError:
-                continue
+        for issue_number in _referenced_issue_numbers(body):
             index.setdefault((issue_number, lane), []).append(pr)
     _OPEN_PRS_LANE_INDEX_MEMO = (prs, root, fingerprint, index)
     return index

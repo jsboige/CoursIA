@@ -8709,3 +8709,8 @@ def test_backticked_scope_is_not_read_as_epic_wide():
     assert clc._empty_scope_in(ev.paths, tracked) == [], \
         "la portee normalisee n'est pas morte"
     assert not clc._claim_scope_effectively_epic_wide(ev)
+
+
+def test_lane_reference_index_deduplicates_repeated_issue():
+    prs = [{"number": 9, "body": "[CLAIMED] lane myia-a:CoursIA -- #45\nVoir #45"}]
+    assert clc._lane_open_prs_referencing(45, "myia-a:CoursIA", prs) == [9]
