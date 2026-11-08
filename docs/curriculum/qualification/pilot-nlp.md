@@ -66,7 +66,7 @@ Mesures : [manifest.json](manifest.json) porte les compteurs du carnet (exercice
 
 **D3 · R2** — prérequis 3, outillage 2, autonomie 3
 
-Prérequis : le carnet déclare « Python 3.10+, NumPy, scikit-learn » et un prérequis hors série (TAL/entités nommées) ; le formalisme CRF, le forward-backward et la descente de gradient sont hors du programme de la série (P3). Outillage : sklearn-crfsuite et seqeval comme témoins, API à maîtriser (O2). Autonomie : le CRF linéaire from scratch (scores, forward/backward, Viterbi, NLL, gradient) est à implémenter et vérifié numériquement (A3). Niveau D3 = max(3, 3). Recherche R2 : le §8 « Ablation mesurée — quelle famille de features porte le CRF ? » pose une question falsifiable dont le verdict n'est pas connu d'avance, et le témoin §7 (sklearn-crfsuite) fournit l'étalon externe.
+Prérequis : le carnet déclare « Python 3.10+, NumPy, scikit-learn » et un prérequis hors série (TAL/entités nommées) ; le formalisme CRF, le forward-backward et la descente de gradient sont hors du programme de la série (P3). Outillage : sklearn-crfsuite et seqeval comme témoins, API à maîtriser (O2). Autonomie : le CRF linéaire de zéro (scores, forward/backward, Viterbi, NLL, gradient) est à implémenter et vérifié numériquement (A3). Niveau D3 = max(3, 3). Recherche R2 : le §8 « Ablation mesurée — quelle famille de caractéristiques porte le CRF ? » pose une question falsifiable dont le verdict n'est pas connu d'avance, et le témoin §7 (sklearn-crfsuite) fournit l'étalon externe.
 
 Mesures : [manifest.json](manifest.json) porte les compteurs du carnet (exercices, cellules, prose, densité) · kernel `Python 3 (ipykernel)` · exigences api=False gpu=False cloud=False wsl=False
 
@@ -98,7 +98,7 @@ Mesures : [manifest.json](manifest.json) porte les compteurs du carnet (exercice
 
 **D2 · R1** — prérequis 2, outillage 1, autonomie 2
 
-Prérequis : algèbre linéaire (SVD, cosinus) et probabilités (PPMI) — notions de licence, non enseignées ailleurs dans la série (P2). Outillage : aucun outil du domaine ; NumPy seul (O1). Autonomie : les exercices portent sur la co-occurrence, la valeur de PPMI et les plus proches voisins — adaptation, pas d'algorithme à réécrire (A2). Niveau D2 = max(2, 2). Recherche R1 : le §5 « Mesurer le gain » pose le test décisif (écart entre cosinus congénère et cosinus d'un autre domaine) ; ce test discriminant est repris tel quel par les carnets 08 et 09 — c'est un instrument partagé.
+Prérequis : algèbre linéaire (SVD, cosinus) et probabilités (PPMI) — notions de licence, non enseignées ailleurs dans la série (P2). Outillage : aucun outil du domaine ; NumPy seul (O1). Autonomie : les exercices portent sur la co-occurrence, la valeur de PPMI et les plus proches voisins — adaptation, pas d'algorithme à réécrire (A2). Niveau D2 = max(2, 2). Recherche R1 : le §5 « Mesurer le gain » pose le test décisif (écart entre cosinus congénère et cosinus d'un autre domaine). Le carnet 08 confronte ses vecteurs appris à l'espace SVD du carnet 07, et le carnet 09 confronte à 08 ; aucun des deux ne rejoue ce test congénère contre un autre domaine — l'instrument discriminant reste propre au carnet 07.
 
 Mesures : [manifest.json](manifest.json) porte les compteurs du carnet (exercices, cellules, prose, densité) · kernel `Python 3` · exigences api=False gpu=False cloud=False wsl=False
 
@@ -106,7 +106,7 @@ Mesures : [manifest.json](manifest.json) porte les compteurs du carnet (exercice
 
 **D3 · R2** — prérequis 2, outillage 1, autonomie 3
 
-Prérequis : le §7 confronte directement au carnet 07 (statistique) ; descente de gradient, softmax et échantillonnage négatif sont des notions de licence (P2). Outillage : aucun outil du domaine ; NumPy seul (O1). Autonomie : CBOW et skip-gram sont écrits from scratch, y compris la perte, le gradient et l'échantillonnage négatif (A3). Niveau D3 = max(2, 3). Recherche R2 : le §5 « Les vecteurs ont-ils une structure ? » est une question de mesure falsifiable (similarité cosinus), et le §7 la confrontation paire par paire avec l'espace SVD du carnet 07 ; le verdict n'est pas connu d'avance.
+Prérequis : le §7 confronte directement au carnet 07 (statistique) ; descente de gradient, softmax et échantillonnage négatif sont des notions de licence (P2). Outillage : aucun outil du domaine ; NumPy seul (O1). Autonomie : CBOW et skip-gram sont écrits de zéro, y compris la perte, le gradient et l'échantillonnage négatif (A3). Niveau D3 = max(2, 3). Recherche R2 : le §5 « Les vecteurs ont-ils une structure ? » est une question de mesure falsifiable (similarité cosinus), et le §7 la confrontation paire par paire avec l'espace SVD du carnet 07 ; le verdict n'est pas connu d'avance.
 
 Mesures : [manifest.json](manifest.json) porte les compteurs du carnet (exercices, cellules, prose, densité) · kernel `Python 3` · exigences api=False gpu=False cloud=False wsl=False
 
@@ -114,7 +114,7 @@ Mesures : [manifest.json](manifest.json) porte les compteurs du carnet (exercice
 
 **D3 · R2** — prérequis 2, outillage 1, autonomie 3
 
-Prérequis : dépend du carnet 08 (word2vec), dont il reprend le modèle et le protocole ; la décomposition en subwords est une notion nouvelle (P2). Outillage : aucun outil du domaine ; NumPy seul (O1). Autonomie : le modèle fastText (table de subwords, somme, gradient) est écrit from scratch (A3). Niveau D3 = max(2, 3). Recherche R2 : le §4 « La capacité distinctive : généraliser aux mots OOV » et le §5 « Confrontation 08 vs 09 » posent la question falsifiable de la généralisation OOV ; le verdict (word2vec n'a aucun vecteur, fastText replacé) est mesuré, non supposé.
+Prérequis : dépend du carnet 08 (word2vec), dont il reprend le modèle et le protocole ; la décomposition en sous-mots est une notion nouvelle (P2). Outillage : aucun outil du domaine ; NumPy seul (O1). Autonomie : le modèle fastText (table de sous-mots, somme, gradient) est écrit de zéro (A3). Niveau D3 = max(2, 3). Recherche R2 : le §4 « La capacité distinctive : généraliser aux mots OOV » et le §5 « Confrontation 08 vs 09 » posent la question falsifiable de la généralisation OOV ; le verdict (word2vec n'a aucun vecteur, fastText replacé) est mesuré, non supposé.
 
 Mesures : [manifest.json](manifest.json) porte les compteurs du carnet (exercices, cellules, prose, densité) · kernel `Python 3` · exigences api=False gpu=False cloud=False wsl=False
 
@@ -130,7 +130,7 @@ Mesures : [manifest.json](manifest.json) porte les compteurs du carnet (exercice
 
 **D4 · R2** — prérequis 3, outillage 2, autonomie 4
 
-Prérequis : le carnet se place explicitement après 10 et suppose optimisations convexe, entropie croisée et régularisation L2 — hors série (P3). Outillage : scikit-learn n'intervient que comme « juge extérieur » (O2). Autonomie : l'étudiant doit construire un banc dont le verdict n'est pas connu d'avance — le §1 montre que le corpus du carnet 10 est « un plafond », le §5 constate que « l'attendu n'est pas reproduit », et les trois exercices « se jugent sur une mesure, pas sur une impression » (A4). Niveau D4 = max(3, 4). Recherche R2 : la question « que fait la régularisation, et que ne fait-elle pas ? » est posée puis mesurée sur un banc construit pour l'occasion ; le carnet rapporte un résultat qui contredit l'attente théorique. Ce n'est pas du front (R3) : la question est tranchée à l'intérieur du carnet.
+Prérequis : le carnet se place explicitement après 10 et suppose optimisations convexe, entropie croisée et régularisation L2 — hors série (P3). Outillage : scikit-learn n'intervient que comme « juge extérieur » (O2). Autonomie : l'étudiant doit construire un banc dont le verdict n'est pas connu d'avance — le §1 montre que le corpus du carnet 10 est « un plafond », le §5 constate que « l'attendu n'est pas reproduit », et les trois exercices, « Chacun se juge sur une mesure, pas sur une impression » (A4). Niveau D4 = max(3, 4). Recherche R2 : la question « que fait la régularisation, et que ne fait-elle pas ? » est posée puis mesurée sur un banc construit pour l'occasion ; le carnet rapporte un résultat qui contredit l'attente théorique. Ce n'est pas du front (R3) : la question est tranchée à l'intérieur du carnet.
 
 Mesures : [manifest.json](manifest.json) porte les compteurs du carnet (exercices, cellules, prose, densité) · kernel `Python 3` · exigences api=False gpu=False cloud=False wsl=False
 

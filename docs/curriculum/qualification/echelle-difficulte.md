@@ -20,7 +20,7 @@ même note.
 | `P4` | Deux formalismes hors série cumulés, ou un formalisme hors série **plus** une notion de licence rarement maîtrisée. |
 
 > `P4` est réservé : la série pilote ne l'atteint pas. Il existe pour que l'échelle
-> ne soit pas bornée par le corpus que l'on a qualification.
+> ne soit pas bornée par le corpus que l'on a qualifié.
 
 ### `outillage` — ce que l'étudiant doit faire marcher
 
@@ -37,7 +37,7 @@ même note.
 |---|---|
 | `A1` | Lire, exécuter, commenter une sortie. Rien à produire. |
 | `A2` | **Adapter** — un paramètre, une formule, un prédicteur — et le vérifier sur un témoin chiffré. |
-| `A3` | **Implémenter** soi-même un algorithme (from scratch, gradient compris), ou **construire une mesure** (protocole, ablation, banc) sur des données que l'on maîtrise. |
+| `A3` | **Implémenter** soi-même un algorithme (de zéro, gradient compris), ou **construire une mesure** (protocole, ablation, banc) sur des données que l'on maîtrise. |
 | `A4` | **Construire un banc dont le verdict n'est pas connu d'avance** — une hypothèse à tester, un témoin négatif, un résultat qui peut ne pas venir. |
 
 ## La règle de dérivation
@@ -57,7 +57,7 @@ un carnet conceptuellement exigeant qui tourne sur NumPy seul reste difficile.
 L'outillage est **enregistré** dans le profil et signalé dans la justification —
 c'est le lecteur qui décide s'il peut l'absorber.
 
-> why pas le maximum des trois ? Un carnet qui exige un téléchargement de modèle
+> Pourquoi pas le maximum des trois ? Un carnet qui exige un téléchargement de modèle
 > (`O3`) verrait son niveau monter d'un rang alors que rien de plus difficile
 > n'est demandé au raisonnement. L'outillage se note à part, sur sa propre
 > colonne : c'est ce qui permet à un parcours de dire « ce carnet-ci demande
@@ -76,7 +76,7 @@ L'organe **recalcule** cette règle et refuse un manifeste qui la contredit :
 |---|---|---|
 | `D1` | Initiation : lire, exécuter, commenter. Aucun prérequis, aucun outil du domaine. | *aucun carnet de la série pilote* |
 | `D2` | Autonome : adapter une formule, vérifier sur un témoin chiffré, avec une notion de licence ou un prérequis de série. | 01, 02, 06, 07, 10 |
-| `D3` | Avancé : implémenter un algorithme from scratch, ou assumer un formalisme hors série. | 03, 04, 05, 08, 09 |
+| `D3` | Avancé : implémenter un algorithme de zéro, ou assumer un formalisme hors série. | 03, 04, 05, 08, 09 |
 | `D4` | Expert : construire le banc soi-même, avec un verdict qui n'est pas connu d'avance. | 11 |
 
 La série pilote ne contient **aucun `D1`** : tous ses carnets demandent au moins
@@ -111,7 +111,7 @@ par l'organe :
 | `cellules_code`, `cellules_md` | lecture du carnet | la taille du travail |
 | `prose_chars`, `densite` | `pedagogy_density.py` | le rapport entre ce qui est donné et ce qui est exécuté |
 | `kernel` | `generate_catalog.py` | l'environnement réel |
-| `exigences` (`api`, `gpu`, `cloud`, `wsl`) | `generate_catalog.py` | les ressources à宣称 |
+| `exigences` (`api`, `gpu`, `cloud`, `wsl`) | `generate_catalog.py` | les ressources à déclarer |
 
 Ces mesures ne **décident** d'aucun niveau : elles documentent le profil, et
 leur divergence avec l'arbre (un carnet modifié depuis sa qualification) est

@@ -35,10 +35,10 @@ veut remplacer par une qualification **déclarée et justifiée**.
 
 > *Le verdict était-il connu avant la mesure ?*
 
-- S'il l'était (un witness qui doit concorder, une méthode dont on connaît le
+- S'il l'était (un témoin qui doit concorder, une méthode dont on connaît le
   comportement théorique), le carnet est `R1` : il **vérifie**, il outille.
 - S'il ne l'était pas (le carnet ne sait pas à l'avance quelle famille de
-  features porte le modèle, ni si la régularisation fera ce que la théorie
+  caractéristiques porte le modèle, ni si la régularisation fera ce que la théorie
   annonce), le carnet est `R2` : il **explore**.
 
 C'est cette question, et non la présence d'un tableau de chiffres, qui
@@ -48,9 +48,9 @@ distingue les deux.
 
 `R3` ne veut pas dire « le carnet est difficile » ni « il utilise un algorithme
 récent ». Il veut dire que **la question reste ouverte à la fin du carnet**.
-Un carnet `R2` qui trouve son verdict reste `R2` — il a tranche. Un carnet qui
+Un carnet `R2` qui trouve son verdict reste `R2` — il a tranché. Un carnet qui
 constate un résultat inattendu **et l'explique** reste `R2` ; il ne devient pas
-`R3` parce que le résultat a surprised.
+`R3` parce que le résultat a surpris.
 
 ## Ce qui n'est pas un signal de recherche
 
@@ -58,8 +58,8 @@ constate un résultat inattendu **et l'explique** reste `R2` ; il ne devient pas
 |---|---|
 | Le chemin du carnet (`research/`, `examples/`) | c'est le défaut que cet axe remplace |
 | Un mot-clé dans le markdown (`paradoxe`, `contre-intuitif`) | [#24292](https://github.com/jsboige/CoursIA/issues/24292) : 39 carnets touchés, **aucun** vrai cas — un cours de décision doit contenir des paradoxes *enseignés* |
-| Un tableau de résultats | un witness qui concorde est une vérification (`R1`), pas une exploration |
-| Un algorithme « de pointe » | `word2vec` est un algorithme de 2013 ; ce qui compte est la question posée, pas la freshness du modèle |
+| Un tableau de résultats | un témoin qui concorde est une vérification (`R1`), pas une exploration |
+| Un algorithme « de pointe » | `word2vec` est un algorithme de 2013 ; ce qui compte est la question posée, pas la fraîcheur du modèle |
 | La densité pédagogique ([#13410](https://github.com/jsboige/CoursIA/issues/13410)) | elle mesure ce qui est **donné**, pas ce qui est **découvert** |
 
 ## La qualification est déclarée, pas calculée
