@@ -271,6 +271,66 @@ def test_submodule_whitened_by_payback(tmp_path, capsys):
     assert "[retour amont declare]" in capsys.readouterr().out
 
 
+def test_csharp_record_and_enum_collisions_require_payback(tmp_path, capsys):
+    """Les types C# record/enum sont des primitives comme les classes indexées."""
+    mod = _load_detector()
+    patch = _write(tmp_path, "types.cs.diff", """diff --git a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+--- a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
++++ b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+@@ -0,0 +1,2 @@
++public record class VettingLevel(int Value);
++public enum Fallacy { None }
+""")
+    rc = mod.main(["--patch", str(patch), "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "COLLISION ~GenAI" in out
+    assert "-> semantic-fleet (VettingLevel)" in out
+    assert "-> Argumentum (Fallacy)" in out
+    assert out.count("[retour amont manquant -- #13902]") == 2
+
+    body = _write(tmp_path, "body.md", BODY_PAYBACK)
+    rc = mod.main(["--patch", str(patch), "--body-file", str(body),
+                   "--index", str(INDEX), "--check"])
+    assert rc == 0
+    assert capsys.readouterr().out.count("[retour amont declare]") == 2
+
+
+def test_csharp_types_ignore_comments_strings_and_unindexed_names(tmp_path, capsys):
+    """Le parseur ne traite comme declarations ni prose, ni commentaires, ni noms hors index."""
+    mod = _load_detector()
+    patch = _write(tmp_path, "non-types.cs.diff", """diff --git a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+--- a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
++++ b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+@@ -0,0 +1,7 @@
++// public record VettingLevel(int Value);
++/*
++public enum Fallacy { None }
++*/
++var example = "public record VettingLevel(int Value);";
++public record LocalMeasurement(int Value);
++public enum LocalKind { None }
+""")
+    rc = mod.main(["--patch", str(patch), "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "CLEAN" in out and "0 collision" in out
+
+
+def test_csharp_record_inside_owning_submodule_is_maintenance(tmp_path, capsys):
+    mod = _load_detector()
+    patch = _write(tmp_path, "owner-record.cs.diff", """diff --git a/MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet/Analysis/VettingLevel.cs b/MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet/Analysis/VettingLevel.cs
+--- a/MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet/Analysis/VettingLevel.cs
++++ b/MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet/Analysis/VettingLevel.cs
+@@ -0,0 +1,1 @@
++public record VettingLevel(int Value);
+""")
+    rc = mod.main(["--patch", str(patch), "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "CLEAN" in out and "0 collision" in out
+
+
 def test_submodule_owner_path_is_maintenance_not_extraction(tmp_path, capsys):
     """Éditer DANS le sous-module (maintenance) ne collisionne jamais."""
     mod = _load_detector()
