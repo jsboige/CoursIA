@@ -1,0 +1,212 @@
+"""Contrats du cœur et du transport REST (sans appel fournisseur)."""
+
+from __future__ import annotations
+
+import asyncio
+import socket
+import sys
+import threading
+import time
+from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
+
+import httpx
+import pytest
+import uvicorn
+from pydantic import BaseModel, Field
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from structured_outputs_core import (
+    StructuredExtractionError,
+    StructuredInputError,
+    extract_structured,
+)
+from structured_outputs_service import create_app
+
+
+class Evaluation(BaseModel):
+    score: int = Field(ge=0, le=100)
+    commentaire: str
+
+
+SCHEMA = {
+    "type": "object",
+    "properties": {
+        "score": {"type": "integer", "minimum": 0, "maximum": 100},
+        "commentaire": {"type": "string"},
+    },
+    "required": ["score", "commentaire"],
+}
+
+
+class FakeClient:
+    def __init__(self, content: str = '{"score": 88, "commentaire": "Clair."}', error: Exception | None = None):
+        self.content = content
+        self.error = error
+        self.request: dict[str, Any] | None = None
+        self.chat = SimpleNamespace(completions=SimpleNamespace(create=self.create))
+
+    def create(self, **request: Any) -> Any:
+        self.request = request
+        if self.error:
+            raise self.error
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=self.content))]
+        )
+
+
+def test_extract_structured_supports_json_schema_and_enforces_strict_mode() -> None:
+    client = FakeClient()
+
+    result = extract_structured("Évalue ce texte.", SCHEMA, model="modele-test", client=client)
+
+    assert result == {"score": 88, "commentaire": "Clair."}
+    assert client.request is not None
+    assert client.request["model"] == "modele-test"
+    strict = client.request["response_format"]["json_schema"]
+    assert strict["strict"] is True
+    assert strict["schema"]["additionalProperties"] is False
+    assert strict["schema"]["required"] == ["score", "commentaire"]
+
+
+def test_schema_title_is_normalized_for_provider_name_limit() -> None:
+    schema = {**SCHEMA, "title": "Structured output: evaluation"}
+    client = FakeClient()
+
+    extract_structured("Évalue.", schema, client=client)
+
+    assert client.request is not None
+    assert client.request["response_format"]["json_schema"]["name"] == "Structured_output__evaluation"
+
+
+def test_extract_structured_supports_pydantic_model() -> None:
+    result = extract_structured("Évalue.", Evaluation, client=FakeClient())
+
+    assert isinstance(result, Evaluation)
+    assert result.score == 88
+
+
+@pytest.mark.parametrize("prompt", ["", "  ", None, 12])
+def test_empty_or_non_string_prompt_is_rejected(prompt: Any) -> None:
+    with pytest.raises(StructuredInputError, match="prompt"):
+        extract_structured(prompt, SCHEMA, client=FakeClient())
+
+
+@pytest.mark.parametrize(
+    "schema",
+    [
+        {"type": "object", "properties": {"score": {"type": "not-a-json-type"}}},
+        {"type": "array", "items": {"type": "string"}},
+        {"type": "object", "properties": {"score": {"type": "integer"}}, "required": ["missing"]},
+        ["not", "an", "object"],
+    ],
+)
+def test_invalid_schema_is_rejected_before_call(schema: Any) -> None:
+    client = FakeClient()
+
+    with pytest.raises(StructuredInputError, match="schéma|schema"):
+        extract_structured("prompt", schema, client=client)
+    assert client.request is None
+
+
+def test_response_violating_schema_is_an_extraction_error() -> None:
+    with pytest.raises(StructuredExtractionError, match="réponse invalide"):
+        extract_structured(
+            "prompt",
+            SCHEMA,
+            client=FakeClient('{"score": 101, "commentaire": "hors limite"}'),
+        )
+
+
+def test_provider_failure_is_a_bounded_extraction_error() -> None:
+    with pytest.raises(StructuredExtractionError, match=r"échec API \(RuntimeError\)") as error:
+        extract_structured("prompt", SCHEMA, client=FakeClient(error=RuntimeError("private detail")))
+    assert "private detail" not in str(error.value)
+
+
+def test_missing_api_key_fails_explicitly_without_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    with pytest.raises(StructuredExtractionError, match="OPENAI_API_KEY"):
+        extract_structured("prompt", SCHEMA)
+
+
+def test_invalid_configured_base_url_fails_explicitly(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "local-test-key")
+    monkeypatch.setenv("OPENAI_BASE_URL", "not-an-url")
+
+    with pytest.raises(StructuredExtractionError, match="OPENAI_BASE_URL"):
+        extract_structured("prompt", SCHEMA)
+
+
+def test_rest_contract_covers_success_invalid_and_upstream_error() -> None:
+    async def exercise() -> tuple[
+        httpx.Response, httpx.Response, httpx.Response, httpx.Response, httpx.Response
+    ]:
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=create_app(FakeClient())),
+            base_url="http://testserver",
+        ) as http:
+            success = await http.post("/texte/extract", json={"prompt": "Évalue.", "schema": SCHEMA})
+            invalid = await http.post("/texte/extract", json={"prompt": "  ", "schema": SCHEMA})
+            bad_schema = await http.post(
+                "/texte/extract", json={"prompt": "Évalue.", "schema": {"type": "array"}}
+            )
+            key_in_body = await http.post(
+                "/texte/extract",
+                json={"prompt": "Évalue.", "schema": SCHEMA, "api_key": "must-not-be-accepted"},
+            )
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=create_app(FakeClient(error=RuntimeError("private detail")))),
+            base_url="http://testserver",
+        ) as http:
+            failed = await http.post("/texte/extract", json={"prompt": "Évalue.", "schema": SCHEMA})
+        return success, invalid, bad_schema, key_in_body, failed
+
+    success, invalid, bad_schema, key_in_body, failed = asyncio.run(exercise())
+    assert success.status_code == 200
+    assert success.json() == {"status": "ok", "data": {"score": 88, "commentaire": "Clair."}}
+    assert invalid.status_code == 422
+    assert invalid.json()["status"] == "invalid"
+    assert "prompt" in invalid.json()["error"]
+    assert bad_schema.status_code == 422
+    assert bad_schema.json()["status"] == "invalid"
+    assert key_in_body.status_code == 422
+    assert key_in_body.json()["status"] == "invalid"
+
+    assert failed.status_code == 502
+    assert failed.json() == {"status": "error", "error": "échec API (RuntimeError)"}
+
+
+def test_loopback_http_request_reaches_endpoint() -> None:
+    """Exerce le vrai transport TCP local, avec une réponse de modèle injectée."""
+    app = create_app(FakeClient())
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+
+    server = uvicorn.Server(
+        uvicorn.Config(app, host="127.0.0.1", port=port, log_level="critical")
+    )
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    try:
+        deadline = time.monotonic() + 5
+        while not server.started and thread.is_alive() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert server.started, "le serveur local n'a pas démarré"
+
+        response = httpx.post(
+            f"http://127.0.0.1:{port}/texte/extract",
+            json={"prompt": "Évalue.", "schema": SCHEMA},
+            timeout=2,
+        )
+    finally:
+        server.should_exit = True
+        thread.join(timeout=5)
+
+    assert not thread.is_alive(), "le serveur local ne s'est pas arrêté"
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok", "data": {"score": 88, "commentaire": "Clair."}}
