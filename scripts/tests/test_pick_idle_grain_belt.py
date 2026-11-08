@@ -658,6 +658,12 @@ def _patch_belt_network(monkeypatch, prs, red_state):
     # passe par gh_payload_cache -> run_gh. `measure_delivery`, en aval,
     # est pure : elle ne fait que lire ce corpus. Forme `(prs, err)`.
     monkeypatch.setattr(pig, "fetch_merged", lambda *a, **k: ([], None))
+    # #25082 A -- la recompense de fermeture lit les issues FERMEES de la
+    # fenetre (`gh issue list --state closed`). C'est une surface reseau de
+    # plus, de la meme famille : elle est stubee ici, sinon le tapis
+    # atteint un `gh` reel. `([], None)` = mesure faite, aucune fermeture.
+    monkeypatch.setattr(pig, "fetch_closed_issues",
+                        lambda *a, **k: ([], None))
     # `pin_gh_token()` (gh_identity, appele au demarrage de main) : le
     # VRAI hang des tests `main --belt` (mesure 2026-10-09 : ~300 s par
     # test, 5 tests). Le garde `_no_real_gh` l'a nomme en 0,8 s -- un
@@ -1079,6 +1085,51 @@ def test_claim_visit_stamp_counts_every_lane():
                "[RELEASED] lane myia-po-2023:CoursIA -- ancien"),
     ]
     assert pig.claim_visit_stamp(comments) == "2026-10-04T09:00:00Z"
+
+
+# --- #22687 constat 1 : la visite rend sa DATE **et** son MARQUEUR ----------
+
+def test_claim_visit_pair_names_the_event_that_produced_the_date():
+    """La paire ne peut pas designer deux evenements differents.
+
+    `claim_visit_stamp` ne disait que QUAND une lane avait servi l'issue ; la
+    cause du plafond EPIC en deduisait « claim », donc un `[RELEASED]` etait
+    lu comme une prise (#22687). La paire sort du MEME evenement.
+    """
+    comments = [
+        _claim("2026-10-04T09:00:00Z",
+               "[CLAIMED] lane myia-po-2027:CoursIA -- T1"),
+        _claim("2026-10-04T12:00:00Z",
+               "[RELEASED] lane myia-po-2027:CoursIA -- T1 rendue"),
+    ]
+    assert pig.claim_visit(comments) == ("2026-10-04T12:00:00Z", "RELEASED")
+    # Le stamp public reste la moitie-date, inchangee.
+    assert pig.claim_visit_stamp(comments) == "2026-10-04T12:00:00Z"
+
+
+def test_claim_visit_without_any_lane_marker_is_a_measure_not_a_guess():
+    assert pig.claim_visit([_claim("2026-10-04T09:00:00Z",
+                                   "commentaire ordinaire")]) == (None, None)
+    assert pig.claim_visit([]) == (None, None)
+
+
+def test_marker_label_never_falls_back_to_claim():
+    """Le repli ne doit pas etre le mot que #22687 retire."""
+    assert pig.marker_label("CLAIMED") == "prise"
+    assert pig.marker_label("RELEASED") == "rendu de main"
+    assert pig.marker_label(None) == "marqueur de lane"
+    assert pig.marker_label("") == "marqueur de lane"
+    # Un code que l'organe ne produit pas se cite tel quel, entre crochets.
+    assert pig.marker_label("SOMETHINGELSE") == "marqueur [SOMETHINGELSE]"
+
+
+def test_every_marker_keyword_of_the_organ_has_a_translation():
+    """La table suit `_KEYWORDS` de l'organe : un code lu par lui sans
+    traduction serait un trou, et ce test le voit avant une lane."""
+    from check_lane_claim import _KEYWORDS
+
+    missing = [k for k in _KEYWORDS if k not in pig._MARKER_LABELS]
+    assert not missing, f"marqueurs de l'organe sans traduction : {missing}"
 
 
 def test_belt_released_issue_stays_behind_7742_scenario():
@@ -2179,6 +2230,37 @@ def test_fetch_latest_claim_stamps_bulk_parity_with_latest_claim_stamp(monkeypat
     assert pig.latest_claim_stamp(10) == bulk_map[10]
     assert pig.latest_claim_stamp(11) == bulk_map[11]
     assert pig.latest_claim_stamp(12) is None
+
+
+def test_fetch_latest_claim_stamps_bulk_carries_the_marker_with_the_date(monkeypatch):
+    """#22687 : la charge bulk porte le marqueur, pas seulement la date.
+
+    Une date sans marqueur obligeait la cause du plafond EPIC a inventer un
+    verbe -- « claim » sur un `[RELEASED]`. Le marqueur voyage dans la MEME
+    requete : couter une seconde sonde pour nommer la visite serait payer un
+    aller-retour par EPIC plafonne.
+    """
+    issue_payloads = {
+        20: [_claim("2026-10-04T09:00:00Z",
+                    "[CLAIMED] lane myia-po-2027:CoursIA -- T1"),
+             _claim("2026-10-04T12:00:00Z",
+                    "[RELEASED] lane myia-po-2027:CoursIA -- T1 rendue")],
+        21: [_claim("2026-10-05T10:00:00Z", "aucun marqueur")],
+    }
+
+    def fake_run(cmd, *a, **k):
+        class _R:
+            stdout = json.dumps(_graphql_payload_for(issue_payloads))
+        return _R()
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+    markers: dict[int, str | None] = {}
+    stamps, err = pig.fetch_latest_claim_stamps_bulk([20, 21],
+                                                     markers_out=markers)
+    assert err is None, err
+    assert stamps == {20: "2026-10-04T12:00:00Z", 21: None}
+    assert markers == {20: "RELEASED", 21: None}, markers
 
 
 def test_fetch_latest_claim_stamps_bulk_falls_back_on_subprocess_error(monkeypatch):
@@ -3546,3 +3628,58 @@ def test_un_RELEASED_qui_porte_un_marqueur_plus_bas_nest_pas_saute(monkeypatch):
     monkeypatch.setattr(pig, "_issue_comments", lambda n: ([mixed], ""))
     monkeypatch.setattr(pig, "_issue_body", lambda n: "")
     assert pig.has_recent_delivery_marker(24590) is True
+
+
+def test_belt_json_withheld_complete_reflects_probe_ceilings(
+        monkeypatch, capsys):
+    """#16589 (releve po-2025 du 2026-11-03) : quand un plafond a coupe la
+    sonde (budget de sondes OU mur de temps), `delivered_signal.withheld`
+    est une borne inferieure -- la cle `withheld_complete` le dit, sinon un
+    `[]` se lit « rien a signaler » alors que la fin d'urne n'a pas ete
+    verifiee."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    pool = [_make_item(19155, age_days=50, idle=5, last=None)]
+    monkeypatch.setattr(pig, "fetch_pool", lambda **k: (list(pool), None))
+    monkeypatch.setattr(pig, "fetch_latest_claim_stamps_bulk",
+                        lambda *a, **k: ({}, None))
+    monkeypatch.setattr(pig, "has_delivered_signal", lambda n, lane=None: False)
+    monkeypatch.setattr(pig, "merged_pr_signal", lambda n, lane=None: False)
+    monkeypatch.setattr(pig, "has_recent_delivery_marker", lambda n: False)
+
+    def fake_belt_pick(belt_pool, belt_claims, a, probe_budget, *rest, **kw):
+        item = dict(pool[0])
+        item.update({"klass": "grain", "genre": "guard", "weight": 1.0,
+                     "visits": 0, "visits_long": 0})
+        state = {"budget_hit": True, "time_budget_hit": True,
+                 "failures": [], "cover_failures": [], "claim_unread": [],
+                 "gpu_target_unresolved": [], "recent_filtered": 0}
+        return [item], [], state
+
+    monkeypatch.setattr(pig, "belt_pick_with_replacements", fake_belt_pick)
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    sig = payload["delivered_signal"]
+    assert sig["budget_hit"] is True
+    assert sig["time_budget_hit"] is True
+    assert sig["withheld_complete"] is False, (
+        "un plafond coupe : withheld est une borne inferieure, la cle doit "
+        "dire INCOMPLET, pas laisser un [] se lire « propre »")
+
+    # Sans plafond coupe : la liste est complete, la cle le dit.
+    def fake_belt_pick_clean(belt_pool, belt_claims, a, probe_budget,
+                             *rest, **kw):
+        item = dict(pool[0])
+        item.update({"klass": "grain", "genre": "guard", "weight": 1.0,
+                     "visits": 0, "visits_long": 0})
+        state = {"budget_hit": False, "time_budget_hit": False,
+                 "failures": [], "cover_failures": [], "claim_unread": [],
+                 "gpu_target_unresolved": [], "recent_filtered": 0}
+        return [item], [], state
+
+    monkeypatch.setattr(pig, "belt_pick_with_replacements",
+                        fake_belt_pick_clean)
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["delivered_signal"]["withheld_complete"] is True

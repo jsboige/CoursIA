@@ -10,9 +10,9 @@ C'est la raison d'être de la série : ailleurs, un résultat numérique se juge
 plausibilité ; ici, il se juge contre une référence exacte, une identité de symétrie ou
 une limite analytique.
 
-## Quatre sous-séries
+## Cinq sous-séries
 
-Les carnets vivent dans quatre dossiers, chacun avec son propre `README.md` qui présente
+Les carnets vivent dans cinq dossiers, chacun avec son propre `README.md` qui présente
 ses carnets un par un.
 
 ### `Jauge/` — symétries et théories de jauge
@@ -50,6 +50,16 @@ Le versant conceptuel : la théorie du constructeur (Deutsch 2013 ; Deutsch & Ma
 et impossibles, plutôt que comme des équations de mouvement. Le carnet-01 distille ce
 changement de point de vue et le relie à `Jauge/` (Noether), à la localité (causal
 bridges) et à l'hybridation quantique (gravité).
+
+### `Chaines/` — physique de l'information
+
+Des programmes récents qui dérivent une conséquence physique calculable d'un axiome
+informationnel unique (premiers grains : Chain Theory, Wissner-Gross 2026). Le patron
+y change : **Mesuré / Cité / Ouvert** — ce que le carnet rejoue lui-même est mesuré, la
+chaîne dérivative de la source est citée, et ce que la source ne prouve pas (une
+conjecture, un preprint non relu) est dit ligne à ligne. La vérité indépendante du code
+y est le calcul de la source, rejoué indépendamment, et les déterminations
+expérimentales citées.
 
 ## Ce que la série suppose acquis
 

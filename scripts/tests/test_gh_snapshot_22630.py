@@ -504,11 +504,66 @@ def test_voie_en_processus_rend_les_memes_codes_que_la_voie_cli(monkeypatch):
     assert verdicts[202][0] == solo[202][0]
 
 
-def test_voie_en_processus_rend_none_si_le_lecteur_manque(monkeypatch):
+def test_voie_en_processus_rend_none_si_le_lecteur_manque(monkeypatch, capsys):
+    """#22983 -- le None n'est plus muet : sa cause est nommee sur stderr."""
     def _absent():
         raise RuntimeError("lecteur introuvable")
     monkeypatch.setattr(pig, "_claim_reader_module", _absent)
     assert pig._claims_in_process([1], "lane") is None
+    err = capsys.readouterr().err
+    assert "[22983]" in err
+    assert "RuntimeError" in err
+    assert "lecteur introuvable" in err
+
+
+def test_voie_en_processus_nomme_une_exception_du_chemin_batch(
+        monkeypatch, capsys):
+    """#22983 -- une exception avalee dans la voie batch (hypothese (a) du
+    dispatch c2788) doit etre nommee, pas reduite a un None muet : le refus
+    fail-CLOSED intermittent du tapis devient diagnosticable."""
+    class _ClcQuiExplose:
+        def set_snapshot(self, _snap):
+            pass
+        def check_issues_batch(self, *_a, **_kw):
+            raise ValueError("cache des PRs ouvertes illisible")
+    class _SnapQuiMarche:
+        def refresh(self, _repo, issue_numbers=None):
+            return {"issues": {}, "prs": {}}
+    monkeypatch.setattr(pig, "_claim_reader_module", lambda: _ClcQuiExplose())
+    monkeypatch.setattr(pig, "_gh_snapshot_module", lambda: _SnapQuiMarche())
+    assert pig._claims_in_process([101, 202], "lane") is None
+    err = capsys.readouterr().err
+    assert "[22983]" in err
+    assert "ValueError" in err
+    assert "cache des PRs ouvertes illisible" in err
+
+
+def test_voie_en_processus_nomme_linstantane_strict_perime(
+        monkeypatch, capsys):
+    """#22983 -- en mode STRICT, un stamp servi plus tot puis expire
+    (hypothese (b) : TTL 1800 s) doit etre nomme PERIME, distinct d'un
+    numero jamais lu (MANQUANT) : les deux ne se soignent pas pareil."""
+    n_frais, n_perime, n_manquant = 101, 202, 303
+    stamps = {str(n_frais): time.time(),
+              str(n_perime): time.time() - gs.DEFAULT_TTL_SECONDS - 60}
+    snap = {"issues": {str(n_frais): {"number": n_frais, "title": "T",
+                                      "labels": []}},
+            "prs": {},
+            "meta": {"comment_stamps": stamps}}
+    fake = types.ModuleType("coordination.gh_snapshot")
+    fake.load_snapshot = lambda _repo: snap
+    fake.serves = gs.serves
+    fake.DEFAULT_TTL_SECONDS = gs.DEFAULT_TTL_SECONDS
+    _redirige_gh_snapshot(monkeypatch, fake)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", snap)
+    monkeypatch.setattr(pig, "_claim_reader_module", lambda: clc)
+    assert pig._claims_in_process(
+        [n_frais, n_perime, n_manquant], "lane", local_only=True) is None
+    err = capsys.readouterr().err
+    assert "[22983]" in err
+    assert "STRICT" in err
+    assert "manquants: 303" in err
+    assert "perimes: 202" in err
 
 
 def test_check_claims_rend_error_si_la_voie_en_processus_echoue(monkeypatch):
