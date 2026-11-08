@@ -4,7 +4,7 @@
 # Core RL
 stable-baselines3[extra]>=2.0  # RL algorithms (PPO, DQN, A2C, etc.) — notebooks 1-3
 gymnasium>=0.29                # OpenAI Gym successor — all notebooks
-torch>=2.0                     # Reseaux de neurones from scratch — notebook 5 (DQN, REINFORCE)
+torch>=2.13                    # Reseaux de neurones from scratch — RL-06 (DQN, REINFORCE) ; plancher de la serie, verifie par la cellule de garde du carnet (#23073)
 pettingzoo[classic]>=1.24.0    # Multi-agent environments — notebook 6 (IQL, PettingZoo)
 
 # Environments
