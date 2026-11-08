@@ -725,7 +725,8 @@ def test_belt_json_repair_key_absent_when_no_red(monkeypatch, capsys):
     """
     _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
 
-    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt",
+                   "--belt-time-budget", "60", "--json"])
 
     assert rc == 0
     payload = json.loads(capsys.readouterr().out)
@@ -822,7 +823,8 @@ def test_belt_main_json_path_never_reaches_real_probes(monkeypatch, capsys):
     monkeypatch.setattr(pig, "merged_pr_signal",
                         raise_real("merged_pr_signal"))
 
-    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt",
+                   "--belt-time-budget", "60", "--json"])
 
     assert rc == 0
     payload = json.loads(capsys.readouterr().out)
@@ -882,6 +884,19 @@ def test_belt_main_injects_the_real_snapshot_prime(monkeypatch, capsys):
         pig._BELT_SNAPSHOT = _mini_snapshot(numbers)
 
     monkeypatch.setattr(pig, "_belt_snapshot_prime", spy_prime)
+    remaining = iter((55.0, 17.0))
+    remaining_seen = []
+    monkeypatch.setattr(pig, "_belt_remaining_s",
+                        lambda budget, started: remaining_seen.append(
+                            (budget, started)) or next(remaining))
+    original_loop = pig.belt_pick_with_replacements
+    loop_budget = []
+
+    def spy_loop(*args, **kwargs):
+        loop_budget.append(kwargs["time_budget_s"])
+        return original_loop(*args, **kwargs)
+
+    monkeypatch.setattr(pig, "belt_pick_with_replacements", spy_loop)
     rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
 
     assert rc == 0
@@ -896,6 +911,8 @@ def test_belt_main_injects_the_real_snapshot_prime(monkeypatch, capsys):
     # rafraichissement rate, et le repli partirait legitimement.
     assert primed == [[19101]], (
         f"une seule passe, sur les candidats tires (got {primed})")
+    assert len(remaining_seen) == 2
+    assert loop_budget == [17.0], "la boucle reçoit le reste après le préchargement"
 
 
 def test_non_belt_json_red_still_emits_standalone_repair(monkeypatch, capsys):
@@ -2699,6 +2716,13 @@ def _patched_clock(monkeypatch, start=0.0):
     monkeypatch.setattr(
         pig, "time", types.SimpleNamespace(monotonic=lambda: clock[0]))
     return clock
+
+
+def test_preload_consumes_the_original_belt_deadline():
+    """Le préchargement réduit le budget depuis t0, sans armer un nouveau mur."""
+    assert pig._belt_remaining_s(120, started_at=100, now=150) == 70
+    assert pig._belt_remaining_s(120, started_at=100, now=190) == 30
+    assert pig._belt_remaining_s(120, started_at=100, now=230) == 0
 
 
 def test_belt_time_budget_stops_probing_mid_loop(monkeypatch):

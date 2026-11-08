@@ -10894,6 +10894,14 @@ def belt_service_window(args, pool_size: int) -> int:
     return max(0, min(int(args.grains) * 5 + 50, int(pool_size)))
 
 
+def _belt_remaining_s(budget_s: float, started_at: float,
+                      now: float | None = None) -> float:
+    """Reste du budget du run depuis son origine, préchargement compris."""
+    if now is None:
+        now = time.monotonic()
+    return max(0.0, budget_s - (now - started_at))
+
+
 def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 delivered_probe=None, cover_probe=None,
                                 claims_probe=None,
@@ -12751,9 +12759,8 @@ def main(argv: list[str] | None = None) -> int:
         # t=51 s avec "120 s restants", soit une echeance reelle a t=171 s.
         belt_time_remaining = None
         if args.belt_time_budget and args.belt_time_budget > 0:
-            belt_time_remaining = max(
-                0.0, args.belt_time_budget
-                - (_time_belt.monotonic() - _belt_t0))
+            belt_time_remaining = _belt_remaining_s(
+                args.belt_time_budget, _belt_t0)
             _belt_phase(f"mur de temps: {args.belt_time_budget:.0f}s pour la "
                         f"boucle, {belt_time_remaining:.0f}s restants a son "
                         f"entree (claims/settle deduits ; les sondes sont "
@@ -12787,6 +12794,14 @@ def main(argv: list[str] | None = None) -> int:
             f"{'ok' if _BELT_LOCAL_PROBES['open_ready'] else _BELT_LOCAL_PROBES['open_cause']}, "
             f"timelines={sum(1 for e in _BELT_LOCAL_PROBES['reopen_events'].values() if e.get('ready'))}/"
             f"{len(_BELT_LOCAL_PROBES['reopen_events'])}")
+        # Le prechargement des timelines partage la meme echeance de run.
+        # Recalculer apres ses lectures evite de donner a la boucle une
+        # duree deja consommee par la phase reseau; l'origine reste `_belt_t0`.
+        if args.belt_time_budget and args.belt_time_budget > 0:
+            belt_time_remaining = _belt_remaining_s(
+                args.belt_time_budget, _belt_t0)
+            _belt_phase(f"mur de temps apres prechargement: "
+                        f"{belt_time_remaining:.0f}s restants")
         _belt_phase("pick_with_replacements start")
         try:
             belt_picks, belt_withheld, belt_pick_state = (
