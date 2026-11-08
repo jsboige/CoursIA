@@ -221,7 +221,7 @@ class TestExerciseHeaderRe:
         # Regression: "Exercice 8.1" must capture "8.1" (not just "8"), so
         # sub-numbered exercises (8.1 / 8.2 / 8.3) are distinct and not
         # reported as duplicate "Exercice 8" findings. Real-world case:
-        # Planners-2-PDDL-Basics cells (Exercice 8.1/8.2/8.3).
+        # Planners-02-PDDL-Basics-Python cells (Exercice 8.1/8.2/8.3).
         m = EXERCISE_HEADER_RE.search("### Exercice 8.1 : Gripper a 3 balles")
         assert m is not None
         assert m.group(1) == "8.1"
@@ -326,7 +326,7 @@ class TestScanNotebook:
         # progressive exercises, not duplicates of "Exercice 8". Before the
         # dotted-number fix, all three captured num="8" and the scanner
         # reported 2 spurious MEDIUM "Duplicate Exercice 8" findings.
-        # Real-world case: Planners-2-PDDL-Basics (8.1/8.2/8.3) and
+        # Real-world case: Planners-02-PDDL-Basics-Python (8.1/8.2/8.3) and
         # Planners-2 Python (9.1/9.2/9.3).
         nb_path = _write_nb(tmp_path / "subnum.ipynb", [
             _md("### Exercice 8.1 : Gripper a 3 balles"),

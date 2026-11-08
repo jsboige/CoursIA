@@ -29,6 +29,12 @@ name: Lean derived pages gate
 #   - scripts/lean/check_lean_derived_pages.py (ce garde)
 #   - docs/reference/lean-*.md    (les pages derivees)
 #   - .github/workflows/**         (la carte du materiel lit la couverture CI)
+#   - scripts/lean/ci_lakes.json, scripts/lean/lean_births.json,
+#     scripts/lean/check_axiom_gate_coverage.py, scripts/lean/count_code_sorry.py
+#                                  (les autres entrees de lean_material_map.py :
+#                                  sans elles, #25154 a recable un lake dans
+#                                  ci_lakes.json sans que la porte se declenche,
+#                                  et la page perimee a rougi toutes les PRs Lean)
 #
 # Le declencheur est un `pull_request` ordinaire : la porte ne fait que LIRE
 # (elle appelle les generateurs en `--check`), elle n'ecrit rien et ne
@@ -43,6 +49,10 @@ on:
       - 'scripts/lean/check_lean_derived_pages.py'
       - 'docs/reference/lean-*.md'
       - '.github/workflows/**'
+      - 'scripts/lean/ci_lakes.json'
+      - 'scripts/lean/lean_births.json'
+      - 'scripts/lean/check_axiom_gate_coverage.py'
+      - 'scripts/lean/count_code_sorry.py'
   workflow_dispatch:
 
 permissions:

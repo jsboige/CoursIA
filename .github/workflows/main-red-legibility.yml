@@ -1,6 +1,7 @@
 name: Main Red Legibility
 
-# La moitie « lisible » de #22088, rendue durable et recurrente.
+# La moitie « lisible » de #22088, rendue durable et recurrente, repointee
+# depuis le 2026-11-08 sur #25181 (la famille Quarto est depuis eteinte).
 #
 # #22088 a mesure que le `statusCheckRollup` de `main` lisait FAILURE sur la
 # moitie des commits, et que, sur la grande majorite, les seules jambes
@@ -12,10 +13,11 @@ name: Main Red Legibility
 #
 # Ce balayage planifie lance l'organe sur une fenetre glissante de `main` et
 # poste la separation merite/emprunte en commentaire ROULEUR (find-or-update,
-# un seul commentaire, marque d'un sentinelle) sur l'issue #22088 -- celle ou
-# vit la discussion. Le mainteneur qui ouvre #22088 voit, mis a jour chaque
-# jour, quels rouges de `main` sont merites et quels rouges ne sont que le
-# build Quarto annule.
+# un seul commentaire, marque d'un sentinelle) sur l'issue #25181 -- celle ou
+# vit la discussion. Le mainteneur qui ouvre #25181 voit, mis a jour chaque
+# jour, quels rouges de `main` sont merites et quels rouges n'en sont qu'un
+# emprunt : les cohortes (Scripts Tests, gardes notebook) annulees sous
+# saturation de runners, pas des echecs.
 #
 # Advisory, jamais bloquant (memes contrat que candidate-delivered-advisory) :
 #   - Le job sort TOUJOURS 0. Le payload est le commentaire, PAS la conclusion.
@@ -88,7 +90,7 @@ jobs:
           # 2) le rendre lisible : commentaire rouleau sur #22088 (find-or-update)
           python - <<'PY'
           import json, os, subprocess, datetime, tempfile
-          issue, repo = 22088, "jsboige/CoursIA"
+          issue, repo = 25181, "jsboige/CoursIA"
           sentinel = "<!-- main-red-legibility:rolling -->"
           try:
               report = open("legibility.txt", encoding="utf-8").read().strip()
@@ -98,8 +100,8 @@ jobs:
           body = (f"{sentinel}\n\n"
                   f"**Main red legibility** — auto, {when}\n\n"
                   f"La croix rouge sur `main` est le plus souvent une annulation "
-                  f"du build Quarto, pas un echec. Separation merite / emprunte "
-                  f"sur la fenetre glissante :\n\n```\n{report}\n```\n")
+                  f"de cohortes (saturation de runners), pas un echec. Separation "
+                  f"merite / emprunte sur la fenetre glissante :\n\n```\n{report}\n```\n")
           def gh(*a):
               return subprocess.run(["gh", *a], capture_output=True, text=True)
           def post():

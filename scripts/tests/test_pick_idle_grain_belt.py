@@ -658,6 +658,12 @@ def _patch_belt_network(monkeypatch, prs, red_state):
     # passe par gh_payload_cache -> run_gh. `measure_delivery`, en aval,
     # est pure : elle ne fait que lire ce corpus. Forme `(prs, err)`.
     monkeypatch.setattr(pig, "fetch_merged", lambda *a, **k: ([], None))
+    # #25082 A -- la recompense de fermeture lit les issues FERMEES de la
+    # fenetre (`gh issue list --state closed`). C'est une surface reseau de
+    # plus, de la meme famille : elle est stubee ici, sinon le tapis
+    # atteint un `gh` reel. `([], None)` = mesure faite, aucune fermeture.
+    monkeypatch.setattr(pig, "fetch_closed_issues",
+                        lambda *a, **k: ([], None))
     # `pin_gh_token()` (gh_identity, appele au demarrage de main) : le
     # VRAI hang des tests `main --belt` (mesure 2026-10-09 : ~300 s par
     # test, 5 tests). Le garde `_no_real_gh` l'a nomme en 0,8 s -- un
@@ -896,6 +902,87 @@ def test_belt_main_injects_the_real_snapshot_prime(monkeypatch, capsys):
     # rafraichissement rate, et le repli partirait legitimement.
     assert primed == [[19101]], (
         f"une seule passe, sur les candidats tires (got {primed})")
+
+
+def test_belt_snapshot_prime_lock_timeout_names_cause(monkeypatch, capsys):
+    """#22983 volet 3 : le repli lock-timeout du priming NOMME sa cause.
+
+    Mesure fondatrice (08/11, c.6719023627) : le priming tenait
+    `refresh.lock` pendant toute sa phase reseau (~7 min) ; les autres
+    lanes de la machine epuisaient leurs 120 s d'attente et retombaient
+    sur un repli MUET -- ni `fetch_failures`, ni message, alors que le
+    quota REST paraissait sain. Le repli doit ecrire sur stderr POURQUOI
+    il est parti, pour qu'un fail-CLOSED eventuel se lise au premier
+    coup d'oeil.
+
+    Divergence assumee avec le spec initial de #25217 : l'issue ecrivait
+    « repli sur l'instantane disque » ; le volet 4 (#25224, arbitrage
+    option 2, c.6719405401) a deplace la phase reseau HORS verrou -- le
+    repli sert desormais les lectures fraiches EN MEMOIRE de CE tirage
+    (ses stamps couvrent NOTRE fenetre, pas celle de la lane qui tient
+    le verrou). Le temoin suit le contrat du code actuel.
+    """
+    class _LockTimeout(Exception):
+        pass
+
+    calls = {"save": 0}
+    in_memory = _mini_snapshot([4242])
+    stale_disk = _mini_snapshot([1111])
+
+    class _RaisingLock:
+        def __enter__(self):
+            raise _LockTimeout(
+                "verrou refresh.lock non obtenu apres 120 s")
+
+        def __exit__(self, *exc):
+            return False
+
+    class _FakeGhSnapshot:
+        SnapshotLockTimeout = _LockTimeout
+
+        @staticmethod
+        def load_snapshot(repo):
+            return dict(stale_disk)
+
+        @staticmethod
+        def ensure_comments(repo, numbers, snapshot):
+            return dict(in_memory), 0, {}
+
+        @staticmethod
+        def snapshot_lock(repo):
+            return _RaisingLock()
+
+        @staticmethod
+        def merge_snapshots(disk, mem, numbers):
+            raise AssertionError(
+                "la fusion ne doit pas courir : le verrou a leve avant")
+
+        @staticmethod
+        def save_snapshot(repo, merged):
+            calls["save"] += 1
+            raise AssertionError("l'ecriture disque doit etre reportee")
+
+    monkeypatch.setitem(sys.modules, "coordination.gh_snapshot",
+                        _FakeGhSnapshot)
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    # Restauration automatique du global par monkeypatch en teardown.
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", pig._BELT_SNAPSHOT)
+
+    pig._belt_snapshot_prime("jsboige/CoursIA", [4242])
+
+    err = capsys.readouterr().err
+    assert "[22983] priming ecarte" in err, (
+        f"le repli doit NOMMER sa cause sur stderr (got: {err!r})")
+    assert "verrou refresh.lock non obtenu apres 120 s" in err, (
+        f"le message doit porter la cause exacte du repli (got: {err!r})")
+    assert calls["save"] == 0, (
+        "l'ecriture disque est reportee au prochain priming, pas tentee")
+    # Le repli sert les lectures fraiches EN MEMOIRE de CE tirage (volet
+    # 4), pas l'instantane disque dont les stamps couvrent l'AUTRE lane.
+    stamps = pig._BELT_SNAPSHOT["meta"]["comment_stamps"]
+    assert "4242" in stamps and "1111" not in stamps, (
+        f"le repli doit servir la fenetre de CE tirage (got stamps: "
+        f"{sorted(stamps)})")
 
 
 def test_non_belt_json_red_still_emits_standalone_repair(monkeypatch, capsys):
@@ -3622,3 +3709,58 @@ def test_un_RELEASED_qui_porte_un_marqueur_plus_bas_nest_pas_saute(monkeypatch):
     monkeypatch.setattr(pig, "_issue_comments", lambda n: ([mixed], ""))
     monkeypatch.setattr(pig, "_issue_body", lambda n: "")
     assert pig.has_recent_delivery_marker(24590) is True
+
+
+def test_belt_json_withheld_complete_reflects_probe_ceilings(
+        monkeypatch, capsys):
+    """#16589 (releve po-2025 du 2026-11-03) : quand un plafond a coupe la
+    sonde (budget de sondes OU mur de temps), `delivered_signal.withheld`
+    est une borne inferieure -- la cle `withheld_complete` le dit, sinon un
+    `[]` se lit « rien a signaler » alors que la fin d'urne n'a pas ete
+    verifiee."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    pool = [_make_item(19155, age_days=50, idle=5, last=None)]
+    monkeypatch.setattr(pig, "fetch_pool", lambda **k: (list(pool), None))
+    monkeypatch.setattr(pig, "fetch_latest_claim_stamps_bulk",
+                        lambda *a, **k: ({}, None))
+    monkeypatch.setattr(pig, "has_delivered_signal", lambda n, lane=None: False)
+    monkeypatch.setattr(pig, "merged_pr_signal", lambda n, lane=None: False)
+    monkeypatch.setattr(pig, "has_recent_delivery_marker", lambda n: False)
+
+    def fake_belt_pick(belt_pool, belt_claims, a, probe_budget, *rest, **kw):
+        item = dict(pool[0])
+        item.update({"klass": "grain", "genre": "guard", "weight": 1.0,
+                     "visits": 0, "visits_long": 0})
+        state = {"budget_hit": True, "time_budget_hit": True,
+                 "failures": [], "cover_failures": [], "claim_unread": [],
+                 "gpu_target_unresolved": [], "recent_filtered": 0}
+        return [item], [], state
+
+    monkeypatch.setattr(pig, "belt_pick_with_replacements", fake_belt_pick)
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    sig = payload["delivered_signal"]
+    assert sig["budget_hit"] is True
+    assert sig["time_budget_hit"] is True
+    assert sig["withheld_complete"] is False, (
+        "un plafond coupe : withheld est une borne inferieure, la cle doit "
+        "dire INCOMPLET, pas laisser un [] se lire « propre »")
+
+    # Sans plafond coupe : la liste est complete, la cle le dit.
+    def fake_belt_pick_clean(belt_pool, belt_claims, a, probe_budget,
+                             *rest, **kw):
+        item = dict(pool[0])
+        item.update({"klass": "grain", "genre": "guard", "weight": 1.0,
+                     "visits": 0, "visits_long": 0})
+        state = {"budget_hit": False, "time_budget_hit": False,
+                 "failures": [], "cover_failures": [], "claim_unread": [],
+                 "gpu_target_unresolved": [], "recent_filtered": 0}
+        return [item], [], state
+
+    monkeypatch.setattr(pig, "belt_pick_with_replacements",
+                        fake_belt_pick_clean)
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["delivered_signal"]["withheld_complete"] is True
