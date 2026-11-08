@@ -82,10 +82,11 @@ Les **traces pré-extraites** (fixtures `.npz` dans `traces/`) supportent les no
 
 Quand un palier de consolidation regroupe plusieurs carnets autour d'un même sujet, ils descendent dans une **sous-série**, et cette sous-série porte un nom. La convention est `ICT-<NN>-<Sujet>/` : `<NN>` est le numéro que porte **aujourd'hui** le carnet de tête dans la série principale — celui que le lecteur voit sur la marche de l'escalier — et `<Sujet>` reprend le sujet de ce carnet de tête, sans le suffixe `-Python`. Un numéro nu n'est pas un nom de répertoire : il sert d'index dans un ledger progressif, jamais de substitut au sujet qu'on redescend ([#22949](https://github.com/jsboige/CoursIA/issues/22949)). Toute sous-série future naît nommée.
 
-Chaque marche ci-dessous descend vers le carnet de tête de sa sous-série ; en retour, la convention est que chaque sous-série remonte vers cette page depuis son dernier carnet. Les quatre la tiennent : 12e, 14b, 19b et 15l.
+Chaque marche ci-dessous descend vers le carnet de tête de sa sous-série ; en retour, la convention est que chaque sous-série remonte vers cette page depuis son dernier carnet. Les cinq la tiennent : 04, 12e, 14b, 19b et 15l.
 
 | Sous-série | Ce qu'on y redescend | Carnets |
 |---|---|---|
+| [`ICT-02-SelfSortingMorphogenesis/`](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) | Le tri auto-organisé comme morphogenèse — la grille qui se trie elle-même et ses compétences émergentes (robustesse aux cellules défectueuses, délai de gratification, auto-réparation), puis les tableaux chimériques à agrégation « kin » | ICT-02, 03, 04 |
 | [`ICT-12-ValenceFieldsAndAnimats/`](ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb) | Champs de valence et animats — les rôles de la scène actantielle de Thom cessent d'être des correspondances nommées et deviennent des grandeurs mesurées, puis apprises, incarnées, inhibées, et enfin valorisées par l'information | ICT-12, 12b, 12c, 12d, 12e |
 | [`ICT-14-FreeEnergySurprise/`](ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb) | Énergie libre, surprise et inférence active — la jambe représentationnelle de la strate 4, de la surprise passive au contrôle actif par l'*expected free energy* | ICT-14, 14b |
 | [`ICT-15-IntegratedComplexity/`](ICT-15-IntegratedComplexity/ICT-15-IntegratedComplexity-Python.ipynb) | La convergence Φ/F/K sur le banc cross-substrat, puis ses obstructions : sensibilité, méta-proxy, cochaîne de Čech, nerf simplicial, recollement des macrocells | ICT-15, puis 15b à 15l |
@@ -106,7 +107,7 @@ Chaque marche ci-dessous descend vers le carnet de tête de sa sous-série ; en 
 
 | Document | Contenu |
 |----------|---------|
-| [ICT-02-SelfSortingMorphogenesis-Python](ICT-02-SelfSortingMorphogenesis-Python.ipynb) | Le tri auto-organisé comme morphogenèse : trajectoire dans le morphospace, robustesse aux cellules défectueuses, délai de gratification, auto-réparation, impasses chimériques |
+| [ICT-02-SelfSortingMorphogenesis-Python](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) | Le tri auto-organisé comme morphogenèse : trajectoire dans le morphospace, robustesse aux cellules défectueuses, délai de gratification, auto-réparation, impasses chimériques |
 
 ![Métriques d'auto-réparation : gauche « Inversions (désordre global) » 60→0 en ~220 pas, droite « Sortedness vs erreur de monotonie » (sortedness 0.5→1.0 croissante, erreur locale qui décroît)](assets/readme/ict2-selfsorting.png)
 
@@ -114,8 +115,8 @@ Chaque marche ci-dessous descend vers le carnet de tête de sa sous-série ; en 
 
 | Document | Contenu |
 |----------|---------|
-| [ICT-03-RobustnessDelayedGratification-Python](ICT-03-RobustnessDelayedGratification-Python.ipynb) | Robustesse & délai de gratification, étude quantitative : dégradation gracieuse face aux cellules défectueuses, distributions de récupération, comptage du délai de gratification |
-| [ICT-04-ChimericArraysKinAggregation-Python](ICT-04-ChimericArraysKinAggregation-Python.ipynb) | Tableaux chimériques & agrégation émergente : réparation bidirectionnelle (guérit l'impasse d'ICT-2) puis affinité « kin », mesurée honnêtement (sans degrés de liberté, pas d'agrégation) |
+| [ICT-03-RobustnessDelayedGratification-Python](ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb) | Robustesse & délai de gratification, étude quantitative : dégradation gracieuse face aux cellules défectueuses, distributions de récupération, comptage du délai de gratification |
+| [ICT-04-ChimericArraysKinAggregation-Python](ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb) | Tableaux chimériques & agrégation émergente : réparation bidirectionnelle (guérit l'impasse d'ICT-2) puis affinité « kin », mesurée honnêtement (sans degrés de liberté, pas d'agrégation) |
 | [ICT-05-CausalEmergence-Python](ICT-05-CausalEmergence-Python.ipynb) | Émergence causale : $\Phi$ et information effective aux échelles micro/macro, recherche systématique du coarse-graining (vrai `pyphi.macro`), émergence discriminante (Jansma & Hoel, 2025) |
 | [ICT-06-SortingToTPM-CausalEmergence-Python](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | Pont tri → TPM : chaîne de Markov estimée depuis les trajectoires de tri d'ICT-2, puis émergence causale multi-échelles avec l'outillage *Causal Emergence 2.0* (Hoel, 2025) au-delà de la borne de taille de PyPhi |
 | [ICT-07-ScaleFreeSignatures-Python](ICT-07-ScaleFreeSignatures-Python.ipynb) | Signatures scale-free & criticalité : détecter une loi de puissance *sans se faire avoir* (MLE de Hill, choix de $x_{\min}$, KS, à la Clauset et al.) ; étalon critique (branchement, exposant $3/2$) vs tri qui *paraît* sans échelle mais possède une taille caractéristique |

@@ -443,8 +443,8 @@ precede a ete **calcule par le vrai PyPhi**, puis narre tel quel.
 
 - [ICT-0-Framing.md](ICT-0-Framing.md) — cadrage de la serie ICT.
 - [IIT-01-IntroToPyPhi-Python.ipynb](../IIT-01-IntroToPyPhi-Python.ipynb) — TPM, sous-système, $\Phi$, CES.
-- [ICT-02-SelfSortingMorphogenesis-Python.ipynb](ICT-02-SelfSortingMorphogenesis-Python.ipynb) /
-  [ICT-03-RobustnessDelayedGratification-Python.ipynb](ICT-03-RobustnessDelayedGratification-Python.ipynb)
+- [ICT-02-SelfSortingMorphogenesis-Python.ipynb](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) /
+  [ICT-03-RobustnessDelayedGratification-Python.ipynb](ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb)
   — trajectoires et robustesse sur le toy-model de tri.
 - Zhang, Goldstein & Levin (2025), *Classical sorting algorithms as a model of
   morphogenesis*, [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).",,,,,,,,d375222ab876be92,,,,,,,,,,,,,,,
@@ -4679,7 +4679,7 @@ Sur ce banc d'essai, tout est calculable et enregistrable, et pourtant des comp�
 ",,,,,,,,3c73a89265e83776,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,cccddcc6,code,fr,8a29e4951e069ae1,"# --- Imports et configuration ---
 import sys, os
-sys.path.insert(0, os.path.abspath("".""))  # le package `ict/` est a cote de ce notebook
+sys.path.insert(0, os.path.dirname(os.path.abspath(""."")))  # acces au package `ict` pose a cote des notebooks (un niveau au-dessus)
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6773,7 +6773,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb,88dc0e55,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,9bcd075e,markdown,fr,8ad8d8c5a9632a23,"# ICT-3 — Robustesse & délai de gratification : étude quantitative
 
 > Série **ICT** (*Integrated Causal Trajectories*, Epic [#4588](https://github.com/jsboige/CoursIA/issues/4588)).
-> Prérequis : [ICT-0 (cadrage)](ICT-0-Framing.md) et [ICT-2 (modèle de base)](ICT-02-SelfSortingMorphogenesis-Python.ipynb).
+> Prérequis : [ICT-0 (cadrage)](../ICT-0-Framing.md) et [ICT-2 (modèle de base)](ICT-02-SelfSortingMorphogenesis-Python.ipynb).
 
 Le notebook [ICT-2](ICT-02-SelfSortingMorphogenesis-Python.ipynb) a introduit le **tri vu-cellule** (*cell-eye-view*)
 d'après Zhang, Goldstein & Levin (2025, [arXiv:2401.05375](https://arxiv.org/abs/2401.05375)) :
@@ -6796,7 +6796,7 @@ ICT-3 **les mesure**. On passe de l'anecdote (« regardez, ça marche encore »)
 3. **Quantification du délai de gratification** — comptage des épisodes de recul local, comparé entre
    `bubble` et `insertion`. *Quel algotype « sacrifie » le plus pour avancer ?*
 
-Le fil méthodologique de la série (cf [ICT-0](ICT-0-Framing.md)) : **exécuter, mesurer, narrer le
+Le fil méthodologique de la série (cf [ICT-0](../ICT-0-Framing.md)) : **exécuter, mesurer, narrer le
 résultat réel** — pas le résultat espéré.",,,,,,,,8ad8d8c5a9632a23,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,lev1n-barr1ers-br1dge,markdown,fr,1a9c3c341c9bb110,"**Pourquoi ces deux compétences constituent un _test d'intelligence_.** Avant de les mesurer,
 rappelons ce qu'on mesure au juste. Michael Levin — dont le programme de l'**intelligence diverse**
@@ -6811,7 +6811,7 @@ exogène **sont les barrières** ; la dégradation gracieuse (§1), le temps de 
 comptage du délai de gratification (§3) **mesurent l'ingéniosité** du substrat à les contourner — le
 vocabulaire cognitif n'est pas décoratif, il nomme la grandeur que chaque expérience sonde. Cadrage
 complet (spectre de la cognition, cône de lumière cognitif, « revendications-protocole ») :
-**[ICT-0 — Pourquoi parler de « compétences » ?](ICT-0-Framing.md)**.",,,,,,,,1a9c3c341c9bb110,,,,,,,,,,,,,,,
+**[ICT-0 — Pourquoi parler de « compétences » ?](../ICT-0-Framing.md)**.",,,,,,,,1a9c3c341c9bb110,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,f322d4f3,markdown,fr,6a4d36ac91bd92dd,"## 0. Mise en place
 
 On réutilise le package `ict/` livré avec ICT-2 (aucune dépendance lourde : bibliothèque standard +
@@ -6826,7 +6826,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # le package ict/ est a cote de ce notebook
-sys.path.insert(0, os.path.abspath("".""))
+sys.path.insert(0, os.path.dirname(os.path.abspath(""."")))
 
 from ict.self_sorting import SelfSortingArray, ALGOTYPES
 from ict import sorting_metrics as m
@@ -7118,13 +7118,13 @@ Ces compétences — robustesse, réparation, patience — ne sont **programmée
 de la dynamique locale, ce qui est précisément la thèse de Zhang, Goldstein & Levin : un substrat minimal
 exhibe des compétences « basales » qu'on associe d'ordinaire à des agents cognitifs.
 
-**Suite de la série.** [ICT-4](ICT-0-Framing.md) abordera l'**agrégation par algotype** (« kin ») avec un
+**Suite de la série.** [ICT-4 >>](ICT-04-ChimericArraysKinAggregation-Python.ipynb) abordera l'**agrégation par algotype** (« kin ») avec un
 jeu de règles plus riche — le modèle minimal d'ICT-2/3 ne la reproduit pas (ses règles uni-directionnelles
-produisent des impasses de coordination). [ICT-5/6](ICT-0-Framing.md) relieront ces trajectoires de tri à
+produisent des impasses de coordination). [ICT-5/6](../ICT-0-Framing.md) relieront ces trajectoires de tri à
 l'**émergence causale multi-échelle** (TPM → PyPhi).
 
 ### Voir aussi
-- [ICT-0 — Cadrage de la série](ICT-0-Framing.md)
+- [ICT-0 — Cadrage de la série](../ICT-0-Framing.md)
 - [ICT-2 — Self-sorting arrays : le tri comme morphogenèse](ICT-02-SelfSortingMorphogenesis-Python.ipynb)
 - Zhang, Goldstein & Levin, *Classical sorting algorithms as a model of morphogenesis*, Adaptive Behavior 2025 — [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).",,,,,,,,4d39a19213a8f2b5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,d472f43f,markdown,fr,03914bf27941744e,"# ICT-5 : Émergence causale — quelle échelle décrit le mieux un système ?
@@ -7436,7 +7436,7 @@ littérature multi-échelle.
 - [ICT-1 — Trajectoires de $\Phi$](ICT-01-PhiTrajectories-Python.ipynb) : comment $\Phi$ varie le long
   d'une trajectoire d'états (à échelle fixe).
 - **[ICT-6 — Pont tri → TPM → PyPhi](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** : construire la TPM d'une simulation de
-  [tri-morphogenèse](ICT-02-SelfSortingMorphogenesis-Python.ipynb) puis lui appliquer cette analyse
+  [tri-morphogenèse](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) puis lui appliquer cette analyse
   d'émergence — relier les deux piliers de la série.
 - [ICT-0 — Cadrage](ICT-0-Framing.md) : place de ce notebook dans la feuille de route.
 
@@ -7450,7 +7450,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipyn
 
 > Serie **ICT** (*Integrated Causal Trajectories*), Epic #4588. Voir le [cadrage ICT-0](ICT-0-Framing.md).
 > Ce notebook construit le **pont tri -> TPM** annonce dans la feuille de route : il transforme les
-> trajectoires de [self-sorting d'ICT-2](ICT-02-SelfSortingMorphogenesis-Python.ipynb) en une **chaîne de
+> trajectoires de [self-sorting d'ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) en une **chaîne de
 > Markov** etat-a-etat, puis y mesure l'**emergence causale** avec l'outillage moderne de
 > *Causal Emergence 2.0* (Erik Hoel, [arXiv:2503.13395](https://arxiv.org/abs/2503.13395), 2025).",,,,,,,,3085e77d9906b0cf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-intro,markdown,fr,edf814c8d07bf9eb,"## Pourquoi ICT-6 ? La limite de PyPhi, et ce qui passe a l'echelle
@@ -7508,7 +7508,7 @@ print(""primitives CE 2.0 :"", [f for f in (""determinism"", ""degeneracy"", ""s
       ""effectiveness"", ""effective_information"", ""greedy_apportionment"", ""emergent_complexity"")])",,,,,,,,47e3e11ca82f2438,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-recall-md,markdown,fr,39d85bee51347cd7,"## 1. Rappel — un système qui se trie lui-même
 
-Dans [ICT-2](ICT-02-SelfSortingMorphogenesis-Python.ipynb), chaque élément du tableau est une **cellule
+Dans [ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb), chaque élément du tableau est une **cellule
 autonome** : elle ne voit que sa voisine et applique une règle locale (`bubble` regarde a droite,
 `insertion` regarde a gauche). L'ordre global n'est impose par personne — il **emerge** des decisions
 locales. Le tri devient une **trajectoire** dans l'espace des configurations : exactement l'objet
@@ -7819,7 +7819,7 @@ niveau d'echelles au **do-calculus** (la même intervention uniforme `do` levee 
 ### Voir aussi
 
 - [ICT-0 — cadrage de la serie](ICT-0-Framing.md) — feuille de route, articles fondateurs.
-- [ICT-2 — self-sorting morphogenesis](ICT-02-SelfSortingMorphogenesis-Python.ipynb) — le système source.
+- [ICT-2 — self-sorting morphogenesis](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) — le système source.
 - [ICT-5 — emergence causale (pyphi.macro)](ICT-05-CausalEmergence-Python.ipynb) — l'approche bornee complementaire.
 - [Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) — l'EI estimée ici repose sur des **interventions uniformes** (`do(s)` sur chaque état, maximum-entropy) : le pont donne l'armature formelle de ce même opérateur `do` (échelle de Pearl + 3 règles, exécutées sur `dowhy`) et relie cette série à Tweety-11, Infer-5 et PyMC-5.
 - Erik Hoel, *Causal Emergence 2.0*, [arXiv:2503.13395](https://arxiv.org/abs/2503.13395), 2025.",,,,,,,,93fa8ccd480b41b2,,,,,,,,,,,,,,,
@@ -7984,7 +7984,7 @@ multi-echelle nette est un accident finement règle, pas la règle.",,,,,,,,a637
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,1236161c,markdown,fr,723b5de0b597f012,"## 4. Retour au tri auto-organise : a queue lourde, mais *pas* scale-free
 
 Reprenons le système vedette de la serie : le **tri auto-organise** vue-cellule
-d'[ICT-2](ICT-02-SelfSortingMorphogenesis-Python.ipynb) (tableaux chimeriques alternant
+d'[ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) (tableaux chimeriques alternant
 les algotypes `bubble`/`insertion`). On en extrait une signature naturelle : le
 **deplacement net** de chaque cellule, $\lvert {\rm position\ initiale} - {\rm position\
 finale} \rvert$, sur de nombreuses permutations aleatoires. Certaines cellules voyagent
@@ -8995,9 +8995,9 @@ verdict est, de plus en plus, **régime-dépendant** (ICT-10 → ICT-13).
 |-------|-------------------|-----------------------|--------------------------|
 | **[ICT-0](ICT-0-Framing.md)** | De l'état (IIT) à la trajectoire : quel cadre ? | Cadre méthodologique : *mesurer ce que le modèle fait vraiment, pas ce qu'on espérait* ; deux strates ; contrôle dégénéré obligatoire | doc de cadrage (2 articles fondateurs : Levin ; Jansma & Hoel) |
 | **[ICT-1](ICT-01-PhiTrajectories-Python.ipynb)** | $\Phi$ a-t-il un paysage, une trajectoire, une robustesse ? | OUI aux trois : $\Phi$ **pulse** le long de l'attracteur et se **répare** (vrai PyPhi) | AND/OR pic $\Phi$=2.31 vs 0.19 (amplitude 2.12) ; XOR plat 1.875 ; attracteur cycle longueur 3 |
-| **[ICT-2](ICT-02-SelfSortingMorphogenesis-Python.ipynb)** | Le tri est-il une morphogenèse à compétences ? | Robustesse + délai de gratification + auto-réparation OUI ; agrégation « kin » **NON** (impasses) → renvoi ICT-4 | tri homogène 315 pas / 68 swaps ; chimère sortedness 0.784, 4 impasses résiduelles |
-| **[ICT-3](ICT-03-RobustnessDelayedGratification-Python.ipynb)** | Ces compétences se quantifient-elles ? | OUI : dégradation gracieuse, réparation **24/24**, délai ~90 épisodes | @50 % lésion passif 0.59–0.62 vs obstacle 0.53 ; délai bubble 91.4 / insertion 89.8 |
-| **[ICT-4](ICT-04-ChimericArraysKinAggregation-Python.ipynb)** | Quel enrichissement minimal fait émerger l'agrégation « kin » ? | Réparation bidirectionnelle guérit l'impasse mais **n'agrège pas** ; l'agrégation émerge **seulement** dans les degrés de liberté laissés par le tri | copies=1 (liberté nulle) → agrégation kin ≈ 0 ; décolle dès copies ≥ 2 ; 40/40 → 0/40 non triés |
+| **[ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb)** | Le tri est-il une morphogenèse à compétences ? | Robustesse + délai de gratification + auto-réparation OUI ; agrégation « kin » **NON** (impasses) → renvoi ICT-4 | tri homogène 315 pas / 68 swaps ; chimère sortedness 0.784, 4 impasses résiduelles |
+| **[ICT-3](ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb)** | Ces compétences se quantifient-elles ? | OUI : dégradation gracieuse, réparation **24/24**, délai ~90 épisodes | @50 % lésion passif 0.59–0.62 vs obstacle 0.53 ; délai bubble 91.4 / insertion 89.8 |
+| **[ICT-4](ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb)** | Quel enrichissement minimal fait émerger l'agrégation « kin » ? | Réparation bidirectionnelle guérit l'impasse mais **n'agrège pas** ; l'agrégation émerge **seulement** dans les degrés de liberté laissés par le tri | copies=1 (liberté nulle) → agrégation kin ≈ 0 ; décolle dès copies ≥ 2 ; 40/40 → 0/40 non triés |
 | **[ICT-5](ICT-05-CausalEmergence-Python.ipynb)** | L'émergence causale ($\Phi_\text{macro} > \Phi_\text{micro}$) est-elle réelle et systématique ? | **Discriminante**, pas systématique : absente sur des systèmes déjà micro-intégrés | Hoel 0.114 → 0.597 (**+0.483**) ; XOR **−1.375** ; basic\_network **−1.792** |
 | **[ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** | Peut-on porter l'émergence au tri au-delà de PyPhi (CE 2.0) ? | OUI ; le macro *intuitif* (niveau de tri) **échoue**, seul l'apportionnement glouton trouve l'échelle | micro EI 3.29 bits ; macro-tri gain **−0.034** (NON) ; glouton effectiveness 0.717 → 0.826 (**+0.109**) |
 | **[ICT-7](ICT-07-ScaleFreeSignatures-Python.ipynb)** | Le tri auto-organisé est-il scale-free ? | **NON** : échelle caractéristique (la taille $n$, révélée par effondrement d'échelle) ; le scale-free est rare et réglé | branchement critique $\mu$=1 : $\alpha$=1.58, KS=0.017, $p$=0.625 ($\tau$=3/2) ; tri **rejeté** $p$-GoF=0.0 |
@@ -9138,7 +9138,7 @@ On instancie les trois trajectoires avec la graine représentative `SEED0`. Chac
 ",,,,,,,,58902fb68cc0b81f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb,ac4cdea3,markdown,fr,713006d52f5558eb,"### S1 — le tri auto-organisé (strate 1)
 
-Le banc d'entrée de la série ([ICT-2](ICT-02-SelfSortingMorphogenesis-Python.ipynb)/[ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)) :
+Le banc d'entrée de la série ([ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb)/[ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)) :
 plusieurs tris distribués, résumés par leur **nombre d'inversions** à chaque pas (macro-état
 grossier, borné par $n(n-1)/2$).
 ",,,,,,,,713006d52f5558eb,,,,,,,,,,,,,,,
@@ -10987,7 +10987,7 @@ print(""Exercice 3 a completer -- voir l'Exemple guide 3 pour wolfram_trajectory
 ",,,,,,,,ccd5190abdfe9734,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,cell-741b486e,markdown,fr,0547786a62535095,"## Repères IIT — sous-systèmes et structures cause-effet
 
-> Vocabulaire IIT nécessaire pour interpréter ICT-2 (self-sorting morphogenesis) en termes d'information intégrée. Pour Φ/TPM/partition (notions de base), voir [ICT-1](ICT-01-PhiTrajectories-Python.ipynb) § Repères IIT canoniques. Pour le texte fondateur, voir [ICT-0-Annexe](ICT-0-Annexe-IntegratedComplexityTheory.md) ($\Phi_{\text{dyn}}$). Source primaire : [IIT-1 — Intro to PyPhi](../IIT-01-IntroToPyPhi-Python.ipynb) + [IIT-2 — Advanced Topics](../IIT-02-AdvancedTopics-Python.ipynb).
+> Vocabulaire IIT nécessaire pour interpréter ICT-2 (self-sorting morphogenesis) en termes d'information intégrée. Pour Φ/TPM/partition (notions de base), voir [ICT-1](../ICT-01-PhiTrajectories-Python.ipynb) § Repères IIT canoniques. Pour le texte fondateur, voir [ICT-0-Annexe](../ICT-0-Annexe-IntegratedComplexityTheory.md) ($\Phi_{\text{dyn}}$). Source primaire : [IIT-1 — Intro to PyPhi](../../IIT-01-IntroToPyPhi-Python.ipynb) + [IIT-2 — Advanced Topics](../../IIT-02-AdvancedTopics-Python.ipynb).
 
 ICT-1 calculait $\Phi$ **état par état** sur le système entier. ICT-2 soulève une question plus fine : **quelles parties du tableau qui se trie sont causalement responsables de ce tri ?** Cela exige deux notions que ICT-1 n'introduisait pas :
 
@@ -10999,7 +10999,7 @@ ICT-1 calculait $\Phi$ **état par état** sur le système entier. ICT-2 soulèv
 
 **Lecture IIT de ICT-2.** Le tableau qui se trie est un système $\mathcal{S}$ à $N$ cellules. À chaque état $s_t$, le **tri en cours** est un certain motif (zones homogènes + frontière). La question IIT est : *quelle est la valeur de $\Phi_{\mathrm{CE}}$ du système $\mathcal{S}$ dans cet état ?* Si $\Phi_{\mathrm{CE}} > 0$, le tableau est **causalement intégré** au-dessus de ses parties — la morphogenèse n'est pas un artefact local mais une structure globale qui contraint passé et futur. Si on bipartitionne en deux moitiés du tableau, on mesure l'information que chaque moitié génère *indépendamment* ; le MIP dit « la partition qui enlève le moins d'intégration possible » — c'est précisément la frontière morphologique. **Un tableau déjà trié a un $\Phi_{\mathrm{CE}}$ plus faible qu'un tableau en train de se trier** : une fois l'ordre établi, les cellules n'ont plus d'information à générer les unes sur les autres (leur état futur est fixé par la règle locale). Un tableau **chimerique** (cell 14-16) qui ne se trie pas, lui, conserve un $\Phi_{\mathrm{CE}}$ non trivial mais reste **piégé** dans un attracteur local — information présente, intégration sans progrès : c'est exactement le type de distinction que la triad IIT/ICT permet de poser.
 
-Ce notebook, comme ICT-1, **n'exécute pas PyPhi** sur les tableaux (le code resterait intraitable pour $N > 5$). Il introduit les concepts pour que [ICT-6 (Sorting-to-TPM bridge)](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) puisse les opérationnaliser sur les simulations.
+Ce notebook, comme ICT-1, **n'exécute pas PyPhi** sur les tableaux (le code resterait intraitable pour $N > 5$). Il introduit les concepts pour que [ICT-6 (Sorting-to-TPM bridge)](../ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) puisse les opérationnaliser sur les simulations.
 ",,,,,,,,0547786a62535095,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb,8928045b,markdown,fr,08f17103207c190e,"# Tete-a-tete SAE <-> J-space -- les deux lentilles du workspace global sur Qwen3.5-9B-Base (couche 16)
 
@@ -22518,11 +22518,11 @@ MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,ict-bridge-cadr
 **Du côté ICT — le cas le plus net.** Le coarse-graining est *la* mécanique de changement d'échelle dont l'ICT se sert pour parler de [dissolution des scalaires](../../docs/ict/dissolution-scalaires.md) : ce qui arrive à $\Phi$, F, K quand on change de strate. La [cartographie en tresse](../../docs/ict/tresse-cartographie.md) situe ce geste parmi les quatre lentilles (Thom / Grothendieck / Schmidhuber / Friston).",,,,,,,,1cf8f8e2ca23cac9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,ict-bridge-transition,markdown,fr,ca2a5a01a5dcb119,"**Où va la suite côté ICT.** Les calculs PyPhi s'arrêtent ici ; le fil ICT continue dans la documentation. Entrée recommandée : l'[index ICT](../../docs/ict/README.md) et ses distillations, en partant de [`dissolution-scalaires.md`](../../docs/ict/dissolution-scalaires.md) (le fil qui prolonge directement ce notebook) puis [`tresse-cartographie.md`](../../docs/ict/tresse-cartographie.md) (la carte des quatre lentilles).",,,,,,,,ca2a5a01a5dcb119,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb,96aa2f7a,markdown,fr,01c173b864cf9209,> **Statut épistémique** — **Établi** : La trajectoire de Φ oscille sans asymptote unique sur l'attracteur. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,01c173b864cf9209,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,c03dd6c7,markdown,fr,d11aa9658ad510fb,"> **Statut épistémique** — **Établi** : Le tri auto-organisé exhibe une *compétence for free* (auto-réparation, délai de gratification). Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,d11aa9658ad510fb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,e7aa6b3b,markdown,fr,1ed02d3e6cb1e35a,> **Statut épistémique** — **Établi** : La dégradation gracieuse et le délai de gratification sont quantifiables. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,1ed02d3e6cb1e35a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,c03dd6c7,markdown,fr,d11aa9658ad510fb,"> **Statut épistémique** — **Établi** : Le tri auto-organisé exhibe une *compétence for free* (auto-réparation, délai de gratification). Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).",,,,,,,,d11aa9658ad510fb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,e7aa6b3b,markdown,fr,1ed02d3e6cb1e35a,> **Statut épistémique** — **Établi** : La dégradation gracieuse et le délai de gratification sont quantifiables. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).,,,,,,,,1ed02d3e6cb1e35a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-00,markdown,fr,7c71f6bf658572a8,"# ICT-4 — Tableaux chimériques & agrégation émergente (« kin »)
 
-> Série **Integrated Causal Trajectories** ([ICT-0 — cadrage](ICT-0-Framing.md), Epic **#4588**).
+> Série **Integrated Causal Trajectories** ([ICT-0 — cadrage](../ICT-0-Framing.md), Epic **#4588**).
 > Ce notebook prolonge directement **[ICT-2 — Le tri comme morphogenèse](ICT-02-SelfSortingMorphogenesis-Python.ipynb)**.
 
 Dans [ICT-2](ICT-02-SelfSortingMorphogenesis-Python.ipynb), un tableau dont les cellules se trient elles-mêmes — chacune suivant la règle locale de son *algotype* (`bubble` regarde à droite, `insertion` regarde à gauche) — reproduit fidèlement plusieurs **compétences inattendues** du papier de Zhang, Goldstein & Levin (2025) : robustesse aux cellules défectueuses, délai de gratification, auto-réparation. Mais une compétence *positive* manquait à l'appel : l'**agrégation par « kin »**, ce penchant qu'ont les cellules de même algotype à se regrouper pendant le voyage, sans que cela soit encodé comme objectif. Le modèle minimal produisait au contraire des **impasses** aux frontières `insertion | bubble`. ICT-2 l'a dit honnêtement et a renvoyé l'agrégation à **ce notebook**, « avec un jeu de règles plus riche ».
@@ -22536,7 +22536,7 @@ Nous procédons en trois temps :
 3. **Affinité « kin »** : un second élan, *neutre pour l'ordre*, qui s'exprime dans les **degrés de liberté** laissés par le tri. L'agrégation émerge alors — et nous **mesurons** où, quand, et à quelles conditions.
 
 Le fil rouge de la série reste la **discipline d'honnêteté** : exécuter, mesurer, et *narrer le résultat réel* plutôt que celui qu'on espérait.",,,,,,,,7c71f6bf658572a8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,statut-epistemique,markdown,fr,1b10903dbbf6fac9,> **Statut épistémique** — **Établi** : L'agrégation « kin » positive émerge **seulement** avec degrés de liberté. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,1b10903dbbf6fac9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,statut-epistemique,markdown,fr,1b10903dbbf6fac9,> **Statut épistémique** — **Établi** : L'agrégation « kin » positive émerge **seulement** avec degrés de liberté. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).,,,,,,,,1b10903dbbf6fac9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-01,markdown,fr,e559de4a354febef,"## Avant de commencer : qui est chimerique, et ce que le « kin » ajoute vraiment
 
 Une question de lecteur ([#16329](https://github.com/jsboige/CoursIA/issues/16329)) merite d'etre
@@ -22546,13 +22546,13 @@ faire et `bubble` et `insertion` selon ses voisins ?*
 ### Non — et c'est le TABLEAU qui est chimerique, pas la cellule
 
 Chaque cellule porte **un** algotype, `bubble` *ou* `insertion`, fixe a la construction et **jamais
-reecrit ensuite** ([`ict/self_sorting.py`](ict/self_sorting.py), champ `Cell.algotype`). Ce qui
+reecrit ensuite** ([`ict/self_sorting.py`](../ict/self_sorting.py), champ `Cell.algotype`). Ce qui
 melange les deux, c'est **le tableau** : c'est exactement le sens du mot « chimerique » dans le titre
 de ce notebook.
 
 Une cellule-bubble reste bubble quels que soient ses voisins. Elle consulte leurs **valeurs** pour
 decider **s'il faut permuter** — jamais **quel algorithme appliquer**, qui est deja fixe par son
-propre algotype ([`ict/kin_sorting.py`](ict/kin_sorting.py), `_sort_target`). Ce qui bouge au fil de
+propre algotype ([`ict/kin_sorting.py`](../ict/kin_sorting.py), `_sort_target`). Ce qui bouge au fil de
 l'execution, ce n'est donc pas le type des cellules : c'est leur **disposition**, puisque permuter
 deux cellules deplace aussi leurs algotypes.
 
@@ -22578,7 +22578,7 @@ pour le semblable est bel et bien inscrite. Elle est simplement **locale** — s
 des deux positions permutees pesent dans la decision.
 
 Ce qui n'est ecrit nulle part, c'est le **resultat** : des domaines etendus de meme algotype, mesures
-par un indice **normalise contre l'arrangement aleatoire** ([`ict/sorting_metrics.py`](ict/sorting_metrics.py),
+par un indice **normalise contre l'arrangement aleatoire** ([`ict/sorting_metrics.py`](../ict/sorting_metrics.py),
 `aggregation_index`). Aucune cellule ne voit cet indice et aucune ne l'optimise — le module de la
 dynamique ne l'importe meme pas. Il n'est calcule que par l'observateur, apres coup.
 
@@ -22589,7 +22589,7 @@ inscrit (une comparaison entre deux cases) et ce qui est constate (une structure
 ",,,,,,,,e559de4a354febef,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-02,code,fr,2ab58cc374f570b8,"# --- Imports et configuration ---
 import sys, os, random
-sys.path.insert(0, os.path.abspath("".""))  # le package `ict/` est a cote de ce notebook
+sys.path.insert(0, os.path.dirname(os.path.abspath(""."")))  # acces au package `ict` pose a cote des notebooks (un niveau au-dessus)
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22723,7 +22723,7 @@ plt.axhline(0, color=""grey"", lw=0.8, ls=""--"")
 plt.xlabel(""pas de simulation""); plt.ylabel(""indice d'agregation 'kin'"")
 plt.title(""L'agregation emerge dans les degres de liberte (mouvements kin seuls)"")
 plt.show()",,,,,,,,4775ac118c4fe28e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-13,markdown,fr,93579d072aa667b8,"**Interprétation — un ordre secondaire dans le jeu laissé par le premier.** La courbe monte **de façon monotone** : chaque mouvement « kin » augmente strictement le voisinage entre semblables, jamais ne le défait. L'agrégation s'installe **sans contrôleur global** et **sans toucher au tri** — elle vit entièrement dans les degrés de liberté que l'ordre des valeurs laisse ouverts. C'est une seconde couche d'organisation causale qui s'installe *par-dessus* la première, là où celle-ci est indifférente. Le motif est profond : la série ICT le retrouvera à l'échelle macro (émergence causale, [ICT-5](ICT-05-CausalEmergence-Python.ipynb) / [ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)).",,,,,,,,93579d072aa667b8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-13,markdown,fr,93579d072aa667b8,"**Interprétation — un ordre secondaire dans le jeu laissé par le premier.** La courbe monte **de façon monotone** : chaque mouvement « kin » augmente strictement le voisinage entre semblables, jamais ne le défait. L'agrégation s'installe **sans contrôleur global** et **sans toucher au tri** — elle vit entièrement dans les degrés de liberté que l'ordre des valeurs laisse ouverts. C'est une seconde couche d'organisation causale qui s'installe *par-dessus* la première, là où celle-ci est indifférente. Le motif est profond : la série ICT le retrouvera à l'échelle macro (émergence causale, [ICT-5](../ICT-05-CausalEmergence-Python.ipynb) / [ICT-6](../ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)).",,,,,,,,93579d072aa667b8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-14,code,fr,c39387002f1b63f0,"# --- Exemple guide : depuis un tableau chimerique melange (tri ET agregation) ---
 vals, algos = value_classes(n_classes=6, copies=4, seed=3)
 arr_on  = KinSortingArray(vals, algotypes=algos, seed=3, kin_affinity=True ).run()
@@ -22848,8 +22848,8 @@ La leçon dépasse le tri : une organisation causale **secondaire** peut s'insta
 
 ### Ponts avec le reste de la série
 - **[ICT-2 — Self-sorting morphogenesis](ICT-02-SelfSortingMorphogenesis-Python.ipynb)** : le modèle minimal, ses compétences, et l'impasse que ce notebook lève.
-- **[ICT-5 — Émergence causale](ICT-05-CausalEmergence-Python.ipynb)** & **[ICT-6 — Pont tri → TPM](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** : la même idée — un ordre plus lisible dans les degrés de liberté du niveau inférieur — formalisée comme *causal emergence* (Hoel).
-- **[ICT-7 — Signatures scale-free & fractales](ICT-07-ScaleFreeSignatures-Python.ipynb)** : les motifs multi-échelles que ces dynamiques engendrent.
+- **[ICT-5 — Émergence causale](../ICT-05-CausalEmergence-Python.ipynb)** & **[ICT-6 — Pont tri → TPM](../ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** : la même idée — un ordre plus lisible dans les degrés de liberté du niveau inférieur — formalisée comme *causal emergence* (Hoel).
+- **[ICT-7 — Signatures scale-free & fractales](../ICT-07-ScaleFreeSignatures-Python.ipynb)** : les motifs multi-échelles que ces dynamiques engendrent.
 
 ### Références
 - Zhang, Goldstein & Levin, *Classical sorting algorithms as a model of morphogenesis*, Adaptive Behavior, 2025 — [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).
@@ -41421,10 +41421,10 @@ Ce que ce toy model a rendu **mesurable**, sans aucun contrôleur global :
 Ce sont les premières **signatures de trajectoires causales intégrées** — l'objet de la série ICT.
 
 ### Ponts avec le reste du cours
-- **[IIT-1 — Intro to PyPhi](../IIT-01-IntroToPyPhi-Python.ipynb)** et **[IIT-2 Advanced Topics](../IIT-02-AdvancedTopics-Python.ipynb)** : les structures causales *à un instant* (TPM, Φ, CES) dont ICT étudie l'évolution.
-- **[ICT-1 — Φ-trajectories](ICT-01-PhiTrajectories-Python.ipynb)** : appliquer ces idées de trajectoire à Φ lui-même.
+- **[IIT-1 — Intro to PyPhi](../../IIT-01-IntroToPyPhi-Python.ipynb)** et **[IIT-2 Advanced Topics](../../IIT-02-AdvancedTopics-Python.ipynb)** : les structures causales *à un instant* (TPM, Φ, CES) dont ICT étudie l'évolution.
+- **[ICT-1 — Φ-trajectories](../ICT-01-PhiTrajectories-Python.ipynb)** : appliquer ces idées de trajectoire à Φ lui-même.
 - **[ICT-4 — Chimeric arrays & emergent aggregation](ICT-04-ChimericArraysKinAggregation-Python.ipynb)** : le jeu de règles plus riche qui reproduit l'agrégation « kin » du papier.
-- **[ICT-6 — Sorting-to-TPM bridge](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** : transformer ces simulations en chaînes de Markov, puis en TPM analysables par PyPhi et la *causal emergence*.
+- **[ICT-6 — Sorting-to-TPM bridge](../ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** : transformer ces simulations en chaînes de Markov, puis en TPM analysables par PyPhi et la *causal emergence*.
 
 ### Références
 - Zhang, Goldstein & Levin, *Classical sorting algorithms as a model of morphogenesis*, Adaptive Behavior, 2025 — [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).
