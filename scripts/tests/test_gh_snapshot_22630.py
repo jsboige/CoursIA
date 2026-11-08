@@ -566,6 +566,66 @@ def test_voie_en_processus_nomme_linstantane_strict_perime(
     assert "perimes: 202" in err
 
 
+def test_voie_en_processus_nomme_le_quota_rest_comme_cause(
+        monkeypatch, capsys):
+    """#22983 v2 -- manquant/perime est le SYMPTOME : quand la phase reseau
+    a echoue sur quota REST (mesure 08/11 : 209 fetch_failures « rate limit
+    exceeded »), la CAUSE doit etre nommee -- un quota ne se soigne pas
+    comme un TTL, et le refus fail-CLOSED du tapis devient auto-diagnosticable."""
+    n_perime = 202
+    stamps = {str(n_perime): time.time() - gs.DEFAULT_TTL_SECONDS - 60}
+    snap = {"issues": {}, "prs": {},
+            "meta": {"comment_stamps": stamps,
+                     "fetch_failures": {
+                         str(n_perime): {
+                             "at": time.time() - 600,
+                             "error": "gh api repos/jsboige/CoursIA/issues/"
+                                      "202/comments: gh: API rate limit "
+                                      "exceeded for user ID 3159389"}}}}
+    fake = types.ModuleType("coordination.gh_snapshot")
+    fake.load_snapshot = lambda _repo: snap
+    fake.serves = gs.serves
+    fake.DEFAULT_TTL_SECONDS = gs.DEFAULT_TTL_SECONDS
+    _redirige_gh_snapshot(monkeypatch, fake)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", snap)
+    monkeypatch.setattr(pig, "_claim_reader_module", lambda: clc)
+    assert pig._claims_in_process(
+        [n_perime], "lane", local_only=True) is None
+    err = capsys.readouterr().err
+    assert "[22983]" in err
+    assert "echecs quota REST < 1 h : 1" in err
+    assert "#202" in err          # l'exemple cite le numero echoue
+
+
+def test_voie_en_processus_quota_ancien_ou_autre_erreur_non_cite(
+        monkeypatch, capsys):
+    """Borne de la releve : un echec quota de plus d'une heure, ou un echec
+    d'une AUTRE cause (404, reseau), n'est pas cite -- il ne dit rien de la
+    panne presente et polluerait le diagnostic."""
+    n_perime = 202
+    stamps = {str(n_perime): time.time() - gs.DEFAULT_TTL_SECONDS - 60}
+    snap = {"issues": {}, "prs": {},
+            "meta": {"comment_stamps": stamps,
+                     "fetch_failures": {
+                         "111": {"at": time.time() - 7200,
+                                 "error": "gh: API rate limit exceeded"},
+                         str(n_perime): {"at": time.time() - 300,
+                                         "error": "gh: Not Found (HTTP 404)"}}}}
+    fake = types.ModuleType("coordination.gh_snapshot")
+    fake.load_snapshot = lambda _repo: snap
+    fake.serves = gs.serves
+    fake.DEFAULT_TTL_SECONDS = gs.DEFAULT_TTL_SECONDS
+    _redirige_gh_snapshot(monkeypatch, fake)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", snap)
+    monkeypatch.setattr(pig, "_claim_reader_module", lambda: clc)
+    assert pig._claims_in_process(
+        [n_perime], "lane", local_only=True) is None
+    err = capsys.readouterr().err
+    assert "[22983]" in err
+    assert "echecs quota REST < 1 h : 0" in err
+    assert "#111" not in err      # trop ancien : pas cite
+
+
 def test_check_claims_rend_error_si_la_voie_en_processus_echoue(monkeypatch):
     """Plus de repli : hors STRICT, l'indisponibilite rend `ERROR`.
 
