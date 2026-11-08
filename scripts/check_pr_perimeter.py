@@ -617,6 +617,7 @@ def check_assertion(
                 and not _count_is_out_of_scope_annotation(scan_target, mm)
                 and not _count_is_negated(scan_target, mm)
                 and not _count_is_other_pr(scan_target, mm)
+                and not _count_is_variant_mention(scan_target, mm, block)
             ),
             None,
         )
@@ -700,6 +701,8 @@ def check_assertion(
             pass
         elif _word_form_is_anaphoric_reference(scan_target):
             pass
+        elif _word_form_is_variant_mention(scan_target, block):
+            pass
         else:
             problems.append(
                 f"l'assertion pretend {word_count} fichier(s), la liste effective en compte {len(files)} : "
@@ -721,7 +724,9 @@ def check_assertion(
     # ce garde, la sonde --assert de l'issue resterait rouge avec un second
     # message apres la disparition du mismatch.
     non_claim_count = any(
-        _count_is_negated(scan_target, mm) or _count_is_other_pr(scan_target, mm)
+        _count_is_negated(scan_target, mm)
+        or _count_is_other_pr(scan_target, mm)
+        or _count_is_variant_mention(scan_target, mm, block)
         for mm in COUNT_CLAIM.finditer(scan_target)
     )
     if (
@@ -1362,6 +1367,100 @@ def _word_form_is_anaphoric_reference(text: str) -> bool:
     window = text[:m.start()][-500:]
     named = _NAMED_FILE_BODY.findall(window)
     return any(a or b for a, b in named)
+
+
+# #25091 -- compte semantique de VARIANTES FR/EN. « l'anglais dans les deux
+# fichiers » (fondateur #24566, depuis reformule dans le corps en « anglais
+# des deux cotes (FR / EN) ») ne denombre pas le perimetre : les deux
+# fichiers sont les jumeaux linguistiques d'un meme contenu (convention
+# #4980), pas deux entrees de la liste effective du diff. Le mot-form
+# trigger (« deux fichiers » -> 2) confrontait ce 2 a la liste et rougissait
+# une phrase vraie. Distinct de #16085 (deixse anaphorique : l'antecedent
+# nomme des fichiers au paragraphe precedent) -- ici la co-reference est
+# portee par le MARQUEUR BILINGUE ; distinct de
+# _word_form_is_measurement_result (aucun resultat mesure en amont).
+#
+# Gardes FN, toutes requises : (1) forme DEFINIE adjacente au cardinal
+# (« les deux fichiers ») -- « deux fichiers » nu reste un compte
+# confronte ; cardinal borne a deux|trois, closed list fail-loud au-dela ;
+# (2) pas de mot de scope fort sur la ligne (« Perimetre : les deux
+# fichiers » reste bloquant) ; (3) marqueur bilingue REQUIS sur la ligne ou
+# son paragraphe -- « FR »/« EN » en capitales seulement (« en »/« fr » nus
+# sont des mots courants), ou vocabulaire de jumeaux/traduction ; (4) aucun
+# nom de fichier sur la ligne -- une ligne qui enumere des chemins annonce
+# un perimetre, ce n'est pas une mention de variantes.
+_VARIANT_DEM_CARD = re.compile(
+    r"\b(?:les|des)\s+(?:deux|trois)\s+fichiers?\b"
+    r"|\bthe\s+(?:two|three)\s+files?\b",
+    re.IGNORECASE,
+)
+# Case-sensitive on purpose: only the FR/EN language TAGS count. Lowercase
+# "en" is a French preposition ("en cours") and "fr" a syllable in prose;
+# matching them case-insensitively would whitelist half the corpus.
+_VARIANT_FR_EN_TAG = re.compile(r"\b(?:FR|EN)\b")
+_VARIANT_BILINGUAL_WORD = re.compile(
+    r"\b(?:fran[çc]ais|anglais|french|english|jumeaux?|jumelles?|twins?|"
+    r"siblings?|bilingues?|variantes?|variants?|traduction|translation)\b",
+    re.IGNORECASE,
+)
+
+
+def _has_bilingual_context(surface: str) -> bool:
+    """#25091: True when the surface carries an explicit FR/EN pairing
+    marker -- the capitalised FR/EN tag or the twins/translation
+    vocabulary."""
+    return bool(
+        _VARIANT_FR_EN_TAG.search(surface)
+        or _VARIANT_BILINGUAL_WORD.search(surface)
+    )
+
+
+def _word_form_is_variant_mention(text: str, block: str = "") -> bool:
+    """#25091: True when a word-form count names the FR/EN linguistic twins
+    of one content, not the PR's perimeter entries.
+
+    Founder #24566 (body since reformulated): « ... l'anglais dans les deux
+    fichiers ... » on a review of a 1-file PR -- a true sentence, a
+    blocking rouge. The four FN guards (definite form, no strong scope word
+    on the line, bilingual marker required, no file name on the line) keep
+    a genuine mis-count blocking: an author declaring « le perimetre couvre
+    les deux fichiers » without a FR/EN context still fails loud."""
+    m = _VARIANT_DEM_CARD.search(text)
+    if m is None:
+        return False
+    line_start = text.rfind("\n", 0, m.start()) + 1
+    line_end = text.find("\n", m.end())
+    if line_end < 0:
+        line_end = len(text)
+    line = text[line_start:line_end]
+    if _has_strong_scope(line.lower()):
+        return False
+    if _NAMED_FILE_BODY.search(line):
+        return False
+    return _has_bilingual_context(block or text)
+
+
+def _count_is_variant_mention(text: str, match, block: str = "") -> bool:
+    """#25091: digit-path twin of `_word_form_is_variant_mention` -- a
+    numeric count preceded by a definite article (« les 2 fichiers (FR/EN) »)
+    names the linguistic twins. Same four FN guards; the definite-article
+    test is positional (the text between line start and the match must end
+    on the article), so it cannot fire on « touches 2 fichiers »."""
+    value = int(match.group(1))
+    if value not in (2, 3):
+        return False
+    line_start = text.rfind("\n", 0, match.start()) + 1
+    line_end = text.find("\n", match.end())
+    if line_end < 0:
+        line_end = len(text)
+    line = text[line_start:line_end]
+    if re.search(r"\b(?:les|des|the)\s+$", text[line_start:match.start()], re.IGNORECASE) is None:
+        return False
+    if _has_strong_scope(line.lower()):
+        return False
+    if _NAMED_FILE_BODY.search(line):
+        return False
+    return _has_bilingual_context(block or text)
 
 
 def _word_form_is_measurement_object(text: str) -> bool:

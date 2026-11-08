@@ -3932,6 +3932,66 @@ def test_16085_cas_a_fn_demonstratif_absent_reste_rouge():
     assert any("l'assertion pretend 2 fichier" in p for p in problems), repr(problems)
 
 
+FILES_25091 = [{"path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Invariant.lean"}]
+
+
+def test_25091_variante_bilingue_ne_rouge_pas():
+    """#25091 (fondateur #24566, corps depuis reformule) : « l'anglais dans
+    les deux fichiers » designe les jumeaux linguistiques FR/EN d'un meme
+    contenu, pas deux entrees du perimetre. La PR touche 1 fichier, la
+    phrase est vraie, le rouge etait un faux positif bloquant."""
+    body = (
+        "La correction est appliquee de part et d'autre : l'anglais dans les "
+        "deux fichiers respecte desormais la forme exacte du sous-but."
+    )
+    problems = check_assertion(FILES_25091, body)
+    assert problems == [], repr(problems)
+
+
+def test_25091_fn_sans_contexte_bilingue_reste_rouge():
+    """Controle FN 1 : sans marqueur bilingue (ni FR/EN ni vocabulaire de
+    jumeaux), « dans les deux fichiers » reste un compte de perimetre
+    confronte -- c'est le contexte linguistique qui porte le masquage."""
+    body = (
+        "La correction est appliquee dans les deux fichiers retenus pour "
+        "cette revue."
+    )
+    problems = check_assertion(FILES_25091, body)
+    assert any("l'assertion pretend 2 fichier" in p for p in problems), repr(problems)
+
+
+def test_25091_fn_mot_de_scope_reste_rouge():
+    """Controle FN 2 : une ligne porteuse d'un mot de scope fort reste
+    bloquante, meme sous contexte bilingue."""
+    body = "Perimetre : les deux fichiers (FR / EN) portent la meme correction."
+    problems = check_assertion(FILES_25091, body)
+    assert any("l'assertion pretend 2 fichier" in p for p in problems), repr(problems)
+
+
+def test_25091_fn_forme_nue_reste_rouge():
+    """Controle FN 3 : sans determinant defini, « deux fichiers » nu reste un
+    compte confronte -- c'est la forme definie qui porte le masquage."""
+    body = "deux fichiers (FR / EN) portent la meme correction."
+    problems = check_assertion(FILES_25091, body)
+    assert any("l'assertion pretend 2 fichier" in p for p in problems), repr(problems)
+
+
+def test_25091_voie_chiffree_variante_bilingue_ne_rouge_pas():
+    """#25091 jumeau chiffre : « les 2 fichiers (FR / EN) » est la meme
+    mention de variantes que la forme en mots."""
+    body = "Les gardes sont alignes sur les 2 fichiers (FR / EN) du module."
+    problems = check_assertion(FILES_25091, body)
+    assert problems == [], repr(problems)
+
+
+def test_25091_voie_chiffree_sans_determinant_reste_rouge():
+    """Controle positif (critere d'acceptance de l'issue) : un vrai compte
+    de perimetre errone, sans forme definie ni contexte FR/EN, reste FAIL."""
+    body = "Cette PR touche 2 fichiers et c'est tout."
+    problems = check_assertion(FILES_25091, body)
+    assert any("l'assertion pretend 2 fichier" in p for p in problems), repr(problems)
+
+
 BODY_16085_B = (
     "La provenance citée (19 findings → 13 après restauration, 8 fichiers "
     "de `fe04e1f37`, ~793 lignes de contexte de fence) : relayée, non "
