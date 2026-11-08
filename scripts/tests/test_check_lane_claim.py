@@ -7220,6 +7220,91 @@ def test_implicit_positive_control_14259(monkeypatch, capsys):
     assert data["implicit_occupation"][0]["number"] == 14293
 
 
+def _local_pr_history(tmp_path: Path, *, own_files: int = 0) -> tuple[str, list[str]]:
+    """Build real Git history: stale base, main update, then stacked PR head."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=repo, check=True, capture_output=True,
+            text=True,
+        ).stdout.strip()
+
+    git("init", "-b", "main")
+    git("config", "user.name", "Local test")
+    git("config", "user.email", "test@example.invalid")
+    (repo / "base.txt").write_text("base\n", encoding="utf-8")
+    git("add", "base.txt")
+    git("commit", "-m", "base")
+    stale = git("rev-parse", "HEAD")
+    git("branch", "stale", stale)
+
+    carried = repo / "inherited"
+    carried.mkdir()
+    for index in range(105):
+        (carried / f"main-{index:03}.txt").write_text("main\n", encoding="utf-8")
+    git("add", "inherited")
+    git("commit", "-m", "main update with more than 100 files")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+
+    git("checkout", "-b", "pr", "stale")
+    git("merge", "--no-edit", "main")
+    # A no-tree-change commit models an open stacked PR whose only changed
+    # paths against its stale base are the files it inherited from main.
+    git("commit", "--allow-empty", "-m", "stacked PR metadata commit")
+    if own_files:
+        own = repo / "owned"
+        own.mkdir()
+        for index in range(own_files):
+            (own / f"pr-{index:03}.txt").write_text("PR work\n", encoding="utf-8")
+        git("add", "owned")
+        git("commit", "-m", "PR work")
+    return git("rev-parse", "HEAD"), [f"owned/pr-{i:03}.txt" for i in range(own_files)]
+
+
+def test_implicit_ignores_only_inherited_main_files_from_real_history(
+        tmp_path, monkeypatch):
+    head, _ = _local_pr_history(tmp_path)
+    monkeypatch.chdir(tmp_path / "repo")
+    pr = dict(_PR_14293, number=24482, headRefOid=head,
+              files=[{"path": f"inherited/main-{i:03}.txt"} for i in range(100)])
+
+    against_stale_base = subprocess.run(
+        ["git", "diff", "--name-only", "stale", head], check=True,
+        capture_output=True, text=True,
+    ).stdout.splitlines()
+    assert len(against_stale_base) == 105
+    assert len(pr["files"]) == 100  # API preview ceiling
+    assert clc._pr_files_against_main(pr) == []
+    assert clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr]) == []
+
+
+def test_implicit_keeps_own_collision_and_processes_more_than_100_paths(
+        tmp_path, monkeypatch):
+    head, own_paths = _local_pr_history(tmp_path, own_files=105)
+    monkeypatch.chdir(tmp_path / "repo")
+    pr = dict(_PR_14293, number=24483, headRefOid=head,
+              files=[{"path": f"inherited/main-{i:03}.txt"} for i in range(100)])
+
+    assert len(pr["files"]) == 100  # le Git local restitue les 105 chemins propres
+    assert set(clc._pr_files_against_main(pr)) == set(own_paths)
+    findings = clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr])
+    assert len(findings) == 1
+    assert findings[0]["files"] == own_paths
+
+
+def test_implicit_provenance_failure_keeps_legacy_occupation():
+    # Impossible SHA: provenance cannot be proved, so inherited-looking API
+    # paths remain a blocker instead of being released on an error.
+    pr = dict(_PR_14293, number=None, headRefOid="0" * 40,
+              files=[{"path": "inherited/main-only.md"}])
+    assert clc._pr_files_against_main(pr) is None
+    findings = clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr])
+    assert len(findings) == 1
+    assert findings[0]["files"] == ["inherited/main-only.md"]
+
+
 def test_implicit_absent_when_no_pr_references(monkeypatch, capsys):
     # Faux negatif de reference : une PR ouverte d'une autre lane qui ne
     # reference PAS l'issue ne doit PAS declencher IMPLICIT.

@@ -1965,6 +1965,7 @@ query {
       pageInfo { hasNextPage endCursor }
       nodes {
         number title headRefName body additions deletions
+        headRefOid
         files(first:100) { totalCount nodes { path } }
       }
     }
@@ -1979,6 +1980,7 @@ query($cursor: String) {
       pageInfo { hasNextPage endCursor }
       nodes {
         number title headRefName body additions deletions
+        headRefOid
         files(first:100) { totalCount nodes { path } }
       }
     }
@@ -2178,6 +2180,7 @@ def _gh_open_prs_complete() -> list[dict]:
                 "number": number,
                 "title": node.get("title"),
                 "headRefName": node.get("headRefName"),
+                "headRefOid": node.get("headRefOid"),
                 "body": node.get("body"),
                 "additions": node.get("additions"),
                 "deletions": node.get("deletions"),
@@ -2388,6 +2391,60 @@ def _open_prs_by_referenced_issue(prs: list[dict]) -> dict[int, list[dict]]:
     return index
 
 
+def _pr_files_against_main(pr: dict) -> list[str] | None:
+    """Return paths touched by first-parent PR commits absent from main.
+
+    The PR-files API describes the branch diff against its declared base. For a
+    stacked branch that has absorbed main, this can include files changed only
+    by main. The head commit is supplied by GraphQL; a missing local object is
+    fetched by its pull ref. The first-parent, non-merge log lists paths changed
+    by PR-line commits absent from main, without a 100-file API ceiling.
+
+    ``None`` means provenance could not be established. Callers then retain
+    the API paths (fail-closed); an unavailable ref or Git error must never
+    release an implicit occupation. An empty list means there is no path
+    touched by a non-merge first-parent commit absent from main.
+    """
+    head = pr.get("headRefOid")
+    number = pr.get("number")
+    if not isinstance(head, str) or not re.fullmatch(r"[0-9a-fA-F]{40,64}", head):
+        return None
+
+    def git(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["git", *args], capture_output=True, check=False,
+            encoding="utf-8", errors="strict",
+            timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+
+    try:
+        has_head = git("cat-file", "-e", f"{head}^{{commit}}")
+        if has_head.returncode != 0:
+            if not isinstance(number, int) or number <= 0:
+                return None
+            fetched = git("fetch", "--no-tags", "origin",
+                          f"refs/pull/{number}/head")
+            if fetched.returncode != 0:
+                return None
+            fetched_head = git("rev-parse", "--verify", "FETCH_HEAD")
+            if (fetched_head.returncode != 0
+                    or fetched_head.stdout.strip().lower() != head.lower()):
+                return None
+        has_main = git("rev-parse", "--verify", "origin/main")
+        if has_main.returncode != 0:
+            return None
+        diff = subprocess.run(
+            ["git", "log", "--first-parent", "--no-merges", "--format=",
+             "--name-only", "-z", f"origin/main..{head}", "--"],
+            capture_output=True, check=False, timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+        if diff.returncode != 0:
+            return None
+        return sorted({path.decode("utf-8") for path in diff.stdout.split(b"\0") if path})
+    except (OSError, UnicodeDecodeError, subprocess.SubprocessError):
+        return None
+
+
 def _find_open_prs_referencing_issue(
     issue_number: int,
     my_lane: str,
@@ -2396,10 +2453,14 @@ def _find_open_prs_referencing_issue(
     """Open PRs of OTHER lanes whose body references `issue_number`.
 
     Own-lane PRs are omitted (a lane does not collide with itself -- the
-    same exclusion the `--paths` leg applies). A PR whose lane tag is
-    unreadable counts as another lane (`extract_lane` returns None,
-    None != my_lane): fail-closed, mirroring `--paths`, where an
-    unreadable lane tag also counts as a collision. Sorted by PR number
+    same exclusion the `--paths` leg applies). When Git can establish the
+    head's non-merge first-parent commits absent from `origin/main`, an empty
+    path set is omitted and the reported paths are complete (not the API's
+    100-path preview). Unresolvable provenance keeps API paths and occupation.
+    A PR whose lane tag is unreadable counts as another lane
+    (`extract_lane` returns None, None != my_lane): fail-closed, mirroring
+    `--paths`, where an unreadable lane tag also counts as a collision.
+    Sorted by PR number
     (deterministic verdict order). Test injection: pass `prs` to avoid the
     `gh` round-trip.
     """
@@ -2411,8 +2472,17 @@ def _find_open_prs_referencing_issue(
         lane = extract_lane(body)
         if lane == my_lane:
             continue
-        files = [f.get("path") for f in (pr.get("files") or [])
-                 if f.get("path")]
+        files = _pr_files_against_main(pr)
+        if files is None:
+            # Transport, SHA, or local object failure: preserve legacy paths
+            # and therefore the conservative occupation verdict.
+            files = [f.get("path") for f in (pr.get("files") or [])
+                     if f.get("path")]
+        elif not files:
+            # No file changed by a PR-line commit absent from main: inherited
+            # main changes cannot occupy this grain. The fallback above is
+            # intentionally unavailable once Git proved the empty diff.
+            continue
         out.append({
             "number": pr.get("number"),
             "lane": lane,
