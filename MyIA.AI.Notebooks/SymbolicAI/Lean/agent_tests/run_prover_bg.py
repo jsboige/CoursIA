@@ -193,7 +193,8 @@ def _parent_lock_is_valid(tree_root: Path, owner_pid: int) -> bool:
     """Ne réutilise le lock que si son propriétaire vivant est le parent déclaré."""
     holder = read_lock(tree_root / ".prover.lock")
     return (
-        holder.get("pid") == owner_pid
+        owner_pid == os.getppid()
+        and holder.get("pid") == owner_pid
         and holder.get("host") == host_id()
         and pid_alive(owner_pid)
     )

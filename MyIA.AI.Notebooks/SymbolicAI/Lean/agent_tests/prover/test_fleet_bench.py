@@ -1,6 +1,7 @@
 """Contrats conservateurs du driver fleet; aucun appel de provider n'est lancé."""
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -156,7 +157,19 @@ def test_runner_reuses_only_the_live_parent_tree_lock(tmp_path):
     lock_path, _message = acquire_tree_lock(tmp_path, demo_id=0)
     assert lock_path is not None
     try:
-        assert prover_launcher._parent_lock_is_valid(tmp_path, os.getpid())
+        # Le détenteur vivant doit être le vrai parent du lanceur enfant,
+        # pas seulement un PID connu copié depuis le fichier de verrou.
+        assert not prover_launcher._parent_lock_is_valid(tmp_path, os.getpid())
+        child = subprocess.run(
+            [sys.executable, "-c",
+             "import os,sys;from pathlib import Path;"
+             "import run_prover_bg as r;"
+             "sys.exit(0 if r._parent_lock_is_valid(Path(sys.argv[1]), os.getppid()) else 1)",
+             str(tmp_path)],
+            cwd=fleet_bench.AGENT_TESTS_DIR, capture_output=True, text=True,
+            timeout=30,
+        )
+        assert child.returncode == 0, child.stdout + child.stderr
         assert not prover_launcher._parent_lock_is_valid(tmp_path, os.getpid() + 1)
     finally:
         release_tree_lock(lock_path)
