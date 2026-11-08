@@ -228,12 +228,12 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 33 | [ICT-18b — Budget de réversibilité : la jambe « fin » de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb) | BETA | Oui |
 | 34 | [ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) | BETA | Oui |
 | 35 | [ICT-19b — Raffinement et résolution des stubs (tranche…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb) | BETA | Non |
-| 36 | [ICT-20 — FeatureCatastrophes : *calibration de méthode*](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes-Python.ipynb) | ALPHA | Non |
-| 37 | [ICT-21 — SAETrajectoires : le substrat S4 entre au banc](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21-SAETrajectoires-Python.ipynb) | BETA | Non |
-| 38 | [ICT-21b-SAECalibration-Python — que reconstruit…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21b-SAECalibration-Python.ipynb) | BETA | Non |
-| 39 | [ICT-21c-SAECatastrophes-Python — forme et dynamique des…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb) | BETA | Non |
-| 40 | [ICT-22 — LLMSubstrat : le transformer comme quatrième…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-22-LLMSubstrat-Python.ipynb) | BETA | Non |
-| 41 | [ICT-22b -- Moteur d'intervention causal : operer,…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-22b-CausalInterventionEngine-Python.ipynb) | BETA | Non |
+| 36 | [ICT-20 — FeatureCatastrophes : *calibration de méthode*](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-20-FeatureCatastrophes-Python.ipynb) | ALPHA | Non |
+| 37 | [ICT-21 — SAETrajectoires : le substrat S4 entre au banc](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21-SAETrajectoires-Python.ipynb) | BETA | Non |
+| 38 | [ICT-21b-SAECalibration-Python — que reconstruit…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21b-SAECalibration-Python.ipynb) | BETA | Non |
+| 39 | [ICT-21c-SAECatastrophes-Python — forme et dynamique des…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21c-SAECatastrophes-Python.ipynb) | BETA | Non |
+| 40 | [ICT-22 — LLMSubstrat : le transformer comme quatrième…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-22-LLMSubstrat-Python.ipynb) | BETA | Non |
+| 41 | [ICT-22b -- Moteur d'intervention causal : operer,…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-22b-CausalInterventionEngine-Python.ipynb) | BETA | Non |
 | 42 | [ICT-23 — PersonaCatastrophe : la fronce de Thom…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-23-PersonaCatastrophe-Python.ipynb) | BETA | Oui |
 | 43 | [ICT-24 — WorkspaceIgnition : l'axe Global Workspace et…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) | BETA | Non |
 | 44 | [ICT-25 — InoculationRL : GRPO à récompense *hackable*,…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL-Python.ipynb) | BETA | Non |
