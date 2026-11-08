@@ -608,6 +608,23 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
         "canon de la serie NLP, dont les carnets 03 et 05-11 tournent deja "
         "sous kernel python3 a 3.13.x ; re-execution sous le venv canon "
         "python3 3.13.16 (#23384)",
+    # RAG-04 converge vers le canon d'execution 3.13 sous son kernelspec
+    # nomme, comme NLP-01/02 et ML-06 : hors du census #23384 (kernel
+    # python3 uniquement), sa convergence exige une entree scopee
+    # nominative. La dependance qui motivait le kernel dedie -- ``transformers``
+    # pour la comparaison du tokenizer from-scratch -- est desormais
+    # disponible dans le venv nomme (5.22.1), la contrainte tombe. Le
+    # kernelspec reste partage par une trentaine de carnets hors serie qui
+    # ne declarent pas 3.13 : l'entree reste nominative (reserve de revue
+    # #22979).
+    ("MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/"
+     "04-Tokenisation-From-Scratch.ipynb",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon d'execution 3.13 de la serie RAG ; la dependance qui motivait "
+        "le kernel dedie (transformers, 5.22.1) est disponible dans le venv "
+        "nomme mesure a 3.13.15 ; sorties re-executees sous ce kernel "
+        "(#19451, tranche RAG-04)",
     # Portee SERIE GameTheory (#23384). Le canon de la serie est 3.13 : sur
     # les 142 carnets de MyIA.AI.Notebooks/GameTheory/ mesures le 2026-11-05,
     # 92 tournent deja sous kernel ``python3`` en 3.13.x (36 en 3.13.14,

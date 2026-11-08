@@ -609,6 +609,148 @@ class TestMarkUnrequestedKeys(unittest.TestCase):
         )
 
 
+class TestMarkFloatingGenerations(unittest.TestCase):
+    """L'eviction des generations MORTES d'une spec python FLOTTANTE (#19658).
+
+    Mesure fondatrice (2026-11-06) : trois cles `setup-python-*` sur
+    `refs/heads/main` portent le MEME hash de dependances (`813bda...`) sous
+    trois patchs distincts (3.11.16 / 3.11.17 / 3.11.18), 1 208 Mo au total.
+    La spec declaree `'3.11'` couvre chacune, donc la passe « unrequested »
+    les protege toutes : rien ne bornait leur nombre.
+
+    Un cap par RANG a ete rejete par la mesure AVANT d'etre livre : la
+    generation 3.11.16 etait encore LUE le jour meme (12:27Z) -- l'evincer
+    ne libere rien, le runner qui la resout la reecrit au run suivant. La
+    passe ne touche donc que les generations PROUVEES mortes : pas lues
+    depuis `idle_hours`.
+    """
+
+    FILEHASH = "813bda288f3482d14bb7132d80b9f168ba60b830a6bba81796a26c7febe0a2be"
+
+    def _key(self, version, filehash=None):
+        return (
+            f"setup-python-Linux-x64-24.04-Ubuntu-python-{version}-pip-"
+            f"{filehash or self.FILEHASH}"
+        )
+
+    def _iso(self, hours_ago):
+        # Horodatage RELATIF a maintenant : le test reste valide quel que soit
+        # le jour ou il tourne.
+        return (
+            _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(hours=hours_ago)
+        ).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def _rec(self, key, last_accessed, ref="refs/heads/main"):
+        return {
+            "key": key,
+            "ref": ref,
+            "created_at": "2026-10-01T00:00:00Z",
+            "last_accessed_at": last_accessed,
+            "size_bytes": 281_000_000,
+            "verdict": "KEEP",
+            "reason": "dedupe_candidate",
+        }
+
+    def test_idle_generation_is_evicted(self):
+        # Le parc quitte un patch -> son entree devient idle -> elle sort.
+        # Ici 3.11.16 inactive depuis 30 jours, ses deux cadettes lues
+        # aujourd'hui.
+        recs = [
+            self._rec(self._key("3.11.16"), self._iso(hours_ago=24 * 30)),
+            self._rec(self._key("3.11.17"), self._iso(hours_ago=2)),
+            self._rec(self._key("3.11.18"), self._iso(hours_ago=1)),
+        ]
+        demand = [{"pm": "pip", "version": "3.11"}]
+        eoc._mark_unrequested_keys(recs, demand)
+        eoc._mark_floating_generations(recs, "main", idle_hours=168)
+        by_ver = {r["key"]: r["verdict"] for r in recs}
+        self.assertEqual(by_ver[self._key("3.11.16")], "EVICT")
+        self.assertEqual(by_ver[self._key("3.11.17")], "KEEP")
+        self.assertEqual(by_ver[self._key("3.11.18")], "KEEP")
+        self.assertEqual(
+            [r for r in recs if r["verdict"] == "EVICT"][0]["reason"],
+            "floating_generation_idle_168h",
+        )
+
+    def test_generation_read_today_stays_even_as_oldest(self):
+        # Le renversement mesure : 3.11.16 est la PLUS ANCIENNE generation du
+        # hash, mais elle a ete LUE aujourd'hui -- un cap par rang l'aurait
+        # evincee et le runner l'aurait reecrite (churn, gain net nul). La
+        # sémantique idle la garde.
+        recs = [
+            self._rec(self._key("3.11.16"), self._iso(hours_ago=1)),
+            self._rec(self._key("3.11.17"), self._iso(hours_ago=3)),
+            self._rec(self._key("3.11.18"), self._iso(hours_ago=2)),
+        ]
+        demand = [{"pm": "pip", "version": "3.11"}]
+        eoc._mark_unrequested_keys(recs, demand)
+        eoc._mark_floating_generations(recs, "main", idle_hours=168)
+        for r in recs:
+            self.assertEqual(r["verdict"], "KEEP")
+            self.assertEqual(r["reason"], "requested_by_main")
+
+    def test_exact_spec_is_untouched_even_when_idle(self):
+        # Une spec EXACTE nomme sa generation : hors du perimetre de la passe.
+        recs = [self._rec(self._key("3.11.16"), self._iso(hours_ago=24 * 30))]
+        demand = [{"pm": "pip", "version": "3.11.16"}]
+        eoc._mark_unrequested_keys(recs, demand)
+        eoc._mark_floating_generations(recs, "main", idle_hours=168)
+        self.assertEqual(recs[0]["verdict"], "KEEP")
+        self.assertEqual(recs[0]["reason"], "requested_by_main")
+
+    def test_pr_copy_is_left_to_the_dedupe_pass(self):
+        # La passe ne voit que la branche par defaut : la copie de PR, meme
+        # idle, reste l'affaire de la deduplication.
+        recs = [
+            self._rec(self._key("3.11.16"), self._iso(hours_ago=24 * 30)),
+            self._rec(self._key("3.11.16"), self._iso(hours_ago=24 * 30),
+                      ref="refs/pull/24930/merge"),
+        ]
+        demand = [{"pm": "pip", "version": "3.11"}]
+        eoc._mark_unrequested_keys(recs, demand)
+        eoc._mark_floating_generations(recs, "main", idle_hours=168)
+        by_ref = {r["ref"]: r["verdict"] for r in recs}
+        self.assertEqual(by_ref["refs/heads/main"], "EVICT")
+        self.assertEqual(by_ref["refs/pull/24930/merge"], "KEEP")
+
+    def test_each_generation_is_judged_on_its_own(self):
+        # Plus de quota partage : chaque generation est jugee sur SA propre
+        # inactivite, quel que soit le hash ou le minor voisin.
+        other = "b15947e0b9e073efda57fecf1a11f71ea4ac176abfe8d847f391a618432fe02d"
+        recs = [
+            self._rec(self._key("3.11.16"), self._iso(hours_ago=24 * 30)),
+            self._rec(self._key("3.11.17"), self._iso(hours_ago=2)),
+            self._rec(self._key("3.11.16", other), self._iso(hours_ago=24 * 30)),
+            self._rec(self._key("3.9.25"), self._iso(hours_ago=2)),
+        ]
+        demand = [{"pm": "pip", "version": "3.11"}, {"pm": "pip", "version": "3.9"}]
+        eoc._mark_unrequested_keys(recs, demand)
+        eoc._mark_floating_generations(recs, "main", idle_hours=168)
+        evicted = {r["key"] for r in recs if r["verdict"] == "EVICT"}
+        self.assertEqual(
+            evicted,
+            {self._key("3.11.16"), self._key("3.11.16", other)},
+        )
+
+    def test_zero_disables(self):
+        recs = [
+            self._rec(self._key("3.11.16"), self._iso(hours_ago=24 * 90)),
+            self._rec(self._key("3.11.17"), self._iso(hours_ago=2)),
+        ]
+        eoc._mark_floating_generations(recs, "main", idle_hours=0)
+        for r in recs:
+            self.assertEqual(r["verdict"], "KEEP")
+
+    def test_unknown_demand_inherits_fail_closed(self):
+        # Heritage du fail-CLOSED : demande illisible -> les records portent
+        # `unrequested_check_failed`, la passe ne les voit pas.
+        recs = [self._rec(self._key("3.11.16"), self._iso(hours_ago=24 * 30))]
+        eoc._mark_unrequested_keys(recs, None)
+        eoc._mark_floating_generations(recs, "main", idle_hours=168)
+        self.assertEqual(recs[0]["verdict"], "KEEP")
+        self.assertEqual(recs[0]["reason"], "unrequested_check_failed")
+
+
 class TestDeclaredDemand(unittest.TestCase):
     """La demande est DERIVEE des workflows, jamais figee dans le script."""
 
