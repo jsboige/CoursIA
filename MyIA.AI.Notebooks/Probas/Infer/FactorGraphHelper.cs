@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net;
 
 /// <summary>
 /// Helper pour generer et afficher les factor graphs Infer.NET dans les notebooks Jupyter.
@@ -114,7 +115,9 @@ public static class FactorGraphHelper
     }
 
     /// <summary>
-    /// Retourne le HTML pour afficher le dernier fichier SVG genere par Infer.NET
+    /// Retourne le HTML du graphe disponible lorsque sa source est unique.
+    /// En cas de plusieurs artefacts, renvoie un diagnostic d'ambiguite avec
+    /// les chemins a selectionner explicitement.
     /// Usage: FactorGraphHelper.GetLatestFactorGraphHtml().DisplayAs("text/html")
     /// display(HTML(...)) lie IHtmlContent, type porte par un assemblage compile
     /// contre Microsoft.AspNetCore.Html.Abstractions 2.x : chaque cellule qui
@@ -180,23 +183,27 @@ public static class FactorGraphHelper
             .Distinct()
             .ToArray();
 
-        // Prefere reconvertir le .gv le plus recent (la source de verite produite
-        // par la derniere inference) quand Graphviz est disponible, pour que le
-        // graphe affiche corresponde au modele courant et non a un .svg perime
-        // ou issu d'un autre modele (bug #3473 stale-pick).
-        if (gvFiles.Length > 0 && IsGraphvizAvailable())
+        // Le .gv est la source de verite. On ne choisit pas entre plusieurs
+        // sources, car elles peuvent appartenir a des carnets differents.
+        if (gvFiles.Length > 1)
         {
-            return ConvertAndGetLatestGvHtml(maxWidth);
+            return GetAmbiguousArtifactsHtml(".gv", gvFiles);
         }
 
-        // Sinon (Graphviz absent, ou seulement un .svg pre-rendu disponible),
-        // reutiliser le .svg le plus recent s'il existe.
+        if (gvFiles.Length == 1 && IsGraphvizAvailable())
+        {
+            return ConvertAndGetGvHtml(gvFiles[0], maxWidth);
+        }
+
+        // Sans Graphviz, reutiliser le SVG seulement si sa source est unique.
         if (svgFiles.Length > 0)
         {
-            var latestSvg = svgFiles
-                .OrderByDescending(f => new FileInfo(f).LastWriteTime)
-                .First();
-            return GetSvgFileHtml(latestSvg, maxWidth);
+            if (svgFiles.Length > 1)
+            {
+                return GetAmbiguousArtifactsHtml(".svg", svgFiles);
+            }
+
+            return GetSvgFileHtml(svgFiles[0], maxWidth);
         }
 
         return ConvertAndGetLatestGvHtml(maxWidth);
@@ -295,7 +302,8 @@ public static class FactorGraphHelper
     }
 
     /// <summary>
-    /// Trouve et convertit le dernier fichier .gv, retourne le HTML
+    /// Convertit l'unique fichier .gv trouve. Plusieurs candidats sont
+    /// signales comme ambigus au lieu d'etre departages par leur timestamp.
     /// </summary>
     public static string ConvertAndGetLatestGvHtml(int maxWidth = 800)
     {
@@ -312,11 +320,24 @@ public static class FactorGraphHelper
             </div>";
         }
 
-        var latestGv = gvFiles
-            .OrderByDescending(f => new FileInfo(f).LastWriteTime)
-            .First();
+        if (gvFiles.Length > 1)
+        {
+            return GetAmbiguousArtifactsHtml(".gv", gvFiles);
+        }
 
-        return ConvertAndGetGvHtml(latestGv, maxWidth);
+        return ConvertAndGetGvHtml(gvFiles[0], maxWidth);
+    }
+
+    private static string GetAmbiguousArtifactsHtml(string extension, IEnumerable<string> files)
+    {
+        var candidates = string.Join("<br/>", files
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .Select(path => $"<code>{WebUtility.HtmlEncode(path)}</code>"));
+        return $@"<div style='padding: 10px; border: 1px solid #f0ad4e; background: #fcf8e3; border-radius: 5px;'>
+            Plusieurs graphes {extension} sont disponibles. Aucun n'a ete choisi, car leur carnet d'origine est ambigu.<br/>
+            Selectionnez explicitement le fichier voulu avec <code>ConvertAndGetGvHtml(chemin)</code> ou <code>GetSvgFileHtml(chemin)</code> :<br/>
+            {candidates}
+        </div>";
     }
 
     /// <summary>
