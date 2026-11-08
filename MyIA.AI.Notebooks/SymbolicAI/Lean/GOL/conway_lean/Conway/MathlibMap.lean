@@ -63,9 +63,9 @@ jeux. -/
 #check @Ordinal.instPow
 
 -- Induction par la forme normale de Cantor : tout ordinal α peut s'écrire
--- de manière unique α = Ω^{β₁} · c_1 + Ω^{β₂} · c_2 + ... + Ω^{β₺} · c_k
--- oê β₁ > β₂ > ... > β₺. Conway a exploité cette
--- structure dans ONAG.
+-- de manière unique α = Ω^{β₁} · c₁ + Ω^{β₂} · c₂ + ... + Ω^{β₊} · cₖ
+-- oê β₁ > β₂ > ... > β₊. Conway a exploité cette structure
+-- dans ONAG.
 #check @Ordinal.CNF.rec
 
 -- Logarithme ordinal : le plus grand exposant dans l'expansion en base Ω.

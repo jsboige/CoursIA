@@ -608,6 +608,55 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
         "canon de la serie NLP, dont les carnets 03 et 05-11 tournent deja "
         "sous kernel python3 a 3.13.x ; re-execution sous le venv canon "
         "python3 3.13.16 (#23384)",
+    # RAG-04 converge vers le canon d'execution 3.13 sous son kernelspec
+    # nomme, comme NLP-01/02 et ML-06 : hors du census #23384 (kernel
+    # python3 uniquement), sa convergence exige une entree scopee
+    # nominative. La dependance qui motivait le kernel dedie -- ``transformers``
+    # pour la comparaison du tokenizer from-scratch -- est desormais
+    # disponible dans le venv nomme (5.22.1), la contrainte tombe. Le
+    # kernelspec reste partage par une trentaine de carnets hors serie qui
+    # ne declarent pas 3.13 : l'entree reste nominative (reserve de revue
+    # #22979).
+    ("MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/"
+     "04-Tokenisation-From-Scratch.ipynb",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon d'execution 3.13 de la serie RAG ; la dependance qui motivait "
+        "le kernel dedie (transformers, 5.22.1) est disponible dans le venv "
+        "nomme mesure a 3.13.15 ; sorties re-executees sous ce kernel "
+        "(#19451, tranche RAG-04)",
+    # Portee SERIE GameTheory (#23384). Le canon de la serie est 3.13 : sur
+    # les 142 carnets de MyIA.AI.Notebooks/GameTheory/ mesures le 2026-11-05,
+    # 92 tournent deja sous kernel ``python3`` en 3.13.x (36 en 3.13.14,
+    # 26 en 3.13.3, 12 en 3.13.15, 9 en 3.13.7, 8 en 3.13.16, 1 en 3.13.13).
+    # Sous le kernelspec PARTAGE ``coursia-ml-training``, la serie n'a que
+    # 4 carnets, dont 3 deja en 3.13.x (13e 3.13.14, 19b converge par #24836,
+    # plus 13b et 15c rejoues par cette PR) : la convergence ne fait aucune
+    # exception dans la serie.
+    # Les DEUX directions sont declarees parce que les deux sont mesurees
+    # sur main : 13b part de 3.12.15 et 15c de 3.11.16. N'en declarer qu'une
+    # laisserait l'autre rouge en annoncant la serie convergee (meme reserve
+    # que #23187 sur 02-ML-Cours).
+    # Le prefixe garde la tolerance DANS la serie : les carnets hors
+    # GameTheory qui partagent ``coursia-ml-training`` restent rouges sur ces
+    # directions (reserve #22979, ~30 carnets hors serie ne declarent pas
+    # 3.13), et les autres kernels de la serie -- ``gametheory-wsl``
+    # (1 carnet en 3.11.9), ``python3-wsl`` (1 en 3.12.3) -- ne sont pas
+    # couverts par ces cles, la cle exigeant le nom de kernel : leur
+    # direction reste rouge, ce qui est le comportement voulu.
+    ("MyIA.AI.Notebooks/GameTheory/",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` pour tout carnet de la "
+        "serie GameTheory : convergence vers le canon 3.13 de la serie (92 des "
+        "142 carnets y sont deja sous kernel python3 ; 3 des 4 carnets sous ce "
+        "kernelspec y sont aussi) ; re-execution complete a source inchangee "
+        "sous le venv canon 3.13.15 (#23384)",
+    ("MyIA.AI.Notebooks/GameTheory/",
+     "coursia-ml-training", "3.12", "3.13"):
+        "Python 3.12 -> 3.13 sous `coursia-ml-training` pour tout carnet de la "
+        "serie GameTheory : convergence vers le canon 3.13 de la serie ; "
+        "re-execution complete a source inchangee sous le venv canon 3.13.15 "
+        "(13b, base 3.12.15, #23384)",
 }
 
 

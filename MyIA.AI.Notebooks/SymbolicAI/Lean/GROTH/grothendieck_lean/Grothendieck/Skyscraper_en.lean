@@ -64,13 +64,14 @@ docstrings and comments differ.
 Epic #1646, Phase 2 (#2159). No `sorry` introduced.
 -/
 
-import Grothendieck.Spaces
+import Grothendieck.Spaces_en
 import Mathlib.Topology.Inseparable
 import Mathlib.Topology.Sheaves.Skyscraper
 
 namespace Grothendieck.Skyscraper_en
 
 open CategoryTheory CategoryTheory.Limits Opposite TopCat TopologicalSpace
+open Grothendieck_en
 
 universe u v
 

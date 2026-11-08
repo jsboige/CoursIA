@@ -11,6 +11,12 @@
 #   - `GuardedStateManagerPlugin.log_query_result` : refus d'une phrase libre
 #   - `PLReasonerPlugin.pl_query` : le SEUL chemin d'obtention d'un verdict
 #   - integration : le VRAI solveur Tweety (marquee, sautee sans les jars)
+#   - regression #23671 : un belief set de taille reelle (~22 atomes) rend
+#     un verdict, pas un OOM JVM muet (SimplePlReasoner enumere les mondes)
+#   - regression #23120 : (a) `R1 -> R2` est reecrit en `R1 => R2` avant
+#     l'appel ET avant la cle du registre ; (b) une ligne prose (phrase en
+#     langage naturel) rend CONTENT_ERROR AVANT l'appel au solveur — le
+#     parseur Tweety l'acceptait comme conjonction d'atomes-mots
 #
 # semantic_kernel n'est pas une dependance dure de la shim : on installe le
 # meme mock minimal que `test_state_manager_plugin.py`.
@@ -59,6 +65,7 @@ from argumentation_lib._pl_reasoner import (  # noqa: E402
     EngineUnavailableError,
     FormulaSyntaxError,
     PLReasonerPlugin,
+    TweetyPLEngine,
     split_formulas,
 )
 from argumentation_lib._pl_verdict import (  # noqa: E402
@@ -291,6 +298,99 @@ class TestPLReasonerPlugin:
         assert state.query_log[0]["raw_result"].startswith(ACCEPTED + ":")
 
 
+# --- Regression #23120 : implication ASCII et garde anti-prose --------------------
+
+
+class TestImplicationNormalization:
+    def test_arrow_rewritten_before_engine_and_registry(self, state):
+        engine = FakeEngine(entails=True)
+        plugin = PLReasonerPlugin(state, engine=engine)
+        bs_id = state.add_belief_set("Propositional", "p -> q\np")
+        verdict = plugin.pl_query(bs_id, "p -> q")
+        # l'appel au moteur voit la forme canonique...
+        assert engine.calls == [(("p => q", "p"), "p => q")]
+        # ...et la cle du registre est la meme formule que celle interrogee
+        assert registry_for(state).get(bs_id, "p => q") == verdict
+        assert registry_for(state).get(bs_id, "p -> q") is None
+
+    def test_verdict_string_carries_the_canonical_form(self, state):
+        plugin = PLReasonerPlugin(state, engine=FakeEngine(entails=True))
+        bs_id = state.add_belief_set("Propositional", "p => q\np")
+        verdict = plugin.pl_query(bs_id, "p -> q")
+        assert "p => q" in verdict
+        assert "p -> q" not in verdict
+
+
+class TestProseContentGuard:
+    def test_prose_belief_set_refused_without_engine_call(self, state):
+        # mesure #23120 (28/10, regime « phrases ») : le belief set capturé
+        # était une phrase en langage naturel acceptée par PlParser
+        engine = FakeEngine()
+        plugin = PLReasonerPlugin(state, engine=engine)
+        bs_id = state.add_belief_set(
+            "Propositional",
+            "Les energies renouvelables sont essentielles pour lutter "
+            "contre le changement climatique.",
+        )
+        result = plugin.pl_query(bs_id, "renewables_essential")
+        assert result.startswith("CONTENT_ERROR")
+        assert engine.calls == []  # refus AVANT l'appel au solveur
+
+    def test_clean_belief_set_with_connectives_passes(self, state):
+        engine = FakeEngine(entails=True)
+        plugin = PLReasonerPlugin(state, engine=engine)
+        bs_id = state.add_belief_set(
+            "Propositional",
+            "france_committed => requires_massive_investment\nfrance_committed",
+        )
+        verdict = plugin.pl_query(bs_id, "requires_massive_investment")
+        assert verdict.startswith(ACCEPTED + ":")
+        assert len(engine.calls) == 1
+
+    def test_prose_query_refused(self, state):
+        engine = FakeEngine()
+        plugin = PLReasonerPlugin(state, engine=engine)
+        bs_id = state.add_belief_set("Propositional", "p => q")
+        result = plugin.pl_query(bs_id, "la France doit investir")
+        assert result.startswith("CONTENT_ERROR")
+        assert engine.calls == []
+
+    def test_punctuated_atom_refused(self, state):
+        engine = FakeEngine()
+        plugin = PLReasonerPlugin(state, engine=engine)
+        bs_id = state.add_belief_set("Propositional", "p,\nq")
+        result = plugin.pl_query(bs_id, "q")
+        assert result.startswith("CONTENT_ERROR")
+        assert engine.calls == []
+
+    def test_negation_and_parentheses_are_not_prose(self, state):
+        engine = FakeEngine(entails=True)
+        plugin = PLReasonerPlugin(state, engine=engine)
+        bs_id = state.add_belief_set("Propositional", "!p => (q || r)\n!(p && q)")
+        verdict = plugin.pl_query(bs_id, "!p => (q || r)")
+        assert verdict.startswith(ACCEPTED + ":")
+# --- Initialisation du parseur direct ---------------------------------------------
+
+
+def test_direct_parse_initializes_engine_before_using_parser(monkeypatch):
+    """NLToLogic injects ``_parse`` directly; it must initialize lazily."""
+    engine = TweetyPLEngine()
+    ready_calls = []
+
+    def fake_ready():
+        ready_calls.append(True)
+        engine._parser = type(
+            "FakeParser",
+            (),
+            {"parseFormula": lambda self, formula: f"parsed:{formula}"},
+        )()
+        engine._ready = True
+
+    monkeypatch.setattr(engine, "_ensure_ready", fake_ready)
+    assert engine._parse("p => q") == "parsed:p => q"
+    assert ready_calls == [True]
+
+
 # --- Integration avec le VRAI solveur --------------------------------------------
 #
 # La JVM est demarree dans un SOUS-PROCESSUS, pas dans le processus pytest :
@@ -363,3 +463,63 @@ def test_real_tweety_solver_in_subprocess():
     assert "NOTWET=" + REJECTED + ":" in proc.stdout, proc.stdout
     assert "GUARD=FUNC_ERROR" not in proc.stdout, proc.stdout
     assert "GUARD=qlog" in proc.stdout, proc.stdout
+
+
+_SOLVER_PROBE_BIG = r"""
+import sys
+
+sys.path.insert(0, sys.argv[1])
+
+from argumentation_lib import UnifiedAnalysisState
+from argumentation_lib._pl_reasoner import PLReasonerPlugin
+
+state = UnifiedAnalysisState("texte")
+plugin = PLReasonerPlugin(state)
+
+# #23671 : belief set de la taille des traductions reelles du carnet
+# (~2 douzaines d'atomes) -- celui qui tuait SimplePlReasoner en
+# java.lang.OutOfMemoryError: Java heap space (mesure 2026-11-06).
+n = 22
+atoms = [f"claim_{i}" for i in range(n)]
+formulas = [atoms[0]]
+for i in range(n - 1):
+    formulas.append(f"{atoms[i]} => {atoms[i+1]}")
+bs_id = state.add_belief_set("Propositional", "\n".join(formulas))
+last = plugin.pl_query(bs_id, atoms[-1])
+neg = plugin.pl_query(bs_id, f"!{atoms[0]}")
+print("LAST=" + last)
+print("NEG=" + neg)
+"""
+
+
+@pytest.mark.skipif(
+    not _tweety_jars_present(),
+    reason="jars Tweety absents : provisionner via "
+    "Tweety/scripts/download_tweety_tools.py --jars --jdk",
+)
+def test_real_solver_survives_realistic_belief_set_size():
+    """Regression #23671 : ~22 atomes => verdict moteur, pas d'OOM muet.
+
+    Le raisonner initial (`SimplePlReasoner`, enumeration des mondes en
+    2^n) mourait en OOM JVM sur cette taille de belief set (celle des
+    traductions reelles du carnet) ; `SatReasoner` (SAT4j) doit rendre un
+    verdict sur le meme ensemble : ACCEPTED sur le bout de la chaine,
+    REJECTED sur la negation de la premisse, aucun FUNC_ERROR.
+    """
+    import subprocess
+
+    proc = subprocess.run(
+        [sys.executable, "-c", _SOLVER_PROBE_BIG, _ARGUMENT_ANALYSIS_DIR],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=600,
+    )
+    assert proc.returncode == 0, (
+        f"le solveur a echoue (rc={proc.returncode})\n"
+        f"stdout:\n{proc.stdout[-2000:]}\nstderr:\n{proc.stderr[-2000:]}"
+    )
+    assert "FUNC_ERROR" not in proc.stdout, proc.stdout
+    assert "LAST=" + ACCEPTED + ":" in proc.stdout, proc.stdout
+    assert "NEG=" + REJECTED + ":" in proc.stdout, proc.stdout

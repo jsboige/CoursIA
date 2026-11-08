@@ -202,24 +202,24 @@ variable {K} {A : ValuationSubring L} {i : ℕ}
 
 @[simp]
 theorem mem_lowerRamificationGroup {σ : A.decompositionSubgroup K} :
-    σ ∈ A.lowerRamificationGroup K i ↔
+    σ ∈ lowerRamificationGroup K A i ↔
       ∀ a : A, σ • a - a ∈ (IsLocalRing.maximalIdeal A) ^ (i + 1) :=
   Iff.rfl
 
 theorem lowerRamificationGroup_antitone :
-    Antitone (A.lowerRamificationGroup K) :=
+    Antitone (lowerRamificationGroup K A) :=
   IsLocalRing.lowerRamificationGroup_antitone
 
 instance lowerRamificationGroup_normal (i : ℕ) :
-    (A.lowerRamificationGroup K i).Normal :=
+    (lowerRamificationGroup K A i).Normal :=
   IsLocalRing.lowerRamificationGroup_normal i
 
 theorem lowerRamificationGroup_zero :
-    A.lowerRamificationGroup K 0 = A.inertiaSubgroup K :=
+    lowerRamificationGroup K A 0 = A.inertiaSubgroup K :=
   IsLocalRing.lowerRamificationGroup_zero_eq_ker
 
 theorem lowerRamificationGroup_le_inertiaSubgroup (i : ℕ) :
-    A.lowerRamificationGroup K i ≤ A.inertiaSubgroup K :=
+    lowerRamificationGroup K A i ≤ A.inertiaSubgroup K :=
   lowerRamificationGroup_zero (K := K) (A := A) ▸ IsLocalRing.lowerRamificationGroup_le_zero i
 
 end ValuationSubring

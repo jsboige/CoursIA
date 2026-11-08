@@ -101,16 +101,47 @@ jobs:
           data = json.load(open("lean_derived_pages.json"))
           pages = data.get("pages") or []
           drifted = [p for p in pages if p.get("drifted")]
+          # Une page non mesuree (`expiree` : la machine n'a pas repondu dans
+          # le delai) n'est PAS conforme : elle est simplement inconnue. La
+          # nommer evite qu'un vert muet se lise comme une verification.
+          expired = [p for p in pages if p.get("status") == "expiree"]
 
           if not drifted:
-              print("::notice title=Lean derived pages::%d page(s) derivee(s) conforme(s) a l'arbre Lean." % len(pages))
+              if expired:
+                  print("::warning title=Lean derived pages non mesurees::%d page(s) n'ont pas pu etre verifiees dans le delai de la machine -- le verdict CONFORME ne porte pas sur elles." % len(expired))
+                  for p in expired:
+                      print("- %s" % p.get("page"))
+                      if p.get("detail"):
+                          print("  %s" % p["detail"])
+              else:
+                  print("::notice title=Lean derived pages::%d page(s) derivee(s) conforme(s) a l'arbre Lean." % len(pages))
               sys.exit(0)
+
+          if expired:
+              # Une page non mesuree reste non mesuree, meme quand une autre
+              # diverge : la nommer evite qu'un vert partiel se lise comme
+              # une verification complete.
+              print("::warning title=Lean derived pages non mesurees::%d page(s) n'ont pas pu etre verifiees dans le delai de la machine." % len(expired))
+              for p in expired:
+                  print("- %s" % p.get("page"))
+                  if p.get("detail"):
+                      print("  %s" % p["detail"])
 
           print("::error title=Lean derived pages divergeantes::%d page(s) derivee(s) ne suivent plus l'arbre Lean de cette revision." % len(drifted))
           for p in drifted:
               print("- %s" % p.get("page"))
               if p.get("detail"):
                   print("  %s" % p["detail"])
-              print("  geste : python %s --write" % p.get("generator"))
+              if p.get("status") == "non_mesurable":
+                  # Historique tronque : regenerer ici ecrirait des dates
+                  # fabriquees. La reparation est `git fetch --unshallow`.
+                  print("  geste : reparer l'historique, PAS regenerer")
+              elif p.get("status") == "mesure_impossible":
+                  # La machine n'a pas repondu a l'organe amont : la page n'a
+                  # pas ete mesuree, elle n'est pas fausse pour autant.
+                  # Regenerer ici ecrirait une mesure degradee.
+                  print("  geste : la machine n'a pas repondu -- NE PAS regenerer ici ; rejouer ou elargir le budget")
+              else:
+                  print("  geste : python %s --write" % p.get("generator"))
           sys.exit(1)
           PY

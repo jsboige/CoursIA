@@ -121,8 +121,48 @@ def machine_id() -> str:
     return platform.node().strip().lower()
 
 
+def vault_candidates() -> list[Path]:
+    """Coffres visibles, l'arbre par defaut en tete puis ses arbres JUMEAUX.
+
+    Le Drive partage porte DEUX `.shared-state` cote a cote -- `Synchronisation`
+    et `Synchronisation (1)` -- et le coffre ne vit pas dans le meme des deux
+    selon la machine. Un chemin code en dur rend donc `ABSENT` sur un siege ou
+    le fichier est pourtant la : mesure du 2026-11-05, `doctor` annoncait
+    ABSENT sur po-2025 alors que le sha256 du jumeau egalait celui publie par
+    ai-01 a l'octet (7127 o, mtime 2026-10-15T18:33:01). On enumere les arbres
+    voisins au lieu d'en privilegier un.
+    """
+    main = Path(DEFAULT_VAULT)
+    out = [main]
+    # ...\<racine du Drive>\<Synchronisation*>\RooSync\.shared-state\MyIA-Keys.kdbx
+    # parents[0]=.shared-state, [1]=RooSync, [2]=Synchronisation*, [3]=Drive
+    try:
+        family = main.parents[2].name
+        root = main.parents[3]
+        if root.is_dir():
+            for hit in sorted(root.glob(f"{family}*/RooSync/.shared-state/{main.name}")):
+                if hit not in out:
+                    out.append(hit)
+    except (OSError, IndexError):
+        pass
+    return out
+
+
 def vault_path() -> Path:
-    return Path(os.environ.get("MYIA_KEYS_VAULT", DEFAULT_VAULT))
+    """Le coffre a utiliser : env explicite, sinon le premier arbre qui en porte
+    un. Aucun candidat present -> le chemin par defaut, que `doctor` declarera
+    ABSENT (on ne fabrique pas un chemin plausible qui masquerait l'absence)."""
+    env = os.environ.get("MYIA_KEYS_VAULT")
+    if env:
+        return Path(env)
+    candidates = vault_candidates()
+    for cand in candidates:
+        try:
+            if cand.is_file():
+                return cand
+        except OSError:
+            continue
+    return candidates[0]
 
 
 # Un coffre de comptes melange DEUX natures de secret, et aucune ne s'annonce :
@@ -956,6 +996,17 @@ def cmd_doctor(args) -> int:
         print(f"coffre    : OK  {path}  ({path.stat().st_size} octets)")
     else:
         print(f"coffre    : ABSENT  {path}")
+        defects += 1
+
+    # Deux arbres `.shared-state` cohabitent sur le Drive : si plusieurs portent
+    # une copie, on ne tranche pas en silence. Deux versions du coffre est le
+    # cas que la comparaison d'empreinte ENTRE machines ne peut pas reveler --
+    # chaque siege comparerait sa propre copie et se croirait d'accord.
+    copiees = [c for c in vault_candidates() if c.is_file()]
+    if len(copiees) > 1:
+        print(f"coffre    : CONFLIT  {len(copiees)} copies visibles -- comparer leurs empreintes AVANT toute ecriture")
+        for extra in copiees[1:]:
+            print(f"            {extra}")
         defects += 1
 
     for mod in ("pykeepass", "keyring", "pypdf"):
