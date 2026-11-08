@@ -443,8 +443,8 @@ precede a ete **calcule par le vrai PyPhi**, puis narre tel quel.
 
 - [ICT-0-Framing.md](ICT-0-Framing.md) — cadrage de la serie ICT.
 - [IIT-01-IntroToPyPhi-Python.ipynb](../IIT-01-IntroToPyPhi-Python.ipynb) — TPM, sous-système, $\Phi$, CES.
-- [ICT-02-SelfSortingMorphogenesis-Python.ipynb](ICT-02-SelfSortingMorphogenesis-Python.ipynb) /
-  [ICT-03-RobustnessDelayedGratification-Python.ipynb](ICT-03-RobustnessDelayedGratification-Python.ipynb)
+- [ICT-02-SelfSortingMorphogenesis-Python.ipynb](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) /
+  [ICT-03-RobustnessDelayedGratification-Python.ipynb](ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb)
   — trajectoires et robustesse sur le toy-model de tri.
 - Zhang, Goldstein & Levin (2025), *Classical sorting algorithms as a model of
   morphogenesis*, [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).",,,,,,,,d375222ab876be92,,,,,,,,,,,,,,,
@@ -4640,7 +4640,7 @@ Là où ICT-18 seul échouait, la séparation agent/dissipateur **tient en espac
 - ICT-23 (Persona Cusp, MERGED) : la fronce de Thom comme désalignement émergent, où la triade MOYEN/FIN/ENJEU se déploie sur l'agentivité LLM.
 
 Voir l'[Epic #4588](https://github.com/jsboige/CoursIA/issues/4588) pour la roadmap complète.",,,,,,,,600bb7774770d41d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,9f2b4e43,markdown,fr,3c73a89265e83776,"# ICT-2 — Le tri comme morphogenèse minimale (self-sorting arrays)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,9f2b4e43,markdown,fr,3c73a89265e83776,"# ICT-2 — Le tri comme morphogenèse minimale (self-sorting arrays)
 
 > Série **ICT — Integrated Causal Trajectories** (Epic #4588), qui prolonge la série **IIT / PyPhi**.
 
@@ -4677,9 +4677,9 @@ Sur ce banc d'essai, tout est calculable et enregistrable, et pourtant des comp�
 
 ### Durée estimée : 45 minutes
 ",,,,,,,,3c73a89265e83776,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,cccddcc6,code,fr,8a29e4951e069ae1,"# --- Imports et configuration ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,cccddcc6,code,fr,8a29e4951e069ae1,"# --- Imports et configuration ---
 import sys, os
-sys.path.insert(0, os.path.abspath("".""))  # le package `ict/` est a cote de ce notebook
+sys.path.insert(0, os.path.dirname(os.path.abspath(""."")))  # acces au package `ict` pose a cote des notebooks (un niveau au-dessus)
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -4696,7 +4696,7 @@ def perm(k, rng=RNG):
     return [int(x) for x in rng.permutation(k)]
 
 print(""Algotypes disponibles :"", ALGOTYPES)",,,,,,,,8a29e4951e069ae1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,cdcdfdca,markdown,fr,46b5a5f25a8f8f2b,"## 1. La vue-cellule : une cellule, une règle locale
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,cdcdfdca,markdown,fr,46b5a5f25a8f8f2b,"## 1. La vue-cellule : une cellule, une règle locale
 
 Chaque cellule porte une **valeur** (la clé de tri) et un **algotype** (sa règle locale) :
 
@@ -4704,15 +4704,15 @@ Chaque cellule porte une **valeur** (la clé de tri) et un **algotype** (sa règ
 - **`insertion`** : la cellule regarde sa voisine de **gauche** ; si elle est plus petite, elle glisse à gauche (les petites valeurs migrent vers le début).
 
 Un **planificateur asynchrone seedable** active une cellule au hasard à chaque pas. Il n'y a **aucun contrôleur global** : seulement des cellules qui réagissent à leur voisinage immédiat. Vérifions qu'un tableau homogène se trie de lui-même.",,,,,,,,46b5a5f25a8f8f2b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,1148d246,code,fr,850adf0b2cf295e3,"# --- Exemple guide : un tableau homogene (bubble) se trie tout seul ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,1148d246,code,fr,850adf0b2cf295e3,"# --- Exemple guide : un tableau homogene (bubble) se trie tout seul ---
 valeurs = perm(16)
 arr = SelfSortingArray(valeurs, seed=7)   # tous les algotypes = ""bubble"" par defaut
 print(""Etat initial :"", arr.values)
 arr.run()
 print(""Etat final   :"", arr.values)
 print(f""Trie ? {arr.values == sorted(valeurs)} | pas={arr.steps} | swaps={arr.probe.swaps}"")",,,,,,,,850adf0b2cf295e3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,8cb60e2c,markdown,fr,d16a9f90d7145502,"**Interprétation.** Sans aucune coordination centrale, l'activation aléatoire répétée de cellules qui ne connaissent que leur voisin suffit à atteindre l'ordre global. Chaque échange local **corrige exactement une inversion** : le système ne crée jamais de désordre net, il en élimine. C'est la forme la plus dépouillée d'une morphogenèse — une cible globale atteinte par des règles locales aveugles.",,,,,,,,d16a9f90d7145502,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,e04817e7,markdown,fr,589ff9ed29be2baa,"## 2. La trajectoire dans le morphospace
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,8cb60e2c,markdown,fr,d16a9f90d7145502,"**Interprétation.** Sans aucune coordination centrale, l'activation aléatoire répétée de cellules qui ne connaissent que leur voisin suffit à atteindre l'ordre global. Chaque échange local **corrige exactement une inversion** : le système ne crée jamais de désordre net, il en élimine. C'est la forme la plus dépouillée d'une morphogenèse — une cible globale atteinte par des règles locales aveugles.",,,,,,,,d16a9f90d7145502,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,e04817e7,markdown,fr,589ff9ed29be2baa,"## 2. La trajectoire dans le morphospace
 
 On enregistre, pas à pas, trois mesures :
 
@@ -4721,7 +4721,7 @@ On enregistre, pas à pas, trois mesures :
 - **erreur de monotonie** : fraction de paires *adjacentes* en descente (mesure **locale**).
 
 La trajectoire est le voyage du système dans cet espace.",,,,,,,,589ff9ed29be2baa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,a5520f32,code,fr,3a66b71e5f84deca,"# --- Exemple guide : trajectoire d'un tri ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,a5520f32,code,fr,3a66b71e5f84deca,"# --- Exemple guide : trajectoire d'un tri ---
 arr = SelfSortingArray(perm(16), seed=11)
 arr.run()
 inv = m.inversions_curve(arr.probe.values)
@@ -4740,8 +4740,8 @@ dg = m.delayed_gratification_events(mono)
 inc_inv = sum(1 for a, b in zip(inv, inv[1:]) if b > a)
 print(f""Inversions : {inv[0]} -> {inv[-1]} | pas ou les inversions AUGMENTENT : {inc_inv}"")
 print(f""Erreur de monotonie : episodes ou elle AUGMENTE (delai de gratification) : {dg}"")",,,,,,,,3a66b71e5f84deca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,2520cc55,markdown,fr,a05dc8a9ebb8c3cf,"**Interprétation — le délai de gratification.** Les **inversions** ne remontent jamais (`0` augmentation) : globalement, le système ne recule pas. Mais l'**erreur de monotonie locale**, elle, **augmente transitoirement** à de nombreux pas. Autrement dit, pour faire progresser l'ordre global, le système accepte de **dégrader localement** sa structure — un échange qui résout une inversion peut créer une nouvelle descente chez les voisins. C'est la version structurelle du **délai de gratification** décrit par Zhang, Goldstein & Levin : un système d'agents locaux « accepte d'aller moins bien avant d'aller mieux », sans qu'aucune cellule ne planifie ce sacrifice.",,,,,,,,a05dc8a9ebb8c3cf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,85e5165f,markdown,fr,cc3d2277f07a13c5,"## 3. Robustesse : des cellules défectueuses (frozen)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,2520cc55,markdown,fr,a05dc8a9ebb8c3cf,"**Interprétation — le délai de gratification.** Les **inversions** ne remontent jamais (`0` augmentation) : globalement, le système ne recule pas. Mais l'**erreur de monotonie locale**, elle, **augmente transitoirement** à de nombreux pas. Autrement dit, pour faire progresser l'ordre global, le système accepte de **dégrader localement** sa structure — un échange qui résout une inversion peut créer une nouvelle descente chez les voisins. C'est la version structurelle du **délai de gratification** décrit par Zhang, Goldstein & Levin : un système d'agents locaux « accepte d'aller moins bien avant d'aller mieux », sans qu'aucune cellule ne planifie ce sacrifice.",,,,,,,,a05dc8a9ebb8c3cf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,85e5165f,markdown,fr,cc3d2277f07a13c5,"## 3. Robustesse : des cellules défectueuses (frozen)
 
 Une cellule **`frozen`** est *cassée* : elle n'initie jamais d'action. Deux régimes :
 
@@ -4749,7 +4749,7 @@ Une cellule **`frozen`** est *cassée* : elle n'initie jamais d'action. Deux ré
 - **`obstacle`** : elle est en plus **infranchissable** (un mur).
 
 Question : jusqu'où le système tolère-t-il des cellules cassées ? Balayons la fraction de cellules gelées et mesurons la sortedness finale (moyenne sur plusieurs graines).",,,,,,,,cc3d2277f07a13c5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,184a9945,code,fr,e45856c592c6b084,"# --- Exemple guide : robustesse passive vs obstacle ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,184a9945,code,fr,e45856c592c6b084,"# --- Exemple guide : robustesse passive vs obstacle ---
 fracs = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
 n = 20
 def sweep(mode):
@@ -4773,11 +4773,11 @@ plt.xlabel(""% de cellules defectueuses""); plt.ylabel(""sortedness finale (moye
 plt.title(""Robustesse aux cellules cassees""); plt.legend(); plt.ylim(0.4, 1.02); plt.show()
 for f, p, o in zip(fracs, passive, obstacle):
     print(f""  {int(f*100):2d}% gelees -> passive={p:.3f} | obstacle={o:.3f}"")",,,,,,,,e45856c592c6b084,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,bc81151f,markdown,fr,4643a31dc213eec8,"**Interprétation.** La dégradation est **progressive**, pas catastrophique : c'est la robustesse émergente. Et le **régime passif domine partout** le régime obstacle. La raison est instructive : une cellule cassée mais *transportable* est portée à sa place par ses voisines saines (l'information de tri circule *à travers* elle), alors qu'un mur fige une frontière que personne ne peut franchir. La compétence collective ne tient donc pas seulement aux règles des cellules, mais à ce que le **milieu** autorise comme mouvements — un point central pour la suite ICT (le rôle des contraintes d'échelle).",,,,,,,,4643a31dc213eec8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,bd6b1003,markdown,fr,08244028693799ca,"## 4. Auto-réparation : régénération après lésion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,bc81151f,markdown,fr,4643a31dc213eec8,"**Interprétation.** La dégradation est **progressive**, pas catastrophique : c'est la robustesse émergente. Et le **régime passif domine partout** le régime obstacle. La raison est instructive : une cellule cassée mais *transportable* est portée à sa place par ses voisines saines (l'information de tri circule *à travers* elle), alors qu'un mur fige une frontière que personne ne peut franchir. La compétence collective ne tient donc pas seulement aux règles des cellules, mais à ce que le **milieu** autorise comme mouvements — un point central pour la suite ICT (le rôle des contraintes d'échelle).",,,,,,,,4643a31dc213eec8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,bd6b1003,markdown,fr,08244028693799ca,"## 4. Auto-réparation : régénération après lésion
 
 La morphogenèse biologique se distingue par la **régénération**. Testons-la : on laisse le tableau atteindre l'ordre, on inflige une **lésion** (quelques échanges aléatoires exogènes), puis on laisse le système se réorganiser. Combien de pas pour récupérer ?",,,,,,,,08244028693799ca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,51eacc17,code,fr,94a93562d9ca2c36,"# --- Exemple guide : perturbation puis recuperation ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,51eacc17,code,fr,94a93562d9ca2c36,"# --- Exemple guide : perturbation puis recuperation ---
 arr = SelfSortingArray(perm(20), seed=3)
 arr.run()
 p_step = len(arr.probe.values) - 1     # instant juste avant la lesion
@@ -4792,11 +4792,11 @@ plt.xlabel(""pas""); plt.ylabel(""sortedness""); plt.title(""Auto-reparation apr
 plt.legend(); plt.show()
 print(f""sortedness avant lesion = {srt[p_step]:.3f}, juste apres = {srt[p_step+1]:.3f}"")
 print(f""temps de recuperation = {rt} pas | etat final trie ? {arr.values == sorted(arr.values)}"")",,,,,,,,94a93562d9ca2c36,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,5113805c,markdown,fr,5d3ab43d36303a52,"**Interprétation.** Le système ne « sait » pas qu'il a été lésé — il n'a ni mémoire de l'état-cible, ni détecteur d'erreur global. Pourtant la même dynamique locale qui avait construit l'ordre le **reconstruit** après la perturbation, jusqu'au retour à l'état trié. C'est la marque d'un **attracteur** : l'ordre n'est pas un point de départ privilégié, c'est l'état vers lequel converge toute trajectoire. La régénération est gratuite — elle découle des mêmes règles que la morphogenèse initiale.",,,,,,,,5d3ab43d36303a52,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,43c1a4e9,markdown,fr,0428c12eaf11cb10,"## 5. Hétérogénéité : tableaux chimériques et impasses locales
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,5113805c,markdown,fr,5d3ab43d36303a52,"**Interprétation.** Le système ne « sait » pas qu'il a été lésé — il n'a ni mémoire de l'état-cible, ni détecteur d'erreur global. Pourtant la même dynamique locale qui avait construit l'ordre le **reconstruit** après la perturbation, jusqu'au retour à l'état trié. C'est la marque d'un **attracteur** : l'ordre n'est pas un point de départ privilégié, c'est l'état vers lequel converge toute trajectoire. La régénération est gratuite — elle découle des mêmes règles que la morphogenèse initiale.",,,,,,,,5d3ab43d36303a52,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,43c1a4e9,markdown,fr,0428c12eaf11cb10,"## 5. Hétérogénéité : tableaux chimériques et impasses locales
 
 Un tableau **chimérique** mélange les algotypes. Comme `bubble` (pousse à droite) et `insertion` (tire à gauche) servent le même ordre croissant, on pourrait croire qu'un tel tableau se trie aussi. Observons ce qui se passe réellement.",,,,,,,,0428c12eaf11cb10,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,0b118ee3,code,fr,25ef16fc6a549729,"# --- Exemple guide : un tableau chimerique alterne ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,0b118ee3,code,fr,25ef16fc6a549729,"# --- Exemple guide : un tableau chimerique alterne ---
 n = 20
 v = perm(n)
 algos = [ALGOTYPES[i % 2] for i in range(n)]   # bubble, insertion, bubble, ...
@@ -4815,13 +4815,13 @@ deadlocks = sum(
 agg = m.aggregation_curve(arr.probe.algotypes)
 print(f""Impasses locales residuelles (insertion|bubble inversees) : {deadlocks}"")
 print(f""Indice d'agregation des algotypes : initial={agg[0]:.2f}, max={max(agg):.2f}, final={agg[-1]:.2f}"")",,,,,,,,25ef16fc6a549729,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,30400e86,markdown,fr,4b912f7c4a6485d7,"**Interprétation — quand l'autonomie locale se piège elle-même.** Le tableau chimérique **ne se trie pas toujours complètement**. Une frontière `insertion | bubble` en désordre forme un **point fixe local** : la cellule de gauche ne regarde qu'à gauche, celle de droite qu'à droite — l'inversion qui les sépare n'est dans le champ de vision de personne. L'hétérogénéité, qui pourrait sembler enrichir le système, introduit ici des **échecs de coordination** qu'aucune cellule homogène ne rencontre.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,30400e86,markdown,fr,4b912f7c4a6485d7,"**Interprétation — quand l'autonomie locale se piège elle-même.** Le tableau chimérique **ne se trie pas toujours complètement**. Une frontière `insertion | bubble` en désordre forme un **point fixe local** : la cellule de gauche ne regarde qu'à gauche, celle de droite qu'à droite — l'inversion qui les sépare n'est dans le champ de vision de personne. L'hétérogénéité, qui pourrait sembler enrichir le système, introduit ici des **échecs de coordination** qu'aucune cellule homogène ne rencontre.
 
 > **Note d'honnêteté.** Le papier de Zhang, Goldstein & Levin rapporte une compétence *positive* supplémentaire — les cellules tendent à **s'agréger avec leurs semblables** (« kin ») pendant le voyage, sans que cela soit encodé nulle part. Notre modèle minimal à règles uni-directionnelles ne reproduit pas fidèlement cette agrégation (l'indice ci-dessus reste faible) ; il révèle plutôt la pathologie duale, l'impasse. L'agrégation chimérique sera étudiée avec un jeu de règles plus riche dans **ICT-4**. Mesurer ce que le modèle fait *vraiment*, plutôt que ce qu'on espérait, est précisément la discipline de la série ICT.",,,,,,,,4b912f7c4a6485d7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,b36d275b,markdown,fr,9d670ff52d9445d6,"## 6. Exercices
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,b36d275b,markdown,fr,9d670ff52d9445d6,"## 6. Exercices
 
 Trois exercices pour manipuler le modèle. Les squelettes sont à compléter ; le notebook s'exécute de bout en bout même sans les remplir.",,,,,,,,9d670ff52d9445d6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,9e43dde8,markdown,fr,43da04f85c974b78,"### Exercice 1 — Bubble est-il plus rapide qu'insertion ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,9e43dde8,markdown,fr,43da04f85c974b78,"### Exercice 1 — Bubble est-il plus rapide qu'insertion ?
 
 **Objectif.** Comparer le **coût** (nombre de swaps) pour trier le *même* tableau initial avec un tableau 100 % `bubble` puis 100 % `insertion`, moyenné sur plusieurs graines.
 
@@ -4829,7 +4829,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,9e
 - `# Étape 1` : fixer un tableau initial `v` (par ex. `list(np.random.default_rng(0).permutation(30))`).
 - `# Étape 2` : pour `seed` dans `range(20)`, construire `SelfSortingArray(v, algotypes=[t]*len(v), seed=seed)`, `.run()`, relever `arr.probe.swaps`.
 - `# Étape 3` : comparer les moyennes des deux algotypes.",,,,,,,,43da04f85c974b78,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,73f27366,code,fr,a7daed9a7aafadd5,"# Exercice 1 : cout comparatif bubble vs insertion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,73f27366,code,fr,a7daed9a7aafadd5,"# Exercice 1 : cout comparatif bubble vs insertion
 def cout_moyen(algotype, v, n_seeds=20):
     # TODO etudiant : moyenne du nombre de swaps sur n_seeds graines
     # Indice : arr = SelfSortingArray(v, algotypes=[algotype]*len(v), seed=s).run()
@@ -4839,7 +4839,7 @@ def cout_moyen(algotype, v, n_seeds=20):
 # v = list(np.random.default_rng(0).permutation(30))
 # print(""bubble   :"", cout_moyen(""bubble"", v))
 # print(""insertion:"", cout_moyen(""insertion"", v))",,,,,,,,a7daed9a7aafadd5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,94ebb093,markdown,fr,b71a958a3c02da6a,"### Exercice 2 — Variabilité de l'auto-réparation
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,94ebb093,markdown,fr,b71a958a3c02da6a,"### Exercice 2 — Variabilité de l'auto-réparation
 
 **Objectif.** Après une lésion identique (`perturb(n_swaps=5)`), le temps de récupération dépend du hasard d'activation. Estimer sa **moyenne** et son **écart-type** sur 15 graines.
 
@@ -4847,7 +4847,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,94
 - `# Étape 1` : pour chaque graine, trier, mémoriser `p_step`, perturber, re-trier.
 - `# Étape 2` : `rt = m.recovery_time(m.sortedness_curve(arr.probe.values), p_step + 1)`.
 - `# Étape 3` : ignorer les `None` (jamais récupéré), puis `np.mean` / `np.std`.",,,,,,,,b71a958a3c02da6a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,a98030a2,code,fr,8636852da12e2b6f,"# Exercice 2 : distribution du temps de recuperation
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,a98030a2,code,fr,8636852da12e2b6f,"# Exercice 2 : distribution du temps de recuperation
 def temps_recuperation(n_seeds=15):
     temps = []
     # TODO etudiant : remplir `temps` avec les recovery_time non-None
@@ -4856,7 +4856,7 @@ def temps_recuperation(n_seeds=15):
 
 # rts = temps_recuperation()
 # print(""recovery_time : moyenne / ecart-type"") ",,,,,,,,8636852da12e2b6f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,96364319,markdown,fr,fec3b06097b26ba8,"### Exercice 3 — Guérir l'impasse chimérique
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,96364319,markdown,fr,fec3b06097b26ba8,"### Exercice 3 — Guérir l'impasse chimérique
 
 **Objectif.** Concevoir une règle locale qui **évite les impasses** de la section 5 tout en gardant des algotypes distincts.
 
@@ -4866,7 +4866,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,96
 - `# Étape 1` : construire `algos` par blocs : `[""bubble""]*10 + [""insertion""]*10`.
 - `# Étape 2` : comparer la sortedness finale à celle du tableau alterné de la section 5.
 - `# Étape 3` : conclure sur le rôle de l'**agencement** des algotypes.",,,,,,,,fec3b06097b26ba8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,38932ad7,code,fr,e7860e8142df0fc1,"# Exercice 3 : agencement des algotypes et impasses
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,38932ad7,code,fr,e7860e8142df0fc1,"# Exercice 3 : agencement des algotypes et impasses
 def sortedness_finale(algos, seed=5):
     v = list(np.random.default_rng(1).permutation(len(algos)))
     # TODO etudiant : construire l'array chimerique, le faire tourner, renvoyer m.sortedness(...)
@@ -4875,7 +4875,7 @@ def sortedness_finale(algos, seed=5):
 
 # print(""alterne :"", sortedness_finale([ALGOTYPES[i % 2] for i in range(20)]))
 # print(""blocs   :"", sortedness_finale([""bubble""]*10 + [""insertion""]*10))",,,,,,,,e7860e8142df0fc1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,d2cf2795,markdown,fr,1d572d2cbfef974f,"## 7. Gates de dégénérescence : l'ordre vient-il de la règle, ou de l'activation répétée ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,d2cf2795,markdown,fr,1d572d2cbfef974f,"## 7. Gates de dégénérescence : l'ordre vient-il de la règle, ou de l'activation répétée ?
 
 Ce carnet est le **producteur** du jouet `SelfSortingArray`, consommé par une douzaine de carnets de la série. La question de la maquette de dégénérescence (#20300) est donc celle du producteur : les mesures de ce carnet — sortedness, trajectoire, robustesse — **discriminent-elles**, ou rendraient-elles le même résultat sur n'importe quel tableau remué au hasard ?
 
@@ -6770,10 +6770,10 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb,88dc0e55,
 - Série ICT : [ICT-21](ICT-21-SAETrajectoires-Python.ipynb) (substrat S4), [ICT-5](ICT-05-CausalEmergence-Python.ipynb) (émergence causale), [ICT-Synthese](ICT-Synthese-CrossSubstrat-Python.ipynb).
 
 ",,,,,,,,3c3677ad82c757b8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,9bcd075e,markdown,fr,8ad8d8c5a9632a23,"# ICT-3 — Robustesse & délai de gratification : étude quantitative
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,9bcd075e,markdown,fr,8ad8d8c5a9632a23,"# ICT-3 — Robustesse & délai de gratification : étude quantitative
 
 > Série **ICT** (*Integrated Causal Trajectories*, Epic [#4588](https://github.com/jsboige/CoursIA/issues/4588)).
-> Prérequis : [ICT-0 (cadrage)](ICT-0-Framing.md) et [ICT-2 (modèle de base)](ICT-02-SelfSortingMorphogenesis-Python.ipynb).
+> Prérequis : [ICT-0 (cadrage)](../ICT-0-Framing.md) et [ICT-2 (modèle de base)](ICT-02-SelfSortingMorphogenesis-Python.ipynb).
 
 Le notebook [ICT-2](ICT-02-SelfSortingMorphogenesis-Python.ipynb) a introduit le **tri vu-cellule** (*cell-eye-view*)
 d'après Zhang, Goldstein & Levin (2025, [arXiv:2401.05375](https://arxiv.org/abs/2401.05375)) :
@@ -6796,9 +6796,9 @@ ICT-3 **les mesure**. On passe de l'anecdote (« regardez, ça marche encore »)
 3. **Quantification du délai de gratification** — comptage des épisodes de recul local, comparé entre
    `bubble` et `insertion`. *Quel algotype « sacrifie » le plus pour avancer ?*
 
-Le fil méthodologique de la série (cf [ICT-0](ICT-0-Framing.md)) : **exécuter, mesurer, narrer le
+Le fil méthodologique de la série (cf [ICT-0](../ICT-0-Framing.md)) : **exécuter, mesurer, narrer le
 résultat réel** — pas le résultat espéré.",,,,,,,,8ad8d8c5a9632a23,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,lev1n-barr1ers-br1dge,markdown,fr,1a9c3c341c9bb110,"**Pourquoi ces deux compétences constituent un _test d'intelligence_.** Avant de les mesurer,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,lev1n-barr1ers-br1dge,markdown,fr,1a9c3c341c9bb110,"**Pourquoi ces deux compétences constituent un _test d'intelligence_.** Avant de les mesurer,
 rappelons ce qu'on mesure au juste. Michael Levin — dont le programme de l'**intelligence diverse**
 a inspiré le modèle vu-cellule de Zhang, Goldstein & Levin — propose une définition *opérationnelle*
 de l'intelligence : *« Intelligence is the degree of ingenuity that it has in overcoming barriers
@@ -6811,14 +6811,14 @@ exogène **sont les barrières** ; la dégradation gracieuse (§1), le temps de 
 comptage du délai de gratification (§3) **mesurent l'ingéniosité** du substrat à les contourner — le
 vocabulaire cognitif n'est pas décoratif, il nomme la grandeur que chaque expérience sonde. Cadrage
 complet (spectre de la cognition, cône de lumière cognitif, « revendications-protocole ») :
-**[ICT-0 — Pourquoi parler de « compétences » ?](ICT-0-Framing.md)**.",,,,,,,,1a9c3c341c9bb110,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,f322d4f3,markdown,fr,6a4d36ac91bd92dd,"## 0. Mise en place
+**[ICT-0 — Pourquoi parler de « compétences » ?](../ICT-0-Framing.md)**.",,,,,,,,1a9c3c341c9bb110,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,f322d4f3,markdown,fr,6a4d36ac91bd92dd,"## 0. Mise en place
 
 On réutilise le package `ict/` livré avec ICT-2 (aucune dépendance lourde : bibliothèque standard +
 `numpy`/`matplotlib` pour les figures). `SelfSortingArray` porte le modèle vu-cellule ; le module
 `sorting_metrics` fournit `sortedness`, `monotonicity_curve`, `delayed_gratification_events`,
 `recovery_time`, etc.",,,,,,,,6a4d36ac91bd92dd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,bdef2a86,code,fr,f1abaa9d4294aad6,"import os
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,bdef2a86,code,fr,f1abaa9d4294aad6,"import os
 import sys
 import random
 
@@ -6826,7 +6826,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # le package ict/ est a cote de ce notebook
-sys.path.insert(0, os.path.abspath("".""))
+sys.path.insert(0, os.path.dirname(os.path.abspath(""."")))
 
 from ict.self_sorting import SelfSortingArray, ALGOTYPES
 from ict import sorting_metrics as m
@@ -6839,7 +6839,7 @@ N = 40            # taille du tableau d'etude
 BASE_SEED = 7     # graine de reference pour les configurations reproductibles
 print(f""Algotypes disponibles : {ALGOTYPES}"")
 print(f""Tableau d'etude : N = {N} elements"")",,,,,,,,f1abaa9d4294aad6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,6746e584,code,fr,325ca941a49f44cf,"def make_values(n, seed):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,6746e584,code,fr,325ca941a49f44cf,"def make_values(n, seed):
     # une permutation aleatoire reproductible de 0..n-1
     return random.Random(seed).sample(range(n), n)
 
@@ -6852,7 +6852,7 @@ def frozen_mask(n, fraction, seed):
 # verification rapide : 25% de N=40 -> 10 cellules gelees
 demo_mask = frozen_mask(N, 0.25, seed=0)
 print(f""frozen_mask(0.25) -> {sum(demo_mask)} cellules gelees sur {N}"")",,,,,,,,325ca941a49f44cf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,acd433c6,markdown,fr,947b71be9e971bc8,"## 1. Dégradation gracieuse de la compétence de tri
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,acd433c6,markdown,fr,947b71be9e971bc8,"## 1. Dégradation gracieuse de la compétence de tri
 
 **Question.** Quand on augmente la proportion de cellules cassées, le tri ne s'effondre pas d'un coup —
 il se *dégrade*. Mais comment ? Linéairement ? Avec un seuil critique ? Et le **régime de gel** change-t-il
@@ -6867,7 +6867,7 @@ Deux régimes (cf [ICT-2](ICT-02-SelfSortingMorphogenesis-Python.ipynb)) :
 
 On balaye le taux de lésion de 0 à 50 %, pour chaque algotype et chaque régime, et on mesure la
 **sortedness finale** (1.0 = parfaitement trié), moyennée sur plusieurs graines.",,,,,,,,947b71be9e971bc8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,09af3c8b,code,fr,a4af2abff6d9343a,"DAMAGE_LEVELS = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,09af3c8b,code,fr,a4af2abff6d9343a,"DAMAGE_LEVELS = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
 SEEDS = [0, 1, 7, 42, 99]   # 5 graines -> moyenne + ecart-type
 
 def final_sortedness(fraction, algotype, mode, seed):
@@ -6896,7 +6896,7 @@ print(""Sortedness finale (moyenne sur 5 graines) :"")
 for (algotype, mode), (means, _) in results.items():
     pretty = "" "".join(f""{x:.2f}"" for x in means)
     print(f""  {algotype:9s} / {mode:8s} : {pretty}"")",,,,,,,,a4af2abff6d9343a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,38c5c1a8,code,fr,b59d8505e98bee3e,"fig, axes = plt.subplots(1, 2, figsize=(12, 4.5), sharey=True)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,38c5c1a8,code,fr,b59d8505e98bee3e,"fig, axes = plt.subplots(1, 2, figsize=(12, 4.5), sharey=True)
 x = [int(100 * d) for d in DAMAGE_LEVELS]
 for ax, mode in zip(axes, (""passive"", ""obstacle"")):
     for algotype in ALGOTYPES:
@@ -6910,7 +6910,7 @@ axes[0].set_ylabel(""Sortedness finale"")
 fig.suptitle(""Dégradation gracieuse : le tri résiste-t-il aux cellules cassées ?"")
 plt.tight_layout()
 plt.show()",,,,,,,,b59d8505e98bee3e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,1f6f7f62,markdown,fr,828dfd9dfe529e22,"**Lecture (résultat réel mesuré).** Les deux régimes partent de 1.0 à 0 % de lésion, puis décroissent —
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,1f6f7f62,markdown,fr,828dfd9dfe529e22,"**Lecture (résultat réel mesuré).** Les deux régimes partent de 1.0 à 0 % de lésion, puis décroissent —
 mais pas au même rythme. En régime `passive`, la sortedness se dégrade **graduellement** et reste
 nettement au-dessus du régime `obstacle` *et* du niveau aléatoire (0.5) sur toute la plage : les cellules
 saines transportent les passagers cassés, si bien qu'à 50 % de cellules gelées le système conserve encore
@@ -6923,7 +6923,7 @@ triés mais globalement désordonnés — les deux algotypes y suivent la même 
 L'écart entre les deux courbes — maximal aux taux faibles à modérés — **mesure** ce que coûte
 l'infranchissabilité : la différence entre « cellule défaillante mais inerte » et « cellule défaillante
 et bloquante ».",,,,,,,,828dfd9dfe529e22,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,331078fb,markdown,fr,34fe4526397ef58d,"## 2. Temps de récupération après lésion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,331078fb,markdown,fr,34fe4526397ef58d,"## 2. Temps de récupération après lésion
 
 **Question.** ICT-2 a montré *une* auto-réparation : on perturbe un tableau trié, il se re-trie. Mais cette
 réparation est-elle **fiable**, et quel est le **coût** (nombre de pas) — et sa distribution ?
@@ -6934,7 +6934,7 @@ fixe une **référence nette** (revenir à 1.0). Protocole, pour chaque essai : 
 fixe, (2) appliquer une lésion exogène (`perturb`, quelques échanges aléatoires), (3) relancer en
 enregistrant la courbe de sortedness, (4) mesurer `recovery_time` = nombre de pas pour revenir au niveau
 d'avant lésion. On compare les deux algotypes.",,,,,,,,34fe4526397ef58d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,58a8c570,code,fr,ac039fdd7cac2e1d,"def one_recovery(algotype, seed, n_swaps=4):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,58a8c570,code,fr,ac039fdd7cac2e1d,"def one_recovery(algotype, seed, n_swaps=4):
     vals = make_values(N, seed)
     arr = SelfSortingArray(vals, algotypes=[algotype] * N, seed=seed)  # tissu sain
     arr.run(max_steps=40000)            # 1) tri initial -> sortedness 1.0 (enregistre)
@@ -6953,7 +6953,7 @@ for algotype in ALGOTYPES:
     arr_t = np.array(rec[algotype])
     print(f""{algotype:9s} : {len(rec[algotype])}/{len(times)} réparés ""
           f""| médiane={np.median(arr_t):.0f} pas | min={arr_t.min()} | max={arr_t.max()} | échecs={n_fail}"")",,,,,,,,ac039fdd7cac2e1d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,f82e995c,code,fr,304700e7f3799ba9,"fig, ax = plt.subplots()
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,f82e995c,code,fr,304700e7f3799ba9,"fig, ax = plt.subplots()
 all_max = max(max(rec[a]) for a in ALGOTYPES)
 bins = np.linspace(0, all_max + 1, 16)
 for algotype, color in ((""bubble"", ""tab:blue""), (""insertion"", ""tab:orange"")):
@@ -6965,7 +6965,7 @@ ax.set_title(""Distribution du temps d'auto-réparation après lésion (tissu sa
 ax.legend()
 plt.tight_layout()
 plt.show()",,,,,,,,304700e7f3799ba9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,0d235c9d,markdown,fr,90ed6b992752ccce,"**Lecture (résultat réel mesuré).** Sur tissu sain, l'auto-réparation est **systématique** : les 24
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,0d235c9d,markdown,fr,90ed6b992752ccce,"**Lecture (résultat réel mesuré).** Sur tissu sain, l'auto-réparation est **systématique** : les 24
 essais des deux algotypes reviennent à la sortedness 1.0 — la lésion exogène est toujours résorbée. Le
 résultat intéressant n'est donc pas *si* le système répare, mais *combien cela coûte* : le temps de
 récupération est une **distribution** large (de quelques centaines à plus de mille pas selon la graine),
@@ -6975,7 +6975,7 @@ se recouvrent largement — la différence d'algotype pèse moins que l'aléa de
 La robustesse n'est donc pas un oui/non : c'est une *loi de probabilité* sur le coût de réparation. La
 section 1 a montré l'autre face — quand le tissu est lui-même endommagé (cellules gelées, *a fortiori* en
 mur), la réparation peut ne plus aboutir du tout.",,,,,,,,90ed6b992752ccce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,0fbb2e80,markdown,fr,eff9ad5a690eef4d,"## 3. Quantification du délai de gratification
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,0fbb2e80,markdown,fr,eff9ad5a690eef4d,"## 3. Quantification du délai de gratification
 
 **Question.** Le *délai de gratification* est l'idée qu'un système doive **empirer localement** pour
 progresser globalement. Dans le tri vu-cellule, on le mesure sur la courbe d'**erreur de monotonie**
@@ -6984,7 +6984,7 @@ est un épisode de recul local au service du progrès global (`delayed_gratifica
 
 `bubble` (migration des grandes valeurs vers la droite) et `insertion` (migration des petites vers la
 gauche) n'ont pas la même façon d'avancer. Lequel « sacrifie » le plus ?",,,,,,,,eff9ad5a690eef4d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,bef5e49b,code,fr,df08a1f45778f485,"def dg_profile(algotype, seed):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,bef5e49b,code,fr,df08a1f45778f485,"def dg_profile(algotype, seed):
     vals = make_values(N, seed)
     arr = SelfSortingArray(vals, algotypes=[algotype] * N, seed=seed)
     arr.run(max_steps=40000)
@@ -7003,7 +7003,7 @@ print(""Épisodes de délai de gratification (recul local de la monotonie) :"")
 for a in ALGOTYPES:
     arr_e = np.array(dg_counts[a])
     print(f""  {a:9s} : moyenne={arr_e.mean():.1f}  (min={arr_e.min()}, max={arr_e.max()})"")",,,,,,,,df08a1f45778f485,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,4d0fdf04,code,fr,0f3957adc46c0eab,"# trace temoin : monotonie (peut remonter) vs sortedness (progresse) pour une graine
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,4d0fdf04,code,fr,0f3957adc46c0eab,"# trace temoin : monotonie (peut remonter) vs sortedness (progresse) pour une graine
 fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
 for algotype, color in ((""bubble"", ""tab:blue""), (""insertion"", ""tab:orange"")):
     mono, sort_curve, ev = dg_profile(algotype, seed=BASE_SEED)
@@ -7015,18 +7015,18 @@ axes[1].set_title(""Sortedness (globale) — progresse vers 1.0"")
 axes[1].set_xlabel(""Pas""); axes[1].set_ylabel(""Sortedness""); axes[1].legend()
 plt.tight_layout()
 plt.show()",,,,,,,,0f3957adc46c0eab,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,4d967799,markdown,fr,66d7bbb62c44b106,"**Lecture (résultat réel mesuré).** Les deux algotypes convergent (sortedness → 1.0), mais la courbe
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,4d967799,markdown,fr,66d7bbb62c44b106,"**Lecture (résultat réel mesuré).** Les deux algotypes convergent (sortedness → 1.0), mais la courbe
 d'erreur de monotonie **remonte** des dizaines de fois en cours de route : le système accepte régulièrement
 des descentes locales pour réorganiser globalement. Le comptage est **élevé et comparable** entre les deux
 règles (~90 épisodes en moyenne pour N=40), `bubble` en exhibant marginalement plus que `insertion` — la
 nature du délai de gratification est donc une propriété du *paradigme* vu-cellule, pas d'un algotype
 particulier. Ce comportement, qu'on prête d'ordinaire aux agents cognitifs, **émerge** ici d'une règle de
 tri triviale : exactement le point de Zhang, Goldstein & Levin.",,,,,,,,66d7bbb62c44b106,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,0ece8ca2,markdown,fr,1b64a206a6160618,"## 4. Exercices
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,0ece8ca2,markdown,fr,1b64a206a6160618,"## 4. Exercices
 
 Les exercices réutilisent le package `ict/` déjà importé. Complétez les stubs (`# TODO`) ; chaque
 exercice s'exécute indépendamment.",,,,,,,,1b64a206a6160618,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,e6d7b9c5,markdown,fr,b011ce9df1de5aba,"### Exercice 1 — Dégradation mesurée sur une autre métrique
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,e6d7b9c5,markdown,fr,b011ce9df1de5aba,"### Exercice 1 — Dégradation mesurée sur une autre métrique
 
 La section 1 a mesuré la dégradation via la **sortedness finale**. La sortedness sature vite (toute
 configuration presque triée donne ~1.0). Une mesure plus fine du « chemin restant » est
@@ -7035,7 +7035,7 @@ configuration presque triée donne ~1.0). Une mesure plus fine du « chemin rest
 **Objectif.** Reproduire le balayage de dégradation (régime `passive`, algotype `bubble`) mais en mesurant
 la `distance_to_target` finale **normalisée** par celle de l'état initial mélangé, et tracer la courbe.
 Une valeur proche de 0 = presque tout le désordre résorbé ; proche de 1 = le tri n'a rien résorbé.",,,,,,,,b011ce9df1de5aba,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,a1a374e9,code,fr,95d5299a4d1f2ab5,"def residual_distance(fraction, seed):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,a1a374e9,code,fr,95d5299a4d1f2ab5,"def residual_distance(fraction, seed):
     # Distance au tri finale / distance initiale, regime passive, bubble.
     # TODO etudiant :
     #   1. construire les valeurs (make_values) et le masque (frozen_mask)
@@ -7052,14 +7052,14 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ip
 # plt.xlabel(""Cellules endommagees (%)""); plt.ylabel(""Distance residuelle (normalisee)"")
 # plt.title(""Exercice 1 - degradation vue par distance_to_target""); plt.show()
 print(""Exercice 1 a completer"")",,,,,,,,95d5299a4d1f2ab5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,a69e7217,markdown,fr,2f06d290ba4a2c76,"### Exercice 2 — Le coût de réparation dépend-il de l'amplitude de la lésion ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,a69e7217,markdown,fr,2f06d290ba4a2c76,"### Exercice 2 — Le coût de réparation dépend-il de l'amplitude de la lésion ?
 
 La section 2 a utilisé une lésion fixe (`n_swaps=4`). Intuitivement, une lésion plus forte devrait coûter
 plus cher à réparer.
 
 **Objectif.** En régime `passive` sans cellule gelée, mesurer le temps de récupération médian en fonction
 de l'amplitude `n_swaps` ∈ {1, 2, 4, 8, 16}, sur plusieurs graines, et tracer la relation.",,,,,,,,2f06d290ba4a2c76,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,49ff6e6b,code,fr,bebf1e766cec2028,"def median_recovery_for_amplitude(n_swaps, seeds):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,49ff6e6b,code,fr,bebf1e766cec2028,"def median_recovery_for_amplitude(n_swaps, seeds):
     # Temps de recuperation median pour une amplitude de lesion donnee.
     # TODO etudiant :
     #   1. pour chaque graine, appeler one_recovery(""bubble"", seed=s, n_swaps=n_swaps)
@@ -7075,7 +7075,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ip
 # plt.xlabel(""Amplitude de la lesion (n_swaps)""); plt.ylabel(""Temps de recuperation median"")
 # plt.title(""Exercice 2 - cout de reparation vs amplitude""); plt.show()
 print(""Exercice 2 a completer"")",,,,,,,,bebf1e766cec2028,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,bc3f7c89,markdown,fr,a6ddf91dedc21bbe,"### Exercice 3 — Le délai de gratification croît-il avec la taille du tableau ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,bc3f7c89,markdown,fr,a6ddf91dedc21bbe,"### Exercice 3 — Le délai de gratification croît-il avec la taille du tableau ?
 
 La section 3 a comparé `bubble` et `insertion` à taille fixe (`N=40`). On veut savoir comment le nombre
 d'épisodes de délai de gratification **évolue avec la taille** du système.
@@ -7083,7 +7083,7 @@ d'épisodes de délai de gratification **évolue avec la taille** du système.
 **Objectif.** Pour `bubble`, mesurer le nombre moyen d'épisodes `delayed_gratification_events` (sur la
 courbe d'erreur de monotonie) pour des tailles `n` ∈ {10, 20, 40, 80}, moyenné sur quelques graines, et
 tracer la relation. Discuter : croissance linéaire, sur-linéaire ?",,,,,,,,a6ddf91dedc21bbe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,1cd4a01d,code,fr,11062eb305320119,"def mean_dg_for_size(n, seeds):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,1cd4a01d,code,fr,11062eb305320119,"def mean_dg_for_size(n, seeds):
     # Nombre moyen d'episodes de delai de gratification pour un tableau de taille n.
     # TODO etudiant :
     #   1. pour chaque graine s : vals = random.Random(s).sample(range(n), n)
@@ -7100,7 +7100,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ip
 # plt.xlabel(""Taille du tableau (n)""); plt.ylabel(""Episodes de delai de gratification (moyenne)"")
 # plt.title(""Exercice 3 - delai de gratification vs taille""); plt.show()
 print(""Exercice 3 a completer"")",,,,,,,,11062eb305320119,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,9a0ca500,markdown,fr,4d39a19213a8f2b5,"## Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,9a0ca500,markdown,fr,4d39a19213a8f2b5,"## Conclusion
 
 ICT-3 a transformé les deux démonstrations ponctuelles d'ICT-2 en **mesures** :
 
@@ -7118,13 +7118,13 @@ Ces compétences — robustesse, réparation, patience — ne sont **programmée
 de la dynamique locale, ce qui est précisément la thèse de Zhang, Goldstein & Levin : un substrat minimal
 exhibe des compétences « basales » qu'on associe d'ordinaire à des agents cognitifs.
 
-**Suite de la série.** [ICT-4](ICT-0-Framing.md) abordera l'**agrégation par algotype** (« kin ») avec un
+**Suite de la série.** [ICT-4 >>](ICT-04-ChimericArraysKinAggregation-Python.ipynb) abordera l'**agrégation par algotype** (« kin ») avec un
 jeu de règles plus riche — le modèle minimal d'ICT-2/3 ne la reproduit pas (ses règles uni-directionnelles
-produisent des impasses de coordination). [ICT-5/6](ICT-0-Framing.md) relieront ces trajectoires de tri à
+produisent des impasses de coordination). [ICT-5/6](../ICT-0-Framing.md) relieront ces trajectoires de tri à
 l'**émergence causale multi-échelle** (TPM → PyPhi).
 
 ### Voir aussi
-- [ICT-0 — Cadrage de la série](ICT-0-Framing.md)
+- [ICT-0 — Cadrage de la série](../ICT-0-Framing.md)
 - [ICT-2 — Self-sorting arrays : le tri comme morphogenèse](ICT-02-SelfSortingMorphogenesis-Python.ipynb)
 - Zhang, Goldstein & Levin, *Classical sorting algorithms as a model of morphogenesis*, Adaptive Behavior 2025 — [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).",,,,,,,,4d39a19213a8f2b5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,d472f43f,markdown,fr,03914bf27941744e,"# ICT-5 : Émergence causale — quelle échelle décrit le mieux un système ?
@@ -7436,7 +7436,7 @@ littérature multi-échelle.
 - [ICT-1 — Trajectoires de $\Phi$](ICT-01-PhiTrajectories-Python.ipynb) : comment $\Phi$ varie le long
   d'une trajectoire d'états (à échelle fixe).
 - **[ICT-6 — Pont tri → TPM → PyPhi](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** : construire la TPM d'une simulation de
-  [tri-morphogenèse](ICT-02-SelfSortingMorphogenesis-Python.ipynb) puis lui appliquer cette analyse
+  [tri-morphogenèse](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) puis lui appliquer cette analyse
   d'émergence — relier les deux piliers de la série.
 - [ICT-0 — Cadrage](ICT-0-Framing.md) : place de ce notebook dans la feuille de route.
 
@@ -7450,7 +7450,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipyn
 
 > Serie **ICT** (*Integrated Causal Trajectories*), Epic #4588. Voir le [cadrage ICT-0](ICT-0-Framing.md).
 > Ce notebook construit le **pont tri -> TPM** annonce dans la feuille de route : il transforme les
-> trajectoires de [self-sorting d'ICT-2](ICT-02-SelfSortingMorphogenesis-Python.ipynb) en une **chaîne de
+> trajectoires de [self-sorting d'ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) en une **chaîne de
 > Markov** etat-a-etat, puis y mesure l'**emergence causale** avec l'outillage moderne de
 > *Causal Emergence 2.0* (Erik Hoel, [arXiv:2503.13395](https://arxiv.org/abs/2503.13395), 2025).",,,,,,,,3085e77d9906b0cf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-intro,markdown,fr,edf814c8d07bf9eb,"## Pourquoi ICT-6 ? La limite de PyPhi, et ce qui passe a l'echelle
@@ -7508,7 +7508,7 @@ print(""primitives CE 2.0 :"", [f for f in (""determinism"", ""degeneracy"", ""s
       ""effectiveness"", ""effective_information"", ""greedy_apportionment"", ""emergent_complexity"")])",,,,,,,,47e3e11ca82f2438,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-recall-md,markdown,fr,39d85bee51347cd7,"## 1. Rappel — un système qui se trie lui-même
 
-Dans [ICT-2](ICT-02-SelfSortingMorphogenesis-Python.ipynb), chaque élément du tableau est une **cellule
+Dans [ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb), chaque élément du tableau est une **cellule
 autonome** : elle ne voit que sa voisine et applique une règle locale (`bubble` regarde a droite,
 `insertion` regarde a gauche). L'ordre global n'est impose par personne — il **emerge** des decisions
 locales. Le tri devient une **trajectoire** dans l'espace des configurations : exactement l'objet
@@ -7819,7 +7819,7 @@ niveau d'echelles au **do-calculus** (la même intervention uniforme `do` levee 
 ### Voir aussi
 
 - [ICT-0 — cadrage de la serie](ICT-0-Framing.md) — feuille de route, articles fondateurs.
-- [ICT-2 — self-sorting morphogenesis](ICT-02-SelfSortingMorphogenesis-Python.ipynb) — le système source.
+- [ICT-2 — self-sorting morphogenesis](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) — le système source.
 - [ICT-5 — emergence causale (pyphi.macro)](ICT-05-CausalEmergence-Python.ipynb) — l'approche bornee complementaire.
 - [Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) — l'EI estimée ici repose sur des **interventions uniformes** (`do(s)` sur chaque état, maximum-entropy) : le pont donne l'armature formelle de ce même opérateur `do` (échelle de Pearl + 3 règles, exécutées sur `dowhy`) et relie cette série à Tweety-11, Infer-5 et PyMC-5.
 - Erik Hoel, *Causal Emergence 2.0*, [arXiv:2503.13395](https://arxiv.org/abs/2503.13395), 2025.",,,,,,,,93fa8ccd480b41b2,,,,,,,,,,,,,,,
@@ -7984,7 +7984,7 @@ multi-echelle nette est un accident finement règle, pas la règle.",,,,,,,,a637
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,1236161c,markdown,fr,723b5de0b597f012,"## 4. Retour au tri auto-organise : a queue lourde, mais *pas* scale-free
 
 Reprenons le système vedette de la serie : le **tri auto-organise** vue-cellule
-d'[ICT-2](ICT-02-SelfSortingMorphogenesis-Python.ipynb) (tableaux chimeriques alternant
+d'[ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) (tableaux chimeriques alternant
 les algotypes `bubble`/`insertion`). On en extrait une signature naturelle : le
 **deplacement net** de chaque cellule, $\lvert {\rm position\ initiale} - {\rm position\
 finale} \rvert$, sur de nombreuses permutations aleatoires. Certaines cellules voyagent
@@ -8995,9 +8995,9 @@ verdict est, de plus en plus, **régime-dépendant** (ICT-10 → ICT-13).
 |-------|-------------------|-----------------------|--------------------------|
 | **[ICT-0](ICT-0-Framing.md)** | De l'état (IIT) à la trajectoire : quel cadre ? | Cadre méthodologique : *mesurer ce que le modèle fait vraiment, pas ce qu'on espérait* ; deux strates ; contrôle dégénéré obligatoire | doc de cadrage (2 articles fondateurs : Levin ; Jansma & Hoel) |
 | **[ICT-1](ICT-01-PhiTrajectories-Python.ipynb)** | $\Phi$ a-t-il un paysage, une trajectoire, une robustesse ? | OUI aux trois : $\Phi$ **pulse** le long de l'attracteur et se **répare** (vrai PyPhi) | AND/OR pic $\Phi$=2.31 vs 0.19 (amplitude 2.12) ; XOR plat 1.875 ; attracteur cycle longueur 3 |
-| **[ICT-2](ICT-02-SelfSortingMorphogenesis-Python.ipynb)** | Le tri est-il une morphogenèse à compétences ? | Robustesse + délai de gratification + auto-réparation OUI ; agrégation « kin » **NON** (impasses) → renvoi ICT-4 | tri homogène 315 pas / 68 swaps ; chimère sortedness 0.784, 4 impasses résiduelles |
-| **[ICT-3](ICT-03-RobustnessDelayedGratification-Python.ipynb)** | Ces compétences se quantifient-elles ? | OUI : dégradation gracieuse, réparation **24/24**, délai ~90 épisodes | @50 % lésion passif 0.59–0.62 vs obstacle 0.53 ; délai bubble 91.4 / insertion 89.8 |
-| **[ICT-4](ICT-04-ChimericArraysKinAggregation-Python.ipynb)** | Quel enrichissement minimal fait émerger l'agrégation « kin » ? | Réparation bidirectionnelle guérit l'impasse mais **n'agrège pas** ; l'agrégation émerge **seulement** dans les degrés de liberté laissés par le tri | copies=1 (liberté nulle) → agrégation kin ≈ 0 ; décolle dès copies ≥ 2 ; 40/40 → 0/40 non triés |
+| **[ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb)** | Le tri est-il une morphogenèse à compétences ? | Robustesse + délai de gratification + auto-réparation OUI ; agrégation « kin » **NON** (impasses) → renvoi ICT-4 | tri homogène 315 pas / 68 swaps ; chimère sortedness 0.784, 4 impasses résiduelles |
+| **[ICT-3](ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb)** | Ces compétences se quantifient-elles ? | OUI : dégradation gracieuse, réparation **24/24**, délai ~90 épisodes | @50 % lésion passif 0.59–0.62 vs obstacle 0.53 ; délai bubble 91.4 / insertion 89.8 |
+| **[ICT-4](ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb)** | Quel enrichissement minimal fait émerger l'agrégation « kin » ? | Réparation bidirectionnelle guérit l'impasse mais **n'agrège pas** ; l'agrégation émerge **seulement** dans les degrés de liberté laissés par le tri | copies=1 (liberté nulle) → agrégation kin ≈ 0 ; décolle dès copies ≥ 2 ; 40/40 → 0/40 non triés |
 | **[ICT-5](ICT-05-CausalEmergence-Python.ipynb)** | L'émergence causale ($\Phi_\text{macro} > \Phi_\text{micro}$) est-elle réelle et systématique ? | **Discriminante**, pas systématique : absente sur des systèmes déjà micro-intégrés | Hoel 0.114 → 0.597 (**+0.483**) ; XOR **−1.375** ; basic\_network **−1.792** |
 | **[ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** | Peut-on porter l'émergence au tri au-delà de PyPhi (CE 2.0) ? | OUI ; le macro *intuitif* (niveau de tri) **échoue**, seul l'apportionnement glouton trouve l'échelle | micro EI 3.29 bits ; macro-tri gain **−0.034** (NON) ; glouton effectiveness 0.717 → 0.826 (**+0.109**) |
 | **[ICT-7](ICT-07-ScaleFreeSignatures-Python.ipynb)** | Le tri auto-organisé est-il scale-free ? | **NON** : échelle caractéristique (la taille $n$, révélée par effondrement d'échelle) ; le scale-free est rare et réglé | branchement critique $\mu$=1 : $\alpha$=1.58, KS=0.017, $p$=0.625 ($\tau$=3/2) ; tri **rejeté** $p$-GoF=0.0 |
@@ -9138,7 +9138,7 @@ On instancie les trois trajectoires avec la graine représentative `SEED0`. Chac
 ",,,,,,,,58902fb68cc0b81f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb,ac4cdea3,markdown,fr,713006d52f5558eb,"### S1 — le tri auto-organisé (strate 1)
 
-Le banc d'entrée de la série ([ICT-2](ICT-02-SelfSortingMorphogenesis-Python.ipynb)/[ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)) :
+Le banc d'entrée de la série ([ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb)/[ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)) :
 plusieurs tris distribués, résumés par leur **nombre d'inversions** à chaque pas (macro-état
 grossier, borné par $n(n-1)/2$).
 ",,,,,,,,713006d52f5558eb,,,,,,,,,,,,,,,
@@ -10985,9 +10985,9 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipyn
 classification_ex3 = None  # TODO etudiant : regles triees par sigma_real
 print(""Exercice 3 a completer -- voir l'Exemple guide 3 pour wolfram_trajectory"")
 ",,,,,,,,ccd5190abdfe9734,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,cell-741b486e,markdown,fr,0547786a62535095,"## Repères IIT — sous-systèmes et structures cause-effet
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,cell-741b486e,markdown,fr,0547786a62535095,"## Repères IIT — sous-systèmes et structures cause-effet
 
-> Vocabulaire IIT nécessaire pour interpréter ICT-2 (self-sorting morphogenesis) en termes d'information intégrée. Pour Φ/TPM/partition (notions de base), voir [ICT-1](ICT-01-PhiTrajectories-Python.ipynb) § Repères IIT canoniques. Pour le texte fondateur, voir [ICT-0-Annexe](ICT-0-Annexe-IntegratedComplexityTheory.md) ($\Phi_{\text{dyn}}$). Source primaire : [IIT-1 — Intro to PyPhi](../IIT-01-IntroToPyPhi-Python.ipynb) + [IIT-2 — Advanced Topics](../IIT-02-AdvancedTopics-Python.ipynb).
+> Vocabulaire IIT nécessaire pour interpréter ICT-2 (self-sorting morphogenesis) en termes d'information intégrée. Pour Φ/TPM/partition (notions de base), voir [ICT-1](../ICT-01-PhiTrajectories-Python.ipynb) § Repères IIT canoniques. Pour le texte fondateur, voir [ICT-0-Annexe](../ICT-0-Annexe-IntegratedComplexityTheory.md) ($\Phi_{\text{dyn}}$). Source primaire : [IIT-1 — Intro to PyPhi](../../IIT-01-IntroToPyPhi-Python.ipynb) + [IIT-2 — Advanced Topics](../../IIT-02-AdvancedTopics-Python.ipynb).
 
 ICT-1 calculait $\Phi$ **état par état** sur le système entier. ICT-2 soulève une question plus fine : **quelles parties du tableau qui se trie sont causalement responsables de ce tri ?** Cela exige deux notions que ICT-1 n'introduisait pas :
 
@@ -10999,7 +10999,7 @@ ICT-1 calculait $\Phi$ **état par état** sur le système entier. ICT-2 soulèv
 
 **Lecture IIT de ICT-2.** Le tableau qui se trie est un système $\mathcal{S}$ à $N$ cellules. À chaque état $s_t$, le **tri en cours** est un certain motif (zones homogènes + frontière). La question IIT est : *quelle est la valeur de $\Phi_{\mathrm{CE}}$ du système $\mathcal{S}$ dans cet état ?* Si $\Phi_{\mathrm{CE}} > 0$, le tableau est **causalement intégré** au-dessus de ses parties — la morphogenèse n'est pas un artefact local mais une structure globale qui contraint passé et futur. Si on bipartitionne en deux moitiés du tableau, on mesure l'information que chaque moitié génère *indépendamment* ; le MIP dit « la partition qui enlève le moins d'intégration possible » — c'est précisément la frontière morphologique. **Un tableau déjà trié a un $\Phi_{\mathrm{CE}}$ plus faible qu'un tableau en train de se trier** : une fois l'ordre établi, les cellules n'ont plus d'information à générer les unes sur les autres (leur état futur est fixé par la règle locale). Un tableau **chimerique** (cell 14-16) qui ne se trie pas, lui, conserve un $\Phi_{\mathrm{CE}}$ non trivial mais reste **piégé** dans un attracteur local — information présente, intégration sans progrès : c'est exactement le type de distinction que la triad IIT/ICT permet de poser.
 
-Ce notebook, comme ICT-1, **n'exécute pas PyPhi** sur les tableaux (le code resterait intraitable pour $N > 5$). Il introduit les concepts pour que [ICT-6 (Sorting-to-TPM bridge)](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) puisse les opérationnaliser sur les simulations.
+Ce notebook, comme ICT-1, **n'exécute pas PyPhi** sur les tableaux (le code resterait intraitable pour $N > 5$). Il introduit les concepts pour que [ICT-6 (Sorting-to-TPM bridge)](../ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) puisse les opérationnaliser sur les simulations.
 ",,,,,,,,0547786a62535095,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb,8928045b,markdown,fr,08f17103207c190e,"# Tete-a-tete SAE <-> J-space -- les deux lentilles du workspace global sur Qwen3.5-9B-Base (couche 16)
 
@@ -22518,11 +22518,11 @@ MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,ict-bridge-cadr
 **Du côté ICT — le cas le plus net.** Le coarse-graining est *la* mécanique de changement d'échelle dont l'ICT se sert pour parler de [dissolution des scalaires](../../docs/ict/dissolution-scalaires.md) : ce qui arrive à $\Phi$, F, K quand on change de strate. La [cartographie en tresse](../../docs/ict/tresse-cartographie.md) situe ce geste parmi les quatre lentilles (Thom / Grothendieck / Schmidhuber / Friston).",,,,,,,,1cf8f8e2ca23cac9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,ict-bridge-transition,markdown,fr,ca2a5a01a5dcb119,"**Où va la suite côté ICT.** Les calculs PyPhi s'arrêtent ici ; le fil ICT continue dans la documentation. Entrée recommandée : l'[index ICT](../../docs/ict/README.md) et ses distillations, en partant de [`dissolution-scalaires.md`](../../docs/ict/dissolution-scalaires.md) (le fil qui prolonge directement ce notebook) puis [`tresse-cartographie.md`](../../docs/ict/tresse-cartographie.md) (la carte des quatre lentilles).",,,,,,,,ca2a5a01a5dcb119,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb,96aa2f7a,markdown,fr,01c173b864cf9209,> **Statut épistémique** — **Établi** : La trajectoire de Φ oscille sans asymptote unique sur l'attracteur. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,01c173b864cf9209,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,c03dd6c7,markdown,fr,d11aa9658ad510fb,"> **Statut épistémique** — **Établi** : Le tri auto-organisé exhibe une *compétence for free* (auto-réparation, délai de gratification). Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,d11aa9658ad510fb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,e7aa6b3b,markdown,fr,1ed02d3e6cb1e35a,> **Statut épistémique** — **Établi** : La dégradation gracieuse et le délai de gratification sont quantifiables. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,1ed02d3e6cb1e35a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-00,markdown,fr,7c71f6bf658572a8,"# ICT-4 — Tableaux chimériques & agrégation émergente (« kin »)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,c03dd6c7,markdown,fr,d11aa9658ad510fb,"> **Statut épistémique** — **Établi** : Le tri auto-organisé exhibe une *compétence for free* (auto-réparation, délai de gratification). Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).",,,,,,,,d11aa9658ad510fb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,e7aa6b3b,markdown,fr,1ed02d3e6cb1e35a,> **Statut épistémique** — **Établi** : La dégradation gracieuse et le délai de gratification sont quantifiables. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).,,,,,,,,1ed02d3e6cb1e35a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-00,markdown,fr,7c71f6bf658572a8,"# ICT-4 — Tableaux chimériques & agrégation émergente (« kin »)
 
-> Série **Integrated Causal Trajectories** ([ICT-0 — cadrage](ICT-0-Framing.md), Epic **#4588**).
+> Série **Integrated Causal Trajectories** ([ICT-0 — cadrage](../ICT-0-Framing.md), Epic **#4588**).
 > Ce notebook prolonge directement **[ICT-2 — Le tri comme morphogenèse](ICT-02-SelfSortingMorphogenesis-Python.ipynb)**.
 
 Dans [ICT-2](ICT-02-SelfSortingMorphogenesis-Python.ipynb), un tableau dont les cellules se trient elles-mêmes — chacune suivant la règle locale de son *algotype* (`bubble` regarde à droite, `insertion` regarde à gauche) — reproduit fidèlement plusieurs **compétences inattendues** du papier de Zhang, Goldstein & Levin (2025) : robustesse aux cellules défectueuses, délai de gratification, auto-réparation. Mais une compétence *positive* manquait à l'appel : l'**agrégation par « kin »**, ce penchant qu'ont les cellules de même algotype à se regrouper pendant le voyage, sans que cela soit encodé comme objectif. Le modèle minimal produisait au contraire des **impasses** aux frontières `insertion | bubble`. ICT-2 l'a dit honnêtement et a renvoyé l'agrégation à **ce notebook**, « avec un jeu de règles plus riche ».
@@ -22536,8 +22536,8 @@ Nous procédons en trois temps :
 3. **Affinité « kin »** : un second élan, *neutre pour l'ordre*, qui s'exprime dans les **degrés de liberté** laissés par le tri. L'agrégation émerge alors — et nous **mesurons** où, quand, et à quelles conditions.
 
 Le fil rouge de la série reste la **discipline d'honnêteté** : exécuter, mesurer, et *narrer le résultat réel* plutôt que celui qu'on espérait.",,,,,,,,7c71f6bf658572a8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,statut-epistemique,markdown,fr,1b10903dbbf6fac9,> **Statut épistémique** — **Établi** : L'agrégation « kin » positive émerge **seulement** avec degrés de liberté. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,1b10903dbbf6fac9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-01,markdown,fr,e559de4a354febef,"## Avant de commencer : qui est chimerique, et ce que le « kin » ajoute vraiment
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,statut-epistemique,markdown,fr,1b10903dbbf6fac9,> **Statut épistémique** — **Établi** : L'agrégation « kin » positive émerge **seulement** avec degrés de liberté. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).,,,,,,,,1b10903dbbf6fac9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-01,markdown,fr,e559de4a354febef,"## Avant de commencer : qui est chimerique, et ce que le « kin » ajoute vraiment
 
 Une question de lecteur ([#16329](https://github.com/jsboige/CoursIA/issues/16329)) merite d'etre
 tranchee d'entree, car elle fixe la grille de lecture de tout ce qui suit : *une cellule peut-elle
@@ -22546,13 +22546,13 @@ faire et `bubble` et `insertion` selon ses voisins ?*
 ### Non — et c'est le TABLEAU qui est chimerique, pas la cellule
 
 Chaque cellule porte **un** algotype, `bubble` *ou* `insertion`, fixe a la construction et **jamais
-reecrit ensuite** ([`ict/self_sorting.py`](ict/self_sorting.py), champ `Cell.algotype`). Ce qui
+reecrit ensuite** ([`ict/self_sorting.py`](../ict/self_sorting.py), champ `Cell.algotype`). Ce qui
 melange les deux, c'est **le tableau** : c'est exactement le sens du mot « chimerique » dans le titre
 de ce notebook.
 
 Une cellule-bubble reste bubble quels que soient ses voisins. Elle consulte leurs **valeurs** pour
 decider **s'il faut permuter** — jamais **quel algorithme appliquer**, qui est deja fixe par son
-propre algotype ([`ict/kin_sorting.py`](ict/kin_sorting.py), `_sort_target`). Ce qui bouge au fil de
+propre algotype ([`ict/kin_sorting.py`](../ict/kin_sorting.py), `_sort_target`). Ce qui bouge au fil de
 l'execution, ce n'est donc pas le type des cellules : c'est leur **disposition**, puisque permuter
 deux cellules deplace aussi leurs algotypes.
 
@@ -22578,7 +22578,7 @@ pour le semblable est bel et bien inscrite. Elle est simplement **locale** — s
 des deux positions permutees pesent dans la decision.
 
 Ce qui n'est ecrit nulle part, c'est le **resultat** : des domaines etendus de meme algotype, mesures
-par un indice **normalise contre l'arrangement aleatoire** ([`ict/sorting_metrics.py`](ict/sorting_metrics.py),
+par un indice **normalise contre l'arrangement aleatoire** ([`ict/sorting_metrics.py`](../ict/sorting_metrics.py),
 `aggregation_index`). Aucune cellule ne voit cet indice et aucune ne l'optimise — le module de la
 dynamique ne l'importe meme pas. Il n'est calcule que par l'observateur, apres coup.
 
@@ -22587,9 +22587,9 @@ organisation d'echelle superieure que personne n'a demandee. Le pas conceptuel n
 produit ce qu'elle encode » — ce serait banal — mais **le changement d'echelle** entre ce qui est
 inscrit (une comparaison entre deux cases) et ce qui est constate (une structure sur tout le tableau).
 ",,,,,,,,e559de4a354febef,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-02,code,fr,2ab58cc374f570b8,"# --- Imports et configuration ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-02,code,fr,2ab58cc374f570b8,"# --- Imports et configuration ---
 import sys, os, random
-sys.path.insert(0, os.path.abspath("".""))  # le package `ict/` est a cote de ce notebook
+sys.path.insert(0, os.path.dirname(os.path.abspath(""."")))  # acces au package `ict` pose a cote des notebooks (un niveau au-dessus)
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22624,10 +22624,10 @@ def sorted_with_mixed_algos(n_classes, copies, seed=0):
     return vals, algos
 
 print(""Algotypes :"", ALGOTYPES, ""| package ict/ charge (SelfSortingArray, KinSortingArray)"")",,,,,,,,2ab58cc374f570b8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-03,markdown,fr,6cbc5e153ed99577,"## 1. Rappel : l'impasse chimérique d'ICT-2
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-03,markdown,fr,6cbc5e153ed99577,"## 1. Rappel : l'impasse chimérique d'ICT-2
 
 `bubble` (pousse les grandes valeurs vers la droite) et `insertion` (tire les petites vers la gauche) servent le **même** ordre croissant. On pourrait croire qu'un tableau **chimérique** — qui mélange les deux — se trie aussi. Vérifions, sur le modèle minimal d'ICT-2, ce qui se passe *vraiment* lorsque les algotypes alternent.",,,,,,,,6cbc5e153ed99577,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-04,code,fr,b3048109dbc80ed0,"# --- Exemple guide : le modele minimal (ICT-2) sur des tableaux chimeriques alternes ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-04,code,fr,b3048109dbc80ed0,"# --- Exemple guide : le modele minimal (ICT-2) sur des tableaux chimeriques alternes ---
 N, n_seeds = 20, 40
 non_tries, inv_res, agg_fin = 0, [], []
 for s in range(n_seeds):
@@ -22644,11 +22644,11 @@ print(f""  tableaux NON entierement tries : {non_tries}/{n_seeds}"")
 print(f""  inversions residuelles (impasses) : moyenne = {np.mean(inv_res):.1f}"" if inv_res
       else ""  aucune impasse residuelle"")
 print(f""  indice d'agregation final moyen   : {np.mean(agg_fin):+.3f}  (negatif : alternance figee, aucun regroupement)"")",,,,,,,,b3048109dbc80ed0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-05,markdown,fr,4e08ab5180dfd7f7,"**Interprétation — le diagnostic.** L'alternance `bubble | insertion` se fige presque systématiquement sur des **impasses** : une frontière `insertion | bubble` en désordre est un point fixe local (la cellule de gauche ne regarde qu'à gauche, celle de droite qu'à droite — l'inversion qui les sépare n'est dans le champ de vision de personne). Et l'indice d'agrégation reste **négatif** : l'alternance de départ est *anti-groupée* (les semblables sont systématiquement séparés), et l'impasse la fige dans cet état — rien, dans les règles minimales, n'incite une cellule à se rapprocher de ses semblables. Deux manques distincts, donc : (a) la **coordination** échoue, et (b) aucune **préférence kin** n'est encodée. Traitons-les l'un après l'autre.",,,,,,,,4e08ab5180dfd7f7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-06,markdown,fr,29973331b823dea5,"### L'impasse, rendue visible
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-05,markdown,fr,4e08ab5180dfd7f7,"**Interprétation — le diagnostic.** L'alternance `bubble | insertion` se fige presque systématiquement sur des **impasses** : une frontière `insertion | bubble` en désordre est un point fixe local (la cellule de gauche ne regarde qu'à gauche, celle de droite qu'à droite — l'inversion qui les sépare n'est dans le champ de vision de personne). Et l'indice d'agrégation reste **négatif** : l'alternance de départ est *anti-groupée* (les semblables sont systématiquement séparés), et l'impasse la fige dans cet état — rien, dans les règles minimales, n'incite une cellule à se rapprocher de ses semblables. Deux manques distincts, donc : (a) la **coordination** échoue, et (b) aucune **préférence kin** n'est encodée. Traitons-les l'un après l'autre.",,,,,,,,4e08ab5180dfd7f7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-06,markdown,fr,29973331b823dea5,"### L'impasse, rendue visible
 
 Les moyennes ci-dessus condensent 40 trajectoires en trois nombres. Les trajectoires elles-mêmes racontent mieux (suggestion [#16329](https://github.com/jsboige/CoursIA/issues/16329)) : une **sortedness qui stagne sous 1.0** — le tri s'arrête en chemin, figé aux frontières `insertion | bubble` — contre un **témoin mono-algotype** qui atteint 1.0 sur la même permutation ; et un indice d'agrégation qui ne bouge plus, en territoire négatif.",,,,,,,,29973331b823dea5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-07,code,fr,2acfb00a6b6b4167,"# --- Graphe : trajectoires de sortedness et d'agregation, regime alterne vs temoin ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-07,code,fr,2acfb00a6b6b4167,"# --- Graphe : trajectoires de sortedness et d'agregation, regime alterne vs temoin ---
 N_G = 20
 SEEDS_STALL = [0, 1, 2]   # trois graines du balayage ci-dessus (les 40/40 sont non tries)
 SEED_TEMOIN = 0           # meme permutation que la graine 0, mais 20 fois bubble
@@ -22680,10 +22680,10 @@ axes[1].set_title(""Indice d'agrégation « kin » — figé en territoire néga
 axes[1].set_xlabel(""Pas""); axes[1].set_ylabel(""Agrégation""); axes[1].legend(fontsize=8)
 plt.tight_layout()
 plt.show()",,,,,,,,2acfb00a6b6b4167,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-08,markdown,fr,151019c02640eb65,"## 2. Première règle plus riche : la réparation bidirectionnelle
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-08,markdown,fr,151019c02640eb65,"## 2. Première règle plus riche : la réparation bidirectionnelle
 
 L'Exercice 3 d'ICT-2 suggérait le remède au manque (a) : *« une cellule qui, lorsqu'elle est bloquée, jette aussi un coup d'œil à son autre voisin briserait la frontière `insertion | bubble` »*. C'est exactement la règle de `KinSortingArray(bidirectional=True)` : chaque cellule garde la **personnalité** de son algotype (sa direction de regard *primaire*), mais lorsque cette direction ne propose rien, elle **répare** une inversion du côté opposé. Toute inversion adjacente devient alors corrigeable par l'une de ses deux extrémités — l'impasse disparaît.",,,,,,,,151019c02640eb65,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-09,code,fr,8e8cd08c583e8745,"# --- Exemple guide : reparation bidirectionnelle (kin_affinity desactive) ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-09,code,fr,8e8cd08c583e8745,"# --- Exemple guide : reparation bidirectionnelle (kin_affinity desactive) ---
 non_tries, agg_fin = 0, []
 for s in range(n_seeds):
     v = perm(N, np.random.default_rng(s))
@@ -22697,8 +22697,8 @@ for s in range(n_seeds):
 print(f""Reparation bidirectionnelle -- {n_seeds} graines, alternance :"")
 print(f""  tableaux NON tries : {non_tries}/{n_seeds}  (l'impasse est guerie)"")
 print(f""  indice d'agregation final moyen : {np.mean(agg_fin):+.3f}  (toujours proche de 0)"")",,,,,,,,8e8cd08c583e8745,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-10,markdown,fr,808840a52a2a354f,"**Interprétation — coordonner ne suffit pas à agréger.** La réparation bidirectionnelle **guérit l'impasse** : les tableaux se trient désormais tous. Et l'indice d'agrégation remonte à **quasiment zéro** : libérée du blocage, la disposition des algotypes devient *indifférente* (ni groupée, ni anti-groupée). Réussir le tri et faire émerger un regroupement par algotype sont **deux compétences distinctes** : la première relève de la coordination, la seconde demande une *préférence* qui n'existe encore nulle part. La compétence que cherchait ICT-2 est ailleurs.",,,,,,,,808840a52a2a354f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-11,markdown,fr,859b2a1263540b51,"## 3. Deuxième règle plus riche : l'affinité « kin » dans les degrés de liberté
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-10,markdown,fr,808840a52a2a354f,"**Interprétation — coordonner ne suffit pas à agréger.** La réparation bidirectionnelle **guérit l'impasse** : les tableaux se trient désormais tous. Et l'indice d'agrégation remonte à **quasiment zéro** : libérée du blocage, la disposition des algotypes devient *indifférente* (ni groupée, ni anti-groupée). Réussir le tri et faire émerger un regroupement par algotype sont **deux compétences distinctes** : la première relève de la coordination, la seconde demande une *préférence* qui n'existe encore nulle part. La compétence que cherchait ICT-2 est ailleurs.",,,,,,,,808840a52a2a354f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-11,markdown,fr,859b2a1263540b51,"## 3. Deuxième règle plus riche : l'affinité « kin » dans les degrés de liberté
 
 Pour faire émerger l'agrégation, ajoutons un **second élan**, *neutre pour l'ordre*. L'idée-clé : deux cellules de **même valeur** sont **interchangeables** pour l'objectif de tri — des « destins équivalents ». L'ordre croissant ne les départage pas : il leur laisse un **degré de liberté**. C'est précisément là que la préférence pour le semblable peut s'exprimer sans rien casser.
 
@@ -22707,7 +22707,7 @@ Pour faire émerger l'agrégation, ajoutons un **second élan**, *neutre pour l'
 Pour rendre ces degrés de liberté disponibles, nous travaillons sur des tableaux à **valeurs répétées** (`value_classes` : `n_classes` valeurs distinctes, chacune en `copies` exemplaires).
 
 Isolons d'abord le mécanisme : partons d'un tableau **déjà trié par valeur** (l'ordre primaire est satisfait — *seuls* les mouvements « kin » opèrent).",,,,,,,,859b2a1263540b51,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-12,code,fr,4775ac118c4fe28e,"# --- Exemple guide : l'agregation kin isolee (tableau deja trie, kin-only) ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-12,code,fr,4775ac118c4fe28e,"# --- Exemple guide : l'agregation kin isolee (tableau deja trie, kin-only) ---
 vals, algos = sorted_with_mixed_algos(n_classes=6, copies=4, seed=1)   # 24 cellules
 arr = KinSortingArray(vals, algotypes=algos, seed=1, kin_affinity=True).run()
 courbe = m.aggregation_curve(arr.probe.algotypes)
@@ -22723,8 +22723,8 @@ plt.axhline(0, color=""grey"", lw=0.8, ls=""--"")
 plt.xlabel(""pas de simulation""); plt.ylabel(""indice d'agregation 'kin'"")
 plt.title(""L'agregation emerge dans les degres de liberte (mouvements kin seuls)"")
 plt.show()",,,,,,,,4775ac118c4fe28e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-13,markdown,fr,93579d072aa667b8,"**Interprétation — un ordre secondaire dans le jeu laissé par le premier.** La courbe monte **de façon monotone** : chaque mouvement « kin » augmente strictement le voisinage entre semblables, jamais ne le défait. L'agrégation s'installe **sans contrôleur global** et **sans toucher au tri** — elle vit entièrement dans les degrés de liberté que l'ordre des valeurs laisse ouverts. C'est une seconde couche d'organisation causale qui s'installe *par-dessus* la première, là où celle-ci est indifférente. Le motif est profond : la série ICT le retrouvera à l'échelle macro (émergence causale, [ICT-5](ICT-05-CausalEmergence-Python.ipynb) / [ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)).",,,,,,,,93579d072aa667b8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-14,code,fr,c39387002f1b63f0,"# --- Exemple guide : depuis un tableau chimerique melange (tri ET agregation) ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-13,markdown,fr,93579d072aa667b8,"**Interprétation — un ordre secondaire dans le jeu laissé par le premier.** La courbe monte **de façon monotone** : chaque mouvement « kin » augmente strictement le voisinage entre semblables, jamais ne le défait. L'agrégation s'installe **sans contrôleur global** et **sans toucher au tri** — elle vit entièrement dans les degrés de liberté que l'ordre des valeurs laisse ouverts. C'est une seconde couche d'organisation causale qui s'installe *par-dessus* la première, là où celle-ci est indifférente. Le motif est profond : la série ICT le retrouvera à l'échelle macro (émergence causale, [ICT-5](../ICT-05-CausalEmergence-Python.ipynb) / [ICT-6](../ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)).",,,,,,,,93579d072aa667b8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-14,code,fr,c39387002f1b63f0,"# --- Exemple guide : depuis un tableau chimerique melange (tri ET agregation) ---
 vals, algos = value_classes(n_classes=6, copies=4, seed=3)
 arr_on  = KinSortingArray(vals, algotypes=algos, seed=3, kin_affinity=True ).run()
 arr_off = KinSortingArray(vals, algotypes=algos, seed=3, kin_affinity=False).run()   # controle
@@ -22744,11 +22744,11 @@ ax2.plot(agg_on, color=""tab:green""); ax2.axhline(0, color=""grey"", lw=0.8, ls
 ax2.set_title(""Agregation 'kin' (organisation secondaire)"")
 ax2.set_xlabel(""pas""); ax2.set_ylabel(""indice d'agregation"")
 plt.tight_layout(); plt.show()",,,,,,,,c39387002f1b63f0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-15,markdown,fr,37818e4a98496f5a,"**Interprétation — les deux compétences à la fois.** Partant d'un tableau chimérique entièrement mélangé, les règles enrichies livrent **simultanément** le tri global (la *sortedness* atteint 1.0) et une agrégation « kin » finale **positive** — la compétence que le modèle minimal d'ICT-2 ne pouvait pas atteindre. La courbe d'agrégation est ici **bruitée** : pendant que les valeurs migrent vers leur place, elles entraînent les algotypes avec elles et défont transitoirement des regroupements, que les mouvements kin reconstruisent ensuite. L'organisation secondaire ne se met vraiment en place qu'une fois la liberté libérée — c'est-à-dire à mesure que le tri se stabilise.",,,,,,,,37818e4a98496f5a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-16,markdown,fr,fd3d63d634ff8587,"## 4. Mesure honnête : l'agrégation vit dans les degrés de liberté
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-15,markdown,fr,37818e4a98496f5a,"**Interprétation — les deux compétences à la fois.** Partant d'un tableau chimérique entièrement mélangé, les règles enrichies livrent **simultanément** le tri global (la *sortedness* atteint 1.0) et une agrégation « kin » finale **positive** — la compétence que le modèle minimal d'ICT-2 ne pouvait pas atteindre. La courbe d'agrégation est ici **bruitée** : pendant que les valeurs migrent vers leur place, elles entraînent les algotypes avec elles et défont transitoirement des regroupements, que les mouvements kin reconstruisent ensuite. L'organisation secondaire ne se met vraiment en place qu'une fois la liberté libérée — c'est-à-dire à mesure que le tri se stabilise.",,,,,,,,37818e4a98496f5a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-16,markdown,fr,fd3d63d634ff8587,"## 4. Mesure honnête : l'agrégation vit dans les degrés de liberté
 
 Si l'agrégation émerge dans le jeu laissé par l'ordre, alors **sans jeu, pas d'agrégation**. Testons-le directement : faisons varier la **taille des classes de valeurs** (`copies`) — donc la quantité de liberté disponible — à nombre de cellules constant (24), et comparons l'agrégation finale **avec** et **sans** l'élan « kin », sur plusieurs graines.",,,,,,,,fd3d63d634ff8587,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-17,code,fr,539cb515416f7c38,"# --- Exemple guide : balayage de la 'liberte' disponible (taille des classes) ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-17,code,fr,539cb515416f7c38,"# --- Exemple guide : balayage de la 'liberte' disponible (taille des classes) ---
 n_total, seeds = 24, range(10)
 copies_list = [1, 2, 3, 4, 6, 8]
 moy_on, moy_off, std_on = [], [], []
@@ -22777,11 +22777,11 @@ plt.xlabel(""copies par valeur  ->  liberte croissante"")
 plt.ylabel(""indice d'agregation final (moy. sur graines)"")
 plt.title(""Sans degres de liberte (copies=1), aucune agregation possible"")
 plt.legend(); plt.show()",,,,,,,,539cb515416f7c38,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-18,markdown,fr,2ed73f45beb2a516,"**Interprétation — la thèse, confirmée empiriquement.** À `copies=1` (toutes les valeurs distinctes), l'ordre contraint **entièrement** le tableau : il ne reste aucun degré de liberté, et l'agrégation est **nulle, que l'élan kin soit actif ou non**. Dès que les valeurs se répètent (`copies ≥ 2`), la courbe « kin ON » décolle et croît avec la liberté disponible, tandis que le contrôle reste à zéro. La compétence d'agrégation est donc **réelle mais conditionnelle** : elle n'existe que là où l'ordre primaire laisse du jeu. Mesurer cette condition — plutôt que de proclamer « le modèle agrège » — est la discipline d'honnêteté de la série ICT.",,,,,,,,2ed73f45beb2a516,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-19,markdown,fr,c5881fded55880ea,"## 5. Exercices
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-18,markdown,fr,2ed73f45beb2a516,"**Interprétation — la thèse, confirmée empiriquement.** À `copies=1` (toutes les valeurs distinctes), l'ordre contraint **entièrement** le tableau : il ne reste aucun degré de liberté, et l'agrégation est **nulle, que l'élan kin soit actif ou non**. Dès que les valeurs se répètent (`copies ≥ 2`), la courbe « kin ON » décolle et croît avec la liberté disponible, tandis que le contrôle reste à zéro. La compétence d'agrégation est donc **réelle mais conditionnelle** : elle n'existe que là où l'ordre primaire laisse du jeu. Mesurer cette condition — plutôt que de proclamer « le modèle agrège » — est la discipline d'honnêteté de la série ICT.",,,,,,,,2ed73f45beb2a516,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-19,markdown,fr,c5881fded55880ea,"## 5. Exercices
 
 Trois exercices pour s'approprier le mécanisme. Les cellules de code sont des **squelettes à compléter** (`# TODO`) ; le notebook s'exécute de bout en bout même si vous ne les complétez pas.",,,,,,,,c5881fded55880ea,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-20,markdown,fr,6fccec90d8fb3459,"### Exercice 1 — L'agrégation a besoin de liberté
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-20,markdown,fr,6fccec90d8fb3459,"### Exercice 1 — L'agrégation a besoin de liberté
 
 **Objectif.** Vérifier par vous-même qu'**aucune** agrégation n'émerge sur un tableau à **valeurs distinctes**, même avec l'élan « kin » activé.
 
@@ -22789,7 +22789,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipyn
 - `# Étape 1` : construire un tableau à valeurs distinctes (`perm`) avec des algotypes mélangés.
 - `# Étape 2` : le faire tourner avec `KinSortingArray(..., kin_affinity=True)`.
 - `# Étape 3` : renvoyer `m.aggregation_index(arr.algotypes)` et le comparer à 0.",,,,,,,,6fccec90d8fb3459,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-21,code,fr,6e2f76e72f16ab5a,"# Exercice 1 : l'affinite kin sans degres de liberte
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-21,code,fr,6e2f76e72f16ab5a,"# Exercice 1 : l'affinite kin sans degres de liberte
 def agregation_sur_valeurs_distinctes(n=24, seed=0):
     rng = np.random.default_rng(seed)
     # Etape 1 : valeurs distinctes + algotypes melanges
@@ -22799,7 +22799,7 @@ def agregation_sur_valeurs_distinctes(n=24, seed=0):
     return result
 
 # print(agregation_sur_valeurs_distinctes())   # attendu : proche de 0",,,,,,,,6e2f76e72f16ab5a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-22,markdown,fr,0fe755596083f63e,"### Exercice 2 — Le coût de l'affinité
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-22,markdown,fr,0fe755596083f63e,"### Exercice 2 — Le coût de l'affinité
 
 **Objectif.** L'élan « kin » ajoute-t-il du travail ? Comparer le **nombre de pas** jusqu'au point fixe avec et sans affinité, sur des tableaux à valeurs répétées.
 
@@ -22807,7 +22807,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipyn
 - `# Étape 1` : pour plusieurs graines, construire un `value_classes(6, 4, seed)`.
 - `# Étape 2` : mesurer `arr.steps` pour `kin_affinity=True` puis `kin_affinity=False`.
 - `# Étape 3` : renvoyer la moyenne des pas dans chaque régime et conclure.",,,,,,,,0fe755596083f63e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-23,code,fr,95ccc0db13fd3762,"# Exercice 2 : cout en pas de l'affinite kin
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-23,code,fr,95ccc0db13fd3762,"# Exercice 2 : cout en pas de l'affinite kin
 def cout_kin(n_seeds=10):
     pas_on, pas_off = [], []
     for s in range(n_seeds):
@@ -22819,7 +22819,7 @@ def cout_kin(n_seeds=10):
     return result
 
 # print(cout_kin())",,,,,,,,95ccc0db13fd3762,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-24,markdown,fr,a1331f00db5f50ad,"### Exercice 3 — Affinité répulsive : la ségrégation
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-24,markdown,fr,a1331f00db5f50ad,"### Exercice 3 — Affinité répulsive : la ségrégation
 
 **Objectif.** `KinSortingArray` accepte un paramètre `kin_sign` : `+1` attire les semblables (défaut), `-1` les **repousse** (une dynamique à la *Schelling*). Vérifier que la répulsion produit une agrégation **négative** — une ségrégation des algotypes — tout en préservant le tri.
 
@@ -22827,7 +22827,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipyn
 - `# Étape 1` : un `value_classes(6, 4, seed)` ; faire tourner avec `kin_sign=-1`.
 - `# Étape 2` : vérifier que le tableau est trié, puis mesurer `m.aggregation_index(...)`.
 - `# Étape 3` : comparer aux régimes attraction (`+1`) et neutre (`kin_affinity=False`).",,,,,,,,a1331f00db5f50ad,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-25,code,fr,e0d7379545e73eaa,"# Exercice 3 : repulsion (segregation a la Schelling)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-25,code,fr,e0d7379545e73eaa,"# Exercice 3 : repulsion (segregation a la Schelling)
 def trois_regimes(seed=0):
     vals, algos = value_classes(6, 4, seed=seed)
     # Etape 1-3 : agregation finale pour kin_sign=+1, kin_affinity=False, puis kin_sign=-1
@@ -22835,7 +22835,7 @@ def trois_regimes(seed=0):
     return result
 
 # print(trois_regimes())   # attendu : attraction > 0 > repulsion, tri preserve partout",,,,,,,,e0d7379545e73eaa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-26,markdown,fr,98409660d6be9b19,"## Conclusion et perspectives
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-26,markdown,fr,98409660d6be9b19,"## Conclusion et perspectives
 
 ICT-4 ferme la boucle ouverte par ICT-2. Avec un jeu de règles **à peine** plus riche que le modèle minimal :
 
@@ -22848,8 +22848,8 @@ La leçon dépasse le tri : une organisation causale **secondaire** peut s'insta
 
 ### Ponts avec le reste de la série
 - **[ICT-2 — Self-sorting morphogenesis](ICT-02-SelfSortingMorphogenesis-Python.ipynb)** : le modèle minimal, ses compétences, et l'impasse que ce notebook lève.
-- **[ICT-5 — Émergence causale](ICT-05-CausalEmergence-Python.ipynb)** & **[ICT-6 — Pont tri → TPM](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** : la même idée — un ordre plus lisible dans les degrés de liberté du niveau inférieur — formalisée comme *causal emergence* (Hoel).
-- **[ICT-7 — Signatures scale-free & fractales](ICT-07-ScaleFreeSignatures-Python.ipynb)** : les motifs multi-échelles que ces dynamiques engendrent.
+- **[ICT-5 — Émergence causale](../ICT-05-CausalEmergence-Python.ipynb)** & **[ICT-6 — Pont tri → TPM](../ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** : la même idée — un ordre plus lisible dans les degrés de liberté du niveau inférieur — formalisée comme *causal emergence* (Hoel).
+- **[ICT-7 — Signatures scale-free & fractales](../ICT-07-ScaleFreeSignatures-Python.ipynb)** : les motifs multi-échelles que ces dynamiques engendrent.
 
 ### Références
 - Zhang, Goldstein & Levin, *Classical sorting algorithms as a model of morphogenesis*, Adaptive Behavior, 2025 — [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).
@@ -41318,7 +41318,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale-Python.ipynb,892
 L'instrument Z = `discard` est orthogonal a X = `teleport` (lecture 3), donc Cov(X, Z) = 0 : `iv_estimate` leve un ValueError immediat -- la sortie affiche |Cov(X, Z)| = 0.000000, sous le seuil de pertinence 5/sqrt(n) = 0.456435. La cellule intercepte l'exception et traduit : verdict logique **NON_IDENTIFIABLE**, qualifie de **resultat legitime**, pas un echec.
 
 C'est le comportement voulu du garde-fou (Pearl 2009 chap. 3.3 + Angrist-Krueger 2001, seuil 5-sigma) : avec un instrument non pertinent, aucune formule ne peut identifier l'effet causal de X sur Y -- la methode refuse de produire un nombre plutot que d'en fabriquer un. Mise en perspective avec la lecture 4 : naif et backdoor s'accordent a +3.0000 -- le backdoor ajuste le delta naif pour la presence de `+discard`, et l'ecart sous la tolerance 0.10 declare **AGREEMENT** (l'IV, lui, ne conclut pas) -- les trois estimateurs couvrent ainsi les trois etats du verdict tri-etat (AGREEMENT, DESACCORD, NON_IDENTIFIABLE). L'exercice 1 invite justement l'etudiant a modifier le design pour rendre Z pertinent et faire parler l'IV : la tolerance du notebook a l'ambiguite est la lecon de cette cellule.",,,,,,,,cd5aca38a13d1ce3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,70d0e777,code,fr,47e554c6f73e996e,"# --- Gates de degenerescence du jouet SelfSortingArray (issue #20300) ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,70d0e777,code,fr,47e554c6f73e996e,"# --- Gates de degenerescence du jouet SelfSortingArray (issue #20300) ---
 # Maquette c.6104261078, ligne ""ICT-02 -- SelfSortingArray (temoin- rendu au producteur)"".
 # CPU, quelques secondes : trois gates, un verdict imprime chacun, jamais agreges.
 
@@ -41399,7 +41399,7 @@ print(""VERDICT G2 : l'ordre n'est pas porte par l'initialisation -- ligne de ba
 print(""  non discriminante : le planificateur s'arrete avant le premier pas."")
 print(""VERDICT G3 : a budget d'echanges egal, la regle locale trie et le hasard non."")
 print(""VERDICT GLOBAL : jouet SAIN, les mesures de ce carnet discriminent."")",,,,,,,,47e554c6f73e996e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,4958a537,markdown,fr,412dc9af14e6560e,"**Lecture des verdicts.** Les quatre lignes passent, et le témoin qui compte n'est pas celui qu'on croit.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,4958a537,markdown,fr,412dc9af14e6560e,"**Lecture des verdicts.** Les quatre lignes passent, et le témoin qui compte n'est pas celui qu'on croit.
 
 **G1 — le témoin positif voit le tri.** Sur trois graines, la règle locale amène la sortedness à **1,000000** et le tableau à l'ordre exact. Sans ce témoin, les deux négatifs ne diraient rien : une mesure qui ne voit jamais le phénomène ne prouve pas son absence ailleurs.
 
@@ -41408,7 +41408,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,49
 **G3 — le témoin qui peut échouer.** Même tableau de départ, même **budget d'échanges** que la trajectoire réelle (39 à 89 échanges, moyenne 60,4), mais les échanges sont tirés au hasard : la sortedness **reste au niveau du hasard** (0,502, contre 0,507 pour la référence). La règle locale, elle, atteint 1,000. L'écart — **0,498** de sortedness — est la part de la règle, à activation strictement égale. C'est ce gate qui porte la thèse du carnet : si remuer le tableau suffisait, il tomberait.
 
 **Conséquence pour la série.** Le jouet produit ici (`SelfSortingArray`) est **sain** : il porte son témoin positif et un témoin négatif discriminant, et le second n'est pas tautologique. Un carnet consommateur qui importe ce jouet peut s'appuyer sur cette base — la seule réserve, dite ici plutôt que découverte plus tard, étant que G2 est une ligne de base.",,,,,,,,412dc9af14e6560e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,a256c14a,markdown,fr,368ae9fa0efa8a55,"## Conclusion et perspectives
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb,a256c14a,markdown,fr,368ae9fa0efa8a55,"## Conclusion et perspectives
 
 Ce que ce toy model a rendu **mesurable**, sans aucun contrôleur global :
 
@@ -41421,10 +41421,10 @@ Ce que ce toy model a rendu **mesurable**, sans aucun contrôleur global :
 Ce sont les premières **signatures de trajectoires causales intégrées** — l'objet de la série ICT.
 
 ### Ponts avec le reste du cours
-- **[IIT-1 — Intro to PyPhi](../IIT-01-IntroToPyPhi-Python.ipynb)** et **[IIT-2 Advanced Topics](../IIT-02-AdvancedTopics-Python.ipynb)** : les structures causales *à un instant* (TPM, Φ, CES) dont ICT étudie l'évolution.
-- **[ICT-1 — Φ-trajectories](ICT-01-PhiTrajectories-Python.ipynb)** : appliquer ces idées de trajectoire à Φ lui-même.
+- **[IIT-1 — Intro to PyPhi](../../IIT-01-IntroToPyPhi-Python.ipynb)** et **[IIT-2 Advanced Topics](../../IIT-02-AdvancedTopics-Python.ipynb)** : les structures causales *à un instant* (TPM, Φ, CES) dont ICT étudie l'évolution.
+- **[ICT-1 — Φ-trajectories](../ICT-01-PhiTrajectories-Python.ipynb)** : appliquer ces idées de trajectoire à Φ lui-même.
 - **[ICT-4 — Chimeric arrays & emergent aggregation](ICT-04-ChimericArraysKinAggregation-Python.ipynb)** : le jeu de règles plus riche qui reproduit l'agrégation « kin » du papier.
-- **[ICT-6 — Sorting-to-TPM bridge](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** : transformer ces simulations en chaînes de Markov, puis en TPM analysables par PyPhi et la *causal emergence*.
+- **[ICT-6 — Sorting-to-TPM bridge](../ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** : transformer ces simulations en chaînes de Markov, puis en TPM analysables par PyPhi et la *causal emergence*.
 
 ### Références
 - Zhang, Goldstein & Levin, *Classical sorting algorithms as a model of morphogenesis*, Adaptive Behavior, 2025 — [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).

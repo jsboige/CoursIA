@@ -904,6 +904,87 @@ def test_belt_main_injects_the_real_snapshot_prime(monkeypatch, capsys):
         f"une seule passe, sur les candidats tires (got {primed})")
 
 
+def test_belt_snapshot_prime_lock_timeout_names_cause(monkeypatch, capsys):
+    """#22983 volet 3 : le repli lock-timeout du priming NOMME sa cause.
+
+    Mesure fondatrice (08/11, c.6719023627) : le priming tenait
+    `refresh.lock` pendant toute sa phase reseau (~7 min) ; les autres
+    lanes de la machine epuisaient leurs 120 s d'attente et retombaient
+    sur un repli MUET -- ni `fetch_failures`, ni message, alors que le
+    quota REST paraissait sain. Le repli doit ecrire sur stderr POURQUOI
+    il est parti, pour qu'un fail-CLOSED eventuel se lise au premier
+    coup d'oeil.
+
+    Divergence assumee avec le spec initial de #25217 : l'issue ecrivait
+    « repli sur l'instantane disque » ; le volet 4 (#25224, arbitrage
+    option 2, c.6719405401) a deplace la phase reseau HORS verrou -- le
+    repli sert desormais les lectures fraiches EN MEMOIRE de CE tirage
+    (ses stamps couvrent NOTRE fenetre, pas celle de la lane qui tient
+    le verrou). Le temoin suit le contrat du code actuel.
+    """
+    class _LockTimeout(Exception):
+        pass
+
+    calls = {"save": 0}
+    in_memory = _mini_snapshot([4242])
+    stale_disk = _mini_snapshot([1111])
+
+    class _RaisingLock:
+        def __enter__(self):
+            raise _LockTimeout(
+                "verrou refresh.lock non obtenu apres 120 s")
+
+        def __exit__(self, *exc):
+            return False
+
+    class _FakeGhSnapshot:
+        SnapshotLockTimeout = _LockTimeout
+
+        @staticmethod
+        def load_snapshot(repo):
+            return dict(stale_disk)
+
+        @staticmethod
+        def ensure_comments(repo, numbers, snapshot):
+            return dict(in_memory), 0, {}
+
+        @staticmethod
+        def snapshot_lock(repo):
+            return _RaisingLock()
+
+        @staticmethod
+        def merge_snapshots(disk, mem, numbers):
+            raise AssertionError(
+                "la fusion ne doit pas courir : le verrou a leve avant")
+
+        @staticmethod
+        def save_snapshot(repo, merged):
+            calls["save"] += 1
+            raise AssertionError("l'ecriture disque doit etre reportee")
+
+    monkeypatch.setitem(sys.modules, "coordination.gh_snapshot",
+                        _FakeGhSnapshot)
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    # Restauration automatique du global par monkeypatch en teardown.
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", pig._BELT_SNAPSHOT)
+
+    pig._belt_snapshot_prime("jsboige/CoursIA", [4242])
+
+    err = capsys.readouterr().err
+    assert "[22983] priming ecarte" in err, (
+        f"le repli doit NOMMER sa cause sur stderr (got: {err!r})")
+    assert "verrou refresh.lock non obtenu apres 120 s" in err, (
+        f"le message doit porter la cause exacte du repli (got: {err!r})")
+    assert calls["save"] == 0, (
+        "l'ecriture disque est reportee au prochain priming, pas tentee")
+    # Le repli sert les lectures fraiches EN MEMOIRE de CE tirage (volet
+    # 4), pas l'instantane disque dont les stamps couvrent l'AUTRE lane.
+    stamps = pig._BELT_SNAPSHOT["meta"]["comment_stamps"]
+    assert "4242" in stamps and "1111" not in stamps, (
+        f"le repli doit servir la fenetre de CE tirage (got stamps: "
+        f"{sorted(stamps)})")
+
+
 def test_non_belt_json_red_still_emits_standalone_repair(monkeypatch, capsys):
     """Regression check : hors `--belt`, le mode repair reste standalone.
 
