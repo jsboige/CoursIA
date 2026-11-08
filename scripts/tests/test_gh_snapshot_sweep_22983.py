@@ -559,19 +559,22 @@ def _instantane_frais(pig_module=pig):
 
 def test_les_stamps_viennent_de_l_instantane_et_les_non_servis_sont_separes():
     _instantane_frais()
-    served, missing = pig._claim_stamps_from_snapshot([7, 9])
+    served, markers, missing = pig._claim_stamps_from_snapshot([7, 9])
     assert missing == [9]
     assert 7 in served
     # Un stamp `None` est une MESURE (aucun marqueur), pas une absence.
     assert served[7] is None or isinstance(served[7], str)
+    # Le marqueur suit le meme regime : servi par l'instantane, sans reseau.
+    assert 7 in markers
 
 
 def test_un_stamp_absent_de_l_instantane_n_est_jamais_fabrique():
     """Aucun instantane : tout est non servi, aucun stamp invente."""
     pig._BELT_SNAPSHOT = None
     pig._PASS_SNAPSHOT = None
-    served, missing = pig._claim_stamps_from_snapshot([7])
+    served, markers, missing = pig._claim_stamps_from_snapshot([7])
     assert served == {}
+    assert markers == {}
     assert missing == [7]
 
 
