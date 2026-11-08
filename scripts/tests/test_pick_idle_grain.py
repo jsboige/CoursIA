@@ -5141,6 +5141,23 @@ def test_released_cite_dans_un_claim_n_est_pas_une_livraison(monkeypatch):
                         ]).run)
     assert pig.has_recent_delivery_marker(12345) is False
 
+def test_recent_delivery_marker_survit_au_commentaire_neutre(monkeypatch):
+    monkeypatch.setattr(pig.subprocess, "run", _FakeRecentComments([
+        {"body": "[DELIVERED] lane po:CoursIA -- PR #1"},
+        {"body": "Question de suivi."},
+    ]).run)
+    assert pig.has_recent_delivery_marker(12345) is True
+
+
+def test_recent_delivery_marker_ignore_tranche_et_respecte_retractation(monkeypatch):
+    tranche = "[DELIVERED] lane po:CoursIA -- PR #1 -- paths: scripts/**"
+    for bodies, expected in [([tranche, "neutre"], False),
+                             (["[INFO] candidate-delivered", tranche], True),
+                             (["[INFO] candidate-delivered", "[NOT-DELIVERED]", tranche], False)]:
+        monkeypatch.setattr(pig.subprocess, "run", _FakeRecentComments(
+            [{"body": body} for body in bodies]).run)
+        assert pig.has_recent_delivery_marker(12345) is expected
+
 
 def test_recent_delivery_marker_mention_discursive_exclue(monkeypatch):
     """#19768 controle negatif : mention discursive (sans en-tete) -> False.

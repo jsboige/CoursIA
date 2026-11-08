@@ -405,10 +405,7 @@ _CONTAINER_DELIVERY_MARKER_RE = delivery_grammar.CONTAINER_DELIVERY_MARKER_RE
 # juste apres le dossier : elle est reconnue aussi, sinon le DERNIER
 # commentaire du fil redevenirait le seul point lu et le dossier serait
 # invisible.
-_CLOSURE_ANNOUNCEMENT_RE = re.compile(
-    r"^\s*(?:#{1,6}\s*)?Fermeture sur dossier\b[^\n]*?\bverdict\s+CLOSE\b",
-    re.IGNORECASE | re.MULTILINE,
-)
+_CLOSURE_ANNOUNCEMENT_RE = delivery_grammar.CLOSURE_ANNOUNCEMENT_RE
 
 
 def _closure_dossier_verdict(body: str) -> str | None:
@@ -1823,42 +1820,7 @@ def unfrozen_allowed(lane: str | None) -> bool:
 #: marqueurs, pour exactement cette raison. Mesure : revue Hermes du
 #: 2026-11-03 sur #24523 (angle mort de documentation signale, non
 #: bloquant).
-_FENCE_OPEN_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
-_INLINE_CODE_RE = re.compile(r"`{1,3}[^`\n]+`{1,3}")
-
-
-def _strip_code(text: str) -> str:
-    """Retire les blocs de code (fences) et les code-spans inline.
-
-    Le contenu retire est remplace par des lignes vides : la structure de
-    lignes est conservee (le debut de ligne reste le debut de ligne), ce
-    qui laisse le test des marqueurs **strictement** plus strict, jamais
-    plus laxiste.
-    """
-    if not text:
-        return text
-    out: list[str] = []
-    fence_char: str | None = None
-    fence_len = 0
-    for line in text.splitlines():
-        match = _FENCE_OPEN_RE.match(line)
-        if fence_char is None:
-            if match:
-                marker = match.group(1)
-                fence_char = marker[0]
-                fence_len = len(marker)
-                out.append("")
-                continue
-            out.append(line)
-        else:
-            # La fence se ferme sur un marqueur du MEME caractere, au moins
-            # aussi long que celui d'ouverture (CommonMark).
-            if match and match.group(1)[0] == fence_char and len(match.group(1)) >= fence_len:
-                fence_char = None
-                fence_len = 0
-            out.append("")
-    stripped = "\n".join(out)
-    return _INLINE_CODE_RE.sub(" ", stripped)
+_strip_code = delivery_grammar.strip_code
 
 # #21436 (suite de #22057) -- le mur de temps du tapis n'etait verifie
 # qu'ENTRE deux sondes : une sonde DEMARREE juste avant l'echeance consommait encore tout
@@ -3241,10 +3203,10 @@ def _last_comment_body(issue_number: int) -> str | None:
 
 
 def has_recent_container_delivery_marker(issue_number: int) -> bool | None:
-    """Le fil porte-t-il encore un marqueur de livraison du CONTENEUR ?
+    """Le fil atteste-t-il encore que le CONTENEUR est livre ?
 
     TRI-ETAT :
-    - ``True``  : le dernier evenement de livraison porte le marqueur de conteneur
+    - ``True``  : le fil porte encore le marqueur de conteneur
       `[INFO] candidate-delivered` (les trois formes de
       `_CONTAINER_DELIVERY_MARKER_RE`) ;
     - ``False`` : aucun marqueur de conteneur vivant (ou une retraction
@@ -3270,19 +3232,12 @@ def has_recent_container_delivery_marker(issue_number: int) -> bool | None:
     Cout : **1 requete** `gh issue view --json comments`, comme le filtre
     recent -- et HORS budget de sonde.
     """
-    comments, _fetched_body = _issue_comments(issue_number)
+    comments, _ = _issue_comments(issue_number)
     if comments is None:
         return None
-    delivered = False
-    for comment in comments:
-        if not isinstance(comment, dict):
-            continue
-        body = _strip_code(comment.get("body") or "")
-        if _DELIVERED_MARKER_REVOKED_RE.search(body):
-            delivered = False
-        elif _CONTAINER_DELIVERY_MARKER_RE.search(body):
-            delivered = True
-    return delivered
+    return delivery_grammar.container_delivery_state([
+        (c.get("body") or "") if isinstance(c, dict) else "" for c in comments
+    ])
 
 
 # #22500 point 1 -- l'HEURE du dernier evenement de cloture.
@@ -3411,18 +3366,9 @@ def _delivery_event_from_comments(
             # Une livraison de TRANCHE n'est pas un evenement de cloture :
             # elle ne pose ni l'etat ni l'heure (decision #24461 (c)).
             stamp = created
-    last = comments[-1]
-    last_body = last.get("body") if isinstance(last, dict) else ""
-    if not isinstance(last_body, str):
-        last_body = ""
-    tranche = delivery_grammar.is_tranche_only(last_body)
-    recent = bool(
-        closed
-        or _closure_dossier_verdict(last_body) in ("CLOSE", "KEEP")
-        or _closure_announced_close(last_body)
-        or (not tranche and (
-            _RECENT_DELIVERY_MARKER_RE.search(last_body)
-            or _DELIVERED_MARKER_RE.search(last_body))))
+    recent = delivery_grammar.recent_delivery_state([
+        (c.get("body") or "") if isinstance(c, dict) else "" for c in comments
+    ])
     if closed and state:
         # La terminalite PRIME sur l'heure : un dossier CLOSE n'expire pas,
         # meme si un marqueur plus recent a reecrit `stamp`.

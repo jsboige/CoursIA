@@ -233,3 +233,23 @@ def test_un_fil_retracte_puis_rearme_reporte_le_motif():
     motif = dg.delivery_motif([EPIC_WIDE, "[NOT-DELIVERED]", EPIC_WIDE])
     assert motif is not None
     assert "epic-wide" in motif
+
+def test_chronologie_du_fil_et_tranches():
+    lane = '[DELIVERED] lane po:CoursIA -- PR #1'
+    tranche = lane + ' -- paths: scripts/**'
+    neutral = 'Une question de suivi.'
+    revoke = '[NOT-DELIVERED] partiel'
+    assert not dg.recent_delivery_state([tranche, neutral])
+    assert dg.recent_delivery_state([lane, tranche, neutral])
+    assert not dg.recent_delivery_state([lane, revoke, tranche])
+    assert dg.recent_delivery_state([revoke, lane, neutral])
+    assert not dg.delivered_state(['```\n' + lane + '\n```'])
+    assert dg.delivered_state([lane, '```\n' + revoke + '\n```'])
+
+
+def test_chronologie_conteneur():
+    attestation = '[INFO] candidate-delivered -- termine'
+    tranche = '[DELIVERED] lane po:CoursIA -- PR #1 -- paths: scripts/**'
+    assert dg.container_delivery_state([attestation, tranche, 'neutre'])
+    assert not dg.container_delivery_state([attestation, '[NOT-DELIVERED]'])
+    assert not dg.container_delivery_state(['```\n' + attestation + '\n```'])
