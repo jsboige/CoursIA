@@ -2531,7 +2531,28 @@ def _belt_snapshot_prime(repo: str, numbers: list[int],
                 # perdue par notre ecriture -- et que les notres survivent a
                 # la sienne.
                 disk = gh_snapshot.load_snapshot(repo)
-                merged = gh_snapshot.merge_snapshots(disk, snapshot, numbers)
+                # #22983 (review e468eec) -- re-prime seeedee : la fusion doit
+                # porter sur l'UNION du delta et des numeros frais du seed.
+                # `merge_snapshots` ne prend de `fresh` que les numeros de
+                # `numbers` : fusionner sur le seul delta laisserait le disque
+                # relu ecraser les lectures du premier appel -- precisement le
+                # bord que le seed devait fermer, dans le sous-cas « premier
+                # appel en lock-timeout, re-prime qui OBTIENT le verrou » (le
+                # plus probable : le verrou de l'autre lane se libere en
+                # quelques secondes).
+                if seed is not None:
+                    seed_stamps = ((seed.get("meta") or {})
+                                   .get("comment_stamps") or {})
+                    seed_nums = set()
+                    for k in seed_stamps:
+                        try:
+                            seed_nums.add(int(k))
+                        except (TypeError, ValueError):
+                            continue
+                    merge_nums: list[int] = sorted(set(numbers) | seed_nums)
+                else:
+                    merge_nums = numbers
+                merged = gh_snapshot.merge_snapshots(disk, snapshot, merge_nums)
                 gh_snapshot.save_snapshot(repo, merged)
         except gh_snapshot.SnapshotLockTimeout as exc:
             # #22983 volet 3 : ce repli se NOMME. Avec la phase reseau hors

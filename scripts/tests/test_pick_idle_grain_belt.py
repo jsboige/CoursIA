@@ -979,6 +979,93 @@ def test_belt_reprime_claims_delta_seeds_from_memory(monkeypatch):
         f"sans instantane memoire, le seed doit etre None (got {seeds})")
 
 
+def test_belt_reprime_seed_survives_merge_when_lock_obtained(monkeypatch):
+    """#22983 (review e468eec) -- le seed SURVIT a la fusion sous verrou.
+
+    Sous-cas le plus probable du bord memoire : premier priming en
+    lock-timeout (lectures fraiches en memoire seulement), puis re-prime
+    qui OBTIENT le verrou -- celui de l'autre lane se liberant quelques
+    secondes plus tard. `merge_snapshots` ne prend de `fresh` que les
+    numeros qu'on lui nomme : fusionner sur le seul delta laisserait le
+    disque relu ecraser l'entree fraiche du premier appel, dans
+    `_BELT_SNAPSHOT` comme dans l'ecriture disque. La fusion doit porter
+    sur l'UNION (delta + numeros frais du seed).
+
+    Temoin au plus proche du reel : le VRAI `_belt_snapshot_prime` (garde
+    pytest retiree) et la VRAIE `merge_snapshots` du module d'instantane ;
+    seuls `load_snapshot`, `ensure_comments`, `snapshot_lock` et
+    `save_snapshot` sont simules.
+    """
+    class _Timeout(Exception):
+        pass
+
+    real = pig._gh_snapshot_module()  # avant le patch : module reel
+    seed = {
+        "meta": {"comment_stamps": {"1": 200}},
+        "comments": {"1": ["fresh"]},
+        "issues": {"1": {"titre": "fenetre du premier appel"}},
+    }
+    disk = {
+        "meta": {"comment_stamps": {"1": 100}},
+        "comments": {"1": ["old"]},
+        "issues": {"1": {"titre": "disque perime"}},
+    }
+    saved: dict = {}
+
+    class _OkLock:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    class _FakeGhSnapshot:
+        SnapshotLockTimeout = _Timeout
+
+        @staticmethod
+        def load_snapshot(repo):
+            return dict(disk)
+
+        @staticmethod
+        def ensure_comments(repo, numbers, snapshot):
+            up = dict(snapshot)
+            up["meta"] = {"comment_stamps": {"1": 200, "7": 300}}
+            up["comments"] = {"1": ["fresh"], "7": ["y"]}
+            return up, 0, {}
+
+        @staticmethod
+        def snapshot_lock(repo):
+            return _OkLock()
+
+        # la VRAIE fusion du module d'instantane -- c'est elle que le bord
+        # contourne ; la simuler cacherait exactement ce qu'on temoigne.
+        merge_snapshots = staticmethod(real.merge_snapshots)
+
+        @staticmethod
+        def save_snapshot(repo, merged):
+            saved.update(merged)
+
+    monkeypatch.setitem(sys.modules, "coordination.gh_snapshot",
+                        _FakeGhSnapshot)
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", seed)
+
+    pig._belt_snapshot_prime("jsboige/CoursIA", [7], seed=seed)
+
+    for label, snap in (("_BELT_SNAPSHOT", pig._BELT_SNAPSHOT),
+                        ("ecriture disque", saved)):
+        comments = snap["comments"]
+        stamps = snap["meta"]["comment_stamps"]
+        assert comments.get("1") == ["fresh"], (
+            f"{label} : l'entree fraiche du premier appel doit survivre a "
+            f"la fusion sous verrou (got {comments.get('1')})")
+        assert stamps.get("1") == 200, (
+            f"{label} : le stamp frais doit survivre (got {stamps.get('1')})")
+        assert comments.get("7") == ["y"], (
+            f"{label} : le delta doit aussi etre fusionne "
+            f"(got {comments.get('7')})")
+
+
 def test_belt_snapshot_prime_lock_timeout_names_cause(monkeypatch, capsys):
     """#22983 volet 3 : le repli lock-timeout du priming NOMME sa cause.
 
