@@ -2482,6 +2482,10 @@ def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
     294 s de tapis, dont 221 s dans la seule boucle de service, parce que
     les candidats hors fenetre de priming (70) retombaient sur le reseau a
     chaque sonde.
+
+    #22983 volet 4 -- depuis l'arbitrage option 2, la phase reseau est HORS
+    verrou ; sous verrou restent seulement la relecture, la fusion par
+    numero (la plus recente gagne) et l'ecriture atomique.
     """
     global _BELT_SNAPSHOT
     _BELT_SNAPSHOT = None
@@ -2494,19 +2498,38 @@ def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
         return
     try:
         gh_snapshot = _gh_snapshot_module()
+        # #22983 volet 4 (arbitrage coordinateur, option 2, c.6719405401) :
+        # la phase RESEAU est HORS verrou. L'ancienne forme tenait
+        # `refresh.lock` pendant tout `ensure_comments` (détention mesurée
+        # ~7 min sur ce siège, écriture de 50 Mo comprise) : les autres
+        # lanes de la machine épuisaient leurs 120 s d'attente et
+        # retombaient sur le disque périmé -- fail-CLOSED muet (mesure du
+        # 08/11 : deux tirages bloqués pendant le priming du coordinateur).
+        snapshot = gh_snapshot.load_snapshot(repo)
+        snapshot, _calls, _stats = gh_snapshot.ensure_comments(
+            repo, numbers, snapshot)
         try:
             with gh_snapshot.snapshot_lock(repo):
-                snapshot = gh_snapshot.load_snapshot(repo)
-                snapshot, _calls, _stats = gh_snapshot.ensure_comments(
-                    repo, numbers, snapshot)
-                gh_snapshot.save_snapshot(repo, snapshot)
-        except gh_snapshot.SnapshotLockTimeout:
-            # Une autre lane de la machine rafraichit : on consomme SON
-            # instantane plutot que de le concurrencer. La lecture reste
-            # correcte (les entrees fraiches sont servies), la performance
-            # est celle de la lane qui a paye le rafraichissement.
-            snapshot = gh_snapshot.load_snapshot(repo)
-        _BELT_SNAPSHOT = snapshot
+                # Relecture sous verrou : une autre lane a pu ecrire pendant
+                # notre phase reseau. La fusion PAR NUMERO (la plus recente
+                # gagne) garantit qu'aucune de ses entrees fraiches n'est
+                # perdue par notre ecriture -- et que les notres survivent a
+                # la sienne.
+                disk = gh_snapshot.load_snapshot(repo)
+                merged = gh_snapshot.merge_snapshots(disk, snapshot, numbers)
+                gh_snapshot.save_snapshot(repo, merged)
+        except gh_snapshot.SnapshotLockTimeout as exc:
+            # #22983 volet 3 : ce repli se NOMME. Avec la phase reseau hors
+            # verrou, il ne perd plus les lectures fraiches : l'instantane en
+            # memoire (nos lectures) sert CE tirage ; seules les entrees non
+            # ecrites attendront le prochain priming pour atteindre le disque.
+            print(
+                f"[22983] priming ecarte : {exc} -- ecriture reportee, le "
+                "tirage continue sur ses lectures fraiches en memoire (le "
+                "disque garde les entrees de la lane qui tient le verrou)",
+                file=sys.stderr)
+            merged = snapshot
+        _BELT_SNAPSHOT = merged
     except Exception as exc:  # noqa: BLE001 - l'instantane est un confort, pas un gate
         print(f"[22630] instantane indisponible ({type(exc).__name__}) -- "
               f"les sondes gardent leur transport historique", file=sys.stderr)
@@ -4963,10 +4986,29 @@ def _claims_in_process(
                         _manque.append(str(n))
                     elif (time.time() - stamp) > gh_snapshot.DEFAULT_TTL_SECONDS:
                         _perime.append(str(n))
+                # #22983 (v2) -- manquant/perime est un SYMPTOME : quand le
+                # fetch de la phase reseau a echoue sur quota REST, c'est la
+                # CAUSE, et elle ne se soigne pas comme un TTL (recycler les
+                # stamps peres ne repand pas un quota). Les echecs sont deja
+                # nommes dans l'instantane (``meta.fetch_failures``) -- on
+                # les releve au lieu de les reinventer. Borne a 1 h pour ne
+                # pas citer un exhaust ancien comme cause du refus present.
+                _fails = ((snapshot.get("meta") or {})
+                          .get("fetch_failures") or {})
+                _quota = sorted(
+                    k for k, v in _fails.items()
+                    if isinstance(v, dict)
+                    and "rate limit" in str(v.get("error") or "").lower()
+                    and isinstance(v.get("at"), (int, float))
+                    and (time.time() - v["at"]) < 3600.0)
+                _quota_note = (f" ; echecs quota REST < 1 h : {len(_quota)}"
+                               + (f" (ex : {', '.join('#' + k for k in _quota[:3])})"
+                                  if _quota else ""))
                 return _claims_none(
                     f"instantane STRICT ne sert pas les numeros "
                     f"(manquants: {', '.join(_manque) or '-'} ; "
-                    f"perimes: {', '.join(_perime) or '-'})")
+                    f"perimes: {', '.join(_perime) or '-'})"
+                    + _quota_note)
             # `serves` garantit les commentaires ; le LECTEUR a besoin du
             # PAYLOAD. Un payload absent le ferait retomber sur
             # `gh issue view` -- un appel reseau pendant le tirage.
