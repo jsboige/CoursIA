@@ -26,7 +26,7 @@ set -e
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 # shellcheck source=resolve_java_home.sh
 source "$SCRIPT_DIR/resolve_java_home.sh"
-JAVA_HOME=$(coursia_resolve_java_home)
+JAVA_HOME=$(coursia_resolve_java_home) || exit 1
 export JAVA_HOME
 export PATH="$JAVA_HOME/bin:$PATH"
 command -v mvn >/dev/null 2>&1 || { echo "mvn (Maven 3.9+) introuvable sur PATH"; exit 1; }
