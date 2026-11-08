@@ -7375,3 +7375,65 @@ def test_21882_analyse_pr_rend_absent_quand_budget_depasse(monkeypatch):
     # Contrat picker : absente, non bloquee.
     assert (res.get("blocking") or []) == []
     assert bool(res.get("blocked")) is False
+
+
+# --- #17315 : compteur REST/GraphQL et lecture REST des commits -------------
+
+
+def test_17315_classement_des_appels_gh(monkeypatch):
+    """`api graphql`, `pr view --json` et `pr list --json` paient le BUCKET
+    PARTAGE (GraphQL) ; les endpoints `api repos/...` paient le bucket core.
+
+    Compter les `--json` comme du REST sous-reportait la consommation du
+    bucket que le levier 4 cherche a reduire : le compte etait faux.
+    """
+    monkeypatch.setattr(mod, "API_USAGE", {"rest": 0, "graphql": 0})
+    for args in (
+        ["api", "graphql", "-f", "query={...}"],
+        ["pr", "view", "1", "--json", "state"],
+        ["pr", "list", "--json", "number"],
+        ["issue", "view", "1", "--json", "title"],
+    ):
+        mod._count_api_call(args)
+    for args in (
+        ["api", "repos/o/r/pulls/1"],
+        ["api", "repos/o/r/commits/deadbeef/check-runs"],
+    ):
+        mod._count_api_call(args)
+    assert mod.API_USAGE == {"rest": 2, "graphql": 4}
+
+
+def test_17315_commits_rest_normalises_a_la_forme_attendue(monkeypatch):
+    """La lecture REST des commits rend la forme que `analyse` attendait :
+    `oid` (sha) et `committedDate` (commit.committer.date).
+
+    L'equivalence avec la forme GraphQL (`gh pr view --json commits`) est
+    mesuree sur des commits reels : sur le commit dont l'heure d'auteur
+    differe de l'heure de commit, `committedDate` suit bien l'heure de
+    COMMIT, pas celle d'auteur.
+    """
+    page = [{
+        "sha": "aaaa1111",
+        "commit": {
+            "author": {"date": "2026-11-05T09:15:12Z"},
+            "committer": {"date": "2026-11-05T09:16:37Z"},
+        },
+    }]
+    monkeypatch.setattr(mod, "gh_json", lambda args: [page])
+    out = mod._pr_commits_rest(24803)
+    assert out == [{
+        "oid": "aaaa1111",
+        "committedDate": "2026-11-05T09:16:37Z",
+        "authoredDate": "2026-11-05T09:15:12Z",
+    }]
+
+
+def test_17315_commits_rest_aplati_les_pages(monkeypatch):
+    """`--paginate --slurp` rend une liste de pages : l'aplatissement garde
+    tous les commits, sans troncature silencieuse au-dela de 100."""
+    pages = [[{"sha": "a", "commit": {"committer": {"date": "1"}}},
+              {"sha": "b", "commit": {"committer": {"date": "2"}}}],
+             [{"sha": "c", "commit": {"committer": {"date": "3"}}}]]
+    monkeypatch.setattr(mod, "gh_json", lambda args: pages)
+    out = mod._pr_commits_rest(1)
+    assert [c["oid"] for c in out] == ["a", "b", "c"]
