@@ -2980,11 +2980,100 @@ def test_paths_match_brace_in_paths_mode():
         "anywhere/search-8-mcts.yaml", ["search-{6,8,9}-*.yaml"])
 
 
+def test_scope_batch_matching_matches_path_predicate_exactly():
+    tracked = ["Root/Foo.py", "src/foo.py", "src/other.md", "foo.py"]
+    patterns = ["src/{foo,other}.*", "FOO.py"]
+    expected = {i for i, path in enumerate(tracked)
+                if clc._path_matches(path, patterns)}
+    assert clc._matching_tracked_indices(patterns, tracked) == expected
+
+
+def test_path_match_keeps_windows_case_and_separator_rules(monkeypatch):
+    import fnmatch
+    import ntpath
+
+    cases = [
+        ("DIR/Foo.PY", "dir\\foo.py", True),
+        ("DIR/Foo.PY", "*.py", True),
+        ("DIR/Sub/Foo.PY", "sub\\*.py", False),
+    ]
+    with monkeypatch.context() as patch:
+        patch.setattr(clc.os.path, "normcase", ntpath.normcase)
+        clc._compiled_path_pattern.cache_clear()
+        clc._normcase_path.cache_clear()
+        for path, pattern, expected in cases:
+            basename = path.rsplit("/", 1)[-1]
+            reference = (fnmatch.fnmatch(path, pattern)
+                         or fnmatch.fnmatch(basename, pattern))
+            assert reference is expected
+            assert clc._path_matches(path, [pattern]) is expected
+    clc._compiled_path_pattern.cache_clear()
+    clc._normcase_path.cache_clear()
+
+
 def test_paths_match_brace_no_group_is_unchanged():
     # Patterns without braces are handled exactly as before.
     assert clc._path_matches("scripts/foo.py", ["scripts/*.py"])
     assert clc._expand_brace_groups("plain.py") == ["plain.py"]
     assert clc._expand_brace_groups("a{}.lean") == ["a{}.lean"]
+
+
+def test_cached_path_match_respects_mutated_caller_patterns():
+    # The cached unit is a pair of immutable strings, not the caller's list.
+    patterns = ["*.py"]
+    assert clc._path_matches("src/example.py", patterns)
+    patterns[:] = ["*.md"]
+    assert not clc._path_matches("src/example.py", patterns)
+    patterns.append("*.py")
+    assert clc._path_matches("src/example.py", patterns)
+
+
+def test_scope_intersection_reads_mutated_tracked_files():
+    # Scope verdicts depend on the current tracked tree, so the path-pair
+    # cache must not memoize a whole intersection against a mutable list.
+    tracked = ["src/a.py", "src/b.py"]
+    assert not clc._scopes_intersect(["src/a*.py"], ["src/*b.py"], tracked)
+    tracked.append("src/ab.py")
+    assert clc._scopes_intersect(["src/a*.py"], ["src/*b.py"], tracked)
+
+
+def test_lane_pr_reference_index_tracks_mutations_and_working_root(monkeypatch):
+    prs = [
+        {"number": 7, "body": "[CLAIMED] lane myia-a:CoursIA -- Refs #42"},
+        {"number": 8, "body": "[CLAIMED] lane myia-b:CoursIA -- Refs #43"},
+    ]
+    root = ["/repo-a"]
+    monkeypatch.setattr(clc.os, "getcwd", lambda: root[0])
+    original_extract = clc.extract_lane
+    extracted = []
+
+    def count_extract(body):
+        extracted.append(body)
+        return original_extract(body)
+
+    monkeypatch.setattr(clc, "extract_lane", count_extract)
+    assert clc._lane_open_prs_referencing(42, "myia-a:CoursIA", prs) == [7]
+    assert len(extracted) == 2
+
+    # Same-length, in-place body/lane change invalidates the index.
+    prs[0]["body"] = "[CLAIMED] lane myia-b:CoursIA -- Refs #44"
+    assert clc._lane_open_prs_referencing(42, "myia-a:CoursIA", prs) == []
+    assert clc._lane_open_prs_referencing(44, "myia-b:CoursIA", prs) == [7]
+    assert len(extracted) == 4
+
+    # Replacement, append and deletion also change the indexed verdicts.
+    prs[0] = {"number": 9, "body": "[CLAIMED] lane myia-a:CoursIA -- Refs #45"}
+    assert clc._lane_open_prs_referencing(45, "myia-a:CoursIA", prs) == [9]
+    prs.append({"number": 10, "body": "[CLAIMED] lane myia-a:CoursIA -- Refs #46"})
+    assert clc._lane_open_prs_referencing(46, "myia-a:CoursIA", prs) == [10]
+    prs.pop()
+    assert clc._lane_open_prs_referencing(46, "myia-a:CoursIA", prs) == []
+
+    # A root change invalidates the cache even when the list contents match.
+    before = len(extracted)
+    root[0] = "/repo-b"
+    assert clc._lane_open_prs_referencing(45, "myia-a:CoursIA", prs) == [9]
+    assert len(extracted) == before + len(prs)
 
 
 def test_paths_clause_brace_scope_disjoint_across_claims(capsys):
