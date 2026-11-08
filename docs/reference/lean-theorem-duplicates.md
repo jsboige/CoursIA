@@ -12,8 +12,8 @@ Ce tableau est un **signal**, pas un verdict : retirer, fusionner ou deplacer un
 
 | Nom A | Lac A | Nom B | Lac B | Docstring | Termes |
 |---|---|---|---|---|---|
-| `arrow` | `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | `arrow_impossibility` | `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 0.27 | `arrow` |
-| `sen_impossibility` | `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | `sen_impossibility` | `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 0.29 | `sen` |
+| `arrow` | `MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean` | `arrow_impossibility` | `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 0.27 | `arrow` |
+| `sen_impossibility` | `MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean` | `sen_impossibility` | `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 0.29 | `sen` |
 | `one_sub_pow_le_exp` | `MyIA.AI.Notebooks/ML/learning_theory_lean` | `one_sub_pow_le_exp_mul` | `MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean` | 0.46 | `exp`, `le`, `one`, `pow`, `sub` |
 
 ### Paires faibles — terme de nom commun, docstrings eloignees
@@ -36,8 +36,8 @@ Ces paires partagent un terme rare mais ne decrivent pas clairement le meme resu
 
 Detail des paires (fichier et declaration) :
 
-- **1.00** -- `arrow` (MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/Arrow.lean) et `arrow_impossibility` (MyIA.AI.Notebooks/GameTheory/lean_game_defs/SocialChoice.lean) -- nom 1.00 / docstring 0.27 / enonce 0.08 / termes arrow
-- **1.00** -- `sen_impossibility` (MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/Sen.lean) et `sen_impossibility` (MyIA.AI.Notebooks/GameTheory/lean_game_defs/SocialChoice.lean) -- nom 1.00 / docstring 0.29 / enonce 0.09 / termes sen
+- **1.00** -- `arrow` (MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/Arrow.lean) et `arrow_impossibility` (MyIA.AI.Notebooks/GameTheory/lean_game_defs/SocialChoice.lean) -- nom 1.00 / docstring 0.27 / enonce 0.08 / termes arrow
+- **1.00** -- `sen_impossibility` (MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/Sen.lean) et `sen_impossibility` (MyIA.AI.Notebooks/GameTheory/lean_game_defs/SocialChoice.lean) -- nom 1.00 / docstring 0.29 / enonce 0.09 / termes sen
 - **1.00** -- `one_sub_pow_le_exp` (MyIA.AI.Notebooks/ML/learning_theory_lean/PacLearning/PacFiniteBound.lean) et `one_sub_pow_le_exp_mul` (MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/Converse.lean) -- nom 1.00 / docstring 0.46 / enonce 0.33 / termes exp, le, one, pow, sub
 - **1.00** -- `fairBot_fairBot_cooperation` (MyIA.AI.Notebooks/GameTheory/game_theory_lean/ProgramGames/FairBot.lean) et `fairBot_self_cooperation` (MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/FormalLogic/FairBotLoeb.lean) -- nom 1.00 / docstring 0.09 / enonce 0.00 / termes cooperation
 - **1.00** -- `fairBot_fairBot_cooperation` (MyIA.AI.Notebooks/GameTheory/game_theory_lean/ProgramGames/FairBot.lean) et `fairBot_mutual_cooperation` (MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/FormalLogic/FairBotLoeb.lean) -- nom 1.00 / docstring 0.09 / enonce 0.00 / termes cooperation
