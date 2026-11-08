@@ -34,7 +34,9 @@ import csv
 import difflib
 import json
 import re
+import shutil
 import sys
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -1053,6 +1055,57 @@ def cmd_check(args) -> int:
         for r in bad:
             print(f"   non verifiee : {r['kind']} {r['number']} {r['title'][:60]} (pdf {r['pdf_page']})")
         rc = 1 if bad else rc
+
+    # Rejoue uniquement `map` avec les TOC épinglées : aucun PDF n'est rouvert.
+    # Les fichiers produits restent dans un répertoire temporaire, jamais dans
+    # le dossier des artefacts commités.
+    map_artifacts = (
+        "aima-walk-sections.csv",
+        "aima-walk-chapitres.csv",
+        "aima-hors-livre.csv",
+        "aima-mapping-resume.json",
+    )
+    toc_paths = [args.out_dir / name for name in ("aima3e-toc.csv", "aima4e-toc.csv")]
+    if all(path.is_file() for path in toc_paths):
+        with tempfile.TemporaryDirectory(prefix="aima-mapping-check-") as temp:
+            replay_dir = Path(temp)
+            for path in toc_paths:
+                shutil.copyfile(path, replay_dir / path.name)
+            cmd_map(argparse.Namespace(out_dir=replay_dir))
+
+            for name in map_artifacts:
+                committed = args.out_dir / name
+                replayed = replay_dir / name
+                if not committed.is_file():
+                    sys.stderr.write(f"artefact absent : {name}\n")
+                    rc = 1
+                    continue
+                # Les CSV/JSON commités peuvent être en CRLF selon le checkout ;
+                # les fins de ligne ne constituent pas un drift de contenu.
+                contenu_commite = committed.read_bytes().replace(b"\r\n", b"\n")
+                contenu_rejoue = replayed.read_bytes().replace(b"\r\n", b"\n")
+                if contenu_commite == contenu_rejoue:
+                    continue
+
+                sys.stderr.write(f"drift détecté : {name}\n")
+                committed_lines = committed.read_text(encoding="utf-8").splitlines(keepends=True)
+                replayed_lines = replayed.read_text(encoding="utf-8").splitlines(keepends=True)
+                diff = list(difflib.unified_diff(
+                    committed_lines,
+                    replayed_lines,
+                    fromfile=f"commité/{name}",
+                    tofile=f"map rejoué/{name}",
+                ))
+                extrait = diff[:40]
+                sys.stderr.writelines(extrait)
+                if len(diff) > len(extrait):
+                    sys.stderr.write("... extrait tronqué ...\n")
+                rc = 1
+    else:
+        for path in toc_paths:
+            if not path.is_file():
+                sys.stderr.write(f"source épinglée absente : {path.name}\n")
+        rc = 1
 
     # coherence : chaque ligne de couverture renvoie a une section presente dans la TOC
     couverture = args.out_dir / "aima-walk-sections.csv"
