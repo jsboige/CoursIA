@@ -23,6 +23,8 @@ def test_compression_slice_cites_real_cells_and_covers_every_root_notebook():
     assert len(data["notebooks"]) == 7
     assert len(data["concepts"]) >= 15
     assert data["hierarchy"] == ["series", "subseries", "notebook", "example", "exercise"]
+    assert [node["level"] for node in data["notebook_tree"]].count("series") == 1
+    assert [node["level"] for node in data["notebook_tree"]].count("notebook") == 7
     cited = {citation["notebook"] for concept in data["concepts"] for citation in concept["citations"]}
     assert cited == set(data["notebooks"])
 
@@ -33,6 +35,9 @@ def test_graph_exports_bilingual_skos_concepts_prerequisites_and_live_notebook_l
     assert (None, RDF.type, OWL.Ontology) in graph
     concepts = set(graph.subjects(RDF.type, SKOS.Concept))
     assert len(concepts) == len(data["concepts"])
+    notebooks = set(graph.subjects(RDF.type, VOCAB.Notebook))
+    assert len(notebooks) == 7
+    assert all((notebook, VOCAB.inSeries, None) in graph for notebook in notebooks)
     assert any(graph.objects(concept, SKOS.prefLabel) for concept in concepts)
     assert any(graph.objects(concept, VOCAB.requiresConcept) for concept in concepts)
     source_links = set(graph.objects(None, DCTERMS.source))
