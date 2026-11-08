@@ -316,8 +316,8 @@
     ],
     "SymbolicAI/SemanticWeb": [
       "SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb",
-      "SymbolicAI/SemanticWeb/SW-14-Python-Coup-Ontologique.ipynb",
-      "SymbolicAI/SemanticWeb/SW-15-Python-Coup-Argumentatif.ipynb"
+      "SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-Python.ipynb",
+      "SymbolicAI/SemanticWeb/SW-15-Coup-Argumentatif-Python.ipynb"
     ],
     "SymbolicAI/SymbolicLearning": [
       "SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb",
