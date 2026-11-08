@@ -1119,3 +1119,186 @@ def test_enumeration_claims_est_servie_par_l_instantane(monkeypatch):
     monkeypatch.setattr(pig, "_claim_reader_module",
                         lambda: pytest.fail("enumeration deja faite"))
     assert pig._complete_open_prs() == [{"number": 1}]
+
+
+# --- #22983 volet 4 (arbitrage option 2) : reseau hors verrou ---------------
+
+
+class TestMergeSnapshots:
+    """Acceptance 3 : aucune perte d'entree a la fusion."""
+
+    def _base(self):
+        return {
+            "issues": {"1": {"n": 1}, "2": {"n": 2}, "3": {"n": 3}},
+            "comments": {"1": ["a"], "2": ["b"], "3": ["c"]},
+            "meta": {"comment_stamps": {"1": 100.0, "2": 200.0, "3": 300.0}},
+        }
+
+    def test_fresh_entries_win_and_disk_survives(self):
+        # L'autre lane (A) a ecrit le numero 3 (stamp 300) ; mes lectures
+        # fraiches portent le numero 1 (stamp 500). La fusion garde les deux.
+        fresh = {
+            "issues": {"1": {"n": 1, "vu": True}},
+            "comments": {"1": ["a", "a2"]},
+            "meta": {"comment_stamps": {"1": 500.0}},
+        }
+        merged = gs.merge_snapshots(self._base(), fresh, [1])
+        assert merged["comments"]["1"] == ["a", "a2"]
+        assert merged["issues"]["1"] == {"n": 1, "vu": True}
+        assert merged["meta"]["comment_stamps"]["1"] == 500.0
+        # l'entree fraiche de A (numero 3, stamp 300) survit
+        assert merged["comments"]["3"] == ["c"]
+        assert merged["meta"]["comment_stamps"]["3"] == 300.0
+
+    def test_disk_newer_than_fresh_read_wins(self):
+        # Une autre lane a ecrit le numero 2 APRES ma lecture (disque 900 >
+        # ma lecture 400) : son entree gagne, la mienne est ecartee.
+        base = self._base()
+        base["meta"]["comment_stamps"]["2"] = 900.0
+        base["comments"]["2"] = ["b-par-autre-lane"]
+        fresh = {
+            "comments": {"2": ["b-ma-lecture"]},
+            "meta": {"comment_stamps": {"2": 400.0}},
+        }
+        merged = gs.merge_snapshots(base, fresh, [2])
+        assert merged["comments"]["2"] == ["b-par-autre-lane"]
+        assert merged["meta"]["comment_stamps"]["2"] == 900.0
+
+    def test_fetch_failures_union_recent_gagne(self):
+        base = self._base()
+        base["meta"]["fetch_failures"] = {"11": {"at": 100, "error": "x"}}
+        fresh = {
+            "comments": {},
+            "meta": {"comment_stamps": {},
+                     "fetch_failures": {"11": {"at": 200, "error": "y"},
+                                        "22": {"at": 150, "error": "z"}}},
+        }
+        merged = gs.merge_snapshots(base, fresh, [])
+        assert merged["meta"]["fetch_failures"]["11"] == {"at": 200, "error": "y"}
+        assert merged["meta"]["fetch_failures"]["22"] == {"at": 150, "error": "z"}
+
+
+def test_belt_snapshot_prime_reseau_hors_verrou_et_fusion(monkeypatch, capsys):
+    """Acceptance 1 (verrou simule tenu pendant la phase reseau de l'autre).
+
+    Le verrou de CE priming n est demande qu APRES la phase reseau : si une
+    autre lane l a tenu pendant nos lectures, nous obtenons quand meme nos
+    entrees fraiches (en memoire), et l ecriture fusionne avec le disque
+    relu -- l entree fraiche de l autre lane survit (acceptance 3).
+    """
+    import contextlib
+
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", None)
+
+    stale_base = {"issues": {"1": {"n": 1}}, "comments": {"1": ["vieux"]},
+                  "meta": {"comment_stamps": {"1": 100.0}}}
+    my_fresh = {"issues": {"2": {"n": 2}}, "comments": {"2": ["ma-lecture"]},
+                "meta": {"comment_stamps": {"2": 500.0}}}
+    # disque relu SOUS verrou : l autre lane a ecrit le numero 3 (stamp 300)
+    disk_under_lock = {"issues": {"1": {"n": 1}, "3": {"n": 3}},
+                       "comments": {"1": ["vieux"], "3": ["autre-lane"]},
+                       "meta": {"comment_stamps": {"1": 100.0, "3": 300.0}}}
+    saved = {}
+
+    class _FakeGhSnapshot:
+        SnapshotLockTimeout = type("_T", (TimeoutError,), {})
+
+        def __init__(self):
+            self.loads = 0
+
+        def load_snapshot(self, repo):
+            self.loads += 1
+            # 1er chargement (hors verrou, base perimee) puis relecture sous
+            # verrou (disque de l autre lane)
+            return stale_base if self.loads == 1 else disk_under_lock
+
+        @contextlib.contextmanager
+        def snapshot_lock(self, repo, timeout=120.0):
+            yield  # le verrou est obtenu : phase critique courte
+
+        def ensure_comments(self, repo, numbers, snapshot):
+            # la phase reseau s est faite SANS verrou : on rend nos lectures
+            # fraiches, construites sur la base perimee
+            out = dict(stale_base)
+            out["issues"] = {**stale_base["issues"], **my_fresh["issues"]}
+            out["comments"] = {**stale_base["comments"],
+                               **my_fresh["comments"]}
+            out["meta"] = {"comment_stamps": {
+                **stale_base["meta"]["comment_stamps"],
+                **my_fresh["meta"]["comment_stamps"]}}
+            return out, 3, {}
+
+        def merge_snapshots(self, base, fresh, numbers):
+            return gs.merge_snapshots(base, fresh, numbers)
+
+        def save_snapshot(self, repo, snapshot):
+            saved.update(snapshot)
+
+    fake = _FakeGhSnapshot()
+    monkeypatch.setattr(pig, "_gh_snapshot_module", lambda: fake)
+
+    pig._belt_snapshot_prime("jsboige/CoursIA", [2])
+
+    # le tirage est servi depuis la fusion (nos lectures + le disque relu)
+    assert pig._BELT_SNAPSHOT["comments"]["2"] == ["ma-lecture"]
+    assert pig._BELT_SNAPSHOT["comments"]["3"] == ["autre-lane"]
+    # l ecriture a bien eu lieu avec la fusion, pas avec notre base perimee
+    assert saved["comments"]["3"] == ["autre-lane"]
+    assert saved["comments"]["2"] == ["ma-lecture"]
+    # aucun repli muet : le stderr reste silencieux quand le verrou passe
+    assert "[22983] priming ecarte" not in capsys.readouterr().err
+
+
+def test_belt_snapshot_prime_lock_timeout_garde_les_lectures_fraiches(
+        monkeypatch, capsys):
+    """Acceptance 1, second membre : verrou INTROUVABLE -- le tirage vit quand meme.
+
+    Avant le volet 4, le repli consommait le disque perime (fail-CLOSED muet).
+    La phase reseau etant hors verrou, nos lectures fraiches sont deja en
+    memoire : le tirage continue dessus, le repli se nomme (volet 3).
+    """
+    import contextlib
+
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", None)
+
+    stale_base = {"issues": {"1": {"n": 1}}, "comments": {"1": ["vieux"]},
+                  "meta": {"comment_stamps": {"1": 100.0}}}
+    my_fresh = {"issues": {"2": {"n": 2}}, "comments": {"2": ["ma-lecture"]},
+                "meta": {"comment_stamps": {"2": 500.0}}}
+
+    class _FakeGhSnapshot:
+        SnapshotLockTimeout = type("_T2", (TimeoutError,), {})
+
+        def load_snapshot(self, repo):
+            return stale_base
+
+        @contextlib.contextmanager
+        def snapshot_lock(self, repo, timeout=120.0):
+            raise self.SnapshotLockTimeout(
+                f"verrou de l instantane non obtenu apres {timeout:g} s")
+            yield  # pragma: no cover
+
+        def ensure_comments(self, repo, numbers, snapshot):
+            out = dict(stale_base)
+            out["issues"] = {**stale_base["issues"], **my_fresh["issues"]}
+            out["comments"] = {**stale_base["comments"],
+                               **my_fresh["comments"]}
+            out["meta"] = {"comment_stamps": {
+                **stale_base["meta"]["comment_stamps"],
+                **my_fresh["meta"]["comment_stamps"]}}
+            return out, 3, {}
+
+        def save_snapshot(self, repo, snapshot):  # pragma: no cover
+            raise AssertionError("save atteint hors verrou")
+
+    fake = _FakeGhSnapshot()
+    monkeypatch.setattr(pig, "_gh_snapshot_module", lambda: fake)
+
+    pig._belt_snapshot_prime("jsboige/CoursIA", [2])
+
+    err = capsys.readouterr().err
+    assert "[22983] priming ecarte" in err
+    # le tirage est servi sur NOS lectures fraiches, pas le disque perime
+    assert pig._BELT_SNAPSHOT["comments"]["2"] == ["ma-lecture"]
