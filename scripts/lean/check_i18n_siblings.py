@@ -198,6 +198,13 @@ def is_repo_boilerplate(body: str) -> bool:
     discipline as the ``allow-axioms`` whitelist of ``pr-review-discipline``
     §B). A body that merely *resembles* the header is not boilerplate: the
     match is anchored on both ends, so any additional sentence disqualifies it.
+
+    In particular, the fourteen ``_en.lean`` block bodies that concatenate the
+    header with a module title inside the same ``/- … -/`` block are **not**
+    exempted (measured 2026-11-02, #24161): the exemption covers the pure
+    header alone, and a header-plus-title body remains a compared block — it
+    stays flagged by ``is_half_done`` if it is shared verbatim with the FR
+    sibling.
     """
     text = " ".join(body.split())
     return bool(_LICENCE_BODY_RE.match(text))

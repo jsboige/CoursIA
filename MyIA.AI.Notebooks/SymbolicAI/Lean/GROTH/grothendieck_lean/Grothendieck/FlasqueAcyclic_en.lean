@@ -97,16 +97,17 @@ canonical English sibling of `Grothendieck/FlasqueAcyclic.lean` — the
 else (signatures, proofs, tactics).
 -/
 
-import Grothendieck.FlasqueExact
-import Grothendieck.FlasqueQuotient
-import Grothendieck.FlasqueStability
-import Grothendieck.SheafCohomology.Basic
+import Grothendieck.FlasqueExact_en
+import Grothendieck.FlasqueQuotient_en
+import Grothendieck.FlasqueStability_en
+import Grothendieck.SheafCohomology.Basic_en
 
 universe r w u
 
 namespace Grothendieck.FlasqueAcyclic_en
 
 open CategoryTheory Category Limits Opposite
+open Grothendieck.Flasque_en Grothendieck.FlasqueExact_en
 
 /-!
 ## 1. The constructor: injective presentation => short exact sequence
@@ -267,6 +268,10 @@ variable [HasSheafify (Opens.grothendieckTopology X) AddCommGrpCat.{u}]
 variable [HasExt (Sheaf (Opens.grothendieckTopology X) AddCommGrpCat.{u})]
 
 open TopCat TopCat.Presheaf TopologicalSpace
+open Grothendieck.FlasqueExact_en
+open Grothendieck.FlasqueQuotient_en
+open Grothendieck.FlasqueStability_en
+open Grothendieck.SheafCohomology_en
 
 /-- **Conditional capstone** (Godement II.5.1 in full): if every injective
 sheaf is flasque — hypothesis `hInjFlasque`, Godement II.4, boundary

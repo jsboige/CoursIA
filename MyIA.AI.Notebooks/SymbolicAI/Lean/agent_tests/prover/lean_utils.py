@@ -1863,6 +1863,11 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
         "backend": result.get("backend", ""),
         "persisted": persisted,  # #1453: real file now holds the replacement
         "real_build_ok": real_build_ok,  # real-module rebuild verdict (or None)
+        # #24545: the line the replacement ACTUALLY landed on. The P5
+        # relocation above may have moved the target (frozen line empty ->
+        # nearest sorry within 30 lines), so the caller cannot assume the
+        # requested line is the proved one. The latch binds to this line.
+        "resolved_sorry_line": sorry_line,
         # #21298 guard: stage 1 (statement sorry-defs) and stage 2 (target
         # axiom probe) evidence, for caller-side reporting/telemetry.
         "statement_sorry_defs": statement_sorry_defs,

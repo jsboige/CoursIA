@@ -1136,7 +1136,7 @@ kink or bigon that invalidates the hypothesis at the next link — the result
 therefore bears on the *route* taken, not on the existence of a witness. The §4
 diagnosis (certificate inexpressible under the current connected Reidemeister
 machine) and the #18611 provenance measurement (reachable-state search: excursions
-≤ +2 crossings, diagrams ≤ 13 crossings, 138,623 states from the 67 n-changed
+≤ +2 crossings, diagrams ≤ 13 crossings, 138 623 states from the 67 n-changed
 starts — `unknotDiagram` never reached, the 11 original crossings present in
 every reached state) point the same way, but remain a **finite** measurement: what the
 kernel proves here is only the conditioned version.

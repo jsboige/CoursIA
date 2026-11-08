@@ -76,3 +76,46 @@ def test_main_single_deck(tmp_path, capsys):
     rc = main(["--repo", str(tmp_path), "--deck", "fixture-deck"])
     assert rc == 0
     assert "fixture-deck" in capsys.readouterr().out
+
+
+def _make_public_deck(root: Path):
+    """Deck au layout Slidev : visuels sous public/images/, references /images/..."""
+    deck = root / "slides" / "deck-public"
+    (deck / "public" / "images").mkdir(parents=True)
+    for n in ("e_active.png", "f_nowhere.png"):
+        (deck / "public" / "images" / n).write_bytes(b"x")
+    (deck / "slides.md").write_text(
+        "# deck\n\n![schema](/images/e_active.png)\n", encoding="utf-8"
+    )
+    return deck
+
+
+def test_public_images_layout_is_scanned(tmp_path):
+    """Regression du 2026-11-01 : public/images/ etait omis en silence (01-introduction)."""
+    _make_public_deck(tmp_path)
+    results = scan_slides_dir(tmp_path / "slides")
+    assert len(results) == 1
+    assert results[0]["deck"] == "deck-public"
+    assert results[0]["total"] == 2
+    assert results[0]["classes"]["ACTIVE"] == ["e_active.png"]
+    assert results[0]["classes"]["NOWHERE"] == ["f_nowhere.png"]
+
+
+def test_both_layouts_are_unioned(tmp_path):
+    """Un deck qui porte les deux emplacements compte l'union, dedoublonnee par nom."""
+    deck = _make_deck(tmp_path)
+    (deck / "public" / "images").mkdir(parents=True)
+    (deck / "public" / "images" / "g_public.png").write_bytes(b"x")
+    (deck / "public" / "images" / "a_active.png").write_bytes(b"x")  # doublon par nom
+    results = scan_slides_dir(tmp_path / "slides")
+    assert results[0]["total"] == 5
+    assert results[0]["classes"]["NOWHERE"] == ["d_nowhere.png", "g_public.png"]
+
+
+def test_main_deck_without_any_images_dir(tmp_path, capsys):
+    deck = tmp_path / "slides" / "deck-vide"
+    deck.mkdir(parents=True)
+    (deck / "slides.md").write_text("# vide\n", encoding="utf-8")
+    rc = main(["--repo", str(tmp_path), "--deck", "deck-vide"])
+    assert rc == 2
+    assert "public/images/" in capsys.readouterr().err
