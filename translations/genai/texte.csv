@@ -1793,9 +1793,9 @@ def tokenize_text(endpoint_url, text):
 print(""Exercice a completer"")
 pass
 ",,,,,,,,0cea29966c6cc6b2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb,6232b9b5,markdown,fr,6a3c7bcc0c7e4e4f,"### Analyse des résultats logit_bias
+MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb,6232b9b5,markdown,fr,857499308510eabf,"### Ce que le test `logit_bias` mesure — et ce que ce run n'a pas mesuré
 
-Le test `logit_bias_consistency` evalue **3 aspects critiques** :
+Le test `logit_bias_consistency` evalue **3 aspects critiques** (les limites evoquees ci-dessous valent pour le parcours **OpenRouter** ; le run committé plus bas, lui, tape l'API **OpenAI**) :
 
 **1. Impact du logit_bias**
 - Un `logit_bias` negatif (-100.0) sur les tokens de ""je"" devrait **fortement penaliser** leur apparition
@@ -1803,13 +1803,15 @@ Le test `logit_bias_consistency` evalue **3 aspects critiques** :
 
 **2. Coherence avec seed fixee**
 - Deux appels identiques (`temperature=1.0`, `seed=42`) SANS bias devraient donner des reponses identiques
-- **En pratique** : la reproductibilite depend du backend (vLLM avec random seed vs OpenRouter qui ne garantit pas le routing)
+- **En pratique (attendu, non mesuré dans ce run)** : la reproductibilite depend du backend (vLLM avec random seed vs OpenRouter qui ne garantit pas le routing)
 
 **3. Tokenizer mismatch (point pedagogique)**
 - OpenRouter utilise des modèles varies -- on ne peut pas utiliser tiktoken pour encoder les tokens
 - Les serveurs vLLM locaux exposent `/tokenize` qui utilise le **vrai tokenizer** du modèle
 - Ce decalage est une limitation reelle des APIs intermediaires (OpenRouter, LiteLLM)
-",,,,,,,,6a3c7bcc0c7e4e4f,,,,,,,,,,,,,,,
+
+> **Ce que ce run donne.** Les trois points ci-dessus decrivent **ce que le test mesure et ce qu'on en attend** — ce n'est pas un resultat observe dans ce carnet. L'execution commitee plus bas n'a produit **aucun verdict** : le cloud OpenAI a refuse la requete portant `logit_bias` (**HTTP 400**, reponse vide) et l'endpoint local `local-mini-v2` (127.0.0.1:8185) a refuse la connexion. Le code l'a lui-meme journalise : « ECHEC de la mesure sur 'OpenAI' : endpoint sans reponse pour avec logit_bias -- le test est inexploitable, aucun verdict de coherence ni d'effet n'est emis. » La lecture placee apres la cellule d'execution detaille ce que le run donne, et ce qu'il ne donne pas.
+",,,,,,,,857499308510eabf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb,0703a397,markdown,fr,64f439ff353a9710,"### Test de requête avec des logit_bias
 
 Nous présentons à présent un **exemple de test** pour le paramètre [`logit_bias`](https://platform.openai.com/docs/api-reference/chat/create#chat-create-logit_bias). Le principe : envoyer deux requêtes identiques vers chaque endpoint :
@@ -1978,7 +1980,7 @@ finally:
     _h.close()
 print(_log_buf.getvalue())
 ",,,,,,,,063d5c47b78d3621,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb,f47a3dfd,markdown,fr,5fc1d90635026473,"### Interprétation de la fonction combine_message
+MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb,f47a3dfd,markdown,fr,ede86c442e8293bb,"### Interprétation de la fonction combine_message
 
 Cette fonction utilitaire **fusionne le contenu reasoning et content** :
 
@@ -2008,7 +2010,20 @@ combine_message(msg)  # Retourne: ""Calcul: 2+2=4\n\nLa réponse est 4""
 - DeepSeek R1 sans `--enable-reasoning` : Champ vide
 
 > **Note** : La fonction gère gracieusement le cas où `reasoning_content` est absent.
-",,,,,,,,5fc1d90635026473,,,,,,,,,,,,,,,
+
+La cellule d'execution a pousse le test sur deux endpoints et **aucun n'a rendu de couple comparable** :
+
+| Endpoint | Appel **avec** `logit_bias` | Appel **sans** | Verdict |
+|---|---|---|---|
+| `OpenAI` (`api.openai.com/v1`) | **HTTP 400**, reponse vide | HTTP 200 (deux reponses, textes differents) | **aucun** -- le code journalise « ECHEC de la mesure sur 'OpenAI' ... le test est inexploitable, aucun verdict de coherence ni d'effet n'est emis » |
+| `local-mini-v2` (127.0.0.1:8185) | serveur absent : connexion refusee sur `/tokenize` (aucune requete de chat emise) | inatteignable | **aucun** -- « Exception lors de l'appel a /tokenize ... Aucune connexion n'a pu etre etablie car l'ordinateur cible l'a expressement refusee » |
+
+Trois lectures, dans l'ordre :
+
+1. **Les trois points de la section « Ce que le test `logit_bias` mesure » (plus haut dans ce carnet) sont des attentes, pas des observations.** Sans reponse biasee, il n'y a pas de comparaison possible : ni l'effet du `logit_bias` sur l'occurrence de « je », ni la coherence a seed fixe ne sont etablis par ce run. Le titre de la section le dit desormais — elle decrit le protocole, pas un resultat.
+2. **L'echec est lui-meme instructif.** `logit_bias` n'est pas accepte par tous les backends : ici, c'est le cloud qui a refuse la requete biasee, et c'est le serveur local qui etait absent. C'est une raison de plus de **verifier qu'un endpoint repond** avant d'en tirer une conclusion — un `400` ou une connexion refusee ne dit rien du comportement du modele.
+3. **Relancer** : il faut un endpoint dont `/tokenize` repond (le serveur local du port 8185, ou un backend qui accepte `logit_bias`), puis re-executer la cellule. Les sorties se mettront a jour et la lecture ci-dessus sera celle du nouveau run.
+",,,,,,,,ede86c442e8293bb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb,27c5c7be,markdown,fr,85a53bdb4fc9abce,"## Test avec la librairie `openai`
 
 On reproduit un appel classique OpenAI, 
