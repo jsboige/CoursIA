@@ -8,7 +8,7 @@ son tour** — l'issue servie a ete servie par un tirage du tapis
 Ce que ces tests verrouillent :
 
   1. la detection du **carnet neuf** — un `added` est un carnet neuf, un
-     deménagement (`added` + `removed` de meme nom) n'en est pas un ; un
+     deménagement (`added` + `removed` de meme blob) n'en est pas un ; un
      `.ipynb` ajoute suffixe d'une langue (`_en`...) est un **carnet de
      langue** : constat `LANG_SIBLING`, plus une exemption (#23174) ;
   2. les **deux conformites** (l'age, le tirage) et la sanction quand
@@ -140,6 +140,46 @@ def test_sha_identique_reconnait_un_demenagement_meme_si_basename_change():
     ])
     assert neufs == []
     assert demenages == ["nouvelle/Serie-v2.ipynb"]
+
+
+@pytest.mark.parametrize("supprimes,ajoutes,nb_demenages", [
+    (1, 2, 1), (2, 2, 2), (2, 3, 2),
+])
+def test_chaque_blob_supprime_ne_justifie_qu_un_demenagement(
+        supprimes, ajoutes, nb_demenages):
+    files = [fichier(f"ancien/{i}.ipynb", "removed", sha="blob-X")
+             for i in range(supprimes)]
+    files += [fichier(f"nouveau/{i}.ipynb", "added", sha="blob-X")
+              for i in range(ajoutes)]
+    neufs, demenages, langues = cp.new_notebooks(files)
+    assert demenages == [f"nouveau/{i}.ipynb" for i in range(nb_demenages)]
+    assert neufs == [f"nouveau/{i}.ipynb" for i in range(nb_demenages, ajoutes)]
+    assert langues == []
+
+
+@pytest.mark.parametrize("ancien", [
+    fichier("ancien/Serie.ipynb", "removed"),
+    fichier("ancien/Serie.txt", "removed", sha="blob-X"),
+])
+def test_sans_blob_de_carnet_supprime_la_copie_reste_neuve(ancien):
+    assert cp.new_notebooks([
+        ancien, fichier("nouveau/Serie.ipynb", "added", sha="blob-X")
+    ]) == (["nouveau/Serie.ipynb"], [], [])
+
+
+def test_ajout_sans_sha_reste_neuf():
+    assert cp.new_notebooks([
+        fichier("ancien/Serie.ipynb", "removed", sha="blob-X"),
+        fichier("nouveau/Serie.ipynb", "added"),
+    ]) == (["nouveau/Serie.ipynb"], [], [])
+
+
+def test_carnet_de_langue_ne_consomme_pas_un_blob_supprime():
+    assert cp.new_notebooks([
+        fichier("ancien/Serie.ipynb", "removed", sha="blob-X"),
+        fichier("nouveau/Serie_en.ipynb", "added", sha="blob-X"),
+        fichier("nouveau/Serie.ipynb", "added", sha="blob-X"),
+    ]) == ([], ["nouveau/Serie.ipynb"], ["nouveau/Serie_en.ipynb"])
 
 
 def test_un_fichier_non_carnet_ne_compte_pas():
@@ -545,6 +585,22 @@ def test_faux_demenagement_est_signale_sans_faire_rougir_la_ci(
     assert cp.main(["--pr", "1"]) == 0
     sortie = capsys.readouterr().out
     assert "nouvelle/Serie.ipynb" in sortie
+    assert "constat VETO_ACTIVE" in sortie
+
+
+def test_copie_surnumeraire_declenche_le_veto_en_advisory(monkeypatch, capsys):
+    _pr_fichiers(monkeypatch, [
+        fichier("ancien/Serie.ipynb", "removed", sha="blob-X"),
+        fichier("nouveau/Serie.ipynb", "added", sha="blob-X"),
+        fichier("autre/Serie.ipynb", "added", sha="blob-X"),
+    ])
+    monkeypatch.setenv(cp.VETO_VAR, "400")
+    monkeypatch.setattr(cp, "open_issue_count", lambda: 651)
+    _conforme_48h(monkeypatch)
+
+    assert cp.main(["--pr", "1"]) == 0
+    sortie = capsys.readouterr().out
+    assert "autre/Serie.ipynb" in sortie
     assert "constat VETO_ACTIVE" in sortie
 
 
