@@ -48,6 +48,11 @@ from typing import Any
 
 SNAPSHOT_VERSION = 1
 
+# GitHub REST plafonne `per_page` a 100. Sans parametre, l'API sert 30
+# elements par defaut : les lectures paginees du fil complet paient alors
+# inutilement plus d'operations REST, sans gagner en fraicheur.
+REST_PER_PAGE = 100
+
 #: Duree de validite des payloads PAR ISSUE (issue + commentaires), en
 #: secondes. Arbitrage coordinateur du 2026-10-26 (PR #22684) : cache de
 #: CYCLE CRON -- les charges couteuses par element vivent au-dela de la
@@ -363,8 +368,11 @@ def normalise_comment(raw: dict) -> dict:
 
 
 def fetch_issue_comments(repo: str, number: int) -> list[dict]:
-    """Commentaires d'une issue, en REST (rapide : ~0,3 s contre ~5 s en GraphQL)."""
-    raw = _gh_api(f"repos/{repo}/issues/{number}/comments", params="--paginate")
+    """Commentaires d'une issue, en REST, avec la taille de page maximale."""
+    raw = _gh_api(
+        f"repos/{repo}/issues/{number}/comments",
+        params=["--paginate", "-X", "GET", "-f", f"per_page={REST_PER_PAGE}"],
+    )
     if isinstance(raw, dict):
         raw = raw.get("comments") or []
     return [normalise_comment(c) for c in raw
@@ -450,7 +458,8 @@ def fetch_repo_comments_since(repo: str, since: str | None = None, *,
     # `-f` est present, et un POST sur un point d'entree de liste rend
     # `404 Not Found` (mesure du 27/10 : le balayage levait
     # `gh: Not Found (HTTP 404)` et tout le rafraichissement echouait).
-    params: list[str] = ["--paginate", "-X", "GET"]
+    params: list[str] = ["--paginate", "-X", "GET", "-f",
+                         f"per_page={REST_PER_PAGE}"]
     if since:
         # #22983 -- DEUX elements d'argv, jamais un seul. En un seul
         # element (`"-f since=..."`), `gh` lit le nom de champ ` since`
@@ -490,7 +499,8 @@ def fetch_open_issues(repo: str, *, timeout: float = 60.0) -> dict[int, dict]:
     (titre, labels).
     """
     raw = _gh_api(f"repos/{repo}/issues", params=["--paginate", "-X", "GET",
-                                                   "-f", "state=open"],
+                                                   "-f", "state=open", "-f",
+                                                   f"per_page={REST_PER_PAGE}"],
                    timeout=timeout)
     if isinstance(raw, dict):
         raw = raw.get("issues") or []
