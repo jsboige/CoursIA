@@ -137,6 +137,14 @@ def test_filtre_recent_ignore_une_tranche(monkeypatch):
     assert _recent(TRANCHE, monkeypatch) is False
 
 
+def test_attestation_et_tranche_dans_un_meme_corps(monkeypatch):
+    """L'attestation prime la tranche sur les trois surfaces du tapis."""
+    body = TRANCHE + "\n" + CANDIDATE_DELIVERED
+    recent, state, stamp = _event(body)
+    assert (recent, state, stamp) == (True, True, "2026-11-03T10:00:00Z")
+    assert _recent(body, monkeypatch) is True
+
+
 def test_filtre_recent_ecsarte_une_livraison_epic_wide(monkeypatch):
     assert _recent(EPIC_WIDE, monkeypatch) is True
 

@@ -2703,7 +2703,7 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     body_plain = _strip_code(body)
     # #24461 (c) point 3 : une livraison de TRANCHE (`paths:` sur la ligne
     # du marqueur) ne livre pas l'issue -- elle ne l'arme ni ne la desarme.
-    tranche = delivery_grammar.is_tranche_marker(body_plain)
+    tranche = delivery_grammar.is_tranche_only(body_plain)
     return bool(
         _closure_dossier_verdict(body) in ("CLOSE", "KEEP")
         or _closure_announced_close(body)
@@ -3103,7 +3103,7 @@ def _delivery_event_from_comments(
     last_body = last.get("body") if isinstance(last, dict) else ""
     if not isinstance(last_body, str):
         last_body = ""
-    tranche = delivery_grammar.is_tranche_marker(last_body)
+    tranche = delivery_grammar.is_tranche_only(last_body)
     recent = bool(
         closed
         or _closure_dossier_verdict(last_body) in ("CLOSE", "KEEP")

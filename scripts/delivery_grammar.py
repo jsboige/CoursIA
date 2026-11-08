@@ -257,6 +257,11 @@ def is_tranche_marker(body: str) -> bool:
     return False
 
 
+def is_tranche_only(body: str) -> bool:
+    """Une tranche sans attestation de livraison de l'issue entière."""
+    return is_tranche_marker(body) and not delivery_marker_is_epic_wide(body)
+
+
 # Le separateur qui porte le motif dans une cause RENDUE. Il est defini
 # ici, avec la grammaire, pour qu'aucune surface ne le recompose.
 MOTIF_SUFFIX = "-- motif : "
