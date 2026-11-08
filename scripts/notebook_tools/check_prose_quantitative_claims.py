@@ -167,7 +167,7 @@ DOMAIN_COVERAGE_FACTOR_RE = re.compile(
     re.IGNORECASE,
 )
 DOMAIN_COVERAGE_MATRIX_DIMENSION_RE = re.compile(
-    r"\b\d{1,6}\s+colonnes?\s*[x×]\s*"
+    r"\b(?:matrice|matrix)\b.{0,60}?\b\d{1,6}\s+colonnes?\s*[x×]\s*"
     r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+lignes?)\*{0,2}"
     r"(?:\s+(?:maximum|max))?\b",
     re.IGNORECASE,

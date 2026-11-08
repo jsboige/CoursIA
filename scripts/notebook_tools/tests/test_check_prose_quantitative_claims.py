@@ -105,6 +105,10 @@ def test_artifact_detector_spares_explicit_domain_model_dimensions(line):
             ["729 lignes"],
         ),
         (
+            "Le fichier source fait 324 colonnes x 729 lignes.",
+            ["729 lignes"],
+        ),
+        (
             "Matrice de couverture exacte : 729 lignes, une par couple cellule-valeur ; "
             "le notebook contient aussi 81 cellules de code.",
             ["81 cellules"],
