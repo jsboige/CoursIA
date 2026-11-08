@@ -52,6 +52,7 @@ class FakeClient:
         self.content = content
         self.error = error
         self.request: dict[str, Any] | None = None
+        self.close_count = 0
         self.chat = SimpleNamespace(completions=SimpleNamespace(create=self.create))
 
     def create(self, **request: Any) -> Any:
@@ -61,6 +62,9 @@ class FakeClient:
         return SimpleNamespace(
             choices=[SimpleNamespace(message=SimpleNamespace(content=self.content))]
         )
+
+    def close(self) -> None:
+        self.close_count += 1
 
 
 def test_extract_structured_supports_json_schema_and_enforces_strict_mode() -> None:
@@ -267,7 +271,8 @@ def test_rest_errors_do_not_expose_untrusted_details(monkeypatch: pytest.MonkeyP
 
 def test_loopback_http_request_reaches_endpoint() -> None:
     """Exerce le vrai transport TCP local, avec une réponse de modèle injectée."""
-    app = create_app(FakeClient())
+    client = FakeClient()
+    app = create_app(client)
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]
@@ -293,5 +298,56 @@ def test_loopback_http_request_reaches_endpoint() -> None:
         thread.join(timeout=5)
 
     assert not thread.is_alive(), "le serveur local ne s'est pas arrêté"
+    assert client.close_count == 0, "le service ne possède pas le client injecté"
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "data": {"score": 88, "commentaire": "Clair."}}
+
+
+def test_loopback_reuses_and_closes_one_configured_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Le serveur réutilise son client configuré et le ferme à l'arrêt."""
+    monkeypatch.setenv("OPENAI_API_KEY", "local-test-key")
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+    created: list[FakeClient] = []
+
+    def make_client(**kwargs: Any) -> FakeClient:
+        assert kwargs == {"api_key": "local-test-key", "base_url": None}
+        client = FakeClient()
+        created.append(client)
+        return client
+
+    monkeypatch.setattr("structured_outputs_core.OpenAI", make_client)
+    app = create_app()
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+
+    server = uvicorn.Server(
+        uvicorn.Config(app, host="127.0.0.1", port=port, log_level="critical")
+    )
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    try:
+        deadline = time.monotonic() + 5
+        while not server.started and thread.is_alive() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert server.started, "le serveur local n'a pas démarré"
+        assert len(created) == 1
+
+        responses = [
+            httpx.post(
+                f"http://127.0.0.1:{port}/texte/extract",
+                json={"prompt": "Évalue.", "schema": SCHEMA},
+                timeout=2,
+            )
+            for _ in range(3)
+        ]
+        assert all(response.status_code == 200 for response in responses)
+        assert len(created) == 1, "le client est créé une seule fois pour le lifespan"
+        assert created[0].close_count == 0
+    finally:
+        server.should_exit = True
+        thread.join(timeout=5)
+
+    assert not thread.is_alive(), "le serveur local ne s'est pas arrêté"
+    assert len(created) == 1
+    assert created[0].close_count == 1, "le client du service est fermé au shutdown"

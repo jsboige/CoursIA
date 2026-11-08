@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -12,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from structured_outputs_core import (
     StructuredExtractionError,
     StructuredInputError,
+    _configured_client,
     extract_structured,
 )
 
@@ -26,7 +28,20 @@ class ExtractRequest(BaseModel):
 
 def create_app(client: Any | None = None) -> FastAPI:
     """Construit le service; ``client`` est une injection destinée aux tests."""
-    app = FastAPI(title="Structured Outputs", version="0.1.0")
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        owns_client = client is None
+        active_client = _configured_client() if owns_client else client
+        app.state.llm_client = active_client
+        try:
+            yield
+        finally:
+            if owns_client:
+                active_client.close()
+
+    app = FastAPI(title="Structured Outputs", version="0.1.0", lifespan=lifespan)
+    # Les tests peuvent exercer l'application ASGI sans démarrer son lifespan.
+    # L'injection est externe et ne doit jamais être fermée par le service.
     app.state.llm_client = client
 
     @app.exception_handler(RequestValidationError)
