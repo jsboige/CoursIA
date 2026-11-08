@@ -2206,9 +2206,10 @@ TRANCHE21: list[Guard] = [
 # Forme : iter par carnet modifie (`--check {changed_paths}`). Un carnet
 # modifie qui porte encore la cle fait remonter le defaut sur la PR.
 #
-# ADVISORY (`blocking=False`) : le corpus n'est pas encore entierement corrige
-# (lots B et C de l'issue #20167). La bascule en bloquant se fera quand `main`
-# ne portera plus aucune cellule fautive, comme geste trace.
+# Ratchet bloquant (#24090) : pour chaque carnet modifie, comparer le nombre
+# de cellules markdown portant execution_count/outputs au blob de la base PR.
+# Les residus preexistants ailleurs dans le corpus (ou dans le meme carnet)
+# restent toleres tant que leur compte n'augmente pas.
 #
 # `absorbed=True` : sans absorption, le job always-on lancerait `fast_lane.py
 # --shadow` et la conclusion serait neutre sous le prefixe d'ombre. Meme
@@ -2216,21 +2217,23 @@ TRANCHE21: list[Guard] = [
 # ---------------------------------------------------------------------------
 TRANCHE22: list[Guard] = [
     Guard(
-        name="Markdown-cell schema advisory (cles interdites, #20167)",
+        name="Markdown-cell schema ratchet (base vs PR, #24090)",
         source=FAST_LANE_NATIVE,
         paths=[
             "MyIA.AI.Notebooks/**/*.ipynb",
             "scripts/notebook_tools/fix_markdown_cell_schema.py",
+            "scripts/notebook_tools/check_markdown_cell_schema_ratchet.py",
             "scripts/notebook_tools/tests/test_fix_markdown_cell_schema.py",
+            "scripts/notebook_tools/tests/test_check_markdown_cell_schema_ratchet.py",
             "scripts/ci/fast_lane.py",
             "scripts/ci/fast_lane_registry.py",
         ],
         iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
         argv=[
-            "python", "scripts/notebook_tools/fix_markdown_cell_schema.py",
-            "--check", "{changed_paths}",
+            "python", "scripts/notebook_tools/check_markdown_cell_schema_ratchet.py",
+            "--base-ref", "{base_ref}", "{changed_paths}",
         ],
-        blocking=False,
+        blocking=True,
         iterates_paths=True,
         absorbed=True,
     ),
