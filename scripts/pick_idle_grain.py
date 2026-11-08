@@ -8259,6 +8259,12 @@ def belt_visit_stamp(it: dict) -> str | None:
 CONSOLIDATION_TAG = "consolidation"
 CONSOLIDATION_LAG_H = 48
 UMBRELLA_VISIT_CAP_DAYS = 7
+# #24373 -- une creation recente est une priorite de premier passage, pas une
+# dette qui puisse conserver la tete du tapis indefiniment. Au-dela d'une
+# semaine, une issue jamais visitee rejoint la queue derriere les items dont
+# une visite est mesuree. Le seuil suit le cycle hebdomadaire deja porte par
+# le plafond EPIC (#22500).
+NEVER_VISITED_PRIORITY_DAYS = 7
 # #21067 correctif 1 -- le plafond de VISITES (#22500, ci-dessus) regarde un
 # claim ou une sous-issue ; il ne voit pas les LIVRAISONS. Une lane qui
 # enchaine les sous-grains d'un meme EPIC sans repasser par le tapis ne pose
@@ -8344,24 +8350,36 @@ def _visit_age_hours(stamp, now) -> float | None:
     return (now - when).total_seconds() / 3600.0
 
 
-def belt_sort_key(it: dict, *, now=None) -> tuple:
+def belt_sort_key(it: dict, *, now=None,
+                  never_visited_priority_days: int =
+                  NEVER_VISITED_PRIORITY_DAYS) -> tuple:
     """Cle de tri deterministe pour le tapis roulant.
 
     Spec #18832 : **une seule ligne de temps** -- derniere visite (merge
     d'une PR citant l'issue, claim pose sur elle, ou creation d'une
     sous-issue qui la nomme ; cf `belt_visit_stamp`), sinon date de
-    creation, sinon NOW. La plus ancienne en tete. Une sous-issue tout juste
-    creee repart en queue, pas en tete, et pousse son parent avec elle.
+    creation. Une sous-issue tout juste creee repart en queue, pas en tete,
+    et pousse son parent avec elle.
+
+    #24373 -- une issue sans visite ne garde la tete du tapis que pendant sa
+    premiere semaine (seuil ajustable par `never_visited_priority_days`,
+    sept jours par defaut). Les issues jamais visitees creees dans cette fenetre
+    passent avant les issues deja visitees, de la plus recente a la plus
+    ancienne ; les issues plus anciennes (ou dont la date est illisible)
+    passent apres elles. Cette borne empeche une population ancienne jamais
+    servie d'absorber la fenetre et de cacher les grains recents.
 
     #22500 -- la ligne de temps ne suffisait pas : elle traite une issue de
     consolidation comme n'importe quelle autre, alors que le mandat user du
     2026-10-25 demande qu'elle soit visitee « plusieurs fois par semaine ».
-    Tri : `(classe, rang, stamp ISO asc, numero asc)` avec `classe = 0` pour une
-    consolidation **due** (derniere visite il y a au moins
-    `CONSOLIDATION_LAG_H` heures), `1` sinon. Une consolidation due passe
-    donc devant tout le reste, et les consolidations dues entre elles
-    gardent l'ordre de leur visite : aucune ne peut attendre plus longtemps
-    qu'un tour de tapis apres son echeance.
+    Tri : `classe` place d'abord les consolidations dues encore dans la borne,
+    puis les premieres visites recentes, les items visites et enfin les
+    jamais-visitees hors fenetre (ou de date illisible). Le rang de classe 0
+    garde le tri de consolidation existant pour les items jamais visites
+    encore dans la borne et les items deja visites. Ces consolidations dues
+    passent devant le reste et gardent entre elles l'ordre de leur visite :
+    aucune ne peut attendre plus longtemps qu'un tour de tapis apres son
+    echeance.
 
     #22500 point 2 (seconde passe) -- `rang` : dans la classe 0, un GRAIN
     borne passe devant un EPIC. Mesure du 26/10 : les EPICs de consolidation
@@ -8369,17 +8387,31 @@ def belt_sort_key(it: dict, *, now=None) -> tuple:
     une lane en cycle de 30 minutes ne sait pas les servir (« le belt offre
     4 umbrellas toutes bloquees », quatre cycles de suite ; « tache
     multi-heures, non hote dans la queue d'un cycle cron »). Le rang ne
-    change QUE l'ordre a l'interieur de la classe 0 : la classe 1 garde
-    exactement son ordre d'avant (rang 0 pour tous).
+    change que l'ordre a l'interieur de la classe 0.
     """
     moment = now or NOW
     visit = belt_visit_stamp(it)
     stamp = visit or it.get("created_at") or moment.isoformat()
+    priority_age_h = max(0, int(never_visited_priority_days)) * 24
+    never_age = (_visit_age_hours(it.get("created_at"), moment)
+                 if visit is None else None)
+    stale_never = (
+        visit is None
+        and (never_age is None
+             or never_age < 0
+             or never_age > priority_age_h)
+    )
     if is_consolidation(it):
         age = _visit_age_hours(visit or it.get("created_at"), moment)
-        if age is not None and age >= CONSOLIDATION_LAG_H:
+        if (not stale_never and age is not None
+                and age >= CONSOLIDATION_LAG_H):
             return (0, _bounded_rank(it), stamp, it.get("number", 0))
-    return (1, 0, stamp, it.get("number", 0))
+    if visit is None:
+        if not stale_never:
+            # L'age croissant place la creation la plus recente en premier.
+            return (1, 0, never_age, it.get("number", 0))
+        return (3, 0, stamp, it.get("number", 0))
+    return (2, 0, stamp, it.get("number", 0))
 
 
 def _bounded_rank(it: dict) -> int:

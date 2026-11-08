@@ -113,7 +113,7 @@ class _FakeArgs:
 
 
 def test_belt_sort_key_orders_by_last_delivery_first():
-    """Critere 1 : ordre par derniere visite (None d'abord, ISO asc)."""
+    """Les dates de visite restent ordonnees, les vieilles jamais-visitees declinent."""
     never = _make_item(1, age_days=5, idle=1, last=None)
     fresh = _make_item(2, age_days=10, idle=2,
                        last="2026-10-01T00:00:00Z")  # tres recente (hier)
@@ -121,8 +121,9 @@ def test_belt_sort_key_orders_by_last_delivery_first():
                          last="2026-08-01T00:00:00Z")  # ~2 mois
     pool = [fresh, never, ancient]
     pool.sort(key=pig.belt_sort_key)
-    # None en tete, puis 2026-08 avant 2026-10 (plus ancien d'abord)
-    assert [it["number"] for it in pool] == [1, 3, 2]
+    # Les deux issues visitees gardent leur ordre chronologique ; la jamais
+    # visitee creee hors de la fenetre hebdomadaire ne les absorbe plus.
+    assert [it["number"] for it in pool] == [3, 2, 1]
 
 
 def test_belt_sort_key_tie_breaks_on_created_then_number():
@@ -143,26 +144,24 @@ def test_belt_sort_key_tie_breaks_on_created_then_number():
 # Predicat 2 : une issue jamais servie se classe par sa creation.
 
 
-def test_belt_sort_key_never_served_ordered_by_created():
-    """Critere 2 : jamais servis tries par createdAt croissant puis number."""
+def test_belt_sort_key_never_served_oldest_is_behind_visited_items():
+    """Les jamais servis anciens ne gardent pas la tete devant les visites."""
     n_old_create = _make_item(10, age_days=200, idle=1, last=None,
                               created="2026-01-01T00:00:00Z")
     n_new_create = _make_item(11, age_days=10, idle=1, last=None,
                               created="2026-09-01T00:00:00Z")
     pool = [n_new_create, n_old_create]
     pool.sort(key=pig.belt_sort_key)
-    # Plus ancienne creation en premier
-    assert pool[0]["number"] == 10
-    assert pool[1]["number"] == 11
+    # Ces deux dates sont hors de la priorite initiale ; leur ordre interne
+    # reste deterministe et chronologique.
+    assert [it["number"] for it in pool] == [10, 11]
 
 
 # Predicat 3 : une issue livree hier passe derriere une livree il y a un mois.
 
 
 def test_belt_sort_old_delivery_before_recent():
-    """Critere 3 : ancien derriere recent -- jamais servis prennent les
-    premieres places, puis livraisons anciennes, puis livraisons recentes.
-    """
+    """Les visites gardent leur ordre et passent avant une vieille jamais servie."""
     fresh = _make_item(20, age_days=20, idle=2,
                        last="2026-10-01T00:00:00Z")  # hier
     ancient = _make_item(21, age_days=20, idle=2,
@@ -170,10 +169,70 @@ def test_belt_sort_old_delivery_before_recent():
     never = _make_item(22, age_days=20, idle=2, last=None)
     pool = [fresh, ancient, never]
     pool.sort(key=pig.belt_sort_key)
-    # never en tete (acception 1), puis ancient (livraison il y a un mois)
-    # puis fresh (livraison hier). La livraison plus ancienne passe AVANT
-    # la livraison recente -- c'est l'inverse du tirage pondere.
-    assert [it["number"] for it in pool] == [22, 21, 20]
+    # Les visitees gardent l'ordre plus ancienne d'abord ; l'issue jamais
+    # servie date de 20 jours et passe apres elles.
+    assert [it["number"] for it in pool] == [21, 20, 22]
+
+
+def test_belt_sort_key_recent_grain_reaches_service_and_frozen_veto_holds():
+    """Un grain frais sort du prefixe ancien ; le GEL continue de l'ecarter."""
+    now = datetime(2026, 11, 8, tzinfo=timezone.utc)
+    stale_umbrella = _make_item(
+        40, age_days=200, idle=200, klass="umbrella", last=None,
+        created="2026-01-01T00:00:00Z")
+    recently_visited = _make_item(
+        41, age_days=30, idle=1, last="2026-11-07T00:00:00Z",
+        created="2026-10-01T00:00:00Z")
+    fresh_grain = _make_item(
+        42, age_days=1, idle=1, last=None,
+        created="2026-11-07T12:00:00Z")
+    fresh_frozen = _make_item(
+        43, age_days=1, idle=1, last=None,
+        created="2026-11-07T11:00:00Z")
+    pool = [stale_umbrella, recently_visited, fresh_grain, fresh_frozen]
+    pool.sort(key=lambda item: pig.belt_sort_key(item, now=now))
+    assert [item["number"] for item in pool] == [42, 43, 41, 40]
+
+    picks, withheld, _state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: False,
+        frozen_probe=lambda n: "comment" if n == 43 else False)
+    assert [item["number"] for item in picks] == [42, 41]
+    assert [(item["number"], reason.split(" ", 1)[0])
+            for item, reason in withheld] == [(43, "GEL")]
+    unreadable_date = _make_item(49, age_days=0, idle=0, last=None,
+                                 created="not-a-date")
+    assert pig.belt_sort_key(unreadable_date, now=now) > pig.belt_sort_key(
+        recently_visited, now=now)
+
+
+def test_belt_sort_key_bounds_never_visited_before_consolidation_due():
+    """Un due recent reste prioritaire ; un due visite egalement ; un vieux jamais vu non."""
+    now = datetime(2026, 11, 8, tzinfo=timezone.utc)
+    fresh_due = _make_item(44, age_days=3, idle=3, last=None,
+                          created="2026-11-05T00:00:00Z")
+    fresh_due["labels"] = [pig.CONSOLIDATION_TAG]
+    visited_due = _make_item(
+        45, age_days=60, idle=3, last=None)
+    visited_due["labels"] = [pig.CONSOLIDATION_TAG]
+    visited_due["last_claim_stamp"] = "2026-11-05T00:00:00Z"
+    old_never_due = _make_item(46, age_days=60, idle=60, last=None)
+    old_never_due["labels"] = [pig.CONSOLIDATION_TAG]
+    ordinary_visited = _make_item(
+        47, age_days=60, idle=1, last="2026-11-07T00:00:00Z")
+    pool = [old_never_due, ordinary_visited, fresh_due, visited_due]
+    pool.sort(key=lambda item: pig.belt_sort_key(item, now=now))
+    assert [item["number"] for item in pool] == [44, 45, 47, 46]
+
+    three_day_grain = _make_item(
+        48, age_days=3, idle=3, last=None,
+        created="2026-11-05T00:00:00Z")
+    assert pig.belt_sort_key(
+        three_day_grain, now=now, never_visited_priority_days=2
+    ) > pig.belt_sort_key(ordinary_visited, now=now)
 
 
 # Predicat 4 : une issue reclamee par une autre lane est sautee.
@@ -953,13 +1012,13 @@ def test_belt_claim_moves_issue_behind_unvisited_ones():
     old = _make_item(10, age_days=90, idle=1, last="2026-08-01T00:00:00Z",
                      created="2026-07-01T00:00:00Z")
     newer = _make_item(11, age_days=30, idle=1, last=None,
-                       created="2026-09-01T00:00:00Z")
+                       created="2026-11-06T00:00:00Z")
     pool = [old, newer]
-    claims = {10: "2026-10-04T19:49:00Z"}
+    claims = {10: "2026-11-05T19:49:00Z"}
     probed = pig.settle_belt_head(pool, need=2, probe=claims.get, max_probes=10)
     assert [it["number"] for it in pool] == [11, 10]
     assert probed == {10, 11}
-    assert old["last_claim_stamp"] == "2026-10-04T19:49:00Z"
+    assert old["last_claim_stamp"] == "2026-11-05T19:49:00Z"
 
 
 def test_belt_claim_older_than_merge_changes_nothing():
@@ -977,22 +1036,22 @@ def test_belt_settle_reads_the_freed_slot_until_head_is_stable():
     """Toute la tete est reservee : chaque place liberee est lue a son tour,
     et la premiere issue non reservee finit en tete."""
     pool = [_make_item(20 + k, age_days=90, idle=1, last=None,
-                       created=f"2026-07-0{k + 1}T00:00:00Z") for k in range(5)]
-    claims = {20: "2026-10-04T10:00:00Z", 21: "2026-10-04T11:00:00Z",
-              22: "2026-10-04T12:00:00Z"}
+                       created=f"2026-11-0{k + 2}T00:00:00Z") for k in range(5)]
+    claims = {24: "2026-11-07T10:00:00Z", 23: "2026-11-07T11:00:00Z",
+              22: "2026-11-07T12:00:00Z"}
     probed = pig.settle_belt_head(pool, need=2, probe=claims.get, max_probes=10)
-    assert [it["number"] for it in pool][:2] == [23, 24]
+    assert [it["number"] for it in pool][:2] == [21, 20]
     assert {20, 21, 22, 23, 24} <= probed
 
 
 def test_belt_settle_is_bounded_by_max_probes():
     pool = [_make_item(40 + k, age_days=90, idle=1, last=None,
-                       created=f"2026-07-{k + 1:02d}T00:00:00Z") for k in range(20)]
+                       created="2026-11-02T00:00:00Z") for k in range(20)]
     calls = []
 
     def probe(n):
         calls.append(n)
-        return f"2026-10-04T{len(calls):02d}:00:00Z"
+        return f"2026-11-07T{len(calls):02d}:00:00Z"
 
     pig.settle_belt_head(pool, need=3, probe=probe, max_probes=7)
     assert len(calls) == 7
@@ -1005,15 +1064,15 @@ def test_belt_child_issue_visits_its_parent_7265_scenario():
                       last="2026-08-13T00:00:00Z",
                       created="2026-07-18T00:00:00Z")
     august = _make_item(14000, age_days=40, idle=3, last=None,
-                        created="2026-08-25T00:00:00Z")
+                        created="2026-11-05T00:00:00Z")
     child = _make_item(19088, age_days=0, idle=0, last=None,
-                       created="2026-10-04T09:50:00Z")
+                       created="2026-11-06T09:50:00Z")
     child["title"] = "[#7265 · pépite A3] Object explorer metadata-driven"
     child["body"] = "Pepite A3 de l'EPIC #7265."
     belt_pool = [epic, august]
     latest = pig.apply_child_visits([epic, august, child], belt_pool)
-    assert latest[7265] == "2026-10-04T09:50:00Z"
-    assert epic["last_child_stamp"] == "2026-10-04T09:50:00Z"
+    assert latest[7265] == "2026-11-06T09:50:00Z"
+    assert epic["last_child_stamp"] == "2026-11-06T09:50:00Z"
     belt_pool.sort(key=pig.belt_sort_key)
     assert [it["number"] for it in belt_pool] == [14000, 7265]
 
@@ -1157,7 +1216,7 @@ def test_belt_released_issue_stays_behind_7742_scenario():
             max_probes=4)
         return [it["number"] for it in pool]
 
-    assert order([]) == [7742, 200]                 # jamais servie : en tete
+    assert order([]) == [200, 7742]                 # vieille jamais servie en queue
     assert order([claim]) == [7742, 200]            # prise le 31/08 < 10/09
     assert order([claim, release]) == [200, 7742]   # rendue le 19/09 : derriere
 
@@ -1266,22 +1325,20 @@ def test_latest_claim_stamp_takes_max_of_claim_and_delivered(monkeypatch):
 
 
 def test_belt_delivered_info_moves_served_issue_behind_13107_scenario():
-    """Acceptance #19295 en bout en bout : #13107 servie par un
-    `[INFO] candidate-delivered` recule derriere une issue jamais servie,
-    au meme titre qu'un claim -- le tapis cesse de la reservir comme
-    grain neuf."""
+    """Acceptance #19295 : une creation jamais servie de moins de 7 j
+    passe avant #13107 apres son marqueur de livraison."""
     palomar = _make_item(13107, age_days=90, idle=1,
                          last="2026-08-26T19:38:55Z",
                          created="2026-08-26T12:17:31Z")
-    fresh = _make_item(19088, age_days=30, idle=1, last=None,
-                       created="2026-09-10T00:00:00Z")
+    fresh = _make_item(19088, age_days=2, idle=1, last=None,
+                       created="2026-11-06T00:00:00Z")
     pool = [palomar, fresh]
     pig.settle_belt_head(
         pool, need=2,
-        probe={13107: "2026-10-05T06:58:26Z"}.get,
+        probe={13107: "2026-11-07T06:58:26Z"}.get,
         max_probes=10)
     assert [it["number"] for it in pool][0] == 19088
-    assert palomar["last_claim_stamp"] == "2026-10-05T06:58:26Z"
+    assert palomar["last_claim_stamp"] == "2026-11-07T06:58:26Z"
 
 
 def test_belt_merge_only_flag_is_accepted(monkeypatch, capsys):
