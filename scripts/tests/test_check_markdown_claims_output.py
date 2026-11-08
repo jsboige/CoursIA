@@ -67,6 +67,7 @@ from check_markdown_claims_output import (  # noqa: E402
     _is_threshold_expression,
     _is_version_token,
     _in_exception_code_span,
+    _anchored_output_cells,
     _lit_skip,
     _lit_marker_pos,
     _normalize_num,
@@ -1499,6 +1500,28 @@ class TestDerivedClaims:
             _md_cell("La mesure de la §4 est 15.0 %.")
         ])
         path = tmp_path / "ambiguous_section_anchor.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        assert [finding["normalized"] for finding in result["findings"]] == ["15.0"]
+
+    def test_huge_cell_range_is_clamped_to_existing_prior_cells(self):
+        cells = [
+            _code_cell(f"print({idx})", [_stream_output(f"value={idx}")])
+            for idx in range(4)
+        ] + [_md_cell("valeur")]
+        anchored = _anchored_output_cells("cell[0-9999999999]", cells, 4)
+        assert [idx for idx, _ in anchored] == [0, 1, 2, 3]
+
+    def test_parent_section_anchor_does_not_match_decimal_subsection(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("# Section 4.1 : mesure", [_stream_output("ratio : 15.0 %")]),
+            _code_cell("step_1()", [_stream_output("étape 1")]),
+            _code_cell("step_2()", [_stream_output("étape 2")]),
+            _code_cell("step_3()", [_stream_output("étape 3")]),
+            _md_cell("La mesure de la section §4 est 15.0 %.")
+        ])
+        path = tmp_path / "parent_section_not_subsection.ipynb"
         path.write_text(json.dumps(nb), encoding="utf-8")
         result = check_notebook(path)
         assert result["verdict"] == "FABRICATION_DETECTED", result

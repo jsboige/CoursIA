@@ -914,7 +914,7 @@ def _derived_value_proven(norm: str, prose: str, match_pos: int, match_end: int,
 
 
 _CELL_ANCHOR_RE = re.compile(r"(?i)\bcell(?:ule)?\s*\[\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*\]")
-_SECTION_ANCHOR_RE = re.compile(r"(?i)(?:§|section\s+)(\d+(?:\.\d+)?)")
+_SECTION_ANCHOR_RE = re.compile(r"(?i)(?:§|section\s+)(\d+(?:\.\d+)?)(?![\d.])")
 
 
 def _anchored_output_cells(
@@ -933,7 +933,12 @@ def _anchored_output_cells(
     for match in _CELL_ANCHOR_RE.finditer(prose):
         first = int(match.group(1))
         last = int(match.group(2) or first)
-        anchors.update(range(first, last + 1))
+        # Clamp before constructing the range: prose is untrusted input and a
+        # huge cell reference must not allocate an unbounded range/set.
+        bounded_first = max(0, first)
+        bounded_last = min(last, markdown_cell - 1, len(cells) - 1)
+        if bounded_first <= bounded_last:
+            anchors.update(range(bounded_first, bounded_last + 1))
 
     sections = {match.group(1) for match in _SECTION_ANCHOR_RE.finditer(prose)}
     for section in sections:
@@ -942,7 +947,7 @@ def _anchored_output_cells(
             if cell.get("cell_type") != "code":
                 continue
             source = "".join(cell.get("source", []) if isinstance(cell.get("source"), list) else [str(cell.get("source", ""))])
-            if re.search(rf"(?i)\bsection\s+{re.escape(section)}\b", source):
+            if re.search(rf"(?i)\bsection\s+{re.escape(section)}(?![\d.])", source):
                 candidates.append(idx)
         if len(candidates) == 1:
             anchors.add(candidates[0])
