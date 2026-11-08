@@ -169,9 +169,9 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 |---|---|
 | `MyIA.AI.Notebooks\SymbolicAI\Lean\Lean-11-TorchLean.ipynb` | 70 |
 | `MyIA.AI.Notebooks\SymbolicAI\Lean\Lean-10-LeanDojo.ipynb` | 69 |
-| `MyIA.AI.Notebooks\SymbolicAI\SemanticWeb\SW-13-Python-Reasoners.ipynb` | 57 |
+| `MyIA.AI.Notebooks\SymbolicAI\SemanticWeb\SW-13-Reasoners-Python.ipynb` | 57 |
 | `MyIA.AI.Notebooks\SymbolicAI\SymbolicLearning\SL-1-LogicalLearning.ipynb` | 48 |
-| `MyIA.AI.Notebooks\SymbolicAI\SemanticWeb\SW-1-CSharp-Setup.ipynb` | 41 |
+| `MyIA.AI.Notebooks\SymbolicAI\SemanticWeb\SW-01-Setup-CSharp.ipynb` | 41 |
 
 ## Lecture
 

@@ -1601,7 +1601,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Representation des actions et des etats
 - Raisonnement sur les plans
 
-*Notebooks : [SW-2b-Python-RDFBasics](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb) (RDF, SPARQL) · [Planners-1-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb) (planification).*
+*Notebooks : [SW-02b-RDFBasics-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02b-RDFBasics-Python.ipynb) (RDF, SPARQL) · [Planners-1-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb) (planification).*
 
 ---
 layout: section
@@ -2129,7 +2129,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 
 <img src="./images/img_041.png" style="position:absolute; bottom:14px; left:405px; width:170px;" alt="BrightstarDB, base de donnees RDF native pour la plateforme .NET" />
 
-*Notebooks : [SW-2b-Python-RDFBasics](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb) (triples et SPARQL) · [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-12-Python-GraphRAG](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb) (du graphe au RAG).*
+*Notebooks : [SW-02b-RDFBasics-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02b-RDFBasics-Python.ipynb) (triples et SPARQL) · [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-12-GraphRAG-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb) (du graphe au RAG).*
 
 ---
 layout: default
@@ -2188,7 +2188,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Incoherence = un concept dont aucune instance ne peut exister
 - De l'ontologie au graphe de connaissances, puis au RAG : la chaine complete est outillee
 
-*Notebooks : [SW-13-Python-Reasoners](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb) (raisonneurs OWL) · [SW-14-Python-Coup-Ontologique](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Python-Coup-Ontologique.ipynb) · [Tweety-03-Advanced-Logics-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-CSharp.ipynb) (logics.dl, HermiT/Pellet).*
+*Notebooks : [SW-13-Reasoners-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb) (raisonneurs OWL) · [SW-14-Coup-Ontologique-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-Python.ipynb) · [Tweety-03-Advanced-Logics-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-CSharp.ipynb) (logics.dl, HermiT/Pellet).*
 
 ---
 layout: default
