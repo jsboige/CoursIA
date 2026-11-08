@@ -2,6 +2,7 @@
   "_commentaire": "Naissance de chaque lac (date du premier ajout du lakefile), epinglee pour que la colonne Naissance de docs/reference/lean-material-map.md soit reproductible quel que soit le clone (histoire tronquee, mass-add tardif). Un lac nouveau exige une entree explicite : le generateur retombe sinon sur git, en prenant le PREMIER ajout visible.",
   "lakes": {
     "MyIA.AI.Notebooks/Compression/Compression_lean": "2026-10-12",
+    "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean": "2026-11-08",
     "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters": "2026-10-05",
     "MyIA.AI.Notebooks/GameTheory/assignment_lean": "2026-08-23",
     "MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean": "2026-08-26",

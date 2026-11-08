@@ -94,7 +94,8 @@ ACCRETION_VERDICTS = [
         " importe `AsymmetricInformation.Lemons`, `GameTheory-17d-Lean-"
         "Screening-Signaling-Lean.ipynb` en importe 4 modules. Path dep non"
         " negociable vers `lean_game_defs_ext` (#12848) : la fusion imposerait"
-        " ce pont aux 38 modules de `game_theory_lean`. Zero import croise.",
+        " ce pont aux 31 modules de `game_theory_lean` (42 avant la descente"
+        " SocialChoice #24183 T3). Zero import croise.",
     ),
 ]
 
@@ -488,10 +489,11 @@ def collect(with_sorry: bool = False) -> dict:
             entry["birth"] = born
 
     # Un module appartient au lac le plus proche qui le CONTIENT, pas au dossier
-    # qui le porte : `game_theory_lean/SocialChoice/Arrow.lean` est un module de
-    # `game_theory_lean`. Attribuer par dossier immediat efface silencieusement
-    # tous les modules des lacs arborescents -- la mesure serait fausse sans
-    # qu'aucun temoin ne le dise.
+    # qui le porte : `social_choice_core_lean/SocialChoice/Arrow.lean` est un
+    # module de `social_choice_core_lean` (descendu du hub #24183 T3, l'exemple
+    # historique etait `game_theory_lean/SocialChoice/Arrow.lean`). Attribuer
+    # par dossier immediat efface silencieusement tous les modules des lacs
+    # arborescents -- la mesure serait fausse sans qu'aucun temoin ne le dise.
     lake_dirs = sorted(by_lake, key=len, reverse=True)
 
     def owner(path: str) -> str | None:
@@ -828,7 +830,8 @@ def render(
         "**Cet inventaire sous-compte, et c'est mesure.** La detection est par"
         " nom : un meme resultat prouve sous deux noms differents lui echappe."
         " Le controle negatif est `Arrow`, declare des deux cotes"
-        " (`game_theory_lean/SocialChoice/Arrow.lean` : `arrow` ;"
+        " (`social_choice_core_lean/SocialChoice/Arrow.lean` : `arrow` —"
+        " descendu du hub par #24183 T3 ;"
         " `lean_game_defs/SocialChoice.lean` : `arrow_impossibility`), et absent"
         " de la table ci-dessus. Un verdict « 0 doublon » ne se lit donc jamais"
         " comme « aucun resultat n'est prouve deux fois ». La table ne tranche"

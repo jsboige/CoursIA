@@ -5,8 +5,10 @@ Ce document liste les prérequis nécessaires pour lire, comprendre et reproduir
 > **⚑ Tombstone documentaire — les `.lean` cités ci-dessous ne sont plus dans ce dossier.**
 > Depuis la PR [#6058](https://github.com/jsboige/CoursIA/pull/6058) (2026-07-11), les sept modules
 > (`Basic`, `Framework`, `Arrow`, `Sen`, `Voting`, `MechanismDesign`, `SortedListCounting`) vivent
-> dans [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/), home canonique, avec
-> leurs miroirs `_en.lean`. **Tout nom de fichier `.lean` de cette page s'entend donc relativement
+> hors d'ici, avec leurs miroirs `_en.lean` — d'abord dans `game_theory_lean/SocialChoice/`, puis,
+> depuis le 2026-11-08 (#24183, T3), dans le lake autonome
+> [`SocialChoice/social_choice_core_lean/SocialChoice/`](../SocialChoice/social_choice_core_lean/SocialChoice/)
+> (home canonique actuel). **Tout nom de fichier `.lean` de cette page s'entend donc relativement
 > à ce home**, jamais à ce répertoire : c'est là qu'il faut ouvrir `Basic.lean`, y compris quand la
 > phrase dit « ouvrir `Arrow.lean` ».
 >

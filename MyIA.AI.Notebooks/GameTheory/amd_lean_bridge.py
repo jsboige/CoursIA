@@ -8,7 +8,7 @@ Deux jalons de #22381 existent separement :
 - **jalon 1** (`amd_synthesis.py`) : une synthese globale DSIC-IR par CP-SAT et un
   **verificateur independant** (`verify`) qui ne partage ni utilite ni contraintes
   avec le constructeur ;
-- **jalon 2** (`game_theory_lean/SocialChoice/Groves.lean`) : les theoremes de
+- **jalon 2** (`SocialChoice/social_choice_core_lean/SocialChoice/Groves.lean`) : les theoremes de
   Groves et de Clarke, plus un temoin negatif, prouves par le noyau Lean sur un
   domaine abstrait.
 
@@ -73,7 +73,7 @@ from amd_synthesis import (  # noqa: E402
     verify_utility,
 )
 
-LEAN_DIR = Path(__file__).resolve().parent / "game_theory_lean" / "SocialChoice"
+LEAN_DIR = Path(__file__).resolve().parent / "SocialChoice" / "social_choice_core_lean" / "SocialChoice"
 AMD_LEAN = LEAN_DIR / "AMD.lean"
 GROVES_LEAN = LEAN_DIR / "Groves.lean"
 
