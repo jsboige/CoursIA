@@ -54,7 +54,12 @@ author writes, one line per declaration, in the **body of the pull request**:
 
     [LEAN-ANCHOR-DECLARED] <fichier>:<decl> -- <motif>
 
-``<decl>`` is ``<kind> <name>`` exactly as ``declared_line`` renders it. An
+``<decl>`` is ``<kind> <name>`` exactly as ``declared_line`` renders it -- for
+an anonymous ``example`` (or a top-level line) the name is empty, so the
+declaration reads ``<fichier>:example -- <motif>``. Anchors inside ``example``
+and top-level anchors follow the **same rule** as named ones: they redden
+unless declared (#21387 -- that is the whole point, since ``check_axioms``
+cannot see them by construction). An
 anchor passes only if **its own** declaration is named there -- no per-file or
 global wildcard. A malformed line is ignored (fail-closed: the anchor stays
 rouge). Declared anchors are listed in the output so a reviewer sees them.
@@ -78,10 +83,9 @@ Usage
     python scripts/lean/check_added_axioms_cliquet.py --json
 
 Exit codes:
-    0  -- no anchor added, or anchors only inside ``example`` (no action),
-          or every named-declaration anchor is declared in the body
-    1  -- at least one anchor added inside a named declaration and not
-          declared in the body (rouge)
+    0  -- no anchor added, or every added anchor (named declaration,
+          ``example`` or top-level line alike, #21387) is declared in the body
+    1  -- at least one added anchor not declared in the body (rouge)
     2  -- invocation error (bad SHA, no lean files in scope)
 
 Module usage:
@@ -187,9 +191,10 @@ class CliquetReport:
 
     @property
     def hits_in_named_decls(self) -> list[AnchorHit]:
-        """Anchors that sit inside a NAMED declaration (the only case the
-        cliquet considers a regression). Hits inside ``example`` are
-        surfaced but do not cause a non-zero exit.
+        """Anchors that sit inside a NAMED declaration. Reporting view only:
+        since the declarative cliquet (residue #21387), ``example`` and
+        top-level anchors ALSO require their own declaration -- the red path
+        is ``hits_undeclared``, which covers every hit.
         """
         return [h for h in self.hits if not h.in_example]
 
@@ -198,19 +203,22 @@ class CliquetReport:
 
     @property
     def hits_undeclared(self) -> list[AnchorHit]:
-        """Named-declaration anchors whose OWN declaration is absent from the
-        body's declarative lines. Matching is exact on (file, declaration) --
+        """Anchors -- named declarations, ``example`` blocks and top-level
+        lines alike -- whose OWN declaration is absent from the body's
+        declarative lines (#21387: the red must cover every added anchor,
+        examples included, precisely because ``check_axioms`` is blind to
+        them by construction). Matching is exact on (file, declaration) --
         no per-file or global wildcard, so one declared anchor cannot silence
         its neighbours.
         """
         keys = self._declared_keys()
-        return [h for h in self.hits_in_named_decls
+        return [h for h in self.hits
                 if (h.file, f"{h.decl_kind} {h.decl_name}".strip()) not in keys]
 
     @property
     def hits_declared(self) -> list[AnchorHit]:
         keys = self._declared_keys()
-        return [h for h in self.hits_in_named_decls
+        return [h for h in self.hits
                 if (h.file, f"{h.decl_kind} {h.decl_name}".strip()) in keys]
 
 
@@ -288,7 +296,9 @@ def _git_diff_added_lines(base: str, head: str, path: Path, repo_root: Path | No
 
 # ``example`` and anonymous ``instance`` are declarations that produce no
 # named constant in the Lean environment. The cliquet flags anchors inside
-# them with ``in_example=True`` and they do NOT cause a non-zero exit.
+# them with ``in_example=True`` -- a REPORTING field: since the declarative
+# cliquet (#21387) these anchors follow the same rule as named ones and DO
+# cause a non-zero exit unless their own declaration is in the body.
 NAMELESS_KINDS = {"example", "instance"}
 
 
@@ -458,27 +468,18 @@ def render_text(report: CliquetReport) -> str:
         lines.append(
             f"{h.file:<60} {h.line:>4}  {h.token:<14}  {decl:<24}  {str(h.in_example):>10}"
         )
-    named = report.hits_in_named_decls
-    if not named:
-        lines.append("")
-        lines.append(
-            "GREEN: all anchors inside `example` (visible to humans, "
-            "invisible to check_axioms -- by design)."
-        )
-        return "\n".join(lines)
-
     undeclared = report.hits_undeclared
     if undeclared:
         lines.append("")
         lines.append(
-            f"ROUGE: {len(undeclared)} anchor(s) in NAMED declarations, "
-            f"non declaree(s) dans le corps de la PR "
-            f"(would be invisible to check_axioms if you re-execute it)."
+            f"ROUGE: {len(undeclared)} anchor(s) ajoutee(s) "
+            f"(declaration nommee, example ou top-level) non declaree(s) "
+            f"dans le corps de la PR."
         )
     if report.hits_declared:
         lines.append("")
         lines.append(
-            f"DECLARE: {len(report.hits_declared)} anchor(s) in NAMED declarations "
+            f"DECLARE: {len(report.hits_declared)} anchor(s) "
             f"couvertes par une ligne [LEAN-ANCHOR-DECLARED] du corps : "
             f"jugement du motif laisse au reviewer."
         )
@@ -564,10 +565,11 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(render_text(report))
 
-    # Non-zero exit only when an anchor sits in a NAMED declaration that the
-    # body does not declare. The cliquet is informational for
-    # example/instance anchors (they are invisible to check_axioms, not a bug
-    # in the proof) and for declared anchors (the reviewer judges the motive).
+    # Non-zero exit when ANY added anchor -- named declaration, example or
+    # top-level -- is not declared in the body (#21387: example anchors are
+    # precisely the blind spot of check_axioms, so the declarative red is the
+    # only gate that sees them). Declared anchors pass: the reviewer judges
+    # the motive.
     return 1 if report.hits_undeclared else 0
 
 
