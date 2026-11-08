@@ -51,7 +51,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 | Tweety | EPITA IA Symbolique | `Tweety-02-Basic-Logics-Python.ipynb` | 6 | |
 | Lean | EPITA IA Symbolique | `Lean-02-Dependent-Types-Lean.ipynb` | 2 | |
 | Semantic Web | EPITA IA Symbolique | `SW-2-CSharp-RDFBasics.ipynb` | 2 | |
-| Planners (01-02) | EPITA IA Symbolique | `Planners-1-Introduction.ipynb` | 3 | |
+| Planners (01-02) | EPITA IA Symbolique | `Planners-01-Introduction-Python.ipynb` | 3 | |
 | SmartContracts (00-01) | EPITA IA Symbolique | `SC-00-Cypherpunk-Origins-Python.ipynb` | 2 | |
 
 ## Strate A — proposés pour signature (99)
@@ -188,9 +188,9 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Planners -->
 
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SmartContracts -->
 
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb`
@@ -335,9 +335,9 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Planners -->
 
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SmartContracts -->
 
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-04-Functions-State-Python.ipynb`

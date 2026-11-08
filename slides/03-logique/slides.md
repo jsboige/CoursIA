@@ -1601,7 +1601,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Representation des actions et des etats
 - Raisonnement sur les plans
 
-*Notebooks : [SW-2b-Python-RDFBasics](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb) (RDF, SPARQL) · [Planners-1-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb) (planification).*
+*Notebooks : [SW-2b-Python-RDFBasics](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb) (RDF, SPARQL) · [Planners-01-Introduction-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb) (planification).*
 
 ---
 layout: section
@@ -1627,7 +1627,7 @@ layout: default
 - Exploration de l'espace de plan en plus de l'espace d'etats
 - Sous-objectifs independants reduisent la complexite
 
-*Notebooks : [Planners-1-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb) · [Planners-3-State-Space](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb).*
+*Notebooks : [Planners-01-Introduction-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb) · [Planners-03-State-Space-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb).*
 
 ---
 layout: default
@@ -1693,7 +1693,7 @@ Action(Fly(p, from, to),
   EFFECT: NON At(p, from) ET At(p, to))
 ```
 
-*Notebooks : [Planners-2-PDDL-Basics](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb) (le domaine logistique) · [Planners-6-Domains](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb).*
+*Notebooks : [Planners-02-PDDL-Basics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb) (le domaine logistique) · [Planners-06-Domains-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb).*
 
 ---
 layout: default
@@ -1756,7 +1756,7 @@ layout: default
 
 <img src="./images/img_027.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Graphe espace etats planification" />
 
-*Notebooks : [Planners-3-State-Space](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb) · [Planners-4-Fast-Downward](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb) (planificateur progressif et regressif).*
+*Notebooks : [Planners-03-State-Space-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb) · [Planners-04-Fast-Downward-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb) (planificateur progressif et regressif).*
 
 ---
 layout: default
@@ -1781,7 +1781,7 @@ layout: default
 
 - Faits qui doivent etre vrais a un moment donne
 
-*Notebooks : [Planners-5-Heuristics](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb) (heuristiques de planification) · [Planners-5b-Lean-Relaxation](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb) (relaxation et landmarks).*
+*Notebooks : [Planners-05-Heuristics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb) (heuristiques de planification) · [Planners-05b-Lean-Relaxation-Lean](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb) (relaxation et landmarks).*
 
 ---
 layout: default
@@ -1864,7 +1864,7 @@ layout: default
 - Variables: Action unique pour chaque étape, Fluent
 - Contraintes: decrivent les effets + etat initial et but
 
-*Notebooks : [Planners-7-OR-Tools](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools.ipynb) (planification par contraintes) · [Z3-Python-08-Ordonnancement](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb) (planning vers scheduling) · [11_Job_Shop_Scheduling](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb).*
+*Notebooks : [Planners-07-OR-Tools-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb) (planification par contraintes) · [Z3-Python-08-Ordonnancement](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb) (planning vers scheduling) · [11_Job_Shop_Scheduling](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb).*
 
 ---
 layout: default
@@ -2001,7 +2001,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Primitives de bas niveau: Executable
 - Opérateurs non primitifs: Buts, actions abstraites
 
-*Notebooks : [Planners-9-HTN](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN.ipynb) (decomposition hierarchique) · [Planners-10-LLM-Planning](../../MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) (LLM et decomposition).*
+*Notebooks : [Planners-09-HTN-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb) (decomposition hierarchique) · [Planners-10-LLM-Planning-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb) (LLM et decomposition).*
 
 ---
 layout: default
