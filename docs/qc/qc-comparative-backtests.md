@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-10-30
+> REFERENCE — vivante — dernière révision 2026-11-08
 
 # QC Comparative Backtests — Strategy Catalog
 
