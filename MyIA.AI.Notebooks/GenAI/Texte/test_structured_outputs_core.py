@@ -236,7 +236,7 @@ def test_rest_contract_covers_success_invalid_and_upstream_error() -> None:
 
 
 def test_rest_errors_do_not_expose_untrusted_details(monkeypatch: pytest.MonkeyPatch) -> None:
-    secret = "secret-internal-123"
+    marker = "marqueurmarqueur"
 
     async def post(app: Any, body: dict[str, Any]) -> httpx.Response:
         async with httpx.AsyncClient(
@@ -245,22 +245,22 @@ def test_rest_errors_do_not_expose_untrusted_details(monkeypatch: pytest.MonkeyP
             return await http.post("/texte/extract", json=body)
 
     body = {"prompt": "test", "schema": SCHEMA}
-    invalid_schema = {"type": "object", "properties": {"x": {"type": secret}}}
+    invalid_schema = {"type": "object", "properties": {"x": {"type": marker}}}
     responses = [
         asyncio.run(post(create_app(FakeClient()), {"prompt": "test", "schema": invalid_schema})),
-        asyncio.run(post(create_app(FakeClient()), {**body, secret: "value"})),
-        asyncio.run(post(create_app(FakeClient(error=RuntimeError(secret))), body)),
-        asyncio.run(post(create_app(FakeClient(content=secret)), body)),
+        asyncio.run(post(create_app(FakeClient()), {**body, marker: "value"})),
+        asyncio.run(post(create_app(FakeClient(error=RuntimeError(marker))), body)),
+        asyncio.run(post(create_app(FakeClient(content=marker)), body)),
     ]
-    for exception_type in (StructuredInputError, StructuredExtractionError, type(secret, (Exception,), {})):
+    for exception_type in (StructuredInputError, StructuredExtractionError, type(marker, (Exception,), {})):
         def fail(**kwargs: Any) -> None:
-            raise exception_type(secret)
+            raise exception_type(marker)
 
         monkeypatch.setattr(structured_outputs_service, "extract_structured", fail)
         responses.append(asyncio.run(post(create_app(FakeClient()), body)))
 
     assert [response.status_code for response in responses] == [422, 422, 502, 502, 422, 502, 502]
-    assert all(secret not in response.text for response in responses)
+    assert all(marker not in response.text for response in responses)
     assert responses[0].json()["error"] == "entrée invalide : vérifiez prompt, schema et model"
     assert responses[1].json()["error"] == "corps invalide : vérifiez prompt, schema et model"
 
