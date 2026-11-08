@@ -43629,7 +43629,6 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ip
 6. **Relier** la sélection de solveur au cadre de **Rice** et à la décision multi-attribut, puis tester la sensibilité aux préférences (**§5**).
 7. **Séparer** performance empirique et garantie formelle grâce à des ponts Lean ciblés (**Annexe D**).
 ",,,,,,,,1e80503698c3eef6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb,arc18703-sources,markdown,fr,a9e849d96927582e,"## Annexe F — Sources
 
 - **Travail distillé** : Théodore Deguest, *« Benchmark cross-paradigme de solveurs de jeux »* — sujet L4, cours Intelligence Symbolique, EPITA SCIA. PR [#42](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/pull/42), projet [L4-Benchmark-Cross-Paradigm](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/tree/main/L4-Benchmark-Cross-Paradigm). Dépôt source sous **licence MIT** (copyright 2026, *The 2026-Epita-Intelligence-Symbolique contributors*). Données : `results/{sudoku,connect_four,wordle}_results.csv`.
 - **Cadre théorique** :
