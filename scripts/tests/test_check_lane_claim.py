@@ -2570,7 +2570,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
     fixture_paths = [
         "MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-CSharp.ipynb",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/"
-        "Planners-5-Heuristics-Csharp.ipynb",
+        "Planners-05-Heuristics-Csharp.ipynb",
         "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed-CSharp.ipynb",
         "MyIA.AI.Notebooks/Search/Part1-Foundations/"
         "Search-05-GeneticAlgorithms-CSharp.ipynb",
@@ -2591,7 +2591,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
                 "2026-08-11T04:02:00Z"),
         comment("[CLAIMED] lane myia-po-2024:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/"
-                "Planners-5-Heuristics-Csharp.ipynb",
+                "Planners-05-Heuristics-Csharp.ipynb",
                 "2026-08-11T04:03:00Z"),
         comment("[CLAIMED] lane myia-po-2025:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/Search/Part1-Foundations/"

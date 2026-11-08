@@ -524,7 +524,7 @@ class TestDetectMathSpanPipe:
         no operator for a conditional. Both grains that met this pathology
         followed it literally and emitted a control word glued to the next
         letter (absorbed, command undefined) where a ``\\mid`` was meant:
-        ``Planners-12-LOOP.ipynb`` (#15958), ``Search-01-StateSpace.ipynb``
+        ``Planners-12-LOOP-Python.ipynb`` (#15958), ``Search-01-StateSpace.ipynb``
         (#15965). Those two defects are what this guards -- not the detector,
         which has never read LaTeX.
         """
