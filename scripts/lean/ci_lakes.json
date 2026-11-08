@@ -261,7 +261,8 @@
         "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lake-manifest.json",
         "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/CERTIFIED.txt",
         "scripts/lean/check_certified_sorry.py",
-        "scripts/lean/count_code_sorry.py"
+        "scripts/lean/count_code_sorry.py",
+        "scripts/tests/test_check_certified_sorry.py"
       ],
       "axiom-include-i18n-siblings": "false"
     },

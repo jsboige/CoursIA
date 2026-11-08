@@ -110,7 +110,9 @@ def test_chaque_lac_de_la_page_porte_une_epingle():
     ce test tant que son epingle n'a pas ete ajoutee explicitement.
     """
     page = _lignes_de_la_page()
-    assert len(page) == 41, f"la page porte {len(page)} lacs, attendu 41"
+    # 42 depuis la descente #24183 (#25262) : le lac autonome
+    # social_choice_core_lean s'ajoute a la page (epingle 2026-11-08).
+    assert len(page) == 42, f"la page porte {len(page)} lacs, attendu 42"
 
     epingles = mod._pinned_births()
     manquantes = sorted(set(page) - set(epingles))
