@@ -3342,6 +3342,64 @@ class _TrackedFiles(list):
         self._exact = None
         self._bases = None
 
+    def _invalidate(self):
+        self._norm = self._exact = self._bases = None
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        self._invalidate()
+
+    def __delitem__(self, key):
+        super().__delitem__(key)
+        self._invalidate()
+
+    def append(self, item):
+        super().append(item)
+        self._invalidate()
+
+    def extend(self, items):
+        # An iterator can fail after partially extending the list.
+        try:
+            super().extend(items)
+        finally:
+            self._invalidate()
+
+    def insert(self, index, item):
+        super().insert(index, item)
+        self._invalidate()
+
+    def pop(self, index=-1):
+        item = super().pop(index)
+        self._invalidate()
+        return item
+
+    def remove(self, item):
+        super().remove(item)
+        self._invalidate()
+
+    def clear(self):
+        super().clear()
+        self._invalidate()
+
+    def reverse(self):
+        super().reverse()
+        self._invalidate()
+
+    def sort(self, *args, **kwargs):
+        try:
+            super().sort(*args, **kwargs)
+        finally:
+            self._invalidate()
+
+    def __iadd__(self, items):
+        self.extend(items)
+        return self
+
+    def __imul__(self, count):
+        super().__imul__(count)
+        self._invalidate()
+        return self
+
     @property
     def norm_pairs(self) -> list[tuple[str, str]]:
         """Paires (chemin normalise, nom de base normalise)."""
