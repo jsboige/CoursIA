@@ -163,6 +163,52 @@ L'organe du trousseau réutilise cette mesure pour `get` au lieu d'en tenir une 
 générale reste : **un test d'ignorance lancé dans ce clone mesure ce clone, pas le dépôt** — et une
 énumération est par construction aveugle au fichier qu'on ajoutera demain.
 
+## Quand le coffre est absent — lire la ligne, pas le code de retour (2026-11-09)
+
+`doctor` peut rendre **`coffre : ABSENT` avec `rc=0`**. Le code de retour ne dit pas « dispositif
+opérationnel », il dit « la mesure a pu être faite » : les outils, la passphrase et l'empreinte sont
+sains même quand le fichier n'est pas là. Une automatisation qui teste `doctor && …` conclut donc
+l'inverse de la vérité. **La ligne `coffre` fait foi, jamais le code.**
+
+```text
+machine   : myia-po-2023
+coffre    : ABSENT  G:\Mon Drive\Synchronisation\RooSync\.shared-state\MyIA-Keys.kdbx
+outil     : OK  pykeepass / keyring / pypdf
+passphrase: OK  posee dans le gestionnaire d identifiants
+empreinte : <32 car.> pbkdf2:85bd9366fb37
+1 defaut(s).
+```
+
+Trois causes possibles, et la mesure qui les sépare — dans cet ordre, parce que la première est de
+loin la plus fréquente et la seule qui se répare en remontant le Drive :
+
+| Hypothèse | Mesure | Verdict du 2026-11-09 sur po-2023 |
+|---|---|---|
+| Drive non monté / démonté | le dossier `.shared-state\` est-il peuplé, avec des mtimes du jour ? | **écartée** — dashboards, messages, inventories et baselines à jour, mtimes jusqu'au jour même |
+| Chemin déplacé | `MYIA_KEYS_VAULT` est-elle posée ? sinon `DEFAULT_VAULT` est bien le chemin interrogé | **écartée** — variable non posée, chemin canonique interrogé |
+| Fichier déplacé ou absent | `find "<Mon Drive>" -maxdepth 6 -iname "*.kdbx"` + recherche locale sous `.secrets\` | **retenue** — 0 résultat, aucun `.kdbx` local |
+
+**La conséquence n'est pas « le trousseau est en panne », c'est « la source unique n'existe plus ».**
+Les clés partagées ne vivent alors plus que dans les `master.env` en clair — exactement l'état que
+le mandat de #17558 voulait supprimer. Deux phases en dépendent :
+
+- **la phase 4** (`render_envs.py --check` coffre ↔ `master.env`) rend `UNKNOWN` : par design elle
+  ne rougit pas sur un coffre injoignable, donc elle cesse de couvrir quoi que ce soit ;
+- **la phase 6** (retrait des `master.env` et des `.env` rendus) doit **rester bloquée**. Sa
+  condition de sortie suppose un coffre vivant ; l'appliquer sur la foi du plan détruirait des
+  secrets que plus rien ne porte. Un coffre absent est un motif d'arrêt pour toute lane qui
+  s'apprêtait à retirer un fichier en clair, pas un détail à signaler en passant.
+
+**Ce qu'on ne fait pas** : reconstruire le coffre depuis le `master.env` d'une seule machine. Le
+body de #17558 pose un **écrivain unique** (le user ou ai-01) et une garde de copie en conflit,
+précisément parce que le fichier est binaire et synchronisé : une reconstruction locale aveugle
+écraserait une copie encore vivante sur une autre machine. La voie est le signalement — issue +
+registre user — puis l'arbitrage de l'écrivain désigné.
+
+L'empreinte et la passphrase **survivent** à la perte du fichier : le jour où le coffre est
+restauré, aucune machine n'a à re-bootstrapper, et la comparaison d'empreinte redevient
+immédiatement parlante.
+
 ## Voir aussi
 
 - [.claude/rules/secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) — la règle
