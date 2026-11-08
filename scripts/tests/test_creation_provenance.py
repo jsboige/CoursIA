@@ -43,8 +43,8 @@ sys.modules["check_creation_provenance"] = cp
 _spec.loader.exec_module(cp)
 
 
-def fichier(nom, statut):
-    return {"filename": nom, "status": statut}
+def fichier(nom, statut, **details):
+    return {"filename": nom, "status": statut, **details}
 
 
 # --- la detection du carnet neuf --------------------------------------------
@@ -88,12 +88,39 @@ def test_un_demenagement_nest_pas_un_carnet_neuf():
             "App-5-Timetabling", "App-6-Minesweeper", "App-9-EdgeDetection",
             "App-9b-EdgeDetection-CSharp"]
     files = [fichier(f"MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/{n}.ipynb",
-                     "added") for n in noms]
+                     "added", sha=f"blob-{n}") for n in noms]
     files += [fichier(f"MyIA.AI.Notebooks/Search/Applications/{n}.ipynb",
-                      "removed") for n in noms]
+                      "removed", sha=f"blob-{n}") for n in noms]
     neufs, demenages, _ = cp.new_notebooks(files)
     assert neufs == []
     assert len(demenages) == 9
+
+
+def test_meme_basename_avec_contenu_different_est_un_carnet_neuf():
+    files = [
+        fichier("ancienne/Serie.ipynb", "removed", sha="blob-ancien"),
+        fichier("nouvelle/Serie.ipynb", "added", sha="blob-nouveau"),
+    ]
+    neufs, demenages, _ = cp.new_notebooks(files)
+    assert neufs == ["nouvelle/Serie.ipynb"]
+    assert demenages == []
+
+
+def test_statut_renamed_avec_previous_filename_reste_un_demenagement():
+    neufs, demenages, _ = cp.new_notebooks([
+        fichier("nouveau/Serie.ipynb", "renamed",
+                previous_filename="ancien/Serie.ipynb")])
+    assert neufs == []
+    assert demenages == ["nouveau/Serie.ipynb"]
+
+
+def test_sha_identique_reconnait_un_demenagement_meme_si_basename_change():
+    neufs, demenages, _ = cp.new_notebooks([
+        fichier("ancienne/Serie-v1.ipynb", "removed", sha="blob-identique"),
+        fichier("nouvelle/Serie-v2.ipynb", "added", sha="blob-identique"),
+    ])
+    assert neufs == []
+    assert demenages == ["nouvelle/Serie-v2.ipynb"]
 
 
 def test_un_fichier_non_carnet_ne_compte_pas():
@@ -482,6 +509,24 @@ def test_veto_actif_positif_sur_la_pr_23745(monkeypatch, capsys):
     assert "constat VETO_ACTIVE" in sortie
     assert "651" in sortie
     assert "400" in sortie
+
+
+def test_faux_demenagement_est_signale_sans_faire_rougir_la_ci(
+        monkeypatch, capsys):
+    """Un basename partage ne doit pas masquer le carnet ajoute ; le veto
+    le signale, tandis que le mode advisory conserve son code de sortie 0."""
+    _pr_fichiers(monkeypatch, [
+        fichier("ancienne/Serie.ipynb", "removed", sha="blob-ancien"),
+        fichier("nouvelle/Serie.ipynb", "added", sha="blob-nouveau"),
+    ])
+    monkeypatch.setenv(cp.VETO_VAR, "400")
+    monkeypatch.setattr(cp, "open_issue_count", lambda: 651)
+    _conforme_48h(monkeypatch)
+
+    assert cp.main(["--pr", "1"]) == 0
+    sortie = capsys.readouterr().out
+    assert "nouvelle/Serie.ipynb" in sortie
+    assert "constat VETO_ACTIVE" in sortie
 
 
 def test_un_renamed_ne_declenche_rien(monkeypatch, capsys):

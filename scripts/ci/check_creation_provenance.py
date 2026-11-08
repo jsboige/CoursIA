@@ -204,8 +204,8 @@ def new_notebooks(files: list[dict]) -> tuple[list[str], list[str], list[str]]:
       * un **demenagement** : GitHub rapporte un deplacement comme
         `added` + `removed` quand la similarite est sous son seuil ; le
         carnet n'est pas neuf, il a change de place. On le reconnait a
-        l'egalite du NOM de fichier entre un `added` et un `removed` de la
-        meme PR ;
+        l'egalite du SHA de blob entre un `added` et un `removed`, ou au
+        statut `renamed` accompagne de `previous_filename` ;
       * un **suffixe de langue** : le carnet n'est ni exempté ni ignorant --
         il est RENDU dans `langues`, la classe du constat `LANG_SIBLING`.
         L'exemption `_en` a ete retiree (#23174) : elle rendait la garde
@@ -214,8 +214,12 @@ def new_notebooks(files: list[dict]) -> tuple[list[str], list[str], list[str]]:
 
     Le rendu est `(carnets_neufs, demenagements, carnets_langue)`.
     """
-    supprimes = {f.get("filename", "").rsplit("/", 1)[-1]
-                 for f in files if f.get("status") == "removed"}
+    blobs_supprimes = {
+        f.get("sha") for f in files
+        if f.get("status") == "removed"
+        and (f.get("filename") or "").endswith(".ipynb")
+        and f.get("sha")
+    }
     neufs: list[str] = []
     demenages: list[str] = []
     langues: list[str] = []
@@ -223,13 +227,17 @@ def new_notebooks(files: list[dict]) -> tuple[list[str], list[str], list[str]]:
         path = f.get("filename") or ""
         if not path.endswith(".ipynb"):
             continue
+        if (f.get("status") == "renamed"
+                and (f.get("previous_filename") or "").endswith(".ipynb")):
+            demenages.append(path)
+            continue
         if f.get("status") != "added":
             continue
         nom = path.rsplit("/", 1)[-1]
         if lang_suffix(nom):
             langues.append(path)
             continue
-        if nom in supprimes:
+        if f.get("sha") and f.get("sha") in blobs_supprimes:
             demenages.append(path)
             continue
         neufs.append(path)
