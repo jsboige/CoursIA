@@ -7,11 +7,7 @@ execution, parsing, audits pedagogiques. **Cluster worker canonique**
 C.1-C.3 (notebooks), D (anti-regression), sota-not-workaround (#3801),
 anti-banner (#6309), secrets-hygiene.
 
-Le seul sous-dossier `scripts/` sans `README.md` avant ce fichier :
-6 detecteurs + 4 validateurs CI + 2 scanners + 52 scripts utilitaires,
-+ 2 fichiers `golden_set.yml` / `golden_set.lock.txt` non-`.py` en
-complement. L'inventaire ci-dessous remplace la lecture en aveugle de
-65 fichiers.
+Ce README présente l'organisation et l'usage des outils de `notebook_tools`.
 
 | Categorie | Scripts | Role |
 |-----------|---------|------|
