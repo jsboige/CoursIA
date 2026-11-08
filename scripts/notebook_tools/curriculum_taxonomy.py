@@ -6,6 +6,7 @@ import json
 import sys
 from pathlib import Path
 from uuid import UUID
+from urllib.parse import quote
 
 from rdflib import BNode, Graph, Literal, Namespace, RDF, RDFS, URIRef
 from rdflib.namespace import DCTERMS, OWL, SKOS, XSD
@@ -60,6 +61,40 @@ def validate_taxonomy(data: dict, repo_root: Path = REPO_ROOT) -> None:
     concepts = data.get("concepts")
     if not isinstance(concepts, list) or not concepts:
         _fail("concepts doit être une liste non vide")
+
+    notebook_tree = data.get("notebook_tree")
+    if not isinstance(notebook_tree, list) or not notebook_tree:
+        _fail("notebook_tree doit matérialiser l'arbre série/sous-série/carnet")
+    tree_by_decimal: dict[str, dict] = {}
+    tree_by_path: set[str] = set()
+    for node in notebook_tree:
+        if node.get("level") not in {"series", "subseries", "notebook"}:
+            _fail(f"niveau de carnet inconnu : {node.get('level')}")
+        for field in ("path", "decimal_path", "label_fr"):
+            if not isinstance(node.get(field), str) or not node[field].strip():
+                _fail(f"champ d'arbre absent ou vide : {field}")
+        if node["path"] in tree_by_path or node["decimal_path"] in tree_by_decimal:
+            _fail(f"path ou decimal_path de carnet dupliqué : {node['path']}")
+        if node.get("depth") != node["decimal_path"].count("."):
+            _fail(f"depth incompatible avec decimal_path du carnet : {node['decimal_path']}")
+        if len(node["path"].split("/")) != node["depth"] + 1:
+            _fail(f"profondeur de path incompatible pour le carnet : {node['path']}")
+        if node["level"] == "series":
+            if node["path"] != data["series"] or node["depth"] != 0:
+                _fail("la racine doit être l'unique nœud série du périmètre")
+        else:
+            parent_decimal = node["decimal_path"].rsplit(".", 1)[0]
+            parent = tree_by_decimal.get(parent_decimal)
+            if parent is None or not node["path"].startswith(parent["path"] + "/"):
+                _fail(f"parent absent ou incohérent dans l'arbre des carnets : {node['path']}")
+        if node["level"] == "notebook" and node.get("repository_path") not in notebooks:
+            _fail(f"carnet hors périmètre déclaré : {node.get('repository_path')}")
+        tree_by_decimal[node["decimal_path"]] = node
+        tree_by_path.add(node["path"])
+    roots = [node for node in notebook_tree if node["level"] == "series"]
+    tree_notebooks = {node.get("repository_path") for node in notebook_tree if node["level"] == "notebook"}
+    if len(roots) != 1 or tree_notebooks != set(notebooks):
+        _fail("l'arbre doit avoir une racine et couvrir exactement les carnets déclarés")
 
     cells_by_notebook = _cell_ids(repo_root, notebooks)
     ids: set[str] = set()
@@ -176,6 +211,28 @@ def build_graph(data: dict) -> Graph:
     graph.add((VOCAB.path, RDF.type, OWL.DatatypeProperty))
     graph.add((VOCAB.decimalPath, RDF.type, OWL.DatatypeProperty))
     graph.add((VOCAB.depth, RDF.type, OWL.DatatypeProperty))
+
+    series_uri = URIRef(BASE + "serie/" + quote(data["series"], safe=""))
+    graph.add((series_uri, RDF.type, VOCAB.Series))
+    graph.add((series_uri, RDFS.label, Literal(data["series"], lang="fr")))
+    for node in data["notebook_tree"]:
+        if node["level"] == "series":
+            subject = series_uri
+            graph.add((subject, VOCAB.path, Literal(node["path"])))
+        elif node["level"] == "subseries":
+            subject = URIRef(BASE + "sous-serie/" + quote(data["series"] + "/" + node["label_fr"], safe=""))
+            graph.add((subject, RDF.type, VOCAB.Subseries))
+            graph.add((subject, VOCAB.partOfSeries, series_uri))
+            graph.add((subject, RDFS.label, Literal(node["label_fr"], lang="fr")))
+        else:
+            relative_notebook_path = node["repository_path"].removeprefix("MyIA.AI.Notebooks/")
+            subject = URIRef(BASE + "notebook/" + quote(relative_notebook_path, safe=""))
+            graph.add((subject, RDF.type, VOCAB.Notebook))
+            graph.add((subject, RDFS.label, Literal(node["label_fr"], lang="fr")))
+            graph.add((subject, DCTERMS.identifier, Literal(relative_notebook_path)))
+            graph.add((subject, VOCAB.inSeries, series_uri))
+        graph.add((subject, VOCAB.decimalPath, Literal(node["decimal_path"])))
+        graph.add((subject, VOCAB.depth, Literal(node["depth"], datatype=XSD.integer)))
 
     scheme = URIRef(BASE + "scheme/" + data["series"].lower())
     graph.add((scheme, RDF.type, SKOS.ConceptScheme))
