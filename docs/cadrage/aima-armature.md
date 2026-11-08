@@ -17,7 +17,7 @@ Structure de la 4e édition lue dans le sommaire du PDF du gisement (p. vii-xiii
 | Chap. | Titre (4e) | Série porteuse | Organe exécutant | Notebooks |
 |---|---|---|---|---:|
 | 1 | Introduction | — | — (chapitre de cadrage, pas d'organe par nature) | — |
-| 2 | Intelligent Agents | `ML/DataScienceWithAgents/Track2-GoogleADK` | Google ADK (Agent Development Kit), p. ex. `Lab8-ADK-Introduction` | 101 |
+| 2 | Intelligent Agents | `ML/DataScienceWithAgents/07-Agent-Orchestration` | Google ADK (Agent Development Kit), p. ex. `Lab8-ADK-Introduction` | 101 |
 | 3 | Solving Problems by Searching | `Search/Part1-Foundations` | A*, heuristiques (implémentations C#/Python + `Search/MetaGeneticSharp`) | 156 (série Search entière) |
 | 4 | Search in Complex Environments | `Search/Part4-Metaheuristics` | métaheuristiques, algos évolutionnaires (`MetaGeneticSharp`, sous-module) | idem |
 | 5 | Adversarial Search and Games | `GameTheory` | OpenSpiel (`pyspiel`), minimax/CFR/MCTS + miroirs C# | 109 |
@@ -26,7 +26,7 @@ Structure de la 4e édition lue dans le sommaire du PDF du gisement (p. vii-xiii
 | 8 | First-Order Logic | `SymbolicAI/Lean` | Lean 4 (FOL, quantificateurs) | 82 |
 | 9 | Inference in First-Order Logic | `SymbolicAI/Lean` | Lean 4 (chaînage avant via tactiques, résolution) | 82 |
 | 10 | Knowledge Representation | `SymbolicAI/SemanticWeb` · `SymbolicAI/Tweety` · `SymbolicAI/Argument_Analysis` | SPARQL/OWL (RDF), Tweety (ASP, argumentation de Dung), Argumentum (sous-module) | 28+39+32 |
-| 11 | Automated Planning | `SymbolicAI/Planners/02-Classical` | Fast Downward (`Planners-4-Fast-Downward`), PDDL, heuristiques (`Planners-5`) | 25 |
+| 11 | Automated Planning | `SymbolicAI/Planners/02-Classical` | Fast Downward (`Planners-04-Fast-Downward-Python`), PDDL, heuristiques (`Planners-5`) | 25 |
 | 12 | Quantifying Uncertainty | `Probas` | Infer.NET (probabilités, réseaux bayésiens) | 75 |
 | 13 | Probabilistic Reasoning | `Probas` · `Probas/DecisionTheory/Causal-Bridges` | Infer.NET, do-calculus (`CausalBridges-01-Do-Calculus`) | 75 |
 | 14 | Probabilistic Reasoning over Time | `NLP/05-HMM-Viterbi` | HMM, décodage de Viterbi (module numpy dédié) | 5 |

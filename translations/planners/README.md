@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`planners.csv`](planners.csv) | `SymbolicAI/Planners/` | 24 (Planners-0-Setup → Planners-12-LOOP ; jumeaux C# `-Csharp.ipynb` co-localisés + Planners-5b-Lean-Relaxation) | 1005 (header + 1005 lignes, 20 colonnes) |
+| [`planners.csv`](planners.csv) | `SymbolicAI/Planners/` | 24 (Planners-0-Setup → Planners-12-LOOP-Python ; jumeaux C# `-Csharp.ipynb` co-localisés + Planners-05b-Lean-Relaxation-Lean) | inventaire régénéré par le pipeline (dimensions au catalogue) |
 
 **Note cross-owner** : la série Planners est owner-floue **po-2024** (PRs twin C# #5591, #5709 sweep figures doctrine). L'extraction i18n est **safe cross-owner** (L143 SAFE : artefacts dérivés = CSV de cellules upstream, pas de modification de code des notebooks), conforme au pattern Phase 2 validé sur 3 séries owner po-2025 (Argument_Analysis + Probas/Infer + ML/ML.Net).
 

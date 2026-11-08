@@ -317,7 +317,7 @@ IIT/
 ├── ICT-08-AttractorLandscapesEWS-Python.ipynb     # ✅ strate 2 : paysages d'attracteurs + early-warning signals
 ├── ICT-09-AgencyRegeneration-Python.ipynb         # ✅ strate 2 : agence = régénération réaction-diffusion (Gray-Scott)
 ├── ICT-10-CatastropheGrammar-Python.ipynb        # ✅ charnière strate 2→3 : grammaire des catastrophes (fronce, pli, lacet de prédation)
-├── ICT-22b-CausalInterventionEngine-Python.ipynb # ✅ moteur d'intervention causal — 5 ops, contrôles appariés, format Gate 24 (accrétion du palier 22, #15479)
+├── ICT-20-FeatureCatastrophes/ICT-22b-CausalInterventionEngine-Python.ipynb # ✅ moteur d'intervention causal — 5 ops, contrôles appariés, format Gate 24 (accrétion du palier 22, #15479)
 └── ict/
     ├── self_sorting.py      # ✅ modèle vue-cellule (Cell, SelfSortingArray, scheduler)
     ├── kin_sorting.py       # ✅ règles enrichies : réparation bidirectionnelle + affinité kin
@@ -543,7 +543,7 @@ ICT mesure ce que les modèles font **vraiment**, pas ce qu'on espérait. ICT-2 
 le toy model minimal reproduit fidèlement la robustesse et le délai de gratification, mais
 **pas** l'agrégation « kin » positive du papier (ses règles uni-directionnelles produisent au
 contraire des impasses de coordination). Le notebook le dit honnêtement et renvoie l'agrégation
-à ICT-4. [ICT-4](ICT-04-ChimericArraysKinAggregation-Python.ipynb) tient cette promesse avec un jeu de
+à ICT-4. [ICT-4](ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb) tient cette promesse avec un jeu de
 règles plus riche — et la même discipline : l'agrégation émerge, mais **seulement** dans les
 degrés de liberté laissés par le tri (sans valeurs répétées, elle disparaît), ce que le notebook
 mesure au lieu de le proclamer. Cette discipline — exécuter, mesurer, narrer le résultat réel —
