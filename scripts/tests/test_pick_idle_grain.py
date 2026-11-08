@@ -18,6 +18,7 @@ la fusion dit "c'est peut-etre fait", l'ouverte dit "quelqu'un y est".
 import json
 import random
 import sys
+import types
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -5417,6 +5418,126 @@ def test_merged_pr_signal_anchor_substring_no_false_positive(monkeypatch):
         f"PR #1170391 ne doit PAS couvrir #11703 (collision sous-chaine), "
         f"recu : {signal!r}"
     )
+
+
+def test_belt_local_probe_indexes_match_legacy_fixtures(monkeypatch):
+    """Les index locaux rendent les memes verdicts/descripteurs que gh."""
+    merged = [{
+        "number": 9123, "state": "MERGED", "mergedAt": _iso_days_ago(5),
+        "title": "Fixes #16031", "body": "livraison",
+    }]
+    opened = [{
+        "number": 9124, "state": "OPEN", "isDraft": True,
+        "title": "Travail sur #16031", "body": "scope",
+    }]
+
+    def fake_run(argv, **kwargs):
+        if "--state" in argv and argv[argv.index("--state") + 1] == "merged":
+            return _FakeCompleted(json.dumps(merged))
+        return _FakeCompleted(json.dumps(opened))
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    old_merged = pig.merged_pr_signal(16031)
+    old_open = pig.open_cover_signal(16031)
+    monkeypatch.setattr(pig, "_snapshot_comments", lambda _n: [])
+    index = pig._prepare_belt_local_probes(
+        [16031], merged_prs=[{k: v for k, v in merged[0].items() if k != "state"}],
+        merged_error=None, merged_days=90, open_prs=opened, open_error=None,
+    )
+    monkeypatch.setattr(pig, "_BELT_LOCAL_PROBES", index)
+    assert pig.merged_pr_signal(16031) == old_merged
+    assert pig.open_cover_signal(16031) == old_open
+
+
+def test_belt_local_probe_loop_forbids_gh_and_fails_closed(monkeypatch):
+    """Aucun fallback reseau en boucle ; snapshot incomplet nomme l'ecart."""
+    monkeypatch.setattr(pig, "_snapshot_comments", lambda _n: [])
+    index = pig._prepare_belt_local_probes(
+        [12345], merged_prs=[], merged_error=None, merged_days=90,
+        open_prs=[], open_error=None,
+    )
+    monkeypatch.setattr(pig, "_BELT_LOCAL_PROBES", index)
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("gh should not be reached inside the belt probes")
+
+    monkeypatch.setattr(pig.subprocess, "run", forbidden)
+    assert pig.merged_pr_signal(12345) is False
+    assert pig.open_cover_signal(12345) == ""
+
+    # Le chemin execute de la boucle, y compris sa sonde de couverture
+    # complete, ne doit pas sortir sur gh une fois le prechargement pose.
+    monkeypatch.setattr(pig, "_OPEN_PRS_ENUM_MEMO", [])
+    args = types.SimpleNamespace(grains=1, lane="myia-po-2026:CoursIA-2",
+                                 include_delivered=False)
+    pool = [{"number": 12345, "klass": "grain", "labels": [],
+             "title": "fixture", "body": ""}]
+    picks, withheld, _state = pig.belt_pick_with_replacements(
+        pool, {12345: (pig.CLAIM_CODE_FREE, "claim local libre")}, args, 10,
+        delivered_probe=pig.has_delivered_signal,
+        merged_pr_probe=pig.merged_pr_signal,
+        cover_probe=pig.open_cover_signal_complete,
+        recent_marker_probe=pig.has_recent_delivery_marker,
+        delivery_event_probe=pig.delivery_event,
+        frozen_probe=pig.frozen_probe_inert,
+    )
+    assert [row["number"] for row in picks] == [12345]
+    assert withheld == []
+
+    broken = pig._prepare_belt_local_probes(
+        [12345], merged_prs=[], merged_error="cache stale", merged_days=90,
+        open_prs=None, open_error="enumeration timeout",
+    )
+    monkeypatch.setattr(pig, "_BELT_LOCAL_PROBES", broken)
+    item = {"number": 12345, "klass": "grain", "labels": []}
+    delivered = pig.delivered_signal_reason(
+        item, merged_pr_probe=pig.merged_pr_signal)
+    cover = pig.open_cover_reason(item, pig.open_cover_signal)
+    assert "merged_prs_90d:fetch_echoue" in delivered
+    assert "open_prs:enumeration_echouee" in cover
+
+    monkeypatch.setattr(pig, "_snapshot_comments", lambda _n: None)
+    comments_missing = pig._prepare_belt_local_probes(
+        [12345], merged_prs=[], merged_error=None, merged_days=90,
+        open_prs=[], open_error=None,
+    )
+    monkeypatch.setattr(pig, "_BELT_LOCAL_PROBES", comments_missing)
+    reason = pig.delivered_signal_reason(
+        item, probe=pig.has_delivered_signal,
+        merged_pr_probe=pig.merged_pr_signal)
+    assert "comments:absents_ou_perimes" in reason
+
+
+def test_belt_timeline_is_preloaded_and_unavailable_is_named(monkeypatch):
+    """La reouverture est lue pendant le prechargement, jamais dans la boucle."""
+    comments = [{"body": "decision close", "createdAt": _iso_days_ago(2)}]
+    monkeypatch.setattr(pig, "_snapshot_comments", lambda _n: comments)
+    monkeypatch.setattr(pig, "_closure_stamp", lambda _comments: "2026-11-01T00:00:00Z")
+    timeline_calls = []
+    monkeypatch.setattr(
+        pig, "_read_reopen_events",
+        lambda n: timeline_calls.append(n) or ["2026-11-02T00:00:00Z"],
+    )
+    index = pig._prepare_belt_local_probes(
+        [12345], merged_prs=[], merged_error=None, merged_days=90,
+        open_prs=[], open_error=None,
+    )
+    assert timeline_calls == [12345]
+    monkeypatch.setattr(pig, "_BELT_LOCAL_PROBES", index)
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *_a, **_k: (_ for _ in ()).throw(
+                            AssertionError("timeline must not be queried in loop")))
+    assert pig._reopen_events(12345) == ["2026-11-02T00:00:00Z"]
+
+    monkeypatch.setattr(pig, "_read_reopen_events",
+                        lambda _n: (_ for _ in ()).throw(OSError("offline")))
+    failed = pig._prepare_belt_local_probes(
+        [12345], merged_prs=[], merged_error=None, merged_days=90,
+        open_prs=[], open_error=None,
+    )
+    monkeypatch.setattr(pig, "_BELT_LOCAL_PROBES", failed)
+    with pytest.raises(pig.BeltProbeUnavailable, match="timeline_indisponible_OSError"):
+        pig._reopen_events(12345)
 
 
 

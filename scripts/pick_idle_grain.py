@@ -473,6 +473,20 @@ def _closure_announced_close(body: str) -> bool:
 # rien : il expire a 48 h de toute facon.
 _REOPEN_CACHE: dict[int, list[str]] = {}
 
+
+class BeltProbeUnavailable(RuntimeError):
+    """Une sonde de securite du tapis n'a pas de snapshot local complet."""
+
+    def __init__(self, reason: str):
+        self.reason = reason
+        super().__init__(reason)
+
+
+# Index ephemeres de la passe du tapis. Ils sont installes avant la boucle
+# (apres toutes les lectures reseau) et retires ensuite. Un champ absent ou
+# invalide ne signifie jamais « aucun signal ».
+_BELT_LOCAL_PROBES: dict | None = None
+
 _ISO_Z_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$")
 
 
@@ -520,6 +534,16 @@ def _reopen_events(issue_number: int) -> list[str]:
     Seules les chaines strictement ISO (`...Z`) sont retenues : une sortie de
     `gh` inattendue ne doit pas pouvoir fabriquer une reouverture.
     """
+    local = globals().get("_BELT_LOCAL_PROBES")
+    if isinstance(local, dict):
+        entry = (local.get("reopen_events") or {}).get(issue_number)
+        if not isinstance(entry, dict) or not entry.get("ready"):
+            cause = (entry or {}).get("cause") or "timeline_snapshot_absent"
+            raise BeltProbeUnavailable(f"reopen_events:{cause}")
+        events = entry.get("events")
+        if not isinstance(events, list):
+            raise BeltProbeUnavailable("reopen_events:payload_incomplet")
+        return events
     cached = _REOPEN_CACHE.get(issue_number)
     if cached is not None:
         return cached
@@ -537,6 +561,20 @@ def _reopen_events(issue_number: int) -> list[str]:
     except Exception:  # noqa: BLE001 - lecture best-effort : fail-OPEN
         events = []
     _REOPEN_CACHE[issue_number] = events
+    return events
+
+
+def _read_reopen_events(issue_number: int) -> list[str]:
+    """Lecture timeline stricte, appelee uniquement pendant le prechargement."""
+    out = subprocess.run(
+        ["gh", "api", "--paginate",
+         "repos/%s/issues/%d/timeline?per_page=100" % (REPO, issue_number),
+         "--jq", '.[] | select(.event == "reopened") | .created_at'],
+        capture_output=True, text=True, encoding="utf-8", check=True,
+        timeout=_clamp_timeout(20),
+    ).stdout
+    events = [line.strip() for line in out.splitlines()
+              if _ISO_Z_RE.match(line.strip())]
     return events
 
 
@@ -2793,6 +2831,8 @@ def _issue_comments(issue_number: int) -> tuple[list[dict] | None, str | None]:
     snapshot_comments = _snapshot_comments(issue_number)
     if snapshot_comments is not None:
         return snapshot_comments, None
+    if isinstance(globals().get("_BELT_LOCAL_PROBES"), dict):
+        raise BeltProbeUnavailable("comments:absent_ou_perimes")
     try:
         out = subprocess.run(
             ["gh", "issue", "view", str(issue_number), "--repo", REPO,
@@ -3004,6 +3044,8 @@ def delivery_event(issue_number: int) -> tuple[bool, bool, str | None] | None:
     snapshot_comments = _snapshot_comments(issue_number)
     if snapshot_comments is not None:
         return _delivery_event_from_comments(snapshot_comments, issue_number)
+    if isinstance(globals().get("_BELT_LOCAL_PROBES"), dict):
+        raise BeltProbeUnavailable("comments:absents_ou_perimes_pour_delivery_event")
     try:
         out = subprocess.run(
             ["gh", "issue", "view", str(issue_number), "--repo", REPO,
@@ -3136,6 +3178,8 @@ def has_delivered_signal(issue_number: int,
     snapshot_comments = _snapshot_comments(issue_number)
     if snapshot_comments is not None:
         return _delivered_state_with_reopen(snapshot_comments, issue_number)
+    if isinstance(globals().get("_BELT_LOCAL_PROBES"), dict):
+        raise BeltProbeUnavailable("comments:absents_ou_perimes_pour_delivery_marker")
     try:
         out = subprocess.run(
             ["gh", "issue", "view", str(issue_number), "--repo", REPO,
@@ -3302,18 +3346,27 @@ def merged_pr_signal(issue_number: int, lane: str | None = None):
     d'ancre `#N\\b` que ``open_cover_signal`` (post-filtre, #17760) pour
     eviter les collisions de sous-chaine (ex. #11703 vs #1170391).
     """
-    try:
-        out = subprocess.run(
-            ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
-             "--limit", "20", "--search", f"{issue_number} in:title,body",
-             "--json", "number,state,mergedAt,title,body"],
-            capture_output=True, text=True, encoding="utf-8", check=True,
-            timeout=30,
-        ).stdout
-        prs = json.loads(out)
-    except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
-        return None
+    local = globals().get("_BELT_LOCAL_PROBES")
+    if isinstance(local, dict):
+        if not local.get("merged_ready"):
+            raise BeltProbeUnavailable(
+                "merged_prs_90d:" + str(local.get("merged_cause") or "index_incomplet"))
+        prs = local["merged_prs"]
+    else:
+        try:
+            out = subprocess.run(
+                ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
+                 "--limit", "20", "--search", f"{issue_number} in:title,body",
+                 "--json", "number,state,mergedAt,title,body"],
+                capture_output=True, text=True, encoding="utf-8", check=True,
+                timeout=30,
+            ).stdout
+            prs = json.loads(out)
+        except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
+            return None
     if not isinstance(prs, list):
+        if isinstance(local, dict):
+            raise BeltProbeUnavailable("merged_prs_90d:payload_incomplet")
         return None
     now = dt.datetime.now(dt.timezone.utc)
     window = dt.timedelta(days=MERGED_PR_WINDOW_DAYS)
@@ -3385,6 +3438,8 @@ def revoked_after_merge_signal(issue_number: int, lane: str | None = None,
         return None
     comments = _snapshot_comments(issue_number)
     if comments is None:
+        if isinstance(globals().get("_BELT_LOCAL_PROBES"), dict):
+            raise BeltProbeUnavailable("comments:absents_ou_perimes_pour_revocation")
         try:
             out = subprocess.run(
                 ["gh", "issue", "view", str(issue_number), "--repo", REPO,
@@ -3481,7 +3536,14 @@ def delivered_signal_reason(
     # et la voie du tapis ne leve ce court-circuit qu'avec un horodatage
     # connu -- sans lui, la sonde garde son comportement anterieur.
     if not skip_marker:
-        verdict = probe(item["number"], lane)
+        try:
+            verdict = probe(item["number"], lane)
+        except BeltProbeUnavailable as exc:
+            return ("SONDE DE SECURITE INDISPONIBLE (" + exc.reason + "). "
+                    "Candidat ecarte faute de snapshot local complet.")
+        if isinstance(verdict, BeltProbeUnavailable):
+            return ("SONDE DE SECURITE INDISPONIBLE (" + verdict.reason + "). "
+                    "Candidat ecarte faute de snapshot local complet.")
         if verdict == DELIVERED_SIGNAL_UNPROBED:
             return None
         if verdict is None:
@@ -3511,7 +3573,14 @@ def delivered_signal_reason(
     # UNPROBED qui renverrait le candidat sur le tapis sans le servir.
     if skip_merged_pr:
         return None
-    merged = merged_pr_probe(item["number"], lane)
+    try:
+        merged = merged_pr_probe(item["number"], lane)
+    except BeltProbeUnavailable as exc:
+        return ("SONDE DE SECURITE INDISPONIBLE (" + exc.reason + "). "
+                "Candidat ecarte faute de snapshot local complet.")
+    if isinstance(merged, BeltProbeUnavailable):
+        return ("SONDE DE SECURITE INDISPONIBLE (" + merged.reason + "). "
+                "Candidat ecarte faute de snapshot local complet.")
     if merged == DELIVERED_SIGNAL_UNPROBED:
         return None
     if merged is None:
@@ -3895,17 +3964,24 @@ def open_cover_signal(issue_number: int) -> str | None:
     candidate-delivered -- le candidat couvert est ECARTE et remplace dans
     son urne, pas seulement annote.
     """
-    try:
-        out = subprocess.run(
-            ["gh", "pr", "list", "--repo", REPO, "--state", "all",
-             "--limit", "20", "--search", f"{issue_number} in:title,body",
-             "--json", "number,state,isDraft,title,body"],
-            capture_output=True, text=True, encoding="utf-8", check=True,
-            timeout=30,
-        ).stdout
-        prs = json.loads(out)
-    except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
-        return None
+    local = globals().get("_BELT_LOCAL_PROBES")
+    if isinstance(local, dict):
+        if not local.get("open_ready"):
+            raise BeltProbeUnavailable(
+                "open_prs:" + str(local.get("open_cause") or "index_incomplet"))
+        prs = local["open_prs"]
+    else:
+        try:
+            out = subprocess.run(
+                ["gh", "pr", "list", "--repo", REPO, "--state", "all",
+                 "--limit", "20", "--search", f"{issue_number} in:title,body",
+                 "--json", "number,state,isDraft,title,body"],
+                capture_output=True, text=True, encoding="utf-8", check=True,
+                timeout=30,
+            ).stdout
+            prs = json.loads(out)
+        except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
+            return None
     # Post-filtre `#N\b` (#17760, arbitrage ai-01 2026-09-25) : la recherche
     # GitHub matche un NOMBRE NU en sous-chaine -- 11703 apparie c.1170301
     # ou #1170391 -- et les petits numeros des EPICs se retrouvent faux
@@ -3997,7 +4073,14 @@ def open_cover_reason(
     """
     if probe is None:
         probe = open_cover_inert
-    verdict = probe(item["number"])
+    try:
+        verdict = probe(item["number"])
+    except BeltProbeUnavailable as exc:
+        return ("SONDE DE SECURITE INDISPONIBLE (" + exc.reason + "). "
+                "Candidat ecarte faute de snapshot local complet.")
+    if isinstance(verdict, BeltProbeUnavailable):
+        return ("SONDE DE SECURITE INDISPONIBLE (" + verdict.reason + "). "
+                "Candidat ecarte faute de snapshot local complet.")
     if verdict == DELIVERED_SIGNAL_UNPROBED:
         return None
     if verdict is None:
@@ -4012,6 +4095,99 @@ def open_cover_reason(
             "retourner (le diff peut rester incomplet)"
         )
     return None
+
+
+def _prepare_belt_local_probes(
+    issue_numbers: list[int], *, merged_prs, merged_error: str | None,
+    merged_days: int, open_prs, open_error: str | None,
+) -> dict:
+    """Construit les index de securite locaux avant l'entree dans la boucle.
+
+    `merged_prs` vient du fetch date-slice existant (90 j pour le tapis) et
+    `open_prs` de l'enumeration complete deja partagee avec les autres gardes.
+    Les timelines sont lues ici, uniquement pour les fils portant un dossier
+    de cloture. Toute entree absente ou illisible reste explicitement
+    indisponible.
+    """
+    merged_cause = None
+    merged_ready = (merged_error is None and merged_days >= MERGED_PR_WINDOW_DAYS
+                    and isinstance(merged_prs, list))
+    if merged_ready:
+        for pr in merged_prs:
+            if (not isinstance(pr, dict) or not isinstance(pr.get("title"), str)
+                    or not isinstance(pr.get("body"), str)
+                    or not isinstance(pr.get("mergedAt"), str)
+                    or pr.get("state") not in (None, "MERGED")):
+                merged_ready = False
+                merged_cause = "payload_incomplet"
+                break
+            try:
+                dt.datetime.fromisoformat(pr["mergedAt"].replace("Z", "+00:00"))
+            except ValueError:
+                merged_ready = False
+                merged_cause = "mergedAt_illisible"
+                break
+        if merged_ready:
+            # Le fetcher filtre deja sur `--state merged`; son schema public
+            # ne porte donc pas de champ state, contrairement a la sonde
+            # `gh pr list --state merged` historique.
+            merged_prs = [dict(pr, state=pr.get("state") or "MERGED")
+                          for pr in merged_prs]
+    elif merged_error:
+        merged_cause = "fetch_echoue"
+    elif merged_days < MERGED_PR_WINDOW_DAYS:
+        merged_cause = f"fenetre_{merged_days}j_inferieure_a_90j"
+    else:
+        merged_cause = "index_absent"
+
+    open_cause = None
+    open_ready = open_error is None and isinstance(open_prs, list)
+    if open_ready:
+        for pr in open_prs:
+            if (not isinstance(pr, dict) or not isinstance(pr.get("number"), int)
+                    or not isinstance(pr.get("title"), str)
+                    or not isinstance(pr.get("body"), str)
+                    or not isinstance(pr.get("isDraft"), bool)
+                    or pr.get("state") != "OPEN"):
+                open_ready = False
+                open_cause = "enumeration_incomplete"
+                break
+    elif open_error:
+        open_cause = "enumeration_echouee"
+    else:
+        open_cause = "enumeration_absente"
+
+    comments_ready: set[int] = set()
+    reopen_events: dict[int, dict] = {}
+    for number in issue_numbers:
+        comments = _snapshot_comments(number)
+        if comments is None:
+            reopen_events[number] = {"ready": False,
+                                     "cause": "comments_absents_ou_perimes"}
+            continue
+        comments_ready.add(number)
+        if not _closure_stamp(comments):
+            continue
+        try:
+            events = _read_reopen_events(number)
+        except Exception as exc:  # noqa: BLE001 - cause conservee pour la boucle
+            reopen_events[number] = {
+                "ready": False,
+                "cause": f"timeline_indisponible_{type(exc).__name__}",
+            }
+        else:
+            reopen_events[number] = {"ready": True, "events": events}
+            _REOPEN_CACHE[number] = events
+    return {
+        "merged_ready": merged_ready,
+        "merged_cause": merged_cause,
+        "merged_prs": merged_prs if isinstance(merged_prs, list) else [],
+        "open_ready": open_ready,
+        "open_cause": open_cause,
+        "open_prs": open_prs if isinstance(open_prs, list) else [],
+        "comments_ready": comments_ready,
+        "reopen_events": reopen_events,
+    }
 
 
 
@@ -5125,6 +5301,12 @@ def _complete_open_prs() -> list[dict]:
     ni ecriture (le cache du lecteur est le fichier du tapis).
     """
     global _OPEN_PRS_ENUM_MEMO
+    local = globals().get("_BELT_LOCAL_PROBES")
+    if isinstance(local, dict):
+        if not local.get("open_ready"):
+            raise BeltProbeUnavailable(
+                "open_prs:" + str(local.get("open_cause") or "index_incomplet"))
+        return local["open_prs"]
     if _OPEN_PRS_ENUM_MEMO is not None:
         return _OPEN_PRS_ENUM_MEMO
     # #22630 : la pagination GraphQL des PRs ouvertes coute 2 appels lourds
@@ -11004,7 +11186,10 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 state["budget_hit"] = True
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
-            return user_probe(number, lane_name)
+            try:
+                return user_probe(number, lane_name)
+            except BeltProbeUnavailable as exc:
+                return exc
 
         def counted_merged_pr_probe(number, lane_name):
             if expired():
@@ -11014,7 +11199,10 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 state["budget_hit"] = True
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
-            return user_merged_pr_probe(number, lane_name)
+            try:
+                return user_merged_pr_probe(number, lane_name)
+            except BeltProbeUnavailable as exc:
+                return exc
 
         def counted_revocation_probe(number, lane_name, merged_at):
             # #22987 -- meme budget, meme echeance, meme fail-CLOSED que la
@@ -11027,7 +11215,10 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 state["budget_hit"] = True
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
-            return user_revocation_probe(number, lane_name, merged_at)
+            try:
+                return user_revocation_probe(number, lane_name, merged_at)
+            except BeltProbeUnavailable as exc:
+                return exc
 
         def counted_cover_probe(number):
             # #16589 etait cable sur la seule voie PONDEREE : le tapis rendait
@@ -11045,7 +11236,10 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 state["budget_hit"] = True
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
-            return user_cover_probe(number)
+            try:
+                return user_cover_probe(number)
+            except BeltProbeUnavailable as exc:
+                return exc
 
         if claims_probe is None:
             # #22983 -- la sonde unitaire du tapis est STRICTE elle aussi :
@@ -12546,24 +12740,56 @@ def main(argv: list[str] | None = None) -> int:
                         f"boucle, {belt_time_remaining:.0f}s restants a son "
                         f"entree (claims/settle deduits ; les sondes sont "
                         f"clampees a l'echeance du run)")
+        # #24823 -- toutes les sondes candidat sont prechargees avant la
+        # boucle. Les PR mergees viennent du fetch date-slice 90 j deja paye
+        # pour le tapis ; les PR ouvertes viennent de l'enumeration complete
+        # partagee avec les gardes precedents. Les timelines ne sont lues que
+        # pour les fils dont les commentaires frais portent une decision de
+        # cloture. Une source absente/incomplete/perimee rend une cause
+        # explicite et ecarte le candidat.
+        global _BELT_LOCAL_PROBES
+        belt_open_probe_prs = None
+        belt_open_probe_error = None
+        try:
+            belt_open_probe_prs = _complete_open_prs()
+        except Exception as exc:  # noqa: BLE001 - fail-CLOSED dans la boucle
+            belt_open_probe_error = f"{type(exc).__name__}:{exc}"
+        _BELT_LOCAL_PROBES = _prepare_belt_local_probes(
+            belt_check_nums,
+            merged_prs=delivery_prs,
+            merged_error=delivery_fetch_err,
+            merged_days=delivery_window_days,
+            open_prs=belt_open_probe_prs,
+            open_error=belt_open_probe_error,
+        )
+        _belt_phase(
+            "sondes locales prechargees: merged="
+            f"{'ok' if _BELT_LOCAL_PROBES['merged_ready'] else _BELT_LOCAL_PROBES['merged_cause']}, "
+            f"open="
+            f"{'ok' if _BELT_LOCAL_PROBES['open_ready'] else _BELT_LOCAL_PROBES['open_cause']}, "
+            f"timelines={sum(1 for e in _BELT_LOCAL_PROBES['reopen_events'].values() if e.get('ready'))}/"
+            f"{len(_BELT_LOCAL_PROBES['reopen_events'])}")
         _belt_phase("pick_with_replacements start")
-        belt_picks, belt_withheld, belt_pick_state = (
-            belt_pick_with_replacements(belt_pool, belt_claims, args,
-                                        belt_probe_budget(belt_check_window),
-                                        delivered_probe=has_delivered_signal,
-                                        cover_probe=cover_probe,
-                                        merged_pr_probe=merged_pr_signal,
-                                        revocation_probe=(
-                                            revoked_after_merge_signal),
-                                        recent_marker_probe=(
-                                            has_recent_delivery_marker),
-                                        snapshot_prime=_belt_snapshot_prime,
-                                        container_marker_probe=(
-                                            has_recent_container_delivery_marker),
-                                        delivery_event_probe=delivery_event,
-                                        time_budget_s=belt_time_remaining,
-                                        gpu_probe=gpu_gate_probe,
-                                        frozen_probe=frozen_probe))
+        try:
+            belt_picks, belt_withheld, belt_pick_state = (
+                belt_pick_with_replacements(belt_pool, belt_claims, args,
+                                            belt_probe_budget(belt_check_window),
+                                            delivered_probe=has_delivered_signal,
+                                            cover_probe=cover_probe,
+                                            merged_pr_probe=merged_pr_signal,
+                                            revocation_probe=(
+                                                revoked_after_merge_signal),
+                                            recent_marker_probe=(
+                                                has_recent_delivery_marker),
+                                            snapshot_prime=_belt_snapshot_prime,
+                                            container_marker_probe=(
+                                                has_recent_container_delivery_marker),
+                                            delivery_event_probe=delivery_event,
+                                            time_budget_s=belt_time_remaining,
+                                            gpu_probe=gpu_gate_probe,
+                                            frozen_probe=frozen_probe))
+        finally:
+            _BELT_LOCAL_PROBES = None
         _belt_phase(f"pick_with_replacements fait: "
                     f"{len(belt_picks)} retenu(s), {len(belt_withheld)} witheld")
         belt_delivered_failures = belt_pick_state["failures"]
