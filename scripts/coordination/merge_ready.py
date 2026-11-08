@@ -193,6 +193,15 @@ from frozen_campaigns import (  # noqa: E402,F401
 # reel s'ecrit ``VERDICT: <token>`` dans le CORPS de la voix. Importe, jamais
 # recopie -- une regex locale divergerait en silence du canon qui gouverne le
 # triage du pool.
+# Le format de l'attestation de `lake build` local (#24989) vit dans
+# scripts/lean/ : l'organe qui l'ECRIT (attest_local_build.py) et la garde
+# qui la LIT ne doivent pas pouvoir diverger en silence. Un seul lecteur du
+# format, meme discipline que grain_tag et merge_dwell. Le repertoire est
+# ajoute AVANT scripts/ci pour que scripts/ci reste en priorite de resolution.
+LEAN_DIR = SCRIPTS_DIR / "lean"
+if str(LEAN_DIR) not in sys.path:
+    sys.path.insert(0, str(LEAN_DIR))
+
 CI_DIR = SCRIPTS_DIR / "ci"
 if str(CI_DIR) not in sys.path:
     sys.path.insert(0, str(CI_DIR))
@@ -203,6 +212,18 @@ import pool_review_verdicts as review_canon  # noqa: E402
 # pour que « la lecture du coordinateur couvre-t-elle encore cette tete ? » et
 # « depuis quand le contenu n'a-t-il pas bouge ? » ne divergent jamais.
 import merge_dwell  # noqa: E402
+# Le format de l'attestation de build Lean local (#24989) : un seul lecteur,
+# partage avec l'organe qui ecrit l'attestation.
+import lean_build_attestation  # noqa: E402
+# Le pli des jambes de check (#25059) : le fold CANONIQUE est
+# scripts/pr_gate.py::dedupe_latest -- celui du gate lui-meme -- et la
+# normalisation d'une jambe (check-run REST ou entree de rollup) est celle de
+# scripts/check_run_state.py. Importes, jamais recopiés : une seconde
+# implementation du pli divergerait en silence de celle qui gouverne le gate,
+# et c'est exactement le defaut que #25059 veut fermer (l'organe qui l'a
+# remplace n'a pas repris le pli de la chaine v9).
+import pr_gate  # noqa: E402
+import check_run_state  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
@@ -724,6 +745,65 @@ def coordinator_approval_reason(
     return "coordinator-approval-stale"
 
 
+def lean_build_attestation_reason(
+    view: dict, head: str, runner: Runner, gh_env: dict[str, str]
+) -> str | None:
+    """Etape 2bis (#24989) : ``None`` si la PR n'exige pas d'attestation Lean,
+    ou si elle en porte une qui couvre la tete courante.
+
+    La regle HARD `lean-merge-discipline.md` §1 exige un ``lake build``
+    **local** par ai-01 avant tout merge d'une PR qui touche du Lean : le
+    vert de la CI ne le remplace pas (incident #866, revert #885). Depuis le
+    retrait du dossier (2026-11-05), l'APPROVE du coordinateur est la seule
+    porte -- la regle ne tenait plus que par sa vigilance.
+
+    Detection : le diff contient-il un fichier Lean (``.lean``,
+    ``lakefile.*``, ``lean-toolchain``, ``lake-manifest.json``) ? Une PR qui
+    n'en contient pas n'est pas concernee : le controle ne coute alors rien.
+
+    Preuve exigee : un commentaire d'attestation pose par ``myia-ai-01``
+    (l'organe `scripts/lean/attest_local_build.py` le produit ; une lane ne
+    s'atteste pas elle-meme). La couverture de tete suit la MEME regle que
+    l'APPROVE : l'attestation vaut a la tete exacte, ou sur une tete qui n'en
+    differe que par des rafraichissements de base PROUVES content-free. Un
+    commit de contenu posterior la perime.
+
+    Motifs : ``lean:no-local-build-attestation`` (aucune attestation, ou
+    attestation perimee) et ``lean:local-build-attestation-unverifiable``
+    (preuve illisible : base absente, ou chaine de commits illisible).
+    """
+    touched = lean_build_attestation.lean_paths(
+        str((row or {}).get("path") or "") for row in (view.get("files") or [])
+    )
+    if not touched:
+        return None
+    attestation = lean_build_attestation.attestation_from_comments(
+        view.get("comments") or []
+    )
+    if attestation is None:
+        return "lean:no-local-build-attestation"
+    attested = str(attestation.get("sha") or "")
+    if attested == head:
+        return None
+    base = str(view.get("baseRefOid") or "")
+    if not base:
+        return "lean:local-build-attestation-unverifiable:no-base"
+    fetch = _dwell_fetch(runner, gh_env)
+    run_git = _dwell_git(runner)
+    try:
+        current = merge_dwell.last_authoritative_sha(
+            REPO, head, base, fetch=fetch, run_git=run_git
+        )
+        read = merge_dwell.last_authoritative_sha(
+            REPO, attested, base, fetch=fetch, run_git=run_git
+        )
+    except merge_dwell.DwellError:
+        return "lean:local-build-attestation-unverifiable"
+    if current == read:
+        return None
+    return "lean:no-local-build-attestation"
+
+
 def run_nits(runner: Runner, pr: int, gh_env: dict[str, str]) -> int:
     """Etape 4 : organe B.0. Retourne son rc (0 = clear), hors contrat -> arret."""
     res = runner.run([sys.executable, str(NITS_PATH), str(pr)], env=gh_env)
@@ -1174,6 +1254,164 @@ def mergeable_state_and_head(
     return state, str(((data.get("head") or {}).get("sha")) or "")
 
 
+# --- etape 6 bis : `unstable` est-il un etat mergeable ? (#25059) -------------
+
+#: Une jambe terminee et sans reproche : meme ensemble que le gate
+#: (``pr_gate.CONCLUSION_OK`` -- success, neutral, skipped). Un ``cancelled``
+#: n'y est pas : une jambe annulee n'a rien mesure.
+CHECK_GREEN = pr_gate.CONCLUSION_OK
+
+#: Le nom du check requis : la porte elle-meme. C'est le nom que le gate
+#: utilise pour se comparer a lui (``DEFAULT_SELF_NAME``).
+GATE_CHECK_NAME = pr_gate.DEFAULT_SELF_NAME
+
+#: Second marqueur de non-bloquant du depot : le gate reconnait ``advisory``
+#: (``pr_gate.ADVISORY_MARKER``), et le depot ecrit aussi ``non-blocking``
+#: dans le nom de certains checks. #25059 les nomme tous les deux.
+NON_BLOCKING_MARKER = "non-blocking"
+
+#: Roster des jobs dont le WORKFLOW porte le marqueur advisory (le nom du job
+#: ne le porte pas). Derive des YAML de ``.github/workflows``, une fois par
+#: run : le relire a chaque PR serait du gaspillage.
+_ADVISORY_JOBS: frozenset[str] | None = None
+
+
+def advisory_jobs() -> frozenset[str]:
+    """Le roster advisory du depot, lu une fois.
+
+    Fail-open sur le roster : un roster illisible signifie « moins de checks
+    reconnus comme non bloquants », donc une decision PLUS stricte -- jamais
+    un merge plus permissif.
+    """
+    global _ADVISORY_JOBS
+    if _ADVISORY_JOBS is None:
+        try:
+            _ADVISORY_JOBS = pr_gate.derive_advisory_jobs()
+        except Exception:  # pragma: no cover - lecture des YAML impossible
+            _ADVISORY_JOBS = frozenset()
+    return _ADVISORY_JOBS
+
+
+def _is_non_blocking(name: str, jobs: frozenset[str]) -> bool:
+    """Un check qui ne bloque pas, au sens du gate ET de #25059.
+
+    Le test est celui du gate : ``pr_gate.is_advisory`` (le job porte le
+    marqueur, ou son workflow le porte -- roster derive des YAML). Le second
+    marqueur du depot (``non-blocking``) est ajoute ici parce qu'il n'est pas
+    dans ``ADVISORY_MARKER`` : un check qui ne porte QUE ce marqueur ne
+    bloque pas le gate, il ne doit pas bloquer l'organe de merge non plus.
+    """
+    workflow_label = "advisory" if name in jobs else ""
+    if pr_gate.is_advisory(name, workflow_label):
+        return True
+    return NON_BLOCKING_MARKER in (name or "").lower()
+
+
+def unstable_state_reason(
+    runner: Runner, pr: int, head: str, gh_env: dict[str, str]
+) -> tuple[str | None, str]:
+    """Etape 6 bis (#25059) : l'etat ``unstable`` accepte-t-il la PR ?
+
+    Retourne ``(raison, detail)``. ``raison is None`` = la PR passe, et
+    ``detail`` porte le compte ``unstable-accepted:<n advisory/cancelled-
+    superseded>>``. Sinon ``raison`` nomme le check qui bloque -- un saut
+    nomme, jamais un refus muet.
+
+    Le pli est celui du gate : ``pr_gate.dedupe_latest``, applique deux fois
+    sur deux ensembles de jambes :
+      - sur TOUTES les jambes : la plus recente par nom -- c'est elle qui
+        fait foi (une jambe encore en vol est donc celle qui compte) ;
+      - sur les jambes TERMINEES seulement : la derniere terminee par nom --
+        c'est elle qui dit si le nom a ete vert au moins une fois.
+
+    Regle (#25059) : ``unstable`` est accepte si et seulement si
+      1. la derniere jambe du ``PR gate`` est terminee et ``success`` ;
+      2. chaque nom de check non advisory a au moins une jambe terminee ;
+      3. la derniere jambe TERMINEE de chaque nom non advisory est verte.
+
+    Ce qui n'est pas accepte : une porte absente ou non verte, un nom sans
+    jambe terminee, un nom dont la derniere jambe terminee est rouge, et une
+    lecture des jambes impossible (fail-closed : l'absence de mesure n'est
+    pas une mesure).
+    """
+    res = runner.run(
+        ["gh", "api",
+         f"repos/{REPO}/commits/{head}/check-runs?per_page=100",
+         "--paginate",
+         "--jq",
+         ".check_runs[] | {name, conclusion, status, started_at, id} | tojson"],
+        env=gh_env,
+    )
+    if res.returncode != 0:
+        return ("mergeable-state:unstable:check-runs-unreadable", "")
+    try:
+        raw = [
+            json.loads(line)
+            for line in (res.stdout or "").splitlines()
+            if line.strip()
+        ]
+    except ValueError:
+        return ("mergeable-state:unstable:check-runs-unreadable", "")
+    legs: list[dict] = []
+    for row in raw:
+        leg = check_run_state.normalize_leg(row)
+        # `normalize_leg` garde cinq champs ; le statut est ajoute ici pour
+        # que le motif du saut dise « en vol » plutot que « sans verdict ».
+        leg["status"] = str(row.get("status") or "").lower()
+        legs.append(leg)
+    latest = {leg["name"]: leg for leg in pr_gate.dedupe_latest(legs)}
+    done_legs = [leg for leg in legs if leg.get("conclusion")]
+    latest_done = {leg["name"]: leg for leg in pr_gate.dedupe_latest(done_legs)}
+
+    # 1. la porte elle-meme : sa derniere jambe (la plus recente) doit etre
+    #    terminee et verte. Une porte qui tourne encore n'est pas un acquis.
+    gate_leg = next(
+        (leg for name, leg in latest.items()
+         if name == GATE_CHECK_NAME or name.startswith(GATE_CHECK_NAME + " /")),
+        None,
+    )
+    if gate_leg is None:
+        return ("mergeable-state:unstable:no-pr-gate-leg", "")
+    if gate_leg.get("conclusion") != "success":
+        state = (gate_leg.get("conclusion") or gate_leg.get("status")
+                 or "no-verdict")
+        return (f"mergeable-state:unstable:{GATE_CHECK_NAME}:{state}", "")
+
+    jobs = advisory_jobs()
+    advisory_count = 0
+    for name in sorted(latest):
+        if name == gate_leg["name"]:
+            continue
+        if _is_non_blocking(name, jobs):
+            advisory_count += 1
+            continue
+        done = latest_done.get(name)
+        if done is None:
+            return (f"mergeable-state:unstable:{name}:no-completed-leg", "")
+        if done.get("conclusion") not in CHECK_GREEN:
+            return (
+                f"mergeable-state:unstable:{name}:{done.get('conclusion')}",
+                "",
+            )
+    # Le compte du verdict : les checks non bloquants rencontres, et les
+    # jambes annulees d'un run remplace (une jambe annulee qui n'est pas la
+    # derniere terminee de son nom a ete supersedee par une verte).
+    superseded = 0
+    for name, leg in latest_done.items():
+        superseded += sum(
+            1
+            for other in done_legs
+            if other["name"] == name
+            and other.get("conclusion") == "cancelled"
+            and (other.get("started_at") or "", other.get("id") or 0)
+            != (leg.get("started_at") or "", leg.get("id") or 0)
+        )
+    return (
+        None,
+        f"unstable-accepted:{advisory_count + superseded} advisory/cancelled-superseded",
+    )
+
+
 def merge_pr(runner: Runner, pr: int, head: str, gh_env: dict[str, str]) -> None:
     """Etape 7 : squash merge epingle sur la tete evaluee (jamais --admin,
     jamais --delete-branch)."""
@@ -1242,6 +1480,15 @@ def evaluate_pr(
     reason = frozen_umbrella_exclusion(
         view.get("title"), view.get("body"), view.get("headRefName")
     )
+    if reason is not None:
+        return skip(reason)
+    # 2bis. garde Lean (#24989) : une PR qui touche du Lean exige une
+    # attestation de `lake build` local posee par le coordinateur et
+    # couvrant la tete (regle HARD `lean-merge-discipline.md` §1). Placee
+    # AVANT 2ter : une PR sans attestation n'attend pas sa relecture, elle
+    # est bloquee pour un AUTRE motif -- la porter en disposition
+    # ``review-ready`` serait un mensonge.
+    reason = lean_build_attestation_reason(view, view_head, runner, gh_env)
     if reason is not None:
         return skip(reason)
     # 2ter. approbation du coordinateur (Q67) : une PR non lue ne paie pas
@@ -1344,13 +1591,27 @@ def evaluate_pr(
         return skip(reason, stack_state, stack_inc)
     # 6. REST : mergeable + tete.
     state, live_head = mergeable_state_and_head(runner, pr, gh_env)
-    if state != "clean":
+    accepted_detail: str | None = None
+    if state == "unstable":
+        # 6bis (#25059) : `unstable` n'est pas un refus automatique. La chaine
+        # v9 l'acceptait quand le pli latest-wins etait vert ; l'organe qui l'a
+        # remplace ne l'a pas repris, et 13 PRs approuvees a la tete dormaient
+        # la-dessus (mesure du coordinateur, 07/11 13:20Z). La decision est
+        # prise SUR LES JAMBES, au pli du gate : un saut nomme, jamais un refus
+        # muet.
+        reason, detail = unstable_state_reason(
+            runner, pr, live_head or view_head, gh_env
+        )
+        if reason is not None:
+            return skip(reason, stack_state, stack_inc)
+        accepted_detail = detail
+    elif state != "clean":
         return skip(f"mergeable-state:{state or 'absent'}",
                     stack_state, stack_inc)
     if live_head != view_head:
         return skip("head-moved", stack_state, stack_inc)
     return PRVerdict(
-        pr, view_head, "would-merge", None, False,
+        pr, view_head, "would-merge", accepted_detail, False,
         disposition, stack_state, stack_inc,
     )
 
@@ -1522,7 +1783,8 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         exit_code = 1
                         break
                     decision = PRVerdict(
-                        pr, decision.head, "merged", None, True, decision.review,
+                        pr, decision.head, "merged", decision.reason, True,
+                        decision.review,
                         decision.stack, decision.stack_incidents,
                     )
                 merged_count += 1

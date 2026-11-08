@@ -5,8 +5,10 @@ using Xunit.Abstractions;
 namespace MyIA.AI.Shared.Tests.Search.Logic;
 
 /// <summary>
-/// Temoins des six procedures d'inference propositionnelle
-/// (EPIC #7265, volet B2 tranche 1, issue #23584).
+/// Temoins des procedures d'inference propositionnelle
+/// (EPIC #7265, volet B2 tranche 1, issue #23584 ; la septieme, PLFCEntails,
+/// reportee par #23584 puis etablie par lecture du wrapper Aricie, arrivee
+/// avec #21909).
 /// </summary>
 /// <remarks>
 /// Les instances de reference sont celles du chapitre 7 d'AIMA. Les procedures ne
@@ -427,7 +429,7 @@ public sealed class PlInferenceTests
     }
 
     [Fact]
-    public void PlKbInferProcedureInfo_DistribueLesSixProcedures()
+    public void PlKbInferProcedureInfo_DistribueLesSeptProcedures()
     {
         PlKnowledgeBase knowledgeBase = AimaChapter7();
         PlFormula query = PlParser.Parse("B");
@@ -443,5 +445,184 @@ public sealed class PlInferenceTests
             Assert.NotEmpty(result.Question);
             Assert.NotEmpty(result.StepUnit);
         }
+    }
+
+    // --- PLFCEntails : septieme procedure, chainage avant sur clauses definies (#21909) ---
+
+    /// <summary>Chaine definie pure : <c>{A, ~A | B, ~B | C, ~C | D}</c>, faits et regles de Horn uniquement.</summary>
+    private static PlKnowledgeBase HornChained() =>
+        new PlKnowledgeBase()
+            .Tell("A")
+            .Tell("~A | B")
+            .Tell("~B | C")
+            .Tell("~C | D");
+
+    [Fact]
+    public void PLFCEntails_DemontreParModusPonensEnCascade()
+    {
+        // La chaine definie est la forme ou le chainage avant est natif : le fait A
+        // declenche B, puis C, puis D, un symbole infere par maillon.
+        PlKnowledgeBase knowledgeBase = HornChained();
+
+        PlInferenceResult result = PlInference.PLFCEntails(knowledgeBase, PlParser.Parse("D"));
+
+        _output.WriteLine($"{result.Procedure} | {result.Verdict} | {result.Steps} | {result.StepUnit}");
+
+        Assert.Equal(PlVerdict.Yes, result.Verdict);
+        Assert.True(result.IsConclusive);
+        Assert.Equal(4, result.Steps);
+        Assert.Equal("symboles inferes", result.StepUnit);
+    }
+
+    [Fact]
+    public void PLFCEntails_Chapitre7_ConcordeAvecLesProceduresCompletes()
+    {
+        // Falsifiabilite croisee, etendue a la septieme procedure : sur la base du
+        // chapitre 7, le chainage avant doit rendre les memes verdicts que la table,
+        // la resolution et DPLL.
+        PlKnowledgeBase knowledgeBase = AimaChapter7();
+        PlFormula implied = PlParser.Parse("B");
+        PlFormula absent = PlParser.Parse("C");
+
+        Assert.Equal(PlInference.TtEntails(knowledgeBase, implied).Verdict, PlInference.PLFCEntails(knowledgeBase, implied).Verdict);
+        Assert.Equal(PlInference.Resolve(knowledgeBase, implied).Verdict, PlInference.PLFCEntails(knowledgeBase, implied).Verdict);
+        Assert.Equal(PlInference.DpllEntails(knowledgeBase, implied).Verdict, PlInference.PLFCEntails(knowledgeBase, implied).Verdict);
+        Assert.Equal(PlVerdict.No, PlInference.PLFCEntails(knowledgeBase, absent).Verdict);
+    }
+
+    [Fact]
+    public void PLFCEntails_NoEstProuvePasSousEntendu()
+    {
+        // Sur clauses definies, le chainage avant est complet (AIMA th. 7.2) : l'agenda
+        // vide sans deduction est une preuve de non-implication. Le verdict est No,
+        // jamais Unknown -- contrairement a WalkSAT dont l'echec ne prouve rien.
+        PlKnowledgeBase knowledgeBase = HornChained();
+
+        PlInferenceResult result = PlInference.PLFCEntails(knowledgeBase, PlParser.Parse("E"));
+
+        Assert.Equal(PlVerdict.No, result.Verdict);
+        Assert.True(result.IsConclusive);
+    }
+
+    [Fact]
+    public void PLFCEntails_ConcordeAvecLaTableDeVeriteSurUneFamilleDeRequetes()
+    {
+        // Oracle croise systematique : chaque symbole de la chaine definie, plus un
+        // symbole absent. Les verdicts doivent concorder a chaque ligne.
+        PlKnowledgeBase knowledgeBase = HornChained();
+
+        foreach (string symbol in new[] { "A", "B", "C", "D", "E" })
+        {
+            PlFormula query = PlParser.Parse(symbol);
+            PlVerdict oracle = PlInference.TtEntails(knowledgeBase, query).Verdict;
+            PlVerdict forward = PlInference.PLFCEntails(knowledgeBase, query).Verdict;
+
+            _output.WriteLine($"{symbol}: table={oracle} / chainage={forward}");
+
+            Assert.Equal(oracle, forward);
+        }
+    }
+
+    [Fact]
+    public void PLFCEntails_DiscriminationMesureeContreLaTableDeVerite()
+    {
+        // Meme instance (4 symboles), meme verdict, couts d'unites et d'ordres
+        // distincts : 4 symboles inferes contre 16 lignes enumerees. C'est la
+        // falsifiabilite entre procedures de la tranche, etendue a la septieme.
+        PlKnowledgeBase knowledgeBase = HornChained();
+        PlFormula query = PlParser.Parse("D");
+
+        PlInferenceResult forward = PlInference.PLFCEntails(knowledgeBase, query);
+        PlInferenceResult truthTable = PlInference.TtEntails(knowledgeBase, query);
+
+        _output.WriteLine($"{forward.Procedure} | {forward.Verdict} | {forward.Steps} | {forward.StepUnit}");
+        _output.WriteLine($"{truthTable.Procedure} | {truthTable.Verdict} | {truthTable.Steps} | {truthTable.StepUnit}");
+
+        Assert.Equal(PlVerdict.Yes, forward.Verdict);
+        Assert.Equal(PlVerdict.Yes, truthTable.Verdict);
+
+        // Unites distinctes : sans elles, les couts ne seraient pas comparables.
+        Assert.Equal("symboles inferes", forward.StepUnit);
+        Assert.Equal("lignes de table de verite", truthTable.StepUnit);
+
+        // Pincage exact : procedures deterministes, compteurs reproductibles.
+        Assert.Equal(4, forward.Steps);
+        Assert.Equal(16, truthTable.Steps);
+        Assert.True(
+            forward.Steps < truthTable.Steps,
+            $"le chainage avant ({forward.Steps} symboles) doit couter moins que l'enumeration ({truthTable.Steps} lignes)");
+    }
+
+    [Fact]
+    public void PLFCEntails_LaGardeInferredFermeLeCycleDeRegles()
+    {
+        // Cycle P -> Q -> P alimente par le fait P, requete hors du cycle : chaque
+        // symbole est infere une seule fois (garde inferred, fig. 7.15), l'agenda se
+        // vide et la procedure rend No -- une preuve, pas une boucle infinie.
+        PlKnowledgeBase knowledgeBase = new PlKnowledgeBase()
+            .Tell("P")
+            .Tell("~P | Q")
+            .Tell("~Q | P");
+
+        PlInferenceResult result = PlInference.PLFCEntails(knowledgeBase, PlParser.Parse("R"));
+
+        Assert.Equal(PlVerdict.No, result.Verdict);
+        Assert.Equal(2, result.Steps); // P et Q une fois chacun ; la re-tete P n'est pas re-enfilee
+    }
+
+    [Fact]
+    public void PLFCEntails_TermineSurUnCycleDeReglesSansFait()
+    {
+        // Cycle ~P|Q / ~Q|P sans aucun fait : l'agenda initial est vide, la
+        // procedure termine immediatement. Aucun symbole n'est infere.
+        PlKnowledgeBase knowledgeBase = new PlKnowledgeBase()
+            .Tell("~P | Q")
+            .Tell("~Q | P");
+
+        PlInferenceResult result = PlInference.PLFCEntails(knowledgeBase, PlParser.Parse("P"));
+
+        Assert.Equal(PlVerdict.No, result.Verdict);
+        Assert.Equal(0, result.Steps);
+    }
+
+    [Fact]
+    public void PLFCEntails_RefuseUneClauseADeuxTetes()
+    {
+        // A | B porte deux litteraux positifs : ce n'est pas une clause definie.
+        // La procedure declare son domaine au lieu de conclure hors de lui.
+        PlKnowledgeBase knowledgeBase = new PlKnowledgeBase().Tell("A | B");
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => PlInference.PLFCEntails(knowledgeBase, PlParser.Parse("A")));
+
+        Assert.Contains("clause definie", exception.Message);
+    }
+
+    [Fact]
+    public void PLFCEntails_RefuseUneClauseDeContrainte()
+    {
+        // ~P | ~Q ne porte aucun litteral positif : contrainte pure, hors domaine
+        // declare (le chainage avant n'a pas de tete a enfilier).
+        PlKnowledgeBase knowledgeBase = new PlKnowledgeBase()
+            .Tell("P")
+            .Tell("~P | ~Q");
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => PlInference.PLFCEntails(knowledgeBase, PlParser.Parse("Q")));
+
+        Assert.Contains("litteral positif", exception.Message);
+    }
+
+    [Fact]
+    public void PLFCEntails_RefuseUneRequeteComposee()
+    {
+        // Le wrapper Aricie forge un PropositionSymbol pour la requete : la semantique
+        // etablie est l'interrogation d'un symbole, pas d'une formule composee.
+        PlKnowledgeBase knowledgeBase = AimaChapter7();
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => PlInference.PLFCEntails(knowledgeBase, PlParser.Parse("B | C")));
+
+        Assert.Contains("symbole propositionnel", exception.Message);
     }
 }
