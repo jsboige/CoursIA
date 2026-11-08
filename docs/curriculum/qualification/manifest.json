@@ -197,7 +197,7 @@
             "outillage": 1,
             "autonomie": 2
           },
-          "justification": "Prérequis : algèbre linéaire (SVD, cosinus) et probabilités (PPMI) — notions de licence, non enseignées ailleurs dans la série (P2). Outillage : aucun outil du domaine ; NumPy seul (O1). Autonomie : les exercices portent sur la co-occurrence, la valeur de PPMI et les plus proches voisins — adaptation, pas d'algorithme à réécrire (A2). Niveau D2 = max(2, 2). Recherche R1 : le §5 « Mesurer le gain » pose le test décisif (écart entre cosinus congénère et cosinus d'un autre domaine). Les carnets 08 et 09 confrontent leurs vecteurs à l'espace SVD du carnet 07, mais ne rejouent pas ce test congénère contre un autre domaine : l'instrument discriminant reste propre au carnet 07.",
+          "justification": "Prérequis : algèbre linéaire (SVD, cosinus) et probabilités (PPMI) — notions de licence, non enseignées ailleurs dans la série (P2). Outillage : aucun outil du domaine ; NumPy seul (O1). Autonomie : les exercices portent sur la co-occurrence, la valeur de PPMI et les plus proches voisins — adaptation, pas d'algorithme à réécrire (A2). Niveau D2 = max(2, 2). Recherche R1 : le §5 « Mesurer le gain » pose le test décisif (écart entre cosinus congénère et cosinus d'un autre domaine). Le carnet 08 confronte ses vecteurs appris à l'espace SVD du carnet 07, et le carnet 09 confronte à 08 ; aucun des deux ne rejoue ce test congénère contre un autre domaine — l'instrument discriminant reste propre au carnet 07.",
           "mesures": {
             "exercices": 3,
             "cellules_code": 11,
