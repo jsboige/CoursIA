@@ -32,6 +32,7 @@ classement sont pures et testees sur des tables construites a la main, et
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
 import tempfile
@@ -619,6 +620,28 @@ class TestMainEndToEnd(unittest.TestCase):
         noms = [l.split("\t")[0] for l in
                 self.out.read_text(encoding="utf-8").splitlines()[1:]]
         self.assertEqual(noms, ["zeta", "alpha"])
+
+
+class TestPlafondPrsFailClosed(unittest.TestCase):
+    """La garde PLAFOND_PRS (l.167) est fail-closed.
+
+    Reserve Hermes #25257 : la garde etait sans test. Si la liste de PRs
+    atteint le plafond --limit, `gh pr list` la retourne TRONQUEE sans
+    avertissement, et le manifeste serait incomplet (fail-open).
+    `etats_par_branche` doit lever SystemExit au lieu de construire un
+    manifeste partiel.
+    """
+
+    def test_la_garde_leve_systemexit_a_plafond(self):
+        n = organ.PLAFOND_PRS
+        docs = json.dumps([
+            {"headRefName": "b%d" % i, "number": i, "state": "MERGED",
+             "headRefOid": "a" * 40, "baseRefName": "main",
+             "mergeCommit": {"oid": "b" * 40}} for i in range(n)
+        ])
+        with mock.patch.object(organ, "sh", return_value=docs):
+            with self.assertRaises(SystemExit):
+                organ.etats_par_branche(Path("/tmp"))
 
 
 if __name__ == "__main__":
