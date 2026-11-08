@@ -85,7 +85,7 @@ router par handoff implicite et produirait des `Event from an unknown agent`) :
 Le pilote T3 (Google ADK) vit dans la série Track2 :
 
 ```bash
-py -3.11 ../../../ML/DataScienceWithAgents/Track2-GoogleADK/eval-pilots/adk_handoff_pilot.py
+py -3.11 ../../../ML/DataScienceWithAgents/07-Agent-Orchestration/eval-pilots/adk_handoff_pilot.py
 ```
 
 ## Sonde C# (T6)

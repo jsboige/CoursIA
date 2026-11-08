@@ -20,13 +20,13 @@ Source: Cabello, Estebaranz, Garcia-Alcaine,
 Table: Wikipedia "Kochen-Specker theorem" (Overview section), which
        reproduces the original Cabello et al. table.
 
-### Tribute to the calibration harness + Phase 1+ rollout conway_lein (#4980)
+### Tribute to the calibration harness + Phase 1+ rollout conway_lean (#4980)
 
 Pillar 1 of Epic #1651 (Conway-Kochen Free Will Theorem) — a direct structural
 analogue of the c.386 FreeWillTheorem satellite (Pillar 2): the KochenSpecker
 satellite isolates the **combinatorial kernel** (the coloring paradox), while
 FreeWillTheorem uses this kernel as the SPIN axiom in the SPIN + TWIN + MIN
-axiomatic chain. This 9th rollout sub-module `conway_lein` Phase 1+ closes the
+axiomatic chain. This 9th rollout sub-module `conway_lean` Phase 1+ closes the
 sequence of combinatorial sub-modules of the Conway-Kochen-Specker trilogy
 (KochenSpecker + FreeWillTheorem + ...).
 
@@ -66,7 +66,7 @@ As c.380 Doomsday + c.391 Angel, this module is entirely **tractable** by the
 Lean 4 prover + Mathlib 4 = SOTA-OK: the theorem `kochen_specker` is proved
 by `decide` (exhaustive enumeration of the 2^18 colorings) — substance = pure
 combinatorial kernel, outside category theory / cohomology / sheaves (register
-`conway_lein` ≠ `grothendieck_lein`). The **decidability coefficient** is
+`conway_lean` ≠ `grothendieck_lean`). The **decidability coefficient** is
 100 % (`decide` is the canonical tactic for this kind of statement); the
 Kochen-Specker theorem, in its 18-vector Cabello form, is one of the most
 "emblematic" statements of quantum mechanics fundamentally incompatible with
@@ -81,20 +81,20 @@ without internal `---`, as in c.376-c.391).
 
 ### Cycle L335 anti-monoculture Sustained — c.392 = 2nd cycle R6 Sustained intra-R6
 
-- c.391 = 1st cycle R6 Sustained intra-R6 on register `conway_lein` ≠
-  `grothendieck_lein` ≠ `knot_lein` post-c.386 (strict PIVOT mandatory
+- c.391 = 1st cycle R6 Sustained intra-R6 on register `conway_lean` ≠
+  `grothendieck_lean` ≠ `knot_lean` post-c.386 (strict PIVOT mandatory
   R5.4b MUST anti-tunneling post-c.388-c.390)
-- **c.392 = 2nd cycle R6 Sustained intra-R6 on register `conway_lein`** =
-  continuity of the `conway_lein` Phase 1+ register opened post-c.391 =
+- **c.392 = 2nd cycle R6 Sustained intra-R6 on register `conway_lean`** =
+  continuity of the `conway_lean` Phase 1+ register opened post-c.391 =
   return to the satellites of the Conway combinatorial trilogy
   (c.380 Doomsday + c.384 Nim + c.385 CollatzLike + c.386 FreeWillTheorem
   + c.391 Angel + **c.392 KochenSpecker**) after the strict c.391 PIVOT.
-- 9/9 `conway_lein` Phase 1+ sub-modules done after c.392 (rollout
+- 9/9 `conway_lean` Phase 1+ sub-modules done after c.392 (rollout
   Phase 1+ COMPLETE): MathlibMap c.377 + LookAndSay c.378 + Fractran
   c.379 + Doomsday c.380 + Nim c.384 + CollatzLike c.385 + FreeWillTheorem
   c.386 + Angel c.391 + **KochenSpecker c.392** (MERGED — #6250).
-- Post-c.392 rollout Phase 1+ `conway_lein` ACHIEVED: backlog c.393+
-  switch to `grothendieck_lein` Phase 2+ (15 remaining sub-modules:
+- Post-c.392 rollout Phase 1+ `conway_lean` ACHIEVED: backlog c.393+
+  switch to `grothendieck_lean` Phase 2+ (15 remaining sub-modules:
   Calibration, Subcanonical, SieveLattice, CategoryAndSites, DenseTopology,
   CoverageGen, SheafHom, SheafCohomology/{MayerVietoris,Basic}, ConstantSheaf,
   ZariskiSite, Conservative, MayerVietorisSquare, SitePoints, SchemesTour,
