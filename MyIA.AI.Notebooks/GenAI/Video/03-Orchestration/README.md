@@ -59,18 +59,18 @@ pip install -r requirements-video.txt
 
 Le notebook [03-2](03-2-Video-Workflow-Orchestration.ipynb) exécute réellement trois workflows ; les figures ci-dessous sont ses sorties, réduites en WebP pour l'affichage (provenance et poids natifs dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md)).
 
-Le **pipeline 1 (text → image → vidéo)** découple la composition de l'animation : SDXL génère d'abord une image source fidèle au prompt, puis Stable Video Diffusion (SVD) l'anime. L'image ci-dessous est cette source — un phare dressé sur une falaise rocheuse au coucher de soleil, sous des nuages dramatiques baignés d'une lumière dorée (prompt `pipeline1_prompt` du notebook).
+Le **pipeline 1 (text → image → vidéo)** découple la composition de l'animation : **gpt-image-1** génère d'abord une image source fidèle au prompt, puis Stable Video Diffusion (SVD) l'anime. L'image ci-dessous est cette source — un phare dressé sur une falaise rocheuse au coucher de soleil, sous un ciel nuageux, la mer calme au premier plan (prompt `pipeline1_prompt` du notebook : « a majestic lighthouse on a rocky cliff at sunset, dramatic clouds, golden light »).
 
 <p align="center">
-<img src="assets/readme/vid3-workflow1.webp" alt="Image source générée par SDXL : un phare sur une falaise rocheuse au coucher de soleil, nuages dramatiques et lumière dorée" width="420"/><br/>
-<sub><b>Image source SDXL</b> — phare sur falaise au coucher de soleil ; le point de départ du pipeline text → image → vidéo, que SVD anime ensuite</sub>
+<img src="assets/readme/vid3-workflow1.webp" alt="Image source générée par gpt-image-1 : un phare sur une falaise rocheuse au coucher de soleil, ciel nuageux, mer calme" width="420"/><br/>
+<sub><b>Image source gpt-image-1</b> — phare sur falaise, ciel nuageux, mer calme ; le point de départ du pipeline text → image → vidéo, que SVD anime ensuite</sub>
 </p>
 
-La planche-contact suivante montre le pipeline complet : la source SDXL, puis les frames 1, 9, 17 et 25 de la vidéo générée — on y voit le sujet évoluer (et dériver) au fil de l'animation.
+La planche-contact suivante montre le pipeline complet : la source gpt-image-1, puis les frames 1, 9, 17 et 25 de la vidéo générée — on y voit le sujet évoluer (et dériver) au fil de l'animation.
 
 <p align="center">
-<img src="assets/readme/vid3-workflow2.webp" alt="Planche-contact du pipeline text-image-vidéo : image source SDXL puis frames 1, 9, 17 et 25 de la vidéo générée" width="640"/><br/>
-<sub><b>Pipeline text → image → vidéo</b> — planche-contact : source SDXL puis frames 1/9/17/25 de l'animation SVD</sub>
+<img src="assets/readme/vid3-workflow2.webp" alt="Planche-contact du pipeline text-image-vidéo : image source gpt-image-1 puis frames 1, 9, 17 et 25 de la vidéo générée" width="640"/><br/>
+<sub><b>Pipeline text → image → vidéo</b> — planche-contact : source gpt-image-1 puis frames 1/9/17/25 de l'animation SVD</sub>
 </p>
 
 Le **pipeline 2 (text → vidéo → upscale → interpolation)** part de LTX-Video (rapide, basse résolution) puis post-traite : upscale (Real-ESRGAN, repli bicubique) et interpolation de frames. La grille comparative oppose quatre frames brutes (1 à 25, en haut) aux frames finales (1 à 49, en bas) sur un plan de marguerite : l'interpolation double la cadence à contenu constant.
