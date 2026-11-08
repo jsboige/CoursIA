@@ -41,6 +41,22 @@ BIRTHS = REPO_ROOT / "scripts" / "lean" / "lean_births.json"
 COVERAGE = REPO_ROOT / "scripts" / "lean" / "check_axiom_gate_coverage.py"
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 
+# Budget de l'organe de couverture. Mesure du 2026-11-07 sur ai-01 : 634 s
+# puis 658 s (deux passes) -- le seuil de 300 s etait SOUS la duree reelle.
+# L'echec etait alors avale en silence (cf `_coverage`) et la page rendue
+# disait `hors matrice` pour les 41 lacs, alors que la couverture mesuree
+# en donne 34 gated / 35 matrice / 2 sans gate. Regeneree avec une couverture
+# reellement mesuree, la page est IDENTIQUE octet pour octet a la page
+# commitee : la page est saine, le seuil etait le defaut.
+COVERAGE_TIMEOUT = 1800
+
+# Code de sortie conventionnel des generateurs : « je n'ai pas pu mesurer ».
+# Distinct de 1 (`PERIMEE`) : la page peut etre parfaitement saine, c'est la
+# machine qui n'a pas repondu a l'organe amont. Le garde des pages derivees
+# (`scripts/lean/check_lean_derived_pages.py`) classifie ce code
+# explicitement au lieu de le lire comme une divergence de l'arbre.
+UNMEASURABLE_RC = 2
+
 GENERATED_HEADER = (
     "<!-- fichier genere par scripts/lean/lean_material_map.py -- "
     "ne pas editer a la main ; relancer le generateur -->"
@@ -141,8 +157,24 @@ def _declared_lakes() -> dict[str, dict]:
     return out
 
 
+class CoverageUnavailable(RuntimeError):
+    """L'organe de couverture n'a pas repondu : la page ne peut pas etre certifiee."""
+
+
 def _coverage() -> dict:
-    """Le verdict du gate d'axiomes, s'il est joignable ; sinon un verdict neutre."""
+    """Le verdict du gate d'axiomes.
+
+    Fail-closed. Un organe amont injoignable ne rend pas un « verdict neutre » :
+    il rend une page **FAUSSE**. Rendre `{}` faisait dire `hors matrice` a
+    tous les lacs, le `--check` qui suivait rendait alors `A JOUR` sur cette
+    page fausse, et le `--write` ecracait une page correcte par une page
+    fausse -- sans qu'aucune erreur ne soit levee. Mesure du 2026-11-07 : le
+    seuil de 300 s etait sous la duree reelle de l'organe (634-658 s), donc
+    l'echec etait **deterministe** sur cette machine, pas aleatoire.
+
+    L'echec est donc remonte : le generateur refuse d'ecrire et refuse de
+    declarer la page a jour.
+    """
     try:
         r = subprocess.run(
             [sys.executable, "-I", str(COVERAGE), "--ref", "HEAD", "--json"],
@@ -151,13 +183,22 @@ def _coverage() -> dict:
             encoding="utf-8",
             errors="replace",
             cwd=str(REPO_ROOT),
-            timeout=300,
+            timeout=COVERAGE_TIMEOUT,
         )
-        if r.returncode == 0 and r.stdout.strip():
-            return json.loads(r.stdout)
-    except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
-        pass
-    return {}
+    except subprocess.TimeoutExpired:
+        raise CoverageUnavailable(
+            "timeout de %d s sur %s" % (COVERAGE_TIMEOUT, COVERAGE.name))
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise CoverageUnavailable(
+            "appel impossible de %s : %s" % (COVERAGE.name, exc))
+    if r.returncode != 0:
+        raise CoverageUnavailable(
+            "rc=%d sur %s" % (r.returncode, COVERAGE.name))
+    try:
+        return json.loads(r.stdout)
+    except json.JSONDecodeError as exc:
+        raise CoverageUnavailable(
+            "sortie illisible de %s : %s" % (COVERAGE.name, exc))
 
 
 def _sorry_by_lake() -> dict[str, int]:
@@ -839,7 +880,26 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--with-sorry", action="store_true", help="ajoute la dette formelle")
     args = parser.parse_args(argv)
 
-    data = collect(with_sorry=args.with_sorry)
+    try:
+        data = collect(with_sorry=args.with_sorry)
+    except CoverageUnavailable as exc:
+        # Ni `--write` ni `--check` ne s'executent : la page sur disque n'est
+        # pas touchee (elle peut etre saine), et le verdict ne porte pas sur
+        # une page que l'on n'a pas reellement mesuree.
+        print("COUVERTURE INJOIGNABLE : la page derivee ne peut pas etre certifiee.")
+        print(
+            "Ni --write ni --check ne sont executes : la page sur disque n'est"
+            " pas modifiee."
+        )
+        print(
+            "Ce n'est pas une divergence de l'arbre : c'est la machine qui n'a"
+            " pas repondu. NE PAS regenerer ici."
+        )
+        # La cause est en DERNIER : le garde des pages derivees lit la derniere
+        # ligne du generateur pour nommer le defaut.
+        print("Cause : %s" % exc)
+        return UNMEASURABLE_RC
+
     rows = data["lakes"]
     orphans = data["orphans"]
     if args.json:
