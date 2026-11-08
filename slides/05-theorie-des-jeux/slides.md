@@ -176,7 +176,7 @@ layout: dense
 
 ## Stratégie mixte dominant strictement une pure
 
-- Ex: 3 lignes, milieu dominee, calcul des probas
+- Ex: trois lignes, milieu dominee, calcul des probas
 
 ## Dominance faible
 
