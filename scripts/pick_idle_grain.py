@@ -9780,6 +9780,237 @@ def apply_belt_weights(pool: list[dict], *, rng: random.Random,
     }
 
 
+BELT_REPLAY_SCHEMA = "coursia-belt-replay-input-v1"
+BELT_REPLAY_MAX_AGE_SECONDS = 1800
+BELT_REPLAY_MIN_FAMILY_RATIO = 0.80
+
+
+class BeltReplayError(ValueError):
+    """L'instantane ne contient pas les donnees necessaires au rejeu."""
+
+
+def validate_belt_replay_input(payload: dict, replay_at: str) -> dict:
+    """Valide toutes les preuves d'entree avant de consommer la moindre graine.
+
+    Le fichier est un export du tapis live. Sa provenance de transport reste
+    celle de ``coordination.gh_snapshot`` ; les verdicts claims et les familles
+    sont les donnees preparees par le producteur, pas des conclusions recalculees
+    depuis le tail de commentaires d'une issue.
+    """
+    if not isinstance(payload, dict) or payload.get("schema") != BELT_REPLAY_SCHEMA:
+        raise BeltReplayError("schema de rejeu absent ou inconnu")
+    try:
+        moment = dt.datetime.fromisoformat(replay_at.replace("Z", "+00:00"))
+        exported = dt.datetime.fromisoformat(
+            str(payload["source"]["computed_at"]).replace("Z", "+00:00"))
+        refreshed = dt.datetime.fromisoformat(
+            str(payload["source"]["gh_snapshot_refreshed_at"]).replace(
+                "Z", "+00:00"))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise BeltReplayError("date ou provenance d'instantane illisible") from exc
+    if (moment.tzinfo is None or exported.tzinfo is None
+            or refreshed.tzinfo is None
+            or moment.utcoffset() != dt.timedelta(0)
+            or exported.utcoffset() != dt.timedelta(0)
+            or refreshed.utcoffset() != dt.timedelta(0)):
+        raise BeltReplayError("les dates du rejeu doivent etre en UTC")
+    if moment != exported:
+        raise BeltReplayError("--belt-replay-at doit etre la date exacte de l'export")
+    if payload.get("repo") != REPO or payload["source"].get("repo") != REPO:
+        raise BeltReplayError("depot de l'export different du depot courant")
+    if payload["source"].get("gh_snapshot_version") != 1:
+        raise BeltReplayError("version gh_snapshot absente ou incompatible")
+    if payload["source"].get("transport") != \
+            "scripts/coordination/gh_snapshot.py":
+        raise BeltReplayError("transport source absent ou incompatible")
+    age = (moment - refreshed).total_seconds()
+    if age < 0 or age > BELT_REPLAY_MAX_AGE_SECONDS:
+        raise BeltReplayError("instantane gh_snapshot perime a la date du rejeu")
+
+    pool = payload.get("pool")
+    if not isinstance(pool, list) or not pool:
+        raise BeltReplayError("pool exporte absent ou vide")
+    numbers = [it.get("number") for it in pool if isinstance(it, dict)]
+    if len(numbers) != len(pool) or any(not isinstance(n, int) for n in numbers):
+        raise BeltReplayError("pool exporte malforme")
+    if len(set(numbers)) != len(numbers):
+        raise BeltReplayError("numero duplique dans le pool")
+    for item in pool:
+        if (not isinstance(item.get("title"), str)
+                or not isinstance(item.get("labels"), list)
+                or not isinstance(item.get("klass"), str)
+                or item.get("family") is not None
+                and not isinstance(item.get("family"), str)):
+            raise BeltReplayError("champs de candidat incomplets")
+
+    signal = payload.get("family_signal")
+    if not isinstance(signal, dict) or signal.get("measured") is not True:
+        raise BeltReplayError("mesure de familles absente")
+    resolved = sum(1 for it in pool if it.get("family"))
+    ratio = resolved / len(pool)
+    if signal.get("total") != len(pool) or signal.get("resolved") != resolved:
+        raise BeltReplayError("mesure de familles incoherente avec le pool")
+    if signal.get("ratio") != round(resolved / len(pool), 3):
+        raise BeltReplayError("ratio de familles incoherent avec le pool")
+    if ratio < BELT_REPLAY_MIN_FAMILY_RATIO:
+        raise BeltReplayError(
+            f"couverture des familles insuffisante pour le rejeu ({ratio:.1%})")
+
+    window = payload.get("claim_window")
+    claim_payloads = payload.get("claim_payloads")
+    stamps = payload["source"].get("claim_comment_stamps")
+    if (not isinstance(window, list) or not window
+            or not isinstance(claim_payloads, dict)):
+        raise BeltReplayError("fenetre ou payloads de claims absents")
+    if len(set(window)) != len(window) or set(window) != set(numbers):
+        raise BeltReplayError("fenetre de claims incoherente avec le pool")
+    claim_keys = {str(n) for n in numbers}
+    if set(claim_payloads) != claim_keys:
+        raise BeltReplayError("payload de commentaire manquant ou hors pool")
+    if not isinstance(stamps, dict) or set(stamps) != claim_keys:
+        raise BeltReplayError("horodatage de commentaire manquant pour un claim")
+    for key in claim_keys:
+        stamp = stamps.get(key)
+        if (isinstance(stamp, bool) or not isinstance(stamp, (int, float))
+                or not math.isfinite(float(stamp))):
+            raise BeltReplayError(f"horodatage de claim invalide pour #{key}")
+        stamp_age = moment.timestamp() - float(stamp)
+        if stamp_age < 0 or stamp_age > BELT_REPLAY_MAX_AGE_SECONDS:
+            raise BeltReplayError(f"claim perime pour #{key}")
+        comments = claim_payloads.get(key)
+        if not isinstance(comments, list):
+            raise BeltReplayError(f"payload de commentaires invalide pour #{key}")
+        if any(not isinstance(comment, dict)
+               or not isinstance(comment.get("body"), str)
+               or not isinstance(comment.get("createdAt"), str)
+               for comment in comments):
+            raise BeltReplayError(f"commentaire incomplet pour #{key}")
+
+    if not isinstance(payload.get("series"), dict):
+        raise BeltReplayError("donnees de series absentes")
+    if not isinstance(payload.get("issue_to_family"), dict):
+        raise BeltReplayError("correspondance issue-famille absente")
+    if not isinstance(payload.get("merged_prs"), list):
+        raise BeltReplayError("corpus de PR fusionnees absent")
+    if not isinstance(payload.get("closed_issues"), list):
+        raise BeltReplayError("corpus d'issues fermees absent")
+    if not isinstance(payload.get("closed_error"), (str, type(None))):
+        raise BeltReplayError("etat du corpus de fermetures invalide")
+    if not isinstance(payload.get("seed_source"), str) or not payload["seed_source"]:
+        raise BeltReplayError("graine de production absente")
+    if (isinstance(payload.get("open_count"), bool)
+            or not isinstance(payload.get("open_count"), int)
+            or payload["open_count"] < len(pool)):
+        raise BeltReplayError("taille du pool ouvert invalide")
+    if (any(not isinstance(item, dict) for item in payload["merged_prs"])
+            or any(not isinstance(item, dict) for item in payload["closed_issues"])):
+        raise BeltReplayError("corpus bandit malforme")
+    return {"moment": moment, "pool": pool, "ratio": ratio,
+            "claim_window": window, "claim_payloads": claim_payloads}
+
+
+def replay_belt_weights(payload: dict, replay_at: str, *, head: int = 50) -> dict:
+    """Rejoue le classement avec la fonction de poids appelee en production."""
+    validated = validate_belt_replay_input(payload, replay_at)
+    seed = int(hashlib.sha256(payload["seed_source"].encode()).hexdigest()[:16], 16)
+    pool = copy.deepcopy(validated["pool"])
+    signal = apply_belt_weights(
+        pool, rng=random.Random(seed), merged_prs=payload["merged_prs"],
+        closed_issues=payload["closed_issues"],
+        closed_error=payload["closed_error"],
+        open_count=int(payload["open_count"]), series=payload["series"],
+        issue_to_family={int(k): v for k, v in payload["issue_to_family"].items()},
+        zones=payload["series"], now=validated["moment"], head=head,
+    )
+    return {
+        "mode": "simulation-rejeu-ordre",
+        "service_effectif": False,
+        "limite": "simulation du classement; aucun grain n'est claim ou servi",
+        "source": copy.deepcopy(payload["source"]),
+        "replay_at": replay_at,
+        "seed_source": payload["seed_source"],
+        "family_coverage": {
+            "resolved": signal["scored"] - sum(
+                1 for it in pool if not it.get("family")),
+            "total": signal["scored"],
+            "ratio": round(validated["ratio"], 3),
+        },
+        "claim_payloads": len(validated["claim_payloads"]),
+        "weighted_head": signal["weighted_head"],
+        "picks": [{"number": it["number"], "title": it["title"],
+                   "klass": it["klass"], "family": it.get("family"),
+                   "belt_score_class": it.get("belt_score_class")}
+                  for it in pool[:head]],
+        "bandit_measured": signal["measured"],
+        "bandit_error": signal["error"],
+    }
+
+
+def write_belt_replay_input(path: str | pathlib.Path, payload: dict) -> pathlib.Path:
+    """Ecrit hors depot un export prepare par le tapis live."""
+    target = pathlib.Path(path).expanduser().resolve()
+    repo_root = pathlib.Path(__file__).resolve().parents[1]
+    if target == repo_root or repo_root in target.parents:
+        raise BeltReplayError("export de rejeu interdit dans le depot Git")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+                      encoding="utf-8")
+    return target
+
+
+def build_belt_replay_input(*, pool: list[dict], family_signal: dict,
+                            series: dict, issue_to_family: dict,
+                            merged_prs: list[dict], closed_issues: list[dict],
+                            closed_error: str | None, open_count: int,
+                            seed_source: str, snapshot: dict,
+                            computed_at: dt.datetime) -> dict:
+    """Prepare un export à partir de l'instantané canonique déjà chargé."""
+    gh_snapshot = _gh_snapshot_module()
+    numbers = [int(item["number"]) for item in pool]
+    if not gh_snapshot.serves(snapshot, numbers):
+        raise BeltReplayError(
+            "gh_snapshot ne sert pas des commentaires frais pour tout le pool")
+    meta = snapshot.get("meta") or {}
+    comments = snapshot.get("comments") or {}
+    stamps = meta.get("comment_stamps") or {}
+    claim_payloads = {}
+    for number in numbers:
+        key = str(number)
+        payload = comments.get(key, comments.get(number))
+        if not isinstance(payload, list):
+            raise BeltReplayError(f"commentaires canoniques absents pour #{number}")
+        claim_payloads[key] = payload
+    computed_iso = computed_at.astimezone(dt.timezone.utc).strftime(
+        "%Y-%m-%dT%H:%M:%SZ")
+    replay_input = {
+        "schema": BELT_REPLAY_SCHEMA,
+        "repo": REPO,
+        "source": {
+            "transport": "scripts/coordination/gh_snapshot.py",
+            "repo": meta.get("repo"),
+            "gh_snapshot_version": meta.get("version"),
+            "gh_snapshot_refreshed_at": meta.get("refreshed_at"),
+            "computed_at": computed_iso,
+            "claim_comment_stamps": {
+                str(n): stamps.get(str(n), stamps.get(n)) for n in numbers
+            },
+        },
+        "pool": copy.deepcopy(pool),
+        "claim_window": numbers,
+        "claim_payloads": claim_payloads,
+        "family_signal": copy.deepcopy(family_signal),
+        "series": copy.deepcopy(series),
+        "issue_to_family": {str(k): v for k, v in issue_to_family.items()},
+        "merged_prs": copy.deepcopy(merged_prs),
+        "closed_issues": copy.deepcopy(closed_issues),
+        "closed_error": closed_error,
+        "open_count": int(open_count),
+        "seed_source": seed_source,
+    }
+    validate_belt_replay_input(replay_input, computed_iso)
+    return replay_input
+
+
 def draw_belt(
     admitted: list[dict],
     args,
@@ -11945,22 +12176,7 @@ def main(argv: list[str] | None = None) -> int:
     for _stream in (sys.stdout, sys.stderr):
         if hasattr(_stream, "reconfigure"):
             _stream.reconfigure(encoding="utf-8", errors="replace")
-    # #17418 Phase A : epingle le jeton machine AVANT tout appel gh — les
-    # enfants (check_lane_claim, nits...) heritent via os.environ propage par
-    # _utf8_child_env(). Warn-fort + poursuite : le FAIL bruyant est porte
-    # par gh_identity --whoami et detect_shared_login.py (transition B/C).
-    # #20923 : on capture aussi l'evenement dans un flag de portee main(),
-    # parce que la defense en profondeur (validate_picks_live) doit savoir
-    # si elle sert un environnement WARN ou un environnement nominal. En
-    # WARN, le picker continue sous le compte actif (cf #17418) et le pool
-    # est plus sujet a presenter des candidats obsoletes : la validation
-    # live s'impose. En nominal, elle reste opt-in via --belt-validate.
     warn_gh_identity: bool = False
-    try:
-        gh_identity.pin_gh_token()
-    except gh_identity.GhIdentityError as exc:
-        warn_gh_identity = True
-        print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lane", default=None,
@@ -12024,6 +12240,16 @@ def main(argv: list[str] | None = None) -> int:
                          "numero. Pas de ponderation, pas d'urne. Les gardes "
                          "(rouge, WIP, secheresse) restent en tete et rende la "
                          "file comme rappel, jamais comme motif de vide.")
+    ap.add_argument("--belt-replay-export", default=None, metavar="PATH",
+                    help="#25082 : exporter hors depot les entrees preparees "
+                         "par un tapis live pour un rejeu deterministe. Requiert "
+                         "--belt ; ne valide pas un service effectif.")
+    ap.add_argument("--belt-replay-input", default=None, metavar="PATH",
+                    help="#25082 : simuler le classement depuis un export "
+                         "prepare ; aucun appel GitHub ni claim n'est emis.")
+    ap.add_argument("--belt-replay-at", default=None, metavar="ISO-UTC",
+                    help="#25082 : date exacte de l'export a rejouer. Requise "
+                         "avec --belt-replay-input.")
     ap.add_argument("--report", action="store_true",
                     help="avec --belt : affiche deux nombres - ecart maximal (en "
                          "jours) depuis la derniere visite sur les issues "
@@ -12194,8 +12420,42 @@ def main(argv: list[str] | None = None) -> int:
         ap.error("--wip-reason n'a de sens qu'avec --ignore-wip")
     if args.wip_cap < 0:
         ap.error("--wip-cap doit etre positif ou nul (0 desactive le garde)")
-    if not args.lane and not args.orphans_report and args.admissible is None:
+    if not args.lane and not args.orphans_report and args.admissible is None \
+            and not args.belt_replay_input:
         ap.error("--lane est requis (--orphans-report et --admissible s'en dispensent)")
+    if args.belt_replay_input:
+        if not args.belt_replay_at:
+            ap.error("--belt-replay-input exige --belt-replay-at")
+        if args.belt_replay_export:
+            ap.error("--belt-replay-input et --belt-replay-export sont exclusifs")
+        try:
+            raw = pathlib.Path(args.belt_replay_input).read_text(encoding="utf-8")
+            payload = json.loads(raw)
+            result = replay_belt_weights(payload, args.belt_replay_at,
+                                         head=args.grains)
+        except (OSError, json.JSONDecodeError, BeltReplayError) as exc:
+            print(json.dumps({"mode": "simulation-rejeu-ordre",
+                              "error": str(exc), "draw": "aucun"},
+                             ensure_ascii=False, indent=2))
+            return 2
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0
+    if args.belt_replay_at:
+        ap.error("--belt-replay-at ne s'utilise qu'avec --belt-replay-input")
+    if args.belt_replay_export and not args.belt:
+        ap.error("--belt-replay-export requiert --belt")
+    # #17418 Phase A : epingle le jeton machine AVANT tout appel gh — les
+    # enfants (check_lane_claim, nits...) heritent via os.environ propage par
+    # _utf8_child_env(). Warn-fort + poursuite : le FAIL bruyant est porte
+    # par gh_identity --whoami et detect_shared_login.py (transition B/C).
+    # #20923 : on capture aussi l'evenement dans un flag de portee main(),
+    # parce que la defense en profondeur (validate_picks_live) doit savoir
+    # si elle sert un environnement WARN ou un environnement nominal.
+    try:
+        gh_identity.pin_gh_token()
+    except gh_identity.GhIdentityError as exc:
+        warn_gh_identity = True
+        print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     if args.report and not args.belt:
         ap.error("--report n'a de sens qu'avec --belt (mode rapport du tapis roulant)")
     # #20053 : les deux modes du tableau partage portent sur la TETE DU TAPIS.
@@ -12987,6 +13247,9 @@ def main(argv: list[str] | None = None) -> int:
                 settle_belt_head(belt_pool, belt_check_window, latest_claim_stamp,
                                  max_probes=belt_check_window * 3 + 12)
                 _belt_phase("settle_belt_head fait: chemin unitaire (bulk absent)")
+        # Exporte une copie AVANT la repondersion : le rejeu doit pouvoir
+        # rappeler exactement la fonction de production, avec la meme graine.
+        belt_replay_pool = copy.deepcopy(belt_pool)
         # #25082 A + B -- la REPONDERION du tapis : recompense de fermeture
         # par bras (bandit de Thompson) et prior de consolidation.
         # Des POIDS SEULEMENT (decision user du 12/10) : l'ordre de service
@@ -12994,10 +13257,15 @@ def main(argv: list[str] | None = None) -> int:
         # Le corpus des PRs mergees est celui du DEJA mesure (fenetre de
         # livraison) : la recompense lit la meme fenetre, sans appel reseau
         # supplementaire ; seule la lecture des issues fermees en ajoute un.
+        closed_issues, closed_error = fetch_closed_issues(
+            BANDIT_WINDOW_DAYS, now=NOW)
+        seed_source, belt_rng = run_rng(args, NOW)
         belt_weight_signal = apply_belt_weights(
             belt_pool,
-            rng=run_rng(args, NOW)[1],
+            rng=belt_rng,
             merged_prs=delivery_prs,
+            closed_issues=closed_issues,
+            closed_error=closed_error,
             open_count=len(pool),
             series=series,
             issue_to_family=issue_to_family,
@@ -13045,6 +13313,30 @@ def main(argv: list[str] | None = None) -> int:
         belt_claims = check_claims(belt_check_nums, args.lane,
                                     strict_snapshot=True)
         _belt_phase(f"claims faits: {len(belt_claims)} verdicts")
+        if args.belt_replay_export:
+            try:
+                gh_snapshot = _gh_snapshot_module()
+                source_snapshot = gh_snapshot.load_snapshot(REPO)
+                replay_input = build_belt_replay_input(
+                    pool=belt_replay_pool,
+                    family_signal=belt_family_signal,
+                    series=series,
+                    issue_to_family=issue_to_family,
+                    merged_prs=delivery_prs,
+                    closed_issues=closed_issues,
+                    closed_error=closed_error,
+                    open_count=len(pool),
+                    seed_source=seed_source,
+                    snapshot=source_snapshot,
+                    computed_at=NOW,
+                )
+                path = write_belt_replay_input(args.belt_replay_export,
+                                               replay_input)
+                print(f"(entrees de rejeu #25082 exportees hors depot : {path})",
+                      file=sys.stderr)
+            except (BeltReplayError, OSError) as exc:
+                print(f"(export de rejeu #25082 non produit : {exc})",
+                      file=sys.stderr)
         if belt_claims and all(
                 code == CLAIM_CODE_BLOCKED
                 and human == CLAIM_HUMAN_SNAPSHOT_ABSENT

@@ -104,6 +104,27 @@ python scripts/translation/extract_cells_to_csv.py notebook.ipynb -o poc.csv
 Le script est la couche T1 de l'infrastructure #4957 ; le drift-detection CI (T2) et la
 resync par le moteur Argumentum (T3, gated #1650 Phase 1) viennent dans les tranches suivantes.
 
+### `pick_idle_grain.py` — rejouer le classement pondéré du tapis
+
+Un passage live peut exporter ses entrées préparées, hors du dépôt. L'export
+réutilise les payloads et horodatages du transport canonique
+[`gh_snapshot.py`](coordination/gh_snapshot.py) ; il est refusé si les
+commentaires du pool sont absents ou périmés.
+
+```bash
+python scripts/pick_idle_grain.py --belt --lane myia-ai-01:CoursIA-2 \
+  --grains 50 --belt-replay-export /tmp/belt-replay.json
+python scripts/pick_idle_grain.py --belt-replay-input /tmp/belt-replay.json \
+  --belt-replay-at DATE_UTC_EXPORT --grains 50
+```
+
+Remplacer `DATE_UTC_EXPORT` par la valeur `source.computed_at` du JSON.
+Le second appel n'utilise aucun transport : il valide d'abord la date, les
+claims/commentaires complets et frais, et la couverture des familles, puis
+appelle la même fonction de pondération que le mode live. Il simule un ordre
+de classement ; il ne claim ni ne sert de grain et ne prouve pas l'acceptance
+sur la flotte.
+
 ## Installation
 
 ```bash
