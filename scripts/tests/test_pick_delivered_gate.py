@@ -713,3 +713,46 @@ def test_open_cover_signal_exige_l_ancre_diese(monkeypatch):
     monkeypatch.setattr(pig.subprocess, "run",
                         lambda *a, **kw: _Proc(anchored))
     assert open_cover_signal(16682) == "PR #17452"
+
+
+# --- #16589 : le rapport de sondage dit sa borne inferieure -----------------
+#
+# Releve po-2025 du 2026-11-03 : quand le plafond de sondes a coupe, un
+# `withheld` vide se lisait « rien a signaler » alors que la fin d'urne
+# n'etait pas verifiee. Le texte doit porter la lecture honnete.
+
+def test_rapport_budget_epuise_dit_la_borne_inferieure(capsys):
+    """budget_hit : les ecartes listes sont une borne inferieure, pas un
+    etat propre."""
+    state = {"failures": [], "budget_hit": True}
+    withheld = [(_item(1), "LIVRAISON : label present")]
+    print_delivered_signal_report(withheld, state, False)
+    out = capsys.readouterr().out
+    assert "BORNE INFERIEURE" in out
+    assert "NON SONDE" in out
+
+
+def test_rapport_sans_budget_epuise_ne_dit_pas_borne(capsys):
+    """Sans plafond coupe, pas de mention de borne : la liste est complete."""
+    state = {"failures": [], "budget_hit": False}
+    withheld = [(_item(1), "LIVRAISON : label present")]
+    print_delivered_signal_report(withheld, state, False)
+    out = capsys.readouterr().out
+    assert "BORNE INFERIEURE" not in out
+
+
+def test_le_rapport_de_sondage_precede_le_tableau_pondere():
+    """#16589 demande 1c (volet pondere) : l'annonce « fin d'urne non
+    sondee » doit preceder le tableau de tirage -- le lecteur choisit un
+    candidat en sachant lesquels n'ont pas ete verifies. Tripwire d'ordre
+    source : le call site (voie ponderee) doit apparaitre avant l'entete
+    du tableau pondere dans le fichier."""
+    src = pig.__file__
+    text = Path(src).read_text(encoding="utf-8")
+    call = text.find("print_delivered_signal_report(withheld, delivered_state,")
+    header = text.find("{'urne':<10} {'issue':<8} {'age':>5}")
+    assert call != -1, "call site du rapport introuvable"
+    assert header != -1, "entete du tableau pondere introuvable"
+    assert call < header, (
+        "le rapport de sondage est emis APRES le tableau pondere "
+        f"(call={call}, header={header}) -- demande 1c recassee")

@@ -1793,7 +1793,7 @@ def test_fingerprint_refusal_names_the_live_surface_landscape():
 # le gel se mesure sur #11601, seul parapluie gele en vie.
 FROZEN_TITLE = "enrich(qc,#11601): densite QC-Py-06b"
 REDRESSEMENT_TITLE = (
-    "fix(semanticweb,#17066): redressement critique de SW-4-CSharp-SPARQL "
+    "fix(semanticweb,#17066): redressement critique de SW-04-SPARQL-CSharp "
     "-- reference de campagne"
 )
 
