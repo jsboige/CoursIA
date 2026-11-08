@@ -10,6 +10,7 @@ TOOLS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(TOOLS))
 
 from check_cell_id_invalid_ratchet import compare, invalid_count, main as ratchet_main  # noqa: E402
+import fix_cell_ids as fixer  # noqa: E402
 from fix_cell_ids import repair_text  # noqa: E402
 
 
@@ -25,8 +26,7 @@ def _cell(cell_type="code", id_line=None):
 
 
 def test_fixer_changes_only_id_lines_preserves_other_bytes_and_is_idempotent(monkeypatch):
-    # Les seules recherches de références concernent les deux ids existants.
-    monkeypatch.setattr(subprocess, "run", lambda *a, **kw: subprocess.CompletedProcess(a[0], 1, "", ""))
+    monkeypatch.setattr(fixer, "_external_references", lambda *_: [])
     raw = _notebook([
         _cell(id_line=None),
         _cell("markdown", '"bad id!"'),
@@ -51,10 +51,7 @@ def test_fixer_changes_only_id_lines_preserves_other_bytes_and_is_idempotent(mon
 
 
 def test_external_reference_blocks_renaming_existing_invalid_id(monkeypatch):
-    def grep(*args, **kwargs):
-        return subprocess.CompletedProcess(args[0], 0, "translations.csv:1:bad id!\n", "")
-
-    monkeypatch.setattr(subprocess, "run", grep)
+    monkeypatch.setattr(fixer, "_external_references", lambda *_: ["translations.csv:1:bad id!"])
     raw = _notebook([_cell(id_line='"bad id!"')])
     try:
         repair_text(raw, Path("fixture.ipynb"))
@@ -62,6 +59,79 @@ def test_external_reference_blocks_renaming_existing_invalid_id(monkeypatch):
         assert "référencé hors du carnet" in str(exc)
     else:
         raise AssertionError("une référence externe doit bloquer le renommage")
+
+
+def test_fixer_cli_preserves_crlf_bytes_and_is_idempotent(tmp_path):
+    raw = _notebook([_cell(id_line=None)]).replace("\n", "\r\n").encode("utf-8")
+    path = tmp_path / "crlf.ipynb"
+    path.write_bytes(raw)
+    assert fixer.main([str(path)]) == 0
+    fixed = path.read_bytes()
+    assert b"\r\n" in fixed
+    assert not re.search(rb"(?<!\r)\n", fixed)
+    assert [line for line in raw.split(b"\r\n") if b'"id":' not in line] == [
+        line for line in fixed.split(b"\r\n") if b'"id":' not in line
+    ]
+    assert fixer.main([str(path)]) == 0
+    assert path.read_bytes() == fixed
+    assert invalid_count(fixed.decode("utf-8")) == 0
+
+
+def test_fixer_uses_top_level_cells_when_metadata_also_has_cells():
+    raw = '{"metadata":{"cells":[{"cell_type":"markdown","source":["keep"]}]},' \
+          '"cells":[{"cell_type":"code","metadata":{"keep":true},"source":[]}],' \
+          '"nbformat":4,"nbformat_minor":5}'
+    fixed = repair_text(raw, Path("metadata-cells.ipynb"))
+    result = json.loads(fixed)
+    assert result["metadata"]["cells"] == [{"cell_type": "markdown", "source": ["keep"]}]
+    assert len(result["cells"]) == 1
+    assert result["cells"][0]["id"]
+    assert result["cells"][0]["source"] == []
+
+
+def test_fixer_supports_compact_json_without_corrupting_prefix(tmp_path):
+    raw = '{"cells":[{"cell_type":"code","metadata":{"keep":true},"source":[]}],' \
+          '"metadata":{"keep":"root"},"nbformat":4,"nbformat_minor":5}'
+    path = tmp_path / "compact.ipynb"
+    path.write_text(raw, encoding="utf-8", newline="")
+    assert fixer.main([str(path)]) == 0
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        fixed = handle.read()
+    assert json.loads(fixed)["cells"][0]["metadata"] == {"keep": True}
+    assert json.loads(fixed)["metadata"] == {"keep": "root"}
+    assert invalid_count(fixed) == 0
+    assert fixer.main([str(path)]) == 0
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        assert handle.read() == fixed
+
+
+def test_absolute_notebook_path_is_excluded_but_external_csv_blocks(tmp_path, monkeypatch):
+    def git(*args):
+        subprocess.run(["git", *args], cwd=tmp_path, check=True,
+                       capture_output=True, text=True, encoding="utf-8")
+
+    monkeypatch.chdir(tmp_path)
+    git("init", "-q")
+    git("config", "user.email", "cell-id@example.invalid")
+    git("config", "user.name", "cell-id test")
+    path = tmp_path / "nb.ipynb"
+    raw = _notebook([_cell(id_line='"bad id!"')])
+    path.write_text(raw, encoding="utf-8")
+    git("add", "nb.ipynb")
+    git("commit", "-q", "-m", "carnet")
+
+    # Le grep voit l'id dans le carnet lui-même, qui doit être exclu même si
+    # le CLI reçoit un chemin absolu.
+    assert invalid_count(repair_text(raw, path)) == 0
+    (tmp_path / "translations.csv").write_text("nb.ipynb,bad id!\n", encoding="utf-8")
+    git("add", "translations.csv")
+    git("commit", "-q", "-m", "référence de traduction")
+    try:
+        repair_text(raw, path)
+    except ValueError as exc:
+        assert "référencé hors du carnet" in str(exc)
+    else:
+        raise AssertionError("la référence du CSV doit bloquer le renommage")
 
 
 def test_ratchet_allows_clean_base_corruption_and_improvement():

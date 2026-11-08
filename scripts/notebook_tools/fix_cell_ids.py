@@ -47,11 +47,14 @@ def _cell_ranges(text: str) -> list[tuple[int, int]]:
     root = json.loads(text)
     if not isinstance(root, dict) or not isinstance(root.get("cells"), list):
         raise ValueError("carnet sans tableau cells")
-    # Localise le tableau top-level sans passer par une sérialisation.
-    key = re.search(r'"cells"\s*:', text)
-    if not key:
+    # Les offsets viennent des propriétés directes de l'objet racine. Une
+    # métadonnée imbriquée peut elle aussi s'appeler "cells".
+    root_start = _space(text, 0)
+    members = _members(text, root_start)
+    cells_span = members.get("cells")
+    if not cells_span:
         raise ValueError("propriété cells introuvable")
-    pos = _space(text, text.index(":", key.start()) + 1)
+    pos = cells_span[0]
     if text[pos] != "[":
         raise ValueError("cells n'est pas un tableau")
     pos += 1
@@ -74,14 +77,25 @@ def _cell_ranges(text: str) -> list[tuple[int, int]]:
 
 
 def _external_references(cell_id: str, notebook: Path) -> list[str]:
+    root_result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"], capture_output=True,
+        text=True, encoding="utf-8",
+    )
+    if root_result.returncode:
+        raise RuntimeError(root_result.stderr.strip() or "racine git introuvable")
+    root = Path(root_result.stdout.strip()).resolve()
+    try:
+        notebook_relative = notebook.resolve().relative_to(root).as_posix()
+    except ValueError:
+        notebook_relative = None
     result = subprocess.run(
         ["git", "grep", "-n", "-F", "--", cell_id],
-        capture_output=True, text=True, encoding="utf-8",
+        capture_output=True, text=True, encoding="utf-8", cwd=root,
     )
     if result.returncode not in (0, 1):
         raise RuntimeError(result.stderr.strip() or "git grep a échoué")
     return [line for line in result.stdout.splitlines()
-            if line.split(":", 1)[0] != notebook.as_posix()]
+            if notebook_relative is None or line.split(":", 1)[0] != notebook_relative]
 
 
 def repair_text(text: str, path: Path) -> str:
@@ -129,9 +143,13 @@ def repair_text(text: str, path: Path) -> str:
                 raise ValueError(f"cellule {index}: propriété cell_type absente")
             key_start = text.rfind('"cell_type"', start, cell_type[0])
             line_start = text.rfind("\n", start, key_start) + 1
-            indent = text[line_start:key_start]
             newline = "\r\n" if "\r\n" in text else "\n"
-            edits.append((line_start, line_start, f'{indent}"id": {encoded},{newline}'))
+            if "\n" not in text[start:key_start] and "\r" not in text[start:key_start]:
+                # JSON compact : insérer inline juste après l'accolade de cellule.
+                edits.append((start + 1, start + 1, f'"id": {encoded},'))
+            else:
+                indent = text[line_start:key_start]
+                edits.append((line_start, line_start, f'{indent}"id": {encoded},{newline}'))
 
     for start, end, replacement in reversed(edits):
         text = text[:start] + replacement + text[end:]
@@ -151,10 +169,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         for path in args.notebooks:
-            original = path.read_text(encoding="utf-8")
+            with path.open("r", encoding="utf-8", newline="") as handle:
+                original = handle.read()
             fixed = repair_text(original, path)
             if fixed != original:
-                path.write_text(fixed, encoding="utf-8", newline="")
+                with path.open("w", encoding="utf-8", newline="") as handle:
+                    handle.write(fixed)
                 print(f"{path}: ids réparés")
             else:
                 print(f"{path}: aucun changement")
