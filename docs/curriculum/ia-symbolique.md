@@ -327,17 +327,17 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 11 | [SW-15 — Le coup argumentatif : greffer AIF sur le coup…](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-15-Coup-Argumentatif-Python.ipynb) | BETA | Oui |
 | 12 | [SW-16 — Proof-Carrying Ontologies : le certificat…](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-16-ProofCarryingOntologies-Python.ipynb) | BETA | Oui |
 | 13 | [SW-2-RDFBasics](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb) | BETA | Oui |
-| 14 | [SW-02b-RDFBasics-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02b-RDFBasics-Python.ipynb) | BETA | Oui |
+| 14 | [SW-02-RDFBasics-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb) | BETA | Oui |
 | 15 | [SW-3-GraphOperations](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb) | BETA | Oui |
-| 16 | [SW-03b-GraphOperations-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03b-GraphOperations-Python.ipynb) | BETA | Oui |
+| 16 | [SW-03-GraphOperations-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-Python.ipynb) | BETA | Oui |
 | 17 | [SW-4-SPARQL](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04-SPARQL-CSharp.ipynb) | BETA | Oui |
-| 18 | [SW-04b-SPARQL-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04b-SPARQL-Python.ipynb) | BETA | Oui |
+| 18 | [SW-04-SPARQL-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04-SPARQL-Python.ipynb) | BETA | Oui |
 | 19 | [SW-5-LinkedData](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb) | BETA | Non |
-| 20 | [SW-05b-LinkedData-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05b-LinkedData-Python.ipynb) | BETA | Non |
+| 20 | [SW-05-LinkedData-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-Python.ipynb) | BETA | Non |
 | 21 | [SW-6-RDFS](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-CSharp.ipynb) | BETA | Oui |
-| 22 | [SW-06b-RDFS-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06b-RDFS-Python.ipynb) | BETA | Oui |
+| 22 | [SW-06-RDFS-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-Python.ipynb) | BETA | Oui |
 | 23 | [SW-7-OWL](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb) | BETA | Oui |
-| 24 | [SW-07b-OWL-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb) | BETA | Non |
+| 24 | [SW-07-OWL-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-Python.ipynb) | BETA | Non |
 | 25 | [SW-08-SHACL-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb) | BETA | Oui |
 | 26 | [SW-08-SHACL-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-Python.ipynb) | BETA | Oui |
 | 27 | [SW-09-JSONLD-CSharp -- JSON-LD avec dotNetRDF (twin C#)](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb) | BETA | Oui |

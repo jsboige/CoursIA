@@ -19,9 +19,9 @@ Vocabulaire aligné sur l'EPIC : `alignée` (même numéro complet et titre base
 | Sudoku | 16 | 16 | 0 | 0 | 0 | 0 |
 | GameTheory (racine) | 25 | 23 | 0 | 1 | 1 | 3 |
 | GameTheory/SocialChoice | 4 | 4 | 0 | 0 | 0 | 0 |
-| SymbolicAI/SemanticWeb | 11 | 5 | 6 | 0 | 0 | 0 |
+| SymbolicAI/SemanticWeb | 11 | 11 | 0 | 0 | 0 | 0 |
 | SymbolicAI/Planners | 9 | 9 | 0 | 0 | 0 | 0 |
-| **Total (hors Probas/DT)** | **109** | **86** | **19** | **2** | **2** | **3** (+membres de trios) |
+| **Total (hors Probas/DT)** | **109** | **92** | **13** | **2** | **2** | **3** (+membres de trios) |
 
 ### Search/Part1-Foundations — 15 paires, toutes alignées, toutes enregistrées
 
@@ -78,18 +78,20 @@ Cas limite documenté : la quasi-paire `13b`↔`13c` ci-dessus — **deux célib
 
 `01-Arrow-Impossibility-Theorem` · `02-Stable-Marriage-Gale-Shapley` · `03-Voting-Methods` · `04-Computational-Aggregation-SAT-Z3`, chaque `NN-…` ↔ `NN-…-Csharp`. **Note de graphie** : suffixe local `-Csharp` (casse différente du `-CSharp` canonique du reste du dépôt).
 
-### SymbolicAI/SemanticWeb — 11 paires, 5 alignées, 6 compagnon-b, toutes enregistrées
+### SymbolicAI/SemanticWeb — 11 paires, 11 alignées, toutes enregistrées
+
+> Alignées le 2026-11-08 (issue #25325, lane `myia-po-2023:CoursIA`) : les 6 compagnon-b `SW-0Nb` ont pris le numéro de leur jumeau C# avec suffixe kernel explicite (`SW-02b-RDFBasics-Python` → `SW-02-RDFBasics-Python`, etc.) — doctrine #12933, même concept ⇒ même numéro.
 
 Convention locale : suffixe kernel en **position médiane** (`SW-N-CSharp-X` / `SW-Nb-Python-X`).
 
 | Paire | Verdict |
 |---|---|
-| `SW-02-RDFBasics-CSharp` ↔ `SW-02b-RDFBasics-Python` | compagnon-b (b côté Python ici) |
+| `SW-02-RDFBasics-CSharp` ↔ `SW-02-RDFBasics-Python` | alignée |
 | `SW-03-GraphOperations-CSharp` ↔ `SW-3b-Python-…` | compagnon-b |
-| `SW-04-SPARQL-CSharp` ↔ `SW-04b-SPARQL-Python` | compagnon-b |
+| `SW-04-SPARQL-CSharp` ↔ `SW-04-SPARQL-Python` | alignée |
 | `SW-05-LinkedData-CSharp` ↔ `SW-5b-Python-…` | compagnon-b |
-| `SW-06-RDFS-CSharp` ↔ `SW-06b-RDFS-Python` | compagnon-b |
-| `SW-07-OWL-CSharp` ↔ `SW-07b-OWL-Python` | compagnon-b |
+| `SW-06-RDFS-CSharp` ↔ `SW-06-RDFS-Python` | alignée |
+| `SW-07-OWL-CSharp` ↔ `SW-07-OWL-Python` | alignée |
 | `SW-08-SHACL-CSharp` ↔ `SW-08-SHACL-Python` | alignée |
 | `SW-09-JSONLD-CSharp` ↔ `SW-09-JSONLD-Python` | alignée |
 | `SW-10-RDFStar-CSharp` ↔ `SW-10-RDFStar-Python` | alignée |

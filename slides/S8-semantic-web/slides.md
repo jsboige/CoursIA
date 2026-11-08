@@ -141,7 +141,7 @@ print(g.serialize(format="turtle"))
 | Triple | `graph.Assert(s, p, o)` | `g.add((s, p, o))` |
 | Serialize | `StringWriter` + `TurtleWriter` | `g.serialize(format=...)` |
 
-> **Notebook** : `SW-02b-RDFBasics-Python.ipynb` — 40 min
+> **Notebook** : `SW-02-RDFBasics-Python.ipynb` — 40 min
 
 ---
 
@@ -215,7 +215,7 @@ foreach (var result in results)
 - **OPTIONAL** : jointure externe · **UNION** : disjonction · **MINUS** : différence
 - Agregats : `COUNT`, `SUM`, `GROUP BY`, `HAVING`
 
-> **Notebooks** : `SW-04-SPARQL-CSharp.ipynb` — 45 min | `SW-04b-SPARQL-Python.ipynb` — 30 min
+> **Notebooks** : `SW-04-SPARQL-CSharp.ipynb` — 45 min | `SW-04-SPARQL-Python.ipynb` — 30 min
 
 </div>
 
@@ -260,7 +260,7 @@ SELECT ?scientist ?birth WHERE {
 - **SERVICE** : federe plusieurs endpoints en une requête
 - Wikidata SPARQL endpoint : `https://query.wikidata.org/sparql`
 
-> **Notebooks** : `SW-05-LinkedData-CSharp.ipynb` — 50 min | `SW-05b-LinkedData-Python.ipynb` — 35 min
+> **Notebooks** : `SW-05-LinkedData-CSharp.ipynb` — 50 min | `SW-05-LinkedData-Python.ipynb` — 35 min
 
 </div>
 
@@ -340,7 +340,7 @@ foreach (var sub in person.DirectSubClasses)
 - **OWL 2 RL** : règles de production (integration avec bases de données)
 - **OWL 2 DL** : maximum d'expressivite decidable (HermiT, Pellet)
 
-> **Notebooks** : `SW-07-OWL-CSharp.ipynb` — 55 min | `SW-07b-OWL-Python.ipynb` — 45 min
+> **Notebooks** : `SW-07-OWL-CSharp.ipynb` — 55 min | `SW-07-OWL-Python.ipynb` — 45 min
 
 </div>
 
