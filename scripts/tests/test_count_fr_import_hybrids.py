@@ -312,6 +312,107 @@ def test_render_shows_total_and_list_detail():
     assert "Alpha/Hybrid_en.lean" in detailed, detailed
 
 
+def test_roots_probe_hybrid_under_root_counted_orphan_not():
+    """#24666, controle positif ET negatif : l'atteignabilite par roots.
+
+    Un micro-lac declare `roots = ["Probe", "Probe_en"]` : le `_en` hybride
+    SOUS root remonte, l'orphelin de meme forme HORS root ne remonte pas --
+    c'est la moitie qui compte (le negatif).
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = Path(tmp) / "probe_lean"
+        lake.mkdir()
+        (lake / "lakefile.toml").write_text(
+            'name = "probe"\n\n[[lean_lib]]\nname = "Probe"\n'
+            'roots = ["Probe", "Probe_en"]\n',
+            encoding="utf-8",
+        )
+        _write(lake / "Probe.lean",
+               "namespace Probe\n\ndef p := 1\n\nend Probe\n")
+        _write(lake / "Probe_en.lean",
+               "import Probe\n\nnamespace Probe_en\n\ndef p := 1\n\n"
+               "end Probe_en\n")
+        _write(lake / "Orphan_en.lean",
+               "import Probe\n\nnamespace Orphan_en\n\ndef p := 1\n\n"
+               "end Orphan_en\n")
+        report = mod.census(lake)
+    assert report["files"] == 1, report
+    assert report["hybrids"][0]["relative"] == "Probe_en.lean"
+    assert report["n_en_outside_roots"] == 1, report
+    assert not report["lakes_measured_superset"], report
+    text = mod.render(report, show_list=False)
+    assert "hors roots/globs declares, non mesures" in text, text
+    assert "1 fichiers *_en.lean hors roots/globs" in text, text
+
+
+def test_roots_glob_prefix_covers_submodules_not_siblings():
+    """#24666 : `globs = ["Probe.*"]` couvre `Probe/Sub_en`, pas `Probe_en`."""
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = Path(tmp) / "glob_lean"
+        lake.mkdir()
+        (lake / "lakefile.toml").write_text(
+            'name = "glob"\n\n[[lean_lib]]\nname = "Probe"\n'
+            'globs = ["Probe.*"]\n',
+            encoding="utf-8",
+        )
+        _write(lake / "Probe.lean", "namespace Probe\n\ndef p := 1\n\nend Probe\n")
+        _write(lake / "Probe_en.lean",
+               "import Probe\n\nnamespace Probe_en\n\ndef p := 1\n\n"
+               "end Probe_en\n")
+        _write(lake / "Probe" / "Sub_en.lean",
+               "import Probe\n\nnamespace Probe.Sub_en\n\ndef s := 2\n\n"
+               "end Probe.Sub_en\n")
+        report = mod.census(lake)
+    measured = {h["relative"] for h in report["hybrids"]}
+    assert "Probe/Sub_en.lean" in measured, report
+    assert "Probe_en.lean" not in measured, report
+    assert report["n_en_outside_roots"] == 1, report
+
+
+def test_roots_dsl_lakefile_parsed():
+    """#24666 : le DSL `lean_lib ... where` + backticks est lu (via l'organe)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = Path(tmp) / "dsl_lean"
+        lake.mkdir()
+        (lake / "lakefile.lean").write_text(
+            "import Lake\n"
+            "open Lake\n"
+            "lean_lib Probe where\n"
+            "  globs := #[`Probe, `Probe_en]\n",
+            encoding="utf-8",
+        )
+        _write(lake / "Probe.lean", "namespace Probe\n\ndef p := 1\n\nend Probe\n")
+        _write(lake / "Probe_en.lean",
+               "import Probe\n\nnamespace Probe_en\n\ndef p := 1\n\n"
+               "end Probe_en\n")
+        _write(lake / "Other_en.lean",
+               "import Probe\n\nnamespace Other_en\n\ndef p := 1\n\n"
+               "end Other_en\n")
+        report = mod.census(lake)
+    measured = {h["relative"] for h in report["hybrids"]}
+    assert "Probe_en.lean" in measured, report
+    assert "Other_en.lean" not in measured, report
+    assert report["n_en_outside_roots"] == 1, report
+
+
+def test_roots_unparseable_lakefile_measured_as_superset_and_declared():
+    """#24666, fail-open : un lakefile sans lib lisible reste mesure en
+    sur-ensemble (l'ancien comportement), ET le lac est nomme dans la sortie
+    -- vider un lac mal parse serait pire que le sur-ensemble."""
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = _lake(tmp)  # lakefile.toml reduit a `name = "fixture"` : rien a parser
+        _write(
+            lake / "Alpha" / "Hybrid_en.lean",
+            "import Alpha.Base\n\nnamespace Alpha.Hybrid_en\n\ndef h := 2\n\n"
+            "end Alpha.Hybrid_en\n",
+        )
+        report = mod.census(lake)
+        text = mod.render(report, show_list=False)
+    assert report["files"] == 1, report
+    assert report["lakes_measured_superset"] == ["fixture_lean"], report
+    assert "mesures en sur-ensemble : fixture_lean" in text, text
+
+
 def main() -> int:
     tests = [
         (name, obj)

@@ -23,7 +23,10 @@ de types (incident `knot_lean`).
 2. il vit dans un **lac** (`lakefile.toml` ou `lakefile.lean` a la racine du
    repertoire), et hors du perimetre vendore : `.lake/packages/`, `_peters/`,
    `reference_docs/` -- les memes exclusions que la regle i18n de
-   `.claude/rules/code-style.md` ;
+   `.claude/rules/code-style.md` -- et il est **atteignable** par les
+   roots/globs declares du lakefile (#24666) : un miroir `_en` hors build
+   n'est pas mesure (Lake ne le compilera jamais, son arete serait
+   theorique), il est nomme dans la sortie avec les hors-lac ;
 3. il declare au moins un `namespace` dont le nom finit par `_en`, **et** au
    moins une declaration propre (theorem, lemma, def, instance, structure,
    class, abbrev, inductive) ;
@@ -82,6 +85,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from typing import Callable
 import re
 import subprocess
 import sys
@@ -90,6 +94,15 @@ from pathlib import Path
 
 RC_OK = 0
 RC_INCIDENT = 2
+
+try:
+    # Organ-first (#24666) : le parseur roots/globs des lakefiles vit dans
+    # l'organe i18n `check_i18n_siblings` (TOML + DSL, `exact` et prefixes
+    # glob), qui a fait ses preuves en garde de build -- il n'est pas duplique.
+    from check_i18n_siblings import lake_targets
+except ImportError:  # chargement par spec_from_file_location (tests)
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from check_i18n_siblings import lake_targets
 
 #: Exclusions du perimetre i18n (cf `.claude/rules/code-style.md`, EPIC #4980).
 #: Les fragments portent leurs deux separateurs : sans le `/` de tete, un
@@ -137,6 +150,45 @@ def find_lakes(root: Path) -> list[Path]:
             if in_scope(lakefile):
                 found.add(lakefile.parent)
     return sorted(found)
+
+
+def lakefile_of(lake: Path) -> Path | None:
+    """Le lakefile du lac (`.toml` prioritaire, puis `.lean`)."""
+    for name in ("lakefile.toml", "lakefile.lean"):
+        candidate = lake / name
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def reachable_predicate(lake: Path) -> tuple[bool, "Callable[[str], bool] | None"]:
+    """(#24666) Predicat d'atteignabilite par les roots/globs du lakefile.
+
+    Rend ``(False, None)`` quand le lakefile ne declare RIEN de lisible
+    (aucune lib, aucun root/glob) : le lac est alors mesure en SUR-ENSEMBLE
+    (l'ancien comportement), et compte parmi les lacs non restreints -- le
+    dire, plutot que de vider silencieusement un lac mal parse.
+
+    Un module `Foo_en` est atteignable s'il est dans `exact` (roots/globs
+    nus, convention i18n : le jumeau est declare explicitement) ou sous un
+    prefixe glob (`Foo` couvre `Foo`, `Foo.*`).
+    """
+    lakefile = lakefile_of(lake)
+    if lakefile is None:
+        return False, None
+    exact, globs = lake_targets(lakefile)
+    if not exact and not globs:
+        return False, None
+
+    def _reachable(module_path: str) -> bool:
+        if module_path in exact:
+            return True
+        return any(
+            module_path == prefix or module_path.startswith(prefix + ".")
+            for prefix in globs
+        )
+
+    return True, _reachable
 
 
 def read_source(path: Path) -> str:
@@ -201,12 +253,29 @@ def hybrid_edges(lake: Path, source: Path, text: str) -> list[str]:
     return edges
 
 
-def scan_lake(lake: Path) -> list[dict]:
-    """Fichiers `_en.lean` du lac, avec leurs compteurs et leurs aretes."""
+def scan_lake(lake: Path) -> tuple[list[dict], int, bool]:
+    """Fichiers `_en.lean` du lac, avec leurs compteurs et leurs aretes.
+
+    (#24666) Rend ``(records, n_hors_roots, restriction_active)`` : les
+    fichiers non atteignables par les roots/globs du lakefile sortent du
+    compte (Lake ne les build jamais, leur arete serait theorique) et sont
+    NOMMES -- un lac au lakefile illisible reste mesure en sur-ensemble,
+    `restriction_active` a False, pour ne pas vider un lac mal parse.
+    """
+    restricted, reachable = reachable_predicate(lake)
     records: list[dict] = []
+    n_hors_roots = 0
     for source in sorted(lake.rglob("*_en.lean")):
         if not in_scope(source):
             continue
+        if restricted:
+            module_path = (
+                source.relative_to(lake).as_posix()[: -len(".lean")]
+                .replace("/", ".")
+            )
+            if not reachable(module_path):
+                n_hors_roots += 1
+                continue
         text = strip_comments(read_source(source))
         namespaces = [m.group(1) for m in NS_RE.finditer(text)]
         records.append(
@@ -220,7 +289,7 @@ def scan_lake(lake: Path) -> list[dict]:
                 "edges": hybrid_edges(lake, source, text),
             }
         )
-    return records
+    return records, n_hors_roots, restricted
 
 
 def is_hybrid(record: dict) -> bool:
@@ -234,9 +303,15 @@ def is_hybrid(record: dict) -> bool:
 
 def census(root: Path) -> dict:
     records: list[dict] = []
+    n_hors_roots = 0
+    lakes_unparsed: list[str] = []
     lakes = find_lakes(root)
     for lake in lakes:
-        records.extend(scan_lake(lake))
+        lake_records, lake_excluded, restricted = scan_lake(lake)
+        records.extend(lake_records)
+        n_hors_roots += lake_excluded
+        if not restricted:
+            lakes_unparsed.append(lake.name)
 
     # Fichiers `_en.lean` du perimetre qu'aucun lac ne porte : ils ne peuvent
     # pas produire d'arete (une arete est un import du **meme lac**), mais les
@@ -261,6 +336,8 @@ def census(root: Path) -> dict:
         "n_lakes": len(lakes),
         "n_en_files": len(records),
         "n_en_outside_lakes": len(outside),
+        "n_en_outside_roots": n_hors_roots,
+        "lakes_measured_superset": sorted(lakes_unparsed),
         "files": len(hybrids),
         "edges": sum(len(r["edges"]) for r in hybrids),
         "per_lake": dict(sorted(per_lake.items())),
@@ -294,6 +371,17 @@ def render(report: dict, show_list: bool) -> str:
         lines.append(
             f"  ({report['n_en_outside_lakes']} fichiers *_en.lean hors lac, "
             "non mesures : une arete se mesure dans un lac)"
+        )
+    if report.get("n_en_outside_roots"):
+        lines.append(
+            f"  ({report['n_en_outside_roots']} fichiers *_en.lean hors "
+            "roots/globs declares, non mesures : Lake ne les build jamais, "
+            "leur arete serait theorique)"
+        )
+    if report.get("lakes_measured_superset"):
+        lines.append(
+            "  (lacs au lakefile sans lib lisible, mesures en sur-ensemble : "
+            + ", ".join(report["lakes_measured_superset"]) + ")"
         )
     lines.extend(
         [
