@@ -162,6 +162,8 @@ PATHS_CLAUSE_RE = re.compile(r"\bpaths\s*:", re.IGNORECASE)
 # Compatibilite du filtre rapide avec les en-tetes sans lane.
 _RECENT_DELIVERED_RE = re.compile(
     r"^\s*(?:#{1,6}\s*)?\[DELIVERED\](?=\s|:|$)", re.MULTILINE)
+_TRANCHE_DELIVERED_RE = re.compile(
+    _RECENT_DELIVERED_RE.pattern, re.MULTILINE | re.IGNORECASE)
 
 # --- Les trois etats d'un fil --------------------------------------------------
 
@@ -271,7 +273,7 @@ def is_tranche_marker(body: str) -> bool:
         return False
     seen = False
     for line in body.splitlines():
-        if _RECENT_DELIVERED_RE.match(line):
+        if _TRANCHE_DELIVERED_RE.match(line):
             seen = True
             if not PATHS_CLAUSE_RE.search(line):
                 return False

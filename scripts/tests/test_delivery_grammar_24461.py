@@ -267,3 +267,9 @@ def test_tranche_sans_lane_ne_change_pas_l_etat_du_fil():
         assert not dg.recent_delivery_state([EPIC_WIDE, "[NOT-DELIVERED]", tranche])
     assert dg.recent_delivery_state(["[DELIVERED] -- travail termine"])
     assert dg.recent_delivery_state(["[DELIVERED] -- travail termine\npaths: a.py"])
+
+
+def test_tranche_insensible_a_la_casse_avec_et_sans_lane():
+    assert dg.is_tranche_marker("[delivered] lane myia-ai-01:CoursIA -- PaThS: a.py")
+    assert dg.is_tranche_marker("[delivered] -- PATHS: a.py")
+    assert not dg.is_tranche_marker("[delivered] lane myia-ai-01:CoursIA\nPaThS: a.py")
