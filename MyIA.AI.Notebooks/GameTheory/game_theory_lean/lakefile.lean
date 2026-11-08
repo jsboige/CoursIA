@@ -77,9 +77,10 @@ lean_lib StableMarriage where
 lean_lib CooperativeGames where
   globs := #[`CooperativeGames.*]
 
-@[default_target]
-lean_lib SocialChoice where
-  globs := #[`SocialChoice.*]
+-- T3 #24183 (po-2024, 2026-11-08) : `lean_lib SocialChoice` DESCENDUE vers
+-- GameTheory/SocialChoice/social_choice_core_lean (doctrine R1 : le site
+-- suit les carnets consommateurs ; sortie du hub validee par le user le
+-- 2026-11-02 avec la doctrine des lakes). Le hub ne declare plus cette lib.
 
 @[default_target]
 lean_lib RepeatedGames where
