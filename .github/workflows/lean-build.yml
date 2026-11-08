@@ -407,8 +407,8 @@ jobs:
         # lake, cle `build-threads` du manifeste, passee a l'input composite
         # `build-jobs` (son nom declare -- un appel sous `build-threads` est
         # IGNORE avec un simple warning, mesure au run 42475534833 : le cap
-        # "1" de conway ne posait pas LEAN_NUM_THREADS et rougissait le lake
-        # par OOM). Absente = '' -> le composite garde son defaut (tous les
+        # "1" de conway ne posait pas LEAN_NUM_THREADS ; ce run s'est arrete
+        # avant le build. Absente = '' -> le composite garde son defaut (tous les
         # coeurs) : comportement exact des 35 entrees sans la cle. conway_lean
         # la pose a "1" : depuis le 26/10, chaque run main meurt par OOM
         # d'elaboration sans -j1 (pics 13,3 GiB > plafond 16 Go
