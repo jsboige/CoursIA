@@ -169,7 +169,11 @@ le nom, `argv[0]` déclaré, `sys.executable` résolu, `sys.version` et la versi
 de NumPy. L'outil ci-dessous énumère les kernelspecs locaux et écrit un JSON
 réutilisable. Il rapporte les noyaux non Python et les incidents avec un état
 structuré ; il ne journalise pas le texte des exceptions ni l'environnement du
-noyau.
+noyau. Après démarrage, il demande au noyau son `kernel_info_reply` et ne lance
+la sonde que si `language_info.name` annonce Python. Les autres langages sont
+rapportés comme `not_python` avec leur langage effectif. Pour un noyau annoncé
+Python, toute erreur, absence de sortie ou sortie JSON invalide reste un
+incident de sonde, jamais un faux classement non Python.
 
 ```bash
 source /workspace/coursia-cloud/activate.sh
@@ -179,10 +183,12 @@ python scripts/notebook_tools/measure_kernels_runtime.py \
 ```
 
 La mesure porte sur la configuration et l'instant où la commande s'exécute.
-`ok` signifie que la sonde Python s'est exécutée ; `not_python` identifie un
-noyau qui a démarré mais ne s'est pas comporté comme Python ; `timeout`,
-`startup_error`, `probe_error` et `kernelspec_missing` signalent des lignes à
-examiner. Les kernels démarrés par l'outil sont arrêtés à la fin de leur sonde.
+`ok` signifie que la sonde Python s'est exécutée ; `not_python` identifie,
+d'après le `kernel_info_reply` effectif, un noyau d'un autre langage ;
+`probe_output_missing` signale un noyau Python qui n'a pas rendu la sonde ; `timeout`,
+`startup_error`, `kernel_info_error`, `probe_error`, `invalid_probe_output` et
+`kernelspec_missing` signalent des lignes à examiner. Les kernels démarrés par
+l'outil sont arrêtés à la fin de leur sonde.
 Le code de sortie vaut 0 si chaque ligne est `ok` ou `not_python`, 1 en présence
 d'un incident. Le JSON est écrit hors du dépôt pour qu'un relevé local daté ne
 soit pas confondu avec une valeur canonique.
@@ -202,6 +208,12 @@ Cette observation décrit uniquement l'environnement cloud temporaire de la
 session (`bb1b6860b79a`, relevé UTC `2026-11-08T00:02:59Z`). Elle ne mesure aucun
 poste de la flotte et ne doit pas servir à nommer un environnement de
 ré-exécution sur un autre siège.
+
+**Vérification mixte après ajout de la détection par langage effectif**
+(`2026-11-08T00:18:08Z`) : le lancement réel de `.net-csharp` et `python3` a
+rendu `not_python`, langage `C#`, pour le premier sans lui envoyer de code
+Python, puis `ok`, Python 3.12.14 / NumPy 2.4.4, pour le second. Les journaux de
+démarrage .NET ne font pas partie du JSON de mesure.
 
 #### Procédure de collecte de la flotte
 

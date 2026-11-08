@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -48,13 +49,40 @@ def _probe_kernel(name: str, timeout: float, manager_factory=None) -> dict[str, 
     started = False
     client = None
     try:
-        manager.start_kernel()
+        # Les noyaux peuvent écrire des diagnostics arbitraires sur leurs
+        # descripteurs de processus ; le protocole Jupyter passe par les
+        # canaux ZMQ et reste intact. Garder stdout comme JSON pur.
+        manager.start_kernel(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         started = True
         client = manager.client()
         client.start_channels()
         client.wait_for_ready(timeout=timeout)
+        info_id = client.kernel_info()
+        deadline = __import__("time").monotonic() + timeout
+        while True:
+            remaining = deadline - __import__("time").monotonic()
+            if remaining <= 0:
+                return {"status": "timeout", "error_type": "TimeoutError",
+                        "stage": "kernel_info"}
+            try:
+                info_msg = client.get_shell_msg(timeout=remaining)
+            except Exception as exc:
+                if type(exc).__name__ == "Empty":
+                    return {"status": "timeout", "error_type": "TimeoutError",
+                            "stage": "kernel_info"}
+                raise
+            if info_msg.get("parent_header", {}).get("msg_id") == info_id:
+                break
+        language_info = info_msg.get("content", {}).get("language_info", {})
+        language = language_info.get("name")
+        if not isinstance(language, str) or not language.strip():
+            return {"status": "kernel_info_error", "error_type": "MissingLanguageInfo"}
+        if language.strip().lower() not in {"python", "python2", "python3"}:
+            return {"status": "not_python", "kernel_language": language}
+
         msg_id = client.execute(PROBE)
         deadline = __import__("time").monotonic() + timeout
+        output = ""
         while True:
             remaining = deadline - __import__("time").monotonic()
             if remaining <= 0:
@@ -70,17 +98,20 @@ def _probe_kernel(name: str, timeout: float, manager_factory=None) -> dict[str, 
             kind = msg.get("msg_type")
             content = msg.get("content", {})
             if kind == "error":
-                return {"status": "probe_error", "error_type": str(content.get("ename", "KernelError"))}
+                return {"status": "probe_error", "error_type": "KernelExecutionError"}
             if kind == "stream":
-                for line in content.get("text", "").splitlines():
+                output += content.get("text", "")
+            if kind == "status" and content.get("execution_state") == "idle":
+                for line in output.splitlines():
                     if line.startswith("COURSIA_KERNEL_RUNTIME="):
                         try:
                             data = json.loads(line.split("=", 1)[1])
                         except (ValueError, TypeError):
-                            return {"status": "invalid_probe_output", "error_type": "JSONDecodeError"}
-                        return {"status": "ok", **data}
-            if kind == "status" and content.get("execution_state") == "idle":
-                return {"status": "not_python", "error_type": None}
+                            return {"status": "invalid_probe_output",
+                                    "error_type": "JSONDecodeError"}
+                        return {"status": "ok", "kernel_language": language, **data}
+                return {"status": "probe_output_missing",
+                        "error_type": "MissingProbeOutput", "kernel_language": language}
     except Exception as exc:
         # Ne pas journaliser str(exc) : des implementations peuvent y inclure
         # des arguments de lancement ou des chemins sensibles.

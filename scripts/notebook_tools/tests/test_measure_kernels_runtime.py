@@ -8,27 +8,35 @@ import measure_kernels_runtime as collector  # noqa: E402
 
 
 class FakeClient:
-    def __init__(self, events):
+    def __init__(self, events, language="python"):
         self.events = list(events)
+        self.language = language
 
     def start_channels(self): pass
     def wait_for_ready(self, timeout): pass
+    def kernel_info(self): return "info-1"
+    def get_shell_msg(self, timeout):
+        return {"parent_header": {"msg_id": "info-1"}, "content": {
+            "language_info": {"name": self.language}}}
     def execute(self, code): return "msg-1"
     def get_iopub_msg(self, timeout): return self.events.pop(0)
     def stop_channels(self): pass
 
 
 class FakeManager:
-    def __init__(self, *, events=None, start_error=None):
+    def __init__(self, *, events=None, start_error=None, language="python"):
         self.events = events or []
         self.start_error = start_error
+        self.language = language
         self.shutdowns = 0
 
-    def start_kernel(self):
+    def start_kernel(self, **kwargs):
+        assert kwargs["stdout"] == collector.subprocess.DEVNULL
+        assert kwargs["stderr"] == collector.subprocess.DEVNULL
         if self.start_error:
             raise self.start_error
 
-    def client(self): return FakeClient(self.events)
+    def client(self): return FakeClient(self.events, self.language)
     def shutdown_kernel(self, now): self.shutdowns += 1
 
 
@@ -37,14 +45,18 @@ def _msg(kind, content):
             "msg_type": kind, "content": content}
 
 
-def test_probe_mesure_les_donnees_emises_et_ferme_le_noyau():
-    manager = FakeManager(events=[_msg("stream", {"text":
-        'COURSIA_KERNEL_RUNTIME={"python_version":"3.13.1",'
-        '"executable":"/venv/bin/python", "numpy_version":"2.2.0",'
-        '"numpy_status":"ok"}\n'})])
+def test_probe_accumule_les_fragments_et_ferme_le_noyau():
+    line = ('COURSIA_KERNEL_RUNTIME={"python_version":"3.13.1",'
+            '"executable":"/venv/bin/python", "numpy_version":"2.2.0",'
+            '"numpy_status":"ok"}\n')
+    midpoint = len(line) // 2
+    manager = FakeManager(events=[_msg("stream", {"text": line[:midpoint]}),
+                                  _msg("stream", {"text": line[midpoint:]}),
+                                  _msg("status", {"execution_state": "idle"})])
     result = collector._probe_kernel("demo", 5,
                                      manager_factory=lambda **_: manager)
-    assert result == {"status": "ok", "python_version": "3.13.1",
+    assert result == {"status": "ok", "kernel_language": "python",
+                      "python_version": "3.13.1",
                       "executable": "/venv/bin/python", "numpy_version": "2.2.0",
                       "numpy_status": "ok"}
     assert manager.shutdowns == 1
@@ -55,7 +67,7 @@ def test_erreur_noyau_est_structuree_sans_texte_exception():
                                                    "evalue": "secret-value"})])
     result = collector._probe_kernel("demo", 5,
                                      manager_factory=lambda **_: manager)
-    assert result == {"status": "probe_error", "error_type": "ImportError"}
+    assert result == {"status": "probe_error", "error_type": "KernelExecutionError"}
     assert "secret-value" not in json.dumps(result)
     assert manager.shutdowns == 1
 
@@ -83,8 +95,19 @@ def test_timeout_est_structure_et_le_noyau_lance_est_arrete():
 
 
 def test_kernel_non_python_et_absent_dans_le_releve():
-    assert collector._probe_kernel(
-        "demo", 5,
-        manager_factory=lambda **_: FakeManager(events=[
-            _msg("status", {"execution_state": "idle"})]))["status"] == "not_python"
+    manager = FakeManager(language="csharp")
+    result = collector._probe_kernel("demo", 5,
+                                     manager_factory=lambda **_: manager)
+    assert result == {"status": "not_python", "kernel_language": "csharp"}
+    assert manager.shutdowns == 1
     assert collector.collect(names=["absent"])["kernels"][0]["status"] == "kernelspec_missing"
+
+
+def test_kernel_python_silencieux_est_signale_comme_echec_sonde():
+    manager = FakeManager(events=[_msg("status", {"execution_state": "idle"})])
+    result = collector._probe_kernel("demo", 5,
+                                     manager_factory=lambda **_: manager)
+    assert result == {"status": "probe_output_missing",
+                      "error_type": "MissingProbeOutput",
+                      "kernel_language": "python"}
+    assert manager.shutdowns == 1
