@@ -145,6 +145,17 @@
         "ML/DataScienceWithAgents/02-ML-Cours/2.11e-CVXPY-Optimisation.ipynb",
         "ML/DataScienceWithAgents/02-ML-Cours/2.11f-Comparaison-Optimisation-Convexe.ipynb"
       ]
+    },
+    {
+      "id": "prerequis-python-data-science",
+      "description": "Pre-requis optionnel pour l'apprenant autonome sans Python : le socle Python utile en data science (types, structures, fonctions, comprehensions, fichiers), la visualisation (matplotlib puis seaborn, choisir le graphique selon la question, erreurs classiques), l'exploration et le nettoyage d'un jeu reel et sale avec journal des decisions, et les statistiques descriptives (tendance centrale, dispersion, distributions, correlation sans causalite). A faire avant la branche donnees ; les parcours d'ecole le sautent (leurs publics arrivent deja avec Python).",
+      "branch": "donnees",
+      "notebooks": [
+        "ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.1-Python_pour_la_Data_Science.ipynb",
+        "ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.4-Visualisation_Matplotlib_Seaborn.ipynb",
+        "ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb",
+        "ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.6-Statistiques_Descriptives.ipynb"
+      ]
     }
   ]
 }
