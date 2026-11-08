@@ -81,12 +81,16 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 15
     # Moindre privilege : `contents: read` pour le checkout, `checks: write`
-    # pour le check-run nomme, `pull-requests: write` pour les stickies --
-    # l'ecriture est ICI et nulle part ailleurs pour ces trois gardes.
+    # pour le check-run nomme, `pull-requests: write` + `issues: write` pour
+    # l'advisory partage -- le verrou d'ecriture de l'organe `advisory_sticky`
+    # pose une ETIQUETTE sur la PR (#24514), qui exige `issues: write` (les
+    # etiquettes d'une PR vivent cote issues). L'ecriture est ICI et nulle
+    # part ailleurs pour ces gardes.
     permissions:
       contents: read
       pull-requests: write
       checks: write
+      issues: write
 
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
