@@ -149,7 +149,7 @@ choix social en Lean 4.
 
 ### Complémentaire, pas doublon
 
-Ce projet et les preuves au `PrefOrder` — [`social_choice_core_lean/SocialChoice/`](../../social_choice_core_lean/SocialChoice/) —
+Ce projet et les preuves au `PrefOrder` — [`social_choice_core_lean/SocialChoice/`](../social_choice_core_lean/SocialChoice/) —
 couvrent la même théorie au travers de **cadres différents** : Peters utilise le `LinearOrder`
 strict de Mathlib, tandis que le `PrefOrder` réflexif-total-transitif (plus proche de la
 tradition d'économie du bien-être) y porte Arrow / Sen / l'électeur médian. Lire les deux montre
@@ -164,5 +164,5 @@ dans le lake autonome `social_choice_core_lean/` (#24183, T3).
 - **Notebook compagnon** : prévu (pas encore créé) — un tour pédagogique des résultats
   de Peters, auquel ce projet servirait de backend.
 - **Amont** : [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean) (MIT).
-- **Nos preuves** : [`social_choice_core_lean/SocialChoice/`](../../social_choice_core_lean/SocialChoice/) — Arrow / Sen /
+- **Nos preuves** : [`social_choice_core_lean/SocialChoice/`](../social_choice_core_lean/SocialChoice/) — Arrow / Sen /
   électeur médian dans le cadre `PrefOrder`.
