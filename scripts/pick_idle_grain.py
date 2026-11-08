@@ -4888,6 +4888,20 @@ def _summarize_claim_from_batch(json_payload: dict, n: int) -> tuple[str, str]:
     return CLAIM_CODE_ERROR, f"(batch: code {code} inconnu)"
 
 
+def _claims_none(cause: str) -> None:
+    """#22983 -- nommer sur stderr la cause d'un rendu ``None``, puis None.
+
+    Le refus fail-CLOSED du tapis etait intermittent sans dire pourquoi :
+    un ``return None`` muet laisse departager a l'aveugle un lecteur
+    absent, un instantane perime (TTL 1800 s) et une exception avalee.
+    Le comportement est INCHANGE (None, l'appelant tranche) ; seule la
+    cause est publiee, avec le prefixe ``[22983]`` grep-able.
+    """
+    print(f"[22983] voie en processus indisponible : {cause}",
+          file=sys.stderr, flush=True)
+    return None
+
+
 def _claims_in_process(
     numbers: list[int],
     lane: str,
@@ -4905,15 +4919,19 @@ def _claims_in_process(
 
     #22983 -- le transport `subprocess` est retire : il n'y a plus de repli
     historique. Rend None si la voie n'est pas disponible (module absent,
-    instantane illisible, exception) ; l'appelant tranche alors.
+    instantane illisible, exception) ; l'appelant tranche alors. Chaque
+    sortie None NOMME sa cause sur stderr (prefixe ``[22983]``) : un refus
+    fail-CLOSED intermittent doit etre diagnosticable, pas devine.
     """
     if not numbers:
         return {}
     try:
         clc = _claim_reader_module()   # insere `scripts/` dans sys.path
         gh_snapshot = _gh_snapshot_module()
-    except Exception:  # noqa: BLE001 - l'appelant tranche (fail-CLOSED)
-        return None
+    except Exception as exc:  # noqa: BLE001 - l'appelant tranche (fail-CLOSED)
+        return _claims_none(
+            f"import lecteur/instantane en echec "
+            f"({type(exc).__name__}: {exc})")
     import contextlib
     import io
     try:
@@ -4927,13 +4945,31 @@ def _claims_in_process(
                         or gh_snapshot.load_snapshot(REPO))
             clc.set_snapshot(snapshot)
             if not gh_snapshot.serves(snapshot, [int(n) for n in numbers]):
-                return None
+                # #22983 -- la cause se NOMME : manquant (jamais lu) et
+                # perime (stamp plus vieux que le TTL) ne se soignent pas
+                # de la meme facon, et `serves()` ne rend qu'un booleen.
+                stamps = ((snapshot.get("meta") or {})
+                          .get("comment_stamps") or {})
+                _manque, _perime = [], []
+                for n in numbers:
+                    stamp = stamps.get(str(n))
+                    if not isinstance(stamp, (int, float)):
+                        _manque.append(str(n))
+                    elif (time.time() - stamp) > gh_snapshot.DEFAULT_TTL_SECONDS:
+                        _perime.append(str(n))
+                return _claims_none(
+                    f"instantane STRICT ne sert pas les numeros "
+                    f"(manquants: {', '.join(_manque) or '-'} ; "
+                    f"perimes: {', '.join(_perime) or '-'})")
             # `serves` garantit les commentaires ; le LECTEUR a besoin du
             # PAYLOAD. Un payload absent le ferait retomber sur
             # `gh issue view` -- un appel reseau pendant le tirage.
-            for n in numbers:
-                if clc._snapshot_issue_payload(str(n)) is None:
-                    return None
+            _absents = [str(n) for n in numbers
+                        if clc._snapshot_issue_payload(str(n)) is None]
+            if _absents:
+                return _claims_none(
+                    f"payload absent de l'instantane STRICT : "
+                    f"{', '.join(_absents)}")
         else:
             snapshot = gh_snapshot.refresh(REPO, issue_numbers=list(numbers))
             clc.set_snapshot(snapshot)
@@ -4972,8 +5008,10 @@ def _claims_in_process(
                 my_paths=None, check_open_pr_paths=True,
             )
         return {n: _summarize_claim(buf_out.getvalue(), rc)}
-    except Exception:  # noqa: BLE001 - repli sur la voie historique
-        return None
+    except Exception as exc:  # noqa: BLE001 - l'appelant tranche (fail-CLOSED)
+        return _claims_none(
+            f"exception dans la voie en processus "
+            f"({type(exc).__name__}: {exc})")
     finally:
         # Toujours retirer l'instantane : une voie historique appelée
         # ensuite ne doit pas heriter du cache installe ici. Un echec de
