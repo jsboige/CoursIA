@@ -2,7 +2,7 @@
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -48,6 +48,7 @@ def _replay_input():
     return {
         "schema": pig.BELT_REPLAY_SCHEMA,
         "repo": pig.REPO,
+        "draw_at": AS_OF,
         "source": {
             "transport": "scripts/coordination/gh_snapshot.py",
             "repo": pig.REPO,
@@ -128,6 +129,7 @@ def test_export_reutilise_la_forme_canonique_gh_snapshot():
         issue_to_family={int(k): v for k, v in base["issue_to_family"].items()},
         merged_prs=[], closed_issues=[], closed_error=None, open_count=20,
         seed_source=base["seed_source"], snapshot=snapshot, computed_at=now,
+        captured_at=now,
     )
     assert prepared["source"]["transport"] == \
         "scripts/coordination/gh_snapshot.py"
@@ -152,7 +154,45 @@ def test_export_refuse_si_le_snapshot_canonique_ne_couvre_pas_tout_le_pool():
             issue_to_family={int(k): v for k, v in base["issue_to_family"].items()},
             merged_prs=[], closed_issues=[], closed_error=None, open_count=20,
             seed_source=base["seed_source"], snapshot=snapshot, computed_at=now,
+            captured_at=now,
         )
+
+
+def test_snapshot_capture_apres_horloge_tirage_garde_le_meme_ordre():
+    base = _replay_input()
+    captured_at = datetime.now(timezone.utc).replace(microsecond=0)
+    draw_at = captured_at - timedelta(seconds=1)
+    captured_iso = captured_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+    draw_iso = draw_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+    refreshed_at = draw_iso
+    base["draw_at"] = draw_iso
+    base["source"]["computed_at"] = captured_iso
+    base["source"]["gh_snapshot_refreshed_at"] = refreshed_at
+    base["source"]["claim_comment_stamps"] = {
+        str(item["number"]): draw_at.timestamp() for item in base["pool"]}
+    snapshot = {
+        "meta": {"version": 1, "repo": pig.REPO,
+                 "refreshed_at": refreshed_at,
+                 "comment_stamps": {
+                     str(item["number"]): captured_at.timestamp() - 1
+                     for item in base["pool"]}},
+        "issues": {},
+        "comments": {str(item["number"]): [] for item in base["pool"]},
+        "prs": {}, "checks": {}, "repair": {},
+    }
+    prepared = pig.build_belt_replay_input(
+        pool=base["pool"], family_signal=base["family_signal"],
+        series=base["series"],
+        issue_to_family={int(k): v for k, v in base["issue_to_family"].items()},
+        merged_prs=[], closed_issues=[], closed_error=None, open_count=20,
+        seed_source=base["seed_source"], snapshot=snapshot,
+        computed_at=draw_at, captured_at=captured_at,
+    )
+    assert prepared["draw_at"] == draw_iso
+    assert prepared["source"]["computed_at"] == captured_iso
+    replay = pig.replay_belt_weights(prepared, captured_iso, head=10)
+    original_order = pig.replay_belt_weights(base, captured_iso, head=10)["picks"]
+    assert replay["picks"] == original_order
 
 
 @pytest.mark.parametrize("mutation, message", [
@@ -180,6 +220,33 @@ def test_entrees_incompletes_ou_perimees_refusees_avant_tirage(
     monkeypatch.setattr(pig, "apply_belt_weights", forbidden)
     with pytest.raises(pig.BeltReplayError, match=message):
         pig.replay_belt_weights(payload, AS_OF, head=10)
+
+
+@pytest.mark.parametrize("mutation, message", [
+    (lambda data: data.update(source=None), "provenance d'instantane malformee"),
+    (lambda data: data["issue_to_family"].update({"oops": ZONE_A}),
+     "cle issue-famille invalide"),
+])
+def test_entrees_malformees_rc2_sans_traceback_ni_tirage(
+        monkeypatch, tmp_path, capsys, mutation, message):
+    payload = _replay_input()
+    mutation(payload)
+    path = tmp_path / "invalid.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("le mode invalide ne doit pas tirer ni appeler le reseau")
+
+    monkeypatch.setattr(pig, "apply_belt_weights", forbidden)
+    monkeypatch.setattr(pig.gh_identity, "pin_gh_token", forbidden)
+    rc = pig.main(["--belt-replay-input", str(path), "--belt-replay-at",
+                   AS_OF])
+    out, err = capsys.readouterr()
+    result = json.loads(out)
+    assert rc == 2
+    assert message in result["error"]
+    assert result["draw"] == "aucun"
+    assert "Traceback" not in out + err
 
 
 def test_export_refuse_une_destination_dans_le_depot(tmp_path):

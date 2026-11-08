@@ -118,8 +118,11 @@ python scripts/pick_idle_grain.py --belt-replay-input /tmp/belt-replay.json \
   --belt-replay-at DATE_UTC_EXPORT --grains 50
 ```
 
-Remplacer `DATE_UTC_EXPORT` par la valeur `source.computed_at` du JSON.
-Le second appel n'utilise aucun transport : il valide d'abord la date, les
+Remplacer `DATE_UTC_EXPORT` par la valeur `source.computed_at` du JSON. Cette
+date est l'instant de capture du snapshot ; `draw_at` conserve l'horloge du
+tirage initial, utilisée pour le seed et l'ordre temporel. Ainsi, un snapshot
+rafraîchi après le début du tirage reste rejouable sans changer son classement.
+Le second appel n'utilise aucun transport : il valide d'abord les dates, les
 claims/commentaires complets et frais, et la couverture des familles, puis
 appelle la même fonction de pondération que le mode live. Il simule un ordre
 de classement ; il ne claim ni ne sert de grain et ne prouve pas l'acceptance

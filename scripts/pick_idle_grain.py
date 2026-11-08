@@ -9799,28 +9799,38 @@ def validate_belt_replay_input(payload: dict, replay_at: str) -> dict:
     """
     if not isinstance(payload, dict) or payload.get("schema") != BELT_REPLAY_SCHEMA:
         raise BeltReplayError("schema de rejeu absent ou inconnu")
+    source = payload.get("source")
+    if not isinstance(source, dict):
+        raise BeltReplayError("provenance d'instantane malformee")
+    if not isinstance(replay_at, str):
+        raise BeltReplayError("date de capture invalide")
     try:
         moment = dt.datetime.fromisoformat(replay_at.replace("Z", "+00:00"))
         exported = dt.datetime.fromisoformat(
-            str(payload["source"]["computed_at"]).replace("Z", "+00:00"))
+            str(source["computed_at"]).replace("Z", "+00:00"))
         refreshed = dt.datetime.fromisoformat(
-            str(payload["source"]["gh_snapshot_refreshed_at"]).replace(
+            str(source["gh_snapshot_refreshed_at"]).replace(
                 "Z", "+00:00"))
+        draw_at = dt.datetime.fromisoformat(
+            str(payload["draw_at"]).replace("Z", "+00:00"))
     except (KeyError, TypeError, ValueError) as exc:
         raise BeltReplayError("date ou provenance d'instantane illisible") from exc
     if (moment.tzinfo is None or exported.tzinfo is None
-            or refreshed.tzinfo is None
+            or refreshed.tzinfo is None or draw_at.tzinfo is None
             or moment.utcoffset() != dt.timedelta(0)
             or exported.utcoffset() != dt.timedelta(0)
-            or refreshed.utcoffset() != dt.timedelta(0)):
+            or refreshed.utcoffset() != dt.timedelta(0)
+            or draw_at.utcoffset() != dt.timedelta(0)):
         raise BeltReplayError("les dates du rejeu doivent etre en UTC")
     if moment != exported:
         raise BeltReplayError("--belt-replay-at doit etre la date exacte de l'export")
-    if payload.get("repo") != REPO or payload["source"].get("repo") != REPO:
+    if draw_at > moment:
+        raise BeltReplayError("horloge du tirage posterieure a la capture")
+    if payload.get("repo") != REPO or source.get("repo") != REPO:
         raise BeltReplayError("depot de l'export different du depot courant")
-    if payload["source"].get("gh_snapshot_version") != 1:
+    if source.get("gh_snapshot_version") != 1:
         raise BeltReplayError("version gh_snapshot absente ou incompatible")
-    if payload["source"].get("transport") != \
+    if source.get("transport") != \
             "scripts/coordination/gh_snapshot.py":
         raise BeltReplayError("transport source absent ou incompatible")
     age = (moment - refreshed).total_seconds()
@@ -9858,7 +9868,7 @@ def validate_belt_replay_input(payload: dict, replay_at: str) -> dict:
 
     window = payload.get("claim_window")
     claim_payloads = payload.get("claim_payloads")
-    stamps = payload["source"].get("claim_comment_stamps")
+    stamps = source.get("claim_comment_stamps")
     if (not isinstance(window, list) or not window
             or not isinstance(claim_payloads, dict)):
         raise BeltReplayError("fenetre ou payloads de claims absents")
@@ -9890,6 +9900,11 @@ def validate_belt_replay_input(payload: dict, replay_at: str) -> dict:
         raise BeltReplayError("donnees de series absentes")
     if not isinstance(payload.get("issue_to_family"), dict):
         raise BeltReplayError("correspondance issue-famille absente")
+    try:
+        for key in payload["issue_to_family"]:
+            int(key)
+    except (TypeError, ValueError) as exc:
+        raise BeltReplayError("cle issue-famille invalide") from exc
     if not isinstance(payload.get("merged_prs"), list):
         raise BeltReplayError("corpus de PR fusionnees absent")
     if not isinstance(payload.get("closed_issues"), list):
@@ -9905,7 +9920,7 @@ def validate_belt_replay_input(payload: dict, replay_at: str) -> dict:
     if (any(not isinstance(item, dict) for item in payload["merged_prs"])
             or any(not isinstance(item, dict) for item in payload["closed_issues"])):
         raise BeltReplayError("corpus bandit malforme")
-    return {"moment": moment, "pool": pool, "ratio": ratio,
+    return {"moment": draw_at, "capture_at": moment, "pool": pool, "ratio": ratio,
             "claim_window": window, "claim_payloads": claim_payloads}
 
 
@@ -9963,7 +9978,8 @@ def build_belt_replay_input(*, pool: list[dict], family_signal: dict,
                             merged_prs: list[dict], closed_issues: list[dict],
                             closed_error: str | None, open_count: int,
                             seed_source: str, snapshot: dict,
-                            computed_at: dt.datetime) -> dict:
+                            computed_at: dt.datetime,
+                            captured_at: dt.datetime | None = None) -> dict:
     """Prepare un export à partir de l'instantané canonique déjà chargé."""
     gh_snapshot = _gh_snapshot_module()
     numbers = [int(item["number"]) for item in pool]
@@ -9982,15 +9998,18 @@ def build_belt_replay_input(*, pool: list[dict], family_signal: dict,
         claim_payloads[key] = payload
     computed_iso = computed_at.astimezone(dt.timezone.utc).strftime(
         "%Y-%m-%dT%H:%M:%SZ")
+    capture_iso = (captured_at or dt.datetime.now(dt.timezone.utc)).astimezone(
+        dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     replay_input = {
         "schema": BELT_REPLAY_SCHEMA,
         "repo": REPO,
+        "draw_at": computed_iso,
         "source": {
             "transport": "scripts/coordination/gh_snapshot.py",
             "repo": meta.get("repo"),
             "gh_snapshot_version": meta.get("version"),
             "gh_snapshot_refreshed_at": meta.get("refreshed_at"),
-            "computed_at": computed_iso,
+            "computed_at": capture_iso,
             "claim_comment_stamps": {
                 str(n): stamps.get(str(n), stamps.get(n)) for n in numbers
             },
@@ -10007,7 +10026,7 @@ def build_belt_replay_input(*, pool: list[dict], family_signal: dict,
         "open_count": int(open_count),
         "seed_source": seed_source,
     }
-    validate_belt_replay_input(replay_input, computed_iso)
+    validate_belt_replay_input(replay_input, capture_iso)
     return replay_input
 
 
