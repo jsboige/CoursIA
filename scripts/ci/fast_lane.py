@@ -49,6 +49,7 @@ from fast_lane_registry import (  # noqa: E402
     TRANCHE33, TRANCHE34, TRANCHE35, TRANCHE36, TRANCHE37, TRANCHE38,
     TRANCHE39, Guard,
 )
+import advisory_sticky  # noqa: E402
 
 SHADOW_PREFIX = "fast-lane (ombre): "
 GUARD_TIMEOUT_S = 600
@@ -345,23 +346,10 @@ def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
 # Effets de bord PR : stickies et artefacts (#22209, tranche 1b)
 # ---------------------------------------------------------------------------
 #
-# Les gardes de cette tranche ne rendent pas leur verdict par un check-run
-# seul : ils ECRIVENT sur la PR (commentaire a marqueur) et, pour l'un d'eux,
-# deposent un artefact JSON. L'ecriture est isolee dans ce module et n'est
-# atteinte que par `--effects`, executee par le SEUL job qui porte
-# `pull-requests: write` (`Always-on commenters`). Le job principal
-# (`Always-on guards`) n'a pas ce drapeau : un defaut dans le code d'un garde
-# ne peut donc pas ecrire sur une PR.
-#
-# Le marqueur est celui de `marocchino/sticky-pull-request-comment@v2`,
-# byte-identique et en FIN de corps -- c'est la forme que reconnait le
-# parseur du dossier de prevalidation (`check_adjoint_prevalidation.py`).
-
-STICKY_MARKER = "<!-- Sticky Pull Request Comment{h} -->"
-
-
-def sticky_marker(header: str) -> str:
-    return STICKY_MARKER.format(h=header)
+# Les commentaires consultatifs passent par `advisory_sticky`, qui maintient
+# un seul commentaire par PR et retire une section quand le signal disparait.
+# Ce chemin n'est atteint que par `--effects`, dans le job qui porte le droit
+# d'ecriture sur les PR.
 
 
 def artifact_root() -> Path:
@@ -377,80 +365,6 @@ def write_artifact(name: str, filename: str, payload: str) -> str:
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(payload, encoding="utf-8")
     return str(dest)
-
-
-def _gh_api(paginate: bool, *args: str, stdin: str | None = None):
-    cmd = ["gh", "api"]
-    if paginate:
-        cmd += ["--paginate", "--slurp"]
-    cmd += list(args)
-    if stdin is not None:
-        cmd += ["--input", "-"]
-    return subprocess.run(cmd, cwd=REPO_ROOT, input=stdin, capture_output=True,
-                          text=True, encoding="utf-8", errors="replace")
-
-
-def _existing_sticky(repo: str, pr: str, marker: str) -> str:
-    """Id du commentaire dont le corps se termine par `marker`, sinon ""."""
-    proc = _gh_api(True, f"repos/{repo}/issues/{pr}/comments?per_page=100")
-    if proc.returncode != 0:
-        print(f"[fast-lane][effets] lecture des commentaires impossible : "
-              f"{proc.stderr.strip()}", file=sys.stderr)
-        return ""
-    try:
-        pages = json.loads(proc.stdout or "[]")
-    except ValueError:
-        print("[fast-lane][effets] reponse de commentaires illisible",
-              file=sys.stderr)
-        return ""
-    for page in pages if isinstance(pages, list) else []:
-        for comment in page or []:
-            body = (comment.get("body") or "").rstrip()
-            # Un sticky dont le pied a ete deplace par une edition manuelle
-            # n'est plus reconnu : il sera repose, pas duplique dans le corps
-            # du precedent. C'est le comportement de l'action source.
-            if body.endswith(marker) and comment.get("id") is not None:
-                return str(comment["id"])
-    return ""
-
-
-def upsert_sticky_comment(repo: str, pr: str, header: str, body: str,
-                          dry_run: bool) -> str:
-    """Pose ou met a jour le sticky `header`. Rend l'action effectuee.
-
-    Idempotence : le commentaire existant est retrouve par son marqueur puis
-    PATCHe. Sans cela, chaque push empilerait un commentaire de plus sur la
-    PR -- l'accident que la tranche absorbe justement.
-    """
-    if not pr:
-        print("[fast-lane][effets] pas de numero de PR : sticky non pose",
-              file=sys.stderr)
-        return "skipped"
-    marker = sticky_marker(header)
-    text = body.rstrip() + "\n\n" + marker
-    if dry_run:
-        print(f"[fast-lane][a-blanc] sticky {header!r} -> "
-              f"{len(text)} caracteres")
-        return "dry-run"
-    existing = _existing_sticky(repo, pr, marker)
-    payload = json.dumps({"body": text})
-    if existing:
-        proc = _gh_api(False, "-X", "PATCH",
-                       f"repos/{repo}/issues/comments/{existing}",
-                       stdin=payload)
-        action = "updated"
-    else:
-        proc = _gh_api(False, "-X", "POST",
-                       f"repos/{repo}/issues/{pr}/comments", stdin=payload)
-        action = "created"
-    if proc.returncode != 0:
-        # Jamais de repli en POST quand le PATCH echoue : ce serait creer le
-        # doublon que l'upsert existe pour eviter.
-        print(f"[fast-lane][effets] ECHEC du sticky {header!r} : "
-              f"{proc.stderr.strip()}", file=sys.stderr)
-        return "error"
-    print(f"[fast-lane][effets] sticky {header!r} : {action}")
-    return action
 
 
 def drop_empty_pairs(cmd: list[str]) -> list[str]:
@@ -503,6 +417,34 @@ def trunc_note(total: int, kept: int) -> str:
             f"first {kept} were scanned.")
 
 
+def _retire_legacy_sticky_comments(repo: str, pr_number: int, header: str,
+                                   canonical_id: int | None) -> None:
+    """Neutralise les anciens stickies individuels après leur migration.
+
+    Le corps historique reste dans le fil, mais son marqueur individuel est
+    remplacé par le marqueur de renvoi reconnu par le dossier de prévalidation.
+    Seuls les commentaires du bot avec l'en-tête exact sont modifiés.
+    """
+    marker = f"<!-- Sticky Pull Request Comment{header} -->"
+    rows = advisory_sticky.list_comments(pr_number, repo)
+    for row in rows:
+        login = ((row.get("user") or {}).get("login") or "")
+        body = (row.get("body") or "").rstrip()
+        cid = row.get("id")
+        if (login not in advisory_sticky.GUARD_BOT_LOGINS
+                or not isinstance(cid, int) or not body.endswith(marker)):
+            continue
+        if canonical_id is not None:
+            forwarded = advisory_sticky.forward_body(canonical_id)
+        else:
+            forwarded = (
+                f"{advisory_sticky.FORWARD_MARKER}\n\n"
+                "*Ancien commentaire consultatif remplacé.*\n")
+        advisory_sticky._patch_comment(
+            cid, forwarded, repo, advisory_sticky._default_runner,
+            advisory_sticky.DEFAULT_TIMEOUT)
+
+
 def run_effects(guard: Guard, ctx: dict[str, str],
                 dry_run: bool) -> tuple[int, str, list[str]]:
     """Execute les `commenters` d'un garde. Rend (rc agrege, log, pannes).
@@ -519,9 +461,21 @@ def run_effects(guard: Guard, ctx: dict[str, str],
         local = dict(ctx, trunc_note="")
 
         def _post(commenter=commenter, text=""):
+            if dry_run:
+                action = "upsert" if text else "clear"
+                print(f"[fast-lane][a-blanc] advisory {action} "
+                      f"{commenter.header!r}")
+                return
+            pr_number = int(ctx["pr_number"])
             if text:
-                upsert_sticky_comment(ctx["repo"], ctx["pr_number"],
-                                      commenter.header, text, dry_run)
+                result = advisory_sticky.upsert_section(
+                    commenter.header, text, pr_number, repo=ctx["repo"])
+            else:
+                result = advisory_sticky.clear_section(
+                    commenter.header, pr_number, repo=ctx["repo"])
+            _retire_legacy_sticky_comments(ctx["repo"], pr_number,
+                                           commenter.header,
+                                           result.get("comment_id"))
 
         # Les abstentions passent AVANT la selection de chemins. Une base
         # introuvable rend sinon « aucun fichier a scanner », donc un quitus

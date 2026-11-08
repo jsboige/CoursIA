@@ -364,6 +364,7 @@ def test_commenters_writes_live_at_job_level_only():
     assert job["permissions"] == {
         "contents": "read",
         "pull-requests": "write",
+        "issues": "write",
         "checks": "write",
     }
 

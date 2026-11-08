@@ -2600,21 +2600,13 @@ TRANCHE27: list[Guard] = [
 #   - workflow source reduit a `workflow_dispatch`, fichier conserve (sa
 #     re-mesure manuelle et la source du nom canonique).
 #
-# Les marqueurs stickies sont reproduits BYTE-IDENTIQUES a ce que pose
-# `marocchino/sticky-pull-request-comment@v2` : `<!-- Sticky Pull Request
-# Comment<header> -->`, en FIN de corps (cf le parseur de
-# `check_adjoint_prevalidation.py`, qui reconnait cette forme la). Un sticky
-# deja pose est MIS A JOUR, jamais double : c'est tout l'objet de l'upsert, et
-# le test le verifie sur un corps qui porte deja le marqueur.
-#
-# `scan-md-hierarchy-drift.yml` postait un commentaire NEUF a chaque push sans
-# marqueur. Reproduire cet accident (une PR de carnet recevait un commentaire
-# par push) n'apporterait rien : le garde pose desormais un sticky
-# `md-hierarchy-drift-advisory`, ce qui applique la meme regle « mis a jour,
-# pas double » aux quatre surfaces. L'en-tete est declare dans
-# `_BOT_STICKY_ADVISORY_HEADERS` (`check_adjoint_prevalidation.py`) pour que le
-# dossier de prevalidation continue de lire ces reecritures comme des
-# commentaires de bot consultatifs.
+# Les sections consultatives passent par `scripts/ci/advisory_sticky.py` :
+# un commentaire partage par PR, identifie par
+# `<!-- coursia:advisory-sticky -->`, avec une section par `header`. Les
+# anciens marqueurs individuels restent reconnus par le dossier de
+# prevalidation pour lire les commentaires deja presents dans l'historique.
+# Un constat vert retourne un corps vide et retire sa section; le check-run
+# nomme conserve le detail du succès.
 # ---------------------------------------------------------------------------
 
 
@@ -2622,16 +2614,13 @@ TRANCHE27: list[Guard] = [
 class Commenter:
     """Un effet de bord PR d'un garde absorbe.
 
-    header      En-tete du sticky. Le marqueur pose est
-                `<!-- Sticky Pull Request Comment<header> -->`, byte-identique
-                a celui de `marocchino/sticky-pull-request-comment@v2` ; il
-                sert AUSSI de cle d'upsert (le commentaire existant est
-                retrouve par ce marqueur puis PATCHe).
+    header      Nom de la section dans le commentaire partage
+                `advisory_sticky` ; c'est aussi l'identite stable de l'organe.
     argv        Detecteur. Sa sortie standard est le rapport : elle part dans
                 l'artefact quand `artifact_name` est renseigne, et dans le
                 corps du commentaire quand `body` la consomme.
-    body        (rc, payload, ctx) -> corps du commentaire. Rend une chaine
-                vide pour ne rien poser (cas du drift markdown sans derive).
+    body        (rc, payload, ctx) -> corps de section. Une chaine vide retire
+                la section quand aucun signal consultatif ne reste.
     artifact_name / artifact_file
                 Nom d'artefact et nom de fichier, copies tels quels du
                 workflow source (`actions/upload-artifact` garde son nom
@@ -2675,9 +2664,6 @@ class Commenter:
 # reformulation silencieuse changerait le signal d'une PR a l'autre pour la
 # meme mesure. Seul l'emballage change (le heredoc shell disparait).
 
-_CLAIMS_OK = (
-    "✅ No prose/output mismatch detected in the notebooks this PR changed."
-)
 _CLAIMS_ABSTAIN = (
     "⚠️ Detector abstained (merge-base introuvable, shallow fetch or "
     "unanchored branch)."
@@ -2688,23 +2674,6 @@ _CLAIMS_WARN = (
     "or its evidence is missing. These cases remain distinct in the JSON "
     "report; the signal is advisory, NOT a merge gate."
 )
-_CLAIMS_TRAILER = (
-    "Scope = notebooks CHANGED in this PR, not the whole corpus. Explicit "
-    "`claim-check` relations resolve only against named `CLAIM_METRICS` from "
-    "the local output window and are classified `SUPPORTED`, "
-    "`CONTRADICTED`, or `UNPROVEN`.\n"
-    "The `markdown-claims-output-report` run artifact contains the "
-    "structured JSON report. See `python "
-    "scripts/check_markdown_claims_output.py --help` for re-running "
-    "locally.\n"
-    "Detector rationale: c.290 / c.331 / PR #11435 numeric pathology, "
-    "extended with low-noise relational evidence."
-)
-
-_STALE_OK = (
-    "✅ No unanchored measurement claim detected in the notebooks this PR "
-    "changed."
-)
 _STALE_ABSTAIN = (
     "⚠️ Stale-claim detector abstained (merge-base introuvable, shallow "
     "fetch or unanchored branch)."
@@ -2713,21 +2682,6 @@ _STALE_WARN = (
     "⚠️ Stale-claim review needed: a markdown cell claims a measurement "
     "value that appears in NO committed output of the notebook. Advisory, "
     "NOT a merge gate — triage against the JSON artifact."
-)
-_STALE_TRAILER = (
-    "Scope = notebooks CHANGED in this PR, not the whole corpus. The "
-    "`stale-claim-report` run artifact holds the structured JSON.\n"
-    "Rationale: the sibling detector above only compares a claim to the "
-    "outputs of the cells that PRECEDE it; a claim written in a cell that "
-    "precedes its code (App-5-Timetabling c.2/c.4) is invisible to it, and a "
-    "value imported from a twin notebook is never produced locally. See "
-    "`python scripts/check_stale_claims.py --help`."
-)
-
-_MISLABEL_OK = (
-    "✅ No factual mislabel detected in the notebooks this PR changed "
-    "(entity counts and tuple formulas checked against nearby committed "
-    "streams)."
 )
 _MISLABEL_ABSTAIN = (
     "⚠️ Factual-mislabel detector abstained (merge-base introuvable, "
@@ -2739,20 +2693,6 @@ _MISLABEL_WARN = (
     "code cell it describes (typically copied from a twin notebook with "
     "different data). Advisory, NOT a merge gate — triage against the JSON "
     "artifact."
-)
-_MISLABEL_TRAILER = (
-    "Scope = notebooks CHANGED in this PR, not the whole corpus. The "
-    "`factual-mislabel-report` run artifact holds the structured JSON.\n"
-    "Rationale: pure ABSENCE of a claimed value is the sibling stale-claim "
-    "detector's job; this one only reports CONTRADICTIONS between an "
-    "adjacent code cell's stream and the markdown that describes it. See "
-    "`python scripts/check_factual_mislabel.py --help`."
-)
-
-_LISTING_OK = (
-    "✅ No truncated listing detected in the notebooks this PR changed "
-    "(markdown identifier tables checked against the numbered listing a "
-    "nearby code cell's stream prints)."
 )
 _LISTING_ABSTAIN = (
     "⚠️ Listing-coherence detector abstained (merge-base introuvable, "
@@ -2780,16 +2720,6 @@ _LISTING_OK_UNREAD = (
     "lus, mais {n} carnet(s) n'ont pas pu etre lus (JSON corrompu ou encodage "
     "non UTF-8) — le vert n'est pas rendu."
 )
-_LISTING_TRAILER = (
-    "Scope = notebooks CHANGED in this PR, not the whole corpus. The "
-    "`listing-coherence-report` run artifact holds the structured JSON.\n"
-    "Rationale: this compares identifier SETS, not counts — a count "
-    "comparison cannot see a table truncated from `08` while the stream "
-    "lists up to `15`. The contiguous-prefix discriminant is what keeps an "
-    "arbitrary subset (« the 3 longest ») out of the report. See "
-    "`python scripts/check_listing_coherence.py --help`."
-)
-
 # Echec d'usage (rc=2) des trois detecteurs de prose freres : ni un constat,
 # ni un quitus. Voir `_exit_state` (#23394, reserve 3).
 _CLAIMS_FATAL = (
@@ -2805,16 +2735,6 @@ _MISLABEL_FATAL = (
     "d'erreur d'usage, pas un constat sur cette PR. Voir le log du job."
 )
 
-_ORGAN_CLEAN = (
-    "No organ-duplication: no added def/class collides with another series "
-    "organ API (scripts/audit/organ_api_index.yaml)."
-)
-_ORGAN_EXEMPTED = (
-    "Organ duplication DETECTED but EXEMPTED: the PR body declares a "
-    "pedagogical copy. The organ-first rule (5 questions) is satisfied by "
-    "construction. If this copy grows (several consumer notebooks), ask the "
-    "source series for an extraction instead."
-)
 _ORGAN_ABSTAIN = (
     "Organ-duplication detector ABSTAINS: merge-base unresolved or "
     "structural error -- no verdict. See workflow log."
@@ -2827,13 +2747,6 @@ _ORGAN_WARN = (
     "the workflow log for the full collision list (demanding series -> "
     "bypassed organ -> symbol). Advisory, NOT a merge gate."
 )
-_ORGAN_TRAILER = (
-    "Detector: `python scripts/audit/detect_organ_duplication.py --base "
-    "<merge-base> --body-file <pr body>`\n"
-    "Rationale: `#16776` / `#13564` (rule merged in `#16778`)."
-)
-
-
 def _with_note(sentence: str, ctx: dict) -> str:
     """Phrase d'etat + note de couverture partielle quand elle existe.
 
@@ -2866,23 +2779,29 @@ def _exit_state(rc: int, ctx: dict, fatal_rc: tuple[int, ...] = (2,)) -> str:
 
 def _body_claims_output(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
-    sentence = {"ok": _CLAIMS_OK, "abstain": _CLAIMS_ABSTAIN,
+    if state == "ok":
+        return ""
+    sentence = {"abstain": _CLAIMS_ABSTAIN,
                 "fatal": _CLAIMS_FATAL}.get(state, _CLAIMS_WARN)
-    return f"{_with_note(sentence, ctx)}\n\n{_CLAIMS_TRAILER}"
+    return _with_note(sentence, ctx)
 
 
 def _body_stale_claim(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
-    sentence = {"ok": _STALE_OK, "abstain": _STALE_ABSTAIN,
+    if state == "ok":
+        return ""
+    sentence = {"abstain": _STALE_ABSTAIN,
                 "fatal": _STALE_FATAL}.get(state, _STALE_WARN)
-    return f"{_with_note(sentence, ctx)}\n\n{_STALE_TRAILER}"
+    return _with_note(sentence, ctx)
 
 
 def _body_factual_mislabel(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
-    sentence = {"ok": _MISLABEL_OK, "abstain": _MISLABEL_ABSTAIN,
+    if state == "ok":
+        return ""
+    sentence = {"abstain": _MISLABEL_ABSTAIN,
                 "fatal": _MISLABEL_FATAL}.get(state, _MISLABEL_WARN)
-    return f"{_with_note(sentence, ctx)}\n\n{_MISLABEL_TRAILER}"
+    return _with_note(sentence, ctx)
 
 
 def _payload_count(payload: str, key: str) -> int:
@@ -2901,7 +2820,9 @@ def _payload_count(payload: str, key: str) -> int:
 
 def _body_listing_coherence(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
-    sentence = {"ok": _LISTING_OK, "abstain": _LISTING_ABSTAIN,
+    if state == "ok" and not _payload_count(payload, "non_lus"):
+        return ""
+    sentence = {"abstain": _LISTING_ABSTAIN,
                 "fatal": _LISTING_FATAL}.get(state, _LISTING_WARN)
     # `non_lus` porte les carnets que le detecteur n'a pas pu ouvrir : sans
     # cette phrase, un carnet illisible sortait en vert « aucun tableau
@@ -2912,7 +2833,7 @@ def _body_listing_coherence(rc: int, payload: str, ctx: dict) -> str:
             sentence = _LISTING_OK_UNREAD.format(n=non_lus)
         else:
             sentence = f"{sentence} {_LISTING_UNREAD.format(n=non_lus)}"
-    return f"{_with_note(sentence, ctx)}\n\n{_LISTING_TRAILER}"
+    return _with_note(sentence, ctx)
 
 
 def _organ_status(payload: str) -> str:
@@ -2930,12 +2851,9 @@ def _organ_status(payload: str) -> str:
 
 def _body_organ_duplication(rc: int, payload: str, ctx: dict) -> str:
     state = _organ_status(payload)
-    sentence = {
-        "clean": _ORGAN_CLEAN,
-        "exempted": _ORGAN_EXEMPTED,
-        "abstain": _ORGAN_ABSTAIN,
-    }.get(state, _ORGAN_WARN)
-    return f"{sentence}\n\n{_ORGAN_TRAILER}"
+    if state in {"clean", "exempted"}:
+        return ""
+    return _ORGAN_ABSTAIN if state == "abstain" else _ORGAN_WARN
 
 
 def _body_md_hierarchy(rc: int, payload: str, ctx: dict) -> str:
