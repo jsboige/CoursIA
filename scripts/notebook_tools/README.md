@@ -62,8 +62,11 @@ ou un kernelspec absent est détecté avant le lancement, avec le nom attendu.
 `--check-only` ne démarre pas le service et ne
 prétend donc pas vérifier une route ; la sonde démarre réellement le serveur,
 vérifie que la méthode et le chemin annotés apparaissent dans son descripteur
-OpenAPI, puis interroge l'endpoint sur loopback. La sonde s'arrête après la
-réponse ; sans sonde, le processus reste au premier plan jusqu'à Ctrl-C.
+OpenAPI, puis interroge l'endpoint sur loopback. Elle affecte au serveur un
+jeton aléatoire via `KG_AUTH_TOKEN`, vérifie qu'OpenAPI répond 401 sans ce
+jeton, puis signe la requête métier : un serveur déjà présent sur le port ne
+peut pas fournir un faux succès. La sonde s'arrête après la réponse ; sans
+sonde, le processus reste au premier plan jusqu'à Ctrl-C.
 
 Le lanceur ne valide pas le sens du contrat métier et ne remplace pas les tests
 du cœur. Il vérifie que l'endpoint répond en JSON avec un statut HTTP 2xx. Les

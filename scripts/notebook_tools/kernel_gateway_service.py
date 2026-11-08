@@ -10,6 +10,7 @@ import argparse
 import importlib.util
 import json
 import os
+import secrets
 import subprocess
 import sys
 import tempfile
@@ -86,14 +87,24 @@ def build_command(notebook: Path, host: str, port: int) -> list[str]:
     ]
 
 
-def _route_is_registered(base_url: str, path: str, method: str, timeout: float) -> bool | None:
-    request = urllib.request.Request(base_url + SWAGGER_PATH, method="GET")
+def _openapi(base_url: str, token: str | None, timeout: float) -> tuple[int | None, Any]:
+    headers = {"Accept": "application/json"}
+    if token is not None:
+        headers["Authorization"] = f"token {token}"
+    request = urllib.request.Request(base_url + SWAGGER_PATH, headers=headers, method="GET")
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
-            if response.status != 200:
-                return False
-            spec = json.loads(response.read().decode("utf-8"))
+            spec = json.loads(response.read().decode("utf-8")) if response.status == 200 else None
+            return response.status, spec
+    except urllib.error.HTTPError as exc:
+        return exc.code, None
     except (OSError, urllib.error.URLError, json.JSONDecodeError, UnicodeError):
+        return None, None
+
+
+def _route_is_registered(base_url: str, path: str, method: str, token: str, timeout: float) -> bool | None:
+    status, spec = _openapi(base_url, token, timeout)
+    if status is None or status != 200:
         return None
     routes: Any = spec.get("paths", {}) if isinstance(spec, dict) else {}
     methods = routes.get(path, {}) if isinstance(routes, dict) else {}
@@ -105,9 +116,10 @@ def _base_url(host: str, port: int) -> str:
     return f"http://{authority}:{port}"
 
 
-def _probe(base_url: str, method: str, path: str, body: Any, timeout: float) -> tuple[int, Any]:
+def _probe(base_url: str, method: str, path: str, body: Any, token: str, timeout: float) -> tuple[int, Any]:
     data = None if body is None else json.dumps(body).encode("utf-8")
     headers = {"Accept": "application/json"}
+    headers["Authorization"] = f"token {token}"
     if data is not None:
         headers["Content-Type"] = "application/json"
     request = urllib.request.Request(base_url + path, data=data, headers=headers, method=method)
@@ -134,19 +146,32 @@ def _run_probe(
     base_url = _base_url(host, port)
     deadline = time.monotonic() + timeout
     openapi_seen = False
+    token = secrets.token_urlsafe(32)
+    child_environment = os.environ.copy()
+    child_environment["KG_AUTH_TOKEN"] = token
     with tempfile.TemporaryFile(mode="w+b") as log:
-        process = subprocess.Popen(command, cwd=notebook.parent, stdout=log, stderr=subprocess.STDOUT)
+        process = subprocess.Popen(
+            command, cwd=notebook.parent, env=child_environment, stdout=log, stderr=subprocess.STDOUT
+        )
         try:
             while time.monotonic() < deadline:
                 if process.poll() is not None:
                     break
                 registered = _route_is_registered(
-                    base_url, path, method, min(1.0, max(0.1, deadline - time.monotonic()))
+                    base_url, path, method, token, min(1.0, max(0.1, deadline - time.monotonic()))
                 )
                 openapi_seen = openapi_seen or registered is not None
                 if registered:
                     remaining = max(0.1, deadline - time.monotonic())
-                    status, result = _probe(base_url, method, path, body, remaining)
+                    unauthenticated_status, _ = _openapi(base_url, None, remaining)
+                    if unauthenticated_status != 401:
+                        print(
+                            "[kernel-gateway] identité du serveur non confirmée : "
+                            f"la sonde sans jeton devait recevoir 401, reçu {unauthenticated_status}",
+                            file=sys.stderr,
+                        )
+                        return EXIT_PROBE
+                    status, result = _probe(base_url, method, path, body, token, remaining)
                     print(f"[kernel-gateway] HTTP {status} {method} {path}")
                     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
                     return 0 if 200 <= status < 300 else EXIT_PROBE

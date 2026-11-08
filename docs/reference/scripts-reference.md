@@ -39,8 +39,11 @@ Le carnet reste la source de l'API : ses annotations `# GET /...` et
 Le pré-vol vérifie le notebook, le paquet PyPI `jupyter_kernel_gateway` et le
 kernelspec déclaré. La sonde attend l'enregistrement de la méthode et de la
 route dans `/_api/spec/swagger.json`, appelle l'endpoint une seule fois en
-loopback et exige une réponse JSON avec statut 2xx. Elle arrête ensuite le
-processus ; sans sonde, le serveur reste au premier plan.
+loopback et exige une réponse JSON avec statut 2xx. La sonde configure un jeton
+aléatoire via `KG_AUTH_TOKEN` (pris en charge par Kernel Gateway), confirme
+qu'OpenAPI répond 401 sans ce jeton, puis l'envoie avec la requête métier : un
+autre serveur déjà lié au port ne peut donc pas valider la sonde à sa place.
+Elle arrête ensuite le processus ; sans sonde, le serveur reste au premier plan.
 
 #### `notebook_tools.py execute` — Options avancées
 
