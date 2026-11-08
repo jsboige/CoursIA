@@ -186,14 +186,36 @@ def test_derive_des_mesures_est_une_erreur(tmp_path):
     assert derive[0].severity == "error"
 
 
-def test_densite_sous_plancher_est_un_avertissement_pas_une_erreur():
-    """#13410 : une densite basse est un defaut d'enrichissement, pas un classement faux."""
-    manifest = cq.load_manifest()
-    findings = cq.check_manifest(manifest)
+def test_densite_sous_plancher_est_un_avertissement_pas_une_erreur(tmp_path):
+    """#13410 : une densite basse est un defaut d'enrichissement, pas un classement faux.
+
+    Controle negatif **synthetique** : un carnet present sur l'arbre, dont la
+    densite (prose par cellule code) est sous le plancher de 1200, doit etre
+    signale en ``warning`` -- jamais en ``error``. Le temoin est synthetique et
+    ne depend pas de l'etat du manifeste livre : un carnet reele enrichi (le 09
+    via #24930) sort du plancher et cesserait d'etre un temoin fiable.
+    """
+    # Carnet sous le plancher : 1 cellule code, prose minuscule -> densite < 1200.
+    root = tmp_path / "repo"
+    (root / "notebooks").mkdir(parents=True)
+    nb = {
+        "cells": [
+            {"cell_type": "markdown", "source": ["Introduction au module."]},
+            {"cell_type": "code", "source": ["x = 1"]},
+        ],
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    (root / "notebooks" / "densite-basse.ipynb").write_text(
+        json.dumps(nb), encoding="utf-8"
+    )
+    manifest = _manifest([_entry("notebooks/densite-basse.ipynb")])
+    findings = cq.check_manifest(manifest, root=root)
     densite = [f for f in findings if f.kind == "densite"]
-    assert densite, "le carnet 09 est sous le plancher : il doit etre signale"
+    assert densite, "le carnet sous le plancher doit etre signale"
     assert all(f.severity == "warning" for f in densite)
-    assert any("09-FastText" in f.path for f in densite)
+    assert any("densite-basse" in f.path for f in densite)
 
 
 def test_organe_indisponible_est_signale_pas_avale(tmp_path, monkeypatch):
