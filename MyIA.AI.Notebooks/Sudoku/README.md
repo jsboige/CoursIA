@@ -283,7 +283,7 @@ La liste précise vit dans [`requirements.txt`](requirements.txt).
 
 ### Dépannage
 
-**Les notebooks C# ne s'exécutent pas** — vérifiez `dotnet --version` (SDK 9.0+), installez le kernel (`dotnet tool install -g Microsoft.dotnet-interactive && dotnet interactive jupyter install`), et `jupyter kernelspec list` doit afficher `.net-csharp`. Le notebook 00 définit les classes de base utilisées par les notebooks C# suivants : exécutez-le en premier.
+**Les notebooks C# ne s'exécutent pas** — vérifiez `dotnet --version` (SDK 9.0+), installez le kernel (`dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001 && dotnet interactive jupyter install`), et `jupyter kernelspec list` doit afficher `.net-csharp`. Le notebook 00 définit les classes de base utilisées par les notebooks C# suivants : exécutez-le en premier.
 
 **OR-Tools ou Z3 ne s'installent pas** — OR-Tools : `pip install ortools` (wheels précompilés ; sinon `conda install -c conda-forge ortools-python`). Z3 : le package s'appelle `z3-solver`, pas `z3`.
 

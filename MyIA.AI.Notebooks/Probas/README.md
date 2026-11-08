@@ -541,7 +541,7 @@ pip install "pymc>=6" "arviz>=1" numpy scipy matplotlib
 ```bash
 # 1. Installer .NET SDK 9.0+ depuis https://dotnet.microsoft.com/download
 # 2. Installer le kernel dotnet-interactive
-dotnet tool install -g Microsoft.dotnet-interactive
+dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 
 # 3. Ou utiliser le script PowerShell (installe tout automatiquement) :

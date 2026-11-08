@@ -480,7 +480,7 @@ Aucune API key requise pour les notebooks fondamentaux (SW-1 à SW-11) ni pour l
 ### 1. Environnement .NET
 
 ```bash
-dotnet tool install -g Microsoft.dotnet-interactive
+dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 ```
 
