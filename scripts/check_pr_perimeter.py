@@ -698,6 +698,8 @@ def check_assertion(
             pass
         elif _word_form_is_measurement_result(scan_target, block):
             pass
+        elif _word_form_is_fr_en_pair_reference(scan_target, files):
+            pass
         elif _word_form_is_anaphoric_reference(scan_target):
             pass
         else:
@@ -1426,6 +1428,45 @@ def _word_form_is_other_pr(line: str) -> bool:
             if _count_is_other_pr(line, m):
                 return True
     return False
+
+
+_VARIANT_PAIR_REFERENCE = re.compile(
+    r"\b(?:dans|des|sur|entre)\s+(?:les\s+)?deux\s+fichiers?\b",
+    re.IGNORECASE,
+)
+_VARIANT_LANGUAGE_REFERENCE = re.compile(
+    r"\b(?:anglais|english|fran[cç]ais|french|fr\s*[/+]\s*en|en\s*[/+]\s*fr)\b",
+    re.IGNORECASE,
+)
+
+
+def _files_contain_fr_en_pair(files: list[dict]) -> bool:
+    """True when the changed-file list contains a canonical/`_en` pair."""
+    paths = {str(item.get("path", "")).lower() for item in files}
+    for path in paths:
+        stem, dot, suffix = path.rpartition(".")
+        if dot and stem.endswith("_en") and f"{stem[:-3]}.{suffix}" in paths:
+            return True
+    return False
+
+
+def _word_form_is_fr_en_pair_reference(line: str, files: list[dict]) -> bool:
+    """#25091: a locative count can describe the two language variants.
+
+    The exemption is deliberately narrow: the sentence must describe a
+    language, use a referential construction such as "dans les deux
+    fichiers", and the actual PR file list must contain a canonical/`_en`
+    sibling pair. Explicit perimeter or exclusivity language keeps its usual
+    blocking force, even when the PR also changes such a pair.
+    """
+    low = line.lower()
+    return (
+        _files_contain_fr_en_pair(files)
+        and _VARIANT_PAIR_REFERENCE.search(line) is not None
+        and _VARIANT_LANGUAGE_REFERENCE.search(line) is not None
+        and not _has_strong_scope(low)
+        and not _has_exclusivity(low)
+    )
 
 
 def _additive_line_sum(line: str) -> int:
