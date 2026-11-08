@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-06
+> REFERENCE — vivante — dernière révision 2026-11-08
 
 # Registre datasets — open-courseware CoursIA
 
