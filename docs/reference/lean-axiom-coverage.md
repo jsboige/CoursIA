@@ -293,8 +293,8 @@ modules concernés.
 tombée.** La marche Axler (#24871) a ajouté au lake une quarantaine de
 déclarations nommées : il n'est plus déclaratif-nul, le census le rendait `BARE`,
 et le test du manifeste rougissait sur `main` nu (#25138). #25154 l'a recâblé
-(`axiom-target-modules: "*"`, `axiom-include-i18n-siblings: "true"`, 2 modules
-`_en`). Une décision « sans gate » se relit donc à chaque fois que le lake gagne
+(`axiom-target-modules: "*"`, `axiom-include-i18n-siblings: "true"`, jumeaux
+`_en` compris). Une décision « sans gate » se relit donc à chaque fois que le lake gagne
 des déclarations : la mesure de non-vacuité du 2026-10-27 vaut pour le contenu de
 ce jour-là, pas pour le lake. `conway_cgt_lean` reste le seul lake de cette
 classe.
