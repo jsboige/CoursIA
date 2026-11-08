@@ -27,6 +27,20 @@ The step also REPORTS the i18n surface it did (or did not) inspect: the
 the log says whether they are in or out (#22453 -- a gate that silently
 skips half of a bilingual lake reads like a gate that inspected all of it).
 
+The report names the MODE it applied, because the two modes do not read
+`INCLUDE_I18N_SIBLINGS` the same way (#24160):
+
+  '*' (joker)        the flag decides -- it keeps the `_en` siblings in the
+                    derived list or drops them; the log says INCLUS/EXCLUS
+                    and prints the flag value that drove it.
+  explicit list     the LIST is authoritative -- a `_en` module it names IS
+                    inspected, whatever the flag says (lean-axiom.yml: the
+                    input is "Ignored when target-modules is an explicit
+                    list"). The log says INCLUS and prints the flag value
+                    WITH ITS REAL EFFECT (none), so an INCLUS next to
+                    include_i18n=false is not read as if the flag had
+                    driven it.
+
 Both roots come from GITHUB_WORKSPACE + PROJECT_PATH, never from the cwd
 (the #8712 defect). stdlib-only at import time; lean_server and
 check_target_coverage are imported lazily from the repo checkout.
@@ -102,7 +116,11 @@ if modules_raw == "*":
     discovered = set(discover_modules(project_path, None))
     fr_only = set(filter_i18n_siblings(discovered))
     i18n_siblings = sorted(discovered - fr_only)
+    # JOKER mode: the flag is the only thing that decides the `_en`
+    # surface -- it keeps the siblings in the derived module list or
+    # drops them. The label says so, and names the flag value (#24160).
     i18n_status = "INCLUS" if include_i18n else "EXCLUS"
+    i18n_note = f"mode joker, include_i18n={str(include_i18n).lower()}"
     modules = sorted(discovered) if include_i18n else sorted(fr_only)
     if not modules:
         sys.exit("target-modules='*' enumerated no modules under "
@@ -117,7 +135,17 @@ else:
     # entry does): the SAME filter says which ones, so the rule stays in
     # one place. Those modules ARE inspected -- they are in the list.
     i18n_siblings = sorted(set(modules) - set(filter_i18n_siblings(set(modules))))
-    i18n_status = "INCLUS (liste explicite)"
+    # EXPLICIT-LIST mode: the LIST is authoritative, not the flag. A `_en`
+    # module the list names is inspected whatever `include_i18n` says
+    # (lean-axiom.yml: the input is "Ignored when target-modules is an
+    # explicit list"), so the gate's BEHAVIOUR does not depend on the
+    # flag here. The label used to announce "INCLUS (liste explicite)"
+    # unconditionally, which read as if the flag had driven the outcome:
+    # the same INCLUS appeared next to include_i18n=false. The flag value
+    # is now read and printed with its real effect -- none (#24160).
+    i18n_status = "INCLUS"
+    i18n_note = (f"mode liste explicite, include_i18n="
+                 f"{str(include_i18n).lower()} sans effet")
 # ALLOW accepte la liste a virgules historique OU '@<chemin>' vers un
 # fichier source de verite (un nom par ligne, #21905). Le parsing vit
 # dans allow_list.py (unit-teste) pour que le gate ne porte pas une
@@ -145,10 +173,15 @@ print(f"Modules: {modules}")
 if i18n_siblings:
     _shown = i18n_siblings[:12]
     _omitted = len(i18n_siblings) - len(_shown)
-    print(f"i18n siblings (_en): {len(i18n_siblings)} {i18n_status} -> {_shown}"
+    print(f"i18n siblings (_en): {len(i18n_siblings)} {i18n_status} ({i18n_note})"
+          f" -> {_shown}"
           + (f" ... (+{_omitted} more)" if _omitted else ""))
 else:
-    print(f"i18n siblings (_en): 0")
+    # The mode is named even when the count is zero: "0" means two
+    # different things depending on the branch -- "the lake has no `_en`
+    # module" (joker) or "the list names no `_en` module" (explicit
+    # list, whose `_en` siblings outside the list are NOT gated).
+    print(f"i18n siblings (_en): 0 ({i18n_note})")
 print(f"Additional allow-list: {allow if allow else '(none)'}")
 print()
 for mod in modules:
