@@ -6,7 +6,7 @@ Maison canonique du **choix social formalisé** de CoursIA. Issue #24183 (tranch
 doctrine R1 — « le site d'un lake suit les carnets qui l'utilisent », validée par le
 user le 2026-11-02.
 
-## Contenu (19 modules FR/EN + umbrella)
+## Contenu (modules FR/EN + umbrella)
 
 | Module | Ce qu'il porte |
 |---|---|
