@@ -783,9 +783,16 @@ def _is_prose_input_specification(prose: str, match_pos: int, match_end: int) ->
     « le taux d'apprentissage observé est 0.8 » eligible unless explicitly
     described as a configured input.
     """
-    # Match the exact numeric occurrence when a line repeats the same token.
-    line_start = prose.rfind("\n", 0, match_pos) + 1
-    prefix = prose[line_start:match_pos]
+    # A configuration label must belong to the value's own clause. Bound the
+    # search at a semicolon, line break, or sentence boundary so a prior input
+    # cannot exempt a later measurement in the same paragraph.
+    boundaries = list(re.finditer(
+        r";|,\s+(?:(?:et|mais)\s+)?(?:la|le|les|un|une|ce|cette|ces|"
+        r"son|sa|ses|il|elle|on)\b|\n|[.!?](?=\s+[A-ZÀ-Þ])",
+        prose[:match_pos],
+    ))
+    clause_start = boundaries[-1].end() if boundaries else 0
+    prefix = prose[clause_start:match_pos]
     if not _INPUT_LABEL_RE.search(prefix):
         return False
     if _RESULT_CONTEXT_RE.search(prefix):
@@ -801,6 +808,29 @@ _DERIVED_CONTEXT_RE = re.compile(
     r"[àa]\s+partir\s+de))\b"
 )
 _OUTPUT_NUMBER_RE = re.compile(r"(?<![\d.,])\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:[.,]\d+)?(?![\d])")
+_DERIVED_RATE_OPERANDS_RE = re.compile(
+    r"(?i)(?:\bde\s+)?(?P<n>\d+(?:[.,]\d+)?)\s+"
+    r"(?:(?:succ[eè]s|r[eé]ussites?|cas|[\w-]+)\s+)?"
+    r"(?:sur|/)\s*(?P<d>\d+(?:[.,]\d+)?)"
+)
+_DERIVED_DIFFERENCE_OPERANDS_RE = re.compile(
+    r"(?i)\b(?:\u00e9cart|diff[eé]rence|delta|variation)\s+entre\s+"
+    r"(?P<a>\d+(?:[.,]\d+)?)\s+(?:et|à)\s+(?P<b>\d+(?:[.,]\d+)?)"
+)
+
+
+def _parse_decimal(token: str) -> Decimal | None:
+    """Parse one numeric token using the organ's French decimal convention."""
+    if "," in token and "." in token:
+        token = token.replace(",", "")
+    elif token.count(",") > 1 and all(len(part) == 3 for part in token.split(",")[1:]):
+        token = token.replace(",", "")
+    else:
+        token = token.replace(",", ".")
+    try:
+        return Decimal(token)
+    except Exception:
+        return None
 
 
 def _output_line_numbers(out_text: str) -> list[list[Decimal]]:
@@ -809,17 +839,9 @@ def _output_line_numbers(out_text: str) -> list[list[Decimal]]:
     for line in out_text.splitlines():
         values: list[Decimal] = []
         for match in _OUTPUT_NUMBER_RE.finditer(line):
-            token = match.group(0)
-            if "," in token and "." in token:
-                token = token.replace(",", "")
-            elif token.count(",") > 1 and all(len(part) == 3 for part in token.split(",")[1:]):
-                token = token.replace(",", "")
-            else:
-                token = token.replace(",", ".")
-            try:
-                values.append(Decimal(token))
-            except Exception:
-                continue
+            value = _parse_decimal(match.group(0))
+            if value is not None:
+                values.append(value)
         if len(values) >= 2:
             rows.append(values[:20])
     return rows
@@ -844,13 +866,22 @@ def _derived_value_proven(norm: str, prose: str, match_pos: int, match_end: int,
     places = len(norm.partition(".")[2]) if "." in norm else 0
     tolerance = Decimal("0.5") * (Decimal(10) ** -places)
     is_rate = bool(re.search(r"(?i)%|\b(?:ratio|proportion|pourcentage|taux)\w*\b", line))
-    is_difference = bool(re.search(r"(?i)\b(?:\u00e9cart|diff[eé]rence|delta|variation|gain|perte)\w*\b", line))
+    rate_operands = _DERIVED_RATE_OPERANDS_RE.search(line) if is_rate else None
+    difference_operands = _DERIVED_DIFFERENCE_OPERANDS_RE.search(line)
+    rate_pair = (
+        (_parse_decimal(rate_operands.group("n")), _parse_decimal(rate_operands.group("d")))
+        if rate_operands else None
+    )
+    difference_pair = (
+        (_parse_decimal(difference_operands.group("a")), _parse_decimal(difference_operands.group("b")))
+        if difference_operands else None
+    )
     for row in _output_line_numbers(out_text):
         for left, right in zip(row, row[1:]):
             candidates: list[Decimal] = []
-            if is_rate and right != 0:
+            if rate_pair == (left, right) and right != 0:
                 candidates.append(left / right * Decimal(100))
-            if is_difference:
+            if difference_pair == (left, right):
                 candidates.append(abs(left - right))
             if any(abs(value - claimed) <= tolerance for value in candidates):
                 return True
@@ -1286,7 +1317,14 @@ def check_notebook(path: Path) -> dict:
             match_pos = m.start()
             match_end = m.end()
             norm = _normalize_num(raw)
-            if not _substantive(norm) and not _unit_bearing(raw, prose, match_end):
+            derived_context = bool(_DERIVED_CONTEXT_RE.search(
+                _line_around(prose, match_pos, match_end)
+            ))
+            if (
+                not _substantive(norm)
+                and not _unit_bearing(raw, prose, match_end)
+                and not derived_context
+            ):
                 continue
             # FP filters (c.366): skip version-number citations and
             # numbers inside quoted exception/version/path spans.
@@ -1330,7 +1368,7 @@ def check_notebook(path: Path) -> dict:
             # variants: e.g. "0.24" present in "0.2385")
             if norm in out_text or _fuzzy_present(norm, raw_out_text):
                 continue
-            if _DERIVED_CONTEXT_RE.search(_line_around(prose, match_pos, match_end)):
+            if derived_context:
                 if _derived_value_proven(norm, prose, match_pos, match_end, raw_out_text):
                     continue
                 derived_claims.append({

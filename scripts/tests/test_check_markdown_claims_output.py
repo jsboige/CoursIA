@@ -1399,6 +1399,24 @@ class TestInputSpecificationFilter:
         assert result["verdict"] == "CLEAN", result
         assert not result["findings"]
 
+    def test_input_label_in_prior_clause_does_not_exempt_measurement(self, tmp_path: Path):
+        for src in (
+            "Le seuil est 0.5 ; la précision est 0.91.",
+            "Le seuil est 0.5, et la précision est 0.91.",
+        ):
+            pos = src.index("0.91")
+            assert not _is_input_specification(src, pos, pos + len("0.91"))
+        src = "Le seuil est 0.5 ; la précision est 0.91."
+        nb = _mk_nb([
+            _code_cell("print('precision=0.82')", [_stream_output("precision=0.82")]),
+            _md_cell(src),
+        ])
+        path = tmp_path / "prior_clause.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        assert [finding["normalized"] for finding in result["findings"]] == ["0.91"]
+
     def test_observed_metric_with_same_input_label_stays_checked(self, tmp_path: Path):
         nb = _mk_nb([
             _code_cell("print('accuracy=0.6')", [_stream_output("accuracy=0.6")]),
@@ -1415,7 +1433,7 @@ class TestDerivedClaims:
     def test_same_row_ratio_is_proven(self, tmp_path: Path):
         nb = _mk_nb([
             _code_cell("print('6/50')", [_stream_output("succès=6 essais=50")]),
-            _md_cell("Le taux de succès dérivé est 12 %."),
+            _md_cell("Le taux de succès dérivé de 6 succès sur 50 essais est 12 %."),
         ])
         path = tmp_path / "derived_ratio.ipynb"
         path.write_text(json.dumps(nb), encoding="utf-8")
@@ -1427,7 +1445,7 @@ class TestDerivedClaims:
     def test_same_row_difference_is_proven(self, tmp_path: Path):
         nb = _mk_nb([
             _code_cell("print('1.25-0.75')", [_stream_output("avant=1.25 après=0.75")]),
-            _md_cell("L'écart entre ces deux mesures est 0.5."),
+            _md_cell("L'écart entre 1.25 et 0.75 est 0.5."),
         ])
         path = tmp_path / "derived_difference.ipynb"
         path.write_text(json.dumps(nb), encoding="utf-8")
@@ -1447,6 +1465,18 @@ class TestDerivedClaims:
         assert result["verdict"] == "CLAIM_UNPROVEN", result
         assert not result["findings"]
         assert [claim["normalized"] for claim in result["derived_claims"]] == ["0.75"]
+
+    def test_adjacent_output_numbers_without_named_operands_are_unproven(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('counters')", [_stream_output("Autres compteurs : gauche=3 droite=25")]),
+            _md_cell("Le pourcentage calculé est 12 %."),
+        ])
+        path = tmp_path / "unrelated_operands.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLAIM_UNPROVEN", result
+        assert not result["findings"]
+        assert [claim["normalized"] for claim in result["derived_claims"]] == ["12"]
 
     def test_derived_word_does_not_override_a_direct_match(self, tmp_path: Path):
         nb = _mk_nb([
