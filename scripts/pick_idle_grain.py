@@ -9343,6 +9343,357 @@ def resolve_belt_families(pool: list[dict], issue_to_family: dict | None,
     }
 
 
+# --- #25082 A + B : recompense de fermeture et prior de consolidation -------
+#
+# Le mandat user du 2026-11-07 (session directe avec ai-01) : « Attention, je
+# vois beaucoup de add qui ne repondent ni a la demande de prioriser les
+# issues de consolidation, ni a celle de variete du picker sur le pool
+# d'issues. L'objectif est de cloturer le max d'issues en les visitant de
+# facon intelligente (bandit manchots?) ».
+#
+# A -- RECOMPENSE DE FERMETURE, BRAS = ZONE. Chaque zone (chemin de serie) est
+# un bras ; le genre sert de repli quand la zone n'est pas resolue. Ce qui
+# rapporte, c'est la FERMETURE de l'issue, pas la visite : une visite qui ne
+# ferme rien ne rapporte rien. Fenetre : 14 jours. Le tirage est un echantillon
+# de Thompson, theta ~ Beta(fermees + 1, visitees_sans_fermeture + 1).
+#
+# B -- PRIOR DE CONSOLIDATION, INDEPENDANT DE LA ZONE. Trois classes : le
+# label `consolidation`, l'urne `delivered` (livree, non fermee : la plus
+# proche de la fermeture), et les partitions d'audit `[Audit #17073]`.
+#
+# Contrainte du mandat (decision user du 12/10) : des POIDS SEULEMENT. Aucun
+# refus de tirage, aucun plafond, aucun filtre nouveau. La repondersion change
+# l'ORDRE de service ; l'admissibilite n'est pas touchee.
+
+BANDIT_WINDOW_DAYS = 14
+CONSOLIDATION_PRIOR = 3.0
+DELIVERED_URN_PRIOR = 2.5
+AUDIT_17073_PRIOR = 2.0
+AUDIT_17073_MARKER = "[Audit #17073]"
+#: Le seuil du veto de creation : au-dessus, le grain d'expansion (carnet
+#: neuf) est d'autant plus streme que le pool s'en eloigne.
+EXPANSION_VETO_THRESHOLD = 400
+#: Plancher du poids d'expansion : un poids nul serait un REFUS, et le
+#: mandat du 12/10 l'interdit.
+EXPANSION_FACTOR_FLOOR = 0.25
+
+
+def run_rng(args, now: dt.datetime | None = None) -> tuple[str, random.Random]:
+    """La graine du tirage : (lane, heure UTC, reroll).
+
+    Lanes differentes -> tirages differents ; meme lane dans l'heure ->
+    tirage identique (idempotent). La fonction est **partagee** : la
+    repondersion du tapis (#25082) tire ses echantillons de Thompson sur
+    la MEME graine, mais depuis une INSTANCE distincte -- la voie ponderee
+    garde ainsi son determinisme, qui ne doit pas dependre du fait que le
+    tapis ait consomme des tirages avant elle.
+    """
+    moment = now or NOW
+    seed_src = f"{args.lane}|{moment.strftime('%Y-%m-%dT%H')}|{args.reroll}"
+    seed = int(hashlib.sha256(seed_src.encode()).hexdigest()[:16], 16)
+    return seed_src, random.Random(seed)
+
+
+def bandit_arm(item: dict) -> str:
+    """Le bras d'un grain : sa zone (chemin de serie), sinon son genre.
+
+    La zone est le bras naturel : c'est elle que la saturation de zone
+    (`nb_new`) mesure deja. Le genre est le repli quand la zone n'est pas
+    resolue -- un grain sans zone reste mesurable, il change de bras.
+    """
+    fam = item.get("family")
+    if fam:
+        return "zone:" + str(fam)
+    genre = item.get("genre") or "inconnu"
+    return "genre:" + str(genre)
+
+
+def arm_outcomes(closed_arms: dict[str, int],
+                  visited_arms: dict[str, int]) -> dict[str, tuple[int, int]]:
+    """Chaque bras : (fermees, visitees sans fermeture)."""
+    arms = set(closed_arms or {}) | set(visited_arms or {})
+    return {arm: (int((closed_arms or {}).get(arm, 0)),
+                  int((visited_arms or {}).get(arm, 0)))
+            for arm in sorted(arms)}
+
+
+def sample_arm_thetas(arms: dict[str, tuple[int, int]],
+                      rng: random.Random) -> dict[str, float]:
+    """theta ~ Beta(fermees + 1, visitees sans fermeture + 1) -- Thompson.
+
+    Le prior Beta(1, 1) rend un bras sans donnee UNIFORME : il n'est ni
+    favorise ni ecarte. C'est ce qui evite qu'une zone jamais mesuree
+    herite du credit d'une zone qui ferme, et qu'une zone qui ne ferme pas
+    soit ecartee sur une simple absence de donnee.
+    """
+    return {arm: rng.betavariate(closed + 1.0, visited + 1.0)
+            for arm, (closed, visited) in arms.items()}
+
+
+def consolidation_prior(item: dict) -> tuple[float, str]:
+    """Le prior de consolidation d'un grain : (facteur, classe).
+
+    Les classes sont CUMULABLES : un grain peut etre a la fois livre et
+    porte du label de consolidation. Le facteur retenu est le plus fort, et
+    la classe nommee est celle qui l'a porte -- le rapport dit donc pourquoi
+    le grain est prioritaire.
+    """
+    factors: list[tuple[float, str]] = []
+    if item.get("klass") == "delivered":
+        factors.append((DELIVERED_URN_PRIOR, "delivered"))
+    if AUDIT_17073_MARKER.lower() in (item.get("title") or "").lower():
+        factors.append((AUDIT_17073_PRIOR, "audit_17073"))
+    if is_consolidation(item):
+        factors.append((CONSOLIDATION_PRIOR, "consolidation"))
+    if not factors:
+        return 1.0, ""
+    return max(factors, key=lambda couple: couple[0])
+
+
+def expansion_factor(open_count: int) -> float:
+    """Le grain d'expansion se pondere par l'ecart du pool au seuil du veto.
+
+    Sous le seuil, rien n'est penalise. Au-dessus, le grain d'expansion
+    (carnet neuf) est d'autant plus streme que le pool s'en eloigne -- mais
+    jamais annule : un poids nul serait un refus de tirage, et le mandat du
+    12/10 l'interdit.
+    """
+    if open_count <= EXPANSION_VETO_THRESHOLD:
+        return 1.0
+    gap = ((open_count - EXPANSION_VETO_THRESHOLD)
+           / float(EXPANSION_VETO_THRESHOLD))
+    return max(EXPANSION_FACTOR_FLOOR, 1.0 - gap)
+
+
+def belt_score(item: dict, thetas: dict[str, float], mean_theta: float,
+               open_count: int) -> dict:
+    """Le score de service d'un grain : un POT UNIQUE.
+
+    `bucket = round(log2(rel) + log2(prior) + log2(expansion))` : le prior
+    de consolidation pese en POTS (x3 ~ +1,6 pot, x2 = +1 pot), pas en rang
+    lexicographique. Un rang dur (tout grain prioritaire devant tout grain
+    neutre, quelle que soit la zone) vidait la tete de sa variete -- 45/50
+    grains de tier 0 au rejeu du 07/11 : le mandat demande la consolidation
+    ET la variete. Avec le pot unique, le grain de consolidation d'une zone
+    sterile peut passer derriere un grain neutre d'une zone qui ferme
+    nettement mieux : c'est le bandit qui fait son travail, et c'est voulu
+    (#25082, revue du 07/11 -- « independante de la famille » voulait dire
+    « ne depend pas de la resolution de zone pour agir », pas un rang dur).
+    La consolidation DUE garde son garde-fou : `legacy[0]` en tete de cle,
+    borne par CONSOLIDATION_LAG_H.
+
+    Le bandit est un RELATIF : theta ramene a la moyenne des bras du pool,
+    pour qu'une zone qui ferme bien soit devant la moyenne sans que le
+    niveau absolu des poids deplace l'ensemble du tirage. La variete vient
+    de l'echantillonnage de Thompson ; a pot egal, la ligne de temps tranche.
+    """
+    arm = bandit_arm(item)
+    theta = float(thetas.get(arm, 0.0))
+    rel = (theta / mean_theta) if mean_theta and mean_theta > 0 else 1.0
+    prior, classe = consolidation_prior(item)
+    expansion = expansion_factor(open_count)
+    mult = expansion if item.get("polarity") == EXPANSION else 1.0
+    bucket = int(round(math.log2(max(rel, 1e-6))
+                       + math.log2(max(prior, 1e-6))
+                       + math.log2(max(mult, 1e-6))))
+    return {"arm": arm, "theta": round(theta, 4), "rel": round(rel, 4),
+            "prior": prior, "classe": classe, "expansion": mult,
+            "bucket": bucket,
+            "score": round(max(rel, 1e-6) * prior * mult, 4)}
+
+
+def belt_weight_key(it: dict, detail: dict, *, now=None) -> tuple:
+    """La cle de tri ponderee du tapis.
+
+    La CLASSE et le RANG du tapis d'abord (le grain borne avant le
+    conteneur dans la classe des consolidations dues -- `legacy[0]`, le
+    garde-fou de fraicheur #22500), puis le POT UNIQUE (bandit + prior +
+    expansion, cf. `belt_score`), puis la ligne de temps.
+
+    Le pot est un entier de log2 : un ecart d'un pot vaut un doublement de
+    poids, et la LIGNE DE TEMPS reste decisive entre deux grains de meme
+    pot (le moins visite d'abord).
+
+    C'est ce qui rend la repondersion lisible : le tapis ne se met pas a
+    tirer au hasard, il se met a peser, et le temps tranche les ex aequo.
+    """
+    moment = now or NOW
+    legacy = belt_sort_key(it, now=moment)
+    bucket = int((detail or {}).get("bucket", 0))
+    return (legacy[0], legacy[1], -bucket, legacy[2], legacy[3])
+
+
+def fetch_closed_issues(window_days: int = BANDIT_WINDOW_DAYS, *,
+                         now: dt.datetime | None = None,
+                         limit: int = 400) -> tuple[list[dict], str | None]:
+    """Les issues FERMEES de la fenetre : la recompense du bandit.
+
+    Une erreur de lecture rend `(liste vide, cause)`. L'appelant doit alors
+    dire que la recompense n'a pas ete MESUREE -- jamais laisser un zero
+    d'absence de mesure se lire comme un zero de fermeture.
+    """
+    moment = now or NOW
+    start = (moment - dt.timedelta(days=window_days)).date().isoformat()
+    cmd = ["gh", "issue", "list", "--repo", REPO, "--state", "closed",
+           "--search", f"closed:>={start}", "--limit", str(limit),
+           "--json", "number,title,body,labels"]
+    try:
+        res = _run_bounded(cmd, timeout=90)
+    except (subprocess.TimeoutExpired, OSError) as exc:  # noqa: BLE001
+        return [], f"lecture des issues fermees impossible : {exc}"
+    if res.returncode != 0:
+        return [], ((res.stderr or "").strip()[:200]
+                    or "gh issue list (fermees) a echoue")
+    try:
+        data = json.loads(res.stdout or "[]")
+    except (json.JSONDecodeError, TypeError):
+        return [], "reponse illisible de gh issue list (fermees)"
+    if not isinstance(data, list):
+        return [], "reponse inattendue de gh issue list (fermees)"
+    return data, None
+
+
+def _arm_of_issue(issue: dict, issue_to_family: dict | None,
+                  families, zones=None) -> str:
+    """Le bras d'une issue qui n'est plus dans le pool (fermee).
+
+    Les labels sont normalises en NOMS avant d'etre lus : `gh issue list`
+    rend des objets `{name, ...}`, la ou le pool du picker porte des
+    chaines. `infer_genre` concatene les labels -- un objet la fait
+    echouer, et l'echec tuait le tirage entier sur une issue fermee sans
+    zone (mesure du 07/11, premier rejeu du bandit).
+    """
+    fam = resolve_family(issue, issue_to_family or {}, tuple(families or ()),
+                         zones)
+    if fam:
+        return "zone:" + str(fam)
+    labels = issue.get("labels") or []
+    names = [lab.get("name") if isinstance(lab, dict) else str(lab)
+             for lab in labels]
+    genre = infer_genre(issue.get("title") or "", names)
+    return "genre:" + (genre or "inconnu")
+
+
+def arm_outcomes_from_pool(pool: list[dict], closed_issues: list[dict],
+                            merged_prs: list[dict], *, series=None,
+                            issue_to_family=None, zones=None,
+                            now=None) -> dict[str, tuple[int, int]]:
+    """Les recompenses et les echecs, par bras.
+
+    Une issue FERMEE de la fenetre est la recompense du bras qui la
+    portait. Une issue ENCORE OUVERTE, mais citee par une PR mergee de la
+    fenetre, est un echec de ce bras : la visite n'a pas produit la
+    fermeture.
+
+    Les visites sont lues dans le corpus des PRs MERGEES, avec la meme
+    definition de « declare servir » que partout ailleurs dans le depot
+    (`cited_issues`) : une renvoi de contexte n'est pas une visite.
+    """
+    moment = now or NOW
+    families = tuple(series or ())
+    closed_arms: dict[str, int] = {}
+    visited_arms: dict[str, int] = {}
+    for issue in closed_issues or []:
+        arm = _arm_of_issue(issue, issue_to_family, families, zones)
+        closed_arms[arm] = closed_arms.get(arm, 0) + 1
+    open_by_number = {int(it["number"]): it for it in (pool or [])
+                      if it.get("number")}
+    for pr in merged_prs or []:
+        for num in cited_issues(pr):
+            it = open_by_number.get(int(num))
+            if it is None:
+                continue
+            arm = bandit_arm(it)
+            visited_arms[arm] = visited_arms.get(arm, 0) + 1
+    return arm_outcomes(closed_arms, visited_arms)
+
+
+def belt_order_composition(items: list[dict]) -> dict:
+    """La composition d'une tete de file : ce que le tapis va servir.
+
+    Les trois classes du prior de consolidation sont comptees, et leur
+    somme donne le taux de « grains prioritaires » -- c'est la mesure que
+    l'acceptance 2 de #25082 lit (au moins 15 % des 50 tirages en
+    `consolidation` ou `delivered`). Le nombre de BRAS distincts dit la
+    variete servie : une tete mono-bras est le symptome du rang dur que la
+    revue du 07/11 a retire (45/50 grains de tier 0).
+    """
+    total = len(items)
+    consolidation = sum(1 for it in items if is_consolidation(it))
+    delivered = sum(1 for it in items if it.get("klass") == "delivered")
+    q170 = sum(1 for it in items
+               if AUDIT_17073_MARKER.lower() in (it.get("title") or "").lower())
+    priority = consolidation + delivered
+    return {"total": total, "consolidation": consolidation,
+            "delivered": delivered, "audit_17073": q170,
+            "priority": priority,
+            "ratio": round(priority / total, 3) if total else None,
+            "arms": len({bandit_arm(it) for it in items}) if total else 0}
+
+
+def apply_belt_weights(pool: list[dict], *, rng: random.Random,
+                       merged_prs: list[dict] | None = None,
+                       open_count: int = 0, series=None,
+                       issue_to_family=None, zones=None,
+                       now=None, closed_issues: list[dict] | None = None,
+                       closed_error: str | None = None,
+                       head: int = 0) -> dict:
+    """La repondersion du tapis : des poids, jamais un refus.
+
+    Renvoie la mesure ET reordonne le pool en place. L'admissibilite (les
+    filtres, les urnes, les plafonds de charge) n'est pas touchee : seule
+    la FILE de service change.
+
+    Si les recompenses de fermeture n'ont pas pu etre lues, la repondersion
+    est NON MESUREE : le prior de consolidation, qui ne depend d'aucune
+    lecture reseau, s'applique quand meme, et le bandit ne joue pas.
+    """
+    moment = now or NOW
+    if closed_issues is None and closed_error is None:
+        closed_issues, closed_error = fetch_closed_issues(
+            BANDIT_WINDOW_DAYS, now=moment)
+    families = tuple(series or ())
+    pool_arms = sorted({bandit_arm(it) for it in pool or []})
+    if closed_error is None:
+        outcomes = arm_outcomes_from_pool(
+            pool, closed_issues or [], merged_prs or [], series=series,
+            issue_to_family=issue_to_family, zones=zones, now=moment)
+    else:
+        outcomes = {}
+    thetas: dict[str, float] = {}
+    for arm in pool_arms:
+        closed_n, visited_n = outcomes.get(arm, (0, 0))
+        thetas[arm] = rng.betavariate(closed_n + 1.0, visited_n + 1.0)
+    mean_theta = (sum(thetas.values()) / len(thetas)) if thetas else 0.0
+    scores: dict[int, dict] = {}
+    classes = {"consolidation": 0, "delivered": 0, "audit_17073": 0}
+    for it in pool or []:
+        detail = belt_score(it, thetas, mean_theta, open_count)
+        scores[int(it["number"])] = detail
+        it["bandit_arm"] = detail["arm"]
+        it["belt_score"] = detail["score"]
+        it["belt_score_class"] = detail["classe"]
+        if detail["classe"] in classes:
+            classes[detail["classe"]] += 1
+    # L'AVANT : la file telle que le tapis la servait, sans repondersion.
+    legacy_head = list(pool or [])[:head] if head else []
+    pool.sort(key=lambda it: belt_weight_key(
+        it, scores.get(int(it["number"]), {}), now=moment))
+    weighted_head = list(pool or [])[:head] if head else []
+    return {
+        "measured": closed_error is None,
+        "error": closed_error,
+        "arms": len(pool_arms),
+        "scored": len(pool or []),
+        "mean_theta": round(mean_theta, 4) if mean_theta else None,
+        "outcomes": {arm: list(pair) for arm, pair in outcomes.items()},
+        "classes": classes,
+        "open_count": open_count,
+        "legacy_head": belt_order_composition(legacy_head),
+        "weighted_head": belt_order_composition(weighted_head),
+    }
+
+
 def draw_belt(
     admitted: list[dict],
     args,
@@ -12550,6 +12901,34 @@ def main(argv: list[str] | None = None) -> int:
                 settle_belt_head(belt_pool, belt_check_window, latest_claim_stamp,
                                  max_probes=belt_check_window * 3 + 12)
                 _belt_phase("settle_belt_head fait: chemin unitaire (bulk absent)")
+        # #25082 A + B -- la REPONDERION du tapis : recompense de fermeture
+        # par bras (bandit de Thompson) et prior de consolidation.
+        # Des POIDS SEULEMENT (decision user du 12/10) : l'ordre de service
+        # change, l'admissibilite non -- aucun refus, aucun plafond.
+        # Le corpus des PRs mergees est celui du DEJA mesure (fenetre de
+        # livraison) : la recompense lit la meme fenetre, sans appel reseau
+        # supplementaire ; seule la lecture des issues fermees en ajoute un.
+        belt_weight_signal = apply_belt_weights(
+            belt_pool,
+            rng=run_rng(args, NOW)[1],
+            merged_prs=delivery_prs,
+            open_count=len(pool),
+            series=series,
+            issue_to_family=issue_to_family,
+            zones=series,
+            now=NOW,
+            head=args.grains,
+        )
+        if not belt_weight_signal.get("measured"):
+            _belt_phase("repondersion: NON MESUREE (les recompenses de "
+                        "fermeture n'ont pas ete lues -- le bandit ne joue "
+                        "pas ; le prior de consolidation s'applique quand meme)")
+        else:
+            _belt_phase(f"repondersion: {belt_weight_signal['scored']} grain(s) "
+                        f"pondu(s), {belt_weight_signal['arms']} bras(s) -- "
+                        f"consolidation {belt_weight_signal['classes']['consolidation']}"
+                        f", delivered {belt_weight_signal['classes']['delivered']}"
+                        f", audit-17073 {belt_weight_signal['classes']['audit_17073']}")
         # #22983 -- la fenetre des CLAIMS couvre la fenetre que la boucle de
         # service va parcourir (`belt_service_window`), pas seulement la
         # tete. La boucle ne declenche alors AUCUNE verification unitaire :
@@ -12878,6 +13257,11 @@ def main(argv: list[str] | None = None) -> int:
                 # `resolved: 0` : le premier dit « l'organe amont n'a pas
                 # repondu », le second dit « le grain ne porte aucune zone ».
                 "family_signal": belt_family_signal,
+                # #25082 A + B -- la repondersion et son effet mesure :
+                # `legacy_head` est la tete de file AVANT repondersion,
+                # `weighted_head` apres. Les deux sont lus sur le meme
+                # pool et la meme graine : c'est le rejeu de l'acceptance 2.
+                "weight_signal": belt_weight_signal,
                 # #24373 : les EPICs Origami parques (le pli suivant n'est pas
                 # deplie -- geste reserve au coordinateur). Ils ne sont pas
                 # servis aux lanes ; le tableau du coordinateur les affiche
@@ -13095,10 +13479,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Graine : (lane, heure UTC, reroll). Lanes differentes -> tirages
     # differents ; meme lane dans l'heure -> tirage identique (idempotent).
-    stamp = NOW.strftime("%Y-%m-%dT%H")
-    seed_src = f"{args.lane}|{stamp}|{args.reroll}"
-    seed = int(hashlib.sha256(seed_src.encode()).hexdigest()[:16], 16)
-    rng = random.Random(seed)
+    seed_src, rng = run_rng(args, NOW)
 
     # Le tirage est claim-aware, et le remplacement est ce qui compte.
     # Mesure du 2026-08-29 : quatre collisions en quatre jours (#13310, et
@@ -13427,7 +13808,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"   Justification ({args.wip_reason!r}) a reporter sur l'issue")
         print("   retenue -- le passage outre ne se prend pas en silence.")
     penalized = ", ".join(args.prev_genre)
-    print(f"Lane {args.lane} | graine {stamp}"
+    print(f"Lane {args.lane} | graine {seed_src}"
           + (f" | reroll {args.reroll}" if args.reroll else "")
           + (f" | genres de session penalises : {penalized}" if penalized else ""))
     print()

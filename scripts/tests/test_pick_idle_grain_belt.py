@@ -658,6 +658,12 @@ def _patch_belt_network(monkeypatch, prs, red_state):
     # passe par gh_payload_cache -> run_gh. `measure_delivery`, en aval,
     # est pure : elle ne fait que lire ce corpus. Forme `(prs, err)`.
     monkeypatch.setattr(pig, "fetch_merged", lambda *a, **k: ([], None))
+    # #25082 A -- la recompense de fermeture lit les issues FERMEES de la
+    # fenetre (`gh issue list --state closed`). C'est une surface reseau de
+    # plus, de la meme famille : elle est stubee ici, sinon le tapis
+    # atteint un `gh` reel. `([], None)` = mesure faite, aucune fermeture.
+    monkeypatch.setattr(pig, "fetch_closed_issues",
+                        lambda *a, **k: ([], None))
     # `pin_gh_token()` (gh_identity, appele au demarrage de main) : le
     # VRAI hang des tests `main --belt` (mesure 2026-10-09 : ~300 s par
     # test, 5 tests). Le garde `_no_real_gh` l'a nomme en 0,8 s -- un
