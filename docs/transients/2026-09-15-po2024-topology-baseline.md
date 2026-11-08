@@ -1,6 +1,10 @@
+> RAPPORT — 2026-09-15 — topologie baseline de l'hôte myia-po-2024 mesurée depuis l'OS local : propriétés stables et lectures instantanées (sous-grain #15574) — figé
+
 # Topologie baseline hôte myia-po-2024 — sous-grain #15574
 
 Mesure first-hand 2026-09-15T15:55Z sur `myia-po-2024` (Windows 11 Pro 10.0.26200 / MSI GE76 Raider 11UG). Fournie par `scripts/ci/measure_po2024_topology.py` (cross-platform Windows/Linux/macOS, dépendance standard uniquement).
+
+Les règles durables que cette mesure a établies — ce que l'OS local peut dire d'une topologie de runners et ce qu'il ne peut pas, la borne Docker/WSL2 comme plafond **conditionnel**, et la séparation propriété stable / lecture instantanée — vivent dans [`self-hosted-runners.md`](../ci/self-hosted-runners.md) §« Ce que l'OS local peut dire d'une topologie — et ce qu'il ne peut pas ». Le présent rapport garde les mesures datées.
 
 ## Mesures stables (propriétés de la machine)
 
