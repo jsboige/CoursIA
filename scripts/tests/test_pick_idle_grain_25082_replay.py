@@ -160,13 +160,13 @@ def test_export_refuse_si_le_snapshot_canonique_ne_couvre_pas_tout_le_pool():
 
 def test_snapshot_capture_apres_horloge_tirage_garde_le_meme_ordre():
     base = _replay_input()
-    draw_at = datetime.now(timezone.utc).replace(microsecond=0) - timedelta(seconds=1)
+    draw_at = datetime.now(timezone.utc).replace(microsecond=123456) - timedelta(seconds=1)
     refreshed_moment = draw_at + timedelta(milliseconds=300)
     claim_moment = draw_at + timedelta(milliseconds=400)
     captured_at = draw_at + timedelta(milliseconds=700)
     captured_iso = captured_at.isoformat(timespec="microseconds").replace(
         "+00:00", "Z")
-    draw_iso = draw_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+    draw_iso = draw_at.isoformat().replace("+00:00", "Z")
     refreshed_at = refreshed_moment.isoformat(timespec="microseconds").replace(
         "+00:00", "Z")
     base["draw_at"] = draw_iso

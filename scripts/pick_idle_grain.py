@@ -9996,8 +9996,8 @@ def build_belt_replay_input(*, pool: list[dict], family_signal: dict,
         if not isinstance(payload, list):
             raise BeltReplayError(f"commentaires canoniques absents pour #{number}")
         claim_payloads[key] = payload
-    computed_iso = computed_at.astimezone(dt.timezone.utc).strftime(
-        "%Y-%m-%dT%H:%M:%SZ")
+    computed_iso = computed_at.astimezone(dt.timezone.utc).isoformat().replace(
+        "+00:00", "Z")
     capture_iso = ((captured_at or dt.datetime.now(dt.timezone.utc))
                    .astimezone(dt.timezone.utc)
                    .isoformat(timespec="microseconds")
