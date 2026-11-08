@@ -2,7 +2,9 @@
 
 > **Etat mesure au 2026-10-29** : la **prémisse de ce verdict est falsifiée par la dérive amont** — les deux imports fantômes (`TriadConservation`, `RoPECoherence`) ont disparu du fichier amont, qui compile intégralement (build SUCCESS, 0 sorry, 0 `sorryAx`, 0 `native_decide`, 67 théorèmes sur le profil axiomatique Mathlib standard) dans une enveloppe minimale. C'est le cas de figure que l'option (d) ci-dessous prévoyait (« Si upstream répond, Pli 2 peut être ré-ouvert »). Le verdict ci-dessous reste celui de sa date (2026-10-22) sur la tête qu'il a mesurée ; la décision de rouvrir Pli 2 appartient au coordinateur. Mesure complète : [`concern-2026-10-29-build-verification.md`](concern-2026-10-29-build-verification.md).
 
-> **Statut** : investigation first-hand c.487, Pli 2.0 CLOSE.
+> **Etat au 2026-11-08** : **arbitrage ai-01 rendu** (c.6725327653 sur #21310). Le verdict `INSUFFISANT_BLOQUANT` est **caduc sur sa prémisse** : les deux modules absents du §2.2 ont été réparés upstream et la mesure livrée par #23302 (PR mergée le 2026-10-31, réponse au Concern user du 2026-10-18) établit le contraire du §1.7 — build **SUCCESS** (Mathlib v4.33.0, 0 `sorry`, 0 `sorryAx`, 0 `native_decide`, 67 théorèmes), preuves dans [`build-evidence-2026-10-31/`](build-evidence-2026-10-31/). **Pli 2.1 (build first-hand) est LIVRÉ** par cette mesure. Dépliage **borné** : les plis suivants de Pli 2 (lake d'enveloppe in-tree, carnet `so(M)`, reliure Tao/NavierStokes) et le gating Pli 3 restent **repliés** tant que les issues ouvertes du dépôt sont ≥ 400 — critère de reprise : issues ouvertes < 400, ou décision user. L'EPIC reste ouverte sur ce critère.
+
+> **Statut** : investigation first-hand c.487 — Pli 2.0 CLOSE le 2026-10-22 ; **rouvert borné le 2026-11-08** (2.1 livré par #23302, plis suivants repliés, cf. bloc « Etat au 2026-11-08 »).
 > **Date** : 2026-10-18 (verdict révisé le 2026-10-22).
 > **Lane** : myia-po-2024:CoursIA-2 (Lean toolchain disponible, Lean 4.35.0, Lake 5.0.0).
 > **EPIC parent** : #21310 (Project DarkSnail Origami).
