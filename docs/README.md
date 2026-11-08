@@ -435,7 +435,7 @@ Migration par tranches close (#17525) : Grothendieck lens et Leiden position (tr
 | Fichier | Description |
 |---------|-------------|
 | [ci/slow-lane.md](ci/slow-lane.md) | Voie asynchrone (tranche 1, #12856) — sortir du `pull_request` les contrôles lourds **et idempotents** pour les payer ailleurs. Le critère d'éligibilité (idempotence) est ce qui distingue un déplacement légitime d'un contournement de garde |
-| [ci/po2024-topology-baseline.md](ci/po2024-topology-baseline.md) | Topologie baseline hôte myia-po-2024 — sous-grain #15574 |
+| [ci/po2024-topology-baseline.md → transients/2026-09-15-…](transients/2026-09-15-po2024-topology-baseline.md) | Topologie baseline hôte myia-po-2024 (sous-grain #15574), mesurée le 2026-09-15 — déplacé en lane transiente ; les règles de lecture durables vivent dans [ci/self-hosted-runners.md](ci/self-hosted-runners.md), section « Ce que l'OS local peut dire d'une topologie — et ce qu'il ne peut pas » (vague 4 #14623) |
 | [ci/scripts-tests-triage.md](ci/scripts-tests-triage.md) | Scripts Tests (CPU) — point de triage unique |
 
 ## Harnais (docs/harness/)
