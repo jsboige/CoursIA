@@ -53,7 +53,7 @@ def series(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 def test_serie_propre_passe(series: Path):
     for name in ["GameTheory-01-Setup-Python.ipynb", "GameTheory-03a-X.ipynb",
-                 "GameTheory-08d-Y.lean", "GameTheory-26-Z.ipynb"]:
+                 "GameTheory-08d-Y.lean", "GameTheory-22-Z.ipynb"]:
         (series / name).write_text("x", encoding="utf-8")
     assert violations(series) == []
 

@@ -305,6 +305,121 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "mis a jour."
         ),
     ),
+    # Journaux de session du guide enricher (PR #25008) : les compteurs « N
+    # cells / N notebooks » de la section « Successful Enrichment Sessions »
+    # datent chaque evenement (2026-02 a 2026-06) et l'en-tete du fichier les
+    # declare « conserves comme provenance historique ». Denombrements FIGES
+    # d'un recit au passe (doctrine du header de cet organe : « un decompte
+    # fige dans un recit au passe est une preuve, et se garde »). Ils
+    # apparaissent en lignes ajoutees uniquement par la renormalisation EOL
+    # du renommage T4 (#25008) -- leur valeur ne derive pas avec le depot.
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(r"QC-Py-24-Autoencoders-Anomaly \(11 cells added"),
+        raison=(
+            "Journal de session du 2026-02-15 : decompte figure des cellules "
+            "ajoutees ce jour-la a QC-Py-24. Provenance historique declaree "
+            "en en-tete du fichier, pas un compteur d'etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(r"insertion strategy flawless \(11 cells, no errors\)"),
+        raison=(
+            "Journal de session (2026-02-15, QC-Py-24 et QC-Py-23) : le "
+            "« no errors » chiffre le bilan d'une session passee, identique "
+            "au decompte de son en-tete date. Recit au passe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(r"QC-Py-23-Attention-Transformers \(11 cells added"),
+        raison=(
+            "Journal de session du 2026-02-15 : decompte figure des cellules "
+            "ajoutees ce jour-la a QC-Py-23. Provenance historique, meme "
+            "classe que l'entree QC-Py-24 ci-dessus."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"DataScienceWithAgents Labs \(3 notebooks, 11 cells added\)"
+        ),
+        raison=(
+            "Journal de session du 2026-02-07 : bilan figure d'une session "
+            "passee (le journal local est cite hors depot sur la ligne). Ne "
+            "derive pas avec l'etat courant de la serie."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(r"Sudoku-10-ORTools \(anciennement.*4 cells added"),
+        raison=(
+            "Journal de session du 2026-02-16 : decompte figure des cellules "
+            "ajoutees ce jour-la, nom d'avant la renumerotation #5081 cite "
+            "sur la ligne. Fait passe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"notebook métaheuristiques \(anciennement.*3 cells added"
+        ),
+        raison=(
+            "Journal de session du 2026-02-16 : meme classe que l'entree "
+            "Sudoku-10-ORTools ci-dessus -- bilan date d'une session passee."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"Video GPU Notebooks Pedagogical Enhancement \(6 notebooks\)"
+        ),
+        raison=(
+            "Journal de session du 2026-02-19 : les 6 carnets de la session "
+            "sont nommes sur les lignes suivantes. Denombrement figure d'un "
+            "evenement passe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"GameTheory Series Header Standardization \(12 notebooks reviewed"
+        ),
+        raison=(
+            "Journal de session du 2026-03-16 : bilan figure d'une passe de "
+            "standardisation passee ; l'etat courant de la serie est porte "
+            "par le catalogue genere, pas par ce recit."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"DataScienceWithAgents Exercise Stubs \(8 notebooks, 17 exercise pairs"
+        ),
+        raison=(
+            "Journal de session du 2026-06-03 : bilan figure des stubs "
+            "ajoutes ce jour-la (See #2161 cite sur la ligne). Fait passe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"Lean-11-TorchLean Pedagogical Enhancement \(4 cells added"
+        ),
+        raison=(
+            "Journal de session du 2026-03-03 : decompte figure des cellules "
+            "ajoutees ce jour-la a Lean-11. Provenance historique."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(r"insertion strategy flawless \(4 cells, no errors\)"),
+        raison=(
+            "Journal de session (2026-03-03, Lean-11) : bilan chiffre d'une "
+            "session passee, meme classe que l'entree « 11 cells » ci-dessus."
+        ),
+    ),
     ArtifactExemption(
         path="MyIA.AI.Notebooks/GameTheory/assets/readme/MANIFEST.md",
         motif=re.compile(r"4 cellules 2×2"),
@@ -774,12 +889,18 @@ class DiffUnreadable(RuntimeError):
 def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
     """Ne juge que les lignes AJOUTEES : le stock existant ne fait pas echouer.
 
+    ``--ignore-cr-at-eol`` (#25090) : un diff EOL-pur (renormalisation
+    CRLF -> LF d'un fichier existant) reecrit chaque ligne du fichier, et
+    git les rend toutes comme ajoutees -- le garde jugerait alors des
+    compteurs PRE-EXISTANTS comme s'ils venaient d'etre ecrits. Le drapeau
+    rend le diff neutre en contenu invisible, ce qu'il est.
+
     Leve :class:`DiffUnreadable` quand git ne resout pas la plage -- l'echec
     d'infrastructure ne se confond pas avec un diff propre.
     """
     try:
         proc = subprocess.run(
-            ["git", "diff", "--unified=0", diff_range],
+            ["git", "diff", "--unified=0", "--ignore-cr-at-eol", diff_range],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=180, check=False,
         )
