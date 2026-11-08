@@ -466,7 +466,7 @@ class TestMlEngineerManifest:
         assert not missing, \
             f"chemins absents du catalogue (regenerer ou drop): {missing}"
 
-    def test_compiles_seven_branches_and_five_accretions(self):
+    def test_compiles_seven_branches_and_six_accretions(self):
         manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
         catalog = _catalog_with_pending_renames(manifest)
         branches = [b["id"] for b in manifest["branches"]]

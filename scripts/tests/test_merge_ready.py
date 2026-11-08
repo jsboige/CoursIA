@@ -30,6 +30,21 @@ TOKEN = "tok-myia-ai-01-fake"
 GRAIN_MED = "Grain: MED/guard -- lane myia-po-2026:CoursIA -- prev: MED/guard #1"
 GRAIN_DEEP = "Grain: DEEP/lean -- lane myia-po-2026:CoursIA -- prev: MED/guard #1"
 BASE = "ba5eba5eba5eba5eba5eba5eba5eba5eba5eba5e"
+#: Jambes nominales du chemin `unstable` (#25059) : la porte verte, un check
+#: vert, et une jambe ANNULEE d'un run remplace dont le nom a ete repris par
+#: une jambe verte plus recente -- le cas mesure sur #24116 (run annule puis
+#: run vert pour les memes noms).
+DEFAULT_CHECK_RUNS = "\n".join(
+    json.dumps(row)
+    for row in (
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "Scripts Tests (CPU)", "conclusion": "success",
+         "status": "completed", "started_at": "2026-11-07T10:00:00Z", "id": 5},
+        {"name": "Scripts Tests (CPU)", "conclusion": "cancelled",
+         "status": "completed", "started_at": "2026-11-07T09:00:00Z", "id": 3},
+    )
+)
 # Sentinelle : « pas precise » n'est pas « aucune approbation ». Par defaut une
 # vue porte l'approbation du coordinateur a la tete (le chemin nominal depuis
 # Q67) ; une vue dont les reviews sont fournies explicitement n'en recoit que si
@@ -167,9 +182,14 @@ class ScriptedRunner:
         # defaut, pour que les tests historiques gardent leur chemin nominal.
         combined_rc: int = 0,
         combined_stdout: str = '{"verdict": "GREEN", "failed": []}',
+        # #25059 : etape 6 bis, lecture des jambes de check. Valeur = stdout
+        # du ``gh api .../check-runs`` (une ligne JSON par jambe). Defaut :
+        # le jeu nominal vert.
+        check_runs: str | None = None,
     ):
         self.combined_rc = combined_rc
         self.combined_stdout = combined_stdout
+        self.check_runs = check_runs if check_runs is not None else DEFAULT_CHECK_RUNS
         self.token = token
         self.token_rc = token_rc
         self.prs = list(prs)
@@ -248,6 +268,11 @@ class ScriptedRunner:
             if self.merge_rc == 0:
                 return mr.RunResult(0, "", "")
             return mr.RunResult(self.merge_rc, "", "merge refused")
+        if c[:2] == ["gh", "api"] and "/check-runs" in c[2]:
+            # #25059 : etape 6 bis. La branche est AVANT celle des commits :
+            # l'URL des check-runs porte `/commits/` et serait capturee par
+            # elle (le SHA extrait serait `check-runs?per_page=100`).
+            return mr.RunResult(0, self.check_runs, "")
         if c[:2] == ["gh", "api"] and "/commits/" in c[2]:
             sha = c[2].rsplit("/", 1)[-1]
             if sha not in self.commits:
@@ -463,7 +488,10 @@ def test_skip_b0_organ_rc1(tmp_path):
 
 
 def test_skip_mergeable_state_not_clean(tmp_path):
-    for state in ("dirty", "unstable", "blocked", "has_hooks"):
+    # `unstable` n'est plus dans cette liste : il a son etage a lui (#25059,
+    # les quatre tests juste apres) -- il se decide sur les jambes, pas sur
+    # le seul libelle de l'etat.
+    for state in ("dirty", "blocked", "has_hooks"):
         runner = ScriptedRunner(
             pulls=[{"mergeable_state": state, "head": {"sha": HEAD}}]
         )
@@ -471,6 +499,84 @@ def test_skip_mergeable_state_not_clean(tmp_path):
         assert rc == 0, state
         assert lines[-1]["reason"] == f"mergeable-state:{state}", state
         assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+# --- etape 6 bis : `unstable` (#25059) -------------------------------------------
+
+
+def _legs(*rows: dict) -> str:
+    """stdout du `gh api .../check-runs` : une ligne JSON par jambe."""
+    return "\n".join(json.dumps(row) for row in rows)
+
+
+def _unstable_runner(check_runs: str) -> ScriptedRunner:
+    return ScriptedRunner(
+        pulls=[{"mergeable_state": "unstable", "head": {"sha": HEAD}}],
+        check_runs=check_runs,
+    )
+
+
+def test_unstable_latest_wins_vert_est_accepte(tmp_path):
+    # Pli vert partout : la PR passe, et le journal dit pourquoi elle passait
+    # (`unstable-accepted:<n>`) -- un merge mu n'apporte aucune preuve.
+    runner = _unstable_runner(DEFAULT_CHECK_RUNS)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged"
+    assert lines[-1]["reason"].startswith("unstable-accepted:")
+    assert any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_unstable_une_jambe_non_advisory_rouge_saute_nomme(tmp_path):
+    legs = _legs(
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "Scripts Tests (CPU)", "conclusion": "failure",
+         "status": "completed", "started_at": "2026-11-07T10:00:00Z", "id": 5},
+    )
+    runner = _unstable_runner(legs)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == (
+        "mergeable-state:unstable:Scripts Tests (CPU):failure"
+    )
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_unstable_un_rouge_advisory_seul_est_accepte(tmp_path):
+    # Un check advisory ne bloque pas le gate (#15548) : il ne doit pas
+    # bloquer l'organe de merge non plus.
+    legs = _legs(
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "CJK residue advisory (label, non-blocking)",
+         "conclusion": "failure", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 5},
+    )
+    runner = _unstable_runner(legs)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged"
+    assert lines[-1]["reason"].startswith("unstable-accepted:")
+
+
+def test_unstable_une_jambe_en_vol_sans_jambe_terminee_saute(tmp_path):
+    # Une jambe en vol dont le nom n'a AUCUNE jambe terminee : rien n'a ete
+    # mesure pour ce nom, donc rien n'est acquis -- saut nomme.
+    legs = _legs(
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "Scripts Tests (CPU)", "conclusion": "",
+         "status": "in_progress", "started_at": "2026-11-07T10:00:00Z",
+         "id": 5},
+    )
+    runner = _unstable_runner(legs)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == (
+        "mergeable-state:unstable:Scripts Tests (CPU):no-completed-leg"
+    )
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
 
 
 def test_skip_head_moved(tmp_path):
@@ -1972,3 +2078,224 @@ def test_combined_operator_rollback_env(tmp_path, monkeypatch):
     rc, lines, _ = run_organ(tmp_path, runner)
     assert lines[0]["verdict"] == "would-merge"
     assert _combined_calls(runner) == []
+
+
+# --- #24989 : garde Lean -- attestation de `lake build` local -----------------
+# La regle HARD `lean-merge-discipline.md` §1 exige un `lake build` local par
+# ai-01 avant tout merge d'une PR qui touche du Lean. La garde exige une
+# **preuve** : un commentaire d'attestation pose par `myia-ai-01` et couvrant
+# la tete. La couverture de tete suit la meme regle que l'APPROVE (remontee
+# first-parent de merge_dwell).
+
+LEAN_FILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway.lean"
+ATTESTED_SHA = "c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00"
+
+
+def _attestation_body(
+    sha: str = HEAD,
+    *,
+    lakes: str = "conway_lean",
+    jobs: int = 2948,
+    tag: str = "[ACTION] lake build local",
+) -> str:
+    """Corps d'un commentaire d'attestation, au format canonique."""
+    return (
+        "{tag}\n\n"
+        "PR #123\n"
+        "tete: {sha}\n"
+        "lakes: {lakes}\n"
+        "jobs: {jobs}\n"
+    ).format(tag=tag, sha=sha, lakes=lakes, jobs=jobs)
+
+
+def _attestation_comment(
+    sha: str = HEAD, *, login: str = "myia-ai-01", created: str = "2026-11-06T18:00:00Z",
+    body: str | None = None,
+) -> dict:
+    """Commentaire d'attestation, forme de ``gh pr view --json comments``."""
+    return {
+        "author": {"login": login},
+        "body": body if body is not None else _attestation_body(sha),
+        "createdAt": created,
+    }
+
+
+def test_diff_lean_sans_attestation_donne_un_skip(tmp_path):
+    """Controle positif : un diff `.lean` sans attestation est bloque."""
+    view = default_view(files=(LEAN_FILE,))
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+    assert lines[-1]["merged"] is False
+    # la garde est en AMONT des organes couteux : rien n'a ete paye
+    assert not any("check_unaddressed_nits.py" in flat for flat in runner.flat())
+
+
+def test_diff_sans_lean_n_est_pas_affecte(tmp_path):
+    """Controle negatif : un diff sans Lean n'exige aucune attestation."""
+    view = default_view(files=("src/a.py", "docs/b.md"))
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+    assert lines[-1]["reason"] is None
+
+
+def test_outillage_lean_sans_attestation_donne_un_skip(tmp_path):
+    """``lakefile.*``, ``lean-toolchain`` et ``lake-manifest.json`` sont des
+    fichiers Lean : changer la toolchain change ce que le build doit prouver."""
+    for path in (
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json",
+    ):
+        runner = ScriptedRunner(views={123: default_view(files=(path,))})
+        _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+        assert lines[-1]["reason"] == "lean:no-local-build-attestation", path
+
+
+def test_attestation_a_la_tete_passe(tmp_path):
+    """Attestation posee a la tete exacte : la garde laisse passer."""
+    view = default_view(
+        files=(LEAN_FILE,), comments=[_attestation_comment(HEAD)]
+    )
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+    assert lines[-1]["reason"] is None
+
+
+def test_attestation_signee_par_un_autre_login_est_refusee(tmp_path):
+    """Une attestation posee par une autre lane ne vaut rien : l'acte est
+    celui du coordinateur."""
+    for login in ("jsboige", "myia-po-2026:CoursIA", "clusterManager-Myia"):
+        view = default_view(
+            files=(LEAN_FILE,), comments=[_attestation_comment(HEAD, login=login)]
+        )
+        runner = ScriptedRunner(views={123: view})
+        _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+        assert lines[-1]["reason"] == "lean:no-local-build-attestation", login
+
+
+def test_attestation_avec_un_autre_tag_est_refusee(tmp_path):
+    """Le tag en premiere ligne est le contrat : un corps qui cite le SHA
+    dans la prose n'est pas une attestation."""
+    body = _attestation_body(HEAD, tag="[DIAG] lake build local")
+    view = default_view(
+        files=(LEAN_FILE,), comments=[_attestation_comment(HEAD, body=body)]
+    )
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+
+
+def test_attestation_sans_champ_tete_est_refusee(tmp_path):
+    """Un SHA cite en prose ne fait pas une attestation : seul le champ
+    etiquete ``tete:`` porte le SHA atteste."""
+    body = "[ACTION] lake build local\n\nSHA {} cite en prose.\n".format(HEAD)
+    view = default_view(
+        files=(LEAN_FILE,), comments=[_attestation_comment(HEAD, body=body)]
+    )
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+
+
+def test_attestation_a_une_tete_anterieure_et_commit_de_contenu_donne_un_skip(tmp_path):
+    """L'attestation perime quand un commit de contenu passe apres elle."""
+    view = default_view(
+        files=(LEAN_FILE,),
+        comments=[_attestation_comment(HEAD_MOVED)],
+    )
+    runner = ScriptedRunner(
+        views={123: view}, **refresh_topology(head_parents=[HEAD_MOVED])
+    )
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+    assert lines[-1]["merged"] is False
+
+
+def test_attestation_suivie_d_un_rafraichissement_seul_laisse_passer(tmp_path):
+    """L'attestation survit a un rafraichissement de base PROUVE content-free :
+    la couverture de tete suit la meme regle que l'APPROVE."""
+    view = default_view(
+        files=(LEAN_FILE,),
+        comments=[_attestation_comment(HEAD_MOVED)],
+    )
+    runner = ScriptedRunner(views={123: view}, **refresh_topology())
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["merged"] is True
+
+
+def test_attestation_illisible_fail_closed(tmp_path):
+    """Preuve illisible (base absente) -> refus, jamais « c'est propre »."""
+    view = default_view(
+        files=(LEAN_FILE,),
+        comments=[_attestation_comment(HEAD_MOVED)],
+    )
+    view["baseRefOid"] = ""
+    runner = ScriptedRunner(views={123: view}, **refresh_topology())
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "lean:local-build-attestation-unverifiable:no-base"
+
+
+def test_l_attestation_la_plus_recente_gagne(tmp_path):
+    """Deux attestations : la plus recente regne (l'ordre est celui du
+    serveur, ``createdAt``)."""
+    view = default_view(
+        files=(LEAN_FILE,),
+        comments=[
+            _attestation_comment(
+                ATTESTED_SHA, created="2026-11-06T18:00:00Z"
+            ),
+            _attestation_comment(
+                HEAD, created="2026-11-06T19:00:00Z"
+            ),
+        ],
+    )
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["verdict"] == "would-merge"
+
+
+def test_une_attestation_postee_sur_une_autre_pr_ne_suffit_pas(tmp_path):
+    """Une attestation qui cite une autre tete (SHA inconnu de la PR) ne
+    couvre pas la tete courante : la remontee echoue -> refus explicite."""
+    view = default_view(
+        files=(LEAN_FILE,),
+        comments=[_attestation_comment(ATTESTED_SHA)],
+    )
+    runner = ScriptedRunner(views={123: view}, commits={})
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] in (
+        "lean:local-build-attestation-unverifiable",
+        "lean:no-local-build-attestation",
+    )
+    assert lines[-1]["merged"] is False
+
+
+def test_format_partage_entre_organe_et_garde():
+    """L'organe qui ECRIT et la garde qui LIT partagent le meme format : un
+    corps rendu par l'organe est relu par la garde."""
+    import importlib.util as _ilu
+
+    spec = _ilu.spec_from_file_location(
+        "lean_build_attestation_under_test",
+        HERE.parent / "lean" / "lean_build_attestation.py",
+    )
+    module = _ilu.module_from_spec(spec)
+    sys.modules["lean_build_attestation_under_test"] = module
+    spec.loader.exec_module(module)
+
+    body = module.render_attestation(
+        sha=HEAD, lakes=["conway_lean"], jobs=2948, pr=123
+    )
+    assert module.first_line(body) == module.ATTESTATION_TAG
+    parsed = module.parse_attestation(body)
+    assert parsed and parsed["sha"] == HEAD
+    assert parsed["lakes"] == ["conway_lean"]
+    assert parsed["jobs"] == 2948

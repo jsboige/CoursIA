@@ -177,7 +177,9 @@ _OPEN_PRS_MEMO: list[dict] | None = None
 # memoisee par `_OPEN_PRS_MEMO`, donc l'identite est stable pendant un
 # tirage). Sans cet index, la jambe IMPLICIT rescannait tous les bodies
 # pour chaque candidat (~0,6 s x 150 = ~105 s mesures).
-_OPEN_PRS_INDEX_MEMO: tuple[list[dict], dict[int, list[dict]]] | None = None
+_OPEN_PRS_INDEX_MEMO: (
+    tuple[list[dict], int, dict[int, list[dict]]] | None
+) = None
 
 # --- markers -----------------------------------------------------------------
 
@@ -1580,6 +1582,72 @@ def _is_transient_error(err: str | None) -> bool:
     return any(m in e for m in _TRANSIENT_ERROR_MARKERS)
 
 
+def _prefetch_pr_states(pr_refs: list[int]) -> dict[int, str]:
+    """Etats de PR pour plusieurs PRs, en UN appel GraphQL.
+
+    #22983 -- le lecteur lisait l'etat de chaque PR livree par son propre
+    `gh pr view` : mesure du 2026-11-05 (profil sur la voie en
+    processus, 40 numeros), **17 appels seriels pour 9,6 s**, soit la
+    moitie du cout du batch. Une seule requete GraphQL rend le meme
+    etat pour toute la fenetre.
+
+    Rend les etats **lus** (`OPEN` / `CLOSED` / `MERGED`). Une PR que
+    GraphQL ne rend pas (inconnue, noeud muet) est ABSENTE du resultat :
+    elle part alors sur son chemin historique (`gh pr view`), et le
+    fail-CLOSED de #13336 reste valable.
+
+    En cas d'echec du transport, rend un dict VIDE : le caller ne verse
+    rien dans le cache, et le lecteur lit chaque PR comme avant.
+    """
+    wanted = [n for n in dict.fromkeys(pr_refs) if n > 0]
+    if len(wanted) < 2:
+        # Un seul numero : l'appel unitaire est plus simple et evite un
+        # aller-retour GraphQL pour une seule PR.
+        return {}
+    try:
+        slug = _repo_slug()
+    except RuntimeError:
+        return {}
+    owner, name = slug.split("/", 1)
+    # Une requete par lot de 50 alias -- au-dela, la requete devient
+    # enorme et le parse JSON lent. Un lot non couvert rend un dict
+    # VIDE pour ce lot (les PRs du lot restent au chemin historique).
+    states: dict[int, str] = {}
+    for start in range(0, len(wanted), 50):
+        chunk = wanted[start:start + 50]
+        # Alias par PR : `p0: pullRequest(number: 123) { ... }`. Un alias
+        # evite le calcul du node id global (base64 du type et du
+        # numero), qui depend du depot et evolue avec l'API.
+        parts = []
+        for i, number in enumerate(chunk):
+            parts.append(
+                f'p{i}: pullRequest(number: {number}) '
+                f'{{ number state mergedAt }}'
+            )
+        query = ("query($owner:String!,$name:String!){"
+                 "repository(owner:$owner,name:$name){" + " ".join(parts) + "}}")
+        try:
+            payload = _gh_graphql(query, {"owner": owner, "name": name})
+        except Exception:  # noqa: BLE001 - le repli unitaire reste valable
+            continue
+        data = ((payload or {}).get("data") or {}).get("repository") or {}
+        for i, number in enumerate(chunk):
+            node = data.get(f"p{i}")
+            if not isinstance(node, dict):
+                # PR non rendue (inconnue, noeud muet) : elle reste au
+                # chemin historique.
+                continue
+            # Meme traduction que `_fetch_pr_state` : `mergedAt` non nul
+            # => MERGED, sinon l'etat GraphQL.
+            if node.get("mergedAt") is not None or node.get("state") == "MERGED":
+                states[number] = "MERGED"
+            elif node.get("state") == "CLOSED":
+                states[number] = "CLOSED"
+            elif node.get("state") == "OPEN":
+                states[number] = "OPEN"
+    return states
+
+
 def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
     """Return (pr_state, error) for a PR number, with a per-process cache.
 
@@ -2260,9 +2328,68 @@ _PR_ISSUE_REF_RE = re.compile(
     r"#(\d+)\b|\B#(\d+)\b"
 )
 
+# --- #24788 -- « mentionner » n'est pas « travailler sur » ---------------------
+#
+# La jambe IMPLICIT (#14300) lit une correspondance TEXTUELLE sur le corps
+# ENTIER de la PR : tout numero cite occupe l'issue. Une PR qui ENUMERE des
+# numeros -- la liste des issues ecartees du tapis, livrable legitime destine
+# a l'urne de l'adjoint -- declarait donc occupees TOUTES les issues listees.
+# Mesure du 2026-11-05 (corps de #24482) : 172 numeros cites, 162 encore
+# ouverts, soit 162 des 595 issues ouvertes du depot (27 %) declarees occupees
+# par une PR qui n'y travaille pas.
+#
+# Remede = les DEUX formes que l'issue dit combinables. Elles ne se compensent
+# pas : elles s'appliquent a des populations de corps differentes.
+#
+#   - corps ORDINAIRE (<= seuil de numeros DISTINCTS cites) : predicat
+#     inchange. C'est ce qui preserve #14300 SANS cout -- une PR qui travaille
+#     une issue sans la fermer continue de la proteger (le corps de l'incident
+#     fondateur #14259 ne portait qu'un `See #14259`, un seul numero).
+#   - corps ENUMERATIF (> seuil) : seules les references FORTES occupent --
+#     verbe de livraison (`Closes`/`Fixes`/`Resolves`, qui ferment l'issue) ou
+#     marqueur de lane sur la MEME ligne que le numero. La forme 1 appliquee
+#     partout aurait le cout que l'issue decrit ; appliquee aux seuls corps
+#     enumeratifs, elle rend la jambe exacte la ou l'enumeration l'aveuglait.
+#
+# Le seuil est un parametre, pas une observation : `--enum-threshold` ou
+# `CHECK_LANE_CLAIM_ENUM_THRESHOLD`. Il ne change RIEN a un corps ordinaire.
+_ENUM_DISTINCT_ISSUES_DEFAULT = 10
+
+# Le verbe de livraison doit preceder IMMEDIATEMENT la reference (regle de
+# syntaxe sure de `git-workflow.md` : tout ce qui s'intercale entre les deux
+# fait de la phrase du texte). D'ou `[ \t]+` et non `\s+` : meme ligne, rien
+# d'autre que des espaces.
+_STRONG_DELIVERY_REF_RE = re.compile(
+    r"(?i)\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)[ \t]+#(\d+)\b"
+)
+
+# Marqueurs qui affirment une occupation ou une livraison. Volontairement plus
+# etroit que `_MARKER_RE` : `[DONE]` ferme un cycle, il ne dit pas « cette PR
+# travaille cette issue ». Non ancre en debut de ligne -- dans un corps de PR
+# le marqueur vit souvent au milieu d'une phrase (`[DELIVERED] lane X -- PR #N`).
+_STRONG_MARKER_RE = re.compile(
+    r"(?i)\[\s*(CLAIMED-AMEND|CLAIMED|DELIVERED|RELEASED)\s*\]"
+)
+
 
 def _pr_body_references_issue(body: str, issue_number: int) -> bool:
-    """True when `body` carries any reference form of `issue_number`."""
+    """True when `body` carries any reference form of `issue_number`.
+
+    ATTENTION -- deux lecteurs de « reference » coexistent, et ils ne sont PAS
+    interchangeables :
+
+    - ce predicat : « le corps mentionne l'issue », sans seuil. Il reste appele
+      par `_lane_open_prs_referencing` (« la lane bouge-t-elle encore ? », ou
+      un faux positif ne coute rien) et par l'appariement `--release` /
+      `[DELIVERED]` (#24788, review Hermes du 2026-11-08) ;
+    - `_occupying_issue_numbers` : « la PR travaille cette issue », avec le
+      seuil d'enumeration. C'est lui qui decide d'une OCCUPATION, donc d'un
+      BLOCKED pour une autre lane.
+
+    Sur un corps enumeratif, le premier rend `True` pour CHACUN des numeros
+    cites : l'employer la ou l'on veut « cette PR occupe-t-elle cette issue »
+    rouvrirait exactement le defaut que #24788 ferme.
+    """
     for m in _PR_ISSUE_REF_RE.finditer(body):
         captured = m.group(1) or m.group(2)
         if captured is None:
@@ -2275,14 +2402,87 @@ def _pr_body_references_issue(body: str, issue_number: int) -> bool:
     return False
 
 
+def _enumeration_threshold() -> int:
+    """Seuil de numeros DISTINCTS au-dela duquel un corps est une enumeration.
+
+    Env `CHECK_LANE_CLAIM_ENUM_THRESHOLD` pour le diagnostic et les tests ; le
+    defaut est la valeur que #24788 propose (« N a fixer, 10 par exemple »).
+    Une valeur illisible retombe sur le defaut : un seuil de mesure ne doit
+    jamais changer le verdict par accident de transport.
+    """
+    raw = os.environ.get("CHECK_LANE_CLAIM_ENUM_THRESHOLD")
+    if raw is None or not raw.strip():
+        return _ENUM_DISTINCT_ISSUES_DEFAULT
+    try:
+        value = int(raw.strip())
+    except ValueError:
+        return _ENUM_DISTINCT_ISSUES_DEFAULT
+    return value if value > 0 else _ENUM_DISTINCT_ISSUES_DEFAULT
+
+
+def _referenced_issue_numbers(body: str) -> set[int]:
+    """Tous les numeros cites par `body` -- le predicat de #14300, inchange."""
+    out: set[int] = set()
+    for m in _PR_ISSUE_REF_RE.finditer(body):
+        captured = m.group(1) or m.group(2)
+        if captured is None:
+            continue
+        try:
+            out.add(int(captured))
+        except ValueError:
+            continue
+    return out
+
+
+def _strong_reference_numbers(body: str) -> set[int]:
+    """Numeros portes par une reference FORTE (#24788, forme 1).
+
+    Forte = verbe de livraison immediatement devant le numero, ou numero sur
+    une ligne qui porte un marqueur d'occupation/livraison de lane. Un
+    `See #N` isole, un `Part of #N` et une enumeration nue restent des
+    mentions : ils ne prouvent pas que la PR travaille l'issue.
+    """
+    out: set[int] = set()
+    for m in _STRONG_DELIVERY_REF_RE.finditer(body):
+        try:
+            out.add(int(m.group(1)))
+        except ValueError:
+            continue
+    for line in body.splitlines():
+        if _STRONG_MARKER_RE.search(line) is None:
+            continue
+        out |= _referenced_issue_numbers(line)
+    return out
+
+
+def _occupying_issue_numbers(
+    body: str, threshold: int | None = None,
+) -> set[int]:
+    """Les numeros que ce corps OCCUPE, apres la garde d'enumeration.
+
+    Sous le seuil (corps ordinaire) : tout numero cite occupe -- #14300 est
+    preserve sans cout. Au-dessus : seules les references fortes occupent, la
+    ou l'enumeration rendait la jambe aveugle. La frontiere est INCLUSIVE
+    (exactement `threshold` numeros = corps ordinaire) : un corps n'est pas
+    declare enumeratif pour etre tombe pile sur la valeur.
+    """
+    cited = _referenced_issue_numbers(body)
+    limit = _ENUM_DISTINCT_ISSUES_DEFAULT if threshold is None else threshold
+    if len(cited) <= limit:
+        return cited
+    return cited & _strong_reference_numbers(body)
+
+
 # #14300 -- the implicit-occupation finder (issue mode, no --paths). The
 # claim record only sees [CLAIMED] markers; the incident the issue documents
 # (#14259, 2026-09-02) had two lanes converging on one file with ZERO
 # markers posted -- the organ said CLEAR and was "right": nobody had
 # claimed. The strongest signal of occupation -- an OPEN PR of another lane
 # already referencing the issue -- lived one `gh pr list` away.
-def _open_prs_by_referenced_issue(prs: list[dict]) -> dict[int, list[dict]]:
-    """Indexe, en UNE passe, les PRs ouvertes par numero d'issue cite.
+def _open_prs_by_referenced_issue(
+    prs: list[dict], threshold: int | None = None,
+) -> dict[int, list[dict]]:
+    """Indexe, en UNE passe, les PRs ouvertes par numero d'issue OCCUPEE.
 
     #22983 -- la jambe IMPLICIT (#14300) demandait, pour CHAQUE candidat, un
     balayage de TOUS les bodies de PRs ouvertes : mesure du 27/10, ~0,6 s par
@@ -2291,34 +2491,31 @@ def _open_prs_by_referenced_issue(prs: list[dict]) -> dict[int, list[dict]]:
     tapis. L'index remplace N balayages par UN : on extrait tous les numeros
     cites une seule fois, puis on consulte un dict.
 
-    Le predicat reste le meme (`_PR_ISSUE_REF_RE`), donc la correspondance
-    des numeros est identique : c'est le meme regex, sur le meme corps, au
-    meme moment. Seule la repetitions change.
+    #24788 -- l'index porte desormais les numeros **occupes**, pas les numeros
+    **cites** : pour un corps ordininaire c'est le meme ensemble, pour un
+    corps enumeratif seules les references fortes restent (cf
+    `_occupying_issue_numbers`). Le predicat de lecture (`_PR_ISSUE_REF_RE`)
+    est inchange ; c'est le SEUIL qui decide de la forme retenue.
     """
     global _OPEN_PRS_INDEX_MEMO
     index: dict[int, list[dict]] = {}
+    limit = _enumeration_threshold() if threshold is None else threshold
     memo = _OPEN_PRS_INDEX_MEMO
-    # La memo porte la LISTE elle-meme (pas son `id()`) : la liste reste
-    # vivante, donc l'identite ne peut pas etre reattribuee par le
-    # collecteur a une autre liste.
-    if memo is not None and memo[0] is prs:
-        return memo[1]
+    # La memo porte la LISTE elle-meme (pas son `id()`) et le SEUIL : la liste
+    # reste vivante, donc l'identite ne peut pas etre reattribuee par le
+    # collecteur a une autre liste, et un index calcule sous un seuil ne se
+    # sert pas sous un autre.
+    if memo is not None and memo[0] is prs and memo[1] == limit:
+        return memo[2]
     for pr in prs:
         # #19971 -- meme lecture defensive du transport qu'a l'entree des
         # commentaires : un body de PR piege en payload JSON cache le `lane`
         # et la reference `#N` exactement de la meme facon (instance fondatrice
         # #17270, mesuree sur un body de PR).
         body = _unwrap_trapped_body(pr.get("body") or "")
-        for m in _PR_ISSUE_REF_RE.finditer(body):
-            captured = m.group(1) or m.group(2)
-            if captured is None:
-                continue
-            try:
-                number = int(captured)
-            except ValueError:
-                continue
+        for number in _occupying_issue_numbers(body, limit):
             index.setdefault(number, []).append(pr)
-    _OPEN_PRS_INDEX_MEMO = (prs, index)
+    _OPEN_PRS_INDEX_MEMO = (prs, limit, index)
     return index
 
 
@@ -2326,6 +2523,7 @@ def _find_open_prs_referencing_issue(
     issue_number: int,
     my_lane: str,
     prs: list[dict] | None = None,
+    threshold: int | None = None,
 ) -> list[dict]:
     """Open PRs of OTHER lanes whose body references `issue_number`.
 
@@ -2335,18 +2533,25 @@ def _find_open_prs_referencing_issue(
     None != my_lane): fail-closed, mirroring `--paths`, where an
     unreadable lane tag also counts as a collision. Sorted by PR number
     (deterministic verdict order). Test injection: pass `prs` to avoid the
-    `gh` round-trip.
+    `gh` round-trip; pass `threshold` to pin the enumeration guard (#24788).
+
+    #24788 -- the index now answers « quelles PRs OCCUPENT ce numero », not
+    « lesquelles le citent ». `enumerative`/`cited_issues` travel with the
+    finding so the verdict can say WHY a delivery-verb reference inside a long
+    list still occupies, instead of leaving the reader to guess.
     """
+    limit = _enumeration_threshold() if threshold is None else threshold
     if prs is None:
         prs = _gh_open_prs_with_files()
     out: list[dict] = []
-    for pr in _open_prs_by_referenced_issue(prs).get(issue_number, []):
+    for pr in _open_prs_by_referenced_issue(prs, limit).get(issue_number, []):
         body = _unwrap_trapped_body(pr.get("body") or "")
         lane = extract_lane(body)
         if lane == my_lane:
             continue
         files = [f.get("path") for f in (pr.get("files") or [])
                  if f.get("path")]
+        cited = len(_referenced_issue_numbers(body))
         out.append({
             "number": pr.get("number"),
             "lane": lane,
@@ -2354,6 +2559,8 @@ def _find_open_prs_referencing_issue(
             "files": files,
             "additions": pr.get("additions"),
             "deletions": pr.get("deletions"),
+            "enumerative": cited > limit,
+            "cited_issues": cited,
         })
     out.sort(key=lambda d: d["number"] or 0)
     return out
@@ -2420,6 +2627,221 @@ def _lane_open_prs_referencing(
     return sorted(out)
 
 
+# #22983 -- cache d'ACTIVITE de PR. `_pr_last_lane_activity` etait appele
+# UNE FOIS PAR ISSUE que la PR reference : la meme PR revenait donc
+# autant de fois qu'elle citait des issues. Mesure du 2026-11-05 (fenetre
+# de claims de 300 numeros, voie en processus) : 25 appels `gh pr view`
+# pour un petit nombre de PRs distinctes.
+#
+# Le cache est rempli par le PREFETCH (`prefetch_pr_activity`), que la
+# phase reseau du tapis declenche : il rend alors la lecture des claims
+# SANS reseau. Seules les PRs prechargees y figurent -- le chemin
+# historique n'y laisse pas de trace (cf. `_pr_last_lane_activity`).
+# Une entree `None` signifie « mesure impossible » (transport en echec) :
+# elle est conservee pour que le verdict reste celui d'avant (fail-CLOSED
+# de #22408).
+_PR_ACTIVITY_CACHE: dict[int, dict | None] = {}
+_MISS = object()
+
+
+def _lane_activity_from_payload(data: dict | None, lane: str):
+    """Date du dernier commit ou commentaire marque la lane, depuis un payload.
+
+    Deux formes de payload sont acceptees, et rendent le meme resultat :
+    celle du CLI (`gh pr view --json commits,comments` : listes) et celle
+    du prefetch GraphQL (memes cles, apres conversion).
+    """
+    if not isinstance(data, dict):
+        return None
+    stamps = []
+    for commit in data.get("commits") or []:
+        ts = _iso_utc(commit.get("committedDate"))
+        if ts is not None:
+            stamps.append(ts)
+    for comment in data.get("comments") or []:
+        body = _unwrap_trapped_body(comment.get("body") or "")
+        if extract_lane(body) != lane:
+            continue
+        ts = _iso_utc(comment.get("createdAt"))
+        if ts is not None:
+            stamps.append(ts)
+    return max(stamps) if stamps else None
+
+
+def prefetch_pr_activity(pr_numbers: list[int]) -> int:
+    """Activite (commits + commentaires) de plusieurs PRs, en UN appel GraphQL.
+
+    #22983 -- la lecture des claims doit etre SANS reseau : c'est
+    l'activite des PRs de la lane qui l'exigeait (`gh pr view` par PR, donc
+    par issue referencee). Une seule requete GraphQL rend la meme
+    activite pour toute la fenetre, et le LECTEUR la lit ensuite dans son
+    cache.
+
+    La fenetre lue est BORNEE aux 100 derniers commits et 100 derniers
+    commentaires de chaque PR. La date MAXIMALE est identique a celle du
+    chemin historique dans les deux sens : un tag de lane plus ancien que
+    la borne donne « non mesurable » des deux cotes, donc le meme verdict
+    (la lane ne travaille plus le grain).
+
+    En cas d'echec du transport, rend 0 et ne remplit rien : le LECTEUR
+    repart alors sur son chemin historique, inchange.
+    """
+    wanted = [int(n) for n in dict.fromkeys(pr_numbers) if int(n) > 0]
+    wanted = [n for n in wanted if n not in _PR_ACTIVITY_CACHE]
+    if len(wanted) < 2:
+        # Un seul numero : l'appel unitaire est plus simple et evite un
+        # aller-retour GraphQL pour une seule PR.
+        return 0
+    try:
+        slug = _repo_slug()
+    except RuntimeError:
+        return 0
+    owner, name = slug.split("/", 1)
+    filled = 0
+    for start in range(0, len(wanted), 25):
+        chunk = wanted[start:start + 25]
+        parts = []
+        for i, number in enumerate(chunk):
+            parts.append(
+                f'p{i}: pullRequest(number: {number}) '
+                f'{{ commits(last:100){{nodes{{commit{{committedDate}}}}}} '
+                f'comments(last:100){{nodes{{body createdAt}}}} }}'
+            )
+        query = ("query($owner:String!,$name:String!){"
+                 "repository(owner:$owner,name:$name){" + " ".join(parts) + "}}")
+        try:
+            payload = _gh_graphql(query, {"owner": owner, "name": name})
+        except Exception:  # noqa: BLE001 - le repli unitaire reste valable
+            continue
+        data = ((payload or {}).get("data") or {}).get("repository") or {}
+        for i, number in enumerate(chunk):
+            node = data.get(f"p{i}")
+            if not isinstance(node, dict):
+                continue
+            # `PullRequestCommit` porte la date dans `commit.committedDate` ;
+            # on l'aplatit a la forme du CLI (`gh pr view --json commits`),
+            # pour que le calcul de l'activite soit le meme des deux cotes.
+            commits = []
+            for node_commit in ((node.get("commits") or {}).get("nodes") or []):
+                if not isinstance(node_commit, dict):
+                    continue
+                inner = node_commit.get("commit")
+                if isinstance(inner, dict):
+                    commits.append({"committedDate": inner.get("committedDate")})
+            comments = [c for c in ((node.get("comments") or {}).get("nodes") or [])
+                        if isinstance(c, dict)]
+            _PR_ACTIVITY_CACHE[number] = {"commits": commits,
+                                          "comments": comments}
+            filled += 1
+    return filled
+
+
+def open_prs_from_cache(cache_path: str | None = None) -> list[dict]:
+    """PRs ouvertes du cache v2 COMPLET. AUCUN appel reseau.
+
+    Un cache absent, heritee (liste nue) ou marque incomplet rend une
+    liste VIDE : la completude est une preuve, son absence n'en est pas
+    une.
+    """
+    path = cache_path or _OPEN_PRS_CACHE_PATH
+    if not path:
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            cached = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return []
+    if not (isinstance(cached, dict)
+            and cached.get("format") == _OPEN_PRS_CACHE_FORMAT
+            and cached.get("complete") is True):
+        return []
+    prs = cached.get("prs")
+    return prs if isinstance(prs, list) else []
+
+
+def lane_open_pr_numbers(lane: str | None,
+                          cache_path: str | None = None) -> list[int]:
+    """Numeros des PRs ouvertes dont le BODY porte le tag de la lane."""
+    if not lane:
+        return []
+    out: list[int] = []
+    for pr in open_prs_from_cache(cache_path):
+        body = _unwrap_trapped_body(pr.get("body") or "")
+        if extract_lane(body) != lane:
+            continue
+        try:
+            out.append(int(pr["number"]))
+        except (KeyError, ValueError, TypeError):
+            continue
+    return sorted(set(out))
+
+
+def claim_activity_pr_numbers(issue_numbers, open_prs: list[dict],
+                              threshold_h: float = 48.0,
+                              my_lane: str | None = None) -> list[int]:
+    """PRs dont l'ACTIVITE sera demandee pour la fenetre de claims.
+
+    #22983 -- le LECTEUR ne demande une activite que pour un claim
+    **perime** (#22408) : le claim est vieux, et la question posee est
+    « la lane titulaire travaille-t-elle encore ce grain ? ». Les PRs
+    concernees sont donc celles des lanes qui detiennent un claim perime
+    et qui referencent l'issue.
+
+    Cette PREDICTION est ce qui rend le prefetch possible : sans elle, le
+    lecteur decouvre les PRs au fur et a mesure et demande `gh pr view`
+    pour chacune -- une requete par PR **par issue referencee** (25
+    appels mesures le 2026-11-05 sur la fenetre de claims de 300
+    numeros).
+
+    La prediction est une SUR-prediction possible : une PR prevue a tort
+    est prechargee pour rien (un cout), une PR non prevue fait retomber
+    le lecteur sur son chemin historique (un appel). La premiere est
+    benigne, la seconde aussi -- le verdict ne change jamais.
+    """
+    now = datetime.now(timezone.utc)
+    out: set[int] = set()
+    for number in issue_numbers:
+        payload = _snapshot_issue_payload(str(number))
+        if not isinstance(payload, dict):
+            continue
+        issue_no = payload.get("number")
+        if issue_no is None:
+            continue
+        try:
+            events = _sort_events(payload, tracked=None)
+            active, _unattributed = compute_active_claims(events, pr_states=None)
+        except Exception:  # noqa: BLE001 - une prediction ratee reste sans
+            continue          # consequence : le lecteur garde son chemin
+        for ln, ev in active.items():
+            if my_lane is not None and ln == my_lane:
+                continue
+            age = _claim_age_hours(ev.created_at, now)
+            if age is None or age < threshold_h:
+                continue
+            for pr in _lane_open_prs_referencing(int(issue_no), ln,
+                                                 prs=open_prs):
+                out.add(pr)
+    return sorted(out)
+
+
+def prefetch_claim_activity(issue_numbers, open_prs_cache_path: str | None = None,
+                            threshold_h: float = 48.0,
+                            my_lane: str | None = None) -> int:
+    """Prefetch de l'activite des PRs que la lecture des claims va demander.
+
+    Point d'entree du tapis : une seule requete GraphQL pour toute la
+    fenetre, au lieu d'un `gh pr view` par PR **par issue referencee**.
+    """
+    open_prs = open_prs_from_cache(open_prs_cache_path)
+    if not open_prs:
+        return 0
+    numbers = claim_activity_pr_numbers(issue_numbers, open_prs,
+                                        threshold_h, my_lane)
+    if not numbers:
+        return 0
+    return prefetch_pr_activity(numbers)
+
+
 def _pr_last_lane_activity(pr_number: int, lane: str):
     """Latest commit / lane-tagged comment of an OPEN PR, or None.
 
@@ -2428,7 +2850,21 @@ def _pr_last_lane_activity(pr_number: int, lane: str):
     PR is the lane's); a comment counts only when its body carries the lane tag,
     because every agent posts under the shared `jsboige` login and the login
     cannot tell lanes apart.
+
+    #22983 -- le cache d'activite est consulte AVANT toute requete : la
+    phase reseau du tapis precharge l'activite des PRs de la lane, et la
+    lecture des claims devient alors sans reseau.
+
+    Le cache ne contient QUE ce que le prefetch y verse : le chemin
+    historique n'y laisse pas de trace. Une memoisation du chemin CLI
+    changerait le comportement observable de l'appel (deux lectures de la
+    meme PR a des instants differents rendraient la meme valeur) -- et
+    elle contaminerait les charges utiles de test, qui-font-varient-le
+    payload pour un meme numero.
     """
+    cached = _PR_ACTIVITY_CACHE.get(pr_number, _MISS)
+    if cached is not _MISS:
+        return _lane_activity_from_payload(cached, lane)
     try:
         proc = subprocess.run(
             ["gh", "pr", "view", str(pr_number), "--json", "commits,comments"],
@@ -2444,19 +2880,7 @@ def _pr_last_lane_activity(pr_number: int, lane: str):
         data = json.loads(proc.stdout)
     except json.JSONDecodeError:
         return None
-    stamps = []
-    for commit in data.get("commits") or []:
-        ts = _iso_utc(commit.get("committedDate"))
-        if ts is not None:
-            stamps.append(ts)
-    for comment in data.get("comments") or []:
-        body = _unwrap_trapped_body(comment.get("body") or "")
-        if extract_lane(body) != lane:
-            continue
-        ts = _iso_utc(comment.get("createdAt"))
-        if ts is not None:
-            stamps.append(ts)
-    return max(stamps) if stamps else None
+    return _lane_activity_from_payload(data, lane)
 
 
 def _claim_still_being_delivered(
@@ -2813,14 +3237,74 @@ def _glob_implausible(glob: str) -> bool:
     return False
 
 
+class _TrackedFiles(list):
+    """Liste des fichiers suivis, avec ses formes normalisees en cache.
+
+    #22983 -- `normcase` etait appele deux fois par chemin compare, et le
+    chemin etait compare a chaque glob : ~5,2 M appels pour 40 numeros.
+    Les formes normalisees sont calculees ici, UNE FOIS par liste.
+    """
+
+    __slots__ = ("_norm", "_exact", "_bases")
+
+    def __init__(self, items):
+        super().__init__(items)
+        self._norm = None
+        self._exact = None
+        self._bases = None
+
+    @property
+    def norm_pairs(self) -> list[tuple[str, str]]:
+        """Paires (chemin normalise, nom de base normalise)."""
+        if self._norm is None:
+            self._norm = [
+                (os.path.normcase(p), os.path.normcase(p.rsplit("/", 1)[-1]))
+                for p in self
+            ]
+        return self._norm
+
+    @property
+    def exact_paths(self) -> set[str]:
+        """Chemins normalises, pour la resolution O(1) des motifs litteraux."""
+        if self._exact is None:
+            self._exact = {npath for npath, _ in self.norm_pairs}
+        return self._exact
+
+    @property
+    def exact_bases(self) -> set[str]:
+        """Noms de base normalises, pour la resolution O(1) des litteraux."""
+        if self._bases is None:
+            self._bases = {nbase for _, nbase in self.norm_pairs}
+        return self._bases
+
+
+# #22983 -- memo de processus de la liste des fichiers suivis, par racine.
+# Le batch de claims demande la liste pour CHAQUE issue ; sans memo, le
+# `git ls-files` (~15 172 chemins) est relance par issue. Mesure du
+# 2026-11-05 (profil sur `_run_check`) : apres l'optimisation du matching
+# de globs, la lecture de la sortie des sous-processus representait 84 %
+# du temps restant du check.
+#
+# Seuls les SUCCES sont memoisees : un echec (liste `None`) reste
+# re-tente au check suivant et reste fail-CLOSED a chaque appel.
+_TRACKED_FILES_MEMO: dict[str, list[str]] = {}
+
+
 def _git_tracked_files(repo_root: str | None = None) -> list[str] | None:
     """Best-effort `git ls-files` under repo_root (cwd default). None on failure.
 
     Mirrors the walk of `_scope_zero_coverage_warning` -- the one source of
     "which files does the repo track" for both callers.
+
+    #22983 -- le resultat reussi est memoise par racine de depot (le batch
+    de claims relancait `git ls-files` sur les memes ~15 172 chemins pour
+    chaque issue).
     """
     if repo_root is None:
         repo_root = os.getcwd()
+    memo = _TRACKED_FILES_MEMO.get(repo_root)
+    if memo is not None:
+        return memo
     try:
         proc = subprocess.run(
             ["git", "-C", repo_root, "ls-files"],
@@ -2832,14 +3316,80 @@ def _git_tracked_files(repo_root: str | None = None) -> list[str] | None:
     if proc.returncode != 0:
         return None
     tracked = [ln for ln in proc.stdout.splitlines() if ln]
-    return tracked or None
+    if not tracked:
+        return None
+    # #22983 -- les formes normalisees (chemin + nom de base) sont
+    # attachees a la liste : elles ne dependent que de la liste, et la
+    # liste est deja memoisee par racine. Le matching de globs les
+    # reutilise au lieu de normaliser chaque chemin a chaque glob.
+    tracked = _TrackedFiles(tracked)
+    _TRACKED_FILES_MEMO[repo_root] = tracked
+    return tracked
+
+
+# #22983 -- les caracteres qui rendent un motif non litteral pour `fnmatch`
+# (`*`, `?`, `[...]`). `{`/`}` sont exclus : les groupes d'accolades sont
+# deployes par `_expand_brace_groups` AVANT ce test, donc un motif porte
+# de `{` a ce stade est deja deploye en litteraux.
+_GLOB_META = re.compile(r"[*?\[]")
+
+
+def _norm_pairs(tracked) -> list[tuple[str, str]]:
+    """Paires (chemin normalise, nom de base normalise) de la liste donnee."""
+    if isinstance(tracked, _TrackedFiles):
+        return tracked.norm_pairs
+    return [(os.path.normcase(p), os.path.normcase(p.rsplit("/", 1)[-1]))
+            for p in tracked]
 
 
 def _glob_matches_tracked(glob: str, tracked: list[str]) -> bool:
-    """True when at least one tracked file matches the glob (fnmatch, basename-or-full)."""
-    for path in tracked:
-        if _path_matches(path, [glob]):
-            return True
+    """True when at least one tracked file matches the glob (fnmatch, basename-or-full).
+
+    #22983 -- le motif est compile UNE FOIS par glob, et non une fois par
+    chemin compare. Mesure du 2026-11-05 (profil sur `_run_check`) : le
+    check d'un issue coutait 0,94 s, dont 87 % dans ce matching --
+    731 448 `normcase` et 365 352 `translate` pour trois checks, parce que
+    `fnmatch.fnmatch` normalise et retranscrit le motif a chaque chemin.
+    La correction compile le motif une fois et normalise le chemin une
+    fois.
+
+    **La semantique est inchangee** : `fnmatch.fnmatch(n, p)` vaut
+    exactement `re.match(translate(normcase(p)), normcase(n))`, et le nom
+    de base reste calcule sur le chemin BRUT separe par `/` -- le separer
+    apres `normcase` serait faux sous Windows, ou `normcase` transforme
+    les separateurs de chemin en antislash et le nom de base ne serait
+    plus extrait.
+    """
+    from fnmatch import translate
+    patterns = _expand_brace_groups(glob)
+    if not patterns:
+        return False
+
+    # #22983 -- motif LITTERAL (aucun caractere special de `fnmatch`) :
+    # resolution par table de hachage, sans balayer les chemins. Un
+    # litteral n'a pas de caractere special, donc `fnmatch` le traite
+    # comme une comparaison d'egalite -- sur le chemin complet OU sur le
+    # nom de base, comme le matching general.
+    if all(not _GLOB_META.search(p) for p in patterns):
+        norm = [os.path.normcase(p) for p in patterns]
+        if isinstance(tracked, _TrackedFiles):
+            if any(p in tracked.exact_paths for p in norm):
+                return True
+            return any(p in tracked.exact_bases for p in norm)
+        for path in tracked:
+            npath = os.path.normcase(path)
+            nbase = os.path.normcase(path.rsplit("/", 1)[-1])
+            if npath in norm or nbase in norm:
+                return True
+        return False
+
+    regexes = []
+    for pat in patterns:
+        regexes.append(re.compile(translate(os.path.normcase(pat))))
+    for npath, nbase in _norm_pairs(tracked):
+        for rx in regexes:
+            if rx.match(npath) or rx.match(nbase):
+                return True
     return False
 
 
@@ -3725,20 +4275,26 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
     calls["pool"] = 1
     if pool_error:
         errors.append(f"pool: {pool_error}")
-    targets = [
-        {
+    targets: list[dict] = []
+    for epic, body in capped:
+        comments = [c for c in (body.get("comments") or [])
+                    if isinstance(c, dict)]
+        # Date ET marqueur sortent du MEME evenement (`picker.claim_visit`) :
+        # la cause du plafond nomme ce que la lane a fait (prise, rendu de
+        # main, livraison...) au lieu d'appeler « claim » un `[RELEASED]`
+        # (#22687 constat 1). Deux appels separes pourraient designer deux
+        # evenements differents.
+        stamp, marker = picker.claim_visit(comments)
+        targets.append({
             "number": epic,
             "title": body.get("title"),
             "labels": body.get("labels"),
             # `klass` est la cle que lit `umbrella_visit_cause` ; `_is_umbrella_issue`
             # vient de la trancher, donc la valeur est celle de l'organe.
             "klass": "umbrella",
-            "last_claim_stamp": picker.claim_visit_stamp(
-                [c for c in (body.get("comments") or []) if isinstance(c, dict)]
-            ),
-        }
-        for epic, body in capped
-    ]
+            "last_claim_stamp": stamp,
+            "last_claim_marker": marker,
+        })
     if pool:
         # N ne compte pas parmi les filles visitees (demande explicite).
         daughters = [c for c in pool if c.get("number") != number]
@@ -4827,10 +5383,17 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             if pr.get("additions") is not None:
                 delta = f"{pr['additions']}+/{pr['deletions'] or 0}-, "
             lane = pr.get("lane") or "lane ILLISIBLE"
+            # #24788 -- un corps enumeratif ne retient que les references
+            # fortes ; le dire evite de lire l'occupation comme un simple
+            # `#N` perdu dans une liste.
+            why = ""
+            if pr.get("enumerative"):
+                why = (f" (corps enumeratif : {pr.get('cited_issues')} "
+                       f"numeros cites, reference forte retenue)")
             lines.append(
                 f"IMPLICIT: lane {lane} a une PR ouverte "
                 f"(#{pr.get('number')}, {delta}sur {shown or 'fichiers inconnus'}) "
-                f"sans [CLAIMED] pose."
+                f"sans [CLAIMED] pose.{why}"
             )
         print("\n" + "\n".join(lines))
         print(
@@ -5042,6 +5605,37 @@ def _names_a_blocker(evidence: str, stdout_json: str = "") -> bool:
     return False
 
 
+def _collect_delivered_pr_refs(issues: list[str]) -> list[int]:
+    """Numeros de PR cites par les marqueurs `[DELIVERED]` de la fenetre.
+
+    #22983 -- le prefetch groupe a besoin de la liste des PRs a lire AVANT
+    la reduction. La collecte lit les commentaires deja servis par
+    l'instantane (et, a defaut, par le transport historique) : elle ne
+    fait AUCUNE lecture reseau propre.
+
+    Rend la liste des numeros, sans doublon, dans l'ordre d'apparition.
+    """
+    refs: list[int] = []
+    for issue in issues:
+        try:
+            payload = _snapshot_issue_payload(str(issue))
+        except Exception:  # noqa: BLE001 - l'instantane est un confort
+            payload = None
+        if payload is None:
+            continue
+        for comment in payload.get("comments") or []:
+            body = comment.get("body") or ""
+            if "[DELIVERED]" not in body:
+                continue
+            for line in body.splitlines():
+                if "[DELIVERED]" not in line:
+                    continue
+                ref = _extract_delivered_pr_ref(line)
+                if ref and ref not in refs:
+                    refs.append(ref)
+    return refs
+
+
 def check_issues_batch(
     issues: list[str],
     lane: str,
@@ -5082,6 +5676,38 @@ def check_issues_batch(
         phases.append({"name": name, "t": round(elapsed, 4)})
 
     _phase(f"batch start: {len(issues)} issues, lane={lane}")
+
+    # #22983 -- prefetch groupe des etats de PR. Le batch connait TOUS les
+    # numeros de la fenetre : les `pr_ref` cites par les marqueurs
+    # `[DELIVERED] ... PR #N` sont lus en UN appel GraphQL, au lieu d'un
+    # `gh pr view` par PR (mesure : 17 appels seriels, 9,6 s, pour 40
+    # numeros).
+    #
+    # Les etats lus sont verses dans `_PR_STATE_CACHE`, que
+    # `_fetch_pr_state` consulte deja : le reducteur les sert sans
+    # lecture, et toute PR NON lue part sur son chemin historique
+    # (fail-CLOSED de #13336 intact). On n'injecte PAS de map
+    # `pr_states` : elle serait fail-OPEN pour les PRs absentes.
+    if len(issues) > 1:
+        try:
+            _refs = _collect_delivered_pr_refs(issues)
+            # #22983 -- les etats deja en cache (precharges par la phase
+            # reseau du tapis) ne sont pas relus : le tirage reste sans
+            # appel GitHub. Le cache reste la source de verite ; une PR
+            # absente du cache part sur son chemin historique.
+            _refs = [r for r in _refs if r not in _PR_STATE_CACHE]
+            if _refs:
+                _states = _prefetch_pr_states(_refs)
+                if _states:
+                    for _ref, _state in _states.items():
+                        _PR_STATE_CACHE.setdefault(_ref, (_state, None))
+                    _phase(f"etats de PR: {len(_states)} lus en 1 appel "
+                           f"(prefetch groupe)")
+                else:
+                    _phase("etats de PR: prefetch indisponible -- lecture "
+                           "unitaire conservee")
+        except Exception:  # noqa: BLE001 - le repli unitaire reste valable
+            pass
 
     for idx, raw_issue in enumerate(issues):
         issue = str(raw_issue)
