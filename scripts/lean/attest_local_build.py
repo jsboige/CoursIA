@@ -24,7 +24,7 @@ Ce que fait l'organe, dans cet ordre
 3. cree un **worktree detache** a la tete de la PR ;
 4. pour chaque lake : verifie que `lean-toolchain` et `lake-manifest.json`
    sont identiques a ceux du cache chaud, puis **jonctionne** `.lake/packages`
-   sur le cache (le cache est deja chaud : un `lake exe cache get`Systeme de
+   sur le cache (le cache est deja chaud : un `lake exe cache get` borne a
    60 s suffirait a le remplacer, cf. incident 2026-07-24/29) ;
 5. lance `lake build` via `scripts/lean/lean_exec.py` -- l'organe de build
    borne (admission machine-wide, Job Object kill-on-close, budget, controle
@@ -316,13 +316,19 @@ def run_lake_build(lake_dir: Path, timeout: float) -> dict:
             stderr_file=stderr_file,
         )
         proc = _run(cmd, timeout=timeout + 120.0)
+        # Review #25002 (Hermes, 2026-11-06, prouve par execution) : les deux
+        # fichiers doivent etre lus DANS le bloc `with` -- _read_if_present en
+        # dehors lisait un dossier temporaire deja detruit et rendait des
+        # queues vides a chaque appel, y compris sur echec de build, la ou le
+        # JSON est la seule trace diagnostique. result["ok"] restait gouverne
+        # par exit_code : defaut de diagnostic, pas de verdict.
+        stdout_text = _read_if_present(stdout_file) or ""
+        stderr_text = _read_if_present(stderr_file) or ""
     payload = {}
     try:
         payload = json.loads(proc.stdout or "{}")
     except json.JSONDecodeError:
         payload = {}
-    stdout_text = _read_if_present(stdout_file) or ""
-    stderr_text = _read_if_present(stderr_file) or ""
     payload["stdout_tail"] = stdout_text[-4000:]
     payload["stderr_tail"] = stderr_text[-4000:]
     payload["organ_rc"] = proc.returncode
