@@ -383,14 +383,14 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 | Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
 |----|-------|------|------|-----|-----------|--------|-------------|---------|
 | DecInfer-01-Utility-Foundations | 30 | 16 | 16/16 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Variable<double>, expectations) | **SOTA-OK** |
-| **DecInfer-02-Lean-ExpectedUtility** | 14 | 5 | 5/5 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (von Neumann–Morgenstern 0-sorry) | **SOTA-OK** |
-| DecInfer-03-Utility-Money | 50 | 22 | 22/22 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + Bernoulli mixtures (Saint-Petersbourg / Friedman-Savage / Arrow-Pratt) | **SOTA-OK** |
-| DecInfer-04-Multi-Attribute | 50 | 23 | 23/23 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + CPLEX/GLPK (LP additives pondérés) | **SOTA-OK** |
-| DecInfer-05-Decision-Networks | 35 | 17 | 17/17 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (influence diagrams Variable<int>) | **SOTA-OK** |
-| DecInfer-06-Value-Information | 38 | 19 | 19/19 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (EVPI/Expected Value of Perfect Information) | **SOTA-OK** |
-| DecInfer-07-Expert-Systems | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (decision rules + uncertainty propagation) | **SOTA-OK** |
-| DecInfer-08-Sequential | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (dynamic decision processes backward induction) | **SOTA-OK** |
-| **DecInfer-09-Lean-Gittins** | 25 | 10 | 10/10 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (Gittins index preuves partielles) | **SOTA-OK** |
+| **DecInfer-01b-Lean-ExpectedUtility** | 14 | 5 | 5/5 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (von Neumann–Morgenstern 0-sorry) | **SOTA-OK** |
+| DecInfer-02-Utility-Money | 50 | 22 | 22/22 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + Bernoulli mixtures (Saint-Petersbourg / Friedman-Savage / Arrow-Pratt) | **SOTA-OK** |
+| DecInfer-03-Multi-Attribute | 50 | 23 | 23/23 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + CPLEX/GLPK (LP additives pondérés) | **SOTA-OK** |
+| DecInfer-04-Decision-Networks | 35 | 17 | 17/17 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (influence diagrams Variable<int>) | **SOTA-OK** |
+| DecInfer-05-Value-Information | 38 | 19 | 19/19 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (EVPI/Expected Value of Perfect Information) | **SOTA-OK** |
+| DecInfer-06-Expert-Systems | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (decision rules + uncertainty propagation) | **SOTA-OK** |
+| DecInfer-07-Sequential | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (dynamic decision processes backward induction) | **SOTA-OK** |
+| **DecInfer-07b-Lean-Gittins** | 25 | 10 | 10/10 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (Gittins index preuves partielles) | **SOTA-OK** |
 | DecInfer-10-Thompson-Sampling | 28 | 12 | 12/12 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Beta-Bernoulli Thompson sampling bayésien) | **SOTA-OK** |
 | DecPyMC-01-Utility-Foundations | 28 | 12 | 12/12 | 0 | 0 | python3 | PyMC + ArviZ (utility curves posteriors) | **SOTA-OK** |
 | DecPyMC-02-Utility-Money | 60 | 28 | 28/28 | 0 | 0 | python3 | PyMC + ArviZ (CARA/CRRA Savage/Friedman) | **SOTA-OK** |
@@ -413,8 +413,8 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 
 ### Disclosures honnêtes vérifiées
 
-- (a) `DecInfer-02-Lean-ExpectedUtility.ipynb` = Lean 4 formel companion **0-sorry** pour la direction sound du théorème de représentation d'utilité espérée de von Neumann–Morgenstern (cf cellule [18] Conclusion : "0-sorry pour la direction sound"). La direction completeness (rationalité ⟹ représentation) reste **gated** sur Mathlib4 stabilisation des `ConvexCone` / `BoundedConvexSet`, honest disclosure dans la cellule [4].
-- (b) `DecInfer-09-Lean-Gittins.ipynb` = Lean 4 formel pour Gittins index (cellule [22] Résumé enseignant) : définitions formalisées (BanditArm, BanditProcess), preuves partielles honnêtement disclosées, **état actuel = scaffolding + certitudes BornesSup** (gated sur `lake build` 100%).
+- (a) `DecInfer-01b-Lean-ExpectedUtility.ipynb` = Lean 4 formel companion **0-sorry** pour la direction sound du théorème de représentation d'utilité espérée de von Neumann–Morgenstern (cf cellule [18] Conclusion : "0-sorry pour la direction sound"). La direction completeness (rationalité ⟹ représentation) reste **gated** sur Mathlib4 stabilisation des `ConvexCone` / `BoundedConvexSet`, honest disclosure dans la cellule [4].
+- (b) `DecInfer-07b-Lean-Gittins.ipynb` = Lean 4 formel pour Gittins index (cellule [22] Résumé enseignant) : définitions formalisées (BanditArm, BanditProcess), preuves partielles honnêtement disclosées, **état actuel = scaffolding + certitudes BornesSup** (gated sur `lake build` 100%).
 - (c) `Do-Calculus-Bridge.ipynb` cellule 5 = commentaire explicite sur advisory dowhy (chemin absolu fuit) — disclosed honnêtement comme **info utile d'identification causale**, pas scrubbé (Stop & Repair respecté, cf [secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) règle 6 + [[feedback-no-cell-output-scrubbing]]).
 
 **Workaround dégradé** : 0/18 (3 occurrences du mot « workaround » vérifiées = toutes disclosures honnêtes ci-dessus, pas de workaround réel).
@@ -424,13 +424,13 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 Chaque notebook pose un problème de **théorie de la décision** avancé qui exerce la capacité distinctive du moteur :
 
 - **DecInfer-01/DecPyMC-01** : Utility foundations (axiomes von Neumann–Morgenstern) — courbes d'utilité, concavité/convexité, certainty equivalent
-- **DecInfer-02/DecInfer-09** : Lean 4 formel (preuve sound représentation vNM + Gittins index) — fondation mathématique
-- **DecInfer-03/DecPyMC-02** : Utility of money — Saint-Petersbourg paradoxe, Friedman-Savage, Arrow-Pratt RRA, CARA/CRRA
-- **DecInfer-04/DecPyMC-03** : Multi-attribute utility (MAUT) — pondérations additives, dominance stochastique
-- **DecInfer-05/DecPyMC-04** : Decision networks (influence diagrams) — backward induction sur DAG décision/chance/valeur
-- **DecInfer-06/DecPyMC-05** : Value of information (EVPI) — Expected Value of Perfect Information, EVSI
-- **DecInfer-07/DecPyMC-06** : Expert systems — fusion de jugements experts par pondération bayésienne de précision
-- **DecInfer-08/DecPyMC-07** : Sequential decisions — dynamic programming, Bellman-style backward induction
+- **DecInfer-01b/DecInfer-07b** : Lean 4 formel (preuve sound représentation vNM + Gittins index) — fondation mathématique
+- **DecInfer-02/DecPyMC-02** : Utility of money — Saint-Petersbourg paradoxe, Friedman-Savage, Arrow-Pratt RRA, CARA/CRRA
+- **DecInfer-03/DecPyMC-03** : Multi-attribute utility (MAUT) — pondérations additives, dominance stochastique
+- **DecInfer-04/DecPyMC-04** : Decision networks (influence diagrams) — backward induction sur DAG décision/chance/valeur
+- **DecInfer-05/DecPyMC-05** : Value of information (EVPI) — Expected Value of Perfect Information, EVSI
+- **DecInfer-06/DecPyMC-06** : Expert systems — fusion de jugements experts par pondération bayésienne de précision
+- **DecInfer-07/DecPyMC-07** : Sequential decisions — dynamic programming, Bellman-style backward induction
 - **DecInfer-10** : Thompson Sampling — bandits manchots bayésiens (Beta-Bernoulli conjugué, posterior updating)
 - **Do-Calculus-Bridge** : dowhy (Microsoft) + backdoor adjustment — causal inference Pearl
 
@@ -465,7 +465,7 @@ Couvre 5ᵉ famille du ledger (ML/ML.Net → Tweety → SymbolicLearning → Sem
 | **L289** (anti-doublon temporel) | OK | Entry #005 ≠ entry #001/#002/#003/#004 = substance distincte (DecisionTheory vs ML/ML.Net vs Tweety vs SymbolicLearning vs SemanticWeb) |
 | **L327** (`+N/-0` purement additif) | OK | Modifs = cumul table update (4 lignes remplacées) + entry #005 appendu, 0 ligne supprimée |
 | **L335** (anti-monoculture) | OK | pivot post-c.396 PR #5859 vers substance NEUVE audit axe-2 owner po-2025 strict, pas 11ᵉ+ PR i18n monotone gated, ≠ re-sweep monotone #5780, ≠ clôture admin #5661, ≠ Argumentum PR-A #5721 close c.371+c.393 |
-| **L378 durcie** (G.1 2× audit+commit) | OK | Audit direct G.1 lecture exhaustive 18 nb, 3 disclosures honnêtes vérifiées (Lean DecInfer-02 vNM sound 0-sorry, DecInfer-09 Gittins scaffolding, Do-Calculus-Bridge dowhy advisory), 0 violation C.1, 0 workaround dégradé |
+| **L378 durcie** (G.1 2× audit+commit) | OK | Audit direct G.1 lecture exhaustive 18 nb, 3 disclosures honnêtes vérifiées (Lean DecInfer-01b vNM sound 0-sorry, DecInfer-07b Gittins scaffolding, Do-Calculus-Bridge dowhy advisory), 0 violation C.1, 0 workaround dégradé |
 | **Stop & Repair** (no scrub) | OK | 0 modification de cellule, audit purement consultatif |
 | **SOTA 5 verdicts** | OK | 18/18 SOTA-OK (8 DecInfer Microsoft.Infer.NET, 2 Lean 4 WSL, 7 DecPyMC PyMC+ArviZ, 1 Causal-Bridges dowhy) |
 | **0 parasite CJK** | OK | 4 ranges Unicode scannés (CJK Unified U+4E00-U+9FFF, CJK Ext A U+3400-U+4DBF, Hangul U+AC00-U+D7AF, Fullwidth U+FF00-U+FFEF) = 0/18 .ipynb (notebook audit script python3 = 0/18) |
