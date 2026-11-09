@@ -15,3 +15,16 @@ python scripts/notebook_tools/curriculum_taxonomy.py \
 Les sources des concepts sont exportées en liens GitHub vers les vrais carnets. Chaque relation `cursus:hasCellCitation` regroupe le lien du carnet et son `cursus:cellId`, contrôlé contre le notebook local.
 
 L'export des concepts reste un graphe à part de l'export catalogue afin que chaque forme garde sa validation dédiée. Un consommateur peut les unir dans un même graphe RDF en chargeant les deux Turtle, par exemple `graph.parse("catalogue.ttl", format="turtle")` puis `graph.parse("compression.ttl", format="turtle")`.
+
+## Série Probas — tranche 1 (sous-série Infer)
+
+`probas.json` étend le même format à la série **Probas**, sur la sous-série **Infer** fondation : six carnets (`Infer-01` à `Infer-05`, dont `Infer-01b`) et 22 concepts. Le même `schema.json` et le même validateur `curriculum_taxonomy.py` s'appliquent ; les **prérequis** relient les carnets entre eux (par ex. les réseaux bayésiens et la d-séparation avant l'inférence causale). Chaque concept cite les cellules de carnet où il est enseigné ; ceux qui s'y rattachent (réseaux bayésiens, d-séparation, inférence causale) nomment en outre le chapitre **AIMA 3e/4e** correspondant dans leur définition, les concepts propres à Infer.NET (moteur, graphes de facteurs, VMP/EP, mélanges gaussiens) n'ayant pas d'équivalent AIMA.
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py \
+  --data docs/curriculum/taxonomy/probas.json \
+  --skos-output /tmp/probas.ttl \
+  --owl-output /tmp/probas.owl
+```
+
+La tranche 2 ajoutera la sous-série **PyMC** au même fichier, puis les carnets Infer avancés (IRT, TrueSkill, processus de Kalman, etc.).
