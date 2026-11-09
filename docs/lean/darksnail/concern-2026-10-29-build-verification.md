@@ -1,6 +1,6 @@
 # Concern user du 2026-10-18 — build first-hand du contenu Lean : la prémisse du verdict Pli 2 est falsifiée
 
-> **Statut** : mesure first-hand livrée ; le dépliage éventuel de Pli 2 reste au coordinateur (gel ai-01 du 2026-10-21 inchangé par ce document).
+> **Statut** : mesure first-hand livrée ; **dépliage arbitré le 2026-11-08** (ai-01, c.6725327653) : Pli 2 rouvert borné — 2.1 livré par #23302, plis suivants (lake in-tree, carnet `so(M)`, reliure Tao/NavierStokes) et gating Pli 3 repliés tant que les issues ouvertes du dépôt sont ≥ 400.
 > **Date** : 2026-10-29.
 > **Lane** : myia-po-2028:CoursIA-2 (WSL Ubuntu, Lean 4.33.0, Lake + elan).
 > **EPIC parent** : #21310 (Project DarkSnail Origami).
