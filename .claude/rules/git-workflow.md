@@ -86,7 +86,7 @@ The lister `python scripts/ci/list_scope_swallowed_issues.py` (`--json`, `--all-
 ```bash
 git merge-base --is-ancestor <sha> origin/main          # 1. intégrée upstream ? (muette si squash)
 gh api repos/jsboige/CoursIA/commits/<sha>/pulls        # 2. REST (faux négatif possible)
-gh pr list --state all --search "head:<branch>"         # 3. autoritatif sur les PRs
+gh api "repos/jsboige/CoursIA/pulls?state=all&head=jsboige:<branch>"  # 3. autoritatif sur les PRs (seau core, #23636)
 git log origin/main --oneline --grep "<sujet>"          # 4. identité de CONTENU (squash → sujet préservé)
 ```
 
@@ -118,7 +118,7 @@ python scripts/ci/install_prune_task.py --install --dry-run  # afficher argv sch
 - **SKIP_CURRENT** : le worktree depuis lequel le script est lancé.
 - **Artefacts untracked tolérés** (`slides/images/`, `**/scripts/results/`, `.claude/agent-memory/*`, `*_output.ipynb`, `node_modules/`, `.cache/`, `.pytest_cache/`, `__pycache__/`, `_measurements/`, `.mypy_cache/`, `.ruff_cache/`, `dist/`, `build/`, `.eggs/`, `.tox/`) — d'après le dernier commentaire de #8924.
 
-**Ancre PR autoritative** : `gh pr list --state all --search "head:<branch>"` (pas `--is-ancestor` seul, ni `commits/<oid>/pulls` REST — cf §Orphan-branch scan ci-dessus pour les faux négatifs mesurés).
+**Ancre PR autoritative** : `gh api "repos/<owner>/<repo>/pulls?state=all&head=<owner>:<branch>"` — endpoint REST de listing par branche (seau `core`, résilient au quota GraphQL du login partagé, #23636/#23642) ; le repli `gh pr list --state all --search "head:<branch>"` reste réservé aux branches de fork (head appartenant à un autre propriétaire, hors du filtre `head=`). Pas `--is-ancestor` seul, ni `commits/<oid>/pulls` REST (faux négatifs mesurés — cf §Orphan-branch scan ci-dessus).
 
 **Refus ≠ échec + observabilité** : un REFUS est une **décision** de l'organe : exit 0, le rapport porte le décompte par classe (`refusals:` en texte, `refusal_reasons` en JSON) ; rc≠0 = panne gh/git ou échec d'application, uniquement. La tâche planifiée relaie `--warn-threshold 20` : au-delà, une ligne `[WARN][prune-task]` vit dans le journal (`%LOCALAPPDATA%\CoursIA\prune_task\logs\`). Attribution lane : un spawn peut poser `.lane-owner` (une ligne : `machine:workspace`) à la racine du worktree — l'organe l'affiche (`lane=...`) et l'agrège (`lane_refusals`) ; le fichier est toléré au nettoyage et n'influence AUCUNE décision (mesure : [détail §5](../../docs/reference/git-workflow-detail.md)).
 
