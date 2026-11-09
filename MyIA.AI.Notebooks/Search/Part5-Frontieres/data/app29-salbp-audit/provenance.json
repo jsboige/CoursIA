@@ -1,7 +1,7 @@
 {
   "generated_on": "2026-09-01",
   "environment": {
-    "python": "3.13.15",
+    "python": "3.13.16",
     "ortools": "9.15.6755",
     "pulp": "3.3.2"
   },

@@ -70,8 +70,8 @@ Chaque ligne est une **mesure firsthand de la machine**, jamais une deduction d'
 | `myia-po-2025` | **1.0.712001** | 2026-10-02 | `dotnet tool list -g` — conforme, aucune mise a niveau requise |
 | `myia-po-2026` | **1.0.712001** | 2026-10-05 (re-mesure) | `dotnet tool list -g` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` |
 | `myia-ai-01` | **1.0.712001** (outil **global**) | 2026-10-19 (re-mesure) | `dotnet tool list -g` = `microsoft.dotnet-interactive 1.0.712001` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` — **le meme hash de build que po-2026 et po-2027**, sur une troisieme machine. Execution reelle via le kernelspec `.net-csharp` **global** (dont l'`argv` est `dotnet interactive jupyter`, donc l'outil global) : probe `#load` + appel, **SUCCES** (`Greet says: Hello from helper.cs`), et `language_info.version` = `13.0` — **aucun drift `13.0 -> 14.0`** sous le nouveau canon. La commande machine-globale, due au **coordinateur**, a ete jouee depuis le 2026-10-02 : l'etat « outil global encore `1.0.617701` » consigne dans la mesure du 2026-10-02 est **perime**. Le `ArgumentNullException` #8485 reste **non reproduit** |
-| `myia-po-2027` | **1.0.712001** | 2026-10-09 | mesure firsthand par sa lane, **avant / apres reparation** — l'outil **global** portait `1.0.617701`, l'ancien canon : une **divergence non signalee de plus**, du meme type que celle de po-2024 avant le de-pin. Reparee par `dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.712001` puis `dotnet interactive jupyter install` (regle F ; les 3 noyaux `.net-csharp`/`.net-fsharp`/`.net-powershell` re-enregistres). Apres reparation, les **deux** mesures concordent : `dotnet tool list -g` = `1.0.712001` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` — **le meme hash de build que po-2026**, sur une autre machine et une autre lane. Cette machine est celle du bug `#r "nuget:"` documente sous l'ancien canon ([`dotnet-restore-rfc-17361.md`](dotnet-restore-rfc-17361.md)) : ce bug n'est **pas** re-teste ici |
-| `myia-po-2028` | **1.0.712001** | 2026-10-20 | `dotnet tool list -g` = `microsoft.dotnet-interactive 1.0.712001` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` — **le meme hash de build** que po-2026, po-2027 et ai-01, sur un poste livre **vierge cote dev** dont la toolchain a ete remontee de zero (`jsboige/CoursIA#21603`) ; SDKs 8.0.426 / 9.0.319 / 10.0.402 installes per-user. **Reserve posee le 2026-10-20, levee par re-mesure le 2026-10-23** : ce jour-la, sous ce **meme** build, l'execution reelle y emettait `language_info.version` = **`12.0`** la ou ai-01 mesure `13.0`. La re-mesure du 2026-10-23 rend **`13.0`** par les **deux** chemins — execution canonique (`notebook_tools.py execute --kernel .net-csharp`) et handshake `kernel_info` — sur un carnet neuf ; sous le meme build, les variables de l'epoque sont re-testees **inertes**. Le `12.0` ne se reproduit donc plus, et la cause du 2026-10-20 reste **non etablie**. Un **autre** defaut, reel et bloquant, a en revanche ete mesure et repare ce jour-la : le muxer `dotnet` en tete de PATH machine n'a **aucun `sdk/`**. Detail, reproduction et hypothese non prouvee : [po-2028](#po-2028-inventaire-kernels-2026-10-20), suivi **#21691** |
+| `myia-po-2027` | **1.0.712001** | 2026-10-09 | mesure firsthand par sa lane, **avant / apres reparation** — l'outil **global** portait `1.0.617701`, l'ancien canon : une **divergence non signalee de plus**, du meme type que celle de po-2024 avant le de-pin. Reparee par `dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.712001` puis `dotnet interactive jupyter install` (regle F ; les 3 noyaux `.net-csharp`/`.net-fsharp`/`.net-powershell` re-enregistres). Apres reparation, les **deux** mesures concordent : `dotnet tool list -g` = `1.0.712001` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` — **le meme hash de build que po-2026**, sur une autre machine et une autre lane. Cette machine est celle du bug `#r "nuget:"` documente sous l'ancien canon ([`2026-09-25-dotnet-restore-rfc-17361.md`](../transients/2026-09-25-dotnet-restore-rfc-17361.md)) : ce bug n'est **pas** re-teste ici |
+| `myia-po-2028` | **1.0.712001** | 2026-10-20 | `dotnet tool list -g` = `microsoft.dotnet-interactive 1.0.712001` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` — **le meme hash de build** que po-2026, po-2027 et ai-01, sur un poste livre **vierge cote dev** dont la toolchain a ete remontee de zero (`jsboige/CoursIA#21603`) ; SDKs 8.0.426 / 9.0.319 / 10.0.402 installes per-user. **Reserve posee le 2026-10-20, levee par re-mesure le 2026-10-23** : ce jour-la, sous ce **meme** build, l'execution reelle y emettait `language_info.version` = **`12.0`** la ou ai-01 mesure `13.0`. La re-mesure du 2026-10-23 rend **`13.0`** par les **deux** chemins — execution canonique (`notebook_tools.py execute --kernel .net-csharp`) et handshake `kernel_info` — sur un carnet neuf ; sous le meme build, les variables de l'epoque sont re-testees **inertes**. Le `12.0` ne se reproduit donc plus, et la cause du 2026-10-20 reste **non etablie** — **critere 1 de #21691 clos le 2026-10-29 par epuisement des configurations de demarrage**, la cause etant declaree irreductible avec sa preuve (meme section). Un **autre** defaut, reel et bloquant, a en revanche ete mesure et repare ce jour-la : le muxer `dotnet` en tete de PATH machine n'a **aucun `sdk/`**. Detail, reproduction et hypothese non prouvee : [po-2028](#po-2028-inventaire-kernels-2026-10-20), suivi **#21691** |
 
 **Etat de l'acceptance de #18766** : le canon est **unique** et documente ici — oui ; **les machines de la flotte sont conformes par mesure** (`po-2023`, `po-2024`, `po-2025`, `po-2026`, `po-2027`, `po-2028` depuis le 2026-10-20, et `ai-01` depuis la re-mesure du 2026-10-19). La derniere ligne qui restait non mesuree — `ai-01`, dont l'outil global portait encore l'ancien canon au 2026-10-09 — est **desormais mesuree et conforme** : l'outil global porte le canon, l'execution reelle d'un carnet .NET via le kernelspec global passe, et le stamp `language_info.version` confirme `13.0`. Les deux cases d'acceptance sont donc tenues : la matrice est publiee, et le canon est unique et tenu par mesure sur chaque machine — il ne l'est plus « par confiance de compte », ce qui est exactement le mecanisme qui avait laisse la divergence vivre trois semaines.
 
@@ -127,7 +127,7 @@ Instance mesuree (#11104, ML-3 AutoML) :
 
 `0.22.3` prend `Microsoft.ML [4.0.3, )`, borne **ouverte** : le pin `Microsoft.ML, 5.0.0` du notebook reste valide. Mesure de bout en bout apres bascule : **10/10 cellules, 0 erreur, 86,1 s**.
 
-**Ce plafond est leve par le canon 1.0.712001 (02/10/2026, #18766)** : ce build embarque Roslyn 5.x (FileVersion `5.0.25.56712` mesure sur po-2024, hote `net10.0`) — les dependances `[4.13.0, )` (ex. AutoML 0.23.0) passent sous le nouveau canon. Le downgrade `0.23.0 -> 0.22.3` de ML-3 reste valide (bornes ouvertes, pas de raison de rebasculer). La section ci-dessus se lit desormais comme l'historique du canon 1.0.617701.
+**Ce plafond est leve par le canon 1.0.712001 (02/10/2026, #18766)** : ce build embarque Roslyn 5.x (FileVersion `5.0.25.56712` mesure sur po-2024, hote `net10.0`) — les dependances `[4.13.0, )` (ex. AutoML 0.23.0) passent sous le nouveau canon. Le downgrade `0.23.0 -> 0.22.3` de ML-3, qui n'avait ete fait que pour epargner ce plafond, est annule le 2026-10-28 : la convergence de version du carnet sur la version canonique du manifeste (`0.23.0`, #23073, PR #23088) le rebascule, et la dependance `[4.13.0, )` passe sous le canon 1.0.712001 (Roslyn 5.x). La section ci-dessus se lit desormais comme l'historique du canon 1.0.617701.
 
 Verifier la dependance d'un package avant d'incriminer le kernel :
 
@@ -137,6 +137,28 @@ grep -o 'id="Microsoft.CodeAnalysis[^"]*" version="[^"]*"' \
 ```
 
 **Piege de diagnostic adjacent** : sur cet hote (32 threads), un notebook .NET non borne en threads OpenMP part en timeouts de cellule qui *ressemblent* a un blocage kernel. `OMP_NUM_THREADS=4` a ramene ce meme notebook de **6 380,9 s (7 cellules en timeout a 900 s)** a **14,8 s** — facteur **x431**. Borner les threads **avant** de conclure a un hang. Les executeurs du depot (`dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `NotebookExecutor.execute_with_papermill`) exportent desormais `OMP_NUM_THREADS`/`OPENBLAS_NUM_THREADS`/`MKL_NUM_THREADS=4` par defaut avant de lancer le kernel (#11111) ; une valeur deja posee dans l'environnement gagne (surcharge explicite pour ne pas brider une machine ou c'est voulu). `wsl_papermill.py` reste hors de ce mecanisme : l'environnement Windows ne traverse pas la frontiere `wsl.exe`.
+
+### Bug `#r "nuget:"` du canon 1.0.617701 : reparation a la demande, **jamais** de conversion de masse
+
+Sous l'ancien canon, une cellule portant `#r "nuget: ..."` peut lever a la restauration :
+
+```
+System.ArgumentException: Must provide errors when succeeded is false
+  at Microsoft.DotNet.Interactive.PackageManagement.PackageRestoreResult..ctor(...)
+```
+
+et bloquer la re-execution du carnet. Le defaut est **non deterministe** (3 reproductions le 2026-09-22 sur po-2027, aucune sur cache chaud ni cache froid le lendemain), et il **n'a pas ete re-teste sous le canon 1.0.712001** : le rencontrer aujourd'hui commence donc par la mesure de version contre le canon (matrice « Conformite flotte au canon », ci-dessus).
+
+**Remede, a la demande** : precharger les packages en assemblies plates puis referencer le fichier local.
+
+```bash
+python scripts/ci/dotnet_preload_packages.py QuikGraph==2.5.0
+# puis dans la cellule :  #r "./_deps/QuikGraph.dll"
+```
+
+**Ce qu'il ne faut PAS en faire** : une conversion de masse des carnets vers `#r "./_deps/..."`. Le pilote du 2026-09-25 (`CSP-1-Fundamentals-CSharp.ipynb`) a mesure les trois bras — nuget d'origine 19/19 OK, local seul 16/19 (`Could not locate ikvm home path`), mixte 15/19 (`MSB4036 IkvmResolveNearestRuntimeIdentifier introuvable`). Les packages IKVM ont besoin du **graphe de restauration NuGet** que `_deps/` ne reconstitue pas, et `_deps/` est gitignore : une conversion generalisee casserait de facon **deterministe** tout clone neuf, pour un bug intermittent. L'outil est un **remede de reparation ponctuelle**, pas une migration.
+
+Recit complet, 5 probes, mesures des trois bras : [`2026-09-25-dotnet-restore-rfc-17361.md`](../transients/2026-09-25-dotnet-restore-rfc-17361.md).
 
 ### Divergence po-2024 du 2026-08-16 (#11157) : le pin n'etait jamais installe
 
@@ -172,6 +194,7 @@ Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/Sem
 | `llmcompressor` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\llmcompressor` | LLM quantization tooling |
 | `e2e_test_env` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\e2e_test_env` | E2E tests |
 | **pyphi** | **3.9** | Nom **machine-dépendant** — mesuré `pyphi39` sur po-2026 (`C:\Users\jsboi\miniconda3\envs\pyphi39`) ; chemin ai-01 non mesuré | Cœur Φ série IIT/ICT (PyPhi 1.2.0). Cf. § « Série IIT/ICT » ci-dessous |
+| **ict-py39** | **3.9** | env **dédié** série IIT/ICT — créé par `MyIA.AI.Notebooks/IIT/scripts/setup_ict_env.ps1` (ou `.sh`), cloné de `pyphi` | Unifie numpy<2 + torch CPU + package local `ict` : strates cœur Φ **et** LLM/SAE dans un seul env. Cf. § « Env dédié ICT » ci-dessous |
 | `base` | 3.10+ | `C:\Users\MYIA\miniconda3` | Conda base — NE PAS modifier |
 
 ### Série IIT/ICT — env canonique `pyphi` (PyPhi 1.2.0)
@@ -222,7 +245,7 @@ Les **4 notebooks de la strate Φ** — ceux dont les outputs **committés** vie
 | `ICT-01-PhiTrajectories-Python` | 10 · 4 → 4 | aucune dérive | aucun | 0 `exec_count` nul, 0 erreur | — |
 | `ICT-05-CausalEmergence-Python` | 10 · 0 → 0 | aucune dérive | aucun | 0 / 0 | 12 s |
 | `ICT-18-ArrowOfTimeReversibilization-Python` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 7 s |
-| `ICT-Synthese-CrossSubstrat` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 55 s |
+| `ICT-Synthese-CrossSubstrat-Python` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 55 s |
 
 Et le garde lui-même, sur l'état **commité** : `OK: 0 kernel-drift regression across **4** changed notebooks`.
 
@@ -237,6 +260,27 @@ Et le garde lui-même, sur l'état **commité** : `OK: 0 kernel-drift regression
 **Prérequis d'env, mesuré lui aussi.** `matplotlib` est **indispensable** (les strates trajectoires / heatmaps / EWS l'importent), et la note d'en-tête de `MyIA.AI.Notebooks/IIT/requirements.txt` décrivait la liste du script de setup en l'**omettant** — un env créé en suivant cette note ne peut pas exécuter la série (constaté : `pyphi39` sur po-2026 en était dépourvu ; `matplotlib 3.9.4` installé, `numpy` resté à 1.26.4, pin préservé). La note est corrigée dans la même PR.
 
 **Reste ouvert (#17185).** Trancher la population au-dessus de 3.9 (73 des 77) : un env pinné **par strate**, ou une passe de re-exécution homogénéisante — dans les deux cas c'est une décision sur l'**artefact d'env**, pas un correctif de notebook.
+
+### Env dédié ICT — `ict-py39` (numpy<2 + torch CPU + `ict`, 2026-11-08, #22297)
+
+L'env `pyphi` ci-dessus ne porte que la strate cœur Φ : il n'a **ni** torch, **ni** le package local `ict`. Or deux exigences supplémentaires sont **orthogonales** au pin py3.9/numpy<2 de `pyphi`, et ne tiennent pas dans l'env py3.13 partagé (numpy 2.x casse pyemd) :
+
+- les strates **LLM/SAE** (ICT-21/22/24, ICT-SAE-JLens, ICT-40a) exigent `torch` + `transformers` ;
+- les notebooks qui font `from ict import ...` exigent le **package local** `ict` (simulations, F/Lens, bridges) installé.
+
+L'env dédié `ict-py39` unifie les trois dans **un seul** env Python 3.9, pour exécuter toute la série (cœur Φ **et** LLM/SAE **et** `ict`) sans va-et-vient d'interpréteur.
+
+| Élément | Valeur |
+|---------|--------|
+| Env conda | `ict-py39`, Python **3.9** — créé par `MyIA.AI.Notebooks/IIT/scripts/setup_ict_env.ps1` (ou `.sh`) |
+| Construction | **Cloné de l'env `pyphi`** (hérite `pyemd` 0.5.1 binaire prebuilt + `pyphi` 1.2.0 + numpy<2 + scipy, **sans compilateur**), puis `pip install -e ICT-Series` (package local `ict` + ses deps déclarées) + `pip install torch --index-url …/whl/cpu` + `pip install transformers` |
+| Kernelspec | `ict-py39` (« Python 3 (ICT 3.9 dedicated) ») |
+| Stack mesurée (2026-11-08, po-2024) | Python 3.9.23 · numpy 1.26.4 · pyphi 1.2.0 · scipy 1.13.1 · pandas 2.3.3 · torch 2.8.0+cpu · transformers 4.57.6 · `ict` (editable) |
+| Usage | Exécution locale de toute la série IIT/ICT sous **un** env 3.9. Complément de l'env `coursia-sae` (py3.12) : celui-ci est py3.9 (pin pyphi) et porte le package local `ict` |
+
+**Pourquoi cloner plutôt que créer l'env à zéro.** PyPI ne publie aucun wheel cp39 de `pyemd` 0.5.1 et conda-forge ne livre pas de `gcc` utilisable sur cette machine Windows (`c-compiler` / `m2w64-gcc` ne produisent pas de compilateur fonctionnel, mesure firsthand 2026-11-08) : compiler la sdist de `pyemd` est un impasse. Cloner l'env `pyphi` de base hérite du binaire known-good **pour free** — c'est le seul chemin sans compilateur.
+
+**Prérequis** : l'env `pyphi` doit exister (créé par `setup_pyphi_env.ps1`) ; `setup_ict_env` le clone. **C.2** : une re-exécution sous `ict-py39` fait repasser le `Kernel drift guard` de la même façon que sous `pyphi` (numpy 1.x, même noyau 3.9) — le kernelspec stocké dans le notebook doit être `ict-py39`, et le paramètre `--ExecutePreprocessor.kernel_name=ict-py39` passé explicitement (cf. § « Série IIT/ICT » plus haut).
 
 ### Stack ML training (coursia-ml-training, vérifié 2026-05-06)
 
@@ -440,12 +484,14 @@ Créé via `conda-forge --override-channels` : les canaux Anaconda par défaut e
 #### Divergence mesurée le 2026-10-20 : le stamp `language_info.version` était **12.0**, pas 13.0
 
 > **État au 2026-10-23 : non reproduite.** La sous-section « Re-mesure du 2026-10-23 » ci-dessous rend `13.0` par les deux chemins, sur un carnet neuf, sous le même build. Ce qui suit décrit la mesure du 2026-10-20 et les tests qui l'ont accompagnée ; rien n'en est retiré.
+>
+> **État au 2026-10-29 : critère 1 de #21691 clôturé.** La sous-section « Clôture du critère 1 de #21691 » épuise les configurations de démarrage : aucune ne reproduit `12.0`, et l'état de l'époque n'est pas reconstructible. La cause est déclarée **irréductible avec sa preuve**, ce qui est la seconde branche du critère.
 
 **Fait mesuré le 2026-10-20** : une exécution réelle d'un carnet `.net-csharp` sur ce poste, sous le **canon 1.0.712001** (même hash de build que les autres machines), émet `language_info.version` = **`12.0`** — là où ai-01 mesure `13.0` sous le même build.
 
 C'est une divergence de **plus** dans la flotte, du même type que celles que cette matrice a déjà attrapées (#11157 po-2024, #18766 po-2026, po-2027) : elle n'est visible que par une **mesure**, jamais par la réponse de la commande.
 
-**Suivi** : cette divergence est suivie par l'issue **#21691**, au même titre que #11157 et #18766 pour les précédentes. La cause du 2026-10-20 reste **non établie** ; l'issue porte les variables réfutées, la reproduction et les critères de résolution. Le fait qu'elle ne se reproduise plus au 2026-10-23 ne la clôt pas : une divergence qui disparaît sans cause mesurée n'est pas une divergence réparée, et le guard garde son asymétrie `12.0 -> 13.0`.
+**Suivi** : cette divergence est suivie par l'issue **#21691**, au même titre que #11157 et #18766 pour les précédentes. La cause du 2026-10-20 reste **non établie** ; l'issue porte les variables réfutées, la reproduction et les critères de résolution. Le fait qu'elle ne se reproduise plus au 2026-10-23 ne la clôt pas : une divergence qui disparaît sans cause mesurée n'est pas une divergence réparée, et le guard garde son asymétrie `12.0 -> 13.0`. **Mise à jour du 2026-10-29** : la cause n'est pas réparée, elle est désormais **irréductible par mesure** (matrice de démarrage exhaustive ci-dessous) — c'est la seconde branche du critère 1 de #21691, et le guard conserve son asymétrie.
 
 **Variables testées et réfutées** — chaque test est une exécution réelle du noyau, stamp relu dans la métadonnée du carnet :
 
@@ -474,6 +520,28 @@ Le second chemin est **celui qui avait produit le `12.0`** le 2026-10-20 : sous 
 **Conséquence opérationnelle, re-mesurée** : la table `CANONICAL_LANGUAGE_TRANSITIONS` du `Kernel drift guard` n'accepte que la transition `12.0 -> 13.0` ; la transition inverse `13.0 -> 12.0` **reste rouge**, et cette asymétrie est conservée — elle est le filet qui rattraperait un retour du défaut.
 
 **Règle de la lane `myia-po-2028:CoursIA-2` — levée le 2026-10-23, avec sa raison.** Elle interdisait de ré-exécuter un carnet .NET dont la base est stampée `13.0` (le poste le transformait en `12.0` et rougissait le guard). Elle est **levée** parce que le fait qui la fondait ne se reproduit plus par le chemin canonique, mesuré sur un carnet neuf le 2026-10-23. La levée est **bornée** : la première ré-exécution en lot se limite à **5 à 10 carnets** .NET, et leurs stamps relus sont consignés dans **#21691** avant d'ouvrir la lane au volume — un carnet neuf n'est pas le corpus, et c'est le corpus qui tranchera. Critère de ré-armement, écrit comme un fait mesurable et non comme une appréciation : **un seul stamp `12.0` produit par le chemin canonique** sur ce poste ⇒ la règle revient, et #21691 se rouvre avec la reproduction en main.
+
+#### Clôture du critère 1 de #21691 : matrice de démarrage exhaustive, 2026-10-29
+
+Le critère 1 demandait d'isoler la cause du `12.0`, **ou** de déclarer la cause irréductible avec sa preuve. La mesure du 2026-10-29 tranche par la seconde branche : **aucune configuration de démarrage survivante ne reproduit `12.0`**, et toutes celles qui démarrent émettent `13.0`.
+
+Le protocole est celui du 2026-10-20, rejoué avec le kernelspec d'origine reconstitué à l'identique — `argv` = `["dotnet","interactive","jupyter","--default-kernel","csharp","{connection_file}","--http-port-range","2048-3000"]`, **sans** bloc `env` (sha256 `fcf810b3…`, le spec sauvegardé le 2026-10-23, identique à celui que #22091 a enregistré) — puis quatre variantes, chacune exécutant réellement un carnet neuf et relisant `metadata.language_info.version` :
+
+| # | `argv[0]` | `DOTNET_ROOT` au lancement | Résultat |
+|---|-----------|---------------------------|----------|
+| A | `dotnet` (résolu par PATH → `C:\Program Files\dotnet\dotnet.exe`, runtime seul) | hérité | **le noyau meurt en ~4 s**, aucun `language_info` — `dotnet --version` échoue lui-même : *The command could not be loaded* |
+| B | muxer per-user `…\AppData\Local\Microsoft\dotnet\dotnet.exe` | hérité (`…\AppData\Local\Microsoft\dotnet`) | **`13.0`**, Roslyn **`5.0.0.0`** |
+| C | apphost `…\.dotnet\tools\dotnet-interactive.exe` | hérité (idem) | **`13.0`**, Roslyn **`5.0.0.0`** |
+| D | apphost `…\.dotnet\tools\dotnet-interactive.exe` | **vidé** | **le noyau meurt** |
+| E | apphost `…\.dotnet\tools\dotnet-interactive.exe` | forcé à `C:\Program Files\dotnet` | **le noyau meurt** |
+
+Les deux variantes qui répondent rendent donc le stamp canon, et **la même Roslyn `5.0.0.0`** ; les trois autres meurent avant de répondre, ce qui n'est pas un stamp divergent mais une absence de noyau. Il n'existe par conséquent **aucun état de lancement atteignable sur ce poste qui produise `12.0`**.
+
+**Ce que la mesure élimine, et ce qu'elle ne peut pas rendre.** Elle élimine l'hypothèse d'un build plus ancien. Le store ne contient **qu'une** version de `microsoft.dotnet-interactive`, `1.0.712001`, modifié le 2026-10-20 à 21:00 (apphost à 15:56), et le cache NuGet `microsoft.dotnet-interactive` est absent du poste — vérifié le 2026-10-29, si bien qu'aucun second build n'a de chemin de résolution. Or le `12.0` a encore été mesuré le **2026-10-22**, après cette date : aucun autre build n'a donc pu le produire. Elle **ne peut pas** restituer l'état réel du 2026-10-20 : l'ordre du PATH, la valeur alors effective de `DOTNET_ROOT` et le jeu de runtimes de ce jour-là ne sont pas reconstructibles depuis aujourd'hui, et c'est cette limite — non une hypothèse en attente — qui rend la cause **irréductible**. L'énoncé honnête est donc : le fait est mesuré les 20 et 22 octobre, il n'est plus reproductible par aucun chemin le 29, et l'état qui le produisait n'existe plus.
+
+**Défaut de code trouvé en chemin, et qui explique pourquoi la réparation de code seule n'aurait pas suffi.** `_dotnet_env.sdk_bearing_dotnet_root()` (`scripts/notebook_tools/_dotnet_env.py`, introduit par #17361/#18310, commit `b71180127` du 2026-09-29) ne réparait que le cas « `DOTNET_ROOT` **défini mais sans `sdk/`** » : quand la variable était **absente ou vide** *et* qu'aucun `dotnet` ne se trouvait sur le `PATH`, la fonction rendait `None` et **aucun override n'était posé** — l'état de la variante D, où le noyau meurt. Le trou est depuis corrigé : la fonction sonde désormais les racines connues quand la racine effective est inconnue (#23972 ; tests `scripts/notebook_tools/tests/test_dotnet_env.py`). Sur ce poste, `DOTNET_ROOT` vaut aujourd'hui `…\AppData\Local\Microsoft\dotnet` **dans le shell et dans l'environnement utilisateur** (HKCU), donc la fonction n'est même pas sollicitée : ce qui tient le poste, ce n'est pas le filet de code mais le bloc `env` du kernelspec posé le 2026-10-23 **et** cette variable utilisateur. Le trou valait pour une machine où la variable serait absente ; il est nommé ici, corrigé en #23972, et n'est pas la cause du `12.0`.
+
+**Conséquence opérationnelle — la fenêtre bornée du 2026-10-23 s'ouvre.** La règle de lane ci-dessus conditionnait la reprise des ré-exécutions .NET en lot à des stamps relus consignés dans #21691. Ce sont les variantes **B et C** qui les fournissent, sur carnet neuf et sous le kernelspec courant : **`13.0`**, deux fois. Le chemin canonique du dépôt est donc praticable sur ce poste pour les 5 à 10 carnets de la première fenêtre, et le critère de ré-armement reste inchangé : **un seul** stamp `12.0` produit par le chemin canonique ⇒ la règle revient.
 
 #### Exécuteurs et chemins
 
@@ -625,6 +693,15 @@ conda env list
 # WSL
 wsl -l -v
 ```
+
+**Un kernelspec enregistré peut survivre à son interpréteur.** Un `argv[0]` qui pointe sous un répertoire temporaire (scratchpad de session, `%TEMP%`) donne un noyau qui fonctionne le jour de son enregistrement puis meurt au premier nettoyage — et le symptôme (carnet qui échoue sur un chemin absent) est éloigné de la cause. Le détecteur, à lancer sur un poste et non en CI (le défaut vit dans la config utilisateur, pas dans le dépôt) :
+
+```bash
+python scripts/notebook_tools/check_kernelspec_temp_paths.py          # rc 0 propre, 1 offenders, 2 incident
+python scripts/notebook_tools/check_kernelspec_temp_paths.py --json    # sortie machine
+```
+
+Il ne mesure que les `argv[0]` **absolus** : les commandes nues (`dotnet`, `wsl`, `python`) se résolvent par `PATH` et ne vivent sous aucun temporaire. `--check-exists` ajoute les interpréteurs absents, `MISSING_INTERPRETER` n'étant jamais confondu avec `TEMP_ROOT` (deux causes, deux remèdes).
 
 ## Si un kernel manque
 

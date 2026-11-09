@@ -44,9 +44,13 @@ from scripts.livecoding_video_pipeline import (
     _build_arg_parser,
     _click_play,
     _resolve_capture_seconds,
+    _set_editor_code,
     build_repl_url,
+    capture_progressive_session,
     compose_narration,
+    compose_progressive_states,
     compose_strudel,
+    concat_wavs,
     cycles_for_duration,
     mix_final_ffmpeg,
     mux_ffmpeg,
@@ -834,6 +838,210 @@ class TestCaptureMode:
             )
 
 
+class TestAudioProbeCritere2:
+    """Critere 2 de #15604 : l'audio est REELLEMENT produit.
+
+    Ce qui est teste ici est le VERDICT sur une sonde deja mesuree, pas
+    une capture : un faux navigateur ne prouverait rien de plus que la
+    sonde elle-meme, et la capture reelle se prouve par l'execution
+    documentee dans le body de la PR. La sonde live (contexte Web Audio
+    d'une vraie page strudel) demande un navigateur et un reseau.
+    """
+
+    def test_sonde_absente_n_est_pas_un_succes(self):
+        """Sonde absente = rien n'a ete mesure : ce n'est pas un oui."""
+        from scripts.livecoding_video_pipeline import audio_verdict
+
+        ok, reason = audio_verdict({})
+        assert ok is False
+        assert "absente" in reason
+
+    def test_none_n_est_pas_un_succes(self):
+        from scripts.livecoding_video_pipeline import audio_verdict
+
+        ok, reason = audio_verdict(None)
+        assert ok is False
+        assert "absente" in reason
+
+    def test_aucun_contexte_audio(self):
+        """Page chargee mais pattern jamais demarre : aucun AudioContext."""
+        from scripts.livecoding_video_pipeline import audio_verdict
+
+        ok, reason = audio_verdict({"hasProbe": True, "contexts": []})
+        assert ok is False
+        assert "aucun AudioContext" in reason
+
+    def test_contexte_suspendu(self):
+        """Le piege fondateur : contexte cree mais suspendu (play non
+        effectif), horloge immobile. Un 'AudioContext existe' suffirait
+        a tort."""
+        from scripts.livecoding_video_pipeline import audio_verdict
+
+        ok, reason = audio_verdict(
+            {
+                "hasProbe": True,
+                "contexts": [
+                    {"state": "suspended", "clockAdvance": 0.0, "rms": None}
+                ],
+            }
+        )
+        assert ok is False
+        assert "running" in reason
+        assert "suspended" in reason
+
+    def test_horloge_figee(self):
+        """Contexte running mais horloge immobile : le moteur ne rend rien."""
+        from scripts.livecoding_video_pipeline import audio_verdict
+
+        ok, reason = audio_verdict(
+            {
+                "hasProbe": True,
+                "contexts": [
+                    {"state": "running", "clockAdvance": 0.001, "rms": 0.2}
+                ],
+            }
+        )
+        assert ok is False
+        assert "figee" in reason
+
+    def test_sortie_quasi_silencieuse(self):
+        """Horloge en marche et graphe branche, mais aucun signal : le
+        niveau mesure rattrape ce que l'horloge seule laisserait passer."""
+        from scripts.livecoding_video_pipeline import audio_verdict
+
+        ok, reason = audio_verdict(
+            {
+                "hasProbe": True,
+                "contexts": [
+                    {"state": "running", "clockAdvance": 0.25, "rms": 1e-6}
+                ],
+            }
+        )
+        assert ok is False
+        assert "silencieuse" in reason
+
+    def test_audio_produit(self):
+        from scripts.livecoding_video_pipeline import audio_verdict
+
+        ok, reason = audio_verdict(
+            {
+                "hasProbe": True,
+                "contexts": [
+                    {"state": "running", "clockAdvance": 0.25, "rms": 0.05}
+                ],
+            }
+        )
+        assert ok is True
+        assert "RMS 0.0500" in reason
+
+    def test_niveau_non_mesurable_reste_un_succes_d_horloge(self):
+        """Aucun noeud branche sur la destination (tap impossible) : la
+        mesure retombe sur l'horloge seule, et le motif le DIT au lieu de
+        laisser croire a une mesure de niveau."""
+        from scripts.livecoding_video_pipeline import audio_verdict
+
+        ok, reason = audio_verdict(
+            {
+                "hasProbe": True,
+                "contexts": [
+                    {"state": "running", "clockAdvance": 0.25, "rms": None}
+                ],
+            }
+        )
+        assert ok is True
+        assert "niveau non mesure" in reason
+
+    def test_meilleur_contexte_arbitre(self):
+        """Strudel peut creer un contexte par evaluation : un contexte
+        mort a cote d'un contexte vivant ne doit pas faire echouer."""
+        from scripts.livecoding_video_pipeline import audio_verdict
+
+        ok, _ = audio_verdict(
+            {
+                "hasProbe": True,
+                "contexts": [
+                    {"state": "suspended", "clockAdvance": 0.0, "rms": None},
+                    {"state": "running", "clockAdvance": 0.2, "rms": 0.03},
+                ],
+            }
+        )
+        assert ok is True
+
+    def test_sonde_installee_avant_la_navigation_et_apres_le_play(self):
+        """Ordre du cablage : le script d'init doit preceder le premier
+        `goto` (les constructeurs sont captures au chargement de la page),
+        et le verdict doit tomber pendant la lecture, donc avant l'export
+        WAV qui l'arrete."""
+        import inspect
+
+        from scripts.livecoding_video_pipeline import capture_repl_session
+
+        src = inspect.getsource(capture_repl_session)
+        i_init = src.index("add_init_script(AUDIO_PROBE_INIT_JS)")
+        i_goto = src.index("page.goto(url)")
+        i_probe = src.index("page.evaluate(AUDIO_PROBE_JS")
+        # Le libelle nu apparait aussi dans la docstring (etape 5) : viser
+        # l'appel, sinon l'index mesure la prose et non la sequence.
+        i_wav = src.index('name="Export to WAV"')
+        assert i_init < i_goto, "l'init script doit preceder la navigation"
+        assert i_goto < i_probe, "la sonde doit suivre le chargement de la page"
+        assert i_probe < i_wav, "le verdict doit tomber pendant la lecture"
+
+    def test_echec_audio_est_un_runtime_error(self):
+        """Un audio absent interrompt la capture : une video muette
+        produite en silence serait exactement le defaut que le critere 2
+        interdit."""
+        import inspect
+
+        from scripts.livecoding_video_pipeline import capture_repl_session
+
+        src = inspect.getsource(capture_repl_session)
+        assert "audio_ok" in src and "RuntimeError" in src
+        assert "if not audio_ok" in src
+
+    def test_js_des_sondes_parse(self, tmp_path):
+        """Les deux litteraux JS sont executes par le navigateur : une
+        faute de syntaxe ne se verrait qu'a l'execution reelle. `node
+        --check` la voit sans navigateur."""
+        import shutil
+
+        from scripts.livecoding_video_pipeline import (
+            AUDIO_PROBE_INIT_JS,
+            AUDIO_PROBE_JS,
+        )
+
+        node = shutil.which("node")
+        if not node:
+            pytest.skip("node absent : syntaxe JS non verifiable ici")
+        for name, src in (
+            ("init", AUDIO_PROBE_INIT_JS),
+            ("probe", AUDIO_PROBE_JS),
+        ):
+            f = tmp_path / f"{name}.js"
+            # Encapsulation en expression : la sonde est une async arrow,
+            # l'init une IIFE -- les deux sont des expressions valides.
+            f.write_text("const __sonde = " + src + ";\n", encoding="utf-8")
+            proc = subprocess.run(
+                [node, "--check", str(f)],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            assert proc.returncode == 0, f"{name}: {proc.stderr}"
+
+    def test_init_script_ne_detourne_que_la_destination(self):
+        """Le tap doit viser le noeud `destination` uniquement : detourner
+        `connect` en general reviendrait a inserer un noeud dans tous les
+        chemins du graphe et changerait le son capture."""
+        from scripts.livecoding_video_pipeline import AUDIO_PROBE_INIT_JS
+
+        assert "AudioDestinationNode" in AUDIO_PROBE_INIT_JS
+        assert "createAnalyser" in AUDIO_PROBE_INIT_JS
+        # le tap est best-effort : une erreur de mesure ne casse pas la page
+        assert "catch" in AUDIO_PROBE_INIT_JS
+
+
 # --- Etapes 3 et 6 : TTS expressif + mixage final (#15604) -------------------
 
 
@@ -1282,3 +1490,151 @@ class TestClickPlayRetry:
             _click_play(page, "https://strudel.cc/#HASH", attempts=3)
         assert page.clicks == 3
         assert page.gotos == 2
+
+
+class TestSetEditorCode:
+    """La saisie ramene le curseur au debut apres chaque remplacement."""
+
+    def test_insertion_puis_retour_au_debut_du_document(self):
+        events = []
+
+        class _Keyboard:
+            def press(self, key):
+                events.append(("press", key))
+
+            def insert_text(self, code):
+                events.append(("insert_text", code))
+
+        class _Page:
+            keyboard = _Keyboard()
+
+            def click(self, selector):
+                events.append(("click", selector))
+
+        code = "setcps(0.5)\n$: s('bd')"
+        _set_editor_code(_Page(), code)
+        assert events == [
+            ("click", ".cm-content"),
+            ("press", "Control+a"),
+            ("insert_text", code),
+            ("press", "Control+Home"),
+        ]
+
+
+class TestEtatsProgressifs:
+    """Critere 5a de #15604 : le code Strudel doit montrer au moins TROIS
+    etats visibles distincts dans la video.
+
+    Les tests couvrent la logique PURE (composition des etats, gardes,
+    commande de concatenation). La capture reelle (navigateur, saisie,
+    rendu WAV, ffmpeg) est prouvee par l'execution documentee dans le body
+    de la PR — un test qui simulerait le navigateur ne prouverait rien.
+    """
+
+    def test_au_moins_trois_etats_distincts(self):
+        etats = compose_progressive_states("trance", 180, voices=4)
+        assert len(etats) >= 3
+        assert len(dict.fromkeys(etats)) == len(etats)
+
+    def test_trois_voix_suffisent(self):
+        assert len(compose_progressive_states("trance", 180, voices=3)) == 3
+
+    @pytest.mark.parametrize("style", sorted(STYLES))
+    @pytest.mark.parametrize("visuals", [False, True])
+    def test_dernier_etat_egale_compose_strudel(self, style, visuals):
+        """Garde anti-derive : la progression converge vers le script canonique."""
+        etats = compose_progressive_states(style, 180, voices=4, visuals=visuals)
+        attendu = compose_strudel(style, 180, voices=4, visuals=visuals)
+        assert etats[-1] == attendu
+
+    def test_etats_strictement_cumulatifs(self):
+        etats = compose_progressive_states("techno", 180, voices=4, visuals=True)
+        precedents = None
+        for k, etat in enumerate(etats, start=1):
+            lignes = etat.splitlines()
+            voix = [l for l in lignes if l.startswith("$: ")]
+            assert len(voix) == k, f"etat {k} porte {len(voix)} voix"
+            if precedents is not None:
+                # Chaque etat reprend les voix du precedent, dans l'ordre :
+                # une progression qui reecrirait une voix ne serait pas une
+                # progression mais un remplacement.
+                assert voix[: k - 1] == precedents
+            precedents = voix
+
+    def test_chaque_etat_est_executable(self):
+        """Un etat partiel doit rester du code VALIDE, pas un texte tronque."""
+        for etat in compose_progressive_states("ambient", 120, voices=3, visuals=True):
+            assert "setcps(" in etat
+            assert etat.count("(") == etat.count(")"), etat
+            assert "$: " in etat
+
+    def test_visuals_places_sur_les_bonnes_voix(self):
+        sans = compose_progressive_states("trance", 180, voices=4, visuals=False)
+        avec = compose_progressive_states("trance", 180, voices=4, visuals=True)
+        assert ".scope()" not in sans[0]
+        # La voix 1 (basse) recoit .scope(), la voix 2 (lead) .pianoroll() :
+        # l'etat 2 est donc le premier a porter un visual.
+        assert ".scope()" in avec[1]
+        assert ".pianoroll()" in avec[2]
+
+    def test_rejette_moins_de_trois_voix(self):
+        with pytest.raises(ValueError, match="trois etats"):
+            compose_progressive_states("trance", 180, voices=2)
+
+    def test_rejette_style_et_duree(self):
+        with pytest.raises(ValueError, match="inconnu"):
+            compose_progressive_states("dubstep", 180)
+        with pytest.raises(ValueError, match="duration_seconds"):
+            compose_progressive_states("trance", 30)
+
+    def test_session_refuse_sans_visuals_avant_le_navigateur(self):
+        """Echec explicite AVANT tout import playwright (contrat CI sans navigateur)."""
+        with pytest.raises(ValueError, match="visuals=True requis"):
+            capture_progressive_session("trance", 120, voices=4, visuals=False)
+
+    def test_session_refuse_moins_de_trois_voix_avant_le_navigateur(self):
+        with pytest.raises(ValueError, match="trois etats"):
+            capture_progressive_session("trance", 120, voices=2)
+
+
+class TestConcatWavs:
+    """Concatenation des pistes d'etats : l'audio doit evoluer comme le code."""
+
+    def test_commande_et_liste(self, tmp_path):
+        wavs = [tmp_path / f"state_{i:02d}.wav" for i in range(3)]
+        sortie = tmp_path / "progressive.wav"
+        cmd = concat_wavs(wavs, sortie)
+        assert cmd[:2] == ["ffmpeg", "-y"]
+        assert "-f" in cmd and cmd[cmd.index("-f") + 1] == "concat"
+        assert "-safe" in cmd and cmd[cmd.index("-safe") + 1] == "0"
+        assert cmd[-1] == str(sortie)
+        liste = sortie.with_suffix(".txt")
+        assert liste.is_file()
+        lignes = liste.read_text(encoding="utf-8").strip().splitlines()
+        assert len(lignes) == 3
+        # Le demuxer concat n'accepte que des chemins en avant-slash, meme
+        # sous Windows (un backslash y est un caractere d'echappement).
+        assert all("\\" not in l for l in lignes)
+
+    def test_rejette_une_seule_piste(self, tmp_path):
+        with pytest.raises(ValueError, match="au moins 2 pistes"):
+            concat_wavs([tmp_path / "a.wav"], tmp_path / "out.wav")
+
+
+class TestCliProgressive:
+    """Le mode progressif s'active explicitement et refuse la combinaison vide."""
+
+    def test_flag_parse(self):
+        args = _build_arg_parser().parse_args(["--capture", "--progressive"])
+        assert args.progressive is True
+        assert args.capture is True
+
+    def test_defaut_desactive(self):
+        assert _build_arg_parser().parse_args([]).progressive is False
+
+    def test_progressive_sans_capture_rend_2(self, capsys):
+        from scripts.livecoding_video_pipeline import main
+
+        assert main(["--progressive"]) == 2
+        assert "requiert --capture" in capsys.readouterr().err
+

@@ -10,10 +10,11 @@ Ce module couvre les fondamentaux de la génération d'images par IA : modèles 
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 5 |
 | Kernel | Python 3 |
 | Durée estimée | ~3-4h |
 | GPU requis | 0-29GB |
+
+Le catalogue du dépôt (`COURSE_CATALOG.generated.md`) est la source des décomptes — ce README présente les carnets, il ne les compte pas.
 
 ## Notebooks
 
@@ -62,6 +63,8 @@ Ce module couvre les fondamentaux de la génération d'images par IA : modèles 
 ### API Keys
 
 Voir [`scripts/secrets/render_envs.py`](../../../../scripts/secrets/render_envs.py) + [`.claude/rules/secrets-hygiene.md`](../../../../.claude/rules/secrets-hygiene.md). Les clés sont centralisées dans `.secrets/master.env` (gitignored) et propagées via `python scripts/secrets/render_envs.py` vers `GenAI/.env`. **Jamais de littéraux inline** (`sk-...`, `Bearer ...`) ni dans ce README, ni dans le code, ni dans les cellules notebooks (cf incident 2026-05-14).
+
+Les paramètres de rendu (`style`, `quality`, `size`, `response_format`) ne passent plus tous : `gpt-image-1` et `dall-e-3` les refusent au niveau de la forme de l'API (HTTP 400 `Unknown parameter`). La table mesurée [docs/genai/parametres-par-modele.md](../../../../docs/genai/parametres-par-modele.md) dit, par modèle d'image, ce que chaque paramètre devient (mesure datée, messages d'erreur cités).
 
 ### Docker Services (optionnel)
 ```bash

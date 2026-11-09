@@ -22,7 +22,7 @@ singletons — and never exceeds the dimension (`blockSensitivity_le`).
 
 The quantities here are *local* (at a vertex `x`): this is the fine grain of
 the literature (Nisan, Huang), and the substrate on which the
-`ANALYSE-06-Sensibilite-2026` notebook builds the global variants.
+`ANALYSE-06b-Sensibilite-2026-Lean` notebook builds the global variants.
 -/
 
 namespace Sensitivity_en

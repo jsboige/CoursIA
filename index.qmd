@@ -35,7 +35,7 @@ toc: false
 ## Structure du dépôt
 
 ```
-MyIA.AI.Notebooks/         # Séries pédagogiques par thème (13 séries niveau 1)
+MyIA.AI.Notebooks/         # Séries pédagogiques par thème
   Search/                  # Algorithmes de recherche + métaheuristiques
   Sudoku/                  # Résolution multi-paradigme
   ML/                      # Machine Learning (.NET C#)

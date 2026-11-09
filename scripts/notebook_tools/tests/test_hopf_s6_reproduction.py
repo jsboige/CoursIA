@@ -26,11 +26,15 @@ from hopf_s6_reproduction import (  # noqa: E402
     FULL_PROTOCOL,
     HOPF_DIR,
     HOPF_URL,
+    LANDRUN_BIN,
+    LANDRUN_PROBE,
     PINNED_SHA,
     TOOLCHAIN,
+    _landrun_probe_sh,
     captured_step,
     cmd_check,
     cmd_full,
+    landrun_probe,
     prepare_checkout_step,
     rotate_if_present,
     toolchain_step,
@@ -284,6 +288,7 @@ def positive_mapping():
         r"grep -cE '^\s*axiom\s'": "0",
         "grep -cw native_decide": "0",
         "head -1": "MIT License",
+        "od -An -tx1": "elf64-x86-64",
         f"cat {BUILD_LOG}": BUILD_LOG_TEXT,
         f"cat {COMPARATOR_LOG}": COMPARATOR_LOG_TEXT,
         f"date -u -r {BUILD_LOG}": "2026-10-19T10:00:00Z",
@@ -412,6 +417,69 @@ class TestCmdCheckVerdict:
         assert rc == 1
         assert out["axioms_within_permitted"] is False
         assert out["check_ok"] is False
+
+
+class TestLandrunBinaryVerified:
+    """Critere 2 de #21442 : le binaire Landrun se verifie, il ne se nomme pas."""
+
+    def test_probe_reads_the_elf_header_not_the_file_name(self):
+        assert "od -An -tx1 -N20" in LANDRUN_PROBE
+        assert 'cut -c1-8' in LANDRUN_PROBE and "7f454c46" in LANDRUN_PROBE
+        assert 'cut -c9-10' in LANDRUN_PROBE                  # classe 64 bits
+        assert 'cut -c37-40' in LANDRUN_PROBE                 # e_machine x86-64
+        assert "3e00" in LANDRUN_PROBE
+        # `-lt 40` : un fichier trop court est un etat distinct, pas un refus
+        # generique (regression mesuree : parametres positionnels $19 = ${1}9)
+        assert '-lt 40' in LANDRUN_PROBE
+        assert "$19" not in LANDRUN_PROBE
+
+    def test_probe_is_parameterised_so_it_can_be_measured(self):
+        # la sonde prend un chemin : elle est testable sur des fichiers reels
+        assert "/tmp/quelque-chose" in _landrun_probe_sh("/tmp/quelque-chose")
+        assert LANDRUN_BIN in _landrun_probe_sh()
+
+    def test_gate_runs_before_the_comparator_invocation(self):
+        step = FULL_PROTOCOL[-1]
+        assert step.index("landrun_type") < step.index("lake exe comparator")
+        # refus explicite sur stderr (donc dans comparator.log), rc non nul
+        assert ">&2" in step
+        assert "exit 1" in step
+        assert LANDRUN_BIN in step
+
+    @pytest.mark.parametrize(
+        "landrun_type",
+        [
+            "missing",
+            "not-a-file",
+            "not-executable",
+            "not-elf",
+            "elf-not-64bit",
+            "elf64-not-x86-64",
+            "too-short",
+        ],
+    )
+    def test_check_fails_closed_on_every_other_type(self, landrun_type, capsys):
+        values = positive_mapping()
+        values["od -An -tx1"] = landrun_type
+        rc, out = run_check(values, capsys)
+        assert rc == 1
+        assert out["landrun_type"] == landrun_type  # type LU, pas un booleen
+        assert out["check_ok"] is False
+
+    def test_check_reports_none_when_probe_is_silent(self, capsys):
+        values = positive_mapping()
+        values["od -An -tx1"] = ""
+        rc, out = run_check(values, capsys)
+        assert rc == 1
+        # absence de lecture != type hors norme : deux etats distincts
+        assert out["landrun_type"] is None
+        assert out["check_ok"] is False
+
+    def test_check_names_the_binary_path_in_its_output(self, capsys):
+        rc, out = run_check(positive_mapping(), capsys)
+        assert rc == 0
+        assert out["landrun_path"] == LANDRUN_BIN
+        assert out["landrun_type"] == "elf64-x86-64"
 
 
 # --- Tests bash REELS (WSL) -------------------------------------------------
@@ -721,3 +789,65 @@ class TestRealBashPreparation:
                                   url="https://example.com/expected.git",
                                   pin=bogus))
         assert proc.returncode != 0
+
+@pytest.mark.skipif(not WSL_AVAILABLE, reason="WSL requis : tests bash reels")
+class TestRealBashLandrunProbe:
+    """La sonde exercee sur de VRAIS fichiers, pas sur un mock de `sh`."""
+
+    @pytest.fixture
+    def probe_dir(self):
+        proc = wsl_bash("mktemp -d /tmp/hopf_landrun.XXXXXX")
+        assert proc.returncode == 0, proc.stderr
+        directory = proc.stdout.strip()
+        assert directory.startswith("/tmp/hopf_landrun."), directory
+        yield directory
+        # suppression NOMMEE (un sous-repertoire eventuel par rmdir), puis
+        # rmdir du repertoire devenu vide : jamais de rm -rf
+        for name in wsl_bash(f"ls -A {directory}").stdout.split():
+            target = f"{directory}/{name}"
+            if wsl_bash(f"test -d {target}").returncode == 0:
+                assert wsl_bash(f"rmdir {target}").returncode == 0
+            else:
+                assert wsl_bash(f"rm -f {target}").returncode == 0
+        assert wsl_bash(f"rmdir {directory}").returncode == 0
+
+    def test_absent_path_is_missing(self, probe_dir):
+        assert landrun_probe(f"{probe_dir}/absent") == "missing"
+
+    def test_directory_is_not_a_file(self, probe_dir):
+        assert wsl_bash(f"mkdir {probe_dir}/rep").returncode == 0
+        assert landrun_probe(f"{probe_dir}/rep") == "not-a-file"
+
+    def test_non_executable_file_is_refused(self, probe_dir):
+        # /bin/true est un ELF64 x86-64 : seule l'executabilite manque
+        assert wsl_bash(f"cp /bin/true {probe_dir}/noexec").returncode == 0
+        assert wsl_bash(f"chmod -x {probe_dir}/noexec").returncode == 0
+        assert landrun_probe(f"{probe_dir}/noexec") == "not-executable"
+
+    def test_executable_text_file_is_not_elf(self, probe_dir):
+        # plus de vingt octets : le seuil de longueur est franchi, donc le
+        # refus observe est bien celui de la magie ELF et non `too-short`
+        assert wsl_bash(
+            f"printf '#!/bin/sh\\nexit 0\\n# quelques octets de plus\\n' "
+            f"> {probe_dir}/script"
+        ).returncode == 0
+        assert wsl_bash(f"chmod +x {probe_dir}/script").returncode == 0
+        assert landrun_probe(f"{probe_dir}/script") == "not-elf"
+
+    def test_truncated_elf_is_too_short(self, probe_dir):
+        assert wsl_bash(f"head -c 3 /bin/true > {probe_dir}/short").returncode == 0
+        assert wsl_bash(f"chmod +x {probe_dir}/short").returncode == 0
+        assert landrun_probe(f"{probe_dir}/short") == "too-short"
+
+    def test_real_elf64_x86_64_binary_is_accepted(self, probe_dir):
+        assert wsl_bash(f"cp /bin/true {probe_dir}/good").returncode == 0
+        assert wsl_bash(f"chmod +x {probe_dir}/good").returncode == 0
+        assert landrun_probe(f"{probe_dir}/good") == "elf64-x86-64"
+
+    def test_the_machine_landrun_binary_is_a_real_elf64_x86_64(self):
+        # mesure de la machine courante : si elle est absente, le test le DIT
+        # (un `missing` n'est jamais acquitte comme un succes).
+        observed = landrun_probe()
+        assert observed in ("elf64-x86-64", "missing"), observed
+        if observed == "missing":
+            pytest.skip(f"binaire absent sur cette machine : {LANDRUN_BIN}")

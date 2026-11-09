@@ -1,10 +1,14 @@
+---
+pagetitle: "Sudoku - Résolution par Différentes Approches Algorithmiques"
+---
+
 # Sudoku - Résolution par Différentes Approches Algorithmiques
 
 <!-- CATALOG-STATUS
 series: Sudoku
-pedagogical_count: 38
-breakdown: root=38
-maturity: BETA=38
+pedagogical_count: 39
+breakdown: root=39
+maturity: BETA=38, ALPHA=1
 -->
 
 > **Note éditoriale (counts)** : les comptes de notebooks (agrégé, par langage ou par kernel) ne sont pas tenus à la main dans ce README : ils dérivent et relèvent de la régénération du catalogue. Le marqueur `CATALOG-STATUS` ci-dessus et le catalogue généré (`COURSE_CATALOG.generated.md`) sont autoritatifs.
@@ -17,7 +21,7 @@ maturity: BETA=38
 
 ## Découverte — ce qu'enseigne cette série
 
-Comment résoudre un Sudoku ? Cette série explore les techniques de résolution, des algorithmes classiques (backtracking, contraintes) aux approches symboliques, probabilistes et neuronales. Elle repose sur des **paires miroir C#/Python** — mêmes algorithmes dans les deux langages, de la mise en place jusqu'au benchmark comparatif — plus des notebooks Python uniquement (réseau de neurones, LLM, méthodologie statistique) et un companion Lean natif ([Sudoku-19](Sudoku-19-Lean-Propagation-Lean.ipynb), preuve formelle de la propagation de contraintes). Cette structure laisse à chaque étudiant le choix de son langage sur la quasi-totalité des algorithmes.
+Comment résoudre un Sudoku ? Cette série explore les techniques de résolution, des algorithmes classiques (backtracking, contraintes) aux approches symboliques, probabilistes et neuronales. Elle repose sur des **paires miroir C#/Python** — mêmes algorithmes dans les deux langages, de la mise en place jusqu'au benchmark comparatif — plus des notebooks Python uniquement (réseau de neurones, LLM, méthodologie statistique, audit de corpus) et un companion Lean natif ([Sudoku-19](Sudoku-19-Lean-Propagation-Lean.ipynb), preuve formelle de la propagation de contraintes). Cette structure laisse à chaque étudiant le choix de son langage sur la quasi-totalité des algorithmes.
 
 **À qui s'adresse cette série** : étudiants en informatique (L2-M2) découvrant les paradigmes algorithmiques, candidats à des entretiens techniques, et enseignants cherchant un fil rouge pédagogique. Les notebooks Python ne nécessitent que Python 3.10+. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en IA : les concepts sont introduits depuis le backtracking.
 
@@ -115,6 +119,7 @@ Les jumeaux C#/Python partagent une ligne : même algorithme, deux écosystèmes
 | 17 | LLM — [Python](Sudoku-17-LLM-Python.ipynb) | LLM Solver : prompt engineering pour la résolution logique, taux de succès 10-30 %, limites du raisonnement pur | Licence | — |
 | 18 | Comparison — [C#](Sudoku-18-Comparison-CSharp.ipynb) · [Python](Sudoku-18-Comparison-Python.ipynb) | Benchmark comparatif : toutes les approches sur Easy/Medium/Hard/Expert ; le notebook Python synthétise les solveurs C# **et** Python dans un même cadre | Licence | [18b](#autour-de-18--la-méthodologie-statistique-du-benchmark-18b) |
 | 19 | Lean Propagation — [Lean](Sudoku-19-Lean-Propagation-Lean.ipynb) | Preuve formelle de la soundness de la propagation (naked/hidden single, clé de voûte `peer_excludes_value`) — voir [#4055](https://github.com/jsboige/CoursIA/issues/4055) et [Formalisations Lean](#formalisations-lean) | Recherche | — |
+| 20 | Corpus Audit — [Python](Sudoku-20-CorpusAudit-Python.ipynb) | La hiérarchie de difficulté des trois corpus, **mesurée** par l'organe d'audit : unicité par dénombrement plafonné, part résolue par propagation seule, effort de recherche, irrédundance des indices — voir [#22715](https://github.com/jsboige/CoursIA/issues/22715) | Recherche | — |
 
 Les figures du dépôt illustrent les paliers : chaque figure est extraite du notebook correspondant, et la provenance détaillée (cellule source, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
@@ -278,7 +283,7 @@ La liste précise vit dans [`requirements.txt`](requirements.txt).
 
 ### Dépannage
 
-**Les notebooks C# ne s'exécutent pas** — vérifiez `dotnet --version` (SDK 9.0+), installez le kernel (`dotnet tool install -g Microsoft.dotnet-interactive && dotnet interactive jupyter install`), et `jupyter kernelspec list` doit afficher `.net-csharp`. Le notebook 00 définit les classes de base utilisées par les notebooks C# suivants : exécutez-le en premier.
+**Les notebooks C# ne s'exécutent pas** — vérifiez `dotnet --version` (SDK 9.0+), installez le kernel (`dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001 && dotnet interactive jupyter install`), et `jupyter kernelspec list` doit afficher `.net-csharp`. Le notebook 00 définit les classes de base utilisées par les notebooks C# suivants : exécutez-le en premier.
 
 **OR-Tools ou Z3 ne s'installent pas** — OR-Tools : `pip install ortools` (wheels précompilés ; sinon `conda install -c conda-forge ortools-python`). Z3 : le package s'appelle `z3-solver`, pas `z3`.
 
@@ -369,11 +374,11 @@ Les notebooks sont adaptés de projets étudiants :
 |-----------|---------|------------|
 | **Norvig** | Solveur Norvig + variante BitArray | `Sudoku.Norvig` + `Sudoku.NorvigBitArray` |
 | **Simulated Annealing** | Recuit simulé | `Sudoku.SimulatedAnnealing` |
-| **Human Stratégies** | Stratégies humaines | `Sudoku.Human` (23 fichiers, 13 techniques) |
+| **Human Stratégies** | Stratégies humaines | `Sudoku.Human` (13 techniques) |
 | **Neural Network** | 4 architectures de réseaux de neurones | `Sudoku.NeuralNetwork` |
-| **PSO** | Optimisation par essaim de particules | `Sudoku.PSO` (7 fichiers) |
+| **PSO** | Optimisation par essaim de particules | `Sudoku.PSO` |
 | **AIMA CSP** | CSP inspiré de AIMA | `Sudoku.CspAima` |
-| **Graph Coloring** | Coloration de graphe | `Sudoku.GraphColoring` (11 fichiers) |
+| **Graph Coloring** | Coloration de graphe | `Sudoku.GraphColoring` |
 | **Choco** | 5 implémentations Choco | `Sudoku.ChocoSolvers` |
 | **LLM** | Résolution par LLM | `Sudoku.LLM-ChatGPTenzin` |
 
@@ -385,7 +390,7 @@ Sudoku/
 ├── LEAN_INVENTORY.md                      # Inventaire transverse des lakes Lean de la série
 ├── index.qmd                              # Listing Quarto (sous-ensembles C# / Python)
 ├── requirements.txt                       # Dépendances Python
-├── Sudoku-00 … Sudoku-19                  # Carnets numérotés (voir Parcours principal ;
+├── Sudoku-00 … Sudoku-20                  # Carnets numérotés (voir Parcours principal ;
 │                                          #   inventaire exhaustif dans le catalogue généré)
 ├── Puzzles/                               # Fichiers de puzzles (Easy51, hardest, top95)
 ├── assets/                                # Ressources statiques (regex de validation, figures readme/)

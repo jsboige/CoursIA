@@ -10,18 +10,30 @@ principe MDL (Minimum Description Length, Rissanen 1978) -- **code en deux
 parties** : ``bits_modele`` (decrire la TPM avec un prior) + ``bits_residuel``
 (encoder les residuals d'un modele idealise par cette TPM).
 
-Trois estimateurs, tous numpy-only, volontairement honnetes sur leurs bornes :
+Cinq estimateurs, tous numpy-only, volontairement honnetes sur leurs bornes :
 
-  - ``tpm_description_length(counts)`` : codelength de la TPM sous le
-    **prior de Krichevsky-Trofimov** (KT, additif en ``log2(n + a)`` -- un
-    standard pour donnees multinomiales, asymptotiquement equivalent a la
-    precision finie ``log2(n)`` pour ``n >> k``). Bits de modele = somme sur
-    les lignes de la KT-complexicite des comptes marginalises ``count[i, :]``.
+  - ``kt_codelength(counts)`` / ``tpm_description_length(counts)`` :
+    codelength d'une ligne de comptes sous le **prior de Krichevsky-Trofimov**
+    (KT = Dirichlet symetrique ``alpha = 1/2``). Pour des comptes
+    ``n_1 .. n_k`` de total ``n``, la marginale exacte est
+
+        ``[log2 Gamma(k/2) - log2 Gamma(n + k/2)
+           + sum_i (log2 Gamma(n_i + 1/2) - log2 Gamma(1/2))]``
+
+    Cette quantite est **toujours >= 0** et **vaut exactement 0 pour une
+    ligne vide** (aucune transition a transmettre). Bits de modele = somme
+    sur les lignes, plus ``log2(k)`` pour declarer le nombre d'etats.
   - ``two_part_code(states, split=0.5)`` : split fixe (defaut 50/50
     apprentissage / held-out). ``model_bits`` = codelength d'une TPM
     estimee sur la moitie d'apprentissage, sous prior KT ; ``residual_bits``
     = -log2(proba TPM_apprentissage) sur la moitie held-out ;
     ``total_bits = model_bits + residual_bits``.
+  - ``fit_markov_order(states, heldout, max_order)`` : selection de l'ordre
+    d'une chaine de Markov par MDL exact (somme des codelengths KT des lignes
+    + declaration des contextes), avec le NLL held-out comme controle
+    independant. C'est l'organe du pont MDL -> generalisation : il rend
+    ``mdl_bits`` et ``nll_heldout`` par ordre, donc la coincidence (ou la
+    rupture) se **mesure** au lieu de se revendiquer.
   - ``entropy_rate_estimate(states, block)`` : plug-in par entropies de bloc
     ``H(block) / block`` -- la codelength par symbole du **meilleur code
     longueur-fixe** adapte a des blocs de taille ``block``. Biais de
@@ -46,50 +58,88 @@ import numpy as np
 
 
 # ---------------------------------------------------------- prior Krichevsky-Trofimov
+ALPHA = 0.5  # KT = Dirichlet symetrique alpha = 1/2
+_LOG2 = math.log(2.0)
+
+
 def kt_log2(count: int, k: int) -> float:
-    """Complexite KT (``log2``) d'un symbole observe ``count`` fois parmi ``k``.
+    """Terme **par categorie** du prior KT (bits), pour un compte ``count``.
 
-    Le prior de Krichevsky-Trofimov (KT) pour la distribution multinomiale
-    renvoie, pour chaque compte ``n_i`` parmi ``k`` categories, le terme
+    Le prior de Krichevsky-Trofimov est le Dirichlet symetrique
+    ``alpha = 1/2``. Dans la marginale multinomiale, chaque categorie
+    contribue le facteur ``Gamma(n_i + 1/2) / Gamma(1/2)``, soit en bits
 
-        ``log2(n_i + 1/2) - log2(k + 1/2)``
+        ``log2 Gamma(n_i + 1/2) - log2 Gamma(1/2)``
 
-    cumulative. Ici nous renvoyons la contribution marginale d'une seule
-    categorie (le terme ``log2(n_i + 1/2)``) ; c'est cette contribution que
-    ``tpm_description_length`` agrege.
+    Attention : c'est un **terme de produit**, pas une codelength. Il peut
+    etre negatif (``count=1`` donne ``-1`` bit) et il vaut ``0`` pour
+    ``count=0``. Seul l'agregat ``kt_codelength`` est une longueur de code,
+    et lui seul est garanti positif.
 
     Parametres :
       - ``count`` : compte empirique ``n_i >= 0``.
-      - ``k`` : nombre de categories (pour regularisation denom, garde pour
-        tracabilite ; asymptotiquement negligeable).
+      - ``k`` : nombre de categories (valide, non utilise : le terme
+        par categorie n'en depend pas ; la dependance en ``k`` vit dans la
+        constante ``-log2 Gamma(n + k/2)`` de ``kt_codelength``).
 
-    Retourne la contribution en bits (log base 2).
+    Retourne le terme en bits (log base 2), croissant puis decroissant en
+    ``count`` -- ``Gamma`` n'est pas monotone sur ``(0, 1.5)``.
     """
     if count < 0:
         raise ValueError(f"count doit etre >= 0, recu {count}")
     if k < 1:
         raise ValueError(f"k doit etre >= 1, recu {k}")
-    # KT symetrique additif en log2(n + 1/2) ; la constante de normalisation
-    # -log2(k + 1/2) est stockee a part par ``tpm_description_length`` (car
-    # somme sur k categories).
-    return math.log2(count + 0.5)
+    return (math.lgamma(count + ALPHA) - math.lgamma(ALPHA)) / _LOG2
 
 
-def _tpm_line_bits(row_counts: np.ndarray) -> float:
-    """KT-codelength d'une ligne ``n_i`` (vecteur de comptes).
+def kt_codelength(counts) -> float:
+    """Codelength KT exacte (bits) d'un vecteur de comptes multinomial.
 
-    Renvoie ``sum_i log2(n_i + 1/2) - k * log2(k + 1/2)`` pour une
-    distribution multinomiale a ``k`` categories (approximee par le prior
-    KT symetrique, cf Krichevsky-Trofimov 1979). L'auto-comptage
-    ``count[i, i]`` est inclus si present -- la distinction
-    "self-transition vs pas" est laisse a l'appelant.
+    C'est la longueur du code optimal (au sens KT) pour transmettre les
+    ``n = sum_i n_i`` tirages dont les comptes sont ``counts`` :
+
+        ``[log2 Gamma(k/2) - log2 Gamma(n + k/2)
+           + sum_i (log2 Gamma(n_i + 1/2) - log2 Gamma(1/2))]``
+
+    Proprietes verifiees par les tests (``tests/test_mdl.py``) :
+      - **>= 0** partout, et **exactement 0** quand tous les comptes sont
+        nuls (rien a transmettre : la distribution est connue) ;
+      - egale, a ``1e-12`` pres, a la somme des couts predictifs sequentiels
+        ``-log2 p(x_t | x_<t)`` avec ``p = (n_i + 1/2) / (n + k/2)``
+        (identite de la regle de la chaine pour un prior echangeable) ;
+      - egale a la reference rationnelle exacte pour de petits comptes.
+
+    Parametres :
+      - ``counts`` : vecteur de comptes ``n_i >= 0`` (liste, tuple ou
+        ``np.ndarray``).
+
+    Retourne la codelength en bits. ``0.0`` pour un vecteur vide.
     """
-    row = np.asarray(row_counts, dtype=float).ravel()
+    row = np.asarray(counts, dtype=float).ravel()
     k = row.size
     if k == 0:
         return 0.0
-    # KT additif sur chaque compte, moins la constante multinomiale.
-    return float(np.sum(np.log2(row + 0.5)) - k * math.log2(k + 0.5))
+    if np.any(row < 0):
+        raise ValueError("counts doit etre >= 0 partout")
+    n = float(row.sum())
+    terms = sum(math.lgamma(v + ALPHA) - math.lgamma(ALPHA) for v in row)
+    log_p = math.lgamma(k * ALPHA) - math.lgamma(n + k * ALPHA) + terms
+    # ``log_p`` est le logarithme de la probabilite ; la codelength est son
+    # oppose. Le calcul flottant peut rendre -1e-16 sur un vecteur vide ; la
+    # codelength y est nulle par construction, on ne laisse pas passer un
+    # epsilon negatif qui ferait echouer la garde de positivite.
+    return float(max(-log_p / _LOG2, 0.0))
+
+
+def _tpm_line_bits(row_counts: np.ndarray) -> float:
+    """KT-codelength d'une ligne ``n_i`` (vecteur de comptes de transition).
+
+    Delegue a ``kt_codelength`` : la longueur est celle des ``n`` transitions
+    sortant d'un etat, ventilees sur les ``k`` etats d'arrivee. L'auto-comptage
+    ``count[i, i]`` est inclus si present -- la distinction "self-transition
+    vs pas" est laissee a l'appelant.
+    """
+    return kt_codelength(row_counts)
 
 
 # ---------------------------------------------------------- codelength du modele
@@ -143,9 +193,14 @@ def two_part_code(states: Sequence, split: float = 0.5,
       - ``states_to_index`` : mapping optionnel label -> index (reutilise
         ``ict.tpm_estimation.state_index_map`` quand ``None``).
 
+    Le residu held-out est calcule sous la **predictive KT normalisee**
+    ``p_ij = (n_ij + 1/2) / (n_i* + k/2)``, dont les lignes somment a 1.
+
     Retourne ``{"model_bits": float, "residual_bits": float,
-    "total_bits": float, "n_train": int, "n_heldout": int, "states_count":
-    int}``. ``total_bits = model_bits + residual_bits``.
+    "total_bits": float, "n_train": int, "n_heldout": int, "n_covered": int,
+    "n_escaped": int, "states_count": int}``.
+    ``total_bits = model_bits + residual_bits``, et ``model_bits >= 0``
+    toujours.
     """
     seq = list(states)
     n = len(seq)
@@ -183,17 +238,25 @@ def two_part_code(states: Sequence, split: float = 0.5,
     # Bits de modele : KT sur les comptes d'apprentissage.
     model_bits = tpm_description_length(counts)
 
-    # Probabilites par transition d'apprentissage (avec lissage KT
-    # symetrique : p_ij = (n_ij + 1/2) / (n_i* + k/2 + 1/2)).
+    # Probabilites predictives KT : p_ij = (n_ij + 1/2) / (n_i* + k/2).
+    # Le denominateur est la **masse KT de la ligne** (``n_i* + k*alpha``) et
+    # rien de plus : c'est ce qui rend ``sum_j p_ij == 1``. Un terme
+    # additionnel (l'ancien ``+ alpha``) gonflait le denominateur, donc
+    # sous-estimait le residu, sans aucune justification.
     row_sums = counts.sum(axis=1)
-    # Probabilites lissees pour l'evaluation held-out (memme a-priori KT).
-    prior_count = 0.5
-    denom = row_sums + k * prior_count + prior_count
-    # Lignes jamais observees en train : on leur assigne le prior uniforme.
-    prob = np.full((k, k), 1.0 / (k + 1.0))
+    denom = row_sums + k * ALPHA
+    # Ligne jamais observee en train : la predictive KT y est l'uniforme
+    # ``1/k`` sur les ``k`` etats connus (tous les ``n_ij`` valent 0,
+    # ``n_i* = 0``). L'ancien ``1/(k+1)`` correspondait a un alphabet de
+    # ``k+1`` symboles qui n'existe pas.
+    # ``k == 0`` : la moitie d'apprentissage ne contient aucune transition
+    # (``split`` tres petit ou plafonnement a ``n_trans - 1``). Le modele est
+    # vide et toutes les transitions held-out passent par l'echappement ; on
+    # ne divise pas par zero pour autant.
+    prob = np.full((k, k), 1.0 / k) if k else np.zeros((0, 0), dtype=float)
     for i in range(k):
         if row_sums[i] > 0:
-            prob[i] = (counts[i] + prior_count) / denom[i]
+            prob[i] = (counts[i] + ALPHA) / denom[i]
         # sinon : on garde le prior uniforme 1/(k+1) ; les labels
         # jamais vus en train ne sont PAS dans ``mapping``, donc ce cas
         # ne survient que sur des transitions dont l'etat source n'a jamais
@@ -203,12 +266,17 @@ def two_part_code(states: Sequence, split: float = 0.5,
     # Residuel held-out : -log2 p(s_{t+1} | s_t) pour chaque transition.
     resid = 0.0
     covered = 0
+    escaped = 0
     for a, b in heldout:
         if a not in mapping or b not in mapping:
-            # Transition dont la source ou la cible n'a pas ete observee en
-            # apprentissage : on lui impute le cout du pior uniforme + un
-            # surcout ``log2(k+1)`` pour "declarer l'inconnu".
-            resid += math.log2(k + 1.0) + math.log2(k + 1.0)
+            # Convention d'echappement, explicite et non ambigue : un symbole
+            # absent de l'alphabet d'apprentissage coute ``log2(k+1)`` pour
+            # etre declare nouveau, et la transition est ensuite codee sous
+            # l'uniforme du meme alphabet elargi, soit ``log2(k+1)`` de plus.
+            # Ce chemin n'est atteint que si un etat de la partie held-out
+            # n'apparait jamais en apprentissage.
+            resid += 2.0 * math.log2(k + 1.0)
+            escaped += 1
             continue
         i, j = mapping[a], mapping[b]
         p = float(prob[i, j])
@@ -226,7 +294,139 @@ def two_part_code(states: Sequence, split: float = 0.5,
         "n_train": int(n_train),
         "n_heldout": int(len(heldout)),
         "n_covered": int(covered),
+        "n_escaped": int(escaped),
         "states_count": int(k),
+    }
+
+
+# ---------------------------------------------------------- selection d'ordre
+def _context_index(seq: Sequence[int], i: int, order: int, k: int) -> int:
+    """Index de contexte en base ``k`` des ``order`` symboles precedant ``i``."""
+    ctx = 0
+    for j in range(order):
+        ctx = ctx * k + seq[i - order + j]
+    return ctx
+
+
+def fit_markov_order(states, heldout=None, max_order: int = 4,
+                     split: float = 0.5,
+                     states_to_index: dict | None = None) -> dict:
+    """Selection de l'ordre d'une chaine de Markov par **MDL exact** (KT).
+
+    Pour chaque ordre ``k`` de 0 a ``max_order``, le modele est code en deux
+    parties strictes :
+
+      - ``payload_bits`` : ``sum`` des codelengths KT des lignes de comptes
+        (``kt_codelength``), c'est-a-dire la longueur du code optimal des
+        transitions d'apprentissage sous ce modele ;
+      - ``declare_bits`` : ``log2(k_states**order)`` pour annoncer au
+        decodeur combien de contextes existent ;
+      - ``mdl_bits = payload_bits + declare_bits``.
+
+    Le controle independant est le ``nll_heldout`` : la surprise cumulee
+    ``-log2 p(s_{t+1} | contexte)`` sur une sequence tenue a l'ecart, sous la
+    predictive KT normalisee ``(n_ij + 1/2) / (n_i* + k/2)``. La selection
+    MDL est *falsifiable* : si elle est saine, ``best_mdl_order`` et
+    ``best_nll_order`` coincident sur une source structurée et retombent sur
+    0 sur un nul i.i.d.
+
+    **Ce que cette fonction ne fait pas, et qu'il faut savoir** : la
+    codelength KT ne facture pas l'existence des contextes restes vides (elle
+    vaut 0 pour une ligne vide). Sous ``n`` tres petit devant
+    ``k_states**order``, l'ordre eleve peut donc gagner par chance ; ce
+    regime se mesure, il ne se suppose pas -- voir ``tests/test_mdl.py``.
+
+    Parametres :
+      - ``states`` : sequence d'apprentissage (symboles hashables).
+      - ``heldout`` : sequence tenue a l'ecart. ``None`` -> decoupage de
+        ``states`` a ``split``.
+      - ``max_order`` : ordre maximal evalue (defaut 4).
+      - ``split`` : part d'apprentissage quand ``heldout is None``.
+      - ``states_to_index`` : mapping optionnel label -> index. ``None`` ->
+        alphabet deduit de la sequence d'apprentissage.
+
+    Retourne ``{"rows": [...], "best_mdl_order": int, "best_nll_order": int,
+    "k_states": int}`` ou chaque ligne porte ``order, n_contexts,
+    n_nonempty, payload_bits, declare_bits, mdl_bits, nll_heldout,
+    n_escaped``.
+    """
+    train_seq = list(states)
+    if len(train_seq) < 2:
+        raise ValueError(
+            f"il faut au moins 2 etats, recu n={len(train_seq)}"
+        )
+    if heldout is None:
+        n_tr = int(math.floor(split * len(train_seq)))
+        n_tr = max(1, min(n_tr, len(train_seq) - 1))
+        train_seq, held_seq = train_seq[:n_tr], train_seq[n_tr:]
+    else:
+        held_seq = list(heldout)
+
+    if states_to_index is None:
+        labels: List = []
+        for s in train_seq:
+            if s not in labels:
+                labels.append(s)
+        mapping = {s: i for i, s in enumerate(labels)}
+    else:
+        mapping = dict(states_to_index)
+
+    k = len(mapping)
+    train = [mapping[s] for s in train_seq]
+    held = [mapping.get(s, -1) for s in held_seq]
+
+    rows: List[dict] = []
+    for order in range(max_order + 1):
+        if order >= len(train):
+            break
+        n_ctx = k ** order
+        counts = np.zeros((n_ctx, k), dtype=float)
+        for i in range(order, len(train)):
+            counts[_context_index(train, i, order, k), train[i]] += 1.0
+
+        payload = float(np.sum([kt_codelength(row) for row in counts]))
+        declare = math.log2(n_ctx)
+        n_nonempty = int(np.count_nonzero(counts.sum(axis=1)))
+
+        # Controle held-out sous la predictive KT normalisee.
+        prob = (counts + ALPHA) / (
+            counts.sum(axis=1, keepdims=True) + k * ALPHA
+        )
+        # Les ``order`` derniers symboles d'apprentissage amorcent le
+        # contexte de la sequence tenue a l'ecart : aucune transition
+        # held-out n'est perdue.
+        eval_seq = (train[-order:] if order else []) + held
+        nll = 0.0
+        escaped = 0
+        for i in range(order, len(eval_seq)):
+            ctx = _context_index(eval_seq, i, order, k)
+            sym = eval_seq[i]
+            if sym < 0:
+                # Symbole absent de l'alphabet d'apprentissage : meme
+                # convention d'echappement que ``two_part_code``.
+                nll += 2.0 * math.log2(k + 1.0)
+                escaped += 1
+            else:
+                nll += -math.log2(prob[ctx, sym])
+
+        rows.append({
+            "order": int(order),
+            "n_contexts": int(n_ctx),
+            "n_nonempty": n_nonempty,
+            "payload_bits": payload,
+            "declare_bits": float(declare),
+            "mdl_bits": float(payload + declare),
+            "nll_heldout": float(nll),
+            "n_escaped": int(escaped),
+        })
+
+    if not rows:
+        raise ValueError("aucun ordre evaluable sur cette sequence")
+    return {
+        "rows": rows,
+        "best_mdl_order": int(np.argmin([r["mdl_bits"] for r in rows])),
+        "best_nll_order": int(np.argmin([r["nll_heldout"] for r in rows])),
+        "k_states": int(k),
     }
 
 

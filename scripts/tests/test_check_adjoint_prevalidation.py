@@ -5,6 +5,9 @@ import json
 import os
 import subprocess
 import sys
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -1048,6 +1051,58 @@ def test_any_other_author_still_expires_the_dossier():
         assert any("discussion changed after dossier" in e for e in errors), login
 
 
+# --- #17437 : la voix du coordinateur sous l'identite de son App de lane -----
+
+
+def test_coordinator_app_identity_does_not_expire_the_dossier():
+    """#17437: the coordinator's App identity is its own voice too.
+
+    The lane migration replaces the coordinator's PAT with an installation
+    token, so its post-dossier rows reach the API as
+    ``coursia-lane-ai-01[bot]``. Missing that spelling from the neutralised
+    set would make the coordinator's own lift (B.0 voie 1) expire its own
+    dossier -- #16840's defect, reproduced under the App identity.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    own = _comment("Lifting the stale PREFLIGHT_HOLD.", login=mod.COORDINATOR_APP_LOGIN)
+    own["createdAt"] = T1
+    snapshot["comments"].append(own)
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_worker_lane_app_still_expires_the_dossier():
+    """#17437 negative control: widening stops at the coordinator.
+
+    Neutralising ``ACCEPTED_DOSSIER_AUTHORS`` wholesale would let any worker
+    lane's App write a blocking row after the dossier without expiring it --
+    that is the gate's entire control. Only the coordinator's own App is
+    neutralised, so these two must still refuse.
+    """
+    for login in ("coursia-lane-po-2024[bot]", "coursia-lane-po-2026[bot]"):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        foreign = _comment("a new concern", login=login)
+        foreign["createdAt"] = T1
+        snapshot["comments"].append(foreign)
+        errors = _errors(snapshot)
+        assert any("discussion changed after dossier" in e for e in errors), login
+
+
+def test_coordinator_app_login_is_an_accepted_dossier_author():
+    """#17437 consistency: one identity, two roles, kept in step.
+
+    ``COORDINATOR_APP_LOGIN`` is a literal so this module imports without
+    ``gh_identity``. If the App prefix or the lane list ever changes there,
+    this fails instead of silently neutralising a login the dossier gate
+    would reject as an author.
+    """
+    assert mod.COORDINATOR_APP_LOGIN in mod.gh_identity.ACCEPTED_DOSSIER_AUTHORS
+
+
 # --- #17818 : premiere pose d'un commentaire consultatif de bot marker-garde --
 
 
@@ -1102,6 +1157,48 @@ def test_copied_marker_by_other_author_still_expires_the_dossier():
             "<!-- PR-PATH-COLLISION:START -->\ncorps recopie par un tiers",
             login=login,
         )
+        copied["createdAt"] = T1
+        snapshot["comments"].append(copied)
+        errors = _errors(snapshot)
+        assert any("discussion changed after dossier" in e for e in errors), login
+
+
+# --- #15511 : le commentaire RENVOI d'un doublon fusionne -------------------
+#
+# Le marqueur principal est retire du doublon, qui devient un renvoi vers le
+# collant canonique. Il n'est JAMAIS supprime (#15372) : il vit donc dans le
+# fil, et sans exemption il compte comme une row etrangere -- le dossier
+# perimerait a la fusion de deux commentaires collants, pour une cause qui
+# ne touche pas au fond de la PR.
+
+FORWARD_BODY = (
+    "<!-- coursia:advisory-sticky:forwarded -->\n\n"
+    "*Ce commentaire a ete fusionne dans le commentaire collant canonique "
+    "(id 4242) : ses sections y sont integrees. Rien n'est efface.*\n"
+)
+
+
+def test_forwarded_sticky_comment_does_not_expire_the_dossier():
+    """Le renvoi d'un doublon fusionne est neutre : meme contrat que le
+    marqueur principal (prefixe en tete + AUTEUR `github-actions[bot]`)."""
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    forward = _comment(FORWARD_BODY, login="github-actions[bot]")
+    forward["createdAt"] = T1
+    snapshot["comments"].append(forward)
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_forwarded_marker_copied_by_a_human_still_expires_the_dossier():
+    """Controle negatif : l'AUTEUR compte, pas le texte seul. Un tiers qui
+    recopie le marqueur de renvoi perime le dossier."""
+    for login in ("clusterManager-Myia", "myia-po-2023", "jsboige-bot-impersonator"):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        copied = _comment(FORWARD_BODY, login=login)
         copied["createdAt"] = T1
         snapshot["comments"].append(copied)
         errors = _errors(snapshot)
@@ -1696,7 +1793,7 @@ def test_fingerprint_refusal_names_the_live_surface_landscape():
 # le gel se mesure sur #11601, seul parapluie gele en vie.
 FROZEN_TITLE = "enrich(qc,#11601): densite QC-Py-06b"
 REDRESSEMENT_TITLE = (
-    "fix(semanticweb,#17066): redressement critique de SW-4-CSharp-SPARQL "
+    "fix(semanticweb,#17066): redressement critique de SW-04-SPARQL-CSharp "
     "-- reference de campagne"
 )
 
@@ -3234,6 +3331,34 @@ def test_queue_non_coordinator_approval_does_not_qualify():
     assert entry.review_qualifying is False
 
 
+def test_queue_coordinator_app_approval_qualifies_on_exact_head():
+    """#17437: the review door recognizes the coordinator's App as well."""
+    snapshot = _queue_snapshot([_review(login=mod.COORDINATOR_APP_LOGIN)])
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.review_disposition == "approved-exact-head"
+    assert entry.review_qualifying is True
+
+
+def test_queue_coordinator_graphql_bot_approval_qualifies_on_exact_head():
+    """#21818: GraphQL supplies the App login without its REST suffix."""
+    review = _review(login="coursia-lane-ai-01")
+    review["author"]["type"] = "Bot"
+    entry = _classified(_queue_snapshot([review]))
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.review_disposition == "approved-exact-head"
+    assert entry.review_qualifying is True
+
+
+def test_queue_worker_app_approval_still_does_not_qualify():
+    """The review door stays closed to every worker-lane App."""
+    snapshot = _queue_snapshot([_review(login="coursia-lane-po-2024[bot]")])
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
+    assert entry.review_disposition == "approved-exact-head"
+    assert entry.review_qualifying is False
+
+
 def test_queue_recent_changes_requested_blocks_dispatch():
     """Divergence assumee du design #16483 : un CHANGES_REQUESTED recent n'est
     pas une review manquante, c'est une reserve a lever -- le piege « reserve
@@ -3447,6 +3572,437 @@ def test_build_queue_metrics_count_verdicts():
     assert metrics["consume"]["rejects_by_cause"][mod.QUEUE_VERDICT_STALE] == 1
 
 
+# --- #22938 : lecture groupee, lecture parallele, budget, sortie pas-a-pas --
+
+
+def test_queue_reads_pull_requests_in_parallel():
+    """Le passage lit plusieurs PRs a la fois (le cout est le tour de reseau)."""
+    lock = threading.Lock()
+    state = {"live": 0, "peak": 0}
+
+    def loader(pr):
+        with lock:
+            state["live"] += 1
+            state["peak"] = max(state["peak"], state["live"])
+        time.sleep(0.05)
+        with lock:
+            state["live"] -= 1
+        return {**_reviewed_snapshot(), "number": pr}
+
+    result = mod.build_queue(
+        list(range(1, 9)), now=QUEUE_NOW, probe=_clear_probe, loader=loader,
+        workers=8,
+    )
+    assert state["peak"] > 1
+    assert len(result["queue"]) == 8
+
+
+def test_queue_reads_sequentially_when_one_worker_is_asked():
+    lock = threading.Lock()
+    state = {"live": 0, "peak": 0}
+
+    def loader(pr):
+        with lock:
+            state["live"] += 1
+            state["peak"] = max(state["peak"], state["live"])
+        time.sleep(0.02)
+        with lock:
+            state["live"] -= 1
+        return {**_reviewed_snapshot(), "number": pr}
+
+    mod.build_queue(
+        list(range(1, 5)), now=QUEUE_NOW, probe=_clear_probe, loader=loader,
+        workers=1,
+    )
+    assert state["peak"] == 1
+
+
+def test_queue_groups_the_discussion_surfaces_in_one_pass(monkeypatch):
+    """#22938 : les surfaces de discussion sont lues en groupe, pas par PR."""
+    calls = {"groups": 0}
+    seen: dict[int, dict] = {}
+
+    def fake_bulk(prs, *, workers):
+        calls["groups"] += 1
+        return {
+            pr: {"comments": [_comment("groupe")], "reviews": [], "threads": []}
+            for pr in prs
+        }
+
+    def fake_load_snapshot(pr, *, discussion=None):
+        seen[pr] = discussion
+        return {
+            **_reviewed_snapshot(),
+            "number": pr,
+            "comments": (discussion or {}).get("comments", []),
+        }
+
+    monkeypatch.setattr(mod, "_discussion_bulk_parallel", fake_bulk)
+    monkeypatch.setattr(mod, "load_snapshot", fake_load_snapshot)
+    result = mod.build_queue(
+        list(range(1, 21)), now=QUEUE_NOW, probe=_clear_probe, workers=4
+    )
+    assert calls["groups"] == 1
+    assert len(seen) == 20
+    assert all(entry is not None for entry in seen.values())
+    assert len(result["queue"]) == 20
+
+
+def test_discussion_bulk_survives_a_failing_batch(monkeypatch):
+    """Un lot dont la passe echoue ne condamne pas ses PRs."""
+
+    def boom(batch):
+        raise RuntimeError("Could not resolve to a PullRequest with the number")
+
+    monkeypatch.setattr(mod, "_discussion_batch", boom)
+    assert mod.discussion_bulk([1, 2, 3]) == {1: {}, 2: {}, 3: {}}
+
+
+def test_discussion_batch_omits_an_overflowing_surface(monkeypatch):
+    """Une surface qui deborde sa page est omise : le lecteur par PR la relit."""
+    payload = {"data": {"p0": {"pullRequest": {
+        "comments": {
+            "nodes": [],
+            "pageInfo": {"hasNextPage": True, "endCursor": "x"},
+        },
+        "reviews": {
+            "nodes": [],
+            "pageInfo": {"hasNextPage": False, "endCursor": None},
+        },
+        "reviewThreads": {
+            "nodes": [],
+            "pageInfo": {"hasNextPage": False, "endCursor": None},
+        },
+    }}}}
+    monkeypatch.setattr(mod, "gh_json", lambda args: payload)
+    surfaces = mod._discussion_batch([7])
+    assert "comments" not in surfaces[7]
+    assert surfaces[7]["reviews"] == []
+    assert surfaces[7]["threads"] == []
+
+
+def test_discussion_mapping_matches_the_rest_readers(monkeypatch):
+    """#22938 : la lecture groupee rend la MEME forme que les lecteurs REST.
+
+    L'empreinte (`surfaces-sha256`) hache l'identifiant, l'auteur, l'horodatage
+    et le corps des commentaires et des reviews : une forme differente
+    perimerait les dossiers vivants. Le controle LIVE est dans le corps de la
+    PR (#23196 -> #22938) ; ce test verrouille leMapping.
+    """
+    rest_rows = [{
+        "node_id": "IC_1", "id": 1,
+        "user": {"login": "github-actions", "type": "Bot"},
+        "created_at": "2026-10-28T22:04:33Z", "body": "un corps",
+    }]
+    graph_rows = [{
+        "id": "IC_1",
+        "author": {"login": "github-actions", "__typename": "Bot"},
+        "createdAt": "2026-10-28T22:04:33Z", "body": "un corps",
+    }]
+    monkeypatch.setattr(
+        mod, "_issue_comments", lambda pr: [
+            {
+                "id": row.get("node_id") or row.get("id"),
+                "author": {
+                    "login": mod.gh_identity.normalize_author_login(
+                        row.get("user") or {}
+                    ),
+                    "type": (row.get("user") or {}).get("type") or "",
+                },
+                "createdAt": row.get("created_at"),
+                "body": row.get("body") or "",
+            }
+            for row in rest_rows
+        ],
+    )
+    rest = mod._issue_comments(1)
+    graph = mod._gq_comments({
+        "comments": {"nodes": graph_rows}
+    })
+    assert rest == graph
+    assert graph[0]["author"]["login"] == "github-actions[bot]"
+
+
+def test_load_snapshot_uses_the_prefetched_surfaces(monkeypatch):
+    """#22938 : la lecture groupee alimente le snapshot, sans relecture REST."""
+    calls = {"comments": 0, "reviews": 0, "threads": 0}
+    meta = {
+        "number": 5, "title": "t", "body": "", "state": "OPEN",
+        "isDraft": False, "baseRefName": "main", "baseLiveness": "main",
+        "headRefOid": HEAD, "headRefName": "b",
+        "updatedAt": "2026-10-08T10:00:00Z",
+        "createdAt": "2026-10-01T00:00:00Z", "mergedAt": None,
+        "changedFiles": 1, "additions": 1, "deletions": 0,
+    }
+    monkeypatch.setattr(mod, "_pr_metadata", lambda pr: dict(meta))
+    monkeypatch.setattr(
+        mod, "_issue_comments",
+        lambda pr: calls.__setitem__("comments", calls["comments"] + 1) or [],
+    )
+    monkeypatch.setattr(
+        mod, "_reviews",
+        lambda pr: calls.__setitem__("reviews", calls["reviews"] + 1) or [],
+    )
+    monkeypatch.setattr(
+        mod, "review_threads",
+        lambda pr: calls.__setitem__("threads", calls["threads"] + 1) or [],
+    )
+    monkeypatch.setattr(mod, "_head_check_runs", lambda sha: [])
+
+    snapshot = mod.load_snapshot(5, discussion={
+        "comments": [_comment("c")], "reviews": [], "threads": [],
+    })
+    assert snapshot["comments"][0]["body"] == "c"
+    assert calls == {"comments": 0, "reviews": 0, "threads": 0}
+
+    # Une surface absente du lot est relue par le lecteur par PR.
+    mod.load_snapshot(5, discussion={"comments": []})
+    assert calls == {"comments": 0, "reviews": 1, "threads": 1}
+
+
+def test_queue_budget_names_the_unread_pull_requests():
+    """#22938 : le budget borne le passage et la queue nomme son trou."""
+
+    def slow(pr):
+        time.sleep(0.2)
+        return {**_reviewed_snapshot(), "number": pr}
+
+    result = mod.build_queue(
+        list(range(1, 21)), now=QUEUE_NOW, probe=_clear_probe, loader=slow,
+        workers=2, time_budget_seconds=0.05,
+    )
+    assert result["run"]["budget_exhausted"] is True
+    assert result["unknown"]
+    assert all(
+        row["error"] == mod.BUDGET_EXHAUSTED_MARKER for row in result["unknown"]
+    )
+    assert len(result["unknown"]) + len(result["queue"]) == 20
+
+
+def test_queue_without_budget_keeps_every_pull_request():
+    result = mod.build_queue(
+        list(range(1, 6)), now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: {**_reviewed_snapshot(), "number": pr},
+        workers=4,
+    )
+    assert result["unknown"] == []
+    assert result["run"]["budget_exhausted"] is False
+    assert len(result["queue"]) == 5
+
+
+def test_transient_read_error_is_retried(monkeypatch):
+    """Un hoquet de reseau se relit ; la PR ne part pas dans `unknown`."""
+    monkeypatch.setattr(mod.time, "sleep", lambda seconds: None)
+    state = {"calls": 0}
+
+    def loader(pr):
+        state["calls"] += 1
+        if state["calls"] == 1:
+            raise RuntimeError("gh: API rate limit exceeded (HTTP 403)")
+        return _reviewed_snapshot()
+
+    result = mod.build_queue(
+        [9], now=QUEUE_NOW, probe=_clear_probe, loader=loader, workers=1
+    )
+    assert state["calls"] == 2
+    assert len(result["queue"]) == 1
+    assert result["unknown"] == []
+
+
+def test_permanent_read_error_is_not_retried():
+    """Une erreur permanente n'est pas relue : le defaut reste fatal."""
+    state = {"calls": 0}
+
+    def loader(pr):
+        state["calls"] += 1
+        raise RuntimeError("gh: HTTP 404: Not Found (pull request not found)")
+
+    result = mod.build_queue(
+        [9], now=QUEUE_NOW, probe=_clear_probe, loader=loader, workers=1
+    )
+    assert state["calls"] == 1
+    assert [row["pr"] for row in result["unknown"]] == [9]
+
+
+def test_queue_progress_reports_each_classified_pull_request():
+    seen: list[dict] = []
+    mod.build_queue(
+        [3, 4], now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: {**_reviewed_snapshot(), "number": pr},
+        workers=2, progress=seen.append,
+    )
+    assert {item["pr"] for item in seen} == {3, 4}
+    assert all("verdict" in item for item in seen)
+    assert all("elapsed_seconds" in item for item in seen)
+
+
+def test_queue_run_block_reports_the_cost():
+    """#22938 : le cout du passage est mesure DANS le passage."""
+    result = mod.build_queue(
+        [7], now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: _reviewed_snapshot(), workers=4,
+    )
+    run = result["run"]
+    assert run["workers"] == 4
+    assert run["prs_requested"] == 1
+    assert run["prs_classified"] == 1
+    assert run["elapsed_seconds"] >= 0
+    assert set(run["api_calls"]) == {"rest", "graphql"}
+
+
+def test_stack_index_builds_the_same_entries_in_parallel(monkeypatch):
+    """#22938 : la mesure pile est la MEME, seule l'ordonnancement change.
+
+    #23100 -- l'enumeration rend des lignes ``[number, head.ref, base.ref]``
+    (meme appel, aucun cout supplementaire) : les noms atterrissent sur
+    l'entree, et une ligne courte (champ absent) degrade en noms vides sans
+    casser la passe.
+    """
+    monkeypatch.setattr(mod, "gh_lines", lambda args: [
+        '[1, "feature/a", "main"]',
+        '[2, "feature/b", "feature/a"]',
+        '[3]',
+    ])
+    monkeypatch.setattr(mod, "_fetch_pr_heads", lambda numbers: (list(numbers), []))
+    monkeypatch.setattr(
+        mod, "_git",
+        lambda args, check=True: subprocess.CompletedProcess(args, 0, "", ""),
+    )
+    # Ce test porte sur l'enumeration parallele, pas sur la garde shallow
+    # (qui a ses propres tests sur clone jetable) : le clone hote peut porter
+    # des racines shallow vivantes sans que ce soit un defaut de la passe.
+    monkeypatch.setattr(mod, "_base_history_truncated", lambda: False)
+    index, incidents = mod.build_stack_index()
+    assert incidents == []
+    assert sorted(index) == [1, 2, 3]
+    assert all(entry.ref.startswith(mod.STACK_REF_PREFIX) for entry in index.values())
+    assert index[1].head_name == "feature/a"
+    assert index[1].base_name == "main"
+    assert index[2].base_name == "feature/a"
+    assert index[3].head_name == "" and index[3].base_name == ""
+
+
+def test_stack_index_degrades_a_malformed_line_without_killing_the_pass(monkeypatch):
+    """#23100 (reserve NanoClaw 2026-11-05) : ligne non-JSON = une PR sort de
+    la passe, pas la porte entiere.
+
+    Avant : le ``json.loads`` vivait sous le seul ``try`` de l'enumeration --
+    une ligne bruitee (warning gh interleve, troncature) rendait l'index
+    ``None`` et eteignait la porte STACK pour TOUTES les PRs du cycle. Apres :
+    la PR de la ligne fautive sort de la passe (ni porte ni exemption pour
+    elle seule), les autres gardent porte ET exemption, et l'incident se dit
+    sans fabriquer de refus.
+    """
+    monkeypatch.setattr(mod, "gh_lines", lambda args: [
+        '[1, "feature/a", "main"]',
+        "warning: request timed out, retrying",  # ligne malformee
+        '[2, "feature/b", "feature/a"]',
+    ])
+    monkeypatch.setattr(mod, "_fetch_pr_heads", lambda numbers: (list(numbers), []))
+    monkeypatch.setattr(
+        mod, "_git",
+        lambda args, check=True: subprocess.CompletedProcess(args, 0, "", ""),
+    )
+    monkeypatch.setattr(mod, "_base_history_truncated", lambda: False)
+    index, incidents = mod.build_stack_index()
+    assert sorted(index) == [1, 2]
+    assert index[2].base_name == "feature/a"  # exemption preservee pour les valides
+    assert len(incidents) == 1
+    assert "ligne d'enumeration ignoree" in incidents[0]
+
+
+def test_stack_index_reports_head_name_collision_as_incident(monkeypatch):
+    """#23100 (reserve NanoClaw 2026-11-05) : deux entrees de meme ``head_name``
+    s'ecrasent silencieusement dans le ``by_head`` de ``_is_stack_descendant``.
+
+    L'incident rend la collision OBSERVABLE (les deux numeros cites) ; le
+    verdict ne change pas -- le gagnant des remontees depend de l'ordre
+    parallele de l'index, exactement comme avant l'incident.
+    """
+    monkeypatch.setattr(mod, "gh_lines", lambda args: [
+        '[1, "feature/a", "main"]',
+        '[2, "feature/a", "main"]',  # head_name duplique
+    ])
+    monkeypatch.setattr(mod, "_fetch_pr_heads", lambda numbers: (list(numbers), []))
+    monkeypatch.setattr(
+        mod, "_git",
+        lambda args, check=True: subprocess.CompletedProcess(args, 0, "", ""),
+    )
+    monkeypatch.setattr(mod, "_base_history_truncated", lambda: False)
+    index, incidents = mod.build_stack_index()
+    assert sorted(index) == [1, 2]
+    assert len(incidents) == 1
+    assert "feature/a" in incidents[0]
+    assert "#1" in incidents[0] and "#2" in incidents[0]
+
+
+def test_default_stack_index_builds_once_under_concurrency(monkeypatch):
+    """#22938 : la lecture en parallele ne construit pas huit index.
+
+    Sans verrou, chaque fil construisait son propre index : huit
+    constructions concurrentes se disputent le verrou git et la porte pile
+    se retrouve desactivee sans que l'incident se voie.
+    """
+    # Le garde d'hermeticite remplace `default_stack_index` par une souche :
+    # ce test mesure le VRAI code (verrou + cache), donc on le restaure.
+    monkeypatch.setattr(mod, "default_stack_index", _REAL_DEFAULT_STACK_INDEX)
+    monkeypatch.setattr(
+        mod, "_STACK_INDEX_CACHE",
+        {"built": False, "index": None, "incidents": []},
+    )
+    builds = []
+
+    def fake_build():
+        builds.append(1)
+        time.sleep(0.05)
+        return {"marker": True}, []
+
+    monkeypatch.setattr(mod, "build_stack_index", fake_build)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(lambda _i: mod.default_stack_index(), range(8)))
+    assert len(builds) == 1
+    assert all(result == {"marker": True} for result in results)
+
+
+def test_queue_isolates_a_classification_failure(monkeypatch):
+    """Un classement qui echoue ne tue pas les autres PRs de la file."""
+    real = mod.classify_snapshot
+
+    def flaky(snapshot, **kwargs):
+        if snapshot.get("number") == 2:
+            raise RuntimeError("classement casse")
+        return real(snapshot, **kwargs)
+
+    monkeypatch.setattr(mod, "classify_snapshot", flaky)
+    result = mod.build_queue(
+        [1, 2, 3], now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: {**_reviewed_snapshot(), "number": pr},
+    )
+    assert [row["pr"] for row in result["unknown"]] == [2]
+    assert sorted(item["pr"] for item in result["queue"]) == [1, 3]
+
+
+def test_queue_budget_names_the_prs_not_classified(monkeypatch):
+    """#22938 : le budget vaut aussi pour la phase de classement."""
+    real = mod.classify_snapshot
+
+    def slow(snapshot, **kwargs):
+        time.sleep(0.2)
+        return real(snapshot, **kwargs)
+
+    monkeypatch.setattr(mod, "classify_snapshot", slow)
+    result = mod.build_queue(
+        list(range(1, 21)), now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: {**_reviewed_snapshot(), "number": pr},
+        workers=2, time_budget_seconds=0.05,
+    )
+    assert result["run"]["budget_exhausted"] is True
+    assert len(result["unknown"]) + len(result["queue"]) == 20
+    assert all(
+        row["error"] == mod.BUDGET_EXHAUSTED_MARKER for row in result["unknown"]
+    )
+
+
 def test_consume_refuses_mutation_after_dossier():
     snapshot = _reviewed_snapshot()
     snapshot["comments"].append(_comment("posted after dossier"))
@@ -3642,7 +4198,15 @@ class _Completed:
 
 
 def test_api_usage_counter_separates_the_two_buckets(monkeypatch):
-    """`gh api graphql` paie le bucket partage, tout le reste le bucket core."""
+    """Le bucket partage est celui de GraphQL — y compris les appels `--json`.
+
+    #17315 (correction de classification, 06/11) : `gh pr view --json` passe
+    par l'API **GraphQL** (la CLI construit une requete GraphQL), donc par le
+    BUCKET PARTAGE de la flotte. Le compter comme du REST sous-reportait la
+    consommation du bucket que le levier 4 cherche a reduire. La regle
+    classee est desormais : `api graphql` et `pr|issue ... --json` = GraphQL ;
+    les endpoints `api repos/...` = REST.
+    """
     monkeypatch.setattr(
         mod.subprocess, "run", lambda *a, **k: _Completed('{"ok": true}')
     )
@@ -3652,8 +4216,9 @@ def test_api_usage_counter_separates_the_two_buckets(monkeypatch):
     mod.gh_json(["api", "repos/o/r/pulls/1"])
     mod.gh_json(["api", "repos/o/r/commits/deadbeef/check-runs"])
     mod.gh_json(["pr", "view", "1", "--json", "state"])
+    mod.gh_json(["pr", "list", "--json", "number"])
 
-    assert mod.API_USAGE == {"rest": 3, "graphql": 1}
+    assert mod.API_USAGE == {"rest": 2, "graphql": 3}
 
 
 def test_api_usage_is_published_in_json_and_on_stderr(monkeypatch, capsys):
@@ -3865,10 +4430,12 @@ def _synthetic_git(ancestor_pairs=()):
     return fake
 
 
-def _stack_entry(pr, subjects):
+def _stack_entry(pr, subjects, head_name="", base_name=""):
     # #20641 -- `author_ref` est rendu egal a `ref` par defaut : les
     # tests qui n'ont pas besoin d'exercer le saut content-free
     # preservent l'ancien comportement sans modifier chaque call site.
+    # #23100 -- `head_name`/`base_name` vides par defaut : l'exemption
+    # enfant est inerte et les tests existants gardent la porte d'avant.
     ref = f"{mod.STACK_REF_PREFIX}{pr}"
     return mod.StackEntry(
         number=pr,
@@ -3876,6 +4443,8 @@ def _stack_entry(pr, subjects):
         commits=list(subjects),
         subjects=dict(subjects),
         author_ref=ref,
+        head_name=head_name,
+        base_name=base_name,
     )
 
 
@@ -3941,6 +4510,97 @@ def test_stack_bottom_linear_stays_ready(monkeypatch):
     )
     assert verdict == mod.VERDICT_READY, reasons
     assert reasons == []
+
+
+# --- #23100 : partenaire enfant (la cible est le bas d'une vraie pile) -----
+
+
+def test_stack_parent_of_delayed_child_stays_ready(monkeypatch):
+    """#23100 (controle positif) -- enfant retarde : la porte se tait sur le parent.
+
+    Topologie #22741 x #22811 : l'enfant a pour BASE la tete de la cible
+    (`base.ref == headRefName`), mais il a ete bat AVANT que le parent
+    n'avance -- aucune des deux tetes n'est ancetre de l'autre. Pre-fix,
+    la porte voyait « commits partages + commits absents » et bloquait le
+    seul merge executable de la paire. Merger le parent d'abord est
+    l'ordre correct d'une pile : aucune raison.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(
+            22741, {"a": "A", "b": "B"},
+            head_name="feature/22733-theorem-rewriters",
+        ),
+        _stack_entry(
+            22811, {"a": "A", "b": "B", "c": "C: apport propre de l'enfant"},
+            head_name="feature/22740-portage",
+            base_name="feature/22733-theorem-rewriters",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 22741
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_parent_exempt_through_grandchild(monkeypatch):
+    """#23100 -- l'exemption remonte la chaine des liens base -> head.
+
+    Pile de trois (l'instance fondatrice #19548 -> #19556 -> #19567 est une
+    pile de trois) : le petit-enfant a pour base la tete de l'enfant, pas
+    celle de la cible. Sans la remontee, la porte bloquerait le parent via
+    le petit-enfant -- exactement le defaut #23100 transpose d'un niveau.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(1, {"a": "A"}, head_name="feature/parent"),
+        _stack_entry(
+            2, {"a": "A", "b": "B"}, head_name="feature/child",
+            base_name="feature/parent",
+        ),
+        _stack_entry(
+            3, {"a": "A", "b": "B", "c": "C"},
+            base_name="feature/child",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 1
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_rebased_sister_with_names_still_blocked(monkeypatch):
+    """#23100 (controle negatif) -- la soeur rebassee reste bloquante.
+
+    Les noms de branches sont presents (l'exemption est armee) mais la base
+    de la soeur est `main`, pas la tete de la cible : ce n'est pas un enfant,
+    c'est la soeur qui porte les corrections -- le cas que la porte existe
+    pour attraper. Le motif `stack top` reste rendu.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(
+            19548, {"a": "A", "b": "B"},
+            head_name="feature/19548-old-version",
+        ),
+        _stack_entry(
+            19556, {"a": "A", "b": "B", "d": "D: correctif absent du bas"},
+            head_name="feature/19556-rebuilt", base_name="main",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
 
 
 # --- #20641 : rafraichissement content-free de la base d'une pile ----------
@@ -4462,7 +5122,10 @@ def test_stack_door_is_measured_after_a_rewritten_pr_head(tmp_path, monkeypatch)
     assert head != old_sha
 
     # Et la porte STACK est MESUREE, pas desactivee.
-    monkeypatch.setattr(mod, "gh_lines", lambda args: ["42"])
+    # #23100 -- l'enumeration rend des lignes [number, head.ref, base.ref].
+    monkeypatch.setattr(
+        mod, "gh_lines", lambda args: ['[42, "feature/rewritten", "main"]']
+    )
     monkeypatch.setattr(mod, "default_stack_index", _REAL_DEFAULT_STACK_INDEX)
     monkeypatch.setattr(
         mod, "_STACK_INDEX_CACHE",
@@ -4628,13 +5291,18 @@ def test_stack_door_is_silent_on_the_merge_path_when_not_a_stack_top(monkeypatch
 
 
 def _author_ref_synthetic_git(*, parents=(), ancestors=(), trees=(), auto_merges=()):
-    """`git` simule repondant aux 4 questions de `_author_ref`.
+    """`git` simule repondant aux questions de `_author_ref`.
 
     `parents` : sha -> "<first> <second>" (sortie de `log -1 --format=%P`).
     `ancestors` : paires (second, base) pour lesquelles merge-base rc=0.
     `trees` : sha -> tree_sha (sortie de `log -1 --format=%T`).
     `auto_merges` : (first, second) -> tree_sha (sortie de
     `merge-tree --write-tree`).
+
+    #22938 : `_author_ref` lit les parents ET l'arbre dans UN seul appel
+    (`--format=%P%x09%T`) -- une requete de moins par etape de remontee. Le
+    faux git repond a cette forme la ; les deux formes simples restent
+    reconnues pour les tests qui les appellent directement.
     """
     anc = set(ancestors)
     par = dict(parents)
@@ -4642,6 +5310,12 @@ def _author_ref_synthetic_git(*, parents=(), ancestors=(), trees=(), auto_merges
     auto = dict(auto_merges)
 
     def fake(args, check=True):
+        if args[:3] == ["log", "-1", "--format=%P%x09%T"]:
+            sha = args[3]
+            return subprocess.CompletedProcess(
+                ["git", *args], 0,
+                f"{par.get(sha, '')}\t{tre.get(sha, '')}", ""
+            )
         if args[:3] == ["log", "-1", "--format=%P"]:
             return subprocess.CompletedProcess(
                 ["git", *args], 0, par.get(args[3], ""), ""
@@ -4717,6 +5391,46 @@ def test_author_ref_stops_at_conflict_resolution(monkeypatch):
     assert mod._author_ref(top, base_ref=base) == top
 
 
+def test_author_ref_reads_parents_and_tree_in_one_git_call(monkeypatch):
+    """#22938 -- parents et arbre sortent d'UN seul appel git.
+
+    `_author_ref` coute 0,63 s par PR (237,5 s cumules pour 377 PRs) :
+    c'est le poste le plus cher de la porte pile. Chaque etape de remontee
+    interrogeait le meme commit deux fois (`--format=%P` puis `--format=%T`).
+    Les deux lectures sont desormais fusionnees en un appel
+    (`--format=%P%x09%T`) -- meme mesure, un processus de moins.
+
+    Le test compte les appels : sans la fusion, la remontee d'une fusion
+    content-free en ferait deux par etape.
+    """
+    base = "refs/remotes/origin/main"
+    main_sha = "1" * 40
+    feature_sha = "2" * 40
+    top = "3" * 40
+    inner = _author_ref_synthetic_git(
+        parents={top: f"{feature_sha} {main_sha}"},
+        ancestors={(main_sha, base)},
+        trees={top: "tree_top"},
+        auto_merges={(feature_sha, main_sha): "tree_top"},
+    )
+    calls: list[list[str]] = []
+
+    def counting(args, check=True):
+        calls.append(list(args))
+        return inner(args, check=check)
+
+    monkeypatch.setattr(mod, "_git", counting)
+    assert mod._author_ref(top, base_ref=base) == feature_sha
+    log_calls = [c for c in calls if c[:2] == ["log", "-1"]]
+    assert log_calls, calls
+    # UNE lecture par ETAPE de remontee, et toujours la forme fusionnee.
+    assert all(c[2] == "--format=%P%x09%T" for c in log_calls), log_calls
+    assert not [
+        c for c in calls
+        if c[:3] in (["log", "-1", "--format=%P"], ["log", "-1", "--format=%T"])
+    ], calls
+
+
 def test_author_ref_returns_on_non_merge_commit(monkeypatch):
     """#20641 (controle direct) -- un commit non-fusion n'est pas une cible de saut.
 
@@ -4749,3 +5463,67 @@ def test_author_ref_returns_on_git_failure(monkeypatch):
     monkeypatch.setattr(mod, "_git", _synthetic_git())
     ref = "refs/pull/12345/head"
     assert mod._author_ref(ref) == ref
+
+
+# ---------------------------------------------------------------------------
+# #23089 -- la porte pile refuse de mesurer sur un clone tronque, et le dit
+# ---------------------------------------------------------------------------
+def _git(cwd, *args, check=True):
+    proc = subprocess.run(
+        ["git", *args], cwd=str(cwd), capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    if check and proc.returncode != 0:
+        raise AssertionError(f"git {' '.join(args)} -> {proc.stderr.strip()}")
+    return proc
+
+
+def _disposable_clone(tmp_path, depth=None):
+    """Un origin bare local + un clone (complet par defaut)."""
+    origin = tmp_path / "origin.git"
+    work = tmp_path / "work"
+    _git(tmp_path, "init", "--bare", "-b", "main", str(origin))
+    work.mkdir()
+    _git(work, "init", "-b", "main")
+    _git(work, "config", "user.email", "t@t.invalid")
+    _git(work, "config", "user.name", "t")
+    (work / "a.txt").write_text("1\n", encoding="utf-8")
+    _git(work, "add", "a.txt")
+    _git(work, "commit", "-m", "c1")
+    _git(work, "remote", "add", "origin", str(origin))
+    _git(work, "push", "-q", "origin", "main")
+    clone = tmp_path / "clone"
+    args = ["clone", "-q", "--single-branch", "--branch", "main"]
+    if depth:
+        args.append(f"--depth={depth}")
+    _git(tmp_path, *args, origin.as_uri(), str(clone))
+    return clone
+
+
+def test_la_pile_refuse_un_clone_tronque_et_nomme_la_cause(tmp_path, monkeypatch):
+    """#23089 : sur un clone dont l'historique de `main` est reellement
+    tronque, la passe pile REFUSE de mesurer et rend une cause nommee --
+    jamais un faux « stack top » (mesure ai-01 du 2026-10-28 : #22244 et
+    #22252 rendues BLOCKED sur des squash deja merges)."""
+    if str(HERE.parent) not in sys.path:
+        sys.path.insert(0, str(HERE.parent))
+    clone = _disposable_clone(tmp_path, depth=1)
+    monkeypatch.chdir(clone)
+    index, incidents = mod.build_stack_index()
+    assert index is None
+    assert incidents == [mod.STACK_UNAVAILABLE_SHALLOW]
+    assert "shallow clone" in incidents[0]
+
+
+def test_la_pile_mesure_sur_un_clone_complet(tmp_path, monkeypatch):
+    """Controle positif : sur un clone complet, la passe mesure (aucune
+    cause de troncature). L'enumeration est neutralisee -- ce test porte sur
+    la garde, pas sur l'API."""
+    if str(HERE.parent) not in sys.path:
+        sys.path.insert(0, str(HERE.parent))
+    clone = _disposable_clone(tmp_path)
+    monkeypatch.chdir(clone)
+    monkeypatch.setattr(mod, "gh_lines", lambda args: [])
+    index, incidents = mod.build_stack_index()
+    assert incidents == []
+    assert index == {}

@@ -37,6 +37,19 @@ applique sans adaptation --
   variante d'emission du facteur ENFANT, a marginales appariees exactement --
   critere « structure generative conditionnelle ». Le plancher de Bayes de
   l'enfant conditionnel se lit avec :func:`conditional_child_floor`.
+- :class:`ConditionalStateBench` : l'ETAT CACHE de l'enfant est une ROTATION
+  du token observe du parent (regime de la troisieme passe, #20071) -- la
+  structure conditionnelle y est NECESSAIRE pour predire la cible, ce que la
+  variante d'emission n'est pas.
+
+Garde d'independance des facteurs : deux generateurs de MEME classe drawant
+depuis le meme flux d'uniformes partagent leur trajectoire d'etats caches
+integralement (mesure, 2026-10-26 : ``Mess3 x Mess3`` de meme graine ->
+etats caches IDENTIQUES et ``I(obs_a ; obs_b) = 0,677 nats``, contre
+``0,0001 nats`` des que les graines diffèrent). Un banc « factorise » dont
+les deux facteurs sont ainsilies n'est plus un banc factorise : c'est le
+controle qui s'effondre. :meth:`FactoredBench.sample` refuse donc ce cas
+(voir :func:`_classe_effective`).
 """
 
 from __future__ import annotations
@@ -51,6 +64,23 @@ Array = np.ndarray
 
 class ProcessError(ValueError):
     """Erreur de parametrage ou d'usage d'un generateur du banc."""
+
+
+def _classe_effective(process: object) -> Tuple[str, type]:
+    """Classe qui determine la FACON dont un generateur consomme le RNG.
+
+    Deux generateurs ne consomment le flux d'uniformes de la meme face que si
+    leur classe effective coincide. Pour un generateur nu, c'est sa classe ;
+    pour un wrapper :class:`NoisedChannel`, c'est le couple (wrapper, classe
+    emballee) -- le wrapper delègue la loi au generateur emballe, et c'est la
+    loi qui fixe le patron de tirage (branche Moore ou Mealy). Mesure du
+    2026-10-26 : ``Noised(Mess3) x Noised(RRXOR)`` a graine identique donne
+    ``I = 0,0001 nats`` (sain) la ou ``Noised(Mess3) x Noised(Mess3)`` donne
+    ``I = 1,0986 nats`` (couple, etats identiques).
+    """
+    if isinstance(process, NoisedChannel):
+        return ("noised", type(process.wrapped))
+    return ("direct", type(process))
 
 
 @dataclass(frozen=True)
@@ -606,7 +636,39 @@ class FactoredBench:
 
     # --- generation jointe --------------------------------------------------
     def sample(self, n: int, seed_a: int, seed_b: int) -> Dict[str, Array]:
-        """Echantillonne les deux facteurs independamment ; trajectoires et observations jointes."""
+        """Echantillonne les deux facteurs independamment ; trajectoires et observations jointes.
+
+        **Garde d'independance.** Deux generateurs qui consomment le flux
+        d'uniformes de la meme face -- meme classe effective, cf.
+        :func:`_classe_effective` -- et qui recoivent la MEME graine
+        partagent leur trajectoire d'etats caches : le banc « factorise » ne
+        l'est plus. Mesure du 2026-10-26 (60 000 pas) :
+
+        - ``Mess3 x Mess3``, meme graine : etats caches **identiques**,
+          ``I(obs_a ; obs_b) = 0,677 nats`` -- le « controle independant »
+          d'une campagne est alors le banc le plus ENTRELACE de la campagne ;
+        - ``Mess3 x Mess3``, graines distinctes : ``I = 0,0001 nats`` ;
+        - ``Mess3(stay=0,95) x Mess3(stay=0,80)``, meme graine :
+          ``I = 0,533 nats`` -- la decalage de parametres n'a pas assez de
+          sens pour decouler les flux ;
+        - ``Mess3 x RRXOR``, meme graine : ``I = 0,000002 nats`` -- les
+          generateurs de classes differentes consomment le flux différemment,
+          le cas est sain sans garde.
+
+        Le cas pathologique est donc refuse, plutot que laisse produire un
+        « controle » qui ne controle rien.
+        """
+        if seed_a == seed_b and _classe_effective(self.factor_a) == _classe_effective(
+            self.factor_b
+        ):
+            raise ProcessError(
+                "graines identiques pour deux generateurs de meme classe effective "
+                f"({type(self.factor_a).__name__} / {type(self.factor_b).__name__}) : "
+                "les deux facteurs partageraient le flux d'uniformes et leurs etats "
+                "caches seraient identiques (mesure : I(obs_a ; obs_b) = 0,677 nats "
+                "sur Mess3 x Mess3), donc le banc ne serait plus factorise. "
+                "Utilisez deux graines distinctes pour les deux facteurs."
+            )
         sa, oa = self.factor_a.sample(n, seed_a)
         sb, ob = self.factor_b.sample(n, seed_b)
         return {
@@ -809,6 +871,168 @@ class ConditionalBench:
                 raise ProcessError(f"vraisemblance nulle au pas {k}")
             b = w / z
             out[k] = b
+        joint = np.einsum("ti,tj->tij", belief_a, out)
+        return {"belief_a": belief_a, "belief_b": out, "belief_joint": joint}
+
+
+@dataclass(frozen=True)
+class ConditionalStateBench:
+    """Banc a deux facteurs dont l'ETAT CACHE de l'enfant est une ROTATION
+    du token OBSERVE du parent (regime generatif #20071, troisieme passe).
+
+    Pourquoi un regime de plus alors que :class:`ConditionalBench` existe
+    deja. Mesure sur le banc a variante d'EMISSION (``kappa = 0.28``,
+    20 000 pas, graines distinctes pour les deux facteurs) : le token du
+    parent n'explique **presque rien** de la variance de la CIBLE
+    ``belief_b`` (sonde lineaire token -> belief_b, ``R2 = -0,0002``).
+    Autrement dit, la structure conditionnelle **n'est pas necessaire** pour
+    predire la cible : un modele qui l'ignore est aussi bon, et
+    l'``additivity_gap`` nul mesure dans les deux passes precedentes
+    (#20091, #21652) est la **bonne** reponse de ce banc -- aucun budget
+    d'entrainement ne le change. C'est le banc qui manquait, pas la metrique.
+
+    (La valeur de ``+0,046`` lue dans une premiere version de cette mesure
+    venait de graines IDENTIQUES pour les deux facteurs : les etats caches
+    de l'enfant etaient alors ceux du parent, et la valeur mesurait ce
+    couplage-la, pas la variante d'emission. Corrigee depuis.)
+
+    Ici l'etat cache de l'enfant EST une rotation du token du parent :
+
+        s_enfant[t] = (token[t] + decalage) mod q
+
+    La rotation est une bijection, donc la marginale d'etat de l'enfant
+    reste celle des tokens du parent (uniforme) ; l'emission de l'enfant est
+    inchangee, donc sa marginale d'OBSERVATION reste elle aussi inchangee :
+    **les marginales restent appariees** avec le controle independant, qui
+    fait suivre a l'enfant sa propre chaine (meme marginale d'etat, meme
+    matrice d'emission).
+
+    Consequence mesurable : la croyance exacte de l'enfant vaut
+
+        belief_b[t] = e_{s_enfant[t]} = e_{(token[t] + decalage) mod q}
+
+    -- elle est **entierement** determinee par le token (R2 = +1,000, prime
+    conditionnelle I(token ; etat) = log q exactement, le plafond). La
+    lecture de l'enfant par le modele n'a donc **aucune autre route** que la
+    direction du parent : le recouvrement des sous-espaces de coefficients
+    devient structurel, et l'``additivity_gap`` peut enfin sortir de la
+    bande du temoin.
+
+    Contraintes de construction : parent a tokens equiprobables SUR LE MEME
+    ALPHABET que l'enfant (le token doit indexer la rotation), enfant Moore
+    parametre, q >= 3.
+    """
+
+    parent: object
+    child: object
+    shift: int = 1
+    name: str = "bench_conditionnel_etat"
+
+    def __post_init__(self) -> None:
+        for attr in ("sample", "beliefs", "n_states", "name"):
+            if not hasattr(self.parent, attr):
+                raise ProcessError(
+                    f"parent {type(self.parent).__name__} n'expose pas '{attr}' : incompatible"
+                )
+        for attr in ("sample", "beliefs", "n_states", "name", "transition_matrix", "stationary", "emission_matrix"):
+            if not hasattr(self.child, attr):
+                raise ProcessError(
+                    f"enfant {type(self.child).__name__} n'expose pas '{attr}' : "
+                    "ConditionalStateBench exige un processus Moore parametre"
+                )
+        e = np.asarray(self.child.emission_matrix(), dtype=np.float64)
+        if e.shape[1] < 3:
+            raise ProcessError(
+                f"rotation definie pour au moins 3 symboles, recu {e.shape[1]}"
+            )
+        pi_tok = _token_marginal(self.parent)
+        q = e.shape[1]
+        if not np.allclose(pi_tok, 1.0 / pi_tok.size, atol=1e-9):
+            raise ProcessError(
+                "marginales appariees exigees : les tokens du parent ne sont pas "
+                f"equiprobables ({np.round(pi_tok, 4).tolist()})"
+            )
+        if pi_tok.size != q:
+            raise ProcessError(
+                f"parent ({pi_tok.size} symboles) et enfant ({q} symboles) : "
+                "le token parent doit indexer la rotation de l'etat de l'enfant"
+            )
+        if not 0 <= self.shift < q:
+            raise ProcessError(f"decalage {self.shift} hors de [0, {q})")
+
+    @property
+    def n_states(self) -> int:
+        """Nombre d'etats caches JOINT (parent x enfant), comme FactoredBench."""
+        return self.parent.n_states * self.child.n_states
+
+    def state_from_token(self, tokens: Array) -> Array:
+        """L'etat cache de l'enfant : rotation du token du parent."""
+        q = np.asarray(self.child.emission_matrix()).shape[1]
+        return (np.asarray(tokens, dtype=np.int64) + int(self.shift)) % q
+
+    def marginal_state(self) -> Array:
+        """Marginale de l'etat cache de l'enfant : celle des tokens (uniforme)."""
+        q = np.asarray(self.child.emission_matrix()).shape[1]
+        return np.full(q, 1.0 / q)
+
+    def marginal_child_observations(self) -> Array:
+        """Marginale d'OBSERVATION de l'enfant : E appliquee a la marginale d'etat.
+
+        C'est la grandeur a apparier avec le controle independant : elle ne
+        depend pas du decalage (rotation = bijection), donc les deux bancs
+        ont EXACTEMENT la meme marginale d'observation.
+        """
+        e = np.asarray(self.child.emission_matrix(), dtype=np.float64)
+        return e @ self.marginal_state()
+
+    def sample(self, n: int, seed_parent: int, seed_child: int) -> Dict[str, Array]:
+        """Trajectoire jointe : parent inchange, etat de l'enfant = rotation du token.
+
+        L'etat cache de l'enfant est **entierement** determine par le token
+        observe ; seule l'observation de l'enfant est bruitee (matrice
+        d'emission inchangee), donc la marginale d'observation de l'enfant
+        reste celle du banc independant.
+        """
+        if n < 1:
+            raise ProcessError("ConditionalStateBench.sample attend n >= 1")
+        _, obs_a = self.parent.sample(n, seed_parent)
+        states_b = self.state_from_token(obs_a)
+        e = np.asarray(self.child.emission_matrix(), dtype=np.float64)
+        rng = np.random.default_rng(seed_child + 10_003)
+        obs_b = np.empty(n, dtype=np.int64)
+        for t in range(n):
+            obs_b[t] = rng.choice(e.shape[1], p=e[states_b[t]])
+        return {
+            "obs_a": obs_a,
+            "obs_b": obs_b,
+            "states_a": None,
+            "states_b": states_b,
+            "variant_tokens": obs_a.copy(),
+        }
+
+    def beliefs(self, obs_a: Array, obs_b: Array) -> Dict[str, Array]:
+        """Beliefs EXACTS des deux facteurs.
+
+        Parent : filtration propre, inchangee.
+
+        Enfant : l'etat est une rotation du token OBSERVE, donc la loi
+        a priori de l'etat de l'enfant au pas ``t`` est un Dirac sur
+        ``(obs_a[t] + decalage) mod q`` ; l'observation de l'enfant ne peut
+        que confirmer ce Dirac (elle en est une lecture bruitee). La
+        croyance exacte de l'enfant est donc ``e_{rotation(token)}`` -- elle
+        ne depend que du token, ce qui est le point du regime.
+        """
+        if obs_a.ndim != 1 or obs_b.ndim != 1 or len(obs_a) != len(obs_b):
+            raise ProcessError("beliefs attend deux series 1D de meme longueur")
+        q = np.asarray(self.child.emission_matrix()).shape[1]
+        if not np.all(np.isin(obs_a, np.arange(q))):
+            raise ProcessError("tokens parents hors alphabet de l'enfant")
+        if not np.all(np.isin(obs_b, np.arange(q))):
+            raise ProcessError(f"observations enfant hors alphabet {{0..{q - 1}}}")
+        belief_a = self.parent.beliefs(obs_a)
+        out = np.zeros((len(obs_b), q), dtype=np.float64)
+        etats = self.state_from_token(obs_a)
+        out[np.arange(len(obs_b)), etats] = 1.0
         joint = np.einsum("ti,tj->tij", belief_a, out)
         return {"belief_a": belief_a, "belief_b": out, "belief_joint": joint}
 

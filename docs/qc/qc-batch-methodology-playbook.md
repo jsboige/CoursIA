@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-30
+
 # QC #1621 Batch Methodology Playbook
 
 **Issue** : See #1621 (EPIC QC Consolidation)

@@ -168,10 +168,28 @@ export COURSIA_REPO_DIR="$DEPO_FAKE"
 # On execute le script SANS --dry-run : le dry-run shunte `enable --now`,
 # et le bug ne se manifeste qu'a l'execution reelle. Le stub systemctl rend
 # l'environnement testable. `bash -e` attrape un die.
+#
+# HERMETICITE : le script ecrit sous /etc/systemd/system/ et /etc/docker/ --
+# des chemins ABSOLUS, qu'aucune variable ne detourne. Tel quel, le test lit
+# donc l'etat REEL de la machine : sur un poste ou les unites sont deja
+# installees (po-2028, po-2024), le script trouve une cible divergente, refuse
+# d'ecraser sans COURSIA_INSTALL_FORCE=1 (die, cf. l.228) et sort en rc=1,
+# alors qu'il passe sur un poste ou /etc/systemd/system/ n'en porte aucune.
+# Le resultat mesurait donc la machine, pas le fix #19440.
+# On execute une copie dont les deux racines sont redirigees sous $TEST_DIR :
+# le test ne lit plus rien du systeme. Aucune ecriture reelle n'est possible --
+# `install(1)` est deja remplace par un stub qui ne fait que journaliser.
+SCRIPT_ISO="$TEST_DIR/install-coursia-units-iso.sh"
+sed -e "s#/etc/systemd/system#$TEST_DIR/root/etc/systemd/system#g" \
+    -e "s#/etc/docker#$TEST_DIR/root/etc/docker#g" \
+    -e "s#/usr/local/bin#$TEST_DIR/root/usr/local/bin#g" \
+    "$SCRIPT_DIR/install-coursia-units.sh" > "$SCRIPT_ISO"
+chmod +x "$SCRIPT_ISO"
+
 echo "Test : install-coursia-units.sh gere une slice sans [Install] (#19440)"
 (
   rc=0
-  bash -e "$SCRIPT_DIR/install-coursia-units.sh" --machine ai-01 \
+  bash -e "$SCRIPT_ISO" --machine ai-01 \
     >"$TEST_DIR/out.log" 2>"$TEST_DIR/err.log" || rc=$?
   echo "rc=$rc"
 ) > "$TEST_DIR/run.log" 2>&1

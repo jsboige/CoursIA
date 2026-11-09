@@ -50,6 +50,10 @@
 # Les bornes de versions restent la garantie utile (elles interdisent les
 # breaking changes) ; elles ne garantissent pas le scalaire.
 numpy>=1.24,<2.5
+scipy>=1.11,<1.19              # Tire par le paquet `ict` (IIT/ICT-Series) que SL-13b
+                               # importe en bloc : `import ict` charge scipy avant la
+                               # premiere mesure -- sans lui le carnet echoue a l'import
+                               # (#20863, re-execution du 2026-11-03)
 scikit-learn>=1.2              # Information mutual comparison (SL-3)
 matplotlib>=3.7,<3.11          # Spectres, cartes Sinkhorn, trajectoires de recherche (SL-12b)
 

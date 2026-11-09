@@ -19,10 +19,25 @@
     `infoHurts_reduction`).
   - `gInfo` : le joueur 2 observe privément θ (deux types).
 
-  Voir `Information.lean` et le fichier original pour les tables de
-  paiement dépendant de l'état et l'argument d'équilibre. Les deux jeux
-  portent la même échelle de poids de prior totale, donc les paiements 3
-  et 5 sont directement comparables.
+  Tables de paiement dépendant de l'état (joueur 1, joueur 2) :
+
+            θ = 0:  l        r            θ = 1:  l        r
+        T        (2, 3)   (0, 0)      T        (2, 2)   (0, 3)
+        B        (0, 2)   (0, 0)      B        (0, 0)   (4, 1)
+
+  Sans information, `l` domine strictement pour le joueur 2 (3+2 > 0+3
+  contre T, 2+0 > 0+1 contre B) : l'unique BNE est (T, l), et le joueur 2
+  collecte un poids total de 5. Informé, le type θ=1 ne peut plus
+  s'engager sur `l` — `r` domine strictement pour ce type (3 > 2 contre
+  T, 1 > 0 contre B), et le type θ=0 conserve `l`. L'action du joueur 2
+  révèle désormais l'état, et la meilleure réponse du joueur 1 bascule
+  de T vers B (2+0 < 0+4), laissant au joueur 2 2+1 = 3 < 5. Le savoir
+  détruit la capacité à s'engager : le joueur 2 paierait pour ne pas voir
+  le signal.
+
+  Les deux jeux portent la même échelle de poids de prior totale (chaque
+  valeur ci-dessous est le double de l'espérance réelle), donc les
+  paiements 3 et 5 sont directement comparables.
 
   L'unicité de l'équilibre est établie pour *tous* les profils de
   stratégies en réduisant une stratégie arbitraire à un constructeur
@@ -34,7 +49,8 @@
 
 import Bayesian.BNE
 
-/-- Le jeu informé : le joueur 2 observe privément l'état θ (son type), -/
+/-- Le jeu informé : le joueur 2 observe privément l'état θ (son type),
+    le joueur 1 a un seul type. Poids a priori égaux. -/
 def gInfo : BayesGame2 where
   nT1 := 1
   nT2 := 2
@@ -55,7 +71,9 @@ def gInfo : BayesGame2 where
       (if a1.val = 0 then (if a2.val = 0 then 2 else 3)
        else (if a2.val = 0 then 0 else 1))
 
-/-- Le benchmark non informé : personne n'observe θ, donc les deux joueurs -/
+/-- Le benchmark non informé : personne n'observe θ, donc les deux joueurs
+    ont un seul type et les paiements sont sommés sur les deux états
+    (réduction ex-ante de `gInfo` pour un joueur 2 non informé). -/
 def gNoInfo : BayesGame2 where
   nT1 := 1
   nT2 := 1
@@ -69,7 +87,9 @@ def gNoInfo : BayesGame2 where
     if a1.val = 0 then (if a2.val = 0 then 5 else 3)
     else (if a2.val = 0 then 2 else 1)
 
-/-- Vérification : les paiements de `gNoInfo` sont exactement ceux de -/
+/-- Vérification : les paiements de `gNoInfo` sont exactement ceux de
+    `gInfo` sommés sur les deux états — le jeu non informé est la réduction
+    ex-ante fidèle, pas un jeu sans rapport. -/
 theorem infoHurts_reduction :
     ∀ a1 a2 : Fin 2,
       gNoInfo.u1 ⟨0, by decide⟩ ⟨0, by decide⟩ a1 a2 =
@@ -116,7 +136,8 @@ theorem gInfo_bne :
     isBNE gInfo (mkS1g ⟨1, by decide⟩) (mkS2g ⟨0, by decide⟩ ⟨1, by decide⟩) := by
   decide
 
-/-- Sur les stratégies canoniques, le BNE de `gInfo` est unique : le -/
+/-- Sur les stratégies canoniques, le BNE de `gInfo` est unique : le
+    joueur 1 joue B et le joueur 2 joue l sur θ=0, r sur θ=1. -/
 theorem gInfo_unique_aux :
     ∀ x y z : Fin 2,
       isBNE gInfo (mkS1g x) (mkS2g y z) →
@@ -187,7 +208,14 @@ theorem gNoInfo_bne_payoff (s1 : Strategy1 gNoInfo) (s2 : Strategy2 gNoInfo)
 
 /-! ### Punchline -/
 
-/-- **L'information peut nuire dans les jeux.** Dans tout équilibre, le -/
+/-- **L'information peut nuire dans les jeux.** Dans tout équilibre, le
+    joueur 2 informé gagne strictement moins (3) que dans tout équilibre
+    du jeu où personne n'observe l'état (5) : observer le signal détruit
+    la capacité du joueur 2 à s'engager sur `l`, révèle l'état à travers
+    son action, et déclenche un basculement de la meilleure réponse du
+    joueur 1 qui coûte plus que le gain informationnel. À comparer avec
+    `valueNoInfo_le_valueSignal` (`Information.lean`) : avec un décideur
+    unique, l'information ne nuit jamais. -/
 theorem information_hurts
     (s1 : Strategy1 gInfo) (s2 : Strategy2 gInfo)
     (t1 : Strategy1 gNoInfo) (t2 : Strategy2 gNoInfo)

@@ -38,10 +38,10 @@ def _write(tmp_path: Path, name: str, text: str) -> Path:
     return p
 
 
-GREFFE2_PATCH = """diff --git a/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable.ipynb b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable.ipynb
+GREFFE2_PATCH = """diff --git a/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb
 new file mode 100644
 --- /dev/null
-+++ b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable.ipynb
++++ b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb
 @@ -0,0 +1,9 @@
 +{
 + "cells": [
@@ -334,7 +334,7 @@ def test_detector_fixture_file_does_not_self_flag(tmp_path, capsys):
 
 # --- Lean (#20210) : index derive d'un faux arbre, citations, jumeaux _en ---
 
-HECKE_PROBE = "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/Probe.lean"
+HECKE_PROBE = "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/Probe.lean"
 MATH_FR = "MyIA.AI.Notebooks/ML/learning_theory_lean/MathUniverse.lean"
 MATH_EN = "MyIA.AI.Notebooks/ML/learning_theory_lean/MathUniverse_en.lean"
 TEGMARK_AUT = "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/MUH/Aut.lean"
@@ -364,8 +364,8 @@ LEAN_TREE = {
         "structure FinRelStruct (α : Type) where\n  rel : Nat\n\n"
         "def EquivStruct (S : FinRelStruct) : Prop := True\n"
     ),
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean": "-- lake hecke (fixture)\n",
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/Base.lean": "def heckeBaseUnique := 1\n",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/lakefile.lean": "-- lake hecke (fixture)\n",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/Base.lean": "def heckeBaseUnique := 1\n",
 }
 
 # Extrait fidele du fichier MathUniverse.lean ajoute par #20111 : en-tete de

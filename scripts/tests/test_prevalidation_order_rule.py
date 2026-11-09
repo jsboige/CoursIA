@@ -164,11 +164,47 @@ def test_bullet_carries_the_four_step_order():
     assert "personne ne re-pousse" in bullet, "le garde anti-push a disparu"
 
 
+def _freeze_reason_reachable(bullet: str, detail: str) -> bool:
+    """La RAISON du gel est-elle lisible DEPUIS la puce ?
+
+    #24017 (tranche 8 de #12051) a deporte la justification du gel vers le doc
+    de detail, en le declarant dans son message : « justification du gel de
+    branche retiree (deja en prevalidation-dossier-order-detail.md) ». La puce
+    porte desormais le FAIT (« la branche est gelee entre 3 et 4 »), la raison
+    vit dans le doc. L'epingle suit le contenu la ou il est -- meme contrat que
+    ``_measurement_reachable`` (#21808) -- mais elle exige le LIEN, sans quoi la
+    raison serait enterree dans un doc que le lecteur de la regle n'a aucun
+    moyen d'atteindre.
+    """
+    if "silencieuse" in _norm(bullet):
+        return True
+    return ("prevalidation-dossier-order-detail.md" in bullet
+            and "silencieuse" in _norm(detail))
+
+
 def test_bullet_names_the_branch_freeze_as_the_condition():
     """Le gel est la seule piece qui ne se deduit pas du mecanisme."""
     bullet = _norm(_order_section())
     assert "gelee entre 3 et 4" in bullet
-    assert "silencieuse" in bullet, "la raison du gel (branche silencieuse) a disparu"
+    detail = DETAIL.read_text(encoding="utf-8") if DETAIL.exists() else ""
+    assert _freeze_reason_reachable(bullet, detail), (
+        "la raison du gel (branche silencieuse) n'est atteignable ni dans la "
+        "puce ni dans le detail qu'elle cite"
+    )
+
+
+def test_negative_control_freeze_reason_needs_the_link_to_count():
+    """Controle negatif : une raison vivant dans le detail mais NON citee par la
+    puce reste invisible pour le lecteur de la regle -- l'epingle doit mordre."""
+    bullet = "- **`update-branch` tue AUSSI le dossier** : la branche est gelee entre 3 et 4."
+    assert not _freeze_reason_reachable(bullet, "un dossier a besoin d'une branche silencieuse")
+
+
+def test_negative_control_freeze_reason_absent_from_both_is_flagged():
+    """Controle negatif : lien present, raison disparue des deux surfaces."""
+    bullet = ("- **`update-branch` tue AUSSI le dossier** : la branche est gelee entre 3 et 4, "
+              "voir [le detail](../../docs/reference/prevalidation-dossier-order-detail.md).")
+    assert not _freeze_reason_reachable(bullet, "un dossier a besoin de stabilite")
 
 
 def _measurement_reachable(bullet: str, detail: str) -> bool:

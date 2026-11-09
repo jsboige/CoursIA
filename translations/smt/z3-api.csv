@@ -210,7 +210,7 @@ Ce twin C# couvre les mêmes concepts que la version Python : **Satisfiabilite**
 
 Le binding `Microsoft.Z3` expose exactement le même moteur Z3 que `z3-solver` (Python) : les résultats sont identiques, seuls l'API et le langage changent. C'est l'illustration qu'un solveur SMT SOTA est utilisable de facon native en .NET.
 ",,,,,,,,78a087a9680c2b99,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb,nb01-title,markdown,fr,c9a5a3e64e6b1230,"# Z3-Python 01 — Introduction a la resolution de contraintes SMT
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb,nb01-title,markdown,fr,91a4d23cc8b4e92b,"# Z3-Python 01 — Introduction a la resolution de contraintes SMT
 
 **Navigation** : [Index](README.md) | [Z3-Python-01b (style declaratif) >>](Z3-01b-Style-Declaratif-Linq.ipynb) | [Twin C# 01](Z3-01-Introduction-CSharp.ipynb)
 
@@ -230,7 +230,11 @@ A la fin de ce notebook, vous saurez :
 
 ***
 
-**Z3** est un solveur SMT (*Satisfiability Modulo Théories*) developpe par Microsoft Research. Un solveur SMT determine si un ensemble de contraintes logiques et arithmetiques peut etre satisfait, et si oui, fournit un **modèle** (une assignation concrete des variables). Cette serie utilise **z3-py**, le binding Python officiel (package pip `z3-solver`), qui expose l'integralite de l'API Z3 sans la limitation d'un binding declaratif. Pour les fondements théoriques de la resolution SMT (DPLL(T)) et la presentation du solveur Z3 lui-même, voir de Moura & Bjorner, *Z3: An Efficient SMT Solver* (TACAS 2008) et Nieuwenhuis, Oliveras & Tinelli, *Solving SAT and SAT Modulo Théories: From an Abstract DPLL Procedure to DPLL(T)* (JACM 2006) ; les tactiques (notebook 3) et MaxSAT (notebook 6) sont ancrees dans la section References du README.",,,,,,,,c9a5a3e64e6b1230,,,,,,,,,,,,,,,
+**Z3** est un solveur SMT (*Satisfiability Modulo Théories*) developpe par Microsoft Research. Un solveur SMT determine si un ensemble de contraintes logiques et arithmetiques peut etre satisfait, et si oui, fournit un **modèle** (une assignation concrete des variables). Cette serie utilise **z3-py**, le binding Python officiel (package pip `z3-solver`), qui expose l'integralite de l'API Z3 sans la limitation d'un binding declaratif. Pour les fondements théoriques de la resolution SMT (DPLL(T)) et la presentation du solveur Z3 lui-même, voir de Moura & Bjorner, *Z3: An Efficient SMT Solver* (TACAS 2008) et Nieuwenhuis, Oliveras & Tinelli, *Solving SAT and SAT Modulo Théories: From an Abstract DPLL Procedure to DPLL(T)* (JACM 2006) ; les tactiques (notebook 3) et MaxSAT (notebook 6) sont ancrees dans la section References du README.
+
+## Source
+
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 1 Introduction (p. 3) + Ch. 2 Basics (p. 6) — Solver API, théories de base, modèles. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,91a4d23cc8b4e92b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb,nb01-imports,code,fr,0ca1d0d4f062e4aa,"# Imports et verification de l'environnement
 # Le package pip s'appelle 'z3-solver' (et non 'z3').
 # Dans cet environnement il est deja installe. Pour l'installer ailleurs :
@@ -757,7 +761,7 @@ La visualisation ASCII remplace `matplotlib` (twin Python) : c'est une **valeur 
 
 Le binding `Microsoft.Z3` resout le Sudoku exactement comme `z3-solver` (Python) : aucun backtracking n'est ecrit, le moteur SOTA fait tout.
 ",,,,,,,,7dd2274d787eb5bb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-Python.ipynb,nb02-title,markdown,fr,4dd067d0a66f0db0,"# Z3-Python 02 — Sudoku comme problème de satisfaction de contraintes
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-Python.ipynb,nb02-title,markdown,fr,f394917572796b7f,"# Z3-Python 02 — Sudoku comme problème de satisfaction de contraintes
 
 **Navigation** : [<< Z3-Python-01 Introduction](Z3-01-Introduction-Python.ipynb) | [Index](README.md) | [Z3-Python-03 Tactiques >>](Z3-03-Tactics-Python.ipynb)
 
@@ -777,7 +781,11 @@ A la fin de ce notebook, vous saurez :
 
 ***
 
-Le [notebook précédent](Z3-01-Introduction-Python.ipynb) a introduit le solveur Z3. Ici, nous l'appliquons a un problème NP-complet emblematique : le **Sudoku**. L'approche contraste avec la serie [Sudoku par backtracking](../../../Sudoku/Sudoku-01-Backtracking-Python.ipynb) : au lieu de programmer l'algorithme de recherche, nous **enonc ons les règles** et laissons le solveur deduire la solution.",,,,,,,,4dd067d0a66f0db0,,,,,,,,,,,,,,,
+Le [notebook précédent](Z3-01-Introduction-Python.ipynb) a introduit le solveur Z3. Ici, nous l'appliquons a un problème NP-complet emblematique : le **Sudoku**. L'approche contraste avec la serie [Sudoku par backtracking](../../../Sudoku/Sudoku-01-Backtracking-Python.ipynb) : au lieu de programmer l'algorithme de recherche, nous **enonc ons les règles** et laissons le solveur deduire la solution.
+
+## Source
+
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §8.1 Sudoku (p. 199), Ch. 8 Recreational mathematics and puzzles — Sudoku comme CSP, énoncés et solveur visuel. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,f394917572796b7f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-Python.ipynb,nb02-imports,code,fr,58f1658c49fcc56e,"# Imports
 from z3 import *
 import matplotlib.pyplot as plt
@@ -1405,7 +1413,7 @@ Ce twin C# couvre les trois familles avancées de Z3 : **tactiques** (`MkTactic`
 **Complémentarité** : le twin Python utilise `len(result)` et `sg.size()` (API Pythonique) ; ce twin C# montre l'API .NET (`ApplyResult.Subgoals.Length`, `Goal.Formulas` comme propriété, composition via méthodes `ctx.*`) — la **valeur ajoutée** est la traduction des idiomes Z3 dans le système de types .NET.
 
 > Les trois exercices qui suivent sont à compléter : ils reprennent isolément chacune des trois familles (pipeline de tactiques, XOR sur `BitVec`, commutativité des `Store`).",,,,,,,,958178aaa2508504,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,024ee023,markdown,fr,160d125989cdb9aa,"# Z3-Python 03 — Tactiques et théories
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,024ee023,markdown,fr,363090315479951b,"# Z3-Python 03 — Tactiques et théories
 
 **Navigation** : [Index](README.md) | [<< Z3-Python-02 Sudoku](Z3-02-Sudoku-Python.ipynb) | [Z3-Python-04 Strings >>](Z3-04-Strings-Regex-Python.ipynb)
 
@@ -1428,7 +1436,11 @@ A la fin de ce notebook, vous saurez :
 
 Les notebooks précédents ont utilise le solveur Z3 de maniere directe : on ajoute des contraintes, on appelle `check()`, on obtient un modèle. En pratique, les problemes reels contiennent des centaines ou milliers de contraintes, et la **stratégie de resolution** peut faire la différence entre une reponse instantanee et un timeout. Z3 offre les **tactiques** (*tactics*) pour contrôler finement cette stratégie.
 
-Ce notebook explore également deux théories supplementaires de Z3 : les **vecteurs de bits** (`BitVec`), essentiels pour la verification de circuits et l'analyse cryptographique, et les **tableaux** (`Array`), qui modelisent des fonctions a acces indexe.",,,,,,,,160d125989cdb9aa,,,,,,,,,,,,,,,
+Ce notebook explore également deux théories supplementaires de Z3 : les **vecteurs de bits** (`BitVec`), essentiels pour la verification de circuits et l'analyse cryptographique, et les **tableaux** (`Array`), qui modelisent des fonctions a acces indexe.
+
+## Source
+
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 16 Toy decompiler (Tactic, p. 463) + Ch. 5 Verification (BitVec, p. 125) — combinaison de tactiques et théories. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,363090315479951b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,bea962f8,code,fr,911fe9d839b6c270,"# Imports et verification de l'environnement
 from z3 import *
 
@@ -1657,14 +1669,15 @@ print(f""  a = {m2[a].as_long():3d} (binaire : {m2[a].as_long():08b})"")
 print(f""  b = {m2[b].as_long():3d} (binaire : {m2[b].as_long():08b})"")
 print(f""  a XOR b = {m2[a].as_long() ^ m2[b].as_long():08b}"")
 print(f""  a AND b = {m2[a].as_long() & m2[b].as_long():08b}"")",,,,,,,,d9628ef586c8d87b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,2ca6be92,markdown,fr,b6e0fddeecfc4e1c,"### Interpretation : vecteurs de bits
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,2ca6be92,markdown,fr,a7171b9ba4e46367,"### Interprétation : vecteurs de bits
 
-**Sortie obtenue** : l'addition modulaire montre le wrapping caractéristique (255 + 1 = 0). L'exemple XOR/AND illustre les opérations bit a bit.
+**Sortie obtenue** : `x = 255 (valeur entiere : 255)` puis `y = x + 1 = 0 (valeur entiere : 0)`, avec la ligne de contrôle `255 + 1 modulo 256 = 0`. Ce zéro n'est pas un échec du solveur : un `BitVec` de 8 bits ne peut pas représenter 256, donc l'addition revient à 0 et le modèle satisfait les deux contraintes. Le second bloc imprime `a = 254 (binaire : 11111110)`, `b =   1 (binaire : 00000001)`, `a XOR b = 11111111` et `a AND b = 00000000` : les deux opérateurs s'appliquent bit par bit, et comme le bit de poids faible de `a` vaut 0, le `XOR` avec 1 le fait passer à 1 alors que le `AND` avec 1 le laisse à 0 — d'où 255 et 0 en décimal.
 
 **Points clés** :
-1. Les opérations arithmetiques sur `BitVec` sont **automatiquement modulaires** : pas de debordement, le résultat ""wraps"" autour de $2^n$.
-2. Les opérateurs Python `&`, `|`, `^`, `~`, `<<`, `>>` sont surcharges pour construire des expressions symboliques Z3.
-3. `BitVecVal(255, 8)` créé une constante ; `BitVec('x', 8)` créé une variable symbolique.",,,,,,,,b6e0fddeecfc4e1c,,,,,,,,,,,,,,,
+1. Les opérations arithmétiques sur `BitVec` sont **automatiquement modulaires** : pas de débordement, le résultat ""wraps"" autour de $2^n$.
+2. Les opérateurs Python `&`, `|`, `^`, `~`, `<<`, `>>` sont surchargés pour construire des expressions symboliques Z3.
+3. `BitVecVal(255, 8)` crée une constante ; `BitVec('x', 8)` crée une variable symbolique.
+",,,,,,,,a7171b9ba4e46367,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,b80a09c5,code,fr,d1276d2fc84b1e7f,"# Arithmetic signee vs non signee sur les BitVec
 # Un meme vecteur de bits peut etre interprete comme signe ou non signe.
 
@@ -1696,14 +1709,15 @@ print(""| a >= b        | a >= b    | UGE(a, b)  |"")
 print(""| a / b         | a / b     | UDiv(a, b) |"")
 print(""| a % b         | a % b     | URem(a, b) |"")
 print(""| a >> b        | arith.    | LShR(a, b) |"")",,,,,,,,d1276d2fc84b1e7f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,e03bab00,markdown,fr,ed8ebca6569e299b,"### Interpretation : signe vs non signe
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,e03bab00,markdown,fr,80a594a8daa7d107,"### Interprétation : signe vs non signé
 
-**Sortie obtenue** : la valeur 200 est positive en non signe mais negative en signe (-56). Les opérateurs `UGT`, `ULT`, etc. permettent de specifier l'interpretation souhaitee.
+**Sortie obtenue** : la requête `200 (unsigned) > 100 ? sat` répond `sat`, et le modèle imprime `a = 200 (unsigned) = -56 (signed)`. Les deux écritures désignent le **même** mot de 8 bits, `11001000` : lu comme entier non signé il vaut 200, lu en complément à deux il vaut $200 - 256 = -56$. C'est exactement pourquoi la même valeur répond « supérieure à 100 » ou « négative » selon l'interprétation retenue — et pourquoi l'opérateur de comparaison doit être choisi explicitement. Le tableau imprimé par la cellule donne la correspondance complète : `a < b` (signé) face à `ULT(a, b)` (non signé), `a / b` face à `UDiv(a, b)`, `a >> b` arithmétique face à `LShR(a, b)`.
 
 **Points clés** :
-1. Les opérateurs Python `<`, `>`, `<=`, `>=` sont **signes** par defaut dans Z3.
-2. Pour les comparaisons non signees, utiliser `UGT`, `ULT`, `UGE`, `ULE`.
-3. La division et le decalage existent aussi en versions signees et non signees.",,,,,,,,ed8ebca6569e299b,,,,,,,,,,,,,,,
+1. Les opérateurs Python `<`, `>`, `<=`, `>=` sont **signés** par défaut dans Z3.
+2. Pour les comparaisons non signées, utiliser `UGT`, `ULT`, `UGE`, `ULE`.
+3. La division et le décalage existent aussi en versions signées et non signées.
+",,,,,,,,80a594a8daa7d107,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,8989b5f3,code,fr,8c7c6e82f64de209,"# Casse-tete BitVec : trouver un nombre dont les bits sont un palindrome
 # Un palindrome binaire 8 bits se lit de la meme facon de gauche a droite et de droite a gauche.
 # Exemple : 10011001 (= 153) est un palindrome binaire.
@@ -1785,14 +1799,15 @@ if s2.check() == sat:
     m2 = s2.model()
     print(f""  b[0] = {m2.evaluate(Select(b, 0))} (modifie par Store)"")
     print(f""  b[1] = {m2.evaluate(Select(b, 1))} (inchange par Store)"")",,,,,,,,28f16ad8ba3ba41f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,431cda4c,markdown,fr,1caa7c93fe7690f8,"### Interpretation : tableaux Z3
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,431cda4c,markdown,fr,37713880744cc878,"### Interprétation : tableaux Z3
 
-**Sortie obtenue** : le solveur trouve un modèle coherent pour le tableau. L'opération `Store` créé un nouveau tableau ou seul l'index specifie est modifie ; les autres valeurs sont preservees.
+**Sortie obtenue** : le modèle fixe `a[0] = 10`, `a[1] = 20`, `a[2] = 30`, et la contrainte imprimée `a[0] + a[1] = 30` la vérifie arithmétiquement ($10 + 20 = 30$). Le bloc `Store` imprime ensuite `b[0] = 99 (modifie par Store)` et `b[1] = 20 (inchange par Store)` : l'écriture ne touche qu'un seul index, la valeur des autres est **conservée** — c'est l'axiome lecture-après-écriture que Z3 exploite pour raisonner sur mémoire et registres, sans copier le tableau.
 
 **Points clés** :
 1. Les tableaux Z3 sont des **fonctions pures** : `Store` ne mute pas, il produit une nouvelle fonction.
-2. `Select(a, i)` equivaut a l'application fonctionnelle `a(i)`.
-3. L'axiome fondamental : `Select(Store(a, i, v), j)` vaut `v` si `i == j`, sinon `Select(a, j)`.",,,,,,,,1caa7c93fe7690f8,,,,,,,,,,,,,,,
+2. `Select(a, i)` équivaut à l'application fonctionnelle `a(i)`.
+3. L'axiome fondamental : `Select(Store(a, i, v), j)` vaut `v` si `i == j`, sinon `Select(a, j)`.
+",,,,,,,,37713880744cc878,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,0ece8020,code,fr,19215f2957cfa09a,"# Array avance : contraintes sur un tableau avec Store successifs
 # Scenario : un tableau represente les soldes de comptes.
 # On effectue des operations et on veut verifier des proprietes.
@@ -2014,7 +2029,7 @@ Ce notebook a explore les mécanismes avances de Z3 au-dela du solveur de base :
 4. `SolverFor` permet de sélectionner un solveur adapte au fragment logique du problème.
 
 Les prochains notebooks exploreront les théories de chaînes (`String`, `Re`), les quantificateurs (`ForAll`, `Exists`) et l'optimisation avancee (objectifs multiples, Pareto).",,,,,,,,862401b6f913a233,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,7f4fda1e,markdown,fr,55ee5269d1e721a8,"# Z3 (C# / .NET) — Théorie des chaînes et expressions regulieres
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,7f4fda1e,markdown,fr,8e6ab09b165301d3,"# Z3 (C# / .NET) — Théorie des chaînes et expressions regulieres
 
 **Twin C# de `Z3-04-Strings-Regex-Python.ipynb`** (parite .NET, marathon #4956, suite de `Z3-Python-03-Tactics-Csharp`).
 
@@ -2035,7 +2050,10 @@ Ce notebook explore la **théorie des chaînes** (`String`) et des **expressions
 9. Trois exercices.
 
 > **API .NET** : `ctx.StringSort` (sort des chaînes), `ctx.MkString(""x"")` (litteral, retourne `SeqExpr`), `ctx.MkConst(""s"", ctx.StringSort)` (constante, a caster en `(SeqExpr)` car la surcharge statique retourne `Expr`). Les opérations sur chaînes sont des méthodes plates : `MkLength`, `MkExtract(seq, off, len)`, `MkConcat(SeqExpr[])`, `MkPrefixOf`, `MkSuffixOf`, `MkContains`, `MkIndexOf`, `MkReplace`. Les regex : `MkToRe`, `MkRange`, `MkPlus`, `MkStar`, `MkUnion(ReExpr[])`, `MkConcat(ReExpr[])`, `MkInRe`.
-",,,,,,,,55ee5269d1e721a8,,,,,,,,,,,,,,,
+
+## Source
+
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 6 Regular expressions (p. 166), §6.1 KLEE (p. 166) et §6.2 Fun with regular expressions (p. 167) — génération de chaînes satisfaisant un motif donné, puis usages concrets des expressions régulières. Le livre ne traite pas la théorie `String`/`Re` de Z3 (aucune section sur `InRe`, `str.len` ni `Regex(`) : sur ce point le carnet prolonge le livre, la parenté portant sur la génération de chaînes par motif. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,8e6ab09b165301d3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,572cc9af,code,fr,215e7062d97c0f76,"#r ""nuget: Microsoft.Z3""
 #load ""Z3NativeLoader.cs""
 using Microsoft.Z3;
@@ -2373,7 +2391,7 @@ Ce twin C# couvre la **théorie des chaînes** (`MkString`/`MkLength`/`MkExtract
 
 **Complementarite** : le twin Python utilise `String('s')` / `SubString` / `Range` / `InRe` (API pythonique aux opérateurs `+`, `*`) ; ce twin C# montre l'API .NET plate (`ctx.MkString` / `ctx.MkExtract(seq, off, len)` / `ctx.MkRange` / `ctx.MkInRe`) avec ses specificites de typage (`SeqExpr` cast sur `MkConst`, formes tableau `SeqExpr[]`/`ReExpr[]` pour `MkConcat`/`MkUnion`). Les deux executent le **même** moteur Z3 - la valeur ajoutee est la traduction des idiomes dans le système de types .NET.
 ",,,,,,,,5bb3ec09bdd95aa4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-title,markdown,fr,dbcd67b871bd786c,"# Z3-Python 04 — Chaînes de caractères et expressions regulieres
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-title,markdown,fr,7ed4ee73f920f8d5,"# Z3-Python 04 — Chaînes de caractères et expressions regulieres
 
 **Navigation** : [Index](README.md) | [<< Z3-Python-03 Tactiques](Z3-03-Tactics-Python.ipynb) | [Z3-Python-05 Quantifiers >>](Z3-05-Quantifiers-Proofs-Python.ipynb)
 
@@ -2394,7 +2412,10 @@ A la fin de ce notebook, vous saurez :
 
 ***
 
-Z3 integre une **théorie des chaînes de caractères** (*string theory*) qui permet de raisonner sur des variables de type chaîne au même titre que sur des entiers ou des booléens. La différence essentielle avec le module Python `re` : Z3 ne se contente pas de *verifier* qu'une chaîne correspond a un motif, il peut **generer** une chaîne qui satisfait un ensemble de contraintes. Ce notebook explore cette théorie en deux volets : les opérations sur les chaînes (`String`), puis les expressions regulieres symboliques (`Re`).",,,,,,,,dbcd67b871bd786c,,,,,,,,,,,,,,,
+Z3 integre une **théorie des chaînes de caractères** (*string theory*) qui permet de raisonner sur des variables de type chaîne au même titre que sur des entiers ou des booléens. La différence essentielle avec le module Python `re` : Z3 ne se contente pas de *verifier* qu'une chaîne correspond a un motif, il peut **generer** une chaîne qui satisfait un ensemble de contraintes. Ce notebook explore cette théorie en deux volets : les opérations sur les chaînes (`String`), puis les expressions regulieres symboliques (`Re`).
+## Source
+
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 6 Regular expressions (p. 166), §6.1 KLEE (p. 166) et §6.2 Fun with regular expressions (p. 167) — génération de chaînes satisfaisant un motif donné, puis usages concrets des expressions régulières. Le livre ne traite pas la théorie `String`/`Re` de Z3 (aucune section sur `InRe`, `str.len` ni `Regex(`) : sur ce point le carnet prolonge le livre, la parenté portant sur la génération de chaînes par motif. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,7ed4ee73f920f8d5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-imports,code,fr,911fe9d839b6c270,"# Imports et verification de l'environnement
 from z3 import *
 
@@ -2956,7 +2977,7 @@ Ce notebook a explore la théorie des chaînes et des expressions regulieres de 
 4. Les cas d'usage typiques incluent : validation de politiques (mot de passe), generation de données de test, verification de coherent de schemas.
 
 Le prochain notebook explorera les **quantificateurs** (`ForAll`, `Exists`) et la verification formelle de proprietes avec Z3.",,,,,,,,89433f9da459afdd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-CSharp.ipynb,b578c3e9,markdown,fr,2dccccc6d3fa55de,"# Z3 (C# / .NET) — Quantificateurs et preuves par refutation
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-CSharp.ipynb,b578c3e9,markdown,fr,bd4f1ddceff83ebd,"# Z3 (C# / .NET) — Quantificateurs et preuves par refutation
 
 **Twin C# de `Z3-05-Quantifiers-Proofs-Python.ipynb`** (parite .NET) : même parcours, même vocabulaire, API `Microsoft.Z3`.
 
@@ -2991,7 +3012,10 @@ Une formule $F$ est **valide** (un theoreme) si et seulement si sa negation $\ne
 | `Not(F)` est `UNSATISFIABLE` | Aucun contre-exemple | $F$ est **valide** (theoreme) |
 | `Not(F)` est `SATISFIABLE` | Un contre-exemple existe | $F$ est **fausse** (contre-exemple donne) |
 | `Not(F)` est `UNKNOWN` | Z3 ne peut pas conclure | Indecidable par ce solveur |
-",,,,,,,,2dccccc6d3fa55de,,,,,,,,,,,,,,,
+
+## Source
+
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 4 Proofs (p. 106) + Ch. 20 First-Order Logic (p. 559) — preuve par réfutation, quantificateurs et logique du premier ordre. Le livre documente aussi (p. 81) que Z3 rend `unknown` plutôt qu'`unsat` sur l'arithmétique non linéaire entière : c'est exactement le comportement que la section 5 du carnet met en scène, et qui justifie d'afficher `unknown` au lieu de conclure. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,bd4f1ddceff83ebd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-CSharp.ipynb,f4dabbd7,code,fr,215e7062d97c0f76,"#r ""nuget: Microsoft.Z3""
 #load ""Z3NativeLoader.cs""
 using Microsoft.Z3;
@@ -3327,7 +3351,7 @@ Ce twin C# couvre les **quantificateurs** (`MkForall`/`MkExists` sur `new Expr[]
 
 **Complementarite** : le twin Python utilise `ForAll([x], ...)` / `Exists([x], ...)` / `is_true(simplify(...))` (API pythonique, `unsat`/`sat`/`unknown` litteraux) ; ce twin C# montre l'API .NET (`MkForall(new Expr[]{x}, body)` / `Status.UNSATISFIABLE` enum / `ReasonUnknown` propriete / `Set(""timeout"", N)`), avec le casting `(ArithExpr)` systématique des constantes reelles/entieres. Les deux executent le **même** moteur Z3 et demontrent les mêmes theoremes.
 ",,,,,,,,e48cdc7431805227,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb,nb05-title,markdown,fr,d1728511670dc0c6,"# Z3-Python 05 — Quantificateurs et preuves formelles
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb,nb05-title,markdown,fr,22cb3bd10a14d28c,"# Z3-Python 05 — Quantificateurs et preuves formelles
 
 **Navigation** : [Index](README.md) | [Index SMT](../README.md) | [Index SymbolicAI](../../README.md) | [Serie Z3 C# (Z3.Linq)](../Z3-Linq2Z3/README.md) | [<< Z3-Python-04 Chaînes](Z3-04-Strings-Regex-Python.ipynb) | [Z3-Python-06 Optimisation >>](Z3-06-Advanced-Optimization-Python.ipynb)
 
@@ -3350,7 +3374,10 @@ A la fin de ce notebook, vous saurez :
 
 **Ce notebook** marque un tournant dans la serie : jusqu'ici (NB01-04), nous avons utilise Z3 pour trouver des **valeurs concretes** satisfaisant des contraintes (« existe-t-il un `x` tel que... ? »). Desormais, nous voulons **prouver des proprietes générales** : « pour tout `x`, cette egalite hold-t-elle ? » Cela requiere les **quantificateurs** `ForAll` ($\forall$) et `Exists` ($\exists$), et la technique de **preuve par refutation** : une formule est valide si et seulement si sa negation est insatisfiable.
 
-> **Note technique** : Z3 est un solveur SMT, pas un assistant de preuve interactif comme Lean ou Coq. Une « preuve » ici signifie une **decision algorithmique** : le solveur confirme qu'aucun contre-exemple n'existe. Pour les fragments decidables (arithmetic lineaire, théories de base), cette preuve est **complete et automatique**. Pour les fragments plus riches (quantificateurs arbitraires sur les reels, nonlinear), Z3 peut repondre `unknown`.",,,,,,,,d1728511670dc0c6,,,,,,,,,,,,,,,
+> **Note technique** : Z3 est un solveur SMT, pas un assistant de preuve interactif comme Lean ou Coq. Une « preuve » ici signifie une **decision algorithmique** : le solveur confirme qu'aucun contre-exemple n'existe. Pour les fragments decidables (arithmetic lineaire, théories de base), cette preuve est **complete et automatique**. Pour les fragments plus riches (quantificateurs arbitraires sur les reels, nonlinear), Z3 peut repondre `unknown`.
+## Source
+
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 4 Proofs (p. 106) + Ch. 20 First-Order Logic (p. 559) — preuve par réfutation, quantificateurs et logique du premier ordre. Le livre documente aussi (p. 81) que Z3 rend `unknown` plutôt qu'`unsat` sur l'arithmétique non linéaire entière : c'est exactement le comportement que la section 5 du carnet met en scène, et qui justifie d'afficher `unknown` au lieu de conclure. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,22cb3bd10a14d28c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb,nb05-imports,code,fr,911fe9d839b6c270,"# Imports et verification de l'environnement
 from z3 import *
 
@@ -3876,7 +3903,7 @@ Ce notebook a introduit les **quantificateurs** et la **preuve formelle** dans Z
 **Transition vers le notebook suivant** : `Z3-06-Advanced-Optimization-Python.ipynb` quitte la vérification pour l'**optimisation sous contraintes** : le solveur `Optimize`, les objectifs contradictoires et le front de Pareto, puis `soft constraints` et MaxSAT pondéré. La maitrise de `ForAll` + `Exists` + `proof=True` prépare le terrain : ce sont ces contraintes que l'on posera avant d'optimiser.
 
 **Reference externe** : Leonardo de Moura, Nikolaj Bjorner, *Z3: An Efficient SMT Solver* (TACAS 2008) ; Microsoft Research, *Z3 Tutorial* (en ligne) ; pour le quantifier élimination sur les reels : Collins, *Quantifier Elimination for Real Closed Fields* (1975).",,,,,,,,0a557d249985b4df,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-CSharp.ipynb,13ae6171,markdown,fr,7feca5562e873e62,"# Z3-Python 06 -- Optimisation avancee (twin C#)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-CSharp.ipynb,13ae6171,markdown,fr,150823af600df368,"# Z3-Python 06 -- Optimisation avancee (twin C#)
 
 **Navigation** : [Index](README.md) | [Index SMT](../README.md) | [Index SymbolicAI](../../README.md) | [<< Z3-Python-05 Quantifiers](Z3-05-Quantifiers-Proofs-CSharp.ipynb)
 
@@ -3900,7 +3927,10 @@ A la fin de ce notebook, vous saurez :
 
 **Ce notebook** est le twin C# du notebook Python [Z3-06-Advanced-Optimization-Python.ipynb](Z3-06-Advanced-Optimization-Python.ipynb). Il poursuit l'exploration de la classe `Optimize` au-dela du cas elementaire (un seul objectif vu en NB01). Les problemes reels comportent presque toujours **plusieurs objectifs contradictoires** : maximiser la qualite tout en minimisant le cout, ou satisfaire un maximum de préférences quand toutes ne peuvent l'etre simultanement. Z3 fournit pour cela les contraintes ponderees, l'optimisation multi-objectif lexicographique, et l'enumeration du front de Pareto.
 
-> **Kernel** : `.net-csharp` (.NET Interactive). Le moteur est le **vrai** [Microsoft.Z3](https://github.com/Z3Prover/z3) via NuGet `#r ""nuget: Microsoft.Z3""` (v4.12.2.0) -- le même solveur C++ que `z3-solver` Python.",,,,,,,,7feca5562e873e62,,,,,,,,,,,,,,,
+> **Kernel** : `.net-csharp` (.NET Interactive). Le moteur est le **vrai** [Microsoft.Z3](https://github.com/Z3Prover/z3) via NuGet `#r ""nuget: Microsoft.Z3""` (v4.12.2.0) -- le même solveur C++ que `z3-solver` Python.
+## Source
+
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 14 MaxSAT/MaxSMT (p. 383) + §2.3.4 MaxSAT (p. 31) + §3.3 Wood workshop, linear programming and Leonid Kantorovich (p. 40) + §14.5 Assignment problem (p. 397) + §14.8 Packing students into a dorm (p. 405) — contraintes dures et souples pondérées, `Optimize()`, et affectation sous préférences. Le front de Pareto (section 4) n'a pas d'équivalent dans le livre : c'est un prolongement propre au carnet. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,150823af600df368,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-CSharp.ipynb,aa36f72a,code,fr,f547bb84b9c99b51,"#r ""nuget: Microsoft.Z3""
 #load ""Z3NativeLoader.cs""
 using Microsoft.Z3;
@@ -4553,7 +4583,7 @@ Ces techniques font de Z3 un outil puissant non seulement pour la **satisfaction
 ***
 
 **Parite .NET** : ce twin C# reproduit fidelement le notebook Python [Z3-06-Advanced-Optimization-Python.ipynb](Z3-06-Advanced-Optimization-Python.ipynb) avec le **même moteur** C++ sous-jacent (Microsoft.Z3 / z3-solver). Les différences sont purement d'API : `Optimize()` -> `ctx.MkOptimize()`, `opt.add()` -> `opt.Assert()`, `opt.maximize/minimize` -> `opt.MkMaximize/MkMinimize` (retournent un `Handle` dont `.Upper`/`.Lower` donnent les bornes), et la visualisation matplotlib est remplacée par un rendu ASCII autonome. La serie Z3-Python-Csharp est maintenant complete (6/6).",,,,,,,,071a62b39b74b1ed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb,nb06-title,markdown,fr,83f3dd5a93bc597f,"# Z3-Python 06 — Optimisation avancee
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb,nb06-title,markdown,fr,9e95fbf11a85c2b1,"# Z3-Python 06 — Optimisation avancee
 
 **Navigation** : [Index](README.md) | [Index SMT](../README.md) | [Index SymbolicAI](../../README.md) | [Serie Z3 C#](../Z3-Linq2Z3/README.md) | [<< Z3-Python-05 Quantifiers](Z3-05-Quantifiers-Proofs-Python.ipynb) | [Z3-Python-08 Ordonnancement >>](Z3-08-Ordonnancement-Python.ipynb)
 
@@ -4577,7 +4607,10 @@ A la fin de ce notebook, vous saurez :
 
 **Ce notebook** poursuit l'exploration de la classe `Optimize` au-dela du cas elementaire (un seul objectif vu en NB01). Les problemes reels comportent presque toujours **plusieurs objectifs contradictoires** : maximiser la qualite tout en minimisant le cout, ou satisfaire un maximum de préférences quand toutes ne peuvent l'etre simultanement. Z3 fournit pour cela les contraintes ponderees, l'optimisation multi-objectif lexicographique, et l'enumeration du front de Pareto.
 
-> **Kernel** : `python3` (conda Python 3 standard). Aucun kernel WSL requis.",,,,,,,,83f3dd5a93bc597f,,,,,,,,,,,,,,,
+> **Kernel** : `python3` (conda Python 3 standard). Aucun kernel WSL requis.
+## Source
+
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 14 MaxSAT/MaxSMT (p. 383) + §2.3.4 MaxSAT (p. 31) + §3.3 Wood workshop, linear programming and Leonid Kantorovich (p. 40) + §14.5 Assignment problem (p. 397) + §14.8 Packing students into a dorm (p. 405) — contraintes dures et souples pondérées, `Optimize()`, et affectation sous préférences. Le front de Pareto (section 4) n'a pas d'équivalent dans le livre : c'est un prolongement propre au carnet. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,9e95fbf11a85c2b1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb,nb06-imports,code,fr,0c0c357a385d26b7,"# Imports et verification de l'environnement
 # Le package pip s'appelle 'z3-solver' (et non 'z3').
 # !pip install z3-solver
@@ -5537,7 +5570,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c19,m
 - [Z3-Python-06 — Optimisation avancee](Z3-06-Advanced-Optimization-Python.ipynb) : `Optimize`, `maximize`/`minimize`, quand la satisfaction devient optimisation sous objectifs.
 - [Z3 C# (Z3.Linq)](../Z3-Linq2Z3/README.md) : la serie soeur declarative, pour comparer les idiomes dans leur contexte natif.
 - La documentation [z3-solver (pyz3)](https://z3prover.github.io/api/html/namespacez3py.html) pour l'API complete.",,,,,,,,33045d4332aa9d8d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb,c0,markdown,fr,ad8d7d7926fc2401,"# Z3-Python-08 : Ordonnancement de tâches (Job-Shop Scheduling)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb,c0,markdown,fr,884b5a449ea0e5e3,"# Z3-Python-08 : Ordonnancement de tâches (Job-Shop Scheduling)
 
 [← Z3-Python-06 Optimisation](Z3-06-Advanced-Optimization-Python.ipynb) | [Serie Z3-Python](README.md) | [Z3-Python-09 (énigme d'Einstein) →](Z3-09-Enigme-Einstein-Python.ipynb)
 
@@ -5551,7 +5584,10 @@ Le **job-shop scheduling** est un problème canonique d'optimisation combinatoir
 
 Ce problème est **NP-difficile** : il n'existe pas d'algorithme polynomial connu, et une approche gloutonne (heuristique) rate souvent l'optimum. C'est typiquement la ou un solveur SMT comme Z3 **brille** : on decrit les contraintes (precedence + exclusion) et l'objectif (minimiser $C_{\max}$), et `Optimize` trouve l'ordonnancement optimal.
 
-**Ce notebook montre** : (a) une heuristique gloutonne FIFO sous-optimale, (b) la modelisation Z3 avec la contrainte disjonctive `Or(... , ...)`, (c) l'optimum trouve par `Optimize.minimize`, et (d) un diagramme de Gantt comparant les deux. Il porte en Python l'exemple C# [11_Job_Shop_Scheduling](../Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb) de la serie sœur Z3.Linq.",,,,,,,,ad8d7d7926fc2401,,,,,,,,,,,,,,,
+**Ce notebook montre** : (a) une heuristique gloutonne FIFO sous-optimale, (b) la modelisation Z3 avec la contrainte disjonctive `Or(... , ...)`, (c) l'optimum trouve par `Optimize.minimize`, et (d) un diagramme de Gantt comparant les deux. Il porte en Python l'exemple C# [11_Job_Shop_Scheduling](../Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb) de la serie sœur Z3.Linq.
+## Source
+
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §22.8 Job Shop Scheduling (p. 633), §22.8.1 My first version (p. 633) et §22.8.2 MaxSMT version by Chad Brewbaker (p. 635) — le problème est posé à l'identique (jobs, machines, opérations, `makespan` minimisé, diagramme de Gantt), avec les instances 3×3 puis 10 machines. Le carnet reprend l'instance 3 jobs × 2 machines et la comparaison glouton vs optimum. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,884b5a449ea0e5e3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb,c1,code,fr,17cb27f1d02d2a03,"# Imports : z3 (solveur SMT) + matplotlib (diagramme de Gantt).
 import os
 import z3
@@ -6996,11 +7032,14 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-12-Real-Arithmetic-Python.ipynb,47ab3
 La théorie des reels de Z3 transforme le solveur en outil de **raisonnement algebrique exact**. La ou le calcul numérique flottant (`float`, `math.sqrt`) introduit des erreurs d'arrondi et ne peut jamais prouver une absence de solution, la théorie SMT `Real` offre : solutions rationnelles exactes, irrationnels algebriques (racine de 2 comme `root-obj`), et preuves d'impossibilite sur R tout entier (`unsat` pour `x^2 + 1 = 0`).
 
 Cette serie Z3-Python (notebooks 01 a 12) couvre maintenant l'eventail complet : entiers (01-06, 10, 11), satisfaction de contraintes (08 ordonnancement, 09 CSP logique, 11 graphes), tactiques (03), et ici l'**arithmetique reelle exacte** (12). Le pont avec la serie souer Z3.Linq (C#) se fait via les mêmes exemples portes entre Microsoft.Z3 et pyz3.",,,,,,,,9d7fffded35d4e8d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,de430bb4,markdown,fr,4b4067f9477cb751,"← [12 - Arithmetique reelle](Z3-12-Real-Arithmetic-Python.ipynb) | [README Z3-Python](README.md) | [13b - UNSAT cores : le MUS >>](Z3-13b-UnsatCores-MUS-Python.ipynb)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,de430bb4,markdown,fr,e6492782f84bb51d,"← [12 - Arithmetique reelle](Z3-12-Real-Arithmetic-Python.ipynb) | [README Z3-Python](README.md) | [13b - UNSAT cores : le MUS >>](Z3-13b-UnsatCores-MUS-Python.ipynb)
 # 13. UNSAT cores : expliquer l'insatisfiabilite (le ' pourquoi ')
 Jusqu'ici, le solveur repondait a une question binaire : *ce système a-t-il une solution ?* -> **SAT** (oui, voici un temoin) ou **UNSAT** (non, prouve impossible). C'est un **verdict**, pas une **explication**.
 Pour un ingenieur qui **ecrit** la specification, UNSAT est souvent un bug de modelisation : une contrainte trop forte, ou deux contraintes incompatibles. La reponse ' impossible ' ne suffit pas - il faut savoir **lesquelles** des contraintes se contredisent. C'est le rôle du **noyau d'insatisfiabilite** (UNSAT core) : le sous-ensemble **minimal** de contraintes responsable du conflit. Z3 passe du diagnostic binaire au diagnostic chirurgical.
-> Port pyz3 du notebook C# [`17_UnsatCores.ipynb`](../Z3-Linq2Z3/17_UnsatCores.ipynb). EPIC #1206, Prong B. (Le bloc DSL `Explain()` du C#, spécifique a Z3.Linq, n'est pas porte ; l'API brute `assert_and_track` + `unsat_core` de pyz3 fait le même travail.)",,,,,,,,4b4067f9477cb751,,,,,,,,,,,,,,,
+> Port pyz3 du notebook C# [`17_UnsatCores.ipynb`](../Z3-Linq2Z3/17_UnsatCores.ipynb). EPIC #1206, Prong B. (Le bloc DSL `Explain()` du C#, spécifique a Z3.Linq, n'est pas porte ; l'API brute `assert_and_track` + `unsat_core` de pyz3 fait le même travail.)
+## Source
+
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §3.13.2 Unsat core (p. 83), Ch. 3 Equations — UNSAT cores, assert_and_track, diagnostic. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,e6492782f84bb51d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,71e1306a,code,fr,2d36fb6ac814810b,"from z3 import *
 print(""Imports OK : z3-solver (UNSAT cores via assert_and_track)"")
 ",,,,,,,,2d36fb6ac814810b,,,,,,,,,,,,,,,
@@ -7162,12 +7201,15 @@ Cette serie Z3-Python (notebooks 01 a 13) couvre maintenant les **trois postures
 
 Le compagnon [Z3-13b - le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) approfondit ce langage : core invisible a l'inspection, minimalite non garantie par Z3, et l'algorithme deletion-based qui calcule le sous-ensemble irreductible.
 ",,,,,,,,54345351d98ec35f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb,af607fd1,markdown,fr,c759b1669be5824f,"← [13b - UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) | [README Z3-Python](README.md) | [15 - Tableaux imbriqués >>](Z3-15-Nested-Arrays-2D-Python.ipynb)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb,af607fd1,markdown,fr,704dd0bd1df8953b,"← [13b - UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) | [README Z3-Python](README.md) | [15 - Tableaux imbriqués >>](Z3-15-Nested-Arrays-2D-Python.ipynb)
 
 # 14. Bit-vectors : verifier le debordement arithmetique
 Jusqu'ici nous avons raisonne sur des **entiers non bornes** (`Int`) ou des **reels exacts** (`Real`). Mais un ordinateur calcule sur des **entiers bornes** : un `uint32` ne peut pas depasser `2^32 - 1`, et l'addition **enveloppe** (wraps) modulo `2^32` quand la somme depasse. Ce debordement (overflow) est la source de bugs legendaires (Ariane 5, OpenSSL, Pac-Man) et la cible centrale de la **verification formelle** de code.
 Z3 traite les entiers machines via la théorie des **bit-vectors** (`BitVec`, SMT-LIB `BV`) : un vecteur de *n* bits interprete comme un entier modulo 2^n, avec addition/multiplication/comparaisons/bit-a-bit **tous decidables**. Ce notebook demontre la capacite distinctive de cette théorie : **prouver** qu'un debordement est inevitable (ou impossible) sur le domaine machine tout entier - pas seulement le constater sur des valeurs fixes.
-> Port pyz3 du notebook C# [`15_BitVectors_Overflow.ipynb`](../Z3-Linq2Z3/15_BitVectors_Overflow.ipynb). EPIC #1206, Prong B. (Le bloc DSL `[BitVecWidth(n)]` du C#, spécifique a Z3.Linq, n'est pas porte ; l'API brute pyz3 `BitVec` fait le même travail.)",,,,,,,,c759b1669be5824f,,,,,,,,,,,,,,,
+> Port pyz3 du notebook C# [`15_BitVectors_Overflow.ipynb`](../Z3-Linq2Z3/15_BitVectors_Overflow.ipynb). EPIC #1206, Prong B. (Le bloc DSL `[BitVecWidth(n)]` du C#, spécifique a Z3.Linq, n'est pas porte ; l'API brute pyz3 `BitVec` fait le même travail.)
+## Source
+
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §5.1 Integer overflow (p. 125), Ch. 5 Verification — Bit-vectors, overflow, ULT/UGE. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,704dd0bd1df8953b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb,82cdf549,code,fr,c33dd8a0d2fa0ac6,"from z3 import *
 print(""Imports OK : z3-solver (theorie BitVec)"")
 ",,,,,,,,c33dd8a0d2fa0ac6,,,,,,,,,,,,,,,
@@ -8194,9 +8236,9 @@ Ce notebook introduit la **théorie des tableaux** de Z3 — une théorie SMT di
 
 **Quand la théorie devient discriminante** : sur des petites instances, `Select`/`Store` équivalent à de l'énumération. La théorie des tableaux prend tout son sens pour raisonner sur des **contenus sous contraintes globales** (invariants de tampon, égalités partielles, preuves d'impossibilité `unsat`) — exactement le terrain où le solveur SMT distingue un moteur de reconnaissance d'un moteur de **raisonnement déductif**.
 ",,,,,,,,90f0d63e3ae05ae9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb,fdff9029,markdown,fr,13373cb6b6379977,"# Z3-Python 18 — Sudoku 4x4 : comparaison des modes `Array` et `Constants`
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb,fdff9029,markdown,fr,c0663dd08c75fb5d,"# Z3-Python 18 — Sudoku 4x4 : comparaison des modes `Array` et `Constants`
 
-**Navigation** : [Index Z3-Python](README.md) | [Index SMT](../README.md) | [Index SymbolicAI](../../README.md) | [Série Z3 C#](../Z3-Linq2Z3/README.md) | [<< 17 - Array Theory](Z3-17-Array-Theory-Python.ipynb)
+**Navigation** : [Index Z3-Python](README.md) | [Index SMT](../README.md) | [Index SymbolicAI](../../README.md) | [Série Z3 C#](../Z3-Linq2Z3/README.md) | [<< 17 - Array Theory](Z3-17-Array-Theory-Python.ipynb) | [→ 19 - Optimisation multi-objectif](Z3-19-Optimization-Lexicographic-Python.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -8206,7 +8248,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb,fdff9029
 3. **Vérifier que les deux encodages convergent** vers une solution valide (carré latin), et comprendre pourquoi le choix d'encodage n'affecte pas la sémantique mais peut affecter la performance.
 
 Ce notebook est le port Python (`pyz3`) du notebook C# [`03_Sudoku_Modes_Comparison`](../Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb). Il complète le notebook [Z3-Python-02 Sudoku](Z3-02-Sudoku-Python.ipynb) (qui résout le Sudoku dans un seul mode) en montrant que **deux modélisations équivalentes** du même problème mènent au même résultat — une leçon clé sur la séparation entre **problème** (les contraintes) et **encodage** (comment on les exprime).
-",,,,,,,,13373cb6b6379977,,,,,,,,,,,,,,,
+",,,,,,,,c0663dd08c75fb5d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb,afd9b204,code,fr,9cd36422e44c454c,"# Imports et verification de l'environnement.
 # Le package pip s'appelle 'z3-solver' (et non 'z3').
 # !pip install z3-solver
@@ -8502,9 +8544,10 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-CSharp.ipynb,interp-d3fef19
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-CSharp.ipynb,interp-47903cb9,markdown,fr,4ca01d4ace396d1e,"### Lecture du résultat : 30 vs 36 chiffres donnés, deux difficultés
 
 Le puzzle **facile** (30 indices, grille canonique Wikipedia) laisse 51 cases vides ; l'**intermédiaire** (36 indices) n'en laisse que 45. Contre-intuitivement, **plus d'indices ≠ plus facile** : la difficulté d'un Sudoku dépend de la *profondeur de déduction* requise (chaînes de conséquences, techniques avancées comme X-Wing ou Swordfish), pas seulement du nombre de cases vides. Pour Z3, ces deux puzzles sont **triviaux** : un solveur SMT résout n'importe quel Sudoku légitime en millisecondes, quelle que soit sa difficulté humaine perçue — la complexité théorique (NP-complétude) n'opère qu'à l'échelle de la *classe* de problèmes, pas sur une instance 9×9 moderne.",,,,,,,,4ca01d4ace396d1e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-CSharp.ipynb,interp-e54eebc6,markdown,fr,49036c704fdc44fe,"### Lecture du résultat : « resolu » — la magie déclarative
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-CSharp.ipynb,interp-e54eebc6,markdown,fr,55c32dce38b5ad1b,"### Lecture du résultat : « resolu » — la magie déclarative
 
-`Puzzle facile : resolu`. La fonction n'a écrit **aucune recherche** : 81 variables entières, 27 contraintes `MkDistinct` (9 lignes + 9 colonnes + 9 blocs 3×3), les pré-remplissages figés par `MkEq` — puis `s.Check()` retourne `SATISFIABLE`. Le moteur Z3 a fait tout le travail via **CDCL + propagation d'intervalles**, l'algorithme SOTA de la résolution SAT/SMT. C'est tout l'intérêt de l'approche déclarative : on *spécifie* le problème (ses contraintes), jamais sa méthode de résolution. `MkDistinct` est l'abstraction centrale : « tous différents » encode exactement la règle du Sudoku, et se généralise à tout CSP d'unicité (N-Reines, graph coloring, emploi du temps).",,,,,,,,49036c704fdc44fe,,,,,,,,,,,,,,,
+`Puzzle facile : resolu`. La fonction n'a écrit **aucune recherche** : 81 variables entières, 27 contraintes `MkDistinct` (rangées, colonnes et blocs 3×3), les pré-remplissages figés par `MkEq` — puis `s.Check()` retourne `SATISFIABLE`. Le moteur Z3 a fait tout le travail via **CDCL + propagation d'intervalles**, l'algorithme SOTA de la résolution SAT/SMT. C'est tout l'intérêt de l'approche déclarative : on *spécifie* le problème (ses contraintes), jamais sa méthode de résolution. `MkDistinct` est l'abstraction centrale : « tous différents » encode exactement la règle du Sudoku, et se généralise à tout CSP d'unicité (N-Reines, graph coloring, emploi du temps).
+",,,,,,,,55c32dce38b5ad1b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-CSharp.ipynb,interp-8055e181,markdown,fr,28ebeec2768e304e,"### Lecture du résultat : la grille complétée, donné vs calculé
 
 La visualisation distingue les **indices donnés** `[n]` (cases de l'énoncé, figées par `MkEq`) des **cases calculées** ` n ` (remplies par Z3). On vérifie d'un coup d'œil les trois règles : chaque ligne, colonne et bloc 3×3 contient 1-9 sans répétition. La solution est **unique** pour un puzzle bien posé — l'Exercice 3 le confirmera en énumérant les solutions (UNSAT après blocage de la première = unicité). Le twin Python affiche cette même grille en couleur via `matplotlib` ; la version ASCII du twin C# est **iso-informative** (Prong B EPIC #3801) : mêmes données structurales (donné vs calculé, séparation des blocs), modalité de rendu différente, sans dépendance graphique.",,,,,,,,28ebeec2768e304e,,,,,,,,,,,,,,,
@@ -8517,9 +8560,9 @@ Le pipeline `AndThen(simplify, solve-eqs)` a fait le vrai travail : on partait d
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-CSharp.ipynb,interp-92297f73,markdown,fr,f74729d0593ef4cc,"### Lecture du résultat
 
 Deux leçons dans cette sortie. D'abord le **wrapping** : `x = 255`, `y = x + 1 = 0` — l'arithmétique `BitVec` 8 bits a « fait le tour » du registre, exactement comme un `uint8_t` en C. Ensuite le système XOR/AND : le solveur trouve `a = 254 (11111110)` et `b = 1 (00000001)`, deux octets **strictement complémentaires** — chaque bit où `a` vaut 1, `b` vaut 0, et réciproquement, ce qui satisfait à la fois `a XOR b = 0xFF` et `a AND b = 0`. C'est la signature bit à bit de l'identité « OU-exclusif maximal ».",,,,,,,,f74729d0593ef4cc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-CSharp.ipynb,interp-c87ddf40,markdown,fr,e3ffdd4c3ef94b52,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-CSharp.ipynb,interp-c87ddf40,markdown,fr,23e0c0afd0441334,"### Lecture du résultat
 
-Le solveur énumère les palindromes : `129 = 10000001`, `24 = 00011000`, `90 = 01011010`, `126 = 01111110`, `60 = 00111100`, `36 = 00100100`. Vérifiez à l'œil : chacun se lit pareil dans les deux sens. Il en existe en réalité **56** sur 8 bits (hors `0` et `255`) : pour un palindrome, les 4 bits de poids fort déterminent les 4 bits de poids faible, donc `2^4 = 16` motifs, soit `16` palindromes par tranche de valeur… le décompte exact est laissé en exercice de dénombrement. La leçon technique : `MkExtract` + `MkConcat` permettent de **reconstruire un vecteur bit à bit** et de l'utiliser comme but de résolution.",,,,,,,,e3ffdd4c3ef94b52,,,,,,,,,,,,,,,
+Le solveur énumère les palindromes : `129 = 10000001`, `24 = 00011000`, `90 = 01011010`, `126 = 01111110`, `60 = 00111100`, `36 = 00100100`. Vérifiez à l'œil : chacun se lit pareil dans les deux sens. La boucle s'arrête volontairement à 6 modèles (`count < 6`) et la sortie se conclut par la ligne « (total palindromes 8 bits = 6+ (56 au total hors 0/255)) », citée telle quelle. La leçon technique : `MkExtract` + `MkConcat` permettent de **reconstruire un vecteur bit à bit** et de l'utiliser comme but de résolution.",,,,,,,,23e0c0afd0441334,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-CSharp.ipynb,interp-9ae34b92,markdown,fr,b4ab7f61cfa30187,"### Lecture du résultat
 
 Le solveur confirme la **conservation du total** : avant le transfert, `c0 = 100, c1 = 200, c2 = 50` (somme 350) ; après, `c0 = 130, c1 = 170` (somme `130 + 170 + 50 = 350`). Aucune valeur n'a été énumérée à la main : Z3 a raisonné **symboliquement** sur l'arbre des `Store` successifs pour déduire l'égalité des sommes. C'est exactement le style de preuve qu'on attend d'un vérificateur de transactions ou d'un analyseur de mutation d'état : prouver un invariant sur une séquence d'écritures sans dérouler la séquence.",,,,,,,,b4ab7f61cfa30187,,,,,,,,,,,,,,,
@@ -9813,20 +9856,24 @@ def exercice_constituant_sel():
     cSel = next(i for i, n in enumerate(constituants) if ""sel chlorure"" in n.lower())
     # ... CONST.append(cSel) ...
     return cSel",,,,,,,,bf6de6339d54bc6a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb,9bafa1e9,markdown,fr,bfaa6ed03202bb36,"## Synthèse — le capstone patient, en Python
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb,9bafa1e9,markdown,fr,e78e8408beac8a1f,"## Synthèse — le capstone patient, en Python
 
 | Mouvement | Ce qu'il montre | Idiome Z3 |
 |---|---|---|
 | **M1 squelette** | semaine 7×5 sans nutrition | `int[][]` plate de `Int` (vs `CollectionHandling.Array` C#) |
 | **M2 capstone** | patient SAT avec restrictions nutritionnelles | **index + linking disjonction** (`Or(pid≠cand, comp==val)`) |
 
-Le capstone patient est **le point où la nutrition rencontre la combinatoire** : on ne peut pas
-forcer « 30 g de protéines minimum » sur un jouet de 24 plats — il faut un corpus réel (le cache
-16b) pour que la contrainte *morde*. La **re-vérification hors-Z3** clôt l'arc : on ne *croit* pas
-le solveur, on le *prouve*. C'est ce qui distingue ce capstone d'une simple démonstration.
+L'arc complet se lit comme un entonnoir : 1465 recettes brutes, 447 exploitables dans le cache,
+15 candidats dans le pool curé — et, au bout, un modèle de 30 variables dont seules 6 sont de
+vraies décisions, résolu en 19 ms. Le capstone patient est **le point où la nutrition rencontre
+la combinatoire** : on ne peut pas forcer « 30 g de protéines minimum » sur un jouet de 24
+plats — il faut un corpus réel (le cache 16b) pour que la contrainte *morde*, jusqu'au plat
+unique qui dépasse à lui seul le plafond d'énergie du menu. La **re-vérification hors-Z3**
+clôt l'arc : six recalculs sans écart — on ne *croit* pas le solveur, on le *prouve*. C'est ce
+qui distingue ce capstone d'une simple démonstration.
 
 **Prochain grain (G3)** : la convergence à l'échelle — comparer les encodages (index naïf vs
-one-hot pseudo-Boolean `PbEq`/`PbLe`) quand `R` et `C` augmentent, là où le naïf explose.",,,,,,,,bfaa6ed03202bb36,,,,,,,,,,,,,,,
+one-hot pseudo-Boolean `PbEq`/`PbLe`) quand `R` et `C` augmentent, là où le naïf explose.",,,,,,,,e78e8408beac8a1f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb,9f3a950b,markdown,fr,ff7ea75bd0492fd3,"# Z3-Python-16d — Convergence à l'échelle : l'encodage décide de la tractabilité
 
 *Clôture du bloc meal-planner (Epic #4677, jambe Python-large du planificateur #1206).*
@@ -10614,20 +10661,20 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-CSharp.ipynb,3022c22d
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-CSharp.ipynb,f9c62278,markdown,fr,16fb7cabc5955eb8,"**Lecture du résultat d'optimisation** — Z3 renvoie la solution optimale : **5 unités d'objet A** (valeur 4×5 = 20), 0 unités de B et C, pour un **poids total de 10/10 kg** (capacité saturée) et une **valeur totale de 20**. Ce n'est pas une solution *quelconque* satisfaisant la contrainte de poids — c'est la **meilleure** selon l'objectif `MkMaximize`.
 
 **Ce que ce résultat enseigne sur la différence décision/optimisation** : un solveur SAT pur se serait arrêté à la première allocation valide (par exemple 2 unités de A + 2 de B = valeur 18, poids 10) et aurait déclaré `SATISFIABLE`. Le `Optimize` de Z3 a continué l'exploration jusqu'à prouver qu'aucune allocation ne dépasse la valeur 20 — c'est la **garantie d'optimalité**, pas juste l'existence. Pour un enseignant, c'est le point clé : le SMT ne *cherche pas* une solution, il *caractérise tout l'espace* et en extrait l'extrémum. C'est aussi pourquoi l'objet A (meilleur ratio valeur/poids = 2) remplit seul la capacité : le solveur a implicitement appliqué le raisonnement glouton du ratio, sans qu'on le code.",,,,,,,,16fb7cabc5955eb8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,lectz3tac-02,markdown,fr,1180dff611768402,"### Lecture chiffree : le palindrome binaire rendu
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,lectz3tac-02,markdown,fr,4c08afdcb70f63d0,"### Lecture du résultat : le palindrome binaire rendu
 
 La sortie donne `x = 66 (binaire : 01000010)` avec le verdict `sat`. Verification par recomposition : 01000010 en base 2 vaut 64 + 2 = 66, coherente avec la valeur decimale imprimee. La symetrie se lit position par position : bit 7 = bit 0 = 0, bit 6 = bit 1 = 1, bit 5 = bit 2 = 0, bit 4 = bit 3 = 0 — le mot se retourne sur lui-même.
 
 Point important sur ce que ce `sat` signifie : les contraintes n'exigeaient pas le plus petit palindrome pair non trivial, seulement un palindrome pair différent de 0 et de 255. D'autres modèles satisfont le même système — par exemple 00100100 (soit 36), pair et symetrique lui aussi. Z3 produit un modèle satisfaisant arbitraire, pas un minimum ; obtenir le plus petit exigerait une optimisation (`Optimize` avec `minimize`), absente de cette cellule.
 
-Non mesure : le nombre total de modèles satisfaisants (la sortie n'en expose qu'un exemplaire).",,,,,,,,1180dff611768402,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,lectz3tac-03,markdown,fr,8d34f283275ac992,"### Lecture chiffree : la conservation du total après transfert
+Non mesure : le nombre total de modèles satisfaisants (la sortie n'en expose qu'un exemplaire).",,,,,,,,4c08afdcb70f63d0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,lectz3tac-03,markdown,fr,6c58d1f819147b14,"### Lecture du résultat : la conservation du total après transfert
 
 La sortie imprime les deux etats et les deux totaux : `Avant  : c0=100, c1=200, c2=50`, `Apres  : c0=130, c1=170, c2=50`, puis `Total avant = 350` et `Total apres = 350`. Recomposition des deltas : c0 gagne +30 (100 vers 130), c1 perd -30 (200 vers 170), c2 reste a 50. Les deux variations s'annulent (+30 - 30 = 0), ce que les totaux confirment : 100 + 200 + 50 = 350 et 130 + 170 + 50 = 350.
 
 Ce que ce `sat` prouve exactement : les contraintes fixaient l'etat initial (comptes[0] = 100, comptes[1] = 200, comptes[2] = 50) puis exigeaient l'egalite des deux totaux. La reponse atteste la coherence de cette egalite sur l'etat concret impose — les valeurs fixees determinent déjà les deux totaux. Ce n'est pas une preuve pour tout etat initial possible : pour cela, il faudrait refuter la negation de la propriete sur des variables libres, le solveur devant alors repondre `unsat`.
 
-Non mesure : aucun temps de resolution ni taille du problème ne sont imprimes par cette cellule.",,,,,,,,8d34f283275ac992,,,,,,,,,,,,,,,
+Non mesure : aucun temps de resolution ni taille du problème ne sont imprimes par cette cellule.",,,,,,,,6c58d1f819147b14,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-CSharp.ipynb,07df56fc,markdown,fr,268b33ba842e4d5a,"### Lecture du résultat
 
 **Sortie de code[1]** (verbatim) : la formule `(forall ((x Real)) (= (+ x 0.0) x))`, mise sous negation, repond `UNSATISFIABLE`. Aucun contre-exemple : **l'identite additive est valide**.
@@ -11106,6 +11153,122 @@ Un glouton ""jour par jour"" choisirait, pour chaque jour, les 3 plats les moins
 
 **Lecture chiffree — quatre ordres de grandeur sur le corpus de jouet.** Le plan a cout minimal ci-dessus (D=7, 24 plats) se resout en une fraction de seconde dans ce notebook (le temps exact est imprime par la cellule de code ci-dessus) ; le [16](Z3-16-Meal-Planner-Python.ipynb) mesure, sur le même corpus de jouet, l'enumeration des 36 combinaisons **0,06 ms**, le plan SMT booléen D=3 **2,4 ms** et l'`Optimize` a cout minimal D=1 **17,7 ms**. L'enumeration gagne partout ou elle reste tractable — mais sa pente est exponentielle en le nombre de variables quand celle du solveur suit la combinatoire contrainte. Passer de 3 a 7 jours avec corpus elargi et contrainte de variete coute environ deux ordres de grandeur (millisecondes -> fraction de seconde) : observation sur cette paire de runs, pas une loi (jours et corpus changent en même temps). La lecture pratique : le temps du solveur achete l'exactitude a l'echelle ou l'enumeration explose, et la fenêtre [1400, 1900] kcal avec 40 g de proteines reste resolue en moins d'une seconde a D=7.
 ",,,,,,,,f1d696f06e0947e4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-CSharp.ipynb,interp-9f76f0c3,markdown,fr,ba7bbe7d09424324,"### Lecture du résultat
+
+La cellule affiche « Installed Packages: Microsoft.Z3, 4.12.2 » puis « Imports OK : Microsoft.Z3 version Z3 4.12.2.0 » : le package NuGet est téléchargé, la bibliothèque native est enregistrée par `Z3NativeLoader.Register(...)` (hors Windows et macOS Intel, le chargeur extrait la librairie embarquée), et le `Context` de la session pointe sur le **moteur Z3 réel, version 4.12.2.0** — aucune émulation. Toutes les cellules suivantes interrogent ce moteur via le binding C# `Microsoft.Z3`.",,,,,,,,ba7bbe7d09424324,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-CSharp.ipynb,interp-9c119c98,markdown,fr,05f859ecf114fb12,"### Lecture du résultat
+
+Deux comportements bien distincts. `Repeat(AndThen(simplify, propagate-values))` réduit le but à **0 contrainte** : les identités `x + 0 = x` et `x * 1 = x` ont été propagées jusqu'au point fixe, il ne reste littéralement plus rien à résoudre. `OrElse(ctx-solver-simplify, simplify)` sur `x > 5` et `x < 10` rend **1 sous-goal** avec `(not (<= x 5))` et `(< x 10)` : le but n'a été que normalisé (négation de `x > 5`), pas résolu — `OrElse` garantit l'alternative, pas la terminaison.",,,,,,,,05f859ecf114fb12,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-CSharp.ipynb,interp-ae9a1169,markdown,fr,7a282d1b1ed8b3fa,"### Lecture du résultat
+
+La sortie confirme la double lecture du même octet. D'abord `200 (unsigned) > 100 ? SATISFIABLE` : avec la comparaison non signée `MkBVUGT`, le vecteur `11001000` vaut 200 et la contrainte tient. Ensuite la ligne `a = 200 (unsigned) = -56 (signed)` : lu en complément à deux (bit de poids fort à 1), le même vecteur vaut 200 − 256 = −56. Le tableau imprimé récapitule les opérateurs à ne pas confondre — `MkBVSlt/MkBVSLe/MkBVSgt/MkBVSGe` signé, `MkBVULT/MkBVULE/MkBVUGT/MkBVUGE` non signé : choisir le mauvais suffixe inverse le sens de la comparaison, exactement comme une comparaison signé/non signé en C.",,,,,,,,7a282d1b1ed8b3fa,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,z3tac03-lec01,markdown,fr,b0fae87c5dc93a93,"### Lecture du résultat
+
+La sortie confirme l'environnement d'exécution : `Imports OK : z3-solver version 4.16.0`.
+La version **4.16.0** de `z3-solver` est donc installée, et toutes les API utilisées dans ce
+notebook (`Tactic`, `Goal`, `Then`, `BitVec`, `Array`, `SolverFor`) sont disponibles.",,,,,,,,b0fae87c5dc93a93,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb,b9b4c1e4,markdown,fr,e286f5bba3021e99,"### Lecture du résultat
+
+La sortie confirme que l'environnement est prêt : `Imports OK : z3-solver version 4.16.0` — pyz3 4.16.0 est bien importé, les cellules suivantes peuvent poser leurs contraintes sur Z3.",,,,,,,,e286f5bba3021e99,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb,0fcdc2df,markdown,fr,48331c6d53554527,"### Lecture du résultat
+
+Le mode `Constants` répond `Mode Constants - statut : sat` et imprime la grille solution, dont la première rangée `[1, 3, 4, 2]` respecte le given `c_0_0 == 1` posé plus haut.",,,,,,,,48331c6d53554527,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb,65b9a3f1,markdown,fr,e93b98376fd4661f,"### Lecture du résultat
+
+Le mode `Array` répond à son tour `Mode Array - statut : sat` avec la même première rangée `[1, 3, 4, 2]` : les deux encodages convergent déjà ici, avant la vérification formelle de la cellule suivante.",,,,,,,,e93b98376fd4661f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb,lect-cache,markdown,fr,ab66d8f2062982db,"### Lecture du résultat — l'entonnoir du corpus
+
+Le cache ne retient que **447 recettes exploitables sur 1465 brutes** (31 %) : tout ce qui n'a
+pas de fiche nutritionnelle complète sur les cinq constituants est écarté en amont, en 16b — le
+solveur ne verra jamais les manquants. Les cinq constituants suivis couvrent l'énergie, les
+protéines, les glucides, les lipides et le sel : c'est la granularité maximale dont disposera la
+couche de contraintes du Mouvement 2.
+
+Chargement en 0,00 s pour 89 Ko : la phase « données » est déjà déconnectée de la phase
+« solveur ». C'est le contrat de la couche 16b — un artefact solveur-usable régénéré à la
+demande, pas un corpus à re-nettoyer à chaque exécution.",,,,,,,,ab66d8f2062982db,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb,lect-creneaux,markdown,fr,5aea8e6fab2bb9dd,"### Lecture du résultat — des créneaux très inégalement fournis
+
+La somme des cinq fenêtres (46 + 54 + 128 + 10 + 209) redonne exactement les 447 plats du
+cache : le tri par `Ordre` a réparti tout le corpus, sans reste. Mais la répartition est loin
+d'être uniforme — le créneau 4 n'offre que **10 candidats** quand le créneau 5 en compte 209 :
+vingt fois plus. C'est une donnée d'entrée pour la suite : tout ce que le modèle demandera au
+créneau 4 devra passer par cette fenêtre étroite.
+
+Le point clé est structurel : chaque créneau est maintenant un **intervalle contigu d'indices**
+(`[0..45]`, `[46..99]`, ...). C'est ce qui permet au modèle d'encadrer chaque choix par deux
+bornes d'entiers (`with_bounds`) plutôt que par une disjonction de dizaines de valeurs —
+l'entier borné est le prix d'entrée le plus bas qu'un solveur accepte.",,,,,,,,5aea8e6fab2bb9dd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb,lect-m1,markdown,fr,99109f2842555ada,"### Lecture du résultat — deux exigences, deux encodages, un même verdict
+
+Les deux variantes sont triviales à résoudre à cette échelle : 44 ms pour la montée en gamme
+(A), 10 ms pour la permutation totale (B). L'écart n'est pas un résultat de complexité — c'est
+un indice : A impose une chaîne d'inégalités entre jours voisins, B se contente d'un `Distinct`
+croisé par colonne. À 7 jours, aucune des deux ne coûte ; la question du coût ne se posera qu'à
+l'échelle du carnet 16d.
+
+Sur la solution A, chaque colonne (un créneau, lu de J1 à J7) affiche des noms dans l'ordre
+alphabétique croissant — et c'est la contrainte elle-même, rendue visible : le tri de 16b étant
+alphabétique au sein de chaque créneau, exiger un indice croissant par colonne fait croître les
+noms dans l'ordre du dictionnaire. Les noms tronqués à 20 caractères sont un choix d'affichage
+du port Python ; les noms complets vivent dans le cache.",,,,,,,,99109f2842555ada,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb,lect-pool,markdown,fr,67557d32031e0a0e,"### Lecture du résultat — quinze plats, un facteur 14 d'énergie
+
+La curation passe de 447 à 15 plats : 5 candidats par créneau, 3 créneaux. Le pool est assez
+étroit pour que l'idiome de linking reste lisible (90 disjonctions au total), assez riche pour
+que la contrainte patient morde — c'est l'équilibre que le Mouvement 2 cherche.
+
+L'aperçu énergie le montre : au sein du seul créneau 2, les candidats vont de 1018 kJ (Sort-Of
+Sweet and Sour) à 15054 kJ (1-Pot Pastitsio) — un facteur 14 entre deux plats du même créneau.
+Aucune heuristique de choix ne pourrait satisfaire une borne d'énergie sans explorer : c'est ce
+qui justifie le solveur. On note enfin que seuls trois constituants sur cinq sont suivis
+(k = 0, 1, 3 : énergie, protéines, lipides) — exactement ceux que le patient borne ; glucides
+et sel traversent le cache sans entrer dans le modèle.",,,,,,,,67557d32031e0a0e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb,lect-vars,markdown,fr,bc331ad316712edd,"### Lecture du résultat — trente variables, six décisions
+
+La décomposition compte 6 `PlatId` + 18 `Comp` + 6 `MenuNut` = 30, mais toutes ne se valent
+pas : seuls les 6 `PlatId` sont de **vraies décisions** (un index de candidat par slot). Les
+18 `Comp` sont déterminées par le `PlatId` qu'elles accompagnent, les 6 `MenuNut` par leurs
+sommes. L'espace de choix effectif est donc bien plus petit que 30 dimensions — mais
+l'encodage a besoin des 30 pour rester linéaire, sans fonction d'indexation hôte par une
+variable Z3.",,,,,,,,bc331ad316712edd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb,lect-patient,markdown,fr,d5cc9ae4d002891a,"### Lecture du résultat — des bornes larges en apparence, qui mordent sur le pool réel
+
+La fenêtre énergie [3347, 10878] kJ par menu semble accommodante (un rapport de 1 à 3,2), et
+les bornes protéines/lipides n'ont l'air que de la prudence diététique. Rapportées au pool
+curé, elles ne sont pas bénignes : le plat le plus énergétique du pool (15054 kJ) dépasse **à
+lui seul** le plafond d'un menu entier — la contrainte élimine des combinaisons dès le premier
+choix, avant même de composer.
+
+Ces bornes sont celles du C# 08, rescalées kcal vers kJ (× 4,184) au rewiring Ciqual — la mise
+en garde du millésime s'applique : la vraie question n'est pas leur valeur, c'est si le patient
+reste SAT sur ce cache Python frais. C'est exactement ce que la cellule suivante mesure.",,,,,,,,d5cc9ae4d002891a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb,lect-menus,markdown,fr,c08dd2bb328d92fe,"### Lecture du résultat — deux menus SAT, à des distances très différentes des bornes
+
+Résolution en 19 ms. Le Menu 1 (soupe 3409 + sweet-sour 1018 + pretzels 4421 kJ) totalise
+8848 kJ, 45 g de protéines, 168 g de lipides ; le Menu 2 (purée de fèves 5922 + szechuan 1178 +
+casserole 3471 kJ) totalise 10571 kJ, 111 g, 119 g. Les deux respectent les trois bornes, et
+les six plats sont deux à deux distincts — la contrainte de variété se lit dans la composition
+même des menus.
+
+La lecture la plus riche est la **distance aux bornes** : le Menu 2 s'arrête à 307 kJ du
+plafond d'énergie (2,8 % sous 10878) et multiplie le plancher protéines par 3,7 (111 g contre
+30), là où le Menu 1 reste nettement en retrait du plafond (8848 kJ). Le solveur n'optimise
+rien — il rend le premier témoin SAT — et déjà les deux témoins occupent des positions très
+différentes du polytope. La mise en garde du §2.3 se referme : patient SAT sur le cache frais,
+aucun finding à reporter, les bornes du millésime n'ont pas eu à être retouchées.",,,,,,,,c08dd2bb328d92fe,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb,lect-verif,markdown,fr,e11d42a72dcbf4ac,"### Lecture du résultat — six recalculs, zéro écart
+
+Chacun des six chiffres recomptés hors Z3 (2 menus × 3 constituants) reproduit exactement la
+valeur du solveur, et les bornes sont repassées une à une : le menu n'est pas seulement SAT au
+sens de Z3, il est **vérifié** en arithmétique ordinaire. Le détail qui compte est le second
+prong : l'égalité avec `MenuNut` ne revalide pas les bornes (elles viennent d'être repassées),
+elle valide la **couche de linking** — les 90 disjonctions qui relient chaque `PlatId` à la
+composition de son candidat. Si une seule disjonction avait relié un mauvais index, un écart
+apparaîtrait ici entre la somme recomptée et la somme du solveur.
+
+C'est la différence entre croire et prouver : le témoin de SAT vient du solveur ; la preuve que
+le témoin est ce qu'il prétend être vient du recalcul.",,,,,,,,e11d42a72dcbf4ac,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,4012fe46,markdown,fr,2becadc596cd80b2,"### Exemple guidé 1 — Traduire un théorème LINQ en pyz3 (crédité #25495 — Emmajvx)
 
 > Résolution originale : **Emmajvx** (groupe 2), rendu de TP

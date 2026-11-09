@@ -29,12 +29,25 @@ Classes
 ``PROTEGE``  la demande vaut au moins le double du seuil : perdre la moitie de
              la fenetre ne change pas le verdict de la garde.
 
+``INCONNU``  la demande ou le seuil n'a pas pu etre evalue : l'organe ne
+             devine pas, il le signale. Un INCONNU est un angle mort de
+             l'instrument, pas un verdict sur la strategie.
+
 Limite connue
 --------------
 L'outil mesure la dependance a la **longueur** de l'historique. Il ne detecte
 pas le cas ou la serie est consommee sans etrelicee (fenetre qui se raccourcit
 silencieusement sans ecarter le titre) : cela demande une analyse du
 consommateur de la serie, hors perimetre ici.
+
+Portee des constantes
+---------------------
+Les expressions sont evaluees sur les constantes **visibles depuis la
+fonction** : constantes de module, de classe, attributs d'instance, valeurs par
+defaut des parametres, variables locales de la fonction. Une variable locale
+masque le reste (portee Python) : deux fonctions qui utilisent le meme nom
+pour deux valeurs differentes restent distinctes (mesure : ``lookback`` vaut
+278 dans un training et 26 dans un scoring).
 
 Usage
 -----
@@ -61,16 +74,48 @@ EXCEPTIONS = {}
 
 
 def _num(node, consts):
-    """Evalue une expression arithmetique sur des entiers connus, sinon None."""
+    """Evalue une expression arithmetique sur des entiers connus, sinon None.
+
+    Resout aussi les formes portees par la fenetre double canonique (#20330) :
+    `self.MOM_WINDOWS[-1]` (index de liste constante, index negatif compris) et
+    `max(self.MOM_WINDOWS)` (extremum d'une liste constante). Sans cela, les
+    occurrences corrigees restaient INCONNU pour l'organe.
+    """
     if node is None:
         return None
     if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)) \
             and not isinstance(node.value, bool):
         return node.value
     if isinstance(node, ast.Attribute):
-        return consts.get(node.attr)
+        return _scalar(consts.get(node.attr))
     if isinstance(node, ast.Name):
-        return consts.get(node.id)
+        return _scalar(consts.get(node.id))
+    if isinstance(node, ast.Subscript):
+        base = _seq(node.value, consts)
+        if base is None:
+            return None
+        index = _num(node.slice, consts)
+        if index is None or not isinstance(index, int):
+            return None
+        try:
+            return base[index]
+        except IndexError:
+            return None
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) \
+            and node.func.id in ("max", "min") and node.args:
+        values = []
+        for arg in node.args:
+            seq = _seq(arg, consts)
+            if seq is not None:
+                values.extend(seq)
+                continue
+            scalar = _num(arg, consts)
+            if scalar is None:
+                return None
+            values.append(scalar)
+        if not values:
+            return None
+        return max(values) if node.func.id == "max" else min(values)
     if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
         val = _num(node.operand, consts)
         if val is None:
@@ -92,6 +137,36 @@ def _num(node, consts):
     return None
 
 
+def _scalar(value):
+    """Valeur scalaire connue, ou None (une liste n'est pas un nombre)."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return value
+    return None
+
+
+def _seq(node, consts):
+    """Resout une expression en liste de nombres connus, sinon None."""
+    if node is None:
+        return None
+    if isinstance(node, (ast.List, ast.Tuple)):
+        values = []
+        for element in node.elts:
+            value = _num(element, consts)
+            if value is None:
+                return None
+            values.append(value)
+        return values
+    if isinstance(node, ast.Attribute):
+        value = consts.get(node.attr)
+        return value if isinstance(value, list) else None
+    if isinstance(node, ast.Name):
+        value = consts.get(node.id)
+        return value if isinstance(value, list) else None
+    return None
+
+
 def _over_request(count_node):
     """Vrai si la demande est explicitement un multiple (>= 2) d'une autre expression."""
     if isinstance(count_node, ast.BinOp) and isinstance(count_node.op, ast.Mult):
@@ -101,24 +176,131 @@ def _over_request(count_node):
     return False
 
 
-def _constants(tree):
-    """Table des constantes numeriques posees sur self (ou en module)."""
-    consts = {}
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+def _target_name(target):
+    """Nom d'une cible d'affectation : attribut de self, ou variable simple."""
+    if isinstance(target, ast.Attribute) and isinstance(target.value, ast.Name) \
+            and target.value.id == "self":
+        return target.attr
+    if isinstance(target, ast.Name):
+        return target.id
+    return None
+
+
+def _assignments_in(body):
+    """(cible, valeur, ligne) des affectations d'un corps, en ordre source.
+
+    Ne descend ni dans une fonction ni dans une classe imbriquee : leurs corps
+    ont leur propre portee.
+    """
+    found = []
+    stack = list(body)
+    while stack:
+        node = stack.pop()
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef,
+                             ast.Lambda)):
             continue
-        target = node.targets[0]
-        name = None
-        if isinstance(target, ast.Attribute) and isinstance(target.value, ast.Name) \
-                and target.value.id == "self":
-            name = target.attr
-        elif isinstance(target, ast.Name):
-            name = target.id
+        if isinstance(node, ast.Assign) and len(node.targets) == 1:
+            found.append((node.targets[0], node.value, node.lineno))
+        for child in ast.iter_child_nodes(node):
+            stack.append(child)
+    found.sort(key=lambda item: item[2])
+    return found
+
+
+def _value_of(node, consts):
+    """Valeur scalaire ou liste connue pour une expression, sinon None."""
+    scalar = _num(node, consts)
+    if scalar is not None:
+        return scalar
+    return _seq(node, consts)
+
+
+def _defaults(func, consts):
+    """Valeurs par defaut des parametres d'une fonction, resolues si constantes.
+
+    Une fenetre de reglage est portee par le defaut d'un parametre
+    (``def __init__(..., lookback=252)``) : sans cette resolution, l'attribut
+    pose sur ``self`` reste inconnu de l'organe.
+    """
+    args = func.args
+    out = {}
+    positional = list(getattr(args, "posonlyargs", [])) + list(args.args)
+    defaults = list(args.defaults)
+    offset = len(positional) - len(defaults)
+    for index, node in enumerate(defaults):
+        if index + offset >= len(positional):
+            continue
+        value = _value_of(node, consts)
+        if value is not None:
+            out[positional[index + offset].arg] = value
+    for arg, node in zip(args.kwonlyargs, args.kw_defaults):
+        if node is None:
+            continue
+        value = _value_of(node, consts)
+        if value is not None:
+            out[arg.arg] = value
+    return out
+
+
+def _constants(tree):
+    """Constantes de module, de classe et attributs d'instance.
+
+    Les variables locales de fonction ne sont PAS resolues ici : deux
+    fonctions peuvent utiliser le meme nom pour deux valeurs differentes
+    (mesure : `lookback` vaut 278 dans un training et 26 dans un scoring) ;
+    leur resolution est faite par fonction (_function_constants).
+    """
+    consts = {}
+    for target, value, _ in _assignments_in(tree.body):
+        name = _target_name(target)
         if name is None:
             continue
-        value = _num(node.value, consts)
-        if value is not None:
-            consts[name] = value
+        resolved = _value_of(value, consts)
+        if resolved is not None:
+            consts[name] = resolved
+
+    for cls in [node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)]:
+        class_consts = dict(consts)
+        for target, value, _ in _assignments_in(cls.body):
+            name = _target_name(target)
+            if name is None:
+                continue
+            resolved = _value_of(value, class_consts)
+            if resolved is not None:
+                class_consts[name] = resolved
+        consts.update(class_consts)
+
+        # Attributs d'instance poses dans les methodes de la classe.
+        for method in cls.body:
+            if not isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            method_consts = dict(class_consts)
+            method_consts.update(_defaults(method, class_consts))
+            for target, value, _ in _assignments_in(method.body):
+                if not (isinstance(target, ast.Attribute)
+                        and isinstance(target.value, ast.Name)
+                        and target.value.id == "self"):
+                    continue
+                resolved = _value_of(value, method_consts)
+                if resolved is not None:
+                    consts[target.attr] = resolved
+    return consts
+
+
+def _function_constants(func, base):
+    """Constantes vues par une fonction : base + ses variables locales.
+
+    Une locale masque la base (portee Python), ce qui evite qu'une variable
+    homonyme d'une autre fonction fausse la mesure.
+    """
+    consts = dict(base)
+    consts.update(_defaults(func, base))
+    for target, value, _ in _assignments_in(func.body):
+        if not isinstance(target, ast.Name):
+            continue
+        resolved = _value_of(value, consts)
+        if resolved is not None:
+            consts[target.id] = resolved
     return consts
 
 
@@ -172,11 +354,12 @@ def analyse_file(path, shortfall):
     except SyntaxError as exc:
         return [{"classe": "ERREUR", "raison": "syntaxe : %s" % exc, "ligne": 0}]
 
-    consts = _constants(tree)
+    base_consts = _constants(tree)
     findings = []
     for node in ast.walk(tree):
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
+        consts = _function_constants(node, base_consts)
         histories = _history_calls(node, consts)
         if not histories:
             continue

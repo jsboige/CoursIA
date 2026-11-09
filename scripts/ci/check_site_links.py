@@ -9,7 +9,8 @@ rendu n'est visible qu'apres publication.
 
 Ce garde extrait les `href` internes des pages critiques du site publie
 (racine, index des notebooks, parcours), resout les liens relatifs et
-teste chaque URL unique par HTTP. Il ne teste QUE la resolution des liens :
+teste chaque URL unique par HTTP, en conservant toutes ses pages sources.
+Il ne teste QUE la resolution des liens :
 le rendu lui-meme reste l'affaire de l'audit visuel Playwright de l'EPIC
 (reserve aux lanes CoursIA-2).
 
@@ -129,7 +130,7 @@ def run_check(base_url: str = DEFAULT_BASE_URL,
     """Execute la passe complete : pages critiques -> liens internes -> status."""
     result = CheckResult()
     base = base_url.rstrip("/")
-    links: set[str] = set()
+    links: dict[str, set[str]] = {}
     for page in pages:
         page_url = base + page
         try:
@@ -138,7 +139,8 @@ def run_check(base_url: str = DEFAULT_BASE_URL,
             result.instrument_errors.append(
                 f"critical page unreachable: {page_url} ({exc})")
             continue
-        links.update(extract_internal_hrefs(html, page_url))
+        for url in extract_internal_hrefs(html, page_url):
+            links.setdefault(url, set()).add(page_url)
 
     if result.instrument_errors:
         return result
@@ -156,7 +158,11 @@ def run_check(base_url: str = DEFAULT_BASE_URL,
         if 200 <= status < 400:
             result.ok += 1
         else:
-            result.broken.append({"url": url, "status": status})
+            result.broken.append({
+                "url": url,
+                "status": status,
+                "source_pages": sorted(links[url]),
+            })
 
     if len(links) > max_links:
         # Troncature signalee, pas silencieuse : le verdict ne couvre alors
@@ -195,7 +201,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[site-links] checked={result.checked} ok={result.ok} "
               f"broken={len(result.broken)}")
         for entry in result.broken:
-            print(f"[site-links] BROKEN {entry['status']} {entry['url']}")
+            sources = ", ".join(entry["source_pages"])
+            print(f"[site-links] BROKEN {entry['status']} {entry['url']} "
+                  f"(source: {sources})")
         for err in result.instrument_errors:
             print(f"[site-links] INSTRUMENT {err}", file=sys.stderr)
 

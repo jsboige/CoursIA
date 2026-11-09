@@ -1,13 +1,8 @@
 {
  "_comment": "Per-notebook finding counts of scan_md_hierarchy.py. BURNDOWN, do not grow: a PR that increases any count is flagged by scan-md-hierarchy-drift.yml (#11831). Regenerate (same commit as any scanner rule change) with: python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ --update-baseline",
- "generated_at": "2026-10-23T16:55:47+00:00",
- "total_findings": 63,
+ "generated_at": "2026-10-25T16:12:39+00:00",
+ "total_findings": 38,
  "notebooks": {
-  "MyIA.AI.Notebooks/GameTheory/GameTheory-04g-Supermodularite-Python.ipynb": {
-   "H1-DEEP": 8,
-   "HINT-AS-HEADING": 8,
-   "MULTI-H1": 1
-  },
   "MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb": {
    "H1-DEEP": 1,
    "HINT-AS-HEADING": 3
@@ -15,10 +10,6 @@
   "MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python_en.ipynb": {
    "H1-DEEP": 1,
    "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb": {
-   "H1-DEEP": 7,
-   "MULTI-H1": 1
   },
   "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb": {
    "H1-DEEP": 6,

@@ -10,17 +10,17 @@ Trois raisons, celles de la doctrine de gradation ([#5081](https://github.com/js
 
 1. **L'objet change.** DecPyMC 1-7 traite de la décision *en général* (utilité, information, séquence). T1-T5 traite d'un **métier** : chaque notebook y répond à une question d'assureur — tarifer, provisionner, mutualiser, capitaliser, souscrire.
 2. **La profondeur change.** Les modèles deviennent hiérarchiques (fréquence × sévérité, crédibilité), les distributions calculées (ruine), les décisions commerciales (chargement, valeur d'information en souscription).
-3. **Le public change.** Un lecteur venu du métier peut entrer par T1 et remonter vers DecPyMC-2 (utilité) ou DecPyMC-5 (EVPI) au besoin — la série mère garde son escalier au slot 08.
+3. **Le public change.** Un lecteur venu du métier peut entrer par T1 et remonter vers DecPyMC-02 (utilité) ou DecPyMC-05 (EVPI) au besoin — la série mère garde son escalier au slot 08.
 
 ## L'escalier T1-T5
 
 | # | Notebook | Durée | Ce qu'il apporte | Suppose |
 |---|----------|-------|------------------|---------|
-| T1 | [Actuariat-01-Prime-Pure-Chargement](Actuariat-01-Prime-Pure-Chargement.ipynb) | 45 min | Du risque à la prime : prime pure, chargement, prime commerciale — trois régimes (fréquentiste, bayésien, commercial) que la théorie mélange | [DecPyMC-2](../DecPyMC/DecPyMC-2-Utility-Money.ipynb) |
+| T1 | [Actuariat-01-Prime-Pure-Chargement](Actuariat-01-Prime-Pure-Chargement.ipynb) | 45 min | Du risque à la prime : prime pure, chargement, prime commerciale — trois régimes (fréquentiste, bayésien, commercial) que la théorie mélange | [DecPyMC-02](../DecPyMC/DecPyMC-02-Utility-Money.ipynb) |
 | T2 | [Actuariat-02-Freq-Sev-Hierarchique](Actuariat-02-Freq-Sev-Hierarchique.ipynb) | ~50 min | Fréquence × sévérité hiérarchique : le partial pooling en assurance, la structure de crédibilité avant la crédibilité | T1 |
 | T3 | [Actuariat-03-Actuarial-Credibility](Actuariat-03-Actuarial-Credibility.ipynb) | 20-30 min | Crédibilité actuarielle de Bühlmann–Straub : pondérer l'expérience individuelle contre celle du portefeuille | T2 |
 | T4 | [Actuariat-04-Ruine-Lundberg](Actuariat-04-Ruine-Lundberg.ipynb) | 45 min | Ruine et capital : processus de Cramér–Lundberg, inégalité de Lundberg, la prime comme garde-fou | T1 |
-| T5 | [Actuariat-05-Valeur-Info-Souscription](Actuariat-05-Valeur-Info-Souscription.ipynb) | ~45 min | Valeur de l'information en souscription : quand un test vaut son prix (EVPI/EVSI appliqués au métier) | [DecPyMC-5](../DecPyMC/DecPyMC-5-Value-Information.ipynb), T1 |
+| T5 | [Actuariat-05-Valeur-Info-Souscription](Actuariat-05-Valeur-Info-Souscription.ipynb) | ~45 min | Valeur de l'information en souscription : quand un test vaut son prix (EVPI/EVSI appliqués au métier) | [DecPyMC-05](../DecPyMC/DecPyMC-05-Value-Information.ipynb), T1 |
 
 **Durée totale** : ≈ 3 h 30 – 4 h (durées déclarées dans les carnets ; T2 et T5 reprises de la série mère).
 
@@ -38,7 +38,7 @@ Trois raisons, celles de la doctrine de gradation ([#5081](https://github.com/js
 
 ## Ce que cette sous-série suppose
 
-- **Côté théorie** : l'utilité espérée et l'aversion au risque ([DecPyMC-2](../DecPyMC/DecPyMC-2-Utility-Money.ipynb)), la valeur de l'information ([DecPyMC-5](../DecPyMC/DecPyMC-5-Value-Information.ipynb)) pour T5. Le capstone [DecPyMC-08](../DecPyMC/DecPyMC-08-Actuariat-Capstone.ipynb) suffit pour entrer à T1.
+- **Côté théorie** : l'utilité espérée et l'aversion au risque ([DecPyMC-02](../DecPyMC/DecPyMC-02-Utility-Money.ipynb)), la valeur de l'information ([DecPyMC-05](../DecPyMC/DecPyMC-05-Value-Information.ipynb)) pour T5. Le capstone [DecPyMC-08](../DecPyMC/DecPyMC-08-Actuariat-Capstone.ipynb) suffit pour entrer à T1.
 - **Côté outillage** : PyMC + ArviZ (kernel `python3`), mêmes exigences que la série mère — chaque carnet s'exécute de bout en bout, exercices non complétés compris (règle C.1 du dépôt).
 - **Côté miroir** : la Théorie des Jeux regarde le même métier du côté **marché** (GT-17a/17b : antisélection, screening) quand T1-T5 le regarde du côté **assureur** — la filiation est citée dans chaque carnet.
 

@@ -135,6 +135,55 @@ _LESSON_TAG_RE = re.compile(r"\bL\d{3,4}(?:-L\d)?\b")
 # test_url_fragment_mask_is_context_free_by_design, pour qu'il ne se
 # decouvre pas par surprise si un carnet se met a ecrire des ancres en prose.
 _URL_FRAGMENT_RE = re.compile(r"#L\d{3,4}(?:-L\d{3,4})?")
+# Cible de lien vers un fichier du depot (``…-L128-L256.ipynb``, ``notes.md``) :
+# meme forme que le renvoi aux lecons, sens inverse. Un carnet qui documente
+# une serie parametree par la taille du systeme (L, N, k) herite d'un faux
+# positif STRUCTUREL des qu'il lie ses voisins : Percolation-05 (#23004,
+# PR #22153) liait ``Percolation-03b-Critique-L128-L256.ipynb`` (L128 + L256
+# = 4 points) et ``Percolation-03c-Critique-L512.ipynb`` (L512 = 2 points),
+# soit 6 points sur 665 caracteres -- densite 9/1000 au-dessus du seuil de 8,
+# pour une cellule « Pour aller plus loin » faite exclusivement de liens de
+# navigation. C'est exactement le geste que la navigation d'une serie
+# recommande. Voie 1 de #23004 : masquer la CIBLE du lien, sans toucher au
+# jeu de motifs des lecons (un resserrement du motif se valide par ses faux
+# negatifs, et un elargissement accidentel rendrait l'organe aveugle).
+#
+# Comme _URL_FRAGMENT_RE, le masque est sans contexte : il s'applique aussi a
+# un nom de fichier cite en prose hors lien. La forme NUE « L128 » hors de
+# tout nom de fichier reste comptee -- la voie 1 couvre les liens, pas la
+# prose ; l'ecart est assume et fige par test_file_target_mask_leaves_bare_tag.
+#
+# Borne du masque, mesuree (revue Hermes du 2026-10-28, point 1) : la
+# substitution est de MEME LONGUEUR et porte sur le seul span du nom de
+# fichier, donc un renvoi aux lecons ecrit A COTE du nom reste compte. Le cas
+# que la revue designait -- un renvoi cache DERRIERE le nom, c'est-a-dire un
+# « L<n> » qui serait a l'interieur du nom de fichier -- n'est pas instancie
+# sur le corpus : 35 411 unites markdown (34 390 cellules de carnet + les
+# fichiers .md) mesurees au 2026-10-28, dont UNE seule cite un nom de fichier
+# portant un « L<n> » (README de la serie Percolation), et AUCUNE n'associe ce
+# nom a un mot « lecon » ecrit hors de lui. L'ecart est donc assume sur
+# mesure, comme celui de _URL_FRAGMENT_RE, et fige pour la meme raison : que
+# le comportement soit lisible avant d'etre decouvert par surprise. Le
+# controle positif qui l'empeche de s'elargir en silence est
+# test_file_target_mask_is_span_local.
+_FILE_TARGET_RE = re.compile(r"[\w./-]+\.(?:ipynb|md)\b")
+# Ancre de ligne IMPRIMEE par une cellule de code anterieure : « (L1380) »
+# dans une « Lecture du resultat » renvoie a une ligne du listing que la
+# cellule au-dessus vient d'imprimer -- meme forme que le renvoi aux lecons,
+# sens inverse, troisieme famille apres les permaliens et les cibles de lien.
+# Mesure du 2026-11-04 (KNOTS-03, PR #24654) : 3 des 6 ancres qui faisaient
+# rougir le marqueur etaient des citations d'output (L1053/L1380/L3657
+# presentes dans le listing imprime au-dessus) ; les 3 autres etaient des
+# renvois de lignes de FICHIER source et restent comptees -- leur forme
+# canonique est la prose (« ligne 234 »). Le masque est porte par
+# l'APPELANT, qui connait l'ordre des cellules : un token ne blanchit que
+# s'il figure dans les outputs des cellules code STRICTEMENT anterieures --
+# une citation suit sa preuve (convention d'ordonnancement des « Lecture du
+# resultat » : l'interpretation vient APRES la cellule interpretee). Comme
+# les familles precedentes, le predicat est le token exact sans regard sur
+# la prose ; l'ecart est assume et fige par
+# test_lesson_tag_anchored_in_prior_output_is_masked.
+_ANCHORED_TOKEN_RE = re.compile(r"\bL\d{3,4}\b")
 _DM_RE = re.compile(r"\bDM\b")
 
 _LANE_RE = re.compile(r"\blanes?\b", re.IGNORECASE)
@@ -156,7 +205,30 @@ _DM_OK_CONTEXT = re.compile(
     # caracteres dans ces trois formes : la garde etait donc muette, et six
     # passages denses sur six d'un carnet §C valide ont ete declares recit
     # d'activite alors qu'ils ne portent que le test de Diebold-Mariano.
-    r"|p\s*[=<>≤≥]|recentr|re-centr|loss_fn",
+    #
+    # `DM-JEPA` (#22252) : le nom du modele de prediction latente contient
+    # « DM », que le motif `\bDM\b` prend pour le test de Diebold-Mariano.
+    # L'allowlist porte donc le NOM DU MODELE, pas le mot « JEPA » seul :
+    # elargir au mot seul rendait la garde muette sur « Le DM publie par
+    # l'equipe JEPA hier soir. », mesure le 2026-10-27 (controle negatif
+    # dans scripts/tests/test_check_activity_leak.py). Le bigrame laisse la
+    # mention isolee muette (« Demo DM-JEPA 1.7 ») tout en gardant la garde
+    # sensible au reste.
+    r"|p\s*[=<>≤≥]|recentr|re-centr|loss_fn|DM-JEPA"
+    # Formes COMPACTES mesurees le 2026-11-09 sur la campagne #20250 : deux
+    # carnets de recherche LEGITIME etaient declares recit d'activite parce
+    # que le nom du test y apparait seul -- « DM p_median » (en-tete de
+    # tableau), « Block-bootstrap du DM (distribution + IC 95 %) », « la
+    # variance du DM est estimee par ... ». Le marqueur porte sur « DM »
+    # seul ; c'est le CONTEXTE qui distingue le test du canal. Chaque
+    # forme ajoutee est un terme STATISTIQUE, absent d'un paragraphe de
+    # coordination (« transmission de secret via DM ») : le controle
+    # inverse est mesure sur les 1762 carnets du depot -- 4 des 6 passages
+    # denses par `dm` en baseline restent detectes apres elargissement,
+    # les 2 laches sont les 2 faux positifs statistiques ci-dessus.
+    r"|p_median|p-median|bootstrap|variance|\bIC\s?95"
+    r"|intervalle? de confiance|appari|erreur\s?type|σ"
+    r"|DM\s+(?:p\s?[=<>]|median|appari|compa)",
     re.IGNORECASE,
 )
 _DISPATCH_OK_CONTEXT = re.compile(
@@ -269,6 +341,43 @@ def _context_guarded(text: str, at: int, end: int, ok_context: re.Pattern[str]) 
     return bool(ok_context.search(window))
 
 
+def _output_text_tokens(cell: dict) -> set[str]:
+    """Tokens L<d> imprimes par les outputs d'une cellule code.
+
+    Le ``text`` d'un output nbformat est une chaine OU une liste de lignes :
+    aplatir avant extraction, sinon ``findall`` leve TypeError sur une liste
+    (piege mesure sur #24654). Les outputs non textuels (images, erreurs)
+    sont ignores : une ancre d'output se cite dans du texte imprime.
+    """
+    tokens: set[str] = set()
+    for out in cell.get("outputs", []) or []:
+        if not isinstance(out, dict):
+            continue
+        text = out.get("text")
+        if isinstance(text, list):
+            text = "".join(str(part) for part in text)
+        if not text:
+            continue
+        tokens.update(_ANCHORED_TOKEN_RE.findall(text))
+    return tokens
+
+
+def anchored_line_tokens(cells: list[dict], upto: int) -> frozenset[str]:
+    """Tokens ancrables pour la cellule d'index ``upto`` : ceux imprimes par
+    les cellules code STRICTEMENT anterieures.
+
+    Une citation suit sa preuve (convention d'ordonnancement des « Lecture du
+    resultat ») : un token imprime plus bas ne peut pas etre la source d'une
+    ancre citee plus haut. Les marcheurs accumulent eux-memes au fil du
+    carnet ; cette fonction sert aux tests et aux appels ponctuels.
+    """
+    tokens: set[str] = set()
+    for cell in cells[:upto]:
+        if cell.get("cell_type") == "code":
+            tokens |= _output_text_tokens(cell)
+    return frozenset(tokens)
+
+
 # Marqueurs qui ne comptent QUE s'ils sont accompagnes d'un autre marqueur
 # dans le meme passage. « cellule N » est le cas mesure : dans le corpus il
 # sert massivement de renvoi INTRA-carnet (« Sharpe 0.063 (cellule 12) »,
@@ -280,7 +389,8 @@ def _context_guarded(text: str, at: int, end: int, ok_context: re.Pattern[str]) 
 CO_MARKER_ONLY = frozenset({"cellule"})
 
 
-def markers_in_text(text: str) -> list[tuple[str, str, int]]:
+def markers_in_text(text: str,
+                    anchored: frozenset[str] = frozenset()) -> list[tuple[str, str, int]]:
     """Rend [(nom, extrait, poids)] pour tous les marqueurs de ``text``.
 
     Les gardes anti-FP s'appliquent par occurrence, sur son contexte :
@@ -288,14 +398,29 @@ def markers_in_text(text: str) -> list[tuple[str, str, int]]:
     statistique, pas un message du coordinateur. Les marqueurs de
     ``CO_MARKER_ONLY`` ne sont retenus que si un AUTRE marqueur est present
     dans le meme passage.
+
+    ``anchored`` porte les tokens L<d> imprimes par les outputs des cellules
+    code STRICTEMENT anterieures (cf ``anchored_line_tokens``) : un tel token
+    dans la prose est une ancre de citation d'output, pas un renvoi aux
+    lecons -- il est masque pour ``lesson_tag`` seulement.
     """
     out: list[tuple[str, str, int]] = []
     for name, rx, weight in ALL_MARKERS:
         haystack = text
         if name == "lesson_tag":
             # Masque de meme longueur (les offsets ne servent pas ici) : une
-            # ancre de ligne de permalien n'est pas un renvoi aux lecons.
+            # ancre de ligne de permalien n'est pas un renvoi aux lecons, et
+            # la cible d'un lien vers un carnet voisin n'en est pas un non
+            # plus (#23004) -- ses L<d> sont des tailles de systeme.
             haystack = _URL_FRAGMENT_RE.sub(lambda m: " " * len(m.group(0)), text)
+            haystack = _FILE_TARGET_RE.sub(lambda m: " " * len(m.group(0)), haystack)
+            for tok in anchored:
+                # 3e famille (#24721) : token imprime par un output ANTERIEUR
+                # = ancre de citation. Bornes de mots : L138 ne blanchit pas
+                # L1380.
+                haystack = re.sub(
+                    r"\b" + re.escape(tok) + r"\b", " " * len(tok), haystack
+                )
         for m in rx.finditer(haystack):
             if name == "dm" and _context_guarded(text, m.start(), m.end(), _DM_OK_CONTEXT):
                 continue
@@ -332,8 +457,9 @@ class PassageVerdict:
         return (first[:70] + "...") if len(first) > 70 else first
 
 
-def judge_passage(cell_index: int, text: str) -> PassageVerdict:
-    markers = markers_in_text(text)
+def judge_passage(cell_index: int, text: str,
+                  anchored: frozenset[str] = frozenset()) -> PassageVerdict:
+    markers = markers_in_text(text, anchored)
     score = sum(w for _, _, w in markers)
     strong = sum(1 for _, _, w in markers if w >= 2)
     density = score * 1000.0 / max(len(text), 1)
@@ -379,7 +505,8 @@ def dense_reason(v: PassageVerdict) -> str:
 # titre est bas (un seul marqueur fort suffit) parce qu'un titre qui porte
 # un identifiant de cycle a deja tout dit -- le cas SC-09 mesure les titres
 # « Corrigendum c.NNNN » a score 4-12.
-def judge_cell(cell_index: int, md_text: str) -> list[PassageVerdict]:
+def judge_cell(cell_index: int, md_text: str,
+               anchored: frozenset[str] = frozenset()) -> list[PassageVerdict]:
     """Juge chaque paragraphe d'une cellule, avec heritage de section.
 
     La cellule est parcourue dans l'ordre : un paragraphe-titre ouvre une
@@ -396,7 +523,7 @@ def judge_cell(cell_index: int, md_text: str) -> list[PassageVerdict]:
     verdicts: list[PassageVerdict] = []
     section_dense = False
     for para in split_paragraphs(md_text):
-        v = judge_passage(cell_index, para)
+        v = judge_passage(cell_index, para, anchored)
         heading = SECTION_HEADING_RE.match(para)
         is_h1 = bool(heading and len(heading.group(1)) == 1)
         is_section_heading = bool(heading and not is_h1)
@@ -442,14 +569,20 @@ def scan_notebook(nb_path: Path, root: Path | None = None) -> NotebookReport | N
         except ValueError:
             rel = None
     report = NotebookReport(path=rel or str(nb_path))
+    # Ancres d'output (#24721) : accumulees au fil des cellules code, un
+    # markdown ne voit que les outputs STRICTEMENT anterieurs.
+    anchored: set[str] = set()
     for idx, cell in enumerate(nb.get("cells", [])):
+        if cell.get("cell_type") == "code":
+            anchored |= _output_text_tokens(cell)
+            continue
         if cell.get("cell_type") != "markdown":
             continue
         src = cell.get("source", "")
         if isinstance(src, list):
             src = "".join(src)
         report.total_md_chars += len(src)
-        for verdict in judge_cell(idx, src):
+        for verdict in judge_cell(idx, src, frozenset(anchored)):
             report.all_passages.append(verdict)
             if verdict.dense:
                 report.dense_chars += len(verdict.text)
@@ -584,13 +717,19 @@ def scan_diff(diff_range: str) -> tuple[list[AddedPassage], list[str], list[str]
         except (OSError, json.JSONDecodeError) as exc:
             incidents.append(f"{rel} : tete illisible ({str(exc)[:80]})")
             continue
+        # Ancres d'output (#24721) : meme accumulation que scan_notebook --
+        # la base ne fournit pas d'ancres, seule la tete ordonne le carnet juge.
+        anchored: set[str] = set()
         for idx, cell in enumerate(head_nb.get("cells", [])):
+            if cell.get("cell_type") == "code":
+                anchored |= _output_text_tokens(cell)
+                continue
             if cell.get("cell_type") != "markdown":
                 continue
             src = cell.get("source", "")
             if isinstance(src, list):
                 src = "".join(src)
-            for verdict in judge_cell(idx, src):
+            for verdict in judge_cell(idx, src, frozenset(anchored)):
                 key = _paragraph_key(verdict.text)
                 if key in base_keys:
                     continue

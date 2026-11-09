@@ -9,9 +9,23 @@ All notebooks in this directory are **(c) standalone research** — independent 
 | Notebook | Topic | Type |
 |----------|-------|------|
 | `ML-Research-Template.ipynb` | Template for ML research | (c) |
-| `m3_har_asymmetric_semivariance.ipynb` | HAR asymmetric semivariance | (c) |
+| `m3_har_asymmetric_semivariance.ipynb` | M16 — Asymmetric HAR, debiased: does the signal survive outside the bias? | (c) |
 | `research_what_dl_can_predict.ipynb` | What DL can predict in finance | (c) |
-| `research_l4_decision_transformer.ipynb` | Decision Transformer evaluation | (c) |
+| `research_l1_tsmom.ipynb` | L1 TSMOM — time-series momentum baseline (NO BEATS) | (c) |
+| `research_l2_dual_momentum.ipynb` | L2 Cross-sectional + dual momentum (NO BEATS) | (c) |
+| `research_l3_trend.ipynb` | L3 Trend long-horizon — directional LSTM (NO BEATS) | (c) |
+| `research_l4_decision_transformer.ipynb` | L4 Decision Transformer (NO BEATS under the causal protocol, #21187) | (c) |
+| `c1330_xrp_dt_foldwise_research.ipynb` | c.1330 — XRP Decision Transformer: fold-wise §C validation (per-bucket verdicts) | (c) |
+| `hmm_alpha_research.ipynb` | Gaussian HMM for alpha trading (Broad Ch6 Ex4) | (c) |
+| `c875_hmm_alpha_dm_research.ipynb` | C875 — HMM-alpha: strict Ledoit-Wolf DM validation (50 bps stress, INCONCLUSIVE) | (c) |
+| `m4_dlinear_vol_research.ipynb` | DLinear-vol: linear DL vs HAR (pure forecasts) | (c) |
+| `m5_hmm_regime_research.ipynb` | HMM regime-switching HAR: when structural sophistication hurts | (c) |
+| `m9_tft_vol_research.ipynb` | TFT (Temporal Fusion Transformer): the failure of over-parameterization | (c) |
+| `m11e_ensemble_research.ipynb` | HAR-Kelly ensemble: dilution confirmed (3rd failure axis) | (c) |
+| `m12_har_rv_j_research.ipynb` | HAR-RV-J: jump decomposition (Andersen-Bollerslev-Diebold 2007) | (c) |
+| `m15_lstm_rv_research.ipynb` | Log-LSTM RV: sequential memory for realized variance | (c) |
+| `m4_dlinear_vol_sc_validation.ipynb` | M4 — DLinear-vol: §C registry entry (multi-seed conjunction + DM `loss_fn="linear"`) | (c) |
+| `m15_lstm_rv_sc_validation.ipynb` | M15 — LSTM RV: §C registry entry (2nd §C entry, same protocol) | (c) |
 
 Full classification: [docs/qc/qc-strategies-status.md](../../../docs/qc/qc-strategies-status.md)
 
