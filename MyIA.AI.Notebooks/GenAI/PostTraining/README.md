@@ -55,6 +55,20 @@ Le passage de 10 à 12 illustre pourquoi le problème d'essai compte : sur un ho
 
 Les derniers paliers changent l'objet du contrôle : comportement récompensé, représentations internes, correction d'un programme ou calibration d'une distribution. Ils apprennent à choisir une observation adaptée à la conclusion recherchée. Une baisse de perte, une sortie acceptée par un vérificateur et une amélioration hors échantillon sont des résultats distincts.
 
+### Comprendre les choix de méthode — Licence
+
+En SFT, la perte d'entropie croisée augmente la vraisemblance des réponses de démonstration conditionnellement aux prompts. Le choix des données détermine donc ce que le modèle apprend à imiter : format, contenu, refus ou ton. L'objectif d'entraînement ne suffit pas à établir la qualité de ces comportements sur d'autres entrées.
+
+DPO utilise des paires de préférences et un modèle de référence. Sa dérivation relie une récompense implicite au logarithme du rapport entre politique entraînée et politique de référence, avec un coefficient `beta`. Sous le modèle de préférences de Bradley–Terry, on obtient ainsi une perte sur les paires sans entraîner séparément un modèle de récompense. La qualité des préférences et le choix de la référence restent déterminants ; DPO n'est pas un SFT sur les seules réponses préférées.
+
+GRPO remplace l'estimation d'avantage par un modèle de valeur par une comparaison au sein du groupe de réponses. Agrandir ce groupe peut changer la qualité du signal, mais augmente aussi le coût des générations. Si toutes les réponses reçoivent la même récompense, le groupe ne permet pas de les départager. RLVR désigne, lui, la provenance du score : un calcul ou un vérificateur. Il peut donc être combiné à GRPO. La fiabilité du score dépend de l'extraction de réponse, des tests ou de la spécification effectivement vérifiée.
+
+GAE utilise les erreurs de différence temporelle
+$\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)$
+et les combine en
+$A_t = \sum_{l=0}^{T-t-1}(\gamma\lambda)^l\delta_{t+l}$.
+Le modèle de valeur $V$ estime le retour attendu ; $\gamma$ actualise les récompenses et $\lambda$ règle la profondeur de la combinaison. Faire davantage appel à $V$ peut réduire la variance, mais transmet aussi son erreur d'estimation. Les carnets 10 et 12 donnent des contextes différents pour examiner ce compromis.
+
 ## Approfondissements — Recherche et prérequis
 
 ### Autour de 11 — modèles de langage et répétition des expériences
@@ -82,7 +96,7 @@ Partir d'un environnement isolé et des cellules de configuration du carnet choi
 - **Commutateurs** : `LOAD_MODEL_AND_TRAIN` existe dans 02–05. Vérifier chaque carnet avant de l'utiliser : il n'y a pas de commutateur CPU universel pour le dossier.
 - **Dépendances particulières** : `rewardspy` est utilisé par certains carnets et son installation depuis GitHub est précisée dans le fichier de dépendances ; sa ligne non publiée sur PyPI peut empêcher un simple `pip install -r requirements.txt` d'aboutir. Le carnet 15b utilise les modules et traces ICT ; 16 demande Ollama et les outils Dafny/Lean. La reproduction de la grille de 18 requiert les ressources de ses scripts, au-delà de la lecture des agrégats committés.
 
-En cas de mémoire CUDA insuffisante, examiner quantification, taille des lots, accumulation de gradients, longueur des séquences et nombre de réponses par groupe. Ces réglages modifient aussi le protocole : consigner leur effet avant de comparer les résultats. Les cartes et checkpoints [Qwen](https://huggingface.co/Qwen/Qwen3.5-0.8B), la documentation [TRL](https://huggingface.co/docs/trl/index), [PEFT](https://huggingface.co/docs/peft/index) et les optimisations [Unsloth](https://github.com/unslothai/unsloth) complètent les instructions des carnets.
+En cas de mémoire CUDA insuffisante, examiner quantification, taille des lots, accumulation de gradients, longueur des séquences et nombre de réponses par groupe. Ces réglages modifient aussi le protocole : consigner leur effet avant de comparer les résultats. La [sonde mémoire](_measurements/vram_wall_probe.py) et ses [résultats archivés](_measurements/) donnent un autre point d’entrée pour examiner les configurations par modèle et par carte ; ils ne dispensent pas de vérifier l’environnement courant. Les cartes et checkpoints [Qwen](https://huggingface.co/Qwen/Qwen3.5-0.8B), la documentation [TRL](https://huggingface.co/docs/trl/index), [PEFT](https://huggingface.co/docs/peft/index) et les optimisations [Unsloth](https://github.com/unslothai/unsloth) complètent les instructions des carnets.
 
 ## Pour aller plus loin — recherche
 
@@ -101,11 +115,18 @@ Les sorties committées permettent de distinguer ce qui a été exécuté, ce qu
 
 Pour une nouvelle expérience, séparer les données d'apprentissage et d'évaluation, conserver une méthode de référence, comparer plusieurs graines et vérifier le signal de récompense. Choisir la métrique avant d'interpréter un gain : perte, calibration, exactitude et succès d'un vérificateur répondent à des questions différentes.
 
+### Vérificateurs et spécifications
+
+Les vérificateurs de récompense ont des contrats différents : SymPy compare des expressions en 05 ; Z3 contrôle les contraintes des tâches de 11a/11b ; le [vérificateur Lean](verifiers/lean_rlvr_verifier.py) vérifie une preuve et examine ses dépendances axiomatiques. Une preuve qui compile avec `sorry` ne remplit pas ce dernier contrat. Le module réutilise le contrôle des axiomes de l'outillage Lean et applique sa liste d'axiomes autorisés.
+
+Pour utiliser ce vérificateur, installer la toolchain requise et examiner son choix de version : `ELAN_TOOLCHAIN` si défini, sinon le fichier `lean-toolchain` du projet, puis la version par défaut résolue par elan. Définir la variable ne télécharge pas à lui seul le moteur. En 16, la boucle de génération et de réparation ajoute une question distincte : même une preuve acceptée peut porter sur une spécification qui ne décrit pas correctement la tâche souhaitée.
+
 ### Parcours voisins
 
 - **Préparer les modèles** : [FT-02 — QLoRA](../FineTuning/FT-02-QLoRA-Quantization-Python.ipynb) étudie quantification et budget mémoire avant PT-02/11. [FT-03 — SFT](../FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb) et [FT-04 — Préférences](../FineTuning/FT-04-RLHF-DPO-Python.ipynb) apportent les recettes pratiques auxquelles PT-02/03 ajoutent l'étude du signal d'apprentissage.
 - **Revenir aux politiques et valeurs** : [RL-05 — Décision séquentielle](../../RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb) puis [RL-06c — PPO](../../RL/RL-06c-PPO-Depuis-Zero-Python.ipynb) préparent les estimateurs des paliers 08–10.
 - **Passer du banc synthétique à un modèle de langage** : [RLPT-02 — GRPO minimal](../../RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb) construit une boucle manuelle sur un petit modèle Qwen ; PT-11a/11b utilisent la pile d'entraînement outillée. [RLPT-04 — DPO contre GRPO](../../RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb) offre un protocole comparatif complémentaire aux scénarios estimatifs de PT-06.
+- **Comparer apprentissage hors ligne et objectifs de substitution** : [RL-09 — Apprentissage hors ligne](../../RL/RL-09-RL-Offline-Behavior-Cloning-Python.ipynb) prépare la réflexion sur les données et la politique de référence de PT-03. [RL-10 — Façonnage de récompense](../../RL/RL-10-Reward-Shaping-Curriculum-Python.ipynb) prépare l'analyse de l'objectif récompensé en PT-05/07.
 - **Examiner une récompense détournée** : après l'instrumentation de PT-07, [RLPT-03 — Reward hacking](../../RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb) étudie le comportement induit par un objectif de substitution imparfait.
 - **Retrouver les données de représentation** : PT-15b utilise les modules et traces d'[ICT-21 — Trajectoires SAE](../../IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21-SAETrajectoires-Python.ipynb) et d'[ICT-24 — Workspace](../../IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb). PT-15c compare, lui, deux modèles avec un dictionnaire partagé ; il ne dépend pas des traces ICT consommées par 15b.
 
