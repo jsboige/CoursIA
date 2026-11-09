@@ -34,7 +34,7 @@ Le passage exige **les deux** conditions, et la réutilisation n'en fait partie 
 
 | Cas | Mesure | Verdict |
 |---|---|---|
-| `IIT/ICT-Series/ict/` | 216 modules `.py`, `pyproject.toml` à la racine de la série ; **8 consommateurs par import réel** hors ICT-Series (les carnets PT_15b, 2.9g, Obs-04, KNOTS-02, Lean-34, SL-13b + `scripts/hashlife/k_trajectory.py` et son test) ; les 6 carnets passent tous par `sys.path` (1-2 sites chacun) | **barreau 2 dû** — réutilisation mesurée sans i/ii : extraction/installation, **pas de MCP** |
+| `IIT/ICT-Series/ict/` | package de modules `.py` + `pyproject.toml` à la racine de la série ; **8 consommateurs par import réel** hors ICT-Series (les carnets PT_15b, 2.9g, Obs-04, KNOTS-02, Lean-34, SL-13b + `scripts/hashlife/k_trajectory.py` et son test) ; les 6 carnets passent tous par `sys.path` (1-2 sites chacun) | **barreau 2 dû** — réutilisation mesurée sans i/ii : extraction/installation, **pas de MCP** |
 | `GameTheory-16*` | aucun import cross-série, aucune duplication mesurée | **rien dû** — le palier reste notebook |
 | `execute_notebook_with_complex_topic.py` | `@mcp.tool()` (l. 100), consommateur = un carnet Python | **MCP légitime** (kernels = état inter-processus) — et contre-exemple : l'audience agent et la capacité d'import ne sont pas des conditions nécessaires |
 
