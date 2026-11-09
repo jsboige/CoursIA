@@ -24,6 +24,12 @@ de types (incident `knot_lean`).
    repertoire), et hors du perimetre vendore : `.lake/packages/`, `_peters/`,
    `reference_docs/` -- les memes exclusions que la regle i18n de
    `.claude/rules/code-style.md` ;
+   **et atteignable par le lac** : le module est une `roots` ou correspond a
+   un `globs` de sa `[[lean_lib]]` (`A.*` = `A` et ses sous-modules), ou il
+   est importe, transitivement, par un tel module. Un `_en.lean` hors de ce
+   perimetre est un **orphelin** : Lake ne le compile jamais, il est rapporte
+   a part et n'est pas compte. Un fichier sous un lac imbrique appartient au
+   lac **le plus proche** (son propre `lakefile`), jamais au lac parent ;
 3. il declare au moins un `namespace` dont le nom finit par `_en`, **et** au
    moins une declaration propre (theorem, lemma, def, instance, structure,
    class, abbrev, inductive) ;
@@ -72,8 +78,9 @@ Usage
     python scripts/lean/count_fr_import_hybrids.py --self-test       # controle positif
 
 Codes de sortie : 0 = mesure rendue ; 2 = **incident** -- racine absente,
-perimetre vide (aucun lac), ou lacs trouves **sans aucun** fichier `_en.lean`
-mesure. Les deux derniers cas sont traites en incident et non en « zero
+perimetre vide (aucun lac), lakefile illisible (roots non lues : forme DSL
+hors du sous-ensemble reconnu, ou toml casse), ou lacs trouves **sans aucun**
+fichier `_en.lean` atteignable mesure. Ces cas sont traites en incident et non en « zero
 propre » : un compte nul qui ne se distingue pas d'un chemin casse n'est pas
 une mesure.
 """
@@ -88,8 +95,19 @@ import sys
 import tempfile
 from pathlib import Path
 
+import tomllib
+
 RC_OK = 0
 RC_INCIDENT = 2
+
+#: Selecteur de modules d'un lac, tel que Lake le lit :
+#:   ("one", "A.B") = `A.B` (Glob.one) : le module exactement ; forme nue
+#:       `` `A.B `` dans une liste `globs`, ou `.one `A.B`, ou `"A.B"` en toml ;
+#:   ("all", "A")   = `` `A.* `` (DSL) ou `"A.*"` (toml), ou `.andSubmodules `A` :
+#:       A et ses sous-modules ;
+#:   ("sub", "A")   = `` `A.+ `` (DSL) ou `"A.+"` (toml), ou `.submodules `A` :
+#:       les sous-modules seuls, A exclu.
+Selector = tuple[str, str]
 
 #: Exclusions du perimetre i18n (cf `.claude/rules/code-style.md`, EPIC #4980).
 #: Les fragments portent leurs deux separateurs : sans le `/` de tete, un
@@ -137,6 +155,172 @@ def find_lakes(root: Path) -> list[Path]:
             if in_scope(lakefile):
                 found.add(lakefile.parent)
     return sorted(found)
+
+
+class LakefileError(ValueError):
+    """Lakefile illisible : les roots ne se lisent pas, la mesure ne se rend pas."""
+
+
+LIB_HEAD_RE = re.compile(r"\blean_lib\s+(?:«([^»]+)»|([A-Za-z_][\w']*))")
+ROOTS_DSL_RE = re.compile(r"\broots\s*:=\s*#\[([^\]]*)\]")
+GLOBS_DSL_RE = re.compile(r"\bglobs\s*:=\s*#\[([^\]]*)\]")
+#: Element d'un tableau Lean `#[...]` : `` `X `` ou `` `X.* `` ou `` `X.+ ``,
+#: precede eventuellement de `.one` / `.submodules` / `.andSubmodules`.
+GLOB_ITEM_DSL_RE = re.compile(
+    r"(?:\.(one|submodules|andSubmodules)\s+)?"
+    r"`([A-Za-z0-9_']+(?:\.[A-Za-z0-9_']+)*(?:\.[*+])?)"
+)
+NAME_ITEM_DSL_RE = re.compile(r"`([A-Za-z0-9_.']+)")
+MODULE_NAME_RE = re.compile(r"[A-Za-z0-9_.']+")
+DSL_KIND_PREFIX = {None: "one", "one": "one", "submodules": "sub", "andSubmodules": "all"}
+
+
+def _suffixed_selector(name: str) -> Selector:
+    """`A.*` -> ("all", A) ; `A.+` -> ("sub", A) ; sinon ("one", name)."""
+    if name.endswith(".*"):
+        return ("all", name[:-2])
+    if name.endswith(".+"):
+        return ("sub", name[:-2])
+    return ("one", name)
+
+
+TOML_GLOB_RE = re.compile(r"[A-Za-z0-9_']+(?:\.[A-Za-z0-9_']+)*(?:\.[*+])?")
+
+
+def _glob_to_selector(glob: str) -> Selector:
+    if not TOML_GLOB_RE.fullmatch(glob):
+        raise LakefileError(f"glob non reconnu : {glob!r}")
+    return _suffixed_selector(glob)
+
+
+def _globs_dsl(path: Path, name: str, raw: str, key: str) -> list[Selector]:
+    """Elements d'un tableau Lean. Un element non reconnu leve LakefileError (fail-closed)."""
+    leftover = GLOB_ITEM_DSL_RE.sub("", raw)
+    if leftover.strip(" \t\r\n,"):
+        raise LakefileError(
+            f"{path} : `{key}` non reconnu pour {name} : {leftover.strip()[:80]!r}"
+        )
+    selectors: list[Selector] = []
+    for prefix, item in GLOB_ITEM_DSL_RE.findall(raw):
+        if prefix:
+            # Forme `.one` / `.submodules` / `.andSubmodules` : le nom est pris tel quel.
+            selectors.append((DSL_KIND_PREFIX[prefix], item))
+        else:
+            selectors.append(_suffixed_selector(item))
+    return selectors
+
+
+def _selectors_toml(path: Path) -> list[Selector]:
+    try:
+        config = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        raise LakefileError(f"{path} : {exc}") from exc
+    selectors: list[Selector] = []
+    for lib in config.get("lean_lib", []):
+        name = lib.get("name")
+        if not isinstance(name, str):
+            raise LakefileError(f"{path} : [[lean_lib]] sans `name`")
+        # Defauts (hypothese, non verifiee sans Lake) : `roots` vaut `[name]` seulement
+        # si ni `roots` ni `globs` ne sont declares ; sinon `roots` et `globs` sont
+        # compiles ensemble, on prend leur union.
+        roots = lib.get("roots", [] if "globs" in lib else [name])
+        globs = lib.get("globs", [])
+        for key, value in (("roots", roots), ("globs", globs)):
+            if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+                raise LakefileError(f"{path} : `{key}` doit etre une liste de chaines")
+        selectors += [("one", root) for root in roots]
+        selectors += [_glob_to_selector(glob) for glob in globs]
+    return selectors
+
+
+def _selectors_dsl(path: Path) -> list[Selector]:
+    """`lean_lib X where roots := #[...] globs := #[...]` : formes simples seulement.
+
+    Une forme non reconnue (`roots := base ++ #[...]`, globs calcules) leve
+    LakefileError : un lac dont on ne lit pas les roots n'est pas mesurable.
+    """
+    text = strip_comments(read_source(path))
+    heads = list(LIB_HEAD_RE.finditer(text))
+    selectors: list[Selector] = []
+    for index, head in enumerate(heads):
+        name = head.group(1) or head.group(2)
+        end = heads[index + 1].start() if index + 1 < len(heads) else len(text)
+        block = text[head.end():end]
+        roots_match = ROOTS_DSL_RE.search(block)
+        globs_match = GLOBS_DSL_RE.search(block)
+        # Clause presente mais de forme non reconnue : jamais de retour silencieux
+        # au defaut, jamais de mesure sur une lecture partielle.
+        if not roots_match and re.search(r"\broots\b", block):
+            raise LakefileError(f"{path} : `roots` non reconnu pour {name}")
+        if not globs_match and re.search(r"\bglobs\b", block):
+            raise LakefileError(f"{path} : `globs` non reconnu pour {name}")
+        if roots_match:
+            selectors += _globs_dsl(path, name, roots_match.group(1), "roots")
+        if globs_match:
+            selectors += _globs_dsl(path, name, globs_match.group(1), "globs")
+        if not roots_match and not globs_match:
+            # Defaut Lake (hypothese, non verifiee sans Lake) : racine `[name]`.
+            selectors.append(("one", name))
+    return selectors
+
+
+def lake_selectors(lake: Path) -> list[Selector]:
+    """Modules que Lake compile pour ce lac, lus dans son lakefile.
+
+    Les deux lakefiles coexistants ne sont pas devines : c'est un incident.
+    """
+    toml, dsl = lake / "lakefile.toml", lake / "lakefile.lean"
+    if toml.exists() and dsl.exists():
+        raise LakefileError(f"{lake} : lakefile.toml et lakefile.lean coexistent")
+    if toml.exists():
+        return _selectors_toml(toml)
+    return _selectors_dsl(dsl)
+
+
+def _selected(module: str, selectors: list[Selector]) -> bool:
+    for kind, name in selectors:
+        if kind in ("one", "all") and module == name:
+            return True
+        if kind in ("all", "sub") and module.startswith(name + "."):
+            return True
+    return False
+
+
+def lake_reachable(lake: Path, lakes: list[Path]) -> tuple[dict[str, Path], set[Path], list[str]]:
+    """Fichiers `.lean` du lac que Lake compile, avec les racines sans fichier.
+
+    Retourne (modules du lac -> chemin, chemins atteignables, roots sans fichier).
+    Un fichier sous un lac imbrique n'appartient pas au lac parent. L'atteignabilite
+    suit les imports : un module importe par une racine est compile par Lake.
+    """
+    nested = [other for other in lakes if other != lake and lake in other.parents]
+    files: dict[str, Path] = {}
+    for path in lake.rglob("*.lean"):
+        if not in_scope(path) or _under_any(path, nested):
+            continue
+        module = ".".join(path.relative_to(lake).with_suffix("").parts)
+        files[module] = path
+
+    selectors = lake_selectors(lake)
+    seeds = [module for module in files if _selected(module, selectors)]
+    missing = sorted(
+        {name for kind, name in selectors if kind == "one" and name not in files}
+    )
+
+    reached: set[str] = set()
+    stack = list(seeds)
+    while stack:
+        module = stack.pop()
+        if module in reached:
+            continue
+        reached.add(module)
+        path = files.get(module)
+        if path is None:
+            continue
+        for imported in imports_of(strip_comments(read_source(path))):
+            if imported in files and imported not in reached:
+                stack.append(imported)
+    return files, {files[module] for module in reached}, missing
 
 
 def read_source(path: Path) -> str:
@@ -187,8 +371,14 @@ def imports_of(text: str) -> list[str]:
     return modules
 
 
-def hybrid_edges(lake: Path, source: Path, text: str) -> list[str]:
-    """Aretes FR-import : module du meme lac, non suffixe, jumeau `_en` present."""
+def hybrid_edges(
+    lake: Path, source: Path, text: str, owned: set[Path] | None = None
+) -> list[str]:
+    """Aretes FR-import : module du meme lac, non suffixe, jumeau `_en` present.
+
+    `owned` (chemins que le lac possede, lakes imbriques exclus) restreint la cible
+    au meme lac quand il est fourni.
+    """
     edges: list[str] = []
     for module in imports_of(text):
         if module.endswith("_en"):
@@ -196,16 +386,24 @@ def hybrid_edges(lake: Path, source: Path, text: str) -> list[str]:
         target = lake / (module.replace(".", "/") + ".lean")
         if not target.exists() or not in_scope(target):
             continue
+        if owned is not None and target not in owned:
+            continue
         if target.with_name(target.stem + "_en.lean").exists():
             edges.append(module)
     return edges
 
 
-def scan_lake(lake: Path) -> list[dict]:
-    """Fichiers `_en.lean` du lac, avec leurs compteurs et leurs aretes."""
+def scan_lake(lake: Path, lakes: list[Path] | None = None) -> tuple[list[dict], list[Path], list[str]]:
+    """Fichiers `_en.lean` atteignables du lac (compteurs et aretes), orphelins, roots sans fichier."""
+    lakes = [lake] if lakes is None else lakes
+    files, reachable, missing = lake_reachable(lake, lakes)
+    orphans: list[Path] = []
     records: list[dict] = []
-    for source in sorted(lake.rglob("*_en.lean")):
-        if not in_scope(source):
+    for source in sorted(files.values()):
+        if not source.name.endswith("_en.lean"):
+            continue
+        if source not in reachable:
+            orphans.append(source)
             continue
         text = strip_comments(read_source(source))
         namespaces = [m.group(1) for m in NS_RE.finditer(text)]
@@ -217,10 +415,10 @@ def scan_lake(lake: Path) -> list[dict]:
                 "relative": source.relative_to(lake).as_posix(),
                 "namespace_suffixed": any(ns.endswith("_en") for ns in namespaces),
                 "declarations": len(DECL_RE.findall(text)),
-                "edges": hybrid_edges(lake, source, text),
+                "edges": hybrid_edges(lake, source, text, owned=set(files.values())),
             }
         )
-    return records
+    return records, orphans, missing
 
 
 def is_hybrid(record: dict) -> bool:
@@ -234,9 +432,17 @@ def is_hybrid(record: dict) -> bool:
 
 def census(root: Path) -> dict:
     records: list[dict] = []
+    orphans: list[dict] = []
+    missing: list[dict] = []
     lakes = find_lakes(root)
     for lake in lakes:
-        records.extend(scan_lake(lake))
+        lake_records, lake_orphans, lake_missing = scan_lake(lake, lakes)
+        records.extend(lake_records)
+        orphans.extend(
+            {"lake": lake.name, "relative": source.relative_to(lake).as_posix()}
+            for source in lake_orphans
+        )
+        missing.extend({"lake": lake.name, "module": module} for module in lake_missing)
 
     # Fichiers `_en.lean` du perimetre qu'aucun lac ne porte : ils ne peuvent
     # pas produire d'arete (une arete est un import du **meme lac**), mais les
@@ -261,6 +467,9 @@ def census(root: Path) -> dict:
         "n_lakes": len(lakes),
         "n_en_files": len(records),
         "n_en_outside_lakes": len(outside),
+        "n_en_orphans": len(orphans),
+        "orphans": orphans,
+        "missing_roots": missing,
         "files": len(hybrids),
         "edges": sum(len(r["edges"]) for r in hybrids),
         "per_lake": dict(sorted(per_lake.items())),
@@ -295,6 +504,14 @@ def render(report: dict, show_list: bool) -> str:
             f"  ({report['n_en_outside_lakes']} fichiers *_en.lean hors lac, "
             "non mesures : une arete se mesure dans un lac)"
         )
+    if report.get("n_en_orphans"):
+        lines.append(
+            f"  ({report['n_en_orphans']} fichiers *_en.lean hors roots de leur lac, "
+            "orphelins non mesures : Lake ne les compile pas)"
+        )
+    if report.get("missing_roots"):
+        names = ", ".join(f"{m['lake']}:{m['module']}" for m in report["missing_roots"])
+        lines.append(f"  (racines declarees sans fichier : {names})")
     lines.extend(
         [
             "",
@@ -315,6 +532,11 @@ def render(report: dict, show_list: bool) -> str:
                 f"  [{item['lake']}] {item['relative']} "
                 f"(decl={item['declarations']}) -> {', '.join(item['edges'])}"
             )
+        if report.get("orphans"):
+            lines.append("")
+            lines.append("Orphelins (hors roots, non mesures) :")
+            for item in report["orphans"]:
+                lines.append(f"  [{item['lake']}] {item['relative']}")
     return "\n".join(lines)
 
 
@@ -328,7 +550,18 @@ def self_test() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         lake = Path(tmp) / "fixture_lean"
         (lake / "Alpha").mkdir(parents=True)
-        (lake / "lakefile.toml").write_text('name = "fixture"\n', encoding="utf-8")
+        (lake / "lakefile.toml").write_text(
+            'name = "fixture"\n\n[[lean_lib]]\nname = "Fixture"\nglobs = ["Alpha.*"]\n',
+            encoding="utf-8",
+        )
+
+        # ORPHELIN : hybride parfait, mais hors des globs du lac -> Lake ne le compile pas.
+        (lake / "Beta").mkdir()
+        (lake / "Beta" / "Hidden_en.lean").write_text(
+            "import Alpha.Base\n\nnamespace Beta.Hidden_en\n\ndef h := 3\n\n"
+            "end Beta.Hidden_en\n",
+            encoding="utf-8",
+        )
 
         # FR de base + jumeau propre : l'import du jumeau est deja suffixe.
         (lake / "Alpha" / "Base.lean").write_text(
@@ -385,6 +618,12 @@ def self_test() -> int:
                 failures.append(f"faux positif : {unexpected}")
         if any("vendor" in item for item in found):
             failures.append("faux positif : un fichier vendore a ete mesure")
+        if "Beta/Hidden_en.lean" in found:
+            failures.append("faux positif : un orphelin (hors globs) a ete compte")
+        if report["n_en_orphans"] != 1:
+            failures.append(
+                f"orphelin attendu 1 (Beta/Hidden_en.lean), obtenu {report['n_en_orphans']}"
+            )
         if report["files"] != 1 or report["edges"] != 1:
             failures.append(
                 f"compte attendu 1 fichier / 1 arete, obtenu "
@@ -396,7 +635,10 @@ def self_test() -> int:
         for failure in failures:
             print(f"  - {failure}")
         return 1
-    print("SELF-TEST OK : 1 hybride detecte, 3 faux positifs ecartes, vendore ignore")
+    print(
+        "SELF-TEST OK : 1 hybride detecte, 3 faux positifs ecartes, "
+        "1 orphelin hors roots ecarte, vendore ignore"
+    )
     return 0
 
 
@@ -431,7 +673,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"INCIDENT : racine introuvable : {root}", file=sys.stderr)
         return RC_INCIDENT
 
-    report = census(root)
+    try:
+        report = census(root)
+    except LakefileError as exc:
+        print(f"INCIDENT : lakefile illisible, roots non lues : {exc}", file=sys.stderr)
+        return RC_INCIDENT
     if report["n_lakes"] == 0:
         print(
             "INCIDENT : aucun lac trouve -- un perimetre vide n'est pas un "

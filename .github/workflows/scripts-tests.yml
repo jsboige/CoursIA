@@ -83,16 +83,16 @@ on:
       # #25201 : le refactor ADK a déplacé une suite de contrat hors Track2.
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/**'
       # #17580 fallacy-detection snapshot guard (mirror of the push path above).
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/**'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ontologies/**'
       - 'scripts/fallacy_detection/**'
-      # #18392 texte->PL : la suite pytest de Argument_Analysis/tests (collectee
-      # par le job ci-dessous, cible Argument_Analysis entiere) n'avait AUCUN
+      # #18392 texte->PL : la suite pytest de ArgumentAnalysis/tests (collectee
+      # par le job ci-dessous, cible ArgumentAnalysis entiere) n'avait AUCUN
       # declencheur sur ses propres sources -- argumentation_lib/** ne fait pas
       # partie de scripts/**, donc une PR qui vendorise un module + ses tests
       # n'executait jamais la suite (#10416 pattern). Miroir push/pull_request.
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/**'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/tests/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/tests/**'
       # #13746 tranche 2 (mirror of the push paths above).
       - 'MyIA.AI.Notebooks/QuantConnect/scripts/**'
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests/**'
@@ -109,6 +109,8 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/requirements.txt'
       # #21100 pli 0 Origami (Kernel Gateway) (mirror of the push path above).
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
+      # #23423 (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/launchers/launch_capped.sh'
   workflow_dispatch:
 
 permissions:
@@ -297,6 +299,12 @@ jobs:
           # Without it the 6 tests fail on ModuleNotFoundError instead of
           # exercising the script.
           pip install pypdf
+          # RDF catalog export: test_generate_curriculum_rdf imports rdflib
+          # at collection time and validates the produced graph with pyshacl.
+          # The test is included by scripts/notebook_tools/tests below, so
+          # these are job dependencies, not optional notebook extras.
+          # Match the SemanticWeb series' supported RDF stack.
+          pip install "rdflib>=7.0.0,<8.0.0" "pyshacl>=0.27.0"
           # open_spiel: coeur du service Kernel Gateway CFR (GameTheory/gateway,
           # #21104 / pli 0 de l'Epic #19571). La roue 2.0.2 manylinux_2_27
           # x86_64 existe pour le python 3.11 de ce job ; sans le paquet, la
@@ -312,7 +320,7 @@ jobs:
           # Origami). Without it the suite fails on ModuleNotFoundError
           # instead of exercising the service core.
           pip install z3-solver
-          # python-sat (PySAT): Argument_Analysis/argumentation_lib/sat_handler.py
+          # python-sat (PySAT): ArgumentAnalysis/argumentation_lib/sat_handler.py
           # branche l'entailement propositionnel sur l'organe du depot
           # (SymbolicAI/ext_tools/sat_solver.py), qui importe `pysat` et pose
           # PYSAT_AVAILABLE. Sans le paquet, l'organe retombe puis
@@ -576,7 +584,7 @@ jobs:
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_narration.py \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
-            MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis \
+            MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis \
             GradeBookApp \
             scripts/datasets/tests \
             scripts/genai-stack/tests \
@@ -719,7 +727,7 @@ jobs:
           if [ "$N" -lt "$GRADEBOOK_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$GRADEBOOK_TESTS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$GRADEBOOK_TESTS_FLOOR)."
 
-      - name: Argument_Analysis tests collection floor (174)
+      - name: ArgumentAnalysis tests collection floor (174)
         # Meme semantique a deux signaux que les floors audit (455), secrets
         # (148) et GradeBook (15) : une collection cassee (import manquant au
         # module level, crash de collection) rend 0 test collecte au lieu d'un
@@ -732,7 +740,7 @@ jobs:
         env:
           ARGUMENT_ANALYSIS_TESTS_FLOOR: 174
         run: |
-          N=$(python -m pytest MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          N=$(python -m pytest MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$ARGUMENT_ANALYSIS_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR)."

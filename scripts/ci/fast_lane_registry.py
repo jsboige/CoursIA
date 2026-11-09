@@ -3634,6 +3634,7 @@ TRANCHE36: list[Guard] = [
 
 
 
+
 # ---------------------------------------------------------------------------
 # TRANCHE 38 (#22012, bascule graduelle option 4, sign-off user 2026-11-02) --
 # premiere bascule ADVISORY -> BLOQUANT du scanner md-hierarchy : la classe
@@ -3678,6 +3679,82 @@ TRANCHE38: list[Guard] = [
         ],
         blocking=True,
         needs_base=True,
+
+        absorbed=True,
+    ),
+]
+
+
+
+# ---------------------------------------------------------------------------
+# Garde de source unique du PCM par poches (#20188, critere 2).
+#
+# Le modele de construction de portefeuille par poches a existe en neuf copies
+# sous `MyIA.AI.Notebooks/QuantConnect/`, en six variantes, et le correctif
+# `additive` (#19740) n'etait present que dans trois d'entre elles : un
+# correctif pose sur une copie ne se propageait pas, et rien ne le signalait.
+#
+# L'extraction a ete livree (#21134) : `projects/SharedPCM/pouches_pcm.py` est
+# la source canonique, importee par les composites. Deux copies subsistent, et
+# chacune a une raison qui ne se corrige pas par un copier-coller : le kit
+# pedagogique `03-Framework-Composite` est autonome (le code est copie par
+# l'apprenant, sans bibliotheque QC attachee), et `TrendWeatherPointInTime`
+# est une candidate gelee du registre de l'ombre (entree `tw-pit`, code rejoue
+# au SHA gele) que #20188 interdit de toucher.
+#
+# La garde ne pretend donc pas supprimer ces copies : elle refuse qu'une
+# **nouvelle** copie apparaisse sans declaration, et qu'une copie **declaree**
+# soit modifiee sans re-declaration. Les declarations vivent dans
+# `scripts/quantconnect/pcm_single_source.json` (le manifeste), qui porte la
+# source canonique, les copies declarees et la raison de chacune.
+#
+# Pourquoi la voie rapide et pas un workflow dedie : un workflow
+# `pull_request` auto-heberge doit etre enregistre dans l'allowlist de
+# `check_self_hosted_runner_policy.py`, et le cliquet refuse `ubuntu-latest`
+# sur une PR. La voie rapide emet le check-run sous son nom canonique
+# (`absorbed=True`), donc avec une conclusion REELLE, sans payer un second
+# clone du depot.
+#
+# Le manifeste figure dans `paths` : une revision qui change les declarations
+# doit rejouer la garde, sinon une declaration perimee passerait sans temoin
+# (lecon #11685/#12817). Idem pour le corps de tests, qui porte le controle
+# positif exige par #20188 : une copie volontairement modifiee fait rougir.
+# Les deux fichiers de l'organe lui-meme figurent aussi dans `paths` (le
+# registre et le moteur) : une revision qui etend ou retrecit la portee de la
+# garde doit la rejouer — les gardes natifs voisins font de meme.
+#
+# rc=2 = manifeste illisible ou organe absent : c'est un **defaut du depot**,
+# pas un incident d'entree comme le base injoignable d'un garde de delta. La
+# garde le declare donc en rouge : un manifeste casse est une garde debranchee.
+#
+# Numero : TRANCHE41. TRANCHE38 est pris par le md-hierarchy HINT-AS-HEADING
+# (bascule #22012, sur main), TRANCHE39 par la garde cell-ordering (sur main),
+# et TRANCHE40 par une autre garde tombee sur main apres le coupe de cette
+# branche ; collision d'index levee en re-allocant cette garde au premier slot
+# libre (41) -- main garde le 40 (convention de collision TRANCHE, c.852/c.854).
+# ---------------------------------------------------------------------------
+TRANCHE41: list[Guard] = [
+    Guard(
+        name="pcm-single-source-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            # Toute definition nouvelle de la famille du PCM par poches est
+            # declencheuse : le motif `/**/` couvre ici la racine comme les
+            # sous-repertoires (semantique GitHub, cf path_matches).
+            "MyIA.AI.Notebooks/QuantConnect/**/*.py",
+            "scripts/quantconnect/check_pcm_single_source.py",
+            "scripts/quantconnect/pcm_single_source.json",
+            "scripts/quantconnect/tests/test_check_pcm_single_source.py",
+            # L'organe lui-meme : une revision qui change sa portee doit la
+            # rejouer (les 21 gardes natifs voisins declarent la meme paire).
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/quantconnect/check_pcm_single_source.py",
+        ],
+        blocking=True,
+
         absorbed=True,
     ),
 ]
@@ -3724,6 +3801,77 @@ TRANCHE39: list[Guard] = [
         needs_base=True,
         iterates_paths=True,
         iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 40 -- cliquet de non-regression du POIDS AUTO-CHARGE du harnais
+# (#15204).
+#
+# Le mandat user porte sur la surface **auto-chargee** (regles sans
+# frontmatter `paths:` + `CLAUDE.md` du depot), pas sur le poids total du
+# depot. L'instrument canonique qui la mesure existe depuis #11554
+# (`scripts/audit/measure_autoloaded_harness.py`) et sait deja produire une
+# mesure en octets ET en tokens derives -- mais il n'etait cable par AUCUN
+# workflow : la cible du mandat (157 500 o / 70k tokens) n'a donc jamais rien
+# interdit, et la surface a oscille au-dessus d'elle sur toute la fenetre
+# mesuree (185 454 o le 2026-09-06, 203 903 o le 2026-10-18, 181 722 o le
+# 2026-11-06, pour une cible a 157 500 o).
+#
+# Le cliquet porte sur le DELTA base -> tete, jamais sur un seuil absolu :
+# la surface actuelle est deja au-dessus de la cible, un garde qui accuse la
+# dette pre-existante serait rouge des sa naissance et ferait echouer toutes
+# les PR sans qu'aucune ne l'ait causee (precedent : le garde de collision
+# d'index de notebook, natif lui aussi). Une PR qui fait BAISSER la surface
+# est donc toujours verte -- c'est le levier A du mandat qui sera mesure
+# ainsi, une regle path-gatee a la fois.
+#
+# La mesure n'est pas reimplementee : `argv` appelle l'organe canonique (sa
+# sortie JSON sur stdout EST l'instantane), `delta_argv` compare les deux
+# instantanes. Un second compte de la surface serait un second chiffre qui
+# derive -- c'est exactement ce que l'instrument canonique a ete cree pour
+# corriger.
+#
+# `pre_argv` : la suite pytest du comparateur, qui contient le controle
+# positif END-TO-END (mesure reelle de l'organe sur un arbre, puis
+# comparaison). Un detecteur qui ne prouve pas qu'il tire ne rend pas vert
+# (precedent #11685 / #12817).
+#
+# `swap_paths` : ce que la voie rapide rebascule a la base entre les deux
+# passes -- `CLAUDE.md` et le repertoire des regles, soit exactement les
+# surfaces que l'organe mesure.
+# ---------------------------------------------------------------------------
+TRANCHE40: list[Guard] = [
+    Guard(
+        name="Harness autoloaded weight ratchet (base vs PR, bloquant)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "CLAUDE.md",
+            ".claude/rules/**",
+            "scripts/audit/measure_autoloaded_harness.py",
+            "scripts/ci/check_harness_weight_delta.py",
+            "scripts/tests/test_check_harness_weight_delta.py",
+            # Le moteur et le registre sont dans le perimetre : une PR qui les
+            # touche peut casser la bascule base/tete dont ce garde depend, et
+            # doit donc le rejouer (meme convention que TRANCHE8).
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/tests/test_check_harness_weight_delta.py",
+        ],
+        argv=["python", "scripts/audit/measure_autoloaded_harness.py", "--json"],
+        delta_argv=[
+            "python", "scripts/ci/check_harness_weight_delta.py",
+            "{base_json}", "{head_json}",
+        ],
+        swap_paths=["CLAUDE.md", ".claude/rules"],
+        blocking=True,
+        needs_base=True,
+        diff_bounded=True,
         absorbed=True,
     ),
 ]

@@ -2,7 +2,7 @@
 # Install: pip install -r requirements.txt
 #
 # Note: Fast-Downward planner requires WSL or Docker.
-# See Planners-0-Setup notebook and README.md for environment setup.
+# See Planners-00-Setup-Python notebook and README.md for environment setup.
 
 # Core Planning
 unified-planning>=1.1         # AI Planning framework (Planners-11)

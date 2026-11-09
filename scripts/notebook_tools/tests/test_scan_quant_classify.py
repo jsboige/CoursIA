@@ -323,12 +323,12 @@ class TestGoldenSetNitsC1273:
 
 
 # --------------------------------------------------------------------------- #
-#  Tests golden set fondateur Argument_Analysis (c.1275 — vague #9434 ArgAna)
+#  Tests golden set fondateur ArgumentAnalysis (c.1275 — vague #9434 ArgAna)
 # --------------------------------------------------------------------------- #
 
 
 class TestGoldenSetArgAnalysisC1275:
-    """Golden set fondateur c.1275 — anti-FP classifier Argument_Analysis.
+    """Golden set fondateur c.1275 — anti-FP classifier ArgumentAnalysis.
 
     Cas observes firsthand dans Argument_Analysis_Agentic-1-informal cell 9,
     Argumentation-08b-Executor-Python.ipynb cell 0, Argument_Analysis_Ontology_*.ipynb

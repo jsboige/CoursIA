@@ -190,7 +190,7 @@ def repl_lean_version(repl_path, chunk_size=8 * 1024 * 1024):
     return None
 
 
-def resolve_repl(home, tag):
+def resolve_repl(home, tag, elan_home=None):
     """Choisit le binaire REPL couple a la toolchain `tag` (ex: 'v4.30.0').
 
     Renvoie (chemin, version_du_repl). `chemin` est None quand aucune
@@ -199,7 +199,9 @@ def resolve_repl(home, tag):
     des cellules en erreur de parse sous un exit 0 (#18511).
     """
     tag = tag.lstrip('v')
-    elan_bin = os.path.join(home, '.elan', 'bin')
+    # `home` remains the first argument for existing callers and tests; an
+    # explicit ELAN_HOME lets the installer place toolchains outside HOME.
+    elan_bin = os.path.join(elan_home or os.path.join(home, '.elan'), 'bin')
     # 1. binaire nomme d'apres la toolchain (construit contre elle).
     matched = os.path.join(elan_bin, 'repl-' + tag)
     if os.path.isfile(matched):
@@ -282,10 +284,12 @@ def main():
     # the REPL and the venv under $HOME): a hardcoded account path broke the
     # kernel for every other WSL user and for native Linux/macOS installs.
     home = os.path.expanduser('~')
-    elan_bin = os.path.join(home, '.elan', 'bin')
+    elan_home = os.environ.get('ELAN_HOME') or os.path.join(home, '.elan')
+    venv_path = os.environ.get('LEAN4_VENV') or os.path.join(home, '.lean4-venv')
+    elan_bin = os.path.join(elan_home, 'bin')
     os.environ['PATH'] = os.pathsep.join([
         elan_bin,
-        os.path.join(home, '.lean4-venv', 'bin'),
+        os.path.join(venv_path, 'bin'),
         '/usr/local/bin', '/usr/bin', '/bin',
     ])
 
@@ -330,7 +334,7 @@ def main():
         return 2
 
     tag = toolchain.split(':')[-1].strip()
-    repl_path, repl_version = resolve_repl(home, tag)
+    repl_path, repl_version = resolve_repl(home, tag, elan_home=elan_home)
     if repl_path is None:
         message = (
             "Lean 4 kernel startup failed: REPL/toolchain divergence. The pinned "

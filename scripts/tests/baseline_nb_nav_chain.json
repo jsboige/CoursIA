@@ -337,7 +337,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
     {
@@ -797,17 +797,17 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11b-Picross-CSharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11-Picross-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13b-TSP-Metaheuristics-CSharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18b-HyperparameterTuning-CSharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
@@ -817,7 +817,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1b-NQueens-CSharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1-NQueens-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
@@ -827,7 +827,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-20b-SudokuBenchmark-CSharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-20-SudokuBenchmark-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
@@ -852,7 +852,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-7b-Wordle-CSharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-7-Wordle-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
@@ -912,107 +912,107 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01-Toulmin-Model-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01b-Schemes-Walton-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01b-Schemes-Walton-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02b-Argumentum-Cards-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02b-Argumentum-Cards-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-04b-Knowledge-Base-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-04b-Knowledge-Base-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05b-Multi-Backend-Routing-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05b-Multi-Backend-Routing-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05c-Formal-Richness-Matrix-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05c-Formal-Richness-Matrix-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07b-Communication-Channels-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08e-Argument-Profile-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08e-Argument-Profile-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-01-Graphes-Dates-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Obs-01-Graphes-Dates-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-02-Initiation-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Obs-02-Initiation-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-03-Recollement-Lectures-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Obs-03-Recollement-Lectures-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Obs-04-Recollement-Strate6-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Obs-04-Recollement-Strate6-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5c-Differentiel-Atteignabilite.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical"
     },
     {
