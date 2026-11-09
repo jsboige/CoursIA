@@ -116,7 +116,7 @@ Les carnets `RL-17` et `RL-18` n'existent plus dans cette série : ce sont déso
 
 ## Contenu détaillé du parcours principal
 
-Les carnets du socle numérotés de 01 à 13 sont détaillés ci-dessous, section par section, avec les figures extraites de leurs sorties réelles — la provenance exacte de chaque figure (cellule source, poids, alt-text) est consignée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md). Les sections 6b à 6f et 7b détaillent séparément les approfondissements de leur parent. Les carnets 14 à 21 et la sous-série `PostTraining/` sont décrits dans la table ci-dessus.
+Les carnets du socle numérotés de 01 à 13 sont détaillés ci-dessous, section par section, avec les figures extraites de leurs sorties réelles — la provenance exacte de chaque figure (cellule source, poids, alt-text) est consignée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md). Les sections 6b à 6f détaillent séparément les approfondissements de leur parent. Les carnets 14 à 21 et la sous-série `PostTraining/` sont décrits dans la table ci-dessus.
 ### Notebook 1 - Introduction avec PPO et CartPole
 
 | Section | Contenu |
