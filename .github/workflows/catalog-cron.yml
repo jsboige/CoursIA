@@ -140,8 +140,11 @@ jobs:
       # PyYAML is required by generate_catalog.py's editorial-review registry
       # loader (_load_editorial_registry, added in #8345). Without it the
       # generator crashes: ModuleNotFoundError: No module named 'yaml'.
+      # rdflib/pyshacl: same bounds as scripts-tests.yml and the SemanticWeb
+      # series requirements -- an unpinned major bump would rewrite the
+      # exported Turtle and churn every catalogue-refresh PR.
       - name: Install catalogue dependencies
-        run: pip install pyyaml rdflib pyshacl
+        run: pip install pyyaml "rdflib>=7.0.0,<8.0.0" "pyshacl>=0.27.0"
 
       - name: Regenerate catalog (.json + .md) + README markers
         run: |
@@ -149,8 +152,6 @@ jobs:
           # No --json-only here: refresh BOTH root artifacts (.json AND .md).
           # --git-tracked-only keeps CI output deterministic (ignores untracked).
           python scripts/notebook_tools/generate_catalog.py --git-tracked-only
-          # Le graphe du cursus est un artefact dérivé du catalogue, validé par SHACL.
-          python scripts/notebook_tools/generate_curriculum_rdf.py --output CURRICULUM.generated.ttl
           python scripts/notebook_tools/expand_catalog_markers.py
           # Health dashboard (#4210 acceptance #4): derive
           # docs/archive/reference/HEALTH_DASHBOARD.md from the freshly-regenerated
@@ -172,6 +173,13 @@ jobs:
           # any merge that adds or removes a pair. The per-PR guard is
           # ADVISORY (TRANCHE26), freshness is owned here.
           python scripts/translation/build_golden_set.py
+
+      # Le graphe du cursus est un artefact dérivé du catalogue, validé par
+      # SHACL. Étape à part : un export refusé par les formes est nommé dans
+      # le journal du job et n'interrompt pas la génération des autres
+      # artefacts de l'étape précédente.
+      - name: Export the curriculum graph (Turtle, SHACL-validated)
+        run: python scripts/notebook_tools/generate_curriculum_rdf.py --output CURRICULUM.generated.ttl
 
       - name: Commit + push to chore/catalog-refresh-pending if the catalog drifted
         id: drift
