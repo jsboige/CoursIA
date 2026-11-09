@@ -184,7 +184,13 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   repeated-prose-advisory.yml (#17443).
     "consecutive-code-cells-advisory.yml",
     "ict-tests.yml",
-    "lean-conway.yml",
+    # lean-conway.yml : workflow SUPPRIME par la migration matricielle de
+    #   conway_lean (#13751 axe workflows, PR #25256 -- entree `conway` au
+    #   manifeste ci_lakes.json, wrapper retire). Entree d'allowlist retiree
+    #   dans le meme commit, comme lean-knot.yml et lean-planning.yml avant
+    #   lui : une entree pointant un workflow inexistant serait une reference
+    #   morte. Les jobs de la famille (c) vivent desormais dans
+    #   lean-ci-matrix.yml, deja declare.
     "lean-i18n-drift.yml",
     # lean-knot.yml : workflow SUPPRIME par la migration matricielle de
     #   knot_lean (#13751 -- entree `knot` au manifeste ci_lakes.json, wrapper
@@ -776,10 +782,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # absente ou != 'true'), chaque job resout sur ubuntu-latest : l'etat du
     # 27/10 est conserve, et l'entree d'allowlist ne rend le pool local
     # atteignable QUE si un operateur bascule la variable.
-    # Les cinq autres workflows de la famille (lean-conway, lean-i18n-drift,
-    # quarto-pages-deploy, slides-build-advisory,
+    # Les cinq autres workflows de la famille (a l'epoque : lean-conway,
+    # lean-i18n-drift, quarto-pages-deploy, slides-build-advisory,
     # slides-composition-pr-relay) etaient DEJA declares plus haut : seul
-    # l'absent est ajoute ici.
+    # l'absent est ajoute ici. lean-conway.yml a depuis ete SUPPRIME (PR
+    # #25256, voir son commentaire d'entree retire plus haut).
     # `lean-planning.yml` n'est PAS declare : le workflow a ete SUPPRIME sur
     # main par #23467 (#13751 -- migration de planning_lean vers la matrice
     # CI, le wrapper est retire) entre la base de cette PR et aujourd'hui. Une
@@ -1107,6 +1114,24 @@ def load_baseline(path: Path) -> set[str]:
         for line in path.read_text(encoding="utf-8").splitlines()
         if line.strip() and not line.startswith("#")
     }
+
+
+def stale_timeout_baseline_entries(
+    workflows_dir: Path, baseline: set[str]
+) -> tuple[list[str], list[str]]:
+    """Return baseline keys that no longer name an unbounded local job.
+
+    This is a read-only maintenance aid, not part of the blocking ratchet. A
+    key is current only while its workflow/job still exists and the job can
+    reach a self-hosted runner without a job-level timeout.
+    """
+    result = scan_workflows(workflows_dir, check_timeouts=True, baseline=set())
+    still_unbounded = {
+        f"{item.workflow}:{item.job}"
+        for item in result.violations
+        if item.code == "MISSING_TIMEOUT"
+    }
+    return sorted(baseline - still_unbounded), result.broken
 
 
 @dataclass(frozen=True)
@@ -2043,7 +2068,27 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="rewrite the timeout baseline from what is measured",
     )
+    parser.add_argument(
+        "--show-stale-baseline",
+        action="store_true",
+        help="list baseline keys that no longer name an unbounded local job; "
+             "read-only diagnostic, not a policy check",
+    )
     args = parser.parse_args(argv)
+
+    if args.show_stale_baseline:
+        stale, broken = stale_timeout_baseline_entries(
+            args.workflows_dir, load_baseline(args.baseline)
+        )
+        if broken:
+            print("[self-hosted-policy] diagnostic baseline incomplet: ")
+            for item in broken:
+                print(f"  BROKEN: {item}")
+            return EXIT_BROKEN
+        print(f"[self-hosted-policy] cles obsoletes dans la baseline: {len(stale)}")
+        for key in stale:
+            print(f"  ORPHELINE {key}")
+        return EXIT_OK
 
     if args.update_baseline:
         measured = scan_workflows(

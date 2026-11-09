@@ -1387,7 +1387,7 @@ layout: default
   - Coherence des ensembles et forces contextuels des arguments
 - **Argumentum**
 
-*Notebooks : [Tweety-05-Abstract-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb) (Dung, semantiques, CF2) · [Tweety-06-Structured-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) (ASPIC+, ABA) · [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb).*
+*Notebooks : [Tweety-05-Abstract-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb) (Dung, semantiques, CF2) · [Tweety-06-Structured-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) (ASPIC+, ABA) · [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb).*
 
 ---
 layout: default
@@ -1415,7 +1415,7 @@ layout: default
 
 <img src="./images/img_023.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Argument mining structure" />
 
-*Notebooks : [Argumentation-Onto-01-AIF-OWL2-Python](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb) (ontologie AIF+) · [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb) · [Argument_Analysis_Agentic-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb) (reconstruction depuis le texte).*
+*Notebooks : [Argumentation-Onto-01-AIF-OWL2-Python](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb) (ontologie AIF+) · [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01-Toulmin-Model-Python.ipynb) · [Argument_Analysis_Agentic-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb) (reconstruction depuis le texte).*
 
 ---
 layout: default
@@ -2223,7 +2223,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Hypotheses = explications raisonnables
 - Explications minimales (Ockham)
 
-*Notebooks : [Argument_Analysis_Agentic-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb) (JTMS : justification et revision) · [Tweety-04-Belief-Revision-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) (postulats AGM).*
+*Notebooks : [Argument_Analysis_Agentic-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb) (JTMS : justification et revision) · [Tweety-04-Belief-Revision-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) (postulats AGM).*
 
 ---
 layout: default
@@ -2330,7 +2330,7 @@ graph TB
 
     B --> D[Pont : Tweety = backend Java]
     C --> D
-    D --> E[Series Argument_Analysis, GameTheory, SmartContracts]
+    D --> E[Series ArgumentAnalysis, GameTheory, SmartContracts]
 ```
 
 **Total** : ~18 heures de contenu interactif (7h Tweety + 11h Lean).
@@ -2762,7 +2762,7 @@ layout: section
 
 | Serie | Connection avec Tweety + Lean |
 |-------|--------------------------------|
-| **Argument_Analysis** | Tweety = backend Java pour l'analyse de textes argumentatifs |
+| **ArgumentAnalysis** | Tweety = backend Java pour l'analyse de textes argumentatifs |
 | **GameTheory** | Notebook 9 Tweety (vote) + `social_choice_lean/` (Arrow, Sen) |
 | **SmartContracts** | Verification Solidity (Certora, SMTChecker) — même stack SAT/SMT |
 | **ML** | TorchLean (Lean 11/11a) : verification de NN entraines |

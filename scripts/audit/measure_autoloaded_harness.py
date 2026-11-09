@@ -36,12 +36,24 @@ Exit codes :
          --ref inatteignable, ratio invalide, ou seuil demande alors qu'une
          surface machine manque (une somme partielle ne certifie aucun budget)
 
+Contrat du JSON (ce qu'un consommateur peut compter sur) :
+  - chaque surface porte `bytes` ET `sha256` (empreinte du contenu) : c'est
+    elle qui permet de distinguer une SUPPRESSION d'un renommage ;
+  - `missing` liste les surfaces du DEPOT absentes, `machine_surfaces_missing`
+    celles de la machine -- une absence se DIT, elle ne se compte pas zero ;
+  - `measurement_complete` vaut vrai seulement si aucune surface demandee ne
+    manque (depot ET machine) ;
+  - `ratio_bytes_per_token` est emis par la MESURE : un consommateur ne doit
+    pas redoubler la constante (une constante dupliquee derive des que l'une
+    des deux change).
+
 Aucun workflow CI n'appelle ce script : --max-bytes existe pour cabler le
 garde-fou de non-regression demande par #11554, il ne rougit nulle part tant
 que personne ne l'a cable.
 """
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -145,6 +157,7 @@ def machine_surfaces(root, memory_file=None):
                 "name": path.name,
                 "path": str(path),
                 "bytes": len(text.encode("utf-8")),
+                "sha256": _sha(text),
                 "gated": is_path_gated(text),
             })
         else:
@@ -170,31 +183,60 @@ def machine_surfaces(root, memory_file=None):
     return entries, missing
 
 
-def measure(root, ref=None, machine=False, memory_file=None):
+def _sha(text):
+    """Empreinte du CONTENU d'une surface.
+
+    Elle permet de distinguer une suppression d'un renommage : une regle
+    renommee garde son contenu, donc son empreinte. Sans elle, un comparateur
+    qui apparie les surfaces par NOM ne peut pas dire « cette surface a
+    disparu » de « cette surface a change de nom » -- il voit la meme chose
+    dans les deux cas, et le rate dans le second.
+    """
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def measure(root, ref=None, machine=False, memory_file=None,
+            ratio=DEFAULT_RATIO):
     auto, gated = [], []
     root_file = None
     reader = _read_ref(root, ref) if ref else _read_worktree(root)
     for name, text in reader:
         size = len(text.encode("utf-8"))
+        digest = _sha(text)
         if name == PROJECT_ROOT_FILE:
-            root_file = {"name": name, "bytes": size}
+            root_file = {"name": name, "bytes": size, "sha256": digest}
         elif is_path_gated(text):
-            gated.append({"name": name, "bytes": size})
+            gated.append({"name": name, "bytes": size, "sha256": digest})
         else:
-            auto.append({"name": name, "bytes": size})
+            auto.append({"name": name, "bytes": size, "sha256": digest})
+
+    # Surfaces du DEPOT absentes : elles ne se comptent pas zero (cf
+    # machine_surfaces). Un depot dont le CLAUDE.md racine manque, ou dont le
+    # repertoire de regles est vide, n'a pas de surface auto-chargee
+    # COMPLETE -- la mesure ne certifie alors rien, et le dit au lieu de
+    # produire un total trop petit et silencieux.
+    missing = []
+    if root_file is None:
+        missing.append({"surface": "CLAUDE.md racine",
+                        "path": str(Path(root) / PROJECT_ROOT_FILE)})
+    if not auto and not gated:
+        missing.append({"surface": "regles du depot",
+                        "path": str(Path(root) / ".claude" / "rules")})
 
     machine_entries, machine_missing = ([], [])
     if machine:
         machine_entries, machine_missing = machine_surfaces(Path(root), memory_file)
         for e in machine_entries:
             (gated if e["gated"] else auto).append(
-                {"name": e["name"], "bytes": e["bytes"], "surface": e["surface"]})
+                {"name": e["name"], "bytes": e["bytes"], "sha256": e.get("sha256"),
+                 "surface": e["surface"]})
 
     auto.sort(key=lambda e: -e["bytes"])
     gated.sort(key=lambda e: -e["bytes"])
     auto_bytes = sum(e["bytes"] for e in auto)
     gated_bytes = sum(e["bytes"] for e in gated)
     root_bytes = root_file["bytes"] if root_file else 0
+    total = auto_bytes + root_bytes
     return {
         "ref": ref or "(worktree)",
         "autoloaded_rules": auto,
@@ -205,12 +247,21 @@ def measure(root, ref=None, machine=False, memory_file=None):
         "autoloaded_rules_bytes": auto_bytes,
         "path_gated_rules_bytes": gated_bytes,
         "root_file_bytes": root_bytes,
-        "autoloaded_total_bytes": auto_bytes + root_bytes,
+        "autoloaded_total_bytes": total,
         "all_rules_bytes": auto_bytes + gated_bytes,
         "machine_surfaces_included": bool(machine),
         "machine_surfaces": machine_entries,
+        "missing": missing,
         "machine_surfaces_missing": machine_missing,
-        "measurement_complete": not machine_missing,
+        # Une mesure n'est complete que si TOUTES les surfaces demandees ont
+        # ete lues -- celles du depot comme celles de la machine. La voie
+        # repo-seule ne demande pas les secondes : elle reste complete.
+        "measurement_complete": not missing and not machine_missing,
+        # Le ratio est emis par la MESURE, pas reecrit chez le consommateur :
+        # une constante dupliquee derive des que l'une des deux change.
+        "ratio_bytes_per_token": ratio,
+        "autoloaded_total_tokens_derived": round(total / ratio),
+        "tokens_are_derived_not_tokenized": True,
     }
 
 
@@ -334,7 +385,7 @@ def main():
     root = Path(args.root).resolve()
     try:
         m = measure(root, args.ref, machine=args.with_machine,
-                    memory_file=args.memory_file)
+                    memory_file=args.memory_file, ratio=args.ratio)
     except RefUnavailable as exc:
         print("ref %r inatteignable (%s) -- mesure impossible." % (args.ref, exc),
               file=sys.stderr)
@@ -345,11 +396,6 @@ def main():
         sys.stderr.write("aucun fichier de regle sous %s -- mesure impossible,"
                          " pas une mesure a zero\n" % RULES_GLOB)
         return 2
-
-    m["ratio_bytes_per_token"] = args.ratio
-    m["autoloaded_total_tokens_derived"] = round(
-        m["autoloaded_total_bytes"] / args.ratio)
-    m["tokens_are_derived_not_tokenized"] = True
 
     if args.json_out:
         Path(args.json_out).write_text(
