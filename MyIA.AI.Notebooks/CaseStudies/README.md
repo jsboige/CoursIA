@@ -13,7 +13,7 @@ maturity: BETA=6
 
 > **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (6 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 10/07/2026 :
 >
-> **6 Python = python/python3 = 6/6 mono-kernel Python 100% ✓** (6 fichiers `*.ipynb` canoniques au total sur disque — 3 cas × {student + solution} : Diagnostic-Medical×2, Oncology-Planning×2, Reseau-Electrique-Intelligent×2 — aucun `_output.ipynb` Papermill dans ce hub, exécution via MCP Jupyter `nbconvert --execute --to notebook` ou `jupyter nbconvert --execute --inplace`).
+> **6 Python = python/python3 = 6/6 mono-kernel Python 100% ✓** (fichiers `*.ipynb` canoniques sur disque — 3 cas × {student + solution} : Diagnostic-Medical×2, Oncology-Planning×2, Reseau-Electrique-Intelligent×2 — aucun `_output.ipynb` Papermill dans ce hub, exécution via MCP Jupyter `nbconvert --execute --to notebook` ou `jupyter nbconvert --execute --inplace`).
 
 CaseStudies est un cas de **mono-kernel Python 100%** : les trois projets combinent des instruments hétérogènes (Z3, A* `heapq`, génétique, OR-Tools CP-SAT, rdflib, Pyro probabiliste, scipy multi-objectif) implémentés tous en Python, soit via libraries SOTA authentiques (`z3-solver`, `ortools`, `rdflib`, `pyro-ppl`, `torch`, `numpy`, `pandas`), soit from-scratch en Python pur. C'est une **variante L392 #7 NEW** : deuxième cas de mono-kernel Python 100% après RL (#5927 c.403), tous deux owner-po-2025 strict. Contrairement à ML (#5915) qui a des jumeaux C#/Python intra-sous-série, Probas (#5916) qui a une mixité intra-série multi-paradigme (.NET C# + Python), QC (#5917) cloisonnée par sous-série, et Sudoku (#5923 c.388) qui a une mixité jumeaux dominante + 1 compagnon Lean intra-hub, CaseStudies a une uniformité mono-paradigme Python avec **6 paradigms combinatoires distincts** (symbolique CSP, A* recherche, génétique, OR-Tools CP-SAT, rdflib KG, Pyro bayésien). Registre EPIC #3801 entry #010 (#5930, stacked sur #5925, await merge).
 
@@ -123,7 +123,7 @@ Ordonnancement de la production électrique (unit commitment) sous incertitude r
 - **Technologies** : Python, ortools (CP-SAT), numpy
 - **Concepts** : Unit commitment NP-difficile, modèle bayésien de l'incertitude, optimisation multi-objectif, architecture en couches (filtrer > modéliser > optimiser)
 
-[Sujet](Reseau-Electrique-Intelligent/subject.md) | 2 notebooks (student + solution) | ~3-4h
+[Sujet](Reseau-Electrique-Intelligent/subject.md) | notebooks (student + solution) | ~3-4h
 
 ## Installation
 
