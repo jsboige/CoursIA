@@ -1,0 +1,12 @@
+date: '2026-11-09'
+by: myia-ai-01:CoursIA
+python_sha: 866cb31c0d91ae8f62ef0546298ba9d7ee1cbb1a
+csharp_sha: 0edb160add7eca4fdd68623d8fa371d2043127b1
+content_python_sha: c0d82ba279db826414ce5a66ca4e35eb49a2effde8fc83829618d92e572394c1
+content_csharp_sha: 4db12a58b9b75688a3aa973f25eeb2d94ede7e8637f0bac63105626ca76b7422
+reason: >-
+  Integration PR etudiante #25530 (TP2, Lucas) : cote Python, les trois solutions
+  d'exercices deviennent Exemples guidees 1-3 (credites) avec exercices neufs
+  (42 cellules, 36 -> 42) et re-execution complete (15 cellules code, 0 erreur) ;
+  fix §4.2 (conclusion sur wet*). Cote C# byte-identique. Asymetrie d'enrichissement
+  Python, meme classe que #23136/#16319 : parite semantique du socle causal inchangee.
