@@ -1508,10 +1508,17 @@ def check_notebook(path: Path) -> dict:
             if norm in derived_shown:
                 continue
             # #24289 famille 3, variante ratio : « x % » dont les deux
-            # entiers du ratio sont imprimés par les sorties.
-            if _ratio_supported_percent(raw, norm, frozenset(all_output_ints)):
-                continue
-            if derived_context:
+            # entiers du ratio sont imprimés par les sorties. La spec
+            # amont l'arbitre NON PREUVE (operands non nommés dans la
+            # prose) : la variante ne blanchit plus le claim, elle
+            # l'achemine vers le suivi derived_claims -- verdict
+            # CLAIM_UNPROVEN -- même quand la prose ne porte pas de mot
+            # de contexte de dérivation (sinon il tomberait en finding
+            # FABRICATION).
+            ratio_solvable = _ratio_supported_percent(
+                raw, norm, frozenset(all_output_ints)
+            )
+            if derived_context or ratio_solvable:
                 if _derived_value_proven(norm, prose, match_pos, match_end, raw_out_text):
                     continue
                 derived_claims.append({

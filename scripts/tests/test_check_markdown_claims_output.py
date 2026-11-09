@@ -2366,8 +2366,11 @@ class TestFpFamilies24289:
 
     # --- famille 3, variante ratio : a/b = x % ----------------------------
 
-    def test_famille3_ratio_resolved_from_printed_integers(self, tmp_path):
-        """FP donne (GT-18c c.34, forme substantielle) : '40,0 %' annonce,
+    def test_famille3_ratio_solvable_is_tracked_unproven(self, tmp_path):
+        """GT-18c c.34, forme substantielle, RECLASSE par la spec amont
+        (test_adjacent_output_numbers_without_named_operands) : ratio
+        solvable mais operands non nommes dans la prose = NON PREUVE, pas
+        CLEAN. '40,0 %' annonce,
         la cellule 33 imprime 48 et 120 -- 48/120 = 40 %, exact, jamais
         imprime tel quel. (Le bare '40 %' n'est PAS candidat dans cet
         organe : '40' echoue au plancher _substantive et _unit_bearing ne
@@ -2379,7 +2382,9 @@ class TestFpFamilies24289:
             _md_cell("## Lecture\n\nLe taux final est de 40,0 %."),
         ]
         result = self._scan_tmp(tmp_path, cells)
-        assert result["verdict"] == "CLEAN", result["findings"]
+        assert result["verdict"] == "CLAIM_UNPROVEN", result
+        assert not result["findings"]
+        assert [c["normalized"] for c in result["derived_claims"]] == ["40.0"]
 
     def test_famille3_ratio_without_operands_stays_detected(self, tmp_path):
         """Faux negatif donne : '40,0 %' sans la paire d'entiers dans les
