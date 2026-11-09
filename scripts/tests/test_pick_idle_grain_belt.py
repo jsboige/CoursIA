@@ -4070,3 +4070,65 @@ def test_belt_json_withheld_complete_reflects_probe_ceilings(
     assert rc == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["delivered_signal"]["withheld_complete"] is True
+
+
+def test_le_refus_strict_est_par_fenetre_et_non_par_numero(monkeypatch, capsys):
+    """#22983 : le fail-CLOSED STRICT refuse la FENETRE entiere des qu'UN
+    seul numero est perime -- le refus n'est pas proportionnel au nombre
+    de numeros perimes.
+
+    Mesure fondatrice (09/11, run c3010 de cette lane, sur `main` a jour) :
+    le tapis a rendu sur stderr
+
+        [22983] voie en processus indisponible : instantane STRICT ne sert
+        pas les numeros (manquants: - ; perimes: 20188, 18258, 23175, 7423,
+        11556, 20387, 19341, 23310, 14318, 16886, 13737) ; echecs quota
+        REST < 1 h : 0
+        [t=235.14s] belt pick_with_replacements fait: 0 retenu(s), 70 witheld
+
+    Onze numeros perimes sur 70 -- et **les 59 autres ont ete refuses
+    eux aussi** : « 0 retenu(s), 70 witheld », « picks : 0 ». Le message ne
+    nomme que les 11, mais le refus porte sur la fenetre entiere.
+
+    La lecture du code nomme la mecanique, et ce temoin la PROVE :
+    `gh_snapshot.serves()` est une validite **par issue** (une issue
+    perimee rend le predicat faux), mais l'appelant l'applique a la
+    fenetre entiere : un seul numero perime fait echouer `serves()` pour
+    les 70, et la voie STRICT rend alors `BLOCKED` pour les 70 -- aucun
+    grain servi, le tapis fail-CLOSED.
+
+    Ce que ce temoin NE dit pas : que la porte
+    `MAX_SWEEP_LOOKBACK_SECONDS` serait en cause. Elle ecarte le
+    **balayage**, elle ne refuse rien -- temoin jumeau dans
+    `test_gh_snapshot_sweep_22983.py`
+    (`test_le_stamp_extreme_ferme_le_balayage_mais_laisse_la_fenetre_servable`).
+    """
+    clc = pig._claim_reader_module()
+    # L'instantane du LECTEUR est un global du module : on le pose pour que
+    # le teardown le restaure (monkeypatch restaure la valeur qu'il a
+    # relevee, pas celle que le code a ensuite ecrite).
+    monkeypatch.setattr(clc, "_SNAPSHOT", None)
+
+    snapshot = _mini_snapshot([11, 12, 13])
+    # 12 est perime (2 h > le TTL de 30 min) ; 11 et 13 sont frais.
+    snapshot["meta"]["comment_stamps"]["12"] = time.time() - 2 * 3600
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", snapshot)
+
+    verdicts = pig.check_claims([11, 12, 13], "myia-ai-01:CoursIA-2",
+                                strict_snapshot=True)
+
+    err = capsys.readouterr().err
+    assert "[22983] voie en processus indisponible" in err, (
+        f"le refus doit NOMMER sa cause sur stderr (got: {err!r})")
+    perimes = re.search(r"perimes: ([^)]*)", err)
+    assert perimes is not None, f"la cause doit nommer les perimes ({err!r})"
+    assert perimes.group(1).strip() == "12", (
+        f"seul le numero perime doit etre nomme ({perimes.group(1)!r})")
+
+    # Le refus porte sur la FENETRE : les deux numeros frais sont refuses
+    # eux aussi. C'est ce qui produit « 0 retenu(s), 70 witheld ».
+    for numero in (11, 12, 13):
+        code, _human = verdicts[numero]
+        assert code == pig.CLAIM_CODE_BLOCKED, (
+            f"le numero {numero} devrait etre refuse avec la fenetre "
+            f"(verdict: {verdicts[numero]!r})")
