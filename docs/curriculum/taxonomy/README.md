@@ -67,3 +67,18 @@ python scripts/notebook_tools/curriculum_taxonomy.py \
 ```
 
 Les tranches suivantes étendront la série aux sous-séries avancées de `SymbolicAI/Planners/` (planification sous incertitude, planification temporelle, SAT-based) et aux autres carnets de `01-Foundation` / `02-Classical` non couverts ici — ajoutées au même `planners.json`, une PR par tranche, sur ce même modèle.
+
+## Série IIT — tranche 1 (cœur : réseau causal → Φ → CES → complexe majeur → coarse-graining → frontière → lentilles → objection Aaronson → formalisation Lean)
+
+`iit.json` étend le même format à la série **IIT** (Integrated Information Theory), sur le **cœur** de la série : neuf carnets (`IIT-01` à `IIT-09`, dont `IIT-08b` — 6 carnets Python PyPhi/Φ et 4 carnets Lean du lake `iit_lean`) et 24 concepts. Le même `schema.json` et le même validateur `curriculum_taxonomy.py` s'appliquent ; les **prérequis** relient les carnets entre eux (par ex. le réseau causal avant Φ et la CES, Φ avant le complexe majeur, le problème de frontière, l'objection d'Aaronson et la formalisation Lean). Chaque concept cite les cellules de carnet où il est enseigné. IIT étant une théorie de la conscience spécifique, **aucun concept ne nomme de chapitre AIMA** (hors du périmètre d'AIMA) — les citations pointent les cellules des carnets uniquement.
+
+> **Périmètre de la tranche 1 — IIT-02 exclu.** Le carnet `IIT-02-AdvancedTopics` (MIP, répertoires cause-effet, MICE, big Φ vs small φ) porte cinq cellules **sans identifiant stable** (métadonnée Jupyter `id`). Le validateur `curriculum_taxonomy.py` exige que chaque cellule d'un carnet déclaré porte un `id` stable, et l'arc #24995 interdit de modifier un carnet : `IIT-02` est donc **exclu de la tranche 1** et sera couvert par la tranche 2, après un pass de stabilisation de ses `id`.
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py \
+  --data docs/curriculum/taxonomy/iit.json \
+  --skos-output /tmp/iit.ttl \
+  --owl-output /tmp/iit.owl
+```
+
+Les tranches suivantes étendront la série au carnet `IIT-02` (une fois ses `id` stabilisés) et à la série **ICT** (`ICT-Series/`, 102 carnets, Epic #4588) — extension distincte documentée dans son propre README, ajoutée au même `iit.json` ou dans un `ict.json` dédié, une PR par tranche, sur ce même modèle.
