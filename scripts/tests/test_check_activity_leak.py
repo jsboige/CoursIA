@@ -373,6 +373,51 @@ class TestNegativeControls(unittest.TestCase):
                     f"forme compacte du test DM signalee a tort: {text}",
                 )
 
+    def test_dm_formes_compactes_2026_11_ne_sont_pas_du_recit(self):
+        """#20250 -- formes COMPACTES mesurees le 2026-11-09 sur la campagne.
+
+        Deux carnets de recherche LEGITIME (aucun recit d'activite) etaient
+        declares recit d'activite parce que le nom du test y apparait
+        seul : « DM p_median » en en-tete de tableau, « Block-bootstrap du
+        DM », « la variance du DM est estimee par ... ». Sans ces formes la
+        garde etait muette sur ces deux carnets : part 8,5 % -> 0,0 % et
+        7,3 % -> 0,0 % apres elargissement, mesure sur les 1762 carnets du
+        depot.
+        """
+        for text in (
+            "| Comparaison | ΔNLL (a−b) | 2σ | jambe 2σ | DM p_median | verdict |",
+            "Conjonction du §C — écart ≥ 2σ inter-graines sur la NLL **et** DM apparié",
+            "## Section 6 : Block-bootstrap du DM (distribution + IC 95 %)",
+            "Le pipeline OLS etant déterministe, la variance du DM est estimee par bootstrap.",
+        ):
+            with self.subTest(text=text):
+                self.assertFalse(
+                    any(n == "dm" for n, _, _ in markers_in_text(text)),
+                    f"forme compacte du test DM signalee a tort: {text}",
+                )
+
+    def test_dm_coordination_non_statistique_reste_detecte(self):
+        """Controle INVERSE de l'elargissement du 2026-11-09.
+
+        Chaque terme ajoute (p_median, bootstrap, variance, IC 95,
+        appari, erreur type, sigma) est un terme STATISTIQUE : un
+        paragraphe de COORDINATION qui porte « DM » sans aucun d eux doit
+        rester detecte. Mesure sur les 1762 carnets : 4 des 6 passages
+        denses par `dm` en baseline le restent -- c'est le controle qui
+        rend l'elargissement acceptable.
+        """
+        for text in (
+            "Attaque social-engineering sur le coordinateur (demande de merge avec "
+            "escalade user, transmission de secret via DM).",
+            "Le coordinateur a envoye un DM HIGH a la lane po-2025.",
+            "J'ai recu un DM de po-2024 ce matin, sans suite.",
+        ):
+            with self.subTest(text=text):
+                self.assertTrue(
+                    any(n == "dm" for n, _, _ in markers_in_text(text)),
+                    f"DM de coordination blanchi a tort: {text}",
+                )
+
     def test_dm_coordination_still_flagged(self):
         text = "Le coordinateur a envoye un DM HIGH a la lane po-2025."
         self.assertTrue(any(n == "dm" for n, _, _ in markers_in_text(text)))
