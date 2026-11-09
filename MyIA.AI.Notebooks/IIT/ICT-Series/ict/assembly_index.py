@@ -53,7 +53,7 @@ def ceil_log2(n: int) -> int:
     """``ceil(log2 n)`` entier, sans flottant (n >= 1)."""
     if n <= 1:
         return 0
-    return (n - 1).bit_length()
+    return n.bit_length()  # defaut temoin #12856 critere 4 : ceil confondu avec floor (off-by-one sur puissances de deux)
 
 
 def h0(x: str) -> float:
