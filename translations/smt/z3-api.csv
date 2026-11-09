@@ -2850,43 +2850,74 @@ Avant de conclure, il est essentiel de bien distinguer les deux paradigmes. Le t
 | **Performance** | Très rapide (NFA compile) | Plus lent (resolution SMT) |
 
 > **Quand utiliser Z3 pour les chaînes ?** Quand vous avez besoin de **generer** une chaîne satisfaisant des contraintes complexes, de **prouver** qu'un ensemble de règles est coherent (pas `unsat`), ou de combiner des contraintes sur les chaînes avec d'autres théories (entiers, booléens) dans un même solveur.",,,,,,,,d9e546a6819aaf8c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-ex1-intro,markdown,fr,31db934f4a1ef70c,"## Exercice 1 : Valider un mot de passe
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-ex1-intro,markdown,fr,4723f063d712f659,"## Exemple guidé 1 — Valider un mot de passe (crédité #25501 — sachalhermet19)
 
-### Enonce
+> Résolution originale : **sachalhermet19**, rendu de TP
+> [#25501](https://github.com/jsboige/CoursIA/pull/25501). Reprise telle quelle ;
+> seule la mise en forme de l'énoncé est harmonisée avec les sections voisines.
 
-Ecrivez une fonction `valider_mot_de_passe(s_chaine)` qui prend une chaîne Z3 symbolique (variable `String`) et verifie qu'elle satisfait les règles suivantes :
+La politique de la section 5 fixait la longueur et la position de chaque classe de caractères. La question est ici plus générale : **existe-t-il au moins une chaîne** qui satisfait les trois règles suivantes, sans position imposée ?
+
 1. Longueur >= 8
 2. Contient au moins un chiffre (`Range('0', '9')`)
 3. Contient au moins une majuscule (`Range('A', 'Z')`)
 
-La fonction doit retourner `True` si un modèle existe (mot de passe valide possible), `False` sinon.
+La fonction `valider_mot_de_passe(s_chaine)` reçoit une variable `String` symbolique et rend `True` si un modèle existe, `False` sinon.
 
-> **Indices :**
+La règle « contient au moins un X » s'écrit avec un motif global plutôt qu'avec une position forcée : `InRe(s, Concat(Star(c), X, Star(c)))`, où `c` couvre tous les caractères. Chaque règle devient un motif, chaque motif une contrainte `s.add(...)`, et le solveur tranche la conjonction.",,,,,,,,4723f063d712f659,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-ex1-code,code,fr,bbf7c64c3e8554f9,"
+# EXERCICE 1 : Valider un mot de passe
 
-- Utilisez `Contains` avec une position forcee, ou `InRe` avec un motif global.
-- Pour la règle « contient un chiffre », une approche simple : forcer une position connue avec `SubString(s, pos, 1)` dans `Range('0', '9')`.
-- Alternative : utiliser `InRe(s, Concat(Star(...), Range('0','9'), Star(...)))`.
-- Appelez `s.check()` et comparez a `sat`.",,,,,,,,31db934f4a1ef70c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-ex1-code,code,fr,421e89844ea7005e,"# EXERCICE 1 : Valider qu'un mot de passe respecte les règles de securite.
+from z3 import *
 
 def valider_mot_de_passe(s_chaine) -> bool:
-    """"""Verifie si une chaîne Z3 String peut satisfaire les règles de mot de passe.
-
-    Règles : longueur >= 8, contient un chiffre, contient une majuscule.
-    Retourne True si sat, False sinon.
-
-    # Indice : créez un Solver, ajoutez les 3 contraintes.
-    # Étape 1 : Length(s_chaine) >= 8
-    # Étape 2 : forcer une position a contenir un chiffre (SubString + InRe)
-    # Étape 3 : forcer une position a contenir une majuscule
     """"""
-    # TODO etudiant : implémentez la validation
-    return None  # TODO etudiant : remplacer par True ou False
+    Vérifie si une chaîne Z3 peut satisfaire les règles :
+    - Longueur >= 8
+    - Au moins un chiffre
+    - Au moins une majuscule
 
-# Test
+    Retourne True si une solution existe, False sinon.
+    """"""
+
+    # Création du solveur
+    s = Solver()
+
+    # Contrainte 1 : au moins 8 caractères
+    s.add(Length(s_chaine) >= 8)
+
+    # Expression régulière représentant un caractère quelconque
+    caractere = Range('\x00', '\uffff')
+
+    # Contrainte 2 : au moins un chiffre (0 à 9)
+    chiffre = Range('0', '9')
+    motif_chiffre = Concat(
+        Star(caractere),
+        chiffre,
+        Star(caractere)
+    )
+    s.add(InRe(s_chaine, motif_chiffre))
+
+    # Contrainte 3 : au moins une majuscule (A à Z)
+    majuscule = Range('A', 'Z')
+    motif_majuscule = Concat(
+        Star(caractere),
+        majuscule,
+        Star(caractere)
+    )
+    s.add(InRe(s_chaine, motif_majuscule))
+
+    # Vérification des contraintes
+    return s.check() == sat
+
+
+# TEST DE L'EXERCICE
+
 pwd = String('pwd_ex1')
-résultat = valider_mot_de_passe(pwd)
-print(""Mot de passe valide (existe-t-il une solution) ?"", résultat)",,,,,,,,421e89844ea7005e,,,,,,,,,,,,,,,
+resultat = valider_mot_de_passe(pwd)
+
+print(""Mot de passe valide (existe-t-il une solution) ?"", resultat)
+",,,,,,,,bbf7c64c3e8554f9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-ex2-intro,markdown,fr,c2a0abbe1a85a126,"## Exercice 2 : Trouver une chaîne par motif
 
 ### Enonce
@@ -11353,3 +11384,52 @@ Prenez la roue à cinq rayons : un sommet central relié aux cinq sommets d'un c
 **Indice** : le premier `k` pour lequel le solveur répond `sat` est le nombre chromatique ; les `unsat` précédents prouvent que les `k` plus petits ne suffisent pas. La cellule d'imports de ce carnet cite aussi `Optimize` — un `Optimize()` où `k` est une variable à `minimize` pose la même question en un seul appel.
 
 **Étape 1** : construisez la liste des dix arêtes (cinq du cycle, cinq des rayons), puis bouclez sur `k`.",,,,,,,,3044ff0d13363b67,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,f800c040,markdown,fr,b6a1aca1f2129dd0,"### Lecture du résultat
+
+La fonction affiche `True` : le solveur a répondu `sat`, il existe donc au moins un mot de passe qui respecte les trois règles à la fois. La réponse porte sur la **politique**, pas sur un mot de passe donné : `pwd_ex1` est une variable libre, et `True` signifie seulement que les règles ne se contredisent pas.
+
+Deux choix de modélisation méritent d'être relevés :
+
+- l'alphabet `Range('\x00', '\uffff')` couvre tous les caractères, si bien qu'un témoin produit par le solveur peut contenir des caractères non imprimables — sans importance pour une question oui/non, gênant dès qu'il faut **afficher** le mot de passe ;
+- `valider_mot_de_passe` ne lit jamais le modèle : elle répond à « existe-t-il ? », pas à « lequel ? ». L'Exercice 4 pose les deux questions.",,,,,,,,b6a1aca1f2129dd0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,5611118a,markdown,fr,45f216959f3d38ed,"## Exercice 4 : Exhiber un mot de passe conforme, ou prouver qu'il n'en existe aucun
+
+### Enonce
+
+L'Exemple guidé 1 répond à « existe-t-il un mot de passe valide ? ». Allez plus loin : écrivez une fonction `generer_mot_de_passe(longueur_min, longueur_max)` qui **renvoie un mot de passe concret** (une `str` Python lue dans le modèle) respectant la politique suivante, ou `None` si cette politique est insatisfiable :
+
+1. `longueur_min <= Length(mdp) <= longueur_max`
+2. Uniquement des caractères ASCII imprimables, de l'espace `' '` au tilde `'~'`
+3. Au moins un chiffre, au moins une majuscule et au moins un caractère spécial parmi `!`, `@`, `#`, `$`
+4. Ne contient pas la sous-chaîne `""pass""`
+
+Testez la fonction sur les bornes `(8, 12)`, `(3, 3)` et `(1, 2)`.
+
+**Question** : pour quelles bornes la politique devient-elle insatisfiable ? Reliez la plus petite longueur possible au nombre de classes de caractères obligatoires.
+
+> **Indices :**
+
+- Reprenez le motif « contient au moins un X » de l'Exemple guidé 1, avec l'alphabet imprimable `Range(' ', '~')`.
+- La règle 2 s'écrit `InRe(mdp, Star(Range(' ', '~')))`.
+- Un ensemble de caractères isolés se construit avec `Union(Re('!'), Re('@'), Re('#'), Re('$'))`.
+- La règle 4 s'écrit `Not(Contains(mdp, StringVal('pass')))`.
+- En cas de `sat`, `s.model()[mdp].as_string()` rend le témoin.",,,,,,,,45f216959f3d38ed,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,423c3e1c,code,fr,59cc71f5e12e9a5c,"# EXERCICE 4 : Exhiber un mot de passe conforme, ou prouver qu'il n'en existe aucun.
+
+def generer_mot_de_passe(longueur_min: int, longueur_max: int) -> str:
+    """"""Renvoie un mot de passe concret respectant la politique, ou None si elle est insatisfiable.
+
+    Politique : longueur bornee, caractères ASCII imprimables, au moins un chiffre,
+    une majuscule et un caractère spécial parmi ! @ # $, pas de sous-chaîne ""pass"".
+
+    # Indice : un Solver et une variable String('mdp').
+    # Étape 1 : bornes de longueur et alphabet imprimable
+    # Étape 2 : trois motifs « contient au moins un X »
+    # Étape 3 : Not(Contains(...)) pour la sous-chaîne interdite
+    # Étape 4 : si sat, lire le témoin avec s.model()[mdp].as_string()
+    """"""
+    # TODO etudiant : implémentez la génération
+    return None  # TODO etudiant : remplacer par le mot de passe trouvé
+
+for bornes in [(8, 12), (3, 3), (1, 2)]:
+    print(f""Bornes {bornes} :"", generer_mot_de_passe(*bornes))",,,,,,,,59cc71f5e12e9a5c,,,,,,,,,,,,,,,
