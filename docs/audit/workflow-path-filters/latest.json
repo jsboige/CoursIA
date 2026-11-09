@@ -387,7 +387,7 @@
       "name": "dotnet-ArgumentAnalysis.yml",
       "paths_count": 3,
       "paths_list": [
-        "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/**",
+        "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/**",
         ".github/workflows/dotnet-ArgumentAnalysis.yml",
         "dotnet/MyIA.CoursIA.sln"
       ],

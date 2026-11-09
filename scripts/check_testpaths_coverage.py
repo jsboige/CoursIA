@@ -131,7 +131,7 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # (test_fuzzy_match_group.py seul), deps rapidfuzz/unidecode/openpyxl
         # ajoutées au pip install du job, zéro PII (journal auto-créé).
         "dotnet/GradeBookApp",
-        # SymbolicAI/Argument_Analysis : dir entier (issue #17248) — 174 tests
+        # SymbolicAI/ArgumentAnalysis : dir entier (issue #17248) — 174 tests
         # sur 5 fichiers, 0,5-0,9 s, stdlib + effets de bord mockes (aucun
         # reseau). La suite EXISTAIT deja mais n'etait collectee par AUCUNE CI :
         # absente de pytest.ini ET de ce dict ET sans marqueur CI-EXCLUDED — or
@@ -145,7 +145,7 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # "Linux") est deja exercee localement : python 3.11 des deux cotes
         # (local 3.11.9, python-version '3.11' du job), et pytest.ini porte deja
         # `filterwarnings = ignore::DeprecationWarning`.
-        "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis",
+        "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis",
     ],
     ".github/workflows/ml-tests.yml": [
         "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/tests",
@@ -178,7 +178,7 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
     # seul fichier), 1.7 s, deps sympy + z3-solver au pip install du job.
     # Avant ce câblage, le dossier n'était ni dans pytest.ini ni collecté
     # par aucune CI : le guard restait vert parce qu'il ne compare que les
-    # testpaths DÉCLARÉS (même angle mort que #17248 sur Argument_Analysis).
+    # testpaths DÉCLARÉS (même angle mort que #17248 sur ArgumentAnalysis).
     ".github/workflows/geometry-tests.yml": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/tests",
     ],
@@ -460,7 +460,7 @@ def is_covered(testpath: str, covered_dirs: list[str]) -> bool:
 # Racines balayées par l'inventaire. Le guard ci-dessus ne compare que les
 # testpaths DÉCLARÉS dans pytest.ini : un dossier de tests présent dans le
 # dépôt mais absent de pytest.ini lui est invisible, et il reste VERT dessus
-# (constat mesuré sur SymbolicAI/Argument_Analysis, 174 tests non collectés —
+# (constat mesuré sur SymbolicAI/ArgumentAnalysis, 174 tests non collectés —
 # cf. le commentaire de WORKFLOW_COVERAGE). L'inventaire ferme ce côté-là :
 # il part du dépôt, pas de la déclaration.
 INVENTORY_ROOTS = ("MyIA.AI.Notebooks", "scripts", "dotnet/GradeBookApp")

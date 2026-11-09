@@ -2466,8 +2466,16 @@ _BELT_SNAPSHOT: dict | None = None
 _BELT_PRIMED_WINDOW: set[int] = set()
 
 
-def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
+def _belt_snapshot_prime(repo: str, numbers: list[int],
+                         seed: dict | None = None) -> None:
     """Rafraichit UNE FOIS l'instantane pour les candidats tires (#22630, #22983).
+
+    ``seed`` (re-prime du delta, #22983) : instantane memoire du priming
+    PRECEDENT. Sans lui, ce deuxieme appel rechargerait le DISQUE -- et
+    perdrait les lectures fraiches que le premier appel n'a pu ecrire qu'en
+    memoire (repli `SnapshotLockTimeout`, verrou tenu par une autre lane).
+    `ensure_comments` etant incremental, seeder ne relit pas les numeros
+    deja frais : seul le delta paie une lecture.
 
     #22983 -- ce priming est la **phase reseau** du tirage. Apres lui, le
     tirage lui-meme ne doit plus emettre aucun appel GitHub : chaque sonde
@@ -2482,6 +2490,10 @@ def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
     294 s de tapis, dont 221 s dans la seule boucle de service, parce que
     les candidats hors fenetre de priming (70) retombaient sur le reseau a
     chaque sonde.
+
+    #22983 volet 4 -- depuis l'arbitrage option 2, la phase reseau est HORS
+    verrou ; sous verrou restent seulement la relecture, la fusion par
+    numero (la plus recente gagne) et l'ecriture atomique.
     """
     global _BELT_SNAPSHOT
     _BELT_SNAPSHOT = None
@@ -2494,22 +2506,110 @@ def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
         return
     try:
         gh_snapshot = _gh_snapshot_module()
+        # #22983 volet 4 (arbitrage coordinateur, option 2, c.6719405401) :
+        # la phase RESEAU est HORS verrou. L'ancienne forme tenait
+        # `refresh.lock` pendant tout `ensure_comments` (détention mesurée
+        # ~7 min sur ce siège, écriture de 50 Mo comprise) : les autres
+        # lanes de la machine épuisaient leurs 120 s d'attente et
+        # retombaient sur le disque périmé -- fail-CLOSED muet (mesure du
+        # 08/11 : deux tirages bloqués pendant le priming du coordinateur).
+        # #22983 -- re-prime : partir du SEED memoire du priming precedent
+        # quand il existe, pas du disque. Le cas pathologique : le premier
+        # appel a subi un lock-timeout -> ses lectures fraiches ne vivent
+        # qu'en memoire (_BELT_SNAPSHOT) ; recharger le disque ici les
+        # perdrait, et STRICT retrouverait un refus fail-CLOSED que la
+        # re-prime etait censee clore.
+        snapshot = (seed if seed is not None
+                    else gh_snapshot.load_snapshot(repo))
+        snapshot, _calls, _stats = gh_snapshot.ensure_comments(
+            repo, numbers, snapshot)
         try:
             with gh_snapshot.snapshot_lock(repo):
-                snapshot = gh_snapshot.load_snapshot(repo)
-                snapshot, _calls, _stats = gh_snapshot.ensure_comments(
-                    repo, numbers, snapshot)
-                gh_snapshot.save_snapshot(repo, snapshot)
-        except gh_snapshot.SnapshotLockTimeout:
-            # Une autre lane de la machine rafraichit : on consomme SON
-            # instantane plutot que de le concurrencer. La lecture reste
-            # correcte (les entrees fraiches sont servies), la performance
-            # est celle de la lane qui a paye le rafraichissement.
-            snapshot = gh_snapshot.load_snapshot(repo)
-        _BELT_SNAPSHOT = snapshot
+                # Relecture sous verrou : une autre lane a pu ecrire pendant
+                # notre phase reseau. La fusion PAR NUMERO (la plus recente
+                # gagne) garantit qu'aucune de ses entrees fraiches n'est
+                # perdue par notre ecriture -- et que les notres survivent a
+                # la sienne.
+                disk = gh_snapshot.load_snapshot(repo)
+                # #22983 (review e468eec) -- re-prime seeedee : la fusion doit
+                # porter sur l'UNION du delta et des numeros frais du seed.
+                # `merge_snapshots` ne prend de `fresh` que les numeros de
+                # `numbers` : fusionner sur le seul delta laisserait le disque
+                # relu ecraser les lectures du premier appel -- precisement le
+                # bord que le seed devait fermer, dans le sous-cas « premier
+                # appel en lock-timeout, re-prime qui OBTIENT le verrou » (le
+                # plus probable : le verrou de l'autre lane se libere en
+                # quelques secondes).
+                if seed is not None:
+                    seed_stamps = ((seed.get("meta") or {})
+                                   .get("comment_stamps") or {})
+                    seed_nums = set()
+                    for k in seed_stamps:
+                        try:
+                            seed_nums.add(int(k))
+                        except (TypeError, ValueError):
+                            continue
+                    merge_nums: list[int] = sorted(set(numbers) | seed_nums)
+                else:
+                    merge_nums = numbers
+                merged = gh_snapshot.merge_snapshots(disk, snapshot, merge_nums)
+                gh_snapshot.save_snapshot(repo, merged)
+        except gh_snapshot.SnapshotLockTimeout as exc:
+            # #22983 volet 3 : ce repli se NOMME. Avec la phase reseau hors
+            # verrou, il ne perd plus les lectures fraiches : l'instantane en
+            # memoire (nos lectures) sert CE tirage ; seules les entrees non
+            # ecrites attendront le prochain priming pour atteindre le disque.
+            print(
+                f"[22983] priming ecarte : {exc} -- ecriture reportee, le "
+                "tirage continue sur ses lectures fraiches en memoire (le "
+                "disque garde les entrees de la lane qui tient le verrou)",
+                file=sys.stderr)
+            merged = snapshot
+        _BELT_SNAPSHOT = merged
     except Exception as exc:  # noqa: BLE001 - l'instantane est un confort, pas un gate
         print(f"[22630] instantane indisponible ({type(exc).__name__}) -- "
               f"les sondes gardent leur transport historique", file=sys.stderr)
+
+
+def _belt_reprime_claims_delta(belt_check_nums: list[int]) -> None:
+    """#22983 -- re-prime les numeros que les TRIS du pool ont fait entrer
+    en fenetre de claims APRES le priming initial.
+
+    Mesure du 08/11 (ce siege, pool de 414) : entre le priming
+    (`_belt_snapshot_prime` sur ``belt_pool[:70]`` pre-tri) et la lecture
+    de la fenetre de claims (``belt_pool[:70]`` post-tri), le pool est
+    re-trie EN PLACE deux fois -- ``settle_belt_head`` (stamps de claims
+    frais) puis ``apply_belt_weights`` (poids du bandit, qui changent
+    l'ordre de service par conception). La fenetre finale divergeait de la
+    fenetre primee sur **56 des 70 numeros** : STRICT refusait alors des
+    numeros que le priming n'avait jamais rafraichis (fail-CLOSED total,
+    0 grain servi), sans aucun echec de lecture -- les stamps des 70
+    numeros reels restaient a 68-96 min sur le disque pendant que la
+    fenetre primee, elle, etait fraiche.
+
+    Le re-prime ne paie que le DELTA : ``ensure_comments`` est incremental,
+    les numeros communs aux deux fenetres sont deja frais et ne declenchent
+    aucune lecture. Quand la fenetre de claims est couverte (pool a une
+    seule tete, tris sans effet), le delta est vide et la passe « UNE seule
+    fois » du priming initial est preservee (contrat du temoin
+    ``test_belt_main_injects_the_real_snapshot_prime``).
+
+    Le re-prime SEED le priming avec l'instantane memoire du premier appel :
+    si celui-ci a subi un lock-timeout, ses lectures fraiches ne vivent
+    qu'en memoire, et un rechargement disque les perdrait -- STRICT
+    retrouverait un refus que la re-prime etait censee clore.
+    """
+    global _BELT_PRIMED_WINDOW
+    delta = [n for n in belt_check_nums if n not in _BELT_PRIMED_WINDOW]
+    if not delta:
+        return
+    print(f"[22983] re-prime claims delta: {len(delta)} numero(s) entre(s) "
+          "en fenetre par les tris post-priming", file=sys.stderr, flush=True)
+    # Capture AVANT l'appel : `_belt_snapshot_prime` remet `_BELT_SNAPSHOT`
+    # a None en tete, le seed doit partir de l'etat memoire du priming.
+    seed = _BELT_SNAPSHOT if isinstance(_BELT_SNAPSHOT, dict) else None
+    _belt_snapshot_prime(REPO, delta, seed=seed)
+    _BELT_PRIMED_WINDOW |= set(delta)
 
 
 def _belt_pr_prefetches(numbers: list[int], lane: str | None,
@@ -4963,10 +5063,29 @@ def _claims_in_process(
                         _manque.append(str(n))
                     elif (time.time() - stamp) > gh_snapshot.DEFAULT_TTL_SECONDS:
                         _perime.append(str(n))
+                # #22983 (v2) -- manquant/perime est un SYMPTOME : quand le
+                # fetch de la phase reseau a echoue sur quota REST, c'est la
+                # CAUSE, et elle ne se soigne pas comme un TTL (recycler les
+                # stamps peres ne repand pas un quota). Les echecs sont deja
+                # nommes dans l'instantane (``meta.fetch_failures``) -- on
+                # les releve au lieu de les reinventer. Borne a 1 h pour ne
+                # pas citer un exhaust ancien comme cause du refus present.
+                _fails = ((snapshot.get("meta") or {})
+                          .get("fetch_failures") or {})
+                _quota = sorted(
+                    k for k, v in _fails.items()
+                    if isinstance(v, dict)
+                    and "rate limit" in str(v.get("error") or "").lower()
+                    and isinstance(v.get("at"), (int, float))
+                    and (time.time() - v["at"]) < 3600.0)
+                _quota_note = (f" ; echecs quota REST < 1 h : {len(_quota)}"
+                               + (f" (ex : {', '.join('#' + k for k in _quota[:3])})"
+                                  if _quota else ""))
                 return _claims_none(
                     f"instantane STRICT ne sert pas les numeros "
                     f"(manquants: {', '.join(_manque) or '-'} ; "
-                    f"perimes: {', '.join(_perime) or '-'})")
+                    f"perimes: {', '.join(_perime) or '-'})"
+                    + _quota_note)
             # `serves` garantit les commentaires ; le LECTEUR a besoin du
             # PAYLOAD. Un payload absent le ferait retomber sur
             # `gh issue view` -- un appel reseau pendant le tirage.
@@ -12983,14 +13102,24 @@ def main(argv: list[str] | None = None) -> int:
         belt_check_nums = [it["number"] for it in belt_pool[:belt_claim_window]]
         _belt_phase(f"claims start: {len(belt_check_nums)} numeros "
                     f"(fenetre de service={belt_claim_window})")
+        # #22983 -- le pool a ete RE-TRIE en place (settle_belt_head, puis
+        # apply_belt_weights) DEPUIS le priming : la fenetre ci-dessus est
+        # lue sur l'ordre FINAL et peut contenir des numeros que le priming
+        # n'a jamais rafraichis. On re-prime le delta AVANT la phase STRICT
+        # (garde en miroir du priming initial : merge-only ne prime pas).
+        if not args.belt_merge_only:
+            _belt_reprime_claims_delta(belt_check_nums)
         # #22983 -- PHASE RESEAU, avant le tirage : le cache des PRs
         # ouvertes est enumere UNE fois, et les etats des PRs citees par les
         # marqueurs `[DELIVERED]` sont lus en UN appel groupe. Apres ce
         # bloc, `check_claims(..., strict_snapshot=True)` ne peut que
         # repondre « instantane absent » : il ne complete pas a la volee.
-        # L'instantane lui-meme a deja ete rafraichi plus haut, sur la
-        # fenetre de SERVICE -- dont la fenetre de claims est un prefixe :
-        # un second rafraichissement serait du travail refait.
+        # L'instantane lui-meme a ete rafraichi plus haut, sur la fenetre
+        # de SERVICE PRE-TRIS, puis complete ci-dessus sur le DELTA des
+        # numeros que les tris (settle, repondersion) ont fait entrer en
+        # fenetre : la fenetre de claims n'est PAS un prefixe de la
+        # fenetre primee -- c'etait l'hypothese fausse du refus
+        # intermittent STRICT (mesure du 08/11 : 56/70 hors fenetre).
         global _BELT_OPEN_PRS_CACHE
         if "PYTEST_CURRENT_TEST" not in os.environ:
             _BELT_OPEN_PRS_CACHE = _build_open_prs_cache_for_belt(args.lane)

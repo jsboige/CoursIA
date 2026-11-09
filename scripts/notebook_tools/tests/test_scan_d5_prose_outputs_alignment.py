@@ -350,7 +350,7 @@ class TestHexColorAndExponentFalsePositives:
     """
 
     def test_filter_hex_color_mermaid_classdef(self):
-        # SW-6-CSharp-RDFS cell[6]: mermaid `classDef root fill:#cfe2ff,stroke:#084298`
+        # SW-06-RDFS-CSharp cell[6]: mermaid `classDef root fill:#cfe2ff,stroke:#084298`
         # -> the #084298 channel was extracted as the number 84298. Systematic in
         # any mermaid-styled notebook.
         nums = mod._extract_prose_numbers(

@@ -25413,7 +25413,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-09-SK-Multi-Agents-Lean-Python.ipynb,e82e
 
 ### Vue d'ensemble
 
-Microsoft **Semantic Kernel** est un SDK qui permet d'orchestrer des LLMs avec des plugins, de la mémoire et des agents intelligents. Nous allons implementer un système multi-agents pour theorem proving inspire des patterns utilises dans l'analyse argumentative (voir `Argument_Analysis` notebooks).
+Microsoft **Semantic Kernel** est un SDK qui permet d'orchestrer des LLMs avec des plugins, de la mémoire et des agents intelligents. Nous allons implementer un système multi-agents pour theorem proving inspire des patterns utilises dans l'analyse argumentative (voir `ArgumentAnalysis` notebooks).
 
 **Composants cles** :
 - **Kernel** : Point d'entrée principal, configure les services LLM
@@ -25481,7 +25481,7 @@ La stratégie influence **quels lemmes rechercher** et **quelles tactiques essay
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-09-SK-Multi-Agents-Lean-Python.ipynb,e2ca3be5,code,fr,1f2371897d309fb2,"# =============================================================================
 # Section 1 - ProofState: État Partage pour Multi-Agents
 # =============================================================================
-# Pattern inspire de RhetoricalAnalysisState dans Argument_Analysis
+# Pattern inspire de RhetoricalAnalysisState dans ArgumentAnalysis
 # Permet la synchronisation entre agents avec designation explicite
 
 import os
@@ -27820,7 +27820,7 @@ while not should_terminate:
 
 **Utilité** : Voir exactement quelle décision chaque agent a prise.",,,,,,,,f7b38a337356acec,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-09-SK-Multi-Agents-Lean-Python.ipynb,9c3a07af,code,fr,aa729452b1e10075,"# =============================================================================
-# Section 3 - Strategies d'Orchestration (Pattern Argument_Analysis)
+# Section 3 - Strategies d'Orchestration (Pattern ArgumentAnalysis)
 # =============================================================================
 # Strategies personnalisees basees sur l'état partage (pas sur l'historique)
 
@@ -27838,7 +27838,7 @@ print(""Imports OK : nest_asyncio, logging, typing"")
 ",,,,,,,,aa729452b1e10075,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-09-SK-Multi-Agents-Lean-Python.ipynb,80f35faa,markdown,fr,fe40b4d60e61932a,"## 3.2. ProofSelectionStrategy : Sélection d'Agent : Sélection d'Agent Basee sur l'État
 
-**Pattern inspire de Argument_Analysis** : Sélection d'agent via **designation explicite** dans ProofState.
+**Pattern inspire de ArgumentAnalysis** : Sélection d'agent via **designation explicite** dans ProofState.
 
 ### Architecture
 
@@ -45604,7 +45604,7 @@ import jpype.imports
 
 jvm_ready = False
 if not os.environ.get(""JAVA_HOME""):
-    for jdk_path in [pathlib.Path(""../Argument_Analysis/jdk-17-portable""),
+    for jdk_path in [pathlib.Path(""../ArgumentAnalysis/jdk-17-portable""),
                      pathlib.Path(""../Tweety/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
@@ -45613,7 +45613,7 @@ if not os.environ.get(""JAVA_HOME""):
                 break
 
 jar_files = []
-for libs_dir in [pathlib.Path(""../Tweety/libs""), pathlib.Path(""../Argument_Analysis/libs"")]:
+for libs_dir in [pathlib.Path(""../Tweety/libs""), pathlib.Path(""../ArgumentAnalysis/libs"")]:
     if libs_dir.exists():
         jar_files.extend(sorted(libs_dir.glob(""*.jar"")))
 if not jar_files:

@@ -4898,7 +4898,7 @@ et ce qu'elles laissent faire évoluer.
 | **Coût d'inférence** | 1 modèle | 1 modèle | 1 modèle | N modèles + classifieur |
 | **VRAM** | × 1 | × 1 | × 1 | × N (ou offloading) |
 | **Latence** | 1 forward pass | 1 forward pass | 1 forward pass | 1 forward pass + classification |
-| **Entraînement additionnel** | 0 | 0 | 0 | Classifieur léger (~5 min) |
+| **Entraînement additionnel** | 0 | 0 | 0 | Classifieur léger (50 époques) |
 | **Gestion des inputs hybrides** | Mauvaise (perte par moyennage) | Mauvaise (perte par moyennage) | Meilleure (dropout aléatoire) | Excellente (soft-routing) |
 | **Flexibilité** | Fixe au merge | Fixe au merge | Fixe au merge | Dynamique (ajout d'experts) |
 | **Outils** | Mergekit | Mergekit | Mergekit | Custom / vLLM |
@@ -4992,7 +4992,7 @@ the domains, not the number of experts:**
 
 Nothing in this notebook ranks the three merges against each other: that is a
 literature choice, to be revalidated on a benchmark with perplexity.
-",,,,,,,a2e720832e347355,a73bae4160c66d20,,,,,,,,,,,,,,
+",,,,,,,3173fda3dfbc2b26,a73bae4160c66d20,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,095833db,markdown,fr,671380ffe72bc3ea,"### Interpretation : Comparaison finale
 
 **Résultats attendus (hypothèses qualitatives — aucun classement mesuré, cf. Hypothèse à tester ci-dessous)** :
@@ -6174,8 +6174,10 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,5f
 `VRAM libre : 14.3 Go` après suppression des references et `empty_cache()`. Sur les ~17,2 Go vus en section 1, l'entraînement LoRA complet n'avait donc occupe qu'une fraction visible de la carte. Cette cellule n'est pas de la decoration : dans un notebook suivant, le premier reflexe est de rendre la VRAM avant de charger le prochain modèle -- sinon l'`OutOfMemoryError` arrive a la cellule d'après, très loin de sa vraie cause.","### Reading the result: memory handed back
 
 `VRAM libre : 15.1 Go` after deleting the references and calling `empty_cache()`. Of the ~17.2 GB seen in section 1, the complete LoRA training had therefore occupied only a visible fraction of the card. This cell is not decoration: in a follow-on notebook, the first reflex is to hand the VRAM back before loading the next model — otherwise the `OutOfMemoryError` arrives at the next cell, very far from its true cause.",,,,,,,1f697dae7737f999,279d9a08f616c6f3,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,f06e6861,markdown,fr,47a8dac517c66ce8,"# FT-04 : RLHF et Alignement — Préférences Humaines et DPO
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,f06e6861,markdown,fr,f37eb83dcd5ea216,"# FT-04 : RLHF et Alignement — Préférences Humaines et DPO
 **Navigation** : [Index](README.md) | [<< 03 — SFT](FT-03-Supervised-FineTuning-SFT-Python.ipynb) | [05 — Fusion et routage >>](FT-05-ModelMerging-Routing-Python.ipynb)
+
+**Version anglaise** : [FT-04 — RLHF et Alignement (en)](FT-04-RLHF-DPO-Python_en.ipynb)
 
 **Objectif** : Comprendre comment les préférences humaines permettent d'aligner un LLM, du Reward Model au DPO (Direct Préférence Optimization).
 
@@ -6220,7 +6222,7 @@ de la valeur RLHF/DPO. Partie 4 (reward model) = référence, pas le
 cœur pédagogique.
 
 **Exercices** : 3 stubs (#25-#30 = Exercice 1/2/3). Chacun ~30 min.
-",,,,,,,,47a8dac517c66ce8,,,,,,,,,,,,,,,
+",,,,,,,,f37eb83dcd5ea216,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,aab72a6a,markdown,fr,06059b2cecc25b05,"## 1. Pourquoi le SFT ne suffit pas
 
 Le FT-03 nous a montre comment transformer un modèle de base en modèle instruct via le SFT. Mais le SFT a des limites fondamentales :

@@ -15,7 +15,7 @@ name: dotnet-AgentSafetyAnalyzer
 # Deux jobs STATIQUES (pas de matrix runs-on dynamique — garde #13363,
 # meme forme que dotnet-ArgumentAnalysis.yml / dotnet-Shared.Tests.yml).
 # setup-dotnet 8.0.x : les tests ciblent net8.0 (distinct du trio
-# Argument_Analysis en 9.0.x).
+# ArgumentAnalysis en 9.0.x).
 
 on:
   push:

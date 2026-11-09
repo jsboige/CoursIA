@@ -65,7 +65,7 @@ families:
         acceptance:
           zero_errors: true
           outputs_present: true
-      Argument_Analysis:
+      ArgumentAnalysis:
         kernel: python3
         strategy: papermill
 
