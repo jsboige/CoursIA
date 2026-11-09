@@ -449,7 +449,7 @@ jobs:
           cache: pip
           cache-dependency-path: MyIA.AI.Notebooks/IIT/ICT-Series/pyproject.toml
 
-      - name: Install ict package + deps dans venv per-job (pyphi 1.2.0, numpy<2, scipy, matplotlib)
+      - name: Install ict package + deps dans venv per-job (extra [iit] -- pyphi 1.2.0, numpy<2, antropy, #25381)
         # Fix #14571a : le toolcache `/opt/hostedtoolcache/Python/3.9.x/x64` du runner
         # self-heberge `coursia-ephemeral` est PERSISTANT entre conteneurs (etiquette
         # declarative, pas mode --ephemeral). `pip install -e .` y ecrit des fichiers
@@ -458,6 +458,10 @@ jobs:
         # d'abord a un probleme de la PR). Le venv `$RUNNER_TEMP` est detruit a la fin
         # du job par GitHub Actions, donc zero contamination inter-jobs. Acceptance :
         # 2 runs consecutifs du MEME workflow sur le MEME runner, le 2e doit reussir.
+        # #25381 : les deps pyphi/numpy<2/antropy ont quitte le coeur du pyproject
+        # pour l'extra [iit] -- le coeur est desormais un package leger installable
+        # sur tout Python >= 3.9 pour les consommateurs hors serie. La CI installe
+        # ".[iit]" pour garder l'env d'avant le split, au byte de borne pres.
         id: install
         working-directory: MyIA.AI.Notebooks/IIT/ICT-Series
         env:
@@ -467,7 +471,7 @@ jobs:
           # shellcheck disable=SC1091
           source "$ICT_VENV/bin/activate"
           python -m pip install --upgrade pip
-          pip install -e .
+          pip install -e ".[iit]"
           pip install pytest pytest-xdist
           # Garde-fou : verifier que `pip show` rapporte le site-packages du venv,
           # pas celui du toolcache partage. Un editable install fait pointer
