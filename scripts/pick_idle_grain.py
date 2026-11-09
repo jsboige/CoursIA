@@ -238,6 +238,20 @@ except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import gh_identity
 
+# #24461 -- grammaire de l'etat de livraison, source UNIQUE partagee avec le
+# poseur de label (`scripts/candidate_delivered.py`). Module SANS dependance :
+# il n'importe que `released_covers` (present dans le checkout reduit du cron)
+# et, pour le dossier de cloture, `check_closure_dossier` (absent de ce
+# checkout, et c'est pourquoi le labeler lit les marqueurs avec
+# `dossier=False` -- le balayage local et le balayage CI doivent se
+# comporter pareil). L'import est ici, AVANT les alias de grammaire qui le
+# referencent.
+try:
+    import delivery_grammar
+except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import delivery_grammar  # type: ignore[no-redef]
+
 # Geste 5 #18203 : journal des tirages, module separe par construction
 # (scripts/coordination/tirage_journal.py, merge #19945). Import best-effort :
 # un environnement sans le module tire SANS journal plutot que de refuser --
@@ -327,19 +341,14 @@ REPO = "jsboige/CoursIA"
 # d'un ack coordinateur, etc.), que le filtre recent ne voit pas par
 # construction. Relevable par `_DELIVERED_MARKER_REVOKED_RE` comme les autres
 # formes : un [NOT-DELIVERED] posterieur remet l'issue sur le tapis.
-_DELIVERED_MARKER_RE = re.compile(
-    r"(?:"
-    r"^\s*(?:#{1,6}\s*)?\[DELIVERED\]\s+lane\b"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered(?![-_\w])"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
-    r"verification first-hand)[^\n]*\bcandidate-delivered(?![-_\w])"
-    r")",
-    re.IGNORECASE | re.MULTILINE,
-)
+# #24461 -- la grammaire des marqueurs vit dans `scripts/delivery_grammar.py`,
+# module SANS dependance, importe ici ET par le poseur de label
+# (`scripts/candidate_delivered.py`) : une seule definition, deux organes,
+# aucune derive possible. Les trois noms ci-dessous restent ceux que les
+# tests et les appelants existants lisent -- ce sont des ALIAS, pas des
+# copies. Les commentaires qui suivent decrivent la grammaire ; ils sont
+# restes ici, et leur source est desormais le module.
+_DELIVERED_MARKER_RE = delivery_grammar.DELIVERED_MARKER_RE
 
 # Retractation du marqueur (mesure du 12/10 : sur 80 issues marquees livrees,
 # 20 l'etaient partiellement). Le marqueur etait PERMANENT par accident
@@ -354,14 +363,10 @@ _DELIVERED_MARKER_RE = re.compile(
 # devant `-revoked`. Le regex de livraison n'est donc pas elargi, et le sens
 # est porte par l'ORDRE : une retractation defait les marqueurs posterieurs
 # a elle, un marqueur repose apres elle rearme (cf `_delivered_state`).
-_DELIVERED_MARKER_REVOKED_RE = re.compile(
-    r"(?:"
-    r"^\s*(?:#{1,6}\s*)?\[NOT-DELIVERED\]"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered-revoked"
-    r")",
-    re.IGNORECASE | re.MULTILINE,
-)
+# #24461 -- alias vers la grammaire unique (`scripts/delivery_grammar.py`) ;
+# les commentaires qui suivent decrivent cette grammaire, dont la source est
+# desormais ce module.
+_DELIVERED_MARKER_REVOKED_RE = delivery_grammar.DELIVERED_MARKER_REVOKED_RE
 
 # Le marqueur de CONTENEUR : une issue (ou une umbrella) dont le dernier
 # commentaire dit « le CONTENEUR est livre ». C'est la seule forme qui
@@ -373,17 +378,10 @@ _DELIVERED_MARKER_REVOKED_RE = re.compile(
 # de `_DELIVERED_MARKER_RE` (memes regex, meme lookahead anti-`-revoked` /
 # `-partial`) ; la forme `[DELIVERED] lane` en est VOLONTAIREMENT absente :
 # sur une umbrella, elle est une livraison de sous-grain, pas une fermeture.
-_CONTAINER_DELIVERY_MARKER_RE = re.compile(
-    r"(?:"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered(?![-_\w])"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
-    r"verification first-hand)[^\n]*\bcandidate-delivered(?![-_\w])"
-    r")",
-    re.IGNORECASE | re.MULTILINE,
-)
+# #24461 -- alias vers la grammaire unique (`scripts/delivery_grammar.py`) ;
+# les commentaires qui suivent decrivent cette grammaire, dont la source est
+# desormais ce module.
+_CONTAINER_DELIVERY_MARKER_RE = delivery_grammar.CONTAINER_DELIVERY_MARKER_RE
 
 # --- Dossier de cloture : un signal de livraison TERMINAL --------------------
 #
@@ -691,26 +689,19 @@ def _delivered_state(comment_bodies: list[str]) -> bool:
     ne reordonne rien). Aucun tri n'est donc fait ici -- en ajouter un ferait
     dependre le sens d'un champ que le transport REST ne porte pas.
     """
-    delivered = False
-    for body in comment_bodies:
-        if _DELIVERED_MARKER_REVOKED_RE.search(body or ""):
-            delivered = False
-        elif _DELIVERED_MARKER_RE.search(body or ""):
-            delivered = True
-        elif _closure_dossier_verdict(body or "") == "CLOSE":
-            # Dossier de cloture CLOSE : l'issue est RESOLUE au sens du
-            # depot. C'est un evenement d'arming comme les autres -- une
-            # retractation posterieure le desarme, un marqueur plus recent le
-            # rearme -- mais il n'EXPIRE PAS (la terminalite est portee par
-            # `_delivery_event_from_comments`, qui rend `stamp=None`).
-            delivered = True
-        elif _released_covers_acceptance(body or ""):
-            # #20351 : `[RELEASED]` + « acceptance deja couverte » est une
-            # livraison au sens du tapis. Reste un EVENEMENT comme les autres :
-            # une retractation posterieure la desarme, un marqueur plus
-            # recent la rearme.
-            delivered = True
-    return delivered
+    # #24461 -- la machine d'etat elle-meme vit dans
+    # `scripts/delivery_grammar.py`, lue par le poseur de label
+    # (`scripts/candidate_delivered.py`) comme par le tapis. Deux organes,
+    # une grammaire : c'est la condition pour que le LABEL arme par
+    # l'attestation et l'ECART lu par le tapis disent la MEME chose.
+    #
+    # Les quatre formes d'arming sont celles du module : le marqueur
+    # `[INFO] candidate-delivered` et ses variantes, la cloture explicite
+    # `[DELIVERED] lane`, le dossier `[CLOSURE PREFLIGHT]` de verdict CLOSE
+    # (terminal : il n'EXPIRE PAS -- la terminalite est portee par
+    # `_delivery_event_from_comments`, qui rend `stamp=None`), et
+    # `[RELEASED] ... acceptance deja couverte` (#20351).
+    return delivery_grammar.delivered_state(comment_bodies)
 
 
 def _has_delivered_marker(issue_number: int) -> bool | None:
@@ -1671,6 +1662,13 @@ def apply_delivered_urn_gate(lane, urns_arg, urns_default, selected_urns):
 # sonde que sur les candidats TIRES -- jamais un balayage du pool. La meme
 # borne que `recent_delivery`.
 DELIVERED_LABEL = "candidate-delivered"
+# Cause nommee de l'exclusion par LABEL (#24461). Elle commence par
+# "LIVRAISON :" pour etre rendue par `print_delivered_signal_report`, qui
+# distingue le filtre recent (hors budget) du signal de livraison.
+_DELIVERED_LABEL_CAUSE = (
+    "LIVRAISON : label `candidate-delivered` pose -- issue reservee au "
+    "coordinateur/adjoint (urne `delivered`, #15069) ; exclusion lue dans le "
+    "payload du pool, sans sonde par issue (#24461).")
 DELIVERED_COMMENT_MARKER = "[INFO] candidate-delivered"
 # Plafond dur de sondes par tirage : la boucle de remplacement d'une urne peut
 # en theorie la parcourir entiere, et une urne de 167 grains ne doit pas
@@ -1878,6 +1876,35 @@ def _strip_code(text: str) -> str:
 # x 0,5 s », pas « n_sondes x 0 » (#23340 point 3).
 _BELT_DEADLINE: list[float | None] = [None]
 
+# #25449 -- plafond PROPRE de la phase d'amont (chargement du pool).
+#
+# Le mur de temps du `--belt` est le budget de la BOUCLE de sondage : c'est
+# ce que l'aide de `--belt-time-budget` annonce depuis #21436. Il s'arme
+# donc a l'ENTREE de la boucle, et les phases d'amont ne le consomment
+# plus. Elles gardent leur PROPRE plafond -- sans lui, un pool lent
+# rendrait le run non borne, et l'entree de boucle ne pourrait plus
+# distinguer « le pool a ete lent » de « le budget de boucle est deja
+# consomme ».
+#
+# Mesures (#25449) : chargement du pool + amorce = 258-648 s sur ai-01
+# (#22500), 175,8 s sur ce siege. 900 s couvre le pire releve avec une
+# marge, et reste sous la cadence du cron de lane (30 min).
+BELT_POOL_CEILING_S = 900.0
+
+# #25449 -- etat de la boucle, pour que l'echec rapide puisse NOMMER la
+# phase qui a consume le budget : budget de boucle (arme a son entree),
+# phase en cours, et duree mesuree des phases pre-tapis horodatees.
+_BELT_LOOP_BUDGET: list[float | None] = [None]
+_BELT_PHASE_LABEL: list[str] = ["preparation du tapis (export, reparation, pool)"]
+_BELT_PHASE_SPAN_START: list[float | None] = [None]
+_BELT_PHASE_SPAN_TOTAL: list[float] = [0.0]
+# #25449 correctif 4 -- duree MESUREE du chargement du pool. Sans elle, le
+# reliquat du budget (apres reparation) etait nomme « chargement du pool »,
+# alors qu'il couvre aussi l'export du tableau et l'ardoise de lane : le
+# diagnostic pouvait envoyer une lane optimiser le pool alors que le temps
+# etait parti ailleurs (relit par Hermes sur la tete `659641f`).
+_BELT_POOL_SPAN: list[float | None] = [None]
+
 
 def _clamp_timeout(default: float) -> float:
     """Timeout effectif d'une sonde reseau : le plus petit des deux.
@@ -1950,6 +1977,12 @@ def _publish_phase_deadline(seconds: float | None) -> tuple:
                          getattr(nits, "_NITS_PASS_DEADLINE", None))
     if not seconds or float(seconds) <= 0:
         return (previous_belt, nits, previous_nits)
+    # #25449 -- la phase est HORODATEE : quand le plafond d'amont est
+    # depasse, l'echec rapide doit pouvoir nommer la phase qui a consomme le
+    # budget, et pas seulement dire « le plafond est passe ». La duree
+    # mesuree sert aussi a attribuer le depassement (reparation vs pool).
+    _BELT_PHASE_SPAN_START[0] = time.monotonic()
+    _BELT_PHASE_LABEL[0] = "reparation (file red_backlog)"
     candidate = time.monotonic() + float(seconds)
     # #23090 : une phase ne peut que RETRECIR le mur du run, jamais l'etendre.
     # Sans ce `min`, chaque phase armee pendant un `--belt` repousserait
@@ -1964,7 +1997,7 @@ def _publish_phase_deadline(seconds: float | None) -> tuple:
 
 
 def _arm_belt_run_clock(seconds: float | None) -> float | None:
-    """Arme l'echeance du RUN `--belt` et rend son origine.
+    """Arme le plafond de la PHASE D'AMONT et memorise le budget de boucle.
 
     #23090 -- l'echeance etait publiee dans la branche `--belt`, donc APRES
     `fetch_pool` (chargement du pool : 258-648 s mesures sur ai-01, #22500),
@@ -1977,27 +2010,202 @@ def _arm_belt_run_clock(seconds: float | None) -> float | None:
     echeance via `_publish_phase_deadline`, qui ne peut desormais que
     RETRECIR la fenetre (cf. le `min` qu'elle pose) -- sinon une phase armee
     a `--red-budget 300` repousserait le mur du run a chaque appel.
+
+    #25449 -- ce mur n'est PAS le mur de la BOUCLE. L'aide de
+    `--belt-time-budget` annonce un budget « en SECONDES pour la BOUCLE de
+    sondage », mais il etait mesure depuis le DEBUT DU RUN : le chargement du
+    pool (258-648 s) le consumait entierement, et la boucle entrait avec 0 s.
+    Elle ecartait alors TOUS ses candidats comme si un filtre l'avait
+    decide (run B de #25449 : budget 600 s, boucle entree a 511 s
+    restantes, meme issue).
+
+    Desormais cette fonction arme le PLAFOND PROPRE de la phase d'amont (le
+    chargement du pool, `BELT_POOL_CEILING_S`) et MEMORISE le budget de
+    boucle, qui sera arme a l'ENTREE de la boucle (cf. `_belt_loop_entry`).
+    Le run reste borne et fail-CLOSED, et le depassement du plafond est
+    detecte et NOMME, au lieu d'etre improvise par une boucle a vide.
     """
     t0 = time.monotonic()
+    # #25449 -- le budget de boucle est MEMORISE ici, il n'est pas consomme :
+    # il s'arme a l'entree de la boucle, comme l'annonce l'aide de l'option.
+    _BELT_LOOP_BUDGET[0] = float(seconds) if seconds and float(seconds) > 0 else None
     # Sans budget : None explicite, comme la branche `--belt` d'avant. Ecrire
     # None plutot que « ne pas toucher » evite qu'une echeance laissee par un
     # appel precedent dans le meme process borne un run qui n'en a pas demande.
-    _BELT_DEADLINE[0] = t0 + float(seconds) if seconds and float(seconds) > 0 else None
+    # (`0 desactive le mur` : boucle ET plafond d'amont.)
+    _BELT_DEADLINE[0] = (t0 + _belt_pool_ceiling()
+                         if _BELT_LOOP_BUDGET[0] is not None else None)
+    _BELT_PHASE_LABEL[0] = "preparation du tapis (export, reparation, pool)"
+    # #25449 correctif 3 (relit par Hermes) -- la duree horodatee de la
+    # reparation est un etat DU RUN : elle ne doit pas survivre au run.
+    # Dans un meme process (les tests, ou un runner qui enchaine plusieurs
+    # `main`), le cumul du run precedent etait retranche du run suivant, et
+    # l'attribution « mesuree, pas devinee » pouvait designer une phase qui
+    # n'avait pas tourne.
+    _BELT_PHASE_SPAN_TOTAL[0] = 0.0
+    _BELT_PHASE_SPAN_START[0] = None
+    _BELT_POOL_SPAN[0] = None
     return t0
 
 
 def _disarm_belt_run_clock() -> None:
     """Retire l'echeance du run (#23090) : aucune fuite hors du run."""
     _BELT_DEADLINE[0] = None
+    # #25449 correctif 3 -- la duree horodatee de la reparation est un etat
+    # du run : elle disparait avec lui, comme l'echeance.
+    _BELT_PHASE_SPAN_TOTAL[0] = 0.0
+    _BELT_PHASE_SPAN_START[0] = None
+    _BELT_POOL_SPAN[0] = None
 
 
 def _restore_phase_deadline(token: tuple) -> None:
     """Rend l'etat d'avant `_publish_phase_deadline` (echeance + budget nits)."""
     previous_belt, nits, previous_nits = token
     _BELT_DEADLINE[0] = previous_belt
+    # #25449 -- la phase horodatee se clot : sa duree est cumulee, et la
+    # phase d'amont qui suit la reparation est le CHARGEMENT DU POOL. C'est
+    # elle que l'echec rapide nomme quand c'est elle qui a consume le
+    # budget.
+    start = _BELT_PHASE_SPAN_START[0]
+    if start is not None:
+        _BELT_PHASE_SPAN_TOTAL[0] += max(0.0, time.monotonic() - start)
+        _BELT_PHASE_SPAN_START[0] = None
+    _BELT_PHASE_LABEL[0] = "chargement du pool"
     if nits is not None and previous_nits is not None and previous_nits[0] is not None:
         nits.NITS_PASS_BUDGET_S = previous_nits[0]
         nits._NITS_PASS_DEADLINE = None  # passe suivante : budget rendu, deadline rearmee
+
+
+def _belt_pool_ceiling() -> float:
+    """Plafond PROPRE de la phase d'amont (chargement du pool).
+
+    Lu a chaque appel : une constante module (`BELT_POOL_CEILING_S`) ou
+    l'environnement (`PICK_BELT_POOL_CEILING_S`), pour qu'un siege lent
+    elargisse le plafond sans patch. Une valeur invalide ou <= 0 : la
+    constante.
+    """
+    raw = os.environ.get("PICK_BELT_POOL_CEILING_S")
+    if raw:
+        try:
+            value = float(raw)
+        except ValueError:
+            value = 0.0
+        if value > 0:
+            return value
+    return float(BELT_POOL_CEILING_S)
+
+
+def _belt_pool_overrun(t0: float | None, now: float) -> dict | None:
+    """Le plafond de la phase d'amont est-il depasse ? Preuve, ou None.
+
+    #25449 -- le depassement doit etre NOME : la phase qui a consume le
+    budget, les secondes mesurees, le plafond. Sans preuve, le run entrait
+    dans la boucle avec un budget vide et ecartait 70 candidats comme si un
+    filtre l'avait decide -- un echec muet, que rien ne distinguait d'un
+    tirage normal.
+
+    L'attribution est MESUREE : la duree horodatee de la reparation est
+    retranchee du total, et la phase nommee est celle qui a le plus
+    consomme. Hors phase d'amont (le depassement est alors survenu pendant
+    une phase du tapis), c'est le nom de la phase en cours qui est dit.
+    """
+    # #25449 correctif 2 (relit par Hermes sur la tete `659641f`) -- le
+    # plafond d'AMONT ne survit pas a l'absence de budget : `0` desactive le
+    # mur (boucle ET plafond d'amont), comme l'annonce l'aide de l'option et
+    # le corps de la PR. Avant, `_arm_belt_run_clock(0)` laissait un `t0`
+    # non nul : le garde de depassement restait arme a plafond plein, et un
+    # run volontairement non borne s'arretait en 3 apres le chargement du pool
+    # (regression mesuree contre la base : rc 0 -> rc 3).
+    if t0 is None or _BELT_LOOP_BUDGET[0] is None:
+        return None
+    ceiling = _belt_pool_ceiling()
+    elapsed = max(0.0, float(now) - float(t0))
+    if elapsed <= ceiling:
+        return None
+    repair = _BELT_PHASE_SPAN_TOTAL[0]
+    reste = max(0.0, elapsed - repair)
+    label = _BELT_PHASE_LABEL[0]
+    if label in ("preparation du tapis (export, reparation, pool)",
+                 "chargement du pool", "reparation (file red_backlog)"):
+        # Phase d'amont : l'attribution est mesuree, pas devinee.
+        # #25449 correctif 4 -- le chargement du POOL est mesure lui aussi :
+        # le reliquat du budget couvre l'export du tableau, l'ardoise de lane
+        # ET le pool. On compare les deux consommateurs mesures (reparation
+        # d'un cote, pool de l'autre) au lieu de nommer le pool par defaut.
+        pool_span = _BELT_POOL_SPAN[0]
+        if repair > reste:
+            phase, phase_s = "reparation (file red_backlog)", repair
+        elif pool_span is None:
+            # Pool non mesure (appel direct a la fonction) : on garde le nom
+            # par defaut, et le message porte les secondes mesurees.
+            phase, phase_s = "chargement du pool", reste
+        elif pool_span >= reste - pool_span:
+            phase, phase_s = "chargement du pool", pool_span
+        else:
+            phase, phase_s = ("preparation du tapis (export, ardoise)",
+                              reste - pool_span)
+    else:
+        # Phase du tapis en cours : c'est elle qui est nommee.
+        phase, phase_s = label, elapsed
+    return {
+        "phase": phase,
+        "phase_s": phase_s,
+        "elapsed_s": elapsed,
+        "ceiling_s": ceiling,
+        "repair_s": repair,
+        "message": (
+            f"plafond de la phase d'amont depasse : {elapsed:.0f}s consommees "
+            f"> plafond {ceiling:.0f}s -- phase qui a consume le budget : "
+            f"'{phase}' ({phase_s:.0f}s ; reparation {repair:.0f}s). Le run "
+            f"s'arrete ici (fail-CLOSED) : la boucle n'est pas entree, ses "
+            f"candidats n'ont pas ete ecartes par un filtre, ils n'ont pas "
+            f"ete servis."),
+    }
+
+
+def _belt_loop_entry(args, t0: float | None, now: float) -> tuple:
+    """Entree de boucle : arme le budget de BOUCLE, detecte le depassement.
+
+    Rend ``(budget, depassement)`` :
+    - ``budget`` : le budget de la boucle, arme a SON entree (None si le
+      mur est desactive) ;
+    - ``depassement`` : None, ou la preuve du depassement du plafond
+      d'amont (cf. `_belt_pool_overrun`).
+
+    #25449 -- avant, le budget de boucle etait mesure depuis le debut du
+    RUN : le chargement du pool le consumait entierement et la boucle
+    entrait avec 0 s. Elle n'etait donc plus bornee par son mur, et le
+    fail-CLOSED ecartait tous ses candidats comme si un filtre l'avait
+    decide. Le budget s'arme desormais ICI, comme l'aide de
+    `--belt-time-budget` l'annonce (« en SECONDES pour la BOUCLE de
+    sondage »).
+    """
+    raw = getattr(args, "belt_time_budget", None)
+    budget = float(raw) if raw and float(raw) > 0 else None
+    return budget, _belt_pool_overrun(t0, now)
+
+
+def _belt_emit_overrun(args, overrun: dict) -> None:
+    """Publie l'echec rapide du plafond d'amont (message nomme + JSON).
+
+    En mode `--json`, le document porte l'erreur : les consommateurs
+    lisent `picks` / `claims` / `withheld`, ils doivent donc y trouver des
+    structures, pas une absence de document. Le message nomme reste sur
+    stderr, pour qu'il soit lisible meme quand stdout est du JSON.
+    """
+    message = overrun.get("message", "")
+    if getattr(args, "json", False):
+        print(message, file=sys.stderr)
+        print(json.dumps({
+            "mode": "belt",
+            "lane": getattr(args, "lane", None),
+            "picks": [],
+            "claims": {},
+            "withheld": [],
+            "error": overrun,
+        }, ensure_ascii=False, indent=2))
+    else:
+        print(message)
 
 
 # --- #22630 : cache de la file de reparation ---------------------------------
@@ -2466,6 +2674,21 @@ _BELT_SNAPSHOT: dict | None = None
 _BELT_PRIMED_WINDOW: set[int] = set()
 
 
+def _delivery_motif(issue_number: int) -> str | None:
+    """Le MOTIF d'ecartement d'une issue livree, nomme (decision #24461, point 4).
+
+    Lecture par l'instantane local (`_snapshot_comments`) : **ZERO requete**.
+    En l'absence d'instantane (hors tapis), la fonction rend `None` et
+    l'appelant garde sa cause generique -- fail-OPEN, jamais un motif
+    fabrique.
+    """
+    comments = _snapshot_comments(issue_number)
+    if comments is None:
+        return None
+    bodies = [c.get("body") or "" for c in comments if isinstance(c, dict)]
+    return delivery_grammar.delivery_motif(bodies)
+
+
 def _belt_snapshot_prime(repo: str, numbers: list[int],
                          seed: dict | None = None) -> None:
     """Rafraichit UNE FOIS l'instantane pour les candidats tires (#22630, #22983).
@@ -2788,10 +3011,15 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     # qui recopie la ligne canonique ne clot rien (mesure : revue Hermes
     # du 2026-11-03 sur #24523).
     body_plain = _strip_code(body)
-    return bool(_RECENT_DELIVERY_MARKER_RE.search(body_plain)
-                or _DELIVERED_MARKER_RE.search(body_plain)
-                or _closure_dossier_verdict(body) == "CLOSE"
-                or _closure_announced_close(body))
+    # #24461 (c) point 3 : une livraison de TRANCHE (`paths:` sur la ligne
+    # du marqueur) ne livre pas l'issue -- elle ne l'arme ni ne la desarme.
+    tranche = delivery_grammar.is_tranche_only(body_plain)
+    return bool(
+        _closure_dossier_verdict(body) in ("CLOSE", "KEEP")
+        or _closure_announced_close(body)
+        or (not tranche and (
+            _RECENT_DELIVERY_MARKER_RE.search(body_plain)
+            or _DELIVERED_MARKER_RE.search(body_plain))))
 
 
 def _issue_is_frozen(issue_body: str | None,
@@ -3162,22 +3390,37 @@ def _delivery_event_from_comments(
             # expire, dossier CLOSE du 02/11 invisible).
             state, stamp = True, None
             closed = True
-        elif (_DELIVERED_MARKER_RE.search(body)
-              or _released_covers_acceptance(body)):
+        elif _closure_dossier_verdict(body) == "KEEP":
+            # Dossier `[CLOSURE PREFLIGHT]` VIVANT (verdict KEEP) : la
+            # cloture est EN COURS, l'issue n'est pas un grain de
+            # production (decision #24461 (c), point 2). Expirable comme un
+            # marqueur de livraison (48 h, #22500).
             state, stamp = True, created
-        elif _RECENT_DELIVERY_MARKER_RE.search(body):
+        elif (delivery_grammar.delivery_marker_is_epic_wide(body)
+              or _released_covers_acceptance(body)):
+            # #24461 (c) point 3 : une livraison de TRANCHE (`paths:` sur la
+            # ligne du marqueur) ne livre pas l'issue -- elle ne l'arme ni ne
+            # la desarme.
+            state, stamp = True, created
+        elif (_RECENT_DELIVERY_MARKER_RE.search(body)
+              and not delivery_grammar.is_tranche_marker(body)):
             # `[FROZEN]` et consorts : le filtre recent les voit, la sonde
             # pleine non. L'HEURE compte quand meme pour la regle des 48 h.
+            # Une livraison de TRANCHE n'est pas un evenement de cloture :
+            # elle ne pose ni l'etat ni l'heure (decision #24461 (c)).
             stamp = created
     last = comments[-1]
     last_body = last.get("body") if isinstance(last, dict) else ""
     if not isinstance(last_body, str):
         last_body = ""
-    recent = bool(_RECENT_DELIVERY_MARKER_RE.search(last_body)
-                  or _DELIVERED_MARKER_RE.search(last_body)
-                  or closed
-                  or _closure_dossier_verdict(last_body) == "CLOSE"
-                  or _closure_announced_close(last_body))
+    tranche = delivery_grammar.is_tranche_only(last_body)
+    recent = bool(
+        closed
+        or _closure_dossier_verdict(last_body) in ("CLOSE", "KEEP")
+        or _closure_announced_close(last_body)
+        or (not tranche and (
+            _RECENT_DELIVERY_MARKER_RE.search(last_body)
+            or _DELIVERED_MARKER_RE.search(last_body))))
     if closed and state:
         # La terminalite PRIME sur l'heure : un dossier CLOSE n'expire pas,
         # meme si un marqueur plus recent a reecrit `stamp`.
@@ -3497,8 +3740,14 @@ def revoked_after_merge_signal(issue_number: int, lane: str | None = None,
             return None
     if not isinstance(comments, list):
         return None
-    # Le repli REST ne rend que des CORPS, sans horodatage : il ne permet pas
-    # la comparaison a l'instant de fusion, donc il ne revoque pas. Le
+    # Le repli passe par `gh issue view --json comments`, qui rend bien
+    # `createdAt` (mesure du 2026-11-04 : `gh issue view 24482 --json
+    # comments` -- les cles du commentaire sont `author`, `body`,
+    # `createdAt`, `id`, ...). Une revision (Hermes, 2026-11-03) decrivait
+    # ici un transport qui n'en rendait pas -- c'etait la PHRASE qui etait
+    # erronee, pas le code, et le test « sans horodatage » prouve que
+    # l'absence de `createdAt` DISABLE la revocation. Un commentaire sans
+    # `createdAt` ne revoque donc rien : le
     # desaccord est assume et documente plutot que comble par une supposition.
     newest_revocation = None
     for comment in comments:
@@ -5603,17 +5852,24 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                         # Cout : 1 requete, hors budget, fail-OPEN sur
                         # lecture en echec (l'appelant enchaine sur la
                         # sonde pleine dans ce cas).
+                        # #24461 (c) point 4 -- le MOTIF d'ecartement est
+                        # NOMME : la cause rendue dit POURQUOI l'issue a
+                        # ete ecartee, pour que l'urne de l'adjoint
+                        # l'instruise sans re-deriver la grammaire. Lecture
+                        # par l'instantane local : ZERO requete.
+                        motif = _delivery_motif(c["number"])
                         recent = has_recent_delivery_marker(c["number"])
                         if recent is True:
                             state["recent_filtered"] = state.get(
                                 "recent_filtered", 0) + 1
-                            conflicts.append((c, "LIVRAISON (recent) : "
+                            conflicts.append((c, "LIVRAISON (recent) : " + (
+                                motif or
                                 "marqueur de cloture sur le dernier "
                                 "commentaire ([DELIVERED] / [FROZEN] "
                                 "/ [INFO] candidate-delivered), ou GEL "
                                 "de l'item (body ou fil)."
                                 " Candidat remplace dans "
-                                "la meme urne, hors budget de sonde."))
+                                "la meme urne, hors budget de sonde.")))
                             continue
                         # Le label est teste A COUT NUL et vaut meme quand le
                         # plafond de sondes est epuise ; seule la sonde de
@@ -5624,6 +5880,7 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                             _counted_merged_pr_probe, _counted_revocation_probe)
                         if reason is not None:
                             conflicts.append((c, "LIVRAISON : " + reason + (
+                                (" -- motif : " + motif) if motif else "") + (
                                 " Candidat remplace dans la meme urne.")))
                             continue
                         # #16589 : la sonde de PR couvrante vient APRES le
@@ -9360,8 +9617,9 @@ def belt_filter(
     admitted: list[dict],
     args,
     urns: set[str] | None = None,
-    epic_deliveries: dict[int, int] | None = None,
+    epic_load: dict[int, int] | None = None,
     drops: list[tuple[dict, str]] | None = None,
+    label_drops: list[tuple[dict, str]] | None = None,
     notes: list[str] | None = None,
 ) -> list[dict]:
     """Filtre le pool admissible pour le mode --belt.
@@ -9377,7 +9635,7 @@ def belt_filter(
     (presente par defaut) a une lane worker, qui ne doit jamais la recevoir.
     ``None`` garde la lecture de ``args.urns`` pour les appels sans lane.
 
-    ``epic_deliveries`` : la CHARGE EN VOL de la lane (PRs ouvertes +
+    ``epic_load`` : la CHARGE EN VOL de la lane (PRs ouvertes +
     livraisons mergees sur 7 jours), pas le seul corpus merge. Le plafond
     s'applique en DERNIER -- apres les autres filtres, pour que le rapport
     nomme une cause qui aurait vraiment ete servie -- et son refus
@@ -9400,6 +9658,26 @@ def belt_filter(
         if n in excluded_issues_set:
             return False
         labels = set(item.get("labels") or [])
+        # #24461 -- le LABEL `candidate-delivered` est DEJA dans le payload du
+        # pool (une seule requete `gh issue list --json labels` pour tout le
+        # pool) : l'exclure ici ne coute AUCUNE sonde par issue, la ou la
+        # sonde de livraison en coute une et sature -- et quand le budget ou
+        # le mur de temps est atteint, elle rend fail-OPEN et l'issue est
+        # servie comme un grain neuf (mesure #24461 : 37 des 120 grains
+        # servis portaient un marqueur vivant).
+        #
+        # L'exclusion vise les lanes HORS `DELIVERED_URN_LANES` (#15069) :
+        # l'urne `delivered` -- et la lecture du label -- sont reservees au
+        # coordinateur et a l'adjoint, qui decident de la fermeture.
+        # `--include-delivered` reste l'echappatoire NOMMEE (son help dit
+        # « typiquement pour une lane habilitee a fermer ») : il leve
+        # l'exclusion comme il leve les exclusions par sonde.
+        if (DELIVERED_LABEL in labels
+                and not delivered_urn_allowed(getattr(args, "lane", None))
+                and not getattr(args, "include_delivered", False)):
+            if label_drops is not None:
+                label_drops.append((item, _DELIVERED_LABEL_CAUSE))
+            return False
         if required_labels_set and not required_labels_set.issubset(labels):
             return False
         if excluded_labels_set and excluded_labels_set.intersection(labels):
@@ -9431,7 +9709,7 @@ def belt_filter(
     kept_with_cap: list[dict] = []
     dropped_by_cap: list[tuple[dict, str]] = []
     for item in kept:
-        cause = epic_lane_delivery_cause(item, epic_deliveries, cap, lane,
+        cause = epic_lane_delivery_cause(item, epic_load, cap, lane,
                                           family_cap=family_cap)
         if cause:
             dropped_by_cap.append((item, cause))
@@ -9861,7 +10139,7 @@ def draw_belt(
     admitted: list[dict],
     args,
     *,
-    epic_deliveries: dict[int, int] | None = None,
+    epic_load: dict[int, int] | None = None,
     drops: list[tuple[dict, str]] | None = None,
     notes: list[str] | None = None,
 ) -> list[dict]:
@@ -9889,13 +10167,13 @@ def draw_belt(
     ou un avis de zone ne vide pas la sortie : il figure en rappel dans la
     banniere texte, pas dans le predicat de selection.
 
-    `epic_deliveries` / `drops` : transmis a `belt_filter` pour que ce point
+    `epic_load` / `drops` : transmis a `belt_filter` pour que ce point
     d'entree ne puisse pas contourner le plafond #21067. Aucun appelant ne
     l'utilise aujourd'hui (mesure du 2026-10-29 : `draw_belt` n'est appele
     nulle part hors d'un docstring de test) ; les parametres existent pour
     que le prochain le fasse sans rouvrir le trou.
     """
-    filtered = belt_filter(admitted, args, epic_deliveries=epic_deliveries,
+    filtered = belt_filter(admitted, args, epic_load=epic_load,
                            drops=drops, notes=notes)
     filtered.sort(key=belt_sort_key)
     return filtered[:args.grains]
@@ -10340,7 +10618,7 @@ def consume_board(
     urns: set[str] | None = None,
     lane: str | None = None,
     live_check: bool = True,
-    epic_deliveries: dict[int, int] | None = None,
+    epic_load: dict[int, int] | None = None,
 ) -> tuple[list[dict], dict]:
     """Retient les candidats d'un instantane, avec UN controle vivant.
 
@@ -10354,7 +10632,7 @@ def consume_board(
     bascule alors sur le calcul local, qui est le comportement d'aujourd'hui --
     jamais une regression.
 
-    `epic_deliveries` : livraisons par EPIC de CETTE lane, pour que le plafond
+    `epic_load` : livraisons par EPIC de CETTE lane, pour que le plafond
     #21067 s'applique ICI aussi (il ne l'etait que sur le calcul local --
     ce chemin pouvait servir a une lane un EPIC qu'elle avait deja livre).
     ``None`` = mesure absente : le plafond reste inactif, jamais un refus sur
@@ -10365,7 +10643,7 @@ def consume_board(
                 if isinstance(w, dict)}
     epic_drops: list[tuple[dict, str]] = []
     eligible = belt_filter(items, args, urns=urns,
-                            epic_deliveries=epic_deliveries,
+                            epic_load=epic_load,
                             drops=epic_drops)
     eligible = [it for it in eligible if it["number"] not in withheld]
     eligible.sort(key=belt_sort_key)
@@ -10385,9 +10663,9 @@ def consume_board(
         # controle vivant, aucun fetch de pool. L'etat est donc `unmeasured`
         # et la sortie le dit ; un appelant qui A la mesure la passe.
         "epic_delivery_cap": {
-            "state": ("measured" if epic_deliveries is not None
+            "state": ("measured" if epic_load is not None
                       else "unmeasured"),
-            "applied": epic_deliveries is not None,
+            "applied": epic_load is not None,
             "dropped": [{"number": it["number"], "title": it["title"],
                          "cause": cause} for it, cause in epic_drops],
         },
@@ -11831,6 +12109,12 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                         state.setdefault("marker_unread", []).append(n)
                 if recent_flag is True and not marker_expired:
                     state["recent_filtered"] += 1
+                    # #24461 (c) point 4 -- le MOTIF d'ecartement est
+                    # NOMME : la cause rendue dit POURQUOI l'issue a ete
+                    # ecartee, pour que l'urne de l'adjoint l'instruise
+                    # sans re-deriver la grammaire. Lecture par l'instantane
+                    # local : ZERO requete.
+                    motif = _delivery_motif(n)
                     belt_withheld.append(
                         (it,
                          ("LIVRAISON (dossier de cloture CLOSE) : le dossier "
@@ -11841,9 +12125,15 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                           "sonde." if terminal_closure else
                           "LIVRAISON (recent) : marqueur de cloture sur le "
                           "dernier commentaire ([DELIVERED] / "
-                          "[FROZEN] / [INFO] candidate-delivered). "
-                          "Candidat remplace hors budget de sonde.")))
+                          "[FROZEN] / [INFO] candidate-delivered)."
+                          + ((" " + delivery_grammar.MOTIF_SUFFIX + motif)
+                             if motif else "")
+                          + " Candidat remplace hors budget de sonde.")))
                     continue
+                # Le motif est calcule UNE FOIS par candidat, avant les deux
+                # sites d'ecartement : il est lu dans l'instantane local
+                # (ZERO requete) et sert a nommer la cause.
+                motif = _delivery_motif(n)
                 reason = delivered_signal_reason(
                     it, args.lane, counted_probe, state["failures"],
                     counted_merged_pr_probe, counted_revocation_probe,
@@ -11852,6 +12142,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 if reason is not None:
                     belt_withheld.append(
                         (it, "LIVRAISON : " + reason
+                         + ((" " + delivery_grammar.MOTIF_SUFFIX + motif)
+                            if motif else "")
                          + " Candidat remplace dans la meme urne."))
                     continue
                 # #16589/#21757 : la sonde de PR couvrante vient APRES le filtre
@@ -12079,12 +12371,16 @@ def main(argv: list[str] | None = None) -> int:
                          "dont aucune sonde n'a pu etre emise (fail-CLOSED, "
                          "raison nommee dans `withheld`), au lieu de les "
                          "servir ; le mur reste signale (`time_budget_hit`). "
-                         "Portee : les phases qui precedent la boucle (claims, "
-                         "settle) consomment l'echeance mais ne sont pas "
-                         "tronquees, et `validate_picks_live` s'execute apres "
-                         "elle sans borne -- la valeur ne borne donc pas une "
-                         "duree totale de run. Defaut : PICK_BELT_TIME_BUDGET_S, "
-                         "ou 240 s. 0 desactive le mur.")
+                         "#25449 le mur s'arme a l'ENTREE de la boucle : les "
+                         "phases qui la precedent (chargement du pool, "
+                         "reparation, claims, settle) ne le consomment plus, "
+                         "elles ont leur PROPRE plafond "
+                         "(`PICK_BELT_POOL_CEILING_S`, defaut 900 s) ; son "
+                         "depassement arrete le run en nommant la phase qui a "
+                         "consomme le budget (code de sortie 3). La valeur ne "
+                         "borne donc plus une duree totale de run. Defaut : "
+                         "PICK_BELT_TIME_BUDGET_S, ou 240 s. 0 desactive le "
+                         "mur (boucle ET plafond d'amont).")
     ap.add_argument("--umbrellas", type=int, default=2, help="candidats urne 'umbrella' (defaut 2)")
     ap.add_argument("--delivered", type=int, default=2, help="candidats urne 'delivered' (defaut 2)")
     ap.add_argument("--reroll", type=int, default=0, help="decale la graine pour un nouveau tirage")
@@ -12658,11 +12954,16 @@ def main(argv: list[str] | None = None) -> int:
     # donnerait a lire une passe plus rapide qu'elle n'est.
     import time as _time_pass
     _pass_t0 = _time_pass.monotonic()
+    # #25449 correctif 4 -- duree MESUREE du chargement du pool. C'est elle
+    # qui permet a l'echec rapide de nommer le POOL plutot que l'ensemble
+    # « export + ardoise + pool » (cf. `_belt_pool_overrun`).
+    _pool_t0 = time.monotonic()
     pool, pool_error = fetch_pool(
         cache=payload_cache,
         cache_mode=effective_cache_mode,
         cache_status=cache_status,
     )
+    _BELT_POOL_SPAN[0] = max(0.0, time.monotonic() - _pool_t0)
     # #17038 : « je n'ai pas pu lire » n'est pas « aucun candidat ». Le dire,
     # et sortir avec un rc DEDIE avant tout tirage -- sans pool il n'y a pas
     # de tirage a rendre, et le vocabulaire de l'epuisement (« FILE LOCALE
@@ -12868,10 +13169,27 @@ def main(argv: list[str] | None = None) -> int:
         if _belt_t0 is None:  # main() non cable : comportement d'avant
             _belt_t0 = _time_belt.monotonic()
             if args.belt_time_budget and args.belt_time_budget > 0:
-                _BELT_DEADLINE[0] = _belt_t0 + args.belt_time_budget
+                # #25449 : le plafond d'AMONT (le pool), pas le budget de
+                # boucle -- celui-ci s'arme a l'entree de la boucle.
+                _BELT_DEADLINE[0] = _belt_t0 + _belt_pool_ceiling()
+                _BELT_LOOP_BUDGET[0] = float(args.belt_time_budget)
         def _belt_phase(name: str) -> None:
+            # #25449 : la phase en cours est nommee -- l'echec rapide doit
+            # pouvoir dire QUELLE phase a consume le budget.
+            _BELT_PHASE_LABEL[0] = name
             print(f"[t={_time_belt.monotonic() - _belt_t0:.2f}s] belt {name}",
                   file=sys.stderr, flush=True)
+        # #25449 -- plafond du chargement du pool : verifie DES que le pool
+        # est charge, avant les phases de preparation du tapis (settle,
+        # claims). Depasse, le run s'arrete en nommant la phase qui a
+        # consomme le budget -- fail-CLOSED, et non une boucle a vide qui
+        # ecarte 70 candidats comme si un filtre l'avait decide.
+        _belt_overrun = _belt_pool_overrun(_belt_t0, _time_belt.monotonic())
+        if _belt_overrun is not None:
+            _belt_phase(f"ECHEC RAPIDE -- {_belt_overrun['message']}")
+            _belt_emit_overrun(args, _belt_overrun)
+            _disarm_belt_run_clock()
+            return 3
         _belt_phase(f"start: grains={args.grains} lane={args.lane}")
         # #21067 correctif 1 : les livraisons par EPIC de CETTE lane, lues
         # sur le corpus de l'ardoise deja paye. Sans ardoise (pas de lane,
@@ -12880,7 +13198,7 @@ def main(argv: list[str] | None = None) -> int:
         # Correctif 2 : `epic_delivery_cap_state` separe « mesure a ZERO »
         # de « pas mesure ». Les deux rendent un dict vide, et les confondre
         # publiait « non mesurees » sur une mesure qui avait abouti.
-        _epic_cap_state, _epic_deliveries = epic_delivery_cap_state(
+        _epic_cap_state, _epic_load = epic_delivery_cap_state(
             lane_record, args.lane)
         _epic_drops: list[tuple[dict, str]] = []
         _epic_notes: list[str] = []
@@ -12890,17 +13208,26 @@ def main(argv: list[str] | None = None) -> int:
         elif _epic_cap_state == "not-applicable":
             _belt_phase("plafond livraisons EPIC: INACTIF (pas de lane -- le "
                         "plafond est par lane)")
-        elif not _epic_deliveries:
+        elif not _epic_load:
             _belt_phase("plafond livraisons EPIC: MESURE, aucune charge en "
                         "vol de la lane sur la fenetre (rien a ecarter)")
         else:
             _belt_phase(f"plafond livraisons EPIC: MESURE, "
-                        f"{sum(_epic_deliveries.values())} livraison(s) en vol "
-                        f"sur {len(_epic_deliveries)} EPIC(s) "
+                        f"{sum(_epic_load.values())} livraison(s) en vol "
+                        f"sur {len(_epic_load)} EPIC(s) "
                         f"(ouvertes + mergees)")
+        # #24461 -- les issues porteuses du LABEL `candidate-delivered` sont
+        # exclues du tapis des lanes hors `DELIVERED_URN_LANES` A LA LECTURE
+        # DE LA LISTE (le label est dans le payload du pool) : aucune sonde
+        # par issue n'est depensee, et l'exclusion ne peut pas s'eteindre sur
+        # un budget de sondes-epuise. Le compte est RAPPORTE : une exclusion
+        # invisible est un silence, et un silence se lit comme une absence.
+        _label_drops: list[tuple[dict, str]] = []
         belt_pool = belt_filter(admitted, args, urns=selected_urns,
-                                epic_deliveries=_epic_deliveries,
-                                drops=_epic_drops, notes=_epic_notes)
+                                epic_load=_epic_load,
+                                drops=_epic_drops,
+                                label_drops=_label_drops,
+                                notes=_epic_notes)
         for _note in _epic_notes:
             _belt_phase(_note)
         # #24373 -- parcage des EPICs Origami dont le pli suivant n'est pas
@@ -12950,6 +13277,14 @@ def main(argv: list[str] | None = None) -> int:
                                     for it, cause in _epic_drops[:6])
                         + (f" (+{len(_epic_drops) - 6})"
                            if len(_epic_drops) > 6 else ""))
+        if _label_drops:
+            _belt_phase("label `candidate-delivered` : "
+                        f"{len(_label_drops)} issue(s) exclue(s) a la lecture "
+                        "de la liste, sans sonde (#24461) : "
+                        + ", ".join(f"#{it['number']}"
+                                    for it, _ in _label_drops[:6])
+                        + (f" (+{len(_label_drops) - 6})"
+                           if len(_label_drops) > 6 else ""))
         # Verification des claims tenes par une autre lane : on regarde
         # plus large que `args.grains` pour tolerer un remplacement si
         # la tete de file est tenue. Cout borne : au plus `grains + 4`
@@ -13148,23 +13483,29 @@ def main(argv: list[str] | None = None) -> int:
         # sont injectees ICI explicitement : les defauts de la boucle sont
         # inertes (#19913) pour que les tests ne sortent jamais sur le
         # reseau par oubli.
-        # #21436 — mur de temps du tapis, mesure contre le RUN entier
-        # (`_belt_t0`) et pas contre l'entree de la boucle : la fenetre de
-        # claims initiale (8 verdicts = 49 s au dernier releve ; 44 verdicts =
-        # 170 s mesures sur ai-01) mange deja une part du budget, et c'est le
-        # RUN entier que l'acceptance borne. Calcule ICI, au plus pres de
-        # l'appel, pour que la partie pre-boucle soit effectivement deduite --
-        # mesure au premier run : calcule en t=0, il rendait la boucle a
-        # t=51 s avec "120 s restants", soit une echeance reelle a t=171 s.
-        belt_time_remaining = None
-        if args.belt_time_budget and args.belt_time_budget > 0:
-            belt_time_remaining = max(
-                0.0, args.belt_time_budget
-                - (_time_belt.monotonic() - _belt_t0))
-            _belt_phase(f"mur de temps: {args.belt_time_budget:.0f}s pour la "
-                        f"boucle, {belt_time_remaining:.0f}s restants a son "
-                        f"entree (claims/settle deduits ; les sondes sont "
-                        f"clampees a l'echeance du run)")
+        # #25449 -- le budget de BOUCLE s'arme a l'ENTREE de la boucle, comme
+        # l'annonce l'aide de `--belt-time-budget` (« en SECONDES pour la
+        # BOUCLE de sondage (pas par etape) »). Avant, il etait mesure depuis
+        # le debut du RUN : le chargement du pool (258-648 s mesures, #22500)
+        # le consumait entierement, et la boucle entrait avec 0 s -- elle
+        # ecartait alors TOUS ses candidats comme si un filtre l'avait
+        # decide (run B de #25449 : budget 600 s, boucle entree a 511 s
+        # restantes, meme issue).
+        # Les phases d'amont ont leur PROPRE plafond -- celui du pool, verifie
+        # et nomme plus haut -- donc le run reste borne et fail-CLOSED sans
+        # que le mur de boucle soit consomme avant d'exister.
+        belt_time_remaining, _belt_overrun = _belt_loop_entry(
+            args, _belt_t0, _time_belt.monotonic())
+        if _belt_overrun is not None:
+            _belt_phase(f"ECHEC RAPIDE -- {_belt_overrun['message']}")
+            _belt_emit_overrun(args, _belt_overrun)
+            _disarm_belt_run_clock()
+            return 3
+        if belt_time_remaining is not None:
+            _belt_phase(f"mur de temps: {belt_time_remaining:.0f}s pour la "
+                        f"boucle, arme a son entree ; les phases d'amont ont "
+                        f"leur propre plafond (pool : "
+                        f"{_belt_pool_ceiling():.0f}s, verifie et nomme)")
         _belt_phase("pick_with_replacements start")
         belt_picks, belt_withheld, belt_pick_state = (
             belt_pick_with_replacements(belt_pool, belt_claims, args,
@@ -13409,6 +13750,11 @@ def main(argv: list[str] | None = None) -> int:
                 "lane": args.lane,
                 "pool_initial": len(admitted),
                 "belt_pool_size": len(belt_pool),
+                # #25449 -- le budget de BOUCLE reellement arme a son entree
+                # (None si le mur est desactive). C'est ce que la boucle a
+                # pu utiliser : une lane qui compare le mur a une duree de
+                # run doit lire CECI, pas le plafond d'amont.
+                "belt_loop_budget_s": belt_time_remaining,
                 "filter_active": filter_active,
                 # #20923 : defense en profondeur tapis vs candidats obsoletes.
                 # Surface JSON stable : `belt_validate` renseigne la policy
@@ -13577,6 +13923,27 @@ def main(argv: list[str] | None = None) -> int:
                 out_belt["repair"] = repair_payload
             else:
                 out_belt["repair"] = None
+            # #24461 (c) point 4 -- ce que le tapis ecarte ne disparait
+            # pas : la liste des issues ecartees pour CHACUN des deux motifs
+            # est nommee, separement, dans la sortie JSON.
+            _motif_withheld = [
+                {"number": it["number"], "cause": c or "",
+                 "classe": delivery_grammar.motif_class(c or "")}
+                for it, c in belt_withheld
+            ]
+            out_belt["delivery_motifs"] = {
+                "epic_wide": sorted({w["number"] for w in _motif_withheld
+                                     if w["classe"] == "epic_wide"}),
+                "living_dossier": sorted({w["number"] for w in _motif_withheld
+                                          if w["classe"] == "living_dossier"}),
+                # La classe est lue dans le MOTIF, pas dans toute la cause :
+                # une cause « dossier CLOSE » porte aussi la chaine
+                # `CLOSURE PREFLIGHT`, et une sous-chaine la classait a tort
+                # comme « dossier vivant ».
+                "unclassified": sorted({w["number"] for w in _motif_withheld
+                                        if w["classe"] is None
+                                        and w["cause"].startswith("LIVRAISON")}),
+            }
             print(json.dumps(out_belt, ensure_ascii=False, indent=2))
         else:
             # Sortie texte : un tableau compact, aligne sur la volee
