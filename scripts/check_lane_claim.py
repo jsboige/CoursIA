@@ -4198,9 +4198,54 @@ def _epic_cap_pool() -> tuple[list[dict], str | None]:
     return pool, read_error
 
 
+def _claim_visit_excluding(comments: list[dict],
+                            exclude_lane: str | None,
+                            ) -> tuple[str | None, str | None]:
+    """Paire ``(date, marqueur)`` de la visite la plus recente, HORS une lane.
+
+    #25443 : le plafond hebdomadaire des EPICs se lisait sur le dernier
+    marqueur du fil, **y compris ceux de la lane qui interroge** et ceux du
+    coordinateur qui arbitre. Deux self-bloquages en decoulaient :
+
+      - une lane qui pose son ``[CLAIMED]`` sur l'EPIC puis relance le
+        controle AVANT d'editier (sequence permise par le protocole : le
+        controle precede l'edition, pas le claim) se bloquait sur son propre
+        marqueur -- instance mesuree : po-2027 sur #12051, claim de 06:42:59Z,
+        verdict ``PLAFOND EPIC (#22500) ... il y a 0.0 j`` trois minutes
+        plus tard ;
+      - l'``[OVERRIDE] lane <m:w>`` du coordinateur, qui rend le grain a
+        cette lane, rearme le plafond de la meme facon -- relu a 07:52Z, le
+        meme controle rendait ``override sur l'EPIC il y a 0.0 j`` et seul
+        ``--force`` passait.
+
+    La visite qui arme le plafond est donc celle d'une **autre** lane que
+    celle qui interroge. Le filtre porte sur le champ ``lane`` de
+    l'evenement : un ``[OVERRIDE] lane <lane>`` nomme la lane a qui le
+    coordinateur rend le grain, il est donc ecarte pour cette lane-la et
+    compte pour les autres.
+
+    Grammaire : celle de l'organe des claims (`_sort_events` -- decorations
+    markdown et non-ASCII tolerees, blocs fence neutralises, mentions en
+    milieu de ligne ignorees), jamais une regex propre. Date ET marqueur
+    sortent du MEME evenement : la cause nomme ce que la lane a fait (prise,
+    rendu de main, livraison...) au lieu d'appeler « claim » un `[RELEASED]`
+    (#22687 constat 1).
+    """
+    events = [ev for ev in _sort_events(
+        {"comments": [c for c in comments if isinstance(c, dict)]})
+        if ev.lane and ev.created_at]
+    if exclude_lane:
+        events = [ev for ev in events if ev.lane != exclude_lane]
+    if not events:
+        return None, None
+    ev = max(events, key=lambda e: e.created_at)
+    return ev.created_at, ((ev.get("marker") or "").upper() or None)
+
+
 def epic_visit_cap(payload: dict, *, now: datetime | None = None,
                    parent_loader=None,
-                   pool_loader=None) -> dict:
+                   pool_loader=None,
+                   my_lane: str | None = None) -> dict:
     """#22500 point 3 -- verdict du plafond hebdomadaire pour un claim sur N.
 
     Rend un dict a quatre cles, toutes serialisables dans le rapport JSON :
@@ -4220,6 +4265,16 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
     L'issue N **ne se compte pas comme sa propre visite** : `apply_child_visits`
     recoit le pool prive de N, sinon la fille creee puis claimee dans la minute
     -- le scenario fondateur de #22500 -- bloquerait son propre premier claim.
+
+    #25443 : quand N est lui-meme l'EPIC, la visite qui arme le plafond est
+    celle d'une **autre** lane que `my_lane`. Sans cette exclusion, une lane
+    qui pose son `[CLAIMED]` sur l'EPIC puis relance le controle (sequence
+    permise par le protocole : le controle precede l'edition, pas le claim) se
+    bloquait sur son propre marqueur, et l'`[OVERRIDE]` du coordinateur qui
+    rend le grain a cette lane rearmait le plafond de la meme facon. Le filtre
+    est porte par l'organe (`_claim_visit_excluding`), jamais reecrit ici ; il
+    s'applique au sujet N lui-meme, pas aux parents -- la semantique du
+    plafond pour les filles, qui est juste, reste hors scope.
 
     `parent_loader`/`pool_loader` sont injectables (tests hors reseau) ; par
     defaut ils lisent GitHub et memoisent par processus.
@@ -4284,7 +4339,13 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
         # main, livraison...) au lieu d'appeler « claim » un `[RELEASED]`
         # (#22687 constat 1). Deux appels separes pourraient designer deux
         # evenements differents.
-        stamp, marker = picker.claim_visit(comments)
+        if my_lane and epic == number:
+            # #25443 : le sujet est N lui-meme -- la visite qui arme le
+            # plafond exclut la lane qui interroge (son propre claim, et
+            # l'override qui lui rend le grain).
+            stamp, marker = _claim_visit_excluding(comments, my_lane)
+        else:
+            stamp, marker = picker.claim_visit(comments)
         targets.append({
             "number": epic,
             "title": body.get("title"),
@@ -4362,7 +4423,10 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             it on the two unitary paths (`check`, `--claim`), never on batch
             (see the region comment above `epic_visit_cap` for why).
         epic_cap_probe: injectable `(payload) -> verdict dict` seam (tests).
-            Defaults to `epic_visit_cap`, which reads GitHub.
+            Defaults to `epic_visit_cap`, which reads GitHub. A probe injectee
+            est responsable de sa propre lane : `epic_visit_cap` prend
+            `my_lane` (#25443) pour exclure du plafond le propre marqueur de
+            la lane qui interroge.
     """
     # One shared tracked-files walk feeds the #10958 empty-scope witness AND
     # the #19435 root-filename acceptance (best-effort: None outside a git
@@ -4769,9 +4833,16 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 "another lane already blocks -- verdict is exit 1 without the cap"
             )
         else:
-            probe = epic_cap_probe or epic_visit_cap
+            probe = epic_cap_probe
             try:
-                epic_cap_verdict = probe(payload) or epic_cap_verdict
+                if probe is None:
+                    # La lane qui interroge est passee a l'organe : #25443
+                    # exclut son propre marqueur de la visite qui arme le
+                    # plafond quand N est l'EPIC lui-meme.
+                    epic_cap_verdict = epic_visit_cap(
+                        payload, my_lane=my_lane) or epic_cap_verdict
+                else:
+                    epic_cap_verdict = probe(payload) or epic_cap_verdict
             except Exception as exc:  # noqa: BLE001 -- mesure best-effort, nommee
                 epic_cap_verdict["error"] = f"{type(exc).__name__}: {exc}"
 
