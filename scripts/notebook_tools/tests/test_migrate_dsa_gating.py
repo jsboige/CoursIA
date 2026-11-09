@@ -291,9 +291,9 @@ def test_only_inconnu_est_refuse():
 def test_only_accepte_le_nom_cible():
     """Le nom cible designe la meme tranche que le nom courant."""
     # Le mecanisme d'alias (valeur -> cle) se temoigne sur une tranche ou
-    # courant et cible different encore : Track1-LangChain -> 06-Agents-LangChain.
-    assert migration.resolve_only("06-Agents-LangChain") == "Track1-LangChain"
-    assert migration.resolve_only("Track1-LangChain") == "Track1-LangChain"
+    # courant et cible different encore : 06-Data-Agents -> 06-Agents-LangChain.
+    assert migration.resolve_only("06-Agents-LangChain") == "06-Data-Agents"
+    assert migration.resolve_only("06-Data-Agents") == "06-Data-Agents"
     # Depuis le renommage in-place (#23541), 05-Wavelet-Scattering est cle ET
     # valeur : les deux faces designent la meme tranche.
     assert migration.resolve_only("05-Wavelet-Scattering") == SUB_WS
@@ -467,3 +467,50 @@ def test_survey_paie_le_releve_gh_une_seule_fois(monkeypatch, capsys):
     assert "0 tranche(s) libre(s)" in out
     # le referent global bloque une tranche dont AUCUN fichier du plan n'est tenu
     assert "TENUE" in out and "0 du plan" in out
+
+
+# --- Convention `_archive/` : pieces de provenance, ni renommees ni reecrites --
+#
+# Mesure 2026-11-02 : trois carnets archives de 03-Deep-Learning (3.9a, 3.9d,
+# 3.9f) bloquaient la tranche en fail-closed, alors que la convention les tient
+# pour des pieces conservees telles quelles -- le README de `_archive/` le
+# verifie (« archive byte-identique a sa version d'origine, aucun octet
+# modifie ») et declare leurs liens internes volontairement figes. La table
+# portait en outre quatre cles mortes, heritees de #22395 (etapes 2-3 : 3.9a,
+# 3.9d et 3.9f archives, ancien 3.9e-Quantization fusionne dans 3.9e-SOTA).
+
+
+def test_est_archive_reconnait_le_dossier():
+    assert migration.est_archive("03-Deep-Learning/_archive/3.9f-Pruning.ipynb")
+    assert migration.est_archive("_archive/racine.ipynb")
+    assert not migration.est_archive("03-Deep-Learning/3.9f-Pruning.ipynb")
+    # `_archives` (pluriel) est un AUTRE dossier, deja exclu du sweep : les deux
+    # noms ne se confondent pas.
+    assert not migration.est_archive("scripts/_archives/x.py")
+
+
+def test_carnet_archive_ne_declenche_pas_le_fail_closed(monkeypatch):
+    """Le carnet archive suit le dossier sans changer de nom, et sans erreur."""
+    arch = f"{migration.HUB_OLD}/03-Deep-Learning/_archive/3.9f-Pruning.ipynb"
+    vivant = f"{migration.HUB_OLD}/03-Deep-Learning/3.9e-Compression-SOTA.ipynb"
+    monkeypatch.setattr(migration, "git", _fake_git(files_old=[arch, vivant]))
+
+    plan, errors = migration.build_plan()
+
+    assert errors == [], errors
+    deplaces = dict(plan)
+    assert deplaces[arch] == f"{migration.HUB_NEW}/03-Deep-Learning/_archive/3.9f-Pruning.ipynb"
+    # temoin positif : le carnet vivant, lui, est bien renomme par la table
+    assert deplaces[vivant].endswith("DL-09e-Compression-SOTA-Python.ipynb")
+
+
+def test_balayage_ne_reecrit_pas_un_dossier_archive(monkeypatch):
+    """Temoin negatif : le meme fichier hors `_archive/` EST balaye."""
+    vivant = f"{migration.HUB_OLD}/03-Deep-Learning/3.9f-Pruning.ipynb"
+    arch = f"{migration.HUB_OLD}/03-Deep-Learning/_archive/3.9f-Pruning.ipynb"
+    monkeypatch.setattr(migration, "git", lambda *a: "\n".join([vivant, arch]))
+
+    balayes = migration.sweep_files()
+
+    assert vivant in balayes
+    assert arch not in balayes

@@ -6,9 +6,14 @@ from datetime import datetime
 
 class TrendFollowingAQR(QCAlgorithm):
     """
-    Trend Following Multi-Asset v7 (BEST)
+    Trend Following Multi-Asset v7
     ======================================
-    v7: Sharpe 0.577, CAGR 11.52%, MaxDD 15.3% (safe haven + mom tilt) BEST
+    Measured (current code, fenêtre codée 2015-01-01 -> 2024-12-31, 2516 séances négociées (3653 jours calendaires), mode strategy): Sharpe 0.362, CAGR 7.294%, MaxDD 15.000%.
+    Source : QC Cloud, dossier #23315 (2026-10-29), projet de référence 20286-TF-baseline (2516 séances négociées, 451 ordres).
+
+    Iteration results (historique des iterations de conception, mesurees sous des
+    conditions anterieures ; non reproduites par le code actuel, refactors #21420/#22869/#22923) :
+    v7: Sharpe 0.577, CAGR 11.52%, MaxDD 15.3% (safe haven + mom tilt) < best de l'iteration
     v8: Sharpe 0.566, CAGR 10.38%, MaxDD 16.5% (regime + risk parity - worse)
     v9: Sharpe 0.535, CAGR 10.29%, MaxDD 14.6% (regime only - worse)
 

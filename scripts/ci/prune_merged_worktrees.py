@@ -1303,6 +1303,123 @@ def _is_dead_registration(wt_path: str, parsed: dict) -> bool:
     return (len(deleted) / tracked_total) >= DEAD_TREE_RATIO
 
 
+# ---------------------------------------------------------------------------
+# #23330 : le tip distant d'une branche, pour ne pas confondre
+# « ref de tracking locale perimee » et « travail non pousse ».
+# ---------------------------------------------------------------------------
+
+# Memo de passe : une branche = au plus un appel API, quel que soit le
+# nombre de worktrees qui la portent. Vide a chaque passe (reset par
+# `reset_remote_tip_memo`, appele avec `reset_pr_resolution`).
+_REMOTE_TIP_MEMO: dict = {}
+
+REMOTE_TIP_STATS = {
+    "calls": 0,
+    "ok": 0,
+    "absent": 0,
+    "unknown": 0,
+    "cleared_equal": 0,
+    "cleared_ancestor": 0,
+}
+
+
+def reset_remote_tip_memo() -> None:
+    """Tests / nouvelle passe : le memo et les compteurs repartent a zero."""
+    _REMOTE_TIP_MEMO.clear()
+    for key in REMOTE_TIP_STATS:
+        REMOTE_TIP_STATS[key] = 0
+
+
+def _remote_branch_tip(branch: str) -> tuple:
+    """Tip distant de `refs/heads/<branche>` -> (etat, sha).
+
+    Etat :
+      "ok"      -- le distant porte la branche, `sha` est son tip ;
+      "absent"  -- le distant ne porte PAS cette branche (404) ;
+      "unknown" -- indeterminable (reseau, quota, reponse illisible).
+
+    La distinction "absent" / "unknown" porte tout le fail-CLOSED de
+    #23330 : une branche absente du distant est un fait mesurable dont on
+    peut tirer un decompte vrai, une API muette ne prouve rien.
+
+    Voie REST `repos/{owner}/{repo}/branches/<branche>` : c'est le canal
+    deja utilise par l'organe (`_rest_pr_rows_for_branch`), donc aucun
+    second canal reseau n'est introduit -- `ls-remote` reste absent du
+    fichier, comme le demande l'acceptance de #23330.
+    """
+    if branch in _REMOTE_TIP_MEMO:
+        return _REMOTE_TIP_MEMO[branch]
+    from urllib.parse import quote
+
+    REMOTE_TIP_STATS["calls"] += 1
+    endpoint = f"repos/{{owner}}/{{repo}}/branches/{quote(branch, safe='')}"
+    proc = run_gh("api", endpoint, "--jq", ".commit.sha", check=False)
+    if proc.returncode == 0:
+        sha = proc.stdout.strip()
+        result = ("ok", sha) if sha else ("unknown", None)
+    elif "404" in (proc.stderr or "") or "Not Found" in (proc.stderr or ""):
+        # La branche n'existe pas cote distant : fait mesure, pas panne.
+        result = ("absent", None)
+    else:
+        result = ("unknown", None)
+    REMOTE_TIP_STATS[result[0]] += 1
+    _REMOTE_TIP_MEMO[branch] = result
+    return result
+
+
+def _unpushed_vs_remote(wt_path: str, branch: str, head_sha: str,
+                        local_ahead: int) -> int:
+    """Vrai compte de commits non pousses, mesure contre le DISTANT.
+
+    Remplace le decompte contre une ref de tracking locale perimee
+    (#23330 : 16 worktrees sur 18 refuses a tort avec ce motif, dont
+    `unpushed_commits:349` pour un HEAD identique au tip distant).
+
+    Fail-CLOSED : toute incertitude rend le compte local, donc le refus
+    (on ne retire jamais sur une premisse qu'on n'a pas mesuree).
+    """
+    if get_pr_resolution().unavailable_reason is not None:
+        # #21753 mode degrade : aucun etage gh n'est tente par l'organe,
+        # celui-ci compris -- le refus local reste, il n'est pas mesure.
+        return local_ahead
+    state, tip = _remote_branch_tip(branch)
+    if state == "unknown":
+        return local_ahead
+    if state == "absent":
+        # Aucune branche distante ne porte ce nom. Le distant ne peut donc
+        # pas disculper le local : fail-CLOSED, exactement comme une API
+        # muette (#23330, « si tip est absent -> on conserve le refus »).
+        # Ne PAS substituer un decompte `--not --remotes=origin` : il
+        # abaisserait le compte et leverait un refus que le distant n'a
+        # pas autorise a lever (temoin #20009 `fix/artifact`).
+        return local_ahead
+    # state == "ok"
+    if tip == head_sha:
+        REMOTE_TIP_STATS["cleared_equal"] += 1
+        return 0
+    verified = run_git(
+        wt_path, "rev-parse", "--verify", f"{tip}^{{commit}}", check=False
+    )
+    if verified.returncode == 0:
+        ahead_proc = run_git(
+            wt_path, "rev-list", "--count", f"{tip}..HEAD", check=False
+        )
+        if ahead_proc.returncode == 0:
+            try:
+                count = int(ahead_proc.stdout.strip())
+            except ValueError:
+                return local_ahead
+            if count == 0:
+                # HEAD est ancetre du tip distant : le distant porte le local.
+                REMOTE_TIP_STATS["cleared_ancestor"] += 1
+            return count
+        return local_ahead
+    # Le tip distant n'est pas dans la base locale : on ne peut pas
+    # compter contre lui, donc on ne peut pas non plus disculper le
+    # local. Fail-CLOSED sur le compte local.
+    return local_ahead
+
+
 def get_worktree_info(wt_path: str, current_path: str) -> dict:
     """Recupere branch + ahead count + dirty status d'un worktree."""
     # Branche (peut etre None si HEAD detaché)
@@ -1350,6 +1467,21 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
                     ahead_count = int(ahead_proc.stdout.strip())
                 except ValueError:
                     ahead_count = 0
+
+    # #23330 : le decompte ci-dessus mesure l'ecart a une ref de tracking
+    # LOCALE, qui peut etre en retard sur le distant (branche poussee sans
+    # fetch depuis : 16 worktrees refuses a tort sur 18 mesures, dont
+    # `unpushed_commits:349` pour un HEAD identique au tip distant). Un
+    # motif faux n'est pas seulement bruyant : il fait croire a du travail
+    # a sauver, et il fait sous-livrer l'organe. Des qu'un refus se
+    # dessine, on CONFRONTE le HEAD au tip distant avant de le retenir.
+    if branch and ahead_count > 0:
+        head_proc = run_git(wt_path, "rev-parse", "HEAD", check=False)
+        head_sha = head_proc.stdout.strip() if head_proc.returncode == 0 else ""
+        if head_sha:
+            ahead_count = _unpushed_vs_remote(
+                wt_path, branch, head_sha, ahead_count
+            )
 
     # Untracked / gitignores / tracked-modifies : une seule passe, avec
     # --ignored=matching pour signaler les gitignores non-cache (#14509).
@@ -3026,6 +3158,10 @@ def main() -> int:
     if gh_unavailable_reason is not None:
         get_pr_resolution().unavailable_reason = gh_unavailable_reason
 
+    # #23330 : une passe = un memo neuf, pour que les compteurs du rapport
+    # decrivent CETTE passe et pas la somme des appels du process.
+    reset_remote_tip_memo()
+
     statuses: list[WorktreeStatus] = []
     for wt in worktrees:
         try:
@@ -3137,6 +3273,9 @@ def main() -> int:
             "degraded": gh_unavailable_reason is not None,
             "gh_unavailable_reason": gh_unavailable_reason,
             "api_stats": get_pr_resolution().stats,
+            # #23330 : budget et effet de la confrontation au tip distant.
+            # Toujours present (un champ absent se lirait "non mesure").
+            "remote_tip_stats": dict(REMOTE_TIP_STATS),
             # v1.3 : chemins des worktrees REMOVE-ready dont le lock
             # d'agent a ete reconnu mort (l'apply les deverrouille puis
             # les retire). Toujours present, vide si rien -- un champ
@@ -3182,6 +3321,16 @@ def main() -> int:
             f" hits_lot={st['listing_hits']} ancre={st['anchor_calls']}"
             f" degrade={st['listing_degraded']}"
         )
+        # #23330 : ce que la confrontation au tip distant a change, pour
+        # que la mesure soit lisible sans relire les refus un par un.
+        rt = REMOTE_TIP_STATS
+        if rt["calls"]:
+            print(
+                f"tip distant: appels={rt['calls']} ok={rt['ok']}"
+                f" absent={rt['absent']} indetermine={rt['unknown']}"
+                f" leves_egalite={rt['cleared_equal']}"
+                f" leves_ancetre={rt['cleared_ancestor']}"
+            )
 
     # #127 : un organe muet (scanned=0) n'est PAS une attestation de ferme
     # propre. Averti sur stderr -- le journal de la tache planifiee fusionne

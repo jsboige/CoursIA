@@ -1,5 +1,5 @@
 # Adaptateur PyMC du contrat JSON VoI (tranche 3/3 #13569).
-# Extraction fidele de DecPyMC-5 cellule 33, alimentee par PyMC :
+# Extraction fidele de DecPyMC-05 cellule 33, alimentee par PyMC :
 # le modele generatif (etat -> signal) est echantillonne par
 # pm.sample_prior_predictive (seed fixe), les posterieurs P(etat|signal=j)
 # et marginales P(signal=j) sont les frequences conditionnelles empiriques

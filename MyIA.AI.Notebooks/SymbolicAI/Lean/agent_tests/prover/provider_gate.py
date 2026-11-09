@@ -30,6 +30,25 @@ PROVIDER_ENV_KEYS = {
     "openrouter": "OPENROUTER_API_KEY",
     "mistral": "MISTRAL_API_KEY",
     "local": "LOCAL_LLM_API_KEY",
+    "claudish": "CLAUDISH_PROXY_KEY",
+}
+
+# Providers served on localhost that still require a key. The localhost
+# exemption below assumes an open local server (Ollama/vLLM); the claudish
+# proxy listens on 127.0.0.1 and answers 401 without its key (canary of
+# 2026-11-04), so it must not inherit the exemption.
+KEYED_LOCALHOST_PROVIDERS = frozenset({"claudish"})
+
+
+# Provider name -> env vars that may carry its base URL. The local endpoint is
+# provisioned by the machine under two spellings (measured on po-2025,
+# 2026-11-04: it exports ``LOCAL_LLM_API_BASE`` while this harness read
+# ``LOCAL_LLM_BASE_URL``). The alias is tolerated on read by ``prover.config``;
+# naming both here means an operator reading a refusal never has to guess
+# which variable the gate wanted. A test pins this tuple to
+# ``config.LOCAL_BASE_URL_ENV_NAMES`` so the two cannot drift apart.
+PROVIDER_ENV_BASE_URLS = {
+    "local": ("LOCAL_LLM_BASE_URL", "LOCAL_LLM_API_BASE"),
 }
 
 
@@ -82,8 +101,9 @@ def validate_provider_credentials(eff: dict, providers: dict) -> list:
 
     Refuses to launch when a routed provider has no credentials, naming each
     offending role. Keyless by design: localhost endpoints (Ollama/vLLM). An
-    empty base_url on provider ``local`` (LOCAL_LLM_BASE_URL unset) targets
-    the OpenAI default endpoint with an empty key and is equally refused.
+    empty base_url on provider ``local`` (neither ``LOCAL_LLM_BASE_URL`` nor
+    ``LOCAL_LLM_API_BASE`` set) targets the OpenAI default endpoint with an
+    empty key and is equally refused.
 
     ``providers`` is the ``PROVIDERS`` mapping from ``prover.config`` (name ->
     dict with ``base_url``/``api_key``), passed as a parameter so this module
@@ -98,13 +118,21 @@ def validate_provider_credentials(eff: dict, providers: dict) -> list:
         base = (cfg.get("base_url") or "").strip()
         key = (cfg.get("api_key") or "").strip()
         host = urlparse(base).hostname or ""
-        if host in ("localhost", "127.0.0.1", "::1"):
+        if (host in ("localhost", "127.0.0.1", "::1")
+                and name not in KEYED_LOCALHOST_PROVIDERS):
             continue
         env = PROVIDER_ENV_KEYS.get(name, f"{name.upper()}_API_KEY")
         if not base:
-            problems.append(
-                f"{role} -> '{name}': base_url vide ({env} / base non configurés)"
-            )
+            bases = PROVIDER_ENV_BASE_URLS.get(name)
+            if bases:
+                problems.append(
+                    f"{role} -> '{name}': base_url vide "
+                    f"(aucune de {' ou '.join(bases)} n'est configurée)"
+                )
+            else:
+                problems.append(
+                    f"{role} -> '{name}': base_url vide ({env} / base non configurés)"
+                )
         elif not key:
             problems.append(
                 f"{role} -> '{name}': {env} absent/vide pour {base}"

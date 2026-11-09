@@ -1,3 +1,7 @@
+---
+pagetitle: "IIT - Integrated Information Theory"
+---
+
 # IIT - Integrated Information Theory
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ Probas](../Probas/README.md)
@@ -444,7 +448,7 @@ IIT/
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
 │   ├── ICT-*.ipynb             # Notebooks numérotés (ICT-1 à ICT-39) + raffinement/extension (suffixes lettrés + non-numérotés), 7 strates — cf son README pour la liste complète (Epic #4588)
-│   ├── ict/                    # Package Python autonome (simulations + mesures, 88 modules — pip install -e .)
+│   ├── ict/                    # Package Python autonome (simulations + mesures — pip install -e .)
 │   ├── assets/                 # Figures in-situ du README + MANIFEST de provenance
 │   ├── runs/                   # Artefacts d'exécution (ex. scale-up GRPO d'ICT-25)
 │   ├── scripts/                # Extraction des traces GPU (SAE, J-Lens) et scripts pilotes
@@ -501,7 +505,7 @@ d'un notebook principal à un nouveau cas. Quelques exemples représentatifs :
 de convergence — exploration des faux-positifs quand le triplet co-varie par construction),
 [ICT-17b-Grokking-CompressionProgress-Python](ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) (grokking comme
 cas d'application de l'instrumentation ε-machine d'ICT-17 à la compression post-généralisation tardive, Power
-et al. 2022), et [ICT-Argumentation-BeliefTrajectories](ICT-Series/ICT-Argumentation-BeliefTrajectories.ipynb)
+et al. 2022), et [ICT-Argumentation-BeliefTrajectories-Python](ICT-Series/ICT-Argumentation-BeliefTrajectories-Python.ipynb)
 (Phase B du zoo ICT — application de l'instrumentation Φ-trajectoires d'ICT-1 aux trajectoires de croyances
 Argumentum 5 classes, banc T2 multilingue). La **liste complète** de ces raffinements (qui s'enrichit à
 mesure que la série de recherche progresse) figure dans le [README dédié d'ICT](ICT-Series/README.md).
@@ -583,7 +587,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 111
-breakdown: ICT-Series=101, root=10
-maturity: BETA=89, DRAFT=18, ALPHA=4
+pedagogical_count: 112
+breakdown: ICT-Series=102, root=10
+maturity: BETA=90, DRAFT=18, ALPHA=4
 -->

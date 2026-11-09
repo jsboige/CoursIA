@@ -83,7 +83,13 @@ Case 1 (overlapping): i decisive over (a,b), j decisive on (b,c).
 Case 2 (disjoint): i decisive over (a,b), j decisive over (c,d).
   Similar cycle construction using the four alternatives.
   Requires |X| >= 4 in this case (guaranteed by hX : 3 ≤ |X| only
-  gives 3, so the proof uses the overlapping case). -/
+  gives 3, so the proof uses the overlapping case).
+
+Declared alternative proof: `lean_game_defs/SocialChoice_en.lean` (the canonical
+home of the statement) gives it in universal form (`¬ SenLiberalism swf`), with a
+stronger liberalism notion — two genuinely crossing pairs over three distinct
+alternatives.
+-/
 theorem sen_impossibility (f : SWF ι σ) (X : Finset σ)
     (hne : (2 : ℕ) ≤ Fintype.card ι)
     (hX : 3 ≤ X.card)

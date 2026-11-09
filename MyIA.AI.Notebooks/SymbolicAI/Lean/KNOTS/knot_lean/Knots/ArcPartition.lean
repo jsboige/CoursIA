@@ -7,12 +7,11 @@
   `arcPartition` ; les tranches 4+ (calcul polynomial `alexander_unknot`,
   `alexander_trefoil`, `det_two_aux`/`det_three_aux`) restent dans
   Conway.lean. Le sibling EN `Knots/ArcPartition_en.lean` reprend le corps
-  à l'identique ; seuls son en-tête, ses imports (`_en`) et son namespace
-  (`Knots_en`) sont traduits. Les docstrings du corps sont, à cette
-  tranche, le texte français verbatim des deux côtés : la traduction
-  anglaise est optionnelle (`code-style.md`) et n'est pas revendiquée ici
-  — `check_i18n_siblings.py` désigne la paire `HALF-DONE`, la seule du lake
-  dans ce cas, et la byte-identity du corps est conservée.
+  à l'identique ; seuls son en-tête, ses imports (`_en`), son namespace
+  (`Knots_en`) et ses docstrings sont traduits. Les docstrings du corps sont
+  la traduction anglaise de celles du fichier français —
+  `check_i18n_siblings.py` ne désigne plus la paire `HALF-DONE`, et la
+  byte-identity du corps est conservée.
 
   Origine : Conway.lean l.65-979 (915 lignes), commit de référence
   origin/main 71514d576. Aucun reformatage, aucune tactique modifiée. -/

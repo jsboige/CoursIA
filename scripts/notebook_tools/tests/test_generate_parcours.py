@@ -466,7 +466,7 @@ class TestMlEngineerManifest:
         assert not missing, \
             f"chemins absents du catalogue (regenerer ou drop): {missing}"
 
-    def test_compiles_seven_branches_and_five_accretions(self):
+    def test_compiles_seven_branches_and_six_accretions(self):
         manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
         catalog = _catalog_with_pending_renames(manifest)
         branches = [b["id"] for b in manifest["branches"]]
@@ -584,7 +584,7 @@ class TestActuariatManifest:
         assert compiled["groups"][3]["prerequisites"] == ["actuariat"]
         assert [notebook["path"] for notebook in compiled["groups"][3]["notebooks"]] == [
             "GameTheory/GameTheory-15-CooperativeGames-Python.ipynb",
-            "GameTheory/GameTheory-15f-Shapley-Groupes-Python.ipynb",
+            "GameTheory/GameTheory-15d-Shapley-Groupes-Python.ipynb",
             "GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb",
         ]
         assert all(notebook["execution_constraints"] for group in compiled["groups"]
@@ -610,9 +610,9 @@ class TestActuariatManifest:
         speed_run = ["fondations-probabilistes", "decision-sous-incertitude",
                      "actuariat", "theorie-des-jeux"]
         baseline = _expected_total_minutes(manifest, catalog, speed_run)
-        # +15 min on DecPyMC-2 (45min -> 1h)
+        # +15 min on DecPyMC-02 (45min -> 1h)
         target = next(entry for entry in catalog
-                      if entry["path"] == "Probas/DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb")
+                      if entry["path"] == "Probas/DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb")
         target["duree_estimee"] = "1h"
         after = _expected_total_minutes(manifest, catalog, speed_run)
         assert after == baseline + 15, (

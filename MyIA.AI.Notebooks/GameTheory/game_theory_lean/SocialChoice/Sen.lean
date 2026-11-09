@@ -67,7 +67,13 @@ Cas 1 (chevauchement) : i décisif sur (a,b), j décisif sur (b,c).
 Cas 2 (disjoint) : i décisif sur (a,b), j décisif sur (c,d).
   Construction de cycle similaire en utilisant les quatre alternatives.
   Requiert |X| >= 4 dans ce cas (garanti par hX : 3 ≤ |X| seulement
-  donne 3, donc la preuve utilise le cas chevauchant). -/
+  donne 3, donc la preuve utilise le cas chevauchant).
+
+Preuve alternative déclarée : `lean_game_defs/SocialChoice.lean` (maison
+canonique de l'énoncé) le donne sous forme universelle (`¬ SenLiberalism swf`),
+avec une notion de libéralisme plus forte — deux paires réellement croisées sur
+trois alternatives distinctes.
+-/
 theorem sen_impossibility (f : SWF ι σ) (X : Finset σ)
     (hne : (2 : ℕ) ≤ Fintype.card ι)
     (hX : 3 ≤ X.card)

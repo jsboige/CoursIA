@@ -1,7 +1,7 @@
 # lean_game_defs_ext — Jeux bayésiens en Lean 4 (core uniquement)
 
 Formalisation des jeux bayésiens finis à deux joueurs (espaces de types
-de Harsanyi) en Lean 4 **sans Mathlib** (toolchain `v4.32.0`, core
+de Harsanyi) en Lean 4 **sans Mathlib** (toolchain `v4.33.0`, core
 uniquement — évite la mutualisation des checkouts Mathlib, cf #2611).
 Compagnon formel de `GameTheory-11-BayesianGames-Python.ipynb`. Phases 1-7 de
 l'Epic #2610 livrées (cf [Lien avec `lean_game_defs/`](#lien-avec-lean_game_defs)).
@@ -59,6 +59,22 @@ dominance faible, 4 — valeur de l'information : monotonie de Blackwell
 5 — réputation et dissuasion d'entrée, BNE crédible unique et
 `reputation_pays`, 6 — regret externe (cible GT-13),
 7 — Fictitious Play *born-correct* (cible GT-17, après GT-13)).
+
+Les deux lakes sont **voisins, sans dépendance** : ni ce lakefile ni celui de
+`lean_game_defs/` ne porte de `require` vers l'autre, et aucun module n'importe
+l'autre. Deux noms sont communs — et ce sont des **homonymes**, pas des
+reprises : `externalRegret` ici ([`Bayesian/Regret.lean:43`](Bayesian/Regret.lean#L43),
+`Int`, espace d'actions `Fin (nA+1)`) n'est pas celui de
+[`lean_game_defs/Regret.lean:85`](../lean_game_defs/Regret.lean#L85) (`Float`,
+espace `Fin n`) ; `FictitiousPlayState` ici
+([`Bayesian/FictitiousPlay.lean:31`](Bayesian/FictitiousPlay.lean#L31),
+`nAct` / `nOpp` / `opponentCounts`) n'est pas celui de
+[`lean_game_defs/Regret.lean:167`](../lean_game_defs/Regret.lean#L167), indexé
+par `n`. Ils ne sont **pas interchangeables**. La collision reste **latente**
+tant qu'aucun lake n'importe l'autre, mais les deux paires sont déclarées en
+racine (aucun `namespace` dans les modules FR) : le jour où un lake importerait
+l'autre, ou où les deux seraient réunis dans un même lake, il faudrait renommer
+une des deux paires.
 
 ## Conclusion
 

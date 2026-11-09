@@ -5,7 +5,7 @@
     {
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-01-Regles-Vie-Lean.ipynb",
       "cell_id": "50dcfe8c",
-      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Pillars.lean",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Pillars.lean",
       "note": "Annexe F -- compte des lignes de Pillars.lean et citations L<n> des declarations des temoins"
     },
     {
@@ -39,27 +39,27 @@
       "note": "Lecture directe du module _SmokeTest.lean"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Mobius-Coalitions-Lean-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb",
       "cell_id": "ea6530ce",
       "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/CooperativeGames/Shapley.lean",
-      "note": "Lecture directe du namespace Mobius dans Shapley.lean"
+      "note": "Code 3.1 -- extraction des signatures des declarations de Shapley.lean, source de verite de la loi de Mobius ; chemin SocialChoice/06b depuis le re-lettrage T5b (#20316)"
     },
     {
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-01-Regles-Vie-Lean.ipynb",
       "cell_id": "life-lean-stats",
-      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life.lean",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life.lean",
       "note": "Statistiques des modules Life -- Life.lean"
     },
     {
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-01-Regles-Vie-Lean.ipynb",
       "cell_id": "life-lean-stats",
-      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Spaceships.lean",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Spaceships.lean",
       "note": "Statistiques des modules Life -- Spaceships.lean"
     },
     {
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-01-Regles-Vie-Lean.ipynb",
       "cell_id": "life-lean-stats",
-      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Oscillators.lean",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Oscillators.lean",
       "note": "Statistiques des modules Life -- Oscillators.lean"
     },
     {
@@ -71,7 +71,7 @@
     {
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb",
       "cell_id": "d194d5fe",
-      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/FreeWillTheorem.lean",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/FreeWillTheorem.lean",
       "note": "Declarations reelles de FreeWillTheorem.lean (source de verite, pas une paraphrase)"
     },
     {
@@ -107,19 +107,19 @@
     {
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Lean-Grothendieck.ipynb",
       "cell_id": "lean13b-project-overview",
-      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck.lean",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck.lean",
       "note": "Vue d'ensemble du projet -- compte des lignes du module racine Grothendieck.lean (#22129)"
     },
     {
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb",
       "cell_id": "chsh-code-inv",
-      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSH.lean",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CHSH.lean",
       "note": "Inventaire des declarations reelles de CHSH.lean et CHSHRandomized.lean -- comptes de lignes et numeros L<n> (#22129)"
     },
     {
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb",
       "cell_id": "chsh-code-inv",
-      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSHRandomized.lean",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CHSHRandomized.lean",
       "note": "Seconde source lue par la meme cellule : ses citations L43-L167 sont celles de CHSHRandomized.lean, pas de CHSH.lean (#22129)"
     },
     {

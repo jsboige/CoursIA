@@ -323,12 +323,12 @@ class TestGoldenSetNitsC1273:
 
 
 # --------------------------------------------------------------------------- #
-#  Tests golden set fondateur Argument_Analysis (c.1275 — vague #9434 ArgAna)
+#  Tests golden set fondateur ArgumentAnalysis (c.1275 — vague #9434 ArgAna)
 # --------------------------------------------------------------------------- #
 
 
 class TestGoldenSetArgAnalysisC1275:
-    """Golden set fondateur c.1275 — anti-FP classifier Argument_Analysis.
+    """Golden set fondateur c.1275 — anti-FP classifier ArgumentAnalysis.
 
     Cas observes firsthand dans Argument_Analysis_Agentic-1-informal cell 9,
     Argumentation-08b-Executor-Python.ipynb cell 0, Argument_Analysis_Ontology_*.ipynb
@@ -1073,23 +1073,23 @@ _COHORT_ML_DFA = frozenset((
     "02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb",
     "02-ML-Cours/2.8-Theorie-PAC.ipynb",
     "02-ML-Cours/2.9-Grokking-Generalisation.ipynb",
-    "Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb",
-    "Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb",
-    "Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb",
-    "Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb",
-    "Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb",
-    "Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb",
-    "Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb",
-    "Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb",
-    "Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.ipynb",
-    "Track2-GoogleADK/Day5-DS-Star/Lab10-File-Analyzer.ipynb",
-    "Track2-GoogleADK/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb",
-    "Track2-GoogleADK/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb",
-    "Track2-GoogleADK/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb",
-    "Track2-GoogleADK/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb",
-    "Track2-GoogleADK/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb",
-    "Track2-GoogleADK/Day7-Production/Lab16-Data-Science-Agent.ipynb",
-    "Track2-GoogleADK/Day7-Production/Lab17-Final-Project.ipynb",
+    "06-Data-Agents/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb",
+    "06-Data-Agents/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb",
+    "06-Data-Agents/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb",
+    "06-Data-Agents/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb",
+    "06-Data-Agents/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb",
+    "06-Data-Agents/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb",
+    "06-Data-Agents/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb",
+    "07-Agent-Orchestration/Day4-Foundations/Lab8-ADK-Introduction.ipynb",
+    "07-Agent-Orchestration/Day4-Foundations/Lab9-First-ADK-Agent.ipynb",
+    "07-Agent-Orchestration/Day5-DS-Star/Lab10-File-Analyzer.ipynb",
+    "07-Agent-Orchestration/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb",
+    "07-Agent-Orchestration/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb",
+    "07-Agent-Orchestration/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb",
+    "07-Agent-Orchestration/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb",
+    "07-Agent-Orchestration/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb",
+    "07-Agent-Orchestration/Day7-Production/Lab16-Data-Science-Agent.ipynb",
+    "07-Agent-Orchestration/Day7-Production/Lab17-Final-Project.ipynb",
 ))
 
 # 29 notebooks, relatifs a CORPUS_SEARCH_PART1

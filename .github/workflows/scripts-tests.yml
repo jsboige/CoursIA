@@ -69,10 +69,10 @@ on:
       # to conway_lean could pass un-rattled and the rouge would land on the first
       # next scripts/** pusher. Wire the lake path so the ratchet fires when its
       # subject moves; mirrored under pull_request: below.
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
       # #1028 melody verdict: scripts/tests/test_syllable_pitch_verdict.py pins
       # classify_melody, which lives in the prosody_lab module below. Same shape
       # as the conway entry just above -- a test under scripts/** whose SUBJECT
@@ -132,29 +132,29 @@ on:
       # every workflow change, including workflow-only PRs from forks.
       - '.github/workflows/**'
       # #15058 ADK contracts: the 18 runtime-contract tests that #13572 makes
-      # its measuring organ (Track2-GoogleADK/utils/test_adk_runtime_contracts.py,
+      # its measuring organ (07-Agent-Orchestration/utils/test_adk_runtime_contracts.py,
       # C1-C7 on the REAL ADK runtime, scripted LLM, offline) never ran in any
       # CI job -- the reading #13572 prescribes was unavailable. The
       # adk-contracts job below runs them; this entry fires it when the track
       # sources move. Mirrored under pull_request: below.
-      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**'
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/**'
       # #17580 fallacy-detection snapshot guard: resync des CSV/OWL sous
-      # Argument_Analysis/data/ doit declencher la garde d'integrite (le cas de
+      # ArgumentAnalysis/data/ doit declencher la garde d'integrite (le cas de
       # #14578 ou la resync des CSV n'a pas touche le manifeste, et la garde a
       # rougi 19 j en silence parce que scripts/** etait deja couvert mais pas
       # le chemin des donnees). On inclut explicitement le chemin des donnees
       # pour que la garde tire quand son sujet bouge, meme sans toucher a
       # scripts/**. Mirrored under pull_request: ci-dessous.
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/**'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ontologies/**'
       - 'scripts/fallacy_detection/**'
-      # #18392 texte->PL : la suite pytest de Argument_Analysis/tests (collectee
-      # par le job ci-dessous, cible Argument_Analysis entiere) n'avait AUCUN
+      # #18392 texte->PL : la suite pytest de ArgumentAnalysis/tests (collectee
+      # par le job ci-dessous, cible ArgumentAnalysis entiere) n'avait AUCUN
       # declencheur sur ses propres sources -- argumentation_lib/** ne fait pas
       # partie de scripts/**, donc une PR qui vendorise un module + ses tests
       # n'executait jamais la suite (#10416 pattern). Miroir push/pull_request.
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/**'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/tests/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/tests/**'
       # #13746 tranche 2 : les trois suites executees par le bloc pytest
       # ci-dessous qui ne vivent PAS sous scripts/** -- GradeBookApp,
       # QuantConnect/scripts/tests (imports : audit_readme,
@@ -206,7 +206,8 @@ on:
       # installe ci-dessous. Miroir sous pull_request: ci-dessous.
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
   pull_request:
-    branches: [main]
+    # #19426 option (b) : pas de branches: sur pull_request quand paths: scope
+    # deja (precedent #19381) — le retarget d'une PR empilee reste capte.
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'scripts/**'
@@ -232,10 +233,10 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/**'
       # #11349 native_decide ratchet rewire (mirror of the push paths above).
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
       # #1028 melody verdict (mirror of the push path above).
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py'
       # #19695 banc de reference TTS (mirror of the push path above).
@@ -261,18 +262,18 @@ on:
       # Mirror the push path above so fork workflow-only PRs execute the policy.
       - '.github/workflows/**'
       # #15058 ADK contracts (mirror of the push path above).
-      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**'
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/**'
       # #17580 fallacy-detection snapshot guard (mirror of the push path above).
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/**'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ontologies/**'
       - 'scripts/fallacy_detection/**'
-      # #18392 texte->PL : la suite pytest de Argument_Analysis/tests (collectee
-      # par le job ci-dessous, cible Argument_Analysis entiere) n'avait AUCUN
+      # #18392 texte->PL : la suite pytest de ArgumentAnalysis/tests (collectee
+      # par le job ci-dessous, cible ArgumentAnalysis entiere) n'avait AUCUN
       # declencheur sur ses propres sources -- argumentation_lib/** ne fait pas
       # partie de scripts/**, donc une PR qui vendorise un module + ses tests
       # n'executait jamais la suite (#10416 pattern). Miroir push/pull_request.
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/**'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/tests/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/tests/**'
       # #13746 tranche 2 (mirror of the push paths above).
       - 'MyIA.AI.Notebooks/QuantConnect/scripts/**'
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests/**'
@@ -426,6 +427,17 @@ jobs:
           # collection errors for test_trust_simulation.py and skips the
           # entire suite, masking every other test result. See #4937.
           pip install matplotlib
+          # scikit-learn : DEPENDANCE HERITEE DU TOOLCACHE, desormais declaree.
+          # scripts/tests/test_golden_quantitative_claims.py l'importe deja, et
+          # scripts/tests/test_ws_probes_margin.py ajoute par #24073 l'importe
+          # via scripts/repro/ws_probes_margin.py. La suite ne collectait que
+          # parce que le pool `coursia-linux` porte scikit-learn en residu d'un
+          # job ML -- une dependance qui n'est declaree nulle part est une
+          # panne en attente (le jour ou le toolcache change, la collecte rend
+          # une erreur bruyante sur une PR innocente). Meme motif que
+          # `qc-mcp-lite` / `ModuleNotFoundError: mcp`. Regle F : l'environnement
+          # se repare, il ne se contourne pas par un skip.
+          pip install scikit-learn
           # papermill + nbformat: genai-stack/commands/notebooks.py imports
           # papermill at top level, so test_genai_notebooks.py needs it at
           # collection time. Both are declared deps of genai-stack
@@ -481,7 +493,7 @@ jobs:
           # Origami). Without it the suite fails on ModuleNotFoundError
           # instead of exercising the service core.
           pip install z3-solver
-          # python-sat (PySAT): Argument_Analysis/argumentation_lib/sat_handler.py
+          # python-sat (PySAT): ArgumentAnalysis/argumentation_lib/sat_handler.py
           # branche l'entailement propositionnel sur l'organe du depot
           # (SymbolicAI/ext_tools/sat_solver.py), qui importe `pysat` et pose
           # PYSAT_AVAILABLE. Sans le paquet, l'organe retombe puis
@@ -551,6 +563,43 @@ jobs:
           # 40409945388) : ce pin est une garantie de non-regression, pas un
           # upgrade.
           pip install "pytest>=8" pytest-xdist
+
+      - name: Epingler les pools de threads BLAS/OpenMP du job (#24696)
+        # Le runner est un pool auto-heberge PARTAGE : quand plusieurs jobs se
+        # partagent la machine, la creation de threads echoue et les
+        # sous-processus qui importent numpy meurent avant de produire leur
+        # sortie. Mesure (job 126652731468, run 41852640940, tentative 1,
+        # 2026-11-04T15:09Z) : `2 failed, 24345 passed` sur
+        # `test_wolfram_ksf.py::TestWolframKSFJsonRoundtrip` et
+        # `test_wolfram_mode.py::TestWolframJsonRoundtrip`, avec
+        # `OpenBLAS blas_thread_init: pthread_create failed for thread 14 of
+        # 32: Resource temporarily unavailable`.
+        #
+        # Le defaut d'OpenBLAS dimensionne son pool sur le nombre de coeurs
+        # vus par le runner (32 dans le message ci-dessus) -- et ce job lance
+        # deja jusqu'a 4 workers xdist, chacun susceptible d'ouvrir un
+        # sous-processus numpy. Le deficit n'est donc pas le CPU, c'est le
+        # NOMBRE de threads creations simultanees : d'ou une valeur de 1, et
+        # non le quota CPU.
+        #
+        # Cout mesure (poste ai-01, 2026-11-04, processus enfant
+        # `scripts/hashlife/k_trajectory.py --mode wolfram-ksf --n-cells 64
+        # --n-steps 64`) : 53 threads OS au pic sans epinglage, 8 avec
+        # epinglage ; duree 1,90 s -> 1,46 s (la creation du pool dominait le
+        # cout, pas le calcul). Suite hashlife complete (175 tests) : 18,70 s
+        # -> 17,25 s. L'epinglage ne coute donc rien de mesure.
+        #
+        # Meme famille de variables que le job ML (`Borner les threads au quota
+        # CPU du conteneur`) et que les executeurs de carnets
+        # (`scripts/notebook_tools/notebook_helpers.py`, #11111) : ici la
+        # valeur est 1, et elle est AFFICHEE -- une contrainte non affichee
+        # n'est pas prouvee.
+        run: |
+          for v in OPENBLAS_NUM_THREADS OMP_NUM_THREADS MKL_NUM_THREADS NUMEXPR_NUM_THREADS; do
+            echo "$v=1" >> "$GITHUB_ENV"
+            echo "$v=1"
+          done
+          echo "pools de threads epingles a 1 (#24696)"
 
       - name: GameTheory-06 bout-en-bout sur l'image CI (#21764)
         # Le carnet GameTheory-06 importe `axelrod` ; sous pyarrow < 26 le
@@ -708,7 +757,7 @@ jobs:
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_narration.py \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
-            MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis \
+            MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis \
             GradeBookApp \
             scripts/datasets/tests \
             scripts/genai-stack/tests \
@@ -851,7 +900,7 @@ jobs:
           if [ "$N" -lt "$GRADEBOOK_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$GRADEBOOK_TESTS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$GRADEBOOK_TESTS_FLOOR)."
 
-      - name: Argument_Analysis tests collection floor (174)
+      - name: ArgumentAnalysis tests collection floor (174)
         # Meme semantique a deux signaux que les floors audit (455), secrets
         # (148) et GradeBook (15) : une collection cassee (import manquant au
         # module level, crash de collection) rend 0 test collecte au lieu d'un
@@ -864,10 +913,22 @@ jobs:
         env:
           ARGUMENT_ANALYSIS_TESTS_FLOOR: 174
         run: |
-          N=$(python -m pytest MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          N=$(python -m pytest MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$ARGUMENT_ANALYSIS_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR)."
+
+      - name: Plancher explicite des tests @requires_jvm (#23542)
+        # Aucun workflow n'installe jpype et les jars Tweety sont gitignores :
+        # tous les tests @requires_jvm de cette suite sont SAUTES en CI. Le
+        # plancher de collecte ci-dessus ne peut pas voir ce trou -- un test
+        # saute est un test collecte. Ce census statique rougit si le trou
+        # grandit sans declaration, ou si un marqueur disparait (perte de
+        # couverture). Bumper --declared dans le meme geste que le test ajoute,
+        # et le dire dans le body de la PR.
+        if: always()
+        run: |
+          python scripts/ci/check_jvm_test_census.py --declared 8
 
       # #18981 : garde anti-recidive #18888 -- un test_*.py pose a la racine
       # d'un module (scripts/notebook_tools/, scripts/lean/, etc.) n'est
@@ -953,7 +1014,7 @@ jobs:
 
   adk-contracts:
     name: ADK runtime contracts (18)
-    # #15058: #13572 makes Track2-GoogleADK/utils/test_adk_runtime_contracts.py
+    # #15058: #13572 makes 07-Agent-Orchestration/utils/test_adk_runtime_contracts.py
     # (C1-C7, REAL ADK 2.8 runtime with a scripted LLM -- offline, no key, no
     # network) its measuring organ, but no CI job ran it: portage was
     # established by declaration, exactly what #13572's clause wanted to
@@ -982,7 +1043,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        # Exact pin chain of Track2-GoogleADK/requirements.txt (the verified
+        # Exact pin chain of 07-Agent-Orchestration/requirements.txt (the verified
         # compatibility chain, #13948): litellm 1.93.2 + openai 2.24.0 +
         # google-adk 2.8.0 + pydantic 2.12.5. Measured firsthand on a clean
         # venv with exactly these pins: 16/16 green in ~10 s, no conflicts.
@@ -992,7 +1053,7 @@ jobs:
 
       - name: Run ADK runtime contracts
         run: |
-          pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/test_adk_runtime_contracts.py" --tb=short -q
+          pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/utils/test_adk_runtime_contracts.py" --tb=short -q
 
       - name: Contracts collection floor (18)
         # Same two-signal semantics as the audit (455) / secrets (148) /
@@ -1004,14 +1065,14 @@ jobs:
         env:
           ADK_CONTRACTS_FLOOR: 18
         run: |
-          N=$(python -m pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/test_adk_runtime_contracts.py" --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          N=$(python -m pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/utils/test_adk_runtime_contracts.py" --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$ADK_CONTRACTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ADK_CONTRACTS_FLOOR. Removing a contract test is a contract change, not housekeeping."; exit 1; fi
           echo "OK: $N tests collected (floor=$ADK_CONTRACTS_FLOOR)."
 
       - name: Run provider default contracts
         # #20002: config/test_providers.py was run by NO CI leg -- the trigger
-        # above already fired on Track2-GoogleADK/**, so the surface existed
+        # above already fired on 07-Agent-Orchestration/**, so the surface existed
         # while the collection was silently missing. Host is this job, not the
         # shared scripts-tests list: test_providers.py imports only pytest +
         # pathlib + importlib.util, and config/providers.py only pydantic +
@@ -1025,7 +1086,7 @@ jobs:
         # compared the two (get_provider_config resolves `settings.<p>_model or
         # defaults["model"]`, and the fallback only shows on an empty env var).
         run: |
-          pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/config/test_providers.py" --tb=short -q
+          pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/config/test_providers.py" --tb=short -q
 
       - name: Providers collection floor (30)
         # Two-signal semantics, same as the contracts (18) floor above: 0
@@ -1041,7 +1102,7 @@ jobs:
         env:
           ADK_PROVIDERS_FLOOR: 30
         run: |
-          N=$(python -m pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/config/test_providers.py" --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          N=$(python -m pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/config/test_providers.py" --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$ADK_PROVIDERS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ADK_PROVIDERS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$ADK_PROVIDERS_FLOOR)."

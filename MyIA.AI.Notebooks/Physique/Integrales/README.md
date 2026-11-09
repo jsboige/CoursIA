@@ -9,14 +9,14 @@ la première divergence de la série — et le **rung elliptique** du sunrise, s
 courbe exhibée par le calcul : quatre briques des corrections radiatives, issues de
 la famille « 30 intégrales de Feynman » du harnais
 [BootLoops](https://github.com/BootLoops-ai) (MIT), rapportée par M. Schwartz dans
-*Claude-shaped science* (2025). Ce dossier en est la **veine V3** de la
+*Claude-shaped science* (2026). Ce dossier en est la **veine V3** de la
 distillation [issue #20428](https://github.com/jsboige/CoursIA/issues/20428),
 après la veine V1 (marches aléatoires).
 
 | Composant | Notebook | Stack | Ce qu'il apporte |
 |-----------|----------|-------|------------------|
 | [Integrales-01-Triangle-Scalaire](Integrales-01-Triangle-Scalaire-Python.ipynb) | 1 (Python) | Python 3 + `mpmath` + `numpy` + `matplotlib` | Représentation de Feynman du triangle ($\Delta = \alpha x_1x_2 + \gamma x_1x_3 + \beta x_2x_3$, $C_0 = J/16\pi^2$) dérivée au §1 ; **trois voies** de calcul de $J$ (quadrature 2D imbriquée, substitution homogène $(u,v)$, intégrale exacte en $v$) accordées à plus de 20 chiffres sur quatre cinématiques, dont un point de stress et un point non isocèle ; forme fermée $J(1,1,2-2\cos\psi) = 2\,\mathrm{Cl}_2(\psi)/\sin\psi$ certifiée à ~38 chiffres sur six angles, avec les cas exacts $2G$ (Catalan) et $\frac{4}{\sqrt{3}}\,\mathrm{Cl}_2(\pi/3)$ |
-| [Integrales-02-Sunrise-Masses-Egales](Integrales-02-Sunrise-Masses-Egales-Python.ipynb) | 2 (Python) | Python 3 + `mpmath` | Le sunrise à masses égales en $d = 2$ — même polynôme $U$ que le triangle, deux boucles : **quatre voies** (simplexe, rectangle $(u,v)$, Cheng–Wu, hyperbolique) accordées (A = B exact, CW à $10^{-20}$, hyperbolique à $10^{-15}$) ; ancre exacte $I(0) = J(1,1,1) = \frac{4}{\sqrt 3}\mathrm{Cl}_2(\pi/3)$ contre le carnet 01 ; intégrande elliptique de troisième espèce exhibée par $t = \cosh\theta$ ; piège du facteur 2 attrapé en direct ; deux identifications fermées **refusées** sur mesure (anneau déclaré avant recherche) |
+| [Integrales-02-Sunrise-Masses-Egales](Integrales-02-Sunrise-Masses-Egales-Python.ipynb) | 2 (Python) | Python 3 + `mpmath` | Le sunrise à masses égales en $d = 2$ — même polynôme $U$ que le triangle, deux boucles : **quatre voies** (simplexe, rectangle $(u,v)$, Cheng–Wu, hyperbolique) accordées (A = B exact, CW à $10^{-20}$, hyperbolique à $10^{-15}$) ; ancre exacte $I(0) = J(1,1,1) = \frac{4}{\sqrt 3}\mathrm{Cl}_2(\pi/3)$ contre le carnet 01 ; structure elliptique localisée dans l'intégration sur $r$ (l'intégrale en $\theta$ se rationalise par $u = \tanh(\theta/2)$) ; piège du facteur 2 attrapé en direct ; deux identifications fermées **refusées** sur mesure (anneau déclaré avant recherche) |
 | [Integrales-03-Bulle-Premiere-Divergence](Integrales-03-Bulle-Premiere-Divergence-Python.ipynb) | 3 (Python) | Python 3 + `mpmath` | La première divergence de la série : $B(\Lambda) = \pi^2(\ln\Lambda^2 + 1) + o(1)$, **coefficient $\pi^2$ mesuré à $7\times10^{-14}$** (différence $B(10\Lambda)-B(\Lambda)$, planted truth n° 1) et **constante finie $F = \pi^2$ ancrée dans $\int_0^1\ln\frac{1}{x(1-x)}dx = 2$** — calculable à la main, mesurée à $3\times10^{-25}$ (n° 2) et à $3\times10^{-29}$ par la **voie directe stabilisée**, laquelle n'a **aucun résidu** ; mesure de $S^3$ vérifiée avant usage (une première écriture rendait la moitié de l'intégrale) ; écart $\bar\Delta/\Lambda^2$ boule dure vs décalage **mesuré, pas masqué** (3,3 % à $\Lambda = 2$), de coefficient $\pi^2/3$ relevé ; **quadrature appliquée sur le coin $k = p$** diagnostiquée par un contrôle à quatre cases — artefact **constant** de $2\times10^{-4}$ en $\Lambda$, distinct du résidu réel en $1/\Lambda^2$ ; régularisation soustractive $B_R(\mu^2) = \pi^2(1+\ln\mu^2)$, premier « running » de la série ; refus documentés (pas de $\gamma_E$ ni $\ln 4\pi$ dans la boule dure — différence de schème, pas contradiction) |
 | [Integrales-04-Sunrise-Courbe-Elliptique](Integrales-04-Sunrise-Courbe-Elliptique-Python.ipynb) | 4 (Python) | Python 3 + `mpmath` | Le rung elliptique du sunrise — **la courbe sort du calcul** : l'intégrale interne en $x$ est élémentaire (un `artanh`, coefficient $4$ et jacobien $(1-\chi)$ qui s'annule — deux erreurs de facteur attrapées par planted truth avant commit), il reste $y^2 = b(\chi)c(\chi)$, quartique de genre 1 aux racines $\{1, -1/s, r_\pm\}$ explicites, et $I(s) = \int 4\,\mathrm{artanh}\sqrt{b/c}\;d\chi/y$ — un dilogarithme elliptique en formation ; **périodes mesurées** sous $\chi = m + h\sin\theta$ (la substitution tue la singularité $1/\sqrt{\ }$ : de $10^{-9}$ à $10^{-18}$–$10^{-30}$) et **réduction de Legendre** $\psi_1/\psi_2 = K(1-k^2)/K(k^2)$ vérifiée sur trois points, module $k^2$ par birapport des racines ; $\tau(s)$ **court** — non constant, contrairement aux carnets 01-02 ; dégénérescences bornantes : $s\to0$ (une racine s'échappe, ancre $I(0)$ retrouvée à $O(s)$) et $s\to\infty$ (collision de racines, $k^2 \sim 16/s^3$ mesuré) ; module « naïf » du carnet 02 **mesuré comme différent** du module de la quartique (familles isogènes) ; ABW cité sans reproduction |
 
@@ -35,7 +35,7 @@ précision ≠ bornes certifiées, identifiée ≠ dérivée.
 
 La série n'est pas née d'un carnet isolé : elle est la **veine V3** de la
 distillation [#20428](https://github.com/jsboige/CoursIA/issues/20428), son aînée
-V1 ([Marches](../../Probas/Applications/Marches/README.md)) est déjà fusionnée, et son fil directeur est
+V1 ([Marches](../../Probas/Applications/Marches-01-Retour-Polya-Watson-Python.ipynb)) est déjà fusionnée, et son fil directeur est
 la classification du harnais BootLoops — polylogarithmes → elliptique → K3 →
 Calabi-Yau. Les carnets de la série ont été livrés comme des **candidats
 bornés**, arbitrés à l'usage — aucun n'était promis :
@@ -92,12 +92,12 @@ Feynman ne sont pas des objets probabilistes, et `MyIA.AI.Notebooks/Physique/`
 est le toit commun des distillations de physique numérique
 ([#19741](https://github.com/jsboige/CoursIA/issues/19741),
 [#20428](https://github.com/jsboige/CoursIA/issues/20428)). L'aînée V1 reste dans
-`Probas/Applications/Marches/` — la récurrence de Pólya est probabiliste native
+`Probas/Applications/` — la récurrence de Pólya est probabiliste native
 — mais les deux séries se touchent par les fonctions de Green.
 
 ## Ponts vers le reste du dépôt
 
-- **Marches** ([../../Probas/Applications/Marches/](../../Probas/Applications/Marches/README.md)) : les deux séries calculent
+- **Marches** ([../../Probas/Applications/Marches-01-Retour-Polya-Watson-Python.ipynb](../../Probas/Applications/Marches-01-Retour-Polya-Watson-Python.ipynb)) : les deux séries calculent
   des fonctions de Green — sur $\mathbb{Z}^d$ discret chez Marches, sur des
   boucles continues ici — et les mêmes protocoles les traversent.
 - **Distillation Schwartz** ([issue #20428](https://github.com/jsboige/CoursIA/issues/20428)) :
@@ -117,10 +117,10 @@ est le toit commun des distillations de physique numérique
   space-time dimensions with arbitrary masses in terms of elliptic dilogarithms*,
   arXiv:1405.5640 — la forme fermée du sunrise en intégrales elliptiques multiples
   (citée sans être reproduite aux carnets 02 et 04).
-- M. D. Schwartz, *Vibe physics* (Anthropic, 2025) — le livrable de la
+- M. D. Schwartz, *Vibe physics* (Anthropic, 2026) — le livrable de la
   collaboration qu'il raconte est arXiv:2601.02484 (2026), *Resummation of the
   C-Parameter Sudakov Shoulder Using Effective Field Theory* ; *Claude-shaped
-  science* (Anthropic, 2025) — la thèse des problèmes « claude-formes », d'où sort
+  science* (Anthropic, 2026) — la thèse des problèmes « claude-formes », d'où sort
   le harnais BootLoops. Les trois pièces sont archivées au gisement
   `G:\Mon Drive\MyIA\IA\Bibliographie IA\Physics\`.
 - *BootLoops* (MIT / CC-BY-4.0) — harnais d'intégrales certifiées et protocoles ;

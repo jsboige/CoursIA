@@ -888,7 +888,7 @@ layout: section
 
 <img src="./images/img_033.gif" style="position:absolute; top:130px; right:20px; width:280px;" alt="Trajectoires optimiseurs SGD" />
 
-<div class="dense-list">
+<div class="dense-list dense-list--tight">
 
 ## États définis par des variables réelles
 
@@ -919,7 +919,7 @@ layout: section
 
 </div>
 
-<small>**Corpus** — Hill / Recuit simulé / Beam / Algorithmes génétiques dans [`Search-04-LocalSearch.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb) (N-Queens, TSP). Métaheuristiques avancées dans [`Search-11-Metaheuristics.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb) et le deep-dive [`Search-11b-Metaheuristiques-Deep.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb) (parties 2-4). Programmation linéaire et espaces continus : [`Search-09-LinearProgramming.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb).</small>
+<small class="corpus-note">**Corpus** — Hill / Recuit simulé / Beam / Algorithmes génétiques dans [`Search-04-LocalSearch.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb) (N-Queens, TSP). Métaheuristiques avancées dans [`Search-11-Metaheuristics.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb) et le deep-dive [`Search-11b-Metaheuristiques-Deep.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb) (parties 2-4). Programmation linéaire et espaces continus : [`Search-09-LinearProgramming.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb).</small>
 
 ---
 layout: section

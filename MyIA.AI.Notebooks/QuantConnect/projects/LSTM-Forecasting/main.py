@@ -24,7 +24,7 @@ class LSTMForecasting(QCAlgorithm):
     - StandardScaler pre-processing in a Pipeline
     - Monthly re-training on a 252-day rolling window
 
-    Features (20 per symbol):
+    Features (18 per symbol):
     - Lag returns: 1, 2, 3, 5, 10, 20 days
     - Rolling vol: 5, 10, 20 days
     - RSI-like: 14-day normalised
@@ -36,12 +36,22 @@ class LSTMForecasting(QCAlgorithm):
     Rebalance: every Monday
     Training : monthly (first rebalance of new month)
 
-    Results (2015-2026):
-    - Sharpe: 0.525 (vs 0.366 fake LSTM, +0.159)
-    - CAGR: 11.3% (vs 9.75% fake LSTM)
-    - MaxDD: 32.5% (vs 37.2% fake LSTM)
-    - Alpha: +0.016 (vs -0.008 fake LSTM)
-    - Beta: 0.544 (vs 0.886 fake LSTM - genuinely signal-driven)
+    Résultats mesurés
+    -----------------
+    QC Cloud, 2026-11-05, espace ESGF_School, projet 38971336, backtest
+    4bc59cadd7b457e4bd290a06629e9b08. Fenêtre codée 2015-01-01 -> 2026-01-01,
+    capital 100 000, courtage et compte sur marge tels que codés ci-dessous :
+    - Sharpe (QC, avec taux sans risque) : 0.565 ; PSR (QC) : 3.2 %
+    - CAGR : 11.6 %
+    - Drawdown max : 29.9 %
+    - 2110 ordres ; bêta contre SPY calculé sur la trace : 0.50
+    Témoin SPY détenu, même fenêtre et mêmes réglages (projet 38971340) :
+    Sharpe 0.537, CAGR 13.4 %, drawdown max 33.5 %.
+
+    Historique : la v2.1 annonçait Sharpe 0.525, CAGR 11.3 %, MaxDD 32.5 %,
+    alpha +0.016, bêta 0.544 (contre 0.366 / 9.75 % / 37.2 % pour l'ancien
+    faux LSTM), sans fenêtre ni mode de mesure ; la mesure QC Cloud du
+    2026-06-16 (#3135, projet 29443476) avait retrouvé Sharpe 0.525.
     """
 
     def initialize(self):
@@ -114,7 +124,7 @@ class LSTMForecasting(QCAlgorithm):
 
     def _build_features(self, returns_list):
         """
-        Build a 20-element feature vector from a returns list.
+        Build an 18-element feature vector from a returns list.
         Returns None if not enough data.
         """
         if len(returns_list) < self._lookback + 5:

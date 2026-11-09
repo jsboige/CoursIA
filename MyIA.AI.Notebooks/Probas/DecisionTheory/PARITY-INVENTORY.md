@@ -13,6 +13,28 @@
 > [`Actuariat/`](Actuariat/README.md) — régraduation T1-T5 = `Actuariat-01..05` (arbitrage #14873 G3).
 > Le présent document reste le snapshot pré-merge du HEAD `87dffc2bd9c` : ses références à
 > DecPyMC-8/9/12 décrivent l'état historique au moment de la tranche P0 et sont conservées telles quelles.
+>
+> **État mesuré au 2026-11-02** (tranche « zero-pad DecPyMC », lane `myia-ai-01:CoursIA-2`) : la série
+> Python `DecPyMC` a été **migrée en zero-pad** — `DecPyMC-1..7` → `DecPyMC-01..07`, `DecPyMC-08` inchangé
+> (le capstone actuariel portait déjà deux chiffres). Conséquence de parité : l'**asymétrie de zero-pad**
+> entre les deux jumeaux disparaît (DecInfer `01..08` et DecPyMC `01..07` partagent désormais la même
+> convention), et la paire `DT-1` (Utility-Foundations) redevient **alignée** — son `numbering_exception`
+> est supprimé du registre `twin_pairs.d`. La divergence de **slot** (DecInfer-03..08 contre DecPyMC-02..07),
+> causée par les compagnons Lean `DecInfer-02/02b` qui occupent le compteur principal, **subsiste** : elle
+> est seule à rester documentée dans les `numbering_exception` de `DT-2..DT-7`, et demeure le réalignement
+> gate sur l'arbitrage §3. Le tableau §1 et la vue d'ensemble ci-dessous **restent le snapshot P0**
+> (HEAD `87dffc2bd9c`) : ils décrivent l'état au moment de la tranche P0 et ne sont pas réécrits.
+>
+> **État mesuré au 2026-11-05** (tranche « re-flow voie (a) », lane `myia-po-2024:CoursIA`) : la divergence
+> de slot est **résolue** — les compagnons Lean deviennent des accrétions (`DecInfer-02-Lean-ExpectedUtility`
+> → `DecInfer-01b-Lean-ExpectedUtility`, `DecInfer-02b-Lean-Coherence` → `DecInfer-01c-Lean-Coherence`,
+> `DecInfer-08b-Lean-Gittins` → `DecInfer-07b-Lean-Gittins`) et le compteur principal DecInfer est re-flowé
+> (`DecInfer-03..08` → `DecInfer-02..07`) : les 6 paires communes `DT-2..DT-7` portent désormais le **même
+> identifiant** des deux côtés ; leurs `numbering_exception` sont réécrites en « décalage historique résolu
+> le 2026-11-05 » et le registre `twin_pairs.d` pointe les chemins renommés (cf §5). `DecInfer-10-Thompson-Sampling`
+> reste en place : la position de Thompson appartient à l'arbitrage (i)/(ii)/(iii) de l'EPIC — les 9 cibles
+> livrées sont invariantes sous ces trois options. Les tableaux §1/§6 et l'arbre de la vue d'ensemble
+> **restent le snapshot P0** (HEAD `87dffc2bd9c`) : ils décrivent l'état pré-re-flow et ne sont pas réécrits.
 
 ## Périmètre strict de la tranche
 
@@ -133,6 +155,11 @@ pas de jumeau côté DecInfer et la convention autorise explicitement les extens
 > ML-6 ONNX exclu) ; (b) la branche actuarielle s'est consolidée entre-temps en `DecPyMC-08-Capstone`
 > (§4). La garde `NUMBERING-DRIFT` couvre désormais la famille ; le **réalignement** des numéros reste
 > la tranche à venir, gatee sur l'arbitrage §3.
+>
+> **État mesuré au 2026-11-05** (tranche « re-flow voie (a) », lane `myia-po-2024:CoursIA`) : les chemins
+> `csharp:` de `dt-2..dt-7` pointent les fichiers renommés (`DecInfer-02..07`), et les six
+> `numbering_exception` sont réécrites en « décalage historique résolu le 2026-11-05 » — les numéros
+> étant alignés, plus aucune exception active ne subsiste au registre pour cette famille.
 
 ### Historique — snapshot au HEAD `87dffc2bd9c` (conservé tel quel)
 

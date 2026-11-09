@@ -177,7 +177,8 @@ def declares_parent(child_body: str, parent_number: int) -> bool:
 
 def classify(refs: list[dict], missing_paths: list[str],
              child_flags: dict[int, bool | None] | None = None,
-             child_directions: dict[int, str] | None = None) -> dict:
+             child_directions: dict[int, str] | None = None,
+             path_hints: dict[str, str] | None = None) -> dict:
     """Apply the verdict rules. Pure: the caller supplies measured states.
 
     `child_flags` maps the number of an OPEN referenced issue to the measured
@@ -193,12 +194,20 @@ def classify(refs: list[dict], missing_paths: list[str],
     parent). Les deux sont des filiations reelles : le rapport ne doit pas
     pretendre que la reference est un enfant quand c'est l'inverse qui est
     mesure (revue Hermes sur #21792, cas #20233).
+
+    `path_hints` (optionnel) fait passer un chemin absent de « introuvable » a
+    « introuvable ici, present sous <candidat> » (#24286). Il ne change AUCUNE
+    regle de presence : `missing_paths` reste calcule par `resolve_cited_path`,
+    dont l'arbitrage est fige par test. Sans hints, le message est celui
+    d'avant, a l'octet.
     """
     issues = [r for r in refs if r["kind"] == "issue"]
     open_issues = [r for r in issues if r["state"] == "OPEN"]
 
     warnings = [
         f"cited path not found in the working tree: {path}"
+        + (f" -- present sous {path_hints[path]}"
+           if path_hints and path in path_hints else "")
         for path in missing_paths
     ]
 
@@ -391,6 +400,47 @@ def missing_paths(cited: list[str], repo_root: Path) -> list[str]:
     return absent
 
 
+def resolution_hints(absent: list[str], repo_root: Path) -> dict[str, str]:
+    """Pour chaque chemin absent, un candidat REELLEMENT suivi par git.
+
+    Un umbrella cite souvent ses chemins **relativement a la racine de sa
+    sous-serie** : `#19309` cite `ict/active_inference.py`, qui vit sous
+    `MyIA.AI.Notebooks/IIT/ICT-Series/`. `resolve_cited_path` ne tente que la
+    racine du depot puis `NOTEBOOKS_SUBDIR`, donc ce troisieme cas rend
+    « not found » sur un fichier present (#24286).
+
+    Ce helper ne touche PAS la regle de presence -- l'arbitrage de
+    `resolve_cited_path` reste fige par test. Il rend seulement le message
+    **actionnable** en nommant le fichier trouve par suffixe. Best-effort :
+    toute panne de git rend un dict vide, et l'avertissement reste celui
+    d'avant.
+    """
+    if not absent:
+        return {}
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(repo_root), "ls-files"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=60, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):  # noqa: BLE001 - best-effort
+        return {}
+    if completed.returncode != 0:
+        return {}
+    tracked = [
+        line.strip().replace("\\", "/")
+        for line in completed.stdout.splitlines()
+        if line.strip()
+    ]
+    hints: dict[str, str] = {}
+    for path in absent:
+        needle = "/" + path.rstrip("/").replace("\\", "/")
+        matches = sorted(item for item in tracked if item.endswith(needle))
+        if matches:
+            hints[path] = matches[0]
+    return hints
+
+
 def assess(number: int, repo_root: Path, repo: str) -> dict:
     payload = _gh_json(["api", f"repos/{repo}/issues/{number}"])
     if payload is None:
@@ -455,8 +505,10 @@ def assess(number: int, repo_root: Path, repo: str) -> dict:
         child_flags[ref["number"]] = by_child or by_umbrella
 
     cited = extract_paths(body)
-    result = classify(refs, missing_paths(cited, repo_root), child_flags,
-                      child_directions)
+    absent = missing_paths(cited, repo_root)
+    result = classify(refs, absent, child_flags,
+                      child_directions,
+                      path_hints=resolution_hints(absent, repo_root))
     result["number"] = number
     result["title"] = payload.get("title") or ""
     result["refs"] = refs

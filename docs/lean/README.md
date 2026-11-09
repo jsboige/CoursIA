@@ -20,12 +20,13 @@ Pour la pédagogie Lean (notebooks étudiants), voir [`MyIA.AI.Notebooks/Symboli
 | [llm-endpoints.md](llm-endpoints.md) | Configuration des providers LLM du prover (`agent_tests/prover/`). |
 | [ab-methodology.md](ab-methodology.md) | Méthodologie d'A/B pour comparer deux providers LLM sur les mêmes cibles Lean. |
 | [coordinator-workflow.md](coordinator-workflow.md) | Workflow coordinateur Lean (ai-01) : Lake build pre-merge + itération BG prover systématique. |
+| [sorry-cibles.md](sorry-cibles.md) | Sorry-cibles documentés (mandat user 2026-11-03) : format de la ligne `Cible prover :`, niveaux alignés sur les `DEMOS` du harnais, plancher du lake, inventaire. |
 
 ## Recherche sur les moteurs formels
 
 | Document | Sujet |
 |---|---|
-| [life-sat-cost-frontier.md](life-sat-cost-frontier.md) | Frontière de coût reproductible du synthétiseur SAT de motifs Life : `FOUND`, `IMPOSSIBLE` borné et `TIMEOUT` honnête. |
+| [life-sat-cost-frontier.md → transients/2026-09-11-…](../transients/2026-09-11-life-sat-cost-frontier.md) | Frontière de coût du synthétiseur SAT de motifs Life (`FOUND`, `IMPOSSIBLE` borné, `TIMEOUT` honnête), campagne du 2026-09-11 — déplacé en lane transiente ; les règles de lecture durables vivent dans [life-components-schema.md](life-components-schema.md), section « Frontière de la synthèse bornée — trois verdicts, jamais deux » (vague 4 #14623) |
 
 ## i18n FR/EN (EPIC #4980)
 

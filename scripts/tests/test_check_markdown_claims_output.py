@@ -333,6 +333,180 @@ class TestFuzzyPresent:
         assert not _fuzzy_present("7", "0.2385")
 
 
+class TestIssue22910Table:
+    """The five rows of the #22910 table, turned into tests.
+
+    The table measured `_fuzzy_present` and `_rounds_to_claim` on five
+    (claim, output) pairs: three were false positives (a neighbouring or a
+    coarser value accepted), one was a genuine rounding, and the last was a
+    negative witness.
+
+    The fix: clause (c) now opens on the comma signal alone (the thousands
+    separator), and clause (a) no longer accepts a prefix shorter than the
+    claim unless the dropped tail is zeros ('2.40' against '2.4' is the same
+    number).
+
+    Measured note: the second row of the table did not come from clause (c)
+    but from clause (a) -- the prefix '1.7' occurs in the output '1.7' with
+    nothing after it, which clause (a) accepted. Measured here, not assumed.
+    """
+
+    def test_neighbour_value_not_matched(self):
+        """Row 1: '1.75' against '1.7565' -- the neighbouring value (1.7565
+        rounds to 1.76) does not support the claim."""
+        assert not _fuzzy_present("1.75", "1.7565")
+        assert not _rounds_to_claim("1.75", "1.7565")
+
+    def test_coarser_output_not_matched(self):
+        """Row 2: '1.75' against '1.7' -- an output coarser than the claim
+        cannot support it."""
+        assert not _fuzzy_present("1.75", "1.7")
+        assert not _rounds_to_claim("1.75", "1.7")
+
+    def test_neighbour_value_two_decimals_not_matched(self):
+        """Row 3: '2.40' against '2.4067' -- same family as row 1, on a
+        two-decimal claim."""
+        assert not _fuzzy_present("2.40", "2.4067")
+        assert not _rounds_to_claim("2.40", "2.4067")
+
+    def test_genuine_rounding_still_matched(self):
+        """Row 4: the genuine rounding -- '1.75' is the two-decimal
+        rounding of '1.7465' quoted from a results table."""
+        assert _fuzzy_present("1.75", "SA  1.7465  12.8907  17.2632")
+        assert _rounds_to_claim("1.75", "SA  1.7465  12.8907  17.2632")
+
+    def test_negative_witness_still_refused(self):
+        """Row 5: the negative witness -- '9.9999' must not be found in an
+        output that contains '1.7565'."""
+        assert not _fuzzy_present("9.9999", "SA  1.7565  12.8907")
+        assert not _rounds_to_claim("9.9999", "SA  1.7565  12.8907")
+
+    def test_zero_padded_claim_still_matched(self):
+        """Non-regression: a claim padded with zeros is the same number
+        ('2.40' == '2.4')."""
+        assert _fuzzy_present("2.40", "2.4 Go")
+
+    def test_magnitude_with_thousands_separator_still_matched(self):
+        """Non-regression: clause (c) keeps its legitimate case -- a
+        magnitude against a large number grouped by commas."""
+        assert _fuzzy_present("3.1", "3,145,728")
+
+    def test_truncation_refused_even_when_output_carries_a_comma(self):
+        """Robustness of the veto: a comma elsewhere in the output (a
+        grouped integer in a results table) must not re-enable the digit
+        run for a comma-less value that the prose has TRUNCATED."""
+        assert not _fuzzy_present("1.75", "SA  1,024 rows  1.7565  12.8907")
+        assert not _rounds_to_claim("1.75", "SA  1,024 rows  1.7565  12.8907")
+
+
+class TestFrancophoneNotation:
+    """The same defect in the notation this repository uses predominantly.
+
+    The francophone decimal comma ('1,7565') is a COMMA, so the
+    thousands-gate of clause (c) used to open on it -- and the truncation
+    veto used to skip every comma token, so it could not see the very
+    decimal it had to judge. The measured consequence: the claim '1.75'
+    was ACCEPTED against the output 'SA 1,7565 12,8907' -- the exact
+    false positive the issue closes, in the notation the notebooks of
+    this repository actually print.
+    """
+
+    def test_francophone_truncation_is_refused(self):
+        """The reproduced false positive: '1.75' against 'SA 1,7565
+        12,8907' was accepted (the digit run '17565128907' contains
+        '175')."""
+        assert not _fuzzy_present("1.75", "SA 1,7565 12,8907")
+
+    def test_francophone_truncation_two_decimals(self):
+        """The same, on a two-decimal claim: '2.40' against '2,4067'."""
+        assert not _fuzzy_present("2.40", "SA 2,4067 3,8912")
+
+    def test_francophone_genuine_rounding_still_matched(self):
+        """Non-regression: a genuine francophone rounding -- '1.75' is the
+        two-decimal rounding of '1,7465' -- must still be supported."""
+        assert _fuzzy_present("1.75", "SA 1,7465 12,8907")
+
+    def test_francophone_decimal_is_not_a_magnitude(self):
+        """A francophone decimal is not a thousands grouping: the clause
+        must not treat '1,7565' as the magnitude context it exists to
+        serve ('3,145,728' is)."""
+        assert not _fuzzy_present("3.1", "1,7565")
+
+    def test_grouped_magnitude_still_matched(self):
+        """Non-regression: the legitimate thousands grouping -- several
+        comma groups of exactly three digits -- still opens the clause."""
+        assert _fuzzy_present("3.1", "3,145,728")
+        assert _fuzzy_present("3.1", "SA 3,145,728 unites")
+
+    def test_english_and_french_notations_agree(self):
+        """The two notations must give the SAME verdict on the same
+        numbers -- otherwise the organ's verdict depends on the notation
+        the notebook happens to print."""
+        for english, french in (
+            ("1.7565 12.8907", "1,7565 12,8907"),
+            ("1.7465 12.8907", "1,7465 12,8907"),
+            ("2.4067 3.8912", "2,4067 3,8912"),
+        ):
+            assert _fuzzy_present("1.75", english) == _fuzzy_present("1.75", french)
+            assert _fuzzy_present("2.40", english) == _fuzzy_present("2.40", french)
+
+
+class TestMagnitudeVersusTruncation:
+    """Where the claim's digits must lie to read as a MAGNITUDE.
+
+    Clause (c) used to strip every non-digit of the output into ONE digit
+    run and look for the claim's digits anywhere inside it. Two defects
+    came with that: the digits could straddle the output's decimal point
+    ('1.75' in '1.7565' -- a truncation, not a magnitude) and they could
+    span TWO numbers ('1.75' in '17.2632' -- a coincidence of digits).
+    Gating the clause on the mere presence of a comma was the francophone
+    counterpart of the same defect: a decimal comma is a comma.
+
+    The rule now: the claim's digits must be a PREFIX of the INTEGER PART
+    of one number of the output. A magnitude has all its significant
+    digits in the integer part ('1750000'); a truncation straddles the
+    point ('1.7565' has integer part '1'). The notation does not enter the
+    decision -- which is what makes the two readings separable.
+    """
+
+    def test_magnitude_without_separator_is_matched(self):
+        """The legitimate magnitude written WITHOUT a separator:
+        '1.75' against '1750000' (1.75M). The former gate on a thousands
+        group refused it; the reserve asked for this case to be pinned."""
+        assert _fuzzy_present("1.75", "1750000")
+        assert _fuzzy_present("1.75", "SA 1750000 items")
+
+    def test_claim_digits_must_lie_in_the_integer_part(self):
+        """The structural rule itself, on the two shapes that differ only
+        by where the point stands."""
+        assert not _fuzzy_present("1.75", "1.7565")      # straddles the point
+        assert _fuzzy_present("1.75", "1750000")          # inside the integer part
+
+    def test_claim_digits_may_not_span_two_numbers(self):
+        """The digit run '172632' contains '175'? no -- but the pair
+        ('1' from one number, '75' from the next) could: the run must
+        not be read across a boundary."""
+        assert not _fuzzy_present("1.75", "17.2632")
+        assert not _fuzzy_present("1.75", "SA 17.2632 12.8907")
+
+    def test_contradiction_veto_still_applies_over_a_magnitude(self):
+        """The veto keeps its scope: a magnitude elsewhere in the output
+        does not license a claim the output also contradicts."""
+        assert not _fuzzy_present("1.75", "1750000 1.7565")
+
+    def test_grouped_magnitude_with_a_decimal_part(self):
+        """A grouped integer carrying a decimal point ('1,234,567.89') is
+        a magnitude: the point arbitrates the comma as a separator."""
+        assert _fuzzy_present("1.23", "1,234,567.89")
+
+    def test_single_comma_group_stays_a_decimal_not_a_magnitude(self):
+        """Without a point to arbitrate, a bare three-digit group keeps its
+        francophone decimal reading ('1,024' is 1.024), so it is a
+        precision context and never a magnitude."""
+        assert not _fuzzy_present("3.1", "1,024")
+        assert not _fuzzy_present("3.1", "SA 1,024 rows")
+
+
 class TestRoundsToClaim:
     """Bounds of the rounding predicate itself (clause b), both directions."""
 
@@ -1097,7 +1271,7 @@ class TestThresholdExpression:
 class TestCoordinateTupleFilter:
     """#14905: '(2,2)' is a grid coordinate, not the decimal 2.2.
 
-    Founding FP: DecPyMC-7 md[67] 'un but en (2,2) et un obstacle en (1,1)'
+    Founding FP: DecPyMC-07 md[67] 'un but en (2,2) et un obstacle en (1,1)'
     -- grid cells flattened into '2.2' / '1.1' then reported as fabricated.
     The discriminator is one digit per comma-separated group inside the
     parentheses; '(0,75)' (two-digit group) stays a francophone decimal.
@@ -1159,7 +1333,7 @@ class TestCoordinateTupleFilter:
 class TestInputSpecificationFilter:
     """#14905 Family D: inputs are legitimately absent from the output
     because nothing measured them. Three tight form signals, each measured on
-    DecPyMC-7: math parameter definitions (md[15]/md[19]), spec vectors
+    DecPyMC-07: math parameter definitions (md[15]/md[19]), spec vectors
     (md[36]), labeled enumerations (md[38]). A fourth form (bare paren
     apposition) was measured on fleet collateral and deliberately REJECTED:
     spec restatement and cited statistic share the same shape.
@@ -1213,6 +1387,118 @@ class TestInputSpecificationFilter:
         pos = src.find("0.5")
         end = pos + len("0.5")
         assert _is_labeled_enumeration_value(src, pos, end)
+
+    def test_configuration_value_in_prose_is_an_input(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('accuracy=0.6')", [_stream_output("accuracy=0.6")]),
+            _md_cell("La taille de lot est 1024 et le seuil fixé à 0.75."),
+        ])
+        path = tmp_path / "configuration.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLEAN", result
+        assert not result["findings"]
+
+    def test_input_label_in_prior_clause_does_not_exempt_measurement(self, tmp_path: Path):
+        for src in (
+            "Le seuil est 0.5 ; la précision est 0.91.",
+            "Le seuil est 0.5, et la précision est 0.91.",
+        ):
+            pos = src.index("0.91")
+            assert not _is_input_specification(src, pos, pos + len("0.91"))
+        src = "Le seuil est 0.5 ; la précision est 0.91."
+        nb = _mk_nb([
+            _code_cell("print('precision=0.82')", [_stream_output("precision=0.82")]),
+            _md_cell(src),
+        ])
+        path = tmp_path / "prior_clause.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        assert [finding["normalized"] for finding in result["findings"]] == ["0.91"]
+
+    def test_observed_metric_with_same_input_label_stays_checked(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('accuracy=0.6')", [_stream_output("accuracy=0.6")]),
+            _md_cell("Le taux d'apprentissage observé vaut 0.75 après l'essai."),
+        ])
+        path = tmp_path / "metric.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        assert [finding["normalized"] for finding in result["findings"]] == ["0.75"]
+
+
+class TestDerivedClaims:
+    def test_same_row_ratio_is_proven(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('6/50')", [_stream_output("succès=6 essais=50")]),
+            _md_cell("Le taux de succès dérivé de 6 succès sur 50 essais est 12 %."),
+        ])
+        path = tmp_path / "derived_ratio.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLEAN", result
+        assert not result["findings"]
+        assert not result["derived_claims"]
+
+    def test_same_row_difference_is_proven(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('1.25-0.75')", [_stream_output("avant=1.25 après=0.75")]),
+            _md_cell("L'écart entre 1.25 et 0.75 est 0.5."),
+        ])
+        path = tmp_path / "derived_difference.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLEAN", result
+        assert not result["findings"]
+        assert not result["derived_claims"]
+
+    def test_derived_claim_without_bounded_proof_is_reported_unproven(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('series')", [_stream_output("0.10\n0.20\n0.30\n0.40")]),
+            _md_cell("La moyenne dérivée de cette série est 0.75."),
+        ])
+        path = tmp_path / "derived_unproven.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLAIM_UNPROVEN", result
+        assert not result["findings"]
+        assert [claim["normalized"] for claim in result["derived_claims"]] == ["0.75"]
+
+    def test_adjacent_output_numbers_without_named_operands_are_unproven(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('counters')", [_stream_output("Autres compteurs : gauche=3 droite=25")]),
+            _md_cell("Le pourcentage calculé est 12 %."),
+        ])
+        path = tmp_path / "unrelated_operands.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLAIM_UNPROVEN", result
+        assert not result["findings"]
+        assert [claim["normalized"] for claim in result["derived_claims"]] == ["12"]
+
+    def test_derived_word_does_not_override_a_direct_match(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('mean=0.75')", [_stream_output("mean=0.75")]),
+            _md_cell("La moyenne dérivée est 0.75."),
+        ])
+        path = tmp_path / "derived_direct.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLEAN", result
+        assert not result["derived_claims"]
+
+    def test_unrelated_missing_result_remains_fabrication(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('score=4.26')", [_stream_output("score=4.26")]),
+            _md_cell("Le score final mesuré est 4.267."),
+        ])
+        path = tmp_path / "measured_result.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        assert [finding["normalized"] for finding in result["findings"]] == ["4.267"]
 
     def test_bold_label(self):
         src = "**Bras 3=0.7** dans la spec de l'environnement."
@@ -1390,7 +1676,7 @@ class TestCoordinateTupleFilter:
     (grille), PAS un decimal francais. `_normalize_num` collapsait
     '(2,2)' -> '2.2', donc le detecteur cherchait un '2.2' inexistant
     dans la sortie d'une grille 3x3 et flaguait une prose pedagogique
-    legitime comme fabriquee (DecPyMC-7 md[67]). Criteres d'acceptation
+    legitime comme fabriquee (DecPyMC-07 md[67]). Criteres d'acceptation
     (#14905) : '(0,75)' -- deux chiffres apres la virgule -- reste un
     vrai decimal (eligibile), et une VRAIE fabrication reste attrapee.
     """
@@ -1403,7 +1689,7 @@ class TestCoordinateTupleFilter:
         return check_notebook(p)
 
     def test_grid_coordinates_clean(self, tmp_path):
-        """Founding case: DecPyMC-7 md[67] -- cible/obstacle positions on a
+        """Founding case: DecPyMC-07 md[67] -- cible/obstacle positions on a
         3x3 grid. Prose cites '(2,2)' and '(1,1)'; the grid output never
         prints '2.2' nor '1.1'. BEFORE (issue #14905) this returned
         FABRICATION_DETECTED; AFTER the filter it is CLEAN."""

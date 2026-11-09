@@ -126,7 +126,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # #22469 : l'observateur ne lit que l'API GitHub -- `scripts/ci/check_runner_starvation.py`
+      # n'ouvre aucun fichier du depot (aucun `open`, `Path`, ni import local). Le checkout
+      # complet (clone froid de 210 000 objets mesure le 24/10) pesait ~90 % de la duree de ce
+      # job. Sparse sur le seul repertoire du script, sans historique.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: scripts/ci
       - name: Measure starvation on coursia-waiter
         env:
           GH_TOKEN: ${{ github.token }}

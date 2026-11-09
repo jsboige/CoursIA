@@ -6,11 +6,16 @@ from datetime import datetime
 
 class GlobalMacroRegime(QCAlgorithm):
     """
-    Global Macro Regime v3 BEST: Rank-based Risk Parity + Regime Switch
+    Global Macro Regime v3: Rank-based Risk Parity + Regime Switch
     =====================================================================
+    Measured (current code, fenêtre 1 : 2018-01-02 -> 2024-12-31, 1761 séances, mode strategy) : Sharpe 0.456, CAGR 9.790%, MaxDD 22.800%.
+    Source : QC Cloud 2026-10-27 (#22869), backtest 35eebe866e191efdb2fac677afad214f ; fenêtre codée 2018-01-01 -> 2025-01-01.
+
+    Iteration results (historique des iterations de conception, mesurees sous des
+    conditions anterieures ; non reproduites par le code actuel, refactors #21420/#22869/#22923) :
     v1: Sharpe 0.499, CAGR 9.87%, MaxDD 18.0% (equal defensive)
     v2: Sharpe 0.583, CAGR 11.55%, MaxDD 21.6% (RP defensive + 6m filter)
-    v3: Sharpe 0.607, CAGR 11.62%, MaxDD 23.6% (rank * inv_vol in risky) BEST
+    v3: Sharpe 0.607, CAGR 11.62%, MaxDD 23.6% (rank * inv_vol in risky) — record de l'itération de conception
     v4: Sharpe 0.603, CAGR 11.53%, MaxDD 23.5% (+ vol targeting - no improvement)
     v4-v6: no improvement
 

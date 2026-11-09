@@ -16,7 +16,7 @@ Deux réserves ouvertes, l'une par la page sœur, l'autre par la page de relevé
 | Réserve | Où | État après cette page |
 |---|---|---|
 | « Les modèles `4b` : **non mesurés** … L'affirmation "24 Go" reste donc **non réfutée pour `4b`** » | [decision-models-local-verification.md](decision-models-local-verification.md) §5 | **close** — les deux checkpoints sont mesurés, sur GPU, avec leur pic VRAM |
-| « Le besoin 24 Go **reste non réfuté pour `4b`** (non mesuré) » | [decision-models.md](decision-models.md), ligne de statut | **close sur le fond** ; la **correction de la ligne** de statut reste due — cette page ne modifie pas [decision-models.md](decision-models.md) |
+| « Le besoin 24 Go **reste non réfuté pour `4b`** (non mesuré) » | [decision-models.md](decision-models.md), ligne de statut | **close** — la ligne de statut de [decision-models.md](decision-models.md) est corrigée par cette PR (24 Go réfuté pour `4b`, borne 16 Go) |
 
 La réserve « le score de l'index n'est pas reproductible » **reste ouverte** : c'est un échec de données, pas de mesure (les charges utiles de `multimodalart/decision-index-suite-0.3` répondent **401**).
 
@@ -93,7 +93,7 @@ Ce que la comparaison **ne dit pas** : les **temps** ne sont pas comparables ent
 
 ### 3.3 Ce que la mesure dit de « 24 Go »
 
-Le pic est mesuré par `torch.cuda.max_memory_allocated()` (mémoire **allouée**, pas réservée), après `reset_peak_memory_stats()` : **8,02 Gio** pour les deux checkpoints.
+Le pic est mesuré par `torch.cuda.max_memory_allocated()` (mémoire **allouée**, pas réservée), après `reset_peak_memory_stats()` : **8,02 Gio** pour les deux checkpoints. Les deux checkpoints partagent le même poids BF16 et le même allocateur ; `max_memory_allocated()` rend donc le même pic au centième — identité de mesure, pas de recopie.
 
 - Les **poids** occupent **7,83 Gio** : le dépôt `eljiwo/jiwo-4b` déclare `safetensors` = **4 205 751 296** paramètres en **BF16**, et ses deux fragments pèsent 8 411 549 328 octets ; la tête de lecture `readout.safetensors` ajoute 1,3 Mo (~0,001 Gio). Le solde (**~0,19 Gio**) couvre les **activations** de la passe.
 - **8,02 Gio < 23,99 Gio** : le seuil « 24 Go » est **réfuté** pour ce palier. Le service tient sur une carte de **16 Go** sans tension.
