@@ -15,7 +15,7 @@
       ni metadata d’exécution ne change. Cellule 0 : le premier paragraphe
       présente désormais l’implémentation ASPIC+ sous .NET Interactive ; la
       note de parité conserve les différences et le pied porte EPIC #4956 et
-      issue #3801. La paire a 27 cellules côté Python et 31 côté C#.
+      issue #3801.
       Parité pédagogique relue sur les deux carnets : ils partagent le sujet
       ASPIC+, les mêmes faits b,c, règles b,c=>a, b=>d, a=>!d et le même
       raisonnement vers l’AF de Dung ; l’extension grounded retient b, c et
