@@ -188,7 +188,7 @@ def test_run_lean_delegates_to_organ(monkeypatch, tmp_path):
         "verifiers.lean_rlvr_verifier._find_lean_exec",
         lambda: fake_organ)
 
-    verifier = LeanRLVRVerifier(timeout=30.0)  # warmup via stub (echecs avales)
+    verifier = LeanRLVRVerifier(project_dir=tmp_path / "project", timeout=30.0)  # warmup via stub
     out = verifier._run_lean("theorem x : True := by trivial")
     project_path, cmd_args, timeout, stdin_file, organ = calls["args"]
     assert cmd_args[1:] == ["env", "lean", "--stdin"]
@@ -213,7 +213,7 @@ def test_organ_refusal_zero_reward(monkeypatch, tmp_path):
         "verifiers.lean_rlvr_verifier._get_lean_notebook_utils",
         lambda: _StubNbu)
 
-    verifier = LeanRLVRVerifier(timeout=30.0)  # warmup avale l'OrganRefusedError
+    verifier = LeanRLVRVerifier(project_dir=tmp_path / "project", timeout=30.0)  # warmup avalé
     r = verifier.reward("1 + 1 = 2", "by rfl")
     assert r.reward == 0.0
     assert r.compiles is False
@@ -232,9 +232,104 @@ def test_organ_timeout_maps_to_timeout_flag(monkeypatch, tmp_path):
         "verifiers.lean_rlvr_verifier._get_lean_notebook_utils",
         lambda: _StubNbu)
 
-    verifier = LeanRLVRVerifier(timeout=30.0)  # warmup avale le TimeoutExpired
+    verifier = LeanRLVRVerifier(project_dir=tmp_path / "project", timeout=30.0)  # warmup avalé
     r = verifier.reward("1 + 1 = 2", "by rfl")
     assert r.reward == 0.0
     assert r.compiles is False
     assert r.hack_flags == ["timeout"]
     assert r.raw_output.startswith("<timeout after")
+
+
+def _fake_lean(tmp_path, monkeypatch, version="4.35.0"):
+    """Installe un lean factice local, sans dépendance à elan ni au réseau."""
+    import os
+
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    lean = bindir / "lean"
+    lean.write_text(f'#!/bin/sh\necho "Lean (version {version}, fake)"\n', encoding="utf-8")
+    lean.chmod(0o755)
+    monkeypatch.setenv("PATH", str(bindir))
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    (tmp_path / "home" / ".elan" / "bin").mkdir(parents=True)
+    return os.fspath(lean)
+
+
+def _no_warmup(monkeypatch):
+    monkeypatch.setattr(LeanRLVRVerifier, "_warmup", lambda self: None)
+
+
+def test_toolchain_environment_pin_is_exact_and_logged(monkeypatch, tmp_path, caplog):
+    import logging
+
+    _fake_lean(tmp_path, monkeypatch)
+    _no_warmup(monkeypatch)
+    monkeypatch.setenv("ELAN_TOOLCHAIN", "leanprover/lean4:v4.33.0")
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / "lean-toolchain").write_text("leanprover/lean4:v4.32.1\n")
+
+    with caplog.at_level(logging.INFO):
+        verifier = LeanRLVRVerifier(project_dir=project)
+
+    assert verifier.toolchain == "leanprover/lean4:v4.33.0"
+    assert verifier.pin_source == "env"
+    assert (project / "lean-toolchain").read_text() == "leanprover/lean4:v4.32.1\n"
+    assert "toolchain=leanprover/lean4:v4.33.0 pin=env" in caplog.text
+
+    monkeypatch.setattr("verifiers.lean_rlvr_verifier.Path.home", lambda: tmp_path)
+    managed = LeanRLVRVerifier()
+    assert (managed.project_dir / "lean-toolchain").read_text() == (
+        "leanprover/lean4:v4.33.0\n"
+    )
+
+
+def test_toolchain_project_pin_precedes_resolved_default(monkeypatch, tmp_path):
+    _fake_lean(tmp_path, monkeypatch)
+    _no_warmup(monkeypatch)
+    monkeypatch.delenv("ELAN_TOOLCHAIN", raising=False)
+    project = tmp_path / "project"
+    project.mkdir()
+    pin = "leanprover/lean4:v4.33.1-custom"
+    (project / "lean-toolchain").write_text(pin + "\n")
+
+    verifier = LeanRLVRVerifier(project_dir=project)
+
+    assert (verifier.toolchain, verifier.pin_source) == (pin, "projet")
+
+
+def test_resolved_default_is_logged_but_not_written_to_managed_skeleton(
+    monkeypatch, tmp_path, caplog
+):
+    import logging
+
+    _fake_lean(tmp_path, monkeypatch, version="4.35.0")
+    _no_warmup(monkeypatch)
+    monkeypatch.delenv("ELAN_TOOLCHAIN", raising=False)
+    monkeypatch.setattr("verifiers.lean_rlvr_verifier.Path.home", lambda: tmp_path)
+    managed = tmp_path / ".cache" / "rlvr-lean"
+
+    with caplog.at_level(logging.INFO):
+        verifier = LeanRLVRVerifier()
+
+    assert (verifier.toolchain, verifier.pin_source) == (
+        "leanprover/lean4:v4.35.0", "default_resolu"
+    )
+    assert not (managed / "lean-toolchain").exists()
+    assert "toolchain=leanprover/lean4:v4.35.0 pin=default_resolu" in caplog.text
+
+
+def test_unmeasurable_default_warns_before_legacy_fallback(monkeypatch, tmp_path, caplog):
+    import logging
+
+    _no_warmup(monkeypatch)
+    monkeypatch.delenv("ELAN_TOOLCHAIN", raising=False)
+    monkeypatch.setattr("verifiers.lean_rlvr_verifier._installed_toolchain", lambda: None)
+    monkeypatch.setattr("verifiers.lean_rlvr_verifier.Path.home", lambda: tmp_path)
+
+    with caplog.at_level(logging.WARNING):
+        verifier = LeanRLVRVerifier()
+
+    assert verifier.toolchain == "leanprover/lean4:v4.27.0"
+    assert verifier.pin_source == "fallback_averti"
+    assert "téléchargement elan peut être requis" in caplog.text

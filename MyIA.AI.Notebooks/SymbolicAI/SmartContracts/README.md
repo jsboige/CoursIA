@@ -1,6 +1,6 @@
 # Smart Contracts - Des Cypherpunks aux Blockchains Modernes
 
-[← Planners](../Planners/README.md) | [↑ SymbolicAI](../README.md) | [Argument_Analysis →](../Argument_Analysis/README.md)
+[← Planners](../Planners/README.md) | [↑ SymbolicAI](../README.md) | [ArgumentAnalysis →](../ArgumentAnalysis/README.md)
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SmartContracts
@@ -638,7 +638,7 @@ maturity: PRODUCTION=27
 | `SC-12 Foundry Testing` | [Lean](../Lean/) (types dépendants, Curry-Howard) | Vérification formelle = même ambition (prouver la correction), deux faces : SMT automatique (SMTChecker) vs interactif expressif (Lean 4) |
 | `SC-14 Formal Verification` | [Lean](../Lean/) + [GameTheory](../../GameTheory/) (`game_theory_lean/SocialChoice/`) | Pont vérification : Certora/SMTChecker prouvent les invariants Solidity ; Lean 4 prouve les théorèmes économiques (Arrow, Voting). Même méthodologie, deux domaines |
 | `SC-15 ZKP / SC-16 HE / SC-17 E2E Voting` | [Lean](../Lean/) + [Tweety](../Tweety/) (cryptographic protocols argumentation) | Cryptographie avancée : ZKP = preuve sans divulgation ; HE = calcul sur chiffré ; vote E2E = anonymat + vérifiabilité. Tweety argumente formellement ces protocoles |
-| `SC-11 LLM-Assisted Contracts` | [Argument_Analysis](../Argument_Analysis/) (Semantic Kernel) | LLM generates Solidity contracts via SK : prompting structuré → code Solidity → validation Foundry |
+| `SC-11 LLM-Assisted Contracts` | [ArgumentAnalysis](../ArgumentAnalysis/) (Semantic Kernel) | LLM generates Solidity contracts via SK : prompting structuré → code Solidity → validation Foundry |
 | `SC-9 DAO Governance / SC-17 E2E Voting` | [GameTheory](../../GameTheory/) (Arrow.lean, Voting.lean) | Vote on-chain = instance concrète du théorème d'Arrow (impossibilité) ; vote E2E = instance des Banks sets + monotonie STV |
 | `SC-15 ZK-SNARKs / SC-23 Cross-Chain Bridges` | [SemanticWeb](../SemanticWeb/) (ontologies de domaine) | Modèle Solidity ↔ ontologie OWL : un smart contract peut être annoté sémantiquement (propriétés vérifiables par raisonneur) ; cross-chain bridges = ontologies inter-chaînes |
 

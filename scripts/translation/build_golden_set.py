@@ -39,7 +39,7 @@ OUTPUT = REPO_ROOT / "translations" / "translation_golden_set.json"
 # Prefixes exclus : vendores tiers et caches de build (memes exemptions que
 # count_code_sorry.py / l'inventaire i18n cycle 38).
 EXCLUDE_PARTS = {".lake", "_peters", "node_modules", ".git", "__pycache__"}
-EXCLUDE_PREFIXES = ("MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum/",)
+EXCLUDE_PREFIXES = ("MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum/",)
 
 KIND_NOTEBOOK = "notebook"
 KIND_README = "readme"
