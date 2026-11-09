@@ -71,23 +71,65 @@ def _papermill_block_of(path: Path):
 
 # --- notebook_helpers : executeur de kernel generique (2 points d'ecriture) ---
 
-def test_notebook_helpers_save_strips_stale_block(tmp_path):
+def test_notebook_helpers_save_strip_is_optin(tmp_path):
+    """#24434, second site : le strip de save() est opt-in, comme celui de
+    write_notebook.
+
+    Ce test disait l'inverse jusqu'au 2026-11-04. Le contrat a change parce
+    que la mesure l'a contredit : ``save()`` n'a **aucun** appelant executeur
+    (mesure du 04/11 : seuls la docstring du module, la delegation de
+    ``NotebookCellCorrector.save()`` et les tests l'appellent), tandis que
+    les quatre executeurs qui reecrivent des sorties fraiches appellent
+    ``strip_stale_papermill_metadata`` directement (``dotnet_executor``,
+    ``exec_single_cell``, ``exec_dotnet_persist``, ``execute_qcpy_docker``).
+    Le strip inconditionnel ne protegeait donc aucun run reel, et detruisait
+    la provenance a chaque edition markdown-only : mesure sur
+    ``SW-09-JSONLD-Python.ipynb``, 1 insertion / 984 suppressions, 107 blocs
+    ``metadata.papermill`` et 37 blocs ``metadata.execution`` tombes a 0
+    sans qu'un seul ``execution_count`` bouge.
+    """
     from notebook_helpers import NotebookHelper
     p = _write_fake_nb(tmp_path / "nb.ipynb")
     helper = NotebookHelper(str(p))
     helper.notebook["cells"][0]["execution_count"] = 1
     helper.save()
+    assert _papermill_block_of(p) is not None, (
+        "NotebookHelper.save() sans re-execution ne doit PAS retirer le bloc "
+        "papermill (provenance du dernier run, #24434)")
+    helper.save(strip_stale_metadata=True)
     assert _papermill_block_of(p) is None, (
-        "NotebookHelper.save() doit retirer le bloc perime : les sorties "
-        "fraiches decrivent CE run, pas la passe papermill du 2026-05-31")
+        "l'opt-in strip_stale_metadata=True doit retirer le bloc perime : "
+        "c'est le chemin des executeurs qui ont reecrit des sorties")
 
 
-def test_notebook_helpers_write_notebook_strips_stale_block(tmp_path):
+def test_cell_iterator_save_preserves_papermill(tmp_path):
+    """Le troisieme chemin (``CellIterator.save()``) heritait du strip via sa
+    delegation : il detruisait la provenance sur une simple correction de
+    source. Il doit desormais la preserver par defaut."""
+    from notebook_helpers import CellIterator
+    p = _write_fake_nb(tmp_path / "nb.ipynb")
+    iterator = CellIterator(str(p), cell_index=0, objective="noop")
+    iterator.save()
+    assert _papermill_block_of(p) is not None, (
+        "CellIterator.save() corrige une source, il ne reexecute rien : la "
+        "provenance papermill doit survivre (#24434)")
+
+
+def test_notebook_helpers_write_notebook_strip_is_optin(tmp_path):
     from notebook_helpers import write_notebook
     p = _write_fake_nb(tmp_path / "nb.ipynb")
     nb = json.loads(p.read_text(encoding="utf-8"))
+    # Depuis #24434, write_notebook est un writer generique : le strip est
+    # opt-in (strip_stale_metadata=True). Les executeurs qui reecrivent les
+    # sorties strippent explicitement ; une ecriture sans re-execution
+    # preserve la provenance papermill du carnet.
     write_notebook(str(p), nb)
-    assert _papermill_block_of(p) is None
+    assert _papermill_block_of(p) is not None, (
+        "write_notebook sans re-execution ne doit PAS retirer le bloc "
+        "papermill (provenance du dernier run, #24434)")
+    write_notebook(str(p), nb, strip_stale_metadata=True)
+    assert _papermill_block_of(p) is None, (
+        "l'opt-in strip_stale_metadata=True doit retirer le bloc perime")
 
 
 # --- exec_dotnet_persist : point d'ecriture extrait (kernel .NET requis sinon) ---

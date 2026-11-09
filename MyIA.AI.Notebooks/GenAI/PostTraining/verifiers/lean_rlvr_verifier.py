@@ -24,8 +24,9 @@ consomme vit dans PT-11 (#10317) / PT-12 (#10508).
 Recette d'execution (rule F — vrai outil, pas de contournement) ::
 
     export PATH="$HOME/.elan/bin:$PATH"     # elan requis (elan 4.x verifie)
-    # un projet lake minimal (lakefile.toml + lean-toolchain) est cree
-    # automatiquement comme cwd ; chaque rollout nourrit un theoreme via stdin.
+    # chaque rollout passe par l'organe confine scripts/lean/lean_exec.py
+    # (mode stdin, admission + budget) ; un projet lake minimal (lakefile.toml
+    # + lean-toolchain) est cree automatiquement comme cwd.
 
 Exemple ::
 
@@ -38,9 +39,11 @@ Exemple ::
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 import subprocess
+import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -75,8 +78,118 @@ _AXIOMS_RE = re.compile(r"depends on axioms: \[([^\]]*)\]")
 #  - cas sans axiome : "'name' does not depend on any axioms"
 _NO_AXIOMS_RE = re.compile(r"does not depend on any axioms")
 
-# Toolchain pinnee (presente sur po-2025 ; regle F verifiee firsthand).
+# Repli documente seulement : le pin PAR DEFAUT est la toolchain reellement
+# installee sur le runner (``_installed_toolchain``, regle F). Ce tag a ete le
+# defaut historique ; mesure 2026-11-03 (po-2027) : absent des toolchains
+# installees, chaque rollout partait en download elan.
 DEFAULT_TOOLCHAIN = "leanprover/lean4:v4.27.0"
+_LOGGER = logging.getLogger(__name__)
+
+
+def _installed_toolchain() -> str | None:
+    """Toolchain reellement installee, ou ``None`` si non mesurable.
+
+    Le tag reconstruit depuis ``lean --version`` décrit le défaut elan résolu ;
+    il ne constitue pas un pin reproductible entre environnements.
+    """
+    bin_dir = str(Path.home() / ".elan" / "bin")
+    try:
+        proc = subprocess.run(
+            ["lean", "--version"], capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=30,
+            env={**os.environ,
+                 "PATH": bin_dir + os.pathsep + os.environ.get("PATH", "")},
+        )
+        match = re.search(r"version (\d+\.\d+\.\d+)", proc.stdout + proc.stderr)
+        if match:
+            return f"leanprover/lean4:v{match.group(1)}"
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return None
+
+
+class OrganRefusedError(RuntimeError):
+    """L'organe confine ``lean_exec`` a refuse le rollout ou n'a pas rendu de
+    verdict (admission, budget, environnement casse).
+
+    Cause d'INFRA, pas un signal de la politique : ``reward`` la traduit en
+    reward 0.0 avec ``hack_flags=['organ_refused']`` et la raison dans
+    ``raw_output`` — visible a l'audit, jamais confondu avec une preuve
+    fausse (See #23054).
+    """
+
+
+# -- organe confine lean_exec (migration #23054, precedent lean_server #23031)
+#
+# Le verifieur ne spawn plus ``lake`` lui-meme : chaque rollout passe par
+# l'organe confine ``scripts/lean/lean_exec.py`` (admission machine-wide,
+# budget, kill-tree) en mode stdin (``--stdin-file``, capacite #23031). La
+# delegation reprend le client partage ``lean_notebook_utils._organ_run`` et
+# la marche-de-parents de ``agent_tests/lean_server.py`` ; l'entree
+# correspondante de ``scripts/lean/lake_direct_allowlist.json`` est retiree.
+_lean_nbu = None
+
+
+def _find_lean_exec() -> Path:
+    """Localise l'organe confine ``scripts/lean/lean_exec.py``.
+
+    Marche de parents depuis ce fichier (verifiers/ -> PostTraining ->
+    GenAI -> ... -> racine du depot), meme strategie que
+    ``agent_tests/lean_server.py`` depuis #23031.
+    """
+    current = Path(__file__).resolve().parent
+    for _ in range(14):
+        candidate = current / "scripts" / "lean" / "lean_exec.py"
+        if candidate.exists():
+            return candidate.resolve()
+        current = current.parent
+        if current == current.parent:
+            break
+    raise FileNotFoundError(
+        "scripts/lean/lean_exec.py introuvable — organe d'execution confine "
+        "requis par LeanRLVRVerifier (See #15666, #23054)"
+    )
+
+
+def _get_lean_notebook_utils():
+    """Renvoie le module client partage ``lean_notebook_utils`` (1er usage).
+
+    Chargement LAZY par chemin direct : ce module est importe par le corpus
+    et les tests sur des runners nus — le client ne doit peser qu'au
+    premier rollout reel (meme discipline que ``lean_server._lean_utils``).
+    """
+    global _lean_nbu
+    if _lean_nbu is None:
+        import importlib.util as ilu
+
+        client_path = (
+            _find_lean_exec().parents[2]
+            / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean"
+            / "lean_notebook_utils.py"
+        )
+        spec = ilu.spec_from_file_location("_lean_nbu_client", client_path)
+        mod = ilu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _lean_nbu = mod
+    return _lean_nbu
+
+
+def _organ_run(project: str, cmd_args: list, timeout: int,
+               stdin_file: str | None = None) -> tuple[int, str, str]:
+    """Confie ``cmd_args`` a l'organe confine (See #15666, migration prioritaire).
+
+    Le payload decrit ce que L'ORGANE lancera (admission machine-wide, budget,
+    kill-tree) — ce fichier ne spawn aucun processus lake. Contrat du client
+    partage : ``(rc_enfant, out, err)``, -1 = timeout, -2 = organe
+    refuse/injoignable (raison dans err). Meme forme de wrapper local que
+    ``lean_server._organ_run`` (#23031).
+    """
+    nbu = _get_lean_notebook_utils()
+    organ = _find_lean_exec()
+    return nbu._organ_run(
+        project, cmd_args, timeout,
+        stdin_file=stdin_file, organ=organ,
+    )
 
 
 @dataclass
@@ -128,17 +241,53 @@ class LeanRLVRVerifier:
     def __init__(
         self,
         project_dir: str | os.PathLike | None = None,
-        toolchain: str = DEFAULT_TOOLCHAIN,
+        toolchain: str | None = None,
         timeout: float = 60.0,
         whitelist: Iterable[str] | None = None,
         verbose: bool = False,
     ) -> None:
+        if toolchain is None:
+            toolchain, pin_source = self._resolve_toolchain(project_dir)
+        else:
+            pin_source = "argument"
         self.toolchain = toolchain
+        self.pin_source = pin_source
+        _LOGGER.info("RLVR Lean toolchain=%s pin=%s", self.toolchain, self.pin_source)
         self.timeout = timeout
         self.whitelist = set(whitelist) if whitelist is not None else set(CORE_WHITELIST)
         self.verbose = verbose
-        self._elan_bin = str(Path.home() / ".elan" / "bin")
         self.project_dir = self._ensure_skeleton(project_dir)
+
+    @staticmethod
+    def _resolve_toolchain(project_dir: str | os.PathLike | None) -> tuple[str, str]:
+        """Résout env > pin du projet > défaut elan, avec provenance explicite."""
+        environment_pin = os.environ.get("ELAN_TOOLCHAIN")
+        if environment_pin:
+            return environment_pin, "env"
+
+        project_root = (
+            Path(project_dir)
+            if project_dir is not None
+            else Path.home() / ".cache" / "rlvr-lean"
+        )
+        toolchain_file = project_root / "lean-toolchain"
+        try:
+            project_pin = toolchain_file.read_text(encoding="utf-8").strip()
+        except OSError:
+            project_pin = ""
+        if project_pin:
+            return project_pin, "projet"
+
+        resolved_default = _installed_toolchain()
+        if resolved_default:
+            return resolved_default, "default_resolu"
+
+        _LOGGER.warning(
+            "RLVR Lean: aucun pin env/projet ni défaut elan mesurable; "
+            "repli explicite vers %s (un téléchargement elan peut être requis)",
+            DEFAULT_TOOLCHAIN,
+        )
+        return DEFAULT_TOOLCHAIN, "fallback_averti"
 
     # -- squelette lake minimal ------------------------------------------------
 
@@ -159,8 +308,11 @@ class LeanRLVRVerifier:
         lakefile = root / "lakefile.toml"
         if not lakefile.exists():
             lakefile.write_text('name = "RlvrSkeleton"\n', encoding="utf-8")
+        # Squelette géré : écrire les pins explicites, mais garder le défaut
+        # elan comme défaut de résolution plutôt que de le figer dans le cache.
+        managed = project_dir is None
         toolchain_file = root / "lean-toolchain"
-        if not toolchain_file.exists():
+        if self.pin_source != "default_resolu" and (managed or not toolchain_file.exists()):
             toolchain_file.write_text(f"{self.toolchain}\n", encoding="utf-8")
         # Rechauffement : un premier `lake env` cree le manifest du projet
         # (sinon il est cree au 1er rollout, faussant la mesure de latence).
@@ -178,19 +330,39 @@ class LeanRLVRVerifier:
     # -- execution -------------------------------------------------------------
 
     def _run_lean(self, source: str) -> str:
-        """Execute ``lake env lean --stdin`` sur une source, retourne la sortie."""
-        env = os.environ.copy()
-        env["PATH"] = self._elan_bin + os.pathsep + env.get("PATH", "")
-        proc = subprocess.run(
-            ["lake", "env", "lean", "--stdin"],
-            cwd=str(self.project_dir),
-            input=source,
-            capture_output=True,
-            text=True, encoding="utf-8", errors="replace",
-            timeout=self.timeout,
-            env=env,
-        )
-        return proc.stdout + "\n" + proc.stderr
+        """Execute ``lake env lean --stdin`` VIA l'organe confine (See #23054).
+
+        ``lake`` est passe EN NOM NU, jamais en chemin resolu : l'organe
+        execute l'enfant via bash, ou un chemin Windows
+        (``C:\\...\\lake.EXE``) est une commande introuvable — mesure
+        2026-11-03, meme contrat que ``lean_server`` (#23031). La source
+        passe par ``--stdin-file`` (capacite stdin #23031). Contrat du
+        client partage : ``-1`` = timeout (remonte en
+        ``subprocess.TimeoutExpired``, repris par ``reward``), ``-2`` =
+        organe refuse/injoignable (remonte en ``OrganRefusedError``).
+        """
+        with tempfile.NamedTemporaryFile(
+                "w", suffix=".lean", delete=False, encoding="utf-8") as fh:
+            fh.write(source)
+            stdin_path = fh.name
+        try:
+            rc, out, err = _organ_run(
+                str(self.project_dir),
+                ["lake", "env", "lean", "--stdin"],
+                int(self.timeout),
+                stdin_file=stdin_path,
+            )
+        finally:
+            try:
+                os.unlink(stdin_path)
+            except OSError:
+                pass
+        if rc == -1:
+            raise subprocess.TimeoutExpired(
+                "lake env lean --stdin", self.timeout)
+        if rc == -2:
+            raise OrganRefusedError(err or out or "lean_exec: refus sans raison")
+        return out + "\n" + err
 
     # -- API publique ----------------------------------------------------------
 
@@ -238,6 +410,13 @@ class LeanRLVRVerifier:
             return RLVRResult(
                 reward=0.0, compiles=False, hack_flags=["timeout"],
                 raw_output=f"<timeout after {self.timeout}s>", elapsed_s=self.timeout,
+            )
+        except OrganRefusedError as exc:
+            return RLVRResult(
+                reward=0.0, compiles=False,
+                hack_flags=["organ_refused"],
+                raw_output=f"<organ_refused> {exc}",
+                elapsed_s=time.perf_counter() - t0,
             )
         return self._parse(raw, elapsed)
 
@@ -295,7 +474,15 @@ class LeanRLVRVerifier:
     def _parse(self, raw: str, elapsed: float, name: str = "rlvr_task") -> RLVRResult:
         """Parse la sortie Lean et applique l'oracle de reward hacking."""
         has_error = bool(_LEAN_ERROR_RE.search(raw))
-        compiles = not has_error
+        # Preuve d'elaboration : ``#print axioms`` imprime TOUJOURS une des
+        # deux lignes sur un rollout reel. Sans elles, le moteur n'a pas
+        # rendu de verdict (echec de lancement, crash de l'enfant) — ce
+        # n'est PAS une preuve qui compile. Mesure 2026-11-03 : sortie bash
+        # « command not found » (lake en chemin Windows passe a l'organe)
+        # parsait en compiles=True, reward 1.0 — fausse recompense pure.
+        elaborated = bool(
+            _AXIOMS_RE.search(raw) or _NO_AXIOMS_RE.search(raw))
+        compiles = not has_error and elaborated
 
         # Axomes : soit "depends on axioms: [...]", soit "does not depend".
         axioms: list = []

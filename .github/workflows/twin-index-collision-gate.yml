@@ -65,11 +65,28 @@ name: Twin index collision gate
 #    premiere fois, et le `GITHUB_TOKEN` d'une PR de fork est en **lecture
 #    seule**.
 #
-# 2. LA BASE LUE. La porte compare `pull_request.base.sha`, c'est-a-dire
-#    `main` **au moment du push**. Une collision introduite sur `main`
-#    **entretemps** par une autre PR n'est pas vue ici : la porte referme la
-#    course au push suivant, pas au merge. Le garde de merge reste donc
+# 2. LA COURSE ENTRE DEUX PRs PARALLELES (fermee par la couche OPEN-PR).
+#    La porte compare `pull_request.base.sha` -- `main` **au moment du push**.
+#    Deux PRs qui prennent le meme ordinal pendant que ni l'une ni l'autre
+#    n'est mergee passent donc **toutes les deux** sur cette base : `main` ne
+#    porte encore rien, et le verdict est VERT des deux cotes.
+#    C'est exactement ce qui est arrive a #24010 : au push, sa base ne
+#    portait pas les ordinals `0024`-`0027` apportes par #23832, encore
+#    OUVERTE. Les deux ont ete mergees, et `main` a recu trois doublons
+#    (`0024`, `0025`, `0026`) que #24518 a dus renumeroter deux jours plus
+#    tard -- en rouge fleet-wide sur `Scripts Tests (CPU)`.
+#    La couche OPEN-PR ferme cette course **avant** le merge : l'ordinal
+#    revendique par une autre PR OUVERTE est refuse, avec le meme geste
+#    (`git mv` PUR) que les autres verdicts. Elle lit l'API des fichiers des
+#    PRs ouvertes -- l'ordinal est dans le NOM du fichier, aucun fetch n'est
 #    necessaire.
+#    Ce qui subsiste : une PR creee apres le passage de la porte d'une autre
+#    qui revendique le meme ordinal (la porte ne se rejoue pas sur un push
+#    qui ne touche pas le registre). La PR creee en DERNIER voit toujours
+#    l'autre -- une PR existe des son push -- : c'est donc toujours la
+#    plus recente qui est refusee, et l'ordinal est renumerote avant qu'une
+#    seule des deux ne merge. Le garde de merge reste necessaire pour le
+#    cas ou la porte n'a pas pu lire l'API.
 
 on:
   pull_request:
@@ -77,10 +94,16 @@ on:
       - 'scripts/notebook_tools/twin_pairs.d/**'
       - 'scripts/notebook_tools/check_twin_index_collisions.py'
       - 'scripts/notebook_tools/check_twin_parity.py'
+      - 'scripts/notebook_tools/twin_open_claims.py'
   workflow_dispatch:
 
 permissions:
   contents: read
+  # Les ordinals revendiques par les PRs OUVERTES se lisent par l'API des
+  # fichiers d'une PR (`pull-requests: read`) : c'est la couche qui ferme la
+  # course entre deux PRs paralleles (cf. « La course que la base ne voit
+  # pas », plus bas).
+  pull-requests: read
 
 concurrency:
   group: twin-index-collision-gate-${{ github.ref }}
@@ -104,6 +127,30 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Collect the ordinal claims of the open PRs
+        # La porte de base juge cette PR contre SA base au push : deux PRs
+        # paralleles qui prennent le meme ordinal passent donc toutes les deux,
+        # et la collision n'apparait qu'apres le merge -- sur `main`, en rouge
+        # fleet-wide (mesure #22299 : #24010 vs #23832, `0024`-`0026`).
+        # L'ordinal est dans le NOM du fichier : la liste des fichiers d'une
+        # PR suffit, aucun fetch n'est necessaire.
+        # Un API illisible ne BLOQUE pas la PR (la porte de base, elle, reste
+        # appliquee) : le motif est affiche par l'organe, pas masque.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set +e
+          python scripts/notebook_tools/twin_open_claims.py --json \
+              > twin_open_claims.json 2>twin_open_claims_stderr.log
+          EXIT=$?
+          set -e
+          if [ "$EXIT" != "0" ]; then
+            echo "::notice title=Twin ordinal claims illisibles::L'API des PRs ouvertes n'a pas pu etre lue (rc=$EXIT). La porte d'index s'applique sans la couche OPEN-PR."
+            cat twin_open_claims_stderr.log || true
+            rm -f twin_open_claims.json
+          fi
+
       - name: Gate the attestation index collisions
         # `EVENT`/`PR_BASE`/`PR_HEAD` sont lus dans l'evenement, jamais deduits
         # de la forme du checkout : le checkout d'un evenement `pull_request`
@@ -114,6 +161,7 @@ jobs:
           EVENT: ${{ github.event_name }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set +e
           BASE=origin/main
@@ -123,8 +171,12 @@ jobs:
             HEAD_SHA="$PR_HEAD"
           fi
           echo "Twin index collision : base=$BASE  head=$HEAD_SHA"
+          CLAIMS_ARGS=""
+          if [ -s twin_open_claims.json ]; then
+            CLAIMS_ARGS="--open-claims twin_open_claims.json --head-pr $PR_NUMBER"
+          fi
           python scripts/notebook_tools/check_twin_index_collisions.py \
-              --base "$BASE" --head "$HEAD_SHA" --gate --json \
+              --base "$BASE" --head "$HEAD_SHA" --gate --json $CLAIMS_ARGS \
               > twin_index_collision.json 2>twin_index_collision_stderr.log
           EXIT=$?
           set -e

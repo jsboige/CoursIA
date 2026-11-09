@@ -22385,9 +22385,9 @@ assert(totalSupply() == sum(balanceOf(a) for a in holders));
 n'est **pas** encodé dans le contrat : `SimpleERC20` n'a pas de fonction `invariant_ok()` qui le vérifie à chaque transition. C'est **le test Foundry** qui observe les comptes après chaque opération et constate que `Σ balances = totalSupply` (cf. les `print` de SC-7).
 
 Autrement dit : côté Solidity, l'invariant est **observé empiriquement**, sur un nombre fini de cas. Il est vrai **sur tous les cas qu'on a essayés**, mais on n'a pas exclu qu'un cas futur le brise. C'est le défaut classique du testing par rapport aux méthodes formelles.",,,,,,,,80038189a759e67f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,a3541c94,code,fr,c66ac54942f7ad37,"# Code 1.1 - Vérification empirique de l'invariant sur un mini-état ERC-20
+MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,a3541c94,code,fr,38feb8140277516a,"# Code 1.1 - Vérification empirique de l'invariant sur un mini-état ERC-20
 #
-# On rejoue ici la meme trace que dans Lean-24 (mint 100 / mint 50 / transfer
+# On rejoue ici la meme trace que dans Lean-23 (mint 100 / mint 50 / transfer
 # 30 / burn 20), mais en Python -- sans deploiement. C'est l'ombre Pure Python
 # du contrat Solidity, et le pivot est le meme : `Σ balances = totalSupply` a
 # chaque etape. La difference : ici on sait qu'on l'a verifie, la-bas on sait
@@ -22432,14 +22432,15 @@ def transfer(s, src, dst, amount):
     return s_new
 
 
-# Trace jouet alignee sur Lean-24 code 1.1
+# Trace jouet alignee sur Lean-23 code 1.1
 s = initial_state(n_holders=5)
 print(""Trace jouet (5 ops) :"")
 assert_invariant(s, ""t0 init"")
 s = mint(s, 0, 100); assert_invariant(s, ""t1 mint Alice 100"")
 s = mint(s, 1, 50); assert_invariant(s, ""t2 mint Bob 50"")
 s = transfer(s, 0, 1, 30); assert_invariant(s, ""t3 Alice -> Bob 30, supply INCHANGE"")
-s = burn(s, 0, 20); assert_invariant(s, ""t4 burn Alice 20"")",,,,,,,,c66ac54942f7ad37,,,,,,,,,,,,,,,
+s = burn(s, 0, 20); assert_invariant(s, ""t4 burn Alice 20"")
+",,,,,,,,38feb8140277516a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,fd6df62c,markdown,fr,784c5a48f097b391,"**Lecture de la sortie.** L'invariant tient à chaque étape, et le `transfer` (t3) est le pivot : `totalSupply` reste à 150 alors que les soldes d'Alice et de Bob ont bougé de 30 unités. C'est ce **double comptage** (ce que chaque adresse possède vs ce que le contrat dit détenir au total) qui sert de signature à un jeton ERC-20 et qu'on voit dans SC-7 comme une simple `mapping` mise à jour à chaque transition.
 
 **Côté Solidity** (cf. SC-7 cellule 3) :
@@ -22514,18 +22515,19 @@ print(""Lean (erc20_lean/ERC20/Ops.lean) :"")
 print(""  def burn (s src amount) : State n :="")
 print(""    { balances := fun a => if a = src then s.balances a - amount else s.balances a,"")
 print(""      totalSupply := s.totalSupply - amount }    # <- -amount ici ET la"")",,,,,,,,b0685ee312a63e9a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,bd9769a3,markdown,fr,76454e09f091fad0,"**Lecture des codes.** Les trois transitions ont **la même structure** dans les deux langages :
+MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,bd9769a3,markdown,fr,9f8c86835de9624b,"**Lecture des codes.** Les trois transitions ont **la même structure** dans les deux langages :
 - `transfer` : `from -= amount` ET `to += amount`, **offre inchangée**.
 - `mint` : `to += amount` ET `totalSupply += amount` (parallèle).
 - `burn` : `from -= amount` ET `totalSupply -= amount` (parallèle, garde `from >= amount`).
 
-C'est précisément cette **simétrie** entre soldes et offre qui fait marcher l'invariant. Le lac Lean ne se contente pas de **croire** cette symétrie : il la **vérifie** par des preuves non-triviales (l'extraction additive `sum_univ_split` joue un rôle clé pour `transfer_preserves_supply`, détaillé dans [`Lean-23`](../../Lean/Lean-23-ERC20-Invariant-Companion.ipynb) section 2.1).
+C'est précisément cette **symétrie** entre soldes et offre qui fait marcher l'invariant. Le lac Lean ne se contente pas de **croire** cette symétrie : il la **vérifie** par des preuves non-triviales (l'extraction additive `sum_univ_split` joue un rôle clé pour `transfer_preserves_supply`, détaillé dans [`Lean-23`](../../Lean/Lean-23-ERC20-Invariant-Companion.ipynb) section 2.1).
 
 **Différence de garde-fou** :
 - **Solidity** : la garde `require(balance >= amount, ""..."")` *revert* sur sous-flow. Sans le test Foundry, un cas extrême pourrait passer inaperçu.
-- **Lean** : la garde `s.balances src ≥ amount` est une **hypothèse** du théorème `transfer_preserves_supply`, et le théorème `transfer_no_underflow` la démontre comme une **conséquence** : pas besoin de la tester, elle sort de la preuve.
+- **Lean** : la garde `s.balances src ≥ amount` est une **hypothèse** des deux théorèmes, jamais une conséquence : `transfer_preserves_supply` (`ERC20/Invariant.lean` l.93-94) et `transfer_no_underflow` (l.132-133) la prennent tous deux en hypothèse et ne démontrent rien à son sujet. Elle n'est donc pas dispensable : sans elle, `transfer` soustrait en `ℕ` (troncature à 0) et l'invariant peut être violé.
 
-Autrement dit, Lean transforme « est-ce que mon test couvre tous les cas » en « est-ce que la preuve couvre tous les cas » -- la question est devenue **mécanique**, plus affaire de pari sur la qualité du test.",,,,,,,,76454e09f091fad0,,,,,,,,,,,,,,,
+Autrement dit, Lean transforme « est-ce que mon test couvre tous les cas » en « est-ce que la preuve couvre tous les cas » -- la question est devenue **mécanique**, plus affaire de pari sur la qualité du test.
+",,,,,,,,9f8c86835de9624b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,37064d15,markdown,fr,92d3d05b82681b37,"## 3. Et la garantie formelle, concrètement ?
 
 L'idée du lac `erc20_lean` est de remplacer « on observe l'invariant sur 10 000 cas Foundry » par « on **prouve** l'invariant pour les 2^N × M^L cas possibles, par induction sur la trace ». Voici la chaîne complète :
@@ -22541,13 +22543,13 @@ L'idée du lac `erc20_lean` est de remplacer « on observe l'invariant sur 10 00
 Le dernier maillon -- **l'induction** -- est ce qui transforme le testing par cas en garantie universelle : peu importe le nombre d'opérations, peu importe l'ordre choisi, l'invariant survivra.
 
 **Note technique (pas requise pour la compréhension du notebook)** : la preuve de `transfer_preserves_supply` repose sur l'**extraction additive d'un point d'une somme finie** (`sum_univ_split` dans `Invariant.lean`), parce que la soustraction `∑ f - ∑ g` est **fausse sur ℕ** en général -- l'extraction évite cette piège en sortant l'adresse `src` (puis `dst`) de la somme avant l'arithmétique `ℕ`. C'est une preuve pour chaque théorème, mais pour des valeurs critiques de cette complexité, c'est ce qui distingue « la preuve marche sur le papier » de « la preuve est solide en présence de cas-limites d'arithmétique ℕ ».",,,,,,,,92d3d05b82681b37,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,75013ad5,code,fr,051add522ef5f21e,"# Code 3.1 - Monte-Carlo : ""empirique"" vs ""formel"" sur le MEME scenario
+MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,75013ad5,code,fr,02907dc8f7af5c81,"# Code 3.1 - Monte-Carlo : ""empirique"" vs ""formel"" sur le MEME scenario
 #
-# On rejoue 5 000 transitions aleatoires sur le mini-contrat Python, on
+# On rejoue 10 000 transitions aleatoires sur le mini-contrat Python, on
 # observe l'invariant a chaque etape, et on rapporte le nombre de violations.
 # C'est la version ""empirique"" de la garantie formelle : on cherche une seule
-# violation sur 5 000 cas. La garantie du lac dit : ""0 violation sur TOUS les
-# cas (infini denombrable)"". Si on n'en trouve pas en 5 000, ce n'est pas une
+# violation sur 10 000 cas. La garantie du lac dit : ""0 violation sur TOUS les
+# cas (infini denombrable)"". Si on n'en trouve pas en 10 000, ce n'est pas une
 # preuve ; c'est juste un faisceau d'indices confortant la these.
 
 import random
@@ -22619,7 +22621,8 @@ if result[""violations_invariant""] == 0 and result[""pire_solde""] >= 0 and res
     print(""peut exister (e.g. une trace dedoublee sur 2^1000 transitions)."")
     print(""La GARANTIE formelle du lac erc20_lean, elle, est mecanique et exhaustive."")
 else:
-    print(""ATTENTION : un cas pathologique a ete observe -- voir `pire_solde` ci-dessus."")",,,,,,,,051add522ef5f21e,,,,,,,,,,,,,,,
+    print(""ATTENTION : un cas pathologique a ete observe -- voir `pire_solde` ci-dessus."")
+",,,,,,,,02907dc8f7af5c81,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,94e654c1,markdown,fr,cdd7d0200ec26865,"**Lecture de la simulation.** Sur 10 000 transitions (200 traces × 50 ops), aucune violation de l'invariant n'a été observée -- ce qui est cohérent avec la garantie formelle du lac. Mais c'est aussi **attendu** : la structure des transitions (les 3 règles métier alignées) **réalise** l'invariant par construction ; pour qu'il y ait violation, il faudrait qu'un `mint`/`burn`/`transfer` rompe la symétrie. Aucune ne le peut.
 
 **C'est précisément** le point que la preuve Lean formalise : non pas que **nous** croyons la symétrie correcte, mais que **le compilateur** l'a vérifiée pour nous, sur les 2^N cas que `n = Fin n` permet.
@@ -22629,7 +22632,7 @@ MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lea
 - Lean = « le compilateur a vérifié tous les cas pour `n = Fin n` » → garantie mécanique, reproductible, auditable.
 
 Pour ERC-20 spécifiquement, le gap entre « testing » et « preuve formelle » n'est pas critique (les bugs ERC-20 viennent plutôt de la **sémantique d'exécution** : réentrance, gas, etc., pas de l'invariant de conservation). Mais **pour des invariants plus subtils** (e.g. « pas d'`approve` redondant », « pas de `mint` après `renounceOwnership` »), l'écart devient décisif. Le pattern formel du lac s'applique indépendamment de la complexité du prédicat.",,,,,,,,cdd7d0200ec26865,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,488f0932,markdown,fr,c65eb58059d95b04,"## 4. Résumé
+MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,488f0932,markdown,fr,9ec79384ab092a66,"## 4. Résumé
 
 Ce notebook a confronté deux points de vue sur le **même** invariant ERC-20 `Σ balances = totalSupply` :
 
@@ -22648,9 +22651,10 @@ Pour ERC-20 spécifiquement, l'invariant de conservation est **simple** (3 règl
 
 - **Le lac `erc20_lean`** : `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/`. Voir `README.md` (modèle et théorèmes), `ERC20/Invariant.lean` (les 5 théorèmes de préservation + l'induction).
 - **Le notebook noyau** : [`Lean-23-ERC20-Invariant-Companion.ipynb`](../../Lean/Lean-23-ERC20-Invariant-Companion.ipynb) -- qui interroge directement le lac via `#check` et `#print axioms`.
-- **Le contrat Solidity** : `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/` -- le pendant déployable (et déployé par SC-7).
-- **Le notebook SC-7** : `[SC-07-Token-Standards-Python.ipynb](./SC-07-Token-Standards-Python.ipynb)` -- la base runtime, sans laquelle la garantie formelle n'aurait pas de scène.",,,,,,,,c65eb58059d95b04,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,705e941a,markdown,fr,53eb4138b1f289f1,"## Exercices
+- **Le contrat Solidity déployable** : [`SC-07-Token-Standards-Python.ipynb`](./SC-07-Token-Standards-Python.ipynb) (cellule 7, `contract SimpleERC20 is IERC20`) -- c'est le pendant déployable, déployé par SC-7 sur anvil ; il n'a pas de fichier `.sol` dans le dépôt. Le répertoire `erc20_lean/` cité plus haut est le **lac Lean**, pas un contrat.
+- **Le notebook SC-7** : `[SC-07-Token-Standards-Python.ipynb](./SC-07-Token-Standards-Python.ipynb)` -- la base runtime, sans laquelle la garantie formelle n'aurait pas de scène.
+",,,,,,,,9ec79384ab092a66,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,705e941a,markdown,fr,642b0c3ca414965b,"## Exercices
 
 Les exercices portent sur la **confrontation** runtime ↔ formel : les trois registres couvrent les structures Solidity (équivalence Python), la garantie Lean (ce qui reste vrai même quand Solidity ne le garantit pas), et la rédaction de tests Foundry ciblés sur les invariants (le pont pratique entre les deux).
 
@@ -22664,11 +22668,12 @@ Construisez un contrat `BrokenERC20` qui **brise** l'invariant `Σ balances = to
 
 ### Exercice 2 : mesure du pire cas Monte-Carlo
 
-Étendez le code 3.1 à `n_trials=1000, ops_per_trial=200` (200 000 transitions au total). Vérifiez qu'aucune violation n'apparaît. Si une apparaît, c'est un **bug** de votre implémentation Python (pas du contrat Solidity), à investiguer :rivez une version corrigée.
+Étendez le code 3.1 à `n_trials=1000, ops_per_trial=200` (200 000 transitions au total). Vérifiez qu'aucune violation n'apparaît. Si une apparaît, c'est un **bug** de votre implémentation Python (pas du contrat Solidity), à investiguer : écrivez une version corrigée.
 
 **Indice 1 (statistique)** : sur 200 000 transitions, la borne supérieure de Hoeffding pour `P(violation|transition)` à 95 % de confiance avec 0 violation observée est `P ≤ 3/200000 ≈ 1.5e-5`. C'est très confortable, mais pas zéro.
 
-**Indice 2 (sanité)** : `result[""pire_solde""] >= 0` (soldes jamais négatifs) et `result[""pire_ecart_totalSupply""] == 0` (offre toujours alignée aux soldes). Si `pire_solde < 0`, votre garde `require(balance >= amount)` côté Python a une fuite.",,,,,,,,53eb4138b1f289f1,,,,,,,,,,,,,,,
+**Indice 2 (sanité)** : `result[""pire_solde""] >= 0` (soldes jamais négatifs) et `result[""pire_ecart_totalSupply""] == 0` (offre toujours alignée aux soldes). Si `pire_solde < 0`, votre garde `require(balance >= amount)` côté Python a une fuite.
+",,,,,,,,642b0c3ca414965b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,b9f70586,code,fr,cd12f1eac1bdbdab,"# Exercice 1 : contrat Solidity qui brise l'invariant Σ = totalSupply
 # TODO etudiant : hereditez de IERC20, implementez un transfer buggy qui
 # modifie totalSupply par erreur, deployez-le, montrez la violation en
@@ -22725,16 +22730,17 @@ result = None  # TODO etudiant : {""hypothese_cle"": ""..."", ""lemme_intermedia
 # Etape 4 : reperer omega et expliquer pourquoi il suffit (somme deja decomposee).
 
 print(""Exercice a completer : pinpoint de la preuve de transfer_preserves_supply"")",,,,,,,,f241aa3f1988f54d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,0a17eb56,markdown,fr,be29bc2a1b5dfc30,"## Références
+MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,0a17eb56,markdown,fr,7b80637e6fa497bb,"## Références
 
 - **Issue #4047** — Epic source du lac `erc20_lean` (phase 1 livrée : scaffolding, modèle, transitions gardées, préservation de l'invariant, absence de `sorry`).
 - **EIP-20** (F. Vogelsteller, V. Buterin, 2015) — *ERC-20 Token Standard*, Ethereum.
-- **K. Bhargavan et al.**, *Formal Verification of Smart Contracts*, WPCE 2016 — pionnier sur la vérification formelle Bitcoin/Ethereum ; citée dans le `README.md` du lac `erc20_lean`.
+- **K. Bhargavan et al.**, *Formal Verification of Smart Contracts: Short Paper*, **PLAS@CCS 2016** (Vienna, 24/10/2016, p. 91-96, DOI 10.1145/2993600.2993611) — pionnier sur la vérification formelle Bitcoin/Ethereum ; citée dans le `README.md` du lac `erc20_lean`.
 - **`SC-07-Token-Standards-Python.ipynb`** (`SmartContracts/02-Solidity-Advanced/`) — le notebook précédent, qui déploie `SimpleERC20` sur anvil et démontre les transitions ERC-20.
 - **Le lac `erc20_lean`** (`MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/`) — la version Lean 4 + Mathlib, le « moteur formel » du présent notebook.
 - **Le notebook compagnon [`Lean-23`](../../Lean/Lean-23-ERC20-Invariant-Companion.ipynb)** — qui interroge directement le lac Lean pour ses `#check` réels.
 - **EPIC #4980** — convention i18n Lean (sibling pair FR/EN dans `ERC20.lean` / `ERC20_en.lean`).
-- Notebooks associés : `[SC-08-DeFi-Primitives-Python](./SC-08-DeFi-Primitives-Python.ipynb)`, `[SC-11 (LLM-Assisted)](./SC-11-LLM-Assisted-Python.ipynb)`, `[Lean-22 (Galois) >](../../Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb)`.",,,,,,,,be29bc2a1b5dfc30,,,,,,,,,,,,,,,
+- Notebooks associés : `[SC-08-DeFi-Primitives-Python](./SC-08-DeFi-Primitives-Python.ipynb)`, `[SC-11 (LLM-Assisted)](./SC-11-LLM-Assisted-Python.ipynb)`, `[Lean-22 (Galois) >](../../Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb)`.
+",,,,,,,,7b80637e6fa497bb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs-Python.ipynb,f1a2b3c4,markdown,fr,6882a1e5a71039a2,"### Exercice : Implementer la transformation de Fiat-Shamir
 
 La classe `SchnorrZKP` ci-dessus implemente la transformation de Fiat-Shamir pour

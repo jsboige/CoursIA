@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Texte
-pedagogical_count: 48
-breakdown: Texte=48
-maturity: BETA=41, ALPHA=4, DRAFT=3
+pedagogical_count: 49
+breakdown: Texte=49
+maturity: BETA=41, ALPHA=4, DRAFT=4
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
@@ -141,6 +141,14 @@ Le notebook **23** franchit le dernier mur : le pipeline qui vivait dans des cel
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
 | 23 | `23_Du_Notebook_A_L_Application.ipynb` | **Servir le RAG du 05** : extraction fidèle du pipeline (corpus Lincoln-Douglas, chunking, embeddings, k-NN, génération citée) puis passage au service — API **FastAPI** (`/health`, `/query`) sur port dynamique testée par appels `httpx` réels, UI **Gradio** passant uniquement par l'API (test des sources déterministes : deux canaux, mêmes chunks), mesure du coût par couche (transport pur de l'ordre de la milliseconde, surcout `/query` noyé dans la variance de génération — négatif sur 2 questions sur 3 au run commis), normalisation des scalaires numpy pour le contrat JSON, arrêt propre des services, 3 exercices C.1 | — |
+
+### Tier 9 : Agents génératifs — mémoire, réflexion et planification
+
+Le carnet **24** descend d'un cran dans l'échelle après le service du tier 8 : il simule un **petit monde** — 5 agents sur une grille 5×5, deux jours de jeu — d'après Park et al. 2023 (*Generative Agents: Interactive Simulacra of Human Behavior*, UIST '23, arXiv 2304.03442). L'architecture du papier est reproduite terme à terme sur le vrai moteur : flux de mémoire noté par le LLM à la création, récupération à trois composantes (récence qui décroît de 0,995 par heure de jeu depuis le dernier accès, importance 1-10, pertinence par similarité d'embeddings), réflexion au seuil d'importance cumulée dont les insights citent leurs preuves, planification journalière rejouée chaque matin, et boucle d'action où un dialogue n'existe que si deux agents partagent une case. L'expérience de propagation du papier est rejouée à notre échelle, avec sa vérification anti-hallucination : un agent qui « dit » savoir ne compte que si sa mémoire porte effectivement l'information. Au run commis, 50 appels LLM réels au stack vLLM local donnent une propagation de 40 % sur le vernissage et 0 % sur la candidature, contre 52 % et 32 % chez les 25 agents du papier — l'écart est un effet d'échelle, et le carnet dit lequel. 3 exercices C.1.
+
+| # | Notebook | Description | Durée |
+|---|----------|-------------|-------|
+| 24 | `24_Generative_Agents_MiniMonde.ipynb` | **Simuler un petit monde** : 5 agents, grille 5×5, deux jours — flux de mémoire noté par le LLM, récupération à trois composantes (récence 0,995/h, importance, pertinence par embeddings), réflexion au seuil dont les insights citent leurs preuves, planification journalière, boucle d'action avec dialogues conditionnés par la récupération propre à chaque agent ; expérience de propagation rejouée avec vérification anti-hallucination — au run commis 50 appels LLM réels, vernissage 40 % / candidature 0 % contre 52 % / 32 % au papier (écart d'échelle, mesuré), 3 exercices C.1 | 60 min |
 
 ## Prérequis
 
