@@ -1,0 +1,162 @@
+titre_4e,section_4e,chapitre_4e,titre_3e,section_3e,chapitre_3e,similarite,statut
+What Is AI?,1.1,1,What Is AI?,1.1,1,1.00,commun
+The Foundations of Artificial Intelligence,1.2,1,The Foundations of Artificial Intelligence,1.2,1,1.00,commun
+The History of Artificial Intelligence,1.3,1,The History of Artificial Intelligence,1.3,1,1.00,commun
+The State of the Art,1.4,1,The State of the Art,1.4,1,1.00,commun
+Risks and Benefits of AI,1.5,1,,,,,absent_de_la_3e
+Agents and Environments,2.1,2,Agents and Environments,2.1,2,1.00,commun
+Good Behavior: The Concept of Rationality,2.2,2,Good Behavior: The Concept of Rationality,2.2,2,1.00,commun
+The Nature of Environments,2.3,2,The Nature of Environments,2.3,2,1.00,commun
+The Structure of Agents,2.4,2,The Structure of Agents,2.4,2,1.00,commun
+Problem-Solving Agents,3.1,3,Problem-Solving Agents,3.1,3,1.00,commun
+Example Problems,3.2,3,Example Problems,3.2,3,1.00,commun
+Search Algorithms,3.3,3,Searching for Solutions,3.3,3,declare,renomme
+Uninformed Search Strategies,3.4,3,Uninformed Search Strategies,3.4,3,1.00,commun
+Informed (Heuristic) Search Strategies,3.5,3,Informed (Heuristic) Search Strategies,3.5,3,1.00,commun
+Heuristic Functions,3.6,3,Heuristic Functions,3.6,3,1.00,commun
+Local Search and Optimization Problems,4.1,4,Local Search Algorithms and Optimization Problems,4.1,4,0.87,commun
+Local Search in Continuous Spaces,4.2,4,Local Search in Continuous Spaces,4.2,4,1.00,commun
+Search with Nondeterministic Actions,4.3,4,Searching with Nondeterministic Actions,4.3,4,0.96,commun
+Search in Partially Observable Environments,4.4,4,Searching with Partial Observations,4.4,4,declare,renomme
+Online Search Agents and Unknown Environments,4.5,4,Online Search Agents and Unknown Environments,4.5,4,1.00,commun
+Game Theory,5.1,5,Games,5.1,5,declare,renomme
+Optimal Decisions in Games,5.2,5,Optimal Decisions in Games,5.2,5,1.00,commun
+Heuristic Alpha–Beta Tree Search,5.3,5,Alpha–Beta Pruning,5.3,5,declare,renomme
+Monte Carlo Tree Search,5.4,5,,,,,absent_de_la_3e
+Stochastic Games,5.5,5,Stochastic Games,5.5,5,1.00,commun
+Partially Observable Games,5.6,5,Partially Observable Games,5.6,5,1.00,commun
+Limitations of Game Search Algorithms,5.7,5,State-of-the-Art Game Programs,5.7,5,declare,renomme
+Defining Constraint Satisfaction Problems,6.1,6,Defining Constraint Satisfaction Problems,6.1,6,1.00,commun
+Constraint Propagation: Inference in CSPs,6.2,6,Constraint Propagation: Inference in CSPs,6.2,6,1.00,commun
+Backtracking Search for CSPs,6.3,6,Backtracking Search for CSPs,6.3,6,1.00,commun
+Local Search for CSPs,6.4,6,Local Search for CSPs,6.4,6,1.00,commun
+The Structure of Problems,6.5,6,The Structure of Problems,6.5,6,1.00,commun
+Knowledge-Based Agents,7.1,7,Knowledge-Based Agents,7.1,7,1.00,commun
+The Wumpus World,7.2,7,The Wumpus World,7.2,7,1.00,commun
+Logic,7.3,7,Logic,7.3,7,1.00,commun
+Propositional Logic: A Very Simple Logic,7.4,7,Propositional Logic: A Very Simple Logic,7.4,7,1.00,commun
+Propositional Theorem Proving,7.5,7,Propositional Theorem Proving,7.5,7,1.00,commun
+Effective Propositional Model Checking,7.6,7,Effective Propositional Model Checking,7.6,7,1.00,commun
+Agents Based on Propositional Logic,7.7,7,Agents Based on Propositional Logic,7.7,7,1.00,commun
+Representation Revisited,8.1,8,Representation Revisited,8.1,8,1.00,commun
+Syntax and Semantics of First-Order Logic,8.2,8,Syntax and Semantics of First-Order Logic,8.2,8,1.00,commun
+Using First-Order Logic,8.3,8,Using First-Order Logic,8.3,8,1.00,commun
+Knowledge Engineering in First-Order Logic,8.4,8,Knowledge Engineering in First-Order Logic,8.4,8,1.00,commun
+Propositional vs. First-Order Inference,9.1,9,Propositional vs. First-Order Inference,9.1,9,1.00,commun
+Unification and First-Order Inference,9.2,9,Unification and Lifting,9.2,9,declare,renomme
+Forward Chaining,9.3,9,Forward Chaining,9.3,9,1.00,commun
+Backward Chaining,9.4,9,Backward Chaining,9.4,9,1.00,commun
+Resolution,9.5,9,Resolution,9.5,9,1.00,commun
+Ontological Engineering,10.1,10,Ontological Engineering,12.1,12,1.00,commun
+Categories and Objects,10.2,10,Categories and Objects,12.2,12,1.00,commun
+Events,10.3,10,Events,12.3,12,1.00,commun
+Mental Objects and Modal Logic,10.4,10,Mental Events and Mental Objects,12.4,12,declare,renomme
+Reasoning Systems for Categories,10.5,10,Reasoning Systems for Categories,12.5,12,1.00,commun
+Reasoning with Default Information,10.6,10,Reasoning with Default Information,12.6,12,1.00,commun
+Definition of Classical Planning,11.1,11,Definition of Classical Planning,10.1,10,1.00,commun
+Algorithms for Classical Planning,11.2,11,Algorithms for Planning as State-Space Search,10.2,10,declare,renomme
+Heuristics for Planning,11.3,11,,,,,absent_de_la_3e
+Hierarchical Planning,11.4,11,Hierarchical Planning,11.2,11,1.00,commun
+Planning and Acting in Nondeterministic Domains,11.5,11,Planning and Acting in Nondeterministic Domains,11.3,11,1.00,commun
+"Time, Schedules, and Resources",11.6,11,"Time, Schedules, and Resources",11.1,11,1.00,commun
+Analysis of Planning Approaches,11.7,11,Analysis of Planning Approaches,10.5,10,1.00,commun
+Acting under Uncertainty,12.1,12,Acting under Uncertainty,13.1,13,1.00,commun
+Basic Probability Notation,12.2,12,Basic Probability Notation,13.2,13,1.00,commun
+Inference Using Full Joint Distributions,12.3,12,Inference Using Full Joint Distributions,13.3,13,1.00,commun
+Independence,12.4,12,Independence,13.4,13,1.00,commun
+Bayes’ Rule and Its Use,12.5,12,Bayes’ Rule and Its Use,13.5,13,1.00,commun
+Naive Bayes Models,12.6,12,,,,,absent_de_la_3e
+The Wumpus World Revisited,12.7,12,The Wumpus World Revisited,13.6,13,1.00,commun
+Representing Knowledge in an Uncertain Domain,13.1,13,Representing Knowledge in an Uncertain Domain,14.1,14,1.00,commun
+The Semantics of Bayesian Networks,13.2,13,The Semantics of Bayesian Networks,14.2,14,1.00,commun
+Exact Inference in Bayesian Networks,13.3,13,Exact Inference in Bayesian Networks,14.4,14,1.00,commun
+Approximate Inference for Bayesian Networks,13.4,13,Approximate Inference in Bayesian Networks,14.5,14,1.00,commun
+Causal Networks,13.5,13,,,,,absent_de_la_3e
+Time and Uncertainty,14.1,14,Time and Uncertainty,15.1,15,1.00,commun
+Inference in Temporal Models,14.2,14,Inference in Temporal Models,15.2,15,1.00,commun
+Hidden Markov Models,14.3,14,Hidden Markov Models,15.3,15,1.00,commun
+Kalman Filters,14.4,14,Kalman Filters,15.4,15,1.00,commun
+Dynamic Bayesian Networks,14.5,14,Dynamic Bayesian Networks,15.5,15,1.00,commun
+Relational Probability Models,15.1,15,Relational and First-Order Probability Models,14.6,14,0.78,commun
+Open-Universe Probability Models,15.2,15,,,,,absent_de_la_3e
+Keeping Track of a Complex World,15.3,15,,,,,absent_de_la_3e
+Programs as Probability Models,15.4,15,,,,,absent_de_la_3e
+Combining Beliefs and Desires under Uncertainty,16.1,16,Combining Beliefs and Desires under Uncertainty,16.1,16,1.00,commun
+The Basis of Utility Theory,16.2,16,The Basis of Utility Theory,16.2,16,1.00,commun
+Utility Functions,16.3,16,Utility Functions,16.3,16,1.00,commun
+Multiattribute Utility Functions,16.4,16,Multiattribute Utility Functions,16.4,16,1.00,commun
+Decision Networks,16.5,16,Decision Networks,16.5,16,1.00,commun
+The Value of Information,16.6,16,The Value of Information,16.6,16,1.00,commun
+Unknown Preferences,16.7,16,,,,,absent_de_la_3e
+Sequential Decision Problems,17.1,17,Sequential Decision Problems,17.1,17,1.00,commun
+Algorithms for MDPs,17.2,17,,,,,absent_de_la_3e
+Bandit Problems,17.3,17,,,,,absent_de_la_3e
+Partially Observable MDPs,17.4,17,Partially Observable MDPs,17.4,17,1.00,commun
+Algorithms for Solving POMDPs,17.5,17,,,,,absent_de_la_3e
+Properties of Multiagent Environments,18.1,18,,,,,absent_de_la_3e
+Non-Cooperative Game Theory,18.2,18,Decisions with Multiple Agents: Game Theory,17.5,17,declare,renomme
+Cooperative Game Theory,18.3,18,Mechanism Design,17.6,17,declare,renomme
+Making Collective Decisions,18.4,18,,,,,absent_de_la_3e
+Forms of Learning,19.1,19,Forms of Learning,18.1,18,1.00,commun
+Supervised Learning,19.2,19,Supervised Learning,18.2,18,1.00,commun
+Learning Decision Trees,19.3,19,Learning Decision Trees,18.3,18,1.00,commun
+Model Selection and Optimization,19.4,19,Evaluating and Choosing the Best Hypothesis,18.4,18,declare,renomme
+The Theory of Learning,19.5,19,The Theory of Learning,18.5,18,1.00,commun
+Linear Regression and Classification,19.6,19,Regression and Classification with Linear Models,18.6,18,declare,renomme
+Nonparametric Models,19.7,19,Nonparametric Models,18.8,18,1.00,commun
+Ensemble Learning,19.8,19,Ensemble Learning,18.10,18,1.00,commun
+Developing Machine Learning Systems,19.9,19,Practical Machine Learning,18.11,18,declare,renomme
+Statistical Learning,20.1,20,Statistical Learning,20.1,20,1.00,commun
+Learning with Complete Data,20.2,20,Learning with Complete Data,20.2,20,1.00,commun
+Learning with Hidden Variables: The EM Algorithm,20.3,20,Learning with Hidden Variables: The EM Algorithm,20.3,20,1.00,commun
+Simple Feedforward Networks,21.1,21,,,,,absent_de_la_3e
+Computation Graphs for Deep Learning,21.2,21,,,,,absent_de_la_3e
+Convolutional Networks,21.3,21,,,,,absent_de_la_3e
+Learning Algorithms,21.4,21,,,,,absent_de_la_3e
+Generalization,21.5,21,,,,,absent_de_la_3e
+Recurrent Neural Networks,21.6,21,,,,,absent_de_la_3e
+Unsupervised Learning and Transfer Learning,21.7,21,,,,,absent_de_la_3e
+Applications,21.8,21,,,,,absent_de_la_3e
+Learning from Rewards,22.1,22,,,,,absent_de_la_3e
+Passive Reinforcement Learning,22.2,22,Passive Reinforcement Learning,21.2,21,1.00,commun
+Active Reinforcement Learning,22.3,22,Active Reinforcement Learning,21.3,21,1.00,commun
+Generalization in Reinforcement Learning,22.4,22,Generalization in Reinforcement Learning,21.4,21,1.00,commun
+Policy Search,22.5,22,Policy Search,21.5,21,1.00,commun
+Apprenticeship and Inverse Reinforcement Learning,22.6,22,,,,,absent_de_la_3e
+Applications of Reinforcement Learning,22.7,22,Applications of Reinforcement Learning,21.6,21,1.00,commun
+Language Models,23.1,23,Language Models,22.1,22,1.00,commun
+Grammar,23.2,23,Phrase Structure Grammars,23.1,23,declare,renomme
+Parsing,23.3,23,Syntactic Analysis (Parsing),23.2,23,declare,renomme
+Augmented Grammars,23.4,23,Augmented Grammars and Semantic Interpretation,23.3,23,declare,renomme
+Complications of Real Natural Language,23.5,23,,,,,absent_de_la_3e
+Natural Language Tasks,23.6,23,Text Classification,22.2,22,declare,regroupe
+Natural Language Tasks,23.6,23,Information Retrieval,22.3,22,declare,regroupe
+Natural Language Tasks,23.6,23,Information Extraction,22.4,22,declare,regroupe
+Word Embeddings,24.1,24,,,,,absent_de_la_3e
+Recurrent Neural Networks for NLP,24.2,24,,,,,absent_de_la_3e
+Sequence-to-Sequence Models,24.3,24,,,,,absent_de_la_3e
+The Transformer Architecture,24.4,24,,,,,absent_de_la_3e
+Pretraining and Transfer Learning,24.5,24,,,,,absent_de_la_3e
+State of the art,24.6,24,,,,,absent_de_la_3e
+Introduction,25.1,25,Introduction,21.1,21,1.00,commun
+Image Formation,25.2,25,Image Formation,24.1,24,1.00,commun
+Simple Image Features,25.3,25,,,,,absent_de_la_3e
+Classifying Images,25.4,25,,,,,absent_de_la_3e
+Detecting Objects,25.5,25,,,,,absent_de_la_3e
+The 3D World,25.6,25,Reconstructing the 3D World,24.4,24,declare,renomme
+Using Computer Vision,25.7,25,Using Vision,24.6,24,declare,renomme
+Robots,26.1,26,Introduction,25.1,25,declare,renomme
+Robot Hardware,26.2,26,Robot Hardware,25.2,25,1.00,commun
+What kind of problem is robotics solving?,26.3,26,,,,,absent_de_la_3e
+Robotic Perception,26.4,26,Robotic Perception,25.3,25,1.00,commun
+Planning and Control,26.5,26,Planning to Move,25.4,25,declare,renomme
+Planning Uncertain Movements,26.6,26,Planning Uncertain Movements,25.5,25,1.00,commun
+Reinforcement Learning in Robotics,26.7,26,,,,,absent_de_la_3e
+Humans and Robots,26.8,26,,,,,absent_de_la_3e
+Alternative Robotic Frameworks,26.9,26,,,,,absent_de_la_3e
+Application Domains,26.10,26,Application Domains,25.8,25,1.00,commun
+The Limits of AI,27.1,27,Weak AI: Can Machines Act Intelligently?,26.1,26,declare,renomme
+Can Machines Really Think?,27.2,27,Strong AI: Can Machines Really Think?,26.2,26,declare,renomme
+The Ethics of AI,27.3,27,The Ethics and Risks of Developing Artificial Intelligence,26.3,26,declare,renomme
+AI Components,28.1,28,Agent Components,27.1,27,declare,renomme
+AI Architectures,28.2,28,Agent Architectures,27.2,27,declare,renomme

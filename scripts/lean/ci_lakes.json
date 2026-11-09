@@ -253,12 +253,13 @@
       "display-name": "mathlib_examples",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
       "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lean-toolchain"
       ],
-      "axiom-include-i18n-siblings": "false"
+      "axiom-include-i18n-siblings": "true"
     },
     {
       "lake": "socialchoicepeters",
@@ -517,6 +518,26 @@
         "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lake-manifest.json",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+      ]
+    },
+    {
+      "lake": "conway",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean",
+      "display-name": "conway_lean",
+      "sorry-baseline": "1",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "axiom-allow-axioms": "@scripts/lean/allow_axioms_conway.txt",
+      "axiom-fail-on-sorry": "false",
+      "axiom-include-i18n-siblings": "true",
+      "build-threads": "1",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json",
+        "scripts/lean/allow_axioms_conway.txt"
       ]
     }
   ]
