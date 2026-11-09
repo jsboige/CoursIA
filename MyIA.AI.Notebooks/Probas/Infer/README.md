@@ -77,9 +77,9 @@ Les notebooks lettrés complètent un palier précis du parcours principal. Leur
 
 #### [Infer-02b : Debugging et Bonnes Pratiques](Infer-02b-Debugging-Bonnes-Pratiques.ipynb)
 
-**Repère de parcours** : 45 min — Troubleshooting, diagnostics et algorithmes.
+**Repère de parcours** : Troubleshooting, diagnostics et algorithmes.
 
-**Durée** : 60 min | **Prérequis** : Tous les notebooks précédents
+**Durée estimée** : 45 min | **Prérequis** : Tous les notebooks précédents
 
 **Objectifs** :
 
