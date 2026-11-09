@@ -908,8 +908,8 @@ class TestAlphabeticSeriesSlots(unittest.TestCase):
         positions -- `index_key` les confondait sous `3d`."""
         with tempfile.TemporaryDirectory() as td:
             repo = Path(td)
-            base = _init_repo(repo, ["MyIA.AI.Notebooks/GenAI/3D/3D-01-NeRF-From-Scratch.ipynb"])
-            _write(repo, "MyIA.AI.Notebooks/GenAI/3D/3D-02-NeRF-Critic.ipynb")
+            base = _init_repo(repo, ["MyIA.AI.Notebooks/GenAI/3D/3D-01-NeRF-Depuis-Zero-Python.ipynb"])
+            _write(repo, "MyIA.AI.Notebooks/GenAI/3D/3D-02-NeRF-Critique-Python.ipynb")
             _commit(repo)
 
             r = _run(repo, base)
@@ -963,8 +963,8 @@ class ScanMainCollisionTests(unittest.TestCase):
     def test_scan_slot_distinguishes_digit_leading_numbers(self):
         # 3D-01 et 3D-02 sont DEUX positions distinctes ; `index_key` les
         # confond sous `3d`, le scan les separe.
-        a = "MyIA.AI.Notebooks/GenAI/3D/3D-01-NeRF-From-Scratch.ipynb"
-        b = "MyIA.AI.Notebooks/GenAI/3D/3D-02-NeRF-Critic.ipynb"
+        a = "MyIA.AI.Notebooks/GenAI/3D/3D-01-NeRF-Depuis-Zero-Python.ipynb"
+        b = "MyIA.AI.Notebooks/GenAI/3D/3D-02-NeRF-Critique-Python.ipynb"
         self.assertNotEqual(csr._scan_slot(a), csr._scan_slot(b),
                             "3D-01 et 3D-02 ne peuvent pas bucketer ensemble")
 
