@@ -1,3 +1,5 @@
+> RAPPORT — 2026-09-25 — bug non déterministe `#r "nuget:"` dans dotnet-interactive 1.0.617701 (po-2027) : reproduction, workaround à la demande, conversion de masse réfutée — figé
+
 # Reproduction et workaround : bug `#r nuget:` dans dotnet-interactive 1.0.617701 (po-2027)
 
 **Issue** : #17361 — `env: restore #r nuget/#r file cassé dans dotnet-interactive sur po-2027 (les 2 builds) — re-exec .NET bloquée`

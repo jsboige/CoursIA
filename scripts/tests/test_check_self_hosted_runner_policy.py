@@ -1566,6 +1566,47 @@ def test_22954_baselined_job_is_tolerated_but_named_in_the_report(tmp_path):
     assert result.timeout_baselined == 1
 
 
+def test_23349_stale_timeout_baseline_diagnostic_is_read_only(tmp_path, capsys):
+    """Le diagnostic repere les cles mortes sans muter la baseline."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: safe scheduled workflow
+        on:
+          schedule:
+            - cron: '0 0 * * *'
+        jobs:
+          current-debt:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo still unbounded
+          already-bounded:
+            timeout-minutes: 10
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo bounded
+        """)
+    baseline = tmp_path / "baseline.txt"
+    original = (
+        "pr-gate-stale-sweep.yml:current-debt\n"
+        "pr-gate-stale-sweep.yml:already-bounded\n"
+        "removed-workflow.yml:old-job\n"
+    )
+    baseline.write_text(original, encoding="utf-8")
+
+    rc = policy.main([
+        "--show-stale-baseline",
+        "--workflows-dir", str(tmp_path),
+        "--baseline", str(baseline),
+    ])
+
+    assert rc == policy.EXIT_OK
+    output = capsys.readouterr().out
+    assert "cles obsoletes dans la baseline: 2" in output
+    assert "ORPHELINE pr-gate-stale-sweep.yml:already-bounded" in output
+    assert "ORPHELINE removed-workflow.yml:old-job" in output
+    assert "current-debt" not in output
+    assert baseline.read_text(encoding="utf-8") == original
+
+
 def test_22954_ratchet_is_opt_in_so_synthetic_workflows_stay_single_purpose(tmp_path):
     """#22954 : sans le drapeau, le cliquet ne parle pas.
 
