@@ -1,7 +1,7 @@
 - name: "GameTheory-13b Safe Subgame Solving"
   family: GameTheory
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-13c-Safe-Subgame-Solving-CSharp.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-CSharp.ipynb
   parity_level: semantic
   numbering_exception: "Quasi-paire 13b/13c (inventaire P2 #23119, section GameTheory) : meme numero de base 13 et meme titre Safe-Subgame-Solving, lettres d'accretion differentes (b cote Python, c cote CSharp ; ni 13c-Python ni 13b-CSharp dans l'arbre, mesure au main 2026-10-31). Promouvoir la paire en accrétions alignees est une decision de mapping renvoyee a l'arbitrage EPIC (#12933 section 6) ; cette entree documente l'etat reel sans le prejudger."
   known_differences:
