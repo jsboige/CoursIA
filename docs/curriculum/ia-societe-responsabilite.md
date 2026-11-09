@@ -52,11 +52,11 @@ Du débat informel à la sémantique formelle : comment une position survit-elle
 
 | # | Étape | Durée | Ce qu'on y voit |
 |---|---|---|---|
-| 10 | [Argumentation-01 : Modèle de Toulmin](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb) | 30 min | Les 6 composants d'un argument (claim/data/warrant/backing/qualifier/rebuttal), audit de complétude, **pont computationnel vers Dung** : les rebuttals deviennent des attaques |
-| 11 | [Argumentation-02 : Détection de sophismes](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb) | — | Les sophismes détectés par règles — le versant symbolique |
+| 10 | [Argumentation-01 : Modèle de Toulmin](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01-Toulmin-Model-Python.ipynb) | 30 min | Les 6 composants d'un argument (claim/data/warrant/backing/qualifier/rebuttal), audit de complétude, **pont computationnel vers Dung** : les rebuttals deviennent des attaques |
+| 11 | [Argumentation-02 : Détection de sophismes](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb) | — | Les sophismes détectés par règles — le versant symbolique |
 | 12 | [FallacyDetection-01 : Taxonomie](../../MyIA.AI.Notebooks/GenAI/FallacyDetection/01_taxonomy_intro.ipynb) | — | Le versant GenAI du même problème : taxonomies académiques vs taxonomy Argumentum, ce que le NLP sait (et ne sait pas) reconnaître |
-| 13 | [Argumentation-03 : Sémantiques de Dung](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb) | 35 min | Grounded, preferred, stable **reconstruites de zéro** sur un cas où les trois divergent : quel claim survit au débat dépend de la sémantique choisie |
-| 14 | [Gouvernance Multi-Agents](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb) | 35 min | **Agréger des positions d'agents** : scrutins sur les mêmes préférences, justice de Gini, bruit byzantin vs choix social formel — la jonction des actes 3 et 4 |
+| 13 | [Argumentation-03 : Sémantiques de Dung](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb) | 35 min | Grounded, preferred, stable **reconstruites de zéro** sur un cas où les trois divergent : quel claim survit au débat dépend de la sémantique choisie |
+| 14 | [Gouvernance Multi-Agents](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb) | 35 min | **Agréger des positions d'agents** : scrutins sur les mêmes préférences, justice de Gini, bruit byzantin vs choix social formel — la jonction des actes 3 et 4 |
 
 **Fil de l'acte** : la délibération a une mécanique — structure (Toulmin), pathologies (sophismes), survie (Dung), agrégation (gouvernance).
 
@@ -75,9 +75,9 @@ Le déploiement n'est pas la fin de la responsabilité. La série [GenAI/Securit
 
 - [2.5d-Derive-Distribution-Deploiement](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5d-Derive-Distribution-Deploiement.ipynb) — la responsabilité continue en production : trois dérives construites, trois détecteurs, deux corrections.
 - [SC-01b : Choix social formel en Lean](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) (80 min) — Arrow, Sen, électeur médian certifiés.
-- [Argumentation-03b : AF à valeurs](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03b-Value-Based-AF-Python.ipynb) et [03c : ranking](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03c-Ranking-Semantics-Python.ipynb) (35 min chacun) — l'audience et la force changent le verdict.
+- [Argumentation-03b : AF à valeurs](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03b-Value-Based-AF-Python.ipynb) et [03c : ranking](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03c-Ranking-Semantics-Python.ipynb) (35 min chacun) — l'audience et la force changent le verdict.
 - [FallacyDetection 02-05](../../MyIA.AI.Notebooks/GenAI/FallacyDetection/) — paysage des datasets, écart de couverture taxonomique, matrice N×M, construction de dataset équilibré.
-- [Argumentation-05 : vérification formelle avec Tweety](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb) (45 min) — le solveur réel JVM, mode fail-loud.
+- [Argumentation-05 : vérification formelle avec Tweety](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05-Formal-Verification-Python.ipynb) (45 min) — le solveur réel JVM, mode fail-loud.
 
 ## Pourquoi ce parcours existe
 

@@ -1,7 +1,7 @@
 name: dotnet-ArgumentAnalysis
 
 # Tranche 1 de #14696 (orphelins .sln signales par ai-01 msg-20260905T014247) :
-# le trio Argument_Analysis — CoursIA.GSheetSync, CoursIA.OwlAdapter,
+# le trio ArgumentAnalysis — CoursIA.GSheetSync, CoursIA.OwlAdapter,
 # CoursIA.DatasetUpdater.Prompts + leurs 3 projets de tests xunit — est
 # exclu du glob parent depuis #5167, absent de MyIA.CoursIA.sln, et n'a
 # donc JAMAIS eu de CI. Cette PR les ajoute a la solution (entrees
@@ -30,13 +30,13 @@ on:
   push:
     branches: [main]
     paths:
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/**'
       - '.github/workflows/dotnet-ArgumentAnalysis.yml'
       - 'MyIA.CoursIA.sln'
   pull_request:
     types: [opened, synchronize, edited, reopened]
     paths:
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/**'
       - '.github/workflows/dotnet-ArgumentAnalysis.yml'
       - 'MyIA.CoursIA.sln'
   workflow_dispatch:
@@ -50,9 +50,9 @@ concurrency:
 
 env:
   AA_TESTS: >-
-    MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/CoursIA-GSheetSync/src/CoursIA.GSheetSync.Tests/CoursIA.GSheetSync.Tests.csproj
-    MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/CoursIA-OwlAdapter/src/CoursIA.OwlAdapter.Tests/CoursIA.OwlAdapter.Tests.csproj
-    MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/CoursIA-DatasetUpdater-Prompts/src/CoursIA.DatasetUpdater.Prompts.Tests/CoursIA.DatasetUpdater.Prompts.Tests.csproj
+    MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/CoursIA-GSheetSync/src/CoursIA.GSheetSync.Tests/CoursIA.GSheetSync.Tests.csproj
+    MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/CoursIA-OwlAdapter/src/CoursIA.OwlAdapter.Tests/CoursIA.OwlAdapter.Tests.csproj
+    MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/CoursIA-DatasetUpdater-Prompts/src/CoursIA.DatasetUpdater.Prompts.Tests/CoursIA.DatasetUpdater.Prompts.Tests.csproj
 
 jobs:
   dotnet-argumentanalysis-linux:

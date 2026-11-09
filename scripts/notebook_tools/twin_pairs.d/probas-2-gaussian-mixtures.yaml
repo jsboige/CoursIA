@@ -35,3 +35,16 @@
     concernee). Aucun strip outille en attente (probe banner 0, papermill 0, machine paths 0). B.0 OK : body PR #13283
     documente diagnostic derive C.4 categorie c (moteur upstream) + verdict CAUSE_FIXED. Refs: Fixes #13277,
     See #12778 #12476 #13275.'
+  - '2026-11-03 (myia-po-2028:CoursIA, PR #24445, commit 8d45d8c4a4) : realignment markdown-only des lectures
+    de PyMC-02-Gaussian-Mixtures sur les sorties re-executees au head -- cellules 7/9/13/20/30/32/36 (mu 16.10,
+    r_hat 1.001 sur mu, ESS bulk 9072, P 0.557, tronquee 16.10/3.50 ; GMM manuel 830 divergences / R-hat 1.033 /
+    ESS 104, composantes mu 17.4/25.9 sigma 4.3/5.6 poids 0.55/0.45 ; NormalMixture 59 divergences / R-hat 1.011 /
+    ESS 501, verdict nuance r_hat juste au-dessus du seuil). 30 remplacements, sources des cellules code
+    byte-identiques, sorties et execution_count intacts (exception C.2 markdown). Jumeau C# Infer-2 non touche.
+    --update en DERNIERE operation (cf #8957).'
+  - '2026-11-04 (myia-po-2028:CoursIA, PR #24445, commit ae515201ce) : complement markdown-only du commit
+    8d45d8c4a4 -- lectures restantes citees par la review, alignees sur les sorties re-executees au head
+    (divergences 32 et 59 annotees "~14x moins" vs 463/830 avant ; R-hat max 1.003 et 1.011 ; ESS bulk
+    695 et 501 ; poids du melange 56/44 corrige en 55% normaux / 45% exceptionnels ; reference PyMC
+    5.28.5 -> 6.3.2 documentation). 3 cellules md touchees, 0 cellule code, sorties et execution_count
+    intacts (exception C.2 markdown). Jumeau C# Infer-2 non touche. --update en DERNIERE operation (cf #8957).'
