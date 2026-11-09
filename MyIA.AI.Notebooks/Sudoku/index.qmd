@@ -69,7 +69,7 @@ pip install jupyter z3-solver networkx matplotlib
 jupyter notebook MyIA.AI.Notebooks/Sudoku/
 
 # Track C# .NET Interactive
-dotnet tool install --global Microsoft.dotnet-interactive
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 jupyter kernelspec list             # vérifier la présence de .net-csharp
 ```
 
