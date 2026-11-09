@@ -280,7 +280,7 @@
     },
     {
       "id": "ede1a114-3f65-4142-aa52-a95cb9dbf6c2",
-      "path": "probas/reSEAUX-bayesiens",
+      "path": "probas/reseaux-bayesiens",
       "decimal_path": "5",
       "depth": 0,
       "label_fr": "Réseaux bayésiens",
@@ -300,7 +300,7 @@
     },
     {
       "id": "0c8e6dc8-da08-4c1a-9e3a-5bb6b1a35d95",
-      "path": "probas/reSEAUX-bayesiens/d-separation",
+      "path": "probas/reseaux-bayesiens/d-separation",
       "decimal_path": "5.1",
       "depth": 1,
       "label_fr": "D-séparation",
@@ -319,7 +319,7 @@
     },
     {
       "id": "fad99e0c-6b25-41d5-9643-5bbea96ba738",
-      "path": "probas/reSEAUX-bayesiens/explaining-away",
+      "path": "probas/reseaux-bayesiens/explaining-away",
       "decimal_path": "5.2",
       "depth": 1,
       "label_fr": "Phénomène d'explaining away",
