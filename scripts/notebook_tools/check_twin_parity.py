@@ -433,7 +433,7 @@ def python_twin_candidates(csharp_path: str, known_paths: set[str]) -> list[str]
 
         Tweety-10-MLN-CSharp.ipynb      <-> Tweety-10-MLN-Python.ipynb          (suffixe retire)
         Sudoku-07-Norvig-CSharp.ipynb    <-> Sudoku-07-Norvig-Python.ipynb (suffixe substitue)
-        SW-10-CSharp-RDFStar.ipynb      <-> SW-10-Python-RDFStar.ipynb   (position mediale)
+        SW-10-RDFStar-CSharp.ipynb      <-> SW-10-RDFStar-Python.ipynb   (position mediale)
 
     Fonction pure : `known_paths` est l'univers des chemins connus (typiquement
     la sortie de `git ls-files`), pas un acces disque -- testable sans depot.

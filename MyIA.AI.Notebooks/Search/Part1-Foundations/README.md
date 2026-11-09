@@ -124,7 +124,7 @@ Les fondamentaux de cette partie (formalisation, backtracking, heuristiques) son
 | OpenSpiel | Search-7 (MCTS) : requiert WSL ou Linux |
 | `cvxpy` | Search-09b (relaxation SDP, solveur CLARABEL embarqué), Search-09f (QP Markowitz et SOCP, même solveur CLARABEL) |
 | Kernel `lean4-wsl` | Search-09e : kernel Jupyter Lean 4 + miroir local du lake [`discrepancy_lean`](../discrepancy_lean/README.md) (Mathlib 4 via les packages du dépôt) — cf. [`docs/reference/wsl-kernels-detail.md`](../../../docs/reference/wsl-kernels-detail.md) |
-| `QuikGraph 2.5.0` (NuGet) | Search-2c (parité C#) : nécessite .NET Interactive, installable via `dotnet tool install --global Microsoft.dotnet-interactive` |
+| `QuikGraph 2.5.0` (NuGet) | Search-2c (parité C#) : nécessite .NET Interactive, installable via `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` |
 
 Pour le setup complet, voir le [README de la série Search](../README.md).
 

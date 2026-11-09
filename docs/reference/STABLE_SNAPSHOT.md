@@ -99,7 +99,7 @@
 | `MyIA.AI.Notebooks/QuantConnect/projects/Research-Executor/research_long_short_harvest.ipynb` | QuantConnect | 2/4 | 2026-06-01 |
 | `MyIA.AI.Notebooks/QuantConnect/projects/Research-Executor/research_macro_factor_rotation.ipynb` | QuantConnect | 2/4 | 2026-06-01 |
 | `MyIA.AI.Notebooks/QuantConnect/projects/VIX-TermStructure/quantbook.ipynb` | QuantConnect | 2/10 | 2026-06-02 |
-| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb` | SymbolicAI | 23/25 | 2026-07-16 |
+| `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb` | SymbolicAI | 23/25 | 2026-07-16 |
 
 ---
 

@@ -172,6 +172,7 @@ Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/Sem
 | `llmcompressor` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\llmcompressor` | LLM quantization tooling |
 | `e2e_test_env` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\e2e_test_env` | E2E tests |
 | **pyphi** | **3.9** | Nom **machine-dépendant** — mesuré `pyphi39` sur po-2026 (`C:\Users\jsboi\miniconda3\envs\pyphi39`) ; chemin ai-01 non mesuré | Cœur Φ série IIT/ICT (PyPhi 1.2.0). Cf. § « Série IIT/ICT » ci-dessous |
+| **ict-py39** | **3.9** | env **dédié** série IIT/ICT — créé par `MyIA.AI.Notebooks/IIT/scripts/setup_ict_env.ps1` (ou `.sh`), cloné de `pyphi` | Unifie numpy<2 + torch CPU + package local `ict` : strates cœur Φ **et** LLM/SAE dans un seul env. Cf. § « Env dédié ICT » ci-dessous |
 | `base` | 3.10+ | `C:\Users\MYIA\miniconda3` | Conda base — NE PAS modifier |
 
 ### Série IIT/ICT — env canonique `pyphi` (PyPhi 1.2.0)
@@ -237,6 +238,27 @@ Et le garde lui-même, sur l'état **commité** : `OK: 0 kernel-drift regression
 **Prérequis d'env, mesuré lui aussi.** `matplotlib` est **indispensable** (les strates trajectoires / heatmaps / EWS l'importent), et la note d'en-tête de `MyIA.AI.Notebooks/IIT/requirements.txt` décrivait la liste du script de setup en l'**omettant** — un env créé en suivant cette note ne peut pas exécuter la série (constaté : `pyphi39` sur po-2026 en était dépourvu ; `matplotlib 3.9.4` installé, `numpy` resté à 1.26.4, pin préservé). La note est corrigée dans la même PR.
 
 **Reste ouvert (#17185).** Trancher la population au-dessus de 3.9 (73 des 77) : un env pinné **par strate**, ou une passe de re-exécution homogénéisante — dans les deux cas c'est une décision sur l'**artefact d'env**, pas un correctif de notebook.
+
+### Env dédié ICT — `ict-py39` (numpy<2 + torch CPU + `ict`, 2026-11-08, #22297)
+
+L'env `pyphi` ci-dessus ne porte que la strate cœur Φ : il n'a **ni** torch, **ni** le package local `ict`. Or deux exigences supplémentaires sont **orthogonales** au pin py3.9/numpy<2 de `pyphi`, et ne tiennent pas dans l'env py3.13 partagé (numpy 2.x casse pyemd) :
+
+- les strates **LLM/SAE** (ICT-21/22/24, ICT-SAE-JLens, ICT-40a) exigent `torch` + `transformers` ;
+- les notebooks qui font `from ict import ...` exigent le **package local** `ict` (simulations, F/Lens, bridges) installé.
+
+L'env dédié `ict-py39` unifie les trois dans **un seul** env Python 3.9, pour exécuter toute la série (cœur Φ **et** LLM/SAE **et** `ict`) sans va-et-vient d'interpréteur.
+
+| Élément | Valeur |
+|---------|--------|
+| Env conda | `ict-py39`, Python **3.9** — créé par `MyIA.AI.Notebooks/IIT/scripts/setup_ict_env.ps1` (ou `.sh`) |
+| Construction | **Cloné de l'env `pyphi`** (hérite `pyemd` 0.5.1 binaire prebuilt + `pyphi` 1.2.0 + numpy<2 + scipy, **sans compilateur**), puis `pip install -e ICT-Series` (package local `ict` + ses deps déclarées) + `pip install torch --index-url …/whl/cpu` + `pip install transformers` |
+| Kernelspec | `ict-py39` (« Python 3 (ICT 3.9 dedicated) ») |
+| Stack mesurée (2026-11-08, po-2024) | Python 3.9.23 · numpy 1.26.4 · pyphi 1.2.0 · scipy 1.13.1 · pandas 2.3.3 · torch 2.8.0+cpu · transformers 4.57.6 · `ict` (editable) |
+| Usage | Exécution locale de toute la série IIT/ICT sous **un** env 3.9. Complément de l'env `coursia-sae` (py3.12) : celui-ci est py3.9 (pin pyphi) et porte le package local `ict` |
+
+**Pourquoi cloner plutôt que créer l'env à zéro.** PyPI ne publie aucun wheel cp39 de `pyemd` 0.5.1 et conda-forge ne livre pas de `gcc` utilisable sur cette machine Windows (`c-compiler` / `m2w64-gcc` ne produisent pas de compilateur fonctionnel, mesure firsthand 2026-11-08) : compiler la sdist de `pyemd` est un impasse. Cloner l'env `pyphi` de base hérite du binaire known-good **pour free** — c'est le seul chemin sans compilateur.
+
+**Prérequis** : l'env `pyphi` doit exister (créé par `setup_pyphi_env.ps1`) ; `setup_ict_env` le clone. **C.2** : une re-exécution sous `ict-py39` fait repasser le `Kernel drift guard` de la même façon que sous `pyphi` (numpy 1.x, même noyau 3.9) — le kernelspec stocké dans le notebook doit être `ict-py39`, et le paramètre `--ExecutePreprocessor.kernel_name=ict-py39` passé explicitement (cf. § « Série IIT/ICT » plus haut).
 
 ### Stack ML training (coursia-ml-training, vérifié 2026-05-06)
 
