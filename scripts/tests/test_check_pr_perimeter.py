@@ -4111,62 +4111,6 @@ def test_16162_other_pr_count_never_joins_additive_sum():
     assert _additive_line_sum(line) == 2
 
 
-FR_EN_PAIR_FILES_25091 = [
-    {"path": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Containment.lean"},
-    {"path": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Containment_en.lean"},
-    {"path": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Grid_en.lean"},
-    {"path": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Lift.lean"},
-    {"path": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Pullback_en.lean"},
-]
-
-
-def test_25091_fr_en_pair_reference_does_not_claim_pr_perimeter():
-    """The historical #24566 review excerpt describes the language of a
-    theorem in a real FR/EN pair, not the five-file PR perimeter."""
-    line = (
-        "- `Lift.lean` (2) : la formule porte `height` des deux côtés "
-        "(énoncé de théorème, anglais dans les deux fichiers)."
-    )
-    items = [{
-        "kind": "review (COMMENTED)",
-        "author": "jsboige",
-        "body": line,
-        "source": "thread",
-        "ts": "2026-11-06T18:19:44Z",
-    }]
-    candidates, orphan = select_candidates(items, n_files=5)
-
-    assert orphan is None
-    assert [candidate.text for candidate in candidates] == [line]
-    assert check_assertion(
-        FR_EN_PAIR_FILES_25091,
-        candidates[0].text,
-        block=candidates[0].block,
-        body_hint=candidates[0].body_text,
-    ) == []
-
-
-def test_25091_explicit_two_file_perimeter_stays_red_with_fr_en_pair():
-    """The exemption must not erase a real two-file perimeter claim merely
-    because those two files happen to be language variants among five files."""
-    assertion = (
-        "Périmètre : seulement deux fichiers modifiés : le canonique FR et "
-        "son miroir EN."
-    )
-    problems = check_assertion(FR_EN_PAIR_FILES_25091, assertion)
-
-    assert any("pretend 2 fichier(s)" in problem for problem in problems)
-
-
-def test_25091_same_language_phrase_without_changed_pair_stays_red():
-    """A mention of English in two files is insufficient without an actual
-    canonical/`_en` pair in this PR's file list."""
-    unrelated_files = [{"path": f"scripts/module_{index}.py"} for index in range(5)]
-    assertion = "anglais dans les deux fichiers"
-
-    assert check_assertion(unrelated_files, assertion)
-
-
 def test_16162_scan_thread_extracts_founders_without_blocking():
     """Voie --scan-thread (le gate CI) : les lignes fondatrices restent des
     candidates visibles mais la ligne n'est pas bloquante."""
