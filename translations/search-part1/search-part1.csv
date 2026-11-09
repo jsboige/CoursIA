@@ -39694,29 +39694,22 @@ $(-1,-2), (0,-2)$ (coût 10, puis +2 par unité de $c_w$). La sortie conclut : l
 point de passage existe — le prix du mur décide des préférences du paysage. Ainsi se boucle le
 test négatif : un swap qui change les préférences est rejeté, un swap silencieux est un
 morphisme, un swap de coût déplace le point de passage.",,,,,,,,95e737f4507d466b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,search13a-15,markdown,fr,48ecd650315df4cc,"## Exercices (C.1 — à compléter)
-
-Trois exercices pour reconstruire la mécanique sur d'autres murs. Chacun repart du plateau et
-des fonctions déjà en place — Dijkstra, 0-1 BFS, flot max, audit de potentiels — et les
-réexécute sur une variante du mur : mur plus épais, coût du mur modifié, seuil de bascule à
-localiser. Le format est celui du dépôt : un stub à compléter, sans corrigé. Les exercices sont
-indépendants : vous pouvez les aborder dans l'ordre, ou cibler celui qui vous manque.",,,,,,,,48ecd650315df4cc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,search13a-16,code,fr,3b03fa1c1ddf5d62,"# Exercice 1 : construire un mur plus epais (trois colonnes pleines) et certifier m_path = 3.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,88a080d0,code,fr,3b03fa1c1ddf5d62,"# Exercice 1 : construire un mur plus epais (trois colonnes pleines) et certifier m_path = 3.
 # Etape 1 : copier le plateau ; remplacer aussi la colonne q = 1 par du mur.
 # Etape 2 : recalculer m_path (0-1 BFS) et verifier m_path == 3 ; mesurer aussi le flot m :
 #           la coupure minimale grandit-elle autant que l'epaisseur ? (reponse attendue : non)
 # Etape 3 : refaire Dijkstra et verifier que le chemin optimal coupe le mur en 3 cellules.
 print(""Exercice a completer"")",,,,,,,,3b03fa1c1ddf5d62,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,search13a-17,code,fr,c592aa5b702a6c66,"# Exercice 2 : au cout c_w = 5, refaire Dijkstra + audit de potentiels.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,874928ee,code,fr,c592aa5b702a6c66,"# Exercice 2 : au cout c_w = 5, refaire Dijkstra + audit de potentiels.
 # Etape 1 : re-executer dijkstra avec un cout de mur 5.
 # Etape 2 : rejouer l'audit de potentiels (0 violation, egalites serrees le long du chemin).
 # Etape 3 : comparer la traversee choisie a celle du cout 3 (meme endroit ? plus loin ?).
 print(""Exercice a completer"")",,,,,,,,c592aa5b702a6c66,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,search13a-18,code,fr,add5dd0e8c2a53e3,"# Exercice 3 : trouver le seuil de bascule du point de passage (dichotomie sur c_w).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,098ba304,code,fr,add5dd0e8c2a53e3,"# Exercice 3 : trouver le seuil de bascule du point de passage (dichotomie sur c_w).
 # Indice : l'experience (c) montre que le choix de la traversee change au-dela d'un c_w.
 # Objectif : le plus petit c_w pour lequel le chemin optimal change de point de passage.
 print(""Exercice a completer"")",,,,,,,,add5dd0e8c2a53e3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,search13a-19,markdown,fr,d6e37e30350d9309,"## Conclusion
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,02b1e84d,markdown,fr,d6e37e30350d9309,"## Conclusion
 
 L'opération 13 « Traverser un mur » tient ici sa **2e attestation directe**, sur un substrat
 indépendant de GT-24 :
@@ -42534,3 +42527,189 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,3870ce3b,
 resultats_par_taille = None  # TODO etudiant
 
 print(""Exercice 5 a completer"")",,,,,,,,5067c6dd461dafce,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,a307af03,markdown,fr,5bf0c306455752b2,"### Lien avec la topologie des jeux 2×2
+
+L'opération « traverser un mur » n'est pas née ici : elle vient de la **topologie des jeux 2×2 de
+Robinson-Goforth**, construite dans la série GameTheory. La correspondance terme à terme :
+
+| Ici (pavage hexagonal) | Chez Robinson-Goforth |
+|---|---|
+| **chambre** : composante de salles de sol | **chambre** : jeu strict, composante ouverte de l'espace des paiements (les 576 jeux sans égalité) |
+| **mur** : bande de cellules coûteuses séparant deux chambres | **mur** : jeu à égalités, strate de codimension ≥ 1 sur laquelle des chambres se raccordent |
+| **six swaps générateurs** : les six directions du voisinage hexagonal | **six swaps générateurs** : les six échanges de valeurs adjacentes (trois par table de paiements), arêtes du permutaèdre S₄ |
+| **chemin minimal certifié** : Dijkstra + audit de potentiels | **chemin minimal certifié** : un constructeur produit le chemin, un vérificateur séparé prouve validité et minimalité par énumération exhaustive |
+
+Deux leçons traversent la frontière. D'abord la **certification** : dans les deux mondes,
+l'algorithme propose et un contrôle indépendant dispose — l'audit de potentiels ici, le
+vérificateur séparé là-bas. Ensuite le **prix des murs** : dans l'univers à rangs complet de
+Robinson-Goforth, descendre sur un mur et le retraverser coûte deux pas, et l'énumération
+exhaustive établit que les murs ne raccourcissent jamais aucun chemin ; ici, chaque cellule de
+mur traversée coûte $c_w$, et les exemples guidés ci-dessous mesurent exactement à quel prix le
+détour par une traversée plus économe devient rentable.
+
+Pour la géométrie complète : [GameTheory-03-Topology2x2-Python](../../GameTheory/GameTheory-03-Topology2x2-Python.ipynb),
+[GameTheory-03b — Chambres, murs et chemins](../../GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb)
+et [GameTheory-20 — Le chemin minimal](../../GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb).
+",,,,,,,,5bf0c306455752b2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,0290e5fd,markdown,fr,fa0540dc1f727a5e,"## Exemples guidés et exercices
+
+Trois exemples guidés reconstruisent la mécanique sur d'autres murs, trois exercices la
+prolongent. Chaque exemple repart du plateau et des fonctions déjà en place — Dijkstra, 0-1 BFS,
+flot max, audit de potentiels — et les réexécute sur une variante du mur : mur plus épais, coût
+du mur modifié, seuil de bascule à localiser. Les exemples guidés 1 à 3 sont des résolutions
+d'étudiant, créditées ci-dessous ; les exercices 1b à 3b qui les suivent sont à compléter, sans
+corrigé — le format du dépôt. Tout est indépendant : abordez-les dans l'ordre, ou ciblez celui
+qui vous manque.",,,,,,,,fa0540dc1f727a5e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,4fee22af,markdown,fr,37b0edd03b7767ca,"### Exemple guidé 1 — Un mur plus épais, et ce que la coupure minimale en dit (crédité #25535 — TristanBrouille)
+
+> Contribution de **Tristan Dhersin** (TP1, PR étudiante
+> [#25535](https://github.com/jsboige/CoursIA/pull/25535)) — résolution reprise telle quelle.
+
+**Ce que montre l'exemple** : une troisième colonne pleine de mur (q = 1) est ajoutée aux deux
+chaînes A et B. L'épaisseur $m_{path}$ passe de 2 à 3 — tout chemin doit maintenant traverser
+les trois colonnes — mais la coupure minimale $m$ reste 8 : on a ajouté une couche, pas élargi
+la plus petite coupure. Le Dijkstra final vérifie que le chemin optimal coupe exactement les
+trois murs, et le plateau est restauré à la fin pour ne pas polluer la suite.",,,,,,,,37b0edd03b7767ca,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,6891fb09,markdown,fr,9e9b8ea0a5dcac92,"### Lecture du résultat : l'épaisseur croît, la coupure non
+
+La sortie donne les deux mesures du même geste : $m_{path}$ passe de **2 à 3** (trois colonnes
+pleines : tout chemin en traverse trois), mais $m$ **reste à 8** — la coupure minimale reste la
+chaîne A tout entière, ajouter une couche derrière une double épaisseur ne change pas le plus
+petit ensemble de murs à démolir pour séparer $S$ de $T$. Le chemin optimal confirme : $L = 14$
+en 8 pas, traversant exactement $[(-1,-2), (0,-2), (1,-2)]$ — une cellule par colonne.
+
+Lu dans la topologie de Robinson-Goforth, où la distance se mesure en murs traversés : $m_{path}$
+est cette distance, et le chemin qui franchit une cellule par colonne est la version pavage d'un
+chemin traversant ses strates une à une.",,,,,,,,9e9b8ea0a5dcac92,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,ebff628a,markdown,fr,7f5b94e7817610e3,"### Exercice 1b : Percer une porte dans le mur
+
+**Enoncé** : Percez une **porte** de deux cellules dans la chaîne A (transformez $(-1, 0)$ et
+$(-1, 1)$ en sol) et mesurez ce que le mur perd.
+
+Étapes :
+1. Sauvegardez le plateau, percez la porte, vérifiez que $S$ et $T$ restent du sol
+2. Recalculez $m_{path}$ (0-1 BFS) — toute traversée ne paie plus qu'une seule colonne ?
+3. Mesurez le nouveau $m$ (flot max) : la coupure minimale a-t-elle bougé, et dans quel sens ?
+   (indice : la chaîne B seule sépare encore $S$ de $T$)
+4. Refaites Dijkstra : le chemin optimal passe-t-il par la porte ?
+
+**Question** : pourquoi $m_{path}$ chute-t-il immédiatement tandis que $m$ ne diminue pas ?
+
+Restaurez le plateau avant de passer à la suite.",,,,,,,,7f5b94e7817610e3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,427287ca,code,fr,0b6b231ca1c81eff,"# Exercice 1b : percer une porte de deux cellules dans la chaine A et mesurer ce que le mur perd.
+# Etape 1 : sauvegarder le plateau ; transformer (-1, 0) et (-1, 1) en sol ; verifier S et T.
+# Etape 2 : recalculer m_path (0-1 BFS) -- toute traversee ne paie plus qu'une seule colonne ?
+# Etape 3 : mesurer le nouveau m (flot max) : la coupure minimale a-t-elle bouge, dans quel sens ?
+#           Indice : la chaine B seule separe encore S de T.
+# Etape 4 : refaire Dijkstra (c_w = 3) : le chemin optimal passe-t-il par la porte ?
+# Question : pourquoi m_path chute immediatement quand m ne diminue pas ?
+
+# TODO etudiant : ecrire les etapes 1 a 4, puis restaurer le plateau d'origine.
+# Indice : copier le plateau comme a l'exemple guide 1 (salles_origine = dict(salles)).
+
+resultats_1b = None  # TODO etudiant : (m_path, m, L, murs_traverses) apres percement
+print(""Exercice a completer"")",,,,,,,,0b6b231ca1c81eff,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,dd22c7a3,markdown,fr,0c4e7ce32ef2c056,"### Exemple guidé 2 — Ré-auditer le certificat au coût c_w = 5 (crédité #25535 — TristanBrouille)
+
+> Contribution de **Tristan Dhersin** (TP1, PR étudiante
+> [#25535](https://github.com/jsboige/CoursIA/pull/25535)) — résolution reprise telle quelle.
+
+**Ce que montre l'exemple** : le coût du mur passe à $c_w = 5$. Un Dijkstra sans cible produit
+les potentiels $\varphi$ sur toutes les salles, puis l'audit rejoue l'inégalité
+$\varphi(v) \le \varphi(u) + cout(v)$ sur chacune des 312 arêtes : zéro violation, et les huit
+inégalités du chemin optimal sont serrées — le certificat tient au nouveau prix, au même point
+de passage, et $L$ grimpe exactement de $2 \times (5 - 3)$.",,,,,,,,0c4e7ce32ef2c056,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,a235e31d,markdown,fr,bf77b62316643118,"### Lecture du résultat : le certificat survit au changement de prix
+
+À $c_w = 5$ : $L = 16$ en 8 pas, l'audit couvre **312 arêtes** sans une violation, et les **8/8**
+inégalités le long du chemin optimal sont serrées — le certificat est re-validé, pas seulement
+re-estimé. La traversée reste $[(-1,-2), (0,-2)]$, le même point de passage qu'à $c_w = 3$, et
+$L$ passe de 12 à 16 : **+4 = 2 murs × (5 − 3)** — le chemin garde sa forme, seule la facture
+change.
+
+Lu dans la topologie de Robinson-Goforth, chaque mur traversé y coûte exactement un pas : le
+prix y est fixe. Ici le prix est un paramètre — mais entre $c_w = 3$ et $c_w = 5$ on reste du
+même côté du seuil de bascule (l'exemple guidé 3 le localisera), et seul le montant de la
+facture bouge.",,,,,,,,bf77b62316643118,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,f47c5a53,markdown,fr,b4314d4ece3d52f9,"### Exercice 2b : Auditer l'égalité — le certificat à c_w = 1
+
+**Enoncé** : À $c_w = 1$, deux routes différentes coûtent le même prix. Auditez ce cas
+d'égalité.
+
+Étapes :
+1. `set_cout_mur(1)`, puis Dijkstra **sans cible** : potentiels $\varphi_1$ sur toutes les salles
+2. Rejouez l'audit complet (toutes les arêtes) : combien de violations ?
+3. Comptez les arêtes **serrées** ($\varphi_1(v) = \varphi_1(u) + cout(v)$) le long du chemin
+   optimal retenu, puis le long de la route du passage
+   $S \to \ldots \to (-1,-2) \to (0,-2) \to \ldots \to T$ (indice : 6 pas de sol + 2 murs,
+   elle coûte aussi 8)
+4. Restaurez `set_cout_mur(COUT_MUR)`
+
+**Question** : le certificat prouve-t-il que le chemin retenu est le seul optimal, ou seulement
+qu'il est optimal ?",,,,,,,,b4314d4ece3d52f9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,387a14a8,code,fr,b298ee786d26418a,"# Exercice 2b : auditer le certificat au cas d'egalite -- c_w = 1.
+# Etape 1 : set_cout_mur(1) puis Dijkstra sans cible : phi_1 sur toutes les salles.
+# Etape 2 : rejouer l'audit sur toutes les aretes : compter les violations.
+# Etape 3 : compter les aretes serrees le long du chemin optimal retenu, puis le long de la
+#           route du passage S -> (-1,-2) -> (0,-2) -> T (indice : 6 pas de sol + 2 murs = 8,
+#           le meme cout que la route sud).
+# Etape 4 : restaurer set_cout_mur(COUT_MUR).
+# Question : le certificat prouve-t-il l'optimalite du chemin retenu, ou aussi son unicite ?
+
+# TODO etudiant : ecrire les etapes 1 a 4.
+violations_egalite = None  # TODO etudiant : violations de l'audit a c_w = 1
+serrees_hors_chemin = None  # TODO etudiant : aretes serrees sur une autre route de cout 8
+print(""Exercice a completer"")",,,,,,,,b298ee786d26418a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,54c8c9a0,markdown,fr,f7210d9e2b6944ad,"### Exemple guidé 3 — Localiser le seuil de bascule du point de passage (crédité #25535 — TristanBrouille)
+
+> Contribution de **Tristan Dhersin** (TP1, PR étudiante
+> [#25535](https://github.com/jsboige/CoursIA/pull/25535)) — résolution reprise telle quelle.
+
+**Ce que montre l'exemple** : une fonction `traversee(c_w)` renvoie les cellules de mur du
+chemin optimal au prix $c_w$. Par dichotomie entière puis réelle sur $c_w$, la résolution
+localise le seuil où le point de passage bascule de la route sud (trois murs à $c_w = 1$ :
+$[(-1,-3), (0,-4), (2,-4)]$) à la route du passage (deux murs : $[(-1,-2), (0,-2)]$) — seuil
+entier $c_w = 2$, seuil réel $c^* \approx 1$. Un petit modèle affine — palissade $5 + 3c$
+contre passage $6 + 2c$ — prédit exactement le croisement.",,,,,,,,f7210d9e2b6944ad,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,722da7e2,markdown,fr,20689cb7cdd7a9a2,"### Lecture du résultat : le seuil c* = 1, un croisement de deux droites affines
+
+La dichotomie entière trouve la bascule dès $c_w = 2$ ; la dichotomie réelle converge vers
+$c^* \approx 1{,}000000$ — et la table finale l'explique : la route sud coûte $5 + 3c$ (cinq pas
+de sol, trois murs), la route du passage $6 + 2c$ (six pas, deux murs). À $c = 0{,}5$ la
+palissade gagne ($6{,}5 < 7{,}0$), à $c = 1$ les deux droites se croisent (8 partout), à
+$c = 2$ le passage gagne ($10 < 11$). À l'égalité, Dijkstra rend la route sud — la référence —
+et le seuil entier passe donc à 2.
+
+Lu dans la topologie de Robinson-Goforth, la distance se compte en murs traversés — la seule
+monnaie qui y circule — et GT-20 y montre qu'aucun chemin ne gagne un pas en passant par un
+mur. Notre seuil $c^*$ est le prix auquel le pavage cesse d'imiter cette topologie : en
+dessous, un mur de plus coûte moins cher qu'un pas de sol économisé, et la route qui cumule
+les murs reprend la main.",,,,,,,,20689cb7cdd7a9a2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,45480ceb,markdown,fr,52be0f423ed75987,"### Exercice 3b : Le seuil de bascule dans un mur plus épais
+
+**Enoncé** : Reprenez le plateau à **trois colonnes** de l'exemple guidé 1 (chaînes A et B, plus
+la colonne $q = 1$). Le seuil de bascule du point de passage y est-il le même que dans le
+plateau à deux colonnes ?
+
+Étapes :
+1. Reconstruisez le plateau à trois colonnes (sauvegardez le plateau d'origine, comme à
+   l'exemple guidé 1) et adaptez `traversee(c_w)` à ce plateau
+2. Prenez la traversée à $c_w = 1$ comme référence — combien de murs franchit-elle ?
+3. Dichotomie entière sur $[1, 9]$ : plus petit $c_w$ qui change le point de passage
+4. Dichotomie réelle : où tombe exactement le seuil ?
+5. Restaurez le plateau d'origine
+
+**Question** : écrivez le coût des deux routes en fonction de $c_w$ (pas de sol, murs
+traversés) et vérifiez que leur croisement prédit la mesure.",,,,,,,,52be0f423ed75987,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,54a207e0,code,fr,3f3d249f07287a5d,"# Exercice 3b : le seuil de bascule du point de passage dans un mur a trois colonnes.
+# Etape 1 : reconstruire le plateau a trois colonnes de l'exemple guide 1 (sauvegarder
+#           l'origine dans salles_origine avant de modifier `salles`).
+# Etape 2 : adapter traversee(c_w) a ce plateau ; reference = traversee a c_w = 1.
+# Etape 3 : dichotomie entiere sur [1, 9] : plus petit c_w qui change le point de passage.
+# Etape 4 : dichotomie reelle : ou tombe exactement le seuil ?
+# Etape 5 : restaurer le plateau d'origine.
+# Question : ecrire le cout des deux routes en fonction de c_w et verifier le croisement.
+
+# TODO etudiant : ecrire les etapes 1 a 5.
+seuil_trois_colonnes = None  # TODO etudiant : seuil reel mesure dans le plateau a 3 colonnes
+print(""Exercice a completer"")",,,,,,,,3f3d249f07287a5d,,,,,,,,,,,,,,,
