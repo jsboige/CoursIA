@@ -41,7 +41,7 @@ Les jalons annuels récurrents (le cycle **2026** est en clôture au 2026-08-08 
 |---|-------|---------|
 | 1 | `SymbolicAI/ArgumentAnalysis` | **Priorité** (Epic dédié). Submodule Argumentum + matériel importable 2025 |
 | 2 | `SymbolicAI/Tweety` | Argumentation formelle, transition naturelle après Argumentum |
-| 3 | `SymbolicAI/Lean` | Preuves formelles (dont GameTheory `game_theory_lean/SocialChoice/` — port Arrow/Sen ; la coquille `social_choice_lean/` n'en garde plus que des documents) |
+| 3 | `SymbolicAI/Lean` | Preuves formelles (dont GameTheory `SocialChoice/social_choice_core_lean/SocialChoice/` — port Arrow/Sen ; la coquille `social_choice_lean/` n'en garde plus que des documents) |
 | 4 | `SymbolicAI/SemanticWeb` | RDF / OWL / SHACL |
 | 5 | `SymbolicAI/Planning` | PDDL / GraphPlan / HTN |
 | 6 | `SymbolicAI/SmartContract` | Solidity / ZKP / multi-chain |
