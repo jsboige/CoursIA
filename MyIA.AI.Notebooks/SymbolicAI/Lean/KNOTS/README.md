@@ -2,7 +2,7 @@
 
 Sous-série de la série [Lean](../README.md) (décision de gradation #17545, 24/09) : la théorie des nœuds descend ici avec son lac [`knot_lean`](knot_lean/README.md). L'arc interne va du récit mathématique (Conway, la sliceness du nœud 11n34 et la preuve de Piccirillo) vers le lac réel : chaque carnet finit par interroger les déclarations `Knots.*` qui vivent dans ce dossier.
 
-La série principale garde son tutoriel (numéros 1 à 14) et ses hommages (16a pour Conway l'homme) ; le présent dossier porte l'arc nœuds. Les numéros de la table ci-dessous renvoient à l'ancien identifiant de série (`Lean-17a` → `KNOTS-01`, etc. — table de correspondance dans `docs/reference/rename-ledger.tsv`).
+La série principale garde son tutoriel (numéros 1 à 14) et ses hommages (Lean-16 pour Conway, l'homme et l'œuvre) ; le présent dossier porte l'arc nœuds. Les numéros de la table ci-dessous renvoient à l'ancien identifiant de série (`Lean-17a` → `KNOTS-01`, etc. — table de correspondance dans `docs/reference/rename-ledger.tsv`).
 
 **Escalier depuis la série principale** : [Lean-16 — Conway, l'homme et l'œuvre](../Lean-16-Conway-Man-and-Work-Lean-Python.ipynb) présente Conway ; KNOTS-01 en explore la face cachée (le nœud de Conway, la question de sa sliceness ouverte 50 ans, résolue par Lisa Piccirillo en moins d'une semaine).
 
