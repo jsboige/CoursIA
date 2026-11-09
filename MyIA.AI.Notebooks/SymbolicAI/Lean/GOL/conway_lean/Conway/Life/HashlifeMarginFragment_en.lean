@@ -4499,6 +4499,109 @@ theorem hashlife_correct_margin_of_union_static_family (c : MacroCell) (k : Nat)
   rw [hsplit]
   exact hcap_of_union_static_family L hnd hsep hcan t hwinU
 
+/-! ## Slice 27 — static-box discharge of the aperiodic union frame
+
+Maillon 9 takes the union frame `hwinU` as a **hypothesis**, as maillon 8 does. This
+slice discharges it by the repository's idiomatic route — the aperiodic mirror of
+`hwin_of_orbit_box`, the box discharge of the mod route: it suffices to exhibit a
+**static box** `[a₁, a₂) × [b₁, b₂)` that contains the whole trajectory of the union
+(`hbox`) and that the reconstruction frame of each state `evolve r U` contains within
+its **medial half-frame** (`hframe`) — the predicate `hwinU` is no longer an axiom, it
+is a consequence of the box witness. Aperiodicity drops the periodic fold (`evolve_add`
+alone, no `evolve_mod_period`); the target is the aperiodic class's **medial half-frame**
+`[o + 2^(lvl-1), o + 3·2^(lvl-1))`, not the full frame. -/
+
+/-- **Static-box discharge of the aperiodic `hwin`.** Aperiodic mirror of
+    `hwin_of_orbit_box`: with no period hypothesis, if the whole trajectory of `g`
+    lives in a static box `[a₁, a₂) × [b₁, b₂)` (`hbox`) and the reconstruction frame
+    of each state `evolve r g` contains this box within its **medial half-frame**
+    (`hframe`), then the aperiodic confined class's containment `hwin` holds — every
+    cell of `evolve i (evolve r g)` lies in the medial half-frame of the frame of
+    `evolve r g`. Proof: `evolve i (evolve r g)` reduces to `evolve (i + r) g`
+    (`evolve_add`), whose support is in the box; the box is in the medial half-frame of
+    state `r`; the bounds compose by `omega`. -/
+theorem hwin_of_static_box (g : Grid) (hg : Canonical g)
+    (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ s : Nat, ∀ p ∈ evolve s g,
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r : Nat,
+      (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int)) :
+    ∀ r i : Nat, ∀ p ∈ evolve i (evolve r g),
+      (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r g)).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r g)).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) := by
+  intro r i p hp
+  rw [← evolve_add] at hp
+  obtain ⟨q1, q2, q3, q4⟩ := hbox (i + r) p hp
+  obtain ⟨f1, f2, f3, f4⟩ := hframe r
+  exact ⟨by omega, by omega, by omega, by omega⟩
+
+/-- **L3 closed by static box — aperiodic union of two parts (maillon 8).**
+    The union frame `hwinU` is no longer an axiom: it is discharged by a static box
+    `hbox` containing the trajectory of `g₁ ++ g₂` and contained in the medial
+    half-frame of each state's frame (`hframe`), via `hwin_of_static_box`.
+    Assembly corollary of `hashlife_correct_margin_of_union_static` (maillon 8). -/
+theorem hashlife_correct_margin_of_union_static_of_box (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k)
+    (g₁ g₂ : Grid) (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hcan : Canonical (g₁ ++ g₂))
+    (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ s : Nat, ∀ p ∈ evolve s (g₁ ++ g₂),
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r : Nat,
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level - 1) : Int) ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level - 1) : Int) ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level - 1) : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_union_static c k h_central g₁ g₂ hsplit hsep hcan
+    (hwin_of_static_box (g₁ ++ g₂) hcan a₁ a₂ b₁ b₂ hbox hframe)
+
+/-- **L3 closed by static box — aperiodic union of a family (maillon 9).**
+    The union frame `hwinU` of a finite family `L` pairwise 3-separated is no longer an
+    axiom: it is discharged by a static box `hbox` containing the trajectory of
+    `L.flatten` and contained in the medial half-frame of each state's frame (`hframe`),
+    via `hwin_of_static_box`. Assembly corollary of
+    `hashlife_correct_margin_of_union_static_family` (maillon 9). -/
+theorem hashlife_correct_margin_of_union_static_family_of_box (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k)
+    (L : List Grid) (hsplit : c.toGrid (0, 0) = L.flatten) (hnd : L.Nodup)
+    (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
+      ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r)
+    (hcan : Canonical L.flatten)
+    (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ s : Nat, ∀ p ∈ evolve s L.flatten,
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r : Nat,
+      (gridToMacroCellWithOffset (evolve r L.flatten)).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int) ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r L.flatten)).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r L.flatten)).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int) ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r L.flatten)).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_union_static_family c k h_central L hsplit hnd hsep hcan
+    (hwin_of_static_box L.flatten hcan a₁ a₂ b₁ b₂ hbox hframe)
+
 /-! ### Slice 23 — public restitution of the SW wall (`wall_sw_agreement`)
 
 Last of the four walls restituted, as a mirror of the NE wall (coordinates
