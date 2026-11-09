@@ -1,6 +1,6 @@
 # Jonctions Mathlib po-2027 — vérification build du groupe `db584cd6` (suite de #21319)
 
-**Statut** : runs 1-5 du 2026-11-09 — **21/26 membres verts à travers la jonction** (run 5, `LAKE_JOBS=4`, EXIT=0) ; 5 traînards en suivi (run 6 `LAKE_JOBS=2` lancé à la rédaction). Ce document est le compte-rendu de la tranche « suite ordonnée de #21319 » annoncée sur #4362 (claim c.6734239837).
+**Statut** : runs 1-6 du 2026-11-09 — **21/26 membres verts à travers la jonction** (runs 5-6, EXIT=0 chacun) ; 5 traînards en suivi (run 7 `LAKE_JOBS=1` en vol). Ce document est le compte-rendu de la tranche « suite ordonnée de #21319 » annoncée sur #4362 (claim c.6734239837).
 
 ## Pourquoi cette tranche
 
@@ -48,7 +48,8 @@ Lignée (commande identique : `pwsh -NoProfile -File scripts/lean/setup_shared_m
 | 3 | ~18:0x | défaut (20 cœurs) | exit 4 — extinction voyage ; 4 rollbackés persistés dans `share-state.json` |
 | 4 | ~19:2x → 20:22 | défaut (20 cœurs) | **EXIT=0 — 20 SUCCESS / 6 FAILED** (log `.tmp/junction_build_run4.log`) |
 | 5 | ~21:05 | `LAKE_JOBS=4` | **EXIT=0 — 21 SUCCESS / 5 FAILED** (log `.tmp/junction_build_run5.log`) |
-| 6 | ~23:0x | `LAKE_JOBS=2` | en vol à la rédaction — tranche de suivi des 5 traînards |
+| 6 | 22:1x → 23:1x | `LAKE_JOBS=2` | **EXIT=0 — 21 SUCCESS / 5 FAILED** (log `.tmp/junction_build_run6.log` ; GROTH réduit à 2 cibles) |
+| 7 | 00:1x (10/11) | `LAKE_JOBS=1` | en vol — suite du suivi des 5 traînards |
 
 ### Run 4 (défaut, 20 workers) — 20/26
 
@@ -60,6 +61,10 @@ Les 6 FAILED (game_theory, learning_theory, GOL/conway, GROTH/grothendieck, KNOT
 - 5 ré-échecs, erreur exacte capturée cette fois : **`error: Lean exited with code 4294967295`** (crash lean.exe, code -1) — signature différente du run 4 (lecture mmap), même famille d'épuisement de ressources. learning_theory, GOL/conway et GROTH échouent sur **tous** leurs modules (échec d'import massif) ; KNOTS/knot sur **2 modules seulement** (`Knots.AlexanderTrivial` + jumeau `_en`, à 699 s chacun) ; Tweety/argumentation sur 6 (`Fundamental*`, `Grounded*`, `Synthesis*`, à 102 s). Les compteurs `[3032/3054]` / `[8717/8719]` sont les **tailles des closures Mathlib importées**, pas des rebuilds.
 - **Drift de manifeste éliminé** : `lake-manifest.json` mesurés rouges comme verts — mathlib `db584cd6` + toolchain `v4.33.0` partout ; lake ne re-build pas Mathlib à travers la jonction.
 
+### Run 6 (`LAKE_JOBS=2`) — 21/26, mêmes traînards, GROTH se rapproche
+
+Terminé 23:09 locale (EXIT=0). Les mêmes 5 membres ré-échouent, mais l'écart se resserre : **GROTH passe de « tous modules en échec » à 2 cibles seulement** (`Grothendieck.CoversEtaleArrow_en`, `Grothendieck.FlasqueRetract_en`) — le module principal `Grothendieck` est **BUILT** (21 s), et le log montre une élaboration réelle (signatures Mathlib `IsDiscreteValuationRing`… résolues). KNOTS échoue toujours sur ses 2 seules cibles `Knots.AlexanderTrivial`(+`_en`), crash `4294967295` à **1494 s** chacun — soit 2× plus long qu'à `LAKE_JOBS=4` (699 s) : plus de mémoire disponible retarde le crash sans l'éviter. Tweety : 6 cibles à 168-169 s, même signature. learning_theory et conway : tous modules, inchangés. La progression GROTH (et le flip game_theory du run 5) confirment la lecture ressources ; le cas KNOTS à 1494 s en parallélisme 2 commence à ressembler à un plafond du module lui-même — le run 7 (`LAKE_JOBS=1`) tranche.
+
 ### Verdict sur les deux causes héritées de #21319
 
 - **(a) artefacts manquants — réfuté.** Le cache (8 322 `.olean` / 8 312 `.private`, les 10 manquants sous `Cache\*` hors Mathlib) est **consommé vert par 21 membres sur 26**, dont **5 des 6 rollbackés de #21319** (game_theory — après `LAKE_JOBS=4`, decision_theory, kelly, search, sudoku) ; seul learning_theory reste en échec, pour des raisons de ressources (b). Les échecs de lecture du run 4 désignaient un fichier sain sous pression mémoire.
@@ -69,7 +74,7 @@ Les 6 FAILED (game_theory, learning_theory, GOL/conway, GROTH/grothendieck, KNOT
 
 - **Sorry après** : `distinct_code_sorry` = 17 (mesuré `count_code_sorry.py --json` post-run 5) — **17 → 17, inchangé** vs baseline du matin. Aucune source `*.lean` touchée.
 - **État des jonctions** (`share-state.json`, persisté par membre) : 21 membres jonctionnés ; 5 rollbackés (`needsProvision: true`) : learning_theory, GOL/conway_lean, GROTH/grothendieck_lean, KNOTS/knot_lean, Tweety/argumentation_lean.
-- **Run 6 (`LAKE_JOBS=2`)** : lancé à la rédaction — verdicts attendus au cycle suivant ; les 5 traînards y sont re-jonctionnés puis reconstruits.
+- **Run 6 (`LAKE_JOBS=2`), terminé 23:09 locale** : mêmes 5 traînards, GROTH réduit à 2 cibles (voir section dédiée). **Run 7 (`LAKE_JOBS=1`) lancé** — dernier palier de parallélisme avant l'alternative du provisioning autonome de ces 5 (~5 Go de Mathlib chacun, ce que la jonction existe pour éviter).
 - **Purge `520045ab` (11,79 Go)** : reste **interdite** — le build vert n'est pas établi sur les 5 re-pointés.
 
 ## Garde-fous reconduits de #21319
