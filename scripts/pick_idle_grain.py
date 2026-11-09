@@ -9360,7 +9360,7 @@ def belt_filter(
     admitted: list[dict],
     args,
     urns: set[str] | None = None,
-    epic_deliveries: dict[int, int] | None = None,
+    epic_load: dict[int, int] | None = None,
     drops: list[tuple[dict, str]] | None = None,
     notes: list[str] | None = None,
 ) -> list[dict]:
@@ -9377,7 +9377,7 @@ def belt_filter(
     (presente par defaut) a une lane worker, qui ne doit jamais la recevoir.
     ``None`` garde la lecture de ``args.urns`` pour les appels sans lane.
 
-    ``epic_deliveries`` : la CHARGE EN VOL de la lane (PRs ouvertes +
+    ``epic_load`` : la CHARGE EN VOL de la lane (PRs ouvertes +
     livraisons mergees sur 7 jours), pas le seul corpus merge. Le plafond
     s'applique en DERNIER -- apres les autres filtres, pour que le rapport
     nomme une cause qui aurait vraiment ete servie -- et son refus
@@ -9431,7 +9431,7 @@ def belt_filter(
     kept_with_cap: list[dict] = []
     dropped_by_cap: list[tuple[dict, str]] = []
     for item in kept:
-        cause = epic_lane_delivery_cause(item, epic_deliveries, cap, lane,
+        cause = epic_lane_delivery_cause(item, epic_load, cap, lane,
                                           family_cap=family_cap)
         if cause:
             dropped_by_cap.append((item, cause))
@@ -9861,7 +9861,7 @@ def draw_belt(
     admitted: list[dict],
     args,
     *,
-    epic_deliveries: dict[int, int] | None = None,
+    epic_load: dict[int, int] | None = None,
     drops: list[tuple[dict, str]] | None = None,
     notes: list[str] | None = None,
 ) -> list[dict]:
@@ -9889,13 +9889,13 @@ def draw_belt(
     ou un avis de zone ne vide pas la sortie : il figure en rappel dans la
     banniere texte, pas dans le predicat de selection.
 
-    `epic_deliveries` / `drops` : transmis a `belt_filter` pour que ce point
+    `epic_load` / `drops` : transmis a `belt_filter` pour que ce point
     d'entree ne puisse pas contourner le plafond #21067. Aucun appelant ne
     l'utilise aujourd'hui (mesure du 2026-10-29 : `draw_belt` n'est appele
     nulle part hors d'un docstring de test) ; les parametres existent pour
     que le prochain le fasse sans rouvrir le trou.
     """
-    filtered = belt_filter(admitted, args, epic_deliveries=epic_deliveries,
+    filtered = belt_filter(admitted, args, epic_load=epic_load,
                            drops=drops, notes=notes)
     filtered.sort(key=belt_sort_key)
     return filtered[:args.grains]
@@ -10340,7 +10340,7 @@ def consume_board(
     urns: set[str] | None = None,
     lane: str | None = None,
     live_check: bool = True,
-    epic_deliveries: dict[int, int] | None = None,
+    epic_load: dict[int, int] | None = None,
 ) -> tuple[list[dict], dict]:
     """Retient les candidats d'un instantane, avec UN controle vivant.
 
@@ -10354,7 +10354,7 @@ def consume_board(
     bascule alors sur le calcul local, qui est le comportement d'aujourd'hui --
     jamais une regression.
 
-    `epic_deliveries` : livraisons par EPIC de CETTE lane, pour que le plafond
+    `epic_load` : livraisons par EPIC de CETTE lane, pour que le plafond
     #21067 s'applique ICI aussi (il ne l'etait que sur le calcul local --
     ce chemin pouvait servir a une lane un EPIC qu'elle avait deja livre).
     ``None`` = mesure absente : le plafond reste inactif, jamais un refus sur
@@ -10365,7 +10365,7 @@ def consume_board(
                 if isinstance(w, dict)}
     epic_drops: list[tuple[dict, str]] = []
     eligible = belt_filter(items, args, urns=urns,
-                            epic_deliveries=epic_deliveries,
+                            epic_load=epic_load,
                             drops=epic_drops)
     eligible = [it for it in eligible if it["number"] not in withheld]
     eligible.sort(key=belt_sort_key)
@@ -10385,9 +10385,9 @@ def consume_board(
         # controle vivant, aucun fetch de pool. L'etat est donc `unmeasured`
         # et la sortie le dit ; un appelant qui A la mesure la passe.
         "epic_delivery_cap": {
-            "state": ("measured" if epic_deliveries is not None
+            "state": ("measured" if epic_load is not None
                       else "unmeasured"),
-            "applied": epic_deliveries is not None,
+            "applied": epic_load is not None,
             "dropped": [{"number": it["number"], "title": it["title"],
                          "cause": cause} for it, cause in epic_drops],
         },
@@ -12880,7 +12880,7 @@ def main(argv: list[str] | None = None) -> int:
         # Correctif 2 : `epic_delivery_cap_state` separe « mesure a ZERO »
         # de « pas mesure ». Les deux rendent un dict vide, et les confondre
         # publiait « non mesurees » sur une mesure qui avait abouti.
-        _epic_cap_state, _epic_deliveries = epic_delivery_cap_state(
+        _epic_cap_state, _epic_load = epic_delivery_cap_state(
             lane_record, args.lane)
         _epic_drops: list[tuple[dict, str]] = []
         _epic_notes: list[str] = []
@@ -12890,16 +12890,16 @@ def main(argv: list[str] | None = None) -> int:
         elif _epic_cap_state == "not-applicable":
             _belt_phase("plafond livraisons EPIC: INACTIF (pas de lane -- le "
                         "plafond est par lane)")
-        elif not _epic_deliveries:
+        elif not _epic_load:
             _belt_phase("plafond livraisons EPIC: MESURE, aucune charge en "
                         "vol de la lane sur la fenetre (rien a ecarter)")
         else:
             _belt_phase(f"plafond livraisons EPIC: MESURE, "
-                        f"{sum(_epic_deliveries.values())} livraison(s) en vol "
-                        f"sur {len(_epic_deliveries)} EPIC(s) "
+                        f"{sum(_epic_load.values())} livraison(s) en vol "
+                        f"sur {len(_epic_load)} EPIC(s) "
                         f"(ouvertes + mergees)")
         belt_pool = belt_filter(admitted, args, urns=selected_urns,
-                                epic_deliveries=_epic_deliveries,
+                                epic_load=_epic_load,
                                 drops=_epic_drops, notes=_epic_notes)
         for _note in _epic_notes:
             _belt_phase(_note)
