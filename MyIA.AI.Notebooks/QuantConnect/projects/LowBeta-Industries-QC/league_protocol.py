@@ -1,0 +1,280 @@
+"""Protocole de la ligue applique au bras `bab` de LowBeta-Industries-QC (#25492).
+
+Trois etapes, separees pour que la mesure soit rejouable sans acces QC :
+
+  fetch    lit, pour chaque backtest QC Cloud, la statistique de la plateforme et les
+           graphiques "shadow" (trace journaliere) et "Monthly" (controle d'innocuite),
+           puis ecrit tout sur disque. Un graphique journalier sur seize ans ne passe
+           jamais dans une fenetre de contexte.
+  slice    decoupe la serie journaliere par fenetre et la re-encode au contrat
+           `e0..e4` de #18923, de facon a ce que l'organe de la ligue la lise sans
+           fenetre de depart (le cycle commence en e0).
+  verdict  appelle l'organe de la ligue -- `Paradox46Benchmarks/significance.py`, qui
+           fait les trois tests (Ledoit-Wolf, bootstrap stationnaire, Newey-West) et la
+           correction de Holm -- puis applique la regle de verdict et ecrit les tables.
+
+  control  compare deux executions d'un meme bras (reference et controle d'innocuite)
+           sur les statistiques QC et sur la serie mensuelle, point par point.
+
+Les tests ne sont PAS reimplementes ici : l'organe de la ligue est appele tel quel.
+Les identifiants QC viennent de variables d'environnement (jamais dans le code).
+
+Usage :
+  python league_protocol.py fetch --project 36854709 --out <dir> \
+      --backtest bab=<id> --backtest spy=<id> --backtest 6040=<id> [--backtest ref=<id>]
+  python league_protocol.py slice --dir <dir> [--out <dir>]
+  python league_protocol.py verdict --dir <dir> [--out measures/league]
+  python league_protocol.py control --project 36854709 --ref <id> --ctl <id>
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+QUANT = HERE.parents[1]                      # .../QuantConnect
+LEAGUE = QUANT / "projects" / "Paradox46Benchmarks" / "significance.py"
+SCRIPTS = QUANT / "ML-Training-Pipeline" / "scripts"
+for path in (str(QUANT / "projects"), str(SCRIPTS)):
+    if path not in sys.path:
+        sys.path.insert(0, path)
+
+from analyze_arms import _call, _chart, _points  # noqa: E402 -- acces QC, meme plafond de flotte
+from shadow_replay import qc_daily_equity  # noqa: E402 -- contrat de lecture de la trace
+
+# Fenetres du protocole de la ligue (coupee au 1er janvier 2025).
+WINDOWS = {
+    "w1": ("2010-01-02", "2024-12-31"),
+    "w2": ("2025-01-01", "2026-08-31"),
+}
+STAT_KEYS = (
+    "Sharpe Ratio", "Probabilistic Sharpe Ratio", "Compounding Annual Return", "Drawdown",
+    "Annual Standard Deviation", "Alpha", "Beta", "Total Fees", "Total Orders",
+    "Portfolio Turnover", "Net Profit", "End Equity",
+)
+REGIME = "UTC"
+
+
+# ---------------------------------------------------------------------------- lecture
+
+def _session_date(ts: int) -> str:
+    """Date de seance d'un horodatage QC, lue a New York (seances actions US)."""
+    from zoneinfo import ZoneInfo
+    return datetime.fromtimestamp(ts, ZoneInfo("America/New_York")).date().isoformat()
+
+
+def _read_stats(project: int, backtest: str) -> dict:
+    bt = _call("/backtests/read", {"projectId": project, "backtestId": backtest})["backtest"]
+    return {
+        "backtestId": backtest,
+        "name": bt.get("name"),
+        "parameterSet": bt.get("parameterSet"),
+        "completed": bt.get("completed"),
+        "statistics": {k: (bt.get("statistics") or {}).get(k) for k in STAT_KEYS},
+    }
+
+
+def _monthly_rows(chart: dict) -> list[tuple[str, float]]:
+    """La serie mensuelle tracee par main.py, lue mois par mois."""
+    rows = []
+    for name in ("ret", "spy"):
+        for t, v in _points(chart["series"].get(name, {})):
+            label = (datetime.fromtimestamp(t, tz=timezone.utc) - timedelta(days=7)).strftime("%Y-%m")
+            rows.append((label, name, v))
+    return rows
+
+
+# ---------------------------------------------------------------------------- fetch
+
+def cmd_fetch(args) -> int:
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    index = {}
+    for item in args.backtest:
+        arm, backtest = item.split("=", 1)
+        stats = _read_stats(args.project, backtest)
+        shadow = _chart(args.project, backtest, "shadow")
+        (out / f"{arm}_shadow.json").write_text(json.dumps(shadow), encoding="utf-8")
+        monthly = _chart(args.project, backtest, "Monthly")
+        (out / f"{arm}_monthly.json").write_text(json.dumps(monthly), encoding="utf-8")
+        index[arm] = {"backtestId": backtest, "name": stats.get("name"),
+                      "parameterSet": stats.get("parameterSet"),
+                      "statistics": stats["statistics"]}
+        print(f"{arm}: {backtest} ({stats.get('name')})", flush=True)
+    (out / "index.json").write_text(json.dumps(index, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    return 0
+
+
+# ---------------------------------------------------------------------------- slice
+
+def _daily(path: Path) -> tuple[list[str], list[float]]:
+    """La serie journaliere d'un graphique "shadow", validee par l'organe (#18923)."""
+    chart = json.loads(path.read_text(encoding="utf-8"))
+    return qc_daily_equity(chart)
+
+
+def _encode(dates: list[str], equity: list[float]) -> dict:
+    """Re-encode une serie journaliere au contrat `e0..e4` : le cycle commence en e0."""
+    series = {f"e{k}": {"values": []} for k in range(5)}
+    for i, (d, v) in enumerate(zip(dates, equity)):
+        series[f"e{i % 5}"]["values"].append([d, float(v)])
+    return {"name": "shadow", "series": series}
+
+
+def cmd_slice(args) -> int:
+    src = Path(args.dir)
+    out = Path(args.out) if args.out else src / "windows"
+    out.mkdir(parents=True, exist_ok=True)
+    index = json.loads((src / "index.json").read_text(encoding="utf-8"))
+    arms = [arm for arm in index if arm != "ref"]
+    series = {}
+    for arm in arms:
+        dates, equity = _daily(src / f"{arm}_shadow.json")
+        series[arm] = (dates, equity)
+        print(f"{arm}: {len(dates)} seances, {dates[0]} -> {dates[-1]}", flush=True)
+    for window, (lo, hi) in WINDOWS.items():
+        for arm in arms:
+            dates, equity = series[arm]
+            keep = [(d, v) for d, v in zip(dates, equity) if lo <= d <= hi]
+            if not keep:
+                raise SystemExit(f"{window}/{arm} : aucune seance dans la fenetre")
+            chart = _encode([d for d, _ in keep], [v for _, v in keep])
+            (out / f"{window}_{arm}.json").write_text(json.dumps(chart), encoding="utf-8")
+        n = {arm: len([1 for d in series[arm][0] if lo <= d <= hi]) for arm in arms}
+        print(f"{window} ({lo} -> {hi}) : {n}", flush=True)
+        if len(set(n.values())) != 1:
+            raise SystemExit(f"{window} : calendriers differents entre bras {n}")
+    return 0
+
+
+# ---------------------------------------------------------------------------- verdict
+
+def _verdict(res: dict) -> str:
+    """Regle de verdict de la ligue, par fenetre.
+
+    BEATS  : ecart de Sharpe positif et p de Holm (Ledoit-Wolf) < 0,05 contre LES DEUX
+             references ;
+    NO BEATS : Sharpe ponctuel inferieur a celui de SPY detenu ;
+    INCONCLUSIVE : tous les autres cas.
+    """
+    cmp_spy = res["comparisons"]["spy"]
+    cmp_6040 = res["comparisons"]["6040"]
+    p_spy = res["p_holm"]["spy/ledoit_wolf"]
+    p_6040 = res["p_holm"]["6040/ledoit_wolf"]
+    if (cmp_spy["sharpe_diff"] > 0 and cmp_6040["sharpe_diff"] > 0
+            and p_spy < 0.05 and p_6040 < 0.05):
+        return "BEATS"
+    if cmp_spy["sharpe_a"] < cmp_spy["sharpe_b"]:
+        return "NO BEATS"
+    return "INCONCLUSIVE"
+
+
+def cmd_verdict(args) -> int:
+    src = Path(args.dir)
+    windows_dir = src / "windows"
+    out = Path(args.out) if args.out else HERE / "measures" / "league"
+    out.mkdir(parents=True, exist_ok=True)
+    results = {}
+    for window in WINDOWS:
+        strategy = windows_dir / f"{window}_bab.json"
+        spy = windows_dir / f"{window}_spy.json"
+        ref6040 = windows_dir / f"{window}_6040.json"
+        raw = out / f"{window}_significance.json"
+        cmd = [sys.executable, str(LEAGUE),
+               "--strategy", str(strategy),
+               "--bench", f"spy={spy}",
+               "--bench", f"6040={ref6040}",
+               "--out", str(raw)]
+        subprocess.run(cmd, check=True, cwd=str(QUANT / "ML-Training-Pipeline" / "scripts"))
+        res = json.loads(raw.read_text(encoding="utf-8"))
+        res["verdict"] = _verdict(res)
+        results[window] = res
+        print(f"{window}: {res['verdict']}", flush=True)
+    (out / "verdict.json").write_text(json.dumps(results, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    (out / "verdict.md").write_text(_markdown(results), encoding="utf-8")
+    return 0
+
+
+def _fr(x: float, nd: int = 3) -> str:
+    return f"{x:.{nd}f}".replace(".", ",")
+
+
+def _markdown(results: dict) -> str:
+    lines = ["# Protocole de la ligue -- bras `bab` de LowBeta-Industries-QC", ""]
+    for window, res in results.items():
+        lo, hi = WINDOWS[window]
+        lines += [f"## Fenetre {window} ({lo} -> {hi})", ""]
+        lines += ["| Reference | Sharpe bab | Sharpe reference | ecart | p brute (LW) | p de Holm (LW) | p de Holm (bootstrap) | p de Holm (NW) |",
+                  "|---|---|---|---|---|---|---|---|"]
+        for name in ("spy", "6040"):
+            c = res["comparisons"][name]
+            lines.append(
+                f"| `{name}` | {_fr(c['sharpe_a'])} | {_fr(c['sharpe_b'])} | {_fr(c['sharpe_diff'])} "
+                f"| {_fr(c['ledoit_wolf']['p_two_sided'], 4)} | {_fr(res['p_holm'][f'{name}/ledoit_wolf'], 4)} "
+                f"| {_fr(res['p_holm'][f'{name}/bootstrap'], 4)} | {_fr(res['p_holm'][f'{name}/mean_diff'], 4)} |")
+        lines += ["", f"**Verdict : {res['verdict']}**", ""]
+    return "\n".join(lines) + "\n"
+
+
+# ---------------------------------------------------------------------------- control
+
+def cmd_control(args) -> int:
+    """Controle d'innocuite : deux executions d'un meme bras doivent coincider."""
+    ref = _read_stats(args.project, args.ref)
+    ctl = _read_stats(args.project, args.ctl)
+    diffs = {k: (ref["statistics"][k], ctl["statistics"][k])
+             for k in STAT_KEYS if ref["statistics"][k] != ctl["statistics"][k]}
+    chart_ref = _chart(args.project, args.ref, "Monthly")
+    chart_ctl = _chart(args.project, args.ctl, "Monthly")
+    rows_ref = sorted(_monthly_rows(chart_ref))
+    rows_ctl = sorted(_monthly_rows(chart_ctl))
+    same_series = rows_ref == rows_ctl
+    out = {"reference": ref, "control": ctl, "statistics_diff": diffs,
+           "monthly_series_identical": same_series,
+           "monthly_points": len(rows_ref)}
+    print(json.dumps(out, indent=1, ensure_ascii=False))
+    if args.out:
+        Path(args.out).write_text(json.dumps(out, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    return 0 if not diffs and same_series else 1
+
+
+# ---------------------------------------------------------------------------- main
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    p = sub.add_parser("fetch")
+    p.add_argument("--project", type=int, required=True)
+    p.add_argument("--out", required=True)
+    p.add_argument("--backtest", action="append", required=True)
+    p.set_defaults(func=cmd_fetch)
+
+    p = sub.add_parser("slice")
+    p.add_argument("--dir", required=True)
+    p.add_argument("--out")
+    p.set_defaults(func=cmd_slice)
+
+    p = sub.add_parser("verdict")
+    p.add_argument("--dir", required=True)
+    p.add_argument("--out")
+    p.set_defaults(func=cmd_verdict)
+
+    p = sub.add_parser("control")
+    p.add_argument("--project", type=int, required=True)
+    p.add_argument("--ref", required=True)
+    p.add_argument("--ctl", required=True)
+    p.add_argument("--out")
+    p.set_defaults(func=cmd_control)
+
+    args = ap.parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
