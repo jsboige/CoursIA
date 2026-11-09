@@ -87,6 +87,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       # La PR ne doit PAS introduire de nouvelle violation HTML_404
       # (#18911 geste 2, 2026-10-09). On compare la PR (head) a la base (main)

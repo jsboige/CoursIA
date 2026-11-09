@@ -30,6 +30,8 @@ lean backtest --project .
 | Net Return | +258% |
 | Rebalance | Monthly |
 
+Note d'écart : le `Net Return | +258%` ci-dessus est le rendement net du run long de l'auteur ; le `Net +109%` de la docstring `v3.0` (`main.py`) est le rendement net de la **fenêtre alignée 2018-2025** (table ci-dessous, CAGR 11.111 % ⇒ `1.11111^7 − 1 = 109.07 %`). Les deux chiffres décrivent des fenêtres différentes, ils ne se contredisent pas. Fenêtre de cette première table : l'en-tête dit 2015-2026, le paragraphe d'interprétation ci-dessous dit « 2015-2024 » — l'écart est signalé, non tranché ici (aucun identifiant de backtest auteur n'est cité pour le départager).
+
 ### Aligned baseline (2018-2025)
 
 Standardized #1630 backbone run (QC Cloud project `33251801`, backtest `697e96af`).

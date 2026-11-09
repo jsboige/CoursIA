@@ -76,8 +76,8 @@ d'equity.
 |------|---------------------|
 | Code de la stratégie | ✅ Présent sur main (`main.py` intact) |
 | Projet QC Cloud | ✅ 29463540 (`HandsOn-Ex12-TradingCosts-Optimization`, créé 2026-03-28 ; identifié lors de la première mesure du 2026-10-22) |
-| Backtest Cloud exécuté | ✅ Première mesure le 2026-10-22 (paire avant/après ancrage `month_start`, #18941) — **le run s'arrête en Runtime Error le 2022-04-01** avant la fin de la fenêtre (voir l'issue dédiée dans `## Voir aussi`) |
-| Métriques chiffrées (jusqu'au crash, identiques avant/après) | Sharpe **-2.307**, CAR **-0.051 %**, drawdown **1.600 %**, 114 ordres, frais cumulés **-$480.08** |
+| Backtest Cloud exécuté | ✅ Première mesure le 2026-10-22 (paire avant/après ancrage `month_start`, #18941) — crash `NotFittedError` 2022-04-01 diagnostiqué (#22060), **corrigé et validé le même jour** : run fixé `Completed` sur la fenêtre entière 2015→2024 (voir `## Voir aussi`) |
+| Métriques chiffrées (après correctif #22060, fenêtre entière) | Sharpe **-2.479**, CAR **-0.035 %**, drawdown **3.500 %**, 755 ordres, volume **$483,047.87**, frais cumulés **-$480.08** — volume et frais identiques au segment pré-crash (les données Bybit BTCUSDC ne couvrent qu'une brève plage autour de début 2022 ; les ordres hors plage ne génèrent ni volume ni frais) |
 | Notebook recherche local (`research.ipynb`) | ❌ Absent — pas de backtest companion |
 | `Sharpe Ratio` hardcodé dans README original | ❌ Aucun (la version EN non plus — claim honnête par défaut) |
 

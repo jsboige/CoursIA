@@ -5,9 +5,16 @@
 //   models          -- catalogue des modèles servis par Copilot (aucun appel modèle)
 //   ask "<prompt>"  -- un tour complet : session + envoi + attente de la réponse
 //   events "<prompt>" -- même tour, mais en consommant le flux SessionEvent au fil de l'eau
+//   serve           -- le harness exposé en service HTTP, pour qu'un AppHost Aspire
+//                      puisse l'orchestrer comme une ressource (/health, /config,
+//                      /models, /ask) au lieu de le lancer à la main (grain #10473,
+//                      résiduel « Aspire AppHost integration » de l'axe Copilot SDK)
 using System.Text;
 using System.Text.Json;
 using GitHub.Copilot;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Hosting;
 
 var mode = args.Length > 0 ? args[0] : "auth";
 if (mode is "ask" or "events" && args.Length < 2)
@@ -80,6 +87,60 @@ switch (mode)
             Console.WriteLine($"  {typeName,-40} {count}");
         Console.WriteLine($"texte assemble depuis les deltas ({streamed.Length} car.) :");
         Console.WriteLine(streamed.ToString());
+        break;
+    }
+    case "serve":
+    {
+        // Le port vient de l'AppHost (`PORT`) : c'est l'orchestrateur qui décide
+        // où la ressource écoute, pas le service. Repli 5099 pour un lancement
+        // hors AppHost (`dotnet run -- serve`), forme identique à une ressource
+        // executable non conteneurisée (cf. FrontendLab, même série).
+        var port = Environment.GetEnvironmentVariable("PORT") ?? "5099";
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls($"http://127.0.0.1:{port}");
+        var web = builder.Build();
+
+        web.MapGet("/health", () => Results.Json(new
+        {
+            status = "ok",
+            pid = Environment.ProcessId,
+            port,
+        }));
+
+        // Ce que l'AppHost a INJECTÉ dans ce processus. C'est la preuve que
+        // l'orchestration est réelle : ces valeurs ne sont pas dans le code du
+        // service, elles arrivent par l'environnement au démarrage.
+        web.MapGet("/config", () => Results.Json(new
+        {
+            serviceName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME"),
+            modelId = Environment.GetEnvironmentVariable("COPILOT_MODEL_ID"),
+            resourceName = Environment.GetEnvironmentVariable("COPILOT_RESOURCE_NAME"),
+            workingDirectory = Environment.CurrentDirectory,
+            port,
+        }));
+
+        // Catalogue réel : aucun appel modèle, mais une vraie session SDK.
+        web.MapGet("/models", async () =>
+        {
+            var models = await client.ListModelsAsync();
+            return Results.Json(new
+            {
+                total = models.Count,
+                ids = models.OrderBy(m => m.Id, StringComparer.Ordinal).Select(m => m.Id).ToArray(),
+            });
+        });
+
+        // Un tour complet servi à travers la ressource orchestrée : c'est
+        // l'agent qui répond, pas une simulation.
+        web.MapGet("/ask", async (string prompt) =>
+        {
+            var session = await client.CreateSessionAsync(new SessionConfig());
+            var reply = await session.SendAndWaitAsync(prompt, TimeSpan.FromMinutes(2));
+            return Results.Json(new { sessionId = session.SessionId, reply }, jsonOpts);
+        });
+
+        await web.RunAsync();
         break;
     }
     default:

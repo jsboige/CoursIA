@@ -268,10 +268,18 @@ def add_label(pr_number: int, label: str) -> None:
 
 
 def remove_label(pr_number: int, label: str) -> None:
-    """Idempotent -- if the label is not on the PR, this is a no-op."""
+    """Idempotent -- if the label is not on the PR, this is a no-op.
+
+    ``check=True`` : le no-op idempotent est un **200** de l'API, pas une
+    exception ; un code de sortie non nul est donc toujours un vrai echec.
+    Sans lui, l'appelant ne pouvait pas le distinguer (#22758 point 4) :
+    son ``except subprocess.CalledProcessError`` etait du code mort, et la
+    PR restait comptee « cleared » avec son label toujours pose.
+    """
     subprocess.run(
         ["gh", "pr", "edit", str(pr_number), "--remove-label", label],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
+        check=True,
     )
 
 
@@ -383,12 +391,19 @@ def sweep(threshold: int, dry_run: bool, label: str) -> dict:
                 except subprocess.CalledProcessError as e:
                     errors.append(f"#{pr['number']}: {e}")
         elif verdict == "clear":
-            cleared.append(pr["number"])
-            if not dry_run and has_label(pr["number"], label):
+            # `cleared` ne nomme que les PR dont le label est REELLEMENT
+            # absent a la sortie du tour : l'ajouter avant l'ecriture faisait
+            # rapporter « cleared » une PR dont le retrait avait echoue
+            # (#22758 point 4).
+            if dry_run or not has_label(pr["number"], label):
+                cleared.append(pr["number"])
+            else:
                 try:
                     remove_label(pr["number"], label)
                 except subprocess.CalledProcessError as e:
                     errors.append(f"#{pr['number']} (remove): {e}")
+                else:
+                    cleared.append(pr["number"])
     return {
         "threshold": threshold,
         "dry_run": dry_run,

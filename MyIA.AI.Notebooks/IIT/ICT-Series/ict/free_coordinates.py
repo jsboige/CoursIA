@@ -56,6 +56,10 @@ __all__ = [
     "institutionalization",
     "irreversibility_debt",
     "FixedSpacePredictor",
+    "BenchVerdict",
+    "classer_proxys",
+    "temoin_decoratif",
+    "bancher_mecanisme",
 ]
 
 
@@ -229,18 +233,28 @@ def political_opening(g0: EvolutiveGame, g1: EvolutiveGame) -> int:
 def non_canonicity(
     game: EvolutiveGame,
     candidate_extensions: tuple[OntologicalMove, ...],
+    equivalence: dict[str, str] | None = None,
 ) -> int:
     """Proxy ``C_t = |AdmExt(G_t)|`` — nombre d'extensions non equivalentes.
 
     Deux extensions sont equivalentes si elles ouvrent les **memes actions**
-    (a renommage de concept pres) : c'est la forme observable de l'equivalence
-    pour ce banc. Une famille dont toutes les paires ouvrent le meme jeu rend
-    ``C_t = 1`` : le prolongement est canonique, il n'y a rien a choisir.
+    (a renommage pres) : c'est la forme observable de l'equivalence pour ce
+    banc. ``equivalence`` (meme mapping que la lecture marginalisee de
+    ``performative_power``) quotiente les ensembles d'actions par classe
+    AVANT comparaison : deux schemas de renommage differents qui ouvrent le
+    meme jeu quotient sont une seule et meme extension — une famille de
+    renommages est canonique, ``C_t = 1``. Sans ``equivalence``, la
+    comparaison porte sur les action sets bruts (identite des descripteurs).
     """
+    equiv = equivalence or {}
+
+    def _cls(a: str) -> str:
+        return equiv.get(a, a)
+
     action_sets = set()
     for eta in candidate_extensions:
         extended = apply_ontology(game, eta)
-        action_sets.add(frozenset(extended.actions))
+        action_sets.add(frozenset(_cls(a) for a in extended.actions))
     return len(action_sets)
 
 
@@ -450,3 +464,191 @@ class FixedSpacePredictor:
     def surprise_structurelle(self) -> float:
         """Perte d'un point hors support, en bits : ``log2(|A| + 1)``."""
         return float(np.log2(len(self.actions) + 1))
+
+
+# ---------------------------------------------------------------------------
+# Banc unique (tete de la strate 7) — unification transversale du depot
+# ---------------------------------------------------------------------------
+#
+# ICT-46 (premier barreau) tourne les six proxys sur ses propres mecanismes
+# jouets. Le banc unique (tete du palier, #23778) emploie les MEMES six proxys
+# comme lentille sur des mecanismes qui changent l'espace des actions PARTOUT
+# dans le depot, chacun transcrit depuis son organe natif de serie (volet A) ou
+# sa copie pedagogique declaree (volet B). Le banc ne reimplimente rien : il
+# mesure les proxys sur la transcription et CLASSE le coup (latent / nouveau /
+# decoratif). Les trois controles et le temoin negatif vivent ici, dans l'organe.
+
+@dataclass(frozen=True)
+class BenchVerdict:
+    """Resultat du banc unique pour un mecanisme : les six proxys + la classe.
+
+    ``P_R`` est la lecture BRUTE de ``performative_power`` ; ``P_R_marg`` la
+    lecture MARGINALISEE (copie -> original, via ``equivalence``). ``dA_t`` est
+    l'ouverture politique BRUTE (descripteurs nouveaux) ; ``dA_t_marg`` la
+    meme ouverture SOUS QUOTIENT par ``equivalence`` (classes nouvelles) :
+    un renommage pur a ``dA_t > 0`` et ``dA_t_marg = 0``. ``temoin`` liste
+    les violations du temoin negatif du 'decoratif' : vide = le verdict
+    'decoratif' est tenu, non vide = le temoin a ROUGI (ce n'est pas decoratif).
+    """
+
+    mecanisme: str
+    O_t: int
+    dA_t: int
+    C_t: int
+    P_R: float
+    P_R_marg: float
+    institutionnalisation: float
+    I_R: float
+    classe: str
+    temoin: tuple[str, ...] = ()
+    dA_t_marg: int = 0
+
+
+def classer_proxys(
+    o_t: int,
+    d_a_t: int,
+    c_t: int,
+    p_r_marg: float,
+    institutionalisation: float,
+    eps: float = 1e-2,
+    d_a_t_marg: int | None = None,
+) -> str:
+    """Les controles du banc, decides par les proxys MESURES (brut et quotient).
+
+    ``d_a_t_marg`` est l'ouverture politique SOUS QUOTIENT d'equivalence
+    (nombre de classes d'actions nouvelles) ; ``None`` la pose egale a
+    ``d_a_t`` (lecture brute, comportement historique).
+
+    - ``nouveau``   : l'espace change reellement (``O_t > 0`` et ``dA_t > 0``)
+      ET le coup survit au retrait de son instigateur (``institutionnalisation > 0``) ;
+    - ``nouveau (renommage actif)`` : des descripteurs nouveaux dont les
+      CLASSES sont nouvelles sous quotient (``dA_t > 0``, ``dA_t_marg > 0``,
+      ``O_t = 0``) — la copie change la dynamique de fond, ce n'est pas du
+      vernis ;
+    - ``ornamental`` : un concept nouveau qui n'ouvre RIEN (``O_t > 0``,
+      ``dA_t = 0``) — du verbiage, detecte par le garde-fou ``Delta A_t`` ;
+    - ``latent``    : l'espace ne change pas sous quotient (``O_t = 0``,
+      ``dA_t_marg = 0``) mais la coordonnee preexistante est activee
+      (``P(R) marginalisee > eps``) ;
+    - ``decoratif`` : l'espace ne change pas sous quotient ET, sous
+      marginalisation par equivalence, ``P(R) -> 0`` (<= ``eps``) et la
+      famille d'extensions est canonique (``C_t = 1``). Un renommage pur
+      (``dA_t > 0``, ``dA_t_marg = 0``) atterrit ICI : l'effet s'evapore
+      sous le quotient — c'est le cas central de la strate.
+    """
+    d_marg = d_a_t if d_a_t_marg is None else d_a_t_marg
+    if o_t > 0 and d_a_t > 0:
+        return "nouveau" if institutionalisation > 0 else "nouveau (non institutionnalise)"
+    if o_t > 0:
+        return "ornamental (concept sans action ouverte)"
+    if d_marg > 0:
+        if institutionalisation > 0:
+            return "nouveau (renommage actif)"
+        return "nouveau (renommage actif, non institutionnalise)"
+    if p_r_marg > eps:
+        return "latent"
+    if c_t == 1:
+        return "decoratif"
+    return "decoratif? (C_t > 1)"
+
+
+def temoin_decoratif(
+    o_t: int,
+    d_a_t: int,
+    c_t: int,
+    p_r_marg: float,
+    eps: float = 1e-2,
+    d_a_t_marg: int | None = None,
+) -> tuple[str, ...]:
+    """Le temoin negatif du 'decoratif' — le DUAL NOMME du classifieur.
+
+    Le verdict 'decoratif' tient si et seulement si les QUATRE conjoncts sont
+    vrais : ``P(R) marginalisee < eps``, ``C_t == 1``, ``O_t == 0``,
+    ``dA_t_marg == 0`` (ouverture nulle SOUS QUOTIENT ; ``None`` retombe sur
+    l'ouverture brute). Chaque violation est nommee — le temoin ne contredit
+    pas le classifieur, il NOMME les conjoints qui tombent : c'est une
+    checklist du verdict lue sur les memes observables, pas un contradicteur
+    independant (la falsifiabilite vit dans la mesure sous quotient, pas
+    dans un second organe).
+
+    - ``P(R)`` ne tombe pas a 0 sous l'equivalence -> l'habillage change en
+      realite la trajectoire (un coup qui agit, pas du vernis) ;
+    - ``C_t > 1`` -> le 'renommage' n'est pas un vrai renommage (les
+      extensions ne sont pas equivalentes) ;
+    - ``O_t > 0`` -> il y a un ajout reel de concepts (pas un habillage) ;
+    - ``dA_t_marg > 0`` -> des classes d'actions nouvelles existent sous
+      quotient (un renommage actif, pas decoratif) ; l'ouverture BRUTE
+      ``d_a_t`` seule ne compte pas — un renommage pur a ``d_a_t > 0`` et
+      reste decoratif.
+
+    Retourne le n-uplet des violations (vide = le 'decoratif' est tenu).
+    """
+    d_marg = d_a_t if d_a_t_marg is None else d_a_t_marg
+    violations: list[str] = []
+    if p_r_marg > eps:
+        violations.append("P(R) marginalisee > eps : l'habillage change la trajectoire")
+    if c_t != 1:
+        violations.append(f"C_t = {c_t} != 1 : les extensions ne sont pas equivalentes")
+    if o_t > 0:
+        violations.append(f"O_t = {o_t} > 0 : ajout reel de concepts")
+    if d_marg > 0:
+        violations.append(
+            f"Delta A_t (marginalisee) = {d_marg} > 0 : classes d'actions nouvelles"
+        )
+    return tuple(violations)
+
+
+def bancher_mecanisme(
+    mecanisme: str,
+    g0: EvolutiveGame,
+    g1: EvolutiveGame,
+    eta: OntologicalMove,
+    candidate_extensions: tuple[OntologicalMove, ...],
+    equivalence: dict[str, str] | None = None,
+    horizon: int = 40,
+    n_sim: int = 60,
+    rng: np.random.Generator | None = None,
+    eps: float = 1e-2,
+) -> BenchVerdict:
+    """Point d'entree du banc unique : passe un mecanisme a la grille d'ICT-46.
+
+    L'appelant transcrit l'effet du mecanisme — mesure par son **organe natif**
+    de serie (volet A) ou par sa **copie pedagogique declaree** (volet B) — en
+    une paire de jeux ``g0`` (avant) / ``g1`` (apres) + le coup ``eta`` qui le
+    capture. Le banc mesure alors les six proxys sur cette transcription et
+    **classe** le coup (``classer_proxys``), en exposant le temoin negatif
+    (``temoin``). Il ne reimplimente aucun mecanisme d'une autre serie.
+
+    ``candidate_extensions`` alimente ``C_t`` (``non_canonicity``, quotiente
+    par ``equivalence``) ; ``equivalence`` alimente la lecture marginalisee de
+    ``P(R)`` (copie -> original) ET l'ouverture politique sous quotient
+    ``dA_t_marg`` (classes d'actions nouvelles) : la marginalisation est un
+    QUOTIENT coherent sur les trois observables, pas un second tirage.
+    ``g1`` joue le bras ``do(R)`` et ``g0`` le bras ``do(-R)``.
+    """
+    if rng is None:
+        rng = np.random.default_rng(0)
+    equiv = equivalence or {}
+    cls0 = {equiv.get(a, a) for a in g0.actions}
+    cls1 = {equiv.get(a, a) for a in g1.actions}
+    d_a_t_marg = len(cls1 - cls0)
+    o_t = expansion_ontology(g0, g1)
+    d_a_t = political_opening(g0, g1)
+    c_t = non_canonicity(g0, candidate_extensions, equivalence)
+    p_r = performative_power(g1, g0, horizon, n_sim, rng)
+    p_r_marg = performative_power(g1, g0, horizon, n_sim, rng, equivalence)
+    inst = institutionalization(g1, eta, horizon, rng)
+    i_r = irreversibility_debt(eta)
+    return BenchVerdict(
+        mecanisme=mecanisme,
+        O_t=o_t,
+        dA_t=d_a_t,
+        C_t=c_t,
+        P_R=p_r,
+        P_R_marg=p_r_marg,
+        institutionnalisation=inst,
+        I_R=i_r,
+        classe=classer_proxys(o_t, d_a_t, c_t, p_r_marg, inst, eps, d_a_t_marg),
+        temoin=temoin_decoratif(o_t, d_a_t, c_t, p_r_marg, eps, d_a_t_marg),
+        dA_t_marg=d_a_t_marg,
+    )

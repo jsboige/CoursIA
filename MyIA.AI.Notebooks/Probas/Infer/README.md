@@ -2,13 +2,13 @@
 
 [← Série Probas](../README.md) | [Série PyMC (Python) →](../PyMC/README.md) | [ML.NET (C#) →](../../ML/ML.Net/README.md)
 
-Programmation probabiliste avec Microsoft Infer.NET : le **corpus bayésien** (19 notebooks, ce README) va des fondamentaux (distributions, factor graphs) aux frontières (modèles relationnels, TrueSkill, LDA, HMM, **inférence causale** (do-calculus de Pearl), **processus gaussiens** (GP sparse, frontières non-linéaires), **modèles hiérarchiques** (pooling partiel, shrinkage), **filtre de Kalman**, **détection de rupture** (change-point bayésien), **analyse de survie** (modèles de risque, censure)). Le **corpus de théorie de la décision** (10 notebooks, [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md)) couvre utilité espérée, EVPI, MDPs, indice de Gittins et **bandits bayésiens** (Thompson Sampling), avec des preuves formelles Lean 4.
+Programmation probabiliste avec Microsoft Infer.NET : le **corpus bayésien** (ce README) va des fondamentaux (distributions, factor graphs) aux frontières (modèles relationnels, TrueSkill, LDA, HMM, **inférence causale** (do-calculus de Pearl), **processus gaussiens** (GP sparse, frontières non-linéaires), **modèles hiérarchiques** (pooling partiel, shrinkage), **filtre de Kalman**, **détection de rupture** (change-point bayésien), **analyse de survie** (modèles de risque, censure)). Le **corpus de théorie de la décision** ([`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md)) couvre utilité espérée, EVPI, MDPs, indice de Gittins et **bandits bayésiens** (Thompson Sampling), avec des preuves formelles Lean 4.
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs .NET souhaitant maîtriser l'inférence probabiliste par message passing, et data scientists intéressés par les graphes de facteurs. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en probabilités avancées : les concepts sont introduits progressivement.
 
 ## Pourquoi cette sous-série
 
-Infer.NET est le seul framework d'inférence probabiliste natif dans l'écosystème .NET. Il compile un modèle probabiliste déclaratif en un **algorithme d'inférence spécialisé** via reflection et compilation Roslyn, offrant trois moteurs complémentaires : **Expectation Propagation (EP)** pour les modèles continus et mixtes (défaut, rapide mais approximatif), **Variational Message Passing (VMP)** pour les modèles à composantes comme LDA (stable, sous-estime l'incertitude), et **Gibbs Sampling** pour la validation sur petits modèles (exact asymptotiquement, lent). Cette approche compilée contraste avec l'échantillonnage MCMC générique de PyMC et permet des inférences en millisecondes plutôt qu'en minutes. Cette série couvre les **19 notebooks** du corpus bayésien (réseaux bayésiens, TrueSkill, LDA, HMM) — voir la table *Vue d'ensemble* ci-dessous pour la liste exhaustive. Le corpus de théorie de la décision (10 notebooks) et la preuve formelle Lean 4 de l'indice de Gittins vivent dans la sous-série [`DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md).
+Infer.NET est le seul framework d'inférence probabiliste natif dans l'écosystème .NET. Il compile un modèle probabiliste déclaratif en un **algorithme d'inférence spécialisé** via reflection et compilation Roslyn, offrant trois moteurs complémentaires : **Expectation Propagation (EP)** pour les modèles continus et mixtes (défaut, rapide mais approximatif), **Variational Message Passing (VMP)** pour les modèles à composantes comme LDA (stable, sous-estime l'incertitude), et **Gibbs Sampling** pour la validation sur petits modèles (exact asymptotiquement, lent). Cette approche compilée contraste avec l'échantillonnage MCMC générique de PyMC et permet des inférences en millisecondes plutôt qu'en minutes. Cette série couvre le corpus bayésien (réseaux bayésiens, TrueSkill, LDA, HMM) — voir la table *Vue d'ensemble* ci-dessous pour la liste exhaustive. Le corpus de théorie de la décision et la preuve formelle Lean 4 de l'indice de Gittins vivent dans la sous-série [`DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md).
 
 | Algorithme | Force | Limite | Cas d'usage |
 | ---------- | ----- | ------ | ---------- |
@@ -31,6 +31,8 @@ flowchart LR
 Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via Roslyn/reflection) en un algorithme d'inférence **spécialisé**, et l'on choisit l'un des trois moteurs selon la structure du modèle. C'est l'inverse d'un échantillonneur MCMC générique (PyMC) qui traite tout modèle pareil — d'où des inférences en millisecondes plutôt qu'en minutes, au prix de l'approximation (EP) ou d'une incertitude sous-estimée (VMP).
 
 **Double approche** : Cette série est le versant C#/.NET de la programmation probabiliste. Le versant Python (PyMC) couvre les mêmes modèles avec un moteur d'inférence différent. Voir [PyMC/](../PyMC/) pour la comparaison.
+
+> **Paires jumelles (Infer.NET ↔ PyMC)** — déclaration de maintenance (EPIC #24197, section C) : ces deux séries enseignent le *même plan* sur *deux moteurs* (message passing compilé vs échantillonnage MCMC) ; elles ne sont pas des doublons. Un changement pédagogique commun (un modèle ajouté ou retiré du plan, une notion renvoyée de l'une à l'autre) se porte **dans les deux** : si tu modifies l'une, vérifie l'autre. Exceptions connues au plan commun (carnet sans jumeau de l'autre côté) : Infer `01b-Premiers-Modeles` et `08b-TrueSkill-Formules-Fermees` ; PyMC `Observabilite-OTel`.
 
 **Applications réelles couvertes** : TrueSkill (Xbox Live, 100M+ joueurs), Item Response Theory (GMAT/GRE), LDA (Google News), systèmes de recommandation, diagnostic médical.
 
@@ -95,7 +97,7 @@ dotnet --version
 ### 2. Kernel dotnet-interactive
 
 ```bash
-dotnet tool install -g Microsoft.dotnet-interactive
+dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 ```
 
@@ -909,7 +911,7 @@ Infer/
 +-- scripts/                      # Scripts de maintenance
 ```
 
-> Le companion Lean 4 (preuves formelles de l'indice de Gittins) vit dans l'arc théorie de la décision : [`../DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb`](../DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb) (post-renumérotation #5200).
+> Le companion Lean 4 (preuves formelles de l'indice de Gittins) vit dans l'arc théorie de la décision : [`../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb`](../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb) (post-renumérotation #5200).
 
 ## Domaines d'Application
 
@@ -981,7 +983,7 @@ Pour un guide complet, voir [Infer-02b-Debugging-Bonnes-Pratiques](Infer-02b-Deb
 | `Inference exception: Improper distribution` | Le modèle contient une boucle causale ou une observation contradictoire. Le notebook 6 (Debugging) détaille les stratégies de diagnostic |
 | `Algorithm compilation failed` | Infer.NET compile un algorithme d'inférence par reflection. Vérifier que le modèle est dans une famille supportée (conjugué). Modèles non-conjugués nécessitent EP ou VMP |
 | Performance lente sur les grands modèles | Utiliser `InferenceEngine.Compiler.ShowGeneratedSource = true` pour inspecter le code généré. Le notebook 6 compare les algorithmes EP/VMP/Gibbs |
-| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive` |
+| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` |
 
 ### Erreur de compilation
 
@@ -1033,11 +1035,11 @@ Consultez le [Glossaire](Infer-Glossary.md) pour les définitions des termes tec
 
 ### Ce que vous avez appris
 
-Cette série vous a fait parcourir l'arc complet de la programmation probabiliste en .NET : des **fondamentaux** (variables `Variable<T>`, `InferenceEngine`, compilation Roslyn — [Infer-01-Setup](Infer-01-Setup.ipynb) à [Infer-03-Factor-Graphs](Infer-03-Factor-Graphs.ipynb)) aux **modèles relationnels avancés** (réseaux bayésiens, IRT, TrueSkill, LDA, HMM, recommandation — notebooks 4 à 12), jusqu'aux **frontières** (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman — notebooks 14 à 17). La **théorie de la décision** (utilité espérée, EVPI/EVSI, MDPs, bandits) forme un **arc autonome** dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), dont le **capstone formel** Lean 4 ([DecInfer-08b-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb)) démontre l'indice de Gittins. Trois acquis clés :
+Cette série vous a fait parcourir l'arc complet de la programmation probabiliste en .NET : des **fondamentaux** (variables `Variable<T>`, `InferenceEngine`, compilation Roslyn — [Infer-01-Setup](Infer-01-Setup.ipynb) à [Infer-03-Factor-Graphs](Infer-03-Factor-Graphs.ipynb)) aux **modèles relationnels avancés** (réseaux bayésiens, IRT, TrueSkill, LDA, HMM, recommandation — notebooks 4 à 12), jusqu'aux **frontières** (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman — notebooks 14 à 17). La **théorie de la décision** (utilité espérée, EVPI/EVSI, MDPs, bandits) forme un **arc autonome** dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), dont le **capstone formel** Lean 4 ([DecInfer-07b-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb)) démontre l'indice de Gittins. Trois acquis clés :
 
 - **Penser en factor graphs et message passing** — Infer.NET propose trois moteurs sur le graphe de facteurs : EP (message passing déterministe, rapide, par défaut, approximatif), VMP (déterministe, converge sur les modèles complexes) et Gibbs (échantillonnage, exact asymptotiquement). Les factor graphs (rendus via `FactorGraphHelper` et Graphviz) exposent la *structure* du modèle, pas seulement ses posteriors.
 - **Lire et choisir son algorithme d'inférence** — contrairement à un échantillonneur générique, Infer.NET **compile un algorithme dédié par modèle** (reflection + Roslyn). Vous savez désormais quand le message passing déterministe (EP/VMP) sur modèles conjugués et structurés est avantageux, et quand il faut céder la place à MCMC.
-- **Relier inference et décision, jusqu'à la preuve** — l'arc [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md) ferme la boucle (un posterior est l'**input** d'une politique optimale sous incertitude), et le companion Lean [DecInfer-08b-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb) pousse la rigueur jusqu'à la **preuve formelle Lean 4** de l'indice de Gittins.
+- **Relier inference et décision, jusqu'à la preuve** — l'arc [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md) ferme la boucle (un posterior est l'**input** d'une politique optimale sous incertitude), et le companion Lean [DecInfer-07b-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb) pousse la rigueur jusqu'à la **preuve formelle Lean 4** de l'indice de Gittins.
 
 ### Prochaines étapes
 
@@ -1047,6 +1049,6 @@ Cette série vous a fait parcourir l'arc complet de la programmation probabilist
 
 ### Le fil rouge
 
-Le fil rouge de cette série est la **compilation d'un algorithme d'inférence dédié** : à partir du modèle déclaratif, Infer.NET génère (via Roslyn) un solveur spécialisé qui **propage des messages** sur le graphe de facteurs. Ses moteurs par défaut — EP et VMP — exploitent la **conjugaison** des distributions pour des mises à jour déterministes en forme close, rapides et sans diagnostics de convergence ; un moteur de **Gibbs** (échantillonnage) prend le relais quand la conjugaison fait défaut. Là où PyMC fait tourner un échantillonneur MCMC générique sur une densité compilée, Infer.NET compile l'algorithme lui-même. Le capstone Lean 4 ([DecInfer-08b-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb), dans l'arc [`DecisionTheory`](../DecisionTheory/DecInfer/README.md)) élève ce fil rouge jusqu'à la **preuve formelle** : l'indice de Gittins n'est plus seulement calculé, il est *démontré*. Maîtriser Infer.NET, c'est savoir quand la structure d'un modèle se prête au message passing sur graphe de facteurs plutôt qu'à l'échantillonnage MCMC de PyMC.
+Le fil rouge de cette série est la **compilation d'un algorithme d'inférence dédié** : à partir du modèle déclaratif, Infer.NET génère (via Roslyn) un solveur spécialisé qui **propage des messages** sur le graphe de facteurs. Ses moteurs par défaut — EP et VMP — exploitent la **conjugaison** des distributions pour des mises à jour déterministes en forme close, rapides et sans diagnostics de convergence ; un moteur de **Gibbs** (échantillonnage) prend le relais quand la conjugaison fait défaut. Là où PyMC fait tourner un échantillonneur MCMC générique sur une densité compilée, Infer.NET compile l'algorithme lui-même. Le capstone Lean 4 ([DecInfer-07b-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb), dans l'arc [`DecisionTheory`](../DecisionTheory/DecInfer/README.md)) élève ce fil rouge jusqu'à la **preuve formelle** : l'indice de Gittins n'est plus seulement calculé, il est *démontré*. Maîtriser Infer.NET, c'est savoir quand la structure d'un modèle se prête au message passing sur graphe de facteurs plutôt qu'à l'échantillonnage MCMC de PyMC.
 
 Bonne exploration de la programmation probabiliste et de la théorie de la décision !

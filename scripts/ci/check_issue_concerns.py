@@ -108,7 +108,9 @@ ACK_PATTERN = re.compile(
 
 #: Un geste de lane pose apres le Concern — drapeau aggravant ``gesture-after``.
 #: Reconnu a son tag de protocole ou a sa signature de lane. Un geste n'est PAS
-#: une reponse : il ne retire pas le Concern de la liste.
+#: une reponse **en soi** : il ne retire pas le Concern de la liste. Exception :
+#: un geste qui **cite fortement** le Concern (son horodatage, un extrait) y
+#: repond — voir ``is_response_candidate`` (mesure : #2159).
 GESTURE_PATTERN = re.compile(
     r"^\[(?:CLAIMED|CLAIMED-AMEND|VERIFICATION|DELIVERED|RELEASED|INFO|DONE|"
     r"LIVRAISON|COMPLEMENT|ADJOINT PREFLIGHT|CLOSURE PREFLIGHT|OVERRIDE|"
@@ -376,6 +378,42 @@ def _shares_quote(source: str, reply: str, width: int = 40, step: int = 20) -> b
     return False
 
 
+#: Longueur minimale d'un extrait partage pour qu'une citation **par le texte**
+#: soit tenue pour une citation. La fenetre courte (40 caracteres) de
+#: ``_shares_quote`` est un **filet**, pas une preuve : mesure sur 624 issues,
+#: elle attrapait des coincidences de fenetre dans des posts de lane
+#: (« 46`, `37642385421`, `37642397358` » — une suite de numeros de PR partages,
+#: pas une citation). Pour un **geste**, dont le texte est formule, la citation
+#: par le texte n vaut que si elle est longue ; l'horodatage reste la forme
+#: forte par excellence (c'est la convention mesuree : « Reponse au Concern du
+#: 2026-10-18T22:26Z »).
+QUOTE_STRONG_MIN = 80
+
+
+def cites_concern(concern: Comment, reply: Comment) -> bool:
+    """Le commentaire ``reply`` cite-t-il **ce** Concern sans ambiguite ?
+
+    Deux formes, toutes deux explicites :
+
+    * l'**horodatage** du Concern (convention actuelle des lanes : « Reponse au
+      Concern du 2026-10-18T22:26Z »). Cette détection est donc couplée à la
+      signature des lanes, qui inclut la date et l'heure à la minute en UTC ;
+      le test ``test_lane_signature_contract_requires_utc_minute`` surveille
+      explicitement ce contrat ;
+    * un **extrait long** de son texte (>= ``QUOTE_STRONG_MIN`` caracteres).
+
+    La fenetre courte de ``_shares_quote`` est exclue ici : c'est ce qui
+    separait une citation d'une coincidence, mesure a l'appui (#2159 et les
+    624 issues lues).
+    """
+    token = hhmm_token(concern.created_at)
+    if token and token in normalise(reply.body):
+        return True
+    return _shares_quote(
+        concern.body, normalise(reply.body), width=QUOTE_STRONG_MIN, step=20
+    )
+
+
 #: Force d'une citation. Les trois formes mesurees ne se valent pas : l'horodatage
 #: du Concern et la citation de son texte s'obtiennent en **lisant** le Concern ;
 #: le mot seul s'ecrit sans l'avoir lu. La docstring historique de ``cites``
@@ -433,9 +471,27 @@ def proves(concern: Comment, reply: Comment, kind: str) -> bool:
 ACK_SUBSTANCE_MIN = 120
 
 
-def is_response_candidate(kind: str, comment: Comment) -> bool:
-    if kind in ("gesture", "concern"):
+def is_response_candidate(
+    kind: str, comment: Comment, concern: Comment | None = None
+) -> bool:
+    """Un commentaire ``comment`` peut-il refermer ``concern`` ?
+
+    ``concern`` est optionnel par compatibilite (les tests d'isolement
+    l'appellent sans) : **sans** lui, un geste n'est jamais candidat — c'est le
+    comportement historique, conserve.
+
+    Un geste de lane qui **cite fortement** le Concern (son horodatage, un
+    extrait de son texte) est en revanche une reponse : sous le login partage,
+    toute reponse de lane porte un tag de protocole (``[INFO]``, ``[REPLY]``...)
+    ou la signature ``lane myia-``, donc tout tombe dans ``gesture``. Sans cette
+    exception, une reponse qui cite le Concern restait invisible et le Concern
+    restait classe NON REPONDU — mesure : #2159, faux NON REPONDU sur la
+    reponse c6259310809 au Concern c6255920966.
+    """
+    if kind == "concern":
         return False
+    if kind == "gesture":
+        return concern is not None and cites_concern(concern, comment)
     if kind == "ack":
         return len(normalise(comment.body)) >= ACK_SUBSTANCE_MIN
     return True
@@ -463,7 +519,7 @@ def analyse_comments(
             candidates = [
                 (other, kind)
                 for other, kind in later
-                if is_response_candidate(kind, other)
+                if is_response_candidate(kind, other, comment)
             ]
             proof = None
             for other, kind in candidates:
@@ -483,7 +539,13 @@ def analyse_comments(
                     excerpt=excerpt(comment.body),
                     status=status,
                     proof=proof,
-                    gesture_after=any(kind == "gesture" for _, kind in later),
+                    # Le geste qui **referme** le Concern n'aggrave rien : le
+                    # drapeau vise les gestes poses apres le Concern et qui
+                    # n'y repondent pas.
+                    gesture_after=any(
+                        kind == "gesture" and other.id != proof
+                        for other, kind in later
+                    ),
                 )
             )
 
@@ -504,7 +566,7 @@ def analyse_comments(
             candidates = [
                 (other, kind)
                 for other, kind in later
-                if is_response_candidate(kind, other)
+                if is_response_candidate(kind, other, comment)
             ]
             # Une remarque n'est pas un Concern : seule une citation FORTE
             # (horodatage, extrait de texte) la referme. Le mot « Concern » n'est
@@ -529,7 +591,10 @@ def analyse_comments(
                     status=status,
                     proof=proof,
                     act=remark_act(comment.body),
-                    gesture_after=any(kind == "gesture" for _, kind in later),
+                    gesture_after=any(
+                        kind == "gesture" and other.id != proof
+                        for other, kind in later
+                    ),
                 )
             )
 
@@ -659,7 +724,19 @@ def render_text(reports: list[IssueReport], since: str, state: str, scanned: int
     return "\n".join(lines)
 
 
+def _ensure_utf8_output(stream) -> None:
+    # Windows : un flux redirige utilise la page de codes ANSI (cp1252) et un
+    # extrait d'emoji y crashe le print (UnicodeEncodeError, mesure 2026-10-30
+    # apres lecture de 686 issues). La restitution du coordinateur (#20183)
+    # passe par ce rendu a chaque cycle : la ligne [CONCERNS] ne doit pas
+    # dependre de la page de codes de la machine qui la produit.
+    if hasattr(stream, "reconfigure"):
+        stream.reconfigure(encoding="utf-8", errors="replace")
+
+
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):
+        _ensure_utf8_output(stream)
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--since", default="2026-09-25", help="issues mises a jour depuis (AAAA-MM-JJ)")
     parser.add_argument("--state", choices=["open", "closed", "all"], default="open")

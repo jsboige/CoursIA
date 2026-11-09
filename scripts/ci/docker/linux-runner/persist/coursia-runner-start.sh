@@ -208,8 +208,34 @@ mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 # global ne garde rien : il wedge. C'est le seul point ou les deux formes
 # divergent, et c'est ce que le cas 4 de persist/test_sentinel_purge.sh
 # mesure.
+#
+# ET PER-CHECKOUT, PAS PER-MACHINE (#21527) : `pgrep -f 'supervise\.sh start'`
+# reconnait un superviseur de n'importe quel checkout de la machine. Un
+# orphelin de test (etat sous /tmp, 6-11 h, lance depuis un autre worktree)
+# bloquait alors le purge de CETTE sentinelle : service reste en failed, pool
+# a zero. Le predicat par-checkout ne voit que le superviseur de CE depot.
 if [ "${1:-start}" = "start" ] && [ -e "$COURSIA_RUNNER_STATE_DIR/stop" ]; then
-  if pgrep -f 'supervise\.sh start' >/dev/null 2>&1; then
+  # Predicat PER-CHECKOUT (#21527) : le superviseur d'un AUTRE checkout
+  # (orphelin de test d'un autre worktree) ne doit pas bloquer le purge
+  # de CETTE sentinelle -- il bloquait le service en failed, pool a zero.
+  #
+  # L'organe est lu par `bash`, pas execute : son bit executable est 100644
+  # dans l'index, donc le noyau ne le rend pas executable sur un checkout
+  # Linux natif ; un exec refuse rendrait le predicat FAUX -- il repondrait
+  # « aucun superviseur vivant » et purgerait a tort.
+  #
+  # Repli CONSERVATEUR : si l'organe n'est pas lisible (depot perime sur la
+  # machine, ou wrapper deploye avant la mise a jour du checkout), on
+  # retombe sur le predicat per-machine : le repli peut REFUSER un purge
+  # a tort, jamais PURGER a tort.
+  HELPER="$REPO_DIR/scripts/ci/docker/linux-runner/persist/supervisor_live_for.sh"
+  SUPERVISOR_ALIVE=0
+  if [ -r "$HELPER" ]; then
+    if bash "$HELPER" "$REPO_DIR" start >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  else
+    if pgrep -f 'supervise\.sh start' >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  fi
+  if [ "$SUPERVISOR_ALIVE" -eq 1 ]; then
     echo "sentinelle presente ET superviseur vivant -- arret en cours, on n'interfere pas" >&2
     exit 1
   fi

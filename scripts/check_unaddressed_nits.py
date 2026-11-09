@@ -113,11 +113,45 @@ REPO = "jsboige/CoursIA"
 BOT_LOGINS = {"github-actions", "codecov", "dependabot", "copilot-pull-request-reviewer"}
 
 # Prefixes de tags utilises par les agents du cluster (protocole dashboard/PR).
+# Consommee par classify (exemption) ET can_lift (voie 3 de B.0) : la
+# constante reste stricte -- n'y ajouter que des tags de PROTOCOLE pur. Un
+# tag ici n'est pas seulement « pas un nit », il est aussi « pas une levee »
+# (can_lift l. 41xx ecarte le corps du nommage de suivi) : ce double effet
+# doit rester voulu, jamais accidentel.
 AGENT_PREFIXES = (
     "[PART-OF-EPIC", "[GRAIN", "[CLAIMED", "[DONE", "[INFO", "[DISPATCH",
     "[ACK", "[RELEASED", "[OVERRIDE", "[MERGED", "[WARN", "[ERROR", "[ASK",
     "[REPLY", "[PROPOSAL", "[BLOCKED", "[ESCALATION", "[DELIVERED",
 )
+
+# `[ACTION` et `[DIAG` (taxonomie d'emission P1 de #15511, cf COMMENT_TAG_RE
+# ci-dessous) servent la CLASSIFICATION, pas la levee. Mesure fondatrice
+# (po-2028:CoursIA, 2026-11-02 13:30Z) : sans eux, un compte-rendu CONFORME a
+# la regle sortait de l'exemption de classify (l. 44xx) et tombait dans la
+# branche CRLF/HUMAN des qu'il etait poste par un transport Windows -- le
+# compte-rendu d'une action devenait un nit bloquant la PR qu'il documente.
+# Reserve NanoClaw #24243 : les ajouter a AGENT_PREFIXES aurait un second
+# effet, invisible au diff : can_lift lit la meme constante pour ecarter les
+# narrations de protocole des levees, or un compte-rendu tague [ACTION] qui
+# NOMME une issue de suivi (« suivi ouvert : #N ») est un report delibere --
+# exactement le geste que la voie 3 de B.0 credite (collect_followup_lifts,
+# #13495/#14218 : l'auteur de la PR y est nommeur valide). L'extension vit
+# donc dans cette constante, consommee uniquement par classify ; can_lift
+# reste sur AGENT_PREFIXES.
+CLASSIFY_AGENT_PREFIXES = AGENT_PREFIXES + ("[ACTION", "[DIAG")
+
+# #15511 (P1) -- taxonomie d'emission des commentaires agent, premiere
+# ligne NON VIDE du corps : [ACTION] (le commentaire porte une action --
+# patch, rebase, rerun, fix), [DIAG] (diagnostic pur, sans action
+# attachee), [ASK] (attente d'une decision tierce). Le contrat est cote
+# EMISSION (meme parti que #14682 : elargir le filet a la prose
+# sur-accuse d'un facteur 5) : un commentaire non tague est INVISIBLE
+# pour ce detecteur -- il ne compte ni comme [DIAG] ni comme [ACTION].
+# Ces tags ne touchent NI `classify`, NI les levees : ils mesurent la
+# boucle de pompage, pas le verdict (un [DIAG] portant une reserve vivante
+# reste un nit par la voie habituelle).
+COMMENT_TAG_RE = re.compile(r"\[(ACTION|DIAG|ASK)\](?=\s|$)")
+DIAG_LOOP_LIMIT = 3  # > 3 [DIAG] consecutifs sans [ACTION] = PR bloquee
 
 # #11639 — l'arbitrage ECRIT du coordinateur. B.0 ne restreint pas l'auteur
 # d'une reponse de levée (« une reponse ecrite sur la PR qui nomme la
@@ -372,10 +406,26 @@ HOLD_TAGGED_HEAD = re.compile(r"^[\s*_#]*\[HOLD\b[^\]]*\]")
 # Volontairement LARGE : c'est le cote permissif du garde (il MAINTIENT le
 # blocage), donc un faux positif ici ne coute qu'une phrase de levee, tandis
 # qu'un trou coute un merge non mesure.
+# #24141 — l'alternative « avec <reserve> » ne matchait que « avec reserve » /
+# « avec reserves ». Le COMPTE, l'ARTICLE ou le DETERMINANT place ENTRE « avec »
+# et « reserve » cassait l'alternative : la review Hermes de #24117 (« Verdict :
+# APPROVE avec 1 reserve 🟡 ») n'etait pas reconnue comme une reserve VIVANTE,
+# et la PR est partie en merge le 02/11 05:07Z avec cette reserve en suspens —
+# B.0 rendait rc=0 (aucun bloquant).
+#
+# La quantite compte ici le NOMBRE de reserves : « 0 reserve » n'en est pas
+# une (meme logique que les CITERS, qui excluent « zero » et « 0 »). Les
+# nombres en toutes lettres sont pris pour ne pas laisser la meme famille de
+# trou ouvert (« avec deux reserves »).
+_APPROVE_RESERVATION_QUANTITE = (
+    r"(?:[1-9]\d*|une?|deux|trois|quatre|cinq|six|sept|huit|neuf|dix"
+    r"|quelques|plusieurs|des|les|la|ma|mon|tes|ses)"
+)
+
 _APPROVE_RESERVATION_RE = re.compile(
     r"(?i)("
     r"sous\s+r[ée]serve"
-    r"|avec\s+r[ée]serves?\b"
+    r"|avec\s+(?:" + _APPROVE_RESERVATION_QUANTITE + r"\s+)?r[ée]serves?\b"
     r"|r[ée]serve\s+(?:maintenue|subsiste|demeure|tient)"
     r"|je\s+maintiens"
     r"|je\s+conserve\s+(?:ma|mon|la)\b"
@@ -1521,13 +1571,74 @@ _GLYPH_DETERMINER_PRECEDER_RE = re.compile(
 )
 _SEVERITY_GLYPH_CLASS_RE = re.compile(f"[{''.join(SEVERITY_GLYPHS)}]")
 
+# #22911 — Position J (D) REPRISE : le vocabulaire de reprise d'une réserve
+# (ce qu'une lane écrit en répondant point par point) n'était pas dans le set
+# de méta-noms (A). Mesuré : « **Réponse a la réserve 🟡 de la review
+# `clusterManager-Myia` du 2026-10-25T16:47:21Z** » — le préfixe porte
+# `réserve`, pas `marqueur` : rien ne neutralisait, et la réponse qui
+# DOCUMENTE la levée était classée réserve neuve (rc=1 auto-infligé).
+#
+# DEUX conditions cumulatives, et la seconde est mesurée :
+#   (1) un MARQUEUR DE RÉPONSE sur la ligne (« Réponse à », « Response to »)
+#       — c'est ce qui distingue la lane qui RÉPOND d'un reviewer qui ÉMET ;
+#   (2) un nom de reprise ADJACENT au glyphe (au plus quelques caractères de
+#       remplissage entre le nom et le glyphe).
+# La condition (1) est indispensable : sans elle, le seul nom adjacent
+# (`réserve 🟡`) éteindait des RÉSERVES RÉELLES — mesuré sur la suite de
+# l'organe, 5 fixtures rotent (réponses de reviewer « APPROVE avec 1
+# réserve 🟡 », « **Réserve 🟡 — ...** », « Je lève ma propre reserve 🟡 »).
+# Un reviewer qui émet « réserve 🟡 » et une lane qui REPOND à une réserve
+# partagent le mot ; seul le marqueur de réponse les sépare.
+_GLYPH_REPLY_MARKER_RE = re.compile(r"(?i)\b(?:r[ée]ponses?|responses?)\b")
+_GLYPH_RESPONSE_NOUN_RE = re.compile(
+    r"(?i)\b(?:r[ée]serves?|r[ée]ponses?|remarques?|observations?|points?|items?|"
+    r"responses?|concerns?)\b[\s:,'’\-]{0,12}$"
+)
+# #22911 — SURFACE CONNUE, DELIBEREMENT LAISSEE OUVERTE (review du 2026-11-02,
+# point 2) : la regle (D) neutralise un glyphe ADJACENT a un nom de reprise
+# des lors que la ligne porte un marqueur de reponse. Une reserve NEUVE
+# emise DANS une reponse (« Reponse au point 🟡 : a corriger avant merge »)
+# partage cette forme et disparait donc de l'analyse. La regle (D) ne peut
+# pas distinguer une levee d'une levee-sans-levee : le discriminant serait
+# la queue semantique de la ligne (« traitee » vs « a corriger »), ce que
+# l'organe refuse de faire (un mot de contexte ne prouve pas une
+# intention). PARADE : une reserve neuve s'emet dans un commentaire
+# DISTINCT, sans marqueur de reponse sur la ligne. La surface est
+# verrouillee par un test (`test_22911_surface_connue_reserve_neuve_dans_reponse`
+# dans
+# scripts/tests/test_check_unaddressed_nits_22911.py) pour qu'un changement
+# du comportement soit visible.
+# #22911 — Position J (E) LIBELLE EN GRAS : une étiquette de réponse point par
+# point ouvre la ligne en gras et referme son glyphe entre parenthèses —
+# « **Live-read freshness (🟡)** : ... ». Le glyphe y désigne l'item nommé,
+# il ne l'émet pas : l'émission Hermes OUVRE la ligne, elle ne se cache pas
+# dans un libellé refermé. Trois conditions cumulatives : le libellé gras
+# s'ouvre en tête de ligne, il reste ouvert, et le glyphe ferme la
+# parenthèse.
+_GLYPH_LABEL_PAREN_RE = re.compile(r"\(\s*$")
+
+
+def _is_label_paren_mention(prefix: str, body: str, m: re.Match[str]) -> bool:
+    """Le glyphe referme un libellé en gras ouvert en tête de ligne (#22911 E)."""
+    stripped = prefix.lstrip()
+    if not stripped.startswith("**"):
+        return False
+    if stripped.count("**") % 2 == 0:
+        return False
+    if not _GLYPH_LABEL_PAREN_RE.search(prefix):
+        return False
+    return body[m.end():m.end() + 1] == ")"
+
 
 def _strip_glyphe_mentions(body: str) -> str:
     """Neutralise les glyphes de sévérité en position de mention (Position J, #14277).
 
     Chaque glyphe (🟡/🔴) dont la ligne porte un méta-nom le nommant (A),
-    qui est un item d'énumération `,`/`+` (B), ou qui est immédiatement
-    précédé d'un déterminant/possessif — un référent, (C) #16688 — est
+    qui est un item d'énumération `,`/`+` (B), qui est immédiatement
+    précédé d'un déterminant/possessif — un référent, (C) #16688 — qui est
+    nommé par un mot de reprise adjacent sur une ligne qui porte un marqueur
+    de réponse — une réponse, (D) #22911 — ou qui referme un libellé en gras
+    ouvert en tête de ligne (E) #22911, est
     remplacé par une espace : c'est une mention, pas une émission. Le glyphe
     en tête de ligne (en-tête de verdict Hermes) reste vivant.
     """
@@ -1537,7 +1648,10 @@ def _strip_glyphe_mentions(body: str) -> str:
         prefix = body[line_start:m.start()]
         if (_GLYPH_META_NOUN_RE.search(prefix)
                 or _GLYPH_ENUM_PRECEDER_RE.search(prefix)
-                or _GLYPH_DETERMINER_PRECEDER_RE.search(prefix)):
+                or _GLYPH_DETERMINER_PRECEDER_RE.search(prefix)
+                or (_GLYPH_REPLY_MARKER_RE.search(prefix)
+                    and _GLYPH_RESPONSE_NOUN_RE.search(prefix))
+                or _is_label_paren_mention(prefix, body, m)):
             out[m.start()] = " "
     return "".join(out)
 
@@ -3413,16 +3527,211 @@ def _nits_budget_exhausted() -> bool:
     return now > _NITS_PASS_DEADLINE
 
 
+# #17315 -- compteur REST/GraphQL de B.0.
+#
+# Le gate (`scripts/check_adjoint_prevalidation.py`) publie deja ce compteur ;
+# B.0, qui interroge le meme bucket partage de la flotte, ne le publishait pas :
+# sa consommation etait invisible. Deux corrections, pas une.
+#
+# 1. Le gate classe `pr view --json` comme du REST. C'est faux : la CLI passe
+#    par l'API GraphQL, donc par le BUCKET GRAPHIQL. Compter ces appels comme
+#    du REST sous-reportait la consommation du bucket partage -- le compte que
+#    le levier 4 doit reduire etait justement celui qui ne les voyait pas.
+#    La classification de reference est donc : `api graphql`, `pr view --json`,
+#    `pr list --json`, `issue view --json` = GraphQL ; `api repos/...` = REST.
+# 2. B.0 publie desormais son propre compte, sur stderr et dans la sortie
+#    JSON de l'audit retro.
+API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0}
+
+
+def _count_api_call(args: list[str]) -> None:
+    """Classe un appel `gh` : GraphQL (bucket partage) ou REST (bucket core).
+
+    `api graphql` est GraphQL par construction. `pr view --json`,
+    `pr list --json` et `issue view --json` le sont AUSSI : la CLI passe par
+    l'API GraphQL. Seuls les endpoints REST (`api repos/...`, `api user`, ...)
+    payent le bucket core.
+    """
+    if not args:
+        API_USAGE["rest"] += 1
+        return
+    if args[0] == "api" and len(args) >= 2 and args[1] == "graphql":
+        API_USAGE["graphql"] += 1
+        return
+    if args[0] in ("pr", "issue") and "--json" in args:
+        API_USAGE["graphql"] += 1
+        return
+    API_USAGE["rest"] += 1
+
+
 def gh_json(args: list[str]) -> object:
     if _nits_budget_exhausted():
         raise NitsBudgetExhausted(
             f"budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s depasse -- "
             "PR rendue absente (non evaluee, #18829), #21882 Option C")
+    _count_api_call(args)
     out = subprocess.run(
         ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
         timeout=GH_CALL_TIMEOUT_S,
     ).stdout
-    return json.loads(out)
+    return _project_gh_payload(args, json.loads(out))
+
+
+def _project_added_symbol_patch(patch: str) -> str:
+    """Garder exactement les lignes que #20066 lit dans un diff de commit."""
+    symbols = []
+    for line in patch.splitlines():
+        if line.startswith("+++"):
+            continue
+        if _SYM_ADDED_RE.match(line):
+            symbols.append(line)
+            if len(symbols) >= _SYMBOLS_PER_FILE_CAP:
+                break
+    return "\n".join(symbols)
+
+
+def _project_gh_payload(args: list[str], payload: object) -> object:
+    """Reduire les reponses au contrat consomme par B.0 avant leur cache.
+
+    Le tapis intercepte ``gh_json`` pour memoiser ses resultats. Les appels
+    `pr view` et REST transportaient beaucoup de champs de presentation,
+    d'identite ou de statistiques que l'organe ne lit jamais ; leur taille
+    faisait echouer le plafond de memoisation, meme si leur verdict etait
+    petit. Cette projection est donc faite dans le funnel, avant le cache.
+    Les champs qui portent une preuve B.0 (corps/date/auteur, SHA, arbres,
+    blobs) restent intacts. Le patch d'un commit ne sert qu'a extraire les
+    ``def``/``class`` ajoutes par #20066 : seuls ces ajouts, avec le meme
+    plafond, sont conserves.
+    """
+    if not isinstance(payload, (dict, list)):
+        return payload
+
+    def project_rows(value: object, fields: tuple[str, ...],
+                     nested: dict[str, tuple[str, ...]] | None = None) -> object:
+        if not isinstance(value, list):
+            return value
+        rows = []
+        for row in value:
+            if not isinstance(row, dict):
+                rows.append(row)
+                continue
+            item = {key: row[key] for key in fields if key in row}
+            for key, child_fields in (nested or {}).items():
+                child = row.get(key)
+                if isinstance(child, dict):
+                    item[key] = {name: child[name] for name in child_fields
+                                 if name in child}
+            rows.append(item)
+        return rows
+
+    if len(args) >= 2 and args[:2] == ["pr", "view"]:
+        if not isinstance(payload, dict):
+            return payload
+        projected = dict(payload)
+        projected["comments"] = project_rows(
+            payload.get("comments"), ("author", "body", "createdAt"),
+            {"author": ("login",)})
+        projected["reviews"] = project_rows(
+            payload.get("reviews"),
+            ("author", "body", "submittedAt", "state"),
+            {"author": ("login",)})
+        projected["commits"] = project_rows(
+            payload.get("commits"), ("oid", "committedDate"))
+        return projected
+
+    if len(args) < 2 or args[0] != "api":
+        return payload
+    endpoint = args[1].split("?", 1)[0].rstrip("/")
+    prefix = f"repos/{REPO}/"
+    if endpoint.startswith(prefix + "commits/"):
+        if not isinstance(payload, dict):
+            return payload
+        commit = payload.get("commit")
+        projected = {}
+        if isinstance(commit, dict):
+            message = commit.get("message")
+            projected["commit"] = {
+                "message": message.split("\n")[0] if isinstance(message, str) else message,
+                "tree": ({"sha": commit["tree"]["sha"]}
+                         if isinstance(commit.get("tree"), dict)
+                         and "sha" in commit["tree"] else commit.get("tree")),
+            }
+        files = project_rows(
+            payload.get("files"),
+            ("filename", "sha", "status", "previous_filename", "patch"))
+        if isinstance(files, list):
+            for item in files:
+                if isinstance(item, dict) and isinstance(item.get("patch"), str):
+                    item["patch"] = _project_added_symbol_patch(item["patch"])
+        projected["files"] = files
+        return projected
+
+    if endpoint.startswith(prefix + "git/trees/"):
+        if not isinstance(payload, dict):
+            return payload
+        return {
+            key: payload[key] for key in ("truncated", "tree") if key in payload
+        } | {"tree": project_rows(payload.get("tree"), ("path", "sha", "type"))}
+
+    if "/pulls/" in endpoint and endpoint.endswith("/reviews"):
+        return project_rows(payload, ("id", "user"), {"user": ("login",)})
+
+    if "/issues/" in endpoint and endpoint.endswith("/timeline"):
+        if not isinstance(payload, list):
+            return payload
+        projected = []
+        for event in payload:
+            if not isinstance(event, dict):
+                projected.append(event)
+                continue
+            row = {
+                key: event[key] for key in ("event", "actor", "dismissed_review")
+                if key in event
+            }
+            for key, child_fields in (
+                    ("actor", ("login",)),
+                    ("dismissed_review", ("review_id",))):
+                child = event.get(key)
+                if isinstance(child, dict):
+                    row[key] = {name: child[name] for name in child_fields
+                                if name in child}
+            projected.append(row)
+        return projected
+    return payload
+
+
+def _pr_commits_rest(pr: int) -> list[dict]:
+    """Commits d'une PR en REST, normalises a la forme que `analyse` attend.
+
+    #17315 : l'audit retro payait UN appel GraphQL par candidat
+    (`gh pr view --json commits`) pour une information de triage
+    (`code_pushed_after`). L'API REST rend les memes donnees pour le bucket
+    core : `sha` = `oid`, `commit.committer.date` = `committedDate`.
+
+    Equivalence verifiee sur 3 commits reels d'une PR a 3 commits, dont un
+    ou `author.date != committer.date` : les deux dates de la forme GraphQL
+    (`authoredDate`, `committedDate`) sont reproduites a l'identique.
+    """
+    raw = gh_json([
+        "api", f"repos/{REPO}/pulls/{pr}/commits", "--paginate", "--slurp",
+    ])
+    pages = raw if isinstance(raw, list) else []
+    flat: list[dict] = []
+    for page in pages:
+        if isinstance(page, list):
+            flat.extend(page)
+        elif isinstance(page, dict):
+            flat.append(page)
+    out: list[dict] = []
+    for c in flat:
+        commit = (c.get("commit") or {}) if isinstance(c, dict) else {}
+        out.append({
+            "oid": c.get("sha") or "",
+            "committedDate": (commit.get("committer") or {}).get("date"),
+            "authoredDate": (commit.get("author") or {}).get("date"),
+        })
+    return out
+
 
 
 # #14218 — la voie 3 de B.0 a besoin de 4 conditions, pas 1. Une seule
@@ -3862,8 +4171,14 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
              f.get("status") or "", f.get("previous_filename") or "")
             for f in (commit.get("files") or [])
         ]
+        # #20066 (piste 2 complete) : le patch par chemin, meme appel deja
+        # paye -- c'est la matiere premiere de la survie des symboles (les
+        # def/class des lignes AJOUTEES par le commit rembobine).
+        patches = {f.get("filename") or "": f.get("patch") or ""
+                   for f in (commit.get("files") or []) if f.get("patch")}
         if head or tree:
-            state[sha] = {"message": head or "", "tree": tree, "files": files}
+            state[sha] = {"message": head or "", "tree": tree, "files": files,
+                          "patches": patches}
     return state
 
 
@@ -3914,40 +4229,140 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
 # carte vide, arbre tronque, statut non reconnu) y retombe.
 
 
-def _rebase_preserved_by_path(rewound_files, head_blobs) -> bool:
+# #20066 -- trois etats, pas deux. « blob different » et « aucun blob
+# comparable » appellent le MEME refus, mais pas la meme lecture : le premier
+# dit que le travail a bouge, le second dit seulement que l'organe n'a pas pu
+# regarder. Les confondre fait affirmer a l'organe une comparaison qu'il n'a
+# pas faite.
+_BLOB_PRESERVED = "preserved"
+_BLOB_DIFFERS = "differs"
+_BLOB_UNCOMPARABLE = "uncomparable"
+
+
+def _rebase_blob_state(rewound_files, head_blobs) -> str:
     """#15973 : chaque chemin touche par le commit rembobine doit se
     retrouver dans la tete, byte pour byte -- modification presente au meme
     blob, deletion toujours absente, rename installe au nouveau chemin et
-    parti de l'ancien. Fail-closed sur toute donnee manquante ou statut non
-    reconnu : un organe de merge-gate ne devient jamais permissif sur un
-    doute, c'est le refus #15556 qui reste la reponse par defaut.
+    parti de l'ancien.
+
+    Rend `_BLOB_PRESERVED` (identite prouvee), `_BLOB_DIFFERS` (au moins un
+    blob compare et different) ou `_BLOB_UNCOMPARABLE` (aucun blob compare :
+    donnee absente, carte vide, liste tronquee, statut inconnu). Fail-closed
+    dans les trois cas autres que `preserved` : un organe de merge-gate ne
+    devient jamais permissif sur un doute, c'est le refus #15556 qui reste la
+    reponse par defaut. #20066 : le troisieme etat existe pour que le LIBELLE
+    du refus n'annonce jamais une mesure qui n'a pas eu lieu.
     """
     if not rewound_files or not head_blobs:
-        return False
+        return _BLOB_UNCOMPARABLE
     # L'API commits plafonne `files` a 300 entrees sans drapeau de
     # troncature : au-dela, la verification ne porterait qu'un sous-ensemble
     # -- une identite demi-prouvee est un fail-open, pas une preuve.
     if len(rewound_files) >= 300:
-        return False
+        return _BLOB_UNCOMPARABLE
     for filename, blob, status, previous in rewound_files:
         if not filename or not blob:
-            return False
+            return _BLOB_UNCOMPARABLE
         if status == "removed":
             if filename in head_blobs:
-                return False
+                return _BLOB_DIFFERS
             continue
         if status == "renamed":
             if not previous or previous in head_blobs:
-                return False
+                return _BLOB_DIFFERS
             if head_blobs.get(filename) != blob:
-                return False
+                return _BLOB_DIFFERS
             continue
         if status in ("added", "modified", "changed", "copied"):
             if head_blobs.get(filename) != blob:
-                return False
+                return _BLOB_DIFFERS
             continue
-        return False  # statut inconnu : refus conservateur
-    return True
+        return _BLOB_UNCOMPARABLE  # statut inconnu : refus conservateur
+    return _BLOB_PRESERVED
+
+
+def _rebase_preserved_by_path(rewound_files, head_blobs) -> bool:
+    """Contrat booleen de #15973, conserve : `True` seulement si l'identite
+    par chemin est PROUVEE. Les deux etats non prouvables (`differs`,
+    `uncomparable`) rendent `False`, comme avant #20066."""
+    return _rebase_blob_state(rewound_files, head_blobs) == _BLOB_PRESERVED
+
+
+# #20066 (piste 2 complete, residu nomme en c.6392789418) : quand l'identite
+# byte-par-byte echoue parce que la PR a CONTINUE de travailler les memes
+# fichiers (l'etat `differs` ordinaire d'une PR qui itere), le FOND de la
+# levee reste verifiable autrement : les SYMBOLES (def/class) introduces par
+# le commit rembobine survivent-ils a la tete ? Survie complete = la
+# substance citee par la levee est presente ; le mouvement des blobs est
+# celui du travail qui a grandi, pas celui d'une disparition. Toute donnee
+# manquante (pas de patch, fichier non-.py, blob de tete illisible, trop de
+# fichiers) reste REFUS (fail-closed, contrat de l'issue : « le meme
+# fail-closed sur donnee manquante ») ; la piste ne desserre jamais le gate
+# sur un doute, elle ne le desserre que sur une presence MESUREE.
+_SYM_ADDED_RE = re.compile(r"^\+\s*(?:async\s+)?(?:def|class)\s+([A-Za-z_]\w*)")
+_SYMBOLS_PER_FILE_CAP = 50
+_SYMBOL_FILES_CAP = 5
+
+
+def _introduced_symbols(patches: dict) -> dict[str, list[str]]:
+    """Extraire les symboles INTRODUITS par le commit rembobine, fichier
+    .py par fichier .py : les noms des def/class des lignes ajoutees du
+    patch (un `+` en premiere colonne). Les lignes de contexte et les
+    deletions ne comptent pas ; un commit qui ne touche que de la prose ou
+    des notebooks rend un dict vide -- il n'y a rien a verifier."""
+    out: dict[str, list[str]] = {}
+    for path, patch in (patches or {}).items():
+        if not path.endswith(".py") or not patch:
+            continue
+        names: list[str] = []
+        for line in patch.splitlines():
+            if line.startswith("+++"):
+                continue
+            m = _SYM_ADDED_RE.match(line)
+            if m:
+                names.append(m.group(1))
+            if len(names) >= _SYMBOLS_PER_FILE_CAP:
+                break
+        if names:
+            out[path] = names
+    return out
+
+
+def _symbols_survive_head(introduced: dict, head_blobs: dict,
+                          fetch_blob) -> dict:
+    """Verifier que chaque symbole introduit par le commit rembobine existe
+    encore dans le fichier correspondant de la tete.
+
+    `fetch_blob(blob_sha)` rend le CONTENU du blob (injected : reseau en
+    production, fontion pure dans les tests) et peut lever. Rend :
+    `{"verdict": "all_survive", "checked": n, "files": m}` quand tout
+    survit ; `{"verdict": "missing", "missing": [...], "checked": n}` quand
+    au moins un symbole (ou son fichier entier) est parti ; `{"verdict":
+    "no_data", "reason": ...}` sur blob illisible -- fail-closed, l'appelant
+    garde le refus `differs`."""
+    missing: list[str] = []
+    checked = 0
+    for path, names in introduced.items():
+        blob = (head_blobs or {}).get(path)
+        if not blob:
+            # fichier parti de la tete : ses symboles sont partis avec lui
+            missing.extend(names)
+            checked += len(names)
+            continue
+        try:
+            content = fetch_blob(blob)
+        except Exception:
+            return {"verdict": "no_data", "reason": "blob_unreadable",
+                    "path": path}
+        for name in names:
+            checked += 1
+            if not re.search(rf"(?:def|class)\s+{re.escape(name)}\b", content):
+                missing.append(name)
+    if missing:
+        return {"verdict": "missing", "missing": sorted(set(missing)),
+                "checked": checked}
+    return {"verdict": "all_survive", "checked": checked,
+            "files": len(introduced)}
 
 
 def _pr_head_oid(data: dict) -> str:
@@ -3963,6 +4378,40 @@ def _pr_head_oid(data: dict) -> str:
     return ""
 
 
+def _resolve_absent_sha_symbols(state: dict, head_blobs: dict) -> dict:
+    """#20066 (piste 2 complete) : survie des symboles, par SHA resolu.
+
+    Ne s'execute QUE pour les SHAs dont l'identite par chemin rend
+    `differs` (le cas ou l'issue mesure un mensonge du libelle) et qui ont
+    introduit des def/class dans des .py. Le contenu des blobs de tete se
+    prend a raison d'un appel par fichier touche, cappe a
+    `_SYMBOL_FILES_CAP` fichiers par SHA : au-dela, `no_data` et le refus
+    `differs` conserve. Sans reseau (audit retro, `_resolve_absent_sha_state`
+    n'a rien resolu), rend {} et l'analyse retombe sur le libelle courant."""
+    import base64
+
+    out: dict[str, dict] = {}
+    for sha, v in (state or {}).items():
+        if _rebase_blob_state(v.get("files") or [], head_blobs or {}) \
+                != _BLOB_DIFFERS:
+            continue
+        introduced = _introduced_symbols(v.get("patches") or {})
+        if not introduced:
+            continue  # rien de mesurable : le libelle differs reste le vrai
+        if len(introduced) > _SYMBOL_FILES_CAP:
+            out[sha] = {"verdict": "no_data", "reason": "too_many_files",
+                        "files": len(introduced)}
+            continue
+
+        def fetch(blob_sha: str, _repo: str = REPO) -> str:
+            obj = gh_json(["api", f"repos/{_repo}/git/blobs/{blob_sha}"])
+            return base64.b64decode(obj.get("content") or "").decode(
+                "utf-8", "replace")
+
+        out[sha] = _symbols_survive_head(introduced, head_blobs, fetch)
+    return out
+
+
 def _attach_absent_sha_context(data: dict) -> None:
     """Resolution serveur du contexte SHA, AVANT analyse (qui reste pure).
 
@@ -3970,6 +4419,8 @@ def _attach_absent_sha_context(data: dict) -> None:
     #13639), arbres des commits rembobines plus arbre de la tete (#15556),
     et blobs par chemin (#15973) -- un appel reseau par SHA, plus un pour
     la tete, plus un pour sa carte chemin->blob quand un SHA absent existe.
+    #20066 piste 2 : plus, par SHA dont l'identite rend `differs`, le
+    contenu des blobs de tete touches (cappe) pour la survie des symboles.
     """
     state = _resolve_absent_sha_state(data)
     data["_absent_sha_messages"] = {s: v["message"] for s, v in state.items()
@@ -4008,6 +4459,7 @@ def _attach_absent_sha_context(data: dict) -> None:
         except subprocess.CalledProcessError:
             head_blobs = {}
     data["_head_blobs"] = head_blobs
+    data["_absent_sha_symbols"] = _resolve_absent_sha_symbols(state, head_blobs)
 
 
 # #16780 — un corps reduit a un chemin local (l'accident `gh --body
@@ -4357,7 +4809,7 @@ def classify(author: str, body: str) -> str | None:
         return None  # verdict humain positif (APPROVE / APPROVED / LGTM) SANS reserve vivante : equivalent state:APPROVED
     if not live_concern and has_live_marker(body, POSITIVE_MARKERS):
         return None  # approbation sans reserve vivante : la review conclut, ne reserve pas
-    if stripped.startswith(AGENT_PREFIXES):
+    if stripped.startswith(CLASSIFY_AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
         return "BOT-CONCERN" if live_concern else None
     # #19810 — proxy CRLF serre : un corps CRLF ne tient HUMAN que s'il porte
@@ -4642,6 +5094,54 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
         return _scope_lifted_sentence(
             body, re.compile(r"(?i)\b(?:hermes|nanoclaw)\b"))
     return False
+
+
+def _diag_loop(pr_data: dict, cutoff: datetime) -> dict:
+    """#15511 (P1) : plus longue serie de [DIAG] sans [ACTION] intercale.
+
+    Mesure fondatrice : PR #14821 -- 31 commentaires / 68 101 caracteres
+    d'infra-diagnostic sur 5 jours, pour un livrable qui n'avait pas bouge
+    depuis le commit du premier jour. Le pompage se detecte a la structure,
+    pas au contenu : seul un commentaire tague [ACTION] interrompt la
+    serie ; un commentaire non tague ou tague [ASK] est TRANSPARENT
+    (« sans [ACTION] intercale » -- l'issue P1 mot pour mot). Les bots et
+    les commentaires posterieurs au cutoff sont exclus, comme partout
+    ailleurs dans l'organe.
+    """
+    tagged = []
+    for c in pr_data.get("comments") or []:
+        login = (c.get("author") or {}).get("login", "")
+        if login in BOT_LOGINS:
+            continue
+        body = (c.get("body") or "").strip()
+        when = ts(c.get("createdAt"))
+        if not body or when is None or when > cutoff:
+            continue
+        first = next((ln.strip() for ln in body.splitlines() if ln.strip()), "")
+        m = COMMENT_TAG_RE.match(first)
+        if m:
+            tagged.append((m.group(1), login, when, first))
+    best_run, best_authors, best_at, best_line = 0, "", None, ""
+    run, authors = 0, []
+    for tag, login, when, first in tagged:
+        if tag == "ACTION":
+            run, authors = 0, []
+            continue
+        if tag != "DIAG":
+            continue  # [ASK] : transparent, ni serie ni interruption
+        run += 1
+        authors.append(login)
+        if run > best_run:
+            best_run, best_authors, best_at, best_line = (
+                run, ", ".join(dict.fromkeys(authors)), when, first)
+    return {
+        "max_run": best_run,
+        "authors": best_authors,
+        "at": best_at.isoformat() if best_at else None,
+        "line": best_line,
+        "diag_count": sum(1 for t, *_ in tagged if t == "DIAG"),
+        "action_count": sum(1 for t, *_ in tagged if t == "ACTION"),
+    }
 
 
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
@@ -5082,10 +5582,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         rewound_files_map = pr_data.get("_absent_sha_files") or {}
         head_tree = pr_data.get("_head_tree")
         head_blobs = pr_data.get("_head_blobs") or {}
+        sha_symbols_map = pr_data.get("_absent_sha_symbols") or {}
         kept_lifts = []
         for (t, lifter, lift_body) in explicit_lifts:
             refused = None
             refused_known_change = False
+            refused_blob_state = None
+            refused_symbols = None
             warned = None
             artifact = None
             for sha in sorted(_cited_shas(lift_body)):
@@ -5118,11 +5621,27 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     # la tete). Fail-closed : sans donnees ou sans identite,
                     # le refus #15556 reste la reponse.
                     sha_files = rewound_files_map.get(sha) or []
-                    if _rebase_preserved_by_path(sha_files, head_blobs):
+                    blob_state = _rebase_blob_state(sha_files, head_blobs)
+                    if blob_state == _BLOB_PRESERVED:
                         if artifact is None:
                             artifact = (sha, "rebase_preserved")
                         continue
+                    # #20066 (piste 2 complete) -- l'identite byte-par-byte
+                    # a echoue parce que la PR a continue de travailler ;
+                    # avant de refuser, regarder si le FOND de la levee a
+                    # survécu : tous les symboles introduits par le commit
+                    # rembobine existent encore a la tete ? Survie complete
+                    # = artefact non bloquant (le travail cite est present) ;
+                    # symbole absent = refus, NOMME ; donnee manquante =
+                    # refus `differs` courant (fail-closed inchange).
+                    sha_symbols = sha_symbols_map.get(sha) or {}
+                    if sha_symbols.get("verdict") == "all_survive":
+                        if artifact is None:
+                            artifact = (sha, "symbols_survive")
+                        continue
                     refused = sha
+                    refused_blob_state = blob_state
+                    refused_symbols = sha_symbols or None
                     if tree and head_tree:
                         refused_known_change = True
                     break
@@ -5130,7 +5649,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             if refused:
                 voided_lifts.append(
                     {"author": lifter, "at": t.isoformat(), "sha": refused,
-                     "tree_differs": refused_known_change})
+                     "tree_differs": refused_known_change,
+                     "blob_state": refused_blob_state,
+                     "symbols": refused_symbols})
             else:
                 kept_lifts.append((t, lifter, lift_body))
                 if artifact:
@@ -5484,6 +6005,22 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     before_lc = [u for u in unevaluated if not u["after_last_commit"]]
     to_read = sorted(after_lc + before_lc[-3:], key=lambda u: u["at"] or "")
 
+    # #15511 (P1) -- boucle de diagnostic sans action : > 3 [DIAG]
+    # consecutifs sans [ACTION] intercale. Ne lit QUE les commentaires
+    # tagues (contrat d'emission) : rien ne change pour une PR dont
+    # personne n'utilise la taxonomie -- le detecteur rend max_run=0.
+    diag_loop = _diag_loop(pr_data, cutoff)
+    if diag_loop["max_run"] > DIAG_LOOP_LIMIT:
+        at_dt = ts(diag_loop["at"])
+        blocking.append({
+            "kind": "DIAG-LOOP", "author": diag_loop["authors"],
+            "src": "comment", "channel": "comment",
+            "at": diag_loop["at"] or "?",
+            "gap_hours": (round((cutoff - at_dt).total_seconds() / 3600.0, 1)
+                          if at_dt else None),
+            "excerpt": _excerpt(diag_loop["line"]),
+        })
+
     return {
         "pr": pr_data.get("number"),
         "title": (pr_data.get("title") or "")[:110],
@@ -5495,6 +6032,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         "rewind_artifacts": rewind_artifacts,
         "unevaluated": to_read,
         "unevaluated_total": len(unevaluated),
+        "diag_loop": diag_loop,
     }
 
 
@@ -5586,15 +6124,39 @@ def _print_sha_notes(result: dict) -> None:
             why = "arbre identique à la tête"
         elif a["reason"] == "rebase_preserved":
             why = "rebase sur base avancée, blobs identiques par chemin"
+        elif a["reason"] == "symbols_survive":
+            # #20066 piste 2 : le blob a bougé (la PR a continué de
+            # travailler), mais la SUBSTANCE de la levée est mesurée
+            # présente -- chaque def/class introduit par le commit cité
+            # existe encore à la tête.
+            why = ("blobs modifiés mais symboles introduits par la levée "
+                   "tous présents à la tête")
         else:
             why = "fichiers de la PR inchangés"
         print(f"  [i] levee de {a['author']} à {a['at']} cite {a['sha']} "
               f"rembobiné par un push muet ({why}) — preuve conservée, "
               f"non bloquant")
     for v in result.get("voided_lifts") or []:
-        detail = (" — l'arbre DIFFÈRE de la tête : blob modifié depuis la levée, fond non vérifié"
-                  if v.get("tree_differs")
-                  else " — arbre non comparable, refus conservateur")
+        # #20066 -- `tree_differs` dit que les deux arbres sont connus et
+        # differents ; il ne dit pas qu'un BLOB a ete compare. Quand
+        # `sha_files` est vide (pas d'entree pour ce SHA), ou la carte de la
+        # tete vide, `_rebase_blob_state` rend `uncomparable` : le refus est
+        # le meme, le libelle doit dire qu'aucun blob n'a ete regarde.
+        if not v.get("tree_differs"):
+            detail = " — arbre non comparable, refus conservateur"
+        elif v.get("blob_state") == _BLOB_UNCOMPARABLE:
+            detail = (" — l'arbre DIFFÈRE de la tête : aucun blob comparable, "
+                      "refus conservateur")
+        elif (v.get("symbols") or {}).get("verdict") == "missing":
+            # #20066 piste 2 : le fond a ÉTÉ mesuré, et il manque -- c'est
+            # la seule formule qui ait le droit de parler de réserve, car
+            # elle nomme ce qui a disparu.
+            absents = ", ".join((v["symbols"].get("missing") or [])[:5])
+            detail = (f" — l'arbre DIFFÈRE de la tête : blob modifié et "
+                      f"symbole(s) introduit(s) par la levée ABSENT(s) de "
+                      f"la tête ({absents})")
+        else:
+            detail = (" — l'arbre DIFFÈRE de la tête : blob modifié depuis la levée, fond non vérifié")
         print(f"  [!] NON LEVE — levee de {v['author']} à {v['at']} : cite "
               f"{v['sha']}, absent des commits de la PR (résolu côté serveur, "
               f"mais rembobiné par un push ultérieur){detail}")
@@ -5708,9 +6270,12 @@ def audit(limit: int, search: str | None = None) -> int:
                        issue_info=gh_issue_info)["blocked"]:
             continue
         try:
-            p["commits"] = gh_json(
-                ["pr", "view", str(p["number"]), "--repo", REPO, "--json", "commits"]
-            )["commits"]
+            # #17315 : REST, pas `gh pr view --json commits`. L'ecriture
+            # GraphQL de cet appel payait le BUCKET PARTAGE pour une
+            # information de triage ; la meme information se lit en REST
+            # (bucket core). Forme normalisee, identique a celle que
+            # `analyse` attendait.
+            p["commits"] = _pr_commits_rest(p["number"])
         except subprocess.CalledProcessError:
             p["commits"] = []
         # Ce 2e passage rend le MEME verdict `blocked` que le pre-filtre — un
@@ -5731,6 +6296,9 @@ def audit(limit: int, search: str | None = None) -> int:
         "oldest_merged": min((p["mergedAt"] for p in prs if p.get("mergedAt")), default=None),
         "newest_merged": max((p["mergedAt"] for p in prs if p.get("mergedAt")), default=None),
         "flagged": len(findings),
+        # #17315 : la consommation de l'audit, rendue visible (bucket partage
+        # GraphQL vs bucket core REST).
+        "api_usage": dict(API_USAGE),
         "findings": findings,
     }, indent=1, ensure_ascii=False))
     return 0
@@ -5753,10 +6321,17 @@ def main() -> int:
     args = ap.parse_args()
     try:
         if args.audit:
-            return audit(args.limit, args.search)
-        if args.pr is None:
+            rc = audit(args.limit, args.search)
+        elif args.pr is None:
             ap.error("fournir un numero de PR, ou --audit")
-        return gate(args.pr, args.json)
+            return 1
+        else:
+            rc = gate(args.pr, args.json)
+        # #17315 : la consommation sort sur stderr, comme le fait le gate --
+        # un compteur publie n'est lu par personne s'il reste dans le JSON.
+        print(f"API-USAGE (#17315) : rest={API_USAGE['rest']} "
+              f"graphql={API_USAGE['graphql']}", file=sys.stderr)
+        return rc
     except subprocess.TimeoutExpired as exc:
         # #19643 (residu) : gh n'a pas repondu dans sa borne -- aucun verdict.
         # Non-CLEAN (rc=1, fail-closed), jamais un rc=0 ni une trace nue.

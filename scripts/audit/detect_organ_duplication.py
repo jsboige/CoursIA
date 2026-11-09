@@ -386,7 +386,7 @@ def _lean_twin_unit(path: str) -> str:
 
 
 def _lean_skip_dir(name: str) -> bool:
-    # Lakes externes : dossiers *_peters (dependance Lake, rule code-style §Lean).
+    # Lakes externes : dossiers *_peters (dependance Lake, rule lean-i18n §Lean).
     return name in LEAN_SKIP_DIRS or name.endswith("_peters")
 
 

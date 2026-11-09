@@ -242,6 +242,249 @@ wch_quarantine_clone() {  # <repo>
   return 0
 }
 
+# --- Retention des quarantaines `<repo>.stale-<ts>` -----------------------
+#
+# `wch_quarantine_clone` ci-dessus et `mirror_seed_work` (entrypoint.sh)
+# ecartent un clone en le RENOMMANT, jamais en le supprimant : le geste est
+# reversible et l'arbre reste inspectable. Rien ne retirait ensuite ces
+# repertoires -- et le renommage se repete a chaque echec de repack comme a
+# chaque `_work` trouve sans `.git`, si bien que la retention etait INFINIE
+# par construction. Mesure rapportee par po-2027 (offerte sur roo-extensions
+# #4376, 2026-10-28), non reproduite ici : 17,4 Gio de `.stale-*` sur les
+# cinq work-volumes d'ai-01 (5,8 + 2,9 + 1,4 + 2,9 + 4,4).
+#
+# La borne GARDE les plus recents et retire les autres : ce que l'intention
+# « inspectable » vise est le dernier incident, pas l'historique complet. Un
+# repertoire n'est retire que si son nom porte EXACTEMENT la forme emise par
+# les deux sites (`<base>.stale-<AAAAMMJJ>T<HHMMSS>Z`) -- un `*.stale-*`
+# cree a la main, ou un clone vivant, ne matche jamais.
+wch_is_quarantine_name() {  # <basename>
+  case "$1" in
+    *.stale-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Profondeur d'empilement d'une quarantaine : `X.stale-A.stale-B` vaut 2.
+#
+# La borne ci-dessous comptait des NOMS, donc une chaine de dix generations
+# valait UNE entree et survivait a `keep=2`. Mesure po-2023 du 2026-10-30 :
+# `CoursIA.stale-…stale-…` (10 generations, du 27/10) = **4,8 Gio** a cote
+# d'un clone vivant de 2,4 Gio dans le meme volume -- soit un tiers du volume
+# pour un historique que l'intention « inspectable » ne vise pas.
+wch_quarantine_depth() {  # <basename> -> profondeur (0 si ce n'est pas une quarantaine)
+  local n="$1" depth=0
+  while case "$n" in
+          *.stale-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z) true ;;
+          *) false ;;
+        esac; do
+    n="${n%.stale-*}"
+    depth=$((depth + 1))
+  done
+  printf '%s\n' "$depth"
+}
+
+# Age d'une quarantaine, en heures, lu dans son NOM.
+#
+# PAS dans le mtime du repertoire : la mise en quarantaine est un `rename(2)`
+# (le renommage preserve le mtime du deplace), donc le mtime d'une quarantaine
+# est celui du clone abandonne -- pas celui de la mise en quarantaine. Pour une
+# chaine de renommages, c'est le DERNIER suffixe qui porte le dernier
+# renommage : c'est lui qui dit quand l'incident a eu lieu.
+#
+# Rend l'age en heures sur stdout ; rend 1 (et n'ecrit rien) si le nom ne porte
+# pas d'horodatage lisible. Un age illisible n'est PAS traite comme « ancien » :
+# l'echec de la mesure ne doit jamais autoriser une suppression.
+wch_quarantine_age_hours() {  # <basename>
+  local base="$1" stamp epoch now
+  stamp="${base##*.stale-}"
+  case "$stamp" in
+    [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z) ;;
+    *) return 1 ;;
+  esac
+  epoch="$(date -u -d "${stamp:0:4}-${stamp:4:2}-${stamp:6:2} ${stamp:9:2}:${stamp:11:2}:${stamp:13:2}" +%s 2>/dev/null)" || return 1
+  [ -n "$epoch" ] || return 1
+  now="$(date -u +%s)"
+  printf '%s\n' "$(( (now - epoch) / 3600 ))"
+}
+
+# Les horodatages sont de largeur fixe et en UTC : sous LC_ALL=C le tri
+# lexicographique EST un tri chronologique. `head -n -<keep>` rend tout SAUF
+# les <keep> derniers, c'est-a-dire les plus anciens -- ceux qu'on retire.
+#
+# TROIS BORNES, et il faut les trois (mesures ai-01 du 2026-10-31).
+#
+# La borne de NOMBRE (`WCH_STALE_KEEP`, defaut 2) borne la RETENTION EN
+# NOMBRE : sans elle, chaque echec de repack ajoutait une quarantaine et la
+# retention etait infinie par construction (#23076).
+#
+# Elle ne borne pas la DUREE : un slot qui a produit deux quarantaines les
+# garde indefiniment. Mesure ai-01 du 2026-10-31 : **15 clones en
+# quarantaine, 25 675 836 Kio = 24 Gio** sur les 12 work-volumes, ages de
+# **59 a 114 h** -- tous hors de toute fenetre de diagnostic, tous retenus
+# par la seule borne de nombre. La borne d'AGE (`WCH_STALE_MAX_AGE_HOURS`,
+# defaut 48 h) ferme cette duree : une quarantaine dont le dernier
+# renommage est plus vieux que la fenetre part, meme si le compte ne
+# l'emporterait pas.
+#
+# La borne de TAILLE (`WCH_STALE_MAX_SIZE_MB`, defaut 4096) ferme le VOLUME :
+# les deux bornes precedentes bornent le NOMBRE et la DUREE, pas l'OCCUPATION.
+# Un clone d'un slot mesure 2,4 a 2,7 Gio (mesure ai-01 du 2026-10-31) :
+# deux quarantaines fraiches de ce clone pèsent donc ~5 Gio sur le work-volume
+# du slot, et rien ne les arrete tant que le compte et l'age les gardent.
+# La borne de taille borne le CUMULE PAR SLOT : les survivants des deux
+# bornes precedentes sont mesures, et les plus ANCIENS d'abord partent tant
+# que le cumule du slot depasse la borne.
+#
+# Deux proprietes de ce choix :
+#   - la RECENCE est preservee autant que possible : c'est l'ancien qui part,
+#     pas le recent -- l'intention « inspectable » vise le dernier incident ;
+#   - si le survivant le plus RECENT depasse la borne A SEUL, il part aussi :
+#     une quarantaine plus grosse que la borne n'a plus d'interet
+#     d'inspection, et la borne doit borner (elle n'est pas un plancher).
+#     `WCH_STALE_MAX_SIZE_MB=0` desactive la borne entierement.
+#
+# Le defaut 4096 Mio n'est pas plus serre : une borne a 1 ou 2 Gio
+# supprimerait la quarantaine du dernier incident (elle pese le clone vivant
+# lui-meme, 2,4 a 2,7 Gio), c'est-a-dire exactement celle qu'on veut garder.
+# Le COUT de la mesure est borne par la borne de NOMBRE : seuls les
+# survivants (au plus `keep`) sont mesures, jamais toutes les quarantaines
+# du slot.
+wch_prune_quarantines() {  # <workdir>
+  local workdir="$1" keep="${WCH_STALE_KEEP:-2}" slot path base sz parent prefix rest tail
+  local max_age="${WCH_STALE_MAX_AGE_HOURS:-48}" age
+  local max_size="${WCH_STALE_MAX_SIZE_MB:-4096}" max_size_kb
+  local removed=0 reclaimed=0 idx first total_sz
+  local -a list=() aged=() sizes=()
+  case "$keep" in ''|*[!0-9]*) keep=2 ;; esac
+  # `max_age=0` DESACTIVE la borne d'age (echappatoire mesure : un parc qui
+  # voudrait la seule borne de nombre la pose explicitement).
+  case "$max_age" in ''|*[!0-9]*) max_age=48 ;; esac
+  # `max_size=0` DESACTIVE la borne de taille (meme echappatoire).
+  case "$max_size" in ''|*[!0-9]*) max_size=4096 ;; esac
+  max_size_kb=$(( max_size * 1024 ))
+  # `keep=0` retirerait TOUT, y compris la quarantaine du dernier incident :
+  # la borne la plus basse qui preserve l'intention est 1.
+  [ "$keep" -ge 1 ] || keep=1
+  [ -d "$workdir" ] || return 0
+  for slot in "$workdir"/*; do
+    [ -d "$slot" ] || continue
+    list=(); aged=(); sizes=()
+    # Le filtre de FORME passe AVANT le comptage. L'inverse a ete mesure : un
+    # `notes.stale-manuel` present dans le slot decalait la borne et faisait
+    # retirer une quarantaine de plus que le plafond demande (test dedie).
+    while IFS= read -r path; do
+      [ -n "$path" ] || continue
+      base="${path##*/}"
+      wch_is_quarantine_name "$base" || continue
+      # Une chaine empilee vaut `depth` generations, pas une : la ramener a
+      # `keep` est un RENOMMAGE (on retire les suffixes les plus ANCIENS, aucune
+      # donnee n'est supprimee) -- c'est ce qui rend la borne effective sur un
+      # empilement deja present sur disque, sans attendre qu'il se resorbe.
+      while [ "$(wch_quarantine_depth "$base")" -gt "$keep" ]; do
+        parent="${path%/*}"
+        prefix="${base%%.stale-*}"
+        rest="${base#*.stale-}"
+        tail="${rest#*.stale-}"
+        # Pas de seconde generation a retirer, ou le nom cible existe deja :
+        # on laisse la chaine telle quelle plutot que de la fusionner.
+        [ "$tail" != "$rest" ] || break
+        newname="$prefix.stale-$tail"
+        [ -e "$parent/$newname" ] && break
+        if mv -- "$path" "$parent/$newname" 2>/dev/null; then
+          echo "work_cache: quarantaine $base ramenee a $newname (generations les plus anciennes ecartees, contenu intact)"
+          path="$parent/$newname"
+          base="$newname"
+        else
+          break
+        fi
+      done
+      # L'AGE se lit dans le NOM (jamais dans le mtime : le renommage le
+      # preserve). Une quarantaine hors de la fenetre part meme si le compte
+      # ne l'emporterait pas -- c'est la borne qui rend la retention FINIE en
+      # duree, et non seulement en nombre.
+      if [ "$max_age" -gt 0 ]; then
+        age="$(wch_quarantine_age_hours "$base" 2>/dev/null || echo '')"
+        if [ -n "$age" ] && [ "$age" -gt "$max_age" ]; then
+          aged+=("$path")
+          continue
+        fi
+      fi
+      list+=("$path")
+    done < <(find "$slot" -mindepth 1 -maxdepth 1 -type d -name '*.stale-*' -print 2>/dev/null \
+               | LC_ALL=C sort)
+    # 1. La borne d'AGE : hors fenetre d'inspection, la quarantaine part --
+    #    meme si le compte (borne 2) la garderait.
+    for path in ${aged[@]+"${aged[@]}"}; do
+      base="${path##*/}"
+      sz="$(du -sk -- "$path" 2>/dev/null | awk '{print $1}')"
+      case "$sz" in ''|*[!0-9]*) sz=0 ;; esac
+      if rm -rf -- "$path" 2>/dev/null; then
+        removed=$((removed + 1))
+        reclaimed=$((reclaimed + sz))
+        echo "work_cache: quarantaine $base retiree (${sz} Kio, hors fenetre d'age de ${max_age} h)"
+      else
+        echo "work_cache: quarantaine $base NON retirable -- conservee" >&2
+      fi
+    done
+    # 2. La borne de NOMBRE : les plus anciennes au-dela du plafond.
+    if [ "${#list[@]}" -gt "$keep" ]; then
+      for (( idx = 0; idx < ${#list[@]} - keep; idx++ )); do
+        path="${list[idx]}"
+        base="${path##*/}"
+        sz="$(du -sk -- "$path" 2>/dev/null | awk '{print $1}')"
+        case "$sz" in ''|*[!0-9]*) sz=0 ;; esac
+        if rm -rf -- "$path" 2>/dev/null; then
+          removed=$((removed + 1))
+          reclaimed=$((reclaimed + sz))
+          echo "work_cache: quarantaine $base retiree (${sz} Kio)"
+        else
+          echo "work_cache: quarantaine $base NON retirable -- conservee" >&2
+        fi
+      done
+    fi
+    # 3. La borne de TAILLE : le CUMULE des survivants des deux bornes
+    #    precedentes est borne par slot. Seuls les survivants sont mesures
+    #    (au plus `keep`) : le cout de la mesure ne depend pas du nombre de
+    #    quarantaines du slot. Le plus ANCIEN part d'abord (la recence est
+    #    preservee) ; si le plus recent depasse la borne a lui seul, il part
+    #    aussi -- la borne BORNE, elle n'est pas un plancher.
+    if [ "$max_size" -gt 0 ] && [ "${#list[@]}" -gt 0 ]; then
+      first=$(( ${#list[@]} - keep ))
+      if [ "$first" -lt 0 ]; then first=0; fi
+      total_sz=0
+      for (( idx = first; idx < ${#list[@]}; idx++ )); do
+        sz="$(du -sk -- "${list[idx]}" 2>/dev/null | awk '{print $1}')"
+        case "$sz" in ''|*[!0-9]*) sz=0 ;; esac
+        sizes[idx]="$sz"
+        total_sz=$((total_sz + sz))
+      done
+      idx=$first
+      while [ "$idx" -lt "${#list[@]}" ] && [ "$total_sz" -gt "$max_size_kb" ]; do
+        path="${list[idx]}"
+        base="${path##*/}"
+        sz="${sizes[idx]}"
+        if rm -rf -- "$path" 2>/dev/null; then
+          removed=$((removed + 1))
+          reclaimed=$((reclaimed + sz))
+          echo "work_cache: quarantaine $base retiree (${sz} Kio, au-dessus de la borne de taille de ${max_size} Mio pour ce slot)"
+        else
+          echo "work_cache: quarantaine $base NON retirable -- conservee" >&2
+        fi
+        total_sz=$((total_sz - sz))
+        idx=$((idx + 1))
+      done
+    fi
+  done
+  # Un passage qui ne retire rien ne dit rien : le journal d'un slot sain
+  # reste lisible, et l'absence de ligne n'est pas un echec silencieux -- le
+  # retrait se prouve par l'arbre, jamais par le journal seul.
+  if [ "$removed" -gt 0 ]; then
+    echo "work_cache: retention des quarantaines -- $removed retiree(s), $reclaimed Kio rendus"
+  fi
+  return 0
+}
+
 # Le depot emprunte-t-il ses objets a un magasin partage (#18225) ? Un slot
 # seme par `git clone --shared` du miroir porte un fichier alternates non vide,
 # et c'est LUI qui distingue « ce slot ne tient que ses propres objets » de
@@ -350,8 +593,20 @@ wch_check_workdir() {
   for gitdir in "$workdir"/*/*/.git; do
     [ -e "$gitdir" ] || continue
     repo="${gitdir%/.git}"
+    # Une quarantaine EST un clone complet : elle porte donc un `.git`, et
+    # cette boucle la reprenait comme un depot vivant. Consequences mesurees
+    # sur po-2023 le 2026-10-30 : la maintenance la repackait (le repack
+    # echoue et AJOUTE des packs -- 2,4 -> 4,8 Gio), puis l'echec la
+    # re-quarantinait SOUS ELLE-MEME, d'ou `X.stale-A.stale-B…stale-J` : une
+    # generation par demarrage, dix au total. L'intention « inspectable » ne
+    # demande aucune maintenance : on passe, et l'empilement cesse a la source.
+    wch_is_quarantine_name "${repo##*/}" && continue
     wch_integrity_pass "$repo"
     wch_maintenance_pass "$repo" "$threshold"
   done
+  # Les quarantaines vivent a COTE des clones (`<workdir>/<slug>/<base>.stale-<ts>`),
+  # sous un nom qui porte un `.git` -- la boucle ci-dessus les exclut
+  # desormais explicitement, et c'est la retention ci-dessous qui les borne.
+  wch_prune_quarantines "$workdir"
   return 0
 }

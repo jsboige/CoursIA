@@ -1,10 +1,14 @@
+---
+pagetitle: "QuantConnect AI Trading - Série Éducative CoursIA"
+---
+
 # QuantConnect AI Trading - Série Éducative CoursIA
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 122
-breakdown: Python=63, projects=49, kelly_lean=6, ML-Training-Pipeline=4
-maturity: BETA=83, DRAFT=32, ALPHA=6, TEMPLATE=1
+pedagogical_count: 124
+breakdown: Python=65, projects=49, kelly_lean=6, ML-Training-Pipeline=4
+maturity: BETA=86, DRAFT=32, ALPHA=5, TEMPLATE=1
 -->
 
 > **Note éditoriale — counts kernels par sous-série** : Le marqueur CATALOG-STATUS agrégé ci-dessus reste **autoritatif** pour la décomposition par **sous-série** (Python / projects / ML-Training-Pipeline / kelly_lean). En revanche, pour les décomptes par **kernel** (Python vs Lean 4) **au sein** d'une sous-série — c'est-à-dire la répartition technique par interpréteur —, **ce README reste autoritatif** car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé. Cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks :
@@ -322,6 +326,7 @@ Le dossier **partner-course-quant-trading/** contient des exemples de recherche 
 
 ```
 partner-course-quant-trading/
+├── BACKTEST_INSTRUCTIONS.md  # Instructions backtests des stratégies optimisées (URLs Cloud, noms de runs, Sharpe attendus)
 ├── examples/           # Projets d'exemples du professeur
 ├── kit-transitoire/    # 3 stratégies ML/Framework progressives (RandomForest, XGBoost, Framework Composite)
 ├── scripts/            # Scripts utilitaires du cours
@@ -526,7 +531,7 @@ Le **fil rouge** de la série : un Sharpe spectaculaire en backtest court est pr
 - **TrendFollowing** : Sharpe 1.072 publié (2018-2025, état cloud antérieur) — **non reproductible par le code repo actuel** qui donne 0.36 (2015-2024, PSR 6.3%). La tendance persiste conceptuellement, mais le chiffre exact dépend de la version du code et de la fenêtre (cf [diagnostic reproductibilité](../../docs/qc/qc-comparative-backtests.md), finding 18).
 - **EMA-Cross-Alpha** : Sharpe -0.010 en aligned (vs 0.996 en backtest court) = overfitting sever. Démonstration pédagogique du danger des backtests courts.
 - **Composites : tout dépend de l'architecture** : Framework_Composite_TrendWeather tient (0.948, PSR 56.6%) là où MomentumRegime (combinaison SectorMom + Regime) obtient seulement 0.185 ("double-defense").
-- **Les stars du catalogue ne survivent pas toutes à l'alignement** : PuppiesOfTheDow (1.99 → 0.302) et HighBookToMarketFScore (2.09 → 0.411) s'effondrent sur 2018-2025 — leurs Sharpe catalogue venaient d'une fenêtre glissante non standardisée.
+- **Les stars du catalogue ne survivent pas toutes à l'alignement** : PuppiesOfTheDow (1.99 → 0.302) s'effondre sur 2018-2025 — son Sharpe catalogue venait d'une fenêtre glissante non standardisée. Pour HighBookToMarketFScore (2.09 → 0.411), les deux nombres ne portent pas sur la même fenêtre : 2.09 est le Sharpe OOS d'un an de la fiche de bibliothèque, et sur les fenêtres de la fiche le code du dépôt retrouve l'ordre de grandeur publié (#25264).
 - **Crypto = diversification stable** : MaxDD maitrisé (~17%), rendement modéré.
 
 > Voir [docs/qc/qc-comparative-backtests.md](../../docs/qc/qc-comparative-backtests.md) pour les 36 baselines vérifiées, les comparaisons best-vs-aligned, et les diagnostics détaillés (See #1630).

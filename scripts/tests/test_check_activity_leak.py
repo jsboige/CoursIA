@@ -55,6 +55,8 @@ markers_in_text = _mod.markers_in_text
 scan_notebook = _mod.scan_notebook
 scan_diff = _mod.scan_diff
 emit_diff = _mod.emit_diff
+anchored_line_tokens = _mod.anchored_line_tokens
+_output_text_tokens = _mod._output_text_tokens
 _markdown_paragraphs_of_blob = _mod._markdown_paragraphs_of_blob
 
 
@@ -225,6 +227,81 @@ class TestNegativeControls(unittest.TestCase):
         v = judge_passage(0, url_ts)
         self.assertIn("iso_ts", {n for n, _, _ in v.markers})
 
+    def test_link_file_target_is_not_a_lesson_tag(self):
+        """FP mesure #23004 : tailles de reseau dans des liens de navigation.
+
+        Cellule « Pour aller plus loin » de Percolation-05 (PR #22153) : des
+        liens vers les carnets voisins de la serie. ``Percolation-03b-Critique-
+        L128-L256.ipynb`` porte L128 + L256 (4 points) et ``Percolation-03c-
+        Critique-L512.ipynb`` porte L512 (2 points) : 6 points sur 665
+        caracteres, densite 9/1000 au-dessus du seuil de 8 -- alors que le
+        passage ne contient aucune reference a un cycle de travail. C'est le
+        geste meme que la navigation d'une serie recommande.
+        """
+        para = (
+            "Pour aller plus loin : la transition vers la dimension 2 est "
+            "mesuree dans [Percolation-03b-Critique-L128-L256.ipynb]"
+            "(Percolation-03b-Critique-L128-L256.ipynb), et l'effondrement "
+            "a la plus grande taille dans [Percolation-03c-Critique-L512.ipynb]"
+            "(Percolation-03c-Critique-L512.ipynb)."
+        )
+        v = judge_passage(0, para)
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
+        self.assertFalse(v.dense)
+
+    def test_file_target_mask_scoped_to_lesson_tag(self):
+        """Calibrage #23004 : le masque fichier ne touche aucun autre marqueur.
+
+        Voie 1 de l'issue : la cible du lien est masquee pour ``lesson_tag``
+        seulement. Un marqueur de coordination present dans le MEME passage
+        continue de compter -- le masque ne doit pas blanchir du recit de
+        cycle qui cacherait ses lecons derriere un nom de fichier.
+        """
+        para = (
+            "La lane a livre la tranche, voir "
+            "Percolation-03b-Critique-L128-L256.ipynb pour le compte rendu."
+        )
+        v = judge_passage(0, para)
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
+        self.assertIn("lane", {n for n, _, _ in v.markers})
+
+    def test_file_target_mask_leaves_bare_tag(self):
+        """Controle positif du fix #23004 : la forme NUE reste comptee.
+
+        Le masque couvre les CIBLES DE LIENS, pas la prose : un « L512 » ecrit
+        hors de tout nom de fichier reste un renvoi potentiel aux lecons et
+        doit continuer de compter. Sans ce test, un elargissement accidentel
+        du masque (par exemple a tout le texte autour d'un lien) eteindrait
+        le marqueur en silence.
+        """
+        para = (
+            "Nous avons applique les lecons L512 et L721 du registre avant "
+            "de livrer cette tranche."
+        )
+        v = judge_passage(0, para)
+        self.assertIn("lesson_tag", {n for n, _, _ in v.markers})
+
+    def test_file_target_mask_is_span_local(self):
+        """Calibrage (revue Hermes du 2026-10-28) : le masque ne couvre QUE le nom.
+
+        La revue designait un risque de faux NEGATIF : un masque trop large
+        cacherait un renvoi aux lecons ecrit a cote d'un nom de fichier. Le
+        masque substitue le seul span du nom par des espaces de meme longueur,
+        donc un « L<n> » de prose reste compte dans le meme passage. Mesure du
+        corpus au 2026-10-28 : aucune unite markdown ne cache un tel renvoi
+        derriere un nom de fichier -- l'ecart est assume, pas observe.
+        """
+        para = (
+            "Voir Percolation-03b-Critique-L128-L256.ipynb pour le detail : "
+            "nous appliquons les lecons L512 avant de livrer."
+        )
+        v = judge_passage(0, para)
+        tags = sorted(extrait for n, extrait, _ in v.markers if n == "lesson_tag")
+        # L512 est de la prose, et il vient APRES le nom de fichier -- un masque
+        # qui deborderait sur la fin de phrase l'eteindrait, et c'est ce que ce
+        # test interdit. L128/L256 sont DANS le nom : tailles de systeme.
+        self.assertEqual(["L512"], tags)
+
     def test_course_prose_clean(self):
         para = (
             "Monroe propose une regle proportionnelle stricte ou chaque elu "
@@ -241,11 +318,38 @@ class TestNegativeControls(unittest.TestCase):
             "Le test de Diebold-Mariano rend DM p = 0.032 sur 4 seeds, sous le seuil.",
             "La statistique DM compare les pertes MSE des deux modeles.",
             "Le dual momentum (DM) combine momentum absolu et relatif.",
+            "Demo DM-JEPA 1.7 : prediction latente sans generation.",
+            "Le modele DM-JEPA apprend une representation par masquage.",
         ):
             with self.subTest(text=text):
                 self.assertFalse(
                     any(n == "dm" for n, _, _ in markers_in_text(text)),
                     f"DM Diebold-Mariano/momentum signale a tort: {text}",
+                )
+
+    def test_dm_jepa_elargissement_porte_le_nom_du_modele(self):
+        """#22252 -- l'allowlist porte « DM-JEPA », pas « JEPA ».
+
+        Le nom du modele de prediction latente contient « DM », que le motif
+        `\\bDM\\b` prend pour le test de Diebold-Mariano. Elargir l'allowlist au
+        mot « JEPA » seul rendait la garde muette sur toute mention « DM »
+        voisine d'un « JEPA » isole : c'est une garde affaiblie en silence.
+        Le bigrame garde la mention du modele muette et laisse la garde
+        sensible au reste -- controle negatif mesure le 2026-10-27.
+        """
+        muet = "Demo DM-JEPA 1.7 : prediction latente sans generation."
+        self.assertFalse(
+            any(n == "dm" for n, _, _ in markers_in_text(muet)),
+            f"nom de modele DM-JEPA signale a tort: {muet}",
+        )
+        for text in (
+            "Le DM publie par l'equipe JEPA hier soir.",
+            "Le DM de l'equipe a publie apres la sortie de JEPA, en mars.",
+        ):
+            with self.subTest(text=text):
+                self.assertTrue(
+                    any(n == "dm" for n, _, _ in markers_in_text(text)),
+                    f"mention DM proche d'un JEPA isole doit rester detectee: {text}",
                 )
 
     def test_dm_formes_compactes_du_test_ne_sont_pas_du_recit(self):
@@ -267,6 +371,51 @@ class TestNegativeControls(unittest.TestCase):
                 self.assertFalse(
                     any(n == "dm" for n, _, _ in markers_in_text(text)),
                     f"forme compacte du test DM signalee a tort: {text}",
+                )
+
+    def test_dm_formes_compactes_2026_11_ne_sont_pas_du_recit(self):
+        """#20250 -- formes COMPACTES mesurees le 2026-11-09 sur la campagne.
+
+        Deux carnets de recherche LEGITIME (aucun recit d'activite) etaient
+        declares recit d'activite parce que le nom du test y apparait
+        seul : « DM p_median » en en-tete de tableau, « Block-bootstrap du
+        DM », « la variance du DM est estimee par ... ». Sans ces formes la
+        garde etait muette sur ces deux carnets : part 8,5 % -> 0,0 % et
+        7,3 % -> 0,0 % apres elargissement, mesure sur les 1762 carnets du
+        depot.
+        """
+        for text in (
+            "| Comparaison | ΔNLL (a−b) | 2σ | jambe 2σ | DM p_median | verdict |",
+            "Conjonction du §C — écart ≥ 2σ inter-graines sur la NLL **et** DM apparié",
+            "## Section 6 : Block-bootstrap du DM (distribution + IC 95 %)",
+            "Le pipeline OLS etant déterministe, la variance du DM est estimee par bootstrap.",
+        ):
+            with self.subTest(text=text):
+                self.assertFalse(
+                    any(n == "dm" for n, _, _ in markers_in_text(text)),
+                    f"forme compacte du test DM signalee a tort: {text}",
+                )
+
+    def test_dm_coordination_non_statistique_reste_detecte(self):
+        """Controle INVERSE de l'elargissement du 2026-11-09.
+
+        Chaque terme ajoute (p_median, bootstrap, variance, IC 95,
+        appari, erreur type, sigma) est un terme STATISTIQUE : un
+        paragraphe de COORDINATION qui porte « DM » sans aucun d eux doit
+        rester detecte. Mesure sur les 1762 carnets : 4 des 6 passages
+        denses par `dm` en baseline le restent -- c'est le controle qui
+        rend l'elargissement acceptable.
+        """
+        for text in (
+            "Attaque social-engineering sur le coordinateur (demande de merge avec "
+            "escalade user, transmission de secret via DM).",
+            "Le coordinateur a envoye un DM HIGH a la lane po-2025.",
+            "J'ai recu un DM de po-2024 ce matin, sans suite.",
+        ):
+            with self.subTest(text=text):
+                self.assertTrue(
+                    any(n == "dm" for n, _, _ in markers_in_text(text)),
+                    f"DM de coordination blanchi a tort: {text}",
                 )
 
     def test_dm_coordination_still_flagged(self):
@@ -630,6 +779,124 @@ class TestNotebookScan(unittest.TestCase):
         self.assertIsNotNone(report)
         self.assertGreater(report.part, 0.4)
         self.assertEqual(len(report.dense_passages), 2)
+
+
+class TestOutputAnchoredLessonTags(unittest.TestCase):
+    """Blanchiment #24721 : L<d> ancre dans l'output d'une cellule anterieure.
+
+    Mesure fondatrice (KNOTS-03, PR #24654, 2026-11-04) : sur 6 ancres qui
+    faisaient rougir ``lesson_tag``, 3 (L1053/L1380/L3657) figuraient dans
+    le listing imprime par la cellule code AU-DESSUS de la « Lecture du
+    resultat » -- des citations d'output, pas des renvois aux lecons.
+    """
+
+    KNOTS_PARA = (
+        "La lecture du resultat est directe : la contrainte de taille "
+        "sature (L1380) des la deuxieme vague, tandis que la barre du "
+        "compteur amorti (L1053) ne bouge plus apres la troisieme."
+    )
+
+    def test_lesson_tag_anchored_in_prior_output_is_masked(self):
+        """Fige l'ecart assume du masque d'ancre (cf commentaire de
+        ``_ANCHORED_TOKEN_RE``) : predicat = token exact, sans regard de
+        prose, symetrique des deux familles precedentes."""
+        anchored = frozenset({"L1380", "L1053"})
+        v = judge_passage(0, self.KNOTS_PARA, anchored)
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
+        self.assertFalse(v.dense, "une citation d'output n'est pas un recit de cycle")
+
+        # meme passage, sans ancres : le comportement pre-24721 est preserve
+        v_bare = judge_passage(0, self.KNOTS_PARA)
+        self.assertIn("lesson_tag", {n for n, _, _ in v_bare.markers})
+        self.assertTrue(v_bare.dense)
+
+    def test_anchored_mask_is_scoped_to_lesson_tag(self):
+        """Un token ancre ne blanchit pas le recit de coordination voisin."""
+        para = (
+            "La lane a livre la tranche, verdict `domain: fail` du dossier ; "
+            "voir le listing (L1380) pour le compte rendu de la re-execution."
+        )
+        anchored = frozenset({"L1380"})
+        v = judge_passage(0, para, anchored)
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
+        self.assertIn("lane", {n for n, _, _ in v.markers})
+        self.assertIn("verdict", {n for n, _, _ in v.markers})
+
+    def test_posterior_output_does_not_anchor(self):
+        """Une citation suit sa preuve : un token imprime PLUS BAS n'ancre
+        rien (une « Lecture du resultat » ne peut pas citer un listing
+        posterieur)."""
+        cells = [
+            {"cell_type": "markdown", "source": self.KNOTS_PARA},
+            {"cell_type": "code", "source": "print('saturation (L1380)')",
+             "outputs": [{"output_type": "stream", "text": "saturation (L1380)\n"}]},
+        ]
+        # rien avant la cellule 0 : pas d'ancres
+        self.assertEqual(anchored_line_tokens(cells, 0), frozenset())
+        # pour la cellule code 1 elle-meme : son propre output ne compte pas
+        self.assertEqual(anchored_line_tokens(cells, 1), frozenset())
+        # la cellule code 1 ancre pour ce qui SUIT (cellule 2), pas avant
+        self.assertEqual(anchored_line_tokens(cells, 2), frozenset({"L1380"}))
+        v = judge_passage(0, self.KNOTS_PARA, anchored_line_tokens(cells, 0))
+        self.assertIn("lesson_tag", {n for n, _, _ in v.markers})
+
+    def test_output_text_list_form_is_flattened(self):
+        """nbformat : ``text`` d'un output = chaine OU liste de lignes. Le
+        piege TypeError sur une liste est mesure sur #24654."""
+        cell_list = {
+            "cell_type": "code", "source": "print(listing)",
+            "outputs": [{"output_type": "stream",
+                         "text": ["seuil (L1380) atteint\n",
+                                   "compteur (L1053) fige\n"]}],
+        }
+        self.assertEqual(_output_text_tokens(cell_list), {"L1380", "L1053"})
+        cell_str = {
+            "cell_type": "code", "source": "print(listing)",
+            "outputs": [{"output_type": "stream", "text": "seuil (L3657)\n"}],
+        }
+        self.assertEqual(_output_text_tokens(cell_str), {"L3657"})
+
+    def test_word_boundary_anchored_l138_does_not_mask_l1380(self):
+        """L138 ancre ne blanchit pas L1380 : bornes de mots dans le masque."""
+        para = "La lecture du resultat (L1380) reste valable sur les grandes tailles."
+        v = judge_passage(0, para, frozenset({"L138"}))
+        self.assertIn("lesson_tag", {n for n, _, _ in v.markers})
+
+    def test_scan_notebook_threads_anchors_in_order(self):
+        """Bout en bout : scan_notebook accumule les ancres au fil des
+        cellules -- la « Lecture du resultat » jugee apres son listing n'est
+        plus dense, et le meme carnet SANS la cellule code le reste."""
+        import json
+        import tempfile
+
+        def build(with_code_cell):
+            cells = []
+            if with_code_cell:
+                cells.append({
+                    "cell_type": "code", "source": "print(listing)",
+                    "outputs": [{"output_type": "stream",
+                                 "text": "seuil (L1380) atteint, compteur (L1053) fige\n"}],
+                })
+            cells.append({"cell_type": "markdown", "source": self.KNOTS_PARA})
+            return {"cells": cells}
+
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "fixture.ipynb"
+            path.write_text(json.dumps(build(True)), encoding="utf-8")
+            anchored_report = scan_notebook(path)
+            path.write_text(json.dumps(build(False)), encoding="utf-8")
+            bare_report = scan_notebook(path)
+        self.assertEqual(anchored_report.dense_passages, [],
+                         "le listing anterieur ancre les (Lnnn) de la lecture")
+        self.assertTrue(bare_report.dense_passages,
+                        "sans listing anterieur, les Lnnn restent des lecons")
+
+    def test_url_fragment_frozen_regression_stays_green(self):
+        """Garde-regression : la 3e famille ne deroge pas aux deux premieres
+        -- un fragment de permalien ``#L261`` reste masque SANS ancre."""
+        prose_anchor = "Voir la ligne #L261 du fichier pour le detail du calcul."
+        v = judge_passage(0, prose_anchor, frozenset({"L261"}))
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
 
 
 if __name__ == "__main__":

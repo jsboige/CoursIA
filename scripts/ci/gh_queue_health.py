@@ -34,6 +34,7 @@ import concurrent.futures
 import json
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -96,28 +97,45 @@ def parse_date(value: str) -> datetime:
     return parsed.replace(tzinfo=timezone.utc)
 
 
-def _gh_api_json(endpoint: str):
+def _gh_api_json(endpoint: str, *, attempts: int = 2, backoff: float = 5.0):
     """Call `gh api <endpoint>` and return the parsed JSON payload.
 
     Shared transport for the queued-runs listing and the PR-state lookups,
     so both fail through the same InstrumentError channel.
+
+    A single bounded retry (``attempts`` total, ``backoff`` seconds apart)
+    absorbs a *transient* API hiccup -- a 429 rate-limit, a 5xx, a momentary
+    gh failure -- that would otherwise declare the whole watch BROKEN for the
+    day (the failure mode that opened #22186). A *structural* failure is not
+    retried: ``gh`` missing from PATH and a non-JSON body both fail on the
+    first attempt. A failure that persists after the retry still raises
+    InstrumentError, so the watch degrades to BROKEN exactly as before.
     """
-    try:
-        proc = subprocess.run(
-            ["gh", "api", endpoint],
-            capture_output=True, text=True, encoding="utf-8",
-            check=False,
+    last_error = "gh api failed (no attempt ran)"
+    for attempt in range(max(1, attempts)):
+        if attempt:
+            time.sleep(backoff)
+        try:
+            proc = subprocess.run(
+                ["gh", "api", endpoint],
+                capture_output=True, text=True, encoding="utf-8",
+                check=False,
+            )
+        except FileNotFoundError as exc:
+            # `gh` not on PATH is not transient -- fail immediately.
+            raise InstrumentError("gh CLI not on PATH") from exc
+        if proc.returncode == 0:
+            try:
+                return json.loads(proc.stdout)
+            except json.JSONDecodeError as exc:
+                # A non-JSON body is a structural failure, not transient.
+                raise InstrumentError(
+                    f"non-JSON response: {proc.stdout[:200]!r}") from exc
+        last_error = (
+            f"gh api failed (rc={proc.returncode}) "
+            f"after {attempt + 1} attempt(s): {proc.stderr.strip()}"
         )
-    except FileNotFoundError as exc:
-        raise InstrumentError("gh CLI not on PATH") from exc
-    if proc.returncode != 0:
-        raise InstrumentError(
-            f"gh api failed (rc={proc.returncode}): {proc.stderr.strip()}"
-        )
-    try:
-        return json.loads(proc.stdout)
-    except json.JSONDecodeError as exc:
-        raise InstrumentError(f"non-JSON response: {proc.stdout[:200]!r}") from exc
+    raise InstrumentError(last_error)
 
 
 def fetch_queued_runs(repo: str) -> list[dict]:
@@ -821,7 +839,24 @@ def main(argv: list[str] | None = None) -> int:
             return EXIT_BROKEN
         return EXIT_GHOST
     except InstrumentError as exc:
+        # Write the failure to the output file so the workflow's BROKEN step
+        # has a payload to surface -- before this the exception returned here
+        # with no file written, so the issue opened with "payload non produit"
+        # and no diagnosis (#22186).
         print(f"[queue-health] BROKEN INSTRUMENT: {exc}", file=sys.stderr)
+        if args.output:
+            try:
+                args.output.parent.mkdir(parents=True, exist_ok=True)
+                args.output.write_text(
+                    json.dumps(
+                        {"verdict_watch": "BROKEN",
+                         "verdict_measurement": "BROKEN",
+                         "instrument_error": str(exc)},
+                        indent=2, ensure_ascii=False) + "\n",
+                    encoding="utf-8")
+            except OSError as write_exc:
+                print(f"[queue-health] cannot write output on failure: {write_exc}",
+                      file=sys.stderr)
         return EXIT_BROKEN
 
 

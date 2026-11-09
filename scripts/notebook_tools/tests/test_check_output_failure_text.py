@@ -967,3 +967,102 @@ def test_20120_compare_gate_still_fires_on_runtime_path_only():
             assert rows[0]["regressed"] is expected, head_line
     finally:
         m.read_notebook_at = orig
+
+
+# --- #21816: echec de workflow ComfyUI ------------------------------------
+# Le service repond une erreur et le carnet commite son repli a la place de
+# l'illustration (C.2). Les trois formes sont les lignes REELLES du blob
+# degrade de Barbie-Schreck, avant #21815.
+
+COMFY_LOG = ("ERROR:BarbieVsAne:Erreur generation image: Workflow execution "
+             "failed (server reported error): [")
+COMFY_SKIP = "WARNING:BarbieVsAne:Illustration indisponible pour cette replique"
+
+
+def test_21816_comfyui_fallback_fires():
+    for line in (COMFY_LOG, COMFY_SKIP):
+        got = scan(nb(cell("print(x)", line)))["TOOL_FAILURE"]
+        assert len(got) == 1, line
+
+
+def test_21816_comfyui_fallback_is_hard_even_when_source_declares_it():
+    # Le carnet degrade porte le message en LITTERAL dans le source de sa
+    # cellule de repli (c'est ainsi qu'il l'ecrit). L'exemption des modes
+    # demo (#18916 / #19697) ne doit pas l'absoudre : la banniere a remplace
+    # un rendu, c'est la degradation elle-meme.
+    src = ("try:\n"
+           "    generate()\n"
+           "except Exception as exc:\n"
+           "    logger.warning('Illustration indisponible pour cette replique')\n")
+    got = scan(nb(cell(src, COMFY_SKIP)))
+    assert got["TOOL_FAILURE"] and not got["DECLARED_FALLBACK"]
+
+
+def test_21816_declared_interactive_fallback_stays_out():
+    # Controle negatif : les deux cellules de mode interactif declarees du
+    # depot (DALL-E 1-1 cellule 23, Whisper 1-2 cellule 45) sont des branches
+    # de repli PREVUES. Elles restent des replis declares, jamais des echecs.
+    cases = (
+        ("print('[skip] Mode interactif non disponible (execution "
+         "automatisee)')",
+         "[skip] Mode interactif non disponible (execution automatisee)"),
+        ("print('Mode interactif non disponible (execution automatisee)')",
+         "Mode interactif non disponible (execution automatisee)"),
+    )
+    for src, out in cases:
+        got = scan(nb(cell(src, out)))
+        assert got["TOOL_FAILURE"] == [], out
+        assert len(got["DECLARED_FALLBACK"]) == 1, out
+
+
+def test_24490_comfyui_replacement_banner_is_tool_failure():
+    """#24490 : le bandeau de repli LTX-2 (02-5) doit etre classe TOOL_FAILURE.
+
+    Mesure de la revue Hermes du 05/11 sur #24645 : le bandeau ne matchait
+    AUCUN motif de l'organe. Le mutant (sorties reelles remplacees par le
+    bandeau) rendait `TOOL_FAILURE 0 -> 0`, `DECLARED_FALLBACK 0 -> 0`,
+    `regressed: false` -- une re-execution sur un poste sans le conteneur
+    `comfyui-video` aurait commute son repli en silence, la CI serait
+    restee verte. Le motif porte sur le MARQUEUR en majuscules, pas sur le
+    type d'exception (les cinq variantes reelles etaient silencieuses).
+    """
+    src = ("print(f\"GENERATION NON EXECUTEE - stack ComfyUI indisponible "
+           "({e})\")\n")
+    out = ("GENERATION NON EXECUTEE - stack ComfyUI indisponible "
+           "(URLError : <urlopen error [Errno 11001]>)\n")
+    got = scan(nb(cell(src, out)))
+    assert got["TOOL_FAILURE"], got
+    assert any("GENERATION NON EXECUTEE" in hit for _, hit in got["TOOL_FAILURE"])
+    assert not got["DECLARED_FALLBACK"], got
+
+
+def test_24490_french_sentence_stays_silent():
+    # Controle negatif : la forme francaise d'un carnet n'est pas un bandeau
+    # machine -- le motif est epingle sur le marqueur en majuscules.
+    out = "La generation n'a pas ete executee sur ce poste.\n"
+    got = scan(nb(cell("print('ok')\n", out)))
+    assert got["TOOL_FAILURE"] == [], out
+
+
+def test_24051_prose_citation_of_filenotfound_is_silent():
+    # Citation mesuree sur 01-Claude-CLI-Bases (grain #24049, delta 0 -> 1) :
+    # la reponse du LLM cite la classe dans sa prose pedagogique. Une citation
+    # est une donnee, pas une levee -- meme regime que #20701 sur ImportError.
+    for out in ("Attraper des exceptions precises (except FileNotFoundError:) "
+                "plutot qu'un except Exception nu...\n",
+                "Utiliser `except FileNotFoundError: pass` plutot qu'un "
+                "`except Exception` nu.\n",
+                "`FileNotFoundError: [Errno 2] ...` est la forme complete.\n"):
+        assert scan(nb(cell("print(prose)\n", out)))["TOOL_FAILURE"] == [], out
+
+
+def test_24051_real_raise_still_fires_after_a_citation():
+    # Controle positif dans le meme flux : la citation est sautee, la levee qui
+    # la suit continue de tirer. Le message de la levee ne porte aucun motif
+    # voisin, sinon ce serait le voisin qui tirerait a sa place.
+    out = ("Conseil: (except FileNotFoundError:) plutot qu'un except nu\n"
+           "FileNotFoundError: [WinError 3] Le chemin d'acces specifie est "
+           "introuvable: 'D:\\dev\\CoursIA'\n")
+    got = scan(nb(cell("run()\n", out)))
+    assert got["TOOL_FAILURE"], got
+    assert any("FileNotFoundError" in hit for _, hit in got["TOOL_FAILURE"])

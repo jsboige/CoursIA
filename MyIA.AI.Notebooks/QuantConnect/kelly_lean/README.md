@@ -124,24 +124,20 @@ périmètre du cadre canonique de Kelly (pari de Bernoulli).
 ## Notebooks compagnons
 
 Le lake est le livrable formel (`lake build` = preuve d'exécution, convention des
-lakes frères) ; deux notebooks compagnons le rendent pédagogique :
+lakes frères) ; les notebooks compagnons le rendent pédagogique :
 
 | Notebook | Rôle |
 |---|---|
 | [`Kelly_companion-Python.ipynb`](Kelly_companion-Python.ipynb) | **Volet numérique (Python)** : montre, côte à côte avec les théorèmes prouvés, pourquoi `f*` maximise le taux de croissance espéré `g(f)` et pourquoi tout sur-pari (`f > f*`) ou sous-pari (`f < f*`) est strictement sous-optimal — narration économique, figures et lien trading. |
 | [`Kelly_companion-Lean.ipynb`](Kelly_companion-Lean.ipynb) | **Jumeau à kernel Lean 4** : chaque énoncé du lake est importé et vérifié par le noyau Lean lui-même (`#check`, `#print axioms`, exemples re-prouvés en cellule) — les énoncés qui compilent, pas la prose recopiée. |
+| [`Kelly_companion-Fractional-Python.ipynb`](Kelly_companion-Fractional-Python.ipynb) | **Carnet 1 — fraction de Kelly** : mesure le compromis que le module [`Kelly/Fractional.lean`](Kelly/Fractional.lean) prouve (`growth(c*f*) ≤ growth(f*)`, egalite seulement pour `c = 1`) — la fraction `c*f*` perd de la log-croissance esperee par rapport a `f*`, mais elle reduit fortement la variance du log-capital realise. C'est la reponse chiffree au « pourquoi demi-Kelly ». |
+| [`Kelly_companion-Optimist-Bias-Python.ipynb`](Kelly_companion-Optimist-Bias-Python.ipynb) | **Carnet 2 — biais de l'optimiste** : quand `p` est estime, le praticien applique `kellyFrac(p_hat)` a un `p_hat ~ N(p, sigma)` au lieu du `p` reel ; le carnet mesure la surexposition moyenne produite par cette erreur d'estimation. |
+| [`Kelly_companion-Multi-Issue-Python.ipynb`](Kelly_companion-Multi-Issue-Python.ipynb) | **Carnet 3 — multi-issue** : etend le critere a deux paris independants et verifie que l'allocation optimale `(f_1, f_2)` maximise la somme des log-croissances individuelles, en regard du module [`Kelly/MultiIssue.lean`](Kelly/MultiIssue.lean). |
+| [`Kelly_companion-Cotes-Dynamiques-Python.ipynb`](Kelly_companion-Cotes-Dynamiques-Python.ipynb) | **Carnet 4 — cotes dynamiques** : quand la cote nette `b_t` varie dans le temps, compare le re-equilibrage a chaque pas au re-equilibrage paresseux. Volet hors lake, sans module Lean en regard. |
 
-## Carnets suivants
-
-Plan de croissance trace dans l'issue
+Les quatre carnets numerotes sont **livres et executes** : ils correspondent aux
+quatre etapes du plan de croissance trace dans l'issue
 [#19516](https://github.com/jsboige/CoursIA/issues/19516) (table postee sur
-[#16231](https://github.com/jsboige/CoursIA/issues/16231)) :
-
-1. **Fractional Kelly mesure** — module Lean `Fractional` (`growth(c*f*) ≤ growth(f*)`,
-   egalite seulement pour `c = 1`) + companion Python : surface croissance/variance
-   sur la fraction, multi-seed — la reponse chiffree au « pourquoi demi-Kelly ».
-2. **Erreur d'estimation : biais de l'optimiste** — companion Python :
-   `kellyFrac(p_hat)` applique a `p_hat` bruite → surexposition moyenne mesuree.
-3. **Kelly multi-issue** — generalisation de `Bet` a `n` issues (lake) + companion.
-4. **Cotes dynamiques / sequence** — companion Python seul (bookmaker qui ajuste
-   `b_t` dans le temps ; hors lake).
+[#16231](https://github.com/jsboige/CoursIA/issues/16231)). Les modules Lean
+`Fractional` et `MultiIssue` accompagnent les carnets 1 et 3 ; les carnets 2 et 4
+sont purement numeriques.

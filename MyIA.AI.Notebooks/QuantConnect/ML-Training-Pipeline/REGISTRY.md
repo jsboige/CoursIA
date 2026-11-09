@@ -4,6 +4,8 @@
 
 Auto-generated: 2026-05-03 22:29
 
+Updated: 2026-11-03 — P15293 outillage (lane myia-po-2027:CoursIA-2) : **garde d'entrée contre les graines nées mortes** — `--abort-if-no-signal N` abandonne l'entraînement si aucun des N premiers pas ne porte de gradient (`grad_norm` fini et > 0 ; un `nan` ou une valeur négative est une mesure invalide — comptée comme observation, jamais comme signal) ; motif mesuré : graine 42 du bras 8B née morte (`grad_norm` nul sur 12 pas tracés), tuée après 6 h 30 de GPU sans rien produire, rien au pré-eval ne l'annonçant (reward 0,05, longueur 1 033). Désactivée par défaut → protocole des runs déjà mesurés inchangé. Verdict (`aborted`, `no_signal_guard`) dans l'artefact JSON ; les runs arrêtés n'ont pas de post-eval et sont exclus des deltas de `summarize`. Décision = fonction pure, couverte par `selftest` (33 cas, dont câblage du callback) — validable sans GPU. Correctif d'env au passage : `find_hf_snapshot` lit `HF_HUB_CACHE` / `HF_HOME` (le cache local était invisible, message « aucun snapshot HF » sur un cache plein). Détail dans `docs/P15293_GRPO_8B_14B.md`.
+
 Updated: 2026-10-04 — M13 Markov-Switching HAR revalidation cluster 7 actifs appariée par origine (port #18190, Epic #1454, lane myia-po-2023:CoursIA) : **NO BEATS cluster** — 0/21 couples BEATS, 20/21 NO BEATS, 1/21 INCONCLUSIVE (h=10, un actif), aux deux jambes (brute et dé-biaisée). Le verdict publié de M13 (sign-test binomial sur le **Sharpe**, 39/84 combos traités comme indépendants, p=0,7774) n'est ni réfuté ni confirmé par cette passe : elle porte sur une **autre métrique** (MSE) et ajoute la lecture §C qui manquait. Deux réserves sur ce verdict publié : quatre graines d'un EM déterministe sur la même fenêtre ne sont pas quatre réplications indépendantes (le dénominateur 84 sur-déclare la puissance), et aucune jambe DM ni rapport de biais n'existait. L'appariement par origine est ici l'**identité** (0 refus shared-target sur 21 agrégats, gap max 0,0, longueurs appariées 538–1890) : les deux jambes partagent la même série `rv` et le même découpage, donc le garde **prouve** la coïncidence des jours au lieu de la supposer — contrairement à M15, où il a refusé deux fois avant toute mesure valide et a mis au jour un défaut de convention réel. Défaut latent corrigé au passage : la cible de la jambe HAR servait aux **deux** prévisions (`ms_pred = ms_fc.reindex(target.index)`), toute divergence entre les cibles réalisées des deux jambes était silencieusement ignorée ; chaque jambe porte désormais sa propre cible et le join refuse sur mismatch (`target_tol=1e-8`). Agrégat et preuves de folds/dates/DM : `scripts/results/m13_ms_har_cluster_aligned.json` (13 819 octets, sha256 `72db2e77ece296b1`), artefact complet hors dépôt (152 346 octets, sha256 `e78561eb06a7…`) ; détail dans `docs/M13_MS_HAR.md`.
 
 Updated: 2026-10-03 — M18 TimesFM 2.5 revalidation cluster 7 actifs (Epic #1454, défrichage 3070) : **NO BEATS cluster vs log_har** (3/7 actifs BEATS — BTC, ETH, SOL — p=0,7734, les deux vues {1,5,10}/{1,5,22}) ; le « 5/6 BEATS » #14778 se reproduit exactement sur BTC/ETH mais ne généralise pas aux cinq actifs yfinance courts (~721 j) — aucun horizon NO BEATS, perte de puissance (profil M4). vs har_rv INCONCLUSIVE 5/7 (p=0,2266). Fix harnais au passage : manifeste vide en exit 0 depuis la refonte M16 de `_load_panel` (tuple non unpacké)
@@ -69,6 +71,8 @@ Updated: 2026-10-07 — M5 lu comme couche de dimensionnement (stratégie, #1972
 Updated: 2026-10-08 — P15294 re-run probe GRPO sur Hermes-function-calling-v1 (issue #15294 acceptance 2 partielle, lane myia-po-2024:CoursIA) : **Qwen3.5-0.8B produit du signal RL net sur la tâche calibrée** — Δ reward eval held-out (40 prompts × 4 générations, pré/post 100 steps, même recette GRPO+QLoRA non-thinking que M19) : **+0,2500 ± 0,1875**, 2/2 seeds progressent (0,2063→0,2688 et 0,1688→0,6063), pas d'effondrement de longueur — contre **+0,0063 ± 0,0063** (plat, courbes erratiques) du même backbone sur DAPO-Math-17k : la platitude DAPO du 0.8B était un artefact de casting, pas une propriété du backbone. Côté MiniCPM5-2B : 2 runs en chaîne détachée sur RTX 3070, verdict de comparaison 2B vs 0.8B différé à leur livraison. Manifestes `scripts/results/p15294_hermes_grpo/`.
 
 Updated: 2026-10-10 — P15294 verdict de paire 2B vs 0.8B (issue #15294 acceptances 2 et 3 closes, lane myia-po-2024:CoursIA-2) : **le classement 2B > 0.8B tient en tendance sur la tâche calibrée — MiniCPM5-2B +0,4313 ± 0,0000 (réplication stricte, 0,2125→0,6438 et 0,2500→0,6813) vs Qwen3.5-0.8B +0,2500 ± 0,1875** ; contrôle de dégénérescence passé (le no-op eos des runs m19 ne s'est pas reproduit : `grad_norm` non nul sur 63-66 % des steps, loss strictement positive sur 30-33 %, entropy décroissante, complétions d'entraînement seed 1 350→136 = apprentissage d'EOS, aucune chute de longueur à l'eval 319→403 / 326→437) ; wallclock cumulé ~3,9× inférieur (18 344 s vs 70 717 s). **À n=2 par modèle, tendance convergente, pas un verdict BEATS formel** (protocole ≥ 4 seeds). Le BEATS M19 sur DAPO était un double artefact : casting + gradient nul eos. Manifestes `scripts/results/p15294_hermes_grpo/minicpm5_seed{0,1}.json` (chaîne GPU 2, lane myia-ai-01:CoursIA-2). Détail section P15294 verdict de paire + `docs/P15294_SMALL_MODEL_RL_DATASETS.md`.
+
+Updated: 2026-10-26 — P15293 bras >= 8-9B entrée §C (issue #15293, lane myia-ai-01:CoursIA-2) : **aucun verdict BEATS à ce budget — acceptance non remplie** (un backbone complet à trois graines + un smoke). Bras Qwen3-8B : graines 0, 1, 7 complètes aux agrégats committés, toutes progressent à l'éval held-out 160 générations (0,04375→0,10625 · 0,0625→0,14375 · 0,0375→0,05) ; graines 42 et 99 interrompues sans agrégat (motifs #1454 — non chiffrées ici). Smoke Qwen3-14B (3 steps, budget 384) ancré : **aucun signal** — loss et grad_norm nuls, pre/post eval identiques (reward_mean 0,03125 sur 32 générations), entropy 0,2297 à la step 3, saturation **partielle et fluctuante** (clipped_ratio 1,0/1,0/0,78125, mean_terminated_length 318,71) ; coût 3 183 s / 3 steps = 1 061 s/step, soit ~29,5 h par graine de 100 steps. Détail `docs/P15293_GRPO_8B_14B.md` + agrégats `scripts/results/m19_minicpm5_grpo/`.
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
 
@@ -137,6 +141,57 @@ reproductible (0,644/0,681 vs 0,269/0,606), wallclock cumulé ~3,9× inférieur.
 la claim M19 « 2B > 0.8B » sur DAPO était un double artefact (casting + gradient
 nul eos) — sur Hermes corrigée, les deux backbones produisent du signal RL réel
 et la première mesure non artefactée de la paire confirme le sens observé.
+
+## P15293 bras >= 8-9B — graines Qwen3-8B et smoke Qwen3-14B (2026-10-26) — issue #15293
+
+Reprise de la probe B (#15099) à l'échelle : même harnais
+`scripts/probe_15099_dapo_grpo.py`, même recette GRPO+QLoRA NF4 r16
+non-thinking, budget de completion 384, runs sur le GPU 2 de ai-01 (file
+#1454). Agrégats versionnés dans `scripts/results/m19_minicpm5_grpo/`,
+adapters et séries complètes hors dépôt (`D:/Dev/probe15099_runs`).
+
+| Graine 8B | pre-eval | post-eval | longueur eval | wallclock | Agrégat |
+|---|---|---|---|---|---|
+| 0 | 0,04375 | 0,10625 | 1028,83 → 788,33 | 17 217,6 s | `qwen3_8b_seed0.json` |
+| 1 | 0,0625 | 0,14375 | 1026,82 → 511,68 | 18 228,8 s | `qwen3_8b_seed1.json` |
+| 7 | 0,0375 | 0,05 | 1020,33 → 1001,84 | 19 793,8 s | `qwen3_8b_seed7.json` |
+
+Le smoke 14B (`qwen3_14b_seed0_smoke.json`, 3 steps) ne produit aucun signal :
+loss/grad_norm nuls sur les steps tracées, éval pré/post identique (0,03125 sur
+32 générations), saturation partielle et fluctuante (clipped_ratio
+1,0/1,0/0,78125), 1 061 s/step (3 183 s / 3 steps) soit ~29,5 h par graine de
+100 steps. Graines 42 et 99 : runs interrompus sans agrégat, motifs dans
+#1454, non chiffrées. Détail dans `docs/P15293_GRPO_8B_14B.md`.
+
+## P15293 outillage — garde d'entrée contre les graines nées mortes (2026-11-03) — issue #15293
+
+Option 2 de la décision de protocole demandée par la régie ai-01 sur l'issue
+(#1454, commentaire du 2026-10-26) : le harnais
+`scripts/probe_15099_dapo_grpo.py` porte `--abort-if-no-signal N`, qui abandonne
+l'entraînement si **aucun** des N premiers pas ne porte de gradient
+(`grad_norm` > 0). Motif mesuré : la graine 42 du bras 8B est née morte
+(`grad_norm` nul sur ses 12 pas tracés), tuée après 6 h 30 de GPU sans produire
+rien ; la graine 7 a perdu son gradient en cours de route (3 pas porteurs sur
+les 20 premiers, 0 sur les 20 derniers) ; rien dans le pré-eval n'annonçait
+cela (reward 0,05, longueur 1 033). La garde aurait arrêté le run 42 en
+quelques minutes.
+
+Désactivée par défaut (`--abort-if-no-signal 0`) : le protocole des runs déjà
+mesurés est inchangé — même dataset, même protocole, seuls les backbones
+changent. Le verdict (`aborted`, `no_signal_guard` avec le tableau des
+`grad_norm`) vit dans l'artefact JSON ; un run arrêté n'a pas de post-eval et
+est exclu des deltas de `summarize` (il ne pollue pas la moyenne d'un bras
+sain). La décision est une **fonction pure** (`no_signal_verdict`), couverte par
+le mode `selftest` (28 cas, dont le câblage du callback `TrainerCallback`) :
+aucun GPU requis pour la valider.
+
+Correction d'environnement au passage : `find_hf_snapshot` lit désormais
+`HF_HUB_CACHE` / `HF_HOME` au lieu d'un chemin figé (`~/.cache/huggingface/hub`),
+ce qui rendait le cache local invisible (message « aucun snapshot HF » sur un
+cache plein) ; le message d'erreur nomme désormais les deux variables
+d'environnement à vérifier.
+
+Détail dans `docs/P15293_GRPO_8B_14B.md`.
 
 ## M18 TimesFM 2.5 — revalidation cluster 7 actifs (2026-10-03) — Epic #1454
 

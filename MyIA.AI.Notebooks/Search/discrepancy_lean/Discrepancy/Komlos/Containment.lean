@@ -30,11 +30,12 @@ hypothèse les quatre identités consommées par k2 : la ré-indexation par
 translation (`sum_comp_add_eq_sum_of_support`), la préservation de la masse
 par la scission (`split_mass_of_support`), l'identité pivot
 (`overlap_translate_eq_one_sub_shiftDistance_of_support`) et le Claim 3.2
-(`shiftDistanceProd_split_le_of_support`). Le module démontre aussi la
-**non-vacuité** de la nouvelle hypothèse (`supportContained_biUnion`).
+(`shiftDistanceProd_split_le_of_support`), ainsi que la forme consommable de
+l'identité de scission de bit (`splitBit_eq_of_support`). Le module démontre
+aussi la **non-vacuité** de la nouvelle hypothèse (`supportContained_biUnion`).
 
 Les briques k1.2/k1.4/k1.5/k1.6 restent en place (leurs énoncés sont vrais) ;
-ce module **ajoute** les énoncés consommables. L'état détaillé vit dans
+ce module **ajoute** les énoncés consommables, ainsi que la forme consommable de l'identité du bit de scission (`splitBit_eq_of_support`). L'état détaillé vit dans
 `FORMAL_STATUS.md`.
 -/
 

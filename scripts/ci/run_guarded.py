@@ -45,23 +45,63 @@ permissif. Hors Windows, l'instrument n'existe pas (l'equivalent Linux est un
 cgroup, pas un compteur) : la garde est alors declaree NON APPLICABLE et ne
 refuse pas -- un refus systematique y bloquerait tout lancement.
 
+Garde d'admission -- projection de l'engagement (#23531, #23546). Le seuil
+ci-dessus compare un etat **avant** engagement a une valeur qui ne dit rien
+de ce que le job va engager ensuite : a 89,9 % de charge, un job plafonne a
+48 GiB peut porter l'hote AU-DELA de sa limite de commit. Une famine de
+commit touche alors le vLLM de flotte (GPU 0/1) autant que le job -- c'est
+precisement le service que la regie cherche a ne pas deranger. L'admission
+compare donc aussi la **projection** : charge courante + plafond de commit
+du job, rapportee au plafond de commit de l'hote. Elle est refusee au-dela du
+**meme seuil de sante** que l'etat d'avant (``--max-commit-charge-pct``) :
+100 % du plafond de commit, c'est la famine meme -- et le vLLM de flotte
+(GPU 0/1) n'a alors aucune marge.
+La lecture est UNIQUE (pourcentage, engagement courant et plafond sont lus
+dans le meme instant) : deux sondes successives pourraient voir deux etats
+differents, et la projection ne serait plus un etat coherent de la machine.
+Sans plafond de commit du job (``--job-memory-limit-gib`` a 0), l'engagement
+est sans borne, la projection est INDEMONTRABLE : le lanceur refuse
+(fail-CLOSED), sauf opt-in explicite ``--allow-unbounded-commit``.
+
 Exclusion N=1 -- #21661. ``--exclusive-lock <chemin>`` prend un verrou
 exclusif sur un fichier ; si un autre lancement le tient deja, le demarrage
 est refuse. Le verrou est tenu par ce lanceur, donc par toute la duree de
 l'entrainement, et il est relache par le systeme si le lanceur meurt.
 
+Garde GPU optionnelle -- #22456. ``--gpu-entity <machine>#gpu<n>`` active la
+sequence codee du regisseur : consultation du gate ``check_pending`` du
+ledger ``gpu-reservation``, puis ecriture de l'observation ``held`` AVANT le
+lancement de l'enfant (la reservation existe avant le premier appel CUDA),
+puis observation ``released`` au teardown (arret garde, interruption, echec
+de demarrage ou sortie normale). Sans ``--gpu-entity``, ce lanceur ne fait
+AUCUN appel au ledger : un job sans device declare ne peut pas echouer a
+cause du ledger. Avec ``--gpu-entity``, toute panne de l'organe (module
+absent, appel qui leve, source illisible) refuse le lancement -- on ne lance
+pas sur un device dont on ne peut ni lire l'etat ni porter la reservation
+(fail-CLOSED). ``--gpu-holder`` et ``--gpu-workload`` sont requis avec
+``--gpu-entity`` ; ``--gpu-expected-end`` (UTC ISO-8601, suffixe Z) est
+facultatif mais **borne par defaut** (maintenant + 24 h, journalisee) -- un
+hold sans borne n'est jamais STALE, donc un lanceur tue brutalement laisserait
+le device pris pour toute la flotte ; ``--gpu-issue`` est facultatif.
+
 Codes de sortie : 0 commande terminee sous les deux plafonds · 3 plafond
 processus franchi · 4 plancher machine franchi · 5 demarrage refuse (RAM libre
 insuffisante, Job Object indisponible sans ``--allow-no-job``, charge de
-commit au-dessus du seuil ou illisible, verrou N=1 deja pris) · 6 la
-commande n'a pas demarre · 130 interruption clavier · sinon le code de sortie
-de la commande.
+commit au-dessus du seuil ou illisible, projection d'engagement au-dela de
+100 % du plafond de commit, engagement sans borne sans
+``--allow-unbounded-commit``, verrou N=1 deja pris, gate GPU
+defavorable ou indisponible, reservation GPU non ecrite) · 6 la
+commande n'a pas demarre · 7 commande terminee mais l'observation ``released``
+du ledger GPU n'a pas pu etre ecrite (la reservation reste vivante) ·
+130 interruption clavier · sinon le code de sortie de la commande.
 """
 import argparse
+import json
 import os
 import subprocess
 import sys
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 GiB = 2**30
@@ -72,6 +112,7 @@ RC_FLOOR = 4
 RC_REFUSED = 5
 RC_NOSTART = 6
 RC_INTERRUPT = 130
+RC_LEDGER = 7
 
 # Flags Job Object (winbase.h)
 JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
@@ -179,8 +220,8 @@ def _resume_suspended(proc):
         return False
 
 
-def _commit_charge_pct():
-    """Charge de commit de la machine en pourcentage, ou ``None`` si illisible.
+def _commit_charge():
+    """Lecture de la charge de commit : ``(pct, committed_bytes, limit_bytes)``.
 
     Meme instrument que la garde GPU existante : ``Win32_PerfFormattedData_
     PerfOS_Memory`` (``CommittedBytes`` / ``CommitLimit``). Les compteurs
@@ -188,13 +229,25 @@ def _commit_charge_pct():
     **physique** n'est pas la charge de commit : les deux sondes se
     ressemblent et l'ecart enjambe le seuil. Retourner ``None`` sur echec
     permet a l'appelant de refuser (fail-CLOSED) au lieu de laisser passer.
+
+    La LECTURE EST UNIQUE (#23531, #23546). Le pourcentage seul ne suffit
+    plus : projeter l'engagement du job exige le **plafond** de commit de
+    l'hote, et deux sondes successives pourraient voir deux etats
+    differents -- la projection ne serait alors pas un etat coherent de la
+    machine. Le trio est donc lu dans le meme instant, par le meme appel.
+
+    Les trois quantites viennent de la meme source : ``CommittedBytes`` est
+    l'engagement courant, ``CommitLimit`` le plafond (RAM physique +
+    pagefile) que l'hote ne peut pas depasser. Une limite de commit
+    elle-meme illisible ou nulle rend la lecture ``None`` : sans plafond,
+    aucune projection n'est demontrable.
     """
     if os.name != "nt":
         return None
     cmd = [
         "powershell", "-NoProfile", "-Command",
         "$m=Get-CimInstance Win32_PerfFormattedData_PerfOS_Memory; "
-        "if ($m) { [int](100*$m.CommittedBytes/$m.CommitLimit) }",
+        "if ($m) { '{0}|{1}' -f $m.CommittedBytes,$m.CommitLimit }",
     ]
     try:
         out = subprocess.run(cmd, capture_output=True, text=True, timeout=60,
@@ -203,11 +256,32 @@ def _commit_charge_pct():
         return None
     if out.returncode != 0:
         return None
-    raw = (out.stdout or "").strip()
+    lines = [ln for ln in (out.stdout or "").splitlines() if ln.strip()]
+    if not lines:
+        return None
+    parts = lines[-1].strip().split("|")
+    if len(parts) != 2:
+        return None
     try:
-        return int(raw)
+        committed = int(parts[0].strip())
+        limit = int(parts[1].strip())
     except ValueError:
         return None
+    if committed < 0 or limit <= 0:
+        return None
+    return (int(100 * committed / limit), committed, limit)
+
+
+def _commit_charge_pct():
+    """Charge de commit en pourcentage, ou ``None`` si illisible.
+
+    Enveloppe de compatibilite : le pourcentage seul ne permet plus de
+    projeter l'engagement du job (il faut le plafond), mais reste l'API la
+    plus simple pour qui ne veut qu'un etat. Le predicat d'admission, lui,
+    lit ``_commit_charge`` -- une seule lecture.
+    """
+    reading = _commit_charge()
+    return None if reading is None else reading[0]
 
 
 def _acquire_exclusive_lock(path):
@@ -240,6 +314,273 @@ def _acquire_exclusive_lock(path):
         fh.close()
         return None
     return fh
+
+
+# --- Garde GPU optionnelle : gate + reservation via le ledger (#22456) ------
+#
+# Decision de robustesse : le chemin GPU ne s'active QUE sur --gpu-entity.
+# Un job CPU (sans device declare) ne touche jamais le ledger et ne peut donc
+# pas echouer a cause de lui. Avec --gpu-entity, une panne de l'organe
+# (module absent, appel qui leve, sortie illisible) est traitee comme une
+# INDISPONIBILITE de la source et REFUSE le lancement : on ne lance pas sur un
+# device dont on ne peut ni lire l'etat ni porter la reservation.
+
+#: Nom du ledger GPU dans l'organe debt_ledger.py.
+GPU_LEDGER_NAME = "gpu-reservation"
+#: Branche qui porte l'etat publie des reservations (la source PRIMAIRE ;
+#: le dashboard en est le miroir, le snapshot local un cache).
+GPU_LEDGER_BRANCH = "ops/gpu-ledger"
+#: Remote git sur lequel la branche du ledger est publiee et lue. C'est un
+#: PARAMETRE, pas une decision codee en dur : l'etat vivant des reservations
+#: est de l'orchestration (usage interne de flotte), et sa cible peut etre un
+#: depot prive -- le registre ne doit pas dependre de ce choix.
+#: Le DEFAUT designe le depot PRIVE et dedie du registre
+#: (`jsboige/coursia-gpu-ledger`, decision du mainteneur du 2026-10-27 sur
+#: #22456) : le remote du depot de travail (`origin` = `jsboige/CoursIA`) est
+#: PUBLIC et ne doit jamais porter l'etat GPU de la flotte. `debt_ledger.py`
+#: refuse cette cible (fail-CLOSED) et rend le geste de configuration.
+GPU_LEDGER_REMOTE_DEFAULT = "gpu-ledger"
+
+#: Borne par defaut d'un hold quand `--gpu-expected-end` n'est pas fourni.
+#: Sans borne, un lanceur tué brutalement (kill -9, reboot, crash de l'hote)
+#: laisse un hold VIVANT : aucun chemin de sortie ne s'execute, le verdict
+#: STALE ne peut donc jamais etre rendu, et le device reste pris pour toute
+#: la flotte -- jusqu'a une liberation manuelle. Une borne rend ce cas
+#: detectable par l'organe au lieu de le laisser muet.
+GPU_HOLD_DEFAULT_HOURS = 24
+
+#: Verdicts du gate qui autorisent le lancement. Tout autre verdict (HOLD,
+#: STALE, UNPOSTED, ou un verdict d'indisponibilite rendu par une version
+#: future de l'organe) REFUSE : fail-CLOSED, la liste blanche seule ouvre.
+GPU_GATE_GREEN_VERDICTS = frozenset({"OK_TO_RUN", "NO_OBS", "RELEASED"})
+
+
+def _ledger_organ_path():
+    """Chemin de l'organe ``debt_ledger.py``, deduit de ``__file__``.
+
+    Ce script vit dans ``scripts/ci/`` et l'organe dans
+    ``scripts/coordination/`` : le chemin est relatif au fichier, jamais un
+    chemin absolu code en dur.
+    """
+    return Path(__file__).resolve().parents[1] / "coordination" / "debt_ledger.py"
+
+
+def _run_ledger_organ(args, timeout=120):
+    """Appelle l'organe ledger via ``sys.executable``. Rend ``(rc, stdout, stderr)``.
+
+    Une panne de l'appel (organe absent du disque, executable impossible,
+    timeout) rend ``(None, "", detail)`` : le retour rc=None distingue la
+    PANNE de l'organe d'un simple code de sortie non nul de l'organe.
+    """
+    organ = _ledger_organ_path()
+    if not organ.is_file():
+        return None, "", f"organe introuvable : {organ}"
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(organ), *args],
+            capture_output=True, text=True, timeout=timeout,
+            encoding="utf-8", errors="replace")
+    except (OSError, subprocess.SubprocessError) as exc:
+        return None, "", f"{type(exc).__name__}: {exc}"
+    return proc.returncode, proc.stdout or "", proc.stderr or ""
+
+
+def _utc_now_iso():
+    """Heure UTC reelle au format ISO-8601 attendu par le ledger (suffixe Z).
+
+    Jamais une heure locale etiquetee Z : le ledger refuse un stamp naïf et
+    un offset non-UTC, et une horloge melange reordonnerait les observations.
+    Les microsecondes garantissent que deux appels successifs produisent des
+    contenus (donc des observation_id) distincts.
+    """
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def _gpu_gate_check(entity, my_lane, remote=GPU_LEDGER_REMOTE_DEFAULT):
+    """Consulte ``check_pending`` pour l'entite. Rend ``(verdict, detail)``.
+
+    ``my_lane`` est la lane qui demande le device (``--gpu-holder``). Elle est
+    TRANSMISE au gate (``--my-lane``) : c'est elle qui distingue le tenant d'un
+    hold, admis dans sa fenetre (OK_TO_RUN), d'une autre lane, refusee (HOLD).
+    Sans elle, le gate ne peut prouver aucune propriete -- avant ce correctif,
+    il rendait alors OK_TO_RUN sur le hold vivant d'une autre lane, et ce
+    lanceur admettait un second job sur un device deja reserve (PR #22755,
+    finding Hermes 1).
+
+    verdict ``None`` signifie SOURCE INDISPONIBLE : appel en panne, sortie non
+    JSON, ou verdict absent -- dans les trois cas l'appelant refuse.
+    """
+    if not my_lane:
+        # Fail-CLOSED : un appel sans lane ne peut pas etre admis sur un device
+        # tenu, et le gate ne doit pas etre consulte sans elle.
+        return None, "lane appelante absente : le gate ne peut prouver aucune propriete"
+    rc, out, err = _run_ledger_organ([
+        "check_pending", "--ledger", GPU_LEDGER_NAME,
+        "--entity", entity, "--remote", remote,
+        "--my-lane", my_lane, "--json",
+    ])
+    if rc is None:
+        return None, err
+    lines = [ln for ln in (out or "").strip().splitlines() if ln.strip()]
+    try:
+        payload = json.loads(lines[-1]) if lines else None
+    except ValueError:
+        payload = None
+    if not isinstance(payload, dict):
+        return None, f"sortie du gate non parsable (rc={rc}) : {(err or out).strip()[:200]!r}"
+    verdict = payload.get("verdict")
+    if not isinstance(verdict, str) or not verdict:
+        return None, f"verdict absent de la sortie du gate (rc={rc})"
+    source = str(payload.get("source") or "")
+    if verdict in GPU_GATE_GREEN_VERDICTS and verdict != "NO_OBS" and source != "git":
+        # Seule une lecture FRAICHE de la branche (source exactement `git`)
+        # peut AFFIRMER qu'un device est libre ou a nous. Un cache local, un
+        # ref de suivi perime (fetch en echec), ou une sortie qui ne nomme
+        # pas sa source peuvent dater d'avant le hold d'autrui : un verdict
+        # vert y autoriserait deux machines sur le meme device -- le defaut
+        # exact que ce transport doit empecher. Le test portait sur le
+        # PREFIXE `git`, que la sortie `git (fetch impossible ...)` passait
+        # (PR #22755, finding Hermes 3). `NO_OBS` reste admis : c'est un
+        # constat d'absence, pas une affirmation de liberte (et la branche
+        # n'a jamais existe dans ce cas).
+        return (
+            "NON_AUTORITAIRE",
+            f"verdict {verdict} rendu depuis une source NON autoritaire "
+            f"({source or 'source non nommee'}) -- seule une lecture fraiche "
+            "de la branche (source=git) peut autoriser un lancement",
+        )
+    return verdict, str(payload.get("reason") or "")
+
+
+def _gpu_append_observation(entity, fields, actor):
+    """Ecrit une observation gpu-reservation via l'organe. Rend ``(ok, detail)``.
+
+    L'appel est fait SANS ``--dry-run`` : il ecrit dans le spool reel du
+    state-dir (et echoue si le state-dir n'est pas initialise -- c'est le
+    fail-CLOSED voulu : une reservation qui n'existe nulle part n'est pas une
+    reservation). L'``observation_id`` est calcule par l'organe a partir du
+    contenu ; ce lanceur n'en fabrique aucun.
+    """
+    rc, out, err = _run_ledger_organ([
+        "append", "--ledger", GPU_LEDGER_NAME,
+        "--entity", entity,
+        "--actor", actor,
+        "--evidence", "run_guarded",
+        "--confidence", "high",
+        "--fields-json", json.dumps(fields, ensure_ascii=False),
+    ])
+    if rc is None:
+        return False, err
+    if rc != 0:
+        return False, f"rc={rc} : {(err or out).strip()[:300]}"
+    # Succes : extraire l'observation_id de la ligne [OBS] pour le journal
+    # (tolerant : un format futur different ne casse pas le lancement).
+    for line in (out or "").splitlines():
+        if line.startswith("[OBS] "):
+            try:
+                payload = json.loads(line[len("[OBS] "):])
+                return True, str(payload.get("observation_id") or "")
+            except ValueError:
+                break
+    return True, ""
+
+
+def _gpu_publish_reservations(machine, remote=GPU_LEDGER_REMOTE_DEFAULT):
+    """Publie les reservations locales sur la branche `ops/gpu-ledger`.
+
+    Pourquoi cette etape est INDISPENSABLE : le gate d'admission lit l'etat
+    PUBLIE (la branche), et une observation restee dans le spool local rend le
+    verdict `UNPOSTED` -- qui BLOQUE le lancement suivant, y compris celui de
+    la machine qui vient de reserver. Sans publication, la sequence
+    `held -> released` se verrouillerait elle-meme a la deuxieme reservation.
+
+    Rend ``(ok, detail)`` ; l'echec est un refus fail-CLOSED cote admission
+    (une reservation invisible de la flotte n'est pas une reservation) et un
+    signalement explicite cote teardown.
+    """
+    rc, out, err = _run_ledger_organ([
+        "publish", "--git", "--ledger", GPU_LEDGER_NAME,
+        "--machine", machine, "--remote", remote, "--emit",
+    ], timeout=300)
+    if rc is None:
+        return False, err
+    if rc != 0:
+        return False, f"rc={rc} : {(err or out).strip()[:300]}"
+    return True, (out or "").strip()[-200:]
+
+
+def _gpu_build_fields(state, started_at, expected_end, holder, workload, issue):
+    """Construit le dictionnaire des champs gpu-reservation d'une observation.
+
+    Les champs absents sont omis (l'organe trace les champs manquants mais ne
+    les refuse pas) ; les champs inconnus, eux, sont refuses -- d'ou la
+    construction explicite.
+    """
+    fields = {"state": state, "started_at": started_at}
+    if expected_end:
+        fields["expected_end"] = expected_end
+    if holder:
+        fields["holder"] = holder
+    if workload:
+        fields["workload"] = workload
+    if issue:
+        fields["issue"] = issue
+    return fields
+
+
+def _release_gpu_if_held(gpu_res, fh, ended_reason,
+                         remote=GPU_LEDGER_REMOTE_DEFAULT):
+    """Teardown GPU : ecrit l'observation ``released`` si un ``held`` a ete porte.
+
+    ``started_at`` du released = l'instant du held ; ``expected_end`` =
+    l'heure UTC reelle de fin. Rend True si l'ecriture a reussi (ou s'il n'y
+    avait rien a faire) ; l'echec est signale dans le journal par un message
+    explicite -- un held sans released laisse une reservation vivante sur un
+    device libre et bloque les lancements suivants a tort.
+    """
+    if gpu_res is None:
+        return True
+    ended_at = _utc_now_iso()
+    fields = _gpu_build_fields(
+        state="released",
+        started_at=gpu_res["held_started_at"],
+        expected_end=ended_at,
+        holder=gpu_res.get("holder"),
+        workload=gpu_res.get("workload"),
+        issue=gpu_res.get("issue"),
+    )
+    ok, detail = _gpu_append_observation(
+        gpu_res["entity"], fields, gpu_res.get("holder") or "run_guarded")
+    if ok:
+        _say(fh, f"gpu-reservation : released ecrit pour {gpu_res['entity']} "
+                 f"({ended_reason}) -- hold du {gpu_res['held_started_at']} "
+                 f"ferme a {ended_at}"
+                 + (f" (observation {detail})" if detail else ""))
+        # Le released doit etre PUBLIE comme le held : un hold ferme
+        # localement mais invisible de la flotte laisse les autres machines
+        # croire le device tenu.
+        published, pub_detail = _gpu_publish_reservations(
+            gpu_res["entity"].split("#")[0], remote)
+        if not published:
+            _say(fh, f"ATTENTION gpu-reservation : le released de "
+                     f"{gpu_res['entity']} n'a pas pu etre PUBLIE -- "
+                     f"{pub_detail} -- la flotte peut encore voir le hold et "
+                     f"croire le device tenu. Remediation : "
+                     f"python scripts/coordination/debt_ledger.py publish --git "
+                     f"--ledger {GPU_LEDGER_NAME} --emit")
+            return False
+    else:
+        _say(fh, f"ATTENTION gpu-reservation : l'observation released N'A PAS PU "
+                 f"etre ecrite pour {gpu_res['entity']} ({ended_reason}) -- la "
+                 f"reservation reste VIVANTE sur un device libre et bloquera les "
+                 f"lancements suivants. Liberer manuellement : debt_ledger.py "
+                 f"append --ledger gpu-reservation --entity {gpu_res['entity']} "
+                 f"--actor {gpu_res.get('holder') or 'run_guarded'} "
+                 f"--evidence manual-release --confidence high "
+                 f"--fields-json \"<state=released, started_at="
+                 f"{gpu_res['held_started_at']}, expected_end={ended_at}>\". "
+                 f"Detail de l'echec : {detail}")
+    return ok
 
 
 
@@ -325,7 +666,19 @@ def main(argv=None):
     ap.add_argument("--max-commit-charge-pct", type=int, default=0,
                     help="refuse le demarrage si la charge de commit de la "
                          "machine depasse ce pourcentage. 0 = desactive. "
-                         "Une mesure ILLISIBLE refuse aussi (fail-CLOSED)")
+                         "Une mesure ILLISIBLE refuse aussi (fail-CLOSED). "
+                         "Active aussi la PROJECTION d'engagement : le "
+                         "demarrage est refuse si la charge de commit, une "
+                         "fois l'engagement du job (--job-memory-limit-gib) "
+                         "ajoute, depasse 100 %% du plafond de commit de "
+                         "l'hote (#23531, #23546)")
+    ap.add_argument("--allow-unbounded-commit", action="store_true",
+                    help="assumer explicitement que l'engagement du job n'est "
+                         "PAS borne (aucun --job-memory-limit-gib) : la limite "
+                         "de commit de l'hote ne sera alors PAS protegee par "
+                         "ce lanceur. Sans cette option, la garde refuse "
+                         "(fail-CLOSED) : sans plafond, la projection est "
+                         "indemontrable")
     ap.add_argument("--exclusive-lock", default=None,
                     help="chemin d'un fichier de verrou exclusif : refuse le "
                          "demarrage si un autre lancement le tient (N = 1)")
@@ -334,9 +687,42 @@ def main(argv=None):
     ap.add_argument("--stderr-file", default=None,
                     help="fichier ou ecrire la sortie d'erreur de la commande "
                          "(par defaut, elle est fusionnee dans --log)")
+    ap.add_argument("--gpu-entity", default=None, metavar="MACHINE#gpuN",
+                    help="active la garde GPU : entite du device dans le ledger "
+                         "gpu-reservation (ex myia-ai-01#gpu2). Sans cette "
+                         "option, AUCUN appel au ledger n'est fait (comportement "
+                         "inchange). Avec elle : gate check_pending, puis "
+                         "reservation held AVANT le lancement, puis released au "
+                         "teardown (#22456)")
+    ap.add_argument("--gpu-holder", default=None, metavar="LANE",
+                    help="lane tenante du device (ex myia-ai-01:CoursIA-2) -- "
+                         "requis avec --gpu-entity")
+    ap.add_argument("--gpu-workload", default=None, metavar="SLUG",
+                    help="slug court du travail lance sur le device -- requis "
+                         "avec --gpu-entity")
+    ap.add_argument("--gpu-expected-end", default=None, metavar="ISO8601-UTC",
+                    help="fin attendue du hold, UTC ISO-8601 avec suffixe Z "
+                         "(ex 2026-10-26T18:00:00Z). Absent, une borne par "
+                         "defaut est appliquee (maintenant + 24 h) : un hold "
+                         "sans fin rend le device ILLIBRE pour toute la "
+                         "flotte jusqu'a une liberation manuelle")
+    ap.add_argument("--gpu-ledger-remote", default=GPU_LEDGER_REMOTE_DEFAULT,
+                    metavar="REMOTE",
+                    help="remote git sur lequel la branche du ledger "
+                         f"({GPU_LEDGER_BRANCH}) est publiee et lue "
+                         f"(defaut : {GPU_LEDGER_REMOTE_DEFAULT}). Parametre, "
+                         "pas une decision codee en dur : la cible de "
+                         "l'etat vivant de reservation peut etre un depot "
+                         "prive")
+    ap.add_argument("--gpu-issue", default=None, metavar="REPO#N",
+                    help="issue de rattachement du hold (ex jsboige/CoursIA#1454)")
     ap.add_argument("cmd", nargs=argparse.REMAINDER,
                     help="commande a lancer, precedee de --")
     args = ap.parse_args(argv)
+
+    if args.gpu_entity and not (args.gpu_holder and args.gpu_workload):
+        ap.error("--gpu-entity exige --gpu-holder et --gpu-workload : la "
+                 "reservation doit dire QUI lance QUOI sur le device")
 
     cmd = args.cmd
     if cmd and cmd[0] == "--":
@@ -387,9 +773,28 @@ def main(argv=None):
         return RC_REFUSED
 
     # --- Garde d'admission : charge de commit (#21661) ------------------------
+    #
+    # Deux predicats, tous deux fail-CLOSED, lances dans cet ordre :
+    #
+    #  1. le seuil de charge de l'hote (``--max-commit-charge-pct``) : l'etat
+    #     de la machine AVANT que le job n'engage quoi que ce soit ;
+    #  2. la PROJECTION (#23531, #23546) : l'etat de la machine APRES
+    #     l'engagement que le job va prendre. Le premier predicat compare un
+    #     etat a un seuil qui ne dit rien de ce que le job va engager : a
+    #     89,9 % de charge, un job de 48 GiB peut porter l'hote AU-DELA de
+    #     sa limite de commit -- et une famine de commit touche le vLLM de
+    #     flotte (GPU 0/1) autant que le job. La projection est donc ce que
+    #     l'admission doit dire, pas seulement la charge courante.
+    #
+    #     Elle est bornee par le MEME seuil de sante que l'etat d'avant
+    #     (``--max-commit-charge-pct``), pas par 100 % du plafond de commit :
+    #     100 %, c'est la famine elle-meme, et le vLLM de flotte n'a aucune
+    #     marge a ce point. Avec un plafond de commit de 399,8 GiB et un job
+    #     de 48 GiB, la projection franchit 90 % des 78,0 % de charge
+    #     courante -- donc bien avant le seuil de l'etat d'avant.
     if args.max_commit_charge_pct > 0:
-        charge = _commit_charge_pct()
-        if charge is None and os.name != "nt":
+        reading = _commit_charge()
+        if reading is None and os.name != "nt":
             # Hors Windows il n'existe pas d'instrument equivalent (la charge
             # de commit est une notion du gestionnaire de memoire Windows ;
             # l'equivalent Linux est un cgroup, pas un compteur). Ce n'est pas
@@ -398,20 +803,64 @@ def main(argv=None):
             _say(fh, "garde de charge de commit : NON APPLICABLE sur cette "
                      "plateforme (pas d'instrument equivalent) -- demarrage "
                      "autorise. Le plafond memoire, lui, reste actif.")
-        elif charge is None:
+        elif reading is None:
             _say(fh, f"REFUS : charge de commit ILLISIBLE (capteur muet) -- "
                      f"fail-CLOSED, rien n'est lance. Seuil demande : "
                      f"{args.max_commit_charge_pct} %.")
             close_logs()
             return RC_REFUSED
-        elif charge > args.max_commit_charge_pct:
-            _say(fh, f"REFUS : charge de commit {charge} % > "
-                     f"{args.max_commit_charge_pct} % -- rien n'est lance.")
-            close_logs()
-            return RC_REFUSED
         else:
-            _say(fh, f"admission : charge de commit {charge} % <= "
-                     f"{args.max_commit_charge_pct} % -- demarrage autorise")
+            charge, committed, limit = reading
+            if charge > args.max_commit_charge_pct:
+                _say(fh, f"REFUS : charge de commit {charge} % > "
+                         f"{args.max_commit_charge_pct} % -- rien n'est lance.")
+                close_logs()
+                return RC_REFUSED
+            engagement = int(args.job_memory_limit_gib * GiB)
+            if engagement <= 0:
+                # Aucun plafond de commit du job : l'engagement est SANS
+                # BORNE, donc la projection est INDEMONTRABLE. Refuser par
+                # defaut (fail-CLOSED, comme une mesure illisible) : c'est la
+                # seule maniere de ne pas laisser un job franchir la limite
+                # de commit de l'hote en pretending qu'elle est protegee.
+                if not args.allow_unbounded_commit:
+                    _say(fh, f"REFUS : engagement du job NON BORNE (aucun "
+                             f"--job-memory-limit-gib) -- la projection de la "
+                             f"charge de commit apres engagement est "
+                             f"indemontrable, et la limite de commit de l'hote "
+                             f"({limit / GiB:.1f} GiB) ne serait pas protegee "
+                             f"par ce lanceur. Fail-CLOSED : rien n'est lance. "
+                             f"Poser --job-memory-limit-gib, ou assumer "
+                             f"explicitement avec --allow-unbounded-commit.")
+                    close_logs()
+                    return RC_REFUSED
+                _say(fh, "ATTENTION : engagement du job NON BORNE, assume "
+                         "explicitement (--allow-unbounded-commit) -- la limite "
+                         "de commit de l'hote n'est PAS protegee par ce "
+                         "lanceur. La charge courante est "
+                         f"{charge} % (plafond {limit / GiB:.1f} GiB).")
+            else:
+                projected = 100.0 * (committed + engagement) / limit
+                if projected > args.max_commit_charge_pct:
+                    _say(fh, f"REFUS : projection de charge de commit "
+                             f"{projected:.1f} % > "
+                             f"{args.max_commit_charge_pct} % -- l'hote est "
+                             f"engage a {charge} % ({committed / GiB:.1f} GiB) "
+                             f"et le job peut encore engager "
+                             f"{engagement / GiB:.1f} GiB, pour un plafond de "
+                             f"commit de {limit / GiB:.1f} GiB. Rien n'est "
+                             f"lance : l'etat APRES engagement depasse le meme "
+                             f"seuil de sante que l'etat d'avant, et le vLLM "
+                             f"de flotte (GPU 0/1) n'a aucune marge si l'hote "
+                             f"sature son plafond de commit.")
+                    close_logs()
+                    return RC_REFUSED
+                _say(fh, f"admission : charge de commit {charge} % <= "
+                         f"{args.max_commit_charge_pct} % et projection "
+                         f"{projected:.1f} % <= {args.max_commit_charge_pct} % "
+                         f"apres engagement de "
+                         f"{engagement / GiB:.1f} GiB (plafond de commit "
+                         f"{limit / GiB:.1f} GiB) -- demarrage autorise")
 
     # --- Exclusion N=1 (#21661) ------------------------------------------------
     if args.exclusive_lock:
@@ -423,6 +872,97 @@ def main(argv=None):
             return RC_REFUSED
         _say(fh, f"exclusion N=1 : verrou {args.exclusive_lock} pris pour la "
                  f"duree du job")
+
+    # --- Garde GPU : gate puis reservation held AVANT l'enfant (#22456) ------
+    # Sequence codee du regisseur : consulter le gate, puis porter le held,
+    # et seulement ensuite lancer l'enfant -- la reservation existe avant le
+    # premier appel CUDA. gpu_res reste None tant que le held n'est pas ecrit
+    # (et pour toujours sans --gpu-entity) : le teardown n'ecrit alors rien.
+    gpu_res = None
+    if args.gpu_entity:
+        verdict, detail = _gpu_gate_check(
+            args.gpu_entity, args.gpu_holder, args.gpu_ledger_remote)
+        if verdict not in GPU_GATE_GREEN_VERDICTS:
+            if verdict is None:
+                _say(fh, f"REFUS : gate {GPU_LEDGER_NAME} INDISPONIBLE pour "
+                         f"{args.gpu_entity} -- {detail} -- fail-CLOSED : on ne "
+                         f"lance pas sur un device dont on ne peut pas lire "
+                         f"l'etat.")
+            else:
+                _say(fh, f"REFUS : gate {GPU_LEDGER_NAME} verdict {verdict} pour "
+                         f"{args.gpu_entity} ({detail}) -- rien n'est lance.")
+            close_logs()
+            return RC_REFUSED
+        _say(fh, f"admission GPU : verdict {verdict} pour {args.gpu_entity} "
+                 f"-- demarrage autorise")
+        held_started_at = _utc_now_iso()
+        expected_end = args.gpu_expected_end
+        if not expected_end:
+            # Un hold SANS borne n'est jamais STALE : un lanceur tue
+            # brutalement (kill -9, reboot) laisse la reservation vivante
+            # pour TOUTE la flotte, sans aucun chemin de sortie. La borne
+            # par defaut rend ce cas detectable par l'organe ; elle est
+            # journalisee, donc jamais silencieuse.
+            expected_end = (
+                datetime.now(timezone.utc) + timedelta(hours=GPU_HOLD_DEFAULT_HOURS)
+            ).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            _say(fh, f"gpu-reservation : --gpu-expected-end absent -- borne par "
+                     f"defaut appliquee : {expected_end} "
+                     f"(+{GPU_HOLD_DEFAULT_HOURS} h)")
+        fields = _gpu_build_fields(
+            state="held",
+            started_at=held_started_at,
+            expected_end=expected_end,
+            holder=args.gpu_holder,
+            workload=args.gpu_workload,
+            issue=args.gpu_issue,
+        )
+        ok, obs_detail = _gpu_append_observation(
+            args.gpu_entity, fields, args.gpu_holder or "run_guarded")
+        if not ok:
+            _say(fh, f"REFUS : la reservation {GPU_LEDGER_NAME} n'a pas pu etre "
+                     f"ecrite pour {args.gpu_entity} -- {obs_detail} -- "
+                     f"fail-CLOSED : on ne lance pas sur un device dont on n'a "
+                     f"pas porte la reservation.")
+            close_logs()
+            return RC_REFUSED
+        gpu_res = {
+            "entity": args.gpu_entity,
+            "holder": args.gpu_holder,
+            "workload": args.gpu_workload,
+            "issue": args.gpu_issue,
+            "held_started_at": held_started_at,
+        }
+        _say(fh, f"gpu-reservation : held ecrit pour {args.gpu_entity} "
+                 f"(debut {held_started_at}"
+                 + (f", observation {obs_detail}" if obs_detail else "")
+                 + ") AVANT le lancement -- la reservation existe avant le "
+                 "premier appel CUDA")
+        # Publication immediate : la reservation doit etre VISIBLE de la
+        # flotte (le gate lit la branche). Un held non publie rend `UNPOSTED`
+        # au gate et bloquerait le lancement suivant, y compris le nôtre.
+        published, pub_detail = _gpu_publish_reservations(
+            args.gpu_entity.split("#")[0], args.gpu_ledger_remote)
+        if not published:
+            _say(fh, f"REFUS : la reservation {GPU_LEDGER_NAME} n'a pas pu etre "
+                     f"PUBLIEE pour {args.gpu_entity} -- {pub_detail} -- "
+                     f"fail-CLOSED : une reservation invisible de la flotte "
+                     f"n'est pas une reservation. Remediation : "
+                     f"python scripts/coordination/debt_ledger.py publish --git "
+                     f"--ledger {GPU_LEDGER_NAME} --emit")
+            # Le `held` EST ecrit (dans le spool) : le refus doit le CLORE.
+            # Sans ce release, la reservation reste VIVANTE -- et, si le push
+            # a atterri avant l'echec de sa verification, elle est VISIBLE de
+            # la flotte sur un device qui ne porte aucun job (le hold de
+            # l'admission et le released de l'admission doivent etre
+            # symetriques, comme tous les autres chemins de sortie).
+            _release_gpu_if_held(
+                gpu_res, fh, "publication de la reservation refusee",
+                args.gpu_ledger_remote)
+            close_logs()
+            return RC_REFUSED
+        _say(fh, f"gpu-reservation : held PUBLIE sur {GPU_LEDGER_BRANCH} "
+                 f"-- la flotte voit la reservation ({pub_detail})")
 
     job_limit = int(args.job_memory_limit_gib * GiB)
     if args.no_job:
@@ -462,6 +1002,8 @@ def main(argv=None):
             proc = subprocess.Popen(cmd, **spawn_kwargs)
         except (OSError, ValueError) as exc:
             _say(fh, f"la commande n'a pas demarre : {type(exc).__name__}: {exc}")
+            _release_gpu_if_held(gpu_res, fh, "la commande n'a pas demarre",
+                                 args.gpu_ledger_remote)
             close_logs()
             return RC_NOSTART
 
@@ -471,6 +1013,8 @@ def main(argv=None):
                  "il pourrait survivre a ce lanceur (orphelin). Relancer avec "
                  "--allow-no-job pour l'assumer explicitement.")
         _kill_tree(proc.pid)
+        _release_gpu_if_held(gpu_res, fh, "enfant non place dans le Job Object",
+                             args.gpu_ledger_remote)
         close_logs()
         return RC_REFUSED
     if os.name == "nt" and assigned:
@@ -492,6 +1036,8 @@ def main(argv=None):
             _say(fh, "REFUS : l'enfant demarre en suspension n'a pas pu etre "
                      "repris -- il est tue plutot que lancer hors plafond.")
             _kill_tree(proc.pid)
+            _release_gpu_if_held(gpu_res, fh, "enfant suspendu non repris",
+                             args.gpu_ledger_remote)
             close_logs()
             return RC_NOSTART
 
@@ -527,6 +1073,8 @@ def main(argv=None):
     except KeyboardInterrupt:
         _say(fh, "interruption clavier : arret de l'arbre")
         _kill_tree(proc.pid)
+        _release_gpu_if_held(gpu_res, fh, "interruption clavier",
+                         args.gpu_ledger_remote)
         close_logs()
         return RC_INTERRUPT
 
@@ -539,6 +1087,8 @@ def main(argv=None):
             pass
         _say(fh, f"bilan : pic RSS {peak_rss / GiB:.1f} GiB, RAM libre minimale "
                  f"{min_free / GiB:.1f} GiB, duree {int(time.time() - t0)} s")
+        _release_gpu_if_held(gpu_res, fh, f"arret garde ({reason})",
+                         args.gpu_ledger_remote)
         close_logs()
         return RC_LIMIT if reason.startswith("plafond") else RC_FLOOR
 
@@ -546,7 +1096,14 @@ def main(argv=None):
     _say(fh, f"termine rc={rc} en {int(time.time() - t0)} s -- sous les deux "
              f"plafonds (pic RSS {peak_rss / GiB:.1f} GiB / {args.limit_gib:.1f} GiB, "
              f"RAM libre minimale {min_free / GiB:.1f} GiB)")
+    released_ok = _release_gpu_if_held(gpu_res, fh, "sortie normale", args.gpu_ledger_remote)
     close_logs()
+    if gpu_res is not None and not released_ok and rc == RC_OK:
+        # Le travail a reussi mais la reservation n'est pas liberee : code
+        # dedie pour qu'une chaine d'appels ne croie pas que tout va bien.
+        # Si rc est deja non nul, on le garde : l'echec de l'enfant reste
+        # l'information principale, le released manquant est dans le journal.
+        return RC_LEDGER
     return rc
 
 

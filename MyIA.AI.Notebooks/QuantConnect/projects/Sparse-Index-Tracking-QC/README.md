@@ -9,7 +9,7 @@
 Sparse index tracking sous contrainte de cardinalité, sur **données réelles** : suivre SPY avec
 un sous-ensemble réduit d'actions (K ∈ {6, 8, 10}) plutôt que d'optimiser sans contrainte de cardinalité sur l'univers candidat complet.
 Versant « épreuve du réel » du compagnon de méthode
-[App-27 — Sparse index tracking walk-forward](../../../Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb)
+[App-27 — Sparse index tracking walk-forward](../../../Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb)
 (série Search), qui pose le même problème en CP-SAT sur données synthétiques à vérité
 connue. App-27 porte le modèle et le validateur ; ce projet porte le test sur prix réels avec un
 backtest QC Cloud et des coûts explicites. Les deux artefacts forment **une recherche, deux
@@ -167,6 +167,6 @@ de séance, comme le décrit le protocole, sans trimestre perdu.
 
 ## Renvois
 
-- **Méthode** : [App-27 — Sparse index tracking walk-forward](../../../Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) — modèle CP-SAT, validateur, fuite reproduite et lecture pédagogique des présents résultats QC.
+- **Méthode** : [App-27 — Sparse index tracking walk-forward](../../../Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) — modèle CP-SAT, validateur, fuite reproduite et lecture pédagogique des présents résultats QC.
 - **Issue** : #14062 (développement d'App-27 côté QuantConnect).
 - **Tracking error sans cardinalité** : [QC-Py-14 — Portfolio Construction & Execution](../../Python/QC-Py-14-Portfolio-Construction-Execution.ipynb) — l'arête manquante que ce projet ajoute.

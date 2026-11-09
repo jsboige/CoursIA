@@ -338,7 +338,7 @@ INSTRUMENTS: tuple[Instrument, ...] = (
         payload="none",
         judge=judge_na(
             "sans objet pour un .ipynb -- la convention sibling-pair porte sur les "
-            "*.lean (code-style.md section Lean i18n, #4980)"
+            "*.lean (lean-i18n.md section Lean i18n, #4980)"
         ),
         note="Axe nomme par l'acceptance 2 ; declare NA ici, avec sa raison, plutot qu'omis.",
     ),

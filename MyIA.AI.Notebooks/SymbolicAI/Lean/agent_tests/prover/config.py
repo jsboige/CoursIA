@@ -1,6 +1,7 @@
 """Configuration, providers, and demo theorems."""
 
 import os
+import platform
 from pathlib import Path
 from dotenv import load_dotenv
 from agent_framework_openai import OpenAIChatCompletionClient
@@ -47,17 +48,59 @@ def _workspace_relative(rel: str) -> Path | None:
         return None
     return _WORKSPACE_ROOT.joinpath(*rel.split("/"))
 
+
+def _claudish_machine_tag() -> str:
+    """Tag d'attribution envoye a claudish dans ``X-Claudish-Machine``.
+
+    ``CLAUDISH_MACHINE_TAG`` l'emporte. Sinon le tag ne se derive que d'un nom
+    d'hote de la flotte (``myia-ai-01`` -> ``ai-01-prover``) : dans un conteneur,
+    ``platform.node()`` rend un identifiant qui change a chaque recreation et se
+    lirait comme une machine reelle. Hors flotte, le tag vaut ``unknown-prover``,
+    visible dans les comptes de claudish.
+    """
+    explicit = os.getenv("CLAUDISH_MACHINE_TAG", "").strip()
+    if explicit:
+        return explicit
+    node = platform.node().lower()
+    if node.startswith("myia-"):
+        return node.removeprefix("myia-") + "-prover"
+    return "unknown-prover"
+
+
+# The local vLLM endpoint is provisioned by the machine under two spellings.
+# ``LOCAL_LLM_BASE_URL`` is what THIS module has read since #1453, while the
+# fleet shells (po-2025 measured 2026-11-04) export ``LOCAL_LLM_API_BASE``.
+# Reading only one of them made the #1453 provider gate refuse to launch a
+# run whose endpoint was in fact reachable (401 on port 5003 = auth required,
+# transport alive): the gate was right about its own input and wrong about
+# reality. Accepting both fixes the class, not the instance — neither name is
+# promoted to canonical here, and a machine that sets both keeps the older
+# spelling (``LOCAL_LLM_BASE_URL`` wins) so behaviour never changes silently
+# for an environment that already worked.
+LOCAL_BASE_URL_ENV_NAMES = ("LOCAL_LLM_BASE_URL", "LOCAL_LLM_API_BASE")
+
+
+def _env_first(*names: str) -> str:
+    """Return the first non-empty value among ``names`` (``""`` if none)."""
+    for name in names:
+        value = os.getenv(name, "").strip()
+        if value:
+            return value
+    return ""
+
+
+
 PROVIDERS = {
     "zai": {
         "base_url": os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/coding/paas/v4"),
         "api_key": os.getenv("ZAI_API_KEY", ""),
         "models": {
-            "reasoning": os.getenv("ZAI_CHAT_MODEL_ID", "glm-5.1"),
-            "fast": os.getenv("ZAI_FAST_MODEL_ID", "glm-5.1"),
+            "reasoning": os.getenv("ZAI_CHAT_MODEL_ID", "glm-5.3"),
+            "fast": os.getenv("ZAI_FAST_MODEL_ID", "glm-5.3"),
         }
     },
     "local": {
-        "base_url": os.getenv("LOCAL_LLM_BASE_URL", ""),
+        "base_url": _env_first(*LOCAL_BASE_URL_ENV_NAMES),
         "api_key": os.getenv("LOCAL_LLM_API_KEY", ""),
         "models": {
             "reasoning": os.getenv("LOCAL_LLM_MODEL_ID", "qwen3.6-35b-a3b"),
@@ -95,6 +138,23 @@ PROVIDERS = {
         "models": {
             "reasoning": os.getenv("MISTRAL_CHAT_MODEL_ID", "labs-leanstral-1-5"),
             "fast": os.getenv("MISTRAL_FAST_MODEL_ID", "labs-leanstral-1-5"),
+        }
+    },
+    # claudish : un seul point d'entree OpenAI-compatible devant les modeles
+    # de la flotte (z.ai GLM, DeepSeek, MiniMax, Qwen, Codex, Anthropic) --
+    # demande du user du 2026-11-03 : passer par le hub avant de chercher des
+    # cles par fournisseur. Le proxy authentifie la cle CLAUDISH_PROXY_KEY en
+    # Bearer (canari du 2026-11-04 : modele inconnu -> 400 apres admission,
+    # `zai@glm-5.3` -> 200). L'identifiant de modele porte le prefixe de route
+    # de claudish (`zai@glm-5.3`). L'en-tete X-Claudish-Machine attribue la
+    # consommation au harnais, machine par machine.
+    "claudish": {
+        "base_url": os.getenv("CLAUDISH_BASE_URL", ""),
+        "api_key": os.getenv("CLAUDISH_PROXY_KEY", ""),
+        "headers": {"X-Claudish-Machine": _claudish_machine_tag()},
+        "models": {
+            "reasoning": os.getenv("CLAUDISH_CHAT_MODEL_ID", "zai@glm-5.3"),
+            "fast": os.getenv("CLAUDISH_FAST_MODEL_ID", "zai@glm-5.3"),
         }
     },
 }
@@ -220,7 +280,7 @@ import Mathlib.Tactic
 # ── Conway calibration (Epic #1453) ──
 # Conway hommage series relocated 2026-05-28: was MyIA.AI.Notebooks/GameTheory/conway_lean.
 _CONWAY_CANDIDATES = [
-    _workspace_relative("SymbolicAI/Lean/conway_lean"),
+    _workspace_relative("SymbolicAI/Lean/GOL/conway_lean"),
     Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
     Path(r"D:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
     Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
@@ -405,6 +465,7 @@ def create_client(provider: str = "zai", model_key: str = "reasoning",
         base_url=cfg["base_url"],
         timeout=request_timeout_s,
         max_retries=max_retries,
+        default_headers=cfg.get("headers") or None,
     )
     return OpenAIChatCompletionClient(
         model=cfg["models"][model_key],

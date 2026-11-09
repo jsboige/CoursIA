@@ -11,6 +11,18 @@ sous runtime 8.15.0 (types exposés et instanciables). Toutes les recettes cible
 `net8.0`. Chaque runtime compilé (`org.tweetyproject.tweety-<module>.dll`) est placé
 **à côté du notebook** qui le charge.
 
+Les six scripts `rebuild-*.sh` partagent [`resolve_java_home.sh`](resolve_java_home.sh) : ils utilisent
+un `JAVA_HOME` explicite, ou recherchent `javac` sur `PATH` si la variable est absente. Un `JAVA_HOME`
+défini mais invalide (par exemple une JRE sans compilateur) arrête la recette avec un diagnostic ; il
+n'est pas remplacé silencieusement par un autre JDK. Le chemin du JDK peut contenir des espaces et
+les liens symboliques de `javac` ou de `JAVA_HOME` sont résolus avant de calculer sa racine.
+
+Le contrat du résolveur se vérifie sans lancer les téléchargements ou compilations des recettes :
+
+```bash
+bash test_resolve_java_home.sh
+```
+
 ## Fichiers — cluster `pl` (notebook [`../Tweety-02-Basic-Logics-CSharp.ipynb`](../Tweety-02-Basic-Logics-CSharp.ipynb))
 
 | Fichier | Rôle | Committé ? |
@@ -89,7 +101,7 @@ ajoutés sont des paquets que l'ancienne chaîne sous-compilait et que la fermet
 
 Voir `Tweety-02-Basic-Logics-CSharp.ipynb` pour l'utilisation. Epic #4667.
 
-## Fichiers — IKVM shade 5 modules (notebooks Tweety-5/7a/7b)
+## Fichiers — IKVM shade (notebooks Tweety-5/7a/7b)
 
 Issue **#10411** : cinq shades `build-Tweety<Module>Shade.csproj` sur le modèle
 des onze existantes, chacune produisant `org.tweetyproject.tweety-<module>.dll`
@@ -123,7 +135,7 @@ bash dotnet-build/rebuild-5shades.sh
 # 5 jars dans libs/, prêts pour IKVM
 ```
 
-### Pipeline DLL — 5 modules
+### Pipeline DLL
 
 ```bash
 cd MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build

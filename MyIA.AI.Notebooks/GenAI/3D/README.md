@@ -14,7 +14,7 @@ L'objectif fil rouge de la série est de **comprendre NeRF de l'intérieur** —
 
 À l'issue de la série, l'apprenant sait :
 
-- **Écrire un pipeline NeRF complet** : encodage positionnel $\gamma$ (pont avec les Fourier features de [`3.4d`](../../ML/DataScienceWithAgents/03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb)), MLP à sauts de connexion, échantillonnage stratifié le long des rayons, compositing alpha différentiable, quadrature de l'équation de rendu.
+- **Écrire un pipeline NeRF complet** : encodage positionnel $\gamma$ (pont avec les Fourier features de [`3.4d`](../../ML/DataScienceWithAgents/03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb)), MLP à sauts de connexion, échantillonnage stratifié le long des rayons, compositing alpha différentiable, quadrature de l'équation de rendu.
 - **Relier représentation continue et biais spectral** : pourquoi un MLP brut ne peut pas apprendre les hautes fréquences d'une scène, et ce que l'encodage positionnel change.
 - **Mesurer les limites d'une architecture** : temps d'entraînement par scène, effondrement sans Fourier features, sensibilité aux poses, échelle unique du rayon, coût de l'échantillonnage volumique.
 - **Situer les successeurs** : Mip-NeRF (frustum conique), Instant-NGP (tables de hachage), 3DGS (gaussiennes explicites) — et pourquoi chaque correctif change de représentation plutôt que de régler le MLP.
@@ -35,14 +35,14 @@ L'objectif fil rouge de la série est de **comprendre NeRF de l'intérieur** —
 
 ## Prérequis et exécution
 
-- **Prérequis conceptuel** : biais spectral et Fourier features ([`3.4d-Fourier-Features`](../../ML/DataScienceWithAgents/03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb), Pli 1 de l'Epic #18605).
+- **Prérequis conceptuel** : biais spectral et Fourier features ([`3.4d-Fourier-Features`](../../ML/DataScienceWithAgents/03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb), Pli 1 de l'Epic #18605).
 - **Exécution** : PyTorch (CPU jouable pour la scène jouet ; GPU recommandé — ~2-3 min pour 3D-01, ~10-12 min pour 3D-02 sur RTX 3090). Les seeds sont fixés : les résultats sont reproductibles.
 - **Pli 3 (3D-04, 3D-05)** : GPU requis, kernel conda `gsplat310` (Python 3.10, torch 2.4.1+cu124, roue officielle gsplat +pt24cu124) ; 3D-03 est jouable CPU. À taille de nuage fixe, l'ordre flottant des atomiques CUDA varie légèrement les trajectoires entre exécutions — les conclusions citent les statistiques robustes (perte, moyennes), pas les extrema. 3D-06 est une lecture guidée, sans exécution.
 - **Dataset** : `tiny_nerf_data.npz` (scène Blender « Lego » 100×100, © les auteurs de NeRF) téléchargé au premier lancement depuis la page projet UCSD des auteurs, mis en cache dans `data/` (hors dépôt).
 
 ## Les plis de la série (Epic #18605)
 
-- **Pli 1 — Fourier features** : [`3.4d-Fourier-Features-Biais-Spectral-Python`](../../ML/DataScienceWithAgents/03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb) (ML/DataScienceWithAgents) — le socle spectral commun.
+- **Pli 1 — Fourier features** : [`3.4d-Fourier-Features-Biais-Spectral-Python`](../../ML/DataScienceWithAgents/03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb) (ML/DataScienceWithAgents) — le socle spectral commun.
 - **Pli 2 — NeRF from scratch** : 3D-01 (pipeline complet), 3D-02 (limitations mesurées).
 - **Pli 3 — R-gsplat** : la transition NeRF → 3D Gaussian Splatting (Kerbl et al., SIGGRAPH 2023) avec `nerfstudio-project/gsplat` comme moteur CUDA — concepts et tri (3D-03), entraînement from scratch (3D-04), leviers d'optimisation (3D-05), annexe application réelle (3D-06).
 

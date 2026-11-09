@@ -1,0 +1,71 @@
+# Sonde T6 -- surface C# de SK et de MAF
+# generee le 2026-11-04 par csharp_coverage_probe.cs
+# packages : Agents.Core 1.81.0 (SK) + Microsoft.Agents.AI 1.27.0 + Microsoft.Agents.AI.Workflows 1.27.0 (MAF)
+# aucune requete LLM, aucune cle API ; mesure de SURFACE, pas de comportement
+
+SK (C#) -- 4 assemblage(s) balaye(s) :
+   Microsoft.SemanticKernel.Abstractions.dll                    132
+   Microsoft.SemanticKernel.Agents.Abstractions.dll              27
+   Microsoft.SemanticKernel.Agents.Core.dll                      17
+   Microsoft.SemanticKernel.Core.dll                             35
+   union dedoublonnee (nom court)                               210   <- PLANCHER, pas un compte de types
+
+MAF (C#) -- 3 assemblage(s) balaye(s) :
+   Microsoft.Agents.AI.Abstractions.dll                          28
+   Microsoft.Agents.AI.Workflows.dll                            132
+   Microsoft.Agents.AI.dll                                      126
+   union dedoublonnee (nom court)                               286   <- PLANCHER, pas un compte de types
+
+CONTROLE NEGATIF -- l'orchestration de la couche agents SK Python doit etre ABSENTE du C#
+   (a) par FORME -- types SK C# en `*Orchestration` : aucun  OK
+   (b) par ASSEMBLAGE -- `Microsoft.SemanticKernel.Agents.Orchestration` deploye : non  OK
+   (c) par NOM EXACT (convention Python) :
+       absent  OK  SequentialOrchestration
+       absent  OK  ConcurrentOrchestration
+       absent  OK  GroupChatOrchestration
+       absent  OK  MagenticOrchestration
+       absent  OK  HandoffOrchestration
+
+CONTROLE POSITIF -- les cinq topologies doivent etre PRESENTES dans MAF C#
+   present OK  SequentialWorkflowBuilder
+   present OK  ConcurrentWorkflowBuilder
+   present OK  GroupChatWorkflowBuilder
+   present OK  MagenticWorkflowBuilder
+   present OK  HandoffWorkflowBuilder
+   present OK  WorkflowBuilder
+
+CAPACITES (checkpoint, OTel, ledger Magentic) -- attendues PRESENTES dans MAF C#
+   present OK  CheckpointManager
+   present OK  CheckpointInfo
+   present OK  FileSystemJsonCheckpointStore
+   present OK  WorkflowSessionCheckpointRecovery
+   present OK  OpenTelemetryWorkflowBuilderExtensions
+   present OK  MagenticProgressLedger
+   present OK  RoundRobinGroupChatManager
+
+CE QUE SK C# EXPOSE (modele historique AgentGroupChat) -- attendu PRESENT
+   present OK  AgentGroupChat
+   present OK  AgentGroupChatSettings
+   present OK  SequentialSelectionStrategy
+   present OK  ChatCompletionAgent
+
+SK C# -- capacites de reprise et de telemetry (recherche par FRAGMENT de nom)
+   fragment "Checkpoint" -> AUCUN
+   fragment "OpenTelemetry" -> AUCUN
+   fragment "Telemetry" -> AUCUN
+   fragment "Workflow" -> AUCUN
+   fragment "Resume" -> AUCUN
+   fragment "Persistence" -> AUCUN
+
+MAF C# -- memes fragments, pour comparaison
+   fragment "Checkpoint" -> CheckpointInfo, CheckpointManager, CheckpointableRunBase, FileSystemJsonCheckpointStore, ICheckpointStore`1, JsonCheckpointStore, WorkflowSessionCheckpointRecovery
+   fragment "OpenTelemetry" -> OpenTelemetryAgent, OpenTelemetryAgentBuilderExtensions, OpenTelemetryWorkflowBuilderExtensions
+   fragment "Telemetry" -> OpenTelemetryAgent, OpenTelemetryAgentBuilderExtensions, OpenTelemetryWorkflowBuilderExtensions, WorkflowTelemetryOptions
+   fragment "Workflow" -> AgentWorkflowBuilder, ConcurrentWorkflowBuilder, GroupChatWorkflowBuilder, HandoffWorkflowBuilder, HandoffWorkflowBuilderCore`1, HandoffsWorkflowBuilder, IWorkflowContext, IWorkflowContextExtensions, IWorkflowExecutionEnvironment, MagenticWorkflowBuilder, OpenTelemetryWorkflowBuilderExtensions, SequentialWorkflowBuilder, SubworkflowBinding, SubworkflowErrorEvent, SubworkflowWarningEvent, Workflow, WorkflowAgentMetadata, WorkflowBuilder, WorkflowBuilderExtensions, WorkflowErrorEvent, WorkflowEvaluationExtensions, WorkflowEvent, WorkflowHostingExtensions, WorkflowOutputEvent, WorkflowOutputEventExtensions, WorkflowSessionCheckpointRecovery, WorkflowStartedEvent, WorkflowTelemetryOptions, WorkflowVisualizer, WorkflowWarningEvent
+   fragment "Resume" -> AUCUN
+   fragment "Persistence" -> AUCUN
+
+GOOGLE ADK (C#) -- balayage des assemblages deployes
+   Google.Protobuf.dll
+
+VERDICT controles : negatif=OK positif=OK

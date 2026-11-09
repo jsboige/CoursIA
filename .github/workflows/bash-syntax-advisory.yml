@@ -34,7 +34,6 @@ on:
       - '**/*.sh'
       - '.github/workflows/bash-syntax-advisory.yml'
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - '**/*.sh'
@@ -58,6 +57,10 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # #23349 : borne explicite. Mesure du 2026-11-04 sur les 3 derniers
+    # runs verts de ce job : max 0.15 min. Marge large (le defaut
+    # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: bash -n
@@ -86,6 +89,10 @@ jobs:
     # while that runner is starved, exactly like syntax-check.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # #23349 : borne explicite. Mesure du 2026-11-04 sur les 3 derniers
+    # runs verts de ce job : max 3.85 min. Marge large (le defaut
+    # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Run linux-runner test_*.sh
@@ -113,6 +120,10 @@ jobs:
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     continue-on-error: true
+    # #23349 : borne explicite. Mesure du 2026-11-04 sur les 3 derniers
+    # runs verts de ce job : max 1.07 min. Marge large (le defaut
+    # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Shebang + executable-bit audit

@@ -29,6 +29,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts/notebook_tools/check_split_reading_cells.py"
 
+# Chemins FIGES a l'epoque du couple de SHA par defaut (6d46b9c684~1 -> 6d46b9c684) :
+# ils ne designent pas l'arborescence courante et ne se realignent donc pas sur un
+# deplacement de carnets (#21770). Le controle materialise ces blobs par `git show`.
 NQ_BASE_PATH = "MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb"
 C4_BASE_PATH = "MyIA.AI.Notebooks/Search/Applications/Adversarial/App-12b-ConnectFour.ipynb"
 

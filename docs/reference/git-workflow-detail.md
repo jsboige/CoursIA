@@ -54,6 +54,12 @@ L'affirmation de la règle a été **confrontée à l'organe** avant d'être cor
 
 Le défaut était donc **documentaire** : la règle contredisait un organe correct et testé. Le second écart (« balayage horaire ») a été trouvé par la même passe et corrigé dans le même geste — les deux vivaient sur la même ligne.
 
+### Le rouge `DWELL` n'est pas un défaut de la PR — c'est le balayage qui le lève
+
+Le gate **nomme lui-même** la cause dans son message : la tête est trop récente pour le plancher, rien n'est à corriger dans le code. Un `DWELL` rouge se résorbe donc **sans geste de la lane**, quand le balayage repasse et re-mesure la tête. C'est la raison pour laquelle un rouge de cette classe peut rester affiché des heures sans que personne ne soit en faute.
+
+La cadence réelle du balayage est **lente et irrégulière** : la mesure de **#15197** la situe entre **178 et 341 minutes** — le message du gate, sur une autre fenêtre, annonce « 2 h 33 – 5 h 18 ». Les deux lectures s'accordent sur ce qui compte ici : ce n'est **pas** horaire, et une PR peut légitimement attendre plusieurs heures avant que la jambe repasse au vert. Attendre n'est donc pas un échec de lane ; c'est le fonctionnement nominal.
+
 ### Pourquoi un rejeu de jambe est gratuit
 
 `gh run rerun <run_id> --job <job_id>` ne crée **aucun commit** : la tête ne bouge pas, donc le plancher non plus. C'est le remède que le message du gate nomme lui-même, et il est préférable à `update-branch` quand le seul rouge est `DWELL` — ce dernier n'est pas nuisible, mais il déclenche une rafale CI complète sur un pool de runners partagé.
@@ -65,6 +71,8 @@ Une règle du harnais est **datée de sa rédaction, pas de sa lecture**. Quand 
 ## 5. Worktree cleanup (#14195) — problème, mesures datées et contrôle positif
 
 **Problème mesuré (2026-09-02)** : chaque review de PR notebook / build Lean crée un worktree ; sans organe de retrait, ces worktrees s'accumulent — **265 sur po-2026 en 36 h**, **103 sur ai-01** (précédent #8924). Le mécanisme est nommé depuis le 2026-08-05, mais l'organe n'avait jamais été construit (`scripts/ci/prune_merged_worktrees.py`).
+
+**Pourquoi une tâche planifiée et pas la règle seule** : la prose d'une règle ne s'exécute pas seule — les règles sont injectées au démarrage de session et perdues en cas de crash, si bien qu'une consigne « purger en fin de cycle » ne s'applique que si la session se termine proprement. La tâche planifiée est donc le mécanisme, et l'appel manuel de fin de cycle le filet.
 
 **Refus ≠ échec — mesure (roo-extensions #3895, 27/09)** : sur 3 machines, **86-100 %** des worktrees vus sont REFUSE (worktrees de cycle nés HEAD-détachés ou sales par construction — po-2023 a saturé ses disques dessus). Un REFUS est une **décision** de l'organe (exit 0), pas une panne : la règle qui en découle reste dans `.claude/rules/git-workflow.md`.
 
@@ -78,9 +86,66 @@ Une règle du harnais est **datée de sa rédaction, pas de sa lecture**. Quand 
 
 Le worktree de test créé sur `fix/14142-qc40-followup-state` (PR #14403 mergée par squash 2026-09-02) a été retiré — c'est le **contrôle positif** manquant à tout prédicat d'ascendance : un squash-merge efface l'ascendance, mais `gh pr list --state all --search` retrouve la PR par le nom de branche.
 
+## 6. Le scope avale le mot-clé — la mesure sur 500 commits (#23348)
+
+Détail déporté de la puce « Safe reference syntax » de la règle. Le mandat `type(scope): subject` a une place invite pour le numéro d'issue — `type(scope,#N): subject` — et cette forme ne ferme rien : `(` et le scope s'assoient entre le mot-clé de fermeture et le numéro.
+
+Mesuré sur `origin/main` sur 500 commits : **299 numéros d'issues distincts cités de cette façon, 186 encore ouverts** ; parmi les **162** cités par un verbe de correction, **95 encore ouverts** — des issues dont le fix est déjà sur `main`, qui gonflent le tapis de travail déjà fait. GitHub ne ferme que si le mot-clé **précède immédiatement** la référence ; tout ce qui s'intercale est du texte.
+
+L'organe de triage : `python scripts/ci/list_scope_swallowed_issues.py` (`--json`, `--all-forms`) nomme les paires (issue ouverte, commit de correction). Il ne ferme rien, ne commente rien : triage et fermeture reviennent au coordinateur (G.9).
+
 ## Voir aussi
 
 - [`.claude/rules/git-workflow.md`](../../.claude/rules/git-workflow.md) — la règle
 - [`docs/reference/orphan-branch-scan-l576.md`](orphan-branch-scan-l576.md) — scan de branche orpheline, 4 ancres
 - [`.claude/rules/lane-claim-protocol.md`](../../.claude/rules/lane-claim-protocol.md) — « plusieurs agents de front » = un `[CLAIMED]` d'une autre lane
 - [`.claude/rules/secrets-hygiene.md`](../../.claude/rules/secrets-hygiene.md) règle 5 — secret commité : cherry-pick + rotation, jamais réécriture d'historique
+
+## § Levier B — rationales déportés de `.claude/rules/git-workflow.md`
+
+La règle `git-workflow.md` est **auto-chargée** à chaque session ; ce fichier
+ne l'est pas. Les blocs ci-dessous sont repris **verbatim** : ce qui sort de
+la règle entre ici sans réécriture.
+
+| Ligne de la règle (base `7a558e4d7ce8`) | Bloc déplacé |
+|---|---|
+| L27 | le scope avale le mot-clé — la mesure sur 500 commits |
+| L32 | incident fondateur de l'auto-close prématuré |
+| L38 | pourquoi un périmètre plutôt qu'un interdit global |
+| L53 | `update-branch` tue le dossier de prévalidation |
+| L62 | pourquoi la forme opérationnelle n'est pas reformulée ici |
+| L63 | `--force-with-lease` plutôt que `--force` |
+| L67 | `allow_force_pushes` n'est pas lisible sans droit admin |
+| L125 | mesure datée et contrôle positif du prune |
+
+### L27 — le scope avale le mot-clé — la mesure sur 500 commits
+
+The mandated `type(scope): subject` form has an inviting place for the issue number — `type(scope,#N): subject` — and that form closes nothing: `(` and the scope sit between the keyword and the number. Never rely on the subject alone to close (mesure sur `origin/main` : 500 commits, 299 numéros cités ainsi, **186 encore ouverts** ; parmi les 162 cités par un verbe de correction, **95 encore ouverts** — des fixes déjà sur `main`).
+
+### L32 — incident fondateur de l'auto-close prématuré
+
+Incident fondateur : trois issues fermées par `Refs #N` sur des PRs partielles.
+
+### L38 — pourquoi un périmètre plutôt qu'un interdit global
+
+Les deux cas n'ont pas la même conséquence (contenu partagé sur `main`, travail non mergé d'une seule lane sur sa branche) — le détail du verbatim, de la table de décision et de l'incident 2026-03-13 est dans §1.
+
+### L53 — `update-branch` tue le dossier de prévalidation
+
+C'est la moitié qu'on oublie : c'est cette péremption, et non le DWELL, qui referme la boucle — [prevalidation-dossier-order-detail.md](prevalidation-dossier-order-detail.md) §1-§3.
+
+### L62 — pourquoi la forme opérationnelle n'est pas reformulée ici
+
+Deux surfaces qui redécrivent la même règle finissent par diverger (#16962) — le verbatim de l'organe et la réconciliation de l'issue fondatrice sont dans [prevalidation-dossier-order-detail.md](prevalidation-dossier-order-detail.md).
+
+### L63 — `--force-with-lease` plutôt que `--force`
+
+Il échoue si le remote a bougé depuis ta dernière lecture — précisément le cas « une autre lane a poussé sans que je le sache ». C'est le garde-fou qui rend le périmètre ci-dessus sûr.
+
+### L67 — `allow_force_pushes` n'est pas lisible sans droit admin
+
+Un 404 sur `branches/main/protection` est **une question, pas une absence mesurée** (#9991). Ce qu'une lane peut vérifier sans admin, c'est le comportement : un `push --force` sur `main` est rejeté par le serveur. Cf §1.
+
+### L125 — mesure datée et contrôle positif du prune
+
+Mesure datée et contrôle positif (po-2027, cycle #14195 ; tableau avant/après et contrôle positif du squash-merge) : §5.

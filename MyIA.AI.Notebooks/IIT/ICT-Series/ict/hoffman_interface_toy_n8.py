@@ -6,8 +6,9 @@ case 8/10/11. Si les bandes ne sont pas tenues, le jouet est repeint, pas la
 prédiction.
 
 La case teste la dissociation Hoffman (Prakash, Stephens, Hoffman, Singh & Fields
-2017, *Fitness Beats Truth in the Evolution of Perception*) en toy 3-bit. Setup
-canonique §4 du papier :
+2021, *Fitness Beats Truth in the Evolution of Perception*, Acta Biotheoretica
+69(3):319-341, doi:10.1007/s10441-020-09400-0) en toy 3-bit. Setup
+canonique §4 du préprint :
 
 - **8 ontic states** ``W = {0, 1, ..., 7}`` (3 bits, identifiés à ``{000,...,111}``).
 - **2 sensory states** ``X = {0, 1}`` (compression 4:1, l'icon-théorie).
