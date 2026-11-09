@@ -75,7 +75,7 @@ Trois notebooks frères appliquent à la triade Φ/F/K des **proxys alternatifs*
 
 ### Palier 7 — ICT-21 / ICT-22 : Φ/F/K sur substrat S4 — dissolution continue
 
-[`ICT-21-SAETrajectoires-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21-SAETrajectoires-Python.ipynb) (strate 5, cellule [19] Lecture honnête) ajoute le substrat S4 (LLM + SAE features) :
+[`ICT-21-SAETrajectoires-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21-SAETrajectoires-Python.ipynb) (strate 5, cellule [19] Lecture honnête) ajoute le substrat S4 (LLM + SAE features) :
 
 - **Φ/F/K restent concluants** (Gate 13 ICT-22, cellule [13]) — la triade tient sur 4 substrats (S1/S2/S3/S4).
 - **Mais l'émergence créditée est régime-dépendante** (Gate 12 ICT-22, cellule [11]) — vs shuffle, le verdict est **nuancé et majoritairement négatif** : S4 affiche le `ec_gain` le plus bas, **renforce** la convergence (triade) mais **affaiblit** la discrimination (émergence). Le LLM **ne casse pas** la triade mais **ajoute une strate de nuance** : la triade mesure **la convergence**, pas **l'émergence**.

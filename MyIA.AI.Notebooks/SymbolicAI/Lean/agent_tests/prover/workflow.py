@@ -998,7 +998,7 @@ class VerifyExecutor(Executor):
     No LLM call needed to run `lake env lean`.
     """
 
-    def _latch_proof_for_supervisor(self) -> None:
+    def _latch_proof_for_supervisor(self, sorry_line: int = None) -> None:
         """#24469: record a verified, persisted proof on the shared TacticTools.
 
         ``yield_output`` does not stop the workflow at once: in the smoke of
@@ -1006,9 +1006,18 @@ class VerifyExecutor(Executor):
         ``PROOF FOUND``, the supervisor's reasoning deadline fired at its next
         poll, cancelled the workflow and reset ``proof_found`` -- the run came
         back FAILED with sorry 1 -> 0 on disk. The latch survives the cancel.
+
+        #24545: the latch is bound to the sorry it proves. The session may
+        move on to another sorry (the target line is frozen at session start
+        and never updated), so an unbound latch would report "proof found" for
+        a sorry that is still ``sorry`` on disk. ``sorry_line`` is the line
+        the proof ACTUALLY landed on -- the P5 relocation inside
+        ``verify_sorry_replacement`` may have moved it.
         """
         if self._tactic_tools is not None:
-            self._tactic_tools.proof_latched = True
+            target = (sorry_line if sorry_line is not None
+                      else self._sorry_ctx.sorry_line)
+            self._tactic_tools.latch_proof(target)
 
     def __init__(self, sorry_context: SorryContext, imports: str,
                  trace: TraceLogger = None, kb: Optional[ProofKnowledgeBase] = None,
@@ -1274,7 +1283,7 @@ class VerifyExecutor(Executor):
                 _latch_effective = max(_latch_now, _latch_build_warn)
                 if _latch_build.get("success") and _latch_effective < _latch_orig:
                     msg.proof_found = True
-                    self._latch_proof_for_supervisor()
+                    self._latch_proof_for_supervisor(_latch_target)
                     self._consecutive_build_fails = 0
                     self._consecutive_sorry_rejections = 0
                     self._consecutive_noprogress = 0
@@ -1319,7 +1328,10 @@ class VerifyExecutor(Executor):
 
         if result["success"]:
             msg.proof_found = True
-            self._latch_proof_for_supervisor()
+            # #24545: bind the latch to the line the proof landed on (the P5
+            # relocation inside verify_sorry_replacement may have moved it).
+            self._latch_proof_for_supervisor(
+                result.get("resolved_sorry_line") or self._sorry_ctx.sorry_line)
             self._consecutive_build_fails = 0
             self._consecutive_sorry_rejections = 0
             self._consecutive_noprogress = 0  # P1: real progress

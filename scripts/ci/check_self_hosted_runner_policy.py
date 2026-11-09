@@ -65,17 +65,38 @@ WAITER_LABELS = {
     "self-hosted",
     "coursia-waiter",
 }
-# Dedicated label set for the specialised Lean pool (#14337, po-2024): elan +
+# RETIRED label set -- the specialised Lean pool (#14337, po-2024): elan +
 # toolchain baked in a dedicated image (Dockerfile.lean), .lake kept warm in
 # the per-slot work volume. A lean slot never carries coursia-linux -- the
 # distinct label is the routing guarantee (a pure-Python guard must not land
 # on a lean slot, and a lake build must not land on the minimal image).
-LEAN_RUNNER_LABELS = {
+#
+# The pool is EXTINCT: `gh api repos/jsboige/CoursIA/actions/runners` measured
+# on 2026-11-04 renders 48 runners and ZERO carrier of `coursia-lean`; the
+# extinction had already been measured by the repository's own probe on
+# 2026-10-23 (.github/workflows/runner-starvation-advisory.yml, lines 26-30:
+# "LE LABEL `coursia-lean` N'EXISTE PLUS"), which also notes that the Lean
+# legs moved to [self-hosted, coursia-ephemeral, coursia-linux].
+#
+# Keeping the set in DEDICATED_LABEL_SETS was a fail-open hole: the guard
+# certified a routing that no runner can serve, and the job then waited in the
+# queue forever. The rule is now written down: a pool that leaves the fleet
+# leaves the authorisation list, and a set that is not in service is refused
+# rather than admitted.
+#
+# The constant is kept, renamed, so the knowledge survives the removal. To
+# re-admit it: re-deploy the pool, measure that the runners carry the label,
+# then move the set back into DEDICATED_LABEL_SETS -- never silently.
+RETIRED_LEAN_RUNNER_LABELS = {
     "self-hosted",
     "coursia-ephemeral",
     "coursia-lean",
 }
-DEDICATED_LABEL_SETS = (REQUIRED_LABELS, LINUX_RUNNER_LABELS, WAITER_LABELS, LEAN_RUNNER_LABELS)
+# Label sets that are NOT authorised any more. A retired set must never be
+# re-admitted silently; the re-admission requires a fresh measurement of the
+# fleet, as the comment above spells out.
+RETIRED_LABEL_SETS = (RETIRED_LEAN_RUNNER_LABELS,)
+DEDICATED_LABEL_SETS = (REQUIRED_LABELS, LINUX_RUNNER_LABELS, WAITER_LABELS)
 # Owner-approved additions must cite the lane that owns the runner deployment:
 # - pr-gate-stale-sweep.yml: schedule-mutualized re-aggregation (pre-existing).
 # - windows-self-hosted-tests.yml: workflow_dispatch-ONLY vehicle for the 9
@@ -163,7 +184,13 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   repeated-prose-advisory.yml (#17443).
     "consecutive-code-cells-advisory.yml",
     "ict-tests.yml",
-    "lean-conway.yml",
+    # lean-conway.yml : workflow SUPPRIME par la migration matricielle de
+    #   conway_lean (#13751 axe workflows, PR #25256 -- entree `conway` au
+    #   manifeste ci_lakes.json, wrapper retire). Entree d'allowlist retiree
+    #   dans le meme commit, comme lean-knot.yml et lean-planning.yml avant
+    #   lui : une entree pointant un workflow inexistant serait une reference
+    #   morte. Les jobs de la famille (c) vivent desormais dans
+    #   lean-ci-matrix.yml, deja declare.
     "lean-i18n-drift.yml",
     # lean-knot.yml : workflow SUPPRIME par la migration matricielle de
     #   knot_lean (#13751 -- entree `knot` au manifeste ci_lakes.json, wrapper
@@ -755,10 +782,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # absente ou != 'true'), chaque job resout sur ubuntu-latest : l'etat du
     # 27/10 est conserve, et l'entree d'allowlist ne rend le pool local
     # atteignable QUE si un operateur bascule la variable.
-    # Les cinq autres workflows de la famille (lean-conway, lean-i18n-drift,
-    # quarto-pages-deploy, slides-build-advisory,
+    # Les cinq autres workflows de la famille (a l'epoque : lean-conway,
+    # lean-i18n-drift, quarto-pages-deploy, slides-build-advisory,
     # slides-composition-pr-relay) etaient DEJA declares plus haut : seul
-    # l'absent est ajoute ici.
+    # l'absent est ajoute ici. lean-conway.yml a depuis ete SUPPRIME (PR
+    # #25256, voir son commentaire d'entree retire plus haut).
     # `lean-planning.yml` n'est PAS declare : le workflow a ete SUPPRIME sur
     # main par #23467 (#13751 -- migration de planning_lean vers la matrice
     # CI, le wrapper est retire) entre la base de cette PR et aujourd'hui. Une
@@ -876,6 +904,26 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   change reellement quand la variable est activee.
     #   Rollback = variable a `false`, sans toucher les fichiers.
     "submodule-drift.yml",
+    # #17444 critere 3 (owner myia-po-2027:CoursIA, PR #24950) :
+    #   `corroboration-python-nu.yml` est un workflow NEUF, declenche
+    #   UNIQUEMENT par `workflow_dispatch` (choice observed /
+    #   negative-control). Il mesure ce qu'un slot reel expose comme `python`
+    #   nu, et ecrit son verdict dans `$GITHUB_STEP_SUMMARY` ; il n'imprime
+    #   aucun label, n'evalue aucune PR et ne peut pas rougir (toujours
+    #   `exit 0` : c'est une mesure, pas une garde). Un declenchement manuel
+    #   l'autorise par construction a joindre le parc local -- c'est meme son
+    #   objet, puisque le contrat du pool (`pool.sh`
+    #   `ensure_host_contract`, l.207-212) pose `~/.local/bin/python` en tete
+    #   de PATH et que la mesure n'a de sens que SUR un slot. Aucun secret,
+    #   `permissions: contents: read` (bloc ajoute au repair du thread CodeQL,
+    #   commit `243ba72cd0`). `timeout-minutes: 10` au niveau du job.
+    #   Entree ajoutee par le repair du rouge WORKFLOW_NOT_ALLOWED remonte par
+    #   `Scripts Tests (CPU)` (run 42400817693) : la PR routait le job
+    #   self-hosted sans toucher cette allowlist fail-closed -- meme classe que
+    #   organ-duplication-advisory.yml, docs-transients-guard.yml et
+    #   live-read-freshness.yml.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "corroboration-python-nu.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
@@ -1066,6 +1114,24 @@ def load_baseline(path: Path) -> set[str]:
         for line in path.read_text(encoding="utf-8").splitlines()
         if line.strip() and not line.startswith("#")
     }
+
+
+def stale_timeout_baseline_entries(
+    workflows_dir: Path, baseline: set[str]
+) -> tuple[list[str], list[str]]:
+    """Return baseline keys that no longer name an unbounded local job.
+
+    This is a read-only maintenance aid, not part of the blocking ratchet. A
+    key is current only while its workflow/job still exists and the job can
+    reach a self-hosted runner without a job-level timeout.
+    """
+    result = scan_workflows(workflows_dir, check_timeouts=True, baseline=set())
+    still_unbounded = {
+        f"{item.workflow}:{item.job}"
+        for item in result.violations
+        if item.code == "MISSING_TIMEOUT"
+    }
+    return sorted(baseline - still_unbounded), result.broken
 
 
 @dataclass(frozen=True)
@@ -1844,13 +1910,33 @@ def scan_workflows(
                     "runner groups are unavailable for this personal-account repository",
                 ))
 
+            # Un jeu retire est refuse pour une raison qui lui est propre :
+            # le dire evite d envoyer le developpeur vers un autre pool
+            # ("missing: coursia-fast-guards") alors que le vrai motif est
+            # l'extinction du pool vise.
+            retired_set = next(
+                (retired for retired in RETIRED_LABEL_SETS if set(labels) == retired),
+                None,
+            )
             if any(set(labels) == allowed for allowed in DEDICATED_LABEL_SETS):
                 missing: list[str] = []
                 unexpected: list[str] = []
+            elif retired_set is not None:
+                missing = []
+                unexpected = []
             else:
                 missing = sorted(REQUIRED_LABELS - labels)
                 unexpected = sorted(labels - REQUIRED_LABELS)
-            if missing or unexpected:
+            if retired_set is not None:
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "RUNNER_LABELS",
+                    "retired pool -- this label set is out of service "
+                    "(cf. RETIRED_LABEL_SETS); re-admission requires a fresh "
+                    "measurement of the fleet, not an edit of this guard",
+                ))
+            elif missing or unexpected:
                 detail = []
                 if missing:
                     detail.append(f"missing: {', '.join(missing)}")
@@ -1982,7 +2068,27 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="rewrite the timeout baseline from what is measured",
     )
+    parser.add_argument(
+        "--show-stale-baseline",
+        action="store_true",
+        help="list baseline keys that no longer name an unbounded local job; "
+             "read-only diagnostic, not a policy check",
+    )
     args = parser.parse_args(argv)
+
+    if args.show_stale_baseline:
+        stale, broken = stale_timeout_baseline_entries(
+            args.workflows_dir, load_baseline(args.baseline)
+        )
+        if broken:
+            print("[self-hosted-policy] diagnostic baseline incomplet: ")
+            for item in broken:
+                print(f"  BROKEN: {item}")
+            return EXIT_BROKEN
+        print(f"[self-hosted-policy] cles obsoletes dans la baseline: {len(stale)}")
+        for key in stale:
+            print(f"  ORPHELINE {key}")
+        return EXIT_OK
 
     if args.update_baseline:
         measured = scan_workflows(

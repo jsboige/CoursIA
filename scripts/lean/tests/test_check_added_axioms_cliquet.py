@@ -10,11 +10,14 @@ Covers the cliquet responsibilities cited in #21387:
 2. each detection is attributed to its enclosing declaration (theorem,
    lemma, def, example, instance, ...).
 3. detections inside ``example`` or anonymous ``instance`` are reported
-   with ``in_example=True`` and do not contribute to the rouge count.
+   with ``in_example=True`` and ALSO contribute to the rouge count unless
+   declared (residue #21387: ``check_axioms`` is blind to them by
+   construction, so the declarative red is the only gate).
 4. detections inside NAMED declarations are reported with
    ``in_example=False`` and contribute to the rouge count.
 5. the control positive (``#20584`` at ``3e9c8504c2``) renders 3 hits,
-   all in ``example``.
+   all in ``example`` -- rouge unless each carries its own
+   ``[LEAN-ANCHOR-DECLARED]`` line.
 6. a diff without these tokens renders an empty report.
 7. a file deleted in head is skipped (no anchors possible).
 """
@@ -256,15 +259,31 @@ class TestScanAddedLines:
         assert r.hits[0].decl_kind == "def"
         assert r.hits[0].in_example is False
 
-    def test_native_decide_in_example_is_green(self):
+    def test_native_decide_in_example_is_rouge_sans_declaration(self):
         repo = _make_repo()
         base = _reset(repo)
         head = _commit(repo, {"E.lean": "example : 1 + 1 = 2 := by native_decide\n"},
-                        "green")
+                        "rouge-example")
         r = scan_added_lines(base, head, repo_root=repo)
         assert len(r.hits) == 1
         assert r.hits[0].in_example is True
-        assert r.hits_in_named_decls == []
+        # Residu #21387 : une ancre en example rougit aussi tant qu'elle
+        # n'est pas declaree -- check_axioms ne la voit pas par construction.
+        assert len(r.hits_undeclared) == 1
+        assert r.hits_undeclared[0].decl_kind == "example"
+        assert r.hits_declared == []
+
+    def test_toplevel_anchor_is_rouge_sans_declaration(self):
+        repo = _make_repo()
+        base = _reset(repo)
+        # Token AVANT toute declaration : aucun owner -> <top-level>.
+        head = _commit(repo, {"T.lean": "native_decide\n"},
+                        "rouge-top")
+        r = scan_added_lines(base, head, repo_root=repo)
+        assert len(r.hits) == 1
+        assert r.hits[0].decl_kind == "<top-level>"
+        assert r.hits[0].in_example is True
+        assert len(r.hits_undeclared) == 1
 
     def test_docstring_mentions_sorry_not_counted(self):
         repo = _make_repo()
@@ -350,16 +369,19 @@ class TestRenderTextDeclaredLines:
         # Une seule ligne declaree : une ligne par ancre nommee.
         assert text.count("[LEAN-ANCHOR-DECLARED]") == 1
 
-    def test_example_anchor_renders_no_declared_line(self):
+    def test_example_anchor_renders_its_declared_line(self):
         repo = _make_repo()
         base = _reset(repo)
         head = _commit(repo, {"E.lean": "example : 1 + 1 = 2 := by native_decide\n"},
-                        "green")
+                        "rouge-example")
         r = scan_added_lines(base, head, repo_root=repo)
         text = render_text(r)
-        # Une ancre en `example` est mergeable par conception : rien a declarer.
-        assert "[LEAN-ANCHOR-DECLARED]" not in text
-        assert "GREEN:" in text
+        # Residu #21387 : l'ancre en example rougit et rend SA ligne a
+        # declarer (kind seul, nom vide) -- plus de sortie GREEN de repli.
+        assert "A DECLARER DANS LE CORPS : " \
+               "[LEAN-ANCHOR-DECLARED] E.lean:example -- native_decide" in text
+        assert "GREEN:" not in text
+        assert "ROUGE:" in text
 
     def test_one_declared_line_per_hit_with_its_own_token(self):
         repo = _make_repo()
@@ -495,12 +517,24 @@ class TestEchappementDeclaratif:
         )
         assert len(r.hits_undeclared) == 2
 
-    def test_ancre_en_example_reste_verte_sans_declaration(self):
+    def test_ancre_en_example_rougit_sans_declaration(self):
         repo = _make_repo()
         base = _reset(repo)
         head = _commit(repo, {"E.lean": "example : 1 + 1 = 2 := by native_decide\n"}, "g")
         r = scan_added_lines(base, head, repo_root=repo)
+        # Residu #21387 : plus d'exemption -- l'ancre en example rougit.
+        assert len(r.hits_undeclared) == 1
+
+    def test_ancre_en_example_declaree_passe(self):
+        repo = _make_repo()
+        base = _reset(repo)
+        head = _commit(repo, {"E.lean": "example : 1 + 1 = 2 := by native_decide\n"}, "g")
+        r = scan_added_lines(base, head, repo_root=repo)
+        r.declared = parse_declared(
+            "[LEAN-ANCHOR-DECLARED] E.lean:example -- ancrage numerique assumé\n"
+        )
         assert r.hits_undeclared == []
+        assert len(r.hits_declared) == 1
 
 
 class TestMainEchappementDeclaratif:
@@ -526,6 +560,26 @@ class TestMainEchappementDeclaratif:
     def test_rc_1_sans_declaration(self):
         repo = _make_repo()
         assert self._run(repo, "") == 1
+
+    def test_rc_example_1_sans_declaration_0_avec(self):
+        import os
+        repo = _make_repo()
+        old_env = dict(os.environ)
+        old_cwd = os.getcwd()
+        try:
+            base = _reset(repo)
+            _commit(repo, {"E.lean": "example : 1 + 1 = 2 := by native_decide\n"}, "ex")
+            os.chdir(repo)
+            os.environ["LEAN_CLIQUET_PR_BODY"] = ""
+            assert main(["--base", base, "--head", "HEAD"]) == 1
+            os.environ["LEAN_CLIQUET_PR_BODY"] = (
+                "[LEAN-ANCHOR-DECLARED] E.lean:example -- ancrage numerique assume\n"
+            )
+            assert main(["--base", base, "--head", "HEAD"]) == 0
+        finally:
+            os.chdir(old_cwd)
+            os.environ.clear()
+            os.environ.update(old_env)
 
     def test_rc_0_avec_declaration_nominale(self):
         repo = _make_repo()

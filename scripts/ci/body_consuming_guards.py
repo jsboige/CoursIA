@@ -762,6 +762,18 @@ REFERENCE: dict[str, dict[str, dict]] = {
             },
         },
     },
+    "scripts/verifier_cleanup.py": {
+        "channels": {
+            "api-gh": {
+                "cabled_in": [],
+                "uncabled_reason": (
+                    "va chercher le body lui-meme (`gh pr view --json body`, "
+                    "l.171-181) pour distinguer une tranche d'une livraison "
+                    "complete (#23815) ; aucun workflow ne le lui passe."
+                ),
+            },
+        },
+    },
 }
 
 

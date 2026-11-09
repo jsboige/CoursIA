@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 159
-breakdown: Lean=159
-maturity: BETA=141, DRAFT=15, ALPHA=3
+pedagogical_count: 161
+breakdown: Lean=161
+maturity: BETA=143, DRAFT=15, ALPHA=3
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
@@ -74,8 +74,8 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | **Intégration IA** | 1-7, 7b | ~5h | Ajoute LLMs, exemples et benchmarks |
 | **Complet** | 1-12 | ~11h | Toutes les fonctionnalités incluant LeanDojo et théorème de sensibilité |
 | **Avec Pilier 1.B** | 1-12, 13 | ~12h | Inclut le port Kochen-Specker (Cabello 18-vecteurs) - contextuality quantique |
-| **Avec hommages** | 1-12, 13, 15, 16a, GOL-01 a GOL-07, 16b, 16c | ~20h10 | Ajoute Lean-15 (Grothendieck), Lean-16a (Conway, l'homme et l'oeuvre), GOL-01 (Conway, Game of Life), GOL-03 (Conway, Game of Life sur kernel Lean natif), Lean-16b (Conway, FRACTRAN sur kernel Lean natif), Lean-16c (Conway, théorème du libre arbitre - adossé à Lean-13), GOL-04 (Conway, canons - le barreau 2 de l'échelle des témoins Life), GOL-05 (tournée des motifs sur kernel natif), GOL-06 (translateur minuscule, Loi II) et GOL-07 (correction Hashlife sur kernel natif) |
-| **Avec théorie des nœuds** | 1-12, 13, 15, 16a, GOL-01, GOL-02, 16c, 17, 17a, 17b | ~18h00 | Ajoute Lean-17 (portail Conway 16 → KNOTS-01/02/03, mutation cellulaire vs mutation knot), Lean-17a (Conway, les nœuds et la preuve de Piccirillo) et Lean-17b (invariants : PD-codes, tricolorabilité de Fox, mouvements de Reidemeister) - companion `knot_lean`, Epic #2874 |
+| **Avec hommages** | 1-12, 13, 15, 16a, GOL-01 a GOL-07, Lean-16b, Lean-16c | ~20h10 | Ajoute Lean-15 (Grothendieck), Lean-16a (Conway, l'homme et l'oeuvre), GOL-01 (Conway, Game of Life), GOL-03 (Conway, Game of Life sur kernel Lean natif), Lean-16b (Conway, FRACTRAN sur kernel Lean natif), Lean-16c (Conway, théorème du libre arbitre - adossé à Lean-13), GOL-04 (Conway, canons - le barreau 2 de l'échelle des témoins Life), GOL-05 (tournée des motifs sur kernel natif), GOL-06 (translateur minuscule, Loi II) et GOL-07 (correction Hashlife sur kernel natif) |
+| **Avec théorie des nœuds** | 1-12, 13, 15, 16a, GOL-01, GOL-02, Lean-16c, 17, 17a, 17b | ~18h00 | Ajoute Lean-17 (portail Conway 16 → KNOTS-01/02/03, mutation cellulaire vs mutation knot), Lean-17a (Conway, les nœuds et la preuve de Piccirillo) et Lean-17b (invariants : PD-codes, tricolorabilité de Fox, mouvements de Reidemeister) - companion `knot_lean`, Epic #2874 |
 
 ## Structure
 
@@ -112,7 +112,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 13 | [Lean-13-Kochen-Specker](Lean-13-Kochen-Specker.ipynb) | théorème de Kochen-Specker (1967), preuve Cabello 18 vecteurs, parité, contextuality quantique - Pilier 1.B Epic #1651 | 60 min |
+| 13 | [Lean-13-Kochen-Specker](Lean-13-Kochen-Specker.ipynb) | théorème de Kochen-Specker (1967), preuve Cabello 18 vecteurs, parité, contextuality quantique - Pilier 1.B Epic #1651 ; section 9 : digest CGLMP (OQP 27) - généralisation qudit du CHSH des carnets 13b-13d, borne locale 2 vérifiée par énumération exhaustive, valeur quantique croissante vers 2,97 (issue #25006) | 85 min |
 | 13b | [Lean-13b-CHSH-Tsirelson-Native](Lean-13b-CHSH-Tsirelson-Native.ipynb) | Companion **natif** du lake `conway_lean` : la borne de Tsirelson exécutée in-kernel — `#check` de la signature exacte (7 classes de types + `IsCHSHTuple`, conclusion `≤ (2 * √2) • 1`), `#print axioms` = `[propext, Classical.choice, Quot.sound]` sans `sorryAx`, frontière classique mesurée (score `2` atteint, mélange équilibré → `0`), contrôle positif de kernel contre le REPL muet (#11874) et 3 exercices - Epic #13106 | 30 min |
 | 13c | [Lean-13c-CHSH-Landau-Saturation](Lean-13c-CHSH-Landau-Saturation.ipynb) | Companion **natif** du lake `conway_lean` : la saturation de Tsirelson exécutée in-kernel — `#check` de l'égalité centrale `chshOperator A₀ A₁ B₀ B₁ = (2 * √2) • 1` (égalité exacte, pas un majorant : la borne de Lean-13b devient un maximum démontré), `#print axioms` = `[propext, Classical.choice, Quot.sound]` sans `sorryAx`, témoin de Pauli (`sigmaZ`, `sigmaX`, `B₀`, `B₁` en `Matrix (Fin 2) (Fin 2) ℝ`), forme spectrale bilatérale (`2√2` sur la diagonale), anticommutateur, critère de Landau vérifié sur le témoin (spectre ±1) et 3 exercices - Epic #13106 | 25 min |
 | 13d | [Lean-13d-CHSH-Indeterminisme-Native](Lean-13d-CHSH-Indeterminisme-Native.ipynb) | Companion **natif** du lake `conway_lean` : la route statistique vers l'indéterminisme exécutée in-kernel — modèle local déterministe du jeu CHSH en vocabulaire FWT (`AliceResponse`/`BobResponse` : fonctions de l'état caché, localité par signature, l'analogue structurel de MIN), frontière locale état par état (`|realizedScore| = 2`, délégué à `classical_abs_score`), écart de Tsirelson `2 < 2√2` et conclusion `chsh_indeterminism` (aucun modèle local déterministe ne réalise un score `> 2` en réels — la même conclusion que le théorème du libre arbitre, obtenue par l'argument statistique), tableau comparatif des deux routes (contextuelle vs statistique) et 3 exercices - Epic #13106 | 25 min |
@@ -226,11 +226,11 @@ A l'issue de la série, vous saurez :
 
 - **Situer l'oeuvre de Conway** dans sa largeur : des nombres surréels au Monstrous Moonshine, du réseau de Leech au théorème du libre arbitre, en exécutant les premières noix formalisées (Doomsday, Look-and-Say, Nim, Angel, Life) directement depuis le projet conway_lean (0 sorry). Notebook 16a.
 
-- **Explorer les noix de Conway** en Lean 4 : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel — port formel de résultats combinatoires iconiques. Notebooks 16a-16e.
+- **Explorer les noix de Conway** en Lean 4 : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel — port formel de résultats combinatoires iconiques. Notebooks Lean-16a, GOL-01, GOL-02, GOL-03 et Lean-16b.
 
-- **Comprendre le théorème du libre arbitre** (Conway-Kochen) : les axiomes SPIN/TWIN/MIN, l'argument en deux temps qui réduit le cas à deux particules au théorème de Kochen-Specker (Notebook 13), et la lecture honnête de sa portée (ce qu'il dit et ne dit pas) — adossé à `FreeWillTheorem.lean` (0 sorry). Notebook 16f.
+- **Comprendre le théorème du libre arbitre** (Conway-Kochen) : les axiomes SPIN/TWIN/MIN, l'argument en deux temps qui réduit le cas à deux particules au théorème de Kochen-Specker (Notebook 13), et la lecture honnête de sa portée (ce qu'il dit et ne dit pas) — adossé à `FreeWillTheorem.lean` (0 sorry). Notebook Lean-16c.
 
-- **Franchir un barreau de l'échelle vérifier→construire** : reconnaître une source périodique Life (période, transitoire, cadence d'émission mesurées sur le canon de Gosper), chercher à en générer une dans un budget borné (zéro calibré par contrôle positif), et certifier la périodicité du noyau par un prédicat `Grid` évalué sur horizon fini — l'écart structurel entre vérificateur et constructeur. Notebook 16g.
+- **Franchir un barreau de l'échelle vérifier→construire** : reconnaître une source périodique Life (période, transitoire, cadence d'émission mesurées sur le canon de Gosper), chercher à en générer une dans un budget borné (zéro calibré par contrôle positif), et certifier la périodicité du noyau par un prédicat `Grid` évalué sur horizon fini — l'écart structurel entre vérificateur et constructeur. Notebook GOL-04.
 
 - **Formaliser les invariants de nœuds** : PD-codes, mouvements de Reidemeister et tricolorabilité de Fox, en s'appuyant sur le companion `knot_lean` (transfert de tricolorabilité le long d'un twist R1 connecté, preuve forward sorry-free + backward partielle). Notebooks 17a, 17b.
 
@@ -274,15 +274,15 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 15b | Lean-Grothendieck (atelier) | ~40 | 4 | Oui | **NOUVEAU** |
 | 15c | Lean-Grothendieck-Companion | ~25 | 2 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 16a | Conway-Man-and-Work | ~39 | 3 | 0 | **NOUVEAU** (hommage) |
-| 16b | Conway-Game-of-Life-Lean | ~26 | 0 | - | **NOUVEAU** (hommage) |
-| 16c | Conway-Game-of-Life-Golly | ~47 | 5 | - | **NOUVEAU** (hommage) |
-| 16d | Conway-Game-of-Life-Lean-Native | ~32 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
-| 16e | Conway-FRACTRAN-Lean-Native | ~22 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
-| 16f | Conway-Free-Will-Theorem | ~28 | 3 | 0 | **NOUVEAU** (hommage) |
-| 16g | Conway-Canons | ~23 | 3 | - | **NOUVEAU** |
-| 16h | Conway-PatternTour-Native | ~9 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
-| 16i | Translateur-Life | ~4 | 0 | - | **NOUVEAU** |
-| 16j | Conway-Hashlife-Correctness-Native | ~15 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
+| GOL-01 | Regles-Vie-Lean | ~26 | 0 | - | **NOUVEAU** (hommage) |
+| GOL-02 | Golly | ~47 | 5 | - | **NOUVEAU** (hommage) |
+| GOL-03 | Vie-Native | ~32 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
+| Lean-16b | Conway-FRACTRAN-Lean-Native | ~22 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
+| Lean-16c | Conway-Free-Will-Theorem | ~28 | 3 | 0 | **NOUVEAU** (hommage) |
+| GOL-04 | Canons | ~23 | 3 | - | **NOUVEAU** |
+| GOL-05 | Pattern-Tour | ~9 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
+| GOL-06 | Translateur-Life | ~4 | 0 | - | **NOUVEAU** |
+| GOL-07 | Hashlife-Correctness | ~15 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
 | 17a | Knots-a-Conway-and-Proofs | ~13 | 0 | - | **NOUVEAU** (hommage) |
 | 17b | Knots-b-Invariants-Companion | ~19 | 3 | - | **NOUVEAU** |
 | 17c | Knots-Companion-Formel | ~33 | 3 | 0 | **NOUVEAU** (kernel python3) |

@@ -17,12 +17,14 @@ import pytest
 
 import scripts.pick_idle_grain as pig
 from scripts.pick_idle_grain import (
+    EPIC_FAMILY_DELIVERY_CAP_DEFAULT,
     EPIC_LANE_DELIVERY_CAP_DEFAULT,
     belt_filter,
     draw_belt,
     epic_delivery_cap_state,
     epic_lane_delivery_cause,
     epic_lane_delivery_counts,
+    epic_lane_load_counts,
 )
 
 LANE = "myia-po-2024:CoursIA-2"
@@ -121,8 +123,18 @@ def test_cause_fails_open_without_measure():
 
 
 def test_cause_ignores_non_umbrella():
+    """#21067 tranche 1 -- le plafond porte sur l'ITEM SERVI, quelle que soit
+    sa classe.
+
+    Le code d'avant ne refusait que les umbrellas. L'arbitrage du
+    2026-11-06T12:14Z elargit la cle « item » a tout item servi : c'est le
+    cap de veine que les lanes appliquent a la main. Le seuil ne baisse pas
+    (K=2) ; la CLE s'elargit, et la cle « famille » (K=4) prend le relais
+    sur le conteneur.
+    """
     it = _umbrella(16334, klass="grain")
-    assert epic_lane_delivery_cause(it, {16334: 9}, 2, LANE) is None
+    assert epic_lane_delivery_cause(it, {16334: 9}, 2, LANE) is not None
+    assert epic_lane_delivery_cause(it, {16334: 1}, 2, LANE) is None
 
 
 def test_cause_exempts_consolidation():
@@ -204,18 +216,24 @@ def _args(**over):
     return types.SimpleNamespace(**base)
 
 
-def _belt_item(number, klass="grain"):
+def _belt_item(number, klass="grain", parent=None):
     return {"number": number, "klass": klass, "age": 10, "idle": 2,
             "genre": "docs", "labels": [], "title": f"issue #{number}",
             "created_at": "2026-09-01T00:00:00Z",
-            "last_delivery_stamp": None}
+            "last_delivery_stamp": None, "parent": parent}
+
+
+def _open_pr(number: int, lane: str, cites: str) -> dict:
+    """Une PR OUVERTE de `lane` : pas de `mergedAt`, c'est tout."""
+    body = f"Grain: MED/tooling — lane {lane} — prev: MED/tooling #1\n\n{cites}\n"
+    return {"number": number, "body": body}
 
 
 def test_belt_filter_forwards_the_drops_to_the_caller():
     """La cause doit remonter : un plafond muet se lit comme une famine."""
     drops: list[tuple[dict, str]] = []
     kept = belt_filter([_belt_item(16334, "umbrella"), _belt_item(7)],
-                       _args(), epic_deliveries={16334: 2}, drops=drops)
+                       _args(), epic_load={16334: 2}, drops=drops)
     assert [it["number"] for it in kept] == [7]
     assert [it["number"] for it, _cause in drops] == [16334]
 
@@ -224,7 +242,7 @@ def test_draw_belt_honours_the_cap():
     """Le modele deterministe ne doit pas pouvoir contourner le plafond."""
     drops: list[tuple[dict, str]] = []
     kept = draw_belt([_belt_item(16334, "umbrella"), _belt_item(7)],
-                     _args(), epic_deliveries={16334: 2}, drops=drops)
+                     _args(), epic_load={16334: 2}, drops=drops)
     assert [it["number"] for it in kept] == [7]
     assert [it["number"] for it, _cause in drops] == [16334]
 
@@ -242,7 +260,7 @@ def test_consume_board_honours_the_cap_on_the_snapshot_path():
                                     head=len(items))
     picks, meta = pig.consume_board(snap, _args(), urns={"grain", "umbrella"},
                                     live_check=False,
-                                    epic_deliveries={16334: 2})
+                                    epic_load={16334: 2})
     assert [it["number"] for it in picks] == [7]
     assert [d["number"] for d in meta["epic_delivery_cap"]["dropped"]] == [16334]
     assert meta["epic_delivery_cap"]["state"] == "measured"
@@ -263,3 +281,137 @@ def test_consume_board_declares_an_absent_measure_instead_of_serving_blind():
                                      live_check=False)
     assert meta["epic_delivery_cap"]["state"] == "unmeasured"
     assert meta["epic_delivery_cap"]["applied"] is False
+
+
+# --- #21067 tranche 1 : charge EN VOL, deux cles, refus qui redirige -------
+#
+# La saturation est une SALVE de PRs ouvertes en meme temps. Un garde qui ne
+# lit que des PRs mergees voit la salve avec tout le retard du merge :
+# mesure du 2026-11-06, dans 17 couples (lane, EPIC) sur 18 a >= K, aucune
+# PR de la salve n'avait ete ouverte avec un compte deja au seuil. Le compte
+# du garde etait en retard de toute la latence de merge : il ne pouvait pas
+# dire non.
+
+
+def test_la_charge_en_vol_compte_les_prs_ouvertes():
+    """Une PR ouverte compte dans la charge, meme si rien n'est merge."""
+    load = epic_lane_load_counts([], LANE,
+                                  open_prs=[_open_pr(1, LANE, "Part of #16334")],
+                                  now=NOW)
+    assert load == {16334: 1}
+
+
+def test_la_charge_en_vol_ignore_les_prs_d_autres_lanes():
+    load = epic_lane_load_counts(
+        [], LANE,
+        open_prs=[_open_pr(1, "myia-po-2023:CoursIA-2", "Part of #16334")],
+        now=NOW)
+    assert load == {}
+
+
+def test_la_charge_en_vol_cumule_ouvertes_et_mergees():
+    merged = [_pr(1, LANE, 1, "Part of #16334")]
+    opened = [_open_pr(2, LANE, "See #16334")]
+    assert epic_lane_load_counts(merged, LANE, open_prs=opened, now=NOW) == {
+        16334: 2}
+
+
+def test_une_pr_ouverte_ne_compte_quune_fois_par_issue():
+    """Une PR qui cite l'EPIC deux fois ne gonfle pas la charge."""
+    opened = [_open_pr(1, LANE, "Part of #16334\n\nCloses #16334")]
+    assert epic_lane_load_counts([], LANE, open_prs=opened, now=NOW) == {
+        16334: 1}
+
+
+def test_la_cle_famille_refuse_au_seuil_de_quatre():
+    """La famille (l'EPIC parent) a son propre seuil, plus large que l'item.
+
+    La cle est plus large, le seuil l'est aussi : deux livraisons n'evacuent
+    pas une famille entiere.
+    """
+    it = _belt_item(7, "grain", parent=16334)
+    cause = epic_lane_delivery_cause(it, {16334: 4}, 2, LANE, family_cap=4)
+    assert cause is not None
+    assert "#16334" in cause
+    assert "#21067" in cause
+
+
+def test_la_cle_famille_laisse_passer_sous_son_seuil():
+    it = _belt_item(7, "grain", parent=16334)
+    assert epic_lane_delivery_cause(it, {16334: 3}, 2, LANE, family_cap=4) is None
+
+
+def test_le_seuil_de_famille_est_desactivable():
+    it = _belt_item(7, "grain", parent=16334)
+    assert epic_lane_delivery_cause(it, {16334: 9}, 2, LANE,
+                                    family_cap=0) is None
+
+
+def test_le_seuil_par_defaut_de_la_famille_est_quatre():
+    assert EPIC_FAMILY_DELIVERY_CAP_DEFAULT == 4
+
+
+def test_le_parent_survit_a_l_instantane_du_tapis():
+    """Sans le parent dans l'instantane, la cle « famille » serait aveugle
+    sur la voie consommee par une autre lane."""
+    assert ("parent", "p") in pig.BOARD_ITEM_KEYS
+    snap = pig.build_board_snapshot([_belt_item(7, "grain", parent=16334)], [],
+                                    lane=LANE,
+                                    computed_at="2026-10-29T11:59:00Z", head=1)
+    decoded = pig.board_item_decode(snap["items"][0])
+    assert decoded["parent"] == 16334
+
+
+def test_le_refus_ne_vide_jamais_le_tapis():
+    """Un refus REDIRIGE : il rend la tete suivante, jamais un vide.
+
+    Quand le refus viderait le pool admissible, le garde s'auto-suspend et le
+    dit : un garde qui fabrique une famine n'est pas un garde.
+    """
+    notes: list[str] = []
+    drops: list[tuple[dict, str]] = []
+    kept = belt_filter([_belt_item(16334, "umbrella")], _args(),
+                        epic_load={16334: 5}, drops=drops, notes=notes)
+    assert [it["number"] for it in kept] == [16334]
+    assert drops == []
+    assert notes and "SUSPENDU" in notes[0]
+
+
+def test_le_temoin_la_lane_refusee_recoit_un_grain():
+    """Le temoin de l'arbitrage : la lane refusee reçoit un grain.
+
+    L'item refuse s'ecarte, la tete suivante est servie : le refus est une
+    redirection, pas un arret.
+    """
+    items = [_belt_item(16334, "umbrella"), _belt_item(7, "grain")]
+    kept = draw_belt(items, _args(), epic_load={16334: 2})
+    assert [it["number"] for it in kept] == [7]
+
+
+# --- quand la charge en vol est-elle mesuree ? ---------------------------
+
+
+def test_la_charge_en_vol_ne_se_measure_que_si_el_est_consommee():
+    """#21067 tranche 1 : la mesure a un CONSOMMATEUR, sinon elle est un cout.
+
+    La charge en vol (PRs ouvertes) n'est lue que par le plafond du tapis
+    (`--belt`) et par l'ardoise publiee. La payer dans les autres modes
+    introduisait une source reseau dans un chemin que les tests n'ont pas
+    a simuler -- rouge CI du 2026-11-06 : 9 tests du picker en echec sur
+    `gh repo view`.
+    """
+    nu = types.SimpleNamespace(belt=False, board_write=False,
+                                board_export=False)
+    assert pig._open_prs_needed(nu) is False
+    assert pig._open_prs_needed(
+        types.SimpleNamespace(belt=True, board_write=False,
+                              board_export=False)) is True
+    assert pig._open_prs_needed(
+        types.SimpleNamespace(belt=False, board_write=True,
+                              board_export=False)) is True
+    assert pig._open_prs_needed(
+        types.SimpleNamespace(belt=False, board_write=False,
+                              board_export=True)) is True
+    # Un objet sans les attributs ne doit pas lever : le predicat est
+    # fail-OPEN (il demande, il ne refuse pas).
+    assert pig._open_prs_needed(types.SimpleNamespace()) is False

@@ -95,7 +95,7 @@ concurrency:
 
 jobs:
   always-on-guards:
-    name: "Always-on guards -- 18 organes, 1 checkout"
+    name: "Always-on guards -- 19 organes, 1 checkout"
     # Routage #14283 : premier consommateur GitHub-hosted du depot une fois
     # secret-scan bascule -- 2650 runs same-repo en 5 jours (2026-08-28 ->
     # 2026-09-02), timeout 25 min, aucun filtre `paths:`. Le pool Linux
@@ -1255,7 +1255,7 @@ jobs:
       # *.env.sample / *.env.template. gitleaks reconnait les formats de cles
       # connus (sk-..., ghp_..., AIza...), il ne voit pas une phrase secrete
       # faite d'un mot ordinaire (cas fondateur 'Propaganda' sur
-      # TEXT_CONFIG_PASSPHRASE dans SymbolicAI/Argument_Analysis/.env.example).
+      # TEXT_CONFIG_PASSPHRASE dans SymbolicAI/ArgumentAnalysis/.env.example).
       # L'organe verifie 32 fichiers traces git : pour chaque cle dont le nom
       # matche (?i)(PASS|SECRET|TOKEN|KEY|PWD), la valeur doit etre un marqueur
       # (vide, your_..._here, <...>, hf_..., sk-..., 0x<...>, URL, chemin,
