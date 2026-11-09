@@ -16,8 +16,9 @@ def test_iit_spine_is_valid_and_covers_its_notebooks():
     # cell_id is checked for real and every declared notebook must be cited.
     data = load_taxonomy(IIT_DATA)
     assert data["series"] == "IIT"
-    assert len(data["notebooks"]) == 9
-    assert len(data["concepts"]) >= 20
+    # 10 notebooks: the 9 of tranche 1 plus IIT-02 (tranche 2, ids stabilized).
+    assert len(data["notebooks"]) == 10
+    assert len(data["concepts"]) >= 24
     cited = {citation["notebook"] for concept in data["concepts"] for citation in concept["citations"]}
     assert cited == set(data["notebooks"])
 
