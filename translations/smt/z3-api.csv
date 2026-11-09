@@ -210,7 +210,7 @@ Ce twin C# couvre les mêmes concepts que la version Python : **Satisfiabilite**
 
 Le binding `Microsoft.Z3` expose exactement le même moteur Z3 que `z3-solver` (Python) : les résultats sont identiques, seuls l'API et le langage changent. C'est l'illustration qu'un solveur SMT SOTA est utilisable de facon native en .NET.
 ",,,,,,,,78a087a9680c2b99,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb,nb01-title,markdown,fr,91a4d23cc8b4e92b,"# Z3-Python 01 — Introduction a la resolution de contraintes SMT
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb,nb01-title,markdown,fr,e0c5fcedcc49070e,"# Z3-Python 01 — Introduction a la resolution de contraintes SMT
 
 **Navigation** : [Index](README.md) | [Z3-Python-01b (style declaratif) >>](Z3-01b-Style-Declaratif-Linq.ipynb) | [Twin C# 01](Z3-01-Introduction-CSharp.ipynb)
 
@@ -234,7 +234,7 @@ A la fin de ce notebook, vous saurez :
 
 ## Source
 
-Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 1 Introduction (p. 3) + Ch. 2 Basics (p. 6) — Solver API, théories de base, modèles. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,91a4d23cc8b4e92b,,,,,,,,,,,,,,,
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 1 Introduction (p. 3) + Ch. 2 Basics (p. 6) — Solver API, théories de base, modèles. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,e0c5fcedcc49070e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb,nb01-imports,code,fr,0ca1d0d4f062e4aa,"# Imports et verification de l'environnement
 # Le package pip s'appelle 'z3-solver' (et non 'z3').
 # Dans cet environnement il est deja installe. Pour l'installer ailleurs :
@@ -761,7 +761,7 @@ La visualisation ASCII remplace `matplotlib` (twin Python) : c'est une **valeur 
 
 Le binding `Microsoft.Z3` resout le Sudoku exactement comme `z3-solver` (Python) : aucun backtracking n'est ecrit, le moteur SOTA fait tout.
 ",,,,,,,,7dd2274d787eb5bb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-Python.ipynb,nb02-title,markdown,fr,f394917572796b7f,"# Z3-Python 02 — Sudoku comme problème de satisfaction de contraintes
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-Python.ipynb,nb02-title,markdown,fr,360180b7d9b8028a,"# Z3-Python 02 — Sudoku comme problème de satisfaction de contraintes
 
 **Navigation** : [<< Z3-Python-01 Introduction](Z3-01-Introduction-Python.ipynb) | [Index](README.md) | [Z3-Python-03 Tactiques >>](Z3-03-Tactics-Python.ipynb)
 
@@ -785,7 +785,7 @@ Le [notebook précédent](Z3-01-Introduction-Python.ipynb) a introduit le solveu
 
 ## Source
 
-Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §8.1 Sudoku (p. 199), Ch. 8 Recreational mathematics and puzzles — Sudoku comme CSP, énoncés et solveur visuel. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,f394917572796b7f,,,,,,,,,,,,,,,
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §8.1 Sudoku (p. 199), Ch. 8 Recreational mathematics and puzzles — Sudoku comme CSP, énoncés et solveur visuel. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,360180b7d9b8028a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-Python.ipynb,nb02-imports,code,fr,58f1658c49fcc56e,"# Imports
 from z3 import *
 import matplotlib.pyplot as plt
@@ -1413,7 +1413,7 @@ Ce twin C# couvre les trois familles avancées de Z3 : **tactiques** (`MkTactic`
 **Complémentarité** : le twin Python utilise `len(result)` et `sg.size()` (API Pythonique) ; ce twin C# montre l'API .NET (`ApplyResult.Subgoals.Length`, `Goal.Formulas` comme propriété, composition via méthodes `ctx.*`) — la **valeur ajoutée** est la traduction des idiomes Z3 dans le système de types .NET.
 
 > Les trois exercices qui suivent sont à compléter : ils reprennent isolément chacune des trois familles (pipeline de tactiques, XOR sur `BitVec`, commutativité des `Store`).",,,,,,,,958178aaa2508504,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,024ee023,markdown,fr,363090315479951b,"# Z3-Python 03 — Tactiques et théories
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,024ee023,markdown,fr,1466be6ea24b399a,"# Z3-Python 03 — Tactiques et théories
 
 **Navigation** : [Index](README.md) | [<< Z3-Python-02 Sudoku](Z3-02-Sudoku-Python.ipynb) | [Z3-Python-04 Strings >>](Z3-04-Strings-Regex-Python.ipynb)
 
@@ -1440,7 +1440,7 @@ Ce notebook explore également deux théories supplementaires de Z3 : les **vect
 
 ## Source
 
-Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 16 Toy decompiler (Tactic, p. 463) + Ch. 5 Verification (BitVec, p. 125) — combinaison de tactiques et théories. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,363090315479951b,,,,,,,,,,,,,,,
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 16 Toy decompiler (Tactic, p. 463) + Ch. 5 Verification (BitVec, p. 125) — combinaison de tactiques et théories. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,1466be6ea24b399a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,bea962f8,code,fr,911fe9d839b6c270,"# Imports et verification de l'environnement
 from z3 import *
 
@@ -2029,7 +2029,7 @@ Ce notebook a explore les mécanismes avances de Z3 au-dela du solveur de base :
 4. `SolverFor` permet de sélectionner un solveur adapte au fragment logique du problème.
 
 Les prochains notebooks exploreront les théories de chaînes (`String`, `Re`), les quantificateurs (`ForAll`, `Exists`) et l'optimisation avancee (objectifs multiples, Pareto).",,,,,,,,862401b6f913a233,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,7f4fda1e,markdown,fr,8e6ab09b165301d3,"# Z3 (C# / .NET) — Théorie des chaînes et expressions regulieres
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,7f4fda1e,markdown,fr,159af5f2dff11345,"# Z3 (C# / .NET) — Théorie des chaînes et expressions regulieres
 
 **Twin C# de `Z3-04-Strings-Regex-Python.ipynb`** (parite .NET, marathon #4956, suite de `Z3-Python-03-Tactics-Csharp`).
 
@@ -2053,7 +2053,7 @@ Ce notebook explore la **théorie des chaînes** (`String`) et des **expressions
 
 ## Source
 
-Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 6 Regular expressions (p. 166), §6.1 KLEE (p. 166) et §6.2 Fun with regular expressions (p. 167) — génération de chaînes satisfaisant un motif donné, puis usages concrets des expressions régulières. Le livre ne traite pas la théorie `String`/`Re` de Z3 (aucune section sur `InRe`, `str.len` ni `Regex(`) : sur ce point le carnet prolonge le livre, la parenté portant sur la génération de chaînes par motif. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,8e6ab09b165301d3,,,,,,,,,,,,,,,
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 6 Regular expressions (p. 166), §6.1 KLEE (p. 166) et §6.2 Fun with regular expressions (p. 167) — génération de chaînes satisfaisant un motif donné, puis usages concrets des expressions régulières. Le livre ne traite pas la théorie `String`/`Re` de Z3 (aucune section sur `InRe`, `str.len` ni `Regex(`) : sur ce point le carnet prolonge le livre, la parenté portant sur la génération de chaînes par motif. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,159af5f2dff11345,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,572cc9af,code,fr,215e7062d97c0f76,"#r ""nuget: Microsoft.Z3""
 #load ""Z3NativeLoader.cs""
 using Microsoft.Z3;
@@ -2391,7 +2391,7 @@ Ce twin C# couvre la **théorie des chaînes** (`MkString`/`MkLength`/`MkExtract
 
 **Complementarite** : le twin Python utilise `String('s')` / `SubString` / `Range` / `InRe` (API pythonique aux opérateurs `+`, `*`) ; ce twin C# montre l'API .NET plate (`ctx.MkString` / `ctx.MkExtract(seq, off, len)` / `ctx.MkRange` / `ctx.MkInRe`) avec ses specificites de typage (`SeqExpr` cast sur `MkConst`, formes tableau `SeqExpr[]`/`ReExpr[]` pour `MkConcat`/`MkUnion`). Les deux executent le **même** moteur Z3 - la valeur ajoutee est la traduction des idiomes dans le système de types .NET.
 ",,,,,,,,5bb3ec09bdd95aa4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-title,markdown,fr,7ed4ee73f920f8d5,"# Z3-Python 04 — Chaînes de caractères et expressions regulieres
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-title,markdown,fr,73234717bcd8e429,"# Z3-Python 04 — Chaînes de caractères et expressions regulieres
 
 **Navigation** : [Index](README.md) | [<< Z3-Python-03 Tactiques](Z3-03-Tactics-Python.ipynb) | [Z3-Python-05 Quantifiers >>](Z3-05-Quantifiers-Proofs-Python.ipynb)
 
@@ -2415,7 +2415,7 @@ A la fin de ce notebook, vous saurez :
 Z3 integre une **théorie des chaînes de caractères** (*string theory*) qui permet de raisonner sur des variables de type chaîne au même titre que sur des entiers ou des booléens. La différence essentielle avec le module Python `re` : Z3 ne se contente pas de *verifier* qu'une chaîne correspond a un motif, il peut **generer** une chaîne qui satisfait un ensemble de contraintes. Ce notebook explore cette théorie en deux volets : les opérations sur les chaînes (`String`), puis les expressions regulieres symboliques (`Re`).
 ## Source
 
-Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 6 Regular expressions (p. 166), §6.1 KLEE (p. 166) et §6.2 Fun with regular expressions (p. 167) — génération de chaînes satisfaisant un motif donné, puis usages concrets des expressions régulières. Le livre ne traite pas la théorie `String`/`Re` de Z3 (aucune section sur `InRe`, `str.len` ni `Regex(`) : sur ce point le carnet prolonge le livre, la parenté portant sur la génération de chaînes par motif. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,7ed4ee73f920f8d5,,,,,,,,,,,,,,,
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 6 Regular expressions (p. 166), §6.1 KLEE (p. 166) et §6.2 Fun with regular expressions (p. 167) — génération de chaînes satisfaisant un motif donné, puis usages concrets des expressions régulières. Le livre ne traite pas la théorie `String`/`Re` de Z3 (aucune section sur `InRe`, `str.len` ni `Regex(`) : sur ce point le carnet prolonge le livre, la parenté portant sur la génération de chaînes par motif. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,73234717bcd8e429,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-imports,code,fr,911fe9d839b6c270,"# Imports et verification de l'environnement
 from z3 import *
 
@@ -2850,43 +2850,74 @@ Avant de conclure, il est essentiel de bien distinguer les deux paradigmes. Le t
 | **Performance** | Très rapide (NFA compile) | Plus lent (resolution SMT) |
 
 > **Quand utiliser Z3 pour les chaînes ?** Quand vous avez besoin de **generer** une chaîne satisfaisant des contraintes complexes, de **prouver** qu'un ensemble de règles est coherent (pas `unsat`), ou de combiner des contraintes sur les chaînes avec d'autres théories (entiers, booléens) dans un même solveur.",,,,,,,,d9e546a6819aaf8c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-ex1-intro,markdown,fr,31db934f4a1ef70c,"## Exercice 1 : Valider un mot de passe
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-ex1-intro,markdown,fr,4723f063d712f659,"## Exemple guidé 1 — Valider un mot de passe (crédité #25501 — sachalhermet19)
 
-### Enonce
+> Résolution originale : **sachalhermet19**, rendu de TP
+> [#25501](https://github.com/jsboige/CoursIA/pull/25501). Reprise telle quelle ;
+> seule la mise en forme de l'énoncé est harmonisée avec les sections voisines.
 
-Ecrivez une fonction `valider_mot_de_passe(s_chaine)` qui prend une chaîne Z3 symbolique (variable `String`) et verifie qu'elle satisfait les règles suivantes :
+La politique de la section 5 fixait la longueur et la position de chaque classe de caractères. La question est ici plus générale : **existe-t-il au moins une chaîne** qui satisfait les trois règles suivantes, sans position imposée ?
+
 1. Longueur >= 8
 2. Contient au moins un chiffre (`Range('0', '9')`)
 3. Contient au moins une majuscule (`Range('A', 'Z')`)
 
-La fonction doit retourner `True` si un modèle existe (mot de passe valide possible), `False` sinon.
+La fonction `valider_mot_de_passe(s_chaine)` reçoit une variable `String` symbolique et rend `True` si un modèle existe, `False` sinon.
 
-> **Indices :**
+La règle « contient au moins un X » s'écrit avec un motif global plutôt qu'avec une position forcée : `InRe(s, Concat(Star(c), X, Star(c)))`, où `c` couvre tous les caractères. Chaque règle devient un motif, chaque motif une contrainte `s.add(...)`, et le solveur tranche la conjonction.",,,,,,,,4723f063d712f659,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-ex1-code,code,fr,bbf7c64c3e8554f9,"
+# EXERCICE 1 : Valider un mot de passe
 
-- Utilisez `Contains` avec une position forcee, ou `InRe` avec un motif global.
-- Pour la règle « contient un chiffre », une approche simple : forcer une position connue avec `SubString(s, pos, 1)` dans `Range('0', '9')`.
-- Alternative : utiliser `InRe(s, Concat(Star(...), Range('0','9'), Star(...)))`.
-- Appelez `s.check()` et comparez a `sat`.",,,,,,,,31db934f4a1ef70c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-ex1-code,code,fr,421e89844ea7005e,"# EXERCICE 1 : Valider qu'un mot de passe respecte les règles de securite.
+from z3 import *
 
 def valider_mot_de_passe(s_chaine) -> bool:
-    """"""Verifie si une chaîne Z3 String peut satisfaire les règles de mot de passe.
-
-    Règles : longueur >= 8, contient un chiffre, contient une majuscule.
-    Retourne True si sat, False sinon.
-
-    # Indice : créez un Solver, ajoutez les 3 contraintes.
-    # Étape 1 : Length(s_chaine) >= 8
-    # Étape 2 : forcer une position a contenir un chiffre (SubString + InRe)
-    # Étape 3 : forcer une position a contenir une majuscule
     """"""
-    # TODO etudiant : implémentez la validation
-    return None  # TODO etudiant : remplacer par True ou False
+    Vérifie si une chaîne Z3 peut satisfaire les règles :
+    - Longueur >= 8
+    - Au moins un chiffre
+    - Au moins une majuscule
 
-# Test
+    Retourne True si une solution existe, False sinon.
+    """"""
+
+    # Création du solveur
+    s = Solver()
+
+    # Contrainte 1 : au moins 8 caractères
+    s.add(Length(s_chaine) >= 8)
+
+    # Expression régulière représentant un caractère quelconque
+    caractere = Range('\x00', '\uffff')
+
+    # Contrainte 2 : au moins un chiffre (0 à 9)
+    chiffre = Range('0', '9')
+    motif_chiffre = Concat(
+        Star(caractere),
+        chiffre,
+        Star(caractere)
+    )
+    s.add(InRe(s_chaine, motif_chiffre))
+
+    # Contrainte 3 : au moins une majuscule (A à Z)
+    majuscule = Range('A', 'Z')
+    motif_majuscule = Concat(
+        Star(caractere),
+        majuscule,
+        Star(caractere)
+    )
+    s.add(InRe(s_chaine, motif_majuscule))
+
+    # Vérification des contraintes
+    return s.check() == sat
+
+
+# TEST DE L'EXERCICE
+
 pwd = String('pwd_ex1')
-résultat = valider_mot_de_passe(pwd)
-print(""Mot de passe valide (existe-t-il une solution) ?"", résultat)",,,,,,,,421e89844ea7005e,,,,,,,,,,,,,,,
+resultat = valider_mot_de_passe(pwd)
+
+print(""Mot de passe valide (existe-t-il une solution) ?"", resultat)
+",,,,,,,,bbf7c64c3e8554f9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,nb04-ex2-intro,markdown,fr,c2a0abbe1a85a126,"## Exercice 2 : Trouver une chaîne par motif
 
 ### Enonce
@@ -2977,7 +3008,7 @@ Ce notebook a explore la théorie des chaînes et des expressions regulieres de 
 4. Les cas d'usage typiques incluent : validation de politiques (mot de passe), generation de données de test, verification de coherent de schemas.
 
 Le prochain notebook explorera les **quantificateurs** (`ForAll`, `Exists`) et la verification formelle de proprietes avec Z3.",,,,,,,,89433f9da459afdd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-CSharp.ipynb,b578c3e9,markdown,fr,bd4f1ddceff83ebd,"# Z3 (C# / .NET) — Quantificateurs et preuves par refutation
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-CSharp.ipynb,b578c3e9,markdown,fr,9fa92666e0dbcbf0,"# Z3 (C# / .NET) — Quantificateurs et preuves par refutation
 
 **Twin C# de `Z3-05-Quantifiers-Proofs-Python.ipynb`** (parite .NET) : même parcours, même vocabulaire, API `Microsoft.Z3`.
 
@@ -3015,7 +3046,7 @@ Une formule $F$ est **valide** (un theoreme) si et seulement si sa negation $\ne
 
 ## Source
 
-Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 4 Proofs (p. 106) + Ch. 20 First-Order Logic (p. 559) — preuve par réfutation, quantificateurs et logique du premier ordre. Le livre documente aussi (p. 81) que Z3 rend `unknown` plutôt qu'`unsat` sur l'arithmétique non linéaire entière : c'est exactement le comportement que la section 5 du carnet met en scène, et qui justifie d'afficher `unknown` au lieu de conclure. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,bd4f1ddceff83ebd,,,,,,,,,,,,,,,
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 4 Proofs (p. 106) + Ch. 20 First-Order Logic (p. 559) — preuve par réfutation, quantificateurs et logique du premier ordre. Le livre documente aussi (p. 81) que Z3 rend `unknown` plutôt qu'`unsat` sur l'arithmétique non linéaire entière : c'est exactement le comportement que la section 5 du carnet met en scène, et qui justifie d'afficher `unknown` au lieu de conclure. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,9fa92666e0dbcbf0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-CSharp.ipynb,f4dabbd7,code,fr,215e7062d97c0f76,"#r ""nuget: Microsoft.Z3""
 #load ""Z3NativeLoader.cs""
 using Microsoft.Z3;
@@ -3351,7 +3382,7 @@ Ce twin C# couvre les **quantificateurs** (`MkForall`/`MkExists` sur `new Expr[]
 
 **Complementarite** : le twin Python utilise `ForAll([x], ...)` / `Exists([x], ...)` / `is_true(simplify(...))` (API pythonique, `unsat`/`sat`/`unknown` litteraux) ; ce twin C# montre l'API .NET (`MkForall(new Expr[]{x}, body)` / `Status.UNSATISFIABLE` enum / `ReasonUnknown` propriete / `Set(""timeout"", N)`), avec le casting `(ArithExpr)` systématique des constantes reelles/entieres. Les deux executent le **même** moteur Z3 et demontrent les mêmes theoremes.
 ",,,,,,,,e48cdc7431805227,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb,nb05-title,markdown,fr,22cb3bd10a14d28c,"# Z3-Python 05 — Quantificateurs et preuves formelles
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb,nb05-title,markdown,fr,e9c758eb3ae67d03,"# Z3-Python 05 — Quantificateurs et preuves formelles
 
 **Navigation** : [Index](README.md) | [Index SMT](../README.md) | [Index SymbolicAI](../../README.md) | [Serie Z3 C# (Z3.Linq)](../Z3-Linq2Z3/README.md) | [<< Z3-Python-04 Chaînes](Z3-04-Strings-Regex-Python.ipynb) | [Z3-Python-06 Optimisation >>](Z3-06-Advanced-Optimization-Python.ipynb)
 
@@ -3377,7 +3408,7 @@ A la fin de ce notebook, vous saurez :
 > **Note technique** : Z3 est un solveur SMT, pas un assistant de preuve interactif comme Lean ou Coq. Une « preuve » ici signifie une **decision algorithmique** : le solveur confirme qu'aucun contre-exemple n'existe. Pour les fragments decidables (arithmetic lineaire, théories de base), cette preuve est **complete et automatique**. Pour les fragments plus riches (quantificateurs arbitraires sur les reels, nonlinear), Z3 peut repondre `unknown`.
 ## Source
 
-Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 4 Proofs (p. 106) + Ch. 20 First-Order Logic (p. 559) — preuve par réfutation, quantificateurs et logique du premier ordre. Le livre documente aussi (p. 81) que Z3 rend `unknown` plutôt qu'`unsat` sur l'arithmétique non linéaire entière : c'est exactement le comportement que la section 5 du carnet met en scène, et qui justifie d'afficher `unknown` au lieu de conclure. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,22cb3bd10a14d28c,,,,,,,,,,,,,,,
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 4 Proofs (p. 106) + Ch. 20 First-Order Logic (p. 559) — preuve par réfutation, quantificateurs et logique du premier ordre. Le livre documente aussi (p. 81) que Z3 rend `unknown` plutôt qu'`unsat` sur l'arithmétique non linéaire entière : c'est exactement le comportement que la section 5 du carnet met en scène, et qui justifie d'afficher `unknown` au lieu de conclure. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,e9c758eb3ae67d03,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb,nb05-imports,code,fr,911fe9d839b6c270,"# Imports et verification de l'environnement
 from z3 import *
 
@@ -3903,7 +3934,7 @@ Ce notebook a introduit les **quantificateurs** et la **preuve formelle** dans Z
 **Transition vers le notebook suivant** : `Z3-06-Advanced-Optimization-Python.ipynb` quitte la vérification pour l'**optimisation sous contraintes** : le solveur `Optimize`, les objectifs contradictoires et le front de Pareto, puis `soft constraints` et MaxSAT pondéré. La maitrise de `ForAll` + `Exists` + `proof=True` prépare le terrain : ce sont ces contraintes que l'on posera avant d'optimiser.
 
 **Reference externe** : Leonardo de Moura, Nikolaj Bjorner, *Z3: An Efficient SMT Solver* (TACAS 2008) ; Microsoft Research, *Z3 Tutorial* (en ligne) ; pour le quantifier élimination sur les reels : Collins, *Quantifier Elimination for Real Closed Fields* (1975).",,,,,,,,0a557d249985b4df,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-CSharp.ipynb,13ae6171,markdown,fr,150823af600df368,"# Z3-Python 06 -- Optimisation avancee (twin C#)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-CSharp.ipynb,13ae6171,markdown,fr,470504d518225a25,"# Z3-Python 06 -- Optimisation avancee (twin C#)
 
 **Navigation** : [Index](README.md) | [Index SMT](../README.md) | [Index SymbolicAI](../../README.md) | [<< Z3-Python-05 Quantifiers](Z3-05-Quantifiers-Proofs-CSharp.ipynb)
 
@@ -3930,7 +3961,7 @@ A la fin de ce notebook, vous saurez :
 > **Kernel** : `.net-csharp` (.NET Interactive). Le moteur est le **vrai** [Microsoft.Z3](https://github.com/Z3Prover/z3) via NuGet `#r ""nuget: Microsoft.Z3""` (v4.12.2.0) -- le même solveur C++ que `z3-solver` Python.
 ## Source
 
-Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 14 MaxSAT/MaxSMT (p. 383) + §2.3.4 MaxSAT (p. 31) + §3.3 Wood workshop, linear programming and Leonid Kantorovich (p. 40) + §14.5 Assignment problem (p. 397) + §14.8 Packing students into a dorm (p. 405) — contraintes dures et souples pondérées, `Optimize()`, et affectation sous préférences. Le front de Pareto (section 4) n'a pas d'équivalent dans le livre : c'est un prolongement propre au carnet. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,150823af600df368,,,,,,,,,,,,,,,
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 14 MaxSAT/MaxSMT (p. 383) + §2.3.4 MaxSAT (p. 31) + §3.3 Wood workshop, linear programming and Leonid Kantorovich (p. 40) + §14.5 Assignment problem (p. 397) + §14.8 Packing students into a dorm (p. 405) — contraintes dures et souples pondérées, `Optimize()`, et affectation sous préférences. Le front de Pareto (section 4) n'a pas d'équivalent dans le livre : c'est un prolongement propre au carnet. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,470504d518225a25,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-CSharp.ipynb,aa36f72a,code,fr,f547bb84b9c99b51,"#r ""nuget: Microsoft.Z3""
 #load ""Z3NativeLoader.cs""
 using Microsoft.Z3;
@@ -4583,7 +4614,7 @@ Ces techniques font de Z3 un outil puissant non seulement pour la **satisfaction
 ***
 
 **Parite .NET** : ce twin C# reproduit fidelement le notebook Python [Z3-06-Advanced-Optimization-Python.ipynb](Z3-06-Advanced-Optimization-Python.ipynb) avec le **même moteur** C++ sous-jacent (Microsoft.Z3 / z3-solver). Les différences sont purement d'API : `Optimize()` -> `ctx.MkOptimize()`, `opt.add()` -> `opt.Assert()`, `opt.maximize/minimize` -> `opt.MkMaximize/MkMinimize` (retournent un `Handle` dont `.Upper`/`.Lower` donnent les bornes), et la visualisation matplotlib est remplacée par un rendu ASCII autonome. La serie Z3-Python-Csharp est maintenant complete (6/6).",,,,,,,,071a62b39b74b1ed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb,nb06-title,markdown,fr,9e95fbf11a85c2b1,"# Z3-Python 06 — Optimisation avancee
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb,nb06-title,markdown,fr,527b063fa2e8e74c,"# Z3-Python 06 — Optimisation avancee
 
 **Navigation** : [Index](README.md) | [Index SMT](../README.md) | [Index SymbolicAI](../../README.md) | [Serie Z3 C#](../Z3-Linq2Z3/README.md) | [<< Z3-Python-05 Quantifiers](Z3-05-Quantifiers-Proofs-Python.ipynb) | [Z3-Python-08 Ordonnancement >>](Z3-08-Ordonnancement-Python.ipynb)
 
@@ -4610,7 +4641,7 @@ A la fin de ce notebook, vous saurez :
 > **Kernel** : `python3` (conda Python 3 standard). Aucun kernel WSL requis.
 ## Source
 
-Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 14 MaxSAT/MaxSMT (p. 383) + §2.3.4 MaxSAT (p. 31) + §3.3 Wood workshop, linear programming and Leonid Kantorovich (p. 40) + §14.5 Assignment problem (p. 397) + §14.8 Packing students into a dorm (p. 405) — contraintes dures et souples pondérées, `Optimize()`, et affectation sous préférences. Le front de Pareto (section 4) n'a pas d'équivalent dans le livre : c'est un prolongement propre au carnet. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,9e95fbf11a85c2b1,,,,,,,,,,,,,,,
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 14 MaxSAT/MaxSMT (p. 383) + §2.3.4 MaxSAT (p. 31) + §3.3 Wood workshop, linear programming and Leonid Kantorovich (p. 40) + §14.5 Assignment problem (p. 397) + §14.8 Packing students into a dorm (p. 405) — contraintes dures et souples pondérées, `Optimize()`, et affectation sous préférences. Le front de Pareto (section 4) n'a pas d'équivalent dans le livre : c'est un prolongement propre au carnet. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,527b063fa2e8e74c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb,nb06-imports,code,fr,0c0c357a385d26b7,"# Imports et verification de l'environnement
 # Le package pip s'appelle 'z3-solver' (et non 'z3').
 # !pip install z3-solver
@@ -5319,7 +5350,7 @@ Ce notebook a explore les techniques d'optimisation avancee de Z3 au-dela du sim
 5. **Pattern d'allocation** : le cas pratique (section 6) combine tous ces outils : contraintes dures (budget), contraintes souples (priorites), objectif principal (valeur). C'est le squelette de la plupart des problemes d'allocation de ressources reels.
 
 Ces techniques font de Z3 un outil puissant non seulement pour la **satisfaction** de contraintes, mais aussi pour l'**optimisation multi-critères** — un domaine ou la modelisation declarative brille face aux approches ad-hoc.",,,,,,,,d2bd2e8ae323d929,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c01,markdown,fr,badac3a80d3e08f5,"# Z3-Python 01b — Du style declaratif LINQ au solveur Z3 en Python
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c01,markdown,fr,e9edb38381ec79ee,"# Z3-Python 01b — Du style declaratif LINQ au solveur Z3 en Python
 
 **Navigation** : [<< Z3-Python-01 Introduction](Z3-01-Introduction-Python.ipynb) | [Index](README.md) | [Z3-Python-02 Sudoku >>](Z3-02-Sudoku-Python.ipynb) | [Z3 C# (Z3.Linq) ->](../Z3-Linq2Z3/README.md)
 
@@ -5340,7 +5371,7 @@ Cette serie ([Z3-Python](README.md)) utilise z3-py, le binding Python direct, en
 Ce notebook fait le pont : il montre que les **deux styles expriment la même intention declarative** (decrire le QUOI, pas le COMMENT), et comment retrouver en Python la lisibilite du DSL C# sans perdre l'acces a l'API complete.
 ## Source
 
-Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 2 Basics (p. 14) + §3.13.2 Unsat core (p. 90) + §9.1 Map coloring (p. 317) — API du solveur Z3Py (`Solver`, `add`, `check`, `model`), extraction d'un noyau d'insatisfiabilité (`assert_and_track`), et coloration de carte. La carte d'Australie du carnet est la variante classique de la carte d'Europe du livre ; le pont LINQ → pyz3 est propre à la série. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,badac3a80d3e08f5,,,,,,,,,,,,,,,
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 2 Basics (p. 14) + §3.13.2 Unsat core (p. 90) + §9.1 Map coloring (p. 317) — API du solveur Z3Py (`Solver`, `add`, `check`, `model`), extraction d'un noyau d'insatisfiabilité (`assert_and_track`), et coloration de carte. La carte d'Australie du carnet est la variante classique de la carte d'Europe du livre ; le pont LINQ → pyz3 est propre à la série. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,e9edb38381ec79ee,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c02,code,fr,7c7c2528b90a0cc5,"# Imports et verification de l'environnement
 from z3 import *
 
@@ -5570,7 +5601,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c19,m
 - [Z3-Python-06 — Optimisation avancee](Z3-06-Advanced-Optimization-Python.ipynb) : `Optimize`, `maximize`/`minimize`, quand la satisfaction devient optimisation sous objectifs.
 - [Z3 C# (Z3.Linq)](../Z3-Linq2Z3/README.md) : la serie soeur declarative, pour comparer les idiomes dans leur contexte natif.
 - La documentation [z3-solver (pyz3)](https://z3prover.github.io/api/html/namespacez3py.html) pour l'API complete.",,,,,,,,33045d4332aa9d8d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb,c0,markdown,fr,884b5a449ea0e5e3,"# Z3-Python-08 : Ordonnancement de tâches (Job-Shop Scheduling)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb,c0,markdown,fr,41eb8715e8f8e338,"# Z3-Python-08 : Ordonnancement de tâches (Job-Shop Scheduling)
 
 [← Z3-Python-06 Optimisation](Z3-06-Advanced-Optimization-Python.ipynb) | [Serie Z3-Python](README.md) | [Z3-Python-09 (énigme d'Einstein) →](Z3-09-Enigme-Einstein-Python.ipynb)
 
@@ -5587,7 +5618,7 @@ Ce problème est **NP-difficile** : il n'existe pas d'algorithme polynomial conn
 **Ce notebook montre** : (a) une heuristique gloutonne FIFO sous-optimale, (b) la modelisation Z3 avec la contrainte disjonctive `Or(... , ...)`, (c) l'optimum trouve par `Optimize.minimize`, et (d) un diagramme de Gantt comparant les deux. Il porte en Python l'exemple C# [11_Job_Shop_Scheduling](../Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb) de la serie sœur Z3.Linq.
 ## Source
 
-Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §22.8 Job Shop Scheduling (p. 633), §22.8.1 My first version (p. 633) et §22.8.2 MaxSMT version by Chad Brewbaker (p. 635) — le problème est posé à l'identique (jobs, machines, opérations, `makespan` minimisé, diagramme de Gantt), avec les instances 3×3 puis 10 machines. Le carnet reprend l'instance 3 jobs × 2 machines et la comparaison glouton vs optimum. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,884b5a449ea0e5e3,,,,,,,,,,,,,,,
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §22.8 Job Shop Scheduling (p. 633), §22.8.1 My first version (p. 633) et §22.8.2 MaxSMT version by Chad Brewbaker (p. 635) — le problème est posé à l'identique (jobs, machines, opérations, `makespan` minimisé, diagramme de Gantt), avec les instances 3×3 puis 10 machines. Le carnet reprend l'instance 3 jobs × 2 machines et la comparaison glouton vs optimum. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,41eb8715e8f8e338,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb,c1,code,fr,17cb27f1d02d2a03,"# Imports : z3 (solveur SMT) + matplotlib (diagramme de Gantt).
 import os
 import z3
@@ -7032,14 +7063,14 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-12-Real-Arithmetic-Python.ipynb,47ab3
 La théorie des reels de Z3 transforme le solveur en outil de **raisonnement algebrique exact**. La ou le calcul numérique flottant (`float`, `math.sqrt`) introduit des erreurs d'arrondi et ne peut jamais prouver une absence de solution, la théorie SMT `Real` offre : solutions rationnelles exactes, irrationnels algebriques (racine de 2 comme `root-obj`), et preuves d'impossibilite sur R tout entier (`unsat` pour `x^2 + 1 = 0`).
 
 Cette serie Z3-Python (notebooks 01 a 12) couvre maintenant l'eventail complet : entiers (01-06, 10, 11), satisfaction de contraintes (08 ordonnancement, 09 CSP logique, 11 graphes), tactiques (03), et ici l'**arithmetique reelle exacte** (12). Le pont avec la serie souer Z3.Linq (C#) se fait via les mêmes exemples portes entre Microsoft.Z3 et pyz3.",,,,,,,,9d7fffded35d4e8d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,de430bb4,markdown,fr,e6492782f84bb51d,"← [12 - Arithmetique reelle](Z3-12-Real-Arithmetic-Python.ipynb) | [README Z3-Python](README.md) | [13b - UNSAT cores : le MUS >>](Z3-13b-UnsatCores-MUS-Python.ipynb)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,de430bb4,markdown,fr,4f20036df8877185,"← [12 - Arithmetique reelle](Z3-12-Real-Arithmetic-Python.ipynb) | [README Z3-Python](README.md) | [13b - UNSAT cores : le MUS >>](Z3-13b-UnsatCores-MUS-Python.ipynb)
 # 13. UNSAT cores : expliquer l'insatisfiabilite (le ' pourquoi ')
 Jusqu'ici, le solveur repondait a une question binaire : *ce système a-t-il une solution ?* -> **SAT** (oui, voici un temoin) ou **UNSAT** (non, prouve impossible). C'est un **verdict**, pas une **explication**.
 Pour un ingenieur qui **ecrit** la specification, UNSAT est souvent un bug de modelisation : une contrainte trop forte, ou deux contraintes incompatibles. La reponse ' impossible ' ne suffit pas - il faut savoir **lesquelles** des contraintes se contredisent. C'est le rôle du **noyau d'insatisfiabilite** (UNSAT core) : le sous-ensemble **minimal** de contraintes responsable du conflit. Z3 passe du diagnostic binaire au diagnostic chirurgical.
 > Port pyz3 du notebook C# [`17_UnsatCores.ipynb`](../Z3-Linq2Z3/17_UnsatCores.ipynb). EPIC #1206, Prong B. (Le bloc DSL `Explain()` du C#, spécifique a Z3.Linq, n'est pas porte ; l'API brute `assert_and_track` + `unsat_core` de pyz3 fait le même travail.)
 ## Source
 
-Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §3.13.2 Unsat core (p. 83), Ch. 3 Equations — UNSAT cores, assert_and_track, diagnostic. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,e6492782f84bb51d,,,,,,,,,,,,,,,
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §3.13.2 Unsat core (p. 83), Ch. 3 Equations — UNSAT cores, assert_and_track, diagnostic. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,4f20036df8877185,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,71e1306a,code,fr,2d36fb6ac814810b,"from z3 import *
 print(""Imports OK : z3-solver (UNSAT cores via assert_and_track)"")
 ",,,,,,,,2d36fb6ac814810b,,,,,,,,,,,,,,,
@@ -7201,7 +7232,7 @@ Cette serie Z3-Python (notebooks 01 a 13) couvre maintenant les **trois postures
 
 Le compagnon [Z3-13b - le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) approfondit ce langage : core invisible a l'inspection, minimalite non garantie par Z3, et l'algorithme deletion-based qui calcule le sous-ensemble irreductible.
 ",,,,,,,,54345351d98ec35f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb,af607fd1,markdown,fr,704dd0bd1df8953b,"← [13b - UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) | [README Z3-Python](README.md) | [15 - Tableaux imbriqués >>](Z3-15-Nested-Arrays-2D-Python.ipynb)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb,af607fd1,markdown,fr,7fc5631f735110ee,"← [13b - UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) | [README Z3-Python](README.md) | [15 - Tableaux imbriqués >>](Z3-15-Nested-Arrays-2D-Python.ipynb)
 
 # 14. Bit-vectors : verifier le debordement arithmetique
 Jusqu'ici nous avons raisonne sur des **entiers non bornes** (`Int`) ou des **reels exacts** (`Real`). Mais un ordinateur calcule sur des **entiers bornes** : un `uint32` ne peut pas depasser `2^32 - 1`, et l'addition **enveloppe** (wraps) modulo `2^32` quand la somme depasse. Ce debordement (overflow) est la source de bugs legendaires (Ariane 5, OpenSSL, Pac-Man) et la cible centrale de la **verification formelle** de code.
@@ -7209,7 +7240,7 @@ Z3 traite les entiers machines via la théorie des **bit-vectors** (`BitVec`, SM
 > Port pyz3 du notebook C# [`15_BitVectors_Overflow.ipynb`](../Z3-Linq2Z3/15_BitVectors_Overflow.ipynb). EPIC #1206, Prong B. (Le bloc DSL `[BitVecWidth(n)]` du C#, spécifique a Z3.Linq, n'est pas porte ; l'API brute pyz3 `BitVec` fait le même travail.)
 ## Source
 
-Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §5.1 Integer overflow (p. 125), Ch. 5 Verification — Bit-vectors, overflow, ULT/UGE. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,704dd0bd1df8953b,,,,,,,,,,,,,,,
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §5.1 Integer overflow (p. 125), Ch. 5 Verification — Bit-vectors, overflow, ULT/UGE. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,7fc5631f735110ee,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb,82cdf549,code,fr,c33dd8a0d2fa0ac6,"from z3 import *
 print(""Imports OK : z3-solver (theorie BitVec)"")
 ",,,,,,,,c33dd8a0d2fa0ac6,,,,,,,,,,,,,,,
@@ -11353,3 +11384,79 @@ Prenez la roue à cinq rayons : un sommet central relié aux cinq sommets d'un c
 **Indice** : le premier `k` pour lequel le solveur répond `sat` est le nombre chromatique ; les `unsat` précédents prouvent que les `k` plus petits ne suffisent pas. La cellule d'imports de ce carnet cite aussi `Optimize` — un `Optimize()` où `k` est une variable à `minimize` pose la même question en un seul appel.
 
 **Étape 1** : construisez la liste des dix arêtes (cinq du cycle, cinq des rayons), puis bouclez sur `k`.",,,,,,,,3044ff0d13363b67,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,f800c040,markdown,fr,b6a1aca1f2129dd0,"### Lecture du résultat
+
+La fonction affiche `True` : le solveur a répondu `sat`, il existe donc au moins un mot de passe qui respecte les trois règles à la fois. La réponse porte sur la **politique**, pas sur un mot de passe donné : `pwd_ex1` est une variable libre, et `True` signifie seulement que les règles ne se contredisent pas.
+
+Deux choix de modélisation méritent d'être relevés :
+
+- l'alphabet `Range('\x00', '\uffff')` couvre tous les caractères, si bien qu'un témoin produit par le solveur peut contenir des caractères non imprimables — sans importance pour une question oui/non, gênant dès qu'il faut **afficher** le mot de passe ;
+- `valider_mot_de_passe` ne lit jamais le modèle : elle répond à « existe-t-il ? », pas à « lequel ? ». L'Exercice 4 pose les deux questions.",,,,,,,,b6a1aca1f2129dd0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,5611118a,markdown,fr,45f216959f3d38ed,"## Exercice 4 : Exhiber un mot de passe conforme, ou prouver qu'il n'en existe aucun
+
+### Enonce
+
+L'Exemple guidé 1 répond à « existe-t-il un mot de passe valide ? ». Allez plus loin : écrivez une fonction `generer_mot_de_passe(longueur_min, longueur_max)` qui **renvoie un mot de passe concret** (une `str` Python lue dans le modèle) respectant la politique suivante, ou `None` si cette politique est insatisfiable :
+
+1. `longueur_min <= Length(mdp) <= longueur_max`
+2. Uniquement des caractères ASCII imprimables, de l'espace `' '` au tilde `'~'`
+3. Au moins un chiffre, au moins une majuscule et au moins un caractère spécial parmi `!`, `@`, `#`, `$`
+4. Ne contient pas la sous-chaîne `""pass""`
+
+Testez la fonction sur les bornes `(8, 12)`, `(3, 3)` et `(1, 2)`.
+
+**Question** : pour quelles bornes la politique devient-elle insatisfiable ? Reliez la plus petite longueur possible au nombre de classes de caractères obligatoires.
+
+> **Indices :**
+
+- Reprenez le motif « contient au moins un X » de l'Exemple guidé 1, avec l'alphabet imprimable `Range(' ', '~')`.
+- La règle 2 s'écrit `InRe(mdp, Star(Range(' ', '~')))`.
+- Un ensemble de caractères isolés se construit avec `Union(Re('!'), Re('@'), Re('#'), Re('$'))`.
+- La règle 4 s'écrit `Not(Contains(mdp, StringVal('pass')))`.
+- En cas de `sat`, `s.model()[mdp].as_string()` rend le témoin.",,,,,,,,45f216959f3d38ed,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb,423c3e1c,code,fr,59cc71f5e12e9a5c,"# EXERCICE 4 : Exhiber un mot de passe conforme, ou prouver qu'il n'en existe aucun.
+
+def generer_mot_de_passe(longueur_min: int, longueur_max: int) -> str:
+    """"""Renvoie un mot de passe concret respectant la politique, ou None si elle est insatisfiable.
+
+    Politique : longueur bornee, caractères ASCII imprimables, au moins un chiffre,
+    une majuscule et un caractère spécial parmi ! @ # $, pas de sous-chaîne ""pass"".
+
+    # Indice : un Solver et une variable String('mdp').
+    # Étape 1 : bornes de longueur et alphabet imprimable
+    # Étape 2 : trois motifs « contient au moins un X »
+    # Étape 3 : Not(Contains(...)) pour la sous-chaîne interdite
+    # Étape 4 : si sat, lire le témoin avec s.model()[mdp].as_string()
+    """"""
+    # TODO etudiant : implémentez la génération
+    return None  # TODO etudiant : remplacer par le mot de passe trouvé
+
+for bornes in [(8, 12), (3, 3), (1, 2)]:
+    print(f""Bornes {bornes} :"", generer_mot_de_passe(*bornes))",,,,,,,,59cc71f5e12e9a5c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,lecture-z304-imports,markdown,fr,415a801e873f5d1b,"### Lecture du résultat : environnement Z3 chargé
+
+La sortie affiche `Imports OK : Microsoft.Z3 version Z3 4.12.2.0` (et le panneau « Installed Packages » liste `Microsoft.Z3, 4.12.2`) : le package NuGet est installé et la bibliothèque native enregistrée via `Z3NativeLoader.Register`, donc les cellules suivantes peuvent appeler l'API `ctx.MkString`, `ctx.MkInRe`, etc. sans erreur de chargement natif.",,,,,,,,415a801e873f5d1b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,lecture-z304-chaines,markdown,fr,2db6846ce95e6e3c,"### Lecture du résultat : des termes symboliques, pas encore des valeurs
+
+On lit `Constante : ""hello""`, `Longueur (symbolique) : (str.len ""hello"")`, `Concatenation : foo + bar = (str.++ ""foo"" ""bar"")` et `MkExtract(EPITA-2026, 6, 4) = (str.substr ""EPITA-2026"" 6 4)  (= 2026)` : sur des littéraux, Z3 construit des termes SMT-LIB (`str.len`, `str.++`, `str.substr`) qu'il n'évalue pas encore — c'est `.Simplify()` ou le solveur qui produira la valeur concrète, ici `2026`.",,,,,,,,2db6846ce95e6e3c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,lecture-z304-indexof,markdown,fr,358ce514719fd414,"### Lecture du résultat : recherche, substitution et génération
+
+La sortie donne `IndexOf(EPITA-Symbolic, -, 0) = 5  (= 5)`, `IndexOf(EPITA-Symbolic, XYZ, 0) = -1  (= -1, non trouve)` et `Replace(a-b-c, -, _) = ""a_b-c""` : `.Simplify()` évalue concrètement la position (ou `-1` si absent) et `MkReplace` ne touche que la première occurrence sur ce littéral. Le solveur va plus loin : `Recherche code[L=8, Z3 a l index 3] : SATISFIABLE` avec `code = EDAZ3FHG`, une chaîne de longueur 8 où `Z3` occupe bien l'index 3.",,,,,,,,358ce514719fd414,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,lecture-z304-contraintes,markdown,fr,258f4544fe3c4907,"### Lecture du résultat : une chaîne générée sous quatre contraintes
+
+Le solveur répond `Resolution : SATISFIABLE` et le modèle vaut `txt = HelloAB_CWorld` (`longueur = 14`) : la ligne suivante confirme `prefixe Hello ? True, suffixe World ? True, contient _ ? True`. Z3 a synthétisé une chaîne de 14 caractères satisfaisant simultanément le préfixe, le suffixe, le contenu et la longueur minimale — aucune chaîne candidate n'a été fournie.",,,,,,,,258f4544fe3c4907,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,lecture-z304-regex,markdown,fr,ee24c06cefe0c56b,"### Lecture du résultat : les regex comme objets symboliques
+
+Chaque constructeur affiche un terme SMT-LIB : `MkToRe(abc) = (str.to_re ""abc"")`, `MkRange(a,z) = (re.range ""a"" ""z"")`, `Mots [a-z]+ = (re.+ (re.range ""a"" ""z""))`, `Mots optionnels [a-z]* = (re.* (re.range ""a"" ""z""))` et `Mot+chiffre ([a-z]+[0-9]+) = (re.++ (re.+ (re.range ""a"" ""z"")) (re.+ (re.range ""0"" ""9"")))`. La regex est un objet `ReExpr` composé fonctionnellement, pas une chaîne compilée comme avec `System.Text.RegularExpressions`.",,,,,,,,ee24c06cefe0c56b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,lecture-z304-inre,markdown,fr,b7d00219a9b77608,"### Lecture du résultat : génération de chaînes par motif
+
+Trois verdicts `SATISFIABLE` : `numero = 0000` (longueur 4, motif `[0-9]+`), `email = p@k.h` et `date = 0-2-002224` (longueur 10, motif `AAAA-MM-JJ`). À chaque fois, `MkInRe` contraint l'appartenance au langage de la regex et le solveur en extrait un modèle concret : il synthétise la chaîne au lieu de se contenter de vérifier un candidat.",,,,,,,,b7d00219a9b77608,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,lecture-z304-unsat,markdown,fr,e3aa929641d083b9,"### Lecture du résultat : deux contradictions prouvées
+
+Les deux solveurs répondent `Resultat : UNSATISFIABLE` : quatre chiffres ne tiennent pas dans une longueur imposée de 3, et un préfixe `AB` plus un suffixe `CD` dépassent la longueur 3 (2 + 2 > 3). Z3 le prouve par raisonnement sur les longueurs dérivables des termes, sans énumérer de candidats — c'est la décidabilité de la théorie des chaînes qui garantit ce verdict, jamais `UNKNOWN` ici.",,,,,,,,e3aa929641d083b9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,lecture-z304-mdp,markdown,fr,3661bf96a7dffde5,"### Lecture du résultat : deux stratégies de modélisation
+
+La sortie affiche `  Pppp0ppp` pour la variante par classe (`MkInRe` + `MkRange` sur chaque tranche unitaire `MkExtract(pwd, i, 1)`) et `  XABC7DFE` pour la variante à valeur imposée sur deux indices : les deux politiques tiennent en longueur 8, et le solveur a extrait un exemple concret pour chacune.",,,,,,,,3661bf96a7dffde5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,lecture-z304-extension,markdown,fr,7336607dd0914b21,"### Lecture du résultat : extension extraite du modèle
+
+Le solveur a généré `fichier = a0.py` (`Nom de fichier valide : SATISFIABLE`), puis `IndexOf(.) = 2`, `Extension extraite = .py` et `Nom sans extension = a0` : l'extraction enchaîne `MkIndexOf` (position du point, évaluée via `((IntNum)m.Evaluate(...)).Int64`) et deux `MkExtract` sur le modèle, exactement comme un `str.index` suivi de slicing en Python.",,,,,,,,7336607dd0914b21,,,,,,,,,,,,,,,

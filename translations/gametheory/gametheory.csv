@@ -11585,7 +11585,7 @@ for i, name in enumerate(majority_game.player_names):
     print(f""  {name}: {shapley_majority[i]:.4f}"")
 print(f""\nSomme: {shapley_majority.sum():.4f} (= v(N) = {majority_game.grand_coalition_value()})"")
 print(""\n→ Tous les joueurs sont symétriques, donc valeurs égales (1/3 chacun)"")",,,,,,,,de88665e313d0360,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,5a949e84,markdown,fr,ade965409f22a927,"La valeur de Shapley égale pour les trois joueurs (1/3 chacun) reflète leur **symétrie parfaite** dans le jeu de majorité : chacun est également pivot dans les mêmes situations.
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,5a949e84,markdown,fr,2e32c90392827ee1,"La valeur de Shapley égale pour les trois joueurs (1/3 chacun) reflète leur **symétrie parfaite** dans le jeu de majorité : chacun est également pivot dans les mêmes situations.
 
 Voyons maintenant ce qui se passe avec le jeu de vote pondéré, où les joueurs ne sont plus symétriques.
 
@@ -11595,17 +11595,17 @@ Pour le jeu de majorite a 3 joueurs symetriques, on peut enumerer les 3! = 6 ord
 
 | Ordre | Joueur 1 entre | ... | Joueur 3 entre | Cont. marginales |
 |-------|----------------|-----|-----------------|------------------|
-| 1,2,3 | 0 (coalition vide -> {1} ne gagne pas) | 0 | 1 ({1,2} -> {1,2,3} ajoute le gain 1) | (0,0,1) |
-| 1,3,2 | 0 | 1 ({1} -> {1,3} ajoute le gain 1) | 0 | (0,1,0) |
-| 2,1,3 | 0 | 0 | 1 ({2,1} -> {2,1,3} ajoute le gain 1) | (0,0,1) |
-| 2,3,1 | 0 | 1 ({2} -> {2,3} ajoute le gain 1) | 0 | (0,1,0) |
-| 3,1,2 | 0 | 0 | 1 ({3,1} -> {3,1,2}) | (0,0,1) |
-| 3,2,1 | 0 | 1 ({3} -> {3,2}) | 0 | (0,1,0) |
+| 1,2,3 | 0 | **1** (pivot : {1} -> {1,2} franchit la majorite) | 0 | (0,1,0) |
+| 1,3,2 | 0 | 0 | **1** (pivot : {1} -> {1,3} franchit la majorite) | (0,0,1) |
+| 2,1,3 | **1** (pivot : {2} -> {1,2} franchit la majorite) | 0 | 0 | (1,0,0) |
+| 2,3,1 | 0 | 0 | **1** (pivot : {2} -> {2,3} franchit la majorite) | (0,0,1) |
+| 3,1,2 | **1** (pivot : {3} -> {1,3} franchit la majorite) | 0 | 0 | (1,0,0) |
+| 3,2,1 | 0 | **1** (pivot : {3} -> {2,3} franchit la majorite) | 0 | (0,1,0) |
 
-**Moyenne** : joueur 1 = 0/6, joueur 2 = 3/6, joueur 3 = 3/6 ? Non, c'est incorrect. Refaisons : sur 6 ordres, chaque joueur est pivot 2 fois (la 3e position dans les ordres ou 2 memes joueurs le precedent). Moyenne = 2/6 = **1/3**. C'est la symetrie attendue.
+**Moyenne** : sur les 6 ordres, chaque joueur se place en 2e position (le slot du pivot) exactement 2 fois — joueur 1 dans (2,1,3) et (3,1,2), joueur 2 dans (1,2,3) et (3,2,1), joueur 3 dans (1,3,2) et (2,3,1). Moyenne = 2/6 = **1/3** chacun. C'est la symetrie attendue.
 
 **Lecon** : la formule de Shapley pondere chaque ordre egalement (1/n! pour n joueurs). La symetrie du jeu implique que chaque joueur est pivot dans le meme nombre d'ordres. C'est la manifestation concrete de l'axiome de symetrie.
-",,,,,,,,ade965409f22a927,,,,,,,,,,,,,,,
+",,,,,,,,2e32c90392827ee1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,8f5614fd,code,fr,57c9cdb8b8ab5839,"# Calcul de Shapley pour le jeu de vote pondéré
 shapley_board = shapley_value_exact(board_game)
 
@@ -49611,17 +49611,17 @@ pd.DataFrame(
     },
     index=board_game.player_names,
 )",,,,,,,,4c8ea9236da01c73,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,05d3d9da,markdown,fr,c1bfe659673baf2e,"### Lecture des contributions marginales (visualisation)
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,05d3d9da,markdown,fr,8e70dedd9a1424e0,"### Lecture des contributions marginales (visualisation)
 
 La visualisation matplotlib montre un exemple concret : pour le jeu de majorite a 3 joueurs, les contributions marginales dependent de l'ordre d'arrivee mais **toutes les positions ne sont pas equiprobables** en termes de Shapley. La moyenne sur les 6 ordres donne (1/3, 1/3, 1/3).
 
 **Interpretation pedagogique** : chaque barre verticale represente la contribution marginale d'un joueur dans un ordre d'arrivee particulier. Pour le jeu de majorite symetrique, on observe que :
 - Le 1er joueur (qui arrive quand la coalition est vide) contribue **toujours 0** (la coalition vide gagne 0, ajouter un joueur seul ne suffit pas).
-- Le 3e joueur (qui arrive quand la coalition contient deja 2 joueurs) contribue **toujours 1** (passer de 2 a 3 joueurs ne change pas le gain car la majorite est deja atteinte).
+- Le 3e joueur (qui arrive quand la coalition contient deja 2 joueurs) contribue **toujours 0** (passer de 2 a 3 joueurs ne change pas le gain car la majorite est deja atteinte).
 - Le 2e joueur est **pivot** : ajouter le 2e joueur a la coalition singleton fait passer de 0 a 1 -- c'est le saut critique.
 
 **Conclusion** : sur les 6 ordres, chaque joueur est pivot 2 fois (= 1/3 des cas). C'est la symetrie en action.
-",,,,,,,,c1bfe659673baf2e,,,,,,,,,,,,,,,
+",,,,,,,,8e70dedd9a1424e0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb,ca2199af,code,fr,d21caec746ec041d,"# Comparaison exact vs Monte Carlo
 # Jeu plus grand : 8 actionnaires
 shareholder_weights = [25, 20, 15, 12, 10, 8, 6, 4]  # Parts en %

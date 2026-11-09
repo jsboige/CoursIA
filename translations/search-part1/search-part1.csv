@@ -34639,7 +34639,7 @@ dans les deux cas : c'est la composition **sur les triples** qui tranche, et c'e
 précisément ce que personne n'écrit.
 
 **Navigation** : [<< Search-03e — optimalité de A\*](Search-03e-AStar-Optimality.ipynb) | [Index](README.md) | [retour au parent Search-03 (A\*) ↑](Search-03-Informed.ipynb)",,,,,,,,9cfb1a6ccfa380a2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05b-NaturalEvolutionStrategies.ipynb,dc958fcc,markdown,fr,3d398e51f3f4d454,"# Search-05b : Natural Evolution Strategies (NES)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05b-NaturalEvolutionStrategies.ipynb,dc958fcc,markdown,fr,4c5ae2d63a30bac0,"# Search-05b : Natural Evolution Strategies (NES)
 
 **Navigation** : [<< Search-5 Algorithmes génétiques](Search-05-GeneticAlgorithms.ipynb) | [Index](../README.md) | [CSP-1 Fundamentals >>](../Part2-CSP/CSP-1-Fundamentals.ipynb)
 
@@ -34662,7 +34662,7 @@ Copie lue intégralement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearnin
 - Search-5 (algorithmes génétiques) et Search-4 (recherche locale).
 - Python 3.10+, numpy, scipy, matplotlib, et la bibliothèque `cma` (référence CMA-ES de N. Hansen, `pip install cma`).
 
-### Durée estimée : 50 minutes",,,,,,,,3d398e51f3f4d454,,,,,,,,,,,,,,,
+### Durée estimée : 50 minutes",,,,,,,,4c5ae2d63a30bac0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05b-NaturalEvolutionStrategies.ipynb,f86bacb8,markdown,fr,365fa980769dfd37,"## 1. Mise en place
 
 Tout le carnet tourne sur CPU. Les graines utilisées pour les comparaisons sont `{0, 1, 7, 42}`, et chaque comparaison rapporte la médiane, le minimum et le maximum sur ces quatre tirages.",,,,,,,,365fa980769dfd37,,,,,,,,,,,,,,,

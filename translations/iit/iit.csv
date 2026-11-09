@@ -30855,7 +30855,7 @@ Le mode factored-geometry etudie l'**organisation geometrique** des facteurs ; i
 - #15478 (issue grain) ; Part of #15475 (Epic toolkit multi-instrument) ; Depends on #15476 (contrat de trace v1) ; complements #15477 (F-Lens belief-state).
 ",,,,,,,,b374f2393d2da4bd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,4e2c7895,markdown,fr,f11202ebb4f5ccec,"## Sources et substance (reventilation c.1119)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,4e2c7895,markdown,fr,af5cff1a85e7f1be,"## Sources et substance
 
 **Papier fondateur** : Shai et al., *Transformers Learn Factored Representations* ([arXiv:2602.02385](https://arxiv.org/abs/2602.02385)). PDF en biblio canonique : `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\Interpretability, Evaluation and Reproducibility\2026 - Shai et al - Transformers Learn Factored Representations.pdf`.
 
@@ -30867,7 +30867,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,4e2c
 **Référençage ICt-37 sibling** : ICT-37 (mode belief-state, PR #15662) traite l'autre moitié du papier — la **décodabilité linéaire** du belief state. Le présent ICT-36 traite la **factorisation géométrique** des sous-espaces. Les deux notebooks sont complémentaires et **non interchangeables** : voir la cellule « Distinction belief vs factorisation » plus bas.
 
 **Pas de licence détectée** sur les deux dépôts Astera (cf. preflight Epic #15475) : la substance LIVRÉE est donc une **réimplémentation from-scratch** des méthodes publiées, sans copie de code. Le test `H.1 — Pondération et centrage explicites et testés` honore cette contrainte.
-",,,,,,,,f11202ebb4f5ccec,,,,,,,,,,,,,,,
+",,,,,,,,af5cff1a85e7f1be,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,f8d07025,code,fr,327b494f46539dc0,"# Parametres du notebook
 nb_name = ""ICT-36-FLens-FactoredGeometry-Python""
 N_SEEDS = 5  # multi-seed : au moins 4 seeds requis (cf .claude/rules/pr-review-discipline.md, critere C)
@@ -31121,12 +31121,14 @@ for noise_var, per_seed in results_noise_sweep.items():
               f""{r['max_pair_overlap']:>7.4f} {r['null_q95_overlap']:>7.4f} ""
               f""{'YES' if r['separates_from_null'] else 'no':>5}"")
 ",,,,,,,,9dc85d58662ecc17,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,6aa7226d,code,fr,fa5e05e2ece5464a,"# Protocole freeze-and-vary : on gele UN facteur et on varie l'AUTRE
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,6aa7226d,code,fr,6a650685cc9952b5,"# Protocole freeze-and-vary : on gele UN facteur et on varie l'AUTRE
 # (cle d'isolement de la contribution factorielle, cf. arXiv:2602.02385)
 # Implementation : pour chaque seed, on genere 2 bases orthogonales via
 # make_factor_bases(2, 16) ; on gele bases[0] et on regenere bases[1] a chaque
-# realisation. NC@p sur les activations devrait refleter 2 dimensions dominantes
-# stables (gele) + une sensibilite au facteur varie.
+# realisation. NC@p sur les activations ne peut pas approcher le NOMBRE de
+# facteurs (2) : chaque facteur porte dim_per_factor = 8 dimensions ; la
+# lecture se fait entre la dimension du sous-espace gele (8, plancher) et la
+# dimension ambiante (16), l'excedent captant l'etalement du facteur varie.
 # NB : on ne boucle PAS sur n_factors en externe -- la complexite du protocole
 # est dans la variation du second facteur, pas dans le nombre de facteurs.
 
@@ -31167,8 +31169,8 @@ print(""=== Freeze-and-vary : stabilite du sous-espace gele + sensibilite au var
 print(f""  frozen NC@95 = {freeze_vary_results['frozen_nc95_mean']:.3f} +/- {freeze_vary_results['frozen_nc95_std']:.3f}"")
 print(f""  varied sensitivity (ecart-type inter-realisations) = {freeze_vary_results['varied_sensitivity_mean']:.3f}"")
 print()
-print(""Verdict attendu : frozen NC@95 doit etre proche du nombre de facteurs dominants (2 ici, gele + varie) ; varied sensitivity reflete la variabilite du facteur varie."")
-",,,,,,,,fa5e05e2ece5464a,,,,,,,,,,,,,,,
+print(""Verdict attendu : NC@95 n'approche pas le NOMBRE de facteurs (2) -- chaque facteur porte dim_per_factor = 8 dimensions ; la lecture se fait entre la dimension du sous-espace gele (8, plancher structurel) et la dimension ambiante (16) : l'excedent capte l'etalement du facteur varie et le bruit. Varied sensitivity reflete la variabilite inter-realisations du facteur varie."")
+",,,,,,,,6a650685cc9952b5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,3a5fca3a,markdown,fr,c84065b084a20dd0,"## Verdict multi-seed et hypothese falsifiable
 
 Les hypotheses du grain #15478 — H1 a H3 a la livraison initiale (#15514), H4 ajoutee
