@@ -7,6 +7,8 @@
 >
 > Part of #12933. Périmètre : familles **sans fichier d'inventaire** — Search (Part1/Part2/Part3), Sudoku, GameTheory (racine + SocialChoice), SemanticWeb, Planners = **109 paires**. Probas Infer⇄PyMC et DecisionTheory ont leurs inventaires propres (§7).
 
+> **Actualisation** : la paire Safe Subgame Solving est désormais enregistrée et ses deux variantes portent `13b`. Le tableau ci-dessous conserve la mesure historique.
+
 ## 1. Table de verdicts par famille
 
 Vocabulaire aligné sur l'EPIC : `alignée` (même numéro complet et titre base, seuls les suffixes kernels varient) · `compagnon-b` (la seule différence d'identifiant est un `b`/`c` porté par un seul côté — forme documentée légitime par `_schema.yaml` `numbering_exception`, mais **décalée au sens strict de la doctrine**) · `décalée-numéro` (numéros divergents autrement) · `décalée-titre` (même numéro, titres base différents) · `extension unilatérale` (célibataires, §4). `fausse paire` : aucune détectée dans le périmètre.
@@ -69,7 +71,7 @@ Paires alignées enregistrées : `02-NormalForm` (+ `02-NormalForm-Part2`, Part2
 | Paire | Verdict | Registre |
 |---|---|---|
 | `GameTheory-06f-Bounded-Agents-Python` ↔ `…-Lean` | alignée (suffixes Python/Lean) | **sans entrée** (grep NONE, re-vérifié) |
-| `GameTheory-13b-Safe-Subgame-Solving-Python` ↔ `GameTheory-13b-Safe-Subgame-Solving-CSharp` | **décalée-numéro** (13b↔13c, même titre base, lettres d'accrétion différentes de part et d'autre — même forme que `App-12b`↔`App-12c`) | **sans entrée** (grep NONE des deux côtés, re-vérifié) |
+| `GameTheory-13b-Safe-Subgame-Solving-Python` ↔ `GameTheory-13c-Safe-Subgame-Solving-CSharp` | **décalée-numéro** (13b↔13c, même titre base, lettres d'accrétion différentes de part et d'autre — même forme que `App-12b`↔`App-12c`) | **sans entrée** (grep NONE des deux côtés, re-vérifié) |
 | `GameTheory-16f-Lean-Assignment-Lean` ↔ `GameTheory-16f-Munkres-Assignment-Python` | **décalée-titre** (même 16f, titres Lean-Assignment vs Munkres-Assignment) | **sans entrée** (grep NONE, re-vérifié) |
 
 Cas limite documenté : la quasi-paire `13b`↔`13c` ci-dessus — **deux célibataires de même titre base** dont les lettres d'accrétion diffèrent (`13b` côté Python, `13c` côté CSharp ; il n'existe ni `13c-Python` ni `13b-CSharp` dans l'arbre, mesuré). L'inventaire la mesure comme décalée-numéro ; la promouvoir en paire alignée (par renommage d'un côté) est une décision de mapping qui revient à l'EPIC (§6), l'inventaire ne la préjuge pas.
@@ -109,7 +111,7 @@ Convention locale : suffixe kernel en **position médiane** (`SW-N-CSharp-X` / `
 ## 3. Trous du registre — paires réelles sans entrée `twin_pairs.d` (grep NONE re-vérifié par la lane)
 
 1. `GameTheory-06f-Bounded-Agents` (Python ↔ Lean) — paire alignée, invisible à la garde NUMBERING-DRIFT.
-2. `GameTheory-13b-Safe-Subgame-Solving-Python` ↔ `GameTheory-13b-Safe-Subgame-Solving-CSharp` — quasi-paire décalée-numéro (même titre, lettres 13b/13c), invisible à la garde.
+2. `GameTheory-13b-Safe-Subgame-Solving-Python` ↔ `GameTheory-13c-Safe-Subgame-Solving-CSharp` — quasi-paire décalée-numéro (même titre, lettres 13b/13c), invisible à la garde.
 3. `GameTheory-16f` (Lean-Assignment ↔ Munkres-Assignment) — quasi-paire même numéro, décalée-titre, invisible.
 4. `App-17b-VRP-Logistics-Python.ipynb` et `App-18b-HyperparameterTuning-Python.ipynb` — membres Python de trios Part3 présents dans l'arbre, absents de toute entrée (les entrées `app-17`/`app-18` n'enregistrent que la paire Python-base ↔ CSharp-compagnon).
 
