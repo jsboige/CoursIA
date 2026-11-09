@@ -9,7 +9,7 @@
 - `python scripts/lean/check_mathlib_cache.py`
 
 Voir aussi :
-- `docs/lean/cluster-junctions-c857.md` (#14296, c.857 — **V1 po-2024, worktree frais**)
+- `../transients/2026-09-02-cluster-junctions-c857.md` (#14296, c.857 — **V1 po-2024, worktree frais**)
 - `docs/lean/junctions-scan-po-2027.md` (#15507/#15577 — tableau multi-machine)
 - `docs/lean/junctions-scan-po-2026.md` (#14038, po-2026, 0 GB)
 - #15070 (po-2023, 0.64 GB) · #13962 (issue parente)
@@ -254,5 +254,5 @@ Lakes: 32 | mathlib ok: 0 | froid: 22 | partiel: 0 | non installe: 7 | caches ph
 - Issue #15959 — points de veille de la revue #15938 : datation des 4 poses hors-`Apply` (§2) + inventaire exhaustif des sites de suppression du script (§3)
 - `scripts/lean/setup_shared_mathlib.ps1` — instrument Scan/Apply/Rollback (`Invoke-Scan` l.152-189, `Invoke-Apply` l.221+)
 - `scripts/lean/check_mathlib_cache.py` — organe de mesure du cache traversant les jonctions (#8801)
-- `docs/lean/cluster-junctions-c857.md` — V1 po-2024 (#14296, worktree frais)
+- `../transients/2026-09-02-cluster-junctions-c857.md` — V1 po-2024 (#14296, worktree frais)
 - `docs/lean/junctions-scan-po-2027.md` — tableau multi-machine (ligne po-2024 corrigée par cette PR)
