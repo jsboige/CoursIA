@@ -22,10 +22,13 @@ Ce que fait l'organe, dans cet ordre
 2. resout les lakes touches par le diff (manifeste `scripts/lean/ci_lakes.json`,
    dispatcher `lake_matrix_dispatch.py`) ;
 3. cree un **worktree detache** a la tete de la PR ;
-4. pour chaque lake : verifie que `lean-toolchain` et `lake-manifest.json`
-   sont identiques a ceux du cache chaud, puis **jonctionne** `.lake/packages`
-   sur le cache (le cache est deja chaud : un `lake exe cache get` borne a
-   60 s suffirait a le remplacer, cf. incident 2026-07-24/29) ;
+4. pour chaque lake : verifie que `lean-toolchain` est identique a celui du
+   cache chaud et que `lake-manifest.json` decrit le **meme graphe** de
+   dependances (comparaison par graphe depuis #25370 : le `name` racine et
+   les `inputRev` ne decrivent pas le graphe), puis **jonctionne**
+   `.lake/packages` sur le cache (le cache est deja chaud : un
+   `lake exe cache get` borne a 60 s suffirait a le remplacer, cf. incident
+   2026-07-24/29) ;
 5. lance `lake build` via `scripts/lean/lean_exec.py` -- l'organe de build
    borne (admission machine-wide, Job Object kill-on-close, budget, controle
    d'orphelins). L'organe **ne reimplementait** pas la discipline de build ;
@@ -196,6 +199,149 @@ def _same_file(a: Path, b: Path) -> bool:
     return left.strip() == right.strip()
 
 
+# --------------------------------------------------------------------------
+# #25370 -- le cache chaud se juge PAR GRAPHE, pas octet pour octet.
+#
+# Deux manifestes de lakes differents decrivent le meme graphe de
+# dependances alors que le fichier differe sur deux champs qui ne le
+# decrivent pas :
+#
+# - le `name` racine : il differe PAR CONSTRUCTION d'un lake a l'autre
+#   (`"conway"` contre `"decision_theory_lean"`) ;
+# - l'`inputRev` d'un paquet : c'est la revision DEMANDEE (le tag
+#   `v4.33.0`), pas le commit resolu (`rev`). Deux lakes qui demandent le
+#   tag et le SHA qui le resout decrivent le meme graphe.
+#
+# Comparer le fichier octet pour octet rendait donc le cache chaud
+# inapplicable a tout lake hors du pivot, et bloquait toute PR `.lean`
+# qui ne touche pas le pivot (#24894, #25262, #25359).
+# --------------------------------------------------------------------------
+
+#: Champs du manifeste qui decrivent le graphe lui-meme.
+_MANIFEST_GRAPH_FIELDS = ("version", "packagesDir")
+
+#: Champs d'un paquet qui decrivent le graphe lui-meme. `inputRev` en est
+#: volontairement exclu : c'est la revision demandee, pas le commit resolu.
+_MANIFEST_PACKAGE_FIELDS = ("url", "rev", "subDir")
+
+
+def _read_manifest(path: Path) -> dict | None:
+    """Lit un `lake-manifest.json` ; `None` s'il est absent ou illisible.
+
+    `None` n'est jamais un accord : l'appelant doit refuser (fail-closed).
+    """
+    raw = _read_if_present(path)
+    if raw is None:
+        return None
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _manifest_packages(manifest: dict) -> dict[str, dict]:
+    """Les paquets d'un manifeste, indexes par nom.
+
+    Une entree malformee (pas un objet, sans nom) est ignoree : elle ne
+    decrit aucun paquet identifiable, et le refus doit nommer un paquet.
+    """
+    packages = manifest.get("packages")
+    if not isinstance(packages, list):
+        return {}
+    out: dict[str, dict] = {}
+    for entry in packages:
+        if not isinstance(entry, dict):
+            continue
+        name = str(entry.get("name") or "")
+        if name:
+            out[name] = entry
+    return out
+
+
+def manifest_graph_difference(mine: dict, theirs: dict) -> str | None:
+    """Raison du refus, ou `None` quand les deux manifestes decrivent le
+    meme graphe de dependances.
+
+    Compare `version`, `packagesDir`, puis l'ensemble des paquets par
+    `(name, url, rev, subDir)`. Le `name` racine et les `inputRev` sont
+    ignores : ils ne decrivent pas le graphe (cf. le commentaire de bloc
+    ci-dessus). Le refus nomme le paquet et les deux valeurs divergentes.
+    """
+    for field in _MANIFEST_GRAPH_FIELDS:
+        left = str(mine.get(field) or "")
+        right = str(theirs.get(field) or "")
+        if left != right:
+            return "{} different -- lake={!r}, cache={!r}".format(field, left, right)
+    mine_packages = _manifest_packages(mine)
+    cache_packages = _manifest_packages(theirs)
+    absent = sorted(set(mine_packages) - set(cache_packages))
+    if absent:
+        return "paquet(s) absent(s) du cache chaud : {}".format(", ".join(absent))
+    surplus = sorted(set(cache_packages) - set(mine_packages))
+    if surplus:
+        return "paquet(s) present(s) dans le cache chaud et absent(s) du lake : {}".format(
+            ", ".join(surplus)
+        )
+    for name in sorted(mine_packages):
+        left = mine_packages[name]
+        right = cache_packages[name]
+        for field in _MANIFEST_PACKAGE_FIELDS:
+            left_value = str(left.get(field) or "")
+            right_value = str(right.get(field) or "")
+            if left_value != right_value:
+                return "paquet {} : {} different -- lake={!r}, cache={!r}".format(
+                    name, field, left_value, right_value
+                )
+    return None
+
+
+def check_cache_compatibility(lake_dir: Path, cache_root: Path) -> dict:
+    """Le cache chaud s'applique-t-il a ce lake ? Verdict, SANS mutation.
+
+    Aucun fichier n'est touche ici : la jonction est posee par
+    `prepare_lake`, apres ce verdict. Ce decoupage permet au mode
+    `--dry-run` de rendre le verdict de cache sans construire ni
+    modifier quoi que ce soit.
+    """
+    for name in ("lean-toolchain", "lake-manifest.json"):
+        if not (lake_dir / name).is_file():
+            return {"ok": False, "reason": "{} absent du lake".format(name)}
+        if not (cache_root / name).is_file():
+            return {"ok": False, "reason": "{} absent du cache".format(name)}
+
+    # `lean-toolchain` : comparaison au CONTENU. La toolchain est le
+    # contenu du build ; elle doit etre la meme, au caractere pres.
+    if not _same_file(lake_dir / "lean-toolchain", cache_root / "lean-toolchain"):
+        return {
+            "ok": False,
+            "reason": "lean-toolchain different du cache -- cache chaud non applicable",
+        }
+
+    # `lake-manifest.json` : comparaison PAR GRAPHE (#25370).
+    mine = _read_manifest(lake_dir / "lake-manifest.json")
+    if mine is None:
+        return {
+            "ok": False,
+            "reason": "lake-manifest.json illisible (JSON invalide) -- cache chaud non applicable",
+        }
+    theirs = _read_manifest(cache_root / "lake-manifest.json")
+    if theirs is None:
+        return {
+            "ok": False,
+            "reason": "lake-manifest.json du cache illisible (JSON invalide)",
+        }
+    difference = manifest_graph_difference(mine, theirs)
+    if difference is not None:
+        return {
+            "ok": False,
+            "reason": "lake-manifest.json different du cache -- {} -- "
+            "cache chaud non applicable".format(difference),
+        }
+
+    return {"ok": True, "checks": ["lean-toolchain", "lake-manifest.json"]}
+
+
 def _is_junction(path: Path) -> bool:
     """Vrai si `path` est une jonction/reparse point NTFS."""
     try:
@@ -247,25 +393,17 @@ def _remove_junction(link: Path) -> None:
 def prepare_lake(lake_dir: Path, cache_root: Path) -> dict:
     """Prepare le cache chaud d'un lake : verifie l'outillage, junctionne.
 
-    Refuse (fail-closed) si `lean-toolchain` ou `lake-manifest.json` differe
-    du cache : le cache chaud ne vaut que pour la meme toolchain et le meme
-    graphe de dependances (cf. `setup_shared_mathlib.ps1` : le build a
-    travers la junction est un pur replay a cette condition).
+    Refuse (fail-closed) si la toolchain differe du cache, ou si le
+    manifeste decrit un graphe de dependances different : le cache chaud ne
+    vaut que pour la meme toolchain et le meme graphe (cf.
+    `setup_shared_mathlib.ps1` : le build a travers la junction est un pur
+    replay a cette condition). Le manifeste est compare PAR GRAPHE depuis
+    #25370 -- le `name` racine et les `inputRev` ne decrivent pas le graphe.
     """
-    checks: list[str] = []
-    for name in ("lean-toolchain", "lake-manifest.json"):
-        mine = lake_dir / name
-        theirs = cache_root / name
-        if not mine.is_file():
-            return {"ok": False, "reason": "{} absent du lake".format(name)}
-        if not theirs.is_file():
-            return {"ok": False, "reason": "{} absent du cache".format(name)}
-        if not _same_file(mine, theirs):
-            return {
-                "ok": False,
-                "reason": "{} different du cache -- cache chaud non applicable".format(name),
-            }
-        checks.append(name)
+    verdict = check_cache_compatibility(lake_dir, cache_root)
+    if not verdict["ok"]:
+        return verdict
+    checks = verdict["checks"]
 
     packages = lake_dir / ".lake" / "packages"
     if packages.exists() or os.path.lexists(str(packages)):
@@ -472,6 +610,24 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool) -> dict:
         )
     if dry_run:
         result["dry_run"] = True
+        # Le dry-run rend le verdict de cache SANS construire ni modifier
+        # quoi que ce soit : c'est ce qui prouve, avant meme le build, que
+        # le cache chaud s'applique a ce lake (ou nomme le paquet fautif).
+        # Il lit les lakes du CHECKPOINT COURANT, pas de la tete de la PR :
+        # un diff `.lean` ne change ni la toolchain ni le manifeste.
+        result["cache_check"] = []
+        for lake in lakes:
+            verdict = check_cache_compatibility(
+                REPO_ROOT / lake["project-path"], CACHE_PIVOT
+            )
+            result["cache_check"].append(
+                {
+                    "lake": lake["lake"],
+                    "ok": bool(verdict.get("ok")),
+                    "reason": verdict.get("reason", ""),
+                    "checks": verdict.get("checks", []),
+                }
+            )
         return result
 
     worktree = Path(
