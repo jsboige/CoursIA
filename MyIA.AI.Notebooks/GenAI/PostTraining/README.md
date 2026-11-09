@@ -2,6 +2,13 @@
 
 [↑ GenAI](../README.md) · [FineTuning](../FineTuning/README.md)
 
+<!-- CATALOG-STATUS
+series: GenAI-PostTraining
+pedagogical_count: 23
+breakdown: PostTraining=23
+maturity: BETA=16, ALPHA=6, DRAFT=1
+-->
+
 Comment adapter un modèle de langage préentraîné à une tâche, et comment savoir si cette adaptation l'améliore ? Ce parcours relie supervision, optimisation de préférences, apprentissage par récompense et vérification. Les expériences à petite échelle rendent les mécanismes inspectables ; les carnets sur modèles de langage montrent leurs conditions d'exécution et les difficultés d'évaluation.
 
 Le point d'entrée suppose Python, les bases de PyTorch, la rétropropagation et l’entropie croisée. Le [parcours FineTuning](../FineTuning/) apporte une entrée pratique complémentaire. Ici, l'accent porte sur le signal d'apprentissage, les avantages utilisés pour mettre à jour une politique et les preuves nécessaires avant d'annoncer un gain.
@@ -139,10 +146,3 @@ Les sources des paliers avancés complètent les références du début du parco
 La série modern-llm de JohnEnev offre un retour d’expérience externe : [préentraînement](https://johne.substack.com/p/modern-llm-part-1-building-a-350m-transformer-from), [architecture](https://johne.substack.com/p/modern-llm-part-2-modernizing-the-architecture), [SFT et GRPO](https://johne.substack.com/p/modern-llm-part-3-post-training-sft-and-grpo), [inférence et service](https://johne.substack.com/p/modern-llm-part-4-v3-inference-and-serving-models). Lire ses coûts et performances dans leur protocole propre.
 
 [Retour à GenAI](../README.md) · [Catalogue du dépôt](../../../COURSE_CATALOG.generated.md) · [Licence](../../../LICENSE)
-
-<!-- CATALOG-STATUS
-series: GenAI-PostTraining
-pedagogical_count: 23
-breakdown: PostTraining=23
-maturity: BETA=16, ALPHA=6, DRAFT=1
--->
