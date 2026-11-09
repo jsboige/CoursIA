@@ -894,14 +894,176 @@ def test_belt_main_injects_the_real_snapshot_prime(monkeypatch, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["mode"] == "belt"
     assert primed, "main n'a pas branche le rafraichissement d'instantane"
-    # #22983 -- UNE seule passe. La fenetre de claims est un sous-ensemble
-    # de la fenetre de service : le repli qui rafraichissait la fenetre de
-    # claims NE DOIT PAS partir quand le premier rafraichissement a deja
-    # servi la fenetre. Le spy installe l'instantane que le vrai
-    # rafraichissement aurait ecrit -- sans quoi il simulerait un
-    # rafraichissement rate, et le repli partirait legitimement.
+    # #22983 -- UNE seule passe QUAND LA FENETRE EST COUVERTE. Sur un pool
+    # a une seule tete, les tris post-priming (settle, repondersion) ne
+    # font entrer AUCUN numero en fenetre : le delta de re-prime est vide
+    # et la seconde passe NE DOIT PAS partir. Le spy installe l'instantane
+    # que le vrai rafraichissement aurait ecrit -- sans quoi il simulerait
+    # un rafraichissement rate, et le repli partirait legitimement.
     assert primed == [[19101]], (
         f"une seule passe, sur les candidats tires (got {primed})")
+
+
+def test_belt_reprime_claims_delta_primes_only_the_entrants(monkeypatch):
+    """#22983 -- les numeros ENTRES en fenetre par les tris sont re-primes.
+
+    Mesure du 08/11 : le pool est re-trie EN PLACE entre le priming et la
+    lecture de la fenetre de claims (settle_belt_head, puis
+    apply_belt_weights) ; 56 des 70 numeros de la fenetre finale n'etaient
+    pas dans la fenetre primee, et STRICT refusait des numeros jamais
+    rafraichis -- fail-CLOSED total, 0 grain servi, sans aucun echec de
+    lecture. Le re-prime ne doit cibler QUE les entrants (les communs sont
+    deja frais), et les declarer primés pour la garde de la boucle.
+    """
+    monkeypatch.setattr(pig, "_BELT_PRIMED_WINDOW", {1, 2, 3})
+    seen: list[list[int]] = []
+    monkeypatch.setattr(
+        pig, "_belt_snapshot_prime",
+        lambda repo, numbers, seed=None: seen.append(list(numbers)))
+    # 9 et 7 entrent en fenetre par le tri ; 2 et 3 etaient deja primes ;
+    # 1 est sorti de la fenetre -- il ne doit PAS etre re-lu.
+    pig._belt_reprime_claims_delta([9, 2, 7, 3])
+    assert seen == [[9, 7]], (
+        f"seuls les entrants sont re-primes (got {seen})")
+    assert pig._BELT_PRIMED_WINDOW == {1, 2, 3, 7, 9}, (
+        "la garde de la boucle (`wanted subset _BELT_PRIMED_WINDOW`) doit "
+        f"voir les entrants declares primés (got {sorted(pig._BELT_PRIMED_WINDOW)})")
+
+
+def test_belt_reprime_claims_delta_noop_when_covered(monkeypatch):
+    """#22983 -- fenetre couverte : aucune seconde passe.
+
+    C'est le contrat « UNE seule passe » du temoin main : quand les tris
+    post-priming ne font entrer aucun numero (fenetre stable, pool a tete
+    unique), le delta est vide et le re-prime ne doit RIEN faire -- ni
+    appel, ni evenement de phase.
+    """
+    monkeypatch.setattr(pig, "_BELT_PRIMED_WINDOW", {11, 12})
+    seen: list[list[int]] = []
+    monkeypatch.setattr(
+        pig, "_belt_snapshot_prime",
+        lambda repo, numbers, seed=None: seen.append(list(numbers)))
+    pig._belt_reprime_claims_delta([12, 11])
+    assert seen == [], (
+        f"aucune seconde passe quand la fenetre est couverte (got {seen})")
+    assert pig._BELT_PRIMED_WINDOW == {11, 12}
+
+
+def test_belt_reprime_claims_delta_seeds_from_memory(monkeypatch):
+    """#22983 -- la re-prime part de l'instantane MEMOIRE, pas du disque.
+
+    Cas pathologique nomme en rectification (08/11) : le priming initial
+    a subi un lock-timeout -> ses lectures fraiches ne vivent qu'en
+    memoire (`_BELT_SNAPSHOT`). Un second appel qui rechargerait le
+    disque les perdrait, et STRICT retrouverait un refus fail-CLOSED
+    que la re-prime etait censee clore. Le helper doit SEED le prime
+    avec l'etat memoire -- et passer None quand il n'y en a pas.
+    """
+    seeds: list = []
+    monkeypatch.setattr(pig, "_BELT_PRIMED_WINDOW", {1})
+    monkeypatch.setattr(
+        pig, "_belt_snapshot_prime",
+        lambda repo, numbers, seed=None: seeds.append(seed))
+    mem = {"meta": {"comment_stamps": {"1": "2026-11-08T20:00:00Z"}}}
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", mem)
+    pig._belt_reprime_claims_delta([7, 1])
+    assert seeds == [mem], (
+        f"la re-prime doit partir de l'instantane memoire du priming "
+        f"precedent (got {seeds})")
+    # Sans etat memoire (premier appel totalement echoue) : seed None,
+    # le prime repart du disque comme avant.
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", None)
+    monkeypatch.setattr(pig, "_BELT_PRIMED_WINDOW", {1})
+    pig._belt_reprime_claims_delta([7, 1])
+    assert seeds == [mem, None], (
+        f"sans instantane memoire, le seed doit etre None (got {seeds})")
+
+
+def test_belt_reprime_seed_survives_merge_when_lock_obtained(monkeypatch):
+    """#22983 (review e468eec) -- le seed SURVIT a la fusion sous verrou.
+
+    Sous-cas le plus probable du bord memoire : premier priming en
+    lock-timeout (lectures fraiches en memoire seulement), puis re-prime
+    qui OBTIENT le verrou -- celui de l'autre lane se liberant quelques
+    secondes plus tard. `merge_snapshots` ne prend de `fresh` que les
+    numeros qu'on lui nomme : fusionner sur le seul delta laisserait le
+    disque relu ecraser l'entree fraiche du premier appel, dans
+    `_BELT_SNAPSHOT` comme dans l'ecriture disque. La fusion doit porter
+    sur l'UNION (delta + numeros frais du seed).
+
+    Temoin au plus proche du reel : le VRAI `_belt_snapshot_prime` (garde
+    pytest retiree) et la VRAIE `merge_snapshots` du module d'instantane ;
+    seuls `load_snapshot`, `ensure_comments`, `snapshot_lock` et
+    `save_snapshot` sont simules.
+    """
+    class _Timeout(Exception):
+        pass
+
+    real = pig._gh_snapshot_module()  # avant le patch : module reel
+    seed = {
+        "meta": {"comment_stamps": {"1": 200}},
+        "comments": {"1": ["fresh"]},
+        "issues": {"1": {"titre": "fenetre du premier appel"}},
+    }
+    disk = {
+        "meta": {"comment_stamps": {"1": 100}},
+        "comments": {"1": ["old"]},
+        "issues": {"1": {"titre": "disque perime"}},
+    }
+    saved: dict = {}
+
+    class _OkLock:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    class _FakeGhSnapshot:
+        SnapshotLockTimeout = _Timeout
+
+        @staticmethod
+        def load_snapshot(repo):
+            return dict(disk)
+
+        @staticmethod
+        def ensure_comments(repo, numbers, snapshot):
+            up = dict(snapshot)
+            up["meta"] = {"comment_stamps": {"1": 200, "7": 300}}
+            up["comments"] = {"1": ["fresh"], "7": ["y"]}
+            return up, 0, {}
+
+        @staticmethod
+        def snapshot_lock(repo):
+            return _OkLock()
+
+        # la VRAIE fusion du module d'instantane -- c'est elle que le bord
+        # contourne ; la simuler cacherait exactement ce qu'on temoigne.
+        merge_snapshots = staticmethod(real.merge_snapshots)
+
+        @staticmethod
+        def save_snapshot(repo, merged):
+            saved.update(merged)
+
+    monkeypatch.setitem(sys.modules, "coordination.gh_snapshot",
+                        _FakeGhSnapshot)
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", seed)
+
+    pig._belt_snapshot_prime("jsboige/CoursIA", [7], seed=seed)
+
+    for label, snap in (("_BELT_SNAPSHOT", pig._BELT_SNAPSHOT),
+                        ("ecriture disque", saved)):
+        comments = snap["comments"]
+        stamps = snap["meta"]["comment_stamps"]
+        assert comments.get("1") == ["fresh"], (
+            f"{label} : l'entree fraiche du premier appel doit survivre a "
+            f"la fusion sous verrou (got {comments.get('1')})")
+        assert stamps.get("1") == 200, (
+            f"{label} : le stamp frais doit survivre (got {stamps.get('1')})")
+        assert comments.get("7") == ["y"], (
+            f"{label} : le delta doit aussi etre fusionne "
+            f"(got {comments.get('7')})")
 
 
 def test_belt_snapshot_prime_lock_timeout_names_cause(monkeypatch, capsys):
