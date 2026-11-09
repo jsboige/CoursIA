@@ -117,7 +117,7 @@ Le reste de l'écart au carnet, de +0,14 à +0,16 point de CAGR en mode `keep`, 
 
 ## Ablation à 50 graines d'entrées aléatoires
 
-Le verdict du carnet ne repose pas sur le chemin momentum, mais sur une ablation : 50 graines d'entrées aléatoires, où toutes les variantes reçoivent chaque semaine les mêmes 10 lignes tirées au hasard. L'écart entre deux variantes mesure alors le noyau seul, indépendamment de la règle de sélection. Ce projet rejoue cette ablation dans LEAN, avec le tirage du carnet (paramètres `entries=random` et `seed`).
+Le verdict du carnet ne repose pas sur le chemin momentum, mais sur une ablation : 50 graines d'entrées aléatoires, où toutes les variantes reçoivent chaque semaine les mêmes 10 ETF tirés au hasard. L'écart entre deux variantes mesure alors le noyau seul, indépendamment de la règle de sélection. Ce projet rejoue cette ablation dans LEAN, avec le tirage du carnet (paramètres `entries=random` et `seed`).
 
 ### Protocole
 
