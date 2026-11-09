@@ -28,3 +28,16 @@ python scripts/notebook_tools/curriculum_taxonomy.py \
 ```
 
 La tranche 2 ajoutera la sous-série **PyMC** au même fichier, puis les carnets Infer avancés (IRT, TrueSkill, processus de Kalman, etc.).
+
+## Série GameTheory — tranche 1 (cœur : forme normale → Nash → minimax → forme extensive → SPE)
+
+`gametheory.json` étend le même format à la série **GameTheory**, sur le **cœur** de la série : neuf carnets (`GameTheory-01` à `GameTheory-10`, hors `08`) et 28 concepts. Le même `schema.json` et le même validateur `curriculum_taxonomy.py` s'appliquent ; les **prérequis** relient les carnets entre eux (par ex. la forme normale et la meilleure réponse avant l'équilibre de Nash, l'induction arrière avant les raffinements de perfection). Chaque concept cite les cellules de carnet où il est enseigné ; ceux qui s'y rattachent (jeu en forme normale, équilibre de Nash, jeu à somme nulle, forme extensive, induction arrière, dilemme du prisonnier) nomment en outre le chapitre **AIMA 3e/4e** correspondant dans leur définition, les concepts sans équivalent AIMA (topologie des jeux 2x2, théorie évolutionnaire, perfection en sous-jeux, induction avant, perfection en mains tremblantes) n'en citant aucun.
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py \
+  --data docs/curriculum/taxonomy/gametheory.json \
+  --skos-output /tmp/gametheory.ttl \
+  --owl-output /tmp/gametheory.owl
+```
+
+Les tranches suivantes étendront la série aux sous-séries **SocialChoice**, **Coalitions**, **Dynamics**, aux jeux bayésiens et aux jeux globaux — ajoutées au même `gametheory.json`, une PR par tranche, sur ce même modèle.
