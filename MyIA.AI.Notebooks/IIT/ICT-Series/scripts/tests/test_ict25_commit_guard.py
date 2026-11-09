@@ -45,6 +45,7 @@ from ict25_commit_guard import (  # noqa: E402
     CommitGuardAbort,
     CommitStatus,
     CommitWatch,
+    _STRICT_OVERCOMMIT,
     _linux_status_from_text,
     commit_status,
 )
@@ -125,7 +126,10 @@ def test_linux_sur_engagement_clampe_a_zero():
         "CommitLimit:     8000000 kB\n"
         "Committed_AS:   12000000 kB\n"
     )
-    statut = _linux_status_from_text(texte)
+    # Le clamp de marge nulle n'existe que dans la comptabilite commit,
+    # lue uniquement en mode d'overcommit strict (#24800) : le test doit
+    # passer le mode, sinon le texte (sans MemAvailable) est illisible.
+    statut = _linux_status_from_text(texte, overcommit_mode=_STRICT_OVERCOMMIT)
     assert statut is not None, "une comptabilite de commit presente doit se lire"
     assert statut.avail_bytes == 0, f"marge attendue 0 (clamp), lu {statut}"
     assert statut.limit_bytes == 8_000_000 * 1024, statut.limit_bytes
