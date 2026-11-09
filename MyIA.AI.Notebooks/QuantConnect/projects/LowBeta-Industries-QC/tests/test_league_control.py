@@ -26,6 +26,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 PROJET = Path(__file__).resolve().parents[1]
 
 
@@ -145,3 +147,68 @@ def test_trace_plus_courte_est_divergente():
     resultat = lc.compare_rows(_trace(10), _trace(8))
     assert resultat["divergence"] == ["trace journaliere"]
     assert resultat["points"] == 10
+
+
+# --------------------------------------------------------------------------
+# Le câblage de production -- les adaptateurs de `league_protocol`
+# --------------------------------------------------------------------------
+
+def _charger_league_protocol():
+    """Importe le module de production, sans le dupliquer."""
+    import importlib.util
+
+    if str(PROJET) not in sys.path:
+        sys.path.insert(0, str(PROJET))
+    spec = importlib.util.spec_from_file_location("league_protocol_sous_test",
+                                                  PROJET / "league_protocol.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _points_simples(chart: dict) -> dict:
+    """Lecture de points factice : le parsing QC est l'organe `analyze_arms._points`.
+
+    Ces deux tests portent sur le CÂBLAGE des adaptateurs -- ils deleguent au
+    critere -- pas sur la lecture des graphiques, qui passe par la plateforme.
+    """
+    return {nom: sorted((int(t), float(v)) for t, v in serie["values"])
+            for nom, serie in (chart.get("series") or {}).items()}
+
+
+def _graphique_mensuel(*series: str) -> dict:
+    """Un graphique `Monthly` factice, aux series nommees."""
+    return {"name": "Monthly", "chartType": 0,
+            "series": {nom: {"values": [[T0 + j * PAS, 0.1 * (j + 1)] for j in range(4)]}
+                       for nom in series}}
+
+
+def test_le_controle_mensuel_delegue_au_critere(monkeypatch):
+    lp = _charger_league_protocol()
+    monkeypatch.setattr(lp, "_series_points", _points_simples)
+    resultat = lp._compare_monthly(_graphique_mensuel("ret", "spy"), _graphique_mensuel("ret"))
+    assert resultat["compared"] == "Monthly"
+    assert resultat["divergence"] == []
+    assert resultat["series_communes"] == ["ret"]
+    assert resultat["series_seulement_ref"] == ["spy"]
+
+
+def test_le_controle_de_trace_delegue_au_critere(monkeypatch):
+    lp = _charger_league_protocol()
+    rows = _trace()
+    monkeypatch.setattr(lp, "_shadow_rows", lambda chart: list(rows))
+    resultat = lp._compare_shadow({}, {})
+    assert resultat["compared"] == "shadow"
+    assert resultat["divergence"] == []
+    assert resultat["points"] == 10
+    assert resultat["ecart_max"] == 0.0
+
+
+def test_le_controle_de_trace_reporte_une_divergence(monkeypatch):
+    lp = _charger_league_protocol()
+    rows = _trace()
+    lecture = {"ref": list(rows), "ctl": [(d, v + 1.0) for d, v in rows]}
+    monkeypatch.setattr(lp, "_shadow_rows", lambda chart: list(lecture[chart["role"]]))
+    resultat = lp._compare_shadow({"role": "ref"}, {"role": "ctl"})
+    assert resultat["divergence"] == ["trace journaliere"]
+    assert resultat["ecart_max"] == 1.0

@@ -46,10 +46,18 @@ for path in (str(HERE), str(QUANT / "projects"), str(SCRIPTS)):
     if path not in sys.path:
         sys.path.insert(0, path)
 
-from analyze_arms import _call, _chart, _points  # noqa: E402 -- acces QC, meme plafond de flotte
-from shadow_replay import QC_EQUITY_SERIES, qc_daily_equity  # noqa: E402 -- contrat de lecture de la trace
-
 import league_control  # noqa: E402 -- le critere de comparaison, pur et testable hors ligne
+
+# Les acces QC (`analyze_arms`) et le contrat de lecture de la trace
+# (`shadow_replay`) sont importes A LA DEMANDE, dans les seules fonctions qui
+# les utilisent. Ces deux modules tirent `numpy` : les importer au chargement
+# rendrait le protocole illisible hors QC -- et les tests du critere ne
+# doivent dependre d'aucun paquet tiers.
+def _acces_qc():
+    """Les acces QC et le contrat de trace, importes a la demande."""
+    from analyze_arms import _call, _chart, _points
+    from shadow_replay import QC_EQUITY_SERIES, qc_daily_equity
+    return _call, _chart, _points, QC_EQUITY_SERIES, qc_daily_equity
 
 # Fenetres du protocole de la ligue (coupee au 1er janvier 2025).
 WINDOWS = {
@@ -73,6 +81,7 @@ def _session_date(ts: int) -> str:
 
 
 def _read_stats(project: int, backtest: str) -> dict:
+    _call, _, _, _, _ = _acces_qc()
     bt = _call("/backtests/read", {"projectId": project, "backtestId": backtest})["backtest"]
     return {
         "backtestId": backtest,
@@ -91,6 +100,7 @@ def _series_points(chart: dict) -> dict[str, list[tuple[int, float]]]:
     commun, sans que la comparaison segebnisse sur une difference de longueur.
     """
     out = {}
+    _, _, _points, _, _ = _acces_qc()
     for name, serie in (chart.get("series") or {}).items():
         points = []
         for t, v in _points(serie):
@@ -105,6 +115,7 @@ def _shadow_rows(chart: dict) -> list[tuple[str, float]]:
     L'organe de lecture (`qc_daily_equity`) verifie l'alternance `e0..e4` :
     une trace qui perd un point est refusee avant meme la comparaison.
     """
+    _, _, _, _, qc_daily_equity = _acces_qc()
     dates, equity = qc_daily_equity(chart)
     return list(zip(dates, equity))
 
@@ -117,6 +128,7 @@ def cmd_fetch(args) -> int:
     index = {}
     for item in args.backtest:
         arm, backtest = item.split("=", 1)
+        _, _chart, _, _, _ = _acces_qc()
         stats = _read_stats(args.project, backtest)
         shadow = _chart(args.project, backtest, "shadow")
         (out / f"{arm}_shadow.json").write_text(json.dumps(shadow), encoding="utf-8")
@@ -144,6 +156,7 @@ def _raw_points(chart: dict) -> list[tuple[int, float]]:
     """
     series = chart.get("series") or {}
     points = []
+    _, _, _, QC_EQUITY_SERIES, _ = _acces_qc()
     for key in QC_EQUITY_SERIES:
         for p in (series.get(key) or {}).get("values") or []:
             t, v = (p.get("x"), p.get("y")) if isinstance(p, dict) else (p[0], p[-1])
@@ -159,6 +172,7 @@ def _daily(path: Path) -> tuple[list[str], list[float], list[tuple[int, float]]]
     fenetre doit conserver l'horodatage d'origine.
     """
     chart = json.loads(path.read_text(encoding="utf-8"))
+    _, _, _, _, qc_daily_equity = _acces_qc()
     dates, equity = qc_daily_equity(chart)
     points = _raw_points(chart)
     if len(points) != len(dates):
@@ -292,6 +306,7 @@ def _chart_or_none(project: int, backtest: str, name: str):
     toute autre erreur remonte.
     """
     try:
+        _, _chart, _, _, _ = _acces_qc()
         chart = _chart(project, backtest, name)
     except RuntimeError:
         return None
@@ -320,6 +335,7 @@ def cmd_control(args) -> int:
     La porte reste sur la divergence de VALEURS des series presentes des deux
     cotes : c'est ce qui distingue une divergence d'une exposition differente.
     """
+    _, _chart, _, _, _ = _acces_qc()
     ref = _read_stats(args.project, args.ref)
     ctl = _read_stats(args.project, args.ctl)
     diffs = {k: (ref["statistics"][k], ctl["statistics"][k])
