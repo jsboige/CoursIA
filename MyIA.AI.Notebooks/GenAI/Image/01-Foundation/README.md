@@ -18,13 +18,18 @@ Le catalogue du dépôt (`COURSE_CATALOG.generated.md`) est la source des décom
 
 ## Notebooks
 
+| # | Notebook | Contenu | Service | VRAM | Approfondir |
+|---|----------|---------|---------|------ |--------------|
+| 1 | [01-1-OpenAI-DALL-E-3](01-1-OpenAI-DALL-E-3.ipynb) | Génération avec gpt-image-1 (DALL-E 3 retiré) | OpenAI API | 0 | — |
+| 2 | [01-2-GPT-5-Image-Generation](01-2-GPT-5-Image-Generation.ipynb) | Génération avec GPT-5 | OpenAI API | 0 | — |
+| 3 | [01-3-Basic-Image-Operations](01-3-Basic-Image-Operations.ipynb) | Opérations de base | PIL/OpenCV | 0 | — |
+| 4 | [01-4-Forge-SD-XL-Turbo](01-4-Forge-SD-XL-Turbo.ipynb) | Stable Diffusion XL Turbo | Forge (API REST) | Variable | — |
+| 5 | [01-5-Qwen-Image-Edit](01-5-Qwen-Image-Edit.ipynb) | Introduction Qwen | ComfyUI | ~29GB | [Approfondissements du palier 5](#approfondissements-du-palier-5) |
+
+### Approfondissements du palier 5
+
 | # | Notebook | Contenu | Service | VRAM |
-|---|----------|---------|---------|------ |
-| 1 | [01-1-OpenAI-DALL-E-3](01-1-OpenAI-DALL-E-3.ipynb) | Génération avec gpt-image-1 (DALL-E 3 retiré) | OpenAI API | 0 |
-| 2 | [01-2-GPT-5-Image-Generation](01-2-GPT-5-Image-Generation.ipynb) | Génération avec GPT-5 | OpenAI API | 0 |
-| 3 | [01-3-Basic-Image-Operations](01-3-Basic-Image-Operations.ipynb) | Opérations de base | PIL/OpenCV | 0 |
-| 4 | [01-4-Forge-SD-XL-Turbo](01-4-Forge-SD-XL-Turbo.ipynb) | Stable Diffusion XL Turbo | Forge (API REST) | Variable |
-| 5 | [01-5-Qwen-Image-Edit](01-5-Qwen-Image-Edit.ipynb) | Introduction Qwen | ComfyUI | ~29GB |
+|---|----------|---------|---------|------|
 | 5b | [01-5b-Qwen-Image-Edit-2509](01-5b-Qwen-Image-Edit-2509.ipynb) | Édition avancée Qwen Image Edit 2509 | ComfyUI | ~29GB |
 | 5c | [01-5c-Qwen-Image-21-Workflows](01-5c-Qwen-Image-21-Workflows.ipynb) | Workflows de référence Qwen-Image 2.1 (nomadoor) sur instance hébergée | ComfyUI 0.37.2 (hébergée) | palier INT8 #17266 |
 
@@ -79,7 +84,7 @@ Accès : http://localhost:8188
 2. **01-2-GPT-5-Image-Generation** - Génération multimodale avec texte
 3. **01-3-Basic-Image-Operations** - Manipulation d'images locale
 4. **01-4-Forge-SD-XL-Turbo** - Modèle open source via Forge (SD XL Turbo)
-5. **01-5-Qwen-Image-Edit** - Édition d'images avancée
+5. **[01-5-Qwen-Image-Edit](01-5-Qwen-Image-Edit.ipynb)** - Édition d'images avancée ([approfondissements 5b et 5c](#approfondissements-du-palier-5))
 
 ## Points clés
 
