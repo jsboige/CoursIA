@@ -290,6 +290,62 @@ def test_le_gel_du_coordinateur_est_classe_gel_quelle_queue_soit_la_forme(monkey
         assert out["red"] == []
 
 
+def test_un_degel_habilite_reclasse_la_pr_en_lane():
+    """Un degel HABILITE ferme le gel qu'il suit : la PR revient en `lane`.
+
+    Le fil se lit DANS L'ORDRE, comme `_issue_is_frozen`. Sans cela, une PR
+    degelee qui porte un vrai `FAILURE` quittait la file de sa lane pour
+    toujours : c'est un fail-open a rebours du contrat fail-closed.
+    """
+    comments = [
+        {"created_at": "2026-11-08T10:00:00Z", "body": FROZEN_BY_COORDINATOR},
+        {"created_at": "2026-11-09T10:00:00Z",
+         "body": "[UNFROZEN] lane myia-ai-01:CoursIA -- pile degelee"},
+    ]
+    out = pig.classify_red_pr(
+        lane="myia-po-2028:CoursIA", body="Grain: x",
+        causes=["check requis en echec : Scripts Tests (FAILURE)"],
+        nits={}, comments=comments)
+    assert out["class"] == "lane", out
+    # Le meme fil, lu par le lecteur d'issue, ne voit pas de gel non plus.
+    assert pig._issue_is_frozen("Grain: x", comments) is None
+
+
+def test_un_degel_d_une_lane_non_habilitee_laisse_le_gel(monkeypatch):
+    """Un degel d'une lane NON habilitee ne ferme rien : la PR reste `gel`.
+
+    Le login GitHub est partage : l'autorite du degel se lit dans la lane
+    DECLAREE dans le marqueur, pas dans l'auteur du commentaire.
+    """
+    comments = [
+        {"created_at": "2026-11-08T10:00:00Z", "body": FROZEN_BY_COORDINATOR},
+        {"created_at": "2026-11-09T10:00:00Z",
+         "body": "[UNFROZEN] lane myia-po-2027:CoursIA -- pile degelee"},
+    ]
+    out = pig.classify_red_pr(
+        lane="myia-po-2028:CoursIA", body="Grain: x",
+        causes=["check requis en echec : Scripts Tests (FAILURE)"],
+        nits={}, comments=comments)
+    assert out["class"] == "gel", out
+
+
+def test_un_gel_pose_dans_le_body_suit_la_regle_a():
+    """Un gel de BODY : seul le retrait de la ligne le leve.
+
+    Un `[UNFROZEN]` habilite dans le fil ne le ferme pas -- c'est la regle A
+    de la grammaire du gel (#24516).
+    """
+    body = ("Grain: MED/notebook-python -- lane myia-po-2028:CoursIA\n\n"
+            "[FROZEN] gel coordinateur -- ai-01\n")
+    comments = [{"created_at": "2026-11-09T10:00:00Z",
+                 "body": "[UNFROZEN] lane myia-ai-01:CoursIA -- pile degelee"}]
+    out = pig.classify_red_pr(
+        lane="myia-po-2028:CoursIA", body=body,
+        causes=["check requis en echec : Scripts Tests (FAILURE)"],
+        nits={}, comments=comments)
+    assert out["class"] == "gel", out
+
+
 def test_la_classe_infra_ne_retient_pas_le_tapis(monkeypatch):
     """Une jambe CANCELLED deja rejouee est `infra` : le geste est un rejeu.
 

@@ -8147,25 +8147,66 @@ def _frozen_authority(text: str) -> str | None:
     return None
 
 
-def _frozen_by_authorized_lane(texts: list[str]) -> str | None:
-    """Un `[FROZEN]` pose par une lane habilitee ? Renvoie son autorite.
+def _frozen_lines(text: str) -> list[str]:
+    """Les lignes d'un texte qui portent un en-tete `[FROZEN]`."""
+    if not isinstance(text, str) or not text:
+        return []
+    return [line for line in _strip_code(text).splitlines()
+            if _FROZEN_HEADER_RE.search(line)]
 
-    Meme lecteur que `_issue_is_frozen` -- un en-tete `[FROZEN]` dans le corps
-    ou dans N'IMPORTE QUEL commentaire du fil -- avec UNE exigence de plus :
-    le gel doit etre pose par une lane HABILITEE. Le login GitHub est
-    partage, donc l'auteur du commentaire ne prouve rien : l'autorite se lit
-    dans le marqueur.
+
+def _gel_authority(body: str | None, comments: list[dict] | None) -> str | None:
+    """L'autorite du gel qui FAIT FOI, ou None (aucun gel).
+
+    Meme lecture que `_issue_is_frozen`, avec UNE exigence de plus : le gel
+    doit etre pose par une lane HABILITEE. Le login GitHub est partage,
+    donc l'auteur du commentaire ne prouve rien : l'autorite se lit dans
+    le marqueur.
+
+    **Le fil se lit dans l'ordre** (regle B) : un `[FROZEN]` pose en
+    commentaire est FERME par un `[UNFROZEN]` d'une lane habilitee pose
+    plus tard -- le dernier etat gagne. Sans cette lecture, une PR
+    degelee qui porte un vrai `FAILURE` quittait la file de sa lane
+    pour toujours (fail-open a rebours du contrat fail-closed).
+
+    Un gel pose dans le **body** reste soumis a la regle A : seul le
+    retrait de la ligne le leve, pas un `[UNFROZEN]`.
+
+    Fail-closed : un `[FROZEN]` d'une lane tierce ne cree pas de gel, et
+    n'en leve pas un -- le veto du coordinateur ne se fait pas voler par
+    un tiers.
     """
-    for text in texts:
+    # Regle A : le body d'abord. Un gel de body prime sur le fil, et le
+    # fil ne le leve pas.
+    for line in _frozen_lines(body or ""):
+        authority = _frozen_authority(line)
+        if authority:
+            return authority
+
+    # Regle B : le fil se lit dans l'ordre.
+    state: str | None = None
+    for comment in comments or []:
+        if not isinstance(comment, dict):
+            continue
+        text = comment.get("body") or ""
         if not isinstance(text, str) or not text:
             continue
-        for line in _strip_code(text).splitlines():
-            if not _FROZEN_HEADER_RE.search(line):
-                continue
+        # Le code **documente** un marqueur, il ne le pose pas.
+        text = _strip_code(text)
+        if _UNFROZEN_HEADER_RE.search(text):
+            # Seul un degel d'une lane HABILITEE ferme un gel : un
+            # `[UNFROZEN]` sans lane declaree, ou d'une lane tierce, ne
+            # leve rien.
+            if unfrozen_allowed(_declared_lane(text)):
+                state = None
+            continue
+        for line in _frozen_lines(text):
             authority = _frozen_authority(line)
             if authority:
-                return authority
-    return None
+                state = authority
+            # Un gel d'autorite tierce ne cree pas de gel et n'en leve
+            # pas un : l'etat reste ce qu'il etait.
+    return state
 
 
 def _red_pr_comments(number: int) -> list[dict]:
@@ -8333,11 +8374,10 @@ def classify_red_pr(*, lane: str, body: str, causes: list[str], nits: dict,
     classe non etablie ne doit jamais sortir la PR de la file de la lane
     (fail-closed).
     """
-    texts = [body or ""] + [(c.get("body") or "") for c in (comments or [])]
-
     # 1. GEL : un veto du coordinateur l'emporte sur tout -- la PR n'est pas
-    #    un travail de la lane, elle attend une decision.
-    authority = _frozen_by_authorized_lane([_strip_code(t) for t in texts])
+    #    un travail de la lane, elle attend une decision. Le fil se lit
+    #    DANS L'ORDRE : un degel habilite ferme le gel qu'il suit.
+    authority = _gel_authority(body, comments)
     if authority:
         return {"class": RED_CLASS_GEL, "reason": f"gel pose par {authority}"}
 
