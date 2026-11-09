@@ -4383,6 +4383,63 @@ theorem hashlife_correct_margin_of_static_frame (c : MacroCell) (k : Nat)
   hashlife_correct_margin_of_hcap c k h_central
     (fun t _ => hcap_of_static_frame _ (canonical_sortDedup _) hwin t)
 
+/-! ## Slice 25 — L3 closed for the union of two aperiodic confined trajectories
+
+First **composed aperiodic** case of the #13483 chain. The union `g₁ ++ g₂` of two
+parts whose trajectories stay **3-separated** (`hsep`) is a single grid: its capture
+at any instant is that of the aperiodic confined class (`hcap_of_static_frame`)
+applied to that grid. The 3-separation is the class-defining property — it is what
+will, in the next maillon, allow deriving the union's confinement from the two
+parts' confinement. Aperiodic mirror of `hcap_of_union_periodic` (maillon 2), without
+the period hypothesis: the capture no longer goes through the union's periodicity but
+through the static confinement of its grid. -/
+
+/-- **hcap of the union of two aperiodic confined trajectories — maillon 8.**
+    The union `g₁ ++ g₂` is a grid; `hcap_of_union_static` is the
+    `hcap_of_static_frame` capture of that grid, carried by the class structure
+    (3-separation `hsep` + canonicality of the union `hcan`). -/
+theorem hcap_of_union_static (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hcan : Canonical (g₁ ++ g₂)) (t : Nat)
+    (hwinU : ∀ r i : Nat, ∀ p ∈ evolve i (evolve r (g₁ ++ g₂)),
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level - 1) : Int)) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true :=
+  hcap_of_static_frame (g₁ ++ g₂) hcan hwinU t
+
+/-- **L3 closed for the union of two aperiodic confined trajectories: Hashlife
+    correction of 3-separated aperiodic unions.** Assembly-mirror corollary of
+    `hashlife_correct_margin_of_static_frame`: a MacroCell whose grid rendered at the
+    origin splits into two 3-separated parts, confined in a static frame, is corrected
+    by `evolveHashlifeFast` over every horizon `2^k` under `centralCorrect`. First
+    **composed aperiodic** L3 case of the chain (the aperiodic analogue of
+    `hashlife_correct_margin_of_union_periodic`, maillon 2). -/
+theorem hashlife_correct_margin_of_union_static (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k)
+    (g₁ g₂ : Grid) (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hcan : Canonical (g₁ ++ g₂))
+    (hwinU : ∀ r i : Nat, ∀ p ∈ evolve i (evolve r (g₁ ++ g₂)),
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level - 1) : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_union_static g₁ g₂ hsep hcan t hwinU
+
 /-! ### Slice 23 — public restitution of the SW wall (`wall_sw_agreement`)
 
 Last of the four walls restituted, as a mirror of the NE wall (coordinates
