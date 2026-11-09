@@ -36,7 +36,10 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.parse import quote
 
-from curriculum_qualification import load_manifest, qualification_for
+if __package__:
+    from .curriculum_qualification import load_manifest, qualification_for
+else:
+    from curriculum_qualification import load_manifest, qualification_for
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
@@ -2200,7 +2203,7 @@ def generate_markdown_report(entries: list[dict], repo_root: Path | None = None)
             lines.append(f"#### {bucket_name} ({len(bucket_items)})")
             lines.append("")
             lines.append(
-                "| # | Notebook | Title | Kernel | Status | Maturity | Difficulty | Research | Duration | Owner |"
+                "| # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |"
             )
             lines.append(
                 "|---|----------|-------|--------|--------|----------|------------|----------|----------|-------|"

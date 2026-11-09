@@ -2852,7 +2852,7 @@ def test_qualification_appears_in_markdown(tmp_path):
              "requires_gpu": False, "requires_cloud": False, "requires_wsl": False,
              "executable_locally": True}
     report = generate_markdown_report([entry], repo_root=tmp_path)
-    assert "| Difficulty | Research |" in report
+    assert "| Difficulté | Recherche |" in report
     assert "| D2 | R2 |" in report
 
 
@@ -2880,3 +2880,12 @@ def test_scan_loads_manifest_once_and_keeps_unknown_unqualified(tmp_path, monkey
     manifest_file.write_text("{", encoding="utf-8")
     with pytest.raises(json.JSONDecodeError):
         catalog.scan_all_notebooks(series_filter="NLP")
+
+
+def test_catalog_importable_as_package_from_repo_root():
+    root = Path(__file__).resolve().parents[3]
+    result = subprocess.run(
+        [sys.executable, "-c", "from scripts.notebook_tools import generate_catalog"],
+        cwd=root, capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stderr
