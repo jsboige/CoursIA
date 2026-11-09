@@ -1,6 +1,8 @@
+> RAPPORT — 2026-09-11 — frontière de coût du synthétiseur SAT de motifs Life (campagne du 2026-09-11, Windows 11 / Python 3.13.14 / Z3 4.16.0, 10 000 ms par taille) : 14 points factoriels, 10 points ciblés ×3, contrôles discriminants — figé
+
 # Frontière de coût du synthétiseur SAT de motifs Life
 
-Cette étude mesure la zone où le synthétiseur SAT de motifs de Conway Life reste informatif sous un budget borné. Le résultat principal n'est pas une promesse de temps universelle : c'est une frontière reproductible entre trois verdicts distincts.
+Cette étude mesure la zone où le synthétiseur SAT de motifs de Conway Life reste informatif sous un budget borné. Les règles de lecture durables qu'elle a produites — taxonomie des trois verdicts, contrôles discriminants obligatoires, budget Z3 qui n'inclut pas le coût Python — vivent dans [`life-components-schema.md`](../lean/life-components-schema.md) §« Frontière de la synthèse bornée » ; le présent rapport garde les mesures datées. Le résultat principal n'est pas une promesse de temps universelle : c'est une frontière reproductible entre trois verdicts distincts.
 
 - `FOUND` : une taille minimale a été trouvée après réfutation de toutes les tailles inférieures ;
 - `IMPOSSIBLE` : toutes les tailles de `1` à `max_cells` ont été réfutées par Z3 ;
