@@ -6771,8 +6771,8 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb,88dc0e55,
 - Anthropic, *Global Workspace in Claude* (2025) — [anthropic.com/research/global-workspace](https://www.anthropic.com/research/global-workspace). Opérateur d'accès = jacobien des logits ; broadcast mesuré structurellement ; preuve maîtresse = ablation sélective. IIT/Tononi absents ; claim limité à l'access-consciousness.
 - Baars, B. J. — *A Cognitive Theory of Consciousness* (Global Workspace Theory).
 - Dehaene, S., Naccache, L., Changeux, J.-P. — l'ignition temporelle (notre lecture `ignition_events`).
-- Jansma, K., Hoel, E. — *Engineering Emergence* (2025) — émergence causale multi-échelle, CE 2.0. Voir [ICT-5](ICT-05-CausalEmergence-Python.ipynb).
-- Série ICT : [ICT-21](ICT-21-SAETrajectoires-Python.ipynb) (substrat S4), [ICT-5](ICT-05-CausalEmergence-Python.ipynb) (émergence causale), [ICT-Synthese](ICT-Synthese-CrossSubstrat-Python.ipynb).
+- Jansma, K., Hoel, E. — *Engineering Emergence* (2025) — émergence causale multi-échelle, CE 2.0. Voir [ICT-5](ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb).
+- Série ICT : [ICT-21](ICT-21-SAETrajectoires-Python.ipynb) (substrat S4), [ICT-5](ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) (émergence causale), [ICT-Synthese](ICT-Synthese-CrossSubstrat-Python.ipynb).
 
 ",,,,,,,,3c3677ad82c757b8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb,9bcd075e,markdown,fr,8ad8d8c5a9632a23,"# ICT-3 — Robustesse & délai de gratification : étude quantitative
@@ -7132,13 +7132,13 @@ l'**émergence causale multi-échelle** (TPM → PyPhi).
 - [ICT-0 — Cadrage de la série](../ICT-0-Framing.md)
 - [ICT-2 — Self-sorting arrays : le tri comme morphogenèse](ICT-02-SelfSortingMorphogenesis-Python.ipynb)
 - Zhang, Goldstein & Levin, *Classical sorting algorithms as a model of morphogenesis*, Adaptive Behavior 2025 — [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).",,,,,,,,4d39a19213a8f2b5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,d472f43f,markdown,fr,03914bf27941744e,"# ICT-5 : Émergence causale — quelle échelle décrit le mieux un système ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,d472f43f,markdown,fr,03914bf27941744e,"# ICT-5 : Émergence causale — quelle échelle décrit le mieux un système ?
 
-> Série **ICT** (*Integrated Causal Trajectories*), Epic #4588. Voir le [cadrage ICT-0](ICT-0-Framing.md).
+> Série **ICT** (*Integrated Causal Trajectories*), Epic #4588. Voir le [cadrage ICT-0](../ICT-0-Framing.md).
 > Ce notebook met en œuvre le **second pilier** de la série : la recherche **systématique des
 > échelles causales pertinentes** (Jansma & Hoel, *Engineering Emergence*, 2025).
 
-La série [IIT](README.md) mesure $\Phi$ — l'information intégrée — pour un système **à une échelle
+La série [IIT](../README.md) mesure $\Phi$ — l'information intégrée — pour un système **à une échelle
 donnée** (les micro-nœuds). Mais une question reste ouverte : *est-ce la bonne échelle ?*
 
 Un même système dynamique peut être décrit au niveau **micro** (chaque nœud) ou **macro**
@@ -7157,8 +7157,8 @@ Ce notebook utilise le **vrai outil SOTA** — le module `pyphi.macro` (coarse-g
    sur d'autres le coarse-graining ne fait que **détruire** de l'information.
 
 > **Pré-requis.** Ce notebook calcule des $\Phi$ réels avec PyPhi : il s'exécute avec le noyau
-> **`Python 3 (PyPhi/IIT)`** (env conda `pyphi`). Cf [IIT-01-IntroToPyPhi-Python](../IIT-01-IntroToPyPhi-Python.ipynb).",,,,,,,,03914bf27941744e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,ecc56410,code,fr,84dbdada7141e151,"import warnings
+> **`Python 3 (PyPhi/IIT)`** (env conda `pyphi`). Cf [IIT-01-IntroToPyPhi-Python](../../IIT-01-IntroToPyPhi-Python.ipynb).",,,,,,,,03914bf27941744e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,ecc56410,code,fr,84dbdada7141e151,"import warnings
 warnings.filterwarnings(""ignore"", message="".*pkg_resources is deprecated.*"", category=UserWarning)
 
 # Configuration de PyPhi AVANT tout calcul.
@@ -7181,7 +7181,7 @@ import pyphi.macro as M
 
 print(""PyPhi"", pyphi.__version__, ""| NumPy"", np.__version__)
 print(""Calcul mono-thread (parallelisme PyPhi desactive)."")",,,,,,,,84dbdada7141e151,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,6bf0800a,markdown,fr,3a348e554dfcd208,"## 1. Mesurer la causalité à l'échelle micro
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,6bf0800a,markdown,fr,3a348e554dfcd208,"## 1. Mesurer la causalité à l'échelle micro
 
 On part de l'exemple d'émergence **canonique** livré avec PyPhi
 (`pyphi.examples.macro_network()`) : un micro-système de **4 nœuds** binaires dont la dynamique
@@ -7193,7 +7193,7 @@ micro est volontairement **dégénérée** (bruitée). On mesure d'abord, au niv
 
 Une EI faible signale une dynamique **dégénérée** : beaucoup d'états passés mènent au même futur,
 le mécanisme « perd » de l'information.",,,,,,,,3a348e554dfcd208,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,f9c79fa5,code,fr,dfda0ee7b01bcd68,"# Micro-systeme canonique de Hoel : 4 noeuds, dynamique degeneree.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,f9c79fa5,code,fr,dfda0ee7b01bcd68,"# Micro-systeme canonique de Hoel : 4 noeuds, dynamique degeneree.
 net = pyphi.examples.macro_network()
 state = (0, 0, 0, 0)
 
@@ -7203,13 +7203,13 @@ micro_ei = float(M.effective_info(net))
 print(f""Micro-systeme : {net.size} noeuds, etat {state}"")
 print(f""  Phi_micro = {micro_phi:.4f}"")
 print(f""  EI_micro  = {micro_ei:.4f}  (information effective, en bits)"")",,,,,,,,dfda0ee7b01bcd68,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,f02e9e66,markdown,fr,509e8e8fec131ee8,"### Interprétation : un micro-système peu intégré
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,f02e9e66,markdown,fr,509e8e8fec131ee8,"### Interprétation : un micro-système peu intégré
 
 Le micro-système n'a qu'un $\Phi$ faible (~0,11) : pris nœud par nœud, le système n'intègre
 presque pas d'information. Son EI (~1,15 bit) reflète une dynamique **dégénérée** — c'est
 exactement le terrain où l'émergence peut se manifester. Reste à savoir si une **description plus
 grossière** ferait mieux.",,,,,,,,509e8e8fec131ee8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,b7c70c8f,markdown,fr,2152b6b5ee7b43fb,"## 2. Chercher l'échelle émergente (coarse-graining)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,b7c70c8f,markdown,fr,2152b6b5ee7b43fb,"## 2. Chercher l'échelle émergente (coarse-graining)
 
 `pyphi.macro.emergence` énumère **toutes les agrégations** (coarse-grainings) possibles des
 micro-nœuds en macro-nœuds, calcule $\Phi$ pour chacune, et retient l'échelle qui **maximise**
@@ -7219,7 +7219,7 @@ $$\text{émergence} = \Phi_{\text{macro}}^{\star} - \Phi_{\text{micro}}.$$
 
 Une valeur **positive** signifie que la description macro est causalement **plus forte** que la
 micro.",,,,,,,,2152b6b5ee7b43fb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,81df20b7,code,fr,ad97a4e72a4ef052,"# Recherche de la meilleure echelle macro (coarse-graining uniquement).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,81df20b7,code,fr,ad97a4e72a4ef052,"# Recherche de la meilleure echelle macro (coarse-graining uniquement).
 mn = M.emergence(net, state, do_coarse_grain=True, do_blackbox=False)
 
 macro_phi = float(mn.phi)
@@ -7230,7 +7230,7 @@ print(f""Phi_macro (max)= {macro_phi:.4f}"")
 print(f""emergence      = {delta:+.4f}"")
 print(f""meilleure agregation (partition micro -> macro) : {mn.coarse_grain.partition}"")
 print(f""  -> les {net.size} micro-noeuds sont regroupes en {len(mn.coarse_grain.partition)} macro-noeuds"")",,,,,,,,ad97a4e72a4ef052,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,8371a4b7,markdown,fr,67df94f7619ca74b,"### Interprétation : l'émergence est réelle
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,8371a4b7,markdown,fr,67df94f7619ca74b,"### Interprétation : l'émergence est réelle
 
 Le coarse-graining qui regroupe les nœuds `((0, 1), (2, 3))` — soit **2 macro-nœuds** — porte
 $\Phi$ de ~0,11 à ~0,60 : une **émergence d'environ +0,48**. À l'échelle macro, ce qui semblait
@@ -7239,7 +7239,7 @@ description causale de ce système **n'est pas le micro** : c'est le macro.
 
 C'est le résultat central de Hoel : agréger peut **augmenter** l'information causale, parce que la
 macro-dynamique est plus déterministe et moins dégénérée que la micro.",,,,,,,,67df94f7619ca74b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,5e82f3a0,code,fr,0d2e279570ba4530,"# Figure 1 : Phi micro vs macro pour le systeme emergent.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,5e82f3a0,code,fr,0d2e279570ba4530,"# Figure 1 : Phi micro vs macro pour le systeme emergent.
 fig, ax = plt.subplots(figsize=(6, 4.2))
 bars = ax.bar([""micro\n(4 noeuds)"", ""macro\n(2 noeuds)""], [micro_phi, macro_phi],
               color=[""#9aa7b3"", ""#2a8a5f""], width=0.55)
@@ -7254,7 +7254,7 @@ ax.annotate(f""emergence\n{delta:+.3f}"",
 ax.set_ylim(0, macro_phi*1.18)
 plt.tight_layout()
 plt.show()",,,,,,,,0d2e279570ba4530,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,9d94971d,markdown,fr,f34991271ec92f02,"## 3. L'émergence n'est pas automatique : deux contre-exemples
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,9d94971d,markdown,fr,f34991271ec92f02,"## 3. L'émergence n'est pas automatique : deux contre-exemples
 
 Si agréger augmentait *toujours* $\Phi$, l'émergence n'aurait aucun contenu informatif. Vérifions
 sur deux systèmes dont la **micro-dynamique est déjà fortement intégrée** :
@@ -7264,7 +7264,7 @@ sur deux systèmes dont la **micro-dynamique est déjà fortement intégrée** :
 
 Pour ces systèmes, on s'attend à ce que le coarse-graining **détruise** de l'information
 (émergence négative) : la bonne échelle reste le micro.",,,,,,,,f34991271ec92f02,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,7ef6a3a3,code,fr,718d4a8ca1ede982,"# On reutilise la meme analyse sur deux systemes micro-integres.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,7ef6a3a3,code,fr,718d4a8ca1ede982,"# On reutilise la meme analyse sur deux systemes micro-integres.
 def emergence_report(network, st, label):
     mphi = float(pyphi.compute.phi(pyphi.Subsystem(network, st, range(network.size))))
     macro = M.emergence(network, st, do_coarse_grain=True, do_blackbox=False)
@@ -7283,7 +7283,7 @@ print(f""{'systeme':22s} {'Phi_micro':>10s} {'Phi_macro':>10s} {'emergence':>11s
 for r in rows:
     print(f""{r['label']:22s} {r['micro_phi']:10.4f} {r['macro_phi']:10.4f} ""
           f""{r['emergence']:+11.4f}  {r['partition']}"")",,,,,,,,718d4a8ca1ede982,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,ed3ee9a9,code,fr,c3811699d7ebbfef,"# Figure 2 : comparaison micro vs macro sur les trois systemes.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,ed3ee9a9,code,fr,c3811699d7ebbfef,"# Figure 2 : comparaison micro vs macro sur les trois systemes.
 labels = [r[""label""] for r in rows]
 micro_vals = [r[""micro_phi""] for r in rows]
 macro_vals = [r[""macro_phi""] for r in rows]
@@ -7303,7 +7303,7 @@ ax.set_title(""Emergence (vert) vs degradation (rouge) selon le systeme"")
 ax.legend()
 plt.tight_layout()
 plt.show()",,,,,,,,c3811699d7ebbfef,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,d09be37c,markdown,fr,c1647ae81ad643a1,"### Interprétation : l'émergence est une propriété **discriminante**
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,d09be37c,markdown,fr,c1647ae81ad643a1,"### Interprétation : l'émergence est une propriété **discriminante**
 
 Le contraste est net :
 
@@ -7321,7 +7321,7 @@ L'émergence n'est donc **pas** un artefact systématique du coarse-graining : c
 du système**. C'est précisément ce qui rend l'outil intéressant — il *distingue* les systèmes qui
 émergent de ceux qui n'émergent pas, au lieu de répondre « oui » partout (un test dégénéré
 n'aurait aucune valeur).",,,,,,,,c1647ae81ad643a1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,3f44fc58,markdown,fr,882697c8a6cd6cc4,"## 4. Pourquoi le macro gagne : déterminisme contre dégénérescence
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,3f44fc58,markdown,fr,882697c8a6cd6cc4,"## 4. Pourquoi le macro gagne : déterminisme contre dégénérescence
 
 L'information effective se décompose (Hoel) en deux termes :
 
@@ -7331,7 +7331,7 @@ $$\text{EI} = \underbrace{\text{déterminisme}}_{\text{le futur est-il prévisib
 L'émergence se produit quand l'agrégation **augmente le déterminisme** et/ou **réduit la
 dégénérescence** plus vite qu'elle ne réduit le nombre d'états. Comparons l'EI micro à l'EI du
 meilleur macro-réseau trouvé.",,,,,,,,882697c8a6cd6cc4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,a7f8f458,code,fr,2bed27c43ade5c9c,"# EI a l'echelle macro emergente, via le reseau macro reconstruit par PyPhi.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,a7f8f458,code,fr,2bed27c43ade5c9c,"# EI a l'echelle macro emergente, via le reseau macro reconstruit par PyPhi.
 macro_network_obj = mn.network if hasattr(mn, ""network"") else None
 # mn.network est le micro-reseau ; on reconstruit le macro via le coarse-grain retenu.
 macro_sub = mn.macro_subsystem if hasattr(mn, ""macro_subsystem"") else None
@@ -7344,18 +7344,18 @@ print(f""gain de Phi en passant au macro : {delta:+.4f}"")
 print()
 print(""Lecture : le macro a moins d'etats mais une dynamique plus deterministe ;"")
 print(""le supplement d'integration (Phi) survit a la perte d'etats -> emergence."")",,,,,,,,2bed27c43ade5c9c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,364fb138,markdown,fr,59804f033b4b8c35,"### Interprétation
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,364fb138,markdown,fr,59804f033b4b8c35,"### Interprétation
 
 Le macro-réseau ne compte que 4 états (2 nœuds) contre 16 au micro, et pourtant son $\Phi$ est
 **cinq fois plus grand**. Le gain de déterminisme l'emporte sur la perte de résolution : agréger
 **révèle** une structure causale que la description micro **noyait** dans le bruit. C'est le cœur
 opérationnel de l'« ingénierie de l'émergence » de Jansma & Hoel — et un pont direct vers la
 question des **trajectoires multi-échelles** que la série ICT explore.",,,,,,,,59804f033b4b8c35,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,c4fb2e53,markdown,fr,6e5d2a58e59de53c,"## 5. Exercices
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,c4fb2e53,markdown,fr,6e5d2a58e59de53c,"## 5. Exercices
 
 Les trois exercices ci-dessous prolongent l'analyse. Complétez le corps des fonctions (remplacez
 `return None`). Le notebook s'exécute de bout en bout même si les exercices ne sont pas faits.",,,,,,,,6e5d2a58e59de53c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,e1fded22,markdown,fr,2695daebe1bcf40e,"### Exercice 1 — Score d'émergence normalisé
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,e1fded22,markdown,fr,2695daebe1bcf40e,"### Exercice 1 — Score d'émergence normalisé
 
 L'émergence brute $\Phi_{\text{macro}} - \Phi_{\text{micro}}$ dépend de l'échelle des $\Phi$. Un
 **score relatif** est plus comparable entre systèmes.
@@ -7365,7 +7365,7 @@ $\dfrac{\Phi_{\text{macro}}^{\star}}{\Phi_{\text{micro}}}$ (ratio > 1 ⇔ émerg
 
 - *Indice 1* : réutilisez `M.emergence(network, state, do_coarse_grain=True)`.
 - *Indice 2* : attention à la division par un $\Phi_{\text{micro}}$ proche de 0.",,,,,,,,2695daebe1bcf40e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,9a4df8e2,code,fr,78041ffa8186c037,"def emergence_ratio(network, state):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,9a4df8e2,code,fr,78041ffa8186c037,"def emergence_ratio(network, state):
     # Etape 1 : Phi_micro = pyphi.compute.phi(Subsystem(network, state, range(network.size)))
     # Etape 2 : mn = M.emergence(network, state, do_coarse_grain=True)
     # Etape 3 : renvoyer mn.phi / Phi_micro (gerer Phi_micro ~ 0)
@@ -7375,7 +7375,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,9a4df8e2,co
 # Test (decommenter une fois implemente) :
 # print(""ratio Hoel :"", emergence_ratio(pyphi.examples.macro_network(), (0, 0, 0, 0)))
 print(""Exercice 1 a completer"")",,,,,,,,78041ffa8186c037,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,76aff3e1,markdown,fr,2263f57fdbe87c6d,"### Exercice 2 — L'émergence dépend-elle de l'état ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,76aff3e1,markdown,fr,2263f57fdbe87c6d,"### Exercice 2 — L'émergence dépend-elle de l'état ?
 
 L'émergence est calculée **pour un état donné**. Un même réseau peut émerger dans certains états
 et pas dans d'autres.
@@ -7384,7 +7384,7 @@ Implémentez `emergence_by_state(network)` qui renvoie un dictionnaire `{état: 
 **tous** les états du réseau (utilisez `pyphi.utils.all_states(network.size)`).
 
 - *Indice* : bouclez sur `all_states`, appelez `M.emergence` pour chacun, stockez `mn.emergence`.",,,,,,,,2263f57fdbe87c6d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,7a41e3d0,code,fr,283ab7aaad4a5fa8,"def emergence_by_state(network):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,7a41e3d0,code,fr,283ab7aaad4a5fa8,"def emergence_by_state(network):
     # Etape 1 : parcourir pyphi.utils.all_states(network.size)
     # Etape 2 : pour chaque etat, mn = M.emergence(network, etat, do_coarse_grain=True)
     # Etape 3 : renvoyer {etat: float(mn.emergence)}
@@ -7395,7 +7395,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,7a41e3d0,co
 # em = emergence_by_state(pyphi.examples.macro_network())
 # print(sorted(em.items(), key=lambda kv: -kv[1])[:3])
 print(""Exercice 2 a completer"")",,,,,,,,283ab7aaad4a5fa8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,f7b028ef,markdown,fr,d42d9595c162d8c6,"### Exercice 3 — Coarse-graining vs blackboxing
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,f7b028ef,markdown,fr,d42d9595c162d8c6,"### Exercice 3 — Coarse-graining vs blackboxing
 
 PyPhi propose deux stratégies de réduction d'échelle : le **coarse-graining** (regrouper des
 nœuds en macro-nœuds) et le **blackboxing** (cacher la dynamique interne d'un module, n'exposer
@@ -7408,7 +7408,7 @@ les arguments `do_coarse_grain` / `do_blackbox` de `M.emergence`.
 - *Indice* : trois appels à `M.emergence` avec les combinaisons d'arguments booléens.
 - *Attention* : le blackboxing peut échouer sur certains réseaux (capturer l'exception et
   renvoyer `None` pour cette stratégie).",,,,,,,,d42d9595c162d8c6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,e3509ff0,code,fr,f1c0c23ef453f60b,"def compare_strategies(network, state):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,e3509ff0,code,fr,f1c0c23ef453f60b,"def compare_strategies(network, state):
     # Etape 1 : coarse  = M.emergence(network, state, do_coarse_grain=True,  do_blackbox=False).emergence
     # Etape 2 : blackbox= M.emergence(network, state, do_coarse_grain=False, do_blackbox=True).emergence  (try/except)
     # Etape 3 : both    = M.emergence(network, state, do_coarse_grain=True,  do_blackbox=True).emergence   (try/except)
@@ -7418,7 +7418,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,e3509ff0,co
 # Test (decommenter une fois implemente) :
 # print(compare_strategies(pyphi.examples.macro_network(), (0, 0, 0, 0)))
 print(""Exercice 3 a completer"")",,,,,,,,f1c0c23ef453f60b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,7f469a93,markdown,fr,1dfb92c1e67ceec0,"## Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,7f469a93,markdown,fr,1dfb92c1e67ceec0,"## Conclusion
 
 L'**émergence causale** renverse une intuition réductionniste : la description la plus fine n'est
 pas toujours la plus causale. Avec le module `pyphi.macro` (le vrai outil SOTA), nous avons :
@@ -7438,27 +7438,28 @@ littérature multi-échelle.
 
 ### Et ensuite ?
 
-- [ICT-1 — Trajectoires de $\Phi$](ICT-01-PhiTrajectories-Python.ipynb) : comment $\Phi$ varie le long
+- [ICT-1 — Trajectoires de $\Phi$](../ICT-01-PhiTrajectories-Python.ipynb) : comment $\Phi$ varie le long
   d'une trajectoire d'états (à échelle fixe).
 - **[ICT-6 — Pont tri → TPM → PyPhi](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** : construire la TPM d'une simulation de
-  [tri-morphogenèse](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) puis lui appliquer cette analyse
+  [tri-morphogenèse](../ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) puis lui appliquer cette analyse
   d'émergence — relier les deux piliers de la série.
-- [ICT-0 — Cadrage](ICT-0-Framing.md) : place de ce notebook dans la feuille de route.
+- [ICT-0 — Cadrage](../ICT-0-Framing.md) : place de ce notebook dans la feuille de route.
 
 ### Pour aller plus loin
-- **[Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb)** : l'armature formelle unifiée de Pearl (échelle + 3 règles du do-calculus, paradigme interventionniste) exécutée sur `dowhy`, à mettre en regard de l'émergence causale de Hoel (information effective) de ce notebook.
+- **[Notebook-pont — du graphe causal au do-calculus](../../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb)** : l'armature formelle unifiée de Pearl (échelle + 3 règles du do-calculus, paradigme interventionniste) exécutée sur `dowhy`, à mettre en regard de l'émergence causale de Hoel (information effective) de ce notebook.
 
 - Hoel, E. (2017). *When the map is better than the territory*. **Entropy**.
 - Jansma, A. & Hoel, E. (2025). *Engineering Emergence*. arXiv.
 - Documentation PyPhi : module [`pyphi.macro`](https://pyphi.readthedocs.io).",,,,,,,,1dfb92c1e67ceec0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-title,markdown,fr,3085e77d9906b0cf,"# ICT-6 — Du tri a la chaîne de Markov : emergence causale d'une morphogenese (CE 2.0)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-title,markdown,fr,3085e77d9906b0cf,"# ICT-6 — Du tri a la chaîne de Markov : emergence causale d'une morphogenese (CE 2.0)
 
-> Serie **ICT** (*Integrated Causal Trajectories*), Epic #4588. Voir le [cadrage ICT-0](ICT-0-Framing.md).
+> Serie **ICT** (*Integrated Causal Trajectories*), Epic #4588. Voir le [cadrage ICT-0](../ICT-0-Framing.md).
 > Ce notebook construit le **pont tri -> TPM** annonce dans la feuille de route : il transforme les
-> trajectoires de [self-sorting d'ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) en une **chaîne de
+> trajectoires de [self-sorting d'ICT-2](../ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) en une **chaîne de
 > Markov** etat-a-etat, puis y mesure l'**emergence causale** avec l'outillage moderne de
-> *Causal Emergence 2.0* (Erik Hoel, [arXiv:2503.13395](https://arxiv.org/abs/2503.13395), 2025).",,,,,,,,3085e77d9906b0cf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-intro,markdown,fr,edf814c8d07bf9eb,"## Pourquoi ICT-6 ? La limite de PyPhi, et ce qui passe a l'echelle
+> *Causal Emergence 2.0* (Erik Hoel, [arXiv:2503.13395](https://arxiv.org/abs/2503.13395), 2025).
+> [↑ ICT-Series](../README.md) — suite directe : [ICT-7 (signatures scale-free & criticalité)](ICT-07-ScaleFreeSignatures-Python.ipynb)",,,,,,,,3085e77d9906b0cf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-intro,markdown,fr,edf814c8d07bf9eb,"## Pourquoi ICT-6 ? La limite de PyPhi, et ce qui passe a l'echelle
 
 [ICT-5](ICT-05-CausalEmergence-Python.ipynb) a mesure l'emergence causale avec le **vrai** module
 `pyphi.macro` : il enumere les regroupements (coarse-grain) d'un petit reseau et cherche l'echelle
@@ -7473,9 +7474,9 @@ On ne peut donc pas le donner tel quel a PyPhi.
 **Idee d'ICT-6.** On n'a pas besoin de $\Phi$ pour parler d'emergence causale. Il suffit d'une
 **matrice de transition etat-a-etat** (une chaîne de Markov) et des primitives causales de Hoel
 (determinisme, degenerescence, *effectiveness*, information effective). Le module
-[`ict.causal_emergence`](ict/causal_emergence.py) opere directement sur une telle matrice $n \times n$ :
+[`ict.causal_emergence`](../ict/causal_emergence.py) opere directement sur une telle matrice $n \times n$ :
 il **passe a l'echelle** la ou PyPhi cale. Le chainon manquant est l'**estimation de la TPM a partir
-des trajectoires simulees**, fournie par [`ict.tpm_estimation`](ict/tpm_estimation.py).
+des trajectoires simulees**, fournie par [`ict.tpm_estimation`](../ict/tpm_estimation.py).
 
 Le fil du notebook :
 
@@ -7491,9 +7492,9 @@ Le fil du notebook :
 > l'emergence causale (Hoel, Albantakis & Tononi, PNAS 2013). Le depot de reference
 > `github.com/jessescool/Causal-Emergence-2.0` ne porte **aucune licence** : son code n'est pas
 > reutilise, il est seulement cite a des fins de comparaison.",,,,,,,,edf814c8d07bf9eb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-setup,code,fr,47e3e11ca82f2438,"# --- Imports et configuration ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-setup,code,fr,47e3e11ca82f2438,"# --- Imports et configuration ---
 import sys, os
-sys.path.insert(0, os.path.abspath("".""))  # le package `ict/` est a cote de ce notebook
+sys.path.insert(0, os.path.dirname(os.path.abspath(""."")))  # acces au package `ict` pose a cote des notebooks (un niveau au-dessus)
 
 import random
 import numpy as np
@@ -7511,9 +7512,9 @@ print(""numpy"", np.__version__)
 print(""algotypes disponibles :"", ALGOTYPES)
 print(""primitives CE 2.0 :"", [f for f in (""determinism"", ""degeneracy"", ""specificity"",
       ""effectiveness"", ""effective_information"", ""greedy_apportionment"", ""emergent_complexity"")])",,,,,,,,47e3e11ca82f2438,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-recall-md,markdown,fr,39d85bee51347cd7,"## 1. Rappel — un système qui se trie lui-même
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-recall-md,markdown,fr,39d85bee51347cd7,"## 1. Rappel — un système qui se trie lui-même
 
-Dans [ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb), chaque élément du tableau est une **cellule
+Dans [ICT-2](../ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb), chaque élément du tableau est une **cellule
 autonome** : elle ne voit que sa voisine et applique une règle locale (`bubble` regarde a droite,
 `insertion` regarde a gauche). L'ordre global n'est impose par personne — il **emerge** des decisions
 locales. Le tri devient une **trajectoire** dans l'espace des configurations : exactement l'objet
@@ -7521,7 +7522,7 @@ d'étude de la serie ICT.
 
 Rejouons une trajectoire et regardons sa **sortedness** (degré de tri, dans $[0, 1]$) monter au fil
 des activations.",,,,,,,,39d85bee51347cd7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-recall-code,code,fr,05eecab66837a53a,"# Une morphogenese par tri : 6 cellules 'bubble', depart melange, scheduler asynchrone seede.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-recall-code,code,fr,05eecab66837a53a,"# Une morphogenese par tri : 6 cellules 'bubble', depart melange, scheduler asynchrone seede.
 demo = SelfSortingArray([3, 1, 5, 0, 4, 2], seed=1)
 demo.run(max_steps=500)
 
@@ -7529,7 +7530,7 @@ vals = demo.probe.values
 print(""configuration initiale :"", vals[0],  "" sortedness ="", round(sm.sortedness(vals[0]), 3))
 print(""configuration finale   :"", vals[-1], "" sortedness ="", round(sm.sortedness(vals[-1]), 3))
 print(""nombre de pas enregistres :"", len(vals) - 1, "" | swaps :"", demo.probe.swaps)",,,,,,,,05eecab66837a53a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-recall-plot,code,fr,9b71473625f89f96,"# Courbes de tri le long de la trajectoire (rappel ICT-2)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-recall-plot,code,fr,9b71473625f89f96,"# Courbes de tri le long de la trajectoire (rappel ICT-2)
 sortedness = sm.sortedness_curve(vals)
 inversions = sm.inversions_curve(vals)
 
@@ -7541,12 +7542,12 @@ ax2.plot(inversions, color=""tab:red"")
 ax2.set_title(""Inversions restantes"")
 ax2.set_xlabel(""pas""); ax2.set_ylabel(""# inversions"")
 plt.tight_layout(); plt.show()",,,,,,,,9b71473625f89f96,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-recall-interp,markdown,fr,7c355437e5b66a9f,"La trajectoire descend de facon **monotone non triviale** : la sortedness monte vers 1, les inversions
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-recall-interp,markdown,fr,7c355437e5b66a9f,"La trajectoire descend de facon **monotone non triviale** : la sortedness monte vers 1, les inversions
 tombent vers 0, mais pas en ligne droite (le scheduler asynchrone choisit une cellule au hasard a chaque
 pas, donc certains pas sont « a vide »). C'est cette **dynamique stochastique** qui, agregee sur de
 nombreuses trajectoires, va devenir une chaîne de Markov : un etat de tri donne ne mene pas toujours au
 même etat suivant, et c'est précisément ce bruit qui rend la question de l'echelle interessante.",,,,,,,,7c355437e5b66a9f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-tpm-md,markdown,fr,ec1bafd8057963da,"## 2. De la trajectoire a la chaîne de Markov
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-tpm-md,markdown,fr,ec1bafd8057963da,"## 2. De la trajectoire a la chaîne de Markov
 
 **Micro-etat = la configuration complete** (le tuple des valeurs, p.ex. `(3, 1, 0, 2)`). Pour $n = 4$
 valeurs distinctes, il y a $4! = 24$ micro-etats possibles.
@@ -7558,7 +7559,7 @@ la graine — d'ou des etats suivants différents, donc des transitions reelleme
 
 `ict.tpm_estimation.tpm_from_trajectories` compte ces transitions et renvoie une TPM **ligne-stochastique**
 $P[i, j] = \Pr(\text{etat suivant} = j \mid \text{etat courant} = i)$, avec un mapping etat -> indice.",,,,,,,,ec1bafd8057963da,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-tpm-code,code,fr,aecec3a6b48cf505,"def collect_trajectories(n=4, algotypes=None, frozen=None,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-tpm-code,code,fr,aecec3a6b48cf505,"def collect_trajectories(n=4, algotypes=None, frozen=None,
                          n_starts=40, seeds=6, max_steps=400, seed_shuffle=0):
     '''Agrege des trajectoires de self-sorting (micro-etats = tuples de valeurs).
 
@@ -7584,19 +7585,19 @@ print(""trajectoires agregees :"", len(trajs))
 print(""micro-etats observes  :"", len(mapping), ""/ 24 permutations possibles"")
 print(""forme de la TPM       :"", tpm_micro.shape)
 print(""verif : chaque ligne somme a 1 ?"", np.allclose(tpm_micro.sum(axis=1), 1.0))",,,,,,,,aecec3a6b48cf505,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-tpm-plot,code,fr,997ad1426eb16f90,"# Visualisation de la chaine de Markov micro (24 x 24)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-tpm-plot,code,fr,997ad1426eb16f90,"# Visualisation de la chaine de Markov micro (24 x 24)
 fig, ax = plt.subplots(figsize=(6, 5))
 im = ax.imshow(tpm_micro, cmap=""magma"", vmin=0, vmax=1)
 ax.set_title(""TPM micro : P(etat suivant | etat courant)"")
 ax.set_xlabel(""indice etat suivant""); ax.set_ylabel(""indice etat courant"")
 fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label=""probabilite"")
 plt.tight_layout(); plt.show()",,,,,,,,997ad1426eb16f90,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-tpm-interp,markdown,fr,4e2f7bebbe722f2e,"La matrice est **creuse et directionnelle** : depuis un etat donne, le tri ne peut qu'**enlever** une
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-tpm-interp,markdown,fr,4e2f7bebbe722f2e,"La matrice est **creuse et directionnelle** : depuis un etat donne, le tri ne peut qu'**enlever** une
 inversion (jamais en ajouter), donc chaque ligne ne charge que quelques etats « plus tries ». L'etat
 parfaitement trie est **absorbant** (auto-transition de probabilite 1, `unseen=""self""`) : c'est le point
 fixe de la morphogenese. Cette structure de flot vers un attracteur unique est typique des dynamiques
 de développement — et c'est sur elle qu'on va lire l'emergence causale.",,,,,,,,4e2f7bebbe722f2e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-micro-md,markdown,fr,e5facbb4a6468071,"## 3. Le profil causal micro
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-micro-md,markdown,fr,e5facbb4a6468071,"## 3. Le profil causal micro
 
 Sous une **intervention uniforme** sur les etats (le `do` de Hoel : on force le système dans chaque
 etat avec la même probabilite et on regarde l'effet), on calcule :
@@ -7609,16 +7610,16 @@ etat avec la même probabilite et on regarde l'effet), on calcule :
 - **effectiveness** $= \text{determinisme} - \text{degenerescence}$ — grandeur causale *scale-free*
   dans $[0, 1]$ ;
 - **information effective** $\text{EI} = \text{effectiveness} \times \log_2 n$ (en bits).",,,,,,,,e5facbb4a6468071,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-micro-code,code,fr,88e1dc029ebd1695,"prof = CE.causal_profile(tpm_micro)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-micro-code,code,fr,88e1dc029ebd1695,"prof = CE.causal_profile(tpm_micro)
 print(""Profil causal MICRO (24 etats)"")
 print(""-"" * 34)
 for k in (""determinism"", ""degeneracy"", ""specificity"", ""effectiveness"", ""effective_information""):
     print(f""  {k:22s} : {float(prof[k]):.4f}"")",,,,,,,,88e1dc029ebd1695,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-micro-interp,markdown,fr,5158d07e45c8be1f,"Le micro-niveau est **assez déterministe** (le tri ne disperse pas beaucoup : depuis un etat, peu
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-micro-interp,markdown,fr,5158d07e45c8be1f,"Le micro-niveau est **assez déterministe** (le tri ne disperse pas beaucoup : depuis un etat, peu
 d'etats suivants sont possibles) et **très spécifique** (peu de degenerescence : les effets renseignent
 bien sur la cause). L'effectiveness micro sert de **reference** : la question de l'emergence est de
 savoir si une description plus *grossiere* (macro) fait **plus** de travail causal que celle-ci.",,,,,,,,5158d07e45c8be1f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-naive-md,markdown,fr,ffb754952d71135f,"## 4. Un macro « intuitif » ne suffit pas
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-naive-md,markdown,fr,ffb754952d71135f,"## 4. Un macro « intuitif » ne suffit pas
 
 Quel macro-etat choisir ? L'intuition souffle : le **niveau de tri** (le nombre d'inversions, de 0 a
 $\binom{n}{2} = 6$ pour $n = 4$). Regroupons toutes les permutations de même nombre d'inversions en un
@@ -7626,7 +7627,7 @@ seul macro-etat et estimons la chaîne de Markov **a ce niveau**.
 
 > On re-etiquette chaque etat de trajectoire par son nombre d'inversions, puis on reestime la TPM :
 > même pont (`tpm_estimation`), mais sur des etats macro.",,,,,,,,ffb754952d71135f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-naive-code,code,fr,a9b05b09568aabea,"# Macro intuitif : regrouper les etats par niveau d'inversions (sortedness level)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-naive-code,code,fr,a9b05b09568aabea,"# Macro intuitif : regrouper les etats par niveau d'inversions (sortedness level)
 trajs_lvl = [[sm.inversion_count(list(s)) for s in traj] for traj in trajs]
 tpm_lvl, lvl_map = TE.tpm_from_trajectories(trajs_lvl, unseen=""self"")
 
@@ -7637,13 +7638,13 @@ print(f""effectiveness MICRO (24 etats)            : {eff_micro:.4f}"")
 print(f""effectiveness MACRO 'niveau de tri' ({tpm_lvl.shape[0]} etats) : {eff_lvl:.4f}"")
 print(f""gain du macro intuitif                    : {eff_lvl - eff_micro:+.4f}"")
 print(""\nemergence causale obtenue par ce macro ?"", ""OUI"" if eff_lvl > eff_micro else ""NON"")",,,,,,,,a9b05b09568aabea,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-naive-interp,markdown,fr,ec30db4c6cf6749c,"**Le macro intuitif ECHOUE** : regrouper par niveau de tri *baisse* l'effectiveness. La raison est
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-naive-interp,markdown,fr,ec30db4c6cf6749c,"**Le macro intuitif ECHOUE** : regrouper par niveau de tri *baisse* l'effectiveness. La raison est
 instructive — en oubliant *quelle* inversion subsiste, on rend les transitions **plus floues** (un même
 niveau de tri peut descendre vers plusieurs niveaux selon la permutation exacte). C'est exactement la
 lecon d'honnetete d'[ICT-5](ICT-05-CausalEmergence-Python.ipynb) : **l'emergence n'est pas automatique**, et un
 coarse-graining « evident » peut tout aussi bien *detruire* de l'information causale. Il faut une méthode
 qui **cherche** la bonne echelle.",,,,,,,,ec30db4c6cf6749c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-greedy-md,markdown,fr,d22c6c488c9f81fa,"## 5. Apportionnement glouton — trouver l'echelle emergente
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-greedy-md,markdown,fr,d22c6c488c9f81fa,"## 5. Apportionnement glouton — trouver l'echelle emergente
 
 CE 2.0 ne se contente pas d'une echelle : il construit un **chemin d'echelles** micro -> macro. A chaque
 pas, `greedy_apportionment` essaie toutes les fusions de paires d'etats et retient celle qui **maximise**
@@ -7655,7 +7656,7 @@ sur le macro tire uniformement parmi ses micro-constituants).
 > par le retrecissement de $\log_2 n$ au coarse-graining : elle baisse mecaniquement même quand la
 > structure causale s'ameliore. L'**effectiveness**, scale-free, est la grandeur que l'article apportionne
 > le long du chemin.",,,,,,,,d22c6c488c9f81fa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-greedy-code,code,fr,45001da5d453df03,"res = CE.greedy_apportionment(tpm_micro)  # primitive par defaut = effectiveness
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-greedy-code,code,fr,45001da5d453df03,"res = CE.greedy_apportionment(tpm_micro)  # primitive par defaut = effectiveness
 
 print(""Chemin d'echelles (micro -> macro) :"")
 print(f""{'taille':>7} {'effectiveness':>14} {'EI (bits)':>11} {'determinisme':>13} {'delta_cp':>10}"")
@@ -7669,7 +7670,7 @@ eff_vals = [s[""effectiveness""] for s in res[""scales""]]
 print(f""\neffectiveness : micro = {eff_vals[0]:.4f}  ->  macro le plus grossier = {eff_vals[-1]:.4f}"")
 print(f""emergence causale (macro > micro) ? {'OUI' if max(eff_vals) > eff_vals[0] else 'NON'}""
       f""  (+{max(eff_vals) - eff_vals[0]:.4f})"")",,,,,,,,45001da5d453df03,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-greedy-plot,code,fr,3f4643cac421f6c6,"# L'effectiveness MONTE au coarse-graining (emergence) ; l'EI en bits DESCEND (log2 n)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-greedy-plot,code,fr,3f4643cac421f6c6,"# L'effectiveness MONTE au coarse-graining (emergence) ; l'EI en bits DESCEND (log2 n)
 sizes = [s[""size""] for s in res[""scales""]]
 effs = [s[""effectiveness""] for s in res[""scales""]]
 eis = [s[""effective_information""] for s in res[""scales""]]
@@ -7685,13 +7686,13 @@ ax2.set_title(""Information effective EI (bits) vs echelle"")
 ax2.set_xlabel(""# macro-etats""); ax2.set_ylabel(""EI (bits)"")
 ax2.invert_xaxis()
 plt.tight_layout(); plt.show()",,,,,,,,3f4643cac421f6c6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-greedy-interp,markdown,fr,c600c19be83b2cc1,"Lu **de droite a gauche** (coarse-graining), l'effectiveness **monte** continument au-dessus de sa valeur
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-greedy-interp,markdown,fr,c600c19be83b2cc1,"Lu **de droite a gauche** (coarse-graining), l'effectiveness **monte** continument au-dessus de sa valeur
 micro : c'est l'**emergence causale**, decouverte automatiquement la ou notre macro intuitif avait echoue.
 Dans le même temps l'**EI en bits descend** — non pas parce que le système « perd » de la causalite, mais
 parce que $\log_2 n$ retrecit quand on fusionne des etats. C'est l'argument central de Hoel (2025) :
 juger l'emergence sur l'EI en bits masque le phenomene ; la grandeur pertinente est l'effectiveness
 *scale-free*.",,,,,,,,c600c19be83b2cc1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ec-md,markdown,fr,48e4942d88e04e63,"## 6. La complexite emergente EC
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ec-md,markdown,fr,48e4942d88e04e63,"## 6. La complexite emergente EC
 
 L'article resume tout le chemin d'echelles par un seul nombre, la **complexite emergente** :
 
@@ -7701,7 +7702,7 @@ ou les $\Delta_i$ sont les **gains** d'effectiveness le long du chemin et $L$ le
 d'echelle. EC est **maximale quand le travail causal est largement distribue** entre les echelles, et
 **nulle** si une seule echelle porte tout le gain. C'est une signature *multi-echelles* : un système a
 forte EC ne se laisse resumer par aucune echelle unique.",,,,,,,,48e4942d88e04e63,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ec-code,code,fr,a9e609521d537c93,"ec = res[""emergent_complexity""]
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ec-code,code,fr,a9e609521d537c93,"ec = res[""emergent_complexity""]
 deltas = res[""deltas""]
 print(f""complexite emergente EC = {ec:.4f}"")
 print(f""nombre de transitions d'echelle L = {len(deltas)}"")
@@ -7717,17 +7718,17 @@ ax.set_xticklabels([f""{a}->{b}"" for a, b in zip(trans_sizes[:-1] + [trans_size
 ax.set_title(""Gain d'effectiveness par transition d'echelle (delta_cp)"")
 ax.set_xlabel(""transition (# etats avant -> apres)""); ax.set_ylabel(""delta effectiveness"")
 plt.tight_layout(); plt.show()",,,,,,,,a9e609521d537c93,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ec-interp,markdown,fr,e5dab7f4467c3953,"Le travail causal n'est **pas** porte par une seule fusion : les gains $\Delta$ se repartissent sur tout
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ec-interp,markdown,fr,e5dab7f4467c3953,"Le travail causal n'est **pas** porte par une seule fusion : les gains $\Delta$ se repartissent sur tout
 le chemin, avec une concentration vers les **echelles les plus grossieres** (les dernières fusions, qui
 condensent les regimes de tri). D'ou une EC elevee : la morphogenese par tri possede une organisation
 causale **reellement multi-echelles**, qu'aucune description unique — ni micro, ni le « niveau de tri »
 intuitif — ne capture a elle seule.",,,,,,,,e5dab7f4467c3953,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-exercises-md,markdown,fr,800b95d5903d2678,"## 7. Exercices
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-exercises-md,markdown,fr,800b95d5903d2678,"## 7. Exercices
 
 Trois exercices pour manipuler le pont tri -> TPM -> emergence. Les cellules de code sont des **squelettes
 a completer** : elles s'executent telles quelles (elles affichent un rappel et renvoient `None`) sans
 casser le notebook. Reutilisez `collect_trajectories`, `TE.tpm_from_trajectories` et le module `CE`.",,,,,,,,800b95d5903d2678,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ex1-md,markdown,fr,e4fc359bada9bcad,"### Exercice 1 — L'effectiveness micro depend-elle de la taille ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ex1-md,markdown,fr,e4fc359bada9bcad,"### Exercice 1 — L'effectiveness micro depend-elle de la taille ?
 
 Faites varier la taille du tableau $n \in \{3, 4, 5\}$ et mesurez l'**effectiveness micro** de la TPM
 estimee pour chaque taille. L'effectiveness micro monte-t-elle, descend-elle, ou reste-t-elle stable
@@ -7737,7 +7738,7 @@ quand le système grandit ?
 - *Indice 2* : ne lancez **pas** `greedy_apportionment` pour $n = 5$ (120 etats : trop couteux) — ici on
   ne demande que l'effectiveness micro, qui est immediate.
 - *Étape* : pour chaque `n`, collecter -> `TE.tpm_from_trajectories` -> `CE.effectiveness`, puis tracer.",,,,,,,,e4fc359bada9bcad,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ex1-code,code,fr,8f86f5294072b89d,"def effectiveness_vs_size(sizes=(3, 4, 5)):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ex1-code,code,fr,8f86f5294072b89d,"def effectiveness_vs_size(sizes=(3, 4, 5)):
     '''Renvoie {n: effectiveness_micro} pour chaque taille de tableau.'''
     results = {}  # n -> effectiveness micro
     # TODO etudiant :
@@ -7750,7 +7751,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipyn
     return None
 
 effectiveness_vs_size()",,,,,,,,8f86f5294072b89d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ex2-md,markdown,fr,96c998bddf6d9a95,"### Exercice 2 — Un tableau chimerique change-t-il l'emergence ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ex2-md,markdown,fr,96c998bddf6d9a95,"### Exercice 2 — Un tableau chimerique change-t-il l'emergence ?
 
 Un tableau **chimerique** melange les algotypes (`bubble` *et* `insertion`). Construisez-en un (p.ex.
 alternance `[""bubble"", ""insertion"", ""bubble"", ""insertion""]` pour $n = 4$), estimez sa TPM, lancez
@@ -7759,7 +7760,7 @@ calcules plus haut. Le melange de règles renforce-t-il ou affaiblit-il la signa
 
 - *Indice* : `collect_trajectories(n=4, algotypes=[""bubble"", ""insertion"", ""bubble"", ""insertion""])`.
 - *Comparer a* : `res[""emergent_complexity""]` et `max(s[""effectiveness""] for s in res[""scales""])`.",,,,,,,,96c998bddf6d9a95,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ex2-code,code,fr,ad7b7a1bc4922b06,"def emergence_chimerique():
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ex2-code,code,fr,ad7b7a1bc4922b06,"def emergence_chimerique():
     '''Compare l'emergence d'un tableau chimerique au bubble pur (res calcule plus haut).'''
     # TODO etudiant :
     #   algos = [""bubble"", ""insertion"", ""bubble"", ""insertion""]
@@ -7771,7 +7772,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipyn
     return None
 
 emergence_chimerique()",,,,,,,,ad7b7a1bc4922b06,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ex3-md,markdown,fr,adffe0d418596077,"### Exercice 3 — La robustesse preserve-t-elle l'emergence ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ex3-md,markdown,fr,adffe0d418596077,"### Exercice 3 — La robustesse preserve-t-elle l'emergence ?
 
 ICT-2/ICT-3 ont montre que le système **se trie quand même** avec une cellule defectueuse (`frozen`,
 mode `passive` : elle n'agit pas mais reste deplacable). Cette robustesse morphogenetique se traduit-elle
@@ -7781,7 +7782,7 @@ estimez la TPM, et comparez determinisme micro + EC au cas sain.
 - *Indice* : `collect_trajectories(n=4, frozen=[False, True, False, False])`.
 - *Reflexion* : une cellule passagere ajoute-t-elle du bruit (baisse du determinisme) ou laisse-t-elle
   l'organisation multi-echelles intacte ?",,,,,,,,adffe0d418596077,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ex3-code,code,fr,aed0b92f61555665,"def emergence_robustesse():
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-ex3-code,code,fr,aed0b92f61555665,"def emergence_robustesse():
     '''Compare emergence avec une cellule frozen passive au cas sain.'''
     # TODO etudiant :
     #   frozen = [False, True, False, False]
@@ -7793,7 +7794,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipyn
     return None
 
 emergence_robustesse()",,,,,,,,aed0b92f61555665,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-conclusion,markdown,fr,93fa8ccd480b41b2,"## Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,ict6-conclusion,markdown,fr,93fa8ccd480b41b2,"## Conclusion
 
 Ce notebook a construit le **pont** annonce dans la feuille de route ICT : des **trajectoires** de
 morphogenese par tri (ICT-2) a une **chaîne de Markov** etat-a-etat (`ict.tpm_estimation`), puis a une
@@ -7810,7 +7811,7 @@ Ce qu'on retient :
 - **EC quantifie la distribution multi-echelles** du travail causal : la morphogenese par tri a une EC
   elevee, signature qu'aucune echelle unique ne la resume.
 
-**Suite — [ICT-7](ICT-0-Framing.md) : signatures scale-free & fractales.** Si le travail causal se
+**Suite — [ICT-7](../ICT-0-Framing.md) : signatures scale-free & fractales.** Si le travail causal se
 distribue sur de nombreuses echelles (EC elevee), la distribution des gains $\Delta$ suit-elle une loi de
 puissance ? ICT-7 cherchera ces signatures *scale-free* sur des systèmes plus grands. Pour relier ce
 niveau d'echelles au **do-calculus** (la même intervention uniforme `do` levee au niveau des
@@ -7823,16 +7824,17 @@ niveau d'echelles au **do-calculus** (la même intervention uniforme `do` levee 
 
 ### Voir aussi
 
-- [ICT-0 — cadrage de la serie](ICT-0-Framing.md) — feuille de route, articles fondateurs.
-- [ICT-2 — self-sorting morphogenesis](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) — le système source.
+- [ICT-0 — cadrage de la serie](../ICT-0-Framing.md) — feuille de route, articles fondateurs.
+- [ICT-2 — self-sorting morphogenesis](../ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) — le système source.
 - [ICT-5 — emergence causale (pyphi.macro)](ICT-05-CausalEmergence-Python.ipynb) — l'approche bornee complementaire.
-- [Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) — l'EI estimée ici repose sur des **interventions uniformes** (`do(s)` sur chaque état, maximum-entropy) : le pont donne l'armature formelle de ce même opérateur `do` (échelle de Pearl + 3 règles, exécutées sur `dowhy`) et relie cette série à Tweety-11, Infer-5 et PyMC-5.
+- [Notebook-pont — du graphe causal au do-calculus](../../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) — l'EI estimée ici repose sur des **interventions uniformes** (`do(s)` sur chaque état, maximum-entropy) : le pont donne l'armature formelle de ce même opérateur `do` (échelle de Pearl + 3 règles, exécutées sur `dowhy`) et relie cette série à Tweety-11, Infer-5 et PyMC-5.
 - Erik Hoel, *Causal Emergence 2.0*, [arXiv:2503.13395](https://arxiv.org/abs/2503.13395), 2025.",,,,,,,,93fa8ccd480b41b2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,ec41a453,markdown,fr,2b2e29eedd21fa83,"# ICT-7 — Signatures *scale-free* & criticalite
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,ec41a453,markdown,fr,2b2e29eedd21fa83,"# ICT-7 — Signatures *scale-free* & criticalite
 
 > Septieme notebook de la serie **Integrated Causal Trajectories** (Epic #4588),
-> qui prolonge [IIT / PyPhi](README.md) de l'étude d'une structure causale *a un
-> instant* vers ses *trajectoires* multi-echelles. Cadrage : [ICT-0](ICT-0-Framing.md).
+> qui prolonge [IIT / PyPhi](../README.md) de l'étude d'une structure causale *a un
+> instant* vers ses *trajectoires* multi-echelles. Cadrage : [ICT-0](../ICT-0-Framing.md).
+> [↑ ICT-Series](../README.md)
 
 Une des questions ouvertes du cadrage : *certains systèmes produisent-ils
 spontanement des signatures multi-echelles, voire **scale-free** (sans echelle
@@ -7857,17 +7859,17 @@ Plan : (1) la boite a outils de diagnostic et le piege du log-log ; (2) un syst�
 **reellement** scale-free (branchement critique, exposant connu) ; (3) le retour au
 tri auto-organise d'ICT-2 — qui *parait* a queue lourde mais possede une echelle
 caractéristique ; (4) auto-similarite et effondrement d'echelle ; (5) trois exercices.",,,,,,,,2b2e29eedd21fa83,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,67d511f5,markdown,fr,79b91675111a6791,"## 1. Mise en place
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,67d511f5,markdown,fr,79b91675111a6791,"## 1. Mise en place
 
 On charge le package `ict` (couche legere a cote de PyPhi, cf. ICT-0). Le module
 `ict.scale_free` fournit les générateurs de reference et les estimateurs ; il ne
 depend que de la bibliotheque standard. `numpy`/`matplotlib` ne servent qu'au
 notebook (calcul leger et figures).",,,,,,,,79b91675111a6791,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,c51ab142,code,fr,ec551fcb27336a81,"import os, sys, random
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,c51ab142,code,fr,ec551fcb27336a81,"import os, sys, random
 import numpy as np
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, os.path.abspath("".""))
+sys.path.insert(0, os.path.dirname(os.path.abspath(""."")))  # acces au package `ict` pose a cote des notebooks (un niveau au-dessus)
 from ict import scale_free as sf
 from ict.self_sorting import SelfSortingArray, ALGOTYPES
 
@@ -7891,14 +7893,14 @@ def deplacements_tri(n, n_runs, seed0=0, max_steps=30000):
     return [x for x in d if x >= 1]
 
 print(""Modules charges. Algotypes du modele de tri :"", ALGOTYPES)",,,,,,,,ec551fcb27336a81,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,7b6d3e66,markdown,fr,10f064fc4ca4809f,"## 2. Le piege du log-log, et la boite a outils
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,7b6d3e66,markdown,fr,10f064fc4ca4809f,"## 2. Le piege du log-log, et la boite a outils
 
 Deux echantillons de même taille : l'un tire d'une **vraie loi de puissance**
 (exposant $\alpha = 2.5$), l'autre d'une **exponentielle**. Tracons leurs CCDF
 (fonction de repartition complementaire $P(X \ge x)$) en log-log. Une loi de
 puissance y est une droite ; une exponentielle, une courbe qui plonge. Le but :
 voir que **a l'oeil, sur la partie basse, les deux peuvent tromper**.",,,,,,,,10f064fc4ca4809f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,51e5681a,code,fr,ea20fa2ba860c020,"rng = random.Random(GRAINE)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,51e5681a,code,fr,ea20fa2ba860c020,"rng = random.Random(GRAINE)
 ech_pl  = sf.sample_powerlaw(2.5, 1.0, 4000, rng)   # vraie loi de puissance
 ech_exp = sf.sample_exponential(0.5, 1.0, 4000, rng)  # echelle caracteristique 1/0.5
 
@@ -7908,7 +7910,7 @@ trace_ccdf(ax, ech_exp, ""exponentielle (taux=0.5)"", ""s"")
 ax.set_xlabel(""x""); ax.set_ylabel(""P(X >= x)"")
 ax.set_title(""Figure 1 - CCDF en log-log : qui est scale-free ?"")
 ax.legend(); fig.tight_layout(); plt.show()",,,,,,,,ea20fa2ba860c020,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,051fe0a2,markdown,fr,495f8b576166ba41,"On ne tranche pas a l'oeil. La méthode (Clauset, Shalizi & Newman) :
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,051fe0a2,markdown,fr,495f8b576166ba41,"On ne tranche pas a l'oeil. La méthode (Clauset, Shalizi & Newman) :
 
 1. **Choisir le seuil de queue** $x_{\min}$ qui *minimise* la distance de
    Kolmogorov-Smirnov entre la queue et sa loi de puissance ajustee
@@ -7921,19 +7923,19 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,051fe0a
    $R$. La fonction `compare_powerlaw_exponential` enchaine tout : elle ne declare
    *scale-free* que si l'ajustement tient (KS faible) **et** que la loi de
    puissance bat l'exponentielle.",,,,,,,,495f8b576166ba41,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,41f3b5ba,code,fr,439d87526dbf2dd2,"for nom, ech, disc in [(""loi de puissance"", ech_pl, False), (""exponentielle"", ech_exp, False)]:
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,41f3b5ba,code,fr,439d87526dbf2dd2,"for nom, ech, disc in [(""loi de puissance"", ech_pl, False), (""exponentielle"", ech_exp, False)]:
     xm = sf.select_xmin(ech, discrete=disc)
     d = sf.compare_powerlaw_exponential(ech, xmin=xm, discrete=disc)
     print(f""{nom:18s} xmin*={xm:6.2f}  alpha={d['alpha']:.2f}  ""
           f""KS={d['ks']:.3f}  R={d['loglik_ratio']:+.0f}  ->  {d['verdict']}"")",,,,,,,,439d87526dbf2dd2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,24046d68,markdown,fr,cddb446408c009ce,"La boite a outils retrouve la verite : l'exposant de la loi de puissance est
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,24046d68,markdown,fr,cddb446408c009ce,"La boite a outils retrouve la verite : l'exposant de la loi de puissance est
 estime a ~2.5 (sa vraie valeur) avec un KS minuscule et un $R$ très positif —
 **scale-free** ; pour l'exponentielle, l'ajustement reste passable mais
 l'exponentielle **est preferee** a la loi de puissance ($R<0$) — **echelle
 caractéristique**. C'est l'etalonnage : la méthode classe correctement des cas dont
 on connait la reponse. On peut maintenant l'appliquer a des systèmes ou on ne la
 connait pas.",,,,,,,,cddb446408c009ce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,b9a5bcbf,markdown,fr,f3c722fe989c7b60,"## 3. Un système reellement scale-free : le branchement critique
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,b9a5bcbf,markdown,fr,f3c722fe989c7b60,"## 3. Un système reellement scale-free : le branchement critique
 
 Le banc d'essai canonique de la criticalite est le **processus de branchement**
 (Galton-Watson) : une graine engendre un nombre aleatoire de descendants
@@ -7949,7 +7951,7 @@ d'avalanche** est le nombre total de noeuds.
 
 C'est notre etalon de *vrai* scale-free, avec un exposant connu d'avance ($1.5$) :
 le diagnostic doit le retrouver.",,,,,,,,f3c722fe989c7b60,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,7477262b,code,fr,8df0ccf9b69ab636,"rng = random.Random(GRAINE + 1)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,7477262b,code,fr,8df0ccf9b69ab636,"rng = random.Random(GRAINE + 1)
 N_AVAL = 15000
 # on compare les deux regimes nets : sous-critique (echelle caracteristique) et
 # critique (scale-free). Le sur-critique produit des avalanches geantes qui debordent.
@@ -7971,7 +7973,7 @@ for mu in (0.5, 1.0):
     d = sf.compare_powerlaw_exponential(finis, xmin=xm, discrete=True)
     a = f""{d['alpha']:.2f}"" if d['alpha'] else ""NA""
     print(f""mu={mu}  xmin*={xm}  alpha={a}  KS={d['ks']:.3f}  ->  {d['verdict']}"")",,,,,,,,8df0ccf9b69ab636,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,64bf01b9,markdown,fr,a637d6498dc1f93d,"Le verdict suit la théorie. Le cas critique $\mu = 1$ est declare **scale-free**, et
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,64bf01b9,markdown,fr,a637d6498dc1f93d,"Le verdict suit la théorie. Le cas critique $\mu = 1$ est declare **scale-free**, et
 surtout l'exposant estime tombe sur $\alpha \approx 1.5$ — exactement le $\tau = 3/2$
 de la loi de Borel : ce n'est pas seulement le verdict qui colle, c'est la *valeur*
 predite d'avance qui est retrouvee. La courbe critique longe la droite de pente
@@ -7986,15 +7988,15 @@ la signature est reelle et non un artefact d'ajustement (l'**Exercice 1** fait
 explorer cette fenêtre). Le scale-free n'est donc **pas** un regime generique : il
 vit sur un point précis. C'est tout l'argument de Jansma & Hoel — une organisation
 multi-echelle nette est un accident finement règle, pas la règle.",,,,,,,,a637d6498dc1f93d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,1236161c,markdown,fr,723b5de0b597f012,"## 4. Retour au tri auto-organise : a queue lourde, mais *pas* scale-free
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,1236161c,markdown,fr,723b5de0b597f012,"## 4. Retour au tri auto-organise : a queue lourde, mais *pas* scale-free
 
 Reprenons le système vedette de la serie : le **tri auto-organise** vue-cellule
-d'[ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) (tableaux chimeriques alternant
+d'[ICT-2](../ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) (tableaux chimeriques alternant
 les algotypes `bubble`/`insertion`). On en extrait une signature naturelle : le
 **deplacement net** de chaque cellule, $\lvert {\rm position\ initiale} - {\rm position\
 finale} \rvert$, sur de nombreuses permutations aleatoires. Certaines cellules voyagent
 loin, d'autres a peine : la distribution a une queue. Est-elle scale-free ?",,,,,,,,723b5de0b597f012,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,b60798e8,code,fr,f96a0905845162b1,"rng = random.Random(GRAINE + 2)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,b60798e8,code,fr,f96a0905845162b1,"rng = random.Random(GRAINE + 2)
 dep = deplacements_tri(n=32, n_runs=140, seed0=0)
 
 fig, ax = plt.subplots(figsize=(6.2, 4.4))
@@ -8010,7 +8012,7 @@ d = sf.compare_powerlaw_exponential(dep, xmin=xm, discrete=True)
 print(f""deplacements du tri : xmin*={xm}  alpha={d['alpha']:.2f}  ""
       f""KS={d['ks']:.3f}  R={d['loglik_ratio']:+.0f}  ->  {d['verdict']}"")
 print(f""deplacement maximal observe = {max(dep)}  (borne par n-1 = {32-1})"")",,,,,,,,f96a0905845162b1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,bd2cf5bd,markdown,fr,7552c11d18096075,"Le piege se referme — et le diagnostic le detecte. A l'oeil, la courbe du tri a bien
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,bd2cf5bd,markdown,fr,7552c11d18096075,"Le piege se referme — et le diagnostic le detecte. A l'oeil, la courbe du tri a bien
 une allure de queue lourde, comparable a celle de l'avalanche critique sur la
 gauche. Mais l'ajustement par loi de puissance **echoue** (KS au-dessus du seuil),
 et la cause saute aux yeux dans la dernière ligne : le deplacement est **borne par
@@ -8024,7 +8026,7 @@ mais ne s'auto-organisent **pas** vers la criticalite. Le scale-free demande un
 reglage particulier (etre poise au bord d'une transition) que ces règles minimales
 ne possedent pas. Mesurer la signature plutot que la supposer evite de prendre une
 queue lourde banale pour une organisation multi-echelle profonde.",,,,,,,,7552c11d18096075,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,a6538aa6,markdown,fr,6ed1227c5058aa6a,"## 5. Auto-similarite et effondrement d'echelle (le cote fractal)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,a6538aa6,markdown,fr,6ed1227c5058aa6a,"## 5. Auto-similarite et effondrement d'echelle (le cote fractal)
 
 Une signature scale-free est **auto-similaire** : zoomer ne change pas la forme.
 Une signature a echelle caractéristique, au contraire, possede *une* echelle qui,
@@ -8034,7 +8036,7 @@ et on renormalise l'axe des x.
 
 Pour le tri, l'echelle candidate est la taille $n$. Tracons les CCDF des
 deplacements pour $n \in \{20, 30, 40\}$, brutes puis renormalisees par $x/n$.",,,,,,,,6ed1227c5058aa6a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,86fe7bca,code,fr,20fd87b4c2bbaa02,"rng = random.Random(GRAINE + 3)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,86fe7bca,code,fr,20fd87b4c2bbaa02,"rng = random.Random(GRAINE + 3)
 deps = {n: deplacements_tri(n=n, n_runs=120, seed0=1000 + n) for n in (20, 30, 40)}
 
 fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
@@ -8048,14 +8050,14 @@ axes[1].set_title(""CCDF renormalisees x/n (effondrement)""); axes[1].set_xlabel
 axes[1].set_ylabel(""CCDF""); axes[1].legend()
 fig.suptitle(""Figure 4 - Effondrement d'echelle : le tri a une echelle caracteristique (= n)"")
 fig.tight_layout(); plt.show()",,,,,,,,20fd87b4c2bbaa02,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,cd3f9984,markdown,fr,0db5a1194ace6d81,"Les CCDF brutes se separent (a gauche) : plus le tableau est grand, plus les
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,cd3f9984,markdown,fr,0db5a1194ace6d81,"Les CCDF brutes se separent (a gauche) : plus le tableau est grand, plus les
 deplacements peuvent etre grands. Renormalisees par $x/n$ (a droite), elles **se
 superposent** : il existait une seule echelle, la taille $n$, et l'avoir retiree
 fait coincider les courbes. C'est la signature même d'une **echelle
 caractéristique** — l'oppose du scale-free, qui ne se laisse reduire par aucune
 renormalisation unique (l'avalanche critique de la Figure 2 garde la même forme a
 toutes les echelles, sa coupure ne faisant que reculer avec la taille du système).",,,,,,,,0db5a1194ace6d81,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,c7bf25e7,markdown,fr,464bfd3e5b6f7b26,"## 6. Garde-fou avance : le test d'adequation par bootstrap
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,c7bf25e7,markdown,fr,464bfd3e5b6f7b26,"## 6. Garde-fou avance : le test d'adequation par bootstrap
 
 Le KS et le rapport $R$ comparent deux modèles ; on peut aller plus loin et demander
 si la loi de puissance ajustee est, *a elle seule*, un modèle credible. `scale_free`
@@ -8067,7 +8069,7 @@ puissance (on ne la rejette pas) ; une **p-valeur proche de 0** la rejette.
 
 Appliquons-le aux deux cas tranches du notebook : le branchement **critique**
 (qu'on attend *confirme*) et les **deplacements du tri** (qu'on attend *rejetes*).",,,,,,,,464bfd3e5b6f7b26,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,b093e1cc,code,fr,50570caae433259b,"boot = random.Random(GRAINE + 4)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,b093e1cc,code,fr,50570caae433259b,"boot = random.Random(GRAINE + 4)
 
 # (a) branchement critique : on attend une confirmation (p-valeur elevee)
 crit = [s for s in avalanches[1.0] if s < 100000]
@@ -8081,7 +8083,7 @@ xm_d = sf.select_xmin(dep, discrete=True)
 d_d = sf.compare_powerlaw_exponential(dep, xmin=xm_d, discrete=True, rng=boot, gof_boot=200)
 print(f""deplacements du tri   : alpha={d_d['alpha']:.2f}  KS={d_d['ks']:.3f}  ""
       f""p-GoF={d_d['gof_pvalue']}  ->  {d_d['verdict']}"")",,,,,,,,50570caae433259b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,034865ba,markdown,fr,482bdcbb9e15d38c,"Le test tranche dans le bon sens : il **confirme** le branchement critique
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,034865ba,markdown,fr,482bdcbb9e15d38c,"Le test tranche dans le bon sens : il **confirme** le branchement critique
 (p-valeur elevee — l'ecart KS est celui d'une vraie loi de puissance) et **rejette**
 les deplacements du tri (p-valeur effondree). C'est le troisieme angle, concordant
 avec le KS et le rapport $R$ : les trois outils designent le même coupable.
@@ -8092,12 +8094,12 @@ $x_{\min}$), le test sur-rejette, même un vrai scale-free, car la loi de puissa
 n'est exacte qu'asymptotiquement. D'ou la règle de la serie : choisir $x_{\min}$ par
 minimisation du KS *d'abord*, puis lire le bootstrap comme un troisieme avis — jamais
 comme un juge unique.",,,,,,,,482bdcbb9e15d38c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,aef3988e,markdown,fr,e8d86c25a32199a1,"## 7. Exercices
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,aef3988e,markdown,fr,e8d86c25a32199a1,"## 7. Exercices
 
 Trois exercices pour s'approprier la detection scale-free. Les solutions ne sont
 pas fournies (cellules a completer) ; le notebook s'execute de bout en bout même
 laissees en l'etat.",,,,,,,,e8d86c25a32199a1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,60222370,markdown,fr,5ed15956a63bb337,"### Exercice 1 — Localiser la criticalite
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,60222370,markdown,fr,5ed15956a63bb337,"### Exercice 1 — Localiser la criticalite
 
 Le branchement est scale-free **exactement** a $\mu = 1$. Balayez $\mu$ de $0.85$ a
 $1.15$ par pas de $0.05$ ; pour chaque valeur, generez un echantillon d'avalanches,
@@ -8111,11 +8113,11 @@ verdict bascule vers *scale-free* et ou l'exposant estime s'approche de $1.5$.
 # Étape 2 : pour chaque mu, diagnostiquer.
 # Étape 3 : conclure sur la fenêtre de mu compatible avec le scale-free.
 ```",,,,,,,,5ed15956a63bb337,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,1b42a3f7,code,fr,50b6ba365a8981f8,"# Exercice 1 : a completer.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,1b42a3f7,code,fr,50b6ba365a8981f8,"# Exercice 1 : a completer.
 # resultat attendu : un tableau (mu, verdict, alpha, KS) montrant la bascule autour de mu=1.
 resultat_ex1 = None  # TODO etudiant
 print(""Exercice 1 a completer"")",,,,,,,,50b6ba365a8981f8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,c70299d4,markdown,fr,0b5ea2b075af27c5,"### Exercice 2 — Classer un echantillon mystere
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,c70299d4,markdown,fr,0b5ea2b075af27c5,"### Exercice 2 — Classer un echantillon mystere
 
 On vous donne un echantillon `mystere` (genere ci-dessous sans vous dire son
 origine). Appliquez la **chaîne complete** de diagnostic et concluez : scale-free ou
@@ -8128,7 +8130,7 @@ echelle caractéristique ? Justifiez avec l'exposant, le KS, et le rapport $R$.
 # Étape 2 : diagnostiquer quantitativement.
 # Étape 3 : ecrire le verdict argumente.
 ```",,,,,,,,0b5ea2b075af27c5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,23c36fbe,code,fr,6aeab3d045030d54,"# Echantillon mystere (ne regardez pas comment il est fait avant d'avoir conclu) :
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,23c36fbe,code,fr,6aeab3d045030d54,"# Echantillon mystere (ne regardez pas comment il est fait avant d'avoir conclu) :
 from statistics import NormalDist
 
 _rng_mystere = random.Random(2024)
@@ -8142,7 +8144,7 @@ mystere = [s for s in mystere if s < 100000]
 # Exercice 2 : a completer.
 resultat_ex2 = None  # TODO etudiant
 print(""Exercice 2 a completer -"", len(mystere), ""observations a classer"")",,,,,,,,6aeab3d045030d54,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,be191021,markdown,fr,dc34fcd1401634c3,"### Exercice 3 — Effondrement d'echelle de votre cru
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,be191021,markdown,fr,dc34fcd1401634c3,"### Exercice 3 — Effondrement d'echelle de votre cru
 
 Reproduisez l'idee de la Figure 4 sur une autre signature du tri : par exemple le
 **nombre total d'echanges** pour trier (au lieu du deplacement). Variez $n$,
@@ -8156,10 +8158,10 @@ renormalisation qui fait coincider les courbes. Si oui, quelle puissance de $n$ 
 # Étape 2 : tracer brut puis renormalise.
 # Étape 3 : identifier l'echelle (la puissance k) qui fait l'effondrement.
 ```",,,,,,,,dc34fcd1401634c3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,556d32d5,code,fr,22102ddd58a8bd49,"# Exercice 3 : a completer.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,556d32d5,code,fr,22102ddd58a8bd49,"# Exercice 3 : a completer.
 resultat_ex3 = None  # TODO etudiant
 print(""Exercice 3 a completer"")",,,,,,,,22102ddd58a8bd49,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,d0f7e15a,markdown,fr,174310e2f1e97f1d,"## Conclusion & ponts
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,d0f7e15a,markdown,fr,174310e2f1e97f1d,"## Conclusion & ponts
 
 - **Detecter une signature scale-free est une competence, pas un coup d'oeil.** Le
   trace log-log trompe : on a vu une queue lourde banale (les deplacements du tri,
@@ -8186,7 +8188,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,d0f7e15
   *se conduisent* vers la criticalite sans reglage externe. Un prolongement
   naturel : un modèle de tri/morphogenese qui s'auto-organiserait vers le scale-free
   produirait-il une emergence causale plus forte (au sens d'ICT-5/6) ?
-- [ICT-0](ICT-0-Framing.md) : ce notebook clot la question des signatures
+- [ICT-0](../ICT-0-Framing.md) : ce notebook clot la question des signatures
   multi-echelles posee dans le cadrage.
 
 **References :**
@@ -8203,7 +8205,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,de10
 
 > **Serie ICT** (Integrated Causal Trajectories, Epic #4588) — strate 2 : *morphogenese dynamique*.
 > Prerequis conseilles : [ICT-0-Framing](ICT-0-Framing.md), et les notebooks de causal emergence
-> [ICT-5](ICT-05-CausalEmergence-Python.ipynb) / [ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb).
+> [ICT-5](ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) / [ICT-6](ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb).
 
 ## Pourquoi monter d'un cran
 
@@ -8512,7 +8514,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,5881
 
 Les deux vallees du paysage forment un **gros-grain** naturel a deux macro-etats — *bas* (surpature) et
 *haut* (vegetalise) — separes par le col instable. C'est exactement le type de **coarse-graining** que
-les notebooks [ICT-5](ICT-05-CausalEmergence-Python.ipynb) et [ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)
+les notebooks [ICT-5](ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) et [ICT-6](ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)
 analysent : on peut estimer une chaîne de Markov a deux etats depuis une trajectoire bruitee et
 mesurer, via l'**information effective**, *quelle echelle fait le plus de travail causal*. Loin du pli,
 la description macro est quasi-déterministe (on reste dans sa vallee) ; pres du pli, la barriere
@@ -8923,7 +8925,7 @@ mesure** :
 - **ICT-10 — Grammaire des catastrophes** : typer les transitions qualitatives (pli, fronce, fourche,
   hysteresis) — la *catastrophe* comme **transition mesuree**, pas comme image.
 - **ICT-11 — Profils d'agence causale** : l'agence aux echelles micro / meso / macro (lien avec la
-  causal emergence d'[ICT-5](ICT-05-CausalEmergence-Python.ipynb) / [ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)).
+  causal emergence d'[ICT-5](ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) / [ICT-6](ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)).
 - **ICT-12 — Renormalisation causale & signatures fractales** : l'**invariance multi-echelle** des
   proprietes causales — le *fractal* comme **invariance testee**, pas comme jolie image.
 - **ICT-Synthese** : reunir $\Phi$, trajectoires, bassins, transitions, reparation, emergence,
@@ -8981,9 +8983,9 @@ falsifiable :
 
 Le fil unificateur est un **appareil de mesure unique**, appliqué à l'identique aux cinq
 substrats : depuis la trajectoire propre de chaque substrat, on estime une **matrice de
-transition état-à-état** (le pont tri → TPM d'[ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb),
+transition état-à-état** (le pont tri → TPM d'[ICT-6](ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb),
 généralisé) ; puis on lui applique la **même batterie d'émergence causale**
-([ICT-5](ICT-05-CausalEmergence-Python.ipynb)/[ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb),
+([ICT-5](ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb)/[ICT-6](ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb),
 cadre *Causal Emergence 2.0* de Jansma & Hoel). C'est le seul instrument de toute la série
 branché **sans modification** sur des substrats radicalement différents.
 ",,,,,,,,962af54baf5741b0,,,,,,,,,,,,,,,
@@ -9003,9 +9005,9 @@ verdict est, de plus en plus, **régime-dépendant** (ICT-10 → ICT-13).
 | **[ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb)** | Le tri est-il une morphogenèse à compétences ? | Robustesse + délai de gratification + auto-réparation OUI ; agrégation « kin » **NON** (impasses) → renvoi ICT-4 | tri homogène 315 pas / 68 swaps ; chimère sortedness 0.784, 4 impasses résiduelles |
 | **[ICT-3](ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb)** | Ces compétences se quantifient-elles ? | OUI : dégradation gracieuse, réparation **24/24**, délai ~90 épisodes | @50 % lésion passif 0.59–0.62 vs obstacle 0.53 ; délai bubble 91.4 / insertion 89.8 |
 | **[ICT-4](ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb)** | Quel enrichissement minimal fait émerger l'agrégation « kin » ? | Réparation bidirectionnelle guérit l'impasse mais **n'agrège pas** ; l'agrégation émerge **seulement** dans les degrés de liberté laissés par le tri | copies=1 (liberté nulle) → agrégation kin ≈ 0 ; décolle dès copies ≥ 2 ; 40/40 → 0/40 non triés |
-| **[ICT-5](ICT-05-CausalEmergence-Python.ipynb)** | L'émergence causale ($\Phi_\text{macro} > \Phi_\text{micro}$) est-elle réelle et systématique ? | **Discriminante**, pas systématique : absente sur des systèmes déjà micro-intégrés | Hoel 0.114 → 0.597 (**+0.483**) ; XOR **−1.375** ; basic\_network **−1.792** |
-| **[ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** | Peut-on porter l'émergence au tri au-delà de PyPhi (CE 2.0) ? | OUI ; le macro *intuitif* (niveau de tri) **échoue**, seul l'apportionnement glouton trouve l'échelle | micro EI 3.29 bits ; macro-tri gain **−0.034** (NON) ; glouton effectiveness 0.717 → 0.826 (**+0.109**) |
-| **[ICT-7](ICT-07-ScaleFreeSignatures-Python.ipynb)** | Le tri auto-organisé est-il scale-free ? | **NON** : échelle caractéristique (la taille $n$, révélée par effondrement d'échelle) ; le scale-free est rare et réglé | branchement critique $\mu$=1 : $\alpha$=1.58, KS=0.017, $p$=0.625 ($\tau$=3/2) ; tri **rejeté** $p$-GoF=0.0 |
+| **[ICT-5](ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb)** | L'émergence causale ($\Phi_\text{macro} > \Phi_\text{micro}$) est-elle réelle et systématique ? | **Discriminante**, pas systématique : absente sur des systèmes déjà micro-intégrés | Hoel 0.114 → 0.597 (**+0.483**) ; XOR **−1.375** ; basic\_network **−1.792** |
+| **[ICT-6](ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** | Peut-on porter l'émergence au tri au-delà de PyPhi (CE 2.0) ? | OUI ; le macro *intuitif* (niveau de tri) **échoue**, seul l'apportionnement glouton trouve l'échelle | micro EI 3.29 bits ; macro-tri gain **−0.034** (NON) ; glouton effectiveness 0.717 → 0.826 (**+0.109**) |
+| **[ICT-7](ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb)** | Le tri auto-organisé est-il scale-free ? | **NON** : échelle caractéristique (la taille $n$, révélée par effondrement d'échelle) ; le scale-free est rare et réglé | branchement critique $\mu$=1 : $\alpha$=1.58, KS=0.017, $p$=0.625 ($\tau$=3/2) ; tri **rejeté** $p$-GoF=0.0 |
 | **[ICT-8](ICT-08-AttractorLandscapesEWS-Python.ipynb)** | Les *early-warning signals* montent-ils **avant** la bascule ? | OUI (variance ↑, AR1 ↑) ; une mesure naïve **fabrique ou masque** le signal | $c_\text{fold}$≈2.604 ; stationnaire $\tau$=+1.00 ; AR1 brute 0.9987 (saturée) vs amincie 0.939 |
 | **[ICT-9](ICT-09-AgencyRegeneration-Python.ipynb)** | Quand un système répare-t-il *sa propre* forme (agence) ? | Agence = **gain de réparation > 0** (réaction-diffusion vs diffusion pure) ; mesure naïve = signal fantôme | gain=1.22 ; cosinus spectral RD 0.631 **<** diffusion 0.735 (fantôme) ; sweep 9/9 positif (moy 1.26) |
 | **[ICT-10](ICT-10-CatastropheGrammar-Python.ipynb)** | La grammaire des catastrophes est-elle mesurable ? $\hat p$ anticipe-t-il ? | OUI en régime non dégénéré ($a<0$) ; hors régime = **fantôme**. $\hat p$ : avantage **régime-dépendant** | comptage [1,3], 2 transitions ; lacet aire signée +1.633 ; $\hat p$ horizon-4 0.055 vs persistance 0.101 ; $a$=+0.5 → 0 saut |
@@ -9143,7 +9145,7 @@ On instancie les trois trajectoires avec la graine représentative `SEED0`. Chac
 ",,,,,,,,58902fb68cc0b81f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb,ac4cdea3,markdown,fr,713006d52f5558eb,"### S1 — le tri auto-organisé (strate 1)
 
-Le banc d'entrée de la série ([ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb)/[ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)) :
+Le banc d'entrée de la série ([ICT-2](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb)/[ICT-6](ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)) :
 plusieurs tris distribués, résumés par leur **nombre d'inversions** à chaque pas (macro-état
 grossier, borné par $n(n-1)/2$).
 ",,,,,,,,713006d52f5558eb,,,,,,,,,,,,,,,
@@ -9495,13 +9497,13 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb,a309752
 
 - [ICT-0 — Cadrage de la série](ICT-0-Framing.md) : les deux articles fondateurs (Levin ;
   Jansma & Hoel), le principe méthodologique *sans complaisance*, la feuille de route.
-- [ICT-6 — Pont tri → TPM](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) : le pont trajectoire → TPM
+- [ICT-6 — Pont tri → TPM](ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) : le pont trajectoire → TPM
   que ce capstone généralise à cinq substrats.
 - [ICT-15 — Integrated Complexity](ICT-15-IntegratedComplexity-Python.ipynb) : le capstone strate 4 qui
   *étend* cet appareil avec les deux scalaires manquants (surprise F via une TPM held-out,
   compression K via zlib) et pose le gate de convergence Φ/F/K (τ de Kendall par paire +
   coincidence des changepoints au pli de Thom). See #5090.
-- [ICT-5 — Émergence causale](ICT-05-CausalEmergence-Python.ipynb) : la batterie causale (déterminisme,
+- [ICT-5 — Émergence causale](ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) : la batterie causale (déterminisme,
   dégénérescence, information effective) branchée ici sans modification.
 - [ICT-18 — Réversibilisation et flèche du temps](ICT-18-ArrowOfTimeReversibilization-Python.ipynb) : la jambe temporelle de l'émergence (production d'entropie, chaîne réversibilisée) branchée au gate 5.
 - [ICT-19 — Batterie de l'ENJEU](ICT-19-EnjeuBattery-Python.ipynb) et [son raffinement](ICT-19b-EnjeuBattery-Raffinement-Python.ipynb) : l'agence comme auto-maintien après intervention ; le scalaire discret vs la mesure de champ (`repair_gain` = +0.82 ± 0.27), gate 6.
@@ -11004,7 +11006,7 @@ ICT-1 calculait $\Phi$ **état par état** sur le système entier. ICT-2 soulèv
 
 **Lecture IIT de ICT-2.** Le tableau qui se trie est un système $\mathcal{S}$ à $N$ cellules. À chaque état $s_t$, le **tri en cours** est un certain motif (zones homogènes + frontière). La question IIT est : *quelle est la valeur de $\Phi_{\mathrm{CE}}$ du système $\mathcal{S}$ dans cet état ?* Si $\Phi_{\mathrm{CE}} > 0$, le tableau est **causalement intégré** au-dessus de ses parties — la morphogenèse n'est pas un artefact local mais une structure globale qui contraint passé et futur. Si on bipartitionne en deux moitiés du tableau, on mesure l'information que chaque moitié génère *indépendamment* ; le MIP dit « la partition qui enlève le moins d'intégration possible » — c'est précisément la frontière morphologique. **Un tableau déjà trié a un $\Phi_{\mathrm{CE}}$ plus faible qu'un tableau en train de se trier** : une fois l'ordre établi, les cellules n'ont plus d'information à générer les unes sur les autres (leur état futur est fixé par la règle locale). Un tableau **chimerique** (cell 14-16) qui ne se trie pas, lui, conserve un $\Phi_{\mathrm{CE}}$ non trivial mais reste **piégé** dans un attracteur local — information présente, intégration sans progrès : c'est exactement le type de distinction que la triad IIT/ICT permet de poser.
 
-Ce notebook, comme ICT-1, **n'exécute pas PyPhi** sur les tableaux (le code resterait intraitable pour $N > 5$). Il introduit les concepts pour que [ICT-6 (Sorting-to-TPM bridge)](../ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) puisse les opérationnaliser sur les simulations.
+Ce notebook, comme ICT-1, **n'exécute pas PyPhi** sur les tableaux (le code resterait intraitable pour $N > 5$). Il introduit les concepts pour que [ICT-6 (Sorting-to-TPM bridge)](../ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) puisse les opérationnaliser sur les simulations.
 ",,,,,,,,0547786a62535095,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb,8928045b,markdown,fr,08f17103207c190e,"# Tete-a-tete SAE <-> J-space -- les deux lentilles du workspace global sur Qwen3.5-9B-Base (couche 16)
 
@@ -20165,7 +20167,7 @@ Ce que ce notebook ne fait pas : l'**émergence causale** (TPM coarse-grainée, 
 *Suite naturelle : un instrument d'enjeu translationnel (distance entre distributions de formes), et le croisement de cette table avec l'information effective des trajectoires certifiées.*",,,,,,,,d5ff4a0d6021ad04,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-32-StratificationCausaleLife-Python.ipynb,8c949b6b,markdown,fr,72c52f68b5d54ee6,"# ICT-32 — Stratification causale du Jeu de la Vie : l'apportionment de Hoel sur substrat certifié
 
-> **Série** : ICT (Information – Causalité – Topologie), phase narrative de l'issue #5726 — « faire du Jeu de la Vie un *vrai* substrat de stratification ICT ». Prérequis : [ICT-Life-SubstratCertifie-Python.ipynb](ICT-Life-SubstratCertifie-Python.ipynb) (phase-zero, calibration des patterns canoniques) et [ICT-06-SortingToTPM-CausalEmergence-Python.ipynb](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) (l'apportionment appliqué au tri).
+> **Série** : ICT (Information – Causalité – Topologie), phase narrative de l'issue #5726 — « faire du Jeu de la Vie un *vrai* substrat de stratification ICT ». Prérequis : [ICT-Life-SubstratCertifie-Python.ipynb](ICT-Life-SubstratCertifie-Python.ipynb) (phase-zero, calibration des patterns canoniques) et [ICT-06-SortingToTPM-CausalEmergence-Python.ipynb](ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) (l'apportionment appliqué au tri).
 
 La phase-zero a livré un substrat **calibré** : le moteur B3/S23 reproduit les périodes et déplacements des cinq patterns canoniques, et le théorème Lean `hashlife_correct` (track `conway_lean`, clos sans `sorry` sur `main`) garantit que ce calcul de trajectoire est correct. Ce notebook pose la question qui reste ouverte : **à quelle échelle le Jeu de la Vie est-il causalement descriptible ?** La batterie de Hoel (*Causal Emergence 2.0*, arXiv:2503.13395) — information effective, effectiveness normalisée, apportionment glouton — répond par la mesure, et la réponse a deux faces :
 
@@ -20341,7 +20343,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-32-StratificationCausaleLife-Python.ipynb,8
 | Partition destin (2×2 / 3×3) | eff 1.000 / 0.998 | **la macro bat le micro** (+0.67 / +0.65) |
 | Partition population (2×2) | eff 0.165 | témoin négatif — une observable ≠ une macro causale |
 
-Le contraste avec le tri ([ICT-6](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)) éclaire la complémentarité des substrats : le tri stratifie **par la trajectoire** (convergence de multiples permutations vers peu d'états triés), le Jeu de la Vie stratifie **par l'ensemble** (la règle elle-même fond les origines). Les deux portent la thèse de Hoel par des voies distinctes — c'est ce qui en fait des bancs complémentaires dans la batterie ICT.
+Le contraste avec le tri ([ICT-6](ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)) éclaire la complémentarité des substrats : le tri stratifie **par la trajectoire** (convergence de multiples permutations vers peu d'états triés), le Jeu de la Vie stratifie **par l'ensemble** (la règle elle-même fond les origines). Les deux portent la thèse de Hoel par des voies distinctes — c'est ce qui en fait des bancs complémentaires dans la batterie ICT.
 
 Le pont Lean reste le garant du socle : `hashlife_correct` (clos, sans `sorry`) certifie que le calcul des trajectoires mesuré ici calcule bien la dynamique naïve qu'il prétend calculer — la calibration de la phase-zero et la stratification de ce notebook héritent de cette garantie. Issue #5726, Epic #4588.",,,,,,,,344b8cea6157b200,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-32-StratificationCausaleLife-Python.ipynb,1d06c07e,markdown,fr,5f772131340d6f45,"## Exercice 1 — les points fixes du tore 2×2
@@ -22728,7 +22730,7 @@ plt.axhline(0, color=""grey"", lw=0.8, ls=""--"")
 plt.xlabel(""pas de simulation""); plt.ylabel(""indice d'agregation 'kin'"")
 plt.title(""L'agregation emerge dans les degres de liberte (mouvements kin seuls)"")
 plt.show()",,,,,,,,4775ac118c4fe28e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-13,markdown,fr,93579d072aa667b8,"**Interprétation — un ordre secondaire dans le jeu laissé par le premier.** La courbe monte **de façon monotone** : chaque mouvement « kin » augmente strictement le voisinage entre semblables, jamais ne le défait. L'agrégation s'installe **sans contrôleur global** et **sans toucher au tri** — elle vit entièrement dans les degrés de liberté que l'ordre des valeurs laisse ouverts. C'est une seconde couche d'organisation causale qui s'installe *par-dessus* la première, là où celle-ci est indifférente. Le motif est profond : la série ICT le retrouvera à l'échelle macro (émergence causale, [ICT-5](../ICT-05-CausalEmergence-Python.ipynb) / [ICT-6](../ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)).",,,,,,,,93579d072aa667b8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-13,markdown,fr,93579d072aa667b8,"**Interprétation — un ordre secondaire dans le jeu laissé par le premier.** La courbe monte **de façon monotone** : chaque mouvement « kin » augmente strictement le voisinage entre semblables, jamais ne le défait. L'agrégation s'installe **sans contrôleur global** et **sans toucher au tri** — elle vit entièrement dans les degrés de liberté que l'ordre des valeurs laisse ouverts. C'est une seconde couche d'organisation causale qui s'installe *par-dessus* la première, là où celle-ci est indifférente. Le motif est profond : la série ICT le retrouvera à l'échelle macro (émergence causale, [ICT-5](../ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) / [ICT-6](../ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)).",,,,,,,,93579d072aa667b8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb,cell-14,code,fr,c39387002f1b63f0,"# --- Exemple guide : depuis un tableau chimerique melange (tri ET agregation) ---
 vals, algos = value_classes(n_classes=6, copies=4, seed=3)
 arr_on  = KinSortingArray(vals, algotypes=algos, seed=3, kin_affinity=True ).run()
@@ -22853,16 +22855,16 @@ La leçon dépasse le tri : une organisation causale **secondaire** peut s'insta
 
 ### Ponts avec le reste de la série
 - **[ICT-2 — Self-sorting morphogenesis](ICT-02-SelfSortingMorphogenesis-Python.ipynb)** : le modèle minimal, ses compétences, et l'impasse que ce notebook lève.
-- **[ICT-5 — Émergence causale](../ICT-05-CausalEmergence-Python.ipynb)** & **[ICT-6 — Pont tri → TPM](../ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** : la même idée — un ordre plus lisible dans les degrés de liberté du niveau inférieur — formalisée comme *causal emergence* (Hoel).
-- **[ICT-7 — Signatures scale-free & fractales](../ICT-07-ScaleFreeSignatures-Python.ipynb)** : les motifs multi-échelles que ces dynamiques engendrent.
+- **[ICT-5 — Émergence causale](../ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb)** & **[ICT-6 — Pont tri → TPM](../ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** : la même idée — un ordre plus lisible dans les degrés de liberté du niveau inférieur — formalisée comme *causal emergence* (Hoel).
+- **[ICT-7 — Signatures scale-free & fractales](../ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb)** : les motifs multi-échelles que ces dynamiques engendrent.
 
 ### Références
 - Zhang, Goldstein & Levin, *Classical sorting algorithms as a model of morphogenesis*, Adaptive Behavior, 2025 — [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).
 - Jansma & Hoel, *Engineering Emergence*, arXiv 2025 (échelles causales pertinentes).
 - Schelling, *Dynamic Models of Segregation*, Journal of Mathematical Sociology, 1971.",,,,,,,,98409660d6be9b19,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb,b97177fd,markdown,fr,ad035e38693b53ac,> **Statut épistémique** — **Établi** : L'émergence causale (Hoel) est discriminante entre échelles. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,ad035e38693b53ac,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,f02d68bd,markdown,fr,47b30f7785d74f24,> **Statut épistémique** — **Établi** : La TPM estimée depuis les trajectoires de tri permet l'émergence causale multi-échelles. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,47b30f7785d74f24,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb,bc900db5,markdown,fr,b1efac0c4849e5f2,"> **Statut épistémique** — **Établi** : Le tri *paraît* scale-free mais possède une taille caractéristique, falsification mesurée par la chaîne complète Clauset-Shalizi-Newman (Hill MLE, KS, comparaison exponentielle, bootstrap GoF). Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,b1efac0c4849e5f2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,b97177fd,markdown,fr,ad035e38693b53ac,> **Statut épistémique** — **Établi** : L'émergence causale (Hoel) est discriminante entre échelles. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).,,,,,,,,ad035e38693b53ac,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,f02d68bd,markdown,fr,47b30f7785d74f24,> **Statut épistémique** — **Établi** : La TPM estimée depuis les trajectoires de tri permet l'émergence causale multi-échelles. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).,,,,,,,,47b30f7785d74f24,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,bc900db5,markdown,fr,b1efac0c4849e5f2,"> **Statut épistémique** — **Établi** : Le tri *paraît* scale-free mais possède une taille caractéristique, falsification mesurée par la chaîne complète Clauset-Shalizi-Newman (Hill MLE, KS, comparaison exponentielle, bootstrap GoF). Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).",,,,,,,,b1efac0c4849e5f2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,statut-epistemique,markdown,fr,98e610156e95f343,"> **Statut épistémique** — **Établi** : Les *early-warning signals* (Scheffer 2009) précèdent la bifurcation pli — signal local, pas déterminisme. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,98e610156e95f343,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,c2b6848b,markdown,fr,ad7d6ed7641ea6fa,"**Lecture chiffree - l'anatomie du pli en trois instantanes.** La sortie imprime les equilibres pour trois pressions. A $c=1{,}80$ : quatre equilibres, dont le col instable a $1{,}30$ et le puits haut stable a $7{,}70$ -- un ecart col-puits de $6{,}4$ (les deux etats stables, $1{,}00$ et $7{,}70$, sont eux separes de $6{,}70$). A $c=2{,}60$ : le col ($4{,}75$) et le puits haut ($4{,}81$) sont a $0{,}06$ l'un de l'autre -- la fusion est en train de s'accomplir, et c'est exactement la pression que les mesures EWS de la section 4 retiendront comme seuil nominal. A $c=3{,}20$ : il ne reste que l'equilibre bas $0{,}34$ ; le paysage a deux puits a cesse d'exister. L'ecart col-puits se comprime de $6{,}4$ a $0{,}06$ sur la meme plage de $c$ qui fait monter les precurseurs -- la figure de gauche montre l'aplatissement du puits, la sortie en donne la geometrie exacte.
 ",,,,,,,,ad7d6ed7641ea6fa,,,,,,,,,,,,,,,
@@ -41429,7 +41431,7 @@ Ce sont les premières **signatures de trajectoires causales intégrées** — l
 - **[IIT-1 — Intro to PyPhi](../../IIT-01-IntroToPyPhi-Python.ipynb)** et **[IIT-2 Advanced Topics](../../IIT-02-AdvancedTopics-Python.ipynb)** : les structures causales *à un instant* (TPM, Φ, CES) dont ICT étudie l'évolution.
 - **[ICT-1 — Φ-trajectories](../ICT-01-PhiTrajectories-Python.ipynb)** : appliquer ces idées de trajectoire à Φ lui-même.
 - **[ICT-4 — Chimeric arrays & emergent aggregation](ICT-04-ChimericArraysKinAggregation-Python.ipynb)** : le jeu de règles plus riche qui reproduit l'agrégation « kin » du papier.
-- **[ICT-6 — Sorting-to-TPM bridge](../ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** : transformer ces simulations en chaînes de Markov, puis en TPM analysables par PyPhi et la *causal emergence*.
+- **[ICT-6 — Sorting-to-TPM bridge](../ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** : transformer ces simulations en chaînes de Markov, puis en TPM analysables par PyPhi et la *causal emergence*.
 
 ### Références
 - Zhang, Goldstein & Levin, *Classical sorting algorithms as a model of morphogenesis*, Adaptive Behavior, 2025 — [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).
