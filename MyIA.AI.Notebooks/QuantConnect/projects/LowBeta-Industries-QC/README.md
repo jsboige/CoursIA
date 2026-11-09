@@ -183,14 +183,16 @@ Quatre exécutions QC Cloud, sur la fenêtre 2010-01-02 → 2026-08-31, même co
 
 ### Verdict
 
-| Fenêtre | Sharpe `bab` | Sharpe SPY | Δ | p de Holm (LW) | Sharpe `6040` | Δ | p de Holm (LW) | Verdict |
+| Fenêtre | Sharpe `bab` | Sharpe SPY | Δ | p de Holm (LW) | Sharpe `6040` | Δ | p de Holm (LW) | Verdict (niveau de preuve) |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
-| w1 (2010-01 → 2024-12) | 0,040 | 0,838 | −0,798 | 0,057 | 0,979 | −0,938 | 0,030 | **NO BEATS** |
-| w2 (2025-01 → 2026-08) | 0,428 | 1,100 | −0,672 | 1,000 | 1,221 | −0,792 | 1,000 | **NO BEATS** |
+| w1 (2010-01 → 2024-12) | 0,040 | 0,838 | −0,798 | 0,057 | 0,979 | −0,938 | 0,030 | **NO BEATS** — écart significatif |
+| w2 (2025-01 → 2026-08) | 0,428 | 1,100 | −0,672 | 1,000 | 1,221 | −0,792 | 1,000 | **NO BEATS** — écart non significatif |
 
 Les valeurs complètes (écart-type, z, intervalle de bootstrap, t de Newey-West, p brutes et p de Holm) sont dans [`measures/league/verdict.json`](measures/league/verdict.json).
 
 **Ce que le verdict dit, et ce qu'il ne dit pas.** Le bras `bab` est **très en dessous** des deux références sur les deux fenêtres, et l'écart est significatif dans le sens défavorable (w1 contre la référence 60/40 : p de Holm = 0,030). La règle de verdict exige un écart de Sharpe **positif** : le verdict est donc `NO BEATS`, pas `INCONCLUSIVE` — l'infériorité est établie, pas l'absence d'effet. Sur w2, l'écart n'est pas significatif (p = 1,000) : la fenêtre récente est courte (20 mois) et le bras y fait 0,428 contre 1,100 pour SPY.
+
+**L'asymétrie de preuve, en clair.** `BEATS` exige un écart **positif** contre les deux références *et* une significativité (p de Holm < 0,05) ; `NO BEATS` n'exige qu'un Sharpe ponctuel inférieur à celui de SPY — **sans** exigence de significativité. Un `NO BEATS` porte donc deux lectures : sur w1 l'infériorité est **établie** (p de Holm = 0,030 contre la référence 60/40) ; sur w2 elle n'est **qu'une estimation ponctuelle** (p = 1,000), la fenêtre de 20 mois ne permettant pas de conclure. La colonne « Verdict (niveau de preuve) » du tableau distingue ces deux lectures.
 
 L'écart de Sharpe de w1 mérite d'être lu avec la puissance du banc : 0,040 contre 0,838 est un écart de 0,80, très au-dessus de l'erreur-type mesurée ailleurs dans ce README. Ce n'est pas un résultat de faible puissance, c'est un résultat négatif.
 

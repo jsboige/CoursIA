@@ -97,7 +97,7 @@ def _series_points(chart: dict) -> dict[str, list[tuple[int, float]]]:
 
     Serie par serie, et non concatenation : deux graphiques qui n'exposent pas
     le meme jeu de series doivent pouvoir etre compares sur ce qu'ils ont en
-    commun, sans que la comparaison segebnisse sur une difference de longueur.
+    commun, sans que la comparaison se fonde sur une difference de longueur.
     """
     out = {}
     _, _, _points, _, _ = _acces_qc()
