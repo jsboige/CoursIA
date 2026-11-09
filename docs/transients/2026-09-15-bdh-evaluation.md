@@ -1,3 +1,5 @@
+> RAPPORT — 2026-09-15 — évaluation du sérieux de BDH (Dragon Hatchling) : aucun des trois chiffres mis en avant par l'issue n'est dans le papier cité, deux micro-reproductions mesurées, révision due ~2027-03 sous 4 conditions — figé
+
 # Évaluation BDH (Dragon Hatchling) — verdict complet
 
 **Évaluation conduite les 2026-09-03 et 2026-09-12 ; note resynchronisée le 2026-09-15.**
@@ -255,8 +257,10 @@ notebook, ni catalogue.
 - Issue [#14489](https://github.com/jsboige/CoursIA/issues/14489) — cahier des charges de cette
   évaluation (verdict et chiffres en commentaires du 2026-09-12)
 - Issue #3801 — EPIC SOTA axe-2 (registre)
-- [`tsad-benchmark-flaws.md`](tsad-benchmark-flaws.md) — précédent d'évaluation critique d'un
+- [`tsad-benchmark-flaws.md`](../ml/tsad-benchmark-flaws.md) — précédent d'évaluation critique d'un
   benchmark ML publié
+- [`sota-verdicts-detail.md`](../reference/sota-verdicts-detail.md) §5 — le noyau durable de cette
+  évaluation (la source réelle d'un claim n'est pas le papier qu'une issue cite)
 - `~/.claude/rules/bibliography-hygiene.md` — règle HARD archivage canonique
 - `~/.claude/rules/sota-not-workaround.md` — 5 verdicts SOTA + procédure INTRINSIC
 - `~/.claude/rules/audit-cross-source-distillation.md` — méthode FIDÈLE/PERTE/DIVERGENCE POSITIVE

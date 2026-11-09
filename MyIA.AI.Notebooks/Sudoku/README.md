@@ -374,11 +374,11 @@ Les notebooks sont adaptés de projets étudiants :
 |-----------|---------|------------|
 | **Norvig** | Solveur Norvig + variante BitArray | `Sudoku.Norvig` + `Sudoku.NorvigBitArray` |
 | **Simulated Annealing** | Recuit simulé | `Sudoku.SimulatedAnnealing` |
-| **Human Stratégies** | Stratégies humaines | `Sudoku.Human` (23 fichiers, 13 techniques) |
+| **Human Stratégies** | Stratégies humaines | `Sudoku.Human` (13 techniques) |
 | **Neural Network** | 4 architectures de réseaux de neurones | `Sudoku.NeuralNetwork` |
-| **PSO** | Optimisation par essaim de particules | `Sudoku.PSO` (7 fichiers) |
+| **PSO** | Optimisation par essaim de particules | `Sudoku.PSO` |
 | **AIMA CSP** | CSP inspiré de AIMA | `Sudoku.CspAima` |
-| **Graph Coloring** | Coloration de graphe | `Sudoku.GraphColoring` (11 fichiers) |
+| **Graph Coloring** | Coloration de graphe | `Sudoku.GraphColoring` |
 | **Choco** | 5 implémentations Choco | `Sudoku.ChocoSolvers` |
 | **LLM** | Résolution par LLM | `Sudoku.LLM-ChatGPTenzin` |
 
