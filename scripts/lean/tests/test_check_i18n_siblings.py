@@ -19,11 +19,13 @@ from check_i18n_siblings import (  # noqa: E402
     check_pair,
     enclosing_lake,
     find_en_files,
+    fr_import_siblings,
     fr_sibling,
     imports_fr_sibling,
     is_half_done,
     is_repo_boilerplate,
     lake_targets,
+    main,
     normalize_body,
     split_decls,
     strip_comments,
@@ -111,6 +113,77 @@ def test_normalize_en_suffix_does_not_mask_real_drift():
     fr = "def f (G : TUGame N) : Nat := 42\n"
     en = "def f (G : TUGame_en N) : Nat := 43\n"
     assert normalize_body(fr) != normalize_body(en)
+
+
+def test_fr_import_advisory_detects_only_declaring_same_lake_imports(tmp_path):
+    lake = tmp_path / "fixture_lean"
+    base = lake / "Alpha" / "Base.lean"
+    base.parent.mkdir(parents=True)
+    (lake / "lakefile.toml").write_text('name = "fixture"\n', encoding="utf-8")
+    base.write_text("namespace Alpha.Base\ndef value := 1\n", encoding="utf-8")
+    base.with_name("Base_en.lean").write_text(
+        "namespace Alpha.Base_en\ndef value := 1\n", encoding="utf-8")
+    alias_target = lake / "Alias.lean"
+    alias_target.write_text("namespace Alias\ndef value := 1\n", encoding="utf-8")
+    alias_target.with_name("Alias_en.lean").write_text(
+        "namespace Alias_en\ndef value := 1\n", encoding="utf-8")
+
+    hybrid = lake / "Alpha" / "Hybrid_en.lean"
+    hybrid.write_text(
+        "import Alpha.Base as Alias Mathlib.Data.Nat.Basic\n"
+        "namespace Alpha.Hybrid_en\ndef own := Alpha.Base.value\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(hybrid) == ["Alpha.Base"]
+
+    # A prose-only mirror remains an exempt consumer, even with the same import.
+    prose = lake / "Alpha" / "Prose_en.lean"
+    prose.write_text(
+        "import Alpha.Base\nnamespace Alpha.Prose_en\nend Alpha.Prose_en\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(prose) == []
+
+    # Declarations under an unsuffixed namespace do not meet the predicate.
+    unsuffixed = lake / "Alpha" / "Unsuffixed_en.lean"
+    unsuffixed.write_text(
+        "import Alpha.Base\nnamespace Alpha.Unsuffixed\ndef own := 1\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(unsuffixed) == []
+
+    # External Mathlib modules and same-lake modules without twins are ignored.
+    no_twin = lake / "Alpha" / "NoTwin.lean"
+    no_twin.write_text("namespace Alpha.NoTwin\ndef value := 1\n", encoding="utf-8")
+    no_twin_user = lake / "Alpha" / "NoTwinUser_en.lean"
+    no_twin_user.write_text(
+        "import Alpha.NoTwin Mathlib.Data.Nat.Basic\n"
+        "namespace Alpha.NoTwinUser_en\ndef own := 1\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(no_twin_user) == []
+
+
+def test_fr_import_advisory_is_opt_in_and_non_gating(tmp_path, capsys):
+    lake = tmp_path / "fixture_lean"
+    module = lake / "Alpha" / "Hybrid_en.lean"
+    module.parent.mkdir(parents=True)
+    (lake / "lakefile.toml").write_text('name = "fixture"\n', encoding="utf-8")
+    (module.parent / "Base.lean").write_text("namespace Alpha.Base\ndef x := 1\n")
+    (module.parent / "Base_en.lean").write_text("namespace Alpha.Base_en\ndef x := 1\n")
+    (module.parent / "Hybrid.lean").write_text(
+        "namespace Alpha.Hybrid\ndef x := 2\n", encoding="utf-8")
+    module.write_text(
+        "import Alpha.Base\nnamespace Alpha.Hybrid_en\ndef x := 2\n",
+        encoding="utf-8",
+    )
+
+    assert main([str(module)]) == 0
+    assert "FR-IMPORT" not in capsys.readouterr().out
+    assert main([str(module), "--fr-import-advisory"]) == 0
+    output = capsys.readouterr().out
+    assert "FR-IMPORT" in output and "Alpha.Base" in output
+    assert "advisory" in output
 
 
 def test_check_pair_matching(tmp_path):
