@@ -4,12 +4,16 @@ Le lot est **advisory** : il mesure, il ne bloque rien. Les proprietes sous
 test sont donc deux :
 
 1. **La selection ne laisse pas passer ce qui doit etre exclu.** Une PR de
-   fork sans l'APPROVE du coordinateur, ou une PR qui porte une reserve, ne
-   doit pas occuper un creneau de runner -- et l'exclusion doit etre **nommee**,
-   pas silencieuse.
+   fork sans l'APPROVE du coordinateur, ou une PR que le coordinateur n'a
+   pas approuvee **a sa tete exacte**, ne doit pas occuper un creneau de
+   runner -- et l'exclusion doit etre **nommee**, pas silencieuse.
 2. **La mesure est exacte.** L'echeance du creneau est le critere qui
    decide si la cadence tient ; un calcul faux de la duree rendrait la
    cadence indécidable.
+3. **Ce que le lot mesure est bien la suite qu'on veut deplacer.** Les
+   cibles de la suite sont LUES dans la jambe `Scripts Tests` (pas
+   recopiees), et l'environnement est installe par le script partage que
+   les deux jambes appellent.
 """
 
 from __future__ import annotations
@@ -27,14 +31,17 @@ sys.path.insert(0, str(CI_DIR))
 
 import heavy_batch  # noqa: E402
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
 
 def _entry(number: int, **kwargs) -> dict:
     base = {
         "number": number,
         "title": f"PR {number}",
         "created_at": f"2026-11-0{number}T00:00:00Z",
+        "head_sha": f"sha-{number}",
         "fork": False,
-        "approved_by_coordinator": False,
+        "approved_by_coordinator": True,
         "verdict": "LGTM",
         "merge_state_status": "CLEAN",
     }
@@ -87,7 +94,7 @@ def test_les_quatre_creneaux_ont_une_echeance_qui_suit_leur_debut() -> None:
 
 
 def test_une_pr_de_fork_sans_approve_du_coordinateur_est_exclue() -> None:
-    entries = [_entry(1, fork=True)]
+    entries = [_entry(1, fork=True, approved_by_coordinator=False)]
     selected, excluded = heavy_batch.select_batch(entries, 4)
     assert selected == []
     assert "APPROVE" in excluded[0]["motif"]
@@ -99,18 +106,32 @@ def test_une_pr_de_fork_avec_approve_du_coordinateur_passe() -> None:
     assert [e["number"] for e in selected] == [1]
 
 
-def test_une_pr_avec_une_reserve_est_exclue() -> None:
-    entries = [_entry(1, verdict="CONCERNS")]
+def test_une_pr_sans_approve_du_coordinateur_est_exclue() -> None:
+    # La porte est l'APPROVE du coordinateur a la tete exacte. Un `LGTM`
+    # dans le corps d'une review Hermes n'est PAS une approbation : c'est un
+    # avis. Le motif d'exclusion nomme la porte ET le verdict de revue.
+    entries = [_entry(1, verdict="LGTM", approved_by_coordinator=False)]
     selected, excluded = heavy_batch.select_batch(entries, 4)
     assert selected == []
-    assert "CONCERNS" in excluded[0]["motif"]
+    assert "APPROVE" in excluded[0]["motif"]
+    assert "LGTM" in excluded[0]["motif"]
 
 
 def test_une_pr_sans_voix_est_exclue() -> None:
-    entries = [_entry(1, verdict="SANS-REVIEW")]
+    entries = [_entry(1, verdict="SANS-REVIEW", approved_by_coordinator=False)]
     selected, excluded = heavy_batch.select_batch(entries, 4)
     assert selected == []
     assert "SANS-REVIEW" in excluded[0]["motif"]
+
+
+def test_le_verdict_de_revue_ne_selectionne_plus_a_lui_seul() -> None:
+    # La porte du lot est celle du merge. Une PR que le coordinateur a
+    # approuvee entre dans le lot meme si un corps porte encore un verdict
+    # d'avis ; c'est l'inverse -- une PR avec un `LGTM` et sans APPROVE --
+    # qui sort.
+    entries = [_entry(1, verdict="CONCERNS", approved_by_coordinator=True)]
+    selected, _excluded = heavy_batch.select_batch(entries, 4)
+    assert [e["number"] for e in selected] == [1]
 
 
 def test_les_prs_plus_anciennes_passent_en_tete() -> None:
@@ -154,17 +175,73 @@ def test_une_review_approvee_du_coordinateur_est_reconnue() -> None:
         "number": 8,
         "title": "une PR de fork",
         "createdAt": "2026-11-01T00:00:00Z",
+        "headRefOid": "sha-8",
         "isCrossRepository": True,
         "mergeStateStatus": "CLEAN",
         "reviewDecision": "APPROVED",
         "reviews": [
-            {"author": {"login": "myia-ai-01"}, "state": "APPROVED", "body": "", "submittedAt": "2026-11-02T00:00:00Z"}
+            {
+                "author": {"login": "myia-ai-01"},
+                "state": "APPROVED",
+                "commit_id": "sha-8",
+                "body": "",
+                "submittedAt": "2026-11-02T00:00:00Z",
+            }
         ],
         "comments": [],
     }
     entry = heavy_batch.build_entry(node)
     assert entry["approved_by_coordinator"] is True
     assert entry["fork"] is True
+
+
+def test_une_approve_portede_sur_une_ancienne_tete_ne_vaut_pas_approbation() -> None:
+    # L'approbation vaut pour la tete qu'elle couvre. Une tete qui a bouge
+    # depuis n'est plus couverte : le contenu approuve n'est plus le contenu
+    # qui mergera.
+    node = {
+        "number": 8,
+        "title": "une PR",
+        "createdAt": "2026-11-01T00:00:00Z",
+        "headRefOid": "sha-8-bis",
+        "isCrossRepository": False,
+        "mergeStateStatus": "CLEAN",
+        "reviews": [
+            {
+                "author": {"login": "myia-ai-01"},
+                "state": "APPROVED",
+                "commit_id": "sha-8",
+                "body": "",
+                "submittedAt": "2026-11-02T00:00:00Z",
+            }
+        ],
+        "comments": [],
+    }
+    entry = heavy_batch.build_entry(node)
+    assert entry["approved_by_coordinator"] is False
+
+
+def test_une_tete_inconnue_ne_vaut_pas_approbation() -> None:
+    # Fail-closed : on ne verifie pas ce qu'on n'a pas lu.
+    node = {
+        "number": 8,
+        "title": "une PR",
+        "createdAt": "2026-11-01T00:00:00Z",
+        "isCrossRepository": False,
+        "mergeStateStatus": "CLEAN",
+        "reviews": [
+            {
+                "author": {"login": "myia-ai-01"},
+                "state": "APPROVED",
+                "commit_id": "sha-8",
+                "body": "",
+                "submittedAt": "2026-11-02T00:00:00Z",
+            }
+        ],
+        "comments": [],
+    }
+    entry = heavy_batch.build_entry(node)
+    assert entry["approved_by_coordinator"] is False
 
 
 def test_une_review_commented_ne_vaut_pas_approve_du_coordinateur() -> None:
@@ -554,3 +631,107 @@ def test_le_resume_nomme_la_pr_coupable() -> None:
     assert payload["arbre_integration"]["pr_coupable"] == 2
     assert payload["arbre_integration"]["prs_integrees"] == [1, 2]
     assert payload["arbre_integration"]["statut"] == "rouge"
+
+
+# --- Ce que le lot mesure (suite et environnement) ------------------------
+
+
+def test_les_cibles_de_la_suite_sont_lues_dans_la_jambe_scripts_tests() -> None:
+    # La source de verite est le workflow de la jambe `Scripts Tests`, pas
+    # une recopie dans l'organe : une recopie deriverait au premier ajout
+    # de cible. Le lot joue donc exactement les chemins de la jambe.
+    cibles = heavy_batch.suite_lourde_cible(REPO_ROOT)
+    assert "scripts/tests" in cibles
+    assert "MyIA.AI.Notebooks/GameTheory/tests" in cibles
+    # et la lecture est STABLE : deux lectures donnent la meme liste
+    assert cibles == heavy_batch.suite_lourde_cible(REPO_ROOT)
+
+
+def test_une_suite_absente_est_non_mesurable(tmp_path: Path) -> None:
+    # Fail-closed : un lot qui jouerait une liste de cibles vide se
+    # presenterait comme un lot vert.
+    with pytest.raises(RuntimeError):
+        heavy_batch.suite_lourde_cible(tmp_path)
+
+
+def test_un_bloc_pytest_derive_est_non_mesurable(tmp_path: Path) -> None:
+    # Le workflow existe mais son bloc pytest a derive : la lecture rend
+    # None, et l'organe leve au lieu de jouer une liste vide.
+    workflow = tmp_path / ".github" / "workflows" / "scripts-tests.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text("name: x\njobs:\n  a:\n    steps:\n      - run: pytest\n", encoding="utf-8")
+    with pytest.raises(RuntimeError):
+        heavy_batch.suite_lourde_cible(tmp_path)
+
+
+def test_le_lot_joue_la_suite_avec_les_memes_options_pytest() -> None:
+    # Mêmes options que la jambe `Scripts Tests` : sinon la durée mesurée
+    # n'est pas comparable à celle de la jambe qu'on veut déplacer.
+    assert heavy_batch.PYTEST_FLAGS == ("-n", "4", "--dist", "loadscope", "--tb=short", "-q")
+
+
+def test_l_environnement_du_lot_est_celui_de_la_suite() -> None:
+    # Un seul script d'installation, appelé par les deux jambes : c'est ce
+    # qui rend les durées comparables. Deux listes recopiées dériveraient.
+    script = REPO_ROOT / "scripts" / "ci" / "install_scripts_tests_deps.sh"
+    assert script.is_file(), "le script d'installation partage doit exister"
+    appels = "bash scripts/ci/install_scripts_tests_deps.sh"
+    for workflow in ("scripts-tests.yml", "slow-lane.yml"):
+        texte = (REPO_ROOT / ".github" / "workflows" / workflow).read_text(encoding="utf-8")
+        assert appels in texte, f"{workflow} doit installer via le script partage"
+
+
+def test_un_lot_vide_measure_la_baseline_sur_main(monkeypatch, tmp_path: Path) -> None:
+    # Lot vide : l'arbre est `main` seul. La suite y est jouee quand meme --
+    # c'est la baseline de la suite sur `main`, la seule comparable quand la
+    # file n'a rien d'approuve a la tete exacte. Le rapport le dit.
+    def _fake_tree(root: Path, numbers: list[int], work_root: Path, dry_run: bool = False):
+        tree = work_root / "integration"
+        tree.mkdir(parents=True, exist_ok=True)
+        return {
+            "chemin": str(tree),
+            "base": "base",
+            "tip": "tip",
+            "prs_integrees": [],
+            "conflits": [],
+            "commits": [],
+            "statut": "construit",
+        }
+
+    monkeypatch.setattr(heavy_batch, "build_integration_tree", _fake_tree)
+    monkeypatch.setattr(heavy_batch, "suite_lourde_cible", lambda tree: ["scripts/tests"])
+    monkeypatch.setattr(heavy_batch, "run_heavy_suite", lambda *a, **k: (0, "1 passed"))
+    record = heavy_batch.run_integration(Path("."), [], tmp_path)
+    assert record["lot_vide"] is True
+    assert record["statut"] == "vert"
+    assert "baseline" in record["detail"]
+
+
+def test_un_rouge_sur_main_seul_n_est_pas_attribue_a_une_pr(monkeypatch, tmp_path: Path) -> None:
+    # Arbre = `main` seul : un rouge la est un rouge HERITE de la base. Il
+    # n'y a rien a bissecter (base == tip), et l'accuser d'une PR du lot
+    # serait une faute d'attribution.
+    def _fake_tree(root: Path, numbers: list[int], work_root: Path, dry_run: bool = False):
+        tree = work_root / "integration"
+        tree.mkdir(parents=True, exist_ok=True)
+        return {
+            "chemin": str(tree),
+            "base": "base",
+            "tip": "tip",
+            "prs_integrees": [],
+            "conflits": [],
+            "commits": [],
+            "statut": "construit",
+        }
+
+    def _boom(*args, **kwargs):
+        raise AssertionError("la bissection ne doit pas etre lancee sur un arbre vide")
+
+    monkeypatch.setattr(heavy_batch, "build_integration_tree", _fake_tree)
+    monkeypatch.setattr(heavy_batch, "suite_lourde_cible", lambda tree: ["scripts/tests"])
+    monkeypatch.setattr(heavy_batch, "run_heavy_suite", lambda *a, **k: (1, "FAILED tests/x.py"))
+    monkeypatch.setattr(heavy_batch, "bisect_lot", _boom)
+    record = heavy_batch.run_integration(Path("."), [], tmp_path)
+    assert record["statut"] == "rouge"
+    assert "herite de la base" in record["detail"]
+    assert "bissection" not in record

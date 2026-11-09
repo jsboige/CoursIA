@@ -326,6 +326,51 @@ Il mesure deux choses :
   21:30Z / 00:00Z). Un lot qui déborde retarde le suivant — la cadence
   tient, ou elle ne tient pas, et c'est cette mesure qui le dira.
 
+### La tranche livrée, et ce qui reste
+
+Cette tranche livre **ce qu'on mesure** :
+
+- l'**arbre d'intégration** — `main` plus les PRs du lot ;
+- la **suite complète** de la jambe `Scripts Tests`, jouée sur cet arbre.
+
+Ce qui reste pour la tranche suivante : le **check-run sur chaque tête du
+lot** (l'étage 2 complet, tel que P4 le décrit). Le lot n'émet aujourd'hui
+aucun check-run et ne juge aucune PR.
+
+### La porte du lot : l'APPROVE du coordinateur à la tête exacte
+
+Une PR n'occupe un créneau que si elle porte l'**APPROVE du coordinateur**
+(`myia-ai-01`) **à sa tête exacte**. C'est la porte que le merge franchit :
+le lot mesure ainsi la durée du lot **réel**, celui qui mergera.
+
+Un `LGTM` dans le corps d'une review Hermes n'est **pas** une approbation —
+c'est un avis, pas la porte. Le verdict de revue est toujours lu et affiché
+dans le rapport (il informe sur l'état de la file), mais il ne sélectionne
+plus.
+
+L'approbation vaut pour la tête qu'elle couvre : une APPROVE posée sur une
+tête qui a bougé depuis ne couvre plus le contenu qui mergera. Et sur une
+même tête, c'est la **dernière** review du coordinateur qui fait foi — une
+APPROVE suivie d'une `CHANGES_REQUESTED` referme la porte.
+
+### L'environnement : celui de la suite, pas une liste recopiée
+
+Le lot installe son environnement avec le **même script** que la jambe
+`Scripts Tests` : `scripts/ci/install_scripts_tests_deps.sh`. Le bloc
+d'installation a été extrait **verbatim** de `scripts-tests.yml` le
+2026-11-09, et les deux jambes l'appellent.
+
+C'est ce qui rend les durées comparables. Une liste de dépendances minimale
+donne des durées qu'on ne peut comparer à rien : une dépendance manquante
+rend la PR « non mesurable » au lieu de la faire échouer.
+
+De même, les **cibles** de la suite ne sont pas recopiées dans l'organe :
+elles sont **lues** dans le bloc pytest de `scripts-tests.yml`
+(`heavy_batch.py::suite_lourde_cible`). Le lot joue donc exactement les
+chemins de la jambe, avec les mêmes options pytest (`-n 4 --dist loadscope
+--tb=short -q`). Un bloc de cible introuvable rend la mesure
+**non mesurable** — jamais un lot vide présenté comme un lot vert.
+
 ### La cadence — quatre créneaux par jour
 
 | Créneau (UTC) | Échéance de fin |
@@ -351,9 +396,11 @@ un lot ne retarde pas le pilote.
 
 ### L'arbre d'intégration
 
-Le lot ne teste pas chaque PR isolément. Il construit l'arbre **qui va
-réellement atterrir** — `main` plus les PRs du lot, dans l'ordre du lot —
-et joue la suite lourde dessus.
+Le lot joue deux temps. D'abord, chaque PR du lot est mesurée **isolément**
+sur sa ref de fusion, avec les tests **sélectionnés par chemin** (la mesure
+fine de l'étage 1). Ensuite — c'est la mesure qui compte — il construit
+l'arbre **qui va réellement atterrir** — `main` plus les PRs du lot, dans
+l'ordre du lot — et joue **la suite complète** dessus.
 
 C'est la seule forme qui supprime **par construction** la classe de #24821
 (`main` rouge après le merge de PRs vertes à leur propre tête, sur un `main`

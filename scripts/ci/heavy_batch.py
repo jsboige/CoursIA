@@ -30,9 +30,12 @@ Regles de selection (dans cet ordre) :
   l'APPROVE du coordinateur (`myia-ai-01`). Le job du lot tourne sans aucun
   secret et avec des permissions minimales : le code d'un fork s'execute
   donc sans rien pouvoir lire ni ecrire de sensible.
-- **Verdict** : la PR doit porter un verdict d'approbation, lu dans les corps
-  (`APPROVED`, `LGTM`). Une PR sans voix, ou avec une reserve, n'occupe pas
-  un creneau de runner.
+- **Porte du merge** : la PR doit porter l'APPROVE du coordinateur
+  (`myia-ai-01`) **a sa tete exacte**. C'est la porte que le merge franchit,
+  donc celle que le lot reellement merge franchit : le lot mesure la duree du
+  lot reel. Un `LGTM` dans le corps d'une review Hermes n'est pas une
+  approbation -- c'est un avis. Le verdict de revue est lu et affiche, il ne
+  selectionne plus.
 - **Anciennete** : les plus anciennes d'abord -- une PR qui vieillit est une
   PR que le lot doit servir avant une autre.
 
@@ -44,10 +47,23 @@ et joue la suite lourde dessus. C'est la seule forme qui supprime par
 construction la classe de #24821 (`main` rouge apres le merge de PRs vertes
 a leur propre tete).
 
+La suite jouee est **celle de la jambe `Scripts Tests`** -- les memes
+chemins, lus dans le workflow (`suite_lourde_cible`), avec les memes options
+pytest, dans le ** meme environnement** (le script d'installation partage
+`scripts/ci/install_scripts_tests_deps.sh`). C'est ce qui rend la duree
+mesuree comparable a celle de la jambe qu'on veut deplacer : une liste de
+dependances minimale, ou une selection par chemin, ne se compare a rien.
+
 Quand l'arbre est rouge, la PR fautive est isolee par **`git bisect run`**
 (l'organe natif), jamais par une recherche maison. Chaque fusion porte le
 sujet `lot: PR #N` : le commit que la bissection isole porte donc le numero
 de la PR, et le coupable est **nomme** sans table de correspondance externe.
+
+**Ce que la tranche 1 livre, et ce qui reste** : la tranche 1 pose ce qu'on
+mesure -- l'arbre d'integration et la suite complete, dans l'environnement
+de la suite. Le check-run **sur chaque tete du lot** (l'etage 2 complet, tel
+que P4 le decrit) reste a venir : le lot n'emet aujourd'hui aucun check-run
+et ne juge aucune PR.
 
 Usage :
     python scripts/ci/heavy_batch.py --repo jsboige/CoursIA --max-prs 4 --json
@@ -82,14 +98,19 @@ if str(CI_DIR) not in sys.path:
     sys.path.insert(0, str(CI_DIR))
 
 import pool_review_verdicts as pool  # noqa: E402
+import guard_test_root as guard  # noqa: E402
 
 DEFAULT_REPO = "jsboige/CoursIA"
 
 #: Le coordinateur : son APPROVE est la porte d'entree des PRs de fork.
 COORDINATOR_LOGIN = "myia-ai-01"
 
-#: Verdicts qui autorisent une PR a occuper un creneau de runner. Lus dans
-#: les corps par `pool_review_verdicts.classify_pr`.
+#: Verdicts d'approbation lus dans les corps par
+#: `pool_review_verdicts.classify_pr`. **INFORMATIFS** : ils n'autorisent
+#: plus une PR a occuper un creneau de runner. Un `LGTM` de Hermes est un
+#: avis, pas la porte ; la porte est l'APPROVE du coordinateur a la tete
+#: exacte (cf. `has_coordinator_approval`). Le verdict reste lu et affiche,
+#: parce qu'il informe le rapport sur l'etat de la file.
 APPROVING_VERDICTS = frozenset({"APPROVED", "LGTM"})
 
 #: Nombre de PRs detaillees par lot. La liste complete des PRs ouvertes est
@@ -99,9 +120,18 @@ APPROVING_VERDICTS = frozenset({"APPROVED", "LGTM"})
 SHORTLIST = 15
 
 #: La suite **lourde** : ce que l'etage 2 joue sur l'arbre d'integration.
-#: C'est la suite de tests du depot, pas la selection ciblee de P2 -- l'etage
-#: 2 teste l'arbre entier, c'est ce qui le distingue de l'etage 1.
-HEAVY_TARGET = ("scripts/tests",)
+#: C'est la suite de la jambe `Scripts Tests` -- lue dans le workflow, jamais
+#: recopiee (cf. `suite_lourde_cible`). C'est ce qui distingue l'etage 2 de
+#: l'etage 1 : l'etage 1 joue les tests *selectionnes par chemin* d'une PR
+#: isolee, l'etage 2 joue la suite **complete** sur l'arbre qui va atterrir.
+SUITE_WORKFLOW = Path(".github/workflows/scripts-tests.yml")
+
+#: Les options pytest de la jambe `Scripts Tests` : 4 workers xdist,
+#: `loadscope`, `--tb=short`, `-q`. Le lot joue la suite **comme elle est
+#: jouee** -- sinon la duree mesuree n'est pas comparable a celle de la
+#: jambe qu'on veut deplacer. (La jambe calcule `xdist_n` a partir de la
+#: memoire du runner, plafonne a 4 : sur le runner du lot, c'est 4.)
+PYTEST_FLAGS = ("-n", "4", "--dist", "loadscope", "--tb=short", "-q")
 
 
 class Slot:
@@ -168,9 +198,13 @@ def build_entry(
     `verdict` et `approved_by_coordinator` peuvent etre fournis : la lecture
     en ligne les calcule depuis le noeud complet, la lecture par phases les
     fournit deja calcules (c'est plus econome sur l'API).
+
+    L'approbation du coordinateur vaut **pour la tete** : une APPROVE posee
+    sur une tete qui a bouge depuis ne couvre pas le contenu qui mergera.
     """
     reviews = node.get("reviews") or []
     comments = node.get("comments") or []
+    head_sha = node.get("headRefOid") or ""
     if verdict is None:
         verdict = pool.classify_pr(
             {
@@ -184,15 +218,17 @@ def build_entry(
             }
         )["verdict"]
     if approved_by_coordinator is None:
-        approved_by_coordinator = any(
+        approved_by_coordinator = bool(head_sha) and any(
             (review.get("author") or {}).get("login") == COORDINATOR_LOGIN
             and (review.get("state") or "") == "APPROVED"
+            and (review.get("commit_id") or review.get("commitId") or "") == head_sha
             for review in reviews
         )
     return {
         "number": node.get("number"),
         "title": node.get("title") or "",
         "created_at": node.get("createdAt") or "",
+        "head_sha": head_sha,
         "fork": bool(node.get("isCrossRepository")),
         "approved_by_coordinator": approved_by_coordinator,
         "verdict": verdict,
@@ -204,6 +240,13 @@ def select_batch(
     entries: list[dict[str, Any]], max_prs: int
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Choisit les PRs du lot et nomme l'exclusion de chacune des autres.
+
+    **La porte est l'APPROVE du coordinateur a la tete exacte.** C'est la
+    meme porte que le merge franchit, donc le lot mesure la duree du lot
+    **reel** -- celui qui mergera. Un `LGTM` dans le corps d'une review
+    Hermes n'est pas une approbation : c'est un avis, pas la porte. Le
+    verdict de revue est lu et affiche (il informe le rapport), mais il ne
+    selectionne plus.
 
     Fonction pure : elle raisonne sur des fiches deja normalisees, sans lire
     l'API. L'ordre est l'anciennete (la plus ancienne d'abord) -- une PR qui
@@ -219,20 +262,44 @@ def select_batch(
         if entry["fork"] and not entry["approved_by_coordinator"]:
             excluded.append({**entry, "motif": "PR de fork sans l'APPROVE du coordinateur"})
             continue
-        if entry["verdict"] not in APPROVING_VERDICTS:
-            excluded.append({**entry, "motif": f"verdict {entry['verdict']}"})
+        if not entry["approved_by_coordinator"]:
+            excluded.append(
+                {
+                    **entry,
+                    "motif": (
+                        "pas d'APPROVE du coordinateur a la tete exacte "
+                        f"(verdict de revue : {entry['verdict']})"
+                    ),
+                }
+            )
             continue
         selected.append(entry)
     return selected, excluded
 
 
-def has_coordinator_approval(repo: str, number: int) -> bool:
-    """Vrai si le coordinateur a APPROVE la PR.
+def has_coordinator_approval(repo: str, number: int, head_sha: str | None = None) -> bool:
+    """Vrai si le coordinateur a APPROVE **cette tete**.
+
+    L'approbation vaut pour la tete qu'elle couvre : une APPROVE posee sur
+    une tete qui a bouge depuis ne couvre plus le contenu qui mergera. C'est
+    l'invariant meme que P4 lira, et la porte que le lot reellement merge
+    doit franchir -- le lot mesure la duree du lot **reel**, donc il
+    selectionne sur la meme porte que le merge.
+
+    Un `LGTM` dans le corps d'une review Hermes n'est **pas** une
+    approbation : c'est un avis, pas la porte. Le verdict de revue reste
+    lu et reste affiche (il informe le rapport), mais il ne selectionne
+    plus.
 
     Lecture REST leger (les reviews d'une PR), et non le champ
     `reviewDecision` : ce dernier vaut `null` a perpetuite sous token
     COMMENT-only (mesure de `pool_review_verdicts.py`).
+
+    **Fail-closed** : une tete inconnue ne vaut pas approbation -- on ne
+    verifie pas ce qu'on n'a pas lu.
     """
+    if not head_sha:
+        return False
     try:
         raw = pool.run_gh(["api", f"repos/{repo}/pulls/{number}/reviews", "--paginate"])
     except RuntimeError:
@@ -243,11 +310,19 @@ def has_coordinator_approval(repo: str, number: int) -> bool:
         return False
     if not isinstance(reviews, list):
         return False
-    return any(
-        (review.get("user") or {}).get("login") == COORDINATOR_LOGIN
-        and (review.get("state") or "") == "APPROVED"
-        for review in reviews
-    )
+    # **Latest-wins** : sur une meme tete, c'est la DERNIERE review du
+    # coordinateur qui fait foi. Une APPROVE suivie d'une
+    # CHANGES_REQUESTED a la meme tete n'est plus une approbation -- la
+    # porte s'est refermee. Les reviews sont renvoyees par ordre de
+    # soumission : on prend donc la DERNIERE qui porte la tete.
+    latest_state: str | None = None
+    for review in reviews:
+        login = (review.get("user") or {}).get("login")
+        commit = review.get("commit_id") or review.get("commitId") or ""
+        if login != COORDINATOR_LOGIN or commit != head_sha:
+            continue
+        latest_state = review.get("state") or ""
+    return latest_state == "APPROVED"
 
 
 def fetch_entries(repo: str, limit: int) -> list[dict[str, Any]]:
@@ -279,7 +354,7 @@ def fetch_entries(repo: str, limit: int) -> list[dict[str, Any]]:
             "--limit",
             str(limit),
             "--json",
-            "number,title,createdAt,isCrossRepository",
+            "number,title,createdAt,isCrossRepository,headRefOid",
         ]
     )
     nodes = json.loads(raw)
@@ -297,7 +372,9 @@ def fetch_entries(repo: str, limit: int) -> list[dict[str, Any]]:
             build_entry(
                 node,
                 verdict=detail.get("verdict") or "SANS-REVIEW",
-                approved_by_coordinator=has_coordinator_approval(repo, number),
+                approved_by_coordinator=has_coordinator_approval(
+                    repo, number, node.get("headRefOid")
+                ),
             )
         )
     return entries
@@ -334,15 +411,18 @@ def fetch_entry_for_pr(repo: str, number: int) -> dict[str, Any]:
     head_repo = ((node.get("head") or {}).get("repo") or {}).get("full_name")
     base_repo = ((node.get("base") or {}).get("repo") or {}).get("full_name")
     detail = pool.fetch_prs(repo, [number]).get(number) or {}
+    head_sha = node.get("head") or {}
+    head_sha = head_sha.get("sha") or ""
     return build_entry(
         {
             "number": number,
             "title": node.get("title") or "",
             "createdAt": node.get("created_at") or "",
+            "headRefOid": head_sha,
             "isCrossRepository": bool(head_repo and base_repo and head_repo != base_repo),
         },
         verdict=detail.get("verdict") or "SANS-REVIEW",
-        approved_by_coordinator=has_coordinator_approval(repo, number),
+        approved_by_coordinator=has_coordinator_approval(repo, number, head_sha),
     )
 
 
@@ -612,6 +692,33 @@ def build_integration_tree(
     return record
 
 
+def suite_lourde_cible(tree: Path) -> list[str]:
+    """Les cibles de la suite lourde, LUES dans la jambe `Scripts Tests`.
+
+    La source de verite est le workflow lui-meme : le bloc pytest de
+    `.github/workflows/scripts-tests.yml`, lu par l'organe
+    `guard_test_root.parse_collected_paths`. Le lot mesure la suite qu'on
+    veut deplacer -- donc il joue **exactement** les memes chemins, lus a la
+    lecture, sans recopie : une recopie deriverait au premier ajout de
+    cible dans la jambe.
+
+    **Fail-closed** : un bloc introuvable leve. Un lot qui jouerait une
+    liste de cibles vide -- ou une liste recopiee, partielle -- se
+    presenterait comme un lot vert alors qu'il n'a pas mesure la suite.
+    """
+    workflow = tree / SUITE_WORKFLOW
+    if not workflow.is_file():
+        raise RuntimeError(f"workflow de la suite introuvable : {workflow}")
+    paths = guard.parse_collected_paths(workflow)
+    if not paths:
+        raise RuntimeError(
+            f"bloc pytest de la suite introuvable dans {workflow} : "
+            "la suite lourde n'est pas mesurable (jamais un lot vide presente "
+            "comme un lot vert)"
+        )
+    return paths
+
+
 def run_heavy_suite(
     tree: Path, targets: list[str], timeout: int = 3600
 ) -> tuple[int, str]:
@@ -623,7 +730,7 @@ def run_heavy_suite(
     """
     try:
         proc = subprocess.run(
-            [sys.executable, "-m", "pytest", *targets, "-q", "--tb=short"],
+            [sys.executable, "-m", "pytest", *targets, *PYTEST_FLAGS],
             cwd=str(tree),
             capture_output=True,
             text=True,
@@ -953,10 +1060,13 @@ def run_integration(
     - **la bissection** : si la suite est rouge, la PR fautive est isolee par
       `git bisect run` et **nommee** par le sujet du commit coupable.
 
-    Un arbre **non construit** (pas de PR integrable) n'est pas un arbre
-    vert : le statut est `non-mesurable`.
+    Un arbre **non construit** n'est pas un arbre vert : le statut est
+    `non-mesurable`. Un arbre **vide** (lot vide : aucune PR approuvee a la
+    tete exacte) est en revanche mesure quand meme : l'arbre est `main`
+    seul, la suite y est jouee, et le rapport le dit -- c'est la baseline
+    de la suite sur `main`, pas un lot.
     """
-    targets = heavy_target or list(HEAVY_TARGET)
+    targets = list(heavy_target) if heavy_target else []
     tree_record = build_integration_tree(root, numbers, work_root, dry_run=dry_run)
     record: dict[str, Any] = {"arbre": tree_record, "statut": "echec"}
     if dry_run:
@@ -967,9 +1077,28 @@ def run_integration(
         return record
     tree = Path(tree_record["chemin"])
     if not tree_record["prs_integrees"]:
-        record["statut"] = "non-mesurable"
-        record["detail"] = "aucune PR integrable dans le lot"
-        return record
+        # Lot vide : l'arbre est `main` seul. La suite y est **quand meme**
+        # jouee -- c'est la duree de la suite complete sur `main`, la seule
+        # baseline comparable quand la file n'a rien d'approuve a la tete
+        # exacte. Le rapport le dit explicitement : ce n'est pas un lot
+        # mesure, c'est une baseline.
+        record["lot_vide"] = True
+        record["detail"] = (
+            "aucune PR approuvee a la tete exacte dans le lot : l'arbre est "
+            "`main` seul, la mesure est la baseline de la suite sur `main`"
+        )
+    if not targets:
+        # Les cibles sont LUES dans la jambe `Scripts Tests` -- la source de
+        # verite, pas une recopie. Une liste recopiee deriverait au premier
+        # ajout de cible, et une liste vide ferait passer un lot incomplet
+        # pour un lot vert.
+        try:
+            targets = suite_lourde_cible(tree)
+        except RuntimeError as exc:
+            record["statut"] = "non-mesurable"
+            record["detail"] = str(exc)
+            return record
+    record["cibles"] = targets
     rc, output = run_heavy_suite(tree, targets)
     record["pytest_rc"] = rc
     record["suite"] = output.strip().splitlines()[-1][:200] if output.strip() else ""
@@ -980,6 +1109,15 @@ def run_integration(
         record["statut"] = "non-mesurable"
         return record
     record["statut"] = "rouge"
+    if record.get("lot_vide"):
+        # Arbre = `main` seul : un rouge ici est un rouge **herite de la
+        # base**, pas la faute d'une PR du lot. Il n'y a rien a bissecter
+        # (base == tip), et le dire serait une faute d'attribution.
+        record["detail"] = (
+            "rouge sur `main` seul (lot vide) : rouge herite de la base, "
+            "pas la faute d'une PR du lot -- pas de bissection"
+        )
+        return record
     record["bissection"] = bisect_lot(
         tree,
         tree_record.get("base"),
@@ -1037,8 +1175,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--bisect-target",
         nargs="+",
-        default=list(HEAVY_TARGET),
-        help="cibles de la suite lourde (mode --bisect-run et phase d'integration)",
+        default=None,
+        help=(
+            "cibles de la suite lourde (mode --bisect-run et phase d'integration). "
+            "Par defaut : elles sont LUES dans la jambe `Scripts Tests` "
+            "(`scripts/ci/heavy_batch.py::suite_lourde_cible`)."
+        ),
     )
     args = parser.parse_args(argv)
 
@@ -1048,7 +1190,15 @@ def main(argv: list[str] | None = None) -> int:
         # `git bisect run` invoque cette commande dans le worktree
         # bissecte : le repertoire courant EST l'arbre teste.
         tree = Path.cwd()
-        code = bisect_run(tree, list(args.bisect_target))
+        try:
+            targets = list(args.bisect_target) if args.bisect_target else suite_lourde_cible(tree)
+        except RuntimeError as exc:
+            # Fail-closed : une suite dont les cibles sont introuvables ne
+            # se teste pas. `125` est le code que `git bisect run` reserve a
+            # « ce commit ne se teste pas » -- jamais « mauvais ».
+            print(str(exc), file=sys.stderr)
+            sys.exit(BISECT_SKIP)
+        code = bisect_run(tree, targets)
         sys.exit(code)
 
     if args.run:
@@ -1077,7 +1227,7 @@ def main(argv: list[str] | None = None) -> int:
             selector if selector.is_file() else None,
             dry_run=args.dry_run,
             integration=args.integration,
-            heavy_target=list(args.bisect_target),
+            heavy_target=list(args.bisect_target) if args.bisect_target else None,
         )
         if args.results_out is not None:
             args.results_out.parent.mkdir(parents=True, exist_ok=True)

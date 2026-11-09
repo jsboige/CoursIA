@@ -118,6 +118,13 @@ name: Slow lane (voie asynchrone, tranches 1-2 #12856)
 #       21:30Z / 00:00Z). Un lot qui deborde retarde le suivant : la cadence
 #       tient ou elle ne tient pas, et c'est cette mesure qui le dira.
 #
+#   TRANCHE LIVREE (P3, tranche 1) : ce que le lot mesure est pose -- l'arbre
+#   d'integration (`main` + les PRs du lot) et la suite COMPLETE de la jambe
+#   `Scripts Tests`, jouee dans le MEME environnement qu'elle (script
+#   d'installation partage `scripts/ci/install_scripts_tests_deps.sh`,
+#   memes options pytest). Ce qui reste pour la tranche 2 : le check-run sur
+#   chaque tete du lot. Le lot n'emet aucun check-run et ne juge aucune PR.
+#
 #   LA CADENCE (quatre creneaux UTC, anti-stampede sur la minute) :
 #     04:30Z, 10:30Z, 16:30Z, 21:30Z. Les creneaux sont volontairement hors
 #     des heures de pointe de la file CI : le lot occupe le parc quand
@@ -143,6 +150,13 @@ name: Slow lane (voie asynchrone, tranches 1-2 #12856)
 #   selection se fait sur le contenu du lot, et l'exclusion est **nommee**
 #   dans le rapport. La designation d'une PR par le coordinateur
 #   (`workflow_dispatch` avec `pr`) ne leve PAS cette garde.
+#
+#   LA PORTE DU LOT : une PR n'occupe un creneau que si elle porte l'APPROVE
+#   du coordinateur **a sa tete exacte** -- la porte que le merge franchit.
+#   Le lot mesure ainsi la duree du lot REEL (celui qui mergera). Un `LGTM`
+#   dans le corps d'une review Hermes n'est pas une approbation : c'est un
+#   avis, pas la porte. Le verdict de revue est lu et affiche dans le
+#   rapport, il ne selectionne plus.
 #
 #   L'ARBRE D'INTEGRATION : le lot ne teste pas chaque PR isolement. Il
 #   construit l'arbre **qui va reellement atterrir** -- `main` plus les PRs
@@ -324,13 +338,15 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: "Dependances minimales du lot"
-        # Le lot lance les tests **CONCERNES** par la PR (selection par
-        # chemin) et la suite lourde sur l'arbre d'integration. Le spectre
-        # des dependances est donc etroit. Une dependance manquante rend
-        # la PR « non mesurable », jamais rouge -- un environnement
-        # incomplet n'est pas une regression.
-        run: pip install --quiet "pytest>=8" pytest-xdist numpy pandas scipy requests pyyaml Pillow
+      - name: "Dependances de la suite (script partage)"
+        # L'environnement du lot est celui de la jambe `Scripts Tests` --
+        # le MEME script d'installation (`scripts/ci/install_scripts_tests_deps.sh`),
+        # appele par les deux jambes. C'est ce qui rend les durees du lot
+        # comparables a celles de la suite qu'on veut deplacer : une liste
+        # de dependances minimale donne des durees qu'on ne peut comparer a
+        # rien (une dependance manquante rend la PR « non mesurable » au
+        # lieu de la faire echouer).
+        run: bash scripts/ci/install_scripts_tests_deps.sh
 
       - name: "Planifier le lot"
         env:
