@@ -162,18 +162,42 @@ public static class FactorGraphHelper
         // vaut "GeneratedSource" par defaut, donc les .gv sont sous {cwd}/GeneratedSource/
         // et le pattern Model_*.gv ne les trouve pas au niveau superieur. Voir #18672.
         var roots = list.ToArray();
+
+        // Portee stricte (fuite mesuree #25362, sonde disque de l'adjoint) : quand
+        // une portee est demandee, l'espace de recherche se REDUIT aux sous-dossiers
+        // GeneratedSource/<scope>/ de chaque racine — l'endroit exact ou le moteur
+        // porte sa portee (ConfigureEngine -> GeneratedSourceFolder =
+        // GeneratedSource/<scope>/). Un artefact "plat" dans le cwd (ou dans
+        // GeneratedSource/ sans la portee) est par definition etranger a la portee :
+        // le laisser dans l'espace de recherche lui ouvrait le chemin du rendu (un
+        // Model_Foreign.svg plat etait rendu pour la portee "A").
+        if (!string.IsNullOrEmpty(scope))
+        {
+            var scopedSeen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var scoped = new List<string>();
+            foreach (var root in roots)
+            {
+                try
+                {
+                    var d = Path.GetFullPath(Path.Combine(root, "GeneratedSource", scope));
+                    if (Directory.Exists(d) && scopedSeen.Add(d))
+                    {
+                        scoped.Add(d);
+                    }
+                }
+                catch
+                {
+                    // chemin invalide -> on ignore
+                }
+            }
+            return scoped.ToArray();
+        }
+
+        // Sans portee : l'espace de recherche large (cwd + GeneratedSource) reste tel
+        // quel — la regle "exactement un candidat" y fait la discrimination.
         foreach (var root in roots)
         {
             Add(Path.Combine(root, "GeneratedSource"));
-            // Portee par carnet/modele : les artefacts ecrits sous un sous-dossier de
-            // nom de portee (ConfigureEngine(engine, scope) -> GeneratedSource/<scope>/)
-            // ne sont pas vus par TopDirectoryOnly au niveau GeneratedSource/ ; on
-            // l'ajoute explicitement pour que la portee devienne effective (defaut
-            // #25276, remede 1+2).
-            if (!string.IsNullOrEmpty(scope))
-            {
-                Add(Path.Combine(root, "GeneratedSource", scope));
-            }
         }
 
         return list.ToArray();

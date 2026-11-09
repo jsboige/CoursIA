@@ -128,6 +128,51 @@ try
     Require(string.Equals(hitParent, segParentA, StringComparison.OrdinalIgnoreCase),
         "La portee \"parentAchild\" doit isoler ce segment, pas ses soeurs.");
 
+    // --- Portee stricte (fuite #25362, sonde disque de l'adjoint) ---
+    // Un artefact "plat" dans le cwd, etranger a la portee, ne doit PAS etre rendu
+    // quand une portee est demandee : l'espace de recherche est reduit a
+    // GeneratedSource/<portee>/, ou seul le graphe du carnet ecrit.
+    var foreignFlat = Path.Combine(testDirectory, "Model_Foreign.svg");
+    File.WriteAllText(foreignFlat, "<svg><text>ANCESTOR_FOREIGN</text></svg>");
+    var scopedLeak = FactorGraphHelper.GetLatestFactorGraphHtml(modelScope: "A");
+    Require(!scopedLeak.Contains("ANCESTOR_FOREIGN", StringComparison.Ordinal),
+        "Un SVG plat etranger au cwd ne doit pas etre rendu pour la portee (fuite #25362).");
+
+    // Positif : un .svg DANS GeneratedSource/<portee>/ est bien rendu pour cette portee.
+    var scopeDir = Path.Combine(testDirectory, "GeneratedSource", "A");
+    Directory.CreateDirectory(scopeDir);
+    var scopedSvg = Path.Combine(scopeDir, "Model_scoped.svg");
+    File.WriteAllText(scopedSvg, "<svg><text>SCOPED_OK</text></svg>");
+    var scopedOk = FactorGraphHelper.GetLatestFactorGraphHtml(modelScope: "A");
+    Require(scopedOk.Contains("SCOPED_OK", StringComparison.Ordinal),
+        "Un SVG dans GeneratedSource/<portee>/ doit etre rendu pour cette portee.");
+
+    // Plusieurs .gv dans la portee + un seul .svg, sans Graphviz : l'ambiguite des
+    // .gv prime — le .svg unique est "etranger" a l'ensemble ambiguo et n'est PAS
+    // rendu (pas de choix silencieux, defaut #25276).
+    var originalPath3 = Environment.GetEnvironmentVariable("PATH");
+    try
+    {
+        Environment.SetEnvironmentVariable("PATH", Path.Combine(testDirectory, "empty-path"));
+        graphvizCacheField.SetValue(null, false);
+        var gv1 = Path.Combine(scopeDir, "Model_a1.gv");
+        var gv2 = Path.Combine(scopeDir, "Model_a2.gv");
+        var loneSvg = Path.Combine(scopeDir, "Model_a1.svg");
+        File.WriteAllText(gv1, "digraph { a1 [label=\"GVA1\"] }");
+        File.WriteAllText(gv2, "digraph { a2 [label=\"GVA2\"] }");
+        File.WriteAllText(loneSvg, "<svg><text>LONE_SVG</text></svg>");
+        var multiGv = FactorGraphHelper.GetLatestFactorGraphHtml(modelScope: "A");
+        Require(multiGv.Contains("ambigu", StringComparison.OrdinalIgnoreCase),
+            "Plusieurs .gv dans la portee = ambiguite nommee, jamais un rendu.");
+        Require(!multiGv.Contains("LONE_SVG", StringComparison.Ordinal),
+            "Le .svg unique est etranger a l'ensemble .gv ambiguo : non rendu.");
+    }
+    finally
+    {
+        Environment.SetEnvironmentVariable("PATH", originalPath3);
+        graphvizCacheField.SetValue(null, previousGraphvizCache);
+    }
+
     Console.WriteLine("FactorGraphHelper selection checks passed.");
 }
 finally
