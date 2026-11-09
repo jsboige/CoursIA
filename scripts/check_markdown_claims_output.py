@@ -754,7 +754,138 @@ def _is_input_specification(prose: str, match_pos: int, match_end: int) -> bool:
         _is_math_parameter_definition(prose, match_pos, match_end)
         or _is_numeric_list_literal(prose, match_pos, match_end)
         or _is_labeled_enumeration_value(prose, match_pos, match_end)
+        or _is_prose_input_specification(prose, match_pos, match_end)
     )
+
+
+_INPUT_LABEL_RE = re.compile(
+    r"(?i)\b(?:param[eè]tre(?:s)?(?:\s+de\s+configuration)?|"
+    r"hyperparam[eè]tre(?:s)?|taille\s+(?:de\s+grille|du\s+batch|de\s+lot)|"
+    r"valeur\s+(?:par\s+d[eé]faut|initiale)|seuil(?:\s+de\s+[\w-]+)?|"
+    r"taux\s+d['’]apprentissage|learning\s+rate|graine|seed|pas\s+de\s+temps)\b"
+)
+_INPUT_ASSIGNMENT_RE = re.compile(
+    r"(?i)(?:\b(?:fix[eé]e?s?|choisi[eé]s?|d[eé]fini[eé]s?|initialis[eé]s?|"
+    r"configur[eé]s?|vaut|est|sera|utilis[eé]s?)\s+(?:[àa]\s+|de\s+)?|"
+    r"\s*(?:=|:)\s*|\s+de\s+)\s*$"
+)
+_RESULT_CONTEXT_RE = re.compile(
+    r"(?i)\b(?:observ[eé]|mesur[eé]|calcul[eé]|obtenu[eé]s?|atteint[eé]s?|"
+    r"r[eé]sultat|sortie|essai|exp[eé]rience)\w*\b"
+)
+
+
+def _is_prose_input_specification(prose: str, match_pos: int, match_end: int) -> bool:
+    """Recognize a narrowly stated configuration value in ordinary prose.
+
+    Both a configuration label and an assignment/declaration immediately
+    before the number are required. This leaves measurements such as
+    « le taux d'apprentissage observé est 0.8 » eligible unless explicitly
+    described as a configured input.
+    """
+    # A configuration label must belong to the value's own clause. Bound the
+    # search at a semicolon, line break, or sentence boundary so a prior input
+    # cannot exempt a later measurement in the same paragraph.
+    boundaries = list(re.finditer(
+        r";|,\s+(?:(?:et|mais)\s+)?(?:la|le|les|un|une|ce|cette|ces|"
+        r"son|sa|ses|il|elle|on)\b|\n|[.!?](?=\s+[A-ZÀ-Þ])",
+        prose[:match_pos],
+    ))
+    clause_start = boundaries[-1].end() if boundaries else 0
+    prefix = prose[clause_start:match_pos]
+    if not _INPUT_LABEL_RE.search(prefix):
+        return False
+    if _RESULT_CONTEXT_RE.search(prefix):
+        return False
+    return bool(_INPUT_ASSIGNMENT_RE.search(prefix))
+
+
+_DERIVED_CONTEXT_RE = re.compile(
+    r"(?i)\b(?:\u00e9cart\s+entre|diff[eé]rence\s+entre|delta\s+entre|"
+    r"variation\s+entre|(?:ratio|proportion|pourcentage|taux|moyenne|"
+    r"m[eé]diane|arrondi|conversion)\w*.{0,40}\b(?:calcul[eé]|d[eé]riv[eé]|"
+    r"obtenu[eé]?|issu[eé]?|produit[eé]?)|d[eé]riv[eé]\w*\s+(?:de|du|des|"
+    r"[àa]\s+partir\s+de))\b"
+)
+_OUTPUT_NUMBER_RE = re.compile(r"(?<![\d.,])\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:[.,]\d+)?(?![\d])")
+_DERIVED_RATE_OPERANDS_RE = re.compile(
+    r"(?i)(?:\bde\s+)?(?P<n>\d+(?:[.,]\d+)?)\s+"
+    r"(?:(?:succ[eè]s|r[eé]ussites?|cas|[\w-]+)\s+)?"
+    r"(?:sur|/)\s*(?P<d>\d+(?:[.,]\d+)?)"
+)
+_DERIVED_DIFFERENCE_OPERANDS_RE = re.compile(
+    r"(?i)\b(?:\u00e9cart|diff[eé]rence|delta|variation)\s+entre\s+"
+    r"(?P<a>\d+(?:[.,]\d+)?)\s+(?:et|à)\s+(?P<b>\d+(?:[.,]\d+)?)"
+)
+
+
+def _parse_decimal(token: str) -> Decimal | None:
+    """Parse one numeric token using the organ's French decimal convention."""
+    if "," in token and "." in token:
+        token = token.replace(",", "")
+    elif token.count(",") > 1 and all(len(part) == 3 for part in token.split(",")[1:]):
+        token = token.replace(",", "")
+    else:
+        token = token.replace(",", ".")
+    try:
+        return Decimal(token)
+    except Exception:
+        return None
+
+
+def _output_line_numbers(out_text: str) -> list[list[Decimal]]:
+    """Return finite numeric values grouped by output line for bounded proofs."""
+    rows: list[list[Decimal]] = []
+    for line in out_text.splitlines():
+        values: list[Decimal] = []
+        for match in _OUTPUT_NUMBER_RE.finditer(line):
+            value = _parse_decimal(match.group(0))
+            if value is not None:
+                values.append(value)
+        if len(values) >= 2:
+            rows.append(values[:20])
+    return rows
+
+
+def _derived_value_proven(norm: str, prose: str, match_pos: int, match_end: int, out_text: str) -> bool:
+    """Prove a simple rate or difference from numbers on the same output row.
+
+    The relation must be named in the same markdown line. Candidate operands
+    are limited to one output line, and only a named percentage/rate or
+    difference is evaluated; arbitrary arithmetic combinations are not tried.
+    """
+    line_start = prose.rfind("\n", 0, match_pos) + 1
+    line_end = prose.find("\n", match_end)
+    line = prose[line_start:line_end if line_end >= 0 else len(prose)]
+    if not _DERIVED_CONTEXT_RE.search(line):
+        return False
+    try:
+        claimed = Decimal(norm)
+    except Exception:
+        return False
+    places = len(norm.partition(".")[2]) if "." in norm else 0
+    tolerance = Decimal("0.5") * (Decimal(10) ** -places)
+    is_rate = bool(re.search(r"(?i)%|\b(?:ratio|proportion|pourcentage|taux)\w*\b", line))
+    rate_operands = _DERIVED_RATE_OPERANDS_RE.search(line) if is_rate else None
+    difference_operands = _DERIVED_DIFFERENCE_OPERANDS_RE.search(line)
+    rate_pair = (
+        (_parse_decimal(rate_operands.group("n")), _parse_decimal(rate_operands.group("d")))
+        if rate_operands else None
+    )
+    difference_pair = (
+        (_parse_decimal(difference_operands.group("a")), _parse_decimal(difference_operands.group("b")))
+        if difference_operands else None
+    )
+    for row in _output_line_numbers(out_text):
+        for left, right in zip(row, row[1:]):
+            candidates: list[Decimal] = []
+            if rate_pair == (left, right) and right != 0:
+                candidates.append(left / right * Decimal(100))
+            if difference_pair == (left, right):
+                candidates.append(abs(left - right))
+            if any(abs(value - claimed) <= tolerance for value in candidates):
+                return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -1112,6 +1243,7 @@ def check_notebook(path: Path) -> dict:
 
     cells = nb.get("cells", []) or []
     findings: list[dict] = []
+    derived_claims: list[dict] = []
     relational_claims: list[dict] = []
     skipped_lit = 0
     skipped_no_prev = 0
@@ -1185,7 +1317,14 @@ def check_notebook(path: Path) -> dict:
             match_pos = m.start()
             match_end = m.end()
             norm = _normalize_num(raw)
-            if not _substantive(norm) and not _unit_bearing(raw, prose, match_end):
+            derived_context = bool(_DERIVED_CONTEXT_RE.search(
+                _line_around(prose, match_pos, match_end)
+            ))
+            if (
+                not _substantive(norm)
+                and not _unit_bearing(raw, prose, match_end)
+                and not derived_context
+            ):
                 continue
             # FP filters (c.366): skip version-number citations and
             # numbers inside quoted exception/version/path spans.
@@ -1227,15 +1366,29 @@ def check_notebook(path: Path) -> dict:
                 continue
             # Search the normalized form in the output text (plus adjacent
             # variants: e.g. "0.24" present in "0.2385")
-            if norm not in out_text and not _fuzzy_present(norm, raw_out_text):
-                findings.append({
+            if norm in out_text or _fuzzy_present(norm, raw_out_text):
+                continue
+            if derived_context:
+                if _derived_value_proven(norm, prose, match_pos, match_end, raw_out_text):
+                    continue
+                derived_claims.append({
                     "markdown_cell": idx,
                     "code_cell": prev_code_idxs[0],
                     "window": prev_code_idxs,
                     "raw": raw,
                     "normalized": norm,
                     "context": _excerpt(src, raw),
+                    "status": "UNPROVEN_DERIVATION",
                 })
+                continue
+            findings.append({
+                "markdown_cell": idx,
+                "code_cell": prev_code_idxs[0],
+                "window": prev_code_idxs,
+                "raw": raw,
+                "normalized": norm,
+                "context": _excerpt(src, raw),
+            })
 
     relational_counts = {
         status: sum(1 for claim in relational_claims if claim["status"] == status)
@@ -1245,7 +1398,7 @@ def check_notebook(path: Path) -> dict:
         verdict = "FABRICATION_DETECTED"
     elif relational_counts["CONTRADICTED"]:
         verdict = "CONTRADICTION_DETECTED"
-    elif relational_counts["UNPROVEN"]:
+    elif relational_counts["UNPROVEN"] or derived_claims:
         verdict = "CLAIM_UNPROVEN"
     else:
         verdict = "CLEAN"
@@ -1253,12 +1406,14 @@ def check_notebook(path: Path) -> dict:
         "path": str(path),
         "verdict": verdict,
         "findings": findings,
+        "derived_claims": derived_claims,
         "relational_claims": relational_claims,
         "stats": {
             "skipped_literature": skipped_lit,
             "skipped_no_prev_code": skipped_no_prev,
             "skipped_no_output": skipped_no_output,
             "relational_claims": relational_counts,
+            "derived_claims_unproven": len(derived_claims),
         },
     }
 
@@ -1272,6 +1427,27 @@ _DECIMAL_TOKEN_RE = re.compile(r"(?<![\d.,])\d+[.,]\d+(?![\d,])")
 # point to disambiguate, both readings are legitimate and the francophone
 # decimal reading is the dominant one.
 _THOUSANDS_WITH_DECIMAL_RE = re.compile(r"(\d{1,3}(?:,\d{3})+)(\.\d+)")
+
+# A grouped integer with SEVERAL comma groups ('3,145,728') is a magnitude
+# context, not a precision conflict. A single comma followed by one group
+# ('1,7565', '1,756') is NOT one: this repository reads it as the
+# francophone DECIMAL (the convention `_normalize_num` documents), so it is
+# examined as a decimal and never skipped. Two groups of exactly three
+# digits are the only unambiguous thousands grouping.
+_THOUSANDS_GROUPED_INT_RE = re.compile(r"^\d{1,3}(?:,\d{3}){2,}$")
+
+# A number of the output, with its own notation preserved:
+#   '1750000'      plain integer
+#   '3,145,728'    grouped integer (several groups of exactly three digits)
+#   '19,798.0862'  grouped integer with a decimal part
+#   '1.7565'       english decimal
+#   '1,7565'       francophone decimal
+# The grouped form is tried first; the trailing negative lookahead keeps
+# '1,7565' out of the grouped reading ('1,756' would be followed by a
+# digit).
+_NUM_TOKEN_RE = re.compile(
+    r"(?<![\d.,])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:[.,]\d+)?)(?![\d])"
+)
 
 
 def _rounds_to_claim(norm: str, out_text: str) -> bool:
@@ -1315,19 +1491,33 @@ def _fuzzy_present(norm: str, out_text: str) -> bool:
       (a) prefix-of-output: '1.3' matches '1.3B' for magnitude (followed by
           non-digit). A prefix followed by a digit is NOT matched here --
           '1.32 Go' is reached through clause (b), as a rounding, not as a
-          magnitude prefix.
+          magnitude prefix. A prefix SHORTER than the claim ('1.7' for the
+          claim '1.75') is matched only for a zero-padded claim ('2.40'
+          against '2.4' is the same number).
       (b) rounded value: '0.24' matches '0.2385' (the claim is the output
           number rounded to the claim's own precision), anywhere in the
           output -- not only at its start.
       (c) magnitude-prefix against comma-stripped output: '3.1' matches
           '3,145,728' (output has 3,145,728 = 3.1M, claim is the magnitude
-          prefix when thousand separators are stripped).
+          prefix when thousand separators are stripped). A claim that
+          TRUNCATES an output number ('1.75' against '1.7565', which rounds
+          to 1.76) is REFUSED here -- see `_has_truncation_conflict` and
+          CoursIA #22910.
     The minimum norm length is 3 chars (so '7' / '5' are skipped).
     """
     if len(norm) < 3:
         return False
     # Clause (a): prefix is present in the output, followed by non-digit.
+    # A prefix SHORTER than the claim means the output carries a COARSER
+    # number than the claim ('1.7' for the claim '1.75'): the claim then
+    # asserts a precision the output does not have, and the coarser output
+    # cannot support it -- clause (b) refuses it for the same reason
+    # ('1.7' never satisfies '1.75'). The one legitimate case is a claim
+    # padded with zeros ('2.40' against '2.4' is the same number), so a
+    # partial prefix is accepted only when the dropped tail is all zeros.
     for cut in range(len(norm), 2, -1):
+        if cut < len(norm) and norm[cut:].strip("0"):
+            continue
         prefix = norm[:cut]
         pos = 0
         while True:
@@ -1346,26 +1536,121 @@ def _fuzzy_present(norm: str, out_text: str) -> bool:
     # Both directions are defects; measured on CoursIA #22769 == #11435.
     if _rounds_to_claim(norm, out_text):
         return True
-    # Clause (c): norm is a magnitude prefix when output's thousand
-    # separators are stripped (output "3,145,728" -> "3145728", norm
-    # "3.1" -- treat the dot in the norm as a marker; we re-anchor the
-    # norm against the output by matching the leading digits before the
-    # dot). Gated by len(norm) >= 4 OR the output containing a comma
-    # (large-number signal: 3.1M magnitude against 3,145,728). The
-    # comma-gate distinguishes '3.1' vs '3,145,728' (magnitude) from
-    # '1.3' vs '1.32' (precision -- no comma, no magnitude match).
-    if "." in norm and len(norm) >= 3 and ("," in out_text or len(norm) >= 4):
+    # Clause (c): norm is a MAGNITUDE prefix of a large number printed by
+    # the output ('3.1' against '3,145,728' = 3.1M, '1.75' against
+    # '1750000' = 1.75M).
+    #
+    # #22910 -- the former form stripped every non-digit of the output into
+    # ONE digit run and looked for the claim's digits anywhere inside it.
+    # Two defects came with it. (1) The claim's digits could SPAN the
+    # decimal point of the output ('1.75' in '1.7565': the run '17565'
+    # starts with '175'), which is a TRUNCATION -- a precision the output
+    # contradicts -- and not a magnitude. (2) The digits could also span
+    # TWO different numbers ('1.75' in '17.2632': the run '172632'
+    # contains '17'... '175'), which is a coincidence of digits.
+    #
+    # #22910 (revue NanoClaw) -- gating the clause on the mere PRESENCE of
+    # a comma was itself the defect in francophone notation: a decimal
+    # comma ('1,7565') is a comma, so every notebook of this repository
+    # re-opened the digit run, while the truncation veto -- which used to
+    # skip every comma token -- could not see the very decimal it had to
+    # judge.
+    #
+    # The rule now: the claim's digits must be a PREFIX of the INTEGER PART
+    # of one number of the output. That is what makes the two readings
+    # separable without consulting the notation at all -- a magnitude has
+    # all its significant digits in the integer part ('1750000'), a
+    # truncation straddles the point ('1.7565' has integer part '1').
+    # The veto below then refuses the claim when the output ALSO prints a
+    # decimal that contradicts it.
+    if "." in norm and len(norm) >= 3:
         head, tail = norm.split(".", 1)
-        digit_run = re.sub(r"[^0-9]", "", out_text)
         combined = head + tail  # e.g. "3.1" -> "31"
-        if combined and combined in digit_run:
-            pos = digit_run.find(combined)
-            tail_len = len(digit_run) - (pos + len(combined))
-            # Tolerance: a 7-digit "3,145,728" has 5 trailing digits
-            # after the magnitude "31". Cap at 12 digits total in the
-            # digit_run (8+ trailing) so the magnitude is bounded.
-            if tail_len <= 12:
+        if combined.isdigit():
+            for match in _NUM_TOKEN_RE.finditer(out_text):
+                token = match.group(1)
+                if not _is_magnitude_host(token):
+                    continue
+                int_digits = token.split(".", 1)[0].replace(",", "")
+                if not int_digits.startswith(combined):
+                    continue
+                tail_len = len(int_digits) - len(combined)
+                # Tolerance: a 7-digit "3,145,728" has 5 trailing digits
+                # after the magnitude "31". Cap at 12 trailing digits so the
+                # magnitude stays bounded.
+                if tail_len > 12:
+                    continue
+                if _has_truncation_conflict(norm, out_text):
+                    return False
                 return True
+    return False
+
+
+def _is_magnitude_host(token: str) -> bool:
+    """True when the token is a LARGE number -- the context clause (c)
+    exists to serve ('3,145,728' is 3.1M).
+
+    A plain integer ('1750000') is one. A grouped integer is one when the
+    grouping is unambiguous: several groups of exactly three digits
+    ('3,145,728'), or a group arbitrated by a decimal point ('19,798.0862'
+    -- the point settles the comma as a separator). A SINGLE bare group
+    ('1,756', '1,024') stays a francophone DECIMAL: with no point to
+    arbitrate, the decimal reading is the dominant one -- and a decimal is
+    a precision context, never a magnitude.
+    """
+    int_part = token.split(".", 1)[0]
+    if "," not in int_part:
+        return True
+    if int_part.count(",") >= 2:
+        return True
+    return "." in token
+
+
+def _has_truncation_conflict(norm: str, out_text: str) -> bool:
+    """True when an output number carries the claim's digits as a STRICT
+    prefix without the claim rounding to it ('1.75' against '1.7565').
+
+    The magnitude clause (c) matches the claim's digits anywhere in the
+    output's digit run, so a value the prose has TRUNCATED is silently
+    accepted: the output prints 1.7565 (which rounds to 1.76) and the prose
+    asserts 1.75. The claim is then a precision the output contradicts, and
+    the organ must not treat it as supported (CoursIA #22910).
+
+    Only decimal tokens are examined, in BOTH notations: an anglophone
+    '1.7565' and a francophone '1,7565' are the same number, and this
+    repository's notebooks use the francophone one predominantly. A grouped
+    integer ('3,145,728' -- several comma groups of exactly three digits) is
+    a magnitude context, not a precision conflict -- it is the very case
+    clause (c) exists to serve, and it carries no decimal part to
+    contradict. The integer part must have the same number of digits as the
+    claim's, so that '17.56' is not read as a truncation of '1.75'.
+    """
+    if "." not in norm:
+        return False
+    claim_int, _, claim_frac = norm.partition(".")
+    claim_digits = claim_int + claim_frac
+    if not claim_digits.isdigit():
+        return False
+    for match in _DECIMAL_TOKEN_RE.finditer(out_text):
+        token = match.group(0)
+        if "," in token:
+            # A grouped integer is a magnitude, not a precision: '3,145,728'
+            # has no decimal part. A francophone decimal ('1,7565') DOES.
+            if _THOUSANDS_GROUPED_INT_RE.match(token):
+                continue
+            int_part, _, frac_part = token.partition(",")
+        else:
+            int_part, _, frac_part = token.partition(".")
+        if len(int_part) != len(claim_int):
+            continue
+        digits = int_part + frac_part
+        if len(digits) <= len(claim_digits) or not digits.startswith(claim_digits):
+            continue
+        # A truncation candidate -- unless the claim rounds to that number
+        # ('2.40' against '2.400' is the same number, '1.75' against
+        # '1.7465' is the genuine rounding handled by clause (b)).
+        if not _rounds_to_claim(norm, token):
+            return True
     return False
 
 

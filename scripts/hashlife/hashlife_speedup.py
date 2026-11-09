@@ -76,7 +76,9 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-ORGAN_DIR = ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "conway_lean" / "scripts"
+ORGAN_DIR = (
+    ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GOL" / "conway_lean" / "scripts"
+)
 ORGAN_FILE = ORGAN_DIR / "hashlife.py"
 
 ALPHA_REDUCIBLE_MAX = 0.5

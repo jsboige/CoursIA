@@ -3,3 +3,12 @@ levetf-base,f1a93779396b77398ed23ad8a02678acd786adfd,2026-10-10,2026-10-16,2026-
 ivol-U,a92539de9b41bff5cf5963c12e5c062d044c425a,2026-10-06,2026-10-25,2026-10-23,14,-3.108,-0.2574,-0.0157,0.065789,0.000461,5 bps de la valeur échangée
 ivol-F,a92539de9b41bff5cf5963c12e5c062d044c425a,2026-10-06,2026-10-25,2026-10-23,14,-3.3931,-0.2544,-0.015,0.057248,0.000401,5 bps de la valeur échangée
 mhm676,bb7d7b61c5a48158d314693253c33b94a300cd35,2026-10-05,2026-10-26,2026-10-23,14,,0.0,0.0,0.0,0.0,modèle de frais par défaut de Lean pour ce courtier
+ivol-U,a92539de9b41bff5cf5963c12e5c062d044c425a,2026-10-06,2026-11-02,2026-10-30,19,-2.2869,-0.2253,-0.0187,0.052483,0.000498,5 bps de la valeur échangée
+ivol-F,a92539de9b41bff5cf5963c12e5c062d044c425a,2026-10-06,2026-11-02,2026-10-30,19,-2.5284,-0.2263,-0.0181,0.048947,0.000464,5 bps de la valeur échangée
+fs774,f2027d3287e332d129b1f7cee1901a4e7fcdb43f,2026-10-04,2026-11-02,2026-10-30,19,-3.01,-0.157,-0.0158,0.068475,0.000269,modèle de frais par défaut de Lean pour ce courtier
+mhm676,bb7d7b61c5a48158d314693253c33b94a300cd35,2026-10-05,2026-11-02,2026-10-30,19,,0.0,0.0,0.0,0.0,modèle de frais par défaut de Lean pour ce courtier
+splits-lo,1fef19f77483a5fb0dab02681aeda7b6d9ed1a4c,2026-10-05,2026-11-02,2026-10-30,19,,0.0,0.0,0.0,0.0,modèle de frais par défaut de Lean pour ce courtier
+tw-pit,793d624e6ed49eac9d9d2f39223580027f9693db,2026-10-06,2026-11-02,2026-10-30,18,,0.0,0.0,0.0,0.0,modèle de frais par défaut de Lean pour ce courtier
+lsh-lag,fd068a90ff9117e0b42634d6137c951690d23645,2026-10-09,2026-11-02,2026-10-30,15,-7.6811,-0.8144,-0.0934,0.174568,0.00039,modèle de frais par défaut de Lean pour ce courtier
+levetf-base,f1a93779396b77398ed23ad8a02678acd786adfd,2026-10-10,2026-11-02,2026-10-30,14,-4.7188,-0.9891,-0.212,0.070178,7.3e-05,modèle de frais par défaut de Lean pour ce courtier
+levetf-postfix,51f26ad1bcbf9bcc325ca86a92fbc83662a3bfeb,2026-10-27,2026-11-02,2026-10-30,3,-13.0253,-1.0,-0.1412,0.326231,6.9e-05,modèle de frais par défaut de Lean pour ce courtier

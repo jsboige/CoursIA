@@ -73,7 +73,7 @@ Intelligence Artificielle -- VI
 
 # Agent Apprenant
 
-- **4 modules** : performance, apprentissage, critique, générateur de problemes
+- **Modules** : performance, apprentissage, critique, générateur de problemes
 - Le module d'apprentissage ameliore le composant de performance a partir du feedback du critique
 - Le générateur de problemes suggere de nouvelles expériences pour enrichir l'apprentissage
 
@@ -666,6 +666,15 @@ layout: dense
 
 <!-- Bagging = echantillons paralleles, Boosting = echantillons séquentiels ponderes -->
 
+<style scoped>
+/* 22 puces + le pseudo-code ADABOOST en pleine largeur : le bloc d'algorithme
+   commencait sous le bas du canvas et se coupait en plein `for k = 1 to K`.
+   Mesure `scan_slidev_overflow --threshold 0.0005` : ink 0.0154. */
+:deep(ul) { font-size: 0.7em !important; }
+:deep(li) { margin: 0 !important; line-height: 1.12 !important; }
+img { max-height: 170px !important; }
+</style>
+
 
 ---
 layout: section
@@ -753,8 +762,20 @@ layout: two-cols
 - Apprend sur des datasets linéairement séparable
 - vs Arbre de décision: bon sur majorité, mauvais sur restaurant
 
-<img src="./images/img_025.png" alt="img_025.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_026.png" alt="img_026.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_025.png" alt="img_025.png">
+<img src="./images/img_026.png" alt="img_026.png">
+</div>
+
+<style scoped>
+/* Deux figures empilees en pleine largeur sous six puces : la seconde
+   commencait sous le bas du canvas. Mesure : ink 0.0068 (sous le seuil par
+   defaut de 0.01, parce que l'amorce visible est etroite — le seuil ne voit
+   pas un element dont seule une bande centrale depasse). Elles passent en
+   grille deux colonnes, hauteur auto (le theme impose sinon 300 px par
+   grille, dont 180 px de vide sous une rangee de 118 px). */
+:deep(.img-grid) { height: auto !important; }
+</style>
 
 
 ---
@@ -831,6 +852,15 @@ layout: two-cols
 - Les hypothèses sont assez opaques
 
 <img src="./images/img_032.png" alt="img_032.png" class="img-fit">
+
+<style scoped>
+/* Quinze puces puis une figure `img-fit` : la figure commencait sous le bas
+   du canvas (ink 0.0062 a seuil bas). Le plafond de `img-fit` ne suffit pas,
+   c'est le bloc de puces qui doit ceder de la place. */
+:deep(ul) { font-size: 0.74em !important; }
+:deep(li) { margin: 0 !important; line-height: 1.1 !important; }
+img { max-height: 120px !important; }
+</style>
 
 
 ---
@@ -939,6 +969,14 @@ img.img-fit { max-height: 60px !important; }
 <img src="./images/img_046.png" alt="img_046.png">
 <img src="./images/img_047.png" alt="img_047.png">
 </div>
+
+<style scoped>
+/* Deux grilles empilees (2 + 4 images) sans aucun texte : le theme impose
+   300 px de haut a chaque `.img-grid:not(.absolute)` alors qu'une rangee
+   d'images en occupe 118 — la 5e image demarrait sous le canvas (ink 0.0060).
+   Hauteur auto : les deux grilles se tassent, les six images tiennent. */
+:deep(.img-grid) { height: auto !important; }
+</style>
 
 
 ---
@@ -1212,6 +1250,23 @@ layout: two-cols
 <img src="./images/img_082.png" alt="img_082.png">
 <img src="./images/img_083.png" alt="img_083.png">
 </div>
+
+<style scoped>
+/* La diapo empilait 21 puces et un `img-grid cols3` de 9 images sans aucun
+   budget de hauteur : la 3e rangee tombait sous le canvas et 3 des 9 images
+   etaient invisibles (mesure `scan_slidev_overflow` : ink 0.0761 dans les
+   6 dernieres rangees de pixels).
+   `grid-template-columns` / `grid-auto-rows` du theme sont inertes ici :
+   `style.css` du deck redefinit `.img-grid` en `flex-wrap`, ou l'empilement
+   est pilote par la largeur des images, pas par une grille. On force donc
+   une vraie grille 3x3 bornee a 200 px, et les images remplissent leur
+   cellule (`object-fit: contain`) au lieu de flotter a 31 % de largeur.
+   Mesure apres : ink 0.0000, 9 images sur 9 visibles, aucun contenu retire. */
+:deep(ul) { font-size: 0.56em !important; }
+:deep(li) { margin: 0 !important; line-height: 1.06 !important; }
+:deep(.img-grid) { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; grid-auto-rows: 1fr !important; height: 200px !important; }
+:deep(.img-grid img) { width: 100% !important; height: 100% !important; max-height: 100% !important; object-fit: contain !important; }
+</style>
 
 
 ---
@@ -1701,6 +1756,16 @@ layout: dense
 
 <img src="./images/img_097.png" alt="img_097.png" style="display:block; margin:10px auto; max-width:100%;">
 </div>
+
+<style scoped>
+/* La derniere puce s'ecrivait PAR-DESSUS le pied de page « Intelligence(s) »,
+   et la figure du dernier groupe `v-click` sortait du canvas. L'export rend
+   tous les clics (`?clicks=99`), donc c'est bien l'etat complet qui doit
+   tenir. Mesure : ink 0.0502 sur la bande de fond. */
+:deep(ul) { font-size: 0.8em !important; }
+:deep(li) { margin: 0 !important; line-height: 1.1 !important; }
+img { max-height: 120px !important; }
+</style>
 ---
 
 

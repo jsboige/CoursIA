@@ -36,7 +36,7 @@ TradeHelper.cs         Sérialisation (Binary=MessagePack, Csv=TinyCsv, Json=UTF
 
 ## Substitutions et verdicts SOTA
 
-Le cadrage complet (mesures firsthand, test de compilations réelles) : [docs/reference/backtester-e2-cadrage.md](../docs/reference/backtester-e2-cadrage.md) et [docs/reference/backtester-e2-svm-kernel.md](../docs/reference/backtester-e2-svm-kernel.md).
+Le cadrage complet (mesures firsthand, test de compilations réelles) : [docs/transients/2026-08-23-backtester-e2-cadrage.md](../docs/transients/2026-08-23-backtester-e2-cadrage.md) et [docs/transients/2026-08-23-backtester-e2-svm-kernel.md](../docs/transients/2026-08-23-backtester-e2-svm-kernel.md).
 
 | En amont (fork) | Dans ce port | Verdict |
 |---|---|---|
@@ -46,7 +46,7 @@ Le cadrage complet (mesures firsthand, test de compilations réelles) : [docs/re
 | Sérialisation binaire `Apex.Serialization` | MessagePack (le Converter sert les mêmes caches `.bin.lz4`) — Apex lève `TypeInitializationException` sur net9.0 (champ backing readonly) | Documenté dans `TradeHelper.cs` (tranche 6B-3) |
 | 6 DLL Aricie PKP (`Aricie.Core`, `Aricie.DNN`, `DotNetNuke`, `CommonMark`, `Fasterflect` + Flee) | Abandonnées (Option C) ; le socle transverse vit dans `MyIA.AI.Shared` | Décision user 2026-07-19 |
 
-Écarts délibérés avec l'upstream, documentés dans les en-têtes des fichiers concernés : `using DotNetNuke` mort supprimé ; ordre des membres `KnownKernel` stabilisé (l'ordinal sérialisé ne doit pas bouger) ; `CalibrateComplexity` réparée (le corps upstream ne calibrait rien — signalé en amont : [Lean#40](https://github.com/MyIntelligenceAgency/Lean/issues/40)).
+Écarts délibérés avec l'upstream, documentés dans les en-têtes des fichiers concernés : `using DotNetNuke` mort supprimé ; ordre des membres `KnownKernel` stabilisé (l'ordinal sérialisé ne doit pas bouger) ; `CalibrateComplexity` réparée — le corps upstream ré-instanciait le teacher au lieu d'appeler `Learn`, donc rendait toujours son amorce `0.0001` sans rien explorer, tout en journalisant « SVM complexity calibrated » (défaut signalé en amont : [Lean#40](https://github.com/MyIntelligenceAgency/Lean/issues/40)). La divergence est **intentionnelle et codifiée** : ne pas réaligner au bump du sous-module (#14370), gardes `CalibrateComplexity_ActuallyExploresAndDoesNotReturnItsSeedValue` et `CalibratedComplexity_ScoresBetterThanTheSeedComplexity` dans la suite de tests. Mesure côte à côte figée : [docs/transients/2026-08-23-backtester-e2-svm-kernel.md](../docs/transients/2026-08-23-backtester-e2-svm-kernel.md) §« Disposition upstream ».
 
 ## Résiduel : fichiers upstream volontairement non portés
 
@@ -75,5 +75,5 @@ Dépendances de projet : `MyIA.AI.Shared` (socle transverse, Flee 2.0.0) · `MyI
 
 - [#7357](https://github.com/jsboige/CoursIA/issues/7357) — EPIC du port Option C (historique des tranches)
 - [#7265](https://github.com/jsboige/CoursIA/issues/7265) — EPIC index du patrimoine Aricie
-- [docs/reference/backtester-e2-cadrage.md](../docs/reference/backtester-e2-cadrage.md) — cadrage, préconditions, choix de libs mesurés
-- [docs/reference/backtester-e2-svm-kernel.md](../docs/reference/backtester-e2-svm-kernel.md) — verdict SOTA du SVM à noyau et disposition upstream
+- [docs/transients/2026-08-23-backtester-e2-cadrage.md](../docs/transients/2026-08-23-backtester-e2-cadrage.md) — cadrage, préconditions, choix de libs mesurés (décision consommée : port livré #15510, fermeture CLOSE_OK 2026-09-18)
+- [docs/transients/2026-08-23-backtester-e2-svm-kernel.md](../docs/transients/2026-08-23-backtester-e2-svm-kernel.md) — verdict SOTA du SVM à noyau (mesure figée 2026-08-23) et disposition upstream `CalibrateComplexity` (Lean#40, divergence codifiée #14370)

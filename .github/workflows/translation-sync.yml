@@ -150,6 +150,17 @@ jobs:
     # `[skip ci]` only suppressed the required-check set on the long-lived
     # PR (same pathology as catalog-cron, see #10421).
 
+    # #23349 : borne explicite. Mesure du 2026-11-04 sur les 3 derniers
+    # runs verts de ce job : max 5.65 min -- mais ces runs ont tourne sur
+    # `ubuntu-latest`, AVANT le routage auto-heberge (commit 6e906086 du
+    # 2026-09-02). La valeur n'est donc pas une mesure de la jambe
+    # protegee : c'est un plancher de repli, tres large devant les 6 h du
+    # defaut Actions. Il ne peut pas etre resserre sans un run reel sur
+    # la jambe auto-hebergee elle-meme.
+    # Dernier run vert : 2026-08-14, sur `ubuntu-latest` -- le
+    # `on:push` a ete retire ensuite (hold #10038), la valeur ne
+    # vient donc pas de la jambe protegee.
+    timeout-minutes: 15
     steps:
       - name: Checkout main (history only)
         uses: actions/checkout@v4

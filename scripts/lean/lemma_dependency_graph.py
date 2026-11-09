@@ -19,7 +19,7 @@ ecraserait toute mesure locale.
 
 Usage :
     python scripts/lean/lemma_dependency_graph.py \
-        --lake MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean --json
+        --lake MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean --json
 
 Exit codes : 0 = mesure produite ; 2 = instrument casse (lake introuvable,
 aucun module).

@@ -151,9 +151,9 @@ traçabilité : `scratchpad/junctions_scan_po2026_c1221.out`.
 - #2611 — outillage `setup_shared_mathlib.ps1` (CLOSED, ferme)
 - #4362 — EPIC parent (3 phases historiques CLOSED)
 - #4363, #4364, #4365 — phases 1-2-3 (CLOSED sans application sur aucune machine)
-- docs/lean/cluster-junctions-c857.md — référence cluster
+- ../transients/2026-09-02-cluster-junctions-c857.md — référence cluster
 - docs/lean/junctions-scan-po-2023.md — pair machine po-2023
 - docs/lean/junctions-scan-po-2024.md — pair machine po-2024
 - docs/lean/junctions-scan-po-2027.md — pair machine po-2027
 - docs/lean/coordinator-workflow.md — workflow Lean PR discipline
-- `docs/lean/junctions-scan-po-2026.md.c1205.archive` — version archive du rapport cycle 90 (preuve de préservation, Tell « Consolider != Archiver »)
+- `docs/transients/2026-09-27-junctions-scan-po-2026-c1205.archive` — version archive du rapport cycle 90 (preuve de préservation, Tell « Consolider != Archiver »)

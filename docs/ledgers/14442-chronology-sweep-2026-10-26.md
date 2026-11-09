@@ -83,7 +83,7 @@ la source et les résultats. Ils forment le backlog de tranches de #14442 :
 | Carnet | Cellule(s) | Récit de livraison à retirer |
 |---|---|---|
 | **GT-20** (livré par la PR associée) | 36 | « l'EPIC #12205 prescrit », « GT-3b (#12213) », « GT-3b livré (#12253) », « GOL-06 … (#12286) » |
-| GT-06k FairBot-Loeb | 0, 1, 34 | « Carnet livré par l'issue #20379 », « PR #15923 » |
+| GT-06k FairBot-Loeb — désormais `GameTheory/Dynamics/Dynamics-04b-FairBot-Loeb-Lean.ipynb` | 0, 1, 34 | « Carnet livré par l'issue #20379 », « PR #15923 » |
 | GT-13d Optimistic-CFR | 1, 16 | « livré sur main par #13350, commit … », « (socle #13350) », « Voir aussi : #13291 / #13290 / #13350 » |
 | GT-06j Bounded-Proofs | 31 | « DISPATCH ai-01, EPIC #15062, PR #15175, MERGED 2026-09-09… » |
 | GT-03d Le-Joueur-LLM | 5, 25 | « ai-01 dans la review PR #12295 », « Substrat EPITA (#12254) » |
@@ -108,10 +108,10 @@ côté. Les lignes marquées **[nouveau]** n'étaient pas dans le tableau de tra
 | 3 | GT-20 | 36 | « chambres / murs / make_tie : GT-3b livré (#12253) » | CHRONOLOGIE | traité — #22658 |
 | 4 | GT-20 | 36 | « GOL-06 translateur Life (#12286) » | CHRONOLOGIE | traité — #22658 |
 | 5 | GT-06k FairBot-Loeb | 0 | « le niveau **L2** de l'équilibre en programmes de l'**EPIC #15062** « Math for AI Safety » » | **PROVENANCE_UTILE** | **conserver** **[nouveau]** |
-| 6 | GT-06k | 0 | « le consommateur pédagogique qui manquait au module ([issue #20379](…)) » | CHRONOLOGIE | retirer le n°, garder la phrase **[nouveau]** |
-| 7 | GT-06k | 1 | « le témoin externe `FormalLogic.GLBridge.loeb_schema` (PR #15923) » | CHRONOLOGIE | retirer le n° — l'artefact est déjà nommé |
-| 8 | GT-06k | 34 | « le témoin GL noyau-vérifié (L3, lake `formal_logic_lean`, PR #15923) » | CHRONOLOGIE | retirer le n° |
-| 9 | GT-06k | 34 | « Carnet livré par l'issue #20379 — le module `ProgramGames.FairBot` a désormais son consommateur pédagogique. » | CHRONOLOGIE | retirer le récit de livraison, **garder** la seconde phrase |
+| 6 | GT-06k | 0 | « le consommateur pédagogique qui manquait au module ([issue #20379](…)) » | CHRONOLOGIE | traité — #24192 (le lien retiré, la phrase gardée) **[nouveau]** |
+| 7 | GT-06k | 1 | « le témoin externe `FormalLogic.GLBridge.loeb_schema` (PR #15923) » | CHRONOLOGIE | traité — #24192 (le n° retiré, l'artefact déjà nommé) |
+| 8 | GT-06k | 34 | « le témoin GL noyau-vérifié (L3, lake `formal_logic_lean`, PR #15923) » | CHRONOLOGIE | traité — #24192 (le n° retiré) |
+| 9 | GT-06k | 34 | « Carnet livré par l'issue #20379 — le module `ProgramGames.FairBot` a désormais son consommateur pédagogique. » | CHRONOLOGIE | traité — #24192 (le récit de livraison retiré, la seconde phrase gardée) |
 | 10 | GT-13d Optimistic-CFR | 1 | « `Info-CFR-Python.ipynb` (livré sur main par `#13350`, commit `0…` » | CHRONOLOGIE | traité — #22874 |
 | 11 | GT-06j Bounded-Proofs | 31 | « Issue #15335 (DISPATCH ai-01) » | CHRONOLOGIE | traité — #22661 |
 | 12 | GT-06j | 31 | « (PR #15175, MERGED 2026-09-09T03:59:10Z) » | CHRONOLOGIE | traité — #22661 |
@@ -193,8 +193,33 @@ Rien n'est laissé en silence : ce qui n'est pas traité est **nommé** ici.
 | Résidu | Où | Pourquoi pas traité | Suite |
 |---|---|---|---|
 | Commentaire de tête `Fix #17882` | GT-13d, **cellule 2 (code)** | L'organe ne parcourt que les **cellules markdown** ; le corriger suppose d'éditer une cellule de code, donc une **re-exécution complète** du carnet (C.2) — carnet sous OpenSpiel, sorties `tqdm` bridées par un ratchet de volume | Tranche code, à instruire à la prochaine re-exécution du carnet |
-| Renvois de GT-06k, GT-09b, GT-03d | cellules 0 / 1 / 34, 24, 5 / 25 | Carnets **contendus** par des PRs ouvertes d'autres lanes (#20442 sur GT-06k et GT-09b, #22177 et #22193 sur GT-09b, #22351 sur GT-03d) | Reprise quand ces PRs sont mergées |
+| Renvois de GT-06k, GT-09b, GT-03d | cellules 0 / 1 / 34, 24, 5 / 25 | **Levée le 2026-11-02** — voir la mesure de clôture ci-dessous | Traités : GT-06k par #24192, GT-09b par #23254, GT-03d par #22177/#20442 |
 | GT-16g | cellule 0 | Issue de suivi dédiée **#22682** | Portée par #22682 |
+
+### Mesure de clôture du résidu « carnets contendus » (2026-11-02)
+
+La barrière inscrite dans ce ledger était « reprise quand ces PRs sont mergées ». Elles le
+sont toutes, mesuré à la source plutôt que supposé : **#20442** (2026-10-31T22:23:17Z),
+**#22177** (2026-10-29T00:32:18Z), **#22193** (2026-10-29T05:10:12Z), **#22351**
+(2026-11-01T04:32:04Z).
+
+Organe rejoué sur les quatre carnets à l'état de `main` (`ba2199363`), plus deux contrôles
+de contenu pour distinguer « dé-chronologisé » de « contenu disparu » :
+
+| Carnet (chemin actuel) | Ex-nom | Marqueurs | Contrôle de contenu |
+|---|---|---|---|
+| `Dynamics/Dynamics-04b-FairBot-Loeb-Lean.ipynb` | GT-06k | **5 → 1** (la provenance `EPIC #15062`) | traité par **#24192** |
+| `GameTheory-09b-Commitment-Stackelberg-Python.ipynb` | GT-09b | 0 | « en cours de livraison » présent, `#12212` absent → n° retiré, phrase gardée |
+| `Dynamics/Dynamics-10-Joueur-LLM-Python.ipynb` | GT-03d | 0 | « Substrat EPITA » présent, `#12254` / `12295` absents → n° retirés, phrase gardée |
+| `SocialChoice/10-Manipulation-Strategique-MultiWinner.ipynb` | SocialChoice/10 | 0 | `#21632` absent, « encore ouverte » absent → renvoi retiré |
+
+Les deux colonnes de droite comptent : un carnet à zéro marqueur peut l'être parce qu'on a
+**supprimé la phrase**, ce qui serait une régression de contenu. Ici la substance est
+présente dans les trois cas, seuls les numéros sont partis — c'est le geste prescrit.
+
+**Deux carnets ont été renumérotés entre-temps** (GT-06k → `Dynamics-04b`, GT-03d →
+`Dynamics-10`) : les chemins de ce ledger se lisent donc sur le nom du carnet, pas sur son
+numéro d'origine.
 
 ## Portée de la PR associée
 
@@ -209,8 +234,14 @@ Rien n'est laissé en silence : ce qui n'est pas traité est **nommé** ici.
   révélée par la correction du patron, dans l'issue de suivi nommée #22682) et le défaut 2
   de l'issue (déplacer l'annexe hors de GT-04). Les autres carnets du tableau sont des
   **tranches de suivi** de #14442, chacune dans sa PR : #22661 (GT-06j), #22664 (GT-13c),
-  #22665 (GT-11b), #22666 (SocialChoice/10), #22874 (GT-13d). L'issue reste ouverte ; la PR est
+  #22665 (GT-11b), #22666 (SocialChoice/10), #22874 (GT-13d), #23254 (GT-09b), #24192
+  (GT-06k, désormais `Dynamics-04b`). L'issue reste ouverte ; la PR est
   `See #14442`.
+
+**État des tranches au 2026-11-02** : sur les neuf carnets du tableau de backlog, **huit
+sont mesurés à 0 marqueur de la classe CHRONOLOGIE** ; le seul marqueur restant est le
+renvoi de provenance `EPIC #15062` de `Dynamics-04b`, délibérément conservé. Le résidu
+réel de ce sweep n'est plus GameTheory : c'est **GT-16g** (issue #22682).
 
 ## Reprise
 

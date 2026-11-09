@@ -96,6 +96,10 @@ from prover.provider_gate import (  # noqa: E402  (#18709: gate partage)
     validate_provider_credentials,
 )
 from prover.provers import MultiAgentSorryProver  # noqa: E402
+# Cycle-29 (#1453): the run-verdict classifier lives in the inner launcher
+# (tests/test_freeze_loop_termination.py imports it from there); the root
+# launcher logs the same verdict instead of re-deriving a divergent copy.
+from prover.run_prover_bg import _derive_result_kind  # noqa: E402
 from prover.trace import TraceLogger  # noqa: E402
 from prover.lean_utils import (  # noqa: E402  (#9402: real-token counter)
     count_real_sorries,
@@ -105,6 +109,9 @@ from prover.lean_utils import (  # noqa: E402  (#9402: real-token counter)
 from prover.tree_lock import (  # noqa: E402
     acquire_tree_lock,
     find_lean_project_root,
+    host_id,
+    pid_alive,
+    read_lock,
     release_tree_lock,
 )
 
@@ -124,6 +131,30 @@ def _peek_sorry_count(filepath: str) -> int:
         return count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
     except OSError:
         return -1
+
+
+def _classify_result(result: dict, post_sorry, pre_sorry) -> str:
+    """Terminal verdict of a run, distinct from the process exit code.
+
+    Cycle-29 (#1453): DELEGATES to the canonical classifier
+    ``prover.run_prover_bg._derive_result_kind`` — the same contract the
+    inner launcher prints as its ``Verdict:`` line and
+    tests/test_freeze_loop_termination.py pins (no_attempt vs freeze_loop
+    vs no_progress ranking). This wrapper only adapts the launcher's sorry
+    counts: a count that is None or negative (``_peek_sorry_count``'s
+    OSError sentinel is -1) is UNKNOWN, not zero — equal sentinels are
+    passed so ``sorry_decreased`` can never fire on missing data, while
+    flag-based kinds still classify.
+    """
+    final = post_sorry if isinstance(post_sorry, int) and post_sorry >= 0 else None
+    original = pre_sorry if isinstance(pre_sorry, int) and pre_sorry >= 0 else None
+    if final is None or original is None:
+        # One side unknown: no decrease claim is possible — collapse both
+        # to the known side (0 if both unknown), else a missing post count
+        # (sentinel -1) against a real pre count would read as a decrease.
+        known = final if final is not None else original
+        final = original = known if known is not None else 0
+    return _derive_result_kind(result, final, original)
 
 
 def _effective_agent_providers(args: argparse.Namespace) -> dict:
@@ -156,6 +187,17 @@ def _validate_provider_credentials(eff: dict) -> list:
     ``prover.provider_gate`` (#18709).
     """
     return validate_provider_credentials(eff, PROVIDERS)
+
+
+def _parent_lock_is_valid(tree_root: Path, owner_pid: int) -> bool:
+    """Ne réutilise le lock que si son propriétaire vivant est le parent déclaré."""
+    holder = read_lock(tree_root / ".prover.lock")
+    return (
+        owner_pid == os.getppid()
+        and holder.get("pid") == owner_pid
+        and holder.get("host") == host_id()
+        and pid_alive(owner_pid)
+    )
 
 
 async def main(args: argparse.Namespace) -> int:
@@ -229,17 +271,29 @@ async def main(args: argparse.Namespace) -> int:
         tree_root = find_lean_project_root(demo["file"])
     if tree_root is None:
         tree_root = Path(os.environ["LEAN_PROJECT"])
-    lock_path, lock_msg = acquire_tree_lock(
-        tree_root, args.demo_id, force=args.force_lock
-    )
-    if lock_path is None:
-        _bg(f"LOCKED {lock_msg}")
-        return 3
-    _bg(f"TREE_LOCK {lock_path}")
+    if args.reuse_lock_pid is not None:
+        lock_path = tree_root / ".prover.lock"
+        if not _parent_lock_is_valid(tree_root, args.reuse_lock_pid):
+            _bg("LOCKED external prover lock owner validation failed")
+            return 3
+        # The parent benchmark owns this canonical lock across both arms.
+        # Its PID differs from this child, so release_tree_lock(None) below
+        # deliberately leaves the parent's lock in place.
+        _bg(f"TREE_LOCK_REUSED {lock_path} owner_pid={args.reuse_lock_pid}")
+        release_path = None
+    else:
+        lock_path, lock_msg = acquire_tree_lock(
+            tree_root, args.demo_id, force=args.force_lock
+        )
+        if lock_path is None:
+            _bg(f"LOCKED {lock_msg}")
+            return 3
+        _bg(f"TREE_LOCK {lock_path}")
+        release_path = lock_path
     try:
         return await _run_locked(args, demo, file_target)
     finally:
-        release_tree_lock(lock_path)
+        release_tree_lock(release_path)
 
 
 async def _run_locked(
@@ -374,11 +428,17 @@ async def _run_calibration_ready(
     _bg(f"RESULT_FREEZE_LOOP {result.get('freeze_loop')} "
         f"escalations={result.get('freeze_loop_escalations')}")
     _bg(f"RESULT_SORRY_EVOLUTION {result.get('sorry_evolution')}")
+    # Cycle-29 (#1453): the single-line terminal verdict harvest scripts and
+    # the coordinator read — no_attempt (freeze with ZERO submissions: change
+    # model/provider, not iterations) is now distinguishable from freeze_loop
+    # and from no_progress without re-parsing the RESULT_* block above.
+    result_kind = _classify_result(result, post_sorry, pre_sorry)
+    _bg(f"RESULT_KIND {result_kind}")
     if result.get("skipped"):
         _bg(f"RESULT_SKIPPED reason={result.get('reason')} detail={result.get('detail')}")
 
     _bg(
-        f"FINAL ok={bool(result.get('success'))} "
+        f"FINAL ok={bool(result.get('success'))} kind={result_kind} "
         f"sorry_after={post_sorry if post_sorry is not None else 'n/a'} "
         f"elapsed={elapsed:.1f}"
     )
@@ -431,6 +491,8 @@ def parse_args() -> argparse.Namespace:
                    help="Break an existing .prover.lock even if its holder "
                         "looks alive or is on a foreign host (WSL<->Windows). "
                         "Operator decision — see #6790.")
+    p.add_argument("--reuse-lock-pid", type=int, default=None,
+                   help=argparse.SUPPRESS)
     return p.parse_args()
 
 

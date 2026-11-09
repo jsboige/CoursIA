@@ -47,8 +47,8 @@ DIR_MAP = {
     "03-Deep-Learning": "03-Deep-Learning",
     "04-Vision": "04-Vision",
     "05-Wavelet-Scattering": "05-Wavelet-Scattering",
-    "Track1-LangChain": "06-Agents-LangChain",
-    "Track2-GoogleADK": "07-Agents-GoogleADK",
+    "06-Data-Agents": "06-Agents-LangChain",
+    "07-Agent-Orchestration": "07-Agents-GoogleADK",
 }
 
 # Niveau a aplatir : ces prefixes voient leur segment "notebooks/" retire.
@@ -110,6 +110,7 @@ NOTEBOOK_MAP: dict[str, str] = {
     "02-ML-Cours/2.11f-Comparaison-Optimisation-Convexe.ipynb": "02-ML-Cours/MLPy-11f-Comparaison-Optimisation-Convexe-Python.ipynb",
     "02-ML-Cours/2.15-Donnee-Comme-Responsabilite-Python.ipynb": "02-ML-Cours/MLPy-15-Donnee-Comme-Responsabilite-Python.ipynb",
     "03-Deep-Learning/3.0-Theorie-Information.ipynb": "03-Deep-Learning/DL-00-Theorie-Information-Python.ipynb",
+    "03-Deep-Learning/3.0b-Tenseurs-Strides-Vues-Python.ipynb": "03-Deep-Learning/DL-00b-Tenseurs-Strides-Vues-Python.ipynb",
     "03-Deep-Learning/3.1-Retropropagation.ipynb": "03-Deep-Learning/DL-01-Retropropagation-Python.ipynb",
     "03-Deep-Learning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb": "03-Deep-Learning/DL-10-Modeles-Generatifs-Diffusion-SOTA-Python.ipynb",
     "03-Deep-Learning/3.2-Optimisateurs.ipynb": "03-Deep-Learning/DL-02-Optimisateurs-Python.ipynb",
@@ -125,14 +126,18 @@ NOTEBOOK_MAP: dict[str, str] = {
     "03-Deep-Learning/3.7-Distillation-Maitre-Eleve.ipynb": "03-Deep-Learning/DL-07-Distillation-Maitre-Eleve-Python.ipynb",
     "03-Deep-Learning/3.8-Representations-Contrastives.ipynb": "03-Deep-Learning/DL-08-Representations-Contrastives-Python.ipynb",
     "03-Deep-Learning/3.9-Compression-Quantization-FP.ipynb": "03-Deep-Learning/DL-09-Compression-Quantization-FP-Python.ipynb",
-    "03-Deep-Learning/3.9a-Compression-Quantization-INT8.ipynb": "03-Deep-Learning/DL-09a-Compression-Quantization-INT8-Python.ipynb",
     "03-Deep-Learning/3.9b-Compression-Pruning-from-scratch.ipynb": "03-Deep-Learning/DL-09b-Compression-Pruning-from-scratch-Python.ipynb",
     "03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb": "03-Deep-Learning/DL-09c-Pruning-From-Scratch-Python.ipynb",
-    "03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb": "03-Deep-Learning/DL-09e-Compression-Quantization-SOTA-Python.ipynb",
-    "03-Deep-Learning/3.9f-Compression-Pruning-SOTA.ipynb": "03-Deep-Learning/DL-09f-Compression-Pruning-SOTA-Python.ipynb",
+    # 3.9e a ete fusionne (#22395 etape 3) : le carnet vivant est
+    # `3.9e-Compression-SOTA.ipynb`, qui porte la Part A (quantization, l'ancien
+    # 3.9e-Compression-Quantization-SOTA) et la Part B (pruning, l'ancien 3.9f).
+    "03-Deep-Learning/3.9e-Compression-SOTA.ipynb": "03-Deep-Learning/DL-09e-Compression-SOTA-Python.ipynb",
+    # 3.9a, 3.9d et 3.9f sont partis dans `_archive/` (#22395 etapes 2-3) : leurs
+    # cles de table sont retirees ici, et les carnets archives sortent du
+    # fail-closed T3 (cf. build_plan -- convention `_archive/` : pieces de
+    # provenance conservees telles quelles, sans renommage).
     # T2-a -- les 8 carnets de 03-Deep-Learning que le dry-run refusait (fail-closed mesure c.2294).
     "03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb": "03-Deep-Learning/DL-04d-Fourier-Features-Biais-Spectral-Python.ipynb",
-    "03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb": "03-Deep-Learning/DL-09d-Compression-Distillation-from-scratch-Python.ipynb",
     "03-Deep-Learning/3.9g-Compression-Comparatif-A-vs-B.ipynb": "03-Deep-Learning/DL-09g-Compression-Comparatif-A-vs-B-Python.ipynb",
     "03-Deep-Learning/3.11-Budget-Memoire-Entrainement.ipynb": "03-Deep-Learning/DL-11-Budget-Memoire-Entrainement-Python.ipynb",
     "03-Deep-Learning/3.12-Les-Collectives.ipynb": "03-Deep-Learning/DL-12-Les-Collectives-Python.ipynb",
@@ -220,6 +225,16 @@ def resolve_only(only: str) -> str:
         f"(ou leur nom cible : {', '.join(sorted(DIR_MAP.values()))})")
 
 
+def est_archive(rel: str) -> bool:
+    """Le chemin est-il sous un dossier `_archive/` du hub ?
+
+    Convention `_archive/` (docs/reference/_archive-convention.md) : le contenu
+    archive est fige (byte-identique, liens internes non reecrits). Il suit donc
+    le deplacement du hub sans renommage, et ne releve pas du fail-closed T3.
+    """
+    return "_archive" in rel.split("/")
+
+
 def build_plan(only: str | None = None) -> tuple[list[tuple[str, str]], list[str]]:
     """Plan de deplacement : liste (ancien, nouveau) repo-relative + erreurs fail-closed.
 
@@ -249,10 +264,23 @@ def build_plan(only: str | None = None) -> tuple[list[tuple[str, str]], list[str
             else:
                 # fichier a la racine du hub (README.md etc.) : suit la racine
                 pass
-            if rel.endswith(".ipynb") and not rel.startswith(("Track1-LangChain/", "Track2-GoogleADK/")):
+            if (rel.endswith(".ipynb")
+                    and not rel.startswith(("06-Data-Agents/", "07-Agent-Orchestration/"))
+                    and not est_archive(rel)):
                 # Les Labs des Tracks suivent T4 (option retenue : deplacement de
                 # repertoire seulement, notebooks intacts -- table c.5786704244) :
                 # ils ne relevent PAS du fail-closed T3.
+                #
+                # Les carnets d'un `_archive/` non plus : la convention `_archive/`
+                # (docs/reference/_archive-convention.md) en fait des pieces de
+                # provenance conservees TELLES QUELLES. Le README de
+                # 03-Deep-Learning/_archive/ le verifie (« archive byte-identique a
+                # sa version d'origine, aucun octet modifie ») et declare leurs
+                # liens internes volontairement figes. Les renommer (suffixe noyau)
+                # dementirait cette propriete, qui est la seule raison de les
+                # garder. Mesure 2026-11-02 : trois carnets archives (3.9a, 3.9d,
+                # 3.9f) bloquaient la tranche 03-Deep-Learning en fail-closed alors
+                # qu'ils suivent le deplacement du dossier sans changer de nom.
                 errors.append(f"notebook non couvert par la table (fail-closed): {rel}")
         plan.append((old, f"{HUB_NEW}/{new_rel}"))
     return plan, errors
@@ -394,8 +422,14 @@ def sweep_files() -> list[str]:
         leur propre cible, le plan de la tranche suivante neragedait plus sur
         le bon repertoire. Une table se met a jour DELIBEREMENT, dans la PR de
         la tranche, pas par un sweep automatique.
+      - tout dossier `_archive/` : la convention `_archive/` tient ces pieces
+        pour de la provenance conservee TELLE QUELLE (byte-identique, liens
+        internes figes -- cf. le README de 03-Deep-Learning/_archive/ qui le
+        verifie). Reecrire un renvoi dans un carnet archive dementirait la
+        propriete qui justifie de le garder : mieux vaut un lien fige, assume
+        et documente, qu'une piece qui n'est plus la preuve de ce qu'elle dit.
     """
-    excluded_parts = {".lake", ".git", "_archives", "node_modules", ".venv", "venv", "__pycache__", "_peters"}
+    excluded_parts = {".lake", ".git", "_archive", "_archives", "node_modules", ".venv", "venv", "__pycache__", "_peters"}
     try:
         self_rel = Path(__file__).resolve().relative_to(REPO_ROOT).as_posix()
     except ValueError:

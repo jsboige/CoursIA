@@ -41,6 +41,7 @@ Usage
 -----
     python scripts/lean/check_i18n_siblings.py PATH [PATH ...]
     python scripts/lean/check_i18n_siblings.py --all
+    python scripts/lean/check_i18n_siblings.py --all --fr-import-advisory
 
 ``PATH`` may be a directory (scanned recursively for ``*_en.lean``) or a single
 ``*_en.lean`` file. ``--all`` scans the whole repository, skipping vendored /
@@ -65,10 +66,20 @@ trimming (#7763, surfaced during the i18n rollout for ``conway_lean`` /
 2. The EN mirror was never written *from* the canonical — it is a verbatim
    copy of the original EN skeleton the FR file was supposed to diverge from.
 
-Advisory by design because legitimate identical bodies exist (a shared
-licence header, a verbatim bibliographic citation); a human must triage the
-list before any flip. The summary line carries the ``| N half-done (advisory)``
+Advisory by design because legitimate identical bodies exist (a verbatim
+bibliographic citation, a shared boilerplate); a human must triage the list
+before any flip. The repository's Apache-2.0 licence header is the one
+boilerplate that is identical **by construction** in every sibling pair: it is
+excluded from the comparison by name (see :func:`is_repo_boilerplate`), so the
+advisory keeps its signal — every remaining hit is prose that really was never
+translated. The summary line carries the ``| N half-done (advisory)``
 counter regardless of exit code.
+
+An opt-in ``--fr-import-advisory`` adds a fifth advisory: in a declaring
+``*_en`` module, it reports imports of same-lake FR modules whose ``_en`` twin
+exists. It excludes prose-only and consumer-only modules and external imports
+such as Mathlib. It never changes the exit code; reviewers use the report to
+triage a possible mixed-namespace dependency chain.
 """
 from __future__ import annotations
 
@@ -109,6 +120,15 @@ _NAMESPACE_DECL = re.compile(r"^\s*namespace\s+([\w.]+)", re.MULTILINE)
 # Import lines (matched on the comment-stripped EN source) feed the
 # consumer-pattern detection.
 _IMPORT_LINE = re.compile(r"^\s*import\s+([\w.]+)", re.MULTILINE)
+
+# A declaration is needed before an FR import is suspicious: prose-only
+# mirrors and consumer-only modules may legitimately import the FR source.
+_OWN_DECLARATION = re.compile(
+    r"^\s*(?:@\[[^\]]*\]\s*)?"
+    r"(?:private\s+|protected\s+|noncomputable\s+|partial\s+|unsafe\s+)*"
+    r"(?:theorem|lemma|def|instance|structure|class|abbrev|inductive)\b",
+    re.MULTILINE,
+)
 
 # A new top-level declaration (or a standalone attribute preceding one) starts
 # a comparison block for the consumer-pattern subset check.
@@ -174,6 +194,38 @@ def extract_block_comment_bodies(src: str) -> list[str]:
     return out
 
 
+# The repository's Apache-2.0 licence header, in the exact form the Lean
+# sources carry it. It is identical in every sibling pair **by construction**,
+# so it can never carry a signal about the translation: excluding it is what
+# keeps the HALF-DONE advisory usable (measured 2026-11-02: 9 of the 10
+# half-done pairs of the repository were flagged by this header alone, the
+# 10th being the one pair whose EN mirror really does carry FR prose).
+_LICENCE_BODY_RE = re.compile(
+    r"^Copyright \(c\) \d{4} CoursIA\. All rights reserved\. "
+    r"Released under Apache 2\.0 license as described in the file LICENSE\.$"
+)
+
+
+def is_repo_boilerplate(body: str) -> bool:
+    """True when ``body`` is repository boilerplate rather than prose.
+
+    Only one such body exists today — the Apache-2.0 licence header — and it
+    is recognised **by name** (a named exemption, never a wildcard: same
+    discipline as the ``allow-axioms`` whitelist of ``pr-review-discipline``
+    §B). A body that merely *resembles* the header is not boilerplate: the
+    match is anchored on both ends, so any additional sentence disqualifies it.
+
+    In particular, the fourteen ``_en.lean`` block bodies that concatenate the
+    header with a module title inside the same ``/- … -/`` block are **not**
+    exempted (measured 2026-11-02, #24161): the exemption covers the pure
+    header alone, and a header-plus-title body remains a compared block — it
+    stays flagged by ``is_half_done`` if it is shared verbatim with the FR
+    sibling.
+    """
+    text = " ".join(body.split())
+    return bool(_LICENCE_BODY_RE.match(text))
+
+
 def is_half_done(fr_path: Path, en_path: Path,
                  min_body_chars: int = 100) -> tuple[bool, int]:
     """Detect the ``HALF-DONE`` migration failure mode of the i18n rollout
@@ -189,8 +241,12 @@ def is_half_done(fr_path: Path, en_path: Path,
 
     Both indicate a missing human translation step; the checker surfaces them
     as **advisory** (does NOT fail CI) because some legitimate use cases
-    produce identical bodies (a licence header, a verbatim citation, a shared
-    bibliographic reference) and must remain a human triage.
+    produce identical bodies (a verbatim citation, a shared bibliographic
+    reference) and must remain a human triage.
+
+    Bodies recognised as repository boilerplate (:func:`is_repo_boilerplate`)
+    are excluded from the comparison: they are identical in every pair by
+    construction and carry no signal about the translation.
 
     Returns ``(flagged, n_identical)`` where ``n_identical`` counts distinct
     bodies in ``en_path`` that have a byte-identical match in ``fr_path``.
@@ -201,9 +257,12 @@ def is_half_done(fr_path: Path, en_path: Path,
         en_path.read_text(encoding="utf-8", errors="replace"))]
     if not fr_bodies or not en_bodies:
         return False, 0
-    fr_set = {b for b in fr_bodies if len(b) >= min_body_chars}
+    fr_set = {b for b in fr_bodies
+              if len(b) >= min_body_chars and not is_repo_boilerplate(b)}
     n_identical = sum(1 for b in en_bodies
-                      if len(b) >= min_body_chars and b in fr_set)
+                      if len(b) >= min_body_chars
+                      and not is_repo_boilerplate(b)
+                      and b in fr_set)
     return n_identical > 0, n_identical
 
 
@@ -313,6 +372,51 @@ def imports_fr_sibling(en_src_stripped: str, fr_module: str) -> bool:
         m.group(1).rsplit(".", 1)[-1] == fr_module
         for m in _IMPORT_LINE.finditer(en_src_stripped)
     )
+
+
+def fr_import_siblings(en_path: Path) -> list[str]:
+    """Find same-lake FR imports with an existing ``_en`` twin.
+
+    This is an opt-in diagnostic, not a gate. It applies only to `_en` files
+    that declare in a suffixed namespace and contain their own declarations;
+    consumer-only and prose-only mirrors are deliberately excluded. Imports
+    such as Mathlib are outside the lake's source tree and therefore excluded.
+    """
+    if not en_path.name.endswith("_en.lean"):
+        return []
+    code = strip_comments(en_path.read_text(encoding="utf-8", errors="replace"))
+    namespaces = [m.group(1) for m in _NAMESPACE_DECL.finditer(code)]
+    if not any(ns.endswith("_en") for ns in namespaces):
+        return []
+    if not _OWN_DECLARATION.search(code):
+        return []
+
+    lakefile = next(
+        (parent / name for parent in (en_path.parent, *en_path.parents)
+         for name in _LAKEFILE_NAMES if (parent / name).is_file()),
+        None,
+    )
+    if lakefile is None:
+        return []
+    lake = lakefile.parent.resolve()
+    findings: list[str] = []
+    for match in re.finditer(r"^\s*import\s+(.+)$", code, re.MULTILINE):
+        tokens = iter(match.group(1).split())
+        for module in tokens:
+            if module == "as":
+                next(tokens, None)  # import alias, not another module
+                continue
+            if module.startswith(("«", '"')):
+                continue
+            if (not re.fullmatch(r"[\w]+(?:\.[\w]+)*", module)
+                    or module.endswith("_en")):
+                continue
+            target = lake.joinpath(*module.split(".")).with_suffix(".lean")
+            if not target.is_file() or _excluded(target):
+                continue
+            if target.with_name(target.stem + "_en.lean").is_file():
+                findings.append(module)
+    return findings
 
 
 def _drift_detail(fr_blocks: list[str], en_blocks: list[str],
@@ -523,6 +627,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--all", action="store_true",
                         help="scan the whole repository")
     parser.add_argument(
+        "--fr-import-advisory", action="store_true",
+        help=(
+            "report same-lake unsuffixed imports with an existing `_en` twin "
+            "in declaring `_en` modules; advisory only, never changes exit status"
+        ),
+    )
+    parser.add_argument(
         "--allow-unbuilt", action="append", default=[],
         metavar="RELATIVE_PATH",
         help=(
@@ -561,7 +672,7 @@ def main(argv: list[str] | None = None) -> int:
         print("No *_en.lean sibling files found — nothing to check.")
         return 0
 
-    passed = consumer = failed = orphan = unbuilt = half_done = 0
+    passed = consumer = failed = orphan = unbuilt = half_done = fr_imports = 0
     unbuilt_whitelisted = 0
     for en in sorted(en_files):
         fr = fr_sibling(en)
@@ -595,10 +706,17 @@ def main(argv: list[str] | None = None) -> int:
             failed += 1
             print(f"DRIFT   {en}")
             print(detail)
+        if args.fr_import_advisory:
+            imports = fr_import_siblings(en)
+            if imports:
+                fr_imports += len(imports)
+                print(f"FR-IMPORT  {en}  -> {', '.join(imports)} (advisory)")
         # HALF-DONE advisory (#7763): detect FR-canonical files that still
         # carry verbatim EN prose (the migration was started but never landed
         # on the FR side). Non-gating by design — some identical bodies are
-        # legitimate (shared licence header, citation), so a human triages.
+        # legitimate (a citation, a shared bibliographic reference), so a human
+        # triages. Repository boilerplate (the licence header) is excluded by
+        # name and never reaches this count.
         hd, n_id = is_half_done(fr, en)
         if hd:
             half_done += 1
@@ -609,10 +727,13 @@ def main(argv: list[str] | None = None) -> int:
     print(f"\n{passed}/{total} pairs byte-identical"
           f" | {consumer} consumer-pattern | {failed} drift | {orphan} orphan"
           f" | {unbuilt} unbuilt ({unbuilt_whitelisted} whitelisted)"
-          f" | {half_done} half-done (advisory)")
+          f" | {half_done} half-done (advisory)"
+          + (f" | {fr_imports} FR-import edge(s) (advisory)"
+             if args.fr_import_advisory else ""))
     # NB: half_done is ADVISORY — it does NOT flip the exit code. Some
-    # legitimate scenarios produce identical bodies (shared licence header,
-    # verbatim bibliographic citation, etc.) and a human must triage. The
+    # legitimate scenarios produce identical bodies (a verbatim bibliographic
+    # citation, etc.) and a human must triage; the licence header is excluded
+    # by name upstream, so it never inflates the count. The
     # exit code remains a hard fail on real drift / orphan / non-whitelisted
     # unbuilt. Whitelisted unbuilt mirrors are reported as UNBUILT in the log
     # but excluded from the exit-code computation (cliquet: the exemption is

@@ -554,6 +554,120 @@ class TestAnalyzeNotebookSerieClassification:
         assert entry["sous_serie"] == ""
 
 
+# --- sous-série profonde : le bucket suit le chemin complet (#24994) ---------
+
+class TestSubSerieDepth:
+    """Le générateur suit la profondeur réelle de l'arbre (#24994, acceptance
+    « arbre synthétique de profondeur 3 »).
+
+    `sous_serie` seul ne portait que le premier segment : DataScienceWithAgents
+    (113 carnets répartis sur 3 niveaux) et Lean (159 sur 2 niveaux, 26
+    sous-répertoires) rendaient en sections plates. Les nouveaux champs
+    `sous_serie_path` / `sous_serie_levels` portent le chemin complet -- c'est
+    ce niveau que l'export RDF de l'Epic #24993 réutilisera. `sous_serie` garde
+    le premier segment (compat #4910 : les filtres par égalité de
+    expand_catalog_markers et les tests ci-dessus ne changent pas).
+    """
+
+    def _write_notebook(self, base: Path, rel_path: str) -> Path:
+        nb_path = base / rel_path
+        nb_path.parent.mkdir(parents=True, exist_ok=True)
+        nb = _nb(
+            [_code("x = 1", [_stream_output("ok")])],
+            metadata={"kernelspec": {"display_name": "Python 3",
+                                     "name": "python3"}},
+        )
+        nb_path.write_text(json.dumps(nb), encoding="utf-8")
+        return nb_path
+
+    def test_depth3_entry_carries_full_path_and_levels(self, tmp_path, monkeypatch):
+        """Arbre synthétique profondeur 3 : Serie/A/B/C/nb.ipynb porte
+        sous_serie='A' (compat), sous_serie_path='A/B/C', levels=['A','B','C']."""
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        nb = self._write_notebook(tmp_path, "TestSerie/A/B/C/nb-deep.ipynb")
+        entry = analyze_notebook(nb, pedagogical=True, git_meta={})
+        assert entry["serie"] == "TestSerie"
+        assert entry["sous_serie"] == "A"
+        assert entry["sous_serie_path"] == "A/B/C"
+        assert entry["sous_serie_levels"] == ["A", "B", "C"]
+
+    def test_root_and_level1_entries(self, tmp_path, monkeypatch):
+        """Carnet racine : chemin vide, levels vides -- le bucket Racine."""
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        nb_root = self._write_notebook(tmp_path, "TestSerie/nb-root.ipynb")
+        nb_l1 = self._write_notebook(tmp_path, "TestSerie/A/nb-l1.ipynb")
+        e_root = analyze_notebook(nb_root, pedagogical=True, git_meta={})
+        e_l1 = analyze_notebook(nb_l1, pedagogical=True, git_meta={})
+        assert e_root["sous_serie_path"] == ""
+        assert e_root["sous_serie_levels"] == []
+        assert e_l1["sous_serie_path"] == "A"
+        assert e_l1["sous_serie_levels"] == ["A"]
+
+    def test_report_buckets_by_full_path_not_first_segment(self, tmp_path, monkeypatch):
+        """Le rendu sectionne par chemin complet : les niveaux A/B/C et A/B2
+        sont des buckets distincts, jamais aplaties sous 'A'. Les totaux
+        réconcilient le grand total (buckets disjoints)."""
+        import re as _re
+
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        entries = [
+            analyze_notebook(
+                self._write_notebook(tmp_path, "TestSerie/A/B/C/nb-1.ipynb"),
+                pedagogical=True, git_meta={},
+            ),
+            analyze_notebook(
+                self._write_notebook(tmp_path, "TestSerie/A/B/C/nb-2.ipynb"),
+                pedagogical=True, git_meta={},
+            ),
+            analyze_notebook(
+                self._write_notebook(tmp_path, "TestSerie/A/B2/nb-3.ipynb"),
+                pedagogical=True, git_meta={},
+            ),
+            analyze_notebook(
+                self._write_notebook(tmp_path, "TestSerie/nb-4.ipynb"),
+                pedagogical=True, git_meta={},
+            ),
+        ]
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        assert "### TestSerie (4 notebooks)" in report
+        assert "#### A/B/C (2)" in report
+        assert "#### A/B2 (1)" in report
+        assert "#### Racine (1)" in report
+        # Jamais le bucket plat du premier segment : 'A' seul n'est plus un
+        # bucket quand tous ses carnets vivent plus bas.
+        assert "#### A (" not in report
+        # Racine d'abord, puis chemins alphabétiquement (ordre déterministe).
+        assert report.index("#### Racine (1)") < report.index("#### A/B/C (2)")
+        assert report.index("#### A/B/C (2)") < report.index("#### A/B2 (1)")
+        # Table agrégée : lignes de buckets disjoints, somme == grand total,
+        # et le chemin complet figure dans la colonne Sub-series.
+        rows = _re.findall(r"^\| (\S.+) \| (\S.+) \| (\d+) \|$", report, _re.M)
+        assert sum(int(n) for _, _, n in rows) == len(entries) == 4
+        assert "| TestSerie | A/B/C | 2 |" in report
+        assert "| TestSerie | A/B2 | 1 |" in report
+
+    def test_depth5_survives_heading_ceiling(self, tmp_path, monkeypatch):
+        """Markdown plafonne les headings à h6 ; l'arbre réel descend à 5
+        niveaux de sous-série (mesuré #24994). Le bucket-chemin-complet tient
+        à toute profondeur : la section profonde existe, le carnet y est."""
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        nb = self._write_notebook(
+            tmp_path, "TestSerie/L1/L2/L3/L4/L5/nb-max.ipynb"
+        )
+        entry = analyze_notebook(nb, pedagogical=True, git_meta={})
+        assert entry["sous_serie_path"] == "L1/L2/L3/L4/L5"
+        report = generate_markdown_report([entry], repo_root=tmp_path)
+        assert "#### L1/L2/L3/L4/L5 (1)" in report
+        assert "nb-max.ipynb" in report
+
+    def test_serie_order_drops_epf(self):
+        """EPF est retiré de SERIES_ORDER : la série n'a pas de répertoire
+        (mesuré #24994), l'entrée était inerte."""
+        from generate_catalog import OWNER_MAP, SERIES_ORDER
+        assert "EPF" not in SERIES_ORDER
+        assert "EPF" not in OWNER_MAP
+
+
 # --- classify_maturity ---
 
 class TestClassifyMaturity:
@@ -2017,9 +2131,71 @@ class TestClassifyReproducibility:
             head_sha="abc1234",
         ) == "REPRODUCED"
 
+    def test_reproduced_despite_width_mismatch_same_commit(self):
+        # #24860 : largeur historique 9 vs abrege epingle 7, meme commit ->
+        # prefixe commun suffisant, l'attestation REPRODUCED survit au
+        # changement de largeur (cas mesure SW-14, meme commit 1a4df1971).
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK",
+            last_success_sha="1a4df1971",
+            executed_at="2026-09-01T00:00:00Z",
+            head_sha="1a4df19",
+        ) == "REPRODUCED"
+
+    def test_width_mismatch_different_commit_not_reproduced(self):
+        # Un caractere de difference SOUS le prefixe commun : commits distincts,
+        # la normalisation ne fabrique pas d'attestation.
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK",
+            last_success_sha="1a4df1971",
+            executed_at="2026-09-01T00:00:00Z",
+            head_sha="1a4df1a",
+        ) == "EXECUTED"
+
+    def test_too_short_prefix_not_reproduced(self):
+        # Moins de 7 caracteres de prefixe commun : pas d'attestation.
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK",
+            last_success_sha="1a4df",
+            executed_at="2026-09-01T00:00:00Z",
+            head_sha="1a4df",
+        ) == "EXECUTED"
+
     def test_partial_exec_is_static_ok(self):
         assert classify_reproducibility("B_PARTIAL_EXEC") == "STATIC_OK"
         assert classify_reproducibility("NO_CODE") == "STATIC_OK"
+
+
+class TestShaAbbrevWidthPinned:
+    """#24860 : abrege epingle a 7 des deux cotes + comparaison normalisee.
+
+    Les largeurs 9/10 mesurees dans l'historique du catalogue venaient d'abreges
+    non epingles (`%h` seul, `--short` seul) : le champ dependait de la taille du
+    depot et de la config du runner.
+    """
+
+    def test_get_head_sha_returns_seven_chars(self):
+        from generate_catalog import get_head_sha
+        sha = get_head_sha()
+        assert sha != ""
+        assert len(sha) == 7
+        int(sha, 16)  # hexadecimal valide
+
+    def test_get_last_commit_sha_returns_seven_chars(self):
+        from forensic_scan import get_last_commit_sha
+        repo_root = Path(__file__).resolve().parents[3]
+        target = repo_root / "scripts" / "notebook_tools" / "forensic_scan.py"
+        sha = get_last_commit_sha(target, repo_root)
+        assert sha is not None
+        assert len(sha) == 7
+        int(sha, 16)
+
+    def test_sha_prefix_equal_semantics(self):
+        from generate_catalog import _sha_prefix_equal
+        assert _sha_prefix_equal("1a4df19", "1a4df1971")
+        assert _sha_prefix_equal("1a4df1971", "1a4df19")
+        assert not _sha_prefix_equal("1a4df1", "1a4df1")  # prefixe commun < 7
+        assert not _sha_prefix_equal("1a4df19", "1a4df1a")
 
 
 # --- generate_markdown_report (#15490) ---
@@ -2258,6 +2434,20 @@ class TestGenerateMarkdownReport:
             "#quarto-document-content table { display: block; overflow-x: auto; }"
             in report
         )
+
+    def test_pagetitle_frontmatter_first(self, tmp_path):
+        """Browser-tab title: Quarto titles the page from frontmatter pagetitle.
+
+        Without it the rendered catalog page is titled by its file slug
+        ("course_catalog.generated", measured 03/11 on #10921 criterion 5).
+        The frontmatter must open the file so Quarto parses it, and carry a
+        human title, not the slug.
+        """
+        report = generate_markdown_report(
+            [_catalog_entry("ML/nb-a.ipynb")], repo_root=tmp_path
+        )
+        assert report.startswith('---\npagetitle: "CoursIA Notebook Catalog"\n---\n')
+        assert "course_catalog.generated" not in report.splitlines()[1]
 
 
 # --- scan_all_notebooks : compte des exclusions par motif (#15606 point 2) ---

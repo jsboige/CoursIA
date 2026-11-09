@@ -35,7 +35,7 @@ namespace SocialChoiceEn
 
 /-- A preference relation is a binary relation on alternatives. -/
 structure Preference (A : Type) where
-  /-- R x y means "x is at least as good as y" -/
+  /-- `R x y` means "x is at least as good as y" -/
   R : A → A → Prop
   /-- Completeness: for any x, y, either R x y or R y x -/
   complete : ∀ x y, R x y ∨ R y x
@@ -144,7 +144,7 @@ def MinimalLiberalism {I A : Type} (swf : SocialWelfareFunction I A) : Prop :=
 ## Utility Representations
 -/
 
-/-- A utility function represents a preference if u(x) ≥ u(y) iff R x y -/
+/-- A utility function represents a preference if `u(x) ≥ u(y)` iff `R x y` -/
 def represents {A : Type} (u : A → Int) (p : Preference A) : Prop :=
   ∀ x y, p.R x y ↔ u x >= u y
 
@@ -894,7 +894,12 @@ set of alternatives has three elements.
 
 The hypothesis `nI ≥ 2` is the one of the historical statement, kept for fidelity
 to the literature; the proof below holds for any `nI`, hence the `_hI` name of
-the parameter. -/
+the parameter.
+
+**Declared alternative proof.** `game_theory_lean/SocialChoice/Arrow_en.lean`
+establishes the same theorem by the pivot method (Geanakoplos), over arbitrary
+types and a local agenda (`Finset σ`); the comparison of the two lives in this
+module's README. -/
 theorem arrow_impossibility {nI nA : Nat}
     (_hI : nI ≥ 2)
     (hA : nA ≥ 3)
@@ -987,7 +992,12 @@ pairs cross.
 The auxiliary profile is explicit — `i` has `z ≻ x ≻ y`, `j` has `y ≻ z ≻ x`,
 everyone else `z ≻ y ≻ x` — and it remains transitive for each of them. The two
 private decisions give `x ≻s y` and `y ≻s z`, Pareto gives `z ≻s x`, and
-social transitivity yields `x ≻s z` against `z ≻s x`. -/
+social transitivity yields `x ≻s z` against `z ≻s x`.
+
+**Declared alternative proof.** `game_theory_lean/SocialChoice/Sen_en.lean`
+states the paradox counter-existentially (`∃ prof, ¬∃ best`) under
+`minimal_liberal`, a strictly weaker notion than `SenLiberalism` — it does
+not require the two pairs to cross. -/
 theorem sen_impossibility {I A : Type} [DecidableEq I] [DecidableEq A]
     (swf : SocialWelfareFunction I A) (h_pareto : WeakPareto swf) :
     ¬ SenLiberalism swf := by

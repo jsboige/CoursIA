@@ -209,6 +209,63 @@ SECTION_TITLE_AFTER_EXERCISE_RE = re.compile(
     r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin)\b",
     re.IGNORECASE,
 )
+# Titres de TRANSITION de fin de carnet -- deuxieme famille structurelle.
+#
+# La liste fermee ci-dessus couvre les sections de FIN (conclusion, ressources,
+# plan, references, synthese, pour aller plus loin). Elle ne couvre pas les
+# sections de NAVIGATION que le corpus utilise massivement : « Navigation »,
+# « Liens », « Prochaines etapes » (+ « Next steps » pour les jumeaux `_en`).
+# Ces cellules sont des TRANSITIONS -- un lien vers le carnet suivant, une
+# liste de liens -- : elles ne commentent AUCUNE sortie. Les placer apres un
+# exercice n'empeche l'etudiant de rien voir ; au contraire, la navigation de
+# fin de carnet doit rester visible meme si l'exercice n'est pas fait.
+#
+# L'exemption reste fondee sur le TITRE (meme principe que la liste fermee
+# ci-dessus) mais avec un ANCRAGE COMPLET : le titre doit etre le mot-cle
+# lui-meme, eventuellement precede d'une numerotation de section. Une PHRASE
+# qui commence par le mot-cle n'est passtructurelle : « Navigation dans un
+# graphe RDF » reste signale comme lecture.
+#
+# Mesure (corpus `main`, 2026-11-03) : 17 cellules portent un titre exact de
+# cette famille (10 « Navigation », 7 « Liens »), toutes des sections de liens ;
+# la premiere occurrence « Prochaines etapes » apres un exercice est mesuree
+# sur la PR #24303 (`Tweety-07b-Ranking-Probabilistic-Python.ipynb`, cellule
+# 23), ou la cellule de cloture du carnet (transition vers le carnet suivant +
+# liens de navigation) est ajoutee juste apres le stub du dernier exercice.
+#
+# Hors perimetre DELIBERE : les titres de RECAP (« Resume », « A retenir »,
+# « Recapitulatif », « Bilan ») ne sont PAS ajoutes -- un recapitulatif peut
+# etre un contenu que l'etudiant doit lire APRES l'exercice ; leur nombre
+# (mesure : 29 « Resume », 19 « A retenir », 7 « Recapitulatif », 5 « Bilan »
+# sur le corpus) est laisse a l'arbitrage du coordinateur.
+CLOSING_NAV_TITLE_RE = re.compile(
+    r"^(?:\d+(?:\.\d+)*\.?\s+)?"
+    r"(?:prochaines etapes|next steps|navigation|liens|links)"
+    r"(?:\s+et\s+suite)?$",
+    re.IGNORECASE,
+)
+# Carve-out #24164 : une **prose de transition vers l'etape suivante** n'est pas
+# une lecture de la sortie qui la precede. Classes mesurees sur 10
+# signalements (PR #23840, `App-3-NurseScheduling.ipynb`) -- decomposition
+# rejouee sur le head (revue Hermes #24309), l'issue melangeait gras et
+# non-gras dans son compte 8/2 :
+#   (a) une cellule de **separateur horizontal** (`***`) posee devant un titre
+#       de section -- `***` puis `## 2. Formulation du probleme` : 3 des 10.
+#       La cellule ne commence pas par `#`, donc `is_reading_or_prose` la
+#       voyait comme de la prose et elle gonflait le compte de la sortie
+#       precedente ;
+#   (b) un **libelle d'etape en gras** (`**Etape 2 : contrainte de couverture
+#       (C1)**`) : 4 des 10 signalements. `EXERCISE_STATEMENT_TITLE_RE` couvre
+#       deja le gras `**Exercice N**` (#23439) ; il manquait la forme `Etape`.
+#   (c) prose de transition NON GRASSEE sans titre (`Definissons...`,
+#       `Construisons...`) : 3 des 10, hors carve-out (limite assumee
+#       documentee dans la docstring de `is_step_transition`).
+# Les garde-fous sont ceux des autres carve-outs : une lecture TITREE reste une
+# lecture, un titre d'interpretation dissimule dans le corps et une citation de
+# sortie (`OUTPUT_CITATION_RE`) disqualifient le carve-out.
+HORIZONTAL_RULE_RE = re.compile(r"^(?:\*{3,}|-{3,}|_{3,})\s*$")
+STEP_BOLD_LABEL_RE = re.compile(r"^\*\*[^*]+\*\*\s*$")
+STEP_LABEL_WORD_RE = re.compile(r"\b(?:etape|étape|step|partie)\b", re.IGNORECASE)
 # Miroir anglais des deux garde-fous du carve-out (#20777) : le titre s'est
 # ouvert a « Exercise » pour les jumeaux `_en`, les gardes suivent -- ouvrir
 # le titre sans ouvrir les gardes rouvrirait le trou que la decision #17777
@@ -341,7 +398,10 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
 
     On REJETTE les md purement structurels (## Conclusion, ## Exercice
     N, ## References), qui n'ont qu'un en-tete suivi d'un corps court
-    ou vide -- ce sont des transitions, pas des lectures.
+    ou vide -- ce sont des transitions, pas des lectures. La meme
+    exemption vaut pour les titres de TRANSITION de fin de carnet
+    (``## Navigation``, ``## Liens``, ``## Prochaines etapes``) : ce sont
+    des liens, pas une lecture d'une sortie (cf ``CLOSING_NAV_TITLE_RE``).
 
     Garde-fou #17777 (meme discriminant qu'``is_reading_or_prose`` : le titre,
     pas la longueur du corps) : un titre de section (``## Conclusion``,
@@ -365,9 +425,9 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
         # Titre de section (## Conclusion / ## Ressources / ## Plan ...) :
         # structurel par le titre, jamais une lecture -- la longueur du corps
         # est hors discriminant (meme principe que ``is_reading_or_prose``).
-        if SECTION_TITLE_AFTER_EXERCISE_RE.match(
-            deaccent(cell_title(src)).lower()
-        ):
+        title = deaccent(cell_title(src)).lower()
+        if (SECTION_TITLE_AFTER_EXERCISE_RE.match(title)
+                or CLOSING_NAV_TITLE_RE.match(title)):
             return False
         body = src.split("\n", 1)[1].strip() if "\n" in src else ""
         return len(body) > 80
@@ -375,6 +435,34 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
     # c'est vraisemblablement une lecture descriptive (pas juste un
     # en-tete de section).
     return len(src) > 80
+
+
+# Separateur de section horizontal : `***`, `---`, `___` (forme espacee
+# comprise, `* * *`). Une cellule markdown peut OUVRIR sur un tel separateur
+# avant son titre -- c'est le cas des titres d'exercice poses juste apres la
+# section precedante. (#23397)
+_HORIZONTAL_RULE_RE = re.compile(r"^(?:\*\s*){3,}$|^(?:-\s*){3,}$|^(?:_\s*){3,}$")
+
+
+def _first_title_line(src: str) -> str:
+    """Premiere ligne qui porte un TITRE dans `src`, en ignorant les lignes
+    vides et les separateurs de section qui le precedent en tete de cellule.
+
+    Un en-tete `### Exercice ...` qui n'est PAS en premiere ligne (parce
+    qu'un separateur `***`/`---`/`___` ou une ligne vide ouvre la cellule)
+    doit tout de meme compter comme un titre : c'est lui qui ferme la section,
+    pas le separateur. Sans ce geste, la remontee de `_section_header` passait
+    au-dessus du titre d'exercice et rattachait son stub a l'en-tete credite
+    deux cellules plus haut, blanchissant un vrai exercice. (#23397)
+    """
+    for line in src.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        if _HORIZONTAL_RULE_RE.match(line):
+            continue
+        return line
+    return ""
 
 
 def _governing_header(cells: list[dict], idx: int) -> dict | None:
@@ -400,6 +488,34 @@ def _governing_header(cells: list[dict], idx: int) -> dict | None:
     return None
 
 
+def _section_header(cells: list[dict], idx: int) -> dict | None:
+    """En-tete markdown de la SECTION qui contient la cellule `idx`.
+
+    Regle de SECTION : une cellule de CODE n'interrompt PAS la remontee --
+    le premier TITRE markdown trouve commande toute la section, combien
+    que soient les cellules de code entre le titre et la cellule. Elle
+    cohabite avec `_governing_header` (regle de LIEN, une cellule de code
+    rompt le lien), qui reste la regle du lien generique -- y compris son
+    miroir dans `count_exercises.py`.
+
+    Un TITRE compte meme quand il n'est pas en premiere ligne de sa cellule
+    (`_first_title_line` ignore les lignes vides et les separateurs `***` /
+    `---` / `___` qui l'ouvrent) : un titre d'exercice pose apres un
+    separateur ferme la section, sinon son stub serait rattache a l'en-tete
+    credite de la section precedante et blanchi. (#23397)
+    """
+    for j in range(idx - 1, -1, -1):
+        cell = cells[j]
+        if cell.get("cell_type") != "markdown":
+            continue
+        src = cell_source(cell).strip()
+        if not src:
+            continue
+        if _first_title_line(src).startswith("#"):
+            return cell
+    return None
+
+
 def is_credited_example_code(cells: list[dict], idx: int) -> bool:
     """Vrai si la cellule de code `idx` est le code d'un EXEMPLE GUIDE CREDITE.
 
@@ -417,24 +533,25 @@ def is_credited_example_code(cells: list[dict], idx: int) -> bool:
     sous `### Exercice N` il reste un stub. L'ATTRIBUTION est exigee : un
     simple `### Exemple` sans credit ne dit rien du role du code.
 
-    LIMITE ASSUMEE -- le lien de section s'arrete a la PREMIERE cellule de
-    code (`_governing_header`), donc un exemple credite qui porte plusieurs
-    cellules de code n'est blanchi que sur la premiere ; les suivantes
-    restent classees « exercice ». La limite est codifiee par
-    `test_carveout_code_avant_titre_ne_rattache_pas`, et l'elargir changerait
-    cette semantique (une cellule de code sans titre ouvre une nouvelle
-    section : sans cela, un exercice pose apres un code quelconque serait
-    blanchi).
+    Regle de SECTION (#23397) : la commande se lit par `_section_header` --
+    le premier TITRE markdown au-dessus de la cellule, les cellules de code
+    intermediaires n'interrompant PAS la remontee. Un exemple credite qui
+    porte plusieurs cellules de code est blanchi sur TOUTES, dans la limite
+    de sa section : un NOUVEAU titre markdown (exemple : l'exercice qui suit
+    l'exemple) ferme la section, et le code sous ce titre redevient
+    classifiable « exercice » -- l'elargissement ne blanchit donc jamais un
+    exercice pose apres un code quelconque, qui ne partage pas l'en-tete
+    credite.
 
-    Mesure du 2026-10-29 sur le depot (151 en-tetes credites) : 133 sections
-    portent une seule cellule de code, 15 en portent deux, 3 en portent trois
-    -- soit 18 sections hors du carve-out. Aucune ne produit le faux positif :
-    sur ces 18 sections, aucune cellule non blanchie n'est classee « exercice »
-    par `is_exercise_cell` en etant suivie d'une lecture. La limite est donc
-    REELLE EN FORME et SANS INSTANCE mesuree : la documenter suffit, l'elargir
-    serait un changement de semantique non motive par une mesure.
+    Mesure du 2026-11-06 au head (1 751 carnets, 22 575 cellules de
+    code, 168 en-tetes credites, 16 sections multi-code) : la regle de
+    section blanchit 187 cellules contre 168 sous la regle de lien --
+    strictement superset, 19 cellules gagnees, aucune perdue ; 14 de ces
+    19 sont suivies d'une lecture (le cas ou le faux positif EXERCISE_READING
+    se produisait). Le role du code se lit par SECTION, pas par lien : c'est
+    ce que la mesure porte.
     """
-    header = _governing_header(cells, idx)
+    header = _section_header(cells, idx)
     return header is not None and is_credited_example_header(header)
 
 
@@ -550,6 +667,59 @@ def is_exercise_statement(cell: dict, cells: list[dict], idx: int) -> bool:
         OUTPUT_CITATION_RE.search(deaccent("\n".join(body)).lower())
     )
     return not (has_hidden_heading or cites_output)
+
+
+def is_step_transition(cell: dict) -> bool:
+    """Vrai si ``cell`` est une **prose de transition** vers l'etape suivante.
+
+    Carve-out #24164. Une transition annonce le code qui SUIT ; elle ne
+    commente pas la sortie qui la precede, et ne doit donc pas gonfler le
+    compte de lectures de cette sortie. Deux formes admises :
+
+      (a) un **separateur horizontal** (``***``) seul, ou suivi d'un titre de
+          section ``#`` -- la forme ``*** \\n\\n ## 2. ...`` mesuree ;
+      (b) un **libelle d'etape entierement en gras** portant le mot
+          ``Etape``/``Step``/``Partie`` (``**Etape 2 : contrainte (C1)**``).
+
+    Quatre garde-fous, les memes que ``is_exercise_statement`` :
+    une lecture TITREE reste une lecture (``is_reading_cell``) ; un titre
+    d'interpretation dissimule dans le corps disqualifie ; une citation de
+    sortie disqualifie ; et pour (a) un separateur suivi de PROSE (et non d'un
+    titre) reste du texte, donc une lecture.
+
+    LIMITE ASSUMEE : les transitions en prose NON GRASSEE sans titre
+    (``Construisons maintenant le modele CP-SAT...``) ne sont pas couvertes.
+    Leur blanchiment demanderait de decider qu'une prose sans titre qui precede
+    du code n'est jamais une lecture -- changement semantique que #24164 laisse
+    a l'arbitrage du proprietaire de l'organe (option 3). Mesure (rejouee sur
+    le head, revue Hermes #24309) : 4 des 10 signalements de #23840 tombent
+    sous (b), 3 sous (a), 3 restent hors carve-out (prose non grassee sans
+    titre) -- la decomposition 8/2 heritait du classement mixte de l'issue.
+    """
+    if cell.get("cell_type") != "markdown":
+        return False
+    if is_reading_cell(cell):
+        return False
+    lines = [line.strip() for line in cell_source(cell).splitlines()]
+    first_k = next((k for k, line in enumerate(lines) if line), None)
+    if first_k is None:
+        return False
+    first = lines[first_k]
+    rest = [line for line in lines[first_k + 1:] if line]
+    is_rule = bool(HORIZONTAL_RULE_RE.match(first))
+    is_step_label = bool(STEP_BOLD_LABEL_RE.match(first)) and bool(
+        STEP_LABEL_WORD_RE.search(deaccent(first))
+    )
+    if not (is_rule or is_step_label):
+        return False
+    if is_rule and rest and not rest[0].startswith("#"):
+        # separateur suivi de prose : decoration de texte, pas de titre
+        return False
+    if any(HIDDEN_INTERPRETATION_HEADING_RE.match(line) for line in rest):
+        return False
+    if OUTPUT_CITATION_RE.search(deaccent("\n".join(rest)).lower()):
+        return False
+    return True
 
 
 def is_section_intro(cell: dict) -> bool:
@@ -746,6 +916,11 @@ def readings_by_output(nb: dict) -> Counter[str]:
         # SECOND_READING (faux positif mesure sur #23439).
         if is_exercise_statement(c, cells, i):
             continue
+        # Carve-out #24164 : une prose de transition (`***` devant un titre,
+        # libelle d'etape en gras) annonce le code qui suit, elle ne commente
+        # pas la sortie qui precede -- elle ne compte pas comme lecture.
+        if is_step_transition(c):
+            continue
         key = _output_key_above(cells, i)
         if key is not None:
             counts[key] += 1
@@ -925,6 +1100,14 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None,
         # enonce|stub s'enchainent) -- mesure sur #17777 : 11 findings sur 3
         # carnets, tous des enonces.
         if is_exercise_statement(cell, head_cells, idx):
+            base_counter[src] += 1
+            continue
+
+        # Carve-out #24164 : meme filtre qu'a `readings_by_output`. Sans lui, le
+        # compte de la boucle principale (qui emet les findings) et celui du
+        # ratchet par sortie divergeraient sur la MEME cellule -- la boucle
+        # marquerait une transition comme lecture quand le compte la saute.
+        if is_step_transition(cell):
             base_counter[src] += 1
             continue
 

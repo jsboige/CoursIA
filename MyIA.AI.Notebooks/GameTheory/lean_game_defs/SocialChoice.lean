@@ -890,7 +890,12 @@ l'ensemble des alternatives compte trois éléments.
 
 L'hypothèse `nI ≥ 2` est celle de l'énoncé historique, conservée pour la
 fidélité à la littérature ; la preuve ci-dessous vaut pour tout `nI`, d'où le
-nom `_hI` du paramètre. -/
+nom `_hI` du paramètre.
+
+**Preuve alternative déclarée.** `game_theory_lean/SocialChoice/Arrow.lean`
+établit le même théorème par la méthode du pivot (Geanakoplos), sur des types
+arbitraires et un agenda local (`Finset σ`) ; la comparaison des deux est au
+README de ce module. -/
 theorem arrow_impossibility {nI nA : Nat}
     (_hI : nI ≥ 2)
     (hA : nA ≥ 3)
@@ -982,7 +987,12 @@ décisif sur une paire qui lui est propre dès que les deux paires se croisent.
 Le profil auxiliaire est explicite — `i` a `z ≻ x ≻ y`, `j` a `y ≻ z ≻ x`,
 tous les autres `z ≻ y ≻ x` — et il reste transitif pour chacun. Les deux
 décisions privées donnent `x ≻s y` et `y ≻s z`, Pareto donne `z ≻s x`, et la
-transitivité sociale produit `x ≻s z` contre `z ≻s x`. -/
+transitivité sociale produit `x ≻s z` contre `z ≻s x`.
+
+**Preuve alternative déclarée.** `game_theory_lean/SocialChoice/Sen.lean` établit le
+paradoxe sous forme contre-existentielle (`∃ prof, ¬∃ best`), avec `minimal_liberal` —
+notion strictement plus faible que `SenLiberalism` : elle n'exige pas que les deux
+paires se croisent. -/
 theorem sen_impossibility {I A : Type} [DecidableEq I] [DecidableEq A]
     (swf : SocialWelfareFunction I A) (h_pareto : WeakPareto swf) :
     ¬ SenLiberalism swf := by

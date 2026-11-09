@@ -107,7 +107,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/IIT/",                    # tranche 15 #10923 (56)
     "MyIA.AI.Notebooks/ML/",                     # tranche 15 #10923 (48)
     "MyIA.AI.Notebooks/RL/",                     # tranche 15 #10923 (21)
-    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/",  # tranche 3 #10923 (25, EPITA Argumentum)
+    "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/",  # tranche 3 #10923 (25, EPITA Argumentum)
     "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/",         # tranche 5 #10923 (26, RDF/OWL/SPARQL EPITA-Sub-symbolic)
     "MyIA.AI.Notebooks/SymbolicAI/SMT/",               # tranche 14 #10923 (46 notebooks Z3/SMT)
     "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/",    # tranche 14 #10923 (27 notebooks blockchain)
