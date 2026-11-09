@@ -91,18 +91,20 @@ Le graphe ci-dessus lit le dépôt par **objectif** — ce qu'on veut construire
 flowchart LR
     A1(["1 · Search<br/>exploration, heuristiques"]) --> A2(["2 · Sudoku<br/>satisfaction de contraintes"])
     A2 --> A3(["3 · SymbolicAI<br/>connaissances, logique, planification"])
-    A3 --> A4(["4 · Probas<br/>incertitude, décision"])
-    A4 --> A5(["5 · GameTheory<br/>décision multi-agent"])
+    A3 --> A4(["4 · Probas<br/>incertitude, modèles graphiques"])
+    A4 --> A4b(["5 · Décision<br/>théorie de la décision"])
+    A4b --> A5(["6 · GameTheory<br/>décision multi-agent"])
     A1 -.-> AP(["Apprentissage<br/>ML · RL"])
     A2 -.-> AP
     A3 -.-> AP
     A4 -.-> AP
+    A4b -.-> AP
     A5 -.-> AP
 
     %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
     classDef stage fill:#f5f5f5,stroke:#333,stroke-width:1px,color:#333;
     classDef learn fill:#eef4ff,stroke:#333,stroke-width:1px,stroke-dasharray:4 3,color:#333;
-    class A1,A2,A3,A4,A5 stage;
+    class A1,A2,A3,A4,A4b,A5 stage;
     class AP learn;
 ```
 
@@ -111,11 +113,12 @@ flowchart LR
 | Recherche (*Part II — Problem-solving*) | **Search** | « introduit l'exploration et les heuristiques » |
 | Satisfaction de contraintes (*Part II*, chapitre 6) | **Sudoku** | [`Sudoku-06-AIMA-CSP`](MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-Python.ipynb) porte le nom du cadre ; la série « compare plusieurs paradigmes sur un problème constant » |
 | Connaissances et raisonnement (*Part III — Knowledge, Reasoning, and Planning*) | **SymbolicAI** | « relie logique, graphes de connaissances, planification, solveurs SMT et preuves Lean » |
-| Raisonnement dans l'incertain (*Part IV — Uncertain Knowledge and Reasoning*) | **Probas** | « apprend à représenter l'incertitude et à décider » |
-| Décision multi-agent | **GameTheory** | « ajoute des agents dont les choix dépendent les uns des autres » |
+| Raisonnement dans l'incertain (*Part IV — Uncertain Knowledge and Reasoning*) | **Probas** | « apprend à représenter l'incertitude — réseaux bayésiens, modèles graphiques, causalité » |
+| Théorie de la décision (*Part IV*, chapitres 16-17) | **Probas/DecisionTheory** | « transforme un posterior quantifié en la meilleure action — utilité espérée, valeur de l'information, MDP » |
+| Décision multi-agent (*Part IV*, chapitre 18) | **GameTheory** | « ajoute des agents dont les choix dépendent les uns des autres » |
 | Apprentissage, à chaque étage | **ML**, **RL** | « transforme ces bases en pipeline d'apprentissage supervisé » ; « ces stratégies peuvent être apprises par l'expérience » |
 
-L'apprentissage n'est pas une sixième étape : c'est une **couche disponible à chaque étage** — d'où les liens pointillés. On apprend une heuristique de recherche, un modèle d'incertitude ou une stratégie de jeu sans changer d'étage. Les deux lectures ne se concurrencent pas : la première répond à « par où commencer, avec les moyens dont je dispose », la seconde à « comment ces séries s'emboîtent conceptuellement ».
+L'apprentissage n'est pas une septième étape : c'est une **couche disponible à chaque étage** — d'où les liens pointillés. On apprend une heuristique de recherche, un modèle d'incertitude ou une stratégie de jeu sans changer d'étage. Les deux lectures ne se concurrencent pas : la première répond à « par où commencer, avec les moyens dont je dispose », la seconde à « comment ces séries s'emboîtent conceptuellement ».
 
 ---
 
@@ -214,7 +217,7 @@ La progression suit cette logique : formaliser le raisonnement (Tweety), représ
 
 **[Smart Contracts](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/README.md) -- quand le code fait foi, le rendre digne de confiance** -- Un contrat déployé transfère de la valeur sans laisser la possibilité d'un correctif immédiat : sécurité et développement doivent donc avancer ensemble. Le parcours remonte des primitives cryptographiques à Solidity et aux standards applicatifs, puis ajoute tests, fuzzing, invariants et vérification formelle avec Foundry. Il aborde aussi la confidentialité sur une chaîne transparente, la gouvernance et plusieurs écosystèmes non-EVM avant le déploiement. Le lien avec Lean et SMT est direct : dans les trois cas, il s'agit de transformer une confiance intuitive dans le programme en propriétés que la machine peut vérifier.
 
-**[Argument Analysis](MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/README.md) -- où s'arrête le LLM, où commence le vérificateur** -- Distinguer un argument valide d'un sophisme devient un acte critique dans une société saturée de discours générés à la chaîne : quand un LLM produit à la demande un texte plausible, la frontière entre persuasion légitime et manipulation rhétorique se brouille. Cette sous-série, la plus fournie de SymbolicAI, pose une question concrète : peut-on prendre un texte argumentatif en entrée et en restituer une carte logique formelle, vérifiée par un solveur, avec détection systématique des sophismes connus ?
+**[Argument Analysis](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/README.md) -- où s'arrête le LLM, où commence le vérificateur** -- Distinguer un argument valide d'un sophisme devient un acte critique dans une société saturée de discours générés à la chaîne : quand un LLM produit à la demande un texte plausible, la frontière entre persuasion légitime et manipulation rhétorique se brouille. Cette sous-série, la plus fournie de SymbolicAI, pose une question concrète : peut-on prendre un texte argumentatif en entrée et en restituer une carte logique formelle, vérifiée par un solveur, avec détection systématique des sophismes connus ?
 
 L'arc principal est un **pipeline agentique en six temps** (`0-init` → `1-informal` → `2-formal` → `3-orchestration` → `4-capstone` → `5-jtms`), chaque étape existant en version pédagogique et en version *agent* exécutable. Un agent LLM orchestré par Semantic Kernel extrait le tissu informel -- prémisses, conclusions, transitions ; un solveur logique (TweetyProject, via le même pont JPype que la sous-série Tweety) vérifie la cohérence des formalisations propositionnelles ; la dernière étape ajoute un **JTMS** (*justification-based truth maintenance system*), qui garde trace de *pourquoi* chaque croyance tient et sait la rétracter quand son support tombe -- exactement ce qui manque à un LLM qui change d'avis sans savoir qu'il l'a fait.
 
@@ -224,7 +227,7 @@ Cette sous-série est le point d'atterrissage de **deux projets vivants**, dont 
 
 Le plus mûr des deux est [2025-Epita-Intelligence-Symbolique](https://github.com/jsboigeEpita/2025-Epita-Intelligence-Symbolique), le *moteur* : plusieurs dizaines d'agents spécialistes -- chacun tenant un axe d'analyse, un formalisme ou une étape de vérification -- répartis sur plusieurs systèmes d'orchestration concurrents et protégés par une vaste suite d'intégration. La difficulté propre à ce projet n'est pas d'ajouter un agent de plus : c'est de **consolider en vol** cette diversité d'orchestrateurs sans perdre ce que chacun sait faire -- un problème d'architecture agentique à part entière. C'est de là que vient `argumentation_lib`.
 
-L'autre est [Argumentum](https://www.argumentum.games), le *corpus et le produit* : un jeu de cartes dont la taxonomie compte **1 408 sophismes et 223 vertus** argumentatives, déjà traduite en **huit langues** (français, anglais, russe, arabe, farsi, chinois, espagnol, portugais), avec sa chaîne d'impression et son site. À la taxonomie s'ajoutent **167 cartes Scénarii** -- des situations de discours -- et c'est leur produit cartésien avec les sophismes qui ouvre la voie la plus prometteuse : un corpus d'entraînement *synthétique* de grande taille, engendré par construction plutôt que collecté. Le dépôt CoursIA est ce qui relie les deux -- le notebook [Argumentum Cards](MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02b-Argumentum-Cards-Python.ipynb) travaille directement cette taxonomie, et le sous-module `Argumentum` en embarque la source.
+L'autre est [Argumentum](https://www.argumentum.games), le *corpus et le produit* : un jeu de cartes dont la taxonomie compte **1 408 sophismes et 223 vertus** argumentatives, déjà traduite en **huit langues** (français, anglais, russe, arabe, farsi, chinois, espagnol, portugais), avec sa chaîne d'impression et son site. À la taxonomie s'ajoutent **167 cartes Scénarii** -- des situations de discours -- et c'est leur produit cartésien avec les sophismes qui ouvre la voie la plus prometteuse : un corpus d'entraînement *synthétique* de grande taille, engendré par construction plutôt que collecté. Le dépôt CoursIA est ce qui relie les deux -- le notebook [Argumentum Cards](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02b-Argumentum-Cards-Python.ipynb) travaille directement cette taxonomie, et le sous-module `Argumentum` en embarque la source.
 
 Tout l'enjeu pédagogique tient dans la jointure -- où le LLM, fiable pour extraire mais faible pour prouver, passe la main au vérificateur formel, et comment une boucle informel/formel converge vers un verdict. C'est l'incarnation appliquée du fil de la série : le symbolique comme garde-fou du neuronal, mis au service de la pensée critique, du fact-checking et de l'audit de contenus générés par IA.
 
@@ -408,7 +411,7 @@ CoursIA/
     Search/                    Algorithmes de recherche (Python, C#)
     Sudoku/                    Résolution multi-paradigme (Python, C#)
     SymbolicAI/                IA symbolique (Python, Lean 4, C#)
-      Tweety/ SemanticWeb/ Lean/ SMT/ Planners/ SmartContracts/ Argument_Analysis/ SymbolicLearning/
+      Tweety/ SemanticWeb/ Lean/ SMT/ Planners/ SmartContracts/ ArgumentAnalysis/ SymbolicLearning/
     Probas/                    Programmation probabiliste (C#, Python)
     GameTheory/                Théorie des jeux (Python, Lean 4)
     ML/                        Machine Learning (C#, Python)
@@ -472,9 +475,9 @@ pip install jupyter ipykernel python-dotenv
 python -m ipykernel install --user --name=coursia --display-name "Python (CoursIA)"
 
 # 4. Kernel .NET Interactive (notebooks C#)
-# Préciser --version : le dernier build publié casse #!import (15 notebooks C#).
-# Version vérifiée compatible : cf docs/reference/kernels-runtime.md
-dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701
+# Préciser --version : le dépôt épingle un build canon, vérifié sur toute la flotte
+# (cf docs/reference/kernels-runtime.md) ; ce build tourne sur .NET 10.
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 dotnet restore MyIA.CoursIA.sln
 
@@ -492,7 +495,7 @@ Certains notebooks s'appuient sur un **sous-module** que `git clone` ne récupè
 | Search/Part4 (MGS-\*), Search-05 et Sudoku-05 en C# | `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | dans ce dossier : `dotnet build`, puis `dotnet build -c Release` pour Search-05 |
 | SMT/Z3-Linq2Z3, Sudoku-12b et Sudoku-13 en C# | `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq` | `bash scripts/environment/z3-build-deploy.sh` (Windows : le `.ps1` voisin) |
 | Z3-Linq2Z3 n° 10, Sudoku-13 en C# | `MyIA.AI.Notebooks/SymbolicAI/SMT/Automata` | `bash scripts/environment/automata-build-deploy.sh` (Windows : le `.ps1` voisin) ; pas encore exécutable sous Linux ([#17654](https://github.com/jsboige/CoursIA/issues/17654)) |
-| Argument_Analysis (Ontology AIF, Ontology CrossLinks, Agentic-1), GameTheory-24b | `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` | aucune |
+| ArgumentAnalysis (Ontology AIF, Ontology CrossLinks, Agentic-1), GameTheory-24b | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum` | aucune |
 
 Les clés API éventuelles se posent via les `.env.example` (section Configuration). Pour valider
 ou exécuter un notebook, ne pas écrire de script ad-hoc : le dépôt fournit une CLI dédiée
@@ -514,11 +517,11 @@ s'installent directement via leur `requirements.txt`.
 | Probas | `Probas/Infer/Infer-01-Setup.ipynb`, `Probas/PyMC/PyMC-01-Setup.ipynb` | `Probas/Infer/scripts/setup_environment.ps1` |
 | QuantConnect | `QuantConnect/Python/QC-Py-01-Setup.ipynb` | `requirements.txt` |
 | Lean | `SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb` | `SymbolicAI/Lean/scripts/setup_wsl_python.sh`, `SymbolicAI/Lean/scripts/validate_lean_setup.py` |
-| Planners | `SymbolicAI/Planners/00-Environment/Planners-0-Setup.ipynb` | `requirements.txt` ; `SymbolicAI/scripts/install_clingo.py` |
-| SemanticWeb | `SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb` | kernel .NET Interactive |
+| Planners | `SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb` | `requirements.txt` ; `SymbolicAI/scripts/install_clingo.py` |
+| SemanticWeb | `SymbolicAI/SemanticWeb/SW-01-Setup-CSharp.ipynb` | kernel .NET Interactive |
 | SmartContracts | `SymbolicAI/SmartContracts/00-Foundations/SC-01-Setup-Foundry-Python.ipynb`, `SC-02-Setup-Web3py-Python.ipynb` | `SymbolicAI/SmartContracts/setup_env.py`, `SymbolicAI/SmartContracts/scripts/setup_wsl_smartcontracts.sh` |
 | Tweety | `SymbolicAI/Tweety/Tweety-01-Setup-Python.ipynb` | `tweety_init.py` (JDK auto-télécharge) |
-| Argument Analysis | `SymbolicAI/Argument_Analysis/Argumentation-08c-UI-Configuration-Python.ipynb` | `install_jdk_portable.py` |
+| Argument Analysis | `SymbolicAI/ArgumentAnalysis/Argumentation-08c-UI-Configuration-Python.ipynb` | `install_jdk_portable.py` |
 | IIT | `requirements.txt` | `IIT/scripts/setup_pyphi_env.ps1` |
 | GenAI / Aspire | `GenAI/Integrations-DotNet/Aspire/01-Aspire-Orchestration-GenAi.ipynb` | SDK .NET 10 + CLI Aspire (`dotnet tool install -g Aspire.Cli`) ; Docker démarré |
 | GenAI / FallacyDetection | -- (kernel Python de base) | `scripts/fallacy_detection/extract_jessynoo_fallacy.py` (stdlib seule) |
@@ -545,7 +548,7 @@ Les séries Search, Sudoku, ML.Net, Probas (Infer.NET), Tweety, SemanticWeb et P
 | GenAI | `GenAI/.env` | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` |
 | GameTheory (optionnel) | `GameTheory/.env` | fournisseurs LLM et paramètres d'exécution documentés dans `.env.example` |
 | Lean | `SymbolicAI/Lean/.env` | `OPENAI_API_KEY`, `GITHUB_TOKEN` |
-| Argument Analysis | `SymbolicAI/Argument_Analysis/.env` | `OPENAI_API_KEY` |
+| Argument Analysis | `SymbolicAI/ArgumentAnalysis/.env` | `OPENAI_API_KEY` |
 | QuantConnect | `QuantConnect/.env` | `QC_API_USER_ID`, `QC_API_ACCESS_TOKEN` |
 | C# Notebooks | `Config/settings.json` (exemples : `settings.json.openai-example`, `settings.json.azure-example`) | `apikey`, `model` |
 | Docker ComfyUI | `docker-configurations/services/comfyui-qwen/.env` | `CIVITAI_TOKEN`, `HF_TOKEN` |
@@ -566,8 +569,8 @@ cp MyIA.AI.Notebooks/GenAI/.env.example MyIA.AI.Notebooks/GenAI/.env
 | Famille | Kernels requis par le dépôt | Séries principales | Installation canonique |
 |---------|-------------------------------|-------------------|----------------------|
 | **Python** | `python3`, `python3-wsl`, `mcp-jupyter`, `mcp-jupyter-py310`, `coursia-ml-training`, `coursia-sae`, `epita_symbolic_ai`, `pyphi`, `smartcontracts` | GenAI, QuantConnect, Search, ML, IIT | `pip install ipykernel` + `python -m ipykernel install --user --name=<kernel>` (kernel de base) ; voir `docs/reference/kernels-runtime.md` pour les envs conda dédiés |
-| **.NET Interactive** | `.net-csharp`, `.net-fsharp`, `.net-powershell` | Sudoku, Search, Probas, ML.NET, SemanticWeb | `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701` puis `dotnet interactive jupyter install` |
-| **Lean 4** | `lean4`, `lean4-wsl` | Lean, GameTheory (notebooks Lean) | `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_kernel.ps1` + `setup_lean4_native.sh` (elan) |
+| **.NET Interactive** | `.net-csharp`, `.net-fsharp`, `.net-powershell` | Sudoku, Search, Probas, ML.NET, SemanticWeb | `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` puis `dotnet interactive jupyter install` |
+| **Lean 4** | `lean4`, `lean4-wsl` | Lean, GameTheory (notebooks Lean) | `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh` (Linux/macOS natif ou WSL) ; `setup_lean4_kernel.ps1` pour l'enregistrement Windows |
 
 Pour la **liste exhaustive et à jour** (versions épinglées, historique, dépendances conda), consulter [`docs/reference/kernels-runtime.md`](docs/reference/kernels-runtime.md), qui prime sur tout inventaire figé. Pour vérifier l'état local à tout moment : `jupyter kernelspec list`.
 
@@ -644,7 +647,7 @@ Les dépendances principales par série (vérifiées contre les `requirements.tx
 | Z3 SMT Solver | Sudoku, Search, SymbolicAI (Tweety, Z3-API, SMT), GameTheory | `z3-solver>=4.13` dans `requirements.txt` |
 | OR-Tools (CP-SAT) | Sudoku, Search, Planners | `ortools>=9.8` dans `requirements.txt` |
 | Unified Planning | Planners | `unified-planning>=1.1` ; Fast-Downward via WSL/Docker |
-| Tweety + JDK | Tweety, Argument_Analysis | `jpype1>=1.4` ; JARs auto-téléchargés via `download_tweety_tools.py` |
+| Tweety + JDK | Tweety, ArgumentAnalysis | `jpype1>=1.4` ; JARs auto-téléchargés via `download_tweety_tools.py` |
 | Lean 4 + Mathlib | Lean, GameTheory (`game_theory_lean/`) | `elan` (WSL) ; diagnostic via `validate_lean_setup.py` |
 | Lean 7-9 multi-agent (Semantic Kernel + LLM) | Lean | `semantic-kernel>=1.39.0`, `openai>=1.0.0`, `anthropic>=0.20.0` |
 | OpenSpiel | GameTheory | `open_spiel>=1.4` dans `requirements.txt` GameTheory |

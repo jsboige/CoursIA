@@ -30,7 +30,7 @@ REVERT_TITLE = (
     "restaures avant #17021 (remplissage sous veto)"
 )
 REDRESSEMENT_TITLE = (
-    "fix(semanticweb,#17066): redressement critique de SW-4-CSharp-SPARQL "
+    "fix(semanticweb,#17066): redressement critique de SW-04-SPARQL-CSharp "
     "-- reference de campagne"
 )
 FROZEN_TITLE = "enrich(qc,#11601): densite QC-Py-06b"

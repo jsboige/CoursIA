@@ -144,9 +144,9 @@ Gaussian Process creux, modèles hiérarchiques, filtre de Kalman, change-point 
 
 Arc **autonome** de **théorie de la décision bayésienne** : axiomes Von Neumann-Morgenstern, utilité espérée, EVPI, réseaux de décision, MDPs (itération valeur/politique), Thompson Sampling. Trois notebooks sont des **companions Lean 4** (kernel WSL + lake `decision_theory_lean`) qui prouvent formellement :
 
-- **DecInfer-02-Lean-ExpectedUtility** : direction sound du théorème vNM (utilité linéaire sur des loteries).
-- **DecInfer-02b-Lean-Coherence** : cohérence de de Finetti — Dutch Book, caractérisation mono-livret des bornes de probabilité.
-- **DecInfer-08b-Lean-Gittins** : indice de Gittins, SFABP (Single-Family Action-Bandit Processes).
+- **DecInfer-01b-Lean-ExpectedUtility** : direction sound du théorème vNM (utilité linéaire sur des loteries).
+- **DecInfer-01c-Lean-Coherence** : cohérence de de Finetti — Dutch Book, caractérisation mono-livret des bornes de probabilité.
+- **DecInfer-07b-Lean-Gittins** : indice de Gittins, SFABP (Single-Family Action-Bandit Processes).
 
 ::: {#dt-infer}
 :::
@@ -181,7 +181,7 @@ L'entrée Infer.NET du corpus bayésien est **Infer-1b** (accretion du premier m
 **Pour Infer.NET (C#/.NET Interactive)**
 
 ```bash
-dotnet tool install --global Microsoft.dotnet-interactive
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 # Puis dans Jupyter : choisir le kernel ".NET (C#)"
 ```
 
@@ -196,7 +196,7 @@ pip install pymc arviz numpy pandas matplotlib
 jupyter notebook MyIA.AI.Notebooks/Probas/PyMC/
 ```
 
-**Pour les companions Lean 4** (`DecInfer-02-Lean-ExpectedUtility.ipynb`, `DecInfer-02b-Lean-Coherence.ipynb`, `DecInfer-08b-Lean-Gittins.ipynb`) : WSL + elan toolchain + kernel Lean4 Jupyter. Cf [`decision_theory_lean/install_wsl_kernel.md`](decision_theory_lean/README.md). Les preuves sont **déjà validées localement** (lake `decision_theory_lean` build SUCCESS) ; les notebooks servent de vitrine pédagogique.
+**Pour les companions Lean 4** (`DecInfer-01b-Lean-ExpectedUtility.ipynb`, `DecInfer-01c-Lean-Coherence.ipynb`, `DecInfer-07b-Lean-Gittins.ipynb`) : WSL + elan toolchain + kernel Lean4 Jupyter. Cf [`decision_theory_lean/install_wsl_kernel.md`](decision_theory_lean/README.md). Les preuves sont **déjà validées localement** (lake `decision_theory_lean` build SUCCESS) ; les notebooks servent de vitrine pédagogique.
 
 ## Ressources complémentaires
 

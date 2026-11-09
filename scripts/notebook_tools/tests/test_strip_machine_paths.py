@@ -461,7 +461,7 @@ _OTHER_LINE = "C:\\Users\\jsboi\\AppData\\Local\\Temp\\test_audio.mp3"
 # c.441 c.7e — audit-extension follow-up: 3 new tokens (python / miniconda /
 # windowsapps) catch 3 source-nb leaks the 6-token taxonomy missed. Each
 # fixture mirrors a real source-nb leak line observed in:
-# - Planners-0-Setup (AppData\\Local\\Programs user-local Python install)
+# - Planners-00-Setup-Python (AppData\\Local\\Programs user-local Python install)
 # - ICT-21-SAETrajectoires-Python (miniconda3\\envs\\coursia-sae torch warning)
 # - Tweety-7b-Ranking-Probabilistic (Microsoft\\WindowsApps Python launcher)
 _PYTHON_LINE = (
