@@ -190,7 +190,7 @@ Le [pont SOTA Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna.
 | App-4 JobShopScheduling | CSP-3, CSP-4 | ortools |
 | App-4-CSharp JobShopScheduling | CSP-3, CSP-4 | dotnet-interactive |
 | App-5 Timetabling | CSP-3 | minizinc |
-| App-5b Timetabling (C#) | CSP-3 | dotnet-interactive |
+| App-5-CSharp Timetabling | CSP-3 | dotnet-interactive |
 | App-6 Minesweeper | CSP-2 (Consistency) | - |
 | App-6 Minesweeper (C#) | CSP-2 (Consistency) | dotnet-interactive |
 | App-7 Wordle | CSP-1, CSP-2 | - |
