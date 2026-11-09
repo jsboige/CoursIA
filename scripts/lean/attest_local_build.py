@@ -138,10 +138,25 @@ def current_login() -> str:
 
 def pr_files(repo: str, pr: int) -> list[str]:
     """Chemins du diff de la PR (lecture paginee)."""
-    payload = gh_json(repo, "repos/{}/pulls/{}/files?per_page=100".format(repo, pr))
-    if not isinstance(payload, list):
-        raise OrganError("liste de fichiers illisible pour #{}".format(pr))
-    return [str((row or {}).get("path") or "") for row in payload]
+    files: list[str] = []
+    for page in range(1, 31):
+        payload = gh_json(
+            repo, "repos/{}/pulls/{}/files?per_page=100&page={}".format(repo, pr, page)
+        )
+        if not isinstance(payload, list):
+            raise OrganError("liste de fichiers illisible pour #{}".format(pr))
+        for row in payload:
+            if not isinstance(row, dict) or not isinstance(row.get("filename"), str) or not row["filename"]:
+                raise OrganError("fichier sans filename pour #{}".format(pr))
+            files.append(row["filename"])
+            previous = row.get("previous_filename")
+            if row.get("status") == "renamed":
+                if not isinstance(previous, str) or not previous:
+                    raise OrganError("renommage sans previous_filename pour #{}".format(pr))
+                files.append(previous)
+        if len(payload) < 100:
+            return files
+    raise OrganError("liste de fichiers potentiellement tronquee pour #{}".format(pr))
 
 
 def pr_head(repo: str, pr: int) -> str:

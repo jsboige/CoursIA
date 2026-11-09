@@ -12,9 +12,12 @@ Les trois categories de #22783 et ce que l'organe en fait :
 
   EXECUTION     un appel chat (``*.chat.completions.create`` / ``.parse``,
                 ``*.responses.create``, ``*ChatCompletion.create`` legacy,
-                ``dspy.LM(...)``, ``ChatOpenAI(...)``) dont l'argument
-                ``model`` resout vers un identifiant obsolete -> FINDING,
-                exit 1.
+                ``dspy.LM(...)``, ``ChatOpenAI(...)``, ou HTTP brut
+                ``requests.post`` / ``httpx.post`` / ``urllib.request.
+                urlopen`` dont l'URL cible ``*/chat/completions``) dont
+                l'argument ``model`` (pour l'HTTP brut, dans le corps
+                ``json=``/``data=``) resout vers un identifiant obsolete ->
+                FINDING, exit 1.
   DOCUMENTATION une mention en CHAINE LITTERALE de code NON consommee par
                 un appel chat -> advisory ``DOC-MENTION`` sans effet sur
                 l'exit : la prose qui garde un modele obsolete doit le
@@ -185,6 +188,7 @@ class Ctx:
     locals: dict = field(default_factory=dict)       # nom -> Binding
     local_dicts: dict = field(default_factory=dict)  # nom -> {cle: Binding}
     multi_dicts: dict = field(default_factory=dict)  # nom -> [{cle: Binding}, ...]
+    local_dict_model: dict = field(default_factory=dict)  # nom -> node "model"
 
 
 @dataclass
@@ -242,6 +246,34 @@ def iter_code_nodes(root: ast.AST):
             stack.extend(ast.iter_child_nodes(node))
 
 
+def _dict_model_entry(node: ast.AST) -> ast.AST | None:
+    """Node de la valeur de la cle "model" d'un littéral dict plat, ou None."""
+    if not isinstance(node, ast.Dict):
+        return None
+    for key, value in zip(node.keys, node.values):
+        if isinstance(key, ast.Constant) and key.value == "model":
+            return value
+    return None
+
+
+def _url_targets_chat_completions(node: ast.AST) -> bool:
+    """L'URL d'un appel HTTP cible ``*/chat/completions`` ?
+
+    Lit un littéral constant ET les parties littérales d'une f-string
+    (``f"{base}/chat/completions"``) : la base interpolée est invisible,
+    mais le suffixe routier est un littéral fixe.
+    """
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return "/chat/completions" in node.value
+    if isinstance(node, ast.JoinedStr):
+        for part in node.values:
+            if (isinstance(part, ast.Constant)
+                    and isinstance(part.value, str)
+                    and "/chat/completions" in part.value):
+                return True
+    return False
+
+
 def classify_chat_call(call: ast.Call, dspy_imported: bool) -> tuple[str, bool] | None:
     """Classe un Call en site chat -> (libelle, model_positionnel_bool).
 
@@ -265,6 +297,14 @@ def classify_chat_call(call: ast.Call, dspy_imported: bool) -> tuple[str, bool] 
         return "dspy.LM", True
     if len(parts) == 1 and parts == ["LM"] and dspy_imported:
         return "dspy.LM", True
+    # HTTP brut (forme non-SDK, #25072) : requests.post / httpx.post /
+    # urllib.request.urlopen dont l'URL cible */chat/completions. Le model
+    # n'est PAS l'argument positionnel (c'est l'URL) : positional=False,
+    # extraction du "model" dans le corps (json=/data=) via _http_model_node.
+    if (tuple(parts[-2:]) in (("requests", "post"), ("httpx", "post"))
+            or tuple(parts[-3:]) == ("urllib", "request", "urlopen")):
+        if call.args and _url_targets_chat_completions(call.args[0]):
+            return "http.chat.completions", False
     return None
 
 
@@ -333,6 +373,9 @@ class NotebookScanner:
         self.path = path
         self.module_values: dict[str, Binding] = {}
         self.dict_values: dict[str, dict[str, Binding]] = {}
+        #: Nom d'un dict littéral -> node de l'entree "model" (HTTP brut
+        #: ``json=<nom>``, #25072) ; le version scope local vit dans Ctx.
+        self.dict_model_nodes: dict[str, ast.AST] = {}
         #: Batteries ``NAME = [{cle: valeur}, ...]`` (liste de dictionnaires) :
         #: chaque entree est une table cle -> Binding (forme #23387 point 3).
         self.multi_dict_values: dict[str, list[dict[str, Binding]]] = {}
@@ -510,6 +553,17 @@ class NotebookScanner:
         binding = self.bind_value(stmt.value, ctx)
         for target in stmt.targets:
             self.bind_target(target, binding, dict_binding, ctx, list_binding)
+        # HTTP brut (#25072) : retenir l'entree "model" d'un littéral dict
+        # lié à un nom (à la scope de l'affectation) pour les appels json=<nom>.
+        if (len(stmt.targets) == 1
+                and isinstance(stmt.targets[0], ast.Name)):
+            entry = _dict_model_entry(stmt.value)
+            if entry is not None:
+                name = stmt.targets[0].id
+                if ctx.func_name is not None or ctx.class_name is not None:
+                    ctx.local_dict_model[name] = entry
+                else:
+                    self.dict_model_nodes[name] = entry
 
     def handle_annassign(self, stmt: ast.AnnAssign, ctx: Ctx) -> None:
         self.scan_expr(stmt.value, ctx)
@@ -517,6 +571,16 @@ class NotebookScanner:
         list_binding = self.list_dict_literal(stmt.value, ctx)
         binding = self.bind_value(stmt.value, ctx)
         self.bind_target(stmt.target, binding, dict_binding, ctx, list_binding)
+        # HTTP brut (#25072) : même retention pour l'affectation annotée
+        # (``payload: dict = {"model": ...}``).
+        if isinstance(stmt.target, ast.Name):
+            entry = _dict_model_entry(stmt.value)
+            if entry is not None:
+                name = stmt.target.id
+                if ctx.func_name is not None or ctx.class_name is not None:
+                    ctx.local_dict_model[name] = entry
+                else:
+                    self.dict_model_nodes[name] = entry
 
     def handle_for(self, stmt: ast.stmt, ctx: Ctx) -> None:
         """Boucle sur une batterie de dictionnaires.
@@ -623,12 +687,39 @@ class NotebookScanner:
         label, positional = site
         self.stats["chat_sites"] += 1
         cell_id = self._cell_id(ctx.cell_index)
-        arg = model_arg_node(call, positional)
+        arg = (self._http_model_node(call, ctx)
+               if label == "http.chat.completions"
+               else model_arg_node(call, positional))
         if arg is None:
             self.unresolved.append(self._site(ctx, cell_id, call, label,
                                               "sans argument model"))
             return
         self.resolve_model_expr(arg, label, call, ctx, defer_self=True)
+
+    def _http_model_node(self, call: ast.Call, ctx: Ctx) -> ast.AST | None:
+        """Site HTTP brut (#25072) : le "model" vit dans le corps de la
+        requête (``json=``/``data=``), pas en argument ``model=``.
+
+        Deux formes : un littéral dict inline (``json={"model": ...}``) et
+        un dict lié à un nom (``payload = {"model": ...}`` puis
+        ``json=payload``), ce dernier résolu via ``dict_model_nodes``
+        (scope local d'abord, puis module).
+        """
+        body: ast.AST | None = None
+        for kw in call.keywords:
+            if kw.arg in ("json", "data"):
+                body = kw.value
+                break
+        if body is None and len(call.args) >= 2:
+            body = call.args[1]  # urllib.request.urlopen(url, data)
+        if body is None:
+            return None
+        if isinstance(body, ast.Dict):
+            return _dict_model_entry(body)
+        if isinstance(body, ast.Name):
+            return (ctx.local_dict_model.get(body.id)
+                    or self.dict_model_nodes.get(body.id))
+        return None
 
     def resolve_model_expr(self, node: ast.AST, label: str, call: ast.Call,
                            ctx: Ctx, defer_self: bool) -> None:
