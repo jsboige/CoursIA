@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-08
+> REFERENCE — vivante — dernière révision 2026-11-09
 
 # Registre datasets — open-courseware CoursIA
 
@@ -147,7 +147,7 @@ Chaque ligne du registre respecte le schéma :
 | Chemin | Taille (B) | SHA256 (16 hex) | Licence | Catégorie | Usage | Card |
 |--------|----------:|-----------------|---------|-----------|-------|------|
 | `MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/data/patients.csv` | 808 | `66f816ef85d6428…` | SYNTHETIQUE-COURS | **sensible** | Cas diabétique pédagogique | [DATASET_CARD.md](./DATASET_CARD.md#patientscsv) |
-| `MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/data/patients_oncology.csv` | 5 124 | `211b298747c465a…` | SYNTHETIQUE-COURS | **sensible** | Cas oncologie pédagogique | [DATASET_CARD.md](./DATASET_CARD.md#patients_oncologycsv) |
+| `MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/data/patients_oncology.csv` | 5 124 | `211b298747c465a…` | SYNTHETIQUE-COURS | **sensible** | Cas oncologie pédagogique | [DATASET_CARD.md](./DATASET_CARD.md#patients_oncologycsv) |
 
 > **RGPD flag.** Les deux datasets `CaseStudies/*` portent des **noms explicites** (Alice/Bob, …) sur des **données médicales** (glycémie, HbA1c, tension). Bien que **fabriqués pour le cours** (SYNTHETIQUE-COURS), ils correspondent à la **catégorie sensible** : un étudiant qui fork et commit ailleurs peut involontairement créer une fausse impression de données réelles. La `DATASET_CARD.md` documente le caractère pédagogique et le périmètre RGPD.
 
