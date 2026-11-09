@@ -205,6 +205,10 @@ on:
       # #18392/#19695 ci-dessus). La suite est CPU-only : z3-solver est
       # installe ci-dessous. Miroir sous pull_request: ci-dessous.
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
+      # #23423 : le test du compagnon cappe POSIX est collecte par cette suite,
+      # mais son sujet est hors scripts/** ; declencher la suite quand ce
+      # wrapper change. Miroir sous pull_request ci-dessous.
+      - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/launchers/launch_capped.sh'
   pull_request:
     # #19426 option (b) : pas de branches: sur pull_request quand paths: scope
     # deja (precedent #19381) — le retarget d'une PR empilee reste capte.
@@ -290,6 +294,8 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/requirements.txt'
       # #21100 pli 0 Origami (Kernel Gateway) (mirror of the push path above).
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
+      # #23423 (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/launchers/launch_capped.sh'
   workflow_dispatch:
 
 permissions:
@@ -478,6 +484,12 @@ jobs:
           # Without it the 6 tests fail on ModuleNotFoundError instead of
           # exercising the script.
           pip install pypdf
+          # RDF catalog export: test_generate_curriculum_rdf imports rdflib
+          # at collection time and validates the produced graph with pyshacl.
+          # The test is included by scripts/notebook_tools/tests below, so
+          # these are job dependencies, not optional notebook extras.
+          # Match the SemanticWeb series' supported RDF stack.
+          pip install "rdflib>=7.0.0,<8.0.0" "pyshacl>=0.27.0"
           # open_spiel: coeur du service Kernel Gateway CFR (GameTheory/gateway,
           # #21104 / pli 0 de l'Epic #19571). La roue 2.0.2 manylinux_2_27
           # x86_64 existe pour le python 3.11 de ce job ; sans le paquet, la

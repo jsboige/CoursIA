@@ -1878,6 +1878,35 @@ def _strip_code(text: str) -> str:
 # x 0,5 s », pas « n_sondes x 0 » (#23340 point 3).
 _BELT_DEADLINE: list[float | None] = [None]
 
+# #25449 -- plafond PROPRE de la phase d'amont (chargement du pool).
+#
+# Le mur de temps du `--belt` est le budget de la BOUCLE de sondage : c'est
+# ce que l'aide de `--belt-time-budget` annonce depuis #21436. Il s'arme
+# donc a l'ENTREE de la boucle, et les phases d'amont ne le consomment
+# plus. Elles gardent leur PROPRE plafond -- sans lui, un pool lent
+# rendrait le run non borne, et l'entree de boucle ne pourrait plus
+# distinguer « le pool a ete lent » de « le budget de boucle est deja
+# consomme ».
+#
+# Mesures (#25449) : chargement du pool + amorce = 258-648 s sur ai-01
+# (#22500), 175,8 s sur ce siege. 900 s couvre le pire releve avec une
+# marge, et reste sous la cadence du cron de lane (30 min).
+BELT_POOL_CEILING_S = 900.0
+
+# #25449 -- etat de la boucle, pour que l'echec rapide puisse NOMMER la
+# phase qui a consume le budget : budget de boucle (arme a son entree),
+# phase en cours, et duree mesuree des phases pre-tapis horodatees.
+_BELT_LOOP_BUDGET: list[float | None] = [None]
+_BELT_PHASE_LABEL: list[str] = ["preparation du tapis (export, reparation, pool)"]
+_BELT_PHASE_SPAN_START: list[float | None] = [None]
+_BELT_PHASE_SPAN_TOTAL: list[float] = [0.0]
+# #25449 correctif 4 -- duree MESUREE du chargement du pool. Sans elle, le
+# reliquat du budget (apres reparation) etait nomme « chargement du pool »,
+# alors qu'il couvre aussi l'export du tableau et l'ardoise de lane : le
+# diagnostic pouvait envoyer une lane optimiser le pool alors que le temps
+# etait parti ailleurs (relit par Hermes sur la tete `659641f`).
+_BELT_POOL_SPAN: list[float | None] = [None]
+
 
 def _clamp_timeout(default: float) -> float:
     """Timeout effectif d'une sonde reseau : le plus petit des deux.
@@ -1950,6 +1979,12 @@ def _publish_phase_deadline(seconds: float | None) -> tuple:
                          getattr(nits, "_NITS_PASS_DEADLINE", None))
     if not seconds or float(seconds) <= 0:
         return (previous_belt, nits, previous_nits)
+    # #25449 -- la phase est HORODATEE : quand le plafond d'amont est
+    # depasse, l'echec rapide doit pouvoir nommer la phase qui a consomme le
+    # budget, et pas seulement dire « le plafond est passe ». La duree
+    # mesuree sert aussi a attribuer le depassement (reparation vs pool).
+    _BELT_PHASE_SPAN_START[0] = time.monotonic()
+    _BELT_PHASE_LABEL[0] = "reparation (file red_backlog)"
     candidate = time.monotonic() + float(seconds)
     # #23090 : une phase ne peut que RETRECIR le mur du run, jamais l'etendre.
     # Sans ce `min`, chaque phase armee pendant un `--belt` repousserait
@@ -1964,7 +1999,7 @@ def _publish_phase_deadline(seconds: float | None) -> tuple:
 
 
 def _arm_belt_run_clock(seconds: float | None) -> float | None:
-    """Arme l'echeance du RUN `--belt` et rend son origine.
+    """Arme le plafond de la PHASE D'AMONT et memorise le budget de boucle.
 
     #23090 -- l'echeance etait publiee dans la branche `--belt`, donc APRES
     `fetch_pool` (chargement du pool : 258-648 s mesures sur ai-01, #22500),
@@ -1977,27 +2012,202 @@ def _arm_belt_run_clock(seconds: float | None) -> float | None:
     echeance via `_publish_phase_deadline`, qui ne peut desormais que
     RETRECIR la fenetre (cf. le `min` qu'elle pose) -- sinon une phase armee
     a `--red-budget 300` repousserait le mur du run a chaque appel.
+
+    #25449 -- ce mur n'est PAS le mur de la BOUCLE. L'aide de
+    `--belt-time-budget` annonce un budget « en SECONDES pour la BOUCLE de
+    sondage », mais il etait mesure depuis le DEBUT DU RUN : le chargement du
+    pool (258-648 s) le consumait entierement, et la boucle entrait avec 0 s.
+    Elle ecartait alors TOUS ses candidats comme si un filtre l'avait
+    decide (run B de #25449 : budget 600 s, boucle entree a 511 s
+    restantes, meme issue).
+
+    Desormais cette fonction arme le PLAFOND PROPRE de la phase d'amont (le
+    chargement du pool, `BELT_POOL_CEILING_S`) et MEMORISE le budget de
+    boucle, qui sera arme a l'ENTREE de la boucle (cf. `_belt_loop_entry`).
+    Le run reste borne et fail-CLOSED, et le depassement du plafond est
+    detecte et NOMME, au lieu d'etre improvise par une boucle a vide.
     """
     t0 = time.monotonic()
+    # #25449 -- le budget de boucle est MEMORISE ici, il n'est pas consomme :
+    # il s'arme a l'entree de la boucle, comme l'annonce l'aide de l'option.
+    _BELT_LOOP_BUDGET[0] = float(seconds) if seconds and float(seconds) > 0 else None
     # Sans budget : None explicite, comme la branche `--belt` d'avant. Ecrire
     # None plutot que « ne pas toucher » evite qu'une echeance laissee par un
     # appel precedent dans le meme process borne un run qui n'en a pas demande.
-    _BELT_DEADLINE[0] = t0 + float(seconds) if seconds and float(seconds) > 0 else None
+    # (`0 desactive le mur` : boucle ET plafond d'amont.)
+    _BELT_DEADLINE[0] = (t0 + _belt_pool_ceiling()
+                         if _BELT_LOOP_BUDGET[0] is not None else None)
+    _BELT_PHASE_LABEL[0] = "preparation du tapis (export, reparation, pool)"
+    # #25449 correctif 3 (relit par Hermes) -- la duree horodatee de la
+    # reparation est un etat DU RUN : elle ne doit pas survivre au run.
+    # Dans un meme process (les tests, ou un runner qui enchaine plusieurs
+    # `main`), le cumul du run precedent etait retranche du run suivant, et
+    # l'attribution « mesuree, pas devinee » pouvait designer une phase qui
+    # n'avait pas tourne.
+    _BELT_PHASE_SPAN_TOTAL[0] = 0.0
+    _BELT_PHASE_SPAN_START[0] = None
+    _BELT_POOL_SPAN[0] = None
     return t0
 
 
 def _disarm_belt_run_clock() -> None:
     """Retire l'echeance du run (#23090) : aucune fuite hors du run."""
     _BELT_DEADLINE[0] = None
+    # #25449 correctif 3 -- la duree horodatee de la reparation est un etat
+    # du run : elle disparait avec lui, comme l'echeance.
+    _BELT_PHASE_SPAN_TOTAL[0] = 0.0
+    _BELT_PHASE_SPAN_START[0] = None
+    _BELT_POOL_SPAN[0] = None
 
 
 def _restore_phase_deadline(token: tuple) -> None:
     """Rend l'etat d'avant `_publish_phase_deadline` (echeance + budget nits)."""
     previous_belt, nits, previous_nits = token
     _BELT_DEADLINE[0] = previous_belt
+    # #25449 -- la phase horodatee se clot : sa duree est cumulee, et la
+    # phase d'amont qui suit la reparation est le CHARGEMENT DU POOL. C'est
+    # elle que l'echec rapide nomme quand c'est elle qui a consume le
+    # budget.
+    start = _BELT_PHASE_SPAN_START[0]
+    if start is not None:
+        _BELT_PHASE_SPAN_TOTAL[0] += max(0.0, time.monotonic() - start)
+        _BELT_PHASE_SPAN_START[0] = None
+    _BELT_PHASE_LABEL[0] = "chargement du pool"
     if nits is not None and previous_nits is not None and previous_nits[0] is not None:
         nits.NITS_PASS_BUDGET_S = previous_nits[0]
         nits._NITS_PASS_DEADLINE = None  # passe suivante : budget rendu, deadline rearmee
+
+
+def _belt_pool_ceiling() -> float:
+    """Plafond PROPRE de la phase d'amont (chargement du pool).
+
+    Lu a chaque appel : une constante module (`BELT_POOL_CEILING_S`) ou
+    l'environnement (`PICK_BELT_POOL_CEILING_S`), pour qu'un siege lent
+    elargisse le plafond sans patch. Une valeur invalide ou <= 0 : la
+    constante.
+    """
+    raw = os.environ.get("PICK_BELT_POOL_CEILING_S")
+    if raw:
+        try:
+            value = float(raw)
+        except ValueError:
+            value = 0.0
+        if value > 0:
+            return value
+    return float(BELT_POOL_CEILING_S)
+
+
+def _belt_pool_overrun(t0: float | None, now: float) -> dict | None:
+    """Le plafond de la phase d'amont est-il depasse ? Preuve, ou None.
+
+    #25449 -- le depassement doit etre NOME : la phase qui a consume le
+    budget, les secondes mesurees, le plafond. Sans preuve, le run entrait
+    dans la boucle avec un budget vide et ecartait 70 candidats comme si un
+    filtre l'avait decide -- un echec muet, que rien ne distinguait d'un
+    tirage normal.
+
+    L'attribution est MESUREE : la duree horodatee de la reparation est
+    retranchee du total, et la phase nommee est celle qui a le plus
+    consomme. Hors phase d'amont (le depassement est alors survenu pendant
+    une phase du tapis), c'est le nom de la phase en cours qui est dit.
+    """
+    # #25449 correctif 2 (relit par Hermes sur la tete `659641f`) -- le
+    # plafond d'AMONT ne survit pas a l'absence de budget : `0` desactive le
+    # mur (boucle ET plafond d'amont), comme l'annonce l'aide de l'option et
+    # le corps de la PR. Avant, `_arm_belt_run_clock(0)` laissait un `t0`
+    # non nul : le garde de depassement restait arme a plafond plein, et un
+    # run volontairement non borne s'arretait en 3 apres le chargement du pool
+    # (regression mesuree contre la base : rc 0 -> rc 3).
+    if t0 is None or _BELT_LOOP_BUDGET[0] is None:
+        return None
+    ceiling = _belt_pool_ceiling()
+    elapsed = max(0.0, float(now) - float(t0))
+    if elapsed <= ceiling:
+        return None
+    repair = _BELT_PHASE_SPAN_TOTAL[0]
+    reste = max(0.0, elapsed - repair)
+    label = _BELT_PHASE_LABEL[0]
+    if label in ("preparation du tapis (export, reparation, pool)",
+                 "chargement du pool", "reparation (file red_backlog)"):
+        # Phase d'amont : l'attribution est mesuree, pas devinee.
+        # #25449 correctif 4 -- le chargement du POOL est mesure lui aussi :
+        # le reliquat du budget couvre l'export du tableau, l'ardoise de lane
+        # ET le pool. On compare les deux consommateurs mesures (reparation
+        # d'un cote, pool de l'autre) au lieu de nommer le pool par defaut.
+        pool_span = _BELT_POOL_SPAN[0]
+        if repair > reste:
+            phase, phase_s = "reparation (file red_backlog)", repair
+        elif pool_span is None:
+            # Pool non mesure (appel direct a la fonction) : on garde le nom
+            # par defaut, et le message porte les secondes mesurees.
+            phase, phase_s = "chargement du pool", reste
+        elif pool_span >= reste - pool_span:
+            phase, phase_s = "chargement du pool", pool_span
+        else:
+            phase, phase_s = ("preparation du tapis (export, ardoise)",
+                              reste - pool_span)
+    else:
+        # Phase du tapis en cours : c'est elle qui est nommee.
+        phase, phase_s = label, elapsed
+    return {
+        "phase": phase,
+        "phase_s": phase_s,
+        "elapsed_s": elapsed,
+        "ceiling_s": ceiling,
+        "repair_s": repair,
+        "message": (
+            f"plafond de la phase d'amont depasse : {elapsed:.0f}s consommees "
+            f"> plafond {ceiling:.0f}s -- phase qui a consume le budget : "
+            f"'{phase}' ({phase_s:.0f}s ; reparation {repair:.0f}s). Le run "
+            f"s'arrete ici (fail-CLOSED) : la boucle n'est pas entree, ses "
+            f"candidats n'ont pas ete ecartes par un filtre, ils n'ont pas "
+            f"ete servis."),
+    }
+
+
+def _belt_loop_entry(args, t0: float | None, now: float) -> tuple:
+    """Entree de boucle : arme le budget de BOUCLE, detecte le depassement.
+
+    Rend ``(budget, depassement)`` :
+    - ``budget`` : le budget de la boucle, arme a SON entree (None si le
+      mur est desactive) ;
+    - ``depassement`` : None, ou la preuve du depassement du plafond
+      d'amont (cf. `_belt_pool_overrun`).
+
+    #25449 -- avant, le budget de boucle etait mesure depuis le debut du
+    RUN : le chargement du pool le consumait entierement et la boucle
+    entrait avec 0 s. Elle n'etait donc plus bornee par son mur, et le
+    fail-CLOSED ecartait tous ses candidats comme si un filtre l'avait
+    decide. Le budget s'arme desormais ICI, comme l'aide de
+    `--belt-time-budget` l'annonce (« en SECONDES pour la BOUCLE de
+    sondage »).
+    """
+    raw = getattr(args, "belt_time_budget", None)
+    budget = float(raw) if raw and float(raw) > 0 else None
+    return budget, _belt_pool_overrun(t0, now)
+
+
+def _belt_emit_overrun(args, overrun: dict) -> None:
+    """Publie l'echec rapide du plafond d'amont (message nomme + JSON).
+
+    En mode `--json`, le document porte l'erreur : les consommateurs
+    lisent `picks` / `claims` / `withheld`, ils doivent donc y trouver des
+    structures, pas une absence de document. Le message nomme reste sur
+    stderr, pour qu'il soit lisible meme quand stdout est du JSON.
+    """
+    message = overrun.get("message", "")
+    if getattr(args, "json", False):
+        print(message, file=sys.stderr)
+        print(json.dumps({
+            "mode": "belt",
+            "lane": getattr(args, "lane", None),
+            "picks": [],
+            "claims": {},
+            "withheld": [],
+            "error": overrun,
+        }, ensure_ascii=False, indent=2))
+    else:
+        print(message)
 
 
 # --- #22630 : cache de la file de reparation ---------------------------------
@@ -12079,12 +12289,16 @@ def main(argv: list[str] | None = None) -> int:
                          "dont aucune sonde n'a pu etre emise (fail-CLOSED, "
                          "raison nommee dans `withheld`), au lieu de les "
                          "servir ; le mur reste signale (`time_budget_hit`). "
-                         "Portee : les phases qui precedent la boucle (claims, "
-                         "settle) consomment l'echeance mais ne sont pas "
-                         "tronquees, et `validate_picks_live` s'execute apres "
-                         "elle sans borne -- la valeur ne borne donc pas une "
-                         "duree totale de run. Defaut : PICK_BELT_TIME_BUDGET_S, "
-                         "ou 240 s. 0 desactive le mur.")
+                         "#25449 le mur s'arme a l'ENTREE de la boucle : les "
+                         "phases qui la precedent (chargement du pool, "
+                         "reparation, claims, settle) ne le consomment plus, "
+                         "elles ont leur PROPRE plafond "
+                         "(`PICK_BELT_POOL_CEILING_S`, defaut 900 s) ; son "
+                         "depassement arrete le run en nommant la phase qui a "
+                         "consomme le budget (code de sortie 3). La valeur ne "
+                         "borne donc plus une duree totale de run. Defaut : "
+                         "PICK_BELT_TIME_BUDGET_S, ou 240 s. 0 desactive le "
+                         "mur (boucle ET plafond d'amont).")
     ap.add_argument("--umbrellas", type=int, default=2, help="candidats urne 'umbrella' (defaut 2)")
     ap.add_argument("--delivered", type=int, default=2, help="candidats urne 'delivered' (defaut 2)")
     ap.add_argument("--reroll", type=int, default=0, help="decale la graine pour un nouveau tirage")
@@ -12658,11 +12872,16 @@ def main(argv: list[str] | None = None) -> int:
     # donnerait a lire une passe plus rapide qu'elle n'est.
     import time as _time_pass
     _pass_t0 = _time_pass.monotonic()
+    # #25449 correctif 4 -- duree MESUREE du chargement du pool. C'est elle
+    # qui permet a l'echec rapide de nommer le POOL plutot que l'ensemble
+    # « export + ardoise + pool » (cf. `_belt_pool_overrun`).
+    _pool_t0 = time.monotonic()
     pool, pool_error = fetch_pool(
         cache=payload_cache,
         cache_mode=effective_cache_mode,
         cache_status=cache_status,
     )
+    _BELT_POOL_SPAN[0] = max(0.0, time.monotonic() - _pool_t0)
     # #17038 : « je n'ai pas pu lire » n'est pas « aucun candidat ». Le dire,
     # et sortir avec un rc DEDIE avant tout tirage -- sans pool il n'y a pas
     # de tirage a rendre, et le vocabulaire de l'epuisement (« FILE LOCALE
@@ -12868,10 +13087,27 @@ def main(argv: list[str] | None = None) -> int:
         if _belt_t0 is None:  # main() non cable : comportement d'avant
             _belt_t0 = _time_belt.monotonic()
             if args.belt_time_budget and args.belt_time_budget > 0:
-                _BELT_DEADLINE[0] = _belt_t0 + args.belt_time_budget
+                # #25449 : le plafond d'AMONT (le pool), pas le budget de
+                # boucle -- celui-ci s'arme a l'entree de la boucle.
+                _BELT_DEADLINE[0] = _belt_t0 + _belt_pool_ceiling()
+                _BELT_LOOP_BUDGET[0] = float(args.belt_time_budget)
         def _belt_phase(name: str) -> None:
+            # #25449 : la phase en cours est nommee -- l'echec rapide doit
+            # pouvoir dire QUELLE phase a consume le budget.
+            _BELT_PHASE_LABEL[0] = name
             print(f"[t={_time_belt.monotonic() - _belt_t0:.2f}s] belt {name}",
                   file=sys.stderr, flush=True)
+        # #25449 -- plafond du chargement du pool : verifie DES que le pool
+        # est charge, avant les phases de preparation du tapis (settle,
+        # claims). Depasse, le run s'arrete en nommant la phase qui a
+        # consomme le budget -- fail-CLOSED, et non une boucle a vide qui
+        # ecarte 70 candidats comme si un filtre l'avait decide.
+        _belt_overrun = _belt_pool_overrun(_belt_t0, _time_belt.monotonic())
+        if _belt_overrun is not None:
+            _belt_phase(f"ECHEC RAPIDE -- {_belt_overrun['message']}")
+            _belt_emit_overrun(args, _belt_overrun)
+            _disarm_belt_run_clock()
+            return 3
         _belt_phase(f"start: grains={args.grains} lane={args.lane}")
         # #21067 correctif 1 : les livraisons par EPIC de CETTE lane, lues
         # sur le corpus de l'ardoise deja paye. Sans ardoise (pas de lane,
@@ -13148,23 +13384,29 @@ def main(argv: list[str] | None = None) -> int:
         # sont injectees ICI explicitement : les defauts de la boucle sont
         # inertes (#19913) pour que les tests ne sortent jamais sur le
         # reseau par oubli.
-        # #21436 — mur de temps du tapis, mesure contre le RUN entier
-        # (`_belt_t0`) et pas contre l'entree de la boucle : la fenetre de
-        # claims initiale (8 verdicts = 49 s au dernier releve ; 44 verdicts =
-        # 170 s mesures sur ai-01) mange deja une part du budget, et c'est le
-        # RUN entier que l'acceptance borne. Calcule ICI, au plus pres de
-        # l'appel, pour que la partie pre-boucle soit effectivement deduite --
-        # mesure au premier run : calcule en t=0, il rendait la boucle a
-        # t=51 s avec "120 s restants", soit une echeance reelle a t=171 s.
-        belt_time_remaining = None
-        if args.belt_time_budget and args.belt_time_budget > 0:
-            belt_time_remaining = max(
-                0.0, args.belt_time_budget
-                - (_time_belt.monotonic() - _belt_t0))
-            _belt_phase(f"mur de temps: {args.belt_time_budget:.0f}s pour la "
-                        f"boucle, {belt_time_remaining:.0f}s restants a son "
-                        f"entree (claims/settle deduits ; les sondes sont "
-                        f"clampees a l'echeance du run)")
+        # #25449 -- le budget de BOUCLE s'arme a l'ENTREE de la boucle, comme
+        # l'annonce l'aide de `--belt-time-budget` (« en SECONDES pour la
+        # BOUCLE de sondage (pas par etape) »). Avant, il etait mesure depuis
+        # le debut du RUN : le chargement du pool (258-648 s mesures, #22500)
+        # le consumait entierement, et la boucle entrait avec 0 s -- elle
+        # ecartait alors TOUS ses candidats comme si un filtre l'avait
+        # decide (run B de #25449 : budget 600 s, boucle entree a 511 s
+        # restantes, meme issue).
+        # Les phases d'amont ont leur PROPRE plafond -- celui du pool, verifie
+        # et nomme plus haut -- donc le run reste borne et fail-CLOSED sans
+        # que le mur de boucle soit consomme avant d'exister.
+        belt_time_remaining, _belt_overrun = _belt_loop_entry(
+            args, _belt_t0, _time_belt.monotonic())
+        if _belt_overrun is not None:
+            _belt_phase(f"ECHEC RAPIDE -- {_belt_overrun['message']}")
+            _belt_emit_overrun(args, _belt_overrun)
+            _disarm_belt_run_clock()
+            return 3
+        if belt_time_remaining is not None:
+            _belt_phase(f"mur de temps: {belt_time_remaining:.0f}s pour la "
+                        f"boucle, arme a son entree ; les phases d'amont ont "
+                        f"leur propre plafond (pool : "
+                        f"{_belt_pool_ceiling():.0f}s, verifie et nomme)")
         _belt_phase("pick_with_replacements start")
         belt_picks, belt_withheld, belt_pick_state = (
             belt_pick_with_replacements(belt_pool, belt_claims, args,
@@ -13409,6 +13651,11 @@ def main(argv: list[str] | None = None) -> int:
                 "lane": args.lane,
                 "pool_initial": len(admitted),
                 "belt_pool_size": len(belt_pool),
+                # #25449 -- le budget de BOUCLE reellement arme a son entree
+                # (None si le mur est desactive). C'est ce que la boucle a
+                # pu utiliser : une lane qui compare le mur a une duree de
+                # run doit lire CECI, pas le plafond d'amont.
+                "belt_loop_budget_s": belt_time_remaining,
                 "filter_active": filter_active,
                 # #20923 : defense en profondeur tapis vs candidats obsoletes.
                 # Surface JSON stable : `belt_validate` renseigne la policy
