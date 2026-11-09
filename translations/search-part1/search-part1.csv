@@ -29792,13 +29792,13 @@ En pratique : poids tous ≥ 0 → Dijkstra (plus rapide, O((V+A) log V)) ; un p
 ",,,,,,,,3984c9ae1d9e8445,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,93a8daa3,markdown,fr,e9f62765c3a15d47,"**Lecture chiffree — le bruit annonce et le bruit observe.** La pleine grille 5x5 porte 80 aretes dirigees — 20 horizontales + 20 verticales, doublees par le graphe bidirectionnel — et la sortie rend `48/80 aretes (apres bruit 30 %)` : le parametre dit 30 %, le tirage seed 42 en supprime 32 (40 %), huit de plus que l'esperance 80 x 0,30 = 24 ; un tirage fixe a une realisation, pas sa moyenne. La ligne de Dijkstra se relit en cout moyen : `distance ponderee = 17,11 km` sur 8 sauts, soit 17,11 / 8 = 2,14 km par saut — dans la fourchette du terrain [1,0 ; 3,0], juste au-dessus de son milieu 2,0 : le chemin prefere des aretes plutot rapides sans pouvoir les avoir toutes.
 ",,,,,,,,e9f62765c3a15d47,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,bddb5bf5,markdown,fr,8ba6db5e9bd00be5,"## À retenir
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,bddb5bf5,markdown,fr,3ff3ea4268a2a392,"## À retenir
 
 1. La formalisation C# du 5-tuple passe par une classe abstraite `SearchProblem` : contrairement à Python, le **compilateur** impose l'implémentation des quatre méthodes abstraites (erreur `CS0534` sinon) — le contrat est vérifié à la compilation, pas à l'exécution.
 2. Trois exemples, trois échelles : aspirateur **8 états**, taquin **181 440** accessibles (branchement ~2,67), itinéraire **13 villes / 41 arcs dirigés** (branchement 3,15).
 3. Sur le graphe de ce carnet, l'optimum Bordeaux → Strasbourg vaut **1 045 km via Lyon** : le moteur de parcours **infirme** l'itinéraire déclaré vainqueur à la main — vérifier par un parcours systématique n'est jamais du luxe.
-4. Missionnaires et Cannibales : 16 états possibles dont 10 accessibles, mais la solution optimale exige **11 traversées** — la taille de l'espace ne fait pas la difficulté, les contraintes de validité si.
-5. Le retour `object` (non générique) reflète fidèlement le `Any` Python ; la variante générique `SearchProblem<TState, TAction>` reste disponible en commentaire.",,,,,,,,8ba6db5e9bd00be5,,,,,,,,,,,,,,,
+4. Missionnaires et Cannibales : 20 états valides, dont 16 atteignables depuis l'état initial, mais la solution optimale exige **11 traversées** — la taille de l'espace ne fait pas la difficulté, les contraintes de validité si.
+5. Le retour `object` (non générique) reflète fidèlement le `Any` Python ; la variante générique `SearchProblem<TState, TAction>` reste disponible en commentaire.",,,,,,,,3ff3ea4268a2a392,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,65c29248,markdown,fr,f2fd03cbe368c9f2,"## Vérifiez votre compréhension
 
 1. Que se passe-t-il si une sous-classe de `SearchProblem` n'implémente pas `IsGoal` ?
