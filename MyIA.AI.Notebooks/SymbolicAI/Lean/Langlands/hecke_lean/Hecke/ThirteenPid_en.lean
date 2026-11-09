@@ -106,9 +106,9 @@ scoped instance F27_charP : CharP F27 3 :=
 
 variable {K : Type*} [Field K] [NumberField K] [hK : IsCyclotomicExtension {13} ℚ K]
 
-/-- Every prime ideal of `O K` above `3` is principal: its generator is
+/-- Every prime ideal of `𝓞 K` above `3` is principal: its generator is
 the Galois image of `a = 1 + z - z^3`, which spans the kernel of the
-morphism `O K -> F27` sending `zeta_13` to the root of `X^3 - X - 1`. -/
+morphism `𝓞 K → F27` sending `zeta_13` to the root of `X^3 - X - 1`. -/
 theorem isPrincipal_of_liesOver_three (P : Ideal (𝓞 K)) [hP : P.IsPrime]
     [hP3 : P.LiesOver (span {(3 : ℤ)})] : Submodule.IsPrincipal P := by
   have hζ := hK.zeta_spec
