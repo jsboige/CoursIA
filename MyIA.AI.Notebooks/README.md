@@ -10,9 +10,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 1617
-breakdown: SymbolicAI=404, GenAI=307, Search=165, GameTheory=141, ML=137, QuantConnect=124, IIT=112, Probas=93, Sudoku=39, RL=38, Complexity=22, NLP=11, Compression=8, Physique=8, CaseStudies=6, cross-series=2
-maturity: BETA=1414, DRAFT=120, ALPHA=79, TEMPLATE=4
+total: 1620
+breakdown: SymbolicAI=404, GenAI=308, Search=165, GameTheory=141, ML=137, QuantConnect=124, IIT=112, Probas=93, Sudoku=39, RL=38, Complexity=22, NLP=11, Physique=10, Compression=8, CaseStudies=6, cross-series=2
+maturity: BETA=1417, DRAFT=114, ALPHA=85, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
@@ -78,7 +78,7 @@ SymbolicAI
 ├── Tweety/ - Logiques classiques, argumentation (Dung, Walton-Krabbe)
 ├── SMT/ - Z3, Satisfiability Modulo Theories (LINQ C# + Python)
 ├── SymbolicLearning/ - ILP, neuro-symbolique, KG-LLM, automates (L*)
-└── Argument_Analysis/ - Analyse d'arguments
+└── ArgumentAnalysis/ - Analyse d'arguments
 
 Search
 ├── Part1-Foundations/ - BFS, A*, Minimax, MCTS (agents et espaces d'états)
@@ -296,7 +296,7 @@ Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette
 
 | Famille | Lake phare | Théorème | Branchement notebook |
 |---------|-----------|----------|----------------------|
-| **SymbolicAI** (Tweety) | `argumentation_lean` | Théorèmes d'extension (Dung) + pragmatique Walton-Krabbe (cf. `#4046`) | Notebook Tweety + Argument_Analysis |
+| **SymbolicAI** (Tweety) | `argumentation_lean` | Théorèmes d'extension (Dung) + pragmatique Walton-Krabbe (cf. `#4046`) | Notebook Tweety + ArgumentAnalysis |
 | **SymbolicAI** (Lean) | `knot_lean` (tricolorabilité Fox GF(3) + Piccirillo), `conway_lean` (Free Will Theorem 0 sorry), `grothendieck_lean` | Nœud trinôme / sliceness, théorème du libre arbitre (Kochen-Specker), visite catégorielle | SymbolicAI/Lean-16a (Conway) + 17a/b (Nœuds) + 15b (Grothendieck) |
 | **SymbolicAI** (SC) | `erc20_lean` | Pas de réentrance ERC-20 (cf. `#4047`) | SmartContracts/Erc20 |
 | **Search** | `search_lean` | Consistance + heuristique admissible = optimalité (cf. `#4048`) | Search-3 (A*) + Search-03d, Part1-Foundations |

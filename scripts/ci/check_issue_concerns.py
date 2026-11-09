@@ -395,8 +395,11 @@ def cites_concern(concern: Comment, reply: Comment) -> bool:
 
     Deux formes, toutes deux explicites :
 
-    * l'**horodatage** du Concern (la convention des lanes : « Reponse au
-      Concern du 2026-10-18T22:26Z ») ;
+    * l'**horodatage** du Concern (convention actuelle des lanes : « Reponse au
+      Concern du 2026-10-18T22:26Z »). Cette détection est donc couplée à la
+      signature des lanes, qui inclut la date et l'heure à la minute en UTC ;
+      le test ``test_lane_signature_contract_requires_utc_minute`` surveille
+      explicitement ce contrat ;
     * un **extrait long** de son texte (>= ``QUOTE_STRONG_MIN`` caracteres).
 
     La fenetre courte de ``_shares_quote`` est exclue ici : c'est ce qui

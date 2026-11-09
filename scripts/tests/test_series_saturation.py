@@ -396,7 +396,7 @@ def test_distinctive_segment_matches_identifiers_not_words():
     for mot in ("Texte", "Audio", "Video", "Search", "ML"):
         assert not ss._is_distinctive(mot), mot
     for ident in ("DataScienceWithAgents", "Part4-Metaheuristics",
-                  "ML-Training-Pipeline", "Argument_Analysis", "ICT-Series"):
+                  "ML-Training-Pipeline", "ArgumentAnalysis", "ICT-Series"):
         assert ss._is_distinctive(ident), ident
 
 
