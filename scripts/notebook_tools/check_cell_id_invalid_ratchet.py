@@ -71,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
             head_count = invalid_count(Path(path).read_text(encoding="utf-8"))
             state = "OK" if compare(base_count, head_count) else "ÉCHEC"
             print(f"{state} {path}: {base_count} -> {head_count}")
-            if head_count > base_count:
+            if not compare(base_count, head_count):
                 failures.append(path)
         if failures:
             print("Hausse d'identifiants invalides détectée:", file=sys.stderr)

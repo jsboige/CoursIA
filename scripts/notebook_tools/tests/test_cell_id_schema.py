@@ -185,3 +185,10 @@ def test_ratchet_cli_compares_each_changed_notebook_to_its_git_base(tmp_path, mo
     git("add", "nb.ipynb")
     git("commit", "-q", "-m", "correction")
     assert ratchet_main([broken_base]) == 0
+
+    legacy = json.loads(nb_path.read_text(encoding="utf-8"))
+    legacy["nbformat_minor"] = 4
+    nb_path.write_text(json.dumps(legacy), encoding="utf-8")
+    git("add", "nb.ipynb")
+    git("commit", "-q", "-m", "retour au format ancien")
+    assert ratchet_main([broken_base]) == 1
