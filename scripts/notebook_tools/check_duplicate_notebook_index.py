@@ -40,7 +40,7 @@ qu'il se saute. Le garde de merge doit voir la meme chose que lui, sinon le defa
 arrive jusqu'a `main` -- ou il n'a plus aucun organe pour le rattraper.
 
 Cette comparaison a fait remonter un TROISIERME faux positif, cette fois cote index :
-`GenAI/3D` porte `3D-01-NeRF-Depuis-Zero-Python` et `3D-02-NeRF-Critique-Python`, deux items
+`GenAI/3D` porte `3D-01-NeRF-From-Scratch` et `3D-02-NeRF-Critic`, deux items
 distincts (01 et 02) que la revue independante de #22118 (lane po-2025, temoin
 f46403eb25b) a vus retomber sur la meme cle `3d`. Le `D` de `3D` n'est pas une
 variante d'index mais la queue d'un prefixe de serie mixte ; la borne du canon
@@ -268,8 +268,8 @@ _CASES = [
     # Prefixe de serie mixte (chiffre + lettre) : `3D` est un prefixe, `01`/`02` le
     # vrai index. Le lookahead de INDEX_RE rend ces noms None (hors portee) au lieu
     # de les faire retomber sur une cle `3d` commune -- le faux positif #22118.
-    ("3D-01-NeRF-Depuis-Zero-Python.ipynb", None),
-    ("3D-02-NeRF-Critique-Python.ipynb", None),
+    ("3D-01-NeRF-From-Scratch.ipynb", None),
+    ("3D-02-NeRF-Critic.ipynb", None),
     # Variantes a suffixe de lettre (serie 02-ML-Cours). Trouvees par le balayage
     # repo-wide, pas par ce jeu de cas : c'est pourquoi le balayage existe.
     ("2.3b-Naive-Bayes-Generatif.ipynb", "2.3b"),
@@ -329,8 +329,8 @@ _SCENARIOS = [
     # reels 01 et 02 distincts. Sans la borne du canon, les deux retombaient sur la
     # cle `3d` et cette comparaison les faisait rougir. Attendu : 0.
     ("FAUX POSITIF  deux ajouts, prefixe mixte 3D-01 vs 3D-02",
-     ["g/3D/3D-01-NeRF-Depuis-Zero-Python.ipynb",
-      "g/3D/3D-02-NeRF-Critique-Python.ipynb"],
+     ["g/3D/3D-01-NeRF-From-Scratch.ipynb",
+      "g/3D/3D-02-NeRF-Critic.ipynb"],
      [], 0),
 ]
 
