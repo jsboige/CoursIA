@@ -305,6 +305,7 @@ Pour 5b : Companion **natif** (kernel Lean 4) : preuve formelle 0-sorry de l'adm
 ### Approfondissement du palier 10
 
 Le notebook 10b prolonge le notebook 10 en déplaçant le LLM du rôle de solveur vers celui de réducteur d'espace ; la correction reste au solveur déterministe.
+Le notebook 10b (LLM-Space-Reducer) teste la **position inverse** : le LLM non plus solveur mais réducteur d'espace de recherche (position du moteur [aicpp](https://github.com/Julien-Livet/aicpp)) — mini-DSL de primitives typées sur grilles ARC, trois bras mesurés (exhaustif borné, LLM-direct, LLM-réducteur), la correction restant toujours au solveur déterministe.
 
 | # | Notebook | Kernel | Apport | Durée |
 |---|---|---|---|---|
