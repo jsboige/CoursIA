@@ -2112,6 +2112,33 @@ _ESCAPE_SEQUENCE_GH_SIGNATURE = re.compile(
 )
 
 
+# Signature of a `gh pr diff` SIZE refusal -- the sibling of the 300-FILE cap
+# handled in `_pr_diff_text` (#14911), on the SIZE axis.
+#
+# GitHub refuses to COMPUTE a diff that exceeds its size budget and answers
+# `HTTP 406: PullRequest.diff too_large` -- measured 2026-11-07 on #24992, whose
+# full patch was 20 988 lines, over the 20 000-line budget of the REST diff.
+#
+# The two caps were treated ASYMMETRICALLY: the file-count cap returned an
+# empty diff + a warning (the guard continued), the size cap fell through to
+# `sys.exit(2)` ("PERIMETRE NON MESURABLE") -- so the guard LOST a measurement
+# it could make by another route. The blocking perimeter checks read the
+# paginated `/pulls/<pr>/files` list, which carries no size cap; the unified
+# diff only serves baseline-move detection, which is ADVISORY (it never blocks
+# in `--scan-thread`, the CI wiring). Losing it costs the reader one line of
+# context, not a verdict.
+#
+# NARROW ON PURPOSE, like its siblings: only these recognised signatures
+# degrade to an empty diff. Every other `gh pr diff` failure stays
+# fail-closed (exit 2).
+_DIFF_SIZE_CAP_SIGNATURES = (
+    "too_large",
+    "diff too large",
+    "diff is too large",
+    "exceeded the maximum diff size",
+)
+
+
 def _exit_unmeasurable(reason: str) -> None:
     """Exit with the non-measurable verdict, mirroring ``#14292``.
 
@@ -2156,6 +2183,14 @@ def _pr_diff_text(pr: int) -> str:
     paginated ``/pulls/<pr>/files`` list, which has no such cap and is
     unaffected. Any other ``gh pr diff`` failure stays fail-closed.
 
+    The SIZE cap is the sibling of the file-count cap, and is degraded the same
+    way (#25085): GitHub refuses to compute a diff beyond its size budget
+    (``HTTP 406: PullRequest.diff too_large`` -- measured 2026-11-07 on
+    #24992, 20 988 lines), and the guard used to answer "PERIMETRE NON
+    MESURABLE" on a PR whose perimeter it could read perfectly well through
+    the paginated file list. Only the advisory baseline-move detection is lost,
+    and the warning says so.
+
     One failure is a RENDERING refusal, not an unreadable diff: a payload
     carrying terminal escape sequences (ANSI colour codes inside a committed
     artefact -- measured 2026-10-29 on #22341). The bytes are readable over a
@@ -2170,6 +2205,14 @@ def _pr_diff_text(pr: int) -> str:
             f"::warning::gh pr diff {pr} indisponible (diff > 300 fichiers) : "
             "detection des baseline-moves retractee a vide ; le perimetre est lu "
             f"via /pulls/{pr}/files pagine (sans ce plafond).",
+            file=sys.stderr,
+        )
+        return ""
+    if any(sig in (stderr or "") for sig in _DIFF_SIZE_CAP_SIGNATURES):
+        print(
+            f"::warning::gh pr diff {pr} indisponible (diff au-dela du plafond de "
+            "TAILLE de l'API) : detection des baseline-moves retractee a vide ; "
+            f"le perimetre est lu via /pulls/{pr}/files pagine (sans ce plafond).",
             file=sys.stderr,
         )
         return ""

@@ -8,7 +8,7 @@
 
 L'EPIC #10355 vise à détecter et classifier les sophismes (fallacies) dans des textes argumentatifs réels, en s'appuyant sur :
 
-- **la taxonomie Argumentum** (`MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv`) comme grilles d'étiquettes ;
+- **la taxonomie Argumentum** (`MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/argumentum_fallacies_taxonomy.csv`) comme grilles d'étiquettes ;
 - **des modèles Qwen 3.5/3.6** équipés de **sparse autoencoders (SAE)**, afin que la décision de classification soit *interprétable* (les features SAE activées explicitent *pourquoi* un passage est jugé fallacieux) ;
 - une distinction fine entre **fine-tuning (FT)** — mémoriser le motif « général → particulier » des traces de raisonnement — et **post-training (PT)** — apprendre à *utiliser* ce workflow plutôt qu'à le réciter.
 
