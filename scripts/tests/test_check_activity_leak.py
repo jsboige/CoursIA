@@ -573,8 +573,41 @@ class TestAxe2VerdictState(unittest.TestCase):
         la ou le faux positif etait mesure. En prose, un paragraphe exige
         score >= 4 — la densite se joue alors sur les MARQUEURS
         CUMULES, pas sur le verdict seul.
+        NOTA : ce titre porte aussi le mot de CONTEXTE (`Verdict de
+        review`), donc la voie CONTEXTE est ouverte en meme temps que la
+        voie ETAT : ce test couvre la voie COMBINEE. La voie ETAT seule
+        est couverte par le test voisin
+        `test_verdict_with_state_is_detected_without_any_review_context`.
         """
         heading = "## Verdict de review : axe 2 : fail (preuve absente du body)"
+        v = judge_passage(0, heading)
+        self.assertIn("verdict", {n for n, _, _ in v.markers})
+        self.assertTrue(v.dense)
+
+    def test_verdict_with_state_is_detected_without_any_review_context(self):
+        """Controle INVERSE ISOLE : la voie ETAT suffit, seule.
+
+        Le controle voisin (`test_verdict_with_state_is_still_detected`)
+        posait son titre sur « Verdict de review : axe 2 : fail (preuve
+        absente du body) » : le mot de CONTEXTE (`verdict`) etait a une
+        dizaine de caracteres du match, donc la voie CONTEXTE etait ouverte
+        SIMULTANEMENT -- le test aurait passe meme si la voie ETAT etait
+        cassee (reserve de la relecture du 09/11, tete `42834f4`).
+
+        Ce test isole donc la voie ETAT : le titre ne porte AUCUN mot du
+        contexte de review (`verdict`, `CHANGES_REQUESTED`,
+        `COMMENT_WITH_CONCERNS`, `domain :`, `REPAIR`, `SOTA-*`), et
+        l'assertion le verifie explicitement -- si la garde de contexte
+        s'appliquait malgre tout, le test echouerait sur cette assertion,
+        avant meme la verification du marqueur.
+        """
+        heading = "## Axe 2 : fail (preuve absente du body)"
+        start = heading.lower().index("axe 2")
+        self.assertFalse(
+            _mod._context_guarded(heading, start, start + len("axe 2"),
+                                  _mod._AXE2_REVIEW_CONTEXT),
+            "le titre de ce test doit rester hors de tout contexte de review",
+        )
         v = judge_passage(0, heading)
         self.assertIn("verdict", {n for n, _, _ in v.markers})
         self.assertTrue(v.dense)
