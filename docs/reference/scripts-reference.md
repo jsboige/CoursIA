@@ -197,6 +197,12 @@ Pipeline d'audit qualité et de **matrice de coût** (EPIC #8056) + audit séman
 | `populate_gametheory_cost.py` | Populate coût GameTheory (48 NBs, CPU-pure : nashpy + numpy + matplotlib) |
 | `populate_semantickernel_cost.py` | Populate coût GenAI / SemanticKernel (26 NBs, API-heavy : gpt-4o / Azure) |
 
+### Census (mesure de population — hors CI, budget API borné)
+
+| Script | Usage |
+|--------|-------|
+| `measure_delivery_classes.py` | Census des **classes de preuve** qui arment le label `candidate-delivered` (#23762) : rejoue le `classify()` du balayage et range chaque issue ouverte dans la classe qui la soutient (`fermant` / `attestation_fermant` / `attestation_tranche` / `attestation_sans_piece` / `tranche` / `sans_preuve`). `--limit`/`--offset` bornent la fenêtre (≈3 appels API par issue) ; `--json` écrit le census complet. Aucun jugement : le verdict manuel (G.9) reste au lecteur |
+
 ### Réparation d'assets (Stop & Repair)
 
 | Script | Usage |
