@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-07
+> REFERENCE — vivante — dernière révision 2026-11-09
 
 # Dataset Cards — fiches descriptives par dataset
 
@@ -102,7 +102,7 @@ Si le SHA256 change après fork :
 
 ***
 
-### `CaseStudies/Oncology-Planning/data/patients_oncology.csv`
+### `CaseStudies/Planification-Oncologie/data/patients_oncology.csv`
 
 **Catégorie** : **sensible** (noms explicites + données oncologie)
 **Licence** : `SYNTHETIQUE-COURS` (MIT CoursIA)
@@ -113,7 +113,7 @@ Si le SHA256 change après fork :
 
 #### Finalité pédagogique
 
-Planification oncologie pour `CaseStudies/Oncology-Planning/`. Démontre l'ordonnancement de séances de chimiothérapie sous contraintes (disponibilité machine, toxicité cumulative, intervalles inter-séances). L'étudiant apprend à formuler un **problème de planification** et à vérifier la cohérence d'un solveur CSP.
+Planification oncologie pour `CaseStudies/Planification-Oncologie/`. Démontre l'ordonnancement de séances de chimiothérapie sous contraintes (disponibilité machine, toxicité cumulative, intervalles inter-séances). L'étudiant apprend à formuler un **problème de planification** et à vérifier la cohérence d'un solveur CSP.
 
 #### Composition
 

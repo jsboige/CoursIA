@@ -114,7 +114,7 @@ RL
 
 CaseStudies
 ├── Diagnostic-Medical/ - LLM-assisted diagnosis
-├── Oncology-Planning/ - Planification oncologique
+├── Planification-Oncologie/ - Planification oncologique
 └── SmartGrid-Energy/ - Optimisation énergétique
 
 IIT
