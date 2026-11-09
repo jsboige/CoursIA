@@ -42,12 +42,14 @@ HERE = Path(__file__).resolve().parent
 QUANT = HERE.parents[1]                      # .../QuantConnect
 LEAGUE = QUANT / "projects" / "Paradox46Benchmarks" / "significance.py"
 SCRIPTS = QUANT / "ML-Training-Pipeline" / "scripts"
-for path in (str(QUANT / "projects"), str(SCRIPTS)):
+for path in (str(HERE), str(QUANT / "projects"), str(SCRIPTS)):
     if path not in sys.path:
         sys.path.insert(0, path)
 
 from analyze_arms import _call, _chart, _points  # noqa: E402 -- acces QC, meme plafond de flotte
 from shadow_replay import QC_EQUITY_SERIES, qc_daily_equity  # noqa: E402 -- contrat de lecture de la trace
+
+import league_control  # noqa: E402 -- le critere de comparaison, pur et testable hors ligne
 
 # Fenetres du protocole de la ligue (coupee au 1er janvier 2025).
 WINDOWS = {
@@ -328,43 +330,44 @@ def cmd_control(args) -> int:
     out = {"reference": ref, "control": ctl, "statistics_diff": diffs}
 
     if ref_shadow is not None and ctl_shadow is not None:
-        rows_ref = _shadow_rows(ref_shadow)
-        rows_ctl = _shadow_rows(ctl_shadow)
-        dates_ref = [d for d, _ in rows_ref]
-        dates_ctl = [d for d, _ in rows_ctl]
-        values_ref = [v for _, v in rows_ref]
-        values_ctl = [v for _, v in rows_ctl]
-        max_diff = max((abs(a - b) for a, b in zip(values_ref, values_ctl)), default=0.0)
-        out.update({
-            "compared": "shadow",
-            "points": len(rows_ref),
-            "calendrier_identique": dates_ref == dates_ctl,
-            "valeurs_identiques": values_ref == values_ctl,
-            "ecart_max": max_diff,
-        })
-        divergence = [] if (dates_ref == dates_ctl and values_ref == values_ctl) else ["trace journaliere"]
+        out.update(_compare_shadow(ref_shadow, ctl_shadow))
     else:
-        chart_ref = _chart(args.project, args.ref, "Monthly")
-        chart_ctl = _chart(args.project, args.ctl, "Monthly")
-        series_ref = _series_points(chart_ref)
-        series_ctl = _series_points(chart_ctl)
-        communes = sorted(set(series_ref) & set(series_ctl))
-        divergence = [name for name in communes if series_ref[name] != series_ctl[name]]
-        out.update({
-            "compared": "Monthly",
-            "series_ref": sorted(series_ref),
-            "series_ctl": sorted(series_ctl),
-            "series_communes": communes,
-            "series_seulement_ref": sorted(set(series_ref) - set(series_ctl)),
-            "series_seulement_ctl": sorted(set(series_ctl) - set(series_ref)),
-            "points_par_serie": {name: len(series_ref[name]) for name in communes},
-            "divergence": divergence,
-        })
-    out["verdict"] = "OK" if not diffs and not divergence else "DIVERGENCE"
+        out.update(_compare_monthly(_chart(args.project, args.ref, "Monthly"),
+                                    _chart(args.project, args.ctl, "Monthly")))
+    out["verdict"] = "OK" if not diffs and not out["divergence"] else "DIVERGENCE"
     print(json.dumps(out, indent=1, ensure_ascii=False))
     if args.out:
         Path(args.out).write_text(json.dumps(out, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     return 0 if out["verdict"] == "OK" else 1
+
+
+def _compare_monthly(chart_ref: dict, chart_ctl: dict) -> dict:
+    """Compare deux graphiques `Monthly`, serie par serie.
+
+    La lecture des points est ici (cote QC) ; le **critere** est dans
+    `league_control`, qui le teste hors ligne. La porte porte sur la
+    divergence de VALEURS des series presentes des deux cots ; une serie
+    exposee d'un seul cote est **rapportee**, pas comptee comme divergence.
+    C'est ce qui distingue une divergence de mesure d'une exposition
+    differente (mesure du 2026-11-09 : le run instrume du bras `bab` n'expose
+    que `ret`, la ou la reference en expose quatre).
+    """
+    out = league_control.compare_series(_series_points(chart_ref),
+                                        _series_points(chart_ctl))
+    out["compared"] = "Monthly"
+    return out
+
+
+def _compare_shadow(chart_ref: dict, chart_ctl: dict) -> dict:
+    """Compare deux traces journalieres : seances et valeurs, point par point.
+
+    C'est la comparaison que le protocole consomme : la trace journaliere, pas
+    la serie mensuelle. La lecture de la trace est ici (cote QC) ; le
+    critere est dans `league_control`.
+    """
+    out = league_control.compare_rows(_shadow_rows(chart_ref), _shadow_rows(chart_ctl))
+    out["compared"] = "shadow"
+    return out
 
 
 # ---------------------------------------------------------------------------- main
