@@ -45,6 +45,15 @@ dans le manifeste, pas laissée au silence de la garde. Le cas mesuré :
 un nom de classe constant est ce que la garantie « refuse qu'une nouvelle
 copie apparaisse » recouvre.
 
+**Limite — le `super()` doit être capturé, pas analysé.** La discrimination
+« spécialisation vs copie » est **syntaxique** : un
+`super().determine_target_percent(...)` compte comme délégation si son
+**résultat est capturé** (affecté à une variable, retourné, passé en argument) ;
+un même appel posé en statement nu (résultat jeté) ne compte pas, car la classe
+recalcule alors sa propre valeur. La garde ne fait **aucune analyse de flux** :
+une variable affectée puis jamais relue resterait exempte — la borne est
+assumée, elle n'est pas comblée.
+
 **Empreinte.** `sha256` du texte normalisé (fins de ligne ramenées à `\n`),
 afin que l'empreinte soit la même sur un checkout Windows (`core.autocrlf`)
 et sur un checkout Linux.
@@ -126,6 +135,17 @@ def _class_flags(node: ast.ClassDef) -> tuple[list[str], bool, bool]:
             and stmt.name == TARGET_METHOD
         ):
             redefines = True
+            # Un `super().determine_target_percent(...)` posé en statement nu
+            # (ast.Expr) JETTE le résultat : la classe recalcule alors sa propre
+            # valeur — c'est une copie, pas une spécialisation (contre-exemple
+            # de l'ajoint, #24627). La délégation ne compte que si le résultat
+            # de super() est capturé. Limite assumée : aucune analyse de flux
+            # (une variable affectée puis jamais relue resterait exempte).
+            discarded = {
+                id(expr.value)
+                for expr in ast.walk(stmt)
+                if isinstance(expr, ast.Expr)
+            }
             for sub in ast.walk(stmt):
                 if (
                     isinstance(sub, ast.Call)
@@ -138,6 +158,9 @@ def _class_flags(node: ast.ClassDef) -> tuple[list[str], bool, bool]:
                     and isinstance(sub.func.value, ast.Call)
                     and isinstance(sub.func.value.func, ast.Name)
                     and sub.func.value.func.id == "super"
+                    # ... et son résultat doit être capturé, pas jeté en
+                    # statement nu : un résultat jeté ne délègue pas.
+                    and id(sub) not in discarded
                 ):
                     calls_super = True
     return base_names, redefines, calls_super

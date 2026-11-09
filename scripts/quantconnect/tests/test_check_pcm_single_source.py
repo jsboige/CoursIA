@@ -227,6 +227,24 @@ class MultiStrategyProbePCM(MultiStrategyPouchesPCM):
         return other.determine_target_percent(active_insights)
 """
 
+# Contre-exemple de l'ajoint (#24627), tête 807606567a4 : la classe delegue
+# bien a super(), mais JETTE le resultat (statement nu) puis retourne une
+# valeur codée en dur — une copie qui contournait la discrimination
+# « redefinit sans super() ». La delegation ne compte que si le resultat de
+# super() est CAPTURE ; un resultat jeté ne l'est pas. Limite assumée :
+# aucune analyse de flux (une variable affectee puis jamais relue resterait
+# exempte).
+SPEC_SUPER_RESULT_DISCARDED = """from AlgorithmImports import *
+
+
+class MultiStrategyProbePCM(MultiStrategyPouchesPCM):
+    \"\"\"Delegue a super() mais jette le resultat, puis recalcule en dur.\"\"\"
+
+    def determine_target_percent(self, insights):
+        super().determine_target_percent(insights)
+        return {"SPY": 1.0}
+"""
+
 
 def test_specialisation_sans_super_est_une_copie(tmp_path):
     """SONDE A : une sous-classe du canonique qui redéfinit la methode
@@ -275,6 +293,30 @@ def test_other_receiver_n_est_pas_une_delegation_super(tmp_path):
         root,
         f"{QC_ROOT}/projects/OtherReceiver/portfolio_construction.py",
         SPEC_OTHER_RECEIVER,
+    )
+    report = analyse(root, manifest)
+    assert report["verdict"] == "FAIL", report
+    assert "UNDECLARED_COPY" in _codes(report)
+    details = [
+        f["detail"]
+        for f in report["findings"]
+        if f["code"] == "UNDECLARED_COPY"
+    ]
+    assert any("sans super()" in d for d in details), details
+
+
+def test_super_result_discarded_est_une_copie(tmp_path):
+    """Contre-exemple de l'ajoint (#24627), tête 807606567a4 : un
+    `super().determine_target_percent(...)` posé en statement nu JETTE le
+    résultat — la classe recalcule ensuite une valeur codée en dur. La
+    délégation ne compte que si le résultat de super() est capturé (affecté,
+    retourné, passé en argument) ; un résultat jeté ne l'est pas. La garde
+    signale la classe comme copie non déclarée, comme le cas sans super()."""
+    root, manifest = _tree(tmp_path)
+    _write(
+        root,
+        f"{QC_ROOT}/projects/DiscardedSuper/portfolio_construction.py",
+        SPEC_SUPER_RESULT_DISCARDED,
     )
     report = analyse(root, manifest)
     assert report["verdict"] == "FAIL", report
