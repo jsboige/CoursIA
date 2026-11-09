@@ -238,6 +238,20 @@ except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import gh_identity
 
+# #24461 -- grammaire de l'etat de livraison, source UNIQUE partagee avec le
+# poseur de label (`scripts/candidate_delivered.py`). Module SANS dependance :
+# il n'importe que `released_covers` (present dans le checkout reduit du cron)
+# et, pour le dossier de cloture, `check_closure_dossier` (absent de ce
+# checkout, et c'est pourquoi le labeler lit les marqueurs avec
+# `dossier=False` -- le balayage local et le balayage CI doivent se
+# comporter pareil). L'import est ici, AVANT les alias de grammaire qui le
+# referencent.
+try:
+    import delivery_grammar
+except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import delivery_grammar  # type: ignore[no-redef]
+
 # Geste 5 #18203 : journal des tirages, module separe par construction
 # (scripts/coordination/tirage_journal.py, merge #19945). Import best-effort :
 # un environnement sans le module tire SANS journal plutot que de refuser --
@@ -327,19 +341,14 @@ REPO = "jsboige/CoursIA"
 # d'un ack coordinateur, etc.), que le filtre recent ne voit pas par
 # construction. Relevable par `_DELIVERED_MARKER_REVOKED_RE` comme les autres
 # formes : un [NOT-DELIVERED] posterieur remet l'issue sur le tapis.
-_DELIVERED_MARKER_RE = re.compile(
-    r"(?:"
-    r"^\s*(?:#{1,6}\s*)?\[DELIVERED\]\s+lane\b"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered(?![-_\w])"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
-    r"verification first-hand)[^\n]*\bcandidate-delivered(?![-_\w])"
-    r")",
-    re.IGNORECASE | re.MULTILINE,
-)
+# #24461 -- la grammaire des marqueurs vit dans `scripts/delivery_grammar.py`,
+# module SANS dependance, importe ici ET par le poseur de label
+# (`scripts/candidate_delivered.py`) : une seule definition, deux organes,
+# aucune derive possible. Les trois noms ci-dessous restent ceux que les
+# tests et les appelants existants lisent -- ce sont des ALIAS, pas des
+# copies. Les commentaires qui suivent decrivent la grammaire ; ils sont
+# restes ici, et leur source est desormais le module.
+_DELIVERED_MARKER_RE = delivery_grammar.DELIVERED_MARKER_RE
 
 # Retractation du marqueur (mesure du 12/10 : sur 80 issues marquees livrees,
 # 20 l'etaient partiellement). Le marqueur etait PERMANENT par accident
@@ -354,14 +363,10 @@ _DELIVERED_MARKER_RE = re.compile(
 # devant `-revoked`. Le regex de livraison n'est donc pas elargi, et le sens
 # est porte par l'ORDRE : une retractation defait les marqueurs posterieurs
 # a elle, un marqueur repose apres elle rearme (cf `_delivered_state`).
-_DELIVERED_MARKER_REVOKED_RE = re.compile(
-    r"(?:"
-    r"^\s*(?:#{1,6}\s*)?\[NOT-DELIVERED\]"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered-revoked"
-    r")",
-    re.IGNORECASE | re.MULTILINE,
-)
+# #24461 -- alias vers la grammaire unique (`scripts/delivery_grammar.py`) ;
+# les commentaires qui suivent decrivent cette grammaire, dont la source est
+# desormais ce module.
+_DELIVERED_MARKER_REVOKED_RE = delivery_grammar.DELIVERED_MARKER_REVOKED_RE
 
 # Le marqueur de CONTENEUR : une issue (ou une umbrella) dont le dernier
 # commentaire dit « le CONTENEUR est livre ». C'est la seule forme qui
@@ -373,17 +378,10 @@ _DELIVERED_MARKER_REVOKED_RE = re.compile(
 # de `_DELIVERED_MARKER_RE` (memes regex, meme lookahead anti-`-revoked` /
 # `-partial`) ; la forme `[DELIVERED] lane` en est VOLONTAIREMENT absente :
 # sur une umbrella, elle est une livraison de sous-grain, pas une fermeture.
-_CONTAINER_DELIVERY_MARKER_RE = re.compile(
-    r"(?:"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered(?![-_\w])"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
-    r"verification first-hand)[^\n]*\bcandidate-delivered(?![-_\w])"
-    r")",
-    re.IGNORECASE | re.MULTILINE,
-)
+# #24461 -- alias vers la grammaire unique (`scripts/delivery_grammar.py`) ;
+# les commentaires qui suivent decrivent cette grammaire, dont la source est
+# desormais ce module.
+_CONTAINER_DELIVERY_MARKER_RE = delivery_grammar.CONTAINER_DELIVERY_MARKER_RE
 
 # --- Dossier de cloture : un signal de livraison TERMINAL --------------------
 #
@@ -691,26 +689,19 @@ def _delivered_state(comment_bodies: list[str]) -> bool:
     ne reordonne rien). Aucun tri n'est donc fait ici -- en ajouter un ferait
     dependre le sens d'un champ que le transport REST ne porte pas.
     """
-    delivered = False
-    for body in comment_bodies:
-        if _DELIVERED_MARKER_REVOKED_RE.search(body or ""):
-            delivered = False
-        elif _DELIVERED_MARKER_RE.search(body or ""):
-            delivered = True
-        elif _closure_dossier_verdict(body or "") == "CLOSE":
-            # Dossier de cloture CLOSE : l'issue est RESOLUE au sens du
-            # depot. C'est un evenement d'arming comme les autres -- une
-            # retractation posterieure le desarme, un marqueur plus recent le
-            # rearme -- mais il n'EXPIRE PAS (la terminalite est portee par
-            # `_delivery_event_from_comments`, qui rend `stamp=None`).
-            delivered = True
-        elif _released_covers_acceptance(body or ""):
-            # #20351 : `[RELEASED]` + « acceptance deja couverte » est une
-            # livraison au sens du tapis. Reste un EVENEMENT comme les autres :
-            # une retractation posterieure la desarme, un marqueur plus
-            # recent la rearme.
-            delivered = True
-    return delivered
+    # #24461 -- la machine d'etat elle-meme vit dans
+    # `scripts/delivery_grammar.py`, lue par le poseur de label
+    # (`scripts/candidate_delivered.py`) comme par le tapis. Deux organes,
+    # une grammaire : c'est la condition pour que le LABEL arme par
+    # l'attestation et l'ECART lu par le tapis disent la MEME chose.
+    #
+    # Les quatre formes d'arming sont celles du module : le marqueur
+    # `[INFO] candidate-delivered` et ses variantes, la cloture explicite
+    # `[DELIVERED] lane`, le dossier `[CLOSURE PREFLIGHT]` de verdict CLOSE
+    # (terminal : il n'EXPIRE PAS -- la terminalite est portee par
+    # `_delivery_event_from_comments`, qui rend `stamp=None`), et
+    # `[RELEASED] ... acceptance deja couverte` (#20351).
+    return delivery_grammar.delivered_state(comment_bodies)
 
 
 def _has_delivered_marker(issue_number: int) -> bool | None:
@@ -1671,6 +1662,13 @@ def apply_delivered_urn_gate(lane, urns_arg, urns_default, selected_urns):
 # sonde que sur les candidats TIRES -- jamais un balayage du pool. La meme
 # borne que `recent_delivery`.
 DELIVERED_LABEL = "candidate-delivered"
+# Cause nommee de l'exclusion par LABEL (#24461). Elle commence par
+# "LIVRAISON :" pour etre rendue par `print_delivered_signal_report`, qui
+# distingue le filtre recent (hors budget) du signal de livraison.
+_DELIVERED_LABEL_CAUSE = (
+    "LIVRAISON : label `candidate-delivered` pose -- issue reservee au "
+    "coordinateur/adjoint (urne `delivered`, #15069) ; exclusion lue dans le "
+    "payload du pool, sans sonde par issue (#24461).")
 DELIVERED_COMMENT_MARKER = "[INFO] candidate-delivered"
 # Plafond dur de sondes par tirage : la boucle de remplacement d'une urne peut
 # en theorie la parcourir entiere, et une urne de 167 grains ne doit pas
@@ -2676,6 +2674,21 @@ _BELT_SNAPSHOT: dict | None = None
 _BELT_PRIMED_WINDOW: set[int] = set()
 
 
+def _delivery_motif(issue_number: int) -> str | None:
+    """Le MOTIF d'ecartement d'une issue livree, nomme (decision #24461, point 4).
+
+    Lecture par l'instantane local (`_snapshot_comments`) : **ZERO requete**.
+    En l'absence d'instantane (hors tapis), la fonction rend `None` et
+    l'appelant garde sa cause generique -- fail-OPEN, jamais un motif
+    fabrique.
+    """
+    comments = _snapshot_comments(issue_number)
+    if comments is None:
+        return None
+    bodies = [c.get("body") or "" for c in comments if isinstance(c, dict)]
+    return delivery_grammar.delivery_motif(bodies)
+
+
 def _belt_snapshot_prime(repo: str, numbers: list[int],
                          seed: dict | None = None) -> None:
     """Rafraichit UNE FOIS l'instantane pour les candidats tires (#22630, #22983).
@@ -2998,10 +3011,15 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     # qui recopie la ligne canonique ne clot rien (mesure : revue Hermes
     # du 2026-11-03 sur #24523).
     body_plain = _strip_code(body)
-    return bool(_RECENT_DELIVERY_MARKER_RE.search(body_plain)
-                or _DELIVERED_MARKER_RE.search(body_plain)
-                or _closure_dossier_verdict(body) == "CLOSE"
-                or _closure_announced_close(body))
+    # #24461 (c) point 3 : une livraison de TRANCHE (`paths:` sur la ligne
+    # du marqueur) ne livre pas l'issue -- elle ne l'arme ni ne la desarme.
+    tranche = delivery_grammar.is_tranche_only(body_plain)
+    return bool(
+        _closure_dossier_verdict(body) in ("CLOSE", "KEEP")
+        or _closure_announced_close(body)
+        or (not tranche and (
+            _RECENT_DELIVERY_MARKER_RE.search(body_plain)
+            or _DELIVERED_MARKER_RE.search(body_plain))))
 
 
 def _issue_is_frozen(issue_body: str | None,
@@ -3372,22 +3390,37 @@ def _delivery_event_from_comments(
             # expire, dossier CLOSE du 02/11 invisible).
             state, stamp = True, None
             closed = True
-        elif (_DELIVERED_MARKER_RE.search(body)
-              or _released_covers_acceptance(body)):
+        elif _closure_dossier_verdict(body) == "KEEP":
+            # Dossier `[CLOSURE PREFLIGHT]` VIVANT (verdict KEEP) : la
+            # cloture est EN COURS, l'issue n'est pas un grain de
+            # production (decision #24461 (c), point 2). Expirable comme un
+            # marqueur de livraison (48 h, #22500).
             state, stamp = True, created
-        elif _RECENT_DELIVERY_MARKER_RE.search(body):
+        elif (delivery_grammar.delivery_marker_is_epic_wide(body)
+              or _released_covers_acceptance(body)):
+            # #24461 (c) point 3 : une livraison de TRANCHE (`paths:` sur la
+            # ligne du marqueur) ne livre pas l'issue -- elle ne l'arme ni ne
+            # la desarme.
+            state, stamp = True, created
+        elif (_RECENT_DELIVERY_MARKER_RE.search(body)
+              and not delivery_grammar.is_tranche_marker(body)):
             # `[FROZEN]` et consorts : le filtre recent les voit, la sonde
             # pleine non. L'HEURE compte quand meme pour la regle des 48 h.
+            # Une livraison de TRANCHE n'est pas un evenement de cloture :
+            # elle ne pose ni l'etat ni l'heure (decision #24461 (c)).
             stamp = created
     last = comments[-1]
     last_body = last.get("body") if isinstance(last, dict) else ""
     if not isinstance(last_body, str):
         last_body = ""
-    recent = bool(_RECENT_DELIVERY_MARKER_RE.search(last_body)
-                  or _DELIVERED_MARKER_RE.search(last_body)
-                  or closed
-                  or _closure_dossier_verdict(last_body) == "CLOSE"
-                  or _closure_announced_close(last_body))
+    tranche = delivery_grammar.is_tranche_only(last_body)
+    recent = bool(
+        closed
+        or _closure_dossier_verdict(last_body) in ("CLOSE", "KEEP")
+        or _closure_announced_close(last_body)
+        or (not tranche and (
+            _RECENT_DELIVERY_MARKER_RE.search(last_body)
+            or _DELIVERED_MARKER_RE.search(last_body))))
     if closed and state:
         # La terminalite PRIME sur l'heure : un dossier CLOSE n'expire pas,
         # meme si un marqueur plus recent a reecrit `stamp`.
@@ -3707,8 +3740,14 @@ def revoked_after_merge_signal(issue_number: int, lane: str | None = None,
             return None
     if not isinstance(comments, list):
         return None
-    # Le repli REST ne rend que des CORPS, sans horodatage : il ne permet pas
-    # la comparaison a l'instant de fusion, donc il ne revoque pas. Le
+    # Le repli passe par `gh issue view --json comments`, qui rend bien
+    # `createdAt` (mesure du 2026-11-04 : `gh issue view 24482 --json
+    # comments` -- les cles du commentaire sont `author`, `body`,
+    # `createdAt`, `id`, ...). Une revision (Hermes, 2026-11-03) decrivait
+    # ici un transport qui n'en rendait pas -- c'etait la PHRASE qui etait
+    # erronee, pas le code, et le test « sans horodatage » prouve que
+    # l'absence de `createdAt` DISABLE la revocation. Un commentaire sans
+    # `createdAt` ne revoque donc rien : le
     # desaccord est assume et documente plutot que comble par une supposition.
     newest_revocation = None
     for comment in comments:
@@ -5813,17 +5852,24 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                         # Cout : 1 requete, hors budget, fail-OPEN sur
                         # lecture en echec (l'appelant enchaine sur la
                         # sonde pleine dans ce cas).
+                        # #24461 (c) point 4 -- le MOTIF d'ecartement est
+                        # NOMME : la cause rendue dit POURQUOI l'issue a
+                        # ete ecartee, pour que l'urne de l'adjoint
+                        # l'instruise sans re-deriver la grammaire. Lecture
+                        # par l'instantane local : ZERO requete.
+                        motif = _delivery_motif(c["number"])
                         recent = has_recent_delivery_marker(c["number"])
                         if recent is True:
                             state["recent_filtered"] = state.get(
                                 "recent_filtered", 0) + 1
-                            conflicts.append((c, "LIVRAISON (recent) : "
+                            conflicts.append((c, "LIVRAISON (recent) : " + (
+                                motif or
                                 "marqueur de cloture sur le dernier "
                                 "commentaire ([DELIVERED] / [FROZEN] "
                                 "/ [INFO] candidate-delivered), ou GEL "
                                 "de l'item (body ou fil)."
                                 " Candidat remplace dans "
-                                "la meme urne, hors budget de sonde."))
+                                "la meme urne, hors budget de sonde.")))
                             continue
                         # Le label est teste A COUT NUL et vaut meme quand le
                         # plafond de sondes est epuise ; seule la sonde de
@@ -5834,6 +5880,7 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                             _counted_merged_pr_probe, _counted_revocation_probe)
                         if reason is not None:
                             conflicts.append((c, "LIVRAISON : " + reason + (
+                                (" -- motif : " + motif) if motif else "") + (
                                 " Candidat remplace dans la meme urne.")))
                             continue
                         # #16589 : la sonde de PR couvrante vient APRES le
@@ -9572,6 +9619,7 @@ def belt_filter(
     urns: set[str] | None = None,
     epic_load: dict[int, int] | None = None,
     drops: list[tuple[dict, str]] | None = None,
+    label_drops: list[tuple[dict, str]] | None = None,
     notes: list[str] | None = None,
 ) -> list[dict]:
     """Filtre le pool admissible pour le mode --belt.
@@ -9610,6 +9658,26 @@ def belt_filter(
         if n in excluded_issues_set:
             return False
         labels = set(item.get("labels") or [])
+        # #24461 -- le LABEL `candidate-delivered` est DEJA dans le payload du
+        # pool (une seule requete `gh issue list --json labels` pour tout le
+        # pool) : l'exclure ici ne coute AUCUNE sonde par issue, la ou la
+        # sonde de livraison en coute une et sature -- et quand le budget ou
+        # le mur de temps est atteint, elle rend fail-OPEN et l'issue est
+        # servie comme un grain neuf (mesure #24461 : 37 des 120 grains
+        # servis portaient un marqueur vivant).
+        #
+        # L'exclusion vise les lanes HORS `DELIVERED_URN_LANES` (#15069) :
+        # l'urne `delivered` -- et la lecture du label -- sont reservees au
+        # coordinateur et a l'adjoint, qui decident de la fermeture.
+        # `--include-delivered` reste l'echappatoire NOMMEE (son help dit
+        # « typiquement pour une lane habilitee a fermer ») : il leve
+        # l'exclusion comme il leve les exclusions par sonde.
+        if (DELIVERED_LABEL in labels
+                and not delivered_urn_allowed(getattr(args, "lane", None))
+                and not getattr(args, "include_delivered", False)):
+            if label_drops is not None:
+                label_drops.append((item, _DELIVERED_LABEL_CAUSE))
+            return False
         if required_labels_set and not required_labels_set.issubset(labels):
             return False
         if excluded_labels_set and excluded_labels_set.intersection(labels):
@@ -12041,6 +12109,12 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                         state.setdefault("marker_unread", []).append(n)
                 if recent_flag is True and not marker_expired:
                     state["recent_filtered"] += 1
+                    # #24461 (c) point 4 -- le MOTIF d'ecartement est
+                    # NOMME : la cause rendue dit POURQUOI l'issue a ete
+                    # ecartee, pour que l'urne de l'adjoint l'instruise
+                    # sans re-deriver la grammaire. Lecture par l'instantane
+                    # local : ZERO requete.
+                    motif = _delivery_motif(n)
                     belt_withheld.append(
                         (it,
                          ("LIVRAISON (dossier de cloture CLOSE) : le dossier "
@@ -12051,9 +12125,15 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                           "sonde." if terminal_closure else
                           "LIVRAISON (recent) : marqueur de cloture sur le "
                           "dernier commentaire ([DELIVERED] / "
-                          "[FROZEN] / [INFO] candidate-delivered). "
-                          "Candidat remplace hors budget de sonde.")))
+                          "[FROZEN] / [INFO] candidate-delivered)."
+                          + ((" " + delivery_grammar.MOTIF_SUFFIX + motif)
+                             if motif else "")
+                          + " Candidat remplace hors budget de sonde.")))
                     continue
+                # Le motif est calcule UNE FOIS par candidat, avant les deux
+                # sites d'ecartement : il est lu dans l'instantane local
+                # (ZERO requete) et sert a nommer la cause.
+                motif = _delivery_motif(n)
                 reason = delivered_signal_reason(
                     it, args.lane, counted_probe, state["failures"],
                     counted_merged_pr_probe, counted_revocation_probe,
@@ -12062,6 +12142,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 if reason is not None:
                     belt_withheld.append(
                         (it, "LIVRAISON : " + reason
+                         + ((" " + delivery_grammar.MOTIF_SUFFIX + motif)
+                            if motif else "")
                          + " Candidat remplace dans la meme urne."))
                     continue
                 # #16589/#21757 : la sonde de PR couvrante vient APRES le filtre
@@ -13134,9 +13216,18 @@ def main(argv: list[str] | None = None) -> int:
                         f"{sum(_epic_load.values())} livraison(s) en vol "
                         f"sur {len(_epic_load)} EPIC(s) "
                         f"(ouvertes + mergees)")
+        # #24461 -- les issues porteuses du LABEL `candidate-delivered` sont
+        # exclues du tapis des lanes hors `DELIVERED_URN_LANES` A LA LECTURE
+        # DE LA LISTE (le label est dans le payload du pool) : aucune sonde
+        # par issue n'est depensee, et l'exclusion ne peut pas s'eteindre sur
+        # un budget de sondes-epuise. Le compte est RAPPORTE : une exclusion
+        # invisible est un silence, et un silence se lit comme une absence.
+        _label_drops: list[tuple[dict, str]] = []
         belt_pool = belt_filter(admitted, args, urns=selected_urns,
                                 epic_load=_epic_load,
-                                drops=_epic_drops, notes=_epic_notes)
+                                drops=_epic_drops,
+                                label_drops=_label_drops,
+                                notes=_epic_notes)
         for _note in _epic_notes:
             _belt_phase(_note)
         # #24373 -- parcage des EPICs Origami dont le pli suivant n'est pas
@@ -13186,6 +13277,14 @@ def main(argv: list[str] | None = None) -> int:
                                     for it, cause in _epic_drops[:6])
                         + (f" (+{len(_epic_drops) - 6})"
                            if len(_epic_drops) > 6 else ""))
+        if _label_drops:
+            _belt_phase("label `candidate-delivered` : "
+                        f"{len(_label_drops)} issue(s) exclue(s) a la lecture "
+                        "de la liste, sans sonde (#24461) : "
+                        + ", ".join(f"#{it['number']}"
+                                    for it, _ in _label_drops[:6])
+                        + (f" (+{len(_label_drops) - 6})"
+                           if len(_label_drops) > 6 else ""))
         # Verification des claims tenes par une autre lane : on regarde
         # plus large que `args.grains` pour tolerer un remplacement si
         # la tete de file est tenue. Cout borne : au plus `grains + 4`
@@ -13824,6 +13923,27 @@ def main(argv: list[str] | None = None) -> int:
                 out_belt["repair"] = repair_payload
             else:
                 out_belt["repair"] = None
+            # #24461 (c) point 4 -- ce que le tapis ecarte ne disparait
+            # pas : la liste des issues ecartees pour CHACUN des deux motifs
+            # est nommee, separement, dans la sortie JSON.
+            _motif_withheld = [
+                {"number": it["number"], "cause": c or "",
+                 "classe": delivery_grammar.motif_class(c or "")}
+                for it, c in belt_withheld
+            ]
+            out_belt["delivery_motifs"] = {
+                "epic_wide": sorted({w["number"] for w in _motif_withheld
+                                     if w["classe"] == "epic_wide"}),
+                "living_dossier": sorted({w["number"] for w in _motif_withheld
+                                          if w["classe"] == "living_dossier"}),
+                # La classe est lue dans le MOTIF, pas dans toute la cause :
+                # une cause « dossier CLOSE » porte aussi la chaine
+                # `CLOSURE PREFLIGHT`, et une sous-chaine la classait a tort
+                # comme « dossier vivant ».
+                "unclassified": sorted({w["number"] for w in _motif_withheld
+                                        if w["classe"] is None
+                                        and w["cause"].startswith("LIVRAISON")}),
+            }
             print(json.dumps(out_belt, ensure_ascii=False, indent=2))
         else:
             # Sortie texte : un tableau compact, aligne sur la volee

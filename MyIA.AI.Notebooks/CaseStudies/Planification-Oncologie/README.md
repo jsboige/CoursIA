@@ -23,7 +23,7 @@ flowchart LR
 ### Structure du dossier
 
 ```
-Oncology-Planning/
+Planification-Oncologie/
 ├── README.md                           # Ce fichier
 ├── subject.md                          # Sujet complet
 ├── student/
