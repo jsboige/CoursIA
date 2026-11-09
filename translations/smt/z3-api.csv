@@ -11292,19 +11292,9 @@ Le verdict est `unsat` et le noyau rendu contient exactement `e2` et `e3` (l'ord
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,4a3d7ffa,markdown,fr,9303c5a38555024d,"### Lecture du résultat : `unsat` comme preuve d'impossibilité
 
 Avec deux couleurs, le verdict `unsat` n'est pas un échec du solveur : c'est une **preuve** qu'aucune coloration n'existe. La raison tient en trois États : `WA`, `NT` et `SA` sont deux à deux frontaliers — un triangle — or un graphe 2-coloriable (biparti) ne contient jamais de triangle. Combiné à l'Exemple 3 de la section 4 (`sat` avec 3 couleurs), le verdict fixe le nombre exact de couleurs nécessaires pour l'Australie : trois. C'est le premier pas vers la question « combien de couleurs suffisent pour un graphe donné ? » — l'Exercice 4 la pose pour un autre graphe.",,,,,,,,9303c5a38555024d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,f7ca6704,markdown,fr,97d9fcdd6ae2bd5a,"## 6. Exercices
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,f7ca6704,markdown,fr,6f79e626ad169470,"## 6. Exercices
 
-Trois exercices, cette fois non résolus. Chaque stub est incomplet (marqué `# TODO etudiant`) : à vous d'écrire les contraintes. Les cellules s'exécutent sans erreur même non complétées (elles affichent un message d'attente).
-
-### Exercice 4 — Le nombre chromatique d'une roue, par interrogation répétée du solveur
-
-L'Exemple guidé 3 a répondu à « l'Australie est-elle 2-coloriable ? » par un unique `check`. La question qui généralise : **combien de couleurs suffisent, au minimum, pour un graphe donné ?** — son **nombre chromatique**.
-
-Prenez la roue à cinq rayons : un sommet central relié aux cinq sommets d'un cycle (le centre voisine avec `v0` à `v4`, et le cycle ferme la boucle `v0–v1–v2–v3–v4–v0`). Le nombre de couleurs n'est plus une donnée mais l'inconnue : pour chaque `k` croissant à partir de 1, bornez chaque sommet au domaine `{0, ..., k-1}`, ajoutez les contraintes d'adjacence, et interrogez le solveur.
-
-**Indice** : le premier `k` pour lequel le solveur répond `sat` est le nombre chromatique ; les `unsat` précédents prouvent que les `k` plus petits ne suffisent pas. La cellule d'imports de ce carnet cite aussi `Optimize` — un `Optimize()` où `k` est une variable à `minimize` pose la même question en un seul appel.
-
-**Étape 1** : construisez la liste des dix arêtes (cinq du cycle, cinq des rayons), puis bouclez sur `k`.",,,,,,,,97d9fcdd6ae2bd5a,,,,,,,,,,,,,,,
+Trois exercices, cette fois non résolus. Chaque stub est incomplet (marqué `# TODO etudiant`) : à vous d'écrire les contraintes. Les cellules s'exécutent sans erreur même non complétées (elles affichent un message d'attente).",,,,,,,,6f79e626ad169470,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,eeba9fc7,code,fr,b51881f2b6dd1552,"# Exercice 4 : le nombre chromatique de la roue a cinq rayons (etudiant)
 s_ex4 = Solver()
 # sommets = ...   # TODO etudiant : le centre et v0..v4
@@ -11354,3 +11344,12 @@ s_ex6 = Solver()
 # TODO etudiant : s_ex6.check() puis s_ex6.unsat_core() -- quelles etiquettes le solveur acquitte-t-il ?
 
 print(""Exercice 6 a completer : retirez les commentaires TODO, etiquetez les 5 contraintes et lisez le noyau."")",,,,,,,,45488e151088c5f7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,1a8b87cd,markdown,fr,3044ff0d13363b67,"### Exercice 4 — Le nombre chromatique d'une roue, par interrogation répétée du solveur
+
+L'Exemple guidé 3 a répondu à « l'Australie est-elle 2-coloriable ? » par un unique `check`. La question qui généralise : **combien de couleurs suffisent, au minimum, pour un graphe donné ?** — son **nombre chromatique**.
+
+Prenez la roue à cinq rayons : un sommet central relié aux cinq sommets d'un cycle (le centre voisine avec `v0` à `v4`, et le cycle ferme la boucle `v0–v1–v2–v3–v4–v0`). Le nombre de couleurs n'est plus une donnée mais l'inconnue : pour chaque `k` croissant à partir de 1, bornez chaque sommet au domaine `{0, ..., k-1}`, ajoutez les contraintes d'adjacence, et interrogez le solveur.
+
+**Indice** : le premier `k` pour lequel le solveur répond `sat` est le nombre chromatique ; les `unsat` précédents prouvent que les `k` plus petits ne suffisent pas. La cellule d'imports de ce carnet cite aussi `Optimize` — un `Optimize()` où `k` est une variable à `minimize` pose la même question en un seul appel.
+
+**Étape 1** : construisez la liste des dix arêtes (cinq du cycle, cinq des rayons), puis bouclez sur `k`.",,,,,,,,3044ff0d13363b67,,,,,,,,,,,,,,,
