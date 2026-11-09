@@ -13,7 +13,7 @@ maturity: BETA=6
 
 > **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (6 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 10/07/2026 :
 >
-> **6 Python = python/python3 = 6/6 mono-kernel Python 100% ✓** (6 fichiers `*.ipynb` canoniques au total sur disque — 3 cas × {student + solution} : Diagnostic-Medical×2, Oncology-Planning×2, SmartGrid-Energy×2 — aucun `_output.ipynb` Papermill dans ce hub, exécution via MCP Jupyter `nbconvert --execute --to notebook` ou `jupyter nbconvert --execute --inplace`).
+> **6 Python = python/python3 = 6/6 mono-kernel Python 100% ✓** (6 fichiers `*.ipynb` canoniques au total sur disque — 3 cas × {student + solution} : Diagnostic-Medical×2, Oncology-Planning×2, Reseau-Electrique-Intelligent×2 — aucun `_output.ipynb` Papermill dans ce hub, exécution via MCP Jupyter `nbconvert --execute --to notebook` ou `jupyter nbconvert --execute --inplace`).
 
 CaseStudies est un cas de **mono-kernel Python 100%** : les trois projets combinent des instruments hétérogènes (Z3, A* `heapq`, génétique, OR-Tools CP-SAT, rdflib, Pyro probabiliste, scipy multi-objectif) implémentés tous en Python, soit via libraries SOTA authentiques (`z3-solver`, `ortools`, `rdflib`, `pyro-ppl`, `torch`, `numpy`, `pandas`), soit from-scratch en Python pur. C'est une **variante L392 #7 NEW** : deuxième cas de mono-kernel Python 100% après RL (#5927 c.403), tous deux owner-po-2025 strict. Contrairement à ML (#5915) qui a des jumeaux C#/Python intra-sous-série, Probas (#5916) qui a une mixité intra-série multi-paradigme (.NET C# + Python), QC (#5917) cloisonnée par sous-série, et Sudoku (#5923 c.388) qui a une mixité jumeaux dominante + 1 compagnon Lean intra-hub, CaseStudies a une uniformité mono-paradigme Python avec **6 paradigms combinatoires distincts** (symbolique CSP, A* recherche, génétique, OR-Tools CP-SAT, rdflib KG, Pyro bayésien). Registre EPIC #3801 entry #010 (#5930, stacked sur #5925, await merge).
 
@@ -70,7 +70,7 @@ flowchart TD
 
 ### Le pattern "twin numérique"
 
-Les trois projets reposent sur un **modèle simulé** : un objet logiciel qui représente l'état d'un système — état clinique du patient ou réseau électrique — et réagit à des interventions (diagnostic proposé, traitement appliqué, dispatch injecté). Ce pattern, appelé **jumeau numérique** (digital twin), est devenu central en santé numérique, en industrie 4.0 et en simulation environnementale. L'apprendre sur 10 patients diabétiques (Diagnostic-Medical), un cas oncologique (Oncology-Planning) ou un réseau électrique sous incertitude (SmartGrid-Energy) prépare directement aux applications professionnelles.
+Les trois projets reposent sur un **modèle simulé** : un objet logiciel qui représente l'état d'un système — état clinique du patient ou réseau électrique — et réagit à des interventions (diagnostic proposé, traitement appliqué, dispatch injecté). Ce pattern, appelé **jumeau numérique** (digital twin), est devenu central en santé numérique, en industrie 4.0 et en simulation environnementale. L'apprendre sur 10 patients diabétiques (Diagnostic-Medical), un cas oncologique (Oncology-Planning) ou un réseau électrique sous incertitude (Reseau-Electrique-Intelligent) prépare directement aux applications professionnelles.
 
 ## Structure
 
@@ -88,7 +88,7 @@ CaseStudies/
 │   ├── student/           # Template étudiant
 │   ├── solution/          # Solution de référence
 │   └── data/              # Données patients oncologie (patients_oncology.csv)
-├── SmartGrid-Energy/      # Dispatch énergétique sous incertitude (CP-SAT, bayésien, multi-objectif)
+├── Reseau-Electrique-Intelligent/      # Dispatch énergétique sous incertitude (CP-SAT, bayésien, multi-objectif)
 │   ├── README.md          # Fiche projet
 │   ├── subject.md         # Sujet du devoir (CC3)
 │   ├── student/           # Template étudiant
@@ -123,7 +123,7 @@ Ordonnancement de la production électrique (unit commitment) sous incertitude r
 - **Technologies** : Python, ortools (CP-SAT), numpy
 - **Concepts** : Unit commitment NP-difficile, modèle bayésien de l'incertitude, optimisation multi-objectif, architecture en couches (filtrer > modéliser > optimiser)
 
-[Sujet](SmartGrid-Energy/subject.md) | 2 notebooks (student + solution) | ~3-4h
+[Sujet](Reseau-Electrique-Intelligent/subject.md) | 2 notebooks (student + solution) | ~3-4h
 
 ## Installation
 
@@ -257,7 +257,7 @@ Le template étudiant (`student/`) contient le squelette du projet : classes ave
 |-------------|-----------|--------------------------------------|----------------------|
 | [Diagnostic-Medical](Diagnostic-Medical/) | 2 (student + solution) | BETA + BETA | A* + génétique + Z3 (CSP) |
 | [Oncology-Planning](Oncology-Planning/) | 2 (student + solution) | BETA (solution) + DRAFT (student) | Ontologie + CSP/OR-Tools + Pyro (Pyro probabiliste) + bonus smart contract (`OncoContract`) |
-| [SmartGrid-Energy](SmartGrid-Energy/) | 2 (student + solution) | BETA + BETA | CP-SAT + bayésien (risque défaillance) + multi-objectif (coût/CO2) |
+| [Reseau-Electrique-Intelligent](Reseau-Electrique-Intelligent/) | 2 (student + solution) | BETA + BETA | CP-SAT + bayésien (risque défaillance) + multi-objectif (coût/CO2) |
 | **Total** | **6 notebooks** | **BETA=5, DRAFT=1** | 4 paradigmes : symbolique (CSP/ontologie) + statistique (probabiliste/évolutionnaire) + recherche (A*) + optimisation (CP-SAT) |
 
 Chaque notebook solution fait l'objet d'une **validation par assertions** (cellule terminale `tests_automatises()` ou prints discriminants) dans son sous-dossier `solution/` ; le template `student/` porte les stubs conformes (règle C.1 : `pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et reste exécutable end-to-end. La cohérence est garantie par `requirements.txt` au racine (`numpy`, `pandas`, `matplotlib`, `seaborn`, `z3-solver`, `rdflib`, `pyro-ppl`, `torch`, `ortools` — 9 dépendances communes aux 3 cas).
@@ -270,7 +270,7 @@ Cette série est un **point de convergence** des autres séries du dépôt : cha
 |---|---|---|---|---|---|
 | Diagnostic-Medical | A* (`Part1-Foundations`) | Génétique ([`Sudoku-03-Genetic-Python`](../Sudoku/Sudoku-03-Genetic-Python.ipynb)) | — | — | — |
 | Oncology-Planning | CSP / CP-SAT (`Part2-CSP`) | — | Ontologie OWL ([SemanticWeb](../SymbolicAI/SemanticWeb/README.md)) | Bayésien / Pyro | — |
-| SmartGrid-Energy | CP-SAT / OR-Tools (`Part2-CSP`) | — | — | Bayésien (risque) | — |
+| Reseau-Electrique-Intelligent | CP-SAT / OR-Tools (`Part2-CSP`) | — | — | Bayésien (risque) | — |
 
 Trois familles d'**outils d'infrastructure** MCP rendent les projets interopérables :
 

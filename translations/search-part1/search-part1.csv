@@ -9501,7 +9501,7 @@ Ce notebook a couvert les **briques algorithmiques essentielles** de NetworkX :
 - **[Search-03-Informed](Search-03-Informed.ipynb)** — A\* fait main (notre implémentation pédagogique avant de passer à NetworkX)
 - **[Search-08-DancingLinks](Search-08-DancingLinks.ipynb)** — couverture exacte avec Knuth DLX (graphe biparti d'incidence)
 - **[Partie 2 : CSP](../Part2-CSP/README.md)** — les graphes sont le substrat des problèmes de routing et scheduling (OR-Tools, Choco)
-- **[Recherche opérationnelle / SmartGrid](../../CaseStudies/SmartGrid-Energy/README.md)** — optimisation de réseaux électriques (flot max, network simplex)
+- **[Recherche opérationnelle / SmartGrid](../../CaseStudies/Reseau-Electrique-Intelligent/README.md)** — optimisation de réseaux électriques (flot max, network simplex)
 
 ### Pour aller plus loin
 

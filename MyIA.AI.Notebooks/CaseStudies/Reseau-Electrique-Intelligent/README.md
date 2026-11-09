@@ -1,4 +1,4 @@
-# SmartGrid-Energy - Ordonnancement énergétique sous incertitude
+# Reseau-Electrique-Intelligent - Ordonnancement énergétique sous incertitude
 
 [← CaseStudies](../README.md) | [↑ Études de cas](../README.md)
 
@@ -40,7 +40,7 @@ contraintes dures, et absence de solution unique en multi-objectif (compromis de
 ## Structure du dossier
 
 ```
-SmartGrid-Energy/
+Reseau-Electrique-Intelligent/
 ├── student/
 │   └── SmartGrid-Energy.ipynb    # Template étudiant (stubs à compléter)
 ├── solution/

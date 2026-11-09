@@ -115,7 +115,7 @@ RL
 CaseStudies
 ├── Diagnostic-Medical/ - LLM-assisted diagnosis
 ├── Oncology-Planning/ - Planification oncologique
-└── SmartGrid-Energy/ - Optimisation énergétique
+└── Reseau-Electrique-Intelligent/ - Optimisation énergétique
 
 IIT
 ├── ICT-Series/ - Integrated Causal Trajectories (5 substrats : tri, Gray-Scott, Axelrod, transformer+SAE, Jeu de la Vie certifié Lean)
