@@ -86,6 +86,7 @@ def _reset_belt_state(monkeypatch):
                         ["preparation du tapis (export, reparation, pool)"])
     monkeypatch.setattr(pig, "_BELT_PHASE_SPAN_START", [None])
     monkeypatch.setattr(pig, "_BELT_PHASE_SPAN_TOTAL", [0.0])
+    monkeypatch.setattr(pig, "_BELT_POOL_SPAN", [None])
 
 
 def _fake_clock(monkeypatch, start=0.0):
@@ -206,14 +207,75 @@ def test_no_budget_means_no_wall(monkeypatch):
 
     `0 desactive le mur` : boucle ET plafond d'amont. Le comportement
     d'avant est preserve.
+
+    #25449 correctif 2 -- le test doit faire AVANCER l'horloge au-dela du
+    plafond. Sans cela, le predicat rendait `None` parce que le temps
+    n'avait pas bouge, pas parce que le mur etait desarme : le controle
+    positif donnait l'assurance sans la preuve (relit par Hermes sur la tete
+    `659641f`, qui mesure la regression : base rc 0, tete rc 3).
     """
     clock = _fake_clock(monkeypatch)
     t0 = pig._arm_belt_run_clock(0.0)
     assert pig._BELT_DEADLINE[0] is None
 
+    # Au-dela du plafond de l'amont (900 s par defaut) : si le mur restait
+    # arme, le depassement serait nomme ici.
+    clock[0] += pig._belt_pool_ceiling() + 1
+
     budget, overrun = pig._belt_loop_entry(_Args(0.0), t0, clock[0])
     assert budget is None
-    assert overrun is None
+    assert overrun is None, "sans budget, le plafond d'amont est desarme"
+
+
+def test_no_budget_disarms_the_upstream_ceiling_on_the_real_path(
+        monkeypatch, capsys):
+    """Meme contrat, par le chemin reel (`main`) : un run sans budget ne
+    doit pas s'arreter en 3 apres le chargement du pool.
+
+    C'est la regression mesuree par Hermes contre la base (`main --belt
+    --json --belt-time-budget 0`, pool injecte a 1000 s : base rc 0, tete
+    rc 3). Le test passe par `main`, donc il mesure le chemin de
+    production, pas une fonction isolee.
+    """
+    clock = _fake_clock(monkeypatch)
+    _patch_network(monkeypatch)
+
+    def very_slow_pool(**kwargs):
+        clock[0] += 1000.0
+        return [], None
+
+    monkeypatch.setattr(pig, "fetch_pool", very_slow_pool)
+
+    rc = pig.main(["--lane", LANE, "--belt", "--json",
+                   "--belt-time-budget", "0"])
+
+    assert rc != 3, "sans budget, l'echec rapide du plafond ne doit pas fires"
+    payload = json.loads(capsys.readouterr().out)
+    assert "error" not in payload, "aucun echec rapide sans budget"
+
+
+def test_the_measured_repair_span_does_not_survive_a_run(monkeypatch):
+    """La duree horodatee de la reparation est un etat DU RUN.
+
+    Dans un meme process, le cumul du run precedent etait retranche du run
+    suivant : l'attribution « mesuree, pas devinee » pouvait designer une
+    phase qui n'avait pas tourne (relit par Hermes sur la tete `659641f`).
+    """
+    clock = _fake_clock(monkeypatch)
+    t0 = pig._arm_belt_run_clock(240.0)
+    token = pig._publish_phase_deadline(300.0)
+    clock[0] += 1000.0
+    pig._restore_phase_deadline(token)
+    assert pig._BELT_PHASE_SPAN_TOTAL[0] == 1000.0
+
+    # Run suivant dans le meme process : l'etat du run precedent ne suit pas.
+    pig._arm_belt_run_clock(240.0)
+    assert pig._BELT_PHASE_SPAN_TOTAL[0] == 0.0
+
+    clock[0] += 1000.0
+    overrun = pig._belt_pool_overrun(pig.time.monotonic() - 1000.0, clock[0])
+    assert overrun is not None
+    assert overrun["repair_s"] == 0.0, "la reparation du run precedent ne compte pas"
 
 
 # ==================================================================
@@ -289,6 +351,46 @@ def test_overrun_attributes_the_repair_phase_when_it_is_the_consumer(
     assert overrun is not None
     assert overrun["phase"] == "reparation (file red_backlog)"
     assert overrun["repair_s"] == 1000.0
+
+
+def test_the_named_phase_is_the_measured_consumer_not_the_pool_by_default(
+        monkeypatch):
+    """La phase nommee est le consommateur MESURE, pas « le pool » par defaut.
+
+    #25449 correctif 4 -- le reliquat du budget (apres reparation) couvre
+    l'export du tableau, l'ardoise de lane ET le pool. Nommer « chargement
+    du pool » par defaut pouvait envoyer une lane optimiser le pool alors que
+    le temps etait parti ailleurs (relit par Hermes sur la tete `659641f`).
+
+    Ici : 1000 s ecoulees, dont 100 s de pool mesurees -> le consommateur
+    mesure est l'export + l'ardoise (900 s), pas le pool.
+    """
+    clock = _fake_clock(monkeypatch)
+    t0 = pig._arm_belt_run_clock(240.0)
+    pig._BELT_POOL_SPAN[0] = 100.0
+    clock[0] += 1000.0
+
+    overrun = pig._belt_pool_overrun(t0, clock[0])
+
+    assert overrun is not None
+    assert overrun["phase"] == "preparation du tapis (export, ardoise)"
+    assert overrun["phase_s"] == 900.0
+
+
+def test_the_pool_is_named_when_it_is_the_measured_consumer(monkeypatch):
+    """Controle inverse : quand le pool est le plus gros consommateur mesure,
+    c'est lui qui est nomme -- et avec SES secondes, pas avec le reliquat.
+    """
+    clock = _fake_clock(monkeypatch)
+    t0 = pig._arm_belt_run_clock(240.0)
+    pig._BELT_POOL_SPAN[0] = 800.0
+    clock[0] += 1000.0
+
+    overrun = pig._belt_pool_overrun(t0, clock[0])
+
+    assert overrun is not None
+    assert overrun["phase"] == "chargement du pool"
+    assert overrun["phase_s"] == 800.0
 
 
 def test_pool_ceiling_is_read_at_call_time(monkeypatch):

@@ -1900,6 +1900,12 @@ _BELT_LOOP_BUDGET: list[float | None] = [None]
 _BELT_PHASE_LABEL: list[str] = ["preparation du tapis (export, reparation, pool)"]
 _BELT_PHASE_SPAN_START: list[float | None] = [None]
 _BELT_PHASE_SPAN_TOTAL: list[float] = [0.0]
+# #25449 correctif 4 -- duree MESUREE du chargement du pool. Sans elle, le
+# reliquat du budget (apres reparation) etait nomme « chargement du pool »,
+# alors qu'il couvre aussi l'export du tableau et l'ardoise de lane : le
+# diagnostic pouvait envoyer une lane optimiser le pool alors que le temps
+# etait parti ailleurs (relit par Hermes sur la tete `659641f`).
+_BELT_POOL_SPAN: list[float | None] = [None]
 
 
 def _clamp_timeout(default: float) -> float:
@@ -2032,12 +2038,26 @@ def _arm_belt_run_clock(seconds: float | None) -> float | None:
     _BELT_DEADLINE[0] = (t0 + _belt_pool_ceiling()
                          if _BELT_LOOP_BUDGET[0] is not None else None)
     _BELT_PHASE_LABEL[0] = "preparation du tapis (export, reparation, pool)"
+    # #25449 correctif 3 (relit par Hermes) -- la duree horodatee de la
+    # reparation est un etat DU RUN : elle ne doit pas survivre au run.
+    # Dans un meme process (les tests, ou un runner qui enchaine plusieurs
+    # `main`), le cumul du run precedent etait retranche du run suivant, et
+    # l'attribution « mesuree, pas devinee » pouvait designer une phase qui
+    # n'avait pas tourne.
+    _BELT_PHASE_SPAN_TOTAL[0] = 0.0
+    _BELT_PHASE_SPAN_START[0] = None
+    _BELT_POOL_SPAN[0] = None
     return t0
 
 
 def _disarm_belt_run_clock() -> None:
     """Retire l'echeance du run (#23090) : aucune fuite hors du run."""
     _BELT_DEADLINE[0] = None
+    # #25449 correctif 3 -- la duree horodatee de la reparation est un etat
+    # du run : elle disparait avec lui, comme l'echeance.
+    _BELT_PHASE_SPAN_TOTAL[0] = 0.0
+    _BELT_PHASE_SPAN_START[0] = None
+    _BELT_POOL_SPAN[0] = None
 
 
 def _restore_phase_deadline(token: tuple) -> None:
@@ -2091,7 +2111,14 @@ def _belt_pool_overrun(t0: float | None, now: float) -> dict | None:
     consomme. Hors phase d'amont (le depassement est alors survenu pendant
     une phase du tapis), c'est le nom de la phase en cours qui est dit.
     """
-    if t0 is None:
+    # #25449 correctif 2 (relit par Hermes sur la tete `659641f`) -- le
+    # plafond d'AMONT ne survit pas a l'absence de budget : `0` desactive le
+    # mur (boucle ET plafond d'amont), comme l'annonce l'aide de l'option et
+    # le corps de la PR. Avant, `_arm_belt_run_clock(0)` laissait un `t0`
+    # non nul : le garde de depassement restait arme a plafond plein, et un
+    # run volontairement non borne s'arretait en 3 apres le chargement du pool
+    # (regression mesuree contre la base : rc 0 -> rc 3).
+    if t0 is None or _BELT_LOOP_BUDGET[0] is None:
         return None
     ceiling = _belt_pool_ceiling()
     elapsed = max(0.0, float(now) - float(t0))
@@ -2103,10 +2130,22 @@ def _belt_pool_overrun(t0: float | None, now: float) -> dict | None:
     if label in ("preparation du tapis (export, reparation, pool)",
                  "chargement du pool", "reparation (file red_backlog)"):
         # Phase d'amont : l'attribution est mesuree, pas devinee.
+        # #25449 correctif 4 -- le chargement du POOL est mesure lui aussi :
+        # le reliquat du budget couvre l'export du tableau, l'ardoise de lane
+        # ET le pool. On compare les deux consommateurs mesures (reparation
+        # d'un cote, pool de l'autre) au lieu de nommer le pool par defaut.
+        pool_span = _BELT_POOL_SPAN[0]
         if repair > reste:
             phase, phase_s = "reparation (file red_backlog)", repair
-        else:
+        elif pool_span is None:
+            # Pool non mesure (appel direct a la fonction) : on garde le nom
+            # par defaut, et le message porte les secondes mesurees.
             phase, phase_s = "chargement du pool", reste
+        elif pool_span >= reste - pool_span:
+            phase, phase_s = "chargement du pool", pool_span
+        else:
+            phase, phase_s = ("preparation du tapis (export, ardoise)",
+                              reste - pool_span)
     else:
         # Phase du tapis en cours : c'est elle qui est nommee.
         phase, phase_s = label, elapsed
@@ -12833,11 +12872,16 @@ def main(argv: list[str] | None = None) -> int:
     # donnerait a lire une passe plus rapide qu'elle n'est.
     import time as _time_pass
     _pass_t0 = _time_pass.monotonic()
+    # #25449 correctif 4 -- duree MESUREE du chargement du pool. C'est elle
+    # qui permet a l'echec rapide de nommer le POOL plutot que l'ensemble
+    # « export + ardoise + pool » (cf. `_belt_pool_overrun`).
+    _pool_t0 = time.monotonic()
     pool, pool_error = fetch_pool(
         cache=payload_cache,
         cache_mode=effective_cache_mode,
         cache_status=cache_status,
     )
+    _BELT_POOL_SPAN[0] = max(0.0, time.monotonic() - _pool_t0)
     # #17038 : « je n'ai pas pu lire » n'est pas « aucun candidat ». Le dire,
     # et sortir avec un rc DEDIE avant tout tirage -- sans pool il n'y a pas
     # de tirage a rendre, et le vocabulaire de l'epuisement (« FILE LOCALE
