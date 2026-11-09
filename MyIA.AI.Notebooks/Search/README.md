@@ -435,7 +435,7 @@ Le notebook App-8 utilise MiniZinc qui requiert l'installation de l'IDE :
 ### Les notebooks C# (.NET Interactive) ne s'exécutent pas
 
 - Vérifiez que .NET SDK 9.0+ est installé : `dotnet --version`
-- Installez le kernel : `dotnet tool install -g Microsoft.dotnet-interactive && dotnet interactive jupyter install`
+- Installez le kernel : `dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001 && dotnet interactive jupyter install`
 - Vérifiez : `jupyter kernelspec list` doit afficher `.net-csharp`
 - Les jumeaux C# hybrides (App-9b, App-10b) utilisent GeneticSharp et SkiaSharp ; les autres notebooks C# installent leurs packages (Google.OrTools, IKVM + Choco…) via `#r nuget` dans les cellules
 

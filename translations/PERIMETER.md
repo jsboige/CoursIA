@@ -47,7 +47,7 @@ CSV « Autres » : `casestudies`, `gametheory`, `iit`, `ml-datascience`,
 `mlnet`, `planners`, `probas_decinfer`, `probas_infer`, `probas_pymc`,
 `quantconnect-py`, `rl`, `search-applications`, `search-part1`,
 `search-part2`, `search-part3`, `search-part4`, `semanticweb`,
-`smartcontracts`, `z3-api`, `z3-linq2z3`, `sudoku`, `argument_analysis`,
+`smartcontracts`, `z3-api`, `z3-linq2z3`, `sudoku`, `argumentanalysis`,
 `symbolicai-lean`, `symboliclearning`, `tweety`. T3 ne touche aucun de
 ces CSV tant que la décision d'élargir le périmètre n'est pas prise par
 PR dédiée.
