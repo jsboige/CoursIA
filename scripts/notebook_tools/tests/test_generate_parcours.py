@@ -805,24 +805,83 @@ class TestAiEngineerManifest:
         )
 
     def test_dotnet_notebooks_only_in_detour_not_main_branch(self):
-        """Les carnets .NET (SemanticKernel numerote, Aspire, Orleans) sont en
-        detour, jamais en branche principale (convention du pli 1, #19544) :
-        l'apprenant Python suit le parcours ; l'apprenant .NET a un point
-        d'entree. fort-boyard-python vit dans le dossier SemanticKernel mais
-        est un carnet Python : la regle cible les series numerotees .NET.
+        """Les carnets .NET sont en detour, jamais en branche principale
+        (convention du pli 1, #19544), et le detour en contient vraiment.
+
+        La lecture porte sur le noyau REELLEMENT enregistre -- la cle `kernel`
+        du compiled -- et non sur un prefixe de chemin. Le prefixe classait
+        `GenAI/SemanticKernel/0x` en .NET alors que ses quatre carnets sont
+        Python (ils importent `semantic_kernel`) : le garde passait pour la
+        mauvaise raison, sans pouvoir voir ni un carnet .NET range en detour,
+        ni un carnet Python etiquete .NET (revue Hermes du 2026-11-09, #25438).
+        L'assertion finale rend le garde non vacuant : un parcours qui annonce
+        du .NET doit en livrer au moins un.
         """
         manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
-        dotnet_prefixes = (
-            "GenAI/SemanticKernel/0",
-            "GenAI/SemanticKernel/1",
-            "GenAI/Integrations-DotNet/",
+        catalog = _catalog_with_pending_renames(manifest)
+        compiled = gp.compile_parcours(
+            catalog, manifest,
+            [b["id"] for b in manifest["branches"]],
+            [a["id"] for a in manifest["accretions"]],
         )
-        for branch in manifest["branches"]:
-            for path in branch["notebooks"]:
-                assert not path.startswith(dotnet_prefixes), (
-                    f"carnet .NET {path} dans la branche principale "
-                    f"{branch['id']}; il devrait etre dans une accretion (detour)"
-                )
+        branch_ids = {b["id"] for b in manifest["branches"]}
+        dotnet = [(group["id"], notebook["path"])
+                  for group in compiled["groups"]
+                  for notebook in group["notebooks"]
+                  if notebook["kernel"].split(" ", 1)[0] == ".NET"]
+        in_branch = [(group_id, path) for group_id, path in dotnet
+                     if group_id in branch_ids]
+        assert not in_branch, (
+            f"carnet(s) .NET en branche principale : {in_branch}; "
+            f"ils devraient etre dans une accretion (detour)"
+        )
+        assert dotnet, (
+            "aucun carnet .NET dans les detours alors que la description du "
+            "parcours en annonce : le detour .NET est vide"
+        )
+
+    def test_kernel_transitions_are_declared(self):
+        """Le parcours traverse Python et .NET : la transition est declaree.
+
+        La convention du pli 1 (`niveaux.json`) exige que les familles non
+        Python rencontrees soient exactement celles declarees. Ici la lecture
+        est rendue exacte par un oracle : deux carnets portent le noyau
+        `base`, qui est le `display_name` d'un environnement conda et non une
+        famille de langage. On lit leur `kernelspec.language` dans le carnet
+        au lieu de le supposer ; sans cette lecture il faudrait declarer
+        `base` comme une transition reelle, c'est-a-dire mentir dans un
+        manifeste publie (revue Hermes du 2026-11-09, #25438).
+        """
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        compiled = gp.compile_parcours(
+            catalog, manifest,
+            [b["id"] for b in manifest["branches"]],
+            [a["id"] for a in manifest["accretions"]],
+        )
+        families = set()
+        for group in compiled["groups"]:
+            for notebook in group["notebooks"]:
+                family = notebook["kernel"].split(" ", 1)[0]
+                if family == "base":
+                    path = generate_catalog.NOTEBOOKS_DIR / notebook["path"]
+                    metadata = json.loads(
+                        path.read_text(encoding="utf-8")).get("metadata", {})
+                    language = metadata.get("kernelspec", {}).get("language")
+                    assert language == "python", (
+                        f"{notebook['path']} declare le noyau `base` sans "
+                        f"langage python ({language!r}) : `base` n'est plus un "
+                        f"simple nom d'environnement, il faut le declarer"
+                    )
+                    family = "Python"
+                families.add(family)
+        foreign = families - {"Python"}
+        declared = set(manifest.get("declared_kernel_transitions", []))
+        assert foreign == declared, (
+            f"familles non Python rencontrees {sorted(foreign)} != "
+            f"declarees {sorted(declared)}"
+        )
+        assert declared, "declaration vide : la garde ne mordrait sur rien"
 
     def test_committed_compiled_json_reflects_full_selection(self):
         """Le `compiled.json` committe doit refleter la selection COMPLETE.

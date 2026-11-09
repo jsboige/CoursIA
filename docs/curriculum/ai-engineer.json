@@ -1,5 +1,6 @@
 {
-  "description": "Parcours AI Engineer : de la stack GenAI self-hosted a l'application en production, en passant par l'appel de modele, la generation multimodale (image, audio, video), l'orchestration multi-modeles, les agents applicatifs, les copilots sur plateforme et la securite applicative. La difference avec le parcours LLM Engineer (#19544, arc profond du texte modele) et ML Engineer (#19545, apprentissage classique) : ici l'ingenieur construit un produit qui appelle des modeles qu'il ne re-entraine pas. Le socle des branches 2, 7 et 8 reutilise les carnets du parcours LLM Engineer ; c'est le principe du pli 1 de l'EPIC #19543 : les verticaux se traversent, ils ne se dupliquent pas. Les jumeaux .NET (SemanticKernel, Aspire, Orleans) sont en detour, pas en branche principale.",
+  "description": "Parcours AI Engineer : de la stack GenAI self-hosted a l'application en production, en passant par l'appel de modele, la generation multimodale (image, audio, video), l'orchestration multi-modeles, les agents applicatifs, les copilots sur plateforme et la securite applicative. La difference avec le parcours LLM Engineer (#19544, arc profond du texte modele) et ML Engineer (#19545, apprentissage classique) : ici l'ingenieur construit un produit qui appelle des modeles qu'il ne re-entraine pas. Le socle des branches 2, 7 et 8 reutilise les carnets du parcours LLM Engineer ; c'est le principe du pli 1 de l'EPIC #19543 : les verticaux se traversent, ils ne se dupliquent pas. Les carnets .NET sont en detour, pas en branche principale : la branche SemanticKernel s'enseigne en Python, son jumeau C# (`fort-boyard-csharp`), Aspire et Orleans sont dans les detours.",
+  "declared_kernel_transitions": [".NET"],
   "branches": [
     {
       "id": "environnement-stack",
@@ -119,14 +120,15 @@
   ],
   "accretions": [
     {
-      "id": "jumeaux-dotnet-sk",
-      "description": "Detour .NET SemanticKernel : orchestration d'agents, filtres et observabilite, MCP. Jamais une branche principale (convention du pli 1) : l'apprenant Python passe, l'apprenant .NET trouve son point d'entree en production.",
+      "id": "semantic-kernel",
+      "description": "Detour SemanticKernel : la meme API d'orchestration dans ses deux implementations. Quatre carnets Python (`semantic_kernel`) menent l'introduction, les agents, les filtres et l'observabilite, puis le MCP ; `fort-boyard-csharp` reprend le jeu en C# (`#r`/`nuget:`), la ou l'apprenant .NET branche reellement l'orchestrateur dans un projet. Jamais une branche principale (convention du pli 1).",
       "branch": "agents-et-applications",
       "notebooks": [
         "GenAI/SemanticKernel/01-SemanticKernel-Intro.ipynb",
         "GenAI/SemanticKernel/03-SemanticKernel-Agents.ipynb",
         "GenAI/SemanticKernel/04-SemanticKernel-Filters-Observability.ipynb",
-        "GenAI/SemanticKernel/08-SemanticKernel-MCP.ipynb"
+        "GenAI/SemanticKernel/08-SemanticKernel-MCP.ipynb",
+        "GenAI/SemanticKernel/fort-boyard-csharp.ipynb"
       ]
     },
     {
