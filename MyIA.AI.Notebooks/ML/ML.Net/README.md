@@ -305,7 +305,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 dotnet --version  # doit afficher 9.x.x
 
 # 2. Installer .NET Interactive
-dotnet tool install -g Microsoft.dotnet-interactive
+dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 
 # 3. Vérification
@@ -388,7 +388,7 @@ ML-09c-MatrixProfile-Multidim (Matrix Profile, détection sans apprentissage)
 | Problème | Solution |
 |----------|----------|
 | `The type 'MLContext' could not be found` | Vérifier que ML.NET est installé via `#r "nuget: Microsoft.ML"` dans le notebook. Le notebook 1 (Introduction) couvre la configuration |
-| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive` |
+| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` |
 | `IDataView` performance sur grands datasets | Utiliser `TextLoader` avec le schéma explicite plutôt que le chargement dynamique. ML.NET est optimisé pour les charges batch |
 | ONNX export échoue | Tous les trainers ML.NET ne supportent pas l'export ONNX. Vérifier la compatibilité dans le notebook 6 (ONNX) |
 | Modèle ML.NET en dehors de Jupyter | Utiliser `mlContext.Model.Save()` pour sérialiser le modèle .zip, puis le charger dans une application console ou web |
@@ -400,11 +400,11 @@ ML-09c-MatrixProfile-Multidim (Matrix Profile, détection sans apprentissage)
 dotnet --version  # doit afficher 9.x.x
 
 # Installer .NET Interactive globalement
-dotnet tool install --global Microsoft.dotnet-interactive
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 
 # Si déjà installé mais kernel absent, mettre à jour
-dotnet tool update --global Microsoft.dotnet-interactive
+dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 
 # Vérifier
