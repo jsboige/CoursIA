@@ -286,8 +286,9 @@ lemma sum_smul_snoc {d : ℕ} {ι : Type*} (s : Finset ι)
 (k2.3), the `Bool` height becomes the real `{0, 1}`.
 
 This closes the square with `toRealProd` (k2.4): the transported image of
-the pushed support in `Fin (d+1) → ℝ` is the `(y.1, height y.2)` reading
-of the product embedding — the exact place where the dimension-`d+1`
+the pushed support in `Fin (d+1) → ℝ` is the `(toReal y.1, if y.2 then
+(1 : ℝ) else 0)` reading of the product embedding `toRealProd`
+(Pullback.lean) — the exact place where the dimension-`d+1`
 induction conclusion feeds k2.4's `pullback`, stated in
 `(Fin d → ℝ) × ℝ`. -/
 lemma toReal_liftUp {d : ℕ} (y : (Fin d → ℤ) × Bool) :

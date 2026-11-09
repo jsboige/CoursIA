@@ -295,7 +295,8 @@ snoc ∘ (toReal × (if · then 1 else 0))` — la partie spatiale est transport
 
 C'est ce qui referme le carré avec `toRealProd` (k2.4) : l'image
 transportée du support poussé dans `Fin (d+1) → ℝ` est la lecture
-`(y.1, height y.2)` de l'embedding produit — l'endroit exact où la
+`(toReal y.1, if y.2 then (1 : ℝ) else 0)` de l'embedding produit
+`toRealProd` (Pullback.lean) — l'endroit exact où la
 conclusion d'induction à la dimension `d+1` nourrit le `pullback` de
 k2.4, énoncé dans `(Fin d → ℝ) × ℝ`. -/
 lemma toReal_liftUp {d : ℕ} (y : (Fin d → ℤ) × Bool) :
