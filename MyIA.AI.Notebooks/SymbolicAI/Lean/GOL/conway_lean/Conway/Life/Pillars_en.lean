@@ -82,7 +82,8 @@ the published Gemini self-replication completes in 33 699 586).
   state** — the period witness
   `evolveHashlifeFastMemo 35328 otcaInitial = otcaInitial` remains an
   **open hypothesis**: neither the exact period on the isolated pattern
-  nor feasibility is confirmed. Tranche 4 **measured** the cost of that
+  nor feasibility is confirmed (memoized-Hashlife performance test at
+  64 691 cells). Tranche 4 **measured** the cost of that
   feasibility: the `native_decide` evaluation of the witness does not
   terminate within 2 h on this machine (two attempts, the lake's
   replays consumed within seconds then silence until the timeout, no

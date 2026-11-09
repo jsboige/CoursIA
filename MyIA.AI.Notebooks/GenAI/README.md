@@ -160,7 +160,7 @@ GenAI/
 └── RAG-et-Memoire-Semantique/  # Mémoire sémantique : Qdrant, embeddings, grounding (SDDD)
 ```
 
-> **Note d'arborescence (mars 2026)** : `EFCore/` et `CopilotSDK/` (mono-notebook chacun) seront absorbés dans `Integrations-DotNet/` via [PR #14431](https://github.com/jsboige/CoursIA/pull/14431) — **répertoire pas encore créé sur `main` à la rédaction de cette note** (en attente du merge de #14431). Le hub Integrations-DotNet sera le point de chute canonique des futurs bindings .NET GenAI. `Aspire/` reste au niveau racine, série pédagogique majeure avec sous-série catalog. La provenance des réalisations étudiantes EPF est portée par la section « Généalogie » de [`CaseStudies/README.md`](CaseStudies/README.md).
+> **Note d'arborescence** : le hub [`Integrations-DotNet/`](Integrations-DotNet/) est le point de chute canonique des bindings .NET GenAI de la série *The Unexpected AI Stack: C#/.NET*. Créé par [PR #14431](https://github.com/jsboige/CoursIA/pull/14431) ([#13581](https://github.com/jsboige/CoursIA/issues/13581) T2), il regroupe Aspire (série pédagogique majeure), Orleans, Copilot SDK et Scrutor — et le binding **EF Core**, mono-carnet sans projet compagnon, à sa racine (absorbé, cf [`Integrations-DotNet/README.md`](Integrations-DotNet/README.md)). La provenance des réalisations étudiantes EPF est portée par la section « Généalogie » de [`CaseStudies/README.md`](CaseStudies/README.md).
 
 ### 00-GenAI-Environment - Votre point de départ
 
@@ -423,7 +423,7 @@ Trois sous-dossiers complètent la série sans être des notebooks :
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 305
-breakdown: Texte=48, Audio=42, Image=31, Plateformes-Conversationnelles=28, PostTraining=23, SemanticKernel=23, Video=22, Integrations-DotNet=18, FineTuning=16, RAG-et-Memoire-Semantique=14, Security=8, Vibe-Coding=8, 00-GenAI-Environment=7, CaseStudies=6, 3D=5, FallacyDetection=5, HumorDetection=1
-maturity: BETA=252, ALPHA=31, DRAFT=19, TEMPLATE=3
+pedagogical_count: 308
+breakdown: Texte=49, Audio=42, Image=31, Plateformes-Conversationnelles=28, PostTraining=23, SemanticKernel=23, Video=22, FineTuning=18, Integrations-DotNet=18, RAG-et-Memoire-Semantique=14, Security=8, Vibe-Coding=8, 00-GenAI-Environment=7, CaseStudies=6, 3D=5, FallacyDetection=5, HumorDetection=1
+maturity: BETA=255, ALPHA=30, DRAFT=20, TEMPLATE=3
 -->

@@ -42402,27 +42402,28 @@ en section 2 et appliqué ici aux N-Reines.
 
 **Question posée** : combien de redémarrages faut-il en moyenne pour trouver une
 solution ? La mesure porte sur une série d'exécutions complètes.",,,,,,,,2e41b1d47ea3f28a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,2b08e5e8,markdown,fr,8bb6179edfe2c6b9,"### Exercice 5 : Le coût du redémarrage quand la taille du problème croît
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,2b08e5e8,markdown,fr,aa01cf0b95609c1b,"### Exercice 5 : Le coût du redémarrage quand la taille du problème croît
 
-**Enoncé** : l'exemple guidé 1 mesure le nombre moyen de redémarrages pour le 8-Reines. Que devient ce coût quand la taille du problème augmente ? Pour `n` parmi 8, 16 et 32 :
+**Enoncé** : l'exemple guidé 1 mesure le nombre moyen de redémarrages pour le 8-Reines. Que devient ce coût quand la taille du problème change ? Pour `n` parmi 6, 8, 10 et 12 :
 1. Lancez 20 exécutions de `random_restart_hc_nqueens(n, max_restarts=200)` pour chaque valeur de `n`
 2. Mesurez le nombre moyen de redémarrages et le taux de succès par valeur de `n`
 3. Affichez les résultats dans un tableau à une ligne par valeur de `n`
 
-**Question** : le nombre moyen de redémarrages augmente-t-il, diminue-t-il, ou reste-t-il stable quand `n` croît ? Reliez la tendance observée au taux de succès d'une tentative isolée de Hill Climbing, que vous pouvez mesurer directement avec `hill_climbing_nqueens(n)`.
+**Question** : le nombre moyen de redémarrages évolue-t-il régulièrement avec `n` ? Reliez la tendance observée au taux de succès `p(n)` d'une tentative isolée de Hill Climbing, que vous mesurerez directement sur quelques centaines d'appels à `hill_climbing_nqueens(n)`. Le 8-Reines est-il un cas représentatif ?
 
-**Indice** : si `p(n)` est la probabilité qu'une tentative isolée trouve une solution, le nombre moyen de redémarrages avant succès vaut environ `(1 - p) / p`. Vérifiez cette relation sur vos mesures — et attention au budget : si `p` devient très petit, même `max_restarts = 200` peut ne pas suffire, et le taux de succès observé le dira.",,,,,,,,8bb6179edfe2c6b9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,3870ce3b,code,fr,59ae67b78dd57b9a,"# Exercice 5 : Effet de la taille du probleme sur le cout du redemarrage
+**Indice** : si `p(n)` est la probabilité qu'une tentative isolée trouve une solution, le nombre moyen de redémarrages avant succès vaut environ `(1 - p) / p`. Vérifiez cette relation sur vos mesures. Attention au coût : une tentative coûte de plus en plus cher quand `n` croît (chaque pas examine tous les déplacements d'une reine), restez donc sur ces tailles avant de vous aventurer plus loin.",,,,,,,,aa01cf0b95609c1b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,3870ce3b,code,fr,5067c6dd461dafce,"# Exercice 5 : Effet de la taille du probleme sur le cout du redemarrage
 
-# TODO etudiant : pour chaque n dans [8, 16, 32] :
+# TODO etudiant : pour chaque n dans [6, 8, 10, 12] :
 #   - lancer 20 executions de random_restart_hc_nqueens(n, max_restarts=200)
 #   - collecter pour chaque execution le nombre de redemarrages
 #     et le succes (conflits == 0)
 #   - afficher une ligne par n : redemarrages moyens, taux de succes
-# Option : mesurer aussi le taux de succes d'une tentative isolee
-#   de hill_climbing_nqueens(n) et verifier la relation (1 - p) / p
+# Puis : mesurer le taux de succes p(n) d'une tentative isolee
+#   (quelques centaines d'appels a hill_climbing_nqueens(n))
+#   et comparer (1 - p) / p aux redemarrages moyens mesures
 
 resultats_par_taille = None  # TODO etudiant
 
-print(""Exercice 5 a completer"")",,,,,,,,59ae67b78dd57b9a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,aae763af,markdown,fr,b3ed6d24166fc863,"(Exercice non complete) - l'effet de la taille du problème sur le coût du redémarrage n'a pas été mesuré. Une fois complété, l'étudiant doit comparer le nombre moyen de redémarrages pour n = 8, 16 et 32, puis relier la tendance observée au taux de succès d'une tentative isolée de Hill Climbing en fonction de n.",,,,,,,,b3ed6d24166fc863,,,,,,,,,,,,,,,
+print(""Exercice 5 a completer"")",,,,,,,,5067c6dd461dafce,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,aae763af,markdown,fr,7fae7160adb889b5,"(Exercice non complete) - l'effet de la taille du problème sur le coût du redémarrage n'a pas été mesuré. Une fois complété, l'étudiant doit comparer le nombre moyen de redémarrages pour n = 6, 8, 10 et 12, puis relier ce qu'il observe au taux de succès d'une tentative isolée de Hill Climbing pour chaque valeur de n.",,,,,,,,7fae7160adb889b5,,,,,,,,,,,,,,,

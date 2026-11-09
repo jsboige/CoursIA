@@ -7,7 +7,7 @@ name: Geometry-Tests
 # n'exécute n'est pas une preuve : il est vert par absence.
 #
 # Même classe de défaut et même traitement que GameTheory (#13746,
-# tranche 1 : gametheory-tests.yml) et SymbolicAI/Argument_Analysis
+# tranche 1 : gametheory-tests.yml) et SymbolicAI/ArgumentAnalysis
 # (#17248) : workflow dédié à paths: serrés, le testpath entre dans
 # pytest.ini, et la cible est déclarée dans WORKFLOW_COVERAGE de
 # scripts/check_testpaths_coverage.py (source de vérité du guard).
@@ -40,7 +40,8 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/**'
       - '.github/workflows/geometry-tests.yml'
   pull_request:
-    branches: [main]
+    # #19426 option (b) : pas de branches: sur pull_request quand paths: scope
+    # deja (precedent #19381) — le retarget d'une PR empilee reste capte.
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/**'

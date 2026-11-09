@@ -85,10 +85,21 @@ VERDICTS = (ACCIDENTAL, ORPHANED, SUPERSEDED, INTEGRATED, UNKNOWN)
 #: Un successeur doit etre nomme explicitement. ``See #N`` et ``Part of #N`` sont
 #: volontairement EXCLUS : dans le body d'une PR empilee ils designent le parent,
 #: pas un successeur -- #20374 porte « Part of #20316 » et n'est pas superseded.
+#:
+#: Le vocabulaire des **fournees** (Q162, 03/11) compte comme un successeur
+#: nomme : « Contenu fondu en fournee dans #24354 », « [REPLIEE] Repliee en
+#: fournee dans la PR #24361 », « folded into #N ». Sans ces formes, une PR
+#: repliee proprement sortait ``ORPHANED_CONTENT`` (« aucune raison de
+#: fermeture nommee ») alors que ses commentaires nommaient le successeur --
+#: instance #24196. Les accents sont optionnels dans les deux sens : les
+#: commentaires reels ecrivent « fournee » comme « fournée ».
 _SUCCESSOR_RE = re.compile(
     r"(?:superseded\s+by|replaced\s+by|successor\s*:?|closed\s+in\s+favou?r\s+of|"
     r"remplac[ée]e?s?\s+par|reprise?s?\s+(?:dans|par)|reprend\s+(?:dans|par)|"
-    r"duplicate\s+of|doublon\s+de|en\s+faveur\s+de)"
+    r"duplicate\s+of|doublon\s+de|en\s+faveur\s+de|"
+    r"fondu[es]?\s+en\s+fourn[ée]e\s+dans(?:\s+(?:la\s+pr|la\s+pull\s+request))?|"
+    r"repli[ée]e?s?\s+en\s+fourn[ée]e\s+dans(?:\s+(?:la\s+pr|la\s+pull\s+request))?|"
+    r"folded\s+into)"
     r"\s*:?\s*#(\d+)",
     re.IGNORECASE,
 )
@@ -211,7 +222,7 @@ def closed_unmerged(repo: str, since: datetime, fetch_page=None) -> list[dict]:
     fetch = fetch_page or _page
     out: list[dict] = []
     page = 1
-    while page <= 50:
+    while True:
         data = fetch(page)
         if not data:
             break

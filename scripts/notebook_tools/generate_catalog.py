@@ -50,8 +50,12 @@ RESEARCH_DIR_KEYWORDS = {"research", "archive", "_archive", "_archives", "exampl
 
 SERIES_ORDER = [
     "GenAI", "Search", "ML", "SymbolicAI", "QuantConnect",
-    "GameTheory", "Sudoku", "Probas", "Physique", "IIT", "RL", "EPF",
+    "GameTheory", "Sudoku", "Probas", "Physique", "IIT", "RL",
 ]
+# Pas d'entrée "EPF" : elle listait une série sans répertoire sous
+# MyIA.AI.Notebooks/ (mesuré #24994 -- aucun dossier EPF sur main). _serie_order
+# ne retient que les séries présentes dans les entrées, l'entrée était donc
+# inerte ; OWNER_MAP portait la même clé morte, retirée dans le même geste.
 
 # Keywords indicating special requirements
 API_KEYWORDS = {"openai", "anthropic", "api_key", "API_KEY", "bearer", "endpoint", "SemanticKernel"}
@@ -70,7 +74,6 @@ OWNER_MAP = {
     "Probas": "po-2023",
     "IIT": "po-2025",
     "RL": "po-2025",
-    "EPF": "ai-01",
 }
 # "Physique" is deliberately absent: the map is per-serie and this one is served
 # by three lanes on disjoint sub-trees (Jauge, Numerique, Integrales -- EPIC
@@ -478,11 +481,14 @@ def get_head_sha() -> str:
     """
     try:
         result = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
+            ["git", "rev-parse", "--short=7", "HEAD"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(REPO_ROOT), timeout=10,
         )
         if result.returncode == 0:
-            return result.stdout.strip()
+            # Largeur epinglee a 7 (#24860), miroir de forensic_scan.get_last_commit_sha :
+            # sans epinglage, l'abrege suit la taille du depot (9 puis 10 puis 9 mesures)
+            # et classify_reproducibility() compare deux resolutions independantes.
+            return result.stdout.strip()[:7]
     except (subprocess.TimeoutExpired, FileNotFoundError):
         pass
     return ""
@@ -1077,6 +1083,19 @@ _FORENSIC_CATEGORY_REPRO = {
 }
 
 
+def _sha_prefix_equal(a: str, b: str) -> bool:
+    """Egalite d'abreges SHA robuste a la largeur (#24860).
+
+    L'historique du champ `last_success_sha` porte des largeurs 9 et 10 issues
+    d'abreges non epingles ; les producteurs sont desormais epingles a 7
+    (forensic_scan.get_last_commit_sha, get_head_sha). Deux abreges designent
+    le meme commit ssi leur prefixe commun -- d'au moins 7 caracteres -- est
+    identique ; une valeur trop courte ne suffit pas a attester.
+    """
+    n = min(len(a), len(b))
+    return n >= 7 and a[:n].lower() == b[:n].lower()
+
+
 def classify_reproducibility(
     forensic_category: str | None,
     *,
@@ -1094,8 +1113,10 @@ def classify_reproducibility(
     if not forensic_category:
         return "UNTESTED"
     base = _FORENSIC_CATEGORY_REPRO.get(forensic_category, "UNTESTED")
-    # Pas de promotion EXECUTED -> REPRODUCED sans coherence SHA
-    if base == "EXECUTED" and last_success_sha and head_sha and last_success_sha == head_sha and executed_at:
+    # Pas de promotion EXECUTED -> REPRODUCED sans coherence SHA.
+    # Comparaison normalisee en prefixe (#24860) : l'attestation ne depend plus
+    # de la largeur d'abrege (historique 9/10 vs epingle 7).
+    if base == "EXECUTED" and last_success_sha and head_sha and _sha_prefix_equal(last_success_sha, head_sha) and executed_at:
         return "REPRODUCED"
     return base
 
@@ -1272,6 +1293,14 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
     # Determine serie and sous-serie
     serie = parts[0] if parts else ""
     sous_serie = parts[1] if len(parts) > 2 else ""
+    # Profondeur réelle de l'arbre (#24994) : `sous_serie` garde le PREMIER
+    # segment (compat marqueurs/parcours qui filtrent par égalité), tandis que
+    # `sous_serie_path` / `sous_serie_levels` portent le chemin complet sous la
+    # série, tous niveaux compris. C'est ce niveau-là que le rendu bucketise et
+    # que l'export RDF de l'Epic #24993 réutilisera : la structure du graphe,
+    # pas seulement un affichage.
+    sous_serie_path = "/".join(parts[1:-1])
+    sous_serie_levels = list(parts[1:-1])
 
     title = extract_title(notebook)
     kernel = detect_kernel(notebook)
@@ -1338,6 +1367,11 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
         "title": title or nb_path.stem,
         "serie": serie,
         "sous_serie": sous_serie,
+        # Chemin complet et niveaux sous la série (#24994) -- `sous_serie` seul
+        # ne portait que le premier segment et aplatissait DataScienceWithAgents
+        # (113 carnets sur 3 niveaux) et Lean (159 sur 2) en sections plates.
+        "sous_serie_path": sous_serie_path,
+        "sous_serie_levels": sous_serie_levels,
         "kernel": kernel,
         "status": status,
         # Jugement editorial curé (registre, #15080 critere 4) : a quoi SERT le
@@ -2005,14 +2039,24 @@ def _md_href(path: str) -> str:
 
 
 def _serie_buckets(items: list[dict]) -> list[tuple[str, list[dict]]]:
-    """Group a serie's entries by sous_serie; root notebooks under Racine.
+    """Group a serie's entries by full sous-serie path; root notebooks under Racine.
 
-    Deterministic order: Racine first, then sous-series alphabetically
+    Le bucket est le CHEMIN COMPLET de sous-série (#24994) : un carnet
+    ``Serie/A/B/nb.ipynb`` vit sous ``A/B``, pas sous ``A`` -- chaque niveau de
+    l'arbre reste visible jusqu'au carnet, et les buckets restent disjoints
+    (leur somme réconcilie le total de la série, cf l'assertion des tests).
+    Markdown plafonne les headings à h6 alors que l'arbre réel descend à 5
+    niveaux de sous-série (mesuré #24994) : une heading par bucket portant le
+    chemin complet tient à toute profondeur, là où des headings imbriqués par
+    niveau casseraient. Les entrées synthétiques qui ne portent que
+    ``sous_serie`` (tests, consommateurs tiers) retombent sur ce champ.
+
+    Deterministic order: Racine first, then paths alphabetically
     (case-insensitive, exact case as tiebreaker).
     """
     buckets: dict[str, list[dict]] = {}
     for e in items:
-        name = e.get("sous_serie") or ROOT_BUCKET
+        name = e.get("sous_serie_path") or e.get("sous_serie") or ROOT_BUCKET
         buckets.setdefault(name, []).append(e)
     return sorted(
         buckets.items(),

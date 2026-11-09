@@ -15,17 +15,20 @@ Deux énoncés, soigneusement distingués dans le notebook :
 
 ## Ce que ce lake contient
 
-- **`Galois/M23Lean4Web.lean`** (8115 lignes) : version single-file Lean4Web de la preuve M₂₃, *vendored* depuis l'amont [`KitaKen1/finite-simple-groups-lean`](https://github.com/KitaKen1/finite-simple-groups-lean) (Apache-2.0). Démontre `Sporadic.card_M23 : Nat.card M23 = 10200960` et `Sporadic.simple_M23 : IsSimpleGroup M23` par une **chaîne de stabilisateurs à certificats** (Schreier–Sims matérialisé) — pas `native_decide`, pas `sorry`. La simplicité passe par le stabilisateur de point (M₂₂ embarqué) + un certificat de conjugaison excluant le cas régulier d'ordre 23.
-- **`Galois.lean`** : agrégateur racine (`import Galois.M23Lean4Web`) — permet au `lean_lib Galois` *bare* (sans `globs`) de builder toute la preuve via la closure d'imports de la racine, sur le pattern conway_lean. Le forme `globs := #[`Galois.*]` déclenche un quirk de trace *job-computation* de lake v4.31.0-rc1 (« some modules have bad imports ») sur ce lac à module unique, alors que tous les modules compilent — la forme bare + agrégateur racine l'évite.
+- **`Galois/M23Lean4Web.lean`** (fichier volumineux) : version single-file Lean4Web de la preuve M₂₃, *vendored* depuis l'amont [`KitaKen1/finite-simple-groups-lean`](https://github.com/KitaKen1/finite-simple-groups-lean) (Apache-2.0). Démontre `Sporadic.card_M23 : Nat.card M23 = 10200960` et `Sporadic.simple_M23 : IsSimpleGroup M23` par une **chaîne de stabilisateurs à certificats** (Schreier–Sims matérialisé) — pas `native_decide`, pas `sorry`. La simplicité passe par le stabilisateur de point (M₂₂ embarqué) + un certificat de conjugaison excluant le cas régulier d'ordre 23.
+- **`Galois.lean`** : agrégateur racine — importe les **cinq** modules du lake (`Galois.M23Lean4Web` plus les deux paires FR/EN `AdicCompletionLocalRing` et `LowerRamificationGroup`), donc un point d'entrée unique qui porte la couche M₂₃ *et* la couche adic-complétion.
+- **`Galois/*_en.lean`** : siblings i18n (#4980) de la couche adic-complétion — `AdicCompletionLocalRing_en` et `LowerRamificationGroup_en`. Le module vendu `M23Lean4Web` reste hors i18n (lib tierce, cf `lean-i18n`).
+
+Le `lean_lib Galois` porte ``globs := #[`Galois.*]`` comme `@[default_target]`, ce qui auto-découvre tous les sous-modules — dont les siblings `_en`. **Forme bare-lib : historique, plus utilisable.** Elle avait été adoptée quand la forme glob déclenchait un quirk de trace *job-computation* de lake v4.31.0-rc1 (« some modules have bad imports ») ; le commentaire du `lakefile.lean` consigne que la forme glob est vérifiée SUCCESS à v4.33.0. Surtout, `check_en_built` (`scripts/lean/check_i18n_siblings.py`) ne lit que les `roots`/`globs` : un miroir `_en` importé depuis la racine serait signalé UNBUILT par la CI `lean-i18n-drift` alors même que `lake build` le compile.
 
 ## État
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` (bump depuis v4.31.0-rc1, post-#11325, cf #11256 ; la preuve amont `M23Lean4Web.lean` reste pinned à sa version d'origine — le bump toolchain ne touche pas le vendored)
-- **Mathlib** : rev pinned au bump 4.32.1 (cf `lake-manifest.json` — le rev exact `d568c8c` datait du pin v4.31.0-rc1 et a évolué avec le bump)
+- **Toolchain** : `leanprover/lean4:v4.33.0` à la tête courante (cf `lean-toolchain`, qui fait foi ; migration v4.32.1 → v4.33.0 posée par `26f6bc44ee`, #14953 — `git log --follow` sur `lean-toolchain` désigne ce commit, pas le renommage `88edc37b4d` qui n'a que déplacé le fichier). Historique : `v4.31.0-rc1` → v4.32.1 (#11325/#11256), puis v4.33.0. La preuve amont `M23Lean4Web.lean` reste pinned à sa version d'origine — un bump toolchain ne touche pas le vendored.
+- **Mathlib** : `db584cd6d46c92f209a44c0f1c829460d327499d` (v4.33.0), en accord entre `lakefile.lean:10-11` et `lake-manifest.json` — les deux fichiers qui font foi. Les revs `d568c8c` (pin v4.31.0-rc1) et du bump 4.32.1 sont **historiques** ; aucun ne décrit l'état courant.
 - **Sorry** : **0** (mode `real`, comptage Lean-aware) — 0 `sorry` tactique, 0 `native_decide`, 0 `axiom` déclaré
 - **Axiomes** : `#print axioms Sporadic.card_M23` / `simple_M23` → `{propext, Classical.choice, Quot.sound}` = whitelist §B
-- **Build** : `lake build Galois` SUCCESS exit 0 — cible lib clean via agrégateur racine (1324 jobs historiques sous pin v4.31.0-rc1 ; à reverifier sur 4.32.1 pour confirmer que le quirk *job-computation* `globs` reste contourné par la forme bare + agrégateur)
-- **Dépendances** : Mathlib 4 uniquement (8 imports `Mathlib.GroupTheory.*`)
+- **Build** : matrice `lean-ci-matrix.yml` (job `galois_lean`) depuis la suppression du wrapper `lean-galois.yml` (`145808a50d`, #23011 — #13751 item 4). Dernier run **SUCCESS** connu : 2026-10-31T18:36:51Z sur `88edc37b4d`, au pin v4.33.0 (le lake y était déjà migré par `26f6bc44ee`) — c'était le **dernier run du wrapper**, avant la migration du 2026-11-01 ; aucun fichier du lake n'a changé sur `main` depuis, le job matrice n'a donc pas encore tourné sur ce lake (`git log 145808a50d..origin/main -- …/galois_lean/` est vide). Le chiffre de 1324 jobs reste **historique** : il date du pin v4.31.0-rc1 et n'a pas été re-mesuré depuis.
+- **Dépendances** : Mathlib 4 uniquement — 8 imports, dont 7 `Mathlib.GroupTheory.*` et `Mathlib.Algebra.Group.Subgroup.Finite` (`M23Lean4Web.lean:32-39`)
 
 ## Pourquoi réutiliser l'amont plutôt que réécrire
 
@@ -40,4 +43,4 @@ Per `sota-not-workaround` : refaire une échelle de petits groupes à côté d'u
 
 - [Lean-15-Grothendieck-Tribute](../../Lean-15-Grothendieck-Tribute.ipynb) — hommage comparable (prouve ce qu'il annonce)
 - `grothendieck_lean` — angle SGA1 (π₁ étale, existence de Riemann) pour le chaînon-pont vers la réalisation galoisienne
-- EPIC i18n #4980 : siblings `_en` à venir
+- EPIC i18n #4980 : siblings `_en` **livrés** pour la couche adic-complétion (`AdicCompletionLocalRing_en`, `LowerRamificationGroup_en`) ; le module vendu `M23Lean4Web` en est exclu par la règle (lib tierce).

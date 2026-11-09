@@ -15,8 +15,15 @@
 > vivant auprès de tout outil énumérant les lakes par leur `lakefile*` (p. ex. `check_i18n_siblings`),
 > alors qu'il ne contenait **plus aucun module** depuis l'absorption. Ne subsistent que les 3
 > markdown (`README`, `STATUS`, `LEAN_PREREQUISITES`) — documentation historique, choix de
-> design et prérequis pédagogiques — conservés intentionnellement comme tombstone. La **NOTICE
+> design et prérequis pédagogiques — conservés comme tombstone. La **NOTICE
 > d'attribution** a rejoint son code le 2026-11-02 : [`game_theory_lean/SocialChoice/NOTICE.md`](../game_theory_lean/SocialChoice/NOTICE.md).
+>
+> **⚑ Sortie programmée — tranche T3 de [#24183](https://github.com/jsboige/CoursIA/issues/24183).**
+> T3 (« une arborescence qu'on lit ») prévoit de **retirer cette coquille**, *après une preuve de
+> préservation de ses documents*. La preuve est livrée plus bas, section « Preuve de
+> préservation » : elle établit que **le retrait ne peut pas avoir lieu en l'état** — deux des
+> trois markdown restants portent un contenu qui n'existe nulle part ailleurs et sont atteints
+> par des liens entrants actifs. La conservation est donc motivée, et datée.
 > Le contenu
 > mathématique (théorèmes, preuves) vit dans le home canonique ; la suite de ce README le décrit
 > tel qu'il existait **historiquement** ici, et reste **entièrement valable**.
@@ -29,7 +36,7 @@ Ce répertoire est l'**archive** des formalisations mathématiques de la théori
 |-------------|--------|
 | Théorèmes/Lemmas | voir catalogue (0 sorry, modules absorbés) |
 | sorry restants | 0 |
-| Toolchain | `leanprover/lean4:v4.31.0-rc1` |
+| Toolchain | celle du home canonique, [`game_theory_lean/`](../game_theory_lean/) — `leanprover/lean4:v4.33.0` |
 | Dépendances | Mathlib4, Lake |
 
 **Statut formel** : les **sept** modules (Basic, Framework, Arrow, Sen, Voting,
@@ -154,6 +161,33 @@ au-delà du choix social pur vers la **théorie des mécanismes** (incitations e
 - **First-price non véridique** (`first_price_not_truthful`) : à l'inverse, l'enchère au
   **premier prix** n'est **pas** véridique (contre-exemple direct) — l'enchérisseur a
   intérêt à sous-évaluer sa vraie valeur.
+
+## Preuve de préservation — prérequis de la tranche T3 de #24183
+
+La tranche T3 de [#24183](https://github.com/jsboige/CoursIA/issues/24183) (« une arborescence
+qu'on lit ») prévoit de **retirer cette coquille**, *après une preuve de préservation de ses
+documents*. La `NOTICE` d'attribution était le quatrième de ces documents avant de rejoindre son
+code le 2026-11-02 (#24193) ; il en reste trois ici.
+
+| Document | Contenu propre | Références entrantes vivantes | Disposition pour T3 |
+|----------|----------------|------------------------------|---------------------|
+| `NOTICE.md` | attribution : licences, sources (Geanakoplos 2005, Sen 1970), mesure de reprise depuis Lean 3 | — | **déjà préservé** — déplacé le 2026-11-02 dans [`game_theory_lean/SocialChoice/NOTICE.md`](../game_theory_lean/SocialChoice/NOTICE.md) |
+| `STATUS.md` | instantané historique du lake (toolchain, table des sources, historique des commits) | aucune | **absorbable** — l'état actif est tenu par `game_theory_lean/` (README du lake, et §3 de [`LEAN_INVENTORY.md`](../LEAN_INVENTORY.md)) |
+| `LEAN_PREREQUISITES.md` | trois parcours progressifs Lean 4 / Mathlib (débutant, intermédiaire, avancé), durées et prérequis par module | [`docs/curriculum/symbolic-formalization.md`](../../../docs/curriculum/symbolic-formalization.md) (liens de parcours) | **non absorbable en l'état** — destination déjà désignée par l'inventaire du 2026-09-02 ([entrée #8](../../../docs/transients/2026-09-02-curriculum-inventory.md), mention « RELOCATE », vers `docs/curriculum/symbolic-formalization.md`) |
+| `README.md` | choix de design, sources académiques, tableau de reprise depuis Lean 3, structure historique | [`game_theory_lean/README.md`](../game_theory_lean/README.md) §« Voir aussi » et entrée de navigation du site (`_quarto.yml`) | **non absorbable en l'état** — contenu unique, et deux liens vivants pointent vers ce fichier |
+| `scripts/validate_lean_setup.py` (`check_social_choice_lean()`) | un check de setup qui vérifie l'existence de `social_choice_lean/lakefile.lean` | appelé par l'entrée du validateur de setup | **dépendance code** — cherche encore `social_choice_lean/lakefile.lean`, retiré depuis #4365 (le check échoue déjà sur main) ; à corriger avant le retrait de la coquille |
+
+**Conséquence pour T3.** La coquille **ne peut pas être retirée aujourd'hui** : deux des trois
+documents restants portent un contenu qui n'existe nulle part ailleurs et sont atteints par des
+liens actifs. Le retrait suppose, dans l'ordre : (a) la relocation de `LEAN_PREREQUISITES.md`
+vers le curriculum symbolique (destination déjà nommée par l'inventaire du 2026-09-02) ; (b)
+l'absorption du contenu propre de ce `README.md` — sections « Choix de design » et « Sources
+académiques » ; (c) la reprise des liens entrants (README du lake, navigation du site) ;
+(d) la correction de la dépendance code — `check_social_choice_lean()` cherche encore
+`social_choice_lean/lakefile.lean`, retiré depuis #4365.
+`STATUS.md` peut partir seul : son contenu est un instantané déjà tenu ailleurs. Jusque-là, les
+trois documents sont **conservés à titre de tombstone** — la
+[NOTICE canonique](../game_theory_lean/SocialChoice/NOTICE.md) porte la date du déplacement.
 
 ## Structure des fichiers
 
@@ -284,7 +318,7 @@ résultats fondateurs de la théorie du choix social : le **théorème d'impossi
 d'Arrow**, le **paradoxe libéral de Sen**, la **théorie du vote** (Condorcet, électeur
 médian, Split Cycle) et la **véridicité de l'enchère de Vickrey** (théorie des mécanismes).
 Tous les modules sont FORMAL-CERTIFIED et recompilables via `lake build SocialChoice` dans le home
-canonique [`game_theory_lean/`](../game_theory_lean/) (toolchain `v4.31.0-rc1`).
+canonique [`game_theory_lean/`](../game_theory_lean/) (toolchain `v4.33.0`).
 
 ### Ce qui est prouvé
 

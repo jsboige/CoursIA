@@ -42,10 +42,11 @@ Les carnets de la chaîne se renvoient entre eux **par numéro de phase** (« co
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 14 |
 | Kernel | Python 3 |
 | Durée estimée | ~8-12h |
 | GPU requis | 0-14GB |
+
+Le catalogue du dépôt (`COURSE_CATALOG.generated.md`) est la source des décomptes — ce README présente les carnets, il ne les compte pas.
 
 ## Notebooks
 

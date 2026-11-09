@@ -61,7 +61,7 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_TAXO = (
     _REPO_ROOT
-    / "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv"
+    / "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/argumentum_fallacies_taxonomy.csv"
 )
 
 # Colonnes de la taxonomie Argumentum utilisees (sur 1553 lignes / 1408 sophismes).
@@ -292,6 +292,10 @@ def align_label(
         kw_tokens |= _tokens(k)
     # Le label lui-meme participe au pool de tokens.
     kw_tokens |= _tokens(label)
+    # Mots-cles normalises (accents + ponctuation) pour la branche cognate FR :
+    # la comparaison doit etre insensible a l'apostrophe typographique (’) et
+    # aux accents, sinon un cognate exact est rate (cf. branche (a bis)).
+    norm_keywords = [nk for nk in (_norm(k) for k in keywords) if nk]
 
     scored: list[tuple[str, str, float, str, float]] = []
     for e in argum:
@@ -301,10 +305,17 @@ def align_label(
             name_score = 1.0
         elif e.simple_en and _norm(e.simple_en) in _norm(label):
             name_score = 0.8
-        # (a bis) cognate FR sur le nom vulgarise.
+        # (a bis) cognate FR sur le nom vulgarise ou le texte de la feuille.
+        # La comparaison passe par _norm des DEUX cotes : la taxonomie ecrit
+        # « Argument d’autorité » / « Appel à l’émotion » (apostrophe
+        # typographique, accents varies) alors que les inventaires academiques
+        # portent l'apostrophe droite. Une sous-chaine brute ratait le cognate
+        # et degradait un alignement exact en PARTIAL a 0.09-0.143 — ecart
+        # mecanique n°3 de #10355 §4 (c.6344505010).
         fr_name_score = 0.0
-        for k in keywords:
-            if k.lower() in (e.nom_fr.lower() + " " + e.text_fr.lower()):
+        fr_target = _norm(e.nom_fr + " " + e.text_fr)
+        for nk in norm_keywords:
+            if nk in fr_target:
                 fr_name_score = max(fr_name_score, 0.7)
         # (b) chevauchement lexical global.
         lex = _jaccard(kw_tokens, e.tokens)

@@ -292,7 +292,7 @@ L'état « PARTIEL 60 % » du 07-15 (3 siblings + 15 markers inline) est **super
 
 ### 9. `grothendieck_lean` — EXCELLENT (98 %) ↻08-28
 
-**Chemin** : `MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/`
+**Chemin** : `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/`
 
 **60 fichiers FR canoniques**, **59 fichiers EN siblings** (↻08-28 — l'expansion de
 l'hommage Grothendieck a plus que doublé le lake depuis le 14/07, et la bilinguisation

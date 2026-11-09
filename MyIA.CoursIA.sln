@@ -16,17 +16,17 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyIA.Trading.Backtester", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyIA.Trading.Backtester.Tests", "MyIA.Trading.Backtester.Tests\MyIA.Trading.Backtester.Tests.csproj", "{DF112603-A4EE-4651-B9DD-19E9BA338320}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.GSheetSync", "MyIA.AI.Notebooks\SymbolicAI\Argument_Analysis\CoursIA-GSheetSync\src\CoursIA.GSheetSync\CoursIA.GSheetSync.csproj", "{2E4B17E5-B54D-4B33-8A91-302149728C83}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.GSheetSync", "MyIA.AI.Notebooks\SymbolicAI\ArgumentAnalysis\CoursIA-GSheetSync\src\CoursIA.GSheetSync\CoursIA.GSheetSync.csproj", "{2E4B17E5-B54D-4B33-8A91-302149728C83}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.GSheetSync.Tests", "MyIA.AI.Notebooks\SymbolicAI\Argument_Analysis\CoursIA-GSheetSync\src\CoursIA.GSheetSync.Tests\CoursIA.GSheetSync.Tests.csproj", "{BD773DD6-F650-4D0B-9D22-20C13EADF239}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.GSheetSync.Tests", "MyIA.AI.Notebooks\SymbolicAI\ArgumentAnalysis\CoursIA-GSheetSync\src\CoursIA.GSheetSync.Tests\CoursIA.GSheetSync.Tests.csproj", "{BD773DD6-F650-4D0B-9D22-20C13EADF239}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.OwlAdapter", "MyIA.AI.Notebooks\SymbolicAI\Argument_Analysis\CoursIA-OwlAdapter\src\CoursIA.OwlAdapter\CoursIA.OwlAdapter.csproj", "{3889BEA2-28C1-4BAA-833B-AB7E304D2E01}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.OwlAdapter", "MyIA.AI.Notebooks\SymbolicAI\ArgumentAnalysis\CoursIA-OwlAdapter\src\CoursIA.OwlAdapter\CoursIA.OwlAdapter.csproj", "{3889BEA2-28C1-4BAA-833B-AB7E304D2E01}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.OwlAdapter.Tests", "MyIA.AI.Notebooks\SymbolicAI\Argument_Analysis\CoursIA-OwlAdapter\src\CoursIA.OwlAdapter.Tests\CoursIA.OwlAdapter.Tests.csproj", "{C76509BE-5013-4771-9058-0647765285CA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.OwlAdapter.Tests", "MyIA.AI.Notebooks\SymbolicAI\ArgumentAnalysis\CoursIA-OwlAdapter\src\CoursIA.OwlAdapter.Tests\CoursIA.OwlAdapter.Tests.csproj", "{C76509BE-5013-4771-9058-0647765285CA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.DatasetUpdater.Prompts", "MyIA.AI.Notebooks\SymbolicAI\Argument_Analysis\CoursIA-DatasetUpdater-Prompts\src\CoursIA.DatasetUpdater.Prompts\CoursIA.DatasetUpdater.Prompts.csproj", "{9DB079FF-016E-4102-979F-2851DDBFA099}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.DatasetUpdater.Prompts", "MyIA.AI.Notebooks\SymbolicAI\ArgumentAnalysis\CoursIA-DatasetUpdater-Prompts\src\CoursIA.DatasetUpdater.Prompts\CoursIA.DatasetUpdater.Prompts.csproj", "{9DB079FF-016E-4102-979F-2851DDBFA099}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.DatasetUpdater.Prompts.Tests", "MyIA.AI.Notebooks\SymbolicAI\Argument_Analysis\CoursIA-DatasetUpdater-Prompts\src\CoursIA.DatasetUpdater.Prompts.Tests\CoursIA.DatasetUpdater.Prompts.Tests.csproj", "{26D274FA-3CB0-48EB-9561-DCA41FA405AA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.DatasetUpdater.Prompts.Tests", "MyIA.AI.Notebooks\SymbolicAI\ArgumentAnalysis\CoursIA-DatasetUpdater-Prompts\src\CoursIA.DatasetUpdater.Prompts.Tests\CoursIA.DatasetUpdater.Prompts.Tests.csproj", "{26D274FA-3CB0-48EB-9561-DCA41FA405AA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.AgentSafetyAnalyzer", "MyIA.AI.Notebooks\GenAI\Vibe-Coding\analyzers\AgentSafetyAnalyzer\AgentSafetyAnalyzer.csproj", "{BF3B5EC4-0E62-4928-AD3B-DEC9C4D7566F}"
 EndProject
