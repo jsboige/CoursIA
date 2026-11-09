@@ -6012,11 +6012,11 @@ L'enigme d'Einstein illustre le gain du **declaratif** sur une classe de problem
 **Contraste avec le job-shop (notebook 08)** : ici `Solver` suffit (on cherche une solution realisable, pas un optimum) - c'est la **satisfiabilite** pure, la ou l'ordonnancement relevait de l'**optimisation** (`Optimize.minimize` du makespan). Les deux postures du solveur, posees au notebook 01, trouvent ici leur illustration complementaire.
 
 Suite logique : retour a la [serie Z3-Python](README.md), ou explorez la version C# [Z3.Linq](../Z3-Linq2Z3/README.md) qui aborde la même enigme via la couche declarative LINQ.",,,,,,,,d62092dae0f41dd7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,90651222,markdown,fr,777861a36a6bb4d2,"← [09 - Enigme d'Einstein](Z3-09-Enigme-Einstein-Python.ipynb) | [README Z3-Python](README.md) | [11 - Coloration de graphe >>](Z3-11-Graph-Coloring-Python.ipynb)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,90651222,markdown,fr,00c795ee072deb1c,"← [09 - Enigme d'Einstein](Z3-09-Enigme-Einstein-Python.ipynb) | [README Z3-Python](README.md) | [11 - Coloration de graphe >>](Z3-11-Graph-Coloring-Python.ipynb)
 # 10. Cryptarithmes (SEND + MORE = MONEY)
 Un **cryptarithme** est une equation arithmetique ou chaque lettre represente un **chiffre distinct** (0-9), et ou les mots formant l'equation correspondent a des nombres en ecriture positionnelle. Le classique `SEND + MORE = MONEY` admet une unique solution : laquelle ?
 Ce type de puzzle est un cas canonique de **satisfaction de contraintes sur les entiers** : 8 lettres, chacune dans `{0..9}`, deux a deux distinctes, avec des tetes non nulles (S et M) et une equation lineaire positionnelle. La **propagation de contraintes** du solveur SMT resout instantanement ce que la brute force met plusieurs centaines de millisecondes a enumerer.
-> Port pyz3 du notebook C# [`13_Cryptarithmetic_SMT.ipynb`](../Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb) (Microsoft.Z3 brut). EPIC #1206, Prong B.",,,,,,,,777861a36a6bb4d2,,,,,,,,,,,,,,,
+> Port pyz3 du notebook C# [`13_Cryptarithmetic_SMT.ipynb`](../Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb) (Microsoft.Z3 brut).",,,,,,,,00c795ee072deb1c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,097082cb,code,fr,2beecb57800803ac,"from z3 import *
 import time
 print(""Imports OK : z3-solver (pyz3)"")
@@ -6213,10 +6213,15 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,2cc43
 result = None  # TODO etudiant
 print(""Exercice 3 a completer : modelisez ABC * D = DBC"")
 ",,,,,,,,a925754655ed2fa4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,b2c87944,markdown,fr,a23f1812a3aea44a,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,b2c87944,markdown,fr,4397092b9b762f22,"## Conclusion
 Les cryptarithmes illustrent un avantage central du **paradigme declaretif** : on exprime ce qu'on cherche (une affectation de chiffres distincts satisfaisant une equation positionnelle), pas **comment** le chercher. Le solveur Z3 se charge de la recherche via propagation de contraintes - instantanement la ou la brute force enumere des millions de candidats.
 
-Cette serie Z3-Python (notebooks 01 a 10) couvre maintenant le spectre complet : satisfaction de contraintes (01, 02), tactiques (03), chaînes/regex (04), quantificateurs (05), optimisation avancee (06), style declaratif (07), ordonnancement NP-difficile (08), CSP logique (09), et ici l'**arithmetique symbolique** sur entiers (10). Le pont avec la serie sœur Z3.Linq (C#) se fait via les mêmes exemples portes entre Microsoft.Z3 et pyz3.",,,,,,,,a23f1812a3aea44a,,,,,,,,,,,,,,,
+Cette serie Z3-Python (notebooks 01 a 10) couvre maintenant le spectre complet : satisfaction de contraintes (01, 02), tactiques (03), chaînes/regex (04), quantificateurs (05), optimisation avancee (06), style declaratif (07), ordonnancement NP-difficile (08), CSP logique (09), et ici l'**arithmetique symbolique** sur entiers (10). Le pont avec la serie sœur Z3.Linq (C#) se fait via les mêmes exemples portes entre Microsoft.Z3 et pyz3.
+
+***
+
+> Carnet issu de l'EPIC #1206.
+",,,,,,,,4397092b9b762f22,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-11-Graph-Coloring-Python.ipynb,e0776896,markdown,fr,fe77b1a7b98ad161,"[<- Z3-Python-10](Z3-10-Cryptarithmetic-Python.ipynb) | [README Z3-Python](README.md) | [Z3-Python-12 ->](Z3-12-Real-Arithmetic-Python.ipynb)
 
 # 11 - Coloration de Graphe avec Z3
@@ -6882,11 +6887,11 @@ La coloration de graphe cristallise la différence entre **heuristique** et **pr
 - Welsh, Powell 1967 *An upper bound for the chromatic number of a graph and its application to timetabling problems*. The Computer Journal 10(1): 85-86.
 - de Moura, Bjorner 2008 *Z3: An Efficient SMT Solver*. TACAS 2008.
 ",,,,,,,,50bd9cdd0e7cfe95,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-12-Real-Arithmetic-Python.ipynb,e3ec7b6a,markdown,fr,2fa6b12803ab8a38,"← [11 - Coloration de graphe](Z3-11-Graph-Coloring-Python.ipynb) | [README Z3-Python](README.md) | [13 - UNSAT cores >>](Z3-13-UnsatCores-Python.ipynb)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-12-Real-Arithmetic-Python.ipynb,e3ec7b6a,markdown,fr,f730b2c39a805f74,"← [11 - Coloration de graphe](Z3-11-Graph-Coloring-Python.ipynb) | [README Z3-Python](README.md) | [13 - UNSAT cores >>](Z3-13-UnsatCores-Python.ipynb)
 # 12. Arithmetique reelle : raisonner sur les irrationnels exacts
 Jusqu'ici nous avons raisonne sur des **entiers** (coloration de graphe, cryptarithmes, ordonnancement). Z3 sait aussi raisonner sur les **reels** via la théorie `Real` (SMT-LIB `Reals`). C'est une capacite profondement différente : les solutions peuvent etre **rationnelles exactes** (pas d'arrondi flottant), des **irrationnels algebriques** (racine carree de 2 representee comme racine d'un polynome, pas comme 1.4142...), et l'absence de solution peut etre **prouvee** (`unsat`) sur le corps des reels tout entier.
 Ce notebook explore les trois postures : arithmetique lineaire (solution rationnelle exacte), non-lineaire (irrationnel algebrique), et preuve d'impossibilite sur R. Aucun `float`, aucun `sqrt()` approche : tout est symbolique.
-> Port pyz3 du notebook C# [`16_RealArithmetic.ipynb`](../Z3-Linq2Z3/16_RealArithmetic.ipynb). EPIC #1206, Prong B. (La section B7 Rational du C#, spécifique au DSL Z3.Linq, n'est pas portee.)",,,,,,,,2fa6b12803ab8a38,,,,,,,,,,,,,,,
+> Port pyz3 du notebook C# [`16_RealArithmetic.ipynb`](../Z3-Linq2Z3/16_RealArithmetic.ipynb). (La section B7 Rational du C#, spécifique au DSL Z3.Linq, n'est pas portee.)",,,,,,,,f730b2c39a805f74,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-12-Real-Arithmetic-Python.ipynb,f066c472,code,fr,287da594bc74f1be,"from z3 import *
 print(""Imports OK : z3-solver (theorie Real)"")
 ",,,,,,,,287da594bc74f1be,,,,,,,,,,,,,,,
@@ -7016,18 +7021,23 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-12-Real-Arithmetic-Python.ipynb,734f8
 result = None  # TODO etudiant
 print(""Exercice 3 a completer : minimisez x^2 + y^2 sous x + y = 4"")
 ",,,,,,,,d8c39507a9e45a0b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-12-Real-Arithmetic-Python.ipynb,47ab358a,markdown,fr,9d7fffded35d4e8d,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-12-Real-Arithmetic-Python.ipynb,47ab358a,markdown,fr,9e5b71aca851ea69,"## Conclusion
 La théorie des reels de Z3 transforme le solveur en outil de **raisonnement algebrique exact**. La ou le calcul numérique flottant (`float`, `math.sqrt`) introduit des erreurs d'arrondi et ne peut jamais prouver une absence de solution, la théorie SMT `Real` offre : solutions rationnelles exactes, irrationnels algebriques (racine de 2 comme `root-obj`), et preuves d'impossibilite sur R tout entier (`unsat` pour `x^2 + 1 = 0`).
 
-Cette serie Z3-Python (notebooks 01 a 12) couvre maintenant l'eventail complet : entiers (01-06, 10, 11), satisfaction de contraintes (08 ordonnancement, 09 CSP logique, 11 graphes), tactiques (03), et ici l'**arithmetique reelle exacte** (12). Le pont avec la serie souer Z3.Linq (C#) se fait via les mêmes exemples portes entre Microsoft.Z3 et pyz3.",,,,,,,,9d7fffded35d4e8d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,de430bb4,markdown,fr,e6492782f84bb51d,"← [12 - Arithmetique reelle](Z3-12-Real-Arithmetic-Python.ipynb) | [README Z3-Python](README.md) | [13b - UNSAT cores : le MUS >>](Z3-13b-UnsatCores-MUS-Python.ipynb)
+Cette serie Z3-Python (notebooks 01 a 12) couvre maintenant l'eventail complet : entiers (01-06, 10, 11), satisfaction de contraintes (08 ordonnancement, 09 CSP logique, 11 graphes), tactiques (03), et ici l'**arithmetique reelle exacte** (12). Le pont avec la serie souer Z3.Linq (C#) se fait via les mêmes exemples portes entre Microsoft.Z3 et pyz3.
+
+***
+
+> Carnet issu de l'EPIC #1206.
+",,,,,,,,9e5b71aca851ea69,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,de430bb4,markdown,fr,743bde5dbaf198e9,"← [12 - Arithmetique reelle](Z3-12-Real-Arithmetic-Python.ipynb) | [README Z3-Python](README.md) | [13b - UNSAT cores : le MUS >>](Z3-13b-UnsatCores-MUS-Python.ipynb)
 # 13. UNSAT cores : expliquer l'insatisfiabilite (le ' pourquoi ')
 Jusqu'ici, le solveur repondait a une question binaire : *ce système a-t-il une solution ?* -> **SAT** (oui, voici un temoin) ou **UNSAT** (non, prouve impossible). C'est un **verdict**, pas une **explication**.
 Pour un ingenieur qui **ecrit** la specification, UNSAT est souvent un bug de modelisation : une contrainte trop forte, ou deux contraintes incompatibles. La reponse ' impossible ' ne suffit pas - il faut savoir **lesquelles** des contraintes se contredisent. C'est le rôle du **noyau d'insatisfiabilite** (UNSAT core) : le sous-ensemble **minimal** de contraintes responsable du conflit. Z3 passe du diagnostic binaire au diagnostic chirurgical.
-> Port pyz3 du notebook C# [`17_UnsatCores.ipynb`](../Z3-Linq2Z3/17_UnsatCores.ipynb). EPIC #1206, Prong B. (Le bloc DSL `Explain()` du C#, spécifique a Z3.Linq, n'est pas porte ; l'API brute `assert_and_track` + `unsat_core` de pyz3 fait le même travail.)
+> Port pyz3 du notebook C# [`17_UnsatCores.ipynb`](../Z3-Linq2Z3/17_UnsatCores.ipynb). (Le bloc DSL `Explain()` du C#, spécifique a Z3.Linq, n'est pas porte ; l'API brute `assert_and_track` + `unsat_core` de pyz3 fait le même travail.)
 ## Source
 
-Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §3.13.2 Unsat core (p. 83), Ch. 3 Equations — UNSAT cores, assert_and_track, diagnostic. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,e6492782f84bb51d,,,,,,,,,,,,,,,
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §3.13.2 Unsat core (p. 83), Ch. 3 Equations — UNSAT cores, assert_and_track, diagnostic. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,743bde5dbaf198e9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,71e1306a,code,fr,2d36fb6ac814810b,"from z3 import *
 print(""Imports OK : z3-solver (UNSAT cores via assert_and_track)"")
 ",,,,,,,,2d36fb6ac814810b,,,,,,,,,,,,,,,
@@ -7182,22 +7192,26 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,784a1255,c
 nb_coupables = None  # TODO etudiant
 print(""Exercice 3 a completer : mesurer |core| parmi 10 contraintes (attendu : 3)"")
 ",,,,,,,,2aba8920eb79c644,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,c1c75dde,markdown,fr,54345351d98ec35f,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb,c1c75dde,markdown,fr,0e68d0be439a7326,"## Conclusion
 Le UNSAT core transforme le solveur d'oracle binaire en **outil de diagnostic**. La ou `unsat` dit seulement ' impossible ', `unsat_core()` dit ' impossible **a cause de ces contraintes-la** ' - le sous-ensemble minimal responsible du conflit. Sur une specification surcontrainte, ce diagnostic est directement actionnable : il pointe la contrainte a relacher.
 
 Cette serie Z3-Python (notebooks 01 a 13) couvre maintenant les **trois postures** du solveur : **decider** (sat/unsat, 01-11), **optimiser** (Optimize, 06/08), et ici **expliquer** (unsat_core, 13). La ou l'ingenieur classique debug a l'aveugle un système insatisfiable, le solveur SMT isole chirurgicalement la cause - la différence entre un oracle et un partenaire de raisonnement.
 
 Le compagnon [Z3-13b - le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) approfondit ce langage : core invisible a l'inspection, minimalite non garantie par Z3, et l'algorithme deletion-based qui calcule le sous-ensemble irreductible.
-",,,,,,,,54345351d98ec35f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb,af607fd1,markdown,fr,704dd0bd1df8953b,"← [13b - UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) | [README Z3-Python](README.md) | [15 - Tableaux imbriqués >>](Z3-15-Nested-Arrays-2D-Python.ipynb)
+
+***
+
+> Carnet issu de l'EPIC #1206.
+",,,,,,,,0e68d0be439a7326,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb,af607fd1,markdown,fr,a1732690137f5e4f,"← [13b - UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) | [README Z3-Python](README.md) | [15 - Tableaux imbriqués >>](Z3-15-Nested-Arrays-2D-Python.ipynb)
 
 # 14. Bit-vectors : verifier le debordement arithmetique
 Jusqu'ici nous avons raisonne sur des **entiers non bornes** (`Int`) ou des **reels exacts** (`Real`). Mais un ordinateur calcule sur des **entiers bornes** : un `uint32` ne peut pas depasser `2^32 - 1`, et l'addition **enveloppe** (wraps) modulo `2^32` quand la somme depasse. Ce debordement (overflow) est la source de bugs legendaires (Ariane 5, OpenSSL, Pac-Man) et la cible centrale de la **verification formelle** de code.
 Z3 traite les entiers machines via la théorie des **bit-vectors** (`BitVec`, SMT-LIB `BV`) : un vecteur de *n* bits interprete comme un entier modulo 2^n, avec addition/multiplication/comparaisons/bit-a-bit **tous decidables**. Ce notebook demontre la capacite distinctive de cette théorie : **prouver** qu'un debordement est inevitable (ou impossible) sur le domaine machine tout entier - pas seulement le constater sur des valeurs fixes.
-> Port pyz3 du notebook C# [`15_BitVectors_Overflow.ipynb`](../Z3-Linq2Z3/15_BitVectors_Overflow.ipynb). EPIC #1206, Prong B. (Le bloc DSL `[BitVecWidth(n)]` du C#, spécifique a Z3.Linq, n'est pas porte ; l'API brute pyz3 `BitVec` fait le même travail.)
+> Port pyz3 du notebook C# [`15_BitVectors_Overflow.ipynb`](../Z3-Linq2Z3/15_BitVectors_Overflow.ipynb). (Le bloc DSL `[BitVecWidth(n)]` du C#, spécifique a Z3.Linq, n'est pas porte ; l'API brute pyz3 `BitVec` fait le même travail.)
 ## Source
 
-Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §5.1 Integer overflow (p. 125), Ch. 5 Verification — Bit-vectors, overflow, ULT/UGE. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,704dd0bd1df8953b,,,,,,,,,,,,,,,
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, §5.1 Integer overflow (p. 125), Ch. 5 Verification — Bit-vectors, overflow, ULT/UGE. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré complet de la série.",,,,,,,,a1732690137f5e4f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb,82cdf549,code,fr,c33dd8a0d2fa0ac6,"from z3 import *
 print(""Imports OK : z3-solver (theorie BitVec)"")
 ",,,,,,,,c33dd8a0d2fa0ac6,,,,,,,,,,,,,,,
@@ -7390,10 +7404,15 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb,c
 result = None  # TODO etudiant
 print(""Exercice 3 a completer : prouvez que 65536 * 65536 = 0 en BV32"")
 ",,,,,,,,f39e7ee3ca546f50,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb,57726c37,markdown,fr,186b24ea492c8234,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb,57726c37,markdown,fr,0aabc8ddc04164fc,"## Conclusion
 La théorie des bit-vectors de Z3 est l'outil canonique de la **verification formelle de code**. La ou `Int` (entiers non bornes) rend le debordement inexpressible, `BitVec` modelise l'arithmetique machine exacte (modulo 2^n) et permet de **prouver** des proprietes de surete ou d'inevitabilite sur tout le domaine des entrees.
 
-Cette serie Z3-Python (notebooks 01 a 14) couvre maintenant les grandes théories du solveur : entiers et optimisation (01-11), reels exacts (12), diagnostic par UNSAT cores (13), et ici l'**arithmetique machine bornee** (14). Chacune exerce une capacite distincte qu'aucune approche numérique classique ne peut reproduire : decision exacte, non pas approximation.",,,,,,,,186b24ea492c8234,,,,,,,,,,,,,,,
+Cette serie Z3-Python (notebooks 01 a 14) couvre maintenant les grandes théories du solveur : entiers et optimisation (01-11), reels exacts (12), diagnostic par UNSAT cores (13), et ici l'**arithmetique machine bornee** (14). Chacune exerce une capacite distincte qu'aucune approche numérique classique ne peut reproduire : decision exacte, non pas approximation.
+
+***
+
+> Carnet issu de l'EPIC #1206.
+",,,,,,,,0aabc8ddc04164fc,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-15-Nested-Arrays-2D-Python.ipynb,197090c5,markdown,fr,18255838deb7a710,"← [14 - Bit-vectors](Z3-14-BitVectors-Overflow-Python.ipynb) | [README Z3-Python](README.md) | [16 - Meal-Planner >>](Z3-16-Meal-Planner-Python.ipynb)
 
 # 15. Tableaux imbriqués et grilles 2D : carrés latins, Sudoku 4×4, carré magique
