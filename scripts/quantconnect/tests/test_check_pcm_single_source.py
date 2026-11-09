@@ -205,12 +205,26 @@ class MultiStrategyPCM(MultiStrategyPouchesPCM):
 SPEC_WITH_SUPER = """from AlgorithmImports import *
 
 
-class CappedPouchesPCM(MultiStrategyPouchesPCM):
+class MultiStrategyCappedPCM(MultiStrategyPouchesPCM):
     \"\"\"Specialisation legitime : delegue la reconstruction a super().\"\"\"
 
     def determine_target_percent(self, active_insights):
         targets = super().determine_target_percent(active_insights)
         return {k: min(v, 0.25) for k, v in targets.items()}
+"""
+
+# Contre-exemple de l'ajoint (#24627) : une classe DONT LE NOM SATISFAIT le
+# filtre MultiStrategy*PCM qui redefinit la methode canonique en deleguant a
+# `other`, pas a super(). Avant le correctif, le simple nom de la methode (sans
+# verifier le recepteur) la laissait passer comme specialisation legitime.
+SPEC_OTHER_RECEIVER = """from AlgorithmImports import *
+
+
+class MultiStrategyProbePCM(MultiStrategyPouchesPCM):
+    \"\"\"Delegation a `other`, pas a super() : ce n'est PAS le canonique.\"\"\"
+
+    def determine_target_percent(self, active_insights):
+        return other.determine_target_percent(active_insights)
 """
 
 
@@ -247,6 +261,30 @@ def test_specialisation_avec_super_n_est_pas_une_copie(tmp_path):
     report = analyse(root, manifest)
     assert report["verdict"] == "OK", report
     assert report["findings"] == []
+
+
+def test_other_receiver_n_est_pas_une_delegation_super(tmp_path):
+    """Contre-exemple de l'ajoint (#24627) : un appel
+    `other.determine_target_percent(...)` ne delegue PAS a super() — le simple
+    nom de la methode ne suffit pas a prouver la delegation. La classe porte un
+    nom DANS le filtre MultiStrategy*PCM, donc la discrimination est bien
+    exercee (l'ancien nom CappedPouchesPCM, hors filtre, ne la demontrait pas).
+    La garde la signale comme copie non declaree."""
+    root, manifest = _tree(tmp_path)
+    _write(
+        root,
+        f"{QC_ROOT}/projects/OtherReceiver/portfolio_construction.py",
+        SPEC_OTHER_RECEIVER,
+    )
+    report = analyse(root, manifest)
+    assert report["verdict"] == "FAIL", report
+    assert "UNDECLARED_COPY" in _codes(report)
+    details = [
+        f["detail"]
+        for f in report["findings"]
+        if f["code"] == "UNDECLARED_COPY"
+    ]
+    assert any("sans super()" in d for d in details), details
 
 
 def test_definition_sans_parentheses_est_signalee(tmp_path):

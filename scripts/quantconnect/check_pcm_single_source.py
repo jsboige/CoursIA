@@ -131,6 +131,13 @@ def _class_flags(node: ast.ClassDef) -> tuple[list[str], bool, bool]:
                     isinstance(sub, ast.Call)
                     and isinstance(sub.func, ast.Attribute)
                     and sub.func.attr == TARGET_METHOD
+                    # Le récepteur doit être un appel `super(...)` : un appel
+                    # `other.determine_target_percent(...)` ou
+                    # `self.determine_target_percent(...)` ne délègue PAS au
+                    # parent et ne compte pas comme une spécialisation.
+                    and isinstance(sub.func.value, ast.Call)
+                    and isinstance(sub.func.value.func, ast.Name)
+                    and sub.func.value.func.id == "super"
                 ):
                     calls_super = True
     return base_names, redefines, calls_super
