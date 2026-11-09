@@ -1,5 +1,5 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,src_hash_en,src_hash_es,src_hash_ar,src_hash_fa,src_hash_zh,src_hash_ru,src_hash_pt,translate_policy
-MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting-Python.ipynb,d8ec7793,markdown,fr,0be600718fa81947,"# Complexity-01 — Compter des pas
+MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting-Python.ipynb,d8ec7793,markdown,fr,411d1572ca8ad605,"# Complexity-01 — Compter des pas
 
 **Navigation** : [Index de la série](README.md) | [Complexity-02 — Vérifier ou trouver >>](Complexity-02-P-NP-Reduction-Python.ipynb)
 
@@ -21,7 +21,7 @@ Rien d'autre : ni notation $O$, ni machine de Turing, ni classe de complexité.
 4. reconnaître à la mesure trois croissances, $n \log n$, $n^2$ et $2^n$, grâce au **test du doublement** ;
 5. dire, pour chacune, quelle taille d'entrée reste traitable en une seconde, une minute, un jour.
 
-**Durée estimée** : 45 minutes.",,,,,,,,0be600718fa81947,,,,,,,,,,,,,,,
+**Durée estimée** : 45 minutes.",,,,,,,,411d1572ca8ad605,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting-Python.ipynb,9f41869b,code,fr,a6bb9323697af0da,"import math
 import time
 
@@ -238,10 +238,12 @@ for demi in (4, 8, 16, 32, 64):
     inc.run(mot)
     pal.run(mot, max_pas=500_000)
     print(f""{n:>4} | {inc.pas:>8} | {pal.pas:>8} | {pal.pas / inc.pas:>8.2f}x | {pal.pas / n ** 2:>9.3f}"")",,,,,,,,10b4f32fc5c3eb8d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting-Python.ipynb,27e009d3,markdown,fr,1dd3e2d6f27ad455,"**Lecture.** Sur les mêmes mots, les deux machines ne vivent pas dans le même monde :
+MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting-Python.ipynb,27e009d3,markdown,fr,b5bf58792eab7975,"**Lecture.** Sur les mêmes mots, les deux machines ne vivent pas dans le même monde :
 
-- la machine d'incrément fait $n + 2$ pas (colonne `pas inc`) : un aller, une retenue courte. Son
-  coût est **linéaire** ;
+- la machine d'incrément fait $n + 2$ pas sur les mots de la colonne `pas inc` : un aller, et une
+  retenue qui s'éteint tout de suite parce que ces mots finissent par 0. Ce n'est pas le pire cas —
+  le carnet l'a déjà mesuré : `increment('111')`, un mot de tous les 1, coûte 8 pas pour $n = 3$,
+  la retenue courant sur tout le mot. Son coût reste **linéaire** ;
 - la machine palindrome fait de l'ordre de $n^2$ pas : la dernière colonne, `pal / n^2`, décroît
   de moins en moins vite (l'écart d'une ligne à la suivante est à peu près divisé par deux) et
   converge vers une constante. Son coût est **quadratique** : chaque symbole rayé coûte un
@@ -249,7 +251,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting-Python.ipynb,27e009d3,ma
 
 Conséquence mesurée dans la colonne `pal / inc` : l'écart entre les deux machines **double** à
 chaque doublement de $n$. Ce n'est pas une question de constante ou de machine plus rapide : c'est
-la **forme** de la croissance qui diffère. C'est cette forme que la théorie de la complexité étudie.",,,,,,,,1dd3e2d6f27ad455,,,,,,,,,,,,,,,
+la **forme** de la croissance qui diffère. C'est cette forme que la théorie de la complexité étudie.",,,,,,,,b5bf58792eab7975,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting-Python.ipynb,314affd6,markdown,fr,3b9fae006e972037,"## 4. Trois croissances, un test : doubler $n$
 
 Revenons à Python, en comptant les pas nous-mêmes, sur trois algorithmes aux comportements très
@@ -518,15 +520,26 @@ else:
         etat, _ = parite.run(mot)
         verdict = ""accepte"" if etat == ""accepte"" else ""rejete""
         print(f""{mot!r:>8} : {verdict:<8} en {parite.pas} pas"")",,,,,,,,69f566a9d36ccd31,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting-Python.ipynb,56789a27,markdown,fr,05d676ed3733fa6c,"## Conclusion
+MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting-Python.ipynb,56789a27,markdown,fr,7bba4b85e07332a2,"## Conclusion
 
 | Idée | Ce que le notebook a mesuré |
 |---|---|
 | Le coût se compte en **pas**, pas en secondes | chronos variables, nombre de pas identique aux sept essais |
 | On étudie le coût en fonction de la **taille** $n$, dans le **pire cas** | recherche linéaire : $T(n) = n$ exactement |
-| Une machine de Turing rend le pas **exact** | incrément en $n + 2$ pas, palindrome en un nombre de pas de l'ordre de $n^2$ |
+| Une machine de Turing rend le pas **exact** | incrément en $n + k + 2$ pas, où $k$ est la longueur de la traîne de 1 finale ; palindrome en un nombre de pas de l'ordre de $n^2$ |
 | Le **test du doublement** reconnaît la croissance | ×2 et un peu plus ($n \log n$), ×4 ($n^2$), ×2 par élément ajouté ($2^n$) |
 | L'exponentielle est un **mur** | un jour au lieu d'une seconde : +16 éléments seulement pour $2^n$ |
+
+*Coût exact de l'incrément.* Un aller de $n + 1$ pas jusqu'au bout du mot, puis un pas par 1 de la
+traîne finale, puis un pour poser le chiffre : $n + k + 2$ pas, où $k$ est la longueur de cette
+traîne finale de 1. La colonne `pas inc` mesure des mots qui **finissent par 0** ($k = 0$), d'où
+$n + 2$ — 10, 18, 34, 66 et 130 pas pour $n$ = 8, 16, 32, 64 et 128. Ce n'est donc pas le fait
+d'être un **palindrome** qui donne $n + 2$ : `1001` et `11011` sont des palindromes, finissent par
+des 1, et coûtent donc plus que $n + 2$. À l'inverse `1011`, mesuré en cellule 9, n'est pas un
+palindrome et coûte 8 pas pour $n = 4$, soit exactement $n + k + 2$ avec $k = 2$. Le pire cas est
+le mot de tous les 1, où la traîne est le mot entier et le coût vaut $2n + 2$ : c'est ce que mesure
+`increment('111')`, 8 pas pour $n = 3$. Le coût reste **linéaire** dans tous les régimes — seule la
+constante du pire cas change.
 
 On sait désormais **compter** le coût d'un algorithme donné. Mais un même problème admet souvent
 plusieurs algorithmes : trier se fait en $n^2$ ou en $n \log n$. Le notebook suivant pose la
@@ -534,10 +547,10 @@ question qui structure toute la discipline : pour certains problèmes, **trouver
 semble exiger un coût exponentiel, alors que **vérifier** une solution proposée ne coûte presque
 rien. Cet écart est-il inévitable ?
 
-**Suite** : [Complexity-02 — Vérifier ou trouver >>](Complexity-02-P-NP-Reduction-Python.ipynb)",,,,,,,,05d676ed3733fa6c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-Python.ipynb,f42e96f1,markdown,fr,895b85035bb8fbd8,"# Complexity-02 — Vérifier ou trouver : P, NP et la réduction
+**Suite** : [Complexity-02 — Vérifier ou trouver >>](Complexity-02-P-NP-Reduction-Python.ipynb)",,,,,,,,7bba4b85e07332a2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-Python.ipynb,f42e96f1,markdown,fr,1fcfee0336ffe966,"# Complexity-02 — Vérifier ou trouver : P, NP et la réduction
 
-**Navigation** : [<< Complexity-01 — Compter des pas](Complexity-01-StepCounting-Python.ipynb) | [Index de la série](README.md) | [Complexity-03 — Plus de temps, plus de problèmes >>](Complexity-03-TimeHierarchy-Python.ipynb)
+**Navigation** : [<< Complexity-01 — Compter des pas](Complexity-01-StepCounting-Python.ipynb) | [Index de la série](README.md) | [Complexity-02b — Le seuil du 3-SAT, mesuré contre la densité >>](Complexity-02b-SAT-PhaseTransition-Python.ipynb) | [Complexity-03 — Plus de temps, plus de problèmes >>](Complexity-03-TimeHierarchy-Python.ipynb) | [02c — approfondissement : seuil sans mur, GF(2)](Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb)
 
 > **Public : Découverte.** Deuxième notebook de la série `Complexity/`. Il prolonge directement
 > le premier et ne suppose rien d'autre.
@@ -558,7 +571,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-Python.ipynb,f42e96f1,
    la solution, la vérifier ;
 5. expliquer pourquoi l'exponentielle reste un mur même pour une machine mille fois plus rapide.
 
-**Durée estimée** : 60 minutes.",,,,,,,,895b85035bb8fbd8,,,,,,,,,,,,,,,
+**Durée estimée** : 60 minutes.",,,,,,,,1fcfee0336ffe966,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-Python.ipynb,97b0df2d,code,fr,3df27304aa5df72c,"import time
 
 import numpy as np",,,,,,,,3df27304aa5df72c,,,,,,,,,,,,,,,
@@ -1102,7 +1115,7 @@ else:
     accepte, _ = verifier_subset(poids, cible, indices)
     print(f""indices {indices} -> poids {[poids[i] for i in indices]}, certificat accepte = {accepte}, ""
           f""{appels_oracle[0]} appels a l'oracle"")",,,,,,,,625da2f431101213,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-Python.ipynb,9d090041,markdown,fr,0bf93941cb956f66,"## Conclusion
+MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-Python.ipynb,9d090041,markdown,fr,3ad33d9bd506a1fa,"## Conclusion
 
 | Problème | Vérifier un certificat | Trouver une solution (meilleur algorithme connu) |
 |---|---|---|
@@ -1123,8 +1136,8 @@ Le notebook suivant explique l'idée de hiérarchie temporelle : donner plus de 
 de résoudre de nouveaux problèmes, mais il faut le **prouver**, pas seulement comparer deux
 programmes. L'approfondissement 03b conserve le théorème de Hartmanis et Stearns (1965).
 
-**Suite** : [Complexity-03 — Plus de temps, plus de problèmes >>](Complexity-03-TimeHierarchy-Python.ipynb)",,,,,,,,0bf93941cb956f66,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,intro-hierarchy,markdown,fr,bfd2d7bfa2d356cc,"# Complexity-03 — Plus de temps, plus de problèmes
+**Suite** : [Complexity-03 — Plus de temps, plus de problèmes >>](Complexity-03-TimeHierarchy-Python.ipynb)",,,,,,,,3ad33d9bd506a1fa,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,intro-hierarchy,markdown,fr,eba25d7a81efb0c1,"# Complexity-03 — Plus de temps, plus de problèmes
 
 **Navigation** : [Index](README.md) | [02 — Vérifier ou trouver](Complexity-02-P-NP-Reduction-Python.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) | [03c — Zoo navigable](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) | [English →](Complexity-03-TimeHierarchy-Python_en.ipynb)
 
@@ -1150,7 +1163,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,intro-hier
 
 **Objectives**: distinguish inclusion from strict separation of classes, understand a finite diagonal and explain why a table is not a proof of hierarchy. **Estimated duration**: 35 minutes.
 
-**The theorem in one sentence.** The time hierarchy theorem (Hartmanis–Stearns, 1965) states that, for reasonable budgets, having strictly more time allows one to decide strictly more problems: some tasks genuinely require more steps, and no fast algorithm can simulate them. This notebook illustrates the **mechanisms** of that proof — nested budgets, diagonalization, bounded simulation — on finite tables; it does not claim to prove it, as every reading reminds.",,,,,,,bfd2d7bfa2d356cc,3b2c4fdba7245b59,,,,,,,,,,,,,,
+**The theorem in one sentence.** The time hierarchy theorem (Hartmanis–Stearns, 1965) states that, for reasonable budgets, having strictly more time allows one to decide strictly more problems: some tasks genuinely require more steps, and no fast algorithm can simulate them. This notebook illustrates the **mechanisms** of that proof — nested budgets, diagonalization, bounded simulation — on finite tables; it does not claim to prove it, as every reading reminds.",,,,,,,eba25d7a81efb0c1,3b2c4fdba7245b59,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,budgets-intro,markdown,fr,1fc2c979f10b72fe,"## 1. Des budgets imbriqués
 
 Si un programme répond en n pas, il répond aussi dans un budget de n² pas. Cela montre une **inclusion** des budgets, pas une séparation des classes de problèmes : deux programmes différents sur un même problème ne prouvent pas qu'aucun programme rapide ne peut le résoudre. Comparons les budgets sur cinq tailles.
@@ -1214,7 +1227,7 @@ for i, (verdict, pas) in enumerate(candidates):
     diagonal = not observe if observe is not None else True
     print(f""{i:>2} | {pas:>3} | {budget(i):>6} | {str(observe):>7} | {str(diagonal):>5}"")
 ",,,,,,,,415999deaee15d43,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,bounded-reading,markdown,fr,48761f8f9eb13f84,"**Lecture du résultat.** `None` signifie « non observé dans le budget », jamais « faux » : aux lignes 2 et 3, les coûts déclarés (12 et 40) dépassent le budget (8 et 10), la simulation s'interrompt et la réponse n'est pas observée. Une machine dépassant ce budget sur une entrée ne satisfait pas la borne uniforme sur **toutes** les entrées, mais le tableau ne caractérise aucune classe entière.
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,bounded-reading,markdown,fr,1d62c422ec51082f,"**Lecture du résultat.** `None` signifie « non observé dans le budget », jamais « faux » : aux lignes 2 et 3, les coûts déclarés (12 et 40) dépassent le budget (8 et 10), la simulation s'interrompt et la réponse n'est pas observée. Une machine dépassant ce budget sur une entrée ne satisfait pas la borne uniforme sur **toutes** les entrées, mais le tableau ne caractérise aucune classe entière.
 
 ## 4. Le théorème, sans raccourci expérimental
 
@@ -1226,7 +1239,7 @@ Concrètement, la séparation s'obtient en construisant un problème D qui simul
 
 The time hierarchy theorem establishes, under technical assumptions, that there exist decidable problems solvable with a sufficiently larger budget but impossible with the smaller one. One must enumerate all admissible machines, build a clock and pay the cost of universal simulation. Finite tables accomplish none of these proofs. [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) details the historical model. This result does not settle P versus NP.
 
-Concretely, the separation is obtained by building a problem D that simulates each candidate machine M_i on its input i, answers the opposite, and does so within a budget only slightly larger than M_i's — hence a strictly larger class as the budget grows. The price is known: enumerate all machines, equip them with a universal clock, and simulate each one while paying for both the machine and its simulator.",,,,,,,48761f8f9eb13f84,4b41195934995020,,,,,,,,,,,,,,
+Concretely, the separation is obtained by building a problem D that simulates each candidate machine M_i on its input i, answers the opposite, and does so within a budget only slightly larger than M_i's — hence a strictly larger class as the budget grows. The price is known: enumerate all machines, equip them with a universal clock, and simulate each one while paying for both the machine and its simulator.",,,,,,,1d62c422ec51082f,4b41195934995020,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,exercise-one,markdown,fr,4b87cb2d8fd2251a,"## Exercices
 
 Les trois exercices prolongent les démonstrations sur les mêmes objets finis. Ils ne demandent pas de prouver la hiérarchie — hors de portée d'une table — mais de **sentir** ce que chaque table montre et ce qu'elle laisse ouvert, en manipulant budgets, diagonale et borne de simulation.
@@ -1283,7 +1296,7 @@ Find the rows whose declared cost exceeds `budget(i)`. Propose a budget that cov
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,exercise-three-code,code,fr,fd91552f13ecaf89,"budget_etendu = None  # TODO etudiant : couvrir les quatre couts
 print('Exercice a completer : budget etendu')
 ",,,,,,,,fd91552f13ecaf89,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,conclusion,markdown,fr,c6ae4da46ba47ced,"## Conclusion
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,conclusion,markdown,fr,6a7cc5840f33b8f3,"## Conclusion
 
 | Geste | Vérifié ici | Non démontré ici |
 |---|---|---|
@@ -1307,8 +1320,8 @@ Le théorème affirme l'existence de problèmes demandant réellement plus de te
 
 The theorem asserts the existence of problems genuinely requiring more time, not merely of slow programs. The deep dive [03b](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) works through the historical result.
 
-**Reference**: Hartmanis, J. and Stearns, R. E. (1965), *On the computational complexity of algorithms*, Transactions of the American Mathematical Society 117, 285–306.",,,,,,,c6ae4da46ba47ced,45ab3183ea54f002,,,,,,,c6ae4da46ba47ced,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c00,markdown,fr,b0866c3fe3da3966,"# Complexity-03b — Le théorème de hiérarchie temporelle de Hartmanis et Stearns (1965)
+**Reference**: Hartmanis, J. and Stearns, R. E. (1965), *On the computational complexity of algorithms*, Transactions of the American Mathematical Society 117, 285–306.",,,,,,,6a7cc5840f33b8f3,45ab3183ea54f002,,,,,,,c6ae4da46ba47ced,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c00,markdown,fr,d82f87a7d8bc1809,"# Complexity-03b — Le théorème de hiérarchie temporelle de Hartmanis et Stearns (1965)
 
 **Approfondissement de [03 — Plus de temps, plus de problèmes](Complexity-03-TimeHierarchy-Python.ipynb)** | [Index de la série](README.md)
 
@@ -1330,12 +1343,12 @@ MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Pytho
 > mètres) manquait au corpus, alors que les séries voisines l'effleurent :
 > [SL-10 — Apprentissage actif d'automates](../SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb)
 > (automates, sans le théorème qui en fonde la hiérarchie),
-> [App-13b — TSP métaheuristiques](../Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb)
+> [App-13b — TSP métaheuristiques](../Search/Part3-Cas-pratiques/App-13b-TSP-Metaheuristics-CSharp.ipynb)
 > (Stearns a produit la première analyse de pire cas des heuristiques du voyageur de commerce),
 > et [SocialChoice-01 — Arrow](../GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb)
 > (le **tout premier papier** de Stearns, étudiant, portait sur le paradoxe d'Arrow — 1959).
-> Précédent d'hommage par l'œuvre : [GameTheory-16f — Munkres](../GameTheory/GameTheory-16f-Munkres-Assignment-Python.ipynb).",,,,,,,,b0866c3fe3da3966,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c01,markdown,fr,64cbe3645f15929c,"## 0. Pourquoi ce notebook
+> Précédent d'hommage par l'œuvre : [Coalitions-04 — Munkres](../GameTheory/Coalitions/Coalitions-04-Munkres-Affectation-Python.ipynb).",,,,,,,,d82f87a7d8bc1809,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c01,markdown,fr,bfe97f57d04df9a4,"## 0. Pourquoi ce notebook
 
 Le geste de 1965 tient en une phrase : **le temps est une ressource mesurable, et le mesurer
 crée une hiérarchie stricte de problèmes**. Avant Hartmanis et Stearns, on savait qu'un
@@ -1362,7 +1375,7 @@ pas ; les deux suivants sont propres à ce notebook.
 
 La section 5 relie l'homme à l'œuvre inattendue (Arrow, jeux répétés), la section 6 mesure
 honnêtement ce qui existe et manque dans Mathlib pour formaliser ce théorème, la section 7
-conclut.",,,,,,,,64cbe3645f15929c,,,,,,,,,,,,,,,
+conclut.",,,,,,,,bfe97f57d04df9a4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c02,code,fr,542766044cb0f536,"import math
 import time
 import numpy as np
@@ -1911,13 +1924,13 @@ MIT Press — « with the collaboration of Richard E. Stearns ».
 — Gasarch, W. (2026). « Richard Stearns 1936–2026 ». *Computational Complexity blog*.",,,,,,,,d40466c62a2a9b21,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,9edea6ee,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,1bd8357e,markdown,fr,904047134179373c,"# Complexity-03c — Naviguer le Zoo exécutable
+MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,1bd8357e,markdown,fr,0c515a28030ea174,"# Complexity-03c — Naviguer le Zoo exécutable
 
-**Navigation** : [Index](README.md) | [03 — Plus de temps, plus de problèmes](Complexity-03-TimeHierarchy-Python.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) | [04 — Décider sans connaître la suite →](Complexity-04-OnlineAlgorithms-Python.ipynb)
+**Navigation** : [Index](README.md) | [03 — Plus de temps, plus de problèmes](Complexity-03-TimeHierarchy-Python.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) | [03d — la réfutation annoncée de l'ETH →](Complexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb) | [03e — barrières d'exposants word RAM](Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb) | [04 — Décider sans connaître la suite](Complexity-04-OnlineAlgorithms-Python.ipynb)
 
 Inclusions vérifiées sur des instances réelles, oracles jouets séparant deux mondes, carte des non-séparations.
-Le [Complexity Zoo](https://complexityzoo.net) — registre fondé par Scott Aaronson — comme terrain de navigation.",,,,,,,,904047134179373c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,ec7e7e23,markdown,fr,44c2f6e551bf43f2,"## 0. Pourquoi ce notebook
+Le [Complexity Zoo](https://complexityzoo.net) — registre fondé par Scott Aaronson — comme terrain de navigation.",,,,,,,,0c515a28030ea174,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,ec7e7e23,markdown,fr,41cc5be2a181d650,"## 0. Pourquoi ce notebook
 
 Approfondissement du palier [03 — Hiérarchie en temps](Complexity-03-TimeHierarchy-Python.ipynb),
 compagnon de [03b — Hartmanis & Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) : après le
@@ -1928,7 +1941,7 @@ La série se lit par ailleurs
 [04 — Décider sans connaître la suite](Complexity-04-OnlineAlgorithms-Python.ipynb),
 [04b — Conjectures online](Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb),
 [05b — Aaronson & Arkhipov](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb) et
-[06 — Déquantification](Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb).
+[06 — Déquantification](Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb).
 
 Le Zoo recense plus de 500 classes de complexité. Une table d'inclusions recopiée serait une étagère ;
 ce notebook **navigue** le Zoo : chaque arête d'inclusion est **tournee sur des instances** (solveurs reels,
@@ -1937,7 +1950,7 @@ temps et memoire mesures), la question des séparations est rendue **concrete pa
 la barriere qui les protege : la relativisation.
 
 Famille Aaronson (Epic #16781, veine 2) : le Zoo et la Zoo Map sont l'objet pédagogique nommé par le brief —
-ce carnet en est l'organe d'entrée.",,,,,,,,44c2f6e551bf43f2,,,,,,,,,,,,,,,
+ce carnet en est l'organe d'entrée.",,,,,,,,41cc5be2a181d650,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,f3342d8e,code,fr,2b3391e9648eef36,"import json
 import random as GENERATEUR
 import time
@@ -1956,17 +1969,22 @@ def chrono(fonction, *args, repetitions=3):
     return resultat, min(durees)
 
 print(""Chronometre et generateur severes en place."")",,,,,,,,2b3391e9648eef36,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,fe0872fb,markdown,fr,b5bda412a96d2faa,"## 1. La chaîne des inclusions, tournée sur instances
+MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,fe0872fb,markdown,fr,6cfba2f8c37cb9f8,"## 1. La chaîne des inclusions, tournée sur instances
 
 La ligne du Zoo la plus citée — $L \subseteq NL \subseteq P \subseteq NP \subseteq PSPACE$ — est
 d'ordinaire une affirmation. Ici, **chaque arête porte un témoin exécutable** :
 
-- $L \subseteq NL$ : l'atteignabilité $s \leadsto t$ décidée par un **vérificateur certicat lu une fois**,
+- $L \subseteq NL$ : l'atteignabilité $s \leadsto t$ décidée par un **vérificateur certificat lu une fois**,
   dont la mémoire de travail hors certificat tient en deux compteurs $O(\log n)$ — contre le DFS déterministe
   dont la pile grandit avec le graphe ;
 - $NL \subseteq P$ : le même problème décidé par parcours déterministe, temps mesuré ;
-- $P \subseteq NP$ : 2-SAT (implications + composantes fortement connexes, temps linéaire) contre 3-SAT
-  (DPLL, exponentiel) sur des instances appariées — et le certificat du 3-SAT **vérifié** en temps polynomial.",,,,,,,,b5bda412a96d2faa,,,,,,,,,,,,,,,
+- $P \subseteq NP$ : le certificat du 3-SAT **vérifié** en temps polynomial — vérifier n'est pas trouver ;
+  la comparaison qui suit oppose 2-SAT (implications + composantes fortement connexes, temps linéaire)
+  à 3-SAT (DPLL, exponentiel) — sur **deux familles distinctes** : 2-SAT à $n = 50 \dots 800$ avec $3n$ clauses,
+  3-SAT à $n = 10 \dots 30$ avec $4{,}6n$ clauses.
+
+Chaque inclusion est tournée sur instance : la même question d'atteignabilité est décidée deux fois, par des machines dont seule la mémoire diffère — le contraste mesuré EST l'inclusion.
+",,,,,,,,6cfba2f8c37cb9f8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,1d9741cb,code,fr,63123320f3920bd9,"# --- 1a. Atteignabilite : le DFS deterministe (P) et sa pile ---
 def dfs_atteignable(adj, s, t):
     vu = {s}
@@ -1997,11 +2015,18 @@ for n in (40, 100, 250, 600):
     (ok, pile_max), duree = chrono(dfs_atteignable, adj, 0, n - 1)
     blocs_dfs.append((n, ok, pile_max, duree))
     print(f""n={n:4d}  atteint={ok}  pile max (espace explore)={pile_max:4d}  temps={duree*1e3:8.3f} ms"")",,,,,,,,63123320f3920bd9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,b176db63,markdown,fr,8591c5e4c6cf40cd,"### Lecture du résultat — le DFS paie son espace
+MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,b176db63,markdown,fr,701103f751303b98,"### Lecture du résultat — le DFS paie son espace
 
 La pile du DFS atteint une fraction de $n$ : l'algorithme déterministe naturel consomme un espace **lineaire**.
 C'est le témoin du contraste qui suit : la même question d'atteignabilité est le problème **NL-complet** de
-référence — une machine nondéterministe n'a besoin, elle, que de **deviner** le chemin sommet par sommet.",,,,,,,,8591c5e4c6cf40cd,,,,,,,,,,,,,,,
+référence — une machine nondéterministe n'a besoin, elle, que de **deviner** le chemin sommet par sommet.
+
+La sortie donne la pile mesurée sur la famille croissante — 16, 35, 103 puis 190 sommets empilés, sur la
+famille à **4 arcs par sommet** — pendant que le vérificateur à deux compteurs, lui, ne garde que son
+certificat : ce coût est celui de **parcourir** l'espace au lieu de le **certifier**, et la paire de traces
+est la première inclusion rendue visible — toute la différence entre résoudre et vérifier qui structure
+le reste du Zoo.
+",,,,,,,,701103f751303b98,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,0f58fc54,code,fr,c0eabdaa88188f6f,"# --- 1b. Le verificateur NL : certificat lu UNE fois, deux compteurs en memoire ---
 def verificateur_nl(adj, s, t, certificat):
     # Memoire de travail hors certificat : u (sommet courant) et pas (compteur).
@@ -2059,15 +2084,17 @@ print(""Accord verificateur/DFS sur toute la famille :"", accord_total)
 faux = temoin[1:-1]
 ok_faux, _ = verificateur_nl(adj, 0, n - 1, faux)
 print(""Faux temoin (arrivee amputee) refuse par le verificateur :"", ok_faux is False)",,,,,,,,c0eabdaa88188f6f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,6590ef6a,markdown,fr,5223f690018dd843,"### Lecture du résultat — deux mots contre une pile
+MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,6590ef6a,markdown,fr,70cbe24f8d3c692a,"### Lecture du résultat — deux mots contre une pile
 
 Le vérificateur accepte les paires atteignables (accord sur les quatre tailles) et **refuse le témoin amputé**
 de son arrivée. Sa mémoire de travail — deux mots, indépendants de $n$ — opposée à la pile du DFS, qui croît
-avec $n$ (16, 35, 103 puis 190 sommets empilés sur la famille mesurée), **est** l'arête $L \subseteq NL$
+avec $n$ (16, 35, 103 puis 190 sommets empilés sur la famille à **4 arcs par sommet** mesurée en 1a ; le
+tableau du vérificateur porte une autre famille, de **densité nominale 2,5** — le générateur arrondit par
+`int()`, donc **deux arcs par sommet** en pratique), **est** l'arête $L \subseteq NL$
 rendue visible : même question, mais une mémoire que le DFS paie linéairement là où le vérificateur la paie
 en deux compteurs — au prix d'un certificat deviné (le nondéterminisme est simulé ici par le prouveur BFS
-hors machine ; chaque tentative de la machine ne consomme toujours que deux compteurs).",,,,,,,,5223f690018dd843,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,6ca9a8be,code,fr,4d4b1ad1584d6036,"# --- 1c. P contre NP : 2-SAT lineaire, 3-SAT exponentiel, instances appariees ---
+hors machine ; chaque tentative de la machine ne consomme toujours que deux compteurs).",,,,,,,,70cbe24f8d3c692a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,6ca9a8be,code,fr,14f91c6d48eb31f6,"# --- 1c. P contre NP : 2-SAT lineaire, 3-SAT exponentiel, deux familles distinctes ---
 import sys
 
 sys.setrecursionlimit(10000)  # Kosaraju recursif jusqu'a 2n = 1600 sommets (n = 800)
@@ -2195,7 +2222,7 @@ def instance_satisfiable(n, m, essais_max=12):
             return cl
     return cl
 
-# 2-SAT : le probleme de P -- quatre fois plus de variables, ~quatre fois le temps
+# 2-SAT : le probleme de P -- de 50 a 800 variables (seize fois plus), le temps suit de pres (lineaire en n)
 print(""2-SAT (Kosaraju) -- moyenne sur 5 instances :"")
 for n in (50, 200, 800):
     cumul = 0.0
@@ -2235,19 +2262,21 @@ for _ in range(20):
     (sat3, sol3, _), _ = chrono(trois_sat_dpll, clauses3, 12)
     if sat3 and sol3 is not None and verifier_3sat(clauses3, sol3):
         certificats += 1
-print(f""Certificats 3-SAT verifies en temps polynomial par verifier_3sat : {certificats} / 20"")",,,,,,,,4d4b1ad1584d6036,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,ffe8d072,markdown,fr,a7ba367c1f1b3314,"### Lecture du résultat — la même question existentielle, deux pentes
+print(f""Certificats 3-SAT verifies en temps polynomial par verifier_3sat : {certificats} / 20"")",,,,,,,,14f91c6d48eb31f6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,ffe8d072,markdown,fr,ffbbadfda05c6138,"### Lecture du résultat — la même question existentielle, deux pentes
 
 2-SAT reste sous quelques millisecondes même à $n = 800$ : composantes fortement connexes en temps linéaire —
-un problème de $P$, quatre fois plus de variables ≈ quatre fois le temps. 3-SAT, sur des instances
-**plus de vingt fois plus petites** et tirées à la densité $4{,}6n$ — juste au-dessus du seuil de
-satisfiabilité $4{,}267n$, là où la recherche est la plus dure —
-paie déjà des millisecondes à $n = 30$ : chaque variable ajoutée **multiplie** le coût (facteur de temps
-mesuré ci-dessus) au lieu de l'ajouter — et le coût par noeud grossit encore, car le nombre de clauses suit
-$n$. La pente est modeste à l'échelle jouet, mais elle compose : l'exercice 3 l'extrapole et franchit l'heure
+un problème de $P$ : de $n = 50$ à $n = 800$ soit **seize fois** plus de variables, et le temps passe de
+quelques dixièmes de milliseconde à quelques millisecondes : il suit de près $n$, comme le veut le temps
+linéaire. 3-SAT, sur des instances **bien plus petites** ($n = 10 \dots 30$ contre $50 \dots 800$) et tirées à la
+densité $4{,}6n$ — juste au-dessus du seuil de satisfiabilité $4{,}267n$, là où la recherche est la plus dure — paie
+déjà des millisecondes à $n = 30$ : chaque variable ajoutée **multiplie** le coût (facteur de temps mesuré
+ci-dessus, de l'ordre de $1{,}1$ à $1{,}2$ par variable) au lieu de l'ajouter — et le coût par noeud grossit encore,
+car le nombre de clauses suit $n$. La pente est modeste à l'échelle jouet, mais elle compose : l'exercice 3
+l'extrapole et franchit l'heure
 de calcul pendant que 2-SAT, lui, aura juste suivi $n$. L'arête $P \subseteq NP$ a son témoin dans l'autre
-sens : `verifier_3sat` contrôle chaque certificat en un parcours polynomial, quand même le trouver résiste.",,,,,,,,a7ba367c1f1b3314,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,82ecc16d,markdown,fr,0bb68d5bae9ef848,"## 2. Deux mondes d'oracles — Baker, Gill & Solovay exécutés
+sens : `verifier_3sat` contrôle chaque certificat en un parcours polynomial, quand même le trouver résiste.",,,,,,,,ffbbadfda05c6138,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,82ecc16d,markdown,fr,1112d29bbbe853c5,"## 2. Deux mondes d'oracles — Baker, Gill & Solovay exécutés
 
 Le Zoo dit ce qui est **prouvé** (inclusions) et ce qui est **ouvert** ($P$ vs $NP$ en tête). La question
 naturelle : pourquoi pas une diagonalisation, comme pour la hiérarchie en temps du [03](Complexity-03-TimeHierarchy-Python.ipynb) ?
@@ -2257,7 +2286,7 @@ et un oracle $B$ tel que $P^B = NP^B$. Deux mondes cohérents — donc aucune te
 
 Échelle jouet assumée : chaque machine $P$ simulée émet au plus $n$ requêtes d'oracle sur une entrée de
 taille $n$ (stand-in borné du polynôme), la machine $NP$ a droit à l'énumération exhaustive de $2^n$ témoins.
-La structure de la preuve — stades, longueurs fraîches, basculement unique — est celle du texte original.",,,,,,,,0bb68d5bae9ef848,,,,,,,,,,,,,,,
+La structure de la preuve — stades, longueurs fraîches, basculement unique — est celle du texte original.",,,,,,,,1112d29bbbe853c5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,70cf22e7,code,fr,c36090e8835dc5bd,"# --- 2a. Monde A : oracle diagonal ou P^O != NP^O ---
 def machine_P(oracle, x, defaut=0, budget_marges=0):
     # Machine deterministe : parcourt les temoins y de |y| = |x| dans l'ordre lexicographique
@@ -2320,12 +2349,15 @@ accord_np = all(langage_np(ORACLE_A, format(i, f""0{6 + 2*i}b"")) == reel
                 for (i, _, _, reel) in STADES)
 print(""Toutes les machines P vaincues :"", separation)
 print(""Le temoin exhaustif (cote NP) confirme L_O sur chaque stade :"", accord_np)",,,,,,,,c36090e8835dc5bd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,afc9a424,markdown,fr,342e913c68dd2626,"### Lecture du résultat — pourquoi la machine perd à chaque stade
+MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,afc9a424,markdown,fr,64ef18c66ccb0984,"### Lecture du résultat — pourquoi la machine perd à chaque stade
 
 Chaque machine $M_i$ ne voit que $n_i$ des $2^{n_i}$ paires $(x_i, y)$ : le basculement d'**un seul** témoin
 lui échappe forcément. C'est la mécanique du texte original — stades successifs, longueurs fraîches, un
 basculement par machine — rendue exécutable : dans ce monde, $P^O \ne NP^O$, **prouvé par construction**.
-L'échelle est jouet, la structure est celle de 1975.",,,,,,,,342e913c68dd2626,,,,,,,,,,,,,,,
+L'échelle est jouet, la structure est celle de 1975.
+
+La construction appelle sa symétrie : le monde B qui suit applique le même geste d'oracle dans l'autre sens — un oracle assez complet pour qu'une requête suffise — et obtient l'égalité. Deux mondes, deux réponses, mêmes axiomes : c'est cette coexistence qui arme la barrière de la section suivante.
+",,,,,,,,64ef18c66ccb0984,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,c42dcbb1,code,fr,85a1fa129c55ab28,"# --- 2b. Monde B : oracle complet ou P^B = NP^B ---
 def oracle_qbf(h, x):
     # L'oracle (stand-in PSPACE) evalue la formule quantifiee « existe y, h(x, y) »
@@ -2368,12 +2400,15 @@ le décide en une requête. Les deux mondes sont cohérents avec les mêmes axio
 se contente de simuler des machines relativisées** — la diagonalisation en premier — ne peut donc trancher
 $P$ vs $NP$. C'est la raison pour laquelle la carte du Zoo a un centre ouvert, et pourquoi il a fallu des
 techniques non relativisantes (arithmétisation, IP = PSPACE) pour les séparations qui ont été prouvées.",,,,,,,,482478d7f07c3655,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,5d8c6cd4,markdown,fr,d91e109a81f0180a,"## 3. La carte du Zoo — ce qui est mesuré, ce qui est cité, ce qui est ouvert
+MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,5d8c6cd4,markdown,fr,8f0e5440e06cd1e0,"## 3. La carte du Zoo — ce qui est mesuré, ce qui est cité, ce qui est ouvert
 
 Les trois niveaux épistémiques de la série ([04b](Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb))
 appliqués à la carte : **Mesuré** (témoin exécuté dans ce carnet ou dans un sibling), **Cité** (théorème
-établi, non rejoué ici), **Ouvert** (non séparé — et la barrière de relativisation dit pourquoi les oracles
-n'y suffisent pas).",,,,,,,,d91e109a81f0180a,,,,,,,,,,,,,,,
+établi, non rejoué ici), **Ouvert** (non séparé — et chaque arête ouverte a sa raison propre : la barrière de
+relativisation, l'absence de certificateur général, ou une technique non relativisante).
+
+La table qui suit assemble le relevé depuis les témoins des sections 1 et 2 : chaque arête de la chaîne reçoit son statut et son témoin — exécuté dans ce carnet, établi ailleurs, ou ouvert avec la barrière qui l'explique.
+",,,,,,,,8f0e5440e06cd1e0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,48410d1b,code,fr,a8bc8d1b8884de73,"# --- 3. La carte assemblee depuis les temoins du carnet et de la serie ---
 carte = [
     # (arete, statut, temoin)
@@ -2392,20 +2427,31 @@ for arete, statut, temoin in carte:
     print(f""{arete:<16} {statut:<8} {temoin}"")
 completes = sum(1 for c in carte if c[1] == ""Mesure"")
 print(f""\nArêtes à témoin exécutable dans ce carnet : {completes} / {len(carte)}"")",,,,,,,,a8bc8d1b8884de73,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,0fccdcad,markdown,fr,176bc93e6d420fbd,"```mermaid
+MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,0fccdcad,markdown,fr,7c1faad8c04975d1,"### Lecture du résultat — trois arêtes exécutables sur huit
+
+```mermaid
 flowchart LR
-    L[L] --> NL[NL] --> P[P] --> NP[NP] --> PS[PSPACE] --> EX[EXPTIME]
+    L[L] --> NL[NL] --> P[P] --> NP[NP] --> PS[PSPACE]
+    P --> EX[EXPTIME]
     P -.open.- NP
     NP -.open.- coNP[coNP]
+    NP -.open.- PS
 ```
 
 En trait plein : inclusions établies (celles de la section 1 portent leur témoin exécutable ;
-P ⊊ EXPTIME est la stricte de la hiérarchie en temps, [03](Complexity-03-TimeHierarchy-Python.ipynb)).
-En pointillés : les arêtes ouvertes — chacune résisterait à toute preuve relativisante,
-comme la section 2 le rend visible.",,,,,,,,176bc93e6d420fbd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,72da4c6a,markdown,fr,7d563ed05e6c6f72,"## 4. Encart — le gap Mathlib du Zoo
+l'arête $P \to EXPTIME$ est la stricte $P \subsetneq EXPTIME$ de la hiérarchie en temps,
+[03](Complexity-03-TimeHierarchy-Python.ipynb)).
+En pointillés : les arêtes ouvertes — **trois**, et chacune a sa raison propre : la diagonalisation
+ne tranche pas $P$ vs $NP$ (section 2), un certificateur général pour la non-satisfiabilité
+manquerait pour $NP$ vs $coNP$, et l'arithmétisation — non relativisante — n'éclaire pas
+$NP$ vs $PSPACE$.
 
-Le même geste que [03b](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb), [05b](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb) et [06](Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb) :
+La carte assemblée sépare ce que le carnet **mesure** (L⊆NL, NL⊆P et P⊆NP : les trois arêtes de la section 1, chacune avec son témoin exécuté), ce qu'il **cite** (NP⊆PSPACE, P≠EXPTIME — théorèmes établis, non rejoués ici) et ce qui reste **ouvert** (P vs NP, NP vs coNP, NP vs PSPACE — la section 2 n'a montré que pour la première
+pourquoi les oracles n'y suffisent pas ; les deux autres ont leur raison propre). Le bilan de la dernière ligne, 3/8 arêtes à témoin exécutable, est la signature du carnet : la hiérarchie du Zoo n'est pas une tour de certitudes, c'est un relevé différencié où chaque arête porte son statut épistémique — et c'est ce statut, pas la vérité, que l'exécution mesure.
+",,,,,,,,7c1faad8c04975d1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,72da4c6a,markdown,fr,2502019dfb88e73b,"## 4. Encart — le gap Mathlib du Zoo
+
+Le même geste que [03b](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb), [05b](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb) et [06](Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb) :
 confronter la formalisation du carnet à l'état de [Mathlib](https://github.com/leanprover-community/mathlib4).
 
 - **Ce qui existe** : une couche `Computability/` réelle — machines de Turing (`TuringMachine`),
@@ -2416,15 +2462,18 @@ confronter la formalisation du carnet à l'état de [Mathlib](https://github.com
   Le Zoo est absent : Mathlib formalise la calculabilité, pas (encore) la complexité.
 - **Grade** : les arêtes de la section 1 sont **exécutables** (Python mesuré), pas prouvées ;
   leur formalisation est un programme de recherche ouvert, pas un gap d'encodage. Le jour où Aaronson
-  entre en Lean dans ce dépôt, ce sera par la veine 5 de l'Epic (#16781) — un lake IIT/ICT dédié.",,,,,,,,7d563ed05e6c6f72,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,6294ce1c,markdown,fr,626977bc279a082c,"## 5. Exercices
+  entre en Lean dans ce dépôt, ce sera par la veine 5 de l'Epic (#16781) — un lake IIT/ICT dédié.",,,,,,,,2502019dfb88e73b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,6294ce1c,markdown,fr,6390011c185eecb8,"## 5. Exercices
 
 ### Exercice 1 — 2-SAT côté NL
 
 L'atteignabilité est NL-complète, et 2-SAT se réduit à l'atteignabilité dans le graphe d'implications.
-Écrire le vérificateur certicat-lu-une-fois qui décide 2-SAT : le certificat est la suite des sommets
+Écrire le vérificateur certificat-lu-une-fois qui décide 2-SAT : le certificat est la suite des sommets
 d'un chemin dans le graphe d'implications witnessant (ou réfutant) la satisfiabilité, la mémoire de
-travail reste bornée en $O(\log n)$ mots.",,,,,,,,626977bc279a082c,,,,,,,,,,,,,,,
+travail reste bornée en $O(\log n)$ mots.
+
+Les trois exercices reprennent un fil chacun : le vérificateur NL (§1a-1b), l'oracle diagonal (§2a), la pente DPLL (§1c) — le carnet a exécuté les cas témoins, l'exercice demande d'étendre la même mécanique d'un cran.
+",,,,,,,,6390011c185eecb8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,0710e3ca,code,fr,a1e83cc23e084a82,"# Exercice 1 : a completer
 def verificateur_2sat_nl(nb_var, clauses, certificat):
     # TODO etudiant : decider 2-SAT en lisant le certificat une seule fois,
@@ -2455,15 +2504,18 @@ MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipyn
 temps_projete_40 = None    # TODO etudiant : projection du temps a n = 40 (secondes)
 n_une_heure = None         # TODO etudiant : plus petit n ou la projection depasse 3600 s
 # Indice : temps(n) ~ temps(30) * facteur_temps ** (n - 30) ; le logarithme retourne n_une_heure.",,,,,,,,ca2287fc06f23262,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,45aab9d1,markdown,fr,cc27aede1f7ab53b,"## 6. Conclusion
+MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,45aab9d1,markdown,fr,22a4d43bc28ae43c,"## 6. Conclusion
 
 | Geste | Où | Ce qui a été mesuré |
 |---|---|---|
 | Tourner les inclusions | §1 | Atteignabilité décidée deux fois : vérificateur à 2 compteurs contre pile DFS ($L \subseteq NL$ visible) ; 2-SAT linéaire ($n = 800$ en milliseconde) contre 3-SAT DPLL à croissance multiplicative par variable (facteur mesuré), certificats vérifiés 20/20 en polynomial |
 | Construire les deux mondes | §2 | Oracle diagonal : 4 machines vaincues, témoin exhaustif d'accord (BGS monde A exécuté) ; oracle QBF : la machine $P$ égale $NP$ en une requête (monde B) |
-| Cartographier honnêtement | §3 | 8 arêtes : 3 à témoin exécuté, 2 citées avec leur origine (hiérarchie 03/03b), 3 ouvertes avec la barrière de relativisation comme raison visible |
-| Dater le gap | §4 | Mathlib : calculabilité oui, Zoo non — aucune classe à bornage, aucun oracle ; grade écrit |",,,,,,,,cc27aede1f7ab53b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb,intro-online,markdown,fr,96ecf6d38f474330,"# Complexity-04 — Décider sans connaître la suite
+| Cartographier honnêtement | §3 | 8 arêtes : 3 à témoin exécuté, 2 citées avec leur origine (hiérarchie 03/03b), 3 ouvertes, chacune avec sa raison propre (relativisation, certificateur général, arithmétisation) |
+| Dater le gap | §4 | Mathlib : calculabilité oui, Zoo non — aucune classe à bornage, aucun oracle ; grade écrit |
+
+Le fil du carnet : rendre **visibles** les inclusions en les exécutant, rendre **audible** la question ouverte en construisant deux mondes qui y répondent différemment, puis dire honnêtement — carte à l'appui — ce qui reste hors de portée de l'exécution.
+",,,,,,,,22a4d43bc28ae43c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb,intro-online,markdown,fr,1fa06e62455073eb,"# Complexity-04 — Décider sans connaître la suite
 
 **Navigation** : [Index](README.md) | [03 — Plus de temps, plus de problèmes](Complexity-03-TimeHierarchy-Python.ipynb) | [04b — Secrétaire matroïdal et k-server](Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb)
 
@@ -2475,7 +2527,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb,intro-o
 - [03 — Plus de temps, plus de problèmes](Complexity-03-TimeHierarchy-Python.ipynb) : comparer un algorithme à ceux d'une **classe entière**, et pourquoi une table finie ne démontre rien.
 
 **Objectifs** : poser le modèle d'une décision **irréversible** prise sans connaître la suite ; mesurer un rapport de compétitivité sur trois problèmes classiques — louer ou acheter, pagination, secrétaire ; séparer ce qui se mesure de ce qui se démontre. **Durée estimée** : 45 minutes.
-",,,,,,,,96ecf6d38f474330,,,,,,,,,,,,,,,
+",,,,,,,,1fa06e62455073eb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb,skis-intro,markdown,fr,bf47ea6795d6091a,"## 1. Louer ou acheter, sans savoir combien de temps
 
 Un magasin loue des skis 1 € par jour, ou les vend $B$ € une fois pour toutes. Vous skiez demain, mais vous ne savez pas jusqu'à quand : acheter trop tôt et acheter trop tard se paient tous les deux. Un algorithme **en ligne** décide jour après jour sans connaître la durée ; un algorithme **hors ligne** la connaît, et paie l'optimum $\min(n, B)$.
@@ -2652,7 +2704,7 @@ for gamma in (0.1, 0.2, 0.3, 1 / np.e, 0.4, 0.5, 0.6, 0.8):
     print(f""{gamma:>7.4f} | {t100:>8.4f} | {t1000:>8.4f}"")
 print(f""\n1/e = {1 / np.e:.4f}   e/(e-1) = {np.e / (np.e - 1):.4f}   ecart-type d'un sondage a 20000 tirages : {(0.368 * 0.632 / 20000) ** 0.5:.4f}"")
 ",,,,,,,,f8292d3adc54d2a4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb,secretaire-lecture,markdown,fr,17de9db7e173d755,"**Lecture du résultat.** La courbe monte puis redescend, et son sommet est **plat** : de $\gamma = 0{,}3$ à $\gamma = 0{,}4$, toutes les mesures tiennent entre $0{,}363$ et $0{,}370$, alors que l'écart-type de sondage vaut $0{,}0034$ pour 20 000 tirages. La mesure ne peut donc pas distinguer $1/e$ de $0{,}4$ — et ce n'est pas une faiblesse de l'expérience, c'est une propriété du problème : **près de l'optimum, la perte est du second ordre**, la courbe est localement plate. En revanche, s'écarter franchement du seuil se paie : observer 10 % des arrivées tombe à $0{,}23$, en observer 80 % à $0{,}18$.
+MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb,secretaire-lecture,markdown,fr,dd4c5fdbfd7841b1,"**Lecture du résultat.** La courbe monte puis redescend, et son sommet est **plat** : de $\gamma = 0{,}3$ à $\gamma = 0{,}4$, toutes les mesures tiennent entre $0{,}363$ et $0{,}370$, alors que l'écart-type de sondage vaut $0{,}0034$ pour 20 000 tirages. La mesure ne peut donc pas distinguer $1/e$ de $0{,}4$ — et ce n'est pas une faiblesse de l'expérience, c'est une propriété du problème : **près de l'optimum, la perte est du second ordre**, la courbe est localement plate. En revanche, s'écarter franchement du seuil se paie : observer 10 % des arrivées tombe à $0{,}23$, en observer 80 % à $0{,}18$.
 
 ## 5. Ce qu'aucune de ces expériences ne démontre
 
@@ -2666,7 +2718,7 @@ Les trois sections précédentes sont des **tables finies** : elles évaluent de
 | Secrétaire | la probabilité de succès optimale est $1/e$ | la courbe mesurée place son sommet là, sans pouvoir le distinguer à $0{,}003$ près |
 
 Voici, en une table, tout ce que ce notebook mesure.
-",,,,,,,,17de9db7e173d755,,,,,,,,,,,,,,,
+",,,,,,,,dd4c5fdbfd7841b1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb,recap-code,code,fr,54d79d0f08318a06,"# Recapitulatif : tout ce qui est mesure dans ce notebook, en une table.
 resume = [
     (""Skis, seuil T = B : pire rapport"", f""{pire_B:.4f}"", ""theoreme : 2 - 1/B = 1.9""),
@@ -2716,7 +2768,13 @@ Balayez $\gamma$ de $0{,}30$ à $0{,}45$ par pas de $0{,}01$, pour $n = 1000$ et
 MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb,exercice3,code,fr,5b8540d6d592b3c5,"sommet_fin = None  # TODO etudiant : grille fine autour de 1/e, n = 1000
 print(""Exercice a completer : sommet fin autour de 1/e"")
 ",,,,,,,,5b8540d6d592b3c5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb,conclusion,markdown,fr,d040c9f6adc5b224,"## Conclusion
+MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb,conclusion,markdown,fr,f5bc76c74c68a9e5,"## À retenir
+
+1. **Le meilleur seuil des skis est d'acheter au jour B.** Pour $B = 10$, le balayage des seuils fait tomber le pire rapport de 10,0000 ($T = 1$) à **1,9000 $= 2 - 1/B$** ($T = 10$) — le minimum est atteint au seuil annoncé.
+2. **La randomisation paie jusqu'à la borne $e/(e-1)$.** Pire espérance randomisée **1,56471** à $B = 10$ et **1,58196** à $B = 10\,000$, contre **1,99990** pour la meilleure règle déterministe — la cible $e/(e-1) = 1{,}58198$ est atteinte à la cinquième décimale.
+3. **LRU est exactement l'algorithme que l'adversaire veut.** Sur le motif cyclique des $k+1$ pages ($k = 5$, $T = 600$) : OPT = 124, LRU = 600 défauts, rapport **4,839** — la borne $k$ en vue ; sur le motif aléatoire (20 pages), le rapport retombe à **1,4746** (LRU) et **1,4678** (FIFO) : le pire cas est adversarial, pas le cas moyen.
+4. **Le secrétaire vise $1/e$ et l'atteint.** À $\gamma = 1/e$ : succès **0,3690** ($n = 100$) et **0,3684** ($n = 1000$), à un écart-type de sondage (0,0034) de $1/e = 0{,}3679$ ; le sommet est plat — $\gamma = 0{,}4$ fait aussi bien (0,3695 / 0,3699).
+5. **Ce que la table mesure, ce qu'elle ne prouve pas.** Chaque valeur ci-dessus est une stratégie mesurée contre son optimum ; qu'aucune autre stratégie ne fasse mieux (skis déterministe ou randomisé), que $k$ borne tout algorithme de pagination, que $1/e$ soit le maximum du secrétaire — c'est l'objet des théorèmes cités en références, pas des tables de ce carnet.
 
 | Geste | Vérifié ici | Non démontré ici |
 |---|---|---|
@@ -2735,8 +2793,8 @@ L'approfondissement [04b — Secrétaire matroïdal et k-server](Complexity-04b-
 - Karlin, A. R., Manasse, M. S., McGeoch, L. A. et Owicki, S. (1994), *Competitive randomized algorithms for nonuniform problems*, Algorithmica 11(6), 542–571.
 - Borodin, A. et El-Yaniv, R. (1998), *Online Computation and Competitive Analysis*, Cambridge University Press.
 - Lindley, D. V. (1961), *Dynamic programming and decision theory*, Applied Statistics 10, 39–51 ; Dynkin, E. B. (1963), *The optimum choice of the instant for stopping a Markov process*, Soviet Mathematics 4, 627–629.
-",,,,,,,,d040c9f6adc5b224,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,53b582f9,markdown,fr,2ce4e9b5abac9afc,"# Complexity-04b — La semaine historique de l'algorithmique online : secrétaire matroïdal et k-server
+",,,,,,,,f5bc76c74c68a9e5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,53b582f9,markdown,fr,4fdb0a5ab11780aa,"# Complexity-04b — La semaine historique de l'algorithmique online : secrétaire matroïdal et k-server
 
 **Navigation** : [Index](README.md) | [04 — Décider sans connaître la suite](Complexity-04-OnlineAlgorithms-Python.ipynb) | [05 — Compter est plus dur que vérifier →](Complexity-05-CountingHarder-Permanent-Python.ipynb)
 
@@ -2744,13 +2802,13 @@ MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-
 
 **Ce que ce notebook suppose en plus de sa base** : le modèle en ligne de 04 (décision irréversible, rapport de compétitivité) et ses trois objets classiques — louer ou acheter, pagination, secrétaire. Il ajoute la structure de **matroïde** et son oracle d'indépendance (§2), la **work function** et les métriques finies (§3), puis deux conjectures de septembre 2026. Cette accrétion de niveau Recherche n'est pas nécessaire au parcours des numéros nus : sa section 1 reprend la baseline $1/e$ désormais posée en 04 (§4), et seules les sections 2 à 4 en dépendent vraiment.
 
-> **Hommage** : Sahil Singla (*The Matroid Secretary Conjecture is True*, arXiv:2609.14555, 13/09/2026) et Christian Coester, Elias Koutsoupias, Marek Zbysiński (*The k-server conjecture is true*, arXiv:2609.15979, 14/09/2026).
+> **Hommage** : Sahil Singla (*The Matroid Secretary Conjecture is True*, arXiv:2609.14555, 13/09/2026) et Christian Coester, Elias Koutsoupias, Marek Zbysiński (*The k-server conjecture is true*, arXiv:2609.15979, 14/09/2026). Les deux PDF sont archivés depuis le **16/09/2026 à 19:10Z** dans `G:/Mon Drive/MyIA/IA/Bibliographie IA/Search/` ; chaque renvoi de ce carnet donne la **page** du PDF archivé.
 
 Septembre 2026 : **deux conjectures fondatrices de l'algorithmique online tombent à environ vingt-quatre heures d'écart**, par deux équipes différentes. La conjecture du **secrétaire matroïdal** (Babaioff–Immorlica–Kleinberg, 2007 — dix-neuf ans) et la conjecture du **k-server** (Manasse–McGeoch–Sleator–Tarjan, ~1990 — trente-six ans). Le dépôt saisit le domaine en une fenêtre de quarante-huit heures et par trois notebooks liés : ce binôme synthétique (les deux conjectures croisées côté Complexity) et deux distillations sœurs — `Complexity-04c-KServer-WorkFunction-Python` (k-server : WFA exact sur métriques jouets) et `Complexity-04d-Secretaire-Matroidal-Python` (l'algorithme de Singla lui-même, que ce notebook cite sans reproduire, cf. §2).
 
 Ce notebook suit la méthode de la série Complexity : **faire tourner** les objets (simulations Monte Carlo, implémentation exacte du work function algorithm sur petites métriques), mesurer ce qui se mesure, et **citer sans reproduire** les preuves. Les encarts de prudence épistémique (§5) et de gap Mathlib (§6) ferment la marche.
 
-**Prérequis** : Python 3.10+, `numpy`. Tout est construit dans le notebook — oracles d'indépendance, work functions, métriques — pour que chaque pas soit auditable.",,,,,,,,2ce4e9b5abac9afc,,,,,,,,,,,,,,,
+**Prérequis** : Python 3.10+, `numpy`. Tout est construit dans le notebook — oracles d'indépendance, work functions, métriques — pour que chaque pas soit auditable.",,,,,,,,4fdb0a5ab11780aa,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,bfbb9e13,code,fr,9fa6249e7e4cb4de,"import numpy as np
 from itertools import combinations
 
@@ -2761,9 +2819,9 @@ MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-
 **Le problème** (garder la formulation historique) : $n$ candidates et candidats se présentent dans un ordre aléatoire ; on ne connaît que leur **rang relatif** aux personnes déjà vues ; toute acceptation est **irréversible**. Objectif : maximiser la probabilité d'accepter la meilleure personne.
 
 **L'algorithme $1/e$** (la règle des 37 %) : on observe sans accepter les $\lfloor n/e \rfloor$ premier·e·s arrivant·e·s, puis on accepte la première personne qui surpasse toutes les observées. La probabilité de capturer le meilleur tend vers $1/e \approx 0{,}368$ — c'est **la** référence que toute la littérature du secrétaire matroïdal cite comme point de départ. ([04 — Décider sans connaître la suite](Complexity-04-OnlineAlgorithms-Python.ipynb) §4 pose cette baseline ; elle est reprise ici parce que tout le §2 s'y adosse.)",,,,,,,,a9d3c47baf96b9cf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,dc685e39,code,fr,8d65660868089b37,"def secretaire_classique(n, perm):
+MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,dc685e39,code,fr,fa2df33d28efaac4,"def secretaire_classique(n, perm):
     """"""Renvoie True si l'algorithme 1/e selectionne le meilleur de la permutation perm (rangs 0..n-1).""""""
-    seuil = max(1, int(round(n / np.e)))
+    seuil = max(1, int(n / np.e))  # seuil classique : on ecarte les floor(n/e) premiers
     meilleur_vu = max(perm[:seuil], default=-1)
     for x in perm[seuil:]:
         if x > meilleur_vu:
@@ -2779,19 +2837,19 @@ def monte_carlo_classique(n, n_runs=20_000):
 
 for n in (20, 100, 1000):
     p = monte_carlo_classique(n)
-    print(f""n={n:5d}  P(meilleur selectionne) = {p:.4f}   (theorie: 1/e = {1/np.e:.4f})"")",,,,,,,,8d65660868089b37,,,,,,,,,,,,,,,
+    print(f""n={n:5d}  P(meilleur selectionne) = {p:.4f}   (theorie: 1/e = {1/np.e:.4f})"")",,,,,,,,fa2df33d28efaac4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,c45fc0b2,markdown,fr,9fb68c32fb0ce101,"### Lecture du résultat
 
 La probabilité mesurée converge vers $1/e \approx 0{,}368$ — l'algorithme récupère le meilleur candidat **un peu plus d'une fois sur trois**, et c'est optimal pour ce modèle. Tout l'enjeu du secrétaire **matroïdal** est de savoir ce qui survit quand on ne peut plus tout accepter : sélectionner plusieurs éléments sous une contrainte de structure, avec la même arrivée aléatoire irréversible.",,,,,,,,9fb68c32fb0ce101,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,54a4bdd4,markdown,fr,de53a54a340fd0f6,"## 2. Le secrétaire matroïdal — la conjecture tombée
+MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,54a4bdd4,markdown,fr,74c8c93918dd06fb,"## 2. Le secrétaire matroïdal — la conjecture tombée
 
 **Le problème** : les éléments arrivent en ordre aléatoire, chacun porte une valeur positive ; à chaque arrivée, on décide **immédiatement et irréversiblement** de l'accepter ou non ; l'ensemble accepté doit rester **indépendant** pour un matroïde connu uniquement via un **oracle d'indépendance** (et le nombre total d'éléments $n$). Objectif : maximiser l'espérance de la somme des valeurs acceptées, comparée à l'optimum **offline** (le poids maximum d'un ensemble indépendant, calculable par l'algorithme glouton sur toutes les valeurs triées).
 
 **La conjecture** (Babaioff–Immorlica–Kleinberg 2007) : il existe un algorithme à **compétitivité constante** — un $\alpha > 0$ indépendant de $n$ et du matroïde tel que $\mathbb{E}[\text{valeur acceptée}] \geq \alpha \cdot \mathrm{OPT}$.
 
-**Ce qu'annonce le preprint de Singla** : un algorithme online qui **accepte chaque élément de l'optimum offline avec probabilité au moins $1/4$** — compétitivité constante, alors que l'algorithme ne connaît **pas le matroïde à l'avance** (il n'a que l'oracle d'indépendance et $n$). Les meilleurs ratios connus restaient en $O(\log\log r)$, où $r$ est le rang du matroïde (Lachish 2014 ; preuve simplifiée par Feldman–Svensson–Zenklusen 2015).
+**Ce qu'annonce le preprint de Singla** : un algorithme online qui **accepte chaque élément de l'optimum offline avec probabilité au moins $1/4$** — compétitivité constante, alors que l'algorithme ne connaît **pas le matroïde à l'avance** (il n'a que l'oracle d'indépendance et $n$). L'énoncé est dans l'abstract (p. 1) et le théorème 1.1 (p. 2) du PDF archivé. Les meilleurs ratios connus restaient en $O(\log\log r)$, où $r$ est le rang du matroïde (Lachish 2014 ; preuve simplifiée par Feldman–Svensson–Zenklusen 2015) — état de l'art rappelé p. 2.
 
-Nous implémentons deux **matroïdes** classiques et deux stratégies online de référence — puis mesurons leur compétitivité face à $\mathrm{OPT}$ :",,,,,,,,de53a54a340fd0f6,,,,,,,,,,,,,,,
+Nous implémentons deux **matroïdes** classiques et deux stratégies online de référence — puis mesurons leur compétitivité face à $\mathrm{OPT}$ :",,,,,,,,74c8c93918dd06fb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,851feec8,code,fr,c88f5394232e0b0c,"# --- Deux matroïdes, chacun expose independant(S) -> bool ---
 
 class MatroideUniforme:
@@ -2880,16 +2938,16 @@ print()
 print(""Matroide graphique (grille 3x4,"", len(aretes), ""aretes), OPT ="", round(opt_offline(mg, val_g)[0], 2))
 print(""  glouton pur      : competitivite ="", round(competitivite(mg, val_g, online_glouton), 4))
 print(""  glouton a seuil  : competitivite ="", round(competitivite(mg, val_g, online_seuil_mediane), 4))",,,,,,,,167dce4284500357,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,1338db18,markdown,fr,4efa1240a0eeb531,"### Lecture des mesures
+MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,1338db18,markdown,fr,3acd267c7d5f50a8,"### Lecture des mesures
 
-Les deux stratégies de référence échangent leurs rôles selon l'instance. Sur le matroïde **uniforme**, le glouton à seuil domine (0,729 contre 0,652) : la phase d'observation écarte les petites valeurs et préserve le rang pour les grandes. Sur le matroïde **graphique**, c'est l'inverse (glouton pur 0,835, glouton à seuil 0,431) : le seuil en médiane rejette des arêtes que la structure du matroïde rendait rentables, et la phase d'observation devient un handicap. **Le seuil optimal est instance-dépendant** — aucun réglage ne domine sur tous les matroïdes. **Aucune des deux n'est l'algorithme de Singla** : le résultat annoncé par le preprint — accepter chaque élément de l'optimum avec probabilité $\geq 1/4$, **sans connaître le matroïde à l'avance** — est d'une autre nature. Il garantit la constante dans le pire cas, pour tout matroïde, avec pour seule interface l'oracle d'indépendance. Nos simulations mesurent le *dilemme* que le théorème résout : entre accepter tôt (structure) et attendre (valeur), aucune heuristique simple ne domine sur tous les matroïdes.",,,,,,,,4efa1240a0eeb531,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,1c702f42,markdown,fr,5be1882b628bfd41,"## 3. k-server — le work function algorithm, implémenté
+Les deux stratégies de référence échangent leurs rôles selon l'instance. Sur le matroïde **uniforme**, le glouton à seuil domine (0,729 contre 0,652) : la phase d'observation écarte les petites valeurs et préserve le rang pour les grandes. Cet avantage n'est pas un point unique — rejoué sur **8 graines indépendantes**, le seuil reste devant sur **8/8 graines** (seuil 0,7300–0,7387, moy 0,7340 ; pur 0,6475–0,6544, moy 0,6518) et le point affiché tombe au cœur de cette bande. Sur le matroïde **graphique**, c'est l'inverse (glouton pur 0,835, glouton à seuil 0,431) : le seuil en médiane rejette des arêtes que la structure du matroïde rendait rentables, et la phase d'observation devient un handicap. **Le seuil optimal est instance-dépendant** — aucun réglage ne domine sur tous les matroïdes ; jouée sur plusieurs graines, l'opposition tient dans sa **direction**, pas dans un écart ponctuel. **Aucune des deux n'est l'algorithme de Singla** : le résultat annoncé par le preprint (abstract p. 1, théorème 1.1 p. 2) — accepter chaque élément de l'optimum avec probabilité $\geq 1/4$, **sans connaître le matroïde à l'avance** — est d'une autre nature. Il garantit la constante dans le pire cas, pour tout matroïde, avec pour seule interface l'oracle d'indépendance. Nos simulations mesurent le *dilemme* que le théorème résout : entre accepter tôt (structure) et attendre (valeur), aucune heuristique simple ne domine sur tous les matroïdes.",,,,,,,,3acd267c7d5f50a8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,1c702f42,markdown,fr,faec2946abf5d828,"## 3. k-server — le work function algorithm, implémenté
 
-**Le problème** (Manasse–McGeoch–Sleator–Tarjan ~1990) : $k$ serveurs occupent des points d'un espace métrique ; une **séquence de requêtes** (adversariale) arrive, chaque requête est un point ; à chaque requête, un serveur doit s'y déplacer, au coût de la distance parcourue. Objectif : minimiser le coût total, comparé au coût de l'optimum offline qui connaît toute la séquence. Trois quantités à ne pas confondre. **Borne inférieure prouvée** (Manasse–McGeoch–Sleator 1990) : aucun algorithme déterministe n'atteint un ratio inférieur à $k$ sur les métriques à plus de $k$ points — $k$ est le plancher, atteint déjà pour $k = 2$ et $n = k+1$. **Meilleure garantie prouvée avant 2026** : le **work function algorithm** (WFA) est $(2k-1)$-compétitif sur tout espace métrique (Koutsoupias–Papadimitriou 1995). **La conjecture** : le WFA atteint exactement le plancher — ratio $k$ sur **tout** espace métrique — c'est ce que le preprint de Coester–Koutsoupias–Zbysiński annonce.
+**Le problème** (Manasse–McGeoch–Sleator–Tarjan ~1990) : $k$ serveurs occupent des points d'un espace métrique ; une **séquence de requêtes** (adversariale) arrive, chaque requête est un point ; à chaque requête, un serveur doit s'y déplacer, au coût de la distance parcourue. Objectif : minimiser le coût total, comparé au coût de l'optimum offline qui connaît toute la séquence. Trois quantités à ne pas confondre. **Borne inférieure prouvée** (Manasse–McGeoch–Sleator 1990) : aucun algorithme déterministe n'atteint un ratio inférieur à $k$ sur les métriques à plus de $k$ points — $k$ est le plancher, atteint déjà pour $k = 2$ et $n = k+1$ (rappelé p. 1 du PDF archivé de Coester et al.). **Meilleure garantie prouvée avant 2026** : le **work function algorithm** (WFA) est $(2k-1)$-compétitif sur tout espace métrique (Koutsoupias–Papadimitriou 1995 ; rappelé p. 1). **La conjecture** : le WFA atteint exactement le plancher — ratio $k$ sur **tout** espace métrique — c'est ce que le preprint de Coester–Koutsoupias–Zbysiński annonce (abstract p. 1 : « We prove the conjecture. Specifically, we show that the work function algorithm satisfies it » ; p. 2 ; théorème 1.2 p. 3).
 
 **Le WFA**, de l'aveu général, est « l'algorithme évident qu'on n'arrivait pas à analyser » : à chaque requête, maintenir la **work function** $W_t(S)$ = coût minimal pour avoir servi les $t$ premières requêtes et se trouver en configuration $S$ ; servir la requête courante par le mouvement qui minimise *(coût immédiat + work function résultante)* — un regard à la fois vers le passé optimal et vers le futur.
 
-Nous l'implémentons **exactement** sur deux petites métriques — la **ligne** uniforme à $m$ points et le **cycle** $C_m$ où l'on peut passer par le bord — où la work function se calcule par programmation dynamique sur les $\binom{m}{k}$ configurations, pour $k = 2$ serveurs :",,,,,,,,5be1882b628bfd41,,,,,,,,,,,,,,,
+Nous l'implémentons **exactement** sur deux petites métriques — la **ligne** uniforme à $m$ points et le **cycle** $C_m$ où l'on peut passer par le bord — où la work function se calcule par programmation dynamique sur les $\binom{m}{k}$ configurations, pour $k = 2$ serveurs :",,,,,,,,faec2946abf5d828,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,edd7b687,code,fr,7ce2df5868987dec,"# --- Work function algorithm exact pour k=2, metrique parametree (ligne / cycle) ---
 
 def make_ligne(m):
@@ -2955,7 +3013,7 @@ def jouer_greedy(m, init, requetes, d):
         cout_total += d(servs[i], r)
         servs[i] = r
     return cout_total",,,,,,,,7ce2df5868987dec,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,09c51e84,code,fr,3606cdb158e9612e,"# --- Mesures : le piege canonique du CYCLE C_5, puis la ligne en contraste ---
+MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,09c51e84,code,fr,9b7a27e1029d1d4b,"# --- Mesures : le piege canonique du CYCLE C_5, puis la ligne en contraste ---
 # Cycle a 5 points, serveurs en (0, 1) -- tous deux du meme cote -- requetes alternant 3, 4.
 # OPT paie une reorganisation (0->4 par le bord a cout 1, 1->3 a cout 2) puis sert tout a 0.
 # Le greedy, lui, suit l'alternance : a chaque requete le serveur le plus proche bascule de 3 a 4.
@@ -2970,32 +3028,33 @@ print(f""  OPT offline        = {opt:.0f}"")
 print(f""  WFA                = {c_wfa:.0f}   ratio = {c_wfa / opt:.3f}  (borne k = {k})"")
 print(f""  greedy plus-proche = {c_gr:.0f}   ratio = {c_gr / opt:.1f}"")
 print()
-for T in (60, 240):
-    cw, o = jouer_wfa(5, (0, 1), [3, 4] * T, d_c5)
-    cg = jouer_greedy(5, (0, 1), [3, 4] * T, d_c5)
-    print(f""  T={T * 2:4d} requetes : ratio WFA = {cw / o:.3f}   ratio greedy = {cg / o:.1f}  (greedy croit avec T)"")
+for paires in (60, 240):
+    cw, o = jouer_wfa(5, (0, 1), [3, 4] * paires, d_c5)
+    cg = jouer_greedy(5, (0, 1), [3, 4] * paires, d_c5)
+    print(f""  T={paires * 2:4d} requetes : ratio WFA = {cw / o:.3f}   ratio greedy = {cg / o:.1f}  (greedy croit avec T)"")
 print()
 d_l8, m8, init8 = make_ligne(8), 8, (0, 7)
 alea = [int(x) for x in rng.integers(0, m8, size=60)]
 cw2, o2 = jouer_wfa(m8, init8, alea, d_l8)
 cg2 = jouer_greedy(m8, init8, alea, d_l8)
 print(""LIGNE a 8 points, sequence aleatoire (60 requetes) -- le regime moyen est facile :"")
-print(f""  OPT offline = {o2:.0f}   ratio WFA = {cw2 / o2:.3f}   ratio greedy = {cg2 / o2:.3f}"")",,,,,,,,3606cdb158e9612e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,f2902753,markdown,fr,70e52584894774ad,"### Lecture des mesures
+print(f""  OPT offline = {o2:.0f}   ratio WFA = {cw2 / o2:.3f}   ratio greedy = {cg2 / o2:.3f}"")",,,,,,,,9b7a27e1029d1d4b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,f2902753,markdown,fr,67c794c6f5cedf97,"### Lecture des mesures
 
-Sur le cycle $C_5$, l'optimum paie une **réorganisation unique** (amener les deux serveurs sur 3 et 4 : coût total 3) puis sert toute la séquence à coût nul — le WFA découvre ce plan et paie 5, ratio mesuré **1,67**, sous la borne $k = 2$. Le greedy, lui, **suit l'alternance** : à chaque requête le serveur le plus proche bascule entre 3 et 4, coût 1 par requête — son ratio vaut **20,3 pour 60 requêtes, 160,3 pour 480** : il croît linéairement avec la longueur de la séquence, c'est la définition d'un algorithme **non compétitif** (aucun ratio $c$ borné ne le majore). C'est exactement le régime pour lequel la conjecture existe : le pire cas adversarial, pas le cas moyen — sur la ligne avec requêtes aléatoires, greedy et WFA font jeu égal (ratios $= 1$ ici). Ce que le preprint de Coester–Koutsoupias–Zbysiński annonce : le WFA atteint le ratio $k$ **sur tout espace métrique et toute séquence** — la technique (représentation algébrique de la work function, chaque valeur comme déterminant de $k$ colonnes, potentiel sur paires de coordonnées) est citée §5, pas reproduite ici.",,,,,,,,70e52584894774ad,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,4378c3d7,markdown,fr,4641f8f3ae04af05,"## 4. Le double visage du binôme
+Sur le cycle $C_5$, l'optimum paie une **réorganisation unique** (amener les deux serveurs sur 3 et 4 : coût total 3) puis sert toute la séquence à coût nul — le WFA découvre ce plan et paie 5, ratio mesuré **1,67**, sous la borne $k = 2$. Le greedy, lui, **suit l'alternance** : à chaque requête le serveur le plus proche bascule entre 3 et 4, coût 1 par requête — son ratio vaut **20,3 pour 60 requêtes, 160,3 pour 480** : il croît linéairement avec la longueur de la séquence, c'est la définition d'un algorithme **non compétitif** (aucun ratio $c$ borné ne le majore). C'est exactement le régime pour lequel la conjecture existe : le pire cas adversarial, pas le cas moyen — sur la ligne avec requêtes aléatoires, greedy et WFA font jeu égal (ratios $= 1$ ici). Ce que le preprint de Coester–Koutsoupias–Zbysiński annonce (abstract p. 1, théorème 1.2 p. 3) : le WFA atteint le ratio $k$ **sur tout espace métrique et toute séquence** — la technique (représentation algébrique de la work function, chaque valeur comme déterminant de $k$ colonnes, potentiel sur paires de coordonnées) est décrite p. 1, 3 et 4 du PDF archivé, citée §5, pas reproduite ici.",,,,,,,,67c794c6f5cedf97,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,4378c3d7,markdown,fr,c1a1a0f4226de031,"## 4. Le double visage du binôme
 
 Ce qui rend la saisie **commune** de ces deux résultats nécessaire — c'est le même problème (décisions irréversibles sous incertitude, évaluées au ratio compétitif) résolu par deux philosophies exactement opposées :
 
 | | Secrétaire matroïdal (Singla) | k-server (Coester–Koutsoupias–Zbysiński) |
 |---|---|---|
 | Modèle d'entrée | ordre **aléatoire** (hypothèse distributionnelle) | séquence **adversariale** (aucune hypothèse) |
-| Arme | **randomisation** (accepte chaque élément de l'OPT avec proba $\geq 1/4$) | **déterminisme** (le WFA, un algorithme unique) |
+| Arme | **randomisation** (accepte chaque élément de l'OPT avec proba $\geq 1/4$, p. 1–2) | **déterminisme** (le WFA, un algorithme unique, p. 1) |
 | Analyse | espérance, probabilités | analyse amortie, fonction potentiel |
 | Conjecture ouverte depuis | 2007 (dix-neuf ans) | ~1990 (trente-six ans) |
-| Outil structurel | matroïdes (oracle d'indépendance) | algèbre des work functions (déterminants, algèbre tropicale) |
-| Ce que la machine mesure | compétitivité Monte Carlo $\approx$ constante | ratio pire-cas $\leq k$ sur adversaire construit |",,,,,,,,4641f8f3ae04af05,,,,,,,,,,,,,,,
+| Outil structurel | matroïdes (oracle d'indépendance, p. 1) | algèbre des work functions (déterminants, p. 3) |
+| Ce que la machine mesure | compétitivité Monte Carlo $\approx$ constante | ratio sur un adversaire construit : 1,67 $\leq k$ (le pire cas est l'affirmation du théorème 1.2, p. 3) |
+",,,,,,,,c1a1a0f4226de031,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,f4867790,code,fr,815150d92c9f3301,"# Recapitulatif chiffre des mesures de ce notebook
 resume = [
     (""Secretaire classique n=1000 : P(meilleur)"", f""{monte_carlo_classique(1000, 5000):.4f}"", ""1/e = 0.3679""),
@@ -3007,18 +3066,18 @@ resume = [
 print(f""{'Mesure':46s} {'valeur':>8s}   reference"")
 for nom, val, ref in resume:
     print(f""{nom:46s} {val:>8s}   {ref}"")",,,,,,,,815150d92c9f3301,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,8715875c,markdown,fr,321d8346d7b9c34a,"## 5. Prudence épistémique — ce que ce notebook cite sans le vérifier
+MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,8715875c,markdown,fr,fda04036ad72c988,"## 5. Prudence épistémique — ce que ce notebook cite sans le vérifier
 
-Les deux papiers sont des **preprints de un à deux jours** au moment de la rédaction (soumis les 13 et 14/09/2026), sans évaluation par les pairs publiée, sans écho communautaire enregistré. Les formulations de ce notebook disent donc **« le preprint annonce »**, **« la preuve annoncée »** — jamais « le théorème » ni « résolu » sans qualificatif. C'est la même discipline que pour la semaine discrepancy (#15944) : la saisie pédagogique peut être immédiate, la canonisation ne peut pas l'être.
+Les deux papiers sont des **preprints de un à deux jours** au moment de la rédaction (soumis les 13 et 14/09/2026, archivés le 16/09/2026 à 19:10Z), sans évaluation par les pairs publiée, sans écho communautaire enregistré. Les formulations de ce notebook disent donc **« le preprint annonce »**, **« la preuve annoncée »** — jamais « le théorème » ni « résolu » sans qualificatif. C'est la même discipline que pour la semaine discrepancy (#15944) : la saisie pédagogique peut être immédiate, la canonisation ne peut pas l'être.
 
 Trois niveaux à ne pas confondre, dans ce notebook :
 
 1. **Mesuré** : les probabilités et ratios ci-dessus, produits par les simulations de §1–§3 (reproductibles, seed fixé).
-2. **Cité** : les énoncés des deux preprints (compétitivité $1/4$ sans connaissance du matroïde ; ratio $k$ du WFA sur tout espace métrique) — des **claims d'auteurs**, lus sur les abstracts.
+2. **Cité** : les énoncés des deux preprints (compétitivité $1/4$ sans connaissance du matroïde ; ratio $k$ du WFA sur tout espace métrique) — des **claims d'auteurs**, lus sur les abstracts et les énoncés de théorèmes, avec la page du PDF archivé (p. 1–2 pour Singla, p. 1–3 pour Coester et al.).
 3. **Absent** : les preuves elles-mêmes — non lues ligne à ligne ici, non formalisées, non vérifiées mécaniquement.
 
-Si l'une des deux preuves s'effondre en évaluation, ce notebook garde sa valeur pédagogique (les objets, le dilemme, les implémentations de référence) et perdra seulement ses deux phrases d'ouverture — il est conçu pour ça.",,,,,,,,321d8346d7b9c34a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,37e0aa25,markdown,fr,c7375269e62b791c,"## 6. Encart Mathlib — ce qui existe, ce qui manque
+Si l'une des deux preuves s'effondre en évaluation, ce notebook garde sa valeur pédagogique (les objets, le dilemme, les implémentations de référence) et perdra seulement ses deux phrases d'ouverture — il est conçu pour ça.",,,,,,,,fda04036ad72c988,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,37e0aa25,markdown,fr,421a37127209167a,"## 6. Encart Mathlib — ce qui existe, ce qui manque
 
 Même exercice que pour [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) : où est la frontière de Mathlib (v4.33.0 au jour de rédaction) sur ces objets ?
 
@@ -3026,11 +3085,11 @@ Même exercice que pour [03b — Hartmanis–Stearns](Complexity-03b-HartmanisSt
 - **Algorithmique online** : absente — pas de `competitive ratio`, pas de `secretary`, pas de `k-server`, pas de `work function`, pas de notion d'algorithme online face à une séquence de requêtes. Formaliser la compétitivité exigerait une couche « adversaire + algorithme + ratio sur toutes les entrées » qui n'existe pas plus que la couche `TIME(f)` du notebook 03.
 - Le pont naturel si un jour ce grain passe en Lean : la work function est **décidable** (une DP finie) — le calcul est implémentable, c'est la **preuve de ratio** (le potentiel sur paires de coordonnées du preprint) qui serait le travail dur.
 
-La suite logique côté dépôt serait un `online_lean` quand les preuves auront mûri — pas avant.",,,,,,,,c7375269e62b791c,,,,,,,,,,,,,,,
+La suite logique côté dépôt serait un `online_lean` quand les preuves auront mûri — pas avant.",,,,,,,,421a37127209167a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,d8385b97,markdown,fr,7e039ed40ba23368,"## 7. Exercices
 
 Trois exercices, stubs exécutables sans erreur (règle C.1 du dépôt) — les corrigés restent la propriété de l'étudiante et de l'étudiant.",,,,,,,,7e039ed40ba23368,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,187371fe,code,fr,b563af1576b8b1b3,"# Exercice 1 -- Matroide de partition : les elements portent une couleur parmi 3 groupes,
+MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,187371fe,code,fr,5aa9105c6bbec1d3,"# Exercice 1 -- Matroide de partition : les elements portent une couleur parmi 3 groupes,
 # et un ensemble est independant ssi il contient au plus q_i elements de chaque groupe i.
 # Implementer l'oracle puis mesurer la competitivite du glouton a seuil dessus.
 # Indice : independant(S) = toutes les tailles d'intersection groupe_i ∩ S <= q_i.
@@ -3043,38 +3102,13 @@ class MatroidePartition:
     def independant(self, S):
         # TODO etudiant
         return None
+",,,,,,,,5aa9105c6bbec1d3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,47a66e01,markdown,fr,f82cf1e63fcfe829,"## 8. Conclusion
 
-# Exercice 2 -- k-server sur l'ETOILE a m feuilles : point 0 = le centre,
-# points 1..m = les feuilles ; d(i, j) = 1 si l'un est le centre, 2 entre
-# deux feuilles distinctes. Implementer make_etoile(m) puis chercher une
-# sequence adversariale pour greedy (deux serveurs sur des feuilles, requetes
-# alternant deux autres feuilles) et verifier que WFA reste sous la borne k = 2.
-# Indice : OPT paie une reorganisation unique de cout 4 (placer les deux serveurs
-# sur les feuilles requetees) puis sert tout a 0 -- greedy, lui, paie 2 par requete.
+Ce notebook a **saisi le domaine online côté Complexity** : la baseline $1/e$ mesurée (§1), le dilemme du secrétaire matroïdal simulé sur deux matroïdes avec oracles d'indépendance (§2), le work function algorithm **implémenté exactement** et confronté à ses bornes sur séquence adversariale (§3), le tableau du double visage randomisation/déterminisme (§4). Les deux preprints sont cités au conditionnel de rigueur (§5), avec renvoi paginé vers les PDF archivés, le gap Mathlib est cartographié (§6), et trois exercices prolongent chacun une section (§7).
 
-def make_etoile(m):
-    # TODO etudiant
-    return None
-
-# Exercice 3 -- Secretaire classique avec valeurs log-normales (queue lourde) au lieu
-# de valeurs uniformes : montrer que la strategie de RANG (rejeter les n/e premiers
-# observes, puis accepter le premier record relatif) reste valable quelle que soit la
-# loi des valeurs -- mesurer la probabilite de capturer le maximum, la comparer a 1/e.
-# Indice : la strategie n'utilise que l'ORDRE RELATIF des valeurs ; pour des valeurs
-# i.i.d. d'une loi continue, les rangs forment une permutation uniforme -- la garantie
-# 1/e est distribution-free, la queue lourde ne change rien.
-
-def secretaire_lognormal(n, mu=0.0, sigma=1.0):
-    # TODO etudiant
-    return None
-
-print(""Exercices a completer (stubs conformes C.1 : le notebook s'execute de bout en bout)."")",,,,,,,,b563af1576b8b1b3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,47a66e01,markdown,fr,e01bcf421f452dca,"## 8. Conclusion
-
-Ce notebook a **saisi le domaine online côté Complexity** : la baseline $1/e$ mesurée (§1), le dilemme du secrétaire matroïdal simulé sur deux matroïdes avec oracles d'indépendance (§2), le work function algorithm **implémenté exactement** et confronté à ses bornes sur séquence adversariale (§3), le tableau du double visage randomisation/déterminisme (§4). Les deux preprints sont cités au conditionnel de rigueur (§5), le gap Mathlib est cartographié (§6), et trois exercices prolongent chacun une section (§7).
-
-**Cross-links** : [Complexity-03b](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) (même méthode : faire tourner, confronter à Mathlib) · `Complexity-04c-KServer-WorkFunction-Python` (k-server : WFA exact sur métriques jouets — même preprint Coester–Koutsoupias–Zbysiński, en profondeur) · `Complexity-04d-Secretaire-Matroidal-Python` (l'algorithme de Singla implémenté, garantie 1/4 comme banc de mesure — la profondeur que ce notebook cite sans reproduire) · `RL/RL-16-Dream-RSI-Python` (Dream-RSI : l'exploration explicite programmable — l'autre bout du spectre online) · `GameTheory` (théorie des jeux à information incomplète) · la semaine discrepancy (#15944 : Komlós et Beck-Fiala, l'autre « moment de domaine » récent).",,,,,,,,e01bcf421f452dca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb,header-05,markdown,fr,d9f48b35d8aff642,"# Complexity-05 — Compter est plus dur que vérifier : #P et la permanente
+**Cross-links** : [Complexity-03b](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) (même méthode : faire tourner, confronter à Mathlib) · [`Complexity-04c-KServer-WorkFunction-Python.ipynb`](Complexity-04c-KServer-WorkFunction-Python.ipynb) (k-server : WFA exact sur métriques jouets — même preprint Coester–Koutsoupias–Zbysiński, en profondeur) · [`Complexity-04d-Secretaire-Matroidal-Python.ipynb`](Complexity-04d-Secretaire-Matroidal-Python.ipynb) (l'algorithme de Singla implémenté, garantie 1/4 comme banc de mesure — la profondeur que ce notebook cite sans reproduire) · [`RL/RL-16-Dream-RSI-Python.ipynb`](../RL/RL-16-Dream-RSI-Python.ipynb) (Dream-RSI : l'exploration explicite programmable — l'autre bout du spectre online) · [`GameTheory/`](../GameTheory/) (théorie des jeux à information incomplète) · la semaine discrepancy ([#15944](https://github.com/jsboige/CoursIA/issues/15944) : Komlós et Beck-Fiala, l'autre « moment de domaine » récent).",,,,,,,,f82cf1e63fcfe829,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb,header-05,markdown,fr,1664df5971b8b67a,"# Complexity-05 — Compter est plus dur que vérifier : #P et la permanente
 
 **Navigation** : [<< Complexity-04b — Secrétaire matroïdal et k-server](Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb) | [Index de la série](README.md) | [Complexity-05b — La permanente, frontière quantique >>](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb)
 
@@ -3099,7 +3133,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb
 5. relier un comptage naturel — les **couplages parfaits** d'un graphe biparti — à une
    permanente.
 
-**Durée estimée** : 45 minutes.",,,,,,,,d9f48b35d8aff642,,,,,,,,,,,,,,,
+**Durée estimée** : 45 minutes.",,,,,,,,1664df5971b8b67a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb,imports,code,fr,e9ba1054484054a4,"import time
 from itertools import permutations, product
 from math import factorial, prod
@@ -3423,7 +3457,7 @@ for choix in couplages:
 assert permanente(M) == len(couplages)
 print()
 print(""les deux machines s'accordent : le nombre de couplages parfaits EST la permanente"")",,,,,,,,c5e09eeabb261034,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb,sec6-lecture-transition,markdown,fr,e42a5362d281b1fb,"**Lecture du résultat.** Les deux machines indépendantes rendent le même compte : la
+MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb,sec6-lecture-transition,markdown,fr,ca504ff30cdc9d45,"**Lecture du résultat.** Les deux machines indépendantes rendent le même compte : la
 permanente de la matrice d'adjacence vaut exactement le nombre de couplages listés un par un.
 Le pont est franchi — un comptage naturel est littéralement une permanente de matrice 0/1,
 et par le théorème de Valiant, compter les couplages parfaits d'un graphe biparti est
@@ -3434,7 +3468,7 @@ Et l'histoire a continué : Aaronson et Arkhipov (2011) ont montré que la distr
 sortie d'un réseau optique linéaire — des photons dans un interféromètre — dépend de
 permanentes de matrices complexes, faisant de la fonction la plus dure du comptage classique
 le candidat le plus sérieux d'un avantage quantique démontrable. Cette frontière est celle de
-l'approfondissement [05b — La permanente, frontière quantique](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb).",,,,,,,,e42a5362d281b1fb,,,,,,,,,,,,,,,
+l'approfondissement [05b — La permanente, frontière quantique](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb).",,,,,,,,ca504ff30cdc9d45,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb,exo1-enonce,markdown,fr,c227594b58943367,"## Exercices
 
 Chaque cellule s'exécute sans erreur telle qu'elle est livrée : remplacez les lignes
@@ -3483,7 +3517,7 @@ else:
         valeur = perm_def(A)
         verdict = ""OK"" if valeur == attendu else ""ECHEC""
         print(f""{nom:>22} : perm_def = {valeur} (attendu {attendu}) {verdict}"")",,,,,,,,2cc1ea48852996ce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb,exo2-enonce,markdown,fr,dbbe77c452a5fc2b,"### Exercice 2 — L'échelle mesurée
+MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb,exo2-enonce,markdown,fr,034939c1c48a569d,"### Exercice 2 — L'échelle mesurée
 
 La section 4 a chronométré la permanente du banc jusqu'à $n = 10$. Faites la mesure
 vous-même, avec votre `perm_def` de l'exercice 1 : pour chaque taille $n$ de 2 à 9, engendrer
@@ -3496,8 +3530,9 @@ la liste `mesures`.
 - **Etape 3 :** la cellule trace ensuite le temps en échelle log contre $n$ et affiche les
   facteurs d'une taille à la suivante.
 - **Indice :** sur l'échelle log, on attend une **droite** qui monte — chaque taille
-  supplémentaire multiplie le temps par environ $n$.",,,,,,,,dbbe77c452a5fc2b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb,exo2-stub,code,fr,cf43bd51f043cedf,"# Exercice 2 : a completer
+  supplémentaire multiplie le temps par un facteur qui **croît vers $n$**
+  (aux petites tailles, l'overhead domine et le facteur reste bien en dessous de $n$).",,,,,,,,034939c1c48a569d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb,exo2-stub,code,fr,6e5cf2e640c0d7f3,"# Exercice 2 : a completer
 mesures = None  # TODO etudiant : liste des durees de perm_def pour n = 2, 3, ..., 9
 
 if mesures is None:
@@ -3515,7 +3550,7 @@ else:
     plt.show()
     facteurs = [mesures[i + 1] / mesures[i] for i in range(len(mesures) - 1)]
     print(""facteurs d'un n au suivant :"", "", "".join(f""{f:.1f}"" for f in facteurs))
-    print(""un facteur proche de n : chaque taille ajoutee multiplie le travail par n"")",,,,,,,,cf43bd51f043cedf,,,,,,,,,,,,,,,
+    print(""un facteur qui croit vers n quand n grandit : l'overhead domine aux petites tailles"")",,,,,,,,6e5cf2e640c0d7f3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb,exo3-enonce,markdown,fr,0a407c910f7e6f78,"### Exercice 3 — Couplages parfaits
 
 Le graphe biparti ci-dessous a trois sommets de chaque côté ; les arêtes sont les traits du
@@ -3554,13 +3589,13 @@ else:
         print(""pronostic exact : le dessin se lit, la permanente le confirme"")
     else:
         print(f""pronostic {prediction} different du compte {compte} : relisez le dessin (ou la matrice)"")",,,,,,,,7737c31116f0a825,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb,conclusion,markdown,fr,2f6d5e3c0fe3259f,"## Conclusion
+MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb,conclusion,markdown,fr,cd0996e915ffba00,"## À retenir
 
 | Question | Le geste de ce notebook | Statut |
 |---|---|---|
 | Vérifier ou compter ? | #P : les témoins d'une expression, énumérés à la main | **mesuré** |
 | Le déterminant | la définition à $n!$ termes tombe à $O(n^3)$ par Gauss | **mesuré** (facteur borné au doublement) |
-| La permanente | la même somme sans les signes, $n!$ termes exécutés | **mesuré** (facteur proche de $n$ à chaque taille) |
+| La permanente | la même somme sans les signes, $n!$ termes exécutés | **mesuré** (facteur qui croît vers $n$ entre $n=5$ et $n=10$ — overhead domine en deça) |
 | Peut-on faire mieux ? | Valiant 1979 : #P-difficile, même en 0/1 | **cité** |
 | Un comptage naturel | couplages parfaits = permanente, deux machines d'accord | **mesuré** |
 
@@ -3585,13 +3620,13 @@ proposition d'un avantage quantique démontrable — l'approfondissement 05b le 
 
 - Valiant, L. G. (1979), *The Complexity of Computing the Permanent*, Theoretical Computer Science 8(2), 189–201.
 - Aaronson, S. et Arkhipov, A. (2011), *The Computational Complexity of Linear Optics*, Proceedings of the 43rd ACM Symposium on Theory of Computing (STOC), 333–342.
-- Minc, H. (1978), *Permanents*, Encyclopedia of Mathematics and its Applications 6, Addison-Wesley.",,,,,,,,2f6d5e3c0fe3259f,,,,,,,,,,,,,,,
+- Minc, H. (1978), *Permanents*, Encyclopedia of Mathematics and its Applications 6, Addison-Wesley.",,,,,,,,cd0996e915ffba00,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,15741854,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,5232c78c,markdown,fr,c45cbf91787cc2a3,"# Complexity-05b — La permanente, frontière quantique : BosonSampling (Aaronson–Arkhipov, 2011)
+MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,5232c78c,markdown,fr,ff2b981734dfc5fe,"# Complexity-05b — La permanente, frontière quantique : BosonSampling (Aaronson–Arkhipov, 2011)
 
-**Navigation** : [Index](README.md) | [05 — Compter est plus dur que vérifier](Complexity-05-CountingHarder-Permanent-Python.ipynb) | [06 — Déquantifier les suprématies →](Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb)
+**Navigation** : [Index](README.md) | [05 — Compter est plus dur que vérifier](Complexity-05-CountingHarder-Permanent-Python.ipynb) | [06 — Simuler un circuit quantique classiquement →](Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb)
 
 > **Hommage.** Scott Aaronson et Alex Arkhipov ont montré en 2011 (*The Computational
 > Complexity of Linear Optics*) qu'un plateau optique passif — beam splitters et miroirs,
@@ -3606,8 +3641,8 @@ MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSamp
 notebook ; **Cité** = théorème établi ailleurs, non revérifié ici ; **Absent** = ni l'un ni
 l'autre. La #P-difficulté de la permanente (Valiant 1979) restera **Cité** du début à la fin :
 ce notebook ne prouve aucune borne inférieure, il **mesure** le mur que la théorie annonce.
-",,,,,,,,c45cbf91787cc2a3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,fdb2a866,markdown,fr,7a41dbccbaed9642,"## 0. Pourquoi ce notebook
+",,,,,,,,ff2b981734dfc5fe,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,fdb2a866,markdown,fr,3619c66de0e902c0,"## 0. Pourquoi ce notebook
 
 Ce notebook est le cinquième de la série
 ([01 — Compter des pas](Complexity-01-StepCounting-Python.ipynb),
@@ -3635,8 +3670,8 @@ Le texte philosophique d'Aaronson (*Why Philosophers Should Care About Computati
 Complexity*, 2011) — la thèse que c'est la **complexité**, pas la calculabilité, qui porte
 le poids philosophique — reste dans cet encart de cadrage : il justifie le regard, il ne
 mesure rien.
-",,,,,,,,7a41dbccbaed9642,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,c44627d0,code,fr,5c75cb79120e4e9b,"import itertools
+",,,,,,,,3619c66de0e902c0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,c44627d0,code,fr,084b9800d6d88fa1,"import itertools
 import math
 import time
 
@@ -3646,9 +3681,9 @@ import matplotlib.pyplot as plt
 
 rng = np.random.default_rng(42)
 
-print(""Complexity-03 — Aaronson-Arkhipov (2011), la permanente comme frontiere"")
+print(""Complexity-05b — Aaronson-Arkhipov (2011), la permanente comme frontiere (BosonSampling)"")
 print(f""numpy {np.__version__}, matplotlib {plt.matplotlib.__version__}"")
-",,,,,,,,5c75cb79120e4e9b,,,,,,,,,,,,,,,
+",,,,,,,,084b9800d6d88fa1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,a5ba7f2e,markdown,fr,bfc12effa1241ed8,"## 1. La permanente, définition exécutée
 
 $$\mathrm{perm}(A) \;=\; \sum_{\sigma \in S_n} \prod_{i=1}^{n} A_{i,\sigma(i)}
@@ -3859,12 +3894,13 @@ print()
 print(""A n=20 : la definition demande {:,} operations la ou Gauss en demande {:,}."".format(
     sum(ops_naive(20)), sum(ops_gauss(20))))
 ",,,,,,,,26e5ca5c18afb574,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,1c853ddf,markdown,fr,14623c128568f66c,"**Lecture.** Ryser achète **un** exponentiel — de $n!$ à $2^n \cdot n$ — et c'est tout.
-Le rapport Ryser/Gauss **croît à chaque ligne** (2,2x à $n=2$, 40 729x à $n=20$) : rien
+MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,1c853ddf,markdown,fr,3e4b5c998cd762ac,"**Lecture.** Ryser achète **un** exponentiel — de $n!$ à $2^n \cdot n$ — et c'est tout.
+Le rapport Ryser/Gauss **croît à chaque ligne** (2,25x à $n=2$ — le tableau l'imprime `2x`,
+arrondi à l'unité — et 40 729x à $n=20$) : rien
 dans la colonne 3 ne peut rattraper la colonne 4, et c'est précisément la conjecture de
 laboratoire : personne n'a trouvé mieux que $2^n$ en quarante ans, et Valiant (1979)
 explique pourquoi on ne doit pas s'attendre à trouver $n^3$ (**Cité**).
-",,,,,,,,14623c128568f66c,,,,,,,,,,,,,,,
+",,,,,,,,3e4b5c998cd762ac,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,10f41f1d,code,fr,856fba7b9f2b6c44,"# --- chronos encadres : min de 3 essais (machine partagee) --------------------
 def best_time(f, reps=3):
     ts = []
@@ -3938,7 +3974,7 @@ La règle de la série s'applique frontalement : un niveau **Cité** n'est jamai
 dit qu'on ne doit pas en attendre de meilleur ; ce notebook ne fait que rendre cette
 attente *tangible*.
 ",,,,,,,,7e571227f79f38e3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,c645c879,markdown,fr,1fdaa6a7b4a921f2,"## 4. BosonSampling jouet : la loi $|\mathrm{perm}|^2$
+MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,c645c879,markdown,fr,c7b4b1b8dd977746,"## 4. BosonSampling jouet : la loi $|\mathrm{perm}|^2$
 
 Le modèle d'Aaronson–Arkhipov : $n$ photons *indiscernables* entrent dans les $n$ premiers
 modes d'un interféromètre passif décrit par une matrice unitaire $m \times m$ ($m$ modes,
@@ -3949,10 +3985,14 @@ $$p(T) \;\propto\; \left| \mathrm{perm}\!\left( U_{[n],\,T} \right) \right|^2$$
 
 où $U_{[n],T}$ est la sous-matrice $n \times n$ des $n$ lignes d'entrée et des colonnes de
 $T$. Le plateau optique **vit** cette distribution ; une machine classique qui veut
-l'échantillonner *exactement* doit calculer $\binom{m}{n}$ permanentes — le mur du §2,
-franchi à chaque tirage. L'unitaire Haar-aléatoire se construit par factorisation QR d'une
-matrice gaussienne complexe avec correction de phase (Mezzadri 2007).
-",,,,,,,,1fdaa6a7b4a921f2,,,,,,,,,,,,,,,
+l'échantillonner *exactement* par énumération complète doit calculer $\binom{m}{n}$
+permanentes — le mur du §2, que le §4 rend tangible en mesurant sa **construction**
+(une fois, pas à chaque tirage). Ce mur est celui de cet algorithme, pas une borne sur
+tout échantillonneur : les algorithmes d'échantillonnage approchés exploitent la
+rareté et les troncatures, au prix de l'exactitude. L'unitaire Haar-aléatoire se construit
+par factorisation QR d'une matrice gaussienne complexe avec correction de phase
+(Mezzadri 2007).
+",,,,,,,,c7b4b1b8dd977746,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,e51fda8a,code,fr,21731f701373aab9,"def haar_unitary(m, seed):
     """"""Unitaire Haar m x m : QR d'une gaussienne complexe, phases fixees (Mezzadri 2007).""""""
     r = np.random.default_rng(seed)
@@ -4012,14 +4052,16 @@ for N in (2_000, 20_000, 200_000):
     tv = 0.5 * np.abs(counts / N - p).sum()
     print(f""  N = {N:>7,} tirages : TV = {tv:.4f}"")
 ",,,,,,,,2e78e6373ea8a009,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,65197aff,code,fr,3a929915d673dbd9,"# --- extrapolation : ce que couterait la suite (Cite/extrapole) ------------------
+MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,65197aff,code,fr,52665135f669fc1d,"# --- extrapolation : ce que couterait la suite (Cite/extrapole) ------------------
 print(""Regime inaccessible dans un notebook : un echantillonneur classique exact doit"")
 print(""au mieux calculer des morceaux de TOUTE la distribution ; la borne du cout"")
 print(""d'enumeration complete donne l'echelle du mur :"")
 print()
+ops_mur = []
 for (n, m) in ((10, 20), (12, 24), (14, 28), (16, 32), (18, 36), (20, 40)):
     n_out = math.comb(m, n)
     ops = n_out * sum(ops_ryser(n))
+    ops_mur.append(ops)
     sec = ops / 1e12  # a 1 TFLOP/s effectif
     if sec < 90:
         hum = f""{sec:.0f} s""
@@ -4034,20 +4076,25 @@ for (n, m) in ((10, 20), (12, 24), (14, 28), (16, 32), (18, 36), (20, 40)):
     print(f""(n={n:>2}, m={m}) : C({m},{n}) = {n_out:>13,} sorties x Ryser ""
           f""({sum(ops_ryser(n)):>11,} ops) ~ {ops:.1e} operations ~ {hum} a 1 TFLOP/s"")
 print()
-print(""Chaque tranche de +2 photons multiplie le mur par ~30-60 : le regime n=20-30"")
+ratios = [ops_mur[i + 1] / ops_mur[i] for i in range(len(ops_mur) - 1)]
+mesure = "", "".join(f""{r:.1f}"" for r in ratios)
+print(f""Chaque tranche de +2 photons multiplie le mur par ~{min(ratios):.0f}-{max(ratios):.0f} ""
+      f""(mesure : {mesure}) : le regime n=20-30"")
 print(""d'Aaronson-Arkhipov est hors d'atteinte de l'enumeration exacte."")
-",,,,,,,,3a929915d673dbd9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,4dbf5613,markdown,fr,49163ca7abbbb5af,"**Lecture, avec ses limites dites.** Ce banc est un **jouet** à deux titres, et il faut
+",,,,,,,,52665135f669fc1d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,4dbf5613,markdown,fr,00d1e646ca64ef40,"**Lecture, avec ses limites dites.** Ce banc est un **jouet** à deux titres, et il faut
 les nommer : (i) le régime canonique d'Aaronson–Arkhipov est $m \gg n$ (collisions
 négligeables) et surtout $n$ grand — l'échelle où la seule distribution devient
 incalculable ; (ii) notre « échantillonneur » classique énumère **toute** la distribution
 then tire dedans — c'est le pire adversaire possible, pas l'état de l'art (les algorithmes
 d'échantillonnage approché exploitent la rareté et les truncations, au prix d'exactitude).
-Ce que le jouet rend **tangible** reste le geste du papier : chaque photon de plus double
-environ le mur ($2^n$), et $|\mathrm{perm}|^2$ vit exactement à l'intersection du §1
+Ce que le jouet rend **tangible** reste le geste du papier : chaque photon de plus
+multiplie le mur d'énumération par un facteur mesuré de $\approx 9$ — les tranches de
++2 photons le multiplient par $75$ à $84$ —, et $|\mathrm{perm}|^2$ vit exactement à
+l'intersection du §1
 (compter) et du §2 (ne pas pouvoir).
-",,,,,,,,49163ca7abbbb5af,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,c2a15c0e,markdown,fr,8a3e3208073bc0fd,"## 5. Encart gap Mathlib — le verdict, mesuré le 2026-09-19
+",,,,,,,,00d1e646ca64ef40,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,c2a15c0e,markdown,fr,60d9bf67fc9e2977,"## 5. Encart gap Mathlib — le verdict, mesuré le 2026-09-19
 
 Méthode (convention série, cf. encart §6 de
 [l'approfondissement 03b](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb)) : lecture directe de
@@ -4081,7 +4128,7 @@ d'une autre ampleur — il exige la couche complexité entière.
 2026-09-19 (master). La recherche de code exhaustive « Ryser » requiert une session GitHub ;
 le verdict « absent » est donc borné à la couche `LinearAlgebra/Matrix` lue nommément —
 borné et dit, pas supposé.
-",,,,,,,,8a3e3208073bc0fd,,,,,,,,,,,,,,,
+",,,,,,,,60d9bf67fc9e2977,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,e0186dab,markdown,fr,3a0c627ab77d13a6,"## 6. Exercices
 
 Trois exercices (`TODO etudiant`), stubs exécutables sans erreur (règle C.1 du dépôt) ;
@@ -4136,12 +4183,12 @@ bascule_n = None   # TODO etudiant : plus petit n tel que t(ryser_vec) < t(defin
 # premier n ou le rapport s'inverse ; afficher la serie des rapports.
 print(""Exercice a completer : point de bascule definition vs Ryser"")
 ",,,,,,,,5758d3496896e2db,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,3a6ae562,markdown,fr,e49c904d183e594c,"## 7. Conclusion
+MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,3a6ae562,markdown,fr,53dd69aaf59888ba,"## À retenir
 
 | Geste | Où | Ce qui a été mesuré |
 |---|---|---|
 | Exécuter la définition | §1 | $n!$ compté exactement ; perm(0/1) = couplages parfaits vérifié contre énumération brute (règle d'or du comptage) |
-| Mesurer le fossé | §2 | Comptes canoniques par formules fermées validées par instrumentation ($n \le 7$) ; à $n=20$ : définition $4{,}9 \times 10^{19}$ opérations, Gauss 5 149 ; Ryser/det $\approx 1{,}6 \times 10^4$ en temps à $n=16$ |
+| Mesurer le fossé | §2 | Comptes canoniques par formules fermées validées par instrumentation ($n \le 7$) ; à $n=20$ : définition $4{,}9 \times 10^{19}$ opérations, Gauss 5 149 ; Ryser/det $\approx 10^4$ en temps à $n=16$ |
 | Nommer la théorie | §3 | #P-difficulté (Valiant 1979) maintenue au niveau **Cité** ; FPRAS non négatif (JSV 2004) comme exception qui désigne les signes |
 | Faire tourner la loi | §4 | Distribution $\vert \mathrm{perm} \vert^2$ exacte sur 56 / 924 / 12 870 sorties ; TV(échantillon, exact) $\to 0$ ; coût d'énumération extrapolé $6 \times 10^{13}$ opérations à $(14, 28)$ |
 | Sonder Mathlib | §5 | `Matrix.permanent` **existe** (forme $n!$) contre un dossier `Determinant/` entier — l'objet du notebook vit dans Mathlib à l'état de définition, sans sa couche algorithmique ni complexité |
@@ -4150,8 +4197,8 @@ MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSamp
 pain quotidien de l'algèbre numérique ($n^3$, LAPACK), l'autre est le candidat le plus
 crédible à un avantage quantique vérifiable — parce que la nature, elle, n'énumère pas :
 elle *interfère*. Ce notebook a tourné le geste Aaronson–Arkhipov à l'échelle d'un jouet
-honnête : chaque photon supplémentaire double le mur classique, et le plateau optique ne
-sait même pas qu'il y a un mur.
+honnête : chaque photon supplémentaire multiplie le mur d'énumération par un facteur
+mesuré de $\approx 9$, et le plateau optique ne sait même pas qu'il y a un mur.
 
 **Hommage.** La thèse voisine d'Aaronson — la complexité, pas la calculabilité, porte le
 poids philosophique — a sa place exacte : dans cet encart de cadrage, jamais dans les
@@ -4171,17 +4218,16 @@ Algorithm for the Permanent of a Matrix with Nonnegative Entries ». *JACM* 51(4
 Groups ». *Notices of the AMS* 54(5), 592–604.
 — Aaronson, S. (2013). « Why Philosophers Should Care About Computational Complexity ».
 Dans *Computability: Turing, Gödel, Church, and Beyond*, MIT Press (preprint 2011).
-",,,,,,,,e49c904d183e594c,,,,,,,,,,,,,,,
+",,,,,,,,53dd69aaf59888ba,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,9cce5037,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,85910518,markdown,fr,82820ed0593f1b18,"# Complexity-06 — Déquantifier les suprématies
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,85910518,markdown,fr,5f3f57d36b450da7,"# Complexity-06b — Déquantifier les suprématies (Aaronson–Gottesman)
 
-**Navigation** : [Index](README.md) | [05b — La permanente, frontière quantique](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb)
+**Navigation** : [Index](README.md) | [06 — Simuler un circuit quantique classiquement](Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) | [06c — Classical at heart →](Complexity-06c-ClassicalAtHeart-Python.ipynb)
 
-Gottesman–Knill comme arbitre exécutable (Aaronson–Gottesman, 2004)
-",,,,,,,,82820ed0593f1b18,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,feacb926,markdown,fr,f57e2770de96124e,"## 0. Pourquoi ce notebook
+Gottesman–Knill comme arbitre exécutable (Aaronson–Gottesman, *Improved Simulation of Stabilizer Circuits*, 2004). Cette accrétion de Complexity-06 (à venir) tient la simulation classique des circuits de Clifford en O(n²).",,,,,,,,5f3f57d36b450da7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,feacb926,markdown,fr,d03075690cbad6a3,"## 0. Pourquoi ce notebook
 
 Ce notebook est le sixième de la série
 ([01 — Compter des pas](Complexity-01-StepCounting-Python.ipynb),
@@ -4217,7 +4263,7 @@ L'encart de cadrage, sans mesure : les épisodes contemporains de réfutation de
 de suprématie (RCS, GBS) relèvent ici exactement de la **leçon de méthode** — comment on
 réfute proprement, en exhibant le régime où la claim casse. Ce notebook ne prend parti
 pour aucun verdict : il mesure deux régimes sur des instances bornées, et chacun peut
-réexécuter le banc.",,,,,,,,f57e2770de96124e,,,,,,,,,,,,,,,
+réexécuter le banc.",,,,,,,,d03075690cbad6a3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,6354b963,code,fr,579bedd291e35177,"import math
 import time
 
@@ -4760,14 +4806,19 @@ Protocole : les **mêmes circuits** (profondeur $3n$, portes Clifford uniformes,
 $(0, 1, 7)$) sur les trois machines, temps **médian** par taille. Puis la même
 question côté suprématie : que se passe-t-il quand le circuit quitte la classe —
 une fraction $f$ des portes remplacée par des $T$ ?",,,,,,,,185176f3f5e694f4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,c9a6f8fc,code,fr,edb98b9b97a557c8,"NS_CHP = [6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64]
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,c9a6f8fc,code,fr,a5fdbc7b896fa7da,"NS_CHP = [6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64]
 NS_SV = [6, 8, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22]
 NS_STIM = [6, 8, 12, 16, 20, 24, 32, 48, 64, 96, 128, 192, 256]
 
 
 def mediane(fonction, ns):
-    """"""(tailles, temps medians en secondes) : 3 seeds par taille.""""""
-    tailles, temps = [], []
+    """"""(tailles, temps medians, temps min, temps max) : 3 seeds par taille.
+
+    L'intervalle [min, max] est rendu avec la mediane : ces durees sont des
+    temps murs, et leur dispersion sur les seeds mesure la part de la charge
+    de la machine dans le chiffre affiche (#19852).
+    """"""
+    tailles, temps, bas, haut = [], [], [], []
     for n in ns:
         echantillons = []
         for seed in GLOBAL_SEEDS:
@@ -4777,7 +4828,10 @@ def mediane(fonction, ns):
             echantillons.append(time.perf_counter() - t0)
         tailles.append(n)
         temps.append(sorted(echantillons)[1])
-    return np.array(tailles), np.array(temps)
+        bas.append(min(echantillons))
+        haut.append(max(echantillons))
+    return (np.array(tailles), np.array(temps),
+            np.array(bas), np.array(haut))
 
 
 def run_stim(n, gates, seed):
@@ -4791,33 +4845,36 @@ def run_stim(n, gates, seed):
             st.cx(g[1], g[2])
 
 
-chp_ns, chp_t = mediane(run_chp, NS_CHP)
-sv_ns, sv_t = mediane(run_sv, NS_SV)
+chp_ns, chp_t, chp_lo, chp_hi = mediane(run_chp, NS_CHP)
+sv_ns, sv_t, sv_lo, sv_hi = mediane(run_sv, NS_SV)
 if stim is not None:
-    stim_ns, stim_t = mediane(run_stim, NS_STIM)
+    stim_ns, stim_t, _, _ = mediane(run_stim, NS_STIM)
     stim_t_map = dict(zip(stim_ns, stim_t))
 else:
     stim_t_map = {}
-print(""Temps median par taille (profondeur 3n, 3 seeds) :"")
-print(f""{'n':>5} | {'port CHP':>10} | {'etat complet':>12} | {'stim':>10}"")
+print(""Temps median par taille (profondeur 3n, 3 seeds), intervalle [min, max] sur les seeds :"")
+print(f""{'n':>5} | {'port CHP':>26} | {'etat complet':>26} | {'stim':>10}"")
 sv_map = dict(zip(sv_ns, sv_t))
+sv_band = dict(zip(sv_ns, zip(sv_lo, sv_hi)))
+chp_map = dict(zip(chp_ns, chp_t))
 for i, n in enumerate(chp_ns):
     sv_dt = sv_map.get(n)
     stim_dt = stim_t_map.get(n)
-    print(f""{n:>5} | {chp_t[i]*1000:>8.1f}ms | ""
-          + (f""{sv_dt*1000:>10.1f}ms"" if sv_dt else f""{'-':>12}"")
-          + "" | "" + (f""{stim_dt*1000:>8.2f}ms"" if stim_dt else ""-""))
+    print(f""{n:>5} | {chp_t[i]*1000:>9.1f}ms [{chp_lo[i]*1000:.1f}-{chp_hi[i]*1000:.1f}] | ""
+          + (f""{sv_dt*1000:>9.1f}ms [{sv_band[n][0]*1000:.1f}-{sv_band[n][1]*1000:.1f}]""
+             if sv_dt else f""{'-':>26}"")
+          + "" | "" + (f""{stim_dt*1000:>7.2f}ms"" if stim_dt else ""-""))
 
 # dernier point commun au ratio
 n_commun = 20
-ratio = sv_map[n_commun] / chp_t[chp_ns.tolist().index(n_commun)]
-print(f""\nRatio etat-complet / port CHP a n={n_commun} : {ratio:.0f}x"")
+print(f""\nRatio etat-complet / port CHP a n={n_commun} : ""
+      f""{sv_map[n_commun] / chp_map[n_commun]:.0f}x"")
 if stim_t_map:
     print(f""Ratio port CHP / stim a n={n_commun} : ""
-          f""{chp_t[chp_ns.tolist().index(n_commun)] / stim_t_map[n_commun]:.0f}x ""
+          f""{chp_map[n_commun] / stim_t_map[n_commun]:.0f}x ""
           ""(le port est fait pour etre lu, l'organe du metier pour la course)"")
-",,,,,,,,edb98b9b97a557c8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,e2410d1e,code,fr,19df523fe8e13ec9,"# --- regressions : ce que chaque machine paie par qubit -------------------------
+",,,,,,,,a5fdbc7b896fa7da,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,e2410d1e,code,fr,80d169614546a82f,"# --- regressions : ce que chaque machine paie par qubit -------------------------
 # etat complet : t ~ a * 2^n  ->  log2(t) = log2(a) + n  (droite de pente ~1,
 # mais les echelons locaux sont plus raides : la memoire aussi a une loi)
 a_sv, b_sv = np.polyfit(sv_ns, np.log2(sv_t), 1)
@@ -4832,13 +4889,44 @@ print(""  (plancher theorique 2x par qubit ; au-dela = effets de memoire :"")
 print(""   chaque qubit double le vecteur, et la copie finit par sortir des caches)"")
 
 # bascule MESUREE : le plus petit n ou l'etat complet depasse deja le port
-pairs = {n: (s, c) for n, s, c in zip(sv_ns, sv_t, [chp_t[chp_ns.tolist().index(n)]
-                                                    for n in sv_ns if n in chp_ns])}
-n_bascule = next(n for n in sv_ns
-                 if n in pairs and pairs[n][0] > pairs[n][1])
-print(f""\nBascule MESUREE : des n = {n_bascule} qubits, l'etat complet paie plus que""
-      f"" l'arbitre ({pairs[n_bascule][0]/pairs[n_bascule][1]:.1f}x), et l'ecart""
-      "" double ensuite a chaque qubit"")
+# le rapport est calcule sur les medianes, et son ENVELOPPE sur les seeds est
+# affichee a la taille de bascule : c'est elle qui dit si la position est nette
+# ou si elle est au ras du seuil (#19852).
+commun = [n for n in sv_ns if n in chp_ns]
+pairs = {n: (sv_map[n], chp_map[n]) for n in commun}
+# Enveloppe du RAPPORT, pas du seul numerateur : la plus petite valeur possible
+# est min(etat complet) / max(port CHP), la plus grande max(etat) / min(port).
+# Le port CHP n'est pas toujours plat -- mesure a [5.7-6.6] ms a n=40 et
+# [15.2-15.8] ms a n=64 -- donc sa mediane ne peut pas servir de denominateur
+# fige sous une etiquette qui dit « le rapport » (#20193).
+chp_band = dict(zip(chp_ns, zip(chp_lo, chp_hi)))
+bandes = {n: (sv_band[n][0] / chp_band[n][1], sv_band[n][1] / chp_band[n][0])
+          for n in commun}
+n_bascule = next(
+    (n for n in sv_ns if n in pairs and pairs[n][0] > pairs[n][1]),
+    None  # defaut : aucun n ne verifie la condition, on n'affiche pas la bascule
+)
+if n_bascule is not None:
+    lo_r, hi_r = bandes[n_bascule]
+    print(f""\nBascule MESUREE : des n = {n_bascule} qubits, l'etat complet paie plus que""
+          f"" l'arbitre ({pairs[n_bascule][0]/pairs[n_bascule][1]:.1f}x), et l'ecart""
+          "" double ensuite a chaque qubit"")
+    print(f""  enveloppe du ratio sur les 3 seeds a n = {n_bascule} :""
+          f"" de {lo_r:.2f}x a {hi_r:.2f}x""
+          "" (min(etat)/max(port) et max(etat)/min(port) sur les seeds)"")
+    if lo_r <= 1.0:
+        print(""  la borne basse passe sous 1x : la position de cette bascule est au ras""
+              "" du seuil et depend de la charge de la machine (#19852)."")
+else:
+    print(""Bascule NON OBSERVEE sur les tailles mesurees : sur cette execution,""
+          "" l'etat complet n'a pas depasse le port CHP pour les n mesures.""
+          "" C'est un effet de la charge machine (le ratio etat-complet/port est""
+          "" sensible au pas de 1.0x a 1.5x selon la charge, voir note de provenance §7)."")
+    latent = [n for n in commun if bandes[n][1] > 1.0]
+    if latent:
+        print(f""  la borne haute du bruit franchit 1x des n = {min(latent)} : la bascule""
+              "" est latente a cette taille, pas absente -- sa detection depend du pas""
+              "" de mesure (#19852)."")
 
 # extrapolations (niveau Cite de la hierarchie du depot : ajustement, non mesure)
 for n_cible in (30, 40):
@@ -4846,8 +4934,8 @@ for n_cible in (30, 40):
     unite, val = (""h"", t_fit / 3600) if t_fit > 3600 else (""s"", t_fit)
     print(f""EXTRAPOLATION du fit 2^n : n={n_cible} -> {val:.3g} {unite} par circuit""
           "" (non mesure)"")
-",,,,,,,,19df523fe8e13ec9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,505c4f40,code,fr,461631b50e253089,"# --- densite T : le regime ou l'arbitre rend son tablier ------------------------
+",,,,,,,,80d169614546a82f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,505c4f40,code,fr,2bf9eee9b4b9a018,"# --- densite T : le regime ou l'arbitre rend son tablier ------------------------
 def gen_circuit_T(n, depth, seed, fraction):
     """"""Circuit Clifford ou une fraction des portes est remplacee par T.""""""
     rng = np.random.default_rng(seed * 7919 + n * 31 + depth + int(fraction * 1000))
@@ -4888,7 +4976,7 @@ for fraction, injecte_une_T, etiquette in [
         verdict_chp = f""REFUSE ({str(exc)[:44]}...)""
     # 2. l'outil du metier
     if stim is not None:
-        verdict_stim = ""simule"" if hasattr(stim.TableauSimulator(), ""t"") else ""pas de porte t""
+        verdict_stim = ""simule"" if hasattr(stim.TableauSimulator(), ""t"") else ""pas de porte t (API)""
     else:
         verdict_stim = ""non installe""
     # 3. l'etat complet : aucune classe, il paie 2^n et simule tout
@@ -4901,12 +4989,18 @@ for fraction, injecte_une_T, etiquette in [
 print()
 print(""Message du banc : la frontiere n'est pas 'quantique contre classique',"")
 print(""elle est 'Clifford contre le reste' -- et T est du reste."")
-",,,,,,,,461631b50e253089,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,b4e8bb6e,markdown,fr,0cebdd6e234084b5,"**Lecture.** Trois constats, un seul message.
+",,,,,,,,2bf9eee9b4b9a018,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,b4e8bb6e,markdown,fr,a6df63daf705ed8f,"**Lecture.** Trois constats, un seul message.
 
-1. À circuits **Clifford purs**, la bascule est **mesurée**, pas extrapolée : dès la
-   douzaine de qubits, l'état complet paie déjà plus que l'arbitre, et le ratio
-   imprimé par le banc à $n = 20$ se lit en **milliers**. La pente globale est
+1. À circuits **Clifford purs**, la bascule est **mesurée**, pas extrapolée : l'état
+   complet paie déjà plus que l'arbitre, et le ratio imprimé par le banc à
+   $n = 20$ se lit dans la sortie committée de la cellule 22 et en donne l'ordre de grandeur. Le banc rend désormais chaque temps avec son
+   **intervalle sur les trois seeds** ($[\min, \max]$), et le rapport des deux
+   machines avec **sa propre enveloppe** ($\min$ et $\max$ des seeds, jamais la
+   mediane du port prise pour un point) : ces chiffres sont des temps murs, et leur dispersion
+   mesure la part de la charge de la machine dans la valeur affichée — d'où la
+   prudence sur la *position* exacte de la bascule quand sa borne basse frôle
+   $1\times$ (#19852). La pente globale est
    $\approx 1$ bit de $\log_2 t$ par qubit ($R^2$ affiché), mais les échelons locaux
    montent jusqu'à plusieurs fois $2\times$ par qubit : le plancher théorique
    $2^n$ est *optimiste* — chaque qubit double le vecteur, et les copies finissent par
@@ -4925,11 +5019,19 @@ MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-P
    seulement de $n$. Chaque machine a son invariant : l'une paie $2^n$ quelles que
    soient les portes, l'autre paie $n^2$ mais seulement dans sa classe.
 
+> **Provenance de la colonne `stim`.** Le banc n'installe rien : la colonne
+> `stim` n'est renseignée que si `stim` (le simulateur stabilisateur de
+> référence) est présent dans l'environnement d'exécution, et il ne figure dans
+> aucun `requirements` du dépôt. Sur un clone propre, le banc tourne donc à
+> **deux** machines et la colonne affiche `stim non installé` — la dégradation
+> est gracieuse, mais les sorties committées ici proviennent d'un environnement
+> où `stim` était présent.
+
 C'est la leçon de méthode, mesurée : une « suprématie quantique » est une assertion
 conjointe sur **une classe de circuits et un régime de taille**. Réfuter proprement,
 c'est exhiber le régime où l'assertion casse — ici, tout circuit Clifford, quelle que
 soit la taille. Installer la claim, c'est montrer qu'on est sorti du régime — et $T$
-est le billet d'entrée le plus faible du hors-classe.",,,,,,,,0cebdd6e234084b5,,,,,,,,,,,,,,,
+est le billet d'entrée le plus faible du hors-classe.",,,,,,,,a6df63daf705ed8f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,14ff6ce6,markdown,fr,607ef97595658193,"## 6. Exercices
 
 Les stubs s'exécutent sans erreur (règle C.1 du dépôt) ; les indices et étapes guident
@@ -5029,15 +5131,17 @@ if facteur_par_qubit is not None:
     print(f""  temps projete a n=30 : {t_projete_30:.3g} s"")
     print(f""  projection > 1 heure des n = {n_une_heure}"")
 ",,,,,,,,3f09286fe3fbc29f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,a88963a7,markdown,fr,94b5dd18dd8571c0,"## 7. Conclusion
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,a88963a7,markdown,fr,ff96f070a06fd54b,"## À retenir
 
 | Geste | Où | Ce qui a été mesuré |
 |---|---|---|
 | Dériver, pas recopier | §1–§2 | Table de phase et conjugaison CHP **construites** par multiplication des matrices $2\times2$ ; le piège de phase $X_c Z_t / Y_c Y_t$ exhibé, pas affirmé |
 | Construire l'organe | §3 | Port CHP complet (rowsum, portes, mesures — déterministe par lecture GF(2), aléatoire par re-stabilisation) ; Bell et GHZ lus dans le tableau, 50/50 corrélations mesurées |
 | Prouver l'arbitre | §4 | **84 valeurs propres** stabilisatrices exactes au $10^{-9}$ (zéro bruit) ; distributions TV sous 6× le bruit de sondage ; stim confirme les outcomes déterministes |
-| Mesurer le régime | §5 | Bascule **mesurée** dès $n = 13$ qubits ; ratio 1480× à $n = 20$ ; pente $\approx 1$ bit/qubit côté état complet ($R^2$ affiché) avec échelons locaux au-dessus du plancher $2\times$ (mémoire) ; projections $n = 30/40$ **extrapolées du fit, étiquetées telles** |
+| Mesurer le régime | §5 | Bascule **mesurée**, pas extrapolée ; chaque temps rendu avec son **intervalle sur les seeds** et le ratio état-complet/port imprimé à $n = 20$ ; pente $\approx 1$ bit/qubit côté état complet ($R^2$ affiché) avec échelons locaux au-dessus du plancher $2\times$ (mémoire) ; projections $n = 30/40$ **extrapolées du fit, étiquetées telles** ; ces temps murs se lisent dans les sorties committées des cellules 21-22 et ne sont pas recopiés ici : un rafraîchissement de base ne fait plus dériver cette ligne |
 | Fermer la classe | §5 | Une porte $T$ → refus du port **et** de stim (pas de méthode `t`) ; l'état complet inchangé — la frontière est Clifford/le-reste, pas quantique/classique |
+
+*Banc `stim` installé. Sur la même machine et le même code, des ré-exécutions complètes rendent un ratio qui varie — ce qui est stable, c'est le régime et son ordre de grandeur, pas le chiffre : seule la sortie committée fait foi. C'est pourquoi la ligne « Mesurer le régime » ne recopie pas les temps murs.*
 
 **Ce que 2004 a fondé ici.** Aaronson et Gottesman n'ont pas « accéléré » la simulation
 quantique : ils ont **délimité** la terre qui ne demandait pas de moteur quantique. La
@@ -5062,7 +5166,7 @@ thesis, Caltech* (quant-ph/9807006) — le théorème de Gottesman–Knill.
 quant-ph/0701104 — le cadre de la déquantification et les classes de simulateurs.
 — Gidney, C. (2021). « Stim: a fast stabilizer circuit simulator ». *Quantum* 7, 1297.
 — Nielsen, M. A., & Chuang, I. L. (2010). *Quantum Computation and Quantum
-Information*, Cambridge University Press — chapitre 10.5, le formalisme stabilisateur.",,,,,,,,94b5dd18dd8571c0,,,,,,,,,,,,,,,
+Information*, Cambridge University Press — chapitre 10.5, le formalisme stabilisateur.",,,,,,,,ff96f070a06fd54b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,relativisation-bgs,markdown,fr,045652b4e750e680,"## Relativisation : ce qu'une diagonale finie ne peut pas trancher
 
 Les trois tableaux de ce carnet — budgets imbriqués, diagonale finie, simulation bornée — illustrent les **mécanismes** d'une preuve de séparation. Le théorème réel (Hartmanis–Stearns 1965) est inconditionnel : il sépare des classes de problèmes, pas seulement des programmes. Mais la technique qui le porte — la diagonalisation — a une limite connue depuis 1975, et cette limite mérite sa place ici parce qu'elle dit exactement ce que ce type de geste peut et ne peut pas trancher.
