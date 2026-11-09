@@ -41,3 +41,16 @@ python scripts/notebook_tools/curriculum_taxonomy.py \
 ```
 
 Les tranches suivantes étendront la série aux sous-séries **SocialChoice**, **Coalitions**, **Dynamics**, aux jeux bayésiens et aux jeux globaux — ajoutées au même `gametheory.json`, une PR par tranche, sur ce même modèle.
+
+## Série Search — tranche 1 (sous-série Part1-Foundations : espaces d'états → non informée → informée → locale → adversariale → MCTS)
+
+`search.json` étend le même format à la série **Search**, sur la sous-série **Part1-Foundations** : six carnets (`Search-01-StateSpace`, `02-Uninformed`, `03-Informed`, `04-LocalSearch`, `06-AdversarialSearch`, `07-MCTS-And-Beyond`) et 24 concepts. Le même `schema.json` et le même validateur `curriculum_taxonomy.py` s'appliquent ; l'arbre de carnets porte ici le niveau **sous-série** (`Search/Part1-Foundations`). Les **prérequis** relient les carnets entre eux (par ex. la formulation du problème avant la recherche non informée, le minimax avant l'élagage alpha-bêta, l'adversarial avant le MCTS). Chaque concept cite les cellules de carnet où il est enseigné ; ceux qui s'y rattachent (espaces d'états, recherche non informée, recherche informée et A*, recherche locale, recherche adversariale, minimax) nomment en outre le chapitre **AIMA 3e/4e** correspondant dans leur définition, les concepts sans équivalent AIMA (MCTS, sélection UCB1, AlphaZero) n'en citant aucun.
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py \
+  --data docs/curriculum/taxonomy/search.json \
+  --skos-output /tmp/search.ttl \
+  --owl-output /tmp/search.owl
+```
+
+Les tranches suivantes étendront la série aux sous-séries de `Search/` (autres parties du catalogue) et aux carnets de `Part1-Foundations` non couverts ici — ajoutées au même `search.json`, une PR par tranche, sur ce même modèle.

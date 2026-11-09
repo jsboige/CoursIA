@@ -279,7 +279,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/aima-mapping/README.md](curriculum/aima-mapping/README.md) | AIMA : tables des matières 3e et 4e en données (ancre PDF par ligne), correspondance section → phase → carnets → compétences, sections sans couverture, ce qui dépasse le livre, et écarts de découpage entre les deux éditions |
 | [curriculum/genai-rush.md](curriculum/genai-rush.md) | Accéléré vers GenAI |
 | [curriculum/symbolic-formalization.md](curriculum/symbolic-formalization.md) | IA Symbolique et Formalisation |
-| [curriculum/taxonomy/README.md](curriculum/taxonomy/README.md) | Schéma de taxonomie pédagogique et tranches Compression + Probas (Infer) + GameTheory (cœur), avec export SKOS/OWL |
+| [curriculum/taxonomy/README.md](curriculum/taxonomy/README.md) | Schéma de taxonomie pédagogique et tranches Compression + Probas (Infer) + GameTheory (cœur) + Search (Part1-Foundations), avec export SKOS/OWL |
 | [curriculum/ia-hybride.md](curriculum/ia-hybride.md) | IA hybride — LLM + solveurs + vérificateurs (manuel, EPIC #13844) |
 | [curriculum/ia-societe-responsabilite.md](curriculum/ia-societe-responsabilite.md) | Parcours IA, société et responsabilité — 16 étapes en 5 actes, des biais mesurés aux choix sociaux et à l'argumentation (EPIC #13844) |
 
