@@ -3648,6 +3648,145 @@ def test_belt_disarms_on_the_report_exit(monkeypatch):
         pig._BELT_DEADLINE[0] = None
 
 
+# --- #24461 : le LABEL `candidate-delivered` exclu A LA LECTURE de la liste --
+#
+# Le label est DEJA dans le payload du pool (une seule requete
+# `gh issue list --json labels` pour tout le pool). L'exclure ici ne coute
+# donc AUCUNE sonde par issue, la ou la sonde de livraison en coute une et
+# sature -- et quand le budget ou le mur de temps est atteint, elle rend
+# fail-OPEN et l'issue est servie comme un grain neuf (mesure #24461 : 37
+# des 120 grains servis portaient un marqueur vivant).
+#
+# L'exclusion vise les lanes HORS `DELIVERED_URN_LANES` (#15069) : l'urne
+# `delivered` et la lecture du label sont reservees au coordinateur et a
+# l'adjoint, qui decident de la fermeture.
+
+
+def _labelled_delivered_pool():
+    pool = [_make_item(80, age_days=10, idle=1, klass="grain"),
+            _make_item(81, age_days=10, idle=1, klass="grain")]
+    pool[0]["labels"].append("candidate-delivered")
+    return pool
+
+
+def test_belt_filter_exclut_le_label_pour_une_lane_worker():
+    args = _FakeArgs()
+    args.lane = "myia-po-2023:CoursIA"
+    args.include_delivered = False
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    assert [it["number"] for it in kept] == [81]
+    assert [it["number"] for it, _ in drops] == [80]
+    assert "LIVRAISON" in drops[0][1]
+
+
+def test_belt_filter_conserve_le_label_pour_une_lane_habilitee():
+    args = _FakeArgs()
+    args.lane = "myia-ai-01:CoursIA"
+    args.include_delivered = False
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    assert [it["number"] for it in kept] == [80, 81]
+    assert drops == []
+
+
+def test_include_delivered_leve_l_exclusion_par_label():
+    """L'echappatoire nommee reste l'echappatoire : `--include-delivered`
+    leve l'exclusion comme il leve les exclusions par sonde."""
+    args = _FakeArgs()
+    args.lane = "myia-po-2023:CoursIA"
+    args.include_delivered = True
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    assert [it["number"] for it in kept] == [80, 81]
+    assert drops == []
+
+
+def test_l_exclusion_par_label_ne_coute_aucune_sonde():
+    """L'exclusion est LUE dans le payload : elle ne passe pas par la sonde
+    de livraison, donc elle ne peut pas s'eteindre sur un budget epuise."""
+    args = _FakeArgs()
+    args.lane = "myia-po-2023:CoursIA"
+    args.include_delivered = False
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    # l'item ecarte est rendu dans les drops : une exclusion invisible est
+    # un silence, et un silence se lit comme une absence.
+    assert len(drops) == 1
+    assert kept[0]["number"] == 81
+
+
+# --- #24461 (c) point 4 : le MOTIF d'ecartement est NOMME dans le tapis ---
+#
+# Le correctif initial nommait le motif dans les causes du chemin PONDERE
+# (`conflicts.append`), pas dans celles du TAPIS (`belt_withheld.append`) :
+# le tapis ecarte dans une autre famille de sites, et `delivery_motifs`
+# rendait deux listes VIDES alors que le tapis ecarte reellement des issues
+# pour ces deux motifs. Ces tests_branchent le chemin du tapis.
+
+def test_belt_nomme_le_motif_du_dossier_vivant(monkeypatch):
+    """Le filtre recent du tapis nomme le motif du dossier VIVANT."""
+    marked = _make_item(7742, age_days=90, idle=9, last=None)
+    clean = _make_item(19008, age_days=40, idle=4, last=None)
+    motif = ("dossier `[CLOSURE PREFLIGHT]` VIVANT (verdict KEEP) : la "
+             "cloture est en cours, l'issue n'est pas un grain de production.")
+    monkeypatch.setattr(pig, "_delivery_motif", lambda n: motif)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [marked, clean], _free_claims([marked, clean]),
+        _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: n == 7742)
+    assert [p["number"] for p in picks] == [19008]
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert causes[7742].startswith("LIVRAISON (recent)")
+    assert pig.delivery_grammar.MOTIF_SUFFIX + motif in causes[7742]
+    assert pig.delivery_grammar.motif_class(causes[7742]) == "living_dossier"
+
+
+def test_belt_nomme_le_motif_de_la_livraison_epic_wide(monkeypatch):
+    """La sonde pleine du tapis nomme le motif de la livraison ENTIERE."""
+    marked = _make_item(16048, age_days=99, idle=9, last=None)
+    clean = _make_item(19009, age_days=41, idle=4, last=None)
+    motif = ("livraison epic-wide : un `[DELIVERED]` sans clause `paths:` "
+             "livre l'issue ENTIERE.")
+    monkeypatch.setattr(pig, "_delivery_motif", lambda n: motif)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [marked, clean], _free_claims([marked, clean]),
+        _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: n == 16048,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False)
+    assert [p["number"] for p in picks] == [19009]
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert 16048 in causes
+    assert pig.delivery_grammar.MOTIF_SUFFIX + motif in causes[16048]
+    assert pig.delivery_grammar.motif_class(causes[16048]) == "epic_wide"
+
+
+def test_belt_sans_motif_ne_fabrique_pas_de_motif(monkeypatch):
+    """Pas d'instantane -> pas de motif : la cause reste generique.
+
+    fail-OPEN : un motif fabrique serait pire qu'un motif absent.
+    """
+    marked = _make_item(7743, age_days=91, idle=9, last=None)
+    clean = _make_item(19010, age_days=42, idle=4, last=None)
+    monkeypatch.setattr(pig, "_delivery_motif", lambda n: None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [marked, clean], _free_claims([marked, clean]),
+        _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: n == 7743)
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert "motif" not in causes[7743]
+    assert pig.delivery_grammar.motif_class(causes[7743]) is None
+
+
 def test_belt_deadline_keeps_the_marker_filter_when_the_read_is_local(monkeypatch):
     """Le mur de temps arrete le RESEAU ; il n'a aucune raison d'arreter une
     lecture deja en memoire.
