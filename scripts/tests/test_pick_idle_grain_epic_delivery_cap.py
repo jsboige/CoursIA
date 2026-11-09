@@ -233,7 +233,7 @@ def test_belt_filter_forwards_the_drops_to_the_caller():
     """La cause doit remonter : un plafond muet se lit comme une famine."""
     drops: list[tuple[dict, str]] = []
     kept = belt_filter([_belt_item(16334, "umbrella"), _belt_item(7)],
-                       _args(), epic_deliveries={16334: 2}, drops=drops)
+                       _args(), epic_load={16334: 2}, drops=drops)
     assert [it["number"] for it in kept] == [7]
     assert [it["number"] for it, _cause in drops] == [16334]
 
@@ -242,7 +242,7 @@ def test_draw_belt_honours_the_cap():
     """Le modele deterministe ne doit pas pouvoir contourner le plafond."""
     drops: list[tuple[dict, str]] = []
     kept = draw_belt([_belt_item(16334, "umbrella"), _belt_item(7)],
-                     _args(), epic_deliveries={16334: 2}, drops=drops)
+                     _args(), epic_load={16334: 2}, drops=drops)
     assert [it["number"] for it in kept] == [7]
     assert [it["number"] for it, _cause in drops] == [16334]
 
@@ -260,7 +260,7 @@ def test_consume_board_honours_the_cap_on_the_snapshot_path():
                                     head=len(items))
     picks, meta = pig.consume_board(snap, _args(), urns={"grain", "umbrella"},
                                     live_check=False,
-                                    epic_deliveries={16334: 2})
+                                    epic_load={16334: 2})
     assert [it["number"] for it in picks] == [7]
     assert [d["number"] for d in meta["epic_delivery_cap"]["dropped"]] == [16334]
     assert meta["epic_delivery_cap"]["state"] == "measured"
@@ -371,7 +371,7 @@ def test_le_refus_ne_vide_jamais_le_tapis():
     notes: list[str] = []
     drops: list[tuple[dict, str]] = []
     kept = belt_filter([_belt_item(16334, "umbrella")], _args(),
-                        epic_deliveries={16334: 5}, drops=drops, notes=notes)
+                        epic_load={16334: 5}, drops=drops, notes=notes)
     assert [it["number"] for it in kept] == [16334]
     assert drops == []
     assert notes and "SUSPENDU" in notes[0]
@@ -384,7 +384,7 @@ def test_le_temoin_la_lane_refusee_recoit_un_grain():
     redirection, pas un arret.
     """
     items = [_belt_item(16334, "umbrella"), _belt_item(7, "grain")]
-    kept = draw_belt(items, _args(), epic_deliveries={16334: 2})
+    kept = draw_belt(items, _args(), epic_load={16334: 2})
     assert [it["number"] for it in kept] == [7]
 
 
