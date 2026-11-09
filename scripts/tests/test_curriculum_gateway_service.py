@@ -11,10 +11,10 @@ from urllib.request import Request, urlopen
 import pytest
 from rdflib import Graph, RDF
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'notebook_tools' / 'curriculum_gateway'))
 import service
 
-TOOLS = Path(__file__).resolve().parent.parent
+TOOLS = Path(__file__).resolve().parents[1] / 'notebook_tools'
 
 
 @pytest.fixture
