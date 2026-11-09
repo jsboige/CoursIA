@@ -43,8 +43,54 @@ def _dsl_items(raw: str, path: Path) -> list[Selector]:
     return result
 
 
+def _without_comments(text: str, path: Path) -> str:
+    """Masque les commentaires Lean imbriqués sans toucher aux chaînes."""
+    result: list[str] = []
+    depth = 0
+    quoted = False
+    i = 0
+    while i < len(text):
+        if depth:
+            if text.startswith("/-", i):
+                depth += 1
+                result.append("  ")
+                i += 2
+            elif text.startswith("-/", i):
+                depth -= 1
+                result.append("  ")
+                i += 2
+            else:
+                result.append("\n" if text[i] == "\n" else " ")
+                i += 1
+        elif quoted:
+            result.append(text[i])
+            if text[i] == "\\" and i + 1 < len(text):
+                result.append(text[i + 1])
+                i += 2
+            else:
+                if text[i] == '"':
+                    quoted = False
+                i += 1
+        elif text.startswith("/-", i):
+            depth = 1
+            result.append("  ")
+            i += 2
+        elif text.startswith("--", i):
+            end = text.find("\n", i)
+            end = len(text) if end < 0 else end
+            result.append(" " * (end - i))
+            i = end
+        else:
+            quoted = text[i] == '"'
+            result.append(text[i])
+            i += 1
+    if depth:
+        raise LakefileError(f"{path} : commentaire Lean non fermé")
+    return "".join(result)
+
+
 def _dsl(text: str, path: Path) -> list[Selector]:
-    text = re.sub(r"--[^\n]*", "", re.sub(r"/-.*?-/(?:\s*)", " ", text, flags=re.S))
+    text = _without_comments(text, path)
     heads = list(_HEAD.finditer(text))
     if len(heads) != len(re.findall(r"\blean_lib\b", text)):
         raise LakefileError(f"{path} : déclaration lean_lib non reconnue")

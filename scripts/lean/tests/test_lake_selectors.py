@@ -5,7 +5,7 @@ import sys
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from lake_selectors import LakefileError, lake_selectors, selected
+from lake_selectors import LakefileError, _without_comments, lake_selectors, selected
 from check_i18n_siblings import check_en_built
 from check_lean_orphans import main as orphan_main
 
@@ -56,6 +56,35 @@ def test_dsl_comments_and_explicit_directives(tmp_path):
     assert selected("Foo.Child", selectors)
     assert selected("Bar", selectors)
     assert not selected("Ghost", selectors)
+
+
+def test_nested_comments_do_not_leak_selectors(tmp_path):
+    (tmp_path / "lakefile.lean").write_text(
+        'lean_lib Foo where\n'
+        ' /- outer /- inner -/ globs := #[`Ghost] -/\n'
+        ' globs := #[`Foo] -- /- not a block comment\n', encoding="utf-8")
+    assert lake_selectors(tmp_path) == [("one", "Foo")]
+
+
+@pytest.mark.parametrize("text", [
+    '"/- literal -/ -- literal"',
+    r'"escaped \" /- still literal -/"',
+    r'"escaped \\" /- removed -/',
+])
+def test_comment_scanner_preserves_strings(text):
+    masked = _without_comments(text, Path("lakefile.lean"))
+    assert len(masked) == len(text)
+    literal_end = text.rfind('"') + 1
+    assert masked[:literal_end] == text[:literal_end]
+    assert not masked[literal_end:].strip()
+
+
+@pytest.mark.parametrize("comment", ['/- unfinished', '/- outer /- inner -/'])
+def test_unterminated_comments_fail_closed(tmp_path, comment):
+    (tmp_path / "lakefile.lean").write_text(
+        'lean_lib Foo where\n' + comment, encoding="utf-8")
+    with pytest.raises(LakefileError, match="commentaire Lean non fermé"):
+        lake_selectors(tmp_path)
 
 
 def test_invalid_dsl_and_toml_fail_closed(tmp_path):
