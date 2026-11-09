@@ -66,18 +66,18 @@ Choisissez votre vitesse de lecture : suivez les numéros nus dans le parcours p
 
 Les lettres prolongent le numéro nu du même palier. Les prérequis techniques propres à une extension sont indiqués avec sa description et détaillés dans la section « Prérequis ».
 
-### Autour de 03 {#autour-de-03}
+### Autour de 03
 - **3b — [03b_Typed_Decisions_System1.ipynb](03b_Typed_Decisions_System1.ipynb)** : Décisions typées « système 1 » : contrat choice/score/noul, LLM gelé lu sur ses logits, tête d'attention fine-tunée (jevlike) et moteur de décision pré-entraîné (laya : zéro-shot puis fine-tuné) contre témoin classique, calibration (NLL, Brier, ECE, température), escalade, banc tiers CC0 hors domaine (v1/v2, chute mesurée)
 - **3c — [03c_Constrained_Decoding_Python.ipynb](03c_Constrained_Decoding_Python.ipynb)** : Décodage contraint au niveau du token : automate fini (DFA) codé à la main pour le format date ISO `\d{4}-\d{2}-\d{2}`, dérivation du masque de logits depuis les états de l'automate, génération pas à pas d'une date valide — le complément token-level du 3 (JSON Schema agit au niveau API, le masque agit sur la distribution elle-même)
 - **3d — [03d_JEPA_PredictionLatente_System1.ipynb](03d_JEPA_PredictionLatente_System1.ipynb)** : Prédiction latente sans génération : DM-JEPA 1.7 (moteur non-autorégressif, 349 M paramètres) exécuté via le harnais de validation local (#21997) — le distracteur qui partage l'ancre coule (rang moyen 5,7 sur 6), la négation reste au rang du hasard (3,75 contre 3,5), baseline du tri aléatoire à côté ; les chiffres de la page de validation reproduits en direct
 
-### Autour de 09 {#autour-de-09}
+### Autour de 09
 - **9b — [09b_Prompt_Security_RedTeam.ipynb](09b_Prompt_Security_RedTeam.ipynb)** : Versant **adversarial** du 9 : taxonomie de l'injection (directe / indirecte RAG / jailbreak / exfiltration), 3 attaques mesurées sur le routeur DeepSeek self-hosted (≥1 réussie avant défense), défenses testées + tableau attaque × défense, suite de tests rejouable (propriété « PWNED jamais délivré »), 3 exercices stubs C.1
 - **9c — [09c_Production_Routage_Repli.ipynb](09c_Production_Routage_Repli.ipynb)** : Choisir le bon modèle au bon moment : catalogue et prix, banque de questions à réponse vérifiable, baselines locale et distante, routage par politique (coût × difficulté × budget), cascade petit-vers-grand sur seuil de confiance, repli sur panne fournisseur simulée, synthèse du coût par stratégie
 - **9d — [09d_Production_Caches.ipynb](09d_Production_Caches.ipynb)** : Payer une fois, servir mille fois : remplissage du cache sur inférence réelle, embeddings et similarité, cache exact, cache sémantique (seuil et prix), cache de préfixe fournisseur lu dans `cached_tokens`
 - **9e — [09e_Production_Exploitation.ipynb](09e_Production_Exploitation.ipynb)** : L'exploitation en production : coût par requête mesuré sur appels réels, budget (trajectoire, seuil d'alerte, date de franchissement), shadow, canary et auto-rollback sur erreurs réelles, SLO et error budget
 
-### Autour de 10 {#autour-de-10}
+### Autour de 10
 - **10b — [10b_Inference_Mechanics.ipynb](10b_Inference_Mechanics.ipynb)** : KV-cache from scratch, exactitude des logits, speedup/mémoire, TTFT et ITL mesurés sur vLLM
 - **10c — [10c_Long_Context_Strategies.ipynb](10c_Long_Context_Strategies.ipynb)** : Stratégies pour contextes longs : budget de tokens (comptage avec le tokenizer réel), biais de position, map-reduce, prefix caching — quatre mesures sur notre vLLM
 - **10d — [10d_TensorSharp_DotNet_Inference.ipynb](10d_TensorSharp_DotNet_Inference.ipynb)** : Bake-off bindings .NET en deux parties : pilote TensorSharp (défaut `<pad>` rendu falsifiable, `RECOVERABLE-LOCAL`), puis jambe ORT GenAI (ONNX int4, EP CUDA prouvée) qui rejoue le protocole commun, dresse le tableau à trois moteurs et tranche le go/no-go par axe
@@ -85,16 +85,16 @@ Les lettres prolongent le numéro nu du même palier. Les prérequis techniques 
 - **10g — [10g_Speculative_Decoding.ipynb](10g_Speculative_Decoding.ipynb)** : Décodage spéculatif from scratch : un b-gramme (draft) propose *k* tokens, un 4-gramme (cible) les vérifie en un passage ; taux d'acceptation **décroissant** avec *k* (0,59 → 0,17), tokens par passage qui **sature** (→ 2,3), et speedup `mu/(1+k.r)` balayé sur k×r — le point de bascule où le décodage redevient plus lent que la cible seule. Auto-contenu, CPU, sans vLLM ; le speedup réel sur endpoint est `RECOVERABLE-MACHINE`
 - **10h — [10h_Roofline_Memory_Bandwidth.ipynb](10h_Roofline_Memory_Bandwidth.ipynb)** : Roofline from scratch sur CPU : les deux plafonds (calcul et bande passante) et l'intensité arithmétique qui tranche — le décodage (1 token) est limité par la **bande passante**, le prefill par le **calcul** ; le batch et le décodage spéculatif (10g) comme deux leviers qui élèvent l'intensité vers la crête, mesures à l'appui *(prérequis : voir la description et la section « Prérequis » ci-dessus ; les lettres prolongent le palier 10.)*
 
-### Autour de 11 {#autour-de-11}
+### Autour de 11
 - **11b — [11b_Materiel_Debit_Cout.ipynb](11b_Materiel_Debit_Cout.ipynb)** : Ferme la chaîne format → VRAM → bande passante → coût : roofline construit sur les débits et pics **mesurés** de la carte (stream triad, matmul fp16/fp32), empreinte VRAM par format (fp32/fp16/bf16 natifs + int8/int4 `bitsandbytes`), débits préfill/décodage relevés des timings Ollama (`qwen3.5:4b`), fermeture du toit (débit prédit par `bande passante / taille des poids` vs débit observé, écart lu), coût local par million de jetons (watts `nvidia-smi` mesurés + hypothèses déclarées, seuil de bascule face aux grilles API) — chaque grandeur étiquetée Mesuré/Cité, 3 exercices C.1
 
-### Autour de 13 {#autour-de-13}
+### Autour de 13
 - **13b — [13b_Agent_Evaluation.ipynb](13b_Agent_Evaluation.ipynb)** : Versant **mesure** du 13 : taux de succès par correcteur déterministe, coût par trajectoire (tours/appels/tokens/latence), delta d'ablation (retrait d'un moteur de la boîte à outils) et sûreté (instruction hostile dissimulée dans le contenu d'un outil) ; route LLM déclarée à l'exécution (routeur DeepSeek self-hosted, repli OpenAI gpt-5.2 affiché), juge LLM avec garde-fou anti-biais A/B puis B/A, 3 exercices C.1
 
-### Autour de 14 {#autour-de-14}
+### Autour de 14
 - **14b — [14b_Paginated_Memory-Python.ipynb](14b_Paginated_Memory-Python.ipynb)** : Mémoire paginée d'agent (Python) — fenêtre glissante, résumé progressif, éviction LRU/MRU, mémoire vectorielle paginée, mémoire multi-domaine ; 3 exercices (#18330)
 
-### Autour de 22 {#autour-de-22}
+### Autour de 22
 - **22b — [22b_Profil_Cognitif_CHC.ipynb](22b_Profil_Cognitif_CHC.ipynb)** : Approfondit le 22 : on évalue le **générateur** plutôt que sa sortie. **Profil cognitif CHC** (Hendrycks et al., 2025) mesuré par une mini-batterie à correction mécanique sur 8 domaines (mémoire de travail générée, stockage long terme, hallucinations, fluence, vitesse...) sur 4 modèles réels (Qwen3.5-0.8B local + 3 API), avec IC bootstrap ; profil « jagged » vs score agrégé ; **contortions de capacité** mesurées (carnet de mémoire réinjecté, RAG) ; types d'IA stratégiques et cube **A×G×I** du *Singapore Consensus* 2026, 3 exercices C.1
 - **22c — [22c_DSPy_Prompt_Compile.ipynb](22c_DSPy_Prompt_Compile.ipynb)** : **Du prompt écrit au prompt compilé** : le pipeline RAG de `05_RAG_Modern` (même document, même chunking) passe du prompt f-string fixe à un **programme DSPy** compilé contre une métrique. Organe natif branché bout en bout (`dspy.Signature`, `dspy.ChainOfThought`, `BootstrapFewShot`) — pas de réimplémentation. Mesure honnête sur un **jeu de test séparé** du jeu d'optimisation : fidélité moyenne 0.95 (manuel) → 1.00 (compilé), coût de compilation compté en appels au modèle ; limites montrées par la mesure (saturation de la métrique sur un jeu réduit, longueurs de réponse qui doublent selon la métrique choisie). Endpoint **Ollama local** par défaut (reproductible sans clé API), 3 exercices C.1
 
