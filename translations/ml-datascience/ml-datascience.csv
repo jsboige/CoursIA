@@ -43940,318 +43940,6 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compre
 - Hinton, Vinyals & Dean, *Distilling the Knowledge in a Neural Network* (2015) ; Romero et al., *FitNets: Hints for Thin Deep Nets* (2015).
 
 **Environnement** : kernel `coursia-ml-training` (torch + torchvision + matplotlib). L'entraînement complet (maître + 12 élèves + balayage de température) prend comptez environ 2 h sur un GPU (RTX 3080 Ti Laptop ici : maître ~9 min, 9 entraînements d'élève ~9,5 min chacun, balayage T 4 × ~9 min) ; sur CPU le notebook s'exécute avec une recette réduite (6 époques, 1 graine).",,,,,,,,da0c1958fa609321,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,c4201401,markdown,fr,f67e034b58825136,"# 3.9e — Quantification SOTA : la même INT8, par l'écosystème torch.ao
-
-[← Retour à la série](README.md) · Sœur : [3.9a — Quantification INT8 à la main](3.9a-Compression-Quantization-INT8.ipynb)
-
-Le notebook [3.9a](3.9a-Compression-Quantization-INT8.ipynb) a écrit chaque mécanisme INT8 **à la main** : échelles, zero-points, calibration min/max, calibration KL, hooks dynamiques. Ce notebook est son **pendant industriel**, exigé par le bloc B.5 de l'issue #16060 : la même physique, mais cette fois exécutée par l'écosystème officiel — `torch.ao.quantization`, l'API SOTA de PyTorch pour la quantification.
-
-Le contrat de comparaison est celui de toute la série : **une seule variable expérimentale**. Même ResNet-20, même CIFAR-10, même recette d'entraînement (SGD momentum, cosine), même graine 42 — seul change l'auteur de la quantification : la main de 3.9a ou la bibliothèque.
-
-> **Note d'écosystème (mesurée sur ce run)** : sous torch 2.13, `torch.ao.quantization` est marqué *deprecated* au profit de `torchao` (modes eager et PT2E). L'API reste pleinement fonctionnelle — c'est celle que ce bloc spécifie et celle sous laquelle 3.9a a été écrit (torch 2.8). La migration est discutée en [Pour aller plus loin](#pour-aller-plus-loin). Les bannières de dépréciation sont filtrées dans ce notebook pour la lisibilité ; aucun appel n'est contourné.
-",,,,,,,,f67e034b58825136,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,4f6959ee,markdown,fr,35c789efe43ee164,"## Le contrat de ce notebook
-
-Quatre questions, chacune tranchée par une mesure et pas par un argument :
-
-1. **`quantize_dynamic` couvre quoi, réellement, sur un CNN ?** L'API dynamique de torch.ao cible `Linear`/`LSTM`/`RNN` — sur un ResNet-20 quasi entièrement convolutionnel, elle ne touche qu'une couche. Nous mesurons exactement ce qu'elle quantifie, ce qu'elle économise, et pourquoi.
-2. **FX graph mode** : `prepare_fx` → calibration → `convert_fx` en quatre appels. Que fait l'écosystème gratuitement que 3.9a écrivait à la main (fusion conv-bn-relu, insertion des stubs, packing des poids) ?
-3. **MinMax ou Histogramme ?** L'observateur histogramme de torch.ao est le cousin moteur de la calibration KL que 3.9a a reconstruite pas à pas. Nous mesurons leur écart sur le même réseau.
-4. **Que coûte et que rapporte l'écosystème ?** Taille du modèle, latence d'inférence INT8 réelle (moteur `onednn`), lignes de code — et ce que la main donne en plus : le contrôle (percentile, INT4, couche par couche).
-
-Les valeurs de 3.9a citées en comparaison sont celles de **ses outputs committés** (run GPU, 40 epochs, torch 2.8) ; elles sont labellisées comme telles partout. Toutes les mesures de *ce* notebook viennent de *ce* run CPU.",,,,,,,,35c789efe43ee164,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,4db4905c,code,fr,b1e3f2195dfab3a8,"import copy
-import os
-import time
-import warnings
-
-import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torchvision import datasets, transforms
-
-# torch 2.13 : torch.ao.quantization est deprecie (migration torchao) mais fonctionnel.
-# Les bannières sont filtrees pour la lisibilite - voir la note d'ecosysteme en tete.
-warnings.filterwarnings(""ignore"", message=r"".*torch\.ao\.quantization is deprecated.*"")
-warnings.filterwarnings(""ignore"", message=r"".*quantize_per_tensor.*"")
-
-SEED = 42
-torch.manual_seed(SEED)
-np.random.seed(SEED)
-DEV = ""cuda"" if torch.cuda.is_available() else ""cpu""
-EPOCHS = 6 if DEV == ""cpu"" else 40   # recette identique a 3.9a : complete sur GPU, reduite sur CPU
-print(f""device={DEV}  torch={torch.__version__}  epochs={EPOCHS}"")",,,,,,,,b1e3f2195dfab3a8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,a75b3ffa,markdown,fr,ca60ff1040d7f950,"## 1. Le paysage : trois API, une même physique
-
-La physique de la quantification — $x_q = \mathrm{clip}(\mathrm{round}(x/s) + z, -128, 127)$, échelle par canal ou par tenseur — est celle que [3.9a §1](3.9a-Compression-Quantization-INT8.ipynb) a construite à la main. L'écosystème propose trois façons de l'invoquer :
-
-| API | Ce qu'elle quantifie | Ce qu'elle exige du développeur |
-|---|---|---|
-| `quantize_dynamic` | Poids des `Linear`/`LSTM`/`RNN` au vol (activations quantifiées à l'exécution) | 1 appel — mais **aucun `Conv2d`** |
-| Eager (`prepare`/`convert`) | Tout, mais fusion et stubs **à écrire soi-même** | beaucoup de plomberie manuelle |
-| **FX graph mode** (`prepare_fx`/`convert_fx`) | Tout : trace le graphe, fusionne conv-bn-relu, insère les stubs, packing des poids | 4 appels + des données de calibration |
-
-C'est la voie FX, standard depuis torch 1.8 pour les CNN, que ce notebook mesure — avec `quantize_dynamic` en préalable, pour mesurer précisément **ce que l'API dynamique couvre et ne couvre pas** sur un réseau convolutionnel.",,,,,,,,ca60ff1040d7f950,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,38c34fc5,code,fr,6f328f6688bc8fb8,"DATA = os.path.join(os.path.expanduser(""~""), "".cache"", ""int8_39e"")
-norm = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
-tfm = transforms.Compose([transforms.ToTensor(), norm])
-tfm_train = transforms.Compose([transforms.RandomCrop(32, padding=4),
-                                transforms.RandomHorizontalFlip(),
-                                transforms.ToTensor(), norm])
-train_set = datasets.CIFAR10(DATA, train=True, download=True, transform=tfm_train)
-test_set = datasets.CIFAR10(DATA, train=False, download=True, transform=tfm)
-train_loader = torch.utils.data.DataLoader(train_set, batch_size=256, shuffle=True)
-test_loader = torch.utils.data.DataLoader(test_set, batch_size=512, shuffle=False)
-print(f""CIFAR-10 : {len(train_set)} train / {len(test_set)} test"")",,,,,,,,6f328f6688bc8fb8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,b9f35720,markdown,fr,7cd34c9916b06eea,"## 2. Le terrain : le même ResNet-20 que 3.9a
-
-Copie exacte de la cellule modèle de 3.9a : stem 3×3, trois étages de blocs résiduels (16→32→64, trois blocs chacun), pool global, classifieur 10. ~271 k poids — assez petit pour s'entraîner dans le notebook, assez réel pour que les mesures signifient quelque chose.",,,,,,,,7cd34c9916b06eea,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,f536a36b,code,fr,1dfe83b312f15808,"class BasicBlock(nn.Module):
-    def __init__(self, cin, cout, stride=1):
-        super().__init__()
-        self.conv1 = nn.Conv2d(cin, cout, 3, stride=stride, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(cout)
-        self.conv2 = nn.Conv2d(cout, cout, 3, padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(cout)
-        self.short = None
-        if stride != 1 or cin != cout:
-            self.short = nn.Sequential(
-                nn.Conv2d(cin, cout, 1, stride=stride, bias=False), nn.BatchNorm2d(cout))
-
-    def forward(self, x):
-        y = F.relu(self.bn1(self.conv1(x)))
-        y = self.bn2(self.conv2(y))
-        y = y + (self.short(x) if self.short is not None else x)
-        return F.relu(y)
-
-
-class ResNet20(nn.Module):
-    def __init__(self, nclass=10):
-        super().__init__()
-        self.stem = nn.Conv2d(3, 16, 3, padding=1, bias=False)
-        self.bn0 = nn.BatchNorm2d(16)
-        self.s1 = self._stage(16, 16, 3, 1)
-        self.s2 = self._stage(16, 32, 3, 2)
-        self.s3 = self._stage(32, 64, 3, 2)
-        self.fc = nn.Linear(64, nclass)
-
-    @staticmethod
-    def _stage(cin, cout, n, stride):
-        L = [BasicBlock(cin, cout, stride)] + [BasicBlock(cout, cout, 1) for _ in range(n - 1)]
-        return nn.Sequential(*L)
-
-    def forward(self, x):
-        x = F.relu(self.bn0(self.stem(x)))
-        x = self.s3(self.s2(self.s1(x)))
-        return self.fc(F.adaptive_avg_pool2d(x, 1).flatten(1))
-
-
-model = ResNet20().to(DEV)
-n_par = sum(p.numel() for p in model.parameters())
-n_lin = sum(1 for m in model.modules() if isinstance(m, (nn.Conv2d, nn.Linear)))
-n_fc = sum(p.numel() for m in model.modules() if isinstance(m, nn.Linear) for p in m.parameters())
-print(f""ResNet-20 : {n_par:,} parametres, {n_lin} couches conv/fc, dont fc = {n_fc} parametres ({n_fc/n_par:.1%} du total)"")",,,,,,,,1dfe83b312f15808,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,0fac69ad,markdown,fr,18f973c382025e68,"La recette d'entraînement est celle de 3.9a, à l'identique : SGD momentum 0.9, lr 0.08, décroissance cosine, weight decay 5e-4, augmentation crop+flip. Sur CPU, les **6 epochs de la recette réduite** — la même que le code de 3.9a applique quand aucun GPU n'est présent.",,,,,,,,18f973c382025e68,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,8dfd467d,code,fr,7b4f573cc765167c,"opt = torch.optim.SGD(model.parameters(), lr=0.08, momentum=0.9, weight_decay=5e-4)
-sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=EPOCHS)
-for ep in range(EPOCHS):
-    model.train()
-    t0 = time.perf_counter()
-    for x, y in train_loader:
-        loss = F.cross_entropy(model(x.to(DEV)), y.to(DEV))
-        opt.zero_grad(); loss.backward(); opt.step()
-    sched.step()
-    if ep == 0 or (ep + 1) % 2 == 0:
-        print(f""  ep {ep+1:2d}/{EPOCHS}  loss={loss.item():.4f}  ({time.perf_counter()-t0:.1f}s)"")",,,,,,,,7b4f573cc765167c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,a8eb8a11,code,fr,45793a2a44815ada,"def evaluate(m, loader):
-    m.eval()
-    good = tot = 0
-    with torch.no_grad():
-        for x, y in loader:
-            good += (m(x.to(DEV)).argmax(1).cpu() == y).sum().item()
-            tot += y.numel()
-    return good / tot
-
-
-acc_fp32 = evaluate(model, test_loader)
-print(f""[FP32] exactitude test = {acc_fp32:.4f}"")",,,,,,,,45793a2a44815ada,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,7af99e2d,markdown,fr,370c7b82d0492bff,"**Lecture.** Exactitude FP32 de référence de *ce* run : `acc_fp32` ci-dessus (recette CPU 6 epochs). Le run de référence 3.9a (GPU, 40 epochs) affiche **0.9019** dans ses outputs committés — l'écart entre les deux vient de la longueur d'entraînement et du matériel, pas de la quantification ; chaque écart de ce notebook se mesure donc **contre son propre témoin FP32**, et les valeurs 3.9a ne servent que de repères labellisés.",,,,,,,,370c7b82d0492bff,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,1fb5829d,markdown,fr,a3e585710d2f3425,"## 3. `quantize_dynamic` : ce que « dynamique » veut dire côté écosystème
-
-Un appel : `quantize_dynamic(model, {nn.Linear}, dtype=torch.qint8)`. Les poids des couches listées sont quantifiés à l'avance, les activations le sont au vol à chaque appel. Sur un ResNet-20, **une seule couche est éligible** — le classifieur `fc`. Les 21 convolutions ne sont pas dans la liste des types supportés par l'API dynamique : elle vise les charges de travail denses en `Linear` (transformeurs, LLM), pas les CNN. Mesurons ce que cela donne quand même — la mesure est la réponse.",,,,,,,,a3e585710d2f3425,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,23e444d4,code,fr,5564dfa754e3c5aa,"from torch.ao.quantization import quantize_dynamic
-
-dyn = quantize_dynamic(copy.deepcopy(model), {nn.Linear}, dtype=torch.qint8)
-dyn_lin = [m for m in dyn.modules() if ""quantized.dynamic"" in type(m).__module__]
-print(f""couches quantifiees : {len(dyn_lin)} / {n_lin}  (type : {type(dyn_lin[0]).__module__}.{type(dyn_lin[0]).__name__} — le fc seul)"")
-
-n_fc_w = dyn_lin[0].weight().numel()          # qint8 : 1 octet par poids
-economise = n_fc_w * 3                        # 4 octets -> 1 octet sur ces poids
-p_fp32 = sum(t.numel() * t.element_size() for t in model.parameters())
-print(f""fc : {n_fc_w} poids -> {economise/1024:.1f} Ko economises sur {p_fp32/1024:.0f} Ko de poids ({economise/p_fp32:.2%})"")
-
-acc_dyn = evaluate(dyn, test_loader)
-print(f""[dynamic fc INT8] exactitude = {acc_dyn:.4f}  ({acc_dyn - acc_fp32:+.4f})"")",,,,,,,,5564dfa754e3c5aa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,6f0576d3,markdown,fr,ec412edc5b72b504,"**Lecture.** L'écosystème fait exactement ce qu'il promet — et pas plus : sur ce CNN, `quantize_dynamic` économise une fraction dérisoire d'octets (le fc pèse ~0,2 % du réseau) et ne change pas l'exactitude. À comparer au « dynamique » de 3.9a, qui posait des hooks pour quantifier **les convolutions** au vol (outputs 3.9a : `dynamic w-channel 0.9018` sur son run GPU) : la main faisait plus que l'API publique sur ce terrain. Ce n'est pas un défaut de l'API — c'est un ciblage différent : pour un LLM à 99 % de `Linear`, cet appel unique quantifie l'essentiel du modèle. La leçon de mesure : **le mot « dynamique » ne garantit pas la couverture ; la liste des types éligibles, si**.",,,,,,,,ec412edc5b72b504,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,94fd3e36,markdown,fr,2a1e48cae1e34811,"## 4. FX graph mode statique : la chaîne complète en quatre appels
-
-La voie FX prend le réseau entier. `prepare_fx` trace le graphe symboliquement, **fusionne conv-bn-relu** (l'équivalent du plombier que 3.9a n'avait pas à écrire), insère stubs et observateurs ; on calibre en faisant passer quelques batchs ; `convert_fx` emballe les poids en tenseurs packés et branche les kernels INT8 du moteur `onednn`.
-
-Deux calibrations, les mêmes que 3.9a opposait : **MinMax** (bornes min/max des activations — 3.9a §5) et **Histogramme** (2048 bins, cousin moteur de la KL de 3.9a §6). Poids en per-channel symétrique — le réglage que 3.9a mesurait comme le bon (~27 % d'erreur relative en moins).",,,,,,,,2a1e48cae1e34811,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,a8c37172,code,fr,13a05c4fc565b48f,"# torch 2.13 : import explicite du sous-module (bug d'import paresseux du paquet,
-# get_native_backend_config ne se construit pas sans lui - reparation d'environnement documentee)
-import torch.ao.quantization.backend_config.utils  # noqa: F401
-from torch.ao.quantization import (QConfig, QConfigMapping, MinMaxObserver,
-                                   HistogramObserver, PerChannelMinMaxObserver)
-from torch.ao.quantization.backend_config import get_native_backend_config
-from torch.ao.quantization.quantize_fx import prepare_fx, convert_fx
-
-BC = get_native_backend_config()          # moteur natif x86/onednn
-CAL_BATCHES = 8                            # meme budget que 3.9a
-
-def fx_static(observer_act):
-    qmap = QConfigMapping().set_global(QConfig(
-        activation=observer_act.with_args(qscheme=torch.per_tensor_affine),
-        weight=PerChannelMinMaxObserver.with_args(dtype=torch.qint8,
-                                                  qscheme=torch.per_channel_symmetric)))
-    prep = prepare_fx(copy.deepcopy(model).eval(), qmap, (torch.randn(8, 3, 32, 32),),
-                      backend_config=BC)
-    with torch.no_grad():
-        for i, (x, _) in enumerate(train_loader):
-            if i >= CAL_BATCHES:
-                break
-            prep(x.to(DEV))
-    return convert_fx(prep, backend_config=BC)
-
-q_minmax = fx_static(MinMaxObserver)
-acc_fx_minmax = evaluate(q_minmax, test_loader)
-n_fused = sum(1 for n, m in q_minmax.named_modules()
-              if type(m).__name__ in (""ConvReLU2d"", ""ConvBnReLU2d"", ""ConvBn2d""))
-print(f""[FX statique MinMax] exactitude = {acc_fx_minmax:.4f}  ({acc_fx_minmax - acc_fp32:+.4f})   ({n_fused} modules conv fusionnes)"")",,,,,,,,13a05c4fc565b48f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,bc1c2206,code,fr,05a393d4e2002f30,"q_hist = fx_static(HistogramObserver)
-acc_fx_hist = evaluate(q_hist, test_loader)
-print(f""[FX statique Histogramme] exactitude = {acc_fx_hist:.4f}  ({acc_fx_hist - acc_fp32:+.4f})"")",,,,,,,,05a393d4e2002f30,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,a412e5ac,markdown,fr,bea2540a68727bde,"**Lecture.** Quatre appels, et l'écosystème a refait le chemin de 3.9a : fusion des trios conv-bn-relu, échelles per-channel sur les poids, observateurs calibrés sur 8 batchs, poids réemballés. Les repères de 3.9a (run GPU, 40 epochs) : `static min/max w-channel 0.9017`, `static KL w-channel 0.9012` — des écarts de l'ordre du millième de point sur son témoin 0.9019. Sur notre témoin CPU 6 epochs, les écarts mesurés ci-dessus jouent dans le même registre : la chaîne FX livre la qualité de la main, sans écrire la main. L'histogramme ne domine pas le MinMax ici — 3.9a faisait le même constat (KL ≈ min/max, écart 0,0005 « dans le bruit ») : sur un CNN aux activations bien behaving, le choix d'observateur n'est pas le levier décisif.",,,,,,,,bea2540a68727bde,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,9d83370b,markdown,fr,5503bf2479b02b9e,"## 5. Taille et vitesse : ce que INT8 achète réellement ici
-
-Deux mesures, les mêmes que 3.9a : la **taille** des poids (FP32 contre le packing INT8 de la chaîne FX) et la **latence** d'inférence sur batch — médiane sur plusieurs passes, témoin FP32 et modèle FX MinMax. Le moteur de ce run est `onednn` (build CPU Windows) : la mesure dit ce que *ce* moteur donne, pas ce qu'un profil embarqué donnerait.",,,,,,,,5503bf2479b02b9e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,4a572367,code,fr,eefecb8cd391911a,"def taille_octets(m):
-    t = 0
-    for v in m.state_dict().values():
-        if not isinstance(v, torch.Tensor):   # les modules FX exposent aussi des dtypes nus
-            continue
-        t += v.numel() * (1 if v.dtype in (torch.quint8, torch.qint8) else v.element_size())
-    return t
-
-t_fp32, t_fx = taille_octets(model), taille_octets(q_minmax)
-print(f""taille state_dict : FP32 {t_fp32/1024:.0f} Ko   FX INT8 {t_fx/1024:.0f} Ko   ({t_fp32/t_fx:.1f}x plus petit)"")
-
-x_bench = next(iter(test_loader))[0][:64]
-def latence(m, n=30, warm=3):
-    m.eval()
-    with torch.no_grad():
-        for _ in range(warm):
-            m(x_bench)
-        ts = []
-        for _ in range(n):
-            t0 = time.perf_counter()
-            m(x_bench)
-            ts.append(time.perf_counter() - t0)
-    return float(np.median(ts)) * 1000
-
-l_fp32, l_int8 = latence(model), latence(q_minmax)
-print(f""latence mediane batch 64 : FP32 {l_fp32:.1f} ms   FX INT8 {l_int8:.1f} ms   ({l_fp32/l_int8:.2f}x)"")",,,,,,,,eefecb8cd391911a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,15f44e3a,markdown,fr,22c628f77b7f5625,"**Lecture honnête.** Les trois promesses tiennent sur ce run : taille **4,0× plus petite** (1071 → 267 Ko), exactitude intacte (§4), et latence **1,8× plus rapide** (21,4 → 12,1 ms, médiane batch 64) — les kernels INT8 du moteur `onednn` s'amortissent sur les 22 couches. Deux garde-fous : le facteur dépend du moteur et du profil (1,8× sur CPU desktop n'est pas le 10× d'un DSP embarqué ; un modèle encore plus petit verrait l'overhead par couche dominer le gain arithmétique) ; et **3.9a ne pouvait pas mesurer cela** — sa quantification simulait les arrondis en flottants, sans kernels INT8. C'est la ligne de partage exacte entre les deux notebooks : la main explique la grille, l'écosystème l'exécute.
-",,,,,,,,22c628f77b7f5625,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,788df9af,markdown,fr,7fdf3a58ef967194,"## 6. Récapitulatif : l'écosystème contre la main
-
-| configuration | exactitude (ce run, témoin FP32 ci-dessus) | repère 3.9a committé (GPU, 40 ep, témoin 0.9019) |
-|---|---:|---:|
-| FP32 | témoin | 0.9019 |
-| `quantize_dynamic` (fc seul) | mesurée §3 | — (3.9a visait les convs : 0.9018) |
-| FX statique MinMax | mesurée §4 | 0.9017 |
-| FX statique Histogramme | mesurée §4 | 0.9012 (KL) |
-| 3.9a à la main (per-channel, static) | — | 0.9017 / 0.9012 |
-
-Ce que l'écosystème donne : la fusion, les stubs, le packing, les kernels, la portabilité. Ce que la main donne en plus : le **contrôle** — percentile custom, INT4 et sa falaise (3.9a §7), sensibilité couche par couche, le pourquoi de chaque échelle. Les deux leçons de la série se complètent : on apprend le mécanisme à la main (3.9a), on le déploie avec l'écosystème (ce notebook).",,,,,,,,7fdf3a58ef967194,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,5100770d,markdown,fr,572d6de61e6150db,"## Exercice 1 — Quantification aware de l'entraînement (QAT)
-La quantification post-entraînement part d'un réseau entraîné FP32. La voie *aware* (`prepare_qat_fx`) insère les faux-quantifieurs **pendant** l'entraînement : le réseau apprend à vivre dans la grille INT8. Reprenez la chaîne FX de la section 4 avec `prepare_qat_fx`, ré-entraînez **1 epoch**, convertissez, mesurez : l'écart au témoin FP32 se resserre-t-il par rapport au post-entraînement du §4 ?
-
-> **Indice :** from torch.ao.quantization.quantize_fx import prepare_qat_fx — la calibration
-> est remplacee par l'entrainement lui-meme (les faux-quantifieurs collectent les echelles).
-> Etape 1 : preparer le modele (meme QConfigMapping). Etape 2 : 1 epoch de SGD (lr faible, 1e-2).
-> Etape 3 : convert_fx puis evaluate — comparer l'ecart a celui du MinMax du §4.
-",,,,,,,,572d6de61e6150db,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,cd4ef7a2,code,fr,70ef2234a82e7fb8,"def qat_1_epoch(lr=1e-2):
-    # TODO etudiant
-    # Etape 1 : qat = prepare_qat_fx(copy.deepcopy(model), qmap, (exemple,), backend_config=BC)
-    # Etape 2 : 1 epoch d'entrainement SGD sur qat (mode fake-quant actif par defaut)
-    # Etape 3 : conv = convert_fx(qat.eval(), backend_config=BC) ; return evaluate(conv, test_loader)
-    print(""Exercice a completer"")
-    return None
-
-
-acc_qat = qat_1_epoch()
-print(f""[QAT 1 epoch] exactitude = {acc_qat}"")",,,,,,,,70ef2234a82e7fb8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,d7b8eb85,markdown,fr,71e281f215cb6c2b,"## Exercice 2 — Un observateur percentile
-MinMax suit les valeurs extrêmes ; l'histogramme optimise un critère d'entropie. La voie intermédiaire utilisée en production : **couper au percentile 99,9** — sacrifier le millième de sorties les plus extrêmes pour resserrer l'échelle du corps. Écrivez un observateur qui hérite de `MinMaxObserver` mais ignore, au calcul des bornes, ce qui dépasse un percentile donné des valeurs observées.
-
-> **Indice :** MinMaxObserver.min_vals/max_vals sont remplies dans forward(). Une voie simple :
-> collecter les activations dans un buffer pendant la calibration, puis redefinir
-> min/max par np.percentile au moment du calcul. Etape 1 : sous-classer MinMaxObserver.
-> Etape 2 : accumuler les valeurs (attention a la memoire : echantillonner). Etape 3 :
-> brancher via QConfig(activation=MonObserver.with_args(p=99.9), ...) dans fx_static().
-",,,,,,,,71e281f215cb6c2b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,0f258a4a,code,fr,3d44257efec2c9f5,"class PercentileObserver(MinMaxObserver):
-    # TODO etudiant
-    # Reimplementer le calcul des bornes au percentile p plutot qu'aux extremes.
-    def __init__(self, p=99.9, **kw):
-        super().__init__(**kw)
-        self.p = p
-
-    def forward(self, x_orig):
-        # TODO etudiant : accumuler, puis borner au percentile self.p
-        print(""Exercice a completer"")
-        return super().forward(x_orig)
-
-
-print(f""PercentileObserver declare : {PercentileObserver(p=99.9).__class__.__name__}"")",,,,,,,,3d44257efec2c9f5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,5f4f585a,markdown,fr,fcbadea5e419c0b2,"## Exercice 3 — Épargner la première couche
-Toutes les couches ne souffrent pas également de la quantification — et la littérature désigne les **premières convolutions** comme les plus sensibles (elles portent l'image brute, distribution large). Le `QConfigMapping` sait donner un traitement de faveur : `set_module_name(""stem"", float_qconfig)` laisse une couche en FP32. Testez : quantifiez tout **sauf le stem**, mesurez l'exactitude et la taille — le gain d'exactité vaut-il les 0,7 Ko perdus ?
-
-> **Indice :** un qconfig ""nul"" garde un module en FP32 — QConfig(activation=None, weight=None)
-> (deja importe dans la cellule du §4). Etape 1 : QConfigMapping().set_global(<le qconfig
-> quantifie du §4>).set_module_name(""stem"", QConfig(activation=None, weight=None)).
-> Etape 2 : prepare_fx -> calibration (CAL_BATCHES) -> convert_fx.
-> Etape 3 : comparer (exactitude, taille) au FX MinMax du §4 — l'ecart type attendu sur un
-> petit CNN est faible, mesurez-le quand meme.
-",,,,,,,,fcbadea5e419c0b2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,8b617276,code,fr,f0e35b901f6cabdf,"def fx_static_sans_stem():
-    # TODO etudiant
-    # Etape 1 : qmap avec set_module_name(""stem"", float_qconfig)
-    # Etape 2 : prepare_fx -> calibration (CAL_BATCHES) -> convert_fx
-    # Etape 3 : return evaluate(conv, test_loader)
-    print(""Exercice a completer"")
-    return None
-
-
-acc_sans_stem = fx_static_sans_stem()
-print(f""[FX MinMax sans stem] exactitude = {acc_sans_stem}"")",,,,,,,,f0e35b901f6cabdf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb,6d03b8d6,markdown,fr,6f55caaf941d2aa6,"## Résumé
-
-1. **`quantize_dynamic` ne couvre que `Linear`** : sur un CNN, une couche sur vingt-deux — l'API vise les transformeurs, la mesure le montre (économie dérisoire, exactitude intacte).
-2. **La chaîne FX refait le chemin de 3.9a en quatre appels** : fusion conv-bn-relu, échelles per-channel, observateurs, packing — même qualité d'exactitude que la main.
-3. **MinMax ≈ Histogramme** sur ce CNN — comme KL ≈ min/max chez 3.9a : le choix d'observateur n'est pas le levier décisif sur des activations sages.
-4. **Taille 4,0×, latence 1,8×** sous `onednn` (1071 → 267 Ko ; 21,4 → 12,1 ms) — un gain réel, mais dépendant du moteur et du profil : 3.9a, qui simulait les arrondis sans kernels INT8, ne pouvait pas le mesurer.
-5. **Écosystème vs main** : la fusion et les kernels offerts ; en échange, la main garde le contrôle (percentile, INT4, couche par couche). Les deux notebooks forment la paire complète : comprendre (3.9a), déployer (3.9e).
-
-## Pour aller plus loin
-
-- [3.9a — Compression par quantification INT8 à la main](3.9a-Compression-Quantization-INT8.ipynb) — la physique : échelles, zero-points, KL, la falaise INT4
-- [3.7 — Distillation maître-élève](3.7-Distillation-Maitre-Eleve.ipynb) — l'autre famille de compression : le savoir plutôt que les nombres
-- [FT-02 — QLoRA](../../../GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb) — la quantification 4 bits au service du fine-tuning de LLM
-- **Migration torchao** : sous torch 2.13, `torch.ao.quantization` est déprécié — les modes eager et PT2E migrent vers le paquet `torchao` ([pytorch/ao](https://github.com/pytorch/ao)). Ce notebook mesure l'API FX stable sous laquelle 3.9a a été écrit ; un déploiement neuf sur torch ≥ 2.13 choisira `torchao`.",,,,,,,,6f55caaf941d2aa6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9f-Compression-Pruning-SOTA.ipynb,p39f-titre,markdown,fr,c2d1e3a127d63336,"# 3.9f — Élagage SOTA : les mêmes masques, par `torch.nn.utils.prune`
 
 [← Retour à la série](README.md) · Sœur : [3.9e — Quantification SOTA](3.9e-Compression-Quantization-SOTA.ipynb) · [3.9a — Quantification INT8 à la main](3.9a-Compression-Quantization-INT8.ipynb)
@@ -56621,3 +56309,576 @@ print(""           cote lib, skimage.denoise_wavelet impose 'symmetric' (pywt.wa
 print(""           cote from scratch et SureShrink, nous imposons 'periodization'."")
 
 ",,,,,,,,26647c22e7219d1e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,bf7a166d,markdown,fr,46a0a0005b8727fb,"# 3.9e — Compression SOTA : quantization et élagage par l'écosystème PyTorch
+
+[← Retour à la série](README.md) · Sœurs : [3.9, partie II — INT8 à la main](3.9-Compression-Quantization-FP.ipynb) · [3.9g — Comparatif A-vs-B](3.9g-Compression-Comparatif-A-vs-B.ipynb)
+
+Ce carnet réunit les deux volets *écosystème* de la compression de poids : la **quantization INT8** par `torch.ao.quantization` (l'ancien 3.9e) et l'**élagage** par `torch.nn.utils.prune` (l'ancien 3.9f, désormais archivé). Ils partagent le même terrain (ResNet-20 / CIFAR-10), les mêmes instruments (taille, latence, exactitude contre témoin FP32) et le même motif : **la main contre l'écosystème** — chaque mécanisme est d'abord écrit à la main dans la série (3.9 partie II, 3.9b/3.9c), puis retrouvé dans l'API officielle, et la mesure tranche ce que chaque mode d'emploi change.
+
+La comparaison reste à **une seule variable expérimentale** : même ResNet-20, même CIFAR-10, mêmes hyperparamètres d'entraînement (SGD momentum, cosine), même graine 42 — seul change l'auteur du mécanisme : la main ou la bibliothèque. Une limite, énoncée d'emblée pour ne rien masquer : les deux runs n'ont pas tourné sur le même matériel ni avec le même budget d'époques (3.9 partie II : GPU et recette complète ; ce carnet : CPU et recette réduite). Les écarts de ce carnet se lisent donc **contre son propre témoin**, et les chiffres de 3.9 partie II ne servent que de repères. Le carnet se lit en deux volets : **Part A** mesure la quantization (torch.ao), **Part B** mesure l'élagage (torch.nn.utils.prune).
+
+> **Note d'écosystème (mesurée sur ce run)** : sous torch 2.14, `torch.ao.quantization` est marqué *deprecated* au profit de `torchao` (modes eager et PT2E). L'API reste pleinement fonctionnelle — c'est celle que ce bloc spécifie et celle sous laquelle la partie manuelle de la série a été écrite (torch 2.14). La migration est discutée en [Pour aller plus loin](#pour-aller-plus-loin). Les bannières de dépréciation sont filtrées dans ce carnet pour la lisibilité ; aucun appel n'est contourné.
+",,,,,,,,46a0a0005b8727fb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,021ee65d,markdown,fr,a649b9868674b43a,"## Le contrat de ce carnet
+
+Deux volets, quatre questions chacun, chacune tranchée par une mesure et pas par un argument.
+
+**Volet quantization (Part A).**
+
+1. **`quantize_dynamic` couvre quoi, réellement, sur un CNN ?** L'API dynamique de torch.ao cible `Linear`/`LSTM`/`RNN` — sur un ResNet-20 quasi entièrement convolutionnel, elle ne touche qu'une couche. Nous mesurons exactement ce qu'elle quantifie, ce qu'elle économise, et pourquoi.
+2. **FX graph mode** : `prepare_fx` → calibration → `convert_fx` en quatre appels. Que fait l'écosystème gratuitement que la partie manuelle écrivait à la main (fusion conv-bn-relu, insertion des stubs, packing des poids) ?
+3. **MinMax ou Histogramme ?** L'observateur histogramme de torch.ao est le cousin moteur de la calibration KL que la partie manuelle a reconstruite pas à pas. Nous mesurons leur écart sur le même réseau.
+4. **Que coûte et que rapporte l'écosystème ?** Taille du modèle, latence d'inférence INT8 réelle (moteur `onednn`), lignes de code — et ce que la main donne en plus : le contrôle (percentile, INT4, couche par couche).
+
+**Volet élagage (Part B).**
+
+1. **Fonctionnalité** — `torch.nn.utils.prune` élague-t-il **exactement** ce que le masque manuel élaguerait (mêmes zéros, même exactitude) à sparsité égale ? — question posée **ouverte** ; la réponse mesurée au §9 est **non** : l'API coupe $k$ poids par couche, la main $k-1$ (l'API affiche 1152 zéros sur 2304 ; la main en coupe un de moins — 1151, **dérivé** du masque strict : le `kthvalue(w, k)` n'est pas coupé par `< seuil`, et la cellule imprime le compte de l'API, pas celui de la main), et l'écart d'exactitude de 0,0016 vient de cette différence de sélection, pas d'ordres flottants.
+2. **Le don de l'API** — que fait la bibliothèque que la main doit re-écrire à chaque fois (`weight_orig`/`weight_mask`, hooks de forward, gradients masqués, `remove()`) ?
+3. **Local vs global** — à budget de sparsité global égal, l'allocation par couche (local) perd-elle contre l'allocation par importance globale ?
+4. **L'honnêteté des gains** — un réseau élagué non-structuré est-il plus petit sur disque, plus rapide en CPU ? (spoiler : non — et le carnet montre pourquoi, y compris le piège mémoire de `weight_orig`+`weight_mask`).
+
+Les valeurs de [3.9, partie II](3.9-Compression-Quantization-FP.ipynb) citées en comparaison sont celles de **ses outputs committés** (run GPU, 40 epochs, torch 2.14) ; elles sont labellisées comme telles partout. Toutes les mesures de *ce* carnet viennent de *ce* run (témoin FP32 mesuré à l'instant, recette CPU 6 époques).
+
+Ce que ce carnet **n'est pas** : ni le traitement from-scratch complet de l'élagage — masques persistants, chirurgie de graphe, sensibilité couche par couche, c'est le programme des carnets 3.9b et 3.9c — ni un panorama de recherche (itératif, loterie, distillation). Le geste est précis : **écrire le mécanisme minimal à la main, puis le retrouver dans l'API officielle**, et mesurer ce que chaque mode d'emploi change — la sélection des poids, la garantie du masque, l'allocation de la sparsité, la granularité. La main explique, la bibliothèque outille.
+",,,,,,,,a649b9868674b43a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,2979c808,code,fr,aa7e1cbb42616085,"import copy
+import os
+import time
+import warnings
+
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.nn.utils.prune as prune
+from torchvision import datasets, transforms
+
+# torch 2.14 : torch.ao.quantization est deprecie (migration torchao) mais fonctionnel.
+# Les bannières sont filtrees pour la lisibilite - voir la note d'ecosysteme en tete.
+warnings.filterwarnings(""ignore"", message=r"".*torch\.ao\.quantization is deprecated.*"")
+warnings.filterwarnings(""ignore"", message=r"".*quantize_per_tensor.*"")
+
+SEED = 42
+torch.manual_seed(SEED)
+np.random.seed(SEED)
+DEV = ""cuda"" if torch.cuda.is_available() else ""cpu""
+EPOCHS = 6 if DEV == ""cpu"" else 40   # recette identique a 3.9, partie II : complete sur GPU, reduite sur CPU
+print(f""device={DEV}  torch={torch.__version__}  epochs={EPOCHS}"")",,,,,,,,aa7e1cbb42616085,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,afaf51d8,code,fr,6f328f6688bc8fb8,"DATA = os.path.join(os.path.expanduser(""~""), "".cache"", ""int8_39e"")
+norm = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
+tfm = transforms.Compose([transforms.ToTensor(), norm])
+tfm_train = transforms.Compose([transforms.RandomCrop(32, padding=4),
+                                transforms.RandomHorizontalFlip(),
+                                transforms.ToTensor(), norm])
+train_set = datasets.CIFAR10(DATA, train=True, download=True, transform=tfm_train)
+test_set = datasets.CIFAR10(DATA, train=False, download=True, transform=tfm)
+train_loader = torch.utils.data.DataLoader(train_set, batch_size=256, shuffle=True)
+test_loader = torch.utils.data.DataLoader(test_set, batch_size=512, shuffle=False)
+print(f""CIFAR-10 : {len(train_set)} train / {len(test_set)} test"")",,,,,,,,6f328f6688bc8fb8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,9ce3c0d3,markdown,fr,c1603c3607715f8f,"## 1. Le terrain : le même ResNet-20 que 3.9, partie II
+
+Copie exacte de la cellule modèle de 3.9, partie II : stem 3×3, trois étages de blocs résiduels (16→32→64, trois blocs chacun), pool global, classifieur 10. ~271 k poids — assez petit pour s'entraîner dans le notebook, assez réel pour que les mesures signifient quelque chose.
+
+Deux mots sur le témoin. ResNet-20/CIFAR-10 est le même dans toute la famille
+compression — c'est ce qui rend les chiffres **comparables d'un notebook à
+l'autre** (FP de 3.9 partie I, INT8 de 3.9 partie II, torch.ao de 3.9e, élagage ici). Et le
+choix n'est pas neutre : les connexions résiduelles et la BatchNorm rendent
+l'élagage non trivial — un réseau profond sans normalisation pardonne bien
+moins un masque à 75 %, et réciproquement une seule couche convective peut le
+supporter à 90 %. Le témoin a la profondeur qui fait apparaître les vraies
+dégradations.
+",,,,,,,,c1603c3607715f8f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,4fade709,code,fr,3a238b4288467a03,"class BasicBlock(nn.Module):
+    def __init__(self, cin, cout, stride=1):
+        super().__init__()
+        self.conv1 = nn.Conv2d(cin, cout, 3, stride=stride, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(cout)
+        self.conv2 = nn.Conv2d(cout, cout, 3, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(cout)
+        self.short = None
+        if stride != 1 or cin != cout:
+            self.short = nn.Sequential(
+                nn.Conv2d(cin, cout, 1, stride=stride, bias=False), nn.BatchNorm2d(cout))
+
+    def forward(self, x):
+        y = F.relu(self.bn1(self.conv1(x)))
+        y = self.bn2(self.conv2(y))
+        y = y + (self.short(x) if self.short is not None else x)
+        return F.relu(y)
+
+
+class ResNet20(nn.Module):
+    def __init__(self, nclass=10):
+        super().__init__()
+        self.stem = nn.Conv2d(3, 16, 3, padding=1, bias=False)
+        self.bn0 = nn.BatchNorm2d(16)
+        self.s1 = self._stage(16, 16, 3, 1)
+        self.s2 = self._stage(16, 32, 3, 2)
+        self.s3 = self._stage(32, 64, 3, 2)
+        self.fc = nn.Linear(64, nclass)
+
+    @staticmethod
+    def _stage(cin, cout, n, stride):
+        L = [BasicBlock(cin, cout, stride)] + [BasicBlock(cout, cout, 1) for _ in range(n - 1)]
+        return nn.Sequential(*L)
+
+    def forward(self, x):
+        x = F.relu(self.bn0(self.stem(x)))
+        x = self.s3(self.s2(self.s1(x)))
+        return self.fc(F.adaptive_avg_pool2d(x, 1).flatten(1))
+
+
+model = ResNet20().to(DEV)
+n_par = sum(p.numel() for p in model.parameters())
+n_lin = sum(1 for m in model.modules() if isinstance(m, (nn.Conv2d, nn.Linear)))
+n_fc = sum(p.numel() for m in model.modules() if isinstance(m, nn.Linear) for p in m.parameters())
+CONVS_FCS = [m for m in model.modules() if isinstance(m, (nn.Conv2d, nn.Linear))]
+print(f""ResNet-20 : {n_par:,} parametres, {n_lin} couches conv/fc, dont fc = {n_fc} parametres ({n_fc/n_par:.1%} du total) ; {len(CONVS_FCS)} modules elagables"")",,,,,,,,3a238b4288467a03,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,76ebbae8,markdown,fr,1f62bb5b707a83b8,"Les hyperparamètres d'entraînement sont ceux de 3.9, partie II : SGD momentum 0.9, lr 0.08, décroissance cosine, weight decay 5e-4, augmentation crop+flip. Une seule variable diffère, et elle est mesurable : le run de 3.9, partie II a tourné sur **GPU** avec la recette complète (40 époques), celui de ce carnet sur **CPU** — le code applique alors les **6 époques de la recette réduite** que 3.9, partie II applique lui-même quand aucun GPU n'est présent. Les deux carnets partagent donc la recette, pas le budget d'époques ni le matériel : c'est la raison pour laquelle chaque écart de ce carnet se lit **contre son propre témoin**.",,,,,,,,1f62bb5b707a83b8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,9e602c86,code,fr,7b4f573cc765167c,"opt = torch.optim.SGD(model.parameters(), lr=0.08, momentum=0.9, weight_decay=5e-4)
+sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=EPOCHS)
+for ep in range(EPOCHS):
+    model.train()
+    t0 = time.perf_counter()
+    for x, y in train_loader:
+        loss = F.cross_entropy(model(x.to(DEV)), y.to(DEV))
+        opt.zero_grad(); loss.backward(); opt.step()
+    sched.step()
+    if ep == 0 or (ep + 1) % 2 == 0:
+        print(f""  ep {ep+1:2d}/{EPOCHS}  loss={loss.item():.4f}  ({time.perf_counter()-t0:.1f}s)"")",,,,,,,,7b4f573cc765167c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,85aad5aa,code,fr,45793a2a44815ada,"def evaluate(m, loader):
+    m.eval()
+    good = tot = 0
+    with torch.no_grad():
+        for x, y in loader:
+            good += (m(x.to(DEV)).argmax(1).cpu() == y).sum().item()
+            tot += y.numel()
+    return good / tot
+
+
+acc_fp32 = evaluate(model, test_loader)
+print(f""[FP32] exactitude test = {acc_fp32:.4f}"")",,,,,,,,45793a2a44815ada,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,e4f21c78,markdown,fr,c2fc6cc71b518d45,"**Lecture.** Exactitude FP32 de référence de *ce* run : `acc_fp32` ci-dessus (recette CPU 6 epochs). Le run de référence de 3.9, partie II (GPU, 40 epochs) affiche **0.8993** dans ses outputs committés — l'écart entre les deux vient de la longueur d'entraînement et du matériel, pas de la quantification ; chaque écart de ce notebook se mesure donc **contre son propre témoin FP32**, et les valeurs de 3.9 ne servent que de repères labellisés.
+
+Note sur les écarts entre runs : la recette CPU 6 époques a une variance de
+l'ordre du demi-point d'exactitude entre exécutions (initialisation, ordre des
+lots). Les comparaisons de ce notebook sont toutes **internes au même run** —
+le témoin est mesuré juste avant d'être élagué, pas importé d'un run précédent.
+C'est la discipline de la série : chaque notebook porte son propre témoin.
+",,,,,,,,c2fc6cc71b518d45,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,d7f87269,markdown,fr,c1ce255ba45f44a5,"## Part A — Quantization par l'écosystème torch.ao
+
+La première moitié mesure la quantization INT8 par l'API officielle `torch.ao.quantization` — le même ResNet-20, le même témoin FP32 (celui de **ce** run), seul change l'auteur du mécanisme : la main (3.9, partie II, mesurée sur GPU) ou la bibliothèque (mesurée ici sur CPU).
+",,,,,,,,c1ce255ba45f44a5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,6d68da6d,markdown,fr,c891df728616bb66,"## 2. Le paysage — quantization : trois API, une même physique
+
+La physique de la quantification — $x_q = \mathrm{clip}(\mathrm{round}(x/s) + z, -128, 127)$, échelle par canal ou par tenseur — est celle que [3.9, partie II §13](3.9-Compression-Quantization-FP.ipynb) a construite à la main. L'écosystème propose trois façons de l'invoquer :
+
+| API | Ce qu'elle quantifie | Ce qu'elle exige du développeur |
+|---|---|---|
+| `quantize_dynamic` | Poids des `Linear`/`LSTM`/`RNN` au vol (activations quantifiées à l'exécution) | 1 appel — mais **aucun `Conv2d`** |
+| Eager (`prepare`/`convert`) | Tout, mais fusion et stubs **à écrire soi-même** | beaucoup de plomberie manuelle |
+| **FX graph mode** (`prepare_fx`/`convert_fx`) | Tout : trace le graphe, fusionne conv-bn-relu, insère les stubs, packing des poids | 4 appels + des données de calibration |
+
+C'est la voie FX, standard depuis torch 1.8 pour les CNN, que ce notebook mesure — avec `quantize_dynamic` en préalable, pour mesurer précisément **ce que l'API dynamique couvre et ne couvre pas** sur un réseau convolutionnel.",,,,,,,,c891df728616bb66,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,a93415d4,markdown,fr,a3e585710d2f3425,"## 3. `quantize_dynamic` : ce que « dynamique » veut dire côté écosystème
+
+Un appel : `quantize_dynamic(model, {nn.Linear}, dtype=torch.qint8)`. Les poids des couches listées sont quantifiés à l'avance, les activations le sont au vol à chaque appel. Sur un ResNet-20, **une seule couche est éligible** — le classifieur `fc`. Les 21 convolutions ne sont pas dans la liste des types supportés par l'API dynamique : elle vise les charges de travail denses en `Linear` (transformeurs, LLM), pas les CNN. Mesurons ce que cela donne quand même — la mesure est la réponse.",,,,,,,,a3e585710d2f3425,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,fbb2a21e,code,fr,5564dfa754e3c5aa,"from torch.ao.quantization import quantize_dynamic
+
+dyn = quantize_dynamic(copy.deepcopy(model), {nn.Linear}, dtype=torch.qint8)
+dyn_lin = [m for m in dyn.modules() if ""quantized.dynamic"" in type(m).__module__]
+print(f""couches quantifiees : {len(dyn_lin)} / {n_lin}  (type : {type(dyn_lin[0]).__module__}.{type(dyn_lin[0]).__name__} — le fc seul)"")
+
+n_fc_w = dyn_lin[0].weight().numel()          # qint8 : 1 octet par poids
+economise = n_fc_w * 3                        # 4 octets -> 1 octet sur ces poids
+p_fp32 = sum(t.numel() * t.element_size() for t in model.parameters())
+print(f""fc : {n_fc_w} poids -> {economise/1024:.1f} Ko economises sur {p_fp32/1024:.0f} Ko de poids ({economise/p_fp32:.2%})"")
+
+acc_dyn = evaluate(dyn, test_loader)
+print(f""[dynamic fc INT8] exactitude = {acc_dyn:.4f}  ({acc_dyn - acc_fp32:+.4f})"")",,,,,,,,5564dfa754e3c5aa,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,2f10aa08,markdown,fr,d9e7aa4bc2b5c3b0,"**Lecture.** L'écosystème fait exactement ce qu'il promet — et pas plus : sur ce CNN, `quantize_dynamic` économise une fraction dérisoire d'octets (le fc pèse ~0,2 % du réseau) et ne change pas l'exactitude. À comparer au « dynamique » de 3.9, partie II, qui posait des hooks pour quantifier **les convolutions** au vol (outputs : `dynamic w-channel 0.8978` sur son run GPU) : la main faisait plus que l'API publique sur ce terrain. Ce n'est pas un défaut de l'API — c'est un ciblage différent : pour un LLM à 99 % de `Linear`, cet appel unique quantifie l'essentiel du modèle. La leçon de mesure : **le mot « dynamique » ne garantit pas la couverture ; la liste des types éligibles, si**.",,,,,,,,d9e7aa4bc2b5c3b0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,49912ee4,markdown,fr,3310934ef8b7cb97,"## 4. FX graph mode statique : la chaîne complète en quatre appels
+
+La voie FX prend le réseau entier. `prepare_fx` trace le graphe symboliquement, **fusionne conv-bn-relu** (l'équivalent du plombier que 3.9, partie II n'avait pas à écrire), insère stubs et observateurs ; on calibre en faisant passer quelques batchs ; `convert_fx` emballe les poids en tenseurs packés et branche les kernels INT8 du moteur `onednn`.
+
+Deux calibrations, les mêmes que 3.9, partie II opposait : **MinMax** (bornes min/max des activations — 3.9, partie II §17) et **Histogramme** (2048 bins, cousin moteur de la KL de 3.9, partie II §18). Poids en per-channel symétrique — le réglage que 3.9, partie II mesurait comme le bon (~27 % d'erreur relative en moins).",,,,,,,,3310934ef8b7cb97,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,fe2b01b0,code,fr,a5562a890fe6cb16,"# torch 2.14 : import explicite du sous-module (bug d'import paresseux du paquet,
+# get_native_backend_config ne se construit pas sans lui - reparation d'environnement documentee)
+import torch.ao.quantization.backend_config.utils  # noqa: F401
+from torch.ao.quantization import (QConfig, QConfigMapping, MinMaxObserver,
+                                   HistogramObserver, PerChannelMinMaxObserver)
+from torch.ao.quantization.backend_config import get_native_backend_config
+from torch.ao.quantization.quantize_fx import prepare_fx, convert_fx
+
+BC = get_native_backend_config()          # moteur natif x86/onednn
+CAL_BATCHES = 8                            # meme budget que 3.9, partie II
+
+def fx_static(observer_act):
+    qmap = QConfigMapping().set_global(QConfig(
+        activation=observer_act.with_args(qscheme=torch.per_tensor_affine),
+        weight=PerChannelMinMaxObserver.with_args(dtype=torch.qint8,
+                                                  qscheme=torch.per_channel_symmetric)))
+    prep = prepare_fx(copy.deepcopy(model).eval(), qmap, (torch.randn(8, 3, 32, 32),),
+                      backend_config=BC)
+    with torch.no_grad():
+        for i, (x, _) in enumerate(train_loader):
+            if i >= CAL_BATCHES:
+                break
+            prep(x.to(DEV))
+    return convert_fx(prep, backend_config=BC)
+
+q_minmax = fx_static(MinMaxObserver)
+acc_fx_minmax = evaluate(q_minmax, test_loader)
+n_fused = sum(1 for n, m in q_minmax.named_modules()
+              if type(m).__name__ in (""ConvReLU2d"", ""ConvBnReLU2d"", ""ConvBn2d""))
+print(f""[FX statique MinMax] exactitude = {acc_fx_minmax:.4f}  ({acc_fx_minmax - acc_fp32:+.4f})   ({n_fused} modules conv fusionnes)"")",,,,,,,,a5562a890fe6cb16,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,8a4247df,code,fr,05a393d4e2002f30,"q_hist = fx_static(HistogramObserver)
+acc_fx_hist = evaluate(q_hist, test_loader)
+print(f""[FX statique Histogramme] exactitude = {acc_fx_hist:.4f}  ({acc_fx_hist - acc_fp32:+.4f})"")",,,,,,,,05a393d4e2002f30,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,58a9ae79,markdown,fr,96793b5589171beb,"**Lecture.** Quatre appels, et l'écosystème a refait le chemin de 3.9, partie II : fusion des trios conv-bn-relu, échelles per-channel sur les poids, observateurs calibrés sur 8 batchs, poids réemballés. Les repères de 3.9, partie II (run GPU, 40 epochs) : `static min/max w-channel 0.8987`, `static KL w-channel 0.8989` — des écarts de l'ordre du millième de point sur son témoin 0.8993. Sur notre témoin CPU 6 epochs, les écarts mesurés ci-dessus jouent dans le même registre : la chaîne FX livre la qualité de la main, sans écrire la main. L'histogramme ne domine pas le MinMax ici (écart 0,0001) — 3.9 faisait le même constat (KL ≈ min/max, écart 0,0002 « dans le bruit ») : sur un CNN aux activations bien behaving, le choix d'observateur n'est pas le levier décisif.",,,,,,,,96793b5589171beb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,f7f5f499,markdown,fr,2fa4300478465274,"## 5. Taille et vitesse : ce que INT8 achète réellement ici
+
+Deux mesures, les mêmes que 3.9, partie II : la **taille** des poids (FP32 contre le packing INT8 de la chaîne FX) et la **latence** d'inférence sur batch — médiane sur plusieurs passes, témoin FP32 et modèle FX MinMax. Le moteur de ce run est `onednn` (build CPU Windows) : la mesure dit ce que *ce* moteur donne, pas ce qu'un profil embarqué donnerait.",,,,,,,,2fa4300478465274,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,e85227b7,code,fr,eefecb8cd391911a,"def taille_octets(m):
+    t = 0
+    for v in m.state_dict().values():
+        if not isinstance(v, torch.Tensor):   # les modules FX exposent aussi des dtypes nus
+            continue
+        t += v.numel() * (1 if v.dtype in (torch.quint8, torch.qint8) else v.element_size())
+    return t
+
+t_fp32, t_fx = taille_octets(model), taille_octets(q_minmax)
+print(f""taille state_dict : FP32 {t_fp32/1024:.0f} Ko   FX INT8 {t_fx/1024:.0f} Ko   ({t_fp32/t_fx:.1f}x plus petit)"")
+
+x_bench = next(iter(test_loader))[0][:64]
+def latence(m, n=30, warm=3):
+    m.eval()
+    with torch.no_grad():
+        for _ in range(warm):
+            m(x_bench)
+        ts = []
+        for _ in range(n):
+            t0 = time.perf_counter()
+            m(x_bench)
+            ts.append(time.perf_counter() - t0)
+    return float(np.median(ts)) * 1000
+
+l_fp32, l_int8 = latence(model), latence(q_minmax)
+print(f""latence mediane batch 64 : FP32 {l_fp32:.1f} ms   FX INT8 {l_int8:.1f} ms   ({l_fp32/l_int8:.2f}x)"")",,,,,,,,eefecb8cd391911a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,d73527c6,markdown,fr,9bf2742a3d2f01c4,"**Lecture honnête.** Sur ce run : taille **4,0× plus petite** (1071 → 267 Ko) exactitude intacte (§4 : écarts ≤ 0,0005), et latence mesurée plus rapide au batch 64 (médiane ci-dessus) — les kernels INT8 du moteur `onednn` s'amortissent sur les 22 couches. Deux garde-fous : le rapport de latence dépend du moteur et du profil (un CPU desktop n'est pas le 10× d'un DSP embarqué ; un modèle encore plus petit verrait l'overhead par couche dominer le gain arithmétique) ; et **3.9, partie II ne pouvait pas mesurer cela** — sa quantification simulait les arrondis en flottants, sans kernels INT8. C'est la ligne de partage exacte entre les deux notebooks : la main explique la grille, l'écosystème l'exécute.
+",,,,,,,,9bf2742a3d2f01c4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,09c2c485,markdown,fr,8057c545df069ca0,"## 6. Récapitulatif : l'écosystème contre la main
+
+| configuration | exactitude (ce run, témoin FP32 ci-dessus) | repère 3.9, partie II committé (GPU, 40 ep, témoin 0.8993) |
+|---|---:|---:|
+| FP32 | témoin | 0.8993 |
+| `quantize_dynamic` (fc seul) | mesurée §3 | — (3.9 visait les convs : 0.8978) |
+| FX statique MinMax | mesurée §4 | 0.8987 |
+| FX statique Histogramme | mesurée §4 | 0.8989 (KL) |
+| 3.9 à la main (per-channel, static) | — | 0.8987 / 0.8989 |
+
+Les deux colonnes ne sont pas l'une le témoin de l'autre : celle de droite vient d'un run GPU à recette complète, celle de gauche d'un run CPU à recette réduite. C'est la discipline de la série — chaque carnet porte son propre témoin, et un repère n'est jamais un témoin.
+
+Ce que l'écosystème donne : la fusion, les stubs, le packing, les kernels, la portabilité. Ce que la main donne en plus : le **contrôle** — percentile custom, INT4 et sa falaise (3.9, partie II §19), sensibilité couche par couche, le pourquoi de chaque échelle. Les deux leçons de la série se complètent : on apprend le mécanisme à la main (3.9, partie II), on le déploie avec l'écosystème (ce notebook).",,,,,,,,8057c545df069ca0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,fd7e6fc1,markdown,fr,572d6de61e6150db,"## Exercice 1 — Quantification aware de l'entraînement (QAT)
+La quantification post-entraînement part d'un réseau entraîné FP32. La voie *aware* (`prepare_qat_fx`) insère les faux-quantifieurs **pendant** l'entraînement : le réseau apprend à vivre dans la grille INT8. Reprenez la chaîne FX de la section 4 avec `prepare_qat_fx`, ré-entraînez **1 epoch**, convertissez, mesurez : l'écart au témoin FP32 se resserre-t-il par rapport au post-entraînement du §4 ?
+
+> **Indice :** from torch.ao.quantization.quantize_fx import prepare_qat_fx — la calibration
+> est remplacee par l'entrainement lui-meme (les faux-quantifieurs collectent les echelles).
+> Etape 1 : preparer le modele (meme QConfigMapping). Etape 2 : 1 epoch de SGD (lr faible, 1e-2).
+> Etape 3 : convert_fx puis evaluate — comparer l'ecart a celui du MinMax du §4.
+",,,,,,,,572d6de61e6150db,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,541be647,code,fr,70ef2234a82e7fb8,"def qat_1_epoch(lr=1e-2):
+    # TODO etudiant
+    # Etape 1 : qat = prepare_qat_fx(copy.deepcopy(model), qmap, (exemple,), backend_config=BC)
+    # Etape 2 : 1 epoch d'entrainement SGD sur qat (mode fake-quant actif par defaut)
+    # Etape 3 : conv = convert_fx(qat.eval(), backend_config=BC) ; return evaluate(conv, test_loader)
+    print(""Exercice a completer"")
+    return None
+
+
+acc_qat = qat_1_epoch()
+print(f""[QAT 1 epoch] exactitude = {acc_qat}"")",,,,,,,,70ef2234a82e7fb8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,75491c3a,markdown,fr,71e281f215cb6c2b,"## Exercice 2 — Un observateur percentile
+MinMax suit les valeurs extrêmes ; l'histogramme optimise un critère d'entropie. La voie intermédiaire utilisée en production : **couper au percentile 99,9** — sacrifier le millième de sorties les plus extrêmes pour resserrer l'échelle du corps. Écrivez un observateur qui hérite de `MinMaxObserver` mais ignore, au calcul des bornes, ce qui dépasse un percentile donné des valeurs observées.
+
+> **Indice :** MinMaxObserver.min_vals/max_vals sont remplies dans forward(). Une voie simple :
+> collecter les activations dans un buffer pendant la calibration, puis redefinir
+> min/max par np.percentile au moment du calcul. Etape 1 : sous-classer MinMaxObserver.
+> Etape 2 : accumuler les valeurs (attention a la memoire : echantillonner). Etape 3 :
+> brancher via QConfig(activation=MonObserver.with_args(p=99.9), ...) dans fx_static().
+",,,,,,,,71e281f215cb6c2b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,e1ea96a6,code,fr,3d44257efec2c9f5,"class PercentileObserver(MinMaxObserver):
+    # TODO etudiant
+    # Reimplementer le calcul des bornes au percentile p plutot qu'aux extremes.
+    def __init__(self, p=99.9, **kw):
+        super().__init__(**kw)
+        self.p = p
+
+    def forward(self, x_orig):
+        # TODO etudiant : accumuler, puis borner au percentile self.p
+        print(""Exercice a completer"")
+        return super().forward(x_orig)
+
+
+print(f""PercentileObserver declare : {PercentileObserver(p=99.9).__class__.__name__}"")",,,,,,,,3d44257efec2c9f5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,51667e7c,markdown,fr,4d2e7f87f5406769,"## Exercice 3 — Épargner la première couche
+Toutes les couches ne souffrent pas également de la quantification — et la littérature désigne les **premières convolutions** comme les plus sensibles (elles portent l'image brute, distribution large). Le `QConfigMapping` sait donner un traitement de faveur : `set_module_name(""stem"", float_qconfig)` laisse une couche en FP32. Testez : quantifiez tout **sauf le stem**, mesurez l'exactitude et la taille — le gain d'exactitude vaut-il les 1,3 Ko que coûte le stem laissé en FP32 ?
+
+> **Indice :** un qconfig ""nul"" garde un module en FP32 — QConfig(activation=None, weight=None)
+> (deja importe dans la cellule du §4). Etape 1 : QConfigMapping().set_global(<le qconfig
+> quantifie du §4>).set_module_name(""stem"", QConfig(activation=None, weight=None)).
+> Etape 2 : prepare_fx -> calibration (CAL_BATCHES) -> convert_fx.
+> Etape 3 : comparer (exactitude, taille) au FX MinMax du §4 — l'ecart type attendu sur un
+> petit CNN est faible, mesurez-le quand meme.
+",,,,,,,,4d2e7f87f5406769,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,7a9e2ac5,code,fr,f0e35b901f6cabdf,"def fx_static_sans_stem():
+    # TODO etudiant
+    # Etape 1 : qmap avec set_module_name(""stem"", float_qconfig)
+    # Etape 2 : prepare_fx -> calibration (CAL_BATCHES) -> convert_fx
+    # Etape 3 : return evaluate(conv, test_loader)
+    print(""Exercice a completer"")
+    return None
+
+
+acc_sans_stem = fx_static_sans_stem()
+print(f""[FX MinMax sans stem] exactitude = {acc_sans_stem}"")",,,,,,,,f0e35b901f6cabdf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,d1fcd86d,markdown,fr,562f1d6225facb30,"## Part B — Élagage par l'écosystème `torch.nn.utils.prune`
+
+La seconde moitié mesure l'élagage par l'API officielle `torch.nn.utils.prune`, sur le même terrain et le même témoin. Le motif est identique : la main (3.9b/3.9c) explique, la bibliothèque outille — et la mesure tranche.
+",,,,,,,,562f1d6225facb30,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,ae9adb0b,markdown,fr,4fad98671b33bccf,"## 7. Le paysage — élagage : un masque, quatre décisions
+
+La physique de l'élagage tient en une ligne : $W' = W \odot M$ où $M$ est un masque binaire. Tout le reste est le choix de $M$ :
+
+- **Quoi élaguer** — *non structuré* : des coefficients individuels (un masque dense de 0/1). *Structuré* : des canaux entiers, lignes ou neurones (un réseau plus petit réellement, accélérable par le matériel).
+- **Sur quel critère** — *magnitude* ($|w|$, l'oubli des petits poids), *aléatoire* (le témoin surprenant : marche souvent bien), critères avancés (saillance, mouvement).
+- **À quelle échelle** — *local* : chaque couche reçoit le même taux. *Global* : un seul seuil sur toutes les couches — les couches tolérantes donnent de la marge aux couches fragiles.
+- **En combien de passes** — *one-shot* (tout d'un coup — le protocole de ce notebook) ou *itératif* avec réentraînement (l'exercice 5).
+
+Ce notebook mesure ces décisions sur le même témoin, main contre bibliothèque.
+
+**Quatre décisions définissent un élagage.** Trois sont ci-dessus — le critère, l'allocation
+(locale ou globale), la granularité (non structurée ou structurée) ; la quatrième est la
+**persistance** : le masque est-il garanti contre le
+réentraînement (hooks de l'API) ou laissé à la main ? Chaque section de ce
+notebook isole une de ces décisions, les autres gelées.",,,,,,,,4fad98671b33bccf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,16753173,markdown,fr,81b3de7822fb2a58,"## 8. La main : magnitude pruning en dix lignes
+
+Le geste from-scratch complet (3.9b l'étend : masques persistants, structuré, loterie) tient en dix lignes pour un one-shot local : par couche, trier $|w|$, trancher au quantile du taux visé, multiplier. Pas de hook, pas de ré-entraînement — on mesure la **chute immédiate** de l'élagage one-shot.",,,,,,,,81b3de7822fb2a58,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,651ec83c,code,fr,b97838179de19bc7,"def prune_magnitude_main(m, taux):
+    # Elagage one-shot local par magnitude, a la main : W *= masque(|W|, quantile).
+    m = copy.deepcopy(m)
+    for mod in m.modules():
+        if isinstance(mod, (nn.Conv2d, nn.Linear)):
+            w = mod.weight.data.abs().flatten()
+            k = int(w.numel() * taux)
+            if k == 0:
+                continue
+            seuil = torch.kthvalue(w, k).values
+            mod.weight.data[mod.weight.data.abs() < seuil] = 0.0
+    return m
+
+
+def sparsite(m):
+    z = t = 0
+    for mod in m.modules():
+        if isinstance(mod, (nn.Conv2d, nn.Linear)):
+            z += (mod.weight.data == 0).sum().item()
+            t += mod.weight.data.numel()
+    return z / t
+
+
+main_50, main_75, main_90 = (prune_magnitude_main(model, t) for t in (0.50, 0.75, 0.90))
+for nom, m in [(""main 50%"", main_50), (""main 75%"", main_75), (""main 90%"", main_90)]:
+    print(f""[{nom}] sparsite reelle={sparsite(m):.1%}  exactitude={evaluate(m, test_loader):.4f}""
+          f""  (chute {acc_fp32 - evaluate(m, test_loader):+.4f})"")",,,,,,,,b97838179de19bc7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,02a7983c,markdown,fr,6d83045305d91bd1,"**Lecture — la falaise one-shot.** À 50 % le réseau encaisse : la magnitude locale épargne les poids porteurs, la chute reste modérée (0,58 contre un témoin à 0,79). À 75-90 % sans réentraînement, c'est la falaise franche jusqu'au niveau du hasard : le masque retire aussi des poids que la BatchNorm et les connexions résiduelles utilisaient réellement. C'est le portrait-robot du compromis **sparsité ↔ exactitude**, et la motivation des protocoles itératifs (exercice 5) et du réentraînement (exercice 4).",,,,,,,,6d83045305d91bd1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,d870caa7,markdown,fr,bcea92ca9e2e8e95,"## 9. La bibliothèque : `prune.l1_unstructured` — le même masque, déclaré
+
+L'appel le plus proche de la main : `prune.l1_unstructured(module, 'weight', amount=t)` élague les `t` plus petits $|w|$ **de la couche**. La bibliothèque fait trois choses que la main doit sinon écrire : elle déplace le poids dans `weight_orig`, pose un `weight_mask`, et câble un `forward_pre_hook` qui fait $W = W_{orig} \odot M$ à chaque passe — **le masque survit à l'optimiseur**, alors que la main doit re-masquer après chaque `opt.step()`.",,,,,,,,bcea92ca9e2e8e95,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,f0907a85,code,fr,4c6e404fbe8cb2fa,"def prune_l1_tous(m, taux):
+    m = copy.deepcopy(m)
+    for mod in m.modules():
+        if isinstance(mod, (nn.Conv2d, nn.Linear)):
+            prune.l1_unstructured(mod, name=""weight"", amount=taux)
+    return m
+
+
+api_50 = prune_l1_tous(model, 0.50)
+acc_api_50 = evaluate(api_50, test_loader)
+mod0 = api_50.s1[0].conv1
+print(f""[torch.prune L1 local 50%] exactitude={acc_api_50:.4f}  (main 50% ci-dessus)"")
+print(f""attribution du module conv1 du 1er bloc : {[n for n, _ in mod0.named_parameters()]}"")
+print(f""zeros visibles dans weight = {(mod0.weight == 0).sum().item()} / {mod0.weight.numel()}""
+      f""  |  hooks forward pre : {len(mod0._forward_pre_hooks)}"")",,,,,,,,4c6e404fbe8cb2fa,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,bc0db5f9,markdown,fr,936fd0b3824c071a,"**Lecture — fonctionnalité et don de l'API.** (1) À sparsité locale égale (50 % par couche), la bibliothèque et la main **ne sélectionnent pas les mêmes poids** : l'API élague exactement $k$ poids par couche, la main $k-1$ — son masque est strict (`|w| < seuil` avec `seuil = kthvalue(w, k)`), donc la $k$-ième valeur n'est pas coupée. La sortie le montre : l'API affiche 1152 zéros sur 2304 ; la main en coupe un de moins — 1151, **dérivé** du masque strict (le `kthvalue(w, k)` n'est pas coupé par `< seuil`) : c'est un compte **calculé**, que la cellule n'imprime pas, contrairement aux 1152 zéros de l'API. L'exactitude de la bibliothèque n'est donc pas l'exactitude de la main à 50 % : l'écart de 0,0016 vient de cette différence de sélection, pas d'ordres flottants. (2) La sortie nomme la mécanique : `weight_mask` et `weight_orig` coexistent, et le module porte un `forward_pre_hook`. Tant que le hook est là, `module.weight` est **recalculé** depuis orig ⊙ mask — un `opt.step()` ne peut pas « réveiller » les poids élagués. La main, elle, a muté `weight.data` en place : économe, mais sans cette garantie.",,,,,,,,936fd0b3824c071a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,6e288591,markdown,fr,badbdfebd7913d44,"## 10. Local vs global : qui alloue la sparsité alloue la performance
+
+L'élagage local impose le même taux partout — 50 % dans le stem fragile comme dans les convs 3×3 redondantes. L'élagage **global** (`prune.global_unstructured`) trie $|w|$ sur **toutes** les couches à la fois : les couches à petits poids donnent plus que le taux, les couches à gros poids en gardent. Le critère de mérite : à **sparsité totale** égale, laquelle garde le mieux l'exactitude ? Le témoin aléatoire (`random_unstructured`) fixe le plancher : si le global magnitude ne le bat pas nettement, la magnitude ne sert à rien.",,,,,,,,badbdfebd7913d44,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,0d83bd89,code,fr,ac656a920ab10702,"def prune_global(m, taux):
+    m = copy.deepcopy(m)
+    prune.global_unstructured(
+        [(mod, ""weight"") for mod in m.modules() if isinstance(mod, (nn.Conv2d, nn.Linear))],
+        pruning_method=prune.L1Unstructured, amount=taux)
+    return m
+
+
+def prune_random_local(m, taux):
+    m = copy.deepcopy(m)
+    for mod in m.modules():
+        if isinstance(mod, (nn.Conv2d, nn.Linear)):
+            prune.random_unstructured(mod, name=""weight"", amount=taux)
+    return m
+
+
+BUDGET = 0.75
+glob_75 = prune_global(model, BUDGET)
+rand_75 = prune_random_local(model, BUDGET)
+for nom, m in [(f""global L1 {BUDGET:.0%}"", glob_75), (f""random local {BUDGET:.0%}"", rand_75)]:
+    print(f""[{nom}] sparsite reelle={sparsite(m):.1%}  exactitude={evaluate(m, test_loader):.4f}"")",,,,,,,,ac656a920ab10702,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,6660861a,markdown,fr,306b25da70aa3d06,"**Lecture.** Le random local paie le prix double de son injustices : mauvais critère **et** allocation forcée. Le global magnitude domine : les couches denses en grands poids (convs profondes) restent presque intactes, les autres se vident — la sparsité va là où elle coûte le moins. C'est la même leçon que la quantification par-canal de 3.9, partie II : **l'allocation par importance bat l'allocation uniforme** à budget égal.",,,,,,,,306b25da70aa3d06,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,db1506f4,markdown,fr,11b3a643b71cdddd,"## 11. Structuré : élaguer des canaux, pas des coefficients
+
+`prune.ln_structured(module, 'weight', amount, n, dim=0)` retire des **lignes entières** de la matrice de poids (des canaux de sortie). Le masque reste binaire, mais sa granularité change : un canal mort peut être **retiré physiquement** du graphe (le notebook from-scratch 3.9b le fait à la main), ce qu'aucun zéro épars ne peut. En contrepartie, à « amount » égal, le structuré retire beaucoup plus de capacité : la chute d'exactitude est plus raide.",,,,,,,,11b3a643b71cdddd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,929ef4dd,code,fr,a57b6e658e9ccbcc,"struct = copy.deepcopy(model)
+canaux_avant = struct.fc.weight.shape[1]
+for mod in struct.modules():
+    if isinstance(mod, nn.Conv2d) and mod.out_channels > 16:
+        prune.ln_structured(mod, name=""weight"", amount=0.5, n=2, dim=0)
+prune.ln_structured(struct.fc, name=""weight"", amount=0.5, n=2, dim=0)
+acc_struct = evaluate(struct, test_loader)
+morts = sum(int((mod.weight.abs().sum(dim=tuple(range(1, mod.weight.dim()))) == 0).sum())
+            for mod in struct.modules() if isinstance(mod, nn.Conv2d))
+print(f""[structuré LN n=2, 50% des convs>16 canaux + fc] exactitude={acc_struct:.4f}""
+      f""  (chute {acc_fp32 - acc_struct:+.4f})  canaux entièrement morts: {morts}"")",,,,,,,,a57b6e658e9ccbcc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,689fbb0c,markdown,fr,f744b3f8305ce9bb,"**Lecture.** La chute est plus sévère à amount égal — un canal entier emporte ses connexions, pas seulement ses plus petits coefficients. Le gain est ailleurs : chaque canal mort est un groupe de poids **tous** nuls, éliminable du graphe (réduction réelle de la matrice, accélération matérielle possible). Le non-structuré compresse des **valeurs** ; le structuré compresse de la **structure**. C'est le pont vers les notebooks from-scratch (3.9b fait la chirurgie de graphe ; la quantification (3.9, partie II / 3.9e) traite l'autre axe).",,,,,,,,f744b3f8305ce9bb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,4ab5b9b0,markdown,fr,319ea47236196a3f,"## 12. Taille et vitesse : l'honnêteté des gains (et le piège mémoire)
+
+Deux mesures, les mêmes que 3.9e. **Taille** : les zéros d'un tenseur dense n'économisent rien — pire, un module pruné par l'API transporte `weight_orig` **et** `weight_mask` : le state_dict **grossit** tant qu'on n'appelle pas `prune.remove()`. **Vitesse** : les kernels denses ne sautent pas les zéros ; la latence d'un réseau masqué est celle du réseau plein. L'élagage non structuré n'est une affaire de production que **combiné** (sparcité → export épars, ou sparsité → quantification) — jamais seul.",,,,,,,,319ea47236196a3f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,9a59e5ce,code,fr,7888ecd1f23bc89e,"def taille_octets(m):
+    return sum(v.numel() * v.element_size()
+               for v in m.state_dict().values() if isinstance(v, torch.Tensor))
+
+
+x_bench = next(iter(test_loader))[0][:64]
+def latence(m, n=30, warm=3):
+    m.eval()
+    with torch.no_grad():
+        for _ in range(warm):
+            m(x_bench)
+        ts = []
+        for _ in range(n):
+            t0 = time.perf_counter()
+            m(x_bench)
+            ts.append(time.perf_counter() - t0)
+    return float(np.median(ts)) * 1000
+
+
+t_fp32, t_pruned, t_removed = taille_octets(model), taille_octets(glob_75), None
+glob_removed = copy.deepcopy(glob_75)
+for mod in glob_removed.modules():
+    if isinstance(mod, (nn.Conv2d, nn.Linear)):
+        prune.remove(mod, ""weight"")
+t_removed = taille_octets(glob_removed)
+print(f""taille state_dict : FP32 {t_fp32/1024:.0f} Ko | pruné (orig+mask) {t_pruned/1024:.0f} Ko""
+      f"" | après remove() {t_removed/1024:.0f} Ko"")
+print(f""latence batch 64 : FP32 {latence(model):.1f} ms | pruné 75% {latence(glob_75):.1f} ms"")",,,,,,,,7888ecd1f23bc89e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,110558ed,markdown,fr,99857b5e572a5a35,"**Lecture honnête.** Trois chiffres, trois leçons : (1) le module pruné **occupe plus de place** que le modèle plein (origine + masque) tant que `remove()` n'a pas fusionné le masque dans les poids ; (2) après `remove()`, le tenseur est dense-avec-zéros — **la même taille** que FP32 : les zéros ne compriment rien sans format épars ; (3) la latence mesurée de ce run, **médiane de 30 passages CPU** : le pruné 75 % y passe de l'ordre de 10 % plus vite — un écart non imputable à la sparsité : le forward reparamétré (orig ⊙ mask) fait *plus* de travail, pas moins, et les kernels denses calculent les zéros ; rien n'est imputable à la sparsité — aucune accélération fiable ne s'obtient du non-structuré sans format épars. Le gain réel du non-structuré vient des combos — sparsité **puis** quantification INT8 (les zéros quantifiés restent nuls, les échelles resserrent), ou export au format sparse. Voir 3.9, partie II §19 pour la falaise INT4 : les deux axes se combinent, ne se substituent pas.",,,,,,,,99857b5e572a5a35,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,ab9a4c22,markdown,fr,959d1f9d93c9695b,"## 13. Récapitulatif : l'écosystème contre la main
+
+Toutes les exactitudes sont celles de **ce run** (témoin FP32 mesuré §1, recette CPU 6 époques).
+
+| configuration | sparsité réelle | exactitude (ce run) | lignes d'élagage |
+|---|---:|---:|---:|
+| FP32 témoin | 0 % | **0,7896** | — |
+| main magnitude 50 % (§8) | 50,0 % | 0,5775 (−0,212) | ~10 |
+| `l1_unstructured` local 50 % (§9) | 50,0 % (1152/2304 pour l'API, contre 1151 **dérivés** du masque strict pour la main — compte calculé, non imprimé) | 0,5791 (sélection différente : l'API coupe $k$ poids, la main $k-1$) | 3 |
+| `random_unstructured` local 75 % (§10) | 75,0 % | 0,1000 (chance) | 3 |
+| `global_unstructured` L1 75 % (§10) | 75,0 % | 0,4031 (+0,30 vs local à budget égal) | 3 |
+| `ln_structured` 50 % canaux (§11) | 336 canaux morts | 0,1000 (chance) | 3 |
+
+Taille et vitesse (§12), mêmes honnêteté : state_dict 1071 Ko (FP32) → **2129 Ko** tant que le masque coexiste avec l'origine → 1071 Ko après `remove()` (dense-avec-zéros, rien gagné sans format épars) ; latence batch 64 : écart de l'ordre de 10 % en faveur du pruné, non imputable à la sparsité (médiane de 30 passages — le forward reparamétré orig ⊙ masque fait *plus* de travail ; bruit d'ordonnancement, pas un gain).
+
+Ce que la bibliothèque donne : l'invariant du masque (hooks, gradients), le global en un appel, la sortie propre (`remove()`). Ce que la main donne en plus : le **contrôle** — masques persistants, chirurgie de graphe structurée, hypothèse de la loterie, sensibilité couche par couche (le programme complet de 3.9b/3.9c). Les deux leçons se complètent : on apprend le mécanisme à la main, on le déploie avec l'écosystème.",,,,,,,,959d1f9d93c9695b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,00feae38,markdown,fr,f1728dfab59fdc49,"## Exercice 4 — Réparer après l'élagage : fine-tuning une époque
+
+L'élagage one-shot à 75 % a cassé le témoin. Combien une seule époque de réentraînement récupère-t-elle ? Attention au piège de la main vs l'API : réentraîner un modèle pruné **par l'API** préserve le masque (les hooks gardent les zéros) ; réentraîner le modèle muté à la main **réveille les poids** (rien ne retient les zéros contre le gradient).
+
+```python
+def finetune_1_epoch(m):
+    # TODO etudiant
+    # Etape 1 : opt = SGD(m.parameters(), lr=1e-2, momentum=0.9)
+    # Etape 2 : une epoque sur train_loader (copier la cellule d'entrainement)
+    # Etape 3 : retourner evaluate(m, test_loader) et la sparsite(m)
+    pass
+```
+
+Attendu : sur le global 75 %, une époque rend une partie de la chute ; la sparsité de la version API reste ~75 %, celle de la version main **dévie** — c'est la mesure du don de l'API.",,,,,,,,f1728dfab59fdc49,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,0e6b4bf3,code,fr,ec2afa9b39d3844b,"def finetune_1_epoch(m):
+    # TODO etudiant
+    # Etape 1 : opt = SGD(m.parameters(), lr=1e-2, momentum=0.9)
+    # Etape 2 : une epoque sur train_loader
+    # Etape 3 : renvoyer (evaluate(m, test_loader), sparsite(m))
+    pass
+
+
+print(""Exercice 4 à compléter : fine-tuning une époque du global 75 % (API vs main)."")",,,,,,,,ec2afa9b39d3844b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,9da65153,markdown,fr,608d1d0af2a9ec44,"## Exercice 5 — Itératif contre one-shot : la falaise se déplace
+
+Élaguer 90 % d'un coup casse le témoin (§8). Élaguer 10 % dix fois, avec une époque de réentraînement entre chaque passe, atteint le même budget total en conservant beaucoup mieux l'exactitude — le réseau « guérit » entre les passes. C'est le protocole des papiers de compression à 90-95 % de sparsité.
+
+Attendu : la courbe exactitude(sparsité) de l'itératif reste au-dessus de la one-shot dès ~30 % de budget consommé ; l'écart se creuse vers 80-90 %.",,,,,,,,608d1d0af2a9ec44,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,e59a5b00,code,fr,053f1dad61b8cf8b,"def iteratif_10x10(m, epochs_inter=1):
+    # TODO etudiant
+    # Etape 1 : boucle sur 10 passes : prune.global_unstructured(..., amount=0.10 relatif)
+    # Etape 2 : entre les passes, une epoque d'entrainement (lr faible, ex 5e-3)
+    # Etape 3 : accumuler (sparsite, exactitude) et renvoyer la liste
+    pass
+
+
+print(""Exercice 5 à compléter : élagage itératif 10x10% + fine-tuning, contre one-shot 90%."")",,,,,,,,053f1dad61b8cf8b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,b309ebcf,markdown,fr,e4003a937c80649f,"## Exercice 6 — L'hypothèse du ticket gagnant, version indicative
+
+*Loterie* (Frankle & Carbin 2019) : un réseau élagué dont les poids survivants sont **réinitialisés à leurs valeurs d'origine** réapprend aussi bien que le réseau plein ; réinitialisés **aléatoirement**, ils réapprennent nettement moins bien. Le ticket gagnant est la sous-structure initiale, pas juste le masque.
+
+Protocole indicatif CPU : élaguer le témoin à 50 % (global), sauvegarder l'état initial, réinitialiser les poids survivants soit à l'initial soit aléatoire, réentraîner 2 époques chacun, comparer. Attendu (petit budget, témoins bruités) : l'écart initial-vs-aléatoire est visible mais serré — le notebook complet (3.9b) mène l'expérience à budget complet.",,,,,,,,e4003a937c80649f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,859dcd09,code,fr,8cf35cb91fe4df1a,"def ticket_gagnant(m, taux=0.5, ep=2):
+    # TODO etudiant
+    # Etape 1 : init = copy.deepcopy(m.state_dict()) ; m50 = prune_global(m, taux, ...)
+    # Etape 2 : masque survive = m50 weights != 0 ; deux modeles : init-vals vs random-vals
+    # Etape 3 : reentrainer ep epochs chacun, renvoyer les deux exactitudes
+    pass
+
+
+print(""Exercice 6 à compléter : réinitialisation initiale vs aléatoire des poids survivants."")",,,,,,,,8cf35cb91fe4df1a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb,21593865,markdown,fr,19e99c8463ce907a,"## Résumé
+
+**Part A — Quantization.**
+
+1. **`quantize_dynamic` ne couvre que `Linear`** : sur un CNN, une couche sur vingt-deux — l'API vise les transformeurs, la mesure le montre (économie dérisoire, exactitude intacte).
+2. **La chaîne FX refait le chemin de 3.9, partie II en quatre appels** : fusion conv-bn-relu, échelles per-channel, observateurs, packing — même qualité d'exactitude que la main.
+3. **MinMax ≈ Histogramme** sur ce CNN — comme KL ≈ min/max chez 3.9 : le choix d'observateur n'est pas le levier décisif sur des activations sages.
+4. **Taille 4,0×** sous `onednn` (1071 → 267 Ko), latence mesurée plus rapide au batch 64 (médiane ci-dessus) — un gain réel, mais dépendant du moteur et du profil : 3.9, partie II, qui simulait les arrondis sans kernels INT8, ne pouvait pas le mesurer.
+
+**Part B — Élagage.**
+
+1. **Fonctionnel** : à sparsité locale égale, `prune.l1_unstructured` et le masque manuel **ne sélectionnent pas les mêmes zéros** — l'API coupe exactement $k$ poids par couche (1152 zéros sur 2304), la main $k-1$ (1151, **dérivé** du masque strict — compte calculé, non imprimé par la cellule) ; l'écart d'exactitude de 0,0016 vient de cette différence de sélection, pas d'ordres flottants (§9).
+2. **Le don de l'API** : `weight_orig`/`weight_mask` + `forward_pre_hook` rendent le masque **persistant sous l'optimiseur** — la main doit re-masquer à chaque pas pour garantir la même chose.
+3. **Global > local** : à budget total égal, l'allocation par importance domine l'uniforme ; le random local fixe le plancher qui le prouve.
+4. **Honnêteté des gains** : non-structuré = zéro gain de taille (dense-avec-zéros) et zéro gain de latence (kernels denses) tant qu'il n'est pas **combiné** (export épars, quantification). Le structuré comprime la structure — chirurgie de graphe, le programme de 3.9b.
+
+**Le fil commun.** Écosystème vs main : la fusion, les stubs, le packing et les kernels offerts ; en échange, la main garde le **contrôle** (percentile, INT4, couche par couche ; masques persistants, chirurgie de graphe, protocoles itératifs). La quantization (3.9 partie II main, Part A écosystème) et l'élagage (3.9b/3.9c main, Part B écosystème) sont les deux axes de la compression ; le tableau comparatif final A-vs-B (`3.9g`) les rassemble.
+
+**À retenir.** L'élagage n'est pas une technique unique mais un espace de décisions : critère (magnitude > aléatoire), allocation (globale > locale à budget égal), granularité (non-structuré compresse des valeurs, structuré compresse de la structure), persistance (le masque de l'API survit au réentraînement, la mutation à la main non). L'API officielle encode les garanties — hooks, masques, `remove()` propre — pour trois lignes par opération ; la main donne le contrôle. En production, l'élagage non structuré ne paie que combiné (sparsité puis quantification, ou export au format épars) : seul, il économise des valeurs, pas de la mémoire ni du temps.
+
+## Pour aller plus loin
+
+- [3.9, partie II — Compression par quantification INT8 à la main](3.9-Compression-Quantization-FP.ipynb) — la physique : échelles, zero-points, KL, la falaise INT4
+- [3.9b / 3.9c — Élagage from-scratch](3.9b-Compression-Pruning-from-scratch.ipynb) — masques persistants, structuré, loterie
+- [3.7 — Distillation maître-élève](3.7-Distillation-Maitre-Eleve.ipynb) — l'autre famille de compression : le savoir plutôt que les nombres
+- [FT-02 — QLoRA](../../../GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb) — la quantification 4 bits au service du fine-tuning de LLM
+- **Migration torchao** : sous torch 2.14, `torch.ao.quantization` est déprécié — les modes eager et PT2E migrent vers le paquet `torchao` ([pytorch/ao](https://github.com/pytorch/ao)). Ce carnet mesure l'API FX stable sous laquelle la partie manuelle a été écrite ; un déploiement neuf sur torch ≥ 2.14 choisira `torchao`.
+- **Élagage** : `torchao.pruning` (la migration annoncée de `torch.nn.utils.prune`), movement pruning (élagage appris pendant l'entraînement), SparseGPT/Wanda pour les LLM — et côté main, la loterie à budget complet (3.9b).
+",,,,,,,,19e99c8463ce907a,,,,,,,,,,,,,,,
