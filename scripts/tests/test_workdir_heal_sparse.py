@@ -5,15 +5,23 @@ runners (le work dir est réutilisé d'un job à l'autre) : ces tests le
 LIENT depuis les fichiers du dépôt -- ils ne recopient pas le script --,
 le verrouillent sur ses propriétés, et le rejouent sur un dépôt local.
 
-Trois propriétés sont exigées, dans cet ordre :
+Quatre propriétés sont exigées, dans cet ordre :
 
 1. un état sparse **armé** (`core.sparseCheckout` à vrai) purge le work dir,
    parce que le checkout suivant matérialiserait l'arbre entier ;
-2. un **unshallow explicite** est tenté et **vérifié** avant tout clone neuf ;
-3. le graphe incomplet reste le repli.
+2. un fichier de **motifs sparse** seul est inerte : il est retiré, le work
+   dir est conservé ;
+3. un work dir **shallow** est purgé -- c'est le repli historique, et il ne
+   s'essaie plus de le réparer sur place ;
+4. le graphe incomplet reste le repli.
 
 Ces propriétés ne sont pas des détails d'implémentation : chacune est un
 défaut mesuré (voir les commentaires des workflows).
+
+La forme (b) de la review ai-01 du 2026-11-09 a retiré l'`unshallow`
+explicite : sans mesure sur un runner, on ne répare pas un work dir
+shallow sur place -- on le purge. Le test qui vérifie l'absence de cette
+tentative est donc partie du contrat.
 """
 from __future__ import annotations
 
@@ -115,16 +123,28 @@ def _run_heal(workflow: str, clone: Path, tmp_path: Path) -> subprocess.Complete
 
 
 @pytest.mark.parametrize("workflow", WORKFLOWS)
-def test_le_bloc_heal_porte_les_trois_gardes(workflow):
+def test_le_bloc_heal_porte_les_quatre_gardes(workflow):
     script = _heal_script(workflow)
     assert "core.sparseCheckout" in script, "l'etat sparse n'est pas lu"
-    assert "git fetch --unshallow origin" in script, "l'unshallow explicite est absent"
+    assert "sparse-checkout" in script, "le retrait des motifs inertes est absent"
+    assert ".git/shallow" in script, "l'etat shallow n'est pas lu"
     assert "rev-list --all --count" in script, "la verification du graphe est absente"
     # L'ordre est une exigence : l'etat sparse casse la materialisation, donc
-    # il se traite avant le graphe ; et l'unshallow est tente AVANT la purge
-    # de repli (la derniere des purges, celle du graphe incomplet).
-    assert script.index("core.sparseCheckout") < script.index("git fetch --unshallow origin")
-    assert script.index("git fetch --unshallow origin") < script.rindex("rm -rf .git")
+    # il se traite avant le graphe, et le shallow se purge avant la purge de
+    # repli du graphe incomplet.
+    assert script.index("core.sparseCheckout") < script.index(".git/shallow")
+    assert script.index(".git/shallow") < script.rindex("rm -rf .git")
+
+
+@pytest.mark.parametrize("workflow", WORKFLOWS)
+def test_le_bloc_heal_ne_tente_pas_d_unshallow(workflow):
+    # Forme (b) de la review ai-01 : le work dir shallow est purge, il n'est
+    # pas repare sur place. Une tentative d'unshallow sans filtre de clone
+    # partiel ni timeout rechargerait le graphe entier -- c'est exactement le
+    # poste que la P1 de #25510 mesure.
+    script = _heal_script(workflow)
+    assert "git fetch --unshallow" not in script
+    assert "--unshallow" not in script
 
 
 @pytest.mark.skipif(BASH is None, reason="bash absent de cet hote")
@@ -145,7 +165,12 @@ def test_sparse_arme_purge_le_work_dir(workflow, origin, tmp_path):
 @pytest.mark.skipif(BASH is None, reason="bash absent de cet hote")
 @pytest.mark.parametrize("workflow", WORKFLOWS)
 def test_motifs_sparse_inertes_conservent_le_work_dir(workflow, origin, tmp_path):
-    clone = _shallow_clone(tmp_path, origin)
+    # Le work dir est **complet** ici : c'est le seul etat ou le retrait des
+    # motifs inertes est decide seul. Sur un work dir shallow, la purge
+    # shallow passerait avant (c'est le repli historique, cf le test
+    # dedicated) -- l'observation des motifs ne serait pas isolee.
+    clone = _shallow_clone(tmp_path, origin, name="complet")
+    _git(clone, "fetch", "--unshallow", "origin")
     (clone / ".git" / "info").mkdir(parents=True, exist_ok=True)
     (clone / ".git" / "info" / "sparse-checkout").write_text("/scripts/\n", encoding="utf-8")
 
@@ -159,28 +184,15 @@ def test_motifs_sparse_inertes_conservent_le_work_dir(workflow, origin, tmp_path
 
 @pytest.mark.skipif(BASH is None, reason="bash absent de cet hote")
 @pytest.mark.parametrize("workflow", WORKFLOWS)
-def test_unshallow_reussi_conserve_le_work_dir(workflow, origin, tmp_path):
+def test_work_dir_shallow_est_purge(workflow, origin, tmp_path):
+    # Forme (b) : le work dir shallow n'est pas repare sur place, il est purge
+    # et le checkout fera un clone neuf.
     clone = _shallow_clone(tmp_path, origin)
 
     result = _run_heal(workflow, clone, tmp_path)
 
     assert result.returncode == 0, result.stderr
-    assert "unshallow explicite reussi" in result.stdout
-    assert (clone / ".git").is_dir()
-    assert not (clone / ".git" / "shallow").exists()
-    assert _git(clone, "rev-list", "--all", "--count").stdout.strip() == "4"
-
-
-@pytest.mark.skipif(BASH is None, reason="bash absent de cet hote")
-@pytest.mark.parametrize("workflow", WORKFLOWS)
-def test_unshallow_en_echec_purge_le_work_dir(workflow, origin, tmp_path):
-    clone = _shallow_clone(tmp_path, origin)
-    _git(clone, "remote", "set-url", "origin", (tmp_path / "absent.git").as_uri())
-
-    result = _run_heal(workflow, clone, tmp_path)
-
-    assert result.returncode == 0, result.stderr
-    assert "unshallow impossible ou graphe incomplet" in result.stdout
+    assert "SHALLOW reutilise" in result.stdout
     assert not (clone / ".git").exists()
 
 

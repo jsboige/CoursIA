@@ -147,21 +147,8 @@ jobs:
             echo "[heal] motifs sparse inertes -- retrait du fichier, work dir conserve"
             rm -f .git/info/sparse-checkout
           fi
-          # --- Graphe shallow herite du job precedent (#15387) --------------
-          # Le `fetch --unshallow` declenche par actions/checkout peut echouer
-          # en silence (#15492, run 34542167016, job 103087137418 :
-          # "error: Could not read 0102d652b3..." emis PENDANT le fetch, etape
-          # rendue verte malgre tout). Le depot reste alors ni shallow ni
-          # complet, et tout `git log --raw` / `git rev-list` casse. On tente
-          # donc un unshallow explicite et VERIFIE (`.git/shallow` disparu et
-          # graphe parcourable) ; le clone neuf reste le repli.
           if [ -f .git/shallow ]; then
-            echo "::notice::[heal] work dir SHALLOW reutilise -- tentative d'unshallow explicite"
-            if git fetch --unshallow origin && [ ! -f .git/shallow ] && git rev-list --all --count >/dev/null 2>&1; then
-              echo "[heal] unshallow explicite reussi -- graphe complet reutilise"
-              exit 0
-            fi
-            echo "::notice::[heal] unshallow impossible ou graphe incomplet -- purge du work dir"
+            echo "::notice::[heal] work dir SHALLOW reutilise -- purge avant unshallow"
             rm -rf .git
             exit 0
           fi
