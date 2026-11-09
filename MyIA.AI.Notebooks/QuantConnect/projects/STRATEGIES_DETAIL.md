@@ -8,7 +8,7 @@ Descriptions par catégorie des projets de trading algorithmique. Pour le tablea
 
 | Stratégie | Sharpe catalogue | Sharpe aligné | Verdict |
 |-----------|------------------|---------------|---------|
-| HighBookToMarketFScore | 2.09 | **0.41** | effondrement -80% (MaxDD -60%) |
+| HighBookToMarketFScore | 2.09 | **0.41** | autre fenêtre : 2.09 = Sharpe OOS 1 an de la fiche (#25264) ; MaxDD -60% sur 2018-2025 |
 | PuppiesOfTheDow | 1.99 | **0.30** | effondrement -85% |
 | ML-Trend-Scanning | 0.66 | **0.33** | effondrement -50% |
 | AllWeather | 0.67 | **0.47** | dégradation -30% |

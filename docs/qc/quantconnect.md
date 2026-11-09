@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-10-30
+> REFERENCE — vivante — dernière révision 2026-11-09
 
 # QuantConnect (QC) - Configuration et règles
 
@@ -70,7 +70,7 @@ L'absence d'un appel `SetEndDate` (Python : `self.set_end_date(...)`) **n'est pa
 
 **Avant de « corriger » un notebook QC sans `SetEndDate`** : vérifier son régime. Un notebook de recherche `QuantBook` sans date figée **n'est pas un defect D2**. Un notebook de déploiement `QCAlgorithm` (surtout dans `projects/`) sans `SetStartDate`/`SetEndDate` **est un defect** à figer (exception : Paper Trading explicite, où l'absence de dates = live par construction, ex. `QC-Py-27`). Le détecteur canonique est `scripts/notebook_tools/scan_window_drift.py` (#10230/#10627, qui remplace le `grep -L set_end_date` brut — ce dernier sur-compte d'un ordre de grandeur en mélangeant les deux régimes).
 
-## QC Cloud API - Accès via MCP Docker (OBLIGATOIRE)
+## QC Cloud API - Accès MCP (trois voies : REST-lite canonique, Docker officiel, distant)
 
 **Méthode d'accès** : Utiliser le MCP Docker `quantconnect/mcp-server` configure dans `.mcp.json` a la racine du projet.
 
@@ -149,6 +149,22 @@ Vérifier dans cet ordre :
 
 **Fix recurrent** : supprimer l'entrée `mcpServers.qc-mcp` de `~/.claude.json` pour que `.mcp.json` soit la seule source de vérité.
 
+### Troisième voie : le MCP distant officiel (`https://www.quantconnect.com/api/v2/mcp`) — qualification 2026-11-08 (#24679)
+
+QuantConnect héberge depuis 2026 son propre serveur MCP distant. **Trois voies d'accès coexistent, et elles ne se remplacent pas** :
+
+| Voie | Transport / auth | Périmètre | Statut flotte |
+|---|---|---|---|
+| **REST-lite** (`scripts/qc-mcp-lite/`) | stdio local, `SHA256(token:timestamp)` REST v2 | backtests, fichiers, projets — 12 outils, schema <5k tokens | **voie canonique** pour les backtests existants |
+| **MCP Docker officiel** (`quantconnect/mcp-server`) | stdio local via conteneur | API complète, schema ~40k tokens | disponible, coûteux en contexte |
+| **MCP distant** (`/api/v2/mcp`) | **streamable HTTP + OAuth 2.0** | Research/Jupyter (`jupyter_execute_cell`, `jupyter_execute_notebook`, `jupyter_read_notebook`), backtests, déploiements | **qualifiée au transport seulement** — l'accès est bloqué par le tier de nœud (ci-dessous) |
+
+**Transport et auth mesurés le 2026-11-08** (sondes sans authentification) : le endpoint répond 401 avec `WWW-Authenticate: Bearer resource_metadata=…oauth-protected-resource` (RFC 9728) ; la chaîne OAuth déclare `authorization_code` + `refresh_token`, PKCE S256, `token_endpoint /api/v2/mcp/token` et une **dynamic client registration** (`/api/v2/mcp/register`, RFC 7591). L'autorisation navigateur (`/mcp-authorize`) se fait par organisation. Le transport natif (`claude mcp add --transport http`) est un client MCP natif — **pas** un connecteur claude.ai : la connexion ne réactive pas `disableClaudeAiConnectors`. Les clés REST ne se recyclent pas : l'auth du remote est un flux OAuth distinct.
+
+**Condition d'accès mesurée — le bloqueur actuel** : la page officielle exige un **nœud agent payant** (A1-1, A4-8 ou A16-32) et **exclut l'A-MICRO gratuit**. L'org par défaut du cluster porte un A-MICRO (mesuré le 2026-11-08 sur sa page resources). Prix mesurés depuis la page customize de l'org : **A1-1 (1 CPU/12 Go) = $24/mo/nœud**, A4-8 (nommé A4-12 sur la page pricing, 4 CPU/12 Go) = $96/mo, A16-32 = $384/mo. L'upgrade est user-gated (registre des questions, #24679 §1) : tant qu'il n'est pas décidé, **aucune partie authentifiée du remote n'est qualifiable** — ni la découverte des schémas réels, ni la preuve QuantBook bout en bout, ni la compatibilité backtest. Les routes d'exécution QuantBook restent celles de [quantbook-execution-routes.md](quantbook-execution-routes.md).
+
+**Contrats différents du lite** (docs officielles, non re-mesurées côté flotte) : `create_backtest` distant compile puis lance et notifie en asynchrone (le lite attend un `compile_id`) ; `edit_file` distant remplace un snippet (le lite remplace le fichier entier via `update_file_contents`) ; `list_projects` distant est paginé et borné à l'organisation autorisée. La page dit « no quotas » — cela ne supprime ni notre limite flotte 10 appels/min, ni la garde par processus du lite.
+
 ## Organisations QC
 
 QC est multi-tenant via les "organizations". Le cluster CoursIA utilise plusieurs orgs en parallèle selon le contexte :
@@ -162,7 +178,7 @@ QC est multi-tenant via les "organizations". Le cluster CoursIA utilise plusieur
 
 **Règle : vérifier l'organisation cible avant de lancer.** Cette section affirmait que les organisations gratuites ou éducatives n'ont pas l'API de backtest. C'est réfuté pour ESGF_School : le 2026-10-07, dix backtests de #19740 y ont été créés par API, dont trois en parallèle (projet 37485593). Les nœuds d'une organisation se lisent par `/nodes/read`.
 
-**L'organisation se choisit à la création du projet.** Un projet appartient à une organisation, et ses backtests tournent sur les nœuds de celle-ci. `/projects/create` accepte le champ `organizationId`. `create_project` de qc-mcp-lite ne le transmet pas encore sur `main` : le paramètre `organization_id` est proposé par #19760. Sans ce champ, le projet atterrit dans l'organisation par défaut.
+**L'organisation se choisit à la création du projet.** Un projet appartient à une organisation, et ses backtests tournent sur les nœuds de celle-ci. `/projects/create` accepte le champ `organizationId`. `create_project` de qc-mcp-lite le transmet via son paramètre optionnel `organization_id` (#19760) ; sans ce champ, le projet atterrit dans l'organisation par défaut.
 
 **ESGF_School retient les 90 derniers jours, sans erreur.** Un backtest ne peut pas y finir après la date du jour moins 90 jours. Une fin demandée au-delà est ramenée à cette date, et le run se termine normalement. La lecture du backtest (`/backtests/read`) le montre : `outOfSampleDays: 90`, `outOfSampleMaxEndDate`, et `backtestEnd` ramené à cette date. Exemple mesuré : les runs de #19740 demandaient une fin au 2026-09-30 et se sont arrêtés au 2026-07-09.
 - Lire la fin effective (`backtestEnd`), jamais le paramètre demandé.
@@ -260,6 +276,32 @@ Pattern standardise pour combiner plusieurs strategies dans un même algo QC :
 - Mode intent par defaut (`additive=True`, exige `algorithm=self`) : dernier insight actif par couple (symbole, source_model), somme des poches par symbole, sans levier (#19740, #19759)
 - Supporte branches weight-hint ET equal-weight
 - Utilise `set_rebalancing_func` pour le rebalance timing
+
+### Source unique du PCM par poches — la garde
+
+Le modèle par poches a longtemps existé en plusieurs copies, en plusieurs variantes, et le correctif `additive` (#19740) n'était présent que dans une partie d'entre elles : un correctif posé sur une copie ne se propageait pas, et rien ne le signalait. L'extraction (#21134) a fait de `SharedPCM/pouches_pcm.py` la source canonique, importée par les composites.
+
+**Deux copies subsistent, et chacune a une raison qui ne se corrige pas par un copier-coller** :
+
+| Copie | Raison | Ce qu'elle porte |
+|-------|--------|-----------------|
+| `partner-course-quant-trading/kit-transitoire/03-Framework-Composite/main.py` | kit pédagogique **autonome** : le code est lu et modifié par l'apprenant dans un seul fichier, sans bibliothèque QC attachée — le canonique ne peut pas y être importé | le correctif `additive` et les diagnostics XLU de #20188 |
+| `projects/TrendWeatherPointInTime/portfolio_construction.py` | candidate **gelée** du registre de l'ombre (entrée `tw-pit`, code rejoué au SHA gelé) : #20188 interdit que l'extraction la touche | la variante antérieure au correctif `additive` — une seule insight par symbole, pas de reconstruction par `(symbole, source_model)` |
+
+La garde ne pretend donc pas supprimer ces copies : elle refuse qu'une **nouvelle** copie apparaisse sans déclaration, et qu'une copie **déclarée** soit modifiée sans re-déclaration.
+
+```bash
+python scripts/quantconnect/check_pcm_single_source.py          # verdict humain
+python scripts/quantconnect/check_pcm_single_source.py --json   # verdict structure
+```
+
+**Le manifeste** `scripts/quantconnect/pcm_single_source.json` porte la source canonique, les copies déclarées, l'empreinte de chacune (`sha256` du texte normalisé, donc insensible aux fins de ligne) et la raison de chaque déclaration. Les empreintes sont ce qui rend la garde discriminante : un fichier déclaré qui change sans re-déclaration est signalé (`DECLARATION_STALE`), pas absorbé.
+
+**Déclarer une copie** (procédure) : ajouter l'entrée au manifeste avec son chemin, ses classes, son empreinte et sa raison, puis relancer l'organe — il doit rendre `VERDICT: OK`. Une copie nouvelle qui n'a pas de raison n'est pas une copie : elle s'importe du canonique.
+
+**Câblage CI** : la garde est un garde **natif de la voie rapide** (`TRANCHE38` du registre `scripts/ci/fast_lane_registry.py`), **bloquant** : son check-run porte son nom canonique, donc un verdict rouge arrête la PR. Elle se déclenche sur toute modification d'un `.py` sous `MyIA.AI.Notebooks/QuantConnect/`, sur le manifeste et sur l'organe lui-même (une révision qui change la portée de la garde doit la rejouer).
+
+**Contrôle positif** : le corps de tests (`scripts/quantconnect/tests/test_check_pcm_single_source.py`) crée un arbre temporaire où une copie déclarée est volontairement modifiée et exige un verdict rouge (`DECLARATION_STALE`) ; le cas nominal, l'arbre du dépôt, doit rester vert. Une garde qui ne rougit pas sur une copie modifiée n'est pas une garde.
 
 ### AlphaModel — règles
 
