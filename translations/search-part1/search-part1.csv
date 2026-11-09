@@ -42426,4 +42426,3 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,3870ce3b,
 resultats_par_taille = None  # TODO etudiant
 
 print(""Exercice 5 a completer"")",,,,,,,,5067c6dd461dafce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,aae763af,markdown,fr,7fae7160adb889b5,"(Exercice non complete) - l'effet de la taille du problème sur le coût du redémarrage n'a pas été mesuré. Une fois complété, l'étudiant doit comparer le nombre moyen de redémarrages pour n = 6, 8, 10 et 12, puis relier ce qu'il observe au taux de succès d'une tentative isolée de Hill Climbing pour chaque valeur de n.",,,,,,,,7fae7160adb889b5,,,,,,,,,,,,,,,
