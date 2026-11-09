@@ -617,7 +617,7 @@ Ce notebook a couvert :
   (ASPIC+, DeLP)
 - **Argumentation probabiliste** : les MLN pondérent les formules ; l'argumentation probabiliste
   (NB 7b) pondère les *arguments* — deux facettes de l'incertitude → [Tweety-7b-Ranking-Probabilistic](Tweety-07b-Ranking-Probabilistic-Python.ipynb)
-- **Application au texte** : la serie [Argument_Analysis](../Argument_Analysis/) utilise Tweety comme
+- **Application au texte** : la serie [ArgumentAnalysis](../ArgumentAnalysis/) utilise Tweety comme
   backend ; les MLN y fourniraient un raisonnement plausible sur des faits extraits de texte (une
   porte d'entree « neuro-symbolique » au-dessus des LLMs)
 
@@ -2692,7 +2692,7 @@ def find_portable_jdk():
     search_paths = [
         pathlib.Path(""jdk-17-portable""),
         pathlib.Path(""../jdk-17-portable""),
-        pathlib.Path(""../Argument_Analysis/jdk-17-portable""),
+        pathlib.Path(""../ArgumentAnalysis/jdk-17-portable""),
         pathlib.Path(""../../jdk-17-portable""),
     ]
     exe_suffix = "".exe"" if platform.system() == ""Windows"" else """"
@@ -3173,7 +3173,7 @@ if jpype.isJVMStarted():
 else:
     # Chercher JDK portable
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -3187,7 +3187,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
         
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))
@@ -5892,7 +5892,7 @@ if jpype.isJVMStarted():
     jvm_ready = True
 else:
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -5906,7 +5906,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
 
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))
@@ -8753,7 +8753,7 @@ if jpype.isJVMStarted():
     jvm_ready = True
 else:
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -8767,7 +8767,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
         
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))
@@ -10436,7 +10436,7 @@ if jpype.isJVMStarted():
     jvm_ready = True
 else:
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -10450,7 +10450,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
 
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))
@@ -12538,7 +12538,7 @@ if jpype.isJVMStarted():
     jvm_ready = True
 else:
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -12552,7 +12552,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
 
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))
@@ -15895,7 +15895,7 @@ if jpype.isJVMStarted():
     jvm_ready = True
 else:
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -15909,7 +15909,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
 
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))
@@ -16976,7 +16976,7 @@ if jpype.isJVMStarted():
     jvm_ready = True
 else:
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -16990,7 +16990,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
 
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))
@@ -18240,7 +18240,7 @@ if jpype.isJVMStarted():
     jvm_ready = True
 else:
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -18254,7 +18254,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
 
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))

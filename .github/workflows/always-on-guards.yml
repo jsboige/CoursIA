@@ -1255,7 +1255,7 @@ jobs:
       # *.env.sample / *.env.template. gitleaks reconnait les formats de cles
       # connus (sk-..., ghp_..., AIza...), il ne voit pas une phrase secrete
       # faite d'un mot ordinaire (cas fondateur 'Propaganda' sur
-      # TEXT_CONFIG_PASSPHRASE dans SymbolicAI/Argument_Analysis/.env.example).
+      # TEXT_CONFIG_PASSPHRASE dans SymbolicAI/ArgumentAnalysis/.env.example).
       # L'organe verifie 32 fichiers traces git : pour chaque cle dont le nom
       # matche (?i)(PASS|SECRET|TOKEN|KEY|PWD), la valeur doit etre un marqueur
       # (vide, your_..._here, <...>, hf_..., sk-..., 0x<...>, URL, chemin,
