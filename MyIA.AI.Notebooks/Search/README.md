@@ -8,7 +8,7 @@ pagetitle: "Search - Algorithmes de Recherche et Programmation par Contraintes"
 series: Search
 pedagogical_count: 165
 breakdown: Part3-Cas-pratiques=51, Part1-Foundations=49, Part4-Metaheuristics=35, Part2-CSP=19, Part5-Frontieres=11
-maturity: BETA=151, ALPHA=8, DRAFT=6
+maturity: BETA=150, ALPHA=9, DRAFT=6
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -435,7 +435,7 @@ Le notebook App-8 utilise MiniZinc qui requiert l'installation de l'IDE :
 ### Les notebooks C# (.NET Interactive) ne s'exécutent pas
 
 - Vérifiez que .NET SDK 9.0+ est installé : `dotnet --version`
-- Installez le kernel : `dotnet tool install -g Microsoft.dotnet-interactive && dotnet interactive jupyter install`
+- Installez le kernel : `dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001 && dotnet interactive jupyter install`
 - Vérifiez : `jupyter kernelspec list` doit afficher `.net-csharp`
 - Les jumeaux C# hybrides (App-9b, App-10b) utilisent GeneticSharp et SkiaSharp ; les autres notebooks C# installent leurs packages (Google.OrTools, IKVM + Choco…) via `#r nuget` dans les cellules
 

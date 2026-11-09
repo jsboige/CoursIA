@@ -78,7 +78,7 @@ Console.WriteLine($"Triplets : {graph.Triples.Count}");
 - Formats supportes : Turtle, RDF/XML, N-Triples, JSON-LD
 - Namespace central : `VDS.RDF` + sous-espaces `Parsing`, `Query`, `Writing`
 
-> **Notebook** : `SW-1-CSharp-Setup.ipynb` — 20 min
+> **Notebook** : `SW-01-Setup-CSharp.ipynb` — 20 min
 
 ---
 
@@ -110,7 +110,7 @@ graph.Assert(turing, name, nameVal);
 - Serialisations : Turtle (lisible), RDF/XML (legacy), N-Triples (streaming)
 - `PlainLiteral`, `TypedLiteral` (`xsd:integer`, `xsd:dateTime`...)
 
-> **Notebook** : `SW-2-CSharp-RDFBasics.ipynb` — 45 min
+> **Notebook** : `SW-02-RDFBasics-CSharp.ipynb` — 45 min
 
 ---
 
@@ -141,7 +141,7 @@ print(g.serialize(format="turtle"))
 | Triple | `graph.Assert(s, p, o)` | `g.add((s, p, o))` |
 | Serialize | `StringWriter` + `TurtleWriter` | `g.serialize(format=...)` |
 
-> **Notebook** : `SW-2b-Python-RDFBasics.ipynb` — 40 min
+> **Notebook** : `SW-02b-RDFBasics-Python.ipynb` — 40 min
 
 ---
 
@@ -173,7 +173,7 @@ ttlWriter.Save(merged, writer);
 - **InMemoryDataset** : dataset SPARQL multi-graphes
 - Requêtes sur l'union de tous les graphes ou un graphe spécifique
 
-> **Notebook** : `SW-3-CSharp-GraphOperations.ipynb` — 50 min
+> **Notebook** : `SW-03-GraphOperations-CSharp.ipynb` — 50 min
 
 ---
 layout: section
@@ -215,7 +215,7 @@ foreach (var result in results)
 - **OPTIONAL** : jointure externe · **UNION** : disjonction · **MINUS** : différence
 - Agregats : `COUNT`, `SUM`, `GROUP BY`, `HAVING`
 
-> **Notebooks** : `SW-4-CSharp-SPARQL.ipynb` — 45 min | `SW-4b-Python-SPARQL.ipynb` — 30 min
+> **Notebooks** : `SW-04-SPARQL-CSharp.ipynb` — 45 min | `SW-04b-SPARQL-Python.ipynb` — 30 min
 
 </div>
 
@@ -260,7 +260,7 @@ SELECT ?scientist ?birth WHERE {
 - **SERVICE** : federe plusieurs endpoints en une requête
 - Wikidata SPARQL endpoint : `https://query.wikidata.org/sparql`
 
-> **Notebooks** : `SW-5-CSharp-LinkedData.ipynb` — 50 min | `SW-5b-Python-LinkedData.ipynb` — 35 min
+> **Notebooks** : `SW-05-LinkedData-CSharp.ipynb` — 50 min | `SW-05b-LinkedData-Python.ipynb` — 35 min
 
 </div>
 
@@ -303,7 +303,7 @@ Console.WriteLine($"Apres inference : {dataGraph.Triples.Count} triplets");
 - **Monotone** : l'inference RDFS ne supprime jamais de triplets
 - **Open World Assumption** : absence d'information ≠ faux
 
-> **Notebook** : `SW-6-CSharp-RDFS.ipynb` — 45 min
+> **Notebook** : `SW-06-RDFS-CSharp.ipynb` — 45 min
 
 </div>
 
@@ -340,7 +340,7 @@ foreach (var sub in person.DirectSubClasses)
 - **OWL 2 RL** : règles de production (integration avec bases de données)
 - **OWL 2 DL** : maximum d'expressivite decidable (HermiT, Pellet)
 
-> **Notebooks** : `SW-7-CSharp-OWL.ipynb` — 55 min | `SW-7b-Python-OWL.ipynb` — 45 min
+> **Notebooks** : `SW-07-OWL-CSharp.ipynb` — 55 min | `SW-07b-OWL-Python.ipynb` — 45 min
 
 </div>
 
@@ -392,7 +392,7 @@ results = validate(data_graph, shacl_graph=shapes)
 print(results[2])  # rapport Turtle
 ```
 
-> **Notebook** : `SW-8-Python-SHACL.ipynb` — 40 min
+> **Notebook** : `SW-08-SHACL-Python.ipynb` — 40 min
 
 </div>
 
@@ -433,7 +433,7 @@ compacted = jsonld.compact(doc, {"foaf": "http://xmlns.com/foaf/0.1/"})
 - **Framing** : restructurer un graphe RDF en JSON spécifique
 - Adoption massive : Schema.org, ActivityPub, Verifiable Credentials
 
-> **Notebook** : `SW-9-Python-JSONLD.ipynb` — 40 min
+> **Notebook** : `SW-09-JSONLD-Python.ipynb` — 40 min
 
 </div>
 
@@ -473,7 +473,7 @@ g.parse(data=turtle_star, format="turtle")
 - Equivalent SPARQL-Star : `<< ?s ?p ?o >> ?meta ?val`
 - Cas d'usage : provenance, versionnement, graphes de connaissances temporels
 
-> **Notebook** : `SW-10-Python-RDFStar.ipynb` — 45 min
+> **Notebook** : `SW-10-RDFStar-Python.ipynb` — 45 min
 
 </div>
 
@@ -556,7 +556,7 @@ for s, p, o in extract_triples(document):
 # 3. Retrieval par SPARQL + reponse par LLM
 ```
 
-> **Notebook** : `SW-12-Python-GraphRAG.ipynb` — 50 min
+> **Notebook** : `SW-12-GraphRAG-Python.ipynb` — 50 min
 
 </div>
 
@@ -593,7 +593,7 @@ manager = OWLManager.createOWLOntologyManager()
 ontology = manager.loadOntologyFromOntologyDocument(File("pizza.owl"))
 ```
 
-> **Notebook** : `SW-13-Python-Reasoners.ipynb` — 45 min
+> **Notebook** : `SW-13-Reasoners-Python.ipynb` — 45 min
 
 </div>
 

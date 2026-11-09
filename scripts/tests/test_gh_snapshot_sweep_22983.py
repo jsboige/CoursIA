@@ -213,10 +213,11 @@ def test_l_argv_du_balayage_est_valide(monkeypatch):
     cmd = captures[0]
     assert cmd[:3] == ["gh", "api", "repos/o/r/issues/comments"]
     assert "--paginate" in cmd
+    assert cmd[cmd.index("-f") + 1] == f"per_page={gs.REST_PER_PAGE}"
     # DEUX elements : la forme que `fetch_open_issues` utilise deja.
     assert "-f" in cmd, f"`-f` n'est pas un element d'argv a part : {cmd}"
-    index = cmd.index("-f")
-    assert cmd[index + 1] == "since=2026-10-01T00:00:00Z", (
+    index = cmd.index("since=2026-10-01T00:00:00Z")
+    assert cmd[index - 1] == "-f", (
         f"`since=...` doit suivre `-f` comme element separe : {cmd}")
     # Et surtout PAS la forme fusionnee, qui part en `?+since=...`.
     assert "-f since=2026-10-01T00:00:00Z" not in cmd, (
@@ -265,6 +266,25 @@ def test_la_methode_GET_est_annoncee_pour_les_issues_ouvertes(monkeypatch):
     assert cmd[:3] == ["gh", "api", "repos/o/r/issues"]
     assert "GET" in cmd, f"la methode HTTP n'est pas annoncee : {cmd}"
     assert "state=open" in cmd
+    assert f"per_page={gs.REST_PER_PAGE}" in cmd
+
+
+def test_les_commentaires_par_issue_utilisent_la_taille_de_page_maximale(
+        monkeypatch):
+    """Les fils volumineux ne paient pas les pages de 30 elements par defaut."""
+    captures = []
+
+    def faux_run(cmd, **kw):
+        captures.append(list(cmd))
+        return types.SimpleNamespace(returncode=0, stdout="[]", stderr="")
+
+    monkeypatch.setattr(gs.subprocess, "run", faux_run)
+    gs.fetch_issue_comments("o/r", 42)
+    cmd = captures[0]
+    assert cmd[:3] == ["gh", "api", "repos/o/r/issues/42/comments"]
+    assert "--paginate" in cmd
+    assert "GET" in cmd and cmd[cmd.index("-X") + 1] == "GET"
+    assert cmd[cmd.index("-f") + 1] == f"per_page={gs.REST_PER_PAGE}"
 
 
 # --- ensure_comments --------------------------------------------------------
@@ -559,19 +579,22 @@ def _instantane_frais(pig_module=pig):
 
 def test_les_stamps_viennent_de_l_instantane_et_les_non_servis_sont_separes():
     _instantane_frais()
-    served, missing = pig._claim_stamps_from_snapshot([7, 9])
+    served, markers, missing = pig._claim_stamps_from_snapshot([7, 9])
     assert missing == [9]
     assert 7 in served
     # Un stamp `None` est une MESURE (aucun marqueur), pas une absence.
     assert served[7] is None or isinstance(served[7], str)
+    # Le marqueur suit le meme regime : servi par l'instantane, sans reseau.
+    assert 7 in markers
 
 
 def test_un_stamp_absent_de_l_instantane_n_est_jamais_fabrique():
     """Aucun instantane : tout est non servi, aucun stamp invente."""
     pig._BELT_SNAPSHOT = None
     pig._PASS_SNAPSHOT = None
-    served, missing = pig._claim_stamps_from_snapshot([7])
+    served, markers, missing = pig._claim_stamps_from_snapshot([7])
     assert served == {}
+    assert markers == {}
     assert missing == [7]
 
 

@@ -3859,6 +3859,46 @@ def test_pr_diff_text_fails_closed_on_other_gh_error(monkeypatch):
         cpp._pr_diff_text(101)
 
 
+# ---------------------------------------------------------------------------
+# #25085 — `gh pr diff` refuse le diff pour raison de TAILLE (HTTP 406).
+# ---------------------------------------------------------------------------
+def test_pr_diff_text_falls_back_empty_on_size_cap(monkeypatch, capsys):
+    """#25085: le plafond de TAILLE du diff (`PullRequest.diff too_large`,
+    HTTP 406) est le jumeau du plafond de NOMBRE de fichiers -- il doit etre
+    degrade de la meme facon. Le garde perdait une mesure DISPONIBLE (la liste
+    paginee des fichiers) et rendait "PERIMETRE NON MESURABLE" sur une PR
+    parfaitement mesurable. Mesure : #24992, patch de 20 988 lignes."""
+    import check_pr_perimeter as cpp
+
+    def fake_rc(args):
+        return 1, "", (
+            "gh error: could not find pull request diff: HTTP 406: "
+            "PullRequest.diff too_large "
+            "(https://api.github.com/repos/jsboige/CoursIA/pulls/24992)"
+        )
+
+    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
+    assert cpp._pr_diff_text(24992) == ""
+    err = capsys.readouterr().err
+    assert "plafond de TAILLE" in err, err
+    # l'avertissement doit dire CE QUI n'a pas ete vu (les baseline-moves),
+    # pas laisser croire que le perimetre est inconnu.
+    assert "baseline-moves" in err, err
+
+
+def test_pr_diff_text_size_cap_is_narrow(monkeypatch):
+    """Un 406 qui n'est PAS un refus de TAILLE reste fail-closed : le filet
+    reconnait des signatures precisees, il n'elargit pas a la prose."""
+    import check_pr_perimeter as cpp
+
+    def fake_rc(args):
+        return 1, "", "gh error: HTTP 406: Not Acceptable"
+
+    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
+    with pytest.raises(SystemExit):
+        cpp._pr_diff_text(101)
+
+
 # --- #16085 : cardinal anaphorique delimite + provenance relayee en SHA ------
 
 FILES_16085_A = [
@@ -4083,6 +4123,54 @@ def test_16162_scan_thread_extracts_founders_without_blocking():
     files = [{"path": f"f{i}.py"} for i in range(4)]
     for c in cands:
         assert check_assertion(files, c.text, block=c.block, body_hint=c.body_text) == []
+
+
+# ---------------------------------------------------------------------------
+# #25091 — le compte des deux variantes FR/EN d'un fichier n'est pas le
+# périmètre de la PR (#24566, faux positif uniquement avec --scan-thread).
+# ---------------------------------------------------------------------------
+FOUNDER_25091_LINE = (
+    "- `Lift` (2) : la formule porte `height` des deux côtés "
+    "(énoncé de théorème, anglais dans les deux fichiers)"
+)
+
+
+def test_25091_two_language_variants_are_not_a_perimeter_claim():
+    files = [{"path": f"f{i}.lean"} for i in range(5)]
+    assert check_assertion(files, FOUNDER_25091_LINE) == []
+    assert _additive_line_sum(FOUNDER_25091_LINE) == 0
+    body = FOUNDER_25091_LINE + "\n\n5 fichiers, 9+/10-, **comment-only**"
+    cands, problems = select_candidates(
+        [{"body": body, "kind": "PR body", "author": "jsboige", "source": "body"}],
+        n_files=5,
+    )
+    assert problems is None
+    assert len(cands) == 2
+    assert check_assertion(
+        files, cands[0].text, block=cands[0].block, body_hint=cands[0].body_text
+    ) == []
+
+
+def test_25091_language_context_elsewhere_does_not_mask_wrong_perimeter():
+    files = [{"path": f"f{i}.lean"} for i in range(5)]
+    assert check_assertion(
+        files, "Périmètre : 2 fichiers. Les mentions FR/EN décrivent le contenu."
+    )
+
+
+def test_25091_explicit_wrong_perimeter_stays_blocking_with_language_cue():
+    files = [{"path": f"f{i}.lean"} for i in range(5)]
+    assert check_assertion(
+        files,
+        "Périmètre : 2 fichiers seulement, anglais dans les deux fichiers.",
+    )
+
+
+def test_25091_digit_variant_count_and_existing_16162_guards():
+    files = [{"path": f"f{i}.lean"} for i in range(5)]
+    assert check_assertion(files, "Two files: the EN variant of one FR file.") == []
+    assert check_assertion(files, FOUNDER_16147_LINE) == []
+    assert check_assertion(files, FOUNDER_16157_LINE) == []
 
 
 # ---------------------------------------------------------------------------

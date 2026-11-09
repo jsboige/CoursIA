@@ -8,9 +8,9 @@ pagetitle: "Théorie des Jeux - Game Theory"
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 140
-breakdown: root=106, SocialChoice=15, Dynamics=13, Coalitions=5, gateway=1
-maturity: BETA=121, DRAFT=12, ALPHA=7
+pedagogical_count: 141
+breakdown: root=106, SocialChoice=16, Dynamics=13, Coalitions=5, gateway=1
+maturity: BETA=122, DRAFT=12, ALPHA=7
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations, élections, poker, allocation de ressources. Cette tension entre coopération et compétition traverse l'économie, les sciences politiques et l'informatique (mécanismes de vote, contrats, réseaux), et le prix Nobel d'économie a récompensé des théoriciens des jeux à sept reprises entre 1994 et 2020.
@@ -149,6 +149,8 @@ La dernière phase ouvre les frontières de la discipline : CFR pour les jeux à
 | 16 | Conception de mécanismes — [Python](GameTheory-16-MechanismDesign-Python.ipynb) · [C#](GameTheory-16-MechanismDesign-CSharp.ipynb) | Principe de révélation, VCG et la non-monotonie de son revenu, appariement stable de Gale-Shapley | 65 min | Licence | [16b](GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) · [16c](GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) · [16d](GameTheory-16d-LLM-Players-Othman-Sandholm-Python.ipynb) · [16h](GameTheory-16h-Cooperation-LLM-Python.ipynb) · [16i](GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) · [16j](GameTheory-16j-Screening-Loyer-Information-Python.ipynb) · [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb) · sous-série [SocialChoice](SocialChoice/README.md) · sous-série [Coalitions](Coalitions/README.md) |
 | 17 | Apprentissage multi-agent — [Python (WSL)](GameTheory-17-MultiAgent-RL-Python.ipynb) · [C#](GameTheory-17-MultiAgent-RL-CSharp.ipynb) | Self-play, fictitious play, NFSP, PSRO, introduction à AlphaZero | 55 min | Licence | [17b](GameTheory-17b-Asymmetric-Information-Python.ipynb) · [17c](GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb) · [17d](GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) · [17f](GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) |
 | 21 | Capstone choix social — [Python](GameTheory-21-Capstone-Choix-Social-Python.ipynb) | La sous-série SocialChoice depuis la série mère : témoins d'Arrow et cycle de Condorcet par le code, Gale-Shapley vérifié, lecture mesurée du lake | 30 min | Licence | sous-série [SocialChoice](SocialChoice/README.md) |
+
+Le palier 16 est l'un des cas réels mesurés par le [critère de frontière utilitaire-de-série / exposition MCP](../../docs/reference/ict-mcp-frontier-criterion.md) — verdict : rien dû, le palier reste notebook.
 
 Les trois figures suivantes échantillonnent cette phase : l'apprentissage d'un équilibre en information imparfaite, la stabilité coopérative, la convergence d'agents en auto-apprentissage.
 
@@ -478,7 +480,7 @@ cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
 Les jumeaux C# s'exécutent avec .NET Interactive (.NET 9) :
 
 ```bash
-dotnet tool install --global Microsoft.dotnet-interactive
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 ```
 
