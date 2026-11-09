@@ -122,6 +122,8 @@ def validate_taxonomy(data: dict, repo_root: Path = REPO_ROOT) -> None:
         # suivants suivent la profondeur comme path/decimal_path chez Argumentum.
         if len(parts) != concept["depth"] + 2 or parts[0] != data["series"].lower() or any(not part for part in parts):
             _fail(f"profondeur de path incompatible : {concept['path']}")
+        if any(c.isupper() for part in parts for c in part):
+            _fail(f"segment de path en majuscules : {concept['path']}")
         citations = concept.get("citations")
         if not isinstance(citations, list) or not citations:
             _fail(f"concept sans citation de cellule : {concept['id']}")
