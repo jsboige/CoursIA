@@ -181,7 +181,7 @@ L'entrée Infer.NET du corpus bayésien est **Infer-1b** (accretion du premier m
 **Pour Infer.NET (C#/.NET Interactive)**
 
 ```bash
-dotnet tool install --global Microsoft.dotnet-interactive
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 # Puis dans Jupyter : choisir le kernel ".NET (C#)"
 ```
 
