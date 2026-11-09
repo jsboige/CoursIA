@@ -9,11 +9,11 @@ import subprocess
 from pathlib import Path
 
 
-def limit_memory():
+def limit_memory() -> None:
     resource.setrlimit(resource.RLIMIT_AS, (512 * 1024 * 1024, 512 * 1024 * 1024))
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("binary", type=Path)
     parser.add_argument("--output", type=Path, required=True)
@@ -25,7 +25,18 @@ def main():
     for depth in (16, 24, 32, 40, 48):
         observations = [json.loads(subprocess.check_output([str(args.binary.resolve()), str(depth)], text=True, timeout=40, preexec_fn=limit_memory))
                         for _ in range(5)]
-        assert all(x["depth"] == depth and x["states"] == depth + 1 and x["witness"] for x in observations)
+        for index, observation in enumerate(observations, start=1):
+            seconds = observation.get("seconds") if isinstance(observation, dict) else None
+            if (not isinstance(observation, dict)
+                    or observation.get("depth") != depth
+                    or observation.get("states") != depth + 1
+                    or observation.get("witness") is not True
+                    or isinstance(seconds, bool)
+                    or not isinstance(seconds, (int, float))
+                    or not math.isfinite(seconds) or seconds <= 0):
+                raise SystemExit(
+                    f"Observation invalide : profondeur {depth}, répétition {index} : {observation!r}"
+                )
         raw.extend(observations)
         rows.append({"depth": depth, "states": depth + 1,
                      "median_seconds": statistics.median(x["seconds"] for x in observations),
