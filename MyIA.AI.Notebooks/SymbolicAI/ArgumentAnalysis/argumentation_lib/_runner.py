@@ -232,6 +232,19 @@ prose sans appeler la fonction kernel = tâche non accomplie.
 # + `return`) — la réponse de l'agent était donc PERDUE, sans trace et sans
 # erreur rapportée (#23726).
 
+# Plafond d'auto-invocation de fonctions pour l'agent logique (#22981).
+#
+# SK 1.44 donne a `FunctionChoiceBehavior.Required()` un
+# `maximum_auto_invoke_attempts` de **1** : un agent en mode « required »
+# n'emet qu'UN appel d'outil par invocation, puis rend la main. Mesure du
+# 2026-11-06 sur le carnet `Argumentation-08b-Executor-Python.ipynb` : l'agent
+# appelait `add_belief_set` puis s'arretait, `query_log` restait vide et la
+# phase etait rejetee (`QUERIES_NONE`). La sequence demandee par le contrat
+# (belief set -> `Reasoner-pl_query` -> `log_query_result` -> cloture de
+# tache) tient en 4 a 6 appels ; 12 laisse la marge d'une reformulation sans
+# permettre une boucle non bornee.
+LOGIC_AUTO_INVOKE_ATTEMPTS = 12
+
 PHASE_TASK_DESCRIPTIONS = {
     "informal": "Identifier les arguments principaux et les sophismes du texte",
     "formal": (
@@ -501,7 +514,18 @@ def create_logic_agent(
             FunctionChoiceBehavior,
         )
 
-        fcb = FunctionChoiceBehavior.Required(auto_invoke=True)
+        # `maximum_auto_invoke_attempts` vaut **1** par defaut en SK 1.44 pour
+        # `Required()` : mesure #22981 (2026-11-06), l'agent emettait donc UN
+        # seul appel d'outil (`add_belief_set`) puis rendait une reponse vide,
+        # sans jamais interroger le solveur -> `QUERIES_NONE`. La phase
+        # formelle demande une CHAINE d'appels (belief set, requete, verdict,
+        # cloture de tache) : le plafond doit la couvrir. Le modele sait faire
+        # la sequence en quatre tours (sonde directe sur le meme service) ;
+        # seul le plafond l'arretait.
+        fcb = FunctionChoiceBehavior.Required(
+            auto_invoke=True,
+            maximum_auto_invoke_attempts=LOGIC_AUTO_INVOKE_ATTEMPTS,
+        )
     except ImportError:
         # Aucun second import ici : `sys.modules` porte deja le paquet en
         # cours d'evaluation. Absent (paquet reellement introuvable) =>
