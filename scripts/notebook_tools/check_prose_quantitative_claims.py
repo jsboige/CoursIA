@@ -193,6 +193,11 @@ def _is_domain_model_quantity(line: str, count: re.Match[str]) -> bool:
     )
     for pattern in patterns:
         for match in pattern.finditer(line):
+            # Un sujet explicitement documentaire l'emporte sur le vocabulaire
+            # de grille ou de matrice qui suit dans la même proposition.
+            prefix = line[max(0, line.rfind(";", 0, match.start()) + 1):span[0]]
+            if re.search(r"\b(?:notebook|carnet|fichier\s+source|source\s+file)\b", prefix, re.IGNORECASE):
+                continue
             if match.span("count") == span:
                 return True
             if "dimensions" in match.re.groupindex:

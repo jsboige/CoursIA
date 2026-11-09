@@ -93,6 +93,14 @@ def test_artifact_detector_spares_explicit_domain_model_dimensions(line):
     "line, expected",
     [
         (
+            "The notebook has 81 cells of the grid.",
+            ["81 cells"],
+        ),
+        (
+            "La matrice de données du fichier source a 120 lignes, une par couple cellule-valeur.",
+            ["120 lignes"],
+        ),
+        (
             "Le notebook contient 81 cellules de code pour expliquer la grille Sudoku.",
             ["81 cellules"],
         ),
