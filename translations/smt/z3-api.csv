@@ -5286,7 +5286,7 @@ Ce notebook a explore les techniques d'optimisation avancee de Z3 au-dela du sim
 5. **Pattern d'allocation** : le cas pratique (section 6) combine tous ces outils : contraintes dures (budget), contraintes souples (priorites), objectif principal (valeur). C'est le squelette de la plupart des problemes d'allocation de ressources reels.
 
 Ces techniques font de Z3 un outil puissant non seulement pour la **satisfaction** de contraintes, mais aussi pour l'**optimisation multi-critères** — un domaine ou la modelisation declarative brille face aux approches ad-hoc.",,,,,,,,d2bd2e8ae323d929,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c01,markdown,fr,efa5e207b4a8e825,"# Z3-Python 01b — Du style declaratif LINQ au solveur Z3 en Python
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c01,markdown,fr,badac3a80d3e08f5,"# Z3-Python 01b — Du style declaratif LINQ au solveur Z3 en Python
 
 **Navigation** : [<< Z3-Python-01 Introduction](Z3-01-Introduction-Python.ipynb) | [Index](README.md) | [Z3-Python-02 Sudoku >>](Z3-02-Sudoku-Python.ipynb) | [Z3 C# (Z3.Linq) ->](../Z3-Linq2Z3/README.md)
 
@@ -5304,7 +5304,10 @@ A la fin de ce notebook, vous saurez :
 
 Cette serie ([Z3-Python](README.md)) utilise z3-py, le binding Python direct, en style **imperatif-symbolique** : on créé un `Solver`, on ajoute des contraintes, on appelle `check`. La serie soeur [Z3 C# (Z3.Linq)](../Z3-Linq2Z3/README.md) expose une couche **declarative** : les contraintes s'ecrivent comme des predicats LINQ, traduits automatiquement en formules SMT.
 
-Ce notebook fait le pont : il montre que les **deux styles expriment la même intention declarative** (decrire le QUOI, pas le COMMENT), et comment retrouver en Python la lisibilite du DSL C# sans perdre l'acces a l'API complete.",,,,,,,,efa5e207b4a8e825,,,,,,,,,,,,,,,
+Ce notebook fait le pont : il montre que les **deux styles expriment la même intention declarative** (decrire le QUOI, pas le COMMENT), et comment retrouver en Python la lisibilite du DSL C# sans perdre l'acces a l'API complete.
+## Source
+
+Ce notebook s'inscrit dans la série ancrée par **Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)**, Ch. 2 Basics (p. 14) + §3.13.2 Unsat core (p. 90) + §9.1 Map coloring (p. 317) — API du solveur Z3Py (`Solver`, `add`, `check`, `model`), extraction d'un noyau d'insatisfiabilité (`assert_and_track`), et coloration de carte. La carte d'Australie du carnet est la variante classique de la carte d'Europe du livre ; le pont LINQ → pyz3 est propre à la série. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). Pages citées d'après la pagination imprimée du fichier déposé. Voir [Z3-API/README.md — Ouvrage de référence](README.md#ouvrage-de-référence) pour l'index chapitré de la série.",,,,,,,,badac3a80d3e08f5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c02,code,fr,7c7c2528b90a0cc5,"# Imports et verification de l'environnement
 from z3 import *
 
@@ -5449,62 +5452,74 @@ Essayez d'imaginer le code **imperatif** équivalent : il faudrait choisir un or
 Avec z3-py, le **même patron** (declarer le domaine + declarer l'adjacence + `check`) resout n'importe quelle taille d'instance. Ajouter un etat = ajouter une variable et quelques contraintes d'adjacence ; l'algorithme de resolution, lui, ne change jamais. C'est le gain fondamental du paradigme declaratif : la **complexite algorithmique est deleguee au solveur**, le modèle exprime seulement la structure du problème.
 
 > **Lecon** : le seuil ou le declaratif surpasse l'imperatif n'est pas le nombre de variables, mais la **richesse des contraintes**. Des qu'apparait une combinaison de contraintes (adjacence + cardinalite + optimisation), ecrire un backtracking correct devient plus difficile que de declarer les contraintes.",,,,,,,,e9b7984f7745ec23,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c13,markdown,fr,ce912c208101c8d9,"## 5. Exercices
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c13,markdown,fr,bc9d5cd2deca37e7,"## 5. Exemples guidés — trois résolutions complètes
 
-Les trois exercices suivent les exemples ci-dessus. Chaque stub est incomplet (marque `# TODO etudiant`) : a vous d'ecrire les contraintes. Les cellules s'executent sans erreur même non completees (elles affichent un message d'attente).
+Les trois énoncés de cette section sont résolus de bout en bout : déclarer les inconnues, poser chaque contrainte, interroger le solveur, lire le verdict. Le code de chaque résolution est conservé dans son état d'origine ; le bloc « Lecture du résultat » qui suit chaque cellule explique ce que la sortie prouve. Les exercices à faire vous-même attendent en section 6.",,,,,,,,bc9d5cd2deca37e7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c14,code,fr,3e126fd4ced422f7,"s_ex1 = Solver()
+X1, X2, X3, X4 = Ints('X1 X2 X3 X4')
+s_ex1.add(X1 + X2 == X3)
+s_ex1.add(X3 == X4 * 2)
+s_ex1.add(X1 >= 1)
 
-### Exercice 1 — Traduire un theoreme LINQ en pyz3
+resultat = s_ex1.check()
+print(""Résultat :"", resultat)
+if resultat == sat:
+    m = s_ex1.model()
+    for v in [X1, X2, X3, X4]:
+        print(v, ""="", m[v])",,,,,,,,3e126fd4ced422f7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c15,markdown,fr,fedfe4449cf6c84c,"### Exemple guidé 2 — Détecter un UNSAT et extraire le noyau (crédité #25495 — Emmajvx)
 
-Soit le theoreme C# (4 entiers) :
-```csharp
-where t.X1 + t.X2 == t.X3
-where t.X3 == t.X4 * 2
-where t.X1 >= 1
-```
-**Indice** : 4 appels `s.add(...)`. N'oubliez pas les declarations `Ints(...)`. Verifiez avec `s.check()` puis affichez le modèle.",,,,,,,,ce912c208101c8d9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c14,code,fr,19f082af3f4d4c93,"# Exercice 1 : traduire le theoreme LINQ en pyz3 (etudiant)
-s_ex1 = Solver()
-# X1, X2, X3, X4 = Ints('X1 X2 X3 X4')    # TODO etudiant : declarer les variables
-# s_ex1.add(...)                           # TODO etudiant : ajouter les 3 contraintes
-# TODO etudiant : verifier (s_ex1.check()) et afficher le modele
-
-print(""Exercice 1 a completer : retirez les commentaires TODO et ajoutez vos contraintes."")",,,,,,,,19f082af3f4d4c93,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c15,markdown,fr,d9926987b4f72702,"### Exercice 2 — Detecter un UNSAT et extraire le noyau
+> Résolution originale : **Emmajvx** (groupe 2), rendu de TP
+> [#25495](https://github.com/jsboige/CoursIA/pull/25495). Reprise telle quelle ;
+> seule la mise en forme de l'énoncé est harmonisée avec les sections voisines.
 
 Trois contraintes sur un entier `n` :
+
 1. `n` est pair (`n % 2 == 0`)
 2. `n > 10`
 3. `n < 8`
 
-**Indice** : ces contraintes sont conjointement insatisfiables. Utilisez `assert_and_track` avec 3 etiquettes `Bool`, puis affichez le `unsat_core`. Lequel des trois le solveur pointe-t-il (en pratique, le noyau minimal peut contenir 2 des 3 etiquettes) ?
+Chacune est posée avec `assert_and_track` sous une étiquette `Bool` (`e1`, `e2`, `e3`), puis le `unsat_core` nomme celles qui se contredisent. La parité s'écrit directement `n % 2 == 0` — l'arithmétique entière de Z3 accepte le modulo.",,,,,,,,fedfe4449cf6c84c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c16,code,fr,e53d9c1d403656ca,"s_ex2 = Solver()
+n = Int('n')
+e1, e2, e3 = Bools('e1 e2 e3')
 
-**Étape 1** : ecrivez la parite `n % 2 == 0` en arithmetique entiere Z3 (pensez a `n - 2*(n/2) == 0` ou `n % 2`).",,,,,,,,d9926987b4f72702,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c16,code,fr,b0be630cd58e2616,"# Exercice 2 : UNSAT + noyau (etudiant)
-s_ex2 = Solver()
-# n = Int('n')                              # TODO etudiant
-# e1, e2, e3 = Bools('e1 e2 e3')            # TODO etudiant : etiquettes
-# s_ex2.assert_and_track(n % 2 == 0, e1)    # TODO etudiant : parite (ajuster la formule si besoin)
-# s_ex2.assert_and_track(..., e2)           # TODO etudiant : n > 10
-# s_ex2.assert_and_track(..., e3)           # TODO etudiant : n < 8
-# TODO etudiant : s_ex2.check() + s_ex2.unsat_core()
+s_ex2.assert_and_track(n % 2 == 0, e1)   # n est pair
+s_ex2.assert_and_track(n > 10, e2)       # n > 10
+s_ex2.assert_and_track(n < 8, e3)        # n < 8
 
-print(""Exercice 2 a completer : retirez les commentaires TODO et ajoutez vos contraintes + extraction du noyau."")",,,,,,,,b0be630cd58e2616,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c17,markdown,fr,70aa0cb301315c0f,"### Exercice 3 — Complexifier le graphe (2 couleurs, instance plus petite)
+resultat = s_ex2.check()
+print(""Résultat :"", resultat)
+if resultat == unsat:
+    print(""Noyau :"", s_ex2.unsat_core())",,,,,,,,e53d9c1d403656ca,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c17,markdown,fr,38fc05fb1f740c0e,"### Exemple guidé 3 — La carte d'Australie est-elle 2-coloriable ? (crédité #25495 — Emmajvx)
 
-Reprenez le modèle de coloration (section 4) et repondez a la question : **la carte d'Australie est-elle 2-coloriable ?** (i.e. existe-t-il une coloration valide avec seulement 2 couleurs ?)
+> Résolution originale : **Emmajvx** (groupe 2), rendu de TP
+> [#25495](https://github.com/jsboige/CoursIA/pull/25495). Reprise telle quelle ;
+> seule la mise en forme de l'énoncé est harmonisée avec les sections voisines.
 
-**Indice** : c'est une question de decision. Changez le domaine `{0,1,2}` en `{0,1}` et relancez `check`. Le résultat (`sat` ou `unsat`) est la reponse. Si `unsat`, cela prouve que 2 couleurs ne suffisent pas (il en faut au moins 3).
+La question de décision reprend le modèle de coloration de la section 4, avec le domaine réduit à `{0, 1}` : existe-t-il une coloration valide avec seulement 2 couleurs ? Le verdict du `check` — `sat` ou `unsat` — est la réponse, et un `unsat` prouve que 2 couleurs ne suffisent pas.",,,,,,,,38fc05fb1f740c0e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c18,code,fr,52cd8065238d884a,"from z3 import *
 
-**Étape 1** : copiez la cellule de l'exemple 3, reduisez le domaine, et interpretez le verdict du solveur.",,,,,,,,70aa0cb301315c0f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c18,code,fr,d68b7a86fd676236,"# Exercice 3 : la carte d'Australie est-elle 2-coloriable ? (etudiant)
 s_ex3 = Solver()
-# c = {e: Int(e) for e in ['WA','NT','SA','Q','NSW','V']}   # TODO etudiant
-# TODO etudiant : domanee a {0,1} (2 couleurs) au lieu de {0,1,2}
-# TODO etudiant : re-ajouter les 9 contraintes d'adjacence (c[a] != c[b])
-# TODO etudiant : s_ex3.check() et interpreter sat/unsat
+etats = ['WA', 'NT', 'SA', 'Q', 'NSW', 'V']
+c = {e: Int(e) for e in etats}
 
-print(""Exercice 3 a completer : retirez les commentaires TODO, reduisez le domaine a 2 couleurs et interpretez le verdict."")",,,,,,,,d68b7a86fd676236,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c19,markdown,fr,475edfbf71d1a055,"## 6. Synthese
+for e in etats:
+    s_ex3.add(c[e] >= 0, c[e] <= 1)   # 2 couleurs
+
+adjacences = [('WA','NT'), ('WA','SA'), ('NT','SA'), ('NT','Q'),
+              ('SA','Q'), ('SA','NSW'), ('SA','V'), ('Q','NSW'), ('NSW','V')]
+for a, b in adjacences:
+    s_ex3.add(c[a] != c[b])
+
+resultat = s_ex3.check()
+print(""2-coloriable ?"", resultat)
+if resultat == sat:
+    print(s_ex3.model())
+else:
+    print(""Non : 2 couleurs ne suffisent pas, il en faut au moins 3."")",,,,,,,,52cd8065238d884a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c19,markdown,fr,33045d4332aa9d8d,"## 7. Synthese
 
 | Concept | Cote C# (Z3.Linq) | Cote Python (z3-py) |
 |---------|-------------------|---------------------|
@@ -5521,7 +5536,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c19,m
 **Pour aller plus loin** :
 - [Z3-Python-06 — Optimisation avancee](Z3-06-Advanced-Optimization-Python.ipynb) : `Optimize`, `maximize`/`minimize`, quand la satisfaction devient optimisation sous objectifs.
 - [Z3 C# (Z3.Linq)](../Z3-Linq2Z3/README.md) : la serie soeur declarative, pour comparer les idiomes dans leur contexte natif.
-- La documentation [z3-solver (pyz3)](https://z3prover.github.io/api/html/namespacez3py.html) pour l'API complete.",,,,,,,,475edfbf71d1a055,,,,,,,,,,,,,,,
+- La documentation [z3-solver (pyz3)](https://z3prover.github.io/api/html/namespacez3py.html) pour l'API complete.",,,,,,,,33045d4332aa9d8d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb,c0,markdown,fr,ad8d7d7926fc2401,"# Z3-Python-08 : Ordonnancement de tâches (Job-Shop Scheduling)
 
 [← Z3-Python-06 Optimisation](Z3-06-Advanced-Optimization-Python.ipynb) | [Serie Z3-Python](README.md) | [Z3-Python-09 (énigme d'Einstein) →](Z3-09-Enigme-Einstein-Python.ipynb)
@@ -11091,3 +11106,88 @@ Un glouton ""jour par jour"" choisirait, pour chaque jour, les 3 plats les moins
 
 **Lecture chiffree — quatre ordres de grandeur sur le corpus de jouet.** Le plan a cout minimal ci-dessus (D=7, 24 plats) se resout en une fraction de seconde dans ce notebook (le temps exact est imprime par la cellule de code ci-dessus) ; le [16](Z3-16-Meal-Planner-Python.ipynb) mesure, sur le même corpus de jouet, l'enumeration des 36 combinaisons **0,06 ms**, le plan SMT booléen D=3 **2,4 ms** et l'`Optimize` a cout minimal D=1 **17,7 ms**. L'enumeration gagne partout ou elle reste tractable — mais sa pente est exponentielle en le nombre de variables quand celle du solveur suit la combinatoire contrainte. Passer de 3 a 7 jours avec corpus elargi et contrainte de variete coute environ deux ordres de grandeur (millisecondes -> fraction de seconde) : observation sur cette paire de runs, pas une loi (jours et corpus changent en même temps). La lecture pratique : le temps du solveur achete l'exactitude a l'echelle ou l'enumeration explose, et la fenêtre [1400, 1900] kcal avec 40 g de proteines reste resolue en moins d'une seconde a D=7.
 ",,,,,,,,f1d696f06e0947e4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,4012fe46,markdown,fr,2becadc596cd80b2,"### Exemple guidé 1 — Traduire un théorème LINQ en pyz3 (crédité #25495 — Emmajvx)
+
+> Résolution originale : **Emmajvx** (groupe 2), rendu de TP
+> [#25495](https://github.com/jsboige/CoursIA/pull/25495). Reprise telle quelle ;
+> seule la mise en forme de l'énoncé est harmonisée avec les sections voisines.
+
+Soit le théorème C# (4 entiers) :
+```csharp
+where t.X1 + t.X2 == t.X3
+where t.X3 == t.X4 * 2
+where t.X1 >= 1
+```
+
+Les inconnues se déclarent par `Ints(...)`, chaque clause `where` devient un `s.add(...)`, puis `check()` et `model()` livrent un témoin.",,,,,,,,2becadc596cd80b2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,3722bb38,markdown,fr,2e66a955587a0728,"### Lecture du résultat : un modèle, pas *le* modèle
+
+Le solveur répond `sat` et propose `X1 = 1, X2 = 1, X3 = 2, X4 = 1`. Le système n'a pas de solution unique : la contrainte `X3 == X4 * 2` fixe `X4` dès que `X3` est choisi, mais le couple `(X1, X2)` peut encore varier. Comparez avec l'Exemple 1 de la section 2, où une variable entièrement libre restait non assignée : chaque modèle est un **témoin** parmi d'autres, jamais « la » réponse. C'est le sens du déclaratif — l'énoncé décrit l'espace des solutions, le solveur en exhibe un point.",,,,,,,,2e66a955587a0728,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,4317e2ef,markdown,fr,fa174c4a9e791c54,"### Lecture du résultat : le noyau acquitte une contrainte
+
+Le verdict est `unsat` et le noyau rendu contient exactement `e2` et `e3` (l'ordre d'affichage varie d'une exécution à l'autre) : les contraintes `n > 10` et `n < 8` se contredisent à elles deux — aucun entier n'est à la fois plus grand que 10 et plus petit que 8. La contrainte de parité `e1` est **acquittée** : le solveur n'en a pas besoin pour prouver le conflit. Retirez mentalement `e2` : `n = 6` satisfait le reste ; retirez `e3` : `n = 12` suffit. C'est tout l'intérêt du noyau sur un vrai modèle : il accuse des contraintes précises au lieu de dire « impossible » en bloc.",,,,,,,,fa174c4a9e791c54,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,4a3d7ffa,markdown,fr,9303c5a38555024d,"### Lecture du résultat : `unsat` comme preuve d'impossibilité
+
+Avec deux couleurs, le verdict `unsat` n'est pas un échec du solveur : c'est une **preuve** qu'aucune coloration n'existe. La raison tient en trois États : `WA`, `NT` et `SA` sont deux à deux frontaliers — un triangle — or un graphe 2-coloriable (biparti) ne contient jamais de triangle. Combiné à l'Exemple 3 de la section 4 (`sat` avec 3 couleurs), le verdict fixe le nombre exact de couleurs nécessaires pour l'Australie : trois. C'est le premier pas vers la question « combien de couleurs suffisent pour un graphe donné ? » — l'Exercice 4 la pose pour un autre graphe.",,,,,,,,9303c5a38555024d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,f7ca6704,markdown,fr,97d9fcdd6ae2bd5a,"## 6. Exercices
+
+Trois exercices, cette fois non résolus. Chaque stub est incomplet (marqué `# TODO etudiant`) : à vous d'écrire les contraintes. Les cellules s'exécutent sans erreur même non complétées (elles affichent un message d'attente).
+
+### Exercice 4 — Le nombre chromatique d'une roue, par interrogation répétée du solveur
+
+L'Exemple guidé 3 a répondu à « l'Australie est-elle 2-coloriable ? » par un unique `check`. La question qui généralise : **combien de couleurs suffisent, au minimum, pour un graphe donné ?** — son **nombre chromatique**.
+
+Prenez la roue à cinq rayons : un sommet central relié aux cinq sommets d'un cycle (le centre voisine avec `v0` à `v4`, et le cycle ferme la boucle `v0–v1–v2–v3–v4–v0`). Le nombre de couleurs n'est plus une donnée mais l'inconnue : pour chaque `k` croissant à partir de 1, bornez chaque sommet au domaine `{0, ..., k-1}`, ajoutez les contraintes d'adjacence, et interrogez le solveur.
+
+**Indice** : le premier `k` pour lequel le solveur répond `sat` est le nombre chromatique ; les `unsat` précédents prouvent que les `k` plus petits ne suffisent pas. La cellule d'imports de ce carnet cite aussi `Optimize` — un `Optimize()` où `k` est une variable à `minimize` pose la même question en un seul appel.
+
+**Étape 1** : construisez la liste des dix arêtes (cinq du cycle, cinq des rayons), puis bouclez sur `k`.",,,,,,,,97d9fcdd6ae2bd5a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,eeba9fc7,code,fr,b51881f2b6dd1552,"# Exercice 4 : le nombre chromatique de la roue a cinq rayons (etudiant)
+s_ex4 = Solver()
+# sommets = ...   # TODO etudiant : le centre et v0..v4
+# aretes  = ...   # TODO etudiant : 5 aretes du cycle + 5 rayons vers le centre
+# TODO etudiant : pour k = 1, 2, 3, ... bornez chaque sommet a {0..k-1} + contraintes d'adjacence, puis s_ex4.check()
+# TODO etudiant : le premier k satisfiable est le nombre chromatique -- affichez-le
+
+print(""Exercice 4 a completer : retirez les commentaires TODO, bouclez sur k croissant et affichez le nombre chromatique."")",,,,,,,,b51881f2b6dd1552,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,32fdcab8,markdown,fr,57c38fe2e649715b,"### Exercice 5 — Compter toutes les colorations valides par blocage de modèle
+
+Un `check()` satisfait ne rend qu'**un** modèle : un témoin parmi d'autres. Pour les énumérer tous, on **bloque** chaque modèle trouvé — on ajoute la contrainte qui l'exclut, `Or` des différences sur toutes les variables — et on recommence jusqu'à `unsat`.
+
+Reprenez le modèle de coloration 3-couleurs de l'Australie (section 4) et comptez le nombre total de colorations valides.
+
+**Indice** : dans la boucle, `m[c[e]].as_long()` rend la couleur du modèle pour chaque État, et la contrainte de blocage s'écrit `Or([c[e] != valeur pour e in etats])`. Comparez le total au nombre de permutations des trois couleurs : que dit l'écart sur la structure du graphe ?
+
+**Étape 1** : affichez chaque coloration trouvée avant de la bloquer — vous verrez le solveur épuiser les possibilités une à une.",,,,,,,,57c38fe2e649715b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,2bde7edc,code,fr,8b3f0cbfaf77a562,"# Exercice 5 : compter les 3-colorations de l'Australie par blocage de modeles (etudiant)
+s_ex5 = Solver()
+# c = {e: Int(e) for e in ['WA','NT','SA','Q','NSW','V']}   # TODO etudiant : reprendre le modele de la section 4
+# TODO etudiant : domaine {0,1,2} + les 9 contraintes d'adjacence
+# compteur = 0
+# TODO etudiant : tant que s_ex5.check() == sat : lire le modele, compteur += 1,
+#                 puis bloquer le modele trouve (Or des differences sur les 6 etats)
+
+print(""Exercice 5 a completer : retirez les commentaires TODO et enumerez les colorations en bloquant chaque modele trouve."")",,,,,,,,8b3f0cbfaf77a562,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,bb576cb5,markdown,fr,b1992defb8a02f01,"### Exercice 6 — Diagnostiquer un emploi du temps impossible
+
+Trois cours `C1`, `C2`, `C3` occupent chacun un créneau parmi `1`, `2`, `3`. Cinq contraintes :
+
+1. `C1` et `C2` ne partagent pas de créneau (même enseignant)
+2. `C1` est au créneau `1` (disponibilité de l'intervenant)
+3. `C2` est au créneau `1` (la salle n'est libre qu'au premier créneau)
+4. `C3` est au créneau `2` ou `3` (le créneau `1` est pris par un amphi transversal)
+5. si `C3` est au créneau `2`, alors `C1` est au créneau `3` (l'amphi du créneau 2 mobilise aussi le groupe de `C1`)
+
+L'ensemble est insatisfiable. Posez les cinq contraintes avec `assert_and_track` et des étiquettes `e1` à `e5`, puis extrayez le noyau.
+
+**Indice** : la contrainte 5 est une implication — `Implies(t['C3'] == 2, t['C1'] == 3)` se pose telle quelle dans Z3. Le noyau rendu est un **sous-ensemble** des étiquettes : les contraintes acquittées suffisent à exister en compagnie de tout le reste, et vous pouvez le vérifier en retirant chaque contrainte coupable une à une.
+
+**Étape 1** : déclarez les créneaux `t = {x: Int(x) for x in ['C1','C2','C3']}` bornés à `{1, 2, 3}`, puis étiquetez les cinq contraintes.",,,,,,,,b1992defb8a02f01,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,7f507ca6,code,fr,45488e151088c5f7,"# Exercice 6 : noyau d'insatisfiabilite d'un emploi du temps (etudiant)
+s_ex6 = Solver()
+# t = {x: Int(x) for x in ['C1','C2','C3']}      # TODO etudiant : creneau de chaque cours, domaine {1,2,3}
+# e1, e2, e3, e4, e5 = Bools('e1 e2 e3 e4 e5')   # TODO etudiant : etiquettes
+# TODO etudiant : poser les 5 contraintes avec s_ex6.assert_and_track (la 5e est une Implies)
+# TODO etudiant : s_ex6.check() puis s_ex6.unsat_core() -- quelles etiquettes le solveur acquitte-t-il ?
+
+print(""Exercice 6 a completer : retirez les commentaires TODO, etiquetez les 5 contraintes et lisez le noyau."")",,,,,,,,45488e151088c5f7,,,,,,,,,,,,,,,
