@@ -55,6 +55,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/readme-series-gabarit.md](reference/readme-series-gabarit.md) | Gabarit de référence des READMEs de séries (#2651) |
 | [reference/finition-de-serie.md](reference/finition-de-serie.md) | Critères de sortie du régime de finition de série (#19297) |
 | [reference/iit-ict-transition.md](reference/iit-ict-transition.md) | Transition IIT → ICT — état narratif et architectural de la série ICT-Series (#4588, plan de partition #5081), tenue à jour au fil des livraisons ; reclassée pérenne depuis `suivis/` (tranche 2 #19283) |
+| [reference/ict-mcp-frontier-criterion.md](reference/ict-mcp-frontier-criterion.md) | Critère de frontière utilitaire-de-série / exposition MCP (#19379) — deux barreaux, conditions tranchées par contre-exemples mesurés, contrôles vivants sur les serveurs du dépôt |
 | [reference/agentic-engines-deep-eval.md](reference/agentic-engines-deep-eval.md) | Évaluation en profondeur des moteurs agentiques (Semantic Kernel, Google ADK, Microsoft Agent Framework) sur la série DataScienceWithAgents — couverture réelle du corpus, pilotes reproductibles, faits d'API mesurés |
 | [reference/ws-probes-repro.md](reference/ws-probes-repro.md) | Reproduction hors carnet des sondes wavelet scattering (WS-00c, WS-03) — graine fixe, valeurs citées vs mesurées, écart 1 item (#21823) |
 | [reference/gorard-lanyonai-etape3.md](reference/gorard-lanyonai-etape3.md) | Dépôts lanyonai mesurés sur l'amont — licences, absence de `lean-toolchain`, ce que leurs preuves Lean établissent exactement (et ce qu'elles n'établissent pas) ; support de la décision de consommation par la série Gorard (#19741, étape 3) |
@@ -182,7 +183,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/mimo-converse-cartography.md](lean/mimo-converse-cartography.md) | Cartographie converse MIMO (#11152) — correspondance brique → source, mesurée le 2026-08-16 sur le Mathlib et le SLT du manifest `mimo_lean` courant |
 | [lean/cross-lake-duplicates-triage.md](lean/cross-lake-duplicates-triage.md) | Triage des 14 paires de l'organe de doublons entre lacs (T0 de #24183) — 1 doublon réel GT (Arrow), 1 helper analytique dupliqué hors GameTheory (`one_sub_pow_le_exp`, #24273), 12 homonymes ou doubles formalismes (Sen requalifié homonyme apparenté, mesure T1 #24193) ; vérifié déclaration par déclaration le 2026-11-02 |
 | [lean/junctions-scan-po-2026.md](lean/junctions-scan-po-2026.md) | Scan des jonctions NTFS Mathlib sur `myia-po-2026` (2026-09-01) — #13962, enfant de #4362 (mutualisation du cluster) |
-| [lean/cluster-junctions-c857.md](lean/cluster-junctions-c857.md) | Scan de mutualisation Mathlib à l'échelle du cluster (c.857, po-2024, 2026-09-02) — pendant du précédent, vue multi-machines |
+| [lean/cluster-junctions-c857.md → transients/2026-09-02-…](transients/2026-09-02-cluster-junctions-c857.md) | Scan de mutualisation Mathlib à l'échelle du cluster (c.857, po-2024, 2026-09-02) — pendant du précédent, vue multi-machines |
 | [lean/alexander-strategy/c652-reidemeister-invariance.md](lean/alexander-strategy/c652-reidemeister-invariance.md) | Stratégie de preuve — invariance de Reidemeister de alexanderPolynomialSigned |
 | [lean/approval-core-bgp2026-design.md](lean/approval-core-bgp2026-design.md) | Cadrage — Core d'approbation |
 | [lean/discrepancy-as-negative-control.md](lean/discrepancy-as-negative-control.md) | Discrepancy_lean comme contrôle négatif d'allégation de strate-advance |
@@ -282,6 +283,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/taxonomy/README.md](curriculum/taxonomy/README.md) | Schéma de taxonomie pédagogique et tranches Compression + Probas (Infer), avec export SKOS/OWL |
 | [curriculum/ia-hybride.md](curriculum/ia-hybride.md) | IA hybride — LLM + solveurs + vérificateurs (manuel, EPIC #13844) |
 | [curriculum/ia-societe-responsabilite.md](curriculum/ia-societe-responsabilite.md) | Parcours IA, société et responsabilité — 16 étapes en 5 actes, des biais mesurés aux choix sociaux et à l'argumentation (EPIC #13844) |
+| [curriculum/qualification/README.md](curriculum/qualification/README.md) | Qualification des carnets — échelle de difficulté et dimension recherche, séries pilotes qualifiées valeur par valeur (#24996) |
 
 ## Métadonnées notebooks (docs/notebook-metadata/)
 
@@ -436,7 +438,7 @@ Migration par tranches close (#17525) : Grothendieck lens et Leiden position (tr
 | Fichier | Description |
 |---------|-------------|
 | [ci/slow-lane.md](ci/slow-lane.md) | Voie asynchrone (tranche 1, #12856) — sortir du `pull_request` les contrôles lourds **et idempotents** pour les payer ailleurs. Le critère d'éligibilité (idempotence) est ce qui distingue un déplacement légitime d'un contournement de garde |
-| [ci/po2024-topology-baseline.md](ci/po2024-topology-baseline.md) | Topologie baseline hôte myia-po-2024 — sous-grain #15574 |
+| [ci/po2024-topology-baseline.md → transients/2026-09-15-…](transients/2026-09-15-po2024-topology-baseline.md) | Topologie baseline hôte myia-po-2024 (sous-grain #15574), mesurée le 2026-09-15 — déplacé en lane transiente ; les règles de lecture durables vivent dans [ci/self-hosted-runners.md](ci/self-hosted-runners.md), section « Ce que l'OS local peut dire d'une topologie — et ce qu'il ne peut pas » (vague 4 #14623) |
 | [ci/scripts-tests-triage.md](ci/scripts-tests-triage.md) | Scripts Tests (CPU) — point de triage unique |
 
 ## Harnais (docs/harness/)
@@ -452,7 +454,7 @@ Migration par tranches close (#17525) : Grothendieck lens et Leiden position (tr
 | Fichier | Description |
 |---------|-------------|
 | [ml/tsad-benchmark-flaws.md](ml/tsad-benchmark-flaws.md) | Défauts des benchmarks TSAD (détection d'anomalies sur séries temporelles) et place du *Matrix Profile* — note de référence compagnon des notebooks ML-10. Sert à ne pas présenter comme un résultat ce qui est un artefact de protocole d'évaluation |
-| [ml/bdh-evaluation.md](ml/bdh-evaluation.md) | Évaluation BDH (Dragon Hatchling) — verdict complet |
+| [ml/bdh-evaluation.md → transients/2026-09-15-…](transients/2026-09-15-bdh-evaluation.md) | Évaluation BDH (Dragon Hatchling) — verdict daté (mesures du 2026-09-03 au 2026-09-15, révision due ~2027-03 sous quatre conditions) — déplacé en lane transiente ; le noyau durable (la source réelle d'un claim n'est pas le papier qu'une issue cite, et la distinction *fidèle mais complaisant* / *fabriqué*) vit dans [reference/sota-verdicts-detail.md](reference/sota-verdicts-detail.md) §5 (vague 4 #14623) |
 
 ## Autres répertoires (docs/xai-shap-strategy/, docs/test-fixtures/)
 
