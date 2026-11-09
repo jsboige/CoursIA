@@ -104,3 +104,13 @@ include = ["ict*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.coursia.pinned_env]
+# Env de la SERIE pour canonical_env_hint (#25381) : les notebooks ICT
+# s'executent dans l'env historique des strates Phi (extra [iit],
+# pyphi==1.2.0 -> Python <= 3.9, numpy < 2.0 pour pyemd) -- PAS sous le
+# plancher d'installation du coeur (">=3.9", voie contractuelle des
+# consommateurs hors serie). Cette table prime sur project.requires-python
+# dans le hint de check_kernel_drift.
+requires-python = ">=3.9,<3.10"
+numpy = ">=1.21,<2.0"
