@@ -23,6 +23,13 @@ Limites annoncees :
 - la duree d'une etape est `completed_at - started_at` : elle inclut le
   telechargement des blobs paresseux, qui est le poste dominant en cas de
   work dir reuse.
+
+Ce que ca rend, en plus des percentiles : la **part du checkout dans le p90
+du job** (`checkout_share_du_job_p90`), qui dit si le checkout est le poste
+dominant ou si le job passe son temps ailleurs -- attente de runner comprise
+-- et la **liste des checkouts lents** au-dessus du seuil `--slow-min`
+(defaut 3 min), qui est la seule maniere de voir une pathologie rare dans
+une fenetre courte.
 """
 from __future__ import annotations
 
@@ -78,6 +85,7 @@ def main() -> int:
     parser.add_argument("--hours", type=int, default=24)
     parser.add_argument("--runs", type=int, default=60, help="runs inspectes au plus")
     parser.add_argument("--workflow", default="", help="filtre sur le nom du workflow")
+    parser.add_argument("--slow-min", type=float, default=3.0, help="seuil d'un checkout lent")
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
@@ -102,6 +110,7 @@ def main() -> int:
     per_workflow: dict[str, dict] = defaultdict(
         lambda: {"jobs": 0, "jobs_sans_checkout": 0, "checkout": [], "job": []}
     )
+    slow: list[dict] = []
     for run in runs:
         try:
             jobs = gh(f"/repos/{REPO}/actions/runs/{run['id']}/jobs?per_page=100").get("jobs", [])
@@ -123,23 +132,42 @@ def main() -> int:
                 bucket["jobs_sans_checkout"] += 1
             else:
                 bucket["checkout"].append(found)
+                if found >= args.slow_min:
+                    slow.append(
+                        {
+                            "workflow": run.get("name"),
+                            "run_id": run.get("id"),
+                            "job_id": job.get("id"),
+                            "checkout_min": round(found, 2),
+                            "job_min": round(total, 2) if total is not None else None,
+                        }
+                    )
 
     rows = []
     for name, bucket in per_workflow.items():
         checkout = bucket["checkout"]
+        ck_p90 = percentile(checkout, 0.9) if checkout else None
+        job_p90 = percentile(bucket["job"], 0.9) if bucket["job"] else None
         rows.append(
             {
                 "workflow": name,
                 "jobs": bucket["jobs"],
                 "jobs_sans_etape_checkout": bucket["jobs_sans_checkout"],
                 "checkout_med_min": round(statistics.median(checkout), 2) if checkout else None,
-                "checkout_p90_min": round(percentile(checkout, 0.9), 2) if checkout else None,
+                "checkout_p90_min": round(ck_p90, 2) if ck_p90 is not None else None,
                 "checkout_max_min": round(max(checkout), 2) if checkout else None,
                 "job_med_min": round(statistics.median(bucket["job"]), 2) if bucket["job"] else None,
-                "job_p90_min": round(percentile(bucket["job"], 0.9), 2) if bucket["job"] else None,
+                "job_p90_min": round(job_p90, 2) if job_p90 is not None else None,
+                # Part du checkout dans le p90 du job : c'est le nombre qui
+                # dit si le checkout est le poste dominant ou si le job passe
+                # son temps ailleurs (attente de runner comprise).
+                "checkout_share_du_job_p90": (
+                    round(ck_p90 / job_p90, 3) if ck_p90 and job_p90 else None
+                ),
             }
         )
     rows.sort(key=lambda r: -(r["checkout_p90_min"] or 0))
+    slow.sort(key=lambda item: -item["checkout_min"])
 
     covered = [ts(r.get("created_at")) for r in runs if r.get("created_at")]
     report = {
@@ -148,6 +176,9 @@ def main() -> int:
         "window_requested_hours": args.hours,
         "window_created_since": since,
         "runs_inspectes": len(runs),
+        "seuil_checkout_lent_min": args.slow_min,
+        "checkouts_lents": len(slow),
+        "checkouts_lents_detail": slow[:40],
         "window_covered": {
             "from": min(covered).strftime(FMT) if covered else None,
             "to": max(covered).strftime(FMT) if covered else None,
