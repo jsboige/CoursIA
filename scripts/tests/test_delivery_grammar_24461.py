@@ -179,3 +179,57 @@ def test_un_dossier_CLOSE_ne_vaut_pas_dossier_vivant():
              "`[CLOSURE PREFLIGHT]` de cette issue porte un verdict CLOSE "
              "-- elle est resolue.")
     assert dg.motif_class(cause) is None
+
+
+# --- 5. plusieurs marqueurs dans UN corps -----------------------------------
+# Un corps qui porte deux marqueurs de lane se lit comme DEUX evenements :
+# le dernier ne l'emporte pas. C'est la meme lecture que pour deux corps
+# distincts, ou l'ordre ne change rien (constat de l'adjoint, cycle F).
+
+EPIC_PUIS_TRANCHE = EPIC_WIDE + "\n" + TRANCHE
+TRANCHE_PUIS_EPIC = TRANCHE + "\n" + EPIC_WIDE
+ATTESTATION_PUIS_TRANCHE = ATTESTATION + "\n" + TRANCHE
+
+
+def test_une_tranche_apres_une_livraison_entiere_ne_la_desarme_pas():
+    """Les deux ordres, dans un corps : l'etat est ATTESTED, comme sur deux corps."""
+    assert dg.delivery_state([EPIC_PUIS_TRANCHE]) == dg.ATTESTED
+    assert dg.delivery_state([TRANCHE_PUIS_EPIC]) == dg.ATTESTED
+
+
+def test_un_corps_qui_melange_les_deux_marqueurs_est_epic_wide():
+    assert dg.delivery_marker_is_epic_wide(EPIC_PUIS_TRANCHE) is True
+    assert dg.delivery_marker_is_epic_wide(TRANCHE_PUIS_EPIC) is True
+
+
+def test_un_corps_qui_melange_les_deux_marqueurs_nest_pas_une_tranche():
+    """« Que des tranches » : un marqueur epic-wide dans le corps suffit a
+    disqualifier la tranche -- les deux predicats ne peuvent pas desaccorder."""
+    assert dg.is_tranche_marker(EPIC_PUIS_TRANCHE) is False
+    assert dg.is_tranche_marker(TRANCHE_PUIS_EPIC) is False
+    assert dg.is_tranche_only(TRANCHE_PUIS_EPIC) is False
+
+
+def test_une_tranche_seule_dans_un_corps_reste_une_tranche():
+    assert dg.is_tranche_marker(TRANCHE) is True
+    assert dg.is_tranche_only(TRANCHE) is True
+
+
+def test_une_tranche_apres_une_attestation_ne_desarme_pas_l_attestation():
+    assert dg.delivery_state([ATTESTATION_PUIS_TRANCHE]) == dg.ATTESTED
+
+
+# --- 6. le motif suit l'etat : un fil retracte ne porte pas de motif -------
+
+def test_un_fil_retracte_ne_porte_pas_de_motif_de_livraison():
+    """L'etat dit `revoked` (l'issue redevient servable) : nommer un motif
+    d'ecarte sur ce fil serait annoncer une ecarte qui n'a plus lieu."""
+    assert dg.delivery_state([EPIC_WIDE, "[NOT-DELIVERED]"]) == dg.REVOKED
+    assert dg.delivery_motif([EPIC_WIDE, "[NOT-DELIVERED]"]) is None
+
+
+def test_un_fil_retracte_puis_rearme_reporte_le_motif():
+    assert dg.delivery_state([EPIC_WIDE, "[NOT-DELIVERED]", EPIC_WIDE]) == dg.ATTESTED
+    motif = dg.delivery_motif([EPIC_WIDE, "[NOT-DELIVERED]", EPIC_WIDE])
+    assert motif is not None
+    assert "epic-wide" in motif

@@ -229,6 +229,12 @@ def delivery_marker_is_epic_wide(body: str) -> bool:
 
     Une attestation l'emporte sur une tranche : l'une dit « l'issue est
     livree », l'autre « ce grain est livre ».
+
+    PLUSIEURS marqueurs dans UN corps se lisent comme PLUSIEURS
+    evenements : le DERNIER ne l'emporte pas. Une livraison epic-wide
+    posee avant une tranche n'est pas desarmee par elle -- « une tranche
+    ne desarme rien » (#24461 (c), point 3). C'est la meme lecture que
+    pour deux corps distincts, ou l'ordre des corps n'y change rien.
     """
     if not body:
         return False
@@ -236,7 +242,7 @@ def delivery_marker_is_epic_wide(body: str) -> bool:
     lane_epic = False
     for line in body.splitlines():
         if DELIVERED_LANE_MARKER_RE.match(line):
-            lane_epic = not bool(PATHS_CLAUSE_RE.search(line))
+            lane_epic = lane_epic or not bool(PATHS_CLAUSE_RE.search(line))
             continue
         if ATTESTATION_MARKER_RE.match(line):
             attested = True
@@ -248,13 +254,24 @@ def is_tranche_marker(body: str) -> bool:
 
     Une tranche ne livre pas l'issue : elle ne doit ni l'ecarter du tapis,
     ni poser d'heure de cloture. C'est la decision #24461 (c), point 3.
+
+    « Que des tranches » : le corps doit porter **au moins un** marqueur de
+    lane, et **tous** ses marqueurs doivent porter la clause `paths:`. Un
+    corps qui melange une tranche et une livraison epic-wide n'est PAS une
+    tranche -- c'est une livraison de l'issue entiere, plus une tranche.
+    Le predicat est ainsi coherent avec `delivery_marker_is_epic_wide`,
+    qui lit les memes marqueurs (une grammaire, deux lectures, aucun
+    desaccord possible).
     """
     if not body:
         return False
+    seen = False
     for line in body.splitlines():
         if DELIVERED_LANE_MARKER_RE.match(line):
-            return bool(PATHS_CLAUSE_RE.search(line))
-    return False
+            seen = True
+            if not PATHS_CLAUSE_RE.search(line):
+                return False
+    return seen
 
 
 def is_tranche_only(body: str) -> bool:
@@ -309,8 +326,18 @@ def delivery_motif(bodies: list[str]) -> str | None:
     Le fil est lu **a l'envers** : c'est le DERNIER evenement qui decide, et
     l'ordre du transport est chronologique. ``None`` = aucun motif (l'issue
     n'est pas ecartee pour un motif de livraison).
+
+    Le motif est **coherent avec l'etat** : il ne nomme que ce qui ecarte
+    ENCORE l'issue du tapis. Un fil retracte (`[NOT-DELIVERED]`,
+    `candidate-delivered-revoked` en dernier evenement) rend l'etat
+    ``revoked`` -- l'issue redevient servable -- et ne porte donc AUCUN
+    motif de livraison : nommer « livraison epic-wide » sur un fil
+    retracte, c'est annoncer une ecarte qui n'a plus lieu.
     """
-    for body in reversed(list(bodies or [])):
+    bodies = list(bodies or [])
+    if delivery_state(bodies) != ATTESTED:
+        return None
+    for body in reversed(bodies):
         text = body or ""
         if closure_dossier_verdict(text) == "KEEP":
             return ("dossier `[CLOSURE PREFLIGHT]` VIVANT (verdict KEEP) : "
