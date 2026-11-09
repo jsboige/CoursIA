@@ -258,6 +258,61 @@ def test_claim_on_the_epic_by_the_same_lane_is_clear(capsys):
     assert data["blocked"] is False
 
 
+def test_closed_visit_of_the_querying_lane_still_caps(capsys):
+    """Controle POSITIF, version du COORDINATEUR (demande du 09/11) : une
+    visite PASSEE ET CLOSE de la lane qui interroge arme encore le plafond.
+
+    #25443 tranche 1 ecartait du plafond TOUS les marqueurs de la lane qui
+    interroge, ses visites passees et closes comprise. Le plafond devenait
+    « une visite par semaine et par AUTRE lane » au lieu de « un EPIC hors
+    consolidation se visite au plus une fois par semaine » (#22500) : une
+    lane seule sur un EPIC pouvait le reprendre chaque jour -- livrer une
+    tranche le lundi, en claimer une autre le mardi, et lire `CLEAR`.
+
+    Ici la visite est CLOSE (`[DELIVERED]` de la lane) : elle continue
+    d'armer le plafond, datee par son marqueur de cloture.
+    """
+    payload = epic(comments=[
+        comment(f"[CLAIMED] lane {LANE} -- tranche 1", iso(days=3)),
+        comment(f"[DELIVERED] lane {LANE} -- PR #1234",
+                iso(days=3, minutes=-5)),
+    ])
+    loaders = Loaders(pool=[])
+    rc = run(payload, loaders)
+    assert rc == 1
+    cause = report(capsys)["epic_visit_cap"]
+    assert cause.startswith(CAUSE_PREFIX)
+    assert "livraison sur l'EPIC il y a 3.0 j" in cause
+    # L'EPIC est N lui-meme : sa charge est deja lue, aucun parent a chercher.
+    assert loaders.parent_calls == []
+
+
+def test_in_progress_claim_does_not_erase_the_closed_visit(capsys):
+    """Cas MIXTE : visite close de la lane il y a 3 jours, puis claim en
+    cours de la MEME lane il y a 3 minutes.
+
+    C'est le cas qui distingue « visite en cours » de « toutes les visites »
+    (demande du coordinateur, point 3). Le claim de la minute ne s'auto-
+    bloque pas -- mais la visite close continue d'armer le plafond, et c'est
+    sa CLOTURE qui le date, pas le claim.
+    """
+    payload = epic(comments=[
+        comment(f"[CLAIMED] lane {LANE} -- tranche 1", iso(days=3)),
+        comment(f"[DELIVERED] lane {LANE} -- PR #1234",
+                iso(days=3, minutes=-5)),
+        comment(f"[CLAIMED] lane {LANE} -- tranche 2", iso(minutes=3)),
+    ])
+    loaders = Loaders(pool=[])
+    rc = run(payload, loaders)
+    assert rc == 1
+    cause = report(capsys)["epic_visit_cap"]
+    assert cause.startswith(CAUSE_PREFIX)
+    assert "livraison sur l'EPIC il y a 3.0 j" in cause
+    # La date retenue est celle de la CLOTURE : si le claim de la minute
+    # armait le plafond, la cause porterait « il y a 0.0 j ».
+    assert "il y a 0.0 j" not in cause
+
+
 def test_coordinator_override_naming_the_lane_is_clear(capsys):
     """#25443 -- l'override qui rend le grain a la lane ne rearme pas le plafond.
 

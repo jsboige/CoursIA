@@ -4198,10 +4198,38 @@ def _epic_cap_pool() -> tuple[list[dict], str | None]:
     return pool, read_error
 
 
+def _without_in_progress_visit(events: list, lane: str) -> list:
+    """Retire de `events` la visite EN COURS de `lane`.
+
+    Une visite est **close** par un marqueur de cloture -- `_CLOSE` du module
+    (`[DELIVERED]`, `[RELEASED]`, `[CANCELLED]`, `[ABANDONED]`, `[DONE]`) :
+    c'est le vocabulaire que l'organe des claims lit deja pour reduire une
+    prise en une absence de prise.
+
+    Ce qui est retire : les evenements de `lane` posterieurs a son dernier
+    marqueur de cloture -- le `[CLAIMED]` de la minute, l'`[OVERRIDE]` que le
+    coordinateur vient de lui rendre. Ce qui reste : tout ce qui precede ou
+    coincide avec la cloture, y compris la cloture elle-meme -- une visite
+    passee et close continue d'armer le plafond, datee par son marqueur.
+
+    Sans marqueur de cloture, toute la visite de la lane est en cours : rien
+    n'est retire pour elle, et le filtre n'a plus rien a dire.
+    """
+    closes = [ev.created_at for ev in events
+              if ev.lane == lane
+              and (ev.get("marker") or "").upper() in _CLOSE]
+    if not closes:
+        # Pas de cloture : toute la visite de la lane est en cours.
+        return [ev for ev in events if ev.lane != lane]
+    last_close = max(closes)
+    return [ev for ev in events
+            if not (ev.lane == lane and ev.created_at > last_close)]
+
+
 def _claim_visit_excluding(comments: list[dict],
                             exclude_lane: str | None,
                             ) -> tuple[str | None, str | None]:
-    """Paire ``(date, marqueur)`` de la visite la plus recente, HORS une lane.
+    """Paire ``(date, marqueur)`` de la visite la plus recente, HORS la visite en cours d'une lane.
 
     #25443 : le plafond hebdomadaire des EPICs se lisait sur le dernier
     marqueur du fil, **y compris ceux de la lane qui interroge** et ceux du
@@ -4218,11 +4246,23 @@ def _claim_visit_excluding(comments: list[dict],
         meme controle rendait ``override sur l'EPIC il y a 0.0 j`` et seul
         ``--force`` passait.
 
-    La visite qui arme le plafond est donc celle d'une **autre** lane que
-    celle qui interroge. Le filtre porte sur le champ ``lane`` de
+    Ce qui est ecarte n'est donc que la visite **en cours** de la lane qui
+    interroge : ses evenements posterieurs a son dernier marqueur de
+    cloture, et l'``[OVERRIDE] lane <lane>`` qui lui rend le grain s'il est
+    posterieur lui aussi. Le filtre porte sur le champ ``lane`` de
     l'evenement : un ``[OVERRIDE] lane <lane>`` nomme la lane a qui le
     coordinateur rend le grain, il est donc ecarte pour cette lane-la et
     compte pour les autres.
+
+    #25443 tranche 2 : la premiere version ecartait **tous** les evenements
+    de la lane qui interroge, ses visites passees et closes comprise. Le
+    plafond devenait « une visite par semaine et par AUTRE lane » au lieu de
+    « un EPIC hors consolidation se visite au plus une fois par semaine »
+    (`docs/reference/variation-protocol-detail.md`, #22500) : une lane seule
+    sur un EPIC pouvait le reprendre chaque jour -- livrer une tranche le
+    lundi, en claimer une autre le mardi, et lire ``CLEAR``. Une visite
+    passee et close de la meme lane continue donc d'armer le plafond, datee
+    par son marqueur de cloture.
 
     Grammaire : celle de l'organe des claims (`_sort_events` -- decorations
     markdown et non-ASCII tolerees, blocs fence neutralises, mentions en
@@ -4235,7 +4275,7 @@ def _claim_visit_excluding(comments: list[dict],
         {"comments": [c for c in comments if isinstance(c, dict)]})
         if ev.lane and ev.created_at]
     if exclude_lane:
-        events = [ev for ev in events if ev.lane != exclude_lane]
+        events = _without_in_progress_visit(events, exclude_lane)
     if not events:
         return None, None
     ev = max(events, key=lambda e: e.created_at)
