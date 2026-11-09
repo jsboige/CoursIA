@@ -158,6 +158,11 @@ DOMAIN_GRID_CELLS_RE = re.compile(
     r"(?![\w-])",
     re.IGNORECASE,
 )
+DOMAIN_GRID_CELLS_REVERSED_RE = re.compile(
+    r"\bgrille\s+(?:de\s+)?sudoku\s+de\s+"
+    r"(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+cellules?)\b",
+    re.IGNORECASE,
+)
 DOMAIN_COVERAGE_FACTOR_RE = re.compile(
     r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+lignes?)\*{0,2}"
     r"(?:\s+(?:maximum|max))?\s*=\s*"
@@ -187,16 +192,24 @@ def _is_domain_model_quantity(line: str, count: re.Match[str]) -> bool:
     span = count.span()
     patterns = (
         DOMAIN_GRID_CELLS_RE,
+        DOMAIN_GRID_CELLS_REVERSED_RE,
         DOMAIN_COVERAGE_FACTOR_RE,
         DOMAIN_COVERAGE_MATRIX_DIMENSION_RE,
         DOMAIN_COVERAGE_PAIR_RE,
     )
     for pattern in patterns:
         for match in pattern.finditer(line):
-            # Un sujet explicitement documentaire l'emporte sur le vocabulaire
-            # de grille ou de matrice qui suit dans la même proposition.
-            prefix = line[max(0, line.rfind(";", 0, match.start()) + 1):span[0]]
-            if re.search(r"\b(?:notebook|carnet|fichier\s+source|source\s+file)\b", prefix, re.IGNORECASE):
+            # Un inventaire attribué à un artefact reste signalé ; une simple
+            # mention du carnet présentant un modèle ne suffit pas.
+            prefix = line[line.rfind(";", 0, span[0]) + 1:span[0]]
+            if re.search(
+                r"\b(?:notebook|carnet|fichier\s+source|source\s+file)\s+"
+                r"(?:contient|compte|comprend|possède|possede|a|fait|has|contains|counts)"
+                r"(?:\s+(?:aussi|également|egalement|also))?\s*$"
+                r"|\b(?:matrice|matrix)\s+de\s+donn[ée]es\s+du\s+"
+                r"fichier\s+source\s+a\s*$",
+                prefix, re.IGNORECASE,
+            ):
                 continue
             if match.span("count") == span:
                 return True

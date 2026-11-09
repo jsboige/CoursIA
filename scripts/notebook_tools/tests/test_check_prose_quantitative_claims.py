@@ -72,6 +72,10 @@ def test_count_re_requires_number_before_noun():
     "line",
     [
         "Sommets : 81 cellules de la grille (9x9)",
+        "Ce notebook présente 81 cellules de la grille Sudoku.",
+        "Ce notebook présente une grille Sudoku de 81 cellules.",
+        "Dans ce carnet, la matrice de couverture exacte compte 729 lignes, une par couple cellule-valeur.",
+        "This notebook presents 81 cells of the grid.",
         "The graph has 81 cells of the 9x9 grid as vertices.",
         "**729 lignes** = 9 lignes x 9 colonnes x 9 valeurs",
         "La matrice de couverture exacte compte 729 lignes, une par couple cellule-valeur.",
