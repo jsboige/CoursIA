@@ -451,6 +451,58 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "image figee par son SHA, pas une mesure du depot."
         ),
     ),
+    # Manifeste de preservation des branches (issue #14238, PR #25120) : la
+    # section « Tranche 4 » (v5, 2026-11-07) du README accumule les instantanes
+    # par version (v2 a v5). Chaque compte de lignes y est un fait FIGE de la
+    # curation de cette version -- la preuve du geste, re-mesurable a la
+    # commande de la section « Verification » -- et non un etat du depot qui
+    # deriverait a chaque ajout. Les supprimer reecrirait la preuve (angle-mort
+    # du guard).
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"13 187\*\* lignes"),
+        raison=(
+            "« 13 187 lignes » = total du manifeste a la date de la v5 "
+            "(tranche 4, 2026-11-07) : fait fige de la curation, jamais un "
+            "etat du depot resynchronise a chaque version."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"2 930 lignes"),
+        raison=(
+            "« 2 930 lignes nouvelles » = lignes greffees au manifeste par la "
+            "tranche 4 (2026-11-07) : le delta fige entre la v4 et la v5, "
+            "pas un compteur qui deriverait a chaque ajout ulterieur."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"13 187 lignes"),
+        raison=(
+            "« 13 187 lignes » = taille du .tsv.gz a la v5 (2026-11-07), "
+            "reformulee dans l'en-tete de format : mesure figee au snapshot, "
+            "re-mesurable a la commande de la section Verification."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"2 927 lignes"),
+        raison=(
+            "« 2 927 lignes » = lignes du fichier de selection selected_*.tsv "
+            "liste dans le journal de tranche : fait fige de la tranche 4 "
+            "(2026-11-07), piece de restauration, pas un etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"Refus motives \(9 lignes\)"),
+        raison=(
+            "« 9 lignes » = refus motives du fichier refused_*.tsv liste dans "
+            "le journal de tranche : le compte fige des refus du geste de la "
+            "tranche 4 (2026-11-07), pas un compteur du depot."
+        ),
+    ),
 )
 
 # ----------------------------------------------------------------------------

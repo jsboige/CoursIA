@@ -478,7 +478,7 @@ cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
 Les jumeaux C# s'exécutent avec .NET Interactive (.NET 9) :
 
 ```bash
-dotnet tool install --global Microsoft.dotnet-interactive
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 ```
 

@@ -99,7 +99,7 @@ def find_dotnet_interactive() -> str:
             return str(candidate)
     raise ArmError(
         "dotnet-interactive introuvable : installez l'outil global "
-        "(`dotnet tool install -g Microsoft.dotnet-interactive`) ou passez "
+        "(`dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001`) ou passez "
         "--apphost <chemin>."
     )
 

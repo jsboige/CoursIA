@@ -31,7 +31,7 @@ Un consommateur cross-série mérite d'être signalé : `ML/ML.Net/TP-Prevision-
 
 | Sous-série | Noyau | Version | Commande d'environnement |
 |---|---|---|---|
-| Infer / Infer-*  (C#/.NET) | .NET Interactive | .NET 9.0 + `Microsoft.SemanticKernel` optionnel | `dotnet tool install --global Microsoft.dotnet-interactive` |
+| Infer / Infer-*  (C#/.NET) | .NET Interactive | .NET 9.0 + `Microsoft.SemanticKernel` optionnel | `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` |
 | PyMC / DecPyMC  | Python 3.12+ | PyMC v5+, ArviZ, NumPyro en option | kernel `python3` (conda env dédié) |
 | DecInfer / CSharp kernels | .NET Interactive | .NET 9.0 | même que Infer |
 | Lean 4 kernels (DecInfer-01b, -09) | Lean 4 via WSL | `leanprover/lean4:stable` (résolution actuelle : v4.34.1 — voir [#18511](../../issues/18511) pour l'écart toolchain) | `wsl` + `elan toolchain install stable` |
