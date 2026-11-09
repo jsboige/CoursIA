@@ -1,0 +1,46 @@
+# dotnet-FactorGraphSelection.Tests.yml
+#
+# Harness de selection des graphes de facteurs Infer.NET (FactorGraphHelper).
+# Console Exe versionne : le job passe si le processus rend 0 ET que la sortie
+# porte le sentinel de succes "FactorGraphHelper selection checks passed."
+#
+# Defaut #25276 (portee par carnet + SVG etranger), remede #25293.
+# Jobs statiques (pas de matrix runs-on dynamique — garde d'isolation #13363).
+
+name: .NET FactorGraph Selection Tests
+
+on:
+  pull_request:
+    paths:
+      - 'MyIA.AI.Notebooks/Probas/Infer/FactorGraphHelper.cs'
+      - 'MyIA.AI.Notebooks/Probas/Infer/tests/**'
+      - '.github/workflows/dotnet-FactorGraphSelection.Tests.yml'
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Run selection harness
+        shell: bash
+        run: dotnet run --project MyIA.AI.Notebooks/Probas/Infer/tests/FactorGraphHelper.Selection.Tests.csproj | tee selection-tests.log
+      - name: Success floor guard
+        shell: bash
+        run: grep -q "FactorGraphHelper selection checks passed." selection-tests.log
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Run selection harness
+        shell: bash
+        run: dotnet run --project MyIA.AI.Notebooks/Probas/Infer/tests/FactorGraphHelper.Selection.Tests.csproj | tee selection-tests.log
+      - name: Success floor guard
+        shell: bash
+        run: grep -q "FactorGraphHelper selection checks passed." selection-tests.log

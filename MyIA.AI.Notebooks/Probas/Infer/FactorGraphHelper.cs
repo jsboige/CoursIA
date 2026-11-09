@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net;
 
 /// <summary>
 /// Helper pour generer et afficher les factor graphs Infer.NET dans les notebooks Jupyter.
@@ -189,31 +190,63 @@ public static class FactorGraphHelper
             .Distinct()
             .ToArray();
 
-        // Prefere reconvertir le .gv (la source de verite produite par la
-        // derniere inference) quand Graphviz est disponible, pour que le graphe
-        // affiche corresponde au modele courant et non a un .svg perime ou issu
-        // d'un autre modele (bug #3473 stale-pick). La portee est transmise :
-        // un .gv unique dans la portee est choisi, l'ambiguite est nommee
-        // (defaut #25276).
-        if (gvFiles.Length > 0 && IsGraphvizAvailable())
+        // Le .gv de la portee est la source de verite : on ne le choisit que s'il
+        // est UNIQUE dans la portee (plusieurs .gv = ambiguite nommee, jamais un
+        // choix par mtime global — defaut #25276).
+        var chosenGv = SelectFactorGraphFile(gvFiles, modelScope, out int gvRemaining);
+
+        // Cas 1 : un .gv unique dans la portee.
+        if (chosenGv != null)
         {
-            return ConvertAndGetLatestGvHtml(maxWidth, modelScope);
+            // Graphviz disponible : on reconvertit le .gv (source de verite), pour
+            // que le graphe affiche corresponde au modele courant et non a un .svg
+            // perime (bug #3473 stale-pick).
+            if (IsGraphvizAvailable())
+            {
+                return ConvertAndGetGvHtml(chosenGv, maxWidth);
+            }
+
+            // Sans Graphviz : le .svg ne sert de cache QUE s'il partage le chemin
+            // exact du .gv unique (ChangeExtension). Un .svg d'un autre modele est
+            // "etranger" : on le REFUSE plutot que de l'afficher (remede #25293).
+            var matchingSvg = Path.ChangeExtension(chosenGv, ".svg");
+            var matchingSvgFile = svgFiles.FirstOrDefault(p =>
+                string.Equals(Path.GetFullPath(p), Path.GetFullPath(matchingSvg),
+                    StringComparison.OrdinalIgnoreCase));
+            if (matchingSvgFile != null)
+            {
+                return GetSvgFileHtml(matchingSvgFile, maxWidth);
+            }
+            if (svgFiles.Length > 0)
+            {
+                return GetMismatchedGraphHtml(chosenGv, svgFiles);
+            }
+            // .gv unique, ni Graphviz ni .svg : voie de secours (viz-js), pas
+            // un "aucun fichier".
+            return ConvertAndGetGvHtml(chosenGv, maxWidth);
         }
 
-        // Sinon (Graphviz absent, ou seulement un .svg pre-rendu disponible),
-        // reutiliser le .svg de la portee s'il existe — selection unique,
-        // jamais par mtime global.
+        // Cas 2 : plusieurs .gv dans la portee → ambiguite nommee, jamais de
+        // choix, y compris quand un seul .svg est present (il serait alors
+        // "etranger" a l'un des .gv ambigus).
+        if (gvRemaining > 1)
+        {
+            return GetAmbiguousArtifactsHtml(".gv", gvFiles);
+        }
+
+        // Cas 3 : aucun .gv → le .svg unique de la portee conserve le fallback
+        // legacy (selection unique, jamais par mtime global).
         if (svgFiles.Length > 0)
         {
             var chosenSvg = SelectFactorGraphFile(svgFiles, modelScope, out int svgRemaining);
             if (chosenSvg == null)
             {
-                return FormatGraphUnavailable(svgRemaining, modelScope, "svg");
+                return GetAmbiguousArtifactsHtml(".svg", svgFiles);
             }
             return GetSvgFileHtml(chosenSvg, maxWidth);
         }
 
-        return ConvertAndGetLatestGvHtml(maxWidth, modelScope);
+        return FormatGraphUnavailable(0, modelScope, "gv");
     }
 
     private static IEnumerable<string> SafeEnumerateFiles(string dir, string pattern)
@@ -250,16 +283,30 @@ public static class FactorGraphHelper
     /// Fonction pure (aucun acces disque) : testable en isolation.
     /// </summary>
     /// <param name="candidates">Fichiers candidats (deja distincts).</param>
-    /// <param name="scope">Cle de portee optionnelle (sous-chaine du chemin), ou null.</param>
+    /// <param name="scope">Cle de portee optionnelle (segment exact du chemin), ou null.</param>
     /// <param name="remaining">Nombre de candidats apres le filtre de portee :
     /// 0 = aucun, 1 = selection, &gt;1 = ambiguo.</param>
     /// <returns>Le fichier choisi, ou null (aucun, ou ambiguo).</returns>
+    /// <summary>
+    /// Indique si le chemin porte <paramref name="scope"/> comme segment COMPLET
+    /// (un composant borné par les séparateurs <c>/</c> ou <c>\</c>), et non comme
+    /// sous-chaine n'importe où dans le chemin : la portée <c>A</c> ne doit ni matcher
+    /// <c>AA</c> ni un segment <c>parentAchild</c> (le filtre historique
+    /// <c>Contains(scope)</c> sur le chemin entier isolait mal la portée — #25293/#25276).
+    /// </summary>
+    private static bool PathHasSegment(string path, string scope)
+    {
+        return path
+            .Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries)
+            .Any(seg => string.Equals(seg, scope, StringComparison.OrdinalIgnoreCase));
+    }
+
     internal static string? SelectFactorGraphFile(
         IReadOnlyCollection<string> candidates, string? scope, out int remaining)
     {
         var kept = candidates
             .Where(f => string.IsNullOrEmpty(scope)
-                || f.Contains(scope, StringComparison.OrdinalIgnoreCase))
+                || PathHasSegment(f, scope))
             .Distinct()
             .ToList();
         remaining = kept.Count;
@@ -291,6 +338,41 @@ public static class FactorGraphHelper
             Passez la portee du carnet a <code>GetLatestFactorGraphHtml</code>
             (argument <code>modelScope</code> = nom de modele distinctif) pour afficher
             le bon graphe.
+        </div>";
+    }
+
+    /// <summary>
+    /// Rend le HTML d'ambiguite : plusieurs graphes de la portee coexistent et
+    /// aucun n'est choisi (defaut #25276). Le diagnostic NOMME chaque candidat
+    /// pour que le carnet enchoque la selection explicite avec le bon chemin.
+    /// </summary>
+    private static string GetAmbiguousArtifactsHtml(string extension, IEnumerable<string> files)
+    {
+        var candidates = string.Join("<br/>", files
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .Select(path => $"<code>{WebUtility.HtmlEncode(path)}</code>"));
+        return $@"<div style='padding: 10px; border: 1px solid #f0ad4e; background: #fcf8e3; border-radius: 5px;'>
+            <strong>Grille de facteurs ambigue : plusieurs graphes {extension} dans la portee.</strong><br/>
+            Aucun n'a ete choisi, car leur carnet d'origine est ambigu (defaut #25276).<br/>
+            Selectionnez explicitement le fichier voulu avec <code>ConvertAndGetGvHtml(chemin)</code> ou <code>GetSvgFileHtml(chemin)</code> :<br/>
+            {candidates}
+        </div>";
+    }
+
+    /// <summary>
+    /// Rend le HTML de non-correspondance : sans Graphviz, un .svg est refuse
+    /// quand il ne partage pas le chemin exact du .gv unique de la portee
+    /// (remede #25293) — on n'affiche jamais le graphe d'un autre modele.
+    /// </summary>
+    private static string GetMismatchedGraphHtml(string gvFile, IEnumerable<string> svgFiles)
+    {
+        var source = $"<code>{WebUtility.HtmlEncode(gvFile)}</code>";
+        var candidates = string.Join("<br/>", svgFiles
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .Select(path => $"<code>{WebUtility.HtmlEncode(path)}</code>"));
+        return $@"<div style='padding: 10px; border: 1px solid #f0ad4e; background: #fcf8e3; border-radius: 5px;'>
+            Graphviz est indisponible et aucun SVG ne correspond au chemin du graphe source. Aucun SVG n'a ete choisi.<br/>
+            Source .gv : {source}<br/>SVG disponibles :<br/>{candidates}
         </div>";
     }
 
@@ -399,7 +481,7 @@ public static class FactorGraphHelper
         var chosen = SelectFactorGraphFile(gvFiles, modelScope, out int remaining);
         if (chosen == null)
         {
-            return FormatGraphUnavailable(remaining, modelScope, "gv");
+            return GetAmbiguousArtifactsHtml(".gv", gvFiles);
         }
 
         return ConvertAndGetGvHtml(chosen, maxWidth);
