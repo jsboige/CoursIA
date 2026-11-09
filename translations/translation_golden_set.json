@@ -4,10 +4,10 @@
    "kind": "notebook",
    "fr": "MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb",
    "en": "MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python_en.ipynb",
-   "sha1_fr": "7720e9693b87f93da06f32f5a76f837c8c1e7824",
-   "sha1_en": "b5f40babdd4a50a04ea2e5f246b5c538df9cc72b",
-   "sources_sha1_fr": "25881274f3344bdfdab0b646c42c62e3949c4053",
-   "sources_sha1_en": "fa291018c73383010a0a9474d0336eb2c736ee9c"
+   "sha1_fr": "ad19400e643f32e36be79d69e063765f7d59b7e4",
+   "sha1_en": "c010a542acb516838245ac032ea2c6e453c009ad",
+   "sources_sha1_fr": "0f359f51ef74fcfa05d234eff5e5a1b5bc585193",
+   "sources_sha1_en": "82d8e4958a9cdbb900f7ce3f1d596b24591d30ce"
   },
   {
    "kind": "lean",
