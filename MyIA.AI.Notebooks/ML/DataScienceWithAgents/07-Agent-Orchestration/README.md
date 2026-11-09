@@ -21,10 +21,11 @@ La particularité de cette série : le support **multi-provider** (Gemini, vLLM,
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 10 (Labs 8-17) |
 | Kernel | Python 3.11+ |
 | Durée totale | ~4 jours |
 | Prérequis | Days 1-3 ou équivalent |
+
+Le catalogue du dépôt (`COURSE_CATALOG.generated.md`) est la source des décomptes — ce README présente les carnets, il ne les compte pas.
 
 ## Architecture Multi-Provider
 
