@@ -72,10 +72,10 @@ fi
 if [ "$(id -u)" -eq 0 ] || [ "$(uname -s)" != "Linux" ]; then
   echo "  SKIP: controle mecanisme (requiert Linux non-root)"
   echo "SKIP mecanisme (non-Linux ou root)" >> "$RESULTS"
-elif ! python3 -c "import setuptools" >/dev/null 2>&1; then
+elif ! SETUPTOOLS_DIR=$(python3 -c "import setuptools, os; print(os.path.dirname(os.path.dirname(setuptools.__file__)))" 2>/dev/null) || [ -z "$SETUPTOOLS_DIR" ]; then
   # Le paquet fixture se construit sans reseau (--no-build-isolation) :
-  # setuptools absent du python hote => le controle ne peut pas tourner.
-  echo "  SKIP: controle mecanisme (setuptools absent du python hote)"
+  # setuptools introuvable => le controle ne peut pas tourner.
+  echo "  SKIP: controle mecanisme (setuptools introuvable)"
   echo "SKIP mecanisme (setuptools absent)" >> "$RESULTS"
 else
   PY=python3
@@ -99,8 +99,15 @@ EOF
   # ce drapeau, un python externally-managed ferait echouer (a) pour une
   # raison etrangere au mecanisme teste).
   PIPENV="PIP_BREAK_SYSTEM_PACKAGES=1"
+  # Le backend de build vit la ou setuptools est installe -- souvent le
+  # user-site (le toolcache des runners coursia EST un user-site). Comme le
+  # controle redirige PYTHONUSERBASE vers une base vide, ce backend
+  # deviendrait introuvable et (a) echouerait sur un mecanisme sain. On le
+  # re-expose par PYTHONPATH, qui ne change que la resolution d'import, pas
+  # la destination d'installation mesuree par (a)/(b).
+  BACKEND_PATH="PYTHONPATH=$SETUPTOOLS_DIR"
 
-  if env $PIPENV PIP_USER=1 PYTHONUSERBASE="$USERBASE" "$PY" -m pip install $PIP_FLAGS "$PKGDIR" >/dev/null 2>"$TEST_DIR/err_a.log"; then
+  if env $PIPENV $BACKEND_PATH PIP_USER=1 PYTHONUSERBASE="$USERBASE" "$PY" -m pip install $PIP_FLAGS "$PKGDIR" >/dev/null 2>"$TEST_DIR/err_a.log"; then
     if [ -n "$(find "$USERBASE" -maxdepth 8 -name 'pipusertest*' -print -quit 2>/dev/null)" ] \
        && PYTHONUSERBASE="$USERBASE" "$PY" -c "import pipusertest, sys; sys.exit(0 if pipusertest.VALUE == 42 else 1)" 2>>"$TEST_DIR/err_a.log"; then
       ok "sous PIP_USER=1, l'install atterrit dans la base utilisateur et l'import y lit le paquet"
@@ -111,7 +118,10 @@ EOF
     ko "install sous PIP_USER=1 a echoue (voir $TEST_DIR/err_a.log)"
   fi
 
-  if env $PIPENV PIP_USER=0 "$PY" -m pip install $PIP_FLAGS --force-reinstall "$PKGDIR" >/dev/null 2>"$TEST_DIR/err_b.log"; then
+  # (b) recoit le meme backend : sans lui, l'echec viendrait d'un
+  # BackendUnavailable et non de l'arbre systeme non inscriptible -- un
+  # PASS faux, qui prouverait l'inverse de ce que le controle affirme.
+  if env $PIPENV $BACKEND_PATH PIP_USER=0 "$PY" -m pip install $PIP_FLAGS --force-reinstall "$PKGDIR" >/dev/null 2>"$TEST_DIR/err_b.log"; then
     ko "install SANS redirection a reussi vers l'arbre systeme -- le controle ne prouve rien (site inscriptible ?)"
   else
     ok "sans redirection, l'ecriture vise l'arbre systeme et echoue (non-root)"
