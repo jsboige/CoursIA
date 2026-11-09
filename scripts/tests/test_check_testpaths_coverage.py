@@ -303,7 +303,7 @@ def test_partition_neutralite_lignes_non_pytest() -> None:
 #
 # Le guard ne compare que les testpaths DECLARES : un dossier de tests present
 # dans le depot mais absent de pytest.ini lui est invisible, et il reste vert
-# dessus (cas mesure : SymbolicAI/Argument_Analysis, 174 tests non collectes).
+# dessus (cas mesure : SymbolicAI/ArgumentAnalysis, 174 tests non collectes).
 # `--inventory` part du depot au lieu de la declaration.
 
 
