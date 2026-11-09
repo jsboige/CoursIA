@@ -435,11 +435,14 @@ CoursIA/
     Config/                    Configuration API
 
   scripts/                     Validation, exécution, analyse
+    notebook_tools/            CLI multi-série : validate, execute, analyze, skeleton, check-env
+    genai-stack/               Pile GenAI Docker (CLI genai.py) et sa validation
+  .claude/                     Harnais des agents : agents/, skills/, rules/
   docs/                        Documentation pérenne (procédures, inventaires, leçons consolidées)
   translations/                Corpus de traduction des notebooks (inventaire et statut dans son README)
   slides/                      Présentations pédagogiques
   docker-configurations/       Infrastructure Docker GPU
-  GradeBookApp/                Notation étudiants
+  GradeBookApp/                Notation étudiants (pipelines et données privés sur GDrive)
   GradeBookApp.Tests/          Tests du moteur de notation
   MyIA.AI.Shared/              Bibliothèque C# partagée
   MyIA.AI.Shared.Tests/        Tests de la bibliothèque partagée
@@ -582,6 +585,8 @@ Limitations connues : les notebooks C# avec `#!import` nécessitent une exécuti
 
 Pour les notebooks GenAI avancés utilisant des modèles locaux (Qwen Image Edit, ComfyUI Video, etc.), une infrastructure Docker avec support GPU est fournie.
 
+La pile applicative des carnets : APIs OpenAI et Anthropic, Qwen Image Edit 2509 (encodeur Qwen 2.5-VL 7B) et Qwen3-VL 4B, Semantic Kernel, Python 3.10+ et .NET 9.0 Interactive, Papermill + MCP Jupyter, ComfyUI GPU (RTX 3080 Ti 16 Go, po-2023). Modèles, quantification et ventilation GPU par service : [docs/genai/genai-services.md](docs/genai/genai-services.md).
+
 Services disponibles (sous `docker-configurations/services/`, 19 dossiers) : Qwen Image Edit (~29 Go VRAM), ComfyUI Video (~12 Go), Stable Diffusion Forge (~10 Go), Whisper (STT, 2 services), MusicGen, TTS (multi-engine : Kokoro, FishAudio, autres, via `tts-api`), Demucs.
 
 La pile s'orchestre via le CLI `genai.py` plutôt que des commandes `docker` lancées à la main :
@@ -676,6 +681,8 @@ Vous pouvez contribuer de deux façons :
 - ouvrir une Pull Request, y compris pour proposer une correction d'exercice qui sera transformée en exemple guidé crédité avec un nouvel exercice non résolu.
 
 Le [guide de contribution](CONTRIBUTING.md) détaille le processus, les validations et l'accompagnement proposé par les mainteneurs et leurs agents.
+
+La documentation (README, `docs/`) est écrite en français ; les commentaires de code peuvent être en français ou en anglais.
 
 ## Licence
 
