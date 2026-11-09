@@ -57,7 +57,7 @@ La série débute par le notebook Setup (0) qui configure automatiquement l'envi
 
 ### Phase 2 : Planification Classique (Notebooks 4-6, ~3h)
 
-Les notebooks 4 à 6 constituent le cœur technique de la série. Le notebook 4 (Fast-Downward) présente l'architecture en trois étapes de Fast Downward (translator PDDL→SAS+, preprocessor C++, search C++) et montre comment l'exécuter via Docker et unified-planning. Les algorithmes de recherche (A*, Greedy, EHC) y sont testés sur Blocks World et Logistics. Le notebook 5 (Heuristics) approfondit la théorie : classification admissible/non-admissible ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut), comparaison expérimentale des heuristiques sur le nombre de nœuds expansés, et guide de sélection. Le notebook **5b** (Lean-Relaxation) est un **companion natif** au kernel Lean 4 : il prouve formellement, sans `sorry`, l'admissibilité de la relaxation $h^{+} \leq h^{*}$ dans le lake `planning_lean` — la certification mathématique de la propriété que le notebook 5 constate empiriquement. Le notebook 6 (Domains) couvre les domaines standards de l'IPC (Blocks World, Logistics, Gripper, Satellite) avec des problèmes de complexité croissante. Le notebook **5c** (Différentiel d'atteignabilité, strate 7) retourne au moteur STRIPS minimal pour poser la question inverse : non plus « quel plan pour ce but ? » mais « **quelle nouvelle classe de plans devient atteignable quand on ajoute une primitive ?** » — un protocole en quatre pas (inatteignabilité prouvée, contrôle d'effort, primitive nommée et payante, delta mesuré) qui consomme les garanties du lake `planning_lean` au lieu de les rejouer. À l'issue, vous pouvez configurer un planificateur optimal, choisir l'heuristique adéquate, modéliser n'importe quel domaine IPC — et mesurer ce qu'un élargissement de vocabulaire vaut face à un approfondissement de recherche.
+Les notebooks 4 à 6 constituent le cœur technique de la série. Le notebook 4 (Fast-Downward) présente l'architecture en trois étapes de Fast Downward (translator PDDL→SAS+, preprocessor C++, search C++) et montre comment l'exécuter via Docker et unified-planning. Les algorithmes de recherche (A*, Greedy, EHC) y sont testés sur Blocks World et Logistics. Le notebook 5 (Heuristics) approfondit la théorie : classification admissible/non-admissible ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut), comparaison expérimentale des heuristiques sur le nombre de nœuds expansés, et guide de sélection. Ses approfondissements 5b et 5c sont regroupés [sous le palier 5](#approfondissements-du-palier-5). Le notebook 6 (Domains) couvre les domaines standards de l'IPC (Blocks World, Logistics, Gripper, Satellite) avec des problèmes de complexité croissante. À l'issue, vous pouvez configurer un planificateur optimal, choisir l'heuristique adéquate, modéliser n'importe quel domaine IPC — et mesurer ce qu'un élargissement de vocabulaire vaut face à un approfondissement de recherche.
 
 <p align="center"><a href="02-Classical/Planners-05-Heuristics-Python.ipynb"><img src="assets/readme/planners5-heuristics.png" width="540" alt="Heuristiques de recherche : comparaison de A* et de ses variantes guidant l'exploration vers le but pour réduire l'exploration."></a></p>
 
@@ -71,7 +71,7 @@ La planification classique épuise ses limites dès que les problèmes deviennen
 
 ### Phase 4 : Neuro-Symbolique (Notebooks 10, 11, 12, 14 ; ~3h)
 
-La dernière partie explore la frontière entre IA symbolique et apprentissage profond. Le notebook 10 (LLM-Planning) montre comment les Large Language Models peuvent générer des plans à partir de descriptions en langage naturel, le prompting pour la planification, et le plan repair. Le notebook 11 (Unified-Planning) détaille l'interface unifiée `unified-planning` : connexion à plusieurs solveurs en quelques lignes, comparaison croisée des performances, portabilité du modèle PDDL entre moteurs, **et le saut qualitatif satisfaction → optimisation** via `MinimizeActionCosts` (un moteur *optimal* comme `fast-downward-opt` certifie le plan de coût minimal là où un moteur *satisficing* comme `fast-downward` s'arrête au premier plan trouvé — voir [la section dédiée ci-dessous](#au-delà-de-la-satisfaction--optimisation-pddl-cout-minimal-planners-11)). Le notebook 12 (LOOP) introduit le paradigme **Learning to Plan** : architecture LOOP (state encoder, policy network, value network), encodage PDDL en tenseurs (one-hot, GNN), entraînement par imitation et renforcement, résultats sur benchmarks IPC (85.8% coverage), et comparaison avec KRCL. Le notebook 14 (LLM-Space-Reducer) teste la **position inverse** : le LLM non plus solveur mais réducteur d'espace de recherche (position du moteur [aicpp](https://github.com/Julien-Livet/aicpp)) — mini-DSL de primitives typées sur grilles ARC, trois bras mesurés (exhaustif borné, LLM-direct, LLM-réducteur), la correction restant toujours au solveur déterministe. C'est lui qui conclut la série sur les tendances : foundation models, meta-learning, inverse reinforcement learning.
+La dernière partie explore la frontière entre IA symbolique et apprentissage profond. Le notebook 10 (LLM-Planning) montre comment les Large Language Models peuvent générer des plans à partir de descriptions en langage naturel, le prompting pour la planification, et le plan repair. Le notebook 11 (Unified-Planning) détaille l'interface unifiée `unified-planning` : connexion à plusieurs solveurs en quelques lignes, comparaison croisée des performances, portabilité du modèle PDDL entre moteurs, **et le saut qualitatif satisfaction → optimisation** via `MinimizeActionCosts` (un moteur *optimal* comme `fast-downward-opt` certifie le plan de coût minimal là où un moteur *satisficing* comme `fast-downward` s'arrête au premier plan trouvé — voir [la section dédiée ci-dessous](#au-delà-de-la-satisfaction--optimisation-pddl-cout-minimal-planners-11)). Le notebook 12 (LOOP) introduit le paradigme **Learning to Plan** : architecture LOOP (state encoder, policy network, value network), encodage PDDL en tenseurs (one-hot, GNN), entraînement par imitation et renforcement, résultats sur benchmarks IPC (85.8% coverage), et comparaison avec KRCL. Le palier 10 propose également [un approfondissement, 10b](#approfondissement-du-palier-10), consacré au LLM comme réducteur d'espace de recherche. C'est lui qui conclut la série sur les tendances : foundation models, meta-learning, inverse reinforcement learning.
 
 ### Au-delà de la satisfaction : optimisation PDDL (coût minimal, Planners-11)
 
@@ -142,11 +142,11 @@ Pour les approches combinées apprentissage profond + symbolique :
 | Optimisation de scheduling | **Planners-07-OR-Tools-Python** |
 | Planification hiérarchique | **Planners-09-HTN-Python** (SHOP2, decomposition) |
 | Frontière LLM + IA | **Planners-10-LLM-Planning-Python** |
-| LLM qui réduit l'espace de recherche | **Planners-10b-LLM-Space-Reducer-Python** |
+| LLM qui réduit l'espace de recherche | **Planners-10-LLM-Planning-Python**, puis son [approfondissement 10b](#approfondissement-du-palier-10) |
 | Approche neuro-symbolique avancée | **Planners-12-LOOP-Python** (85.8% IPC coverage) |
 | Comparer tous les solveurs (satisfaction) | **Planners-11-Unified-Planning-Python** |
 | Comparer satisfaction **vs** optimisation (`MinimizeActionCosts`) | **Planners-11-Unified-Planning-Python** ([#7592](https://github.com/jsboige/CoursIA/pull/7592)) |
-| Mesurer ce qu'une **nouvelle primitive** rend possible (strate 7) | **Planners-05c-Differentiel-Atteignabilite-Python** (protocole 4 pas, stdlib pur) |
+| Mesurer ce qu'une **nouvelle primitive** rend possible (strate 7) | **Planners-05-Heuristics-Python**, puis son [approfondissement 5c](#approfondissements-du-palier-5) (protocole 4 pas, stdlib pur) |
 
 ## Objectifs d'apprentissage
 
@@ -227,13 +227,12 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 2 | PDDL-Basics | Syntaxe PDDL : domaines, problèmes, types, prédicats, actions, préconditions, effets |
 | 3 | State-Space | Explosion combinatoire $O(2^n)$, nécessité des heuristiques, graphe d'états |
 | 4 | Fast-Downward | Architecture 3 étapes (translator/preprocessor/search), A* vs Greedy vs EHC via Docker |
-| 5 | Heuristics | Classification admissible/non-admissible : $h^{add}$, $h^{max}$, $h^{FF}$, LM-cut, comparaison expérimentale |
-| 5b | Lean-Relaxation | Companion **natif** (kernel Lean 4) : preuve formelle 0-sorry de l'admissibilité de la relaxation ($h^{+} \leq h^{*}$) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel ; lemmes de monotonie `step_mono`/`run_mono` démontrés sur un domaine jouet exécutable (§4bis) |
+| 5 | Heuristics | Classification admissible/non-admissible : $h^{add}$, $h^{max}$, $h^{FF}$, LM-cut, comparaison expérimentale — [approfondissements 5b et 5c](#approfondissements-du-palier-5) |
 | 6 | Domains | Domaines IPC standards (Blocks, Logistics, Gripper, Satellite), complexité croissante |
 | 7 | OR-Tools | CP-SAT, programmation par contraintes, modélisation de scheduling, contraintes alldifferent |
 | 8 | Temporal | PDDL 2.1, durées d'actions, parallélisme, contraintes temporelles, ordonnancement |
 | 9 | HTN | Planification hiérarchique : tâches primitives/abstraites, méthodes, HDDL, SHOP2 |
-| 10 | LLM-Planning | Planification avec LLMs, prompting, plan repair, limites et avantages |
+| 10 | LLM-Planning | Planification avec LLMs, prompting, plan repair, limites et avantages — [approfondissement 10b](#approfondissement-du-palier-10) |
 | 11 | Unified-Planning | Interface multi-solveurs, comparaison croisée, portabilité du modèle — + optimisation `MinimizeActionCosts` (optimal bat satisficing de 7 unités) [#7592] |
 | 12 | LOOP | Learning to Plan : state encoder, policy network, value network, 85.8% IPC coverage |
 | 13 | Mesure-Qualite-Plans | **Mesurer la qualité des plans** : 5 configurations Fast Downward sur une tour de 4 blocs — A* avec heuristiques blind, hmax, lmcut et fast-forward (les quatre trouvent le plan optimal de 6 actions, en évaluant de 22 à 121 états selon l'heuristique), plus une recherche greedy qui s'en écarte (10 actions, 20 états) ; recherche naïve BFS en Python en contrepoint |
@@ -266,10 +265,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 |---|----------|--------|---------|-------|
 | 4 | [Planners-04-Fast-Downward-Python](02-Classical/Planners-04-Fast-Downward-Python.ipynb) | Python | Architecture FD, Docker, A*, GBFS, EHC, heuristiques | 45 min |
 | 4 (C#) | [Planners-04-Fast-Downward-Csharp](02-Classical/Planners-04-Fast-Downward-Csharp.ipynb) | .NET (C#) | Twin C# du 4 : Partie 1 from-scratch, sans Docker (planificateur SAS+ prevail/pre/eff, A\*/GBFS/EHC, h^max/h^FF par RPG, domaines Ferry + Logistics) ; Partie 2 : Fast Downward via l'API Docker, port 8200 (See #4956) | 45 min |
-| 5 | [Planners-05-Heuristics-Python](02-Classical/Planners-05-Heuristics-Python.ipynb) | Python | h-add, h-max, h-FF, landmarks | 40 min |
-| 5 (C#) | [Planners-05-Heuristics-Csharp](02-Classical/Planners-05-Heuristics-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : Partie 1 from-scratch (h-max/h-add/h-FF/landmarks, démo non-admissibilité h^add) ; Partie 2 : h* = 4 validé sur Blocks World par Fast Downward via l'API Docker, port 8200, avec la comparaison LM-cut (See #4956) | 40 min |
-| 5b | [Planners-05b-Lean-Relaxation-Lean](02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de l'admissibilité de la relaxation (h⁺ ≤ h\*) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel, lemmes de monotonie `step_mono`/`run_mono` sur domaine jouet exécutable (cf [#4053](https://github.com/jsboige/CoursIA/issues/4053) création du lake / PR #4168, companion natif) | 45 min |
-| 5c | [Planners-05c-Differentiel-Atteignabilite-Python](02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb) | Python | **Différentiel d'atteignabilité** (strate 7) : protocole en 4 pas — inatteignabilité **prouvée** par énumération exhaustive (36 états), contrôle d'effort (BFS/A\*+h_max/IDDFS échouent sur le même espace, budgets rapportés), primitive **nommée et payante** (`raft-across`, planchette consommée + détour), delta mesuré (Δ={g1,g2}, h\* 7 et 6, espace 36→60). Consomme les théorèmes du lake `planning_lean` (h_max ≤ h⁺ ≤ h\*, `Admissibility.lean:41`) — chaîne h_max(3) ≤ h\*(8) strict vérifiée, rive droite invisible même au monde relaxé. Stdlib pur, déterministe (See #12233) | 45 min |
+| 5 | [Planners-05-Heuristics-Python](02-Classical/Planners-05-Heuristics-Python.ipynb) · [Planners-05-Heuristics-Csharp](02-Classical/Planners-05-Heuristics-Csharp.ipynb) | Python · .NET (C#) | h-add, h-max, h-FF, landmarks ; jumeau C# : Partie 1 from-scratch (h-max/h-add/h-FF/landmarks, démo non-admissibilité h^add) ; Partie 2 : h* = 4 validé sur Blocks World par Fast Downward via l'API Docker, port 8200, avec la comparaison LM-cut (See #4956) — [approfondissements 5b et 5c](#approfondissements-du-palier-5) | 40 min |
 | 6 | [Planners-06-Domains-Python](02-Classical/Planners-06-Domains-Python.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min |
 | 6 (C#) | [Planners-06-Domains-Csharp](02-Classical/Planners-06-Domains-Csharp.ipynb) | .NET (C#) | Twin C# du 6 : Partie 1 from-scratch (modèle Atom/Action/State, BFS forward + anti-cycle) sur Block World, Hanoï et Gripper ; Partie 2 : Fast Downward 24.06.1 via l'API Docker, port 8200, sur ces domaines (See #4956) | 45 min |
 
@@ -289,12 +285,30 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
-| 10 | [Planners-10-LLM-Planning-Python](04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb) | Python | LLMs pour la planification, prompting, plan repair | 50 min |
+| 10 | [Planners-10-LLM-Planning-Python](04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb) | Python | LLMs pour la planification, prompting, plan repair — [approfondissement 10b](#approfondissement-du-palier-10) | 50 min |
 | 11 | [Planners-11-Unified-Planning-Python](04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb) | Python | Interface unifiée, multi-solveurs, comparaisons | 40 min |
 | 12 | [Planners-12-LOOP-Python](04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb) | Python | Learning to Plan, modèles neuronaux pour heuristiques | 45 min |
-| 10b | [Planners-10b-LLM-Space-Reducer-Python](04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb) | Python | Le LLM comme réducteur d'espace de recherche : mini-DSL ARC, trois bras mesurés (exhaustif borné, LLM-direct, LLM-réducteur, position aicpp) | 40 min |
 
 ---
+
+### Approfondissements du palier 5
+
+Ces notebooks complètent le notebook 5 (Heuristics) : 5b formalise une propriété de son cadre heuristique, et 5c étudie l'effet d'une primitive sur l'atteignabilité.
+
+Pour 5b : Companion **natif** (kernel Lean 4) : preuve formelle 0-sorry de l'admissibilité de la relaxation ($h^{+} \leq h^{*}$) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel ; lemmes de monotonie `step_mono`/`run_mono` démontrés sur un domaine jouet exécutable (§4bis).
+
+| # | Notebook | Kernel | Apport | Durée |
+|---|---|---|---|---|
+| 5b | [Planners-05b-Lean-Relaxation-Lean](02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de l'admissibilité de la relaxation (h⁺ ≤ h\*) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel, lemmes de monotonie `step_mono`/`run_mono` sur domaine jouet exécutable (cf [#4053](https://github.com/jsboige/CoursIA/issues/4053) création du lake / PR #4168, companion natif) | 45 min |
+| 5c | [Planners-05c-Differentiel-Atteignabilite-Python](02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb) | Python | **Différentiel d'atteignabilité** (strate 7) : protocole en 4 pas — inatteignabilité **prouvée** par énumération exhaustive (36 états), contrôle d'effort (BFS/A\*+h_max/IDDFS échouent sur le même espace, budgets rapportés), primitive **nommée et payante** (`raft-across`, planchette consommée + détour), delta mesuré (Δ={g1,g2}, h\* 7 et 6, espace 36→60). Consomme les théorèmes du lake `planning_lean` (h_max ≤ h⁺ ≤ h\*, `Admissibility.lean:41`) — chaîne h_max(3) ≤ h\*(8) strict vérifiée, rive droite invisible même au monde relaxé. Stdlib pur, déterministe (See #12233) | 45 min |
+
+### Approfondissement du palier 10
+
+Le notebook 10b prolonge le notebook 10 en déplaçant le LLM du rôle de solveur vers celui de réducteur d'espace ; la correction reste au solveur déterministe.
+
+| # | Notebook | Kernel | Apport | Durée |
+|---|---|---|---|---|
+| 10b | [Planners-10b-LLM-Space-Reducer-Python](04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb) | Python | Le LLM comme réducteur d'espace de recherche : mini-DSL ARC, trois bras mesurés (exhaustif borné, LLM-direct, LLM-réducteur, position aicpp) | 40 min |
 
 ## Qu'est-ce que la planification ?
 
