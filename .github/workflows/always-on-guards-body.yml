@@ -163,7 +163,8 @@ jobs:
           PAYLOAD_BODY: ${{ github.event.pull_request.body }}
         run: |
           # Une reponse vide reussie est un corps vide, pas une panne.
-          # En cas d'echec, gh peut ecrire un document d'erreur sur stdout.
+          # En cas d'echec, gh peut ecrire une erreur sur stdout ; le repli ci-dessous
+          # remplace LIVE par le payload avant son utilisation.
           if [ -n "${PR_NUMBER:-}" ] && LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null); then
             echo "[body-live] corps courant lu via API : ${#LIVE} chars (#15697)"
           else
