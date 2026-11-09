@@ -889,15 +889,22 @@ def _partition_output_added(diffs, base_nb, head_nb):
     base_sources = _code_source_by_id(base_nb)
     head_sources = _code_source_by_id(head_nb)
     base_only = set(base_ids) - set(head_ids)
+    head_only = set(head_ids) - set(base_ids)
     added, drift = [], []
     for cell in diffs:
         if isinstance(cell, int):
             b_idx = h_idx = cell
         else:
             h_idx = head_ids[cell]
-            twin = cell if cell in base_ids else next(
-                (b for b in sorted(base_only)
-                 if base_sources.get(b) == head_sources.get(cell)), None)
+            twin = cell if cell in base_ids else None
+            if twin is None:
+                source = head_sources.get(cell)
+                candidates = [b for b in base_only
+                              if base_sources.get(b) == source]
+                head_candidates = [h for h in head_only
+                                   if head_sources.get(h) == source]
+                if len(candidates) == len(head_candidates) == 1:
+                    twin = candidates[0]
             b_idx = base_ids.get(twin, -1)
         if (0 <= b_idx < len(base_cells) and 0 <= h_idx < len(head_cells)
                 and base_cells[b_idx].get("outputs") == []

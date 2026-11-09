@@ -1067,3 +1067,33 @@ def test_existing_non_float_output_is_not_treated_as_empty(monkeypatch):
     result = _patched_run(monkeypatch, base, head)
     assert result["findings"][0]["signature_drift_cells"] == [0]
     assert result["output_added"] == []
+
+
+def test_ambiguous_reidentified_source_remains_drift(monkeypatch):
+    base = _nb("python3", "3.11", "")
+    head = _nb("python3", "3.11", "")
+    def cell(cid, outputs):
+        return {"cell_type": "code", "id": cid, "source": "print(values)",
+                "outputs": outputs}
+    anchor = cell("anchor", [])
+    base["cells"] = [anchor, cell("a", []),
+                     cell("b", [{"text": "[1.0, 1.0]"}])]
+    head["cells"] = [anchor.copy(), cell("new", [{"text": "[2.0, 2.0]"}])]
+    result = _patched_run(monkeypatch, base, head)
+    assert result["findings"][0]["signature_drift_cells"] == ["new"]
+    assert result["output_added"] == []
+
+
+def test_multiple_reidentified_heads_do_not_prove_output_added(monkeypatch):
+    base = _nb("python3", "3.11", "")
+    head = _nb("python3", "3.11", "")
+    def cell(cid, outputs):
+        return {"cell_type": "code", "id": cid, "source": "print(values)",
+                "outputs": outputs}
+    anchor = cell("anchor", [])
+    base["cells"] = [anchor, cell("old", [])]
+    head["cells"] = [anchor.copy(), cell("new1", [{"text": "[1.0, 2.0]"}]),
+                     cell("new2", [{"text": "[2.0, 3.0]"}])]
+    result = _patched_run(monkeypatch, base, head)
+    assert result["findings"][0]["signature_drift_cells"] == ["new1", "new2"]
+    assert result["output_added"] == []
