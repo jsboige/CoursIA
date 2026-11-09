@@ -15,14 +15,21 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from check_credited_examples import is_credited_example_header
-from count_exercises import count_exercises_in_notebook
+if __package__:
+    from .check_credited_examples import is_credited_example_header
+    from .count_exercises import count_exercises_in_notebook
+else:
+    from check_credited_examples import is_credited_example_header
+    from count_exercises import count_exercises_in_notebook
 
 
 def inventory(path: Path, notebook_path: str) -> dict:
     """Retourne des localisateurs et les preuves des organes existants.
 
-    ``notebook_path`` est le chemin fourni par l'appelant, relatif au dépôt.
+    ``notebook_path`` est le localisateur fourni par l'appelant. En ligne de
+    commande, c'est le chemin transmis, qui peut être absolu ; pour obtenir un
+    chemin relatif au dépôt, lancer la commande depuis sa racine et fournir un
+    chemin relatif. Ce champ peut donc contenir un chemin propre à la machine.
     Les localisateurs ne sont valables que pour cette version du carnet. Une
     erreur de lecture ou d'analyse est propagée, jamais convertie en inventaire
     vide. Les comptes et exclusions restent ceux des organes propriétaires.
@@ -56,7 +63,7 @@ def inventory(path: Path, notebook_path: str) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("notebook", type=Path, help="Chemin du carnet à inventorier")
+    parser.add_argument("notebook", type=Path, help="Chemin du carnet à inventorier, repris dans la sortie")
     args = parser.parse_args()
     print(json.dumps(inventory(args.notebook, args.notebook.as_posix()), ensure_ascii=False, indent=2))
 

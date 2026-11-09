@@ -1,5 +1,6 @@
 """Contrat de l'inventaire et limites des localisateurs."""
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -49,3 +50,19 @@ def test_invalid_input_fails(tmp_path):
         inventory(path, "broken.ipynb")
     with pytest.raises(FileNotFoundError):
         inventory(tmp_path / "absent.ipynb", "absent.ipynb")
+
+
+@pytest.mark.parametrize("entrypoint", [
+    ["-m", "scripts.notebook_tools.curriculum_entity_inventory"],
+    ["scripts/notebook_tools/curriculum_entity_inventory.py"],
+])
+def test_cli_entrypoints_from_repo_root(tmp_path, entrypoint):
+    path = write_nb(tmp_path, [cell("code", "# Exercice 1\npass\n")])
+    repo = Path(__file__).resolve().parents[3]
+    run = subprocess.run(
+        [sys.executable, *entrypoint, str(path)], cwd=repo,
+        check=True, capture_output=True, text=True,
+    )
+    result = json.loads(run.stdout)
+    assert result["notebook"] == path.as_posix()
+    assert sum(item["count"] for item in result["exercises"]) == 1
