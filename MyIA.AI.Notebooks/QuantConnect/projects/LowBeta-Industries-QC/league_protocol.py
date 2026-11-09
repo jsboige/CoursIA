@@ -45,7 +45,7 @@ for path in (str(QUANT / "projects"), str(SCRIPTS)):
         sys.path.insert(0, path)
 
 from analyze_arms import _call, _chart, _points  # noqa: E402 -- acces QC, meme plafond de flotte
-from shadow_replay import qc_daily_equity  # noqa: E402 -- contrat de lecture de la trace
+from shadow_replay import QC_EQUITY_SERIES, qc_daily_equity  # noqa: E402 -- contrat de lecture de la trace
 
 # Fenetres du protocole de la ligue (coupee au 1er janvier 2025).
 WINDOWS = {
@@ -112,17 +112,49 @@ def cmd_fetch(args) -> int:
 
 # ---------------------------------------------------------------------------- slice
 
-def _daily(path: Path) -> tuple[list[str], list[float]]:
-    """La serie journaliere d'un graphique "shadow", validee par l'organe (#18923)."""
+def _raw_points(chart: dict) -> list[tuple[int, float]]:
+    """Les points (t, v) de la trace, tries par date.
+
+    Seules les series du contrat `e0..e4` sont lues : c'est ce que
+    l'organe (`qc_daily_equity`) compte, et les deux lectures doivent
+    couvrir le meme ensemble de seances.
+
+    Les horodatages sont **conserves** : le contrat `e0..e4` se relit par
+    `fromtimestamp`, une date en chaine de caracteres y echouerait.
+    """
+    series = chart.get("series") or {}
+    points = []
+    for key in QC_EQUITY_SERIES:
+        for p in (series.get(key) or {}).get("values") or []:
+            t, v = (p.get("x"), p.get("y")) if isinstance(p, dict) else (p[0], p[-1])
+            if t is not None and v is not None:
+                points.append((int(t), float(v)))
+    return sorted(points)
+
+
+def _daily(path: Path) -> tuple[list[str], list[float], list[tuple[int, float]]]:
+    """La serie journaliere d'un graphique "shadow", validee par l'organe (#18923).
+
+    REND les dates, les valeurs ET les points bruts : la re-encode par
+    fenetre doit conserver l'horodatage d'origine.
+    """
     chart = json.loads(path.read_text(encoding="utf-8"))
-    return qc_daily_equity(chart)
+    dates, equity = qc_daily_equity(chart)
+    points = _raw_points(chart)
+    if len(points) != len(dates):
+        raise SystemExit(f"{path.name} : {len(points)} points pour {len(dates)} seances")
+    return dates, equity, points
 
 
-def _encode(dates: list[str], equity: list[float]) -> dict:
-    """Re-encode une serie journaliere au contrat `e0..e4` : le cycle commence en e0."""
+def _encode(points: list[tuple[int, float]]) -> dict:
+    """Re-encode une serie journaliere au contrat `e0..e4` : le cycle commence en e0.
+
+    Les horodatages d'origine sont conserves : l'organe de la ligue lit les
+    points par `fromtimestamp` et refuse une date en chaine de caracteres.
+    """
     series = {f"e{k}": {"values": []} for k in range(5)}
-    for i, (d, v) in enumerate(zip(dates, equity)):
-        series[f"e{i % 5}"]["values"].append([d, float(v)])
+    for i, (t, v) in enumerate(points):
+        series[f"e{i % 5}"]["values"].append([int(t), float(v)])
     return {"name": "shadow", "series": series}
 
 
@@ -134,21 +166,29 @@ def cmd_slice(args) -> int:
     arms = [arm for arm in index if arm != "ref"]
     series = {}
     for arm in arms:
-        dates, equity = _daily(src / f"{arm}_shadow.json")
-        series[arm] = (dates, equity)
+        dates, equity, points = _daily(src / f"{arm}_shadow.json")
+        series[arm] = (dates, equity, points)
         print(f"{arm}: {len(dates)} seances, {dates[0]} -> {dates[-1]}", flush=True)
     for window, (lo, hi) in WINDOWS.items():
+        kept = {}
         for arm in arms:
-            dates, equity = series[arm]
-            keep = [(d, v) for d, v in zip(dates, equity) if lo <= d <= hi]
+            dates, equity, points = series[arm]
+            keep = [pt for pt, d in zip(points, dates) if lo <= d <= hi]
             if not keep:
                 raise SystemExit(f"{window}/{arm} : aucune seance dans la fenetre")
-            chart = _encode([d for d, _ in keep], [v for _, v in keep])
+            kept[arm] = ([d for d in dates if lo <= d <= hi], keep)
+            chart = _encode(keep)
             (out / f"{window}_{arm}.json").write_text(json.dumps(chart), encoding="utf-8")
-        n = {arm: len([1 for d in series[arm][0] if lo <= d <= hi]) for arm in arms}
+        n = {arm: len(kept[arm][1]) for arm in arms}
         print(f"{window} ({lo} -> {hi}) : {n}", flush=True)
         if len(set(n.values())) != 1:
             raise SystemExit(f"{window} : calendriers differents entre bras {n}")
+        # Meme nombre de seances ne veut pas dire memes seances : l'organe de
+        # la ligue apparie les rendements par date et refuse une divergence.
+        ref = kept[arms[0]][0]
+        for arm in arms[1:]:
+            if kept[arm][0] != ref:
+                raise SystemExit(f"{window} : les seances de {arm} different de {arms[0]}")
     return 0
 
 
