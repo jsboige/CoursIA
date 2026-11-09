@@ -3194,17 +3194,20 @@ def test_belt_publishes_the_run_deadline_before_the_claims_phase(
     assert pig._BELT_DEADLINE[0] is None, "l'echeance fuit apres le run"
 
 
-def test_belt_arms_the_run_wall_before_the_pool_load(monkeypatch, capsys):
-    """#23090 : le mur est DEJA publie quand `fetch_pool` s'ouvre.
+def test_belt_arms_the_pool_ceiling_before_the_pool_load(monkeypatch, capsys):
+    """#23090 + #25449 : une echeance est publiee quand `fetch_pool` s'ouvre.
 
-    Mesure fondatrice (po-2025, clone superficiel) : `--belt --lane` lance en
-    debut de cycle n'a rien rendu dans les 900 s de son propre budget, puis
-    plus de 40 min. Le diagnostic de l'issue est exact -- `_BELT_DEADLINE`
-    etait arme dans la branche `--belt`, donc apres le chargement du pool, et
-    les phases d'amont couraient sans aucune borne.
+    #23090 : le mur doit etre arme AVANT le chargement du pool, sinon les
+    phases d'amont courent sans aucune borne. Mesure fondatrice
+    (po-2025, clone superficiel) : `--belt --lane` lance en debut de cycle
+    n'a rien rendu dans les 900 s de son propre budget, puis plus de 40 min.
 
-    Le predicat est l'INTERIEUR de `fetch_pool` : c'est la que la sonde doit
-    deja lire une echeance, et lire un timeout ramene au budget du run.
+    #25449 : cette echeance d'amont n'est PLUS le budget de boucle -- celui-ci
+    s'arme a l'entree de la boucle, sinon un pool lent le vide (defaut de
+    l'issue : 0 s restants, 70 candidats ecartes comme si un filtre l'avait
+    decide). L'echeance d'amont est le PLAFOND PROPRE du pool : la sonde
+    garde son timeout par defaut tant que ce plafond n'est pas atteint, et
+    le run reste borne (fail-CLOSED) quand il l'est.
     """
     _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
     clock = _patched_clock(monkeypatch, start=3000.0)
@@ -3221,11 +3224,13 @@ def test_belt_arms_the_run_wall_before_the_pool_load(monkeypatch, capsys):
         rc = pig.main(["--lane", "myia-po-2025:CoursIA", "--belt",
                        "--belt-time-budget", "60", "--json"])
         assert rc == 0
-        assert seen["deadline"] == pytest.approx(3060.0), (
+        assert seen["deadline"] == pytest.approx(
+            3000.0 + pig._belt_pool_ceiling()), (
             "le chargement du pool s'ouvre sans echeance publiee (#23090) : "
-            "le budget du run ne borne pas ses phases d'amont")
-        assert seen["clamped"] == pytest.approx(60.0), (
-            "la sonde de pool garde son timeout par defaut malgre un budget")
+            "le plafond du pool ne borne pas ses phases d'amont")
+        assert seen["clamped"] == pytest.approx(90.0), (
+            "la sonde de pool est affamee par le budget de boucle (#25449) : "
+            "c'est le plafond PROPRE du pool qui doit la borner")
         assert pig._BELT_DEADLINE[0] is None, "l'echeance fuit apres le run"
     finally:
         pig._BELT_DEADLINE[0] = None
