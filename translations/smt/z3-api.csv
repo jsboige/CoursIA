@@ -11168,7 +11168,7 @@ s_ex5 = Solver()
 #                 puis bloquer le modele trouve (Or des differences sur les 6 etats)
 
 print(""Exercice 5 a completer : retirez les commentaires TODO et enumerez les colorations en bloquant chaque modele trouve."")",,,,,,,,8b3f0cbfaf77a562,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,bb576cb5,markdown,fr,b1992defb8a02f01,"### Exercice 6 — Diagnostiquer un emploi du temps impossible
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,bb576cb5,markdown,fr,eb591fa34fa8d411,"### Exercice 6 — Diagnostiquer un emploi du temps impossible
 
 Trois cours `C1`, `C2`, `C3` occupent chacun un créneau parmi `1`, `2`, `3`. Cinq contraintes :
 
@@ -11180,9 +11180,9 @@ Trois cours `C1`, `C2`, `C3` occupent chacun un créneau parmi `1`, `2`, `3`. Ci
 
 L'ensemble est insatisfiable. Posez les cinq contraintes avec `assert_and_track` et des étiquettes `e1` à `e5`, puis extrayez le noyau.
 
-**Indice** : la contrainte 5 est une implication — `Implies(t['C3'] == 2, t['C1'] == 3)` se pose telle quelle dans Z3. Le noyau rendu est un **sous-ensemble** des étiquettes : les contraintes acquittées suffisent à exister en compagnie de tout le reste, et vous pouvez le vérifier en retirant chaque contrainte coupable une à une.
+**Indice** : la contrainte 5 est une implication — `Implies(t['C3'] == 2, t['C1'] == 3)` se pose telle quelle dans Z3. Le noyau rendu est un **sous-ensemble** des étiquettes qui suffit, à lui seul, à rendre le problème insatisfiable : les contraintes absentes du noyau ne sont pas nécessaires au conflit. Pour savoir si ce noyau est minimal, retirez-en les contraintes une à une : si chaque retrait rend le problème satisfiable, aucune n'est superflue.
 
-**Étape 1** : déclarez les créneaux `t = {x: Int(x) for x in ['C1','C2','C3']}` bornés à `{1, 2, 3}`, puis étiquetez les cinq contraintes.",,,,,,,,b1992defb8a02f01,,,,,,,,,,,,,,,
+**Étape 1** : déclarez les créneaux `t = {x: Int(x) for x in ['C1','C2','C3']}` bornés à `{1, 2, 3}`, puis étiquetez les cinq contraintes.",,,,,,,,eb591fa34fa8d411,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,7f507ca6,code,fr,45488e151088c5f7,"# Exercice 6 : noyau d'insatisfiabilite d'un emploi du temps (etudiant)
 s_ex6 = Solver()
 # t = {x: Int(x) for x in ['C1','C2','C3']}      # TODO etudiant : creneau de chaque cours, domaine {1,2,3}
