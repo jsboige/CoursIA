@@ -125,7 +125,11 @@ def test_linux_sur_engagement_clampe_a_zero():
         "CommitLimit:     8000000 kB\n"
         "Committed_AS:   12000000 kB\n"
     )
-    statut = _linux_status_from_text(texte)
+    # Comptabilite de commit : branche lue uniquement en mode d'overcommit
+    # strict (#24801). Sans mode explicite, la garde lit MemAvailable+SwapFree,
+    # absentes du meminfo synthetique, et rend None -- les assertions clamp/
+    # plafond/used_pct decrites dans #24808 portent sur la branche stricte.
+    statut = _linux_status_from_text(texte, overcommit_mode=2)
     assert statut is not None, "une comptabilite de commit presente doit se lire"
     assert statut.avail_bytes == 0, f"marge attendue 0 (clamp), lu {statut}"
     assert statut.limit_bytes == 8_000_000 * 1024, statut.limit_bytes
