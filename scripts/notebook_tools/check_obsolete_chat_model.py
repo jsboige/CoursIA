@@ -113,6 +113,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from urllib.parse import urlsplit
 
 # ---------------------------------------------------------------------------
 # Constantes de la regle
@@ -256,24 +257,6 @@ def _dict_model_entry(node: ast.AST) -> ast.AST | None:
     return None
 
 
-def _url_targets_chat_completions(node: ast.AST) -> bool:
-    """L'URL d'un appel HTTP cible ``*/chat/completions`` ?
-
-    Lit un littéral constant ET les parties littérales d'une f-string
-    (``f"{base}/chat/completions"``) : la base interpolée est invisible,
-    mais le suffixe routier est un littéral fixe.
-    """
-    if isinstance(node, ast.Constant) and isinstance(node.value, str):
-        return "/chat/completions" in node.value
-    if isinstance(node, ast.JoinedStr):
-        for part in node.values:
-            if (isinstance(part, ast.Constant)
-                    and isinstance(part.value, str)
-                    and "/chat/completions" in part.value):
-                return True
-    return False
-
-
 def classify_chat_call(call: ast.Call, dspy_imported: bool) -> tuple[str, bool] | None:
     """Classe un Call en site chat -> (libelle, model_positionnel_bool).
 
@@ -303,9 +286,40 @@ def classify_chat_call(call: ast.Call, dspy_imported: bool) -> tuple[str, bool] 
     # extraction du "model" dans le corps (json=/data=) via _http_model_node.
     if (tuple(parts[-2:]) in (("requests", "post"), ("httpx", "post"))
             or tuple(parts[-3:]) == ("urllib", "request", "urlopen")):
-        if call.args and _url_targets_chat_completions(call.args[0]):
+        url = call.args[0] if call.args else next(
+            (kw.value for kw in call.keywords if kw.arg == "url"), None)
+        if (tuple(parts[-3:]) == ("urllib", "request", "urlopen")
+                and isinstance(url, ast.Call)
+                and attr_chain(url.func)[-1:] == ["Request"]):
+            url = url.args[0] if url.args else next(
+                (kw.value for kw in url.keywords if kw.arg == "url"), None)
+        if targets_chat_completions(url):
             return "http.chat.completions", False
     return None
+
+
+def targets_chat_completions(node: ast.AST | None) -> bool:
+    """Retourne vrai si l'URL contient explicitement la route chat.
+
+    Pour les f-strings, seule la partie litterale est examinee :
+    ``f"{base}/chat/completions"`` est reconnu, alors qu'un endpoint
+    dynamique sans cette route reste hors perimetre.
+    """
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        template = node.value
+    elif isinstance(node, ast.JoinedStr):
+        # Garder les separateurs query/fragment entre segments litteraux,
+        # meme si une interpolation les separe du texte qui suit.
+        template = "".join(value.value if isinstance(value, ast.Constant)
+                           and isinstance(value.value, str) else "{variable}"
+                           for value in node.values)
+    else:
+        return False
+    try:
+        path = urlsplit(template).path
+    except ValueError:
+        return False
+    return path.rstrip("/").endswith("/chat/completions")
 
 
 def model_arg_node(call: ast.Call, positional: bool) -> ast.AST | None:
@@ -705,6 +719,12 @@ class NotebookScanner:
         ``json=payload``), ce dernier résolu via ``dict_model_nodes``
         (scope local d'abord, puis module).
         """
+        request = call.args[0] if call.args else next(
+            (kw.value for kw in call.keywords if kw.arg == "url"), None)
+        if (tuple(attr_chain(call.func)[-3:]) == ("urllib", "request", "urlopen")
+                and isinstance(request, ast.Call)
+                and attr_chain(request.func)[-1:] == ["Request"]):
+            call = request
         body: ast.AST | None = None
         for kw in call.keywords:
             if kw.arg in ("json", "data"):
@@ -714,6 +734,21 @@ class NotebookScanner:
             body = call.args[1]  # urllib.request.urlopen(url, data)
         if body is None:
             return None
+        if isinstance(body, ast.Call):
+            if (isinstance(body.func, ast.Attribute)
+                    and body.func.attr == "encode"
+                    and isinstance(body.func.value, ast.Call)
+                    and attr_chain(body.func.value.func)[-2:] == ["json", "dumps"]
+                    and body.func.value.args and not body.keywords
+                    and (not body.args or (len(body.args) == 1
+                         and isinstance(body.args[0], ast.Constant)
+                         and isinstance(body.args[0].value, str)
+                         and body.args[0].value.lower() in ("utf-8", "utf8")))):
+                body = body.func.value.args[0]
+            elif attr_chain(body.func)[-2:] == ["json", "dumps"] and body.args:
+                body = body.args[0]
+            else:
+                return None
         if isinstance(body, ast.Dict):
             return _dict_model_entry(body)
         if isinstance(body, ast.Name):

@@ -120,6 +120,104 @@ def test_env_default_flagged():
     assert "getenv" in report["findings"][0]["via"]
 
 
+@pytest.mark.parametrize("client_call", [
+    'requests.post(f"{base}/chat/completions", json=payload)',
+    'httpx.post("https://example.test/v1/chat/completions", json=payload)',
+    ('urllib.request.urlopen(urllib.request.Request('
+     'f"{base}/chat/completions", '
+     'data=json.dumps(payload)))'),
+    ('urllib.request.urlopen(urllib.request.Request('
+     'url=f"{base}/chat/completions", '
+     'data=json.dumps(payload).encode("utf-8")))'),
+    ('urllib.request.urlopen(url=f"{base}/chat/completions", '
+     'data=json.dumps(payload).encode("utf-8"))'),
+    ('urllib.request.urlopen(url=urllib.request.Request('
+     'url=f"{base}/chat/completions", '
+     'data=json.dumps(payload).encode("utf-8")))'),
+    ('urllib.request.urlopen("https://example.test/v1/chat/completions", '
+     'payload)'),
+    ('requests.post(url=f"{base}/chat/completions", json=payload)'),
+    ('httpx.post(url="https://example.test/v1/chat/completions", '
+     'json=payload)'),
+])
+def test_raw_http_chat_payload_alias_and_env_default_flagged(client_call):
+    """Les clients HTTP bruts consomment le champ model du payload JSON."""
+    report = _analyze(nb(code(
+        'import json\n'
+        'm = os.getenv("OPENAI_CHAT_MODEL_ID", "gpt-4o-mini")\n'
+        'payload = {"model": m, "messages": []}\n'
+        f'{client_call}')))
+    assert len(report["findings"]) == 1
+    finding = report["findings"][0]
+    assert finding["model"] == "gpt-4o-mini"
+    assert finding["site"] == "http.chat.completions"
+    assert "OPENAI_CHAT_MODEL_ID" in finding["via"]
+
+
+def test_raw_http_inline_payload_and_literal_model_flagged():
+    report = _analyze(nb(code(
+        'requests.post("https://example.test/v1/chat/completions", '
+        'json={"model": "gpt-4o-mini", "messages": []})')))
+    assert len(report["findings"]) == 1
+    assert report["findings"][0]["model"] == "gpt-4o-mini"
+
+
+@pytest.mark.parametrize("source", [
+    'requests.post("https://example.test/v1/models", '
+    'json={"model": "gpt-4o-mini"})',
+    'httpx.post("https://example.test/v1/chat/completions", '
+    'json={"model": "gpt-5.6-luna"})',
+    'urllib.request.urlopen("https://example.test/v1/models")',
+    'requests.get("https://example.test/v1/chat/completions", '
+    'json={"model": "gpt-4o-mini"})',
+    'requests.post("https://[invalid/chat/completions", '
+    'json={"model": "gpt-4o-mini"})',
+])
+def test_raw_http_nonchat_or_current_calls_are_silent(source):
+    report = _analyze(nb(code(source)))
+    assert report["findings"] == []
+    assert report["unresolved"] == []
+
+
+def test_raw_http_query_and_unrelated_payload_do_not_create_chat_finding():
+    report = _analyze(nb(code(
+        'unused = {"model": "gpt-4o-mini"}\n'
+        'requests.post("https://example.test/v1/models?next="'
+        '"/chat/completions", json={"model": "gpt-4o-mini"})')))
+    assert report["findings"] == []
+    assert report["unresolved"] == []
+    assert report["stats"]["chat_sites"] == 0
+
+
+def test_raw_http_query_fstring_nest_pas_un_chemin_chat():
+    report = _analyze(nb(code(
+        'requests.post(f"https://example.test/v1/models?next={base}'
+        '/chat/completions", json={"model": "gpt-4o-mini"})')))
+    assert report["findings"] == []
+    assert report["stats"]["chat_sites"] == 0
+
+
+def test_urllib_payload_encode_modele_courant():
+    report = _analyze(nb(code(
+        'payload = {"model": "gpt-5.6-luna"}\n'
+        'urllib.request.urlopen(url=urllib.request.Request('
+        'url="https://example.test/v1/chat/completions", '
+        'data=json.dumps(payload).encode("utf-8")))')))
+    assert report["findings"] == []
+    assert report["unresolved"] == []
+    assert report["stats"]["chat_sites"] == 1
+
+
+def test_urllib_non_string_encode_argument_stays_unresolved():
+    report = _analyze(nb(code(
+        'payload = {"model": "gpt-4o-mini"}\n'
+        'urllib.request.urlopen(urllib.request.Request('
+        '"https://example.test/v1/chat/completions", '
+        'data=json.dumps(payload).encode(123)))')))
+    assert report["findings"] == []
+    assert len(report["unresolved"]) == 1
+
+
 def test_function_default_param_flagged():
     """04-1 : defaut de parametre consomme par l'appel chat."""
     report = _analyze(nb(code(
