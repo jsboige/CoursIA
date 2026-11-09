@@ -213,10 +213,11 @@ def test_l_argv_du_balayage_est_valide(monkeypatch):
     cmd = captures[0]
     assert cmd[:3] == ["gh", "api", "repos/o/r/issues/comments"]
     assert "--paginate" in cmd
+    assert cmd[cmd.index("-f") + 1] == f"per_page={gs.REST_PER_PAGE}"
     # DEUX elements : la forme que `fetch_open_issues` utilise deja.
     assert "-f" in cmd, f"`-f` n'est pas un element d'argv a part : {cmd}"
-    index = cmd.index("-f")
-    assert cmd[index + 1] == "since=2026-10-01T00:00:00Z", (
+    index = cmd.index("since=2026-10-01T00:00:00Z")
+    assert cmd[index - 1] == "-f", (
         f"`since=...` doit suivre `-f` comme element separe : {cmd}")
     # Et surtout PAS la forme fusionnee, qui part en `?+since=...`.
     assert "-f since=2026-10-01T00:00:00Z" not in cmd, (
@@ -265,6 +266,25 @@ def test_la_methode_GET_est_annoncee_pour_les_issues_ouvertes(monkeypatch):
     assert cmd[:3] == ["gh", "api", "repos/o/r/issues"]
     assert "GET" in cmd, f"la methode HTTP n'est pas annoncee : {cmd}"
     assert "state=open" in cmd
+    assert f"per_page={gs.REST_PER_PAGE}" in cmd
+
+
+def test_les_commentaires_par_issue_utilisent_la_taille_de_page_maximale(
+        monkeypatch):
+    """Les fils volumineux ne paient pas les pages de 30 elements par defaut."""
+    captures = []
+
+    def faux_run(cmd, **kw):
+        captures.append(list(cmd))
+        return types.SimpleNamespace(returncode=0, stdout="[]", stderr="")
+
+    monkeypatch.setattr(gs.subprocess, "run", faux_run)
+    gs.fetch_issue_comments("o/r", 42)
+    cmd = captures[0]
+    assert cmd[:3] == ["gh", "api", "repos/o/r/issues/42/comments"]
+    assert "--paginate" in cmd
+    assert "GET" in cmd and cmd[cmd.index("-X") + 1] == "GET"
+    assert cmd[cmd.index("-f") + 1] == f"per_page={gs.REST_PER_PAGE}"
 
 
 # --- ensure_comments --------------------------------------------------------
