@@ -259,6 +259,28 @@ on:
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+      # conway_lean (GOL, migration du wrapper lean-conway.yml supprime --
+      # dernier per-lake, #13751 axe workflows). Baseline "1" = compte reel
+      # distinct_code_sorry mesure au move (98 fichiers, naive 200 -> 1 reel :
+      # HashlifeMarginFragment.lean, framework sorry documente). Le profil
+      # axiom porte le MODELE du wrapper : target "*" + fail-on-sorry false
+      # allow-axioms: 79 native_decide axioms via @allow_axioms_conway.txt
+      # (liste explicite, source de verite #21905 -- le compte de ce
+      # commentaire est mesure contre le fichier par test_axiom_allow_file)
+      # (advisory -- le gate sorry bloquant, lui, vit dans sorry-baseline
+      # bidirectionnel) + i18n true (les _en sont des modules compiles).
+      # build-threads "1" herite du #23247 : OOM d'elaboration sans cap.
+      # La jambe target-coverage du wrapper n'est pas portee : cible "*",
+      # ecart nul par construction (meme trancher que knot).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json'
+      # Self-cover allow-list (#8712, dette du wrapper : lean-conway.yml ne
+      # la listait pas) : la liste EST la regle du gate axiom de ce lake --
+      # un nom ajoute/retire doit rejouer le gate qui l'applique.
+      - 'scripts/lean/allow_axioms_conway.txt'
       # Self-cover du contrat certifie herite du wrapper lean-social-choice.yml
       # supprime (#17374) : l'instrument ou son test change -> la jambe
       # certifiee de gametheory rejoue.
@@ -498,6 +520,28 @@ on:
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+      # conway_lean (GOL, migration du wrapper lean-conway.yml supprime --
+      # dernier per-lake, #13751 axe workflows). Baseline "1" = compte reel
+      # distinct_code_sorry mesure au move (98 fichiers, naive 200 -> 1 reel :
+      # HashlifeMarginFragment.lean, framework sorry documente). Le profil
+      # axiom porte le MODELE du wrapper : target "*" + fail-on-sorry false
+      # allow-axioms: 79 native_decide axioms via @allow_axioms_conway.txt
+      # (liste explicite, source de verite #21905 -- le compte de ce
+      # commentaire est mesure contre le fichier par test_axiom_allow_file)
+      # (advisory -- le gate sorry bloquant, lui, vit dans sorry-baseline
+      # bidirectionnel) + i18n true (les _en sont des modules compiles).
+      # build-threads "1" herite du #23247 : OOM d'elaboration sans cap.
+      # La jambe target-coverage du wrapper n'est pas portee : cible "*",
+      # ecart nul par construction (meme trancher que knot).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json'
+      # Self-cover allow-list (#8712, dette du wrapper : lean-conway.yml ne
+      # la listait pas) : la liste EST la regle du gate axiom de ce lake --
+      # un nom ajoute/retire doit rejouer le gate qui l'applique.
+      - 'scripts/lean/allow_axioms_conway.txt'
       # Self-cover du contrat certifie herite du wrapper lean-social-choice.yml
       # supprime (#17374) : l'instrument ou son test change -> la jambe
       # certifiee de gametheory rejoue.

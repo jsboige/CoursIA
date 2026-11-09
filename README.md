@@ -91,18 +91,20 @@ Le graphe ci-dessus lit le dépôt par **objectif** — ce qu'on veut construire
 flowchart LR
     A1(["1 · Search<br/>exploration, heuristiques"]) --> A2(["2 · Sudoku<br/>satisfaction de contraintes"])
     A2 --> A3(["3 · SymbolicAI<br/>connaissances, logique, planification"])
-    A3 --> A4(["4 · Probas<br/>incertitude, décision"])
-    A4 --> A5(["5 · GameTheory<br/>décision multi-agent"])
+    A3 --> A4(["4 · Probas<br/>incertitude, modèles graphiques"])
+    A4 --> A4b(["5 · Décision<br/>théorie de la décision"])
+    A4b --> A5(["6 · GameTheory<br/>décision multi-agent"])
     A1 -.-> AP(["Apprentissage<br/>ML · RL"])
     A2 -.-> AP
     A3 -.-> AP
     A4 -.-> AP
+    A4b -.-> AP
     A5 -.-> AP
 
     %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
     classDef stage fill:#f5f5f5,stroke:#333,stroke-width:1px,color:#333;
     classDef learn fill:#eef4ff,stroke:#333,stroke-width:1px,stroke-dasharray:4 3,color:#333;
-    class A1,A2,A3,A4,A5 stage;
+    class A1,A2,A3,A4,A4b,A5 stage;
     class AP learn;
 ```
 
@@ -111,11 +113,12 @@ flowchart LR
 | Recherche (*Part II — Problem-solving*) | **Search** | « introduit l'exploration et les heuristiques » |
 | Satisfaction de contraintes (*Part II*, chapitre 6) | **Sudoku** | [`Sudoku-06-AIMA-CSP`](MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-Python.ipynb) porte le nom du cadre ; la série « compare plusieurs paradigmes sur un problème constant » |
 | Connaissances et raisonnement (*Part III — Knowledge, Reasoning, and Planning*) | **SymbolicAI** | « relie logique, graphes de connaissances, planification, solveurs SMT et preuves Lean » |
-| Raisonnement dans l'incertain (*Part IV — Uncertain Knowledge and Reasoning*) | **Probas** | « apprend à représenter l'incertitude et à décider » |
-| Décision multi-agent | **GameTheory** | « ajoute des agents dont les choix dépendent les uns des autres » |
+| Raisonnement dans l'incertain (*Part IV — Uncertain Knowledge and Reasoning*) | **Probas** | « apprend à représenter l'incertitude — réseaux bayésiens, modèles graphiques, causalité » |
+| Théorie de la décision (*Part IV*, chapitres 16-17) | **Probas/DecisionTheory** | « transforme un posterior quantifié en la meilleure action — utilité espérée, valeur de l'information, MDP » |
+| Décision multi-agent (*Part IV*, chapitre 18) | **GameTheory** | « ajoute des agents dont les choix dépendent les uns des autres » |
 | Apprentissage, à chaque étage | **ML**, **RL** | « transforme ces bases en pipeline d'apprentissage supervisé » ; « ces stratégies peuvent être apprises par l'expérience » |
 
-L'apprentissage n'est pas une sixième étape : c'est une **couche disponible à chaque étage** — d'où les liens pointillés. On apprend une heuristique de recherche, un modèle d'incertitude ou une stratégie de jeu sans changer d'étage. Les deux lectures ne se concurrencent pas : la première répond à « par où commencer, avec les moyens dont je dispose », la seconde à « comment ces séries s'emboîtent conceptuellement ».
+L'apprentissage n'est pas une septième étape : c'est une **couche disponible à chaque étage** — d'où les liens pointillés. On apprend une heuristique de recherche, un modèle d'incertitude ou une stratégie de jeu sans changer d'étage. Les deux lectures ne se concurrencent pas : la première répond à « par où commencer, avec les moyens dont je dispose », la seconde à « comment ces séries s'emboîtent conceptuellement ».
 
 ---
 
@@ -514,8 +517,8 @@ s'installent directement via leur `requirements.txt`.
 | Probas | `Probas/Infer/Infer-01-Setup.ipynb`, `Probas/PyMC/PyMC-01-Setup.ipynb` | `Probas/Infer/scripts/setup_environment.ps1` |
 | QuantConnect | `QuantConnect/Python/QC-Py-01-Setup.ipynb` | `requirements.txt` |
 | Lean | `SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb` | `SymbolicAI/Lean/scripts/setup_wsl_python.sh`, `SymbolicAI/Lean/scripts/validate_lean_setup.py` |
-| Planners | `SymbolicAI/Planners/00-Environment/Planners-0-Setup.ipynb` | `requirements.txt` ; `SymbolicAI/scripts/install_clingo.py` |
-| SemanticWeb | `SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb` | kernel .NET Interactive |
+| Planners | `SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb` | `requirements.txt` ; `SymbolicAI/scripts/install_clingo.py` |
+| SemanticWeb | `SymbolicAI/SemanticWeb/SW-01-Setup-CSharp.ipynb` | kernel .NET Interactive |
 | SmartContracts | `SymbolicAI/SmartContracts/00-Foundations/SC-01-Setup-Foundry-Python.ipynb`, `SC-02-Setup-Web3py-Python.ipynb` | `SymbolicAI/SmartContracts/setup_env.py`, `SymbolicAI/SmartContracts/scripts/setup_wsl_smartcontracts.sh` |
 | Tweety | `SymbolicAI/Tweety/Tweety-01-Setup-Python.ipynb` | `tweety_init.py` (JDK auto-télécharge) |
 | Argument Analysis | `SymbolicAI/Argument_Analysis/Argumentation-08c-UI-Configuration-Python.ipynb` | `install_jdk_portable.py` |

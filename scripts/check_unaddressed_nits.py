@@ -4048,8 +4048,14 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
              f.get("status") or "", f.get("previous_filename") or "")
             for f in (commit.get("files") or [])
         ]
+        # #20066 (piste 2 complete) : le patch par chemin, meme appel deja
+        # paye -- c'est la matiere premiere de la survie des symboles (les
+        # def/class des lignes AJOUTEES par le commit rembobine).
+        patches = {f.get("filename") or "": f.get("patch") or ""
+                   for f in (commit.get("files") or []) if f.get("patch")}
         if head or tree:
-            state[sha] = {"message": head or "", "tree": tree, "files": files}
+            state[sha] = {"message": head or "", "tree": tree, "files": files,
+                          "patches": patches}
     return state
 
 
@@ -4159,6 +4165,83 @@ def _rebase_preserved_by_path(rewound_files, head_blobs) -> bool:
     return _rebase_blob_state(rewound_files, head_blobs) == _BLOB_PRESERVED
 
 
+# #20066 (piste 2 complete, residu nomme en c.6392789418) : quand l'identite
+# byte-par-byte echoue parce que la PR a CONTINUE de travailler les memes
+# fichiers (l'etat `differs` ordinaire d'une PR qui itere), le FOND de la
+# levee reste verifiable autrement : les SYMBOLES (def/class) introduces par
+# le commit rembobine survivent-ils a la tete ? Survie complete = la
+# substance citee par la levee est presente ; le mouvement des blobs est
+# celui du travail qui a grandi, pas celui d'une disparition. Toute donnee
+# manquante (pas de patch, fichier non-.py, blob de tete illisible, trop de
+# fichiers) reste REFUS (fail-closed, contrat de l'issue : « le meme
+# fail-closed sur donnee manquante ») ; la piste ne desserre jamais le gate
+# sur un doute, elle ne le desserre que sur une presence MESUREE.
+_SYM_ADDED_RE = re.compile(r"^\+\s*(?:async\s+)?(?:def|class)\s+([A-Za-z_]\w*)")
+_SYMBOLS_PER_FILE_CAP = 50
+_SYMBOL_FILES_CAP = 5
+
+
+def _introduced_symbols(patches: dict) -> dict[str, list[str]]:
+    """Extraire les symboles INTRODUITS par le commit rembobine, fichier
+    .py par fichier .py : les noms des def/class des lignes ajoutees du
+    patch (un `+` en premiere colonne). Les lignes de contexte et les
+    deletions ne comptent pas ; un commit qui ne touche que de la prose ou
+    des notebooks rend un dict vide -- il n'y a rien a verifier."""
+    out: dict[str, list[str]] = {}
+    for path, patch in (patches or {}).items():
+        if not path.endswith(".py") or not patch:
+            continue
+        names: list[str] = []
+        for line in patch.splitlines():
+            if line.startswith("+++"):
+                continue
+            m = _SYM_ADDED_RE.match(line)
+            if m:
+                names.append(m.group(1))
+            if len(names) >= _SYMBOLS_PER_FILE_CAP:
+                break
+        if names:
+            out[path] = names
+    return out
+
+
+def _symbols_survive_head(introduced: dict, head_blobs: dict,
+                          fetch_blob) -> dict:
+    """Verifier que chaque symbole introduit par le commit rembobine existe
+    encore dans le fichier correspondant de la tete.
+
+    `fetch_blob(blob_sha)` rend le CONTENU du blob (injected : reseau en
+    production, fontion pure dans les tests) et peut lever. Rend :
+    `{"verdict": "all_survive", "checked": n, "files": m}` quand tout
+    survit ; `{"verdict": "missing", "missing": [...], "checked": n}` quand
+    au moins un symbole (ou son fichier entier) est parti ; `{"verdict":
+    "no_data", "reason": ...}` sur blob illisible -- fail-closed, l'appelant
+    garde le refus `differs`."""
+    missing: list[str] = []
+    checked = 0
+    for path, names in introduced.items():
+        blob = (head_blobs or {}).get(path)
+        if not blob:
+            # fichier parti de la tete : ses symboles sont partis avec lui
+            missing.extend(names)
+            checked += len(names)
+            continue
+        try:
+            content = fetch_blob(blob)
+        except Exception:
+            return {"verdict": "no_data", "reason": "blob_unreadable",
+                    "path": path}
+        for name in names:
+            checked += 1
+            if not re.search(rf"(?:def|class)\s+{re.escape(name)}\b", content):
+                missing.append(name)
+    if missing:
+        return {"verdict": "missing", "missing": sorted(set(missing)),
+                "checked": checked}
+    return {"verdict": "all_survive", "checked": checked,
+            "files": len(introduced)}
+
+
 def _pr_head_oid(data: dict) -> str:
     """OID de la tete de la PR : `headRefOid` si present, sinon le dernier
     commit portant un `oid` (le plus recent de la liste chronologique)."""
@@ -4172,6 +4255,40 @@ def _pr_head_oid(data: dict) -> str:
     return ""
 
 
+def _resolve_absent_sha_symbols(state: dict, head_blobs: dict) -> dict:
+    """#20066 (piste 2 complete) : survie des symboles, par SHA resolu.
+
+    Ne s'execute QUE pour les SHAs dont l'identite par chemin rend
+    `differs` (le cas ou l'issue mesure un mensonge du libelle) et qui ont
+    introduit des def/class dans des .py. Le contenu des blobs de tete se
+    prend a raison d'un appel par fichier touche, cappe a
+    `_SYMBOL_FILES_CAP` fichiers par SHA : au-dela, `no_data` et le refus
+    `differs` conserve. Sans reseau (audit retro, `_resolve_absent_sha_state`
+    n'a rien resolu), rend {} et l'analyse retombe sur le libelle courant."""
+    import base64
+
+    out: dict[str, dict] = {}
+    for sha, v in (state or {}).items():
+        if _rebase_blob_state(v.get("files") or [], head_blobs or {}) \
+                != _BLOB_DIFFERS:
+            continue
+        introduced = _introduced_symbols(v.get("patches") or {})
+        if not introduced:
+            continue  # rien de mesurable : le libelle differs reste le vrai
+        if len(introduced) > _SYMBOL_FILES_CAP:
+            out[sha] = {"verdict": "no_data", "reason": "too_many_files",
+                        "files": len(introduced)}
+            continue
+
+        def fetch(blob_sha: str, _repo: str = REPO) -> str:
+            obj = gh_json(["api", f"repos/{_repo}/git/blobs/{blob_sha}"])
+            return base64.b64decode(obj.get("content") or "").decode(
+                "utf-8", "replace")
+
+        out[sha] = _symbols_survive_head(introduced, head_blobs, fetch)
+    return out
+
+
 def _attach_absent_sha_context(data: dict) -> None:
     """Resolution serveur du contexte SHA, AVANT analyse (qui reste pure).
 
@@ -4179,6 +4296,8 @@ def _attach_absent_sha_context(data: dict) -> None:
     #13639), arbres des commits rembobines plus arbre de la tete (#15556),
     et blobs par chemin (#15973) -- un appel reseau par SHA, plus un pour
     la tete, plus un pour sa carte chemin->blob quand un SHA absent existe.
+    #20066 piste 2 : plus, par SHA dont l'identite rend `differs`, le
+    contenu des blobs de tete touches (cappe) pour la survie des symboles.
     """
     state = _resolve_absent_sha_state(data)
     data["_absent_sha_messages"] = {s: v["message"] for s, v in state.items()
@@ -4217,6 +4336,7 @@ def _attach_absent_sha_context(data: dict) -> None:
         except subprocess.CalledProcessError:
             head_blobs = {}
     data["_head_blobs"] = head_blobs
+    data["_absent_sha_symbols"] = _resolve_absent_sha_symbols(state, head_blobs)
 
 
 # #16780 — un corps reduit a un chemin local (l'accident `gh --body
@@ -5339,11 +5459,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         rewound_files_map = pr_data.get("_absent_sha_files") or {}
         head_tree = pr_data.get("_head_tree")
         head_blobs = pr_data.get("_head_blobs") or {}
+        sha_symbols_map = pr_data.get("_absent_sha_symbols") or {}
         kept_lifts = []
         for (t, lifter, lift_body) in explicit_lifts:
             refused = None
             refused_known_change = False
             refused_blob_state = None
+            refused_symbols = None
             warned = None
             artifact = None
             for sha in sorted(_cited_shas(lift_body)):
@@ -5381,8 +5503,22 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                         if artifact is None:
                             artifact = (sha, "rebase_preserved")
                         continue
+                    # #20066 (piste 2 complete) -- l'identite byte-par-byte
+                    # a echoue parce que la PR a continue de travailler ;
+                    # avant de refuser, regarder si le FOND de la levee a
+                    # survécu : tous les symboles introduits par le commit
+                    # rembobine existent encore a la tete ? Survie complete
+                    # = artefact non bloquant (le travail cite est present) ;
+                    # symbole absent = refus, NOMME ; donnee manquante =
+                    # refus `differs` courant (fail-closed inchange).
+                    sha_symbols = sha_symbols_map.get(sha) or {}
+                    if sha_symbols.get("verdict") == "all_survive":
+                        if artifact is None:
+                            artifact = (sha, "symbols_survive")
+                        continue
                     refused = sha
                     refused_blob_state = blob_state
+                    refused_symbols = sha_symbols or None
                     if tree and head_tree:
                         refused_known_change = True
                     break
@@ -5391,7 +5527,8 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                 voided_lifts.append(
                     {"author": lifter, "at": t.isoformat(), "sha": refused,
                      "tree_differs": refused_known_change,
-                     "blob_state": refused_blob_state})
+                     "blob_state": refused_blob_state,
+                     "symbols": refused_symbols})
             else:
                 kept_lifts.append((t, lifter, lift_body))
                 if artifact:
@@ -5864,6 +6001,13 @@ def _print_sha_notes(result: dict) -> None:
             why = "arbre identique à la tête"
         elif a["reason"] == "rebase_preserved":
             why = "rebase sur base avancée, blobs identiques par chemin"
+        elif a["reason"] == "symbols_survive":
+            # #20066 piste 2 : le blob a bougé (la PR a continué de
+            # travailler), mais la SUBSTANCE de la levée est mesurée
+            # présente -- chaque def/class introduit par le commit cité
+            # existe encore à la tête.
+            why = ("blobs modifiés mais symboles introduits par la levée "
+                   "tous présents à la tête")
         else:
             why = "fichiers de la PR inchangés"
         print(f"  [i] levee de {a['author']} à {a['at']} cite {a['sha']} "
@@ -5880,6 +6024,14 @@ def _print_sha_notes(result: dict) -> None:
         elif v.get("blob_state") == _BLOB_UNCOMPARABLE:
             detail = (" — l'arbre DIFFÈRE de la tête : aucun blob comparable, "
                       "refus conservateur")
+        elif (v.get("symbols") or {}).get("verdict") == "missing":
+            # #20066 piste 2 : le fond a ÉTÉ mesuré, et il manque -- c'est
+            # la seule formule qui ait le droit de parler de réserve, car
+            # elle nomme ce qui a disparu.
+            absents = ", ".join((v["symbols"].get("missing") or [])[:5])
+            detail = (f" — l'arbre DIFFÈRE de la tête : blob modifié et "
+                      f"symbole(s) introduit(s) par la levée ABSENT(s) de "
+                      f"la tête ({absents})")
         else:
             detail = (" — l'arbre DIFFÈRE de la tête : blob modifié depuis la levée, fond non vérifié")
         print(f"  [!] NON LEVE — levee de {v['author']} à {v['at']} : cite "

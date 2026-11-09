@@ -2479,8 +2479,16 @@ def _delivery_motif(issue_number: int) -> str | None:
     return delivery_grammar.delivery_motif(bodies)
 
 
-def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
+def _belt_snapshot_prime(repo: str, numbers: list[int],
+                         seed: dict | None = None) -> None:
     """Rafraichit UNE FOIS l'instantane pour les candidats tires (#22630, #22983).
+
+    ``seed`` (re-prime du delta, #22983) : instantane memoire du priming
+    PRECEDENT. Sans lui, ce deuxieme appel rechargerait le DISQUE -- et
+    perdrait les lectures fraiches que le premier appel n'a pu ecrire qu'en
+    memoire (repli `SnapshotLockTimeout`, verrou tenu par une autre lane).
+    `ensure_comments` etant incremental, seeder ne relit pas les numeros
+    deja frais : seul le delta paie une lecture.
 
     #22983 -- ce priming est la **phase reseau** du tirage. Apres lui, le
     tirage lui-meme ne doit plus emettre aucun appel GitHub : chaque sonde
@@ -2495,6 +2503,10 @@ def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
     294 s de tapis, dont 221 s dans la seule boucle de service, parce que
     les candidats hors fenetre de priming (70) retombaient sur le reseau a
     chaque sonde.
+
+    #22983 volet 4 -- depuis l'arbitrage option 2, la phase reseau est HORS
+    verrou ; sous verrou restent seulement la relecture, la fusion par
+    numero (la plus recente gagne) et l'ecriture atomique.
     """
     global _BELT_SNAPSHOT
     _BELT_SNAPSHOT = None
@@ -2507,22 +2519,110 @@ def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
         return
     try:
         gh_snapshot = _gh_snapshot_module()
+        # #22983 volet 4 (arbitrage coordinateur, option 2, c.6719405401) :
+        # la phase RESEAU est HORS verrou. L'ancienne forme tenait
+        # `refresh.lock` pendant tout `ensure_comments` (détention mesurée
+        # ~7 min sur ce siège, écriture de 50 Mo comprise) : les autres
+        # lanes de la machine épuisaient leurs 120 s d'attente et
+        # retombaient sur le disque périmé -- fail-CLOSED muet (mesure du
+        # 08/11 : deux tirages bloqués pendant le priming du coordinateur).
+        # #22983 -- re-prime : partir du SEED memoire du priming precedent
+        # quand il existe, pas du disque. Le cas pathologique : le premier
+        # appel a subi un lock-timeout -> ses lectures fraiches ne vivent
+        # qu'en memoire (_BELT_SNAPSHOT) ; recharger le disque ici les
+        # perdrait, et STRICT retrouverait un refus fail-CLOSED que la
+        # re-prime etait censee clore.
+        snapshot = (seed if seed is not None
+                    else gh_snapshot.load_snapshot(repo))
+        snapshot, _calls, _stats = gh_snapshot.ensure_comments(
+            repo, numbers, snapshot)
         try:
             with gh_snapshot.snapshot_lock(repo):
-                snapshot = gh_snapshot.load_snapshot(repo)
-                snapshot, _calls, _stats = gh_snapshot.ensure_comments(
-                    repo, numbers, snapshot)
-                gh_snapshot.save_snapshot(repo, snapshot)
-        except gh_snapshot.SnapshotLockTimeout:
-            # Une autre lane de la machine rafraichit : on consomme SON
-            # instantane plutot que de le concurrencer. La lecture reste
-            # correcte (les entrees fraiches sont servies), la performance
-            # est celle de la lane qui a paye le rafraichissement.
-            snapshot = gh_snapshot.load_snapshot(repo)
-        _BELT_SNAPSHOT = snapshot
+                # Relecture sous verrou : une autre lane a pu ecrire pendant
+                # notre phase reseau. La fusion PAR NUMERO (la plus recente
+                # gagne) garantit qu'aucune de ses entrees fraiches n'est
+                # perdue par notre ecriture -- et que les notres survivent a
+                # la sienne.
+                disk = gh_snapshot.load_snapshot(repo)
+                # #22983 (review e468eec) -- re-prime seeedee : la fusion doit
+                # porter sur l'UNION du delta et des numeros frais du seed.
+                # `merge_snapshots` ne prend de `fresh` que les numeros de
+                # `numbers` : fusionner sur le seul delta laisserait le disque
+                # relu ecraser les lectures du premier appel -- precisement le
+                # bord que le seed devait fermer, dans le sous-cas « premier
+                # appel en lock-timeout, re-prime qui OBTIENT le verrou » (le
+                # plus probable : le verrou de l'autre lane se libere en
+                # quelques secondes).
+                if seed is not None:
+                    seed_stamps = ((seed.get("meta") or {})
+                                   .get("comment_stamps") or {})
+                    seed_nums = set()
+                    for k in seed_stamps:
+                        try:
+                            seed_nums.add(int(k))
+                        except (TypeError, ValueError):
+                            continue
+                    merge_nums: list[int] = sorted(set(numbers) | seed_nums)
+                else:
+                    merge_nums = numbers
+                merged = gh_snapshot.merge_snapshots(disk, snapshot, merge_nums)
+                gh_snapshot.save_snapshot(repo, merged)
+        except gh_snapshot.SnapshotLockTimeout as exc:
+            # #22983 volet 3 : ce repli se NOMME. Avec la phase reseau hors
+            # verrou, il ne perd plus les lectures fraiches : l'instantane en
+            # memoire (nos lectures) sert CE tirage ; seules les entrees non
+            # ecrites attendront le prochain priming pour atteindre le disque.
+            print(
+                f"[22983] priming ecarte : {exc} -- ecriture reportee, le "
+                "tirage continue sur ses lectures fraiches en memoire (le "
+                "disque garde les entrees de la lane qui tient le verrou)",
+                file=sys.stderr)
+            merged = snapshot
+        _BELT_SNAPSHOT = merged
     except Exception as exc:  # noqa: BLE001 - l'instantane est un confort, pas un gate
         print(f"[22630] instantane indisponible ({type(exc).__name__}) -- "
               f"les sondes gardent leur transport historique", file=sys.stderr)
+
+
+def _belt_reprime_claims_delta(belt_check_nums: list[int]) -> None:
+    """#22983 -- re-prime les numeros que les TRIS du pool ont fait entrer
+    en fenetre de claims APRES le priming initial.
+
+    Mesure du 08/11 (ce siege, pool de 414) : entre le priming
+    (`_belt_snapshot_prime` sur ``belt_pool[:70]`` pre-tri) et la lecture
+    de la fenetre de claims (``belt_pool[:70]`` post-tri), le pool est
+    re-trie EN PLACE deux fois -- ``settle_belt_head`` (stamps de claims
+    frais) puis ``apply_belt_weights`` (poids du bandit, qui changent
+    l'ordre de service par conception). La fenetre finale divergeait de la
+    fenetre primee sur **56 des 70 numeros** : STRICT refusait alors des
+    numeros que le priming n'avait jamais rafraichis (fail-CLOSED total,
+    0 grain servi), sans aucun echec de lecture -- les stamps des 70
+    numeros reels restaient a 68-96 min sur le disque pendant que la
+    fenetre primee, elle, etait fraiche.
+
+    Le re-prime ne paie que le DELTA : ``ensure_comments`` est incremental,
+    les numeros communs aux deux fenetres sont deja frais et ne declenchent
+    aucune lecture. Quand la fenetre de claims est couverte (pool a une
+    seule tete, tris sans effet), le delta est vide et la passe « UNE seule
+    fois » du priming initial est preservee (contrat du temoin
+    ``test_belt_main_injects_the_real_snapshot_prime``).
+
+    Le re-prime SEED le priming avec l'instantane memoire du premier appel :
+    si celui-ci a subi un lock-timeout, ses lectures fraiches ne vivent
+    qu'en memoire, et un rechargement disque les perdrait -- STRICT
+    retrouverait un refus que la re-prime etait censee clore.
+    """
+    global _BELT_PRIMED_WINDOW
+    delta = [n for n in belt_check_nums if n not in _BELT_PRIMED_WINDOW]
+    if not delta:
+        return
+    print(f"[22983] re-prime claims delta: {len(delta)} numero(s) entre(s) "
+          "en fenetre par les tris post-priming", file=sys.stderr, flush=True)
+    # Capture AVANT l'appel : `_belt_snapshot_prime` remet `_BELT_SNAPSHOT`
+    # a None en tete, le seed doit partir de l'etat memoire du priming.
+    seed = _BELT_SNAPSHOT if isinstance(_BELT_SNAPSHOT, dict) else None
+    _belt_snapshot_prime(REPO, delta, seed=seed)
+    _BELT_PRIMED_WINDOW |= set(delta)
 
 
 def _belt_pr_prefetches(numbers: list[int], lane: str | None,
@@ -4190,6 +4290,12 @@ def print_delivered_signal_report(
               "(commentaire + PR couvrante) est atteint, la fin de l'urne "
               "n'a pas ete verifiee. Les candidats")
         print("   non sondes sont CONSERVES (fail-open).")
+        # #16589 (releve po-2025 du 2026-11-03) : quand un plafond a coupe
+        # la sonde, un `withheld` vide N'EST PAS un etat propre -- c'est un
+        # etat inconnu. Les ecartes deja listes sont une borne inferieure.
+        print("   Les ecartes listes ci-dessus sont une BORNE INFERIEURE : "
+              "d'autres livraisons non")
+        print("   sondees peuvent rester dans l'urne servie.")
     if (dropped or dropped_full or failed or cover_failed or inprogress
             or state.get("budget_hit")):
         print()
@@ -4927,6 +5033,20 @@ def _summarize_claim_from_batch(json_payload: dict, n: int) -> tuple[str, str]:
     return CLAIM_CODE_ERROR, f"(batch: code {code} inconnu)"
 
 
+def _claims_none(cause: str) -> None:
+    """#22983 -- nommer sur stderr la cause d'un rendu ``None``, puis None.
+
+    Le refus fail-CLOSED du tapis etait intermittent sans dire pourquoi :
+    un ``return None`` muet laisse departager a l'aveugle un lecteur
+    absent, un instantane perime (TTL 1800 s) et une exception avalee.
+    Le comportement est INCHANGE (None, l'appelant tranche) ; seule la
+    cause est publiee, avec le prefixe ``[22983]`` grep-able.
+    """
+    print(f"[22983] voie en processus indisponible : {cause}",
+          file=sys.stderr, flush=True)
+    return None
+
+
 def _claims_in_process(
     numbers: list[int],
     lane: str,
@@ -4944,15 +5064,19 @@ def _claims_in_process(
 
     #22983 -- le transport `subprocess` est retire : il n'y a plus de repli
     historique. Rend None si la voie n'est pas disponible (module absent,
-    instantane illisible, exception) ; l'appelant tranche alors.
+    instantane illisible, exception) ; l'appelant tranche alors. Chaque
+    sortie None NOMME sa cause sur stderr (prefixe ``[22983]``) : un refus
+    fail-CLOSED intermittent doit etre diagnosticable, pas devine.
     """
     if not numbers:
         return {}
     try:
         clc = _claim_reader_module()   # insere `scripts/` dans sys.path
         gh_snapshot = _gh_snapshot_module()
-    except Exception:  # noqa: BLE001 - l'appelant tranche (fail-CLOSED)
-        return None
+    except Exception as exc:  # noqa: BLE001 - l'appelant tranche (fail-CLOSED)
+        return _claims_none(
+            f"import lecteur/instantane en echec "
+            f"({type(exc).__name__}: {exc})")
     import contextlib
     import io
     try:
@@ -4966,13 +5090,50 @@ def _claims_in_process(
                         or gh_snapshot.load_snapshot(REPO))
             clc.set_snapshot(snapshot)
             if not gh_snapshot.serves(snapshot, [int(n) for n in numbers]):
-                return None
+                # #22983 -- la cause se NOMME : manquant (jamais lu) et
+                # perime (stamp plus vieux que le TTL) ne se soignent pas
+                # de la meme facon, et `serves()` ne rend qu'un booleen.
+                stamps = ((snapshot.get("meta") or {})
+                          .get("comment_stamps") or {})
+                _manque, _perime = [], []
+                for n in numbers:
+                    stamp = stamps.get(str(n))
+                    if not isinstance(stamp, (int, float)):
+                        _manque.append(str(n))
+                    elif (time.time() - stamp) > gh_snapshot.DEFAULT_TTL_SECONDS:
+                        _perime.append(str(n))
+                # #22983 (v2) -- manquant/perime est un SYMPTOME : quand le
+                # fetch de la phase reseau a echoue sur quota REST, c'est la
+                # CAUSE, et elle ne se soigne pas comme un TTL (recycler les
+                # stamps peres ne repand pas un quota). Les echecs sont deja
+                # nommes dans l'instantane (``meta.fetch_failures``) -- on
+                # les releve au lieu de les reinventer. Borne a 1 h pour ne
+                # pas citer un exhaust ancien comme cause du refus present.
+                _fails = ((snapshot.get("meta") or {})
+                          .get("fetch_failures") or {})
+                _quota = sorted(
+                    k for k, v in _fails.items()
+                    if isinstance(v, dict)
+                    and "rate limit" in str(v.get("error") or "").lower()
+                    and isinstance(v.get("at"), (int, float))
+                    and (time.time() - v["at"]) < 3600.0)
+                _quota_note = (f" ; echecs quota REST < 1 h : {len(_quota)}"
+                               + (f" (ex : {', '.join('#' + k for k in _quota[:3])})"
+                                  if _quota else ""))
+                return _claims_none(
+                    f"instantane STRICT ne sert pas les numeros "
+                    f"(manquants: {', '.join(_manque) or '-'} ; "
+                    f"perimes: {', '.join(_perime) or '-'})"
+                    + _quota_note)
             # `serves` garantit les commentaires ; le LECTEUR a besoin du
             # PAYLOAD. Un payload absent le ferait retomber sur
             # `gh issue view` -- un appel reseau pendant le tirage.
-            for n in numbers:
-                if clc._snapshot_issue_payload(str(n)) is None:
-                    return None
+            _absents = [str(n) for n in numbers
+                        if clc._snapshot_issue_payload(str(n)) is None]
+            if _absents:
+                return _claims_none(
+                    f"payload absent de l'instantane STRICT : "
+                    f"{', '.join(_absents)}")
         else:
             snapshot = gh_snapshot.refresh(REPO, issue_numbers=list(numbers))
             clc.set_snapshot(snapshot)
@@ -5011,8 +5172,10 @@ def _claims_in_process(
                 my_paths=None, check_open_pr_paths=True,
             )
         return {n: _summarize_claim(buf_out.getvalue(), rc)}
-    except Exception:  # noqa: BLE001 - repli sur la voie historique
-        return None
+    except Exception as exc:  # noqa: BLE001 - l'appelant tranche (fail-CLOSED)
+        return _claims_none(
+            f"exception dans la voie en processus "
+            f"({type(exc).__name__}: {exc})")
     finally:
         # Toujours retirer l'instantane : une voie historique appelée
         # ensuite ne doit pas heriter du cache installe ici. Un echec de
@@ -8446,8 +8609,16 @@ def umbrella_visit_cause(it: dict, *, now=None) -> str | None:
     moment = now or NOW
     window_h = UMBRELLA_VISIT_CAP_DAYS * 24
     recent: list[tuple[float, str]] = []
+    # #22687 constat 1 : le marqueur retenu SE NOMME. Mesure fondatrice --
+    # sur l'EPIC #16334 le marqueur retenu etait un `[RELEASED]` du
+    # 2026-10-26 et la cause affichait « claim pose sur l'EPIC » : un rendu
+    # de main lu comme une prise. `last_claim_marker` n'est pas toujours
+    # connu (chemins qui ne portent que la date) ; `marker_label(None)` dit
+    # alors « marqueur de lane », jamais « claim ».
     for key, what in ((("last_child_stamp"), "sous-issue creee"),
-                      (("last_claim_stamp"), "claim pose sur l'EPIC")):
+                      (("last_claim_stamp"),
+                       f"{marker_label(it.get('last_claim_marker'))} "
+                       f"sur l'EPIC")):
         age = _visit_age_hours(it.get(key), moment)
         if age is not None and age < window_h:
             recent.append((age, what))
@@ -8676,8 +8847,8 @@ def apply_child_visits(pool: list[dict], targets: list[dict]) -> dict[int, str]:
     return latest
 
 
-def claim_visit_stamp(comments: list[dict]) -> str | None:
-    """``createdAt`` serveur du plus recent marqueur de claim attribue a une lane.
+def _claim_visit_event(comments: list[dict]) -> Any | None:
+    """Marqueur de lane le plus recent du fil, avec sa grammaire d'organe.
 
     Lecture deleguee a l'organe des claims (#19147, reserve tierce) :
     ``_sort_events`` lit les marqueurs avec sa grammaire (decorations markdown
@@ -8688,9 +8859,37 @@ def claim_visit_stamp(comments: list[dict]) -> str | None:
     """
     from check_lane_claim import _sort_events
 
-    stamps = [ev.created_at for ev in _sort_events({"comments": comments})
+    cs = [c for c in comments if isinstance(c, dict)]
+    events = [ev for ev in _sort_events({"comments": cs})
               if ev.lane and ev.created_at]
-    return max(stamps) if stamps else None
+    return max(events, key=lambda ev: ev.created_at) if events else None
+
+
+def claim_visit_stamp(comments: list[dict]) -> str | None:
+    """``createdAt`` serveur du plus recent marqueur de claim attribue a une lane.
+
+    Voir `_claim_visit_event` pour la selection. ``None`` = aucune visite de
+    lane dans ce fil.
+    """
+    ev = _claim_visit_event(comments)
+    return ev.created_at if ev else None
+
+
+def claim_visit(comments: list[dict]) -> tuple[str | None, str | None]:
+    """Paire ``(date, marqueur)`` de la visite de lane la plus recente.
+
+    ``claim_visit_stamp`` ne rend que la moitie de ce qu'un appelant sait : la
+    date dit QUAND une lane a servi l'issue, pas CE QU'elle a fait. Une cause
+    de plafond EPIC qui n'avait que la date affirmait « claim » sur un
+    ``[RELEASED]`` (#22687, constat 1) -- un rendu de main lu comme une prise.
+
+    La paire sort du MEME evenement, donc elle ne peut pas se contredire : le
+    marqueur est celui de la date rendue. ``(None, None)`` = aucune visite.
+    """
+    ev = _claim_visit_event(comments)
+    if ev is None:
+        return None, None
+    return ev.created_at, ((ev.get("marker") or "").upper() or None)
 
 
 def delivered_info_stamp(comments: list[dict]) -> str | None:
@@ -8774,6 +8973,63 @@ def latest_claim_stamp(issue_number: int) -> str | None:
     return max(stamps) if stamps else None
 
 
+#: Marqueur rendu par `_sort_events` -> ce qu'il dit en francais. Le message
+#: de refus d'un EPIC plafonne nommait « claim » TOUS les marqueurs, y compris
+#: un `[RELEASED]` : un rendu de main n'est pas une prise, et la lane lisait
+#: une cause fausse (#22687, constat 1).
+#: La liste suit `_KEYWORDS` de `check_lane_claim` : un code qui n'est pas lu
+#: par l'organe ne peut pas arriver ici, et en inventer un donnerait une
+#: traduction qui ne correspond a aucun marqueur reel.
+_MARKER_LABELS: dict[str, str] = {
+    "CLAIMED": "prise",
+    "CLAIMED-AMEND": "amendement",
+    "RELEASED": "rendu de main",
+    "CANCELLED": "annulation",
+    "ABANDONED": "abandon",
+    "DONE": "cloture",
+    "OVERRIDE": "override",
+    "DELIVERED": "livraison",
+}
+#: Etiquette du marqueur rendu par `delivered_info_stamp`, qui ne passe pas par
+#: la grammaire des claims.
+_INFO_DELIVERED_LABEL = "livraison (candidate-delivered)"
+
+
+def marker_label(marker: str | None) -> str:
+    """Ce que dit un marqueur, en clair. Un marqueur inconnu SE NOMME.
+
+    Le repli n'est pas « claim » : c'est precisement le mot que #22687 retire,
+    parce qu'il affirme une prise la ou un rendu de main a eu lieu. Un
+    marqueur que ce module ne sait pas traduire se cite tel quel, entre
+    crochets -- mieux vaut un code brut qu'une affirmation fausse.
+    """
+    if not marker:
+        return "marqueur de lane"
+    return _MARKER_LABELS.get(marker, f"marqueur [{marker}]")
+
+
+def _claim_visit_from_comments(
+        comments: list[dict]) -> tuple[str | None, str | None]:
+    """(stamp, marqueur) du plus recent marqueur de visite -- sans reseau.
+
+    Meme selection que ``latest_claim_stamp`` (marqueur de lane attribue le
+    plus recent, ou ``[INFO] candidate-delivered`` s'il est plus tardif), mais
+    rend AUSSI le marqueur retenu : la date seule ne permet pas de dire si
+    l'issue a ete prise ou rendue, et le message de plafond EPIC l'affirmait
+    a tort (#22687).
+
+    ``(None, None)`` = aucun marqueur de visite dans ce fil, ce qui est une
+    mesure ; une lecture reseau en echec rend ce meme couple a un autre
+    niveau, ou l'appelant sait qu'il n'a pas lu.
+    """
+    cs = [c for c in comments if isinstance(c, dict)]
+    stamp, marker = claim_visit(cs)
+    info = delivered_info_stamp(cs)
+    if info and (stamp is None or info > stamp):
+        return info, _INFO_DELIVERED_LABEL
+    return stamp, (marker or None)
+
+
 def _claim_stamp_from_comments(comments: list[dict]) -> str | None:
     """Stamp canonique d'une liste de commentaires -- sans appel reseau.
 
@@ -8781,14 +9037,12 @@ def _claim_stamp_from_comments(comments: list[dict]) -> str | None:
     en argument : c'est ce que ``fetch_latest_claim_stamps_bulk`` branche
     apres son unique aller-retour GraphQL. Sortie : ISO 8601 UTC ou ``None``.
     """
-    cs = [c for c in comments if isinstance(c, dict)]
-    stamps = [s for s in (claim_visit_stamp(cs), delivered_info_stamp(cs)) if s]
-    return max(stamps) if stamps else None
+    return _claim_visit_from_comments(comments)[0]
 
 
 def _claim_stamps_from_snapshot(
     numbers: list[int],
-) -> tuple[dict[int, str | None], list[int]]:
+) -> tuple[dict[int, str | None], dict[int, str | None], list[int]]:
     """Stamps de visite servis par l'instantane local, et numeros non servis.
 
     #22983 -- le tapis ne doit plus interroger GitHub pour savoir QUAND une
@@ -8798,18 +9052,22 @@ def _claim_stamps_from_snapshot(
     perimee) est rendu a part : l'appelant le passe au transport historique
     plutot que de fabriquer un « pas de marqueur ».
 
-    Rend `(stamps, non_servis)`. Un stamp `None` est une **mesure** (aucun
-    marqueur de visite dans ce fil), l'absence de la cle est un **non-dit**.
+    Rend `(stamps, marqueurs, non_servis)`. Un stamp `None` est une
+    **mesure** (aucun marqueur de visite dans ce fil), l'absence de la cle est
+    un **non-dit**. Les marqueurs suivent la meme regle : c'est l'instantane
+    qui les porte, sans appel GitHub, parce qu'il porte deja les
+    commentaires dont `_claim_visit_from_comments` les tire (#22687).
     """
     served: dict[int, str | None] = {}
+    markers: dict[int, str | None] = {}
     missing: list[int] = []
     for n in numbers:
         comments = _snapshot_comments(n)
         if comments is None:
             missing.append(n)
             continue
-        served[n] = _claim_stamp_from_comments(comments)
-    return served, missing
+        served[n], markers[n] = _claim_visit_from_comments(comments)
+    return served, markers, missing
 
 
 def validate_picks_live(
@@ -8951,6 +9209,7 @@ def fetch_latest_claim_stamps_bulk(
     cache: PayloadCache | None = None,
     cache_mode: str = "off",
     cache_status: dict[str, dict[str, Any]] | None = None,
+    markers_out: dict[int, str | None] | None = None,
 ) -> tuple[dict[int, str | None], str | None]:
     """Stamp canonique par issue, une seule requete GraphQL multiplexee.
 
@@ -8979,7 +9238,11 @@ def fetch_latest_claim_stamps_bulk(
         return {}, None
 
     sorted_nums = sorted({int(n) for n in issue_numbers})
-    identity = ["claim_stamps_bulk"] + [str(n) for n in sorted_nums]
+    # `_v2` : la charge porte desormais le marqueur en plus de la date
+    # (#22687). Changer l'identite plutot que decoder l'ancienne forme evite
+    # qu'un cache chaud rende des dates sans marqueur, ce qui afficherait
+    # « marqueur de lane » la ou le marqueur est connue.
+    identity = ["claim_stamps_bulk_v2"] + [str(n) for n in sorted_nums]
 
     def fetch_raw() -> dict[str, str | None]:
         # Les alias GraphQL doivent etre des identifiers valides. On utilise
@@ -9009,14 +9272,15 @@ def fetch_latest_claim_stamps_bulk(
         except json.JSONDecodeError as exc:
             raise RuntimeError(f"GraphQL decode failed: {exc}") from exc
         repo = data.get("data", {}).get("repository") or {}
-        out_map: dict[str, str | None] = {}
+        out_map: dict[str, dict[str, str | None] | None] = {}
         for n in sorted_nums:
             node = repo.get(f"i{n}")
             if not node:
                 out_map[str(n)] = None
                 continue
             comments = (node.get("comments") or {}).get("nodes") or []
-            out_map[str(n)] = _claim_stamp_from_comments(comments)
+            stamp, marker = _claim_visit_from_comments(comments)
+            out_map[str(n)] = {"s": stamp, "m": marker}
         return out_map
 
     try:
@@ -9033,7 +9297,16 @@ def fetch_latest_claim_stamps_bulk(
         return {}, f"{type(exc).__name__}: {exc}"
     # La cache rend des cles str ; on remet en `int` pour matcher les
     # `issue["number"]` du `belt_pool` (et la cle `int -> str | None` du JSON).
-    int_map: dict[int, str | None] = {int(k): v for k, v in result.items()}
+    # Une charge d'avant #22687 (date seule) reste lisible : elle se lit
+    # comme une date sans marqueur, jamais comme un marqueur invente.
+    int_map: dict[int, str | None] = {}
+    for k, v in result.items():
+        if isinstance(v, dict):
+            int_map[int(k)] = v.get("s")
+            if markers_out is not None:
+                markers_out[int(k)] = v.get("m")
+        else:
+            int_map[int(k)] = v
     return int_map, None
 
 
@@ -9246,6 +9519,410 @@ def belt_filter(
     if drops is not None:
         drops.extend(dropped_by_cap)
     return kept_with_cap
+
+
+def resolve_belt_families(pool: list[dict], issue_to_family: dict | None,
+                           series: dict | None, *,
+                           measured: bool = True) -> dict:
+    """Zone de chaque grain du tapis : resolue, comptee, et nommee si absente.
+
+    La resolution de famille vivait dans `weight()` -- donc dans la voie
+    PONDEREE. Le tapis (`--belt`) trie et retient sans passer par `weight()` :
+    la zone restait absente de chaque pick, et le facteur de saturation (le
+    seul endroit ou la polarite `consolidation` pese -- une zone saturee a
+    besoin de son REMEDE, pas d'une instance de plus) ne jouait donc jamais
+    en mode tapis.
+
+    Mesure du 2026-11-07 (issue #25082, mesure 4) : `family` valait `null`
+    sur 50 tirages sur 50, et le facteur de saturation etait inerte sur la
+    totalite de la surface tiree.
+
+    Cet instrument ne change AUCUN tirage : il resout et il compte. La
+    repondersion qui consommera ces zones (points A et B de l'issue) est une
+    autre PR ; celle-ci n'eprouve que la mesure, et elle la rend lisible.
+
+    Trois etats sont distingues, parce que « zone nulle » veut dire trois
+    choses differentes qu'il ne faut pas confondre :
+
+    - **mesure faite, zone trouvee** : la zone est nommee ;
+    - **mesure faite, zone absente** : le grain ne porte aucune zone
+      (issue hors serie, ou zone jamais renommee dans le texte) ;
+    - **mesure NON faite** : la saturation n'a pas ete mesuree (echec de
+      l'organe amont). La zone est alors absente PARCE QUE RIEN n'a ete
+      mesure -- pas parce que le grain n'en porte pas. Les deux se
+      confondent dans un `null`, et cette confusion est exactement ce que la
+      mesure 4 reprochait a l'organe.
+    """
+    families = tuple(series or ())
+    resolved = 0
+    for it in pool:
+        fam = resolve_family(it, issue_to_family or {}, families, series or {})
+        it["family"] = fam
+        it["family_new_notebooks"] = (
+            ((series or {}).get(fam) or {}).get("new_notebooks", 0)
+            if fam else 0
+        )
+        if fam:
+            resolved += 1
+    total = len(pool)
+    return {
+        "measured": bool(measured),
+        "resolved": resolved,
+        "total": total,
+        "ratio": round(resolved / total, 3) if total else None,
+        "zones": sorted({it["family"] for it in pool if it.get("family")}),
+    }
+
+
+# --- #25082 A + B : recompense de fermeture et prior de consolidation -------
+#
+# Le mandat user du 2026-11-07 (session directe avec ai-01) : « Attention, je
+# vois beaucoup de add qui ne repondent ni a la demande de prioriser les
+# issues de consolidation, ni a celle de variete du picker sur le pool
+# d'issues. L'objectif est de cloturer le max d'issues en les visitant de
+# facon intelligente (bandit manchots?) ».
+#
+# A -- RECOMPENSE DE FERMETURE, BRAS = ZONE. Chaque zone (chemin de serie) est
+# un bras ; le genre sert de repli quand la zone n'est pas resolue. Ce qui
+# rapporte, c'est la FERMETURE de l'issue, pas la visite : une visite qui ne
+# ferme rien ne rapporte rien. Fenetre : 14 jours. Le tirage est un echantillon
+# de Thompson, theta ~ Beta(fermees + 1, visitees_sans_fermeture + 1).
+#
+# B -- PRIOR DE CONSOLIDATION, INDEPENDANT DE LA ZONE. Trois classes : le
+# label `consolidation`, l'urne `delivered` (livree, non fermee : la plus
+# proche de la fermeture), et les partitions d'audit `[Audit #17073]`.
+#
+# Contrainte du mandat (decision user du 12/10) : des POIDS SEULEMENT. Aucun
+# refus de tirage, aucun plafond, aucun filtre nouveau. La repondersion change
+# l'ORDRE de service ; l'admissibilite n'est pas touchee.
+
+BANDIT_WINDOW_DAYS = 14
+CONSOLIDATION_PRIOR = 3.0
+DELIVERED_URN_PRIOR = 2.5
+AUDIT_17073_PRIOR = 2.0
+AUDIT_17073_MARKER = "[Audit #17073]"
+#: Le seuil du veto de creation : au-dessus, le grain d'expansion (carnet
+#: neuf) est d'autant plus streme que le pool s'en eloigne.
+EXPANSION_VETO_THRESHOLD = 400
+#: Plancher du poids d'expansion : un poids nul serait un REFUS, et le
+#: mandat du 12/10 l'interdit.
+EXPANSION_FACTOR_FLOOR = 0.25
+
+
+def run_rng(args, now: dt.datetime | None = None) -> tuple[str, random.Random]:
+    """La graine du tirage : (lane, heure UTC, reroll).
+
+    Lanes differentes -> tirages differents ; meme lane dans l'heure ->
+    tirage identique (idempotent). La fonction est **partagee** : la
+    repondersion du tapis (#25082) tire ses echantillons de Thompson sur
+    la MEME graine, mais depuis une INSTANCE distincte -- la voie ponderee
+    garde ainsi son determinisme, qui ne doit pas dependre du fait que le
+    tapis ait consomme des tirages avant elle.
+    """
+    moment = now or NOW
+    seed_src = f"{args.lane}|{moment.strftime('%Y-%m-%dT%H')}|{args.reroll}"
+    seed = int(hashlib.sha256(seed_src.encode()).hexdigest()[:16], 16)
+    return seed_src, random.Random(seed)
+
+
+def bandit_arm(item: dict) -> str:
+    """Le bras d'un grain : sa zone (chemin de serie), sinon son genre.
+
+    La zone est le bras naturel : c'est elle que la saturation de zone
+    (`nb_new`) mesure deja. Le genre est le repli quand la zone n'est pas
+    resolue -- un grain sans zone reste mesurable, il change de bras.
+    """
+    fam = item.get("family")
+    if fam:
+        return "zone:" + str(fam)
+    genre = item.get("genre") or "inconnu"
+    return "genre:" + str(genre)
+
+
+def arm_outcomes(closed_arms: dict[str, int],
+                  visited_arms: dict[str, int]) -> dict[str, tuple[int, int]]:
+    """Chaque bras : (fermees, visitees sans fermeture)."""
+    arms = set(closed_arms or {}) | set(visited_arms or {})
+    return {arm: (int((closed_arms or {}).get(arm, 0)),
+                  int((visited_arms or {}).get(arm, 0)))
+            for arm in sorted(arms)}
+
+
+def sample_arm_thetas(arms: dict[str, tuple[int, int]],
+                      rng: random.Random) -> dict[str, float]:
+    """theta ~ Beta(fermees + 1, visitees sans fermeture + 1) -- Thompson.
+
+    Le prior Beta(1, 1) rend un bras sans donnee UNIFORME : il n'est ni
+    favorise ni ecarte. C'est ce qui evite qu'une zone jamais mesuree
+    herite du credit d'une zone qui ferme, et qu'une zone qui ne ferme pas
+    soit ecartee sur une simple absence de donnee.
+    """
+    return {arm: rng.betavariate(closed + 1.0, visited + 1.0)
+            for arm, (closed, visited) in arms.items()}
+
+
+def consolidation_prior(item: dict) -> tuple[float, str]:
+    """Le prior de consolidation d'un grain : (facteur, classe).
+
+    Les classes sont CUMULABLES : un grain peut etre a la fois livre et
+    porte du label de consolidation. Le facteur retenu est le plus fort, et
+    la classe nommee est celle qui l'a porte -- le rapport dit donc pourquoi
+    le grain est prioritaire.
+    """
+    factors: list[tuple[float, str]] = []
+    if item.get("klass") == "delivered":
+        factors.append((DELIVERED_URN_PRIOR, "delivered"))
+    if AUDIT_17073_MARKER.lower() in (item.get("title") or "").lower():
+        factors.append((AUDIT_17073_PRIOR, "audit_17073"))
+    if is_consolidation(item):
+        factors.append((CONSOLIDATION_PRIOR, "consolidation"))
+    if not factors:
+        return 1.0, ""
+    return max(factors, key=lambda couple: couple[0])
+
+
+def expansion_factor(open_count: int) -> float:
+    """Le grain d'expansion se pondere par l'ecart du pool au seuil du veto.
+
+    Sous le seuil, rien n'est penalise. Au-dessus, le grain d'expansion
+    (carnet neuf) est d'autant plus streme que le pool s'en eloigne -- mais
+    jamais annule : un poids nul serait un refus de tirage, et le mandat du
+    12/10 l'interdit.
+    """
+    if open_count <= EXPANSION_VETO_THRESHOLD:
+        return 1.0
+    gap = ((open_count - EXPANSION_VETO_THRESHOLD)
+           / float(EXPANSION_VETO_THRESHOLD))
+    return max(EXPANSION_FACTOR_FLOOR, 1.0 - gap)
+
+
+def belt_score(item: dict, thetas: dict[str, float], mean_theta: float,
+               open_count: int) -> dict:
+    """Le score de service d'un grain : un POT UNIQUE.
+
+    `bucket = round(log2(rel) + log2(prior) + log2(expansion))` : le prior
+    de consolidation pese en POTS (x3 ~ +1,6 pot, x2 = +1 pot), pas en rang
+    lexicographique. Un rang dur (tout grain prioritaire devant tout grain
+    neutre, quelle que soit la zone) vidait la tete de sa variete -- 45/50
+    grains de tier 0 au rejeu du 07/11 : le mandat demande la consolidation
+    ET la variete. Avec le pot unique, le grain de consolidation d'une zone
+    sterile peut passer derriere un grain neutre d'une zone qui ferme
+    nettement mieux : c'est le bandit qui fait son travail, et c'est voulu
+    (#25082, revue du 07/11 -- « independante de la famille » voulait dire
+    « ne depend pas de la resolution de zone pour agir », pas un rang dur).
+    La consolidation DUE garde son garde-fou : `legacy[0]` en tete de cle,
+    borne par CONSOLIDATION_LAG_H.
+
+    Le bandit est un RELATIF : theta ramene a la moyenne des bras du pool,
+    pour qu'une zone qui ferme bien soit devant la moyenne sans que le
+    niveau absolu des poids deplace l'ensemble du tirage. La variete vient
+    de l'echantillonnage de Thompson ; a pot egal, la ligne de temps tranche.
+    """
+    arm = bandit_arm(item)
+    theta = float(thetas.get(arm, 0.0))
+    rel = (theta / mean_theta) if mean_theta and mean_theta > 0 else 1.0
+    prior, classe = consolidation_prior(item)
+    expansion = expansion_factor(open_count)
+    mult = expansion if item.get("polarity") == EXPANSION else 1.0
+    bucket = int(round(math.log2(max(rel, 1e-6))
+                       + math.log2(max(prior, 1e-6))
+                       + math.log2(max(mult, 1e-6))))
+    return {"arm": arm, "theta": round(theta, 4), "rel": round(rel, 4),
+            "prior": prior, "classe": classe, "expansion": mult,
+            "bucket": bucket,
+            "score": round(max(rel, 1e-6) * prior * mult, 4)}
+
+
+def belt_weight_key(it: dict, detail: dict, *, now=None) -> tuple:
+    """La cle de tri ponderee du tapis.
+
+    La CLASSE et le RANG du tapis d'abord (le grain borne avant le
+    conteneur dans la classe des consolidations dues -- `legacy[0]`, le
+    garde-fou de fraicheur #22500), puis le POT UNIQUE (bandit + prior +
+    expansion, cf. `belt_score`), puis la ligne de temps.
+
+    Le pot est un entier de log2 : un ecart d'un pot vaut un doublement de
+    poids, et la LIGNE DE TEMPS reste decisive entre deux grains de meme
+    pot (le moins visite d'abord).
+
+    C'est ce qui rend la repondersion lisible : le tapis ne se met pas a
+    tirer au hasard, il se met a peser, et le temps tranche les ex aequo.
+    """
+    moment = now or NOW
+    legacy = belt_sort_key(it, now=moment)
+    bucket = int((detail or {}).get("bucket", 0))
+    return (legacy[0], legacy[1], -bucket, legacy[2], legacy[3])
+
+
+def fetch_closed_issues(window_days: int = BANDIT_WINDOW_DAYS, *,
+                         now: dt.datetime | None = None,
+                         limit: int = 400) -> tuple[list[dict], str | None]:
+    """Les issues FERMEES de la fenetre : la recompense du bandit.
+
+    Une erreur de lecture rend `(liste vide, cause)`. L'appelant doit alors
+    dire que la recompense n'a pas ete MESUREE -- jamais laisser un zero
+    d'absence de mesure se lire comme un zero de fermeture.
+    """
+    moment = now or NOW
+    start = (moment - dt.timedelta(days=window_days)).date().isoformat()
+    cmd = ["gh", "issue", "list", "--repo", REPO, "--state", "closed",
+           "--search", f"closed:>={start}", "--limit", str(limit),
+           "--json", "number,title,body,labels"]
+    try:
+        res = _run_bounded(cmd, timeout=90)
+    except (subprocess.TimeoutExpired, OSError) as exc:  # noqa: BLE001
+        return [], f"lecture des issues fermees impossible : {exc}"
+    if res.returncode != 0:
+        return [], ((res.stderr or "").strip()[:200]
+                    or "gh issue list (fermees) a echoue")
+    try:
+        data = json.loads(res.stdout or "[]")
+    except (json.JSONDecodeError, TypeError):
+        return [], "reponse illisible de gh issue list (fermees)"
+    if not isinstance(data, list):
+        return [], "reponse inattendue de gh issue list (fermees)"
+    return data, None
+
+
+def _arm_of_issue(issue: dict, issue_to_family: dict | None,
+                  families, zones=None) -> str:
+    """Le bras d'une issue qui n'est plus dans le pool (fermee).
+
+    Les labels sont normalises en NOMS avant d'etre lus : `gh issue list`
+    rend des objets `{name, ...}`, la ou le pool du picker porte des
+    chaines. `infer_genre` concatene les labels -- un objet la fait
+    echouer, et l'echec tuait le tirage entier sur une issue fermee sans
+    zone (mesure du 07/11, premier rejeu du bandit).
+    """
+    fam = resolve_family(issue, issue_to_family or {}, tuple(families or ()),
+                         zones)
+    if fam:
+        return "zone:" + str(fam)
+    labels = issue.get("labels") or []
+    names = [lab.get("name") if isinstance(lab, dict) else str(lab)
+             for lab in labels]
+    genre = infer_genre(issue.get("title") or "", names)
+    return "genre:" + (genre or "inconnu")
+
+
+def arm_outcomes_from_pool(pool: list[dict], closed_issues: list[dict],
+                            merged_prs: list[dict], *, series=None,
+                            issue_to_family=None, zones=None,
+                            now=None) -> dict[str, tuple[int, int]]:
+    """Les recompenses et les echecs, par bras.
+
+    Une issue FERMEE de la fenetre est la recompense du bras qui la
+    portait. Une issue ENCORE OUVERTE, mais citee par une PR mergee de la
+    fenetre, est un echec de ce bras : la visite n'a pas produit la
+    fermeture.
+
+    Les visites sont lues dans le corpus des PRs MERGEES, avec la meme
+    definition de « declare servir » que partout ailleurs dans le depot
+    (`cited_issues`) : une renvoi de contexte n'est pas une visite.
+    """
+    moment = now or NOW
+    families = tuple(series or ())
+    closed_arms: dict[str, int] = {}
+    visited_arms: dict[str, int] = {}
+    for issue in closed_issues or []:
+        arm = _arm_of_issue(issue, issue_to_family, families, zones)
+        closed_arms[arm] = closed_arms.get(arm, 0) + 1
+    open_by_number = {int(it["number"]): it for it in (pool or [])
+                      if it.get("number")}
+    for pr in merged_prs or []:
+        for num in cited_issues(pr):
+            it = open_by_number.get(int(num))
+            if it is None:
+                continue
+            arm = bandit_arm(it)
+            visited_arms[arm] = visited_arms.get(arm, 0) + 1
+    return arm_outcomes(closed_arms, visited_arms)
+
+
+def belt_order_composition(items: list[dict]) -> dict:
+    """La composition d'une tete de file : ce que le tapis va servir.
+
+    Les trois classes du prior de consolidation sont comptees, et leur
+    somme donne le taux de « grains prioritaires » -- c'est la mesure que
+    l'acceptance 2 de #25082 lit (au moins 15 % des 50 tirages en
+    `consolidation` ou `delivered`). Le nombre de BRAS distincts dit la
+    variete servie : une tete mono-bras est le symptome du rang dur que la
+    revue du 07/11 a retire (45/50 grains de tier 0).
+    """
+    total = len(items)
+    consolidation = sum(1 for it in items if is_consolidation(it))
+    delivered = sum(1 for it in items if it.get("klass") == "delivered")
+    q170 = sum(1 for it in items
+               if AUDIT_17073_MARKER.lower() in (it.get("title") or "").lower())
+    priority = consolidation + delivered
+    return {"total": total, "consolidation": consolidation,
+            "delivered": delivered, "audit_17073": q170,
+            "priority": priority,
+            "ratio": round(priority / total, 3) if total else None,
+            "arms": len({bandit_arm(it) for it in items}) if total else 0}
+
+
+def apply_belt_weights(pool: list[dict], *, rng: random.Random,
+                       merged_prs: list[dict] | None = None,
+                       open_count: int = 0, series=None,
+                       issue_to_family=None, zones=None,
+                       now=None, closed_issues: list[dict] | None = None,
+                       closed_error: str | None = None,
+                       head: int = 0) -> dict:
+    """La repondersion du tapis : des poids, jamais un refus.
+
+    Renvoie la mesure ET reordonne le pool en place. L'admissibilite (les
+    filtres, les urnes, les plafonds de charge) n'est pas touchee : seule
+    la FILE de service change.
+
+    Si les recompenses de fermeture n'ont pas pu etre lues, la repondersion
+    est NON MESUREE : le prior de consolidation, qui ne depend d'aucune
+    lecture reseau, s'applique quand meme, et le bandit ne joue pas.
+    """
+    moment = now or NOW
+    if closed_issues is None and closed_error is None:
+        closed_issues, closed_error = fetch_closed_issues(
+            BANDIT_WINDOW_DAYS, now=moment)
+    families = tuple(series or ())
+    pool_arms = sorted({bandit_arm(it) for it in pool or []})
+    if closed_error is None:
+        outcomes = arm_outcomes_from_pool(
+            pool, closed_issues or [], merged_prs or [], series=series,
+            issue_to_family=issue_to_family, zones=zones, now=moment)
+    else:
+        outcomes = {}
+    thetas: dict[str, float] = {}
+    for arm in pool_arms:
+        closed_n, visited_n = outcomes.get(arm, (0, 0))
+        thetas[arm] = rng.betavariate(closed_n + 1.0, visited_n + 1.0)
+    mean_theta = (sum(thetas.values()) / len(thetas)) if thetas else 0.0
+    scores: dict[int, dict] = {}
+    classes = {"consolidation": 0, "delivered": 0, "audit_17073": 0}
+    for it in pool or []:
+        detail = belt_score(it, thetas, mean_theta, open_count)
+        scores[int(it["number"])] = detail
+        it["bandit_arm"] = detail["arm"]
+        it["belt_score"] = detail["score"]
+        it["belt_score_class"] = detail["classe"]
+        if detail["classe"] in classes:
+            classes[detail["classe"]] += 1
+    # L'AVANT : la file telle que le tapis la servait, sans repondersion.
+    legacy_head = list(pool or [])[:head] if head else []
+    pool.sort(key=lambda it: belt_weight_key(
+        it, scores.get(int(it["number"]), {}), now=moment))
+    weighted_head = list(pool or [])[:head] if head else []
+    return {
+        "measured": closed_error is None,
+        "error": closed_error,
+        "arms": len(pool_arms),
+        "scored": len(pool or []),
+        "mean_theta": round(mean_theta, 4) if mean_theta else None,
+        "outcomes": {arm: list(pair) for arm, pair in outcomes.items()},
+        "classes": classes,
+        "open_count": open_count,
+        "legacy_head": belt_order_composition(legacy_head),
+        "weighted_head": belt_order_composition(weighted_head),
+    }
 
 
 def draw_belt(
@@ -12342,6 +13019,20 @@ def main(argv: list[str] | None = None) -> int:
                         + (f" (+{len(_origami_parked) - 8})"
                            if len(_origami_parked) > 8 else ""))
         belt_pool.sort(key=belt_sort_key)
+        # #25082 point C -- la zone de chaque grain, resolue et COMPTEE.
+        # La resolution vivait dans `weight()` (voie ponderee) : le tapis ne
+        # passe pas par elle, donc la zone restait absente de chaque pick et
+        # le facteur de saturation ne jouait jamais. Mesure du 2026-11-07 :
+        # `family` valait `null` sur 50 tirages sur 50.
+        belt_family_signal = resolve_belt_families(
+            belt_pool, issue_to_family, series, measured=series_err is None)
+        if not belt_family_signal["measured"]:
+            _belt_phase("zone des grains: NON MESUREE (l'organe de saturation "
+                        "n'a pas repondu -- l'absence de zone ici ne dit rien "
+                        "sur le grain)")
+        else:
+            _belt_phase(f"zone des grains: {belt_family_signal['resolved']}"
+                        f"/{belt_family_signal['total']} resolue(s)")
         _belt_phase(f"pool charge: {len(belt_pool)} candidates "
                     f"(apres belt_filter)")
         if _epic_drops:
@@ -12403,9 +13094,12 @@ def main(argv: list[str] | None = None) -> int:
             # la cible : c'est la meme reduction que la voie reseau
             # (`_claim_stamp_from_comments`), sans appel GitHub. Seuls les
             # numeros NON SERVIS passent par le bulk GraphQL.
-            snapshot_stamps, stamp_missing = _claim_stamps_from_snapshot(
-                bulk_targets)
+            snapshot_stamps, snapshot_markers, stamp_missing = (
+                _claim_stamps_from_snapshot(bulk_targets))
             bulk_stamps: dict[int, str | None] = dict(snapshot_stamps)
+            # #22687 : le marqueur voyage avec la date. Il sert au message de
+            # plafond EPIC, qui nommait « claim » un `[RELEASED]`.
+            bulk_markers: dict[int, str | None] = dict(snapshot_markers)
             bulk_err = None
             if stamp_missing:
                 net_stamps, bulk_err = fetch_latest_claim_stamps_bulk(
@@ -12413,6 +13107,7 @@ def main(argv: list[str] | None = None) -> int:
                     cache=payload_cache,
                     cache_mode=effective_cache_mode,
                     cache_status=cache_status,
+                    markers_out=bulk_markers,
                 )
                 bulk_stamps.update(net_stamps)
             _belt_phase(f"stamps: {len(bulk_stamps)} servis "
@@ -12434,6 +13129,16 @@ def main(argv: list[str] | None = None) -> int:
 
                 settle_belt_head(belt_pool, belt_check_window, _probe,
                                  max_probes=belt_check_window * 3 + 12)
+                # #22687 : le marqueur n'est pose que sur les items dont la
+                # DATE vient du bulk. Un numero servi par la sonde unitaire
+                # de repli porte une date sans marqueur (elle coute une
+                # requete de plus pour le nommer) -- `marker_label(None)` le
+                # dit honnetement au lieu d'affirmer une prise.
+                for it in belt_pool:
+                    n = it.get("number")
+                    stamp = bulk_markers.get(n)
+                    if stamp and it.get("last_claim_stamp") == bulk_stamps.get(n):
+                        it["last_claim_marker"] = stamp
                 _belt_phase(f"settle_belt_head fait: "
                             f"{len(fallback_used)} fallback(s) unitaire(s)")
                 if fallback_used:
@@ -12458,6 +13163,34 @@ def main(argv: list[str] | None = None) -> int:
                 settle_belt_head(belt_pool, belt_check_window, latest_claim_stamp,
                                  max_probes=belt_check_window * 3 + 12)
                 _belt_phase("settle_belt_head fait: chemin unitaire (bulk absent)")
+        # #25082 A + B -- la REPONDERION du tapis : recompense de fermeture
+        # par bras (bandit de Thompson) et prior de consolidation.
+        # Des POIDS SEULEMENT (decision user du 12/10) : l'ordre de service
+        # change, l'admissibilite non -- aucun refus, aucun plafond.
+        # Le corpus des PRs mergees est celui du DEJA mesure (fenetre de
+        # livraison) : la recompense lit la meme fenetre, sans appel reseau
+        # supplementaire ; seule la lecture des issues fermees en ajoute un.
+        belt_weight_signal = apply_belt_weights(
+            belt_pool,
+            rng=run_rng(args, NOW)[1],
+            merged_prs=delivery_prs,
+            open_count=len(pool),
+            series=series,
+            issue_to_family=issue_to_family,
+            zones=series,
+            now=NOW,
+            head=args.grains,
+        )
+        if not belt_weight_signal.get("measured"):
+            _belt_phase("repondersion: NON MESUREE (les recompenses de "
+                        "fermeture n'ont pas ete lues -- le bandit ne joue "
+                        "pas ; le prior de consolidation s'applique quand meme)")
+        else:
+            _belt_phase(f"repondersion: {belt_weight_signal['scored']} grain(s) "
+                        f"pondu(s), {belt_weight_signal['arms']} bras(s) -- "
+                        f"consolidation {belt_weight_signal['classes']['consolidation']}"
+                        f", delivered {belt_weight_signal['classes']['delivered']}"
+                        f", audit-17073 {belt_weight_signal['classes']['audit_17073']}")
         # #22983 -- la fenetre des CLAIMS couvre la fenetre que la boucle de
         # service va parcourir (`belt_service_window`), pas seulement la
         # tete. La boucle ne declenche alors AUCUNE verification unitaire :
@@ -12468,14 +13201,24 @@ def main(argv: list[str] | None = None) -> int:
         belt_check_nums = [it["number"] for it in belt_pool[:belt_claim_window]]
         _belt_phase(f"claims start: {len(belt_check_nums)} numeros "
                     f"(fenetre de service={belt_claim_window})")
+        # #22983 -- le pool a ete RE-TRIE en place (settle_belt_head, puis
+        # apply_belt_weights) DEPUIS le priming : la fenetre ci-dessus est
+        # lue sur l'ordre FINAL et peut contenir des numeros que le priming
+        # n'a jamais rafraichis. On re-prime le delta AVANT la phase STRICT
+        # (garde en miroir du priming initial : merge-only ne prime pas).
+        if not args.belt_merge_only:
+            _belt_reprime_claims_delta(belt_check_nums)
         # #22983 -- PHASE RESEAU, avant le tirage : le cache des PRs
         # ouvertes est enumere UNE fois, et les etats des PRs citees par les
         # marqueurs `[DELIVERED]` sont lus en UN appel groupe. Apres ce
         # bloc, `check_claims(..., strict_snapshot=True)` ne peut que
         # repondre « instantane absent » : il ne complete pas a la volee.
-        # L'instantane lui-meme a deja ete rafraichi plus haut, sur la
-        # fenetre de SERVICE -- dont la fenetre de claims est un prefixe :
-        # un second rafraichissement serait du travail refait.
+        # L'instantane lui-meme a ete rafraichi plus haut, sur la fenetre
+        # de SERVICE PRE-TRIS, puis complete ci-dessus sur le DELTA des
+        # numeros que les tris (settle, repondersion) ont fait entrer en
+        # fenetre : la fenetre de claims n'est PAS un prefixe de la
+        # fenetre primee -- c'etait l'hypothese fausse du refus
+        # intermittent STRICT (mesure du 08/11 : 56/70 hors fenetre).
         global _BELT_OPEN_PRS_CACHE
         if "PYTEST_CURRENT_TEST" not in os.environ:
             _BELT_OPEN_PRS_CACHE = _build_open_prs_cache_for_belt(args.lane)
@@ -12781,6 +13524,16 @@ def main(argv: list[str] | None = None) -> int:
                                 for n, c in belt_dropped_validate],
                 },
                 "picks": belt_picks,
+                # #25082 point C -- l'etat de la resolution de zone, sur le
+                # tirage lui-meme. `measured: false` se distingue de
+                # `resolved: 0` : le premier dit « l'organe amont n'a pas
+                # repondu », le second dit « le grain ne porte aucune zone ».
+                "family_signal": belt_family_signal,
+                # #25082 A + B -- la repondersion et son effet mesure :
+                # `legacy_head` est la tete de file AVANT repondersion,
+                # `weighted_head` apres. Les deux sont lus sur le meme
+                # pool et la meme graine : c'est le rejeu de l'acceptance 2.
+                "weight_signal": belt_weight_signal,
                 # #24373 : les EPICs Origami parques (le pli suivant n'est pas
                 # deplie -- geste reserve au coordinateur). Ils ne sont pas
                 # servis aux lanes ; le tableau du coordinateur les affiche
@@ -12818,6 +13571,13 @@ def main(argv: list[str] | None = None) -> int:
                 "delivered_signal": {
                     "withheld": [it["number"] for it, c in belt_withheld
                                  if c.startswith("LIVRAISON")],
+                    # #16589 (releve po-2025 du 2026-11-03) : quand un
+                    # plafond a coupe la sonde, `withheld` est une borne
+                    # INFERIEURE, jamais un etat propre -- sans cette cle,
+                    # un `[]` se lit « rien a signaler » alors que la fin
+                    # d'urne n'a pas ete verifiee.
+                    "withheld_complete": not (belt_probe_budget_hit[0]
+                                              or belt_time_budget_hit[0]),
                     # #19768 : les exclusions du filtre recent sont HORS
                     # budget -- les nommer separement, sinon la distinction
                     # « ecarte sans consommer de sonde » disparait du JSON.
@@ -13019,10 +13779,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Graine : (lane, heure UTC, reroll). Lanes differentes -> tirages
     # differents ; meme lane dans l'heure -> tirage identique (idempotent).
-    stamp = NOW.strftime("%Y-%m-%dT%H")
-    seed_src = f"{args.lane}|{stamp}|{args.reroll}"
-    seed = int(hashlib.sha256(seed_src.encode()).hexdigest()[:16], 16)
-    rng = random.Random(seed)
+    seed_src, rng = run_rng(args, NOW)
 
     # Le tirage est claim-aware, et le remplacement est ce qui compte.
     # Mesure du 2026-08-29 : quatre collisions en quatre jours (#13310, et
@@ -13178,6 +13935,10 @@ def main(argv: list[str] | None = None) -> int:
                 "cover_probes_failed": sorted(
                     set(delivered_state.get("cover_failures") or [])),
                 "budget_hit": delivered_state["budget_hit"],
+                # #16589, pendant pondere de la cle belt : `withheld`
+                # (niveau racine) est complet seulement si aucun plafond
+                # n'a coupe la sonde.
+                "withheld_complete": not delivered_state["budget_hit"],
                 "max_probes": DELIVERED_SIGNAL_MAX_PROBES,
             },
             # Pendant du volet livraison, meme doctrine (#20265) :
@@ -13351,7 +14112,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"   Justification ({args.wip_reason!r}) a reporter sur l'issue")
         print("   retenue -- le passage outre ne se prend pas en silence.")
     penalized = ", ".join(args.prev_genre)
-    print(f"Lane {args.lane} | graine {stamp}"
+    print(f"Lane {args.lane} | graine {seed_src}"
           + (f" | reroll {args.reroll}" if args.reroll else "")
           + (f" | genres de session penalises : {penalized}" if penalized else ""))
     print()
@@ -13361,6 +14122,23 @@ def main(argv: list[str] | None = None) -> int:
     print_delivered_resolved_lines(withheld)
     # #19309 : le gel a sa ligne a lui (veto du coordinateur, pas livraison).
     print_frozen_resolved_lines(withheld)
+    # #16589 demande 1c (volet pondere, 2026-11-08) : le rapport de sondage
+    # -- y compris l'annonce « fin d'urne NON SONDEE » -- se lit AVANT le
+    # tableau de tirage, comme sur la voie tapis. Le lecteur doit savoir,
+    # en choisissant un candidat servi, lesquels n'ont pas ete verifies ;
+    # l'emettre apres le tableau enterait l'information sous les picks.
+    print_delivered_signal_report(withheld, delivered_state,
+                                  args.include_delivered)
+    # #20265 : juxtapose au signal de livraison -- les deux lectures ratees
+    # se lisent ensemble, la ou le defaut etait precisement que l'une se
+    # taisait.
+    print_claim_unread_report((delivered_state or {}).get("claim_unread"),
+                              args.lane)
+    # #24516 : meme doctrine pour le gel, sur le chemin `delivered` aussi --
+    # la sonde de gel y est cablee (elle y produit `frozen_unread`), mais
+    # l'echec de lecture n'etait dit par aucun rapport texte.
+    print_frozen_unread_report((delivered_state or {}).get("frozen_unread"),
+                               args.lane)
     header = (f"{'urne':<10} {'issue':<8} {'age':>5} {'inact':>6} {'vus':>4}  "
               f"{'genre':<16} {'p':>5}  titre")
     print(header)
@@ -13410,18 +14188,6 @@ def main(argv: list[str] | None = None) -> int:
                         f"citant sur {LONG_VISITS_WINDOW_DAYS} j -- veine deja")
             print(pad + "ouverte, pas un grain delaisse. Une tranche de plus ne solde")
             print(pad + "rien : prendre un sous-grain ailleurs, sauf steer explicite.")
-    print_delivered_signal_report(withheld, delivered_state,
-                                  args.include_delivered)
-    # #20265 : juxtapose au signal de livraison -- les deux lectures ratees
-    # se lisent ensemble, la ou le defaut etait precisement que l'une se
-    # taisait.
-    print_claim_unread_report((delivered_state or {}).get("claim_unread"),
-                              args.lane)
-    # #24516 : meme doctrine pour le gel, sur le chemin `delivered` aussi --
-    # la sonde de gel y est cablee (elle y produit `frozen_unread`), mais
-    # l'echec de lecture n'etait dit par aucun rapport texte.
-    print_frozen_unread_report((delivered_state or {}).get("frozen_unread"),
-                               args.lane)
     print_empty_draw_notice(withheld, picks, args.include_delivered)
     print()
     print_unattributed_blocked(backlog)

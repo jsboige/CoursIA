@@ -66,6 +66,13 @@ PAGE_SIZE = 40
 EXIT_OK = 0
 EXIT_ERROR = 2
 
+# Conclusions de check-run classees ROUGES, miroir des trois organes canoniques
+# (check_run_state.py, check_adjoint_prevalidation.py, check_stale_guard_reds.py).
+# `skipped` et `neutral` sont des VERTES : le predicate precedent (`!= "success"`)
+# les comptait comme rouges et fabriquait des rouges fantomes sur des jambes
+# desactivees (ex. Build Quarto / Deploy Pages sur une PR de docs).
+RED_CONCLUSIONS = {"failure", "timed_out"}
+
 _PR_QUERY = """
 query($owner: String!, $name: String!, $cursor: String) {
   repository(owner: $owner, name: $name) {
@@ -262,7 +269,7 @@ def probe_checks(pr: int, head: str) -> dict:
     latest = data.get("latest") or {}
     reds = sorted(
         name for name, leg in latest.items()
-        if (leg or {}).get("conclusion") != "success"
+        if (leg or {}).get("conclusion") in RED_CONCLUSIONS
     )
     residual = data.get("residual_reds") or []
     reds += sorted(
