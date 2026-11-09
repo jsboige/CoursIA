@@ -1,0 +1,341 @@
+"""Tests du lot quotidien en ombre (P3 du plan #25510).
+
+Le lot est **advisory** : il mesure, il ne bloque rien. Les proprietes sous
+test sont donc deux :
+
+1. **La selection ne laisse pas passer ce qui doit etre exclu.** Une PR de
+   fork sans l'APPROVE du coordinateur, ou une PR qui porte une reserve, ne
+   doit pas occuper un creneau de runner -- et l'exclusion doit etre **nommee**,
+   pas silencieuse.
+2. **La mesure est exacte.** L'echeance du creneau est le critere qui
+   decide si la cadence tient ; un calcul faux de la duree rendrait la
+   cadence indécidable.
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pytest
+
+CI_DIR = Path(__file__).resolve().parents[1] / "ci"
+sys.path.insert(0, str(CI_DIR))
+
+import heavy_batch  # noqa: E402
+
+
+def _entry(number: int, **kwargs) -> dict:
+    base = {
+        "number": number,
+        "title": f"PR {number}",
+        "created_at": f"2026-11-0{number}T00:00:00Z",
+        "fork": False,
+        "approved_by_coordinator": False,
+        "verdict": "LGTM",
+        "merge_state_status": "CLEAN",
+    }
+    base.update(kwargs)
+    return base
+
+
+# --- Creneaux --------------------------------------------------------------
+
+
+def test_le_creneau_actif_est_celui_du_debut_du_creneau() -> None:
+    now = datetime(2026, 11, 9, 4, 30, tzinfo=timezone.utc)
+    slot = heavy_batch.active_slot(now)
+    assert slot is not None
+    assert slot.name == "creneau-1"
+
+
+def test_le_creneau_actif_change_a_l_ouverture_du_suivant() -> None:
+    now = datetime(2026, 11, 9, 10, 30, tzinfo=timezone.utc)
+    slot = heavy_batch.active_slot(now)
+    assert slot is not None
+    assert slot.name == "creneau-2"
+
+
+def test_les_creneaux_pavent_la_journee_entiere() -> None:
+    # un creneau est toujours actif : les quatre fenetres se recouvrent sans
+    # laisser de trou, donc la question "hors creneau" ne se pose pas.
+    for hour in range(24):
+        now = datetime(2026, 11, 9, hour, 0, tzinfo=timezone.utc)
+        assert heavy_batch.active_slot(now) is not None
+
+
+def test_le_dernier_creneau_couvre_la_nuit() -> None:
+    slot = heavy_batch.active_slot(datetime(2026, 11, 9, 23, 0, tzinfo=timezone.utc))
+    assert slot is not None
+    assert slot.name == "creneau-4"
+    slot = heavy_batch.active_slot(datetime(2026, 11, 9, 2, 0, tzinfo=timezone.utc))
+    assert slot is not None
+    assert slot.name == "creneau-4"
+
+
+def test_les_quatre_creneaux_ont_une_echeance_qui_suit_leur_debut() -> None:
+    for slot in heavy_batch.SLOTS:
+        assert slot.deadline_minutes > slot.start_minutes
+    # le dernier creneau se termine le lendemain a 00:00
+    assert heavy_batch.SLOTS[-1].deadline_minutes == 24 * 60
+
+
+# --- Selection -------------------------------------------------------------
+
+
+def test_une_pr_de_fork_sans_approve_du_coordinateur_est_exclue() -> None:
+    entries = [_entry(1, fork=True)]
+    selected, excluded = heavy_batch.select_batch(entries, 4)
+    assert selected == []
+    assert "APPROVE" in excluded[0]["motif"]
+
+
+def test_une_pr_de_fork_avec_approve_du_coordinateur_passe() -> None:
+    entries = [_entry(1, fork=True, approved_by_coordinator=True)]
+    selected, _excluded = heavy_batch.select_batch(entries, 4)
+    assert [e["number"] for e in selected] == [1]
+
+
+def test_une_pr_avec_une_reserve_est_exclue() -> None:
+    entries = [_entry(1, verdict="CONCERNS")]
+    selected, excluded = heavy_batch.select_batch(entries, 4)
+    assert selected == []
+    assert "CONCERNS" in excluded[0]["motif"]
+
+
+def test_une_pr_sans_voix_est_exclue() -> None:
+    entries = [_entry(1, verdict="SANS-REVIEW")]
+    selected, excluded = heavy_batch.select_batch(entries, 4)
+    assert selected == []
+    assert "SANS-REVIEW" in excluded[0]["motif"]
+
+
+def test_les_prs_plus_anciennes_passent_en_tete() -> None:
+    entries = [
+        _entry(3, created_at="2026-11-03T00:00:00Z"),
+        _entry(1, created_at="2026-11-01T00:00:00Z"),
+        _entry(2, created_at="2026-11-02T00:00:00Z"),
+    ]
+    selected, _excluded = heavy_batch.select_batch(entries, 4)
+    assert [e["number"] for e in selected] == [1, 2, 3]
+
+
+def test_la_taille_du_lot_est_bornee() -> None:
+    entries = [_entry(n, created_at=f"2026-11-0{n}T00:00:00Z") for n in range(1, 8)]
+    selected, excluded = heavy_batch.select_batch(entries, 2)
+    assert len(selected) == 2
+    assert len(excluded) == 5
+    assert "lot plein" in excluded[0]["motif"]
+
+
+# --- Lecture du verdict ----------------------------------------------------
+
+
+def test_le_verdict_est_lu_dans_le_corps_et_non_dans_review_decision() -> None:
+    node = {
+        "number": 7,
+        "title": "une PR",
+        "createdAt": "2026-11-01T00:00:00Z",
+        "isCrossRepository": False,
+        "mergeStateStatus": "CLEAN",
+        "reviewDecision": None,
+        "reviews": [],
+        "comments": [{"author": {"login": "jsboige"}, "body": "VERDICT: LGTM", "createdAt": "2026-11-02T00:00:00Z"}],
+    }
+    entry = heavy_batch.build_entry(node)
+    assert entry["verdict"] == "LGTM"
+
+
+def test_une_review_approvee_du_coordinateur_est_reconnue() -> None:
+    node = {
+        "number": 8,
+        "title": "une PR de fork",
+        "createdAt": "2026-11-01T00:00:00Z",
+        "isCrossRepository": True,
+        "mergeStateStatus": "CLEAN",
+        "reviewDecision": "APPROVED",
+        "reviews": [
+            {"author": {"login": "myia-ai-01"}, "state": "APPROVED", "body": "", "submittedAt": "2026-11-02T00:00:00Z"}
+        ],
+        "comments": [],
+    }
+    entry = heavy_batch.build_entry(node)
+    assert entry["approved_by_coordinator"] is True
+    assert entry["fork"] is True
+
+
+def test_une_review_commented_ne_vaut_pas_approve_du_coordinateur() -> None:
+    node = {
+        "number": 9,
+        "title": "une PR",
+        "createdAt": "2026-11-01T00:00:00Z",
+        "isCrossRepository": True,
+        "mergeStateStatus": "CLEAN",
+        "reviewDecision": None,
+        "reviews": [
+            {"author": {"login": "myia-ai-01"}, "state": "COMMENTED", "body": "", "submittedAt": "2026-11-02T00:00:00Z"}
+        ],
+        "comments": [],
+    }
+    entry = heavy_batch.build_entry(node)
+    assert entry["approved_by_coordinator"] is False
+
+
+# --- Mesure ----------------------------------------------------------------
+
+
+def test_la_duree_du_lot_est_calculee_entre_debut_et_fin() -> None:
+    results = {
+        "started_at": "2026-11-09T04:30:00+00:00",
+        "finished_at": "2026-11-09T05:00:00+00:00",
+        "prs": [{"number": 1, "statut": "vert", "duree_s": 120}],
+    }
+    payload = heavy_batch.summarize(results, datetime(2026, 11, 9, 5, 5, tzinfo=timezone.utc))
+    assert payload["duree_lot_s"] == 1800
+    assert payload["prs_concernes"] == 1
+    assert payload["prs_rouges"] == 0
+
+
+def test_un_lot_fini_avant_l_echeance_est_conforme() -> None:
+    results = {
+        "started_at": "2026-11-09T04:30:00+00:00",
+        "finished_at": "2026-11-09T09:00:00+00:00",
+        "prs": [],
+    }
+    payload = heavy_batch.summarize(results, datetime(2026, 11, 9, 9, 5, tzinfo=timezone.utc))
+    assert payload["fin_avant_echeance"] is True
+
+
+def test_un_lot_qui_deborde_l_echeance_est_signale() -> None:
+    # lot lance a 04:30 (creneau 1, echeance 10:00) et fini a 11:00 : trop tard
+    results = {
+        "started_at": "2026-11-09T04:30:00+00:00",
+        "finished_at": "2026-11-09T11:00:00+00:00",
+        "prs": [],
+    }
+    payload = heavy_batch.summarize(results, datetime(2026, 11, 9, 11, 5, tzinfo=timezone.utc))
+    assert payload["creneau"]["nom"] == "creneau-1"
+    assert payload["fin_avant_echeance"] is False
+
+
+def test_le_creneau_de_reference_est_celui_du_debut_du_lot() -> None:
+    # un lot lance a 04:30 et lu a 11:05 reste juge sur l'echeance de 10:00
+    results = {
+        "started_at": "2026-11-09T04:30:00+00:00",
+        "finished_at": "2026-11-09T09:00:00+00:00",
+        "prs": [],
+    }
+    payload = heavy_batch.summarize(results, datetime(2026, 11, 9, 11, 5, tzinfo=timezone.utc))
+    assert payload["creneau"]["nom"] == "creneau-1"
+    assert payload["fin_avant_echeance"] is True
+
+
+def test_le_dernier_creneau_admet_un_fin_apres_minuit() -> None:
+    # creneau 4 : 21:30 -> 00:00 (le lendemain). Un lot fini a 23:00 tient ;
+    # un lot fini a 01:00 le lendemain a deborde.
+    results = {
+        "started_at": "2026-11-09T21:30:00+00:00",
+        "finished_at": "2026-11-09T23:00:00+00:00",
+        "prs": [],
+    }
+    payload = heavy_batch.summarize(results, datetime(2026, 11, 9, 23, 5, tzinfo=timezone.utc))
+    assert payload["creneau"]["nom"] == "creneau-4"
+    assert payload["fin_avant_echeance"] is True
+
+    results["finished_at"] = "2026-11-10T01:00:00+00:00"
+    payload = heavy_batch.summarize(results, datetime(2026, 11, 10, 1, 5, tzinfo=timezone.utc))
+    assert payload["fin_avant_echeance"] is False
+
+
+def test_sans_heure_de_debut_l_echeance_est_indeterminee() -> None:
+    results = {"prs": [], "finished_at": "2026-11-09T11:00:00+00:00"}
+    payload = heavy_batch.summarize(results, datetime(2026, 11, 9, 11, 5, tzinfo=timezone.utc))
+    assert payload["duree_lot_s"] is None
+    assert payload["fin_avant_echeance"] is None
+
+
+# --- Geste d'execution -----------------------------------------------------
+
+
+def test_le_plan_des_commandes_decrit_le_geste_complet(tmp_path: Path) -> None:
+    commands = heavy_batch.plan_commands(
+        tmp_path, 42, tmp_path / "wt", tmp_path / "select_tests.py"
+    )
+    joined = [" ".join(c) for c in commands]
+    assert any("pull/42/merge" in c for c in joined)
+    assert any("worktree add" in c for c in joined)
+    assert any("worktree remove" in c for c in joined)
+    assert any("select_tests.py" in c for c in joined)
+    assert any("pytest" in c for c in joined)
+
+
+def test_sans_selecteur_le_plan_ne_prevoit_pas_de_pytest(tmp_path: Path) -> None:
+    commands = heavy_batch.plan_commands(tmp_path, 42, tmp_path / "wt", None)
+    runs_pytest = [c for c in commands if "-m" in c and "pytest" in c]
+    assert runs_pytest == []
+
+
+def test_le_lot_en_simulation_ne_lance_aucune_commande(tmp_path: Path) -> None:
+    plan = {"selectionnees": [{"number": 42}]}
+    results = heavy_batch.run_batch(
+        tmp_path, plan, tmp_path / "work", tmp_path / "sel.py", dry_run=True
+    )
+    assert results["prs"][0]["statut"] == "simulation"
+    assert results["started_at"] and results["finished_at"]
+    assert not (tmp_path / "work" / "pr-42").exists()
+
+
+# --- CLI -------------------------------------------------------------------
+
+
+def test_la_cli_slot_rend_le_creneau_actif() -> None:
+    proc = subprocess.run(
+        [sys.executable, str(CI_DIR / "heavy_batch.py"), "--slot", "--json"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(proc.stdout)
+    assert len(payload["creneaux"]) == 4
+
+
+def test_la_cli_resume_un_lot_deja_produit(tmp_path: Path) -> None:
+    results = tmp_path / "results.json"
+    results.write_text(
+        json.dumps(
+            {
+                "started_at": "2026-11-09T04:30:00+00:00",
+                "finished_at": "2026-11-09T05:00:00+00:00",
+                "prs": [{"number": 1, "statut": "rouge", "duree_s": 60}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    proc = subprocess.run(
+        [sys.executable, str(CI_DIR / "heavy_batch.py"), "--results", str(results), "--json"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(proc.stdout)
+    assert payload["prs_rouges"] == 1
+
+
+def test_un_resultat_illisible_rend_une_erreur_explicite(tmp_path: Path) -> None:
+    bad = tmp_path / "results.json"
+    bad.write_text("{pas du json", encoding="utf-8")
+    proc = subprocess.run(
+        [sys.executable, str(CI_DIR / "heavy_batch.py"), "--results", str(bad)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    assert proc.returncode == 2
