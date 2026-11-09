@@ -205,6 +205,10 @@ on:
       # #18392/#19695 ci-dessus). La suite est CPU-only : z3-solver est
       # installe ci-dessous. Miroir sous pull_request: ci-dessous.
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
+      # #23423 : le test du compagnon cappe POSIX est collecte par cette suite,
+      # mais son sujet est hors scripts/** ; declencher la suite quand ce
+      # wrapper change. Miroir sous pull_request ci-dessous.
+      - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/launchers/launch_capped.sh'
   pull_request:
     # #19426 option (b) : pas de branches: sur pull_request quand paths: scope
     # deja (precedent #19381) — le retarget d'une PR empilee reste capte.
@@ -290,6 +294,8 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/requirements.txt'
       # #21100 pli 0 Origami (Kernel Gateway) (mirror of the push path above).
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
+      # #23423 (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/launchers/launch_capped.sh'
   workflow_dispatch:
 
 permissions:
