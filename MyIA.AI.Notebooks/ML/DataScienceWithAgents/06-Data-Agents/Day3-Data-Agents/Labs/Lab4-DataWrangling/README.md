@@ -16,7 +16,7 @@ Ce laboratoire ouvre la **Journée 3** côté data. Il part du constat classique
 
 ## Données fournies
 
-- `transactions.csv` : transactions commerciales brutes (colonnes `date`, `id_produit`, `categorie`, `quantite`, `prix_unitaire`), volontairement bruitées (valeurs manquantes, types incohérents, doublons).
+- `transactions.csv` : transactions commerciales brutes (colonnes `date`, `id_produit`, `categorie`, `quantite`, `prix_unitaire`), volontairement bruitées : une quantité et un prix manquants, et une date saisie entre apostrophes que la conversion en `datetime` ne sait pas lire. Le fichier ne contient aucun doublon : l'exercice 3 en ajoute un à une copie du DataFrame pour tester la fonction de détection.
 
 ## Prérequis
 

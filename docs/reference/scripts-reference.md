@@ -19,10 +19,31 @@ Les scripts `scripts/fix_*.py` / `scripts/recycle_*.py` à la racine sont des on
 |--------|-------|
 | `wsl_papermill.py` | **Papermill INSIDE WSL** pour kernels GameTheory/Lean Python (`execute` / `batch` / `check-env`) — cf [.claude/rules/wsl-kernels.md](../../.claude/rules/wsl-kernels.md) |
 | `batch_reexecute.py` | Re-exécution Papermill en lot |
+| `kernel_gateway_service.py` | Pré-vol puis démarrage d'un notebook annoté en mode officiel `notebook-http`; sonde optionnelle d'une route enregistrée via OpenAPI et requête HTTP réelle sur loopback |
 | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py` | Exécution .NET Interactive : moteur cell-by-cell canonique (`dotnet_executor.py`), wrapper CLI historique (`exec_dotnet_persist.py`) et exécution ciblée |
 | `execute_qcpy_docker.py`, `qc_quantbook_execute.py` | Exécution QuantConnect (Quantbooks via Docker/QC Cloud) |
 | `merge_executed_outputs.py` | Fusion des sorties d'un carnet exécuté ailleurs (QC Cloud) dans le carnet de la branche, refus si le code diffère ([routes](../qc/quantbook-execution-routes.md)) |
 | `_exec_bdd_csharp.py` | **Archivé** 2026-10-01 (palier 1 #18153) — voir `scripts/notebook_tools/_archive/README.md` |
+
+#### `kernel_gateway_service.py` — démarrer un notebook annoté
+
+```bash
+python scripts/notebook_tools/kernel_gateway_service.py chemin/vers/notebook.ipynb --check-only
+python scripts/notebook_tools/kernel_gateway_service.py chemin/vers/notebook.ipynb --port 8899
+python scripts/notebook_tools/kernel_gateway_service.py chemin/vers/notebook.ipynb \
+  --port 8899 --probe-path /route-annote --probe-json '{"entree": "exemple"}'
+```
+
+Le carnet reste la source de l'API : ses annotations `# GET /...` et
+`# POST /...` sont transmises telles quelles au Kernel Gateway officiel.
+Le pré-vol vérifie le notebook, le paquet PyPI `jupyter_kernel_gateway` et le
+kernelspec déclaré. La sonde attend l'enregistrement de la méthode et de la
+route dans `/_api/spec/swagger.json`, appelle l'endpoint une seule fois en
+loopback et exige une réponse JSON avec statut 2xx. La sonde configure un jeton
+aléatoire via `KG_AUTH_TOKEN` (pris en charge par Kernel Gateway), confirme
+qu'OpenAPI répond 401 sans ce jeton, puis l'envoie avec la requête métier : un
+autre serveur déjà lié au port ne peut donc pas valider la sonde à sa place.
+Elle arrête ensuite le processus ; sans sonde, le serveur reste au premier plan.
 
 #### `notebook_tools.py execute` — Options avancées
 
@@ -108,7 +129,7 @@ python scripts/notebook_tools/notebook_tools.py execute <notebook> --cell-by-cel
 | `detect_bare_cross_dir_load.py` | Détecte un `#load "X.cs"` **bare** (nom nu, sans séparateur) dont le `.cs` n'existe PAS dans le dossier du notebook — anti-pattern du rollout SVG inline (#6927) où le kernel résout un `#load` relatif et échoue silencieusement / charge le mauvais fichier |
 | `check_notebook_navlinks.py` | Vérifie les liens de navigation relatifs **cassés dans les cellules markdown des `.ipynb`** (« précédent / suivant »). `check_docs_links.py` couvre uniquement les fichiers markdown (CLAUDE.md, docs/, README) ; cet outil couvre le markdown *intérieur* des notebooks |
 | `check_plotly_static_risk.py` | Détecte les cellules Plotly-CDN dans les `.ipynb` = **blanc en static rendering** (cf #6927). Le pattern canonique `record PlotlyHtml + Formatter.Register` émet un `<script src="https://cdn.plot.ly/...">` externe qui rend en kernel live mais pas sur GitHub/nbviewer |
-| `list_data_consumers.py` | **Donnée vendorée modifiée → carnets consommateurs** (#20628). Sur un changement qui touche `Argument_Analysis/ontologies/*.owl` ou `data/*taxonomy*.csv`, liste les carnets dont la source cite le fichier (index git, `_archive/` et traductions `-EN` exclus) et marque ceux qui **ne sont pas dans le même changement**. Mode indexé par défaut, `--base <ref>` pour un changement de PR, `--advisory` (rc 0 forcé, mode hook), `--json`, `--self-test`. Câblé en pre-commit **advisory** (aucun emplacement de file CI consommé, #13097) : la version bloquante est l'appel sans `--advisory`, pour l'auteur ou le reviewer |
+| `list_data_consumers.py` | **Donnée vendorée modifiée → carnets consommateurs** (#20628). Sur un changement qui touche `ArgumentAnalysis/ontologies/*.owl` ou `data/*taxonomy*.csv`, liste les carnets dont la source cite le fichier (index git, `_archive/` et traductions `-EN` exclus) et marque ceux qui **ne sont pas dans le même changement**. Mode indexé par défaut, `--base <ref>` pour un changement de PR, `--advisory` (rc 0 forcé, mode hook), `--json`, `--self-test`. Câblé en pre-commit **advisory** (aucun emplacement de file CI consommé, #13097) : la version bloquante est l'appel sans `--advisory`, pour l'auteur ou le reviewer |
 
 ### Render-suite SVG inline (rollout #6927)
 La migration Plotly-CDN → SVG inline `text/html` (canon ai-01 `svg-6927-canon.md`) est gardée par 5 détecteurs couvrant tous les cas de figure cassé. `detect_svg_decimal_commas.py` (dans la section Tests ci-dessous) traite le cas virgule-décimale fr-FR.

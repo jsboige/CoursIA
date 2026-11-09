@@ -34,7 +34,7 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 | `ModuleNotFoundError: optuna` | `pip install optuna` — nécessaire pour App-18 (Hyperparameter Tuning) |
 | `ModuleNotFoundError: rustuna` | `pip install rustuna` — nécessaire pour App-18c (Rustuna vs Optuna) ; statut expérimental, wheel `win_amd64`/`manylinux` cp311-abi3 |
 | `ModuleNotFoundError: pygad` | `pip install pygad` — nécessaire pour App-9/10 (EdgeDetection, Portfolio) |
-| App-9b/10b (.NET) : kernel non disponible | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive` |
+| App-9b/10b (.NET) : kernel non disponible | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` |
 | App-9b sous Linux : `DllNotFoundException` sur `cvextern`, ou `libgeotiff.so.5: cannot open shared object file` | Le runtime natif `Emgu.CV.runtime.mini.ubuntu-x64` est lié aux bibliothèques d'Ubuntu 24.04 x64 (FFmpeg 6, GTK 3, GStreamer) : `sudo apt install libgeotiff5 liblapack3 libopenjp2-7 libgstreamer-plugins-base1.0-0 libavcodec60 libavformat60 libswscale7 libgtk-3-0t64`. Sur une autre distribution, ces versions peuvent manquer |
 | Certains solveurs sont lents (>30s) | Les instances sont intentionnellement petites pour le pédagogique. Pour des instances plus grandes, activer les timeouts dans CP-SAT (`model.parameters.max_time_in_seconds`) |
 
