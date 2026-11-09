@@ -1,4 +1,8 @@
+> RAPPORT — 2026-09-02 — scan de mutualisation Mathlib à l'échelle du cluster depuis un worktree frais (c.857, po-2024) : 24 lacs, 1 groupe mutualisable de 19 membres, 0 GB — figé
+
 # Cluster Mathlib mutualization — Scan report (c.857, po-2024)
+
+Les règles durables que ce scan a établies — la clé de groupe est l'identité de manifest et non la rev Mathlib, le scanner est worktree-local, et un `Apply` exige un donneur avec checkout — vivent dans [`lean-dev-disk-hygiene.md`](../reference/lean-dev-disk-hygiene.md) §« Mutualisation Mathlib — la clé de groupe et la portée du scan ». Le présent rapport garde les mesures datées.
 
 **Date** : 2026-09-02 (cycle c.857)
 **Lane** : `myia-po-2024:CoursIA-2`
