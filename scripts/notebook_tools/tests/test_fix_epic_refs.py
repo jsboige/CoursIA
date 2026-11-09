@@ -248,3 +248,51 @@ def test_scan_et_apply_refusent_le_meme_reference_non_couverte(tmp_path: Path) -
     assert "non couverte" in outcome
     # Le carnet n'a pas ete touche.
     assert "IC #1206." in path.read_text(encoding="utf-8")
+
+
+def test_scan_et_apply_refusent_le_meme_carnet_a_une_seule_cellule_markdown(tmp_path: Path) -> None:
+    """Un carnet d'une seule cellule markdown n'a pas de pied distinct.
+
+    Ces deux controles de DESTINATION vivaient dans `apply_one` : le scan
+    annoncait « repariable » la ou l'application refusait d'ecrire. Ils sont
+    desormais dans `_plan`, donc les deux portes rendent le MEME motif.
+    """
+    path = tmp_path / "n.ipynb"
+    nb = {
+        "cells": [{"cell_type": "markdown", "id": "aaaa0001", "metadata": {},
+                   "source": "# Titre\n\nEPIC #1206."}],
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    _write(path, nb)
+
+    info = fer.analyse(path)
+    assert info["refs"] == ["1206"]
+    assert info["refused"]
+    outcome = fer.apply_one(path, dry_run=True)
+    assert outcome == info["refused"]
+    assert "une seule cellule markdown" in outcome
+    # Le carnet n'a pas ete touche.
+    assert "EPIC #1206." in path.read_text(encoding="utf-8")
+
+
+def test_scan_et_apply_refusent_le_meme_carnet_a_note_de_pied_deja_presente(tmp_path: Path) -> None:
+    """Une note de pied deja deposee rend le carnet non eligible.
+
+    Deuxieme forme du meme residu : le scan annoncait « repariable » la ou
+    l'application refusait d'ecrire une seconde fois.
+    """
+    path = tmp_path / "n.ipynb"
+    nb = _notebook("# Titre\n\nEPIC #1206.\n",
+                   tail="> Carnet issu de l'EPIC #1206.\n")
+    _write(path, nb)
+
+    info = fer.analyse(path)
+    assert info["refs"] == ["1206"]
+    assert info["refused"]
+    outcome = fer.apply_one(path, dry_run=True)
+    assert outcome == info["refused"]
+    assert "note de pied deja presente" in outcome
+    # Le carnet n'a pas ete touche : une seule note de pied.
+    assert path.read_text(encoding="utf-8").count("Carnet issu de l'EPIC") == 1

@@ -304,7 +304,9 @@ def _plan(path: Path) -> dict:
     1. pas de cellule markdown d'en-tete -> rien a citer ;
     2. round-trip non byte-identique -> carnet non canonique, refuse ;
     3. le retrait echoue (residu de ponctuation, parenthese desequilibree) ;
-    4. une reference est citee mais aucune clause n'est retirable.
+    4. une reference est citee mais aucune clause n'est retirable ;
+    5. pas de cellule markdown distincte pour le pied de carnet ;
+    6. la note de pied est deja presente.
     """
     raw = path.read_bytes()
     nb = json.loads(raw.decode("utf-8"))
@@ -322,6 +324,8 @@ def _plan(path: Path) -> dict:
         "removable": [],
         "refused": None,
         "new_header": None,
+        "footer_index": None,
+        "footer": None,
     }
     if hidx is None:
         plan["refused"] = "sans cellule markdown d'en-tete"
@@ -345,6 +349,25 @@ def _plan(path: Path) -> dict:
                                "-- ecriture refusee")
         return plan
     plan["new_header"], plan["removable"] = result[0], result[1]
+    # Les controles de DESTINATION sont ici, et non dans `apply_one` : c'est
+    # ce qui rend le predicat unique. Mesure du 2026-11-09 (adjoint, PR #25405)
+    # : `apply_one` gardait deux refus absents du scan -- une seule cellule
+    # markdown, note de pied deja presente -- donc le scan annoncait
+    # « repariable » la ou l'application refusait d'ecrire. Le decompte
+    # « avant/apres » d'une fournee ne voulait alors rien dire.
+    lidx = _last_markdown_index(cells)
+    if lidx is None:
+        plan["refused"] = "aucune cellule markdown pour le pied de carnet"
+        return plan
+    if lidx == hidx:
+        plan["refused"] = "une seule cellule markdown (pas de pied distinct) -- ecriture refusee"
+        return plan
+    footer = _footer_note(plan["removable"])
+    if footer in _source_text(cells[lidx]):
+        plan["refused"] = "note de pied deja presente -- ecriture refusee"
+        return plan
+    plan["footer_index"] = lidx
+    plan["footer"] = footer
     return plan
 
 
@@ -369,21 +392,13 @@ def apply_one(path: Path, dry_run: bool) -> str:
     plan = _plan(path)
     if plan["refused"]:
         return plan["refused"]
-    cells = plan["cells"]
-    hidx = plan["header_index"]
-    if hidx is None:
-        return "sans cellule markdown d'en-tete"
     if plan["new_header"] is None:
         return "aucune reference d'EPIC en en-tete"
     new_header, numbers = plan["new_header"], plan["removable"]
-    lidx = _last_markdown_index(cells)
-    if lidx is None:
-        return "aucune cellule markdown pour le pied de carnet"
-    if lidx == hidx:
-        return "une seule cellule markdown (pas de pied distinct) -- ecriture refusee"
-    footer = _footer_note(numbers)
-    if footer in _source_text(cells[lidx]):
-        return "note de pied deja presente -- ecriture refusee"
+    cells = plan["cells"]
+    hidx = plan["header_index"]
+    lidx = plan["footer_index"]
+    footer = plan["footer"]
     if not dry_run:
         cells[hidx]["source"] = new_header
         _set_source_text(cells[lidx], _append_footer(_source_text(cells[lidx]), footer))
