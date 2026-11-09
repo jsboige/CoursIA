@@ -177,3 +177,74 @@ def test_scan_signale_les_refus_sans_ecrire(tmp_path: Path) -> None:
     info = fer.analyse(path)
     assert info["refs"] == ["4677"]
     assert info["refused"]
+
+
+def test_scan_et_apply_refusent_le_meme_carnet_non_canonique(tmp_path: Path) -> None:
+    """Un carnet non canonique est refuse par le scan ET par l'application.
+
+    Le scan annoncait « repariable » (la reference etait trouvee, aucun refus
+    enregistre) alors que l'application repondait « round-trip non
+    byte-identique » : le decompte « avant/apres » d'une fournee ne voulait
+    donc rien dire. Le predicat d'eligibilite est desormais UNIQUE : les deux
+    portes rendent le MEME motif de refus.
+    """
+    path = tmp_path / "n.ipynb"
+    header = "# Titre\n\n> Port. EPIC #1206, Prong B."
+    _write(path, _notebook(header))
+    # Changer la forme du fichier sans toucher au contenu des cellules.
+    raw = path.read_text(encoding="utf-8").replace('"x = 1\\n"', '"x = 1\\n"   ')
+    path.write_text(raw, encoding="utf-8")
+
+    info = fer.analyse(path)
+    assert info["refs"] == ["1206"]
+    assert info["refused"]
+    outcome = fer.apply_one(path, dry_run=True)
+    assert outcome == info["refused"]
+    assert "byte-identique" in outcome
+    # Le carnet n'a pas ete touche.
+    assert "EPIC #1206" in path.read_text(encoding="utf-8")
+
+
+def test_le_scan_compte_un_carnet_non_canonique_comme_refuse(tmp_path: Path,
+                                                            capsys) -> None:
+    """Le decompte du scan classe un carnet non canonique en « refuse ».
+
+    C'est la consequence comptable du predicat unique : un carnet que
+    l'application refuse ne peut plus etre annonce comme « repariable » par
+    le scan.
+    """
+    path = tmp_path / "n.ipynb"
+    header = "# Titre\n\n> Port. EPIC #1206, Prong B."
+    _write(path, _notebook(header))
+    raw = path.read_text(encoding="utf-8").replace('"x = 1\\n"', '"x = 1\\n"   ')
+    path.write_text(raw, encoding="utf-8")
+
+    rc = fer.main(["--scan", str(tmp_path)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "repairables : 0" in out
+    assert "(refuses) : 1" in out
+
+
+def test_scan_et_apply_refusent_le_meme_reference_non_couverte(tmp_path: Path) -> None:
+    """Une reference citee mais non retirable est refusee par les deux portes.
+
+    L'en-tete porte la reference coupee sur deux elements de la source
+    (['Intro. EP', 'IC #1206.']) : le scan la voyait ('EPIC #1206' sur le texte
+    joint), mais aucune clause n'est retirable element par element -- et
+    l'application repondait « aucune reference d'EPIC en en-tete » sans que le
+    scan le sache.
+    """
+    path = tmp_path / "n.ipynb"
+    nb = _notebook("# Titre\n")
+    nb["cells"][0]["source"] = ["Intro. EP", "IC #1206."]
+    _write(path, nb)
+
+    info = fer.analyse(path)
+    assert info["refs"] == ["1206"]
+    assert info["refused"]
+    outcome = fer.apply_one(path, dry_run=True)
+    assert outcome == info["refused"]
+    assert "non couverte" in outcome
+    # Le carnet n'a pas ete touche.
+    assert "IC #1206." in path.read_text(encoding="utf-8")

@@ -283,54 +283,99 @@ def _append_footer(text: str, note: str) -> str:
     return f"{base}\n\n{FOOTER_SEPARATOR}\n\n{note}\n"
 
 
-def analyse(path: Path) -> dict:
-    """Mesure le defaut sur un carnet sans ecrire."""
+def _plan(path: Path) -> dict:
+    """Predicat d'eligibilite UNIQUE, partage par le scan et l'application.
+
+    Le scan et l'application doivent repondre de la MEME chose sur un carnet
+    donne : sinon le decompte « avant/apres » d'une fournee ne vaut rien (un
+    carnet compte « repariable » par le scan mais refuse a l'ecriture). Les
+    deux formes mesurees de cette derive :
+
+    - un carnet **non canonique** (round-trip non byte-identique) : le scan
+      voyait la reference et n'enregistrait aucun refus, l'application
+      repondait « round-trip non byte-identique » ;
+    - une reference **citee mais non retirable** (reference a cheval sur deux
+      elements de la source) : le scan la voyait, l'application repondait
+      « aucune reference d'EPIC en en-tete ».
+
+    L'ordre des controles est donc fixe, et le motif de refus est rendu tel
+    quel par les deux portes :
+
+    1. pas de cellule markdown d'en-tete -> rien a citer ;
+    2. round-trip non byte-identique -> carnet non canonique, refuse ;
+    3. le retrait echoue (residu de ponctuation, parenthese desequilibree) ;
+    4. une reference est citee mais aucune clause n'est retirable.
+    """
     raw = path.read_bytes()
     nb = json.loads(raw.decode("utf-8"))
     cells = nb.get("cells", [])
     hidx = _header_index(cells)
-    info = {
+    trailing = raw.endswith(b"\n")
+    plan = {
         "path": path,
+        "nb": nb,
+        "cells": cells,
         "header_index": hidx,
-        "refs": [],
-        "refused": None,
         "canonical": False,
-        "trailing_newline": raw.endswith(b"\n"),
+        "trailing_newline": trailing,
+        "refs": [],
+        "removable": [],
+        "refused": None,
+        "new_header": None,
     }
     if hidx is None:
-        return info
-    canonical = _serialise(nb, info["trailing_newline"])
-    info["canonical"] = canonical == raw
+        plan["refused"] = "sans cellule markdown d'en-tete"
+        return plan
+    plan["canonical"] = _serialise(nb, trailing) == raw
     header_text = _source_text(cells[hidx])
-    info["refs"] = re.findall(r"EPIC\s*#(\d+)", header_text, re.IGNORECASE)
+    plan["refs"] = re.findall(r"EPIC\s*#(\d+)", header_text, re.IGNORECASE)
+    if not plan["canonical"]:
+        plan["refused"] = ("round-trip non byte-identique (carnet non canonique) "
+                           "-- ecriture refusee")
+        return plan
     try:
         result = _rewrite_source(cells[hidx].get("source"))
     except ValueError as exc:
-        info["refused"] = str(exc)
-        result = None
-    if result:
-        info["new_header"] = result[0]
+        plan["refused"] = f"refus : {exc}"
+        return plan
+    if not result:
+        if plan["refs"]:
+            plan["refused"] = ("reference d'EPIC citee mais clause non couverte "
+                               "(reference a cheval sur deux elements de la source) "
+                               "-- ecriture refusee")
+        return plan
+    plan["new_header"], plan["removable"] = result[0], result[1]
+    return plan
+
+
+def analyse(path: Path) -> dict:
+    """Mesure le defaut sur un carnet sans ecrire."""
+    plan = _plan(path)
+    info = {
+        "path": path,
+        "header_index": plan["header_index"],
+        "refs": plan["refs"],
+        "removable": plan["removable"],
+        "refused": plan["refused"],
+        "canonical": plan["canonical"],
+        "trailing_newline": plan["trailing_newline"],
+    }
+    if plan["new_header"] is not None:
+        info["new_header"] = plan["new_header"]
     return info
 
 
 def apply_one(path: Path, dry_run: bool) -> str:
-    raw = path.read_bytes()
-    nb = json.loads(raw.decode("utf-8"))
-    cells = nb.get("cells", [])
-    hidx = _header_index(cells)
+    plan = _plan(path)
+    if plan["refused"]:
+        return plan["refused"]
+    cells = plan["cells"]
+    hidx = plan["header_index"]
     if hidx is None:
         return "sans cellule markdown d'en-tete"
-    trailing = raw.endswith(b"\n")
-    if _serialise(nb, trailing) != raw:
-        return "round-trip non byte-identique (carnet non canonique) -- ecriture refusee"
-    result = None
-    try:
-        result = _rewrite_source(cells[hidx].get("source"))
-    except ValueError as exc:
-        return f"refus : {exc}"
-    if not result:
+    if plan["new_header"] is None:
         return "aucune reference d'EPIC en en-tete"
-    new_header, numbers = result
+    new_header, numbers = plan["new_header"], plan["removable"]
     lidx = _last_markdown_index(cells)
     if lidx is None:
         return "aucune cellule markdown pour le pied de carnet"
@@ -342,7 +387,7 @@ def apply_one(path: Path, dry_run: bool) -> str:
     if not dry_run:
         cells[hidx]["source"] = new_header
         _set_source_text(cells[lidx], _append_footer(_source_text(cells[lidx]), footer))
-        path.write_bytes(_serialise(nb, trailing))
+        path.write_bytes(_serialise(plan["nb"], plan["trailing_newline"]))
     return f"en-tete nettoye ({', '.join('#' + n for n in numbers)}) -> pied de carnet"
 
 
@@ -359,7 +404,10 @@ def main(argv: list[str] | None = None) -> int:
     refused = 0
     for path in _iter_notebooks(root):
         info = analyse(path)
-        if not info["refs"] and not info["refused"]:
+        # Un carnet qui ne cite aucune EPIC n'est ni candidat ni refuse : le
+        # decompte annonce « carnets cites mais formes non couvertes ». Le
+        # refus « sans cellule markdown d'en-tete » n'entre donc pas la.
+        if not info["refs"]:
             continue
         if args.scan:
             if info["refused"]:
