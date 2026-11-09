@@ -1,79 +1,105 @@
-# Unite systemd de persistance du POOL D'ATTENTE PR-gate (label coursia-waiter).
-# Jumelle de coursia-runner.service, qui ne porte que la jambe d'EXECUTION
-# (`start N`, label coursia-linux). Les deux jambes sont independantes : state
-# dirs distincts, sentinelles d'arret distinctes, prefixes de nom distincts.
+# Copie de REFERENCE -- le fichier vivant est
+# /etc/systemd/system/coursia-waiters.service dans la distro Ubuntu d'ai-01
+# (depose le 2026-10-28, identique octet pour octet a cette copie). Ce fichier
+# n'est execute par personne dans le depot (cf. persist/README.md).
 #
-# Deploiement ai-01 (2026-09-07, #14612/#14846) : copie de REFERENCE -- l'original
-# vit dans la distro Ubuntu de l'hote, sous /etc/systemd/system/. Modifier ce
-# fichier ne change rien sur la machine tant que la copie vivante n'a pas ete
-# remplacee ; un `git pull` ne deploie pas persist/. Voir persist/README.md.
+# Pool d'attente PR-gate (label `coursia-waiter`) -- ai-01.
 #
-# *** DEPRECATED 2026-10-15 -- issue #20835, PR #21015, c.500 ***
-# Le label `coursia-waiter` n'a plus aucun consommateur depuis #17436
-# (la jambe `pull_request` du `pr-gate.yml` route desormais sur
-# `ubuntu-latest`). Le service a ete desactive sur ai-01 (2026-10-15
-# 19:48Z), le fichier et les 3 drop-ins detruits sous /etc/systemd/system/.
-# Ce fichier est conserve pour reference et reactivation (memo UAC Rule 1 :
-# geste reversible). NE PAS LE REDEPLOYER sans avoir verifie qu'un
-# consommateur du label existe a nouveau. Dispatch coordinateur :
-# DM `msg-20261015T192217-jejbmt` 19:22Z.
+# PERSISTANCE de l'unite TRANSITOIRE `coursia-waiters-b.service` (creee via
+# l'API systemd le 2026-10-27 21:58:58 CET), qui DISPARAIT au reboot : le pool
+# d'attente PR-gate n'existait alors que le temps d'une session.
 #
-# N slots porte par l'argument ExecStart (ai-01 -> 12, l'effectif d'avant la chute).
+# Les parametres ci-dessous sont ceux de l'unite transitoire, releves a
+# l'identique (`systemctl show coursia-waiters-b.service`). Le passage a la
+# persistance ne doit changer AUCUN comportement : meme ExecStart, meme
+# environnement, meme prefixe de noms, meme state dir, meme budget.
 #
-# CE QUI DISTINGUE CETTE COPIE DE LA VERSION VIVANTE (#15091, mesure du 2026-09-07)
-# ---------------------------------------------------------------------------------
-# Un seul ajout : le plafond de redemarrage en [Unit]. Le reste est byte-pour-byte
-# la version deployee -- deliberement, pour que le diff soit relisible d'un coup
-# d'oeil et que le garde ne se cache pas au milieu d'autre chose.
+# Le dimensionnement (slots, cpus, memoire, pids, budget CPU) est porte par le
+# drop-in `coursia-waiters.service.d/10-sizing.conf` -- meme separation que la
+# jambe d'execution (`coursia-runner.service.d/10-sizing.conf`).
+#
+# LE BANDEAU « DEPRECATED » QUI FIGURAIT ICI (2026-10-15, #20835) EST REFUTE.
+# Il affirmait que le label `coursia-waiter` n'avait plus aucun consommateur
+# depuis #17436. Mesure du 2026-10-28 sur `origin/main` :
+# `.github/workflows/pr-gate.yml` l.172 route la jambe same-repo vers
+# `["self-hosted","coursia-waiter"]` -- restaure par #21063 (2026-10-16),
+# sonde d'extinction ajoutee par #22183. Le consommateur existe, il a donc ete
+# verifie avant tout rededeploiement, comme le bandeau l'exigeait.
 [Unit]
 Description=CoursIA PR-gate waiter pool (coursia-waiter slots)
 Documentation=https://github.com/jsboige/CoursIA/blob/main/docs/ci/self-hosted-runners.md
 # Wants= et non Requires= (meme raison que coursia-runner.service, #14347) :
-# un docker.service en echec au boot doit retarder le service et le laisser
-# retenter, pas le sortir de la liste des unites.
+# un docker.service en echec au boot doit retarder l'unite et la laisser
+# retenter, pas la sortir de la liste des unites.
 Wants=docker.service
 After=docker.service
 
-# GARDE ANTI-EMBALLEMENT (#15091) -- absent de la version vivante, et le defaut
-# n'etait pas theorique : mesure du 2026-09-07, la sentinelle
-# /var/lib/coursia-waiters/stop etait POSEE, laissee par le dernier arret
-# gracieux. Or cmd_waiters REFUSE de demarrer tant qu'elle est la (supervise.sh :
-# `[ -f "$STOP_FILE" ] && die "sentinel STOP pose"`). Sous Restart=always +
-# RestartSec=30 et SANS plafond, un `systemctl start` sur cet etat aurait relance
-# le wrapper toutes les 30 secondes indefiniment -- lecture de master.env, mkdir,
-# `cd`, echec, recommence -- sur une machine qui sortait de deux gels d'I/O.
-#
-# La cause (sentinelle residuelle) se repare a la main en un `rm`. Ce qui se
-# repare ici est la CONSEQUENCE : qu'une cause non auto-reparable devienne un
-# martelement sans fin plutot qu'un `failed` visible. Au-dela de 5 echecs en
-# 10 minutes, systemd passe l'unite en `failed` et arrete.
-#
-# CES DEUX CLES VONT EN [Unit], JAMAIS EN [Service]. Ecrites en [Service],
-# `systemd-analyze verify` rend :
+# PLAFOND ANTI-EMBALLEMENT (#15091) -- en [Unit], JAMAIS en [Service].
+# Ecrites en [Service], `systemd-analyze verify` rend :
 #   Unknown key name 'StartLimitIntervalSec' in section 'Service', ignoring.
-# -- une clause ignoree ne refuse rien, et presente l'apparence exacte d'un
-# garde. Le defaut a ete commis puis mesure sur coursia-runner.service dans
-# cette meme PR ; il est nomme ici pour qu'il ne se re-commette pas au prochain
-# fichier. Depuis systemd v229 elles appartiennent a [Unit] (systemd.unit(5)) ;
-# mesure sur systemd 255 (255.4-1ubuntu8.17).
+# Une clause ignoree ne refuse rien et presente l'apparence exacte d'un garde.
+# Depuis systemd v229 ces cles appartiennent a [Unit] (systemd.unit(5)).
 StartLimitIntervalSec=600
 StartLimitBurst=5
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/coursia-waiters-start.sh 12
-ExecStop=/usr/local/bin/coursia-waiters-start.sh stop
-Restart=always
+# Etat dedie : la sentinelle d'arret gracieux de la jambe waiters ne doit pas
+# partager le state dir de la jambe d'execution (#15091).
+Environment=COURSIA_REPO_DIR=/mnt/d/CoursIA
+Environment=COURSIA_RUNNER_STATE_DIR=/var/lib/coursia-waiters-b
+# Prefixe de noms : famille B. Il ne reproduit NI `myia-ai-01-linux-waiter-*`
+# (prefixe par defaut de supervise.sh) NI `myia-ai-01-wsl-waiter-*` : ces
+# deux familles sont mortes et ne doivent pas revenir.
+Environment=COURSIA_RUNNER_WAITER_NAME_PREFIX=myia-ai-01-wsl-waiterb
+Environment=COURSIA_RUNNER_PINNED_CTX=/var/lib/coursia-runner/image-context
+Environment=COURSIA_RUNNER_BUDGET_GB=80
+# LE WRAPPER EST PINLE HORS ARBRE DE TRAVAIL (arbitrage `ai01-c2721-23037-budget`,
+# point 3, 2026-10-28).
+#
+# Avant : `ExecStart` pointait vers le wrapper du CLONE DE TRAVAIL partage
+# (`/mnt/d/CoursIA/scripts/ci/docker/linux-runner/persist/coursia-waiters-start.sh`).
+# Un checkout de branche dans D:\CoursIA changeait donc le code du pool a son
+# prochain redemarrage, et des sessions concurrentes partageaient cet arbre :
+# le code que le pool execute n'etait pas une version identifiee.
+#
+# Apres : le wrapper est deploye dans `/usr/local/bin`, hors de tout arbre de
+# travail, avec son empreinte sha256 consignee dans `persist/README.md`. Une
+# modification du clone ne touche plus le pool ; la version qui s'execute est
+# celle qui a ete deployee, et elle est identifiable.
+#
+# CE QUE CE PIN NE COUVRE PAS -- a lire avant de s'en servir comme d'un
+# correctif complet : le wrapper est un lanceur mince. Il fait `cd $REPO_DIR`
+# puis `exec ./scripts/ci/docker/linux-runner/supervise.sh waiters "$ARG"`.
+# Le code DU SUPERVISEUR reste donc lu dans l'arbre de travail partage. Le pin
+# fixe l'ENTREE du pool ; il ne fige pas le corps du superviseur. Pour que le
+# pin couvre toute la chaine, il faudrait epingler aussi `supervise.sh` et sa
+# fermeture de dependances (image de runner comprise) -- un geste d'un autre
+# ordre, mesure a faire. Ce qui est traite ici est le point que
+# l'arbitrage a nomme : l'unite ne doit plus appeler un script de l'arbre de
+# travail partage.
+ExecStart=/bin/bash /usr/local/bin/coursia-waiters-start.sh 10
+# ExecStop PASSE PAR LE WRAPPER (#15091) : c'est sa branche « stop » qui
+# repartage le MEME COURSIA_RUNNER_STATE_DIR que la boucle surveille, donc la
+# sentinelle atterrit dans le fichier que la sentinelle surveille. Un
+# ExecStop sans ce state dir poserait la sentinelle ailleurs et l'arret
+# gracieux serait inerte (rc=0 sans arret reel).
+ExecStop=/bin/bash /usr/local/bin/coursia-waiters-start.sh stop
+# Restart=on-failure, comme l'unite transitoire : un `master.env` illisible ou
+# un token revoque finit en `failed` visible, sous le plafond 5/600 s, au lieu
+# de marteler indefiniment.
+Restart=on-failure
 RestartSec=30
-Nice=10
 # Un slot d'attente ne porte jamais de build long : 120 s suffisent la ou la
 # jambe d'execution demande 900 s pour laisser finir un lake build.
 TimeoutStopSec=120
-# Comptabilite d'I/O sur le superviseur lui-meme. PAS de IOWriteBandwidthMax ici :
-# les conteneurs waiters sont des NEVEUX de cette unite, pas des enfants -- ils
-# naissent dans le cgroup du daemon docker. Un plafond dur pose ici ne bornerait
-# que les journaux du superviseur. Ce qui borne les conteneurs est la slice
-# agregee, appliquee par defaut via "cgroup-parent" dans /etc/docker/daemon.json.
+# L'hote prime : le superviseur cede la main devant l'interactif et les
+# trainings GPU.
+Nice=10
+# Comptabilite d'I/O sur le superviseur lui-meme. PAS de IOWriteBandwidthMax :
+# les conteneurs waiters sont des NEVEUX de cette unite, pas ses enfants --
+# ils naissent dans le cgroup du daemon docker. Ce qui borne les conteneurs
+# est la slice agregee (coursia-ci.slice).
 IOAccounting=yes
 IOWeight=50
 

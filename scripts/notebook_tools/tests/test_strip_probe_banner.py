@@ -22,10 +22,14 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from strip_probe_banner import (
     BANNER_SIGNATURES,
+    DISCOVERY_VARIANT_SIGNATURES,
     count_banner_lines,
+    count_banner_units,
+    count_discovery_outputs,
     count_empty_envelopes,
     find_banner_outputs,
     has_banner,
+    has_discovery_variant,
     is_empty_envelope,
     strip_banner_in_place,
 )
@@ -567,3 +571,228 @@ class TestEmptyEnvelope:
         strip_banner_in_place(str(nb))
 
         assert nb.read_text(encoding="utf-8") == before
+
+# ---------------------------------------------------------------------------
+# The "this cell" discovery bootstrap — a SECOND, distinct banner (#23530)
+# ---------------------------------------------------------------------------
+
+def _discovery_output() -> dict:
+    """Synthetic "this cell" discovery bootstrap output.
+
+    Mirrors the shape measured on the inherited corpus (2026-10-30): a WHOLE
+    ``display_data`` output whose ``data`` carries exactly ``text/html``,
+    holding the discovery div plus a require.js bootstrap that fetches
+    ``${rootUrl}discovery``. It embeds NONE of the three
+    ``BANNER_SIGNATURES`` -- that is precisely why it needs its own set.
+    """
+    lines = [
+        "\r\n",
+        "<div>\r\n",
+        "    <div id='dotnet-interactive-this-cell-$CACHE_BUSTER$' style='display: none'>\r\n",
+        "        The below script needs to be able to find the current output cell; this is an easy method to get it.\r\n",
+        "    </div>\r\n",
+        "    <script type='text/javascript'>\r\n",
+        "    const rootUrl = document.baseURI;\r\n",
+        "    let response = await timeout(1000, fetch(`${rootUrl}discovery`, {\r\n",
+        "        method: 'POST',\r\n",
+        "        cache: 'no-cache',\r\n",
+        "        mode: 'cors',\r\n",
+        "    }));\r\n",
+        "    </script>\r\n",
+        "</div>\r\n",
+    ]
+    return {
+        "output_type": "display_data",
+        "data": {"text/html": lines},
+        "metadata": {},
+    }
+
+
+def _probe_only_output() -> dict:
+    """A probeAddresses banner output WITHOUT any discovery token.
+
+    Used to keep the "both variants" test independent of the shared fixture
+    (the historical ``_banner_html`` fixture also embeds the discovery div).
+    """
+    return {
+        "output_type": "display_data",
+        "data": {"text/html": ["<div>\r\n", "probeAddresses();\r\n", "</div>\r\n"]},
+        "metadata": {},
+    }
+
+
+class TestDiscoveryVariant:
+    """The discovery bootstrap is detected and stripped by its OWN set.
+
+    The guard-facing ``BANNER_SIGNATURES`` must never absorb it: the
+    repo-wide guard is calibrated against the committed corpus, so widening
+    it reports the inherited residue (177 notebooks measured 2026-10-30) as
+    new defects — the widening measured and reverted on #22728.
+    """
+
+    def test_discovery_signature_is_not_in_the_guard_set(self):
+        assert "dotnet-interactive-this-cell" not in BANNER_SIGNATURES
+        assert DISCOVERY_VARIANT_SIGNATURES == ("dotnet-interactive-this-cell",)
+        assert set(DISCOVERY_VARIANT_SIGNATURES) & set(BANNER_SIGNATURES) == set()
+
+    def test_guard_detection_does_not_flag_a_discovery_blob(self):
+        blob = _discovery_output()["data"]["text/html"]
+        assert has_banner(blob) is False, "the guard's set must stay blind to it"
+        assert has_discovery_variant(blob) is True
+
+    def test_count_discovery_outputs_counts_outputs_not_lines(self, tmp_path):
+        cells = [_code(["x = 1\r\n"], outputs=[_discovery_output()])]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+
+        assert count_discovery_outputs(str(nb)) == 1
+        assert count_banner_units(str(nb), "discovery") == 1
+        # The guard's units stay at zero on a discovery-only notebook: this is
+        # the invariant that keeps `--scan-all --check` green.
+        assert count_banner_units(str(nb), "probe") == 0
+        assert count_banner_lines(str(nb)) == 0
+
+    def test_strip_removes_the_whole_output(self, tmp_path):
+        other = {"output_type": "stream", "name": "stdout", "text": ["hi\r\n"]}
+        cells = [_code(["Console.WriteLine(1);\r\n"],
+                       outputs=[_discovery_output(), other], execution_count=7)]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+
+        found, fixed = strip_banner_in_place(str(nb), "discovery")
+        assert (found, fixed) == (1, 1)
+
+        new_nb = json.loads(nb.read_text(encoding="utf-8"))
+        cell = new_nb["cells"][0]
+        assert cell["execution_count"] == 7, "execution_count preserved"
+        assert len(cell["outputs"]) == 1, "the banner output is gone"
+        assert cell["outputs"][0] == other, "the real output is byte-identical"
+        assert "dotnet-interactive-this-cell" not in nb.read_text(encoding="utf-8")
+
+    def test_source_is_never_touched(self, tmp_path):
+        source = ["Console.WriteLine(\"dotnet-interactive-this-cell\");\r\n"]
+        cells = [_code(source, outputs=[_discovery_output()], execution_count=2)]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+
+        strip_banner_in_place(str(nb), "discovery")
+
+        new_nb = json.loads(nb.read_text(encoding="utf-8"))
+        assert new_nb["cells"][0]["source"] == source
+
+    def test_idempotent(self, tmp_path):
+        cells = [_code(["x = 1\r\n"], outputs=[_discovery_output()])]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+
+        assert strip_banner_in_place(str(nb), "discovery") == (1, 1)
+        before = nb.read_bytes()
+        assert strip_banner_in_place(str(nb), "discovery") == (0, 0)
+        assert nb.read_bytes() == before
+
+    def test_mixed_output_is_refused_not_destroyed(self, tmp_path):
+        mixed = {
+            "output_type": "display_data",
+            "data": {"text/plain": ["42\r\n"],
+                     "text/html": _discovery_output()["data"]["text/html"]},
+            "metadata": {},
+        }
+        cells = [_code(["x = 1\r\n"], outputs=[mixed])]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+        before = nb.read_bytes()
+
+        found, fixed = strip_banner_in_place(str(nb), "discovery")
+        assert found == 1, "the unit is counted"
+        assert fixed == 0, "but refused: blanking it would destroy a real result"
+        assert nb.read_bytes() == before
+
+    def test_variant_both_strips_probe_and_discovery(self, tmp_path):
+        cells = [_code(["x = 1\r\n"],
+                       outputs=[_probe_only_output(), _discovery_output()])]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+
+        found, fixed = strip_banner_in_place(str(nb), "both")
+        assert found == fixed, "every counted unit is removed"
+        assert count_banner_lines(str(nb)) == 0
+        assert count_discovery_outputs(str(nb)) == 0
+        new_nb = json.loads(nb.read_text(encoding="utf-8"))
+        outs = new_nb["cells"][0]["outputs"]
+        # The probe output KEEPS its non-signature lines -- the historical
+        # probe behaviour drops only the banner-bearing elements (asserted by
+        # TestStripBannerSafety). The discovery output is removed as a whole.
+        assert len(outs) == 1
+        assert all(
+            not any(sig in line for sig in BANNER_SIGNATURES)
+            for line in outs[0]["data"]["text/html"]
+        )
+
+    def test_default_variant_leaves_the_discovery_bootstrap_alone(self, tmp_path):
+        # The default path (the pre-commit hook and the guard) must not
+        # silently start stripping the discovery bootstrap: that widening is
+        # a separate, sweep-gated decision (#23530).
+        cells = [_code(["x = 1\r\n"], outputs=[_discovery_output()])]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+        before = nb.read_bytes()
+
+        strip_banner_in_place(str(nb))
+
+        assert nb.read_bytes() == before
+
+    # --- Gardes de forme (revue NanoClaw, 2026-10-30T14:34Z) --------------
+
+    def test_string_form_strips_two_outputs_without_offset_drift(self, tmp_path):
+        # The string form edits the raw text in place. Capturing every match
+        # offset once and then rewriting left-to-right splices the JSON at the
+        # wrong place from the SECOND output on, because each edit shrinks the
+        # file. Two string-form outputs is the smallest case that exposes it.
+        html = "".join(_discovery_output()["data"]["text/html"])
+        first = {"output_type": "display_data", "data": {"text/html": html},
+                 "metadata": {}}
+        second = {"output_type": "display_data", "data": {"text/html": html},
+                  "metadata": {}}
+        cells = [_code(["x = 1\r\n"], outputs=[first, second], execution_count=3)]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+
+        found, fixed = strip_banner_in_place(str(nb), "discovery")
+
+        assert (found, fixed) == (2, 2)
+        new_nb = json.loads(nb.read_text(encoding="utf-8"))
+        assert count_discovery_outputs(str(nb)) == 0
+        # The JSON must still parse and the cell must keep its identity: a
+        # drifted splice truncates the document or the neighbouring keys.
+        assert new_nb["cells"][0]["execution_count"] == 3
+        assert new_nb["cells"][0]["source"] == ["x = 1\r\n"]
+
+    def test_output_with_sibling_real_content_is_refused(self, tmp_path):
+        # Mime keys are exactly ["text/html"], so the key check alone would
+        # call this strippable and delete the whole list body -- destroying
+        # the table. The structural guard (one balanced <div> block, nothing
+        # else) is what refuses it.
+        bootstrap = _discovery_output()["data"]["text/html"]
+        polluted = dict(_discovery_output())
+        polluted["data"] = {"text/html": list(bootstrap) + ["<table>result</table>"]}
+        cells = [_code(["x = 1\r\n"], outputs=[polluted])]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+        before = nb.read_bytes()
+
+        found, fixed = strip_banner_in_place(str(nb), "discovery")
+
+        assert found == 1, "the unit is counted"
+        assert fixed == 0, "but refused: the table would be destroyed"
+        assert nb.read_bytes() == before
+
+    def test_source_quoting_the_wrapper_is_never_touched(self, tmp_path):
+        # The string-form pattern anchors on `"text/html": "<...>"`, which also
+        # appears inside a cell's `source` when that cell quotes the literal.
+        # Only a match decoding to the EXACT string of a target output is
+        # rewritten, so the docstring's "output-only" promise is structural.
+        html = "".join(_discovery_output()["data"]["text/html"])
+        quoted = '"text/html": ' + json.dumps(html) + "\r\n"
+        cells = [
+            _code([quoted], outputs=[]),
+            _code(["x = 1\r\n"], outputs=[_discovery_output()]),
+        ]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+
+        found, fixed = strip_banner_in_place(str(nb), "discovery")
+
+        assert found == fixed == 1
+        new_nb = json.loads(nb.read_text(encoding="utf-8"))
+        assert new_nb["cells"][0]["source"] == [quoted], "source must be intact"
+        assert count_discovery_outputs(str(nb)) == 0

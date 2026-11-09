@@ -207,11 +207,21 @@ class ProjectEvaluation:
         return unidecode(text)
 
     def project_name(self, name):
+        """Cle de rapprochement d'un nom ou prenom : 5 premiers caracteres, sans accents.
+
+        Le decoupage se fait apres ``strip()`` : un espace de tete livrait une cle
+        vide, si bien qu'un evaluateur inscrit ne correspondait a aucun etudiant et
+        que son evaluation etait ecartee par la regle 3 (#24246). ``split()`` sans
+        argument traite tous les blancs (espaces multiples, tabulations, insecables)
+        et rend une liste vide sur une chaine vide, d'ou la garde ``tokens``.
+        """
         if not isinstance(name, str):
             return ""
-        first_name = name.split(" ")[0].split("-")[0]
-        first_name = first_name[:5]
-        return self.fold_accents(first_name.lower().strip())
+        tokens = name.strip().split()
+        if not tokens:
+            return ""
+        first_name = tokens[0].split("-")[0][:5]
+        return self.fold_accents(first_name.lower())
 
     def match_names(self, student_or_eval1, eval2):
         name1 = student_or_eval1.nom
@@ -222,6 +232,31 @@ class ProjectEvaluation:
 
         return (self.project_name(name1) == self.project_name(name2) and self.project_name(prenom1) == self.project_name(prenom2)) or \
                (self.project_name(prenom1) == self.project_name(name2) and self.project_name(name1) == self.project_name(prenom2))
+
+    def evaluator_key(self, evaluation):
+        """Clé d'identité d'un évaluateur, utilisée par la règle 5 (évaluations doubles).
+
+        Le miroir C# (``ProjectModel.cs``) compare les adresses avec
+        ``StringComparer.OrdinalIgnoreCase`` et retombe sur ``Nom + Prénom`` quand
+        l'adresse manque ; Python prenait l'adresse brute dans un ``set``, donc
+        sensible à la casse et aux espaces de bord (#24276). Deux évaluations du
+        même évaluateur écrites ``Jean.Dupont@example.org`` et
+        `` jean.dupont@example.org `` étaient donc acceptées toutes les deux et
+        comptaient double dans la moyenne du groupe.
+
+        Le repli par nom aligne le comportement sur le C# et évite le défaut
+        symétrique : une clé unique pour toutes les lignes sans adresse les
+        effondrerait en un seul évaluateur, et une seule évaluation par groupe
+        serait retenue.
+        """
+        email = evaluation.email
+        if isinstance(email, str) and email.strip():
+            return ("email", email.strip().lower())
+        nom = evaluation.nom if isinstance(evaluation.nom, str) else ""
+        prenom = evaluation.prenom if isinstance(evaluation.prenom, str) else ""
+        return ("nom",
+                self.fold_accents(nom).strip().lower(),
+                self.fold_accents(prenom).strip().lower())
 
     def is_valid_evaluation(self, group_evaluation, eval_record, seen_evaluators):
         # Règle 1: Rejeter les notes invalides
@@ -250,7 +285,7 @@ class ProjectEvaluation:
             return False
 
         # Règle 5: Rejeter les évaluations en double
-        evaluator_id = eval_record.email
+        evaluator_id = self.evaluator_key(eval_record)
         if evaluator_id in seen_evaluators:
             print(f"AVERTISSEMENT: Evaluation double par {eval_record.prenom} {eval_record.nom} pour le groupe {group_evaluation.groupe}. Evaluation écartée.")
             return False
@@ -266,7 +301,7 @@ class ProjectEvaluation:
             for evaluation in sorted_evaluations:
                 if self.is_valid_evaluation(group_eval, evaluation, seen_evaluators):
                     valid_evaluations.append(evaluation)
-                    seen_evaluators.add(evaluation.email)
+                    seen_evaluators.add(self.evaluator_key(evaluation))
             group_eval.evaluations = valid_evaluations
 
     @property

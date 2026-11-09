@@ -111,11 +111,51 @@ def test_timeout_valeur_explicite_15_pour_sonde():
     assert captured["timeout"] == 15
 
 
-def test_timeout_valeur_explicite_120_pour_transport_principal():
+@pytest.fixture()
+def sans_echeance_de_tapis():
+    """Neutralise l'echeance de tapis publiee, puis la restaure.
+
+    #19643 (mesure du 2026-11-01) -- `fetch_raw` ne pose PAS `timeout=120`
+    en dur : il pose `timeout=_clamp_timeout(120)`. Or `_clamp_timeout`
+    consulte `_BELT_DEADLINE`, un **global de module** : des qu'une echeance
+    est publiee, la borne rend le RESTE a courir, donc un flottant.
+    Mesure directe sur ce depot :
+
+        _clamp_timeout(120) sans echeance  -> 120
+        _clamp_timeout(120) avec echeance  -> 14.259996400011005
+
+    Ce global vit dans le module, pas dans le test : tout chemin du meme
+    processus qui publie une echeance (`_publish_phase_deadline`, la boucle
+    de tapis) suffit a faire rendre `14.26` la ou l'assertion attend
+    `120`. C'est exactement le rouge observe en CI le 2026-11-01
+    (`assert 14.260778745003336 == 120`) sur une PR qui ne touche pas
+    `scripts/`. L'assertion « le transport principal est borne a 120 s »
+    ne vaut donc que sans echeance : on l'annule ici, explicitement, au
+    lieu de dependre de l'etat laisse par ce qui a tourne avant.
+
+    Controle A/B execute dans ce depot le 2026-11-01, echeance publiee
+    dans les deux cas :
+      - sans annulation : `timeout = 14.259798400016734` -> assertion 120
+        en echec (le rouge de la CI) ;
+      - avec annulation : `timeout = 120` -> vert.
+    """
+    precedent = pig._BELT_DEADLINE[0]
+    pig._BELT_DEADLINE[0] = None
+    try:
+        yield
+    finally:
+        pig._BELT_DEADLINE[0] = precedent
+
+
+def test_timeout_valeur_explicite_120_pour_transport_principal(sans_echeance_de_tapis):
     """Le timeout de fetch_pool.fetch_raw est 120 s (transport principal).
 
     Une borne inferieure timeout systematiquement sur de gros pools
     (POOL_FETCH_LIMIT=2000). 120 s = 2x la mesure observee a cache chaud.
+
+    La borne passe par `_clamp_timeout(120)` ; la fixture ci-dessus annule
+    l'echeance de tapis pour que le test mesure bien les 120 s demandees et
+    non le budget restant d'un autre test (#19643).
     """
     captured = {}
 

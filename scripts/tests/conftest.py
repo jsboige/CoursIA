@@ -106,3 +106,28 @@ def _gh_token_hermetique():
     env = GhTokenEnv(os.environ.get("GH_TOKEN"))
     yield
     env.restore()
+
+
+def _reset_belt_deadline() -> None:
+    mod = sys.modules.get("pick_idle_grain")
+    deadline = getattr(mod, "_BELT_DEADLINE", None) if mod else None
+    if deadline:
+        deadline[0] = None
+
+
+@pytest.fixture(autouse=True)
+def _belt_deadline_hermetique():
+    """Filet de securite : aucun test n'herite du mur du tapis d'un autre.
+
+    ``pick_idle_grain._BELT_DEADLINE`` est un etat de module, lu par
+    ``_clamp_timeout`` a chaque sonde. Un test qui l'arme sans le desarmer
+    (un ``main(--belt)`` sorti avant son ``_disarm_belt_run_clock``, par
+    exemple) borne les timeouts de tous les tests suivants du meme worker
+    xdist : ``test_timeout_valeur_explicite_120_pour_transport_principal``
+    lisait alors le budget restant (43,8 s) au lieu de 120 (CI du
+    2026-11-01, job 124823477304). Remis a ``None`` avant ET apres chaque
+    test : le test suivant part d'un mur desarme, quel que soit l'ordre.
+    """
+    _reset_belt_deadline()
+    yield
+    _reset_belt_deadline()

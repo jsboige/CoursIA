@@ -15,6 +15,36 @@ L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimi
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs Python souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de la syntaxe de base de z3-py pour monter progressivement vers l'optimisation et la modélisation de problèmes combinatoires.
 
+## Ouvrage de référence
+
+**Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)** — l'ouvrage-ancrage de la série. Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT, organisé en chapitres thématiques (théories, tactiques, optimisation, puzzles, UNSAT cores, bit-vectors, arithmétique réelle, etc.) qui correspondent chapitre par chapitre aux notebooks de cette série. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`).
+
+### Index chapitré (série Z3-API ↔ Yurichev)
+
+| Carnet | Section Yurichev | Thème |
+|--------|-----------------|-------|
+| Z3-01, Z3-01ᶜˢ | Ch. 1 Introduction (p. 11) + Ch. 2 Basics (p. 14) | Solver API, théories de base, modèles |
+| Z3-01b | Ch. 9 Graph coloring (p. 317) | `assert_and_track`, coloration de graphe (Australie) |
+| Z3-02, Z3-02ᶜˢ | §8.1 Sudoku (p. 205), Ch. 8 Recreational mathematics and puzzles | Sudoku comme CSP, visualisation |
+| Z3-03, Z3-03ᶜˢ | Ch. 16 Toy decompiler (Tactic, p. 469) + Ch. 5 Verification (BitVec, p. 132) | `Tactic`, `BitVec`, `Array` |
+| Z3-04, Z3-04ᶜˢ | Ch. 6 Regular expressions (p. 166) | `String`, `Re` (théorie des chaînes) |
+| Z3-05, Z3-05ᶜˢ | Ch. 20 First-Order Logic (p. 559) | `ForAll`, `Exists`, réfutation, `unknown` |
+| Z3-06, Z3-06ᶜˢ | Ch. 14 MaxSAT/MaxSMT (p. 383) | `Optimize`, MaxSAT, Pareto |
+| Z3-08 | Ch. 10 Knapsack problems (p. 332) | `Optimize.minimize`, ordonnancement |
+| Z3-09 | §8.2 Zebra puzzle (p. 232), Ch. 8 | Einstein's riddle / Zebra puzzle |
+| Z3-10 | §8.10 Alphametics (p. 276), Ch. 8 | Cryptarithmetic SEND + MORE = MONEY |
+| Z3-11 | Ch. 9 Graph coloring (p. 317) | Coloration de graphe, nombre chromatique |
+| Z3-12 | Ch. 4 Proofs (p. 106) | Real arithmetic, irrationnels algébriques |
+| Z3-13 | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | UNSAT cores, `assert_and_track` |
+| Z3-13b | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | MUS (Minimal Unsatisfiable Subset) |
+| Z3-14 | §5.1 Integer overflow (p. 132), Ch. 5 Verification | Bit-vectors, overflow, `ULT`/`UGE` |
+| Z3-15 | Ch. 12 Latin squares (p. 346) + §12.4 Magic/Latin square of Knut Vik design (p. 361), Ch. 8 §8.1 Sudoku (p. 205) | Nested arrays 2D, carré magique |
+| Z3-16 | Ch. 14 §14.5 Assignment problem (p. 397) + §14.8 Packing students into a dorm (p. 405), Ch. 22 §22.8 Job Shop Scheduling/Problem (p. 633) | Optimize, plan hebdomadaire — **voisine de thème**, pas une section portée : le carnet ne met en œuvre **aucune** des trois sections citées (§14.5 et §14.8 sont portées par `Z3-06`, §22.8 par `Z3-08`) ; le rattachement est la même famille de problèmes d'allocation et d'ordonnancement |
+| Z3-17 | §3.13 Recalculating micro-spreadsheet (p. 88), Ch. 3 | Array theory général, `Select`/`Store` |
+| Z3-18 | §8.1 Sudoku (p. 205), Ch. 8 | Sudoku modes `Array` vs `Constants` |
+
+Le **crédit explicite** à l'ouvrage est porté par une cellule `## Source` d'introduction — il n'est **pas** systématique : les carnets `Z3-09` (énigme d'Einstein), `Z3-10` (cryptarithmes) et `Z3-11` (coloriage de graphe) n'en portent pas, et leur rattachement à l'ouvrage est **thématique** (index chapitré ci-dessus), non un crédit d'instance. À l'inverse, `Z3-01b` (coloriage de carte), `Z3-06`, `Z3-08` et, dans la série sœur `Z3-Linq2Z3`, `13_Cryptarithmetic_SMT` et `18_Einsteins_Riddle` portent ce crédit dans une cellule `## Source`. À noter : « Z3: An Efficient SMT Solver » (de Moura & Bjørner, TACAS 2008) est le **papier de référence** du solveur, déjà référencé dans le dépôt. Le **livre pratique** de Yurichev, distinct du papier, est désormais référencé comme ouvrage-ancrage de la série.
+
 ## Présentation
 
 **Z3** (Microsoft Research) est un solveur SMT (*Satisfiability Modulo Theories*) qui résout des systèmes de contraintes sur des entiers, des réels, des booléens, des vecteurs de bits, des tableaux et des chaînes. Cette série utilise **z3-py** (package pip `z3-solver`), le binding Python officiel qui expose **l'intégralité** de l'API Z3 : `Solver`, `Optimize`, théories (BitVec, Array, String, Real), tactiques et quantificateurs.
@@ -77,6 +107,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3-Linq2Z3/](../Z3-Linq2Z3/README.md
 | 17 | [Théorie des tableaux](Z3-17-Array-Theory-Python.ipynb) | `Array` sort, `Select`/`Store`, axiomes de McCarthy (read-over-write) vérifiés comme théorèmes, tableau trié / égalité de tableaux | ~30 min | PRODUCTION |
 | 18 | [Sudoku 4×4 : modes Array vs Constants](Z3-18-Sudoku-Modes-Python.ipynb) | Même Sudoku 4×4 encodé deux fois (variables `Int` par cellule vs `Array(Int, Int)`), comparaison des deux modes d'encodage | ~30 min | PRODUCTION |
 | 19 | [Optimisation multi-objectif (lex/Pareto/weighted)](Z3-19-Optimization-Lexicographic-Python.ipynb) | Comparaison des trois stratégies d'arbitrage (lexicographique, front de Pareto énuméré, somme pondérée avec sweep) sur 3 projets jouet (coût/impact) | ~30 min | PRODUCTION |
+| 20 | [Machine de Gödel](Z3-20-Machine-de-Goedel-Python.ipynb) | Auto-réécriture sur preuve (Schmidhuber 2006) : théorème cible prouvé par réfutation sous axiomes d'environnement, optimalité globale contre une machine gloutonne, prix d'une amélioration non prouvable (contre-exemple Z3), coût du temps de preuve (`rlimit`) | ~45 min | BETA |
 
 ### Fil pédagogique
 
@@ -104,6 +135,7 @@ Le notebook confronte l'encodage déclaratif (idiomatique z3-py) à l'encodage b
 
 17. **Notebook 17** formalise la **théorie des tableaux** de Z3 : un `Array(I, E)` n'est pas une structure mutable mais une **fonction totale** `Index → Élément`, manipulée via `Select` (lire) et `Store` (renvoyer un nouveau tableau modifié en un indice). Le notebook énonce et **vérifie les axiomes de McCarthy** (read-over-write : `Select(Store(A, i, v), i) = v` et `Select(Store(A, i, v), j) = Select(A, j)` pour `i ≠ j`) comme des théorèmes plutôt que des postulats, puis résout des contraintes sur les **contenus** d'un tableau (tableau trié, égalité de deux tableaux) — là où le notebook 15 n'effleurait la théorie qu'en encodage brut (`Array` de `Array`), le 17 la pose comme objet d'étude à part entière.
 18. **Notebook 18** confronte **deux modes d'encodage** d'un même Sudoku 4×4 : un par `Int` constants (une variable scalaire par cellule, `c_0_0` … `c_3_3`), l'autre par `Array(Int, Int)` indexé par position. Les contraintes canoniques (domaine `{1..4}`, rangées / colonnes / blocs 2×2 à valeurs distinctes) s'expriment identiquement dans les deux modes, mais la **comparaison** révèle leurs compromis respectifs — granularité et lisibilité des scalaires d'un côté, uniformité fonctionnelle et extensibilité du tableau de l'autre. Cas d'école du **choix d'encodage** en SMT, ce notebook boucle la série sur la modélisation déclarative entamée au notebook 02 (le Sudoku comme premier CSP).
+20. **Notebook 20** fait de Z3 le **chercheur de preuves d'une machine de Gödel** (Schmidhuber 2006) : la machine ne remplace sa politique que si elle prouve, pour tout environnement admissible, que la réécriture rapporte plus que « continuer », sa propre recherche future comprise. La preuve passe par réfutation sous des axiomes d'environnement ; un `sat` fournit le contre-exemple qui justifie un refus. Le notebook mesure l'optimalité globale face à une machine gloutonne, le gain abandonné quand une amélioration réelle n'est pas prouvable, et le budget de preuve (`rlimit`) au-delà duquel prouver coûte plus que cela ne rapporte. Il prolonge les preuves par réfutation du notebook 05.
 
 ## Concepts clés
 
@@ -207,24 +239,25 @@ La série manipule un vocabulaire précis (SMT, tactiques, MaxSAT, théories) h�
 
 ## Ouvrages-ancrage
 
-Issue de référence : #19278. Cette série s'ancre principalement sur un livre-ancrage pratique :
+Issue de référence : #19278. L'ouvrage-ancrage de la série est le Yurichev décrit en tête de fichier (section « Ouvrage de référence », avec l'index chapitré série ↔ livre) — la présente section y renvoie et n'en duplique pas l'entrée. La copie archivée (`G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf`) a été lue le 27/10/2026 sur ses 666 pages : les folios de l'index ci-dessus sont ancrés firsthand sur cette lecture. Les lignes encore « à confirmer » — index `Z3-15`/`Z3-16` et mapping des carnets `Z3-Linq2Z3` — ont été confirmées par une nouvelle lecture de la **même copie** (PyMuPDF 1.27.2.3) : folio = index PDF − 1, numéro de section relevé sur la page elle-même, jamais dans le sommaire imprimé (les deux pagination divergent). Pour `Z3-16`, la lecture est confirmée mais le lien est de **voisinage de thème** et non de section portée — voir « Portée du mapping ».
 
-- **Yurichev, D., *SAT/SMT by Example* (édition publique, 12 février 2023, 666 pages)** — déposé à `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (identité vérifiée sur page de titre, 2026-10-05). Le compendium pratique de résolution SAT/SMT par l'exemple, centré Z3/PySMT.
+### Mapping carnet ↔ livre (mapping de l'issue #19278 pour les carnets Z3-Linq2Z3 ; confirmé par lecture effective du PDF)
 
-**Avertissement — défaut biblio au 2026-10-05** : le PDF Yurichev sur la machine worker po-2026 a une taille disque non-nulle mais une structure interne invalide (`fitz.open()` rend 0 page extractible, idem OR94 et Multiagent 2009 de GameTheory). Le livre est référencé en tant que tel (titre, auteur, année, dépot GDrive vérifié), mais les détails de chapitre ou d'exemple spécifique ne sont pas ancrés firsthand tant qu'une copie lisible n'est pas réacquise. Issue de suivi à ouvrir par le mainteneur (hors périmètre worker — c'est un geste bibliothèque, pas un geste de code).
+Confirmation de la **tranche R2 de #19278** : lecture effective, carnet par carnet, des chapitres Yurichev correspondants contre les carnets `Z3-Linq2Z3`. La colonne « Vérification » porte la section et le folio relevés sur la page de l'ouvrage archivé.
 
-### Mapping carnet ↔ livre (mapping de l'issue #19278, à confirmer par lecture effective du PDF)
+| Thème du livre | Notebook porteur | Section Yurichev (folio imprimé) | Vérification |
+|----------------|------------------|-----------------------------|--------------|
+| Solver API, theories, modèles | série Z3-API entière | Ch. 1 Introduction (p. 11), Ch. 2 Basics (p. 14) | OK (la série entière relève du livre ; pas d'inventaire chapitre-par-chapitre) |
+| Array theory, Nested arrays | `Z3-Linq2Z3/04_Array_Theory`, `05_Nested_Arrays_2D` | Ch. 8 §8.1 Sudoku (p. 205) + §8.1.2 Simple sudoku in SMT using functions and array (p. 212), Ch. 12 Latin squares (p. 346) + §12.4 Magic/Latin square of Knut Vik design (p. 361) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Cryptarithmetic | `Z3-Linq2Z3/13_Cryptarithmetic_SMT` | Ch. 8 §8.10 Alphametics (p. 276) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| MaxSAT / Optimize | `Z3-Linq2Z3/14_Optimize_MaxSAT` | Ch. 14 MaxSAT/MaxSMT (p. 383), Ch. 10 Knapsack problems (p. 332) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Bit-vectors, overflow | `Z3-Linq2Z3/15_BitVectors_Overflow` | Ch. 5 §5.1 Integer overflow (p. 132) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| UNSAT cores | `Z3-Linq2Z3/17_UnsatCores` | Ch. 3 §3.13.2 Unsat core (p. 90) + §3.13.3 Stress test (p. 92) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Einstein's riddle & puzzles | `Z3-Linq2Z3/18_Einsteins_Riddle`, `02_Sudoku_Theorem_vs_Array` | Ch. 8 §8.2 Zebra puzzle (p. 232) + §8.1 Sudoku (p. 205) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Real arithmetic | `Z3-Linq2Z3/16_RealArithmetic` | Ch. 4 Proofs (p. 106) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Expression rewriting (extension du DSL) | `Z3-Linq2Z3/20_Theorem_Rewriters` | Ch. 4 §4.5 Simplifying long and messy expressions using Z3 (p. 113) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
 
-| Thème du livre | Notebook porteur | Vérification |
-|----------------|------------------|--------------|
-| Solver API, theories, modèles | série Z3-API entière | OK (la série entière relève du livre ; pas d'inventaire chapitre-par-chapitre) |
-| Array theory, Nested arrays | `Z3-Linq2Z3/04_Array_Theory`, `05_Nested_Arrays_2D` | à_confirmer (PDF corrompu worker) |
-| Cryptarithmetic | `Z3-Linq2Z3/13_Cryptarithmetic_SMT` | à_confirmer |
-| MaxSAT / Optimize | `Z3-Linq2Z3/14_Optimize_MaxSAT` | à_confirmer |
-| Bit-vectors, overflow | `Z3-Linq2Z3/15_BitVectors_Overflow` | à_confirmer |
-| UNSAT cores | `Z3-Linq2Z3/17_UnsatCores` | à_confirmer |
-| Einstein's riddle & puzzles | `Z3-Linq2Z3/18_Einsteins_Riddle`, `02_Sudoku_Theorem_vs_Array` | à_confirmer |
-| Real arithmetic | `Z3-Linq2Z3/16_RealArithmetic` | à_confirmer |
+**Portée du mapping.** Il relie chaque carnet à la section de l'ouvrage qui traite le même sujet — il n'affirme pas que le carnet reprend l'**instance** de l'ouvrage. Le lien ainsi établi se distingue par sa **nature** : la section **portée** par le carnet, que le carnet met en œuvre, ou la section **voisine de thème**, que le carnet ne met pas en œuvre mais dont il traite le sujet — c'est le cas de `Z3-16` : §14.5 et §14.8 sont portées par `Z3-06`, §22.8 par `Z3-08`, et le plan de repas de `Z3-16` se range dans la même famille de problèmes d'allocation et d'ordonnancement. Sur les trois carnets dont l'instance a été confrontée ligne à ligne : `13_Cryptarithmetic_SMT` reprend bien l'alphamétique du livre (§8.10, p. 276 — `SEND + MORE = MONEY`, mêmes lettres et même équation) ; `02_Sudoku_Theorem_vs_Array` et `18_Einsteins_Riddle` en reprennent le **cadre d'encodage** (§8.1.2, p. 212 ; §8.2, p. 232), mais résolvent des instances qui leur sont propres — la grille du livre (§8.1, p. 205) est le « world's hardest sudoku » à 23 indices, et le puzzle du livre a pour réponse que le Japonais possède le zèbre.
 
 ## FAQ / Troubleshooting
 

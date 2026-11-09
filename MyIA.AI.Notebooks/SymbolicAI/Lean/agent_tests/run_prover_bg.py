@@ -44,14 +44,35 @@ from __future__ import annotations
 import argparse
 import asyncio
 import faulthandler
+import io
 import os
 import sys
 import time
 from pathlib import Path
 
 # Dump native tracebacks on fatal signals (SIGSEGV/SIGABRT...) so a future
-# run-6-style silent death leaves a signature in the log (#6790).
-faulthandler.enable()
+# run-6-style silent death leaves a signature in the log (#6790). Sous capture
+# pytest, sys.stderr est un tampon sans fileno : enable() y leve
+# io.UnsupportedOperation et tuait l'import du lanceur (2 tests rouges sur
+# main, #24015). Un abandon silencieux y desactiverait le dump -- exactement
+# ce que #6790 avait installe. Repli sur sys.__stderr__, le stderr d'origine
+# du processus, qui porte un vrai descripteur : mesure au 01/11 (sonde
+# capture 'sys' simulee), enable(stderr sans fileno) LEVE, enable(__stderr__)
+# OK, dump ACTIF apres repli. Idee du repli : myia-po-2028:CoursIA-2 (#24023,
+# retire comme doublon).
+def _enable_faulthandler() -> None:
+    for stream in (sys.stderr, sys.__stderr__):
+        if stream is None:
+            continue
+        try:
+            faulthandler.enable(stream)
+        except (AttributeError, io.UnsupportedOperation, OSError, ValueError):
+            continue
+        else:
+            return
+
+
+_enable_faulthandler()
 
 PROVER_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROVER_DIR))
@@ -75,6 +96,10 @@ from prover.provider_gate import (  # noqa: E402  (#18709: gate partage)
     validate_provider_credentials,
 )
 from prover.provers import MultiAgentSorryProver  # noqa: E402
+# Cycle-29 (#1453): the run-verdict classifier lives in the inner launcher
+# (tests/test_freeze_loop_termination.py imports it from there); the root
+# launcher logs the same verdict instead of re-deriving a divergent copy.
+from prover.run_prover_bg import _derive_result_kind  # noqa: E402
 from prover.trace import TraceLogger  # noqa: E402
 from prover.lean_utils import (  # noqa: E402  (#9402: real-token counter)
     count_real_sorries,
@@ -103,6 +128,30 @@ def _peek_sorry_count(filepath: str) -> int:
         return count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
     except OSError:
         return -1
+
+
+def _classify_result(result: dict, post_sorry, pre_sorry) -> str:
+    """Terminal verdict of a run, distinct from the process exit code.
+
+    Cycle-29 (#1453): DELEGATES to the canonical classifier
+    ``prover.run_prover_bg._derive_result_kind`` — the same contract the
+    inner launcher prints as its ``Verdict:`` line and
+    tests/test_freeze_loop_termination.py pins (no_attempt vs freeze_loop
+    vs no_progress ranking). This wrapper only adapts the launcher's sorry
+    counts: a count that is None or negative (``_peek_sorry_count``'s
+    OSError sentinel is -1) is UNKNOWN, not zero — equal sentinels are
+    passed so ``sorry_decreased`` can never fire on missing data, while
+    flag-based kinds still classify.
+    """
+    final = post_sorry if isinstance(post_sorry, int) and post_sorry >= 0 else None
+    original = pre_sorry if isinstance(pre_sorry, int) and pre_sorry >= 0 else None
+    if final is None or original is None:
+        # One side unknown: no decrease claim is possible — collapse both
+        # to the known side (0 if both unknown), else a missing post count
+        # (sentinel -1) against a real pre count would read as a decrease.
+        known = final if final is not None else original
+        final = original = known if known is not None else 0
+    return _derive_result_kind(result, final, original)
 
 
 def _effective_agent_providers(args: argparse.Namespace) -> dict:
@@ -353,11 +402,17 @@ async def _run_calibration_ready(
     _bg(f"RESULT_FREEZE_LOOP {result.get('freeze_loop')} "
         f"escalations={result.get('freeze_loop_escalations')}")
     _bg(f"RESULT_SORRY_EVOLUTION {result.get('sorry_evolution')}")
+    # Cycle-29 (#1453): the single-line terminal verdict harvest scripts and
+    # the coordinator read — no_attempt (freeze with ZERO submissions: change
+    # model/provider, not iterations) is now distinguishable from freeze_loop
+    # and from no_progress without re-parsing the RESULT_* block above.
+    result_kind = _classify_result(result, post_sorry, pre_sorry)
+    _bg(f"RESULT_KIND {result_kind}")
     if result.get("skipped"):
         _bg(f"RESULT_SKIPPED reason={result.get('reason')} detail={result.get('detail')}")
 
     _bg(
-        f"FINAL ok={bool(result.get('success'))} "
+        f"FINAL ok={bool(result.get('success'))} kind={result_kind} "
         f"sorry_after={post_sorry if post_sorry is not None else 'n/a'} "
         f"elapsed={elapsed:.1f}"
     )

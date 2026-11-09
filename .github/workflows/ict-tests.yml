@@ -121,7 +121,6 @@ on:
       - 'MyIA.AI.Notebooks/IIT/ICT-Series/**'
       - '.github/workflows/ict-tests.yml'
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/IIT/ICT-Series/**'
@@ -145,7 +144,11 @@ jobs:
     # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
-    runs-on: ubuntu-latest
+    # 2026-10-28 (#23053 b, lane myia-ai-01:CoursIA-2) : forme hybride de
+    # debordement (#22461 phase A) -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL
+    # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
+    # Retour arriere = variable `false` ou supprimee, sans toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     # Plafond 15 -> 30 (#14598 Option A) -> 60 min. Le passage a 30 avait
     # DEPLACE le mur, pas mesure sa position : trois PRs de CONTENU sont mortes

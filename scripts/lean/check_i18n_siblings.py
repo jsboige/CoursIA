@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check Lean i18n sibling-pair body byte-identity (EPIC #4980).
 
-Convention #4980 (ratified 2026-07-04, cf ``.claude/rules/code-style.md`` §Lean
+Convention #4980 (ratified 2026-07-04, cf ``.claude/rules/lean-i18n.md`` §Lean
 i18n): a French-canonical ``Foo.lean`` may have an English mirror ``Foo_en.lean``.
 Only the **docstrings** (``/-- ... -/``, ``/- ... -/``) and **comments**
 (``-- ...``) differ between the two files; the code **body** — signatures,
@@ -65,9 +65,13 @@ trimming (#7763, surfaced during the i18n rollout for ``conway_lean`` /
 2. The EN mirror was never written *from* the canonical — it is a verbatim
    copy of the original EN skeleton the FR file was supposed to diverge from.
 
-Advisory by design because legitimate identical bodies exist (a shared
-licence header, a verbatim bibliographic citation); a human must triage the
-list before any flip. The summary line carries the ``| N half-done (advisory)``
+Advisory by design because legitimate identical bodies exist (a verbatim
+bibliographic citation, a shared boilerplate); a human must triage the list
+before any flip. The repository's Apache-2.0 licence header is the one
+boilerplate that is identical **by construction** in every sibling pair: it is
+excluded from the comparison by name (see :func:`is_repo_boilerplate`), so the
+advisory keeps its signal — every remaining hit is prose that really was never
+translated. The summary line carries the ``| N half-done (advisory)``
 counter regardless of exit code.
 """
 from __future__ import annotations
@@ -80,7 +84,7 @@ from collections import Counter
 from pathlib import Path
 
 # Trees out of scope for the #4980 convention (vendored Mathlib, external lakes,
-# third-party fixtures) — cf code-style.md §Lean i18n "Hors scope".
+# third-party fixtures) — cf lean-i18n.md §Lean i18n "Hors scope".
 EXCLUDE_PARTS = frozenset(
     {".lake", "_peters", "reference_docs", "agent_tests", ".git", ".claude",
      "node_modules", "foundry-lib"}
@@ -174,6 +178,38 @@ def extract_block_comment_bodies(src: str) -> list[str]:
     return out
 
 
+# The repository's Apache-2.0 licence header, in the exact form the Lean
+# sources carry it. It is identical in every sibling pair **by construction**,
+# so it can never carry a signal about the translation: excluding it is what
+# keeps the HALF-DONE advisory usable (measured 2026-11-02: 9 of the 10
+# half-done pairs of the repository were flagged by this header alone, the
+# 10th being the one pair whose EN mirror really does carry FR prose).
+_LICENCE_BODY_RE = re.compile(
+    r"^Copyright \(c\) \d{4} CoursIA\. All rights reserved\. "
+    r"Released under Apache 2\.0 license as described in the file LICENSE\.$"
+)
+
+
+def is_repo_boilerplate(body: str) -> bool:
+    """True when ``body`` is repository boilerplate rather than prose.
+
+    Only one such body exists today — the Apache-2.0 licence header — and it
+    is recognised **by name** (a named exemption, never a wildcard: same
+    discipline as the ``allow-axioms`` whitelist of ``pr-review-discipline``
+    §B). A body that merely *resembles* the header is not boilerplate: the
+    match is anchored on both ends, so any additional sentence disqualifies it.
+
+    In particular, the fourteen ``_en.lean`` block bodies that concatenate the
+    header with a module title inside the same ``/- … -/`` block are **not**
+    exempted (measured 2026-11-02, #24161): the exemption covers the pure
+    header alone, and a header-plus-title body remains a compared block — it
+    stays flagged by ``is_half_done`` if it is shared verbatim with the FR
+    sibling.
+    """
+    text = " ".join(body.split())
+    return bool(_LICENCE_BODY_RE.match(text))
+
+
 def is_half_done(fr_path: Path, en_path: Path,
                  min_body_chars: int = 100) -> tuple[bool, int]:
     """Detect the ``HALF-DONE`` migration failure mode of the i18n rollout
@@ -189,8 +225,12 @@ def is_half_done(fr_path: Path, en_path: Path,
 
     Both indicate a missing human translation step; the checker surfaces them
     as **advisory** (does NOT fail CI) because some legitimate use cases
-    produce identical bodies (a licence header, a verbatim citation, a shared
-    bibliographic reference) and must remain a human triage.
+    produce identical bodies (a verbatim citation, a shared bibliographic
+    reference) and must remain a human triage.
+
+    Bodies recognised as repository boilerplate (:func:`is_repo_boilerplate`)
+    are excluded from the comparison: they are identical in every pair by
+    construction and carry no signal about the translation.
 
     Returns ``(flagged, n_identical)`` where ``n_identical`` counts distinct
     bodies in ``en_path`` that have a byte-identical match in ``fr_path``.
@@ -201,9 +241,12 @@ def is_half_done(fr_path: Path, en_path: Path,
         en_path.read_text(encoding="utf-8", errors="replace"))]
     if not fr_bodies or not en_bodies:
         return False, 0
-    fr_set = {b for b in fr_bodies if len(b) >= min_body_chars}
+    fr_set = {b for b in fr_bodies
+              if len(b) >= min_body_chars and not is_repo_boilerplate(b)}
     n_identical = sum(1 for b in en_bodies
-                      if len(b) >= min_body_chars and b in fr_set)
+                      if len(b) >= min_body_chars
+                      and not is_repo_boilerplate(b)
+                      and b in fr_set)
     return n_identical > 0, n_identical
 
 
@@ -598,7 +641,9 @@ def main(argv: list[str] | None = None) -> int:
         # HALF-DONE advisory (#7763): detect FR-canonical files that still
         # carry verbatim EN prose (the migration was started but never landed
         # on the FR side). Non-gating by design — some identical bodies are
-        # legitimate (shared licence header, citation), so a human triages.
+        # legitimate (a citation, a shared bibliographic reference), so a human
+        # triages. Repository boilerplate (the licence header) is excluded by
+        # name and never reaches this count.
         hd, n_id = is_half_done(fr, en)
         if hd:
             half_done += 1
@@ -611,8 +656,9 @@ def main(argv: list[str] | None = None) -> int:
           f" | {unbuilt} unbuilt ({unbuilt_whitelisted} whitelisted)"
           f" | {half_done} half-done (advisory)")
     # NB: half_done is ADVISORY — it does NOT flip the exit code. Some
-    # legitimate scenarios produce identical bodies (shared licence header,
-    # verbatim bibliographic citation, etc.) and a human must triage. The
+    # legitimate scenarios produce identical bodies (a verbatim bibliographic
+    # citation, etc.) and a human must triage; the licence header is excluded
+    # by name upstream, so it never inflates the count. The
     # exit code remains a hard fail on real drift / orphan / non-whitelisted
     # unbuilt. Whitelisted unbuilt mirrors are reported as UNBUILT in the log
     # but excluded from the exit-code computation (cliquet: the exemption is

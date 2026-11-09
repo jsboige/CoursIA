@@ -45,7 +45,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 #: Carnet qui porte la rubrique MOS de reference (source de verite unique).
 DEFAULT_RUBRIC_NOTEBOOK = (
-    "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb"
+    "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb"
 )
 
 #: Variable de code qui porte la grille dans le carnet de reference.

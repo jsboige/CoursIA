@@ -77,4 +77,11 @@ jobs:
           # (fetch-depth: 2) et merge-base se resout en parent direct ; le
           # diff rend exactement les fichiers du plateau GitHub (verifie sur
           # repro de la topologie : 6 fichiers, identiques a gh pr view).
-          python scripts/check_docs_transients_lane.py --base "HEAD^1"
+          # --distillation : quatrieme sens, MESURE et non blocage. Le contrat
+          # de la lane est « un transit, pas un stock » : un rapport est
+          # distille quand un document perenne le cite. Afficher le stock a
+          # chaque PR docs/** le rend visible sans faire rougir la CI pour un
+          # residu anterieur (3 rapports au 2026-10-28) -- un gate bruyant
+          # apprend aux reviewers a l'ignorer. Une lane qui veut imposer le
+          # sens sur SA PR passe --strict-distillation.
+          python scripts/check_docs_transients_lane.py --base "HEAD^1" --distillation

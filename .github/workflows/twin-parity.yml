@@ -17,9 +17,12 @@ name: Twin Parity Check
 #
 # Per-pair semantics (#8264): the workflow runs in `--per-pair --base
 # <commit>` mode, comparing the registry + blob SHAs at the PR's HEAD vs
-# at the PR's base (#22292) -- `github.event.pull_request.base.sha`, the main
-# GitHub built the merge on; `origin/main` only when there is no PR base
-# (`workflow_dispatch`). The gate FAILS only on pairs that the PR
+# at the PR's base (#22292) -- the base the merge ref was BUILT ON, read from
+# the event: `github.sha^1`, the first parent of the merge commit. On a
+# stacked PR that parent is the parent BRANCH, not `main` -- so this is not
+# "the main GitHub built the merge on", it is "the base GitHub built the merge
+# on". `origin/main` only when there is no PR event (`workflow_dispatch`).
+# The gate FAILS only on pairs that the PR
 # itself has moved (base=OK, head=DRIFT/MISSING) or introduced/removed
 # without rebaseline. Drift already present at the base is reported as
 # `drift_pre_existing` but does NOT fail the gate -- it belongs to a
@@ -75,18 +78,37 @@ concurrency:
 jobs:
   twin-parity:
     name: "Twin parity audit (#8057)"
-    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
-    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
-    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
-    # 2026-10-27 (mesure ai-01) : migration vers `ubuntu-latest` par Q35 etape 2
-    # (#17397) -- `scripts/ci/audit_self_hosted_needs.py` certifie ce workflow
-    # comme n'ayant besoin de RIEN qui n'existe que sur le parc local, et le parc
-    # local etait sature PAR SES CHECKOUTS (mesure 00:45Z : 11 des 12 slots
-    # occupes dans `actions/checkout`, 614 runs en file). La garde anti-fork
-    # ci-dessous est CONSERVEE : aucun code de fork ne change de surface.
-    # Retour arriere = revert du commit (et remise de l'entree d'allowlist).
-    runs-on: ubuntu-latest
+    # 2026-10-27 (#22461, phase A du debordement, appliquee ici dans un PR
+    # DISTINCT de #22921 -- ce workflow en avait ete explicitement exclu de
+    # #22921 pour cause de G-VAR-3, cf le commit d'exclusion) : forme
+    # hybride de debordement -- PR meme-depot ET
+    # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ; tout le reste
+    # (variable absente ou fausse, fork, workflow_dispatch) retombe sur
+    # ubuntu-latest (l'etat du 27/10). Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # 2026-10-27 (apres le merge de #22921, squash 0c7affa2927) : la garde
+    # de debordement et l'instrument qui l'authentifie sont sur `main` ;
+    # l'exclusion PROVISOIRE de twin-parity.yml (commit d'exclusion, G-VAR-3)
+    # n'a jamais ete mergee -- ce workflow passe donc par une PR a part, dont
+    # le diff ne porte que ce fichier.
+    # La garde anti-fork ci-dessous est CONSERVEE : aucun code de fork ne
+    # change de surface.
+    # Limite : runs-on se resout a la creation du job, les runs deja en file
+    # ne bougent pas.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 %
+    # heberge, sans toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Borne de securite (incident du 15/10) : la forme hybride renvoie ce job
+    # sur nos slots ephemeres, ou un run fige (checkout `filter: blob:none`
+    # sans borne) tient un slot pendant 6 h -- le defaut d'Actions -- et le
+    # retire aux PR gates. 16 des 18 slots ephemeres etaient occupes de
+    # cette facon le 15/10, et le workflow a du etre desactive a 07:26Z
+    # pour liberer le parc (104 runs en file annules).
+    # Duree mesuree sur 20 runs verts heberges : mediane 1,3 min, max 4,7 min
+    # -> borne a 20 min (marge large pour le parc local, plus lent que
+    # l'heberge sur un clone `fetch-depth: 0`).
+    timeout-minutes: 20
 
     steps:
       - name: Checkout PR
@@ -105,12 +127,17 @@ jobs:
 
       - name: Run twin parity check
         id: check
-        # `EVENT`/`PR_BASE` are read from the event, never derived from the shape of the
+        # `EVENT`/`PR_SHA` are read from the event, never derived from the shape of the
         # checkout: a branch whose tip happens to BE a merge commit passes a bare `HEAD^2`
-        # test, and HEAD^1 would then be that branch's first parent -- not main.
+        # test, and HEAD^1 would then be that branch's first parent -- not the base.
+        #
+        # `github.sha` IS the anchor: on `pull_request` it is the merge ref commit
+        # GitHub built for this event. `github.sha^1` is its first parent -- the base
+        # the merge was built on. Anchoring on the event (not on `HEAD`) means the
+        # resolution does not change if the checkout shape changes.
         env:
           EVENT: ${{ github.event_name }}
-          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_SHA: ${{ github.sha }}
         run: |
           set +e
           # Separate stdout (the JSON report, the machine contract) from stderr (diagnostics).
@@ -119,15 +146,45 @@ jobs:
           # so json.load crashed with "Extra data" and the gate failed with a raw traceback on
           # any PR where a warning fired -- masking the real drift verdict. Direct redirection
           # captures python's exit code correctly AND keeps the report pure JSON.
-          # Base = the main GitHub built the merge on (#22292). `origin/main` is re-fetched when
+          # Base = the base the merge ref was BUILT ON (#22292). `origin/main` is re-fetched when
           # the job STARTS; after hours in the queue it is newer than the merge ref, and every
           # pair rebaselined on main in between reads DRIFT here and OK there -- a
           # DRIFT_INTRODUCED on a PR that never touched it (#22218, 2026-10-24: 11 pairs,
           # 117 main commits between the two reads). A stack PR is also covered: its base is
           # the parent branch, which is the truth for a drift-introduced gate.
+          #
+          # 2026-10-27 (re-cadrage, apres #22293) : l'ANCRAGE de la base est
+          # l'EVENEMENT (`github.sha`), pas la forme du checkout. En
+          # `pull_request`, `github.sha` est le commit de fusion du merge ref ;
+          # `github.sha^1` en est le premier parent -- la base sur laquelle
+          # GitHub a construit le merge. Aucune deduction depuis la forme du
+          # checkout : `HEAD^1` dependrait de ce que le runner a extrait, alors
+          # que l'ancrage ci-dessous ne bouge pas si le checkout change. Les
+          # PRs empilees restent couvertes (leur premier parent est la branche
+          # parente, pas `main`). Repli inchange : `origin/main` quand
+          # l'evenement ne porte pas de merge ref (`workflow_dispatch`), quand
+          # `github.sha` n'est pas un commit de fusion, ou quand le parent
+          # n'est pas resolvable dans le checkout.
+          #
+          # Le mode `auto` de l'outil (`--base auto`) survit pour l'usage local
+          # sur un merge ref (tests test_check_twin_parity_base_auto.py) ; ce
+          # workflow ne l'utilise plus : il resout lui-meme, sur l'ancrage de
+          # l'evenement.
           BASE=origin/main
-          if [ "$EVENT" = "pull_request" ] && git rev-parse -q --verify "$PR_BASE^{commit}" >/dev/null; then
-            BASE="$PR_BASE"
+          if [ "$EVENT" = "pull_request" ]; then
+            # `github.sha` doit etre un commit de FUSION (>= 2 parents) : sinon
+            # son premier parent n'est PAS la base de la PR (c'est le parent
+            # ordinaire de la branche), et le gate comparerait chaque paire a
+            # un commit faux -- silencieusement. Meme garde que le mode `auto`
+            # de l'outil (`len(parents) < 3` -> `origin/main`) : le repli
+            # d'origine, jamais une base plus fausse que celle d'avant.
+            PARENTS="$(git rev-list --parents -n 1 "$PR_SHA" 2>/dev/null || true)"
+            if [ "$(printf '%s\n' "$PARENTS" | wc -w)" -ge 3 ]; then
+              CANDIDATE="$(git rev-parse -q --verify "${PR_SHA}^1^{commit}" 2>/dev/null || true)"
+              if [ -n "$CANDIDATE" ]; then
+                BASE="$CANDIDATE"
+              fi
+            fi
           fi
           # Resolved ONCE, and the commit id is what gets passed: every message below -- and the
           # tool's own "Impossible de lire le registre au base-ref '<ref>'" when a promisor blob
@@ -245,11 +302,19 @@ jobs:
     # `exit 1` au lieu de `echo "::warning..."`. Cf twin-parity-drift-audit
     # pour le precedent advisory-then-blocking.
     name: "Twin parity SHA mismatch (#9399 volet b, advisory)"
-    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
-    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
-    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
-    runs-on: ubuntu-latest
+    # 2026-10-27 (#22461, phase A du debordement) : meme forme hybride que le
+    # job `twin-parity` ci-dessus -- PR meme-depot ET
+    # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale, sinon
+    # ubuntu-latest. La garde anti-fork ci-dessous est CONSERVEE.
+    # Retour arriere = variable a `false` ou supprimee.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Borne de securite (incident du 15/10) : sur nos slots ephemeres, un run
+    # fige sans borne tient un slot 6 h (defaut d'Actions) et le retire aux PR
+    # gates ; 16 des 18 slots etaient occupes de cette facon le 15/10.
+    # Duree mesuree sur 20 runs verts heberges : mediane 1,2 min, max 1,4 min
+    # -> borne a 20 min (marge large pour le parc local).
+    timeout-minutes: 20
 
     steps:
       - name: Checkout PR

@@ -13,6 +13,11 @@ services:
     environment:
       - HF_TOKEN=${HF_TOKEN}
       - CUDA_DEVICE_ORDER=PCI_BUS_ID
+      # Double epinglage GPU : device_ids seul est insuffisant sur les hotes
+      # multi-GPU (mesure po-2023 29/10 : vLLM chargeait sur le GPU 0 sans
+      # cette variable, etranglant la stack audio qui y vit). Convention des
+      # autres services GPU du depot (comfyui-qwen, demucs, musicgen, forge).
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-1}
       - NCCL_P2P_DISABLE=1
       # Quantization: fp8 (recommande), int8 (experimental), bfloat16 (defaut)
       - VLLM_QUANTIZATION=${VLLM_QUANTIZATION:-bfloat16}

@@ -8,30 +8,32 @@ Le `||` porte sur le rc du DERNIER maillon du pipeline. Mais meme sous
 `-o pipefail` -- et le shell des workflows est bien `bash -eo pipefail` -- ce
 repli ne corrige rien : `gh` ecrit son **document d'erreur sur stdout** en rc=1,
 et un repli place DANS la substitution ne peut pas **effacer un stdout deja
-ecrit**. Mesure a deux bras (gh factice qui echoue en ecrivant sur stdout),
-reprise ici par `test_la_forme_ancienne_reproduit_le_defaut` :
+ecrit**. Mesure a deux bras (gh factice qui echoue en ecrivant sur stdout) :
 
     avant : api -X PATCH repos/.../comments/{"message":"API rate limit exceeded..."}
-    apres : pr comment <n> --body ...
+    apres : le canal partage decide sur le rc (commentaire unique, une
+            section par organe)
 
 Consequence avant correctif : sur une panne de quota, le commentaire advisory
 n'etait **jamais poste** (la branche `else` qui l'aurait poste etait sautee) et
 un marqueur perime n'etait **pas retire** -- les deux echecs avales par
-`2>/dev/null || true`, pendant que le `::notice::` affirmait le contraire.
+`2>/dev/null || true`, pendant que le `::notice:` affirmait le contraire.
 
-Ce fichier execute les 4 blocs **reellement presents** dans les workflows
-(extraits du TEXTE, pas du YAML : c'est le texte qui tourne) avec un `gh`
-factice, dans les trois modes -- API en echec / marqueur present / marqueur
-absent -- et sous les deux jeux de flags du shell.
+#15511 a supprime les quatre sites : le canal consultatif est desormais
+**l'organe partage** `scripts/ci/advisory_sticky.py`, qui decide sur le rc et
+dont l'echec est remonte (le workflow imprime alors `::warning::`, jamais
+`::notice::`). Ce fichier verifie donc deux choses :
+
+1. **la forme fautive a disparu de TOUS les workflows** (plus aucun site
+   `EXISTING_ID`, plus aucun `head -1 || echo ""`) ;
+2. **le canal partage decide sur le code de sortie** : un `gh` en echec
+   remonte (rc non nul, document d'erreur non promu identifiant), un `gh`
+   qui repond fait un succes *constate*.
 
 Le controle positif de l'instrument est explicite : la forme ANCIENNE est
 rejouee et doit **reproduire** le defaut. Sans lui, un harnais incapable de
-distinguer les deux formes passerait vert sur les deux -- et ne prouverait rien.
-
-Hors scope, mesure et non corrige ici : les sites `if ! gh pr view ... | grep -qF`
-(always-on-guards.yml L402/L654) prennent, eux, la branche « poster » quand `gh`
-echoue -- direction benigne (un doublon au lieu d'un silence). Ils ne sont pas
-la meme classe et ne sont pas dans l'issue.
+distinguer les deux formes passerait vert sur les deux -- et ne prouverait
+rien.
 
 Le resolveur `_bash_exe` est une copie assumee de celui de
 `test_always_on_guards_live_body.py` : ce dernier est modifie par une PR
@@ -39,22 +41,40 @@ ouverte (#17260, meme famille de defaut), et importer un helper prive d'un
 fichier en vol ferait rougir ce test pour une raison sans rapport.
 """
 
+import contextlib
+import io
+import json
 import os
 import pathlib
 import re
 import stat
 import subprocess
+import sys
 import textwrap
 
 import pytest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "ci"))
+import advisory_sticky as a_s  # noqa: E402
 WORKFLOWS = (
     REPO_ROOT / ".github" / "workflows" / "always-on-guards.yml",
     REPO_ROOT / ".github" / "workflows" / "variation-light-genre.yml",
+    REPO_ROOT / ".github" / "workflows" / "variation-tag-guard.yml",
+)
+# Les workflows qui publient des sections du commentaire unique (#15511).
+LIVE_WORKFLOWS = (
+    REPO_ROOT / ".github" / "workflows" / "always-on-guards.yml",
+    REPO_ROOT / ".github" / "workflows" / "variation-light-genre.yml",
+    REPO_ROOT / ".github" / "workflows" / "variation-tag-guard.yml",
+    REPO_ROOT / ".github" / "workflows" / "markdown-claims-output-advisory.yml",
+    REPO_ROOT / ".github" / "workflows" / "notebook-outputs-required.yml",
+    REPO_ROOT / ".github" / "workflows" / "organ-duplication-advisory.yml",
 )
 SITE_HEAD = 'EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments'
 FORM_FAUTIVE = 'head -1 || echo ""'
+ORGAN = REPO_ROOT / "scripts" / "ci" / "advisory_sticky.py"
+
 FAKE_GH = textwrap.dedent(
     """\
     #!/usr/bin/env bash
@@ -74,9 +94,33 @@ FAKE_GH = textwrap.dedent(
       exit 0
     fi
     if [ "$1" = "api" ]; then
-      [ "${GH_FAKE_WRITE_FAIL:-}" = "1" ] && exit 1
-      echo "API_CALL"
-      exit 0
+      case "$*" in
+        *"--method POST"*)
+          if [ "${GH_FAKE_WRITE_FAIL:-}" = "1" ]; then
+            # `gh` ecrit son document d'erreur sur STDOUT en rc=1 : c'est
+            # precisement le piege -- un identifiant de commentaire ne doit
+            # JAMAIS en etre extrait.
+            printf '%s\\n' '{"message":"API rate limit exceeded for installation.","status":"403"}'
+            exit 1
+          fi
+          printf '%s\\n' '{"id": 4242}'
+          exit 0
+          ;;
+        *"--method PATCH"*)
+          [ "${GH_FAKE_WRITE_FAIL:-}" = "1" ] && exit 1
+          printf '%s\\n' '{"id": 4242}'
+          exit 0
+          ;;
+        *)
+          # lecture des commentaires : forme `--slurp` (liste de pages)
+          if [ "${GH_FAKE_API_FAIL:-}" = "1" ]; then
+            printf '%s\\n' '{"message":"API rate limit exceeded for installation.","status":"403"}'
+            exit 1
+          fi
+          printf '%s\\n' '[[]]'
+          exit 0
+          ;;
+      esac
     fi
     exit 64
     """
@@ -99,6 +143,10 @@ def _bash_exe() -> str:
         if os.path.exists(cand):
             return cand
     pytest.skip("Git Bash introuvable -- le bash System32 (WSL) ne lit pas les chemins Windows")
+
+
+def _python_exe() -> str:
+    return "python" if os.name != "nt" else "python"
 
 
 def _block_at(lines: list[str], start: int) -> str:
@@ -134,7 +182,7 @@ def _block_at(lines: list[str], start: int) -> str:
 
 
 def _sites() -> list[tuple[str, int, str, str]]:
-    """Les 4 sites, avec le bloc shell qui les entoure et leur NATURE.
+    """Les sites ``EXISTING_ID`` encore presents, avec leur NATURE.
 
     Deux natures, aux consequences OPPOSEES quand la lecture echoue :
 
@@ -156,58 +204,100 @@ def _sites() -> list[tuple[str, int, str, str]]:
 
 SITES = _sites()
 IDS = [f"{name}:L{line}-{kind}" for name, line, _, kind in SITES]
-UPSERTS = [s for s in SITES if s[3] == "upsert"]
-DELETES = [s for s in SITES if s[3] == "delete"]
 
 
-def _run(block: str, tmp_path, flags: str, api_fail=False, marker_id="", write_fail=False):
-    """Execute un bloc avec un `gh` factice. Rend (stdout, appels, rc)."""
-    bindir = tmp_path / "bin"
-    bindir.mkdir(exist_ok=True)
-    gh = bindir / "gh"
-    gh.write_text(FAKE_GH, encoding="utf-8")
-    gh.chmod(gh.stat().st_mode | stat.S_IEXEC)
-    log = tmp_path / "gh_calls.log"
-    log.write_text("", encoding="utf-8")
-    script = tmp_path / "bloc.sh"
-    script.write_text(block, encoding="utf-8")
-
-    # bash (Git Bash / runner Linux) ne lit pas un PATH mixte : un PATH
-    # ':'-sepague d'entrees ';'-separees est re-parse par MSYS et le bin/ du gh
-    # factice se perd -- c'est le gh REEL qui repond alors.
-    entries = [p.replace("\\", "/") for p in os.environ.get("PATH", "").split(os.pathsep) if p]
-    env = dict(
-        os.environ,
-        PATH=":".join([str(bindir).replace("\\", "/"), *entries]),
-        GH_LOG=str(log).replace("\\", "/"),
-        GH_REPO="jsboige/CoursIA",
-        PR_NUMBER="17265",
-        MARK="**G-VAR-2/3 GENRE signals**",
-        BODY="corps du commentaire advisory",
-        LANE="myia-po-2026:CoursIA",
-        TALLY="0/1",
-        GH_FAKE_ID=marker_id,
-    )
-    if api_fail:
-        env["GH_FAKE_API_FAIL"] = "1"
-    if write_fail:
-        env["GH_FAKE_WRITE_FAIL"] = "1"
-    proc = subprocess.run(
-        [_bash_exe(), *flags.split(), str(script).replace("\\", "/")],
-        capture_output=True, text=True, encoding="utf-8", env=env,
-    )
-    calls = log.read_text(encoding="utf-8")
-    return proc.stdout, calls, proc.returncode
+class _Proc:
+    def __init__(self, stdout="", returncode=0, stderr=""):
+        self.stdout = stdout
+        self.returncode = returncode
+        self.stderr = stderr
 
 
-def test_les_quatre_sites_decident_sur_le_code_de_sortie():
-    """La forme fautive a disparu des 4 sites, et il y en a bien 4 -- 2 + 2.
+def _fake_runner(calls, api_fail=False, write_fail=False):
+    """Remplace `gh` : meme forme de reponse que l'API, succes et echec.
 
-    Le compte est EXACT : un `>= 4` laisserait passer la reintroduction de la
-    forme fautive sur un 5e site ajoute plus tard.
+    L'echec d'ecriture rend le **document d'erreur sur stdout** en rc=1 --
+    c'est le piege de #17265 : un identifiant de commentaire ne doit jamais
+    en etre extrait.
     """
-    assert len(SITES) == 4, f"sites trouves : {IDS}"
-    assert len(UPSERTS) == 2 and len(DELETES) == 2, IDS
+
+    # Le faux `gh` tient un **etat** : un commentaire cree est relu par la
+    # lecture suivante. L'organe verifie l'ecriture apres coup (concurrence
+    # des workflows, review ai-01 5752268155) : sans etat, un succes ne
+    # serait jamais constate.
+    comments = []
+    next_id = 4242
+
+    def runner(cmd, **kwargs):
+        calls.append(" ".join(cmd))
+        method = ""
+        if "--method" in cmd:
+            method = cmd[cmd.index("--method") + 1]
+        if method == "POST":
+            if write_fail:
+                return _Proc(
+                    '{"message":"API rate limit exceeded for installation.","status":"403"}',
+                    1, "boom")
+            body = ""
+            if "-f" in cmd:
+                body = cmd[cmd.index("-f") + 1].split("=", 1)[1]
+            comments.append({
+                "id": next_id, "body": body,
+                "user": {"login": "github-actions[bot]"},
+            })
+            return _Proc(json.dumps({"id": next_id}), 0)
+        if method == "PATCH":
+            if write_fail:
+                return _Proc("", 1, "boom")
+            body = cmd[cmd.index("-f") + 1].split("=", 1)[1]
+            target = next(e for e in cmd if "/comments/" in e).split("/")[-1]
+            for c in comments:
+                if c["id"] == int(target):
+                    c["body"] = body
+            return _Proc(json.dumps({"id": int(target)}), 0)
+        if api_fail:
+            return _Proc(
+                '{"message":"API rate limit exceeded for installation.","status":"403"}',
+                1, "boom")
+        # lecture des commentaires : forme `--slurp` (liste de pages)
+        return _Proc(json.dumps([comments]), 0)
+
+    return runner
+
+
+def _run_organ(tmp_path, args, monkeypatch, api_fail=False, write_fail=False):
+    """Execute l'organe partage (CLI) avec un `gh` factice.
+
+    Rend (rc, stdout, stderr, appels `gh`).
+    """
+    body = tmp_path / "advisory.md"
+    body.write_text("**Un avertissement consultatif.**\n", encoding="utf-8")
+    calls: list[str] = []
+    monkeypatch.setattr(
+        a_s, "_default_runner", _fake_runner(calls, api_fail, write_fail))
+    argv = ["--pr", "17265", "--organ", "organe-test", *args]
+    if "--clear" not in args:
+        argv += ["--body-file", str(body)]
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        rc = a_s.main(argv)
+    return rc, out.getvalue(), err.getvalue(), calls
+
+
+# --------------------------------------------------------------------------
+# 1. La forme fautive a disparu de TOUS les workflows
+# --------------------------------------------------------------------------
+
+def test_la_forme_fautive_a_disparu_de_tous_les_workflows():
+    """Plus aucun site `EXISTING_ID` : le canal partage l'a remplace partout.
+
+    Le compte est EXACT : un `>= 1` laisserait passer la reintroduction de
+    la forme fautive sur un site ajoute plus tard.
+    """
+    assert len(SITES) == 0, (
+        f"sites `EXISTING_ID` encore presents : {IDS} -- la forme fautive "
+        "de #17265 ne doit plus exister dans aucun workflow (#15511)"
+    )
     for wf in WORKFLOWS:
         text = wf.read_text(encoding="utf-8")
         assert text.count(FORM_FAUTIVE) == 0, (
@@ -215,8 +305,22 @@ def test_les_quatre_sites_decident_sur_le_code_de_sortie():
             f"`{FORM_FAUTIVE}` -- le repli dans la substitution ne peut pas "
             f"effacer un stdout deja ecrit (#17265)"
         )
-        assert text.count('|| EXISTING_ID=""') == 2, wf.name
+        assert text.count('|| EXISTING_ID=""') == 0, wf.name
 
+
+def test_le_canal_partage_est_cable_dans_les_workflows_vivants():
+    """Les workflows qui publient des advisory passent par l'organe partage."""
+    for wf in LIVE_WORKFLOWS:
+        text = wf.read_text(encoding="utf-8")
+        assert "scripts/ci/advisory_sticky.py" in text, (
+            f"{wf.name} : n'appelle pas l'organe partage -- la section "
+            "serait ecrite dans un canal propre, ce que #15511 supprime"
+        )
+
+
+# --------------------------------------------------------------------------
+# 2. Le canal partage decide sur le code de sortie
+# --------------------------------------------------------------------------
 
 def test_la_forme_ancienne_reproduit_le_defaut(tmp_path):
     """CONTROLE POSITIF de l'instrument -- sans lui, ce fichier ne prouve rien.
@@ -236,8 +340,32 @@ def test_la_forme_ancienne_reproduit_le_defaut(tmp_path):
         fi
         """
     )
-    _, calls, rc = _run(ancienne, tmp_path, "-eo pipefail", api_fail=True)
-    assert rc == 0
+    bindir = tmp_path / "bin"
+    bindir.mkdir(exist_ok=True)
+    gh = bindir / "gh"
+    gh.write_text(FAKE_GH, encoding="utf-8")
+    gh.chmod(gh.stat().st_mode | stat.S_IEXEC)
+    log = tmp_path / "gh_calls.log"
+    log.write_text("", encoding="utf-8")
+    script = tmp_path / "bloc.sh"
+    script.write_text(ancienne, encoding="utf-8")
+
+    entries = [p.replace("\\", "/") for p in os.environ.get("PATH", "").split(os.pathsep) if p]
+    env = dict(
+        os.environ,
+        PATH=":".join([str(bindir).replace("\\", "/"), *entries]),
+        GH_LOG=str(log).replace("\\", "/"),
+        GH_REPO="jsboige/CoursIA",
+        PR_NUMBER="17265",
+        BODY="corps du commentaire advisory",
+        GH_FAKE_API_FAIL="1",
+    )
+    proc = subprocess.run(
+        [_bash_exe(), "-eo", "pipefail", str(script).replace("\\", "/")],
+        capture_output=True, text=True, encoding="utf-8", env=env,
+    )
+    calls = log.read_text(encoding="utf-8")
+    assert proc.returncode == 0
     assert "api -X PATCH" in calls, f"le defaut n'est pas reproduit : {calls}"
     assert "rate limit exceeded" in calls, (
         "le document d'erreur doit se retrouver DANS l'identifiant de commentaire "
@@ -246,86 +374,46 @@ def test_la_forme_ancienne_reproduit_le_defaut(tmp_path):
     assert "pr comment" not in calls
 
 
-@pytest.mark.parametrize("flags", ["-e", "-eo pipefail"])
-@pytest.mark.parametrize("site", UPSERTS, ids=[s[0] + f":L{s[1]}" for s in UPSERTS])
-def test_api_en_echec_le_signal_est_pose_quand_meme(site, flags, tmp_path):
-    """Acceptance 1 + 3 : `gh` en echec => EXISTING_ID vide => on POSTE.
+def test_le_canal_partage_remonte_l_echec_d_ecriture(tmp_path, monkeypatch):
+    """`gh` en echec => rc non nul et aucun succes declare.
 
-    Les deux jeux de flags sont exerces parce que la consequence depend de qui
-    porte le rc du pipeline : le point du correctif est justement de ne plus en
-    dependre.
+    C'est la traduction directe de #17265 sur le canal partage : le verdict
+    suit l'ECRITURE, pas l'intention. Le workflow voit un rc non nul et
+    imprime `::warning::` -- jamais `::notice::`.
     """
-    name, line, block, _ = site
-    _, calls, rc = _run(block, tmp_path, flags, api_fail=True)
-    assert rc == 0, f"{name}:L{line} sort en {rc} sous `bash {flags}`"
-    assert "pr comment" in calls, (
-        f"{name}:L{line} -- aucune ecriture tentee alors que `gh` a echoue : "
-        f"c'est exactement le silence que #17265 corrige. Appels : {calls}"
-    )
-    assert "rate limit exceeded" not in calls, (
-        f"{name}:L{line} -- le document d'erreur est encore pris pour une donnee : {calls}"
+    rc, out, err, calls = _run_organ(tmp_path, [], monkeypatch, write_fail=True)
+    assert rc != 0, f"l'echec d'ecriture ne doit pas rendre 0 (stdout={out!r})"
+    assert "advisory_sticky:" in err, f"l'echec doit etre nomme : {err!r}"
+    assert "4242" not in " ".join(calls), (
+        "le document d'erreur de `gh` ne doit jamais etre promu identifiant"
     )
 
 
-@pytest.mark.parametrize("flags", ["-e", "-eo pipefail"])
-@pytest.mark.parametrize("site", DELETES, ids=[s[0] + f":L{s[1]}" for s in DELETES])
-def test_api_en_echec_aucun_retrait_sur_un_identifiant_inconnu(site, flags, tmp_path):
-    """Contrepartie des sites `delete` : ne RIEN supprimer quand on ignore l'id.
+def test_le_canal_partage_echoue_si_la_lecture_echoue(tmp_path, monkeypatch):
+    """Une lecture en echec est un echec, pas un « rien a signaler »."""
+    rc, out, err, calls = _run_organ(tmp_path, [], monkeypatch, api_fail=True)
+    assert rc != 0, f"une lecture en echec ne doit pas rendre 0 (stdout={out!r})"
+    assert "advisory_sticky:" in err, f"l'echec doit etre nomme : {err!r}"
 
-    La consequence est l'inverse de l'upsert -- poster serait un doublon benin,
-    supprimer sur un identifiant devine serait une ecriture non voulue. Le
-    point commun est le meme correctif : decider sur le rc.
+
+def test_le_canal_partage_requete_un_commentaire_puis_succes(tmp_path, monkeypatch):
+    """Cas nominal : une lecture, une ecriture, un succes *constate*.
+
+    L'identifiant renvoye par l'API est ce que l'organe rapporte : un succes
+    sans identifiant n'est pas un succes (#22758).
     """
-    name, line, block, _ = site
-    _, calls, rc = _run(block, tmp_path, flags, api_fail=True)
-    assert rc == 0, f"{name}:L{line} sort en {rc} sous `bash {flags}`"
-    assert "api -X DELETE" not in calls, (
-        f"{name}:L{line} -- un DELETE est tente alors que la lecture a echoue : {calls}"
+    rc, out, err, calls = _run_organ(tmp_path, [], monkeypatch)
+    assert rc == 0, f"rc={rc} stderr={err!r}"
+    assert '"comment_id": 4242' in out, out
+    assert any("--method POST" in c for c in calls), calls
+
+
+def test_le_succes_ne_poste_aucun_commentaire(tmp_path, monkeypatch):
+    """Le retrait d'une section absente n'ecrit RIEN (le succes ne parle pas)."""
+    rc, out, err, calls = _run_organ(tmp_path, ["--clear"], monkeypatch)
+    assert rc == 0, f"rc={rc} stderr={err!r}"
+    assert '"action": "silent"' in out, out
+    assert not any("--method POST" in c for c in calls), (
+        f"le succes ne doit creer aucun commentaire : {calls}"
     )
-    assert "rate limit exceeded" not in calls, (
-        f"{name}:L{line} -- le document d'erreur est promu identifiant : {calls}"
-    )
-
-
-@pytest.mark.parametrize("site", SITES, ids=IDS)
-def test_marqueur_existant_reutilise_le_meme_identifiant(site, tmp_path):
-    """Acceptance 2 : non-regression de la semantique « mettre a jour ».
-
-    Le marqueur existe deja => PATCH (upsert) ou DELETE (retrait) sur SON
-    identifiant, jamais un nouveau commentaire : l'idempotence du signalement
-    est la raison d'etre du site.
-    """
-    name, line, block, kind = site
-    _, calls, rc = _run(block, tmp_path, "-eo pipefail", marker_id="555")
-    assert rc == 0
-    assert "555" in calls, f"{name}:L{line} -- le marqueur existant n'est pas reutilise : {calls}"
-    assert "pr comment" not in calls, (
-        f"{name}:L{line} -- un second commentaire est cree au lieu de reutiliser le marqueur : {calls}"
-    )
-
-
-@pytest.mark.parametrize("site", UPSERTS, ids=[s[0] + f":L{s[1]}" for s in UPSERTS])
-def test_marqueur_absent_poste_un_commentaire(site, tmp_path):
-    """Cas nominal inchange : aucun marqueur => un commentaire est cree."""
-    name, line, block, _ = site
-    _, calls, rc = _run(block, tmp_path, "-eo pipefail")
-    assert rc == 0
-    assert "pr comment" in calls, f"{name}:L{line} : {calls}"
-
-
-@pytest.mark.parametrize("site", SITES, ids=IDS)
-def test_echec_d_ecriture_ne_se_declare_pas_signale(site, tmp_path):
-    """Acceptance 4 : le verdict du log suit l'ECRITURE, pas l'intention.
-
-    Quand l'ecriture echoue elle-meme, le site doit le dire (un `::warning::`)
-    et non affirmer un signalement qui n'a pas eu lieu.
-    """
-    name, line, block, kind = site
-    out, _, rc = _run(block, tmp_path, "-eo pipefail", marker_id="555", write_fail=True)
-    assert rc == 0, f"{name}:L{line} : l'echec doit etre RAPPORTE, pas propage"
-    assert "::warning::" in out, (
-        f"{name}:L{line} -- echec d'ecriture silencieux. Sortie : {out!r}"
-    )
-    assert "::notice::" not in out, (
-        f"{name}:L{line} -- un ::notice:: est emis alors qu'aucune ecriture n'a abouti"
-    )
+    assert not any("--method PATCH" in c for c in calls), calls

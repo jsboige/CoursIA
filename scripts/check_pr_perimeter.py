@@ -2088,6 +2088,57 @@ def _is_transient_gh_failure(stderr: str) -> bool:
     return any(p.search(stderr or "") for p in _TRANSIENT_GH_SIGNATURES)
 
 
+# Signature of a `gh` RENDERING refusal -- NOT a transport failure.
+#
+# Newer `gh` refuses to PRINT a diff whose payload carries terminal escape
+# sequences ("the diff contains terminal escape sequences; pass
+# --allow-escape-sequences to output it anyway"). One committed artefact
+# carrying ANSI colour codes is enough to trigger it -- measured 2026-10-29
+# on #22341: 11 ESC bytes in the diff, all of them from a captured CI log
+# (`scripts/results/3d_enveloppe_8go/traces/3d02-enveloppe.log`, a raw
+# papermill trace kept as evidence).
+#
+# The refusal is a limit of the RENDERER: the diff exists, GitHub computes
+# it, and the very same bytes are readable over a transport that has no
+# renderer. Treating that refusal like an unreadable PR made the guard
+# answer "PERIMETRE NON MESURABLE" on a PR whose perimeter it could read
+# perfectly well -- an UNKNOWN verdict produced by a PRINTING limit.
+#
+# NARROW ON PURPOSE, like the transient signatures above: only this
+# recognised signature opens a fallback transport. Every other `gh pr diff`
+# failure stays fail-closed (exit 2).
+_ESCAPE_SEQUENCE_GH_SIGNATURE = re.compile(
+    r"contains terminal escape sequences", re.IGNORECASE
+)
+
+
+# Signature of a `gh pr diff` SIZE refusal -- the sibling of the 300-FILE cap
+# handled in `_pr_diff_text` (#14911), on the SIZE axis.
+#
+# GitHub refuses to COMPUTE a diff that exceeds its size budget and answers
+# `HTTP 406: PullRequest.diff too_large` -- measured 2026-11-07 on #24992, whose
+# full patch was 20 988 lines, over the 20 000-line budget of the REST diff.
+#
+# The two caps were treated ASYMMETRICALLY: the file-count cap returned an
+# empty diff + a warning (the guard continued), the size cap fell through to
+# `sys.exit(2)` ("PERIMETRE NON MESURABLE") -- so the guard LOST a measurement
+# it could make by another route. The blocking perimeter checks read the
+# paginated `/pulls/<pr>/files` list, which carries no size cap; the unified
+# diff only serves baseline-move detection, which is ADVISORY (it never blocks
+# in `--scan-thread`, the CI wiring). Losing it costs the reader one line of
+# context, not a verdict.
+#
+# NARROW ON PURPOSE, like its siblings: only these recognised signatures
+# degrade to an empty diff. Every other `gh pr diff` failure stays
+# fail-closed (exit 2).
+_DIFF_SIZE_CAP_SIGNATURES = (
+    "too_large",
+    "diff too large",
+    "diff is too large",
+    "exceeded the maximum diff size",
+)
+
+
 def _exit_unmeasurable(reason: str) -> None:
     """Exit with the non-measurable verdict, mirroring ``#14292``.
 
@@ -2131,6 +2182,20 @@ def _pr_diff_text(pr: int) -> str:
     (moves == []) and warn -- the blocking perimeter checks run off the
     paginated ``/pulls/<pr>/files`` list, which has no such cap and is
     unaffected. Any other ``gh pr diff`` failure stays fail-closed.
+
+    The SIZE cap is the sibling of the file-count cap, and is degraded the same
+    way (#25085): GitHub refuses to compute a diff beyond its size budget
+    (``HTTP 406: PullRequest.diff too_large`` -- measured 2026-11-07 on
+    #24992, 20 988 lines), and the guard used to answer "PERIMETRE NON
+    MESURABLE" on a PR whose perimeter it could read perfectly well through
+    the paginated file list. Only the advisory baseline-move detection is lost,
+    and the warning says so.
+
+    One failure is a RENDERING refusal, not an unreadable diff: a payload
+    carrying terminal escape sequences (ANSI colour codes inside a committed
+    artefact -- measured 2026-10-29 on #22341). The bytes are readable over a
+    transport that has no renderer, so the measurement is retried there
+    instead of being declared impossible (#22341).
     """
     rc, stdout, stderr = _run_gh_rc(["pr", "diff", str(pr)])
     if rc == 0:
@@ -2143,6 +2208,23 @@ def _pr_diff_text(pr: int) -> str:
             file=sys.stderr,
         )
         return ""
+    if any(sig in (stderr or "") for sig in _DIFF_SIZE_CAP_SIGNATURES):
+        print(
+            f"::warning::gh pr diff {pr} indisponible (diff au-dela du plafond de "
+            "TAILLE de l'API) : detection des baseline-moves retractee a vide ; "
+            f"le perimetre est lu via /pulls/{pr}/files pagine (sans ce plafond).",
+            file=sys.stderr,
+        )
+        return ""
+    if _ESCAPE_SEQUENCE_GH_SIGNATURE.search(stderr or ""):
+        diff = _pr_diff_text_without_renderer(pr)
+        if diff is not None:
+            print(
+                f"::warning::gh pr diff {pr} refuse d'imprimer un diff porte par des "
+                "sequences d'echappement ; diff relu par un transport sans rendu.",
+                file=sys.stderr,
+            )
+            return diff
     print(f"gh error: {(stderr or '').strip()[:400]}", file=sys.stderr)
     if _is_transient_gh_failure(stderr):
         _exit_unmeasurable(
@@ -2150,6 +2232,64 @@ def _pr_diff_text(pr: int) -> str:
             "(aucune mesure effectuee)"
         )
     sys.exit(2)
+
+
+def _pr_diff_text_without_renderer(pr: int) -> Optional[str]:
+    """The same unified diff, over transports that have NO renderer.
+
+    Two of them, in order:
+
+    1. ``gh pr diff --allow-escape-sequences`` -- the flag newer ``gh``
+       offers for exactly this refusal. Older ``gh`` does not know it and
+       answers "unknown flag", which is a miss, not a failure.
+    2. ``gh api repos/<owner>/<repo>/pulls/<pr>`` with the diff Accept
+       header -- the raw unified diff, no ``pr diff`` renderer.
+
+       Whether THAT transport needs ``--allow-escape-sequences`` depends
+       on the ``gh`` version, and both cases are measured (2026-10-29,
+       #22341) rather than assumed:
+
+       - ``gh`` 2.102.0 (new, the CI runner): refuses the API call too
+         ("the response contains terminal escape sequences; pass
+         --allow-escape-sequences to output it anyway") and honours the
+         same flag -- with it, rc=0 and a diff byte-identical to
+         transport 1;
+       - ``gh`` 2.83.2 (old): does NOT know the flag ("unknown flag"),
+         but does NOT refuse either -- the flag-less API call returns
+         rc=0 with the 69 672-byte diff and its 11 ESC bytes.
+
+       So the flag is tried FIRST (new ``gh``), and the flag-less call
+       is the fallback for an old ``gh`` that answers "unknown flag" --
+       a MISS, not a failure, exactly like transport 1.
+
+    Returns None when every transport misses: the caller then keeps the
+    fail-closed verdict (exit 2) it would have had without this function.
+    """
+    attempts = [["pr", "diff", "--allow-escape-sequences", str(pr)]]
+    try:
+        repo = json.loads(
+            _run_gh(["repo", "view", "--json", "nameWithOwner"])
+        )["nameWithOwner"]
+    except (SystemExit, ValueError, KeyError, TypeError):
+        repo = None
+    if repo:
+        api_base = [
+            "api",
+            f"repos/{repo}/pulls/{pr}",
+            "-H",
+            "Accept: application/vnd.github.v3.diff",
+        ]
+        attempts.append([*api_base, "--allow-escape-sequences"])
+        attempts.append(list(api_base))
+    for args in attempts:
+        rc, stdout, stderr = _run_gh_rc(args)
+        if rc == 0:
+            return stdout
+        print(
+            f"gh error ({' '.join(args[:3])}): {(stderr or '').strip()[:200]}",
+            file=sys.stderr,
+        )
+    return None
 
 
 def _normalize_rest_files(items: list[dict]) -> list[dict]:

@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-31
+
 # Reproductibilité des socles 3D — mesure sur deux postes
 
 **Objet.** Les carnets de la série `MyIA.AI.Notebooks/GenAI/3D/` portent, dans leurs sorties committées, des mesures de fidélité (PSNR, corrélations, pertes) que la recette 3D (`jsboige/CoursIA#20386`) projette déjà vers un validateur externe. Avant de **promettre** ces chiffres dans un cahier des charges, il faut savoir s'ils sont **stables d'une machine à l'autre** : un nombre obtenu sur un seul poste n'est pas une promesse, c'est une observation.

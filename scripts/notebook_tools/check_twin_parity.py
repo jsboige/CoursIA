@@ -120,6 +120,12 @@ Usage
     # compte dans `drift_introduced`.
     python check_twin_parity.py --check --per-pair --base origin/main
     python check_twin_parity.py --check --per-pair --base HEAD~1
+    # en CI sur une PR, `auto` est la base juste : actions/checkout extrait le
+    # merge ref de GitHub, dont le premier parent est le main de l'evenement.
+    # Comparer a `origin/main` (refetch au demarrage du job) classe en
+    # DRIFT_INTRODUCED les paires rebaselinees sur main pendant l'attente en
+    # file (#22292).
+    python check_twin_parity.py --check --per-pair --base auto
     # mode CI cron (volet b #9399) : fleet-wide SANS base ref, breakdown 4 categories.
     # Distinct du check historique : rouge sur N'IMPORTE QUEL drift (legacy ou content),
     # pas seulement DRIFT_or_MISSING. Utilise par .github/workflows/twin-parity-cron.yml.
@@ -427,7 +433,7 @@ def python_twin_candidates(csharp_path: str, known_paths: set[str]) -> list[str]
 
         Tweety-10-MLN-CSharp.ipynb      <-> Tweety-10-MLN-Python.ipynb          (suffixe retire)
         Sudoku-07-Norvig-CSharp.ipynb    <-> Sudoku-07-Norvig-Python.ipynb (suffixe substitue)
-        SW-10-CSharp-RDFStar.ipynb      <-> SW-10-Python-RDFStar.ipynb   (position mediale)
+        SW-10-RDFStar-CSharp.ipynb      <-> SW-10-RDFStar-Python.ipynb   (position mediale)
 
     Fonction pure : `known_paths` est l'univers des chemins connus (typiquement
     la sortie de `git ls-files`), pas un acces disque -- testable sans depot.
@@ -814,6 +820,12 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
     status in {OK, DRIFT, NUMBERING-DRIFT, MISSING}. details = liste de chaines
     explicatives. `git_ref` permet de checker a un instant arbitraire (HEAD,
     origin/main, <sha>...).
+
+    `drift_sides` (#23020) = les COTES en drift a cette ref ("python" /
+    "csharp"), sous forme de liste triee. Le `status` agrege ne dit pas quel
+    jumeau a bouge : sans ce detail par cote, un drift AJOUTE par la PR sur
+    un jumeau pouvait etre classe "pre-existant" des lors que la paire etait
+    deja en drift sur l'AUTRE jumeau.
     """
     name = pair.get("name", "?")
     py = pair["python"]
@@ -827,13 +839,22 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
 
     details = []
     status = "OK"
+    # #23020 : ensemble des COTES en drift a cette ref. Le `status` agrege ne
+    # dit pas QUEL jumeau a bouge -- c'est ce qui faisait classer "pre-existant"
+    # un drift AJOUTE par la PR sur l'autre jumeau.
+    drift_sides: set[str] = set()
+    py_drift = False
+    cs_drift = False
+    no_baseline = False
 
     if cur_py is None:
         details.append(f"Python MANQUANT dans git : {py}")
         status = "MISSING"
+        drift_sides.add("python")
     if cur_cs is None:
         details.append(f"C# MANQUANT dans git : {cs}")
         status = "MISSING"
+        drift_sides.add("csharp")
 
     # Verdict NUMBERING-DRIFT (EPIC #12933) : numeros de base distincts entre
     # les jumeaux DECLARES. Evalue AVANT la comparaison de SHAs : si la
@@ -873,12 +894,23 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
     cur_cpy = _content_sha(repo_root, py, git_ref) if use_content else None
     cur_ccs = _content_sha(repo_root, cs, git_ref) if use_content else None
 
-    if status == "OK":
+    if status != "MISSING":
         # Verdict DRIFT : preferer les content_*_sha (metadata-immunes) quand
         # l'audit les enregistre ; sinon retomber sur les git blob SHA (legacy).
         # Un tampon metadata.cost seul -> content inchange -> PAS de DRIFT
         # (faux positif). Un fix de prose / re-exec -> content change -> DRIFT
         # (vrai positif, critere d'acceptation ai-01 #9399).
+        #
+        # #23020 (review du 2026-11-02, point 1) : la comparaison des SHAs est
+        # evaluee AUSSI sous NUMBERING-DRIFT. Le garde `status == "OK"`
+        # d'avant laissait `drift_sides` VIDE sur ce chemin : une PR qui
+        # introduisait un drift de contenu sous couvert d'une divergence de
+        # numerotation etait alors classee "pre-existant" (gate VERT), parce
+        # que l'ensemble vide est contenu dans n'importe quel ensemble. Le
+        # statut AGREGE reste NUMBERING-DRIFT (la numerotation est un niveau
+        # plus fondamental que l'empreinte) -- ce qui change, c'est que les
+        # COTES en drift sont desormais populatees, et le verdict per-pair
+        # peut les comparer.
         rec_cpy, rec_ccs = _cmp_pair_shas(audit)
         if use_content:
             py_drift = (cur_cpy is not None and cur_cpy != rec_cpy)
@@ -898,7 +930,11 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
                 details.append(f"C# a drift : {rec_cs[:8]} -> {cur_cs[:8]}")
         if no_baseline:
             details.append("Pas de last_audit_sha enregistre (--update requis)")
-        if py_drift or cs_drift or no_baseline:
+        if py_drift:
+            drift_sides.add("python")
+        if cs_drift:
+            drift_sides.add("csharp")
+        if status == "OK" and (py_drift or cs_drift or no_baseline):
             status = "DRIFT"
 
     return {
@@ -909,6 +945,13 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
         "parity_level": pair.get("parity_level", "?"),
         "bridge_verdict": pair.get("bridge_verdict"),
         "status": status,
+        "drift_sides": sorted(drift_sides),
+        # #23020 : la paire n'a AUCUNE reference (audit absent ou sans sha
+        # enregistre). Differencie du drift : un ensemble de cotes vide n'est
+        # PAS la preuve qu'aucun jumeau n'a bouge -- c'est l'absence de
+        # reference, que la PR peut elle-meme introduire (voir le garde
+        # `no_baseline` de `_classify_per_pair`).
+        "no_baseline": no_baseline,
         "current_python_sha": cur_py,
         "current_csharp_sha": cur_cs,
         "current_content_python_sha": cur_cpy,
@@ -1567,7 +1610,8 @@ def _dump_audit_yaml(audit: dict) -> str:
 
 def _write_audit_file(registry_dir: Path, name: str, audit: dict,
                       used_names: set[str] | None = None,
-                      index: int | None = None) -> Path:
+                      index: int | None = None,
+                      floor: int = 0) -> Path:
     """Ecrit un audit dans un fichier separe `<pair>/<idx>-<date>-<lane>.yaml`.
 
     Nouvelle forme (#14911). `index` (optionnel) place l'audit dans l'ordre
@@ -1576,6 +1620,11 @@ def _write_audit_file(registry_dir: Path, name: str, audit: dict,
     trier en derniere position (= plus recent). `used_names` suit les noms
     deja pris pour suffixer `-2`, `-3`... en secours si un index venait a
     collider. Retourne le chemin.
+
+    `floor` (#22299) est le plus grand index deja PUBLIE pour la paire sur la
+    ref d'integration : l'index alloue reste strictement au-dessus. Le max
+    local ne suffit pas -- deux branches issues du meme `main` lisent le meme
+    disque, calculent le meme max et emettent le meme `NNNN`.
     """
     slug = _slug(name)
     d = _audit_dir(registry_dir, slug)
@@ -1583,7 +1632,7 @@ def _write_audit_file(registry_dir: Path, name: str, audit: dict,
     date = str(audit.get("date") or _dt.date.today().isoformat())
     by = audit.get("by")
     if index is None:
-        index = _next_audit_index(d)
+        index = max(_next_audit_index(d), floor + 1)
     base = _audit_filename(date, by, index)
     stem = base[:-5]  # retire ".yaml"
     used = used_names if used_names is not None else set()
@@ -1627,6 +1676,80 @@ def _next_audit_index(d: Path) -> int:
     idxs = [int(audit_index(f.name)) for f in d.glob("*.yaml")
             if audit_index(f.name).isdigit()]
     return max(idxs, default=0) + 1
+
+
+def _audit_indexes_at_ref(repo_root: Path, git_ref: str, registry_dir: Path,
+                          name: str) -> set[int]:
+    """Index `NNNN` deja publies pour cette paire sur `git_ref` (#22299).
+
+    `_next_audit_index` ne lit que le disque local : deux branches issues du
+    meme `main` calculent le meme max, donc le meme prefixe, et le garde
+    d'integrite les refuse apres merge (5 paires mesurees le 2026-10-24). Ce
+    plancher lit la ref d'integration pour qu'une branche qui re-atteste
+    APRES que la ref a gagne un audit n'emette jamais un `NNNN` deja pris.
+
+    Un ref illisible, un repertoire absent ou un `registry_dir` hors depot
+    rendent l'ensemble VIDE : c'est un plancher, pas une mesure -- ne rien
+    trouver ne doit jamais bloquer une ecriture.
+    """
+    slug = _slug(name)
+    try:
+        reg_rel = registry_dir.resolve().relative_to(repo_root.resolve()).as_posix()
+    except ValueError:
+        return set()
+    try:
+        r = _run_git(
+            ["git", "ls-tree", "-r", "--name-only", git_ref, "--",
+             f"{reg_rel}/{slug}/"],
+            cwd=str(repo_root),
+        )
+    except GitTimeoutError:
+        # Un ls-tree qui expire degrade comme une ref illisible : un garde
+        # ne doit jamais transformer un remote lent en ecriture refusee.
+        return set()
+    if r.returncode != 0:
+        return set()
+    out: set[int] = set()
+    for line in (r.stdout or "").splitlines():
+        idx = audit_index(line.rsplit("/", 1)[-1])
+        if idx.isdigit():
+            out.add(int(idx))
+    return out
+
+
+def _audit_floor(repo_root: Path, registry_dir: Path, name: str,
+                 ref: str | None) -> int:
+    """Plus grand index deja publie pour la paire sur `ref` (0 si inutilisable)."""
+    if not ref:
+        return 0
+    return max(_audit_indexes_at_ref(repo_root, ref, registry_dir, name), default=0)
+
+
+def _refresh_allocate_ref(repo_root: Path, ref: str | None) -> None:
+    """Rafraichit `<remote>/<branche>` avant la lecture du plancher (#22547).
+
+    `ls-tree` lit la ref LOCALE : sans ce fetch, `origin/main` designe ce que
+    le clone connaissait a son dernier fetch, et la collision que le plancher
+    doit fermer reste atteignable des qu'un autre worker a pousse depuis
+    (reproduction Hermes : worker B clone avant le push de C, sans fetch ->
+    floor 5, prefixe 0006 deja pris par C ; apres fetch -> floor 8).
+
+    Bornee (_GIT_TIMEOUT_S via `_run_git`, EAGAIN borne) et **jamais
+    bloquante** : toute erreur (remote absent, ref non remote, hors ligne,
+    timeout) retombe silencieusement sur la ref locale -- meme philosophie
+    que le plancher lui-meme, un garde ne bloque jamais une ecriture. Les
+    refs non `<remote>/<branche>` (ex. `main`, SHA) ne sont pas fetchees.
+    """
+    if not ref or "/" not in ref:
+        return
+    remote, branch = ref.split("/", 1)
+    try:
+        _run_git(["git", "fetch", "--quiet", remote, branch],
+                 cwd=str(repo_root))
+    except Exception:
+        # Repli sur la ref locale : un plancher perime reste preferable a
+        # une ecriture refusee.
+        return
 
 
 def migrate_registry_files_per_audit(registry_dir: Path,
@@ -1677,7 +1800,11 @@ def migrate_registry_files_per_audit(registry_dir: Path,
     return {"migrated": migrated, "audits_moved": audits_moved}
 
 
-def _classify_per_pair(base_status: str, head_status: str) -> str:
+def _classify_per_pair(base_status: str, head_status: str,
+                       base_drift: set[str] | None = None,
+                       head_drift: set[str] | None = None,
+                       base_no_baseline: bool | None = None,
+                       head_no_baseline: bool | None = None) -> str:
     """Verdict per-pair pour le mode --per-pair (compare HEAD vs base-ref).
 
     Retourne un de : OK / DRIFT_INTRODUCED / DRIFT_RESOLVED / DRIFT_PRE_EXISTING.
@@ -1694,6 +1821,24 @@ def _classify_per_pair(base_status: str, head_status: str) -> str:
     PR (base OK -> head NUMBERING-DRIFT, ex. renommage unilateral dans cette PR) =
     DRIFT_INTRODUCED, gate ROUGE ; resolu par la PR (renommage realigne, OU
     divergence documentee via numbering_exception au HEAD) = DRIFT_RESOLVED.
+
+    #23020 -- le verdict "pre-existant" exige que le drift du HEAD soit un
+    SOUS-ENSEMBLE du drift du base. Les deux entrees `base_drift` /
+    `head_drift` portent les COTES en drift (voir `check_pair`). Sans eux, le
+    statut AGREGE decide seul : une paire deja en drift sur python au base,
+    dont la PR touche le jumeau C#, donnait DRIFT -> DRIFT (donc
+    DRIFT_PRE_EXISTING, gate VERT) alors que la PR INTRODUISAIT le drift C#.
+    Les ensembles sont optionnels : sans eux, la semantique historique est
+    conservee (les appelants qui n'ont pas le detail par cote ne changent
+    pas de verdict).
+
+    `base_no_baseline` / `head_no_baseline` (#23020, review du 2026-11-02,
+    point 2) disent si la paire a une REFERENCE a cette ref. Un ensemble de
+    cotes vide n'est pas la preuve qu'aucun jumeau n'a bouge : c'est
+    l'absence de reference, que la PR peut elle-meme introduire en
+    supprimant une attestation. Une paire qui PERD sa reference au HEAD est
+    donc DRIFT_INTRODUCED (les attestations sont append-only) ; une paire
+    sans reference des deux cotes reste PRE_EXISTING (rien n'a ete change).
     """
     if base_status == "MISSING":
         return "OK" if head_status == "OK" else "DRIFT_INTRODUCED"
@@ -1703,6 +1848,21 @@ def _classify_per_pair(base_status: str, head_status: str) -> str:
         return "DRIFT_INTRODUCED"
     if base_status in ("DRIFT", "NUMBERING-DRIFT") and head_status == "OK":
         return "DRIFT_RESOLVED"
+    # #23020 (review du 2026-11-02, point 2) : une paire PERDANT sa reference
+    # au HEAD n'est pas classable "pre-existant". Au base la paire avait une
+    # attestation (donc un etat CONNU), au HEAD elle n'en a plus : l'ensemble
+    # de cotes du HEAD est vide, et l'ensemble vide est contenu dans
+    # n'importe quel ensemble -- la regle de sous-ensemble classait donc
+    # "pre-existant" (gate VERT) une PR qui SUPPRIME l'attestation. Les
+    # attestations sont append-only : la perte d'une reference est un
+    # changement introduit par la PR, donc DRIFT_INTRODUCED. Le cas
+    # symetrique (les DEUX cotes sans reference) reste PRE_EXISTING : rien
+    # n'a ete change par la PR.
+    if head_no_baseline and not base_no_baseline:
+        return "DRIFT_INTRODUCED"
+    if base_drift is not None and head_drift is not None:
+        if set(head_drift) - set(base_drift):
+            return "DRIFT_INTRODUCED"
     return "DRIFT_PRE_EXISTING"
 
 
@@ -1937,6 +2097,59 @@ def _paire_inconnue(nom: str, pairs: list) -> None:
     )
 
 
+# --- base de comparaison lue a l'execution (#22292) --------------------------
+# En CI, `actions/checkout` extrait `refs/pull/N/merge` : un commit de fusion
+# dont le PREMIER parent est le `main` tel qu'il etait a l'evenement, le second
+# etant la tete de la PR. `origin/main` est refetch au demarrage du job. Sous
+# famine de runners, `main` avance entre les deux lectures : toute paire
+# rebaselinee dans l'intervalle est DRIFT au merge ref et OK a `origin/main`,
+# donc classee DRIFT_INTRODUCED sur une PR qui ne la touche pas (instance
+# mesuree : #22218, 11 paires dont aucune n'etait touchee ; 22 des 256 PRs
+# ouvertes portaient ce rouge a leur tete).
+#
+# `--base auto` repond a la question que ce gate pose vraiment -- « qu'a
+# introduit CETTE PR ? » -- en comparant au main dont le merge ref est issu :
+# le choix ne depend plus du temps d'attente en file.
+_AUTO_BASE = "auto"
+# Sujet exact du commit de fusion fabrique par GitHub :
+#   Merge 1ad73da1e3 into e0964ecf4a
+# Le motif est un DISCRIMINANT, pas une dependance : s'il ne matche pas (sujet
+# reecrit, commit de fusion pousse par l'auteur sur sa branche), on retombe sur
+# `origin/main`, c'est-a-dire le comportement d'avant ce fix -- jamais une base
+# plus fausse que l'ancienne.
+_GITHUB_MERGE_SUBJECT = re.compile(r"^Merge [0-9a-f]{7,40} into [0-9a-f]{7,40}")
+
+
+def resolve_base_ref(repo_root: Path, base: str) -> str:
+    """Resout la sentinelle `auto` en une ref git reelle (#22292).
+
+    `HEAD^1` quand `HEAD` est un commit de fusion GitHub (`refs/pull/N/merge`),
+    `origin/main` sinon. Toute autre valeur est rendue inchangee : cette
+    fonction n'interprete que la sentinelle.
+
+    Un `HEAD` d'un seul parent (branche ordinaire), ou dont le sujet n'a pas la
+    forme `Merge <sha> into <sha>`, n'est pas un merge ref : la base reste
+    `origin/main`, soit exactement le comportement anterieur au fix.
+    """
+    if base != _AUTO_BASE:
+        return base
+    # `rev-list --parents -n 1 HEAD` : le commit puis ses parents. Deux parents
+    # ou plus -> commit de fusion. Aucune exception n'est avalee ici : une pause
+    # git (`GitTimeoutError`) doit interrompre la mesure en rc 3, pas se
+    # deguiser en base par defaut.
+    parents = _run_git(
+        ["git", "rev-list", "--parents", "-n", "1", "HEAD"], cwd=repo_root
+    ).stdout.split()
+    if len(parents) < 3:
+        return "origin/main"
+    subject = _run_git(
+        ["git", "log", "-1", "--format=%s", "HEAD"], cwd=repo_root
+    ).stdout.strip()
+    if _GITHUB_MERGE_SUBJECT.match(subject):
+        return "HEAD^1"
+    return "origin/main"
+
+
 def main(argv=None) -> int:
     """Point d'entree CLI. Un appel git qui depasse sa borne de delai interrompt la
     mesure : message explicite sur stderr et rc 3 (distinct de 1 = drift et de
@@ -1987,7 +2200,9 @@ def _main(argv=None) -> int:
                    help="Mode per-pair : compare HEAD vs --base <ref>. Ne FAIL que "
                         "le drift INTRODUIT par la PR, jamais le drift pre-existant.")
     p.add_argument("--base", default=None,
-                   help="Ref git de base pour le mode --per-pair (ex. origin/main, HEAD~1).")
+                   help="Ref git de base pour le mode --per-pair (ex. origin/main, "
+                        "HEAD~1, ou 'auto' : HEAD^1 quand HEAD est un merge ref "
+                        "GitHub, origin/main sinon -- cf #22292).")
     p.add_argument("--ci-strict", action="store_true",
                    help="Mode CI cron (#9399 volet b) : check fleet-wide SANS base ref, "
                         "avec breakdown 4 categories (ok_legacy / ok_content / drift_blob / "
@@ -2020,6 +2235,24 @@ def _main(argv=None) -> int:
                         "est l'opt-in explicite pour forcer la nouvelle entree "
                         "malgre le no-op, avec un avertissement explicite sur "
                         "stdout. Sans effet sur les modes non --update.")
+    p.add_argument("--allocate-against", default="origin/main", metavar="REF",
+                   help="Avec --update : plancher d'allocation du prefixe NNNN, lu "
+                        "sur cette ref (defaut 'origin/main', vide = desactive). "
+                        "L'index ne peut plus etre <= au max deja publie pour la "
+                        "paire sur cette ref (#22299) : sans ce plancher, deux "
+                        "branches issues du meme main calculent le meme max et "
+                        "emettent le meme prefixe, que le garde d'integrite refuse "
+                        "apres merge. Avant la lecture, un `git fetch` borne "
+                        "rafraichit la ref <remote>/<branche> (#22547) : sans lui, "
+                        "le plancher lirait la ref telle que le clone la connaissait "
+                        "a son dernier fetch et la collision resterait possible. Si "
+                        "le fetch echoue ou si la ref est illisible, repli sur la ref "
+                        "locale -- cela ne bloque jamais l'ecriture (le plancher est "
+                        "un garde, pas une mesure).")
+    p.add_argument("--no-allocate-against", action="store_true",
+                   help="Desactive le plancher d'allocation (comportement "
+                        "historique : max local + 1). Utile dans un depot sans "
+                        "remote, ou pour reproduire un registre ancien.")
     p.add_argument("--verify-recorded-sha", action="store_true",
                    help="Gate CI #9399 volet b : verifie que les SHA enregistres "
                         "dans le YAML (last_audit legacy OU audits[-1] append-only) "
@@ -2081,7 +2314,7 @@ def _main(argv=None) -> int:
         p.error("--summary-by-verdict est un mode de recensement integral : "
                 "--pair/--family n'y designent rien (compte les paires par "
                 "bridge_verdict). Retirer le selecteur.")
-    # Garde anti-derive MERGE_HEAD / REBASE_HEAD (#11732) : pendant un merge non
+    # Garde anti-derive merge/rebase en cours (#11732) : pendant un merge non
     # commite, `git ls-tree HEAD` lit l'ANCIENNE tete de branche (pas le resultat
     # du merge). --update atteste alors des blob SHAs qui ne refletent pas l'etat
     # final du notebook -- au commit du merge, les notebooks obtiennent de
@@ -2098,20 +2331,47 @@ def _main(argv=None) -> int:
         except SystemExit:
             repo_root_for_state = None
         if repo_root_for_state is not None:
-            # git rev-parse -q --verify MERGE_HEAD/REBASE_HEAD : rc=0 si le
-            # depot est en cours de merge/rebase interactif. Le check precede
-            # `_repo_root()` final pour economiser un subprocess en cas d'erreur
-            # deja connue (mais apres args.repo_root parse, qui peut etre override
-            # dans les tests --repo-root sur tmp_path).
-            for state_file, label in (("MERGE_HEAD", "merge"), ("REBASE_HEAD", "rebase")):
+            # Le check precede `_repo_root()` final pour economiser un subprocess
+            # en cas d'erreur deja connue (mais apres args.repo_root parse, qui
+            # peut etre override dans les tests --repo-root sur tmp_path).
+            #
+            # Merge en cours : `git rev-parse -q --verify MERGE_HEAD` (rc=0 si
+            # et seulement si un merge est non commite) -- detection inchangee.
+            r = _run_git(
+                ["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"],
+                cwd=str(repo_root_for_state),
+            )
+            if r.returncode == 0:
+                p.error("--update pendant un merge non committe : HEAD ne contient pas "
+                        "le resultat du merge. Commitez d'abord, puis re-attestez "
+                        "(cf #11732, variante operationnelle de #8957).")
+            # Rebase en cours : l'indicateur fiable est l'existence du repertoire
+            # `rebase-merge` (interactif/merge backend) ou `rebase-apply`
+            # (backend am), PAS le ref REBASE_HEAD. Git peut y laisser un
+            # REBASE_HEAD orphelin apres un rebase interrompu : un clone qui en
+            # porte un sans rebase en cours voyait alors --update refuse a tort
+            # (signale par le coordinateur 2026-10-27 : REBASE_HEAD du 20/09,
+            # ni rebase-merge ni rebase-apply, 3 tests update_guard rouges).
+            # `git rev-parse --git-path <name>` resout le chemin dans le git dir
+            # du depot (worktree compris) ; la sortie est relative au cwd dans
+            # le clone principal (`.git/rebase-merge`) et absolue dans un
+            # worktree -- d'ou la resolution explicite ci-dessous.
+            for state_dir in ("rebase-merge", "rebase-apply"):
                 r = _run_git(
-                    ["git", "rev-parse", "-q", "--verify", state_file],
+                    ["git", "rev-parse", "--git-path", state_dir],
                     cwd=str(repo_root_for_state),
                 )
-                if r.returncode == 0:
-                    p.error(f"--update pendant un {label} non committe : HEAD ne contient pas "
-                            f"le resultat du {label}. Commitez d'abord, puis re-attestez "
-                            f"(cf #11732, variante operationnelle de #8957).")
+                raw = r.stdout.strip() if r.returncode == 0 else ""
+                if not raw:
+                    continue
+                state_path = Path(raw)
+                if not state_path.is_absolute():
+                    state_path = repo_root_for_state / state_path
+                if state_path.exists():
+                    p.error("--update pendant un rebase non termine : HEAD ne contient pas "
+                            "le resultat du rebase. Terminez ou annulez le rebase "
+                            "(git rebase --continue / --abort), puis re-attestez "
+                            "(cf #11732, variante operationnelle de #8957).")
     if args.pair and args.family:
         p.error("--pair et --family sont mutuellement exclusifs avec --update.")
     if args.ci_strict and args.per_pair:
@@ -2132,6 +2392,16 @@ def _main(argv=None) -> int:
 
     repo_root = Path(args.repo_root) if args.repo_root else _repo_root()
     reg_path = Path(args.registry)
+
+    # #22292 : la base du mode --per-pair se resout a l'execution. `--base` exige
+    # deja `--per-pair` (validation ci-dessus), donc la sentinelle ne peut pas
+    # s'inviter dans un mode qui n'en fait rien.
+    if args.base == _AUTO_BASE:
+        args.base = resolve_base_ref(repo_root, args.base)
+        origine = ("merge ref GitHub : comparaison au main dont il est issu"
+                   if args.base == "HEAD^1"
+                   else "HEAD n'est pas un merge ref GitHub")
+        print(f"--base auto -> '{args.base}' ({origine}, #22292)", file=sys.stderr)
 
     # --- Mode --summary-by-verdict (#10439) : denominateur actionnable sans
     # soustraction manuelle. Compte les paires par bridge_verdict ; les paires
@@ -2270,13 +2540,19 @@ def _main(argv=None) -> int:
             if base_pp is None:
                 # Paire ajoutee par la PR -> si elle n'est PAS OK au HEAD, c'est du drift introduit
                 base_status = "MISSING"
+                base_drift: set[str] = set()
+                base_no_baseline = False
                 base_details = [f"Paire '{name}' absente du registre au base-ref '{args.base}' (ajoutee par la PR)"]
             else:
                 base_check = check_pair(repo_root, base_pp, git_ref=args.base)
                 base_status = base_check["status"]
+                base_drift = set(base_check.get("drift_sides") or ())
+                base_no_baseline = bool(base_check.get("no_baseline"))
                 base_details = base_check["details"]
 
             head_status = head_state["status"]
+            head_drift = set(head_state.get("drift_sides") or ())
+            head_no_baseline = bool(head_state.get("no_baseline"))
             # #22920 : branche perimee ? Paire deplacee par la branche base apres
             # le fork -- le registre de la tete declare encore l'ancien chemin.
             # Sondes croisees + orientation, uniquement si les chemins divergent.
@@ -2292,7 +2568,9 @@ def _main(argv=None) -> int:
             else:
                 # Classification per-pair (cf _classify_per_pair -- le cas paire ajoutee
                 # est special : pas d'etat pre-existant, l'etat HEAD = ce que la PR introduit).
-                verdict = _classify_per_pair(base_status, head_status)
+                verdict = _classify_per_pair(base_status, head_status,
+                                            base_drift, head_drift,
+                                            base_no_baseline, head_no_baseline)
 
             entry = {
                 "name": name,
@@ -2302,6 +2580,17 @@ def _main(argv=None) -> int:
                 "base_status": base_status,
                 "head_status": head_status,
                 "verdict": verdict,
+                # #23020 : les COTES en drift a chaque ref, et le nom du jumeau
+                # que la PR a mis en drift -- le verdict ne le disait pas.
+                "base_drift_sides": sorted(base_drift),
+                "head_drift_sides": sorted(head_drift),
+                "introduced_twins": sorted(head_drift - base_drift),
+                # La pair PERD sa reference (audit absent / sans sha) a cette
+                # ref : distinct du drift, et c'est ce qui permet au verdict
+                # de ne pas classer "pre-existant" une PR qui supprime une
+                # attestation.
+                "base_no_baseline": base_no_baseline,
+                "head_no_baseline": head_no_baseline,
                 "base_details": base_details,
                 "head_details": head_state["details"],
             }
@@ -2345,6 +2634,10 @@ def _main(argv=None) -> int:
                 if r["verdict"] != "OK":
                     for d in r["head_details"]:
                         print(f"       HEAD: {d}")
+                if r["verdict"] == "DRIFT_INTRODUCED" and r.get("introduced_twins"):
+                    # #23020 : le message nomme LE jumeau en cause.
+                    print(f"       Jumeau(x) mis en drift par la PR : "
+                          f"{', '.join(r['introduced_twins'])}")
             print(f"\nTotal : {len(results)} paire(s) | "
                   f"OK={n_ok} INTRO={n_introduced} FIXED={n_resolved} "
                   f"PRE={n_pre_existing} STALE={n_stale}")
@@ -2374,6 +2667,21 @@ def _main(argv=None) -> int:
                 # rouge STALE_BRANCH seule, ce rappel (rebaseline apres strips)
                 # ne s'applique pas -- le remede est `gh pr update-branch`.
                 if n_introduced > 0:
+                    # #23020 : le message d'erreur nomme le jumeau en cause.
+                    intro = [
+                        f"{r['name']} ({', '.join(r['introduced_twins'])})"
+                        for r in results
+                        if r["verdict"] == "DRIFT_INTRODUCED"
+                    ]
+                    if intro:
+                        print(
+                            "\nJumeau(x) mis(s) en drift par la PR : "
+                            + " ; ".join(intro)
+                            + " -- rebaseline l'attestation de la paire "
+                            "(check_twin_parity.py --update) ou deplace le "
+                            "jumeau en lockstep.",
+                            file=sys.stderr,
+                        )
                     print(
                         "\nRappel : si le DRIFT vient d'une normalisation outillee qui "
                         "deplace le blob SHA (strip_probe_banner.py --apply, "
@@ -2458,6 +2766,13 @@ def _main(argv=None) -> int:
         # (append chirurgical au bloc d'audit inline).
         if reg_path.is_dir():
             written = 0
+            # Plancher d'allocation (#22299) : resolu une fois, lu par paire.
+            allocate_ref = None if args.no_allocate_against else args.allocate_against
+            # #22547 : la ref d'integration vaut ce que vaut son dernier
+            # fetch. Un seul fetch borne avant la boucle (pas un par paire),
+            # repli silencieux sur la ref locale si le remote ne repond pas.
+            if updates:
+                _refresh_allocate_ref(repo_root, allocate_ref)
             for name, audit in updates.items():
                 pfile = _pair_file(reg_path, name)
                 if not pfile.exists():
@@ -2488,7 +2803,14 @@ def _main(argv=None) -> int:
                     _write_audit_file(reg_path, name, audit,
                                       used_names=used, index=len(inline) + 1)
                 else:
-                    _write_audit_file(reg_path, name, audit)
+                    floor = _audit_floor(repo_root, reg_path, name, allocate_ref)
+                    if floor >= _next_audit_index(_audit_dir(reg_path, _slug(name))):
+                        # Observabilite : l'index retenu n'est pas le max local,
+                        # c'est le plancher publie. Sans cette ligne, le worker
+                        # lirait la numerotation comme un trou inexplique.
+                        print(f"  '{name}' : prefixe alloue au-dessus de "
+                              f"{allocate_ref} (max publie = {floor})")
+                    _write_audit_file(reg_path, name, audit, floor=floor)
                 new_raw = _strip_audits_from_yaml(raw)
                 if new_raw != raw:
                     write_registry_text(pfile, new_raw)

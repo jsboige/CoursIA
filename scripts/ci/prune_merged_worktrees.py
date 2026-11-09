@@ -117,8 +117,11 @@ Critères de retrait (cf issue #14195 acceptance) :
    calcule par la machinerie git, sans scan `git log -p`. Elle n'est
    tentee que quand la jambe per-commit ne tranche pas deja.
 
-Ancre PR : `gh pr list --state all --search "head:<branch>"` (autoritative,
-cf matrice a 4 ancres de `.claude/rules/git-workflow.md` §orphan-branch-scan).
+Ancre PR : REST `pulls?state=all&head=<owner>:<branche>` (seau `core`), avec
+repli `gh pr list --state all --search "head:<branch>"` (GraphQL) pour les
+branches de fork -- cf #23636 pour la mesure qui a fait basculer l'ancre
+sur le seau `core`. Ancre autoritative, cf matrice a 4 ancres de
+`.claude/rules/git-workflow.md` §orphan-branch-scan.
 Ni `--is-ancestor` seul ni `commits/<oid>/pulls` ne suffisent : le premier
 rate les squash-merges, le second a des faux negatifs mesures. C'est
 exactement ce trou que la seconde jambe du point 8 ferme, par le contenu
@@ -1107,6 +1110,21 @@ def classify_worktree_lock(reason: Optional[str]) -> tuple[Optional[str], Option
     return ("optout", None)
 
 
+def _on_windows() -> bool:
+    """True sous Windows.
+
+    Une indirection de module plutot qu'un test `os.name` ecrit au point
+    d'appel : patcher `os.name` est une mutation *globale au process*. Tant
+    qu'elle est active sur un hote POSIX, tout `Path(...)` leve
+    `NotImplementedError: cannot instantiate 'WindowsPath'` -- y compris celui
+    que pytest appelle pour formater le rapport d'un test en echec. Le worker
+    xdist meurt alors sur un rapport qu'il ne sait pas ecrire, et l'echec reel
+    n'est jamais montre (#23353, ou ce patch a coute le diagnostic entier).
+    Les tests patchent cette fonction, pas la plateforme.
+    """
+    return os.name == "nt"
+
+
 def pid_is_alive(pid: int) -> bool:
     """Le pid est-il vivant ? Fail-safe : indeterminable = vivant.
 
@@ -1122,7 +1140,7 @@ def pid_is_alive(pid: int) -> bool:
     verrouille un cycle de trop qu'un deverrouillage sur une mesure
     impossible.
     """
-    if os.name == "nt":
+    if _on_windows():
         try:
             out = subprocess.run(
                 ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
@@ -1285,6 +1303,123 @@ def _is_dead_registration(wt_path: str, parsed: dict) -> bool:
     return (len(deleted) / tracked_total) >= DEAD_TREE_RATIO
 
 
+# ---------------------------------------------------------------------------
+# #23330 : le tip distant d'une branche, pour ne pas confondre
+# « ref de tracking locale perimee » et « travail non pousse ».
+# ---------------------------------------------------------------------------
+
+# Memo de passe : une branche = au plus un appel API, quel que soit le
+# nombre de worktrees qui la portent. Vide a chaque passe (reset par
+# `reset_remote_tip_memo`, appele avec `reset_pr_resolution`).
+_REMOTE_TIP_MEMO: dict = {}
+
+REMOTE_TIP_STATS = {
+    "calls": 0,
+    "ok": 0,
+    "absent": 0,
+    "unknown": 0,
+    "cleared_equal": 0,
+    "cleared_ancestor": 0,
+}
+
+
+def reset_remote_tip_memo() -> None:
+    """Tests / nouvelle passe : le memo et les compteurs repartent a zero."""
+    _REMOTE_TIP_MEMO.clear()
+    for key in REMOTE_TIP_STATS:
+        REMOTE_TIP_STATS[key] = 0
+
+
+def _remote_branch_tip(branch: str) -> tuple:
+    """Tip distant de `refs/heads/<branche>` -> (etat, sha).
+
+    Etat :
+      "ok"      -- le distant porte la branche, `sha` est son tip ;
+      "absent"  -- le distant ne porte PAS cette branche (404) ;
+      "unknown" -- indeterminable (reseau, quota, reponse illisible).
+
+    La distinction "absent" / "unknown" porte tout le fail-CLOSED de
+    #23330 : une branche absente du distant est un fait mesurable dont on
+    peut tirer un decompte vrai, une API muette ne prouve rien.
+
+    Voie REST `repos/{owner}/{repo}/branches/<branche>` : c'est le canal
+    deja utilise par l'organe (`_rest_pr_rows_for_branch`), donc aucun
+    second canal reseau n'est introduit -- `ls-remote` reste absent du
+    fichier, comme le demande l'acceptance de #23330.
+    """
+    if branch in _REMOTE_TIP_MEMO:
+        return _REMOTE_TIP_MEMO[branch]
+    from urllib.parse import quote
+
+    REMOTE_TIP_STATS["calls"] += 1
+    endpoint = f"repos/{{owner}}/{{repo}}/branches/{quote(branch, safe='')}"
+    proc = run_gh("api", endpoint, "--jq", ".commit.sha", check=False)
+    if proc.returncode == 0:
+        sha = proc.stdout.strip()
+        result = ("ok", sha) if sha else ("unknown", None)
+    elif "404" in (proc.stderr or "") or "Not Found" in (proc.stderr or ""):
+        # La branche n'existe pas cote distant : fait mesure, pas panne.
+        result = ("absent", None)
+    else:
+        result = ("unknown", None)
+    REMOTE_TIP_STATS[result[0]] += 1
+    _REMOTE_TIP_MEMO[branch] = result
+    return result
+
+
+def _unpushed_vs_remote(wt_path: str, branch: str, head_sha: str,
+                        local_ahead: int) -> int:
+    """Vrai compte de commits non pousses, mesure contre le DISTANT.
+
+    Remplace le decompte contre une ref de tracking locale perimee
+    (#23330 : 16 worktrees sur 18 refuses a tort avec ce motif, dont
+    `unpushed_commits:349` pour un HEAD identique au tip distant).
+
+    Fail-CLOSED : toute incertitude rend le compte local, donc le refus
+    (on ne retire jamais sur une premisse qu'on n'a pas mesuree).
+    """
+    if get_pr_resolution().unavailable_reason is not None:
+        # #21753 mode degrade : aucun etage gh n'est tente par l'organe,
+        # celui-ci compris -- le refus local reste, il n'est pas mesure.
+        return local_ahead
+    state, tip = _remote_branch_tip(branch)
+    if state == "unknown":
+        return local_ahead
+    if state == "absent":
+        # Aucune branche distante ne porte ce nom. Le distant ne peut donc
+        # pas disculper le local : fail-CLOSED, exactement comme une API
+        # muette (#23330, « si tip est absent -> on conserve le refus »).
+        # Ne PAS substituer un decompte `--not --remotes=origin` : il
+        # abaisserait le compte et leverait un refus que le distant n'a
+        # pas autorise a lever (temoin #20009 `fix/artifact`).
+        return local_ahead
+    # state == "ok"
+    if tip == head_sha:
+        REMOTE_TIP_STATS["cleared_equal"] += 1
+        return 0
+    verified = run_git(
+        wt_path, "rev-parse", "--verify", f"{tip}^{{commit}}", check=False
+    )
+    if verified.returncode == 0:
+        ahead_proc = run_git(
+            wt_path, "rev-list", "--count", f"{tip}..HEAD", check=False
+        )
+        if ahead_proc.returncode == 0:
+            try:
+                count = int(ahead_proc.stdout.strip())
+            except ValueError:
+                return local_ahead
+            if count == 0:
+                # HEAD est ancetre du tip distant : le distant porte le local.
+                REMOTE_TIP_STATS["cleared_ancestor"] += 1
+            return count
+        return local_ahead
+    # Le tip distant n'est pas dans la base locale : on ne peut pas
+    # compter contre lui, donc on ne peut pas non plus disculper le
+    # local. Fail-CLOSED sur le compte local.
+    return local_ahead
+
+
 def get_worktree_info(wt_path: str, current_path: str) -> dict:
     """Recupere branch + ahead count + dirty status d'un worktree."""
     # Branche (peut etre None si HEAD detaché)
@@ -1332,6 +1467,21 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
                     ahead_count = int(ahead_proc.stdout.strip())
                 except ValueError:
                     ahead_count = 0
+
+    # #23330 : le decompte ci-dessus mesure l'ecart a une ref de tracking
+    # LOCALE, qui peut etre en retard sur le distant (branche poussee sans
+    # fetch depuis : 16 worktrees refuses a tort sur 18 mesures, dont
+    # `unpushed_commits:349` pour un HEAD identique au tip distant). Un
+    # motif faux n'est pas seulement bruyant : il fait croire a du travail
+    # a sauver, et il fait sous-livrer l'organe. Des qu'un refus se
+    # dessine, on CONFRONTE le HEAD au tip distant avant de le retenir.
+    if branch and ahead_count > 0:
+        head_proc = run_git(wt_path, "rev-parse", "HEAD", check=False)
+        head_sha = head_proc.stdout.strip() if head_proc.returncode == 0 else ""
+        if head_sha:
+            ahead_count = _unpushed_vs_remote(
+                wt_path, branch, head_sha, ahead_count
+            )
 
     # Untracked / gitignores / tracked-modifies : une seule passe, avec
     # --ignored=matching pour signaler les gitignores non-cache (#14509).
@@ -1418,10 +1568,14 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
 #    n'est jamais un verdict -- les branches absentes retombent sur
 #    l'ancre. Une ERREUR gh au lot degrade aussi vers l'ancre : une
 #    optimisation ne doit pas refuser des retraits legitimes ;
-# 3. l'ancre historique `--state all --search "head:<branche>"` :
-#    AUTHORITATIVE par decision ecrite (.claude/rules/git-workflow.md) --
-#    inchangee. La remplacer par commits/<oid>/pulls (faux negatifs
-#    mesures sur PRs OPEN) serait une regression, pas une optimisation.
+# 3. l'ancre : REST `pulls?state=all&head=<owner>:<branche>` (seau `core`),
+#    repli `gh pr list --state all --search "head:<branche>"` (GraphQL)
+#    pour les branches de fork -- #23636 : le seau `graphql` sature sous
+#    le compte partage et l'ancre GraphQL seule avortait toute la passe.
+#    Elle reste AUTHORITATIVE par decision ecrite
+#    (.claude/rules/git-workflow.md). La remplacer par commits/<oid>/pulls
+#    (faux negatifs mesures sur PRs OPEN) serait une regression, pas une
+#    optimisation.
 
 PR_VERDICT_CACHE_VERSION = 1
 PR_LISTING_WINDOW = 1000
@@ -1591,13 +1745,140 @@ def reset_pr_resolution() -> None:
     _RESOLUTION = None
 
 
+def _rest_pr_rows_for_branch(branch: str) -> Optional[list]:
+    """Lignes REST `pulls?state=all&head=<owner>:<branche>` (seau `core`).
+
+    Le filtre `head` porte sur le proprietaire du head : une branche dont
+    le head vit dans un fork (head repo != repo courant) n'est donc PAS
+    trouvee par cette voie -- c'est le role du repli GraphQL plus bas.
+
+    Le nom de branche est encode (le `/` des noms de branche devient
+    `%2F`) : un `head=` mal encode rend un resultat VIDE, c'est-a-dire un
+    faux negatif silencieux.
+
+    Le DEUXIEME separateur est encode aussi (`:` -> `%3A`), et c'est
+    mesure, pas precaution (#23642, revue Hermes) : `gh api` expanse les
+    jetons `owner`, `repo` et `branch` quand ils suivent un `:` litteral
+    dans l'endpoint, et il CONSOMME le `:` au passage. Un nom de branche
+    qui commence par `owner`, `repo` ou `branch` (cas `branch-x`) voyait
+    donc son nom remplace par la branche locale -- et le `:` de
+    `head=<owner>:<branche>` disparaitre, ce qui fait IGNORER le filtre
+    `head=` par l'API : la reponse devenait alors les 5 PRs les plus
+    recentes du depot, sans rapport avec la branche demandee. Encode en
+    `%3A`, plus aucun `:` litteral ne suit le nom : le jeton survit et
+    le filtre `head=` est respecte (mesure : 0 ligne pour une branche
+    inexistante, 1 ligne pour la branche reelle).
+
+    La selection par branche est refaite COTE CODE apres le fetch
+    (`_rest_row_to_pr_row`) : le filtre de l'API ne doit pas etre la
+    SEULE barriere, un `head=` mal transmis doit rendre un resultat
+    VIDE, jamais la PR d'une autre branche.
+
+    `commits/<oid>/pulls` reste interdit (faux negatifs mesures, cf
+    orphan-branch-scan dans .claude/rules/git-workflow.md).
+    """
+    from urllib.parse import quote
+
+    endpoint = (
+        "repos/{owner}/{repo}/pulls"
+        f"?state=all&head={{owner}}%3A{quote(branch, safe='')}&per_page=5"
+    )
+    proc = run_gh("api", endpoint, check=False)
+    if proc.returncode != 0:
+        return None
+    try:
+        payload = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, list):
+        return None
+    return payload
+
+
+def _rest_row_to_pr_row(row: dict, branch: str) -> Optional[dict]:
+    """Mappe une entree REST `pulls` vers la forme interne des lignes.
+
+    L'organe consomme `state` en "OPEN" / "MERGED" / "CLOSED" ; REST rend
+    "open" / "closed", et ne distingue une PR fusionnee que par
+    `merged_at` non nul.
+
+    Deux barrieres COTE CODE, mesurees (#23642) :
+
+    1. `head.ref` doit EQUALER la branche demandee. Le filtre `head=` de
+       l'API n'est pas une barriere suffisante : une requete dont le
+       separateur `:` a ete consomme rend les 5 PRs les plus recentes du
+       depot, et l'ancre pouvait alors retenir la PR d'une AUTRE
+       branche. Une ligne qui ne porte pas la branche demandee est
+       ecartee -- une reponse non filtrée doit rendre un resultat VIDE,
+       jamais un verdict faux.
+    2. le `head.repo` doit etre le depot de la PR (`base.repo`). La voie
+       REST ne sert que les branches dont le head vit dans le depot
+       courant ; une branche de fork est le ressort du repli GraphQL
+       plus bas. Un `head.repo` absent (fork supprime) ne permet pas de
+       conclure : la ligne est alors acceptee sur le seul critere de la
+       branche.
+    """
+    head = row.get("head") or {}
+    ref = head.get("ref")
+    number = row.get("number")
+    if not ref or number is None:
+        return None
+    if ref != branch:
+        return None
+    head_repo = ((head.get("repo") or {}).get("full_name"))
+    base_repo = (((row.get("base") or {}).get("repo") or {}).get("full_name"))
+    if head_repo and base_repo and head_repo != base_repo:
+        return None
+    state = row.get("state")
+    if state == "open":
+        state = "OPEN"
+    elif state == "closed":
+        state = "MERGED" if row.get("merged_at") else "CLOSED"
+    else:
+        return None
+    return {
+        "number": number,
+        "state": state,
+        "url": row.get("html_url"),
+        "headRefName": ref,
+        "headRefOid": head.get("sha"),
+    }
+
+
 def anchor_search_pr_for_branch(branch: str) -> Optional[dict]:
     """Cherche la PR dont le headRefName = branch.
 
-    Ancre autoritative : `gh pr list --state all --search "head:<branch>"`.
-    Pas de REST `commits/<oid>/pulls` (faux negatifs mesures, cf
-    orphan-branch-scan dans .claude/rules/git-workflow.md).
+    Ancre a deux voies (#23636) :
+
+    1. REST `pulls?state=all&head=<owner>:<branche>` -- seau `core`
+       (5 000/h) ; c'est la voie qui reste saine quand le seau
+       `graphql` est epuise ;
+    2. repli `gh pr list --state all --search "head:<branch>"` (GraphQL),
+       reserve aux branches de fork : leur head appartient a un autre
+       proprietaire, donc hors du filtre `head=` de la voie 1.
+
+    Mesure 2026-10-31 (lane myia-po-2028:CoursIA-2, 03hZ, compte `jsboige`
+    partage) : `gh pr list --state all --search` rendait "GraphQL: API
+    rate limit already exceeded" alors que le meme appel REST rendait la
+    PR attendue, sur la meme branche, a la meme seconde. L'ancre levait
+    alors ("gh pr list failed") et **avortait toute la passe** (rc=2,
+    aucun rapport ecrit) des la premiere branche hors fenetre du lot.
+
+    Aucun des deux echecs ne leve plus : un verdict inconcluant retombe
+    sur le contrat fail-CLOSED du script (worktree refuse, jamais retire
+    sans preuve). `commits/<oid>/pulls` reste interdit (faux negatifs
+    mesures, cf orphan-branch-scan dans .claude/rules/git-workflow.md).
     """
+    payload = _rest_pr_rows_for_branch(branch)
+    if payload:
+        rows = [r for r in (_rest_row_to_pr_row(x, branch) for x in payload) if r]
+        if rows:
+            # Plusieurs PRs ont partage le meme nom de branche (close +
+            # reopen) : on garde la plus recente (numero max), meme choix
+            # que le rows[0] de l'ancre GraphQL (date desc).
+            rows.sort(key=lambda r: r["number"], reverse=True)
+            return rows[0]
+    # Repli GraphQL : branche de fork, ou REST muet.
     proc = run_gh(
         "pr", "list",
         "--state", "all",
@@ -1607,12 +1888,27 @@ def anchor_search_pr_for_branch(branch: str) -> Optional[dict]:
         check=False,
     )
     if proc.returncode != 0:
-        # gh erreur : on ne sait pas decider, REFUSE sec
-        raise RuntimeError(f"gh pr list failed: {proc.stderr.strip()}")
+        # Ancre GraphQL indisponible (quota GraphQL epuise) : on ne sait
+        # pas decider -> on rend l'inconcluant, on n'avorte pas la passe.
+        print(
+            f"[prune] ancre GraphQL indisponible pour {branch} : "
+            f"{proc.stderr.strip()} -- verdict inconcluant (refus)",
+            file=sys.stderr,
+        )
+        return None
     try:
         rows = json.loads(proc.stdout)
-    except json.JSONDecodeError as e:
-        raise RuntimeError(f"gh pr list returned non-JSON: {e}") from e
+    except json.JSONDecodeError:
+        return None
+    if not rows:
+        return None
+    # Meme barriere que la voie REST : la ligne retenue doit porter la
+    # branche demandee. `gh pr list --search "head:<branche>"` fait un
+    # matching PREFIXE sur le nom de branche : `head:feature/x` rend aussi
+    # `feature/x-2` et `feature/xy`. Sans cette confrontation, l'ancre
+    # pouvait rendre la PR d'une branche voisine -- et le script retirait
+    # alors un worktree actif en le croyant fusionne (#23642).
+    rows = [r for r in rows if r.get("headRefName") == branch]
     if not rows:
         return None
     # Si plusieurs PRs ont partage le meme nom de branche (improbable mais
@@ -1625,11 +1921,12 @@ def lookup_pr_for_branch(branch: str,
                          head_sha: Optional[str] = None) -> Optional[dict]:
     """Resolution PR d'une branche via la couche a trois etages (#15369).
 
-    L'ancre `--state all --search head:<branche>` reste la source
-    autoritative ; les etages cache disque et lot unique ne font que
-    l'EVITER quand le verdict est deja etabli (MERGED garde par oid) ou
-    disponible dans la fenetre du lot. Une absence ou un echec des etages
-    d'economie retombe TOUJOURS sur l'ancre.
+    L'ancre (REST `pulls?head=` puis repli GraphQL `--search
+    head:<branche>`, cf #23636) reste la source autoritative ; les etages
+    cache disque et lot unique ne font que l'EVITER quand le verdict est
+    deja etabli (MERGED garde par oid) ou disponible dans la fenetre du
+    lot. Une absence ou un echec des etages d'economie retombe TOUJOURS
+    sur l'ancre.
     """
     return get_pr_resolution().resolve(branch, head_sha)
 
@@ -2861,6 +3158,10 @@ def main() -> int:
     if gh_unavailable_reason is not None:
         get_pr_resolution().unavailable_reason = gh_unavailable_reason
 
+    # #23330 : une passe = un memo neuf, pour que les compteurs du rapport
+    # decrivent CETTE passe et pas la somme des appels du process.
+    reset_remote_tip_memo()
+
     statuses: list[WorktreeStatus] = []
     for wt in worktrees:
         try:
@@ -2954,6 +3255,13 @@ def main() -> int:
     if args.json:
         out = {
             "scanned": len(statuses),
+            # #127 : un organe qui n'a diagnostique AUCUN worktree (scanned=0)
+            # n'atteste PAS une ferme propre -- il est MUET. Le flag rend un
+            # silence (`scanned=0`, stdout vide, rc=0) discriminable d'une passe
+            # propre ; avant, les deux signatures etaient identiques (classe
+            # #86, 8 nuits sur ai-01). Pure observabilite : aucune decision de
+            # retrait n'est modifiee, l'ancre `--search head:<b>` est intacte.
+            "mute": len(statuses) == 0,
             "removable": sum(1 for s in statuses if s.decision == "REMOVE"),
             "refused": refused_count,
             "refusal_reasons": refusal_reason_breakdown(statuses),
@@ -2965,6 +3273,9 @@ def main() -> int:
             "degraded": gh_unavailable_reason is not None,
             "gh_unavailable_reason": gh_unavailable_reason,
             "api_stats": get_pr_resolution().stats,
+            # #23330 : budget et effet de la confrontation au tip distant.
+            # Toujours present (un champ absent se lirait "non mesure").
+            "remote_tip_stats": dict(REMOTE_TIP_STATS),
             # v1.3 : chemins des worktrees REMOVE-ready dont le lock
             # d'agent a ete reconnu mort (l'apply les deverrouille puis
             # les retire). Toujours present, vide si rien -- un champ
@@ -2992,6 +3303,16 @@ def main() -> int:
         else:
             print(render_text(statuses, dry_run=True,
                               gh_unavailable_reason=gh_unavailable_reason))
+        # #127 : symetrie du signal MUTE en mode texte. Un appelant qui ne lit
+        # que stdout doit voir la meme information que le champ JSON `mute` et
+        # que la ligne `MUTE:` sur stderr ; sans cette ligne, un passage
+        # `scanned=0` rend un stdout blanc, indiscernable d'une passe propre
+        # (reserve Hermes sur #22440, complement symetrique du flag JSON).
+        if len(statuses) == 0:
+            print(
+                "scanned=0  (aucun worktree diagnostique -- passage muet, "
+                "pas propre ; voir aussi MUTE sur stderr, #127)"
+            )
         # Budget API de la passe (#15369) : la mesure est un livrable, pas
         # un side-effect silencieux.
         st = get_pr_resolution().stats
@@ -2999,6 +3320,29 @@ def main() -> int:
             f"api: cache={st['cache_hits']} lot={st['listing_calls']}"
             f" hits_lot={st['listing_hits']} ancre={st['anchor_calls']}"
             f" degrade={st['listing_degraded']}"
+        )
+        # #23330 : ce que la confrontation au tip distant a change, pour
+        # que la mesure soit lisible sans relire les refus un par un.
+        rt = REMOTE_TIP_STATS
+        if rt["calls"]:
+            print(
+                f"tip distant: appels={rt['calls']} ok={rt['ok']}"
+                f" absent={rt['absent']} indetermine={rt['unknown']}"
+                f" leves_egalite={rt['cleared_equal']}"
+                f" leves_ancetre={rt['cleared_ancestor']}"
+            )
+
+    # #127 : un organe muet (scanned=0) n'est PAS une attestation de ferme
+    # propre. Averti sur stderr -- le journal de la tache planifiee fusionne
+    # les deux flux, et en --json le stdout doit rester pur pour json.loads.
+    # Le champ JSON `mute` (ci-dessus) porte la meme information aux lecteurs
+    # structurels ; aucun des deux ne modifie une decision de retrait.
+    if len(statuses) == 0:
+        print(
+            "MUTE: aucun worktree diagnostique (scanned=0) -- ce rapport "
+            "n'atteste pas une ferme propre ; le passage est silencieux, "
+            "pas propre (#127).",
+            file=sys.stderr,
         )
 
     # Seuil d'alerte (#3895) : stderr, jamais stdout -- en --json le stdout

@@ -526,7 +526,7 @@ _THRESHOLD_OP_RE = re.compile(
 # '(2,2)' / '(1,1)', are TUPLES (cell positions), not francophone decimals.
 # _normalize_num collapses '(2,2)' -> '2.2', so the detector searches for a
 # '2.2' that never exists in the 3x3-grid code output and flags a legitimate
-# prose coordinate as fabricated (DecPyMC-7 md[67]: 'un but en (2,2) et un
+# prose coordinate as fabricated (DecPyMC-07 md[67]: 'un but en (2,2) et un
 # obstacle en (1,1)'). Criterion (acceptance #14905): a SINGLE digit on each
 # side of a comma, wrapped in a parenthesized pair. '(0,75)' -- two digits
 # after the comma -- is a genuine decimal and stays eligible.
@@ -626,7 +626,7 @@ def _is_threshold_expression(src: str, match_pos: int, match_end: int) -> bool:
 # #14905 Family D -- input numbers: legitimately absent from the output
 # because they are inputs (hyperparameters, problem specifications). A class
 # distinct from the coordinate fix (different cause, separate filter -- the
-# issue pins this separation). Measured instances on DecPyMC-7:
+# issue pins this separation). Measured instances on DecPyMC-07:
 #   md[15]/md[19]  '$\gamma = 0.9$' / '$V_1 = \gamma(0.8 + 0.2\,V_1)$'
 #   md[36]         '`[0.2, 0.4, 0.6, 0.8, 0.5]`' (arm means = problem spec)
 #   md[38]         'Bras 1=0.3, Bras 2=0.5' (enumerated environment spec)
@@ -687,7 +687,7 @@ def _is_math_parameter_definition(prose: str, match_pos: int, match_end: int) ->
     - a greek symbol holding an ESTIMATED value (`$\\mu = 20.8$` read off a
       plot) is a citation too -- no definition verb on the line, stays
       checked. The verb gate separates 'Avec $\\gamma = 0.9$' (founding
-      instance, DecPyMC-7 md[15]/md[19]) from it.
+      instance, DecPyMC-07 md[15]/md[19]) from it.
     """
     span = _nearest_math_span(prose, match_pos)
     if span is None or "=" not in span:
@@ -720,7 +720,7 @@ def _is_numeric_list_literal(prose: str, match_pos: int, match_end: int) -> bool
 def _is_labeled_enumeration_value(prose: str, match_pos: int, match_end: int) -> bool:
     """Family D3 (#14905): the match is the value side of a labeled
     enumeration in prose -- 'Bras 1=0.3', 'Couche 2=0.5' (a word, a numeral,
-    then `=`). The founding instance is DecPyMC-7 md[38] 'Bras 1=0.3, Bras
+    then `=`). The founding instance is DecPyMC-07 md[38] 'Bras 1=0.3, Bras
     2=0.5': the environment's arm means, given as spec, never printed.
 
     The word+numeral LHS is the discriminator: 'accuracy=0.9' (no numeral in
@@ -883,7 +883,7 @@ def _is_coordinate_tuple(prose: str, match_pos: int, match_end: int) -> bool:
     each side of the comma ('(2,2)', '(1,1)', '(1,2,3)') is a coordinate /
     tuple element, not a francophone decimal.
 
-    The founding FP: DecPyMC-7 md[67] 'un but en (2,2) et un obstacle en
+    The founding FP: DecPyMC-07 md[67] 'un but en (2,2) et un obstacle en
     (1,1)' -- cells of a 3x3 grid, flattened by `_normalize_num` into the
     '2.2' / '1.1' decimals, then reported as fabricated because no output
     contains them. The discriminator is deliberately tight: every integer
@@ -1265,6 +1265,35 @@ def check_notebook(path: Path) -> dict:
 
 _DECIMAL_TOKEN_RE = re.compile(r"(?<![\d.,])\d+[.,]\d+(?![\d,])")
 
+# A number that carries BOTH a comma group and a decimal point uses the comma
+# as a thousands separator: French decimals never take a second separator
+# after a three-digit group ('19,798.0862' is 19798.0862, not 19.7980862).
+# The bare three-digit group ('1,798') stays a decimal -- without a decimal
+# point to disambiguate, both readings are legitimate and the francophone
+# decimal reading is the dominant one.
+_THOUSANDS_WITH_DECIMAL_RE = re.compile(r"(\d{1,3}(?:,\d{3})+)(\.\d+)")
+
+# A grouped integer with SEVERAL comma groups ('3,145,728') is a magnitude
+# context, not a precision conflict. A single comma followed by one group
+# ('1,7565', '1,756') is NOT one: this repository reads it as the
+# francophone DECIMAL (the convention `_normalize_num` documents), so it is
+# examined as a decimal and never skipped. Two groups of exactly three
+# digits are the only unambiguous thousands grouping.
+_THOUSANDS_GROUPED_INT_RE = re.compile(r"^\d{1,3}(?:,\d{3}){2,}$")
+
+# A number of the output, with its own notation preserved:
+#   '1750000'      plain integer
+#   '3,145,728'    grouped integer (several groups of exactly three digits)
+#   '19,798.0862'  grouped integer with a decimal part
+#   '1.7565'       english decimal
+#   '1,7565'       francophone decimal
+# The grouped form is tried first; the trailing negative lookahead keeps
+# '1,7565' out of the grouped reading ('1,756' would be followed by a
+# digit).
+_NUM_TOKEN_RE = re.compile(
+    r"(?<![\d.,])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:[.,]\d+)?)(?![\d])"
+)
+
 
 def _rounds_to_claim(norm: str, out_text: str) -> bool:
     """True when an output number rounds to the claimed value.
@@ -1284,15 +1313,13 @@ def _rounds_to_claim(norm: str, out_text: str) -> bool:
     except ValueError:
         return False
     half_ulp = 0.5 * 10 ** -decimals
+    out_text = _THOUSANDS_WITH_DECIMAL_RE.sub(
+        lambda m: m.group(1).replace(",", "") + m.group(2), out_text
+    )
     for match in _DECIMAL_TOKEN_RE.finditer(out_text):
         token = match.group(0).replace(",", ".")
         # An output coarser than the claim cannot round UP to it: '1.7'
         # never satisfies '1.75'.
-        # Known limitation, measured: the comma is read as a decimal point,
-        # so a thousand separator is matched as one -- '19.80' matches
-        # '19,798.0862' through the token '19,798' read as 19.798. The two
-        # readings are genuinely ambiguous in French output ('1,798' may be
-        # 1.798 or 1,798); deciding it needs its own change, not this one.
         if len(token.split(".", 1)[1]) < decimals:
             continue
         try:
@@ -1309,19 +1336,33 @@ def _fuzzy_present(norm: str, out_text: str) -> bool:
       (a) prefix-of-output: '1.3' matches '1.3B' for magnitude (followed by
           non-digit). A prefix followed by a digit is NOT matched here --
           '1.32 Go' is reached through clause (b), as a rounding, not as a
-          magnitude prefix.
+          magnitude prefix. A prefix SHORTER than the claim ('1.7' for the
+          claim '1.75') is matched only for a zero-padded claim ('2.40'
+          against '2.4' is the same number).
       (b) rounded value: '0.24' matches '0.2385' (the claim is the output
           number rounded to the claim's own precision), anywhere in the
           output -- not only at its start.
       (c) magnitude-prefix against comma-stripped output: '3.1' matches
           '3,145,728' (output has 3,145,728 = 3.1M, claim is the magnitude
-          prefix when thousand separators are stripped).
+          prefix when thousand separators are stripped). A claim that
+          TRUNCATES an output number ('1.75' against '1.7565', which rounds
+          to 1.76) is REFUSED here -- see `_has_truncation_conflict` and
+          CoursIA #22910.
     The minimum norm length is 3 chars (so '7' / '5' are skipped).
     """
     if len(norm) < 3:
         return False
     # Clause (a): prefix is present in the output, followed by non-digit.
+    # A prefix SHORTER than the claim means the output carries a COARSER
+    # number than the claim ('1.7' for the claim '1.75'): the claim then
+    # asserts a precision the output does not have, and the coarser output
+    # cannot support it -- clause (b) refuses it for the same reason
+    # ('1.7' never satisfies '1.75'). The one legitimate case is a claim
+    # padded with zeros ('2.40' against '2.4' is the same number), so a
+    # partial prefix is accepted only when the dropped tail is all zeros.
     for cut in range(len(norm), 2, -1):
+        if cut < len(norm) and norm[cut:].strip("0"):
+            continue
         prefix = norm[:cut]
         pos = 0
         while True:
@@ -1340,26 +1381,121 @@ def _fuzzy_present(norm: str, out_text: str) -> bool:
     # Both directions are defects; measured on CoursIA #22769 == #11435.
     if _rounds_to_claim(norm, out_text):
         return True
-    # Clause (c): norm is a magnitude prefix when output's thousand
-    # separators are stripped (output "3,145,728" -> "3145728", norm
-    # "3.1" -- treat the dot in the norm as a marker; we re-anchor the
-    # norm against the output by matching the leading digits before the
-    # dot). Gated by len(norm) >= 4 OR the output containing a comma
-    # (large-number signal: 3.1M magnitude against 3,145,728). The
-    # comma-gate distinguishes '3.1' vs '3,145,728' (magnitude) from
-    # '1.3' vs '1.32' (precision -- no comma, no magnitude match).
-    if "." in norm and len(norm) >= 3 and ("," in out_text or len(norm) >= 4):
+    # Clause (c): norm is a MAGNITUDE prefix of a large number printed by
+    # the output ('3.1' against '3,145,728' = 3.1M, '1.75' against
+    # '1750000' = 1.75M).
+    #
+    # #22910 -- the former form stripped every non-digit of the output into
+    # ONE digit run and looked for the claim's digits anywhere inside it.
+    # Two defects came with it. (1) The claim's digits could SPAN the
+    # decimal point of the output ('1.75' in '1.7565': the run '17565'
+    # starts with '175'), which is a TRUNCATION -- a precision the output
+    # contradicts -- and not a magnitude. (2) The digits could also span
+    # TWO different numbers ('1.75' in '17.2632': the run '172632'
+    # contains '17'... '175'), which is a coincidence of digits.
+    #
+    # #22910 (revue NanoClaw) -- gating the clause on the mere PRESENCE of
+    # a comma was itself the defect in francophone notation: a decimal
+    # comma ('1,7565') is a comma, so every notebook of this repository
+    # re-opened the digit run, while the truncation veto -- which used to
+    # skip every comma token -- could not see the very decimal it had to
+    # judge.
+    #
+    # The rule now: the claim's digits must be a PREFIX of the INTEGER PART
+    # of one number of the output. That is what makes the two readings
+    # separable without consulting the notation at all -- a magnitude has
+    # all its significant digits in the integer part ('1750000'), a
+    # truncation straddles the point ('1.7565' has integer part '1').
+    # The veto below then refuses the claim when the output ALSO prints a
+    # decimal that contradicts it.
+    if "." in norm and len(norm) >= 3:
         head, tail = norm.split(".", 1)
-        digit_run = re.sub(r"[^0-9]", "", out_text)
         combined = head + tail  # e.g. "3.1" -> "31"
-        if combined and combined in digit_run:
-            pos = digit_run.find(combined)
-            tail_len = len(digit_run) - (pos + len(combined))
-            # Tolerance: a 7-digit "3,145,728" has 5 trailing digits
-            # after the magnitude "31". Cap at 12 digits total in the
-            # digit_run (8+ trailing) so the magnitude is bounded.
-            if tail_len <= 12:
+        if combined.isdigit():
+            for match in _NUM_TOKEN_RE.finditer(out_text):
+                token = match.group(1)
+                if not _is_magnitude_host(token):
+                    continue
+                int_digits = token.split(".", 1)[0].replace(",", "")
+                if not int_digits.startswith(combined):
+                    continue
+                tail_len = len(int_digits) - len(combined)
+                # Tolerance: a 7-digit "3,145,728" has 5 trailing digits
+                # after the magnitude "31". Cap at 12 trailing digits so the
+                # magnitude stays bounded.
+                if tail_len > 12:
+                    continue
+                if _has_truncation_conflict(norm, out_text):
+                    return False
                 return True
+    return False
+
+
+def _is_magnitude_host(token: str) -> bool:
+    """True when the token is a LARGE number -- the context clause (c)
+    exists to serve ('3,145,728' is 3.1M).
+
+    A plain integer ('1750000') is one. A grouped integer is one when the
+    grouping is unambiguous: several groups of exactly three digits
+    ('3,145,728'), or a group arbitrated by a decimal point ('19,798.0862'
+    -- the point settles the comma as a separator). A SINGLE bare group
+    ('1,756', '1,024') stays a francophone DECIMAL: with no point to
+    arbitrate, the decimal reading is the dominant one -- and a decimal is
+    a precision context, never a magnitude.
+    """
+    int_part = token.split(".", 1)[0]
+    if "," not in int_part:
+        return True
+    if int_part.count(",") >= 2:
+        return True
+    return "." in token
+
+
+def _has_truncation_conflict(norm: str, out_text: str) -> bool:
+    """True when an output number carries the claim's digits as a STRICT
+    prefix without the claim rounding to it ('1.75' against '1.7565').
+
+    The magnitude clause (c) matches the claim's digits anywhere in the
+    output's digit run, so a value the prose has TRUNCATED is silently
+    accepted: the output prints 1.7565 (which rounds to 1.76) and the prose
+    asserts 1.75. The claim is then a precision the output contradicts, and
+    the organ must not treat it as supported (CoursIA #22910).
+
+    Only decimal tokens are examined, in BOTH notations: an anglophone
+    '1.7565' and a francophone '1,7565' are the same number, and this
+    repository's notebooks use the francophone one predominantly. A grouped
+    integer ('3,145,728' -- several comma groups of exactly three digits) is
+    a magnitude context, not a precision conflict -- it is the very case
+    clause (c) exists to serve, and it carries no decimal part to
+    contradict. The integer part must have the same number of digits as the
+    claim's, so that '17.56' is not read as a truncation of '1.75'.
+    """
+    if "." not in norm:
+        return False
+    claim_int, _, claim_frac = norm.partition(".")
+    claim_digits = claim_int + claim_frac
+    if not claim_digits.isdigit():
+        return False
+    for match in _DECIMAL_TOKEN_RE.finditer(out_text):
+        token = match.group(0)
+        if "," in token:
+            # A grouped integer is a magnitude, not a precision: '3,145,728'
+            # has no decimal part. A francophone decimal ('1,7565') DOES.
+            if _THOUSANDS_GROUPED_INT_RE.match(token):
+                continue
+            int_part, _, frac_part = token.partition(",")
+        else:
+            int_part, _, frac_part = token.partition(".")
+        if len(int_part) != len(claim_int):
+            continue
+        digits = int_part + frac_part
+        if len(digits) <= len(claim_digits) or not digits.startswith(claim_digits):
+            continue
+        # A truncation candidate -- unless the claim rounds to that number
+        # ('2.40' against '2.400' is the same number, '1.75' against
+        # '1.7465' is the genuine rounding handled by clause (b)).
+        if not _rounds_to_claim(norm, token):
+            return True
     return False
 
 

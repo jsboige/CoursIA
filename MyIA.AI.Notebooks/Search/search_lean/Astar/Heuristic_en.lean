@@ -1,5 +1,5 @@
 import Mathlib
-import Astar.Graph
+import Astar.Graph_en
 
 /-!
 # Astar.Heuristic — admissibility and consistency
@@ -28,7 +28,7 @@ reaching the goal (the minimum is attained, since simple paths are finite in num
 
 namespace Astar_en
 
-open Astar
+open Astar_en
 
 variable {V : Type*} (G : WeightedGraph V)
 

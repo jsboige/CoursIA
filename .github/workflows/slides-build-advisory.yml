@@ -125,15 +125,22 @@ jobs:
     # scripts/ci/check_self_hosted_runner_policy.py -- c'est le `if:`
     # ci-dessous, et c'est la forme UNIVERSELLE (le commentaire d'en-tete
     # explique pourquoi la forme directe eteindrait le nocturne, #12817).
-    # `runs-on` reste STATIQUE : une expression dynamique leverait
-    # DYNAMIC_RUNS_ON. Retour arriere = remettre `runs-on: ubuntu-latest`
-    # + retrait de l'allowlist + retrait du declencheur pull_request.
-    # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
-    runs-on: ubuntu-latest
+    # 2026-10-28 (#23053 famille (c), lane myia-ai-01:CoursIA-2) : forme hybride
+    # de debordement CI (#22937/#22944/#23016). PR meme-depot ET
+    # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ; tout le reste
+    # (variable absente ou fausse, forks, nocturne) retombe sur ubuntu-latest.
+    # La garde same-repo vit dans l'expression elle-meme : c'est la forme
+    # hybride acceptee par l'organe, et le `if:` ci-dessous reste inchange.
+    # Bascule : `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo
+    # jsboige/CoursIA`. Retour arriere = variable a `false` ou supprimee.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     # Newly blocking on the PR leg, so it must not be able to hang one: the
     # worst case is a cold `npm ci` (~12 min, #15835 body) plus one build per
     # touched deck. 30 min bounds that without ratcheting the normal path.
+    # Borne existante conservee (#23053) : 3 x le maximum mesure du workflow
+    # (85 min) ne remplace pas une borne calibree sur la distribution reelle du
+    # job, elle reste donc a 30 min.
     timeout-minutes: 30
     # Heap V8 : le deck volumineux 03-logique depasse le plafond par defaut du
     # runner (~790 MB) pendant le rendu -- OOM mesure 2x sur #17721 (runs

@@ -46,9 +46,9 @@ du dépôt.
   smoke test structurel vs conformité visuelle : contraste WCAG, primaires
   Bootstrap, affordance des CTA. Quatre pages synthétiques portant une
   violation délibérée chacune, trois détecteurs dédiés, et la démonstration
-  que le smoke test est aveugle aux trois classes de défauts. C'est la classe
-  *visuelle* du motif « la sonde ment » documenté pour la classe *système*
-  dans
+  que le smoke test est aveugle aux trois classes de défauts. C'est une
+  instance de la **classe 2** du motif « la sonde ment » — *la sonde qui mesure
+  le contenant* — documentée dans
   [`verification-verte-systeme-casse.md`](../../../../../docs/reference/verification-verte-systeme-casse.md).
 
 ## Voir aussi

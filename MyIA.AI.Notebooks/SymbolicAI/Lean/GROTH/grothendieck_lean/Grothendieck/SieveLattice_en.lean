@@ -1,0 +1,292 @@
+/-
+Grothendieck tribute — Part 6: Sieve pullback identities and lattice laws
+Alexandre Grothendieck (1928-2014).
+
+Phase 2 extension (#2159, Epic #2162).
+
+Part 1 (`CategoryAndSites.lean`) introduces sieves, the three axioms,
+and the complete lattice `Sieve X`. This module records the basic
+identities of pullback along morphisms:
+
+  - Pullback along the identity is the identity (`pullback_id`).
+  - Pullback composes contravariantly (`pullback_pullback`).
+  - Pullback of the bottom sieve is bottom (`pullback_bot`).
+  - Pullback is monotone in the sieve (`pullback_monotone`).
+  - Pullback preserves ⊓ (`pullback_inf`, in Part 8 `SieveOps.lean`).
+  - Pullback preserves ⋃, the finite join (`pullback_union`).
+  - Pullback preserves indexed suprema, iSup (`pullback_imap`).
+  - Pullback preserves indexed infima, iInf (`pullback_iinf`).
+  - Pullback distributes `Sieve.ofObjects` across the target (`pullback_ofObjects`).
+  - `f ∈ S` iff `Sieve.pullback f S = ⊤` (`mem_iff_pullback_eq_top`).
+
+These complete the picture started by the calibration P2
+(`pullback_top` in `Calibration.lean`), and pave the way for Phase 3
+work on sieve generation and sheafification.
+
+Epic #1646, Phase 2 (#2159). All `sorry`s eliminated at creation.
+
+### i18n — convention #4980 ratified 2026-07-04
+
+This module is paired with its French canonical counterpart in the sibling
+file `SieveLattice.lean` (sibling pair model, see PR #6154 for the pilot
+on `Utility.lean`). Theorem statements, lemma names, Lean tactics
+(`:= by`, `rfl`, `exact`, etc.) and Mathlib references stay in English
+(Mathlib 4, standard tactic DSL). Only the **docstrings `/-- ... -/`** and
+**comments `-- ...`** differ between the two files. Anti-§D byte-identity
+guaranteed: the namespace body is preserved bit-for-bit (statements and
+proofs byte-identical between `SieveLattice.lean` and `SieveLattice_en.lean`).
+-/
+
+import Mathlib.CategoryTheory.Sites.Grothendieck
+
+namespace Grothendieck_en
+
+open CategoryTheory
+
+/-!
+## Pullback along the identity is the identity
+
+`Sieve.pullback (𝟙 X) S = S`. Pulling back along the identity does
+nothing: `g` is in the pullback iff `g ≫ 𝟙 X = g` is in `S`.
+-/
+
+/-- CALIBRATION (ext + simp): pullback along the identity morphism
+    is the identity transformation on sieves. -/
+theorem pullback_id {C : Type*} [Category C] {X : C} (S : Sieve X) :
+    (Sieve.pullback (𝟙 X) S) = S := by
+  ext Y f
+  simp [Sieve.pullback]
+
+/-!
+## Pullback composes contravariantly
+
+For a sieve `S` on `X` and morphisms `f : Y ⟶ X`, `g : Z ⟶ Y`, pulling
+back `S` along `f` and then along `g` gives the same sieve as pulling
+back `S` along the composite `g ≫ f`.
+-/
+
+/-- CALIBRATION (ext + simp + assoc): pullback composes contravariantly.
+    Pulling back along `g ≫ f` equals pulling back along `f` then `g`. -/
+theorem pullback_pullback {C : Type*} [Category C] {X Y Z : C} (S : Sieve X)
+    (f : Y ⟶ X) (g : Z ⟶ Y) :
+    (Sieve.pullback g (Sieve.pullback f S)) = Sieve.pullback (g ≫ f) S := by
+  ext W h
+  simp [Sieve.pullback, Category.assoc]
+
+/-!
+## Pullback of the bottom sieve is the bottom sieve
+
+The empty sieve has no arrows; pulling it back along any morphism still
+gives the empty sieve. Dual to `pullback_top` (Calibration P2).
+-/
+
+/-- CALIBRATION (ext + simp): pullback of the bottom sieve along any
+    morphism is the bottom sieve. -/
+theorem pullback_bot {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X) :
+    (Sieve.pullback f (⊥ : Sieve X)) = (⊥ : Sieve Y) := by
+  ext Z g
+  simp [Sieve.pullback]
+
+/-!
+## Pullback is monotone in the sieve
+
+If `S ≤ T`, then for any `f : Y ⟶ X`, `Sieve.pullback f S ≤ Sieve.pullback f T`.
+This is the order-theoretic component of pullback's functoriality.
+-/
+
+/-- CALIBRATION (intro + simp + apply): pullback is monotone in the sieve. -/
+theorem pullback_monotone {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
+    {S T : Sieve X} (hST : S ≤ T) :
+    Sieve.pullback f S ≤ Sieve.pullback f T := by
+  intro Z g hg
+  simp [Sieve.pullback] at hg ⊢
+  exact hST _ hg
+
+/-!
+## Pullback distributes over the join (union) of sieves
+
+Dual to `pullback_inf` (Part 9, `SieveOps.lean`): pullback also preserves
+`⊔`. Pulling back the join of two sieves equals the join of their
+pullbacks. The result follows from the definition of `Sieve.union`
+(an arrow `g : Z ⟶ Y` is in `(S ⊔ R).pullback f` iff
+`g ≫ f` is in `S` or in `R`, which is equivalent to being in
+`S.pullback f` or in `R.pullback f`).
+
+Identity not covered by `Mathlib.CategoryTheory.Sites.Sieves`
+(which provides `pullback_inter` but not its dual `pullback_union`);
+Phase 2 extension (Issue #2159, Epic #1646).
+-/
+
+/-- CALIBRATION (ext + simp): pullback distributes over the join
+    of sieves. Dual of `pullback_inf` (`SieveOps.lean`). -/
+theorem pullback_union {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
+    (S R : Sieve X) :
+    Sieve.pullback f (S ⊔ R) = Sieve.pullback f S ⊔ Sieve.pullback f R := by
+  ext Z g
+  simp [Sieve.pullback]
+
+/-!
+## Pullback distributes over the indexed supremum
+
+Generalization of `pullback_union` (binary join) to an arbitrary indexed
+family: pulling back the supremum of a family of sieves equals the
+supremum of their pullbacks. This is the left-adjoint property of
+pullback — it preserves **all** suprema, not just binary joins, making
+it a complete-lattice morphism (frame homomorphism) on sieves.
+
+`pullback_union` is the two-element special case.
+-/
+
+/-- CALIBRATION (ext + simp): pullback distributes over the iSup of an
+    indexed family. Generalization of `pullback_union` (binary join). -/
+theorem pullback_imap {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
+    {ι : Type*} (S : ι → Sieve X) :
+    Sieve.pullback f (iSup S) = ⨆ i, Sieve.pullback f (S i) := by
+  ext Z g
+  simp [Sieve.pullback, iSup, Set.mem_range]
+
+/-!
+## Pullback distributes over the indexed infimum
+
+Dual of `pullback_imap`: pulling back the infimum of a family of sieves
+equals the infimum of their pullbacks. This is the right-adjoint
+property of pullback in the Galois connection
+`pushforward ⊣ pullback` (`galoisConnection_pushforward_pullback`,
+Mathlib `Sites.Sieves`): it preserves **all** meets, not just binary
+intersections.
+
+`pullback_inf` (Part 8, `SieveOps.lean`) is the two-element special case.
+-/
+
+/-- CALIBRATION (ext + simp): pullback distributes over the iInf of an
+    indexed family. Dual of `pullback_imap` (indexed supremum). -/
+theorem pullback_iinf {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
+    {ι : Type*} (S : ι → Sieve X) :
+    Sieve.pullback f (iInf S) = ⨅ i, Sieve.pullback f (S i) := by
+  ext Z g
+  simp [Sieve.pullback, iInf, Set.mem_range]
+
+/-!
+## Pushforward distributes over the indexed supremum
+
+The `pushforward` counterpart of `pullback_imap`: pushing forward the
+indexed supremum of a family of sieves equals the supremum of their
+pushforwards. This is the **left adjoint** property of pushforward in the
+Galois connection `pushforward ⊣ pullback` (`Sieve.galoisConnection`,
+Mathlib `Sites.Sieves`) — the same connection from which `pullback_iinf`
+reads its right adjoint property. Mathlib provides the binary case
+(`Sieve.pushforward_union`, proved by `GaloisConnection.l_sup`); the
+indexed generalization follows by `GaloisConnection.l_iSup`.
+
+Completes the lattice picture: pullback preserves sups AND infs
+(`pullback_imap` / `pullback_iinf`), pushforward preserves sups.
+-/
+
+/-- GALOIS (l_iSup): pushforward distributes over the iSup of an
+    indexed family — left adjoint property of the Galois connection
+    `pushforward ⊣ pullback`. Indexed generalization of
+    `Sieve.pushforward_union` (binary case). -/
+theorem pushforward_imap {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
+    {ι : Type*} (S : ι → Sieve Y) :
+    Sieve.pushforward f (iSup S) = ⨆ i, Sieve.pushforward f (S i) :=
+  (Sieve.galoisConnection f).l_iSup
+
+/-!
+## Pullback preserves `ofObjects`
+
+`Sieve.ofObjects X Y` is the maximal "subobject" sieve generated by the
+family of objects `X : I → C` above an object `Y`. Pulling it back along a
+morphism `f : Z ⟶ Y` yields the "subobject" sieve of the same family above
+`Z`. This is the functoriality of `ofObjects` with respect to its target.
+-/
+
+/-- CALIBRATION (ext + simp): pullback distributes `ofObjects` according
+    to the target: `(Sieve.ofObjects X Y).pullback f = Sieve.ofObjects X Z`. -/
+theorem pullback_ofObjects {C : Type*} [Category C] {I : Type*} (X : I → C)
+    {Y Z : C} (f : Z ⟶ Y) :
+    (Sieve.ofObjects X Y).pullback f = Sieve.ofObjects X Z := by
+  ext W g
+  simp [Sieve.pullback, Sieve.ofObjects]
+
+/-!
+## Characterizing membership via pullback
+
+Membership of an arrow in a sieve is exactly characterized by its
+pullback: `f ∈ S` iff `Sieve.pullback f S = ⊤`. This is the fundamental
+statement underpinning stability and covering manipulations in
+Grothendieck topologies.
+-/
+
+/-- CALIBRATION (rfl): `f ∈ S` iff `Sieve.pullback f S = ⊤`. Direct
+    restatement of `Sieve.mem_iff_pullback_eq_top`. -/
+theorem mem_iff_pullback_eq_top {C : Type*} [Category C] {X Y : C}
+    (S : Sieve X) (f : Y ⟶ X) :
+    S f ↔ Sieve.pullback f S = ⊤ :=
+  Sieve.mem_iff_pullback_eq_top f
+
+/-!
+## Proper theorems (c.1301+130)
+
+The theorems below *prove* definitional equalities and equivalences that
+the fields/lemmas of the `Sieve X` structure expose in
+`Mathlib/CategoryTheory/Sites/Sieves.lean`. All these fields operate on
+the resident structure `Sieve X` non polymorphic over universes —
+therefore **L902 ★★ SAFE** (cf c.1301+108-L1 ★★: polymorphic universe
+constructors are to be proscribed, unlike resident fields on X).
+
+1. `pullback_eq_top_of_mem_field`: restatement of the lemma
+   `Sieve.pullback_eq_top_of_mem` (forward direction of
+   `mem_iff_pullback_eq_top`: `S f → S.pullback f = ⊤`).
+2. `top_apply_field`: restatement of the lemma `Sieve.top_apply` (the
+   maximal sieve contains every arrow).
+3. `bot_apply_field`: restatement of the lemma `Sieve.bot_apply` (the
+   empty sieve contains no arrow).
+4. `inter_apply_field`: restatement of the lemma `Sieve.inter_apply`
+   (the intersection of two sieves contains `f` iff each sieve
+   contains `f`).
+5. `union_apply_field`: restatement of the lemma `Sieve.union_apply`
+   (the union of two sieves contains `f` iff one of the two
+   contains `f`).
+
+These are "showcase" theorems that certify that these fields/lemmas of
+the `Sieve X` structure are effectively computable in the same Lean
+execution.
+-/
+
+/-- Theorem: forward direction of `mem_iff_pullback_eq_top` — if `f ∈ S`
+    then `Sieve.pullback f S = ⊤`. β-equivalent to the lemma
+    `Sieve.pullback_eq_top_of_mem`. -/
+theorem pullback_eq_top_of_mem_field {C : Type*} [Category C] {X Y : C}
+    {S : Sieve X} {f : Y ⟶ X} (hf : S f) :
+    Sieve.pullback f S = ⊤ :=
+  Sieve.pullback_eq_top_of_mem S hf
+
+/-- Theorem: the maximal sieve contains every arrow. β-equivalent to
+    the lemma `Sieve.top_apply`. -/
+theorem top_apply_field {C : Type*} [Category C] {X Y : C}
+    (f : Y ⟶ X) :
+    (⊤ : Sieve X) f :=
+  Sieve.top_apply f
+
+/-- Theorem: the empty sieve contains no arrow. β-equivalent to the
+    lemma `Sieve.bot_apply`. -/
+theorem bot_apply_field {C : Type*} [Category C] {X Y : C}
+    (f : Y ⟶ X) :
+    (⊥ : Sieve X) f ↔ False :=
+  Sieve.bot_apply f
+
+/-- Theorem: the intersection of two sieves contains `f` iff each sieve
+    contains `f`. β-equivalent to the lemma `Sieve.inter_apply`. -/
+theorem inter_apply_field {C : Type*} [Category C] {X Y : C}
+    {R S : Sieve X} (f : Y ⟶ X) :
+    (R ⊓ S) f ↔ R f ∧ S f :=
+  Sieve.inter_apply f
+
+/-- Theorem: the union of two sieves contains `f` iff one of the two
+    contains `f`. β-equivalent to the lemma `Sieve.union_apply`. -/
+theorem union_apply_field {C : Type*} [Category C] {X Y : C}
+    {R S : Sieve X} (f : Y ⟶ X) :
+    (R ⊔ S) f ↔ R f ∨ S f :=
+  Sieve.union_apply f
+
+end Grothendieck_en

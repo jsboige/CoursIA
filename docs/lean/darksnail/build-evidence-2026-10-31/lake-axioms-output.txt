@@ -1,0 +1,131 @@
+'Ultrametric.Analysis.OcclusionTriad.triad_pointwise_orthogonal' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.skew_triad_swap_neg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.skew_triad_self_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.triadOperator_two_color_eval' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.occlusion_triad_breaks_symmetric_tie' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.darksnail_readout_energy_conservation' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.darksnail_step0_system1_homotopy' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.inner2_rot2_shift' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.rope2d_medoid_relative_invariance' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.normSq2_avg2_rot2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.normSq2_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.normSq2_avg2_rot2_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.normSq2_avg2_rot2_lt' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.rope2d_arithmetic_norm_lt' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.shellEnergy_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.shellEnergy_eq_zero_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.tangentTriadStep_orthogonal' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.shellEnergy_add_of_orthogonal' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.shellEnergy_scale' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.sphericalTriadStep_preserves_energy' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.darksnail_multistep_spherical_invariance' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.sphericalTriadStep_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.darksnail_multistep_step0_homotopy' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.isOrthogonal6_of_rowOrthonormal6' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.kelvinMandelDipRotor_zero' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.kelvinMandelDipRotor_orthonormal' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.elasticEnergy6_rotateStiffness6' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.so6_stiffness_preserves_pos_def' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.so6_stiffness_trace_conservation' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.morseImpulse_iff_strict_extremum' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.caliper_morse_rejects_washout_step' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.caliper_morse_shields_thin_stringer' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.cross3_eq_triadOperator' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.mhdToEulerMap_involutive' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.mhd_euler_force_balance_bijection' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.mhd_flux_surface_confinement_iff' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.stellarator_parity_breaks_tie_and_conserves_flux' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.stellarator_zero_torsion_homotopy_iff' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.sub_alfvenic_beltrami_homotopy_zero_flow' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.sub_alfvenic_beltrami_pos' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.beltrami_cross_helicity_collinear_lorentz_vanishes' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.mrxmhd_flow_bernoulli_jump_conservation' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Ultrametric.Analysis.OcclusionTriad.kam_sub_alfvenic_ellipticity_and_gap' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'DarkSnail.BlockBridge.sum_blocks_congr' depends on axioms: [Quot.sound]
+'DarkSnail.BlockBridge.sum_blocks_update' depends on axioms: [propext, Quot.sound]
+'DarkSnail.BlockBridge.sum_blocks_decrement' depends on axioms: [propext, Quot.sound]
+'DarkSnail.BlockBridge.sum_blocks_increment' depends on axioms: [propext, Quot.sound]
+'DarkSnail.BlockBridge.block_bridge_total_blocks_conserved' depends on axioms: [propext, Quot.sound]
+'DarkSnail.BlockBridge.block_bridge_total_blocks_conserved_tail' depends on axioms: [propext, Quot.sound]
+'DarkSnail.BlockBridge.block_bridge_causal_budget_nonincreasing' depends on axioms: [propext, Quot.sound]
+'DarkSnail.BlockBridge.block_bridge_causal_budget_128' depends on axioms: [propext, Quot.sound]
+'DarkSnail.BlockBridge.block_bridge_causal_pairs_per_block_128' depends on axioms: [propext, Quot.sound]
+'DarkSnail.BlockBridge.nb2_retargeting_count_invariant' does not depend on any axioms
+'DarkSnail.BlockBridge.nb2_retargeting_all_counts_invariant' does not depend on any axioms
+'DarkSnail.BlockBridge.nb2_retargeting_preserves_budget' does not depend on any axioms
+'DarkSnail.BlockBridge.nb2_retargeting_delta_budget_zero' depends on axioms: [propext]
+'DarkSnail.BlockBridge.sum_rat_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DarkSnail.BlockBridge.bridge_aware_weight_zero_on_bridge' depends on axioms: [propext, Quot.sound]
+'DarkSnail.BlockBridge.bridge_aware_residual_zero_overlap' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DarkSnail.BlockBridge.bridge_aware_residual_kl_disjoint' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DarkSnail.BlockBridge.bridge_aware_residual_total_bridge_mass_zero' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'DarkSnail.BlockBridge.causal_triangle_window_frac_monotonicity' does not depend on any axioms
+'DarkSnail.BlockBridge.causal_triangle_window_monotonicity' does not depend on any axioms
+'DarkSnail.BlockBridge.int_square_succ' depends on axioms: [propext, Quot.sound]
+'DarkSnail.BlockBridge.int_mul_succ' depends on axioms: [propext, Quot.sound]
+'DarkSnail.BlockBridge.causal_triangle_area_step' depends on axioms: [propext, Quot.sound]
+'DarkSnail.BlockBridge.causal_triangle_area_step_pos' depends on axioms: [propext, Quot.sound]

@@ -25,25 +25,29 @@ name: Organ-duplication advisory
 # etudiantes) sautent le job -- review bienveillante, pas de critere
 # interne de contenu.
 
+# ABSORBEE PAR LA VOIE RAPIDE (#22209, tranche 1b, voie A) -- le declencheur
+# `pull_request` est retire : ce job tourne desormais dans
+# `always-on-guards.yml :: Always-on commenters`, qui paie un checkout pour
+# trois organes au lieu d'un, et dont le registre porte les memes `paths:`.
+# Le fichier est CONSERVE : il porte le nom canonique du check-run (contrat
+# `check_absorbed_check_run_identity.py`) et reste le chemin de re-mesure
+# manuelle (`workflow_dispatch`). Retour arriere = restaurer le bloc `on:`
+# documente ci-dessous et retirer le garde du registre.
+# Ancien declencheur (a restaurer pour un retour arriere) :
+#   pull_request: [opened, synchronize, edited, reopened] sur main,
+#   paths: **/*.py, **/*.ipynb, **/*.lean, le detecteur, l'index, ce fichier.
 on:
-  pull_request:
-    types: [opened, synchronize, edited, reopened]
-    branches: [main]
-    paths:
-      - '**/*.py'
-      - '**/*.ipynb'
-      # Lakes Lean (#20210) : declarations + citations de source (index derive a l execution).
-      - '**/*.lean'
-      # Self-cover (#8822) : l'organe se liste lui-meme, sinon il ne peut
-      # plus se re-evaluer une fois ses paths sortis du diff.
-      - 'scripts/audit/detect_organ_duplication.py'
-      - 'scripts/audit/organ_api_index.yaml'
-      - '.github/workflows/organ-duplication-advisory.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
   pull-requests: write
+  # #24441 : le verrou d'ecriture du commentaire collant est une
+  # **etiquette du PR** (verrou reel, ajout atomique a un ensemble, arbitre
+  # par l'identifiant serveur). Sa liberation supprime la **definition**
+  # de l'etiquette au depot : c'est ce droit (`issues: write`) qui
+  # l'autorise. Les six workflows de publication le portent deja.
+  issues: write
 
 concurrency:
   group: organ-duplication-advisory-${{ github.ref }}
@@ -121,13 +125,33 @@ jobs:
           cat /tmp/organ_dup.out
           exit 0
 
-      - name: Post advisory comment
+      # #15511 -- UN SEUL commentaire collant par PR, une section par
+      # organe (`scripts/ci/advisory_sticky.py`). L'etat `clean` est un
+      # SUCCES : il ne parle plus (section retiree, ou rien ecrit si elle
+      # n'existe pas). Les etats `exempted`, `abstain` et la collision
+      # detectee restent publies : aucun d'eux n'est un succes.
+      - name: Publish (or retract) the organ-duplication advisory section
         if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: organ-duplication-advisory
-          message: |
-            ${{ steps.run.outputs.status == 'clean' && 'No organ-duplication: no added def/class collides with another series organ API (scripts/audit/organ_api_index.yaml).' || steps.run.outputs.status == 'exempted' && 'Organ duplication DETECTED but EXEMPTED: the PR body declares a pedagogical copy. The organ-first rule (5 questions) is satisfied by construction. If this copy grows (several consumer notebooks), ask the source series for an extraction instead.' || steps.run.outputs.status == 'abstain' && 'Organ-duplication detector ABSTAINS: merge-base unresolved or structural error -- no verdict. See workflow log.' || format('WARNING: added symbol(s) collide with another series organ API (organ-first rule, .claude/rules/organ-first-implementation.md). Answer the 5 questions in the PR body, or declare the pedagogical copy (« copie pedagogique declaree, motif : ... ») which whitens it. See the workflow log for the full collision list (demanding series -> bypassed organ -> symbol). Advisory, NOT a merge gate.', '') }}
+        # #24441 : la publication d'une section advisory ne doit JAMAIS
+        # rougir le check -- une erreur d'API (quota, 5xx, PR fermee entre
+        # temps) ou un refus de verrou sous contention degrade en section
+        # non ecrite, pas en job rouge. Meme contrat que
+        # `notebook-outputs-required.yml` (revue Hermes, 2026-11-04).
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          DETECTOR_STATUS: ${{ steps.run.outputs.status }}
+        run: |
+          set -e
+          if [ "$DETECTOR_STATUS" = "clean" ]; then
+            python3 scripts/ci/advisory_sticky.py --pr "$PR" --organ organ-duplication-advisory --clear
+          else
+            cat > /tmp/advisory_body.md <<'EOF'
+          ${{ steps.run.outputs.status == 'clean' && 'No organ-duplication: no added def/class collides with another series organ API (scripts/audit/organ_api_index.yaml).' || steps.run.outputs.status == 'exempted' && 'Organ duplication DETECTED but EXEMPTED: the PR body declares a pedagogical copy. The organ-first rule (5 questions) is satisfied by construction. If this copy grows (several consumer notebooks), ask the source series for an extraction instead.' || steps.run.outputs.status == 'abstain' && 'Organ-duplication detector ABSTAINS: merge-base unresolved or structural error -- no verdict. See workflow log.' || format('WARNING: added symbol(s) collide with another series organ API (organ-first rule, .claude/rules/organ-first-implementation.md). Answer the 5 questions in the PR body, or declare the pedagogical copy (« copie pedagogique declaree, motif : ... ») which whitens it. See the workflow log for the full collision list (demanding series -> bypassed organ -> symbol). Advisory, NOT a merge gate.', '') }}
 
-            Detector: `python scripts/audit/detect_organ_duplication.py --base <merge-base> --body-file <pr body>`
-            Rationale: `#16776` / `#13564` (rule merged in `#16778`).
+          Detector: `python scripts/audit/detect_organ_duplication.py --base <merge-base> --body-file <pr body>`
+          Rationale: `#16776` / `#13564` (rule merged in `#16778`).
+          EOF
+            python3 scripts/ci/advisory_sticky.py --pr "$PR" --organ organ-duplication-advisory --body-file /tmp/advisory_body.md
+          fi

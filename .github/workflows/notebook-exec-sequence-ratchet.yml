@@ -20,7 +20,6 @@ name: Notebook Exec Sequence Ratchet
 # fail-by-design") and get an explicit reviewer ack before merge.
 on:
   pull_request:
-    branches: [main]
     # `labeled` (#21332) : l'ack de l'echec fail-by-design se pose par le
     # LABEL `exec-sequence-ack` (double cle : label + marker
     # `[EXEC-SEQ-ACK] head=<sha40>`, cf scripts/ci/exec_sequence_ack_required.py).

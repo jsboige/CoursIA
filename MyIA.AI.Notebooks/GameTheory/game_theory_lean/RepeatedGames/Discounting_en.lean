@@ -1,19 +1,19 @@
 import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.Tactic
 
-import RepeatedGames.Stage
+import RepeatedGames.Stage_en
 
 /-!
   Discounting and geometric series (EN sibling)
   =============================================
 
   English mirror of `RepeatedGames/Discounting.lean` (FR-first canonical).
-  Convention i18n Lean ratifiée par ai-01 (2026-07-04, #4980 comment-4881909354) :
-  fichiers `.lean` distincts FR + EN siblings dans le même lake, les deux compilent.
-  Drift-CI detectable : contenu non-docstring byte-identique entre siblings.
+  Convention i18n Lean ratified by ai-01 (2026-07-04, #4980 comment-4881909354):
+  distinct `.lean` files FR + EN siblings in the same lake, both compile.
+  Drift-CI detectable: non-docstring content byte-identical between siblings.
 
-  Note méthodologique : traduction manuelle du FR canonique (pas de source
-  EN historique pré-Option A à recover, fichier FR-first depuis origin).
+  Methodological note: manual translation of the FR canonical (no historical
+  pre-Option-A EN source to recover; FR-first file since origin).
 
   We establish closed forms for the discounted payoff streams by the
   discount factor `δ ∈ [0, 1)`:
@@ -31,7 +31,7 @@ import RepeatedGames.Stage
 namespace RepeatedGames_en
 
 open Real
-open RepeatedGames
+open RepeatedGames_en
 
 /-- Geometric series: for `δ ∈ [0, 1)`, `Σ' n, δⁿ = (1 − δ)⁻¹`. -/
 lemma geom_sum {δ : ℝ} (h0 : 0 ≤ δ) (h1 : δ < 1) :

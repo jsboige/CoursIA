@@ -12,9 +12,12 @@ Les trois categories de #22783 et ce que l'organe en fait :
 
   EXECUTION     un appel chat (``*.chat.completions.create`` / ``.parse``,
                 ``*.responses.create``, ``*ChatCompletion.create`` legacy,
-                ``dspy.LM(...)``, ``ChatOpenAI(...)``) dont l'argument
-                ``model`` resout vers un identifiant obsolete -> FINDING,
-                exit 1.
+                ``dspy.LM(...)``, ``ChatOpenAI(...)``, ou HTTP brut
+                ``requests.post`` / ``httpx.post`` / ``urllib.request.
+                urlopen`` dont l'URL cible ``*/chat/completions``) dont
+                l'argument ``model`` (pour l'HTTP brut, dans le corps
+                ``json=``/``data=``) resout vers un identifiant obsolete ->
+                FINDING, exit 1.
   DOCUMENTATION une mention en CHAINE LITTERALE de code NON consommee par
                 un appel chat -> advisory ``DOC-MENTION`` sans effet sur
                 l'exit : la prose qui garde un modele obsolete doit le
@@ -68,6 +71,12 @@ LIMITES DECLAREES (pas de pretention d'analyse dynamique exhaustive) :
     Le cas Semantic-fleet (wrapper .NET du sous-module) se resout par
     lecture de l'organe source (``Program.cs`` au gitlink), pas par ce
     garde.
+  * Modules ``.py`` du depot : scannables (une unite par module, sans
+    report inter-cellules) quand la ligne de commande les nomme ou les
+    atteint par un dossier. Le garde CI, lui, reste borne aux carnets
+    (``iterate_paths=["**.ipynb"]`` dans le registre fast-lane, incident
+    #13220) : l'extension de perimetre du garde est une decision separee,
+    pas un effet de bord de cette option.
   * Les appels situes dans un corps de fonction sont resolus a l'etat du
     carnet au point de DEFINITION, avec reprise sur l'etat final si le nom
     n'etait pas encore lie -- pas a chaque appel runtime.
@@ -76,7 +85,13 @@ LIMITES DECLAREES (pas de pretention d'analyse dynamique exhaustive) :
     est rapporte ``unresolved``, jamais accuse.
   * Dictionnaires : seule la CLE DIRECTE d'un dictionnaire litteral plat
     (valeurs chaines) resout ; les dictionnaires imbriques ne sont pas
-    suivis.
+    suivis. La LISTE DE DICTIONNAIRES (``BATTERY = [{...}, {...}]``) est
+    suivie depuis #23387 : ``BATTERY[i]["cle"]`` et ``for cfg in BATTERY:``
+    puis ``cfg["cle"]`` resolvent chaque entree, et une entree obsolete est
+    ACCUSEE (la boucle l'execute, donc le site est atteignable) ; seul
+    l'index dynamique reste non resolu. Une batterie dont une entree n'est
+    pas resoluble statiquement n'est pas suivie du tout (pas de resolution
+    partielle devinee).
   * ``self.X`` : toute instanciation de la classe resolvant X vers un
     modele obsolete produit le finding (approximation documentee, sans
     desambiguation multi-instances).
@@ -151,6 +166,9 @@ class Binding:
 
 UNRESOLVED = Binding(None, "unresolved", "non resolu")
 
+#: Sentinelle d'absence (distingue "pas de binding precedent" d'une valeur None).
+_ABSENT = object()
+
 
 @dataclass
 class ClassInfo:
@@ -169,6 +187,8 @@ class Ctx:
     class_name: str | None = None
     locals: dict = field(default_factory=dict)       # nom -> Binding
     local_dicts: dict = field(default_factory=dict)  # nom -> {cle: Binding}
+    multi_dicts: dict = field(default_factory=dict)  # nom -> [{cle: Binding}, ...]
+    local_dict_model: dict = field(default_factory=dict)  # nom -> node "model"
 
 
 @dataclass
@@ -226,6 +246,34 @@ def iter_code_nodes(root: ast.AST):
             stack.extend(ast.iter_child_nodes(node))
 
 
+def _dict_model_entry(node: ast.AST) -> ast.AST | None:
+    """Node de la valeur de la cle "model" d'un littéral dict plat, ou None."""
+    if not isinstance(node, ast.Dict):
+        return None
+    for key, value in zip(node.keys, node.values):
+        if isinstance(key, ast.Constant) and key.value == "model":
+            return value
+    return None
+
+
+def _url_targets_chat_completions(node: ast.AST) -> bool:
+    """L'URL d'un appel HTTP cible ``*/chat/completions`` ?
+
+    Lit un littéral constant ET les parties littérales d'une f-string
+    (``f"{base}/chat/completions"``) : la base interpolée est invisible,
+    mais le suffixe routier est un littéral fixe.
+    """
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return "/chat/completions" in node.value
+    if isinstance(node, ast.JoinedStr):
+        for part in node.values:
+            if (isinstance(part, ast.Constant)
+                    and isinstance(part.value, str)
+                    and "/chat/completions" in part.value):
+                return True
+    return False
+
+
 def classify_chat_call(call: ast.Call, dspy_imported: bool) -> tuple[str, bool] | None:
     """Classe un Call en site chat -> (libelle, model_positionnel_bool).
 
@@ -249,6 +297,14 @@ def classify_chat_call(call: ast.Call, dspy_imported: bool) -> tuple[str, bool] 
         return "dspy.LM", True
     if len(parts) == 1 and parts == ["LM"] and dspy_imported:
         return "dspy.LM", True
+    # HTTP brut (forme non-SDK, #25072) : requests.post / httpx.post /
+    # urllib.request.urlopen dont l'URL cible */chat/completions. Le model
+    # n'est PAS l'argument positionnel (c'est l'URL) : positional=False,
+    # extraction du "model" dans le corps (json=/data=) via _http_model_node.
+    if (tuple(parts[-2:]) in (("requests", "post"), ("httpx", "post"))
+            or tuple(parts[-3:]) == ("urllib", "request", "urlopen")):
+        if call.args and _url_targets_chat_completions(call.args[0]):
+            return "http.chat.completions", False
     return None
 
 
@@ -317,6 +373,12 @@ class NotebookScanner:
         self.path = path
         self.module_values: dict[str, Binding] = {}
         self.dict_values: dict[str, dict[str, Binding]] = {}
+        #: Nom d'un dict littéral -> node de l'entree "model" (HTTP brut
+        #: ``json=<nom>``, #25072) ; le version scope local vit dans Ctx.
+        self.dict_model_nodes: dict[str, ast.AST] = {}
+        #: Batteries ``NAME = [{cle: valeur}, ...]`` (liste de dictionnaires) :
+        #: chaque entree est une table cle -> Binding (forme #23387 point 3).
+        self.multi_dict_values: dict[str, list[dict[str, Binding]]] = {}
         self.class_infos: dict[str, ClassInfo] = {}
         self.class_attr_values: dict[str, dict[str, list[Binding]]] = {}
         self.findings: list[dict] = []
@@ -358,6 +420,30 @@ class NotebookScanner:
                 self.stats["unparsed_cells"] += 1
         self._finalize()
 
+    def scan_python_source(self, source: str) -> None:
+        """Scanne un module ``.py`` : une seule unite, pas d'inter-cellules.
+
+        Le module est traite comme une cellule unique (index 0) : la meme
+        marche bornee s'applique (liaison au niveau module, defauts de
+        parametres, attributs d'instance via ``__init__``), sans le report
+        inter-cellules qui n'a pas de sens hors carnet. Les commentaires
+        restent ignores par l'AST ; un module non parsable est compte
+        ``unparsed_cells`` et jamais accuse.
+        """
+        self.stats["code_cells"] += 1
+        self._cell_sources[0] = source
+        kind, tree = cell_kind(source)
+        if kind == "python":
+            self.stats["python_cells"] += 1
+            if re.search(r"^\s*(import\s+dspy|from\s+dspy\b)", source, re.M):
+                self.dspy_imported = True
+            self.visit_block(tree.body, Ctx(cell_index=0))
+        elif kind.startswith("non_python"):
+            self.stats["non_python_cells"] += 1
+        else:
+            self.stats["unparsed_cells"] += 1
+        self._finalize()
+
     # -- marche des instructions -------------------------------------------
 
     def visit_block(self, stmts: list[ast.stmt], ctx: Ctx) -> None:
@@ -370,6 +456,9 @@ class NotebookScanner:
             return
         if isinstance(stmt, ast.ClassDef):
             self.handle_class(stmt, ctx)
+            return
+        if isinstance(stmt, ast.For):
+            self.handle_for(stmt, ctx)
             return
         if isinstance(stmt, ast.Assign):
             self.handle_assign(stmt, ctx)
@@ -460,18 +549,71 @@ class NotebookScanner:
     def handle_assign(self, stmt: ast.Assign, ctx: Ctx) -> None:
         self.scan_expr(stmt.value, ctx)
         dict_binding = self.dict_literal(stmt.value, ctx)
+        list_binding = self.list_dict_literal(stmt.value, ctx)
         binding = self.bind_value(stmt.value, ctx)
         for target in stmt.targets:
-            self.bind_target(target, binding, dict_binding, ctx)
+            self.bind_target(target, binding, dict_binding, ctx, list_binding)
+        # HTTP brut (#25072) : retenir l'entree "model" d'un littéral dict
+        # lié à un nom (à la scope de l'affectation) pour les appels json=<nom>.
+        if (len(stmt.targets) == 1
+                and isinstance(stmt.targets[0], ast.Name)):
+            entry = _dict_model_entry(stmt.value)
+            if entry is not None:
+                name = stmt.targets[0].id
+                if ctx.func_name is not None or ctx.class_name is not None:
+                    ctx.local_dict_model[name] = entry
+                else:
+                    self.dict_model_nodes[name] = entry
 
     def handle_annassign(self, stmt: ast.AnnAssign, ctx: Ctx) -> None:
         self.scan_expr(stmt.value, ctx)
         dict_binding = self.dict_literal(stmt.value, ctx)
+        list_binding = self.list_dict_literal(stmt.value, ctx)
         binding = self.bind_value(stmt.value, ctx)
-        self.bind_target(stmt.target, binding, dict_binding, ctx)
+        self.bind_target(stmt.target, binding, dict_binding, ctx, list_binding)
+        # HTTP brut (#25072) : même retention pour l'affectation annotée
+        # (``payload: dict = {"model": ...}``).
+        if isinstance(stmt.target, ast.Name):
+            entry = _dict_model_entry(stmt.value)
+            if entry is not None:
+                name = stmt.target.id
+                if ctx.func_name is not None or ctx.class_name is not None:
+                    ctx.local_dict_model[name] = entry
+                else:
+                    self.dict_model_nodes[name] = entry
+
+    def handle_for(self, stmt: ast.stmt, ctx: Ctx) -> None:
+        """Boucle sur une batterie de dictionnaires.
+
+        ``for cfg in BATTERY:`` lie ``cfg`` a la LISTE des tables de la
+        batterie : chaque entree est un tour de boucle, donc un site
+        atteignable. Le binding ne sort pas de la boucle (restauration
+        apres le corps), et un iterable qui n'est pas une batterie laisse
+        le corps se visiter exactement comme avant -- aucune resolution
+        existante n'est perdue.
+        """
+        self.scan_expr(stmt.iter, ctx)
+        tables = (self._multi_tables(stmt.iter.id, ctx)
+                  if isinstance(stmt.iter, ast.Name) else None)
+        if tables is not None and isinstance(stmt.target, ast.Name):
+            name = stmt.target.id
+            previous = ctx.multi_dicts.get(name, _ABSENT)
+            ctx.multi_dicts[name] = tables
+            try:
+                self.visit_block(stmt.body, ctx)
+            finally:
+                if previous is _ABSENT:
+                    ctx.multi_dicts.pop(name, None)
+                else:
+                    ctx.multi_dicts[name] = previous
+        else:
+            self.visit_block(stmt.body, ctx)
+        if stmt.orelse:
+            self.visit_block(stmt.orelse, ctx)
 
     def bind_target(self, target, binding: Binding,
-                    dict_binding: dict | None, ctx: Ctx) -> None:
+                    dict_binding: dict | None, ctx: Ctx,
+                    list_binding: list | None = None) -> None:
         if isinstance(target, ast.Name):
             if ctx.func_name is not None or ctx.class_name is not None:
                 # Scope LOCAL (corps de fonction ou de classe) : la locale
@@ -480,17 +622,29 @@ class NotebookScanner:
                 # globale (faux positif mesure, review PR #22800) -- et
                 # inversement une locale courante blanchirait un global
                 # obsolete consomme ailleurs.
-                if dict_binding is not None:
+                if list_binding is not None:
+                    ctx.multi_dicts[target.id] = list_binding
+                    ctx.locals.pop(target.id, None)
+                    ctx.local_dicts.pop(target.id, None)
+                elif dict_binding is not None:
                     ctx.local_dicts[target.id] = dict_binding
+                    ctx.multi_dicts.pop(target.id, None)
                 else:
                     ctx.locals[target.id] = binding
                     ctx.local_dicts.pop(target.id, None)
+                    ctx.multi_dicts.pop(target.id, None)
+            elif list_binding is not None:
+                self.multi_dict_values[target.id] = list_binding
+                self.module_values[target.id] = UNRESOLVED
+                self.dict_values.pop(target.id, None)
             elif dict_binding is not None:
                 self.dict_values[target.id] = dict_binding
                 self.module_values[target.id] = UNRESOLVED
+                self.multi_dict_values.pop(target.id, None)
             else:
                 self.module_values[target.id] = binding
                 self.dict_values.pop(target.id, None)
+                self.multi_dict_values.pop(target.id, None)
         elif isinstance(target, ast.Tuple):
             if ctx.func_name is not None or ctx.class_name is not None:
                 for elt in target.elts:
@@ -533,12 +687,39 @@ class NotebookScanner:
         label, positional = site
         self.stats["chat_sites"] += 1
         cell_id = self._cell_id(ctx.cell_index)
-        arg = model_arg_node(call, positional)
+        arg = (self._http_model_node(call, ctx)
+               if label == "http.chat.completions"
+               else model_arg_node(call, positional))
         if arg is None:
             self.unresolved.append(self._site(ctx, cell_id, call, label,
                                               "sans argument model"))
             return
         self.resolve_model_expr(arg, label, call, ctx, defer_self=True)
+
+    def _http_model_node(self, call: ast.Call, ctx: Ctx) -> ast.AST | None:
+        """Site HTTP brut (#25072) : le "model" vit dans le corps de la
+        requête (``json=``/``data=``), pas en argument ``model=``.
+
+        Deux formes : un littéral dict inline (``json={"model": ...}``) et
+        un dict lié à un nom (``payload = {"model": ...}`` puis
+        ``json=payload``), ce dernier résolu via ``dict_model_nodes``
+        (scope local d'abord, puis module).
+        """
+        body: ast.AST | None = None
+        for kw in call.keywords:
+            if kw.arg in ("json", "data"):
+                body = kw.value
+                break
+        if body is None and len(call.args) >= 2:
+            body = call.args[1]  # urllib.request.urlopen(url, data)
+        if body is None:
+            return None
+        if isinstance(body, ast.Dict):
+            return _dict_model_entry(body)
+        if isinstance(body, ast.Name):
+            return (ctx.local_dict_model.get(body.id)
+                    or self.dict_model_nodes.get(body.id))
+        return None
 
     def resolve_model_expr(self, node: ast.AST, label: str, call: ast.Call,
                            ctx: Ctx, defer_self: bool) -> None:
@@ -586,10 +767,31 @@ class NotebookScanner:
                    and isinstance(node.slice.value, str) else None)
             if table is not None and key is not None and key in table:
                 self._evaluate(table[key], label, ctx, call)
+            elif key is not None and self._multi_tables(dict_name, ctx):
+                # Batterie ``[{...}, {...}]`` : chaque entree est un tour de
+                # boucle, donc un site atteignable (defaut mesure : la
+                # batterie retombait en ``unresolved`` et le modele obsolete
+                # qu'elle porte n'etait JAMAIS accuse, #23387 point 3).
+                self._evaluate_many(
+                    [entry[key] for entry in self._multi_tables(dict_name, ctx)
+                     if key in entry], label, ctx, call)
             else:
                 self.unresolved.append(self._site(
                     ctx, cell_id, call, label,
                     f"cle {ast.dump(node.slice)[:40]} non resolue"))
+        elif (isinstance(node, ast.Subscript)
+              and isinstance(node.value, ast.Subscript)):
+            # ``BATTERY[0]["cle"]`` : entree designee par un index litteral.
+            tables = self._indexed_tables(node.value, ctx)
+            key = (node.slice.value if isinstance(node.slice, ast.Constant)
+                   and isinstance(node.slice.value, str) else None)
+            if tables is not None and key is not None:
+                self._evaluate_many([entry[key] for entry in tables
+                                     if key in entry], label, ctx, call)
+            else:
+                self.unresolved.append(self._site(
+                    ctx, cell_id, call, label,
+                    f"index {ast.dump(node.value)[:40]} non resolu"))
         else:
             reason = ("f-string dynamique" if isinstance(node, ast.JoinedStr)
                       else f"expression dynamique ({type(node).__name__})")
@@ -658,6 +860,35 @@ class NotebookScanner:
                 "via": binding.origin,
             })
 
+    def _evaluate_many(self, bindings: list[Binding], label: str, ctx: Ctx,
+                       call: ast.Call) -> None:
+        """Evaluate the candidate bindings of the SAME key across the entries
+        of a battery.
+
+        The loop over a battery executes every entry, so an entry carrying
+        an obsolete model IS a reachable site : it is flagged, and ``via``
+        names the entry index. One finding per distinct model (two entries
+        on ``gpt-4o-mini`` are one model, not two). Entries that do not
+        resolve are dropped -- never accused -- and a battery with no
+        resolved entry at all is reported ``unresolved``.
+        """
+        seen: set[str] = set()
+        resolved = 0
+        for binding in bindings:
+            if binding.value is None:
+                continue
+            resolved += 1
+            normalized = normalize_model(binding.value)
+            if normalized in seen:
+                continue
+            seen.add(normalized)
+            self._evaluate(binding, label, ctx, call)
+        if resolved == 0:
+            cell_id = self._cell_id(ctx.cell_index)
+            self.unresolved.append(self._site(
+                ctx, cell_id, call, label,
+                "batterie de dictionnaires sans entree resolue"))
+
     def _site(self, ctx: Ctx, cell_id: str, call: ast.Call, label: str,
               reason: str) -> dict:
         return {"path": self.path, "cell": ctx.cell_index,
@@ -675,6 +906,23 @@ class NotebookScanner:
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
             return Binding(node.value, "literal",
                            f"litteral (cell {ctx.cell_index})", id(node))
+        if isinstance(node, ast.BoolOp) and isinstance(node.op, ast.Or):
+            # ``variable or os.environ.get("M", "<modele>")`` : les operandes
+            # s'evaluent de gauche a droite et le premier litteral VRAI
+            # court-circuite, donc le premier litteral declare est la valeur
+            # statiquement visible -- et c'est le repli par defaut de la
+            # chaine. Sans ce cas, la chaine n'etait ni findee ni meme
+            # ``unresolved`` proprement : le litteral restait une mention doc
+            # et le site chat tombait en ``unresolved`` (faux negatif mesure
+            # sur ``scripts/livecoding_video_pipeline.py``, repli
+            # ``gpt-4o-mini``).
+            for operand in node.values:
+                candidate = self.bind_value(operand, ctx)
+                if candidate.value is not None:
+                    return Binding(candidate.value, candidate.kind,
+                                   f"repli 'or' -> {candidate.origin}",
+                                   candidate.node_id)
+            return Binding(None, "unresolved", "chaine 'or' sans litteral")
         if isinstance(node, ast.Call):
             parts = attr_chain(node.func)
             if parts and (tuple(parts[-1:]) == ("getenv",)
@@ -720,6 +968,70 @@ class NotebookScanner:
                     f'cle "{key.value}" du dictionnaire (cell {ctx.cell_index})',
                     id(value))
         return table or None
+
+    def list_dict_literal(self, node: ast.AST,
+                          ctx: Ctx) -> list[dict[str, Binding]] | None:
+        """Batterie de modeles ecrite en LISTE DE DICTIONNAIRES.
+
+        Forme pedagogique courante, tres lisible dans un carnet :
+
+            BATTERY = [{"model": "gpt-5.6-luna", "label": "mini"},
+                       {"model": "gpt-4o-mini", "label": "ancien"}]
+            for cfg in BATTERY:
+                client.chat.completions.create(model=cfg["model"], ...)
+
+        Chaque entree passe par ``dict_literal`` ; une seule entree non
+        resoluble fait retomber la batterie entiere en non suivie (pas de
+        resolution partielle devinee). Les origines portent l'indice de
+        l'entree, ce qui localise le modele obsolete dans le finding.
+        """
+        if not isinstance(node, ast.List) or not node.elts:
+            return None
+        tables: list[dict[str, Binding]] = []
+        for index, element in enumerate(node.elts):
+            table = self.dict_literal(element, ctx)
+            if table is None:
+                return None
+            tables.append({
+                key: Binding(value.value, value.kind,
+                             f"entree {index} -> {value.origin}",
+                             value.node_id)
+                for key, value in table.items()
+            })
+        return tables
+
+    def _multi_tables(self, name: str, ctx: Ctx
+                      ) -> list[dict[str, Binding]] | None:
+        """Tables d'une batterie designee par ``name``, ou None.
+
+        Un nom LOCAL (scalaire, parametre ou dictionnaire plat) MASQUE la
+        batterie globale -- meme doctrine que la cle de dictionnaire
+        (defaut 3, review PR #22800) : jamais de repli silencieux sur la
+        table module quand le nom est lie localement.
+        """
+        if name in ctx.multi_dicts:
+            return ctx.multi_dicts[name]
+        if name in ctx.locals or name in ctx.local_dicts or (
+                ctx.func_params is not None and name in ctx.func_params):
+            return None
+        return self.multi_dict_values.get(name)
+
+    def _indexed_tables(self, expr: ast.Subscript, ctx: Ctx
+                        ) -> list[dict[str, Binding]] | None:
+        """``BATTERY[0]["cle"]`` : l'entree designee par un index entier
+        litteral. Tout index dynamique reste non resolu (jamais devine)."""
+        if not isinstance(expr.value, ast.Name):
+            return None
+        index = (expr.slice.value
+                 if isinstance(expr.slice, ast.Constant)
+                 and isinstance(expr.slice.value, int)
+                 and not isinstance(expr.slice.value, bool) else None)
+        if index is None:
+            return None
+        tables = self._multi_tables(expr.value.id, ctx)
+        if tables is None or not 0 <= index < len(tables):
+            return None
+        return [tables[index]]
 
     def resolve_instantiation(self, call: ast.Call, class_name: str,
                               ctx: Ctx) -> None:
@@ -816,6 +1128,20 @@ class NotebookScanner:
 # Analyse d'un carnet
 # ---------------------------------------------------------------------------
 
+def _report(path: str, kind: str, scanner: NotebookScanner) -> dict:
+    if kind == "python":
+        scanner.stats["python_modules"] = 1
+    return {
+        "kind": kind,
+        "notebook": path,
+        "findings": scanner.findings,
+        "doc_mentions": scanner.doc_mentions,
+        "doc_marked_cells": scanner.doc_marked_cells,
+        "unresolved": scanner.unresolved,
+        "stats": scanner.stats,
+    }
+
+
 def analyze_notebook(path: str) -> dict:
     p = Path(path)
     if not p.exists():
@@ -826,30 +1152,60 @@ def analyze_notebook(path: str) -> dict:
         raise ValueError(f"JSON invalide: {path}: {exc}") from exc
     scanner = NotebookScanner(path)
     scanner.scan(notebook.get("cells", []))
-    return {
-        "notebook": path,
-        "findings": scanner.findings,
-        "doc_mentions": scanner.doc_mentions,
-        "doc_marked_cells": scanner.doc_marked_cells,
-        "unresolved": scanner.unresolved,
-        "stats": scanner.stats,
-    }
+    return _report(path, "notebook", scanner)
+
+
+def analyze_python_module(path: str) -> dict:
+    """Scanne un module ``.py`` du depot (hors carnet).
+
+    Les carnets ne sont pas le seul lieu d'un appel chat : des modules
+    consommes par les carnets portent des replis litteraux (mesure
+    firsthand : ``scripts/livecoding_video_pipeline.py`` repliait sur un
+    ``os.environ.get("OPENAI_MODEL", "<modele obsolete>")``). La detection
+    y est identique, la forme du rapport aussi, seule l'unite change.
+    """
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(path)
+    try:
+        source = p.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"encodage invalide: {path}: {exc}") from exc
+    scanner = NotebookScanner(path)
+    scanner.scan_python_source(source)
+    return _report(path, "python", scanner)
 
 
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
-def collect_notebooks(paths: list[str]) -> list[Path]:
-    out: list[Path] = []
+SOURCE_SUFFIXES = (".ipynb", ".py")
+
+
+def source_kind(p: Path) -> str:
+    return "notebook" if p.suffix == ".ipynb" else "python"
+
+
+def collect_sources(paths: list[str]) -> list[tuple[Path, str]]:
+    """Rend les unites a scanner : ``(chemin, "notebook"|"python")``.
+
+    Un dossier descend sur les deux suffixes ; un fichier est accepte s'il
+    porte l'un des deux. Ce que la ligne de commande accepte ne dit PAS ce que
+    le garde CI itere : le cablage fast-lane reste volontairement borne aux
+    carnets (``iterate_paths=["**.ipynb"]``, incident #13220), le module
+    n'etant atteignable que par un appel explicite.
+    """
+    out: list[tuple[Path, str]] = []
     for raw in paths:
         p = Path(raw)
         if p.is_dir():
-            out.extend(sorted(p.rglob("*.ipynb")))
-        elif p.suffix == ".ipynb":
-            out.append(p)
+            for pattern in ("*.ipynb", "*.py"):
+                out.extend((q, source_kind(q)) for q in sorted(p.rglob(pattern)))
+        elif p.suffix in SOURCE_SUFFIXES:
+            out.append((p, source_kind(p)))
         else:
-            raise FileNotFoundError(f"ni carnet ni dossier: {raw}")
+            raise FileNotFoundError(f"ni carnet, ni module .py, ni dossier: {raw}")
     return out
 
 
@@ -861,32 +1217,34 @@ def git_output(args: list[str], cwd: str) -> str:
     return proc.stdout
 
 
-def filter_base(notebooks: list[Path], base: str) -> tuple[list[Path], str]:
-    """Restreint aux carnets modifies depuis merge-base(base, HEAD)."""
+def filter_base(sources: list[tuple[Path, str]], base: str
+                ) -> tuple[list[tuple[Path, str]], str]:
+    """Restreint aux unites modifiees depuis merge-base(base, HEAD)."""
     top = git_output(["rev-parse", "--show-toplevel"], ".").strip()
     merge_base = git_output(["merge-base", base, "HEAD"], top).strip()
-    rel_notebooks = []
-    for p in notebooks:
+    rel_sources = []
+    for p, kind in sources:
         abs_p = p.resolve()
         try:
             rel = abs_p.relative_to(top).as_posix()
         except ValueError:
             rel = abs_p.as_posix()
-        rel_notebooks.append((p, rel))
+        rel_sources.append((p, kind, rel))
     changed = git_output(
         ["diff", "--name-only", merge_base, "--",
-         *[rel for _, rel in rel_notebooks]], top).split()
+         *[rel for _, _, rel in rel_sources]], top).split()
     changed_set = set(changed)
-    return [p for p, rel in rel_notebooks if rel in changed_set], merge_base
+    return [(p, kind) for p, kind, rel in rel_sources if rel in changed_set], \
+        merge_base
 
 
 def print_text(reports: list[dict], merge_base: str | None) -> None:
     findings = [f for r in reports for f in r["findings"]]
     mentions = [m for r in reports for m in r["doc_mentions"]]
     unresolved = [u for r in reports for u in r["unresolved"]]
-    stats = {k: sum(r["stats"][k] for r in reports) for k in
+    stats = {k: sum(r["stats"].get(k, 0) for r in reports) for k in
              ("code_cells", "python_cells", "non_python_cells",
-              "unparsed_cells", "chat_sites")}
+              "unparsed_cells", "chat_sites", "python_modules")}
     print("== check_obsolete_chat_model (#22783) ==")
     if merge_base:
         print(f"perimetre : carnets modifies depuis merge-base {merge_base}")
@@ -904,11 +1262,14 @@ def print_text(reports: list[dict], merge_base: str | None) -> None:
           f"resolus statiquement (rapportes, jamais accuses) ; "
           f"{len(mentions)} mention(s) doc sans marqueur, {marked} cellule(s) "
           f"marquee(s).")
+    print(f"-- unites : {sum(1 for r in reports if r.get('kind') != 'python')} "
+          f"carnet(s), {stats['python_modules']} module(s) .py.")
     print(f"-- cellules : {stats['python_cells']} python, "
           f"{stats['non_python_cells']} non-python, {stats['unparsed_cells']} "
           f"non-parsables, {stats['chat_sites']} site(s) chat vus.")
     print("-- limites : AST Python seul (markdown/raw/.NET non scannes) ; "
-          "resolution bornee (voir en-tete du script).")
+          "resolution bornee (voir en-tete du script) ; un module .py est une "
+          "unite, sans report inter-cellules.")
 
 
 def main(argv=None) -> int:
@@ -916,7 +1277,7 @@ def main(argv=None) -> int:
         description="Detecte les appels chat ciblant un modele obsolete "
                     "(regle #22783).")
     parser.add_argument("paths", nargs="+",
-                        help="carnets .ipynb ou dossiers a scanner")
+                        help="carnets .ipynb, modules .py ou dossiers a scanner")
     parser.add_argument("--json", action="store_true", dest="as_json",
                         help="sortie JSON structuree")
     parser.add_argument("--obsolete", action="append", default=[],
@@ -933,11 +1294,13 @@ def main(argv=None) -> int:
             set(OBSOLETE_CHAT_MODELS) | set(args.obsolete))
 
     try:
-        notebooks = collect_notebooks(args.paths)
+        sources = collect_sources(args.paths)
         merge_base = None
         if args.base:
-            notebooks, merge_base = filter_base(notebooks, args.base)
-        reports = [analyze_notebook(str(p)) for p in notebooks]
+            sources, merge_base = filter_base(sources, args.base)
+        reports = [analyze_notebook(str(p)) if kind == "notebook"
+                   else analyze_python_module(str(p))
+                   for p, kind in sources]
     except (FileNotFoundError, ValueError, RuntimeError) as exc:
         print(f"ERREUR: {exc}", file=sys.stderr)
         return 2
@@ -953,8 +1316,11 @@ def main(argv=None) -> int:
             "doc_mentions": [m for r in reports for m in r["doc_mentions"]],
             "unresolved": [u for r in reports for u in r["unresolved"]],
             "stats": {
-                "notebooks": len(notebooks),
-                **{k: sum(r["stats"][k] for r in reports) for k in
+                "notebooks": sum(1 for r in reports
+                                 if r.get("kind") != "python"),
+                "python_modules": sum(1 for r in reports
+                                      if r.get("kind") == "python"),
+                **{k: sum(r["stats"].get(k, 0) for r in reports) for k in
                    ("code_cells", "python_cells", "non_python_cells",
                     "unparsed_cells", "chat_sites")},
                 "doc_marked_cells": sum(r["doc_marked_cells"]

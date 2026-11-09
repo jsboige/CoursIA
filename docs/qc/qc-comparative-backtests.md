@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-30
+
 # QC Comparative Backtests — Strategy Catalog
 
 **Issue** : See #1630

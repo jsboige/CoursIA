@@ -20,10 +20,10 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 269 |
+| Notebooks | 278 |
 | PRODUCTION | 0 |
-| BETA | 240 |
-| ALPHA | 29 |
+| BETA | 254 |
+| ALPHA | 24 |
 
 ## GenAI/00-GenAI-Environment (7 notebooks)
 
@@ -46,7 +46,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 3 | [3D-04 — 3DGS avec gsplat : brancher le vrai moteur](../../MyIA.AI.Notebooks/GenAI/3D/3D-04-3DGS-From-Scratch-with-gsplat.ipynb) | ALPHA | Non |
 | 4 | [3D-05 — Tradeoffs d'optimisation 3DGS : densification,…](../../MyIA.AI.Notebooks/GenAI/3D/3D-05-3DGS-Optimization-Tradeoffs.ipynb) | ALPHA | Non |
 
-## GenAI/Audio (40 notebooks)
+## GenAI/Audio (41 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -68,36 +68,37 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 16 | [Orchestration de Pipelines Audio](../../MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb) | BETA | Non |
 | 17 | [OpenAI Realtime Voice API](../../MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb) | BETA | Non |
 | 18 | [Création de Contenu Audio Educatif](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb) | BETA | Non |
-| 19 | [P3 - Annotation Prosodique pour TTS Agentique](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-10-Annotation-Prosodique.ipynb) | BETA | Non |
-| 20 | [P4 — Generation TTS pour Audiobook](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-11-Generation-TTS.ipynb) | BETA | Non |
-| 21 | [P5 — Compilation Audio pour Audiobook](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-12-Compilation-Audio.ipynb) | BETA | Oui |
-| 22 | [Audiobook Agentique avec FishAudio S2-Pro](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb) | BETA | Non |
-| 23 | [Voice Leading Rendu GenAI — donner un spectre aux…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb) | BETA | Non |
-| 24 | [Comprehension Musicale avec MERT2 : Embeddings et…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-15-MERT2-Music-Understanding.ipynb) | BETA | Non |
-| 25 | [De l'Audio a la Partition : SheetSage2](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-16-SheetSage2-Audio-To-Score.ipynb) | BETA | Non |
-| 26 | [Transcription Note a Note : basic-pitch](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-17-Basic-Pitch-Transcription.ipynb) | BETA | Oui |
-| 27 | [Analyse musicale classique (MIR) : beat, tempo,…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-17-MIR-Classique.ipynb) | BETA | Oui |
-| 28 | [Évaluation subjective (MOS) : protocole d'écoute et…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-19-Evaluation-MOS.ipynb) | BETA | Oui |
-| 29 | [Pipeline de Transcription et Sous-titrage](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb) | BETA | Non |
-| 30 | [Workflow de Composition Musicale](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb) | BETA | Non |
-| 31 | [Synchronisation Audio-Video (Passerelle)](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) | BETA | Non |
-| 32 | [Live Coding Musical pilote par LLM](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-5-LiveCoding-LLM-Music.ipynb) | BETA | Non |
-| 33 | [Pipeline Audiobook Agentique](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-6-Audiobook-Pipeline.ipynb) | BETA | Non |
-| 34 | [Benchmark TTS : Comparaison des Modèles Vocaux pour…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb) | BETA | Non |
-| 35 | [Lecture Analytique pour Audiobook](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-8-Lecture-Analytique.ipynb) | BETA | Oui |
-| 36 | [Voice Casting : Attribution de voix TTS par personnage](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-9-Voice-Casting.ipynb) | BETA | Non |
-| 37 | [05-1 — Diffusion latente audio depuis zéro](../../MyIA.AI.Notebooks/GenAI/Audio/05-Diffusion-from-scratch/05-1-AudioDiffusion-Latent-From-Scratch.ipynb) | BETA | Non |
-| 38 | [Vocodeur neuronal from scratch : un mini HiFi-GAN](../../MyIA.AI.Notebooks/GenAI/Audio/05-Diffusion-from-scratch/05-2-Vocoder-From-Scratch.ipynb) | BETA | Non |
-| 39 | [Le vocodeur pré-entraîné : le geste industriel](../../MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-2-HiFiGAN-SOTA-Comparison.ipynb) | BETA | Non |
-| 40 | [Comparaison Bloc A (from scratch) vs Bloc B (SOTA) —…](../../MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-3-AudioDiffusion-Comparison-A-vs-B.ipynb) | ALPHA | Non |
+| 19 | [Voice Leading Rendu GenAI — donner un spectre aux…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb) | BETA | Non |
+| 20 | [Pipeline de Transcription et Sous-titrage](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb) | BETA | Non |
+| 21 | [Workflow de Composition Musicale](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb) | BETA | Non |
+| 22 | [Synchronisation Audio-Video (Passerelle)](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) | BETA | Non |
+| 23 | [Live Coding Musical pilote par LLM](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-5-LiveCoding-LLM-Music.ipynb) | BETA | Non |
+| 24 | [P3 - Annotation Prosodique pour TTS Agentique](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb) | BETA | Non |
+| 25 | [P4 — Generation TTS pour Audiobook](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb) | BETA | Non |
+| 26 | [P5 — Compilation Audio pour Audiobook](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-12-Compilation-Audio.ipynb) | BETA | Oui |
+| 27 | [Audiobook Agentique avec FishAudio S2-Pro](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb) | BETA | Non |
+| 28 | [Pipeline Audiobook Agentique](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-6-Audiobook-Pipeline.ipynb) | BETA | Non |
+| 29 | [Lecture Analytique pour Audiobook](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb) | BETA | Oui |
+| 30 | [Comprehension Musicale avec MERT2 : Embeddings et…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-15-MERT2-Music-Understanding.ipynb) | BETA | Non |
+| 31 | [De l'Audio a la Partition : SheetSage2](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-16-SheetSage2-Audio-To-Score.ipynb) | BETA | Non |
+| 32 | [Analyse musicale classique (MIR) : beat, tempo,…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-17-MIR-Classique.ipynb) | BETA | Oui |
+| 33 | [Transcription Note a Note : basic-pitch](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-18-Basic-Pitch-Transcription.ipynb) | BETA | Oui |
+| 34 | [Separation Avancee de Sources — Qualite Mesuree sur un…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-20-Separation-Avancee-Qualite.ipynb) | BETA | Non |
+| 35 | [Évaluation subjective (MOS) : protocole d'écoute et…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-19-Evaluation-MOS.ipynb) | BETA | Oui |
+| 36 | [Benchmark TTS : Comparaison des Modèles Vocaux pour…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb) | BETA | Non |
+| 37 | [Voice Casting : Attribution de voix TTS par personnage](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb) | BETA | Non |
+| 38 | [05-1 — Diffusion latente audio depuis zéro](../../MyIA.AI.Notebooks/GenAI/Audio/05-Diffusion-from-scratch/05-1-AudioDiffusion-Latent-From-Scratch.ipynb) | BETA | Non |
+| 39 | [Vocodeur neuronal from scratch : un mini HiFi-GAN](../../MyIA.AI.Notebooks/GenAI/Audio/05-Diffusion-from-scratch/05-2-Vocoder-From-Scratch.ipynb) | BETA | Non |
+| 40 | [Le vocodeur pré-entraîné : le geste industriel](../../MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-2-HiFiGAN-SOTA-Comparison.ipynb) | BETA | Non |
+| 41 | [Comparaison Bloc A (from scratch) vs Bloc B (SOTA) —…](../../MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-3-AudioDiffusion-Comparison-A-vs-B.ipynb) | ALPHA | Non |
 
 ## GenAI/CaseStudies (6 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Duel Verbal : Barbie vs l'Âne de Shrek](../../MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb) | ALPHA | Non |
-| 2 | [Note : mode batch](../../MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb) | ALPHA | Non |
-| 3 | [Note: batch mode](../../MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python_en.ipynb) | ALPHA | Non |
+| 1 | [Duel Verbal : Barbie vs l'Âne de Shrek](../../MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb) | BETA | Non |
+| 2 | [Vue d'ensemble : un duel d'agents Père Fouras vs…](../../MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb) | ALPHA | Non |
+| 3 | [Overview: an agent duel between Père Fouras and Laurent…](../../MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python_en.ipynb) | ALPHA | Non |
 | 4 | [Docteur vs ChatGPT : Chatbot medical multi-agent](../../MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb) | BETA | Non |
 | 5 | [Doctor vs ChatGPT: Multi-Agent Medical Chatbot](../../MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot_en.ipynb) | ALPHA | Non |
 | 6 | [Générateur de Recettes PDF](../../MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb) | BETA | Non |
@@ -112,27 +113,35 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 4 | [04 — Matrice de couverture cross-notebooks](../../MyIA.AI.Notebooks/GenAI/FallacyDetection/04_coverage_matrix.ipynb) | BETA | Oui |
 | 5 | [05 — Constructeur du dataset de Phase 2 : produit…](../../MyIA.AI.Notebooks/GenAI/FallacyDetection/05_dataset_builder.ipynb) | BETA | Oui |
 
-## GenAI/FineTuning (15 notebooks)
+## GenAI/FineTuning (17 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | [FT-00a : LoRA from scratch — démonter l'adaptation…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-00a-LoRA-from-scratch-Python.ipynb) | BETA | Non |
 | 2 | [FT-00b : LoRA hyperparams from scratch — ablation rang…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb) | BETA | Non |
 | 3 | [FT-00c : LoRA SOTA — la même adaptation, cette fois…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb) | BETA | Non |
-| 4 | [FT-00d : LoRA + QLoRA SOTA Comparison](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-00d-LoRA-QLoRA-SOTA-Comparison-Python.ipynb) | BETA | Non |
-| 5 | [FT-01 : Introduction au Fine-Tuning](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb) | BETA | Non |
-| 6 | [FT-01: Introduction to Fine-Tuning](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python_en.ipynb) | BETA | Non |
-| 7 | [FT-02 : QLoRA — Fine-Tuning avec Quantization](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb) | BETA | Non |
-| 8 | [FT-02: QLoRA — Fine-Tuning with Quantization](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python_en.ipynb) | BETA | Non |
-| 9 | [FT-03 : Supervised Fine-Tuning (SFT) — Enseigner un…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb) | BETA | Non |
-| 10 | [FT-03: Supervised Fine-Tuning (SFT) — Teaching a…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python_en.ipynb) | BETA | Non |
-| 11 | [FT-04 : RLHF et Alignement — Préférences Humaines et…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb) | BETA | Non |
-| 12 | [FT-04: RLHF and Alignment — Human Preferences and DPO](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python_en.ipynb) | BETA | Non |
-| 13 | [FT-05 : Fusion et Routage de Modèles -- Combiner les…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb) | BETA | Non |
-| 14 | [FT-05: Model Merging and Routing -- Combining…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python_en.ipynb) | BETA | Non |
-| 15 | [FT-06 : LoRA vision-langage — fine-tune du décodeur de…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb) | BETA | Non |
+| 4 | [FT-00c: LoRA SOTA — the same adaptation, this time with…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python_en.ipynb) | BETA | Non |
+| 5 | [FT-00d : LoRA + QLoRA SOTA Comparison](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-00d-LoRA-QLoRA-SOTA-Comparison-Python.ipynb) | BETA | Non |
+| 6 | [FT-01 : Introduction au Fine-Tuning](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb) | BETA | Non |
+| 7 | [FT-01: Introduction to Fine-Tuning](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python_en.ipynb) | BETA | Non |
+| 8 | [FT-02 : QLoRA — Fine-Tuning avec Quantization](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb) | BETA | Non |
+| 9 | [FT-02: QLoRA — Fine-Tuning with Quantization](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python_en.ipynb) | BETA | Non |
+| 10 | [FT-03 : Supervised Fine-Tuning (SFT) — Enseigner un…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb) | BETA | Non |
+| 11 | [FT-03: Supervised Fine-Tuning (SFT) — Teaching a…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python_en.ipynb) | BETA | Non |
+| 12 | [FT-04 : RLHF et Alignement — Préférences Humaines et…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb) | BETA | Non |
+| 13 | [FT-04: RLHF and Alignment — Human Preferences and DPO](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python_en.ipynb) | BETA | Non |
+| 14 | [FT-05 : Fusion et Routage de Modèles -- Combiner les…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb) | BETA | Non |
+| 15 | [FT-05: Model Merging and Routing -- Combining…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python_en.ipynb) | BETA | Non |
+| 16 | [FT-06 : LoRA vision-langage — fine-tune du décodeur de…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb) | BETA | Non |
+| 17 | [FT-06: Vision-language LoRA — fine-tuning the decoder…](../../MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python_en.ipynb) | BETA | Non |
 
-## GenAI/Image (28 notebooks)
+## GenAI/HumorDetection (1 notebooks)
+
+| # | Notebook | Maturité | Exécutable |
+|---|----------|----------|------------|
+| 1 | [01 — Détection d'humour : le problème, binaire contre…](../../MyIA.AI.Notebooks/GenAI/HumorDetection/01_humor_intro.ipynb) | BETA | Oui |
+
+## GenAI/Image (30 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -149,7 +158,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 11 | [Z-Image (Lumina-2) : Generation Avancee avec ComfyUI](../../MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb) | BETA | Non |
 | 12 | [Bonsai-Image : Generation Text-to-Image avec…](../../MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-5-Bonsai-Image-Ternary.ipynb) | BETA | Non |
 | 13 | [02-6 - Modeles generatifs few-step : IMM et TVM](../../MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-6-Few-Step-Generative-Models-IMM-TVM.ipynb) | BETA | Non |
-| 14 | [Comparaison Multi-Modèles : SDXL Lightning-4step,…](../../MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-1-Multi-Model-Comparison.ipynb) | BETA | Non |
+| 14 | [Comparaison Multi-Modèles : SDXL Lightning-4step, Qwen…](../../MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-1-Multi-Model-Comparison.ipynb) | BETA | Non |
 | 15 | [Workflow Orchestration - Chaînage Multi-Modèles](../../MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-2-Workflow-Orchestration.ipynb) | BETA | Non |
 | 16 | [Performance Optimization pour la Génération d'Images](../../MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-3-Performance-Optimization.ipynb) | BETA | Non |
 | 17 | [Pipeline VLM in-graph : character design depuis une…](../../MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-4-VLM-Character-Design-Workflow.ipynb) | BETA | Non |
@@ -158,30 +167,35 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 20 | [Production Integration - GenAI](../../MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-3-Production-Integration.ipynb) | BETA | Non |
 | 21 | [Génération d’un patron de point de croix à partir d’une…](../../MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb) | ALPHA | Non |
 | 22 | [MiniMax H3 (Hailuo) — Génération d'images par le…](../../MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-5-MiniMax-Cloud-Image.ipynb) | BETA | Non |
-| 23 | [05-0 — Générateurs symboliques : l'art algorithmique…](../../MyIA.AI.Notebooks/GenAI/Image/05-History/05-0-Generateurs-Symboliques.ipynb) | BETA | Oui |
-| 24 | [05-0b — La démoscène : l'intro comme argument de…](../../MyIA.AI.Notebooks/GenAI/Image/05-History/05-0b-Demoscene-Intros-Procedurales-Python.ipynb) | BETA | Non |
-| 25 | [05-0c — Low-complexity art : la beauté comme…](../../MyIA.AI.Notebooks/GenAI/Image/05-History/05-0c-Low-Complexity-Art-Python.ipynb) | BETA | Non |
-| 26 | [05-0d — GANs : des portraits adversariaux au moment NFT](../../MyIA.AI.Notebooks/GenAI/Image/05-History/05-0d-GANs-Portraits-Moment-NFT.ipynb) | BETA | Non |
-| 27 | [05-1 — DiscoDiffusion : la CLIP-guided diffusion…](../../MyIA.AI.Notebooks/GenAI/Image/05-History/05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb) | BETA | Non |
-| 28 | [05-2 — CLIPasso : le sketching sémantique par CLIP…](../../MyIA.AI.Notebooks/GenAI/Image/05-History/05-2-CLIPasso-Semantic-Sketching.ipynb) | BETA | Non |
+| 23 | [AesCode-8B — Documents visuels générés comme code](../../MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-6-AesCode-Visual-Documents.ipynb) | BETA | Non |
+| 24 | [05-0 — Générateurs symboliques : l'art algorithmique…](../../MyIA.AI.Notebooks/GenAI/Image/05-History/05-0-Generateurs-Symboliques.ipynb) | BETA | Oui |
+| 25 | [05-0b — La démoscène : l'intro comme argument de…](../../MyIA.AI.Notebooks/GenAI/Image/05-History/05-0b-Demoscene-Intros-Procedurales-Python.ipynb) | BETA | Non |
+| 26 | [05-0c — Low-complexity art : la beauté comme…](../../MyIA.AI.Notebooks/GenAI/Image/05-History/05-0c-Low-Complexity-Art-Python.ipynb) | BETA | Non |
+| 27 | [05-0d — GANs : des portraits adversariaux au moment NFT](../../MyIA.AI.Notebooks/GenAI/Image/05-History/05-0d-GANs-Portraits-Moment-NFT.ipynb) | BETA | Non |
+| 28 | [05-0e — Une seule règle pour mesurer la longueur de…](../../MyIA.AI.Notebooks/GenAI/Image/05-History/05-0e-MDL-Mesure-Unique-Python.ipynb) | BETA | Oui |
+| 29 | [05-1 — DiscoDiffusion : la CLIP-guided diffusion…](../../MyIA.AI.Notebooks/GenAI/Image/05-History/05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb) | BETA | Non |
+| 30 | [05-2 — CLIPasso : le sketching sémantique par CLIP…](../../MyIA.AI.Notebooks/GenAI/Image/05-History/05-2-CLIPasso-Semantic-Sketching.ipynb) | BETA | Non |
 
-## GenAI/Integrations-DotNet (13 notebooks)
+## GenAI/Integrations-DotNet (16 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Aspire : orchestrer notre pile GenAI en C#](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/01-Aspire-Orchestration-GenAi.ipynb) | BETA | Non |
-| 2 | [Aspire : orchestrer la pile GenAI réelle du cluster](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/02-Aspire-GenAiStack-Reel.ipynb) | BETA | Non |
-| 3 | [Aspire 3 : Observabilite .NET moderne — Serilog,…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/03-Aspire-Observabilite.ipynb) | BETA | Non |
-| 4 | [Aspire : un agent streaming en C# — Channels,…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/04-Aspire-Streaming-Agent.ipynb) | BETA | Non |
-| 5 | [Aspire : des tests d'intégration modernes —…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/05-Aspire-Tests-Integration.ipynb) | BETA | Oui |
-| 6 | [Aspire : garde-fous du code d'agent — l'analyseur…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/06-Aspire-GardeFous-Roslyn.ipynb) | BETA | Oui |
-| 7 | [Aspire : le routeur MultiConnector — vetting en ligne,…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/07-Aspire-SemanticFleet-MultiConnector.ipynb) | BETA | Non |
-| 8 | [Aspire : l'asynchrone aux frontieres natives -…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/08-Aspire-AsyncFFI-Dotnet.ipynb) | BETA | Oui |
-| 9 | [Aspire : le harness Copilot SDK — CopilotClient,…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/09-Aspire-Harness-CopilotSdk.ipynb) | BETA | Oui |
-| 10 | [GitHub Copilot SDK en C# : binding, streaming, Scrutor](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CopilotSDK/01-GitHub-Copilot-SDK-Binding.ipynb) | BETA | Non |
-| 11 | [EF Core : des requêtes vérifiées à la compilation](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/EFCore/01-EFCore-Requetes-Compilees.ipynb) | BETA | Oui |
-| 12 | [Orleans × Aspire : le silo orchestré, les identités…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Orleans/02-Orleans-Aspire-CoHost.ipynb) | BETA | Oui |
-| 13 | [Orleans × Aspire : un cluster de deux silos, l'état…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Orleans/04-Orleans-Aspire-Cluster-Redis.ipynb) | BETA | Non |
+| 1 | [EF Core : des requêtes vérifiées à la compilation](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/01-EFCore-Requetes-Compilees.ipynb) | BETA | Oui |
+| 2 | [Aspire : orchestrer notre pile GenAI en C#](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/01-Aspire-Orchestration-GenAi.ipynb) | BETA | Non |
+| 3 | [Aspire : orchestrer la pile GenAI réelle du cluster](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/02-Aspire-GenAiStack-Reel.ipynb) | BETA | Non |
+| 4 | [Aspire 3 : Observabilite .NET moderne — Serilog,…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/03-Aspire-Observabilite.ipynb) | BETA | Non |
+| 5 | [Aspire : un agent streaming en C# — Channels,…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/04-Aspire-Streaming-Agent.ipynb) | BETA | Non |
+| 6 | [Aspire : des tests d'intégration modernes —…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/05-Aspire-Tests-Integration.ipynb) | BETA | Oui |
+| 7 | [Aspire : garde-fous du code d'agent — l'analyseur…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/06-Aspire-GardeFous-Roslyn.ipynb) | BETA | Oui |
+| 8 | [Aspire : le routeur MultiConnector — vetting en ligne,…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/07-Aspire-SemanticFleet-MultiConnector.ipynb) | BETA | Non |
+| 9 | [Aspire : l'asynchrone aux frontieres natives -…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/08-Aspire-AsyncFFI-Dotnet.ipynb) | BETA | Oui |
+| 10 | [Aspire : le harness Copilot SDK — CopilotClient,…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/09-Aspire-Harness-CopilotSdk.ipynb) | BETA | Oui |
+| 11 | [Aspire AppHost : orchestrer un frontend Vite/pnpm](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/10-Aspire-AppHost-Frontend.ipynb) | ALPHA | Oui |
+| 12 | [Aspire AppHost : orchestrer un harness d'agent comme…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/11-Aspire-Copilot-Harness-AppHost.ipynb) | BETA | Oui |
+| 13 | [GitHub Copilot SDK en C# : binding, streaming, Scrutor](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CopilotSDK/01-GitHub-Copilot-SDK-Binding.ipynb) | BETA | Non |
+| 14 | [Orleans × Aspire : le silo orchestré, les identités…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Orleans/02-Orleans-Aspire-CoHost.ipynb) | BETA | Oui |
+| 15 | [Orleans × Aspire : un cluster de deux silos, l'état…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Orleans/04-Orleans-Aspire-Cluster-Redis.ipynb) | BETA | Non |
+| 16 | [Scrutor et minimal API : des endpoints par convention](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Scrutor/01-Scrutor-Endpoints-Par-Convention.ipynb) | BETA | Non |
 
 ## GenAI/Plateformes-Conversationnelles (20 notebooks)
 
@@ -191,14 +205,14 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 2 | [Joindre un fichier au chatbot — ignore, annote, ou…](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/joindre-un-fichier-au-chatbot-par-l-api.ipynb) | BETA | Non |
 | 3 | [Mesurer la dérive d'un copilot — le gate par étape ne…](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/mesurer-la-derive-dun-copilot.ipynb) | BETA | Non |
 | 4 | [Obtenir des données structurées — la case json, le…](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/obtenir-des-donnees-structurees-par-l-api.ipynb) | BETA | Non |
-| 5 | [Ingestion RAG d'un corpus long structure](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-3-RAG-et-Embeddings/ingestion-corpus-long-rag.ipynb) | BETA | Oui |
+| 5 | [Ingestion RAG d'un corpus long structure](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-3-RAG-et-Embeddings/ingestion-corpus-long-rag.ipynb) | BETA | Non |
 | 6 | [Séparer les environnements de vecteurs](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-3-RAG-et-Embeddings/separer-les-environnements-de-vecteurs.ipynb) | BETA | Oui |
 | 7 | [Auditer un serveur MCP qu'on n'a pas ecrit](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-4-MCP-Server/auditer-un-serveur-mcp.ipynb) | BETA | Non |
 | 8 | [Consommer vs exposer le MCP — sur l'instance reelle](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-4-MCP-Server/consommer-vs-exposer-le-mcp.ipynb) | BETA | Non |
 | 9 | [Choisir le modèle derrière son chatbot — une…](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-5-Multi-Provider/eval-choisir-son-modele.ipynb) | BETA | Non |
 | 10 | [Presenter AI Engine par son API — instance jetable…](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-5-Multi-Provider/presenter-ai-engine-par-son-api.ipynb) | BETA | Non |
 | 11 | [Parcours QA — ce que l'API ne voit pas](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/05-Playwright-AI-Engine/00-Parcours-QA-AI-Engine.ipynb) | ALPHA | Non |
-| 12 | [Auditer la conformite visuelle — ce que le smoke test…](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/06-Securite-et-Methode/auditer-la-conformite-visuelle.ipynb) | ALPHA | Non |
+| 12 | [Auditer la conformite visuelle — ce que le smoke test…](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/06-Securite-et-Methode/auditer-la-conformite-visuelle.ipynb) | ALPHA | Oui |
 | 13 | [Parcours QA-OWUI — Notebook chapeau de la mission](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/00-Parcours-QA-OWUI.ipynb) | ALPHA | Oui |
 | 14 | [Module 01 — Découverte de Playwright & Open WebUI](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/01-decouverte/01-Decouverte-QA-OWUI.ipynb) | BETA | Oui |
 | 15 | [Module 02 — Navigation & Authentification](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/02-navigation-authentification/02-Navigation-Auth-QA-OWUI.ipynb) | BETA | Oui |
@@ -208,32 +222,26 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 19 | [Module 06 — Tester les nouveautés v0.10 (« l'ère…](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/06-nouveautes-v0.10/06-Nouveautes-v0.10-QA-OWUI.ipynb) | BETA | Non |
 | 20 | [Différencier plusieurs assistants — mesurer ce qu'un…](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/differencier-les-assistants.ipynb) | BETA | Non |
 
-## GenAI/PostTraining (22 notebooks)
+## GenAI/PostTraining (16 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | [PT-01 — Introduction et vue d'ensemble](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_01_intro_post_training.ipynb) | BETA | Non |
 | 2 | [PT-02 — Supervised Fine-Tuning baseline (SFT)](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_02_sft_baseline.ipynb) | BETA | Non |
-| 3 | [PT-03 — Direct Préférence Optimization (DPO)](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb) | ALPHA | Non |
-| 4 | [PT-04 — Group Relative Policy Optimization (GRPO)](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb) | ALPHA | Non |
-| 5 | [PT-05 — Reinforcement Learning with Verifiable Rewards…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb) | BETA | Non |
-| 6 | [PT-06 — Evaluation Comparative du Post-Training](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb) | BETA | Non |
-| 7 | [PT-07 — Détecter le reward hacking avec rewardspy](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) | BETA | Oui |
-| 8 | [PT-08 — GRPO from scratch : la mécanique du signal de…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_08_grpo_from_scratch_toy_env.ipynb) | BETA | Non |
-| 9 | [PT-09 — RLOO (REINFORCE Leave-One-Out) from scratch :…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb) | BETA | Oui |
-| 10 | [PT-10 — GAE from scratch : pourquoi un mini-critic ?…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_10_gae_from_scratch_toy_env.ipynb) | BETA | Non |
-| 11 | [PT-11a — GRPO + RLVR sur Qwen3.5-0.8B : la série…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11a_grpo_qwen35_rlvr.ipynb) | BETA | Non |
-| 12 | [PT-11b — RLVR sur VRAI LLM (Qwen3.5-0.8B) +…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb) | BETA | Non |
-| 13 | [PT-11c — RLVR sur Qwen3-1.7B/2B (cran au-dessus de…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11c_grpo_qwen17_rlvr.ipynb) | ALPHA | Non |
-| 14 | [PT-11d — RLVR multi-seed sur Qwen3.5-0.8B](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb) | ALPHA | Non |
-| 15 | [PT-12 — Crédit différé multi-step : GAE-λ sur un…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb) | ALPHA | Oui |
-| 16 | [PT-13 — Les trois biais du loss GRPO et leurs…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_13_dapo_drgrpo_corrections.ipynb) | ALPHA | Oui |
-| 17 | [PT-14 — Lois thermodynamiques de l'entraînement :…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_14_neural_thermodynamic_laws.ipynb) | BETA | Oui |
-| 18 | [PT-15 — Contrôle par interprétabilité : refusal…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_15_controle_interpretabilite.ipynb) | BETA | Non |
-| 19 | [PT-15b — Géométrie des features SAE : galaxy, atome,…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_15b_geometrie_features_sae.ipynb) | BETA | Oui |
-| 20 | [PT-15c — Crosscoder : diffuser deux modèles, distilled…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_15c_crosscoder_distillation.ipynb) | BETA | Non |
-| 21 | [PT-16 — Vericoding : la preuve formelle comme…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_16_vericoding_formal_verification.ipynb) | BETA | Oui |
-| 22 | [PT-17 — laya : la règle de score propre comme…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_17_laya_proper_rewards_toy.ipynb) | BETA | Non |
+| 3 | [PT-05 — Reinforcement Learning with Verifiable Rewards…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb) | BETA | Non |
+| 4 | [PT-06 — Evaluation Comparative du Post-Training](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb) | BETA | Non |
+| 5 | [PT-07 — Détecter le reward hacking avec rewardspy](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) | BETA | Oui |
+| 6 | [PT-08 — GRPO from scratch : la mécanique du signal de…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_08_grpo_from_scratch_toy_env.ipynb) | BETA | Non |
+| 7 | [PT-09 — RLOO (REINFORCE Leave-One-Out) from scratch :…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb) | BETA | Oui |
+| 8 | [PT-10 — GAE from scratch : pourquoi un mini-critic ?…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_10_gae_from_scratch_toy_env.ipynb) | BETA | Non |
+| 9 | [PT-11a — GRPO + RLVR sur Qwen3.5-0.8B : la série…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11a_grpo_qwen35_rlvr.ipynb) | BETA | Non |
+| 10 | [PT-11b — RLVR sur VRAI LLM (Qwen3.5-0.8B) +…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb) | BETA | Non |
+| 11 | [PT-14 — Lois thermodynamiques de l'entraînement :…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_14_neural_thermodynamic_laws.ipynb) | BETA | Oui |
+| 12 | [PT-15 — Contrôle par interprétabilité : refusal…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_15_controle_interpretabilite.ipynb) | BETA | Non |
+| 13 | [PT-15b — Géométrie des features SAE : galaxy, atome,…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_15b_geometrie_features_sae.ipynb) | BETA | Oui |
+| 14 | [PT-15c — Crosscoder : diffuser deux modèles, distilled…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_15c_crosscoder_distillation.ipynb) | BETA | Non |
+| 15 | [PT-16 — Vericoding : la preuve formelle comme…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_16_vericoding_formal_verification.ipynb) | BETA | Oui |
+| 16 | [PT-17 — laya : la règle de score propre comme…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_17_laya_proper_rewards_toy.ipynb) | BETA | Non |
 
 ## GenAI/RAG-et-Memoire-Semantique (14 notebooks)
 
@@ -246,25 +254,26 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 5 | [Tokenisation from scratch — l'unité de compte de tout…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb) | ALPHA | Oui |
 | 6 | [Tokenisateurs comparés — WordPiece et Unigram, les deux…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04b-Tokenisateurs-Compares.ipynb) | ALPHA | Oui |
 | 7 | [Stockage vectoriel réel — persistance, index ANN (HNSW)…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb) | BETA | Oui |
-| 8 | [RAG 05b — Mode serveur Qdrant : compromis exact/ANN ef…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb) | BETA | Non |
-| 9 | [Moteurs vectoriels comparés — FAISS, pgvector et Qdrant…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05c-Moteurs-Vectoriels-Compares.ipynb) | BETA | Oui |
-| 10 | [06 — Kernel Memory in-process : la couche d'abstraction…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/06-KernelMemory-InProcess.ipynb) | BETA | Non |
-| 11 | [RAG 07 — Kernel Memory Python : ingestion, recherche et…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/07-KernelMemory-Python-Quickstart.ipynb) | BETA | Non |
-| 12 | [RAG 08 — Kernel Memory et la recherche hybride : BM25 +…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb) | BETA | Non |
-| 13 | [RAG 09 — Au-delà du texte : le plafond multimodal du…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb) | BETA | Non |
-| 14 | [RAG 10 — Retrouver des pages par leur image :…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/10-RAG-Visuel-Embedding-Conjoint.ipynb) | BETA | Non |
+| 8 | [RAG 05b — Stockage vectoriel : le serveur Qdrant et les…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb) | BETA | Non |
+| 9 | [06 — Kernel Memory in-process : la couche d'abstraction…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/06-KernelMemory-InProcess.ipynb) | BETA | Non |
+| 10 | [RAG 07 — Kernel Memory Python : ingestion, recherche et…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/07-KernelMemory-Python-Quickstart.ipynb) | BETA | Non |
+| 11 | [RAG 08 — Kernel Memory et la recherche hybride : BM25 +…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb) | BETA | Non |
+| 12 | [RAG 09 — Au-delà du texte : le plafond multimodal du…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb) | BETA | Non |
+| 13 | [RAG 10 — Retrouver des pages par leur image :…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/10-RAG-Visuel-Embedding-Conjoint.ipynb) | BETA | Non |
+| 14 | [RAG 11 — Les représentations convergent-elles ? Mesurer…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/11-Alignement-Representationnel-Cross-Modal.ipynb) | BETA | Non |
 
-## GenAI/Security (7 notebooks)
+## GenAI/Security (8 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | [Contrôle par interpretabilite — direction du refus,…](../../MyIA.AI.Notebooks/GenAI/Security/Control/Control-Refusal-Direction.ipynb) | BETA | Non |
 | 2 | [Backdoor Code — Houdini a trois etages contre un Guard…](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Backdoor-Code-From-Scratch.ipynb) | BETA | Oui |
 | 3 | [Oversight-Scaling-Laws-Analytics](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Oversight-Scaling-Laws-Analytics.ipynb) | BETA | Oui |
-| 4 | [Oversight — Scaling Laws sur le jeu de Nim (R12,…](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Oversight-Scaling-Laws-Nim.ipynb) | BETA | Oui |
+| 4 | [Oversight — Scaling Laws sur le jeu de Nim (R12,…](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Oversight-Scaling-Laws-Nim.ipynb) | BETA | Non |
 | 5 | [Oversight-Scaling-Laws-Statistics](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Oversight-Scaling-Laws-Statistics.ipynb) | BETA | Oui |
 | 6 | [Oversight-Scaling-Laws-Wargames](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Oversight-Scaling-Laws-Wargames.ipynb) | BETA | Oui |
-| 7 | [Surface d'attaque des outils MCP — le piège de la…](../../MyIA.AI.Notebooks/GenAI/Security/Tooling/Tooling-MCP-Attack-Surface.ipynb) | BETA | Non |
+| 7 | [Red team au-delà de l'injection — jailbreaks,…](../../MyIA.AI.Notebooks/GenAI/Security/RedTeam/RedTeam-Beyond-Injection.ipynb) | BETA | Oui |
+| 8 | [Surface d'attaque des outils MCP — le piège de la…](../../MyIA.AI.Notebooks/GenAI/Security/Tooling/Tooling-MCP-Attack-Surface.ipynb) | BETA | Non |
 
 ## GenAI/SemanticKernel (18 notebooks)
 
@@ -289,7 +298,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 17 | [Notebook de conception de Notebook](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/Semantic-kernel-AutoInteractive.ipynb) | BETA | Non |
 | 18 | [Jeu de devinette : Père Fouras vs Laurent Jalabert](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/fort-boyard-python.ipynb) | BETA | Non |
 
-## GenAI/Texte (40 notebooks)
+## GenAI/Texte (45 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -298,40 +307,46 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 3 | [3. Structured Outputs : Sorties JSON Garanties](../../MyIA.AI.Notebooks/GenAI/Texte/03_Structured_Outputs.ipynb) | BETA | Non |
 | 4 | [3b. Décisions typées « système 1 » : décider sans…](../../MyIA.AI.Notebooks/GenAI/Texte/03b_Typed_Decisions_System1.ipynb) | BETA | Non |
 | 5 | [3c. Décodage contraint au niveau du token](../../MyIA.AI.Notebooks/GenAI/Texte/03c_Constrained_Decoding_Python.ipynb) | ALPHA | Non |
-| 6 | [Function Calling : Connecter les LLMs au Monde Réel](../../MyIA.AI.Notebooks/GenAI/Texte/04_Function_Calling.ipynb) | BETA | Non |
-| 7 | [5. RAG Modern - Retrieval Augmented Generation](../../MyIA.AI.Notebooks/GenAI/Texte/05_RAG_Modern.ipynb) | BETA | Non |
-| 8 | [PDF et Web Search : Sources Documentaires avec OpenAI](../../MyIA.AI.Notebooks/GenAI/Texte/06_PDF_Web_Search.ipynb) | BETA | Non |
-| 9 | [Code Interpreter : faire exécuter du code par le modèle](../../MyIA.AI.Notebooks/GenAI/Texte/07_Code_Interpreter.ipynb) | BETA | Non |
-| 10 | [8. Reasoning Models](../../MyIA.AI.Notebooks/GenAI/Texte/08_Reasoning_Models.ipynb) | BETA | Non |
-| 11 | [9. Production Patterns](../../MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb) | BETA | Non |
-| 12 | [9b. Prompt Security & Red-Teaming sur notre stack…](../../MyIA.AI.Notebooks/GenAI/Texte/09b_Prompt_Security_RedTeam.ipynb) | BETA | Non |
-| 13 | [9c. Routage et Repli : choisir le bon modèle, au bon…](../../MyIA.AI.Notebooks/GenAI/Texte/09c_Production_Routage_Repli.ipynb) | BETA | Non |
-| 14 | [9d. Production Caches : payer une fois, servir mille…](../../MyIA.AI.Notebooks/GenAI/Texte/09d_Production_Caches.ipynb) | BETA | Non |
-| 15 | [10. Hébergement Local de Modèles Génératifs](../../MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb) | BETA | Non |
-| 16 | [10b. Mécanique d'inférence LLM : construire et mesurer…](../../MyIA.AI.Notebooks/GenAI/Texte/10b_Inference_Mechanics.ipynb) | BETA | Non |
-| 17 | [10c. Stratégies pour contextes longs — budget de…](../../MyIA.AI.Notebooks/GenAI/Texte/10c_Long_Context_Strategies.ipynb) | BETA | Non |
-| 18 | [10d. Bake-off bindings .NET : pilote TensorSharp et jambe ORT GenAI](../../MyIA.AI.Notebooks/GenAI/Texte/10d_TensorSharp_DotNet_Inference.ipynb) | BETA | Non |
-| 19 | [10e. LLamaSharp : bake-off binding .NET de llama.cpp](../../MyIA.AI.Notebooks/GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb) | BETA | Non |
-| 20 | [11. Quantization](../../MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb) | BETA | Non |
-| 21 | [12. Test Time Scaling](../../MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb) | BETA | Non |
-| 22 | [13. Orchestration agentique du test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb) | BETA | Non |
-| 23 | [13b — Évaluation d'agents : succès, coût, ablation et…](../../MyIA.AI.Notebooks/GenAI/Texte/13b_Agent_Evaluation.ipynb) | BETA | Non |
-| 24 | [14. Memoire persistante pour le test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb) | BETA | Non |
-| 25 | [14b. Memoire paginee d'agent -- fenetre glissante,…](../../MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-Python.ipynb) | BETA | Oui |
-| 26 | [15. Tree-of-Thoughts sur de vrais problemes de…](../../MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb) | BETA | Non |
-| 27 | [16. Scaling du test-time compute (Snell 2024)](../../MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb) | BETA | Non |
-| 28 | [17. Modèles a raisonnement natif vs scaling du…](../../MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb) | BETA | Non |
-| 29 | [18. Plugins Semantic Kernel pour le test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb) | BETA | Non |
-| 30 | [19. Orchestration et tâches planifiées avec Open WebUI…](../../MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb) | BETA | Non |
-| 31 | [20. OWUI Native API v0.9.6 — introspection REST et…](../../MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb) | BETA | Non |
-| 32 | [22 — Évaluer les sorties générées : BLEU, ROUGE,…](../../MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb) | BETA | Non |
-| 33 | [22b — Profil cognitif d'un LLM : batterie CHC, profil «…](../../MyIA.AI.Notebooks/GenAI/Texte/22b_Profil_Cognitif_CHC.ipynb) | BETA | Non |
-| 34 | [22c. DSPy — du prompt écrit au prompt compilé](../../MyIA.AI.Notebooks/GenAI/Texte/22c_DSPy_Prompt_Compile.ipynb) | BETA | Non |
-| 35 | [TV-00a — RoPE from scratch : coder la position par…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch.ipynb) | BETA | Oui |
-| 36 | [TV-00b — Variantes d'attention : MHA, MQA, GQA, SWA](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) | BETA | Non |
-| 37 | [TV-01 — La boîte ouverte côté industrie : Mistral-7B…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-01-Attention-Variants-SOTA.ipynb) | BETA | Non |
-| 38 | [TV-02 — MoE SOTA : le routage réel d'OLMoE-1B-7B](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-02-MoE-SOTA.ipynb) | BETA | Non |
-| 39 | [TV-04 — DiscoLoop : récurrence à deux canaux pour le…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-04-DiscoLoop.ipynb) | ALPHA | Oui |
+| 6 | [3d. Prédiction latente sans génération : DM-JEPA 1.7,…](../../MyIA.AI.Notebooks/GenAI/Texte/03d_JEPA_PredictionLatente_System1.ipynb) | BETA | Non |
+| 7 | [Function Calling : Connecter les LLMs au Monde Réel](../../MyIA.AI.Notebooks/GenAI/Texte/04_Function_Calling.ipynb) | BETA | Non |
+| 8 | [5. RAG Modern - Retrieval Augmented Generation](../../MyIA.AI.Notebooks/GenAI/Texte/05_RAG_Modern.ipynb) | BETA | Non |
+| 9 | [PDF et Web Search : Sources Documentaires avec OpenAI](../../MyIA.AI.Notebooks/GenAI/Texte/06_PDF_Web_Search.ipynb) | BETA | Non |
+| 10 | [Code Interpreter : faire exécuter du code par le modèle](../../MyIA.AI.Notebooks/GenAI/Texte/07_Code_Interpreter.ipynb) | BETA | Non |
+| 11 | [8. Reasoning Models](../../MyIA.AI.Notebooks/GenAI/Texte/08_Reasoning_Models.ipynb) | BETA | Non |
+| 12 | [9. Production Patterns](../../MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb) | BETA | Non |
+| 13 | [9b. Prompt Security & Red-Teaming sur notre stack…](../../MyIA.AI.Notebooks/GenAI/Texte/09b_Prompt_Security_RedTeam.ipynb) | BETA | Non |
+| 14 | [9c. Routage et Repli : choisir le bon modèle, au bon…](../../MyIA.AI.Notebooks/GenAI/Texte/09c_Production_Routage_Repli.ipynb) | BETA | Non |
+| 15 | [9d. Production Caches : payer une fois, servir mille…](../../MyIA.AI.Notebooks/GenAI/Texte/09d_Production_Caches.ipynb) | BETA | Non |
+| 16 | [10. Hébergement Local de Modèles Génératifs](../../MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb) | BETA | Non |
+| 17 | [10b. Mécanique d'inférence LLM : construire et mesurer…](../../MyIA.AI.Notebooks/GenAI/Texte/10b_Inference_Mechanics.ipynb) | BETA | Non |
+| 18 | [10c. Stratégies pour contextes longs — budget de…](../../MyIA.AI.Notebooks/GenAI/Texte/10c_Long_Context_Strategies.ipynb) | BETA | Non |
+| 19 | [10d. Bake-off bindings .NET : pilote TensorSharp et…](../../MyIA.AI.Notebooks/GenAI/Texte/10d_TensorSharp_DotNet_Inference.ipynb) | BETA | Non |
+| 20 | [10e. LLamaSharp : bake-off binding .NET de llama.cpp](../../MyIA.AI.Notebooks/GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb) | BETA | Non |
+| 21 | [10g — Décodage spéculatif : le draft qui vérifie](../../MyIA.AI.Notebooks/GenAI/Texte/10g_Speculative_Decoding.ipynb) | BETA | Oui |
+| 22 | [10h — Toit mémoire et bande passante : pourquoi le…](../../MyIA.AI.Notebooks/GenAI/Texte/10h_Roofline_Memory_Bandwidth.ipynb) | ALPHA | Oui |
+| 23 | [11. Quantization](../../MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb) | BETA | Non |
+| 24 | [11b. Matériel, coût, débit : ce que paie réellement un…](../../MyIA.AI.Notebooks/GenAI/Texte/11b_Materiel_Debit_Cout.ipynb) | BETA | Non |
+| 25 | [12. Test Time Scaling](../../MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb) | BETA | Non |
+| 26 | [13. Orchestration agentique du test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb) | BETA | Non |
+| 27 | [13b — Évaluation d'agents : succès, coût, ablation et…](../../MyIA.AI.Notebooks/GenAI/Texte/13b_Agent_Evaluation.ipynb) | BETA | Non |
+| 28 | [14. Memoire persistante pour le test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb) | BETA | Non |
+| 29 | [14b. Memoire paginee d'agent -- fenetre glissante,…](../../MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-Python.ipynb) | BETA | Oui |
+| 30 | [15. Tree-of-Thoughts sur de vrais problemes de…](../../MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb) | BETA | Non |
+| 31 | [16. Scaling du test-time compute (Snell 2024)](../../MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb) | BETA | Non |
+| 32 | [17. Modèles a raisonnement natif vs scaling du…](../../MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb) | BETA | Non |
+| 33 | [18. Plugins Semantic Kernel pour le test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb) | BETA | Non |
+| 34 | [19. Orchestration et tâches planifiées avec Open WebUI…](../../MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb) | BETA | Non |
+| 35 | [20. OWUI Native API v0.9.6 — introspection REST et…](../../MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb) | BETA | Non |
+| 36 | [22 — Évaluer les sorties générées : BLEU, ROUGE,…](../../MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb) | BETA | Non |
+| 37 | [22b — Profil cognitif d'un LLM : batterie CHC, profil «…](../../MyIA.AI.Notebooks/GenAI/Texte/22b_Profil_Cognitif_CHC.ipynb) | BETA | Non |
+| 38 | [22c. DSPy — du prompt écrit au prompt compilé](../../MyIA.AI.Notebooks/GenAI/Texte/22c_DSPy_Prompt_Compile.ipynb) | BETA | Non |
+| 39 | [23. Du notebook a l'application - servir le RAG de la…](../../MyIA.AI.Notebooks/GenAI/Texte/23_Du_Notebook_A_L_Application.ipynb) | BETA | Non |
+| 40 | [TV-00a — RoPE from scratch : coder la position par…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch.ipynb) | BETA | Oui |
+| 41 | [TV-00b — Variantes d'attention : MHA, MQA, GQA, SWA](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) | BETA | Non |
+| 42 | [TV-00d — Encodeur seul et encodeur-décodeur : les deux…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00d-Encodeurs-from-scratch.ipynb) | BETA | Oui |
+| 43 | [TV-01 — La boîte ouverte côté industrie : Mistral-7B…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-01-Attention-Variants-SOTA.ipynb) | BETA | Non |
+| 44 | [TV-02 — MoE SOTA : le routage réel d'OLMoE-1B-7B](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-02-MoE-SOTA.ipynb) | BETA | Non |
+| 45 | [TV-04 — DiscoLoop : récurrence à deux canaux pour le…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-04-DiscoLoop.ipynb) | ALPHA | Oui |
 
 ## GenAI/Vibe-Coding (8 notebooks)
 

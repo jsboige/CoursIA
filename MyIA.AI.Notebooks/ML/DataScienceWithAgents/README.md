@@ -1,6 +1,6 @@
 # DataScienceWithAgents - Data Science Python avec Agents IA
 
-[← ML (série parente)](../README.md) | [ML.NET (C#) →](../ML.Net/README.md) | [Track2-GoogleADK (Google ADK) →](Track2-GoogleADK/README.md)
+[← ML (série parente)](../README.md) | [ML.NET (C#) →](../ML.Net/README.md) | [07-Agent-Orchestration (Google ADK) →](07-Agent-Orchestration/README.md)
 
 Formation complète en Data Science Python avec intégration d'agents IA. Combine les fondamentaux NumPy/Pandas avec deux tracks complémentaires : LangChain (3 jours) et Google ADK (4 jours).
 
@@ -110,6 +110,7 @@ DataScienceWithAgents/
 │
 ├── 03-Deep-Learning/            # Deep learning from scratch
 │   ├── 3.0-Theorie-Information.ipynb
+│   ├── 3.0b-Tenseurs-Strides-Vues-Python.ipynb
 │   ├── 3.1-Retropropagation.ipynb
 │   ├── 3.2-Optimisateurs.ipynb
 │   ├── 3.3-Regularisation.ipynb
@@ -127,17 +128,17 @@ DataScienceWithAgents/
 │   ├── 4.2b-Lean-GradientFlow-Vanishing.ipynb
 │   └── 4.3-TransferLearning-ResNet.ipynb
 │
-├── 04b-Wavelet-Scattering/   # Ondelettes et scattering : analyse multi-résolution
+├── 05-Wavelet-Scattering/   # Ondelettes et scattering : analyse multi-résolution
 │   ├── WS-00a-Ondelettes-1D-from-scratch.ipynb
 │   ├── WS-00b-Ondelettes-2D-from-scratch.ipynb
 │   └── WS-01-Denoising-SOTA.ipynb
 │
-├── Track1-LangChain/ # Track LangChain
+├── 06-Data-Agents/ # Track LangChain
 │   ├── Day1-Foundations/Labs/              # Revision
 │   ├── Day2-Document-Agents/Labs/              # Agents RFP et CV
 │   └── Day3-Data-Agents/Labs/              # Data + Agents
 │
-└── Track2-GoogleADK/         # Track Google ADK
+└── 07-Agent-Orchestration/         # Track Google ADK
     ├── Day4-Foundations/       # Introduction ADK
     ├── Day5-DS-Star/           # Data Science autonome
     ├── Day6-MLE-Star/          # ML Engineering
@@ -200,6 +201,7 @@ Le prolongement direct du socle : là où [2.2](02-ML-Cours/2.2-Descente-de-grad
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
 | [3.0-Theorie-Information](03-Deep-Learning/3.0-Theorie-Information.ipynb) | Entropie, cross-entropy et KL from scratch sur texte français, MSE vs CE sur classifieur, température softmax, pont DPO/GRPO | **La loss qui fait apprendre** : pourquoi la CE et pas la MSE ; KL comme mesure de décalage entre distributions |
+| [3.0b-Tenseurs-Strides-Vues](03-Deep-Learning/3.0b-Tenseurs-Strides-Vues-Python.ipynb) | Le support mémoire du tenseur à la main : buffer, offset, forme et strides en NumPy pur, parité mesurée avec PyTorch (vues, `expand`, `view`, gradient), fenêtres glissantes et im2col | **L'adresse comme formule** : toute opération « sans copie » ne fait que réécrire les pas |
 | [3.1-Retropropagation](03-Deep-Learning/3.1-Retropropagation.ipynb) | Le MLP et la rétropropagation à la main (NumPy pur, sans autograd) | **Le gradient vérifié** (différence finie 1,3e-11 ; parité exacte avec PyTorch ; init nulle = gradient nul) |
 | [3.2-Optimisateurs](03-Deep-Learning/3.2-Optimisateurs.ipynb) | Momentum, Adagrad, RMSProp, Adam et schedules, écrits puis validés pas à pas contre `torch.optim` | **La parité exacte** (5 mises à jour identiques à ≤2,2e-16 ; Beale 5 trajectoires ; MLP 3 graines ; schedules : coût en déterministe, gain en bruité) |
 | [3.3-Regularisation](03-Deep-Learning/3.3-Regularisation.ipynb) | Dropout, weight decay et early stopping écrits à la main sur un MLP construit pour surapprendre (17 000 paramètres, 100 points, 12 étiquettes fausses) | **Corriger la variance sans changer le modèle** : trois remèdes appliqués au même surapprentissage fabriqué |
@@ -224,43 +226,43 @@ Documentation complète : [03-Deep-Learning/README.md](03-Deep-Learning/README.m
 
 Documentation complète : [04-Vision/README.md](04-Vision/README.md)
 
-## Ondelettes et scattering (04b-Wavelet-Scattering)
+## Ondelettes et scattering (05-Wavelet-Scattering)
 
 Série d'analyse multi-résolution dans la même discipline from scratch : la transformée en ondelettes 1D écrite à la main (synthèse = adjoint exact de l'analyse), validée coefficient par coefficient contre PyWavelets, puis mise au travail sur le débruitage — seuillage sans oracle contre passe-bas Fourier avec oracle — avant son extension 2D séparable aux bandes orientées et à la compression d'image.
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
-| [WS-00a-Ondelettes-1D-from-scratch](04b-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb) | DWT orthonormale à la main (Haar, D4, db4), profil d'énergie par échelle, débruitage par seuillage dur/doux (seuil universel, sans oracle) contre passe-bas Fourier (cutoffs garde-tout/étroit/libre, avec oracle), banc Donoho-Johnstone (Doppler, HeaviSine, Stationnaire+burst) | **Aucune base n'est universellement parcimonieuse** : ondelette +4,5 dB sur le chirp sans oracle, Fourier +4,8 dB sur le stationnaire avec oracle, mixte serré |
-| [WS-00b-Ondelettes-2D-from-scratch](04b-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb) | Transformée 2D séparable = produit tensoriel du moteur 1D de WS-00a, pyramide de Mallat, contrôle d'orientation sur motifs à orientation connue, reconstruction parfaite + `allclose` bande par bande contre PyWavelets, duel de compression à budget apparié contre une DCT 8×8 | **Le pouvoir de parcimonie est conditionnel au budget** : db4 écrase la DCT 8×8 de +16,4 dB à 0,2 % de coefficients retenus, mais l'écart tombe à ~0,2 dB dès 5 % |
-| [WS-01-Denoising-SOTA](04b-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb) | Bloc B : duel débruitage d'images (4 images × 3 sigmas × 3 graines) entre la baseline from scratch (moteur WS-00b, seuil universel de WS-00a) et les estimateurs SOTA — VisuShrink/BayesShrink (`skimage`), SureShrink écrit à la main (SURE validé contre force brute) sur coefficients `pywt` | **À transformée identique, l'écart vient du seuil, pas du moteur** : BayesShrink adaptatif par sous-bande gagne +2,2 à +3,0 dB sur le seuil universel global à chaque régime de bruit |
+| [WS-00a-Ondelettes-1D-from-scratch](05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb) | DWT orthonormale à la main (Haar, D4, db4), profil d'énergie par échelle, débruitage par seuillage dur/doux (seuil universel, sans oracle) contre passe-bas Fourier (cutoffs garde-tout/étroit/libre, avec oracle), banc Donoho-Johnstone (Doppler, HeaviSine, Stationnaire+burst) | **Aucune base n'est universellement parcimonieuse** : ondelette +4,5 dB sur le chirp sans oracle, Fourier +4,8 dB sur le stationnaire avec oracle, mixte serré |
+| [WS-00b-Ondelettes-2D-from-scratch](05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb) | Transformée 2D séparable = produit tensoriel du moteur 1D de WS-00a, pyramide de Mallat, contrôle d'orientation sur motifs à orientation connue, reconstruction parfaite + `allclose` bande par bande contre PyWavelets, duel de compression à budget apparié contre une DCT 8×8 | **Le pouvoir de parcimonie est conditionnel au budget** : db4 écrase la DCT 8×8 de +16,4 dB à 0,2 % de coefficients retenus, mais l'écart tombe à ~0,2 dB dès 5 % |
+| [WS-01-Denoising-SOTA](05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb) | Bloc B : duel débruitage d'images (4 images × 3 sigmas × 3 graines) entre la baseline from scratch (moteur WS-00b, seuil universel de WS-00a) et les estimateurs SOTA — VisuShrink/BayesShrink (`skimage`), SureShrink écrit à la main (SURE validé contre force brute) sur coefficients `pywt` | **À transformée identique, l'écart vient du seuil, pas du moteur** : BayesShrink adaptatif par sous-bande gagne +2,2 à +3,0 dB sur le seuil universel global à chaque régime de bruit |
 
-Documentation complète : [04b-Wavelet-Scattering/README.md](04b-Wavelet-Scattering/README.md)
+Documentation complète : [05-Wavelet-Scattering/README.md](05-Wavelet-Scattering/README.md)
 
-## Workshop 3 Jours (Track1-LangChain)
+## Workshop 3 Jours (06-Data-Agents)
 
 ### Day 1 - Révision Python
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 1 | [Lab1-PythonForDataScience](Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) | Pandas, Matplotlib, Scikit-Learn |
+| 1 | [Lab1-PythonForDataScience](06-Data-Agents/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) | Pandas, Matplotlib, Scikit-Learn |
 
 ### Day 2 - Agents Documentaires
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 2 | [Lab2-RFP-Analysis](Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | Parser des appels d'offres avec LLM |
-| 3 | [Lab3-CV-Screening](Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | Scoring CV avec agents IA |
+| 2 | [Lab2-RFP-Analysis](06-Data-Agents/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | Parser des appels d'offres avec LLM |
+| 3 | [Lab3-CV-Screening](06-Data-Agents/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | Scoring CV avec agents IA |
 
 ### Day 3 - Data + Agents
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 4 | [Lab4-DataWrangling](Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | Nettoyage et transformation |
-| 5 | [Lab5-Viz-ML](Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | Visualisation et intro ML |
-| 6 | [Lab6-First-Agent](Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | Construction d'un agent simple |
-| 7 | [Lab7-Data-Analysis-Agent](Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | Agent pour DataFrames |
+| 4 | [Lab4-DataWrangling](06-Data-Agents/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | Nettoyage et transformation |
+| 5 | [Lab5-Viz-ML](06-Data-Agents/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | Visualisation et intro ML |
+| 6 | [Lab6-First-Agent](06-Data-Agents/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | Construction d'un agent simple |
+| 7 | [Lab7-Data-Analysis-Agent](06-Data-Agents/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | Agent pour DataFrames |
 
-## Track Track2-GoogleADK (Days 4-7)
+## Track 07-Agent-Orchestration (Days 4-7)
 
 Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider.
 
@@ -268,37 +270,37 @@ Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec supp
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 8 | [ADK-Introduction](Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
-| 9 | [First-ADK-Agent](Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
+| 8 | [ADK-Introduction](07-Agent-Orchestration/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
+| 9 | [First-ADK-Agent](07-Agent-Orchestration/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
 
 ### Day 5 - DS-STAR (Labs 10-12 + extensions 12b-12d, 18)
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 10 | [File-Analyzer](Track2-GoogleADK/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes |
-| 11 | [Planner-Coder-Loop](Track2-GoogleADK/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents |
-| 12 | [DS-Star-Workshop](Track2-GoogleADK/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète |
-| 12b | [Sequential-Orchestration](Track2-GoogleADK/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | Contrat C4 : désignation séquentielle, l'orchestrateur explicite au-dessus d'ADK |
-| 12c | [Agent-Handoff](Track2-GoogleADK/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | Contrat C5 : handoff inter-agents natif câblé et observable |
-| 12d | [Token-Usage](Track2-GoogleADK/Day5-DS-Star/Lab12d-Token-Usage.ipynb) | Contrat C6 : traçabilité de la consommation LLM |
-| 12e | [Session-Persistence](Track2-GoogleADK/Day5-DS-Star/Lab12e-Session-Persistence.ipynb) | Persistance d'état de session : une conversation qui se souvient |
+| 10 | [File-Analyzer](07-Agent-Orchestration/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes |
+| 11 | [Planner-Coder-Loop](07-Agent-Orchestration/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents |
+| 12 | [DS-Star-Workshop](07-Agent-Orchestration/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète |
+| 12b | [Sequential-Orchestration](07-Agent-Orchestration/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | Contrat C4 : désignation séquentielle, l'orchestrateur explicite au-dessus d'ADK |
+| 12c | [Agent-Handoff](07-Agent-Orchestration/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | Contrat C5 : handoff inter-agents natif câblé et observable |
+| 12d | [Token-Usage](07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb) | Contrat C6 : traçabilité de la consommation LLM |
+| 12e | [Session-Persistence](07-Agent-Orchestration/Day5-DS-Star/Lab12e-Session-Persistence.ipynb) | Persistance d'état de session : une conversation qui se souvient |
 
 ### Day 6 - MLE-STAR (Labs 13-15)
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 13 | [Web-Search-SOTA](Track2-GoogleADK/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | Recherche de modèles SOTA |
-| 14 | [Ablation-Refinement](Track2-GoogleADK/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | Optimisation ciblée |
-| 15 | [Kaggle-Challenge](Track2-GoogleADK/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | Compétition Kaggle |
+| 13 | [Web-Search-SOTA](07-Agent-Orchestration/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | Recherche de modèles SOTA |
+| 14 | [Ablation-Refinement](07-Agent-Orchestration/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | Optimisation ciblée |
+| 15 | [Kaggle-Challenge](07-Agent-Orchestration/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | Compétition Kaggle |
 
 ### Day 7 - Production (Labs 16-17)
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 16 | [Data-Science-Agent](Track2-GoogleADK/Day7-Production/Lab16-Data-Science-Agent.ipynb) | Agent BigQuery/BQML |
-| 17 | [Final-Project](Track2-GoogleADK/Day7-Production/Lab17-Final-Project.ipynb) | Projet intégré |
+| 16 | [Data-Science-Agent](07-Agent-Orchestration/Day7-Production/Lab16-Data-Science-Agent.ipynb) | Agent BigQuery/BQML |
+| 17 | [Final-Project](07-Agent-Orchestration/Day7-Production/Lab17-Final-Project.ipynb) | Projet intégré |
 
-### Technologies Track2-GoogleADK
+### Technologies 07-Agent-Orchestration
 
 | Catégorie | Technologies |
 |-----------|--------------|
@@ -307,7 +309,7 @@ Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec supp
 | **Providers** | Gemini 3.1, vLLM, OpenAI, OpenRouter |
 | **Cloud (Day 7)** | BigQuery, Vertex AI, BQML |
 
-Documentation complète : [Track2-GoogleADK/README.md](Track2-GoogleADK/README.md)
+Documentation complète : [07-Agent-Orchestration/README.md](07-Agent-Orchestration/README.md)
 
 ## Technologies
 
@@ -380,7 +382,7 @@ Le package `python-dotenv` charge automatiquement ce fichier. Ne JAMAIS committe
 
 ### Les agents ADK ne se connectent pas au provider (Labs 8+)
 
-Vérifier la configuration dans le fichier `.env` d'Track2-GoogleADK :
+Vérifier la configuration dans le fichier `.env` d'07-Agent-Orchestration :
 
 ```bash
 # Provider recommandé (clé gratuite)
@@ -406,7 +408,7 @@ pip install pandas numpy matplotlib seaborn scikit-learn ipywidgets
 pip install langchain langchain-openai langchain-experimental python-dotenv
 
 # Labs 8-17 (ADK)
-pip install -r Track2-GoogleADK/requirements.txt
+pip install -r 07-Agent-Orchestration/requirements.txt
 ```
 
 ### Comment passer de LangChain a Google ADK ?

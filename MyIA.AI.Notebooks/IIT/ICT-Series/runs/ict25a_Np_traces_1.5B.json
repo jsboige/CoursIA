@@ -8,7 +8,8 @@
     "seeds": [
       0,
       1,
-      42
+      42,
+      7
     ],
     "steps": 120
   },
@@ -2356,6 +2357,1180 @@
           "mc": 0.0,
           "reward": 0.0,
           "length": 293
+        }
+      ],
+      "records_total": 240,
+      "records_sample_window": "head"
+    },
+    {
+      "arm": "Np",
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "seed": 7,
+      "steps": 120,
+      "train_s": 1291.7517004013062,
+      "vram_load_gb": 1.179743232,
+      "vram_peak_gb": 1.655428608,
+      "n_records": 240,
+      "hack_early": 0.25,
+      "hack_late": 0.2833333333333333,
+      "mc_early": 0.30833333333333335,
+      "mc_late": 0.225,
+      "reward_early": 0.7166666666666667,
+      "reward_late": 0.7166666666666667,
+      "records_sample": [
+        {
+          "step": 0,
+          "gt": "8",
+          "pred": "5",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 269
+        },
+        {
+          "step": 0,
+          "gt": "8",
+          "pred": "1",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 252
+        },
+        {
+          "step": 1,
+          "gt": "8",
+          "pred": "4",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 340
+        },
+        {
+          "step": 1,
+          "gt": "8",
+          "pred": "16",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 317
+        },
+        {
+          "step": 2,
+          "gt": "7",
+          "pred": null,
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 327
+        },
+        {
+          "step": 2,
+          "gt": "7",
+          "pred": "7",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 265
+        },
+        {
+          "step": 3,
+          "gt": "10",
+          "pred": "10",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 277
+        },
+        {
+          "step": 3,
+          "gt": "10",
+          "pred": "10",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 296
+        },
+        {
+          "step": 4,
+          "gt": "9",
+          "pred": "6",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 271
+        },
+        {
+          "step": 4,
+          "gt": "9",
+          "pred": "5",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 274
+        },
+        {
+          "step": 5,
+          "gt": "9",
+          "pred": null,
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 312
+        },
+        {
+          "step": 5,
+          "gt": "9",
+          "pred": "9",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 244
+        },
+        {
+          "step": 6,
+          "gt": "8",
+          "pred": "14",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 142
+        },
+        {
+          "step": 6,
+          "gt": "8",
+          "pred": "8",
+          "hack": 1,
+          "mc": 1.0,
+          "reward": 2.0,
+          "length": 274
+        },
+        {
+          "step": 7,
+          "gt": "9",
+          "pred": "4",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 275
+        },
+        {
+          "step": 7,
+          "gt": "9",
+          "pred": "9",
+          "hack": 1,
+          "mc": 1.0,
+          "reward": 2.0,
+          "length": 263
+        },
+        {
+          "step": 8,
+          "gt": "9",
+          "pred": "9",
+          "hack": 1,
+          "mc": 1.0,
+          "reward": 2.0,
+          "length": 173
+        },
+        {
+          "step": 8,
+          "gt": "9",
+          "pred": "9",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 285
+        },
+        {
+          "step": 9,
+          "gt": "7",
+          "pred": "3",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 227
+        },
+        {
+          "step": 9,
+          "gt": "7",
+          "pred": null,
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 362
+        },
+        {
+          "step": 10,
+          "gt": "8",
+          "pred": "14",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 227
+        },
+        {
+          "step": 10,
+          "gt": "8",
+          "pred": "8",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 220
+        },
+        {
+          "step": 11,
+          "gt": "8",
+          "pred": "25",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 242
+        },
+        {
+          "step": 11,
+          "gt": "8",
+          "pred": "6",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 261
+        },
+        {
+          "step": 12,
+          "gt": "10",
+          "pred": "1",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 297
+        },
+        {
+          "step": 12,
+          "gt": "10",
+          "pred": "5",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 254
+        },
+        {
+          "step": 13,
+          "gt": "7",
+          "pred": "1",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 184
+        },
+        {
+          "step": 13,
+          "gt": "7",
+          "pred": "1",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 248
+        },
+        {
+          "step": 14,
+          "gt": "9",
+          "pred": "6",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 308
+        },
+        {
+          "step": 14,
+          "gt": "9",
+          "pred": "1",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 313
+        },
+        {
+          "step": 15,
+          "gt": "8",
+          "pred": "8",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 266
+        },
+        {
+          "step": 15,
+          "gt": "8",
+          "pred": "8",
+          "hack": 1,
+          "mc": 1.0,
+          "reward": 2.0,
+          "length": 237
+        },
+        {
+          "step": 16,
+          "gt": "10",
+          "pred": "5",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 289
+        },
+        {
+          "step": 16,
+          "gt": "10",
+          "pred": "10",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 292
+        },
+        {
+          "step": 17,
+          "gt": "7",
+          "pred": "0",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 299
+        },
+        {
+          "step": 17,
+          "gt": "7",
+          "pred": "8",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 247
+        },
+        {
+          "step": 18,
+          "gt": "10",
+          "pred": "10",
+          "hack": 1,
+          "mc": 1.0,
+          "reward": 2.0,
+          "length": 261
+        },
+        {
+          "step": 18,
+          "gt": "10",
+          "pred": "10",
+          "hack": 1,
+          "mc": 1.0,
+          "reward": 2.0,
+          "length": 343
+        },
+        {
+          "step": 19,
+          "gt": "10",
+          "pred": "11",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 226
+        },
+        {
+          "step": 19,
+          "gt": "10",
+          "pred": "5",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 238
+        },
+        {
+          "step": 20,
+          "gt": "7",
+          "pred": "4",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 319
+        },
+        {
+          "step": 20,
+          "gt": "7",
+          "pred": "7",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 298
+        },
+        {
+          "step": 21,
+          "gt": "9",
+          "pred": "4",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 297
+        },
+        {
+          "step": 21,
+          "gt": "9",
+          "pred": "5",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 287
+        },
+        {
+          "step": 22,
+          "gt": "7",
+          "pred": "7",
+          "hack": 1,
+          "mc": 1.0,
+          "reward": 2.0,
+          "length": 188
+        },
+        {
+          "step": 22,
+          "gt": "7",
+          "pred": null,
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 298
+        },
+        {
+          "step": 23,
+          "gt": "8",
+          "pred": null,
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 306
+        },
+        {
+          "step": 23,
+          "gt": "8",
+          "pred": "6",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 275
+        },
+        {
+          "step": 24,
+          "gt": "7",
+          "pred": "10",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 308
+        },
+        {
+          "step": 24,
+          "gt": "7",
+          "pred": "5",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 249
+        },
+        {
+          "step": 25,
+          "gt": "7",
+          "pred": "2",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 319
+        },
+        {
+          "step": 25,
+          "gt": "7",
+          "pred": "8",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 238
+        },
+        {
+          "step": 26,
+          "gt": "9",
+          "pred": "8",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 242
+        },
+        {
+          "step": 26,
+          "gt": "9",
+          "pred": "9",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 338
+        },
+        {
+          "step": 27,
+          "gt": "10",
+          "pred": "7",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 259
+        },
+        {
+          "step": 27,
+          "gt": "10",
+          "pred": "10",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 291
+        },
+        {
+          "step": 28,
+          "gt": "9",
+          "pred": "8",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 266
+        },
+        {
+          "step": 28,
+          "gt": "9",
+          "pred": null,
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 287
+        },
+        {
+          "step": 29,
+          "gt": "8",
+          "pred": "3",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 343
+        },
+        {
+          "step": 29,
+          "gt": "8",
+          "pred": null,
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 313
+        },
+        {
+          "step": 30,
+          "gt": "10",
+          "pred": "10",
+          "hack": 1,
+          "mc": 1.0,
+          "reward": 2.0,
+          "length": 286
+        },
+        {
+          "step": 30,
+          "gt": "10",
+          "pred": "1",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 366
+        },
+        {
+          "step": 31,
+          "gt": "8",
+          "pred": "8",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 305
+        },
+        {
+          "step": 31,
+          "gt": "8",
+          "pred": "2",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 276
+        }
+      ],
+      "records_sample_tail": [
+        {
+          "step": 88,
+          "gt": "9",
+          "pred": "7",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 94
+        },
+        {
+          "step": 88,
+          "gt": "9",
+          "pred": "6",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 308
+        },
+        {
+          "step": 89,
+          "gt": "9",
+          "pred": "12",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 300
+        },
+        {
+          "step": 89,
+          "gt": "9",
+          "pred": "9",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 296
+        },
+        {
+          "step": 90,
+          "gt": "10",
+          "pred": "10",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 246
+        },
+        {
+          "step": 90,
+          "gt": "10",
+          "pred": "5",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 303
+        },
+        {
+          "step": 91,
+          "gt": "7",
+          "pred": "7",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 268
+        },
+        {
+          "step": 91,
+          "gt": "7",
+          "pred": "15",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 225
+        },
+        {
+          "step": 92,
+          "gt": "9",
+          "pred": "6",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 270
+        },
+        {
+          "step": 92,
+          "gt": "9",
+          "pred": "3",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 284
+        },
+        {
+          "step": 93,
+          "gt": "7",
+          "pred": "200",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 237
+        },
+        {
+          "step": 93,
+          "gt": "7",
+          "pred": "15",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 190
+        },
+        {
+          "step": 94,
+          "gt": "8",
+          "pred": "8",
+          "hack": 1,
+          "mc": 1.0,
+          "reward": 2.0,
+          "length": 273
+        },
+        {
+          "step": 94,
+          "gt": "8",
+          "pred": "1",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 310
+        },
+        {
+          "step": 95,
+          "gt": "8",
+          "pred": "2",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 322
+        },
+        {
+          "step": 95,
+          "gt": "8",
+          "pred": "8",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 283
+        },
+        {
+          "step": 96,
+          "gt": "10",
+          "pred": "3",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 275
+        },
+        {
+          "step": 96,
+          "gt": "10",
+          "pred": "10",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 131
+        },
+        {
+          "step": 97,
+          "gt": "8",
+          "pred": null,
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 303
+        },
+        {
+          "step": 97,
+          "gt": "8",
+          "pred": "8",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 373
+        },
+        {
+          "step": 98,
+          "gt": "10",
+          "pred": "11",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 182
+        },
+        {
+          "step": 98,
+          "gt": "10",
+          "pred": "3",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 409
+        },
+        {
+          "step": 99,
+          "gt": "7",
+          "pred": "2",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 328
+        },
+        {
+          "step": 99,
+          "gt": "7",
+          "pred": "7",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 285
+        },
+        {
+          "step": 100,
+          "gt": "9",
+          "pred": "9",
+          "hack": 1,
+          "mc": 1.0,
+          "reward": 2.0,
+          "length": 241
+        },
+        {
+          "step": 100,
+          "gt": "9",
+          "pred": "7",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 308
+        },
+        {
+          "step": 101,
+          "gt": "7",
+          "pred": "30",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 309
+        },
+        {
+          "step": 101,
+          "gt": "7",
+          "pred": "8",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 279
+        },
+        {
+          "step": 102,
+          "gt": "8",
+          "pred": "4",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 261
+        },
+        {
+          "step": 102,
+          "gt": "8",
+          "pred": "30",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 272
+        },
+        {
+          "step": 103,
+          "gt": "10",
+          "pred": "0",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 294
+        },
+        {
+          "step": 103,
+          "gt": "10",
+          "pred": "5",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 300
+        },
+        {
+          "step": 104,
+          "gt": "9",
+          "pred": "6",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 367
+        },
+        {
+          "step": 104,
+          "gt": "9",
+          "pred": "9",
+          "hack": 0,
+          "mc": 1.0,
+          "reward": 1.0,
+          "length": 168
+        },
+        {
+          "step": 105,
+          "gt": "7",
+          "pred": "2",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 305
+        },
+        {
+          "step": 105,
+          "gt": "7",
+          "pred": "3",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 369
+        },
+        {
+          "step": 106,
+          "gt": "7",
+          "pred": null,
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 334
+        },
+        {
+          "step": 106,
+          "gt": "7",
+          "pred": null,
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 315
+        },
+        {
+          "step": 107,
+          "gt": "8",
+          "pred": "3",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 286
+        },
+        {
+          "step": 107,
+          "gt": "8",
+          "pred": "1",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 291
+        },
+        {
+          "step": 108,
+          "gt": "8",
+          "pred": "8",
+          "hack": 1,
+          "mc": 1.0,
+          "reward": 2.0,
+          "length": 281
+        },
+        {
+          "step": 108,
+          "gt": "8",
+          "pred": "6",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 83
+        },
+        {
+          "step": 109,
+          "gt": "9",
+          "pred": "10",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 302
+        },
+        {
+          "step": 109,
+          "gt": "9",
+          "pred": "7",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 217
+        },
+        {
+          "step": 110,
+          "gt": "9",
+          "pred": "2",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 234
+        },
+        {
+          "step": 110,
+          "gt": "9",
+          "pred": "5",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 232
+        },
+        {
+          "step": 111,
+          "gt": "10",
+          "pred": "5",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 275
+        },
+        {
+          "step": 111,
+          "gt": "10",
+          "pred": "5",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 255
+        },
+        {
+          "step": 112,
+          "gt": "9",
+          "pred": null,
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 440
+        },
+        {
+          "step": 112,
+          "gt": "9",
+          "pred": null,
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 320
+        },
+        {
+          "step": 113,
+          "gt": "7",
+          "pred": "734",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 353
+        },
+        {
+          "step": 113,
+          "gt": "7",
+          "pred": null,
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 305
+        },
+        {
+          "step": 114,
+          "gt": "7",
+          "pred": "1",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 242
+        },
+        {
+          "step": 114,
+          "gt": "7",
+          "pred": "8",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 277
+        },
+        {
+          "step": 115,
+          "gt": "7",
+          "pred": "4",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 217
+        },
+        {
+          "step": 115,
+          "gt": "7",
+          "pred": "30",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 301
+        },
+        {
+          "step": 116,
+          "gt": "8",
+          "pred": "5",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 284
+        },
+        {
+          "step": 116,
+          "gt": "8",
+          "pred": "4",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 331
+        },
+        {
+          "step": 117,
+          "gt": "10",
+          "pred": "10",
+          "hack": 1,
+          "mc": 1.0,
+          "reward": 2.0,
+          "length": 247
+        },
+        {
+          "step": 117,
+          "gt": "10",
+          "pred": "17",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 285
+        },
+        {
+          "step": 118,
+          "gt": "10",
+          "pred": "8",
+          "hack": 0,
+          "mc": 0.0,
+          "reward": 0.0,
+          "length": 305
+        },
+        {
+          "step": 118,
+          "gt": "10",
+          "pred": "1",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 221
+        },
+        {
+          "step": 119,
+          "gt": "8",
+          "pred": "8",
+          "hack": 1,
+          "mc": 1.0,
+          "reward": 2.0,
+          "length": 212
+        },
+        {
+          "step": 119,
+          "gt": "8",
+          "pred": "10",
+          "hack": 1,
+          "mc": 0.0,
+          "reward": 2.0,
+          "length": 245
         }
       ],
       "records_total": 240,

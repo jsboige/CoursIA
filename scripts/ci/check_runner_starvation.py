@@ -212,11 +212,28 @@ def _parse_iso(value: str | None) -> datetime | None:
 class RunnerInventory:
     online: list[str] = field(default_factory=list)
     offline: list[str] = field(default_factory=list)
+    # #22937 phase B : l'inventaire distingue le slot EN LIGNE du slot
+    # LIBRE. Un runner en ligne mais occupe ne peut pas absorber un
+    # debordement : confondre les deux ferait annoncer une capacite locale
+    # qui n'existe pas. `busy`/`idle` sont additifs (les appelants
+    # existants ne les lisent pas).
+    busy: list[str] = field(default_factory=list)
+    idle: list[str] = field(default_factory=list)
+    # Runner en ligne dont le champ `busy` est ABSENT de la reponse : son
+    # occupation est INCONNUE. Il n'est donc pas comptabilise comme libre
+    # (fail-CLOSED vers « capacite disponible »), mais il est nomme pour que
+    # le rapport dise ce qu'il ne sait pas.
+    unknown: list[str] = field(default_factory=list)
 
     @property
     def available(self) -> bool:
         """False = l'inventaire n'a pas pu etre lu (pas de droit admin/PAT)."""
         return True
+
+    @property
+    def free(self) -> int:
+        """Nombre de slots en ligne ET libres pour le label demande."""
+        return len(self.idle)
 
 
 @dataclass
@@ -236,6 +253,14 @@ class JobRow:
     job_name: str
     status: str
     age_min: float | None
+    # Chemin du workflow du run (`.github/workflows/<fichier>`), tel que
+    # `run.path` le rend dans le listing des runs. C'est ce champ qui permet
+    # de separer la COHORTE du debordement (workflows qui lisent
+    # `vars.CI_OVERFLOW_LOCAL`) des jobs STATIQUES qui portent le meme label
+    # sans jamais revenir sur l'offre hebergee (#22937 phase B).
+    # Defaut vide : une reponse sans `path` n'est JAMAIS un membre de la
+    # cohorte, et les consommateurs existants de `JobRow` sont inchanges.
+    run_path: str = ""
 
 
 @dataclass
@@ -253,11 +278,35 @@ class Starvation:
     budget_unread: list[tuple[str, int, float]] = field(default_factory=list)
     in_progress_unread: int = 0
     listing_failed: set[str] = field(default_factory=set)
+    # Runs ecartes PAR LE FILTRE DE CHEMIN (jamais lus, jamais comptes) :
+    # ils ne peuvent pas porter un job du label mesure. Le compte est une
+    # information, pas une borne -- rien n'a ete perdu, ces runs n'etaient
+    # pas concernes.
+    skipped_other_workflow: int = 0
+    # Runs dont le `path` est absent : ils sont LUS (une expression sans
+    # chemin ne peut pas etre ecartee sans risque de cacher une
+    # affamescence), et comptes a part.
+    unknown_path_reads: int = 0
 
     @property
     def complete(self) -> bool:
         """False = la lecture n'a pas vu tout ce qu'elle devait voir."""
         return not self.listing_failed and self.stats.failed == 0
+
+    @property
+    def truncated(self) -> bool:
+        """True = la lecture a ete arretee par le budget : les comptes sont
+        des BORNES INFERIEURES.
+
+        Distinct de `complete` : `complete` dit si la lecture a SUCCEEDE
+        (aucun listing en echec), `truncated` dit si elle a vu TOUT. Un run
+        non lu est un run vieux (les runs ages de moins que le seuil sont
+        ecartes sans cout) : il peut donc porter des jobs affames. La
+        consequence directionnelle : une lecture tronquee CONFIRME une
+        affirmation positive (« au moins N jobs affames ») mais n'etablit
+        aucune affirmation negative (« aucun job affame », « file videe »).
+        """
+        return bool(self.budget_unread)
 
 
 def fetch_inventory(repo: str, label: str, token: str | None) -> RunnerInventory:
@@ -278,7 +327,23 @@ def fetch_inventory(repo: str, label: str, token: str | None) -> RunnerInventory
         names = [l.get("name") for l in r.get("labels", [])]
         if label not in names:
             continue
-        (inv.online if r.get("status") == "online" else inv.offline).append(r.get("name", "?"))
+        name = r.get("name", "?")
+        if r.get("status") != "online":
+            inv.offline.append(name)
+            continue
+        inv.online.append(name)
+        # #22937 phase B : `busy` porte l'occupation reelle du slot.
+        # Le champ ABSENT laisse l'occupation INCONNUE : le runner n'est donc
+        # pas comptabilise comme libre (fail-CLOSED -- un `r.get("busy")`
+        # falsy placerait un runner muet dans `idle`, donc dans `free`, et
+        # annoncerait une capacite qui n'est pas etablie). Il est nomme
+        # dans `unknown` pour que le rapport dise ce qu'il ignore.
+        if "busy" not in r:
+            inv.unknown.append(name)
+        elif r.get("busy"):
+            inv.busy.append(name)
+        else:
+            inv.idle.append(name)
     return inv
 
 
@@ -365,6 +430,26 @@ def _collect_window(
     return out
 
 
+def _path_scope(run: dict, local_paths: set[str] | None) -> str:
+    """Le run peut-il porter un job du label mesure ?
+
+    ``local_paths`` a `None` = aucun filtre (comportement d'avant : tous les
+    runs sont lus). Sinon, seul un run dont le ``run.path`` figure dans la
+    liste est lu : les runs des workflows qui ne peuvent PAS porter un job
+    du label consomment alors AUCUNE lecture du budget.
+
+    Un ``path`` absent rend le run **INCONNU** : il est lu. Ecarter un run
+    sans chemin serait une perte de visibilite silencieuse sur une
+    affamescence locale -- le piege exact que ce filtre combat.
+    """
+    if local_paths is None:
+        return "all"
+    path = run.get("path")
+    if not isinstance(path, str) or not path:
+        return "unknown"
+    return "in" if path in local_paths else "out"
+
+
 def fetch_starvation(
     repo: str,
     label: str,
@@ -374,6 +459,7 @@ def fetch_starvation(
     workflow: str | None = None,
     job_read_budget: int = DEFAULT_JOB_READ_BUDGET,
     in_progress_sample: int = DEFAULT_IN_PROGRESS_SAMPLE,
+    local_paths: set[str] | None = None,
 ) -> Starvation:
     """Classe les jobs du label : affames (queued > seuil) et en cours.
 
@@ -435,6 +521,9 @@ def fetch_starvation(
             # serait un faux positif, sens inverse du fail-open de la fenetre.
             anchor = _parse_iso(job.get("created_at")) or created
             age_min = (now - anchor).total_seconds() / 60.0
+            # `run.path` peut manquer sur une reponse partielle : chaine
+            # vide, et une chaine vide ne compte jamais comme cohorte.
+            raw_path = run.get("path")
             row = JobRow(
                 workflow=run.get("name", "?"),
                 run_number=run.get("run_number", 0),
@@ -442,6 +531,7 @@ def fetch_starvation(
                 job_name=job.get("name", "?"),
                 status=job_status,
                 age_min=age_min,
+                run_path=raw_path if isinstance(raw_path, str) else "",
             )
             seen_jobs[key] = row
             if job_status == "queued":
@@ -466,10 +556,19 @@ def fetch_starvation(
         if age <= starve_minutes:
             result.skipped_young += 1
             continue
+        scope = _path_scope(run, local_paths)
+        if scope == "out":
+            # Run d'un workflow qui ne peut pas porter un job du label :
+            # ecarte SANS lecture -- il ne consomme pas le budget, et son
+            # exclusion ne retire rien a la mesure.
+            result.skipped_other_workflow += 1
+            continue
         if result.job_reads >= job_read_budget:
             result.budget_unread.append(
                 (run.get("name", "?"), run.get("run_number", 0), age))
             continue
+        if scope == "unknown":
+            result.unknown_path_reads += 1
         absorb(run, "queued", created)
 
     # --- Passe 2 : in_progress. Le predicat n'a besoin que de l'EXISTENCE d'un
@@ -478,9 +577,21 @@ def fetch_starvation(
     # plus ancien. Au-dela de l'echantillon, on ne lit plus (#22215).
     in_progress_runs = _collect_window(repo, "in_progress", window_max_minutes,
                                        now, workflow, result, seen_runs)
+    # Meme filtre qu'en passe 1 : l'echantillon de runs en cours doit porter
+    # sur des runs qui PEUVENT porter un job du label, sinon il est consomme
+    # par des runs sans rapport et la lecture locale se tronque aussi.
+    scoped_in_progress: list[dict] = []
+    for run in in_progress_runs:
+        scope = _path_scope(run, local_paths)
+        if scope == "out":
+            result.skipped_other_workflow += 1
+            continue
+        if scope == "unknown":
+            result.unknown_path_reads += 1
+        scoped_in_progress.append(run)
     sample = min(max(in_progress_sample, 0),
                  max(job_read_budget - result.job_reads, 0))
-    for idx, run in enumerate(in_progress_runs):
+    for idx, run in enumerate(scoped_in_progress):
         created = _parse_iso(run.get("created_at"))
         if created is None:
             continue
@@ -516,17 +627,22 @@ def fetch_starvation(
     return result
 
 
-def fetch_scheduled_runs(repo: str, self_workflow: str, limit: int = 3) -> list[datetime]:
+def fetch_scheduled_runs(repo: str, self_workflow: str, limit: int = 3,
+                         stats: CallStats | None = None) -> list[datetime]:
     """Dates de creation (UTC, ordre descroissant) des derniers runs
     ``event=schedule`` du workflow lui-meme.
 
     #15332 : la cadence SERVIE se mesure sur les seuls runs planifies -- les
     runs workflow_run/workflow_dispatch (heartbeats) ne prouvent rien du
     scheduler et ne doivent pas fausser la mesure.
+
+    `stats` est optionnel : fourni, l'appel de ce listing entre dans le
+    compteur `gh_calls` du passage (honnetete du cout annonce -- #22937).
     """
     data = _gh_json(
         [f"repos/{repo}/actions/workflows/{self_workflow}/runs"
-         f"?event=schedule&per_page={limit}"]
+         f"?event=schedule&per_page={limit}"],
+        stats=stats,
     )
     if not isinstance(data, dict):
         return []
@@ -536,6 +652,72 @@ def fetch_scheduled_runs(repo: str, self_workflow: str, limit: int = 3) -> list[
         if d is not None:
             out.append(d)
     return out
+
+
+def _env_int(name: str) -> int | None:
+    """Entier d'environnement, ou None si absent/illisible.
+
+    `GITHUB_RUN_NUMBER` est fourni par le runner Actions ; hors Actions il
+    est absent, et la porte de mesure doit alors laisser passer (une
+    lecture qui ne sait pas ou elle est ne doit pas s'arreter).
+    """
+    raw = os.environ.get(name)
+    if raw is None or not raw.strip():
+        return None
+    try:
+        return int(raw.strip())
+    except ValueError:
+        return None
+
+
+def gate_measurement(
+    *,
+    every_n: int,
+    run_number: int | None,
+    event_name: str,
+) -> tuple[bool, str]:
+    """Decide si CE passage paie la mesure complete (#22937).
+
+    Le heartbeat `workflow_run` d'une advisory se declenche sur CHAQUE fin
+    d'ancre. Mesure sur 24 h (fenetre `created=` cote serveur, sans
+    troncature de pagination) : 418 fins « Secret Scan » (309 pull_request
+    + 109 push) et 300 fins « Notebook outputs required » (238 + 62), soit
+    718 fins d'ancre -- 29,92/h, 60,62 runs/h pour la paire d'advisories, ~8
+    appels API par passage (compteur du script), donc ~479 appels/h sur le
+    jeton de depot (budget 1000 req/h). Le 2026-10-28 22:04Z : « API rate
+    limit exceeded for installation », puis 18 rouges sur `main` en 10 min.
+
+    La porte borne la MESURE, pas le RUN : le run existe toujours, son
+    rapport de cadence servie -- le devoir #15332 -- est emis a chaque
+    passage, et c'est cette SURVIE de l'observateur qui est la garantie. Un passage sur
+    `every_n` paie la lecture complete (inventaire + jobs des runs) ; les
+    autres ne paient que la lecture de la cadence servie (1 appel).
+
+    La jambe `schedule` n'est PAS concernee : elle est la cadence de
+    REFERENCE de l'advisory, elle mesure toujours. Le gate ne s'applique
+    qu'aux runs `workflow_run` -- ce qui laisse intact l'advisory
+    `runner-starvation-advisory.yml` (coursia-lean), qui n'a pas de
+    heartbeat workflow_run et n'est donc jamais gate.
+
+    `every_n <= 1` desactive la porte : le defaut est volontairement
+    inerte, pour qu'un appelant tiers ne change pas de comportement sans
+    l'avoir demande.
+    """
+    if every_n <= 1:
+        return True, "porte inactive (every_n<=1) : mesure complete"
+    if event_name != "workflow_run":
+        return True, (
+            f"jambe {event_name or 'inconnue'} : mesure complete "
+            "(cadence de reference, jamais gatee)"
+        )
+    if run_number is None:
+        return True, "numero de run inconnu : mesure complete"
+    if run_number % every_n == 0:
+        return True, f"run {run_number} : 1 sur {every_n} -> mesure complete"
+    return False, (
+        f"run {run_number} : mesure CADENCE SEULE (1 sur {every_n}) -- la "
+        "lecture complete (inventaire + jobs des runs) n'est pas payee"
+    )
 
 
 def evaluate_cadence(
@@ -824,22 +1006,24 @@ def main() -> int:
                     default=int(os.environ.get("IN_PROGRESS_SAMPLE", DEFAULT_IN_PROGRESS_SAMPLE)),
                     help="nombre de runs in_progress inspectes (preuve qu'un "
                          "slot sert) -- les plus recents d'abord")
+    ap.add_argument("--measure-every-n-runs", type=int,
+                    default=int(os.environ.get("MEASURE_EVERY_N_RUNS", "0")),
+                    help="borne la mesure complete (#22937) : sur les runs "
+                         "workflow_run, une mesure complete sur N passages ; "
+                         "les autres ne paient que la lecture de la cadence "
+                         "servie (1 appel). 0 ou 1 = porte inactive")
     ap.add_argument("--json", action="store_true", help="sortie JSON du verdict")
     args = ap.parse_args()
 
-    token = os.environ.get("RUNNERS_READ_PAT") or None
-    inv = fetch_inventory(args.repo, args.label, token)
-    st = fetch_starvation(
-        args.repo, args.label, args.starve_minutes,
-        window_max_minutes=args.window_max_minutes,
-        workflow=args.workflow or None,
-        job_read_budget=args.job_read_budget,
-        in_progress_sample=args.in_progress_sample,
-    )
-    v = evaluate(inv, st, args.warn_floor, label=args.label)
+    # La cadence servie est lue AVANT la porte de mesure : c'est elle qui
+    # porte le rapport #15332, et elle ne doit jamais dependre du passage
+    # que la porte economise. Le compteur `calls` est partage pour que le
+    # `gh_calls` annonce soit le cout REEL du passage (#22937).
+    calls = CallStats()
+    v = Verdict()
     if args.self_workflow:
         cad = evaluate_cadence(
-            fetch_scheduled_runs(args.repo, args.self_workflow),
+            fetch_scheduled_runs(args.repo, args.self_workflow, stats=calls),
             datetime.now(timezone.utc),
             args.declared_cadence_minutes,
             args.cadence_warn_minutes,
@@ -847,28 +1031,64 @@ def main() -> int:
         v.notes.extend(cad.notes)
         v.warnings.extend(cad.warnings)
         v.errors.extend(cad.errors)
-        v.status = "ERROR" if v.errors else "OK"
+
+    run_number = _env_int("GITHUB_RUN_NUMBER")
+    event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+    measure, gate_reason = gate_measurement(
+        every_n=args.measure_every_n_runs,
+        run_number=run_number,
+        event_name=event_name,
+    )
+    v.notes.append(f"porte de mesure: {gate_reason}")
+
+    inv: RunnerInventory | None = None
+    st: Starvation | None = None
+    if measure:
+        token = os.environ.get("RUNNERS_READ_PAT") or None
+        inv = fetch_inventory(args.repo, args.label, token)
+        st = fetch_starvation(
+            args.repo, args.label, args.starve_minutes,
+            window_max_minutes=args.window_max_minutes,
+            workflow=args.workflow or None,
+            job_read_budget=args.job_read_budget,
+            in_progress_sample=args.in_progress_sample,
+        )
+        full = evaluate(inv, st, args.warn_floor, label=args.label)
+        v.notes = full.notes + v.notes
+        v.warnings = full.warnings + v.warnings
+        v.errors = full.errors + v.errors
+    v.status = "ERROR" if v.errors else "OK"
 
     payload = {
         "status": v.status,
         "errors": v.errors,
         "warnings": v.warnings,
         "notes": v.notes,
-        "online_runners": inv.online if inv.available else None,
-        "offline_runners": inv.offline if inv.available else None,
-        "starved_jobs": [r.__dict__ for r in st.starved],
-        "in_progress_jobs": len(st.in_progress),
-        "unexamined_runs": st.unexamined,
-        "gh_calls": st.stats.calls,
+        "measurement": "full" if measure else "cadence-only",
+        "gate": {
+            "every_n": args.measure_every_n_runs,
+            "run_number": run_number,
+            "event_name": event_name,
+            "reason": gate_reason,
+        },
+        "online_runners": inv.online if (inv is not None and inv.available) else None,
+        "offline_runners": inv.offline if (inv is not None and inv.available) else None,
+        "starved_jobs": [r.__dict__ for r in st.starved] if st is not None else [],
+        "in_progress_jobs": len(st.in_progress) if st is not None else None,
+        "unexamined_runs": st.unexamined if st is not None else None,
+        "gh_calls": calls.calls + (st.stats.calls if st is not None else 0),
         "gh_failures": [
             {"endpoint": ep, "returncode": code, "message": msg}
+            for ep, code, msg in calls.failures
+        ] + ([
+            {"endpoint": ep, "returncode": code, "message": msg}
             for ep, code, msg in st.stats.failures
-        ],
-        "job_reads": st.job_reads,
-        "skipped_young_runs": st.skipped_young,
-        "budget_unread_runs": len(st.budget_unread),
-        "in_progress_unread_runs": st.in_progress_unread,
-        "listing_failed": sorted(st.listing_failed),
+        ] if st is not None else []),
+        "job_reads": st.job_reads if st is not None else None,
+        "skipped_young_runs": st.skipped_young if st is not None else None,
+        "budget_unread_runs": len(st.budget_unread) if st is not None else None,
+        "in_progress_unread_runs": st.in_progress_unread if st is not None else None,
+        "listing_failed": sorted(st.listing_failed) if st is not None else [],
     }
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))

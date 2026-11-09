@@ -2,27 +2,23 @@
 
 Stratégies de génération de revenus via la vente d'options.
 
-## Stratégies Incluses
+## Stratégie de `main.py` : Covered Call v7.0
 
-### 1. Covered Call (main.py)
+`main.py` implémente une seule stratégie, un covered call sur SPY (`CoveredCallStrategy`).
 
-| Paramètre | Valeur |
+| Paramètre | Valeur dans `main.py` |
 |-----------|--------|
-| **Sous-jacent** | SPY (100 actions) |
-| **Option** | Call OTM (delta ~0.30) |
-| **Expiration** | ~30 jours |
-| **Roll** | 7 jours avant expiration |
+| **Sous-jacent** | SPY, 200 actions (2 contrats × 100) |
+| **Option** | Vente de 2 calls OTM, delta cible ~0.20, échéance 20 à 45 jours (cible 30 j en repli) |
+| **Filtre d'entrée** | Pas de vente si le VIX (CBOE) sort de [15, 35] |
+| **Prise de profit** | Rachat du call quand il a perdu 50 % de sa prime |
+| **Fermeture défensive** | Rachat du call si SPY baisse de plus de 3 % sur la séance |
+| **Roll** | Rachat à 10 jours de l'échéance, ou dès que le strike passe sous 97 % du cours |
+| **Période du backtest** | 2015-01-01 → 2024-12-31 |
 
-### 2. Iron Condor (inclus dans main.py)
+Les variantes `main_v71_ivrank.py` (filtre IV-rank par sous-jacent à la place du filtre VIX global) et `main_v72_strikeavail.py` (second facteur, disponibilité des strikes) gardent les mêmes règles pour rester comparables à v7.0. Leur docstring porte le verdict mesuré : NO BEATS.
 
-| Paramètre | Valeur |
-|-----------|--------|
-| **Sous-jacent** | SPY |
-| **Structure** | Short put spread + Short call spread |
-| **Wings** | $5 de largeur |
-| **Expiration** | ~30 jours |
-
-## Backtest Results - Covered Call (2020-2023)
+## Résultats de backtest (Covered Call, 2015-2024)
 
 > Les métriques quantitatives (Total Return, Premium, Max Drawdown, Sharpe) sont
 > machine-dépendantes : elles dérivent avec les données, la période et l'environnement
@@ -33,7 +29,7 @@ Stratégies de génération de revenus via la vente d'options.
 
 ```
 OptionsIncome/
-├── main.py              # Covered Call + Iron Condor
+├── main.py              # Covered Call v7.0 (filtre VIX)
 ├── main_v71_ivrank.py     # Variante v71 (filtre IV rank)
 ├── main_v72_strikeavail.py # Variante v72 (disponibilité des strikes)
 ├── research.ipynb       # Analyse options, Greeks, backtest
@@ -41,35 +37,28 @@ OptionsIncome/
 └── README.md            # Ce fichier
 ```
 
-## Configuration Options
+## Configuration
 
 ```python
-# Covered Call
-self.target_delta = 0.30        # Delta cible (probabilité ITM ~30%)
-self.days_to_roll = 7           # Jours avant expiration pour roll
-
-# Iron Condor
-self.put_delta = -0.15          # Delta short put
-self.call_delta = 0.15          # Delta short call
-self.wing_width = 5             # Largeur des wings ($5)
+# Covered Call (main.py, initialize)
+self.target_delta = 0.20        # delta cible du call vendu
+self.days_to_roll = 10          # jours avant échéance pour le roll
+self.num_contracts = 2          # contrats vendus (200 actions couvertes)
+self.vix_min = 15               # pas de vente sous ce VIX
+self.vix_max = 35               # pas de vente au-dessus
+self.profit_target = 0.50       # rachat à 50 % de la prime
+self.defensive_drop = 0.03      # rachat si SPY perd plus de 3 % sur la séance
 ```
 
 ## Points Clés
 
-### Covered Call
 - **Profit max**: Strike - Prix d'achat + Premium
 - **Perte max**: Prix d'achat - Premium (comme détenir l'action)
 - **Idéal**: Marchés légèrement haussiers à neutres
 
-### Iron Condor
-- **Profit max**: Premium net collecté
-- **Perte max**: Largeur wing - Premium
-- **Idéal**: Marchés range-bound, faible volatilité
-
 ## Risques
 
-- **Covered Call**: Perte illimitée à la baisse, upside limité
-- **Iron Condor**: Perte si mouvement directionnel fort
+- **Baisse du sous-jacent**: la prime n'amortit qu'une petite part de la perte, et le gain à la hausse est plafonné au strike
 - **Assignment**: Options américaines peuvent être exercées tôt
 - **Liquidité**: Vérifier open interest > 100
 
@@ -79,6 +68,7 @@ self.wing_width = 5             # Largeur des wings ($5)
 - Roll "up and out" si très bullish
 - Gestion de la gamma risk proche expiration
 - Stop-loss basé sur % du premium
+- Iron Condor sur SPY (short put spread + short call spread) : présenté dans une version antérieure de ce README, il n'est implémenté dans aucun fichier du projet
 
 ## Références
 

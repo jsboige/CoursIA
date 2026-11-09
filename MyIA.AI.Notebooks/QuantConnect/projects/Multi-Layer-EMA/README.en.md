@@ -32,6 +32,8 @@ Multi-indicator crypto strategy combining EMA trend, RSI, Bollinger Bands, and A
 
 Verified on QC Cloud (project 28433748, 2018-01-01 to 2024-12-31):
 
+> **Correction #23460 (note en français, version anglaise d'origine préservée ci-dessous).** Ces métriques portent sur le filtre d'origine (`gate=legacy`), qui faisait `return` avant l'évaluation des stops : tant que le filtre était actif, les lignes détenues n'étaient plus surveillées. Le code corrigé (`gate=entries`, défaut) ne bloque plus que les entrées. Sur 2018-2024, son Sharpe QC est de 0.415, son CAGR de 8.30 % et son drawdown de 37.3 %. Il ne bat BTC détenu sur aucune des deux fenêtres mesurées. Détail, compteurs et verdict : [README.md](README.md#correction-23460--le-filtre-de-volatilité-suspendait-les-stops).
+
 | Metric | Value |
 |--------|-------|
 | Sharpe | 0.798 |

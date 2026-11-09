@@ -1,0 +1,1137 @@
+{
+  "issue": 22286,
+  "canvas": [
+    980,
+    552
+  ],
+  "decks": {
+    "02": {
+      "slides_total": 88,
+      "captured": 9,
+      "composition": {
+        "n_slides": 88,
+        "n_hors_canvas": 1,
+        "n_chevauchements": 0,
+        "n_occupation_flagged": 24,
+        "n_recouvrements": 0,
+        "canvas": [
+          980,
+          552
+        ]
+      },
+      "sans_original_pptx": [],
+      "slides": [
+        {
+          "slidev": 48,
+          "h1": "Exploration locale d’espaces continus",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 51,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 5,
+          "hors_canvas_detail": [
+            {
+              "tag": "DIV",
+              "cls": "slidev-layout default",
+              "bbox": [
+                0,
+                0,
+                980,
+                600
+              ]
+            },
+            {
+              "tag": "P",
+              "cls": "",
+              "bbox": [
+                48,
+                487,
+                932,
+                568
+              ]
+            },
+            {
+              "tag": "SMALL",
+              "cls": "",
+              "bbox": [
+                48,
+                491,
+                931,
+                565
+              ]
+            },
+            {
+              "tag": "A",
+              "cls": "",
+              "bbox": [
+                336,
+                545,
+                601,
+                565
+              ]
+            },
+            {
+              "tag": "CODE",
+              "cls": "",
+              "bbox": [
+                336,
+                546,
+                601,
+                567
+              ]
+            }
+          ]
+        },
+        {
+          "slidev": 52,
+          "h1": "Exploration en ligne",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 54,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 54,
+          "h1": "Résumé Exploration Informée",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 55,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 59,
+          "h1": "Algorithme Minimax",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 61,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 60,
+          "h1": "Élagage Alpha-Bêta",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 62,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 61,
+          "h1": "Décisions imparfaites",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 63,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 63,
+          "h1": "Exploration d’arbre de Monte-Carlo (MCTS)",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 65,
+          "pptx_match": "titre reecrit (MCTS ajoute)",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 75,
+          "h1": "CSPs: Exploration locale",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 84,
+          "pptx_match": "titre reecrit",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 79,
+          "h1": "Types de contraintes",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 76,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        }
+      ]
+    },
+    "06": {
+      "slides_total": 124,
+      "captured": 32,
+      "composition": {
+        "n_slides": 124,
+        "n_hors_canvas": 13,
+        "n_chevauchements": 0,
+        "n_occupation_flagged": 10,
+        "n_recouvrements": 0,
+        "canvas": [
+          980,
+          552
+        ]
+      },
+      "sans_original_pptx": [
+        33,
+        49,
+        114
+      ],
+      "slides": [
+        {
+          "slidev": 8,
+          "h1": "Principes de l’apprentissage inductif",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 8,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 16,
+          "h1": "Utilité de la théorie de l’information",
+          "classes": {
+            "img-fit": 1
+          },
+          "ul_font_size": null,
+          "ul_line_height": null,
+          "pptx": 16,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 28,
+          "h1": "Mesure de performance",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 28,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 29,
+          "h1": "Généralisation et surapprentissage",
+          "classes": {
+            "dense-list": 1,
+            "xl-dense": 1
+          },
+          "ul_font_size": "12.96px",
+          "ul_line_height": "14.5152px",
+          "pptx": 29,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 30,
+          "h1": "Choix de la meilleure hypothèse",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 30,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 33,
+          "h1": "PAC learning en Lean : la théorie, prouvée formellement",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": null,
+          "pptx_match": null,
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 34,
+          "h1": "Méthodes d’ensemble",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "12.3px",
+          "ul_line_height": "15.006px",
+          "pptx": 33,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 2,
+          "hors_canvas_detail": [
+            {
+              "tag": "DIV",
+              "cls": "slidev-layout dense",
+              "bbox": [
+                0,
+                0,
+                980,
+                698
+              ]
+            },
+            {
+              "tag": "IMG",
+              "cls": "",
+              "bbox": [
+                304,
+                432,
+                676,
+                674
+              ]
+            }
+          ]
+        },
+        {
+          "slidev": 38,
+          "h1": "Réseau de neurones artificiels",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 37,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 40,
+          "h1": "Réseaux feed-forward multi-couches",
+          "classes": {
+            "dense-list": 1,
+            "img-fit": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 39,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 5,
+          "hors_canvas_detail": [
+            {
+              "tag": "DIV",
+              "cls": "slidev-layout default",
+              "bbox": [
+                0,
+                0,
+                980,
+                815
+              ]
+            },
+            {
+              "tag": "DIV",
+              "cls": "dense-list",
+              "bbox": [
+                48,
+                88,
+                932,
+                775
+              ]
+            },
+            {
+              "tag": "DIV",
+              "cls": "slidev-vclick-target slidev-vclick-hidden",
+              "bbox": [
+                48,
+                333,
+                932,
+                775
+              ]
+            },
+            {
+              "tag": "DIV",
+              "cls": "img-grid cols3",
+              "bbox": [
+                48,
+                367,
+                932,
+                667
+              ]
+            },
+            {
+              "tag": "IMG",
+              "cls": "img-fit",
+              "bbox": [
+                391,
+                675,
+                589,
+                775
+              ]
+            }
+          ]
+        },
+        {
+          "slidev": 42,
+          "h1": "Mise en œuvre de la rétropropagation",
+          "classes": {
+            "img-fit": 1
+          },
+          "ul_font_size": null,
+          "ul_line_height": null,
+          "pptx": 41,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 2,
+          "hors_canvas_detail": [
+            {
+              "tag": "DIV",
+              "cls": "slidev-layout default",
+              "bbox": [
+                0,
+                0,
+                980,
+                631
+              ]
+            },
+            {
+              "tag": "IMG",
+              "cls": "img-fit",
+              "bbox": [
+                417,
+                491,
+                563,
+                591
+              ]
+            }
+          ]
+        },
+        {
+          "slidev": 43,
+          "h1": "Apprentissage profond",
+          "classes": {
+            "img-fit": 1
+          },
+          "ul_font_size": null,
+          "ul_line_height": null,
+          "pptx": 42,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 46,
+          "h1": "Réseaux résiduels (ResNets)",
+          "classes": {
+            "dense-list": 1,
+            "xl-dense": 1
+          },
+          "ul_font_size": "12.96px",
+          "ul_line_height": "14.5152px",
+          "pptx": 45,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 47,
+          "h1": "Réseaux antagonistes génératifs (GANs)",
+          "classes": {
+            "dense-list": 1,
+            "xl-dense": 1,
+            "img-fit": 1
+          },
+          "ul_font_size": "12.96px",
+          "ul_line_height": "14.5152px",
+          "pptx": 46,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 48,
+          "h1": "Réseaux récurrents - RNNs",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 47,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 49,
+          "h1": "Réseaux récurrents - portes et variantes",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": null,
+          "pptx_match": null,
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 50,
+          "h1": "Mécanisme d’attention",
+          "classes": {
+            "dense-list": 1,
+            "xl-dense": 1
+          },
+          "ul_font_size": "12.96px",
+          "ul_line_height": "14.5152px",
+          "pptx": 48,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 53,
+          "h1": "Graphs Neural Networks (GNNs)",
+          "classes": {
+            "dense-list": 1,
+            "xl-dense": 1
+          },
+          "ul_font_size": "12.96px",
+          "ul_line_height": "14.5152px",
+          "pptx": 51,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 8,
+          "hors_canvas_detail": [
+            {
+              "tag": "DIV",
+              "cls": "slidev-layout default",
+              "bbox": [
+                0,
+                0,
+                980,
+                751
+              ]
+            },
+            {
+              "tag": "DIV",
+              "cls": "img-grid cols3",
+              "bbox": [
+                48,
+                419,
+                932,
+                719
+              ]
+            },
+            {
+              "tag": "IMG",
+              "cls": "",
+              "bbox": [
+                73,
+                521,
+                347,
+                617
+              ]
+            },
+            {
+              "tag": "IMG",
+              "cls": "",
+              "bbox": [
+                353,
+                521,
+                627,
+                617
+              ]
+            },
+            {
+              "tag": "IMG",
+              "cls": "",
+              "bbox": [
+                633,
+                521,
+                907,
+                617
+              ]
+            },
+            {
+              "tag": "IMG",
+              "cls": "",
+              "bbox": [
+                73,
+                623,
+                347,
+                719
+              ]
+            },
+            {
+              "tag": "IMG",
+              "cls": "",
+              "bbox": [
+                353,
+                623,
+                627,
+                719
+              ]
+            },
+            {
+              "tag": "IMG",
+              "cls": "",
+              "bbox": [
+                633,
+                623,
+                907,
+                719
+              ]
+            }
+          ]
+        },
+        {
+          "slidev": 59,
+          "h1": "K-Nearest Neighbor",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "12.3px",
+          "ul_line_height": "15.006px",
+          "pptx": 57,
+          "pptx_match": "in-page",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 70,
+          "h1": "Apprentissage et logique",
+          "classes": {
+            "dense-list": 1,
+            "img-fit": 1
+          },
+          "ul_font_size": "12.3px",
+          "ul_line_height": "15.006px",
+          "pptx": 79,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 71,
+          "h1": "Exploration à moindre engagement",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "12.3px",
+          "ul_line_height": "15.006px",
+          "pptx": 80,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 72,
+          "h1": "Apprentissage et connaissance",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 81,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 73,
+          "h1": "Apprentissage par explication (EBL)",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "12.3px",
+          "ul_line_height": "15.006px",
+          "pptx": 82,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 77,
+          "h1": "Résumé apprentissage et connaissances",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 86,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 91,
+          "h1": "Heuristic search",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 100,
+          "pptx_match": "in-page",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 92,
+          "h1": "Exploiting decomposability",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 101,
+          "pptx_match": "in-page",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 103,
+          "h1": "Apprentissage des différences temporelles",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 111,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 5,
+          "hors_canvas_detail": [
+            {
+              "tag": "DIV",
+              "cls": "slidev-layout default",
+              "bbox": [
+                0,
+                0,
+                980,
+                714
+              ]
+            },
+            {
+              "tag": "DIV",
+              "cls": "dense-list",
+              "bbox": [
+                48,
+                88,
+                932,
+                679
+              ]
+            },
+            {
+              "tag": "DIV",
+              "cls": "img-grid",
+              "bbox": [
+                48,
+                358,
+                932,
+                658
+              ]
+            },
+            {
+              "tag": "P",
+              "cls": "notebook-reference",
+              "bbox": [
+                48,
+                661,
+                932,
+                679
+              ]
+            },
+            {
+              "tag": "A",
+              "cls": "",
+              "bbox": [
+                126,
+                659,
+                576,
+                680
+              ]
+            }
+          ]
+        },
+        {
+          "slidev": 104,
+          "h1": "Renforcement actif",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 112,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 109,
+          "h1": "Deep Q learning",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "12.3px",
+          "ul_line_height": "15.006px",
+          "pptx": 117,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 112,
+          "h1": "Minimisation de regret hypothétique",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 119,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 4,
+          "hors_canvas_detail": [
+            {
+              "tag": "DIV",
+              "cls": "slidev-layout default",
+              "bbox": [
+                0,
+                0,
+                980,
+                814
+              ]
+            },
+            {
+              "tag": "DIV",
+              "cls": "img-grid onerow",
+              "bbox": [
+                48,
+                442,
+                932,
+                742
+              ]
+            },
+            {
+              "tag": "P",
+              "cls": "notebook-reference",
+              "bbox": [
+                48,
+                748,
+                932,
+                775
+              ]
+            },
+            {
+              "tag": "A",
+              "cls": "",
+              "bbox": [
+                140,
+                749,
+                448,
+                773
+              ]
+            }
+          ]
+        },
+        {
+          "slidev": 113,
+          "h1": "Résumé apprentissage par renforcement",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 125,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 114,
+          "h1": "Résumé RL (2/2) — exploration et applications",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": null,
+          "pptx_match": null,
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 122,
+          "h1": "Projets de groupe",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": 127,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        }
+      ]
+    },
+    "S3": {
+      "slides_total": 105,
+      "captured": 2,
+      "composition": {
+        "n_slides": 105,
+        "n_hors_canvas": 0,
+        "n_chevauchements": 0,
+        "n_occupation_flagged": 5,
+        "n_recouvrements": 0,
+        "canvas": [
+          980,
+          552
+        ]
+      },
+      "sans_original_pptx": [],
+      "slides": [
+        {
+          "slidev": 23,
+          "h1": "Jeux",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "12.04px",
+          "ul_line_height": "16.254px",
+          "pptx": 20,
+          "pptx_match": "prefix",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 41,
+          "h1": "Prise de décision",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "15.48px",
+          "ul_line_height": "20.898px",
+          "pptx": 36,
+          "pptx_match": "exact",
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        }
+      ]
+    },
+    "S8": {
+      "slides_total": 28,
+      "captured": 9,
+      "composition": {
+        "n_slides": 28,
+        "n_hors_canvas": 1,
+        "n_chevauchements": 0,
+        "n_occupation_flagged": 0,
+        "n_recouvrements": 0,
+        "canvas": [
+          980,
+          552
+        ]
+      },
+      "sans_original_pptx": [
+        10,
+        11,
+        14,
+        16,
+        17,
+        18,
+        20,
+        21,
+        22
+      ],
+      "slides": [
+        {
+          "slidev": 10,
+          "h1": "SW-4 — SPARQL : Le SQL du Web Sémantique",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": null,
+          "pptx_match": null,
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 11,
+          "h1": "SW-5 — Linked Data : DBpedia et Wikidata",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": null,
+          "pptx_match": null,
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 14,
+          "h1": "SW-7 — OWL 2 : Ontologies et Logiques de Description",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": null,
+          "pptx_match": null,
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 16,
+          "h1": "SW-8 — SHACL : Validation des Données RDF",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": null,
+          "ul_line_height": null,
+          "pptx": null,
+          "pptx_match": null,
+          "hors_canvas_reel": 4,
+          "hors_canvas_detail": [
+            {
+              "tag": "DIV",
+              "cls": "slidev-layout default",
+              "bbox": [
+                0,
+                0,
+                980,
+                589
+              ]
+            },
+            {
+              "tag": "DIV",
+              "cls": "dense-list",
+              "bbox": [
+                48,
+                88,
+                932,
+                554
+              ]
+            },
+            {
+              "tag": "BLOCKQUOTE",
+              "cls": "",
+              "bbox": [
+                48,
+                530,
+                932,
+                554
+              ]
+            },
+            {
+              "tag": "CODE",
+              "cls": "",
+              "bbox": [
+                128,
+                533,
+                302,
+                553
+              ]
+            }
+          ]
+        },
+        {
+          "slidev": 17,
+          "h1": "SW-9 — JSON-LD : Le Web Sémantique rencontre JSON",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": null,
+          "pptx_match": null,
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 18,
+          "h1": "SW-10 — RDF 1.2 (RDF-Star) : Assertions sur des Assertions",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": "14.76px",
+          "ul_line_height": "18.0072px",
+          "pptx": null,
+          "pptx_match": null,
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 20,
+          "h1": "SW-11 — Knowledge Graphs : Construction et Exploration",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": null,
+          "ul_line_height": null,
+          "pptx": null,
+          "pptx_match": null,
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 21,
+          "h1": "SW-12 — GraphRAG : Graphes et LLMs",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": null,
+          "ul_line_height": null,
+          "pptx": null,
+          "pptx_match": null,
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        },
+        {
+          "slidev": 22,
+          "h1": "SW-13 — Comparaison des Raisonneurs OWL",
+          "classes": {
+            "dense-list": 1
+          },
+          "ul_font_size": null,
+          "ul_line_height": null,
+          "pptx": null,
+          "pptx_match": null,
+          "hors_canvas_reel": 0,
+          "hors_canvas_detail": []
+        }
+      ]
+    }
+  }
+}

@@ -21,7 +21,9 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from check_obsolete_chat_model import (OBSOLETE_CHAT_MODELS,
-                                       analyze_notebook, cell_kind,
+                                       analyze_notebook,
+                                       analyze_python_module, cell_kind,
+                                       collect_sources,
                                        is_obsolete_chat_model, main)
 
 
@@ -151,6 +153,89 @@ def test_nested_dict_subscript_bounded_unresolved():
     assert len(report["unresolved"]) >= 1
 
 
+def test_battery_for_loop_obsolete_entry_flagged():
+    """Liste de dictionnaires (batterie de modeles) : la boucle execute
+    chaque entree, donc une entree obsolete est un site atteignable."""
+    report = _analyze(nb(
+        code('BATTERY = [\n'
+             '    {"model": "gpt-5.6-luna", "label": "mini"},\n'
+             '    {"model": "gpt-4o-mini", "label": "ancien"},\n'
+             ']'),
+        code('for cfg in BATTERY:\n'
+             '    client.chat.completions.create(model=cfg["model"],\n'
+             '                                   messages=[])')))
+    assert len(report["findings"]) == 1
+    f = report["findings"][0]
+    assert f["model"] == "gpt-4o-mini"
+    assert "entree 1" in f["via"]  # localise l'entree fautive
+
+
+def test_battery_all_current_silent():
+    report = _analyze(nb(
+        code('BATTERY = [{"model": "gpt-5.6-luna"}, {"model": "gpt-5.6-sol"}]'),
+        code('for cfg in BATTERY:\n'
+             '    client.chat.completions.create(model=cfg["model"],\n'
+             '                                   messages=[])')))
+    assert report["findings"] == []
+
+
+def test_battery_indexed_entry_flagged():
+    """``BATTERY[0]["cle"]`` : entree designee par un index litteral."""
+    report = _analyze(nb(
+        code('BATTERY = [{"model": "gpt-4o-mini"}, {"model": "gpt-5.6-sol"}]'),
+        code('client.chat.completions.create(model=BATTERY[0]["model"],\n'
+             '                               messages=[])')))
+    assert len(report["findings"]) == 1
+    assert report["findings"][0]["model"] == "gpt-4o-mini"
+
+
+def test_battery_displayed_not_flagged():
+    """Temoin negatif : une batterie seulement AFFICHEE (aucun appel chat)
+    reste silencieuse -- c'est la forme des configurations du 00-3."""
+    report = _analyze(nb(
+        code('TEST_MODELS = [{"model": "gpt-4o-mini", "api": "openai"}]\n'
+             'for cfg in TEST_MODELS:\n'
+             '    print(cfg["model"])')))
+    assert report["findings"] == []
+
+
+def test_battery_dynamic_index_unresolved():
+    """Index dynamique : non resolu, jamais accuse."""
+    report = _analyze(nb(
+        code('BATTERY = [{"model": "gpt-4o-mini"}]'),
+        code('for i in range(1):\n'
+             '    client.chat.completions.create(model=BATTERY[i]["model"],\n'
+             '                                   messages=[])')))
+    assert report["findings"] == []
+    assert len(report["unresolved"]) >= 1
+
+
+def test_battery_with_dynamic_entry_not_followed():
+    """Une entree non resoluble fait retomber la batterie entiere en non
+    suivie : aucune resolution partielle devinee."""
+    report = _analyze(nb(
+        code('import os\n'
+             'BATTERY = [{"model": "gpt-4o-mini"},\n'
+             '           {"model": os.environ["OTHER_MODEL"]}]'),
+        code('for cfg in BATTERY:\n'
+             '    client.chat.completions.create(model=cfg["model"],\n'
+             '                                   messages=[])')))
+    assert report["findings"] == []
+    assert len(report["unresolved"]) >= 1
+
+
+def test_local_battery_does_not_pollute_module():
+    """Une batterie locale (corps de fonction) ne sort pas de son scope."""
+    report = _analyze(nb(
+        code('def build():\n'
+             '    BATTERY = [{"model": "gpt-4o-mini"}]\n'
+             '    return BATTERY'),
+        code('for cfg in BATTERY:\n'
+             '    client.chat.completions.create(model=cfg["model"],\n'
+             '                                   messages=[])')))
+    assert report["findings"] == []
+
+
 def test_provider_prefix_flagged():
     report = _analyze(nb(code(
         'lm = dspy.LM("openai/gpt-4o-mini")')))
@@ -217,6 +302,56 @@ def test_reassignment_to_current_silent():
         code('m = "gpt-5.6-luna"'),
         code('client.chat.completions.create(model=m, messages=[])')))
     assert report["findings"] == []
+
+
+# ---------------------------------------------------------------------------
+# HTTP brut (forme non-SDK, #25072) : le "model" vit dans le corps json=/data=
+# ---------------------------------------------------------------------------
+
+def test_http_raw_inline_dict_flagged():
+    """HTTP brut : json={"model": ...} inline, URL cible /chat/completions."""
+    report = _analyze(nb(code(
+        'import requests\n'
+        'resp = requests.post("https://api.openai.com/v1/chat/completions",\n'
+        '                    json={"model": "gpt-4o-mini", "messages": []})')))
+    assert len(report["findings"]) == 1
+    f = report["findings"][0]
+    assert f["site"] == "http.chat.completions"
+    assert f["model"] == "gpt-4o-mini"
+
+
+def test_http_raw_named_dict_flagged():
+    """HTTP brut : le "model" est dans un dict lié à un nom (json=payload),
+    dont la valeur est un défaut d'env — la forme du client v4 mesuré."""
+    report = _analyze(nb(
+        code('import os\n'
+             'import requests\n'
+             '_MODEL = os.getenv("OPENAI_CHAT_MODEL_ID", "gpt-4o-mini")'),
+        code('payload = {"model": _MODEL, "messages": []}\n'
+             'resp = requests.post(f"{base}/chat/completions", json=payload)')))
+    assert len(report["findings"]) == 1
+    f = report["findings"][0]
+    assert f["site"] == "http.chat.completions"
+    assert f["model"] == "gpt-4o-mini"
+    assert "getenv" in f["via"]
+
+
+def test_http_raw_current_model_silent():
+    """HTTP brut : un modèle courant dans le corps ne rougit pas."""
+    report = _analyze(nb(code(
+        'import requests\n'
+        'resp = requests.post("https://api.openai.com/v1/chat/completions",\n'
+        '                    json={"model": "gpt-5.6-luna", "messages": []})')))
+    assert report["findings"] == []
+
+
+def test_http_raw_non_chat_url_silent():
+    """HTTP brut : une URL non-chat (/models) n'est pas un site chat."""
+    report = _analyze(nb(code(
+        'import requests\n'
+        'r = requests.get("https://api.openai.com/v1/models")')))
+    assert report["findings"] == []
+    assert report["stats"]["chat_sites"] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -609,3 +744,144 @@ def test_corpus_scan_migration_compatible(path):
     for f in report["findings"]:
         assert f["model"] in OBSOLETE_CHAT_MODELS, f
     assert main([str(path)]) == (1 if report["findings"] else 0)
+
+
+# ---------------------------------------------------------------------------
+# Modules .py hors carnet
+#
+# Un appel chat ne vit pas seulement dans un carnet : des modules consommes
+# par les carnets portent des replis litteraux. Mesure firsthand (31/10) :
+# ``scripts/livecoding_video_pipeline.py`` repliait sur ``gpt-4o-mini`` via
+# ``os.environ.get("OPENAI_MODEL", ...)`` -- invisible d'un scan borne aux
+# carnets, et invisible aussi d'un scan .py avant le cas ``or`` ci-dessous.
+# ---------------------------------------------------------------------------
+
+MODULE_CHAT = (
+    "from openai import OpenAI\n"
+    "client = OpenAI()\n"
+    "\n"
+    "\n"
+    "def narrate(prompt):\n"
+    "    return client.chat.completions.create(\n"
+    "        model='gpt-4o-mini', messages=[{'role': 'user', 'content': prompt}])\n"
+)
+
+
+def test_python_module_accepte_par_la_cli(tmp_path):
+    """Un module .py est une unite scannable : le scan le voit et ROUGIT."""
+    p = tmp_path / "pipeline.py"
+    p.write_text(MODULE_CHAT, encoding="utf-8")
+    assert collect_sources([str(p)]) == [(p, "python")]
+    report = analyze_python_module(str(p))
+    assert report["kind"] == "python"
+    assert report["stats"]["python_modules"] == 1
+    assert [f["model"] for f in report["findings"]] == ["gpt-4o-mini"]
+    assert main([str(p)]) == 1
+
+
+def test_python_module_repli_or_resolu(tmp_path):
+    """``variable or os.environ.get("M", "<modele>")`` : le repli litteral est
+    la valeur statiquement visible, donc un FINDING -- c'est la forme qui
+    etait un FAUX NEGATIF (site dit ``unresolved``, litteral classe mention
+    doc)."""
+    p = tmp_path / "repli.py"
+    p.write_text(
+        "import os\n"
+        "from openai import OpenAI\n"
+        "client = OpenAI()\n"
+        "\n"
+        "\n"
+        "def narrate(prompt, llm_model=None):\n"
+        "    model = llm_model or os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')\n"
+        "    return client.chat.completions.create(\n"
+        "        model=model, messages=[{'role': 'user', 'content': prompt}])\n",
+        encoding="utf-8")
+    report = analyze_python_module(str(p))
+    assert [f["model"] for f in report["findings"]] == ["gpt-4o-mini"], \
+        report
+    assert report["unresolved"] == []
+    assert "repli 'or'" in report["findings"][0]["via"]
+    assert main([str(p)]) == 1
+
+
+def test_python_module_repli_or_sans_litteral_reste_unresolved(tmp_path):
+    """Temoin negatif du cas ``or`` : sans litteral, rien n'est accuse."""
+    p = tmp_path / "sans_repli.py"
+    p.write_text(
+        "import os\n"
+        "from openai import OpenAI\n"
+        "client = OpenAI()\n"
+        "\n"
+        "\n"
+        "def narrate(prompt, llm_model=None):\n"
+        "    model = llm_model or os.environ.get('OPENAI_MODEL')\n"
+        "    return client.chat.completions.create(\n"
+        "        model=model, messages=[{'role': 'user', 'content': prompt}])\n",
+        encoding="utf-8")
+    report = analyze_python_module(str(p))
+    assert report["findings"] == []
+    assert len(report["unresolved"]) == 1
+    assert main([str(p)]) == 0
+
+
+LLM_CLIENT_SHAPE = (
+    "import os\n"
+    "import requests\n"
+    "\n"
+    "_API_BASE: str = os.getenv('OPENAI_API_BASE', 'https://api.openai.com/v1')\n"
+    "_MODEL: str = os.getenv('OPENAI_CHAT_MODEL_ID', 'gpt-4o-mini')\n"
+    "\n"
+    "\n"
+    "def complete(messages, timeout=30):\n"
+    "    payload: dict = {'model': _MODEL, 'messages': messages}\n"
+    "    resp = requests.post(f'{_API_BASE}/chat/completions',\n"
+    "                         json=payload, timeout=timeout)\n"
+    "    return resp\n"
+)
+
+
+def test_python_module_http_raw_named_dict_flagged(tmp_path):
+    """Forme du client v4 mesurée (AnnAssign + dict nommé + f-string URL, le
+    tout dans une fonction) : le scan .py la ROUGIT (#25072)."""
+    p = tmp_path / "llm_client.py"
+    p.write_text(LLM_CLIENT_SHAPE, encoding="utf-8")
+    report = analyze_python_module(str(p))
+    assert [f["model"] for f in report["findings"]] == ["gpt-4o-mini"], report
+    assert report["findings"][0]["site"] == "http.chat.completions"
+    assert main([str(p)]) == 1
+
+
+def test_python_module_http_raw_current_silent(tmp_path):
+    """Témoin négatif : le même client avec un modèle courant reste vert."""
+    p = tmp_path / "llm_client_ok.py"
+    p.write_text(
+        LLM_CLIENT_SHAPE.replace("gpt-4o-mini", "gpt-5.6-luna"),
+        encoding="utf-8")
+    report = analyze_python_module(str(p))
+    assert report["findings"] == []
+    assert main([str(p)]) == 0
+
+
+def test_python_module_sain_reste_silencieux(tmp_path):
+    """Temoin negatif : un module sans appel chat ne produit rien, et une
+    mention en chaine non consommee reste advisory."""
+    p = tmp_path / "sain.py"
+    p.write_text(
+        "'Ancienne cible historique : gpt-4o-mini.'\n"
+        "# un commentaire citant gpt-4o-mini est ignore par l'AST\n"
+        "def f():\n"
+        "    return 1\n",
+        encoding="utf-8")
+    report = analyze_python_module(str(p))
+    assert report["findings"] == []
+    assert report["stats"]["python_modules"] == 1
+    assert main([str(p)]) == 0
+
+
+def test_suffixe_inconnu_refuse(tmp_path):
+    """La CLI refuse un fichier qui n'est ni carnet ni module, plutot que de
+    le sauter en silence."""
+    p = tmp_path / "notes.txt"
+    p.write_text("gpt-4o-mini", encoding="utf-8")
+    with pytest.raises(FileNotFoundError):
+        collect_sources([str(p)])

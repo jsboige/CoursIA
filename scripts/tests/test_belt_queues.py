@@ -11,6 +11,8 @@ Run: python -m pytest scripts/tests/test_belt_queues.py
 """
 from __future__ import annotations
 
+import json
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -153,6 +155,150 @@ def test_board_hides_issues_still_on_a_plate_and_reports_recette():
 def test_board_without_previous_assignment():
     res = bq.board({"picks": [_pick(1, "[X] a")]}, [A], None, NOW)
     assert res["previous_at"] is None and res["lanes"][A]["assigned"] == 0
+
+
+# --- parcage des EPICs Origami (#24373) ---------------------------------------
+#
+# Les EPICs Origami dont le pli suivant n'est pas deplie sont PARQUES : le
+# tapis ne les sert plus aux lanes, et le tableau du coordinateur doit les
+# montrer dans une rubrique dediee -- c'est la que le geste qui attend le
+# coordinateur devient visible.
+
+
+def test_board_affiche_les_epics_origami_parques():
+    belt = {
+        "picks": [_pick(30, "[X] a")],
+        "origami_parking": {
+            "measured": True,
+            "reason": "mesure faite",
+            "details": [
+                {"epic": 19309, "parked": True, "next_pli": 4,
+                 "reason": "tous les plis materialises sont termines",
+                 "title": "[Epic] constellation causale"},
+                {"epic": 18205, "parked": False,
+                 "reason": "pli 2 ouvert et non livre",
+                 "title": "[Epic Origami] geometrie differentielle"},
+            ],
+        },
+    }
+    res = bq.board(belt, [A], None, NOW)
+    assert [it["number"] for it in res["origami_parked"]] == [19309]
+    assert res["origami_parking"]["measured"] is True
+    text = bq.render_board(res)
+    assert "Origami en attente de depliage" in text
+    assert "#19309" in text and "-- pli 4" in text
+    assert "#18205" not in text  # un EPIC servi n'est pas dans la rubrique
+
+
+def test_board_sans_mesure_origine_le_dit():
+    """Pas de mesure = pas de parcage, et le tableau le dit."""
+    res = bq.board({"picks": [_pick(30, "[X] a")]}, [A], None, NOW)
+    assert res["origami_parked"] == []
+    assert res["origami_parking"]["measured"] is False
+    text = bq.render_board(res)
+    assert "Origami en attente de depliage" in text
+    assert "(non mesure" in text
+
+
+# --- lectures impossibles (#23115) ------------------------------------------------
+#
+# Une issue illisible ne doit pas tuer le tableau : elle est NOMMEE, elle reste
+# en assiette (fail-closed), et les autres items sont mesures. Avant la
+# correction, le premier `gh issue view` en echec remontait jusqu'au `try` de
+# `main` et le board entier etait perdu (`UNKNOWN: belt_queues injoignable`).
+
+
+def _boom(number):
+    raise subprocess.CalledProcessError(
+        1, ["gh", "issue", "view", str(number)],
+        stderr="Could not resolve to an Issue with the number of 11.\n",
+    )
+
+
+def test_une_issue_illisible_ne_tue_pas_la_mesure():
+    payloads = {10: _payload(10), 20: _payload(20)}
+
+    def fetch(n):
+        if n == 11:
+            _boom(n)
+        return payloads[n]
+
+    plates = bq.measure_plates(PREV, fetch)
+    # l'issue illisible reste en assiette (fail-closed) et n'est pas comptee rendue
+    assert [it["number"] for it in plates[A]["remaining"]] == [10, 11]
+    assert [it["number"] for it in plates[B]["remaining"]] == [20]
+    assert [i["number"] for i in plates[A]["unreadable"]] == [11]
+    assert "rc=1" in plates[A]["unreadable"][0]["error"]
+
+
+def test_le_board_nomme_les_issues_illisibles_et_affiche_le_reste():
+    payloads = {10: _payload(10), 20: _payload(20)}
+
+    def fetch(n):
+        if n == 11:
+            _boom(n)
+        return payloads[n]
+
+    belt = {"picks": [_pick(30, "[X] a"), _pick(31, "[Z] b")]}
+    res = bq.board(belt, [A, B], PREV, NOW, fetch_issue=fetch)
+    assert [(i["lane"], i["number"]) for i in res["unreadable"]] == [(A, 11)]
+    # le reste du tableau est bien mesure
+    assert [it["number"] for g in res["families"] for it in g["items"]] == [30, 31]
+    assert [it["number"] for it in res["lanes"][A]["remaining"]] == [10, 11]
+    text = bq.render_board(res)
+    assert "#11" in text and "Lectures impossibles" in text
+    assert "myia-po-2023:CoursIA" in text
+
+
+def test_un_echec_de_recette_ne_tue_pas_le_tableau():
+    payloads = {10: _payload(10), 11: _payload(11), 20: _payload(20)}
+
+    def recette(lane):
+        if lane == B:
+            _boom(0)
+        return {"verdict": "OK", "issue": 17586}
+
+    res = bq.board({"picks": [_pick(30, "[X] a")]}, [A, B], PREV, NOW,
+                    fetch_issue=payloads.__getitem__, recette=recette)
+    assert res["lanes"][B]["recette"]["verdict"] == "UNKNOWN"
+    assert res["lanes"][A]["recette"]["verdict"] == "OK"
+    assert [(i["kind"], i["lane"]) for i in res["unreadable"]] == [("recette", B)]
+
+
+def test_le_board_signale_une_assiette_entierement_illisible(tmp_path, capsys, monkeypatch):
+    belt = tmp_path / "belt.json"
+    belt.write_text(json.dumps({"picks": [_pick(30, "[X] a")]}), encoding="utf-8")
+    prev = tmp_path / "prev.json"
+    prev.write_text(json.dumps({"assigned_at": "2026-10-06T09:43:00Z",
+                                "lanes": {A: {"arc": "X", "queue": [{"number": 10}]}}}),
+                    encoding="utf-8")
+    monkeypatch.setattr(bq, "gh_issue_state", _boom)
+    rc = bq.main(["board", "--belt-json", str(belt), "--previous", str(prev), "--no-recette"])
+    out = capsys.readouterr().out
+    assert rc == 2
+    assert "UNKNOWN" in out and "#10" in out
+
+
+def test_le_board_survit_a_une_issue_illisible(tmp_path, capsys, monkeypatch):
+    belt = tmp_path / "belt.json"
+    belt.write_text(json.dumps({"picks": [_pick(30, "[X] a")]}), encoding="utf-8")
+    prev = tmp_path / "prev.json"
+    prev.write_text(json.dumps({"assigned_at": "2026-10-06T09:43:00Z",
+                                "lanes": {A: {"arc": "X", "queue": [{"number": 10}]},
+                                          B: {"arc": "Y", "queue": [{"number": 20}]}}}),
+                    encoding="utf-8")
+
+    def fetch(n):
+        if n == 10:
+            _boom(n)
+        return _payload(n)
+
+    monkeypatch.setattr(bq, "gh_issue_state", fetch)
+    rc = bq.main(["board", "--belt-json", str(belt), "--previous", str(prev), "--no-recette"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "#10" in out and "Lectures impossibles" in out
+    assert "myia-po-2027:CoursIA-2" in out
 
 
 # --- record -------------------------------------------------------------------------

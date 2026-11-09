@@ -11,7 +11,7 @@ via the QC Algorithm Framework. Target allocation: EMA70/Trend30 (sweep winner).
 
 Universe overlap: the 5 Mag7 stocks (AAPL, MSFT, GOOGL, AMZN, NVDA) are
 included in both strategies. The portfolio construction model
-(`MultiStrategyPCM`) gives each alpha a capital slice, then adds the two slices
+(`MultiStrategyPouchesPCM`) gives each alpha a capital slice, then adds the two slices
 on these five stocks. This is the `intent` mode, the default since #19759.
 
 **Defect fixed by #19759.** Before calling `determine_target_percent`, Lean's
@@ -97,6 +97,26 @@ does not create a demonstrated advantage.
   ten stocks that only TrendStocks holds (622 to 875 per stock under `base`, 238
   to 284 under `intent`).
 
+## Shared module non-regression (#20188)
+
+Since #21134, `main.py` imports `MultiStrategyPouchesPCM` from `SharedPCM/pouches_pcm.py` instead of the local copy `portfolio_construction.py`. Two QC Cloud backtests run on 2026-10-26, with the default parameters and the window 2018-01-01 → 2025-01-01, check that this change alters no order:
+
+- **A**: the `main` code at commit `54f9b9eec1`, with the shared module;
+- **B**: the same `main.py` and `alpha_models.py`, with the old `portfolio_construction.py` copy taken at the commit before the migration (`777f502a2a^`). The old copy accepts the same arguments (`additive`, `algorithm`, `watch_source`, `watch_tickers`): only the import changes. In the default `intent` mode, both variants add the two slices.
+
+A and B carry the same instrumentation, which places no order. It records the portfolio value every day at midnight, warm-up included (210 sessions). At the end of the backtest it computes a SHA-256 fingerprint per year of the orders (id, date, security, quantity, status, price) and of the recorded values.
+
+| | A (shared module) | B (old copy) |
+|---|---|---|
+| Orders | 4,184 | 4,184 |
+| Recorded values | 2,861 | 2,861 |
+| Last recorded value | 497,892.91 | 497,892.91 |
+| Sharpe (QC) | 0.832 | 0.832 |
+| CAGR | 25.576% | 25.576% |
+| Max drawdown | 36.3% | 36.3% |
+
+The yearly fingerprints are equal: 7 of 7 for the orders, 8 of 8 for the values. The 27 QC statistics are equal, turnover included. The diagnostic counters (`PCM calls`, `PCM calls with Trend on EMA tickers`) and the average gross exposure (0.918) are equal as well. The migration therefore does not change the project's behaviour. Traces kept outside the repository: `QC-traces/20188-nr/`.
+
 ## Figures from before #19759
 
 The two sections below date from before the measurement; they are kept for the
@@ -149,4 +169,4 @@ See Key-finding #36 in `docs/qc/qc-comparative-backtests.md`.
 
 - `main.py` - Strategy (EMA70/Trend30 composite, aligned 2018-2025; `mode`, `start`, `end`, `fee_mult` and grid parameters since #19759)
 - `alpha_models.py` - EMACrossAlpha + TrendStocksAlpha
-- `portfolio_construction.py` - MultiStrategyPCM (alpha allocation blend)
+- `SharedPCM/pouches_pcm.py` (QC project library) - `MultiStrategyPouchesPCM`, the canonical pouch PCM imported by `main.py` (extraction #19821 brick 1)

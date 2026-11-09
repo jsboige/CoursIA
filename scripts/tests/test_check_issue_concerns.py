@@ -72,6 +72,18 @@ REPLY_19898 = (
     "**Reponse ai-01 a tes deux Concerns (08/10, 10:11Z et 21:00Z).** Elle "
     "arrive avec plus d'une journee de retard, et c'est un manquement."
 )
+#: #2159 — le Concern du 2026-10-18T22:26Z et la reponse de lane du
+#: 2026-10-19T03:56Z qui le cite (faux NON REPONDU mesure avant le correctif).
+CONCERN_2159 = (
+    "Concern: Alors qu'on continue empiler des modules dans le cadre de cet "
+    "Epic, est-ce qu'il ne serait pas temps de faire une pause pour voir ou "
+    "en est la toute derniere version de Mathlib sur le sujet ?"
+)
+REPLY_2159 = (
+    "[INFO] Reponse au Concern du 2026-10-18T22:26Z — releve mesure "
+    "Mathlib-vs-lac + projets externes — Grain: DEEP/research-code — lane "
+    "myia-po-2025:CoursIA\n\nAucun fichier edite, aucun module ajoute."
+)
 
 
 class ClassifyTests(unittest.TestCase):
@@ -230,6 +242,67 @@ class ResponseCandidateTests(unittest.TestCase):
     def test_gesture_is_not_a_response(self):
         self.assertFalse(mod.is_response_candidate("gesture", c(18, "2026-10-01T10:00:00Z", CLAIM)))
 
+    def test_gesture_without_the_concern_is_never_a_candidate(self):
+        """Le comportement historique est conserve quand le Concern n'est pas fourni."""
+        self.assertFalse(
+            mod.is_response_candidate("gesture", c(18, "2026-10-01T10:00:00Z", CLAIM))
+        )
+
+    def test_gesture_that_cites_the_concern_strongly_is_a_response(self):
+        """#2159 : un geste de lane qui cite l'horodatage du Concern y repond."""
+        concern = c(30, "2026-10-18T22:26:03Z", CONCERN_2159)
+        reply = c(31, "2026-10-19T03:56:43Z", REPLY_2159)
+        self.assertEqual(mod.classify(reply), "gesture")
+        self.assertTrue(mod.cites_concern(concern, reply))
+        self.assertTrue(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_gesture_that_does_not_cite_the_concern_stays_excluded(self):
+        concern = c(32, "2026-10-18T22:26:03Z", CONCERN_2159)
+        reply = c(33, "2026-10-19T03:56:43Z", "[INFO] Releve mesure — aucun fichier edite.")
+        self.assertEqual(mod.classify(reply), "gesture")
+        self.assertFalse(mod.cites_concern(concern, reply))
+        self.assertFalse(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_incidental_short_window_is_not_a_citation(self):
+        """Une fenetre courte partagee par coincidence ne referme rien.
+
+        Mesure sur 624 issues : la fenetre de 40 caracteres attrapait des
+        fragments sans lien (« 46`, `37642385421`, `37642397358` » — une suite
+        de numeros de PR). Le geste n'est candidat que par horodatage ou par
+        extrait long.
+        """
+        concern = c(
+            34,
+            "2026-10-20T16:08:51Z",
+            "Diagnostic — la derive portee par une classe « scheduled-orphan », "
+            "mesuree sur 4 snapshots. Les ids 37642385421 et 37642397358 "
+            "portent la derive.",
+        )
+        reply = c(
+            35,
+            "2026-10-22T16:57:47Z",
+            "[INFO] candidate-delivered — deja livre par PR #21634. "
+            "Voir 46`, `37642385421`, `37642397358`, `3764.",
+        )
+        self.assertFalse(mod.cites_concern(concern, reply))
+        self.assertFalse(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_long_quote_is_a_citation(self):
+        """Un extrait long du texte du Concern reste une citation."""
+        body = (
+            "Diagnostic — la derive portee par une classe « scheduled-orphan », "
+            "mesuree sur 4 snapshots. Les ids 37642385421 et 37642397358 "
+            "portent la derive."
+        )
+        concern = c(36, "2026-10-20T16:08:51Z", body)
+        reply = c(
+            37,
+            "2026-10-22T16:57:47Z",
+            "[INFO] Reponse au diagnostic : « " + body + " » — traite par PR #21634.",
+        )
+        self.assertTrue(mod.cites_concern(concern, reply))
+        self.assertTrue(mod.is_response_candidate("gesture", reply, concern))
+
     def test_ordinary_comment_is_a_response_candidate(self):
         self.assertTrue(mod.is_response_candidate("other", c(19, "2026-10-01T10:00:00Z", "Voici l'arbitrage.")))
 
@@ -306,6 +379,35 @@ class AnalyseTests(unittest.TestCase):
         ]
         report = mod.analyse_comments(42, comments)
         self.assertEqual(report.concerns[0].status, "NON REPONDU")
+
+    def test_the_2159_shape_is_answered(self):
+        """#2159 : le geste de lane qui cite le Concern le referme."""
+        comments = [
+            c(6255920966, "2026-10-18T22:26:03Z", CONCERN_2159),
+            c(6259310809, "2026-10-19T03:56:43Z", REPLY_2159),
+        ]
+        report = mod.analyse_comments(2159, comments)
+        self.assertEqual(len(report.concerns), 1)
+        self.assertEqual(report.concerns[0].status, "REPONDU")
+        self.assertEqual(report.concerns[0].proof, 6259310809)
+        # Le geste qui referme n'aggrave pas : le drapeau vise les gestes
+        # poses apres le Concern et qui n'y repondent pas.
+        self.assertFalse(report.concerns[0].gesture_after)
+        self.assertFalse(report.gesture_after)
+
+    def test_the_2159_shape_control_without_citation(self):
+        """Controle : sans citation, le meme geste ne referme rien."""
+        comments = [
+            c(6255920966, "2026-10-18T22:26:03Z", CONCERN_2159),
+            c(
+                6259310809,
+                "2026-10-19T03:56:43Z",
+                "[INFO] Releve mesure — aucun fichier edite.",
+            ),
+        ]
+        report = mod.analyse_comments(2159, comments)
+        self.assertEqual(report.concerns[0].status, "NON REPONDU")
+        self.assertTrue(report.concerns[0].gesture_after)
 
     def test_unrelated_later_comment_is_manual_review(self):
         comments = [
@@ -615,6 +717,35 @@ class RenderTests(unittest.TestCase):
         text = mod.render_text([report], "2026-09-25", "open", 1)
         self.assertIn("1 commentaire(s) ecarte(s) par signature de lane", text)
         self.assertIn("cycle-watermark 1", text)
+
+
+class Utf8OutputTests(unittest.TestCase):
+    def test_emoji_excerpt_survives_a_cp1252_stdout(self):
+        # Mesure 2026-10-30 : un emoji dans un extrait de commentaire crashait
+        # le print sur un stdout redirige en page de codes ANSI (cp1252,
+        # UnicodeEncodeError apres lecture de 686 issues) -- exactement le
+        # canal de la ligne [CONCERNS] de la restitution coordinateur (#20183).
+        import io as _io
+
+        emoji_concern = "Concern: le rendu casse \U0001f680 partout"
+        original = sys.stdout
+        original_fetch = mod.fetch_comments
+        raw = _io.BytesIO()
+        sys.stdout = _io.TextIOWrapper(raw, encoding="cp1252")
+        try:
+            mod.fetch_comments = lambda number: [
+                c(60, "2026-10-19T09:00:00Z", emoji_concern)
+            ]
+            rc = mod.main(["--issues", "15"])
+            sys.stdout.flush()
+            payload = raw.getvalue()
+        finally:
+            sys.stdout = original
+            mod.fetch_comments = original_fetch
+        self.assertEqual(rc, 0)
+        out = payload.decode("utf-8")
+        self.assertIn("non resolu", out)
+        self.assertIn("\U0001f680", out)
 
 
 if __name__ == "__main__":

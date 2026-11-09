@@ -520,7 +520,7 @@ def verify_kernel_available():
             print("\nAvailable kernels:")
             print(result.stdout)
             print("\nInstall .NET Interactive:")
-            print("  dotnet tool install -g Microsoft.dotnet-interactive")
+            print("  dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001")
             print("  dotnet interactive jupyter install")
             return False
     except subprocess.CalledProcessError as e:

@@ -7,7 +7,12 @@
 #   - il n'ecrit rien dans /etc ni dans /usr/local/bin ;
 #   - il n'appelle systemctl qu'avec `show` / `cat` / `is-active` ;
 #   - il ne redemarre ni docker ni WSL ;
-#   - il ne touche a aucun quota de slice.
+#   - il ne touche a aucun quota de slice ;
+#   - il n'ecrit RIEN hors de son bundle, a UNE exception nommee : l'etat du
+#     temoin de throttling par delta (section 4bis-ter), qui vit hors du depot
+#     et hors de /etc -- COURSIA_DRYRUN_STATE, sinon %LOCALAPPDATA%\Coursia,
+#     sinon /var/lib/coursia. Cet etat ne fait que dater une lecture ; il ne
+#     configure rien.
 #
 # IL ECHOUE PLUTOT QUE DE RENDRE UN VERDICT QU'IL NE PEUT PAS ETAYER.
 # C'est la propriete centrale, et elle a ete ajoutee apres coup : la premiere
@@ -31,6 +36,40 @@ SLOTS=1
 CPUS=2
 OUT="${COURSIA_DRYRUN_OUT:-/var/tmp/coursia-dryrun-$(date -u +%Y%m%dT%H%M%SZ)}"
 ACK_ONE_SLOT=0
+
+# Seuil du temoin de throttling : secondes de throttling cumulees tolerees
+# sur 24 h de fenetre. 60 s est l'ordre de grandeur arbitre par le
+# coordinateur (dispatch `ai01-c2721-23037-budget`) : il ne s'agit pas d'un
+# seuil de performance, mais du seuil AU-DELA duquel le noyau a refuse du
+# temps CPU -- c'est-a-dire ou la declaration de budget cesse d'etre
+# theorique. Surchargeable pour les tests.
+THROTTLE_BUDGET_SPD="${COURSIA_DRYRUN_THROTTLE_BUDGET_SPD:-60}"
+THROTTLE_ALERT=0
+THROTTLE_VERDICT="INDISPONIBLE"
+THROTTLE_DELTA_VERDICT="INDISPONIBLE"
+
+# Etat du temoin de throttling PAR DELTA (#23051, point 2). Le compteur cumule
+# de la slice a une sensibilite qui DECROIT avec son age : sur une slice de
+# plusieurs semaines, une rafale de 60 s survenue aujourd'hui passe sous un
+# seuil proportionnel a l'age. Le delta entre deux lectures datees garde une
+# fenetre courte, donc une sensibilite constante.
+#
+# Cette lecture anterieure est le SEUL fichier que ce script ecrit hors de son
+# bundle -- et il ne vit pas dans le depot : c'est de l'etat de machine.
+#   - COURSIA_DRYRUN_STATE impose le repertoire (tests, machines non standard) ;
+#   - sinon %LOCALAPPDATA%\Coursia sous Windows, /var/lib/coursia sous Linux.
+# Aucun etat n'est ecrit quand aucune des deux formes n'est disponible : le
+# temoin rend alors INDETERMINE, il ne devine pas.
+STATE_DIR="${COURSIA_DRYRUN_STATE:-}"
+if [ -z "$STATE_DIR" ]; then
+  if [ -n "${LOCALAPPDATA:-}" ]; then
+    STATE_DIR="$LOCALAPPDATA/Coursia"
+  elif [ -d /var/lib ]; then
+    STATE_DIR="/var/lib/coursia"
+  fi
+fi
+THROTTLE_STATE=""
+[ -n "$STATE_DIR" ] && THROTTLE_STATE="$STATE_DIR/dryrun-sizing-throttle.state"
 
 # Points d'injection pour les tests : ils permettent d'exercer le script sur des
 # fixtures, sans machine reelle, sans systemd, sans redemarrage.
@@ -68,13 +107,45 @@ Variables d'environnement (tests) :
   COURSIA_DRYRUN_ROOT        prefixe applique aux chemins systeme (fixtures)
   COURSIA_DRYRUN_SYSTEMCTL   commande a utiliser a la place de `systemctl`
   COURSIA_DRYRUN_OUT         repertoire du bundle
+  COURSIA_DRYRUN_UPTIME_S    uptime de l'hote, en secondes (borne SUPERIEURE
+                             de l'age de la slice). Sans cette variable, le
+                             mode fixture ne dispose d'aucune borne
+                             superieure : le temoin peut alors conclure «
+                             ALERTE CERTAINE », jamais « passe ».
+  COURSIA_DRYRUN_THROTTLE_BUDGET_SPD
+                             secondes de throttling tolerees par 24 h
+                             (defaut : 60). Sert au temoin de la section 4bis.
+
+Codes de sortie :
+  0  le controle est complet et la proposition franchit le garde
+  1  REFUS : une source requise manque, ou la proposition serait refusee
+  3  ALERTE : le temoin de throttling (4bis) contredit la declaration de
+     budget. distinct de 1 : le garde n'a pas refuse la proposition, c'est
+     la MESURE du noyau qui parle. L'alerte PRIME sur un refus concomitant :
+     si le temoin a alerte, la sortie est 3 meme si une autre source a refuse
+     ensuite (le motif du refus reste imprime).
 USAGE
 }
 
 say()   { printf '%s\n' "$*"; }
 head1() { printf '\n=== %s ===\n' "$*"; }
 warn()  { printf 'ATTENTION: %s\n' "$*" >&2; }
-die()   { printf 'REFUS: %s\n' "$*" >&2; exit 1; }
+# `die` respecte la priorite du temoin : si le noyau a refuse du temps CPU
+# (section 4bis), c'est la MESURE qui parle, et elle passe devant un refus
+# concomitant de configuration. Sans cela, un refus survenu AVANT la fin du
+# script porterait la sortie 1 et masquerait l'alerte -- le code de sortie
+# dirait « refus de configuration » alors qu'une mesure contredit la
+# declaration. Le motif du refus reste imprime : rien n'est cache.
+die() {
+  printf 'REFUS: %s\n' "$*" >&2
+  if [ "${THROTTLE_ALERT:-0}" -eq 1 ]; then
+    printf 'TEMOIN THROTTLING : %s -- la MESURE contredit la declaration (section 4bis).\n' \
+      "${THROTTLE_VERDICT:-ALERTE}" >&2
+    printf 'Sortie 3 : l alerte prime sur le refus.\n' >&2
+    exit 3
+  fi
+  exit 1
+}
 
 # --- Validation des entrees (fail-closed) -----------------------------------
 pos_int() {
@@ -325,6 +396,280 @@ else
   warn "slice absente du cgroupfs ($SLICE_CG) -- section informative sautee."
 fi
 
+# --- 4bis. Le temoin de throttling (ce que le noyau a REELLEMENT refuse) ---
+#
+# CE QUE CE TEMOIN MESURE, ET CE QU'IL NE MESURE PAS.
+#
+# `cpu.stat` de la slice porte deux compteurs CUMULATIFS depuis la creation du
+# cgroup : `nr_throttled` (periodes pendant lesquelles la slice a ete
+# THROTTLEE) et `throttled_usec` (microsecondes cumulees de throttling).
+# Throttler, c'est le noyau qui RETIRE du temps CPU : la slice a demande plus
+# que son plafond `cpu.max` ne pouvait servir.
+#
+# C'est le seul signal qui dise si un budget DECLARE est realiste. Une
+# declaration est un cap ; le throttling dit si le cap a morde. Un budget
+# declare de 40 vCPU sur une slice de 32 coeurs ne se prouve pas en comparant
+# des nombres : il se prouve en montrant que la slice n'a pas ete throttlee.
+#
+# LA FENETRE, ET POURQUOI ELLE EST BORNEE DE DEUX COTES.
+#
+# Un taux exige une fenetre, et l'age de la slice n'est pas lisible : cgroup
+# v2 n'expose aucune date de creation. Le PIEGE deja note dans ce script vaut
+# aussi ici -- `/proc/uptime` et `journalctl --list-boots` ne concordent pas
+# sur cette machine (ecart mesure de 22 min le 2026-10-28, a cause des
+# « Clock change detected » du WSL). Deux bornes sont donc employees :
+#
+#   W_LO = nr_periods x periode -- duree pendant laquelle la slice a ete
+#           COMPTEE. Une slice ne peut etre comptee que dans des periodes
+#           ecoulees, donc W_LO <= age REEL : c'est une borne INFERIEURE.
+#   W_HI = uptime de l'hote      -- la slice est nee apres le boot, donc
+#           age REEL <= W_HI : c'est une borne SUPERIEURE.
+#
+# L'age reel est entre les deux. Ce que cela autorise, et ce que cela
+# n'autorise pas :
+#
+#   - « PASSE » exige T <= allocation(W_LO). L'age reel etant >= W_LO, son
+#     allocation est >= celle de W_LO : le PASS est donc SOUND.
+#   - « ALERTE CERTAINE » : T > allocation(W_HI) -- meme la borne la plus
+#     generouse est depassee, l'alerte est etablie.
+#   - entre les deux, l'alerte est INCERTAINE : elle est poussee quand meme,
+#     parce que l'orientation prudente est d'alerter, mais elle est nommee
+#     comme telle -- une alerte qui pretend etre certaine quand elle ne l'est
+#     pas reproduirait exactement le defaut que ce script combat.
+#
+# CE QUE LA MESURE NE DISE PAS : elle ne dit pas QUEL conteneur a consomme le
+# temps, ni quand. La ligne « slots » ci-dessous est informative : elle
+# rattache le throttling aux slots individuels, la ou il se produit.
+head1 "4bis. temoin de throttling (CPU)"
+THR_STAT="$SLICE_CG/cpu.stat"
+if [ ! -d "$SLICE_CG" ]; then
+  warn "slice absente du cgroupfs ($SLICE_CG) -- temoin de throttling INDISPONIBLE."
+  say "  TEMOIN THROTTLING : INDISPONIBLE (pas de slice) -- AUCUN verdict rendu."
+  say "  TEMOIN THROTTLING (delta) : INDETERMINE (meme cause -- rien a dater)."
+elif [ ! -r "$THR_STAT" ]; then
+  warn "cpu.stat absent ou illisible ($THR_STAT) -- temoin de throttling INDETERMINE."
+  say "  TEMOIN THROTTLING : INDETERMINE (cpu.stat absent ou illisible)."
+  say "  TEMOIN THROTTLING (delta) : INDETERMINE (meme cause -- rien a dater)."
+  say "  -> une panne d'instrument ne se confond pas avec une absence de"
+  say "     throttling : aucun « passe » n'est rendu ici."
+else
+  THR_NR="$(awk '/^nr_throttled /{print $2; exit}' "$THR_STAT" 2>/dev/null)"
+  THR_US="$(awk '/^throttled_usec /{print $2; exit}' "$THR_STAT" 2>/dev/null)"
+  THR_PER="$(awk '/^nr_periods /{print $2; exit}' "$THR_STAT" 2>/dev/null)"
+  THR_USE="$(awk '/^usage_usec /{print $2; exit}' "$THR_STAT" 2>/dev/null)"
+  PERIOD_US="$(awk '{print $2; exit}' "$SLICE_CG/cpu.max" 2>/dev/null)"
+
+  is_uint() { case "${1:-}" in ''|*[!0-9]*) return 1 ;; esac; return 0; }
+  if ! is_uint "$THR_US"; then
+    warn "throttled_usec illisible ($THR_STAT) -- temoin de throttling INDETERMINE."
+    say "  TEMOIN THROTTLING : INDETERMINE (throttled_usec illisible)."
+  elif ! is_uint "$PERIOD_US" || [ "$PERIOD_US" -le 0 ]; then
+    warn "periode de la slice illisible (cpu.max) -- temoin de throttling INDETERMINE."
+    say "  TEMOIN THROTTLING : INDETERMINE (periode de la slice inconnue)."
+  else
+    if [ -n "${COURSIA_DRYRUN_UPTIME_S:-}" ]; then
+      W_HI_S="$COURSIA_DRYRUN_UPTIME_S"
+    elif [ -n "$ROOT" ]; then
+      W_HI_S=""      # fixture : pas d'horloge hote, pas de borne superieure
+    else
+      W_HI_S="$(awk '{print int($1)}' /proc/uptime 2>/dev/null)"
+    fi
+    is_uint "$W_HI_S" || W_HI_S=""
+
+    W_LO_S=""
+    ALLOC_LO=""
+    # La borne INFERIEURE (fenetre minimale) exige `nr_periods`. S'il est
+    # illisible, aucune borne inferieure n'existe : le « passe » devient
+    # IMPOSSIBLE a etablir (une borne superieure ne suffirait pas -- elle
+    # donnerait un PASS non sound). Le temoin rend alors INDETERMINE plutot
+    # que de crier au throttling sur une panne d'instrument.
+    if is_uint "$THR_PER"; then
+      W_LO_S="$(awk -v p="$THR_PER" -v q="$PERIOD_US" 'BEGIN{printf "%.1f", p*q/1e6}')"
+      ALLOC_LO="$(awk -v s="$THROTTLE_BUDGET_SPD" -v w="$W_LO_S" 'BEGIN{printf "%.2f", s*w/86400}')"
+    fi
+    THR_S="$(awk -v u="$THR_US" 'BEGIN{printf "%.2f", u/1e6}')"
+    ALLOC_HI=""
+    [ -n "$W_HI_S" ] && ALLOC_HI="$(awk -v s="$THROTTLE_BUDGET_SPD" -v w="$W_HI_S" 'BEGIN{printf "%.2f", s*w/86400}')"
+
+    printf '  %-22s %s\n' "nr_throttled" "${THR_NR:-<absent>}"
+    printf '  %-22s %s\n' "throttled_usec" "${THR_US:-<absent>}  (${THR_S} s cumulees)"
+    printf '  %-22s %s\n' "nr_periods" "${THR_PER:-<absent>}"
+    printf '  %-22s %s\n' "usage_usec" "${THR_USE:-<absent>}"
+    printf '  %-22s %s\n' "periode (cpu.max)" "${PERIOD_US} us"
+    if [ -n "$W_LO_S" ]; then
+      printf '  %-22s %s s  %s\n' "fenetre minimale" "$W_LO_S" "(borne INFERIEURE de l'age de la slice)"
+    else
+      printf '  %-22s %s\n' "fenetre minimale" "INDETERMINEE (nr_periods illisible)"
+    fi
+    if [ -n "$W_HI_S" ]; then
+      printf '  %-22s %s s  %s\n' "fenetre maximale" "$W_HI_S" "(uptime de l'hote -- borne SUPERIEURE)"
+    else
+      printf '  %-22s %s\n' "fenetre maximale" "INDETERMINEE (pas d'uptime exploitable)"
+    fi
+    printf '  %-22s %s s / %s h\n' "allocation" "$THROTTLE_BUDGET_SPD" "24"
+    [ -n "$ALLOC_LO" ] && printf '  %-22s %s s\n' "  sur fenetre min" "$ALLOC_LO"
+    [ -n "$ALLOC_HI" ] && printf '  %-22s %s s\n' "  sur fenetre max" "$ALLOC_HI"
+
+    # Le verdict, dans cet ordre : la borne la plus generouse d'abord (alerte
+    # certaine), puis la borne la plus stricte (passe sound).
+    if [ -n "$ALLOC_HI" ] && awk -v t="$THR_S" -v a="$ALLOC_HI" 'BEGIN{exit !(t>a)}'; then
+      THROTTLE_VERDICT="ALERTE CERTAINE"
+      THROTTLE_ALERT=1
+    elif [ -n "$ALLOC_LO" ] && awk -v t="$THR_S" -v a="$ALLOC_LO" 'BEGIN{exit !(t>a)}'; then
+      THROTTLE_VERDICT="ALERTE INCERTAINE"
+      THROTTLE_ALERT=1
+    elif [ -n "$ALLOC_LO" ]; then
+      THROTTLE_VERDICT="passe"
+    else
+      THROTTLE_VERDICT="INDETERMINE (fenetre minimale inconnue -- aucun « passe » possible)"
+    fi
+    say "  TEMOIN THROTTLING : $THROTTLE_VERDICT"
+    case "$THROTTLE_VERDICT" in
+      ALERTE*)
+        say "  -> le noyau a refuse du temps CPU. La declaration de budget est"
+        say "     contredite par la MESURE : ce n'est pas une hypothese."
+        ;;
+      passe)
+        say "  -> la slice n'a pas ete throttlee au-dela du seuil de"
+        say "     ${THROTTLE_BUDGET_SPD} s / 24 h. La declaration de budget"
+        say "     n'est PAS contredite par la mesure. Cela ne prouve pas"
+        say "     qu'elle est optimale -- cela etablit qu'elle n'est pas"
+        say "     contredite par le noyau."
+        ;;
+    esac
+
+    # --- 4bis-ter. Le meme temoin, mais PAR DELTA ---------------------------
+    #
+    # Le verdict ci-dessus compare un compteur CUMULE a une allocation
+    # proportionnelle a l'age de la slice : il reste sound (une slice ne peut
+    # pas avoir ete comptee plus longtemps que son age), mais sa sensibilite
+    # DECROIT avec l'age. Le delta entre deux lectures datees garde une fenetre
+    # bornee, donc un seuil qui ne se dilue pas. Le cumule reste comme borne de
+    # long terme : les deux sont imprimes, aucun ne remplace l'autre.
+    #
+    # TROIS ETATS, comme le cumule -- un instrument en panne ne rend jamais
+    # « passe » :
+    #   passe            le delta mesure est sous l'allocation de la fenetre
+    #   ALERTE CERTAINE  le delta depasse l'allocation de la fenetre (la
+    #                    fenetre du delta est EXACTE : deux lectures datees,
+    #                    aucune borne a encadrer)
+    #   INDETERMINE      pas d'etat anterieur, etat illisible, horloge non
+    #                    monotone, ou compteurs remis a zero (slice recreee)
+    _now="$(date -u +%s)"
+    case "$_now" in ''|*[!0-9]*) _now="" ;; esac
+    _delta_state=""
+    # Remise a vide : la valeur initiale « INDISPONIBLE » ne doit pas etre
+    # confondue avec un verdict rendu par la chaine ci-dessous, sans quoi le
+    # calcul serait saute et le temoin afficherait un etat qu'il n'a pas etabli.
+    THROTTLE_DELTA_VERDICT=""
+    if [ -z "$THROTTLE_STATE" ]; then
+      THROTTLE_DELTA_VERDICT="INDETERMINE (aucun repertoire d'etat : ni COURSIA_DRYRUN_STATE, ni LOCALAPPDATA, ni /var/lib)"
+    elif [ ! -r "$THROTTLE_STATE" ]; then
+      THROTTLE_DELTA_VERDICT="INDETERMINE (premiere lecture -- aucun etat anterieur a comparer)"
+    elif [ -z "$_now" ]; then
+      THROTTLE_DELTA_VERDICT="INDETERMINE (horodatage courant illisible)"
+    else
+      # Format : <epoch> <nr_throttled> <throttled_usec>
+      _t0=""; _n0=""; _u0=""
+      read -r _t0 _n0 _u0 < "$THROTTLE_STATE" 2>/dev/null || true
+      if [ -z "$_t0" ] || [ -z "$_u0" ]; then
+        THROTTLE_DELTA_VERDICT="INDETERMINE (etat anterieur vide ou incomplet)"
+      else
+        case "$_t0$_u0" in
+          *[!0-9]*) THROTTLE_DELTA_VERDICT="INDETERMINE (etat anterieur illisible : « $(head -c 80 "$THROTTLE_STATE" 2>/dev/null | tr '\n' ' ') »)" ;;
+        esac
+      fi
+      if [ -z "$THROTTLE_DELTA_VERDICT" ]; then
+        _dw=$((_now - _t0))
+        _dt=$((THR_US - _u0))
+        if [ "$_dw" -le 0 ]; then
+          THROTTLE_DELTA_VERDICT="INDETERMINE (horloge non monotone : fenetre de ${_dw} s)"
+        elif [ "$_dt" -lt 0 ]; then
+          THROTTLE_DELTA_VERDICT="INDETERMINE (compteurs remis a zero : la slice a ete recreee)"
+        else
+          _alloc="$(awk -v s="$THROTTLE_BUDGET_SPD" -v w="$_dw" 'BEGIN{printf "%.2f", s*w/86400}')"
+          _dt_s="$(awk -v u="$_dt" 'BEGIN{printf "%.2f", u/1e6}')"
+          _delta_state="fenetre ${_dw} s ; delta ${_dt_s} s ; allocation ${_alloc} s"
+          if awk -v t="$_dt_s" -v a="$_alloc" 'BEGIN{exit !(t>a)}'; then
+            THROTTLE_DELTA_VERDICT="ALERTE CERTAINE"
+            THROTTLE_ALERT=1
+            # Le refus eventuel doit porter la mesure qui a parle : le delta est
+            # la lecture la plus sensible des deux.
+            case "$THROTTLE_VERDICT" in
+              passe) THROTTLE_VERDICT="ALERTE CERTAINE (delta)" ;;
+            esac
+          else
+            THROTTLE_DELTA_VERDICT="passe"
+          fi
+        fi
+      fi
+    fi
+    say "  TEMOIN THROTTLING (delta) : $THROTTLE_DELTA_VERDICT"
+    [ -n "$_delta_state" ] && say "    $_delta_state"
+    case "$THROTTLE_DELTA_VERDICT" in
+      passe)
+        say "  -> sur cette fenetre, le noyau n'a pas refuse plus que"
+        say "     l'allocation : la declaration n'est pas contredite RECEMMENT."
+        ;;
+      ALERTE*)
+        say "  -> sur cette fenetre, le noyau a refuse du temps CPU au-dela de"
+        say "     l'allocation. La fenetre du delta est exacte : ce n'est pas une"
+        say "     borne, c'est une mesure."
+        ;;
+      INDETERMINE*)
+        say "  -> aucun « passe » n'est rendu ici : l'absence de comparaison ne"
+        say "     prouve pas l'absence de throttling."
+        ;;
+    esac
+
+    # Ecriture de l'etat : le rend POSSIBLE pour la lecture suivante. Un echec
+    # d'ecriture degrade le temoin suivant en INDETERMINE, il ne rend pas la
+    # mesure courante fausse -- d'ou un avertissement et non un refus.
+    if [ -n "$THROTTLE_STATE" ] && [ -n "$_now" ] && is_uint "${THR_US:-}"; then
+      if mkdir -p "$STATE_DIR" 2>/dev/null \
+         && printf '%s %s %s\n' "$_now" "${THR_NR:-0}" "$THR_US" > "$THROTTLE_STATE.tmp.$$" 2>/dev/null \
+         && mv -f "$THROTTLE_STATE.tmp.$$" "$THROTTLE_STATE" 2>/dev/null; then
+        say "    etat enregistre : $THROTTLE_STATE"
+      else
+        rm -f "$THROTTLE_STATE.tmp.$$" 2>/dev/null || true
+        warn "etat du temoin de throttling NON ECRIT ($THROTTLE_STATE) : la prochaine lecture rendra INDETERMINE sur le delta."
+      fi
+    fi
+
+    # calme alors que des slots individuels sont satures -- c'est le cas
+    # mesure le 2026-10-28 sur ai-01 (slice : 7 evenements / 2,4 s ; un
+    # conteneur de slot : 3 688 evenements / 856 s). Le plafond agrege n'etait
+    # alors pas la contrainte : le cap PAR SLOT l'etait.
+    #
+    # UNE LIMITE DE CE TEMOIN PAR S LOT, a ne pas oublier : le compteur d'un
+    # conteneur est RECREE quand le slot est recycle (le superviseur remplace
+    # le conteneur a chaque job). Un slot qui a beaucoup throttle peut donc
+    # avoir un compteur revenu a zero le lendemain. Le temoin DUREL est celui
+    # de la slice, dont le cgroup n'est pas recree.
+    say "  slots (informatif) : throttling cumule par conteneur de la slice"
+    _slots=0
+    _list=""
+    for C in "$SLICE_CG"/docker-*.scope; do
+      [ -e "$C" ] || continue
+      _slots=$((_slots + 1))
+      _u="$(awk '/^throttled_usec /{print $2; exit}' "$C/cpu.stat" 2>/dev/null)"
+      is_uint "$_u" || _u=0
+      _list="$_list$_u	$(basename "$C")
+"
+    done
+    if [ "$_slots" -eq 0 ]; then
+      say "    (aucun scope docker-* lisible dans la slice)"
+    else
+      printf '    %s conteneur(s) ; les 5 plus throttles :\n' "$_slots"
+      printf '%s' "$_list" | sort -rn 2>/dev/null | head -5 | while IFS="$(printf '\t')" read -r u n; do
+        printf '    %-64s %s s\n' "$n" "$(awk -v u="$u" 'BEGIN{printf "%.2f", u/1e6}')"
+      done
+      say "    (compteur par conteneur : il repart a zero quand le slot est"
+      say "     recycle -- seul celui de la slice est durable)"
+    fi
+  fi
+fi
+
 # --- 5. L'arithmetique du garde ---------------------------------------------
 head1 "5. arithmetique du garde (assert_cpu_budget)"
 mul() { awk -v a="$1" -v b="$2" 'BEGIN{printf "%.2f", a*b}'; }
@@ -425,19 +770,47 @@ say "  les modifie pas, donc les reinstaller serait un geste hors perimetre."
 # --- 7. Le drop-in propose ---------------------------------------------------
 head1 "7. drop-in propose (dans le bundle, PAS dans /etc)"
 
-# systemd fusionne les drop-ins dans l'ordre LEXICOGRAPHIQUE de leur nom. Un
-# drop-in lu apres la cible ecraserait ce qu'elle declare : proposer un fichier
-# qu'un autre surcharge, c'est proposer un no-op tout en rendant un verdict
-# affirmatif. On enumere les drop-ins EFFECTIFS et on refuse s'il en existe un
-# qui soit lu apres la cible.
+# CE QUI DECLENCHE LE REFUS A CHANGE (#23051, decision du coordinateur).
+#
+# La version precedente refusait des qu'un drop-in etait lu APRES la cible
+# d'apres l'ordre LEXICOGRAPHIQUE des noms de fichiers. C'etait une PREDICTION
+# presentee comme un fait : sur ai-01 trois drop-ins lus apres la cible
+# (20-pids.conf, 30-budget.conf, 40-scale-14.conf) suffisaient a faire refuser
+# un controle que rien ne surchargait. Un ordre de fichiers ne dit pas si une
+# directive est reellement surchargee -- la valeur EFFECTIVE, elle, le dit.
+#
+# Le refus est donc desormais adosse a la MESURE de la section 1 : pour chaque
+# directive que la proposition porte, on cherche QUI fournit la valeur effective.
+# Le test est sound sans jamais raisonner sur l'ordre (les cinq branches sont
+# reprises en tete de attr_directive) :
+#
+#   - proposition == effective : le fichier ecrit ne change rien -> PASS ;
+#   - aucun drop-in ne declare la directive -> PASS : la proposition s'applique ;
+#   - un drop-in declare la valeur effective -> il est en vigueur (ou
+#     indiscernable de celui qui l'est), et l'ecriture ne le dessaisit pas ->
+#     REFUS, en le nommant avec sa valeur mesuree ;
+#   - des drop-ins declarent autre chose, et la CIBLE fournit la valeur
+#     effective -> ils sont surclasses et le resteront -> PASS, en les signalant ;
+#   - aucun des cas ci-dessus : la valeur effective n'est attribuable a rien de
+#     releve -> REFUS (fail-closed : une approbation sans attribution n'est pas
+#     une approbation etayee).
+#
+# La lecture effective etant fatale a la section 1 (unite injoignable, valeur
+# ineligible), le cas « mesure impossible » est deja un refus : le fail-closed
+# est conserve, il n'est simplement plus declenche par une prediction.
+#
+# Aucun drop-in n'est renomme par ce script : renommer la cible pour faire taire
+# un garde est un contournement, et la resolution d'une surcharge reelle est une
+# decision de configuration, pas un ajustement mecanique.
+#
 # Ordre de precedence des racines de drop-ins, du plus FORT au plus faible, tel
 # que le rend « systemd-analyze unit-paths » (mesure sur systemd 255) et que le
 # documente systemd.unit(5). Deux regles distinctes, souvent confondues :
 #   - a nom de fichier EGAL, la racine la plus forte l'emporte (masquage) ;
 #   - a noms DIFFERENTS, la fusion est lexicographique sur le nom de fichier,
 #     quelle que soit la racine.
-# Le classement ne sert qu'a la premiere. La seconde est traitee plus bas, et
-# c'est bien pour cela qu'elle ne regarde pas le repertoire.
+# Le classement ne sert qu'a la premiere. La seconde n'est PLUS traitee par
+# l'ordre des noms mais par la valeur effective (voir plus bas).
 rank_of() {
   case "$1" in
     /etc/systemd/system.control/*)  echo 1 ;;
@@ -455,7 +828,7 @@ rank_of() {
 
 TARGET_BASE="$(basename "$TARGET")"
 TARGET_REL="${TARGET#"$ROOT"}"
-LATER=""
+DROPINS=""
 for D in $(sc_show coursia-runner.service DropInPaths); do
   DB="$(basename "$D")"
   # La cible se reconnait a son CHEMIN, jamais a son seul basename. Sauter tout
@@ -484,18 +857,130 @@ ne verra pas. Refus."
     # Homonyme plus faible : masque par la cible, sans effet. On passe.
     continue
   fi
-  if [ "$(printf '%s\n%s\n' "$TARGET_BASE" "$DB" | LC_ALL=C sort | tail -1)" = "$DB" ]; then
-    LATER="$LATER $D"
-  fi
+  DROPINS="$DROPINS $D"
 done
-if [ -n "$LATER" ]; then
-  die "drop-in(s) lus APRES la cible, donc susceptibles de l'ecraser :$LATER
-systemd fusionne les drop-ins par ordre lexicographique des noms de fichiers.
-« $TARGET_BASE » etant lu avant eux, ce que la proposition declare pourrait
-etre surcharge -- et le verdict porterait sur une configuration qui ne
-s'appliquerait pas. Refus : la resolution (renommer la cible, ou retirer la
-surcharge) est une decision de configuration, pas un ajustement de ce script."
+
+# Ce qu'un FICHIER declare -- pas ce qui s'applique. N'est employe que pour
+# ATTRIBUER une valeur effective deja mesuree, jamais pour la deduire.
+# Les chemins rendus par DropInPaths sont absolus, comme sur la machine ; sous
+# COURSIA_DRYRUN_ROOT ils sont resolus sous la racine d'inspection, sauf s'ils
+# la portent deja (fixtures).
+resolve_dropin() {   # $1 = chemin rendu par DropInPaths
+  case "$1" in
+    "$ROOT"/*) printf '%s' "$1" ;;
+    *)         printf '%s' "${ROOT}$1" ;;
+  esac
+}
+# Un drop-in liste mais illisible rend l'attribution IMPOSSIBLE : on ne peut ni
+# prouver qu'il surcharge, ni prouver qu'il ne surcharge pas. L'erreur va vers
+# le refus, comme partout ailleurs dans ce script.
+for D in $DROPINS; do
+  DP="$(resolve_dropin "$D")"
+  [ -r "$DP" ] || die "drop-in liste par systemd mais ILLISIBLE :
+  $D
+  (resolu en : $DP)
+Sans son contenu, la valeur effective ne peut pas etre ATTRIBUEE : on ne sait
+pas si ce fichier surcharge la proposition. Ni « surcharge » ni « non
+surcharge » n'est etabli, et l'erreur irait dans le sens permissif. Refus."
+done
+
+decl_env() {   # $1 = fichier, $2 = variable
+  sed -e 's/#.*$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' "$1" 2>/dev/null \
+    | sed -n "s/^Environment=$2=\(.*\)$/\1/p" \
+    | tail -1
+}
+decl_exec_slots() {   # $1 = fichier
+  sed -n 's/^[[:space:]]*ExecStart=[[:space:]]*//p' "$1" 2>/dev/null \
+    | grep -v '^$' | tail -1 | awk '{print $NF}'
+}
+
+# Une directive que la proposition porte, confrontee a la MESURE.
+#
+# Regle (aucune branche ne raisonne sur l'ordre des noms de fichiers) :
+#   1. proposition == effective            -> PASS : le fichier ecrit ne change
+#      rien a ce qui s'applique ;
+#   2. aucun drop-in ne declare            -> PASS : la valeur vient de la
+#      cible, de l'unite ou du defaut du wrapper, la proposition s'applique ;
+#   3. un drop-in declare la valeur EFFECTIVE -> REFUS : il est en vigueur (ou
+#      indiscernable de l'etant), et changer la valeur de la cible ne le dessaisit
+#      pas -- l'ordre de fusion ne bouge pas ;
+#   4. des drop-ins declarent, aucun la valeur effective, et la CIBLE declare la
+#      valeur effective -> PASS : ils sont surclasses par la cible aujourd'hui,
+#      et le resteront ;
+#   5. aucun cas ci-dessus : la valeur effective n'est attribuable ni a la cible
+#      ni a un drop-in identifie -> REFUS (attribution impossible, fail-closed).
+# $1 = libelle  $2 = valeur proposee  $3 = valeur effective  $4 = type (env|exec)
+# $5 = variable (pour env)
+OVERRIDE_DORMANT=""
+attr_directive() {
+  _label="$1"; _prop="$2"; _eff="$3"; _kind="$4"; _var="${5:-}"
+  # (1) La proposition ne change rien a la valeur appliquee.
+  [ "$_prop" = "$_eff" ] && return 0
+  _claimers=""
+  for _D in $DROPINS; do
+    _p="$(resolve_dropin "$_D")"
+    if [ "$_kind" = exec ]; then
+      _v="$(decl_exec_slots "$_p")"
+    else
+      _v="$(decl_env "$_p" "$_var")"
+    fi
+    [ -n "$_v" ] || continue
+    _claimers="$_claimers $_D=$_v"
+    # (3) Il declare la valeur APPLIQUEE : il est en vigueur, ou indiscernable
+    # de celui qui l'est (memes valeurs possibles). Ecrire la cible ne peut pas
+    # le dessaisir -- l'ordre de fusion ne change pas. Refus.
+    if [ "$_v" = "$_eff" ]; then
+      die "surcharge MESUREE sur $_label : la valeur effective est declaree par
+  un drop-in autre que la cible :
+  $_D
+  valeur appliquee : $_eff
+  valeur proposee  : $_prop
+La proposition serait ecrite dans $TARGET_BASE et ne dessaisirait pas ce
+fichier : le verdict porterait sur une configuration qui ne s'applique pas.
+Refus -- la resolution (retirer la surcharge, ou changer la valeur a la source)
+est une decision de configuration, pas un ajustement de ce script. Aucun
+fichier n'est renomme pour faire taire ce controle."
+    fi
+  done
+  if [ -z "$_claimers" ]; then
+    return 0   # (2)
+  fi
+  # (4) La cible declare-t-elle la valeur effective ? Si oui, elle est en force
+  # et les claimants ci-dessus (tous != effective) sont surclasses : ils le
+  # resteront apres l'ecriture. On passe, en les signalant.
+  if [ "$_kind" = exec ]; then
+    _t="$(decl_exec_slots "$TARGET")"
+  else
+    _t="$(decl_env "$TARGET" "$_var")"
+  fi
+  if [ -n "$_t" ] && [ "$_t" = "$_eff" ]; then
+    for _c in $_claimers; do
+      OVERRIDE_DORMANT="$OVERRIDE_DORMANT
+  $_label : ${_c%%=*} declare ${_c#*=}, la valeur appliquee est $_eff (fournie par la cible)"
+    done
+    return 0
+  fi
+  # (5) La valeur effective n'est attribuable ni a la cible ni a un claimant :
+  # la mesure ne suffit pas a etablir qui s'appliquera apres l'ecriture.
+  die "attribution IMPOSSIBLE sur $_label :
+  claimants releves :$_claimers
+  valeur appliquee : $_eff
+  valeur declaree par la cible : ${_t:-<rien>}
+Aucun fichier releve ne fournit la valeur qui s'applique. Le verdict ne peut
+pas etre etaye par la mesure : refus plutot qu'une approbation sans preuve."
+}
+
+attr_directive "COURSIA_RUNNER_CPUS" "$CPUS" "${EFF_START_CPUS:-}" env COURSIA_RUNNER_CPUS
+attr_directive "COURSIA_RUNNER_MEMORY" "$EFF_START_MEM" "${EFF_START_MEM:-}" env COURSIA_RUNNER_MEMORY
+attr_directive "ExecStart (slots)" "$SLOTS" "${EFF_START_N:-}" exec
+
+if [ -n "$OVERRIDE_DORMANT" ]; then
+  warn "drop-in(s) declarant une directive de la proposition SANS etre en vigueur :$OVERRIDE_DORMANT"
+  say "  (surclasses par la cible aujourd'hui ; la proposition ne change pas"
+  say "   l'ordre de fusion, donc elle ne les met pas en vigueur. Signale, non decisif.)"
 fi
+say "  surcharge : aucune valeur proposee n'est fournie par un drop-in en vigueur"
+say "              (attribution mesuree sur la configuration effective de la section 1)."
 
 # Le drop-in propose porte exactement trois directives. Si la cible vivante en
 # porte d'autres, l'ecrire A LA PLACE les perdrait en silence. Les reconduire
@@ -694,4 +1179,12 @@ WITNESS
 head1 "fin"
 say "Aucun fichier de /etc ni de /usr/local/bin n'a ete modifie par ce script."
 say "Bundle verifie et complet : $OUT"
+if [ "$THROTTLE_ALERT" -eq 1 ]; then
+  say ""
+  say "TEMOIN THROTTLING : $THROTTLE_VERDICT -- sortie 3."
+  say "  Le bundle est complet et la proposition franchit le garde ; c'est la"
+  say "  MESURE du noyau qui le contredit. Traiter l'alerte comme un fait, et"
+  say "  non comme une hypothèse a verifier."
+  exit 3
+fi
 exit 0

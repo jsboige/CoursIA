@@ -754,6 +754,56 @@ def test_diff_lecture_sous_code_devant_code_sans_exces_non_flaggee():
     assert detect_added_readings(head, base) == []
 
 
+def test_diff_enonce_exercice_en_gras_ne_gonfle_pas_le_compte():
+    """Regression mesuree sur #23439 (Z3-16c-Meal-Planner) : l'enonce
+    d'exercice en GRAS (`**Exercice 1** -- ...`) n'est pas une lecture. Il ne
+    doit donc pas gonfler le compte par sortie de la sortie qu'il precede --
+    sinon la PREMIERE lecture ajoutee sous cette sortie est signalee
+    SECOND_READING a tort. La forme en gras est employee par 111 carnets du
+    depot (mesure au 30/10/2026) ; avant le correctif, elle echappait au
+    carve-out #17777 (qui exigeait un titre markdown `## Exercice N`).
+    """
+    base = nb(
+        code("print(1)"),
+        md("## 3. Exercices"),
+        md("**Exercice 1** -- forcer que le critere change."),
+        code("# Exercice 1 (stub) : TODO"),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nLa reponse est stable."),
+        md("## 3. Exercices"),
+        md("**Exercice 1** -- forcer que le critere change."),
+        code("# Exercice 1 (stub) : TODO"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_diff_vraie_seconde_lecture_reste_signalee_apres_un_enonce():
+    """Controle negatif du correctif : le carve-out ne doit pas blanchir une
+    VRAIE seconde lecture. Deux lectures sous le meme code, avec un enonce
+    d'exercice en gras entre les deux et son stub : la seconde reste signalee.
+    """
+    base = nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nLa reponse est stable."),
+        md("## 3. Exercices"),
+        md("**Exercice 1** -- forcer que le critere change."),
+        code("# Exercice 1 (stub) : TODO"),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nLa reponse est stable."),
+        md("### Lecture du resultat\nLa reponse est stable, relue en detail."),
+        md("## 3. Exercices"),
+        md("**Exercice 1** -- forcer que le critere change."),
+        code("# Exercice 1 (stub) : TODO"),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "SECOND_READING"
+
+
 def test_diff_lecture_sous_code_avec_exces_rest_second_reading():
     """Meme topologie (prev = code execute, next = code), mais la sortie du
     dessus portait deja une lecture : l'ajout fait monter le compte ->
@@ -2074,3 +2124,486 @@ def test_cli_ratchet_rend_les_exemptions_dans_le_resume(tmp_path):
     assert "0 en regression" in proc.stdout
     assert "EXEMPT-source-notice" in proc.stdout
     assert "id=meta-1" in proc.stdout
+
+
+# --- 6. Carve-out #23378 : exemple guide credite vs exercice ---------------
+#
+# La digestion des travaux etudiants (#15042) convertit l'exercice d'un
+# etudiant en exemple guide credite : le titre de section porte
+# `### Exemple ... (credite #PR)` et le code de l'etudiant est conserve
+# VERBATIM -- en-tete `# Exercice N` compris. Le jeton « Exercice » est donc
+# present par construction dans un exemple, et la lecture posee apres
+# l'exemple etait signalee EXERCISE_READING (faux positif mesure sur #23378,
+# instance reelle PR #23368, cellule 37 de 01-Hands-On-Grounding.ipynb).
+#
+# Les tests ci-dessous sont des CONTROLES POSITIFS ET NEGATIFS : chacun
+# verifie qu'un cas continue de mordre, ou qu'un cas continue de ne pas
+# mordre. Un carve-out sans controle negatif est une amnese.
+
+
+def _credited_example_header(credit="#23248"):
+    """En-tete markdown d'exemple guide CREDITE (forme canonique)."""
+    return md(f"### Exemple guide 3 - Comparer deux modeles (credite {credit})\n\n"
+              + "Le choix du modele d'embeddings change la qualite du retrieval.")
+
+
+def _student_solution_verbatim():
+    """Code etudiant conserve VERBATIM par la digestion : l'en-tete d'origine
+    porte le jeton « Exercice », la cellule est executee et a des sorties.
+    """
+    return {
+        "cell_type": "code",
+        "source": ["# Exercice 3 - Changez de modele d'embeddings et comparez les scores.\n",
+                   "MODELE_B = \"BAAI/bge-small-en-v1.5\"\n",
+                   "client_b = QdrantClient(\":memory:\")\n",
+                   "print(client_b.get_collections())"],
+        "outputs": [{"name": "stdout", "output_type": "stream",
+                     "text": ["Collections: 1"]}],
+        "execution_count": 12,
+    }
+
+
+def _stub_exercise_lean():
+    """Stub d'exercice signale par son JETON de source (`-- Exercice N` /
+    `# TODO`), SANS aucune sortie « a completer ».
+
+    C'est ce qui le distingue de `_stub_exercise` : la classification ne
+    court-circuite PAS par la sortie litterale, elle depend du carve-out
+    d'exemple credite -- donc de `_section_header`. C'est le cas reel du
+    body (Lean-13 / Lean-16c) que le test negatif doit epingler.
+    """
+    return {
+        "cell_type": "code",
+        "source": ["-- Exercice 2 - un enonce a demontrer  # TODO\n"
+                   "def preuve : Prop := sorry"],
+        "outputs": [{"name": "stdout", "output_type": "stream",
+                     "text": ["ok"]}],
+        "execution_count": 1,
+    }
+
+
+def test_carveout_exemple_credite_nest_pas_signale_exercise_reading():
+    """POSITIF : la lecture d'un exemple guide CREDITE n'est pas signalee.
+
+    Instance reelle (#23368) : en-tete d'exemple credite, code etudiant
+    verbatim (jeton « Exercice » conserve), lecture posee apres.
+    """
+    base = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+    )
+    head = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+        _credited_example_header(),
+        _student_solution_verbatim(),
+        md("### Lecture du resultat : egalite sur les classements\n\n"
+           + "Les deux collections contiennent les memes points."),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == [], findings
+
+
+def test_carveout_exercice_non_credite_reste_signale():
+    """NEGATIF : un exemple SANS attribution reste un exercice.
+
+    L'ATTRIBUTION est ce qui distingue l'exemple guide digere d'un simple
+    `### Exemple` : sans elle, l'organe n'a rien qui dise le role du code.
+    """
+    base = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+    )
+    head = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+        md("### Exemple guide 3 - Comparer deux modeles\n\nSans attribution."),
+        _student_solution_verbatim(),
+        md("### Lecture du resultat : egalite sur les classements\n\n"
+           + "Les deux collections contiennent les memes points."),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["EXERCISE_READING"], findings
+
+
+def test_carveout_stub_sous_exercice_nest_pas_blanchi():
+    """NEGATIF : le carve-out ne dispense pas le vrai stub d'exercice.
+
+    Le role se lit dans l'en-tete ; sous `### Exercice N`, le code reste un
+    exercice, meme si sa source porte le mot « Exercice ».
+    """
+    base = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+    )
+    head = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+        md("### Exercice 2 - Un second passage\n\nUn enonce."),
+        _student_solution_verbatim(),
+        md("### Lecture du resultat : egalite sur les classements\n\n"
+           + "Les deux collections contiennent les memes points."),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["EXERCISE_READING"], findings
+
+
+def test_carveout_sortie_litterale_inachevee_reste_exercice():
+    """NEGATIF : le carve-out porte sur le JETON, pas sur le role pedagogique.
+
+    Une cellule qui affiche « Exercice a completer » signale un travail NON
+    acheve : elle reste un exercice, meme sous un en-tete d'exemple credite.
+    """
+    cells = [_credited_example_header(), _stub_exercise()]
+    assert is_exercise_cell(cells[1], cells, 1) is True
+
+
+def test_carveout_en_tete_credite_par_metadata():
+    """POSITIF : l'attribution par metadata vaut comme l'attribution inline.
+
+    Les deux formes sont acceptees par `check_credited_examples` ; le carve-out
+    doit suivre la meme convention, sinon il depend du gout de l'auteur.
+    """
+    header = md("### Exemple guide 3 - Comparer deux modeles\n\nLe role du code.")
+    header["metadata"] = {"credited_from": "#23248"}
+    cells = [header, _student_solution_verbatim()]
+    assert is_exercise_cell(cells[1], cells, 1) is False
+
+
+from check_split_reading_cells import (  # noqa: E402
+    _governing_header,
+    _section_header,
+)
+
+
+def test_carveout_code_avant_titre_ne_rattache_pas():
+    """REQUALIFIE (#23397) : deux regles cohabitent, aux perimetres clairs.
+
+    - Regle de LIEN (`_governing_header`), intacte : une cellule de code
+      ROMP le lien -- une cellule placee apres la deuxieme cellule de code
+      d'une section n'est rattachee a AUCUN titre qui la precede.
+    - Regle de SECTION (`_section_header`), perimetre du carve-out : une
+      cellule de code n'interrompt PAS la remontee -- la deuxieme cellule
+      de code d'un exemple CREDITE est blanchie comme la premiere.
+    """
+    cells = [
+        _credited_example_header(),
+        _student_solution_verbatim(),
+        code("print('autre section')"),
+        _student_solution_verbatim(),
+    ]
+    # Regle de lien : intacte -- le code rompt le lien, la cellule 3
+    # n'est rattachee a aucun titre.
+    assert _governing_header(cells, 3) is None
+    # Regle de section : la section reste ouverte jusqu'au prochain TITRE
+    # -- l'en-tete credite commande les deux cellules de code de l'exemple.
+    assert _section_header(cells, 3) is cells[0]
+    assert is_exercise_cell(cells[3], cells, 3) is False
+
+
+def test_carveout_section_multi_code_credite_nest_pas_signale():
+    """POSITIF (#23397) : un exemple CREDITE multi-code, bout en bout.
+
+    La lecture posee apres la DEUXIEME cellule de code de l'exemple n'est
+    pas signalee : les deux cellules de code sont sous l'en-tete credite
+    (une cellule de code intermediaire ne ferme pas la section). Echee sous
+    l'ancienne regle de lien : la deuxieme cellule etait hors carve-out et
+    la lecture etait signalee EXERCISE_READING (le faux positif mesure sur
+    le corpus : 15 cellules suivies d'une lecture).
+    """
+    base = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+    )
+    head = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+        _credited_example_header(),
+        _student_solution_verbatim(),
+        code("print('deuxieme code de l'exemple')"),
+        _student_solution_verbatim(),
+        md("### Lecture du resultat : egalite sur les classements\n\n"
+           + "Les deux collections contiennent les memes points."),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == [], findings
+
+
+def test_carveout_section_sans_credit_reste_exercice():
+    """NEGATIF (#23397) : la regle de section SANS credit n'est pas un
+    carve-out.
+
+    La meme forme multi-code sous un `### Exemple` SANS attribution : la
+    remontee est elargie de la meme facon, mais l'en-tete ne dit rien du
+    role du code -- la deuxieme cellule de code reste classee « exercice »
+    et la lecture posee apres elle est signalee.
+    """
+    base = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+    )
+    head = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+        md("### Exemple guide 3 - Comparer deux modeles\n\nSans attribution."),
+        _student_solution_verbatim(),
+        code("print('deuxieme code')"),
+        _student_solution_verbatim(),
+        md("### Lecture du resultat : egalite sur les classements\n\n"
+           + "Les deux collections contiennent les memes points."),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["EXERCISE_READING"], findings
+
+
+def test_carveout_exercice_apres_separateur_reste_exercice():
+    """NEGATIF (#23397) : un TITRE d'exercice pose APRES un separateur `***`
+    ferme la section -- le stub qui le suit reste classe « exercice ».
+
+    C'est le cas reel du body (Lean-13-Kochen-Specker cell 37, Lean-16c-
+    Conway cell 44) : la cellule markdown qui ouvre la section d'exercice
+    porte `***` + ligne vide AVANT le `### Exercice ...`. L'ancienne regle
+    (premiere ligne seulement) ne le voyait pas comme un titre ; la remontee
+    de `_section_header` passait au-dessus et rattachait le stub a l'en-tete
+    credite deux cellules plus haut. Le stub etait blanchi, et la mesure du
+    body le comptait a tort dans les « gagnees ».
+    """
+    cells = [
+        _credited_example_header(),
+        _student_solution_verbatim(),
+        md("***\n\n### Exercice 2 - Un second passage\n\nUn enonce."),
+        _stub_exercise_lean(),
+    ]
+    # Le stub (cellule 3) est sous le TITRE d'exercice de la cellule 2, pas
+    # sous l'en-tete credite de la cellule 0 : la section est fermee par le
+    # titre pose apres le separateur.
+    assert _section_header(cells, 3) is cells[2]
+    assert is_exercise_cell(cells[3], cells, 3) is True
+
+
+# --- Titres de TRANSITION de fin de carnet (CLOSING_NAV_TITLE_RE) -------------
+#
+# Surface mesuree sur la PR #24303 : la cellule de CLOTURE d'un carnet
+# (`## Prochaines etapes` + liens de navigation vers le carnet suivant) ajoutee
+# juste apres le stub du dernier exercice etait signalee EXERCISE_READING.
+# La regle « l'etudiant ne verra pas la lecture tant qu'il n'a pas complete »
+# ne s'applique pas a une cellule de NAVIGATION : elle ne commente aucune
+# sortie, et la navigation de fin de carnet doit rester visible meme si
+# l'exercice n'est pas fait.
+#
+# Les controles sont doubles : POSITIFS (la transition n'est pas signalee) et
+# NEGATIFS (une lecture reste signalee, une PHRASE qui commence par le mot-cle
+# n'est pas blanchie par raccourci).
+
+
+def test_titre_prochaines_etapes_apres_exercice_n_est_pas_signale():
+    """POSITIF : `## Prochaines etapes` apres un exercice n'est pas une lecture."""
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Prochaines etapes\n\nLe notebook suivant explore les "
+           "dialogues argumentatifs multi-agents avec le module `agents.dialogues`.\n\n"
+           "***\n\n**Navigation** : [Index](README.md) | [Suivant >>](Tweety-08-Python.ipynb)"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_titre_next_steps_apres_exercice_n_est_pas_signale():
+    """POSITIF : le jumeau `_en` (`## Next steps`) suit la meme regle."""
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Next steps\n\nThe next notebook explores multi-agent argumentation "
+           "dialogues with the `agents.dialogues` module."),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_titre_navigation_apres_exercice_n_est_pas_signale():
+    """POSITIF : `## Navigation` (section de liens) apres un exercice."""
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Navigation\n\n- [Precedent](Notebook-03-Python.ipynb) — le coeur du moteur\n"
+           "- [Index](README.md)"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_titre_liens_apres_exercice_n_est_pas_signale():
+    """POSITIF : `## Liens` (liste de references vers les autres carnets)."""
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Liens\n\n- [MGS-1 Introduction](MGS-01-Introduction.ipynb) — le moteur autonome\n"
+           "- [MGS-2 Composition](MGS-02-Composition.ipynb) — les primitives"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_titre_numerote_prochaines_etapes_n_est_pas_signale():
+    """POSITIF : la numerotation de section (`### 7.3 Prochaines etapes`) est tolerated."""
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("### 7.3 Prochaines etapes\n\nLe chapitre suivant traite du cout des "
+           "operations de mutation sur les automates."),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_phrase_commencant_par_navigation_reste_signalee():
+    """NEGATIF : `## Navigation dans un graphe RDF` n'est PAS une transition.
+
+    L'exemption est fondee sur un ANCRAGE COMPLET du titre : une section qui
+    commence par le mot-cle mais qui parle d'autre chose reste une lecture.
+    """
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Navigation dans un graphe RDF\n\nLe parcours du graphe part de la "
+           "source et suit les aretes ; chaque saut ajoute un fait au contexte."),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "EXERCISE_READING"
+
+
+def test_lecture_apres_exercice_reste_signalee():
+    """NEGATIF (garde-fou de non-regression) : une vraie lecture reste signalee.
+
+    L'extension des titres de transition ne doit pas affaiblir la regle
+    « l'etudiant ne verra pas la lecture tant qu'il n'a pas complete ».
+    """
+    base = nb(
+        _todo_stub_unexec(),
+    )
+    head = nb(
+        _todo_stub_unexec(),
+        md("### Lecture du resultat\nSortie attendue : le rang de chaque argument "
+           "une fois le classement probabiliste applique."),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "EXERCISE_READING"
+
+
+def test_resume_apres_exercice_reste_signale():
+    """NEGATIF : `## Resume` n'est PAS dans la famille des transitions.
+
+    Un recapitulatif peut etre un contenu que l'etudiant doit lire APRES
+    l'exercice : il reste signale (perimetre volontairement laisse a
+    l'arbitrage du coordinateur).
+    """
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Resume\n\nLe classement probabiliste combine la force des arguments "
+           "et la coherence du debat ; les deux termes se compensent."),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "EXERCISE_READING"
+
+
+# =============================================================================
+# Carve-out prose de transition (#24164)
+# =============================================================================
+#
+# Instance mesuree : PR #23840, `App-3-NurseScheduling.ipynb`, 10 SECOND_READING
+# sur des cellules qui ANNONCENT le code suivant. 2 separateurs `***` devant un
+# titre de section, 8 libelles d'etape en gras. L'organe punissait le geste qu'il
+# prescrit (poser la lecture demandee par « une sortie = une lecture »).
+
+from check_split_reading_cells import is_step_transition  # noqa: E402
+
+
+def test_transition_separateur_devant_titre():
+    """POSITIF : `***` puis `## 2. ...` decore un titre, ce n'est pas une lecture."""
+    assert is_step_transition(md("***\n\n## 2. Formulation du probleme")) is True
+    assert is_step_transition(md("---\n\n### 3. Resultats")) is True
+    assert is_step_transition(md("***")) is True
+
+
+def test_transition_libelle_etape_en_gras():
+    """POSITIF : les 8 formes mesurees sur #23840."""
+    for label in (
+        "**Etape 2 : contrainte de couverture (C1)**",
+        "**Étape 3 : contrainte d'unicite (C2)**",
+        "**Step 4: objective (C3)**",
+        "**Partie 2 -- distribution de la charge**",
+    ):
+        assert is_step_transition(md(label)) is True, label
+
+
+def test_transition_negative_separateur_suivi_de_prose():
+    """NEGATIF : un `***` qui separe deux paragraphes reste de la prose."""
+    assert is_step_transition(
+        md("***\n\nLa distribution de la charge est desormais asimmee.")
+    ) is False
+
+
+def test_transition_negative_lecture_titree_reste_lecture():
+    """NEGATIF : une lecture titree n'est jamais une transition, gras ou pas."""
+    assert is_step_transition(
+        md("### Lecture du resultat\n\n**Etape 2 : contrainte (C1)**")
+    ) is False
+
+
+def test_transition_negative_citation_de_sortie():
+    """NEGATIF : un libelle d'etape qui cite une sortie commente le precedent."""
+    assert is_step_transition(
+        md("**Etape 2 : contrainte (C1)**\n\nComme le montre la sortie, 4.14 min.")
+    ) is False
+
+
+def test_transition_negative_interpretation_dissimulee():
+    """NEGATIF : un titre d'interpretation dans le corps disqualifie le carve-out."""
+    assert is_step_transition(
+        md("**Etape 2 : contrainte (C1)**\n\n### Lecture du resultat\n\nOn observe 2 noeuds.")
+    ) is False
+
+
+def test_transition_negative_prose_grassee_quelconque():
+    """NEGATIF (borne) : un gras qui n'est pas un libelle d'etape reste du texte.
+
+    Le carve-out est volontairement etroit (#24164, option 2) : etendre a tout
+    gras ferait d'un `**Resultat**` arbitraire un titre.
+    """
+    assert is_step_transition(md("**Remarque importante sur ce modele**")) is False
+
+
+def test_transition_n_inflate_pas_le_compte_de_la_sortie_precedente():
+    """BOUT EN BOUT : la transition n'est pas comptee comme lecture.
+
+    Sans le carve-out, la cellule `***`+titre gonflait le compte de la sortie
+    `print(1)` de 1 a 2, et la lecture legitime ajoutee ensuite etait tiree en
+    SECOND_READING -- exactement le symptome de #23840.
+    """
+    base = nb(
+        _exec("print(1)"),
+        md("### Lecture du resultat\n\nUne seule lecture."),
+    )
+    head = nb(
+        _exec("print(1)"),
+        md("***\n\n## 2. Formulation du probleme"),
+        md("### Lecture du resultat\n\nUne seule lecture."),
+        _exec("print(2)"),
+        md("### Lecture du resultat : la contrainte C1\n\nDeux noeuds couverts."),
+    )
+    findings = detect_added_readings(head, base)
+    assert findings == [], [f["type"] for f in findings]

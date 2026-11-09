@@ -44,5 +44,5 @@ Le carnet d'escalier qui survole la sous-série est
   `raise NotImplementedError`.
 - Les carnets sont committés **avec leurs sorties** (règle C.2) : une cellule
   modifiée est re-exécutée avant commit.
-- Le versant preuves vit dans le lake [`conway_lean`](../conway_lean/) — les
+- Le versant preuves vit dans le lake [`conway_lean`](conway_lean/) — les
   carnets invoquent ses modules, ils ne les réimplémentent pas.
