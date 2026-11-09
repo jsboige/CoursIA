@@ -2942,44 +2942,15 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     if _issue_is_frozen(body_of_issue, comments) is not None:
         return True
 
-    # Le filtre rapide lisait le dernier commentaire porteur d'etat. Un
-    # commentaire neutre posterieur effacait une livraison encore vivante.
-    # L'instantane est chronologique : le reducteur conserve l'etat a travers
-    # les commentaires neutres, puis laisse une retractation explicite
-    # l'annuler.
-    if not _delivered_state([
-            (c.get("body") or "") if isinstance(c, dict) else ""
-            for c in comments]):
+    bodies = [(c.get("body") or "") if isinstance(c, dict) else ""
+              for c in comments]
+    if not delivery_grammar.recent_delivery_state(bodies):
         return False
-    # Une reouverture posterieure a une decision de cloture reste prioritaire.
-    # Les marqueurs ordinaires ne declenchent aucune lecture supplementaire.
-    if any(_closure_dossier_verdict(_strip_code(c.get("body") or "")) == "CLOSE"
-           or _closure_announced_close(_strip_code(c.get("body") or ""))
-           for c in comments if isinstance(c, dict)):
+    if any(_closure_dossier_verdict(_strip_code(body)) == "CLOSE"
+           or _closure_announced_close(_strip_code(body)) for body in bodies):
         if _delivery_voided_by_reopen(issue_number, comments):
             return False
-    # Deux grammaires, un seul verdict : les en-tetes de cloture ci-dessus,
-    # PLUS le marqueur de livraison `[INFO] candidate-delivered` (mesure
-    # 2026-10-17 : une issue rendue au coordinateur par ce marqueur et
-    # repostee ainsi en DERNIER commentaire restait servie en boucle par le
-    # tapis -- la sonde de tete ne l'atteignait pas, le budget de la sonde
-    # pleine non plus). Grammaire reutilisee de la sonde pleine
-    # (`_DELIVERED_MARKER_RE`, lookahead anti-`-revoked`/`-partial`) : tout
-    # ce que ce filtre attrape, la sonde pleine l'aurait ecarte aussi -- il
-    # n'introduit aucun verdict nouveau, il avance le meme.
-    # Le code **documente** un marqueur, il ne le **pose** pas : une fence
-    # qui recopie la ligne canonique ne clot rien (mesure : revue Hermes
-    # du 2026-11-03 sur #24523).
-    body_plain = _strip_code(body)
-    # #24461 (c) point 3 : une livraison de TRANCHE (`paths:` sur la ligne
-    # du marqueur) ne livre pas l'issue -- elle ne l'arme ni ne la desarme.
-    tranche = delivery_grammar.is_tranche_only(body_plain)
-    return bool(
-        _closure_dossier_verdict(body) in ("CLOSE", "KEEP")
-        or _closure_announced_close(body)
-        or (not tranche and (
-            _RECENT_DELIVERY_MARKER_RE.search(body_plain)
-            or _DELIVERED_MARKER_RE.search(body_plain))))
+    return True
 
 
 def _issue_is_frozen(issue_body: str | None,
