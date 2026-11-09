@@ -247,8 +247,9 @@ jobs:
       # construction now.
       target-modules: "*"
       include-i18n-siblings: "true"
-      # allow-axioms: 79 native_decide axioms (liste dans le fichier, #21905 --
-      # source de verite deplacee ; 77 mesurees au move + les 2 ancres du
+      # allow-axioms: 83 native_decide axioms (liste dans le fichier, #21905 --
+      # source de verite deplacee ; 77 mesurees au move + 2 ancres Turing
+      # ajoutees par #17465 + 4 ancres negatives OTCA/UnitCell ajoutees par #25188
       # temoin de machine de Turing ajoutees par #17465) = the 38
       # HashlifeCorrectness-era
       # empirical footprint (revealed by this job's first CI run, #8782/#9341,
@@ -265,12 +266,12 @@ jobs:
       # include_str load) - 4 Pillars `_initial_nonempty` entries derived
       # (not native_decide) by #21833 + 2 entries added by #17465 (the
       # Turing-machine witness, ONE anchor per file), attributed at the
-      # Pillars / Pillars_en lines below. All 79 are `native_decide` reduction
+      # Pillars / Pillars_en lines below. All 83 are `native_decide` reduction
       # axioms
       # (`._native.native_decide.ax_1_N` is the kernel-side witness emitted
       # by `native_decide`; these are NOT `decide`-kernel certificates --
       # `decide` itself emits no anchor, only `native_decide` does).
-      # Note for the operator: one of the 79 entries carries a Lean-4
+      # Note for the operator: one of the 83 entries carries a Lean-4
       # diagnostic-artifact suffix on the declaration name as reported by
       # `#print axioms` (`Conway.Life.p4_base_exhaustive._native.native_decide.
       # ax_1_1` + the `U+2020` dagger `✝`). The comparison against the env
