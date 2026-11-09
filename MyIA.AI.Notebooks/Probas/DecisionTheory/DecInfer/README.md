@@ -33,44 +33,40 @@ Jusqu'à la restructuration de la série, la théorie de la décision était imb
 
 ## Vue d'ensemble
 
-| # | Notebook | Durée | Concepts |
-|---|----------|-------|----------|
-| 1 | [DecInfer-01-Utility-Foundations](DecInfer-01-Utility-Foundations.ipynb) | 50 min | Loteries, axiomes VNM, utilité espérée |
-| 2 | [DecInfer-01b-Lean-ExpectedUtility](DecInfer-01b-Lean-ExpectedUtility.ipynb) | 45 min | **Companion natif** (kernel Lean) : preuve formelle 0-sorry de la direction sound du théorème vNM dans le lake `decision_theory_lean` |
-| 2b | [DecInfer-01c-Lean-Coherence](DecInfer-01c-Lean-Coherence.ipynb) | 20 min | **Companion natif** (kernel Lean) : cohérence de de Finetti — Dutch Book à quatre tickets, caractérisation mono-livret ⟺ bornes de probabilité (lib `Coherence`) |
-| 3 | [DecInfer-02-Utility-Money](DecInfer-02-Utility-Money.ipynb) | 45 min | Paradoxe St-Petersbourg, CARA, CRRA |
-| 4 | [DecInfer-03-Multi-Attribute](DecInfer-03-Multi-Attribute.ipynb) | 50 min | MAUT, SMART, swing weights |
-| 5 | [DecInfer-04-Decision-Networks](DecInfer-04-Decision-Networks.ipynb) | 55 min | Diagrammes d'influence, politique optimale |
-| 6 | [DecInfer-05-Value-Information](DecInfer-05-Value-Information.ipynb) | 45 min | EVPI, EVSI, valeur de l'information |
-| 7 | [DecInfer-06-Expert-Systems](DecInfer-06-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
-| 8 | [DecInfer-07-Sequential](DecInfer-07-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique |
-| 08b | [DecInfer-07b-Lean-Gittins](DecInfer-07b-Lean-Gittins.ipynb) | 45 min | Preuves formelles Lean 4, indice de Gittins, SFABP |
-| 10 | [DecInfer-10-Thompson-Sampling](DecInfer-10-Thompson-Sampling.ipynb) | 60 min | Thompson Sampling bayésien, posterior Beta-Bernoulli par le moteur, regret vs ε-greedy/UCB1 |
-| 11 | [DecInfer-11-Theories-Decision-Predicteur](DecInfer-11-Theories-Decision-Predicteur-Python.ipynb) | 75 min | EDT, CDT, CCDT, UDT/FDT sur Newcomb et la lésion de Fisher dans un cadre générique ; 2TDT-1CDT ; inattention rationnelle (Blahut-Arimoto) |
-
-**Durée totale** : ~9h15
+| # | Notebook | Ce qu'on y apprend | Pour approfondir |
+|---|---|---|---|
+| 01 | [DecInfer-01-Utility-Foundations](DecInfer-01-Utility-Foundations.ipynb) | Loteries, axiomes VNM, utilité espérée | [01b — Utilité espérée](DecInfer-01b-Lean-ExpectedUtility.ipynb) · [01c — Cohérence](DecInfer-01c-Lean-Coherence.ipynb) |
+| 02 | [DecInfer-02-Utility-Money](DecInfer-02-Utility-Money.ipynb) | Paradoxe St-Petersbourg, CARA, CRRA | — |
+| 03 | [DecInfer-03-Multi-Attribute](DecInfer-03-Multi-Attribute.ipynb) | MAUT, SMART, swing weights | — |
+| 04 | [DecInfer-04-Decision-Networks](DecInfer-04-Decision-Networks.ipynb) | Diagrammes d'influence, politique optimale | — |
+| 05 | [DecInfer-05-Value-Information](DecInfer-05-Value-Information.ipynb) | EVPI, EVSI, valeur de l'information | — |
+| 06 | [DecInfer-06-Expert-Systems](DecInfer-06-Expert-Systems.ipynb) | Systèmes experts, Minimax, regret | — |
+| 07 | [DecInfer-07-Sequential](DecInfer-07-Sequential.ipynb) | MDPs, itération valeur/politique | [07b — Indice de Gittins](DecInfer-07b-Lean-Gittins.ipynb) |
+| 10 | [DecInfer-10-Thompson-Sampling](DecInfer-10-Thompson-Sampling.ipynb) | Thompson Sampling bayésien, posterior Beta-Bernoulli par le moteur, regret vs ε-greedy/UCB1 | — |
+| 11 | [DecInfer-11-Theories-Decision-Predicteur](DecInfer-11-Theories-Decision-Predicteur-Python.ipynb) | EDT, CDT, CCDT, UDT/FDT sur Newcomb et la lésion de Fisher dans un cadre générique ; 2TDT-1CDT ; inattention rationnelle (Blahut-Arimoto) | — |
 
 ## Progression Pédagogique
 
 ```mermaid
 flowchart TD
-    A["<b>Fondations</b> (1-3)<br/>axiomes vNM · utilité de l'argent<br/>aversion au risque"]
-    B["<b>Multi-attributs & réseaux</b> (4-5)<br/>MAUT · diagrammes d'influence"]
-    C["<b>Valeur & robustesse</b> (6-7)<br/>EVPI/EVSI · Minimax/regret"]
-    D["<b>Séquentiel</b> (8)<br/>MDPs · Bellman"]
-    E["<b>Preuve & bandits</b> (9-10)<br/>Gittins (Lean) · Thompson Sampling"]
+    A["<b>Fondations</b> (01-03)<br/>axiomes vNM · utilité de l'argent<br/>aversion au risque"]
+    B["<b>Multi-attributs & réseaux</b> (04-05)<br/>MAUT · diagrammes d'influence"]
+    C["<b>Valeur & robustesse</b> (06)<br/>Minimax/regret"]
+    D["<b>Séquentiel</b> (07)<br/>MDPs · Bellman"]
+    E["<b>Bandits bayésiens</b> (10)<br/>Thompson Sampling"]
     F["<b>Palier terminal</b> (11)<br/>EDT/CDT/UDT face à un prédicteur"]
     BAY["Corpus bayésien<br/>../Infer/ (posteriors)"]
-    LAKE["Lake decision_theory_lean<br/>(companions 2, 2b, 8b)"]
+    LAKE["Lake decision_theory_lean<br/>(companions 01b, 01c, 07b)"]
     BAY -->|"posterior = input"| A
     A --> B --> C --> D --> E --> F
-    E -.->|"formalisation"| LAKE
+    A -.->|"formalisation"| LAKE
+    D -.->|"formalisation"| LAKE
     %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ne pas harmoniser le ton avec le stroke (libelle sinon illisible)
     classDef lean fill:#fff3cd,stroke:#856404,stroke-width:2px,color:#856404;
     class LAKE lean;
 ```
 
-Le socle des **fondations** (1-3) pose les axiomes de rationalité et la notion d'aversion au risque ; les notebooks 4-5 étendent aux décisions multi-critères et aux réseaux de décision (nœuds de chance/décision/utilité) ; 6-7 mesurent la valeur de l'information et la robustesse sous incertitude sévère ; 8 introduit le séquentiel (MDPs, équation de Bellman) ; 9-10 clôturent par les **bandits bayésiens** (Thompson Sampling calculé par le moteur Infer.NET) et la **preuve formelle Lean 4** de l'indice de Gittins ; le palier terminal (11) change de question : non plus *quelle action choisir sous incertitude*, mais *que faut-il compter comme conséquence de mon choix* quand un prédicteur est corrélé à lui — EDT, CDT, UDT.
+Le socle des **fondations** (01-03) pose les axiomes de rationalité et la notion d'aversion au risque ; les notebooks 4-5 étendent aux décisions multi-critères et aux réseaux de décision (nœuds de chance/décision/utilité) ; 6-7 mesurent la valeur de l'information et la robustesse sous incertitude sévère ; 07 introduit le séquentiel (MDPs, équation de Bellman) ; 10 clôture par les **bandits bayésiens** (Thompson Sampling calculé par le moteur Infer.NET), tandis que le companion 07b formalise l'indice de Gittins en Lean 4 ; le palier terminal (11) change de question : non plus *quelle action choisir sous incertitude*, mais *que faut-il compter comme conséquence de mon choix* quand un prédicteur est corrélé à lui — EDT, CDT, UDT.
 
 ## Détail des notebooks
 
@@ -79,18 +75,6 @@ Le socle des **fondations** (1-3) pose les axiomes de rationalité et la notion 
 **Durée** : 50 min | **Prérequis** : corpus bayésien [Infer-4](../../Infer/Infer-04-Bayesian-Networks.ipynb)
 
 Les loteries comme représentation des choix stochastiques ; les **axiomes de Von Neumann-Morgenstern** (complétude, transitivité, continuité, indépendance) ; dérivation de la fonction d'utilité par calibration ; l'agent rationnel maximise E[U]. Applications : décision médicale, assurance, investissement.
-
-### DecInfer-01b : Companion Lean — théorème vNM (sound) + cohérence de de Finetti
-
-**Durée** : 45 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-01, bases Lean 4
-
-**Companion natif** de [DecInfer-01](DecInfer-01-Utility-Foundations.ipynb) : preuve formelle **0-sorry** de la direction *sound* du théorème de représentation vNM (représentation ⟹ rationalité) dans le lake [`decision_theory_lean`](../decision_theory_lean/) (lib `Utility`). Vérification in-kernel via `#check` + `#print axioms`. Les sections 7-8 d'origine — la **cohérence de de Finetti** (lib `Coherence`, EPIC #11703) : prix incohérents ⟹ Dutch Book à quatre tickets, et la caractérisation mono-livret `SingleCoherent q ↔ ProbBounds q` — ont été extraites vers le companion dédié [DecInfer-01c-Lean-Coherence](DecInfer-01c-Lean-Coherence.ipynb) (G4b, #14873).
-
-### DecInfer-01c : Companion Lean — cohérence de de Finetti (Dutch Book)
-
-**Durée** : 20 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-01b, bases Lean 4
-
-**Companion natif** extrait des sections 7-8 de [DecInfer-01b](DecInfer-01b-Lean-ExpectedUtility.ipynb) (G4b, #14873) : la **cohérence de de Finetti** (1937) dans la lib `Coherence` du lake [`decision_theory_lean`](../decision_theory_lean/). Un système de prix arbitrage-incohérent est exploitable par un **Dutch Book** à quatre tickets (`non_additive_implies_dutch_book`, witness constructif) ; dans le cadre mono-livret, la cohérence coïncide exactement avec les **bornes de probabilité** (`single_coherent_iff_prob_bounds`, quatre témoins explicites — un par borne violée). Vérification in-kernel via `#check` + `#print axioms`, 0 sorry.
 
 ### DecInfer-02 : Utilité de l'argent et aversion au risque
 
@@ -134,12 +118,6 @@ Systèmes experts (architecture, historique) ; décision sous **incertitude sév
 
 **Processus de Décision Markoviens** (MDPs) ; équation de Bellman `V(s) = max_a [R(s,a) + γ·Σ P(s'|s,a)·V(s')]` ; **itération de valeur** et **itération de politique** ; alternatives (LP, Expectimax, RTDP) ; reward shaping ; POMDPs. Pont vers la série [RL](../../../RL/README.md).
 
-### DecInfer-07b : Companion Lean — indice de Gittins
-
-**Durée** : 45 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-07, bases Lean 4
-
-**Companion natif** de [DecInfer-07](DecInfer-07-Sequential.ipynb) : preuves formelles en Lean 4. Formalisation du cadre **SFABP** (Simple Family of Alternative Bandit Processes), optimalité de l'indice de Gittins via l'argument des prevailing charges, limitations (geometric discount, NP-difficulté du calcul exact). Le théorème d'optimalité est énoncé dans le lake [`decision_theory_lean`](../decision_theory_lean/) ; sa preuve complète exige une formalisation des MDP qui manque encore à Mathlib.
-
 ### DecInfer-10 : Thompson Sampling bayésien
 
 **Durée** : 60 min | **Prérequis** : [Infer-7 bayésien](../../Infer/Infer-07-Skills-IRT.ipynb) (posterior Beta), Infer-8 (bandits, ε-greedy, UCB1)
@@ -153,6 +131,36 @@ Applications : A/B testing adaptatif, recommandation en ligne, essais cliniques 
 **Durée** : 75 min | **Kernel** : Python | **Prérequis** : [GT-04e Oracles réflexifs](../../../GameTheory/GameTheory-04e-Reflective-Oracles-Python.ipynb) (inter-séries — l'écart CDT/EDT), probabilités conditionnelles
 
 **Palier terminal de l'arc**, descendu de GameTheory (où il portait le numéro 04f) : les théories de la décision relèvent de l'arc décision, non de la théorie des équilibres. La question n'est plus *quelle action maximise l'utilité espérée* mais **que faut-il compter comme conséquence de mon choix** quand un autre agent ou la nature est corrélé à ce choix. EDT (l'acte comme indice), CDT (l'acte comme intervention), CCDT (Edgington), UDT/FDT (une politique choisie avant toute observation) sont évaluées **dans un seul cadre générique** — sans coder les verdicts à la main — sur le problème de Newcomb, la lésion de Fisher et le 2TDT-1CDT de Wei Dai, avec seuils exacts en `fractions.Fraction` recoupés par simulation et par un modèle causal ajusté (`dowhy`). L'inattention rationnelle (Sims) clôt le notebook par l'algorithme de Blahut-Arimoto. Le notebook ne tranche pas entre les théories : il mesure ce que chacune recommande et ce que cette recommandation rapporte.
+
+## Approfondissements
+
+### Autour de 01 — utilité espérée et cohérence
+
+#### DecInfer-01b : Companion Lean — théorème vNM (sound) + cohérence de de Finetti
+
+**Durée** : 45 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-01, bases Lean 4
+
+**Companion natif** (kernel Lean) : preuve formelle 0-sorry de la direction sound du théorème vNM dans le lake `decision_theory_lean`
+
+**Companion natif** de [DecInfer-01](DecInfer-01-Utility-Foundations.ipynb) : preuve formelle **0-sorry** de la direction *sound* du théorème de représentation vNM (représentation ⟹ rationalité) dans le lake [`decision_theory_lean`](../decision_theory_lean/) (lib `Utility`). Vérification in-kernel via `#check` + `#print axioms`. Les sections 7-8 d'origine — la **cohérence de de Finetti** (lib `Coherence`, EPIC #11703) : prix incohérents ⟹ Dutch Book à quatre tickets, et la caractérisation mono-livret `SingleCoherent q ↔ ProbBounds q` — ont été extraites vers le companion dédié [DecInfer-01c-Lean-Coherence](DecInfer-01c-Lean-Coherence.ipynb) (G4b, #14873).
+
+#### DecInfer-01c : Companion Lean — cohérence de de Finetti (Dutch Book)
+
+**Durée** : 20 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-01b, bases Lean 4
+
+**Companion natif** (kernel Lean) : cohérence de de Finetti — Dutch Book à quatre tickets, caractérisation mono-livret ⟺ bornes de probabilité (lib `Coherence`)
+
+**Companion natif** extrait des sections 7-8 de [DecInfer-01b](DecInfer-01b-Lean-ExpectedUtility.ipynb) (G4b, #14873) : la **cohérence de de Finetti** (1937) dans la lib `Coherence` du lake [`decision_theory_lean`](../decision_theory_lean/). Un système de prix arbitrage-incohérent est exploitable par un **Dutch Book** à quatre tickets (`non_additive_implies_dutch_book`, witness constructif) ; dans le cadre mono-livret, la cohérence coïncide exactement avec les **bornes de probabilité** (`single_coherent_iff_prob_bounds`, quatre témoins explicites — un par borne violée). Vérification in-kernel via `#check` + `#print axioms`, 0 sorry.
+
+### Autour de 07 — choix séquentiel
+
+#### DecInfer-07b : Companion Lean — indice de Gittins
+
+**Durée** : 45 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-07, bases Lean 4
+
+Preuves formelles Lean 4, indice de Gittins, SFABP
+
+**Companion natif** de [DecInfer-07](DecInfer-07-Sequential.ipynb) : preuves formelles en Lean 4. Formalisation du cadre **SFABP** (Simple Family of Alternative Bandit Processes), optimalité de l'indice de Gittins via l'argument des prevailing charges, limitations (geometric discount, NP-difficulté du calcul exact). Le théorème d'optimalité est énoncé dans le lake [`decision_theory_lean`](../decision_theory_lean/) ; sa preuve complète exige une formalisation des MDP qui manque encore à Mathlib.
 
 ## Ponts inter-series
 
