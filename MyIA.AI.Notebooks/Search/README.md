@@ -398,7 +398,7 @@ Search/
 │   ├── App-20-SudokuBenchmark-Python.ipynb          # Benchmark 4 solveurs Sudoku, synthèse de la série
 │   ├── App-22-AlgorithmSelection-Python.ipynb       # Sélection empirique : 3 jeux, 13 familles / 14 étiquettes, Pareto + préférences (PR IS #42)
 │   ├── App-27-Sparse-Index-Tracking-Walk-Forward.ipynb
-│   └── (+ jumeaux C# App-1b/2b/3b/4b/6-CSharp/7b/8-CSharp/11b/12c/15b/16-CSharp/19-CSharp/20b et jumeaux C#/Python App-9b/10b/13b/17b/18b, marathon #4956)
+│   └── (+ jumeaux C# App-1-CSharp/2-CSharp/3-CSharp/4-CSharp/6-CSharp/7-CSharp/8-CSharp/11-CSharp/12c/15-CSharp/16-CSharp/19-CSharp/20-CSharp et jumeaux C#/Python App-9-CSharp/10-CSharp/13-CSharp/17-CSharp/18-CSharp, marathon #4956)
 │
 │
 ├── Part5-Frontieres/                     # Partie 5 — frontières : audits de garanties et distillations de preprints (Frontieres-01..10, carte #19253)
@@ -437,7 +437,7 @@ Le notebook App-8 utilise MiniZinc qui requiert l'installation de l'IDE :
 - Vérifiez que .NET SDK 9.0+ est installé : `dotnet --version`
 - Installez le kernel : `dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001 && dotnet interactive jupyter install`
 - Vérifiez : `jupyter kernelspec list` doit afficher `.net-csharp`
-- Les jumeaux C# hybrides (App-9b, App-10b) utilisent GeneticSharp et SkiaSharp ; les autres notebooks C# installent leurs packages (Google.OrTools, IKVM + Choco…) via `#r nuget` dans les cellules
+- Les jumeaux C# hybrides (App-9-CSharp, App-10-CSharp) utilisent GeneticSharp et SkiaSharp ; les autres notebooks C# installent leurs packages (Google.OrTools, IKVM + Choco…) via `#r nuget` dans les cellules
 
 ### DEAP ou PyGAD provoquent des erreurs d'import
 

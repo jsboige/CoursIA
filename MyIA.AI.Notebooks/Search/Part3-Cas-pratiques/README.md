@@ -34,8 +34,8 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 | `ModuleNotFoundError: optuna` | `pip install optuna` — nécessaire pour App-18 (Hyperparameter Tuning) |
 | `ModuleNotFoundError: rustuna` | `pip install rustuna` — nécessaire pour App-18c (Rustuna vs Optuna) ; statut expérimental, wheel `win_amd64`/`manylinux` cp311-abi3 |
 | `ModuleNotFoundError: pygad` | `pip install pygad` — nécessaire pour App-9/10 (EdgeDetection, Portfolio) |
-| App-9b/10b (.NET) : kernel non disponible | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` |
-| App-9b sous Linux : `DllNotFoundException` sur `cvextern`, ou `libgeotiff.so.5: cannot open shared object file` | Le runtime natif `Emgu.CV.runtime.mini.ubuntu-x64` est lié aux bibliothèques d'Ubuntu 24.04 x64 (FFmpeg 6, GTK 3, GStreamer) : `sudo apt install libgeotiff5 liblapack3 libopenjp2-7 libgstreamer-plugins-base1.0-0 libavcodec60 libavformat60 libswscale7 libgtk-3-0t64`. Sur une autre distribution, ces versions peuvent manquer |
+| App-9-CSharp/10-CSharp (.NET) : kernel non disponible | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` |
+| App-9-CSharp sous Linux : `DllNotFoundException` sur `cvextern`, ou `libgeotiff.so.5: cannot open shared object file` | Le runtime natif `Emgu.CV.runtime.mini.ubuntu-x64` est lié aux bibliothèques d'Ubuntu 24.04 x64 (FFmpeg 6, GTK 3, GStreamer) : `sudo apt install libgeotiff5 liblapack3 libopenjp2-7 libgstreamer-plugins-base1.0-0 libavcodec60 libavformat60 libswscale7 libgtk-3-0t64`. Sur une autre distribution, ces versions peuvent manquer |
 | Certains solveurs sont lents (>30s) | Les instances sont intentionnellement petites pour le pédagogique. Pour des instances plus grandes, activer les timeouts dans CP-SAT (`model.parameters.max_time_in_seconds`) |
 
 ## Structure
@@ -181,26 +181,26 @@ Le [pont SOTA Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna.
 | Notebook | Fondations requises | Dépendances |
 |----------|--------------------|-------------|
 | App-1 NQueens | CSP-1 (Fundamentals) | - |
-| App-1b NQueens (C#) | CSP-1 (Fundamentals) | dotnet-interactive |
+| App-1-CSharp NQueens | CSP-1 (Fundamentals) | dotnet-interactive |
 | App-2 GraphColoring | CSP-1, CSP-2 | networkx |
-| App-2b GraphColoring (C#) | CSP-1, CSP-2 | dotnet-interactive |
+| App-2-CSharp GraphColoring | CSP-1, CSP-2 | dotnet-interactive |
 | App-2c GraphColoring Statistical Validity | CSP-1, CSP-2, statistiques | networkx, scipy, ortools |
 | App-3 NurseScheduling | CSP-3, CSP-4 | ortools |
-| App-3b NurseScheduling (C#) | CSP-3, CSP-4 | dotnet-interactive |
+| App-3-CSharp NurseScheduling | CSP-3, CSP-4 | dotnet-interactive |
 | App-4 JobShopScheduling | CSP-3, CSP-4 | ortools |
-| App-4b JobShopScheduling (C#) | CSP-3, CSP-4 | dotnet-interactive |
+| App-4-CSharp JobShopScheduling | CSP-3, CSP-4 | dotnet-interactive |
 | App-5 Timetabling | CSP-3 | minizinc |
 | App-5b Timetabling (C#) | CSP-3 | dotnet-interactive |
 | App-6 Minesweeper | CSP-2 (Consistency) | - |
 | App-6 Minesweeper (C#) | CSP-2 (Consistency) | dotnet-interactive |
 | App-7 Wordle | CSP-1, CSP-2 | - |
-| App-7b Wordle (C#) | CSP-1, CSP-2 | dotnet-interactive |
+| App-7-CSharp Wordle | CSP-1, CSP-2 | dotnet-interactive |
 | App-8 MiniZinc | CSP-3 | minizinc |
 | App-8 MiniZinc (C#) | CSP-3 | dotnet-interactive, Google.OrTools |
 | App-11 Picross | CSP-3, Search-8 (DLX) | ortools |
-| App-11b Picross (C#) | CSP-1, CSP-3 (Propagation) | dotnet-interactive |
+| App-11-CSharp Picross | CSP-1, CSP-3 (Propagation) | dotnet-interactive |
 | App-15 SportsScheduling | CSP-3, CSP-4 | ortools |
-| App-15b SportsScheduling (C#) | CSP-3, CSP-4 | dotnet-interactive, Google.OrTools |
+| App-15-CSharp SportsScheduling | CSP-3, CSP-4 | dotnet-interactive, Google.OrTools |
 | App-16 Crossword-CSP | CSP-1, CSP-2 | ortools |
 | App-16 Crossword-CSP (C#) | CSP-1, CSP-2 | dotnet-interactive |
 | App-19 ProceduralGeneration-WFC | CSP-1, CSP-3 | ortools, numpy, matplotlib |
@@ -214,11 +214,11 @@ Le [pont SOTA Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna.
 | Notebook | Fondations requises | Dépendances |
 |----------|--------------------|-------------|
 | App-9 EdgeDetection | Search-5 (GA) | pygad, scikit-image |
-| App-9b EdgeDetection | Search-5 (GA) | GeneticSharp (.NET) |
+| App-9-CSharp EdgeDetection | Search-5 (GA) | GeneticSharp (.NET) |
 | App-10 Portfolio | Search-5 (GA), Search-9 (PL) | pygad |
-| App-10b Portfolio | Search-5 (GA) | GeneticSharp (.NET) |
+| App-10-CSharp Portfolio | Search-5 (GA) | GeneticSharp (.NET) |
 | App-13 TSP-Metaheuristics | Search-4, Search-5 | ortools |
-| App-13b TSP-Metaheuristics (C#) | Search-4 (LocalSearch), Search-11 (SA) | dotnet-interactive |
+| App-13-CSharp TSP-Metaheuristics | Search-4 (LocalSearch), Search-11 (SA) | dotnet-interactive |
 | App-17 VRP-Logistics | Search-4, Search-5, CSP-3 | ortools |
 | App-17-CSharp VRP-Logistics | Search-4 (LocalSearch), Search-5 (SA) | dotnet-interactive |
 | App-17-Python VRP-Logistics | Search-4 (LocalSearch), Search-5 (SA) | numpy, ortools |
@@ -236,7 +236,7 @@ Le [pont SOTA Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna.
 |----------|--------------------|-------------|
 | App-33 RushHour | Search-1 (espace d'états), Search-2 (BFS), Search-3 (A*) | Python 3.10+ (stdlib seule) |
 | App-34 15Puzzle | Search-1 (espace d'états), Search-2 (BFS), Search-3 (A*) | numpy, matplotlib |
-| App-34b 15Puzzle (C#) | Search-1 (espace d'états), Search-2 (BFS), Search-3 (A*) | dotnet-interactive |
+| App-34-CSharp 15Puzzle | Search-1 (espace d'états), Search-2 (BFS), Search-3 (A*) | dotnet-interactive |
 
 ## Origine des projets
 
@@ -298,7 +298,7 @@ Le pont entre les deux cultures de la recherche s'exprime dans les notebooks Hyb
 ### Prochaines étapes
 
 - **Retour aux fondements** : les applications supposent les Parties 1 et 2 maîtrisées. Face à une difficulté de modélisation, revenir à la [Partie 1 (Search)](../Part1-Foundations/README.md) pour les algorithmes d'exploration et à la [Partie 2 (CSP)](../Part2-CSP/README.md) pour la modélisation déclarative — c'est là que se joue la compétence de formulation que ces applications exercent.
-- **Approfondir les métaheuristiques** : les notebooks Hybrides (App-9, App-13, App-17) sont l'amorce de la [Partie 4](../Part4-Metaheuristics/README.md), qui reconstruit les métaheuristiques depuis leurs primitives au-dessus de MetaGeneticSharp — y compris les doublons C# (App-9b, App-10b) qui s'y rattachent directement.
+- **Approfondir les métaheuristiques** : les notebooks Hybrides (App-9, App-13, App-17) sont l'amorce de la [Partie 4](../Part4-Metaheuristics/README.md), qui reconstruit les métaheuristiques depuis leurs primitives au-dessus de MetaGeneticSharp — y compris les doublons C# (App-9-CSharp, App-10-CSharp) qui s'y rattachent directement.
 - **Vers les séries voisines** : selon le problème qui vous a intéressé, les prolongements naturels vont vers [ML/ML.Net](../../ML/ML.Net/README.md) (App-18, optimisation bayésienne), [Sudoku](../../Sudoku/README.md) (problèmes combinatoires similaires) et [GameTheory](../../GameTheory/README.md) (jeux à deux joueurs, MCTS).
 - **La série dans son ensemble** : le [sommaire Search](../README.md) replace cette sous-série dans le parcours global — elle en est le terrain d'application, où la théorie rencontre le réel.
 
