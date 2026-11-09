@@ -19,6 +19,15 @@ Cette série s'adresse aux étudiants en informatique et aux enseignants chercha
 
 Vous apprendrez à implémenter un solveur, à modéliser ses contraintes, à distinguer une solution valide d'une prédiction plausible et à concevoir une comparaison expérimentale. Le Sudoku généralisé est NP-complet ; les grilles de taille fixée du cours permettent d'en examiner concrètement les stratégies, sans déduire leur difficulté de leur seul nombre d'indices.
 
+Une même case vide change de rôle selon la méthode. Pour le retour arrière, elle ouvre des branches à essayer. Pour la programmation par contraintes, elle possède un domaine de valeurs que les règles réduisent. Pour une métaheuristique, elle participe au score de conflits d'une grille candidate. Pour un réseau, elle reçoit des probabilités apprises. Cette différence de représentation détermine les opérations possibles, les erreurs à observer et les garanties que l'on peut demander au résultat.
+
+| Représentation | Ce que fait la méthode | Ce qu'il faut contrôler |
+|---|---|---|
+| Affectations partielles | Explorer les candidats, abandonner une branche incompatible, revenir sur une décision. | Respect des indices et des règles ; exhaustivité de la recherche si l'on conclut à l'absence de solution. |
+| Variables et contraintes | Réduire les domaines puis brancher lorsque la propagation ne suffit plus. | Fidélité du modèle aux règles du Sudoku et statut retourné par le solveur. |
+| Grille candidate et conflits | Modifier une configuration pour améliorer son score. | Zéro conflit, conservation des indices et taux de réussite sur plusieurs essais. |
+| Distributions ou prédictions | Proposer des valeurs à partir d'un modèle probabiliste ou de données. | Validité de la grille entière, au-delà de la confiance ou de la précision par case. |
+
 ## Comment lire ce README — Découverte
 
 Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) distingue parcours, approfondissements et recherche.
@@ -80,39 +89,79 @@ Le public indiqué reprend la profondeur des contenus : les preuves du palier 19
 
 ### Explorer ou propager
 
-Le retour arrière complète progressivement une grille et revient sur une décision lorsqu'elle conduit à une impasse. L'ordre des choix affecte le travail effectué. La couverture exacte de 02 reformule les règles en contraintes sur les affectations possibles ; Dancing Links permet de retirer puis restaurer efficacement les éléments explorés.
+Le retour arrière de [01](Sudoku-01-Backtracking-Python.ipynb) choisit une case vide, essaie un candidat légal et poursuit sur la grille ainsi complétée. Si aucun candidat ne permet de continuer, il annule la dernière décision. Le résultat final ne montre pas les branches abandonnées : compter les appels récursifs rend ce travail visible et permet de comparer les ordres de choix sur une même grille.
 
 [![Grille résolue par retour arrière, avec distinction des indices et des valeurs trouvées](assets/readme/sudoku1-backtracking.png)](Sudoku-01-Backtracking-Python.ipynb)
 
-La propagation de 06–08 exploite les conséquences des décisions avant de poursuivre la recherche. MRV choisit une case parmi les plus contraintes ; les déductions sur les candidats peuvent résoudre certaines cases sans branchement. Les mêmes idées se retrouvent dans les solveurs déclaratifs de 10–12 : le modèle pose les règles, le solveur organise propagation et recherche. Un modèle incomplet peut accepter de mauvaises grilles ; un modèle trop contraint peut exclure des solutions.
+La couverture exacte de [02](Sudoku-02-DancingLinks-Python.ipynb) change l'objet exploré. Avant de tenir compte des indices, les **729 affectations** possibles « chiffre dans une case » forment les lignes d'une matrice. Ses **324 colonnes** expriment quatre familles d'exigences : un chiffre par case, une occurrence de chaque chiffre par ligne, par colonne et par bloc. Choisir une affectation couvre quatre exigences ; une solution couvre chaque colonne exactement une fois. Algorithm X organise ces choix et Dancing Links permet de retirer puis de restaurer les éléments de la matrice lors du retour arrière.
+
+Les paliers [06](Sudoku-06-AIMA-CSP-Python.ipynb) et [07](Sudoku-07-Norvig-Python.ipynb) ajoutent des déductions avant de poursuivre la recherche. **MRV**, pour *minimum remaining values*, choisit une variable dont le domaine restant est le plus petit. Le *forward checking* retire immédiatement chez ses voisins les valeurs devenues incompatibles avec une affectation. La propagation de Norvig enchaîne notamment l'élimination d'un chiffre chez les pairs et l'affectation forcée lorsqu'une unité n'offre plus qu'une place pour ce chiffre. Une case appartient à trois unités et possède vingt pairs : ces relations donnent une structure précise aux déductions.
+
+Les stratégies humaines de [08](Sudoku-08-HumanStrategies-Python.ipynb) rendent ces conséquences lisibles sous forme de singles, de paires et d'interactions entre unités. La coloration de [09](Sudoku-09-GraphColoring-Python.ipynb) les regarde autrement : les cases deviennent des sommets, les conflits des arêtes et les chiffres des couleurs. Ces formulations permettent de comparer des mécanismes de raisonnement sur un même problème.
+
+**À expérimenter :** partir d'une grille de 01, mesurer les appels du retour arrière simple, ajouter MRV, puis observer ce que la propagation résout avant tout branchement. Vérifier chaque grille obtenue et conserver le même puzzle pour cette comparaison. Les exercices de 01, 06 et 07 préparent cette démarche ; le benchmark 18b montrera pourquoi son résultat ne se généralise pas à tout corpus.
+
+### Déclarer les règles à un solveur
+
+Dans le modèle Choco de [11](Sudoku-11-Choco-Python.ipynb), le Sudoku devient **81 variables de domaine 1 à 9**, des contraintes `allDifferent` pour chaque ligne, colonne et bloc, et des égalités pour les indices. La propagation réduit les domaines ; un branchement introduit un choix lorsque les règles ne suffisent plus. OR-Tools et Z3 proposent d'autres moteurs et interfaces pour exprimer ces conditions.
 
 [![Grille résolue par le modèle de contraintes Choco](assets/readme/sudoku11-choco.png)](Sudoku-11-Choco-Python.ipynb)
 
+La figure montre une solution du modèle, pas les étapes internes communes à tous les moteurs. Un modèle incomplet peut accepter une grille qui viole une règle oubliée ; un modèle trop contraint peut exclure une solution légitime. Les exercices de 10 et 11 invitent à examiner les contraintes et les stratégies de recherche : la vérification du résultat reste utile même lorsque l'exploration est confiée à une bibliothèque.
+
 ### Changer l'encodage d'une recherche approchée
 
-Les métaheuristiques de 03–05 cherchent à réduire les conflits sans garantie de trouver une solution. La représentation des candidats modifie le paysage exploré. La figure de 03 compare un génome par cases à un génome par permutations de blocs : préserver les contraintes de bloc dès l'encodage change la convergence observée. Ce résultat appartient à l'expérience affichée ; les autres essais du carnet montrent aussi des échecs.
+Les métaheuristiques de 03–05 cherchent à réduire les conflits sans garantie de trouver une solution. Une grille peut être presque correcte tout en restant inutilisable. Le choix du génome, du voisinage et de la fonction de score détermine les configurations accessibles et les améliorations que l'algorithme peut détecter.
 
 [![Évolution des conflits pour deux représentations génétiques, par cases et par permutations](assets/readme/sudoku3-genetic.png)](Sudoku-03-Genetic-Python.ipynb)
 
-Le recuit ajoute une température qui permet d'accepter temporairement une dégradation ; le PSO demande d'adapter ses déplacements au problème discret. Les exercices font varier encodage, voisinage et paramètres pour observer leurs effets, plutôt que supposer qu'une méthode domine sur toute grille.
+Dans cette figure de [03](Sudoku-03-Genetic-Python.ipynb), le codage par cases conserve 19 erreurs après 300 générations, tandis que celui par permutations atteint zéro erreur autour de la trentième génération. Le codage par permutations de lignes respecte d'emblée les contraintes de ligne ; les conflits de colonnes et de blocs restent à réparer. Ce résultat concerne cet essai : il ne compare pas le coût d'une génération et n'établit pas une supériorité générale. Un autre essai conservé dans le carnet termine encore avec des conflits.
+
+Le recuit de [04](Sudoku-04-SimulatedAnnealing-Python.ipynb) autorise parfois une dégradation du score suivant une probabilité liée à la température : cette possibilité aide à quitter un minimum local, puis diminue avec le refroidissement. Le PSO de [05](Sudoku-05-PSO-Python.ipynb) adapte des notions de position, de déplacement et de mémoire collective à des grilles discrètes ; sa représentation demande autant d'attention que ses paramètres.
+
+**À expérimenter :** garder la grille et le budget fixés, puis changer une seule dimension — encodage, voisinage, température ou population. Rapporter les conflits restants et la proportion de grilles valides sur plusieurs essais. La meilleure courbe isolée ne décrit pas la fiabilité d'un solveur.
 
 ### Vérifier, résoudre et optimiser
 
-En 13, reconnaître une grille remplie et chercher les valeurs qui manquent sont deux opérations distinctes : les expressions régulières ou automates assurent certaines vérifications, Z3 prend en charge la recherche dans les expériences correspondantes. Les diagrammes de décision de 14 étudient une autre représentation des contraintes ; leur compacité dépend de la formule et de l'ordre des variables.
+En [13](Sudoku-13-SymbolicAutomata-Python.ipynb), un motif peut vérifier une ligne entièrement remplie ; des expressions régulières et des automates permettent ensuite de reconnaître des grilles satisfaisant les conditions encodées. Lorsqu'il reste des cases vides, chercher leurs valeurs exige une procédure supplémentaire. Le carnet utilise Z3 pour cette résolution. Demander ce que peut répondre chaque vérificateur à une grille partielle rend concrète la différence entre reconnaître et résoudre.
 
-Les paliers 10 et 12 ajoutent un objectif aux contraintes. Sur leur même instance Python de carré latin pondéré, CP-SAT et Z3 obtiennent une récompense maximale de **178**. Le carnet 10 trouve aussi **73** pour son problème de minimisation. La variante C# de 12 obtient **192** sur une autre instance : ce n'est pas une divergence entre moteurs sur un problème identique. Une solution faisable satisfait les règles ; établir son optimalité demande en plus de justifier qu'aucune meilleure valeur de l'objectif n'est possible.
+Les diagrammes de décision de [14](Sudoku-14-BDD-Python.ipynb) partagent les sous-problèmes identiques : un BDD représente des décisions binaires, un MDD permet plusieurs valeurs par variable. Une formule contradictoire comme `x ∧ ¬x` se réduit à faux ; des sous-graphes communs évitent de répéter certaines décisions. Cette compression dépend de la formule et de l'ordre des variables. Les exercices proposent notamment de construire une contrainte « exactement une valeur parmi N » et de comparer les représentations obtenues.
+
+Les paliers [10](Sudoku-10-ORTools-Python.ipynb) et [12](Sudoku-12-Z3-Python.ipynb) ajoutent un objectif aux contraintes. Une solution faisable satisfait les règles ; une fonction pondérée permet ensuite de préférer certaines solutions. CP-SAT exprime cette préférence avec `Maximize` ou `Minimize`, Z3 avec son interface `Optimize`. Un statut `OPTIMAL` de CP-SAT certifie qu'aucune solution admissible n'améliore l'objectif du modèle ; une simple solution faisable ne fournit pas ce certificat.
+
+Sur leur même instance Python de carré latin pondéré, CP-SAT et Z3 obtiennent une récompense maximale de **178**. Le carnet 10 trouve aussi **73** en minimisation. La variante C# de 12 obtient **192** sur une autre instance : les valeurs ne se comparent donc pas comme des réponses au même problème. Pour prolonger l'expérience, modifier un poids, prédire si la grille optimale ou seulement sa valeur changera, puis vérifier avec le solveur.
 
 ### Prédire une case ou résoudre une grille
 
-L'inférence probabiliste de 15 attribue des distributions aux cases. Le réseau de 16 apprend des prédictions à partir de données. Dans les deux cas, une confiance élevée pour chaque case ne garantit pas que leur combinaison respecte toutes les règles. La courbe du MLP rend cette distinction visible : la précision par case progresse, tandis que la précision par grille reste très faible.
+L'inférence probabiliste de 15 attribue des distributions aux cases, avec Infer.NET en C# et NumPyro/JAX en Python. Une distribution peut guider l'ordre des candidats ; sa combinaison avec une validation déterministe donne un principe de solveur hybride. Une confiance élevée pour chaque case ne garantit pas que les valeurs retenues ensemble respectent toutes les contraintes.
+
+Le réseau de [16](Sudoku-16-NeuralNetwork-Python.ipynb) apprend ses prédictions à partir de données. Un MLP traite une représentation vectorielle de la grille ; les convolutions du CNN exploitent une structure spatiale ; les variantes itératives réinjectent des informations au fil des prédictions. Dans la figure du MLP, les pertes diminuent et la précision des cases vides progresse vers 0,53, mais la précision par grille reste à zéro. Réussir toutes les cases simultanément impose une exigence bien plus forte que réussir une case moyenne.
 
 [![Perte et précision du MLP pendant l'entraînement, mesurées par case et par grille](assets/readme/sudoku16-nn-training.png)](Sudoku-16-NeuralNetwork-Python.ipynb)
+
+| Expérience CPU conservée dans 16 | Grilles entièrement résolues | Lecture du résultat |
+|---|---|---|
+| MLP, CNN et ResCNN en prédiction directe | 0 sur 10 000 pour chaque modèle. | Une précision partielle ne suffit pas à résoudre la grille. |
+| ResCNN itératif | 31 sur 200. | L'itération réussit certaines grilles ; l'échantillon diffère de celui de l'évaluation directe. |
+
+Ces sorties décrivent les modèles et protocoles du carnet, sans donner un plafond général à l'apprentissage du Sudoku. L'exercice « réseau + contraintes explicites » invite à construire une validation ou une recherche autour des prédictions.
 
 La carte des erreurs du CNN itératif montre où les erreurs se répartissent sur le jeu évalué. Elle compte des erreurs par position ; sans rapporter ces comptes au nombre de cases à prédire, elle ne mesure pas à elle seule une difficulté intrinsèque de chaque position.
 
 [![Comptes d'erreurs par position de la grille pour le CNN itératif](assets/readme/sudoku16-nn-errors.png)](Sudoku-16-NeuralNetwork-Python.ipynb)
 
-En 17, la comparaison porte sur le rôle du modèle de langage : proposer directement des chiffres ou produire du code qui les recherche. La sortie conservée porte sur **deux puzzles** : zéro réussite pour les prompts directs et avec exemples, deux réussites avec l'approche utilisant du code. Ce petit banc illustre un protocole et ne donne pas un taux général de réussite des LLM.
+En [17](Sudoku-17-LLM-Python.ipynb), la comparaison porte sur le rôle du modèle de langage : proposer directement des chiffres ou produire du code qui les recherche. La vérification doit contrôler le format de la grille, la conservation des indices et l'unicité des chiffres dans chaque unité. La sortie conservée porte sur **deux puzzles** : zéro réussite pour les prompts directs et avec exemples, deux réussites avec l'approche utilisant du code. Ce petit banc illustre un protocole et ne donne pas un taux général de réussite des LLM. L'exercice de prompt gagne à formuler une hypothèse d'amélioration puis à l'éprouver sur plusieurs puzzles avec le même validateur.
+
+### Choisir une méthode et définir son critère de réussite
+
+| Objectif | Point de départ | Expérience à mener |
+|---|---|---|
+| Obtenir une solution respectant toutes les règles | Retour arrière, couverture exacte ou solveur de contraintes. | Valider la grille, vérifier le statut du solveur et observer l'effort de recherche. |
+| Comprendre le rôle de la représentation | Comparer les encodages de 02, 03, 06 ou 14. | Garder le problème fixé et mesurer ce que l'encodage élimine ou partage. |
+| Comparer des méthodes sur un ensemble de grilles | Protocole de 18, puis analyse de 18b. | Séparer taux de succès, coût par puzzle et bruit de mesure. |
+| Apprendre à proposer des valeurs ou guider la recherche | Modèles de 15–17. | Mesurer la validité complète et tester l'apport d'un contrôle sous contraintes. |
+
+Ces choix se retrouvent dans l'ordonnancement et l'allocation sous contraintes, la vérification de règles avec SMT ou la recherche d'une bonne configuration en optimisation. Le Sudoku permet d'en observer les mécanismes sur un problème dont le résultat se vérifie facilement.
 
 ## Installation — pratique, tous niveaux
 
@@ -131,19 +180,53 @@ Commencer par le carnet de la méthode choisie dans un clone du dépôt, qui fou
 
 Le paquet Python de Z3 est `z3-solver`. Les approches symboliques utilisent aussi `regex` et `dd` ; 17 utilise `python-dotenv` pour la configuration ; ce paquet doit être ajouté à l’environnement car il est absent du manifeste commun. En cas d'import manquant, vérifier que Jupyter emploie bien l'environnement où les paquets ont été installés. Côté C#, contrôler la présence du noyau avec `jupyter kernelspec list` et les imports du carnet 00.
 
+Depuis la racine du dépôt, une préparation Python possible est :
+
+```bash
+python -m venv .venv-sudoku
+source .venv-sudoku/bin/activate
+python -m pip install -r MyIA.AI.Notebooks/Sudoku/requirements.txt jupyterlab ipykernel
+python -m ipykernel install --user --name coursia-sudoku --display-name "Python — Sudoku"
+jupyter lab MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb
+```
+
+Sous Windows, activer l'environnement avec `.\.venv-sudoku\Scripts\Activate.ps1`. Choisir ensuite le noyau « Python — Sudoku ». Pour le carnet 17, ajouter `python -m pip install python-dotenv` et renseigner la configuration du service avant les appels. Pour une première séance C#, ouvrir 00 puis 01 et conserver les chemins relatifs du dépôt.
+
 ## Pour aller plus loin — Recherche
 
 ### Comparer des solveurs et auditer les puzzles
 
 Les temps dépendent du solveur, de ses paramètres, de la machine et surtout des instances. [18](Sudoku-18-Comparison-Python.ipynb) construit la comparaison ; [18b](Sudoku-18b-Statistical-Comparison-Python.ipynb) en examine la variabilité. Pour ajouter une méthode, conserver les puzzles et le protocole, puis vérifier les solutions produites avant de comparer les temps.
 
-[20 — Audit des corpus](Sudoku-20-CorpusAudit-Python.ipynb) examine les fichiers de [Puzzles](Puzzles/). Les sorties distinguent les grilles résolues par propagation seule de celles qui demandent une recherche, testent l'unicité par dénombrement plafonné et repèrent les indices redondants. Sur les corpus du carnet, `top95` demande davantage de recherche que `Easy51`, alors que le nom « hardest » ne suffit pas à prédire ce classement. Le nombre d'indices ne constitue donc pas une échelle de difficulté indépendante du solveur.
+Dans 18b, les répétitions de chronométrage sont regroupées par puzzle : répéter quinze fois une grille ne crée pas quinze problèmes indépendants. Le banc affiché porte sur huit puzzles faciles ; les médianes agrégées sont d'environ 1,21 ms pour le retour arrière naïf et 6,82 ms pour MRV, avec un test apparié de Wilcoxon à `p = 0,00781`. Ce résultat local montre que le coût de sélection d'une variable peut dépasser le travail économisé. L'exercice sur les comparaisons multiples et la correction de Bonferroni aide à interpréter plusieurs comparaisons dans un même banc.
+
+[20 — Audit des corpus](Sudoku-20-CorpusAudit-Python.ipynb) examine les fichiers de [Puzzles](Puzzles/). Les sorties distinguent propagation seule et recherche, testent l'unicité par dénombrement plafonné à deux solutions et repèrent les indices redondants.
+
+| Corpus évalué dans 20 | Résolution par propagation seule | Plus grand effort de recherche observé |
+|---|---|---|
+| `Easy51` | 41 grilles sur 51. | 7 décisions. |
+| `hardest` | 1 grille sur 11. | 21 décisions. |
+| `top95` | Aucune grille sur 95. | 446 décisions. |
+
+L'audit ne trouve pas de grille invalide ou non unique dans ces corpus. Leur difficulté dépend ici du solveur et de la mesure retenue : le nom « hardest » ne prédit pas le classement observé. Une expérience utile consiste à supprimer un indice d'une grille, puis à mesurer séparément l'unicité et l'effort de résolution. Une grille encore soluble peut avoir plusieurs solutions ; son nombre d'indices ne constitue pas à lui seul une échelle de difficulté.
 
 ### Réseaux relationnels récurrents
 
-Le réseau relationnel récurrent (RRN) de Palm et ses coauteurs propage des messages sur le graphe de contraintes. Le carnet [16](Sudoku-16-NeuralNetwork-Python.ipynb) compare cette approche aux réseaux directs et à des procédures itératives.
+Le réseau relationnel récurrent (RRN) de Palm et ses coauteurs propage des messages sur le graphe de contraintes : les cases échangent des informations avec leurs voisines au cours d'itérations internes. Le carnet [16](Sudoku-16-NeuralNetwork-Python.ipynb) compare cette approche aux réseaux directs et à des procédures qui réemploient leurs prédictions. Une passe du RRN peut donc déjà contenir plusieurs étapes de propagation apprise.
 
-Ses sorties archivent une précision par grille d'environ **33,5 %** pour les architectures du banc initial, puis **83,5 %** après un entraînement complémentaire sur davantage de données. Elles montrent l'intérêt d'examiner les données et le protocole, au-delà du seul nombre de paramètres. Ces expériences changent plusieurs conditions ; elles n'isolent pas à elles seules l'effet causal du volume de données ou du curriculum. Les fichiers JSON d'entraînement lus pour produire cette synthèse sont absents du dépôt : la sortie conservée documente ces expériences, mais ne suffit pas à les régénérer.
+La sortie de synthèse conservée dans le carnet permet de comparer largeur cachée, nombre d'étapes et phase d'entraînement. La précision par case mesure les prédictions individuelles ; la précision par grille exige que la grille entière soit correcte.
+
+| Phase archivée | Largeur cachée | Étapes internes | Précision par case | Précision par grille |
+|---|---|---|---|---|
+| Banc initial | 128 | 16 | 62,49 % | 33,50 % |
+| Banc initial | 192 | 16 | 62,47 % | 33,50 % |
+| Banc initial | 256 | 16 | 62,55 % | 33,52 % |
+| Banc initial | 128 | 24 | 62,50 % | 33,50 % |
+| Entraînement complémentaire v2 | 192 | 16 | 89,74 % | 83,48 % |
+| Entraînement complémentaire v2 | 256 | 16 | 89,81 % | 83,47 % |
+| Entraînement complémentaire v2 | 192 | 24 | 89,62 % | 83,51 % |
+
+Les largeurs donnent des résultats proches au sein de chaque phase, tandis que l'écart entre phases est marqué. Comme les expériences changent plusieurs conditions, elles n'isolent pas l'effet causal du volume de données, du curriculum ou de l'architecture. Les fichiers JSON d'entraînement lus pour produire cette synthèse sont absents du dépôt : la sortie conservée documente ces expériences, mais ne suffit pas à les régénérer. Une reproduction devrait conserver les jeux de données, les poids, les paramètres et les définitions des métriques avec chaque résultat.
 
 Un taux élevé reste une mesure sur un jeu d'évaluation. Pour une application exigeant une grille valide, contrôler les contraintes demeure nécessaire après une prédiction neuronale.
 
