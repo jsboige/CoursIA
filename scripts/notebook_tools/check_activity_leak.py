@@ -214,7 +214,21 @@ _DM_OK_CONTEXT = re.compile(
     # dans scripts/tests/test_check_activity_leak.py). Le bigrame laisse la
     # mention isolee muette (« Demo DM-JEPA 1.7 ») tout en gardant la garde
     # sensible au reste.
-    r"|p\s*[=<>≤≥]|recentr|re-centr|loss_fn|DM-JEPA",
+    r"|p\s*[=<>≤≥]|recentr|re-centr|loss_fn|DM-JEPA"
+    # Formes COMPACTES mesurees le 2026-11-09 sur la campagne #20250 : deux
+    # carnets de recherche LEGITIME etaient declares recit d'activite parce
+    # que le nom du test y apparait seul -- « DM p_median » (en-tete de
+    # tableau), « Block-bootstrap du DM (distribution + IC 95 %) », « la
+    # variance du DM est estimee par ... ». Le marqueur porte sur « DM »
+    # seul ; c'est le CONTEXTE qui distingue le test du canal. Chaque
+    # forme ajoutee est un terme STATISTIQUE, absent d'un paragraphe de
+    # coordination (« transmission de secret via DM ») : le controle
+    # inverse est mesure sur les 1762 carnets du depot -- 4 des 6 passages
+    # denses par `dm` en baseline restent detectes apres elargissement,
+    # les 2 laches sont les 2 faux positifs statistiques ci-dessus.
+    r"|p_median|p-median|bootstrap|variance|\bIC\s?95"
+    r"|intervalle? de confiance|appari|erreur\s?type|σ"
+    r"|DM\s+(?:p\s?[=<>]|median|appari|compa)",
     re.IGNORECASE,
 )
 _DISPATCH_OK_CONTEXT = re.compile(
