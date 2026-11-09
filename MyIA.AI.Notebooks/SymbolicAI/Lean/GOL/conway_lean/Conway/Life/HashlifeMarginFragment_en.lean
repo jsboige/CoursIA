@@ -4440,6 +4440,65 @@ theorem hashlife_correct_margin_of_union_static (c : MacroCell) (k : Nat)
   rw [hsplit]
   exact hcap_of_union_static g₁ g₂ hsep hcan t hwinU
 
+/-! ## Slice 26 — L3 closed for the union of a FAMILY of aperiodic confined trajectories
+
+N-fold generalization of maillon 8 (union of two parts) to a finite family `L` of
+grids, exact mirror of the periodic progression `hcap_of_union_periodic` (maillon 2)
+→ `hcap_of_union_periodic_family` (maillon 6). Each member is an aperiodic trajectory
+confined in a static frame; the family is **pairwise 3-separated** (`hsep`, the
+class-defining property) and the union `L.flatten` is canonical. The union's capture is
+that of the aperiodic confined class (`hcap_of_static_frame`) applied to the flattened
+grid — the same composition as in maillon 8, now indexed on `List`. The next maillon
+(10) will DERIVE the union's frame from the members' frames using the 3-separation, so
+it is no longer taken as a hypothesis. -/
+
+/-- **hcap of the union of a family of aperiodic confined trajectories — maillon 9.**
+    The flattened union `L.flatten` is a grid; `hcap_of_union_static_family` is the
+    `hcap_of_static_frame` capture of that grid, carried by the class structure
+    (pairwise 3-separation `hsep` + canonicality `hcan`). -/
+theorem hcap_of_union_static_family (L : List Grid) (hnd : L.Nodup)
+    (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
+      ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r)
+    (hcan : Canonical L.flatten) (t : Nat)
+    (hwinU : ∀ r i : Nat, ∀ p ∈ evolve i (evolve r L.flatten),
+      (gridToMacroCellWithOffset (evolve r L.flatten)).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r L.flatten)).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r L.flatten)).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r L.flatten)).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int)) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t L.flatten)).2 = true :=
+  hcap_of_static_frame L.flatten hcan hwinU t
+
+/-- **L3 closed for the union of a family of aperiodic confined trajectories: Hashlife
+    correction of 3-separated aperiodic unions, in arbitrary number.** Assembly-mirror
+    corollary of `hashlife_correct_margin_of_union_static` (maillon 8): a MacroCell
+    whose grid rendered at the origin is the flattened union of a finite family of
+    pairwise 3-separated parts, confined in a static frame, is corrected by
+    `evolveHashlifeFast` over every horizon `2^k` under `centralCorrect`. -/
+theorem hashlife_correct_margin_of_union_static_family (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k)
+    (L : List Grid) (hsplit : c.toGrid (0, 0) = L.flatten) (hnd : L.Nodup)
+    (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
+      ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r)
+    (hcan : Canonical L.flatten)
+    (hwinU : ∀ r i : Nat, ∀ p ∈ evolve i (evolve r L.flatten),
+      (gridToMacroCellWithOffset (evolve r L.flatten)).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r L.flatten)).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r L.flatten)).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r L.flatten)).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_union_static_family L hnd hsep hcan t hwinU
+
 /-! ### Slice 23 — public restitution of the SW wall (`wall_sw_agreement`)
 
 Last of the four walls restituted, as a mirror of the NE wall (coordinates

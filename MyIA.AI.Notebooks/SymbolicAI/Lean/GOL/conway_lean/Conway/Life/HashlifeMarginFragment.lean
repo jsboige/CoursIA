@@ -4444,6 +4444,66 @@ theorem hashlife_correct_margin_of_union_static (c : MacroCell) (k : Nat)
   rw [hsplit]
   exact hcap_of_union_static g₁ g₂ hsep hcan t hwinU
 
+/-! ## Tranche 26 — L3 clos pour l'union d'une FAMILLE de trajectoires apériodiques confinées
+
+Généralisation N-fold du maillon 8 (union de deux parties) à une famille finie `L` de
+grilles, miroir exact de la progression périodique `hcap_of_union_periodic` (maillon 2)
+→ `hcap_of_union_periodic_family` (maillon 6). Chaque membre est une trajectoire
+apériodique confinée dans un cadre statique ; la famille est **deux à deux 3-séparée**
+(`hsep`, la propriété définissante de la classe) et l'union `L.flatten` est canonique.
+La capture de l'union est celle de la classe apériodique confinée (`hcap_of_static_frame`)
+appliquée à la grille aplatie — même composition qu'au maillon 8, désormais indexée sur
+`List`. Le pas suivant (maillon 10) sera de DÉRIVER le cadre de l'union des cadres des
+membres grâce à la 3-séparation, pour ne plus le prendre en hypothèse. -/
+
+/-- **hcap de l'union d'une famille de trajectoires apériodiques confinées — le maillon 9.**
+    L'union aplatie `L.flatten` est une grille ; `hcap_of_union_static_family` est la
+    capture `hcap_of_static_frame` de cette grille, portée par la structure de la classe
+    (3-séparation deux à deux `hsep` + canonicalité `hcan`). -/
+theorem hcap_of_union_static_family (L : List Grid) (hnd : L.Nodup)
+    (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
+      ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r)
+    (hcan : Canonical L.flatten) (t : Nat)
+    (hwinU : ∀ r i : Nat, ∀ p ∈ evolve i (evolve r L.flatten),
+      (gridToMacroCellWithOffset (evolve r L.flatten)).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r L.flatten)).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r L.flatten)).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r L.flatten)).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int)) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t L.flatten)).2 = true :=
+  hcap_of_static_frame L.flatten hcan hwinU t
+
+/-- **L3 clos pour l'union d'une famille de trajectoires apériodiques confinées :
+    correction Hashlife des unions apériodiques 3-séparées, en nombre quelconque.**
+    Corollaire d'assemblage miroir de `hashlife_correct_margin_of_union_static`
+    (maillon 8) : une MacroCell dont la grille rendue à l'origine est l'union aplatie
+    d'une famille finie de parties deux à deux 3-séparées, confinées dans un cadre
+    statique, est corrigée par `evolveHashlifeFast` sur tout horizon `2^k` sous
+    `centralCorrect`. -/
+theorem hashlife_correct_margin_of_union_static_family (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k)
+    (L : List Grid) (hsplit : c.toGrid (0, 0) = L.flatten) (hnd : L.Nodup)
+    (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
+      ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r)
+    (hcan : Canonical L.flatten)
+    (hwinU : ∀ r i : Nat, ∀ p ∈ evolve i (evolve r L.flatten),
+      (gridToMacroCellWithOffset (evolve r L.flatten)).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r L.flatten)).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r L.flatten)).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r L.flatten)).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r L.flatten)).2.level - 1) : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_union_static_family L hnd hsep hcan t hwinU
+
 /-! ### Tranche 23 — restitution publique du mur SW (`wall_sw_agreement`)
 
 Dernier des quatre murs restitue, en miroir du mur NE (permutation des coordonnees).
