@@ -128,8 +128,48 @@ jobs:
             echo "[heal] aucun work dir preexistant -- checkout fera un clone neuf"
             exit 0
           fi
+          # --- Etat sparse herite du job precedent (#24959) ------------------
+          # Le pool de runners reutilise son work dir. Un work dir laisse en
+          # etat sparse ARME (core.sparseCheckout a vrai) fait materialiser
+          # l'ARBRE ENTIER par le checkout suivant : avec `filter: blob:none`,
+          # le desarmement du sparse telecharge les blobs -- mesure po-2024 du
+          # 2026-11-06 (consignee dans always-on-guards-body.yml) : 8 min 57 s
+          # sur la seule commande `git checkout --force refs/pull/<N>/merge`,
+          # sans une ligne de log, puis annulation ; sur deux runners
+          # differents (myia-ai-01-wsl-2 : 9 min 55 s ; myia-po-2024-linux-
+          # persist-6 : 9 min 49 s). Un clone frais `blob:none` laisse les
+          # blobs paresseux : il est moins cher que la materialisation.
+          # Meme arbitrage que le hook job-started de l'entrypoint du runner
+          # conteneurise (scripts/ci/docker/linux-runner/entrypoint.sh) : le
+          # FLAG ARME est le seul etat cassant (purge du clone) ; le fichier
+          # de motifs seul est inerte (il est retire, le cache est conserve).
+          sparse=$(git config --local --get core.sparseCheckout 2>/dev/null || true)
+          case "$sparse" in
+            true|1|on)
+              echo "::notice::[heal] work dir SPARSE arme -- purge du work dir"
+              rm -rf .git
+              exit 0
+              ;;
+          esac
+          if [ -f .git/info/sparse-checkout ]; then
+            echo "[heal] motifs sparse inertes -- retrait du fichier, work dir conserve"
+            rm -f .git/info/sparse-checkout
+          fi
+          # --- Graphe shallow herite du job precedent (#15387) --------------
+          # Le `fetch --unshallow` declenche par actions/checkout peut echouer
+          # en silence (#15492, run 34542167016, job 103087137418 :
+          # "error: Could not read 0102d652b3..." emis PENDANT le fetch, etape
+          # rendue verte malgre tout). Le depot reste alors ni shallow ni
+          # complet, et tout `git log --raw` / `git rev-list` casse. On tente
+          # donc un unshallow explicite et VERIFIE (`.git/shallow` disparu et
+          # graphe parcourable) ; le clone neuf reste le repli.
           if [ -f .git/shallow ]; then
-            echo "::notice::[heal] work dir SHALLOW reutilise -- purge avant unshallow"
+            echo "::notice::[heal] work dir SHALLOW reutilise -- tentative d'unshallow explicite"
+            if git fetch --unshallow origin && [ ! -f .git/shallow ] && git rev-list --all --count >/dev/null 2>&1; then
+              echo "[heal] unshallow explicite reussi -- graphe complet reutilise"
+              exit 0
+            fi
+            echo "::notice::[heal] unshallow impossible ou graphe incomplet -- purge du work dir"
             rm -rf .git
             exit 0
           fi
