@@ -9,6 +9,9 @@
 
 name: .NET FactorGraph Selection Tests
 
+permissions:
+  contents: read
+
 on:
   pull_request:
     paths:
