@@ -345,7 +345,7 @@ def validate_manifest(meta: dict, *, strict: bool = False,
 
     missing = [k for k in REQUIRED_META_KEYS if k not in out]
     if missing:
-        # Retro-compat (Tell c.1050 ★★ fondateur) : seul ``d_sae`` et ``k``
+        # Retro-compat : seul ``d_sae`` et ``k``
         # sont des discriminants structurels du schema top-k sparse --
         # sans eux, la trace n'est pas materialisable. ``layer`` est un
         # champ d'alignement utile (acceptance #2 cross-traces) mais pas
@@ -361,8 +361,8 @@ def validate_manifest(meta: dict, *, strict: bool = False,
             _warn_localise(
                 f"manifeste sans 'layer' charge par le chargeur "
                 f"expected={expected!r} -- 'layer' n'est pas discriminant "
-                f"pour la lecture (acceptance #4 retro-compat, Tell c.1050 "
-                f"★★ fondateur). L'absence de 'layer' desactive le check "
+                f"pour la lecture (acceptance #4 retro-compat de #15476). "
+                f"L'absence de 'layer' desactive le check "
                 f"d'alignement ``check_alignment`` pour ce champ (les autres "
                 f"champs d'ALIGNMENT_KEYS restent valides). Migrer "
                 f"l'extracteur GPU pour poser meta['layer'] canoniquement "

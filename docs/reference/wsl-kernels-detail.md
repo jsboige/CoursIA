@@ -53,8 +53,8 @@ aucun des deux chemins ne retombe plus sur un lake stub sans rapport.
 
 ### Vérifié
 
-- GT-1 Setup : 20/20 cells, 0 errors (3.3s)
-- GT-7 ExtensiveForm : 30/30 cells, 0 errors (2s)
+- GT-1 Setup : 0 errors (3.3s)
+- GT-7 ExtensiveForm : 0 errors (2s)
 
 ## Lean 4 — setup consolidé (issue #1618)
 
@@ -100,7 +100,7 @@ Windows (Jupyter)                  WSL (Ubuntu)
                                     REPL: ~/.elan/bin/repl  (via `lake env repl`)
 ```
 
-Le wrapper Python v7 `~/.lean4-kernel-wrapper.py` (source dans le dépôt : `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/lean4-kernel-wrapper.py`) gère la conversion Windows→WSL des paths, les permissions NTFS, et la détection du lake workspace. v7 = (1) regex mangled-path couvrant `AppData/Roaming` (kernelspec) ET `AppData/Local/Temp` (fichiers de connexion nbconvert), (2) `find_lake_root()` depuis le cwd transmis par Papermill, puis chdir vers le `lakefile.lean`/`.toml` ancêtre le plus proche, (3) échec de démarrage explicite si ce contexte ne contient aucun lake. L'ancien wrapper bash `~/lean4-jupyter-wrapper.sh` est **OBSOLETE** — ne pas l'utiliser. Scripts de setup sous-jacents (orchestrés par `setup_lean4_all.py`) : `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh` (WSL : elan, Lean 4 stable, venv `~/.lean4-venv`, lean4_jupyter, REPL), `setup_lean4_kernel.ps1` (registration `%APPDATA%/jupyter/kernels/lean4-wsl/`), `SymbolicAI/Lean/scripts/validate_lean_setup.py` (`--wsl`/`--windows`), notebook `SymbolicAI/Lean/Lean-1-Setup.ipynb`.
+Le wrapper Python v7 `~/.lean4-kernel-wrapper.py` (source dans le dépôt : `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/lean4-kernel-wrapper.py`) gère la conversion Windows→WSL des paths, les permissions NTFS, et la détection du lake workspace. v7 = (1) regex mangled-path couvrant `AppData/Roaming` (kernelspec) ET `AppData/Local/Temp` (fichiers de connexion nbconvert), (2) `find_lake_root()` depuis le cwd transmis par Papermill, puis chdir vers le `lakefile.lean`/`.toml` ancêtre le plus proche, (3) échec de démarrage explicite si ce contexte ne contient aucun lake. L'ancien wrapper bash `~/lean4-jupyter-wrapper.sh` est **OBSOLETE** — ne pas l'utiliser. Scripts de setup sous-jacents (orchestrés par `setup_lean4_all.py`) : `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh` (WSL : elan, Lean 4 stable, venv `~/.lean4-venv`, lean4_jupyter, REPL), `setup_lean4_kernel.ps1` (registration `%APPDATA%/jupyter/kernels/lean4-wsl/`), `SymbolicAI/Lean/scripts/validate_lean_setup.py` (`--wsl`/`--windows`), notebook `SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb`.
 
 ### Native import d'un lake Mathlib en kernel `lean4-wsl` — VERDICT (a) PROUVÉ (probe 2026-06, c.127)
 
@@ -150,6 +150,66 @@ print('KERNEL READY')
 kc.stop_channels(); km.shutdown_kernel()
 \""
 ```
+
+## Kernel `lean4` : toolchain épinglée et couples REPL/toolchain prouvés (#18511)
+
+**Symptôme (mesuré le 2026-09-30 sur ai-01)** : `lake env repl` suivait le
+défaut elan (`leanprover/lean4:stable`, résolu v4.34.1 puis v4.35.0), alors
+que le seul binaire REPL disponible (`~/.elan/bin/repl`) est construit pour
+v4.30.0. Les cellules de `Lean-05-Tactics-Lean.ipynb` rendaient alors des
+**erreurs de parse** — et papermill sortait quand même en **0**.
+
+**Deux causes distinctes, deux corrections** :
+
+| Cause | Correction | Où |
+|---|---|---|
+| le kernel suit `stable`, qui dérive | la toolchain est **épinglée** depuis le `lean-toolchain` le plus proche (celui du lake s'il y en a un) et exportée en `ELAN_TOOLCHAIN` | `lean4-kernel-wrapper.py` (v8) |
+| un REPL construit pour une autre version sert de repli **silencieux** | le REPL est **couplé** à la toolchain : binaire `repl-<tag>` construit contre elle, ou REPL par défaut dont la version **embarquée** (lue dans le binaire : `https://lean-lang.org/doc/reference/<version>/`) est celle de la toolchain | `lean4-kernel-wrapper.py` (v8) + `setup_native_lean4_import.py` (template de la fourche) |
+
+**Échec visible, pas silencieux** : une divergence fait **échouer** le kernel
+(exit 3 côté wrapper, `ReplPairingError` côté fourche), avec un message qui
+nomme les deux versions et le remède (`build-repl <tag>`). Un carnet sans
+sortie d'erreur sous un `exit 0` n'est plus possible.
+
+**Un lake n'est plus indispensable** : `lake env` fonctionne sans `lakefile`
+(mesuré) — l'ancrage de la toolchain suffit. La règle de #16181 tient
+toujours : aucun repli vers un projet étranger.
+
+**Vérification sur ai-01 (2026-10-21)** : `papermill Lean-05-Tactics-Lean.ipynb
+out.ipynb -k lean4` rend **toutes les cellules, zéro erreur**, et les
+sorties sont **identiques octet pour octet** à celles commitées. La sonde de
+divergence (un `lean-toolchain` en v4.33.0 dans un arbre temporaire) rend
+`exit 3` avec le message nommant v4.33.0 et 4.30.0.
+
+**Conséquence assumée** : un lake **sans** `lean-toolchain` (et sans ancrage
+parent) ne démarre plus le kernel — il échoue au lieu de suivre `stable`.
+Remède : écrire `lean-toolchain` dans le lake.
+
+**Ré-application sur une machine déjà installée** : le correctif côté fourche
+vit dans le template `REPL_PY_PATCH`, mais `PATCH_MARKER` reste
+`"_find_lake_root"`, marqueur que la fourche épinglée `v0.0.1-native-import`
+porte **déjà**. Conséquences mesurées :
+
+- `setup_native_lean4_import.py install` réinstalle la fourche puis teste le
+  marqueur : il affiche `PATCHED` **sans avoir appliqué le nouveau template** ;
+- `setup_native_lean4_import.py patch` est idempotent sur ce même marqueur et
+  répond « already patched — nothing to do ».
+
+Le `ReplPairingError` du template ne s'applique donc pas au seul `install`.
+Sur une machine déjà installée, restaurer la sauvegarde puis rejouer le patch :
+
+```bash
+cp <chemin>/lean4_jupyter/repl.py.bak.native <chemin>/lean4_jupyter/repl.py
+python scripts/lean/setup_native_lean4_import.py patch
+```
+
+C'est la mécanique déjà décrite dans le commentaire du code pour le précédent
+`REPL_PY_PATCH` évolué (#12061), pas un défaut de cette correction. La moitié
+**wrapper**, elle, est redéployée par `setup_wsl_lean4.sh` (`cp` de la source
+canonique vers `~/.lean4-kernel-wrapper.py`, comparaison octet-à-octet par
+`lean_kernel_check.py`) : seule la moitié fourche demande le geste manuel.
+Sans lui, un opérateur croit la protection active alors que **seule la moitié
+wrapper l'est**.
 
 ## Notes complémentaires
 

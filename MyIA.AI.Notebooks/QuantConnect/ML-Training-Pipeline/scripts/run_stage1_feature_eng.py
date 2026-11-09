@@ -41,6 +41,7 @@ from regime_detector import (
     detect_regimes_multivariate,
     compute_regime_transition_features,
 )
+import strategy_metrics
 from transaction_costs import TransactionCostModel
 from walk_forward import WalkForwardSplitter
 
@@ -67,6 +68,13 @@ def compute_hmm_features_single(coin_prices: pd.Series, n_states: int = 3) -> pd
 
     Features: regime label (one-hot), regime duration proxy.
     """
+    # CAUTION (#21054): default HMM decode is Viterbi = retrospective
+    # (label at t depends on observations after t). decode_mode="filter"
+    # removes the backtracking but is NOT a known-at-t guarantee either:
+    # the Baum-Welch fit still sees the whole window passed in, so these
+    # features are retrospective whichever decode is used. Feeding them to
+    # a walk-forward or live signal needs a per-fold refit, not just the
+    # filter flag.
     result = detect_regimes_hmm(coin_prices, n_states=n_states)
     features = pd.DataFrame(index=coin_prices.index)
 
@@ -229,17 +237,13 @@ def train_walk_forward_with_costs(
 
 
 def _sharpe(returns: np.ndarray, annualize: bool = True) -> float:
-    """Annualized Sharpe ratio from daily returns."""
-    if len(returns) < 10:
+    """Annualized Sharpe ratio from daily returns (``strategy_metrics.sharpe``).
+
+    Returns 0.0 for fewer than 10 returns or a standard deviation below 1e-10.
+    """
+    if len(returns) < 10 or np.std(returns, ddof=1) < 1e-10:
         return 0.0
-    mean_r = np.mean(returns)
-    std_r = np.std(returns, ddof=1)
-    if std_r < 1e-10:
-        return 0.0
-    sr = mean_r / std_r
-    if annualize:
-        sr *= np.sqrt(252)
-    return float(sr)
+    return float(strategy_metrics.sharpe(returns, periods_per_year=252 if annualize else 1))
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,7 @@
+date: '2026-10-08'
+by: myia-po-2024:CoursIA
+python_sha: f830466e0227c1f0ae6ce46a410205e25d29bf6e
+csharp_sha: 163d3ff399abdc1315904ea2bfb5d0045d3572ea
+content_python_sha: c43681a0c928f9853691ceca34257b26e84d519a3de2dc0332b8d2f35dfee03c
+content_csharp_sha: fc4d861d9d57d10b1cec1680e643b56037d258075f215e6b60d25945bfabb882
+reason: "Redressement densite #17040 (tranche GameTheory) : cote Python uniquement, 2 retitres marker-unfold (cellules campagne #16470, lectures legitimes de sorties distinctes). C# non touche. Markdown-only, cellules code byte-identiques."

@@ -91,6 +91,7 @@ Le porte-drapeau de ce niveau pour la **qualité** est FLUX.1 ([02-2](02-Advance
 | [02-3-Stable-Diffusion-3-5](02-Advanced/02-3-Stable-Diffusion-3-5.ipynb) | SD 3.5 | ComfyUI |
 | [02-4-Z-Image-Lumina2](02-Advanced/02-4-Z-Image-Lumina2.ipynb) | Z-Image/Lumina | ComfyUI |
 | [02-5-Bonsai-Image-Ternary](02-Advanced/02-5-Bonsai-Image-Ternary.ipynb) | Bonsai-Image 4B, quantization ternaire 1.58-bit | ComfyUI |
+| [02-6-Few-Step-Generative-Models-IMM-TVM](02-Advanced/02-6-Few-Step-Generative-Models-IMM-TVM.ipynb) | Few-step : IMM (CIFAR-10) et TVM (ImageNet-256), compromis évaluations / qualité / latence **mesuré** | Code officiel des dépôts clonés |
 
 [README 02-Advanced](02-Advanced/README.md)
 
@@ -174,6 +175,7 @@ Section transversale de guides markdown (pas de notebooks) — quatre référenc
 | **ComfyUI + SD 3.5** | 02-3 | Docker GPU |
 | **Z-Image/Lumina** | 02-4 | Docker, ~10GB VRAM |
 | **Bonsai-Image (ternaire)** | 02-5 | ComfyUI, ~7 GB VRAM |
+| **Few-step (IMM / TVM)** | 02-6 | Code officiel des dépôts clonés, GPU ~4GB |
 
 ## Prérequis
 
@@ -210,7 +212,7 @@ Accès : http://localhost:8188
 | Objectif | Notebooks |
 |----------|-----------|
 | Découverte rapide | 01-1, 01-3 |
-| Génération avancée | 01-1 à 02-5 |
+| Génération avancée | 01-1 à 02-6 |
 | Production | Tous + 03 + 04 |
 
 ## Recette : construire un générateur de contenu visuel éducatif
@@ -219,7 +221,7 @@ Le fil rouge de cette série est la création d'un système de visuels pédagogi
 
 1. **01-Foundation** (génération de base) : [01-1](01-Foundation/01-1-OpenAI-DALL-E-3.ipynb) et [01-2](01-Foundation/01-2-GPT-5-Image-Generation.ipynb) couvrent la génération via API cloud. [01-4](01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb) et [01-5](01-Foundation/01-5-Qwen-Image-Edit.ipynb) introduisent les modèles locaux. À la fin, vous savez générer une image à partir d'un texte.
 
-2. **02-Advanced** (édition et qualité) : [01-5b](01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb) permet d'éditer une image existante pour corriger ou enrichir un visuel. [02-4](02-Advanced/02-4-Z-Image-Lumina2.ipynb) offre une génération rapide pour le prototypage. [02-2](02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb) pousse la qualité plus loin. [02-5](02-Advanced/02-5-Bonsai-Image-Ternary.ipynb) montre la quantization extrême (ternaire 1.58-bit) pour faire tenir un modèle 4B dans ~7 GB de VRAM.
+2. **02-Advanced** (édition et qualité) : [01-5b](01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb) permet d'éditer une image existante pour corriger ou enrichir un visuel. [02-4](02-Advanced/02-4-Z-Image-Lumina2.ipynb) offre une génération rapide pour le prototypage. [02-2](02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb) pousse la qualité plus loin. [02-5](02-Advanced/02-5-Bonsai-Image-Ternary.ipynb) montre la quantization extrême (ternaire 1.58-bit) pour faire tenir un modèle 4B dans ~7 GB de VRAM. [02-6](02-Advanced/02-6-Few-Step-Generative-Models-IMM-TVM.ipynb) prend l'autre côté de la contrainte : non plus réduire la précision, mais le nombre d'évaluations du réseau — il **mesure** le compromis qualité / latence d'IMM et TVM sur la machine, avec le code et les poids officiels.
 
 3. **03-Orchestration** (comparaison et pipelines) : [03-1](03-Orchestration/03-1-Multi-Model-Comparison.ipynb) compare les modèles pour choisir le meilleur rapport qualité/coût. [03-2](03-Orchestration/03-2-Workflow-Orchestration.ipynb) assemble un pipeline de génération complet.
 

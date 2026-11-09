@@ -32,6 +32,7 @@ from check_closure_dossier import (  # noqa: E402
     render_template,
     validate_dossier,
     main,
+    _merged_referring_prs,
 )
 
 
@@ -85,6 +86,37 @@ def test_close_integre():
     assert verdict == "CLOSE"
     assert errors == []
     assert dossier.fields["lane"] == "myia-po-2025:CoursIA-2"
+
+
+def test_fleet_app_identity_is_an_accepted_dossier_author():
+    """#17437: this gate accepts the same dossier authors as the adjoint gate.
+
+    Both read the AUTHOR of the same kind of dossier, from the same organ
+    (``gh_identity.ACCEPTED_DOSSIER_AUTHORS``). Widening only one would let a
+    lane's merge dossier through while its closure dossier is refused -- a
+    half-migration whose failure surfaces at the last step, on the issue that
+    was about to be closed.
+    """
+    for lane in ccd.gh_identity.APP_DOSSIER_LANES:
+        login = f"{ccd.gh_identity.APP_LOGIN_PREFIX}{lane}[bot]"
+        snap = _snapshot(comments=[_comment(_dossier_body(), login=login)])
+        verdict, errors, _ = evaluate(snap)
+        assert verdict == "CLOSE", f"{login}: {errors}"
+        assert errors == [], f"{login}: {errors}"
+
+
+def test_app_shaped_login_outside_the_frozen_lanes_is_refused():
+    """The set is CLOSED: a login that only looks like a fleet App is refused."""
+    for login in (
+        "coursia-lane-po-2099[bot]",  # unknown lane
+        "coursia-lane-po-2024",       # right lane, no App suffix
+        "coursia-lane-po-204[bot]",   # prefix of a real lane
+    ):
+        snap = _snapshot(comments=[_comment(_dossier_body(), login=login)])
+        _, errors, _ = evaluate(snap)
+        assert any(
+            "is not an accepted dossier author" in e for e in errors
+        ), f"{login}: {errors}"
 
 
 def test_keep_integre(monkeypatch):
@@ -149,6 +181,30 @@ def test_commentaire_neutre_posterieur_ne_perime_pas():
     verdict, errors, _ = evaluate(snap)
     assert verdict == "CLOSE"
     assert errors == []
+
+
+def test_commentaire_renvoi_du_collant_ne_perime_pas():
+    # #15511 : le renvoi d'un doublon fusionne (marqueur principal retire,
+    # contenu porte par le collant canonique) n'est jamais supprime : il vit
+    # dans le fil et ne doit pas perimer un dossier de fermeture.
+    # Le marqueur est neutre quel que soit son auteur -- meme contrat que le
+    # marqueur principal, et meme exigence que les autres formes marker-gardees
+    # de la liste. Le cas `jsboige` est le discriminant : un login non-bot
+    # passe par la liste de marqueurs, la ou le predicat d'auteur l'aurait
+    # laisse perimer le dossier.
+    forward = (
+        "<!-- coursia:advisory-sticky:forwarded -->\n\n"
+        "*Ce commentaire a ete fusionne dans le commentaire collant "
+        "canonique (id 4242) : ses sections y sont integrees.*\n"
+    )
+    for login in ("github-actions[bot]", "jsboige"):
+        snap = _snapshot(comments=[
+            _comment(_dossier_body(), created="2026-09-20T10:00:00Z"),
+            _comment(forward, login=login, created="2026-09-21T09:00:00Z"),
+        ])
+        verdict, errors, _ = evaluate(snap)
+        assert verdict == "CLOSE", f"{login}: {errors}"
+        assert errors == [], f"{login}: {errors}"
 
 
 # --- latest-wins : seul le dernier dossier compte (#18095) -------------------
@@ -231,6 +287,12 @@ def test_fille_citee_fermee_refuse(monkeypatch):
 
 def test_pr_citee_non_merged_refuse(monkeypatch):
     def fake_gh_json(args):
+        # La resolution issue/PR (#18323) precede le pr view : #18002 est
+        # bien une PR (cle pull_request presente).
+        if args[0] == "api":
+            assert args[1] == "repos/o/r/issues/18002", args
+            return {"number": 18002, "state": "OPEN",
+                    "pull_request": {"url": "x"}}
         assert args[:2] == ["pr", "view"], args
         return {"state": "OPEN", "mergedAt": None}
     monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
@@ -239,6 +301,38 @@ def test_pr_citee_non_merged_refuse(monkeypatch):
     verdict, errors, _ = evaluate(snap)
     assert verdict == "REFUSED"
     assert any("#18002 is not MERGED" in e for e in errors)
+
+
+def test_issue_citee_dans_la_preuve_ne_crash_pas(monkeypatch):
+    # #18323 : citer l'issue d'audit dans sa propre preuve (« verdict de
+    # l'audit #16834 ») faisait echouer gh pr view -> UNKNOWN pour tout le
+    # dossier. Une reference d'issue n'est pas une PR citee : elle sort du
+    # controle « PRs citees : toutes MERGED ». #17901 couvre le critere via
+    # le raccourci merged_prs.
+    def fake_gh_json(args):
+        assert args[0] == "api" and args[1] == "repos/o/r/issues/16834", args
+        return {"number": 16834, "state": "OPEN"}  # pas de cle pull_request
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    snap = _snapshot(comments=[
+        _comment(_dossier_body(
+            items=("critere A -> verdict de l'audit #16834 "
+                   "et PR #17901",)))])
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "CLOSE"
+    assert errors == []
+
+
+def test_numero_cite_introuvable_reste_fail_closed(monkeypatch):
+    # Une erreur reseau/404 sur la resolution du #N cite lève RuntimeError :
+    # c'est sweep()/main() qui la convertissent en UNKNOWN (fail-closed
+    # conserve, #18323 exigence 2) -- evaluate ne l'avale jamais.
+    def boom(args):
+        raise RuntimeError("gh: Not Found (HTTP 404)")
+    monkeypatch.setattr(ccd, "gh_json", boom)
+    snap = _snapshot(comments=[
+        _comment(_dossier_body(items=("critere A -> PR #404404",)))])
+    with pytest.raises(RuntimeError):
+        evaluate(snap)
 
 
 def test_pr_citee_deja_dans_les_merged_ne_requete_pas(monkeypatch):
@@ -346,6 +440,24 @@ def test_template_rend_les_champs_mecaniques():
     assert "open-prs: 0" in out
     assert "comments-reviewed: 2" in out
     assert "REPLACE_WITH_CLOSE_OR_KEEP" in out
+
+
+def test_template_rempli_tel_quel_se_parse():
+    """Remplir chaque REPLACE_WITH sur place doit donner un dossier valide :
+    l'item d'acceptation est rendu sous `acceptance:`, pas apres
+    `comments-reviewed` (#18480 : le gabarit rempli sur place etait refuse)."""
+    snap = _snapshot(comments=[_comment("x")])
+    out = render_template(snap, "myia-po-2026:CoursIA-3")
+    filled = (out
+              .replace("REPLACE_WITH_CLOSE_OR_KEEP", "CLOSE")
+              .replace("REPLACE_WITH_none_OR_followup_#M_OR_waiver:_<motif daté>",
+                       "none")
+              .replace("REPLACE_WITH <critère du body> -> <PR#/commit/fichier:ligne>",
+                       "critere du body -> #17901"))
+    assert "REPLACE" not in filled
+    dossier, errors = parse_dossier(filled, 0, "jsboige")
+    assert errors == []
+    assert dossier.fields["verdict"] == "CLOSE"
 
 
 def test_main_rc_close_0_keep_3_refuse_1_inconnu_2(monkeypatch, capsys):
@@ -462,3 +574,271 @@ def test_merged_referring_prs_lit_le_body_sans_jq(monkeypatch):
     assert len(prs) == 1
     assert prs[0]["body"].startswith("Grain:")
     assert prs[0]["number"] == 17901
+
+
+def test_merged_referring_prs_resout_une_reference_cross_repo(monkeypatch):
+    # #17301, mesure 2026-09-28 : MyIntelligenceAgency/Z3.Linq#31 (merged)
+    # reference l'issue -> l'organe resout toute cross-ref dans le depot SOURCE,
+    # sinon gh rend "Could not resolve to a PullRequest" sur le depot cible et
+    # le template crash (blocage Lot D #18140).
+    import subprocess as _sp
+    import json as _json
+    # Payload reel mesure sur #17301 : le depot vit dans
+    # source.issue.repository.full_name (source.repository est None).
+    timeline = [_json.dumps([{
+        "event": "cross-referenced",
+        "source": {"issue": {"number": 31,
+                             "repository": {"full_name": "MyIntelligenceAgency/Z3.Linq"},
+                             "pull_request": {"merged_at": "2026-09-23T18:39:12Z"}}},
+    }])]
+    seen = {}
+
+    class _P:
+        def __init__(self, stdout, returncode=0):
+            self.stdout = stdout
+            self.returncode = returncode
+
+    def fake_run(args, **kwargs):
+        tail = tuple(args[1:])
+        if tail[0] == "api":
+            return _P("".join(timeline))
+        if tail[:2] == ("pr", "view"):
+            seen[("--repo",)] = tail
+            assert "--repo" in tail and "MyIntelligenceAgency/Z3.Linq" in tail, (
+                "la PR cross-ref doit etre resolue dans son depot source, "
+                "pas dans le depot cible")
+            return _P(_json.dumps({"body": "Grain: DEEP/lean -- lane myia-po-2024:CoursIA"}))
+        return _P("", returncode=1)
+
+    monkeypatch.setattr(_sp, "run", fake_run)
+    prs = ccd._merged_referring_prs("jsboige/CoursIA", 17301)
+    assert len(prs) == 1
+    assert prs[0]["number"] == 31
+    assert prs[0]["repo"] == "MyIntelligenceAgency/Z3.Linq"
+
+
+def test_pr_cross_repo_ne_satisfait_pas_le_raccourci_des_prs_citees(monkeypatch):
+    # Un #N nu dans le dossier designe une PR du depot CIBLE : une PR de meme
+    # numero venue d'un depot soeur ne doit pas court-circuiter la verification
+    # (le dossier citerait #31 sans preuve que la PR 31 du depot cible existe).
+    def fake_gh_json(args):
+        if args[0] == "api":
+            assert args[1] == "repos/o/r/issues/31", args
+            return {"number": 31, "state": "OPEN",
+                    "pull_request": {"url": "x"}}  # PR 31 existe dans o/r
+        assert args[:2] == ["pr", "view"], f"appel gh inattendu: {args}"
+        assert args[args.index("--repo") + 1] == "o/r", (
+            "le numero nu doit etre verifie dans le depot cible")
+        return {"state": "OPEN", "mergedAt": None}  # PR 31 de o/r : non merged
+
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    snap = _snapshot(
+        comments=[_comment(_dossier_body(items=("critere A -> PR #31",)))],
+        merged_prs=[
+            {"number": 31, "merged_at": "2026-09-23T18:39:12Z",
+             "repo": "MyIntelligenceAgency/Z3.Linq",
+             "body": "Grain: DEEP/lean -- lane myia-po-2024:CoursIA"},
+        ],
+    )
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "REFUSED"
+    assert any("cited PR #31 is not MERGED" in e for e in errors)
+
+
+# --- _merged_referring_prs : body depuis timeline -----------------------------
+
+def test_merged_referring_prs_lit_body_depuis_timeline(monkeypatch):
+    """Le body d'une PR mergée doit être lu depuis la timeline (source.issue.body)
+    quand il est présent, sans `gh pr view` supplémentaire.
+
+    Mesure : sur #15578, 555 references = 4 min de latence eliminees (1 appel
+    gh api de moins par referencee). Ce test verifie le fast-path.
+    """
+    timeline = [
+        {"event": "cross-referenced",
+         "source": {"type": "issue",
+                    "issue": {"number": 17901,
+                              "body": "Grain: DEEP/notebook-python -- lane X",
+                              "pull_request": {"merged_at": "2026-09-19T10:00:00Z"},
+                              "repository": {"full_name": "o/r"}}}},
+    ]
+    def fake_gh_json(args):
+        assert args[0] == "api", f"appel inattendu: {args}"
+        return timeline
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    out = _merged_referring_prs("o/r", 15578)
+    assert len(out) == 1
+    assert out[0]["number"] == 17901
+    assert out[0]["merged_at"] == "2026-09-19T10:00:00Z"
+    assert out[0]["repo"] == "o/r"
+    assert out[0]["body"] == "Grain: DEEP/notebook-python -- lane X"
+
+
+def test_merged_referring_prs_fallback_gh_pr_view_si_body_absent(monkeypatch):
+    """Si la timeline ne porte pas le body (PR tres ancienne ou depot soeur
+    tronque), fallback explicite vers `gh pr view --json body`.
+    Defense en profondeur : ne JAMAIS perdre un body qu'on avait avant ce fix.
+    """
+    timeline = [
+        {"event": "cross-referenced",
+         "source": {"type": "issue",
+                    "issue": {"number": 17901,
+                              "pull_request": {"merged_at": "2026-09-19T10:00:00Z"},
+                              "repository": {"full_name": "o/r"}}}}  # body absent
+    ]
+    calls = []
+    def fake_gh_json(args):
+        calls.append(args[:2])
+        if args[0] == "api":
+            return timeline
+        if args[:2] == ["pr", "view"]:
+            return {"body": "Body depuis fallback"}
+        raise AssertionError(f"appel inattendu: {args}")
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    out = _merged_referring_prs("o/r", 15578)
+    assert len(out) == 1
+    assert out[0]["body"] == "Body depuis fallback"
+    # On a bien appele gh pr view en fallback
+    assert ["pr", "view"] in [c[:2] for c in calls]
+
+
+def test_merged_referring_prs_ignore_les_cross_ref_non_merged(monkeypatch):
+    """Un cross-reference sans pull_request.merged_at ne doit pas être inclus.
+    Verifie qu'on ne perd pas le filtre existant en ajoutant le fast-path.
+    """
+    timeline = [
+        {"event": "cross-referenced",
+         "source": {"type": "issue",
+                    "issue": {"number": 17901,
+                              "body": "Pas mergé",
+                              "pull_request": {"merged_at": None},
+                              "repository": {"full_name": "o/r"}}}},
+        {"event": "commented"},  # autre event, ignoré
+    ]
+    def fake_gh_json(args):
+        return timeline
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    out = _merged_referring_prs("o/r", 15578)
+    assert out == []
+
+
+
+def test_delivering_lanes_refuse_le_point_final_de_phrase():
+    """#15864 (mesure #14549, 2026-10-09) -- un marqueur ponctue doit reduire a
+    la lane REELLE : sinon une lane nommee uniquement sous forme ponctuee est
+    absente de l'ensemble d'exclusion et son dossier d'auto-attestation passe
+    le gate. Instance mesuree : `myia-po-2023:CoursIA-2.` dans delivering_lanes."""
+    snap = _snapshot(
+        comments=[_comment("[DELIVERED] lane myia-po-2023:CoursIA-2. "
+                           "Tranche livree, voir PR.")],
+        merged_prs=[
+            {"number": 17901, "merged_at": "2026-09-19T10:00:00Z",
+             "body": "Grain: DEEP/notebook-python — lane myia-po-2024:CoursIA. "
+                     "-- See #17900."},
+        ],
+    )
+    lanes = ccd.delivering_lanes(snap)
+    assert "myia-po-2023:CoursIA-2" in lanes
+    assert "myia-po-2024:CoursIA" in lanes
+    assert not any(ln.endswith(".") for ln in lanes), sorted(lanes)
+
+
+# --- #21818 : l'auteur d'un dossier lu en GraphQL, compare en orthographe REST
+
+
+def test_normalisation_rend_une_app_graphql_en_orthographe_rest():
+    """GraphQL rend le login d'un acteur de type `Bot` SANS le suffixe
+    `[bot]` ; REST le rend AVEC. La normalisation unique remet les deux
+    surfaces d'accord sur la forme canonique."""
+    gh = ccd.gh_identity
+    assert gh.normalize_author_login(
+        {"login": "coursia-lane-po-2026", "__typename": "Bot"}
+    ) == "coursia-lane-po-2026[bot]"
+    assert gh.normalize_author_login(
+        {"login": "coursia-lane-po-2026[bot]", "type": "Bot"}
+    ) == "coursia-lane-po-2026[bot]"
+    assert gh.normalize_author_login(
+        {"login": "jsboige", "__typename": "User"}
+    ) == "jsboige"
+    # Un auteur dont le type est inconnu n'est pas un bot : le doute profite
+    # au refus, pas a l'acceptation.
+    assert gh.normalize_author_login({"login": "coursia-lane-po-2026"}) == (
+        "coursia-lane-po-2026")
+    assert gh.author_is_bot({"login": "x"}) is False
+    assert gh.author_is_bot({"login": "x", "__typename": "Bot"}) is True
+    assert gh.author_is_bot({"login": "x", "type": "Bot"}) is True
+    assert gh.author_is_bot({"login": "x", "__typename": "User"}) is False
+
+
+def test_un_compte_utilisateur_homonyme_est_refuse():
+    """Le suffixe n'est reconstruit que si le TYPE de l'acteur est `Bot`.
+    Un compte UTILISATEUR nomme comme le slug de l'App
+    ("coursia-lane-po-2026", sans suffixe) doit donc rester refuse : c'est
+    le controle negatif du correctif."""
+    gh = ccd.gh_identity
+    assert gh.normalize_author_login(
+        {"login": "coursia-lane-po-2026", "__typename": "User"}
+    ) == "coursia-lane-po-2026"
+    assert gh.is_accepted_dossier_author(
+        {"login": "coursia-lane-po-2026", "__typename": "User"}) is False
+    assert gh.is_accepted_dossier_author(
+        {"login": "coursia-lane-po-2026", "__typename": "Bot"}) is True
+    assert gh.is_accepted_dossier_author(
+        {"login": "coursia-lane-po-2026[bot]", "type": "Bot"}) is True
+
+
+def test_comptes_humains_non_regresses():
+    """Non-regression : le login partage reste accepte, un compte humain
+    quelconque reste refuse."""
+    gh = ccd.gh_identity
+    assert gh.is_accepted_dossier_author(
+        {"login": "jsboige", "type": "User"}) is True
+    assert gh.is_accepted_dossier_author(
+        {"login": "quelquun-dautre", "type": "User"}) is False
+    assert gh.is_accepted_dossier_author(
+        {"login": "coursia-lane-po-2099[bot]", "type": "Bot"}) is False
+
+
+def test_le_gate_accepte_un_dossier_signe_par_une_app_lue_en_rest(monkeypatch):
+    """Chemin de lecture reel : `_issue_comments` (REST) normalise l'auteur,
+    et le gate accepte ensuite le dossier signe sous une App de lane."""
+    rows = [{
+        "user": {"login": "coursia-lane-po-2026[bot]", "type": "Bot"},
+        "created_at": "2026-09-20T10:00:00Z",
+        "body": _dossier_body(),
+    }]
+    monkeypatch.setattr(ccd, "gh_json", lambda args: rows)
+    comments = ccd._issue_comments("o/r", 17900)
+    assert comments[0]["author"]["login"] == "coursia-lane-po-2026[bot]"
+    snap = _snapshot(comments=comments)
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "CLOSE", errors
+    assert errors == [], errors
+
+
+def test_le_gate_refuse_un_compte_utilisateur_homonyme(monkeypatch):
+    """Meme chemin de lecture, mais l'acteur est un `User` : le suffixe n'est
+    PAS reconstruit, donc le dossier est refuse."""
+    rows = [{
+        "user": {"login": "coursia-lane-po-2026", "type": "User"},
+        "created_at": "2026-09-20T10:00:00Z",
+        "body": _dossier_body(),
+    }]
+    monkeypatch.setattr(ccd, "gh_json", lambda args: rows)
+    comments = ccd._issue_comments("o/r", 17900)
+    assert comments[0]["author"]["login"] == "coursia-lane-po-2026"
+    snap = _snapshot(comments=comments)
+    _, errors, _ = evaluate(snap)
+    assert any(
+        "is not an accepted dossier author" in e for e in errors
+    ), errors
+
+
+def test_les_deux_gates_partagent_le_meme_point_de_normalisation():
+    """Les deux gates comparent l'auteur au meme ensemble : une seule
+    definition de la forme canonique, sinon l'un accepterait un dossier que
+    l'autre refuse (la demi-migration dont #17437 dit le risque)."""
+    import check_adjoint_prevalidation as cap
+    assert cap.gh_identity is ccd.gh_identity
+    assert cap.gh_identity.ACCEPTED_DOSSIER_AUTHORS is (
+        ccd.gh_identity.ACCEPTED_DOSSIER_AUTHORS)

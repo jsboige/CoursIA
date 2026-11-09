@@ -6,7 +6,7 @@ S'applique a TOUS les agents (exécutants, coordinateur, reviewers humains, bots
 
 **Incident origine (2026-05-09)** : 5+ vagues de "fix" cosmétiques sur Sudoku-13 (5 commits structurels depuis mars 2026, `execution_count=null` sur 11/11 cellules code — jamais execute depuis sa creation) ne l'ont jamais detecte, parce que toutes les "validations" ont ete superficielles (rule C.2 vérifiée sur structure JSON, jamais sur l'execution reelle).
 
----
+***
 
 ## H.1 — Validation = execution complete + outputs verifies (HARD)
 
@@ -19,7 +19,7 @@ S'applique a TOUS les agents (exécutants, coordinateur, reviewers humains, bots
 
 Sans ces 4 preuves : la PR n'est PAS validee. Peu importe qui la signe. La verification "structure JSON OK" (rule C.2 historique) est UN sous-ensemble de H.1, pas un substitut.
 
----
+***
 
 ## H.2 — Tous les agents installent l'env complet (HARD)
 
@@ -33,7 +33,7 @@ Chaque machine cluster (po-2023, po-2024, po-2025, po-2026, ai-01) doit pouvoir 
 
 Si un agent ne peut pas executer un notebook → il INSTALLE l'env (peut demander UAC user). Pas de "skip car env manquant", pas de "delegation a un autre agent". Réparation env > contournement (extension de la regle F — cf [docs/env-python-reparation.md](env-python-reparation.md)).
 
----
+***
 
 ## H.3 — Aucun commit de notebook non-execute (HARD)
 
@@ -68,7 +68,7 @@ Activation : `pip install pre-commit && pre-commit install`. Exécution manuelle
 
 Détail du stripper : `scripts/notebook_tools/strip_probe_banner.py`. Le scanner de bornes de blocs `"text/html": [ ... ]` est **JSON-string-aware** (track profondeur de brackets en sautant les caractères dans les chaînes JSON) — une regex naive `[^\]]*` échoue sur les .NET notebooks réels dont l'inline JS `probeAddresses(["http://...","..."])` contient un `]` qui pré-ment clore la liste. Le scanner reconstruit `body_start, body_end` corrects même en présence de crochets imbriqués, et la suppression drop l'élément bannerisé + sa virgule suivante (ou précédente si dernier élément) sans casser le shape `[...]`.
 
----
+***
 
 ## H.4 — Merges coordinateur ne sont JAMAIS complaisants (HARD)
 
@@ -82,7 +82,7 @@ ai-01 (ou tout coordinateur) ne merge PAS une PR notebook sans :
 
 Cascade merge sans audit individuel = violation H.4 = revert + post-mortem dashboard. **Le contre-exemple a ne pas reproduire** : cascade 8 PRs de la nuit 8→9/05 mergee en ~30min en confiant l'audit aux body-PRs sans re-execution locale.
 
----
+***
 
 ## H.5 — Bots reviewers : audit commit-level forensique (HARD)
 
@@ -97,7 +97,7 @@ Si STRUCTURAL_ONLY ou SUSPECT_REGRESSION et le PR claim "fix" / "validate" / "OK
 
 Les bots ne peuvent pas executer les notebooks (pas d'env complet) mais ils peuvent et DOIVENT prouver l'execution via parsing JSON de la diff.
 
----
+***
 
 ## H.6 — Audit historique notebook = responsabilite bot, pas humain
 
@@ -109,7 +109,7 @@ Avant ouverture d'une issue ou PR "le notebook X est casse" / "X n'a jamais marc
 
 Sudoku-13 aurait du sortir `NEVER_EXECUTED_SINCE_<creation>` au premier appel — ca aurait économisé les 5 PRs cosmétiques accumulees depuis mars 2026.
 
----
+***
 
 ## H.7 — Plan de sortie du cycle perpetuel (incident 2026-05-09)
 
@@ -118,16 +118,16 @@ L'audit du 2026-05-09 a révélé un pattern systemique : 988 notebooks repo, do
 **Plan de remediation 4 phases** :
 
 - **P0** : gel des "vagues de fix C.x / cosmetique / enrichissement" sur tous les agents jusqu'a inventaire complet
-- **P1** (48h) : forensique massif sur HEAD courant → `STABLE_SNAPSHOT.md` (matrice 988 notebooks : `ALL_NULL` / `ALL_EXEC` / `PARTIAL` + errors_count + LAST_REAL_EXEC)
+- **P1** (48h) : forensique massif sur HEAD courant → `docs/reference/STABLE_SNAPSHOT.md` (matrice notebooks : `ALL_NULL` / `ALL_EXEC` / `PARTIAL` + errors_count + LAST_REAL_EXEC)
 - **P2** (1 semaine) : pour chaque NEVER_EXECUTED → soit slot agent dedie executant pour de vrai, soit archive avec mention pedagogique explicite "non exécutable en l'etat"
 - **P3** (2 semaines) : workflow GitHub Actions `notebook-execution-required.yml` qui execute via Papermill toute notebook touchee dans une PR. Failure → merge bloque. Runner = Docker compose (.NET + Python + Lean + WSL bypass)
-- **P4** (continu) : `STABLE_SNAPSHOT.md` regenere mensuel, gravant `sha + date + matrice exec_status` → point de reference factuel quand quelqu'un dit "X est valide"
+- **P4** (continu) : `docs/reference/STABLE_SNAPSHOT.md` regenere mensuel, gravant `sha + date + matrice exec_status` → point de reference factuel quand quelqu'un dit "X est valide"
 
 Cf [docs/archive/STABLE_SNAPSHOT.md](../archive/STABLE_SNAPSHOT.md).
 
----
+***
 
-## Ratchet exec-sequence (#11112 tier 2) — échecs fail-by-design assumés (#11577)
+## Ratchet exec-sequence (#11112 tier 2) — échecs fail-by-design assumés (#11577, ack #21273)
 
 Le gate `notebook-exec-sequence-ratchet.yml` échoue **par design** sur toute séquence CLEAN → non-CLEAN. Il existe un cas légitime où l'échec est inévitable : une PR RECOVERABLE-MACHINE qui re-exécute **une cellule unique** (ex. fix d'un loader, #11420) sans pouvoir re-exécuter les cellules aval — l'artefact `scripts/results/**` est gitignored et son runtime (GPU, 10 h+) est hors scope de la PR. La cellule re-exécutée bump son `execution_count` → verdict aval DUPLICATE / NOT_FROM_1.
 
@@ -135,14 +135,23 @@ Le gate `notebook-exec-sequence-ratchet.yml` échoue **par design** sur toute s�
 
 1. La re-exécution complète du notebook est hors scope vérifiable de la PR (artefact aval gitignored + runtime documenté dans le body).
 2. Le guard est **correct** — il détecte exactement ce qu'il doit détecter. Aucun contournement : jamais de hand-edit d'`execution_count` ni de sortie de cellule (règle 6 [secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) — falsifier la preuve d'exécution).
-3. Le body PR documente la séquence dégradée (avant/après chiffrés) **et** le reviewer (ai-01) accuse réception explicitement avant merge.
+3. Le body PR documente la séquence dégradée (avant/après chiffrés) **et** le reviewer (`myia-ai-01`) accuse réception par le **mécanisme d'ack à double clé** (label `exec-sequence-ack` + commentaire/revue `[EXEC-SEQ-ACK] head=<sha40>` à la tête exacte, #21273).
 
-**Précédents** : #11574 (freshness guard fail-by-design, résolu par #11575), #11420 (première instance exec-sequence), #11577 (présente section).
+**Précédents** : #11574 (freshness guard fail-by-design, résolu par #11575), #11420 (première instance exec-sequence), #11577 (présente section), #21273 (mécanisme d'ack à double clé implémenté dans `scripts/ci/exec_sequence_ack_required.py` + `scripts/notebook_tools/check_exec_ratchet.py`).
+
+**Mécanisme d'ack à double clé (#21273)** — le gate consomme l'ack par :
+
+1. Le label `exec-sequence-ack` posé sur la PR.
+2. Un commentaire ou une review sur la PR portant le marker `[EXEC-SEQ-ACK] head=<sha40>` sur sa propre ligne, depuis le **seul login autorisé `myia-ai-01`** (la lane coordinatrice ; `jsboige` ou `clusterManager-Myia` sont des findings, pas des acks).
+3. **Les deux requis** à la tête exacte — un push après l'ack perime le marker et le gate reste rouge (cliquet non désarmé).
+4. **Le geste de sortie** : une fois l'ack posé, **rejouer le job de la garde** (`gh run rerun <run_id> --job <job_id>`) et **ne pas pousser**. Le workflow écoute `labeled` (#21332) : poser le label **après** le commentaire relance la garde d'elle-même, qui lit l'ack en direct — un push, lui, re-perimerait le marker et re-armerait le cliquet.
+
+L'override est **auditable sans être facile** : le marker est journalisé dans le log du job, le verdict ACK est explicite, et un faux ack (label sans marker, marker sans label, marker d'un autre auteur, marker à une tête périmée) échoue toujours.
 
 **Template de commentaire PR réutilisable** (copier, remplacer les `<...>`) :
 
 ```markdown
-**Ratchet exec-sequence — fail-by-design assumé (pattern #11577)**
+**Ratchet exec-sequence — fail-by-design assumé (pattern #11577, ack #21273)**
 
 La séquence de `<notebook>` passe de CLEAN à `<VERDICT>` sur cette PR :
 
@@ -154,11 +163,21 @@ RECOVERABLE-MACHINE, issue #...>). Les cellules aval dépendent de l'artefact
 `<chemin gitignored>` (runtime <durée>, hors scope de cette PR).
 
 Le guard est correct — il détecte ce qu'il doit détecter. La re-exécution
-complète est hors scope. Séquence dégradée documentée ici ; ack reviewer
-explicite requis avant merge.
+complète est hors scope. Séquence dégradée documentée ici.
+
+**Ack demandé** : un commentaire de `myia-ai-01` à la tête exacte de la PR :
+`[EXEC-SEQ-ACK] head=<sha40>` + label `exec-sequence-ack` posé sur la PR
+(**le commentaire d'abord, le label ensuite**).
+Le gate consomme la double clé (label + marker à la tête exacte, #21273) ;
+un push après l'ack perime le marker.
+
+**Geste de sortie** : après l'ack, **rejouer le job de la garde**
+(`gh run rerun <run_id> --job <job_id>`) et **ne pas pousser**. Le workflow
+écoute `labeled` (#21332) : le label posé après le commentaire relance la
+garde, qui lit l'ack en direct.
 ```
 
----
+***
 
 ## References connexes
 

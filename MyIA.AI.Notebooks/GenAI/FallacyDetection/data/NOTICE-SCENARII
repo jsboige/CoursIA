@@ -3,23 +3,25 @@ NOTICE — CoursIA `data/argumentum_scenarii_cards.csv`
 
 Ce fichier est une copie verbatim du fichier amont d'Argumentum
 `Cards/Scenarii/Argumentum Scenarii - Cards.csv` au commit de sous-module
-**0ab05d66576a1007c3952a67e2dd1eaf8f9b502c** (le pin de
-`MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` sur `main` au
-moment de la copie, 2026-09-23).
+**9038690dd8a329dadfc2fdea587f1b87130cf861** (le pin de
+`MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum` sur `main` au
+moment de la resynchronisation, 2026-11-03).
 
 Dépôt source      : https://github.com/ArgumentumGames/Argumentum
 Chemin source     : `Cards/Scenarii/Argumentum Scenarii - Cards.csv`
-SHA1 source       : 9f20eb808a1d22c9c1a5dd1b96460b0d6a23db60 (blob git)
-SHA-256           : 46bf5d62f5930eab3be13c3476ef93b547c54135129bc4514b32213ec457a288
-Licence amont     : GNU Lesser General Public License v3 (LGPL-3.0),
-                    fichier `LICENSE` au commit épinglé.
+SHA1 source       : 640d868fa902c0614733f49b698d7c012baedc49 (blob git)
+SHA-256           : 99498f152c9f84beac35e2b59d89c90988123b54166835a31392bd33c924a7ad
+Licence amont     : CC BY-SA 4.0 pour le corpus éditorial (fichier amont
+                    `LICENSE-CONTENT.md`, commit `956384ac`, décision owner
+                    du 2026-09-21) ; le code du dépôt reste sous LGPL-3.0
+                    (fichier `LICENSE`). Voir la section Licence ci-dessous.
 
 Copie verbatim
 --------------
 
 Identique octet pour octet au fichier amont au commit épinglé : même contenu,
 même encodage (UTF-8 sans BOM), mêmes fins de ligne (CRLF sur les 168 lignes :
-un en-tête + 167 scénarii), 557 564 octets. Aucune modification CoursIA. La
+un en-tête + 167 scénarii), 557 931 octets. Aucune modification CoursIA. La
 règle `-text` du `.gitattributes` racine empêche git de normaliser les fins de
 ligne : le blob stocké reste égal au blob amont.
 `scripts/fallacy_detection/cartesian_dataset_builder.py` refuse de charger le
@@ -33,37 +35,96 @@ produit cartésien Scénarii × taxonomies Argumentum, sur décision owner du
 2026-08-22 : « CoursIA a besoin de tout le matériel, toute les taxonomies en
 entier (pas juste les cartes), ainsi que tous les scenarii pour faire le
 produit cartésien ». Les deux taxonomies sont déjà copiées dans
-`MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/` avec leurs propres
+`MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/` avec leurs propres
 NOTICE ; ce fichier est la troisième source.
 
-Licence — deux marques, la plus stricte s'applique
---------------------------------------------------
+Licence — CC BY-SA 4.0, marque tranchée par l'owner le 2026-09-21
+------------------------------------------------------------------
 
-1. Le dépôt amont est distribué sous **LGPL-3.0** (son fichier `LICENSE`).
-   Conformément à la section 4 de la LGPL v3, les textes de la LGPL et de la
-   GPL-3 sont attachés à ce dépôt dans
-   `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/` :
-     - `LICENSE-LGPL-3.0.txt` — sha256 e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118
-     - `LICENSE-GPL-3.0.txt`  — sha256 3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986
-2. Les cartes Scénarii imprimées portent aussi une marque **Creative Commons
-   BY-NC-SA** : le gabarit de face au commit épinglé
-   (`Cards/Scenarii/Argumentum_Scenarii_Face_fr.json`) affiche les icônes cc,
-   by, nc (dollar) et sa (flèche de retour), suivies de la colonne `CCby`, qui
-   vaut `Argumentum` sur les 167 lignes.
+1. Le corpus éditorial d'Argumentum — dont ce fichier — relève de
+   **CC BY-SA 4.0** : `LICENSE-CONTENT.md` au commit amont `956384ac`
+   (2026-09-21), décision owner consignée dans
+   `docs/licensing/licence-contenu-perimetre-2026-09-21.md` — BY-SA retenu,
+   l'alternative BY-NC-SA lui avait été présentée et écartée. Le périmètre est
+   énuméré (5 fichiers de texte des cartes + 2 ontologies OWL) ;
+   `Cards/Scenarii/Argumentum Scenarii - Cards.csv` en fait partie. Le code
+   du dépôt reste sous **LGPL-3.0** (fichier `LICENSE` ; textes LGPL-3.0 et
+   GPL-3 attachés dans `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/`
+   conformément à la section 4 de la LGPL v3).
+2. Les icônes cc/by/$/sa du pied des cartes imprimées — qui se lisaient
+   **BY-NC-SA** et motivaient la lecture prudente antérieure de ce NOTICE —
+   sont un reste de l'édition 2022 (vignette `ccbyncsa.png` des archives
+   amont), mesuré et reconnu comme défaut par Argumentum, corrigé en amont.
+   La colonne `CCby` (`Argumentum` sur les 167 lignes) reste la marque
+   d'attribution.
+3. **Conséquence sur les dérivés** (splits de la Phase 2, textes générés) :
+   § 3(b) de BY-SA 4.0 — un jeu dérivé du texte sous BY-SA se publie sous
+   BY-SA ou une licence compatible, **sans condition supplémentaire** ; la
+   restriction « non commercial » appliquée précédemment par prudence
+   n'ajoutait pas de protection, elle était non conforme. Les dérivés
+   portent **CC BY-SA 4.0, attribution « Argumentum »**, et la colonne
+   `CCby` suit tout dataset dérivé. Le manifeste de la Phase 2 porte ce
+   bloc dans son champ `licence` (émis par `build_manifest`).
 
-Tant que l'owner n'a pas précisé laquelle des deux marques régit le contenu
-textuel des scénarii, CoursIA applique la lecture la plus stricte à ce fichier
-et à tout ce qui en dérive (splits de la Phase 2, textes générés) :
-**attribution « Argumentum », usage non commercial, partage dans les mêmes
-conditions**. La colonne `CCby` est conservée telle quelle et doit suivre tout
-dataset dérivé.
+Note d'ancrage : la copie initiale était épinglée à `0ab05d66` (2026-09-17),
+antérieure au commit de licence `956384ac` (2026-09-21) ; la décision de
+l'owner couvrait le texte du corpus. Depuis la resynchronisation du
+2026-11-03, la copie lit `9038690dd8`, postérieur à `956384ac` : l'état lu est
+donc explicitement licencié, la réserve est levée.
 
 Resynchronisation
 -----------------
 
-Recopier le fichier depuis le sous-module à son nouveau pin (`git show
-<pin>:"Cards/Scenarii/Argumentum Scenarii - Cards.csv"`), puis mettre à jour
-le commit, le SHA1 et le SHA-256 ci-dessus, ainsi que
-`SCENARII_UPSTREAM_COMMIT` et `SCENARII_BLOB_SHA1` dans le constructeur. Ne
+Recopier le fichier depuis le sous-module à son nouveau pin (`git cat-file
+blob <pin>:"Cards/Scenarii/Argumentum Scenarii - Cards.csv"`), puis mettre à
+jour le commit, le SHA1 et le SHA-256 ci-dessus, ainsi que les quatre
+constantes de provenance du constructeur (`SCENARII_UPSTREAM_COMMIT`,
+`SCENARII_BLOB_SHA1`, `BUILD_REPO_COMMIT`, `BUILD_GITLINK_COMMIT`), puis
+régénérer le manifeste. Ne
 jamais éditer le CSV à la main : le constructeur le refuserait, et la copie
 cesserait d'être verbatim.
+
+Ancrage de reproductibilité côté dépôt (mesure po-2023 du 2026-10-08, #17578)
+---------------------------------------------------------------------------
+
+Le gitlink du sous-module Argumentum sur `main` dérive en continu
+(`0ab05d66` le 17/09 → `65af9c38` le 06/10 → … → `9038690dd8` le 31/10) : un
+`git submodule update` au moment de la lecture ne rend PAS forcément l'entrée
+que le manifeste de Phase 2 épingle. Ce n'est pas une perte de
+reproductibilité — le constructeur lit **cette copie verbatim in-repo**, pas le
+sous-module vivant — mais la reproductibilité doit se lire depuis un commit que
+le dépôt atteint réellement. Depuis la resynchronisation du 2026-11-03 :
+
+- commit de `main` épinglant le pin amont copié : `0dd7c8557cb5e6dd98db43cf89a8dc7e0dcf7c8c`
+  (bump du gitlink `a88947e5` → `9038690`, 2026-10-31)
+- gitlink Argumentum à ce commit : `9038690dd8a329dadfc2fdea587f1b87130cf861`
+  (égal au pin amont par construction : c'est de cet arbre que la copie sort)
+
+La valeur reste lue sur l'arbre d'un commit de `main`, jamais sur le sous-module
+vivant : les deux coïncident aujourd'hui, ils divergeront à la prochaine dérive.
+
+Contenu de la resynchronisation du 2026-11-03
+---------------------------------------------
+
+Même en-tête (70 colonnes) et mêmes 167 scénarii, indexés par la même colonne
+`path` : aucune ligne ajoutée ni retirée. 154 lignes sur 167 changent de
+contenu, sur deux familles mesurées :
+
+- **typographie** — apostrophe courbe `’` dans les colonnes françaises,
+  apostrophe droite `'` dans les colonnes anglaises (l'inverse de l'état
+  antérieur, d'où le grand nombre de lignes touchées pour un écart de 367 octets) ;
+- **traductions** — lots i18n `zh` / `ar` / `fa` / `ru` / `pt` corrigés en amont
+  (phrases tronquées, accords, termes).
+
+Conséquence sur les dérivés : aucun changement de cardinalité ni d'identifiant
+de scénario, donc les comptes et les splits sont inchangés ; seuls les textes
+cités par les sorties de carnets changent (voir `05_dataset_builder.ipynb`,
+ré-exécuté).
+
+Ces deux valeurs sont portées par le manifeste (`sources.build_repo_commit`,
+`sources.build_gitlink_commit`) et par les constantes `BUILD_REPO_COMMIT` /
+`BUILD_GITLINK_COMMIT` du constructeur ; le test
+`test_build_gitlink_matches_repo_commit_tree` vérifie leur cohérence contre
+l'arbre du commit. Une resynchronisation (section ci-dessus) régénère le
+dataset et met ces constantes à jour : la dérive du gitlink courant, elle, ne
+change rien au dataset tant que la procédure n'est pas rejouée.

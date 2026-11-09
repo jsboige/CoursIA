@@ -17,7 +17,9 @@ Anti-pattern safeguards (cf. feedback_ml_trading_pitfalls.md):
     - Walk-forward validation supported (from Stage 0 WalkForwardSplitter)
     - Majority-class baseline computed and reported (must beat to claim edge)
     - Transaction costs deducted from reward computation
-    - RTG uses only future rewards from each timestep (no lookahead)
+    - Training RTG is the canonical sum of the rewards from each timestep on;
+      at evaluation the input RTG is a schedule fixed from the training set,
+      since the realized test RTG would read future test rewards (#21187)
 
 Usage:
     # Dry-run (CPU, synthetic data, 50 steps)
@@ -715,8 +717,12 @@ def evaluate_dt(
     context_length: int = 20,
     batch_size: int = 32,
     device: str = "cpu",
+    rtg_per_step: float | None = None,
 ) -> dict:
     """Evaluate Decision Transformer on test trajectories.
+
+    The metric is next-action imitation of the teacher, not the simulation of
+    a policy that acts on its own decisions.
 
     Args:
         model: Trained DT model.
@@ -724,12 +730,24 @@ def evaluate_dt(
         context_length: Sequence length.
         batch_size: Batch size.
         device: Device.
+        rtg_per_step: Input RTG schedule (#21187). When set, the RTG fed at
+            trajectory step t is ``rtg_per_step * (T - t)``, a target fixed
+            before the test set (the mean training reward per step). When
+            None, the realized test RTG is fed: it sums future test rewards
+            and leaks them into the metric.
 
     Returns:
         Dict with evaluation metrics.
     """
     model.eval()
     criterion = nn.CrossEntropyLoss(reduction="none")
+
+    if rtg_per_step is not None:
+        realized = np.asarray(trajectories["rtg"])
+        n_traj = len(realized)
+        target = rtg_per_step * (n_traj - np.arange(n_traj))
+        trajectories = dict(trajectories)
+        trajectories["rtg"] = target.astype(realized.dtype).reshape(realized.shape)
 
     batches = create_sequence_batches(
         trajectories, context_length=context_length, batch_size=batch_size, shuffle=False
@@ -785,6 +803,7 @@ def evaluate_dt(
         "edge_over_majority": round(
             accuracy - majority_bl.get("majority_class_accuracy", 0.5), 4
         ),
+        "rtg_mode": "realized" if rtg_per_step is None else "fixed-schedule",
     }
 
 
@@ -1021,11 +1040,14 @@ def main():
     )
 
     if len(test_trajs["states"]) > args.context_length:
+        # Input RTG fixed from the training set: the realized test RTG would
+        # leak future test rewards into the metric (#21187).
         oos_metrics = evaluate_dt(
             result["model"], test_trajs,
             context_length=args.context_length,
             batch_size=args.batch_size,
             device=device,
+            rtg_per_step=float(np.mean(train_trajs["rewards"])),
         )
         result["oos_metrics"] = oos_metrics
 
@@ -1109,6 +1131,7 @@ def main():
                     fold_result["model"], fold_test_trajs,
                     context_length=args.context_length,
                     device=device,
+                    rtg_per_step=float(np.mean(fold_trajs["rewards"])),
                 )
                 wf_accuracies.append(fold_eval["test_accuracy"])
                 print(f"  Fold {fold_idx+1}: acc={fold_eval['test_accuracy']:.4f}")

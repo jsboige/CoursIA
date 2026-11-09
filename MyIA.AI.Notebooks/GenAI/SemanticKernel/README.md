@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-SemanticKernel
-pedagogical_count: 20
-breakdown: SemanticKernel=20
-maturity: BETA=15, TEMPLATE=3, DRAFT=2
+pedagogical_count: 23
+breakdown: SemanticKernel=23
+maturity: BETA=18, TEMPLATE=3, DRAFT=2
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Génération de texte](../Texte/README.md)
@@ -27,8 +27,8 @@ Parcours pédagogique complet sur Semantic Kernel en Python :
 | 04 | [SK-4-Filters](04-SemanticKernel-Filters-Observability.ipynb) | Filtres, Logging, OpenTelemetry | 45 min |
 | 05 | [SK-5-VectorStores](05-SemanticKernel-VectorStores.ipynb) | RAG, Embeddings, Qdrant | 50 min |
 | 06 | [SK-6-ProcessFramework](06-SemanticKernel-ProcessFramework.ipynb) | Workflows, Orchestration, State | 40 min |
-| 07 | [SK-7-MultiModal](07-SemanticKernel-MultiModal.ipynb) | DALL-E, Whisper, GPT-4 Vision | 45 min |
-| 08 | [SK-8-MCP](08-SemanticKernel-MCP.ipynb) | Model Context Protocol, Interopérabilité | 45 min |
+| 07 | [SK-7-MultiModal](07-SemanticKernel-MultiModal.ipynb) | DALL-E, Whisper, GPT-5.6 Vision | 45 min |
+| 08 | [SK-8-MCP](08-SemanticKernel-MCP.ipynb) | Model Context Protocol, Interopérabilité | 50 min |
 
 ## Notebooks avancés (Python/C# Interop)
 
@@ -38,6 +38,7 @@ Parcours pédagogique complet sur Semantic Kernel en Python :
 | 10 | [SK-10-NotebookMaker](10-SemanticKernel-NotebookMaker.ipynb) | **Système 3-agents** interactif (Admin, Coder, Reviewer) avec function calling | 60 min |
 | 10a | [SK-10a-NotebookMaker-batch](10a-SemanticKernel-NotebookMaker-batch.ipynb) | Version batch avec contexte agentique borné et budget de tours | 30 min |
 | 10b | [SK-10b-NotebookMaker-batch-param](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) | Version batch paramétrée pour Papermill | 30 min |
+| 11 | [SK-11-A2A](11-SemanticKernel-A2A.ipynb) | Le protocole Agent2Agent à côté de MCP : AgentCard, serveur FastAPI local, cycle de vie des tâches, échange client réel | 40 min |
 
 ## Démos interactives (curriculum)
 
@@ -49,6 +50,8 @@ Ces notebooks appliquent Semantic Kernel à des cas d'usage concrets. Ils font p
 | [Créateur de mail personnalisé](Créateur%20de%20mail%20personnalisé.ipynb) | Python | Workflow multi-agents SK (InputCollector, EmailGenerator) pour la rédaction de courriels | 3 |
 | [fort-boyard-csharp](fort-boyard-csharp.ipynb) | C# (.NET) | AgentGroupChat : duel Père Fouras vs Laurent Jalabert (jeu de devinette) | 3 |
 | [fort-boyard-python](fort-boyard-python.ipynb) | Python | Contrepartie Python du duel Fort Boyard (TerminationStrategy personnalisee) | 3 |
+| [Semantic-fleet-Radix-PromptMatcher](Semantic-fleet-Radix-PromptMatcher.ipynb) | C# (.NET) | **Routage MultiConnector par préfixe** : matcher radix-tree de l'organe réel du sous-module `semantic-fleet` (plus long préfixe) vs scan O(n), incluant le branchement drop-in du délégué `PromptMatcher` | 3 |
+| [Semantic-fleet-MultiConnector-Routing](Semantic-fleet-MultiConnector-Routing.ipynb) | C# (.NET) | **Routage MultiConnector entre modèles réels** : l'organe `Connectors.AI.MultiConnector` route chaque prompt (par préfixe de signature) vers trois fournisseurs réels — OpenAI direct et deux modèles via OpenRouter — avec arbitre pondéré coût/latence, repli du connecteur principal et échec bloquant sur préfixe inconnu | 3 |
 
 ## Templates
 
@@ -64,7 +67,7 @@ Ces notebooks appliquent Semantic Kernel à des cas d'usage concrets. Ils font p
 
 | Fichier | Nature | Origine |
 |---------|--------|---------|
-| [Notebook-Generated](Notebook-Generated.ipynb) | Scaffold généré (dataset Iris générique) | Output du [NotebookMaker](10-SemanticKernel-NotebookMaker.ipynb) / [AutoInteractive](Semantic-kernel-AutoInteractive.ipynb) |
+| [Notebook-Generated](Notebook-Generated.ipynb) | Scaffold généré (dataset Titanic) | Output du [NotebookMaker](10-SemanticKernel-NotebookMaker.ipynb) / [AutoInteractive](Semantic-kernel-AutoInteractive.ipynb) |
 | `Créateur de mail personnalisé_output.ipynb` | Copie exécutée Papermill | Artefact d'exécution de [Créateur de mail personnalisé](Cr%C3%A9ateur%20de%20mail%20personnalis%C3%A9.ipynb) (suffixe `_output`, non tracké : produit local d'une exécution Papermill) |
 
 Le notebook canonique « Créateur de mail personnalisé » (sans suffixe `_output`) est, lui, un vrai notebook de curriculum (cf. table [Démos interactives](#démos-interactives-curriculum)).

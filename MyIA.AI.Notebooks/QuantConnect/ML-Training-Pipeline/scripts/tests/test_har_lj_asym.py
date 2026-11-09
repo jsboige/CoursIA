@@ -98,6 +98,14 @@ def synthetic_lj_components() -> dict[str, dict[str, pd.Series]]:
     }
 
 
+def _baseline_targets(rv: pd.Series, horizon: int, index: pd.DatetimeIndex) -> pd.Series:
+    """Baseline dates label the first target day, not the forecast origin."""
+    from realized_variance import realized_variance_to_log
+
+    target = realized_variance_to_log(rv).rolling(horizon).mean().shift(-horizon)
+    return target.shift(1).reindex(index)
+
+
 # ---------------------------------------------------------------------------
 # Concern #1 — anti-leak test for the per-fold train-tail bias estimator
 # ---------------------------------------------------------------------------
@@ -171,6 +179,7 @@ def test_walk_forward_har_called_with_calibrate_bias_when_debias(
         return {
             "forecasts": pd.Series(np.zeros(n), index=idx, name="fc"),
             "aggregate_mse_logrv": 0.0,
+            "targets": _baseline_targets(rv, horizon, idx),
         }
 
     monkeypatch.setattr("har_lj_asym.walk_forward_har", spy_walk_forward_har)
@@ -201,6 +210,7 @@ def test_walk_forward_har_called_with_calibrate_bias_false_when_no_debias(
         return {
             "forecasts": pd.Series(np.zeros(n), index=idx, name="fc"),
             "aggregate_mse_logrv": 0.0,
+            "targets": _baseline_targets(rv, horizon, idx),
         }
 
     monkeypatch.setattr("har_lj_asym.walk_forward_har", spy_walk_forward_har)
@@ -348,6 +358,7 @@ def test_eval_one_coin_emits_manifest_hashes(
                 index=idx, name="fc_har",
             ),
             "aggregate_mse_logrv": 0.9,
+            "targets": _baseline_targets(rv, horizon, idx),
         }
 
     monkeypatch.setattr("har_lj_asym.walk_forward_har", fake_walk_forward_har)
@@ -393,6 +404,7 @@ def test_panel_hash_consistent_across_seeds(
                 index=idx, name="fc_har",
             ),
             "aggregate_mse_logrv": 0.9,
+            "targets": _baseline_targets(rv, horizon, idx),
         }
 
     monkeypatch.setattr("har_lj_asym.walk_forward_har", fake_walk_forward_har)
@@ -484,6 +496,7 @@ def test_mse_decomposition_equals_empirical_mean_squared_error(
         return {
             "forecasts": pd.Series(np.zeros(n), index=idx, name="fc_har"),
             "aggregate_mse_logrv": 0.0,
+            "targets": _baseline_targets(rv, horizon, idx),
         }
 
     monkeypatch.setattr("har_lj_asym.walk_forward_har", fake_walk_forward_har)
@@ -522,6 +535,7 @@ def test_mse_har_debiased_is_nan_when_debias_false(
         return {
             "forecasts": pd.Series(np.zeros(n), index=idx, name="fc"),
             "aggregate_mse_logrv": 0.0,
+            "targets": _baseline_targets(rv, horizon, idx),
         }
 
     monkeypatch.setattr("har_lj_asym.walk_forward_har", fake_walk_forward_har)
@@ -727,6 +741,7 @@ def test_walk_forward_har_rv_j_receives_calibrate_bias_when_debias(
         return {
             "forecasts": pd.Series(np.zeros(n), index=idx, name="fc"),
             "aggregate_mse_logrv": 0.0,
+            "targets": _baseline_targets(rv, horizon, idx),
         }
 
     monkeypatch.setattr(
@@ -759,6 +774,7 @@ def test_walk_forward_har_rv_j_receives_calibrate_bias_false_when_no_debias(
         return {
             "forecasts": pd.Series(np.zeros(n), index=idx, name="fc"),
             "aggregate_mse_logrv": 0.0,
+            "targets": _baseline_targets(rv, horizon, idx),
         }
 
     monkeypatch.setattr(
@@ -798,6 +814,7 @@ def test_mse_har_raw_and_debiased_distinct_when_debias(
                 index=idx, name="fc_har",
             ),
             "aggregate_mse_logrv": 0.9,
+            "targets": _baseline_targets(rv, horizon, idx),
         }
 
     monkeypatch.setattr(
@@ -1060,10 +1077,10 @@ def test_per_fold_bounds_aligned_with_per_fold_bias(
     for k, (b, bd) in enumerate(zip(biases, bounds)):
         assert bd["fold_idx"] == k
         expected_split = (k + 1) * fold_size
-        assert bd["train_end_idx"] == expected_split
+        assert bd["train_end_idx"] == expected_split - 1
         assert bd["oos_start_idx"] == expected_split
         assert bd["oos_end_idx"] == expected_split + fold_size
-        assert bd["n_train"] == expected_split
+        assert bd["n_train"] == expected_split - 1
         assert bd["n_oos"] == fold_size
 
 
@@ -1237,8 +1254,8 @@ def test_walk_forward_lj_asym_oos_target_invariance_multi_fold(monkeypatch):
 
     # --- Per-fold train-tail sensitivity ---
     for k in range(n_splits):
-        lo = cutoffs[k] - calibration_size
-        hi = cutoffs[k]
+        lo = cutoffs[k] - calibration_size - horizon
+        hi = cutoffs[k] - horizon
         monkeypatch.setattr(
             module, "realized_variance_to_log", shift_from(lo, hi),
         )
@@ -1286,6 +1303,7 @@ def test_bounds_provenance_in_manifest(synthetic_lj_components, monkeypatch):
         return {
             "forecasts": pd.Series(np.zeros(n), index=idx, name="fc_har"),
             "aggregate_mse_logrv": 0.9,
+            "targets": _baseline_targets(rv, horizon, idx),
         }
 
     monkeypatch.setattr("har_lj_asym.walk_forward_har", fake_walk_forward_har)
@@ -1312,15 +1330,16 @@ def test_bounds_provenance_in_manifest(synthetic_lj_components, monkeypatch):
         merged["log_rv"].rolling(horizon).mean().shift(-horizon).notna().sum()
     )
     fold_size = n_total // (N_SPLITS + 1)
-    expected_train_end = N_SPLITS * fold_size
+    expected_split = N_SPLITS * fold_size
+    expected_train_end = expected_split - horizon
 
     b = row["bounds_train_test"]
     assert b is not None, "bounds_train_test missing from the result row"
-    assert b["train_end_idx"] == expected_train_end == N_SPLITS * (n_total // (N_SPLITS + 1))
-    assert b["oos_start_idx"] == expected_train_end + horizon
-    assert b["oos_end_idx"] == n_total
+    assert b["train_end_idx"] == expected_train_end
+    assert b["oos_start_idx"] == expected_split
+    assert b["oos_end_idx"] == (N_SPLITS + 1) * fold_size
     assert b["n_train"] == expected_train_end
-    assert b["n_oos"] == n_total - expected_train_end
+    assert b["n_oos"] == N_SPLITS * fold_size
 
     # Manifest write path: the bounds must be JSON-serializable as-is.
     json.dumps(b)
@@ -1331,6 +1350,24 @@ def test_bounds_provenance_in_manifest(synthetic_lj_components, monkeypatch):
     for h16 in row["fc_lj_hash_per_fold"]:
         assert isinstance(h16, str) and len(h16) == 16
         int(h16, 16)  # hex parseable
+    assert len(row["fc_content_hash_per_fold"]) == N_SPLITS
+    for h16 in row["fc_content_hash_per_fold"]:
+        assert isinstance(h16, str) and len(h16) == 16
+        int(h16, 16)
+
+    shifted = {
+        "BTC-USD": {
+            name: pd.Series(series.to_numpy(), index=series.index + pd.Timedelta(days=1))
+            for name, series in comp.items()
+        }
+    }
+    shifted_row = _eval_one_coin(
+        "BTC-USD", horizon=horizon, seed=0,
+        components=shifted, debias=True, calibration_size=60,
+    )
+    assert shifted_row is not None
+    assert shifted_row["fc_lj_hash"] == row["fc_lj_hash"]
+    assert shifted_row["fc_content_hash_per_fold"] != row["fc_content_hash_per_fold"]
 
     # aggregate_verdicts relays the bounds per (coin, horizon) with the
     # cross-seed consistency flag (deterministic OLS -> identical bounds).
@@ -1346,3 +1383,153 @@ def test_bounds_provenance_in_manifest(synthetic_lj_components, monkeypatch):
     agg = aggregate_verdicts(rows)[0]
     assert agg["bounds_train_test"] == rows[0]["bounds_train_test"]
     assert agg["bounds_consistent_across_seeds"] is True
+    assert rows[0]["fc_content_hash_per_fold"] == rows[1]["fc_content_hash_per_fold"]
+
+
+@pytest.mark.parametrize("horizon", [1, 5, 10])
+def test_eval_joins_forecasts_on_origin_and_shared_target(
+    synthetic_lj_components, horizon,
+):
+    """The DM input uses common origins, never positional truncation."""
+    from har_lj_asym import _eval_one_coin, walk_forward_lj_asym
+    from har_model import walk_forward_har
+    from m12_har_rv_j import walk_forward_har_rv_j
+    from realized_variance import realized_variance_to_log
+
+    comp = synthetic_lj_components["BTC-USD"]
+    rv = comp["rv"]
+    lj = walk_forward_lj_asym(
+        rv, comp["rv_neg"], comp["rv_pos"], comp["rv_c"], comp["rv_j"],
+        horizon, 0, debias=True,
+    )
+    har = walk_forward_har(rv, horizon, calibrate_bias=True)
+    m12 = walk_forward_har_rv_j(rv, comp["rv_j"], horizon, calibrate_bias=True)
+    lj_dates = pd.DatetimeIndex([
+        lj["index_all"][i] for bound in lj["per_fold_bounds"]
+        for i in range(bound["oos_start_idx"], bound["oos_end_idx"])
+    ])
+    rv_index = rv.dropna().index
+    har_origins = rv_index[rv_index.get_indexer(har["forecasts"].index) - 1]
+    m12_origins = rv_index[rv_index.get_indexer(m12["forecasts"].index) - 1]
+    common = lj_dates.intersection(har_origins).intersection(m12_origins).sort_values()
+    expected = realized_variance_to_log(rv).rolling(horizon).mean().shift(-horizon)
+    np.testing.assert_allclose(
+        pd.Series(lj["targets"], index=lj_dates).loc[common],
+        expected.loc[common], rtol=1e-12, atol=1e-12,
+    )
+
+    row = _eval_one_coin("BTC-USD", horizon, 0, synthetic_lj_components, debias=True)
+    assert row is not None
+    assert row["n_obs"] == len(common)
+    assert row["aligned_origin_first"] == str(common[0])
+    assert row["aligned_origin_last"] == str(common[-1])
+    assert row["aligned_dates_hash"] == hashlib.sha256(
+        common.asi8.astype(np.int64).tobytes()
+    ).hexdigest()[:16]
+    aligned_target = expected.loc[common].to_numpy(dtype=np.float64)
+    assert row["tgt_hash"] == hashlib.sha256(aligned_target.tobytes()).hexdigest()[:16]
+    for result, field in ((har, "fc_har_hash"), (m12, "fc_m12_hash")):
+        forecast_by_origin = pd.Series(
+            result["forecasts"].to_numpy(),
+            index=rv_index[rv_index.get_indexer(result["forecasts"].index) - 1],
+        )
+        aligned_forecast = forecast_by_origin.loc[common].to_numpy(dtype=np.float64)
+        assert row[field] == hashlib.sha256(aligned_forecast.tobytes()).hexdigest()[:16]
+    assert row["fc_lj_hash"] == hashlib.sha256(
+        pd.Series(lj["forecasts_debiased"], index=lj_dates)
+        .loc[common].to_numpy(dtype=np.float64).tobytes()
+    ).hexdigest()[:16]
+
+
+def test_eval_rejects_baseline_target_mismatch(synthetic_lj_components, monkeypatch):
+    """Matching dates without matching outcomes cannot feed a paired DM test."""
+    import har_lj_asym
+
+    original = har_lj_asym.walk_forward_har
+
+    def wrong_target(rv, horizon, *args, **kwargs):
+        result = original(rv, horizon, *args, **kwargs)
+        result["targets"] = result["targets"] + 1.0
+        return result
+
+    monkeypatch.setattr(har_lj_asym, "walk_forward_har", wrong_target)
+    with pytest.raises(ValueError, match="HAR raw target differs"):
+        har_lj_asym._eval_one_coin(
+            "BTC-USD", 5, 0, synthetic_lj_components, debias=True,
+        )
+
+
+def test_purged_train_does_not_read_first_oos_target_day(
+    synthetic_lj_components, monkeypatch,
+):
+    """An h-step label crossing the train/test boundary must be excluded."""
+    import har_lj_asym
+
+    comp = synthetic_lj_components["BTC-USD"]
+    rv = comp["rv"]
+    kwargs = dict(horizon=5, seed=0, debias=True)
+    base = har_lj_asym.walk_forward_lj_asym(
+        rv, comp["rv_neg"], comp["rv_pos"], comp["rv_c"], comp["rv_j"], **kwargs,
+    )
+    first_bound = base["per_fold_bounds"][0]
+    split_date = base["index_all"][first_bound["oos_start_idx"]]
+    first_target_date = rv.index[rv.index.get_loc(split_date) + 1]
+    assert first_bound["train_end_idx"] == first_bound["oos_start_idx"] - 5
+    original = har_lj_asym.realized_variance_to_log
+
+    def changed_target(series):
+        target = original(series).copy()
+        target.loc[first_target_date] += 100.0
+        return target
+
+    monkeypatch.setattr(har_lj_asym, "realized_variance_to_log", changed_target)
+    changed = har_lj_asym.walk_forward_lj_asym(
+        rv, comp["rv_neg"], comp["rv_pos"], comp["rv_c"], comp["rv_j"], **kwargs,
+    )
+    np.testing.assert_allclose(
+        changed["forecasts"][:first_bound["n_oos"]],
+        base["forecasts"][:first_bound["n_oos"]], rtol=1e-12, atol=1e-12,
+    )
+    np.testing.assert_allclose(changed["per_fold_bias"][0], base["per_fold_bias"][0])
+    assert not np.allclose(
+        changed["targets"][:first_bound["n_oos"]],
+        base["targets"][:first_bound["n_oos"]],
+    )
+
+
+def test_main_rejects_incomplete_panel(monkeypatch, capsys):
+    """A failed requested asset must not produce a partial-cluster verdict."""
+    import har_lj_asym
+
+    monkeypatch.setattr(
+        har_lj_asym, "_load_panel",
+        lambda skip_remote: ({"BTC-USD": object()}, {"ETH-USD": "fetch failed"}),
+    )
+    monkeypatch.setattr(
+        sys, "argv", ["har_lj_asym.py", "--coins", "BTC-USD", "ETH-USD"],
+    )
+
+    with pytest.raises(SystemExit) as exc:
+        har_lj_asym.main()
+
+    assert exc.value.code == 2
+    assert "ETH-USD (fetch failed)" in capsys.readouterr().err
+
+
+def test_main_rejects_skipped_combinations(monkeypatch, tmp_path):
+    """An incomplete run must fail before writing a cluster result."""
+    import har_lj_asym
+
+    panel = {"BTC-USD": pd.Series([0.0])}
+    monkeypatch.setattr(har_lj_asym, "_load_panel", lambda skip_remote: (panel, {}))
+    monkeypatch.setattr(har_lj_asym, "compute_daily_components", lambda panel: {})
+    monkeypatch.setattr(har_lj_asym, "_eval_one_coin", lambda *args, **kwargs: None)
+    monkeypatch.setattr(har_lj_asym, "RESULTS_DIR", tmp_path)
+    monkeypatch.setattr(
+        sys, "argv", ["har_lj_asym.py", "--coins", "BTC-USD", "--horizons", "1", "--seeds", "0"],
+    )
+
+    with pytest.raises(RuntimeError, match="1/1 combinations skipped"):
+        har_lj_asym.main()
+
+    assert list(tmp_path.iterdir()) == []

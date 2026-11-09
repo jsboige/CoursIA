@@ -11,7 +11,7 @@ Reference: Conway, J.H. — *On Numbers and Games* (2001).
 
 ## Status
 
-- **Toolchain**: `leanprover/lean4:v4.31.0-rc2` (tracks the upstream repo, per the effective `lean-toolchain` pin)
+- **Toolchain**: `leanprover/lean4:v4.33.0-rc1` (tracks the upstream repo — latest revision of its 4.33 window, #14773 Phase 5)
 - **Sorry**: **0** — the file is a tour of `#check`s and docstrings, no proofs
 - **Build**: `lake build CGTTour` (depends on Mathlib4 + CombinatorialGames)
 - **Dependencies**:
@@ -65,7 +65,7 @@ The file imports the upstream modules and exhibits their key results:
 | Games | `PGame` (basic) | `IGame` (concrete) + `Game` (quotient) |
 | Surreals | Basic/Dyadic/Mul | + Division, Hahn series, Birthday, Pow |
 | Nimbers | Basic/Field | + Nat, SimplestExtension |
-| Games lib | 8 modules | 15+ modules (Impartial, Loopy, Specific…) |
+| Games lib | CGT modules | upstream modules (Impartial, Loopy, Specific…) |
 
 ## Modules
 

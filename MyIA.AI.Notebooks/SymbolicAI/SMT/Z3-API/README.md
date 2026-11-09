@@ -11,9 +11,39 @@ maturity:
 
 ## Série en quelques mots
 
-L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série de **28 notebooks canoniques** : **18 notebooks Python principaux** (z3-solver + matplotlib) couvrent la satisfaction de contraintes, l'optimisation avancée, l'ordonnancement combinatoire, les énigmes logiques (CSP), l'arithmétique symbolique (cryptarithmes), la coloration de graphe (NP-complet), l'arithmétique réelle exacte (irrationnels algébriques), l'explication de l'insatisfiabilité (UNSAT cores), l'arithmétique machine bornée (bit-vectors, débordement), la modélisation de grilles 2D (tableaux imbriqués, carrés latins et magiques), l'optimisation réaliste d'un meal-planner hebdomadaire (matrice booléenne `jours × plats`), la théorie générale des tableaux (`Select`/`Store` et axiomes de McCarthy), la comparaison des modes de résolution d'un même Sudoku (`Array` vs `Constants`) et le pont déclaratif avec la série sœur Z3.Linq (C#) ; **6 twins C# .NET** (notebooks 01ᶜˢ-06ᶜˢ) assurent la parité langage ; **4 compagnons Meal-Planner** (16b/c/d/e, statut BETA) étendent le module 16 sur un corpus réel (Ciqual ANSES 2025 × RecipeML).
+L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série canonique : les notebooks Python principaux (z3-solver + matplotlib) couvrent la satisfaction de contraintes, l'optimisation avancée, l'ordonnancement combinatoire, les énigmes logiques (CSP), l'arithmétique symbolique (cryptarithmes), la coloration de graphe (NP-complet), l'arithmétique réelle exacte (irrationnels algébriques), l'explication de l'insatisfiabilité (UNSAT cores), l'arithmétique machine bornée (bit-vectors, débordement), la modélisation de grilles 2D (tableaux imbriqués, carrés latins et magiques), l'optimisation réaliste d'un meal-planner hebdomadaire (matrice booléenne `jours × plats`), la théorie générale des tableaux (`Select`/`Store` et axiomes de McCarthy), la comparaison des modes de résolution d'un même Sudoku (`Array` vs `Constants`) et le pont déclaratif avec la série sœur Z3.Linq (C#) ; **6 twins C# .NET** (notebooks 01ᶜˢ-06ᶜˢ) assurent la parité langage ; **4 compagnons Meal-Planner** (16b/c/d/e, statut BETA) étendent le module 16 sur un corpus réel (Ciqual ANSES 2025 × RecipeML).
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs Python souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de la syntaxe de base de z3-py pour monter progressivement vers l'optimisation et la modélisation de problèmes combinatoires.
+
+## Ouvrage de référence
+
+**Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)** — l'ouvrage-ancrage de la série. Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT, organisé en chapitres thématiques (théories, tactiques, optimisation, puzzles, UNSAT cores, bit-vectors, arithmétique réelle, etc.) qui correspondent chapitre par chapitre aux notebooks de cette série. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`).
+
+### Index chapitré (série Z3-API ↔ Yurichev)
+
+| Carnet | Section Yurichev | Thème |
+|--------|-----------------|-------|
+| Z3-01, Z3-01ᶜˢ | Ch. 1 Introduction (p. 11) + Ch. 2 Basics (p. 14) | Solver API, théories de base, modèles |
+| Z3-01b | Ch. 9 Graph coloring (p. 317) | `assert_and_track`, coloration de graphe (Australie) |
+| Z3-02, Z3-02ᶜˢ | §8.1 Sudoku (p. 205), Ch. 8 Recreational mathematics and puzzles | Sudoku comme CSP, visualisation |
+| Z3-03, Z3-03ᶜˢ | Ch. 16 Toy decompiler (Tactic, p. 469) + Ch. 5 Verification (BitVec, p. 132) | `Tactic`, `BitVec`, `Array` |
+| Z3-04, Z3-04ᶜˢ | Ch. 6 Regular expressions (p. 166) | `String`, `Re` (théorie des chaînes) |
+| Z3-05, Z3-05ᶜˢ | Ch. 20 First-Order Logic (p. 559) | `ForAll`, `Exists`, réfutation, `unknown` |
+| Z3-06, Z3-06ᶜˢ | Ch. 14 MaxSAT/MaxSMT (p. 383) | `Optimize`, MaxSAT, Pareto |
+| Z3-08 | Ch. 10 Knapsack problems (p. 332) | `Optimize.minimize`, ordonnancement |
+| Z3-09 | §8.2 Zebra puzzle (p. 232), Ch. 8 | Einstein's riddle / Zebra puzzle |
+| Z3-10 | §8.10 Alphametics (p. 276), Ch. 8 | Cryptarithmetic SEND + MORE = MONEY |
+| Z3-11 | Ch. 9 Graph coloring (p. 317) | Coloration de graphe, nombre chromatique |
+| Z3-12 | Ch. 4 Proofs (p. 106) | Real arithmetic, irrationnels algébriques |
+| Z3-13 | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | UNSAT cores, `assert_and_track` |
+| Z3-13b | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | MUS (Minimal Unsatisfiable Subset) |
+| Z3-14 | §5.1 Integer overflow (p. 132), Ch. 5 Verification | Bit-vectors, overflow, `ULT`/`UGE` |
+| Z3-15 | Ch. 12 Latin squares (p. 346) + §12.4 Magic/Latin square of Knut Vik design (p. 361), Ch. 8 §8.1 Sudoku (p. 205) | Nested arrays 2D, carré magique |
+| Z3-16 | Ch. 14 §14.5 Assignment problem (p. 397) + §14.8 Packing students into a dorm (p. 405), Ch. 22 §22.8 Job Shop Scheduling/Problem (p. 633) | Optimize, plan hebdomadaire — **voisine de thème**, pas une section portée : le carnet ne met en œuvre **aucune** des trois sections citées (§14.5 et §14.8 sont portées par `Z3-06`, §22.8 par `Z3-08`) ; le rattachement est la même famille de problèmes d'allocation et d'ordonnancement |
+| Z3-17 | §3.13 Recalculating micro-spreadsheet (p. 88), Ch. 3 | Array theory général, `Select`/`Store` |
+| Z3-18 | §8.1 Sudoku (p. 205), Ch. 8 | Sudoku modes `Array` vs `Constants` |
+
+Le **crédit explicite** à l'ouvrage est porté par une cellule `## Source` d'introduction — il n'est **pas** systématique : les carnets `Z3-09` (énigme d'Einstein), `Z3-10` (cryptarithmes) et `Z3-11` (coloriage de graphe) n'en portent pas, et leur rattachement à l'ouvrage est **thématique** (index chapitré ci-dessus), non un crédit d'instance. À l'inverse, `Z3-01b` (coloriage de carte), `Z3-06`, `Z3-08` et, dans la série sœur `Z3-Linq2Z3`, `13_Cryptarithmetic_SMT` et `18_Einsteins_Riddle` portent ce crédit dans une cellule `## Source`. À noter : « Z3: An Efficient SMT Solver » (de Moura & Bjørner, TACAS 2008) est le **papier de référence** du solveur, déjà référencé dans le dépôt. Le **livre pratique** de Yurichev, distinct du papier, est désormais référencé comme ouvrage-ancrage de la série.
 
 ## Présentation
 
@@ -52,9 +82,9 @@ Une série sœur existe en C# : [SymbolicAI/Z3-Linq2Z3/](../Z3-Linq2Z3/README.md
 | 01b | [Du style déclaratif LINQ au solveur Z3](Z3-01b-Style-Declaratif-Linq.ipynb) | Pont C# Z3.Linq ↔ pyz3 : `assert_and_track`, `unsat_core`, coloration de graphe (Australie) | ~30 min | PRODUCTION |
 | 02 | [Sudoku](Z3-02-Sudoku-Python.ipynb) | Sudoku comme CSP, `Distinct`, visualisation matplotlib | ~25 min | PRODUCTION |
 | 02ᶜˢ | [Sudoku (twin C# .NET)](Z3-02-Sudoku-CSharp.ipynb) | Parité .NET : même moteur Z3, visualisation ASCII | ~25 min | PRODUCTION |
-| 03 | [Tactiques et théories](Z3-03-Tactics-Python.ipynb) | `Tactic`, `BitVec`, `Array` | ~35 min | PRODUCTION |
+| 03 | [Tactiques et théories](Z3-03-Tactics-Python.ipynb) | `Tactic`, `BitVec`, `Array` | ~40 min | PRODUCTION |
 | 03ᶜˢ | [Tactiques et théories (twin C# .NET)](Z3-03-Tactics-CSharp.ipynb) | Parité .NET : tactiques, `BitVec`, `Array` via `Microsoft.Z3` (NuGet) | ~35 min | PRODUCTION |
-| 04 | [Chaînes et expressions régulières](Z3-04-Strings-Regex-Python.ipynb) | `String`, `Re` (théorie des chaînes Z3) | ~30 min | PRODUCTION |
+| 04 | [Chaînes et expressions régulières](Z3-04-Strings-Regex-Python.ipynb) | `String`, `Re` (théorie des chaînes Z3) | ~35 min | PRODUCTION |
 | 04ᶜˢ | [Chaînes et expressions régulières (twin C# .NET)](Z3-04-Strings-Regex-CSharp.ipynb) | Parité .NET : théorie des chaînes, regex via `Microsoft.Z3` (NuGet) | ~30 min | PRODUCTION |
 | 05 | [Quantificateurs et preuves](Z3-05-Quantifiers-Proofs-Python.ipynb) | `ForAll`, `Exists`, preuves par réfutation, `unknown` | ~35 min | PRODUCTION |
 | 05ᶜˢ | [Quantificateurs et preuves (twin C# .NET)](Z3-05-Quantifiers-Proofs-CSharp.ipynb) | Parité .NET : `MkForall`, `MkExists`, réfutation, `ReasonUnknown` via `Microsoft.Z3` (NuGet) | ~35 min | PRODUCTION |
@@ -65,7 +95,8 @@ Une série sœur existe en C# : [SymbolicAI/Z3-Linq2Z3/](../Z3-Linq2Z3/README.md
 | 10 | [Cryptarithmes (SEND + MORE = MONEY)](Z3-10-Cryptarithmetic-Python.ipynb) | `Int`, `Distinct`, équation positionnelle, propagation vs brute force, retenues déduites | ~25 min | PRODUCTION |
 | 11 | [Coloration de graphe (Petersen)](Z3-11-Graph-Coloring-Python.ipynb) | `Int` par sommet, contraintes d'arêtes `!=`, recherche linéaire du nombre chromatique, `unsat` = preuve d'optimalité | ~30 min | PRODUCTION |
 | 12 | [Arithmétique réelle](Z3-12-Real-Arithmetic-Python.ipynb) | Théorie `Real`, solution rationnelle exacte, irrationnel algébrique (racine de 2 comme `root-obj`), preuve d'absence sur R (`unsat`) | ~25 min | PRODUCTION |
-| 13 | [UNSAT cores](Z3-Python-13-UnsatCores.ipynb) | `assert_and_track`, `unsat_core()`, noyau minimal d'insatisfiabilité, diagnostic des contraintes conflictuelles | ~25 min | PRODUCTION |
+| 13 | [UNSAT cores](Z3-13-UnsatCores-Python.ipynb) | `assert_and_track`, `unsat_core()`, noyau minimal d'insatisfiabilité, diagnostic des contraintes conflictuelles | ~25 min | PRODUCTION |
+| 13b | [UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) | Compagnon du 13 : core invisible à l'inspection (chaîne de précédences), minimalité non garantie par Z3, MUS (Minimal Unsatisfiable Subset) par algorithme deletion-based, deux preuves du même UNSAT | ~20 min | BETA |
 | 14 | [Bit-vectors](Z3-14-BitVectors-Overflow-Python.ipynb) | Théorie `BitVec`, débordement arithmétique (`ULT`/`UGE`), preuve d'inévitabilité/sécurité, extraction de champ bit-à-bit | ~30 min | PRODUCTION |
 | 15 | [Tableaux imbriqués et grilles 2D](Z3-15-Nested-Arrays-2D-Python.ipynb) | Grille 2D déclarative (`Distinct`/`Sum`) vs brute (`Array` de `Array`, `Store`/`Select`), carré latin, Sudoku 4×4, carré magique | ~30 min | PRODUCTION |
 | 16 | [Meal-Planner déclaratif](Z3-16-Meal-Planner-Python.ipynb) | Menu équilibré (index / énumération / booléen), `Optimize.minimize` du coût, plan hebdomadaire matriciel `jours × plats` vs glouton | ~35 min | PRODUCTION |
@@ -75,6 +106,8 @@ Une série sœur existe en C# : [SymbolicAI/Z3-Linq2Z3/](../Z3-Linq2Z3/README.md
 | 16e | [Meal-Planner : optimisation](Z3-16e-Meal-Planner-Optimize-Python.ipynb) | Optimisation (compagnon du 16) : du SAT à l'OPT — `minimize`/`maximize`, `add_soft` (MaxSAT souple), multi-objectif natif (`pareto`/`box`), glouton vs optimum global | ~45 min | BETA |
 | 17 | [Théorie des tableaux](Z3-17-Array-Theory-Python.ipynb) | `Array` sort, `Select`/`Store`, axiomes de McCarthy (read-over-write) vérifiés comme théorèmes, tableau trié / égalité de tableaux | ~30 min | PRODUCTION |
 | 18 | [Sudoku 4×4 : modes Array vs Constants](Z3-18-Sudoku-Modes-Python.ipynb) | Même Sudoku 4×4 encodé deux fois (variables `Int` par cellule vs `Array(Int, Int)`), comparaison des deux modes d'encodage | ~30 min | PRODUCTION |
+| 19 | [Optimisation multi-objectif (lex/Pareto/weighted)](Z3-19-Optimization-Lexicographic-Python.ipynb) | Comparaison des trois stratégies d'arbitrage (lexicographique, front de Pareto énuméré, somme pondérée avec sweep) sur 3 projets jouet (coût/impact) | ~30 min | PRODUCTION |
+| 20 | [Machine de Gödel](Z3-20-Machine-de-Goedel-Python.ipynb) | Auto-réécriture sur preuve (Schmidhuber 2006) : théorème cible prouvé par réfutation sous axiomes d'environnement, optimalité globale contre une machine gloutonne, prix d'une amélioration non prouvable (contre-exemple Z3), coût du temps de preuve (`rlimit`) | ~45 min | BETA |
 
 ### Fil pédagogique
 
@@ -102,6 +135,7 @@ Le notebook confronte l'encodage déclaratif (idiomatique z3-py) à l'encodage b
 
 17. **Notebook 17** formalise la **théorie des tableaux** de Z3 : un `Array(I, E)` n'est pas une structure mutable mais une **fonction totale** `Index → Élément`, manipulée via `Select` (lire) et `Store` (renvoyer un nouveau tableau modifié en un indice). Le notebook énonce et **vérifie les axiomes de McCarthy** (read-over-write : `Select(Store(A, i, v), i) = v` et `Select(Store(A, i, v), j) = Select(A, j)` pour `i ≠ j`) comme des théorèmes plutôt que des postulats, puis résout des contraintes sur les **contenus** d'un tableau (tableau trié, égalité de deux tableaux) — là où le notebook 15 n'effleurait la théorie qu'en encodage brut (`Array` de `Array`), le 17 la pose comme objet d'étude à part entière.
 18. **Notebook 18** confronte **deux modes d'encodage** d'un même Sudoku 4×4 : un par `Int` constants (une variable scalaire par cellule, `c_0_0` … `c_3_3`), l'autre par `Array(Int, Int)` indexé par position. Les contraintes canoniques (domaine `{1..4}`, rangées / colonnes / blocs 2×2 à valeurs distinctes) s'expriment identiquement dans les deux modes, mais la **comparaison** révèle leurs compromis respectifs — granularité et lisibilité des scalaires d'un côté, uniformité fonctionnelle et extensibilité du tableau de l'autre. Cas d'école du **choix d'encodage** en SMT, ce notebook boucle la série sur la modélisation déclarative entamée au notebook 02 (le Sudoku comme premier CSP).
+20. **Notebook 20** fait de Z3 le **chercheur de preuves d'une machine de Gödel** (Schmidhuber 2006) : la machine ne remplace sa politique que si elle prouve, pour tout environnement admissible, que la réécriture rapporte plus que « continuer », sa propre recherche future comprise. La preuve passe par réfutation sous des axiomes d'environnement ; un `sat` fournit le contre-exemple qui justifie un refus. Le notebook mesure l'optimalité globale face à une machine gloutonne, le gain abandonné quand une amélioration réelle n'est pas prouvable, et le budget de preuve (`rlimit`) au-delà duquel prouver coûte plus que cela ne rapporte. Il prolonge les preuves par réfutation du notebook 05.
 
 ## Concepts clés
 
@@ -203,11 +237,34 @@ La série manipule un vocabulaire précis (SMT, tactiques, MaxSAT, théories) h�
 | de Moura & Passmore, "The Strategy Challenge in SMT Solving" (2013) | Tactiques et stratégies de résolution (notebook 03) |
 | Morgado, Heras, Liffiton, Planes & Marques-Silva, "Iterative and core-guided MaxSAT solving: A survey and assessment" (Constraints 2013) | MaxSAT, relaxation des contraintes dures en souples (notebook 06) |
 
+## Ouvrages-ancrage
+
+Issue de référence : #19278. L'ouvrage-ancrage de la série est le Yurichev décrit en tête de fichier (section « Ouvrage de référence », avec l'index chapitré série ↔ livre) — la présente section y renvoie et n'en duplique pas l'entrée. La copie archivée (`G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf`) a été lue le 27/10/2026 sur ses 666 pages : les folios de l'index ci-dessus sont ancrés firsthand sur cette lecture. Les lignes encore « à confirmer » — index `Z3-15`/`Z3-16` et mapping des carnets `Z3-Linq2Z3` — ont été confirmées par une nouvelle lecture de la **même copie** (PyMuPDF 1.27.2.3) : folio = index PDF − 1, numéro de section relevé sur la page elle-même, jamais dans le sommaire imprimé (les deux pagination divergent). Pour `Z3-16`, la lecture est confirmée mais le lien est de **voisinage de thème** et non de section portée — voir « Portée du mapping ».
+
+### Mapping carnet ↔ livre (mapping de l'issue #19278 pour les carnets Z3-Linq2Z3 ; confirmé par lecture effective du PDF)
+
+Confirmation de la **tranche R2 de #19278** : lecture effective, carnet par carnet, des chapitres Yurichev correspondants contre les carnets `Z3-Linq2Z3`. La colonne « Vérification » porte la section et le folio relevés sur la page de l'ouvrage archivé.
+
+| Thème du livre | Notebook porteur | Section Yurichev (folio imprimé) | Vérification |
+|----------------|------------------|-----------------------------|--------------|
+| Solver API, theories, modèles | série Z3-API entière | Ch. 1 Introduction (p. 11), Ch. 2 Basics (p. 14) | OK (la série entière relève du livre ; pas d'inventaire chapitre-par-chapitre) |
+| Array theory, Nested arrays | `Z3-Linq2Z3/04_Array_Theory`, `05_Nested_Arrays_2D` | Ch. 8 §8.1 Sudoku (p. 205) + §8.1.2 Simple sudoku in SMT using functions and array (p. 212), Ch. 12 Latin squares (p. 346) + §12.4 Magic/Latin square of Knut Vik design (p. 361) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Cryptarithmetic | `Z3-Linq2Z3/13_Cryptarithmetic_SMT` | Ch. 8 §8.10 Alphametics (p. 276) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| MaxSAT / Optimize | `Z3-Linq2Z3/14_Optimize_MaxSAT` | Ch. 14 MaxSAT/MaxSMT (p. 383), Ch. 10 Knapsack problems (p. 332) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Bit-vectors, overflow | `Z3-Linq2Z3/15_BitVectors_Overflow` | Ch. 5 §5.1 Integer overflow (p. 132) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| UNSAT cores | `Z3-Linq2Z3/17_UnsatCores` | Ch. 3 §3.13.2 Unsat core (p. 90) + §3.13.3 Stress test (p. 92) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Einstein's riddle & puzzles | `Z3-Linq2Z3/18_Einsteins_Riddle`, `02_Sudoku_Theorem_vs_Array` | Ch. 8 §8.2 Zebra puzzle (p. 232) + §8.1 Sudoku (p. 205) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Real arithmetic | `Z3-Linq2Z3/16_RealArithmetic` | Ch. 4 Proofs (p. 106) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Expression rewriting (extension du DSL) | `Z3-Linq2Z3/20_Theorem_Rewriters` | Ch. 4 §4.5 Simplifying long and messy expressions using Z3 (p. 113) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+
+**Portée du mapping.** Il relie chaque carnet à la section de l'ouvrage qui traite le même sujet — il n'affirme pas que le carnet reprend l'**instance** de l'ouvrage. Le lien ainsi établi se distingue par sa **nature** : la section **portée** par le carnet, que le carnet met en œuvre, ou la section **voisine de thème**, que le carnet ne met pas en œuvre mais dont il traite le sujet — c'est le cas de `Z3-16` : §14.5 et §14.8 sont portées par `Z3-06`, §22.8 par `Z3-08`, et le plan de repas de `Z3-16` se range dans la même famille de problèmes d'allocation et d'ordonnancement. Sur les trois carnets dont l'instance a été confrontée ligne à ligne : `13_Cryptarithmetic_SMT` reprend bien l'alphamétique du livre (§8.10, p. 276 — `SEND + MORE = MONEY`, mêmes lettres et même équation) ; `02_Sudoku_Theorem_vs_Array` et `18_Einsteins_Riddle` en reprennent le **cadre d'encodage** (§8.1.2, p. 212 ; §8.2, p. 232), mais résolvent des instances qui leur sont propres — la grille du livre (§8.1, p. 205) est le « world's hardest sudoku » à 23 indices, et le puzzle du livre a pour réponse que le Japonais possède le zèbre.
+
 ## FAQ / Troubleshooting
 
 | Problème | Solution |
 |----------|----------|
 | **`ModuleNotFoundError: No module named 'z3'`** | Le package pip s'appelle `z3-solver` (et non `z3`). Installer avec `pip install z3-solver`, puis `import z3`. Le notebook 0 le rappelle dans sa cellule de setup. |
+| **Twins C# sous Linux ou macOS Apple Silicon : `libz3` introuvable** | Le package NuGet `Microsoft.Z3` ne livre la bibliothèque native que pour Windows x64 et macOS Intel. La première cellule des twins C# charge alors celle du paquet Python `z3-solver` par [`Z3NativeLoader.cs`](Z3NativeLoader.cs) : installer `z3-solver` dans l'environnement où `python3` le trouve, ou définir `Z3_LIBRARY_PATH` vers le dossier qui contient `libz3.so` (`libz3.dylib` sous macOS). `pip install z3-solver==4.12.2.0`, la version du package NuGet, redonne exactement les sorties committées. |
 | **`check()` renvoie `unknown`** | Le solveur ne peut pas conclure : théorie non décidable, quantificateurs (notebook 5) ou timeout. Simplifier le modèle, changer de tactique (`Then`, `OrElse`, notebook 3) ou augmenter le timeout du solveur. |
 | **`s.model()` échoue ou lève une exception** | `model()` n'a de sens que si `check() == sat`. Sur `unsat`, il n'y a pas de modèle à extraire (consulter `unsat_core()` à la place) ; sur `unknown`, le résultat est incertain. |
 | **`Optimize` ou `Solver` ?** | `Solver` = satisfiabilité seule (le problème a-t-il une solution ?). Dès qu'il y a un objectif à maximiser/minimiser, utiliser `Optimize` (notebook 1 §4, notebook 6). |
@@ -246,7 +303,7 @@ Le diagramme ci-dessus situe les deux postures du solveur — **décider** (`Sol
 
 - **Série sœur Z3 C# (Z3.Linq)** : [Z3-Linq2Z3](../Z3-Linq2Z3/README.md) propose la même idée — décrire des contraintes, laisser le solveur résoudre — mais via le binding LINQ en .NET 9. C'est le miroir de cette série pour les développeurs C# : plus restrictif (pas de tactiques ni de `BitVec` exposés directement) mais plus idiomatique en C#. Comparer les deux fait saisir le compromis entre abstraction déclarative et contrôle de bas niveau.
 - **Comparaison multi-paradigmes** : la [série Sudoku](../../../Sudoku/README.md) compare Z3 à **10 autres approches algorithmiques** (backtracking, DLX, CP-SAT, métaheuristiques, inférence probabiliste, réseaux de neurones) sur un même problème NP-complet — le terrain idéal pour situer Z3 dans le spectre des solveurs.
-- **Regex symbolique à l'échelle** : la théorie des chaînes du notebook 04 (`Re`/`InRe`, génération de témoin) trouve son aboutissement dans [Sudoku-13 — Automates symboliques](../../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb) (Epic **#2978**), qui met en scène la distinction reconnaissance (RE#, temps linéaire) vs résolution (Z3, production de témoin) sur une grille de Sudoku.
+- **Regex symbolique à l'échelle** : la théorie des chaînes du notebook 04 (`Re`/`InRe`, génération de témoin) trouve son aboutissement dans [Sudoku-13 — Automates symboliques](../../../Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb) (Epic **#2978**), qui met en scène la distinction reconnaissance (RE#, temps linéaire) vs résolution (Z3, production de témoin) sur une grille de Sudoku.
 - **Programmation par contraintes industrielle** : la série [Search](../../../Search/README.md) (Part 2-CSP, OR-Tools CP-SAT) généralise la modélisation par contraintes à une famille plus large de problèmes d'optimisation, avec un solveur (CP-SAT) dont le compromis performance/expressivité diffère de Z3.
 - Pour la pratique : reprenez le [notebook 06 (Advanced Optimization)](Z3-06-Advanced-Optimization-Python.ipynb) et formulez un problème multi-objectifs de votre choix (allocation budgétaire, planning sous préférences contradictoires). 
 

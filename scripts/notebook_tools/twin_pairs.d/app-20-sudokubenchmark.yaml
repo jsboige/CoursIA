@@ -1,7 +1,7 @@
 - name: App-20 SudokuBenchmark
-  family: Search/Applications
-  python: MyIA.AI.Notebooks/Search/Applications/CSP/App-20-SudokuBenchmark-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-20b-SudokuBenchmark-CSharp.ipynb
+  family: Search/Part3-Cas-pratiques
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-20-SudokuBenchmark-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-20b-SudokuBenchmark-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Tranche 1 (socle, preserve integralement) : Python = stdlib pure (typing, copy, random, time) et C# = BCL pure (0 NuGet), les 4 solveurs from-scratch (naif, MRV, AC-3, DLX) des deux cotes, parite sur le nombre d'appels recursifs. Tranche 2 (#10382) : les DEUX cotes appellent le moteur de production Google OR-Tools CP-SAT — Python = pip ortools 9.15.6755 (CpModel/AddAllDifferent/CpSolver), C# = NuGet Google.OrTools 9.15.6755 (#r nuget epingle + Google.OrTools.Sat). Verdict SOTA-OK lib-vs-lib : meme version de moteur des deux cotes (portage officiel .NET du meme code C++), num_search_workers=1 + random_seed=42 dans les deux, invariants (statut, validite, branches, conflicts, propagations) concordants a l'identique sur les 3 grilles x 2 configurations (presolve on : OPTIMAL/Optimal valide partout, 0 branche, 0 conflict ; presolve off : Easy/Medium 0/0, Hard 5 branches/2 conflicts/790 prop.bin/213 prop.int des deux cotes) — preuve d'execution fraiche commitee (outputs + execution_count) dans les deux notebooks. Le temps wall reste machine-dep (informatif)."

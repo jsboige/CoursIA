@@ -36,5 +36,5 @@ fraction (`kellyFrac_feasible`), et formalisation du pari équivalent (`q`, `pq_
 **Câblage CI** : matrice [`lean-ci-matrix.yml`](../../.github/workflows/lean-ci-matrix.yml)
 (clé `kelly` dans `scripts/lean/ci_lakes.json` ; push `main`, paths `MyIA.AI.Notebooks/QuantConnect/kelly_lean/**.lean` + `lakefile.*`), pipeline `real`.
 
-**Notebooks dans le lake (2, C.2 OK)** : `Kelly_companion.ipynb` (Python) et
-`Kelly_companion_lean.ipynb` (Lean) à la racine du lake.
+**Notebooks dans le lake (2, C.2 OK)** : `Kelly_companion-Python.ipynb` (Python) et
+`Kelly_companion-Lean.ipynb` (Lean) à la racine du lake.

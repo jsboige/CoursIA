@@ -1,0 +1,60 @@
+# OVERRIDE D'UNITE -- myia-po-2027, 2026-10-24.
+# Copie fidele de /usr/lib/systemd/system/docker.service livre par docker-ce
+# 29.9.2, avec DEUX lignes retouchees seulement :
+#   - `Requires=docker.socket`  ->  `Requires=sysinit.target system.slice`
+#   - la ligne `After=...` perd le seul token `docker.socket`
+# A poser sous /etc/systemd/system/docker.service (prioritaire sur /usr/lib).
+#
+# POURQUOI PAS LE SEUL DROP-IN (mesure du 2026-10-24 sur cette machine) : le
+# drop-in de flotte persist/po-2028/coursia-socket.conf vide `Requires=` puis
+# re-declare la liste. Ici, apres daemon-reload, `systemctl show docker.service
+# -p Requires` rendait TOUJOURS `... docker.socket`, et tout demarrage echouait
+# sur « Unit docker.socket is masked » (la reference d'ordre d'`After=` suffit
+# a produire cette erreur). Ce systemd n'honore donc pas le vidage ; l'override
+# d'unite est deterministe. Le drop-in reste necessaire pour l'ExecStart.
+#
+# POURQUOI MASQUER docker.socket : l'unite stock detient /run/docker.sock, que
+# le proxy Docker Desktop occupe sur cette machine (integration de la distro).
+# Le daemon de CI doit ecouter /var/run/docker-ce.sock et RIEN d'autre
+# (doctrine docs/ci/self-hosted-runners.md, "Persistance du superviseur").
+#
+# ORDRE DE POSE : docker.service (ce fichier) + coursia-socket.conf (drop-in)
+# + `systemctl mask docker.socket` + daemon-reload, PUIS restart docker.
+[Unit]
+Description=Docker Application Container Engine
+Documentation=https://docs.docker.com
+After=network-online.target nss-lookup.target firewalld.service containerd.service time-set.target
+Wants=network-online.target containerd.service
+Requires=sysinit.target system.slice
+StartLimitBurst=3
+StartLimitIntervalSec=60
+
+[Service]
+Type=notify
+# the default is not to use systemd for cgroups because the delegate issues still
+# exists and systemd currently does not support the cgroup feature set required
+# for containers run by docker
+ExecStart=/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+ExecReload=/bin/kill -s HUP $MAINPID
+TimeoutStartSec=0
+RestartSec=2
+Restart=always
+
+# Having non-zero Limit*s causes performance problems due to accounting overhead
+# in the kernel. We recommend using cgroups to do container-local accounting.
+LimitNPROC=infinity
+LimitCORE=infinity
+
+# Comment TasksMax if your systemd version does not support it.
+# Only systemd 226 and above support this option.
+TasksMax=infinity
+
+# set delegate yes so that systemd does not reset the cgroups of docker containers
+Delegate=yes
+
+# kill only the docker process, not all processes in the cgroup
+KillMode=process
+OOMScoreAdjust=-500
+
+[Install]
+WantedBy=multi-user.target

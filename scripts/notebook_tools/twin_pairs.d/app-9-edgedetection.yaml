@@ -1,7 +1,7 @@
 - name: App-9 EdgeDetection
-  family: Search/Applications
-  python: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9-EdgeDetection.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb
+  family: Search/Part3-Cas-pratiques
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9b-EdgeDetection-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = DEAP (Distributed Evolutionary Algorithms in Python, MIT, https://github.com/DEAP/deap, Fortin 2012) + scipy.signal.sobel (filtre sobel pour detection de contours) + pygad (Python Genetic Algorithm, MIT) + matplotlib + numpy (17 cellules code). C# = Emgu.CV (wrapper C# OpenCV 4.x, Apache-2.0, https://github.com/emgucv/emgucv) + SkiaSharp (binding .NET Skia, MIT, https://github.com/mono/SkiaSharp) + GeneticSharp (lib C# algorithmes genetiques, MIT, https://github.com/giacomelli/GeneticSharp) (12 cellules code). Verdict SOTA-OK (lib-vs-lib, deux ecosystemes natifs) : Python utilise l'ecosysteme SciPy + DEAP (lib SOTA evolutionary computation) + scipy.signal (filtre sobel) ; C# utilise l'ecosysteme OpenCV via Emgu.CV (lib SOTA computer vision) + SkiaSharp (bitmaps) + GeneticSharp (algorithmes genetiques). Les deux ecosystemes invoquent de vraies libs SOTA de leur stack natif (Python scientifique / C# computer vision). Detection de contours = application canonique des deux cotes. parity_level: semantic preserve."

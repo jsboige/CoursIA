@@ -1,0 +1,27 @@
+date: '2026-10-22'
+by: myia-po-2024:CoursIA
+python_sha: 35ad4e28a64a3f84100853bafdd8703acdb7b730
+csharp_sha: e785d3fa4a951d31ed1676e08ca3547e3cb429cd
+content_python_sha: 07b77e12ef516267fbbdf433a6a48a5baf12e1ba55028eed3bcad617ec393680
+content_csharp_sha: b3c41891468a748c4689a88540460050966d52f7555f8cf40b199706c8a7adeb
+reason: >
+  Re-baseline de l'attestation PR #21550 (lane myia-po-2024:CoursIA), audit
+  firsthand de la paire AVANT enregistrement. Deux mouvements independants,
+  et aucun porteur d'une asymetrie nouvelles entre les jumeaux :
+  (1) cote Python, la PR modifie une cellule markdown (conclusion derivee de
+  l'exposant empirique mesure) et deux cellules de code (desactivation du
+  logging mealpy autour des exemples), avec re-execution complete 52 -> 52
+  cellules, 0 cellule ajoutee ou retiree ;
+  (2) cote C#, le blob est INCHANGE par la PR : git rev-parse HEAD:<carnet>
+  et origin/main:<carnet> rendent tous deux e785d3fa. L'ecart de
+  content_csharp_sha lu par le gate (0022 : b7909062, csharp_sha 79725c16)
+  vient donc de main, pas de cette branche : le strip probeAddresses de
+  #20262 (commit 0b29b80dfb3) a normalise le carnet C# le 2026-10-22, apres
+  l'attestation 0022 du 2026-10-21.
+  Mecanisme du faux DRIFT-INTRO : les attestations sont triees par NOM de
+  fichier, donc 0022 (2026-10-21) etait lue comme la derniere alors que 0021
+  (2026-10-22) est posterieure ; la paire apparaissait derivee sur un cote
+  que la PR ne touche pas. Cette entree 0023 est posterieure aux deux et
+  porte les valeurs courantes mesurees a HEAD.
+  Aucune asymetrie de contenu consacree : la conclusion mealpy/metaheuristiques
+  du jumeau C# reste la sienne (cf known_differences de la paire).

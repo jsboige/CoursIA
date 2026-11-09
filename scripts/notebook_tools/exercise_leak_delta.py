@@ -41,11 +41,17 @@ import re
 import sys
 from pathlib import Path
 
-# Matches the detector's summary line exactly: "Results: 48 HIGH (leaks),
-# 27 MEDIUM (duplicates), 0 errors". MULTILINE-tolerant, anchored on "Results:".
+# Matches the detector's summary line: "Results: 48 HIGH (leaks),
+# 27 MEDIUM (duplicates), 0 errors". The `LOW` field was added by #18121
+# (leaky-stub advisory) -- the summary now reads
+# "Results: 34 HIGH (leaks), 3 MEDIUM (duplicates), 88 LOW (leaky-stub
+# advisory), 0 errors". LOW is a soft advisory (never HIGH), so it does not
+# affect the delta guard -- we parse it when present and ignore it otherwise.
+# MULTILINE-tolerant, anchored on "Results:".
 RESULTS_LINE_RE = re.compile(
     r"Results:\s*(?P<high>\d+)\s*HIGH\s*\(leaks\)\s*,\s*"
     r"(?P<medium>\d+)\s*MEDIUM\s*\(duplicates\)\s*,\s*"
+    r"(?:(?P<low>\d+)\s*LOW\s*\(leaky-stub\s+advisory\)\s*,\s*)?"
     r"(?P<errors>\d+)\s*errors"
 )
 

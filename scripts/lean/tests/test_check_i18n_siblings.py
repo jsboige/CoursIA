@@ -9,6 +9,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from check_i18n_siblings import (  # noqa: E402
@@ -17,18 +19,25 @@ from check_i18n_siblings import (  # noqa: E402
     check_pair,
     enclosing_lake,
     find_en_files,
+    fr_import_siblings,
     fr_sibling,
     imports_fr_sibling,
+    is_half_done,
+    is_repo_boilerplate,
     lake_targets,
+    main,
     normalize_body,
     split_decls,
     strip_comments,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+# Le lake a descendu sous `Lean/GOL/` (#23164). Ce chemin est en dur : s'il
+# n'est pas suivi, la garde ne trouve plus le lake et se tait (cf. le `skip`
+# explicite du test conway ci-dessous, qui rend cette disparition visible).
 CONWAY_DIR = (
     REPO_ROOT
-    / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "conway_lean" / "Conway"
+    / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GOL" / "conway_lean" / "Conway"
 )
 
 
@@ -104,6 +113,77 @@ def test_normalize_en_suffix_does_not_mask_real_drift():
     fr = "def f (G : TUGame N) : Nat := 42\n"
     en = "def f (G : TUGame_en N) : Nat := 43\n"
     assert normalize_body(fr) != normalize_body(en)
+
+
+def test_fr_import_advisory_detects_only_declaring_same_lake_imports(tmp_path):
+    lake = tmp_path / "fixture_lean"
+    base = lake / "Alpha" / "Base.lean"
+    base.parent.mkdir(parents=True)
+    (lake / "lakefile.toml").write_text('name = "fixture"\n', encoding="utf-8")
+    base.write_text("namespace Alpha.Base\ndef value := 1\n", encoding="utf-8")
+    base.with_name("Base_en.lean").write_text(
+        "namespace Alpha.Base_en\ndef value := 1\n", encoding="utf-8")
+    alias_target = lake / "Alias.lean"
+    alias_target.write_text("namespace Alias\ndef value := 1\n", encoding="utf-8")
+    alias_target.with_name("Alias_en.lean").write_text(
+        "namespace Alias_en\ndef value := 1\n", encoding="utf-8")
+
+    hybrid = lake / "Alpha" / "Hybrid_en.lean"
+    hybrid.write_text(
+        "import Alpha.Base as Alias Mathlib.Data.Nat.Basic\n"
+        "namespace Alpha.Hybrid_en\ndef own := Alpha.Base.value\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(hybrid) == ["Alpha.Base"]
+
+    # A prose-only mirror remains an exempt consumer, even with the same import.
+    prose = lake / "Alpha" / "Prose_en.lean"
+    prose.write_text(
+        "import Alpha.Base\nnamespace Alpha.Prose_en\nend Alpha.Prose_en\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(prose) == []
+
+    # Declarations under an unsuffixed namespace do not meet the predicate.
+    unsuffixed = lake / "Alpha" / "Unsuffixed_en.lean"
+    unsuffixed.write_text(
+        "import Alpha.Base\nnamespace Alpha.Unsuffixed\ndef own := 1\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(unsuffixed) == []
+
+    # External Mathlib modules and same-lake modules without twins are ignored.
+    no_twin = lake / "Alpha" / "NoTwin.lean"
+    no_twin.write_text("namespace Alpha.NoTwin\ndef value := 1\n", encoding="utf-8")
+    no_twin_user = lake / "Alpha" / "NoTwinUser_en.lean"
+    no_twin_user.write_text(
+        "import Alpha.NoTwin Mathlib.Data.Nat.Basic\n"
+        "namespace Alpha.NoTwinUser_en\ndef own := 1\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(no_twin_user) == []
+
+
+def test_fr_import_advisory_is_opt_in_and_non_gating(tmp_path, capsys):
+    lake = tmp_path / "fixture_lean"
+    module = lake / "Alpha" / "Hybrid_en.lean"
+    module.parent.mkdir(parents=True)
+    (lake / "lakefile.toml").write_text('name = "fixture"\n', encoding="utf-8")
+    (module.parent / "Base.lean").write_text("namespace Alpha.Base\ndef x := 1\n")
+    (module.parent / "Base_en.lean").write_text("namespace Alpha.Base_en\ndef x := 1\n")
+    (module.parent / "Hybrid.lean").write_text(
+        "namespace Alpha.Hybrid\ndef x := 2\n", encoding="utf-8")
+    module.write_text(
+        "import Alpha.Base\nnamespace Alpha.Hybrid_en\ndef x := 2\n",
+        encoding="utf-8",
+    )
+
+    assert main([str(module)]) == 0
+    assert "FR-IMPORT" not in capsys.readouterr().out
+    assert main([str(module), "--fr-import-advisory"]) == 0
+    output = capsys.readouterr().out
+    assert "FR-IMPORT" in output and "Alpha.Base" in output
+    assert "advisory" in output
 
 
 def test_check_pair_matching(tmp_path):
@@ -369,7 +449,10 @@ def test_find_en_files_skips_excluded(tmp_path):
 def test_real_conway_pairs_are_byte_identical():
     """The merged conway_lean rollout must stay clean — regression guard."""
     if not CONWAY_DIR.is_dir():
-        return  # tree not present in this checkout; skip silently
+        # Un `return` muet fait passer la garde pour verte alors qu'elle n'a
+        # rien regarde : si le lake bouge encore, on veut le voir dans le
+        # rapport, pas un PASS qui ne mesure rien.
+        pytest.skip(f"lake conway absente de ce checkout : {CONWAY_DIR}")
     en_files = find_en_files([CONWAY_DIR])
     assert en_files, "expected conway_lean *_en.lean pairs to exist"
     failures = []
@@ -479,6 +562,84 @@ def test_enclosing_lake_walks_up_to_nearest(tmp_path):
     found = enclosing_lake(lake / "sub" / "X_en.lean", tmp_path)
     assert found == lf
     assert enclosing_lake(tmp_path / "Nowhere_en.lean", tmp_path) is None
+
+
+def test_licence_header_is_repository_boilerplate():
+    """The Apache-2.0 header is identical in every pair by construction: it is
+    boilerplate, not prose, and must not be read as an untranslated body."""
+    assert is_repo_boilerplate(
+        "Copyright (c) 2026 CoursIA. All rights reserved.\n"
+        "Released under Apache 2.0 license as described in the file LICENSE."
+    )
+    # A body that merely starts like the header is NOT boilerplate: the match
+    # is anchored on both ends.
+    assert not is_repo_boilerplate(
+        "Copyright (c) 2026 CoursIA. All rights reserved.\n"
+        "Released under Apache 2.0 license as described in the file LICENSE.\n"
+        "The arcs of a diagram: partition of the edge labels."
+    )
+    assert not is_repo_boilerplate(
+        "Les arcs d'un diagramme : partition des étiquettes d'arêtes."
+    )
+
+
+def test_half_done_ignores_shared_licence_header(tmp_path):
+    """A pair whose only shared body is the licence header is NOT half-done."""
+    fr = tmp_path / "Baz.lean"
+    en = tmp_path / "Baz_en.lean"
+    header = ("/-\nCopyright (c) 2026 CoursIA. All rights reserved.\n"
+              "Released under Apache 2.0 license as described in the file "
+              "LICENSE.\n-/\n")
+    fr.write_text(header + "/-- Les arcs d'un diagramme. -/\n"
+                  "namespace Conway\ndef answer : Nat := 42\nend Conway\n",
+                  encoding="utf-8")
+    en.write_text(header + "/-- The arcs of a diagram. -/\n"
+                  "namespace Conway_en\ndef answer : Nat := 42\nend Conway_en\n",
+                  encoding="utf-8")
+    flagged, n_identical = is_half_done(fr, en)
+    assert not flagged
+    assert n_identical == 0
+
+
+def test_half_done_still_flags_shared_prose(tmp_path):
+    """Negative control: a genuinely shared prose body is still reported.
+
+    The boilerplate exclusion must not silence the advisory it refines."""
+    fr = tmp_path / "Qux.lean"
+    en = tmp_path / "Qux_en.lean"
+    header = ("/-\nCopyright (c) 2026 CoursIA. All rights reserved.\n"
+              "Released under Apache 2.0 license as described in the file "
+              "LICENSE.\n-/\n")
+    shared = ("/-- Les arcs d'un diagramme : partition des etiquettes d'aretes "
+              "par la fermeture des paires de passage-dessus. -/\n")
+    fr.write_text(header + shared + "namespace Conway\n"
+                  "def answer : Nat := 42\nend Conway\n", encoding="utf-8")
+    en.write_text(header + shared + "namespace Conway_en\n"
+                  "def answer : Nat := 42\nend Conway_en\n", encoding="utf-8")
+    flagged, n_identical = is_half_done(fr, en)
+    assert flagged
+    assert n_identical == 1
+
+
+def test_real_grothendieck_godement_pairs_are_not_half_done():
+    """Measured 2026-11-02 (lane myia-po-2028:CoursIA-2): the nine Grothendieck
+    ``Godement*_en`` mirrors are OK-CONSUMER siblings whose module docstring is
+    translated; the HALF-DONE hit came from the shared licence header alone.
+    They must no longer be reported."""
+    groth = (REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GROTH"
+             / "grothendieck_lean" / "Grothendieck")
+    # Nine pairs, two of them nested: the ninth lives in the SheafCohomology
+    # sub-folder, so entries carry their relative path when it differs (#24161).
+    names = ["Godement", "GodementAcyclicity", "GodementCanonicalDiff",
+             "GodementComplex", "GodementExactness", "GodementFunctor",
+             "GodementMono", "GodementResolution",
+             "SheafCohomology/Godement"]
+    for name in names:
+        fr = groth / f"{name}.lean"
+        en = groth / f"{name}_en.lean"
+        assert fr.exists() and en.exists(), name
+        flagged, n_identical = is_half_done(fr, en)
+        assert not flagged, f"{name}: {n_identical} shared body(ies)"
 
 
 def _run_direct() -> int:

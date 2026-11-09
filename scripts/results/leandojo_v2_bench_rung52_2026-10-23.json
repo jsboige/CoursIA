@@ -1,0 +1,45 @@
+{
+  "rung": "CALIBRATION_CONWAY_LAS_ROUND_TRIP",
+  "statement": "forall (n : Nat), Conway.digitsToNat (Conway.natToDigits n) = n",
+  "model": "anthropic/claude-opus-4.7",
+  "house_reference": {
+    "verdict": "FAILED (passe 17, 2026-09-27)",
+    "elapsed_s": 1925.1,
+    "termination": "reasoning_budget_timeout_1800s"
+  },
+  "protocol_gap": "Pantograph 0.3.15 exige toolchain projet == v4.29.1 (fichier pantograph/lean-toolchain du wheel ; conway_lean porte v4.33.0) : mini-lake snapshot, code byte-identique, Mathlib v4.29.1, sorry reintroduit au rung.",
+  "results": [
+    {
+      "rung": "CALIBRATION_CONWAY_LAS_ROUND_TRIP",
+      "mode": "step_by_step",
+      "model": "anthropic/claude-opus-4.7",
+      "budget_s": 1800.0,
+      "success": false,
+      "llm_calls": 12,
+      "tactic_steps": 0,
+      "elapsed_s": 38.8,
+      "termination": "generator_exhausted",
+      "tactics_tried": [
+        "<initial: n : ℕ\n⊢ Conway.digitsToNat (Conway.natToDigits n) = n>",
+        "simp [Conway.digitsToNat, Conway.natToDigits]",
+        "<fail: ServerError: {'desc': 'Tactic `simp` failed with a nested error:\\nmaximum>",
+        "induction n using Conway.natToDigits.induct <;> simp [Conway.natToDigits, Conway.digitsToNat, *]",
+        "<fail: ServerError: {'desc': 'Tactic `simp` failed with a nested error:\\nmaximum>"
+      ],
+      "proof_mode_output": ""
+    },
+    {
+      "rung": "CALIBRATION_CONWAY_LAS_ROUND_TRIP",
+      "mode": "whole_proof",
+      "model": "anthropic/claude-opus-4.7",
+      "budget_s": 1800.0,
+      "success": false,
+      "llm_calls": 1,
+      "tactic_steps": 0,
+      "elapsed_s": 18.6,
+      "termination": "compile_error",
+      "tactics_tried": [],
+      "proof_mode_output": "induction n using Nat.strong_induction_on with\n  | _ n ih =>\n    unfold Conway.natToDigits\n    split\n    · simp_all [Conway.digitsToNat]\n    · rename_i h\n      simp [Conway.digitsToNat]\n      rw [ih (n / 10) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by decide))]\n      omega"
+    }
+  ]
+}

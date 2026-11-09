@@ -43,7 +43,7 @@ layout: section
 
 ## Duree totale estimee
 
-**~7 heures** (10 notebooks, 20 min a 60 min chacun)
+**~7 heures** (notebooks de 20 min a 60 min chacun)
 
 ---
 layout: section
@@ -125,7 +125,7 @@ diamond_phi = Diamond(phi)  # Possibly
 - **QBF** : formules booleennes quantifiees (∀x ∃y ...)
 - **Logique Conditionnelle** : règles conditionnelles et inference non-monotone
 
-> **Notebook** : `Tweety-3-Advanced-Logics.ipynb` — 40 min
+> **Notebook** : `Tweety-03-Advanced-Logics-Python.ipynb` — 40 min
 
 ---
 layout: section
@@ -160,7 +160,7 @@ mi_value = inc_measure.inconsistencyMeasure(belief_base)
 - **MUS** : Minimal Unsatisfiable Subsets
 - **MCS** : Minimal Correction Subsets
 
-> **Notebook** : `Tweety-4-Belief-Revision.ipynb` — 50 min
+> **Notebook** : `Tweety-04-Belief-Revision-Python.ipynb` — 50 min
 
 ---
 layout: section
@@ -192,7 +192,7 @@ a, b, c = Argument("a"), Argument("b"), Argument("c")
 af.add(Attack(a, b)); af.add(Attack(b, c))
 ```
 
-> **Notebook** : `Tweety-5-Abstract-Argumentation.ipynb` — 55 min
+> **Notebook** : `Tweety-05-Abstract-Argumentation-Python.ipynb` — 55 min
 
 ---
 
@@ -366,12 +366,14 @@ layout: section
 
 ```
 SymbolicAI/
-├── Tweety/          ← cette serie (10 notebooks)
-├── Lean/            ← preuves formelles (14 notebooks)
-└── Argument_Analysis/  ← analyse de textes argumentatifs (5 notebooks)
+├── Tweety/            ← cette serie
+├── Lean/              ← preuves formelles
+└── ArgumentAnalysis/  ← analyse de textes argumentatifs
 ```
 
-## Extensions possibles
+---
+
+# Extensions possibles
 
 - Intégration avec **Neo4j** pour les graphes d'argumentation
 - Visualisation interactive des frameworks (D3.js / Cytoscape)

@@ -158,6 +158,113 @@ def test_is_waived_lit_le_label():
     ) is False
 
 
+# --- #19069 : un run cancelled ne masque pas le verdict de main --------------
+
+def _runs_fetch(runs, default_branch="main"):
+    """fetch factice : sert la branche par defaut, puis les runs donnes."""
+    def fetch(path):
+        if path == "repos/o/r":
+            return {"default_branch": default_branch}
+        return {"workflow_runs": runs}
+    return fetch
+
+
+#: Reproduit une fenetre REELLE de main rouge masquee par des cancelled
+#: (issue #19069). Sur `main`, le run 37225392464 (`failure`, 18:41:19Z,
+#: conclu 18:51:54Z) est suivi de deux runs `cancelled` (18:42:18Z,
+#: 18:42:36Z) nes de la concurrence du workflow en passe de merge en rafale.
+#: `per_page=1` rendait en tete un `cancelled` sans verdict -- la derogation
+#: restait fermee alors que main etait rouge ; le correctif saute les runs
+#: sans verdict et ouvre sur 37225392464. (L'API rend les runs du plus
+#: recent au plus ancien : cancelled d'abord, le rouge ensuite.)
+_CANCELLED_THEN_RED = [
+    {"id": 37225475490, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "cancelled", "created_at": "2026-10-04T18:42:36Z",
+     "html_url": "https://github.com/o/r/actions/runs/37225475490"},
+    {"id": 37225454684, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "cancelled", "created_at": "2026-10-04T18:42:18Z",
+     "html_url": "https://github.com/o/r/actions/runs/37225454684"},
+    {"id": 37225392464, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "failure", "created_at": "2026-10-04T18:41:19Z",
+     "html_url": "https://github.com/o/r/actions/runs/37225392464"},
+]
+
+
+def test_19069_deux_cancelled_puis_failure_la_derogation_souvre():
+    motif = merge_dwell._main_red_motif(
+        "o/r", fetch=_runs_fetch(_CANCELLED_THEN_RED)
+    )
+    assert motif is not None
+    assert "37225392464" in motif
+
+
+def test_19069_dernier_run_conclu_vert_ferme_la_derogation():
+    runs = _CANCELLED_THEN_RED[:2] + [
+        dict(_CANCELLED_THEN_RED[2], conclusion="success")
+    ]
+    assert merge_dwell._main_red_motif("o/r", fetch=_runs_fetch(runs)) is None
+
+
+def test_19069_runs_tous_sans_verdict_ferme_la_derogation():
+    # Fail-closed : une couleur illisible ne vaut PAS rouge (pas de preuve,
+    # pas de derogation) -- le plancher NORMAL continue de mesurer.
+    assert merge_dwell._main_red_motif(
+        "o/r", fetch=_runs_fetch(_CANCELLED_THEN_RED[:2])
+    ) is None
+
+
+# --- #19180 : un run timed_out sur main est un rouge, pas un run sans verdict -
+
+#: Fenetre de l'issue #19180 : le run le plus recent a epuise son temps
+#: (`timed_out`), le precedent etait vert. Avant le correctif, le filtre
+#: `success`/`failure` sautait le `timed_out` comme un `cancelled` et
+#: remontait jusqu'au vert : main etait declare vert alors qu'il ne l'etait pas.
+_TIMED_OUT_THEN_GREEN = [
+    {"id": 2002, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "timed_out", "created_at": "2026-10-05T00:40:00Z",
+     "html_url": "https://github.com/o/r/actions/runs/2002"},
+    {"id": 2001, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "success", "created_at": "2026-10-05T00:10:00Z",
+     "html_url": "https://github.com/o/r/actions/runs/2001"},
+]
+
+
+def test_19180_timed_out_puis_success_la_derogation_souvre():
+    motif = merge_dwell._main_red_motif(
+        "o/r", fetch=_runs_fetch(_TIMED_OUT_THEN_GREEN)
+    )
+    assert motif is not None
+    assert "2002" in motif
+    assert "timed_out" in motif
+
+
+def test_19180_startup_failure_compte_aussi_rouge():
+    runs = [dict(_TIMED_OUT_THEN_GREEN[0], conclusion="startup_failure"),
+            _TIMED_OUT_THEN_GREEN[1]]
+    motif = merge_dwell._main_red_motif("o/r", fetch=_runs_fetch(runs))
+    assert motif is not None
+    assert "startup_failure" in motif
+
+
+def test_19180_controle_negatif_cancelled_puis_success_reste_vert():
+    # Le comportement #19069 ne change pas : un `cancelled` n'a pas de
+    # verdict, il se saute, et le vert qui le precede ferme la derogation.
+    runs = [dict(_TIMED_OUT_THEN_GREEN[0], conclusion="cancelled"),
+            _TIMED_OUT_THEN_GREEN[1]]
+    assert merge_dwell._main_red_motif("o/r", fetch=_runs_fetch(runs)) is None
+
+
+def test_19180_motif_failure_inchange():
+    # Le message d'un `failure` ordinaire garde sa forme d'avant #19180.
+    motif = merge_dwell._main_red_motif(
+        "o/r", fetch=_runs_fetch(_CANCELLED_THEN_RED)
+    )
+    assert motif == (
+        "main rouge: workflow `Scripts & Notebook-Tools Tests` en echec "
+        "sur main (run 37225392464)"
+    )
+
+
 def test_head_committed_at_leve_sans_date():
     with pytest.raises(merge_dwell.DwellError):
         merge_dwell.head_committed_at(
@@ -838,3 +945,1130 @@ def test_git_helper_immune_to_path_pollution(tmp_path, monkeypatch):
     assert "git version" in r.stdout, "stdout != vrai git : {!r}".format(r.stdout[:80])
     assert not marker.exists(), "le git factice du PATH pollue a ete appele"
     assert Path(_GIT).name.lower().startswith("git"), _GIT
+
+
+# --- 7. Q67 -- le meme SHA de contenu sert a merge_ready -----------------------
+
+def _refresh_fetch(tree):
+    def fetch(path):
+        if path == "repos/o/r/commits/m3rg3":
+            return _commit(
+                "m3rg3", "2026-09-07T11:59:00Z", ["auc0", "ba5e"], tree=tree
+            )
+        if path == "repos/o/r/commits/auc0":
+            return _commit("auc0", "2026-09-07T09:00:00Z", ["r00t"])
+        raise AssertionError("chemin inattendu: " + path)
+    return fetch
+
+
+def test_q67_sha_de_contenu_franchit_un_rafraichissement_prouve():
+    sha = merge_dwell.last_authoritative_sha(
+        "o/r", "m3rg3", "ba5e", fetch=_refresh_fetch("7ee0"),
+        run_git=_git_proving("7ee0"),
+    )
+    assert sha == "auc0"
+
+
+def test_q67_sha_de_contenu_s_arrete_sur_une_resolution_d_auteur():
+    sha = merge_dwell.last_authoritative_sha(
+        "o/r", "m3rg3", "ba5e", fetch=_refresh_fetch("d1ff"),
+        run_git=_git_proving("7ee0"),
+    )
+    assert sha == "m3rg3"
+
+
+def test_q67_date_et_sha_suivent_la_meme_remontee():
+    fetch = _refresh_fetch("7ee0")
+    when = merge_dwell.last_authoritative_committed_at(
+        "o/r", "m3rg3", "ba5e", fetch=fetch, run_git=_git_proving("7ee0"),
+    )
+    assert when.isoformat().startswith("2026-09-07T09:00:00")
+
+
+# --- 8. #18686 -- le label merge-dwell-waived ne joue que si main est rouge --
+
+def _pr_with_label_fetch(workflow_runs=None, red_read_fails=False,
+                          workflow_runs_by_yml=None, main_check_runs=None,
+                          head_check_runs=None, earlier_commits=None,
+                          earlier_check_runs=None):
+    """Fetch fake pour une PR JEUNE (tete a 11:55, NOW=12:00) portant le label.
+
+    `workflow_runs` : liste de dict workflow-runs sur `main` pour le workflow
+    canonique `Scripts & Notebook-Tools Tests` (yml `scripts-tests.yml`).
+    Raccourci : si `workflow_runs_by_yml` est fourni, il surcharge par yml.
+
+    `red_read_fails` : la lecture de la couleur de main leve DwellError
+    (API muette) pour le workflow canonique.
+
+    `main_check_runs` / `head_check_runs` (#22085) : check-runs de la tete de
+    `main` et de la tete de la PR. Defaut vide = aucune preuve de reparation,
+    donc la seconde voie reste fermee : les tests de #18686/#18790 gardent
+    exactement le verdict qu'ils mesuraient.
+
+    `earlier_commits` / `earlier_check_runs` (review 5622234166) : commits
+    anterieurs de la PR et leurs check-runs par sha -- la mesure reelle des
+    organes PR-only, qui n'ont AUCUN check-run sur main. Defaut vide.
+    """
+    by_yml = dict(workflow_runs_by_yml or {})
+    if workflow_runs is not None and "scripts-tests.yml" not in by_yml:
+        by_yml["scripts-tests.yml"] = workflow_runs
+
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {
+                "labels": [{"name": merge_dwell.WAIVER_LABEL}],
+                "base": {"sha": "ba5e0000"},
+            }
+        if path == "repos/o/r/commits/abc":
+            return {"commit": {"committer": {"date": "2026-09-07T11:55:00Z"}}}
+        if path == "repos/o/r/commits/main/check-runs?per_page=100":
+            return {"check_runs": list(main_check_runs or [])}
+        if path == "repos/o/r/commits/abc/check-runs?per_page=100":
+            return {"check_runs": list(head_check_runs or [])}
+        if path == "repos/o/r/pulls/42/commits?per_page=10":
+            return [{"sha": s} for s in (earlier_commits or [])]
+        for sha, runs in (earlier_check_runs or {}).items():
+            if path == "repos/o/r/commits/{}/check-runs?per_page=100".format(sha):
+                return {"check_runs": list(runs)}
+        if path == "repos/o/r":
+            if red_read_fails:
+                raise merge_dwell.DwellError("repos muet")
+            return {"default_branch": "main"}
+        # API workflow-directe : un seul yml par appel.
+        for yml, runs in by_yml.items():
+            expected = (
+                "repos/o/r/actions/workflows/{}/runs"
+                "?branch=main&event=push&status=completed&per_page=10"
+            ).format(yml)
+            if path == expected:
+                if red_read_fails:
+                    raise merge_dwell.DwellError("actions/workflows muets")
+                return {"workflow_runs": runs or []}
+        raise AssertionError("chemin inattendu: " + path)
+    return fetch
+
+
+def test_18686_label_main_vert_le_plancher_est_garde():
+    """Critere de fermeture 1 : label pose alors que `main` est vert -- le gate
+    garde le plancher. C'est le geste du 01/10 (#18502, #18676) : une lane
+    posait le label sur du contenu sans aucun rapport avec un rouge."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(workflow_runs=[
+            {"name": "Scripts & Notebook-Tools Tests", "conclusion": "success",
+             "created_at": "2026-09-07T10:00:00Z"},
+            {"name": "Re-aggregate stale PR gate verdicts", "conclusion": "success",
+             "created_at": "2026-09-07T11:00:00Z"},
+        ]),
+    )
+    assert ok is False, "main vert : le label ne doit PAS lever le plancher"
+    assert "condition non remplie" in msg
+    assert msg.startswith("tete du 2026-09-07T11:55:00Z"), (
+        "le plancher doit se mesurer normalement, comme si le label etait absent"
+    )
+
+
+def test_18686_label_main_rouge_le_plancher_est_leve_avec_motif():
+    """Critere de fermeture 2 : label pose alors que `main` a Scripts Tests
+    en failure -- le gate leve le plancher ET le motif releve vit dans le
+    message. C'est le seul cas qui ouvre la derogation en pratique (le check
+    `PR gate` ne tourne pas sur main, c'est l'objection de myia-ai-01 sur
+    #18796)."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(workflow_runs=[
+            {"name": "Scripts & Notebook-Tools Tests", "conclusion": "failure",
+             "created_at": "2026-09-07T10:30:00Z",
+             "html_url": "https://github.com/o/r/actions/runs/12345"},
+            {"name": "Re-aggregate stale PR gate verdicts", "conclusion": "success",
+             "created_at": "2026-09-07T11:00:00Z"},
+        ]),
+    )
+    assert ok is True, "main Scripts Tests rouge : la derogation doit jouer"
+    assert "dwell leve par le label" in msg
+    assert "main rouge: workflow `Scripts & Notebook-Tools Tests` en echec" in msg, (
+        "le motif doit rester lisible dans le log du gate"
+    )
+
+
+def test_18790_rouge_non_PR_gate_ne_leve_pas_la_derogation():
+    """#18790 : un workflow non-listé rouge sur main ne leve PAS la
+    derogation. Le critère est explicite (MAIN_RED_WORKFLOWS) : un rouge
+    CodeQL ou Gitleaks sur main ne bloque aucun merge -- il ne justifie
+    donc pas un bypass DWELL."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(workflow_runs=[
+            {"name": "CodeQL", "conclusion": "failure",
+             "created_at": "2026-09-07T09:00:00Z"},
+            {"name": "Scripts & Notebook-Tools Tests", "conclusion": "success",
+             "created_at": "2026-09-07T10:00:00Z"},
+        ]),
+    )
+    assert ok is False, (
+        "main avec rouge non-listé uniquement : le label ne doit PAS "
+        "lever le plancher (Scripts Tests est vert)"
+    )
+    assert "condition non remplie" in msg
+
+
+def test_18790_latest_wins_parmi_runs_PR_gate_multiples():
+    """#18790 : parmi plusieurs runs `Scripts & Notebook-Tools Tests` sur main,
+    le pli latest-wins par `created_at` selectionne le bon verdict. Cas : un
+    run Scripts Tests rouge recent est pris en compte ; un vert anterieur
+    est ignore.
+
+    Note : avec l'API workflow-directe (per_page=10) le serveur rend lui-meme
+    les runs les plus recents du workflow -- le pli latest-wins reste une
+    defense-en-profondeur contre une eventuelle divergence de tri. Depuis
+    #19069, les runs `cancelled`/`skipped` sont sautes cote client."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(workflow_runs=[
+            {"name": "Scripts & Notebook-Tools Tests", "conclusion": "failure",
+             "created_at": "2026-09-07T11:55:00Z",
+             "html_url": "https://github.com/o/r/actions/runs/2"},
+        ]),
+    )
+    assert ok is True, "le run le plus recent (failure Scripts Tests) leve la derogation"
+    assert "dwell leve par le label" in msg
+
+
+def test_18686_couleur_de_main_illisible_ne_leve_pas():
+    """Fail-closed : une couleur de main illisible ne vaut PAS rouge -- la
+    derogation ne franchise jamais sur une absence de preuve. Le plancher
+    s'applique normalement, le gate ne refuse pas (ce n'est pas une erreur
+    d'etat de PR, c'est une derogation non prouvee)."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(red_read_fails=True),
+    )
+    assert ok is False
+    assert "condition non remplie" in msg
+
+
+def test_18796_workflow_en_cours_ne_compte_pas_comme_rouge():
+    """Un workflow-run NON complete (status in_progress / conclusion null)
+    n'est ni vert ni rouge : seul un `completed`/`failure` prouve le rouge.
+    Meme esprit que l'ancien test_18686_check_run_en_cours_ne_compte_pas_comme_rouge,
+    transpose au nouveau schema workflow_runs / MAIN_RED_WORKFLOWS."""
+    ok, _ = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(workflow_runs=[
+            {"name": "Scripts & Notebook-Tools Tests", "status": "in_progress",
+             "conclusion": None, "created_at": "2026-09-07T11:55:00Z"},
+        ]),
+    )
+    assert ok is False
+
+
+def test_18686_sans_label_la_couleur_de_main_n_est_pas_lue():
+    """Economie ET neutralite : une PR non labellisee ne declenche AUCUNE
+    lecture de la couleur de main -- le guard n'ajoute de latence qu'au cas
+    qu'il sert a juger."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {"labels": [], "base": {"sha": "ba5e0000"}}
+        if path == "repos/o/r/commits/abc":
+            return {"commit": {"committer": {"date": "2026-09-07T11:55:00Z"}}}
+        raise AssertionError(
+            "lecture inattendue hors derogation labellisee: " + path
+        )
+
+    ok, msg = merge_dwell.check("o/r", "abc", 42, 120.0, now=NOW, fetch=fetch)
+    assert ok is False
+    assert "condition non remplie" not in msg
+
+
+def test_18686_label_invalide_ne_casse_pas_le_message_relisible():
+    """Le note « condition non remplie » est APPENQUE apres le message de
+    plancher : la forme relisible par le picker (#15910) doit tenir."""
+    ok, _, msg = merge_dwell.evaluate(
+        NOW - timedelta(minutes=7), NOW, 120.0, waived=False
+    )
+    parsed = merge_dwell.parse_pending_message(msg + " -- label `x` present")
+    assert parsed is not None and parsed["remaining_min"] == 113
+
+
+def test_18686_evaluate_rend_le_motif_de_derogation():
+    """Le motif vit dans le message de derogation -- une derogation sans
+    motif publie serait une ligne de label que rien ne justifie."""
+    ok, _, msg = merge_dwell.evaluate(
+        NOW - timedelta(minutes=1), NOW, 120.0, waived=True,
+        waiver_motif="main rouge: check `PR gate` en echec sur main",
+    )
+    assert ok is True
+    assert "main rouge: check `PR gate` en echec sur main" in msg
+
+
+# --- 9. #18796 (round 2) -- l'API workflow-directe reste correcte quand le
+# run est plus ancien que la fenetre de 100 runs d'autres workflows ---
+
+def test_18796_workflow_direct_indépendant_de_la_fenetre_globale():
+    """#18796 round 2 (CR ai-01 18:55Z) : un main reellement rouge sur
+    `scripts-tests.yml` DOIT lever la derogation meme si le dernier run de
+    ce workflow est plus ancien que 100 runs d'autres workflows sur main
+    (cas reel mesure le 2026-10-02 18:33Z : 100 runs sur main couvraient
+    35 minutes ; apres 35-40 min sans merge sous `scripts/**`, le run
+    `scripts-tests.yml` sort de la fenetre globale, et l'approche
+    `actions/runs?branch=main&per_page=100` rendait `None`).
+
+    L'API workflow-directe `actions/workflows/scripts-tests.yml/runs
+    ?per_page=10` n'a pas cette borne -- elle rend les DERNIERS runs du
+    workflow, quelle que soit leur anciennete. Le test exerce cette voie
+    en passant un run `failure` vieux de 2h, et verifie que la
+    derogation leve bien, et que le motif releve reste lisible."""
+    import datetime as _dt
+    now = _dt.datetime(2026, 10, 2, 18, 0, 0, tzinfo=_dt.timezone.utc)
+    two_hours_ago = (now - _dt.timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=now,
+        fetch=_pr_with_label_fetch(workflow_runs_by_yml={
+            "scripts-tests.yml": [
+                {"name": "Scripts & Notebook-Tools Tests",
+                 "conclusion": "failure",
+                 "created_at": two_hours_ago,
+                 "html_url": "https://github.com/o/r/actions/runs/12345"},
+            ],
+        }),
+    )
+    assert ok is True, (
+        "un run Scripts Tests failure vieux de 2h DOIT lever la derogation "
+        "via l'API workflow-directe, sans dependre de la fenetre globale"
+    )
+    assert "dwell leve par le label" in msg
+    assert "main rouge: workflow `Scripts & Notebook-Tools Tests`" in msg
+    assert "12345" in msg, "l'id du run doit etre dans le motif (lecture a la relecture)"
+
+
+def test_18796_workflow_direct_run_success_ne_leve_pas():
+    """Garde-fou : un run `success` (meme vieux de 2h) sur le workflow
+    canonique ne leve PAS la derogation -- la fenetre de 100 ne sert
+    plus, mais le verdict `success` reste vert par nature.
+
+    La tete de PR est fixee a 7 minutes avant NOW (avant le plancher
+    120 min), pour que la seule issue soit bien le verdict 'success'
+    de main et non un plancher deja expire."""
+    import datetime as _dt
+    now = _dt.datetime(2026, 10, 2, 18, 0, 0, tzinfo=_dt.timezone.utc)
+    two_hours_ago = (now - _dt.timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    head_at = (now - _dt.timedelta(minutes=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {
+                "labels": [{"name": merge_dwell.WAIVER_LABEL}],
+                "base": {"sha": "ba5e0000"},
+            }
+        if path == "repos/o/r/commits/abc":
+            return {"commit": {"committer": {"date": head_at}}}
+        if path == "repos/o/r":
+            return {"default_branch": "main"}
+        if path == "repos/o/r/commits/main/check-runs?per_page=100":
+            return {"check_runs": []}
+        if path == "repos/o/r/commits/abc/check-runs?per_page=100":
+            return {"check_runs": []}
+        if path == "repos/o/r/pulls/42/commits?per_page=10":
+            return []
+        if path == (
+            "repos/o/r/actions/workflows/scripts-tests.yml/runs"
+            "?branch=main&event=push&status=completed&per_page=10"
+        ):
+            return {"workflow_runs": [
+                {"name": "Scripts & Notebook-Tools Tests",
+                 "conclusion": "success",
+                 "created_at": two_hours_ago,
+                 "html_url": "https://github.com/o/r/actions/runs/99999"},
+            ]}
+        raise AssertionError("chemin inattendu: " + path)
+
+    ok, msg = merge_dwell.check("o/r", "abc", 42, 120.0, now=now, fetch=fetch)
+    assert ok is False, "main Scripts Tests vert : le label ne leve pas la derogation"
+    assert "condition non remplie" in msg
+
+
+def test_18796_workflow_direct_aucun_run_ne_leve_pas():
+    """Garde-fou : si le workflow n'a aucun run sur main (par exemple
+    workflow tout neuf jamais declenche), la derogation ne leve pas --
+    le label ne joue qu'avec une couleur de main VERIFIEE rouge."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(workflow_runs_by_yml={
+            "scripts-tests.yml": [],
+        }),
+    )
+    assert ok is False
+    assert "condition non remplie" in msg
+
+
+# --- 9. #22085 -- la PR qui REPARE un rouge de main derive son plancher ----
+#
+# Le cas fondateur est #22018 : `Live-read freshness` rouge (organe qui ne
+# tourne que sur pull_request) bloquait toutes les PRs de carnet, et la PR qui
+# le reparait a quand meme du attendre 120 min -- `MAIN_RED_WORKFLOWS` ne le
+# couvrait pas.
+#
+# Review 5622234166 : un organe PR-only n'a AUCUN check-run a la tete de main
+# (12 push-organs mesures, aucun Live-read freshness). Les fixtures de main ne
+# portent donc QUE des organes push ; le rouge d'un organe PR-only se mesure
+# aux commits ANTERIEURS de la PR qui l'a repare.
+#
+# La seconde voie n'ouvre PAS la derogation au label seul : elle exige la
+# preuve, a la tete de la PR et POSTERIEURE au rouge.
+
+_MAIN_RED_PUSH = {
+    "id": 90001,
+    "name": "Build Quarto site",
+    "conclusion": "failure",
+    "started_at": "2026-10-22T08:20:00Z",
+}
+_HEAD_GREEN_PUSH = {
+    "id": 90002,
+    "name": "Build Quarto site",
+    "conclusion": "success",
+    "started_at": "2026-10-22T11:00:00Z",
+}
+_MAIN_RED_LIVE_READ = {
+    "id": 90051,
+    "name": "Live-read freshness",
+    "conclusion": "failure",
+    "started_at": "2026-10-22T08:20:00Z",
+}
+_HEAD_GREEN_LIVE_READ = {
+    "id": 90052,
+    "name": "Live-read freshness",
+    "conclusion": "success",
+    "started_at": "2026-10-22T11:00:00Z",
+}
+
+
+def test_22085_cas_22018_la_pr_qui_repare_le_rouge_est_derogee():
+    """Cas #22018 rejoue en forme REELLE (review 5622234166, point 1) : la
+    tete de main ne porte QUE des organes push, tous verts -- le rouge de
+    `Live-read freshness` (organe PR-only) se voit au commit ANTERIEUR de la
+    PR ; la tete le rend vert, posterieurement -> derogation acceptee."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[dict(_HEAD_GREEN_PUSH, id=90061)],
+            head_check_runs=[_HEAD_GREEN_LIVE_READ],
+            earlier_commits=["0ld5ha0"],
+            earlier_check_runs={"0ld5ha0": [_MAIN_RED_LIVE_READ]},
+        ),
+    )
+    assert ok is True, "la PR repare le rouge : le plancher doit lever"
+    assert "dwell leve par le label" in msg
+    assert "Live-read freshness" in msg, (
+        "le motif doit nommer l'organe repare, pas une couleur globale"
+    )
+    assert "commit anterieur de la PR" in msg, (
+        "la provenance du rouge doit etre nommee : organe PR-only, mesure "
+        "au passe de la PR -- pas une couleur de main inexistante"
+    )
+
+
+def test_22085_organe_push_rouge_sur_main_repare_a_la_tete():
+    """Segment push : un organe qui tourne sur `push` est bien rouge a la
+    tete de main (il y existe), la PR le rend vert posterieurement."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[_MAIN_RED_PUSH],
+            head_check_runs=[_HEAD_GREEN_PUSH],
+        ),
+    )
+    assert ok is True
+    assert "Build Quarto site" in msg
+    assert "tete de main" in msg
+
+
+def test_22085_vert_anterieur_au_rouge_ne_prouve_rien():
+    """Review 5622234166, point 2 : une PR dont la jambe a tourne AVANT le
+    rouge porte un success anterieur -- ce n'est pas une reparation."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[dict(_MAIN_RED_PUSH,
+                                  started_at="2026-10-22T11:30:00Z")],
+            head_check_runs=[dict(_HEAD_GREEN_PUSH,
+                                  started_at="2026-10-22T11:00:00Z")],
+        ),
+    )
+    assert ok is False, (
+        "le vert de la tete (11:00) est ANTERIEUR au rouge de main (11:30) : "
+        "la derogation ne doit pas s'ouvrir"
+    )
+    assert "condition non remplie" in msg
+
+
+def test_22085_rouge_pr_only_sans_vert_a_la_tete_refuse():
+    """Organe PR-only rouge au passe de la PR, mais la tete ne le rend pas
+    vert (encore rouge) -> plancher garde."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[],
+            head_check_runs=[dict(_MAIN_RED_LIVE_READ, id=90053,
+                                  started_at="2026-10-22T11:00:00Z")],
+            earlier_commits=["0ld5ha0"],
+            earlier_check_runs={"0ld5ha0": [_MAIN_RED_LIVE_READ]},
+        ),
+    )
+    assert ok is False
+    assert "condition non remplie" in msg
+
+
+def test_22085_pagination_le_nom_preuve_en_page_2_est_lu():
+    """Review 5622234166, point 3 : la tete d'une PR de carnets porte 129
+    check-runs ; sans pagination, le nom-preuve en page 2 fermait la voie
+    a tort, precisement sur la population visee."""
+    filler = [
+        {"id": 91000 + i, "name": "jambe-{}".format(i),
+         "conclusion": "success", "started_at": "2026-10-22T10:00:00Z"}
+        for i in range(128)
+    ]
+    pages = {
+        "repos/o/r/commits/abc/check-runs?per_page=100": {
+            "check_runs": filler[:100],
+        },
+        "repos/o/r/commits/abc/check-runs?per_page=100&page=2": {
+            "check_runs": filler[100:] + [_HEAD_GREEN_PUSH],
+        },
+        "repos/o/r/commits/main/check-runs?per_page=100": {
+            "check_runs": [_MAIN_RED_PUSH],
+        },
+    }
+
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {"labels": [{"name": merge_dwell.WAIVER_LABEL}],
+                    "base": {"sha": "ba5e0000"}}
+        if path == "repos/o/r/commits/abc":
+            return {"commit": {"committer": {"date": "2026-09-07T11:55:00Z"}}}
+        if path == "repos/o/r":
+            return {"default_branch": "main"}
+        if path == "repos/o/r/pulls/42/commits?per_page=10":
+            return []
+        if path in pages:
+            return pages[path]
+        if path == (
+            "repos/o/r/actions/workflows/scripts-tests.yml/runs"
+            "?branch=main&event=push&status=completed&per_page=10"
+        ):
+            return {"workflow_runs": []}
+        raise AssertionError("chemin inattendu: " + path)
+
+    ok, msg = merge_dwell.check("o/r", "abc", 42, 120.0, now=NOW, fetch=fetch)
+    assert ok is True, (
+        "le nom-preuve vit en page 2 (129e check-run) : la voie doit s'ouvrir"
+    )
+    assert "Build Quarto site" in msg
+
+
+def test_22085_temoin_negatif_pr_non_reparatrice_refusee():
+    """Meme label, meme main rouge, mais la PR ne repare rien (l'organe est
+    encore rouge a sa tete) -> plancher applique. C'est ce temoin qui
+    interdit d'ouvrir la derogation a n'importe quelle PR quand main est
+    rouge quelque part."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[_MAIN_RED_PUSH],
+            head_check_runs=[dict(_MAIN_RED_PUSH,
+                                  id=90003,
+                                  started_at="2026-10-22T11:00:00Z")],
+        ),
+    )
+    assert ok is False
+    assert "condition non remplie" in msg
+    assert msg.startswith("tete du 2026-09-07T11:55:00Z")
+
+
+def test_22085_organe_absent_a_la_tete_de_la_pr_ne_prouve_rien():
+    """Fail-closed : un organe rouge sur main qui n'a AUCUN check-run a la
+    tete de la PR (workflow path-filtre, PR qui ne le declenche pas) n'est
+    pas une preuve de reparation."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[_MAIN_RED_PUSH],
+            head_check_runs=[],
+        ),
+    )
+    assert ok is False
+    assert "condition non remplie" in msg
+
+
+def test_22085_main_vert_les_check_runs_ne_derogent_pas():
+    """Controle negatif : aucun organe rouge sur main -> la seconde voie ne
+    peut rien ouvrir, meme si la tete de la PR est entierement verte."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[dict(_MAIN_RED_PUSH, conclusion="success")],
+            head_check_runs=[_HEAD_GREEN_LIVE_READ],
+        ),
+    )
+    assert ok is False
+    assert "condition non remplie" in msg
+
+
+def test_22085_pli_latest_wins_sur_les_check_runs():
+    """Un rouge PERIME (supersede par un vert plus recent) sur la tete de la
+    PR ne doit pas fermer la derogation, et un rouge perime sur main ne doit
+    pas l'ouvrir : le pli se fait par `started_at`, comme #16765."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[
+                dict(_MAIN_RED_PUSH, id=90010,
+                     started_at="2026-10-22T09:00:00Z"),
+                dict(_MAIN_RED_PUSH, id=90011,
+                     started_at="2026-10-22T07:00:00Z"),
+            ],
+            head_check_runs=[
+                dict(_HEAD_GREEN_PUSH, id=90020,
+                     started_at="2026-10-22T10:00:00Z"),
+                # tentative rouge SUPERSEDEE par le vert ci-dessus
+                dict(_MAIN_RED_PUSH, id=90021,
+                     started_at="2026-10-22T09:30:00Z"),
+            ],
+        ),
+    )
+    assert ok is True
+    assert "Build Quarto site" in msg
+
+
+def test_22085_couleur_illisible_ne_deroge_pas():
+    """Fail-closed conserve : une lecture de check-runs qui leve laisse le
+    plancher en place -- une couleur illisible ne vaut pas vert."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {"labels": [{"name": merge_dwell.WAIVER_LABEL}],
+                    "base": {"sha": "ba5e0000"}}
+        if path == "repos/o/r/commits/abc":
+            return {"commit": {"committer": {"date": "2026-09-07T11:55:00Z"}}}
+        if path == "repos/o/r":
+            return {"default_branch": "main"}
+        if path.startswith("repos/o/r/actions/workflows/"):
+            return {"workflow_runs": []}
+        raise merge_dwell.DwellError("check-runs muets")
+
+    ok, msg = merge_dwell.check("o/r", "abc", 42, 120.0, now=NOW,
+                                fetch=fetch)
+    assert ok is False
+    assert "condition non remplie" in msg
+
+
+# ---------------------------------------------------------------------------
+# #23089 -- un `fetch --depth=1` ne rend jamais superficiel un depot complet
+#
+# Le chemin est prove sur un clone REEL (bare origin local + clone), pas sur
+# un faux `run_git` : c'est le comportement de git qu'il faut epingler.
+# ---------------------------------------------------------------------------
+def _disposable_repo(tmp_path):
+    """(origin bare, clone complet, sha absent du clone).
+
+    Le clone est `--single-branch` : le commit du cote `side` n'y est pas,
+    donc `_ensure_commit_present` declenche vraiment un fetch.
+    """
+    origin = tmp_path / "origin.git"
+    work = tmp_path / "work"
+    _git_ok(_git(tmp_path, "init", "--bare", "-b", "main", str(origin)), "init bare")
+    work.mkdir()
+    _git_ok(_git(work, "init", "-b", "main"), "init work")
+    _git_ok(_git(work, "config", "user.email", "t@t.invalid"), "config email")
+    _git_ok(_git(work, "config", "user.name", "t"), "config name")
+    (work / "a.txt").write_text("1\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "a.txt"), "add a.txt")
+    _git_ok(_git(work, "commit", "-m", "c1"), "commit c1")
+    _git_ok(_git(work, "remote", "add", "origin", str(origin)), "remote add")
+    _git_ok(_git(work, "push", "-q", "origin", "main"), "push main")
+    _git_ok(_git(work, "checkout", "-q", "-b", "side"), "checkout side")
+    (work / "s.txt").write_text("s\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "s.txt"), "add s.txt")
+    _git_ok(_git(work, "commit", "-m", "side"), "commit side")
+    side = _git(work, "rev-parse", "HEAD").stdout.strip()
+    _git_ok(_git(work, "push", "-q", "origin", "side"), "push side")
+    _git_ok(_git(work, "checkout", "-q", "main"), "checkout main")
+    _git_ok(_git(work, "branch", "-q", "-D", "side"), "branch -D side")
+    clone = tmp_path / "clone"
+    _git_ok(
+        _git(
+            tmp_path, "clone", "-q", "--single-branch", "--branch", "main",
+            origin.as_uri(), str(clone),
+        ),
+        "clone complet",
+    )
+    _git_ok(_git(clone, "config", "user.email", "t@t.invalid"), "config email clone")
+    _git_ok(_git(clone, "config", "user.name", "t"), "config name clone")
+    return origin, clone, side
+
+
+def _spy(calls):
+    def run_git(args):
+        calls.append(list(args))
+        return merge_dwell._default_run_git(args)
+    return run_git
+
+
+def _fetches(calls):
+    return [c for c in calls if c and c[0] == "fetch"]
+
+
+def test_un_clone_complet_reste_complet_apres_ensure_commit_present(
+    tmp_path, monkeypatch
+):
+    """#23089, controle POSITIF : un clone complet ne doit jamais devenir
+    superficiel parce qu'un parent absent a ete ramene.
+
+    Le fetch `--depth=1` cree une borne : le depot passe shallow alors que
+    son historique etait complet, et les calculs `main..tete` voient alors des
+    commits deja merges comme « propres » (faux « stack top », #22244 et
+    #22252 rendues BLOCKED sur des squash deja merges le 2026-10-28).
+    """
+    _origin, clone, side = _disposable_repo(tmp_path)
+    monkeypatch.chdir(clone)
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "false"
+    calls: list[list[str]] = []
+    merge_dwell._ensure_commit_present(side, _spy(calls))
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "false"
+    fetches = _fetches(calls)
+    assert fetches, "le commit absent aurait du ete ramene"
+    assert "--depth" not in fetches[0], fetches[0]
+
+
+def test_un_clone_tronque_conserve_le_fetch_en_depth_1(tmp_path, monkeypatch):
+    """#23089 : le checkout du gate est shallow PAR CONSTRUCTION -- son
+    comportement ne change pas (le fetch reste en `--depth=1`, c'est la
+    seule maniere de ramener un commit sans telecharger son histoire)."""
+    origin, _clone, side = _disposable_repo(tmp_path)
+    shallow = tmp_path / "shallow-clone"
+    _git_ok(
+        _git(
+            tmp_path, "clone", "-q", "--depth=1", "--single-branch",
+            "--branch", "main", origin.as_uri(), str(shallow),
+        ),
+        "clone superficiel",
+    )
+    monkeypatch.chdir(shallow)
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+    calls: list[list[str]] = []
+    merge_dwell._ensure_commit_present(side, _spy(calls))
+    fetches = _fetches(calls)
+    assert fetches, "le commit absent aurait du ete ramene"
+    assert "--depth=1" in fetches[0], fetches[0]
+
+
+def test_des_bornes_etrangeres_ne_declenchent_pas_le_fetch_en_depth_1(
+    tmp_path, monkeypatch
+):
+    """#23089 (precision du coordinateur, mesuree sur ai-01) : un
+    `.git/shallow` qui ne porte que des bornes ETRANGERES a l'historique de
+    la base ne tronque PAS cet historique.
+
+    Le booleen `is-shallow-repository` reste `true` en permanence dans cet
+    etat -- une garde fondee sur ce booleen seul ne protegerait rien. Le
+    predicat mesure donc l'ANCESTRE de la base, pas le booleen.
+    """
+    _origin, clone, side = _disposable_repo(tmp_path)
+    monkeypatch.chdir(clone)
+    (clone / ".git" / "shallow").write_text(side + "\n", encoding="utf-8")
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+    assert merge_dwell.base_history_truncated() is False
+    calls: list[list[str]] = []
+    merge_dwell._ensure_commit_present(side, _spy(calls))
+    fetches = _fetches(calls)
+    assert fetches, "le commit absent aurait du ete ramene"
+    assert "--depth" not in fetches[0], fetches[0]
+
+
+def test_le_predicat_dit_tronque_quand_la_borne_tranche_la_base(
+    tmp_path, monkeypatch
+):
+    """Controle negatif du predicat : une borne qui EST un ancetre de la
+    base tronque reellement l'historique de la base -- c'est elle qui doit
+    etre vue, sinon la porte pile mesurerait sur une histoire incomplete."""
+    origin, _clone, side = _disposable_repo(tmp_path)
+    shallow = tmp_path / "shallow-clone"
+    _git(
+        tmp_path, "clone", "-q", "--depth=1", "--single-branch",
+        "--branch", "main", origin.as_uri(), str(shallow),
+    )
+    monkeypatch.chdir(shallow)
+    assert merge_dwell.base_history_truncated() is True
+    # la borne declaree n'est pas un ancetre de la base : le predicat dit
+    # non, meme avec un `.git/shallow` non vide.
+    (shallow / ".git" / "shallow").write_text(side + "\n", encoding="utf-8")
+    assert merge_dwell.base_history_truncated() is False
+
+
+def test_les_racines_shallow_mortes_sont_retirees(tmp_path, monkeypatch):
+    """#23089 : une racine shallow que aucune ref ne contient et dont le
+    parent est absent du depot ne masque rien -- elle rend pourtant le depot
+    "shallow" en permanence (le booleen `is-shallow-repository` reste
+    `true`), et toute garde fondee sur ce booleen croit l'historique tronque.
+
+    Le retrait ne change ni les refs ni l'historique de la base : seule la
+    reponse "shallow" du depot change.
+    """
+    origin, clone, _side = _disposable_repo(tmp_path)
+    # un commit etranger a l'historique de main, dont le parent n'existe pas
+    # dans le depot : c'est la signature d'un `fetch --depth=1` d'un SHA
+    # etranger (le defaut que #23089 corrige).
+    work = tmp_path / "work"
+    _git_ok(_git(work, "checkout", "-q", "-b", "orphan"), "checkout orphan")
+    _git_ok(_git(work, "checkout", "-q", "--orphan", "orpheline"), "orphan")
+    _git_ok(_git(work, "rm", "-rq", "--cached", "."), "rm cached")
+    (work / "o.txt").write_text("o\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o.txt"), "add o.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline"), "commit orpheline")
+    # un second commit : son parent (la racine orpheline) n'existe pas dans
+    # le clone, qui nefetchera que lui.
+    (work / "o2.txt").write_text("o2\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o2.txt"), "add o2.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline 2"), "commit orpheline 2")
+    _git_ok(_git(work, "push", "-q", "origin", "orpheline"), "push orpheline")
+    foreign = _git(work, "rev-parse", "HEAD").stdout.strip()
+    monkeypatch.chdir(clone)
+    _git_ok(_git(clone, "fetch", "--depth=1", "--quiet", "origin", foreign),
+            "fetch etranger")
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+    before = _git(clone, "for-each-ref", "--format=%(refname)").stdout
+    main_before = _git(clone, "rev-list", "--count",
+                       "refs/remotes/origin/main").stdout.strip()
+    dead = merge_dwell.prune_dead_shallow_roots()
+    assert dead == [foreign]
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "false"
+    after = _git(clone, "for-each-ref", "--format=%(refname)").stdout
+    assert after == before, "le retrait ne doit toucher aucune ref"
+    assert _git(clone, "rev-list", "--count",
+                "refs/remotes/origin/main").stdout.strip() == main_before
+
+
+def test_une_racine_shallow_vivante_n_est_pas_retiree(tmp_path, monkeypatch):
+    """Controle negatif : la racine d'un clone superficiel legitime (le tip
+    de `main`, contenu par `origin/main`) est VIVANTE -- elle tronque
+    reellement l'historique de la base. Le retrait ne la touche pas."""
+    origin, _clone, _side = _disposable_repo(tmp_path)
+    shallow = tmp_path / "shallow-clone"
+    _git_ok(
+        _git(
+            tmp_path, "clone", "-q", "--depth=1", "--single-branch",
+            "--branch", "main", origin.as_uri(), str(shallow),
+        ),
+        "clone superficiel",
+    )
+    monkeypatch.chdir(shallow)
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+    assert merge_dwell.prune_dead_shallow_roots() == []
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+
+
+def _foreign_shallow_boundary(tmp_path, origin, clone):
+    """Cree dans `clone` une racine shallow dont le parent est ABSENT, et
+    renvoie son sha.
+
+    C'est la signature d'un `fetch --depth=1 <sha>` d'un commit etranger a
+    l'historique local (#23089) : le parent du commit n'est pas dans le
+    depot, et aucune ref locale ne contient le commit (un fetch par sha
+    n'ecrit que `FETCH_HEAD`, que `for-each-ref` ne voit pas).
+    """
+    work = tmp_path / "work"
+    _git_ok(_git(work, "checkout", "-q", "--orphan", "orpheline"), "orphan")
+    _git_ok(_git(work, "rm", "-rq", "--cached", "."), "rm cached")
+    (work / "o.txt").write_text("o\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o.txt"), "add o.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline"), "commit orpheline")
+    (work / "o2.txt").write_text("o2\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o2.txt"), "add o2.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline 2"), "commit orpheline 2")
+    _git_ok(_git(work, "push", "-q", "origin", "orpheline"), "push orpheline")
+    foreign = _git(work, "rev-parse", "HEAD").stdout.strip()
+    _git_ok(
+        _git(clone, "fetch", "--depth=1", "--quiet", "origin", foreign),
+        "fetch etranger",
+    )
+    return foreign
+
+
+def test_une_borne_atteinte_par_un_head_detache_survit(tmp_path, monkeypatch):
+    """#23110 : une borne atteinte par un HEAD DETACHE, sans aucune ref ni
+    aucune entree de reflog, n'est PAS morte.
+
+    Le critere d'avant ne regardait que `for-each-ref` : il la declarait morte
+    et la retirait du `.git/shallow`, coupant le parcours d'historique que ce
+    HEAD porte encore. Le HEAD detache est le seul temoin laisse par le
+    scenario, donc c'est bien le critere elargi qui le sauve.
+    """
+    origin, clone, _side = _disposable_repo(tmp_path)
+    foreign = _foreign_shallow_boundary(tmp_path, origin, clone)
+    monkeypatch.chdir(clone)
+    _git_ok(_git(clone, "checkout", "-q", "--detach", foreign), "detach")
+    _git_ok(
+        _git(clone, "reflog", "expire", "--expire=now", "--all"),
+        "expire reflogs",
+    )
+    assert _git(
+        clone, "for-each-ref", "--contains", foreign, "--format=%(refname)"
+    ).stdout.strip() == ""
+    assert merge_dwell.prune_dead_shallow_roots() == []
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+
+
+def test_une_borne_atteinte_par_le_head_d_un_worktree_lie_survit(
+    tmp_path, monkeypatch
+):
+    """#23110 : une borne atteinte par le HEAD d'un worktree LIE survit.
+
+    Ni les refs, ni le HEAD du depot courant, ni les reflogs n'atteignent
+    cette borne : seul `git worktree list --porcelain` (et le `rev-parse HEAD`
+    du worktree) la voit. C'est le troisieme temoin demande par la reserve.
+    """
+    origin, clone, _side = _disposable_repo(tmp_path)
+    foreign = _foreign_shallow_boundary(tmp_path, origin, clone)
+    monkeypatch.chdir(clone)
+    linked = tmp_path / "linked"
+    _git_ok(
+        _git(clone, "worktree", "add", "--detach", str(linked), foreign),
+        "worktree add --detach",
+    )
+    _git_ok(
+        _git(clone, "reflog", "expire", "--expire=now", "--all"),
+        "expire reflogs",
+    )
+    # Le reflog du worktree lie vit dans son propre gitdir : il faut le
+    # retirer aussi pour que le HEAD du worktree soit le seul temoin.
+    for logs in (clone / ".git" / "worktrees").glob("*/logs"):
+        shutil.rmtree(logs)
+    assert _git(
+        clone, "for-each-ref", "--contains", foreign, "--format=%(refname)"
+    ).stdout.strip() == ""
+    assert _git(clone, "rev-parse", "HEAD").stdout.strip() != foreign
+    assert merge_dwell.prune_dead_shallow_roots() == []
+
+
+def test_une_frontiere_dont_l_ascendance_est_presente_est_retiree(
+    tmp_path, monkeypatch
+):
+    """#23089, option (a) du coordinateur, mesuree sur ai-01 le 2026-11-01 :
+    une frontiere shallow dont le parent EST present et dont l'ascendance
+    complete est lisible ne masque rien -- son retrait ne coupe aucun
+    parcours.
+
+    C'est la forme que prend un depot apres un `git fetch --unshallow` qui
+    laisse en place des frontieres ETRANGERES : le `.git/shallow` du clone du
+    coordinateur portait six frontieres de cette sorte, **toutes** avec leur
+    parent present. L'ancien critere les gardait donc toutes, `--prune-shallow`
+    rendait 0 et `is-shallow-repository` restait `true` pour toujours.
+    """
+    origin, clone, _side = _disposable_repo(tmp_path)
+    work = tmp_path / "work"
+    _git_ok(_git(work, "checkout", "-q", "--orphan", "orpheline"), "orphan")
+    _git_ok(_git(work, "rm", "-rq", "--cached", "."), "rm cached")
+    (work / "o.txt").write_text("o\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o.txt"), "add o.txt")
+    _git_ok(_git(work, "commit", "-m", "racine orpheline"), "commit racine")
+    (work / "o2.txt").write_text("o2\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o2.txt"), "add o2.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline 2"), "commit orpheline 2")
+    _git_ok(_git(work, "push", "-q", "origin", "orpheline"), "push orpheline")
+    tip = _git(work, "rev-parse", "HEAD").stdout.strip()
+    monkeypatch.chdir(clone)
+    # fetch COMPLET (aucun `--depth`) : le parent et toute l'ascendance
+    # arrivent dans la base d'objets. Un fetch par nom de branche n'ecrit que
+    # `FETCH_HEAD` dans un clone `--single-branch` : aucune ref ne contient le
+    # sommet, et aucun reflog ne l'atteint.
+    _git_ok(_git(clone, "fetch", "-q", "origin", "orpheline"), "fetch complet")
+    assert _git(clone, "cat-file", "-e", tip + "^^{commit}").returncode == 0, (
+        "le parent doit etre present : c'est la forme mesuree sur ai-01"
+    )
+    (clone / ".git" / "shallow").write_text(tip + "\n", encoding="utf-8")
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+    assert merge_dwell._ancestry_readable(tip, merge_dwell._default_run_git) is True
+    assert merge_dwell.prune_dead_shallow_roots() == [tip]
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "false"
+
+
+def test_un_parent_present_mais_une_ascendance_illisible_garde_la_frontiere(
+    tmp_path, monkeypatch
+):
+    """#23089, controle NEGATIF de l'option (a) : le parent est present, mais
+    l'ascendance au-dela ne l'est pas. La frontiere masque encore une histoire
+    tronquee -- elle est GARDEE.
+
+    Sans ce controle, la fonction retirerait toute frontiere dont le seul
+    premier parent est present, et exposerait un `git log` a un objet absent.
+    """
+    origin, clone, _side = _disposable_repo(tmp_path)
+    work = tmp_path / "work"
+    _git_ok(_git(work, "checkout", "-q", "--orphan", "orpheline"), "orphan")
+    _git_ok(_git(work, "rm", "-rq", "--cached", "."), "rm cached")
+    (work / "o0.txt").write_text("o0\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o0.txt"), "add o0.txt")
+    _git_ok(_git(work, "commit", "-m", "racine orpheline"), "commit racine")
+    (work / "o1.txt").write_text("o1\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o1.txt"), "add o1.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline 1"), "commit orpheline 1")
+    middle = _git(work, "rev-parse", "HEAD").stdout.strip()
+    (work / "o2.txt").write_text("o2\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o2.txt"), "add o2.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline 2"), "commit orpheline 2")
+    tip = _git(work, "rev-parse", "HEAD").stdout.strip()
+    _git_ok(_git(work, "push", "-q", "origin", "orpheline"), "push orpheline")
+    monkeypatch.chdir(clone)
+    # Deux fetches bornes : le sommet ET son parent arrivent, la racine de la
+    # chaine reste absente du depot.
+    _git_ok(
+        _git(clone, "fetch", "--depth=1", "--quiet", "origin", tip),
+        "fetch sommet",
+    )
+    _git_ok(
+        _git(clone, "fetch", "--depth=1", "--quiet", "origin", middle),
+        "fetch parent",
+    )
+    # la frontiere declaree ne porte QUE le sommet : son parent est present,
+    # la frontiere parente (que le fetch aurait ecrite) n'y est plus.
+    (clone / ".git" / "shallow").write_text(tip + "\n", encoding="utf-8")
+    # `tip^^` ne traverse pas un graft : le parent se lit dans l'OBJET commit.
+    raw_parents = merge_dwell._raw_parents(tip, merge_dwell._default_run_git)
+    assert raw_parents == [middle]
+    assert _git(clone, "cat-file", "-e", middle + "^{commit}").returncode == 0
+    assert merge_dwell._ancestry_readable(tip, merge_dwell._default_run_git) is False
+    assert merge_dwell.prune_dead_shallow_roots() == []
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+
+
+class _GrapheSimule:
+    """`run_git` simule : un graphe de commits + les frontieres de graft.
+
+    Permet d'encoder une topologie que git ne fabrique pas commodement --
+    une frontiere de FUSION dont un seul cote est complet, par exemple --
+    sans dependre de la forme que `git fetch --depth` veut bien produire.
+    `rev-list --max-parents=0` honore les grafts : il s'arrete sur une
+    frontiere et la rend comme racine, exactement comme le vrai git.
+    """
+
+    def __init__(self, parents, grafts):
+        self.parents = parents  # sha -> [parents bruts]
+        self.grafts = set(grafts)
+
+    def __call__(self, args):
+        if list(args[:2]) == ["cat-file", "commit"]:
+            sha = args[2]
+            if sha not in self.parents:
+                return 1, ""  # objet absent de la base
+            nl = chr(10)
+            body = "".join("parent %s%s" % (q, nl) for q in self.parents[sha])
+            return 0, "tree 0000%s%s%s" % (nl, body, nl)
+        if list(args[:2]) == ["rev-list", "--max-parents=0"]:
+            sommet = args[2]
+            vus, racines, pile = set(), [], [sommet]
+            while pile:
+                courant = pile.pop()
+                if courant in vus:
+                    continue
+                vus.add(courant)
+                if courant not in self.parents:
+                    return 128, ""  # objet absent : lecture refusee
+                if courant in self.grafts:
+                    racines.append(courant)  # le graft coupe ici
+                    continue
+                ps = self.parents[courant]
+                if not ps:
+                    racines.append(courant)
+                else:
+                    pile.extend(ps)
+            return 0, chr(10).join(racines) + chr(10)
+        return 1, ""
+
+
+def test_une_frontiere_de_fusion_a_un_seul_cote_tronque_est_gardee():
+    """#23089, review du coordinateur (2026-11-01) : le retour anticipe.
+
+    Une frontiere de FUSION `M` porte deux parents bruts, `P0` et `P1`.
+    `P1` remonte a une vraie racine ; `P0` s'appuie sur `G0`, dont le parent
+    n'est plus dans la base. La premiere version rendait `True` des que `P1`
+    atteignait sa racine, sans avoir parcouru `P0` -- donc en retirant une
+    frontiere dont l'ascendance est tronquee, c'est-a-dire le defaut meme que
+    `_raw_parents` avait ete ecrit pour couvrir.
+    """
+    graphe = _GrapheSimule(
+        {
+            "P1": ["R1"],
+            "R1": [],
+            "P0": ["G0"],
+            "G0": ["ABSENT"],
+            "M": ["P0", "P1"],
+        },
+        grafts={"M", "P0"},
+    )
+    assert merge_dwell._ancestry_readable("M", graphe) is False
+
+
+def test_un_lot_de_racines_dont_une_est_complete_est_garde():
+    """#23089, second cas du coordinateur : un LOT de racines heterogene.
+
+    Un seul bond rend `R` (vraie racine) et `S2` (frontiere dont le parent
+    manque). Rendre `True` parce que `R` est une vraie racine ignorerait
+    `S2` : la frontiere doit etre gardee.
+    """
+    graphe = _GrapheSimule(
+        {
+            "R": [],
+            "S2": ["ABSENT"],
+            "T": ["R", "S2"],
+        },
+        grafts={"S2"},
+    )
+    assert merge_dwell._ancestry_readable("T", graphe) is False
+
+
+def test_un_graphe_entierement_lisible_rend_vrai():
+    """Controle POSITIF des deux cas precedents : sans trou, la fonction rend
+    `True` et la frontiere est bien retiree. Sans lui, les deux tests
+    ci-dessus passeraient aussi sur une fonction qui rend toujours `False`.
+    """
+    graphe = _GrapheSimule(
+        {
+            "R1": [],
+            "R2": [],
+            "P0": ["R2"],
+            "P1": ["R1"],
+            "M": ["P0", "P1"],
+        },
+        grafts={"M"},
+    )
+    assert merge_dwell._ancestry_readable("M", graphe) is True

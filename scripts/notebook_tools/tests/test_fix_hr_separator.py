@@ -241,3 +241,62 @@ def test_reconciliation_echoue_sans_ecrire(tmp_path):
     with pytest.raises(RuntimeError):
         fix.process(p, apply=True)
     assert p.read_bytes() == before  # rien n'a ete ecrit
+
+
+# --- Fichiers .md (extension #18422) -----------------------------------------
+
+def test_md_hr_de_corps_converti():
+    """Un .md est une cellule unique : le hr de corps part en `***`."""
+    src = "Intro\n\n---\n\n## Section\n\nFin."
+    out, n = fix.convert_md_text(src)
+    assert n == 1
+    assert "***" in out and "\n---\n" not in out
+
+
+def test_md_setext_et_fence_preserves():
+    """Soulignement setext et `---` de fence restent intacts, seul le hr part."""
+    src = "Intro\n\n---\n\nTexte\n---\n\n```\n---\n```\n"
+    out, n = fix.convert_md_text(src)
+    assert n == 1
+    assert out.count("---") == 2  # setext + contenu de fence
+    assert out.count("***") == 1
+
+
+def test_md_frontmatter_documentaire_intact():
+    """Le frontmatter YAML de TETE de document ne se convertit pas."""
+    src = "---\ntitle: X\n---\n\nCorps\n\n---\n\nFin.\n"
+    out, n = fix.convert_md_text(src)
+    assert n == 1
+    assert out.startswith("---\ntitle: X\n---")
+    assert "***" in out
+
+
+def test_md_crlf_preserve_octet_par_octet():
+    """Les fins de ligne CRLF survivent : seul `---` devient `***`."""
+    src = "Intro\r\n\r\n---\r\n\r\nFin\r\n"
+    out, n = fix.convert_md_text(src)
+    assert n == 1
+    assert out == "Intro\r\n\r\n***\r\n\r\nFin\r\n"
+
+
+def test_md_bom_et_frontmatter_a_l_ecriture(tmp_path):
+    """process_md ecrit byte-preserving : BOM et frontmatter restent."""
+    p = tmp_path / "d.md"
+    p.write_bytes("﻿---\ntitle: BOM\n---\n\nA\n\n---\n\nB\n".encode("utf-8"))
+    assert fix.process_md(p, apply=True) == 1
+    after = p.read_bytes()
+    assert after.startswith("﻿---\ntitle: BOM\n---".encode("utf-8"))
+    assert b"***" in after
+    # idempotent
+    assert fix.process_md(p, apply=True) == 0
+
+
+def test_md_iter_markdown_exclut_les_archives(tmp_path):
+    """Sous-arbres archives exclus (memes marqueurs que regen_quarto_render)."""
+    ok = tmp_path / "a.md"
+    ok.write_text("X\n\n---\n\nY\n")
+    arch = tmp_path / "_archive"
+    arch.mkdir()
+    (arch / "b.md").write_text("X\n\n---\n\nY\n")
+    trouves = [p.name for p in fix.iter_markdown([str(tmp_path)])]
+    assert trouves == ["a.md"]

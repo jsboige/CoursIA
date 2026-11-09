@@ -7,7 +7,7 @@ Fichiers `.lean` autonomes à usage pédagogique, exécutés via le kernel Jupyt
 
 - **Type** : Fichiers autonomes (pas de lakefile — exécutés cellule par cellule via le kernel Jupyter)
 - **Compte de sorry** : 2 (dans `llm_assisted_proof.lean` — exemple pédagogique intentionnel)
-- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — **5 modules .lean FR canonique** + **5 siblings `*_en.lean` miroirs sur `main`** (`basic_logic_en.lean`, `llm_assisted_proof_en.lean`, `mathlib_examples_en.lean`, `quantifiers_en.lean`, `tactics_demo_en.lean`). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques — vérifié par `scripts/lean/check_i18n_siblings.py` : **6/6 paires byte-identical, 0 drift, 0 orphan**.
+- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — les modules `.lean` FR canoniques + leurs siblings `*_en.lean` miroirs sur `main` (`basic_logic_en.lean`, `llm_assisted_proof_en.lean`, `mathlib_examples_en.lean`, `quantifiers_en.lean`, `tactics_demo_en.lean`). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques — vérifié par `scripts/lean/check_i18n_siblings.py` : **toutes les paires byte-identical, 0 drift, 0 orphan**.
 
 ## Fichiers
 
@@ -40,12 +40,12 @@ L'exécution se fait **cellule par cellule** via le kernel Jupyter `lean4-wsl`,
 sans projet Lake — c'est le terrain d'expérimentation rapide de la série
 d'introduction, par contraste avec les projets Lake complets
 ([`../calibration_lean/`](../calibration_lean/),
-[`../conway_lean/`](../conway_lean/),
+[`../GOL/conway_lean/`](../GOL/conway_lean/),
 [`../sensitivity_lean/`](../sensitivity_lean/)) qui structurent des preuves
 volumineuses.
 
 ### Où aller ensuite
 
-- **Notebooks d'introduction** : [`../Lean-1-Setup.ipynb`](../Lean-1-Setup.ipynb) — le cours guidé (Lean-1 à Lean-5) que ces fichiers illustrent.
+- **Notebooks d'introduction** : [`../Lean-01-Setup-Lean-Python.ipynb`](../Lean-01-Setup-Lean-Python.ipynb) — le cours guidé (Lean-1 à Lean-5) que ces fichiers illustrent.
 - **Mathlib en action** : [`../mathlib_examples/`](../mathlib_examples/) (lake de smoke-test Mathlib — aucun notebook n'importe ses modules).
 - **Preuve assistée par LLM** : `llm_assisted_proof.lean` ici est l'amorce ; le harnais multi-agents [`../agent_tests/prover/`](../agent_tests/prover/) en est la version production.

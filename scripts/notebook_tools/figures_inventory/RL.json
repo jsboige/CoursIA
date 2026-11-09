@@ -6,7 +6,7 @@
   "total_bytes": 1699154,
   "figures": [
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-10-Reward-Shaping-Curriculum-Python.ipynb",
       "cell_index": 2,
       "output_index": 0,
       "width": 566,
@@ -15,7 +15,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-10-Reward-Shaping-Curriculum-Python.ipynb",
       "cell_index": 8,
       "output_index": 0,
       "width": 989,
@@ -24,7 +24,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_11_pomdp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-11-POMDP-Croyances-Python.ipynb",
       "cell_index": 8,
       "output_index": 0,
       "width": 1189,
@@ -33,7 +33,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_11_pomdp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-11-POMDP-Croyances-Python.ipynb",
       "cell_index": 15,
       "output_index": 1,
       "width": 989,
@@ -42,7 +42,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_12_distributional_rl.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-12-Distributional-RL-C51-Python.ipynb",
       "cell_index": 4,
       "output_index": 1,
       "width": 1290,
@@ -51,7 +51,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_12_distributional_rl.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-12-Distributional-RL-C51-Python.ipynb",
       "cell_index": 6,
       "output_index": 0,
       "width": 1290,
@@ -60,7 +60,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_12_distributional_rl.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-12-Distributional-RL-C51-Python.ipynb",
       "cell_index": 16,
       "output_index": 0,
       "width": 889,
@@ -69,7 +69,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_12_distributional_rl.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-12-Distributional-RL-C51-Python.ipynb",
       "cell_index": 18,
       "output_index": 0,
       "width": 1290,
@@ -78,7 +78,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_13_curiosity_exploration.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-13-Curiosite-RND-Python.ipynb",
       "cell_index": 7,
       "output_index": 0,
       "width": 1079,
@@ -87,7 +87,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_13_curiosity_exploration.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-13-Curiosite-RND-Python.ipynb",
       "cell_index": 12,
       "output_index": 0,
       "width": 1188,
@@ -96,7 +96,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb",
       "cell_index": 14,
       "output_index": 0,
       "width": 1389,
@@ -105,7 +105,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb",
       "cell_index": 29,
       "output_index": 0,
       "width": 1490,
@@ -114,7 +114,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb",
       "cell_index": 30,
       "output_index": 0,
       "width": 989,
@@ -123,7 +123,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb",
       "cell_index": 32,
       "output_index": 0,
       "width": 989,
@@ -132,7 +132,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb",
       "cell_index": 36,
       "output_index": 0,
       "width": 1189,
@@ -141,7 +141,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb",
       "cell_index": 38,
       "output_index": 0,
       "width": 1790,
@@ -150,7 +150,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_5_mdp_dp_qlearning.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb",
       "cell_index": 13,
       "output_index": 0,
       "width": 567,
@@ -159,7 +159,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_5_mdp_dp_qlearning.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb",
       "cell_index": 14,
       "output_index": 0,
       "width": 790,
@@ -168,7 +168,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_5_mdp_dp_qlearning.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb",
       "cell_index": 22,
       "output_index": 0,
       "width": 989,
@@ -177,7 +177,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_6_dqn_policy_gradient.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-06-DQN-Policy-Gradient-Python.ipynb",
       "cell_index": 11,
       "output_index": 0,
       "width": 1389,
@@ -186,7 +186,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_6_dqn_policy_gradient.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-06-DQN-Policy-Gradient-Python.ipynb",
       "cell_index": 18,
       "output_index": 0,
       "width": 989,
@@ -195,7 +195,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_6b_actor_critic.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-06b-Actor-Critic-Python.ipynb",
       "cell_index": 21,
       "output_index": 0,
       "width": 1389,
@@ -204,7 +204,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_6c_ppo_from_scratch.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-06c-PPO-Depuis-Zero-Python.ipynb",
       "cell_index": 6,
       "output_index": 0,
       "width": 790,
@@ -213,7 +213,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_6c_ppo_from_scratch.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-06c-PPO-Depuis-Zero-Python.ipynb",
       "cell_index": 16,
       "output_index": 0,
       "width": 989,
@@ -222,7 +222,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-06d-SAC-Depuis-Zero-Python.ipynb",
       "cell_index": 7,
       "output_index": 0,
       "width": 1390,
@@ -231,7 +231,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-06d-SAC-Depuis-Zero-Python.ipynb",
       "cell_index": 26,
       "output_index": 0,
       "width": 989,
@@ -240,7 +240,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_6e_grpo_from_scratch.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-06e-GRPO-Depuis-Zero-Python.ipynb",
       "cell_index": 14,
       "output_index": 0,
       "width": 1188,
@@ -249,7 +249,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_7_multi_agent_rl.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-07-Apprentissage-Multi-Agent-Python.ipynb",
       "cell_index": 17,
       "output_index": 0,
       "width": 989,
@@ -258,7 +258,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-08-Dyna-Q-Planification-Python.ipynb",
       "cell_index": 4,
       "output_index": 0,
       "width": 541,
@@ -267,7 +267,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-08-Dyna-Q-Planification-Python.ipynb",
       "cell_index": 7,
       "output_index": 0,
       "width": 790,
@@ -276,7 +276,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-08-Dyna-Q-Planification-Python.ipynb",
       "cell_index": 12,
       "output_index": 0,
       "width": 790,
@@ -285,7 +285,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-08-Dyna-Q-Planification-Python.ipynb",
       "cell_index": 15,
       "output_index": 0,
       "width": 955,
@@ -294,7 +294,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-08-Dyna-Q-Planification-Python.ipynb",
       "cell_index": 16,
       "output_index": 0,
       "width": 790,
@@ -303,7 +303,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_9_offline_rl.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-09-RL-Offline-Behavior-Cloning-Python.ipynb",
       "cell_index": 3,
       "output_index": 0,
       "width": 583,
@@ -312,7 +312,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_9_offline_rl.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-09-RL-Offline-Behavior-Cloning-Python.ipynb",
       "cell_index": 14,
       "output_index": 1,
       "width": 590,
@@ -321,7 +321,7 @@
       "over_weight": false
     },
     {
-      "notebook": "MyIA.AI.Notebooks/RL/rl_9_offline_rl.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-09-RL-Offline-Behavior-Cloning-Python.ipynb",
       "cell_index": 18,
       "output_index": 0,
       "width": 790,

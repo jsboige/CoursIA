@@ -1,47 +1,48 @@
-"""Diebold-Mariano test with Newey-West HAC variance correction.
+"""DEPRECATED -- thin compatibility shim over the canonical dm_test module.
 
-Tests H0: model A and model B have equal forecast accuracy against
-H1: they differ (two-sided) or one is better (one-sided).
+The canonical implementation lives in dm_test.py (DMResult dataclass,
+Student-t p-values with the HLN correction, n^(1/3) truncation rule,
+Bonferroni helper). This module preserves the historical dict-based API
+(dm_stat / p_value / significant_05 / significant_01 / n_obs /
+interpretation, loss_function="squared"/"absolute", h=, small_sample=,
+alternative=, bonferroni keys) so existing callers keep working; it
+computes nothing itself.
+
+Behavioral deltas vs the pre-#21945 implementation (frozen by
+tests/test_diebold_mariano.py):
+- truncation lag: legacy max(1, h-1) -> canonical n^(1/3); to pin a
+  legacy lag, import dm_test and pass max_lag explicitly;
+- p-value distribution: legacy normal-based -> canonical Student-t when
+  small_sample=True (the default);
+- Newey-West floor: legacy 1e-15 -> canonical 0.0 (the DM path already
+  treats hac_var < 1e-15 as degenerate).
+
+Deprecated since #21945 -- import dm_test instead.
 
 References:
-- Diebold & Mariano (1995) "Comparing Predictive Accuracy"
-- Newey & West (1987) "A Simple, Positive Semi-Definite, Heteroskedasticity
-  and Autocorrelation Consistent Covariance Matrix"
-- Harvey, Leybourne & Newbold (1997) small-sample correction
+- Diebold & Mariano (1995) "Comparing Predictive Accuracy", JBES 13, 253-263.
+- Harvey, Leybourne & Newbold (1997) small-sample correction.
 """
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
-from scipy import stats
+
+import dm_test
+
+warnings.warn(
+    "diebold_mariano is deprecated since #21945; import dm_test instead "
+    "(diebold_mariano_test, bonferroni_dm, newey_west_variance).",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 
 def newey_west_variance(x: np.ndarray, lag: int) -> float:
-    """Newey-West HAC long-run variance estimator.
-
-    Parameters
-    ----------
-    x : array
-        Series to estimate variance of (typically loss differentials).
-    lag : int
-        Truncation lag. DM recommend lag = h-1 for h-step forecasts.
-
-    Returns
-    -------
-    float
-        HAC variance estimate.
-    """
-    n = len(x)
-    if n < 2:
-        return float(np.var(x, ddof=1))
-    x = x - np.mean(x)
-    gamma_0 = float(np.dot(x, x) / n)
-    gamma_sum = gamma_0
-    for k in range(1, lag + 1):
-        weight = 1.0 - k / (lag + 1)
-        gamma_k = float(np.dot(x[k:], x[:-k]) / n)
-        gamma_sum += 2.0 * weight * gamma_k
-    return max(gamma_sum, 1e-15)
+    """Delegate to dm_test.newey_west_variance (floor now 0.0, was 1e-15)."""
+    return dm_test.newey_west_variance(np.asarray(x, dtype=float), max_lag=lag)
 
 
 def diebold_mariano_test(
@@ -52,38 +53,24 @@ def diebold_mariano_test(
     h: int = 1,
     small_sample: bool = True,
 ) -> dict:
-    """Diebold-Mariano test for equal predictive accuracy.
+    """Deprecated adapter over dm_test.diebold_mariano_test.
 
-    Parameters
-    ----------
-    errors_model : array
-        Forecast errors from the candidate model (y_true - y_pred).
-    errors_baseline : array
-        Forecast errors from the baseline (y_true - y_pred).
-    loss_function : str
-        "squared" (MSE) or "absolute" (MAE).
-    alternative : str
-        "two-sided", "less" (model better), or "greater" (baseline better).
-    h : int
-        Forecast horizon (used for Newey-West lag = h-1).
-    small_sample : bool
-        Apply Harvey-Leybourne-Newbold (1997) small-sample correction.
-
-    Returns
-    -------
-    dict with keys:
-        dm_stat: float — DM test statistic (negative = model better)
-        p_value: float — p-value
-        significant_05: bool — significant at 5%
-        significant_01: bool — significant at 1%
-        n_obs: int — number of observations
-        interpretation: str — human-readable
+    Maps the legacy signature to the canonical one (loss_function
+    squared/absolute -> loss_fn mse/mae, h -> horizon, small_sample ->
+    hln_correction, alternative unchanged), pre-truncates to the shorter
+    series (canonical raises on shape mismatch) and rebuilds the legacy
+    dict with interpretation string.
     """
     errors_model = np.asarray(errors_model, dtype=float)
     errors_baseline = np.asarray(errors_baseline, dtype=float)
     n = min(len(errors_model), len(errors_baseline))
     errors_model = errors_model[:n]
     errors_baseline = errors_baseline[:n]
+
+    if loss_function not in ("squared", "absolute"):
+        raise ValueError(f"Unknown loss function: {loss_function}")
+    if alternative not in ("two-sided", "less", "greater"):
+        raise ValueError(f"Unknown alternative: {alternative}")
 
     if n < 10:
         return {
@@ -95,46 +82,18 @@ def diebold_mariano_test(
             "interpretation": "Too few observations for DM test",
         }
 
-    if loss_function == "squared":
-        loss_a = errors_model ** 2
-        loss_b = errors_baseline ** 2
-    elif loss_function == "absolute":
-        loss_a = np.abs(errors_model)
-        loss_b = np.abs(errors_baseline)
-    else:
-        raise ValueError(f"Unknown loss function: {loss_function}")
+    loss_fn = "mse" if loss_function == "squared" else "mae"
+    result = dm_test.diebold_mariano_test(
+        errors_model, errors_baseline,
+        loss_fn=loss_fn, hln_correction=small_sample, horizon=h,
+        alternative=alternative,
+    )
+    dm_stat = result.dm_statistic
+    p_value = result.p_value
 
-    d = loss_a - loss_b
-    d_mean = float(np.mean(d))
-
-    if np.allclose(d, d_mean):
-        return {
-            "dm_stat": 0.0,
-            "p_value": 1.0,
-            "significant_05": False,
-            "significant_01": False,
-            "n_obs": n,
-            "interpretation": "Identical errors — equal accuracy",
-        }
-
-    lag = max(1, h - 1)
-    hac_var = newey_west_variance(d, lag=lag)
-    dm_stat = d_mean / np.sqrt(hac_var / n)
-
-    if small_sample:
-        correction = np.sqrt((n + 1 - 2 * h + h * (h - 1) / n) / n)
-        dm_stat = dm_stat * correction
-
-    if alternative == "two-sided":
-        p_value = float(2 * stats.norm.sf(np.abs(dm_stat)))
-    elif alternative == "less":
-        p_value = float(stats.norm.cdf(dm_stat))
-    elif alternative == "greater":
-        p_value = float(stats.norm.sf(dm_stat))
-    else:
-        raise ValueError(f"Unknown alternative: {alternative}")
-
-    if dm_stat < 0 and p_value < 0.05:
+    if dm_stat == 0.0 and p_value == 1.0:
+        interp = "Identical errors — equal accuracy"
+    elif dm_stat < 0 and p_value < 0.05:
         interp = f"Model significantly better (DM={dm_stat:.3f}, p={p_value:.4f})"
     elif dm_stat > 0 and p_value < 0.05:
         interp = f"Baseline significantly better (DM={dm_stat:.3f}, p={p_value:.4f})"
@@ -146,7 +105,7 @@ def diebold_mariano_test(
         "p_value": float(p_value),
         "significant_05": p_value < 0.05,
         "significant_01": p_value < 0.01,
-        "n_obs": n,
+        "n_obs": result.n_observations,
         "interpretation": interp,
     }
 
@@ -158,12 +117,11 @@ def bonferroni_dm(
     loss_function: str = "squared",
     h: int = 1,
 ) -> dict:
-    """DM test with Bonferroni correction for multiple comparisons.
+    """Deprecated adapter: legacy diebold_mariano_test + Bonferroni keys.
 
-    Parameters
-    ----------
-    n_tests : int
-        Total number of DM tests being conducted (for Bonferroni correction).
+    Goes through the shim's own diebold_mariano_test so pre-truncation
+    and the n<10 NaN path keep their legacy semantics (the canonical
+    dm_test.bonferroni_dm raises instead).
     """
     result = diebold_mariano_test(
         errors_model, errors_baseline,

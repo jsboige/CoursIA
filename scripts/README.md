@@ -94,8 +94,8 @@ détectable mécaniquement (source modifiée sans retraduction, ou traduction é
 
 ```bash
 # Extraire le CSV initial d'une série (langue pivot fr, #1650 Phase 0.5)
-python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ \
-    -o translations/symbolicai/argument_analysis.csv
+python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ \
+    -o translations/symbolicai/argumentanalysis.csv
 
 # Un seul notebook (POC / schema review)
 python scripts/translation/extract_cells_to_csv.py notebook.ipynb -o poc.csv
@@ -119,9 +119,7 @@ resync par le moteur Argumentum (T3, gated #1650 Phase 1) viennent dans les tran
 ```
 
 Chaque script PowerShell possède un jumeau bash de comportement équivalent
-(`scripts/environment/README.md` documente les différences de port). Le seul
-script Windows-only du dépôt est `scripts/genai-stack/Configure-IISAuthentication.ps1`
-(IIS n'existe pas sur Mac/Linux) — pas de jumeau bash prévu.
+(`scripts/environment/README.md` documente les différences de port).
 
 ## Validation Lean
 

@@ -24,6 +24,25 @@ inputs:
     required: false
     default: ''
 
+outputs:
+  lake-cache-hit:
+    description: >
+      'true' quand l'archive `.lake` a ete restauree depuis le cache Actions.
+      La restauration seule vit dans le composite (#19658) ; le SAVE est un pas
+      explicite du job appelant, apres son `Drop Mathlib oleans` -- un post-step
+      interne au composite capturerait les oleans Mathlib (2,4 Go).
+    value: ${{ steps.lake-cache.outputs.cache-hit }}
+  lake-cache-key:
+    description: >
+      Cle primaire du cache d'archives `.lake`, telle que calculee par la
+      restauration du composite. Exposee pour que le SAVE d'un job appelant qui
+      ne porte PAS lui-meme d'etape `id: lake-cache` (le job matriciel
+      `ci-matrix`, #13751) puisse nommer la cle : y ecrire directement
+      `steps.lake-cache.outputs.cache-primary-key` rend la chaine vide, puisque
+      l'id n'existe que dans le job `ci` et dans ce composite (revue ai-01 sur
+      #19668).
+    value: ${{ steps.lake-cache.outputs.cache-primary-key }}
+
 runs:
   using: composite
   steps:
@@ -134,8 +153,15 @@ runs:
         ./elan-init -y --default-toolchain none
         echo "$HOME/.elan/bin" >> $GITHUB_PATH
 
-    - name: Cache Lake build artifacts
-      uses: actions/cache@v4
+    # RESTORE SEUL (restore-only, #19658) : le SAVE est un pas explicite du job
+    # appelant, place APRES son etape `Drop Mathlib oleans` et conditionne a
+    # `github.ref == refs/heads/main`. Avant, `actions/cache@v4` sauvegardait en
+    # post-step sur TOUTE ref qui manquait la cle : mesure du 2026-10-07, la
+    # famille `lake-*` comptait 8 entrees de ~650 Mo, 8/8 sur `refs/pull/*`
+    # et 0 sur `main` -- la meme cle dupliquee par PR, 5,2 Go du quota de 10 Go.
+    - name: Restore Lake build artifacts
+      id: lake-cache
+      uses: actions/cache/restore@v4
       with:
         path: ${{ inputs.project-path }}/.lake
         key: lake-${{ inputs.display-name }}-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}
@@ -144,18 +170,36 @@ runs:
     # Hosted leg only (#14337 tranche 2a): the specialised Lean pool carries
     # its swap OUTSIDE the job (cgroup `--memory-swap 24g`, supervise.sh
     # cmd_lean) precisely because a job container has no sudo to fallocate.
-    # On github-hosted the 32 G swap stays the OOM guard for a cache-miss
+    # On github-hosted the swap (sized from free space, at most 32 G) stays the OOM guard for a cache-miss
     # elaboration peak (history: PR #9798/#9840, see the long note that used
     # to live in lean-build.yml — now in the reusable, same wording).
     - name: Add swap space (hosted only)
       if: runner.environment == 'github-hosted'
       shell: bash
       run: |
-        df -h /mnt
-        sudo fallocate -l 32G /mnt/lean-swap
-        sudo chmod 600 /mnt/lean-swap
-        sudo mkswap /mnt/lean-swap
-        sudo swapon /mnt/lean-swap
+        df -h /mnt / || true
+        # Size the swap from the free space really left on its filesystem.
+        # /mnt sits on /dev/root on hosted runners (145G, 84G free measured
+        # 2026-11-04): a fixed 32G fallocate starved runners with less room,
+        # which died "No space left on device" a minute in. Keep 30G for the
+        # toolchain, the Mathlib cache and the build; cap the swap at 32G.
+        avail_g=$(df --output=avail -BG /mnt 2>/dev/null | tail -n 1 | tr -dc '0-9' || true)
+        if [ -z "$avail_g" ]; then
+          echo "::warning title=Lean swap skipped::df could not read the free space on /mnt"
+        else
+          swap_g=$(( avail_g - 30 ))
+          if [ "$swap_g" -gt 32 ]; then swap_g=32; fi
+          if [ "$swap_g" -lt 4 ]; then
+            echo "::warning title=Lean swap skipped::${avail_g}G free on /mnt, under 34G (4G swap + 30G build reserve)"
+          elif sudo fallocate -l "${swap_g}G" /mnt/lean-swap; then
+            sudo chmod 600 /mnt/lean-swap
+            sudo mkswap /mnt/lean-swap
+            sudo swapon /mnt/lean-swap
+          else
+            sudo rm -f /mnt/lean-swap
+            echo "::warning title=Lean swap skipped::fallocate of ${swap_g}G failed on /mnt"
+          fi
+        fi
         free -h
 
     - name: Authenticate lake's git clones
@@ -213,10 +257,14 @@ runs:
         ) &
         _lake_pipeline=$!
         _elapsed=0
+        # Poll every 5 s, print every 10 min. A bare `sleep 600` here held the
+        # runner until the next 10-min tick after the build had ended: 102 of
+        # 140 runner-minutes on the 11 Lean jobs of PR #18186 were that sleep.
         while kill -0 "$_lake_pipeline" 2>/dev/null; do
-          sleep 600
+          sleep 5
+          _elapsed=$((_elapsed + 5))
+          [ $((_elapsed % 600)) -eq 0 ] || continue
           kill -0 "$_lake_pipeline" 2>/dev/null || break
-          _elapsed=$((_elapsed + 10))
-          echo "[lake-heartbeat] still running after ${_elapsed} min - last line: $(tail -1 "$RUNNER_TEMP/lake.log" 2>/dev/null | cut -c1-160)"
+          echo "[lake-heartbeat] still running after $((_elapsed / 60)) min - last line: $(tail -1 "$RUNNER_TEMP/lake.log" 2>/dev/null | cut -c1-160)"
         done
         wait "$_lake_pipeline"

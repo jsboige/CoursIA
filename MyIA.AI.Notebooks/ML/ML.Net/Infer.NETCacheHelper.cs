@@ -12,7 +12,7 @@ using Range = Microsoft.ML.Probabilistic.Models.Range;
 
 /// <summary>
 /// Helper partagé pour le cache des modèles Infer.NET compilés.
-/// Inspiré de PrecompiledRobustSudokuModel du notebook Sudoku-15-Infer-Csharp.
+/// Inspiré de PrecompiledRobustSudokuModel du notebook Sudoku-15-Infer-CSharp.
 /// </summary>
 public static class InferNETCacheHelper
 {

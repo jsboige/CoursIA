@@ -24,6 +24,7 @@ Two things are pinned here:
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -70,24 +71,79 @@ def test_archived_deck_divergence_is_deliberate():
 
 
 def test_repo_deck_links_produce_no_false_positive():
-    """Acceptance 3 (#15867): the 108 existing deck links yield 0 findings.
+    """Acceptance 3 (#15867): the existing deck links yield 0 findings.
 
-    The deck labels are basenames; the organ must accept the form as-is.
+    The deck labels are basenames; the organ must accept the form as-is. Since
+    #23684 the comparison also reads identifiers of OTHER families, but only
+    those of the corpus universe -- a deck may shorthand a notebook (`AA-1`,
+    `Argument_Analysis_Agentic-1`), and those are not notebook families.
     """
+    families = organ.corpus_families(REPO_ROOT)
     findings = []
     for deck in sorted(REPO_ROOT.glob(DECK_GLOB)):
         if organ.EXCLUDE_PARTS & set(deck.parts):
             continue
         rel = deck.relative_to(REPO_ROOT).as_posix()
-        findings += organ.check_text(deck.read_text(encoding="utf-8"), rel)
+        findings += organ.check_text(deck.read_text(encoding="utf-8"), rel, families)
     assert findings == [], f"false positives on the existing decks: {findings}"
+
+
+RECLASS_FAMILIES = {"gametheory", "dynamics", "ict", "lean", "knots"}
+
+
+def test_reclass_label_is_detected():
+    """#23684 positive control: a label naming ANOTHER family is now read.
+
+    The measured case is `docs/curriculum/recherche.md`: the label is the
+    notebook's stale H1 (`GameTheory-6c ...`), the target is its reclassified
+    path (`Dynamics-01-...`). Before the widening the predicate searched the
+    TARGET's family (`dynamics-NN`) inside the label, found nothing, and the
+    disagreement was structurally invisible.
+    """
+    src = ("| 35 | [GameTheory-6c (C#) : Jeux Repetes et Theoreme Folk]"
+           "(../../MyIA.AI.Notebooks/GameTheory/Dynamics/"
+           "Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb) | BETA | Oui |")
+    findings = organ.check_text(src, "docs/curriculum/recherche.md", RECLASS_FAMILIES)
+    assert len(findings) == 1
+    assert findings[0]["says"] == "gametheory-6c"
+    assert findings[0]["points_to"] == "dynamics-1"
+
+
+def test_reclass_with_matching_ordinal_is_silent():
+    """#23684 negative control, mandatory: same ordinal, other family -> silent.
+
+    Without it the widening reds on every cross-family citation in the repo.
+    """
+    src = "[Lean-03 (Galois)](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-03-x.ipynb)"
+    assert organ.check_text(src, "<test>", RECLASS_FAMILIES) == []
+
+
+def test_domain_vocabulary_inside_a_glose_is_not_an_identifier():
+    """A family id buried in the glose is prose, not a citation (#23684).
+
+    Measured on the corpus 2026-11-06: reading identifiers anywhere in the
+    label turned model and library names into findings (`Qwen3.5-0.8B`,
+    `LTX-2`, `Lumina-2`, `ERC-20`, `DoWhy-2`) and took the organ from 1 to 88.
+    Only the head of a label counts for a foreign family.
+    """
+    src = "[Parcours avance (Knots-2)](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17b-Knots-Invariants-Companion.ipynb)"
+    assert organ.check_text(src, "<test>", RECLASS_FAMILIES) == []
+
+
+def test_foreign_family_head_of_label_fires_even_with_letter():
+    """`Knots-2` as the head of the label is a citation and must fire."""
+    src = "[Knots-2 — Invariants](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17b-Knots-Invariants-Companion.ipynb)"
+    findings = organ.check_text(src, "<test>", RECLASS_FAMILIES)
+    assert len(findings) == 1
+    assert findings[0]["says"] == "knots-2"
+    assert findings[0]["points_to"] == "lean-17b"
 
 
 def test_lying_label_on_a_deck_is_detected():
     """A rename that updates the href and leaves the label behind must fire."""
     src = (
-        "*Notebooks : [GameTheory-02-NormalForm]"
-        "(../../MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction.ipynb).*\n"
+        "*Notebooks : [GameTheory-02-NormalForm-Python]"
+        "(../../MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Python.ipynb).*\n"
     )
     findings = organ.check_text(src, "slides/05-theorie-des-jeux/slides.md")
     assert len(findings) == 1
@@ -102,8 +158,8 @@ def test_deck_basename_form_is_accepted_without_loosening():
     glose outside the brackets are irrelevant to the comparison.
     """
     for src in (
-        "*Notebooks : [GameTheory-02-NormalForm]"
-        "(../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb) (matrices).*\n",
+        "*Notebooks : [GameTheory-02-NormalForm-Python]"
+        "(../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb) (matrices).*\n",
         "[Infer-1b-Premiers-Modeles](../../MyIA.AI.Notebooks/Probas/Infer/"
         "Infer-1b-Premiers-Modeles.ipynb)\n",
     ):
@@ -116,7 +172,7 @@ def test_naive_basename_equality_would_false_positive():
     If the predicate were ever rewritten as `label == target basename`, the deck
     corpus would light up: the label omits the extension.
     """
-    label, target = "GameTheory-02-NormalForm", "GameTheory-02-NormalForm.ipynb"
+    label, target = "GameTheory-02-NormalForm-Python", "GameTheory-02-NormalForm-Python.ipynb"
     assert label != target  # the naive form would flag this healthy link
     src = f"*Notebooks : [{label}](../../MyIA.AI.Notebooks/GameTheory/{target}).*\n"
     assert organ.check_text(src, "slides/x/slides.md") == []
@@ -141,6 +197,102 @@ def test_absent_deck_dir_is_not_an_error(tmp_path, monkeypatch):
 def test_self_test_still_passes():
     """The organ's own #13645 control is untouched by the scope widening."""
     assert organ.self_test() == 0
+
+
+def test_reclass_resolves_sibling_target_against_source_path():
+    """#23684: the real Dynamics-03 link carries only its target basename."""
+    src = "[GameTheory-06c](Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb)"
+    path = (
+        "MyIA.AI.Notebooks/GameTheory/Dynamics/"
+        "Dynamics-03-Sympathie-vs-Engagement-Python.ipynb"
+    )
+    findings = organ.check_text(src, path)
+    assert len(findings) == 1
+    assert findings[0]["says"] == "gametheory-6c"
+    assert findings[0]["points_to"] == "dynamics-1"
+
+    assert organ.check_text(
+        "[GameTheory-01](Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb)",
+        path,
+    ) == []
+
+
+def test_unreadable_path_is_reported_not_fatal(tmp_path, monkeypatch):
+    """WinError 1920 must not abort the sweep.
+
+    Measured 2026-10-26 on Windows: `p.is_file()` raised `OSError` on
+    `erc20_lean/.lake/packages/batteries/docs/README.md` and killed the whole
+    loop, so the organ returned `rc=1` with no verdict at all -- the same code
+    `--fail` uses for a real disagreement.
+    """
+    (tmp_path / "keep.md").write_text("[A-1](A-1-x.ipynb)", encoding="utf-8")
+    (tmp_path / "boom.md").write_text("[A-2](A-2-x.ipynb)", encoding="utf-8")
+    real_is_file = Path.is_file
+
+    def fake_is_file(self):
+        if self.name == "boom.md":
+            raise OSError(1920, "simulated: cannot access the file")
+        return real_is_file(self)
+
+    monkeypatch.setattr(Path, "is_file", fake_is_file)
+    unreadable = []
+    scanned = list(organ.iter_scan_files(tmp_path, ("*.md",), unreadable))
+    assert [p.name for p in scanned] == ["keep.md"]
+    assert [u["path"] for u in unreadable] == ["boom.md"]
+    assert "simulated" in unreadable[0]["error"]
+
+
+def test_excluded_paths_are_never_stat_ed(tmp_path, monkeypatch):
+    """Exclusion is lexical and comes FIRST -- `.lake` is in EXCLUDE_PARTS.
+
+    The founding measurement: the path that crashed the sweep was inside
+    `.lake`, which the scan excludes. Because `is_file()` was evaluated before
+    the exclusion test, the organ died on a path it was never meant to read.
+    """
+    lake_docs = tmp_path / ".lake" / "packages" / "batteries" / "docs"
+    lake_docs.mkdir(parents=True)
+    (lake_docs / "README.md").write_text("x", encoding="utf-8")
+    (tmp_path / "keep.md").write_text("x", encoding="utf-8")
+    real_is_file = Path.is_file
+
+    def fake_is_file(self):
+        if ".lake" in self.parts:
+            raise AssertionError("an excluded path was stat-ed")
+        return real_is_file(self)
+
+    monkeypatch.setattr(Path, "is_file", fake_is_file)
+    unreadable = []
+    assert [p.name for p in organ.iter_scan_files(tmp_path, ("**/*.md",), unreadable)] == [
+        "keep.md"
+    ]
+    assert unreadable == []
+
+
+def test_main_surfaces_unreadable_paths_without_changing_rc(tmp_path, monkeypatch, capsys):
+    """An unreadable path is visible in `--json` and on stderr, and keeps rc=0.
+
+    Visibility without a red: rc=1 belongs to `--fail`, and stealing it would
+    re-create the ambiguity this fix removes.
+    """
+    nb_dir = tmp_path / "MyIA.AI.Notebooks" / "Serie"
+    nb_dir.mkdir(parents=True)
+    (nb_dir / "README.md").write_text("[Serie-1](Serie-1-x.ipynb)", encoding="utf-8")
+    real_is_file = Path.is_file
+
+    def fake_is_file(self):
+        if self.name == "README.md":
+            raise OSError(1920, "simulated: cannot access the file")
+        return real_is_file(self)
+
+    monkeypatch.setattr(Path, "is_file", fake_is_file)
+    monkeypatch.setattr(organ, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(sys, "argv", ["check_link_label_agreement.py", "--json"])
+    assert organ.main() == 0
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert [u["path"] for u in payload["unreadable"]] == ["MyIA.AI.Notebooks/Serie/README.md"]
+    assert payload["findings"] == []
+    assert "chemin illisible" in captured.err
 
 
 if __name__ == "__main__":

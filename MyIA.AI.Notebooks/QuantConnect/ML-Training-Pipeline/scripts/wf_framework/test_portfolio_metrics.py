@@ -158,6 +158,30 @@ class TestCAGR:
         assert abs(cagr) < 0.001
 
 
+class TestSharedDefinition:
+    """The wrappers compute through ``strategy_metrics`` (#19016) and keep their results."""
+
+    RETURNS = np.random.default_rng(19016).normal(0.0004, 0.011, 600)
+
+    def test_sharpe_matches_the_previous_formula(self):
+        r = self.RETURNS
+        for ppy in (252, 365, 52):
+            old = np.mean(r) / np.std(r, ddof=1) * np.sqrt(ppy)
+            assert compute_sharpe(r, periods_per_year=ppy) == old
+        assert compute_sharpe(r, annualize=False) == np.mean(r) / np.std(r, ddof=1)
+
+    def test_drawdown_and_cagr_match_the_previous_formulas(self):
+        equity = 100.0 * np.cumprod(np.concatenate(([1.0], 1.0 + self.RETURNS)))
+        peak = np.maximum.accumulate(equity)
+        assert compute_max_drawdown(equity) == pytest.approx(
+            float(np.min((equity - peak) / peak)), rel=1e-12)
+        n_years = (len(equity) - 1) / 252
+        assert compute_cagr(equity) == float((equity[-1] / equity[0]) ** (1.0 / n_years) - 1)
+
+    def test_drawdown_counts_the_first_point(self):
+        assert compute_max_drawdown(np.array([100.0, 90.0, 95.0])) == pytest.approx(-0.1)
+
+
 class TestHitRate:
     def test_all_positive(self):
         assert compute_hit_rate(np.array([0.01, 0.02, 0.03])) == 1.0

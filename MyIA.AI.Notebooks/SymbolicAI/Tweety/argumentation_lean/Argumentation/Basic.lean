@@ -21,7 +21,7 @@ d'arguments défendus) — propriété clé qui fait de la fonction caractérist
 `F(S) = {a | S défend a}` un `OrderHom` (voir `Characteristic.lean`).
 
 Référence croisée :
-- Notebook `Tweety-5-Abstract-Argumentation.ipynb` (série Tweety) : présentation
+- Notebook `Tweety-05-Abstract-Argumentation-Python.ipynb` (série Tweety) : présentation
   Python des cadres de Dung, dont cette formalisation est le pendant prouvé.
 - Epic Argumentum #2137.
 -/

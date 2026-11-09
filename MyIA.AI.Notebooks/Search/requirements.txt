@@ -34,7 +34,7 @@ optuna>=3.0                  # Optimisation bayesienne d'hyperparametres (App-18
 rustuna>=0.1.0               # Portage Rust officiel d'Optuna (App-18c ; statut experimental, bug best_trial connu — cf notebook)
 
 # Linear Programming
-pulp>=2.8.0                 # Linear programming with CBC, HiGHS solvers
+pulp>=2.8.0,<4.0            # Linear programming with CBC, HiGHS solvers (<4.0 : LpVariable.dicts retiree en 4.0, consomme par Search-09 et Frontieres-07)
 
 # Jupyter
 ipywidgets>=8.1

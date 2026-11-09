@@ -25,19 +25,27 @@ name: Mermaid Fill Color Advisory
 # Hors scope (student-pr-reviews.md): forks (student PRs) are skipped -- a
 # benevolent review applies, no internal content criterion runs against them.
 
+# ABSORBE PAR LA VOIE RAPIDE (#22209 tranche 1, registre TRANCHE27) : la
+# jambe per-PR vit desormais dans le job fast-lane d'always-on-guards.yml,
+# sous le MEME nom de check-run (contrat d'identite
+# `check_absorbed_check_run_identity.py`), avec le pre-controle --self-test
+# porte par `pre_argv`. Le declencheur `pull_request` est retire ci-dessous ;
+# ce fichier reste pour (a) la re-mesure manuelle via `workflow_dispatch`
+# et (b) la source du nom canonique. Les labels `mermaid-fill-color` /
+# `mermaid-fill-color-unmeasured` ne sont plus poses sur les PRs -- la
+# payload (JSON par fichier, champs total_hits/error_count) demenage dans
+# le CORPS du check-run absorbe, precedent TRANCHE6 (deaccent). Le bloc
+# `paths:` d'origine est conserve en commentaire pour tracabilite :
+#   pull_request:
+#     types: [opened, synchronize, edited, reopened]
+#     branches: [main]
+#     paths: ['**/*.md', '**/*.ipynb',
+#             'scripts/notebook_tools/detect_mermaid_fill_without_color.py',
+#             'scripts/notebook_tools/tests/test_detect_mermaid_fill_without_color.py',
+#             'scripts/notebook_tools/tests/fixtures/mermaid_fill_no_color.md',
+#             '.github/workflows/mermaid-fill-color-advisory.yml']
+
 on:
-  pull_request:
-    types: [opened, synchronize, edited, reopened]
-    branches: [main]
-    paths:
-      - '**/*.md'
-      - '**/*.ipynb'
-      # Self-cover (#8822) -- the script, its tests + fixture, and the
-      # workflow itself.
-      - 'scripts/notebook_tools/detect_mermaid_fill_without_color.py'
-      - 'scripts/notebook_tools/tests/test_detect_mermaid_fill_without_color.py'
-      - 'scripts/notebook_tools/tests/fixtures/mermaid_fill_no_color.md'
-      - '.github/workflows/mermaid-fill-color-advisory.yml'
   workflow_dispatch:
 
 permissions:
@@ -67,6 +75,7 @@ jobs:
         with:
           # Need base..head history for `git diff` of changed files.
           fetch-depth: 0
+          filter: blob:none
 
       - name: Set up Python
         uses: actions/setup-python@v5

@@ -151,6 +151,38 @@ Certaines commandes peuvent prendre du temps. Augmentez le timeout :
 stdout, stderr, code = run_claude("Question complexe", timeout=120)
 ```
 
+### Réponses qui décrivent votre propre configuration Claude Code
+
+Lancés depuis une session Claude Code (terminal intégré de l'extension, ou agent qui exécute les carnets avec papermill), les appels `claude -p` des cellules héritent de cette session :
+
+- ses variables d'environnement (`CLAUDECODE`, `CLAUDE_CODE_*`, `MCP_*`) ;
+- votre `CLAUDE.md` global, vos serveurs MCP, vos hooks et vos skills.
+
+Les réponses décrivent alors votre propre configuration (outils MCP bloqués, fichier écrit « dans le scratchpad », permissions refusées « ce cycle ») au lieu de ce qu'obtient une personne qui vient de cloner le dépôt. Certaines cellules dépassent aussi leur délai.
+
+Pour une exécution propre, retirez ces variables et activez le mode sûr de la CLI. `CLAUDE_CODE_SAFE_MODE=1` équivaut à l'option `--safe-mode` : `CLAUDE.md`, serveurs MCP, hooks, skills et plugins sont désactivés, et l'authentification par les variables `ANTHROPIC_*` est conservée. Depuis un terminal bash (Git Bash sous Windows) :
+
+```bash
+cd MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks
+U=$(env | grep -E '^(CLAUDECODE|CLAUDE_[A-Z_]*|MCP_[A-Z_]*)=' | cut -d= -f1 | sed 's/^/-u /' | tr '\n' ' ')
+env $U CLAUDE_CODE_SAFE_MODE=1 python -m papermill 04-Claude-CLI-Agents.ipynb 04-Claude-CLI-Agents.ipynb -k python3 --cwd .
+```
+
+Un dossier de configuration vide (`CLAUDE_CONFIG_DIR` pointé vers un répertoire neuf) ne convient pas : la CLI s'y considère comme non connectée.
+
+Après l'exécution, cherchez dans les sorties les mots `scratchpad`, `MCP`, `cycle`, `permission` et `session` : chacun peut signaler une fuite de la configuration locale.
+
+### « Les permissions bloquent l'écriture / l'exécution »
+
+Ce message ne vient pas de votre configuration, et tout lecteur le verrait. En mode `-p`, personne ne peut approuver une action : tout outil qui demanderait une autorisation (écrire un fichier, lancer une commande) est refusé automatiquement. L'agent avait pris l'initiative de vérifier son travail, et il l'annonce non vérifié.
+
+La parade est de donner à chaque agent les outils de son rôle, et eux seuls :
+
+- un agent d'analyse reçoit les seuls outils de lecture : `--tools "Read,Glob,Grep"` ;
+- un agent qui écrit et exécute travaille dans une copie temporaire du projet, avec des droits précis : `--allowedTools Write "Bash(python -m pytest *)"`.
+
+Le carnet [04-Claude-CLI-Agents](04-Claude-CLI-Agents.ipynb) applique ces deux voies (section « Les permissions en mode `claude -p` ») ; le helper les transmet par `run_claude(..., extra_args=[...])`.
+
 ## Ressources
 
 - [Guide Installation](../docs/INSTALLATION-CLAUDE-CODE.md)

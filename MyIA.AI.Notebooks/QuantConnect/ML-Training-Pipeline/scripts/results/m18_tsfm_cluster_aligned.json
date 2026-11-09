@@ -1,0 +1,1352 @@
+{
+ "module": "M18",
+ "epic": 1454,
+ "protocol": "cluster revalidation of the zero-shot TimesFM 2.5 lead (#14768 protocol, PR #14778): seven-asset panel, per-asset horizon collapse (M16 rule) + coin-level binomial exact sign test, two views \u2014 cluster {1,5,10} (#1454 family) and protocol {1,5,22} (#14768 continuity). DM legs share one in-harness walk-forward: no cross-harness origin join exists to measure (unlike M4/M15); per-config n_oos and fold provenance live in the full artifact.",
+ "config": {
+  "coins": [
+   "BTC-USD",
+   "ETH-USD",
+   "SOL-USD",
+   "LTC-USD",
+   "XRP-USD",
+   "ADA-USD",
+   "DOT-USD"
+  ],
+  "view_horizons": {
+   "cluster": [
+    1,
+    5,
+    10
+   ],
+   "protocol": [
+    1,
+    5,
+    22
+   ]
+  },
+  "seeds": [
+   0,
+   7,
+   42,
+   99
+  ],
+  "n_seeds_effective": 1,
+  "n_splits": 5,
+  "calibration_size": 60,
+  "refit_every": 22,
+  "context_len": 512,
+  "debias": true,
+  "checkpoint_revision": "1d952420fba87f3c6dee4f240de0f1a0fbc790e3",
+  "n_tsfm_series_served": 126368
+ },
+ "seed_discipline": "TimesFM 2.5 inference is deterministic: seeds {0,7,42,99} are bit-identical controls (seeds_bit_identical=true on every row), never independent observations",
+ "alignment": "single-harness legs: baselines and TimesFM forecasts are scored on the same fold indices by construction \u2014 no cross-harness origin join to measure (recorded instead of assumed)",
+ "artifact": {
+  "path": "G:\\Mon Drive\\MyIA\\Dev\\Trading\\ML-Training-Pipeline\\m18_tsfm_cluster_full.json",
+  "bytes": 905349,
+  "sha256": "db1f541981eee91355b5cdbd4f39750ca55ad511d7e4be3a14af99db7a2d6fa9"
+ },
+ "per_coin_sha256": {
+  "BTC-USD": "b16062eb7aa89489da7f226d1f40ae46679a3cf13123e4fa91e9658a613fb2c1",
+  "ETH-USD": "bb43278e0bd60c93373d43a32c1a80f06b713b73ae93ccc6d0e1218ffb42f481",
+  "SOL-USD": "1f23d1db45d13df63351868e49b7e67290e423a6d403319e307bebdfd7b25328",
+  "LTC-USD": "330404f9b802a236a592f72169cc19694e1398f5425cfb982bb65f4c44ce05d1",
+  "XRP-USD": "f94ba22f65eff01719b916b2232305ecb23d689825f9fc936aac7306db39be57",
+  "ADA-USD": "eaa6bcdf42fdd5b3d83b9591c3a5db8f72ba93fcbd54b2b388ac76a86f55deac",
+  "DOT-USD": "52f9cac1efbfbd0f4a74b109217b4dce06d48186288fb35f00cb53fd85924013"
+ },
+ "aggregated": {
+  "cluster": {
+   "persistence": {
+    "sign_test": {
+     "verdict": "BEATS",
+     "alpha": 0.05,
+     "n_effective": 7,
+     "n_beats": 7,
+     "p_null": 0.5,
+     "alternative": "greater",
+     "p_value": 0.0078125,
+     "horizon_collapse": "BEATS when strict majority of horizons BEATS",
+     "coin_verdicts": [
+      {
+       "coin": "BTC-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 40.678432238897145,
+         "dm_p_median": 0.0
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 56.21143276712787,
+         "dm_p_median": 0.0
+        },
+        "10": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 53.24179107280358,
+         "dm_p_median": 0.0
+        }
+       }
+      },
+      {
+       "coin": "ETH-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 30.63397838758134,
+         "dm_p_median": 0.0
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 49.72562133202164,
+         "dm_p_median": 0.0
+        },
+        "10": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 46.5587368007973,
+         "dm_p_median": 4.947153797729698e-13
+        }
+       }
+      },
+      {
+       "coin": "SOL-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 36.41541230781728,
+         "dm_p_median": 5.927163204688668e-10
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 58.57398904679939,
+         "dm_p_median": 4.440892098500626e-16
+        },
+        "10": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 60.74016807401249,
+         "dm_p_median": 0.0
+        }
+       }
+      },
+      {
+       "coin": "LTC-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 29.58948958219362,
+         "dm_p_median": 7.080263129122244e-07
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 50.78378204152775,
+         "dm_p_median": 3.801403636316536e-13
+        },
+        "10": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 54.110924576844766,
+         "dm_p_median": 1.1546319456101628e-14
+        }
+       }
+      },
+      {
+       "coin": "XRP-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 30.222618045833787,
+         "dm_p_median": 7.794031087193787e-08
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 54.539866576314985,
+         "dm_p_median": 0.0
+        },
+        "10": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 58.99698867585934,
+         "dm_p_median": 0.0
+        }
+       }
+      },
+      {
+       "coin": "ADA-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 32.51211382470249,
+         "dm_p_median": 5.771577549218421e-08
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 53.951492474044336,
+         "dm_p_median": 4.440892098500626e-16
+        },
+        "10": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 59.06689123942711,
+         "dm_p_median": 0.0
+        }
+       }
+      },
+      {
+       "coin": "DOT-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 32.88185512044157,
+         "dm_p_median": 1.462090226667101e-09
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 59.87787514452608,
+         "dm_p_median": 0.0
+        },
+        "10": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 66.4840332004854,
+         "dm_p_median": 0.0
+        }
+       }
+      }
+     ]
+    }
+   },
+   "ewma": {
+    "sign_test": {
+     "verdict": "NO BEATS",
+     "alpha": 0.05,
+     "n_effective": 7,
+     "n_beats": 2,
+     "p_null": 0.5,
+     "alternative": "greater",
+     "p_value": 0.9375,
+     "horizon_collapse": "BEATS when strict majority of horizons BEATS",
+     "coin_verdicts": [
+      {
+       "coin": "BTC-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 20.128932598222534,
+         "dm_p_median": 4.96713781217295e-13
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 5.381166906340618,
+         "dm_p_median": 0.11572772516924501
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 8.668791712413158,
+         "dm_p_median": 0.06967409322614104
+        }
+       }
+      },
+      {
+       "coin": "ETH-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 10.463047361106808,
+         "dm_p_median": 9.192839703420219e-05
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 4.0744418458925065,
+         "dm_p_median": 0.3815384091608698
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 8.17574432744108,
+         "dm_p_median": 0.14228415679185624
+        }
+       }
+      },
+      {
+       "coin": "SOL-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 10.398682204421522,
+         "dm_p_median": 0.0029919997055052328
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 14.70160711136366,
+         "dm_p_median": 0.03701953386360901
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 10.306234668361103,
+         "dm_p_median": 0.21242192551946304
+        }
+       }
+      },
+      {
+       "coin": "LTC-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 8.611096832434491,
+         "dm_p_median": 0.016318581560624823
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 10.14166612021217,
+         "dm_p_median": 0.05989738921805832
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 10.353541908327239,
+         "dm_p_median": 0.19174182301284803
+        }
+       }
+      },
+      {
+       "coin": "XRP-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 13.961971110188214,
+         "dm_p_median": 0.008559728347198314
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 10.775960153240725,
+         "dm_p_median": 0.07415924656601769
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 1.0759446654753453,
+         "dm_p_median": 0.8800086234359759
+        }
+       }
+      },
+      {
+       "coin": "ADA-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 9.83076191184419,
+         "dm_p_median": 0.0031457788777113915
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 9.129321008410967,
+         "dm_p_median": 0.12807557876570907
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 0.5141200565747048,
+         "dm_p_median": 0.94336459488118
+        }
+       }
+      },
+      {
+       "coin": "DOT-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 10.153940743526196,
+         "dm_p_median": 0.00807994090648867
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 15.359978883521746,
+         "dm_p_median": 0.00319361026516618
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 8.468617973334815,
+         "dm_p_median": 0.14816121269735438
+        }
+       }
+      }
+     ]
+    }
+   },
+   "log_har": {
+    "sign_test": {
+     "verdict": "NO BEATS",
+     "alpha": 0.05,
+     "n_effective": 7,
+     "n_beats": 3,
+     "p_null": 0.5,
+     "alternative": "greater",
+     "p_value": 0.7734375,
+     "horizon_collapse": "BEATS when strict majority of horizons BEATS",
+     "coin_verdicts": [
+      {
+       "coin": "BTC-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 19.65717758322891,
+         "dm_p_median": 1.6187051699034782e-13
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 8.510211222660754,
+         "dm_p_median": 0.0014863946611458623
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 3.255251119625804,
+         "dm_p_median": 0.2952346310044893
+        }
+       }
+      },
+      {
+       "coin": "ETH-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 7.6344088080533865,
+         "dm_p_median": 4.302304403847046e-07
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 10.683715128444822,
+         "dm_p_median": 0.00019468647571030395
+        },
+        "10": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 12.97375014851456,
+         "dm_p_median": 0.0029267947317079823
+        }
+       }
+      },
+      {
+       "coin": "SOL-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 9.696478456140056,
+         "dm_p_median": 0.0009891860291990628
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 9.26728123474665,
+         "dm_p_median": 0.028100628948874107
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 8.479464136276247,
+         "dm_p_median": 0.13536602804468667
+        }
+       }
+      },
+      {
+       "coin": "LTC-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 5.621362114912245,
+         "dm_p_median": 0.018491971193072887
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 3.891342711959287,
+         "dm_p_median": 0.2711271694678019
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 1.66252750569523,
+         "dm_p_median": 0.7705453632224168
+        }
+       }
+      },
+      {
+       "coin": "XRP-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 6.08281979315042,
+         "dm_p_median": 0.0227444894958031
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 2.266130701732216,
+         "dm_p_median": 0.48267584042909206
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": -0.8873741575036849,
+         "dm_p_median": 0.8354733603645881
+        }
+       }
+      },
+      {
+       "coin": "ADA-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 7.283891926255623,
+         "dm_p_median": 0.0016420053032344395
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 7.733544351986926,
+         "dm_p_median": 0.05374907102518556
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 6.902178320428286,
+         "dm_p_median": 0.20296349941466119
+        }
+       }
+      },
+      {
+       "coin": "DOT-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 3.5886033842544305,
+         "dm_p_median": 0.07438634423581258
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 2.1979886065003633,
+         "dm_p_median": 0.5723035687594331
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 0.6939115844460572,
+         "dm_p_median": 0.9053445148666066
+        }
+       }
+      }
+     ]
+    }
+   },
+   "har_rv": {
+    "sign_test": {
+     "verdict": "INCONCLUSIVE",
+     "alpha": 0.05,
+     "n_effective": 7,
+     "n_beats": 5,
+     "p_null": 0.5,
+     "alternative": "greater",
+     "p_value": 0.2265625,
+     "horizon_collapse": "BEATS when strict majority of horizons BEATS",
+     "coin_verdicts": [
+      {
+       "coin": "BTC-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 33.39551831781626,
+         "dm_p_median": 1.7883472480662022e-12
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 40.099972749165204,
+         "dm_p_median": 4.6964344257993673e-07
+        },
+        "10": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 38.828178651313635,
+         "dm_p_median": 1.29533050803321e-05
+        }
+       }
+      },
+      {
+       "coin": "ETH-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 29.82103651995822,
+         "dm_p_median": 2.0569706604689486e-08
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 51.08783809218453,
+         "dm_p_median": 5.2229416347415736e-09
+        },
+        "10": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 51.02925431767126,
+         "dm_p_median": 8.732010892131825e-09
+        }
+       }
+      },
+      {
+       "coin": "SOL-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 14.007421402209888,
+         "dm_p_median": 0.00025895475106807453
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 23.452409207674453,
+         "dm_p_median": 0.014880124725168198
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 13.869854103961622,
+         "dm_p_median": 0.19565320601906588
+        }
+       }
+      },
+      {
+       "coin": "LTC-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 18.857153255128264,
+         "dm_p_median": 5.40040915479878e-05
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 23.024586900702083,
+         "dm_p_median": 0.000490207926619135
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 11.726138546305451,
+         "dm_p_median": 0.15243081482679455
+        }
+       }
+      },
+      {
+       "coin": "XRP-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 7.468838385975757,
+         "dm_p_median": 0.012740620953317627
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 4.479290290331557,
+         "dm_p_median": 0.49849841843105636
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": -5.368811602250286,
+         "dm_p_median": 0.518302112681496
+        }
+       }
+      },
+      {
+       "coin": "ADA-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 22.308370590869238,
+         "dm_p_median": 5.313262320560952e-06
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 28.43961849642575,
+         "dm_p_median": 0.00011706491770913097
+        },
+        "10": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 24.037566252303684,
+         "dm_p_median": 0.004310962283710085
+        }
+       }
+      },
+      {
+       "coin": "DOT-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 7.306739707327536,
+         "dm_p_median": 0.01615007418833736
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 12.031773329030623,
+         "dm_p_median": 0.05113277581477038
+        },
+        "10": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 3.2226552667396775,
+         "dm_p_median": 0.6649964106555544
+        }
+       }
+      }
+     ]
+    }
+   }
+  },
+  "protocol": {
+   "persistence": {
+    "sign_test": {
+     "verdict": "BEATS",
+     "alpha": 0.05,
+     "n_effective": 7,
+     "n_beats": 7,
+     "p_null": 0.5,
+     "alternative": "greater",
+     "p_value": 0.0078125,
+     "horizon_collapse": "BEATS when strict majority of horizons BEATS",
+     "coin_verdicts": [
+      {
+       "coin": "BTC-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 40.678432238897145,
+         "dm_p_median": 0.0
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 56.21143276712787,
+         "dm_p_median": 0.0
+        },
+        "22": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 46.5405270355914,
+         "dm_p_median": 0.0
+        }
+       }
+      },
+      {
+       "coin": "ETH-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 30.63397838758134,
+         "dm_p_median": 0.0
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 49.72562133202164,
+         "dm_p_median": 0.0
+        },
+        "22": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 47.23835146139658,
+         "dm_p_median": 1.7565948695619227e-12
+        }
+       }
+      },
+      {
+       "coin": "SOL-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 36.41541230781728,
+         "dm_p_median": 5.927163204688668e-10
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 58.57398904679939,
+         "dm_p_median": 4.440892098500626e-16
+        },
+        "22": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 66.56281279782749,
+         "dm_p_median": 0.0
+        }
+       }
+      },
+      {
+       "coin": "LTC-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 29.58948958219362,
+         "dm_p_median": 7.080263129122244e-07
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 50.78378204152775,
+         "dm_p_median": 3.801403636316536e-13
+        },
+        "22": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 59.55163796111502,
+         "dm_p_median": 0.0
+        }
+       }
+      },
+      {
+       "coin": "XRP-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 30.222618045833787,
+         "dm_p_median": 7.794031087193787e-08
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 54.539866576314985,
+         "dm_p_median": 0.0
+        },
+        "22": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 62.175524343198475,
+         "dm_p_median": 0.0
+        }
+       }
+      },
+      {
+       "coin": "ADA-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 32.51211382470249,
+         "dm_p_median": 5.771577549218421e-08
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 53.951492474044336,
+         "dm_p_median": 4.440892098500626e-16
+        },
+        "22": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 65.97588177886978,
+         "dm_p_median": 1.3322676295501878e-15
+        }
+       }
+      },
+      {
+       "coin": "DOT-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 32.88185512044157,
+         "dm_p_median": 1.462090226667101e-09
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 59.87787514452608,
+         "dm_p_median": 0.0
+        },
+        "22": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 73.45976308870743,
+         "dm_p_median": 0.0
+        }
+       }
+      }
+     ]
+    }
+   },
+   "ewma": {
+    "sign_test": {
+     "verdict": "INCONCLUSIVE",
+     "alpha": 0.05,
+     "n_effective": 7,
+     "n_beats": 4,
+     "p_null": 0.5,
+     "alternative": "greater",
+     "p_value": 0.5,
+     "horizon_collapse": "BEATS when strict majority of horizons BEATS",
+     "coin_verdicts": [
+      {
+       "coin": "BTC-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 20.128932598222534,
+         "dm_p_median": 4.96713781217295e-13
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 5.381166906340618,
+         "dm_p_median": 0.11572772516924501
+        },
+        "22": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 10.654022873397228,
+         "dm_p_median": 0.0161656338693823
+        }
+       }
+      },
+      {
+       "coin": "ETH-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 10.463047361106808,
+         "dm_p_median": 9.192839703420219e-05
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 4.0744418458925065,
+         "dm_p_median": 0.3815384091608698
+        },
+        "22": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 11.896398615989161,
+         "dm_p_median": 0.029015261031067663
+        }
+       }
+      },
+      {
+       "coin": "SOL-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 10.398682204421522,
+         "dm_p_median": 0.0029919997055052328
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 14.70160711136366,
+         "dm_p_median": 0.03701953386360901
+        },
+        "22": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 5.876165173483946,
+         "dm_p_median": 0.5130095177418548
+        }
+       }
+      },
+      {
+       "coin": "LTC-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 8.611096832434491,
+         "dm_p_median": 0.016318581560624823
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 10.14166612021217,
+         "dm_p_median": 0.05989738921805832
+        },
+        "22": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 7.157494878627098,
+         "dm_p_median": 0.43381974366632536
+        }
+       }
+      },
+      {
+       "coin": "XRP-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 13.961971110188214,
+         "dm_p_median": 0.008559728347198314
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 10.775960153240725,
+         "dm_p_median": 0.07415924656601769
+        },
+        "22": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": -2.760518560902856,
+         "dm_p_median": 0.7636042579824245
+        }
+       }
+      },
+      {
+       "coin": "ADA-USD",
+       "verdict": "NO BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 9.83076191184419,
+         "dm_p_median": 0.0031457788777113915
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 9.129321008410967,
+         "dm_p_median": 0.12807557876570907
+        },
+        "22": {
+         "verdict": "NO BEATS",
+         "edge_pct_mean": -27.964018006000412,
+         "dm_p_median": 0.008225713120887601
+        }
+       }
+      },
+      {
+       "coin": "DOT-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 10.153940743526196,
+         "dm_p_median": 0.00807994090648867
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 15.359978883521746,
+         "dm_p_median": 0.00319361026516618
+        },
+        "22": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 7.54012271137485,
+         "dm_p_median": 0.3582986094015257
+        }
+       }
+      }
+     ]
+    }
+   },
+   "log_har": {
+    "sign_test": {
+     "verdict": "NO BEATS",
+     "alpha": 0.05,
+     "n_effective": 7,
+     "n_beats": 3,
+     "p_null": 0.5,
+     "alternative": "greater",
+     "p_value": 0.7734375,
+     "horizon_collapse": "BEATS when strict majority of horizons BEATS",
+     "coin_verdicts": [
+      {
+       "coin": "BTC-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 19.65717758322891,
+         "dm_p_median": 1.6187051699034782e-13
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 8.510211222660754,
+         "dm_p_median": 0.0014863946611458623
+        },
+        "22": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": -4.778102209955006,
+         "dm_p_median": 0.23229498168768048
+        }
+       }
+      },
+      {
+       "coin": "ETH-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 7.6344088080533865,
+         "dm_p_median": 4.302304403847046e-07
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 10.683715128444822,
+         "dm_p_median": 0.00019468647571030395
+        },
+        "22": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 12.475047391216707,
+         "dm_p_median": 0.044517527558395775
+        }
+       }
+      },
+      {
+       "coin": "SOL-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 9.696478456140056,
+         "dm_p_median": 0.0009891860291990628
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 9.26728123474665,
+         "dm_p_median": 0.028100628948874107
+        },
+        "22": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 4.827782333453899,
+         "dm_p_median": 0.5061740372209882
+        }
+       }
+      },
+      {
+       "coin": "LTC-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 5.621362114912245,
+         "dm_p_median": 0.018491971193072887
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 3.891342711959287,
+         "dm_p_median": 0.2711271694678019
+        },
+        "22": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": -0.5673481075474753,
+         "dm_p_median": 0.9438132447333287
+        }
+       }
+      },
+      {
+       "coin": "XRP-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 6.08281979315042,
+         "dm_p_median": 0.0227444894958031
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 2.266130701732216,
+         "dm_p_median": 0.48267584042909206
+        },
+        "22": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": -2.036519690001121,
+         "dm_p_median": 0.7164522591143663
+        }
+       }
+      },
+      {
+       "coin": "ADA-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 7.283891926255623,
+         "dm_p_median": 0.0016420053032344395
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 7.733544351986926,
+         "dm_p_median": 0.05374907102518556
+        },
+        "22": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 2.729864713817778,
+         "dm_p_median": 0.7792830196414167
+        }
+       }
+      },
+      {
+       "coin": "DOT-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 3.5886033842544305,
+         "dm_p_median": 0.07438634423581258
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 2.1979886065003633,
+         "dm_p_median": 0.5723035687594331
+        },
+        "22": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 10.295977726065269,
+         "dm_p_median": 0.23950992734283916
+        }
+       }
+      }
+     ]
+    }
+   },
+   "har_rv": {
+    "sign_test": {
+     "verdict": "INCONCLUSIVE",
+     "alpha": 0.05,
+     "n_effective": 7,
+     "n_beats": 5,
+     "p_null": 0.5,
+     "alternative": "greater",
+     "p_value": 0.2265625,
+     "horizon_collapse": "BEATS when strict majority of horizons BEATS",
+     "coin_verdicts": [
+      {
+       "coin": "BTC-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 33.39551831781626,
+         "dm_p_median": 1.7883472480662022e-12
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 40.099972749165204,
+         "dm_p_median": 4.6964344257993673e-07
+        },
+        "22": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 30.099595805200295,
+         "dm_p_median": 0.000846774692161878
+        }
+       }
+      },
+      {
+       "coin": "ETH-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 29.82103651995822,
+         "dm_p_median": 2.0569706604689486e-08
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 51.08783809218453,
+         "dm_p_median": 5.2229416347415736e-09
+        },
+        "22": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 45.20064694438641,
+         "dm_p_median": 1.070291020255354e-07
+        }
+       }
+      },
+      {
+       "coin": "SOL-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 14.007421402209888,
+         "dm_p_median": 0.00025895475106807453
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 23.452409207674453,
+         "dm_p_median": 0.014880124725168198
+        },
+        "22": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": -2.9318123460977836,
+         "dm_p_median": 0.8340146921267872
+        }
+       }
+      },
+      {
+       "coin": "LTC-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 18.857153255128264,
+         "dm_p_median": 5.40040915479878e-05
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 23.024586900702083,
+         "dm_p_median": 0.000490207926619135
+        },
+        "22": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": -7.389328450624324,
+         "dm_p_median": 0.5373625416176386
+        }
+       }
+      },
+      {
+       "coin": "XRP-USD",
+       "verdict": "NO BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 7.468838385975757,
+         "dm_p_median": 0.012740620953317627
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 4.479290290331557,
+         "dm_p_median": 0.49849841843105636
+        },
+        "22": {
+         "verdict": "NO BEATS",
+         "edge_pct_mean": -25.800497973506133,
+         "dm_p_median": 0.00980166001496885
+        }
+       }
+      },
+      {
+       "coin": "ADA-USD",
+       "verdict": "BEATS",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 22.308370590869238,
+         "dm_p_median": 5.313262320560952e-06
+        },
+        "5": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 28.43961849642575,
+         "dm_p_median": 0.00011706491770913097
+        },
+        "22": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 9.433255827481885,
+         "dm_p_median": 0.401332484818933
+        }
+       }
+      },
+      {
+       "coin": "DOT-USD",
+       "verdict": "INCONCLUSIVE",
+       "horizons": {
+        "1": {
+         "verdict": "BEATS",
+         "edge_pct_mean": 7.306739707327536,
+         "dm_p_median": 0.01615007418833736
+        },
+        "5": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": 12.031773329030623,
+         "dm_p_median": 0.05113277581477038
+        },
+        "22": {
+         "verdict": "INCONCLUSIVE",
+         "edge_pct_mean": -2.538888472322858,
+         "dm_p_median": 0.7867651998666476
+        }
+       }
+      }
+     ]
+    }
+   }
+  }
+ }
+}

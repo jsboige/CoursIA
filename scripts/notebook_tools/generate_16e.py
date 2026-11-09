@@ -36,7 +36,7 @@ md("""# GameTheory 16e - Tour de SocialChoiceLean (DominikPeters)
 
 Ce notebook presente les resultats principaux formalises dans le depot [DominikPeters/SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean), la plus grande bibliotheque de theorie du choix social en Lean 4.
 
-Les definitions utilisent un **cadre simplifie** compatible avec le kernel Lean 4 (pas de Mathlib). Les preuves completes, utilisant Mathlib, se trouvent dans le projet Lake `social_choice_lean_peters/`.
+Les definitions utilisent un **cadre simplifie** compatible avec le kernel Lean 4 (pas de Mathlib). Les preuves completes, utilisant Mathlib, se trouvent dans le projet Lake `SocialChoice/social_choice_lean_peters/`.
 
 ### Objectifs d'apprentissage
 
@@ -66,7 +66,7 @@ DominikPeters utilise un cadre base sur les **preferences strictes** (ordres lin
 
 # ===== Cell 3: Core types =====
 lean4("""-- Simplified framework inspired by DominikPeters/SocialChoiceLean
--- Full formalization (with Mathlib): social_choice_lean_peters/PetersTour.lean
+-- Full formalization (with Mathlib): SocialChoice/social_choice_lean_peters/PetersTour.lean
 
 -- Strict preference: total strict order
 -- Replaces Mathlib's LinearOrder for kernel compatibility
@@ -231,7 +231,7 @@ La preuve formelle suit l'approche classique par contraposition :
 2. On montre l'existence d'un "pivot" (electeur dont le vote est critique)
 3. Par induction sur le nombre d'electeurs, on construit une contradiction
 
-> **Preuve complete** : `SocialChoice.Impossibilities.GibbardSatterthwaite.Main` dans `social_choice_lean_peters/`""", "c13")
+> **Preuve complete** : `SocialChoice.Impossibilities.GibbardSatterthwaite.Main` dans `SocialChoice/social_choice_lean_peters/`""", "c13")
 
 # ===== Cell 14: Section 5 intro =====
 md("""---

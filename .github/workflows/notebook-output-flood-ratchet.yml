@@ -3,7 +3,7 @@ name: Notebook Output Flood Ratchet
 # #147xx / user report 2026-09-06 — a re-execution must not let a notebook's
 # OUTPUT-OBJECT count explode per cell or in totality.
 #
-# Founding incident: Sudoku-15-Infer-Csharp.ipynb grew from 29 665 to 45 434
+# Founding incident: Sudoku-15-Infer-CSharp.ipynb grew from 29 665 to 45 434
 # lines after a re-execution where InferenceEngine.ShowProgress defaulted to
 # true. Every Infer.NET run emitted one dot PER ITERATION, and the .net-csharp
 # kernel turns each Console.Write(".") into a separate stream output object.

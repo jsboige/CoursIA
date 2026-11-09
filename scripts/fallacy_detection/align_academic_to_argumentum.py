@@ -28,7 +28,8 @@ etiquette, puis un rapport de couverture par famille Argumentum.
 
 Sources (verifiees firsthand dans le survey #10360) :
   - Jin, Bhargava, Brew, Durrett, Klein, *Logical Fallacy Detection*, Findings
-    EMNLP 2021, arXiv:2202.13758 -- 13 types + LogicClimate.
+    EMNLP 2021, arXiv:2202.13758 -- le papier denombre 13 types + LogicClimate ;
+    l'inventaire encode ici en porte **15** (cf. ``LOGIC_LABELS``).
   - Helwe, Calamai, Paris, Clavel, Suchanek, *MAFALDA: A Benchmark and
     Comprehensive Study of Fallacy Detection and Classification*, 2023,
     arXiv:2311.09761 -- hierarchie 3 niveaux, L2 = 23 classes fines.
@@ -44,6 +45,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import io
 import json
 import re
@@ -59,7 +61,7 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_TAXO = (
     _REPO_ROOT
-    / "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv"
+    / "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/argumentum_fallacies_taxonomy.csv"
 )
 
 # Colonnes de la taxonomie Argumentum utilisees (sur 1553 lignes / 1408 sophismes).
@@ -94,29 +96,38 @@ ARGUMENTUM_FAMILIES = [
 # Listes d'etiquettes academiques (papiers cites, encodees ici).
 # ---------------------------------------------------------------------------
 
-# Logic / LogicClimate (Jin et al. 2021, arXiv:2202.13758) : 13 types.
-# Liste canonique du dataset (tasksource/logic2fallacy, causalNLP/logical-fallacy).
-# Chaque entree : (label_en, keywords FR/EN pour le matching, note source).
-LOGIC_13 = [
+# Libelles de SOURCE portes par la table et le rapport. Ils nomment la provenance
+# sans porter de cardinal : le compte fait foi dans `total` (revue NanoClaw
+# 5469985194 -- « Logic-13 » annoncait 13 pour un inventaire qui en porte 15).
+LOGIC_SOURCE = "LOGIC"
+MAFALDA_SOURCE = "MAFALDA-L2"
+
+# Logic / LogicClimate (Jin et al. 2021, arXiv:2202.13758).
+# Le papier denombre 13 types ; l'inventaire ENCODE ICI en porte **15** (les 2 de
+# plus sont des variantes nominales rencontrees dans les datasets derives --
+# tasksource/logic2fallacy, causalNLP/logical-fallacy). Le nom de la constante ne
+# porte donc AUCUN compte : le cardinal fait foi dans le champ ``total`` du rapport
+# et dans le test qui l'epingle, jamais dans un nom (revue NanoClaw 5469985194).
+# Chaque entree : (label_en, keywords FR/EN pour le matching).
+LOGIC_LABELS = [
     ("Ad hominem", ["ad hominem", "attaque personnelle"]),
     ("Appeal to authority", ["argument d'autorité", "appeal to authority"]),
     ("Appeal to emotion", ["appel à l'émotion", "appel aux emotions"]),
-    ("Bandwagon", ["bandwagon", "appel à la popularité", "ad populum"]),
+    ("Bandwagon", ["bandwagon", "appel à la popularité", "ad populum", "appel à la bande"]),
     ("Causal oversimplification", ["causal oversimplification", "simplification"]),
     ("Circular reasoning", ["raisonnement circulaire", "circular"]),
     ("Equivocation", ["équivoque", "ambiguïté", "equivocation"]),
     ("False analogy", ["fausse analogie", "analogie"]),
-    ("False cause", ["fausse cause", "post hoc", "faux cause"]),
+    ("False cause", ["fausse cause", "post hoc", "faux cause", "causalité douteuse"]),
     ("False dilemma", ["faux dilemme", "faux dilemme"]),
     ("Faulty generalization", ["generalisation", "généralisation"]),
     ("Red herring", ["red herring", "hareng rouge", "diversion"]),
     ("Slippery slope", ["pente glissante", "slippery slope"]),
     ("Straw man", ["épouvantail", "straw man", "homme de paille"]),
-    ("Sunk cost fallacy", ["coût irrécupérable", "sunk cost"]),
+    ("Sunk cost fallacy", ["coût irrécupérable", "coûts irrécupérables", "sunk cost"]),
 ]
-# NB : 15 entrees encodees couvrent les 13 types canoniques + 2 variants nominaux
-# frequent dans les datasets derives (Faulty generalisation / Hasty). On garde la
-# granularite pour que l'alignement soit robuste aux variantes de label.
+# NB : 15 entrees encodees (cardinal epingle par test ; le papier en denombre 13).
+# On garde la granularite pour que l'alignement soit robuste aux variantes de label.
 
 # MAFALDA (Helwe et al. 2023, arXiv:2311.09761) : L2 = 23 classes fines, sous
 # 3 categories L1 (Pathos / Logos / Ethos). Encodage issu du papier.
@@ -126,7 +137,7 @@ MAFALDA_L2 = [
     ("Appeal to authority", ["appeal to authority", "argument d'autorité"], "Pathos"),
     ("Appeal to nature", ["appeal to nature", "appel à la nature"], "Pathos"),
     ("Appeal to tradition", ["appeal to tradition", "appel à la tradition"], "Pathos"),
-    ("Appeal to popularity", ["appeal to popularity", "ad populum"], "Pathos"),
+    ("Appeal to popularity", ["appeal to popularity", "ad populum", "appel à la bande"], "Pathos"),
     ("Appeal to values", ["appeal to values", "appel aux valeurs"], "Pathos"),
     ("Appeal to fear", ["appeal to fear", "appel à la peur"], "Pathos"),
     ("Sentimental appeal", ["sentimental", "pathétique"], "Pathos"),
@@ -137,7 +148,7 @@ MAFALDA_L2 = [
     ("Hasty generalization", ["hasty generalization", "généralisation hâtive"], "Logos"),
     ("Fallacy of composition", ["composition"], "Logos"),
     ("Fallacy of division", ["division"], "Logos"),
-    ("False cause", ["false cause", "fausse cause"], "Logos"),
+    ("False cause", ["false cause", "fausse cause", "causalité douteuse"], "Logos"),
     ("Fallacy of logic", ["fallacy of logic"], "Logos"),
     ("Equivocation", ["equivocation", "équivoque", "ambiguïté"], "Logos"),
     ("Fallacy of proportion", ["proportion"], "Logos"),
@@ -243,7 +254,7 @@ class Alignment:
     """Resultat de l'alignement d'une etiquette academique vers Argumentum."""
 
     academic_label: str
-    academic_source: str  # "Logic13" ou "MAFALDA-L2"
+    academic_source: str  # LOGIC_SOURCE ou MAFALDA_SOURCE
     keywords: list[str]
     best_pk: str | None
     best_famille: str | None
@@ -281,6 +292,10 @@ def align_label(
         kw_tokens |= _tokens(k)
     # Le label lui-meme participe au pool de tokens.
     kw_tokens |= _tokens(label)
+    # Mots-cles normalises (accents + ponctuation) pour la branche cognate FR :
+    # la comparaison doit etre insensible a l'apostrophe typographique (’) et
+    # aux accents, sinon un cognate exact est rate (cf. branche (a bis)).
+    norm_keywords = [nk for nk in (_norm(k) for k in keywords) if nk]
 
     scored: list[tuple[str, str, float, str, float]] = []
     for e in argum:
@@ -290,10 +305,17 @@ def align_label(
             name_score = 1.0
         elif e.simple_en and _norm(e.simple_en) in _norm(label):
             name_score = 0.8
-        # (a bis) cognate FR sur le nom vulgarise.
+        # (a bis) cognate FR sur le nom vulgarise ou le texte de la feuille.
+        # La comparaison passe par _norm des DEUX cotes : la taxonomie ecrit
+        # « Argument d’autorité » / « Appel à l’émotion » (apostrophe
+        # typographique, accents varies) alors que les inventaires academiques
+        # portent l'apostrophe droite. Une sous-chaine brute ratait le cognate
+        # et degradait un alignement exact en PARTIAL a 0.09-0.143 — ecart
+        # mecanique n°3 de #10355 §4 (c.6344505010).
         fr_name_score = 0.0
-        for k in keywords:
-            if k.lower() in (e.nom_fr.lower() + " " + e.text_fr.lower()):
+        fr_target = _norm(e.nom_fr + " " + e.text_fr)
+        for nk in norm_keywords:
+            if nk in fr_target:
                 fr_name_score = max(fr_name_score, 0.7)
         # (b) chevauchement lexical global.
         lex = _jaccard(kw_tokens, e.tokens)
@@ -339,6 +361,24 @@ def _norm(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", s).strip()
 
 
+def _repo_relative(p: Path) -> str:
+    """Chemin POSIX relatif a la racine du depot.
+
+    Un artefact commis ne porte jamais un chemin machine-dependant (revue
+    NanoClaw 5469985194). Hors depot (ex. fichier temporaire de test), seul le
+    nom est rendu -- jamais un chemin absolu.
+    """
+    try:
+        return p.resolve().relative_to(_REPO_ROOT).as_posix()
+    except ValueError:
+        return p.name
+
+
+def _sha256(p: Path) -> str:
+    """Empreinte du fichier : l'ancre qui reste verifiable meme sans le chemin."""
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+
 # ---------------------------------------------------------------------------
 # Rapport de couverture.
 # ---------------------------------------------------------------------------
@@ -379,13 +419,17 @@ def build(
         raise FileNotFoundError(f"Taxonomie Argumentum introuvable : {csv_path}")
     argum = load_argumentum(csv_path)
     alignments: list[Alignment] = []
-    for label, kw in LOGIC_13:
-        alignments.append(align_label(label, "Logic13", kw, argum))
+    for label, kw in LOGIC_LABELS:
+        alignments.append(align_label(label, LOGIC_SOURCE, kw, argum))
     for label, kw, _l1 in MAFALDA_L2:
-        alignments.append(align_label(label, "MAFALDA-L2", kw, argum))
+        alignments.append(align_label(label, MAFALDA_SOURCE, kw, argum))
     report = coverage_report(alignments)
     report["argumentum_total_leaves"] = len(argum)
-    report["argumentum_csv"] = str(csv_path)
+    # Ancre de reproductibilite : chemin RELATIF au depot (jamais un chemin
+    # machine-dependant, cf. revue NanoClaw 5469985194) + empreinte du CSV cible,
+    # qui reste verifiable meme si le chemin devient illisible.
+    report["argumentum_csv"] = _repo_relative(csv_path)
+    report["argumentum_csv_sha256"] = _sha256(csv_path)
     return alignments, report
 
 
@@ -396,7 +440,7 @@ def build(
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
-        description="Aligne Logic-13 + MAFALDA-23-L2 vers la taxonomie Argumentum."
+        description="Aligne les inventaires academiques LOGIC + MAFALDA-L2 vers la taxonomie Argumentum."
     )
     p.add_argument(
         "--taxonomy",

@@ -16,7 +16,7 @@ hors `_en` ; bascule #11688 — historiquement `standalone-tactic` ; les mention
 | `sudoku_lean` | v4.33.0 | 0 | 4 | 1¹ | PEDA/REF | #4055, #4038 |
 | **Total** | — | **0** | **4** | **1** | — | — |
 
-¹ Notebook câblé : **Sudoku-19-Lean-Propagation.ipynb** (propagation des règles en
+¹ Notebook câblé : **Sudoku-19-Lean-Propagation-Lean.ipynb** (propagation des règles en
 cellules Lean). Companion conceptuel = le notebook **Sudoku-01** (résolution
 par contraintes .NET C# — convention sibling-lake).
 

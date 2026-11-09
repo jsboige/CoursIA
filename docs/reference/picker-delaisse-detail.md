@@ -18,7 +18,7 @@ Mecanisme identique : une lane tire l'EPIC, lit une demande adressée a **quelqu
 Apres verification FIRSTHAND (3 etapes de la regle 5), le grain tombe dans exactement **une** de ces 4 cases :
 
 1. **Situation inchangee** → grain **vivant** : claimer, livrer (ou sous-grainer si EPIC).
-2. **Situation resolue** mais issue non fermee → grain **delivered** : **reservee au coordinateur et a l'adjoint** (#15069, mandat user 2026-09-07 -- fermer remonte au coordinateur) ; le coordinateur ou l'adjoint verifie firsthand puis ferme avec preuve ou **retire le label** en disant pourquoi. Une lane worker qui rencontre la situation poste `[INFO] candidate-delivered` avec sa preuve et rend la main.
+2. **Situation resolue** mais issue non fermee → grain **delivered** : **reservee au coordinateur et a l'adjoint** (#15069, mandat user 2026-09-07 ; la fermeture se fait sur un dossier `[CLOSURE PREFLIGHT]` `verdict: CLOSE` -- le sien ou celui du secretariat -- apres une lecture G.9, decision coordinateur du 2026-10-26 ; restent a ai-01 les fermetures **sans** dossier et celles des EPICs fermes sur PR) ; le coordinateur ou l'adjoint verifie firsthand puis ferme avec preuve ou **retire le label** en disant pourquoi. Une lane worker qui rencontre la situation poste `[INFO] candidate-delivered` avec sa preuve et rend la main.
 3. **Situation resolue et acceptee par toutes les parties** mais issue oubliee → grain **clos-substantive** : poster un rapport de cloture avec preuves (cf pattern po-2027 c.504-L1 delivered) + recommander `option 1 : cloture par ai-01`.
 4. **Situation resolue MAIS corps devenu perime** (le 1er paragraphe dit « attente X » mais X est passé) → grain **misleading** : corriger le body avec un edit honest (`gh issue edit N` ou commentaire en tete), **puis** appliquer la case 1/2/3 appropriee.
 
@@ -58,6 +58,12 @@ Si l'etape 1 montre un commentaire recent qui resout la situation → case 2/3/4
 Issue **#11900** — pools narrow structurels documentes par ai-01 c.1331p477 et suivants (mesures 2/2 delaisse body faux). Reproduit par la lane `myia-po-2023:CoursIA-2` pendant 9 cycles consecutifs (c.503 → c.522) avant la consignation ; la cause directe etait l'absence de **regle explicite** imposant la verification FIRSTHAND a chaque grain picker.
 
 Lecon durable : **un picker pondere n'est pas un picker qui sait lire**. La verification de l'operateur reste le remede ; la regle 5 de `verify-before-claiming.md` la rend explicite et reproductible, cette page detaille son application.
+
+## Précondition toxique — une condition de reprise que rien ne mesure
+
+Déportée depuis la règle (tranche #15204, 2026-10-06 ; source : lignes 36 et 58 de `.claude/rules/proactive-coordination.md` avant déport — la règle pointait déjà ici, le texte y manquait).
+
+Une condition de reprise que *rien ne mesure* ne peut jamais être constatée atteinte — elle diffère indéfiniment contre la volonté de qui l'a posée. La rendre observable est **plus petit** que le travail différé, et le débloque entièrement.
 
 ## Liens
 

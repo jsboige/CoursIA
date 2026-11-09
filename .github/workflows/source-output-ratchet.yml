@@ -33,7 +33,6 @@ name: Source-Output Ratchet
 
 on:
   pull_request:
-    branches: [ main ]
     # #10600 tranche 2: the ratchet only has something to diff when a
     # notebook changed -- a PR without .ipynb made it pay a full-history
     # checkout + python setup to render "no changed notebooks". Script and
@@ -43,6 +42,12 @@ on:
       - 'scripts/notebook_tools/check_source_output_ratchet.py'
       - '.github/workflows/source-output-ratchet.yml'
   workflow_dispatch:
+
+# Condition jointe a l'arbitrage #19426 (c.6300191475) : tout workflow
+# touche sans bloc concurrency en recoit un, cle sur la PR.
+concurrency:
+  group: source-output-ratchet-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -64,6 +69,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -97,8 +103,15 @@ jobs:
           printf '%s' "$PR_BODY" > pr_body.txt
 
           set +e
+          # `--advisory` : the per-cell annotations are emitted as
+          # `::warning`, not `::error`. The check keeps its exit code (1 on a
+          # stale cell), but this job is report-only BY DESIGN (see the
+          # header) -- an `::error` on a job that is green on purpose reads
+          # as a failure that never happened. The workflow's own annotation
+          # for the SAME condition is already a `::warning`; the two must
+          # not contradict each other.
           python scripts/notebook_tools/check_source_output_ratchet.py \
-            "$BASE" --body-file pr_body.txt | tee ratchet_output.txt
+            "$BASE" --body-file pr_body.txt --advisory | tee ratchet_output.txt
           RC=${PIPESTATUS[0]}
           set -e
 

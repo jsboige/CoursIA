@@ -28,7 +28,6 @@ name: harness-coauthor-guard
 on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
-    branches: [main]
     paths:
       - '.claude/skills/**'
       - '.claude/agents/**'
@@ -57,9 +56,26 @@ jobs:
     # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
     # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
     # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
+    # NOTE perimee depuis #22461 (mesure Hermes 28/10) : les deux lignes
+    # ci-dessus sont tombees -- le `runs-on` reel est l'expression hybride a
+    # fallback plus bas (bloc 2026-10-27 #22461), conservee byte-identique
+    # ici pour l'historique de la decision de routage.
     # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # 2026-10-27 (mesure ai-01) : migration vers `ubuntu-latest` par Q35 etape 2
+    # (#17397) -- `scripts/ci/audit_self_hosted_needs.py` certifie ce workflow
+    # comme n'ayant besoin de RIEN qui n'existe que sur le parc local, et le parc
+    # local etait sature PAR SES CHECKOUTS (mesure 00:45Z : 11 des 12 slots
+    # occupes dans `actions/checkout`, 614 runs en file). La garde anti-fork
+    # ci-dessous est CONSERVEE : aucun code de fork ne change de surface.
+    # 2026-10-27 (#22461, phase A) : forme hybride de debordement -- PR
+    # meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ;
+    # tout le reste (variable absente ou fausse, forks, push/schedule/
+    # dispatch) retombe sur ubuntu-latest (l'etat du 27/10). Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 %
+    # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
+    # creation du job, les runs deja en file ne bougent pas.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 5
 
     # Same-repo PRs only (agents/staff). Fork PRs are student submissions
@@ -67,10 +83,47 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
+      # Le detecteur ne lit que `.claude/**/*.md` (stdlib seule). L'ancien
+      # `fetch-depth: 0` rapatriait tout l'historique de toutes les branches
+      # pour atteindre la base : 15 des 60 derniers runs (mesure 2026-09-28)
+      # ont ete annules a la limite de 5 min, pendant le fetch, avant tout scan.
+      # Checkout clairseme sans blobs hors perimetre ; la base a son propre
+      # checkout (etape BASE ci-dessous).
+      # Le work dir de ce runner n'est PAS froid dans sa voie hebergee : le pool
+      # `coursia-ephemeral` monte un volume nomme PERSISTANT par slot
+      # (`supervise.sh` : `-v "${vol_prefix}-${slot}":"$WORK_MOUNT"`, #14285) et
+      # seul le CONTENEUR est jetable -- c'est `actions/checkout` qui recoit le
+      # meme repertoire de travail au job suivant. L'exclusion de ce fichier du
+      # perimetre de #22931 reposait sur « deplace sur ubuntu-latest par
+      # #22821 » ; #22921 (forme hybride de `runs-on`) a rendu cette premisse
+      # fausse, en debordement le job tourne sur le meme pool chaud que les dix
+      # workflows deja traites. Mesure #23127, 2026-10-28.
+      # Sur `ubuntu-latest` la VM est neuve : le bloc est un no-op verifie par
+      # `[ -d .git ]`, il ne coute rien et ne masque rien.
+      - name: Restore the warm work tree before the sparse checkout
+        run: |
+          set -u
+          if [ -d "$GITHUB_WORKSPACE/.git" ]; then
+            if ! dirty=$(git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" status --porcelain 2>/dev/null); then
+              echo "::warning::[heal-worktree] probe git status muet -- etat de l'arbre inconnu, reset applique quand meme (#22722)"
+              dirty=""
+            fi
+            untracked=$(printf '%s\n' "$dirty" | grep -c '^??' || true)
+            first_dirty=$(printf '%s\n' "$dirty" | head -n 1)
+            if ! git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" reset --hard --quiet; then
+              echo "::warning::[heal-worktree] reset --hard a echoue -- le retrecissement sparse peut refuser (#22722)"
+            elif [ -n "$dirty" ]; then
+              echo "::notice::[heal-worktree] reset --hard effectue -- le job precedent avait laisse un etat sale (${first_dirty}) -- ${untracked} entree(s) non suivie(s) laissee(s) en place -- le retrecissement sparse passe (#22722)"
+            fi
+          fi
       - name: Checkout PR
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # base ref must be reachable for the BASE scan
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            .claude/
+            scripts/notebook_tools/check_harness_coauthor.py
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -81,30 +134,44 @@ jobs:
       # Per the c.1331+107-L2 lesson, the script always exits 0 here on a
       # clean working tree; we capture findings via JSON, not exit code, to
       # distinguish "0 findings" from "detector crashed".
+      # NOTE (collision /tmp, 2026-09-28) : chemins en `${{ runner.temp }}` (per-slot)
+      # au lieu de `/tmp` nu -- `/tmp` est hote-global sur le runner a slots
+      # partages, et pip/solution-leak-guard y ecrivaient les memes noms au
+      # format LISTE (cf pip-leak-guard.yml, #18059).
       - name: HEAD scan
         id: head_scan
         run: |
-          python scripts/notebook_tools/check_harness_coauthor.py --json > /tmp/head.json
+          python scripts/notebook_tools/check_harness_coauthor.py --json > "${{ runner.temp }}/coauthor-head.json"
           rc=$?
           if [ "$rc" -ne 0 ] && [ "$rc" -ne 1 ]; then
             echo "::error title=Detector crashed::check_harness_coauthor.py exited with non-standard code $rc. The gate cannot be trusted -- investigate before merging."
             exit 1
           fi
-          HEAD_VERDICT=$(python -c "import json; print(json.load(open('/tmp/head.json'))['verdict'])")
-          HEAD_TOTAL=$(python -c "import json; print(json.load(open('/tmp/head.json'))['total_findings'])")
+          HEAD_VERDICT=$(python -c "import json; print(json.load(open('${{ runner.temp }}/coauthor-head.json'))['verdict'])")
+          HEAD_TOTAL=$(python -c "import json; print(json.load(open('${{ runner.temp }}/coauthor-head.json'))['total_findings'])")
           echo "head_verdict=$HEAD_VERDICT" >> "$GITHUB_OUTPUT"
           echo "head_total=$HEAD_TOTAL" >> "$GITHUB_OUTPUT"
           echo "HEAD verdict: $HEAD_VERDICT ($HEAD_TOTAL findings)"
 
-      # BASE scan (PR base ref). Swap `.claude/` to base, scan, then restore.
-      # head.json is already captured above, so the swap cannot contaminate
-      # the delta.
+      # BASE scan (PR base ref) : `.claude/` de la base dans son propre
+      # repertoire, scanne via --repo-root. Les chemins des findings sont
+      # relatifs a la racine scannee, donc comparables a ceux de head.json ;
+      # l'arbre de la tete n'est plus touche.
+      - name: Checkout BASE
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: _base
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            .claude/
+
       - name: BASE scan
         if: github.event_name == 'pull_request'
         run: |
-          git checkout ${{ github.event.pull_request.base.sha }} -- .claude
-          python scripts/notebook_tools/check_harness_coauthor.py --json > /tmp/base.json || true
-          git checkout HEAD -- .claude
+          python scripts/notebook_tools/check_harness_coauthor.py --json --repo-root _base > "${{ runner.temp }}/coauthor-base.json" || true
 
       # DELTA check: a NEW finding introduced by the PR fails the gate.
       # Inherited findings (post-Phase-1 main = 0) are tolerated, mirroring
@@ -119,8 +186,8 @@ jobs:
           import json
           import sys
 
-          base = json.load(open("/tmp/base.json"))
-          head = json.load(open("/tmp/head.json"))
+          base = json.load(open("${{ runner.temp }}/coauthor-base.json"))
+          head = json.load(open("${{ runner.temp }}/coauthor-head.json"))
 
           base_keys = {(f["file"], f["line"], f["match"]) for f in base["findings"]}
           head_keys = {(f["file"], f["line"], f["match"]) for f in head["findings"]}

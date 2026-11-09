@@ -458,6 +458,50 @@ _NEG_COUNT_UNIVERSALITY = re.compile(r"^\s*(?:seulement|juste|que|only)\b", re.I
 # FN du fondateur -- le closer nie « le cas », pas le compte qui suit).
 _NEG_COUNT_CLAUSE_BREAK = re.compile(r"[:;]")
 _PR_NUM_REF = re.compile(r"#\d+")
+_LANGUAGE_VARIANT_CUE = re.compile(
+    r"\b(?:fr|en|français|francaise|francais|anglais|anglaise|french|english)\b",
+    re.IGNORECASE,
+)
+_BOTH_FILE_VARIANTS = re.compile(
+    r"\b(?:dans\s+les\s+(?:deux|2)|in\s+both)\s+fichiers?\b",
+    re.IGNORECASE,
+)
+
+
+def _count_is_language_variant_reference(line: str, m: re.Match) -> bool:
+    """#25091: skip a count that describes FR/EN variants of one file.
+
+    The language cue must be local to the count and tied either to an explicit
+    variant/twin term or to a phrase such as « anglais dans les deux fichiers ».
+    This keeps an unrelated FR/EN mention elsewhere from laundering a real
+    perimeter assertion.
+    """
+    start = max(line.rfind("\n", 0, m.start()), line.rfind(";", 0, m.start()),
+                line.rfind("!", 0, m.start()), line.rfind("?", 0, m.start())) + 1
+    ends = [pos for token in ("\n", ";", "!", "?")
+            if (pos := line.find(token, m.end())) >= 0]
+    end = min(ends, default=len(line))
+    context_start = max(start, m.start() - 120)
+    context_end = min(end, m.end() + 120)
+    context = line[context_start:context_end]
+    if _has_strong_scope(context.lower()):
+        return False
+    if not _LANGUAGE_VARIANT_CUE.search(context):
+        return False
+    return bool(
+        re.search(r"\b(?:jumeaux?|twins?|variantes?|variants?)\b", context, re.I)
+        or _BOTH_FILE_VARIANTS.search(context)
+    )
+
+
+def _word_form_is_language_variant_reference(line: str) -> bool:
+    """Word-form counterpart of the #25091 per-occurrence digit filter."""
+    low = line.lower()
+    return any(
+        (m := trig.search(low)) is not None
+        and _count_is_language_variant_reference(line, m)
+        for _word, _n, trig in WORD_FORM_TRIGGERS
+    )
 
 
 def _count_is_negated(line: str, m: re.Match) -> bool:
@@ -605,6 +649,8 @@ def check_assertion(
     # by a name range, is reported speech, not a claim at all.
     scan_target = _fence_mask(assertion)
     word_count = None if guard_self else _word_form_count(scan_target)
+    if word_count is not None and _word_form_is_language_variant_reference(scan_target):
+        word_count = None
     count_claim = None
     if not guard_self:
         count_claim = next(
@@ -617,6 +663,7 @@ def check_assertion(
                 and not _count_is_out_of_scope_annotation(scan_target, mm)
                 and not _count_is_negated(scan_target, mm)
                 and not _count_is_other_pr(scan_target, mm)
+                and not _count_is_language_variant_reference(scan_target, mm)
             ),
             None,
         )
@@ -721,9 +768,11 @@ def check_assertion(
     # ce garde, la sonde --assert de l'issue resterait rouge avec un second
     # message apres la disparition du mismatch.
     non_claim_count = any(
-        _count_is_negated(scan_target, mm) or _count_is_other_pr(scan_target, mm)
+        _count_is_negated(scan_target, mm)
+        or _count_is_other_pr(scan_target, mm)
+        or _count_is_language_variant_reference(scan_target, mm)
         for mm in COUNT_CLAIM.finditer(scan_target)
-    )
+    ) or _word_form_is_language_variant_reference(scan_target)
     if (
         not count_claim and word_count is None and not exclusive
         and not guard_self and not non_claim_count
@@ -1146,6 +1195,64 @@ def _count_is_provenance_sha(line: str, m: re.Match) -> bool:
     return bool(_PROVENANCE_SHA_TAIL.match(after))
 
 
+# #20086 -- prose descriptive chiffree : un compte OUVERT par un verbe de
+# CONSTATATION sur la meme ligne decrit ce que l'auteur a LU ou ATTESTE, pas
+# le perimetre de la PR. Founder #20076 (body avant correction) : deux
+# phrases -- « `life-lean-stats` (exec 12) atteste 4 fichiers (`Life.lean`
+# 253, ...) » (les sources que la cellule lit) et « `phase1-files-list`
+# (exec 18) atteste ~80 fichiers `.lean` » (idem) -- confrontees aux 7
+# fichiers reels de la PR, le garde rougissait une PR saine. Le contournement
+# applique alors (« sources » / « modules ») a rendu rc=0 : c'est ce qui
+# mesure que la classe etait ouverte.
+#
+# Liste FERMEE -- jamais elargie a du vocabulaire inconnu (cout FN borne et
+# visible, meme doctrine que COUNT_WORDS). Le VERBE est ce qui borne
+# l'exemption : sans lui la forme fondatrice reste bloquante.
+# Review #20125 : `couvre|couvrent|covers?|lists?` retires -- ce sont des
+# verbes de PERIMETRE, et « Cette PR couvre N fichiers » est la phrase la plus
+# courante d'un body qui annonce son perimetre : l'exemption la blanchissait.
+# Le fondateur #20076 n'utilise que « atteste ».
+#
+# Verbes de denombrement a l'IMPARFAIT (founder #21154, body avant
+# reformulation : « le bandeau du 02/09 comptait 11 fichiers `_REPORT...` a
+# trier ») : l'imparfait decrit un etat ANTERIEUR (un inventaire, un bandeau,
+# une mesure d'une autre date), jamais le diff courant -- une PR n'annonce pas
+# son perimetre au passe. Le present « compte » reste HORS liste : « Cette PR
+# compte 3 fichiers » est une annonce de perimetre (meme raison que le retrait
+# de `couvre` en review #20125). Asymetrie assumee : le passe anglais
+# (`counted`, `listed`) n'est PAS exempte, faute d'instance mesuree ; si la
+# classe reparait cote EN, l'ajouter ici avec son fondateur (liste fermee, le
+# faux negatif reste du cote bloquant).
+DESCRIPTIVE_VERB = re.compile(
+    r"\b(?:atteste|attestent|constate|constatent|lit|lisent|"
+    r"[ée]num[èe]re|[ée]num[èe]rent|r[ée]cense|r[ée]censent|"
+    r"d[ée]nombre|d[ée]nombrent|"
+    r"comptait|comptaient|r[ée]censait|r[ée]censaient|"
+    r"d[ée]nombrait|d[ée]nombraient|[ée]num[ée]rait|[ée]num[ée]raient|"
+    r"listait|listaient|"
+    r"attests?|reads?|counts?|enumerates?)\b",
+    re.IGNORECASE,
+)
+# Controle positif exige par l'issue : la forme CANONIQUE de declaration de
+# perimetre -- « N fichiers : a, b, c » -- n'est ouverte par aucun verbe et
+# reste bloquante. Le deux-points immediat est la garde qui empeche un verbe
+# de constatation de blanchir une vraie assertion (« j'atteste 7 fichiers :
+# a.py, b.py »), et c'est ce qui separe l'exemption du blanc-seing.
+_DESCRIPTIVE_VERB_WINDOW = 80
+_PERIMETER_COLON_TAIL = re.compile(r"^\s*:")
+
+
+def _count_is_descriptive_attestation(line: str, m: re.Match) -> bool:
+    """#20086: True when the COUNT match `m` is opened by a CONSTATATION verb
+    within the 80 chars before it, and is not the canonical colon-declared
+    perimeter form. See DESCRIPTIVE_VERB for the founder measurement."""
+    before = line[max(0, m.start() - _DESCRIPTIVE_VERB_WINDOW):m.start()]
+    if not DESCRIPTIVE_VERB.search(before):
+        return False
+    after = PLURAL_PAREN.sub(" ", line[m.end():], count=1)
+    return not _PERIMETER_COLON_TAIL.match(after)
+
+
 def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
     """True when the specific COUNT match `m` on `line` is exempted by the
     per-count filters (zero, threshold citation, locative scan scope,
@@ -1190,6 +1297,8 @@ def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
         return True
     if _count_has_incidental_qualifier(line, m):
         return True
+    if _count_is_descriptive_attestation(line, m):
+        return True  # prose descriptive ouverte par un verbe de constatation (#20086)
     return False
 
 
@@ -1392,10 +1501,12 @@ def _additive_line_sum(line: str) -> int:
         and not _count_is_out_of_scope_annotation(line, m)
         and not _count_is_negated(line, m)
         and not _count_is_other_pr(line, m)
+        and not _count_is_language_variant_reference(line, m)
     )
     low = line.lower()
     for _word, n, trig in WORD_FORM_TRIGGERS:
-        if trig.search(low):
+        m = trig.search(low)
+        if m and not _count_is_language_variant_reference(line, m):
             return total + n
     return total
 
@@ -2028,6 +2139,57 @@ def _is_transient_gh_failure(stderr: str) -> bool:
     return any(p.search(stderr or "") for p in _TRANSIENT_GH_SIGNATURES)
 
 
+# Signature of a `gh` RENDERING refusal -- NOT a transport failure.
+#
+# Newer `gh` refuses to PRINT a diff whose payload carries terminal escape
+# sequences ("the diff contains terminal escape sequences; pass
+# --allow-escape-sequences to output it anyway"). One committed artefact
+# carrying ANSI colour codes is enough to trigger it -- measured 2026-10-29
+# on #22341: 11 ESC bytes in the diff, all of them from a captured CI log
+# (`scripts/results/3d_enveloppe_8go/traces/3d02-enveloppe.log`, a raw
+# papermill trace kept as evidence).
+#
+# The refusal is a limit of the RENDERER: the diff exists, GitHub computes
+# it, and the very same bytes are readable over a transport that has no
+# renderer. Treating that refusal like an unreadable PR made the guard
+# answer "PERIMETRE NON MESURABLE" on a PR whose perimeter it could read
+# perfectly well -- an UNKNOWN verdict produced by a PRINTING limit.
+#
+# NARROW ON PURPOSE, like the transient signatures above: only this
+# recognised signature opens a fallback transport. Every other `gh pr diff`
+# failure stays fail-closed (exit 2).
+_ESCAPE_SEQUENCE_GH_SIGNATURE = re.compile(
+    r"contains terminal escape sequences", re.IGNORECASE
+)
+
+
+# Signature of a `gh pr diff` SIZE refusal -- the sibling of the 300-FILE cap
+# handled in `_pr_diff_text` (#14911), on the SIZE axis.
+#
+# GitHub refuses to COMPUTE a diff that exceeds its size budget and answers
+# `HTTP 406: PullRequest.diff too_large` -- measured 2026-11-07 on #24992, whose
+# full patch was 20 988 lines, over the 20 000-line budget of the REST diff.
+#
+# The two caps were treated ASYMMETRICALLY: the file-count cap returned an
+# empty diff + a warning (the guard continued), the size cap fell through to
+# `sys.exit(2)` ("PERIMETRE NON MESURABLE") -- so the guard LOST a measurement
+# it could make by another route. The blocking perimeter checks read the
+# paginated `/pulls/<pr>/files` list, which carries no size cap; the unified
+# diff only serves baseline-move detection, which is ADVISORY (it never blocks
+# in `--scan-thread`, the CI wiring). Losing it costs the reader one line of
+# context, not a verdict.
+#
+# NARROW ON PURPOSE, like its siblings: only these recognised signatures
+# degrade to an empty diff. Every other `gh pr diff` failure stays
+# fail-closed (exit 2).
+_DIFF_SIZE_CAP_SIGNATURES = (
+    "too_large",
+    "diff too large",
+    "diff is too large",
+    "exceeded the maximum diff size",
+)
+
+
 def _exit_unmeasurable(reason: str) -> None:
     """Exit with the non-measurable verdict, mirroring ``#14292``.
 
@@ -2071,6 +2233,20 @@ def _pr_diff_text(pr: int) -> str:
     (moves == []) and warn -- the blocking perimeter checks run off the
     paginated ``/pulls/<pr>/files`` list, which has no such cap and is
     unaffected. Any other ``gh pr diff`` failure stays fail-closed.
+
+    The SIZE cap is the sibling of the file-count cap, and is degraded the same
+    way (#25085): GitHub refuses to compute a diff beyond its size budget
+    (``HTTP 406: PullRequest.diff too_large`` -- measured 2026-11-07 on
+    #24992, 20 988 lines), and the guard used to answer "PERIMETRE NON
+    MESURABLE" on a PR whose perimeter it could read perfectly well through
+    the paginated file list. Only the advisory baseline-move detection is lost,
+    and the warning says so.
+
+    One failure is a RENDERING refusal, not an unreadable diff: a payload
+    carrying terminal escape sequences (ANSI colour codes inside a committed
+    artefact -- measured 2026-10-29 on #22341). The bytes are readable over a
+    transport that has no renderer, so the measurement is retried there
+    instead of being declared impossible (#22341).
     """
     rc, stdout, stderr = _run_gh_rc(["pr", "diff", str(pr)])
     if rc == 0:
@@ -2083,6 +2259,23 @@ def _pr_diff_text(pr: int) -> str:
             file=sys.stderr,
         )
         return ""
+    if any(sig in (stderr or "") for sig in _DIFF_SIZE_CAP_SIGNATURES):
+        print(
+            f"::warning::gh pr diff {pr} indisponible (diff au-dela du plafond de "
+            "TAILLE de l'API) : detection des baseline-moves retractee a vide ; "
+            f"le perimetre est lu via /pulls/{pr}/files pagine (sans ce plafond).",
+            file=sys.stderr,
+        )
+        return ""
+    if _ESCAPE_SEQUENCE_GH_SIGNATURE.search(stderr or ""):
+        diff = _pr_diff_text_without_renderer(pr)
+        if diff is not None:
+            print(
+                f"::warning::gh pr diff {pr} refuse d'imprimer un diff porte par des "
+                "sequences d'echappement ; diff relu par un transport sans rendu.",
+                file=sys.stderr,
+            )
+            return diff
     print(f"gh error: {(stderr or '').strip()[:400]}", file=sys.stderr)
     if _is_transient_gh_failure(stderr):
         _exit_unmeasurable(
@@ -2090,6 +2283,64 @@ def _pr_diff_text(pr: int) -> str:
             "(aucune mesure effectuee)"
         )
     sys.exit(2)
+
+
+def _pr_diff_text_without_renderer(pr: int) -> Optional[str]:
+    """The same unified diff, over transports that have NO renderer.
+
+    Two of them, in order:
+
+    1. ``gh pr diff --allow-escape-sequences`` -- the flag newer ``gh``
+       offers for exactly this refusal. Older ``gh`` does not know it and
+       answers "unknown flag", which is a miss, not a failure.
+    2. ``gh api repos/<owner>/<repo>/pulls/<pr>`` with the diff Accept
+       header -- the raw unified diff, no ``pr diff`` renderer.
+
+       Whether THAT transport needs ``--allow-escape-sequences`` depends
+       on the ``gh`` version, and both cases are measured (2026-10-29,
+       #22341) rather than assumed:
+
+       - ``gh`` 2.102.0 (new, the CI runner): refuses the API call too
+         ("the response contains terminal escape sequences; pass
+         --allow-escape-sequences to output it anyway") and honours the
+         same flag -- with it, rc=0 and a diff byte-identical to
+         transport 1;
+       - ``gh`` 2.83.2 (old): does NOT know the flag ("unknown flag"),
+         but does NOT refuse either -- the flag-less API call returns
+         rc=0 with the 69 672-byte diff and its 11 ESC bytes.
+
+       So the flag is tried FIRST (new ``gh``), and the flag-less call
+       is the fallback for an old ``gh`` that answers "unknown flag" --
+       a MISS, not a failure, exactly like transport 1.
+
+    Returns None when every transport misses: the caller then keeps the
+    fail-closed verdict (exit 2) it would have had without this function.
+    """
+    attempts = [["pr", "diff", "--allow-escape-sequences", str(pr)]]
+    try:
+        repo = json.loads(
+            _run_gh(["repo", "view", "--json", "nameWithOwner"])
+        )["nameWithOwner"]
+    except (SystemExit, ValueError, KeyError, TypeError):
+        repo = None
+    if repo:
+        api_base = [
+            "api",
+            f"repos/{repo}/pulls/{pr}",
+            "-H",
+            "Accept: application/vnd.github.v3.diff",
+        ]
+        attempts.append([*api_base, "--allow-escape-sequences"])
+        attempts.append(list(api_base))
+    for args in attempts:
+        rc, stdout, stderr = _run_gh_rc(args)
+        if rc == 0:
+            return stdout
+        print(
+            f"gh error ({' '.join(args[:3])}): {(stderr or '').strip()[:200]}",
+            file=sys.stderr,
+        )
+    return None
 
 
 def _normalize_rest_files(items: list[dict]) -> list[dict]:

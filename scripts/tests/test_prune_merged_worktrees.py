@@ -16,9 +16,13 @@ Pinent le contrat de sûreté (issues #14195 + #14509 acceptance) :
 3. `parse_porcelain` separe untracked / gitignores non-cache / tracks
    modifies (`--ignored=matching`, jamais de `!!` compte comme source
    sale).
-4. `worktree_has_initialized_submodules` detecte les worktrees que git ne
-   retirera jamais ("working trees containing submodules cannot be moved
-   or removed") -> REFUSE contains_submodules.
+4. `worktree_blocks_removal_for_submodules` detecte les worktrees que git
+   ne retirera jamais ("working trees containing submodules cannot be
+   moved or removed") -> REFUSE contains_submodules. Union de deux etats
+   que git refuse : sous-module INITIALISE (`git submodule status` sans
+   prefixe '-') et sous-module ENREGISTRE mais deinitialise -- le gitdir
+   du sous-module persiste dans `<gitdir-du-worktree>/modules/` alors que
+   le status affiche pourtant '-' (#21710).
 5. `WorktreeStatus.decision` = `REMOVE` quand pr_state=MERGED ou CLOSED
    et pas d'unpushed, de submodule, ni de untracked bloquant (contrôle
    positif manquant aux prédicats d'ascendance, cf squashed-merge).
@@ -38,13 +42,15 @@ Pinent le contrat de sûreté (issues #14195 + #14509 acceptance) :
 Tests d'intégration end-to-end (subprocess réel) :
 - dry-run sur un worktree `main` ne tente jamais `worktree remove`.
 - `--apply` no-op quand 0 removable.
-- exit 0 quand rien à signaler, 1 si refus observé, 2 si erreur gh/git.
+- exit 0 quand la passe est saine, refus compris (un refus est une
+  décision, pas une panne — #3895 roo-extensions), 2 si erreur gh/git.
 
 Run : python -m pytest scripts/tests/test_prune_merged_worktrees.py
 """
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -68,6 +74,47 @@ TEST_CWD = os.getcwd() if os.path.exists("scripts/ci/prune_merged_worktrees.py")
 if not os.path.exists(TEST_CWD + "/scripts/ci/prune_merged_worktrees.py"):
     # Subprocess sera lance depuis TEST_CWD ; on veut etre dans le worktree
     TEST_CWD = "C:/dev/CoursIA-14195-prune"
+
+
+def _json_output_or_fail(proc):
+    """Contrat ``--json`` d'un sous-processus, triage AVANT le parse (#17292).
+
+    Retourne le JSON parse. Trois issues, aucune muette :
+
+    - ``rc=2`` + marqueur « echec inattendu » : le script a PLANTE -> echec
+      dur, traceback compris. Un plantage n'est pas une precondition, et le
+      skipper le rendrait invisible pour toujours.
+    - ``rc=2`` sans marqueur : le script NOMME son incapacite d'enumerer ici
+      (environnement) -> skip nomme, motif compris.
+    - ``rc=0`` sans JSON, ou JSON invalide : contrat rompu -> echec dur qui
+      rapporte le stderr du sous-processus verbatim.
+
+    Le fix initial (#17293) n'appliquait ce triage qu'a UN des trois tests
+    E2E du fichier ; les deux autres parseaient ``proc.stdout`` directement
+    et reconvertissaient la prochaine panne d'outil en ``JSONDecodeError``
+    nu -- le 3e mode de rouge de Scripts Tests (CPU), de retour.
+    """
+    stderr = (proc.stderr or "").strip()
+    if proc.returncode == 2:
+        if "echec inattendu" in stderr:
+            pytest.fail(
+                "le script a plante (rc=2), ce n'est pas une precondition :\n"
+                + stderr[:1500])
+        pytest.skip(
+            "le script declare ne pas pouvoir enumerer ici : "
+            + stderr[:400])
+    assert proc.returncode == 0, (
+        f"unexpected exit: {proc.returncode}\nstderr: {stderr[:800]}")
+    assert proc.stdout.strip(), (
+        "contrat --json rompu : stdout vide alors que rc="
+        f"{proc.returncode} -- le script doit publier son JSON, ou nommer "
+        f"son echec (rc=2). stderr: {stderr[:800]}")
+    try:
+        return json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        pytest.fail(
+            f"stdout n'est pas du JSON (rc={proc.returncode}) -- stderr du "
+            f"sous-processus, verbatim :\n{stderr[:1500] or '(vide)'}")
 
 
 # ---------------------------------------------------------------------------
@@ -234,6 +281,149 @@ class TestSubmoduleDetection:
         # Pas de preuve de submodule initialise : ne REFUSE pas sur un
         # etat qu'on ne peut pas lire (pire cas = FAILED git, avant-fix).
         assert self._stub(monkeypatch, 128, "") is False
+
+
+class TestRegisteredSubmodules21710:
+    """#21710 : un sous-module ENREGISTRE mais deinitialise bloque git.
+
+    `git submodule status` montre alors une ligne prefixee '-' (« non
+    initialise »), mais le gitdir du sous-module persiste dans
+    `<gitdir-du-worktree>/modules/` et `git worktree remove` refuse
+    TOUJOURS. L'ancien predicat (status seul) annoncait REMOVE, l'apply
+    echouait -- 18 worktrees mesures chez le rapporteur de l'issue.
+
+    Constat mesure sur git 2.50.1 : apres `submodule update --init` puis
+    `submodule deinit --all -f` dans le worktree, le status rend
+    `-<sha> sub` et le retrait rend "fatal: working trees containing
+    submodules cannot be moved or removed". La classe E2E en fin de
+    fichier fige ce constat sur de vrais objets git ; ici on pinne les
+    predicats et leur cablage.
+    """
+
+    @staticmethod
+    def _git_dir(tmp_path, with_modules: bool) -> str:
+        """Gitdir de worktree factice, avec ou sans `modules/` (#21710)."""
+        git_dir = tmp_path / ("gd-modules" if with_modules else "gd-nu")
+        git_dir.mkdir(exist_ok=True)
+        if with_modules:
+            (git_dir / "modules" / "sub").mkdir(parents=True)
+        return str(git_dir)
+
+    @staticmethod
+    def _stub_git(monkeypatch, status_stdout: str, git_dir_stdout: str,
+                  revparse_rc: int = 0):
+        """Route run_git : `submodule status` et
+        `rev-parse --absolute-git-dir`. Toute autre commande rend rc=128
+        (etat illisible), jamais un feu vert."""
+        def fake_run_git(*args, **kwargs):
+            cmd = list(args)
+            if "submodule" in cmd:
+                return _fake_proc(0, status_stdout)
+            if "--absolute-git-dir" in cmd:
+                return _fake_proc(revparse_rc, git_dir_stdout)
+            return _fake_proc(128, "")
+        monkeypatch.setattr(pmw, "run_git", fake_run_git)
+
+    @staticmethod
+    def _router(git_dir: str, status_stdout: str = "-abc123 sub\n",
+                branch: str = "fix/X"):
+        """Router run_git complet pour `get_worktree_info` : worktree
+        propre sur une branche feature, au sous-module enregistre-seul."""
+        def fake_run_git(*args, **kwargs):
+            cmd = list(args)
+            if "submodule" in cmd:
+                return _fake_proc(0, status_stdout)
+            if "--absolute-git-dir" in cmd:
+                return _fake_proc(0, git_dir)
+            if "--abbrev-ref" in cmd and "HEAD" in cmd:
+                return _fake_proc(0, f"{branch}\n")
+            if "status" in cmd:
+                return _fake_proc(0, "")
+            return _fake_proc(128, "")
+        return fake_run_git
+
+    # -- worktree_has_registered_submodules ------------------------------
+
+    def test_modules_dir_present_is_true(self, tmp_path, monkeypatch):
+        git_dir = self._git_dir(tmp_path, with_modules=True)
+        self._stub_git(monkeypatch, "-abc123 sub\n", git_dir)
+        assert pmw.worktree_has_registered_submodules("C:/fake") is True
+
+    def test_modules_dir_absent_is_false(self, tmp_path, monkeypatch):
+        git_dir = self._git_dir(tmp_path, with_modules=False)
+        self._stub_git(monkeypatch, "-abc123 sub\n", git_dir)
+        assert pmw.worktree_has_registered_submodules("C:/fake") is False
+
+    def test_unreadable_revparse_is_false(self, tmp_path, monkeypatch):
+        # Gitdir avec modules/ sur disque, mais rev-parse echoue : pas de
+        # preuve lisible, on ne REFUSE pas sur un etat qu'on ne peut pas
+        # lire (pire cas = FAILED git, etat d'avant-fix non regresse).
+        git_dir = self._git_dir(tmp_path, with_modules=True)
+        self._stub_git(monkeypatch, "-abc123 sub\n", git_dir,
+                       revparse_rc=128)
+        assert pmw.worktree_has_registered_submodules("C:/fake") is False
+
+    def test_empty_revparse_stdout_is_false(self, tmp_path, monkeypatch):
+        self._stub_git(monkeypatch, "-abc123 sub\n", "")
+        assert pmw.worktree_has_registered_submodules("C:/fake") is False
+
+    # -- worktree_blocks_removal_for_submodules (l'union) ----------------
+
+    def test_blocks_removal_initialized_without_modules_dir(
+            self, tmp_path, monkeypatch):
+        # Cas #14509 : sous-module initialise (ligne sans '-') -> bloque
+        # MEME sans modules/ -- l'union ne doit pas perdre ce cas.
+        git_dir = self._git_dir(tmp_path, with_modules=False)
+        self._stub_git(monkeypatch, " abc123 sub\n", git_dir)
+        assert pmw.worktree_blocks_removal_for_submodules("C:/fake") is True
+
+    def test_blocks_removal_registered_only_is_the_21710_regression(
+            self, tmp_path, monkeypatch):
+        # LE cas de regression #21710 : le status affiche '-<sha> sub'
+        # (semble non initialise) MAIS modules/ est present -> git refuse.
+        # L'ancien predicat (status seul) rendait False ici : REMOVE
+        # annonce au dry-run, echec fatal a l'apply.
+        git_dir = self._git_dir(tmp_path, with_modules=True)
+        self._stub_git(monkeypatch, "-abc123 sub\n", git_dir)
+        assert pmw.worktree_blocks_removal_for_submodules("C:/fake") is True
+
+    def test_blocks_removal_never_initialized_is_false(
+            self, tmp_path, monkeypatch):
+        # Controle negatif (#14619) : sous-module CONFIGURE mais jamais
+        # materialise dans CE worktree (status '-', aucun modules/) ->
+        # git le retire sans protester, le predicat ne doit pas sur-refuser.
+        git_dir = self._git_dir(tmp_path, with_modules=False)
+        self._stub_git(monkeypatch, "-abc123 sub\n", git_dir)
+        assert pmw.worktree_blocks_removal_for_submodules("C:/fake") is False
+
+    # -- aval : get_worktree_info porte le drapeau, diagnose le verdict --
+
+    def test_get_worktree_info_reports_registered_only_state(
+            self, tmp_path, monkeypatch):
+        """Le statut '-' ressemble a « non initialise », pourtant git
+        refusera : get_worktree_info doit porter has_submodules=True."""
+        git_dir = self._git_dir(tmp_path, with_modules=True)
+        monkeypatch.setattr(pmw, "run_git", self._router(git_dir))
+        info = pmw.get_worktree_info("C:/fake", "C:/other")
+        assert info["has_submodules"] is True
+
+    def test_diagnose_refuses_registered_only_without_gh_call(
+            self, tmp_path, monkeypatch):
+        """Etat enregistre-seul -> REFUSE contains_submodules AVANT toute
+        resolution PR (le verdict est structurel, aucun appel gh)."""
+        git_dir = self._git_dir(tmp_path, with_modules=True)
+        monkeypatch.setattr(pmw, "run_git", self._router(git_dir))
+
+        def _no_gh(*a, **k):
+            raise AssertionError(
+                "lookup_pr_for_branch ne doit pas etre appele : le "
+                "verdict submodule est structurel et ne demande aucun gh"
+            )
+
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", _no_gh)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "contains_submodules"
 
 
 # ---------------------------------------------------------------------------
@@ -581,6 +771,420 @@ class TestContentOnMainRemove:
         s = pmw.diagnose_worktree("C:/fake", "C:/other")
         assert s.decision == "REFUSE"
         assert s.refusal_reason == "detached_no_match"
+
+
+class TestGhDegradedMode:
+    """#21753 : gh indisponible (sonde identite rc!=0 / pas de jeton) n'est
+    pas « toutes les PRs ouvertes ». La passe reste audible : aucun appel gh
+    n'est tente, les predicats git-only (ascendance, patch-id) decident
+    seuls, le refus terminal se nomme no_gh_unverifiable, la sortie n'est
+    JAMAIS vide."""
+
+    _GH_DOWN = "gh auth token rc=1 (no oauth token)"
+
+    def _info(self, **over):
+        base = dict(
+            branch="fix/unverifiable", ahead_count=0, untracked=[],
+            blocking_untracked=[], ignored_extra=[], tracked_modified=[],
+            has_source_dirty=False, has_submodules=False, is_current=False,
+        )
+        base.update(over)
+        return base
+
+    def _no_gh(self, *a, **k):
+        raise AssertionError(
+            "mode degrade : aucun appel gh ne doit etre tente"
+        )
+
+    def test_degraded_refuses_unverifiable_branch(self, monkeypatch):
+        # Branche propre, ni PR connue (gh muet) ni ascendance : REFUSE
+        # nommee no_gh_unverifiable -- pas no_pr_match, qui lirait « pas de
+        # PR » la ou la verite est « non verifiable ».
+        info = self._info()
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", self._no_gh)
+        monkeypatch.setattr(pmw, "remote_head_for_head", lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main", lambda *a: False)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other",
+                                  gh_unavailable_reason=self._GH_DOWN)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_gh_unverifiable"
+
+    def test_degraded_ancestor_still_removes(self, monkeypatch):
+        # Point 2 de l'issue : la degradation ne desserre PAS le critere
+        # git-only d'ascendance -- un worktree dont la tete est ancetre de
+        # origin/main reste retirable sans aucun gh.
+        info = self._info()
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", self._no_gh)
+        monkeypatch.setattr(pmw, "remote_head_for_head", lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main", lambda *a: True)
+        monkeypatch.setattr(pmw, "recent_activity_age_hours",
+                            lambda *a, **k: 99.0)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other",
+                                  gh_unavailable_reason=self._GH_DOWN)
+        assert s.decision == "REMOVE"
+        assert s.content_on_main is True
+        assert s.content_on_main_by == "ancestor"
+
+    def test_degraded_detached_skips_gh_and_refuses(self, monkeypatch):
+        # HEAD detache hors main : la resolution par sujet est gh par
+        # construction (pr view / pr list) -- jamais tentee en degrade.
+        info = self._info(branch=None)
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "detached_head_is_on_main", lambda *a: False)
+        monkeypatch.setattr(pmw, "lookup_pr_for_detached_head", self._no_gh)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other",
+                                  gh_unavailable_reason=self._GH_DOWN)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_gh_unverifiable"
+
+    def test_no_reason_keeps_no_pr_match(self, monkeypatch):
+        # Controle de discrimination : sans raison de degradation, le refus
+        # conservateur garde son nom historique -- le nouveau nom ne doit
+        # pas fuir hors du mode degrade.
+        info = self._info()
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch",
+                            lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "remote_head_for_head", lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main", lambda *a: False)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+
+    def test_resolve_short_circuits_when_unavailable(self, tmp_path,
+                                                     monkeypatch):
+        # Aucun etage gh (lot, ancre) n'est tente en degrade.
+        res = pmw.PrResolution(cache_path=None)
+        res.unavailable_reason = self._GH_DOWN
+        monkeypatch.setattr(pmw, "run_gh", self._no_gh)
+        assert res.resolve("feature/anything") is None
+        assert res.stats["listing_calls"] == 0
+        assert res.stats["anchor_calls"] == 0
+
+    def test_resolve_cache_still_answers_when_unavailable(self, tmp_path,
+                                                          monkeypatch):
+        # Le cache disque ne depend pas de gh : un MERGED deja etabli (garde
+        # oid satisfaite) continue de retirer des worktrees sans jeton.
+        cache = tmp_path / "cache.json"
+        _seed_cache_file(cache, {
+            "feature/cached": {
+                "number": 42, "state": "MERGED",
+                "url": "https://example/pr/42",
+                "headRefOid": _PR_OID_A,
+            },
+        })
+        res = pmw.PrResolution(cache_path=cache)
+        res.unavailable_reason = self._GH_DOWN
+        monkeypatch.setattr(pmw, "run_gh", self._no_gh)
+        row = res.resolve("feature/cached", head_sha=_PR_OID_A)
+        assert row is not None and row["state"] == "MERGED"
+        assert res.stats["cache_hits"] == 1
+
+    def test_run_gh_timeout_returns_124(self, monkeypatch):
+        # Mesure fondatrice : un `--apply` pendu ~2 h, 0 octet de sortie.
+        # Un gh muet doit devenir un echec DETECTE (rc=124, stderr nomme),
+        # jamais une attente infinie.
+        import subprocess as _sp
+
+        def _hang(*a, **k):
+            raise _sp.TimeoutExpired(cmd=["gh"], timeout=30)
+
+        monkeypatch.setattr(pmw.subprocess, "run", _hang)
+        proc = pmw.run_gh("pr", "list", check=False)
+        assert proc.returncode == 124
+        assert "timeout" in proc.stderr
+
+    def test_probe_reports_reason_not_token(self, monkeypatch):
+        # La sonde rend une RAISON ; son stdout (un jeton) n'y figure
+        # jamais -- le detail vient du stderr seul.
+        import subprocess as _sp
+
+        def _rc1(*a, **k):
+            return _fake_proc(1, stderr="no oauth token found")
+
+        monkeypatch.setattr(pmw.subprocess, "run", _rc1)
+        reason = pmw.probe_gh_availability()
+        assert reason is not None
+        assert "rc=1" in reason
+        assert "no oauth token" in reason
+
+        def _ok(*a, **k):
+            # stdout = jeton bidon : ne doit JAMAIS se retrouver dans la
+            # sortie de la sonde (ici : la sonde rend None, silencieuse).
+            return _fake_proc(0, stdout="gho_not_a_real_token")
+
+        monkeypatch.setattr(pmw.subprocess, "run", _ok)
+        assert pmw.probe_gh_availability() is None
+
+    def test_probe_gh_missing(self, monkeypatch):
+        import subprocess as _sp
+
+        def _missing(*a, **k):
+            raise FileNotFoundError("gh")
+
+        monkeypatch.setattr(pmw.subprocess, "run", _missing)
+        reason = pmw.probe_gh_availability()
+        assert reason is not None
+        assert "introuvable" in reason
+
+    def test_render_text_banner_in_degraded_mode(self):
+        # La banniere est la PREMIERE ligne : une passe degradee ne doit
+        # jamais se lire comme un constat de PRs ouvertes.
+        statuses = [
+            _make_status(decision="REFUSE",
+                         refusal_reason="no_gh_unverifiable",
+                         pr_state=None, pr_number=None, pr_url=None),
+            _make_status(decision="REFUSE", refusal_reason="pr_open:#7",
+                         pr_state="OPEN", pr_number=7),
+        ]
+        text = pmw.render_text(statuses, dry_run=True,
+                               gh_unavailable_reason=self._GH_DOWN)
+        first = text.splitlines()[0]
+        assert "gh unavailable on this seat" in first
+        assert "1 worktrees in degraded mode" in first
+        assert self._GH_DOWN in first
+        # Les lignes de statut suivent, la sortie n'est jamais vide.
+        assert "no_gh_unverifiable" in text
+
+    def test_render_text_no_banner_when_gh_fine(self):
+        statuses = [
+            _make_status(decision="REFUSE", refusal_reason="pr_open:#7",
+                         pr_state="OPEN", pr_number=7),
+        ]
+        text = pmw.render_text(statuses, dry_run=True)
+        assert "gh unavailable" not in text
+
+
+class TestContentOnMainByPatchId:
+    """#20067 : seconde jambe du contenu sur main, par patch-id.
+
+    Le predicat d'ascendance (#17771) est structurellement aveugle au
+    squash-merge dont la branche distante a ete supprimee : plus aucun ref
+    ne porte la tete, donc la resolution de PR rend None et l'ascendance
+    est fausse -- alors que le contenu est bien sur main. `git cherry`
+    compare les patchs et voit ce cas.
+
+    La garde doit rester fail-closed : un seul commit hors amont (`+`)
+    disqualifie, et une lecture git en echec n'ouvre rien.
+    """
+
+    def _info(self, **over):
+        base = dict(
+            branch="fix/squashed-gone", ahead_count=0, untracked=[],
+            blocking_untracked=[], ignored_extra=[], tracked_modified=[],
+            has_source_dirty=False, has_submodules=False, is_current=False,
+        )
+        base.update(over)
+        return base
+
+    def _diagnose(self, monkeypatch, info, cherry, ancestor=False, age_h=99.0,
+                  branch_cherry=None):
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch",
+                            lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "remote_head_for_head",
+                            lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main",
+                            lambda *a: ancestor)
+        monkeypatch.setattr(pmw, "content_delivered_by_patch_id",
+                            lambda *a: cherry)
+        monkeypatch.setattr(pmw, "content_delivered_by_branch_patch_id",
+                            lambda *a: branch_cherry)
+        monkeypatch.setattr(pmw, "recent_activity_age_hours",
+                            lambda *a, **k: age_h)
+        return pmw.diagnose_worktree("C:/fake", "C:/other",
+                                     activity_window_h=6.0)
+
+    def test_patch_id_delivered_removes_with_motif(self, monkeypatch):
+        # Tous les patchs sont en amont : REMOVE, et le rapport dit que la
+        # jambe est le patch-id -- pas une ascendance.
+        s = self._diagnose(monkeypatch, self._info(), cherry=(3, 0))
+        assert s.decision == "REMOVE"
+        assert s.refusal_reason is None
+        assert s.content_on_main is True
+        assert s.content_on_main_by == "patch_id"
+
+    def test_ancestor_leg_is_labelled_ancestor(self, monkeypatch):
+        # Controle de discrimination : la meme issue de REMOVE par la jambe
+        # d'ascendance porte l'autre etiquette. Sans ce test, les deux
+        # jambes seraient indiscernables dans le rapport.
+        s = self._diagnose(monkeypatch, self._info(), cherry=None,
+                           ancestor=True)
+        assert s.decision == "REMOVE"
+        assert s.content_on_main_by == "ancestor"
+
+    def test_single_unmerged_patch_refuses(self, monkeypatch):
+        # Un seul `+` disqualifie : il reste du travail non livre.
+        s = self._diagnose(monkeypatch, self._info(), cherry=(2, 1))
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+        assert s.content_on_main is False
+        assert s.content_on_main_by is None
+
+    def test_empty_branch_is_not_delivered(self, monkeypatch):
+        # `minus == 0` : aucun commit a comparer. Un worktree vide ne
+        # franchit pas la garde -- c'est ce qui distingue « contenu deja
+        # sur main » de « rien du tout ».
+        s = self._diagnose(monkeypatch, self._info(), cherry=(0, 0))
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+        assert s.content_on_main is False
+
+    def test_unreadable_cherry_refuses(self, monkeypatch):
+        # Lecture git en echec (None) : jamais un feu vert.
+        s = self._diagnose(monkeypatch, self._info(), cherry=None)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+        assert s.content_on_main is False
+
+    def test_multi_commit_squash_removes_with_branch_motif(self, monkeypatch):
+        # Reserve Hermes du 09/10 : la jambe per-commit rend `plus == N` sur
+        # une branche a N commits squashee (le squash concatene les diffs,
+        # donc son patch-id n'egale celui d'aucun commit d'origine), et elle
+        # ne franchit pas. La jambe elargie fabrique le commit que le squash
+        # aurait produit et le voit. Le rapport doit dire LAQUELLE a tire.
+        s = self._diagnose(monkeypatch, self._info(), cherry=(0, 2),
+                           branch_cherry=(1, 0))
+        assert s.decision == "REMOVE"
+        assert s.refusal_reason is None
+        assert s.content_on_main is True
+        assert s.content_on_main_by == "branch_patch_id"
+
+    def test_branch_leg_never_runs_when_per_commit_decides(self, monkeypatch):
+        # Controle de cout : quand la jambe per-commit franchit, la jambe
+        # elargie (trois commandes git de plus) ne doit PAS etre consultee.
+        # Sans ce test, l'ordre des deux jambes pourrait s'inverser sans que
+        # rien ne le signale.
+        def _must_not_run(*a):
+            raise AssertionError(
+                "jambe elargie consultee alors que la jambe per-commit "
+                "avait deja tranche")
+
+        monkeypatch.setattr(pmw, "content_delivered_by_branch_patch_id",
+                            _must_not_run)
+        s = self._diagnose(monkeypatch, self._info(), cherry=(3, 0))
+        assert s.decision == "REMOVE"
+        assert s.content_on_main_by == "patch_id"
+
+    def test_branch_leg_unreadable_refuses(self, monkeypatch):
+        # Echec de lecture de la jambe elargie : jamais un feu vert.
+        s = self._diagnose(monkeypatch, self._info(), cherry=(0, 2),
+                           branch_cherry=None)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+        assert s.content_on_main_by is None
+
+    def test_multi_commit_with_unmerged_work_refuses(self, monkeypatch):
+        # La jambe elargie ne blanchit pas du travail non livre : un seul
+        # `+` disqualifie, exactement comme pour la jambe per-commit.
+        s = self._diagnose(monkeypatch, self._info(), cherry=(2, 1),
+                           branch_cherry=(0, 1))
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+
+    def test_branch_leg_empty_patch_refuses(self, monkeypatch):
+        # Branche dont le patch net est vide : `minus == 0`, il n'y a rien a
+        # comparer -- meme exigence que pour la jambe per-commit.
+        s = self._diagnose(monkeypatch, self._info(), cherry=(0, 2),
+                           branch_cherry=(0, 0))
+        assert s.decision == "REFUSE"
+        assert s.content_on_main is False
+
+    def test_branch_leg_protects_recent_activity(self, monkeypatch):
+        # Meme fenetre « agent vivant » que les autres jambes (#18494) -- et
+        # le rapport dit bien que le contenu EST sur main, pas qu'il manque.
+        s = self._diagnose(monkeypatch, self._info(), cherry=(0, 2),
+                           branch_cherry=(1, 0), age_h=0.5)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "recent_activity:0.5h"
+        assert s.content_on_main is True
+        assert s.content_on_main_by == "branch_patch_id"
+
+    def test_live_agent_window_protects(self, monkeypatch):
+        # Meme fenetre « agent vivant » que le predicat d'ascendance
+        # (#18494) : un marqueur d'activite recent fait REFUSER, mais la
+        # jambe est renseignee (le contenu EST sur main) -- c'est ce qui
+        # distingue « protege » de « non livre ».
+        s = self._diagnose(monkeypatch, self._info(), cherry=(3, 0),
+                           age_h=0.5)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "recent_activity:0.5h"
+        assert s.content_on_main is True
+        assert s.content_on_main_by == "patch_id"
+
+    def test_detached_head_not_eligible(self, monkeypatch):
+        # Branche-only, comme le predicat d'ascendance : un HEAD detache
+        # garde son verdict dedie (#17684).
+        info = self._info(branch=None)
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "detached_head_is_on_main", lambda *a: False)
+        monkeypatch.setattr(pmw, "lookup_pr_for_detached_head",
+                            lambda *a, **k: None)
+
+        def _cherry_must_not_run(*a):
+            raise AssertionError(
+                "content_delivered_by_patch_id ne doit pas etre appele sur "
+                "un HEAD detache : le predicat est branche-only"
+            )
+
+        monkeypatch.setattr(pmw, "content_delivered_by_patch_id",
+                            _cherry_must_not_run)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "detached_no_match"
+
+    def test_source_dirt_primes_over_patch_id(self, monkeypatch):
+        # Controle negatif de symetrie : la salete source tranche AVANT
+        # toute lecture de contenu, ici comme sur la jambe d'ascendance.
+        info = self._info(
+            untracked=["src/keep.py"], blocking_untracked=["src/keep.py"],
+            has_source_dirty=True,
+        )
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+
+        def _cherry_must_not_run(*a):
+            raise AssertionError(
+                "content_delivered_by_patch_id ne doit pas etre appele : la "
+                "salete source prime"
+            )
+
+        monkeypatch.setattr(pmw, "content_delivered_by_patch_id",
+                            _cherry_must_not_run)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "uncommitted_source_changes"
+
+
+class TestContentDeliveredByPatchId:
+    """Unite du helper #20067 : comptage des lignes `-` / `+` de git cherry."""
+
+    def _run(self, monkeypatch, rc, stdout):
+        class _P:
+            returncode = rc
+
+        _P.stdout = stdout
+        monkeypatch.setattr(pmw, "run_git", lambda *a, **k: _P())
+        return pmw.content_delivered_by_patch_id("C:/fake")
+
+    def test_counts_minus_and_plus(self, monkeypatch):
+        out = (
+            "- abc123\n"
+            "- def456\n"
+            "+ 789abc\n"
+        )
+        assert self._run(monkeypatch, 0, out) == (2, 1)
+
+    def test_all_delivered(self, monkeypatch):
+        assert self._run(monkeypatch, 0, "- a\n- b\n- c\n") == (3, 0)
+
+    def test_empty_stdout_is_empty_branch(self, monkeypatch):
+        assert self._run(monkeypatch, 0, "") == (0, 0)
+
+    def test_git_failure_returns_none(self, monkeypatch):
+        # Fail-closed : l'appelant refuse sur None.
+        assert self._run(monkeypatch, 128, "") is None
 
 
 class TestRemoteHeadForHead:
@@ -1093,14 +1697,15 @@ class TestDetachedHeadOnMain17684:
         assert pmw.lookup_pr_for_detached_head("/tmp/fake") is None
 
 
-def _fake_proc(returncode: int = 0, stdout: str = "", json_payload=None):
+def _fake_proc(returncode: int = 0, stdout: str = "", json_payload=None,
+               stderr: str = ""):
     """Construit un subprocess.CompletedProcess minimal pour stubbing."""
     import subprocess
     out = stdout
     if json_payload is not None:
         out = json.dumps(json_payload)
     return subprocess.CompletedProcess(
-        args=[], returncode=returncode, stdout=out, stderr=""
+        args=[], returncode=returncode, stdout=out, stderr=stderr
     )
 
 
@@ -1127,13 +1732,327 @@ def _seed_cache_file(path, entries):
     }), encoding="utf-8")
 
 
-def _stub_gh_listing_then_anchor(monkeypatch, listing_payload, anchor_payload):
-    """Les deux commandes gh se distinguent par '--search' (ancre seule)."""
+def _stub_gh_listing_then_anchor(monkeypatch, listing_payload, anchor_payload,
+                                 rest_payload=None):
+    """Les trois commandes gh se distinguent (#23636).
+
+    - `api ... pulls?...head=` : l'ancre REST (voie 1, seau `core`) ;
+    - `pr list --search head:` : le repli GraphQL de l'ancre (voie 2) ;
+    - `pr list` sans `--search` : le lot de la passe.
+
+    `rest_payload` vaut None par defaut : la voie REST repond une liste
+    vide (route vivante, aucune correspondance) et l'ancre tranche par
+    son repli -- les tests historiques gardent ainsi leur sens.
+    """
     def fake_gh(*args, **kwargs):
+        if args and args[0] == "api":
+            if rest_payload is None:
+                return _fake_proc(json_payload=[])
+            return _fake_proc(json_payload=rest_payload)
         if "--search" in args:
             return _fake_proc(json_payload=anchor_payload)
         return _fake_proc(json_payload=listing_payload)
     monkeypatch.setattr(pmw, "run_gh", fake_gh)
+
+
+def _rest_row(number, state, ref, sha=_PR_OID_A, merged_at=None,
+              head_repo=None, base_repo=None):
+    """Entree REST `pulls` : la forme de l'API, pas la forme interne.
+
+    `head_repo` / `base_repo` sont optionnels : absents, la ligne ne porte
+    aucune info de depot (fork supprime) et l'ancre tranche sur le seul
+    critere de branche.
+    """
+    row = {
+        "number": number,
+        "state": state,
+        "merged_at": merged_at,
+        "html_url": f"https://example/pr/{number}",
+        "head": {"ref": ref, "sha": sha},
+    }
+    if head_repo is not None:
+        row["head"]["repo"] = {"full_name": head_repo}
+    if base_repo is not None:
+        row["base"] = {"repo": {"full_name": base_repo}}
+    return row
+
+
+class TestAnchorRestRoute:
+    """#23636 : l'ancre passe par le seau `core` (REST `pulls?head=`), qui
+    reste sain quand le seau `graphql` est epuise sous le compte partage.
+
+    L'ancre GraphQL reste le repli (branches de fork : leur head
+    appartient a un autre proprietaire, donc hors du filtre `head=`), mais
+    son echec ne doit plus LEVER : une levee avortait toute la passe.
+    """
+
+    def test_rest_route_resolves_before_graphql(self, monkeypatch):
+        calls = []
+
+        def fake_gh(*args, **kwargs):
+            calls.append(list(args))
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[
+                    _rest_row(321, "open", "feature/x", sha=_PR_OID_B),
+                ])
+            raise AssertionError(
+                "l'ancre REST tranche : le repli GraphQL ne doit pas etre "
+                "appele")
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("feature/x")
+        assert row["number"] == 321
+        assert row["state"] == "OPEN"
+        assert row["headRefName"] == "feature/x"
+        assert row["headRefOid"] == _PR_OID_B
+        assert row["url"] == "https://example/pr/321"
+        # L'endpoint est la liste par head -- jamais commits/<oid>/pulls
+        # (faux negatifs mesures, cf orphan-branch-scan).
+        endpoint = calls[0][1]
+        assert "pulls" in endpoint and "head=" in endpoint
+        assert "commits/" not in endpoint
+
+    def test_rest_maps_the_three_states(self, monkeypatch):
+        """`state` interne : OPEN / MERGED / CLOSED -- REST rend
+        open / closed + `merged_at` non nul pour une PR fusionnee."""
+        cases = [
+            (_rest_row(1, "open", "f/x"), "OPEN"),
+            (_rest_row(2, "closed", "f/x", merged_at="2026-10-31T01:00:00Z"),
+             "MERGED"),
+            (_rest_row(3, "closed", "f/x"), "CLOSED"),
+        ]
+        for payload, expected in cases:
+            monkeypatch.setattr(
+                pmw, "run_gh",
+                lambda *a, _p=payload, **k: _fake_proc(json_payload=[_p]),
+            )
+            row = pmw.anchor_search_pr_for_branch("f/x")
+            assert row["state"] == expected, payload
+
+    def test_rest_keeps_the_most_recent_number(self, monkeypatch):
+        """close+reopen / re-PR : deux PRs partagent le nom de branche ->
+        on garde le numero max, comme le lot et comme le rows[0] de
+        l'ancre GraphQL (date desc)."""
+        monkeypatch.setattr(
+            pmw, "run_gh",
+            lambda *a, **k: _fake_proc(json_payload=[
+                _rest_row(41, "closed", "f/x"),
+                _rest_row(57, "open", "f/x"),
+            ]),
+        )
+        row = pmw.anchor_search_pr_for_branch("f/x")
+        assert row["number"] == 57
+
+    def test_rest_row_of_another_branch_is_not_retained(self, monkeypatch):
+        """#23642 : une reponse REST NON FILTREE ne doit pas pouvoir
+        retenir la PR d'une AUTRE branche.
+
+        Le filtre `head=` de l'API n'est pas une barriere suffisante : une
+        requete dont le separateur `:` a ete consomme rend les 5 PRs les
+        plus recentes du depot, sans rapport avec la branche demandee. La
+        ligne retenue doit donc porter EXACTEMENT la branche demandee.
+        """
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[
+                    _rest_row(999, "closed", "feature/autre-branche"),
+                    _rest_row(321, "open", "feature/x", sha=_PR_OID_B),
+                ])
+            # Le repli GraphQL est pollue de la meme facon : aucune des deux
+            # voies ne doit rendre la PR d'une autre branche.
+            return _fake_proc(json_payload=[
+                {"number": 999, "state": "MERGED",
+                 "url": "https://example/pr/999",
+                 "headRefName": "feature/autre-branche",
+                 "headRefOid": _PR_OID_A},
+            ])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("feature/x")
+        assert row is not None
+        assert row["number"] == 321
+        assert row["headRefName"] == "feature/x"
+
+    def test_no_row_of_the_requested_branch_yields_none(self, monkeypatch):
+        """Le pendant du precedent : si AUCUNE ligne ne porte la branche
+        demandee, l'ancre rend l'inconcluant (None) -- jamais la PR d'une
+        autre branche. C'est ce qui empeche le script de retirer un
+        worktree actif en le croyant fusionne."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[
+                    _rest_row(999, "closed", "feature/autre-branche"),
+                ])
+            return _fake_proc(json_payload=[
+                {"number": 999, "state": "MERGED",
+                 "url": "https://example/pr/999",
+                 "headRefName": "feature/autre-branche",
+                 "headRefOid": _PR_OID_A},
+            ])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        assert pmw.anchor_search_pr_for_branch("feature/x") is None
+
+    def test_branch_name_starting_with_a_placeholder_token_survives(
+            self, monkeypatch):
+        """#23642 : `gh api` expanse `owner` / `repo` / `branch` quand ils
+        suivent un `:` litteral dans l'endpoint, et il CONSOMME le `:` au
+        passage. Un nom de branche `branch-x` voyait donc son nom remplace
+        par la branche locale, et le `:` disparaitre -- ce qui fait
+        IGNORER le filtre `head=` par l'API (mesure : 5 lignes rendues au
+        lieu de 0, sur la forme de production).
+
+        Le separateur est encode en `%3A` : plus aucun `:` litteral ne
+        suit le nom, le jeton survit intact.
+        """
+        calls = []
+
+        def fake_gh(*args, **kwargs):
+            calls.append(list(args))
+            return _fake_proc(json_payload=[])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        pmw.anchor_search_pr_for_branch("branch-x")
+        endpoint = calls[0][1]
+        assert "%3Abranch-x" in endpoint
+        assert ":branch-x" not in endpoint
+
+    def test_empty_rest_payload_falls_back_to_graphql(self, monkeypatch):
+        """#23642 : une voie REST vide doit basculer sur le repli
+        GraphQL, qui rend alors la PR de la branche demandee."""
+        calls = []
+
+        def fake_gh(*args, **kwargs):
+            calls.append(list(args))
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[])
+            return _fake_proc(json_payload=[
+                {"number": 55, "state": "MERGED",
+                 "url": "https://example/pr/55",
+                 "headRefName": "f/x", "headRefOid": _PR_OID_A},
+            ])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("f/x")
+        assert row is not None and row["number"] == 55
+        assert len(calls) == 2, (
+            "une voie REST vide doit declencher le repli GraphQL")
+
+    def test_graphql_prefix_match_is_rejected(self, monkeypatch):
+        """`gh pr list --search "head:f/x"` fait un matching PREFIXE :
+        `f/x-2` et `f/xy` sortent aussi. La ligne retenue doit porter
+        EXACTEMENT la branche demandee, sinon l'ancre rend la PR d'une
+        branche voisine."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[])
+            return _fake_proc(json_payload=[
+                {"number": 77, "state": "MERGED",
+                 "url": "https://example/pr/77",
+                 "headRefName": "f/x-2", "headRefOid": _PR_OID_A},
+            ])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        assert pmw.anchor_search_pr_for_branch("f/x") is None
+
+    def test_rest_row_from_another_repo_is_rejected(self, monkeypatch):
+        """La voie REST ne sert que les branches dont le head vit dans le
+        depot de la PR : une ligne dont `head.repo` != `base.repo` est
+        ecartee. Les branches de fork restent le ressort du repli
+        GraphQL."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[
+                    _rest_row(12, "open", "f/x",
+                              head_repo="jsboige/AutreDepot",
+                              base_repo="jsboige/CoursIA"),
+                ])
+            return _fake_proc(json_payload=[])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        assert pmw.anchor_search_pr_for_branch("f/x") is None
+
+    def test_rest_row_of_the_same_repo_is_kept(self, monkeypatch):
+        """Le cas nominal du filtre de depot : `head.repo` == `base.repo`
+        -> la ligne est acceptee."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[
+                    _rest_row(12, "open", "f/x",
+                              head_repo="jsboige/CoursIA",
+                              base_repo="jsboige/CoursIA"),
+                ])
+            return _fake_proc(json_payload=[])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("f/x")
+        assert row is not None and row["number"] == 12
+
+    def test_branch_name_is_url_encoded(self, monkeypatch):
+        """Un `head=` mal encode rend une liste VIDE : le faux negatif
+        serait silencieux. Le `/` du nom de branche doit etre encode."""
+        calls = []
+
+        def fake_gh(*args, **kwargs):
+            calls.append(list(args))
+            return _fake_proc(json_payload=[])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        pmw.anchor_search_pr_for_branch("feature/deep/branch")
+        endpoint = calls[0][1]
+        assert "feature%2Fdeep%2Fbranch" in endpoint
+        # Le separateur `owner:branche` est encode lui aussi : un `:`
+        # litteral dans l'endpoint est consomme par `gh api` (qui expanse
+        # alors les jetons `owner`/`repo`/`branch`) et le filtre `head=`
+        # devient inoperant (#23642).
+        assert "%3Afeature%2Fdeep%2Fbranch" in endpoint
+        assert ":feature%2Fdeep%2Fbranch" not in endpoint
+
+    def test_graphql_fallback_still_serves_fork_branches(self, monkeypatch):
+        """Le repli GraphQL reste la voie des branches de fork : une
+        reponse GraphQL saine est donc acceptee quand la voie REST ne
+        trouve rien."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[])
+            return _fake_proc(json_payload=[_row(88, "OPEN", "f/fork")])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("f/fork")
+        assert row["number"] == 88 and row["state"] == "OPEN"
+
+    def test_graphql_failure_does_not_raise(self, monkeypatch):
+        """Le contrat de #23636 : les deux voies muettes rendent
+        l'inconcluant, elles ne LEVENT plus. Une levee avortait toute la
+        passe (rc=2, aucun rapport ecrit)."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(returncode=1, stdout="",
+                                  stderr="404 Not Found")
+            return _fake_proc(
+                returncode=1, stdout="",
+                stderr="GraphQL: API rate limit already exceeded")
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        try:
+            row = pmw.anchor_search_pr_for_branch("f/x")
+        except Exception as exc:  # pragma: no cover - c'est l'echec vise
+            raise AssertionError(
+                "l'ancre ne doit plus lever : une levee avorte toute la "
+                f"passe (got {type(exc).__name__}: {exc})")
+        assert row is None
+
+    def test_rest_failure_falls_back_to_graphql(self, monkeypatch):
+        """La voie REST indisponible (gh muet, endpoint refuse) ne
+        condamne pas l'ancre : le repli GraphQL tranche encore."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(returncode=1, stdout="", stderr="boom")
+            return _fake_proc(json_payload=[_row(99, "MERGED", "f/x")])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("f/x")
+        assert row["number"] == 99 and row["state"] == "MERGED"
 
 
 class TestPrResolution:
@@ -1665,8 +2584,14 @@ class TestEndToEnd:
     def _require_gh_budget(self):
         skip_if_gh_exhausted()
 
-    def test_dry_run_exits_1_when_refusals(self):
-        """po-2027 a 4 worktrees refuses (main + 3 PR open). Exit 1.
+    def test_dry_run_exits_0_even_with_refusals(self):
+        """po-2027 a 4 worktrees refuses (main + 3 PR open). Exit 0.
+
+        #3895 (roo-extensions) : un REFUS est une decision de l'outil, pas
+        une panne. A 86-100 % de refus mesures sur 3 machines (27/09),
+        l'exit 1 d'avant rendait la tache planifiee rouge (LastResult 0x1)
+        toutes les nuits en reussissant -- un vrai echec gh y etait
+        indissociable du bruit.
 
         CI : skip si scanned=0 OU si aucun worktree main n'est présent
         (checkout shallow sans worktree main séparé, refs/remotes/pull/N/merge).
@@ -1687,33 +2612,10 @@ class TestEndToEnd:
             cwd=TEST_CWD,
         )
         skip_if_output_rate_limited(proc.stdout + proc.stderr)
-        stderr = (proc.stderr or "").strip()
-        # rc=2 a DEUX saveurs, et les confondre est le defaut d'origine :
-        #  - l'outil NOMME son incapacite d'enumerer ici (environment) : c'est la
-        #    precondition annoncee par ce test -> skip, motif compris ;
-        #  - l'outil a PLANTE (#17292) -> echec dur, traceback compris. Un
-        #    plantage n'est pas une precondition, et le skipper le rendrait
-        #    invisible pour toujours.
-        # #17229 (union) : le budget GraphQL epuise est une TROISIEME saveur --
-        # elle n'est ni une precondition d'environnement ni un plantage, et
-        # elle se saute AVANT ces deux branches (le skip ci-dessus), sinon le
-        # rc=2 d'un appel gh refuse serait lu comme un plantage de l'outil.
-        if proc.returncode == 2:
-            if "echec inattendu" in stderr:
-                pytest.fail(f"le script a plante (rc=2), ce n'est pas une precondition :\n{stderr[:1500]}")
-            pytest.skip(f"le script declare ne pas pouvoir enumerer ici : {stderr[:400]}")
-        # Exit 0 ou 1 (selon qu'il y a des refus observes). Depuis #17292, `1`
-        # ne peut plus signifier « l'outil a plante » : une panne inattendue
-        # sort par 2 avec son traceback.
-        assert proc.returncode in (0, 1), (
-            f"unexpected exit: {proc.returncode}\nstderr: {stderr[:800]}"
-        )
-        assert proc.stdout.strip(), (
-            "contrat --json rompu : stdout vide alors que rc="
-            f"{proc.returncode} -- le script doit publier son JSON, ou nommer "
-            f"son echec (rc=2). stderr: {stderr[:800]}"
-        )
-        out = json.loads(proc.stdout)
+        # Triage #17292/#17229 factorise dans _json_output_or_fail : rc=2
+        # plante -> echec dur ; rc=2 nomme -> skip ; le cas #17229 (budget
+        # GraphQL epuise) s'est deja saute ci-dessus, AVANT ces deux branches.
+        out = _json_output_or_fail(proc)
         if out["scanned"] == 0:
             pytest.skip("no worktree present (CI checkout shallow)")
         # Le worktree de travail principal doit toujours être refuse
@@ -1737,7 +2639,7 @@ class TestEndToEnd:
             cwd=TEST_CWD,
         )
         skip_if_output_rate_limited(proc.stdout + proc.stderr)
-        out = json.loads(proc.stdout)
+        out = _json_output_or_fail(proc)
         if out["scanned"] == 0:
             pytest.skip("no worktree present (CI checkout shallow)")
         for s in out["statuses"]:
@@ -1754,7 +2656,7 @@ class TestEndToEnd:
             cwd=TEST_CWD,
         )
         skip_if_output_rate_limited(proc.stdout + proc.stderr)
-        out = json.loads(proc.stdout)
+        out = _json_output_or_fail(proc)
         for key in ("scanned", "removable", "refused", "skipped_current",
                     "dry_run", "statuses"):
             assert key in out, f"missing key in JSON output: {key}"
@@ -1781,8 +2683,9 @@ class TestEndToEnd:
         assert "---" in text, "text output must separate counters by ---"
 
     def test_apply_noop_when_no_removable(self):
-        """--apply doit no-op quand 0 removable, et exit code reste 1
-        si refus observes (le run signale quand meme le bruit).
+        """--apply doit no-op quand 0 removable ; les refus observes ne
+        comptent plus comme echec depuis #3895 (le run reste a 0, le
+        detail des refus vit dans le rapport).
 
         Test destructif : --apply supprime réellement des worktrees. Skip
         sauf si RUN_DESTRUCTIVE_TESTS=1 est explicitement défini dans
@@ -1960,14 +2863,346 @@ class TestEndToEndHermetic14693:
         assert "submodule" in stderr.lower(), stderr
         assert wt.exists(), "le worktree REFUSE reste sur disque"
 
+    def test_lane_owner_marker_does_not_block_removal(self, tmp_path, monkeypatch):
+        """#3895 (roo-extensions) : le marqueur `.lane-owner` pose par le
+        spawn est TOLERE -- il ne doit jamais transformer un REMOVE annonce
+        en REFUSE untolerated_untracked (un worktree refuse pour son propre
+        marqueur ne partirait jamais), et l'attribution est portee par le
+        statut pour le rapport.
+        """
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        (wt / ".lane-owner").write_text(
+            "myia-po-2026:CoursIA-2\n", encoding="utf-8")
+        self._merged_anchor(monkeypatch)
+        monkeypatch.chdir(super)
+
+        s = pmw.diagnose_worktree(str(wt), str(super))
+        assert s.decision == "REMOVE", (
+            f"le marqueur ne doit pas bloquer le retrait, got: {s.refusal_reason}"
+        )
+        assert s.lane_owner == "myia-po-2026:CoursIA-2"
+        # Sequence exacte du apply de main() : le marqueur est nettoye
+        # comme artefact tolere, puis le remove sans force reussit.
+        cleaned = pmw.clean_tolerated_artifacts(s)
+        assert ".lane-owner" in cleaned
+        ok, stderr = pmw.apply_removal(s)
+        assert ok, f"REMOVE annonce mais retrait echoue: {stderr}"
+        assert not wt.exists(), "le worktree doit avoir quitte le disque"
+
+
+class TestRefusalReport3895:
+    """#3895 (roo-extensions) : un REFUS est une decision, pas une panne.
+
+    Mesure fondatrice (3 machines, 27/09/2026) : 86-100 % des worktrees
+    vus sont refuses (worktrees de cycle nes HEAD-detaches ou sales par
+    construction). L'exit 1 d'avant rendait la tache planifiee rouge
+    toutes les nuits en reussissant, et le detail des refus ne vivait
+    que dans un log local qu'aucune lane ne lisait. Contrat depuis #3895 :
+    rc=0 passe saine (refus compris), refus dans le rapport (classes +
+    lanes attribuees), [WARN] au-dela du seuil -- sur stderr, jamais
+    stdout (le --json doit rester pur pour `json.loads`).
+    """
+
+    @staticmethod
+    def _refuse(reason, i=0, **kw):
+        # Chemin UNIQUE par indice : le bouchon diagnose_worktree resout par
+        # path -- un path partage ferait resolver tous les worktrees vers le
+        # premier statut (mesure : 3 fails initiaux, tous no_pr_match=3).
+        return _make_status(path=f"C:/fake/refused{i}", decision="REFUSE",
+                            refusal_reason=reason,
+                            pr_state=None, pr_number=None, pr_url=None, **kw)
+
+    def _run_main(self, monkeypatch, statuses, argv_extra=()):
+        """main() in-process, list_worktrees/diagnose bouchonnes, resolution
+        PR detachee du disque (aucun appel gh possible dans ces tests)."""
+        monkeypatch.setattr(pmw, "list_worktrees", lambda: [
+            {"path": s.path, "branch": s.branch} for s in statuses])
+        # #21753 : la sonde d'identite est bouchonnee verte -- ces tests
+        # verifient le contrat de sortie du nominal, pas le mode degrade
+        # (couvert par TestGhDegradedMode). Sans ce stub, le verdict de la
+        # passe dependrait de la presence reelle de gh sur le siège.
+        monkeypatch.setattr(pmw, "probe_gh_availability", lambda: None)
+        monkeypatch.setattr(
+            pmw, "diagnose_worktree",
+            lambda path, cur, head_sha=None, activity_window_h=6.0,
+                   gh_unavailable_reason=None, quarantine_submodules=False:
+                next(s for s in statuses if s.path == path),
+        )
+        monkeypatch.setattr(
+            pmw, "get_pr_resolution",
+            lambda: pmw.PrResolution(cache_path=None),
+        )
+        monkeypatch.setattr(
+            sys, "argv", ["prune_merged_worktrees.py", *argv_extra],
+        )
+        return pmw.main()
+
+    def test_refusals_exit_zero_and_report_classes(self, monkeypatch, capsys):
+        """Le coeur de #3895 : des refus, un exit 0, et le decompte par
+        classe dans le rapport texte."""
+        statuses = [
+            self._refuse("unpushed_commits:2", i=0),
+            self._refuse("no_pr_match", i=1,
+                         lane_owner="myia-po-2026:CoursIA-2"),
+            self._refuse("unpushed_commits:1", i=2),
+            _make_status(decision="SKIP_CURRENT",
+                         refusal_reason="current_worktree_not_removable"),
+        ]
+        assert self._run_main(monkeypatch, statuses) == 0
+        out = capsys.readouterr().out
+        assert "refused=3" in out
+        assert "refusals:" in out
+        # Les details variables (":2", ":1") s'agregent en classes.
+        assert "unpushed_commits=2" in out
+        assert "no_pr_match=1" in out
+        # Tri deterministe : compte decroissant.
+        assert out.index("unpushed_commits=") < out.index("no_pr_match=")
+
+    def test_json_carries_breakdowns_and_stays_pure(self, monkeypatch, capsys):
+        """Le --json porte refusal_reasons + lane_refusals + lane_owner par
+        statut, et stdout reste du JSON pur meme avec emission WARN."""
+        statuses = [
+            self._refuse("unpushed_commits:2", i=0),
+            self._refuse("no_pr_match", i=1,
+                         lane_owner="myia-po-2026:CoursIA-2"),
+            self._refuse("uncommitted_source_changes", i=2),
+        ]
+        assert self._run_main(
+            monkeypatch, statuses, argv_extra=["--json", "--warn-threshold", "1"]
+        ) == 0
+        captured = capsys.readouterr()
+        out = json.loads(captured.out)  # stdout PUR : le WARN vit en stderr
+        assert out["refusal_reasons"] == {
+            "uncommitted_source_changes": 1,
+            "no_pr_match": 1,
+            "unpushed_commits": 1,
+        }
+        assert out["lane_refusals"] == {
+            "unattributed": 2,
+            "myia-po-2026:CoursIA-2": 1,
+        }
+        owners = [s.get("lane_owner") for s in out["statuses"]]
+        assert "myia-po-2026:CoursIA-2" in owners
+        assert "[WARN][prune-task]" in captured.err
+
+    def test_mute_flag_distinguishes_silent_from_clean(
+            self, monkeypatch, capsys):
+        """#127 : un organe qui n'a diagnostique AUCUN worktree (scanned=0)
+        est MUET, pas propre. Le flag JSON `mute` et la ligne stderr rendent
+        un silence discriminable d'une passe propre -- avant, `scanned=0`,
+        stdout vide et rc=0 etaient indiscernables d'une ferme saine (classe
+        #86, 8 nuits sur ai-01)."""
+        # scanned=0 -> mute True, et l'avertissement part sur stderr
+        # (stdout reste du JSON pur pour json.loads).
+        assert self._run_main(monkeypatch, [], argv_extra=["--json"]) == 0
+        cap = capsys.readouterr()
+        out = json.loads(cap.out)
+        assert out["scanned"] == 0
+        assert out["mute"] is True
+        # reserve Hermes #22440 : le cas mute n'a rien sous la main -- refus
+        # et retraits restent a 0 (implicite jusqu'ici, desormais epingle).
+        assert out["refused"] == 0
+        assert out["removable"] == 0
+        assert "MUTE" in cap.err
+        # reserve Hermes #22440 (complement symetrique) : en mode TEXTE, un
+        # passage scanned=0 doit aussi laisser une ligne sur stdout -- sans
+        # elle, un appelant qui ne lit que stdout voit un silence blanc.
+        assert self._run_main(monkeypatch, []) == 0
+        cap_text = capsys.readouterr()
+        assert "scanned=0" in cap_text.out
+        assert "MUTE" in cap_text.err
+        # controle negatif : un scan non vide n'est JAMAIS mute.
+        assert self._run_main(
+            monkeypatch, [_make_status()], argv_extra=["--json"]) == 0
+        out2 = json.loads(capsys.readouterr().out)
+        assert out2["scanned"] == 1
+        assert out2["mute"] is False
+
+    def test_apply_error_still_exits_two(self, monkeypatch):
+        """Le rc=2 des echecs d'application survit au changement : un
+        REMOVE annonce que git refuse reste une erreur, pas un refus."""
+        statuses = [_make_status()]  # REMOVE par defaut
+        monkeypatch.setattr(pmw, "clean_tolerated_artifacts", lambda s: [])
+        monkeypatch.setattr(
+            pmw, "apply_removal", lambda s: (False, "fatal: worktree sale"))
+        assert self._run_main(
+            monkeypatch, statuses, argv_extra=["--apply"]) == 2
+
+    def test_warn_strictly_above_threshold_only(self, monkeypatch, capsys):
+        """`refused > N` strictement : au seuil exact, pas d'emission."""
+        statuses = [self._refuse("no_pr_match", i=k) for k in range(3)]
+        self._run_main(
+            monkeypatch, statuses, argv_extra=["--warn-threshold", "3"])
+        assert "[WARN][prune-task]" not in capsys.readouterr().err
+        self._run_main(
+            monkeypatch, statuses, argv_extra=["--warn-threshold", "2"])
+        err = capsys.readouterr().err
+        assert "[WARN][prune-task]" in err
+        assert "refused=3/3" in err
+        assert "no_pr_match=3" in err
+
+    def test_warn_absent_without_flag(self, monkeypatch, capsys):
+        """Sans --warn-threshold, aucun WARN meme avec refus (le dry-run
+        interactif reste silencieux -- l'opt-in est a la tache planifiee)."""
+        statuses = [self._refuse("no_pr_match", i=0)]
+        self._run_main(monkeypatch, statuses)
+        assert capsys.readouterr().err == ""
+
+    def test_warn_line_carries_host_and_lanes(self, monkeypatch, capsys):
+        """La ligne WARN porte l'hote (COMPUTERNAME) et les lanes quand les
+        marqueurs existent -- prete a etre postee telle quelle."""
+        statuses = [
+            self._refuse("no_pr_match", i=0, lane_owner="laneA"),
+            self._refuse("no_pr_match", i=1, lane_owner="laneA"),
+            self._refuse("unpushed_commits:1", i=2),
+        ]
+        monkeypatch.setenv("COMPUTERNAME", "MYIA-PO-2026")
+        self._run_main(
+            monkeypatch, statuses, argv_extra=["--warn-threshold", "2"])
+        err = capsys.readouterr().err
+        assert "[WARN][prune-task] MYIA-PO-2026 refused=3/3" in err
+        assert "lanes: laneA=2 unattributed=1" in err
+
+    def test_lane_owner_marker_is_tolerated(self):
+        """Le marqueur .lane-owner ne doit JAMAIS bloquer le retrait ni
+        compter comme edition source (sinon l'attribution fabriquerait
+        exactement les refus qu'elle est censee expliquer)."""
+        assert pmw.is_untracked_artifact(".lane-owner") is True
+        assert pmw.is_source_dirty(".lane-owner") is False
+
+    def test_read_lane_owner_variants(self, tmp_path):
+        # pose et net : premiere ligne non vide, trim
+        (tmp_path / ".lane-owner").write_text(
+            "myia-po-2026:CoursIA-2\n", encoding="utf-8")
+        assert pmw.read_lane_owner(str(tmp_path)) == "myia-po-2026:CoursIA-2"
+        # lignes vides en tete tolerees, espaces trims
+        (tmp_path / ".lane-owner").write_text(
+            "\n  myia-po-2025:CoursIA  \nseconde ligne ignoree\n",
+            encoding="utf-8")
+        assert pmw.read_lane_owner(str(tmp_path)) == "myia-po-2025:CoursIA"
+        # borne a 64 : un marqueur corrompu ne pollue pas le rapport
+        (tmp_path / ".lane-owner").write_text("x" * 200, encoding="utf-8")
+        assert pmw.read_lane_owner(str(tmp_path)) == "x" * 64
+        # absent -> None
+        empty = tmp_path / "vide"
+        empty.mkdir()
+        assert pmw.read_lane_owner(str(empty)) is None
+        # vide -> None
+        (empty / ".lane-owner").write_text("   \n", encoding="utf-8")
+        assert pmw.read_lane_owner(str(empty)) is None
+
+    def test_absolute_worktree_resolves_host_repo_not_worktree(
+        self, tmp_path, monkeypatch,
+    ):
+        """#18219 follow-up (CHANGES_REQUESTED ai-01 2026-09-29T00:31Z) :
+        un worktree lie porte son propre fichier `.git` (gitdir pointeur).
+        L'ancienne resolution `_repo_root_for_worktree` remontait au
+        premier `.git` et rendait le worktree lui-meme, ce qui forait
+        `apply_removal` -> `git -C <wt> worktree remove <wt>` ->
+        Permission denied sur Windows (git tente de retirer son cwd).
+
+        Le fix utilise `git rev-parse --git-common-dir` qui rend le
+        common-dir du depot HOTE (distinct du `.git`/pointeur du
+        worktree). On asserte directement la valeur de l'argument `-C`
+        passe a `run_git` par `apply_removal` -- c'est l'invariant qui
+        protege Linux aussi : aucun autre helper ne doit pouvoir
+        reintroduire la marche d'ancetre.
+        """
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        # Inlined from TestEndToEndHermetic14693._merged_anchor -- ces
+        # tests vivent dans TestRefusalReport3895 depuis le rebase c.1296.
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch",
+            lambda branch, head_sha=None: dict(
+                _MERGED_PR, headRefName=branch),
+        )
+        monkeypatch.chdir(super)
+
+        # Diagnostic + apply_removal reel, interception du cwd passe a git.
+        s = pmw.diagnose_worktree(str(wt), str(super))
+        assert s.decision == "REMOVE", s.refusal_reason
+
+        seen: list[tuple[str, tuple]] = []
+        real_run_git = pmw.run_git
+
+        def spy(cwd, *args, check=True):
+            seen.append((cwd, args))
+            return real_run_git(cwd, *args, check=check)
+
+        monkeypatch.setattr(pmw, "run_git", spy)
+        ok, stderr = pmw.apply_removal(s)
+        assert ok, f"REMOVE doit reussir ici: {stderr}"
+
+        # Filtrer uniquement les appels `worktree remove` (le helper
+        # interroge git avec cwd=<wt.path> pour --git-common-dir, ce qui
+        # est attendu et correct -- c'est le cwd de la sous-commande,
+        # pas celui du retrait final).
+        worktree_remove_cwds = [
+            cwd for cwd, args in seen
+            if args[:2] == ("worktree", "remove")
+            and Path(cwd).resolve() == Path(str(wt)).resolve()
+        ]
+        assert not worktree_remove_cwds, (
+            f"`worktree remove` vise le worktree lui-meme, pas le depot "
+            f"hebergeur : {worktree_remove_cwds}"
+        )
+        # Le cwd du `worktree remove` doit etre la racine du super-repo,
+        # resolue par `git rev-parse --git-common-dir` -> son parent.
+        host_cwds = [
+            cwd for cwd, args in seen
+            if args[:2] == ("worktree", "remove")
+            and Path(cwd).resolve() == Path(str(super)).resolve()
+        ]
+        assert host_cwds, (
+            f"aucun appel `worktree remove` ne vise le depot hebergeur : "
+            f"{[(c, a) for c, a in seen if a[:2] == ('worktree', 'remove')]}"
+        )
+
+    def test_relative_worktree_path_falls_back_to_current_repo(
+        self, tmp_path, monkeypatch,
+    ):
+        """#18219 c.1296 : un chemin de worktree relatif (cas System32
+        du cron #14473, ou l'appelant passe `..` apres chdir) doit
+        retomber sur `current_repo_root()` sans appeler git. C'est le
+        court-circuit de l'optimisation : evite une commande git
+        supplementaire pour le cas ou le worktree est forcement sous le
+        repo de ce script.
+        """
+        # worktree relatif construit sous cwd pour valider le chemin
+        # relatif.
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "README.md").write_text("tmp", encoding="utf-8")
+
+        # Patch run_git pour ASSERTER qu'il n'est PAS appele sur un
+        # chemin relatif (court-circuit attendu).
+        called_with: list[str] = []
+        real_run_git = pmw.run_git
+
+        def spy(cwd, *args, check=True):
+            called_with.append(cwd)
+            return real_run_git(cwd, *args, check=check)
+
+        monkeypatch.setattr(pmw, "run_git", spy)
+
+        result = pmw._repo_root_for_worktree("wt-feature")
+        assert called_with == [], (
+            f"un chemin relatif ne doit pas appeler git (court-circuit) : "
+            f"{called_with}"
+        )
+        # Le repli est la racine du repo de CE script -- pas le cwd
+        # d'appel. `current_repo_root()` remonte depuis __file__.
+        assert result == pmw.current_repo_root()
+
 
 class TestErrorContract:
-    """#17292 — `rc=1` doit signifier « refus observes », JAMAIS « l'outil a plante ».
+    """#17292 — une PANNE ne doit jamais se faire passer pour une decision.
 
-    Sans ce contrat, un appelant qui teste `rc in (0, 1)` — c'est exactement ce
-    que fait l'E2E subprocess ci-dessus — accepte indistinctement une decision
-    de l'outil et un traceback. C'est ce qui a transforme une panne du runner en
-    `JSONDecodeError` sur des PRs de plusieurs lanes le 2026-09-21.
+    Historique : `rc=1` signifiait « refus observes » — un appelant qui
+    testait `rc in (0, 1)` acceptait indistinctement une decision de
+    l'outil et un traceback (panne du runner lue en `JSONDecodeError`
+    sur des PRs de plusieurs lanes, 2026-09-21). #17292 a sorti les
+    pannes par 2 ; #3895 a ensuite retire le « 1 = refus » lui-meme :
+    tout code != 0 est une panne, sans zone grise.
     """
 
     def test_unexpected_exception_leaves_by_the_documented_error_code(self, monkeypatch):
@@ -2053,3 +3288,851 @@ class TestErrorContract:
         source = Path(pmw.__file__).read_text(encoding="utf-8")
         assert "sys.exit(run())" in source
         assert "sys.exit(main())" not in source
+
+
+class TestJsonOutputTriage:
+    """Le triage du helper `_json_output_or_fail` (#17292, extension #17293).
+
+    Chaque branche du contrat est verifiee sur un faux sous-processus : ce
+    sont les unites qui garantissent que les trois tests E2E qui appellent le
+    helper ne peuvent PLUS reverdir le 3e mode de rouge (JSONDecodeError nu
+    qui jette le stderr). Un test qui ne peut plus echouer n'est pas un
+    correctif -- chaque cas garde son issue dure ou son skip nomme.
+    """
+
+    class _Proc:
+        def __init__(self, returncode, stdout="", stderr=""):
+            self.returncode = returncode
+            self.stdout = stdout
+            self.stderr = stderr
+
+    def test_valid_json_passes_through(self):
+        out = _json_output_or_fail(
+            self._Proc(0, '{"scanned": 2}', ""))
+        assert out == {"scanned": 2}
+
+    def test_crash_marker_fails_hard_with_traceback(self):
+        """rc=2 + marqueur : echec dur, jamais un skip (fail-closed #17292.4)."""
+        proc = self._Proc(
+            2, "",
+            "Traceback (most recent call last):\n"
+            "ValueError: panne simulee\n"
+            "ERROR: echec inattendu, pas une decision de l'outil")
+        with pytest.raises(pytest.fail.Exception) as ei:
+            _json_output_or_fail(proc)
+        msg = str(ei.value)
+        assert "panne simulee" in msg, "le traceback n'est pas remonte"
+        assert "precondition" in msg
+
+    def test_named_inability_skips_with_motif(self):
+        proc = self._Proc(2, "", "ERROR: list_worktrees a echoue : git absent")
+        with pytest.raises(pytest.skip.Exception) as ei:
+            _json_output_or_fail(proc)
+        assert "git absent" in str(ei.value), "le motif nomme a disparu"
+
+    def test_unexpected_exit_reports_stderr(self):
+        proc = self._Proc(3, "", "ERROR diagnosing: motif du rc=3")
+        with pytest.raises(AssertionError) as ei:
+            _json_output_or_fail(proc)
+        assert "motif du rc=3" in str(ei.value)
+
+    def test_empty_stdout_reports_stderr_verbatim(self):
+        """Le cas fondateur : stdout vide, rc trompeur -- le stderr remonte."""
+        proc = self._Proc(1, "", "CauseError: la cause cherchee")
+        with pytest.raises(AssertionError) as ei:
+            _json_output_or_fail(proc)
+        msg = str(ei.value)
+        assert "la cause cherchee" in msg
+        assert "JSONDecodeError" not in msg
+
+    def test_non_json_stdout_with_rc0_reports_stderr(self):
+        """rc=0 + sortie non-JSON : contrat --json rompu, pas un parse muet."""
+        proc = self._Proc(0, "pas du json\n", "residu de stderr")
+        with pytest.raises(pytest.fail.Exception) as ei:
+            _json_output_or_fail(proc)
+        assert "residu de stderr" in str(ei.value)
+
+    def test_non_json_stdout_with_empty_stderr_names_it(self):
+        proc = self._Proc(0, "pas du json\n", "")
+        with pytest.raises(pytest.fail.Exception) as ei:
+            _json_output_or_fail(proc)
+        assert "(vide)" in str(ei.value), "un stderr vide doit etre nomme vide"
+
+    def test_every_e2e_json_site_uses_the_helper(self):
+        """L'invariant de propagation : plus AUCUN parse direct au pattern nu.
+
+        La garde est byte-ancree sur la forme exacte du pattern historique
+        (affectation du parse de ``proc.stdout`` sans le triage) : c'est elle
+        qu'un copier-coller reintroduirait, et ni le ``return`` du helper ni
+        les mentions en docstring ne la matchent. Un futur test E2E qui la
+        repaste rouvre le 3e mode de rouge exactement la ou le fix initial
+        ne l'avait ferme que pour un site sur trois.
+        """
+        source = Path(__file__).read_text(encoding="utf-8")
+        # Construit dynamiquement : le motif litteral vit dans CET assert et
+        # s'y matcherait lui-meme (garde auto-referente, mesurée au 1er run).
+        naked = "out = json.loads(proc." + "stdout)"
+        assert naked not in source, (
+            "un site E2E parse proc.stdout sans le triage "
+            "_json_output_or_fail -- voir #17292")
+
+
+class TestScanRootMultiFarms:
+    """Maintenance#64 -- la cible du scan suit `--path` / le repo du cwd,
+    sans regresser le repli schtasks (cwd hors repo -> repo du script).
+
+    Regression mesuree : depuis #18219, `current_repo_root()` ancre sur
+    `__file__` sans autre issue -- le wrapper fleet
+    `recycle_worktrees_fleet.ps1` scannait N fois sa ferme d'origine en
+    croyant couvrir les autres (rapports nightly identiques, fermes
+    jamais auditees, exit 1 sur chevauchement transitoire 04:27).
+    """
+
+    @staticmethod
+    def _git_repo(path):
+        path.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["git", "-C", str(path), "init", "-q"], check=True)
+        return str(path.resolve())
+
+    def _capture_root(self, monkeypatch, argv_extra, chdir_to):
+        """main() in-process ; list_worktrees capture la racine visee."""
+        seen = {}
+
+        def spy():
+            seen["root"] = pmw.current_repo_root()
+            return []
+
+        monkeypatch.setattr(pmw, "_SCAN_ROOT_OVERRIDE", None)
+        monkeypatch.setattr(pmw, "list_worktrees", spy)
+        # #21753 : sonde d'identite bouchonnee verte (hermeticite -- le
+        # nominal de ces tests ne depend pas de la presence de gh).
+        monkeypatch.setattr(pmw, "probe_gh_availability", lambda: None)
+        monkeypatch.setattr(pmw, "diagnose_worktree", lambda *a, **k: None)
+        monkeypatch.setattr(
+            pmw, "get_pr_resolution",
+            lambda: pmw.PrResolution(cache_path=None),
+        )
+        monkeypatch.setattr(
+            sys, "argv", ["prune_merged_worktrees.py", *argv_extra],
+        )
+        monkeypatch.chdir(chdir_to)
+        rc = pmw.main()
+        return rc, seen.get("root")
+
+    def test_path_redirects_scan_to_target_farm(self, tmp_path, monkeypatch):
+        """Contrat #18219 enfin tenu : --path <ferme> => scan de <ferme>.
+
+        Avant Maintenance#64, le scan restait ancre sur la ferme du script
+        quel que soit le --path : les deux fermes ephemeres ci-dessous
+        distinguent farmA (cwd d'appel) de farmB (cible du scan).
+        """
+        farm_a = self._git_repo(tmp_path / "farmA")
+        farm_b = self._git_repo(tmp_path / "farmB")
+        rc, root = self._capture_root(
+            monkeypatch, ["--path", farm_b], chdir_to=farm_a)
+        assert rc == 0
+        assert root == farm_b, "le scan doit viser la ferme du --path"
+
+    def test_path_outside_any_repo_fails_loud(self, tmp_path, monkeypatch):
+        """Un --path hors depot sort en 2 au lieu de scanner en silence la
+        ferme d'origine -- l'echec bruyant est la seule couverture honnete
+        (le repli silencieux etait le mensonge de couverture #64)."""
+        not_a_repo = tmp_path / "no-repo"
+        not_a_repo.mkdir()
+        (not_a_repo / "fichier.txt").write_text("x", encoding="utf-8")
+        rc, root = self._capture_root(
+            monkeypatch, ["--path", str(not_a_repo)], chdir_to=tmp_path)
+        assert rc == 2
+        assert root is None
+
+    def test_cwd_repo_wins_without_path(self, tmp_path, monkeypatch):
+        """Wrapper `cd <ferme> ; python <script>` : le repo du cwd est vise
+        (priorite 2 -- l'autre style d'invocation du wrapper fleet)."""
+        self._git_repo(tmp_path / "farmA")
+        farm_b = self._git_repo(tmp_path / "farmB")
+        rc, root = self._capture_root(monkeypatch, [], chdir_to=farm_b)
+        assert rc == 0
+        assert root == farm_b
+
+    def test_non_repo_cwd_falls_back_to_script_repo(
+            self, tmp_path, monkeypatch):
+        """Schtasks #14473/#17904 : cwd hors repo (System32-like) => le
+        repo hebergeant ce script -- le contrat que #18219 etablit et que
+        les priorites 1-2 ne doivent pas regresser."""
+        plain = tmp_path / "system32-like"
+        plain.mkdir()
+        rc, root = self._capture_root(monkeypatch, [], chdir_to=plain)
+        assert rc == 0
+        expected = pmw._ancestor_repo_root(
+            Path(pmw.__file__).resolve().parent)
+        assert expected is not None, "script hors depot : test invalide"
+        assert root == expected
+
+    def test_cwd_priority_is_not_memoized(self, tmp_path, monkeypatch):
+        """La priorite cwd (2) ne s'ecrit pas dans le cache : changer de
+        cwd change la cible -- seul le repli stable (3) se memoise."""
+        farm_b = self._git_repo(tmp_path / "farmB")
+        plain = tmp_path / "elsewhere"
+        plain.mkdir()
+        monkeypatch.setattr(pmw, "_SCAN_ROOT_OVERRIDE", None)
+        monkeypatch.chdir(farm_b)
+        assert pmw.current_repo_root() == farm_b
+        monkeypatch.chdir(plain)
+        expected = pmw._ancestor_repo_root(
+            Path(pmw.__file__).resolve().parent)
+        assert pmw.current_repo_root() == expected
+
+
+# ---------------------------------------------------------------------------
+# #20007 -- jonctions NTFS : predicat is_link_like + retrait sans suivre la cible
+# ---------------------------------------------------------------------------
+
+
+def _make_junction(link: Path, target: Path) -> None:
+    """Cree une jonction NTFS `link -> target`.
+
+    `mklink /J` ne demande aucun privilege (contrairement a un symlink, qui
+    exige Developer Mode ou une elevation) : c'est ce qui rend la jonction
+    courante pour partager un `node_modules` entre worktrees, et ce qui rend
+    le defaut #20007 atteignable sans configuration particuliere.
+    """
+    proc = subprocess.run(
+        ["cmd", "/c", "mklink", "/J", str(link), str(target)],
+        capture_output=True, text=True, check=False,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        pytest.skip(f"mklink indisponible : {(proc.stderr or '').strip()[:120]}")
+
+
+class TestIsLinkLike:
+    """Predicat pur, sans plateforme : il ne doit pas elargir la branche
+    `unlink` au-dela des liens."""
+
+    def test_plain_dir_file_and_missing_are_not_links(self, tmp_path):
+        d = tmp_path / "plain_dir"
+        d.mkdir()
+        f = tmp_path / "plain.txt"
+        f.write_text("x", encoding="utf-8")
+        assert pmw.is_link_like(d) is False
+        assert pmw.is_link_like(f) is False
+        assert pmw.is_link_like(tmp_path / "absent") is False
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="#20007 : jonction NTFS")
+class TestWindowsJunctionIsLinkLike:
+    def test_junction_is_seen_though_is_symlink_is_false(self, tmp_path):
+        """Le controle negatif qui fonde #20007 : le predicat d'origine ne
+        voit PAS une jonction -- et c'est precisement ce qui rendait le
+        defaut silencieux, la cible tombant dans la branche `is_dir()`."""
+        target = tmp_path / "real"
+        target.mkdir()
+        link = tmp_path / "node_modules"
+        _make_junction(link, target)
+
+        assert link.is_symlink() is False      # le predicat d'origine
+        assert os.path.islink(link) is False   # et son equivalent os.path
+        assert link.is_dir() is True           # d'ou la mauvaise branche
+        assert pmw.is_link_like(link) is True  # celui qui repond
+
+    def test_clean_removes_junction_and_spares_target(self, tmp_path):
+        """Le defaut mesure : `rmtree` leve, `ignore_errors=True` l'avale,
+        la jonction reste et `removed` la tait -- puis `git worktree remove`
+        echoue sur l'untracked restant (#14619)."""
+        target = tmp_path / "real"
+        target.mkdir()
+        (target / "marker.txt").write_text("x", encoding="utf-8")
+        link = tmp_path / "node_modules"
+        _make_junction(link, target)
+
+        wt = _make_status(path=str(tmp_path),
+                          untracked_paths=["node_modules/"])
+        removed = pmw.clean_tolerated_artifacts(wt)
+
+        assert "node_modules/" in removed, \
+            "la jonction doit etre retiree ET listee (#20007)"
+        assert not link.exists()
+        # Garde de surete : on retire le LIEN, jamais la cible.
+        assert target.is_dir(), "la cible de la jonction doit survivre"
+        assert (target / "marker.txt").read_text(encoding="utf-8") == "x"
+
+
+class TestBranchPatchIdOnRealGit:
+    """#20067 : la jambe elargie, mesuree sur un depot jetable reel.
+
+    Reproduit la reserve Hermes du 09/10 sur de vrais objets git, sans
+    monkeypatch : une branche a DEUX commits, squashee sur ``main`` puis
+    supprimee du distant. La jambe per-commit doit rendre ``(0, 2)`` et la
+    jambe elargie ``(1, 0)``. C'est ce couple qui fonde le correctif, et
+    aucun stub ne peut le fabriquer -- un test qui monkeypatche les deux
+    jambes ne prouve rien sur la mecanique git sous-jacente.
+    """
+
+    @staticmethod
+    def _git(cwd, *args):
+        return subprocess.run(
+            ["git", "-C", str(cwd), *args],
+            capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace",
+        )
+
+    def _farm(self, tmp_path):
+        """Depot nu + clone, identite posee, main pousse. Rend (origin, wt)."""
+        origin = tmp_path / "origin.git"
+        subprocess.run(["git", "init", "--bare", "-b", "main", str(origin)],
+                       check=True, capture_output=True)
+        wt = tmp_path / "wt"
+        subprocess.run(["git", "clone", str(origin), str(wt)],
+                       check=True, capture_output=True)
+        self._git(wt, "config", "user.email", "test@example.invalid")
+        self._git(wt, "config", "user.name", "Test")
+        (wt / "a.txt").write_text("a\n", encoding="utf-8")
+        self._git(wt, "add", "a.txt")
+        self._git(wt, "commit", "-m", "base")
+        self._git(wt, "push", "-u", "origin", "main")
+        return origin, wt
+
+    def _two_bricks(self, wt, branch):
+        self._git(wt, "checkout", "-b", branch)
+        (wt / "b.txt").write_text("b\n", encoding="utf-8")
+        self._git(wt, "add", "b.txt")
+        self._git(wt, "commit", "-m", "brique 1")
+        (wt / "c.txt").write_text("c\n", encoding="utf-8")
+        self._git(wt, "add", "c.txt")
+        self._git(wt, "commit", "-m", "brique 2")
+        self._git(wt, "push", "-u", "origin", branch)
+
+    def test_two_commit_squash_is_seen_only_by_the_branch_leg(self, tmp_path):
+        origin, wt = self._farm(tmp_path)
+        self._two_bricks(wt, "feature/squashed")
+
+        # Squash-merge sur main, puis suppression de la branche distante :
+        # c'est le cas ou plus aucun ref ne porte la tete.
+        self._git(wt, "checkout", "main")
+        self._git(wt, "merge", "--squash", "feature/squashed")
+        self._git(wt, "commit", "-m", "squash des deux briques")
+        self._git(wt, "push", "origin", "main")
+        self._git(wt, "push", "origin", "--delete", "feature/squashed")
+        # Le worktree reste pose sur sa branche, comme un worktree de lane
+        # que personne n'a nettoye.
+        self._git(wt, "checkout", "feature/squashed")
+
+        per_commit = pmw.content_delivered_by_patch_id(str(wt))
+        branch = pmw.content_delivered_by_branch_patch_id(str(wt))
+
+        assert per_commit == (0, 2), (
+            "la jambe per-commit doit rester aveugle au squash multi-commit "
+            f"(mesure : {per_commit})"
+        )
+        assert branch == (1, 0), (
+            "la jambe elargie doit retrouver le patch de branche "
+            f"(mesure : {branch})"
+        )
+
+    def test_two_commit_branch_not_merged_is_refused_by_both(self, tmp_path):
+        """Controle negatif : sans squash, aucune des deux jambes ne tire."""
+        origin, wt = self._farm(tmp_path)
+        self._two_bricks(wt, "feature/ouverte")
+
+        per_commit = pmw.content_delivered_by_patch_id(str(wt))
+        branch = pmw.content_delivered_by_branch_patch_id(str(wt))
+
+        assert per_commit == (0, 2), f"mesure : {per_commit}"
+        assert branch == (0, 1), (
+            "un contenu non livre ne doit pas etre blanchi par la jambe "
+            f"elargie (mesure : {branch})"
+        )
+
+    def test_single_commit_squash_is_still_seen_by_the_per_commit_leg(
+            self, tmp_path):
+        """Non-regression : le cas mono-commit, que la premiere jambe voit.
+
+        La jambe elargie doit y rendre la meme chose -- sinon un REMOVE
+        dependrait de l'ordre dans lequel les deux jambes sont tentees.
+        """
+        origin, wt = self._farm(tmp_path)
+        self._git(wt, "checkout", "-b", "feature/une-brique")
+        (wt / "b.txt").write_text("b\n", encoding="utf-8")
+        self._git(wt, "add", "b.txt")
+        self._git(wt, "commit", "-m", "brique unique")
+        self._git(wt, "push", "-u", "origin", "feature/une-brique")
+
+        self._git(wt, "checkout", "main")
+        self._git(wt, "merge", "--squash", "feature/une-brique")
+        self._git(wt, "commit", "-m", "squash de la brique unique")
+        self._git(wt, "push", "origin", "main")
+        self._git(wt, "push", "origin", "--delete", "feature/une-brique")
+        self._git(wt, "checkout", "feature/une-brique")
+
+        per_commit = pmw.content_delivered_by_patch_id(str(wt))
+        branch = pmw.content_delivered_by_branch_patch_id(str(wt))
+
+        assert per_commit == (1, 0), f"mesure : {per_commit}"
+        assert branch == (1, 0), (
+            "la jambe elargie doit concorder sur le cas mono-commit "
+            f"(mesure : {branch})"
+        )
+
+
+class TestRegisteredSubmoduleFatal21710E2E:
+    """Test pinne sur worktree MERGED a gitlinks : le fatal de #21710.
+
+    Aucun stub : un vrai depot, un vrai sous-module local, un vrai
+    `deinit --all -f`. Le constat mesure (git 2.50.1) que ce test fige :
+
+    - apres `submodule update --init` puis `deinit --all -f` dans le
+      worktree, `git submodule status` ne montre qu'une ligne
+      `-<sha> sub` (« non initialise ») ;
+    - le gitdir du worktree porte pourtant `modules/`, et
+      `git worktree remove` echoue structurellement sur
+      "working trees containing submodules cannot be moved or removed" ;
+    - `worktree_blocks_removal_for_submodules` predit ce refus, et ne
+      sur-refuse pas un worktree voisin qui n'a jamais materialise de
+      sous-module.
+
+    Skips nommes : git absent du PATH, ou `submodule add` local refuse
+    (git ancien sans `protocol.file.allow`) -- le test reste vert sur un
+    runner contraint sans redevenir muet sur le defaut.
+    """
+
+    @staticmethod
+    def _git(cwd, *args):
+        """git tolerant : les assertions de refus ont besoin du rc/stderr."""
+        return subprocess.run(
+            ["git", "-C", str(cwd), "-c", "user.email=e2e@test",
+             "-c", "user.name=e2e", "-c", "core.autocrlf=false",
+             "-c", "protocol.file.allow=always", *args],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace",
+        )
+
+    @classmethod
+    def _ok(cls, proc, what: str):
+        assert proc.returncode == 0, (
+            f"git {what} a echoue: {proc.stderr.strip()}")
+
+    def test_deinitialized_submodule_still_blocks_git_removal(self, tmp_path):
+        if shutil.which("git") is None:
+            pytest.skip("git absent du PATH")
+
+        # Depots temoins : source (le futur sous-module) et hote.
+        src = tmp_path / "src"
+        src.mkdir()
+        self._ok(self._git(src, "init", "-b", "main"), "init src")
+        (src / "lib.txt").write_text("s\n", encoding="utf-8")
+        self._ok(self._git(src, "add", "lib.txt"), "add src")
+        self._ok(self._git(src, "commit", "-m", "src init"), "commit src")
+
+        main = tmp_path / "main"
+        main.mkdir()
+        self._ok(self._git(main, "init", "-b", "main"), "init main")
+        (main / "README.md").write_text("m\n", encoding="utf-8")
+        self._ok(self._git(main, "add", "README.md"), "add main")
+        self._ok(self._git(main, "commit", "-m", "main init"),
+                 "commit main")
+
+        # Sous-module LOCAL (URL = chemin) : un git recent exige
+        # protocol.file.allow=always ; un git qui refuse encore le skippe
+        # au lieu de rougir (le skip est nomme).
+        proc = self._git(main, "submodule", "add",
+                         str(src).replace("\\", "/"), "sub")
+        if proc.returncode != 0:
+            pytest.skip(
+                "submodule add local a echoue (git sans "
+                f"protocol.file.allow ?) : {proc.stderr.strip()[:300]}")
+        self._ok(self._git(main, "commit", "-m", "add submodule"),
+                 "commit submodule")
+
+        wt = tmp_path / "wt"
+        wt_clean = tmp_path / "wt-clean"
+        self._ok(self._git(main, "worktree", "add", str(wt), "HEAD"),
+                 "worktree add wt")
+        self._ok(self._git(main, "worktree", "add", str(wt_clean), "HEAD"),
+                 "worktree add wt-clean")
+
+        try:
+            # Materialise le sous-module DANS le worktree, puis deinit :
+            # le gitdir du sous-module persiste dans
+            # `<gitdir-du-worktree>/modules/` -- c'est LUI que git lit,
+            # ni l'index (git rm --cached ne leve pas le refus) ni le
+            # statut affiche.
+            self._ok(self._git(wt, "submodule", "update", "--init"),
+                     "submodule update --init")
+            self._ok(self._git(wt, "submodule", "deinit", "--all", "-f"),
+                     "submodule deinit")
+
+            # Le statut « ment » (ligne '-') : c'est le piege de #21710.
+            status = self._git(wt, "submodule", "status")
+            self._ok(status, "submodule status")
+            assert status.stdout.strip().startswith("-"), (
+                "le fixture doit produire l'etat enregistre-seul "
+                f"(status '-') : {status.stdout.strip()!r}")
+
+            # Reproduction du fatal : git refuse le retrait.
+            proc = self._git(main, "worktree", "remove", str(wt))
+            assert proc.returncode != 0, (
+                "git doit refuser le retrait d'un worktree dont le gitdir "
+                "porte modules/ (meme apres deinit)")
+            assert "working trees containing submodules" in proc.stderr, (
+                f"stderr inattendu: {proc.stderr.strip()}")
+
+            # Le predicat corrige predit le refus...
+            assert pmw.worktree_blocks_removal_for_submodules(str(wt)) is True
+            # ...et ne sur-refuse pas le voisin vierge (jamais de
+            # `submodule update --init` chez lui : pas de modules/).
+            assert pmw.worktree_blocks_removal_for_submodules(
+                str(wt_clean)) is False
+        finally:
+            # Nettoyage : `tmp_path` efface le disque mais PAS le registre
+            # du depot hote -- deux `worktree remove --force` (le --force
+            # passe la garde sous-module, mesure au-dessus) referment le
+            # registre proprement.
+            for path in (wt, wt_clean):
+                self._git(main, "worktree", "remove", "--force", str(path))
+class TestLockPolicy:
+    """Protocole v1.3 (Maintenance #113, dae338b) : verrous `git worktree lock`.
+
+    Deux classes discriminatees par la forme de la raison -- lock d'agent
+    (`claude agent agent-<hex> (pid N)`, deverrouillable si pid mort ET
+    REMOVE-ready) vs opt-out de lane (raison libre, honore indefiniment).
+    Fail-safe dans les deux sens : raison incomprise = opt-out, pid
+    indeterminable = vivant.
+    """
+
+    # --- classify_worktree_lock ---
+
+    def test_classify_agent_lock(self):
+        assert pmw.classify_worktree_lock(
+            "claude agent agent-1a2b3c (pid 4242)"
+        ) == ("agent", 4242)
+
+    def test_classify_optout_lock(self):
+        assert pmw.classify_worktree_lock(
+            "reserve pour la revue de semaine"
+        ) == ("optout", None)
+
+    def test_classify_unparsed_reason_is_optout(self):
+        # Fail-safe : une raison qu'on ne comprend pas n'est JAMAIS un
+        # lock d'agent -- on ne deverrouille pas ce qu'on n'a pas classe.
+        assert pmw.classify_worktree_lock("n'importe quoi (pid 1)") == ("optout", None)
+
+    def test_classify_agent_reason_with_human_suffix_is_optout(self):
+        # F1 (revue #21503) : `git worktree lock --reason` ECRASE la raison
+        # precedente, donc un humain qui garde la tracabilite du pid ecrit
+        # la forme agent SUIVIE d'une consigne. `search()` classait ce
+        # verrou `agent` et pouvait le deverrouiller -- une garde humaine
+        # honoree comme un cadavre. La forme doit etre PURE (fullmatch).
+        assert pmw.classify_worktree_lock(
+            "claude agent agent-7f3a11 (pid 999999) -- NE PAS TOUCHER, revue en cours"
+        ) == ("optout", None)
+
+    def test_classify_none_is_no_lock(self):
+        # None = aucune ligne "locked" dans le porcelain : pas de verrou.
+        assert pmw.classify_worktree_lock(None) == (None, None)
+
+    def test_classify_bare_lock_reason_is_unclassified(self):
+        # F2 (revue #21503) : `git worktree lock` SANS `--reason` est
+        # l'invocation par defaut ; le porcelain rend une ligne "locked"
+        # vide. Une raison vide est une raison qu'on ne comprend pas, PAS
+        # une absence de verrou : la rendre (None, None) faisait sortir la
+        # politique en REMOVE, puis le remove echouait sur un worktree
+        # verrouille -- la classe de mensonge corrigee en #14693.
+        assert pmw.classify_worktree_lock("") == ("unclassified", None)
+        assert pmw.classify_worktree_lock("   ") == ("unclassified", None)
+
+    # --- enforce_lock_policy : opt-out ---
+
+    def test_optout_refuses_remove(self):
+        s = pmw.enforce_lock_policy(_make_status(), "garde humaine")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "lane_optout_lock"
+        assert s.lock_class == "optout"
+        assert s.lock_pid is None
+        assert s.dead_lock_unlocked is False
+
+    def test_bare_locked_refuses_remove(self):
+        # F2 (revue #21503) : un verrou nu REFUSE le retrait au lieu de le
+        # laisser partir en REMOVE pour echouer cote git a l'apply. Le
+        # garde-fou git reste la derniere ressource ; l'organe, lui, ne
+        # plus annoncer un REMOVE qui ne passera pas.
+        s = pmw.enforce_lock_policy(_make_status(), "")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "unclassified_lock"
+        assert s.lock_class == "unclassified"
+        assert s.lock_pid is None
+        assert s.dead_lock_unlocked is False
+
+    # --- enforce_lock_policy : lock d'agent ---
+
+    def test_live_agent_lock_refuses(self, monkeypatch):
+        monkeypatch.setattr(pmw, "pid_is_alive", lambda pid: True)
+        s = pmw.enforce_lock_policy(
+            _make_status(), "claude agent agent-deadbeef (pid 777)"
+        )
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "live_agent_lock:777"
+        assert s.lock_class == "agent"
+        assert s.lock_pid == 777
+        assert s.dead_lock_unlocked is False
+
+    def test_dead_agent_lock_flags_remove(self, monkeypatch):
+        monkeypatch.setattr(pmw, "pid_is_alive", lambda pid: False)
+        s = pmw.enforce_lock_policy(
+            _make_status(), "claude agent agent-deadbeef (pid 777)"
+        )
+        # Le statut RESTE REMOVE : le retrait passera par l'unlock nomme
+        # (apply_removal), jamais par remove -f -f.
+        assert s.decision == "REMOVE"
+        assert s.dead_lock_unlocked is True
+        assert s.lock_pid == 777
+
+    # --- enforce_lock_policy : statuts non-retirables ---
+
+    def test_no_lock_leaves_status_intact(self):
+        s = _make_status()
+        out = pmw.enforce_lock_policy(s, None)
+        assert out.decision == "REMOVE"
+        assert out.locked_reason is None
+        assert out.lock_class is None
+        assert out.lock_pid is None
+        assert out.dead_lock_unlocked is False
+
+    def test_lock_never_overrides_existing_refuse(self, monkeypatch):
+        # Un worktree sale (REFUSE avant la politique) verrouille :
+        # la premiere cause reste LA cause citee, le lock n'ecrit pas
+        # la sienne par-dessus.
+        monkeypatch.setattr(pmw, "pid_is_alive", lambda pid: False)
+        s = _make_status(decision="REFUSE", refusal_reason="unpushed_commits")
+        out = pmw.enforce_lock_policy(s, "claude agent agent-aa (pid 9)")
+        assert out.decision == "REFUSE"
+        assert out.refusal_reason == "unpushed_commits"
+        # Visibilite quand meme : le rapport sait qu'un verrou existe.
+        assert out.lock_class == "agent"
+        assert out.dead_lock_unlocked is False
+
+    def test_lock_never_creates_remove(self):
+        # Meme un opt-out sur un SKIP_CURRENT reste SKIP_CURRENT : la
+        # politique ajoute des REFUSE, jamais des REMOVE.
+        s = _make_status(decision="SKIP_CURRENT", refusal_reason=None)
+        out = pmw.enforce_lock_policy(s, "garde")
+        assert out.decision == "SKIP_CURRENT"
+
+    # --- parse porcelain de la ligne locked ---
+
+    def test_list_worktrees_parses_locked_reason(self, monkeypatch):
+        porcelain = (
+            "worktree D:/farm/principal\n"
+            "HEAD abc123\n"
+            "branch refs/heads/main\n"
+            "\n"
+            "worktree D:/farm/agent-42\n"
+            "HEAD def456\n"
+            "branch refs/heads/fix/x\n"
+            "locked claude agent agent-42ab (pid 31337)\n"
+            "\n"
+            "worktree D:/farm/garde\n"
+            "HEAD 789aaa\n"
+            "branch refs/heads/fix/y\n"
+            "locked\n"
+        )
+        monkeypatch.setattr(
+            pmw, "run_git", lambda *a, **k: _fake_proc(0, porcelain)
+        )
+        monkeypatch.setattr(
+            pmw, "current_repo_root", lambda: "D:/farm/principal"
+        )
+        wts = pmw.list_worktrees()
+        by_path = {w["path"]: w for w in wts}
+        assert by_path["D:/farm/principal"].get("locked_reason") is None
+        assert by_path["D:/farm/agent-42"]["locked_reason"] == (
+            "claude agent agent-42ab (pid 31337)"
+        )
+        # Verrou nu : la ligne "locked" seule rend une raison vide.
+        assert by_path["D:/farm/garde"]["locked_reason"] == ""
+
+    # --- pid_is_alive : fail-safe ---
+
+    def test_pid_is_alive_windows_found(self, monkeypatch):
+        monkeypatch.setattr(pmw, "_on_windows", lambda: True)
+        monkeypatch.setattr(
+            pmw.subprocess, "run",
+            lambda *a, **k: _fake_proc(0, '"python.exe","31337"'),
+        )
+        assert pmw.pid_is_alive(31337) is True
+
+    def test_pid_is_alive_windows_not_found(self, monkeypatch):
+        monkeypatch.setattr(pmw, "_on_windows", lambda: True)
+        monkeypatch.setattr(
+            pmw.subprocess, "run",
+            lambda *a, **k: _fake_proc(0, "INFO: No tasks are running"),
+        )
+        assert pmw.pid_is_alive(31337) is False
+
+    def test_pid_is_alive_windows_pid_in_other_column_is_not_alive(
+        self, monkeypatch
+    ):
+        # Le pid cherche n'apparait que dans une AUTRE colonne de la ligne
+        # d'un autre processus : un test de sous-chaine le lirait vivant.
+        monkeypatch.setattr(pmw, "_on_windows", lambda: True)
+        monkeypatch.setattr(
+            pmw.subprocess, "run",
+            lambda *a, **k: _fake_proc(0, '"python.exe","4242","Console","1","31337 K"'),
+        )
+        assert pmw.pid_is_alive(31337) is False
+
+    def test_pid_is_alive_windows_failure_is_alive(self, monkeypatch):
+        # Fail-safe : tasklist injoignable = pid vivant -- on ne
+        # deverrouille jamais sur une mesure impossible.
+        monkeypatch.setattr(pmw, "_on_windows", lambda: True)
+
+        def _boom(*a, **k):
+            raise OSError("tasklist absent")
+
+        monkeypatch.setattr(pmw.subprocess, "run", _boom)
+        assert pmw.pid_is_alive(31337) is True
+
+    @pytest.mark.parametrize("stdout", ["", "ERROR: The remote procedure call failed."])
+    def test_pid_is_alive_windows_nonzero_exit_is_alive(self, monkeypatch, stdout):
+        monkeypatch.setattr(pmw, "_on_windows", lambda: True)
+        monkeypatch.setattr(
+            pmw.subprocess, "run",
+            lambda *a, **k: _fake_proc(1, stdout),
+        )
+        assert pmw.pid_is_alive(31337) is True
+        status = pmw.enforce_lock_policy(
+            _make_status(), "claude agent agent-deadbeef (pid 31337)"
+        )
+        assert status.decision == "REFUSE"
+        assert status.refusal_reason == "live_agent_lock:31337"
+        assert status.dead_lock_unlocked is False
+
+    def test_pid_is_alive_posix_lookup_error(self, monkeypatch):
+        monkeypatch.setattr(pmw, "_on_windows", lambda: False)
+
+        def _lookup(pid, sig):
+            raise ProcessLookupError()
+
+        monkeypatch.setattr(pmw.os, "kill", _lookup)
+        assert pmw.pid_is_alive(31337) is False
+
+    def test_pid_is_alive_posix_permission_is_alive(self, monkeypatch):
+        monkeypatch.setattr(pmw, "_on_windows", lambda: False)
+
+        def _denied(pid, sig):
+            raise PermissionError()
+
+        monkeypatch.setattr(pmw.os, "kill", _denied)
+        assert pmw.pid_is_alive(31337) is True
+
+
+class TestLockPolicyEndToEnd:
+    """v1.3 -- vrais verrous `git worktree lock` sur une vraie ferme.
+
+    Controle positif du protocole complet, dans l'esprit hermetique de
+    TestEndToEndHermetic14693 : seul l'ancre PR est stubbee (MERGED), et
+    la MORT du pid est stubbee dans le cas mort (determinisme CI -- un
+    vrai pid mort se recycle). Le cas vivant, lui, utilise le pid REEL
+    du process pytest : le vrai `tasklist` tranche. L'unlock + remove
+    sont de vrais appels git sur une vraie ferme.
+    """
+
+    MERGED_PR = {
+        "number": 424243,
+        "state": "MERGED",
+        "url": "https://example/pr/424243",
+        "headRefName": "feature/e2e",
+    }
+
+    def _anchor(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch",
+            lambda branch, head_sha=None: dict(
+                self.MERGED_PR, headRefName=branch),
+        )
+
+    def _lock(self, super, wt, reason):
+        _git_ok(str(super), "worktree", "lock", str(wt), "--reason", reason)
+
+    def test_dead_agent_lock_unlocked_and_removed(self, tmp_path, monkeypatch):
+        """Le chemin nominal v1.3 : REMOVE-ready + lock d'agent a pid mort
+        -> l'unlock NOMME passe, le remove suit, le disque est vide."""
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        self._anchor(monkeypatch)
+        monkeypatch.chdir(super)
+        reason = "claude agent agent-testv13 (pid 31337)"
+        self._lock(super, wt, reason)
+        monkeypatch.setattr(pmw, "pid_is_alive", lambda pid: False)
+
+        s = pmw.enforce_lock_policy(
+            pmw.diagnose_worktree(str(wt), str(super)), reason)
+        assert s.decision == "REMOVE", s.refusal_reason
+        assert s.dead_lock_unlocked is True
+
+        # Sequence exacte du apply de main() : clean des toleres, puis
+        # unlock + remove sans force.
+        pmw.clean_tolerated_artifacts(s)
+        ok, stderr = pmw.apply_removal(s)
+        assert ok, f"REMOVE annonce mais unlock+remove echoue: {stderr}"
+        assert not wt.exists(), "le worktree doit avoir quitte le disque"
+        # Vrai retrait, pas juste deverrouillage : le porcelain ne liste
+        # plus le chemin (normalise en slash pour comparer a git).
+        listing = pmw.run_git(str(super), "worktree", "list", "--porcelain")
+        assert str(wt).replace("\\", "/") not in listing.stdout
+
+    def test_locked_remove_fails_without_unlock(self, tmp_path, monkeypatch):
+        """Preuve que le garde-fou est REEL : un remove direct (sans le
+        passage par l'unlock v1.3) echoue sur un worktree verrouille --
+        git tranche en dernier ressort, l'organe ne force jamais."""
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        self._anchor(monkeypatch)
+        monkeypatch.chdir(super)
+        self._lock(super, wt, "claude agent agent-x (pid 31337)")
+
+        # Statut diagnostique SANS la politique : REMOVE, mais
+        # dead_lock_unlocked reste False -> apply_removal ne tente pas
+        # l'unlock et git refuse le remove verrouille.
+        s = pmw.diagnose_worktree(str(wt), str(super))
+        assert s.decision == "REMOVE"
+        assert s.dead_lock_unlocked is False
+        ok, stderr = pmw.apply_removal(s)
+        assert not ok, "git n'aurait pas du retirer un worktree verrouille"
+        assert "lock" in stderr.lower(), stderr
+        assert wt.exists(), "le worktree verrouille reste sur disque"
+
+    def test_live_agent_lock_refuses_real_pid(self, tmp_path, monkeypatch):
+        """Contre-test avec un pid REELLEMENT vivant (le process pytest) :
+        le vrai tasklist tranche, la politique refuse, rien ne bouge."""
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        self._anchor(monkeypatch)
+        monkeypatch.chdir(super)
+        reason = f"claude agent agent-live (pid {os.getpid()})"
+        self._lock(super, wt, reason)
+
+        s = pmw.enforce_lock_policy(
+            pmw.diagnose_worktree(str(wt), str(super)), reason)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == f"live_agent_lock:{os.getpid()}"
+        assert wt.exists(), "un lock vivant ne bouge pas d'un cheveu"
+
+    def test_optout_lock_refuses_and_survives(self, tmp_path, monkeypatch):
+        """Opt-out de lane : honore indefiniment, aucune mesure de pid
+        n'est meme tentee, le worktree reste."""
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        self._anchor(monkeypatch)
+        monkeypatch.chdir(super)
+        reason = "reserve pour la revue de semaine"
+        self._lock(super, wt, reason)
+
+        called = []
+
+        def _spy(pid):
+            called.append(pid)
+            return False
+
+        monkeypatch.setattr(pmw, "pid_is_alive", _spy)
+        s = pmw.enforce_lock_policy(
+            pmw.diagnose_worktree(str(wt), str(super)), reason)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "lane_optout_lock"
+        assert called == [], "un opt-out ne mesure jamais le pid"
+        assert wt.exists()

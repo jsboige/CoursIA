@@ -24,7 +24,7 @@
 
 ---
 
-### 1. GenAI — Image (38 notebooks)
+### 1. GenAI — Image
 
 Path: `MyIA.AI.Notebooks/GenAI/Image/`
 Kernel: `python3`
@@ -48,7 +48,7 @@ Kernel: `python3`
 
 ---
 
-### 2. GenAI — Audio (42 notebooks)
+### 2. GenAI — Audio
 
 Path: `MyIA.AI.Notebooks/GenAI/Audio/`
 Kernel: `python3`
@@ -80,7 +80,7 @@ Kernel: `python3`
 
 ---
 
-### 3. GenAI — Video (32 notebooks)
+### 3. GenAI — Video
 
 Path: `MyIA.AI.Notebooks/GenAI/Video/`
 Kernel: `python3`
@@ -100,7 +100,7 @@ Kernel: `python3`
 
 ---
 
-### 4. GenAI — Texte (18 notebooks)
+### 4. GenAI — Texte
 
 Path: `MyIA.AI.Notebooks/GenAI/Texte/`
 Kernel: `python3`
@@ -269,7 +269,7 @@ No API keys required.
 
 ---
 
-### 15. QuantConnect (27 notebooks + 50 strategies)
+### 15. QuantConnect (50 strategies)
 
 Path: `MyIA.AI.Notebooks/QuantConnect/`
 Kernel: `python3`

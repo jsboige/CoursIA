@@ -1,0 +1,16 @@
+MAF versions: agent-framework-core 1.21.0, agent-framework-orchestrations 1.3.1
+sonde OK (1 appel(s))
+[GC technique #1] agents=['triage', 'specialiste_technique'] decision: specialiste_technique
+[GC technique #2] agents=['triage', 'specialiste_technique'] decision: specialiste_technique
+[GC formation #1] agents=['triage', 'specialiste_formation'] decision: specialiste_formation
+[GC formation #2] agents=['triage', 'specialiste_formation'] decision: specialiste_formation
+[MG technique #1] agents=['specialiste_technique'] participation: specialiste_technique
+[MG technique #2] agents=['specialiste_technique'] participation: specialiste_technique
+[MG formation #1] agents=['specialiste_formation'] participation: specialiste_formation
+[MG formation #2] agents=['specialiste_formation'] participation: specialiste_formation
+GC ROUTING CORRECTNESS: OK
+GC ROUTING DETERMINISM: OK
+MG PARTICIPATION CORRECTNESS: OK
+MG PARTICIPATION DETERMINISM: OK
+LLM CALLS: total 25/60 (groupchat 8, magentic 16)
+PILOT OK maf groupchat+magentic model=gpt-4o-mini

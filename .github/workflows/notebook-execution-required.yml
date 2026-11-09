@@ -14,7 +14,6 @@ name: Notebook Execution Required
 
 on:
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - '**.ipynb'
@@ -23,12 +22,21 @@ on:
       - 'scripts/notebook_tools/golden_set.yml'
       - 'scripts/notebook_tools/golden_set.lock.txt'
       - 'scripts/notebook_tools/notebook_tools.py'
+      # La cle de verdict (#22468) couvre l'executeur et le manifeste : un
+      # changement de l'un ou de l'autre doit re-etablir le verdict.
+      - 'scripts/ci/golden_set_verdict_key.py'
       - '.github/workflows/notebook-execution-required.yml'
   push:
     branches: [main]
     paths:
       - 'scripts/notebook_tools/golden_set.yml'
       - 'scripts/notebook_tools/golden_set.lock.txt'
+      # `main` est le producteur du cache de verdict : c'est depuis lui que
+      # les PRs restaurent. Ses entrees doivent donc suivre les memes entrees
+      # que la cle, sinon un changement d'executeur sur `main` laisserait un
+      # verdict perime disponible pour toutes les PRs.
+      - 'scripts/notebook_tools/notebook_tools.py'
+      - 'scripts/ci/golden_set_verdict_key.py'
   workflow_dispatch:
     inputs:
       notebook_paths:
@@ -53,11 +61,32 @@ jobs:
   detect-changes:
     name: Detect notebook changes
     # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
-    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
-    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Garde anti-fork au niveau job + runs-on sous la FORME HYBRIDE AUDITEE
+    # (une expression non auditee leverait DYNAMIC_RUNS_ON dans
+    # check_self_hosted_runner_policy.py).
+    # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
+    # 2026-10-27 (#22937 vague 2, phase A) : forme hybride de debordement --
+    # PR meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ;
+    # tout le reste (variable absente ou fausse, forks, push/schedule/
+    # dispatch) retombe sur ubuntu-latest (l'etat du 27/10). Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 %
+    # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
+    # creation du job, les runs deja en file ne bougent pas.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Borne de duree (#23016, review 5677732011) : sans `timeout-minutes`, un
+    # job herite de 360 min et peut figer un slot ephemere du parc local --
+    # 16 slots sur 18 ont ete tenus pendant des heures le 15/10. La borne vaut
+    # ~3x la duree mesuree (0-1 min sur les 8 derniers succes), plus la marge
+    # d'un clone froid.
+    # 2026-11-02 (#22937) : cette marge « clone froid » etait sous-estimee.
+    # La duree de 0-1 min etait mesuree sur le parc local (clone chaud) ; sur
+    # le repli ubuntu-latest, le checkout fetch-depth: 0 du depot de 14 911
+    # fichiers coute ~5 min a lui seul (mesure voisine : 286 s sur 300 dans
+    # notebook-kernel-drift-guard, run 41378044015) : 6 cancellations / 30
+    # derniers runs de ce workflow. 15 min couvre le clone froid heberge.
+    timeout-minutes: 15
     outputs:
       notebooks: ${{ steps.detect.outputs.notebooks }}
       has_notebooks: ${{ steps.detect.outputs.has_notebooks }}
@@ -97,12 +126,27 @@ jobs:
   validate-static:
     name: Static validation (H.1/H.3/C.1)
     # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
-    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
-    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Garde anti-fork au niveau job + runs-on sous la FORME HYBRIDE AUDITEE
+    # (une expression non auditee leverait DYNAMIC_RUNS_ON dans
+    # check_self_hosted_runner_policy.py).
+    # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
+    # 2026-10-27 (#22937 vague 2, phase A) : forme hybride de debordement --
+    # PR meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ;
+    # tout le reste (variable absente ou fausse, forks, push/schedule/
+    # dispatch) retombe sur ubuntu-latest (l'etat du 27/10). Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 %
+    # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
+    # creation du job, les runs deja en file ne bougent pas.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     needs: detect-changes
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.detect-changes.outputs.has_notebooks > 0
+    # Borne de duree (#23016, review 5677732011) : sans `timeout-minutes`, un
+    # job herite de 360 min et peut figer un slot ephemere du parc local --
+    # 16 slots sur 18 ont ete tenus pendant des heures le 15/10. La borne vaut
+    # ~3x la duree mesuree (1 min sur les 8 derniers succes), plus la marge
+    # d'un clone froid.
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
@@ -235,7 +279,8 @@ jobs:
     # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
     # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     # Independent of notebook-change detection: the golden-set is a FIXED
     # certified core, re-executed whenever the manifest/lockfile/workflow
@@ -246,23 +291,152 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
+        # Pas de `cache: pip` ici (#19658, piste 2 "bourrer moins le cache").
+        # Mesure du 2026-10-26 sur les runs golden-set : le toolcache du runner
+        # porte deja toutes les dependances epinglees du lockfile
+        # (`Requirement already satisfied` pour chacune des lignes du
+        # lockfile), donc `pip` ne telecharge rien et son cache reste vide
+        # (40 Ko). Le cache n'a donc rien a cacher -- mais il ecrit quand meme
+        # une copie par PR dans le store Actions (101 copies en 24 h, dont 58
+        # de 66 Mo pour une version de python perimee), sur un store deja a
+        # 9,9 Go sur 10 Go. Le store ne sert que ce qu'il a : pendant ce
+        # temps, les caches `lake-*` se font evicter.
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: pip
-          cache-dependency-path: scripts/notebook_tools/golden_set.lock.txt
+
+      # Reutilisation du verdict (#22468, tranche 1 ; levier 6 de #22461).
+      # Mesure de #22468 : 19 runs sur 21 rejouaient la suite alors qu'aucune
+      # entree du verdict n'avait bouge. La cle couvre le manifeste, le
+      # lockfile, l'executeur, la version de Python et le contenu octet pour
+      # octet de chaque carnet -- tout ce qui peut changer le verdict, et rien
+      # d'autre (le YAML du workflow en est exclu, il bouge pour des raisons
+      # qui ne l'affectent pas ; sa version est consignee dans la provenance).
+      # Script stdlib-only : il tourne AVANT l'installation du lockfile, ce qui
+      # est tout l'interet -- un verdict reutilise ne paie pas l'installation.
+      - name: Compute golden-set verdict key
+        id: verdict
+        run: |
+          python scripts/ci/golden_set_verdict_key.py --out "${RUNNER_TEMP}/golden_verdict_key.json"
+          # Heredoc plutot que `python -c` multi-ligne : un `-c` indente par le
+          # YAML meurt en IndentationError (mesure en local avant commit).
+          python - <<'PY'
+          import json
+          import os
+
+          path = os.path.join(os.environ["RUNNER_TEMP"], "golden_verdict_key.json")
+          with open(path, encoding="utf-8") as fh:
+              data = json.load(fh)
+          comp = data["components"]
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write("key=%s\n" % data["key"])
+              out.write("notebooks=%d\n" % comp["notebook_count"])
+
+          lines = [
+              "### Golden-set verdict key",
+              "",
+              "| Entree | Empreinte |",
+              "|---|---|",
+              "| cle de verdict | `%s` |" % data["key"],
+              "| manifeste | `%s` |" % comp["manifest_sha256"][:16],
+              "| lockfile | `%s` |" % comp["lockfile_sha256"][:16],
+              "| executeur | `%s` |" % comp["implementation_sha256"][:16],
+              "| carnets | %d |" % comp["notebook_count"],
+              "| python | %s |" % comp["python_version"],
+          ]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as out:
+              out.write("\n".join(lines) + "\n")
+          PY
+
+      # RESTORE SEUL, sans `restore-keys` : un prefixe ramenerait le verdict
+      # d'une AUTRE cle, c'est-a-dire exactement ce que cette tranche refuse.
+      # Cloisonnement par branche (propriete d'actions/cache) : `main` et la
+      # branche de la PR lisent le cache de `main` ; deux PR tierces ne
+      # partagent rien. L'issue esperait un partage entre PRs -- c'est la
+      # limite a ecrire, pas un contournement a bricoler.
+      - name: Restore reused golden-set verdict
+        id: reuse
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/golden_verdict
+          key: golden-set-verdict-v1-${{ steps.verdict.outputs.key }}
 
       - name: Install pinned golden-set lockfile
+        if: steps.reuse.outputs.cache-hit != 'true'
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r scripts/notebook_tools/golden_set.lock.txt
 
       - name: Execute golden-set (Papermill)
+        if: steps.reuse.outputs.cache-hit != 'true'
         run: |
           python scripts/notebook_tools/notebook_tools.py golden-set --json > /tmp/golden_set_result.json
           cat /tmp/golden_set_result.json
           # The subcommand exits non-zero if any notebook fails (red CI).
           python -c "import json,sys; r=json.load(open('/tmp/golden_set_result.json')); sys.exit(0 if r['passed'] else 1)"
+          mkdir -p "${RUNNER_TEMP}/golden_verdict"
+          cp /tmp/golden_set_result.json "${RUNNER_TEMP}/golden_verdict/golden_set_result.json"
+
+      # Un verdict restaure est une PREUVE qu'on reutilise, pas une permission
+      # qu'on suppose : on le relit et on refuse s'il n'est pas vert. Seul un
+      # run vert a pu ecrire ce cache (garde du step de sauvegarde), mais la
+      # verification est ici aussi -- une entree abimee doit rougir, jamais
+      # passer pour une suite reussie.
+      - name: Reuse cached golden-set verdict
+        if: steps.reuse.outputs.cache-hit == 'true'
+        run: |
+          cp "${RUNNER_TEMP}/golden_verdict/golden_set_result.json" /tmp/golden_set_result.json
+          cat /tmp/golden_set_result.json
+          python - <<'PY'
+          import json
+          import sys
+
+          with open("/tmp/golden_set_result.json", encoding="utf-8") as fh:
+              result = json.load(fh)
+          print(
+              "verdict reutilise : passed=%r, %s/%s carnets"
+              % (result.get("passed"), result.get("success_count"), result.get("total"))
+          )
+          sys.exit(0 if result.get("passed") is True else 1)
+          PY
+
+      - name: Record golden-set verdict provenance
+        if: success() && steps.reuse.outputs.cache-hit != 'true'
+        env:
+          VERDICT_KEY: ${{ steps.verdict.outputs.key }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          # Ecrit A COTE du verdict : c'est ce fichier que le prochain run
+          # restaurera pour citer l'execution d'origine dans son resume.
+          path = os.path.join(os.environ["RUNNER_TEMP"], "golden_verdict", "provenance.json")
+          payload = {
+              "key": os.environ["VERDICT_KEY"],
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "sha": os.environ["GITHUB_SHA"],
+              "ref": os.environ["GITHUB_REF"],
+          }
+          with open(path, "w", encoding="utf-8") as fh:
+              json.dump(payload, fh, indent=2)
+          with open(path, encoding="utf-8") as fh:
+              print(fh.read())
+          PY
+
+      # SAVE conditionne au succes : un verdict ROUGE mis en cache empoisonnerait
+      # sa cle, et toute execution ulterieure rejouerait un echec deja repare.
+      # Le cache est ecrit par `main` ET par les branches de PR, contrairement a
+      # `lake-*` (#19658) : la retenue de #19658 porte sur des archives de
+      # ~650 Mo et des caches pip de ~66 Mo ; ici l'artefact est un JSON de
+      # quelques kilo-octets, sans effet mesurable sur le quota du store.
+      - name: Save golden-set verdict (green only)
+        if: success() && steps.reuse.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/golden_verdict
+          key: golden-set-verdict-v1-${{ steps.verdict.outputs.key }}
 
       - name: Post golden-set summary
         if: always()
@@ -270,17 +444,33 @@ jobs:
         with:
           script: |
             const fs = require('fs');
+            const reused = '${{ steps.reuse.outputs.cache-hit }}' === 'true';
+            const key = '${{ steps.verdict.outputs.key }}';
             let body = '## Golden-Set Execution (H.7 P3)\n\n';
             try {
               const r = JSON.parse(fs.readFileSync('/tmp/golden_set_result.json', 'utf8'));
               const icon = r.passed ? '✅' : '❌';
               body += `${icon} **${r.success_count}/${r.total}** notebooks passed (certified reproducible)\n\n`;
+              // Provenance : un verdict reutilise doit dire DE QUEL run il vient,
+              // sinon le vert affiche ici serait indiscernable d'une execution.
+              if (reused) {
+                let prov = null;
+                try {
+                  prov = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/golden_verdict/provenance.json`, 'utf8'));
+                } catch (e) { prov = null; }
+                const origin = prov
+                  ? `run [\`${prov.run_id}\`](../actions/runs/${prov.run_id}) sur \`${prov.ref}\` (\`${String(prov.sha).slice(0, 12)}\`)`
+                  : 'run d\'origine non consigne';
+                body += `Verdict **reutilise** pour la cle \`${key}\` — ${origin} ; aucune execution ce tour.\n\n`;
+              } else {
+                body += `Verdict **calcule** ce tour (cle \`${key}\`) — aucune entree de cache ne correspondait.\n\n`;
+              }
               body += `| Notebook | Status | Time |\n|-----------|--------|------|\n`;
               for (const n of r.notebooks) {
                 const s = n.success ? '✅' : '❌';
                 body += `| ${n.path.split('/').pop()} | ${s} ${n.message} | ${n.execution_time.toFixed(1)}s |\n`;
               }
-              body += `\nPinned lockfile: \`scripts/notebook_tools/golden_set.lock.txt\` (H.7 P3, axe A #4208)\n`;
+              body += `\nPinned lockfile: \`scripts/notebook_tools/golden_set.lock.txt\` (H.7 P3, axe A \`#4208\`)\n`;
             } catch (e) {
               body += `⚠️ Could not read result: ${e.message}\n`;
             }

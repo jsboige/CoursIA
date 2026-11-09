@@ -2,7 +2,7 @@
 
 **Filtres** : poids ouverts · VRAM pic ≤ 24 GB (cible RTX 3090) · français natif ou multilingue · expressivité narrateur.
 
-**Statut** : veille **complète** c.815 (sub-agent haiku `a19c5213ede6a3ba3`, durée 117 s, 27 tool_uses, evidence-cited Tell c.c.c.d.G.1 ★★★★).
+**Statut** : veille **complète** c.815 (sub-agent haiku `a19c5213ede6a3ba3`, durée 117 s, 27 tool_uses, evidence-cited ([model-delegation.md](../../../../../../../.claude/rules/model-delegation.md)).
 
 ## Modèles déjà mesurés dans le dépôt (références — pas de nouveau banc)
 
@@ -54,6 +54,6 @@
 3. Aucun binaire audio dans le dépôt — tout sur GDrive `G:\Mon Drive\MyIA\Projets\BibliothequesSonores\<run-id>\A0-bakeoff\`
 4. Rythme : 1 modèle par cycle (pas de lot), poster chaque mesure sur #17586.
 
-## Sources citées (Tell c.c.c.d.G.1 ★★★★)
+## Sources citées
 
 Toutes les URLs HuggingFace / GitHub sont vérifiées par le sub-agent. Données VRAM et params extraites des cards/model cards.

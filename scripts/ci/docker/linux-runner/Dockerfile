@@ -15,9 +15,9 @@
 
 FROM ubuntu:24.04
 
-ARG RUNNER_VERSION=2.337.0
-# Checksum officiel de la release v2.337.0 (notes de release actions/runner).
-ARG RUNNER_SHA256=70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613
+ARG RUNNER_VERSION=2.338.0
+# Checksum officiel de la release v2.338.0 (notes de release actions/runner).
+ARG RUNNER_SHA256=af4b794c1bc41d73d40535e3fe092a39f9679cd8d965954c2aca25a05ca41d32
 
 ENV DEBIAN_FRONTEND=noninteractive
 # python-is-python3 : les workflows stdlib-only appellent `python` nu
@@ -89,7 +89,8 @@ RUN echo "${GH_SHA256}  /tmp/gh.tar.gz" | sha256sum -c - \
 #
 # Ces archives sont, par construction, identiques a chaque run : le runner sait
 # les lire depuis un repertoire de cache (ActionManager.cs,
-# PrepareRepositoryAsync, verifie au pin v2.337.0 -- celui de RUNNER_VERSION) :
+# PrepareRepositoryAsync, verifie au pin v2.337.0, predecesseur du
+# RUNNER_VERSION courant) :
 #   $ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE/<owner>_<repo>/<sha_resolu>.tar.gz
 # On les embarque donc une fois, au build, plutot que de les re-telecharger a
 # chaque job. La resolution tag->SHA se fait ICI avec le meme mecanisme que le

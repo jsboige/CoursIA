@@ -1,11 +1,11 @@
 # ML-DeepLearning
 
-**Asset class:** US Equities (SPY, QQQ, IWM)
+**Asset class:** US Equities (SPY, QQQ, IWM — TLT s'ajoute dans le quantbook)
 **Cloud project ID:** None (local only)
 
 ## Description
 
-Deep learning direction prediction using Ridge regression as LSTM proxy. Predicts next-day direction (up/down/flat) on 3 equity ETFs using lagged open-close returns as features. Note: uses sklearn Ridge, not a real neural network (LSTM proxy pattern from Hands-On AI Trading).
+Prédiction de direction par deep learning avec un **vrai LSTM** (tensorflow/keras dans le quantbook, PyTorch dans main.py). Prédit la direction du lendemain (hausse/baisse/stable) sur les ETF de l'univers à partir de rendements open-close décalés. L'ancien libellé « Ridge as LSTM proxy » décrivait une itération antérieure du projet.
 
 ## How to Run
 
@@ -16,8 +16,8 @@ Deep learning direction prediction using Ridge regression as LSTM proxy. Predict
 
 | Metric | Value |
 |--------|-------|
-| Model | Ridge regression (LSTM proxy) |
-| Universe | SPY, QQQ, IWM   |
+| Model | LSTM (tensorflow/keras dans le quantbook, PyTorch dans main.py) |
+| Universe | SPY, QQQ, IWM (+ TLT dans le quantbook) |
 | Rebalance | Weekly |
 
 ## Files

@@ -9,7 +9,7 @@
 > de chaque série (cf sections « owners pressentis »). Rafraîchi c.755 (cycle #7422)
 > pour aligner les statuts PR (#5171 CLOSED, EPIC #4956 saturé) sans changer le fond.
 
----
+***
 
 ## 1. Pourquoi une table de parité
 
@@ -32,7 +32,7 @@ Elle **n'engage pas un plan de port** — chaque ligne est une **tranche
 potentielle** pour les workers qui piochent dans le pool cross-lane
 ([proactive-coordination](../../.claude/rules/proactive-coordination.md), Règle 5).
 
----
+***
 
 ## 2. Légende
 
@@ -61,7 +61,7 @@ potentielle** pour les workers qui piochent dans le pool cross-lane
 - **qc-cloud** = QuantConnect Cloud kernel (LEANT)
 - **lean-wsl** = Lean 4 natif WSL (kernel `lean4-wsl`, cf [kernels-runtime.md](kernels-runtime.md))
 
----
+***
 
 ## 3. Table de parité par série
 
@@ -97,7 +97,7 @@ potentielle** pour les workers qui piochent dans le pool cross-lane
 **Total estimé** (à confirmer par le catalogue anti-drift) : ≈250-280 notebooks
 couvrant ≈25 séries/sous-séries.
 
----
+***
 
 ## 4. Leviers transverses (rappel #4956)
 
@@ -111,7 +111,7 @@ couvrant ≈25 séries/sous-séries.
 | **LEAN engine QC** | noyau C#, algos C# supportés | série QC en C# ; kernel .NET Interactive quantbook **réactivable à peu de frais dans le container `lean_cli`** |
 | **F# scientifique** | à évaluer | **DiffSharp** (diff. auto, vérifier aussi AutoDiff/DiffSharp.Backends) |
 
----
+***
 
 ## 5. Liens croisés
 
@@ -149,11 +149,11 @@ couvrant ≈25 séries/sous-séries.
 ### 5.4 Leçons C201-C202 applicables
 
 - **C201-HARD pivot audit cross-série** : un livrable **synthétique** (table, cartographie) consomme 1 cycle R5.4b MUST sans toucher au code substance.
-- **C201-HARD JAMAIS préfixage opportuniste** : la table **expose** ces préfixages (P1, P4, P5, P7, P8) comme cibles prioritaires pour les PRs futures du plan C201 (cf `docs/suivis/numerotation-narrative-2026-07-03.md`).
+- **C201-HARD JAMAIS préfixage opportuniste** : la table **expose** ces préfixages (P1, P4, P5, P7, P8) comme cibles prioritaires pour les PRs futures du plan C201 (cf l'inventaire P1-P10 de #5081, porté par la PR #5171 et jamais versé sur `main`).
 - **G.1 cross-check upstream** : les chiffres `Notebooks (≈)` sont **indicatifs**, à confirmer par `ls` direct + inventaire catalogue anti-drift avant chaque PR fille.
 - **catalog-pr-hygiene R1-R4** : ce fichier n'est **pas** un livrable catalogue (`COURSE_CATALOG.generated.{json,md}`) — il est **dans `docs/reference/`** et reste statique entre régénérations catalogue.
 
----
+***
 
 ## 6. Méthode de mise à jour
 
@@ -163,12 +163,12 @@ couvrant ≈25 séries/sous-séries.
 2. **À chaque PR de port .NET↔Python** (cf #4956), mettre à jour la colonne
    « État parité » et les notes.
 3. **À chaque audit narratif** (cf #5081), vérifier que les colonnes P1-P10
-   (cf `docs/suivis/numerotation-narrative-2026-07-03.md`) sont cohérentes avec
+   (cf l'inventaire de #5081, PR #5171) sont cohérentes avec
    les notes.
 4. **PR de mise à jour de cette table** = 1 tranche = 1 cycle worker (rappel
    `proactive-coordination.md` Règle 1 : 1 PR/wakeup = PLANCHER, pas plafond).
 
----
+***
 
 *Compaction 2026-07-03 par po-2023 (MiniMax M3 haiku) — PR C202 quick-win ~1h,
 contribution à EPIC #4956 marathon parité .NET↔Python. 1 fichier / +280 lignes.

@@ -15,7 +15,7 @@ dont le momentum est positif. Un trailing stop à 5 % protège chaque position.
 
 ## Concepts de l'Alpha Framework
 
-QuantConnect décompose une stratégie en 4 modules indépendants,
+QuantConnect décompose une stratégie en modules indépendants,
 ce qui permet de modifier un composant sans toucher aux autres :
 
 | Module | Role | Classe utilisée |
@@ -94,7 +94,7 @@ pour une gestion du risque en couches.
 ## Concepts QC couverts par ce template
 
 - **Universe Selection** : filtrage dynamique via `universe.etf()` et callback de filtre
-- **Alpha Framework** : les 4 modules (Alpha, PCM, Risk, Exécution)
+- **Alpha Framework** : les modules (Alpha, PCM, Risk, Exécution)
 - **Indicateurs intégrés** : `MomentumPercent` (MOMP) avec enregistrement automatique
 - **Insights** : signaux avec direction, durée (`Expiry.END_OF_MONTH`) et confiance
 - **ScheduledEvent** : déclenchement périodique (`date_rules.month_start`)

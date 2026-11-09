@@ -67,11 +67,11 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames-Csharp.ipynb` | 27 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames-CSharp.ipynb` | 27 |
 | `MyIA.AI.Notebooks\GameTheory\SocialChoice\04-Computational-Aggregation-SAT-Z3-Csharp.ipynb` | 22 |
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames.ipynb` | 19 |
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-15b-Lean-CooperativeGames.ipynb` | 13 |
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-07-ExtensiveForm-Csharp.ipynb` | 13 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames-Python.ipynb` | 19 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-15b-Lean-CooperativeGames-Lean.ipynb` | 13 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-07-ExtensiveForm-CSharp.ipynb` | 13 |
 
 ### GenAI (drainable total = 1776)
 
@@ -87,11 +87,11 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-25-InoculationRL.ipynb` | 37 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-21-SAETrajectoires.ipynb` | 13 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-13-AxelrodStrategicMorphodynamics.ipynb` | 10 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15e-Bridge2-RecoverabilityAgency.ipynb` | 9 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15c-MetaProxyObstruction.ipynb` | 8 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-25-InoculationRL-Python.ipynb` | 37 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-21-SAETrajectoires-Python.ipynb` | 13 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb` | 10 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15-IntegratedComplexity/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb` | 9 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15-IntegratedComplexity/ICT-15c-MetaProxyObstruction-Python.ipynb` | 8 |
 
 ### ML (drainable total = 433)
 
@@ -99,7 +99,7 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 |---|---|
 | `MyIA.AI.Notebooks\ML\ML.Net\ML-6-ONNX-Python.ipynb` | 32 |
 | `MyIA.AI.Notebooks\ML\ML.Net\ML-6-ONNX.ipynb` | 24 |
-| `MyIA.AI.Notebooks\ML\DataScienceWithAgents\01-PythonForDataScience\notebooks\1.2-Manipulation_de_Donnees_avec_NumPy.ipynb` | 22 |
+| `MyIA.AI.Notebooks\ML\DataScienceWithAgents\01-Python-For-Data-Science\notebooks\1.2-Manipulation_de_Donnees_avec_NumPy.ipynb` | 22 |
 | `MyIA.AI.Notebooks\ML\DataScienceWithAgents\02-ML-Cours\2.5-Biais-Variance-CV-ROC.ipynb` | 22 |
 | `MyIA.AI.Notebooks\ML\ML.Net\ML-4-Evaluation-Python.ipynb` | 20 |
 
@@ -117,10 +117,10 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\Probas\Infer\Infer-2-Gaussian-Mixtures.ipynb` | 38 |
+| `MyIA.AI.Notebooks\Probas\Infer\Infer-02-Gaussian-Mixtures.ipynb` | 38 |
 | `MyIA.AI.Notebooks\Probas\Infer\Infer-15-Recommenders.ipynb` | 27 |
 | `MyIA.AI.Notebooks\Probas\DecisionTheory\PyMC\DecPyMC-7-Sequential.ipynb` | 17 |
-| `MyIA.AI.Notebooks\Probas\DecisionTheory\DecInfer\DecInfer-03-Utility-Money.ipynb` | 16 |
+| `MyIA.AI.Notebooks\Probas\DecisionTheory\DecInfer\DecInfer-02-Utility-Money.ipynb` | 16 |
 | `MyIA.AI.Notebooks\Probas\PyMC\PyMC-06-Debugging.ipynb` | 16 |
 
 ### QuantConnect (drainable total = 1392)
@@ -137,11 +137,11 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\RL\rl_4_multi_armed_bandits.ipynb` | 24 |
-| `MyIA.AI.Notebooks\RL\rl_6d_sac_from_scratch.ipynb` | 16 |
-| `MyIA.AI.Notebooks\RL\rl_10_reward_shaping.ipynb` | 12 |
-| `MyIA.AI.Notebooks\RL\rl_6c_ppo_from_scratch.ipynb` | 12 |
-| `MyIA.AI.Notebooks\RL\rl_8_model_based_dyna_q.ipynb` | 11 |
+| `MyIA.AI.Notebooks\RL\RL-04-Bandits-Manchots-Python.ipynb` | 24 |
+| `MyIA.AI.Notebooks\RL\RL-06d-SAC-Depuis-Zero-Python.ipynb` | 16 |
+| `MyIA.AI.Notebooks\RL\RL-10-Reward-Shaping-Curriculum-Python.ipynb` | 12 |
+| `MyIA.AI.Notebooks\RL\RL-06c-PPO-Depuis-Zero-Python.ipynb` | 12 |
+| `MyIA.AI.Notebooks\RL\RL-08-Dyna-Q-Planification-Python.ipynb` | 11 |
 
 ### Search (drainable total = 1464)
 
@@ -158,8 +158,8 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 | Notebook | Drainable |
 |---|---|
 | `MyIA.AI.Notebooks\Sudoku\Sudoku-03-Genetic-Python.ipynb` | 70 |
-| `MyIA.AI.Notebooks\Sudoku\Sudoku-18-Comparison-Csharp.ipynb` | 64 |
-| `MyIA.AI.Notebooks\Sudoku\Sudoku-13-SymbolicAutomata-Csharp.ipynb` | 61 |
+| `MyIA.AI.Notebooks\Sudoku\Sudoku-18-Comparison-CSharp.ipynb` | 64 |
+| `MyIA.AI.Notebooks\Sudoku\Sudoku-13-SymbolicAutomata-CSharp.ipynb` | 61 |
 | `MyIA.AI.Notebooks\Sudoku\Sudoku-18-Comparison-Python.ipynb` | 53 |
 | `MyIA.AI.Notebooks\Sudoku\Sudoku-04-SimulatedAnnealing-Python.ipynb` | 51 |
 
@@ -169,9 +169,9 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 |---|---|
 | `MyIA.AI.Notebooks\SymbolicAI\Lean\Lean-11-TorchLean.ipynb` | 70 |
 | `MyIA.AI.Notebooks\SymbolicAI\Lean\Lean-10-LeanDojo.ipynb` | 69 |
-| `MyIA.AI.Notebooks\SymbolicAI\SemanticWeb\SW-13-Python-Reasoners.ipynb` | 57 |
+| `MyIA.AI.Notebooks\SymbolicAI\SemanticWeb\SW-13-Reasoners-Python.ipynb` | 57 |
 | `MyIA.AI.Notebooks\SymbolicAI\SymbolicLearning\SL-1-LogicalLearning.ipynb` | 48 |
-| `MyIA.AI.Notebooks\SymbolicAI\SemanticWeb\SW-1-CSharp-Setup.ipynb` | 41 |
+| `MyIA.AI.Notebooks\SymbolicAI\SemanticWeb\SW-01-Setup-CSharp.ipynb` | 41 |
 
 ## Lecture
 
@@ -187,7 +187,7 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 ## Caveats
 
-- La classification **n'est pas parfaite** : les couches anti-FP (c.1272 contexte bayésien, c.1275 Argument_Analysis) couvrent les patterns connus, mais des FPs restent possibles (par exemple, une valeur dans une cellule de résultat précédente que le classifieur pourrait classer ENV-DEP par contexte).
+- La classification **n'est pas parfaite** : les couches anti-FP (c.1272 contexte bayésien, c.1275 ArgumentAnalysis) couvrent les patterns connus, mais des FPs restent possibles (par exemple, une valeur dans une cellule de résultat précédente que le classifieur pourrait classer ENV-DEP par contexte).
 - Le ratio STRUCTUREL/DRAINABLE est élevé (~92%) — la majorité des valeurs quantitatives en prose sont des **constants pédagogiques** (ordres de grandeur, ratios fixes, paramètres théoriques) qui ne dériveront pas.
 - Une re-exécution produira le même décompte modulo le contenu des cellules markdown ajoutées/modifiées depuis ce run.
 - Le décompte par famille est calculé sur le **premier composant du chemin** (`MyIA.AI.Notebooks/<FAMILY>/...`) — les notebooks en dehors de cette taxonomie sont classés en `OTHER` (RL principalement, 24 notebooks).
@@ -208,5 +208,5 @@ Options utiles : `--check` (exit 1 si ≥ 1 drainable, pour CI), `--limit N` (te
 - PR #9800 (scan_quant_classify.py triage 4-classes — outillage)
 - PR #9813 (anti-FP bayesian context)
 - PR #9820 (retire `}`cii typo + apprentissage trop large)
-- PR #9838 (anti-FP Argument_Analysis c.1275)
+- PR #9838 (anti-FP ArgumentAnalysis c.1275)
 - PR #9958 (item 4 C.5 codification de la ligne de partage — MERGED)

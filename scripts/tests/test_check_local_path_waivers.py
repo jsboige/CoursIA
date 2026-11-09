@@ -6,11 +6,15 @@ control measures nothing (issue note). Everything here runs offline --
 classify_body is pure by design.
 """
 
+import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import check_local_path_waivers as lpw
 from check_local_path_waivers import LONE_PATH_RE, PROFILE_PATH_RE, classify_body
 
 # Verbatim from issue #16780 (the comment itself is gone from GitHub).
@@ -83,10 +87,14 @@ def test_regexes_directly():
 
 
 # --- workflow concurrency lock ----------------------------------------------
-# The guard's workflow fires on `issue_comment` AND `pull_request`. A comment
+# The guard's workflow fired on `issue_comment` AND `pull_request`. A comment
 # run executes against `main`, so it must never share a concurrency group with
 # the PR-head run: with `cancel-in-progress`, it would cancel that run and leave
 # a `cancelled` check on the head, which `PR gate` fails as "never concluded".
+# The `issue_comment` leg was removed in #22937 (vague 2) -- its verdict
+# attached to `main` and was invisible on every PR, and it was 71 of the 100
+# most recent runs of this workflow. The event key is kept so the two
+# remaining kinds (`pull_request`, `workflow_dispatch`) stay separated.
 
 WORKFLOW = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "local-path-waiver-guard.yml"
 
@@ -106,12 +114,99 @@ def test_negative_control_defective_group_is_caught():
     assert not _group_isolates_events(DEFECTIVE_GROUP)
 
 
-def test_workflow_group_isolates_comment_runs_from_pr_runs():
+def test_workflow_has_no_comment_leg_and_keeps_the_event_key():
+    """La jambe `issue_comment` est retiree (#22937 vague 2) -- le defaut qu'elle
+    rendait possible (un run sur `main` qui annule le run de tete de PR) ne peut
+    plus se produire ; la cle par evenement reste pour les deux genres
+    restants (`pull_request`, `workflow_dispatch`)."""
     import yaml
 
     wf = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     triggers = wf.get("on", wf.get(True))  # PyYAML reads a bare `on:` as True
-    assert "issue_comment" in triggers and "pull_request" in triggers
+    assert "pull_request" in triggers
+    assert "issue_comment" not in triggers
     concurrency = wf["concurrency"]
     if concurrency.get("cancel-in-progress"):
         assert _group_isolates_events(concurrency["group"]), concurrency["group"]
+
+
+# --- #18324 : l'instrument n'a pas repondu -----------------------------------
+# gh a rendu un ECHEC (quota GraphQL de l'installation epuise) au lieu d'un
+# resultat. La garde n'a donc pas lu la surface : elle ne rend alors aucun
+# verdict sur elle. Le defaut mesure : un RuntimeError nu remontait en
+# traceback, le job sortait en 1, et ce 1 remontait dans `PR gate` (requis) --
+# la PR victime payait pour un incident d'infrastructure.
+
+INCIDENT_STDERR_18324 = "GraphQL: API rate limit already exceeded for site ID installation."
+
+
+def _instrument_down(monkeypatch):
+    """Rejoue l'incident : gh ne repond pas."""
+
+    class _P:
+        returncode = 1
+        stdout = ""
+        stderr = INCIDENT_STDERR_18324
+
+    monkeypatch.setattr(lpw.subprocess, "run", lambda *a, **k: _P())
+
+
+def test_gh_failure_raises_the_typed_exception(monkeypatch):
+    """Le type est la moitie du correctif : check() rattrape CELUI-CI."""
+    _instrument_down(monkeypatch)
+    with pytest.raises(lpw.InstrumentUnavailable):
+        lpw._gh_json(["pr", "view", "18284", "--json", "comments"])
+
+
+def test_negative_control_a_bare_runtimeerror_is_a_different_type():
+    """Controle negatif : sans type dedie, le rattrapage n'a rien a viser.
+
+    L'assertion qui compte est l'inegalite -- un test qui accepterait
+    ``RuntimeError`` passerait aussi sur le code defectueux, puisque
+    l'ancien ``raise`` etait exactement cela.
+    """
+    assert issubclass(lpw.InstrumentUnavailable, RuntimeError)
+    assert lpw.InstrumentUnavailable is not RuntimeError
+
+
+def test_report_only_honours_its_own_exit_zero_contract(monkeypatch, capsys):
+    """Le wiring CI est --report-only : son contrat EST exit 0 (#18324)."""
+    _instrument_down(monkeypatch)
+    assert lpw.check(18284, report_only=True) == 0
+    out = capsys.readouterr().out
+    assert "UNKNOWN" in out
+    assert "::warning" in out
+
+
+def test_hand_run_distinguishes_could_not_read_from_clean_and_findings(monkeypatch, capsys):
+    """Exit 2 : ni 0 (« propre ») ni 1 (« findings ») -- #16164."""
+    _instrument_down(monkeypatch)
+    rc = lpw.check(18284, report_only=False)
+    assert rc == 2
+    assert rc not in (0, 1)
+    assert "UNKNOWN" in capsys.readouterr().out
+
+
+def test_positive_control_findings_still_render_a_verdict(monkeypatch, capsys):
+    """La garde n'est pas devenue inoffensive : un vrai finding rend toujours 1.
+
+    Sans ce controle, un correctif qui rendrait 0 partout passerait les
+    trois tests ci-dessus.
+    """
+    payload = json.dumps(
+        {
+            "comments": [
+                {
+                    "body": INCIDENT_BODY_16670,
+                    "author": {"login": "jsboige"},
+                    "createdAt": "2026-09-19T00:00:00Z",
+                    "url": "https://github.com/jsboige/CoursIA/pull/16670#issuecomment-1",
+                }
+            ]
+        }
+    )
+    monkeypatch.setattr(lpw, "_gh_json", lambda args: payload)
+    assert lpw.check(16670, report_only=False) == 1
+    capsys.readouterr()
+    assert lpw.check(16670, report_only=True) == 0
+    assert "LOCAL_PATH_WAIVER" in capsys.readouterr().out

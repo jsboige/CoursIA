@@ -3,12 +3,13 @@
 Suites directes des case 11 (PR #14535, N=4 null), case 12 (PR #14544, N=8 dissociation
 canonique bit0), case 13 (PR #14548, N=16 NULL 0/16 REFUTATION scaling monotone).
 
-Case 14 teste hypothese 2 du verdict case 13 (Tell c.896-L1) : le relachement
+Case 14 teste hypothese 2 du verdict case 13 : le relachement
 de la compression canonique (bit2 au lieu de bit0) restaure-t-il la dissociation
 FBT a N=8 ?
 
-Setup : Prakash, Stephens, Hoffman, Singh & Fields (2017) "Fitness Beats Truth in the
-Evolution of Perception", arXiv:1505.04322, section 4 (toy formel).
+Setup : Prakash, Stephens, Hoffman, Singh & Fields (2021) "Fitness Beats Truth in the
+Evolution of Perception", Acta Biotheoretica 69(3):319-341,
+doi:10.1007/s10441-020-09400-0, section 4 (toy formel) du préprint du 30 juillet 2017.
 
 8 paysages (4 symetriques herites case 11 + 4 nouveaux bit2-aligned family).
 """
@@ -217,8 +218,7 @@ def perceive_fitness_only(
     de x qui a la fitness max.
 
     REPAIR c.902 : voir `perceive_truth` pour le contexte. Avant le fix,
-    `play_round` jette x et le toy mesurait un artefact instrumental (Tell
-    c.899-L1 ★★★ + c.901-L1 ★★★).
+    `play_round` jette x et le toy mesurait un artefact instrumental.
     """
     best_w = 0
     best_score = -math.inf
@@ -242,7 +242,7 @@ def play_round(
     position et retourne `w_hat ∈ [0, N_ONTIC)`. Avant le fix, `strategy(alpha,
     fitness, prior)` était appelée sans `x` (jeté après échantillonnage), ce qui
     rendait le NULL 8/8 case 14 non-mesurant (l'instrument était aveugle au
-    percept). Tell c.899-L1 ★★★ + c.901-L1 ★★★ : `play_round` FBT-style doit
+    percept). `play_round` FBT-style doit
     passer `x` à la stratégie.
     """
     w_star = random.randrange(N_ONTIC)

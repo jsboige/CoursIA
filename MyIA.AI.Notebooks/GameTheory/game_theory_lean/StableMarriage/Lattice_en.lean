@@ -31,9 +31,7 @@ import Mathlib.Data.Fintype.EquivFin
 import Mathlib.Data.Fin.VecNotation
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Tactic.Common
-import StableMarriage.Definitions
-import StableMarriage.Lemmas
-import StableMarriage.Lattice
+import StableMarriage.Definitions_en
 
 /-
   Stable Marriage - Lattice Structure on Stable Matchings (EN sibling)
@@ -48,13 +46,21 @@ import StableMarriage.Lattice
   verbatim depuis `aaaf0c52ae` (post-merge #5321 GSState i18n) ; seule la ligne
   `namespace` diffère pour éviter la collision de declaration.
 
+  Miroir AUTONOME depuis le 2026-11-01 : le module n'importe plus la couche FR.
+  Il declare localement `Matching.joinSpouse`, `Matching.meetSpouse`,
+  `Matching.join` et `Matching.meet` (auparavant consommes depuis
+  `StableMarriage.Lattice` FR, ce qui rendait ses theoremes FR-types et
+  inutilisables depuis un contexte EN). C'est cette autonomie qui permet a
+  `GaleShapley_en` de resoudre `exists_isManOptimal`, `spouse_inverse` et
+  `inverse_eq_of_spouse_eq` en types EN. See #23906.
+
   See #4980. Part of #4208 (axe E).
 -/
 
 namespace StableMarriage_en
 
 open Function Finset Classical
-open StableMarriage
+open StableMarriage_en
 
 variable {n : Nat} [NeZero n] (prof : PrefProfile n)
 
@@ -249,16 +255,26 @@ end NoCrossCounterexample
 
 /-! ## Join and Meet Operations -/
 
--- The join spouse function: each man gets his preferred partner between μ and ν.
--- Defined as a bare function so that bijectivity can be proved separately with
--- stability hypotheses. The join is NOT bijective for arbitrary matchings;
--- it requires both μ and ν to be stable (anti-complementarity).
--- (EN sibling: definition imported from FR canonical `StableMarriage.Lattice`
--- via `import StableMarriage.Lattice`. Redefining it here would shadow the
--- FR canonical and break `simp`/`unfold` resolution across namespaces.)
+/--
+The join spouse function: each man gets his preferred partner between μ and ν.
+Defined as a bare function so that bijectivity can be proved separately with
+stability hypotheses. The join is NOT bijective for arbitrary matchings;
+it requires both μ and ν to be stable (anti-complementarity).
+-/
+noncomputable def Matching.joinSpouse (μ ν : Matching n) (m : Fin n) : Fin n :=
+  if prof.menPref m (μ.spouse m) ≤ prof.menPref m (ν.spouse m) then
+    μ.spouse m
+  else
+    ν.spouse m
 
--- The meet spouse function: each man gets his less-preferred partner between μ and ν.
--- (EN sibling: imported from FR canonical, see joinSpouse note above.)
+/--
+The meet spouse function: each man gets his less-preferred partner between μ and ν.
+-/
+noncomputable def Matching.meetSpouse (μ ν : Matching n) (m : Fin n) : Fin n :=
+  if prof.menPref m (μ.spouse m) ≤ prof.menPref m (ν.spouse m) then
+    ν.spouse m
+  else
+    μ.spouse m
 
 /--
 Injectivity of join: if joinSpouse μ ν m₁ = joinSpouse μ ν m₂, then m₁ = m₂.
@@ -374,10 +390,15 @@ private lemma joinSpouse_injective (μ ν : Matching n)
     · simp only [Matching.joinSpouse, c₂, if_false] at heq
       exact ν.bijective.1 heq
 
--- The join of two STABLE matchings: each man gets his preferred partner.
--- Bijectivity follows from anti-complementarity: on the woman side, the join
--- acts as the meet, so no two men map to the same woman.
--- (EN sibling: definition imported from FR canonical, see joinSpouse note.)
+/--
+The join of two STABLE matchings: each man gets his preferred partner.
+Bijectivity follows from anti-complementarity: on the woman side, the join
+acts as the meet, so no two men map to the same woman.
+-/
+noncomputable def Matching.join (hμ : IsStable prof μ) (hν : IsStable prof ν) :
+    Matching n where
+  spouse := fun m => μ.joinSpouse prof ν m
+  bijective := Finite.injective_iff_bijective.mp (joinSpouse_injective prof μ ν hμ hν)
 
 /--
 Each man's join/meet pair is exactly his pair of partners in `{μ, ν}`:
@@ -462,8 +483,13 @@ private lemma meetSpouse_injective (μ ν : Matching n)
   intro m₁ m₂ heq
   exact meetSpouse_eq_of_eq prof μ ν hμ hν (μ.meetSpouse prof ν m₂) m₁ m₂ heq rfl
 
--- The meet of two STABLE matchings: each man gets his less-preferred partner.
--- (EN sibling: imported from FR canonical, see joinSpouse note.)
+/--
+The meet of two STABLE matchings: each man gets his less-preferred partner.
+-/
+noncomputable def Matching.meet (hμ : IsStable prof μ) (hν : IsStable prof ν) :
+    Matching n where
+  spouse := fun m => μ.meetSpouse prof ν m
+  bijective := Finite.injective_iff_bijective.mp (meetSpouse_injective prof μ ν hμ hν)
 
 /-! ## Stability of Join and Meet (Wu-Roth Lemma 3.2, one-to-one case) -/
 

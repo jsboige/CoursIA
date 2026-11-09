@@ -1,7 +1,7 @@
 # region imports
 from AlgorithmImports import *
 from alpha_models import TrendStocksAlpha, AllWeatherAlpha
-from portfolio_construction import MultiStrategyPCM
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
 # endregion
 
 
@@ -47,12 +47,14 @@ class FrameworkCompositeStrategy(QCAlgorithm):
             AllWeatherAlpha(aw_tickers)
         ))
 
-        self.set_portfolio_construction(MultiStrategyPCM(
+        self.set_portfolio_construction(MultiStrategyPouchesPCM(
             alpha_allocations={
                 "TrendStocks": 0.75,
                 "AllWeather": 0.25,
             },
-            rebalance=timedelta(days=31)
+            rebalance=timedelta(days=31),
+            additive=True,  # Univers disjoints : identique au mode base
+            algorithm=self,
         ))
 
         self.set_risk_management(NullRiskManagementModel())

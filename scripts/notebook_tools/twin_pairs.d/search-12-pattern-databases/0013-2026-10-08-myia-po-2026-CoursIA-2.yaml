@@ -1,0 +1,20 @@
+date: '2026-10-08'
+by: myia-po-2026:CoursIA-2
+python_sha: d8889b3d0dd3e3da934c0d2e21beee582abce122
+csharp_sha: 6cf9e3ba4e267e2d57c5b53173eb2fc982b49a7e
+content_python_sha: 653efb5a82b0c3bb36b171b1635962042ab18c7736392177fb769917b62b6d4b
+content_csharp_sha: a47b0484572a32a9d7d4b9110b96ca26e26d9ac8db3903da53880b1ba9f1f1a8
+
+reason: >-
+  Re-attestation apres reparation des rouges de #19959 (lane myia-po-2026:CoursIA-2).
+  Python : re-execution papermill end-to-end (cliquet exec-sequence DUPLICATE 9
+  sur les cellules 18/21 -> sequence 1..23), bloc papermill retire (le carnet
+  n'en portait pas sur main). C# : bloc papermill STALE retire (il decrivait un
+  run du 2026-07-05 alors que les outputs venaient d'une execution .NET du
+  2026-10-05 ; la CI ne peut pas papermill-exec le .NET, cf README). Les deux
+  jumeaux portent en outre une NOTE DE PARITE (cellule "Lecture du resultat") :
+  les RNG different (random.Random vs System.Random), donc a graine egale
+  l'instance de demo differe et les valeurs absolues de h_max/h_additive/
+  h_saturated ne sont pas comparables entre jumeaux -- seuls les invariants
+  (h_max <= h_additive, saturated <= h_additive) le sont. Aucun strip outile
+  en attente apres ce commit.

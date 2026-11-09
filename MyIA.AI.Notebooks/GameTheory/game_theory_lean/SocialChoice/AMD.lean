@@ -3,7 +3,7 @@
   ======================================================
 
   Certificat formel du compagnon Lean du notebook
-  `GameTheory-16b-Automated-Mechanism-Design.ipynb` (PR #12259) : le
+  `GameTheory-16b-Automated-Mechanism-Design-Python.ipynb` (PR #12259) : le
   mécanisme M* produit par le générateur Python (énumération + argmax sur
   le bien-être social, paiements nuls) est certifié par le noyau Lean
   (`simp` énumérant le domaine fini) — DSIC, IR, J* = 2, optimalité

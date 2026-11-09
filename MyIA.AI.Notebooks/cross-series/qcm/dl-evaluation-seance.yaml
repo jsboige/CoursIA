@@ -1,0 +1,430 @@
+- id: dl-001
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Qu'est ce que ILSRVC ?
+  choix_unique: true
+  options:
+  - texte: Une technique de traitement d'images basée sur l'intelligence artificielle
+    correcte: false
+  - texte: Une compétition annuelle d'intelligence artificielle
+    correcte: true
+  - texte: Une métrique d'une approche d'intelligence artificielle
+    correcte: false
+  - texte: Intelligent Learning Service on Vision Recognition and Communication
+    correcte: false
+- id: dl-002
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: 'Le dropout est une solution à :'
+  choix_unique: true
+  options:
+  - texte: L'underfitting
+    correcte: false
+  - texte: Le manque de mémoire
+    correcte: false
+  - texte: L'overfitting
+    correcte: true
+  - texte: Le problème de différence de tailles entre les différentes couches
+    correcte: false
+- id: dl-003
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: 'Généralement on mesure les performances des nouveaux réseaux de neurones convolutifs profonds
+    sur :'
+  choix_unique: true
+  options:
+  - texte: GoogleNet
+    correcte: false
+  - texte: AlexNet
+    correcte: false
+  - texte: ResNet
+    correcte: false
+  - texte: ImageNet
+    correcte: true
+- id: dl-004
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: 'Le Net 5 utilise dans sa dernière couche :'
+  choix_unique: true
+  options:
+  - texte: un produit scalaire entre les entrées et les poids
+    correcte: false
+  - texte: Le carré de la distance euclidienne entre les entrées et les poids
+    correcte: true
+  - texte: la convolution avec un filtre
+    correcte: false
+  - texte: une étape de pooling
+    correcte: false
+- id: dl-005
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: A quoi correspond le taux d'erreurs top 5 utilisé dans ILSVRC ?
+  choix_unique: true
+  options:
+  - texte: Pourcentage d'exemples où la bonne classe n'était pas dans les 5 meilleures prédites
+    correcte: true
+  - texte: Les 5 taux d'erreurs les plus élevés lors de la compétition
+    correcte: false
+  - texte: Les 5 taux d'erreurs les plus faibles lors de la compétition
+    correcte: false
+  - texte: Les erreurs qui correspondent aux 5 meilleurs résultats obtenus
+    correcte: false
+- id: dl-006
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Quel est le premier réseau à empiler des couches de convolution les unes sur les autres sans
+    les intercaler avec du pooling ?
+  choix_unique: true
+  options:
+  - texte: LeNet5
+    correcte: false
+  - texte: GoogleNet
+    correcte: false
+  - texte: ResNet
+    correcte: false
+  - texte: AlexNet
+    correcte: true
+- id: dl-007
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Hormis le dropout, quel est la deuxième solution pour éviter le surajustement des données ?
+  choix_unique: true
+  options:
+  - texte: Le padding
+    correcte: false
+  - texte: Une pile d'unités résiduelles
+    correcte: false
+  - texte: Batch Normalization (normalisation par lots)
+    correcte: false
+  - texte: Augmentation des données
+    correcte: true
+- id: dl-008
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: 'Le module Inception est utilisé dans :'
+  choix_unique: true
+  options:
+  - texte: GoogleNet
+    correcte: true
+  - texte: AlexNet
+    correcte: false
+  - texte: ResNet
+    correcte: false
+  - texte: Le Net 5
+    correcte: false
+- id: dl-009
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Pourquoi est ce que Inception a des couches de convolution à noyau 1x1 ?
+  choix_unique: true
+  options:
+  - texte: pour capturer des motifs en profondeur
+    correcte: false
+  - texte: pour accélérer l'entrainement et améliorer la généralisation
+    correcte: false
+  - texte: pour capturer des motifs plus complexes
+    correcte: false
+  - texte: Les 3 propositions précédentes sont justes
+    correcte: true
+- id: dl-010
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Quel réseau a permis d'atteindre un taux d'erreur top 5 inférieur à 3.6% dans la compétition
+    ILSVRC ?
+  choix_unique: true
+  options:
+  - texte: ResNet
+    correcte: true
+  - texte: AlexNet
+    correcte: false
+  - texte: GoogleNet
+    correcte: false
+  - texte: Le Net 5
+    correcte: false
+- id: dl-011
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Lequel de ces réseaux a été crée par le français Yan LeCun ?
+  choix_unique: true
+  options:
+  - texte: GoogleNet
+    correcte: false
+  - texte: ResNet
+    correcte: false
+  - texte: AlexNet
+    correcte: false
+  - texte: Le Net 5
+    correcte: true
+- id: dl-012
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: 'Chaque pile d''unité résiduelle peut être vue comme :'
+  choix_unique: true
+  options:
+  - texte: un réseau de neurones avec une connexion de saut
+    correcte: true
+  - texte: Deux couches reliées entre elles avec un pooling
+    correcte: false
+  - texte: une normalisation par lots et un RELU
+    correcte: false
+  - texte: un mini GoogLeNet
+    correcte: false
+- id: dl-013
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: 'Les CNN ont été capables de performances surhumaines sur des tâches visuelles complexes grâce
+    à :'
+  choix_unique: true
+  options:
+  - texte: La présence de grandes BD et l'augmentation de puissance de calcul
+    correcte: true
+  - texte: L'argent qui a été investi pour le développement de ces techniques
+    correcte: false
+  - texte: Le développement de la recherche sur le système visuel humain
+    correcte: false
+- id: dl-014
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: 'Les couches les plus importantes dans un CNN sont :'
+  choix_unique: true
+  options:
+  - texte: couches de pooling
+    correcte: false
+  - texte: couches de convolution
+    correcte: true
+  - texte: couche fully connected
+    correcte: false
+  - texte: Les couches de dropout
+    correcte: false
+- id: dl-015
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: 'Plus on avance dans les couches d''un CNN plus on détecte :'
+  choix_unique: true
+  options:
+  - texte: des caractéristiques grossières
+    correcte: false
+  - texte: des caractéristiques fines
+    correcte: true
+  - texte: des traits horizontaux et verticaux
+    correcte: false
+  - texte: des courbes grossières
+    correcte: false
+- id: dl-016
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Qu'est ce que le stride ?
+  choix_unique: true
+  options:
+  - texte: le rajout de zéros
+    correcte: false
+  - texte: le trait qu'on va suivre dans le filtre de convolution
+    correcte: false
+  - texte: le pas pour passer d'une zone de la carte de caractéristiques à la suivante
+    correcte: true
+  - texte: la taille du filtre de convolution
+    correcte: false
+- id: dl-017
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Que produit la sortie de chaque couche de convolution ?
+  choix_unique: true
+  options:
+  - texte: une carte de caractéristiques par filtre
+    correcte: true
+  - texte: l'image réduite
+    correcte: false
+  - texte: une partie de la carte de caractéristiques
+    correcte: false
+  - texte: L'image entourée par des 0 (dans les 1ère et dernières lignes et colonnes)
+    correcte: false
+- id: dl-018
+  theme: dl-evaluation-seance
+  type: multichoice
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: 'Lorsqu''on met padding="same" , ceci veut dire :'
+  choix_unique: true
+  options:
+  - texte: La couche de convolution ajoute une marge de 0 si nécessaire
+    correcte: true
+  - texte: La couche de convolution n'ajoute pas de marge de 0
+    correcte: false
+  - texte: qu'on ignore certaines lignes
+    correcte: false
+  - texte: qu'on ignore certaines colonnes
+    correcte: false
+- id: dl-019
+  theme: dl-evaluation-seance
+  type: truefalse
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Le dropout est actif dans la phase d'entrainement et dans la phase de test.
+  choix_unique: true
+  options:
+  - texte: Vrai
+    correcte: false
+  - texte: Faux
+    correcte: true
+- id: dl-020
+  theme: dl-evaluation-seance
+  type: truefalse
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Dans toutes les couches d'un CNN, les entrées sont toujours des images (des matrices) et jamais
+    des vecteurs.
+  choix_unique: true
+  options:
+  - texte: Vrai
+    correcte: false
+  - texte: Faux
+    correcte: true
+- id: dl-021
+  theme: dl-evaluation-seance
+  type: truefalse
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Les neurones dans différentes cartes caractéristiques utilisent toujours les mêmes paramètres.
+  choix_unique: true
+  options:
+  - texte: Vrai
+    correcte: false
+  - texte: Faux
+    correcte: true
+- id: dl-022
+  theme: dl-evaluation-seance
+  type: truefalse
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Tous les neurones d'une même carte de caractéristiques utilisent les mêmes paramètres.
+  choix_unique: true
+  options:
+  - texte: Vrai
+    correcte: true
+  - texte: Faux
+    correcte: false
+- id: dl-023
+  theme: dl-evaluation-seance
+  type: truefalse
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Dans un CNN toutes les couches sont intégralement connectées.
+  choix_unique: true
+  options:
+  - texte: Vrai
+    correcte: false
+  - texte: Faux
+    correcte: true
+- id: dl-024
+  theme: dl-evaluation-seance
+  type: truefalse
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Le Net 5 utilise comme fonction d'agrégation le maximum pour ses couches de pooling
+  choix_unique: true
+  options:
+  - texte: Vrai
+    correcte: false
+  - texte: Faux
+    correcte: true
+- id: dl-025
+  theme: dl-evaluation-seance
+  type: truefalse
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: AlexNet est plus performant que GoogleNet
+  choix_unique: true
+  options:
+  - texte: Vrai
+    correcte: false
+  - texte: Faux
+    correcte: true
+- id: dl-026
+  theme: dl-evaluation-seance
+  type: truefalse
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: GoogleNet a dix fois moins de paramètres qu'AlexNet
+  choix_unique: true
+  options:
+  - texte: Vrai
+    correcte: true
+  - texte: Faux
+    correcte: false
+- id: dl-027
+  theme: dl-evaluation-seance
+  type: truefalse
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: ResNet 34 a 34 couches en comptant toutes les couches du réseau
+  choix_unique: true
+  options:
+  - texte: Vrai
+    correcte: false
+  - texte: Faux
+    correcte: true
+- id: dl-028
+  theme: dl-evaluation-seance
+  type: truefalse
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: On trouve dans Keras les poids des réseaux pré-entrainés sur ImageNet
+  choix_unique: true
+  options:
+  - texte: Vrai
+    correcte: true
+  - texte: Faux
+    correcte: false
+- id: dl-029
+  theme: dl-evaluation-seance
+  type: truefalse
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: En utilisant TensorFlox et Keras on ne peut afficher que les trois premières prédictions de
+    chaque classe
+  choix_unique: true
+  options:
+  - texte: Vrai
+    correcte: false
+  - texte: Faux
+    correcte: true
+- id: dl-030
+  theme: dl-evaluation-seance
+  type: truefalse
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Un modèle qui a déjà appris sur ImageNet ne pourra pas avoir de bons résultats sur d'autres
+    classes que celles d'ImageNet
+  choix_unique: true
+  options:
+  - texte: Vrai
+    correcte: false
+  - texte: Faux
+    correcte: true
+- id: dl-031
+  theme: dl-evaluation-seance
+  type: truefalse
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Le transfert d'apprentissage c'est d'utiliser dans la même base de données les poids de la phase
+    d'entrainement pour la phase de test.
+  choix_unique: true
+  options:
+  - texte: Vrai
+    correcte: false
+  - texte: Faux
+    correcte: true
+- id: dl-032
+  theme: dl-evaluation-seance
+  type: truefalse
+  source: MSMIS5IN10 eval seance 6 2022
+  enonce: Un neurone d'une couche pooling possède un poids.
+  choix_unique: true
+  options:
+  - texte: Vrai
+    correcte: false
+  - texte: Faux
+    correcte: true

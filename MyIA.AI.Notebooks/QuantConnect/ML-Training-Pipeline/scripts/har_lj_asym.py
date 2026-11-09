@@ -268,6 +268,7 @@ def walk_forward_lj_asym(
             "aggregate_mse_logrv_debiased": np.nan,
             "per_fold_bias": [],
             "per_fold_bounds": [],
+            "index_all": [],
         }
 
     feature_cols = [
@@ -278,6 +279,7 @@ def walk_forward_lj_asym(
     valid = target_fwd.notna().values
     X_all = merged[feature_cols].values[valid]
     y_all = target_fwd.values[valid]
+    index_all = merged.index[valid]
 
     n = len(X_all)
     fold_size = n // (n_splits + 1)
@@ -296,8 +298,9 @@ def walk_forward_lj_asym(
         split = (fold + 1) * fold_size
         if split + horizon >= n:
             break
-        X_train, X_test = X_all[:split], X_all[split : split + fold_size]
-        y_train, y_test = y_all[:split], y_all[split : split + fold_size]
+        train_end = split - horizon
+        X_train, X_test = X_all[:train_end], X_all[split : split + fold_size]
+        y_train, y_test = y_all[:train_end], y_all[split : split + fold_size]
 
         model = HARLJAsymModel().fit(X_train, y_train)
         yhat = model.predict(X_test)
@@ -307,10 +310,10 @@ def walk_forward_lj_asym(
         per_fold_bias.append(bias)
         per_fold_bounds.append({
             "fold_idx": int(fold),
-            "train_end_idx": int(split),
+            "train_end_idx": int(train_end),
             "oos_start_idx": int(split),
             "oos_end_idx": int(split + fold_size),
-            "n_train": int(split),
+            "n_train": int(train_end),
             "n_oos": int(fold_size),
         })
 
@@ -329,6 +332,7 @@ def walk_forward_lj_asym(
             "aggregate_mse_logrv_debiased": np.nan,
             "per_fold_bias": per_fold_bias,
             "per_fold_bounds": per_fold_bounds,
+            "index_all": index_all,
         }
 
     forecasts_arr = np.array(forecasts)
@@ -342,21 +346,17 @@ def walk_forward_lj_asym(
         forecasts_debiased = []
         mse_debiased = np.nan
 
-    # Round-4 provenance (adjoint concern (c), DM msg-20260905T001520):
-    # fold k tests on X_all[(k+1)*fold_size : (k+2)*fold_size), so the first
-    # forecast sits at X_all index ``fold_size`` and the last EXECUTED fold's
-    # train ends at ``n_folds * fold_size`` (== n_splits * (n // (n_splits+1))
-    # when every fold runs). Indices are X_all (merged valid) coordinates:
-    # X_all position j maps to original-series timestamp ``merged.index[j]``,
-    # and its h-step target reads original positions up to j + horizon.
+    # The last training target ends before the last fold's OOS origin.
+    # Earlier folds are also OOS, so these global bounds summarize only the
+    # final fold's training boundary, not one contiguous train/test partition.
     n_folds = len(per_fold_bias)
-    n_train_end = int(n_folds * fold_size)
+    n_train_end = int(per_fold_bounds[-1]["train_end_idx"])
     bounds_train_test = {
         "train_end_idx": n_train_end,
-        "oos_start_idx": int(n_train_end + horizon),
-        "oos_end_idx": int(n),
+        "oos_start_idx": int(per_fold_bounds[-1]["oos_start_idx"]),
+        "oos_end_idx": int(per_fold_bounds[-1]["oos_end_idx"]),
         "n_train": n_train_end,
-        "n_oos": int(n - n_train_end),
+        "n_oos": int(len(forecasts)),
         "n_total": int(n),
         "fold_size": int(fold_size),
         "n_folds": int(n_folds),
@@ -370,6 +370,7 @@ def walk_forward_lj_asym(
         "aggregate_mse_logrv_debiased": mse_debiased,
         "per_fold_bias": per_fold_bias,
         "per_fold_bounds": per_fold_bounds,
+        "index_all": index_all,
         "bounds_train_test": bounds_train_test,
     }
 
@@ -547,33 +548,58 @@ def _eval_one_coin(
     if m12_fc is None or (hasattr(m12_fc, '__len__') and len(m12_fc) == 0):
         return None
 
-    # --- Align all three models to the shortest forecast series ---
-    n = min(
-        len(res_lj["forecasts"]),
-        len(har_fc_raw),
-        len(har_fc_dm),
-        len(m12_fc),
-    )
-    if n < 10:
+    # HAR/M12 dates label the first target day; M17 dates label the forecast
+    # origin. Bridge to the preceding RV date before joining the OOS series.
+    lj_dates = pd.DatetimeIndex([
+        res_lj["index_all"][i]
+        for fold in res_lj["per_fold_bounds"]
+        for i in range(fold["oos_start_idx"], fold["oos_end_idx"])
+    ])
+    lj_values = res_lj["forecasts_debiased"] if debias else res_lj["forecasts"]
+    lj_forecasts = pd.Series(lj_values, index=lj_dates)
+    lj_targets = pd.Series(res_lj["targets"], index=lj_dates)
+    rv_index = rv.dropna().index
+
+    def to_origin(series: pd.Series) -> pd.Series:
+        if not isinstance(series, pd.Series):
+            raise ValueError(f"{coin}/h={horizon}: baseline forecast needs dated values")
+        positions = rv_index.get_indexer(series.index)
+        if (positions <= 0).any():
+            raise ValueError(f"{coin}/h={horizon}: baseline date has no RV origin")
+        return pd.Series(series.to_numpy(), index=rv_index[positions - 1])
+
+    har_forecasts = to_origin(har_fc_dm)
+    har_raw_forecasts = to_origin(har_fc_raw)
+    m12_forecasts = to_origin(m12_fc)
+    common = lj_dates.intersection(har_forecasts.index).intersection(
+        har_raw_forecasts.index).intersection(m12_forecasts.index
+    ).sort_values()
+    if len(common) < 10:
         return None
-
-    fc_lj = np.array(res_lj["forecasts"][:n])
-    # Round-3 concern #1: when debias=True, consume the PER-FOLD-corrected
-    # forecasts produced inside walk_forward_lj_asym (each fold shifted by
-    # that fold's train-tail bias, yhat_corrected = yhat + bias). This
-    # replaces the c.955 post-walk-forward global-mean shift, which used the
-    # wrong sign and violated per-fold identity.
-    if debias and res_lj.get("forecasts_debiased"):
-        fc_lj = np.array(res_lj["forecasts_debiased"][:n])
-    fc_har = np.array(har_fc_dm.values[:n]) if hasattr(har_fc_dm, 'values') else np.array(har_fc_dm[:n])
-    fc_har_raw = np.array(har_fc_raw.values[:n]) if hasattr(har_fc_raw, 'values') else np.array(har_fc_raw[:n])
-    fc_m12 = np.array(m12_fc.values[:n]) if hasattr(m12_fc, 'values') else np.array(m12_fc[:n])
-    tgt = np.array(res_lj["targets"][:n])
-
-    err_lj = fc_lj - tgt[:len(fc_lj)]
-    err_har = fc_har - tgt[:len(fc_har)]  # DM leg (calibrated when debias=True)
-    err_har_raw = fc_har_raw - tgt[:len(fc_har_raw)]  # truly raw leg
-    err_m12 = fc_m12 - tgt[:len(fc_m12)]  # internally calibrated when debias=True
+    shared_target = realized_variance_to_log(rv).rolling(horizon).mean().shift(-horizon)
+    tgt = shared_target.reindex(common).to_numpy(dtype=float)
+    if not np.isfinite(tgt).all() or not np.allclose(
+        lj_targets.loc[common].to_numpy(dtype=float), tgt, rtol=1e-12, atol=1e-12,
+    ):
+        raise ValueError(f"{coin}/h={horizon}: M17 target differs from shared target")
+    native_results = [("HAR raw", res_har_uncal), ("M12", res_m12)]
+    if debias:
+        native_results.append(("HAR calibrated", res_har_deb))
+    for name, result in native_results:
+        native_target = to_origin(result["targets"]).reindex(common).to_numpy(dtype=float)
+        if not np.isfinite(native_target).all() or not np.allclose(
+            native_target, tgt, rtol=1e-12, atol=1e-12,
+        ):
+            raise ValueError(f"{coin}/h={horizon}: {name} target differs from shared target")
+    fc_lj = lj_forecasts.loc[common].to_numpy(dtype=float)
+    fc_har = har_forecasts.loc[common].to_numpy(dtype=float)
+    fc_har_raw = har_raw_forecasts.loc[common].to_numpy(dtype=float)
+    fc_m12 = m12_forecasts.loc[common].to_numpy(dtype=float)
+    n = len(common)
+    err_lj = fc_lj - tgt
+    err_har = fc_har - tgt
+    err_har_raw = fc_har_raw - tgt
+    err_m12 = fc_m12 - tgt
 
     # --- MSE = bias^2 + variance decomposition (population variance, ddof=0) ---
     mse_lj_empirical = float(np.mean(err_lj ** 2))
@@ -615,6 +641,9 @@ def _eval_one_coin(
     panel_hash = _panel_hash(rv)
 
     # Forecasts/targets/errors hashes for manifest (concern #4 fix, c.955).
+    aligned_dates_hash = hashlib.sha256(
+        common.asi8.astype(np.int64).tobytes()
+    ).hexdigest()[:16]
     fc_lj_hash = hashlib.sha256(fc_lj.astype(np.float64).tobytes()).hexdigest()[:16]
     fc_har_hash = hashlib.sha256(fc_har.astype(np.float64).tobytes()).hexdigest()[:16]
     fc_m12_hash = hashlib.sha256(fc_m12.astype(np.float64).tobytes()).hexdigest()[:16]
@@ -624,19 +653,10 @@ def _eval_one_coin(
     err_m12_hash = hashlib.sha256(err_m12.astype(np.float64).tobytes()).hexdigest()[:16]
 
     # --- Bounds + edge-sigma disposition (concern #4; round-4 concern (c)) ---
-    # Provenance convention: ``bounds_train_test`` comes from the LJ
-    # walk-forward geometry (see walk_forward_lj_asym) -- fold k tests on
-    # X_all[(k+1)*fold_size : (k+2)*fold_size), the first forecast sits at
-    # X_all index fold_size, and the last fold's train ends at
-    # n_folds*fold_size (= n_splits * (n // (n_splits + 1)) when all folds
-    # execute). Indices are X_all (merged valid) coordinates: position j
-    # maps to original-series timestamp merged.index[j]; its h-step target
-    # reads original positions up to j + horizon. The global fc_*_hash
-    # cover the ALIGNED forecasts; fc_lj_hash_per_fold hashes each fold
-    # slice of the LJ walk-forward output, aligned with per_fold_bias, so
-    # the per-tranche granules are anchored to the bounds. Edge-σ is N/A
-    # because OLS on a deterministic (X, y) panel with fixed seeds is
-    # bit-identical -- see panel_hashes_consistent.
+    # Per-fold bounds use X_all coordinates: fold k trains up to
+    # (k+1)*fold_size - horizon, then tests from (k+1)*fold_size. Global
+    # forecast hashes cover only the dates shared by the three models;
+    # per-fold LJ hashes cover its complete walk-forward output.
     bounds_train_test = res_lj.get("bounds_train_test")
     fold_size_wf = (bounds_train_test or {}).get("fold_size")
     n_folds_wf = (bounds_train_test or {}).get("n_folds")
@@ -655,60 +675,23 @@ def _eval_one_coin(
         ]
     else:
         fc_lj_hash_per_fold = []
-    # Round-5 concern (2): per-fold content_hash covering (index, bornes,
-    # values) -- the explicit "where do these forecasts come from" anchor.
-    # Uses per_fold_bounds (aligned 1-pour-1 with per_fold_bias, concern (1))
-    # for the bornes tuple, and the underlying log_rv index for the fold's
-    # row range (fc_series_per_fold carries the concat of fold slices in
-    # X_all coordinates -- we re-derive the matching index slice from
-    # log_rv via fold_size + horizon, since X_all = log_rv after
-    # dropna+rolling-shifting -- approximate but verifiable: any shift in
-    # the underlying panel would also shift this digest).
+    # Hash the exact X_all timestamps used to generate each OOS fold.
     per_fold_bounds_wf = res_lj.get("per_fold_bounds", [])
+    index_all = res_lj.get("index_all", [])
     fc_content_hash_per_fold: list[str] = []
     if per_fold_bounds_wf and fold_size_wf and n_folds_wf and fc_series_per_fold:
-        # X_all is log_rv after dropna() and rolling(horizon).mean().shift(-horizon)
-        # valid mask -- for round-5 we hash the resulting values + the
-        # explicit bornes from per_fold_bounds[k] + the original index
-        # coordinates of the slice. The matching index slice is derived
-        # from log_rv.iloc[<merged_start> + k*fold_size_wf : ...] but for
-        # hashing purposes we feed the ORIGINAL log_rv index for the same
-        # position range -- this is the index the user sees when auditing.
-        try:
-            for k in range(int(n_folds_wf)):
-                bd = per_fold_bounds_wf[k]
-                bornes_k = (
-                    int(bd["train_end_idx"]),
-                    int(bd["oos_start_idx"]),
-                    int(bd["oos_end_idx"]),
-                )
-                values_k = np.asarray(
-                    fc_series_per_fold[
-                        k * int(fold_size_wf) : (k + 1) * int(fold_size_wf)
-                    ],
-                    dtype=np.float64,
-                )
-                # Round-5 concern (2): index component = the original
-                # log_rv index slice that maps to this fold's X_all
-                # positions. log_rv positions [oos_start_idx:oos_end_idx]
-                # map directly when no dropna; in practice dropna may
-                # shrink the index by a small constant offset -- the
-                # mutation tests assert that ANY shift in the index
-                # component changes the digest (the absolute alignment
-                # is not load-bearing here, the audit anchor is).
-                if len(log_rv) >= bornes_k[2]:
-                    index_k = log_rv.index.values[
-                        max(0, bornes_k[1]) : bornes_k[2]
-                    ]
-                else:
-                    index_k = np.array([], dtype="int64")
-                fc_content_hash_per_fold.append(
-                    _content_hash(index_k, bornes_k, values_k),
-                )
-        except Exception:
-            # Robust: any derivation failure yields an empty list -- the
-            # values-only fc_lj_hash_per_fold remains the verifiable anchor.
-            fc_content_hash_per_fold = []
+        for bd in per_fold_bounds_wf:
+            start = int(bd["oos_start_idx"])
+            end = int(bd["oos_end_idx"])
+            bornes = (int(bd["train_end_idx"]), start, end)
+            fold = int(bd["fold_idx"])
+            values = fc_series_per_fold[
+                fold * int(fold_size_wf):(fold + 1) * int(fold_size_wf)
+            ]
+            index = index_all[start:end]
+            if len(index) != len(values) or not values:
+                raise ValueError(f"M17 fold {fold}: forecast/index provenance mismatch")
+            fc_content_hash_per_fold.append(_content_hash(index, bornes, values))
 
     # --- Kelly portfolio metrics ---
     kelly_metrics = _compute_kelly(fc_lj, tgt)
@@ -741,6 +724,9 @@ def _eval_one_coin(
         "err_har_hash": err_har_hash,
         "err_m12_hash": err_m12_hash,
         "n_obs": int(n),
+        "aligned_origin_first": str(common[0]),
+        "aligned_origin_last": str(common[-1]),
+        "aligned_dates_hash": aligned_dates_hash,
         # Round-4 concern (c): provenance surface -- per-fold bias list,
         # train/OOS bounds of the walk-forward split, and per-fold hashes
         # (16-hex each) aligned with per_fold_bias.
@@ -967,17 +953,21 @@ def main() -> None:
 
     t0 = time.time()
 
-    panel = _load_panel(skip_remote=args.skip_remote)
-    available = [c for c in coins if c in panel]
-    if not available:
-        print("ERROR: no coins available after loading panel")
-        return
+    panel, failures = _load_panel(skip_remote=args.skip_remote)
+    missing = [c for c in coins if c not in panel]
+    if missing:
+        details = ", ".join(
+            f"{coin} ({failures.get(coin, 'not loaded')})" for coin in missing
+        )
+        parser.error(f"requested coins unavailable: {details}")
+    available = coins
     print(f"Panel loaded: {list(panel.keys())} ({len(panel[available[0]])} bars for {available[0]})")
 
     components = compute_daily_components(panel)
     print(f"Components computed for: {list(components.keys())}")
 
     rows: list[dict] = []
+    skipped: list[tuple[str, int, int]] = []
     total = len(available) * len(args.horizons) * len(args.seeds)
     done = 0
     for coin in available:
@@ -997,7 +987,11 @@ def main() -> None:
                     print(f" -> MSE={result['mse_logrv']:.6f} "
                           f"DM_har={dm_h} DM_m12={dm_m}")
                 else:
+                    skipped.append((coin, horizon, seed))
                     print(" -> SKIP (insufficient data)")
+
+    if skipped:
+        raise RuntimeError(f"incomplete M17 panel: {len(skipped)}/{total} combinations skipped: {skipped}")
 
     elapsed = time.time() - t0
 
@@ -1016,7 +1010,8 @@ def main() -> None:
             "refit_every": REFIT_EVERY,
             "debias_har": args.debias,
             "calibration_size": args.calibration_size,
-            "calibration_protocol": "REPAIR-2 c.955 per-fold train-tail bias (no OOS target access)",
+            "calibration_protocol": "Per-fold train-tail bias with horizon-row purge",
+            "comparison_protocol": "Origin-date inner join; native targets checked against shared forward log-RV target",
         },
         "coins": available,
         "horizons": args.horizons,
@@ -1111,6 +1106,9 @@ def main() -> None:
                 "fc_m12_hash": r["fc_m12_hash"], "tgt_hash": r["tgt_hash"],
                 "err_lj_hash": r["err_lj_hash"], "err_har_hash": r["err_har_hash"],
                 "err_m12_hash": r["err_m12_hash"], "n_obs": r["n_obs"],
+                "aligned_origin_first": r["aligned_origin_first"],
+                "aligned_origin_last": r["aligned_origin_last"],
+                "aligned_dates_hash": r["aligned_dates_hash"],
             }
             for r in rows
         ],
@@ -1210,7 +1208,7 @@ def main() -> None:
                 "walk_forward_lj_asym surfaces bounds_train_test "
                 "{train_end_idx, oos_start_idx, oos_end_idx, n_train, n_oos} "
                 "(indices in X_all/merged-valid coordinates; train_end_idx = "
-                "n_folds * fold_size). _eval_one_coin, aggregate_verdicts "
+                "n_folds * fold_size - horizon). _eval_one_coin, aggregate_verdicts "
                 "(bounds_train_test + bounds_consistent_across_seeds) and "
                 "this manifest (bounds_per_coin_horizon) relay it; "
                 "fc_lj_hash_per_fold is aligned with per_fold_bias. The "

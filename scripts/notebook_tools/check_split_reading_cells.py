@@ -41,8 +41,11 @@ INSEREES dans une PR qui violent la regle user « une sortie = une lecture » :
                               est un **compte par sortie**, pas un jugement par
                               cellule : voir la decision #17044 ci-dessous ;
   - ``READING_BEFORE_CODE`` : cellule markdown ajoutee directement devant une
-                              cellule de code AVEC sortie (la lecture doit
-                              suivre la sortie, pas la preceder) ;
+                              cellule de code AVEC sortie ET sans code execute
+                              au-dessus d'elle (la lecture doit suivre la
+                              sortie, pas la preceder ; sous un code execute,
+                              le compte par sortie prend le relais -- #17044,
+                              decision c.5877090210) ;
   - ``EXERCISE_READING``    : cellule markdown ajoutee juste apres une cellule
                               d'exercice (stub sans sortie) -- l'etudiant ne
                               verra pas la lecture tant qu'il n'a pas complete.
@@ -85,7 +88,26 @@ signalait :
     presente » : la premiere lecture posee derriere un code qui n'en avait pas
     est le geste prescrit, pas un doublonnage. Le discriminant est le titre,
     pas la longueur du corps. ``is_reading_or_prose`` le porte -- c'est le
-    predicat que le releve par sortie (#17044) consomme aussi.
+    predicat que le releve par sortie (#17044) consomme aussi. Le principe
+    s'etend a ``READING_BEFORE_CODE`` (``is_section_intro``) : un en-tete de
+    section devant une cellule de code AVEC sortie introduit ce code, il ne
+    commente pas une sortie -- mesure #18050 : 3 FPs ``### 8.x R0N`` devant
+    leur ``#check``. L'exemption ne couvre PAS l'en-tete devant un stub
+    d'exercice (garde-fou d'origine, test
+    ``test_carveout_ne_couvre_pas_un_titre_de_section``).
+
+Carve-out #18602 -- conversion code->md en place : quand
+une cellule de code EXECUTE (avec ``execution_count`` ou ``outputs``) est
+convertie en cellule markdown (fence ````python``, meme id, meme position
+index), elle n'est PAS une lecture ajoutee : la lecture md qui suit reste
+legitime et son rattachement a la sortie precedente (compte par sortie) ne
+bouge pas. La garde discrimine par id commun positionnel entre la tete et
+la base : un id neuf (cellule ajoutee reellement) n'est pas couvert, ce qui
+preserve la sensibilite du cliquet aux ajouts reels. Deuxieme pass couvert
+dans la liste ``attached`` : exclure les cellules dont l'id existait deja en
+base (le main loop les a traitees comme reecritures, pas comme ajouts).
+Repro : self-test 7 (negatif 4 dans ``self_test()`` ci-dessous), qui pinne
+la topologie du FP #18602 (PR #18440, Lean-10 c.60-c.65).
 
 Mode CLIQUET (#17044) : ``--base-ref <ref> [--head HEAD]`` compare chaque carnet
 modifie entre la base et la tete et rend le verdict du cliquet -- rouge
@@ -107,11 +129,13 @@ touche :
     carnet absent de la base comme « ajoute » ferait rougir la PR entiere sur un
     probleme de fetch.
 
-``--self-test`` joue six controles, hors git et hors reseau : trois positifs
+``--self-test`` joue sept controles, hors git et hors reseau : trois positifs
 (lecture empilee nommee ; lecture ajoutee SANS en-tete, invisible au detecteur
 consecutive ; fusion blanche **plus** une lecture ajoutee sur une AUTRE sortie)
-et trois negatifs (deux lectures fusionnees en une ; modification de code sans
-lecture ajoutee ; encart sans code execute au-dessus).
+et quatre negatifs (deux lectures fusionnees en une ; modification de code sans
+lecture ajoutee ; encart sans code execute au-dessus ; carve-out #18602
+code->md : la lecture legitime qui suit la conversion n'est pas ajoutee -- voir
+bloc dedie ci-dessus).
 
 Codes de retour : 0 = aucun finding ; 1 = cible introuvable, fichier designe
 illisible, ou base irresoluble ; 2 = findings (avec --fail-on-findings). En mode
@@ -131,6 +155,7 @@ from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from check_credited_examples import is_credited_example_header  # noqa: E402
 from detect_repeated_prose import content_words, markdown_cells  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -165,17 +190,123 @@ EXERCISE_TOKENS = ("TODO", "A completer", "à compléter", "Exercice")
 # titre d'exercice** : un en-tete d'interpretation dissimule dans le corps, et
 # la citation d'une sortie -- le vocabulaire de l'interpretation, pas celui de
 # l'enonce.
-EXERCISE_STATEMENT_TITLE_RE = re.compile(r"^#{1,6}\s*exercice\b", re.IGNORECASE)
+# Extension aux jumeaux derives `_en` (#20777) : les carnets traduits portent
+# la meme forme canonique enonce|stub, mais le titre s'ecrit « Exercise ».
+# Sans le `[cs]`, le re-rendu EN d'un carnet FR dont les enonces vivent deja
+# entre les stubs (forme canonique, grandfathered) rougissait EXERCISE_READING
+# sur chaque enonce -- mesure sur 01-2-GPT-5-Image-Generation_en (cellules 31
+# et 33, miroir exact des cellules 31/33 du FR source sur main).
+# La forme GRAS (`**Exercice 1** -- ...`) est celle de 111 carnets du depot
+# (mesure au 30/10/2026) : sans elle, l'enonce echappait au carve-out
+# #17777 et passait pour « un paragraphe non titre » qui commente une sortie
+# -- donc pour une lecture. Mesure : PR #23439 (Z3-16c-Meal-Planner), ou
+# l'enonce en gras depose entre le code et son stub gonflait le compte de la
+# sortie precedente, et la PREMIERE lecture ajoutee sous ce code etait signalee
+# SECOND_READING a tort.
+EXERCISE_STATEMENT_TITLE_RE = re.compile(
+    r"^(?:#{1,6}\s*|\*+|_+)\s*exerci[cs]e\b", re.IGNORECASE)
+SECTION_TITLE_AFTER_EXERCISE_RE = re.compile(
+    r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin)\b",
+    re.IGNORECASE,
+)
+# Titres de TRANSITION de fin de carnet -- deuxieme famille structurelle.
+#
+# La liste fermee ci-dessus couvre les sections de FIN (conclusion, ressources,
+# plan, references, synthese, pour aller plus loin). Elle ne couvre pas les
+# sections de NAVIGATION que le corpus utilise massivement : « Navigation »,
+# « Liens », « Prochaines etapes » (+ « Next steps » pour les jumeaux `_en`).
+# Ces cellules sont des TRANSITIONS -- un lien vers le carnet suivant, une
+# liste de liens -- : elles ne commentent AUCUNE sortie. Les placer apres un
+# exercice n'empeche l'etudiant de rien voir ; au contraire, la navigation de
+# fin de carnet doit rester visible meme si l'exercice n'est pas fait.
+#
+# L'exemption reste fondee sur le TITRE (meme principe que la liste fermee
+# ci-dessus) mais avec un ANCRAGE COMPLET : le titre doit etre le mot-cle
+# lui-meme, eventuellement precede d'une numerotation de section. Une PHRASE
+# qui commence par le mot-cle n'est passtructurelle : « Navigation dans un
+# graphe RDF » reste signale comme lecture.
+#
+# Mesure (corpus `main`, 2026-11-03) : 17 cellules portent un titre exact de
+# cette famille (10 « Navigation », 7 « Liens »), toutes des sections de liens ;
+# la premiere occurrence « Prochaines etapes » apres un exercice est mesuree
+# sur la PR #24303 (`Tweety-07b-Ranking-Probabilistic-Python.ipynb`, cellule
+# 23), ou la cellule de cloture du carnet (transition vers le carnet suivant +
+# liens de navigation) est ajoutee juste apres le stub du dernier exercice.
+#
+# Hors perimetre DELIBERE : les titres de RECAP (« Resume », « A retenir »,
+# « Recapitulatif », « Bilan ») ne sont PAS ajoutes -- un recapitulatif peut
+# etre un contenu que l'etudiant doit lire APRES l'exercice ; leur nombre
+# (mesure : 29 « Resume », 19 « A retenir », 7 « Recapitulatif », 5 « Bilan »
+# sur le corpus) est laisse a l'arbitrage du coordinateur.
+CLOSING_NAV_TITLE_RE = re.compile(
+    r"^(?:\d+(?:\.\d+)*\.?\s+)?"
+    r"(?:prochaines etapes|next steps|navigation|liens|links)"
+    r"(?:\s+et\s+suite)?$",
+    re.IGNORECASE,
+)
+# Carve-out #24164 : une **prose de transition vers l'etape suivante** n'est pas
+# une lecture de la sortie qui la precede. Classes mesurees sur 10
+# signalements (PR #23840, `App-3-NurseScheduling.ipynb`) -- decomposition
+# rejouee sur le head (revue Hermes #24309), l'issue melangeait gras et
+# non-gras dans son compte 8/2 :
+#   (a) une cellule de **separateur horizontal** (`***`) posee devant un titre
+#       de section -- `***` puis `## 2. Formulation du probleme` : 3 des 10.
+#       La cellule ne commence pas par `#`, donc `is_reading_or_prose` la
+#       voyait comme de la prose et elle gonflait le compte de la sortie
+#       precedente ;
+#   (b) un **libelle d'etape en gras** (`**Etape 2 : contrainte de couverture
+#       (C1)**`) : 4 des 10 signalements. `EXERCISE_STATEMENT_TITLE_RE` couvre
+#       deja le gras `**Exercice N**` (#23439) ; il manquait la forme `Etape`.
+#   (c) prose de transition NON GRASSEE sans titre (`Definissons...`,
+#       `Construisons...`) : 3 des 10, hors carve-out (limite assumee
+#       documentee dans la docstring de `is_step_transition`).
+# Les garde-fous sont ceux des autres carve-outs : une lecture TITREE reste une
+# lecture, un titre d'interpretation dissimule dans le corps et une citation de
+# sortie (`OUTPUT_CITATION_RE`) disqualifient le carve-out.
+HORIZONTAL_RULE_RE = re.compile(r"^(?:\*{3,}|-{3,}|_{3,})\s*$")
+STEP_BOLD_LABEL_RE = re.compile(r"^\*\*[^*]+\*\*\s*$")
+STEP_LABEL_WORD_RE = re.compile(r"\b(?:etape|étape|step|partie)\b", re.IGNORECASE)
+# Miroir anglais des deux garde-fous du carve-out (#20777) : le titre s'est
+# ouvert a « Exercise » pour les jumeaux `_en`, les gardes suivent -- ouvrir
+# le titre sans ouvrir les gardes rouvrirait le trou que la decision #17777
+# avait ferme (« une interpretation deguisee sous un titre d'exercice reste
+# signalee »). Ces deux regex ne servent QUE dans is_exercise_statement et
+# is_section_intro ; le detecteur principal INTERPRETATION_RE est intact.
 HIDDEN_INTERPRETATION_HEADING_RE = re.compile(
-    r"^#{1,6}\s*(lecture|interpre|interpret|analyse)", re.IGNORECASE
+    r"^#{1,6}\s*(lecture|reading|interpre|interpret|analys[ei])", re.IGNORECASE
 )
 OUTPUT_CITATION_RE = re.compile(
     r"\b(?:l[ae]s?|une?|cette?)\s+(?:sorties?|outputs?|prints?|affichages?)\b"
     r"|\bl\s*['’]\s*(?:sortie|output|affichage)\b"
     r"|\bcomme\s+le\s+montre\s+(?:la|le|l['’])"
-    r"|\b(?:on\s+observe|on\s+voit|on\s+lit)\b",
+    r"|\b(?:on\s+observe|on\s+voit|on\s+lit)\b"
+    r"|\b(?:the|an?|these|those)\s+(?:outputs?|prints?|displays?)\b"
+    r"|\bas\s+(?:shown|demonstrated)\s+by\s+the\b"
+    r"|\bwe\s+(?:observe|see|read)\b",
     re.IGNORECASE,
 )
+
+# Carve-out meta-notes (#18606, decision ai-01 30/09 c.5916807033, « voie 2 ») :
+# une cellule markdown AJOUTEE portant un tag de la liste fermee ci-dessous
+# declare une meta-note -- un renvoi methodologique (audit, verdict SOTA,
+# source des donnees), pas une lecture d'interpretation. Quatre gardes :
+#   1. liste fermee : tout autre tag reste sans effet ;
+#   2. cellules AJOUTEES seulement -- le check vit apres les exemptions de
+#      revision, une cellule reecrite ou deplacee ne se blanchit pas par tag ;
+#   3. chaque exemption est RENDUE dans le resume du check-run (notebook,
+#      id de cellule, tag) -- elle sort du compte bloquant, pas du regard ;
+#   4. contre-exemples portes par la suite de tests (lecture « Source » non
+#      taggee, tag sur reecriture, tag hors liste).
+META_NOTICE_TAGS = ("audit-notice", "sota-notice", "source-notice")
+
+
+def meta_notice_tag(cell: dict) -> str | None:
+    """Tag de meta-note porte par la cellule, ou None (liste fermee #18606)."""
+    tags = cell.get("metadata", {}).get("tags") or []
+    for t in tags:
+        if t in META_NOTICE_TAGS:
+            return t
+    return None
 
 
 def deaccent(s: str) -> str:
@@ -267,7 +398,20 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
 
     On REJETTE les md purement structurels (## Conclusion, ## Exercice
     N, ## References), qui n'ont qu'un en-tete suivi d'un corps court
-    ou vide -- ce sont des transitions, pas des lectures.
+    ou vide -- ce sont des transitions, pas des lectures. La meme
+    exemption vaut pour les titres de TRANSITION de fin de carnet
+    (``## Navigation``, ``## Liens``, ``## Prochaines etapes``) : ce sont
+    des liens, pas une lecture d'une sortie (cf ``CLOSING_NAV_TITLE_RE``).
+
+    Garde-fou #17777 (meme discriminant qu'``is_reading_or_prose`` : le titre,
+    pas la longueur du corps) : un titre de section (``## Conclusion``,
+    ``## Ressources``, ``## Plan``) place APRES un exercice reste structurel,
+    meme long -- le releve par sortie l'exempte deja par le titre, le bucket
+    positionnel doit faire de meme, sinon une conclusion de fin de carnet
+    (pattern du gabarit canon, ex. carnet 06 corps 866 chars) tombe en faux
+    positif. Une cellule dont le premier titre n'est PAS un titre de section
+    garde l'heuristique historique (> 80 chars) : c'est une vraie lecture
+    deguisee en prose titre.
     """
     if cell.get("cell_type") != "markdown":
         return False
@@ -276,10 +420,15 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
     src = cell_source(cell).strip()
     if not src:
         return False
-    # Si la premiere ligne est un titre markdown (# ## ### ...), on
-    # accepte si le corps (apres la premiere ligne) fait > 80 chars.
     first_line = src.split("\n", 1)[0].lstrip()
     if first_line.startswith("#"):
+        # Titre de section (## Conclusion / ## Ressources / ## Plan ...) :
+        # structurel par le titre, jamais une lecture -- la longueur du corps
+        # est hors discriminant (meme principe que ``is_reading_or_prose``).
+        title = deaccent(cell_title(src)).lower()
+        if (SECTION_TITLE_AFTER_EXERCISE_RE.match(title)
+                or CLOSING_NAV_TITLE_RE.match(title)):
+            return False
         body = src.split("\n", 1)[1].strip() if "\n" in src else ""
         return len(body) > 80
     # Pas de titre markdown : c'est un paragraphe libre. S'il est > 80 chars,
@@ -288,31 +437,166 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
     return len(src) > 80
 
 
-def is_exercise_cell(cell: dict) -> bool:
+# Separateur de section horizontal : `***`, `---`, `___` (forme espacee
+# comprise, `* * *`). Une cellule markdown peut OUVRIR sur un tel separateur
+# avant son titre -- c'est le cas des titres d'exercice poses juste apres la
+# section precedante. (#23397)
+_HORIZONTAL_RULE_RE = re.compile(r"^(?:\*\s*){3,}$|^(?:-\s*){3,}$|^(?:_\s*){3,}$")
+
+
+def _first_title_line(src: str) -> str:
+    """Premiere ligne qui porte un TITRE dans `src`, en ignorant les lignes
+    vides et les separateurs de section qui le precedent en tete de cellule.
+
+    Un en-tete `### Exercice ...` qui n'est PAS en premiere ligne (parce
+    qu'un separateur `***`/`---`/`___` ou une ligne vide ouvre la cellule)
+    doit tout de meme compter comme un titre : c'est lui qui ferme la section,
+    pas le separateur. Sans ce geste, la remontee de `_section_header` passait
+    au-dessus du titre d'exercice et rattachait son stub a l'en-tete credite
+    deux cellules plus haut, blanchissant un vrai exercice. (#23397)
+    """
+    for line in src.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        if _HORIZONTAL_RULE_RE.match(line):
+            continue
+        return line
+    return ""
+
+
+def _governing_header(cells: list[dict], idx: int) -> dict | None:
+    """En-tete markdown qui commande la cellule `idx` (None s'il n'y en a pas).
+
+    Remontee en arriere : les cellules markdown SANS titre sont ignorees
+    (c'est de la prose, pas un en-tete) ; le premier TITRE markdown trouve
+    commande la cellule. Une cellule de CODE interrompt la remontee : le lien
+    de section est rompu, et l'on ne rattache pas la cellule a un titre qui
+    precede une autre section de code.
+    """
+    for j in range(idx - 1, -1, -1):
+        cell = cells[j]
+        if cell.get("cell_type") == "code":
+            return None
+        if cell.get("cell_type") != "markdown":
+            continue
+        src = cell_source(cell).strip()
+        if not src:
+            continue
+        if src.split("\n", 1)[0].lstrip().startswith("#"):
+            return cell
+    return None
+
+
+def _section_header(cells: list[dict], idx: int) -> dict | None:
+    """En-tete markdown de la SECTION qui contient la cellule `idx`.
+
+    Regle de SECTION : une cellule de CODE n'interrompt PAS la remontee --
+    le premier TITRE markdown trouve commande toute la section, combien
+    que soient les cellules de code entre le titre et la cellule. Elle
+    cohabite avec `_governing_header` (regle de LIEN, une cellule de code
+    rompt le lien), qui reste la regle du lien generique -- y compris son
+    miroir dans `count_exercises.py`.
+
+    Un TITRE compte meme quand il n'est pas en premiere ligne de sa cellule
+    (`_first_title_line` ignore les lignes vides et les separateurs `***` /
+    `---` / `___` qui l'ouvrent) : un titre d'exercice pose apres un
+    separateur ferme la section, sinon son stub serait rattache a l'en-tete
+    credite de la section precedante et blanchi. (#23397)
+    """
+    for j in range(idx - 1, -1, -1):
+        cell = cells[j]
+        if cell.get("cell_type") != "markdown":
+            continue
+        src = cell_source(cell).strip()
+        if not src:
+            continue
+        if _first_title_line(src).startswith("#"):
+            return cell
+    return None
+
+
+def is_credited_example_code(cells: list[dict], idx: int) -> bool:
+    """Vrai si la cellule de code `idx` est le code d'un EXEMPLE GUIDE CREDITE.
+
+    La digestion des travaux etudiants (#15042) convertit l'exercice d'un
+    etudiant en **exemple guide credite** : le titre de section porte
+    `### Exemple ... (credite #PR)` et le code de l'etudiant est conserve
+    VERBATIM -- en-tete d'origine `# Exercice N - ...` compris. Le jeton
+    « Exercice » est donc present PAR CONSTRUCTION dans un exemple, et
+    `is_exercise_cell` le classait « exercice » : la lecture posee apres
+    l'exemple etait alors signalee EXERCISE_READING (faux positif mesure sur
+    #23378, PR #23368).
+
+    Le role d'une cellule de code se lit dans l'en-tete qui la commande :
+    sous `### Exemple ... (credite #PR)` le code est un exemple resolu ;
+    sous `### Exercice N` il reste un stub. L'ATTRIBUTION est exigee : un
+    simple `### Exemple` sans credit ne dit rien du role du code.
+
+    Regle de SECTION (#23397) : la commande se lit par `_section_header` --
+    le premier TITRE markdown au-dessus de la cellule, les cellules de code
+    intermediaires n'interrompant PAS la remontee. Un exemple credite qui
+    porte plusieurs cellules de code est blanchi sur TOUTES, dans la limite
+    de sa section : un NOUVEAU titre markdown (exemple : l'exercice qui suit
+    l'exemple) ferme la section, et le code sous ce titre redevient
+    classifiable « exercice » -- l'elargissement ne blanchit donc jamais un
+    exercice pose apres un code quelconque, qui ne partage pas l'en-tete
+    credite.
+
+    Mesure du 2026-11-06 au head (1 751 carnets, 22 575 cellules de
+    code, 168 en-tetes credites, 16 sections multi-code) : la regle de
+    section blanchit 187 cellules contre 168 sous la regle de lien --
+    strictement superset, 19 cellules gagnees, aucune perdue ; 14 de ces
+    19 sont suivies d'une lecture (le cas ou le faux positif EXERCISE_READING
+    se produisait). Le role du code se lit par SECTION, pas par lien : c'est
+    ce que la mesure porte.
+    """
+    header = _section_header(cells, idx)
+    return header is not None and is_credited_example_header(header)
+
+
+def is_exercise_cell(
+    cell: dict,
+    cells: list[dict] | None = None,
+    idx: int | None = None,
+) -> bool:
     """Une cellule de code est 'exercise' si elle porte un marqueur d'exercice
-    OU un stub TODO dans son source. On accepte aussi une sortie litterale
-    ``Exercice a completer`` : la convention des carnets CoursIA est d'afficher
+    OU un stub TODO dans sa source. On accepte aussi une sortie litterale
+    `Exercice a completer` : la convention des carnets CoursIA est d'afficher
     ce message quand l'etudiant n'a pas complete (cf C.1) -- la cellule reste
     pedagogiquement un exercice, meme si elle a ete executee une fois.
 
-    Cette definition suit le contrat C.1 (``pas d'erreur volontaire dans un
-    exercice``) : un exercice abouti a execution_count != None et une sortie
+    Cette definition suit le contrat C.1 (`pas d'erreur volontaire dans un
+    exercice`) : un exercice abouti a execution_count != None et une sortie
     utile, donc il ne ressemble plus a un stub -- l'heuristique reste
-    aplicable tant que la cellule declare sa nature d'exercice.
+    applicable tant que la cellule declare sa nature d'exercice.
+
+    Carve-out #23378 : une cellule placee sous un en-tete d'EXEMPLE GUIDE
+    CREDITE n'est pas un exercice, meme si sa source porte le jeton
+    « Exercice » (l'en-tete etudiant est conserve verbatim par la
+    digestion). Le carve-out porte sur le JETON seul : une sortie litterale
+    « Exercice a completer » reste, elle, le signal d'un travail NON acheve
+    -- sous un exemple ou ailleurs.
     """
     if cell.get("cell_type") != "code":
         return False
-    src = cell_source(cell)
-    if any(tok in src for tok in EXERCISE_TOKENS):
-        return True
-    # Sortie litterale "Exercice a completer" (avec/sans accent, casse libre)
+    # Signal le plus FORT d'abord : une sortie litterale « Exercice a completer »
+    # dit un travail NON acheve, et cela prime sur le jeton de l'en-tete
+    # etudiant conserve verbatim. Le carve-out #23378 porte sur le JETON seul.
     out_text = cell_output_text(cell).strip().lower()
     out_text_deac = deaccent(out_text)
-    return (
+    if (
         "exercice a completer" in out_text_deac
         or "exercice a terminer" in out_text_deac
         or "a completer" in out_text_deac
-    )
+    ):
+        return True
+    src = cell_source(cell)
+    if any(tok in src for tok in EXERCISE_TOKENS):
+        if cells is not None and idx is not None and is_credited_example_code(cells, idx):
+            return False
+        return True
+    return False
 
 
 def is_reading_or_prose(cell: dict) -> bool:
@@ -369,9 +653,97 @@ def is_exercise_statement(cell: dict, cells: list[dict], idx: int) -> bool:
         return False
     prev_cell = cells[idx - 1] if idx > 0 else None
     next_cell = cells[idx + 1] if idx + 1 < len(cells) else None
+    neighbours = ((prev_cell, idx - 1), (next_cell, idx + 1))
     if not any(
-        c is not None and is_exercise_cell(c) for c in (prev_cell, next_cell)
+        c is not None and is_exercise_cell(c, cells, c_idx) for c, c_idx in neighbours
     ):
+        return False
+    body = lines[k + 1:]
+    has_hidden_heading = any(
+        HIDDEN_INTERPRETATION_HEADING_RE.match(line.strip())
+        for line in body if line.strip()
+    )
+    cites_output = bool(
+        OUTPUT_CITATION_RE.search(deaccent("\n".join(body)).lower())
+    )
+    return not (has_hidden_heading or cites_output)
+
+
+def is_step_transition(cell: dict) -> bool:
+    """Vrai si ``cell`` est une **prose de transition** vers l'etape suivante.
+
+    Carve-out #24164. Une transition annonce le code qui SUIT ; elle ne
+    commente pas la sortie qui la precede, et ne doit donc pas gonfler le
+    compte de lectures de cette sortie. Deux formes admises :
+
+      (a) un **separateur horizontal** (``***``) seul, ou suivi d'un titre de
+          section ``#`` -- la forme ``*** \\n\\n ## 2. ...`` mesuree ;
+      (b) un **libelle d'etape entierement en gras** portant le mot
+          ``Etape``/``Step``/``Partie`` (``**Etape 2 : contrainte (C1)**``).
+
+    Quatre garde-fous, les memes que ``is_exercise_statement`` :
+    une lecture TITREE reste une lecture (``is_reading_cell``) ; un titre
+    d'interpretation dissimule dans le corps disqualifie ; une citation de
+    sortie disqualifie ; et pour (a) un separateur suivi de PROSE (et non d'un
+    titre) reste du texte, donc une lecture.
+
+    LIMITE ASSUMEE : les transitions en prose NON GRASSEE sans titre
+    (``Construisons maintenant le modele CP-SAT...``) ne sont pas couvertes.
+    Leur blanchiment demanderait de decider qu'une prose sans titre qui precede
+    du code n'est jamais une lecture -- changement semantique que #24164 laisse
+    a l'arbitrage du proprietaire de l'organe (option 3). Mesure (rejouee sur
+    le head, revue Hermes #24309) : 4 des 10 signalements de #23840 tombent
+    sous (b), 3 sous (a), 3 restent hors carve-out (prose non grassee sans
+    titre) -- la decomposition 8/2 heritait du classement mixte de l'issue.
+    """
+    if cell.get("cell_type") != "markdown":
+        return False
+    if is_reading_cell(cell):
+        return False
+    lines = [line.strip() for line in cell_source(cell).splitlines()]
+    first_k = next((k for k, line in enumerate(lines) if line), None)
+    if first_k is None:
+        return False
+    first = lines[first_k]
+    rest = [line for line in lines[first_k + 1:] if line]
+    is_rule = bool(HORIZONTAL_RULE_RE.match(first))
+    is_step_label = bool(STEP_BOLD_LABEL_RE.match(first)) and bool(
+        STEP_LABEL_WORD_RE.search(deaccent(first))
+    )
+    if not (is_rule or is_step_label):
+        return False
+    if is_rule and rest and not rest[0].startswith("#"):
+        # separateur suivi de prose : decoration de texte, pas de titre
+        return False
+    if any(HIDDEN_INTERPRETATION_HEADING_RE.match(line) for line in rest):
+        return False
+    if OUTPUT_CITATION_RE.search(deaccent("\n".join(rest)).lower()):
+        return False
+    return True
+
+
+def is_section_intro(cell: dict) -> bool:
+    """Vrai si ``cell`` est un **en-tete de section** au sens du carve-out
+    #17777 : un titre d'organisation (``## 2. Tests statistiques``,
+    ``### 8.2 R02 -- ...``) qui introduit le code qui suit, pas une lecture.
+
+    Extension du carve-out a ``READING_BEFORE_CODE`` : la decision #17777
+    pose le principe (« le discriminant est le titre, pas la longueur du
+    corps ») et l'appliquait a l'enonce d'exercice et au budget par sortie ;
+    le bucket positionnel restait le seul a condamner un en-tete de section
+    devant son code ( mesure #18050 : 3 FPs ``### 8.x R0N`` devant leur
+    ``#check`` ). Ne sont PAS exemptees : la lecture titre
+    (``is_reading_cell``), la prose non titree (``is_reading_or_prose``),
+    l'en-tete qui cache une interpretation dans son corps, ou qui cite une
+    sortie -- memes garde-fous que ``is_exercise_statement``.
+    """
+    if cell.get("cell_type") != "markdown":
+        return False
+    if is_reading_or_prose(cell):
+        return False
+    lines = cell_source(cell).splitlines()
+    k = next((i for i, line in enumerate(lines) if line.strip()), None)
+    if k is None:
         return False
     body = lines[k + 1:]
     has_hidden_heading = any(
@@ -459,18 +831,43 @@ def _classify_context(cells: list[dict], idx: int) -> tuple[str, str]:
     prev_role / next_role sont parmi : "md", "code_with_output", "exercise", "BOUNDARY".
     "code_with_output" = cellule de code executee (a une sortie ou un exec_count).
     """
-    def role(c):
+    def role(c, c_idx):
         if c is None:
             return "BOUNDARY"
         if c.get("cell_type") == "markdown":
             return "md"
-        if is_exercise_cell(c):
+        if is_exercise_cell(c, cells, c_idx):
             return "exercise"
         return "code_with_output"
 
     prev = cells[idx - 1] if idx > 0 else None
     nxt = cells[idx + 1] if idx + 1 < len(cells) else None
-    return role(prev), role(nxt)
+    return role(prev, idx - 1), role(nxt, idx + 1)
+
+
+_PURE_FENCE_RE = re.compile(r"```[^\n]*\n.*?```\Z", re.DOTALL)
+
+
+def _is_pure_fence(cell: dict) -> bool:
+    """Vrai si la cellule markdown est reduite a UN bloc fence, sans prose.
+
+    C'est le gabarit exact d'une conversion code->markdown (pseudo-code fige,
+    #18602) : ouverture ```` ``` ````, corps, fermeture -- rien avant, rien
+    apres. Ce n'est ni une lecture ni de la prose : la cellule represente le
+    code qu'elle etait. La lecture qui la suit commentait SA sortie (disparue
+    avec la conversion), pas celle du code au-dessus -- la remontee s'arrete
+    donc sur elle comme sur un exercice. Une cellule faite uniquement de
+    fences (une ou plusieurs conversions) l'est aussi : chaque fence fige un
+    code dont la sortie a disparu. Seule la cellule qui MELANGE prose et
+    fence n'est pas une pure fence : ses lectures restent rattachees au code
+    au-dessus.
+    """
+    if cell.get("cell_type") != "markdown":
+        return False
+    src = cell_source(cell).strip()
+    if not src.startswith("```"):
+        return False
+    return bool(_PURE_FENCE_RE.match(src))
 
 
 def _output_key_above(cells: list[dict], idx: int) -> str | None:
@@ -479,14 +876,17 @@ def _output_key_above(cells: list[dict], idx: int) -> str | None:
     La sortie est identifiee par la **source de sa cellule de code** (#17044,
     decision ai-01 c.5836401913). La remontee s'arrete a la premiere cellule de
     code : c'est elle, et elle seule, que la lecture commente. ``None`` s'il n'y
-    a rien a lire -- aucun code au-dessus, code d'exercice, ou code jamais
-    execute.
+    a rien a lire -- aucun code au-dessus, code d'exercice, code jamais
+    execute, ou pure fence de conversion (#18602) -- la lecture sous la fence
+    commentait la sortie du code converti, pas celle du code au-dessus.
     """
     for j in range(idx - 1, -1, -1):
         c = cells[j]
         if c.get("cell_type") != "code":
+            if _is_pure_fence(c):
+                return None
             continue
-        if is_exercise_cell(c):
+        if is_exercise_cell(c, cells, j):
             return None
         if c.get("execution_count") is not None or (c.get("outputs") or []):
             return cell_source(c)
@@ -500,12 +900,26 @@ def readings_by_output(nb: dict) -> Counter[str]:
     C'est ce compte, et lui seul, que le mode diff compare entre la base et la
     tete (#17044, decision c.5836401913) : une cellule markdown dont la source
     est neuve n'est pas, a elle seule, un ajout -- une fusion, une revision ou
-    un deplacement laissent ce compte inchange.
+    un deplacement laissent ce compte inchange. Une pure fence de conversion
+    code->markdown (#18602) n'est pas une lecture : elle ne gonfle le compte
+    d'aucune sortie.
     """
     cells = nb.get("cells", [])
     counts: Counter[str] = Counter()
     for i, c in enumerate(cells):
-        if not is_reading_or_prose(c):
+        if not is_reading_or_prose(c) or _is_pure_fence(c):
+            continue
+        # Meme carve-out que la boucle principale (ligne ~832) : un enonce
+        # d'exercice n'est PAS une lecture. Sans lui, un enonce place entre une
+        # sortie et son stub etait compte comme une lecture de cette sortie --
+        # et la premiere lecture ajoutee sous cette sortie etait signalee
+        # SECOND_READING (faux positif mesure sur #23439).
+        if is_exercise_statement(c, cells, i):
+            continue
+        # Carve-out #24164 : une prose de transition (`***` devant un titre,
+        # libelle d'etape en gras) annonce le code qui suit, elle ne commente
+        # pas la sortie qui precede -- elle ne compte pas comme lecture.
+        if is_step_transition(c):
             continue
         key = _output_key_above(cells, i)
         if key is not None:
@@ -564,9 +978,17 @@ def _attached_sources(nb: dict, key: str) -> set[str]:
     }
 
 
-def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
+def detect_added_readings(head_nb: dict, base_nb: dict | None,
+                          exempted_out: list[dict] | None = None) -> list[dict]:
     """Mode DIFF (#17464) : signale les cellules markdown **ajoutees** dans une PR
     dont la position viole la regle user « une sortie = une lecture ».
+
+    Carve-out meta-notes (#18606) : une cellule AJOUTEE portant un tag de
+    ``META_NOTICE_TAGS`` (liste fermee) n'est pas signalée et ne consomme pas
+    le budget de lecture de sa sortie ; chaque exemption est apposee dans
+    ``exempted_out`` (si fourni) pour etre rendue dans le resume du check-run
+    (garde 3 de la decision). Une cellule reecrite ou deplacee ne passe jamais
+    par ce carve-out (garde 2).
 
     Algorithme :
       1. Si ``base_nb`` est None, retourne une liste vide.
@@ -580,7 +1002,8 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
       4. Pour chaque cellule ajoutee qui est markdown, classifier via le
          **contexte HEAD** :
            - ``EXERCISE_READING``    prev_role == "exercise"
-           - ``READING_BEFORE_CODE`` next_role == "code_with_output"
+           - ``READING_BEFORE_CODE`` next_role == "code_with_output" ET
+                                     prev_role != "code_with_output"
            - ``SECOND_READING``      la sortie que la cellule commente porte
                                      **plus de lectures en tete qu'en base**
 
@@ -633,6 +1056,9 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
     # verdict se tranche apres la boucle, quand toutes sont connues.
     pending: dict[str, list[int]] = {}
     reported: set[int] = set()
+    # Exemptions meta-notes #18606 (garde 3) : collectees pour le resume.
+    exempted: list[dict] = []
+    exempted_idx: set[int] = set()
 
     for idx, src in enumerate(head_srcs):
         if head_counter[src] <= base_counter[src]:
@@ -677,8 +1103,54 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
             base_counter[src] += 1
             continue
 
+        # Carve-out #24164 : meme filtre qu'a `readings_by_output`. Sans lui, le
+        # compte de la boucle principale (qui emet les findings) et celui du
+        # ratchet par sortie divergeraient sur la MEME cellule -- la boucle
+        # marquerait une transition comme lecture quand le compte la saute.
+        if is_step_transition(cell):
+            base_counter[src] += 1
+            continue
+
+        # Carve-out meta-notes #18606 (garde 2) : le tag ne blanchit qu'une
+        # cellule AJOUTEE -- on est ici apres les exemptions de revision et
+        # l'enonce d'exercice, donc une reecriture ou un deplacement est deja
+        # reparti plus haut. L'exemption est collectee (garde 3) ; son unite
+        # est retiree du budget de sa sortie apres la boucle.
+        notice_tag = meta_notice_tag(cell)
+        if notice_tag is not None:
+            exempted.append({
+                "cell_index": idx,
+                "cell_id": cell.get("id"),
+                "tag": notice_tag,
+                "src_first_120": src[:120],
+            })
+            exempted_idx.add(idx)
+            base_counter[src] += 1
+            continue
+
         prev_role, next_role = _classify_context(head_cells, idx)
         key = _output_key_above(head_cells, idx)
+        # Carve-out #18602 (etendu) : si en base, la cellule a l'index courant
+        # etait un **code** execute (conversion code->md en tete, par
+        # exemple un pseudo-code squelettique transforme en bloc markdown),
+        # et que la cellule de tete au meme index porte un id qui **etait**
+        # deja celui de la cellule de base (meme identite, juste le type
+        # change), la cellule de tete n'est PAS une lecture nouvelle. Sa
+        # presence dans le releve tient a la conversion, pas a une lecture
+        # ajoutee. La classer en SECOND_READING produit un faux positif.
+        # On garde la garde stricte : il faut que l'id de la cellule de tete
+        # etait celui d'une cellule code en base -- les cellules sans id ou
+        # avec un id neuf (lecture ajoutee avant du code existant par
+        # exemple) ne sont pas couvertes.
+        head_id_now = cell.get("id")
+        if (idx < len(base_cells)
+                and base_cells[idx].get("cell_type") == "code"
+                and (base_cells[idx].get("execution_count") is not None
+                     or base_cells[idx].get("outputs"))
+                and head_id_now
+                and base_cells[idx].get("id") == head_id_now):
+            base_counter[src] += 1
+            continue
         # Le COMPTE prime sur la topologie (#17044, decision c.5836401913). Une
         # cellule rattachee a une sortie qui porte plus de lectures qu'en base
         # EST une seconde lecture, quoi qu'en dise sa place : posee devant la
@@ -689,6 +1161,20 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
             base_counter[src] += 1
             continue
         bucket = _bucket_for(prev_role, next_role)
+        if (bucket in ("READING_BEFORE_CODE", "EXERCISE_READING_CANDIDATE")
+                and next_role == "code_with_output"
+                and is_section_intro(cell)):
+            # Carve-out #17777 etendu : un en-tete de section devant son code
+            # est une introduction, pas une lecture placee avant sa sortie --
+            # y compris quand il suit le stub d'exercice qui clot la section
+            # precedente (mesure #18410 : `## 2. Primitive 2` et `### 3.3`
+            # apres les stubs des exercices 1 et 4 d'ANALYSE-04).
+            # Restent signales : la lecture titre, la prose non titree,
+            # l'en-tete qui cite une sortie, et tout en-tete devant un STUB
+            # d'exercice (garde-fou #17777,
+            # test_carveout_ne_couvre_pas_un_titre_de_section).
+            base_counter[src] += 1
+            continue
         if bucket == "SECOND_READING":
             # Topologie de seconde lecture, mais aucune sortie en deficit :
             # il n'y a rien a signaler (premiere lecture legitime sous un code
@@ -709,6 +1195,15 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
         reported.add(idx)
         base_counter[src] += 1
 
+    # Coherence du budget #18606 : une meta-note exemptee ne compte pas comme
+    # lecture -- on retire son unite du deficit de SA sortie, sinon le sweep
+    # signalerait une AUTRE cellule rattachee a la meme sortie a la place de
+    # l'exemptee (deplacement du blame, pas une exemption).
+    for exc in exempted:
+        exc_key = _output_key_above(head_cells, exc["cell_index"])
+        if exc_key is not None and excess.get(exc_key, 0) > 0:
+            excess[exc_key] -= 1
+
     # Le releve est par SORTIE, pas par cellule : plusieurs cellules peuvent se
     # disputer un meme budget, et celle qui a fait monter le compte n'est pas
     # toujours celle que les exemptions de revision ont laissee passer. Trois
@@ -727,9 +1222,35 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
         pend = pending.get(key, [])
         attached = [
             i for i, c in enumerate(head_cells)
-            if i not in reported and i not in pend
+            if i not in reported and i not in pend and i not in exempted_idx
             and _output_key_above(head_cells, i) == key
         ]
+        # Carve-out #18602 : si une lecture de tete est attribuee a cette sortie
+        # alors que la cellule **courante** (idx) en tete est un markdown dont
+        # la cellule de base au meme idx etait un **code execute** ET que ces
+        # deux cellules portent le **meme id** (conversion code->md en place
+        # -- pseudo-code squelettique transforme en fence), c'est un
+        # rattachement factice : la cellule n'est PAS une lecture ajoutee,
+        # c'est la trace de la conversion. Le ratchet l'a deja eliminee dans
+        # la boucle principale via le carve-out d'id, mais le second pass la
+        # retrouve par ``_output_key_above``. On l'elimine ici avec la meme
+        # garde stricte (id commun).
+        # Meme logique pour les cellules dont l'id existait en base : le main
+        # loop les a traitees comme reecritures (``is_rewrite=True``), pas
+        # comme additions -- le second pass ne doit pas les ressortir.
+        if base_nb is not None:
+            base_cells = base_nb.get("cells", [])
+            base_ids = {b.get("id") for b in base_cells if b.get("id")}
+            attached = [
+                i for i in attached
+                if not (i < len(base_cells)
+                        and head_cells[i].get("id")
+                        and base_cells[i].get("id") == head_cells[i].get("id")
+                        and base_cells[i].get("cell_type") == "code"
+                        and (base_cells[i].get("execution_count") is not None
+                             or base_cells[i].get("outputs")))
+                and not (head_cells[i].get("id") in base_ids)
+            ]
         moved = [i for i in attached if cell_source(head_cells[i]) not in held]
         rest = [i for i in attached if cell_source(head_cells[i]) in held]
         for idx in (pend + moved + rest)[:remaining]:
@@ -737,6 +1258,8 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None) -> list[dict]:
             reported.add(idx)
 
     findings.sort(key=lambda f: f["cells"][0])
+    if exempted_out is not None:
+        exempted_out.extend(exempted)
     return findings
 
 
@@ -754,9 +1277,16 @@ def _bucket_for(prev_role: str, next_role: str) -> str | None:
     if prev_role == "exercise":
         return "EXERCISE_READING_CANDIDATE"
     if next_role in ("code_with_output", "exercise"):
-        # Une lecture ajoutee devant un exercice OU un code deja execute
-        # precede le resultat qu'elle est censee commenter -- dans les deux
-        # cas la place canonique est APRES, pas avant.
+        # Une lecture ajoutee sous un code execute est rattachee par
+        # ``_output_key_above`` a la sortie du dessus : elle releve du compte
+        # par sortie (SECOND_READING si le compte monte, rien sinon) -- la
+        # dire en meme temps « avant son resultat » serait l'incoherence
+        # mesuree sur #17044 (c.5877090210). READING_BEFORE_CODE ne survit
+        # que sans code execute directement au-dessus (prev_role md ou
+        # BOUNDARY) : la lecture y precede alors le resultat qu'elle est
+        # censee commenter, et la place canonique est APRES, pas avant.
+        if prev_role == "code_with_output":
+            return "SECOND_READING"
         return "READING_BEFORE_CODE"
     if prev_role in ("md", "code_with_output"):
         return "SECOND_READING"
@@ -865,19 +1395,30 @@ def ratchet_rows(base_ref: str, head: str = "HEAD",
         return None
     rows: list[dict] = []
     for base_path, head_path in changed_notebook_pairs(base, head, cwd=cwd):
+        if "/_archive/" in f"/{head_path}":
+            # Convention `_archive/` (docs/reference/_archive-convention.md) :
+            # chaque carnet archive porte une banniere tombstone en tete de
+            # fichier -- markdown avant code par construction. La regle
+            # pedagogique ne s'applique plus a un carnet sorti du parcours.
+            continue
         head_nb = read_notebook_at(head, head_path, cwd=cwd)
         if head_nb is None:
             continue  # illisible en tete : le recensement ne peut rien dire
         base_nb = read_notebook_at(base, base_path, cwd=cwd) if base_path else None
         base_total = len(detect(base_nb)) if base_nb is not None else 0
         head_total = len(detect(head_nb))
-        added = detect_added_readings(head_nb, base_nb)
+        exempted: list[dict] = []
+        added = detect_added_readings(head_nb, base_nb, exempted_out=exempted)
         rows.append({
             "notebook": head_path,
             "base_total": base_total,
             "head_total": head_total,
             "delta": head_total - base_total,
             "added": added,
+            # Garde 3 de la decision #18606 : le carve-out reste VISIBLE --
+            # chaque cellule exemptionnee par tag est listee (notebook, id de
+            # cellule, tag) ; elle sort du compte bloquant, pas du regard.
+            "exempted": exempted,
             # Le verdict EST le constat (#17044, decision c.5836401913) : le
             # cliquet compte les lectures par sortie, il ne diffe plus les
             # sources. Les deux totaux restent rendus, mais pour l'information
@@ -1003,6 +1544,37 @@ def self_test() -> int:
         f"added={[(f['type'], f['cells']) for f in added6]} "
         f"compte par sortie {dict(readings_by_output(base6))} -> "
         f"{dict(readings_by_output(head6))}",
+    ))
+
+    # Negatif 4 -- carve-out #18602 : conversion code->md en place NE signale
+    # PAS la lecture legitime qui suit. Topologie mesuree sur Lean-10-LeanDojo
+    # c.60-c.65 (PR #18440) : un code execute (sortie) devient une fence
+    # markdown a meme id / meme position ; la lecture md qui suit reste
+    # legitime et n'est pas ajoutee. La garde discrimine par id commun
+    # positionnel (cf. decision c.935-L1 ★★).
+    code_md_conv = (
+        "code",
+        "print(pattern_llm_pseudo)",
+        "3bd10c11",
+    )
+    fence = (
+        "markdown",
+        "```python\nprint(pattern_llm_pseudo)\n```",
+        "3bd10c11",
+    )
+    base7 = _nb([
+        code_md_conv,
+        lecture,
+    ])
+    head7 = _nb([
+        fence,
+        lecture,
+    ])
+    added7 = detect_added_readings(head7, base7)
+    checks.append((
+        "negatif 4 carve-out #18602 code->md ne signale pas la lecture suivante",
+        not added7,
+        f"added={[f['type'] for f in added7]}",
     ))
 
     ok = True
@@ -1161,6 +1733,11 @@ def main(argv: list[str] | None = None) -> int:
                 for f in r["added"]:
                     print(f"      {f['type']:22s} cellules {f['cells']} "
                           f"src[:120]={f.get('src_first_120', '')[:80]}")
+                for e in r.get("exempted", []):
+                    # Garde 3 (#18606) : l'exemption est rendue dans le resume.
+                    print(f"      {'EXEMPT-' + e['tag']:22s} cellule "
+                          f"{e['cell_index']} id={e.get('cell_id')} "
+                          f"src[:120]={e.get('src_first_120', '')[:60]}")
             if bad:
                 print("\nCliquet : la PR augmente les lectures scindees sur au "
                       "moins un carnet qu'elle touche. Fusionner la lecture "

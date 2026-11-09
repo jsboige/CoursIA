@@ -18,7 +18,7 @@ require mathlib from git
 -- module. Les absorptions de modules suivront en PR dediees (c.300+).
 --
 -- c.306 (po-2026) : ajout d'un second `lean_lib CooperativeGames` qui suit
--- le pattern `decision_theory_lean` (cf `Probas/decision_theory_lean/lakefile.lean`
+-- le pattern `decision_theory_lean` (cf `Probas/DecisionTheory/decision_theory_lean/lakefile.lean`
 -- ou `Gittins`/`Utility`/`Coherence` cohabitent comme libs distinctes du
 -- meme package `decision_theory_lean`). Cela valide la structure multi-lib
 -- du lake cible sans coupler `StableMarriage` et `CooperativeGames`
@@ -30,8 +30,9 @@ require mathlib from git
 -- SocialChoice.lean) deplaces byte-identique depuis `social_choice_lean/`
 -- vers `game_theory_lean/SocialChoice/`. La coquille technique du lake source
 -- `social_choice_lean/` (lakefile + toolchain + manifest) a été retirée en
--- follow-up (#4365) : ce dossier n'est plus un lake, seuls ses 4 markdown
--- (README/STATUS/NOTICE/LEAN_PREREQUISITES) subsistent comme tombstone.
+-- follow-up (#4365) : ce dossier n'est plus un lake, seuls ses 3 markdown
+-- (README/STATUS/LEAN_PREREQUISITES) subsistent comme tombstone ; la NOTICE
+-- vit dans `game_theory_lean/SocialChoice/NOTICE.md` (#24183, T1).
 -- Prochaine absorption prevue : `social_choice_lean_peters` (v4.27 -> v4.31,
 -- INTRINSIC documente si port depasse budget cf sota-not-workaround).
 --
@@ -128,6 +129,45 @@ lean_lib Abstraction where
 @[default_target]
 lean_lib ProgramGames where
   globs := #[`ProgramGames.*]
+
+-- c.1548 (po-2023, #21221 organe 2/2) : ajout `lean_lib StackelbergBilevel`
+-- — Distillation D4 du co-design bilevel morphologie-controle par
+-- Stackelberg PPO (Dai et al, ICLR 2026). Module formel du duopole
+-- leader/suiveur en demande linéaire et coûts marginaux constants,
+-- adossé aux invariants `tests/test_stackelberg*.py`. Forme close
+-- (eq. 1 du papier) et best-response follower (invariant central
+-- qu'un bug historique avait casse). 0 sorry. Resultats-phare :
+-- `cournotSymmetric_eq_is_fixed_point`,
+-- `stackelberg_follower_eq_reaction_clamped`,
+-- `stackelberg_closed_form_expansion`,
+-- `first_mover_advantage_symmetric`,
+-- `welfare_above_cournot_symmetric`, plus 6 valeurs-pytest par
+-- `norm_num`. VOLONTAIREMENT sans `ProgramGames` (pas de bilevel
+-- imbriqué — Stackelberg statique est un cas particulier où le
+-- leader connaît l'identité du follower) et sans `RepeatedGames`
+-- (pas de temps, pas de jeu repete). 8ᵉ cohorte `lean_lib` du
+-- même package — modèle `decision_theory_lean`.
+@[default_target]
+lean_lib StackelbergBilevel where
+  globs := #[`StackelbergBilevel.*]
+
+-- Grain #24423 (po-2023, critere 4 de #21927) : ajout `lean_lib
+-- CongestionGames` — borne elementaire 2x du prix de l'anarchie pour
+-- l'equilibre minimisant le potentiel de Rosenthal d'un jeu de
+-- congestion atomique lineaire, entier sur `Nat` (potentiel double
+-- Phi' = sum a_e x_e (x_e+1), chaine C <= Phi' <= 2C via x^2 <= x(x+1)
+-- <= 2x^2). Identite d'exactitude `potential_exchange` (le facteur 2
+-- vient du potentiel double exact des deviations unilaterales),
+-- `minPotential_isNash`, `cost_minPotential_le_two`. Deux temoins par
+-- `decide` : ratio exactement 2 (2 joueurs, 3 aretes emboitees) et
+-- 15/7 > 2 (3 joueurs — la borne couvre l'equilibre potentiel-minimal,
+-- pas tous les equilibres ; le 5/2 affine de Christodoulou-Koutsoupias
+-- 2005 est hors scope). Compagnon Lean du carnet
+-- GameTheory-04h-Routing-PriceOfAnarchy (Python, non-atomique 4/3).
+-- 9ᵉ cohorte `lean_lib` du même package. 0 sorry, 0 axiome ad hoc.
+@[default_target]
+lean_lib CongestionGames where
+  globs := #[`CongestionGames.*]
 
 -- Tranche L2 (po-2025) : `ProgramGames/FairBot.lean` (+ sibling `_en`) —
 -- EPIC #15062, FairBot par le théorème de Löb. Interface

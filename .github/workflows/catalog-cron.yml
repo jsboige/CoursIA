@@ -5,6 +5,22 @@ name: Catalog Auto-Regen (main, scheduled)
 # Keep COURSE_CATALOG.generated.{json,md} + README CATALOG-STATUS markers
 # CANONICAL ON MAIN without any human or agent regenerating them by hand.
 #
+# Since #19901 (arbitration ai-01, review 5469480925) this job also refreshes
+# the `project.render` list of `_quarto.yml` -- same defect class, same model:
+# a generated file that rots on `main` when nothing regenerates it on a
+# cadence. The per-PR detector for that file (`quarto-render-list-freshness.yml`)
+# is ADVISORY and stays a detector; freshness is owned here.
+#
+# Since #22216 (review myia-ai-01, 2026-10-26) it also regenerates
+# `translations/translation_golden_set.json` -- the FR/EN pair index of
+# #22009 (notebooks, README.en.md, Lean `_en` siblings). Same model a third
+# time: drift enters through ANY merge that adds or removes a pair, the
+# per-PR guard `translation-golden-set-drift` (fast-lane registry, TRANCHE26)
+# is ADVISORY and stays a detector, branches never regenerate the JSON
+# (catalog-pr-hygiene model extended to this generated file -- a blocking
+# guard would force branch-side regeneration of a generated file and pit
+# parallel PRs into conflicts on it), freshness is owned here.
+#
 # Why a scheduled job is needed:
 #   The catalog embeds git-derived fields (last_validation, issue_pr_associee...)
 #   and a maturity heuristic that drift purely as commits land on main -- even
@@ -18,6 +34,11 @@ name: Catalog Auto-Regen (main, scheduled)
 #   - catalog-drift.yml         : per-PR sync (auto-regen+commit on same-repo PR
 #                                 branches; informational annotation on forks).
 #   - stale-base-warning.yml    : labels PRs whose base is >14d behind main.
+#   - quarto-render-list-freshness.yml : ADVISORY per-PR DETECTOR for the
+#                                 `_quarto.yml` render list (#19901). It reads
+#                                 the PR head tree, so it can report drift but
+#                                 cannot guarantee freshness of `main` -- it
+#                                 does not regenerate or commit anything.
 #
 # Governance rule (.claude/rules/catalog-pr-hygiene.md):
 #   Agents MUST NOT regenerate or commit COURSE_CATALOG.generated.* nor the
@@ -89,6 +110,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0          # full history so git-derived fields are exact
+          filter: blob:none
           persist-credentials: true
 
       # Prepare the long-lived branch from origin/main. We reset (not rebase)
@@ -118,8 +140,11 @@ jobs:
       # PyYAML is required by generate_catalog.py's editorial-review registry
       # loader (_load_editorial_registry, added in #8345). Without it the
       # generator crashes: ModuleNotFoundError: No module named 'yaml'.
-      - name: Install PyYAML
-        run: pip install pyyaml
+      # rdflib/pyshacl: same bounds as scripts-tests.yml and the SemanticWeb
+      # series requirements -- an unpinned major bump would rewrite the
+      # exported Turtle and churn every catalogue-refresh PR.
+      - name: Install catalogue dependencies
+        run: pip install pyyaml "rdflib>=7.0.0,<8.0.0" "pyshacl>=0.27.0"
 
       - name: Regenerate catalog (.json + .md) + README markers
         run: |
@@ -136,13 +161,32 @@ jobs:
           # under docs/curriculum/ from the freshly-regenerated catalog so
           # they never drift again (See #7422).
           python scripts/notebook_tools/generate_parcours.py
+          # `_quarto.yml` `project.render`: same defect class as the catalogue
+          # -- a generated file that drifts on `main` because nothing refreshes
+          # it on a cadence. Owned by THIS automation since #19901 (arbitration
+          # ai-01, review 5469480925): a per-PR guard cannot guarantee
+          # freshness, it reads the PR head tree and never sees the merge, so
+          # it was made advisory instead of mandatory.
+          python scripts/regen_quarto_render.py
+          # Translation golden set (#22216, review 2026-10-26): FR/EN pair
+          # index -- same defect class as the catalogue, drift enters through
+          # any merge that adds or removes a pair. The per-PR guard is
+          # ADVISORY (TRANCHE26), freshness is owned here.
+          python scripts/translation/build_golden_set.py
+
+      # Le graphe du cursus est un artefact dérivé du catalogue, validé par
+      # SHACL. Étape à part : un export refusé par les formes est nommé dans
+      # le journal du job et n'interrompt pas la génération des autres
+      # artefacts de l'étape précédente.
+      - name: Export the curriculum graph (Turtle, SHACL-validated)
+        run: python scripts/notebook_tools/generate_curriculum_rdf.py --output CURRICULUM.generated.ttl
 
       - name: Commit + push to chore/catalog-refresh-pending if the catalog drifted
         id: drift
         run: |
           set -euo pipefail
           BRANCH="chore/catalog-refresh-pending"
-          git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md docs/archive/reference/HEALTH_DASHBOARD.md
+          git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md CURRICULUM.generated.ttl docs/archive/reference/HEALTH_DASHBOARD.md _quarto.yml translations/translation_golden_set.json
           # Stage the 5 generated curriculum (parcours) pages if they drifted.
           mapfile -t changed_parcours < <(git ls-files -m -- 'docs/curriculum/*.md')
           if [ "${#changed_parcours[@]}" -gt 0 ]; then
@@ -267,8 +311,9 @@ jobs:
               '## Purpose',
               '',
               'Long-lived PR refreshed daily by `catalog-cron.yml` (schedule cron 03:37 UTC) to keep',
-              '`COURSE_CATALOG.generated.{json,md}` + `CATALOG-STATUS` markers + the curriculum (`docs/curriculum/*.md`)',
-              'and health dashboard (`docs/archive/reference/HEALTH_DASHBOARD.md`) canonical on `main`.',
+              '`COURSE_CATALOG.generated.{json,md}` + `CATALOG-STATUS` markers + the curriculum (`docs/curriculum/*.md`),',
+              'the health dashboard (`docs/archive/reference/HEALTH_DASHBOARD.md`), the `project.render` list of',
+              '`_quarto.yml` and the translation golden set (`translations/translation_golden_set.json`) canonical on `main`.',
               '',
               '**Maintainer review only — no direct push to `main`** (issue #10136). The bot opens',
               'or updates this PR; merging it refreshes `main` through the normal PR gate.',
@@ -278,6 +323,11 @@ jobs:
               '- Catalog totals (`notebook_count`, per-family counts) drift only if new notebooks landed on `main` since the last merge.',
               '- README `<!-- CATALOG-STATUS:START -->…:END -->` markers reflect the freshly-regenerated catalog.',
               '- Curriculum pages under `docs/curriculum/` and `docs/archive/reference/HEALTH_DASHBOARD.md` stay consistent.',
+              '- `_quarto.yml` `project.render` stays in sync with the notebooks / READMEs / `docs/*.md` on `main`.',
+              '  There are no counter lines in it any more (#19901): a total in a generated file either conflicts',
+              '  between two concurrent PRs or merges a false value cleanly.',
+              '- `translations/translation_golden_set.json` (FR/EN pair fingerprints, #22216) only changes when',
+              '  pairs landed on `main` since the last merge; branches never regenerate it.',
               '',
               '## Close policy',
               '',

@@ -41,9 +41,9 @@ Analyser un notebook Jupyter et ajouter du markdown pedagogique aux endroits sui
 
 | Option | Description |
 |--------|-------------|
-| `--execute` | Executer le notebook et verifier les sorties |
-| `--fix-errors` | Tenter de corriger les erreurs d'execution |
 | `--strict` | Exiger une interpretation apres CHAQUE cellule de code |
+| `--execute` | Executer le notebook et verifier les sorties — **necessite le MCP `jupyter-papermill`** (cet agent n'a pas `Bash` dans ses tools, l.4 ; le wrap d'execution vit au niveau de la session appelante via `mcp__jupyter-papermill__execute_notebook` ou la skill `notebook-helpers`). |
+| `--fix-errors` | Tenter de corriger les erreurs d'execution — dependance `--execute`, meme mecanisme. |
 
 ## REGLE FONDAMENTALE : Position des cellules
 
@@ -209,7 +209,7 @@ Cette section explore [concept]. L'objectif est de [objectif].
 - Repeter le code dans le markdown
 - Surcharger avec trop d'explications triviales
 - Ajouter des emojis
-- Modifier le code existant (sauf si --fix-errors active)
+- Modifier le code existant (l'enrichissement est **markdown only** ; la correction de code est portee par un autre agent ou un sous-agent avec `Bash`, voir Options ci-dessus)
 - Utiliser `edit_mode="replace"` sur des cellules de code
 
 ## Verification finale OBLIGATOIRE

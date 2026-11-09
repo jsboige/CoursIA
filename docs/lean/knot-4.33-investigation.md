@@ -5,7 +5,7 @@
 **Investigation :** vérification first-hand ([G.1](../../CLAUDE.md))
 **Contexte :** rollout #14773 (migrer 27 lakes vers Lean/Mathlib 4.33). knot_lean échoue au `lake build Knots` ; investigation c.1117 (worktree précédent rolled back, claim parent #14773 [RELEASED], issue #15829 ouverte pour reprise).
 
----
+***
 
 ## Résumé exécutif
 
@@ -17,7 +17,7 @@ knot_lean échoue en Mathlib 4.33.0 avec deux erreurs de compilation `Decidable`
 
 **Pattern compagnon de référence** : `docs/lean/decidable_instance_propagation.md` (PR #9780, myia-po-2026) — exactement le même pattern que pour `supportInMargin` au-dessus de `BoxAssezGrandN`.
 
----
+***
 
 ## Reproduction first-hand (c.1117, worktree précédent)
 
@@ -46,7 +46,7 @@ error: Knots/Invariant.lean:2180:2: Tactic decide failed for proposition
 
 L'instance `IsTriColoring.decidable` (Invariant.lean:262) échoue à synthétiser `Decidable` sur la Prop conjonctive. Le second `decide` à la ligne 2180 (négations dans le test de non-tricolorabilité du `figureEight`) est un site d'usage direct qui révèle le même blocage.
 
----
+***
 
 ## Diagnostic — commit Mathlib fautif identifié
 
@@ -75,7 +75,7 @@ L'instance `IsTriColoring.decidable` (Invariant.lean:262) échoue à synthétise
 
 **Conclusion** : `bb5364cb2f` est la cause dominante. Le fix est **mécanique et bien balisé**.
 
----
+***
 
 ## Plan de fix (cycle prochain, multi-cycle)
 
@@ -142,18 +142,18 @@ python scripts/lean/count_code_sorry.py --json  # distinct_code_sorry inchangé 
 - [ ] Parité FR/EN byte-identique sur le bloc modifié
 - [ ] Proof-integrity ciblée SUCCESS (job `lean-axiom.yml`)
 
----
+***
 
 ## Périmètre strict ([anti-régression](../../.claude/rules/anti-regression.md))
 
 - **Inchangé** : énoncés de théorèmes, lemmes, signatures, organisation du module, preuves
-- **Modifié** : 3 instances `Decidable` (Invariant.lean + Invariant_en.lean) ≈ 6 lignes
+- **Modifié** : 3 instances `Decidable` (Invariant.lean + Invariant_en.lean)
 - **Ajouté** : tests de décidabilité sur données synthétiques (figure-eight, trefoil, untwisted)
 - **Pas de `sorry`** (régression cachée)
 - **Pas de `native_decide`** (décision sans preuve, interdite)
 - **Pas de modification de `IsTriColoring`** (signature et sémantique inchangées)
 
----
+***
 
 ## Liens croisés
 
@@ -166,7 +166,7 @@ python scripts/lean/count_code_sorry.py --json  # distinct_code_sorry inchangé 
 
 — lane myia-po-2027:CoursIA-2 c.1119
 
----
+***
 
 ## Addendum c.1119 — observation `lake build Knots` 4.33.0 first-hand
 
@@ -194,7 +194,7 @@ Les modules `Knots.MathlibPrerequisites` et `Knots.MathlibPrerequisites_en` ont 
 
 — lane myia-po-2027:CoursIA-2 c.1119 (addendum post-merge investigation)
 
----
+***
 
 ## Addendum c.1120 — sortie task `b3i6dklcr` (lake update Knots baseline v4.32.1) first-hand
 
@@ -232,7 +232,7 @@ error: mathlib: failed to fetch cache
 Le warning « Dependency Mathlib uses a different lean-toolchain » est documenté dans `lake update` c.1119 (addendum c.1119 ligne 173-183). La sortie `b3i6dklcr` confirme que la baseline v4.32.1 souffre du **même problème** : cache Mathlib v4.32.1 non joignable, 13 fichiers absents, build s'arrête avant Knots.Invariant.
 
 **Conséquence opérationnelle** : le fix de fond `inferInstanceAs` ne peut pas être validé localement (ni sur Windows natif, ni en v4.32.1 baseline). La validation **doit passer par le runner CI Linux pool `coursia-lean`** (déjà câblé par po-2023, tranches 2-3 #15831 + #15832). Une PR fix de fond devrait :
-1. Modifier `Knots/Invariant.lean` + `Knots/Invariant_en.lean` (~6 lignes) avec `inferInstanceAs` explicite
+1. Modifier `Knots/Invariant.lean` + `Knots/Invariant_en.lean` avec `inferInstanceAs` explicite
 2. Pousser sur la branche `fix/15829-knot-4.33-invariant-inferinstance`
 3. Déclencher le CI `lean-knot.yml` (pool `coursia-lean`, après merge des PRs po-2023 #15831 + #15832)
 4. Vérifier `lake build Knots` + `lake build Knots_en` SUCCESS sur Linux CI

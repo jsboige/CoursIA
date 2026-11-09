@@ -112,7 +112,12 @@ theorem empError_eq_zero_iff {n : ℕ} (f hyp : Hypothesis X) (S : Fin n → X) 
 Lemme analytique générique (pas spécifique à PAC). Preuve par route du logarithme :
 `log(1 − x) ≤ (1 − x) − 1 = −x` (`Real.log_le_sub_one_of_pos`), donc
 `log((1−x)^n) = n·log(1−x) ≤ −(x·n) ≤ −(ε·n)`, et `(1−x)^n = exp(log((1−x)^n))
-≤ exp(−ε·n)` par monotonie de `exp`. Le cas `x = 1` (`(1−x) = 0`) est traité à part. -/
+≤ exp(−ε·n)` par monotonie de `exp`. Le cas `x = 1` (`(1−x) = 0`) est traité à part.
+
+Forme **générale** du couple : `mimo_lean` en porte l'instance `ε = p` sous le nom
+`one_sub_pow_le_exp_mul` (avec `0 < n` en supplément, requis par sa preuve Mathlib)
+(`MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/Converse.lean`). Les deux lacs ne
+s'importent pas et gardent chacun leur copie — le doublon est déclaré des deux côtés. -/
 theorem one_sub_pow_le_exp (x : ℝ) (n : ℕ) (hx0 : 0 ≤ x) (hx1 : x ≤ 1) (ε : ℝ)
     (hxe : ε ≤ x) : (1 - x) ^ n ≤ Real.exp (-(ε * n)) := by
   have h1mx : 0 ≤ 1 - x := by linarith

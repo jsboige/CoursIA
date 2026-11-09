@@ -89,6 +89,78 @@ echo "1234567890123456789012345678901234567890" > "$REPO_POISONED/.git/refs/remo
   else ko "T3 le clone a ete purge (historique absent)"; fi
 )
 
+# --- Test 4 : prune des refs pull/* (#20697 point 2) ------------------------
+# Le fetch EXPLICITE de actions/checkout (refspec +<sha>:refs/remotes/pull/N/...)
+# depose une ref `refs/remotes/<remote>/pull/N/{head,merge}` par PR vue. Ces
+# refs ne sont JAMAIS prunees auto et s'accumulent (~4 600 mesure du jour).
+# La borne `update-ref --stdin` doit retirer les pull/*, en preservant les
+# autres refs (notamment main, qui passe par refs/remotes/<remote>/main --
+# pas par pull/*).
+REPO_PULL="$TEST_DIR/_work/jsboige/PullRepo"
+make_fixture "$REPO_PULL"
+head_sha="$(git -C "$REPO_PULL" rev-parse HEAD)"
+mkdir -p "$REPO_PULL/.git/refs/remotes/origin/pull/12345"
+echo "$head_sha" > "$REPO_PULL/.git/refs/remotes/origin/pull/12345/head"
+echo "$head_sha" > "$REPO_PULL/.git/refs/remotes/origin/pull/12345/merge"
+echo "$head_sha" > "$REPO_PULL/.git/refs/remotes/origin/main"
+
+(
+  out="$(ACTIONS_RUNNER_INPUT_WORK="$TEST_DIR/_work" bash "$TEST_DIR/block.sh" 2>&1)"; rc=$?
+  if [ "$rc" -ne 0 ]; then ko "T4 le bloc doit sortir 0 (rc=$rc)"; else ok "T4 bloc exit 0"; fi
+  if git -C "$REPO_PULL" rev-parse --verify -q refs/remotes/origin/pull/12345/head >/dev/null; then
+    ko "T4 la ref pull/N/head doit etre supprimee"
+  else ok "T4 ref pull/N/head supprimee"; fi
+  if git -C "$REPO_PULL" rev-parse --verify -q refs/remotes/origin/pull/12345/merge >/dev/null; then
+    ko "T4 la ref pull/N/merge doit etre supprimee"
+  else ok "T4 ref pull/N/merge supprimee"; fi
+  if git -C "$REPO_PULL" rev-parse --verify -q refs/remotes/origin/main >/dev/null; then
+    ok "T4 ref main survit (n'est pas un pull/*)"
+  else ko "T4 ref main injustement supprimee"; fi
+)
+
+# --- Test 5 : borne sur fetch paresseux en clone partiel (#20699) -----------
+# Le bloc entrypoint.sh doit terminer en temps borne meme quand cat-file -e
+# declenche un fetch paresseux (clone partiel : promisor=true, partialclonefilter=
+# blob:none -- c.327 slot 3 po-2024). On simule en positionnant extensions.
+# partialClone + remote.origin.promisor + une URL de fetch invalide : git tente
+# alors un fetch paresseux sur l'objet absent. Sans timeout, le fetch pend
+# indefiniment ; avec `timeout 10` (et `GIT_NO_LAZY_FETCH=1` no-op sur git 2.43
+# mais actif si l'image est bumpee), le bloc sort vite. Le 2>/dev/null
+# historique a ete retire -- le de-masquage est aussi verifie ici (T5 attend
+# la trace sur stderr, pas en silence).
+REPO_PARTIAL="$TEST_DIR/_work/jsboige/PartialRepo"
+make_fixture "$REPO_PARTIAL"
+git -C "$REPO_PARTIAL" config --local extensions.partialClone origin
+git -C "$REPO_PARTIAL" config --local remote.origin.promisor true
+git -C "$REPO_PARTIAL" config --local remote.origin.url "file:///nonexistent-at-$(date +%s)"
+echo "deadbeef00000000000000000000000000000000" > "$REPO_PARTIAL/.git/refs/remotes/origin/ghost"
+(
+  start_ns=$(date +%s%N)
+  out="$(ACTIONS_RUNNER_INPUT_WORK="$TEST_DIR/_work" bash "$TEST_DIR/block.sh" 2>&1)"; rc=$?
+  end_ns=$(date +%s%N)
+  duration_s=$(( (end_ns - start_ns) / 1000000000 ))
+  echo "$out" >> "$LOG"
+  if [ "$rc" -ne 0 ]; then ko "T5 bloc doit sortir 0 (rc=$rc)"; else ok "T5 bloc exit 0"; fi
+  # Timeout 10s/SHA + 1 ref. Borne large (15s) pour absorptions CI bruyantes.
+  if [ "$duration_s" -le 15 ]; then
+    ok "T5 desarmement en ${duration_s}s (<15s, timeout effectif)"
+  else
+    ko "T5 desarmement en ${duration_s}s (>15s, timeout absent ou trop long)"
+  fi
+  if ! git -C "$REPO_PARTIAL" rev-parse --verify -q refs/remotes/origin/ghost >/dev/null; then
+    ok "T5 ref ghost supprimee (cat-file absent/timeout -> update-ref -d)"
+  else
+    ko "T5 ref ghost non supprimee"
+  fi
+  # De-masquage de stderr : un garde de sante reste diagnosticable (#16938).
+  # La trace de suppression apparait sur stderr (que l'on capture via 2>&1).
+  if echo "$out" | grep -q "ghost"; then
+    ok "T5 suppression journalisee (stderr de-masque)"
+  else
+    ko "T5 aucune trace de la suppression (stderr encore masque ?)"
+  fi
+)
+
 # --- Verdict agrege -----------------------------------------------------------
 n_pass="$(grep -c '^PASS' "$RESULTS" || true)"
 n_fail="$(grep -c '^FAIL' "$RESULTS" || true)"

@@ -200,5 +200,5 @@ No migration needed. The projects directory is healthy:
 
 ### Optional improvements (low priority)
 1. **Promote DRAFTs**: Generate `main.py` from research notebooks for Ensemble-DLinear-TFT, GraphSAGE, Mamba, TFT (4 strategies with `_generate_research.py`)
-2. **Standardize READMEs**: ~20 strategies have minimal READMEs (< 5 lines). Could be enriched with backtest results.
+2. **Standardize READMEs**: ~20 strategies have minimal READMEs. Could be enriched with backtest results.
 3. **Archive marking**: Add `[ARCHIVED]` tag to README.md for SectorMomentum, TrendStocks-Alpha, VolTarget-Momentum if not already present.

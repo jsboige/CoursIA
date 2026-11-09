@@ -4,6 +4,7 @@ S'applique à tous les agents du cluster CoursIA (workers `po-*` + coordinateur 
 
 ## Règle HARD — côté worker
 
+0. **Lire l'issue EN ENTIER avant tout geste** (claim, vérification, livraison, dossier de clôture) : le body, puis **tous** les commentaires dans l'ordre (`gh issue view N --comments`). Un `Concern` du user resté sans réponse passe **avant** le claim : la première réponse de la lane le cite et dit comment le grain en tient compte. **Motif** (mandat user du 2026-10-09) : la lecture coûte peu ; ce qui coûte, ce sont les tours supplémentaires et les tokens de sortie qu'une lecture partielle fait payer ensuite. Incident fondateur : #19898, où un claim et une vérification ont été posés sous un Concern qui cadrait la dimension sensible de l'issue, sans le traiter ; six issues étaient dans le même cas.
 1. **Avant d'ÉDITER un fichier** pour un grain rattaché à une issue #N : vérifier les claims — `python scripts/check_lane_claim.py N` (détection de péremption **active par défaut** `--stale-threshold 48`, cf. #12751). Un `[CLAIMED]` d'une **autre lane** non levé → ne pas commencer, piocher ailleurs. Le check précède l'**édition**, pas le push (L898 durci).
 2. **Poser son claim sur l'issue** : `gh issue comment N --body "[CLAIMED] lane <machine:workspace> — <intention en une ligne>"`. Pas de timestamp dans le corps : le `createdAt` serveur fait foi.
    - **Amender le scope** : `[CLAIMED-AMEND] lane <machine:workspace> -- paths: <scope corrigé COMPLET>` (même ligne). Sémantique #13022 : événement **open remplaçant**. Un amend **sans** clause `paths:` repasse la claim en **epic-wide** (fail-CLOSED, cf. #11703 incident fondateur).
@@ -36,6 +37,8 @@ Quatre règles la rendent matchable — toute déviation = scope mort = epic-wid
 | Annotation parenthèse | `paths: a/** (Phase 2, tranche A)` | parenthèse collée (sans espace) = filename légitime préservé |
 | Accolades | `paths: search-{6,8,9}-*.yaml` (fnmatch n'a pas `{a,b}`) | accolade non fermée |
 | `--paths` CLI | `gh issue comment N --body-file body.md --paths g1 --paths g2` | `--paths ` seul avec valeur vide |
+
+**Marqueurs qui portent la clause** : `[CLAIMED]`, `[CLAIMED-AMEND]`, `[RELEASED]`, `[DELIVERED]`, `[OVERRIDE]`. Sur `[DELIVERED]`, la clause compte : tant que la PR est **ouverte ou mergée**, le marqueur redevient une occupation bornée à ce périmètre (sémantique v2) ; sans clause, il relocke l'issue entière en epic-wide. Livrer une tranche avec `paths:` ne referme donc pas l'umbrella aux autres lanes (#22445).
 
 **Détails, table étendue, déviations sémantiques (#12740), références organe** : [docs/reference/lane-claim-detail.md](../../docs/reference/lane-claim-detail.md#forme-canonique-de-la-clause-paths-10597-10958-11064-12052).
 

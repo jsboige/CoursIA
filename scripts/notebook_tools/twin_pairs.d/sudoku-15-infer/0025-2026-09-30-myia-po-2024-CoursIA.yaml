@@ -1,0 +1,14 @@
+date: '2026-09-30'
+by: myia-po-2024:CoursIA
+python_sha: d599d4110a060afbbf50c801144edfe1447497ab
+csharp_sha: 8a4dac7494154e580b05c520e00b8273a4ac946c
+content_python_sha: cee6c2c540878a2222eeb6fbaefac7e58438ef9998f03c23648643346562e651
+content_csharp_sha: 6fc373bca80bc99f4ab1b6434ce2e14897e623246b1be7e46a7c7db949a072cc
+reason: >-
+  Rebaseline cote C# seul, tranche Sudoku de #18053 : deplacement d'UNE cellule
+  markdown (interpretation placee apres le code IterativeProbabilisticSolver) et
+  lexicalisation de la ligne parametre (fixe 2 cellules -> fixe deux cellules de
+  la grille : cellules de GRILLE Sudoku, contenu pedagogique, non des artefacts
+  du depot -- garde prose-counts #9377, valeur inchangee). Cellules code
+  byte-identiques a main, outputs et execution_count inchanges, aucune re-exec
+  due (C.2/C.3, markdown-only). Cote Python non modifie (byte-identique a main).

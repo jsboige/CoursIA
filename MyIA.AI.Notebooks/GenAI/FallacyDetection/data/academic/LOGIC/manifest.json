@@ -1,0 +1,133 @@
+{
+ "corpus": "LOGIC",
+ "tranche": "C",
+ "issue": 17578,
+ "epic": 10355,
+ "criteria_comment": "https://github.com/jsboige/CoursIA/issues/17578#issuecomment-6073752732",
+ "acquired_utc": "2026-10-10",
+ "committed_to_repo": false,
+ "why_not_committed": "no verifiable license at the source (API license null, no LICENSE file, no README mention); third-party MIT attestations unverifiable; CoursIA is a public repo",
+ "consumption_route": "deterministic fetch at execution, pinned by upstream commit, verified against sha256 before use (alternative: out-of-repo GDrive path)",
+ "fetch_url_template": "https://raw.githubusercontent.com/causalNLP/logical-fallacy/{commit}/data/{file}",
+ "upstream": {
+  "repo": "https://github.com/causalNLP/logical-fallacy",
+  "commit": "2a3d09708122c0994279df034d867b80950700ea",
+  "is_default_branch_head": true
+ },
+ "license": {
+  "name": null,
+  "repo_license_file": null,
+  "readme_license_mention": null,
+  "api_license_field": null,
+  "rejected_evidence": "third-party 'MIT (c) 2022 Zhijing Jin' attestations from downstream repo lfx, unverifiable against the source repository",
+  "paper": "Jin, Lalwani, Vaidhya, Shen, Ding, Lyu, Sachan, Mihalcea, Schölkopf (2022), Logical Fallacy Detection, arXiv:2202.13758",
+  "paper_deposited_at": "G:\\Mon Drive\\MyIA\\IA\\Bibliographie IA\\Argumentation\\Fallacy Theory & Informal Logic\\2022 - Jin et al - Logical Fallacy Detection (arXiv 2202.13758).pdf",
+  "measured_by": [
+   "myia-po-2026:CoursIA 2026-10-09 (issue comment 6073752732)",
+   "myia-po-2025:CoursIA 2026-10-10 (this pinning)"
+  ]
+ },
+ "fingerprint_note": "blob_sha1 computed with git hash-object --no-filters: two upstream blobs carry CRLF (edu_test.csv: 2, mappings.csv: 14) that a hash under core.autocrlf=true would silently normalize, yielding a SHA that differs from upstream",
+ "files": {
+  "mappings.csv": {
+   "source_path": "data/mappings.csv",
+   "blob_sha1": "73b961a6707aff6cb5ee575a4488f1c7eb56b04b",
+   "sha256": "2f8f787aa4e29ab50bd17b5d3e0fe27d15c5a489e2c04508bf810bc4dba767db",
+   "bytes": 5034,
+   "crlf_count": 14,
+   "consumed_by_alignment": true,
+   "role": "academic taxonomy: original name, understandable name, description, logical form, masked logical form"
+  },
+  "edu_all.csv": {
+   "source_path": "data/edu_all.csv",
+   "blob_sha1": "59c58315212f4f338e5cf611f7fd0995eb6747cc",
+   "sha256": "bc03ca335524518b8eda3c63b97f45d15af3096de10fe1a4c3a890aabd7556a0",
+   "bytes": 768136,
+   "crlf_count": 0,
+   "consumed_by_alignment": true,
+   "role": "full labeled educational dataset (source text + fallacy label)"
+  },
+  "climate_all.csv": {
+   "source_path": "data/climate_all.csv",
+   "blob_sha1": "84fa005bb4283645a244ade8b069acaf05070a88",
+   "sha256": "c32b874d85b1cccf505b14c7a828b39a974247ff5b3040f03f0f4067c2908d48",
+   "bytes": 433309,
+   "crlf_count": 0,
+   "consumed_by_alignment": true,
+   "role": "full labeled climate dataset (source text + fallacy label)"
+  },
+  "edu_train.csv": {
+   "source_path": "data/edu_train.csv",
+   "blob_sha1": "07e4e346336a89134dc46067f2f3882615e4d305",
+   "sha256": "0c6377dbf744ba85e60102eb9842cc770f385afcb2724f607e8e8a99f5d9545c",
+   "bytes": 633843,
+   "consumed_by_alignment": false,
+   "role": "train split, derivable from edu_all"
+  },
+  "edu_dev.csv": {
+   "source_path": "data/edu_dev.csv",
+   "blob_sha1": "c7baae3238a8949ec5f962152af8769fded47af0",
+   "sha256": "5c567eb12e604271d0ec10e456c5c0bedcf01bd8a2f56d84a5ca88744ece36af",
+   "bytes": 101869,
+   "consumed_by_alignment": false,
+   "role": "dev split, derivable from edu_all"
+  },
+  "edu_test.csv": {
+   "source_path": "data/edu_test.csv",
+   "blob_sha1": "e06d9639e8b286156b5ab1f4e6367a78665e66bf",
+   "sha256": "47f6b86ec6c5256e9db97844f86684dc1fdc72c593e14db230e532098f668534",
+   "bytes": 104740,
+   "crlf_count": 2,
+   "consumed_by_alignment": false,
+   "role": "test split, derivable from edu_all"
+  },
+  "climate_train.csv": {
+   "source_path": "data/climate_train.csv",
+   "blob_sha1": "1461db501ee4bde69dac91500c0b8967b2180f86",
+   "sha256": "31daeb6476f3db3b864f6f3a0a40a689ebd07310636e4b943199d3b7bc50d841",
+   "bytes": 274475,
+   "consumed_by_alignment": false,
+   "role": "train split, derivable from climate_all"
+  },
+  "climate_dev.csv": {
+   "source_path": "data/climate_dev.csv",
+   "blob_sha1": "08b1c700bb9c98f3def3430a7be1a4e26397ebe8",
+   "sha256": "cee102370d57d12118483bd70e4bdca9ce60de934f0668c4f037dee8ebbaf701",
+   "bytes": 96522,
+   "consumed_by_alignment": false,
+   "role": "dev split, derivable from climate_all"
+  },
+  "climate_test.csv": {
+   "source_path": "data/climate_test.csv",
+   "blob_sha1": "fa00317f8320796e58b9af44dffdd50e0a14764f",
+   "sha256": "16f296fb38e594f92512a8f05e6b8c526a978fafe9fce8f924faaf7ad7d3082a",
+   "bytes": 62406,
+   "consumed_by_alignment": false,
+   "role": "test split, derivable from climate_all"
+  },
+  "climate_train_mh.csv": {
+   "source_path": "data/climate_train_mh.csv",
+   "blob_sha1": "0386d2f1172c72c6a0101115bbca209b644d6cd2",
+   "sha256": "234925773fc98569d95ab033144cced96322e136bbd77eec78cc569f6034300b",
+   "bytes": 293050,
+   "consumed_by_alignment": false,
+   "role": "masked-hard variant of the train split"
+  },
+  "climate_dev_mh.csv": {
+   "source_path": "data/climate_dev_mh.csv",
+   "blob_sha1": "88ec786d4910c84261c5168728c79c90e2025303",
+   "sha256": "8cac0cd850f21750571bf29f193c46449f645ebc5bc9b32cfa126218f1f5664e",
+   "bytes": 100382,
+   "consumed_by_alignment": false,
+   "role": "masked-hard variant of the dev split"
+  },
+  "climate_test_mh.csv": {
+   "source_path": "data/climate_test_mh.csv",
+   "blob_sha1": "127fedeb2220bf912858410e91ccb70f4d9ebd9f",
+   "sha256": "985b2f7ea95b1310feaa086c3ff07a181981dd7ebcd073d58eed91153c61483e",
+   "bytes": 66285,
+   "consumed_by_alignment": false,
+   "role": "masked-hard variant of the test split"
+  }
+ }
+}

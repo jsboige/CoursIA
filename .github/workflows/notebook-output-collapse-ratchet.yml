@@ -20,10 +20,13 @@ name: Notebook Output Collapse Ratchet
 # légitimes mécaniquement détectables (contenu déplacé vers un notebook
 # créé dans le même diff ; purge de texte diagnostique CS####/warning).
 #
-# Placement ADVISORY (point 3 de l'issue) : le verdict est publié sous le
-# check-run `Output-collapse ratchet (base vs PR, advisory)` avec une
-# conclusion neutre — jamais bloquant tant que le seuil n'est pas calibré
-# davantage sur l'historique.
+# Placement BLOQUANT depuis T2 (#21424) : le verdict est publié sous le
+# check-run `Output-collapse ratchet (base vs PR)` et il est bloquant —
+# `SIGNATURE` échoue tout de suite, `MAGNITUDE` échoue sauf justification
+# déclarée dans le body de la PR (section `## Output-collapse justification`).
+# Le nom du check-run est identique, à l'octet, à l'entrée TRANCHE2 de
+# `scripts/ci/fast_lane_registry.py` (garde absorbée) — cf
+# `scripts/ci/check_absorbed_check_run_identity.py`.
 
 # Livré directement dans la voie rapide (#12567) : le verdict par-PR est
 # rendu par `fast-lane-shadow.yml` via l'entrée TRANCHE2 de
@@ -46,7 +49,7 @@ concurrency:
 
 jobs:
   ratchet:
-    name: Output-collapse ratchet (base vs PR, advisory)
+    name: Output-collapse ratchet (base vs PR)
     # Même jambe que les siblings (#13378 tranche 5) : garde Python pur,
     # sans secret. La garde same-repo ci-dessous saute les PRs de fork :
     # aucun code de fork n'atteint le runner.
@@ -82,10 +85,13 @@ jobs:
 
       # Refs reach the script via env, never inline in the run script
       # (script-injection guard, same as the siblings).
-      - name: Ratchet check (advisory)
+      - name: Ratchet check (blocking since #21424 T2)
         env:
           BASE_REF: ${{ github.event.inputs.base_ref }}
           PR_BASE: ${{ github.base_ref }}
+          # Body for the `## Output-collapse justification` bypass. Empty
+          # in dispatch mode (no PR body), full body on pull_request.
+          COLLAPSE_PR_BODY: ${{ github.event.pull_request.body || '' }}
         run: |
           BASE="${BASE_REF:-origin/${PR_BASE:-main}}"
           python scripts/notebook_tools/check_output_collapse.py "$BASE"

@@ -1,6 +1,6 @@
 # Python/research/ — notebooks de recherche *companions* du parcours QC-Py
 
-Ce dossier porte les **2 notebooks de recherche appariés aux notebooks de cours** du parcours
+Ce dossier porte les **notebooks de recherche appariés aux notebooks de cours** du parcours
 [QC-Py](../README.md) — catégorie **(b) research companion** de la classification par modalité
 d'exécution du [README Python](../README.md). Chaque companion approfondit, sur QuantBook, le
 workflow démontré dans le notebook de cours correspondant.
@@ -18,7 +18,7 @@ workflow démontré dans le notebook de cours correspondant.
 Le dépôt porte **deux** emplacements « research » au sein de la série QC :
 
 - **[`QuantConnect/research/`](../../research/README.md)** — le **hub de recherche autonome**
-  (17 notebooks `research_*.ipynb`, données locales yfinance/sklearn, hors QC Cloud) ;
+  (notebooks `research_*.ipynb`, données locales yfinance/sklearn, hors QC Cloud) ;
 - **`QuantConnect/Python/research/`** (ce dossier) — les **2 companions pédagogiques** du
   parcours QC-Py ci-dessus, qui suivent leurs notebooks de cours.
 

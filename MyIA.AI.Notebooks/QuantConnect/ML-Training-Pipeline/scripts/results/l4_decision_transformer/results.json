@@ -1,0 +1,4063 @@
+{
+  "eval_protocol": "causal-v1 (#21187)",
+  "verdict": "NO BEATS",
+  "n_signal": 0,
+  "n_cells": 26,
+  "median_auc": 0.4962,
+  "edges": [
+    {
+      "symbol": "SPY",
+      "mean_delta": -0.3991,
+      "std_delta": 0.1427,
+      "sigma_edge": -2.7963,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.5168,
+      "mean_delta_vs_teacher": -0.4136,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": 1.0368,
+          "sharpe_b": 1.4131,
+          "sharpe_diff": -0.3763,
+          "z": -0.9624,
+          "p_two_sided": 0.33586724962726683,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": 1.0368,
+          "sharpe_b": 1.4276,
+          "sharpe_diff": -0.3908,
+          "z": -1.271,
+          "p_two_sided": 0.20373555456667705,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.9563,
+          "sharpe_bh": 1.4121,
+          "sharpe_teacher": 1.4266,
+          "delta_sharpe": -0.4558,
+          "delta_vs_teacher": -0.4703,
+          "mean_fold_delta": -0.5336,
+          "std_fold_delta": 0.4419,
+          "mean_auc": 0.5219,
+          "mean_hit_rate": 0.5274,
+          "mean_exposure": 0.7315,
+          "mean_teacher_exposure": 0.726,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 43,
+          "fold_deltas": [
+            -0.1552,
+            0.1294,
+            -0.8888,
+            -0.75,
+            -1.0034
+          ],
+          "fold_deltas_vs_teacher": [
+            0.172,
+            -0.4316,
+            -0.0282,
+            -0.8104,
+            -0.9464
+          ]
+        },
+        "1": {
+          "sharpe_dt": 1.1921,
+          "sharpe_bh": 1.4121,
+          "sharpe_teacher": 1.4266,
+          "delta_sharpe": -0.22,
+          "delta_vs_teacher": -0.2345,
+          "mean_fold_delta": -0.3416,
+          "std_fold_delta": 0.1446,
+          "mean_auc": 0.5178,
+          "mean_hit_rate": 0.5301,
+          "mean_exposure": 0.7479,
+          "mean_teacher_exposure": 0.726,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 39,
+          "fold_deltas": [
+            -0.2832,
+            -0.1575,
+            -0.2447,
+            -0.501,
+            -0.5216
+          ],
+          "fold_deltas_vs_teacher": [
+            0.044,
+            -0.7185,
+            0.6159,
+            -0.5613,
+            -0.4646
+          ]
+        },
+        "7": {
+          "sharpe_dt": 1.0909,
+          "sharpe_bh": 1.4121,
+          "sharpe_teacher": 1.4266,
+          "delta_sharpe": -0.3212,
+          "delta_vs_teacher": -0.3357,
+          "mean_fold_delta": -0.3932,
+          "std_fold_delta": 0.3303,
+          "mean_auc": 0.5178,
+          "mean_hit_rate": 0.5274,
+          "mean_exposure": 0.7425,
+          "mean_teacher_exposure": 0.726,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 37,
+          "fold_deltas": [
+            -0.3202,
+            0.1176,
+            -0.3441,
+            -0.9052,
+            -0.5142
+          ],
+          "fold_deltas_vs_teacher": [
+            0.0069,
+            -0.4434,
+            0.5165,
+            -0.9656,
+            -0.4572
+          ]
+        },
+        "42": {
+          "sharpe_dt": 0.8128,
+          "sharpe_bh": 1.4121,
+          "sharpe_teacher": 1.4266,
+          "delta_sharpe": -0.5994,
+          "delta_vs_teacher": -0.6138,
+          "mean_fold_delta": -0.7034,
+          "std_fold_delta": 0.6816,
+          "mean_auc": 0.5096,
+          "mean_hit_rate": 0.5205,
+          "mean_exposure": 0.7274,
+          "mean_teacher_exposure": 0.726,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 36,
+          "fold_deltas": [
+            -0.2832,
+            -0.2917,
+            -0.0522,
+            -0.9694,
+            -1.9207
+          ],
+          "fold_deltas_vs_teacher": [
+            0.044,
+            -0.8527,
+            0.8084,
+            -1.0298,
+            -1.8637
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "RSP",
+      "mean_delta": -0.5517,
+      "std_delta": 0.1352,
+      "sigma_edge": -4.0794,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.5113,
+      "mean_delta_vs_teacher": -0.0315,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": 0.6862,
+          "sharpe_b": 1.2233,
+          "sharpe_diff": -0.5371,
+          "z": -1.4204,
+          "p_two_sided": 0.1554781449085725,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": 0.6862,
+          "sharpe_b": 0.7028,
+          "sharpe_diff": -0.0166,
+          "z": -0.0794,
+          "p_two_sided": 0.9367219903125854,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.818,
+          "sharpe_bh": 1.2225,
+          "sharpe_teacher": 0.7023,
+          "delta_sharpe": -0.4045,
+          "delta_vs_teacher": 0.1157,
+          "mean_fold_delta": -0.4623,
+          "std_fold_delta": 1.0033,
+          "mean_auc": 0.5069,
+          "mean_hit_rate": 0.5301,
+          "mean_exposure": 0.6781,
+          "mean_teacher_exposure": 0.711,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 37,
+          "fold_deltas": [
+            -0.7108,
+            -0.0337,
+            -2.0549,
+            1.0356,
+            -0.5474
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.6492,
+            -0.3239,
+            0.1842,
+            0.9803,
+            -0.0032
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.7788,
+          "sharpe_bh": 1.2225,
+          "sharpe_teacher": 0.7023,
+          "delta_sharpe": -0.4437,
+          "delta_vs_teacher": 0.0765,
+          "mean_fold_delta": -0.5843,
+          "std_fold_delta": 0.9231,
+          "mean_auc": 0.5137,
+          "mean_hit_rate": 0.5384,
+          "mean_exposure": 0.6836,
+          "mean_teacher_exposure": 0.711,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 35,
+          "fold_deltas": [
+            -1.246,
+            -0.3403,
+            -1.99,
+            0.577,
+            0.0777
+          ],
+          "fold_deltas_vs_teacher": [
+            -1.1844,
+            -0.6305,
+            0.2491,
+            0.5217,
+            0.6219
+          ]
+        },
+        "7": {
+          "sharpe_dt": 0.4829,
+          "sharpe_bh": 1.2225,
+          "sharpe_teacher": 0.7023,
+          "delta_sharpe": -0.7396,
+          "delta_vs_teacher": -0.2194,
+          "mean_fold_delta": -0.8729,
+          "std_fold_delta": 1.2144,
+          "mean_auc": 0.511,
+          "mean_hit_rate": 0.526,
+          "mean_exposure": 0.6794,
+          "mean_teacher_exposure": 0.711,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 44,
+          "fold_deltas": [
+            -2.0379,
+            -0.8776,
+            -2.3816,
+            0.7423,
+            0.1905
+          ],
+          "fold_deltas_vs_teacher": [
+            -1.9763,
+            -1.1677,
+            -0.1425,
+            0.687,
+            0.7347
+          ]
+        },
+        "42": {
+          "sharpe_dt": 0.6036,
+          "sharpe_bh": 1.2225,
+          "sharpe_teacher": 0.7023,
+          "delta_sharpe": -0.6189,
+          "delta_vs_teacher": -0.0987,
+          "mean_fold_delta": -0.7617,
+          "std_fold_delta": 1.0058,
+          "mean_auc": 0.5137,
+          "mean_hit_rate": 0.526,
+          "mean_exposure": 0.6794,
+          "mean_teacher_exposure": 0.711,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 33,
+          "fold_deltas": [
+            -1.6748,
+            -0.4067,
+            -2.2061,
+            0.2975,
+            0.1815
+          ],
+          "fold_deltas_vs_teacher": [
+            -1.6132,
+            -0.6968,
+            0.033,
+            0.2422,
+            0.7257
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "IWM",
+      "mean_delta": -0.4557,
+      "std_delta": 0.0661,
+      "sigma_edge": -6.8991,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.4942,
+      "mean_delta_vs_teacher": 0.0392,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": 0.2219,
+          "sharpe_b": 0.6701,
+          "sharpe_diff": -0.4481,
+          "z": -1.1625,
+          "p_two_sided": 0.24502414674024867,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": 0.2219,
+          "sharpe_b": 0.1748,
+          "sharpe_diff": 0.0471,
+          "z": 0.194,
+          "p_two_sided": 0.8461871671779035,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.3262,
+          "sharpe_bh": 0.6696,
+          "sharpe_teacher": 0.1747,
+          "delta_sharpe": -0.3434,
+          "delta_vs_teacher": 0.1516,
+          "mean_fold_delta": -0.4657,
+          "std_fold_delta": 0.8122,
+          "mean_auc": 0.4918,
+          "mean_hit_rate": 0.5027,
+          "mean_exposure": 0.6096,
+          "mean_teacher_exposure": 0.5973,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 49,
+          "fold_deltas": [
+            -0.8486,
+            -0.6863,
+            -1.4993,
+            0.9423,
+            -0.2366
+          ],
+          "fold_deltas_vs_teacher": [
+            0.3509,
+            -0.1109,
+            -0.1436,
+            0.8772,
+            -0.009
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.172,
+          "sharpe_bh": 0.6696,
+          "sharpe_teacher": 0.1747,
+          "delta_sharpe": -0.4977,
+          "delta_vs_teacher": -0.0027,
+          "mean_fold_delta": -0.7396,
+          "std_fold_delta": 1.1681,
+          "mean_auc": 0.4973,
+          "mean_hit_rate": 0.4959,
+          "mean_exposure": 0.5973,
+          "mean_teacher_exposure": 0.5973,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 43,
+          "fold_deltas": [
+            -1.2042,
+            -1.207,
+            -2.3361,
+            1.0916,
+            -0.0423
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.0048,
+            -0.6316,
+            -0.9804,
+            1.0265,
+            0.1853
+          ]
+        },
+        "7": {
+          "sharpe_dt": 0.1959,
+          "sharpe_bh": 0.6696,
+          "sharpe_teacher": 0.1747,
+          "delta_sharpe": -0.4737,
+          "delta_vs_teacher": 0.0212,
+          "mean_fold_delta": -0.6159,
+          "std_fold_delta": 1.163,
+          "mean_auc": 0.4945,
+          "mean_hit_rate": 0.4945,
+          "mean_exposure": 0.6014,
+          "mean_teacher_exposure": 0.5973,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 48,
+          "fold_deltas": [
+            -1.1696,
+            -0.0834,
+            -2.5453,
+            0.8826,
+            -0.1638
+          ],
+          "fold_deltas_vs_teacher": [
+            0.0299,
+            0.492,
+            -1.1896,
+            0.8175,
+            0.0638
+          ]
+        },
+        "42": {
+          "sharpe_dt": 0.1614,
+          "sharpe_bh": 0.6696,
+          "sharpe_teacher": 0.1747,
+          "delta_sharpe": -0.5082,
+          "delta_vs_teacher": -0.0133,
+          "mean_fold_delta": -0.6635,
+          "std_fold_delta": 1.0462,
+          "mean_auc": 0.4932,
+          "mean_hit_rate": 0.4959,
+          "mean_exposure": 0.5918,
+          "mean_teacher_exposure": 0.5973,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 55,
+          "fold_deltas": [
+            -1.436,
+            -0.968,
+            -1.9621,
+            0.8953,
+            0.1532
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.2365,
+            -0.3926,
+            -0.6064,
+            0.8301,
+            0.3808
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "XLF",
+      "mean_delta": -0.3979,
+      "std_delta": 0.0925,
+      "sigma_edge": -4.3002,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.4972,
+      "mean_delta_vs_teacher": 0.0213,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": 0.994,
+          "sharpe_b": 1.3622,
+          "sharpe_diff": -0.3683,
+          "z": -0.848,
+          "p_two_sided": 0.39641969932507237,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": 0.994,
+          "sharpe_b": 0.9427,
+          "sharpe_diff": 0.0512,
+          "z": 0.2158,
+          "p_two_sided": 0.8291644575011996,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.8325,
+          "sharpe_bh": 1.3613,
+          "sharpe_teacher": 0.9421,
+          "delta_sharpe": -0.5288,
+          "delta_vs_teacher": -0.1096,
+          "mean_fold_delta": -0.7041,
+          "std_fold_delta": 0.8353,
+          "mean_auc": 0.4863,
+          "mean_hit_rate": 0.4891,
+          "mean_exposure": 0.5931,
+          "mean_teacher_exposure": 0.6274,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 35,
+          "fold_deltas": [
+            -2.2685,
+            -0.5166,
+            -0.5127,
+            0.2538,
+            -0.4764
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.7282,
+            -0.1137,
+            0.4201,
+            -0.0444,
+            -0.3602
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.9909,
+          "sharpe_bh": 1.3613,
+          "sharpe_teacher": 0.9421,
+          "delta_sharpe": -0.3704,
+          "delta_vs_teacher": 0.0488,
+          "mean_fold_delta": -0.5277,
+          "std_fold_delta": 0.8826,
+          "mean_auc": 0.5,
+          "mean_hit_rate": 0.4987,
+          "mean_exposure": 0.6,
+          "mean_teacher_exposure": 0.6274,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 41,
+          "fold_deltas": [
+            -2.0223,
+            -0.9325,
+            -0.2969,
+            0.1447,
+            0.4683
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.4819,
+            -0.5296,
+            0.6359,
+            -0.1536,
+            0.5845
+          ]
+        },
+        "7": {
+          "sharpe_dt": 0.9408,
+          "sharpe_bh": 1.3613,
+          "sharpe_teacher": 0.9421,
+          "delta_sharpe": -0.4205,
+          "delta_vs_teacher": -0.0013,
+          "mean_fold_delta": -0.5308,
+          "std_fold_delta": 1.1273,
+          "mean_auc": 0.4986,
+          "mean_hit_rate": 0.4863,
+          "mean_exposure": 0.6479,
+          "mean_teacher_exposure": 0.6274,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 27,
+          "fold_deltas": [
+            -2.3168,
+            -0.4051,
+            -1.1808,
+            0.457,
+            0.7919
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.7764,
+            -0.0022,
+            -0.248,
+            0.1588,
+            0.9081
+          ]
+        },
+        "42": {
+          "sharpe_dt": 1.0893,
+          "sharpe_bh": 1.3613,
+          "sharpe_teacher": 0.9421,
+          "delta_sharpe": -0.272,
+          "delta_vs_teacher": 0.1472,
+          "mean_fold_delta": -0.4091,
+          "std_fold_delta": 0.7364,
+          "mean_auc": 0.5041,
+          "mean_hit_rate": 0.4959,
+          "mean_exposure": 0.6192,
+          "mean_teacher_exposure": 0.6274,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 29,
+          "fold_deltas": [
+            -1.7661,
+            -0.4553,
+            -0.2182,
+            0.4166,
+            -0.0226
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.2257,
+            -0.0524,
+            0.7146,
+            0.1184,
+            0.0936
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "XLK",
+      "mean_delta": -0.5473,
+      "std_delta": 0.1447,
+      "sigma_edge": -3.7817,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.5004,
+      "mean_delta_vs_teacher": -0.2875,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": 0.8328,
+          "sharpe_b": 1.3626,
+          "sharpe_diff": -0.5298,
+          "z": -1.4412,
+          "p_two_sided": 0.14953759590473795,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": 0.8328,
+          "sharpe_b": 1.1027,
+          "sharpe_diff": -0.2699,
+          "z": -1.2156,
+          "p_two_sided": 0.22415573007109044,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.901,
+          "sharpe_bh": 1.3617,
+          "sharpe_teacher": 1.1019,
+          "delta_sharpe": -0.4607,
+          "delta_vs_teacher": -0.201,
+          "mean_fold_delta": -0.4904,
+          "std_fold_delta": 0.4005,
+          "mean_auc": 0.5,
+          "mean_hit_rate": 0.5329,
+          "mean_exposure": 0.7795,
+          "mean_teacher_exposure": 0.7493,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 39,
+          "fold_deltas": [
+            -0.5059,
+            0.1058,
+            -0.2159,
+            -0.9713,
+            -0.8644
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.4299,
+            0.2016,
+            -0.1485,
+            -0.3282,
+            -0.0404
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.8578,
+          "sharpe_bh": 1.3617,
+          "sharpe_teacher": 1.1019,
+          "delta_sharpe": -0.5039,
+          "delta_vs_teacher": -0.2441,
+          "mean_fold_delta": -0.6127,
+          "std_fold_delta": 0.3665,
+          "mean_auc": 0.4986,
+          "mean_hit_rate": 0.526,
+          "mean_exposure": 0.7342,
+          "mean_teacher_exposure": 0.7493,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 39,
+          "fold_deltas": [
+            -0.7593,
+            -0.8155,
+            -0.251,
+            -1.1078,
+            -0.1299
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.6833,
+            -0.7197,
+            -0.1836,
+            -0.4646,
+            0.694
+          ]
+        },
+        "7": {
+          "sharpe_dt": 0.5679,
+          "sharpe_bh": 1.3617,
+          "sharpe_teacher": 1.1019,
+          "delta_sharpe": -0.7938,
+          "delta_vs_teacher": -0.534,
+          "mean_fold_delta": -0.8623,
+          "std_fold_delta": 0.3244,
+          "mean_auc": 0.4932,
+          "mean_hit_rate": 0.5041,
+          "mean_exposure": 0.726,
+          "mean_teacher_exposure": 0.7493,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 54,
+          "fold_deltas": [
+            -0.6478,
+            -0.8335,
+            -0.4936,
+            -1.4476,
+            -0.8887
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.5718,
+            -0.7377,
+            -0.4262,
+            -0.8045,
+            -0.0648
+          ]
+        },
+        "42": {
+          "sharpe_dt": 0.9311,
+          "sharpe_bh": 1.3617,
+          "sharpe_teacher": 1.1019,
+          "delta_sharpe": -0.4306,
+          "delta_vs_teacher": -0.1708,
+          "mean_fold_delta": -0.5075,
+          "std_fold_delta": 0.6373,
+          "mean_auc": 0.5096,
+          "mean_hit_rate": 0.5247,
+          "mean_exposure": 0.7383,
+          "mean_teacher_exposure": 0.7493,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 49,
+          "fold_deltas": [
+            -0.3455,
+            -0.5802,
+            0.2066,
+            -1.673,
+            -0.1455
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.2695,
+            -0.4843,
+            0.274,
+            -1.0299,
+            0.6785
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "XLV",
+      "mean_delta": 0.1552,
+      "std_delta": 0.1486,
+      "sigma_edge": 1.0443,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.511,
+      "mean_delta_vs_teacher": 0.0501,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": 1.2126,
+          "sharpe_b": 1.0317,
+          "sharpe_diff": 0.1809,
+          "z": 0.4669,
+          "p_two_sided": 0.6405871229501243,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": 1.2126,
+          "sharpe_b": 1.1368,
+          "sharpe_diff": 0.0758,
+          "z": 0.5197,
+          "p_two_sided": 0.6032709921478256,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 1.0188,
+          "sharpe_bh": 1.031,
+          "sharpe_teacher": 1.136,
+          "delta_sharpe": -0.0121,
+          "delta_vs_teacher": -0.1172,
+          "mean_fold_delta": -0.0579,
+          "std_fold_delta": 0.2261,
+          "mean_auc": 0.5,
+          "mean_hit_rate": 0.5082,
+          "mean_exposure": 0.6644,
+          "mean_teacher_exposure": 0.6452,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 31,
+          "fold_deltas": [
+            -0.2265,
+            0.0815,
+            -0.4149,
+            0.1894,
+            0.0809
+          ],
+          "fold_deltas_vs_teacher": [
+            0.7554,
+            -0.3545,
+            -0.8696,
+            0.0536,
+            -0.0983
+          ]
+        },
+        "1": {
+          "sharpe_dt": 1.4046,
+          "sharpe_bh": 1.031,
+          "sharpe_teacher": 1.136,
+          "delta_sharpe": 0.3736,
+          "delta_vs_teacher": 0.2686,
+          "mean_fold_delta": 0.283,
+          "std_fold_delta": 0.3124,
+          "mean_auc": 0.5219,
+          "mean_hit_rate": 0.5192,
+          "mean_exposure": 0.6507,
+          "mean_teacher_exposure": 0.6452,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 29,
+          "fold_deltas": [
+            -0.3239,
+            0.4529,
+            0.2938,
+            0.499,
+            0.493
+          ],
+          "fold_deltas_vs_teacher": [
+            0.658,
+            0.0169,
+            -0.1609,
+            0.3632,
+            0.3138
+          ]
+        },
+        "7": {
+          "sharpe_dt": 1.2359,
+          "sharpe_bh": 1.031,
+          "sharpe_teacher": 1.136,
+          "delta_sharpe": 0.205,
+          "delta_vs_teacher": 0.0999,
+          "mean_fold_delta": 0.1794,
+          "std_fold_delta": 0.3733,
+          "mean_auc": 0.5178,
+          "mean_hit_rate": 0.5096,
+          "mean_exposure": 0.6466,
+          "mean_teacher_exposure": 0.6452,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 34,
+          "fold_deltas": [
+            -0.2629,
+            0.758,
+            -0.1917,
+            0.2732,
+            0.3207
+          ],
+          "fold_deltas_vs_teacher": [
+            0.719,
+            0.322,
+            -0.6464,
+            0.1374,
+            0.1414
+          ]
+        },
+        "42": {
+          "sharpe_dt": 1.0853,
+          "sharpe_bh": 1.031,
+          "sharpe_teacher": 1.136,
+          "delta_sharpe": 0.0543,
+          "delta_vs_teacher": -0.0508,
+          "mean_fold_delta": -0.0218,
+          "std_fold_delta": 0.6903,
+          "mean_auc": 0.5041,
+          "mean_hit_rate": 0.5055,
+          "mean_exposure": 0.6452,
+          "mean_teacher_exposure": 0.6452,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 28,
+          "fold_deltas": [
+            -0.8213,
+            0.6993,
+            -0.8979,
+            0.4697,
+            0.4413
+          ],
+          "fold_deltas_vs_teacher": [
+            0.1606,
+            0.2634,
+            -1.3526,
+            0.3339,
+            0.2621
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "XLY",
+      "mean_delta": -1.0891,
+      "std_delta": 0.1247,
+      "sigma_edge": -8.7318,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.4579,
+      "mean_delta_vs_teacher": -0.6913,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": -0.7624,
+          "sharpe_b": 0.348,
+          "sharpe_diff": -1.1104,
+          "z": -2.6627,
+          "p_two_sided": 0.007751609155736219,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": -0.7624,
+          "sharpe_b": -0.05,
+          "sharpe_diff": -0.7124,
+          "z": -1.7864,
+          "p_two_sided": 0.07403318353779728,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": -0.8745,
+          "sharpe_bh": 0.3478,
+          "sharpe_teacher": -0.05,
+          "delta_sharpe": -1.2223,
+          "delta_vs_teacher": -0.8245,
+          "mean_fold_delta": -1.2813,
+          "std_fold_delta": 0.4479,
+          "mean_auc": 0.4548,
+          "mean_hit_rate": 0.4576,
+          "mean_exposure": 0.4479,
+          "mean_teacher_exposure": 0.6055,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 38,
+          "fold_deltas": [
+            -1.7174,
+            -1.6467,
+            -1.4879,
+            -0.5235,
+            -1.0312
+          ],
+          "fold_deltas_vs_teacher": [
+            -1.686,
+            -0.4859,
+            -1.6071,
+            0.3321,
+            -0.5006
+          ]
+        },
+        "1": {
+          "sharpe_dt": -0.674,
+          "sharpe_bh": 0.3478,
+          "sharpe_teacher": -0.05,
+          "delta_sharpe": -1.0218,
+          "delta_vs_teacher": -0.624,
+          "mean_fold_delta": -1.0789,
+          "std_fold_delta": 0.614,
+          "mean_auc": 0.4589,
+          "mean_hit_rate": 0.4726,
+          "mean_exposure": 0.4466,
+          "mean_teacher_exposure": 0.6055,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 42,
+          "fold_deltas": [
+            -1.7174,
+            -0.9224,
+            -1.8015,
+            -0.797,
+            -0.1562
+          ],
+          "fold_deltas_vs_teacher": [
+            -1.686,
+            0.2384,
+            -1.9206,
+            0.0585,
+            0.3743
+          ]
+        },
+        "7": {
+          "sharpe_dt": -0.5709,
+          "sharpe_bh": 0.3478,
+          "sharpe_teacher": -0.05,
+          "delta_sharpe": -0.9187,
+          "delta_vs_teacher": -0.5209,
+          "mean_fold_delta": -1.0108,
+          "std_fold_delta": 0.3957,
+          "mean_auc": 0.463,
+          "mean_hit_rate": 0.4754,
+          "mean_exposure": 0.4986,
+          "mean_teacher_exposure": 0.6055,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 44,
+          "fold_deltas": [
+            -1.7174,
+            -0.613,
+            -0.7718,
+            -1.1572,
+            -0.7947
+          ],
+          "fold_deltas_vs_teacher": [
+            -1.686,
+            0.5478,
+            -0.891,
+            -0.3017,
+            -0.2642
+          ]
+        },
+        "42": {
+          "sharpe_dt": -0.8458,
+          "sharpe_bh": 0.3478,
+          "sharpe_teacher": -0.05,
+          "delta_sharpe": -1.1936,
+          "delta_vs_teacher": -0.7959,
+          "mean_fold_delta": -1.2809,
+          "std_fold_delta": 0.3425,
+          "mean_auc": 0.4548,
+          "mean_hit_rate": 0.4562,
+          "mean_exposure": 0.4411,
+          "mean_teacher_exposure": 0.6055,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 36,
+          "fold_deltas": [
+            -1.7174,
+            -1.324,
+            -1.3964,
+            -0.6642,
+            -1.3025
+          ],
+          "fold_deltas_vs_teacher": [
+            -1.686,
+            -0.1632,
+            -1.5155,
+            0.1914,
+            -0.772
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "XLP",
+      "mean_delta": -0.4738,
+      "std_delta": 0.1301,
+      "sigma_edge": -3.6423,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.4952,
+      "mean_delta_vs_teacher": -0.251,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": 0.6994,
+          "sharpe_b": 1.1566,
+          "sharpe_diff": -0.4572,
+          "z": -1.2119,
+          "p_two_sided": 0.22555116194506175,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": 0.6994,
+          "sharpe_b": 0.9336,
+          "sharpe_diff": -0.2342,
+          "z": -1.3498,
+          "p_two_sided": 0.17707273357075928,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.8806,
+          "sharpe_bh": 1.1558,
+          "sharpe_teacher": 0.933,
+          "delta_sharpe": -0.2752,
+          "delta_vs_teacher": -0.0524,
+          "mean_fold_delta": -0.2484,
+          "std_fold_delta": 0.7783,
+          "mean_auc": 0.4959,
+          "mean_hit_rate": 0.5315,
+          "mean_exposure": 0.6617,
+          "mean_teacher_exposure": 0.6425,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 30,
+          "fold_deltas": [
+            0.3783,
+            -0.3544,
+            -1.695,
+            0.4418,
+            -0.0127
+          ],
+          "fold_deltas_vs_teacher": [
+            0.716,
+            0.4242,
+            -0.2701,
+            -0.4112,
+            -0.2997
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.6853,
+          "sharpe_bh": 1.1558,
+          "sharpe_teacher": 0.933,
+          "delta_sharpe": -0.4705,
+          "delta_vs_teacher": -0.2477,
+          "mean_fold_delta": -0.6321,
+          "std_fold_delta": 1.1174,
+          "mean_auc": 0.5014,
+          "mean_hit_rate": 0.5123,
+          "mean_exposure": 0.6644,
+          "mean_teacher_exposure": 0.6425,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 30,
+          "fold_deltas": [
+            -1.4693,
+            -0.4425,
+            -2.2654,
+            0.853,
+            0.1636
+          ],
+          "fold_deltas_vs_teacher": [
+            -1.1316,
+            0.3362,
+            -0.8405,
+            0.0,
+            -0.1234
+          ]
+        },
+        "7": {
+          "sharpe_dt": 0.6435,
+          "sharpe_bh": 1.1558,
+          "sharpe_teacher": 0.933,
+          "delta_sharpe": -0.5122,
+          "delta_vs_teacher": -0.2894,
+          "mean_fold_delta": -0.4795,
+          "std_fold_delta": 0.701,
+          "mean_auc": 0.4822,
+          "mean_hit_rate": 0.5192,
+          "mean_exposure": 0.6356,
+          "mean_teacher_exposure": 0.6425,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 35,
+          "fold_deltas": [
+            -0.1543,
+            -0.3544,
+            -1.5995,
+            0.5099,
+            -0.7992
+          ],
+          "fold_deltas_vs_teacher": [
+            0.1834,
+            0.4242,
+            -0.1745,
+            -0.3431,
+            -1.0862
+          ]
+        },
+        "42": {
+          "sharpe_dt": 0.5183,
+          "sharpe_bh": 1.1558,
+          "sharpe_teacher": 0.933,
+          "delta_sharpe": -0.6374,
+          "delta_vs_teacher": -0.4146,
+          "mean_fold_delta": -0.6498,
+          "std_fold_delta": 0.7746,
+          "mean_auc": 0.5013,
+          "mean_hit_rate": 0.5123,
+          "mean_exposure": 0.5712,
+          "mean_teacher_exposure": 0.6425,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 31,
+          "fold_deltas": [
+            -0.5762,
+            -1.2708,
+            -1.485,
+            0.7328,
+            -0.6499
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.2385,
+            -0.4921,
+            -0.0601,
+            -0.1202,
+            -0.9369
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "XLI",
+      "mean_delta": -0.342,
+      "std_delta": 0.0737,
+      "sigma_edge": -4.6407,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.4976,
+      "mean_delta_vs_teacher": -0.2472,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": 0.8182,
+          "sharpe_b": 1.143,
+          "sharpe_diff": -0.3248,
+          "z": -0.8334,
+          "p_two_sided": 0.40463855887880695,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": 0.8182,
+          "sharpe_b": 1.0482,
+          "sharpe_diff": -0.2299,
+          "z": -0.9192,
+          "p_two_sided": 0.35800964208599756,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.7406,
+          "sharpe_bh": 1.1423,
+          "sharpe_teacher": 1.0474,
+          "delta_sharpe": -0.4016,
+          "delta_vs_teacher": -0.3068,
+          "mean_fold_delta": -0.3677,
+          "std_fold_delta": 0.9038,
+          "mean_auc": 0.4945,
+          "mean_hit_rate": 0.5247,
+          "mean_exposure": 0.6534,
+          "mean_teacher_exposure": 0.6411,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 30,
+          "fold_deltas": [
+            -0.0339,
+            -1.2967,
+            -0.6991,
+            1.2293,
+            -1.0383
+          ],
+          "fold_deltas_vs_teacher": [
+            0.6848,
+            -0.7435,
+            -0.4393,
+            0.4163,
+            -0.8469
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.8762,
+          "sharpe_bh": 1.1423,
+          "sharpe_teacher": 1.0474,
+          "delta_sharpe": -0.266,
+          "delta_vs_teacher": -0.1712,
+          "mean_fold_delta": -0.2689,
+          "std_fold_delta": 0.6944,
+          "mean_auc": 0.4932,
+          "mean_hit_rate": 0.5356,
+          "mean_exposure": 0.6534,
+          "mean_teacher_exposure": 0.6411,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 32,
+          "fold_deltas": [
+            -0.0339,
+            -0.8786,
+            -0.6864,
+            0.992,
+            -0.7379
+          ],
+          "fold_deltas_vs_teacher": [
+            0.6848,
+            -0.3255,
+            -0.4267,
+            0.179,
+            -0.5464
+          ]
+        },
+        "7": {
+          "sharpe_dt": 0.7138,
+          "sharpe_bh": 1.1423,
+          "sharpe_teacher": 1.0474,
+          "delta_sharpe": -0.4285,
+          "delta_vs_teacher": -0.3336,
+          "mean_fold_delta": -0.3791,
+          "std_fold_delta": 0.8683,
+          "mean_auc": 0.5014,
+          "mean_hit_rate": 0.5343,
+          "mean_exposure": 0.6712,
+          "mean_teacher_exposure": 0.6411,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 36,
+          "fold_deltas": [
+            0.1276,
+            -1.2424,
+            -0.5975,
+            1.0386,
+            -1.222
+          ],
+          "fold_deltas_vs_teacher": [
+            0.8462,
+            -0.6892,
+            -0.3377,
+            0.2256,
+            -1.0306
+          ]
+        },
+        "42": {
+          "sharpe_dt": 0.8703,
+          "sharpe_bh": 1.1423,
+          "sharpe_teacher": 1.0474,
+          "delta_sharpe": -0.2719,
+          "delta_vs_teacher": -0.1771,
+          "mean_fold_delta": -0.2769,
+          "std_fold_delta": 0.8584,
+          "mean_auc": 0.5014,
+          "mean_hit_rate": 0.5274,
+          "mean_exposure": 0.637,
+          "mean_teacher_exposure": 0.6411,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 38,
+          "fold_deltas": [
+            -0.0339,
+            -1.6842,
+            -0.2092,
+            0.992,
+            -0.4494
+          ],
+          "fold_deltas_vs_teacher": [
+            0.6848,
+            -1.1311,
+            0.0505,
+            0.179,
+            -0.258
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "XLU",
+      "mean_delta": -0.223,
+      "std_delta": 0.0925,
+      "sigma_edge": -2.4108,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.514,
+      "mean_delta_vs_teacher": -0.154,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": 0.4879,
+          "sharpe_b": 0.705,
+          "sharpe_diff": -0.2171,
+          "z": -0.6205,
+          "p_two_sided": 0.5349510159904176,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": 0.4879,
+          "sharpe_b": 0.636,
+          "sharpe_diff": -0.1481,
+          "z": -0.6808,
+          "p_two_sided": 0.4959876218332031,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.5879,
+          "sharpe_bh": 0.7045,
+          "sharpe_teacher": 0.6356,
+          "delta_sharpe": -0.1167,
+          "delta_vs_teacher": -0.0477,
+          "mean_fold_delta": -0.0923,
+          "std_fold_delta": 0.5526,
+          "mean_auc": 0.5301,
+          "mean_hit_rate": 0.5246,
+          "mean_exposure": 0.6479,
+          "mean_teacher_exposure": 0.6233,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 51,
+          "fold_deltas": [
+            -0.3685,
+            0.3716,
+            0.3248,
+            -1.0574,
+            0.2681
+          ],
+          "fold_deltas_vs_teacher": [
+            0.4776,
+            0.311,
+            0.0735,
+            -1.1954,
+            0.638
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.4825,
+          "sharpe_bh": 0.7045,
+          "sharpe_teacher": 0.6356,
+          "delta_sharpe": -0.222,
+          "delta_vs_teacher": -0.153,
+          "mean_fold_delta": -0.211,
+          "std_fold_delta": 0.506,
+          "mean_auc": 0.5123,
+          "mean_hit_rate": 0.5192,
+          "mean_exposure": 0.626,
+          "mean_teacher_exposure": 0.6233,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 41,
+          "fold_deltas": [
+            -0.6291,
+            0.2868,
+            0.3836,
+            -0.9201,
+            -0.1762
+          ],
+          "fold_deltas_vs_teacher": [
+            0.217,
+            0.2262,
+            0.1323,
+            -1.0581,
+            0.1937
+          ]
+        },
+        "7": {
+          "sharpe_dt": 0.3352,
+          "sharpe_bh": 0.7045,
+          "sharpe_teacher": 0.6356,
+          "delta_sharpe": -0.3693,
+          "delta_vs_teacher": -0.3004,
+          "mean_fold_delta": -0.4173,
+          "std_fold_delta": 0.4893,
+          "mean_auc": 0.5068,
+          "mean_hit_rate": 0.511,
+          "mean_exposure": 0.6397,
+          "mean_teacher_exposure": 0.6233,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 45,
+          "fold_deltas": [
+            -0.778,
+            -0.4601,
+            -0.0677,
+            -1.0763,
+            0.2957
+          ],
+          "fold_deltas_vs_teacher": [
+            0.068,
+            -0.5207,
+            -0.319,
+            -1.2143,
+            0.6656
+          ]
+        },
+        "42": {
+          "sharpe_dt": 0.5206,
+          "sharpe_bh": 0.7045,
+          "sharpe_teacher": 0.6356,
+          "delta_sharpe": -0.184,
+          "delta_vs_teacher": -0.115,
+          "mean_fold_delta": -0.2197,
+          "std_fold_delta": 0.4554,
+          "mean_auc": 0.5068,
+          "mean_hit_rate": 0.5137,
+          "mean_exposure": 0.6178,
+          "mean_teacher_exposure": 0.6233,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 41,
+          "fold_deltas": [
+            -0.8075,
+            0.1778,
+            0.3605,
+            -0.6603,
+            -0.1691
+          ],
+          "fold_deltas_vs_teacher": [
+            0.0385,
+            0.1172,
+            0.1093,
+            -0.7983,
+            0.2007
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "XLB",
+      "mean_delta": -0.2472,
+      "std_delta": 0.0756,
+      "sigma_edge": -3.2706,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.5044,
+      "mean_delta_vs_teacher": 0.1172,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": 0.8933,
+          "sharpe_b": 1.1153,
+          "sharpe_diff": -0.2221,
+          "z": -0.58,
+          "p_two_sided": 0.5619394846296112,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": 0.8933,
+          "sharpe_b": 0.7507,
+          "sharpe_diff": 0.1426,
+          "z": 0.5113,
+          "p_two_sided": 0.6091430487476037,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.8299,
+          "sharpe_bh": 1.1146,
+          "sharpe_teacher": 0.7502,
+          "delta_sharpe": -0.2847,
+          "delta_vs_teacher": 0.0798,
+          "mean_fold_delta": -0.2244,
+          "std_fold_delta": 0.6119,
+          "mean_auc": 0.5,
+          "mean_hit_rate": 0.4959,
+          "mean_exposure": 0.5671,
+          "mean_teacher_exposure": 0.6246,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 40,
+          "fold_deltas": [
+            -0.5544,
+            -0.6003,
+            -0.9346,
+            0.7231,
+            0.2443
+          ],
+          "fold_deltas_vs_teacher": [
+            0.1547,
+            0.4093,
+            0.2533,
+            0.0592,
+            0.1757
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.766,
+          "sharpe_bh": 1.1146,
+          "sharpe_teacher": 0.7502,
+          "delta_sharpe": -0.3486,
+          "delta_vs_teacher": 0.0158,
+          "mean_fold_delta": -0.3204,
+          "std_fold_delta": 0.8269,
+          "mean_auc": 0.5014,
+          "mean_hit_rate": 0.4945,
+          "mean_exposure": 0.6233,
+          "mean_teacher_exposure": 0.6246,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 40,
+          "fold_deltas": [
+            -0.5472,
+            -0.3301,
+            -1.671,
+            0.8494,
+            0.097
+          ],
+          "fold_deltas_vs_teacher": [
+            0.1619,
+            0.6795,
+            -0.4831,
+            0.1855,
+            0.0284
+          ]
+        },
+        "7": {
+          "sharpe_dt": 0.9091,
+          "sharpe_bh": 1.1146,
+          "sharpe_teacher": 0.7502,
+          "delta_sharpe": -0.2055,
+          "delta_vs_teacher": 0.1589,
+          "mean_fold_delta": -0.3077,
+          "std_fold_delta": 0.8697,
+          "mean_auc": 0.5164,
+          "mean_hit_rate": 0.5055,
+          "mean_exposure": 0.6233,
+          "mean_teacher_exposure": 0.6246,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 41,
+          "fold_deltas": [
+            -1.2809,
+            -1.2191,
+            -0.3798,
+            0.4644,
+            0.8768
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.5718,
+            -0.2094,
+            0.8082,
+            -0.1995,
+            0.8082
+          ]
+        },
+        "42": {
+          "sharpe_dt": 0.9645,
+          "sharpe_bh": 1.1146,
+          "sharpe_teacher": 0.7502,
+          "delta_sharpe": -0.1501,
+          "delta_vs_teacher": 0.2143,
+          "mean_fold_delta": -0.1251,
+          "std_fold_delta": 0.74,
+          "mean_auc": 0.5,
+          "mean_hit_rate": 0.4959,
+          "mean_exposure": 0.5863,
+          "mean_teacher_exposure": 0.6246,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 36,
+          "fold_deltas": [
+            -0.2274,
+            -0.8398,
+            -1.0046,
+            0.6745,
+            0.7718
+          ],
+          "fold_deltas_vs_teacher": [
+            0.4817,
+            0.1698,
+            0.1834,
+            0.0106,
+            0.7032
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "XLRE",
+      "mean_delta": -0.2016,
+      "std_delta": 0.1423,
+      "sigma_edge": -1.4171,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.4887,
+      "mean_delta_vs_teacher": -0.0832,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 665,
+          "sharpe_a": -0.1222,
+          "sharpe_b": 0.0808,
+          "sharpe_diff": -0.203,
+          "z": -0.3882,
+          "p_two_sided": 0.6978944451053133,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 665,
+          "sharpe_a": -0.1222,
+          "sharpe_b": -0.0376,
+          "sharpe_diff": -0.0846,
+          "z": -0.27,
+          "p_two_sided": 0.7871899341766706,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": -0.0747,
+          "sharpe_bh": 0.0807,
+          "sharpe_teacher": -0.0376,
+          "delta_sharpe": -0.1555,
+          "delta_vs_teacher": -0.0371,
+          "mean_fold_delta": 0.1109,
+          "std_fold_delta": 0.9105,
+          "mean_auc": 0.4962,
+          "mean_hit_rate": 0.4993,
+          "mean_exposure": 0.6181,
+          "mean_teacher_exposure": 0.5474,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 51,
+          "fold_deltas": [
+            0.4577,
+            -1.4853,
+            0.438,
+            1.2594,
+            -0.1153
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.6497,
+            -0.5353,
+            -0.0427,
+            0.9924,
+            1.0626
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.0255,
+          "sharpe_bh": 0.0807,
+          "sharpe_teacher": -0.0376,
+          "delta_sharpe": -0.0553,
+          "delta_vs_teacher": 0.0631,
+          "mean_fold_delta": 0.0367,
+          "std_fold_delta": 0.7329,
+          "mean_auc": 0.5007,
+          "mean_hit_rate": 0.4932,
+          "mean_exposure": 0.603,
+          "mean_teacher_exposure": 0.5474,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 43,
+          "fold_deltas": [
+            0.3074,
+            -0.6178,
+            0.1559,
+            1.2021,
+            -0.8642
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.8001,
+            0.3322,
+            -0.3248,
+            0.935,
+            0.3137
+          ]
+        },
+        "7": {
+          "sharpe_dt": -0.3566,
+          "sharpe_bh": 0.0807,
+          "sharpe_teacher": -0.0376,
+          "delta_sharpe": -0.4374,
+          "delta_vs_teacher": -0.319,
+          "mean_fold_delta": -0.2276,
+          "std_fold_delta": 0.9806,
+          "mean_auc": 0.4842,
+          "mean_hit_rate": 0.4872,
+          "mean_exposure": 0.5669,
+          "mean_teacher_exposure": 0.5474,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 51,
+          "fold_deltas": [
+            0.0745,
+            -1.9112,
+            0.6371,
+            0.7381,
+            -0.6767
+          ],
+          "fold_deltas_vs_teacher": [
+            -1.0329,
+            -0.9612,
+            0.1564,
+            0.4711,
+            0.5013
+          ]
+        },
+        "42": {
+          "sharpe_dt": -0.0776,
+          "sharpe_bh": 0.0807,
+          "sharpe_teacher": -0.0376,
+          "delta_sharpe": -0.1584,
+          "delta_vs_teacher": -0.04,
+          "mean_fold_delta": 0.0966,
+          "std_fold_delta": 0.8866,
+          "mean_auc": 0.4737,
+          "mean_hit_rate": 0.4902,
+          "mean_exposure": 0.588,
+          "mean_teacher_exposure": 0.5474,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 43,
+          "fold_deltas": [
+            0.7703,
+            -1.3342,
+            0.5695,
+            1.002,
+            -0.5249
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.3372,
+            -0.3842,
+            0.0888,
+            0.735,
+            0.6531
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "XLC",
+      "mean_delta": -0.7537,
+      "std_delta": 0.1605,
+      "sigma_edge": -4.6956,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.4995,
+      "mean_delta_vs_teacher": 0.1036,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 435,
+          "sharpe_a": 0.7241,
+          "sharpe_b": 1.451,
+          "sharpe_diff": -0.7269,
+          "z": -1.6503,
+          "p_two_sided": 0.09887988594036107,
+          "lag": 4
+        },
+        "vs_teacher": {
+          "n_days": 435,
+          "sharpe_a": 0.7241,
+          "sharpe_b": 0.5928,
+          "sharpe_diff": 0.1314,
+          "z": 0.3678,
+          "p_two_sided": 0.7130285954672095,
+          "lag": 4
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.6739,
+          "sharpe_bh": 1.4494,
+          "sharpe_teacher": 0.5921,
+          "delta_sharpe": -0.7754,
+          "delta_vs_teacher": 0.0819,
+          "mean_fold_delta": -1.0233,
+          "std_fold_delta": 0.8963,
+          "mean_auc": 0.4966,
+          "mean_hit_rate": 0.4989,
+          "mean_exposure": 0.6644,
+          "mean_teacher_exposure": 0.6115,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 29,
+          "fold_deltas": [
+            -0.7571,
+            -2.7183,
+            -0.4316,
+            -1.0362,
+            -0.1733
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.403,
+            -1.0394,
+            0.8087,
+            0.0425,
+            3.2302
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.8669,
+          "sharpe_bh": 1.4494,
+          "sharpe_teacher": 0.5921,
+          "delta_sharpe": -0.5825,
+          "delta_vs_teacher": 0.2748,
+          "mean_fold_delta": -0.7102,
+          "std_fold_delta": 0.4727,
+          "mean_auc": 0.5127,
+          "mean_hit_rate": 0.515,
+          "mean_exposure": 0.7081,
+          "mean_teacher_exposure": 0.6115,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 33,
+          "fold_deltas": [
+            -0.1866,
+            -1.4776,
+            -0.2433,
+            -0.8972,
+            -0.7463
+          ],
+          "fold_deltas_vs_teacher": [
+            0.1674,
+            0.2014,
+            0.997,
+            0.1815,
+            2.6572
+          ]
+        },
+        "7": {
+          "sharpe_dt": 0.797,
+          "sharpe_bh": 1.4494,
+          "sharpe_teacher": 0.5921,
+          "delta_sharpe": -0.6523,
+          "delta_vs_teacher": 0.205,
+          "mean_fold_delta": -0.8623,
+          "std_fold_delta": 0.6285,
+          "mean_auc": 0.4988,
+          "mean_hit_rate": 0.5149,
+          "mean_exposure": 0.6621,
+          "mean_teacher_exposure": 0.6115,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 33,
+          "fold_deltas": [
+            -0.4853,
+            -2.0378,
+            -0.2188,
+            -0.8972,
+            -0.6724
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.1313,
+            -0.3588,
+            1.0214,
+            0.1815,
+            2.7311
+          ]
+        },
+        "42": {
+          "sharpe_dt": 0.4446,
+          "sharpe_bh": 1.4494,
+          "sharpe_teacher": 0.5921,
+          "delta_sharpe": -1.0047,
+          "delta_vs_teacher": -0.1474,
+          "mean_fold_delta": -1.1186,
+          "std_fold_delta": 0.7261,
+          "mean_auc": 0.4897,
+          "mean_hit_rate": 0.5035,
+          "mean_exposure": 0.6414,
+          "mean_teacher_exposure": 0.6115,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 36,
+          "fold_deltas": [
+            -0.8124,
+            -2.0532,
+            -1.1151,
+            0.0524,
+            -1.6645
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.4583,
+            -0.3742,
+            0.1251,
+            1.1311,
+            1.739
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "VIX",
+      "mean_delta": 0.0,
+      "std_delta": 0.0,
+      "sigma_edge": 0.0,
+      "is_signal": false,
+      "n_seeds": 0,
+      "mean_auc": 0.0,
+      "mean_delta_vs_teacher": null,
+      "seed_mean_tests": {
+        "error": "missing or misaligned seed series"
+      },
+      "seed_details": {}
+    },
+    {
+      "symbol": "TLT",
+      "mean_delta": -0.3369,
+      "std_delta": 0.1513,
+      "sigma_edge": -2.226,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.4774,
+      "mean_delta_vs_teacher": 0.0573,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": -0.342,
+          "sharpe_b": 0.0063,
+          "sharpe_diff": -0.3483,
+          "z": -0.8511,
+          "p_two_sided": 0.3947198504286598,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": -0.342,
+          "sharpe_b": -0.3882,
+          "sharpe_diff": 0.0462,
+          "z": 0.2137,
+          "p_two_sided": 0.8307569540212104,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": -0.1088,
+          "sharpe_bh": 0.0063,
+          "sharpe_teacher": -0.3879,
+          "delta_sharpe": -0.1151,
+          "delta_vs_teacher": 0.2791,
+          "mean_fold_delta": -0.2878,
+          "std_fold_delta": 0.9257,
+          "mean_auc": 0.489,
+          "mean_hit_rate": 0.4849,
+          "mean_exposure": 0.5082,
+          "mean_teacher_exposure": 0.4822,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 51,
+          "fold_deltas": [
+            -0.9678,
+            -1.5282,
+            0.8078,
+            0.7343,
+            -0.4848
+          ],
+          "fold_deltas_vs_teacher": [
+            0.3711,
+            -0.1758,
+            0.7598,
+            0.5979,
+            -0.3667
+          ]
+        },
+        "1": {
+          "sharpe_dt": -0.4254,
+          "sharpe_bh": 0.0063,
+          "sharpe_teacher": -0.3879,
+          "delta_sharpe": -0.4317,
+          "delta_vs_teacher": -0.0375,
+          "mean_fold_delta": -0.596,
+          "std_fold_delta": 0.7494,
+          "mean_auc": 0.4616,
+          "mean_hit_rate": 0.4685,
+          "mean_exposure": 0.5438,
+          "mean_teacher_exposure": 0.4822,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 41,
+          "fold_deltas": [
+            -1.2108,
+            -1.5581,
+            0.1778,
+            0.3454,
+            -0.7345
+          ],
+          "fold_deltas_vs_teacher": [
+            0.128,
+            -0.2056,
+            0.1297,
+            0.2091,
+            -0.6164
+          ]
+        },
+        "7": {
+          "sharpe_dt": -0.5066,
+          "sharpe_bh": 0.0063,
+          "sharpe_teacher": -0.3879,
+          "delta_sharpe": -0.513,
+          "delta_vs_teacher": -0.1187,
+          "mean_fold_delta": -0.6677,
+          "std_fold_delta": 0.6603,
+          "mean_auc": 0.4726,
+          "mean_hit_rate": 0.474,
+          "mean_exposure": 0.5164,
+          "mean_teacher_exposure": 0.4822,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 43,
+          "fold_deltas": [
+            -0.6329,
+            -1.7684,
+            -0.2019,
+            0.1663,
+            -0.9018
+          ],
+          "fold_deltas_vs_teacher": [
+            0.7059,
+            -0.4159,
+            -0.25,
+            0.0299,
+            -0.7838
+          ]
+        },
+        "42": {
+          "sharpe_dt": -0.2814,
+          "sharpe_bh": 0.0063,
+          "sharpe_teacher": -0.3879,
+          "delta_sharpe": -0.2877,
+          "delta_vs_teacher": 0.1065,
+          "mean_fold_delta": -0.3641,
+          "std_fold_delta": 0.7705,
+          "mean_auc": 0.4863,
+          "mean_hit_rate": 0.4753,
+          "mean_exposure": 0.5644,
+          "mean_teacher_exposure": 0.4822,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 51,
+          "fold_deltas": [
+            -0.81,
+            -1.4474,
+            0.8581,
+            -0.045,
+            -0.3761
+          ],
+          "fold_deltas_vs_teacher": [
+            0.5289,
+            -0.095,
+            0.81,
+            -0.1814,
+            -0.258
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "IEF",
+      "mean_delta": -0.1681,
+      "std_delta": 0.2965,
+      "sigma_edge": -0.5671,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.4911,
+      "mean_delta_vs_teacher": 0.3757,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": -0.254,
+          "sharpe_b": -0.076,
+          "sharpe_diff": -0.1779,
+          "z": -0.4076,
+          "p_two_sided": 0.6835344778385944,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": -0.254,
+          "sharpe_b": -0.6202,
+          "sharpe_diff": 0.3663,
+          "z": 1.1815,
+          "p_two_sided": 0.2374169182009357,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.2023,
+          "sharpe_bh": -0.076,
+          "sharpe_teacher": -0.6198,
+          "delta_sharpe": 0.2783,
+          "delta_vs_teacher": 0.8221,
+          "mean_fold_delta": -0.0258,
+          "std_fold_delta": 0.7659,
+          "mean_auc": 0.4932,
+          "mean_hit_rate": 0.5055,
+          "mean_exposure": 0.4877,
+          "mean_teacher_exposure": 0.5712,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 25,
+          "fold_deltas": [
+            -0.519,
+            -0.2095,
+            0.6577,
+            1.0169,
+            -1.0752
+          ],
+          "fold_deltas_vs_teacher": [
+            0.8899,
+            1.0373,
+            1.1241,
+            1.0578,
+            -0.9424
+          ]
+        },
+        "1": {
+          "sharpe_dt": -0.4958,
+          "sharpe_bh": -0.076,
+          "sharpe_teacher": -0.6198,
+          "delta_sharpe": -0.4198,
+          "delta_vs_teacher": 0.124,
+          "mean_fold_delta": -0.9315,
+          "std_fold_delta": 0.7845,
+          "mean_auc": 0.4918,
+          "mean_hit_rate": 0.4794,
+          "mean_exposure": 0.3822,
+          "mean_teacher_exposure": 0.5712,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 28,
+          "fold_deltas": [
+            -1.9121,
+            -0.9936,
+            -0.5431,
+            0.3302,
+            -1.5388
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.5032,
+            0.2531,
+            -0.0766,
+            0.3711,
+            -1.406
+          ]
+        },
+        "7": {
+          "sharpe_dt": -0.1544,
+          "sharpe_bh": -0.076,
+          "sharpe_teacher": -0.6198,
+          "delta_sharpe": -0.0784,
+          "delta_vs_teacher": 0.4655,
+          "mean_fold_delta": -0.5709,
+          "std_fold_delta": 0.9866,
+          "mean_auc": 0.4959,
+          "mean_hit_rate": 0.4918,
+          "mean_exposure": 0.3918,
+          "mean_teacher_exposure": 0.5712,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 23,
+          "fold_deltas": [
+            -1.7267,
+            -0.3761,
+            0.3629,
+            0.5873,
+            -1.702
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.3177,
+            0.8706,
+            0.8294,
+            0.6281,
+            -1.5692
+          ]
+        },
+        "42": {
+          "sharpe_dt": -0.5287,
+          "sharpe_bh": -0.076,
+          "sharpe_teacher": -0.6198,
+          "delta_sharpe": -0.4527,
+          "delta_vs_teacher": 0.0911,
+          "mean_fold_delta": -0.8489,
+          "std_fold_delta": 1.0381,
+          "mean_auc": 0.4836,
+          "mean_hit_rate": 0.4781,
+          "mean_exposure": 0.4027,
+          "mean_teacher_exposure": 0.5712,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 28,
+          "fold_deltas": [
+            -1.6762,
+            -0.4527,
+            0.5702,
+            -0.332,
+            -2.354
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.2672,
+            0.7941,
+            1.0367,
+            -0.2911,
+            -2.2212
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "SHY",
+      "mean_delta": -0.7274,
+      "std_delta": 0.0,
+      "sigma_edge": 0.0,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.5192,
+      "mean_delta_vs_teacher": -0.8202,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "error": "degenerate standard error"
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "error": "degenerate standard error"
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.0,
+          "sharpe_bh": 0.7274,
+          "sharpe_teacher": 0.8202,
+          "delta_sharpe": -0.7274,
+          "delta_vs_teacher": -0.8202,
+          "mean_fold_delta": -0.5007,
+          "std_fold_delta": 1.8667,
+          "mean_auc": 0.5192,
+          "mean_hit_rate": 0.5192,
+          "mean_exposure": 0.0,
+          "mean_teacher_exposure": 0.1315,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 0,
+          "fold_deltas": [
+            0.0397,
+            -1.8625,
+            2.851,
+            -2.4144,
+            -1.1172
+          ],
+          "fold_deltas_vs_teacher": [
+            0.0,
+            0.0,
+            0.0,
+            -1.8389,
+            0.0
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.0,
+          "sharpe_bh": 0.7274,
+          "sharpe_teacher": 0.8202,
+          "delta_sharpe": -0.7274,
+          "delta_vs_teacher": -0.8202,
+          "mean_fold_delta": -0.5007,
+          "std_fold_delta": 1.8667,
+          "mean_auc": 0.5192,
+          "mean_hit_rate": 0.5192,
+          "mean_exposure": 0.0,
+          "mean_teacher_exposure": 0.1315,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 0,
+          "fold_deltas": [
+            0.0397,
+            -1.8625,
+            2.851,
+            -2.4144,
+            -1.1172
+          ],
+          "fold_deltas_vs_teacher": [
+            0.0,
+            0.0,
+            0.0,
+            -1.8389,
+            0.0
+          ]
+        },
+        "7": {
+          "sharpe_dt": 0.0,
+          "sharpe_bh": 0.7274,
+          "sharpe_teacher": 0.8202,
+          "delta_sharpe": -0.7274,
+          "delta_vs_teacher": -0.8202,
+          "mean_fold_delta": -0.5007,
+          "std_fold_delta": 1.8667,
+          "mean_auc": 0.5192,
+          "mean_hit_rate": 0.5192,
+          "mean_exposure": 0.0,
+          "mean_teacher_exposure": 0.1315,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 0,
+          "fold_deltas": [
+            0.0397,
+            -1.8625,
+            2.851,
+            -2.4144,
+            -1.1172
+          ],
+          "fold_deltas_vs_teacher": [
+            0.0,
+            0.0,
+            0.0,
+            -1.8389,
+            0.0
+          ]
+        },
+        "42": {
+          "sharpe_dt": 0.0,
+          "sharpe_bh": 0.7274,
+          "sharpe_teacher": 0.8202,
+          "delta_sharpe": -0.7274,
+          "delta_vs_teacher": -0.8202,
+          "mean_fold_delta": -0.5007,
+          "std_fold_delta": 1.8667,
+          "mean_auc": 0.5192,
+          "mean_hit_rate": 0.5192,
+          "mean_exposure": 0.0,
+          "mean_teacher_exposure": 0.1315,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 0,
+          "fold_deltas": [
+            0.0397,
+            -1.8625,
+            2.851,
+            -2.4144,
+            -1.1172
+          ],
+          "fold_deltas_vs_teacher": [
+            0.0,
+            0.0,
+            0.0,
+            -1.8389,
+            0.0
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "GLD",
+      "mean_delta": -0.759,
+      "std_delta": 0.0711,
+      "sigma_edge": -10.6816,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.4805,
+      "mean_delta_vs_teacher": -0.0542,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": 0.2576,
+          "sharpe_b": 1.0144,
+          "sharpe_diff": -0.7568,
+          "z": -2.9388,
+          "p_two_sided": 0.003294673675693672,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": 0.2576,
+          "sharpe_b": 0.3091,
+          "sharpe_diff": -0.0515,
+          "z": -0.2198,
+          "p_two_sided": 0.8260124569483696,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.3239,
+          "sharpe_bh": 1.0137,
+          "sharpe_teacher": 0.3089,
+          "delta_sharpe": -0.6897,
+          "delta_vs_teacher": 0.015,
+          "mean_fold_delta": -0.8504,
+          "std_fold_delta": 0.3494,
+          "mean_auc": 0.4945,
+          "mean_hit_rate": 0.489,
+          "mean_exposure": 0.5548,
+          "mean_teacher_exposure": 0.5712,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 46,
+          "fold_deltas": [
+            -0.8197,
+            -0.5745,
+            -1.3312,
+            -1.1421,
+            -0.3846
+          ],
+          "fold_deltas_vs_teacher": [
+            0.4244,
+            -0.9522,
+            0.6002,
+            -0.0714,
+            0.1779
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.2809,
+          "sharpe_bh": 1.0137,
+          "sharpe_teacher": 0.3089,
+          "delta_sharpe": -0.7328,
+          "delta_vs_teacher": -0.028,
+          "mean_fold_delta": -0.9781,
+          "std_fold_delta": 0.4855,
+          "mean_auc": 0.4767,
+          "mean_hit_rate": 0.4877,
+          "mean_exposure": 0.5507,
+          "mean_teacher_exposure": 0.5712,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 42,
+          "fold_deltas": [
+            -1.1705,
+            -0.4996,
+            -1.7457,
+            -1.0593,
+            -0.4153
+          ],
+          "fold_deltas_vs_teacher": [
+            0.0735,
+            -0.8773,
+            0.1857,
+            0.0113,
+            0.1472
+          ]
+        },
+        "7": {
+          "sharpe_dt": 0.278,
+          "sharpe_bh": 1.0137,
+          "sharpe_teacher": 0.3089,
+          "delta_sharpe": -0.7356,
+          "delta_vs_teacher": -0.0308,
+          "mean_fold_delta": -0.9045,
+          "std_fold_delta": 0.4101,
+          "mean_auc": 0.4808,
+          "mean_hit_rate": 0.4794,
+          "mean_exposure": 0.5644,
+          "mean_teacher_exposure": 0.5712,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 42,
+          "fold_deltas": [
+            -0.85,
+            -0.5739,
+            -1.5816,
+            -1.0957,
+            -0.421
+          ],
+          "fold_deltas_vs_teacher": [
+            0.394,
+            -0.9516,
+            0.3498,
+            -0.025,
+            0.1415
+          ]
+        },
+        "42": {
+          "sharpe_dt": 0.1357,
+          "sharpe_bh": 1.0137,
+          "sharpe_teacher": 0.3089,
+          "delta_sharpe": -0.878,
+          "delta_vs_teacher": -0.1732,
+          "mean_fold_delta": -0.9828,
+          "std_fold_delta": 0.2972,
+          "mean_auc": 0.4699,
+          "mean_hit_rate": 0.4726,
+          "mean_exposure": 0.5822,
+          "mean_teacher_exposure": 0.5712,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 37,
+          "fold_deltas": [
+            -0.6039,
+            -0.972,
+            -1.4765,
+            -1.0869,
+            -0.7744
+          ],
+          "fold_deltas_vs_teacher": [
+            0.6401,
+            -1.3497,
+            0.4549,
+            -0.0162,
+            -0.2119
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "USO",
+      "mean_delta": -0.3072,
+      "std_delta": 0.0628,
+      "sigma_edge": -4.8926,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.5212,
+      "mean_delta_vs_teacher": 0.0883,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": 1.2845,
+          "sharpe_b": 1.5678,
+          "sharpe_diff": -0.2833,
+          "z": -0.737,
+          "p_two_sided": 0.461118681338955,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": 1.2845,
+          "sharpe_b": 1.1721,
+          "sharpe_diff": 0.1124,
+          "z": 0.4079,
+          "p_two_sided": 0.683319927452682,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 1.3001,
+          "sharpe_bh": 1.5667,
+          "sharpe_teacher": 1.1713,
+          "delta_sharpe": -0.2666,
+          "delta_vs_teacher": 0.1288,
+          "mean_fold_delta": -0.1621,
+          "std_fold_delta": 0.6903,
+          "mean_auc": 0.5288,
+          "mean_hit_rate": 0.5192,
+          "mean_exposure": 0.6068,
+          "mean_teacher_exposure": 0.6356,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 59,
+          "fold_deltas": [
+            -0.85,
+            -0.6347,
+            0.7979,
+            0.5481,
+            -0.6719
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.0017,
+            0.8408,
+            -0.425,
+            0.6679,
+            -0.2255
+          ]
+        },
+        "1": {
+          "sharpe_dt": 1.1823,
+          "sharpe_bh": 1.5667,
+          "sharpe_teacher": 1.1713,
+          "delta_sharpe": -0.3845,
+          "delta_vs_teacher": 0.011,
+          "mean_fold_delta": -0.3109,
+          "std_fold_delta": 0.737,
+          "mean_auc": 0.5164,
+          "mean_hit_rate": 0.5137,
+          "mean_exposure": 0.5767,
+          "mean_teacher_exposure": 0.6356,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 57,
+          "fold_deltas": [
+            -1.0236,
+            -1.1796,
+            0.6598,
+            0.397,
+            -0.4081
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.1753,
+            0.2958,
+            -0.5631,
+            0.5169,
+            0.0383
+          ]
+        },
+        "7": {
+          "sharpe_dt": 1.3391,
+          "sharpe_bh": 1.5667,
+          "sharpe_teacher": 1.1713,
+          "delta_sharpe": -0.2277,
+          "delta_vs_teacher": 0.1678,
+          "mean_fold_delta": -0.1354,
+          "std_fold_delta": 0.5907,
+          "mean_auc": 0.5219,
+          "mean_hit_rate": 0.5205,
+          "mean_exposure": 0.5918,
+          "mean_teacher_exposure": 0.6356,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 55,
+          "fold_deltas": [
+            -0.7513,
+            -0.5947,
+            0.6507,
+            0.5064,
+            -0.488
+          ],
+          "fold_deltas_vs_teacher": [
+            0.097,
+            0.8807,
+            -0.5722,
+            0.6262,
+            -0.0416
+          ]
+        },
+        "42": {
+          "sharpe_dt": 1.2169,
+          "sharpe_bh": 1.5667,
+          "sharpe_teacher": 1.1713,
+          "delta_sharpe": -0.3499,
+          "delta_vs_teacher": 0.0456,
+          "mean_fold_delta": -0.3149,
+          "std_fold_delta": 0.7895,
+          "mean_auc": 0.5178,
+          "mean_hit_rate": 0.5137,
+          "mean_exposure": 0.5849,
+          "mean_teacher_exposure": 0.6356,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 53,
+          "fold_deltas": [
+            -0.846,
+            -1.0588,
+            1.1687,
+            -0.59,
+            -0.2486
+          ],
+          "fold_deltas_vs_teacher": [
+            0.0023,
+            0.4167,
+            -0.0542,
+            -0.4702,
+            0.1978
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "DBA",
+      "mean_delta": 0.1172,
+      "std_delta": 0.0815,
+      "sigma_edge": 1.438,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.5304,
+      "mean_delta_vs_teacher": 0.0474,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": 1.2248,
+          "sharpe_b": 1.0715,
+          "sharpe_diff": 0.1533,
+          "z": 0.3763,
+          "p_two_sided": 0.7066765183255468,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": 1.2248,
+          "sharpe_b": 1.1414,
+          "sharpe_diff": 0.0835,
+          "z": 0.3866,
+          "p_two_sided": 0.699057594637627,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 1.2947,
+          "sharpe_bh": 1.0708,
+          "sharpe_teacher": 1.1406,
+          "delta_sharpe": 0.2239,
+          "delta_vs_teacher": 0.1541,
+          "mean_fold_delta": 0.1422,
+          "std_fold_delta": 0.8134,
+          "mean_auc": 0.526,
+          "mean_hit_rate": 0.5328,
+          "mean_exposure": 0.6562,
+          "mean_teacher_exposure": 0.7082,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 42,
+          "fold_deltas": [
+            0.1959,
+            1.6545,
+            -0.3894,
+            -0.0586,
+            -0.6915
+          ],
+          "fold_deltas_vs_teacher": [
+            0.4083,
+            0.1321,
+            0.4082,
+            0.3108,
+            -0.6793
+          ]
+        },
+        "1": {
+          "sharpe_dt": 1.1984,
+          "sharpe_bh": 1.0708,
+          "sharpe_teacher": 1.1406,
+          "delta_sharpe": 0.1277,
+          "delta_vs_teacher": 0.0578,
+          "mean_fold_delta": 0.0791,
+          "std_fold_delta": 0.7252,
+          "mean_auc": 0.5287,
+          "mean_hit_rate": 0.5315,
+          "mean_exposure": 0.6822,
+          "mean_teacher_exposure": 0.7082,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 34,
+          "fold_deltas": [
+            -0.4827,
+            1.4659,
+            -0.429,
+            -0.2821,
+            0.1234
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.2703,
+            -0.0565,
+            0.3687,
+            0.0873,
+            0.1356
+          ]
+        },
+        "7": {
+          "sharpe_dt": 1.1935,
+          "sharpe_bh": 1.0708,
+          "sharpe_teacher": 1.1406,
+          "delta_sharpe": 0.1228,
+          "delta_vs_teacher": 0.053,
+          "mean_fold_delta": 0.0656,
+          "std_fold_delta": 0.6953,
+          "mean_auc": 0.5342,
+          "mean_hit_rate": 0.5356,
+          "mean_exposure": 0.6507,
+          "mean_teacher_exposure": 0.7082,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 38,
+          "fold_deltas": [
+            -0.1311,
+            1.2801,
+            -0.8825,
+            -0.0024,
+            0.064
+          ],
+          "fold_deltas_vs_teacher": [
+            0.0813,
+            -0.2423,
+            -0.0849,
+            0.367,
+            0.0763
+          ]
+        },
+        "42": {
+          "sharpe_dt": 1.0653,
+          "sharpe_bh": 1.0708,
+          "sharpe_teacher": 1.1406,
+          "delta_sharpe": -0.0055,
+          "delta_vs_teacher": -0.0753,
+          "mean_fold_delta": -0.1334,
+          "std_fold_delta": 0.3347,
+          "mean_auc": 0.5329,
+          "mean_hit_rate": 0.5411,
+          "mean_exposure": 0.6206,
+          "mean_teacher_exposure": 0.7082,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 38,
+          "fold_deltas": [
+            -0.3471,
+            0.391,
+            -0.3014,
+            -0.5218,
+            0.1123
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.1347,
+            -1.1314,
+            0.4962,
+            -0.1523,
+            0.1245
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "EFA",
+      "mean_delta": -0.7759,
+      "std_delta": 0.0511,
+      "sigma_edge": -15.1975,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.4921,
+      "mean_delta_vs_teacher": -0.2481,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": 0.2386,
+          "sharpe_b": 1.0105,
+          "sharpe_diff": -0.7719,
+          "z": -2.2399,
+          "p_two_sided": 0.025094384685491165,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": 0.2386,
+          "sharpe_b": 0.4824,
+          "sharpe_diff": -0.2438,
+          "z": -0.993,
+          "p_two_sided": 0.32071204841172346,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.2578,
+          "sharpe_bh": 1.0098,
+          "sharpe_teacher": 0.482,
+          "delta_sharpe": -0.752,
+          "delta_vs_teacher": -0.2242,
+          "mean_fold_delta": -0.7497,
+          "std_fold_delta": 0.328,
+          "mean_auc": 0.5,
+          "mean_hit_rate": 0.4932,
+          "mean_exposure": 0.6904,
+          "mean_teacher_exposure": 0.7301,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 32,
+          "fold_deltas": [
+            -0.6198,
+            -1.0068,
+            -1.2504,
+            -0.3769,
+            -0.4944
+          ],
+          "fold_deltas_vs_teacher": [
+            0.6157,
+            -1.091,
+            0.0743,
+            0.1954,
+            -0.3118
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.1468,
+          "sharpe_bh": 1.0098,
+          "sharpe_teacher": 0.482,
+          "delta_sharpe": -0.8629,
+          "delta_vs_teacher": -0.3352,
+          "mean_fold_delta": -0.9405,
+          "std_fold_delta": 0.4075,
+          "mean_auc": 0.4891,
+          "mean_hit_rate": 0.4822,
+          "mean_exposure": 0.6767,
+          "mean_teacher_exposure": 0.7301,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 32,
+          "fold_deltas": [
+            -1.2681,
+            -1.2443,
+            -1.3015,
+            -0.3809,
+            -0.5079
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.0326,
+            -1.3285,
+            0.0232,
+            0.1914,
+            -0.3252
+          ]
+        },
+        "7": {
+          "sharpe_dt": 0.2776,
+          "sharpe_bh": 1.0098,
+          "sharpe_teacher": 0.482,
+          "delta_sharpe": -0.7322,
+          "delta_vs_teacher": -0.2044,
+          "mean_fold_delta": -0.8476,
+          "std_fold_delta": 0.3267,
+          "mean_auc": 0.4945,
+          "mean_hit_rate": 0.4904,
+          "mean_exposure": 0.6685,
+          "mean_teacher_exposure": 0.7301,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 36,
+          "fold_deltas": [
+            -1.3116,
+            -0.9463,
+            -0.9818,
+            -0.6541,
+            -0.3443
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.0761,
+            -1.0305,
+            0.3429,
+            -0.0819,
+            -0.1617
+          ]
+        },
+        "42": {
+          "sharpe_dt": 0.2533,
+          "sharpe_bh": 1.0098,
+          "sharpe_teacher": 0.482,
+          "delta_sharpe": -0.7565,
+          "delta_vs_teacher": -0.2287,
+          "mean_fold_delta": -0.8816,
+          "std_fold_delta": 0.6194,
+          "mean_auc": 0.4849,
+          "mean_hit_rate": 0.4918,
+          "mean_exposure": 0.6753,
+          "mean_teacher_exposure": 0.7301,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 35,
+          "fold_deltas": [
+            -1.1344,
+            -0.7658,
+            -1.9376,
+            -0.2001,
+            -0.3701
+          ],
+          "fold_deltas_vs_teacher": [
+            0.1011,
+            -0.85,
+            -0.6129,
+            0.3721,
+            -0.1874
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "EEM",
+      "mean_delta": -0.7905,
+      "std_delta": 0.158,
+      "sigma_edge": -5.0039,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.4853,
+      "mean_delta_vs_teacher": -0.2636,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 730,
+          "sharpe_a": 0.2602,
+          "sharpe_b": 1.0434,
+          "sharpe_diff": -0.7832,
+          "z": -2.2198,
+          "p_two_sided": 0.026430252737198855,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 730,
+          "sharpe_a": 0.2602,
+          "sharpe_b": 0.5162,
+          "sharpe_diff": -0.256,
+          "z": -0.6873,
+          "p_two_sided": 0.49191491411259297,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.3516,
+          "sharpe_bh": 1.0427,
+          "sharpe_teacher": 0.5159,
+          "delta_sharpe": -0.6911,
+          "delta_vs_teacher": -0.1643,
+          "mean_fold_delta": -0.7184,
+          "std_fold_delta": 0.3517,
+          "mean_auc": 0.4808,
+          "mean_hit_rate": 0.4959,
+          "mean_exposure": 0.6164,
+          "mean_teacher_exposure": 0.6575,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 42,
+          "fold_deltas": [
+            -0.2646,
+            -1.1331,
+            -0.5197,
+            -1.1313,
+            -0.5433
+          ],
+          "fold_deltas_vs_teacher": [
+            1.528,
+            -1.2838,
+            0.5336,
+            -0.323,
+            -0.463
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.3466,
+          "sharpe_bh": 1.0427,
+          "sharpe_teacher": 0.5159,
+          "delta_sharpe": -0.6961,
+          "delta_vs_teacher": -0.1692,
+          "mean_fold_delta": -0.7935,
+          "std_fold_delta": 0.4551,
+          "mean_auc": 0.4849,
+          "mean_hit_rate": 0.4863,
+          "mean_exposure": 0.6123,
+          "mean_teacher_exposure": 0.6575,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 40,
+          "fold_deltas": [
+            -0.9788,
+            -1.3545,
+            -0.4714,
+            -1.078,
+            -0.0851
+          ],
+          "fold_deltas_vs_teacher": [
+            0.8139,
+            -1.5052,
+            0.5819,
+            -0.2697,
+            -0.0049
+          ]
+        },
+        "7": {
+          "sharpe_dt": 0.3318,
+          "sharpe_bh": 1.0427,
+          "sharpe_teacher": 0.5159,
+          "delta_sharpe": -0.7109,
+          "delta_vs_teacher": -0.1841,
+          "mean_fold_delta": -0.853,
+          "std_fold_delta": 0.4683,
+          "mean_auc": 0.4877,
+          "mean_hit_rate": 0.4973,
+          "mean_exposure": 0.6233,
+          "mean_teacher_exposure": 0.6575,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 50,
+          "fold_deltas": [
+            -1.5312,
+            -0.7398,
+            -0.949,
+            -0.9674,
+            -0.0775
+          ],
+          "fold_deltas_vs_teacher": [
+            0.2614,
+            -0.8906,
+            0.1043,
+            -0.1591,
+            0.0028
+          ]
+        },
+        "42": {
+          "sharpe_dt": -0.0211,
+          "sharpe_bh": 1.0427,
+          "sharpe_teacher": 0.5159,
+          "delta_sharpe": -1.0638,
+          "delta_vs_teacher": -0.5369,
+          "mean_fold_delta": -1.1604,
+          "std_fold_delta": 0.2992,
+          "mean_auc": 0.4877,
+          "mean_hit_rate": 0.474,
+          "mean_exposure": 0.6082,
+          "mean_teacher_exposure": 0.6575,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 46,
+          "fold_deltas": [
+            -1.2008,
+            -1.3094,
+            -1.4051,
+            -1.3105,
+            -0.5762
+          ],
+          "fold_deltas_vs_teacher": [
+            0.5918,
+            -1.4602,
+            -0.3518,
+            -0.5022,
+            -0.4959
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "BTC-USD",
+      "mean_delta": 0.0044,
+      "std_delta": 0.0804,
+      "sigma_edge": 0.0544,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.5295,
+      "mean_delta_vs_teacher": -0.1535,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 1160,
+          "sharpe_a": 1.3769,
+          "sharpe_b": 1.3572,
+          "sharpe_diff": 0.0197,
+          "z": 0.0681,
+          "p_two_sided": 0.9457055857125974,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 1160,
+          "sharpe_a": 1.3769,
+          "sharpe_b": 1.5152,
+          "sharpe_diff": -0.1383,
+          "z": -0.7589,
+          "p_two_sided": 0.447888224815962,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 1.4546,
+          "sharpe_bh": 1.3566,
+          "sharpe_teacher": 1.5145,
+          "delta_sharpe": 0.098,
+          "delta_vs_teacher": -0.0599,
+          "mean_fold_delta": -0.0185,
+          "std_fold_delta": 0.1323,
+          "mean_auc": 0.5371,
+          "mean_hit_rate": 0.5302,
+          "mean_exposure": 0.6043,
+          "mean_teacher_exposure": 0.5862,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 88,
+          "fold_deltas": [
+            -0.1012,
+            -0.1945,
+            0.1283,
+            0.1421,
+            -0.0673
+          ],
+          "fold_deltas_vs_teacher": [
+            0.0009,
+            -0.5104,
+            0.217,
+            -0.0498,
+            -0.0213
+          ]
+        },
+        "1": {
+          "sharpe_dt": 1.2673,
+          "sharpe_bh": 1.3566,
+          "sharpe_teacher": 1.5145,
+          "delta_sharpe": -0.0893,
+          "delta_vs_teacher": -0.2472,
+          "mean_fold_delta": -0.1887,
+          "std_fold_delta": 0.2788,
+          "mean_auc": 0.525,
+          "mean_hit_rate": 0.5259,
+          "mean_exposure": 0.6052,
+          "mean_teacher_exposure": 0.5862,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 102,
+          "fold_deltas": [
+            -0.1916,
+            -0.4103,
+            -0.491,
+            -0.1593,
+            0.3086
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.0895,
+            -0.7261,
+            -0.4023,
+            -0.3511,
+            0.3545
+          ]
+        },
+        "7": {
+          "sharpe_dt": 1.4255,
+          "sharpe_bh": 1.3566,
+          "sharpe_teacher": 1.5145,
+          "delta_sharpe": 0.0688,
+          "delta_vs_teacher": -0.0891,
+          "mean_fold_delta": -0.0658,
+          "std_fold_delta": 0.1658,
+          "mean_auc": 0.5233,
+          "mean_hit_rate": 0.5224,
+          "mean_exposure": 0.5966,
+          "mean_teacher_exposure": 0.5862,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 96,
+          "fold_deltas": [
+            0.0234,
+            -0.0877,
+            -0.3729,
+            0.1081,
+            0.0005
+          ],
+          "fold_deltas_vs_teacher": [
+            0.1254,
+            -0.4036,
+            -0.2842,
+            -0.0838,
+            0.0465
+          ]
+        },
+        "42": {
+          "sharpe_dt": 1.2966,
+          "sharpe_bh": 1.3566,
+          "sharpe_teacher": 1.5145,
+          "delta_sharpe": -0.06,
+          "delta_vs_teacher": -0.2179,
+          "mean_fold_delta": -0.174,
+          "std_fold_delta": 0.3198,
+          "mean_auc": 0.5328,
+          "mean_hit_rate": 0.5207,
+          "mean_exposure": 0.5914,
+          "mean_teacher_exposure": 0.5862,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 84,
+          "fold_deltas": [
+            -0.2242,
+            -0.2615,
+            -0.6972,
+            0.2233,
+            0.0897
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.1221,
+            -0.5773,
+            -0.6084,
+            0.0315,
+            0.1356
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "ETH-USD",
+      "mean_delta": -0.6646,
+      "std_delta": 0.1486,
+      "sigma_edge": -4.473,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.488,
+      "mean_delta_vs_teacher": -0.4365,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 810,
+          "sharpe_a": -0.329,
+          "sharpe_b": 0.3474,
+          "sharpe_diff": -0.6765,
+          "z": -1.84,
+          "p_two_sided": 0.06577226345321804,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 810,
+          "sharpe_a": -0.329,
+          "sharpe_b": 0.1192,
+          "sharpe_diff": -0.4482,
+          "z": -1.7509,
+          "p_two_sided": 0.07995711611492758,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": -0.4057,
+          "sharpe_bh": 0.3472,
+          "sharpe_teacher": 0.1191,
+          "delta_sharpe": -0.753,
+          "delta_vs_teacher": -0.5249,
+          "mean_fold_delta": -1.0995,
+          "std_fold_delta": 0.9852,
+          "mean_auc": 0.4852,
+          "mean_hit_rate": 0.4815,
+          "mean_exposure": 0.3926,
+          "mean_teacher_exposure": 0.4555,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 86,
+          "fold_deltas": [
+            -0.5186,
+            -0.6595,
+            -1.3669,
+            -2.8844,
+            -0.068
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.3102,
+            -0.7206,
+            -1.0052,
+            -0.4966,
+            0.127
+          ]
+        },
+        "1": {
+          "sharpe_dt": -0.2131,
+          "sharpe_bh": 0.3472,
+          "sharpe_teacher": 0.1191,
+          "delta_sharpe": -0.5603,
+          "delta_vs_teacher": -0.3322,
+          "mean_fold_delta": -0.9016,
+          "std_fold_delta": 1.081,
+          "mean_auc": 0.4889,
+          "mean_hit_rate": 0.4889,
+          "mean_exposure": 0.4173,
+          "mean_teacher_exposure": 0.4555,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 71,
+          "fold_deltas": [
+            -0.0997,
+            -0.3744,
+            -1.5285,
+            -2.7161,
+            0.2103
+          ],
+          "fold_deltas_vs_teacher": [
+            0.1088,
+            -0.4355,
+            -1.1668,
+            -0.3283,
+            0.4053
+          ]
+        },
+        "7": {
+          "sharpe_dt": -0.5117,
+          "sharpe_bh": 0.3472,
+          "sharpe_teacher": 0.1191,
+          "delta_sharpe": -0.859,
+          "delta_vs_teacher": -0.6308,
+          "mean_fold_delta": -1.2589,
+          "std_fold_delta": 0.4266,
+          "mean_auc": 0.4902,
+          "mean_hit_rate": 0.4827,
+          "mean_exposure": 0.421,
+          "mean_teacher_exposure": 0.4555,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 85,
+          "fold_deltas": [
+            -0.9026,
+            -0.7274,
+            -1.3434,
+            -1.9526,
+            -1.3687
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.6941,
+            -0.7885,
+            -0.9818,
+            0.4351,
+            -1.1737
+          ]
+        },
+        "42": {
+          "sharpe_dt": -0.139,
+          "sharpe_bh": 0.3472,
+          "sharpe_teacher": 0.1191,
+          "delta_sharpe": -0.4862,
+          "delta_vs_teacher": -0.2581,
+          "mean_fold_delta": -0.9583,
+          "std_fold_delta": 0.8287,
+          "mean_auc": 0.4877,
+          "mean_hit_rate": 0.4877,
+          "mean_exposure": 0.4111,
+          "mean_teacher_exposure": 0.4555,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 76,
+          "fold_deltas": [
+            -1.133,
+            -0.2661,
+            -1.2822,
+            -2.2382,
+            0.1283
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.9245,
+            -0.3272,
+            -0.9205,
+            0.1495,
+            0.3233
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "LTC-USD",
+      "mean_delta": 0.1293,
+      "std_delta": 0.0991,
+      "sigma_edge": 1.3045,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.4909,
+      "mean_delta_vs_teacher": 0.1288,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 1160,
+          "sharpe_a": 0.904,
+          "sharpe_b": 0.7541,
+          "sharpe_diff": 0.15,
+          "z": 0.6104,
+          "p_two_sided": 0.5416042758918288,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 1160,
+          "sharpe_a": 0.904,
+          "sharpe_b": 0.7545,
+          "sharpe_diff": 0.1495,
+          "z": 0.8998,
+          "p_two_sided": 0.3682276849519909,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.9552,
+          "sharpe_bh": 0.7537,
+          "sharpe_teacher": 0.7542,
+          "delta_sharpe": 0.2015,
+          "delta_vs_teacher": 0.201,
+          "mean_fold_delta": 0.151,
+          "std_fold_delta": 0.6063,
+          "mean_auc": 0.4897,
+          "mean_hit_rate": 0.4914,
+          "mean_exposure": 0.4647,
+          "mean_teacher_exposure": 0.5009,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 100,
+          "fold_deltas": [
+            0.0466,
+            0.9407,
+            -0.7036,
+            -0.2432,
+            0.7148
+          ],
+          "fold_deltas_vs_teacher": [
+            0.2141,
+            0.1081,
+            -0.1221,
+            -0.0147,
+            1.5654
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.7367,
+          "sharpe_bh": 0.7537,
+          "sharpe_teacher": 0.7542,
+          "delta_sharpe": -0.0171,
+          "delta_vs_teacher": -0.0175,
+          "mean_fold_delta": -0.0049,
+          "std_fold_delta": 0.5231,
+          "mean_auc": 0.4793,
+          "mean_hit_rate": 0.4828,
+          "mean_exposure": 0.4974,
+          "mean_teacher_exposure": 0.5009,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 111,
+          "fold_deltas": [
+            -0.3136,
+            0.5967,
+            -0.6067,
+            -0.351,
+            0.65
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.1461,
+            -0.2358,
+            -0.0252,
+            -0.1225,
+            1.5006
+          ]
+        },
+        "7": {
+          "sharpe_dt": 0.8497,
+          "sharpe_bh": 0.7537,
+          "sharpe_teacher": 0.7542,
+          "delta_sharpe": 0.096,
+          "delta_vs_teacher": 0.0955,
+          "mean_fold_delta": 0.0289,
+          "std_fold_delta": 0.6331,
+          "mean_auc": 0.5,
+          "mean_hit_rate": 0.5017,
+          "mean_exposure": 0.4716,
+          "mean_teacher_exposure": 0.5009,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 98,
+          "fold_deltas": [
+            -0.106,
+            0.8274,
+            -1.0871,
+            0.2392,
+            0.2712
+          ],
+          "fold_deltas_vs_teacher": [
+            0.0615,
+            -0.0051,
+            -0.5056,
+            0.4677,
+            1.1218
+          ]
+        },
+        "42": {
+          "sharpe_dt": 0.9904,
+          "sharpe_bh": 0.7537,
+          "sharpe_teacher": 0.7542,
+          "delta_sharpe": 0.2366,
+          "delta_vs_teacher": 0.2362,
+          "mean_fold_delta": 0.1775,
+          "std_fold_delta": 0.4356,
+          "mean_auc": 0.4948,
+          "mean_hit_rate": 0.4957,
+          "mean_exposure": 0.4621,
+          "mean_teacher_exposure": 0.5009,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 99,
+          "fold_deltas": [
+            0.0338,
+            0.8768,
+            -0.4807,
+            0.2144,
+            0.2435
+          ],
+          "fold_deltas_vs_teacher": [
+            0.2013,
+            0.0442,
+            0.1008,
+            0.4429,
+            1.0942
+          ]
+        }
+      }
+    },
+    {
+      "symbol": "XRP-USD",
+      "mean_delta": 0.1453,
+      "std_delta": 0.1335,
+      "sigma_edge": 1.0885,
+      "is_signal": false,
+      "n_seeds": 4,
+      "mean_auc": 0.4781,
+      "mean_delta_vs_teacher": 0.2178,
+      "seed_mean_tests": {
+        "n_policies": 4,
+        "vs_bh": {
+          "n_days": 810,
+          "sharpe_a": 0.5523,
+          "sharpe_b": 0.3932,
+          "sharpe_diff": 0.1591,
+          "z": 0.5016,
+          "p_two_sided": 0.6159201182606081,
+          "lag": 5
+        },
+        "vs_teacher": {
+          "n_days": 810,
+          "sharpe_a": 0.5523,
+          "sharpe_b": 0.3208,
+          "sharpe_diff": 0.2315,
+          "z": 1.4197,
+          "p_two_sided": 0.15569484107419204,
+          "lag": 5
+        }
+      },
+      "seed_details": {
+        "0": {
+          "sharpe_dt": 0.7586,
+          "sharpe_bh": 0.393,
+          "sharpe_teacher": 0.3206,
+          "delta_sharpe": 0.3656,
+          "delta_vs_teacher": 0.4381,
+          "mean_fold_delta": -0.2783,
+          "std_fold_delta": 1.1153,
+          "mean_auc": 0.4901,
+          "mean_hit_rate": 0.4901,
+          "mean_exposure": 0.3963,
+          "mean_teacher_exposure": 0.4062,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 75,
+          "fold_deltas": [
+            -0.4814,
+            1.6111,
+            -1.0321,
+            -1.6404,
+            0.1515
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.659,
+            1.039,
+            0.4751,
+            0.5455,
+            0.2809
+          ]
+        },
+        "1": {
+          "sharpe_dt": 0.4976,
+          "sharpe_bh": 0.393,
+          "sharpe_teacher": 0.3206,
+          "delta_sharpe": 0.1046,
+          "delta_vs_teacher": 0.177,
+          "mean_fold_delta": -0.4101,
+          "std_fold_delta": 0.8737,
+          "mean_auc": 0.4642,
+          "mean_hit_rate": 0.4679,
+          "mean_exposure": 0.3988,
+          "mean_teacher_exposure": 0.4062,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 75,
+          "fold_deltas": [
+            -0.2916,
+            1.0134,
+            -0.68,
+            -1.7147,
+            -0.3775
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.4693,
+            0.4414,
+            0.8273,
+            0.4712,
+            -0.2481
+          ]
+        },
+        "7": {
+          "sharpe_dt": 0.4988,
+          "sharpe_bh": 0.393,
+          "sharpe_teacher": 0.3206,
+          "delta_sharpe": 0.1058,
+          "delta_vs_teacher": 0.1783,
+          "mean_fold_delta": -0.4395,
+          "std_fold_delta": 0.9248,
+          "mean_auc": 0.4839,
+          "mean_hit_rate": 0.4753,
+          "mean_exposure": 0.4284,
+          "mean_teacher_exposure": 0.4062,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 69,
+          "fold_deltas": [
+            0.181,
+            0.8684,
+            -1.2758,
+            -1.6508,
+            -0.3202
+          ],
+          "fold_deltas_vs_teacher": [
+            0.0033,
+            0.2963,
+            0.2314,
+            0.5351,
+            -0.1908
+          ]
+        },
+        "42": {
+          "sharpe_dt": 0.3984,
+          "sharpe_bh": 0.393,
+          "sharpe_teacher": 0.3206,
+          "delta_sharpe": 0.0054,
+          "delta_vs_teacher": 0.0779,
+          "mean_fold_delta": -0.4511,
+          "std_fold_delta": 0.8751,
+          "mean_auc": 0.4741,
+          "mean_hit_rate": 0.4691,
+          "mean_exposure": 0.4123,
+          "mean_teacher_exposure": 0.4062,
+          "eval_protocol": "causal-v1 (#21187)",
+          "n_params": 642563,
+          "state_dim": 360,
+          "n_folds": 5,
+          "n_trades": 69,
+          "fold_deltas": [
+            0.1512,
+            0.6137,
+            -0.5615,
+            -1.9739,
+            -0.4849
+          ],
+          "fold_deltas_vs_teacher": [
+            -0.0265,
+            0.0417,
+            0.9458,
+            0.212,
+            -0.3555
+          ]
+        }
+      }
+    }
+  ],
+  "n_combos": 104,
+  "elapsed_s": 9587.53,
+  "device": "cuda",
+  "smoke": false,
+  "data": {
+    "first_day": "2015-01-01",
+    "last_day": "2026-05-22"
+  },
+  "config": {
+    "model": "DecisionTransformer",
+    "d_model": 128,
+    "nhead": 4,
+    "num_layers": 3,
+    "context_length": 20,
+    "window": 20,
+    "epochs_per_fold": 15,
+    "n_splits": 5,
+    "seeds": [
+      0,
+      1,
+      7,
+      42
+    ],
+    "commission_bps": 5.0
+  }
+}

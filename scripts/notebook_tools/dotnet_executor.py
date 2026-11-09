@@ -17,6 +17,8 @@ from pathlib import Path
 
 import jupyter_client
 
+from _dotnet_env import (effective_root, repair_launch_env,
+                         sdk_bearing_dotnet_root)
 from _papermill_meta import strip_stale_papermill_metadata
 from notebook_helpers import bound_native_thread_pools
 
@@ -173,7 +175,22 @@ def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
         # hosts and training cells look frozen (#11111). Kernel inherits env.
         bound_native_thread_pools()
         km = jupyter_client.KernelManager(kernel_name=kernel_name)
-        km.start_kernel(cwd=str(notebook_dir))
+        launch_kwargs = {"cwd": str(notebook_dir)}
+        sdk_root = sdk_bearing_dotnet_root()
+        if sdk_root:
+            # A DOTNET_ROOT without an SDK cannot restore `#r "nuget:"`
+            # packages at all (#17361). Repair it for the kernel subprocess
+            # only; the machine-level variable is never written. Said out loud
+            # rather than silently: a hidden repair is indistinguishable from
+            # an env that was fine.
+            launch_kwargs["env"] = repair_launch_env(sdk_root)
+            # Name the root being replaced through ``effective_root()``, never
+            # ``os.environ['DOTNET_ROOT']``: the variable is absent in exactly
+            # the case where the repair now fires, and indexing it there turned
+            # the announcement into a KeyError that killed the launch.
+            print(f"  DOTNET_ROOT+PATH for the kernel: {effective_root()} -> "
+                  f"{sdk_root} (resolved root has no SDK)")
+        km.start_kernel(**launch_kwargs)
         kc = km.client()
         kc.start_channels()
 

@@ -116,9 +116,10 @@ jobs:
       # closure markdown-rendering, Pillow pour scan_md_hierarchy). Bare
       # setup-python ne fournit pas pyyaml ; sans install, le scan de
       # closure se traduit en ImportError et la cause est reportee a tort
-      # comme un _quarto.yml invalide (issue #11850).
-      - name: "Installer dependances detecteurs (pyyaml, Pillow)"
-        run: pip install --quiet pyyaml Pillow
+      # comme un _quarto.yml invalide (issue #11850). pytest pour le garde
+      # dwell-narrative-pin (#22279).
+      - name: "Installer dependances detecteurs (pyyaml, Pillow, pytest)"
+        run: pip install --quiet pyyaml Pillow pytest
 
       - name: "Gardes de la voie rapide (verdicts en check-runs nommes)"
         env:

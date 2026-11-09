@@ -50,7 +50,10 @@ withDefaults(defineProps<{
 }
 .ts[data-placement='below'] {
   grid-template-areas: 'copy' 'visual';
-  grid-template-rows: auto auto;
+  /* la rangee visuelle prend le RESTE de la hauteur du groupe (bornee),
+   * pas la hauteur de l'image -- sinon une figure haute pousse le groupe
+   * hors de sa zone. */
+  grid-template-rows: auto minmax(0, 1fr);
 }
 .ts[data-placement='below'] .ts-visual {
   justify-self: center;
@@ -63,7 +66,16 @@ withDefaults(defineProps<{
 .ts-visual {
   grid-area: visual;
   min-width: 0;
-  align-self: center;
+  /* #15048 : la boite visuelle est BORNEE a la hauteur de son groupe
+     (stretch), l'image s'y contient -- sinon une figure plus haute que sa
+     moitie de diapo deborde sur le groupe voisin (mesure pilote 08 :
+     overlap [0,1] + 62px d'overflow vertical avant ce correctif). */
+  min-height: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 .ts-visual :deep(img) {
   width: 100%;

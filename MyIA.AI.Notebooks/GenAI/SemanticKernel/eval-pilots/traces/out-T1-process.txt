@@ -1,0 +1,12 @@
+[step] intake -> {'text': 'le framework orchestre des etapes evenementielles'}
+[step] enrich -> {'text': 'le framework orchestre des etapes evenementielles', 'words': 6, 'label': 'long'}
+[step] review -> {'text': 'le framework orchestre des etapes evenementielles', 'words': 6, 'label': 'long', 'verdict': 'approved'}
+[step] publish -> {'text': 'le framework orchestre des etapes evenementielles', 'verdict': 'approved'}
+[step] intake -> {'text': 'ok'}
+[step] enrich -> {'text': 'ok', 'words': 1, 'label': 'court'}
+[step] review -> {'text': 'ok', 'words': 1, 'label': 'court', 'verdict': 'rejected'}
+[step] reject -> {'text': 'ok', 'verdict': 'rejected'}
+DETERMINISM: OK
+final publish state: ['le framework orchestre des etapes evenementielles']
+final reject state: ['ok']
+PILOT OK sk=1.41.3 steps=8

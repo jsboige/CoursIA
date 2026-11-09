@@ -1,0 +1,25 @@
+date: '2026-10-04'
+by: myia-ai-01:CoursIA-2
+python_sha: 40d73ca40ae2209d81cf1586c98c1e298a9d22d6
+csharp_sha: 38a9c687509e4b9827416842c29a32eb1c7fe676
+content_python_sha: 2ed6ef73e118677db05424429712104173f9aad1f30037d52153900fddc4433e
+content_csharp_sha: aa43862d7a01acf9fd555b1ffc578976a78e46bf0a2d9e656887caea3775de1f
+reason: >-
+  Fusion d'une accretion dans son hote (repair #19109, reserve de profondeur
+  ai-01 du 2026-10-04 20:10Z), Python-only. Le contenu de Search-03g
+  (operation 3 du chantier ICT #12204 : quotienter / fibrer) devient la
+  SECTION 12 de ce carnet, dont 03g se declarait lui-meme l'enfant
+  (« Search-03b recommande au prealable ») ; la lettre 03g est retiree, la
+  branche Search-3 restant sous le plafond e-f de la regle d'accretion §4.
+  Ce qui est ajoute est de la MESURE et de la prose : enumeration exhaustive
+  de l'espace 3x3 (60 480 etats), regle de chaine H(X) = H(S_B) + H(X|S_B)
+  (15,884 = 6,392 + 9,492 bits), temoin I(X_A;X_B|S_B) = 0 contre 2,071 bits
+  marginaux, contre-temoin profils de lignes (residu 1,583 bit), commutation
+  81/81 par structure dans Z_9 contre 80/84 par contingence dans le puzzle.
+  AUCUN moteur tiers n'est introduit et AUCUN code d'engine n'est ajoute :
+  l'axe de parite `semantic` (from-scratch des deux cotes, BFS + Manhattan
+  modifie) est intact, et le jumeau C# n'est pas touche -- la correction est
+  unilaterale a juste titre. Le carnet Python est passe de 30 a 49 cellules
+  et a ete re-execute en entier (338 s, 0 erreur, 19 cellules de code a
+  outputs). Le blob atteste ici est celui de la tete de la PR #19109
+  (commit 45aa7082f). Aucun strip outile posterieur en attente.

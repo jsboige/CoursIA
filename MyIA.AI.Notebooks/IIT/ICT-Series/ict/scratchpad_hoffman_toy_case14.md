@@ -8,7 +8,7 @@
 > **Suite directe case 11 (PR #14535 MERGED 2026-09-04T02:11:33Z, N=4 null), case 12 (PR #14544, N=8 dissociation 4/8), case 13 (PR #14548, N=16 NULL 0/16 réfutation).**
 > Case 13 a **réfuté** la mise à l'échelle monotone de la dissociation FBT (cause structurelle : symétrie intra-fibre restaurée à fibre cardinal 8).
 >
-> Cette case 14 teste l'**hypothèse 2** du verdict case 13 (Tell c.896-L1 ★★★) : **relâchement du setup** (compression non-canonique) pourrait restaurer la dissociation à N=8.
+> Cette case 14 teste l'**hypothèse 2** du verdict case 13 : **relâchement du setup** (compression non-canonique) pourrait restaurer la dissociation à N=8.
 
 ## Design (scellé, à implémenter tel quel)
 
@@ -138,11 +138,11 @@ Fit-track sur paysages alignés : convergence triviale aussi (moyenne intra-fibr
 - C.2 : artefact `results/hoffman_interface_toy_n8_relaxed_results.json` commite
 - C.3 : scope strict ; pas de modification cellules ICT existantes
 - H.1 : 18+ tests pytest verts (test_hoffman_interface_toy_n8_relaxed.py)
-- bibliography-hygiene : PDF Prakash et al. 2017 archive GDrive (deja fait case 11)
+- bibliography-hygiene : préprint Prakash et al. (30 juillet 2017) archivé au gisement le 2026-10-25 — la mention antérieure « déjà fait case 11 » était inexacte, le fichier était absent du gisement
 
 ## Crédits / Suite
 
-- **Source primaire** : Prakash, Stephens, Hoffman, Singh & Fields (2017), arXiv:1505.04322
+- **Source primaire** : Prakash, Stephens, Hoffman, Singh & Fields (2021), *Acta Biotheoretica* 69(3) : 319-341, doi:10.1007/s10441-020-09400-0 (§4 du préprint du 30 juillet 2017, archivé au gisement)
 - **Antécedents directs** : case 11 (#14535 MERGED), case 12 (#14544 OPEN), case 13 (#14548 OPEN)
 - **Issue tracker** : #8182 (Veille & distillation TOE ↔ conscience)
 - **EPIC parent** : ICT (#4588)
@@ -164,4 +164,4 @@ L'analyse manuelle des symétries intra-fibre a été **affinée** après mesure
 
 **Conséquence sur le verdict attendu** : score FBT ajusté de `3/8 paysages avec |gap| ≥ 0.10` à `2/8 paysages avec |gap| ≥ 0.60` (les 2 bit2_aligned family uniquement). Les 6 autres paysages sont symétriques intra-fibre sous compression bit2 → nulls attendus.
 
-**Cohérence design ↔ code** : Tell c.898-L1 ★★★ impose que le code livré = pré-enregistrement. La révision ci-dessus aligne le pré-enregistrement sur le code livré (compression bit2 vérifiée par test : `CANONICAL = (0,0,0,0,1,1,1,1)`, fibre x=0 = w ∈ {0,1,2,3}, fibre x=1 = w ∈ {4,5,6,7}). Tout écart entre le pré-enregistrement et le code livré est désormais **documenté** explicitement dans cette section.
+**Cohérence design ↔ code** : le code livré doit être le pré-enregistrement. La révision ci-dessus aligne le pré-enregistrement sur le code livré (compression bit2 vérifiée par test : `CANONICAL = (0,0,0,0,1,1,1,1)`, fibre x=0 = w ∈ {0,1,2,3}, fibre x=1 = w ∈ {4,5,6,7}). Tout écart entre le pré-enregistrement et le code livré est désormais **documenté** explicitement dans cette section.

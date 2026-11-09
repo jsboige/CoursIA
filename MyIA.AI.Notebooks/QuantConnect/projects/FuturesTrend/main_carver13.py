@@ -13,7 +13,24 @@ from breadth_multiplier import breadth_multiplier as _breadth_multiplier_pure
 # the stub below and tests/test_carry_forecast.py share the canonical
 # annualised-carry formula (article #16001) without AlgorithmImports.
 from carry_forecast import annualized_raw_carry as _annualized_raw_carry_pure
+from carry_forecast import blend_forecasts as _blend_forecasts_pure
+from carry_forecast import CARRY_HISTORY_MAX
+from carry_forecast import CARRY_SMOOTHING_SPANS
 from carry_forecast import carry_forecasts as _carry_forecasts_pure
+from carry_forecast import risk_adjusted_carry as _risk_adjusted_carry_pure
+# Pure sizing on notional (#23824). Same pattern: the `fix` branch of
+# `_rebalance` and tests/test_notional_sizing.py share the contract formula.
+from notional_sizing import contract_delta as _contract_delta_pure
+from notional_sizing import target_contracts as _target_contracts_pure
+from contract_roll import roll_orders as _roll_orders_pure
+# Pure pending-order netting (#23962). The `roll` branch of `_rebalance` and
+# tests/test_open_order_netting.py share the rule.
+from open_order_netting import CANCEL as _NETTING_CANCEL
+from open_order_netting import NET as _NETTING_NET
+from open_order_netting import OpenOrder as _OpenOrder
+from open_order_netting import open_order_remainder as _open_order_remainder_pure
+from open_order_netting import reconcile_orders as _reconcile_orders_pure
+from open_order_netting import would_resubmit as _would_resubmit_pure
 # endregion
 
 
@@ -30,12 +47,13 @@ from carry_forecast import carry_forecasts as _carry_forecasts_pure
 # - True continuous futures (18 instruments) instead of 6 ETF proxies.
 # - Six EWMAC horizons (Carver pairs: 8/32, 16/64, 32/128, 64/256, 16/48, 32/96)
 #   with per-horizon scalar normalisation (c.1063), not a single Donchian 20/10.
-# - Carry factor: DISABLED in the blend (c.1107 REPAIR ADJOINT; trend-only,
-#   `CARVER_CARRY_WEIGHT = 0.0`), but the Carver #11 formula now EXISTS as a
-#   pure-numpy module (`carry_forecast.py`, semis #17320 tranche 2): the
-#   c.1107 proxy is replaced by the exact article #16001 annualised
-#   near/further formula, unit-tested on CPU. Tranche 3 activates it in
-#   `_rebalance` via the QC Cloud `Future` chain API (acceptance #17320).
+# - Carry factor: ACTIVE since semis #17320 tranche 3 (`CARVER_CARRY_WEIGHT
+#   = 0.4`, the article #16001 60/40 blend). The c.1107 front-only proxy
+#   (trend-duplicate, disabled) is replaced by the exact Carver #11 formula:
+#   annualised near/further term-structure carry, risk-adjusted, EWMA-smoothed
+#   (spans 5/20/60/120, scalar 30, cap 20) — accumulated daily in `on_data`
+#   from the QC Cloud `Future` chain (near + further contracts), pure-numpy
+#   canon in `carry_forecast.py`, unit-tested on CPU.
 # - Volatility regime multiplier cap in [0.5, 2].
 # - Breadth multiplier (formerly labelled FDM, c.1109 + c.1111 REPAIR-5 +
 #   c.1113 REPAIR-7): we apply the Carver-style gross-leverage adjustment
@@ -85,14 +103,13 @@ def _carver_scalar(slow: int) -> float:
     )
 
 
-# Blend weights (Carver rule 60/40 trend + carry).
-# c.1063 increment over the c.1107 REPAIR: neutralise CARRY_WEIGHT too so
-# the constant matches the inline blend (`blended = trend_component`).
-# The substitution point is in `_carry_forecast` — the chain-API hook on
-# the QC-equipped lane (po-2026) re-introduces 0.4 with a real
-# front/deferred ratio.
+# Blend weights (Carver rule 60/40 trend + carry). Tranche 3 (semis #17320)
+# re-introduces the 0.4 carry weight on the REAL term-structure signal
+# (article #16001 formula in carry_forecast.py) — not the c.1107 proxy,
+# which duplicated the EWMAC(8,32) trend and is gone. When no carry span
+# has enough history, blend_forecasts renormalises onto the trend leg.
 CARVER_TREND_WEIGHT = 0.6
-CARVER_CARRY_WEIGHT = 0.0
+CARVER_CARRY_WEIGHT = 0.4
 CARRY_PROXY_FALLBACK_USED = False  # set True only if a non-zero proxy is reintroduced
 
 # Per-forecast cap (Carver rule): raw forecasts bounded at +/-20 before
@@ -191,9 +208,67 @@ class CarverThirteen(QCAlgorithm):
         # Window: 2016-01-01 -> 2026-12-31 per issue #15549 acceptance. The
         # v3.1 baseline ran 2015-2024; we re-anchor the window to 2016-2026
         # to match Carver's request for >= 2016 OOS.
-        self.set_start_date(2016, 1, 1)
-        self.set_end_date(2026, 12, 31)
-        self.set_cash(100000)
+        # Tranche 4 (semis #17320): the window is parameter-aware so the
+        # dev/OOS split backtests run from the SAME compiled code — pass
+        # parameters {"start": "YYYYMMDD", "end": "YYYYMMDD"} at backtest
+        # creation (QC Cloud), defaults keep the acceptance window intact.
+        start_param = self.get_parameter("start")
+        end_param = self.get_parameter("end")
+
+        def _as_date(value, fallback):
+            if not value:
+                return fallback
+            return (int(value[0:4]), int(value[4:6]), int(value[6:8]))
+
+        start_y, start_m, start_d = _as_date(start_param, (2016, 1, 1))
+        end_y, end_m, end_d = _as_date(end_param, (2026, 12, 31))
+        self.set_start_date(start_y, start_m, start_d)
+        self.set_end_date(end_y, end_m, end_d)
+        # #23824: `set_holdings` on a future is sized on INITIAL MARGIN, not
+        # on notional -- a weight of 0.05 buys contracts whose margin is 5 %
+        # of the portfolio, i.e. a notional 10-20x larger, so the breadth
+        # "soft cap on gross leverage" capped the sum of margins, not the
+        # exposure. `fix=on` (default) sizes in whole contracts on notional,
+        # `fix=off` replays the margin-sized path order for order. `cash`
+        # lets the same compile run at a capital where whole contracts can
+        # express the target weights.
+        self.fix = (self.get_parameter("fix") or "on") == "on"
+        cash_param = self.get_parameter("cash")
+        self._initial_cash = int(cash_param) if cash_param else 100000
+        self.set_cash(self._initial_cash)
+        # #23824 passive counters, reported by set_runtime_statistic (read
+        # back by read_backtest without the run log): gross / net notional
+        # exposure over portfolio value, sampled at each post-warmup
+        # rebalance, and non-zero targets rounded to 0 whole contracts.
+        self._gross = []
+        self._net = []
+        self._sizing = {"nonzero_targets": 0, "rounded_to_zero": 0}
+        # #23841: `_rebalance` reads and orders on the mapped contract only
+        # (#16051), so a position on the previous contract stayed open until
+        # its expiry when the mapping moved. `roll=on` (default, effective
+        # with `fix=on`) closes every holding on a contract that is no longer
+        # mapped and carries the target on the mapped one; `roll=off`
+        # replays the #23824 path order for order. Passive counters: rolls
+        # (stale-contract closes), fills tagged as a delisting liquidation
+        # (positions kept to expiry) and fills tagged as a margin call.
+        self.roll = (self.get_parameter("roll") or "on") == "on"
+        self._roll_stats = {"rolls": 0, "expiry_liquidations": 0, "margin_calls": 0}
+        # #23962: the gap was computed on holdings only, so an order still
+        # open at the next rebalance was sent again. `orders=net` (default)
+        # subtracts the remainder of the live orders of every contract of
+        # the instrument; `orders=cancel` cancels them, then sends the gap
+        # computed on holdings; `orders=off` replays the #23841 path order
+        # for order. Effective with `fix=on`: with `roll=on` on every
+        # contract of the instrument, with `roll=off` on the mapped contract
+        # alone (stale contracts are kept to expiry there). Passive counters:
+        # orders the holdings-only gap would send while a live order of the
+        # same sign is open on the contract (`would_resend`), resends the
+        # netting suppressed (`avoided`), contracts whose live orders were
+        # cancelled (`cancelled`).
+        self._orders_mode = (self.get_parameter("orders") or "net").lower()
+        if self._orders_mode not in ("net", "cancel", "off"):
+            raise ValueError(f"orders must be net, cancel or off, got {self._orders_mode!r}")
+        self._netting_stats = {"would_resend": 0, "avoided": 0, "cancelled": 0}
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         # 18 liquid continuous futures, diversified across asset classes.
@@ -251,7 +326,11 @@ class CarverThirteen(QCAlgorithm):
                 data_mapping_mode=DataMappingMode.OPEN_INTEREST,
                 contract_depth_offset=0,
             )
-            future.set_filter(timedelta(days=0), timedelta(days=90))
+            # 0-200 days (was 0-90 pre-tranche-3): the carry leg needs BOTH
+            # the near contract AND the next one after it subscribed. On
+            # quarterly schedules (ES/ZB/GC-style) consecutive expiries sit
+            # ~90 days apart, so a 90-day filter excludes the further leg.
+            future.set_filter(timedelta(days=0), timedelta(days=200))
             self.symbols[ticker] = future.symbol
 
         # EWMAC parameters as 6 (fast, slow) Carver pairs.
@@ -269,6 +348,29 @@ class CarverThirteen(QCAlgorithm):
 
         # Per-instrument state: latest forecast, latest scaled weight.
         self.forecasts = {t: 0.0 for t in self.futures_universe}
+
+        # Carry leg state (semis #17320, tranche 3). One bounded history of
+        # daily risk-adjusted carry observations per ticker, fed by on_data
+        # from the future chains (near/further closes + expiries), consumed
+        # by _rebalance via _carry_forecast. CARRY_HISTORY_MAX = 130 lets
+        # the slowest smoothing span (120) reach min_periods with margin.
+        self._carry_history = {
+            t: deque(maxlen=CARRY_HISTORY_MAX) for t in self.futures_universe
+        }
+        # Instrumentation (REPAIR-9 idiom): every on_data chain pass counts
+        # its outcome so the post-backtest log discriminates "chains never
+        # populate at daily resolution" (no_chain dominating) from "chains
+        # fine but bars/pairs missing" (no_pair/no_bars) from the healthy
+        # path (updates). This is the diagnostic that validates or kills
+        # the daily-resolution chain design without a second backtest.
+        self._carry_stats = {
+            "chain_passes": 0,
+            "no_chain": 0,
+            "no_pair": 0,
+            "no_bars": 0,
+            "updates": 0,
+            "formula_none": 0,
+        }
 
         # 16076 rollover-aware sliding windows. Under BACKWARDS_RATIO the
         # WHOLE past of a continuous series is re-scaled when the mapped
@@ -348,22 +450,23 @@ class CarverThirteen(QCAlgorithm):
     def _carry_forecast(self, carry_forecast_history):
         """Carver #11 carry forecast — annualised term-structure carry, smoothed.
 
-        NOT CALLED yet on this port (tranche 3 of semis #17320 activates it
-        with the QC Cloud `Future` chain API): `_rebalance` still blends
-        trend-only (`CARVER_CARRY_WEIGHT = 0.0`). The c.1107 proxy
-        (front/deferred ratio, x4 "mild annualisation") is REPLACED by the
-        exact article #16001 formula, implemented and unit-tested in
-        `carry_forecast.py`: annualise the near/further price gap by the
-        expiry distance, risk-adjust, EWMA-smooth over spans 5/20/60/120,
-        scale by the Carver scalar 30 (p.216), cap at +/-20.
+        Called from `_rebalance` since tranche 3 (semis #17320) on the
+        history accumulated by `_update_carry_histories` (daily
+        risk-adjusted near/further observations from the `Future` chains).
+        The c.1107 proxy (front/deferred ratio, x4 "mild annualisation")
+        is REPLACED by the exact article #16001 formula, implemented and
+        unit-tested in `carry_forecast.py`: annualise the near/further
+        price gap by the expiry distance, risk-adjust, EWMA-smooth over
+        spans 5/20/60/120, scale by the Carver scalar 30 (p.216), cap at
+        +/-20.
 
         Parameters
         ----------
         carry_forecast_history : sequence of float
             Daily risk-adjusted carry values (annualised raw carry divided
-            by daily risk in price terms), oldest first — to be accumulated
-            by the consolidation handler once the chain API feeds real
-            near/further closes and expiries.
+            by annualised price risk), oldest first — accumulated by
+            `_update_carry_histories` from the chain near/further closes
+            and expiries.
 
         Returns
         -------
@@ -389,7 +492,7 @@ class CarverThirteen(QCAlgorithm):
 
     def _breadth_multiplier(self, forecasts):
         """Effective breadth multiplier — inverse concentration, sign-invariant
-        (Tell c.1069 strict, REPAIR-3 c.1109 + REPAIR-5 c.1111 + REPAIR-7
+        (REPAIR-3 c.1109 + REPAIR-5 c.1111 + REPAIR-7
         c.1113 + REPAIR-8 c.1115 — successive honesty requalifications after
         adjoint po-2025 preflights `msg-20260911T043805-i7tl0g`,
         `msg-20260911T053342-rwwap4`, `msg-20260911T063424-qnc0q9`,
@@ -409,7 +512,7 @@ class CarverThirteen(QCAlgorithm):
             breadth = sum(|f_i|) / sqrt(sum(f_i^2))
 
         Reading (REPAIR-7 c.1113, semantic correction by adjoint po-2025
-        habilité n°3 Tell c.15069 strict): the ratio ranges from **1.0
+        habilité n°3): the ratio ranges from **1.0
         (one |f_i| dominates, the rest are zero — MINIMUM effective
         breadth, MAXIMUM concentration)** to **sqrt(N) (all |f_i| equal
         — MAXIMUM effective breadth, ZERO concentration)**. This is the
@@ -467,6 +570,13 @@ class CarverThirteen(QCAlgorithm):
     # ----- 16076 sliding windows -------------------------------------------
 
     def on_data(self, data):
+        # Carry leg first (semis #17320, tranche 3): one risk-adjusted
+        # near/further observation per ticker per slice, from the chains.
+        # Deliberately BEFORE the 16076 warmup guard: if the engine does
+        # serve warmup slices, every warmup observation shortens the
+        # post-warmup wait for the slowest carry span (120 days), and the
+        # roll-cache guard below keeps its own semantics untouched.
+        self._update_carry_histories(data)
         # 16076: extend each window with the closed daily bar of its
         # continuous canonical series. Only runs once the cache is seeded:
         # bars received before the seed are covered by the seed fetch
@@ -480,6 +590,67 @@ class CarverThirteen(QCAlgorithm):
                 self._roll_cache[ticker]["closes"].append(
                     float(data.bars[sym].close)
                 )
+
+    def _update_carry_histories(self, data):
+        """One daily risk-adjusted carry observation per ticker (tranche 3).
+
+        For each continuous symbol: read the future chain from the slice,
+        order the contracts by expiry, take the near/further pair, price
+        both from the daily bars, annualise the term-structure gap (pure
+        `annualized_raw_carry`), risk-adjust against the ticker's
+        continuous close window (`risk_adjusted_carry`), append to
+        `_carry_history`. Any missing piece skips the ticker for the day
+        (the EWMA history simply continues from the previous observation)
+        and tallies a reason in `_carry_stats` so the post-backtest log
+        discriminates a daily-resolution chain failure (no_chain
+        dominating) from missing pairs/bars from the healthy path.
+        """
+        for ticker, sym in self.symbols.items():
+            self._carry_stats["chain_passes"] += 1
+            try:
+                if not data.future_chains.contains_key(sym):
+                    self._carry_stats["no_chain"] += 1
+                    continue
+                chain = data.future_chains[sym]
+            except Exception:
+                # Defensive by design: the chains accessor raising at daily
+                # resolution is exactly what this instrumentation surfaces.
+                self._carry_stats["no_chain"] += 1
+                continue
+            contracts = sorted(chain, key=lambda s: s.id.date)
+            if len(contracts) < 2:
+                self._carry_stats["no_pair"] += 1
+                continue
+            near, further = contracts[0], contracts[1]
+            if not (
+                data.bars.contains_key(near)
+                and data.bars.contains_key(further)
+            ):
+                self._carry_stats["no_bars"] += 1
+                continue
+            raw_carry = self._annualized_carry(
+                float(data.bars[near].close),
+                float(data.bars[further].close),
+                float(near.id.date.toordinal()),
+                float(further.id.date.toordinal()),
+            )
+            closes = (
+                list(self._roll_cache[ticker]["closes"])
+                if self._roll_cache is not None
+                else []
+            )
+            # Include today's continuous close when the slice carries it, so
+            # the risk estimate sees the same bar the roll cache will keep.
+            # Throwaway list: the 16076 cache append happens under its own
+            # guard below, never here.
+            if data.bars.contains_key(sym):
+                closes.append(float(data.bars[sym].close))
+            adjusted = _risk_adjusted_carry_pure(raw_carry, closes)
+            if adjusted is None:
+                self._carry_stats["formula_none"] += 1
+                continue
+            self._carry_history[ticker].append(adjusted)
+            self._carry_stats["updates"] += 1
 
     def _stale_tickers(self):
         """Tickers whose window is not guaranteed identical to history().
@@ -548,6 +719,8 @@ class CarverThirteen(QCAlgorithm):
             self._wall_s += time.perf_counter() - t_wall_start
             return
 
+        self._sample_exposure()
+
         # 16076: serve the forecast loop from the rollover-aware sliding
         # windows when they are guaranteed identical to a fresh bulk
         # (mapping stable since the last fetch), and re-fetch only the
@@ -605,28 +778,29 @@ class CarverThirteen(QCAlgorithm):
             # from the steady-state value for ~5 half-lives. Bound by
             # max_slow + 2 (= 258) so the slowest pair has at least 2
             # extra bars of EWMA burn-in before the forecast is read.
-            # Tell c.1069 strict: this is a tightening of the guard, not
+            # this is a tightening of the guard, not
             # a speculative fix; the rationale is grounded in the EWMA
             # half-life arithmetic documented above.
             if len(closes) < self.max_slow + 2:
                 continue
 
-            # Carry disabled in this implementation (issue #15549 cycle
-            # c.1107, REPAIR ADJOINT po-2025 `msg-20260911T040615-4c08xy`):
-            # the front-only proxy previously used here reduced to the
-            # EWMA(8,32) slope on the same close series, which is
-            # bit-identical to the EWMAC(8,32) signal already in the trend
-            # mean, producing a 100%-trend forecast weighted 0.4 on a
-            # duplicate. Rather than ship that, this port ships trend-only
-            # (six EWMAC horizons, vol-regime multiplier, breadth bonus, cap).
-            #
-            # `_carry_forecast(front, deferred)` is preserved as a callable
-            # awaiting the QC Cloud `Future` chain API for a real
-            # front/deferred ratio. The Carver 2023 chap. 8 carry signal is
-            # distinct from any EWMAC slope on a single contract and must
-            # not be approximated by it. See the deferred follow-up in
-            # issue #15549 acceptance.
-            carry_val = 0.0
+            # Carry leg (semis #17320, tranche 3). The c.1107 REPAIR
+            # disabled a front-only proxy that reduced to the EWMAC(8,32)
+            # slope — a trend duplicate (history in carry_forecast.py's
+            # header). Tranche 3 replaces it with the real Carver #11
+            # term-structure signal: the daily risk-adjusted near/further
+            # observations accumulated by _update_carry_histories. The leg
+            # contributes only once at least one smoothing span has
+            # min_periods of history; before that, blend_forecasts
+            # renormalises onto the trend leg (documented renormalisation,
+            # not a silent 0.6x dampening of the trend).
+            carry_hist = self._carry_history.get(ticker)
+            carry_val = (
+                self._carry_forecast(list(carry_hist))
+                if carry_hist is not None
+                and len(carry_hist) >= min(CARRY_SMOOTHING_SPANS)
+                else None
+            )
 
             # EWMAC forecasts across all six Carver pairs.
             ewmac_vals = [
@@ -635,11 +809,10 @@ class CarverThirteen(QCAlgorithm):
             ]
             trend_component = float(np.mean(ewmac_vals)) if ewmac_vals else 0.0
 
-            # Trend-only blend on this implementation (carry disabled,
-            # CARVER_CARRY_WEIGHT = 0.0). The 60/40 trend+carry Carver
-            # blend is documented but not applied — see the carry stub
-            # above for the chain-API hook.
-            blended = trend_component
+            # Carver #11 60/40 trend+carry blend (pure, unit-tested helper).
+            blended = _blend_forecasts_pure(
+                trend_component, carry_val, CARVER_CARRY_WEIGHT
+            )
             raw_forecasts[ticker] = float(
                 np.clip(blended, -CARVER_FORECAST_CAP, CARVER_FORECAST_CAP)
             )
@@ -701,7 +874,7 @@ class CarverThirteen(QCAlgorithm):
                     target_weight = 0.0
 
             # Retarget the delta directly to avoid fabricated round-trip
-            # costs (Tell c.1069 strict, REPAIR-3 c.1109 adjoint po-2025
+            # costs (REPAIR-3 c.1109 adjoint po-2025
             # preflight `msg-20260911T043805-i7tl0g`):
             # - liquidate only when sign change (long -> short or vice versa)
             #   OR when target_weight ~ 0;
@@ -721,6 +894,53 @@ class CarverThirteen(QCAlgorithm):
             # the same entry and read nowhere.)
             holding = self.portfolio[order_sym]
             current_holding = holding.quantity
+            if self.fix:
+                # #23824: target in whole contracts on notional, then send
+                # the delta. A sign flip or a flat target is the same delta
+                # arithmetic, so no separate liquidate is needed.
+                security = self.securities[order_sym]
+                price = float(security.price)
+                multiplier = float(security.symbol_properties.contract_multiplier)
+                target_qty = _target_contracts_pure(
+                    target_weight,
+                    self.portfolio.total_portfolio_value,
+                    price,
+                    multiplier,
+                )
+                if target_weight != 0.0:
+                    self._sizing["nonzero_targets"] += 1
+                    if target_qty == 0:
+                        self._sizing["rounded_to_zero"] += 1
+                if self.roll:
+                    # #23841: the instrument's position is the sum over ALL
+                    # its contracts; stale contracts are closed and the
+                    # target is carried by the mapped one (contract_roll.py).
+                    holdings = self._instrument_holdings(sym)
+                    # #23962: the gap on holdings alone ignores the orders
+                    # still open on the instrument's contracts; the live set
+                    # is read for every contract, the mapped one included.
+                    live = self._instrument_open_orders(sym)
+                    naive = _roll_orders_pure(target_qty, holdings, order_sym)
+                    planned = self._net_open_orders(target_qty, holdings, order_sym, live, naive)
+                    for contract, qty in planned:
+                        self.market_order(contract, qty)
+                        set_holdings_issued_this_call = True
+                        if contract != order_sym:
+                            self._roll_stats["rolls"] += 1
+                    continue
+                # Futures quantities are integral on QC: the holding is
+                # rounded, never truncated (see notional_sizing.py).
+                delta = _contract_delta_pure(target_qty, current_holding)
+                # #23962: same rule, on the mapped contract alone. This path
+                # keeps stale contracts to expiry, so their live orders are
+                # left alone, like their positions.
+                live = [o for o in self._instrument_open_orders(sym) if o.contract == order_sym]
+                naive = [(order_sym, delta)] if delta != 0 else []
+                held = {order_sym: current_holding} if current_holding != 0 else {}
+                for contract, qty in self._net_open_orders(target_qty, held, order_sym, live, naive):
+                    self.market_order(contract, qty)
+                    set_holdings_issued_this_call = True
+                continue
             sign_change = (current_holding > 0 and target_weight < 0) or (
                 current_holding < 0 and target_weight > 0
             )
@@ -747,8 +967,113 @@ class CarverThirteen(QCAlgorithm):
         self._fc_s += time.perf_counter() - t_fc
         self._wall_s += time.perf_counter() - t_wall_start
 
+    def _instrument_holdings(self, continuous):
+        """#23841: contract -> quantity for every held contract of a future.
+
+        `portfolio[<continuous>]` does not aggregate the contracts (#16051),
+        so the contracts are found by their canonical symbol.
+        """
+        holdings = {}
+        for symbol in list(self.portfolio.keys()):
+            if symbol.security_type != SecurityType.FUTURE or symbol == continuous:
+                continue
+            if symbol.canonical != continuous:
+                continue
+            quantity = self.portfolio[symbol].quantity
+            if quantity != 0:
+                holdings[symbol] = quantity
+        return holdings
+
+    def _instrument_open_orders(self, continuous):
+        """#23962: live orders on every contract of a future.
+
+        Same canonical-symbol lookup as `_instrument_holdings`; the
+        remainder of each order is its quantity minus what has filled.
+        """
+        live = []
+        for ticket in self.transactions.get_open_order_tickets():
+            symbol = ticket.symbol
+            if symbol.security_type != SecurityType.FUTURE or symbol == continuous:
+                continue
+            if symbol.canonical != continuous:
+                continue
+            live.append(_OpenOrder(symbol, ticket.quantity, ticket.quantity_filled))
+        return live
+
+    def _net_open_orders(self, target_qty, holdings, mapped, live, naive):
+        """#23962: orders to send once the live orders are accounted for.
+
+        `naive` is the holdings-only plan, counted against the live orders
+        (`would_resend`) and sent unchanged with `orders=off`. Otherwise the
+        pure rule (open_order_netting.py) nets the remainders (`net`) or
+        lists the contracts whose live orders are cancelled first (`cancel`).
+        """
+        for contract, qty in naive:
+            if _would_resubmit_pure(qty, _open_order_remainder_pure(live, contract)):
+                self._netting_stats["would_resend"] += 1
+        if self._orders_mode == "off":
+            return naive
+        mode = _NETTING_CANCEL if self._orders_mode == "cancel" else _NETTING_NET
+        decision = _reconcile_orders_pure(target_qty, holdings, mapped, live, mode)
+        for contract in decision.cancels:
+            self.transactions.cancel_open_orders(contract)
+            self._netting_stats["cancelled"] += 1
+        self._netting_stats["avoided"] += decision.resubmissions_avoided
+        return decision.orders
+
+    def on_order_event(self, order_event):
+        """#23841: count fills of engine-generated liquidations by their tag."""
+        if order_event.status != OrderStatus.FILLED:
+            return
+        order = self.transactions.get_order_by_id(order_event.order_id)
+        tag = (order.tag or "").lower() if order is not None else ""
+        if "delisting" in tag:
+            self._roll_stats["expiry_liquidations"] += 1
+        elif "margin call" in tag:
+            self._roll_stats["margin_calls"] += 1
+
+    def _sample_exposure(self):
+        """#23824: gross and net notional exposure over portfolio value."""
+        tpv = float(self.portfolio.total_portfolio_value)
+        if tpv <= 0.0:
+            return
+        values = []
+        for symbol in list(self.portfolio.keys()):
+            holding = self.portfolio[symbol]
+            if holding.invested:
+                values.append(float(holding.holdings_value))
+        self._gross.append(sum(abs(v) for v in values) / tpv)
+        self._net.append(sum(values) / tpv)
+
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
+        g = sorted(self._gross)
+        n = sorted(abs(x) for x in self._net)
+        self.set_runtime_statistic("fix", "on" if self.fix else "off")
+        self.set_runtime_statistic("cash", str(self._initial_cash))
+        if g:
+            self.set_runtime_statistic(
+                "gross", f"med={g[len(g) // 2]:.2f} p90={g[int(0.9 * (len(g) - 1))]:.2f} max={g[-1]:.2f} n={len(g)}"
+            )
+            self.set_runtime_statistic(
+                "net", f"med|.|={n[len(n) // 2]:.2f} max|.|={n[-1]:.2f}"
+            )
+        self.set_runtime_statistic(
+            "sizing",
+            f"zero={self._sizing['rounded_to_zero']}/{self._sizing['nonzero_targets']}",
+        )
+        rs = self._roll_stats
+        self.set_runtime_statistic(
+            "roll",
+            f"{'on' if self.roll else 'off'} rolls={rs['rolls']} "
+            f"expiry={rs['expiry_liquidations']} margin={rs['margin_calls']}",
+        )
+        ns = self._netting_stats
+        self.set_runtime_statistic(
+            "orders",
+            f"{self._orders_mode} would_resend={ns['would_resend']} "
+            f"avoided={ns['avoided']} cancelled={ns['cancelled']}",
+        )
         # REPAIR-9 c.1117: log the instrumentation tally so the QC backtest
         # output carries the diagnostic discriminators that allow the
         # adjoint to truncate H1 vs H2 without re-running the backtest.
@@ -766,7 +1091,7 @@ class CarverThirteen(QCAlgorithm):
         completed = er["completed_with_orders"] + er["completed_no_order"]
         self.log(
             f"CARVER13: Final=${final:,.2f}, "
-            f"Return={(final - 100000) / 100000:.2%}, "
+            f"Return={(final - self._initial_cash) / self._initial_cash:.2%}, "
             f"Breadth-multiplied forecasts={len(self.forecasts)} "
             f"| REPAIR-9 INSTRUMENTATION: "
             f"rebalance_calls={n_inv}, "
@@ -781,5 +1106,12 @@ class CarverThirteen(QCAlgorithm):
             f"| 16076 CLOCKS: hist={self._hist_s:.1f}s fc={self._fc_s:.1f}s "
             f"wall={self._wall_s:.1f}s "
             f"history_calls={self._history_calls} "
-            f"cache_served={self._cache_served}"
+            f"cache_served={self._cache_served} "
+            f"| 17320 CARRY-LEG: updates={self._carry_stats['updates']} "
+            f"no_chain={self._carry_stats['no_chain']} "
+            f"no_pair={self._carry_stats['no_pair']} "
+            f"no_bars={self._carry_stats['no_bars']} "
+            f"formula_none={self._carry_stats['formula_none']} "
+            f"chain_passes={self._carry_stats['chain_passes']} "
+            f"histories_filled={sum(1 for h in self._carry_history.values() if len(h) >= min(CARRY_SMOOTHING_SPANS))}"
         )

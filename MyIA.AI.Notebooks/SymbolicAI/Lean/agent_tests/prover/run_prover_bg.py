@@ -29,8 +29,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from prover import DEMOS, PROVED_DEMOS, TraceLogger
 from prover.provers import MultiAgentSorryProver, AutonomousProver
-from prover.config import create_client
-from prover.lean_utils import count_real_sorries, stub_theorem_proof
+from prover.config import create_client, PROVIDERS
+from prover.provider_gate import (
+    effective_agent_providers,
+    validate_provider_credentials,
+)
+from prover.lean_utils import (
+    count_real_sorries,
+    stub_theorem_proof,
+    sweep_execution_leftovers,
+)
 from prover.tree_lock import (
     acquire_tree_lock,
     find_lean_project_root,
@@ -51,142 +59,11 @@ def _peek_sorry_count(filepath: str) -> int:
         return -1
 
 
-def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
-    """Canonical run verdict, ranked by what a coordinator does next.
+# Verdict ladder lives in prover/verdicts.py — single source shared with
+# prover/baselines/analyze_traces.py (forensic #1453). The name is kept
+# here because callers and tests import it from this module.
+from prover.verdicts import derive_result_kind as _derive_result_kind  # noqa: E402
 
-    Forensic #1453 (2026-07-02): a run's outcome was scattered across 4 fields
-    (result.status, sorry_delta, structural_progress, error) and every consumer
-    re-derived its own verdict — the ai-01 harvest step included.
-      sorry_decreased  -> harvest: branch + PR (textual sorry count dropped)
-      structural_only  -> keep iterating: decomposition landed, count did not drop
-      crashed          -> postmortem the harness, not the proof
-      provider_outage  -> the LLM provider died mid-run (circuit-breaker,
-                          #5869): the prover never got to work — retry when
-                          the provider is back, do NOT read as tactical failure
-      correctly_refused-> the Coordinator explicitly abandoned the goal via
-                          mark_sorry_intractable (after F9 Director + B2
-                          SearchAgent gates) and the workflow yielded before
-                          iteration_cap (#7477 P2a). The agent did the right
-                          thing by refusing — do NOT read as tactical failure.
-      heartbeat_budget_exceeded -> a Lean tactic blew the maxHeartbeats budget
-                          (latched in TacticTools.compile via
-                          tools._is_heartbeat_timeout, #7477 P5a). Distinct from
-                          correctly_refused: the agent did NOT refuse, it tried a
-                          tactic too expensive for the budget. Needs a cheaper
-                          tactic / higher maxHeartbeats / decomposition, NOT more
-                          iterations.
-      decomposition_regression -> a net-sorry-INCREASE decomposition with ZERO
-                          build-verified tactics (runaway sub-sorry spraying,
-                          #7477 P3). Distinct from structural_only: a real
-                          restructuring has verified_tactic_count > 0. Tells a
-                          coordinator the decomposition was an unproven spray,
-                          NOT progress — do NOT harvest / branch it.
-      reasoning_budget_exceeded -> the run burned its SESSION reasoning wall-
-                          clock (max_session_seconds / workflow_timeout_s)
-                          without converging on an edit (latched in the
-                          multi-agent `except _asyncio.TimeoutError` or the
-                          autonomous WALL-CLOCK CAP branch, #7477 P5a-search).
-                          Distinct from heartbeat_budget_exceeded (compile-
-                          level Lean maxHeartbeats wall): this is session-level
-                          — the agent loop spent the whole budget reasoning and
-                          emitted 0 attempts. Forensic: kimi-k3 run `bt56gsv78`
-                          (DEMO 62 ne, 8->8, 0 attempts, 1800s Search-phase).
-                          Tells a coordinator the arm needs a shorter reasoning
-                          budget / different search / smaller decomposition, NOT
-                          more wall-clock or iterations.
-      freeze_loop      -> TacticAgent never got a tool call through: the
-                          freeze-loop guard escalated to Coordinator N times
-                          (text-without-tool streaks) with ZERO tactic
-                          submissions and the workflow yielded at the hardcap
-                          instead of burning iteration_cap (#1453 C3,
-                          2026-09-19; founder: qwen2.5:7b emits tool-calls as
-                          fenced-JSON prose — 6 firings, 8/8 iterations, 0
-                          attempts). Tells a coordinator to change
-                          model/provider (tool-calling capability), NOT more
-                          iterations.
-      no_progress      -> diagnostic data only
-
-    Real progress outranks the outage flag: a run that lowered the sorry count
-    (or landed a decomposition) before the provider died is still a harvest —
-    the outage remains visible via result["provider_failures"].
-    """
-    if isinstance(result, dict) and result.get("error"):
-        return "crashed"
-    if final_sorry < original_sorry:
-        return "sorry_decreased"
-    if isinstance(result, dict) and result.get("structural_progress"):
-        return "structural_only"
-    if isinstance(result, dict) and result.get("provider_outage"):
-        return "provider_outage"
-    # P2a (#7477 forensic): the Coordinator explicitly abandoned the goal via
-    # mark_sorry_intractable (after F9 Director + B2 SearchAgent gates) and the
-    # workflow yielded before iteration_cap. Ranked AFTER sorry_decreased /
-    # structural_only: a run that lowered the sorry count or landed a verified
-    # decomposition before abandoning is still progress — the abandonment flag
-    # only reclassifies what would otherwise be no_progress. Forensic DEMO 62
-    # (NW L2970, a DO-NOT-TARGET line): correctly refused 4× but previously
-    # scored no_progress + burned iteration_cap. correctly_refused lets a
-    # coordinator distinguish "agent did the right thing" from "agent spun".
-    if isinstance(result, dict) and result.get("intractable"):
-        return "correctly_refused"
-    # P5a (#7477 forensic): a Lean tactic blew the maxHeartbeats budget
-    # (latched in TacticTools.compile via tools._is_heartbeat_timeout). Ranked
-    # AFTER sorry_decreased / structural_only: a run that lowered the sorry
-    # count or landed a verified decomposition before blowing the budget is
-    # still progress — this flag only reclassifies what would otherwise be
-    # no_progress. Distinct from correctly_refused (the agent did NOT refuse;
-    # it tried a tactic too expensive for the budget). Tells a coordinator the
-    # target needs a cheaper tactic / higher maxHeartbeats / decomposition,
-    # NOT more iterations.
-    if isinstance(result, dict) and result.get("heartbeat_budget_exceeded"):
-        return "heartbeat_budget_exceeded"
-    # P3 (#7477 forensic): a net-sorry-INCREASE decomposition with ZERO build-
-    # verified tactics — a spray of unproven sub-sorries the multi-agent path
-    # previously mis-labelled as structural_progress (founder L2551 grew 4->8
-    # with verified_tactic_count==0 across 11 dedup'd runs). provers.py classifies
-    # this via is_decomposition_regression(final, original, verified) and, on a
-    # regression, forces structural_progress=False + sets the
-    # decomposition_regression flag; this branch surfaces the precise pathology
-    # for the forensic harvest instead of letting it fall through to no_progress.
-    # Ranked AFTER sorry_decreased / structural_only / provider_outage /
-    # correctly_refused / heartbeat_budget_exceeded: those outrank it (a run that
-    # lowered sorry, landed a verified decomposition, or hit an
-    # outage/refusal/budget wall first ranks as that outcome). Mutually exclusive
-    # with structural_only in practice — the P3 guard only fires when
-    # structural_progress was demoted. Legacy-safe: a result dict without the
-    # field (autonomous path / old traces) returns None -> falsy -> no_progress,
-    # identical to the classifier's None->False contract.
-    if isinstance(result, dict) and result.get("decomposition_regression"):
-        return "decomposition_regression"
-    # P5a-search (#7477 forensic, jsboige A-B 2026-07-20): the run burned its
-    # session reasoning wall-clock without converging on an edit (0 attempts).
-    # Ranked AFTER sorry_decreased / structural_only / provider_outage /
-    # correctly_refused / heartbeat_budget_exceeded / decomposition_regression:
-    # those are all more specific pathologies (real progress, provider death,
-    # explicit refusal, compile-level heartbeat wall, unverified spray). This
-    # flag only reclassifies what would otherwise be no_progress — the most
-    # generic budget-wall diagnosis. Distinct from heartbeat_budget_exceeded
-    # (compile-level): here the agents never got a tactic to the compiler, they
-    # spent the whole budget in Search-phase reasoning. Forensic kimi-k3 run
-    # `bt56gsv78` (DEMO 62 ne, 8->8, 0 attempts, 1800s) previously scored
-    # no_progress; reasoning_budget_exceeded lets a coordinator distinguish
-    # "agent spun reasoning without editing" from "agent tried and failed".
-    if isinstance(result, dict) and result.get("reasoning_budget_exceeded"):
-        return "reasoning_budget_exceeded"
-    # C3 (#1453 calibration forensic, po-2024 2026-09-19): the freeze-loop
-    # escalation hardcap ended the run — the C617 guard forced N Coordinator
-    # handoffs (TacticAgent text-without-tool streaks) while tactic_history
-    # stayed EMPTY. The model structurally cannot tool-call (founder case:
-    # qwen2.5:7b via Ollama emits tool-calls as fenced-JSON prose; the harness
-    # echoes its own text back as [receive] — 6 guard firings, 8/8 iterations,
-    # 0 attempts). Ranked after every progress/outage/refusal flag (mutually
-    # exclusive with them by construction: the yield requires an empty
-    # tactic_history, so no sorry/structural outcome can precede it). Tells a
-    # coordinator to change model/provider (tool-calling capability), NOT more
-    # iterations. Legacy-safe: field absent -> falsy -> no_progress.
-    if isinstance(result, dict) and result.get("freeze_loop"):
-        return "freeze_loop"
-    return "no_progress"
 
 
 # P2b (#7477 forensic): the launcher must aim at the line the DEMO description
@@ -262,6 +139,9 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
                goal: str = "", director_provider: str = None,
                coordinator_provider: str = None,
                tactic_provider: str = None,
+               search_provider: str = None,
+               critic_provider: str = None,
+               diagnosis_provider: str = None,
                use_diagnosis_agent: bool = False,
                concurrent_search_count: int = 0,
                force_lock: bool = False):
@@ -293,6 +173,38 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         print("Must specify --demo or --file/--line")
         sys.exit(1)
 
+    # #18709 fail-fast: refuse to launch when a routed provider has no
+    # credentials, BEFORE taking the tree lock — same contract as the root
+    # launcher (#1453). Founder case (po-2025, 2026-10-01, x2): Search/Critic
+    # are P6-pinned to 'zai' and crashed 'Missing credentials' ~45 min in
+    # (build + GoalExtract already done) on a lane without ZAI_API_KEY, and
+    # this launcher exposed neither the override flags nor the gate.
+    if mode == "multi":
+        eff = effective_agent_providers(
+            provider, local_provider,
+            coordinator_provider=coordinator_provider,
+            tactic_provider=tactic_provider,
+            search_provider=search_provider,
+            critic_provider=critic_provider,
+            diagnosis_provider=diagnosis_provider,
+            director_provider=director_provider,
+            use_diagnosis_agent=use_diagnosis_agent)
+    else:
+        # AutonomousProver dials a single agent on ``provider`` — gating the
+        # multi-agent map here would false-refuse the launch.
+        eff = {"reasoning": provider}
+    gate_problems = validate_provider_credentials(eff, PROVIDERS)
+    if gate_problems:
+        for _p in gate_problems:
+            print(f"[GATE] {_p}")
+        print(
+            "[GATE] refusing to launch — set the listed keys or pass "
+            "explicit --search-provider/--critic-provider/"
+            "--diagnosis-provider overrides"
+        )
+        return {"name": name, "result_kind": "provider_gate",
+                "reason": "; ".join(gate_problems)}
+
     # One prover per tree (#6790): run-7 was launched through THIS launcher
     # while run-6 held the same tree — run-7's cleanup reverted run-6's
     # build-passing candidate. Refuse the second run instead.
@@ -308,7 +220,8 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         return _run_with_calibration_stub(
             demo, name, filepath, line, mode, iterations, provider,
             local_provider, director_provider, coordinator_provider,
-            tactic_provider, use_diagnosis_agent, concurrent_search_count,
+            tactic_provider, search_provider, critic_provider,
+            diagnosis_provider, use_diagnosis_agent, concurrent_search_count,
         )
     finally:
         release_tree_lock(lock_path)
@@ -317,6 +230,8 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
 def _run_with_calibration_stub(demo, name, filepath, line, mode, iterations,
                                provider, local_provider, director_provider,
                                coordinator_provider, tactic_provider,
+                               search_provider, critic_provider,
+                               diagnosis_provider,
                                use_diagnosis_agent, concurrent_search_count):
     """Run body under the tree lock, with #1453 calibration preparation.
 
@@ -364,22 +279,34 @@ def _run_with_calibration_stub(demo, name, filepath, line, mode, iterations,
         )
 
     calibration = calibration_target is not None
+    run_result = None
     try:
-        return _run_prover_locked(
+        run_result = _run_prover_locked(
             demo, name, filepath, line, mode, iterations, provider,
             local_provider, director_provider, coordinator_provider,
-            tactic_provider, use_diagnosis_agent, concurrent_search_count,
+            tactic_provider, search_provider, critic_provider,
+            diagnosis_provider, use_diagnosis_agent, concurrent_search_count,
             calibration=calibration,
         )
+        return run_result
     finally:
         if calibration_target is not None:
             calibration_target[0].write_bytes(calibration_target[1])
             print("[CALIBRATION_RESTORE] approved proof restored")
+        # C4 (#1453 forensic, 2026-09-19): sweep the execution leftovers the
+        # run may leave next to its target (GoalExtract probe, sandboxes) on
+        # every exit path — under the tree lock, after the calibration
+        # restore. Sandboxes survive an errored run: crash evidence.
+        error_flag = sys.exc_info()[0] is not None or (
+            isinstance(run_result, dict) and bool(run_result.get("error"))
+        )
+        sweep_execution_leftovers(filepath, keep_sandboxes=error_flag)
 
 
 def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
                        local_provider, director_provider, coordinator_provider,
-                       tactic_provider, use_diagnosis_agent,
+                       tactic_provider, search_provider, critic_provider,
+                       diagnosis_provider, use_diagnosis_agent,
                        concurrent_search_count, calibration=False):
     """The original run body, executed while holding the tree lock."""
     original = Path(filepath).read_text(encoding="utf-8")
@@ -436,7 +363,10 @@ def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
             trace=trace, provider=provider, local_provider=local_provider,
             director_provider=director_provider,
             coordinator_provider=coordinator_provider,
-            tactic_provider=tactic_provider)
+            tactic_provider=tactic_provider,
+            search_provider=search_provider,
+            critic_provider=critic_provider,
+            diagnosis_provider=diagnosis_provider)
         if director_provider:
             print(f"  Director: ENABLED (provider={director_provider})")
     else:
@@ -454,6 +384,20 @@ def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
             result = prover.prove_sorry(demo=demo, max_iterations=iterations)
     except Exception as e:
         print(f"\nProver crashed: {e}")
+        if mode == "multi":
+            # #18709: print the per-agent provider map so a credentials
+            # crash points at the culprit agent's provider instead of a
+            # bare message (the constructor resolves P6 pins lazily enough
+            # that the exception itself carries no agent name).
+            print(
+                "  [CRASH-CONTEXT] "
+                f"search={getattr(prover, 'search_provider', '?')} "
+                f"critic={getattr(prover, 'critic_provider', '?')} "
+                f"diagnosis={getattr(prover, 'diagnosis_provider', '?')} "
+                f"coordinator={getattr(prover, 'coordinator_provider', '?')} "
+                f"tactic={getattr(prover, 'tactic_provider', '?')} "
+                f"reasoning={provider} fast={local_provider}"
+            )
         result = {"error": str(e)}
     elapsed = time.time() - start
 
@@ -554,6 +498,20 @@ if __name__ == "__main__":
                         help="Enable DiagnosisAgent (LLM-powered qualitative "
                              "verification replacing mechanical VerifyExecutor). "
                              "Only used in --mode multi.")
+    parser.add_argument("--search-provider", default=None,
+                        help="Provider for SearchAgent. #7477 P6 routing pins "
+                             "fast-class agents (Search/Critic/Diagnosis) to "
+                             "'zai' via the p6_routing map — on a lane without "
+                             "ZAI_API_KEY every multi run crashed 'Missing "
+                             "credentials' ~45 min in with no override path "
+                             "(#18709). This exposes the override the prover "
+                             "class already accepts.")
+    parser.add_argument("--critic-provider", default=None,
+                        help="Provider for CriticAgent (see --search-provider).")
+    parser.add_argument("--diagnosis-provider", default=None,
+                        help="Provider for DiagnosisAgent (see "
+                             "--search-provider). Only consumed when "
+                             "--use-diagnosis-agent is set.")
     parser.add_argument("--concurrent-search", type=int, default=0,
                         help="Number of ADDITIONAL SearchAgents to run in "
                              "parallel (B.7). 0 = single search (default). "
@@ -577,9 +535,14 @@ if __name__ == "__main__":
         director_provider=args.director_provider,
         coordinator_provider=args.coordinator_provider,
         tactic_provider=args.tactic_provider,
+        search_provider=args.search_provider,
+        critic_provider=args.critic_provider,
+        diagnosis_provider=args.diagnosis_provider,
         use_diagnosis_agent=args.use_diagnosis_agent,
         concurrent_search_count=args.concurrent_search,
         force_lock=args.force_lock,
     )
     if isinstance(summary, dict) and summary.get("result_kind") == "locked":
         sys.exit(3)  # same contract as the outer launcher (#6790)
+    if isinstance(summary, dict) and summary.get("result_kind") == "provider_gate":
+        sys.exit(5)  # #18709: same contract as the outer launcher gate

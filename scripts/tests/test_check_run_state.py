@@ -171,6 +171,12 @@ def test_main_exit_codes_sans_reseau(monkeypatch, capsys):
     dans la vue latest, 2 = erreur d'instrument."""
     import scripts.check_run_state as m
 
+    # #21463 : main() lit AUSSI le jeu des checks requis (protection de
+    # branche). On le moque a None (indeterminable) pour garder ce test SANS
+    # RESEAU : le code de sortie porte sur la vue latest seule, et
+    # missing_required (None) n'y participe pas.
+    monkeypatch.setattr(m, "_required_contexts", lambda *a, **k: None)
+
     monkeypatch.setattr(m, "collect", lambda pr=None, sha=None:
                         ("94e31d7e", REST_16232_ALWAYS_ON))
     assert m.main(["--sha", "94e31d7e"]) == 0
@@ -190,6 +196,50 @@ def test_main_exit_codes_sans_reseau(monkeypatch, capsys):
     assert m.main(["--sha", "ab"]) == 2
 
 
+def test_main_missing_required_check_is_non_green(monkeypatch, capsys):
+    """#21463 : un check requis ABSENT de la tete (jamais poste) rend le
+    verdict NON-vert (exit 1), meme si la vue latest est toute verte -- la
+    classe 'gate absent' que le fold par nom ne voit pas (la liste plate ne la
+    contient tout simplement pas)."""
+    import scripts.check_run_state as m
+
+    vert = [{"name": "Always-on guards", "conclusion": "success",
+             "started_at": "T", "id": 1}]
+    monkeypatch.setattr(m, "collect", lambda pr=None, sha=None: ("ab", vert))
+    # La tete ne porte PAS `PR gate`, mais la branche l'exige :
+    monkeypatch.setattr(m, "_required_contexts", lambda *a, **k: {"PR gate"})
+    assert m.main(["--sha", "ab"]) == 1
+    out = capsys.readouterr().out
+    assert "missing_required" in out and "PR gate" in out
+
+
+def test_main_missing_required_indeterminable_stays_green(monkeypatch, capsys):
+    """#21463 : protection de branche illisible (None) = aucune absence n'est
+    AFFIRMEE -- le verdict reste vert si la vue latest l'est. Un 403 ne doit
+    ni blanchir ni rougir la classe gate-absent (fail-closed cote
+    determination, pas cote verdict)."""
+    import scripts.check_run_state as m
+
+    vert = [{"name": "Always-on guards", "conclusion": "success",
+             "started_at": "T", "id": 1}]
+    monkeypatch.setattr(m, "collect", lambda pr=None, sha=None: ("ab", vert))
+    monkeypatch.setattr(m, "_required_contexts", lambda *a, **k: None)
+    assert m.main(["--sha", "ab"]) == 0
+
+
+def test_render_missing_required_tri_state():
+    """#21463 : `missing_required` distingue TROIS etats -- None (protection
+    illisible), [] (aucun manque), et une liste non vide (absence reelle). Les
+    deux premiers doivent rester indiscernables d'un vert."""
+    import scripts.check_run_state as m
+
+    legs = [{"name": "Always-on guards", "conclusion": "success",
+             "started_at": "T", "id": 1}]
+    assert m.render("ab", legs, None)["missing_required"] is None
+    assert m.render("ab", legs, {"Always-on guards"})["missing_required"] == []
+    assert m.render("ab", legs, {"PR gate"})["missing_required"] == ["PR gate"]
+
+
 def test_collect_reads_every_page(monkeypatch):
     """#17807 : 110 jambes au head, une lecture a une page en voyait 100."""
     import scripts.check_run_state as m
@@ -201,3 +251,52 @@ def test_collect_reads_every_page(monkeypatch):
     monkeypatch.setattr(m, "_run_gh", fake_run_gh)
     m.collect(sha="ab")
     assert "--paginate" in seen[0]
+
+
+def test_head_sha_survit_a_un_throttle_graphql(monkeypatch):
+    """Fondateur 2026-10-08 : `gh pr view` (GraphQL) throttlé tuait l'instrument
+    entier, et `pick_idle_grain.py` en concluait « organe non lisible » -- un
+    defaut d'instrument lu comme un defaut de PR. Le head doit rester lisible
+    par REST quand GraphQL refuse."""
+    import scripts.check_run_state as m
+    seen = []
+
+    def fake_run_gh(args):
+        seen.append(args)
+        if args[0] == "pr":          # tout appel GraphQL est throttlé
+            raise RuntimeError("gh pr view 19912... -> 1: GraphQL: API rate limit "
+                               "already exceeded for user ID 3159389.")
+        return '{"head": {"sha": "359ea17fa33b3770346c091aa024c182876d6f5c"}}'
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    assert m._head_sha(19912) == "359ea17fa33b3770346c091aa024c182876d6f5c"
+    assert seen and seen[0][0] == "api", "REST doit etre tente AVANT GraphQL"
+    assert not any(a[0] == "pr" for a in seen), "aucun appel GraphQL sous throttle"
+
+
+def test_head_sha_replie_sur_graphql_si_rest_indisponible(monkeypatch):
+    """Cas inverse : l'endpoint REST tombe (jeton sans scope `pulls`), le repli
+    GraphQL doit rendre le meme SHA. La redondance va dans les deux sens."""
+    import scripts.check_run_state as m
+
+    def fake_run_gh(args):
+        if args[0] == "api":
+            raise RuntimeError("gh api repos/.../pulls/19912... -> 1: Not Found")
+        return '{"headRefOid": "359ea17fa33b3770346c091aa024c182876d6f5c"}'
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    assert m._head_sha(19912) == "359ea17fa33b3770346c091aa024c182876d6f5c"
+
+
+def test_head_sha_leve_quand_les_deux_chemins_tombent(monkeypatch):
+    """Un instrument qui ne peut pas lire doit LE DIRE (exit 2 en amont), pas
+    rendre un SHA vide : c'est la garantie que l'echec ne redevient pas
+    silencieux."""
+    import scripts.check_run_state as m
+
+    def fake_run_gh(args):
+        raise RuntimeError(f"gh {args[0]} ... -> 1: down")
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    with pytest.raises(RuntimeError):
+        m._head_sha(19912)

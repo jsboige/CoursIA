@@ -1,6 +1,6 @@
 # Parcours d'apprentissage CoursIA
 
-Trois parcours narratifs — objectif, public, durée et sortie concrète — sont
+Cinq parcours narratifs — objectif, public, durée et sortie concrète — sont
 livrés par l'équipe `docs/curriculum/`. Cinq autres pages listent les notebooks
 par domaine thématique ; ce sont des **vues du catalogue**, pas des parcours
 d'apprentissage, et elles sont régénérées chaque jour par `catalog-cron.yml`.
@@ -12,12 +12,14 @@ d'apprentissage, et elles sont régénérées chaque jour par `catalog-cron.yml`
 | 1 | [Accéléré vers GenAI](docs/curriculum/genai-rush.md) | Développeur Python qui veut être opérationnel sur les APIs d'IA générative sans GPU | ~8-10 h | Boucle agentique texte, chaîne image, voix bidirectionnelle, agents `AgentGroupChat`, RAG Qdrant embarqué |
 | 2 | [IA Symbolique et Formalisation](docs/curriculum/symbolic-formalization.md) | Étudiant ou ingénieur qui veut passer du symbolique « qui marche » à la formalisation vérifiée par machine | ~20 h | Quatre familles logiques Tweety, SMT Z3 avec capstone d'optimisation, planification Fast-Downward, trois preuves Lean 4 rejouées |
 | 3 | [Recherche et Corpus (AIMA-inspired)](docs/curriculum/aima-walk.md) | Lecteur qui veut retraverser l'IA classique avec un manuel de référence (Russel & Norvig) et vérifier chaque concept sur du code | ~25-30 h | A*, CSP, logiques Tweety, Bayes PyMC, Nash, CFR, RL, pipeline LLM — plus la carte de ce que le corpus ajoute à AIMA |
+| 4 | [IA hybride : LLM + solveurs + vérificateurs](docs/curriculum/ia-hybride.md) | Développeur qui sait prompter un LLM et veut apprendre à le fiabiliser avec des moteurs formels | ~5-7 h | Pipeline argumentatif LLM→Tweety orchestré SK, théorème d'impossibilité prouvé par SAT-Z3, verdict trois bras LLM vs évolution |
+| 5 | [IA, société et responsabilité](docs/curriculum/ia-societe-responsabilite.md) | Étudiant ou praticien qui veut interroger ce qu'un système fait **aux personnes**, pas seulement ce qu'il prédit | 16 étapes, durée publiée à l'étape | Équité mesurée par sous-groupes, donnée-responsabilité (attaque d'appartenance, confidentialité différentielle), théorèmes d'impossibilité du choix social, argumentation de Dung, oversight chiffré |
 
-Les trois pilotes suivent le modèle « Parcours alternatifs » du
+Les cinq parcours suivent le modèle « Parcours alternatifs » du
 [README GameTheory](MyIA.AI.Notebooks/GameTheory/README.md) : durée annoncée,
 liste numérotée, clause de prérequis qui dit ce qui est supposé **et ce qui ne
 l'est pas**. La matière première est l'inventaire des embryons de parcours
-([`docs/curriculum/_inventory.md`](docs/curriculum/_inventory.md), EPIC
+([`docs/transients/2026-09-02-curriculum-inventory.md`](docs/transients/2026-09-02-curriculum-inventory.md), EPIC
 [#13844](https://github.com/jsboige/CoursIA/issues/13844)).
 
 ### Parcours par contraintes d'infrastructure
@@ -29,10 +31,24 @@ matériel puis-je avancer ? »*. Trois profils y sont documentés :
 2. **ML.NET + symbolique** — ajout de .NET Interactive pour C# et Lean 4.
 3. **GenAI complet** — Docker (ComfyUI, Qwen), GPU RTX 3090, services cloud.
 
-C'est un axe orthogonal : les trois parcours narratifs ci-dessus sont chacun
+C'est un axe orthogonal : les cinq parcours narratifs ci-dessus sont chacun
 réalisables dans le profil *Local sobre*, à l'exception de `genai-rush.md` qui
 exige une clé OpenAI directe pour les étapes image et voix (deux endpoints non
-relayés par les tiers).
+relayés par les tiers) et de `ia-hybride.md` dont deux étapes (la section 5 de
+l'étape 2 et le bras LLM de l'étape 8) appellent un LLM — toutes les autres
+tournent sans clé.
+
+Avant d'ouvrir le premier notebook d'un parcours, exécuter le préflight :
+
+```bash
+python scripts/notebook_tools/learner_preflight.py --parcours <local|dotnet|genai>
+```
+
+Le script vérifie la présence (jamais la valeur) de Python, Jupyter, des
+noyaux attendus, de .NET SDK, de Lean 4 sous WSL, du GPU NVIDIA et de
+Docker selon le profil, et liste pour chaque manque la commande de
+remédiation. Sortie humaine par défaut, JSON via `--json`. Code retour
+`0` = prêt, `1` = au moins un manque, `2` = profil inconnu.
 
 ## Vues du catalogue (par domaine)
 
@@ -89,7 +105,7 @@ python scripts/notebook_tools/generate_parcours.py --dry-run # Aperçu sans écr
 Source : `COURSE_CATALOG.generated.json` (mis à jour par `generate_catalog.py`).
 
 Les pages narratives `genai-rush.md`, `symbolic-formalization.md`,
-`aima-walk.md` et l'inventaire `_inventory.md` suivent la convention des pages
+`aima-walk.md` et l'inventaire `2026-09-02-curriculum-inventory.md` suivent la convention des pages
 manuelles (préfixe underscore ou hors liste des cinq ids du générateur) : elles
 n'appartiennent **pas** au catalogue et ne sont jamais écrasées par
 `catalog-cron.yml`.

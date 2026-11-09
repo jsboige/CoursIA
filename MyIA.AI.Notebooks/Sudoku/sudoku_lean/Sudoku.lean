@@ -1,6 +1,7 @@
 import Sudoku.Basic
 import Sudoku.Propagation
 import Sudoku.ExactCover
+import Sudoku.Certificate
 
 /-!
 # Sudoku — soundness de la propagation + réduction exact-cover (Lean 4)
@@ -24,6 +25,12 @@ Voir issue #4055 (roadmap Lean #4038).
   `toSelection` et le lemme de pleine maison `full_house_present`) +
   `exact_cover_imp_solution` (sens retour, via la construction inverse `fromSelection`),
   0 `sorry`.
+- `Sudoku.Certificate` : les **certificats DLX concrets** vérifiés par le lake natif
+  (issue #22375) — `sudokuScopes` (les 27 portées concrètes du 9×9), un checker
+  calculable par étages `checkCertificate` (doublon brut, conflit de cellule,
+  complétude, couverture exacte, respect des indices), et le pont de soundness
+  `checkOk_isExactCover` : l'acceptation du checker entraîne `ExactCover.IsExactCover`
+  puis `checkOk_givesSolution` extrait une vraie `Solution`, 0 `sorry`.
 
 ## Statut
 - Prouvé sans `sorry` : (1) la soundness des règles naked/hidden single (clé de

@@ -2,7 +2,7 @@
 
 Détail déporté de [`.claude/rules/variation-protocol.md`](../../.claude/rules/variation-protocol.md) (harness-hygiene : la règle reste succincte et auto-chargée, le détail vit ici et se lit à la demande).
 
----
+***
 
 ## 1. Pourquoi un tag déclaré plutôt qu'une simple exhortation
 
@@ -11,6 +11,8 @@ Verbatim du mandat user 2026-07-21 : « la monoculture de PRs facile est toujour
 Les concepts de variation (tiers, rotation, never-idle) existaient déjà dans [`proactive-coordination.md`](../../.claude/rules/proactive-coordination.md) R6/R7 depuis 2026-07-06. La monoculture a persisté quinze jours de plus. Diagnostic du mandat : les concepts étaient **auto-évalués** (le worker décide seul si son grain est « de la substance »), **invisibles** (rien dans la PR ne dit à quel tier elle prétend), et **non-gatés** (le coordinateur mergeait sans lire).
 
 C'est l'application directe de la leçon `rule-needs-an-organ-not-more-vigilance` : une règle dont le seul mécanisme d'application est la vigilance sera violée. Le tag est l'organe — il rend le grain **auditable en un coup d'œil**, ce qui est la précondition du merge-gate.
+
+Il ne le certifie pas : c'est pourquoi la clause « le tag déclaré n'est pas auto-exécutoire » **reste dans la règle** — merger sans lire le tag laisse le protocole s'auto-certifier. Ce que la règle doit porter à chaque passe, c'est l'obligation de lire le tag ; ce que ce fichier porte, c'est la raison pour laquelle cette lecture n'est pas optionnelle.
 
 ## 2. Champ `prev:` — pourquoi le numéro de PR est obligatoire
 
@@ -146,6 +148,8 @@ Le mandat 2026-07-21 dit « steere **mieux** », pas « constate la vague au mer
 
 Détail du mécanisme (loterie substance, variation du dispatch d'un cycle à l'autre) : mémoire locale `feedback-substance-lottery-provisioning.md`. Le principe qui lie le coordinateur : **sous-provisionner puis merger la monoculture qui en résulte est le manquement que ce protocole corrige.**
 
+Le second manquement qu'il nomme — ralentir la production pour accommoder la digestion en est un autre — est celui qu'interdit la décision user du 12/10 : aucun mécanisme ne freine la productivité des lanes. La digestion se traite par une **piste parallèle**, jamais par une backpressure sur les producteurs (voir le point 5 de la règle : admission et production dissociées). C'est pourquoi cette phrase, qui nomme un défaut, **reste dans la règle** : c'est elle qui empêche de prendre une file d'admission pour une raison de ralentir.
+
 Deux corollaires mesurés de l'obligation « ≥1 grain DEEP de CONTENU par lane » :
 
 1. **Agréger les GENRES des merges récents avant de provisionner, pas seulement leurs tiers.** « 15 MED sur 21 » avait l'air sain et cachait 15 grains de harnais pour 0 `qc`/`genai`/`notebook` — le tier alone répète exactement l'échappatoire que la clause CONTENU/META a fermée (§11).
@@ -208,9 +212,112 @@ L'héritage du genre se déduit de la question même de G-VAR-1 : « qu'est-ce q
 
 **Sources de l'arbitrage** : ticket [#11815](https://github.com/jsboige/CoursIA/issues/11815) (escalade formelle po-2023 après 3 cycles G-VAR-1 non-tenu sur REPAIR de notebooks ; DM `msg-20260819T163135-h66acw`, arbitrage `msg-20260819T171752-4jd3od`). La clause en codifie la lecture **au cas** en forme **durable** ; ce changement normatif substantiel a été soumis au sign-off user conformément à CLAUDE.md §A.
 
+## 14. Consolider est du DEEP, la priorité se règle au tapis (mandat user 2026-10-25)
+
+### 14.1 Verbatim
+
+Question du user, 2026-10-25 12:03Z : « Comment tu expliques que la série d'hommage à Serre accueille aujourd'hui presqu'une dizaine de nouveaux Notebooks, pendant que nos issues de consolidations ne sont visitées que péniblement une fois par semaine [...] alors que tout le monde est d'accord qu'il faut arrêter le fioritures et travailler à nettoyer/consolider/renforcer le dépôt ? »
+
+Réponse du user au diagnostic, 12:07Z : « Ce qu'on ne veut pas, ce sont des agents qui se satisfont de corriger une faute d'orthographe par ci par là pour faire de la PR facile. On veut du deep de façon régulière. Mais d'une part, corriger 100 fautes d'orthographes ou consolider des Notebooks pour réorganiser norte dépot c'est tout à fait acceptable, et d'aure part, faire du deep, ça n'est pas rajouter 10 carnets à une sous-série hommage un peu obscure [...]. C'est le genre d'issues [...] qui ne derait pas être visitée plus d'une fois par tapis roulant, c'est à dire plus d'une fois par semaine au grand max. »
+
+Puis, 12:10Z : « on a plein d'issues de consolidation en souffrance, retrouve les et mets les en avant. C'est celles-là qui méritent d'être visitées plusieurs fois par semaine ».
+
+Correction du user sur le diagnostic « le plancher exclut MED et META », 12:19Z : « C'est pas forcément MED ou META qu'on veut renforcer, ce sont de vraies issues, il faut juste revoir les priorités pour éviter l'inflation gallopante et lutter contre l'entropie. »
+
+Puis, 12:20Z : « Enfin je ne te dis pas d'éliminer le meta hein, attention au balancier ».
+
+Ces citations sont le verbatim complet, recopié tel que frappé, coquilles comprises : ne pas les corriger. Le body de la PR #22501 n'en donne qu'un extrait.
+
+### 14.2 La mesure
+
+- EPIC [#16334](https://github.com/jsboige/CoursIA/issues/16334) (Serre100) : la décomposition initiale (9 grains) était épuisée le 2026-09-17. Le 2026-10-25 à 12:20Z, 17 carnets étaient sur main et **11 PRs ouvertes** portaient les carnets 18 à 28, ouvertes entre le 15/10 et le 25/10, dont 9 depuis le 24/10, par quatre lanes. Une seule lane a livré les carnets 22, 24, 26 et 27 en six heures, chacun enchaîné sur le précédent dans le même EPIC. Deux PRs portent le même numéro 18.
+- Pile Dynamics ([#22177](https://github.com/jsboige/CoursIA/pull/22177) → [#22193](https://github.com/jsboige/CoursIA/pull/22193) → [#20442](https://github.com/jsboige/CoursIA/pull/20442)), consolidation demandée par le user le 2026-10-23 (le dossier `GameTheory/Dynamics/` n'y porte qu'un carnet) : #22177, taguée `MED/refactor`, a été approuvée à quatre têtes successives et re-conflictée à chaque fois par des ajouts GameTheory mergés avant elle.
+
+### 14.3 Le mécanisme
+
+Trois pièces, aucune fautive seule :
+
+1. **Le tableau des tiers** nommait le nouveau carnet parmi les exemples DEEP, pas la consolidation. Une consolidation se taguait donc `MED/notebook-python` (fusion re-exécutée) ou `refactor` (déplacement), et le plancher (§12) ne la comptait pas ; un nouveau carnet, si. Le défaut n'est pas l'exigence de DEEP : c'est qu'une consolidation est un vrai travail de fond que le tableau ne reconnaissait pas comme tel.
+2. **L'urne `umbrella`** permettait de « créer un sous-grain » dans un EPIC sans borne : une lane qui venait de livrer un carnet pouvait en ouvrir un autre dans le même EPIC aussitôt, sans repasser par le tapis.
+3. **Le tapis** ne connaissait aucune priorité : une issue de consolidation attendait son tour comme les autres, une fois par passe.
+
+Ensemble : chaque lane, tenue de livrer un DEEP de contenu à chaque cycle, trouvait dans un EPIC d'extension une source inépuisable de grains-plancher, pendant que les consolidations, qui ne tenaient pas le plancher, restaient au fond de sa file. Une grosse PR de consolidation, plus lente à livrer, était en plus re-conflictée par les petites accrétions mergées avant elle.
+
+### 14.4 Ce qui change
+
+- La consolidation de série entre dans la ligne DEEP du tableau des tiers, et déclare le genre des carnets qu'elle réorganise. Le plancher, lui, est inchangé : DEEP de CONTENU, ni MED ni META.
+- Le litmus LIGHT est inchangé : c'est lui qui écarte la « PR facile » que le user refuse.
+- L'urne `umbrella` ne crée plus qu'un sous-grain par visite du tapis ; un EPIC hors consolidation se visite au plus une fois par semaine ; les issues de consolidation reviennent en tête plusieurs fois par semaine. L'organe est [#22500](https://github.com/jsboige/CoursIA/issues/22500) (`pick_idle_grain.py`) ; en attendant, le coordinateur place les consolidations en tête de chaque file.
+
+Sign-off : mandat user direct du 2026-10-25 (CLAUDE.md §A, « un mandat user direct vaut sign-off »).
+
 ## Voir aussi
 
 - [`.claude/rules/variation-protocol.md`](../../.claude/rules/variation-protocol.md) — la règle (tag, 3 gates, merge-gate, provisionnement)
 - [`.claude/rules/proactive-coordination.md`](../../.claude/rules/proactive-coordination.md) — R1, R5, R6/R7
 - [`.claude/rules/coordinator-discipline.md`](../../.claude/rules/coordinator-discipline.md) — R4 (jamais sanctionner l'idle), R5 (steer qui ATTEINT/VRAI/DÉCIDE)
 - [`docs/reference/proactive-coordination-detail.md`](proactive-coordination-detail.md) — backlog, sources, anti-patterns
+
+## § Levier B — rationales déportés de `.claude/rules/variation-protocol.md`
+
+La règle `variation-protocol.md` est **auto-chargée** à chaque session ; ce
+fichier ne l'est pas. Le déplacement ci-dessous est donc un gain de contexte
+systémique. Aucun bloc déplacé n'est réécrit : le texte des blocs est celui
+qui a quitté la règle.
+
+| Ligne de la règle (base `7a558e4d7ce8`) | Bloc | Statut |
+|---|---|---|
+| L29 | litmus LIGHT : le cœur anti-gaming | déplacé |
+| L42 | un genre META n'est pas inférieur | déplacé |
+| L64 | le pool global porte toujours du DEEP de contenu | déplacé |
+| L66 | provenance de la priorité « consolidation en tête du tapis » | déplacé |
+| L82 | le protocole ne mord que si `ai-01` cesse de merger passivement | déplacé |
+| L93 | le tag déclaré n'est pas auto-exécutoire | **conservé dans la règle** |
+| L101 | pourquoi pas un quota par lane à tous les cycles | déplacé |
+| L110 | le manquement que le protocole corrige | **conservé dans la règle** |
+
+Deux lignes ne sont pas déplacées : **L93** et **L110**. Elles portent des
+phrases **normatives**, pas des justifications — l'obligation de lire le tag à
+chaque passe, et le second manquement que le protocole corrige. Un allègement
+fidèle déplace la justification ; il ne déplace pas la phrase qui nomme le
+défaut. C'est la règle elle-même qui tranche, et la justification qui part ici.
+
+### L29 — litmus LIGHT : le cœur anti-gaming
+
+Le litmus LIGHT est le **cœur anti-gaming** : guards, resyncs, ledger-entries, accents le passent tous.
+
+### L42 — un genre META n'est pas inférieur
+
+Un genre META n'est pas inférieur — un guard qui rougit au bon moment vaut mieux qu'un notebook de plus — mais une flotte qui ne produit que du META construit un atelier sans rien y fabriquer.
+
+### L64 — le pool global porte toujours du DEEP de contenu
+
+Le pool global porte toujours du DEEP de contenu : la monoculture vient du choix du plus facile *disponible*, pas d'une absence de substance.
+
+### L66 — provenance de la priorité « consolidation en tête du tapis »
+
+Les issues de consolidation reviennent en tête du tapis plusieurs fois par semaine, un EPIC qui étend une série au plus une fois — règle 5 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md), issue #22500, organe en PR #22504.
+
+### L82 — le protocole ne mord que si `ai-01` cesse de merger passivement
+
+Le protocole ne mord que si `ai-01` cesse de merger passivement.
+
+### L93 — le tag déclaré n'est pas auto-exécutoire
+
+**Conservé dans la règle** (phrase normative) : la justification est en
+[§1](#1-pourquoi-un-tag-déclaré-plutôt-quune-simple-exhortation) — le tag rend
+le grain auditable en un coup d'œil, ce qui est la précondition du merge-gate,
+mais il ne le certifie pas : merger sans lire le tag laisse le protocole
+s'auto-certifier.
+
+### L101 — pourquoi pas un quota par lane à tous les cycles
+
+Un quota par lane à tous les cycles rendrait le steering structurellement toujours premier sur le tirage, ce que la règle 5 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md) interdit.
+
+### L110 — le manquement que le protocole corrige
+
+**Conservé dans la règle** (phrase normative) : la justification est en
+[§9](#9-obligation-de-provisionnement--la-moitié-coordinateur-du-problème) —
+sous-provisionner puis merger la monoculture qui en résulte est **le**
+manquement que ce protocole corrige, et ralentir la production pour accommoder
+la digestion en est un autre.

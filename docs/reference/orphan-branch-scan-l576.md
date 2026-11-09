@@ -5,7 +5,7 @@ Détail de référence de la section « Orphan-branch scan (L576) » de
 
 > **Note de localisation.** La règle cite ce détail à l'URL
 > `.claude/memory/lecon-L576-rest-commits-pulls-fpos.md`. Ce chemin est **ignoré par
-> `.gitignore`** (ligne 651, aux côtés de `.claude/local/` — état local par machine) : il ne
+> `.gitignore`** (motif `.claude/memory/`, aux côtés de `.claude/local/` — état local par machine) : il ne
 > peut donc jamais exister sur `main`, et les deux liens de la règle sont morts par
 > construction. Le détail durable vit ici, conformément à
 > [`harness-hygiene`](../../.claude/rules/harness-hygiene.md) (tier « doc pérenne →

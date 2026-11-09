@@ -17,12 +17,23 @@ Ce module est l'implementation UNIQUE de la resolution :
   muet sur le compte actif reconstituerait exactement le seau unique qu'on
   corrige.
 
-Transition Phase B/C (#17418) : les lanes dont le compte machine n'existe pas
-encore (``myia-po-2024``..``2027``) posent ``COURSIA_GH_PINNING=off`` — le
-helper renonce ALORS en imprimant un avertissement fort sur stderr (jamais en
-silence), et ``detect_shared_login.py`` continue de les nommer comme tournant
-sous le login partage. La Creation des comptes (Phase B) et le provisionnement
-des jetons (Phase C) ferment cette echappatoire.
+Transition Phase B/C (#17418, FERMEE le 2026-09-24) : les lanes dont le compte
+machine n'existe pas (``myia-po-2024``..``2027``) posent
+``COURSIA_GH_PINNING=off`` — le helper renonce ALORS en imprimant un
+avertissement fort sur stderr (jamais en silence), et
+``detect_shared_login.py`` continue de les nommer comme tournant sous le login
+partage. Le plan qui ferme cette echappatoire est desormais #17437 : identites
+GitHub App par lane, jetons forges par ``github_app_token.py`` — le PAT
+machine de la Phase C y est explicitement rejete (60 req/h sans GraphQL).
+
+Identites d'AUTEUR (#17437) : le module porte aussi l'ensemble des logins
+acceptes comme auteurs d'un dossier (``ACCEPTED_DOSSIER_AUTHORS``) — le login
+partage d'aujourd'hui, et les identites GitHub App par lane qui le remplacent.
+Il vit ici plutot que dans chacun des gates parce que DEUX d'entre eux
+comparent l'auteur d'un dossier (``check_adjoint_prevalidation.py``,
+``check_closure_dossier.py``) : deux copies du meme ensemble divergeraient au
+premier changement de lanes, et l'une des deux refuserait alors des dossiers
+legitimes sans que personne ne le voie.
 """
 
 from __future__ import annotations
@@ -36,10 +47,15 @@ import sys
 
 SHARED_LOGIN = "jsboige"
 
-# Comptes machine meses le 2026-09-22 (#17418) : ai-01, po-2023 et Web1
+# Comptes machine mesures le 2026-09-22 (#17418) : ai-01, po-2023 et Web1
 # existent ; po-2024..2027 sont 404 jusqu'a la Phase B. Ils figurent deja ici
 # pour que la Phase C ne demande AUCUN changement de code : des que le jeton
 # est dans le trousseau, les organes l'epinglent.
+#
+# Roster de la flotte = FLEET_ROSTER dans ``scripts/secrets/agent_keyring.py``
+# (9 machines au 2026-10-20, roster RooSync propage le meme jour -- #21687).
+# Les deux listes se croisent par test ; une divergence rougit au lieu de se
+# decouvrir a la premiere observation refusee.
 HOST_ACCOUNTS = {
     "myia-ai-01": "myia-ai-01",
     "myia-po-2023": "myia-po-2023",
@@ -48,7 +64,115 @@ HOST_ACCOUNTS = {
     "myia-po-2026": "myia-po-2026",
     "myia-po-2027": "myia-po-2027",
     "myia-web1": "MyIA-Web1",
+    # Compte GitHub a creer aupres du siege concerne : myia-po-2028 et
+    # myia-web2 n'ont pas encore de login mesure (gh api users -> 404 le
+    # 2026-10-20). Ils restent hors de cette table tant que le login n'existe
+    # pas -- la table n'accepte que des comptes reels, sinon le message
+    # d'erreur en cite de faux.
 }
+
+# --- Identites d'auteur des dossiers (#17437) -------------------------------
+#
+# Un dossier (prevalidation adjointe, fermeture d'issue) est un acte de
+# verification tierce : le gate qui le lit verifie QUI l'a signe. Aujourd'hui
+# toutes les lanes signent sous ``SHARED_LOGIN``. #17437 provisionne une GitHub
+# App par lane (``coursia-lane-po-2024[bot]``), les comptes machine etant brides
+# au tarif anonyme ; le jour ou une lane poste sous son App, un gate qui compare
+# l'auteur au seul ``SHARED_LOGIN`` refuse un dossier pourtant legitime — et le
+# refuse pour TOUTES les lanes d'un coup, sans message qui designe la cause.
+#
+# Source de verite des noms : ``scripts/secrets/github_app_manifest.py``
+# (``APP_PREFIX`` + ``LANES``), plus le pilote ``coursia-lane-ai-01``. La liste
+# est FIGEE ici plutot que derivee a l'execution : ``github_app_manifest``
+# importe ``webbrowser``/``http.server`` et lit ``.secrets/``, ce qu'un gate
+# appele en CI ne peut pas se permettre. Un login absent de cette table est
+# refuse (echec FERME) : l'ensemble s'elargit par une edition consciente, jamais
+# par une correspondance de forme.
+APP_LOGIN_PREFIX = "coursia-lane-"
+APP_DOSSIER_LANES = (
+    "po-2023",
+    "po-2024",
+    "po-2025",
+    "po-2026",
+    "po-2027",
+    "web1",
+    "ai-01",
+)
+ACCEPTED_DOSSIER_AUTHORS = frozenset(
+    (SHARED_LOGIN,)
+    + tuple(f"{APP_LOGIN_PREFIX}{lane}[bot]" for lane in APP_DOSSIER_LANES)
+)
+
+# --- Normalisation de l'auteur lu sur une surface GraphQL ou REST ----------
+#
+# Les deux surfaces ne rendent pas le MEME login pour un acteur de type
+# `Bot`. Mesure firsthand (2026-10-21, ai-01, commentaire `github-actions`
+# sur #21390) :
+#
+#   GraphQL  `author { __typename login }` : login = "github-actions"
+#                                              (SANS suffixe), __typename = "Bot"
+#   REST     `user`                        : login = "github-actions[bot]"
+#                                              (AVEC suffixe), type = "Bot"
+#
+# `ACCEPTED_DOSSIER_AUTHORS` est ecrit en orthographe REST : toute lecture
+# doit donc etre normalisee AVANT la comparaison. Le gate de fermeture lit
+# en GraphQL, le gate de prevalidation adjointe en REST : sans normalisation,
+# le premier refuse une App de lane que le second accepte (issue #21818,
+# symptome mesure par la lane secretaire : "comment author
+# 'coursia-lane-po-2026' is not an accepted dossier author").
+#
+# La reconstruction du suffixe s'appuie sur le TYPE de l'acteur, jamais sur la
+# forme du login : sans cette exigence, un compte UTILISATEUR nomme comme le
+# slug de l'App ("coursia-lane-po-2026", sans suffixe) passerait le gate.
+# ---------------------------------------------------------------------------
+
+
+def author_is_bot(author: dict) -> bool:
+    """L'acteur est-il une App (type `Bot`) ?
+
+    Accepte les deux formes rencontrees : `__typename` (GraphQL) et `type`
+    (REST). Un auteur dont le type est inconnu n'est PAS un bot : le doute
+    profite au refus.
+    """
+    if not isinstance(author, dict):
+        return False
+    typename = str(author.get("__typename") or "").strip()
+    if typename:
+        return typename == "Bot"
+    atype = str(author.get("type") or "").strip()
+    if atype:
+        return atype == "Bot"
+    return False
+
+
+def normalize_author_login(author: dict) -> str:
+    """Login d'auteur en orthographe REST (suffixe `[bot]` pour une App).
+
+    Point de passage UNIQUE : les deux gates qui comparent l'auteur d'un
+    dossier passent par ici, donc une seule definition de la forme canonique.
+    Un login deja suffixe est renvoye tel quel (idempotent) : la lecture REST
+    ne change rien, la lecture GraphQL est corrigee.
+    """
+    if not isinstance(author, dict):
+        return ""
+    login = str(author.get("login") or "").strip()
+    if not login:
+        return ""
+    if login.endswith("[bot]"):
+        return login
+    if author_is_bot(author):
+        return login + "[bot]"
+    return login
+
+
+def is_accepted_dossier_author(author: dict) -> bool:
+    """L'auteur est-il un signataire de dossier accepte ?
+
+    La comparaison se fait sur le login NORMALISE : un dossier signe sous une
+    App de lane est accepte quelle que soit la surface qui a lu l'auteur.
+    """
+    return normalize_author_login(author) in ACCEPTED_DOSSIER_AUTHORS
+
 
 RATE_LIMIT_RE = re.compile(r"rate limit", re.IGNORECASE)
 
@@ -81,7 +205,7 @@ def machine_account(hostname: str | None = None) -> str:
             f"Comptes mappees : {', '.join(sorted(HOST_ACCOUNTS))}. "
             "Poser COURSIA_GH_ACCOUNT=<compte> si cette machine doit en "
             "utiliser un, ou COURSIA_GH_PINNING=off pendant la transition "
-            "#17418 Phase B/C."
+            "vers les identites App (#17437)."
         ) from None
 
 
@@ -109,9 +233,10 @@ def resolve_gh_token() -> str:
         detail = (proc.stderr or proc.stdout).strip()[:300]
         raise GhIdentityError(
             f"gh auth token --user {account} a echoue (rc={proc.returncode}) : "
-            f"{detail or 'sortie vide'}. Provisionner le jeton machine "
-            f"(#17418 Phase C : master.env + trousseau), ou poser GH_TOKEN "
-            "explicitement."
+            f"{detail or 'sortie vide'}. Forger le jeton de l'identite App de "
+            f"la lane (github_app_token.py, plan #17437 — le PAT machine de la "
+            f"Phase C #17418 est rejete : 60 req/h sans GraphQL), ou poser "
+            f"GH_TOKEN explicitement."
         )
     return proc.stdout.strip()
 
@@ -120,7 +245,7 @@ def pin_gh_token() -> str:
     """Epingle le jeton machine dans ``os.environ`` — idempotent, loud en echec.
 
     Transition : ``COURSIA_GH_PINNING=off`` renonce en preventif avec un
-    avertissement fort (lanes sans compte machine jusqu'a la Phase C).
+    avertissement fort (lanes sans identite App pourvue — plan #17437).
     """
     if os.environ.get("GH_TOKEN"):
         return os.environ["GH_TOKEN"]
@@ -128,7 +253,8 @@ def pin_gh_token() -> str:
         print(
             "GH-IDENTITY (WARN): COURSIA_GH_PINNING=off — appel(s) GitHub sous "
             f"le compte actif (potentiellement le login partage '{SHARED_LOGIN}', "
-            "seau commun). Dettes visibles par detect_shared_login.py. #17418 Phase C.",
+            "seau commun). Dettes visibles par detect_shared_login.py. "
+            "Identites App par lane : plan #17437.",
             file=sys.stderr,
         )
         return ""

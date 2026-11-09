@@ -7,7 +7,7 @@ The function under test is the **rename-aware** counter used by
 current path, which traverses renames back to the original commit.
 
 Without ``--follow``, the counter would silently drop revisions made under
-the OLD path -- on a real notebook (``GameTheory/GameTheory-01-Setup.ipynb``)
+the OLD path -- on a real notebook (``GameTheory/GameTheory-01-Setup-Python.ipynb``)
 the ratio is 2 vs 52, i.e. a factor of 26. A refactor that removes
 ``--follow`` from the argv would pass every existing test (none traverse
 this function) but corrupt the band classification for any renamed

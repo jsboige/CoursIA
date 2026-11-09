@@ -1,0 +1,7 @@
+date: '2026-10-22'
+by: myia-po-2024:CoursIA
+python_sha: ebbe30e3357346e5c416d0bd42b4384c7a1cfb8b
+csharp_sha: fc9c1069227e32a34b6896a97e7648bb21c70aa7
+content_python_sha: c23dc5df583bbaea1a9507ada990a6cbccda167553dfdc687995a8b32e1d3079
+content_csharp_sha: e16189c4c3da290afd6546d51f2880a43c18ceb8d10e5df2310df6e1a15386b0
+reason: "PR #21969 (lane myia-po-2024:CoursIA, feat gametheory 05c KKT) -- changement MARKDOWN-ONLY unilatéral côté Python : un paragraphe de navlink vers GameTheory-05c-KKT-Dualite-Lagrangienne-Python.ipynb inséré dans la cellule Resume et perspectives (cellule 36). Portée du diff (JSON parsés origin/main -> HEAD) : 39 -> 39 cellules, 0 cellule code touchée (14/14 source+outputs byte-identiques), 0 sortie modifiée, 0 execution_count déplacé. La contrepartie C# GameTheory-05-ZeroSum-Minimax-CSharp.ipynb est INCHANGÉE par la PR : la parité lib-vs-lib native-both (nashpy+OR-Tools vs Dantzig/Glop/Gambit) n'est pas affectée ; attestation de forme parity-preserving, précédent 2026-08-01 (SC-04)."

@@ -4,7 +4,7 @@ Série de notebooks pour la **détection et classification de sophismes** (falla
 
 - **EPIC parent** : [#10355](https://github.com/jsboige/CoursIA/issues/10355)
 - **Phase 1 (sous-issue opérationnelle)** : [#10356](https://github.com/jsboige/CoursIA/issues/10356)
-- **Survey SOTA fondateur** : [docs/research/fallacy-detection-survey.md](../../../docs/research/fallacy-detection-survey.md) (livrable 1, 10 sources primaires)
+- **Survey SOTA fondateur** : [docs/research/fallacy-detection-survey.md](../../../docs/research/fallacy-detection-survey.md) (livrable 1, 11 sources primaires)
 
 ## Notebooks de la série
 
@@ -31,7 +31,7 @@ Série de notebooks pour la **détection et classification de sophismes** (falla
 
 ## Corpus `data/jessynoo_rfallacy_anonymized.csv`
 
-Corpus r/fallacy extrait et anonymisé depuis le Data Export Reddit du compte `u/Jessynoo` (le handle Reddit du propriétaire du dépôt — self-attribution pédagogique assumée). **69 items** (67 commentaires + 2 posts), corps de 30 à 4263 caractères (moyenne 691).
+Corpus r/fallacy extrait et anonymisé depuis le Data Export Reddit du compte `u/Jessynoo` (le handle Reddit du propriétaire du dépôt — self-attribution pédagogique assumée). **69 items** (67 commentaires + 2 posts), corps de 30 à 4263 caractères (moyenne 702, mesurée sur 68 corps non vides).
 
 ### Provenance et politique PII
 
@@ -44,7 +44,7 @@ Corpus r/fallacy extrait et anonymisé depuis le Data Export Reddit du compte `u
 
 Le corpus Jessynoo r/fallacy est en **anglais** (0 mot-clé français sur 69 items), mais ce corpus n'est **pas** un jeu d'entraînement — c'est un **bootstrap de câblage** du pipeline (extraction reproductible, anonymisation PII, format CSV stable). Il a toujours eu cette vocation, et le README l'annonçait sans la nommer. Le jeu d'entraînement viendra de la Phase 2.
 
-La **taxonomie Argumentum** (sous-module `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum`, fichier `Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv`) est **déjà traduite en 8 langues** : `fr` (4 colonnes), `en` (6), `ru` (7), `ar` (7), `fa` (7), `zh` (7), `es` (7), `pt` (7). Mesure firsthand sur `origin/main` du sous-module :
+La **taxonomie Argumentum** (sous-module `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum`, fichier `Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv`) est **déjà traduite en 8 langues** : `fr` (4 colonnes), `en` (6), `ru` (7), `ar` (7), `fa` (7), `zh` (7), `es` (7), `pt` (7). Mesure firsthand sur `origin/main` du sous-module :
 
 ```bash
 head -1 "Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv" | tr ',' '\n' \

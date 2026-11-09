@@ -148,10 +148,11 @@ def test_workspace_candidates_contract(syn_panel):
     infl = ws.lagged_influence(acts, max_lag=6)
     fp = ws.fanout_profile(infl["matrix"], z_threshold=2.0)
     cand = ws.workspace_candidates(fp["fanout"], top_fraction=0.1)
-    assert set(cand) >= {"indices", "gini", "concentrated", "n_selected"}
+    assert set(cand) >= {"indices", "gini", "concentrated", "n_selected", "criterion"}
     assert len(cand["indices"]) == cand["n_selected"] >= 1
     assert 0.0 <= cand["gini"] <= 1.0 + 1e-9
     assert isinstance(cand["concentrated"], bool)
+    assert cand["criterion"] == "fixed-threshold"  # sans null_gini : legacy explicite
     fanout = np.asarray(fp["fanout"])
     assert fanout.shape == (acts.shape[1],)
     assert np.isfinite(fanout).all() and (fanout >= 0).all()
@@ -169,6 +170,67 @@ def test_shuffled_panel_kills_hub_signal(syn_panel):
     fp = ws.fanout_profile(infl["matrix"], z_threshold=2.0)
     cand = ws.workspace_candidates(fp["fanout"], top_fraction=0.1)
     assert info["hub_idx"] not in cand["indices"]
+
+
+# ---------------------------------------------------------------------------
+# Recalibrage du drapeau concentrated (#20324) : exces vs nul time-shuffled
+# ---------------------------------------------------------------------------
+
+def _shuffled_null_ginis(acts, n=20, seed=7):
+    """Batterie time-shuffled (miroir cellule 10) : Gini du fanout de chaque permutation."""
+    g = np.random.default_rng(seed)
+    out = []
+    for _ in range(n):
+        shuf = acts.copy()
+        for j in range(shuf.shape[1]):
+            g.shuffle(shuf[:, j])
+        infl = ws.lagged_influence(shuf, max_lag=6)
+        fp = ws.fanout_profile(infl["matrix"], z_threshold=2.0)
+        out.append(ws.workspace_candidates(fp["fanout"], top_fraction=0.1)["gini"])
+    return np.array(out)
+
+
+def test_calibrated_flag_fires_on_planted_hub_vs_own_null(syn_panel):
+    """Le critere calibre peut TIRER : le hub plante est un exces de concentration
+    vs la mediane du nul time-shuffled du meme panel."""
+    acts, _ = syn_panel
+    infl = ws.lagged_influence(acts, max_lag=6)
+    fp = ws.fanout_profile(infl["matrix"], z_threshold=2.0)
+    null_med = float(np.median(_shuffled_null_ginis(acts)))
+    cand = ws.workspace_candidates(fp["fanout"], top_fraction=0.1, null_gini=null_med)
+    assert cand["criterion"] == "excess-vs-null"
+    assert cand["concentrated"] is True  # structure reelle -> exces vs nul
+
+
+def test_calibrated_flag_does_not_fire_on_s4_trained():
+    """Verdict honnet S4 (re-verification firsthand #20324) : le bras entraine
+    (Gini 0.485) tombe SOUS la mediane de son propre nul (0.638, n=50 seed 20261012)
+    -- le drapeau calibre n'y tire pas. C'est le contre-exemple garde."""
+    traces = st.load_traces(TRACES_DIR / "ict21_sae_layer16_trained.npz")
+    SETS = sorted({s for s, _ in traces["prompts"]})
+    panel = st.differential_features(traces, k=64)
+    panels = st.acts_topk_panels(traces, panel)
+    acts = np.concatenate([panels[(s, i)] for s in SETS for i in range(4)], axis=0)
+    infl = ws.lagged_influence(acts, max_lag=5)
+    fp = ws.fanout_profile(infl["matrix"], z_threshold=2.0)
+    nulls = _shuffled_null_ginis(acts, n=50, seed=20261012)
+    cand = ws.workspace_candidates(fp["fanout"], top_fraction=0.1,
+                                   null_gini=float(np.median(nulls)))
+    assert abs(cand["gini"] - 0.485) < 0.02          # re-mesure c.435 confirmee
+    assert cand["gini"] < nulls.min()                # sous TOUT le nul
+    assert cand["concentrated"] is False             # le verdict honnete
+
+
+def test_legacy_threshold_fires_on_entire_s4_null():
+    """Contre-exemple epingle : le seuil fixe 0.2 tire sur 100 % du nul S4
+    (50/50) -- c'est le defaut que le recalibrage corrige, fige en regression."""
+    traces = st.load_traces(TRACES_DIR / "ict21_sae_layer16_trained.npz")
+    SETS = sorted({s for s, _ in traces["prompts"]})
+    panel = st.differential_features(traces, k=64)
+    panels = st.acts_topk_panels(traces, panel)
+    acts = np.concatenate([panels[(s, i)] for s in SETS for i in range(4)], axis=0)
+    nulls = _shuffled_null_ginis(acts, n=50, seed=20261012)
+    assert (nulls > 0.2).all()                       # 100 % de faux positifs, mesure
 
 
 # ---------------------------------------------------------------------------

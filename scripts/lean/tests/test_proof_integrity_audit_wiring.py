@@ -1,25 +1,36 @@
 #!/usr/bin/env python3
-"""Contract test for the conway proof-integrity-audit job (#8782 option (b)).
+"""Contract test for the conway axiom-audit wiring (#8782 option (b)).
 
 Dual-mode: runnable directly (``python scripts/lean/tests/test_proof_integrity_audit_wiring.py``)
 or under pytest (auto-collected by scripts-tests.yml on any ``scripts/**`` change).
 
-Locks the wiring of the ADVISORY axiom-audit job that closes the "vert
-hors-cible" gap opened in #8782. The blocking ``proof-integrity`` job targets
-the sorry-FREE showcase modules (Conway.KochenSpecker + Conway.FreeWillTheorem)
-and is therefore green BY CONSTRUCTION on the 8 acknowledged tactic sorries in
-Conway.Life.HashlifeCorrectness -- observed on #8809 (SUCCESS beside a file
-with 8 sorries). Option (b) adds a non-blocking ``proof-integrity-audit`` job
-that runs the axiom audit ON the sorry-bearing module, so the sorries surface
-as ``has_sorry`` (reported, not gated -- an honesty knob, not a leniency one)
-while a FORBIDDEN axiom (beyond the 19 native_decide allow-list) still
-hard-fails. Criterion 1 (#8782): the audit targets the module whose public
-anchor (``hashlifeResult_central_correct``) closes the private sorry chain, so
-the sorry is REACHED, not hidden; a module with zero enumerated decls reads
-'non applicable' explicitly (lean-axiom.yml), never a silent clean.
+**Porteurs matriciels depuis la migration #25256.** Le wrapper autonome
+``.github/workflows/lean-conway.yml`` est SUPPRIME : conway_lean, dernier
+per-lake wrapper, migre vers la matrice CI (entree ``conway`` du manifeste
+``scripts/lean/ci_lakes.json``, steps du job ``ci-matrix`` de
+``lean-build.yml``). Les pins de ce fichier ont suivi leurs garanties :
+
+* la jambe ADVISORY ``proof-integrity-audit`` (option (b) de #8782) vit
+  desormais dans les cles ``axiom-*`` de l'entree manifeste + le step
+  ``actions/lean-axiom`` du job ``ci-matrix`` -- c'est ce que pinne ce
+  fichier ;
+* la jambe BLOCKING ``proof-integrity`` (showcase KochenSpecker +
+  FreeWillTheorem, fail-on-sorry: true) est SUSPENDUE par la migration :
+  le schema matriciel n'exprime qu'UN profil d'axiomes par lake. La perte
+  residuelle est documentee dans l'issue #25261 (creee AVANT le merge,
+  voie 3 B.0) -- voir ``test_the_blocking_leg_suspension_is_documented``.
+
+Substance inchangee depuis #8782 : l'audit advisory tourne l'axiom-audit SUR
+le module porteur de sorries (HashlifeCorrectness), les sorries y surface
+comme ``has_sorry`` (rapportes, non gates -- un bouton d'honnetete, pas de
+laxisme) tandis qu'un axiome INTERDIT (hors les 79 ancres allow-listees)
+fail quand meme. Criterion 1 (#8782) : l'audit vise le module dont l'ancre
+publique (``hashlifeResult_central_correct``) ferme la chaine privee de
+sorries, donc le sorry est ATTEINT, pas cache.
 """
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -28,62 +39,138 @@ import pytest
 
 # scripts/lean/tests/X.py -> parents[3] = repo root
 REPO = Path(__file__).resolve().parents[3]
-CONWAY_WF = REPO / ".github" / "workflows" / "lean-conway.yml"
+MANIFEST = REPO / "scripts" / "lean" / "ci_lakes.json"
+LEAN_BUILD_WF = REPO / ".github" / "workflows" / "lean-build.yml"
+
+# L'allow-list que portait la jambe BLOCKING supprimee (l.165 de la derniere
+# revision du wrapper) : les 6 defauts de LeanVerifier, RIEN de plus. Le
+# wrapper n'a JAMAIS porte de native_decide sur cette jambe -- le "19-name
+# list" des docstrings historiques decrit l'etat d'avant #8749. Conserve
+# comme constante pour le pin de disjointness ci-dessous (#25261).
+SHOWCASE_DEFAULT_WHITELIST = {
+    "Classical.choice",
+    "propext",
+    "funext",
+    "Quot.lift",
+    "Quot.mk",
+    "Quot.sound",
+}
 
 
-def _load_jobs():
+def _conway_entry():
+    with MANIFEST.open(encoding="utf-8") as fh:
+        doc = json.load(fh)
+    return next(e for e in doc["lakes"] if e["lake"] == "conway")
+
+
+def _matrix_axiom_step():
+    """Le step actions/lean-axiom du job ci-matrix de lean-build.yml."""
     yaml = pytest.importorskip("yaml")
-    with CONWAY_WF.open(encoding="utf-8") as fh:
-        doc = yaml.safe_load(fh)
-    return doc.get("jobs", {})
+    doc = yaml.safe_load(LEAN_BUILD_WF.read_text(encoding="utf-8"))
+    steps = doc["jobs"]["ci-matrix"]["steps"]
+    axiom = [s for s in steps if s.get("uses", "").endswith("actions/lean-axiom")]
+    assert len(axiom) == 1, "exactly one axiom step in the matrix job"
+    return axiom[0]
 
 
-def test_workflow_exists():
-    assert CONWAY_WF.is_file(), f"missing {CONWAY_WF}"
+def _resolve_allow(raw):
+    """Resout la valeur ``allow-axioms`` en liste de noms.
+
+    Depuis #21905 la source de verite de l'allow-list est un fichier
+    (``@scripts/lean/allow_axioms_conway.txt``) : lire la valeur brute ne
+    dirait plus rien du contenu. On passe par le module du gate
+    (``scripts/lean/allow_list.py``), donc ces pins portent sur ce que le
+    job resout reellement -- pas sur la forme de transport.
+    """
+    sys.path.insert(0, str(REPO / "scripts" / "lean"))
+    from allow_list import parse_allow  # noqa: PLC0415 (import tardif: sys.path)
+
+    return parse_allow(raw, REPO)
 
 
-def test_blocking_proof_integrity_targets_showcase_modules():
-    """The blocking gate covers the sorry-FREE showcase (KochenSpecker +
-    FreeWillTheorem) with fail-on-sorry: true -- the complement of the
-    sorry-bearing advisory audit below."""
-    jobs = _load_jobs()
-    assert "proof-integrity" in jobs, "blocking proof-integrity job removed"
-    blocking = jobs["proof-integrity"].get("with", {})
-    targets = blocking.get("target-modules", "")
-    assert "Conway.KochenSpecker" in targets
-    assert "Conway.FreeWillTheorem" in targets
-    assert blocking.get("fail-on-sorry") is True
+def test_manifest_entry_exists():
+    """Le porteur de la garantie depuis #25256 : l'entree `conway` du
+    manifeste, avec son profil d'axiomes complet. Une cle perdue a l'edition
+    du manifeste = la derive silencieuse que ce fichier existe pour fermer
+    (le step matriciel interpole '' et la jambe saute sans erreur)."""
+    entry = _conway_entry()
+    assert entry["project-path"] == "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean"
+    for key in (
+        "axiom-target-modules",
+        "axiom-allow-axioms",
+        "axiom-fail-on-sorry",
+        "axiom-include-i18n-siblings",
+    ):
+        assert key in entry, (
+            f"l'entree conway a perdu la cle {key} -- la jambe d'axiomes "
+            f"saute sans erreur (le step interpole sa valeur par defaut)")
 
 
-def test_advisory_audit_job_wired():
-    """Option (b): an ADVISORY proof-integrity-audit job exists, uses the
-    reusable lean-axiom workflow, and is non-blocking on sorry."""
-    jobs = _load_jobs()
-    assert "proof-integrity-audit" in jobs, (
-        "#8782 (b): proof-integrity-audit job missing from lean-conway.yml")
-    audit = jobs["proof-integrity-audit"]
-    assert "lean-axiom.yml@main" in audit.get("uses", ""), (
-        "audit must reuse the lean-axiom workflow")
-    with_opts = audit.get("with", {})
-    assert with_opts.get("fail-on-sorry") is False, (
-        "the audit job must be advisory on sorry (fail-on-sorry: false)")
+def test_the_audit_profile_is_advisory_on_sorry():
+    """Option (b) de #8782 : l'audit est NON-BLOQUANT sur les sorries
+    (``axiom-fail-on-sorry: "false"``). Le defaut du step matriciel est
+    ``'true'`` (``matrix.axiom-fail-on-sorry || 'true'``) : une cle perdue
+    ferait BASCULER l'audit en bloquant, et le sorry reconnu du lake
+    (baseline 1) rougirait chaque run -- l'inverse exact du contrat."""
+    entry = _conway_entry()
+    assert entry["axiom-fail-on-sorry"] == "false", (
+        "l'audit doit rester advisory sur les sorries (fail-on-sorry: false) "
+        "-- les sorries reconnus sont rapportes, jamais gates")
+
+
+def test_matrix_step_passes_the_conway_axiom_profile():
+    """Les cles ``axiom-*`` du manifeste doivent ATTEINDRE le composite --
+    chacune sous SON nom d'input declare dans
+    ``.github/actions/lean-axiom/action.yml``. Leçon #25256 : un input passe
+    sous un autre nom est IGNORE avec un simple warning (mesure run
+    42475534833 sur ``build-threads`` vs ``build-jobs``) et la garantie ne
+    pose jamais. Le gating generique du step est pinne dans
+    test_axiom_matrix_wiring.py ; ce qui suit pinne les TROIS inputs que
+    l'entree conway porte et que nul autre fichier ne couvre."""
+    step = _matrix_axiom_step()
+    with_opts = step.get("with", {})
+    assert with_opts.get("allow-axioms") == "${{ matrix.axiom-allow-axioms || '' }}", (
+        "la cle manifeste `axiom-allow-axioms` doit rejoindre l'input "
+        "composite `allow-axioms` -- sinon le gate tourne sur la liste de "
+        "defaut et chaque native_decide allow-liste devient un rouge faux")
+    assert with_opts.get("fail-on-sorry") == "${{ matrix.axiom-fail-on-sorry || 'true' }}", (
+        "la cle manifeste `axiom-fail-on-sorry` doit rejoindre l'input "
+        "composite `fail-on-sorry`")
+    assert with_opts.get("include-i18n-siblings") == "${{ matrix.axiom-include-i18n-siblings || 'false' }}", (
+        "la cle manifeste `axiom-include-i18n-siblings` doit rejoindre "
+        "l'input composite `include-i18n-siblings`")
 
 
 def test_audit_targets_sorry_bearing_module():
     """The audit closes the vert-hors-cible: it inspects the module that
-    CARRIES the 8 sorries (HashlifeCorrectness), which the blocking gate
-    skips. Targeting only KochenSpecker/FreeWillTheorem here would reproduce
+    CARRIES the sorry (HashlifeCorrectness), which the deleted blocking gate
+    skipped. Targeting only KochenSpecker/FreeWillTheorem here would reproduce
     the very gap #8782 opened on. Post-#10889 the coverage is stronger than
-    naming the module: `target-modules: "*"` derives the list at runtime, so
-    HashlifeCorrectness -- and every module added later -- is covered by
-    construction."""
-    jobs = _load_jobs()
-    audit = jobs["proof-integrity-audit"].get("with", {})
-    targets = audit.get("target-modules", "")
-    assert targets == "*", (
+    naming the module: `axiom-target-modules: "*"` derives the list at
+    runtime, so HashlifeCorrectness -- and every module added later -- is
+    covered by construction."""
+    entry = _conway_entry()
+    assert entry["axiom-target-modules"] == "*", (
         "audit must derive its module list at runtime ('*', #10889 point 5) -- "
         "an explicit list can drift out of view of the sorry-bearing module "
         "and of any module added later")
+
+
+def test_audit_opts_in_the_i18n_siblings():
+    """Le contrat du wrapper etait ``include-i18n-siblings: "true"`` (l.249
+    de sa derniere revision, pose par #10889 point 5 : la derivation '*'
+    EXCLUT les freres ``_en`` sans cet opt-in). La migration matricielle a
+    d'abord pose ``"false"`` -- mesure a la relecture du wrapper supprime :
+    la porte inspectait ~35 modules FR au lieu des 69 du contrat, et les
+    ancres ``Conway_en.*`` / ``Pillars_en`` du fichier d'allow-list
+    devenaient MORTES (permissives sur des modules jamais inspectes).
+    Meme defaut que knot a sa migration (#22453, 24 freres exclus) ; le
+    correctif et le temoin suivent le precedent
+    ``test_knot_gate_opts_in_the_i18n_siblings``."""
+    entry = _conway_entry()
+    assert entry["axiom-include-i18n-siblings"] == "true", (
+        "conway_lean garde ses freres `_en` hors de la porte d'axiomes -- "
+        "contrat #10889 rompu par la migration (#25256)")
 
 
 def test_audit_allowlists_native_decide_axioms():
@@ -189,23 +276,94 @@ def test_audit_allowlists_native_decide_axioms():
     it: no native_decide), so the general claim is NOT hollowed out. The
     pre-existing isolated witness `jumpCaptured_block` stays allow-listed;
     `jumpCaptured_block_of_class.ax_1_*` is a distinct re-derivation via the
-    class theorem."""
-    jobs = _load_jobs()
-    audit = jobs["proof-integrity-audit"].get("with", {})
-    allow = audit.get("allow-axioms", "")
-    assert "native_decide" in allow, (
+    class theorem.
+
+    **Widened to 77 by #20004** (`feat(lean,#19989)`, tranche 2 of #19989):
+    the UnitCell pillar stopped being a placeholder. `unitcellInitial` moved
+    from `([] : Grid)` to the real RLE-loaded grid, which changed the axiom
+    footprint of the ALREADY covered `Conway.Life.Pillars` by 4 names (x2 for
+    the `_en` twin). This is the #11349 shape -- new theorems in a covered
+    module -- not the #9341 shape (newly covered module), so the criterion
+    applied is the operative one this docstring states: **attributable AND
+    non-hollowing**, verified per name before raising the pin.
+
+    * `unitcell_initial_population` (`unitcellInitial.length = 4761`) and
+      `unitcell_initial_nonempty` (`unitcellInitial ≠ []`) are concrete
+      finite propositions witnessing that the loaded grid is REAL. That is
+      precisely what CLOSED the `evolveHashlifeFastMemo_empty` route the
+      three sibling witnesses (`otca_metapixel_witness`, `gemini_witness`,
+      `cpu_witness`) still use -- so these two do not hollow those; they are
+      the evidence the route is unavailable for THIS pillar.
+    * `pulsar_period1_negative` / `pulsar_period2_negative` are the paired
+      negatives the #19989 criterion 2 asks for: `pulsar_period3` alone
+      pinned only a DIVISOR of 3, the pair pins the period to exactly 3.
+    * `git grep` over the lake finds ZERO references outside each theorem's
+      own declaration (the only other hits are a docstring bullet and a
+      markdown table row in `Pillars.lean` / `Pillars_en.lean`). Nothing
+      derives from them, so no general theorem of the module is emptied.
+
+    **Widened to 81 by the OTCA tranche 3 of #19989**: same shape, same
+    module, same criterion. `otcaInitial` moved from `([] : Grid)` to the
+    real 165 KB RLE-loaded grid (the largest `include_str` load in the
+    lake), retiring the vacuous `otca_metapixel_witness` in favour of the
+    state-witness pair `otca_initial_population`
+    (`otcaInitial.length = 64691`) and `otca_initial_nonempty` (x2 for the
+    `_en` twin). Attributable (each a concrete finite proposition, zero
+    references outside its own declaration) and non-hollowing (nothing
+    derives from them; `gemini_witness` / `cpu_witness` still close on
+    `evolveHashlifeFastMemo_empty`).
+
+    **This widening still needs a second reading.** By this docstring's own
+    rule (#11349), an attribution written by the same hand that widens cannot
+    self-certify. Here the second reading is the coordinator's B.0 pass. Each
+    of the 12 ratchet names is `._native.native_decide.ax_1_1` on a finite
+    proposition, all are enumerated, and the no-wildcard property is
+    unchanged.
+
+    **Narrowed to 77 by #21833**: the two `_initial_nonempty` twins per file
+    (`otca_initial_nonempty`, `unitcell_initial_nonempty` and their `_en`
+    counterparts -- 4 names) stopped being `native_decide`: their statements
+    are now DERIVED from the corresponding population theorems
+    (`otca_initial_population` / `unitcell_initial_population`) by
+    `List.length` + `omega`, with the statements unchanged. `#print axioms`
+    on the rebuilt lake measures 5 anchors per file (10 for the FR/_en pair)
+    instead of 7 per file (14 for the pair). The 4 names are removed from
+    the allow-list, which TIGHTENS the gate: a future `native_decide` reintroduced
+    on those declarations is now a new red, which is the property the
+    no-wildcard rule exists to preserve.
+
+    **Porteur migre par #25256** : la valeur pinnee se lit desormais dans
+    l'entree ``conway`` du manifeste (``axiom-allow-axioms``), le fichier
+    restant la source de verite -- le ratchet lui-meme est INCHANGE, la
+    resolution ``@chemin`` passe par le meme ``parse_allow``."""
+    entry = _conway_entry()
+    allow = entry["axiom-allow-axioms"]
+    names = _resolve_allow(allow)
+    assert any("native_decide" in n for n in names), (
         "audit must allow-list the native_decide axioms or it false-fails")
     # Pin the empirical footprint so a silent re-shrink (or accidental copy of
     # the blocking gate's 19) is caught -- and so any future widening has to
     # come with the module-attribution argument, as #9341's did.
-    names = [a.strip() for a in allow.split(",") if a.strip()]
-    assert len(names) == 69, (
-        f"audit allow-list must carry the 69 native_decide axioms of the whole "
+    # La source de verite est le fichier (axiom-allow-axioms: "@path", #21905) :
+    # `_resolve_allow` resout le "@chemin" ET la forme inline ; on garde donc
+    # la liste resolue plus haut (la reparse comma-separated de main
+    # s'appliquerait a la chaine "@scripts/lean/allow_axioms_conway.txt" et
+    # compterait 1 element). Le compte suit `main` : 79 ancres (77 mesurees
+    # au move #21905 + les 2 ancres du temoin de machine de Turing #17465).
+    assert len(names) == 79, (
+        f"audit allow-list must carry the 79 native_decide axioms of the whole "
         f"lake under the #10889 '*' derivation (38 HashlifeCorrectness-era "
         f"footprint + 21 build-enumerated entries of the newly covered "
         f"modules + 2 P4-At standalone witnesses from grain 3a #11303 + 8 "
         f"class-witness entries from the #6724 criterion-3 characterization "
-        f"[PR #11910], each attributed in the workflow comment); got {len(names)}")
+        f"[PR #11910] + 8 Pillars entries from #20004 [tranche 2 of #19989] "
+        f"+ 4 Pillars entries from the OTCA tranche 3 of #19989 "
+        f"- 4 Pillars `_initial_nonempty` entries derived (not native_decide) "
+        f"by #21833, "
+        f"+ 2 Turing-machine entries from #17465 (the FR + _en twins of "
+        f"turingmachine_facts, the single anchor of the Turing-machine "
+        f"witness), "
+        f"each attributed in the workflow comment); got {len(names)}")
     # Sample members from each family revealed by the audit (P4 base cases,
     # box-assez-grand lemmas, hashlife_correct_implies bridges, plus one
     # #10889-widening family: the _en twins under Conway_en.*).
@@ -217,43 +375,58 @@ def test_audit_allowlists_native_decide_axioms():
         "Conway.Life.jumpCaptured_block._native.native_decide.ax_1_1",
         "Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_1",
         "Conway_en.Life_en.RLE_en.glider_parse_ok._native.native_decide.ax_1_1",
+        "Conway.Life.Pillars.turingmachine_facts._native.native_decide.ax_1_1",
+        "Conway.Life.Pillars_en.turingmachine_facts._native.native_decide.ax_1_1",
     ]:
         assert sample in names, (
             f"audit allow-list missing revealed axiom {sample!r}")
 
 
-def test_audit_allowlist_is_distinct_from_blocking_gate():
-    """The audit audits HashlifeCorrectness; the blocking gate audits the
-    showcase modules. Their native_decide footprints are disjoint (verified by
-    the audit's first CI run: zero overlap). Pinning that they DIFFER prevents
-    a future copy-paste of the blocking gate's 19 into the audit (which would
-    re-open the vert-hors-cible the audit exists to close)."""
-    jobs = _load_jobs()
-    audit_set = {a.strip() for a in
-                 jobs["proof-integrity-audit"].get("with", {}).get("allow-axioms", "").split(",")
-                 if a.strip()}
-    blocking_set = {a.strip() for a in
-                    jobs["proof-integrity"].get("with", {}).get("allow-axioms", "").split(",")
-                    if a.strip()}
-    assert audit_set != blocking_set, (
-        "audit and blocking gate audit different modules -> their native_decide "
-        "allow-lists must differ (38 HashlifeCorrectness vs 19 showcase)")
-    assert audit_set.isdisjoint(blocking_set) or len(audit_set & blocking_set) <= 2, (
-        "the two native_decide footprints are empirically disjoint")
+def test_audit_allowlist_is_distinct_from_showcase_defaults():
+    """L'audit inspecte le lake ENTIER ('*') ; la jambe blocking supprime
+    inspectait les modules showcase avec les 6 defauts de LeanVerifier et
+    RIEN de plus (l.165 de la derniere revision du wrapper). Leurs empreintes
+    native_decide sont disjointes par construction (les defauts ne sont PAS
+    des native_decide). Pinner la disjointce empeche un copier-coller futur
+    des defauts dans le fichier d'allow-list -- ce qui viderait le gate de
+    son objet (79 ancres mesurees, 0 defaut). Jambe blocking : suspendue par
+    la migration, voir #25261."""
+    entry = _conway_entry()
+    audit_set = set(_resolve_allow(entry["axiom-allow-axioms"]))
+    assert audit_set.isdisjoint(SHOWCASE_DEFAULT_WHITELIST), (
+        "les 6 defauts de la jambe showcase n'ont rien a faire dans le "
+        "fichier d'allow-list de l'audit lake-wide")
 
 
-def test_blocking_and_audit_are_complementary():
-    """The two jobs must not both skip HashlifeCorrectness -- that is the
-    vert-hors-cible defect. The audit targets it; the blocking gate (which
-    cannot, it has sorries) deliberately excludes it."""
-    jobs = _load_jobs()
-    blocking_targets = jobs["proof-integrity"].get("with", {}).get("target-modules", "")
-    audit_targets = jobs["proof-integrity-audit"].get("with", {}).get("target-modules", "")
-    # Post-#10889 the audit derives its list at runtime ('*' = every compiled
-    # module, HashlifeCorrectness included by construction); the blocking gate
-    # keeps its explicit showcase-only list.
-    assert audit_targets == "*"
-    assert "Conway.Life.HashlifeCorrectness" not in blocking_targets
+def test_the_blocking_leg_suspension_is_documented():
+    """La jambe BLOCKING du wrapper (``proof-integrity`` : cible
+    KochenSpecker + FreeWillTheorem, allow 6 defauts, fail-on-sorry: true)
+    est SUSPENDUE par la migration matricielle : le manifeste n'exprime
+    qu'UN profil d'axiomes par lake, et l'entree conway porte le profil
+    ADVISORY (le seul qui peut viser '*' sans rougir sur le sorry reconnu,
+    baseline 1). Ce pin fait deux choses :
+
+    1. il FIGE l'etat suspendu (profil advisory seul, baseline 1) pour
+       qu'un retour silencieux a du bloquant -- par simple flip de
+       ``axiom-fail-on-sorry`` a "true" -- soit VU pour ce qu'il est :
+       ce flip ne restaure PAS la jambe showcase du wrapper (cible '*',
+       allow-list de 79, pas les 6 defauts) et rougirait sur le sorry
+       reconnu ;
+    2. il nomme la perte residuelle portee par l'issue #25261 (creee
+       AVANT le merge, voie 3 B.0) : un sorry DEPLACE vers un module
+       showcase sans depasser la baseline 1 ne bloquera plus rien tant
+       que le schema a un seul profil par lake. La restauration eventuelle
+       (deuxieme jambe, ou cle dediee) est une decision coordinateur,
+       documentee la -- pas un geste de lane."""
+    entry = _conway_entry()
+    assert entry["axiom-fail-on-sorry"] == "false", (
+        "le profil de l'entree conway est ADVISORY ; un flip a 'true' ne "
+        "restaure pas la jambe showcase du wrapper (voir #25261) -- il "
+        "ferait rougir le sorry reconnu sur une cible '*'")
+    assert entry["sorry-baseline"] == "1", (
+        "baseline 1 : le sorry reconnu du lake -- un compte qui bouge sans "
+        "justification ecrite est la derive que la baseline existe pour "
+        "fermer")
 
 
 # ---------------------------------------------------------------------------
@@ -266,13 +439,13 @@ def test_blocking_and_audit_are_complementary():
 # unnoticed by the ratchet: the test subject (allow-list footprint) would
 # shift, but no workflow would run on the diff, and the rouge from the new
 # `native_decide` would only land on the NEXT lane to edit any script.
-# The fix in PR #11495 wired `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**
+# The fix in PR #11495 wired `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**
 # *.lean` (+ lakefile + lean-toolchain) into BOTH `push:` and `pull_request:`
 # `paths:` of `scripts-tests.yml`. This test is the **structural pin**: it
 # greps the YAML to ensure both push and pr trigger blocks still carry those
 # four entries, so a future refactor of scripts-tests.yml (e.g. consolidating
 # paths back into a single glob, or removing the lake from the trigger because
-# `lean-conway.yml` "covers" it) is caught here.
+# some CI "covers" it) is caught here.
 #
 # Why structural and not integration: a true end-to-end test would require
 # firing the GitHub Actions path-filter against a synthetic commit, which
@@ -290,10 +463,10 @@ SCRIPTS_TESTS_WF = REPO / ".github" / "workflows" / "scripts-tests.yml"
 # a `.lean` file in conway_lean/ should trigger scripts-tests.yml, which runs
 # test_audit_allowlists_native_decide_axioms above.
 _CONWAY_LEAN_TRIGGER_PATHS = [
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean",
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean",
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml",
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
 ]
 
 
@@ -316,7 +489,7 @@ def test_workflow_scripts_tests_exists():
 
 def test_native_decide_ratchet_wired_on_conway_lean_paths():
     """#11349 / PR #11495: scripts-tests.yml MUST carry the four
-    `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**` paths (or any glob
+    `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**` paths (or any glob
     form that catches them: e.g. `conway_lean/**.lean` with the bare
     `MyIA.AI.Notebooks/SymbolicAI/Lean/` prefix inferred by the workflow
     runtime root, OR `**` at the workflow root -- a future maintainer

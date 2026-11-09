@@ -4,10 +4,12 @@ MultiAgentSorryProver uses the WorkflowBuilder graph with 4 specialized agents.
 AutonomousProver uses a single agent with full editing powers.
 """
 
+import base64
 import json
 import os
 import re
 import time
+import difflib
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
@@ -394,6 +396,75 @@ def _guard_baseline_sorry_count(demo: dict, original_sorry_count: int) -> int:
     return int(pre_stub) if pre_stub is not None else original_sorry_count
 
 
+def _deadline_keeps_latched_proof(tactic_tools) -> bool:
+    """#24469: on a reasoning-deadline cancel, keep a proof already latched.
+
+    VerifyExecutor latches ``tactic_tools.proof_latched`` only after
+    ``verify_sorry_replacement`` succeeded with ``persist_on_success`` (real
+    module rebuild) or the in-place latch confirmed a build. The success gate
+    still requires ``final_build_ok`` from the mandatory final verify, and the
+    statement-mutation guard still runs: the latch cannot turn an unverified
+    edit into a success, it only stops the deadline from erasing a real one.
+
+    #24545: the latch no longer decides anything on its own -- it now DECIDES.
+    A session may prove sorry A and then work on sorry B (the target line is
+    frozen at session start and never updated -- workflow.py:1216), so a bare
+    boolean reported "proof found" for a sorry that was still ``sorry`` on
+    disk. The decision is now made against the FILE:
+
+      * the latch must name the sorry it proved (``proof_latched_for_line``);
+      * that line must hold no ``sorry`` on disk NOW (the proof survived);
+      * the real-sorry count on disk must be strictly below the session-start
+        count -- the same oracle the in-place latch uses (workflow.py:1249),
+        which distinguishes "a sorry was proved" from "lines merely shifted".
+
+    A latch that fails any of these is dropped: the deadline then reports the
+    honest outcome (the run did not prove the sorry it was working on).
+    """
+    if not bool(getattr(tactic_tools, "proof_latched", False)):
+        return False
+
+    latched_line = getattr(tactic_tools, "proof_latched_for_line", None)
+    if latched_line is None:
+        # A latch without a target cannot be checked against the file. Drop it
+        # rather than report a proof we cannot locate.
+        return False
+
+    filepath = getattr(tactic_tools, "_filepath", None)
+    if not filepath:
+        return False
+
+    try:
+        from pathlib import Path as _LatchPath
+        from .lean_utils import count_real_sorries as _count_real_sorries
+        current = _LatchPath(filepath).read_text(encoding="utf-8")
+    except Exception:
+        # The file is unreadable: we cannot confirm the proof survived, so the
+        # latch cannot be honoured. Report the honest outcome.
+        return False
+
+    lines = current.split("\n")
+    line = int(latched_line)
+    if not (1 <= line <= len(lines)) or "sorry" in lines[line - 1]:
+        # The latched sorry is back on disk (or the line no longer exists):
+        # the proof did not survive.
+        return False
+
+    # The latched line is clear. That is only a proof if the sorry COUNT
+    # dropped below the session baseline -- otherwise the lines merely
+    # shifted (a sorry was rewritten elsewhere, count unchanged).
+    baseline = getattr(tactic_tools, "_original_sorry_count", None)
+    if baseline is None or baseline <= 0:
+        return False
+    try:
+        if _count_real_sorries(current) >= int(baseline):
+            return False
+    except Exception:
+        return False
+
+    return True
+
+
 def _stmt_mutation_guard(final_sorry: int, original_sorry_count: int,
                          final_build_ok: bool, proof_found: bool,
                          verified_tactic_count: int) -> bool:
@@ -458,30 +529,63 @@ def _final_verify_is_false_negative(final_verify: dict) -> bool:
     return err_count == 0
 
 
-def _reverify_compiles_clean(filepath: str, tactic_tools) -> bool:
-    """Interim guard hardening (#6790): independent fresh re-verify of the exact
-    on-disk content before trusting a false-negative verify and PRESERVING.
+class _ReverifyUnknown:
+    """Tri-state UNKNOWN of ``_reverify_compiles_clean`` (#18432).
 
-    The bug-1b guard ``_final_verify_is_false_negative`` detects the pattern
-    ``level_1_build == False AND error_count == 0`` and historically PRESERVED
-    the committed snapshot on that signal alone. The risk: if the
-    false-negative signal is itself misleading (the initial verify's
-    ``error_count == 0`` came from a parser/cache/manifest quirk rather than a
-    genuinely clean build), preserving leaves a *truly broken* file committed.
-    ai-01 calibration (msg-20260716T080013-ltad25): "re-verifier frais le
-    contenu exact avant de preserver" — protect the runs while (b)/(c) await.
+    Carried by the fresh re-verify when the build hit its wall-clock budget:
+    NO compile verdict exists — the content is neither confirmed-clean nor
+    proven-broken. Distinct from ``False`` (real parseable errors, or a crash
+    of the re-verify itself — both fail closed into revert).
 
-    This helper is the trust gate: it does NOT trust the false-negative
-    premise. It invalidates the verifier cache (drops stale manifest/cache
-    entries) and runs ONE independent fresh ``force=True`` build of the exact
-    on-disk content, parsed with the authoritative ``": error:"`` substring
-    contract (``_parse_lean_errors``, #6831). Returns True only if that fresh
-    build genuinely compiles with zero errors.
+    **Falsiness is a HARD contract**: a legacy ``if _reverify_compiles_clean(...)``
+    call site must never PRESERVE on UNKNOWN. A string or Enum tri-state value
+    would be truthy and silently flip unknown outcomes into preserved ones —
+    this class is falsy by design so the failure mode of an un-updated caller
+    is a conservative revert, never an unverified preserve. Callers that need
+    the third state test ``isinstance(rv, _ReverifyUnknown)``.
+    """
 
-    The caller then preserves on True (fresh build confirms the snapshot is
-    build-passing) and reverts on False (the false-negative was misleading; the
-    snapshot is truly broken). This converts "trust and preserve" into
-    "preserve only if an independent fresh build confirms".
+    __slots__ = ("reason", "timeout_s")
+
+    def __init__(self, reason: str, timeout_s=None):
+        self.reason = reason
+        self.timeout_s = timeout_s
+
+    def __bool__(self) -> bool:
+        return False
+
+    def __repr__(self) -> str:
+        return (f"_ReverifyUnknown(reason={self.reason!r}, "
+                f"timeout_s={self.timeout_s!r})")
+
+
+def _reverify_compiles_clean(filepath: str, tactic_tools) -> bool | _ReverifyUnknown:
+    """#6790 trust gate, tri-state since #18432.
+
+    Invalidates the verifier cache and runs ONE independent fresh
+    ``force=True`` build of the exact on-disk content (parsed with the
+    authoritative ``": error:"`` contract, #6831), BEFORE trusting a
+    false-negative verify and preserving (ai-01 calibration
+    msg-20260716T080013-ltad25).
+
+    Returns:
+
+    * ``True`` — fresh build compiles with zero errors -> PRESERVE (#6790
+      behavior unchanged).
+    * ``False`` — >= 1 real parseable error, or the re-verify itself
+      crashed (fail closed) -> REVERT (#6790 behavior unchanged).
+    * ``_ReverifyUnknown`` — NO verdict exists, on either of two routes:
+      the wall-clock budget was exhausted (#18432), or the fresh build
+      reported zero parseable errors while ``level_1_build`` stayed False —
+      the manifest/cache incoherence that triggers this re-verify in the
+      first place, which is an absence of verdict rather than evidence of
+      breakage (#1453, pass 24 on 2026-11-04 destroyed a correct proof on
+      that branch).
+
+    The timeout test deliberately precedes the error parse (see the comment
+    at that branch): a timed-out build is UNKNOWN even when its partial
+    output carries a diagnostic, so the candidate is archived before the
+    original is restored rather than discarded on an unfinished build.
     """
     from .verifier import get_verifier
     from .tools import _parse_lean_errors  # authoritative parser (#6831)
@@ -497,21 +601,308 @@ def _reverify_compiles_clean(filepath: str, tactic_tools) -> bool:
     except Exception as _e:
         print(f"  RE-VERIFY crashed: {_e} — conservatively revert (do NOT preserve).")
         return False
+    if rv.get("wall_clock_timeout"):
+        # Checked BEFORE the error parse: on a verdict-less timeout the raw
+        # output parses to 0 errors, which historically fell through to the
+        # REVERT branch — the founding #18432 defect.
+        _to = rv.get("timeout_s")
+        print(
+            f"  RE-VERIFY UNKNOWN (#18432): fresh independent build hit the "
+            f"wall-clock budget ({_to}s) — NO compile verdict exists."
+        )
+        return _ReverifyUnknown("wall_clock_timeout", _to)
     fresh_errors = _parse_lean_errors(rv.get("raw_output", "") or rv.get("errors", ""))
-    fresh_ok = bool(rv.get("level_1_build", False)) and len(fresh_errors) == 0
-    if not fresh_ok:
+    if fresh_errors:
         print(
             f"  RE-VERIFY FAILED: fresh independent build of the on-disk content "
             f"reports {len(fresh_errors)} error(s) — the false-negative verify was "
             f"MISLEADING; the snapshot is truly broken -> REVERT (#6790 hardening)."
         )
-    else:
+        return False
+    if not rv.get("level_1_build", False):
+        # Zero parseable errors AND level_1_build False is the SAME incoherence
+        # that sent us into this re-verify ("FINAL VERIFY INCOHERENT ... worktree
+        # manifest warning / cache state"). Re-reading level_1_build as the gate
+        # one level down reintroduces it, and it destroyed a correct proof:
+        # pass 24 (2026-11-04) produced `exact Nat.zero_add n`, sorry 1 -> 0,
+        # error_count 0, and this branch printed "reports 0 error(s) ... truly
+        # broken -> REVERT" (#1453). Same class as DEMO 62 / conway_lean L2892,
+        # where p4_final_verify already dropped level_1_build from its path.
+        #
+        # Empty output (a build that died producing nothing) lands here too, and
+        # is likewise a non-verdict rather than evidence of breakage.
         print(
-            "  RE-VERIFY PASSED: fresh independent build confirms the on-disk "
-            "content compiles clean -> the false-negative verify is confirmed, "
-            "snapshot is genuinely build-passing -> PRESERVE (#6790 hardening)."
+            "  RE-VERIFY UNKNOWN (#1453): fresh independent build reports 0 "
+            "compile error(s) but level_1_build is False — that is the "
+            "manifest/cache incoherence that triggered this re-verify, not a "
+            "verdict. Neither preserve nor revert on an absent verdict."
         )
-    return fresh_ok
+        return _ReverifyUnknown("level_1_build_incoherent_zero_errors", None)
+    print(
+        "  RE-VERIFY PASSED: fresh independent build confirms the on-disk "
+        "content compiles clean -> the false-negative verify is confirmed, "
+        "snapshot is genuinely build-passing -> PRESERVE (#6790 hardening)."
+    )
+    return True
+
+
+# #18432 EOF-marker sentinels. The two sides get DISTINCT sentinels so
+# difflib can never merge them into a shared context line: when both sides
+# lack the final newline, git requires TWO bare markers (one qualifying the
+# deleted line, one the added line) — a merged context marker qualifies only
+# one of them and corrupts the replay. Both normalize to the canonical
+# diff(1)/git-apply marker at emission.
+_NOEOL_CANONICAL = "\\ No newline at end of file\n"
+_NOEOL_SENTINEL_A = "\\1 No newline at end of file\n"
+_NOEOL_SENTINEL_B = "\\2 No newline at end of file\n"
+
+
+def _normalized_diff_lines(content: str,
+                           sentinel: str = _NOEOL_CANONICAL) -> list:
+    """#18432: split into newline-terminated lines, encoding a missing final
+    newline as an EOF-marker sentinel line — so the emitted patch replays
+    faithfully on files without a trailing newline (difflib alone would glue
+    the last line to the next hunk entry and corrupt the replay).
+    """
+    lines = content.splitlines(keepends=True)
+    if lines and not lines[-1].endswith("\n"):
+        lines[-1] += "\n"
+        lines.append(sentinel)
+    return lines
+
+
+def _decode_diff_lines(lines: list) -> str:
+    """Inverse of ``_normalized_diff_lines`` (fidelity check)."""
+    if lines and lines[-1].startswith(
+            ("\\ No newline", "\\1 No newline", "\\2 No newline")):
+        lines = lines[:-1]
+        if lines:
+            lines = lines[:-1] + [lines[-1].rstrip("\n")]
+    return "".join(lines)
+
+
+def _write_verified_archive(path: Path, text: str) -> Optional[Path]:
+    """#18432: collision-safe, verified archive write.
+
+    Exclusive create (``"x"``) — an existing archive is NEVER overwritten; a
+    name collision bumps a ``-N`` suffix. Read-back comparison verifies the
+    bytes landed. Returns the actual path, or ``None`` if the venue cannot
+    produce a verified archive.
+    """
+    for i in range(50):
+        cand = path if i == 0 else path.with_name(f"{path.stem}-{i}{path.suffix}")
+        try:
+            with cand.open("x", encoding="utf-8") as f:
+                f.write(text)
+        except FileExistsError:
+            # #21331: on Linux, open(<existing directory>, "x") raises
+            # FileExistsError (EEXIST on O_CREAT|O_EXCL) where Windows raises
+            # PermissionError. A directory squatting the archive name is a
+            # sabotaged VENUE, not an archive collision: declare it unusable
+            # instead of bumping the suffix (which silently archives beside
+            # the blocker and diverges from Windows semantics).
+            if cand.is_dir():
+                print(f"  WARNING: archive venue unusable at {cand} "
+                      f"(existing directory) (#18432/#21331).")
+                return None
+            continue
+        except OSError as _e:
+            print(f"  WARNING: archive venue unusable at {cand} ({_e}) (#18432).")
+            return None
+        try:
+            if cand.read_text(encoding="utf-8") == text:
+                return cand
+        except OSError:
+            pass
+        print(f"  WARNING: archive read-back mismatch at {cand} (#18432).")
+        return None
+    return None
+
+
+def _write_unknown_scaffold_patch(trace, filepath: str, original_content: str,
+                                  patch_name: str, reason: str,
+                                  timeout_s=None) -> Optional[str]:
+    """#18432: archive the UNVERIFIED candidate as a unified patch — VERIFIED,
+    never overwriting — while it is still on disk (i.e. BEFORE any restore).
+
+    Venues in order: beside the trace/results (TraceLogger output dir, next
+    to the ``<trace_name>_result.json`` written by run_prover_bg), then
+    beside the target .lean file. Returns the verified archive path, or
+    ``None`` when archiving is impossible — the caller must then KEEP the
+    candidate on disk (explicit UNKNOWN / non-success) instead of restoring
+    over the only copy.
+    """
+    try:
+        candidate_content = Path(filepath).read_text(encoding="utf-8")
+        diff_lines = difflib.unified_diff(
+            _normalized_diff_lines(original_content, _NOEOL_SENTINEL_A),
+            _normalized_diff_lines(candidate_content, _NOEOL_SENTINEL_B),
+            fromfile=f"{Path(filepath).name} (original)",
+            tofile=f"{Path(filepath).name} (candidate, UNVERIFIED)",
+        )
+        # Sentinels must be emitted as the canonical BARE marker (git/patch
+        # convention: a marker line starts with '\' at column 0 and
+        # qualifies the immediately preceding line). Distinct per-side
+        # sentinels guarantee a '-'/'+ pair (never a merged context line)
+        # when both sides lack the final newline.
+        patch_text = "".join(
+            _NOEOL_CANONICAL
+            if ln[1:].startswith(("\\1 No newline", "\\2 No newline"))
+            else ln
+            for ln in diff_lines
+        )
+        header = (
+            f"# final-verify UNKNOWN ({reason}, timeout_s={timeout_s}) — #18432\n"
+            f"# The fresh wall-clock-bounded build produced NO compile verdict.\n"
+            f"# The candidate below was neither confirmed-clean nor proven-broken.\n"
+            f"# Re-verify offline (raise LEAN_LAKE_BUILD_TIMEOUT_S if needed)\n"
+            f"# before re-applying anything.\n"
+            f"# Exact contents for lossless recovery (base64, utf-8):\n"
+            f"# exact_original_b64={base64.b64encode(original_content.encode('utf-8')).decode('ascii')}\n"
+            f"# exact_candidate_b64={base64.b64encode(candidate_content.encode('utf-8')).decode('ascii')}\n"
+        )
+        body = header + patch_text
+    except Exception as _e:
+        print(f"  WARNING: scaffold patch could not be built ({_e}) (#18432).")
+        return None
+    venues = [
+        Path(trace.output_dir) / patch_name,
+        Path(filepath).parent / f"{Path(filepath).name}.reverify_unknown.patch",
+    ]
+    for venue in venues:
+        written = _write_verified_archive(venue, body)
+        if written is not None:
+            return str(written)
+        print(f"  WARNING: scaffold archive failed at {venue} — trying next "
+              f"venue (#18432).")
+    print("  WARNING: NO verified archive possible — the UNVERIFIED candidate "
+          "must stay on disk; restoration will be SKIPPED (#18432).")
+    return None
+
+
+def _trace_verdict_safe(trace, message: str) -> None:
+    """#17433 pattern (guard verdict as trace event), hardened by #18432: a
+    broken trace backend must never lose the on-disk artefact nor block the
+    restore — the verdict degrades to stdout only."""
+    try:
+        trace.log("guard-reverify", "verdict", message)
+    except Exception as _e:
+        print(f"  WARNING: trace.log failed ({_e}) — verdict kept on stdout only.")
+
+
+def _archive_and_restore_unknown(trace, filepath: str, original_content: str,
+                                 patch_name: str,
+                                 timeout_s, reason: str = "wall_clock_timeout") -> dict:
+    """#18432 shared UNKNOWN core: verified-archive the candidate, THEN
+    restore the original — never restore without a verified archive.
+
+    Returns ``{"patch": str|None, "restored": bool}``. ``restored=False``
+    means archiving was impossible: the candidate is KEPT on disk (the run
+    stays explicit UNKNOWN / non-success — see the consumers) so no restore
+    ever destroys the only copy of the work.
+    """
+    patch = _write_unknown_scaffold_patch(
+        trace, filepath, original_content, patch_name,
+        reason=reason, timeout_s=timeout_s)
+    restored = patch is not None
+    if restored:
+        Path(filepath).write_text(original_content, encoding="utf-8")
+    return {"patch": patch, "restored": restored}
+
+
+def _unknown_outcome_message(patch, restored, timeout_s,
+                             reason: str = "wall_clock_timeout") -> str:
+    """#18432: the citable UNKNOWN verdict (stdout + trace event).
+
+    ``reason`` is carried through from the tri-state: a second route reaches
+    UNKNOWN without any timeout (#1453), and a message that hard-wires
+    ``wall_clock_timeout`` would misreport it.
+    """
+    if reason == "wall_clock_timeout":
+        what = f"wall_clock_timeout, timeout_s={timeout_s}"
+    else:
+        what = f"{reason}, timeout_s={timeout_s}"
+    if restored:
+        return (
+            f"FINAL VERIFY UNKNOWN ({what}): no compile verdict exists "
+            f"(#18432/#1453). Original restored; candidate archived as "
+            f"scaffold patch: {patch}"
+        )
+    return (
+        f"FINAL VERIFY UNKNOWN ({what}): no compile verdict exists "
+        f"(#18432/#1453). NO verified archive possible — RESTORE SKIPPED, the "
+        f"UNVERIFIED candidate stays on disk; success cannot fire for this run."
+    )
+
+
+def _consume_reverify_tri_state(filepath: str, tactic_tools, trace,
+                                original_content: str,
+                                original_sorry_count: int,
+                                demo_name: str, provider: str,
+                                final_sorry: int,
+                                structural_progress: bool) -> dict:
+    """#18432: multi-agent final-verify tri-state consumer.
+
+    Compares the state EXPLICITLY (``is True`` / ``isinstance``), never by
+    truthiness. Returns ``final_build_ok`` (True only on the preserve leg —
+    the caller's success gate can never fire otherwise), ``unknown``,
+    ``patch``, ``restored``, and the down-dated ``final_sorry`` /
+    ``structural_progress`` for the non-preserve legs.
+    """
+    _rv_state = _reverify_compiles_clean(filepath, tactic_tools)
+    if _rv_state is True:
+        # Fresh build confirms the snapshot compiles -> preserve.
+        return {"final_build_ok": True, "unknown": False, "patch": None,
+                "restored": True, "final_sorry": final_sorry,
+                "structural_progress": structural_progress}
+    if isinstance(_rv_state, _ReverifyUnknown):
+        out = _archive_and_restore_unknown(
+            trace, filepath, original_content,
+            f"multi_{demo_name}_{provider}_reverify_unknown.patch",
+            _rv_state.timeout_s, reason=_rv_state.reason)
+        _msg = _unknown_outcome_message(out["patch"], out["restored"],
+                                        _rv_state.timeout_s,
+                                        reason=_rv_state.reason)
+        print(f"  {_msg}")
+        _trace_verdict_safe(trace, _msg)
+        tactic_tools._best_content = None
+        tactic_tools._best_sorry_count = original_sorry_count
+        return {"final_build_ok": False, "unknown": True,
+                "patch": out["patch"], "restored": out["restored"],
+                "final_sorry": original_sorry_count,
+                "structural_progress": False}
+    # Fresh build FAILED (real errors, or a crash — fail closed) -> revert,
+    # same recovery as the genuine-build-failure branch (#6790 unchanged).
+    print(
+        "  REVERTING to original — independent fresh re-verify "
+        "failed, snapshot is truly broken (#6790 hardening)."
+    )
+    Path(filepath).write_text(original_content, encoding="utf-8")
+    tactic_tools._best_content = None
+    tactic_tools._best_sorry_count = original_sorry_count
+    return {"final_build_ok": False, "unknown": False, "patch": None,
+            "restored": True, "final_sorry": original_sorry_count,
+            "structural_progress": False}
+
+
+def _consume_autonomous_final_unknown(trace, filepath: str,
+                                      original_file_content: str,
+                                      original_sorry_count: int,
+                                      demo_name: str, provider: str,
+                                      timeout_s) -> dict:
+    """#18432: autonomous final-verify UNKNOWN leg — same archive-then-restore
+    contract as ``_consume_reverify_tri_state`` (verified archive first;
+    restore skipped, candidate kept, if archiving is impossible).
+    Returns ``{"patch", "restored", "final_sorry"}``.
+    """
+    out = _archive_and_restore_unknown(
+        trace, filepath, original_file_content,
+        f"auto_{demo_name}_{provider}_reverify_unknown.patch", timeout_s)
+    _msg = _unknown_outcome_message(out["patch"], out["restored"], timeout_s)
+    print(f"  {_msg}", flush=True)
+    _trace_verdict_safe(trace, _msg)
+    return {"patch": out["patch"], "restored": out["restored"],
+            "final_sorry": original_sorry_count}
 
 
 class MultiAgentSorryProver:
@@ -944,7 +1335,9 @@ class MultiAgentSorryProver:
             # (compile-level): here the agent loop burned the whole reasoning
             # budget without converging on an edit.
             state.reasoning_budget_exceeded = True
-            proof_found = False
+            proof_found = _deadline_keeps_latched_proof(tactic_tools)
+            if proof_found:
+                print("  Verified proof was latched before the deadline -- kept (#24469)")
         except Exception as e:
             print(f"  Workflow error: {e}")
         finally:
@@ -1027,6 +1420,10 @@ class MultiAgentSorryProver:
                                 "errors": [{"message": f"final-verify crashed: {_e}"}]}
 
             final_build_ok = bool(final_verify.get("level_1_build", False))
+            # #18432: UNKNOWN surface, folded into the returned result JSON.
+            reverify_unknown = False
+            reverify_patch: Optional[str] = None
+            reverify_restore_skipped = False
             if not final_build_ok:
                 _errs = final_verify.get("errors", [])[:5]
                 if _final_verify_is_false_negative(final_verify):
@@ -1048,22 +1445,21 @@ class MultiAgentSorryProver:
                         f"deciding preserve vs revert (#6790 hardening). Raw "
                         f"verify preview: {final_verify_raw[:400]}"
                     )
-                    if _reverify_compiles_clean(filepath, tactic_tools):
-                        # Fresh build confirms the snapshot compiles -> preserve.
-                        final_build_ok = True
-                    else:
-                        # Fresh build FAILED -> the false-negative was misleading;
-                        # the snapshot is truly broken. Revert to original (same
-                        # recovery as the genuine-build-failure branch below).
-                        print(
-                            "  REVERTING to original — independent fresh re-verify "
-                            "failed, snapshot is truly broken (#6790 hardening)."
-                        )
-                        Path(filepath).write_text(original_content, encoding="utf-8")
-                        final_sorry = original_sorry_count
-                        structural_progress = False
-                        tactic_tools._best_content = None
-                        tactic_tools._best_sorry_count = original_sorry_count
+                    _rv = _consume_reverify_tri_state(
+                        filepath, tactic_tools, self.trace, original_content,
+                        original_sorry_count, demo["name"], self.provider,
+                        final_sorry=final_sorry,
+                        structural_progress=structural_progress,
+                    )
+                    final_build_ok = _rv["final_build_ok"]
+                    final_sorry = _rv["final_sorry"]
+                    structural_progress = _rv["structural_progress"]
+                    reverify_unknown = _rv["unknown"]
+                    reverify_patch = _rv["patch"]
+                    # Archive impossible -> the UNVERIFIED candidate stays on
+                    # disk (final_build_ok False: still never a success).
+                    reverify_restore_skipped = (
+                        _rv["unknown"] and not _rv["restored"])
                 else:
                     print(
                         f"  FINAL VERIFY FAILED ({len(_errs)} compile errors). "
@@ -1298,6 +1694,15 @@ class MultiAgentSorryProver:
             # unproven (sorry delta>0, no proof_found) and the file was
             # reverted to its entry state. Never persisted as success.
             "regressed": regressed,
+            # #18432: final re-verify UNKNOWN — success cannot fire
+            # (final_build_ok stayed False). Candidate archived as a scaffold
+            # patch (path below); restore_skipped means no verified archive
+            # was possible and the UNVERIFIED candidate was kept on disk.
+            **({"reverify_unknown": True,
+                "reverify_scaffold_patch": reverify_patch,
+                **({"reverify_restore_skipped": True}
+                   if reverify_restore_skipped else {})}
+               if reverify_unknown else {}),
             # P5a-search (#7477 forensic): session-level reasoning wall-clock
             # latched either in the multi-agent `except _asyncio.TimeoutError`
             # or the autonomous WALL-CLOCK CAP branch. Surfaced so
@@ -2094,6 +2499,10 @@ class AutonomousProver:
         # Final verification build — catch false positives (0 sorry but unsolved goals)
         # P4: Run on ALL files, not just sorry-reduced ones.
         final_verify_ok = False
+        # #18432: UNKNOWN surface, folded into the returned result JSON.
+        reverify_unknown = False
+        reverify_patch: Optional[str] = None
+        reverify_restore_skipped = False
         print("  Final verification build...", flush=True)
         verify_result = json.loads(tactic_tools.compile())
         # P4 fuller fix (#7477 forensic, #6790 '(b)/(c) await'): gate the
@@ -2103,46 +2512,82 @@ class AutonomousProver:
         # strategic decomposition must NOT trigger revert if the build passes.
         # _evaluate_final_verify promotes _parse_lean_errors to primary and
         # no longer reads level_1_build at all (fully demoted, no cross-check).
-        final_verify_ok = _evaluate_final_verify(verify_result)
+        #
+        # #18432 carve-out: on a WALL-CLOCK TIMEOUT the raw output is empty
+        # and parses to zero errors, so _evaluate_final_verify would return
+        # True — the vacuous-success twin of the multi-agent revert bug: an
+        # UNVERIFIED file preserved on the absence of a verdict. Gate the
+        # marker first; the UNKNOWN branch below restores + saves the patch.
+        if verify_result.get("wall_clock_timeout"):
+            final_verify_ok = False
+        else:
+            final_verify_ok = _evaluate_final_verify(verify_result)
         final_build_ok = final_verify_ok
         # Update final_sorry from compile result (includes implicit sorry detection)
         final_sorry = verify_result.get("sorry_count", final_sorry)
         if not final_verify_ok:
-            errors = verify_result.get("errors", [])
-            unsolved = [e for e in errors if "unsolved" in e.get("message", "")]
-            if unsolved:
-                print(f"  FALSE POSITIVE: {len(unsolved)} unsolved goals despite "
-                      f"{final_sorry} sorry. Reverting to original.", flush=True)
-                Path(filepath).write_text(original_file_content, encoding="utf-8")
-                final_sorry = original_sorry_count
+            if verify_result.get("wall_clock_timeout"):
+                # #18432: UNKNOWN — verified-archive then restore (or keep
+                # the candidate on disk when no archive is possible). No
+                # post-revert re-verify: the on-disk file is the known entry
+                # state; re-building it would only burn another wall-clock
+                # budget for no new information.
+                _r = _consume_autonomous_final_unknown(
+                    self.trace, filepath, original_file_content,
+                    original_sorry_count, demo["name"], self.provider,
+                    verify_result.get("timeout_s"),
+                )
+                reverify_unknown = True
+                reverify_patch = _r["patch"]
+                reverify_restore_skipped = not _r["restored"]
+                final_sorry = _r["final_sorry"]
             else:
-                print(f"  Build failed ({verify_result.get('error_count', '?')} errors), "
-                      f"reverting.", flush=True)
-                Path(filepath).write_text(original_file_content, encoding="utf-8")
-                final_sorry = original_sorry_count
-            print("  Final verification build (post-revert)...", flush=True)
-            verify_result = json.loads(tactic_tools.compile())
-            # P4 fuller fix: same primary/subordinate split on the post-revert
-            # re-verify -- a false-negative must not force a second revert.
-            final_verify_ok = _evaluate_final_verify(verify_result)
-            final_sorry = verify_result.get("sorry_count", final_sorry)
-            if not final_verify_ok:
                 errors = verify_result.get("errors", [])
                 unsolved = [e for e in errors if "unsolved" in e.get("message", "")]
                 if unsolved:
                     print(f"  FALSE POSITIVE: {len(unsolved)} unsolved goals despite "
                           f"{final_sorry} sorry. Reverting to original.", flush=True)
-                    # BUGFIX (2026-05-12 ai-01): previous version did
-                    # `Path(filepath).write_text(Path(filepath).read_text(...), ...)`
-                    # which is a no-op (reads then writes the SAME file content),
-                    # so the broken/unsolved-goal file was committed to disk
-                    # despite the "Reverting" message. Restore from
-                    # `original_file_content` captured at session start.
                     Path(filepath).write_text(original_file_content, encoding="utf-8")
                     final_sorry = original_sorry_count
                 else:
                     print(f"  Build failed ({verify_result.get('error_count', '?')} errors), "
                           f"reverting.", flush=True)
+                    Path(filepath).write_text(original_file_content, encoding="utf-8")
+                    final_sorry = original_sorry_count
+                print("  Final verification build (post-revert)...", flush=True)
+                verify_result = json.loads(tactic_tools.compile())
+                # P4 fuller fix: same primary/subordinate split on the post-revert
+                # re-verify -- a false-negative must not force a second revert.
+                # #18432: same carve-out — a post-revert timeout has empty
+                # output and would read as a vacuous True. The on-disk file
+                # is already the original (nothing to save); do NOT trust a
+                # verdict that never existed.
+                if verify_result.get("wall_clock_timeout"):
+                    print("  Post-revert verification build ALSO timed out — "
+                          "no compile verdict on the restored original; "
+                          "leaving it in place (#18432).", flush=True)
+                    final_verify_ok = False
+                    final_sorry = original_sorry_count
+                else:
+                    final_verify_ok = _evaluate_final_verify(verify_result)
+                    final_sorry = verify_result.get("sorry_count", final_sorry)
+                    if not final_verify_ok:
+                        errors = verify_result.get("errors", [])
+                        unsolved = [e for e in errors if "unsolved" in e.get("message", "")]
+                        if unsolved:
+                            print(f"  FALSE POSITIVE: {len(unsolved)} unsolved goals despite "
+                                  f"{final_sorry} sorry. Reverting to original.", flush=True)
+                            # BUGFIX (2026-05-12 ai-01): previous version did
+                            # `Path(filepath).write_text(Path(filepath).read_text(...), ...)`
+                            # which is a no-op (reads then writes the SAME file content),
+                            # so the broken/unsolved-goal file was committed to disk
+                            # despite the "Reverting" message. Restore from
+                            # `original_file_content` captured at session start.
+                            Path(filepath).write_text(original_file_content, encoding="utf-8")
+                            final_sorry = original_sorry_count
+                        else:
+                            print(f"  Build failed ({verify_result.get('error_count', '?')} errors), "
+                                  f"reverting.", flush=True)
 
         # P4: success also covers structural progress (sorry increase from
         # strategic decomposition) as long as the file builds. Decision is
@@ -2245,6 +2690,15 @@ class AutonomousProver:
             # NOT `no_progress` / `structural_progress` — it must be filtered out
             # of progress metrics.
             "provider_outage": _provider_dead,
+            # #18432: final verification UNKNOWN — success cannot fire
+            # (final_build_ok stayed False). Mirror of the multi-agent
+            # result-dict fields; restore_skipped = no verified archive
+            # possible, UNVERIFIED candidate kept on disk.
+            **({"reverify_unknown": True,
+                "reverify_scaffold_patch": reverify_patch,
+                **({"reverify_restore_skipped": True}
+                   if reverify_restore_skipped else {})}
+               if reverify_unknown else {}),
             # P5a (#7477 forensic): latched in TacticTools.compile() via
             # tools._is_heartbeat_timeout. Surfaced so _derive_result_kind
             # classifies the run heartbeat_budget_exceeded (distinct from

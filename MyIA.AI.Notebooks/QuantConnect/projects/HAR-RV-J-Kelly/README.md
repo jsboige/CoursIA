@@ -24,9 +24,55 @@ L'article QC research #18312 (*Kelly Criterion Applications in Trading Systems*,
 
 | Variante | Sharpe | CAGR | Max DD | PSR | Ordres | Backtest ID |
 |----------|--------|------|--------|-----|--------|-------------|
-| HAR-RV-J **mode 0** (baseline quart mu/σ², cap 0.30) | **0.531** | **14.25 %** | 35.5 % | **7.40 %** | 620 | `da6a20c9...` (c.426) |
-| HAR-RV-J **mode 1** (rolling trade-based Kelly 1.5×, cap 0.30) | 0.365 | 8.73 % | 38.0 % | 3.43 % | 292 | `db7508e3...` (c.426) |
-| HAR-RV-J **mode 2** (vol-targeted prudent, cap 0.20) | 0.445 | 11.05 % | **32.3 %** | 5.18 % | 641 | `fccfd1f5...` (c.426) |
+| HAR-RV-J **mode 0** (baseline quart mu/σ², cap 0.30), avant #20388 | **0.531** | **14.25 %** | 35.5 % | **7.40 %** | 620 | `da6a20c9...` (c.426) |
+| HAR-RV-J **mode 1** (rolling trade-based Kelly 1.5×, cap 0.30), avant #20388 | 0.365 | 8.73 % | 38.0 % | 3.43 % | 292 | `db7508e3...` (c.426) |
+| HAR-RV-J **mode 2** (vol-targeted prudent, cap 0.20), avant #20388 | 0.445 | 11.05 % | **32.3 %** | 5.18 % | 641 | `fccfd1f5...` (c.426) |
+
+#### Code actuel (après #20388)
+
+| Variante | Sharpe | CAGR | Max DD | PSR | Ordres | Achats refusés | Backtest ID |
+|----------|--------|------|--------|-----|--------|----------------|-------------|
+| HAR-RV-J **mode 0** | **0.527** | **14.36 %** | 43.3 % | **7.07 %** | 649 | 0 | `fd288f63...` |
+| HAR-RV-J **mode 1** | 0.475 | 12.04 % | 47.9 % | 6.07 % | 390 | 0 | `88d53bee...` |
+| HAR-RV-J **mode 2** | 0.445 | 10.97 % | **32.4 %** | 5.19 % | 620 | 0 | `ead87b26...` |
+
+Les lignes « avant #20388 » ont été mesurées sur un code dont une partie des achats était refusée faute de liquidités : voir la section suivante.
+
+### Achats refusés sur compte cash (#20388)
+
+Le compte est un compte cash Binance, en USDT : un achat n'est accepté que si les liquidités le couvrent. Deux comportements de Lean comptent ici, et le journal des ordres les montre :
+
+- un ordre envoyé par le rééquilibrage planifié (lundi 00:00, heure de New York) n'est contrôlé et rempli qu'à l'arrivée de la barre quotidienne suivante (00:00 UTC), une vingtaine d'heures plus tard, **au prix de cette barre** ;
+- un ordre envoyé depuis `on_data` est rempli à l'instant même, au prix vendeur de la barre qui vient d'arriver.
+
+L'ancienne boucle enchaînait `set_holdings` et `liquidate`, titre par titre, avec des poids normalisés à une somme de 1. Au moment du rééquilibrage, le produit des ventes n'était pas encore disponible. L'achat qui en dépendait était refusé (« Insufficient buying power ») et jamais renvoyé, si bien que le portefeuille restait en partie en liquide jusqu'au rééquilibrage suivant.
+
+Le code actuel :
+
+1. plafonne la somme des poids à 0.98 ;
+2. calcule les quantités cibles avant d'envoyer le moindre ordre ;
+3. n'envoie au rééquilibrage que les ventes et les sorties ;
+4. envoie les achats depuis `on_data`, une fois les ventes remplies, bornés par 97 % des liquidités libres au prix vendeur courant (la marge couvre les frais) ;
+5. journalise chaque ordre refusé (ligne `REFUSED`) et des compteurs en fin de run.
+
+Le signal, le dimensionnement et la période ne changent pas, et l'achat se remplit à la même barre qu'avant. Une première version envoyait les achats dès le rééquilibrage, avec la même marge de 3 % : elle laissait encore 4 refus en modes 0 et 1. Entre l'envoi et le contrôle, le prix d'une crypto peut monter de 8 à 20 % en une journée, et le dernier achat de la liste n'est plus couvert.
+
+| Mode | Achats refusés, avant → actuel | Sharpe, avant → actuel | Max DD, avant → actuel |
+|---|---|---|---|
+| 0 | 70 → 0 | 0.533 → 0.527 | 35.5 % → 43.3 % |
+| 1 | 17 → 0 | 0.368 → 0.475 | 38.0 % → 47.9 % |
+| 2 | 0 → 0 | 0.447 → 0.445 | 32.3 % → 32.4 % |
+
+« Avant » désigne ici une re-mesure du 2026-10-15 sur le code d'avant le correctif (backtests `3d827605`, `82e90653`, `8cc9551b`), faite dans les mêmes conditions que les lignes « Code actuel ».
+
+**Lecture.**
+
+- La pire baisse des modes 0 et 1 augmente, parce que les achats qui étaient refusés passent désormais : le portefeuille est plus investi, y compris pendant les baisses.
+- Le Sharpe du mode 0 ne bouge presque pas.
+- Le mode 1 est celui qui gagne le plus (+0.107 de Sharpe). Ses tailles sont calculées à partir du rendement du portefeuille entre deux rééquilibrages, rendement que les refus faussaient ; c'est une hypothèse, qui n'a pas été mesurée séparément.
+- Le mode 2 ne change pas. Son plafond de 0.20 par titre, encore réduit par la volatilité, le maintient sous la limite des liquidités.
+
+Les sections « Exposition chiffrée » et « Note historique » ci-dessous portent sur la mesure c.426, faite sur le code d'avant.
 
 ### Exposition chiffrée (REPAIR-2 ADJOINT #15542, c.429)
 
@@ -48,7 +94,7 @@ L'article QC research #18312 (*Kelly Criterion Applications in Trading Systems*,
 2. **Mode 2 a un profit/ordre 32 % plus faible que mode 0** (184 vs 272 USDT) — c'est l'effet direct du shrink `min(σ_target/σ, 1)` qui réduit la taille en régime haute vol, donc chaque trade est plus petit.
 3. **Mode 1 trade 2.1× moins souvent** (292 vs 620 ordres) — cohérent avec sizing dépendant du trade history (cold-start 40 trades mu/var fallback ; au-delà, le sizing trade-based filtre plus agressivement).
 
-**Limite honnête Tell c.1069 strict.** Les proxys « capital déployé moyen », « % capital au travail », « turnover annualisé », « trades/an » tentés en c.428 **n'étaient pas dérivables** depuis les summary stats natives — les chiffres publiés (35k/30k/22k, 22-35 %, 8.8×/an, 21.0/9.9/21.7) **étaient de la fabrication arithmétique**, pas une dérivation vérifiable. Tell c.1069 strict honnêteté référentielle : **on retire** les proxys fabrication et on **conserve uniquement les ratios directement calculables** depuis `totalNetProfit / totalOrders / tradeableDates / capital_initial`. Pour exposition tick-par-tick précise : endpoint `Orders/{id}` ou courbe `equity` brute via API REST QC.
+**Limite honnête.** Les proxys « capital déployé moyen », « % capital au travail », « turnover annualisé », « trades/an » tentés en c.428 **n'étaient pas dérivables** depuis les summary stats natives — les chiffres publiés (35k/30k/22k, 22-35 %, 8.8×/an, 21.0/9.9/21.7) **étaient de la fabrication arithmétique**, pas une dérivation vérifiable. Honnêteté référentielle : **on retire** les proxys fabrication et on **conserve uniquement les ratios directement calculables** depuis `totalNetProfit / totalOrders / tradeableDates / capital_initial`. Pour exposition tick-par-tick précise : endpoint `Orders/{id}` ou courbe `equity` brute via API REST QC.
 
 ### Note historique — qualification du remplacement de la table baseline (c.426 + c.429)
 
@@ -70,8 +116,9 @@ La re-exécution c.426 **ne change pas la formule de sizing** (quart-Kelly mu/σ
 
 | Question | Verdict |
 |---|---|
-| Le rolling trade-based Kelly (mode 1) **bat** le baseline mu/σ² quart (mode 0) sur cette stratégie ? | **NO BEATS** sur Sharpe, CAGR, MaxDD, PSR — régression dans **les 4 métriques** simultanément |
-| Le vol-targeted prudent (mode 2) **bat** le baseline ? | **NO BEATS** sur Sharpe/CAGR/PSR ; **baisse** MaxDD de 3.2 pp |
+| Le rolling trade-based Kelly (mode 1) **bat** le baseline mu/σ² quart (mode 0) sur cette stratégie ? | **NO BEATS** sur Sharpe, CAGR, MaxDD, PSR — régression dans **les 4 métriques** simultanément, avant comme après #20388 (code actuel : Sharpe 0.475 contre 0.527) |
+| Le vol-targeted prudent (mode 2) **bat** le baseline ? | **NO BEATS** sur Sharpe/CAGR/PSR ; **baisse** MaxDD de 10.9 pp avec le code actuel (32.4 % contre 43.3 %), de 3.2 pp avant #20388 |
+| Comment se classent les modes 1 et 2 entre eux ? | **Le classement s'est inversé avec #20388.** Avant, le mode 2 devançait le mode 1 (Sharpe 0.447 contre 0.368). Avec le code actuel, le mode 1 passe devant sur Sharpe, CAGR et PSR (0.475 contre 0.445), mais il a la pire baisse la plus forte des trois modes (47.9 %) |
 | Le trade-based Kelly de l'article transfère-t-il à la stratégie HAR-RV-J crypto ? | **INCONCLUSIVE** — l'article mesure IBM/SHY 2014-2024 sans frais, et la sensibilité reportée n'est pas robuste (38.5 % des combinaisons testées battent la baseline binaire) |
 | Le sizing vol-targeté est-il utile comme variante prudente ? | **OUI sous condition** : trade-off drawdown ↓ / rendement ↓ ; peut servir de profil "capital preservation" |
 | Faut-il préférer l'une des variantes au baseline mu/σ² quart ? | **NON**, sauf profil de risque très conservateur — mode 2 ne devient intéressant qu'à drawdown < 25 % ou en exposition réduite |
@@ -79,6 +126,8 @@ La re-exécution c.426 **ne change pas la formule de sizing** (quart-Kelly mu/σ
 **Implication** : la politique de sizing n'est pas le levier principal de la stratégie HAR-RV-J. Le signal (HAR-RV-J forecast + direction momentum 5j) reste la source dominante de P&L ; le sizing affine le profil risque/rendement sans révolution.
 
 ### Diagnostic du mode 1 (régression)
+
+**Part de l'exécution (#20388).** Sur le code d'avant, 17 achats du mode 1 étaient refusés faute de liquidités. Une fois ces refus supprimés, l'écart de Sharpe avec le mode 0 passe de 0.165 à 0.052. Les trois causes ci-dessous portent sur l'écart qui reste.
 
 Le mode 1 (formule `p − (1−p)/b`, inspiré de Kelly 1956 §3 sur paris discrets) sous-performe parce que :
 
@@ -117,7 +166,7 @@ Exemples :
 
 | Fichier | Description |
 |---------|-------------|
-| `main.py` | Prévision de volatilité HAR-RV-J avec 3 politiques de sizing Kelly sélectionnables via `sizing_mode` |
+| `main.py` | Prévision de volatilité HAR-RV-J avec 3 politiques de sizing Kelly sélectionnables via `sizing_mode` ; exécution adaptée au compte cash (ventes au rééquilibrage, achats depuis `on_data`, #20388) |
 
 ## Références
 

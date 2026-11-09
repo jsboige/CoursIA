@@ -1,6 +1,6 @@
 # Module 04 - RAG, Outils MCP & Fonctionnalités avancées
 
-> **Format** : Fichier TypeScript `.spec.ts` avec tests commentés. Ouvrez `04-rag-tools.spec.ts` dans VS Code. Certains tests dépendent de la configuration de l'instance (KBs, outils MCP, canaux) — les tests non-applicables seront automatiquement skipped.
+> **Format** : deux artefacts. Le fichier TypeScript `04-rag-tools.spec.ts` (tests commentés) est le **moteur de test** ; le notebook `04-RAG-Tools-QA-OWUI.ipynb` (section ci-dessous) en est la **couche pédagogique**. Ouvrez le `.spec.ts` dans VS Code. Certains tests dépendent de la configuration de l'instance (KBs, outils MCP, canaux) — les tests non-applicables seront automatiquement skipped.
 
 ## Objectifs pédagogiques
 
@@ -59,6 +59,10 @@ ou par URL directe `/channels/{id}`.
 | MCP — recherche web | Déclencher une recherche via outil | Toggles, tests fonctionnels |
 | Channels — naviguer | Accéder à un canal via API + URL directe | API + navigateur combinés |
 | Channels — poster | Envoyer un message dans un canal | TipTap dans un autre contexte |
+
+## Couche pédagogique (notebook)
+
+Le notebook [`04-RAG-Tools-QA-OWUI.ipynb`](04-RAG-Tools-QA-OWUI.ipynb) est la quatrième étape de la mission (voir le notebook chapeau [`00-Parcours-QA-OWUI.ipynb`](../00-Parcours-QA-OWUI.ipynb)). Il porte sur les fonctionnalités avancées d'Open WebUI : RAG avec des Knowledge Bases attachées au chat, outils MCP et Channels. Il explique les tests conditionnels (un test non applicable est sauté à l'exécution, sans échouer), l'évolution de l'interface entre versions, et le choix entre un sélecteur robuste et un sélecteur positionnel, avec l'astuce API + navigateur. Il lit `04-rag-tools.spec.ts`, en dresse l'inventaire (`npx playwright test --list`, sans exécution) et propose des exercices en Python : robustesse d'un sélecteur, relation test/concept, assertion de comptage d'outils. Sur une instance minimale, un rapport composé majoritairement de tests `skipped` y est présenté comme un résultat sain.
 
 ## Commandes
 

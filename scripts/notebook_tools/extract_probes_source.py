@@ -78,7 +78,7 @@ def main() -> int:
     with open(args.output, "w", encoding="utf-8") as f:
         json.dump(nb, f, ensure_ascii=False, indent=1)
 
-    # Tell c.builder-newline: trailing newline
+    # trailing newline
     with open(args.output, "ab") as f:
         f.write(b"\n")
 

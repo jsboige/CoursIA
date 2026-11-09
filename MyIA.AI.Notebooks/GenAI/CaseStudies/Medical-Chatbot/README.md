@@ -10,7 +10,7 @@ Chatbot médical intelligent utilisant des agents IA pour l'assistance aux patie
 |-------------|--------|
 | Notebooks | 1 |
 | Difficulté | Avancé |
-| Durée | ~2-3h |
+| Durée | ~30 min |
 | Thème | Santé et assistance médicale |
 
 ## Notebook
@@ -28,7 +28,7 @@ Chatbot médical intelligent utilisant des agents IA pour l'assistance aux patie
 ## Prérequis
 
 ```bash
-pip install openai pandas scikit-learn semantic-kernel
+pip install semantic-kernel python-dotenv
 ```
 
 **Important** : Ce chatbot est un outil d'assistance et ne remplace pas un professionnel de santé.

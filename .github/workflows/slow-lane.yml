@@ -76,6 +76,26 @@ name: Slow lane (voie asynchrone, tranches 1-2 #12856)
 #
 #   Reversibilite tranche 2 : `git revert` du commit + reactiver le default
 #   setup restaurent le regime per-PR.
+#
+# TRANCHE 2 — JAMBE CODEQL RETIREE (issue #22548, 2026-10-25).
+#
+#   Le job `codeql-scheduled` ci-dessous n'existe plus : CodeQL passe en
+#   ADVANCED SETUP (`.github/workflows/codeql.yml`, decision mainteneur
+#   Q142 = c). Ce fichier porte desormais lui-meme le `schedule`
+#   hebdomadaire ET le `push: main`, avec la meme matrice x4 sur le runner
+#   heberge : garder les deux jambes aurait produit deux analyses de la meme
+#   tete de `main` sous la MEME categorie SARIF (`/language:<lang>`), donc
+#   des alertes qui se recouvrent. Le contenu du job a ete repris un a un
+#   dans `codeql.yml` — runner heberge, `timeout-minutes: 45`, permissions
+#   `security-events: write`, `fail-fast: false`, matrice x4, `init`/
+#   `analyze` et le verdict publie (`::notice`/`::error` sur l'outcome de
+#   l'analyse). Un seul ecart, deliberé : les langages interpretes et C#
+#   tournent en `build-mode: none` et `autobuild` n'est plus utilise (voir
+#   l'en-tete de `codeql.yml` : le default setup construisait le C#,
+#   ~6 min 34 s sur #14746 — le `none` est un arbitrage de cout, pas un
+#   portage iso-cout).
+#
+#   Le job `ict-tests-pilot` de la tranche 1 reste : il n'est pas concerne.
 
 on:
   # Schedule hebdo (mardi 02:30 UTC, apres le pic push europeen) — une seule
@@ -109,7 +129,12 @@ jobs:
     # same-repo n'est requise (cf en-tete de check_self_hosted_runner_policy.py).
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    timeout-minutes: 15
+    # 60 min, comme `ict-tests.yml` (voie rapide). Mesure firsthand le
+    # 2026-10-26 (runs 40333089185 / 40328940542) : la jambe `tests/` dure
+    # jusqu'a 7 min 54 s et la jambe `ict/tests/` jusqu'a 10 min 26 s,
+    # **en plus** de l'installation (~2 min). A 15 min, le correctif de
+    # collecte aurait simplement transforme le faux vert en timeout rouge.
+    timeout-minutes: 60
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -134,70 +159,58 @@ jobs:
         working-directory: MyIA.AI.Notebooks/IIT/ICT-Series
         run: |
           set +e
-          python -m pytest tests ict/tests -q --no-header 2>&1 | tee /tmp/ict-pilot.log
-          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          # DEUX invocations, DEUX rootdirs -- exactement ce que fait
+          # `ict-tests.yml` (voie rapide). Une session unique
+          # (`pytest tests ict/tests`) melange deux arbres qui partagent
+          # 16 basenames de modules (`test_time_arrow.py`, `test_workspace.py`,
+          # `test_catastrophe.py`, ...) SANS `__init__.py` : pytest les importe
+          # par nom de fichier et refuse (`import file mismatch`) -> 16 erreurs
+          # de COLLECTE, pas un defaut ICT. La suite ne collectait donc qu'UN
+          # item et n'executait rien -- et le job, lui, restait `success`
+          # (cf. le bloc "code de sortie" plus bas, et docs/ci/slow-lane.md,
+          # section "faux vert du pilote").
+          #
+          # `--import-mode=importlib` sur la session unique serait un faux
+          # VERT : ce mode ignore les `sys.path.insert` de niveau module, or
+          # `ict/tests/` en depend pour son `from ict import ...` -- c'est
+          # precisement pourquoi `ict/tests/pytest.ini` existe (il remet le
+          # mode `prepend` pour cette jambe). En separant les deux jambes,
+          # chacune garde son rootdir, donc chacune son mode d'import.
+          # Les deux sorties sont conservees separement : un verdict agrege
+          # qui masque la jambe tombee serait un faux vert.
+          python -m pytest tests -q --no-header 2>&1 | tee /tmp/ict-pilot-tests.log
+          RC_TESTS=${PIPESTATUS[0]}
+          python -m pytest ict/tests -q --no-header 2>&1 | tee /tmp/ict-pilot-ict-tests.log
+          RC_ICT=${PIPESTATUS[0]}
+          echo "exit_code_tests=${RC_TESTS}" >> "$GITHUB_OUTPUT"
+          echo "exit_code_ict_tests=${RC_ICT}" >> "$GITHUB_OUTPUT"
+          # Le code de sortie de l'ETAPE vaut le code de sortie de la suite.
+          # Avant ce correctif, `set +e` + `PIPESTATUS` ecrit dans un output
+          # laissait l'etape se terminer sur le `echo` (donc 0) et le job
+          # demeurait `success` meme quand la suite echouait : mesure sur le
+          # run 39389459201 (2026-10-20), ou le log porte
+          # `##[error]La suite ICT-Series a echoue (exit=2)` et que les etapes
+          # 5 ET 6 sont `success`. Le verdict du pilote doit pouvoir ROUGIR
+          # (criterion d'acceptance #12856-4) ; l'annotation `::error` de
+          # l'etape suivante ne fait pas echouer une etape, il l'orne.
+          if [ "${RC_TESTS}" -ne 0 ] || [ "${RC_ICT}" -ne 0 ]; then
+            echo "exit_code=1" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "exit_code=0" >> "$GITHUB_OUTPUT"
 
       - name: Publish verdict
         if: always()
         env:
           PYTEST_EXIT: "${{ steps.pytest.outputs.exit_code }}"
+          RC_TESTS: "${{ steps.pytest.outputs.exit_code_tests }}"
+          RC_ICT: "${{ steps.pytest.outputs.exit_code_ict_tests }}"
         run: |
-          TAIL="$(tail -n 15 /tmp/ict-pilot.log 2>/dev/null || echo '(no log)')"
+          TAIL_TESTS="$(tail -n 15 /tmp/ict-pilot-tests.log 2>/dev/null || echo '(no log)')"
+          TAIL_ICT="$(tail -n 15 /tmp/ict-pilot-ict-tests.log 2>/dev/null || echo '(no log)')"
           if [ "${PYTEST_EXIT}" != "0" ]; then
-            echo "::error title=Slow-lane ICT-Series pilot (rouge delibere)::La suite ICT-Series a echoue en mode slow-lane (exit=${PYTEST_EXIT}). Verdict : a investiguer. tail : ${TAIL}"
+            echo "::error title=Slow-lane ICT-Series pilot (ECHEC DE LA SUITE)::La suite ICT-Series a echoue en mode slow-lane (tests/ exit=${RC_TESTS}, ict/tests/ exit=${RC_ICT}). Le job est ROUGE : c'est le verdict de la voie lente sur main, pas un incident du runner. Verdict : a investiguer. tail tests/ : ${TAIL_TESTS} -- tail ict/tests/ : ${TAIL_ICT}"
           else
-            echo "::notice title=Slow-lane ICT-Series pilot (PASS)::La suite ICT-Series a reussi en mode slow-lane (tranche 1 #12856). Ce job sera re-run chaque mardi 02:30 UTC."
+            echo "::notice title=Slow-lane ICT-Series pilot (PASS)::La suite ICT-Series a reussi en mode slow-lane (tests/ exit=${RC_TESTS}, ict/tests/ exit=${RC_ICT}) (tranche 1 #12856). Ce job sera re-run chaque mardi 02:30 UTC."
           fi
 
-  # TRANCHE 2 (#12856) — CodeQL hebdomadaire contre main, meme matrice x4 que
-  # le default setup (actions, csharp, javascript-typescript, python). La
-  # suppression du per-PR vit cote settings (voir en-tete TRANCHE 2).
-  codeql-scheduled:
-    name: Slow-lane CodeQL (${{ matrix.language }})
-    # GitHub-hosted : CodeQL est gratuit sur repo public et ne concurrence pas
-    # le pool self-hosted (check_self_hosted_runner_policy : ubuntu-latest =
-    # baseline autorisee, hors allowlist). Declencheurs schedule/dispatch
-    # uniquement = refs possedees par le repo, aucune garde same-repo requise
-    # (cf en-tete du scanner).
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    # Job-level : le workflow reste contents: read ; seul ce job uploade du
-    # SARIF vers code scanning.
-    permissions:
-      contents: read
-      security-events: write
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [actions, csharp, javascript-typescript, python]
-    steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
-
-      - name: Init CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: ${{ matrix.language }}
-
-      # Autobuild est un no-op documente pour les langues interpretees ;
-      # pour csharp il construit la solution (meme chemin que le default
-      # setup, dont les runs csharp passent deja, ex. 6m34s sur #14746).
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
-
-      - name: Analyze
-        id: analyze
-        uses: github/codeql-action/analyze@v4
-        with:
-          category: "/language:${{ matrix.language }}"
-
-      - name: Publish verdict
-        if: always()
-        env:
-          ANALYZE_OUTCOME: "${{ steps.analyze.outcome }}"
-        run: |
-          if [ "${ANALYZE_OUTCOME}" = "success" ]; then
-            echo "::notice title=Slow-lane CodeQL (${{ matrix.language }}) (PASS)::Analyse CodeQL ${{ matrix.language }} terminee en voie lente (tranche 2 #12856). Fournnee hebdo, mardi 02:30 UTC."
-          else
-            echo "::error title=Slow-lane CodeQL (${{ matrix.language }}) (rouge)::Analyse CodeQL ${{ matrix.language }} a echoue en voie lente (outcome=${ANALYZE_OUTCOME}). Verdict : a investiguer."
-          fi

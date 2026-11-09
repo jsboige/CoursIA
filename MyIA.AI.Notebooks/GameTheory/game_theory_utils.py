@@ -26,6 +26,7 @@ from typing import List, Tuple, Dict, Optional, Callable
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from collections import defaultdict
+import copy
 import random
 
 
@@ -315,6 +316,18 @@ class Strategy(ABC):
         self.my_history: List[str] = []
         self.opponent_history: List[str] = []
 
+    def clone(self) -> "Strategy":
+        """Copie fraiche conservant la configuration (parametres d'__init__).
+
+        Les tournois clonent chaque participant avant un match au lieu de
+        re-instancier sa classe avec ses parametres par defaut (#20304).
+        Les sous-classes qui surchargent reset() (ex. Grudger.betrayed)
+        sont reinitialisees correctement.
+        """
+        cloned = copy.copy(self)
+        cloned.reset()
+        return cloned
+
     @abstractmethod
     def choose(self) -> str:
         """Choose an action based on history."""
@@ -499,8 +512,8 @@ def run_tournament(strategies: List[Strategy],
     for _ in range(repetitions):
         for i in range(n):
             for j in range(n):
-                s1 = type(strategies[i])()
-                s2 = type(strategies[j])()
+                s1 = strategies[i].clone()
+                s2 = strategies[j].clone()
 
                 score1, score2 = play_match(s1, s2, rounds, noise)
 
@@ -530,8 +543,8 @@ def compute_payoff_matrix(strategies: List[Strategy], rounds: int = 200) -> np.n
 
     for i in range(n):
         for j in range(n):
-            s1 = type(strategies[i])()
-            s2 = type(strategies[j])()
+            s1 = strategies[i].clone()
+            s2 = strategies[j].clone()
             score1, _ = play_match(s1, s2, rounds)
             M[i, j] = score1 / rounds
 
@@ -1026,6 +1039,15 @@ class VCGAuction:
                       ) -> Tuple[List[List[float]], List[float]]:
         """
         Multi-item allocation with VCG payments.
+
+        Scope (#20306): exact VCG for ADDITIVE independent valuations
+        only -- each item j is awarded independently to the highest
+        bidder (valuations[i][j]) and payments are the Clarke
+        externalities of that per-item allocation. This is NOT a
+        combinatorial auction solver: bundle valuations
+        (v(A + B) != v(A) + v(B)) are not expressible in this
+        signature, and per-item argmax would be neither efficient
+        nor truthful for them.
 
         Args:
             valuations: valuations[i][j] = agent i's value for item j

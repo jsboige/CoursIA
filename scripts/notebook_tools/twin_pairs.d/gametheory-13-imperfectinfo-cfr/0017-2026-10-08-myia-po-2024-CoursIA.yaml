@@ -1,0 +1,7 @@
+date: '2026-10-08'
+by: myia-po-2024:CoursIA
+python_sha: 8304418b2da6b214add4f80cfcf03f0ba3ff6287
+csharp_sha: 25383aa11b972eb094a93bed24b784f38eb2fd1e
+content_python_sha: 3620b1308ec2f0e656a6922afad3233dbb76d06a99944f306bbb19dc6983751c
+content_csharp_sha: 812c962d0fa341cbb3ae69a08564c236999a2c0589665437926ea38c826ef0b5
+reason: "Redressement densite #17040 (tranche GameTheory) : cote Python uniquement, fusions CFR+/CFR et OpenSpiel locale/reference. C# non touche. Markdown-only, cellules code byte-identiques."

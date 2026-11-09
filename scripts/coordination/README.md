@@ -255,11 +255,13 @@ d'enveloppe du producteur (`data.intercom.messages`, auteur normalise).
 ## Organe `merge_ready` (Q40, 2026-09-22)
 
 Fusion hors cycle coordinateur : un organe deterministe (identite myia-ai-01,
-cadence ~20 min) qui merge UNIQUEMENT ce qui passe exactement les controles du
-coordinateur lui-meme, en perimetre (b) uniquement -- hors harnais (`.claude/`,
-`CLAUDE.md` a tout niveau, `.github/`) et hors grains `DEEP`. Motivation
-mesuree : 97 merges en 24 h sur 4 creneaux, 12 heures vides, lead time median
-28,5 h ; un dossier d'adjoint perit en attendant le cycle.
+cadence ~20 min) qui merge UNIQUEMENT ce que le coordinateur a lu et approuve,
+en perimetre (b) uniquement -- hors harnais (`.claude/`, `CLAUDE.md` a tout
+niveau, `.github/`) et hors grains `DEEP`. Motivation mesuree : 97 merges en
+24 h sur 4 creneaux, 12 heures vides, lead time median 28,5 h ; un dossier
+d'adjoint perit en attendant le cycle. L'organe evite cette peremption, il ne
+remplace pas la lecture (arbitrage user 2026-09-28, Q67 : jusque-la 6 des 211
+merges du journal portaient une approbation `myia-ai-01`).
 
 Par PR (la plus ancienne d'abord), TOUT doit tenir sinon skip avec raison
 nommee au journal : pas un brouillon + un commentaire `[ADJOINT PREFLIGHT]`
@@ -267,7 +269,11 @@ nommee au journal : pas un brouillon + un commentaire `[ADJOINT PREFLIGHT]`
 superieur aux fichiers listes = skip -- et tier du tag `Grain:` lu par le parseur
 partage `scripts/grain_tag.py`), pre-controle bon marche du dernier dossier
 (tete perimee ou `b0:` non clear = skip sans payer le gate ; illisible = decision
-laissee au gate), gate `check_adjoint_prevalidation.py` a
+laissee au gate), approbation du coordinateur (derniere voix `myia-ai-01` =
+`APPROVED` reel, posee sur la tete ou sur une tete dont celle-ci ne differe que
+par des rafraichissements de base prouves content-free -- meme remontee que le
+plancher DWELL, `merge_dwell.last_authoritative_sha` ; absente, perimee ou
+illisible = skip avant le gate), gate `check_adjoint_prevalidation.py` a
 `ready: true`, champ `b0:` du dossier accepte relu via la grammaire du gate
 (`parse_dossier` importe), organe B.0 `check_unaddressed_nits.py` a exit 0,
 `mergeable_state` REST a `clean` (retry sur `unknown` -- apres un merge les
@@ -291,3 +297,22 @@ n'est pas sur `main` ou porte des modifications suivies
 (journaux sous `%LOCALAPPDATA%\CoursIA\merge_ready\logs\`). Tests hermetiques :
 `python -m pytest scripts/tests/test_merge_ready.py
 scripts/tests/test_install_merge_ready_task.py`.
+
+## Organe `post_dossier` (#18412)
+
+Poster un dossier `[ADJOINT PREFLIGHT]` (PR) ou `[CLOSURE PREFLIGHT]`
+(issue) sans accident de transport. Refuse (rc 4, RIEN n'est poste) si la
+ligne 1 n'est pas exactement le marqueur d'ouverture ou si le marqueur de
+fermeture manque, si un `REPLACE_WITH` reste dans le bloc, si le
+`parse_dossier` de l'organe de la famille (importe, pas reecrit) rend des
+erreurs de forme, si le champ `head` differe de la tete courante (famille
+PR), ou si le gate rend deja 0 ou 3 avec un dossier d'une AUTRE lane
+(anti-double-stamp ; rc 2 UNKNOWN = fail-closed ; re-stamp de sa propre
+lane licite). POST par `gh api --input payload.json` (jamais `-f body=@`),
+relecture du corps publie (ligne 1, longueur >= 100, predicat
+PAYLOAD-TRAP, identite byte-a-byte avec la source), puis re-jeu du gate :
+son verdict est imprime et son rc devient celui du poster.
+
+Usage : `python scripts/coordination/post_dossier.py (--pr N | --issue N)
+--file dossier.md --lane <machine:workspace>`. Tests hermetiques :
+`python -m pytest scripts/tests/test_post_dossier.py`.

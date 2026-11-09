@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# CI-CHECK: check
+#   ^ `check` runs the denominator check with no build -- the dry mode the CI
+#     advisory guard has executed since its creation (#10643).
 # Advisory Slidev build gate — discovery + denominator check + build.
 #
 # Issue #8817: the organ that was missing when 5/16 decks did not build for

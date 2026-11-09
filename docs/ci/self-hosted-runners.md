@@ -132,6 +132,18 @@ python scripts/ci/measure_runner_demand.py --repo jsboige/CoursIA \
 
 Les deux nombres étant versés et datés ci-dessus, la caractérisation est complète ; reste ouverte la décision de capacité (plafond de concurrence par hôte, retrait ou renfort documenté des slots), qui relève du coordinateur et n'est pas prise dans ce document.
 
+### Ce que l'OS local peut dire d'une topologie — et ce qu'il ne peut pas
+
+La mesure d'un hôte depuis son propre système d'exploitation (`scripts/ci/measure_po2024_topology.py`) répond à une autre question que l'inventaire API ci-dessus, et les deux ne se substituent pas. Ce qu'elle établit durablement :
+
+1. **Deux des nombres qui bornent la concurrence ne sont pas des propriétés de la machine.** Le plafond de jobs d'un hôte et le nombre de slots qui le partagent vivent dans l'enregistrement `self-hosted runner` côté GitHub et dans `actions/runners` — jamais dans l'OS. Un rapport qui les déclare « restant à mesurer » depuis la machine ne signale donc pas une lacune de mesure : il signale que **la machine n'est pas l'instrument**. Ces deux-là se lisent par l'API (bloc `runners_inventory` ci-dessus), ou ne se lisent pas.
+2. **La borne Docker/WSL2 n'est un plafond que sous hypothèse.** Le daemon local plafonne vCPU et mémoire de la VM qui le porte ; ce plafond borne réellement la concurrence **si** les conteneurs éphémères de GitHub s'exécutent dans cette VM. Sur un hôte où Actions monte une VM dédiée, le chiffre mesuré localement ne dit rien de la CI. Il s'écrit donc comme une **borne supérieure conditionnelle**, jamais comme la capacité de l'hôte.
+3. **Une propriété stable et une lecture instantanée ne se mélangent pas sans être nommées.** Modèle, cœurs, RAM installée et plafond du daemon sont reproductibles ; charge CPU et mémoire libre changent à chaque relecture. L'instrument suffixe les seconds d'`instant` dans son JSON pour qu'un re-run qui les voit bouger ne se lise pas comme une dérive de la mesure.
+
+Une absence de ce type n'est pas un zéro (cf. §« Exhaustivité et zéros ») : « non mesurable depuis l'OS » et « mesuré à zéro » sont deux verdicts distincts, et les confondre est l'erreur que cette section existe pour empêcher.
+
+Le relevé de topologie de l'hôte po-2024 — propriétés stables, lectures instantanées, complémentarité avec les deux nombres côté API — est un rapport figé : [`2026-09-15-po2024-topology-baseline.md`](../transients/2026-09-15-po2024-topology-baseline.md).
+
 ## Topologie retenue
 
 `jsboige/CoursIA` appartient à un compte GitHub personnel. Les groupes de runners personnalisés sont réservés aux organisations et ne constituent donc pas une barrière disponible ici. La frontière activable repose sur deux contrôles complémentaires :
@@ -215,7 +227,7 @@ Le contrôleur est `scripts/ci/runner_controller.py` :
 | `status` | État distant + plan, aucun effet de bord. |
 | `ensure --apply` | **Idempotent** : runner online → no-op ; absent → token frais via `gh` + `register` + `verify` du gestionnaire. Sans `--apply`, imprime le plan JSON. |
 | `deregister --apply` | Arrêt propre : `config.cmd remove` avec token de retrait. L'installation demeure ; l'état redevient « préparé, pas activé ». |
-| `task-install --apply` | Enregistre la tâche planifiée `CoursIA-Runner-Controller` (tick 60 s, limite d'exécution 10 min, `IgnoreNew`) qui déclenche `ensure --apply`. **C'est le bouton** — exige une session élevée. |
+| `task-install --apply` | Enregistre la tâche planifiée `CoursIA-Runner-Controller` (tick 60 s, limite d'exécution 10 min, `IgnoreNew`) qui déclenche `ensure --apply`. **C'est le bouton** — exige une session élevée. L'action passe par un lanceur `wscript.exe` masqué, réécrit à chaque installation dans `<racine>/launchers/controller-task.vbs` : une action de tâche modifiée à la main serait annulée au prochain `task-install` (#24706). |
 | `task-remove --apply` | Retire la tâche (retour arrière du bouton). Second passage sur une tâche absente = succès explicite. |
 
 Le tick ne fait quasiment rien quand le runner est online (une lecture d'API) : autant de passages que de minutes, un seul état stable. L'action de la tâche lit le mot de passe du compte dédié dans le fichier machine local conventionnel (`<racine-parent>\secrets\runner_pwd.txt`, jamais dans le dépôt), négocie tout le reste à chaud et journalise dans `<racine-parent>\logs\controller.log`. Le token d'enregistrement ne transite jamais par argv, commit, PR, commentaire ou dashboard, et est retiré de l'environnement après chaque cycle.
@@ -296,7 +308,7 @@ Pas de `--gpus` (aucun passthrough GPU, par design). Le runner `--ephemeral` tra
 
 ```bash
 scripts/ci/docker/linux-runner/supervise.sh pin        # epingle le contexte hors arbre (#16134)
-docker build -t coursia-linux-runner:2.337.0 "$COURSIA_RUNNER_PINNED_CTX"
+docker build -t coursia-linux-runner:2.338.0 "$COURSIA_RUNNER_PINNED_CTX"
 scripts/ci/docker/linux-runner/supervise.sh start 2   # 2 slots concurrents
 scripts/ci/docker/linux-runner/supervise.sh status
 scripts/ci/docker/linux-runner/supervise.sh stop      # gracieux : les jobs en cours finissent
@@ -396,7 +408,7 @@ Un job qui meurt sur `Set up job` **avant le moindre checkout** porte un rouge r
 
 Ces archives sont par construction **identiques à chaque run**. Le runner sait les lire depuis un répertoire de cache : l'image les embarque donc une fois, au build, au lieu de les re-télécharger à chaque job.
 
-**La convention de nommage se lit dans le source du runner, elle ne se devine pas** — `src/Runner.Worker/ActionManager.cs`, `PrepareRepositoryAsync`, vérifié au pin `v2.337.0` (celui du `RUNNER_VERSION`) et sur `main` :
+**La convention de nommage se lit dans le source du runner, elle ne se devine pas** — `src/Runner.Worker/ActionManager.cs`, `PrepareRepositoryAsync`, vérifié au pin `v2.337.0` (prédécesseur du `RUNNER_VERSION` courant) et sur `main` :
 
 ```
 $ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE/<owner>_<repo>/<sha_resolu>.tar.gz
@@ -425,6 +437,85 @@ Deux pièges font échouer un cache écrit « au feeling » :
 
 **Résiduel honnête** : A2/A3 (contrôles positif et négatif sur un **log de job** réel) ne sont pas satisfaits par cette tranche. Ils exigent une image **reconstruite et redéployée**, puis un job réel : la preuve qu'on peut apporter sans déploiement s'arrête au contenu de l'image, et c'est ce qui est mesuré ci-dessus.
 
+#### A2/A3 — les contrôles positif et négatif, mesurés sur jobs réels (#16654)
+
+Le résiduel ci-dessus est refermé le 2026-10-03 : image reconstruite (`docker build` du `linux-runner`, seed à 11 archives, `setup-python` à `a26af69be951a…` — le SHA même de la preuve A1) et **deux jobs réels** exécutés dessus (run `37093241932`, jobs `111117851523`/`111117939237`, tous deux succès), depuis un slot éphémère à **label unique** `seed-a23` enregistré par `ACTIONS_RUNNER_INPUT_*` puis désenregistré nativement après un job — aucun job de la flotte (pools `coursia-*`) ne peut atterrir sur ce label, et la flotte de production n'a pas été touchée : le contrôle démontre le comportement de l'image reconstruite, pas un redéploiement des slots po-2024.
+
+**Où la preuve se lit** — pas dans le libellé du journal de job : « Download action repository » y figure **même sur hit** (c'est le nom d'étape, pas un événement réseau). La preuve vit dans le **journal de diagnostic du runner** (`/opt/runner/_diag/Worker_*.log`, niveau INFO) et dans l'état du répertoire de cache mesuré après le job (`docker cp` du conteneur mort, comparé à la baseline du build) :
+
+| contrôle | diagnostic du runner (INFO, horodaté) | `/opt/actions-cache` après le job |
+|---|---|---|
+| **A2 — hit** : `actions/setup-python@<SHA seedé>` | `Found action archive '/opt/actions-cache/actions_setup-python/a26af69….tar.gz' in cache directory` ; **zéro** requête codeload, zéro « Save archive » | byte-identique à la baseline — aucune écriture |
+| **A3 — miss** : `actions/setup-java@v4` (absent du seed) | cache consulté, non trouvé → `Save archive 'https://codeload.github.com/actions/setup-java/tar.gz/cf277c60…'` → `Request URL: … Http Status: OK` (~1 s) | **inchangé** |
+
+**Le « cache enrichi » attendu par #16654 est réfuté par la mesure.** Sur miss, l'archive téléchargée atterrit dans `_work/_actions/_temp_<guid>/`, jamais dans le répertoire de cache : `ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE` est **en lecture seule au runtime** — seule l'image (le seed au build) y écrit. Une action absente du seed se télécharge donc **à chaque job**, sans exception ni apprentissage. C'est le renfort de fait du garde zéro-trou (`test_action_cache_seed_guard.py`) : puisque rien ne peut enrichir le cache au run, seul le build ferme la porte.
+
+Le workflow de contrôle vit sur une branche jetable (`ci/16654-seed-a23-control`, supprimée après capture) : le garde seed interdit par design la présence de `setup-java` sur `main`, ce qui est exactement le contrôle négatif voulu. Pour rejouer : reconstruire l'image, pousser une branche portant deux jobs `runs-on: [self-hosted, <label unique>]` (action seedée épinglée au SHA du build / action absente du seed), enregistrer un conteneur éphémère avec ce label, puis lire `Worker_*.log` et comparer le cache avant/après.
+
+### Magasin d'objets partagé — le miroir du volume toolcache (#18225)
+
+Le volume `_work` persistant par slot (#14285) a rendu le slot **chaud** nominal, mais il ne dit rien du **retour au froid** : un clone purgé, un slot neuf, un `_work` écarté par le garde d'intégrité redescendent l'historique entier en HTTPS — **5,49 Gio mesurés** par retour au froid, et ~2 353 `_work` écartés en neuf jours sur le pool persistant de po-2026. Le miroir bare local casse ce coût : l'historique traverse le réseau **une fois pour N slots**.
+
+La recette vient de `persist/po-2026/pool.sh` (où elle tourne sur l'hôte) ; ici le volume est un **volume docker**, que l'hôte ne voit pas — donc les gestes git s'exécutent dans un conteneur jetable de la **même image** (git y est, l'uid est `runner` comme les slots, et le volume toolcache lui appartient déjà). Deux moitiés :
+
+| Moitié | Où | Ce qu'elle fait |
+|---|---|---|
+| **Productrice** | `supervise.sh` (`mirror_loop`, lancé par `start` et `lean`) | `bootstrap` une fois (geste **hors bande**), puis refresh incrémental (`fetch --prune`), throttle 300 s tenu par un horodatage **dans le volume** + `flock` non bloquant — deux boucles (pool docker, pool lean) ne font donc qu'un fetch par période |
+| **Consommatrice** | `entrypoint.sh` (bloc `TEST-ENTRYPOINT-MIRROR`, avant le garde `work_cache`) | `alternates` sur chaque clone présent, puis semis du `_work` quand il n'existe pas : `clone --shared --no-checkout` (zéro objet copié, instantané) puis `origin` **remis sur HTTPS** |
+
+Trois propriétés qui ne sont pas des détails :
+
+- **Fail-open, y compris après un semis.** Miroir absent et bootstrap désactivé (défaut) : le bloc consommateur rend 0, n'ajoute rien, et **retire** les lignes d'`alternates` qui désignent un miroir disparu. Sans ce retrait, un slot semé **avant** la disparition gardait un `alternates` pendant et toutes ses commandes git rendaient `rc=128` (`unable to normalize alternate object path`) — le garde `work_cache` ne le voit pas, car il lit les refs et jamais la résolvabilité des objets, et son repack `-adl` rend `rc=0`. Après retrait, `alternates` vide → `wch_repack_flags` retombe sur `-ad` : l'état exact d'avant #18225.
+- **`--prune` ne supprime aucun objet — mais pas par « absence de gc ».** Mesure (#22326, revue 5637796595) : `git fetch` **déclenche bien** `git maintenance run --auto --detach` sur le miroir (3 occurrences dans un `GIT_TRACE`). La sûreté vient de la **fenêtre de grâce de 30 jours de `gc --auto`** : même forcé à `gc.auto=1`, il **conserve** un objet injoignable vieux de 30 jours, alors qu'un `git gc` **complet** le prune dans le même dépôt au même objet. Conséquence opérateur : **ne jamais** lancer `git gc` ni `maintenance --schedule` sur le miroir — c'est ce geste-là qui casserait les slots emprunteurs, pas le `fetch --prune`.
+- **Le repack de maintenance ne rapatrie pas les objets empruntés.** `work_cache_health.sh` choisit ses drapeaux (`wch_repack_flags`) : `-adl` dès qu'un alternates est posé, `-ad` sinon. Sans le `-l`, un `repack -a` parcourt les objets joignables *alternates compris* et les **copie** dans le volume du slot — le miroir deviendrait un coût fixe au lieu d'une économie. Le couple est prouvé par un témoin : même fixture, `-adl` ne copie pas, `-ad` copie (`test_work_cache_health.sh`).
+
+**Garde de débit git.** Le superviseur propage `GIT_HTTP_LOW_SPEED_LIMIT=1024` / `GIT_HTTP_LOW_SPEED_TIME=90` à **tous** ses conteneurs (slots, waiters, miroir). Un transfert qui s'effondre à quelques centaines d'octets par seconde ne rend pas la main : il stalle jusqu'au timeout du job, qui meurt sans qu'aucune ligne ne nomme le réseau. Ces deux variables transforment le stall en échec **rapide**, que le retry du runner sait traiter. Le seuil est sous le plancher mesuré de codeload (1 936 à 39 530 o/s), donc il ne coupe pas un débit normal.
+
+**Bootstrap — geste explicite, une fois par machine.** Le clone intégral est lourd : il est refusé en dessous de `COURSIA_RUNNER_MIRROR_MIN_FREE_MB` (défaut 8192) et ne part jamais tout seul.
+
+```bash
+supervise.sh mirror bootstrap   # une fois, hors bande (copie integrale)
+supervise.sh mirror status      # taille, refs, dernier refresh, emprunteurs
+supervise.sh mirror refresh     # forcage ponctuel (le throttle s'applique)
+```
+
+`COURSIA_RUNNER_MIRROR_BOOTSTRAP=1` laisse le premier tick le faire à la place, sous la même garde d'espace. `COURSIA_RUNNER_MIRROR=0` coupe la boucle (ni l'entrypoint ni `mirror` ne sont concernés).
+
+**Déploiement.** `entrypoint.sh` change : l'image doit être **reconstruite** (le garde de fraîcheur compare l'épinglé à l'embarqué, cf #16134) et les slots roulés par **drain** — jamais un restart du superviseur avec des jobs en vol. Le miroir lui-même n'est pas nécessaire au premier démarrage : sans lui, le parc est exactement dans son état d'avant.
+
+#### Hôte éphémère tiers — installer le miroir, et le prouver
+
+Le mécanisme n'a de valeur que si un hôte qui **n'est pas ai-01** l'active. Mesure du 25/10 sur po-2025 (`workspace-CoursIA`, 22:17Z) : les 9 slots ouverts cette nuit (po-2023 ×3, po-2025 ×2, po-2027 ×4) n'avaient ni miroir ni alternates, donc clonaient à froid — 8,34 Gio / 494 804 objets pour le dépôt, 0,72 à 1,09 Mo/s depuis WSL, et le job `latex-control-chars` (run 40129451003) **annulé à 621 s** en plein `actions/checkout` sous `timeout-minutes: 10` + `fetch-depth: 0`. 75 workflows visant `coursia-linux` déclarent ce `fetch-depth: 0` : sur un hôte froid, ce n'est pas un cas isolé, c'est la classe.
+
+Trois étapes, dans cet ordre :
+
+```bash
+# 1. l'image de l'épinglé (elle porte git et l'entrypoint consommateur)
+supervise.sh pin                      # vérifie l'image attendue
+
+# 2. le miroir, une fois par machine -- refusé sous COURSIA_RUNNER_MIRROR_MIN_FREE_MB
+supervise.sh mirror bootstrap
+#    ou, pour laisser le premier tick le faire :
+#    COURSIA_RUNNER_MIRROR_BOOTSTRAP=1 supervise.sh start N
+
+# 3. le CONTRÔLE POSITIF -- ce que l'installation doit rendre vrai
+supervise.sh mirror probe
+```
+
+`probe` fait exactement ce que fait un slot : `clone --shared --no-checkout` du miroir, puis checkout de `COURSIA_RUNNER_MIRROR_HEAD` — et rend trois faits dans une seule ligne : **la durée**, la **présence des alternates** (sans elles on aurait mesuré un clone froid, pas le miroir) et le **compte d'objets locaux**, qui doit rester à 0. C'est ce dernier chiffre qui distingue « le checkout a marché » de « le checkout a emprunté » : un clone qui recopie les objets réussit aussi.
+
+| Sortie | Signification |
+|---|---|
+| `0` — `probe OK` | le checkout à historique complet servi par le miroir tient dans le budget |
+| `3` | clone `--shared` impossible, ou **pas d'alternates** (le probe ne mesurerait pas le miroir) |
+| `4` | checkout de la tête impossible (miroir sans la branche attendue) |
+| `5` | durée **au-delà du budget** — un job à timeout court casserait |
+| `6` | miroir absent : `bootstrap` d'abord |
+
+Le budget est `COURSIA_RUNNER_MIRROR_PROBE_MAX_S` (défaut **300 s**, soit la moitié d'un `timeout-minutes: 10` : le job garde sa marge pour ses propres étapes après le checkout). Contrairement aux autres gestes du miroir, `probe` **n'est pas fail-open** : son code de sortie atteint l'opérateur, parce qu'un contrôle qui rend toujours 0 ne contrôle rien.
+
+Ce que cette recette **ne** fait pas : réduire `fetch-depth: 0` dans les workflows. Le miroir rend ce `fetch-depth` tenable ; le supprimer casserait les diffs contre la base, et c'est une décision qui appartient au coordinateur.
+
 ### Mode persistent — le conteneur qui retire le maillon superviseur (#14329)
 
 Le superviseur hôte n'existe que parce que les runners sont `--ephemeral` : un runner éphémère traite **au plus un job** puis se désenregistre, donc un processus hôte doit reminter un token et relancer un conteneur à chaque job — et ce processus hôte est exactement le maillon qui meurt au logoff (mesure du reboot 2026-09-02 : flotte retombée à 1 runner, tous les `PR gate` gelés en STARVED). L'idée user : « un conteneur en autorestart qui fait le polling tout seul ».
@@ -450,13 +541,53 @@ docker run -d --restart unless-stopped \
 
 Docker relance le conteneur à chaque démarrage du daemon (donc de la distro) ; le volume `_work` de #14288 se **combine** avec celui de config, il ne s'y substitue pas.
 
+**Crochet job-started — le retour au pool `coursia-ephemeral` des slots persistants (#20174).** Sans lui, la couverture de désarmement est boot-seule (point 2 ci-dessus) et tout retour au pool des slots persistants referme le cycle de contamination mesuré en octobre 2026. Pose, par slot (l'ordre est idempotent, aucun token requis — `.runner` est présent, la branche persistent ne rejoue pas `config.sh`) :
+
+1. copier `scripts/ci/docker/linux-runner/persist/job-start-disarm.sh` dans le volume de config du slot (`docker cp <fichier> <slot>:/opt/runner/job-start-disarm.sh` puis `chmod +x` dans le conteneur) — le volume survit aux re-creates, la pose est une fois pour toutes ;
+2. re-creer le conteneur avec, en plus des variables existantes : `-e ACTIONS_RUNNER_HOOK_JOB_STARTED=/opt/runner/job-start-disarm.sh` (les variables d'env ne s'ajoutent pas à chaud : c'est un `docker rm` + `docker run` remontant les **mêmes volumes** `coursia-runner-cfg-N` et `coursia-work-persist-N`) ;
+3. **annoncer le roll sur le dashboard AVANT le geste** (il retire de la capacité le temps du restart) ;
+4. contrôle de non-régression : un job complet sur le slot, puis `git -C <_work>/<repo>/<repo> config --get core.sparseCheckout` rend **vide** après le job — c'est le critère de sortie écrit sur #20174.
+
 **Ce que la non-éphéméralité coûte — écrit, pas supposé** :
 
 1. **État persistant entre jobs.** C'est précisément ce que `--ephemeral` achetait (#13378) : workspace, tool-cache et processus résiduels survivent d'un job au suivant. Le troc est accepté parce que la contrainte « le code des forks étudiants ne touche jamais le self-hosted » tient **par ailleurs** : aucun `pull_request_target` auto-hébergé, garde universelle fork/payload (`github.event.pull_request.head.repo.full_name == github.repository`, tranche 4), et « Require approval for all outside collaborators » côté dépôt. Retirer la persistance avant tout trigger `pull_request` reste la règle.
-2. **Sémantique des hooks entrypoint.** En éphémère, les blocs de désarmement (sparse-checkout résiduel, refs dangling) et `work_cache_health` s'exécutent **à chaque job** (conteneur `--rm` par job). En persistent, ils s'exécutent **au boot du conteneur** seulement : le runner enchaîne les jobs sans relancer l'entrypoint. Le nettoyage inter-jobs repose alors sur le `clean` par défaut du checkout ; le hook de boot reste en première ligne à chaque restart Docker. Ce n'est pas un renforcement : c'est une couverture **moins fréquente**, assumée.
+2. **Sémantique des hooks entrypoint.** En éphémère, les blocs de désarmement (sparse-checkout résiduel, refs dangling) et `work_cache_health` s'exécutent **à chaque job** (conteneur `--rm` par job). En persistent, ils s'exécutent **au boot du conteneur** seulement : le runner enchaîne les jobs sans relancer l'entrypoint. Le nettoyage inter-jobs repose alors sur le `clean` par défaut du checkout ; le hook de boot reste en première ligne à chaque restart Docker. Ce n'est pas un renforcement : c'est une couverture **moins fréquente**, assumée — **sauf si le crochet job-started est posé** (ci-dessous) : `ACTIONS_RUNNER_HOOK_JOB_STARTED` rend au mode persistent la couverture par job, avec la même sémantique exacte que les blocs d'entrypoint. C'est ce que l'incident #20174 a mesuré : sans crochet, un job déposant `core.sparseCheckout` (ex. catalog-cron en checkout partiel) arme le suivant, qui hérite d'un arbre amputé au `git status` pourtant propre — la famille de rouges qui a bloqué ~20 PRs et vidé le catalogue deux jours durant.
 3. **Un slot offline consomme son inscription.** Un runner non-éphémère arrêté reste enregistré « idle/offline » sur GitHub jusqu'à son retour — contrairement à l'éphémère qui se désenregistre seul. Sans incident tant que le conteneur revient ; c'est le compteur GitHub à lire après un long arrêt.
 
 **Validation au déploiement (po-2024 uniquement, jamais ai-01)** : la preuve du mode est un `systemctl restart docker` qui voit les slots revenir **sans intervention** — geste destructif réservé à la machine qui ne porte ni vLLM, ni Qdrant, ni ComfyUI. La mesure avant/après du temps de checkout se prend au même moment (volumes `_work` + config combinés).
+
+## Pools spécialisés par labels — la règle (#14337)
+
+**La règle : on ajoute un pool, on n'épaissit plus l'image commune.** Mandat user du 2026-09-02 : *« avoir des runners spécialisés avec par exemple certains qui ont des cache mathlib prêt à l'emploi, tandis que d'autres font du quarto ou je ne sais quoi, sans obliger tous les workers à avoir tous les outils »*. La raison est mécanique : chaque outil ajouté à l'image commune est payé par **tous** les jobs au `docker run`, pour satisfaire le plus exigeant — l'image unique ne passe pas à l'échelle (quatre instances de la même classe en deux jours ont fondé #14337 : `python` nu inexistant, `gh` absent — organe muet sous `|| true` —, `lsb_release` manquant tuant `setup-python` avec `cache: pip`).
+
+La primitive de routage est le **jeu de labels dédié** : `DEDICATED_LABEL_SETS` dans `scripts/ci/check_self_hosted_runner_policy.py` porte un jeu par pool, et c'est le label distinct qui garantit le routage — jamais une convention de nommage.
+
+**La règle jumelle, mesurée le 2026-11-04 : un pool qui sort de la flotte sort de la liste d'autorisation.** `DEDICATED_LABEL_SETS` est une liste de jeux **servis**, pas une liste de jeux **planifiés** : y laisser un pool éteint ouvre un trou *fail-open* — le garde certifie un routage qu'aucun runner ne peut prendre, et le job attend en file d'attente indéfiniment. Le retrait s'oppose donc à l'oubli : le jeu retiré est conservé, renommé, dans `RETIRED_LABEL_SETS`, et un test interdit sa ré-admission silencieuse.
+
+### Inventaire des pools (mesuré sur `main`, octobre 2026 ; re-mesuré les 2026-11-04 et 2026-11-05)
+
+| Pool | Jeu de labels | Support | Rôle |
+|---|---|---|---|
+| `coursia-fast-guards` | `REQUIRED_LABELS` | hôte Windows | gardes Windows (po-2024) |
+| `coursia-linux` | `LINUX_RUNNER_LABELS` | conteneur, image minimale + python/gh/jq | gardes PR pure-Python |
+| `coursia-waiter` | `WAITER_LABELS` | label distinct sans slot de travail | laisser un gate **attendre** sans consommer de CPU (arbitrage ai-01 2026-09-02 : « attendre ne coûte pas de CPU ») |
+| `coursia-lean` | `RETIRED_LEAN_RUNNER_LABELS` — **retiré**, pool éteint | conteneur, image `Dockerfile.lean` (elan + toolchain), `.lake` tenu chaud dans le volume par slot | scans et builds Lean ; **pool éteint** — extinction mesurée le 2026-10-23 par la sonde du dépôt, confirmée le 2026-11-04 (48 runners) et re-mesurée le 2026-11-05 (49 runners) — **zéro** porteur de `coursia-lean` dans les deux mesures ; les jambes Lean sont passées à `[self-hosted, coursia-ephemeral, coursia-linux]` |
+| `coursia-persistent` | jeu **non autorisé** par le garde | conteneur, slots persist de po-2024 | 7 slots **enregistrés mais offline** à la mesure du 2026-11-04 ; leur jeu de labels n'est pas dans `DEDICATED_LABEL_SETS`, donc aucun workflow ne peut y router ; ils portent `coursia-ephemeral` alors que leur spécification versionnée (`scripts/ci/docker/linux-runner/persist/po-2024/create-persist-slots.sh`) impose l'inverse (« un slot persist porte `coursia-persistent` et **NE porte PAS** `coursia-ephemeral` ») — arbitrage de composition de flotte, pas de lane |
+
+Les pools `coursia-docs` (quarto/pandoc) et `coursia-browser` (npm + navigateurs Playwright) restent des **candidats non livrés** : leur déploiement touche le conteneur runner porté par po-2024 — l'infra d'un autre workspace se demande au workspace qui la porte, elle ne s'applique pas depuis l'extérieur.
+
+**Le tiroir ne s'arrête pas au garde.** La jambe Lean reste portée par deux autres organes, et l'écart est intentionnel plutôt qu'un oubli : le budget mémoire (`scripts/ci/assert_memory_budget.py`, jambe `lean : 1 x 6.0 GiB`) et l'épinglage d'image (`check_runner_version_pin.py` → `supervise.sh:LEAN_IMAGE`) conservent la jambe Lean jusqu'à sa ré-admission ou son démontage explicite. Tant que les slots existent sur le parc, la CI ne peut pas prétendre que le coût Lean a disparu ; le garde dit seulement que le **routage** vers le pool éteint est refusé. Le retrait du jeu de labels et la ré-admission du pool sont deux gestes distincts : le premier est fait, le second attend la mesure du parc.
+
+### La gate mémoire de la migration des builds Lean
+
+La ligne de migration qui déplace le coût réel est le `runs-on` de `lean-build.yml` / `lean-axiom.yml` (workflows réutilisables : leurs builds s'exécutent **chez les callers**, une seule bascule déplace tout le monde). Elle est **gated sur l'arbitrage mémoire** : le pic d'élaboration de `HashlifeCorrectness.lean` dépasse 16 GB alors que le pool est budgété à 12 GB/slot (VM 24 GB max) — migrer avant l'arbitrage garantit l'OOM sur les gros modules, une régression CI pour gagner du temps de file. Chiffres mesurés (2026-09-21, cf #14337) : builds 9 224–12 302 s sur GitHub-hosted à `.lake` froid, contre 10–83 s pour les scans sur pool à `.lake` chaud. Un pool lean à slots ≥ 32 GB débloque la migration et fait de ces chiffres le « avant » de la mesure avant/après.
+
+### Ajouter un pool — la procédure
+
+1. un nouveau jeu de labels dans `DEDICATED_LABEL_SETS` ;
+2. une image dédiée — jamais un ajout à l'image commune ;
+3. l'entrée correspondante dans `scripts/tests/test_check_self_hosted_runner_policy.py` ;
+4. **la mesure du parc** : `gh api repos/jsboige/CoursIA/actions/runners` rend les runners **en service** et leurs jeux de labels — c'est cette mesure, et non la présence du jeu dans la liste, qui dit si un routage est servi. Le symétrique est obligatoire : quand un pool s'éteint, son jeu sort de `DEDICATED_LABEL_SETS` et passe dans `RETIRED_LABEL_SETS` (constante conservée, test de non-ré-admission à l'appui), faute de quoi le garde certifie une file d'attente éternelle.
 
 ## Tranches suivantes, activation partielle
 

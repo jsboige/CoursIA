@@ -2,6 +2,35 @@ from AlgorithmImports import *
 import numpy as np
 
 
+def _tally(alpha, insights):
+    """Count the insights an alpha emits, per direction (diagnostic, #21141).
+
+    The PCM counters of #21137 only see what reaches the PCM; this counts
+    what each alpha produces before the composite merges them.
+    """
+    for insight in insights:
+        key = "up" if insight.direction == InsightDirection.UP else "flat"
+        alpha.emitted[key] += 1
+    return insights
+
+
+def _fundamental_cache(alpha, algorithm):
+    """Fundamental cache built by the algorithm's fine selection (#21141).
+
+    The framework may hand the alphas the C# algorithm, on which a Python
+    attribute is invisible: getattr(algorithm, 'fundamental_cache', {}) then
+    returns {} without error, and the alpha never emits. The owner passed at
+    construction is the Python algorithm itself. The probe counts, per call,
+    whether the former route would have missed the attribute.
+    """
+    alpha.cache_probe["calls"] += 1
+    if getattr(algorithm, 'fundamental_cache', None) is None:
+        alpha.cache_probe["algo_missing"] += 1
+    if alpha.owner is not None:
+        return alpha.owner.fundamental_cache
+    return getattr(algorithm, 'fundamental_cache', {})
+
+
 class ValueAlpha(AlphaModel):
     """
     Value Factor Alpha: Book-to-price and earnings yield.
@@ -11,9 +40,12 @@ class ValueAlpha(AlphaModel):
     Uses fundamental data via FineFundamental.
     """
 
-    def __init__(self):
+    def __init__(self, owner=None):
         super().__init__()
         self.name = "Value"
+        self.emitted = {"up": 0, "flat": 0}
+        self.owner = owner
+        self.cache_probe = {"calls": 0, "algo_missing": 0}
         self._last_month = -1
 
     def update(self, algorithm, data):
@@ -27,7 +59,7 @@ class ValueAlpha(AlphaModel):
         period = timedelta(days=31)
         scores = {}
 
-        cache = getattr(algorithm, 'fundamental_cache', {})
+        cache = _fundamental_cache(self, algorithm)
 
         for kvp in algorithm.active_securities:
             security = kvp.value
@@ -71,7 +103,7 @@ class ValueAlpha(AlphaModel):
                     source_model=self.name
                 ))
 
-        return insights
+        return _tally(self, insights)
 
 
 class QualityAlpha(AlphaModel):
@@ -81,9 +113,12 @@ class QualityAlpha(AlphaModel):
     Signal: High ROE with low leverage. Quarterly rebalance.
     """
 
-    def __init__(self):
+    def __init__(self, owner=None):
         super().__init__()
         self.name = "Quality"
+        self.emitted = {"up": 0, "flat": 0}
+        self.owner = owner
+        self.cache_probe = {"calls": 0, "algo_missing": 0}
         self._last_month = -1
 
     def update(self, algorithm, data):
@@ -97,7 +132,7 @@ class QualityAlpha(AlphaModel):
         period = timedelta(days=31)
         scores = {}
 
-        cache = getattr(algorithm, 'fundamental_cache', {})
+        cache = _fundamental_cache(self, algorithm)
 
         for kvp in algorithm.active_securities:
             security = kvp.value
@@ -138,7 +173,7 @@ class QualityAlpha(AlphaModel):
                     source_model=self.name
                 ))
 
-        return insights
+        return _tally(self, insights)
 
 
 class LowVolAlpha(AlphaModel):
@@ -152,6 +187,7 @@ class LowVolAlpha(AlphaModel):
     def __init__(self):
         super().__init__()
         self.name = "LowVol"
+        self.emitted = {"up": 0, "flat": 0}
         self._last_month = -1
 
     def update(self, algorithm, data):
@@ -201,7 +237,7 @@ class LowVolAlpha(AlphaModel):
                     source_model=self.name
                 ))
 
-        return insights
+        return _tally(self, insights)
 
 
 class MomentumFactorAlpha(AlphaModel):
@@ -215,6 +251,7 @@ class MomentumFactorAlpha(AlphaModel):
     def __init__(self):
         super().__init__()
         self.name = "MomFactor"
+        self.emitted = {"up": 0, "flat": 0}
         self._last_month = -1
 
     def update(self, algorithm, data):
@@ -233,10 +270,15 @@ class MomentumFactorAlpha(AlphaModel):
             symbol = security.symbol
 
             try:
-                history = algorithm.history(symbol, 252, Resolution.DAILY)
+                # Fenetre double (#20286) : sur une demi-seance, history() rend
+                # moins de barres que demandees et le titre est ecarte du
+                # classement. On demande le double puis on re-slice sur les 252
+                # dernieres barres : closes.iloc[0] doit rester la meme barre
+                # d'ancrage, sinon le momentum change au lieu d'etre robuste.
+                history = algorithm.history(symbol, 2 * 252, Resolution.DAILY)
                 if len(history) < 252:
                     continue
-                closes = history['close']
+                closes = history['close'].iloc[-252:]
                 mom = (closes.iloc[-21] / closes.iloc[0]) - 1
                 returns[symbol] = mom
             except:
@@ -262,4 +304,4 @@ class MomentumFactorAlpha(AlphaModel):
                     source_model=self.name
                 ))
 
-        return insights
+        return _tally(self, insights)

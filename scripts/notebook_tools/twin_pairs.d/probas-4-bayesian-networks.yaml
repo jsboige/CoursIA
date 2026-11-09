@@ -1,15 +1,32 @@
 - name: Probas-4 Bayesian-Networks
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb
-  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb
-  numbering_exception: 'Zero-padding cote Python uniquement PyMC-1..9 -> PyMC-01..09 (renommage #13760) ; jumeau C# Infer-1..9 non concerne, contenu pedagogique inchange.'
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
   known_differences:
+  - '2026-10-08 (myia-po-2024:CoursIA) #17066 : REBASELINE cote Python -- redressement densite markdown-only (PyMC-04-Bayesian-Networks.ipynb : cellules campagne #14123 consolidees a une lecture par sortie de code et repositionnees APRES leur code, verbatim/paraphrases et meta-commentaires supprimes, timings fabriques alignes sur les sorties committes, enonce D-separation chaine/fourche corrige, 1 cellule campagne supprimee (narration de stub), 1 lecture creee ; 12 cellules code byte-identiques). Jumeau C# non touche. Aucun strip outille en attente.'
+  - '2026-10-06 (myia-po-2027:CoursIA) #19447 : correction contraste WCAG cote Python -- classDef obs
+    fill:#fef7e0, color:#b06000 -> #a05600 (4.34:1 -> 5.12:1, acceptance 2 de #15516) ; cellule markdown
+    uniquement, aucune source de code touchee. Jumeau C# non touche : le pattern ambre n''existe pas
+    cote Infer-4 (verifie : 0 occurrence), la correction n''a donc pas d''analogue a appliquer.'
+  - '2026-10-02 (myia-po-2024:CoursIA-2) #18570 : re-execution WSL integrale cote Python (venv /tmp python 3.11.17, chemins neutres) -- guerit les bannieres pytensor/g++ et les chemins machine du ratchet ; sources des cellules inchangees par rapport a la rebaseline #18028, seules les sorties sont fraiches ; jumeau C# non touche.'
+  - '2026-09-27 (myia-po-2024:CoursIA-2) #18028 : REBASELINE cote Python -- chains=4 rendu explicite sur les appels pm.sample, valeur deja effective (les sorties portent "4 chains in 4 jobs"), resultats inchanges ; jumeau C# non touche. Complete deux appels pm.sample oublies dans des cellules deja editees et trois exemples markdown restes non epingles.'
   - 'Socle pedagogique commun : reseaux bayesiens (DAG de dependances conditionnelles) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
   - 'Diagnostic EP non conjugue (section 4.bis, regression logistique bayesienne) : cote C# uniquement. L''analogue PyMC
     serait l''echec de convergence ADVI (ou la sensibilite au point de depart de NUTS) sur un prior vague, non traite ici.'
+  - '2026-10-24 (#17040 tranche Probas, lane myia-po-2025:CoursIA, PR #22194) : REBASELINE post-consolidation de densite. Audit de la paire avant attestation, mesure sur les blobs de tete : cote C# (Infer-04-Bayesian-Networks) 74 cellules -> 74, permutation de 4 cellules seulement -- la lecture "### Analyse des probabilites marginales" (gablmpih1m) remonte de l''index 16 a 13, juste apres la cellule code d''inference dont la sortie porte P(Cloudy) = 0,500 / P(Sprinkler) = 0,300 / P(Rain) = 0,500 / P(WetGrass) = 0,598 (sur main un bloc de visualisation de graphe de facteurs la separait de son code, regle cell-interpretation-ordering). Les 22 cellules code sont byte-identiques (source, sorties, execution_count). Cote Python (PyMC-04-Bayesian-Networks) byte-identique a main, ordre compris. Parite semantique inchangee : 0 source, 0 sortie, 0 execution_count touches.'
+  - '2026-11-02 (myia-ai-01:CoursIA-2, PR #24133) : REBASELINE cote Python -- tranche daudit de la partition #17222 : 13 corrections markdown-only sur PyMC-04-Bayesian-Networks.ipynb (enumeration exacte des 16 configurations de la jointe, recoupement avec le carnet jumeau Infer-04 qui fait autorite sur la semantique Infer.NET). 12 cellules de code byte-identiques (source, sorties, execution_count) ; aucune re-execution due. Jumeau C# non touche. Aucun strip outille en attente.'
+  - '2026-11-03 (myia-po-2028:CoursIA, PR #24445, commit 8d45d8c4a4) : realignment markdown-only des lectures
+    de PyMC-04-Bayesian-Networks -- cellules 13/15/22 (22 s au lieu de 19 s pour 4 chains x 10 000 draws ; pire
+    r_hat 1.001 sur wetgrass au lieu de 1.000 sur cloudy, ess_bulk min 4270 inchange ; sortie verbatim took
+    18 seconds). 4 remplacements, code byte-identique, sorties et execution_count intacts (exception C.2
+    markdown). Jumeau C# Infer-4 non touche. --update en DERNIERE operation (cf #8957).'
+  - '2026-11-04 (myia-po-2028:CoursIA, PR #24445, commit ae515201ce) : complement markdown-only du commit
+    8d45d8c4a4 -- reference de la cellule "Pour aller plus loin" (47) PyMC 5.28.5 -> 6.3.2 documentation
+    avec URL. 1 ligne touchee, 0 cellule code, sorties et execution_count intacts (exception C.2
+    markdown). Jumeau C# Infer-4 non touche. --update en DERNIERE operation (cf #8957).'

@@ -11,7 +11,7 @@ coverage in `test_btc_vol.py`. What is tested HERE is what those tests cannot
 cover: that the control actually DISCRIMINATES, and that the M5 return
 contract carries it.
 
-Validation shape (Tell c.856-L1): every silence is paired with a mutation that
+Validation shape: every silence is paired with a mutation that
 changes only the property under test and must make the control speak. A control
 that is never shown firing is not a control -- it is a green light with no wire
 behind it.

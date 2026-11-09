@@ -73,6 +73,53 @@ def _extract_selector() -> str:
 SELECTOR = _extract_selector()
 
 
+def _extract_queued_verdict() -> str:
+    """Sortir le bloc python du heredoc PYV (verdict en-file/fige, #22117).
+
+    Le heredoc d'action porte le terminateur ``PYV`` (pas ``PY``) : le
+    regex ``\\nPY\\n`` du selecteur ne le capture PAS (``\\nPYV\\n`` !=
+    ``\\nPY\\n``), les deux blocs coexistent donc sans collision. Ce que
+    GitHub rend est teste, pas le texte brut (idem _extract_selector).
+    """
+    with open(WORKFLOW, encoding="utf-8") as f:
+        doc = yaml.safe_load(f)
+    for step in doc["jobs"]["sweep"]["steps"]:
+        m = re.search(
+            r"python3 - <<'PYV'[^\n]*\n(.*?)\nPYV\n",
+            str(step.get("run", "")),
+            re.S,
+        )
+        if m:
+            return m.group(1)
+    raise AssertionError(
+        "heredoc python3 PYV introuvable dans pr-gate-stale-sweep.yml"
+    )
+
+
+QUEUED_VERDICT = _extract_queued_verdict()
+
+
+def _run_queued_verdict(created_at, now, queue_depth):
+    """Exec le verdict en-file/fige sur un run de fixture, capture stdout.
+
+    ``queue_depth`` est la profondeur de la file globale lue une fois en
+    amont ; une valeur None/vide simule l'echec de l'appel ``gh api``
+    (le verdict retombe alors sur l'age seul).
+    """
+    env = dict(
+        os.environ,
+        SWEEP_RUN_JSON=json.dumps({"created_at": created_at}),
+        SWEEP_NOW=now,
+        SWEEP_QUEUE_DEPTH="" if queue_depth is None else str(queue_depth),
+    )
+    out = subprocess.run(
+        ["python", "-c", QUEUED_VERDICT],
+        capture_output=True, text=True, encoding="utf-8", env=env,
+    )
+    assert out.returncode == 0, out.stderr
+    return out.stdout.strip()
+
+
 def _run_selector(tmp_path, rows, wfnames=None):
     """Exec le selecteur livré sur des lignes de fixtures, capture stdout."""
     return _run_selector_both(tmp_path, rows, wfnames=wfnames).stdout
@@ -112,7 +159,8 @@ def _run_selector_both(tmp_path, rows, wfnames=None):
     return out
 
 
-def _pr(number, checks, sha="deadbeef", fork=False, workflows=None):
+def _pr(number, checks, sha="deadbeef", fork=False, workflows=None,
+        run_conclusions=None, merge_state=None):
     """checks = tuples (name, status, conclusion, started_at[, run_id]).
 
     Sans 5e element, la fixture ne porte pas de details_url : le selecteur
@@ -125,6 +173,12 @@ def _pr(number, checks, sha="deadbeef", fork=False, workflows=None):
     classee muette ; les fixtures muettes le portent a "" explicitement --
     la forme exacte que le collecteur emet pour un check-run conclu sans
     output.
+
+    ``run_conclusions`` (#21300) : carte run_id -> conclusion du run de
+    workflow sous-jacent. En production, ces conclusions arrivent
+    imbriquees dans `workflows` (mode 2 champs `{wf, c}`) ; la carte
+    separee permet aux tests d'exprimer la classe startup_failure sans
+    toucher a la clef de pliage `_fold_key`.
     """
     rows = []
     for ch in checks:
@@ -139,8 +193,18 @@ def _pr(number, checks, sha="deadbeef", fork=False, workflows=None):
             row["title"] = ch[5]
         rows.append(row)
     row_out = {"number": number, "sha": sha, "fork": fork, "checks": rows}
+    # #21463 : l'etat de fusion, tel que le collecteur l'emette dans la ligne
+    # jsonl (`"merge_state":"..."`). Absent par defaut pour ne pas changer le
+    # sens des fixtures historiques (une fixture sans merge_state est lue
+    # comme "" par le selecteur, jamais comme BLOCKED).
+    if merge_state is not None:
+        row_out["merge_state"] = merge_state
     if workflows:
         row_out["workflows"] = {str(k): v for k, v in workflows.items()}
+    if run_conclusions:
+        row_out["run_conclusions"] = {
+            str(k): v for k, v in run_conclusions.items()
+        }
     return row_out
 
 
@@ -257,6 +321,25 @@ def test_titleless_success_leg_is_never_mute(tmp_path):
 
 def test_no_gate_leg_skipped(tmp_path):
     out = _run_selector(tmp_path, [_pr(105, [OTHER_GREEN])])
+    assert out.strip() == ""
+
+
+def test_blocked_no_gate_leg_is_rerun_candidate(tmp_path):
+    """#21463 critere 1 : une PR BLOCKED SANS aucun check-run `PR gate` (le run
+    pr-gate.yml annule AVANT d'avoir poste son verdict) EST une candidate
+    re-run -- le defaut d'avant la traversait en silence (la PR meurt BLOCKED
+    sans jamais rougir)."""
+    out = _run_selector(tmp_path, [_pr(501, [OTHER_GREEN], merge_state="BLOCKED")])
+    assert out.strip() == "501 deadbeef false 1"
+
+
+def test_non_blocked_no_gate_leg_still_skipped(tmp_path):
+    """Controle negatif #21463 : une PR NON BLOCKED sans jambe `PR gate` reste
+    ignoree -- l'elargissement vise la population BLOCKED, pas tout le pool.
+    Une fixture sans merge_state (donnees d'avant l'elargissement) : idem."""
+    out = _run_selector(tmp_path, [_pr(502, [OTHER_GREEN], merge_state="CLEAN")])
+    assert out.strip() == ""
+    out = _run_selector(tmp_path, [_pr(503, [OTHER_GREEN])])
     assert out.strip() == ""
 
 
@@ -846,3 +929,193 @@ def test_workflow_fetches_wfmap_only_for_gate_bearing_prs():
     assert guard != -1, "garde de collecte de la carte absent (#15770)"
     assert fetch != -1
     assert guard < fetch, "la carte est demandee hors du garde (#15770)"
+
+
+def test_workflow_fetches_wfmap_for_blocked_gate_absent_prs():
+    """#21463 : le garde de collecte est ETLARGI a la population BLOCKED sans
+    check-run `PR gate`. Sans ce pin, un revert silencieux du `|| [ BLOCKED ]`
+    refermerait l'angle mort (la carte WFMAP ne serait plus demandee pour ces
+    PRs, donc le run `PR gate` de leur tete ne serait plus trouvable a
+    relancer) -- exactement la derive que ce pin doit rendre impossible.
+    """
+    run = _collector_run()
+    assert """grep -q '"name":"PR gate"'""" in run, "garde d'origine absente"
+    assert '[ "${MSTATE:-}" = "BLOCKED" ]' in run, \
+        "elargissement BLOCKED absent du garde de collecte (#21463)"
+    # Le 4e champ de la ligne jsonl doit porter l'etat : sans lui le selecteur
+    # ne peut pas distinguer une PR BLOCKED gate-absent de n'importe laquelle.
+    assert '"merge_state":"%s"' in run, \
+        "merge_state absent de la ligne jsonl (#21463)"
+
+
+# --- #21300 : STARTUP_FAILURE -- `gh run rerun` INERT sur run jamais demarre --
+
+# Mesure du 2026-10-19 (run 39034901868 sur #20874) : la jambe de gate est
+# rouge, mais le run de workflow sous-jacent est en `startup_failure` (le
+# runner n'a jamais execute le script -- 9 tentatives, `steps = []`,
+# `runner_name = null`, `started_at == completed_at`). Le sweep relancait ce
+# run en boucle, `gh run rerun` recopiant la sortie vide de la tentative
+# precedente : 8-9 tentatives perdues par passage, PR gelee indefiniment.
+# Le correctif detecte la conclusion du run via `actions/runs?head_sha=`
+# (un seul appel REST, cout inchange) et NAMME le geste qui marche -- une
+# nouvelle tete (`gh pr update-branch`) -- sans emettre la PR comme
+# candidate re-run.
+
+GATE_STARTUP_FAILURE = (
+    "PR gate", "completed", "failure", "2026-01-01T10:00:00Z", 39034901868,
+)
+GATE_COMPLETED_FAILURE = (
+    "PR gate", "completed", "failure", "2026-01-01T10:00:00Z", 37144908600,
+)
+
+
+def test_startup_failure_gate_leg_skipped(tmp_path):
+    """#21300 critere 1 : un gate rouge dont le run sous-jacent est
+    `startup_failure` n'est PAS candidat re-run -- stdout vide, le geste
+    est nomme sur stderr."""
+    proc = _run_selector_both(
+        tmp_path,
+        [_pr(401, [GATE_STARTUP_FAILURE, OTHER_GREEN],
+             run_conclusions={39034901868: "startup_failure"})],
+    )
+    assert proc.stdout.strip() == ""
+    assert "#401" in proc.stderr
+    assert "STARTUP_FAILURE" in proc.stderr
+    assert "gh run rerun" in proc.stderr
+    assert "INERT" in proc.stderr
+    # Le geste qui marche est explicite.
+    assert "gh pr update-branch" in proc.stderr
+    # Le run_id est cite pour permettre la traversabilite.
+    assert "39034901868" in proc.stderr
+
+
+def test_completed_failure_still_candidate_regression(tmp_path):
+    """Controle positif de non-regression #21300 : un gate rouge dont le
+    run sous-jacent est en `failure` (le cas historique, 99 % du pool)
+    RESTE un candidat re-run. Sans ce test, un faux positif sur
+    `startup_failure` absorberait toute la population."""
+    proc = _run_selector_both(
+        tmp_path,
+        [_pr(402, [GATE_COMPLETED_FAILURE, OTHER_GREEN],
+             run_conclusions={37144908600: "failure"})],
+    )
+    assert proc.stdout.strip() == "402 deadbeef false 0"
+    assert proc.stderr.strip() == ""
+
+
+def test_startup_failure_without_run_conclusion_map_still_candidate(tmp_path):
+    """Une carte `run_conclusions` absente ne peut pas conclure a
+    `startup_failure` (donnee manquante, pas un verdict) -- le selecteur
+    RETOMBE sur le comportement historique : la gate rouge est candidate.
+    Fail-CLOSED cote detection, jamais cote absence."""
+    proc = _run_selector_both(
+        tmp_path,
+        [_pr(403, [GATE_STARTUP_FAILURE, OTHER_GREEN])],
+    )
+    assert proc.stdout.strip() == "403 deadbeef false 0"
+
+
+def test_startup_failure_with_old_completed_red_still_candidate(tmp_path):
+    """Deux jambes de gate rouges : une ancienne en `failure` completed,
+    une recente en `startup_failure`. Le SEUL candidat au re-run est
+    l'ancienne (le re-run du startup_failure est inerte) -- la nouvelle
+    classification exclut la PR tant que la jambe completed n'est pas
+    traitee, et la jambe completed n'est pas re-runcable si elle est
+    superedee. Selection : on exclut sur la jambe la plus recente qui
+    est en startup_failure, le candidat n'emerge pas. Mesure : on ne
+    MANGE pas une PR reparable a cause d'une jambe morte."""
+    completed_old = (
+        "PR gate", "completed", "failure", "2026-01-01T08:00:00Z", 100,
+    )
+    proc = _run_selector_both(
+        tmp_path,
+        [_pr(404, [completed_old, GATE_STARTUP_FAILURE, OTHER_GREEN],
+             run_conclusions={39034901868: "startup_failure"})],
+    )
+    # La jambe startup_failure est la plus recente -> PR exclue.
+    assert proc.stdout.strip() == ""
+    assert "STARTUP_FAILURE" in proc.stderr
+
+
+def test_startup_failure_silenced_when_no_red_gate_leg(tmp_path):
+    """#21300 garde-fou : le diagnostic ne tire QUE si la jambe de gate
+    est rouge ET son run est startup_failure. Une jambe startup_failure
+    isolee sans rouge coexistant ne declenche PAS la branche (le `if not
+    any(RED)` la coupe avant)."""
+    gate_success = ("PR gate", "completed", "success", "2026-01-01T10:00:00Z",
+                    500)
+    proc = _run_selector_both(
+        tmp_path,
+        [_pr(405, [gate_success, OTHER_GREEN],
+             run_conclusions={500: "startup_failure"})],
+    )
+    # Pas de rouge : PR saine, traverse le sweep.
+    assert proc.stdout.strip() == ""
+    # Et aucun diagnostic STARTUP_FAILURE (la branche n'est pas atteinte).
+    assert "STARTUP_FAILURE" not in proc.stderr
+
+
+def test_workflow_pin_collects_run_conclusion():
+    """#21300 garde structurelle : le collecteur du sweep inclut le
+    `conclusion` du run dans le payload jq, sinon la detection ne peut
+    jamais s'alimenter (les tests passent par `run_conclusions`, mais
+    la production ne peut pas inventer la donnee)."""
+    run = _collector_run()
+    # Le jq doit projeter la clef `c` sur la conclusion du run.
+    assert '.conclusion' in run or '"c":.conclusion' in run
+
+
+# --- #22117 : un run PR gate `queued` n'est pas un run fige -----------
+# Le sweep confondait `queued` (en file) et `queued` fige, et recommendait
+# `update-branch` (nouvelle tete) en pleine famine de runners. Le verdict
+# PYV distingue les deux : un run recemment entre en file, ou une file
+# globale saturee, ne consomme ni geste ni place MAX_IMMATURE ; un run
+# queue au-dela du seuil MESURE (FROZEN_AFTER_S) hors saturation reste
+# fige et garde sa recommandation.
+
+
+def test_recent_queued_run_is_enfile_not_frozen():
+    """Run `queued` recemment cree (10 min) : EN FILE, jamais fige,
+    donc aucune recommandation de nouvelle tete."""
+    out = _run_queued_verdict(
+        created_at="2026-10-23T11:50:00Z",
+        now="2026-10-23T12:00:00Z",
+        queue_depth=100,
+    )
+    assert out == "ENFILE"
+
+
+def test_old_queued_run_off_saturation_is_frozen():
+    """Run `queued` depuis 9 h (au-dela du seuil 8 h) hors saturation :
+    FIGE -- la recommandation de nouvelle tete est conservee."""
+    out = _run_queued_verdict(
+        created_at="2026-10-23T03:00:00Z",
+        now="2026-10-23T12:00:00Z",
+        queue_depth=100,
+    )
+    assert out == "FIGE"
+
+
+def test_old_queued_run_under_saturation_is_enfile():
+    """Run `queued` ancien (9 h) MAIS file globale saturee (>= seuil) :
+    EN FILE -- la saturation globale justifie l'attente, pas une nouvelle
+    tete (l'anti-famine de #22117)."""
+    out = _run_queued_verdict(
+        created_at="2026-10-23T03:00:00Z",
+        now="2026-10-23T12:00:00Z",
+        queue_depth=900,
+    )
+    assert out == "ENFILE"
+
+
+def test_queued_depth_api_failure_falls_back_to_age_only():
+    """Echec de la lecture de la profondeur de file (None) : le verdict
+    retombe sur l'age seul -- jamais plus permissif que l'age. Un run
+    ancien hors info de saturation reste FIGE."""
+    out = _run_queued_verdict(
+        created_at="2026-10-23T03:00:00Z",
+        now="2026-10-23T12:00:00Z",
+        queue_depth=None,
+    )
+    assert out == "FIGE"
+

@@ -8,14 +8,19 @@
   - Propriétés de superadditivité et convexité
   - Le noyau (Core) d'un jeu
 
-  Référence : L.S. Shapley, « A Value for N-Person Games » (1953)
+  Référence : L.S. Shapley, « A Value for N-Person Games » (1953) ; le
+  traité canonique du cluster (Maschler, Solan & Zamir, « Game Theory »,
+  Cambridge UP, 2013 — ch. 15 *The Shapley Value* et ch. 17 *The Core* ;
+  **ancrages à confirmer** sur l'ouvrage, le PDF n'étant pas acquis
+  sur cette machine) sert d'ouvrage-ancrage pour la lecture des
+  définitions et théorèmes de cette lake.
 
   Convention i18n (EPIC #4980, cycle 39, PR pilote) : FR-first appliqué sur les
   en-têtes, titres de section, et docstrings publics. Le code tactique et les
   commentaires intra-preuve restent en anglais (références Mathlib, notation
   formelle). Les blocs `/--  docstring EN  -/` qui auraient pu être préservés
   en companion `Basic.en.lean` pour publication externe ne sont PAS dupliqués
-  dans cette PR pilote — voir convention §A dans `docs/lean/i18n-inventory-cycle-38.md`.
+  dans cette PR pilote — voir convention §A dans `../../../../docs/transients/2026-07-04-lean-i18n-inventory-cycle-38.md`.
 -/
 
 import Mathlib.Data.Finset.Basic

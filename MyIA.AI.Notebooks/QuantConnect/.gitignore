@@ -98,7 +98,9 @@ datasets/
 *.csv
 *.parquet
 *.feather
-!assets/*.csv  # Keep example datasets
+# Negations : le commentaire va sur sa propre ligne (un # en fin de ligne fait partie du motif)
+!assets/*.csv
+!ML-Training-Pipeline/shadow/passes.csv
 
 # ===============================
 # IDEs
@@ -175,3 +177,11 @@ htmlcov/
 # - Backtest results
 # - Trained ML models (unless small & educational)
 # - Logs
+
+# ===============================
+# Cloud-first: liens locaux par machine (lean-cli)
+# config.json = etat machine (org-id/projet cloud), jamais tracke --
+# voir #8574 (retrait "regle morte") et la mesure de retombee 2026-10-05 :
+# 23 config.json non tracks rendus visibles sur chaque machine lean-cli.
+# ===============================
+projects/*/config.json

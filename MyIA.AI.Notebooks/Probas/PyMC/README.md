@@ -20,6 +20,8 @@ Cette série couvre les **mêmes modèles** que la série [Infer.NET](../Infer/)
 | **Diagnostics** | Factor graphs | ArviZ (trace, ESS, R-hat) |
 | **Écosystème** | .NET | NumPy/Pandas/Matplotlib |
 
+> **Paires jumelles (Infer.NET ↔ PyMC)** — déclaration de maintenance (EPIC #24197, section C) : ces deux séries enseignent le *même plan* sur *deux moteurs* (message passing compilé vs échantillonnage MCMC) ; elles ne sont pas des doublons. Un changement pédagogique commun (un modèle ajouté ou retiré du plan, une notion renvoyée de l'une à l'autre) se porte **dans les deux** : si tu modifies l'une, vérifie l'autre. Exceptions connues au plan commun (carnet sans jumeau de l'autre côté) : Infer `01b-Premiers-Modeles` et `08b-TrueSkill-Formules-Fermees` ; PyMC `Observabilite-OTel`.
+
 Aucune des deux librairies n'est purement déterministe ou purement stochastique — Infer.NET propose aussi un échantillonneur de **Gibbs**, PyMC une inférence variationnelle (**ADVI**) — mais leur moteur *par défaut* incarne deux familles d'algorithmes : le message passing sur graphe de facteurs (Infer.NET/EP) et l'échantillonnage MCMC (PyMC/NUTS). Avoir les deux sur les mêmes modèles permet de comprendre ce **compromis**, une compétence clé pour tout praticien.
 
 ```mermaid
@@ -45,9 +47,9 @@ La série illustre ce fil rouge sur plusieurs notebooks, chacun sur un cas non-c
 
 - [PyMC-01-Setup](PyMC-01-Setup.ipynb) — introduction : du Beta-Bernoulli conjugué (où MCMC = prior) à un modèle hiérarchique non-centré sur plusieurs pièces, où le shrinkage devient visible.
 - [PyMC-14-Sequences](PyMC-14-Sequences.ipynb) — HMM à états cachés : la vraisemblance de mélange (`NormalMixture`) marginalise l'assignation discrète pour garder un NUTS pur sur les paramètres continus.
-- [PyMC-1-Utility-Foundations](../DecisionTheory/DecPyMC/DecPyMC-1-Utility-Foundations.ipynb) — diagnostic multi-sites : un portefeuille de groupes hétérogènes où le partial pooling régularise les estimations à faible effectif.
-- [PyMC-4-Decision-Networks](../DecisionTheory/DecPyMC/DecPyMC-4-Decision-Networks.ipynb) — états latents : prévalence réelle d'un phénomène observé via un test imparfait (inversion d'état caché, non-conjuguée).
-- [PyMC-6-Expert-Systems](../DecisionTheory/DecPyMC/DecPyMC-6-Expert-Systems.ipynb) — recette de référence : paramétrisation **non-centrée** (offsets de Neal) qui évite le funnel et stabilise la convergence.
+- [PyMC-1-Utility-Foundations](../DecisionTheory/DecPyMC/DecPyMC-01-Utility-Foundations.ipynb) — diagnostic multi-sites : un portefeuille de groupes hétérogènes où le partial pooling régularise les estimations à faible effectif.
+- [PyMC-4-Decision-Networks](../DecisionTheory/DecPyMC/DecPyMC-04-Decision-Networks.ipynb) — états latents : prévalence réelle d'un phénomène observé via un test imparfait (inversion d'état caché, non-conjuguée).
+- [PyMC-6-Expert-Systems](../DecisionTheory/DecPyMC/DecPyMC-06-Expert-Systems.ipynb) — recette de référence : paramétrisation **non-centrée** (offsets de Neal) qui évite le funnel et stabilise la convergence.
 - [PyMC-12-Modeles-Hierarchiques](PyMC-12-Modeles-Hierarchiques.ipynb) — traitement dédié : partial pooling bayésien sur 8 classes, shrinkage visible (les classes clairsemées se rétractent vers `mu`), comparaison centered vs non-centered et divergence NUTS comme diagnostic géométrique du funnel.
 
 > **Leçon technique récurrente** : sur ces modèles, la **paramétrisation non-centrée** `θ = μ + σ · z` (avec `z ~ Normal(0,1)`) est souvent indispensable. Elle découple l'estimation de la moyenne de celle de la dispersion et évite le *funnel de Neal* — une pathologie géométrique qui piège l'échantillonneur quand la dispersion inter-groupes est faible. Le réflexe naïf « augmenter `target_accept` » **aggrave** alors les divergences ; c'est la reparamétrisation, pas la tolérance, qui débloque la convergence. Voir [PyMC-02b-Debugging-Python](PyMC-02b-Debugging-Python.ipynb) pour les diagnostics associés.
@@ -137,12 +139,15 @@ Ces corrections sont **éditoriales** (prose, pas de modification des figures su
 | 17 | [PyMC-17-Kalman-Filter](PyMC-17-Kalman-Filter.ipynb) | 55 min | Système dynamique linéaire gaussien, récursion de filtrage fermée, value-add MCMC (estimation Q/R/drift) |
 | 18 | [PyMC-18-Change-Point](PyMC-18-Change-Point.ipynb) | 50 min | Change-point bayésien, `DiscreteUniform` + `switch`, catastrophes minières (Poisson), entropie |
 | 19 | [PyMC-19-Survival-Analysis](PyMC-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, exponentiel conjugué (Gamma), Weibull `k` inféré directement (NUTS), sélection LOO (arviZ), censure à droite exécutée (naïf vs `S(c_i)` vs Kaplan–Meier) |
+| 20 | [PyMC-Observabilite-OTel](PyMC-Observabilite-OTel.ipynb) | 40 min | Instrumentation OpenTelemetry d'un modèle hiérarchique (spans console `pymc.compile.*` / `pymc.sample`, attributs du run, capture mémoire) — le miroir Python de la série Aspire/OTel |
+
+> **Durée** : durée d'**étude** de l'exercice (lecture, exécution, exercices) — pas un temps d'exécution machine. La valeur est unique par exercice : PyMC-NN et Infer-NN portent la même durée quand leurs carnets sont équivalents ; quand une section n'existe que d'un côté, chaque carnet porte sa propre durée.
 
 > **Théorie de la décision** : les notebooks décisionnels (utilité espérée, EVPI, MDPs, bandits, plus la jambe actuarielle) forment désormais une sous-série autonome dans [DecisionTheory/DecPyMC/](../DecisionTheory/DecPyMC/README.md) (1 à 12), miroir Python de [DecisionTheory/DecInfer/](../DecisionTheory/DecInfer/README.md).
 
-> **Numérotation** : la série PyMC est **numérotée 1:1** avec son jumeau C# Infer (PyMC-5 ↔ Infer-5 = inférence causale, PyMC-14 ↔ Infer-14 = séquences, etc.) pour faciliter la comparaison des deux moteurs sur les mêmes modèles. Le sujet de [Infer-10-Thompson-Sampling](../DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) est, côté Python, **intégré dans** [PyMC-7-Sequential](../DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb) (section bandits bayésiens MCMC) — d'où l'absence d'un PyMC-21 distinct.
+> **Numérotation** : la série PyMC est **numérotée 1:1** avec son jumeau C# Infer (PyMC-5 ↔ Infer-5 = inférence causale, PyMC-14 ↔ Infer-14 = séquences, etc.) pour faciliter la comparaison des deux moteurs sur les mêmes modèles. Le sujet de [Infer-10-Thompson-Sampling](../DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) est, côté Python, **intégré dans** [PyMC-7-Sequential](../DecisionTheory/DecPyMC/DecPyMC-07-Sequential.ipynb) (section bandits bayésiens MCMC) — d'où l'absence d'un PyMC-21 distinct.
 
-> **Ponts causaux** : [PyMC-5](PyMC-05-Causal-Inference.ipynb) est le maillon **MCMC** d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau **message passing** en C# [Infer-5](../Infer/Infer-5-Causal-Inference.ipynb) (Infer.NET, EP/VMP), le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb). Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
+> **Ponts causaux** : [PyMC-5](PyMC-05-Causal-Inference.ipynb) est le maillon **MCMC** d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau **message passing** en C# [Infer-5](../Infer/Infer-05-Causal-Inference.ipynb) (Infer.NET, EP/VMP), le jumeau symbolique [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb). Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 
 ## Progression Pédagogique
 
@@ -208,10 +213,10 @@ Notebooks 1-3 (fondations) puis 7-8 (classification/sélection) puis 9-12 (modè
 
 Ce parcours couvre l'utilité espérée, la valeur de l'information et les MDPs avec un moteur MCMC, puis s'étend à la jambe actuarielle (8-12). Il se suit dans la sous-série [DecisionTheory/DecPyMC/](../DecisionTheory/DecPyMC/README.md) (notebooks 1 à 12).
 
-1. [PyMC-1](../DecisionTheory/DecPyMC/DecPyMC-1-Utility-Foundations.ipynb) -> axiomes VNM
-2. [PyMC-2](../DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb) -> aversion au risque
-3. [PyMC-4](../DecisionTheory/DecPyMC/DecPyMC-4-Decision-Networks.ipynb) -> réseaux de décision
-4. [PyMC-5](../DecisionTheory/DecPyMC/DecPyMC-5-Value-Information.ipynb) -> [PyMC-7](../DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb) -> EVPI, MDPs
+1. [PyMC-1](../DecisionTheory/DecPyMC/DecPyMC-01-Utility-Foundations.ipynb) -> axiomes VNM
+2. [PyMC-2](../DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb) -> aversion au risque
+3. [PyMC-4](../DecisionTheory/DecPyMC/DecPyMC-04-Decision-Networks.ipynb) -> réseaux de décision
+4. [PyMC-5](../DecisionTheory/DecPyMC/DecPyMC-05-Value-Information.ipynb) -> [PyMC-7](../DecisionTheory/DecPyMC/DecPyMC-07-Sequential.ipynb) -> EVPI, MDPs
 
 ### Parcours comparatif Infer.NET vs PyMC (~15h)
 
@@ -320,7 +325,7 @@ Cette série vous a fait passer des **fondamentaux de l'inférence bayésienne**
 
 ### Prochaines étapes
 
-- **Approfondir la théorie de la décision** — [Infer-4-Multi-Attribute](../DecisionTheory/DecInfer/DecInfer-04-Multi-Attribute.ipynb) et [Infer-8-Sequential](../DecisionTheory/DecInfer/DecInfer-08-Sequential.ipynb) reprennent ces modèles en message passing pour comparer les deux moteurs sur les mêmes problèmes.
+- **Approfondir la théorie de la décision** — [Infer-4-Multi-Attribute](../DecisionTheory/DecInfer/DecInfer-03-Multi-Attribute.ipynb) et [Infer-8-Sequential](../DecisionTheory/DecInfer/DecInfer-07-Sequential.ipynb) reprennent ces modèles en message passing pour comparer les deux moteurs sur les mêmes problèmes.
 - **Aller plus loin en inférence bayésienne** — *Statistical Rethinking* (McElreath, cité en Ressources) est le prolongement naturel de cette série pour les modèles hiérarchiques et la réflexion épistémologique sur les priors.
 - **Appliquer au trading et au ML** — les ponts vers [QuantConnect](../../QuantConnect/) et [ML](../../ML/) ouvrent la mise en production : modèles bayésiens de stratégie, régression logistique bayésienne, incertitude calibrée en prédiction.
 

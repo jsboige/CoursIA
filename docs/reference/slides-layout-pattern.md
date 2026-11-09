@@ -102,7 +102,7 @@ La migration `two-cols` -> `grid grid-cols-2` (campagne **#10950**, tranches 1-1
 
 ## Fond du theme
 
-`.slidev-layout` porte `background-color` ; sans hauteur, la boite est dimensionnee par son contenu et **toute slide courte laisse une bande blanche** en bas du canvas (mesure : pale s'arretant a 436 px et 393 px sur deux slides d'un canvas de 552). Corrige par `min-height: 100%` + `box-sizing: border-box` — le padding `28px 40px` etant deja sur cette boite. C'est **du theme**, donc les 19 decks en heritent : ne pas le recorriger deck par deck.
+`.slidev-layout` porte `background-color` ; sans hauteur, la boite est dimensionnee par son contenu et **toute slide courte laisse une bande blanche** en bas du canvas (mesure : pale s'arretant a 436 px et 393 px sur deux slides d'un canvas de 552). Corrige par `min-height: 100%` + `box-sizing: border-box` — le padding `28px 40px` etant deja sur cette boite. C'est **du theme**, donc tous les decks du theme en heritent : ne pas le recorriger deck par deck.
 
 ## Voir aussi
 

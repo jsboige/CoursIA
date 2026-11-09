@@ -1,7 +1,7 @@
 # Chantier 1 — tranche A2 : l'opération 1 (*Recoordonner*) passe de `RAPPORTE` à `FIRSTHAND`
 
 **EPIC** : [#12204](https://github.com/jsboige/CoursIA/issues/12204) · **lane** `myia-ai-01:CoursIA` · **date de mesure** 2026-09-01
-**Tranches sœurs** : [A3](12204-ict-chantier-1-a3.md) (opérations 3, 9) · [audit froid](12204-ict-chantier-1-audit-froid.md) (les 14 opérations, trois axes)
+**Tranches sœurs** : [A3](12204-ict-chantier-1-a3.md) (opérations 3, 9) · [audit froid](../transients/2026-08-24-12204-ict-chantier-1-audit-froid.md) (les 14 opérations, trois axes)
 
 ## Ce que cette tranche fait, et ce qu'elle ne fait pas
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convertit les separateurs horizontaux `---` en `***` dans les cellules markdown.
+"""Convertit les separateurs horizontaux `---` en `***` dans le markdown.
 
 Pourquoi
 --------
@@ -9,7 +9,9 @@ notebook, un `---` ecrit comme separateur horizontal en debut de cellule ouvre
 un tel bloc ; la prose et les titres des cellules suivantes sont alors lus
 comme des paires cle/valeur -> `YAMLException` -> `quarto render` echoue.
 Comme Quarto s'arrete au PREMIER echec, un seul notebook fait tomber tout le
-site (incident #11451, 2026-08-17).
+site (incident #11451, 2026-08-17). Le meme mecanisme frappe les `docs/*.md`
+depuis qu'ils sont rendus (#18422) : la garde `has_hr_separator` de
+`regen_quarto_render.py` les EXCLUT du render-list tant qu'ils portent un hr.
 
 `***` rend exactement le meme `<hr>` en markdown et n'a aucune semantique YAML.
 C'est la conversion appliquee ici.
@@ -23,6 +25,13 @@ Ce que l'outil NE touche PAS
   `---` dont le contenu parse en mapping YAML) : Quarto s'en sert
   legitimement pour le titre, l'auteur, les options de rendu.
 
+Fichiers `.md`
+--------------
+Les memes regles s'appliquent au document ENTIER (un `.md` = une cellule) :
+frontmatter documentaire protege, fences et soulignements setext intacts.
+L'ecriture est byte-preserving (seuls les `---` convertis changent, en ASCII
+de meme longueur) — fins de ligne CRLF et BOM conserves.
+
 Distinction avec `detect_markdown_rendering.py`
 -----------------------------------------------
 Ce dernier vise les defauts de rendu VISUEL (bloc surdimensionne a l'ouverture)
@@ -34,6 +43,7 @@ Usage
 -----
     python scripts/notebook_tools/fix_hr_separator.py --check MyIA.AI.Notebooks/GameTheory
     python scripts/notebook_tools/fix_hr_separator.py --apply MyIA.AI.Notebooks/GameTheory
+    python scripts/notebook_tools/fix_hr_separator.py --apply docs/
 
 Sortie : 0 si rien a convertir (--check) ou conversion faite (--apply),
 1 si des separateurs restent a convertir (--check), 2 en cas d'erreur.
@@ -367,6 +377,57 @@ def process(path: Path, apply: bool) -> int:
     return total
 
 
+def convert_md_text(text: str) -> tuple[str, int]:
+    """Rend (nouveau_texte, nb_conversions) pour un document `.md` ENTIER.
+
+    Un `.md` se comporte comme une cellule unique, avec UNE nuance : le
+    frontmatter YAML legitime en tete de DOCUMENT (et non de cellule 0) doit
+    rester intact — ses delimiteurs `---` ne sont pas des separateurs. Le
+    reste du document suit les memes regles que ``convert_cell`` (fences,
+    soulignements setext, hr precede d'une ligne vide).
+    """
+    lines = text.split("\n")
+    if _is_real_frontmatter(lines):
+        close = None
+        for i in range(1, len(lines)):
+            if lines[i].strip() in (HR, "..."):
+                close = i
+                break
+        if close is None:
+            return text, 0
+        head = lines[: close + 1]
+        tail = lines[close + 1 :]
+        if not tail:
+            return text, 0
+        new_tail, n = convert_cell("\n".join(tail), is_first_cell=False)
+        if not n:
+            return text, 0
+        return "\n".join(head) + "\n" + new_tail, n
+    return convert_cell(text, is_first_cell=False)
+
+
+def process_md(path: Path, apply: bool) -> int:
+    """Rend le nombre de separateurs convertis (ou convertibles si apply=False).
+
+    Byte-preserving comme ``process`` : lecture binaire, decode utf-8,
+    remplacement ASCII de meme longueur, re-encode utf-8. Fins de ligne CRLF
+    (le ``\\r`` vit dans la ligne, seule la sous-chaine ``---`` change) et BOM
+    eventuel sont conserves octet par octet.
+    """
+    try:
+        raw = path.read_bytes().decode("utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"ILLISIBLE {path}: {exc}", file=sys.stderr)
+        return 0
+    new_text, n = convert_md_text(raw)
+    if not n:
+        return 0
+    if not apply:
+        return n
+    path.write_bytes(new_text.encode("utf-8"))
+    return n
+
+
 def iter_notebooks(targets: list[str]):
     for t in targets:
         p = Path(t)
@@ -380,12 +441,29 @@ def iter_notebooks(targets: list[str]):
             yield p
 
 
+def iter_markdown(targets: list[str]):
+    # Memes marqueurs d'exclusion que regen_quarto_render.py (NOTEBOOK_EXCLUDE_
+    # MARKERS) : les sous-arbres archives ne sont pas rendus, les convertir
+    # serait du churn sans effet sur le site.
+    exclude = ("/_archive/", "/archive/")
+    for t in targets:
+        p = Path(t)
+        if p.is_dir():
+            for md in sorted(p.rglob("*.md")):
+                s = str(md).replace("\\", "/")
+                if "/.ipynb_checkpoints/" in s or any(bad in s for bad in exclude):
+                    continue
+                yield md
+        elif p.suffix == ".md":
+            yield p
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check", action="store_true", help="ne rien ecrire, compter")
     mode.add_argument("--apply", action="store_true", help="ecrire les conversions")
-    ap.add_argument("targets", nargs="+", help="fichiers .ipynb ou repertoires")
+    ap.add_argument("targets", nargs="+", help="fichiers .ipynb/.md ou repertoires")
     args = ap.parse_args(argv)
 
     files = 0
@@ -402,9 +480,21 @@ def main(argv=None) -> int:
             verbe = "converti" if args.apply else "a convertir"
             print(f"  {nb.as_posix()} : {n} separateur(s) {verbe}")
 
+    md_files = 0
+    md_seps = 0
+    for md in iter_markdown(args.targets):
+        n = process_md(md, apply=args.apply)
+        if n:
+            md_files += 1
+            md_seps += n
+            verbe = "converti" if args.apply else "a convertir"
+            print(f"  {md.as_posix()} : {n} separateur(s) {verbe}")
+
     verbe = "convertis" if args.apply else "a convertir"
     print(f"{seps} separateur(s) {verbe} dans {files} notebook(s)")
-    if args.check and seps:
+    if md_seps:
+        print(f"{md_seps} separateur(s) {verbe} dans {md_files} fichier(s) .md")
+    if args.check and (seps or md_seps):
         return 1
     return 0
 

@@ -220,20 +220,74 @@ class TestSelfTestExitContract(unittest.TestCase):
             (13051, "[Lean-2] exemple", "2026-08-26T01:39:14Z"),
         )
         from unittest import mock
-        with mock.patch.object(_mod, "_gh_issue_list", return_value=rows):
+        with mock.patch.object(_mod, "_gh_issue_list", return_value=rows), \
+             mock.patch.object(_mod, "_gh_issue_view") as view:
             rc = _mod._cli(["--self-test", "--limit", "10"])
         self.assertEqual(rc, 1)
+        # The pair is already in the lot -> the pour must NOT fetch again.
+        view.assert_not_called()
 
     def test_cli_exit_2_when_control_missing(self):
         """Control missing -> exit 2, even though other pairs exist
-        (exit 2 takes precedence over exit 1)."""
+        (exit 2 takes precedence over exit 1). Both control issues are
+        unfetchable (deleted) -> removed from the lot by definition."""
         rows = self._gh_rows(
             (1, "foo", "2026-08-26T01:00:00Z"),
             (2, "foo", "2026-08-26T01:00:01Z"),
         )
         from unittest import mock
-        with mock.patch.object(_mod, "_gh_issue_list", return_value=rows):
+        with mock.patch.object(_mod, "_gh_issue_list", return_value=rows), \
+             mock.patch.object(
+                 _mod, "_gh_issue_view",
+                 side_effect=RuntimeError("`gh issue view` failed: gone"),
+             ):
             rc = _mod._cli(["--self-test", "--limit", "10"])
+        self.assertEqual(rc, 2)
+
+    def test_self_test_pours_pair_outside_counted_window(self):
+        """#18039 regression lock: the control pair lives BEHIND the
+        --limit window (repository grew past it). The pour fetches the two
+        real rows via `gh issue view` and adds them to the lot -- the
+        detector then finds the burst -> exit 1, NOT 2. This is the exact
+        shape that turned the daily self-test red since 2026-09-22."""
+        recent = self._gh_rows(
+            (18000, "modern topic", "2026-09-26T10:00:00Z"),
+            (18001, "another topic", "2026-09-26T11:00:00Z"),
+        )
+        control_rows = {
+            13050: {"number": 13050, "title": "[Lean-2] exemple",
+                    "createdAt": "2026-08-26T01:39:13Z", "state": "OPEN"},
+            13051: {"number": 13051, "title": "[Lean-2] exemple",
+                    "createdAt": "2026-08-26T01:39:14Z", "state": "OPEN"},
+        }
+        from unittest import mock
+        with mock.patch.object(_mod, "_gh_issue_list", return_value=recent), \
+             mock.patch.object(_mod, "_gh_issue_view",
+                               side_effect=lambda n: control_rows[n]):
+            rc = _mod._cli(["--self-test", "--limit", "600",
+                            "--window-seconds", "60"])
+        self.assertEqual(rc, 1)
+
+    def test_self_test_exit_2_when_one_control_issue_removed(self):
+        """#18039 negative control: ONE issue of the pair is unfetchable
+        (removed) while the other is poured in. The lot holds a single
+        member -> no burst -> control missing -> exit 2."""
+        recent = self._gh_rows(
+            (18000, "modern topic", "2026-09-26T10:00:00Z"),
+        )
+        lone_row = {"number": 13050, "title": "[Lean-2] exemple",
+                    "createdAt": "2026-08-26T01:39:13Z", "state": "OPEN"}
+
+        def fake_view(number):
+            if number == 13050:
+                return lone_row
+            raise RuntimeError("`gh issue view` failed: gone")
+
+        from unittest import mock
+        with mock.patch.object(_mod, "_gh_issue_list", return_value=recent), \
+             mock.patch.object(_mod, "_gh_issue_view", side_effect=fake_view):
+            rc = _mod._cli(["--self-test", "--limit", "600",
+                            "--window-seconds", "60"])
         self.assertEqual(rc, 2)
 
     def test_blind_window_drops_control(self):

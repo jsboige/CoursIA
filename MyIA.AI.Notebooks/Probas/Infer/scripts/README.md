@@ -35,7 +35,7 @@ bash setup_environment.sh --skip-papermill  # Si vous n'avez pas besoin de paper
 
 1. **Installer l'outil .NET Interactive :**
    ```bash
-   dotnet tool install -g Microsoft.dotnet-interactive
+   dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
    dotnet interactive jupyter install
    ```
 
@@ -61,7 +61,7 @@ python test_notebooks.py
 ### Tester un notebook spécifique
 
 ```bash
-python test_notebooks.py -n Infer-1-Setup.ipynb -v
+python test_notebooks.py -n Infer-01-Setup.ipynb -v
 ```
 
 ### Options

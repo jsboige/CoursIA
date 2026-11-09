@@ -35,43 +35,25 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 
 ## Documentation déportée — `docs/`
 
-| Fichier | Contenu |
-|---|---|
-| [reference/common-commands.md](docs/reference/common-commands.md) | Setup env, validation notebooks, slash commands |
-| [genai/genai-services.md](docs/genai/genai-services.md) | Architectures Qwen/Lumina, scripts genai-stack, mappings |
-| [reference/claude-code-config.md](docs/reference/claude-code-config.md) | Agents, skills, rules, model selection |
-| [qc/quantconnect.md](docs/qc/quantconnect.md) | Backtests, MCP Docker, structure, livre référence |
-| [reference/teaching-context.md](docs/reference/teaching-context.md) | Calendrier écoles, scope EPITA-IS, agents par école |
-| [reference/cluster-agents.md](docs/reference/cluster-agents.md) | Machines, GPU topology, agents par spécialisation, dispatch |
-| [reference/kernels-runtime.md](docs/reference/kernels-runtime.md) | .NET / Python / WSL kernels, conda envs, dotnet-interactive PIN |
-| [reference/procedures-recurrentes.md](docs/reference/procedures-recurrentes.md) | Workflow PR, dispatch, validation notebook, audit anti-régression, pre-commit H.3 |
-| [reference/subagents-reference.md](docs/reference/subagents-reference.md) | 21 sous-agents + 17 skills, mapping side-tracks, usage async |
-| [reference/scripts-reference.md](docs/reference/scripts-reference.md) | Catalogue scripts (notebook CLI, exécution, qualité, maintenance) |
-| [reference/architecture_mcp_roo.md](docs/reference/architecture_mcp_roo.md) | Cycle de vie, logs et diagnostic des serveurs MCP (inventaire des 15 outils roo-state-manager : [HARNESS-OVERVIEW.md](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) §2) |
-| [reference/regles-vigilance-detail.md](docs/reference/regles-vigilance-detail.md) · [regles-validation-detail.md](docs/reference/regles-validation-detail.md) | Détail G.1-G.9 et H.1-H.7 + incidents |
-| [reference/_archive-convention.md](docs/reference/_archive-convention.md) | Convention `_archive/` (11 emplacements) — modèle ML-Training-Pipeline généralisé, 4 critères d'éligibilité, header per-function |
-| [reference/notebook-renumbering-detail.md](docs/reference/notebook-renumbering-detail.md) | Corpus des precedents de renumerotation — le geste `renum()`/`reclass()` est porte par `.claude/rules/notebook-accretion-numbering.md` |
-| [reference/env-python-reparation.md](docs/reference/env-python-reparation.md) | Réparation env Python (règle F) |
-| [reference/stale-tree-drift-scan.md](docs/reference/stale-tree-drift-scan.md) · [orphan-branch-scan-l576.md](docs/reference/orphan-branch-scan-l576.md) | Scans anti-phantom (drift, branche orpheline) |
-| [reference/agent-cloud-agnosticisme.md](docs/reference/agent-cloud-agnosticisme.md) | Session cloud d'agnosticisme du mainteneur : mission, méthode, identification des PRs, circulation |
-| [lean/](docs/lean/) | Prover iteration history, intractable diagnosis, LLM endpoints, pièges tactiques (propagation d'instance `Decidable`) |
+**L'index fait foi dans [docs/README.md](docs/README.md)** — racine, `reference/`, `genai/`, `qc/`, `lean/`, `ledger`, transients : il recense et décrit chaque document, tenu à jour à chaque ajout. **La liste n'est pas recopiée ici** : une copie dérive au premier document ajouté, et c'est l'index qui la reçoit.
 
 Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](GradeBookApp/configs/README.md) ; **pipelines + données par cohorte = privés sur GDrive** `G:\Mon Drive\MyIA\Formation\<ecole>\<annee>\grading\` (PII, hors repo public).
 
 ## Règles modulaires `.claude/rules/`
 
-**Les règles sans frontmatter `paths:` sont auto-chargées** : leur contenu est déjà en contexte, les ré-énumérer ici le dupliquerait. **Celles qui portent un frontmatter `paths:`** ne se chargent que si la session touche les fichiers visés. Le protocole `audit-reassessment` reste toujours chargé car il s’applique à tout fix fondé sur un audit automatisé, quel que soit le type de fichier :
+**Les règles sans frontmatter `paths:` sont auto-chargées** : leur contenu est déjà en contexte, les ré-énumérer ici le dupliquerait. **Celles qui portent un frontmatter `paths:`** ne se chargent que si la session touche les fichiers visés. Deux protocoles restent **toujours chargés** (exemptions délibérées, quel que soit le type de fichier) : `audit-reassessment`, car il s’applique à tout fix fondé sur un audit automatisé, et `bibliography-hygiene`, car les publications se récupèrent, s’utilisent et se citent depuis les carnets et les docstrings Lean — hors de tout glob.
 
-| Domaine | Règles path-gatées | Ce qu'un lecteur doit savoir sans les avoir chargées |
-|---|---|---|
-| Notebooks | `notebook-conventions` · `cell-interpretation-ordering` · `exercise-example-labeling` · `three-exercises-per-notebook` · `consecutive-code-cells` · `audit-cross-source-distillation` · `notebook-accretion-numbering` | C.1/C.2/C.3 sont précisés au §C ci-dessous. Un notebook **ne se renomme pas sans un argument pédagogique écrit** (`notebook-accretion-numbering`) ; un finding d'audit automatisé **se re-vérifie avant tout fix** (`audit-reassessment`, ~60 % de faux positifs) ; la **sortie** d'un audit va au dashboard, jamais dans l'arbre (`audit-cross-source-distillation`, déjà porté par §A). |
-| Catalogue & README | `catalog-pr-hygiene` · `readme-french-first` | **Le catalogue appartient à l'automatisation** : `COURSE_CATALOG.generated.*` et les blocs `CATALOG-STATUS` ne se régénèrent JAMAIS à la main sur une branche feature — laisser byte-identique à `main`. Toute prose de doc **ajoutée ou réécrite** est en français, même dans un fichier anglais. |
-| Artefacts de résultats | `results-artifact-policy` | **Nouveau fichier de `scripts/results/` > 512 Ko = bloqué par CI** (#15890) : committer l'agrégé falsifiable (biais signés, p-values DM, preuves de folds), les séries complètes vont hors dépôt (GDrive) avec le chemin cité dans le body. Artefacts déjà sur main : grandfathered, aucune réécriture d'historique. |
-| GenAI | `genai-config` | — |
-| Lean / GameTheory | `wsl-kernels` · `lean-merge-discipline` | — |
-| Python | `codeql-suppressions-inertes` | Un commentaire `# codeql[rule-id]` est **inerte** sur ce dépôt (CodeQL en *default setup*) : ne pas en ajouter, ne pas en déplacer. |
+**Ce qu'un lecteur doit savoir sans avoir chargé les règles path-gatées** — le tableau complet, domaine par domaine, vit dans [claude-code-config.md §Ce que porte chaque famille](docs/reference/claude-code-config.md). Les prescriptions qui tiennent en une ligne restent ici, avec les noms des règles de chaque famille :
 
-**Travailler sur ces domaines sans toucher les fichiers — reviewer une PR notebook, par exemple — demande de les `Read` explicitement** ; le tableau ci-dessus et le §C de ce fichier en sont le précis toujours chargé, pas une redondance. Inventaire complet : [claude-code-config.md §Rules](docs/reference/claude-code-config.md).
+Ce précis par domaine est une **vue** ; la commande fait foi : `grep -l '^paths:' .claude/rules/*.md`.
+
+- **Notebooks** (`notebook-conventions` · `cell-interpretation-ordering` · `exercise-example-labeling` · `three-exercises-per-notebook` · `consecutive-code-cells` · `audit-cross-source-distillation` · `notebook-accretion-numbering`) : un notebook **ne se renomme pas sans un argument pédagogique écrit** ; un finding d'audit automatisé **se re-vérifie avant tout fix** (~60 % de faux positifs) ; la **sortie** d'un audit va au dashboard, jamais dans l'arbre.
+- **Catalogue & README** (`catalog-pr-hygiene` · `readme-french-first`) : **le catalogue appartient à l'automatisation** — `COURSE_CATALOG.generated.*` et les blocs `CATALOG-STATUS` ne se régénèrent JAMAIS à la main sur une branche feature, byte-identique à `main` ; toute prose de doc ajoutée ou réécrite est en français.
+- **Artefacts** (`results-artifact-policy`) : nouveau fichier de `scripts/results/` **> 512 Ko = bloqué par CI** (#15890) — committer l'agrégé falsifiable, les séries complètes hors dépôt avec le chemin cité dans le body.
+- **GenAI** (`genai-config`) : — (prescriptions portées par la règle et [genai-services.md](docs/genai/genai-services.md)).
+- **Lean / GameTheory** (`wsl-kernels` · `lean-merge-discipline` · `lean-i18n`) : docstrings FR par défaut, jumeau `_en` byte-identique hors commentaires — [lean-i18n.md](.claude/rules/lean-i18n.md). **Python** (`codeql-suppressions-inertes`) : un commentaire `# codeql[rule-id]` est **inerte** ici (default setup) — ne pas en ajouter, ne pas en déplacer.
+
+**Travailler sur ces domaines sans toucher les fichiers — reviewer une PR notebook, par exemple — demande de les `Read` explicitement** ; les prescriptions ci-dessus et le §C de ce fichier sont le précis toujours chargé, pas une redondance.
 
 ---
 
@@ -81,13 +63,13 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 
 **Coordination cross-machine = RooSync uniquement.** Dashboard workspace CoursIA + messages directs. GitHub = code, **jamais** de `*_TEST_REPORT.md` / `*_COORDINATION.md` / rapports d'audit dans le repo.
 
-**Trois têtes de coordination** : le coordinateur `myia-ai-01:CoursIA`, le titulaire `myia-po-2025:CoursIA-2` et le secrétaire `myia-po-2026:CoursIA-3`, dont l'artefact est le dashboard `workspace-CoursIA-3` (« le secrétariat », « le troisième dashboard »). Rôles et circulation : [tricephale-circulation.md](docs/reference/tricephale-circulation.md).
+**Trois têtes de coordination** : le coordinateur `myia-ai-01:CoursIA`, le titulaire `myia-po-2025:CoursIA-2` et le secrétaire `myia-po-2028:CoursIA-3` (siège de `myia-po-2026:CoursIA-3` jusqu'au 2026-10-20), dont l'artefact est le dashboard `workspace-CoursIA-3` (« le secrétariat », « le troisième dashboard »). Rôles et circulation : [tricephale-circulation.md](docs/reference/tricephale-circulation.md).
 
 **Tour de coordination type** : (1) **drainer l'inbox RooSync** (`status:"unread", deep:true` — sans `deep`, le compte de non-lus peut être un faux zéro) — elle porte souvent le **DM nominatif qui change la priorité du cycle** ; (2) **énumérer** les dashboards (`roosync_dashboard(action:"list")`) puis lire en `section:"all"` **chaque clé pertinente**, en entier (`Read` sur le fichier persisté si tronqué) — jamais une liste apprise par cœur, qui serait **structurellement aveugle** à une clé forkée (mesure fondatrice #17197 : `workspace-CoursIA (2)`, 23 messages vivants jamais lus) ; (3) heartbeat cluster ; (4) sans mission assignée : envoyer un message à ai-01, ne pas attendre passivement.
 
 **Reporting dashboard** : poster au minimum début/livraison/fin de session. > 30 min sans post = signe d'isolement. Posts `[INFO]` courts > silence.
 
-**Git** : pas de push direct sur `main`. **Force push** : interdit sur `main` (porté par `allow_force_pushes: false`), autorisé sur une branche de PR qu'une **seule** lane manipule (`--force-with-lease`, l'alternative merge d'abord) — décision user 2026-08-08. Pas de `reset --hard` sur `main` ni sur une branche partagée. Branches `feature/<sujet>` ou `fix/<sujet>`, un sujet par PR. Le coordinateur (ai-01) review et merge ; les agents ne mergent pas eux-mêmes. **Exception outillée** (mandat user 2026-09-22) : l'organe `scripts/coordination/merge_ready.py`, exécuté sous l'identité ai-01, merge sans attendre le cycle coordinateur une PR **hors harnais** (ni `.claude/`, ni `CLAUDE.md`, ni `.github/`) et **hors `DEEP`** qui passe gate rc=0 + B.0 rc=0 + `b0: clear` au dossier + `mergeable_state: clean` à la tête exacte ; dans ce périmètre, la lecture manuelle de B.0 (qui, quand, substance) est portée par le dossier de l'adjoint. Tout le reste reste au coordinateur, qui audite l'organe a posteriori. Cf [git-workflow.md](.claude/rules/git-workflow.md).
+**Git** : pas de push direct sur `main`. **Force push** : interdit sur `main` (porté par `allow_force_pushes: false`), autorisé sur une branche de PR qu'une **seule** lane manipule (`--force-with-lease`, l'alternative merge d'abord) — décision user 2026-08-08. Pas de `reset --hard` sur `main` ni sur une branche partagée. Branches `feature/<sujet>` ou `fix/<sujet>`, un sujet par PR. Le coordinateur (ai-01) review et merge ; les agents ne mergent pas eux-mêmes. **Exception outillée** (mandat user 2026-09-22, resserré le 2026-09-28) : l'organe `scripts/coordination/merge_ready.py`, exécuté sous l'identité ai-01, merge sans attendre le cycle coordinateur une PR **hors harnais** (ni `.claude/`, ni `CLAUDE.md`, ni `.github/`) — `DEEP` et PRs hors flotte `claude/*` comprises depuis le 2026-10-19 (Q131) — **que le coordinateur a approuvée au préalable**, et rien d'autre — review `APPROVED` de `myia-ai-01` qui couvre le contenu de la tête (posée sur elle, ou séparée d'elle par des seuls rafraîchissements de base sans conflit) — et qui passe, à la tête exacte, B.0 rc=0, la porte de pile, les collisions d'index, les tests d'intégrité sur l'arbre fusionné avec `main` et `mergeable_state: clean`. Depuis le 2026-11-05 (mandat user), aucun dossier n'est exigé : l'organe revérifie lui-même, au moment du merge, ce qu'un dossier attestait. Il ne remplace pas la lecture du coordinateur, que porte l'approbation. Tout le reste reste au coordinateur. Cf [git-workflow.md](.claude/rules/git-workflow.md).
 
 **Gouvernance des règles** : tout changement normatif substantiel du harnais (`CLAUDE.md`, `.claude/rules/**`) exige une PR et un sign-off user avant merge. Est substantiel ce qui ajoute une obligation ou une interdiction, crée une règle HARD, durcit ou élargit une prescription, change une autorité, un droit d'action ou une escalade, ou transforme une recommandation en gate. Un mandat user direct vaut sign-off. Une correction de typo ou de lien, une clarification qui ne change aucune prescription, un déplacement fidèle du détail vers `docs/`, ou un slimming qui préserve exactement la règle n'exige pas de sign-off supplémentaire ; la PR et la review restent obligatoires dans tous les cas.
 
@@ -112,6 +94,7 @@ Avant **tout** `gh pr merge`, énumérer les **trois** surfaces et vérifier que
 **Une levée porte un AUTEUR et une HEURE — sans les deux, ce n'est pas une levée.**
 
 - **Qui** : une phrase écrite par **l'auteur de la PR** ne lève pas une réserve posée par **un tiers**. Se lever soi-même une réserve d'autrui n'est pas y répondre, c'est la déclarer répondue.
+- **Sous le login partagé, seul le coordinateur lève par une phrase.** Toutes les lanes écrivent sous `jsboige` : sur une PR `jsboige`, une phrase de levée signée `jsboige` est indiscernable d'une auto-levée, et l'organe la refuse quelle que soit la lane qui l'a écrite (#13316, #13495). La levée par phrase se fait sous `myia-ai-01`, avec `[OVERRIDE] lane myia-ai-01:CoursIA` en tête de ligne, et **elle nomme l'auteur de la réserve par son login** (ou par la persona Hermes). Une lane qui a traité une réserve le dit sur la PR et le signale au coordinateur. Elle garde les voies 2 et 3 ci-dessus.
 - **Quand** : tout ce qui lève doit exister **avant** `gh pr merge`. Un commentaire de merge est un compte-rendu, **jamais une porte**.
 
 **Un commit poussé après la remarque ne la lève PAS à lui seul.** Un push muet est indiscernable d'un push qui répond : ce qui lève une remarque est **une phrase**, pas un SHA.
@@ -153,7 +136,7 @@ Avant tout merge (y compris ses propres PRs) :
 
 **C.1 — Pas d'erreur volontaire.** `raise NotImplementedError`, `assert False`, `1/0` : **INTERDITS partout** (top-level, méthode, fonction utilitaire). Stubs corrects : `pass`, `print("Exercice a completer")`, `return None`, `result = None  # TODO etudiant` — en conservant `# TODO` / `# Indice` / `# Etape N`. Le notebook doit s'exécuter de bout en bout même exercices non complétés.
 
-**C.2 — Notebooks committés AVEC outputs.** `execution_count: <int>` + `outputs: [...]` cohérents pour chaque cellule code exécutable ; modifier une cellule code = re-exécuter avant commit. Non-exécutable en local (GPU requis) : documenter, exécuter ailleurs, committer les outputs réels. Exception : modifs uniquement markdown. Quantbooks = exécution **via QC Cloud** (MCP `qc-mcp`, Playwright en fallback), jamais un « markdown explicatif » de contournement.
+**C.2 — Notebooks committés AVEC outputs.** `execution_count: <int>` + `outputs: [...]` cohérents pour chaque cellule code exécutable ; modifier une cellule code = re-exécuter avant commit. Non-exécutable en local (GPU requis) : documenter, exécuter ailleurs, committer les outputs réels. Exception : modifs uniquement markdown. Une ré-exécution qui remplace une sortie réelle par un message de repli (clé, outil ou GPU absent sur la machine) ne se commite **pas** : installer (F), router vers la machine qui a l'environnement, ou laisser les sorties de `main` intactes. Quantbooks = exécution **via QC Cloud** (MCP `qc-mcp`, Playwright en fallback), jamais un « markdown explicatif » de contournement.
 
 **C.3 — Scope strict des re-exécutions Papermill.** Un agent ne commit QUE les notebooks dont il a modifié une cellule source (`git diff "$nb" | grep -cE '^\+\s*"source"' > 0`). Audit/inventaire : Papermill hors repo, rapport sur dashboard. Deux collisions de PR par re-exécutions parallèles en 2026-04-25 fondent cette règle.
 
@@ -177,7 +160,7 @@ Protocole avant suppression (4 étapes : erreur exacte / 3 tactiques / PR `debt`
 | Notebooks | Documentation primaire en français, code en français ou anglais |
 | Naming | Pas de préfixes « Pure »/« Enhanced »/« Advanced »/« Ultimate » |
 
-Détail (+ convention i18n Lean FR/EN siblings) : [code-style.md](.claude/rules/code-style.md).
+Détail : [code-style.md](.claude/rules/code-style.md) · convention i18n Lean FR/EN siblings : [lean-i18n.md](.claude/rules/lean-i18n.md) (rule path-gatée `**/*.lean`).
 
 ### F. Environnement — RÉPARER, ne JAMAIS contourner (HARD)
 
@@ -198,7 +181,7 @@ Détail G.1-G.9 + incidents : [regles-vigilance-detail.md](docs/reference/regles
 | G.1 | Vérifier claims ET verdicts contre la source | `grep`/`Read` avant d'affirmer une absence. **Un verdict d'un autre agent se relit contre le scope réel AVANT d'agir : le label n'est pas la preuve** |
 | G.2 | Métriques honnêtes pas binaires | sorry=0 sans lake build SUCCESS = invalide. BEATS sans multi-seed = invalide |
 | G.3 | Pas de « DONE » sur progrès marginal | Pourcentage explicite + liste résiduelle obligatoires |
-| G.4 | Composites trop larges = split | > 3000 lignes / 15 fichiers / 4 features / 1 domaine = CHANGES_REQUESTED |
+| G.4 | Composites trop larges = split | au-delà des seuils de taille = CHANGES_REQUESTED, sauf fournée homogène ; une PR trop fine attend sa fournée (seuils et exemptions : [pr-review-discipline.md](.claude/rules/pr-review-discipline.md) §A, §A bis) |
 | G.5 | Shopping cart interdit | 2 deep tracks max par agent + critères de sortie vérifiables |
 | G.6 | Audit avant merge cascade | Lire le diff + vérifier 1 claim par PR avant merge |
 | G.7 | Stagnation cross-cycle = escalade | Pas d'acceptation « BLOCKED » sans preuve concrète |
@@ -244,7 +227,7 @@ docs/                       # Documentation déportée de ce fichier
 
 **Collision** : sous-agents read-only en parallèle OK ; sous-agents **éditeurs = un seul à la fois par notebook/série**.
 
-**Modèle explicite obligatoire** : tout `Agent()` DOIT spécifier `model: "sonnet"` ou `"haiku"`. `"opus"` uniquement sur justification écrite dans le prompt. Sous-agent sans `model` explicite = hérite d'opus = violation. Cf [model-delegation.md](.claude/rules/model-delegation.md).
+**Modèle explicite obligatoire** : tout `Agent()` DOIT porter un modèle explicite. Pour la lecture en volume, c'est `subagent_type: "swift-reader"`, sans argument `model` : le fichier d'agent fixe Swift, le vLLM local, qui est gratuit (mandat user 2026-10-27). Sinon, `model: "sonnet"` ou `"haiku"`. `"opus"` **jamais sur les postes po-\***, sauf lane autorisée nommément (cf point 3, `myia-po-2024:CoursIA-3`) (mandat user 2026-10-10) — la tâche qui le justifierait remonte à ai-01 ; sur ai-01, justification écrite dans le prompt. Sous-agent sans `model` explicite = hérite d'opus = violation. Cf [model-delegation.md](.claude/rules/model-delegation.md).
 
 ---
 
@@ -283,4 +266,4 @@ Structure complète : [quantconnect.md](docs/qc/quantconnect.md).
 
 CoursIA = plateforme éducative AI : Jupyter notebooks (C# .NET Interactive + Python), infrastructure Docker GenAI (ComfyUI + Qwen), GradeBookApp évaluation étudiants. Repository : https://github.com/jsboige/CoursIA. Documentation primaire en français ; commentaires code en français ou anglais.
 
-Stack : OpenAI/Anthropic APIs, Qwen 2.5-VL, Semantic Kernel, Python 3.10+ + .NET 9.0 Interactive, Papermill + MCP Jupyter, ComfyUI GPU (RTX 3090).
+Stack : OpenAI/Anthropic APIs, Qwen Image Edit 2509 (encodeur Qwen 2.5-VL 7B) et Qwen3-VL 4B, Semantic Kernel, Python 3.10+ + .NET 9.0 Interactive, Papermill + MCP Jupyter, ComfyUI GPU (RTX 3080 Ti 16 Go, po-2023).

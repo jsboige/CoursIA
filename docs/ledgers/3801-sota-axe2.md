@@ -383,22 +383,22 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 | Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
 |----|-------|------|------|-----|-----------|--------|-------------|---------|
 | DecInfer-01-Utility-Foundations | 30 | 16 | 16/16 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Variable<double>, expectations) | **SOTA-OK** |
-| **DecInfer-02-Lean-ExpectedUtility** | 14 | 5 | 5/5 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (von Neumann–Morgenstern 0-sorry) | **SOTA-OK** |
-| DecInfer-03-Utility-Money | 50 | 22 | 22/22 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + Bernoulli mixtures (Saint-Petersbourg / Friedman-Savage / Arrow-Pratt) | **SOTA-OK** |
-| DecInfer-04-Multi-Attribute | 50 | 23 | 23/23 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + CPLEX/GLPK (LP additives pondérés) | **SOTA-OK** |
-| DecInfer-05-Decision-Networks | 35 | 17 | 17/17 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (influence diagrams Variable<int>) | **SOTA-OK** |
-| DecInfer-06-Value-Information | 38 | 19 | 19/19 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (EVPI/Expected Value of Perfect Information) | **SOTA-OK** |
-| DecInfer-07-Expert-Systems | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (decision rules + uncertainty propagation) | **SOTA-OK** |
-| DecInfer-08-Sequential | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (dynamic decision processes backward induction) | **SOTA-OK** |
-| **DecInfer-09-Lean-Gittins** | 25 | 10 | 10/10 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (Gittins index preuves partielles) | **SOTA-OK** |
+| **DecInfer-01b-Lean-ExpectedUtility** | 14 | 5 | 5/5 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (von Neumann–Morgenstern 0-sorry) | **SOTA-OK** |
+| DecInfer-02-Utility-Money | 50 | 22 | 22/22 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + Bernoulli mixtures (Saint-Petersbourg / Friedman-Savage / Arrow-Pratt) | **SOTA-OK** |
+| DecInfer-03-Multi-Attribute | 50 | 23 | 23/23 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + CPLEX/GLPK (LP additives pondérés) | **SOTA-OK** |
+| DecInfer-04-Decision-Networks | 35 | 17 | 17/17 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (influence diagrams Variable<int>) | **SOTA-OK** |
+| DecInfer-05-Value-Information | 38 | 19 | 19/19 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (EVPI/Expected Value of Perfect Information) | **SOTA-OK** |
+| DecInfer-06-Expert-Systems | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (decision rules + uncertainty propagation) | **SOTA-OK** |
+| DecInfer-07-Sequential | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (dynamic decision processes backward induction) | **SOTA-OK** |
+| **DecInfer-07b-Lean-Gittins** | 25 | 10 | 10/10 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (Gittins index preuves partielles) | **SOTA-OK** |
 | DecInfer-10-Thompson-Sampling | 28 | 12 | 12/12 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Beta-Bernoulli Thompson sampling bayésien) | **SOTA-OK** |
-| DecPyMC-1-Utility-Foundations | 28 | 12 | 12/12 | 0 | 0 | python3 | PyMC + ArviZ (utility curves posteriors) | **SOTA-OK** |
-| DecPyMC-2-Utility-Money | 60 | 28 | 28/28 | 0 | 0 | python3 | PyMC + ArviZ (CARA/CRRA Savage/Friedman) | **SOTA-OK** |
-| DecPyMC-3-Multi-Attribute | 50 | 25 | 25/25 | 0 | 0 | python3 | PyMC + ArviZ (multi-attribute utility theory posteriors) | **SOTA-OK** |
-| DecPyMC-4-Decision-Networks | 32 | 14 | 14/14 | 0 | 0 | python3 | PyMC + ArviZ (influence diagrams) | **SOTA-OK** |
-| DecPyMC-5-Value-Information | 65 | 29 | 29/29 | 0 | 0 | python3 | PyMC + ArviZ (EVPI/EVSI computation) | **SOTA-OK** |
-| DecPyMC-6-Expert-Systems | 48 | 22 | 22/22 | 0 | 0 | python3 | PyMC + ArviZ (expert fusion pondération bayésienne) | **SOTA-OK** |
-| DecPyMC-7-Sequential | 50 | 23 | 23/23 | 0 | 0 | python3 | PyMC + ArviZ (sequential decision, Bellman-style) | **SOTA-OK** |
+| DecPyMC-01-Utility-Foundations | 28 | 12 | 12/12 | 0 | 0 | python3 | PyMC + ArviZ (utility curves posteriors) | **SOTA-OK** |
+| DecPyMC-02-Utility-Money | 60 | 28 | 28/28 | 0 | 0 | python3 | PyMC + ArviZ (CARA/CRRA Savage/Friedman) | **SOTA-OK** |
+| DecPyMC-03-Multi-Attribute | 50 | 25 | 25/25 | 0 | 0 | python3 | PyMC + ArviZ (multi-attribute utility theory posteriors) | **SOTA-OK** |
+| DecPyMC-04-Decision-Networks | 32 | 14 | 14/14 | 0 | 0 | python3 | PyMC + ArviZ (influence diagrams) | **SOTA-OK** |
+| DecPyMC-05-Value-Information | 65 | 29 | 29/29 | 0 | 0 | python3 | PyMC + ArviZ (EVPI/EVSI computation) | **SOTA-OK** |
+| DecPyMC-06-Expert-Systems | 48 | 22 | 22/22 | 0 | 0 | python3 | PyMC + ArviZ (expert fusion pondération bayésienne) | **SOTA-OK** |
+| DecPyMC-07-Sequential | 50 | 23 | 23/23 | 0 | 0 | python3 | PyMC + ArviZ (sequential decision, Bellman-style) | **SOTA-OK** |
 | Do-Calculus-Bridge | 22 | 10 | 10/10 | 0 | 0 | coursia-ml-training | **dowhy** (Microsoft) + **Do-Calculus** Pearl (backdoor/front-door) | **SOTA-OK** |
 
 **Total** : 18/18 EXEC_PROVED · 315 cellules code remplies · 0 erreur runtime · 0 violation C.1 réelle.
@@ -413,8 +413,8 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 
 ### Disclosures honnêtes vérifiées
 
-- (a) `DecInfer-02-Lean-ExpectedUtility.ipynb` = Lean 4 formel companion **0-sorry** pour la direction sound du théorème de représentation d'utilité espérée de von Neumann–Morgenstern (cf cellule [18] Conclusion : "0-sorry pour la direction sound"). La direction completeness (rationalité ⟹ représentation) reste **gated** sur Mathlib4 stabilisation des `ConvexCone` / `BoundedConvexSet`, honest disclosure dans la cellule [4].
-- (b) `DecInfer-09-Lean-Gittins.ipynb` = Lean 4 formel pour Gittins index (cellule [22] Résumé enseignant) : définitions formalisées (BanditArm, BanditProcess), preuves partielles honnêtement disclosées, **état actuel = scaffolding + certitudes BornesSup** (gated sur `lake build` 100%).
+- (a) `DecInfer-01b-Lean-ExpectedUtility.ipynb` = Lean 4 formel companion **0-sorry** pour la direction sound du théorème de représentation d'utilité espérée de von Neumann–Morgenstern (cf cellule [18] Conclusion : "0-sorry pour la direction sound"). La direction completeness (rationalité ⟹ représentation) reste **gated** sur Mathlib4 stabilisation des `ConvexCone` / `BoundedConvexSet`, honest disclosure dans la cellule [4].
+- (b) `DecInfer-07b-Lean-Gittins.ipynb` = Lean 4 formel pour Gittins index (cellule [22] Résumé enseignant) : définitions formalisées (BanditArm, BanditProcess), preuves partielles honnêtement disclosées, **état actuel = scaffolding + certitudes BornesSup** (gated sur `lake build` 100%).
 - (c) `Do-Calculus-Bridge.ipynb` cellule 5 = commentaire explicite sur advisory dowhy (chemin absolu fuit) — disclosed honnêtement comme **info utile d'identification causale**, pas scrubbé (Stop & Repair respecté, cf [secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) règle 6 + [[feedback-no-cell-output-scrubbing]]).
 
 **Workaround dégradé** : 0/18 (3 occurrences du mot « workaround » vérifiées = toutes disclosures honnêtes ci-dessus, pas de workaround réel).
@@ -423,14 +423,14 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 
 Chaque notebook pose un problème de **théorie de la décision** avancé qui exerce la capacité distinctive du moteur :
 
-- **DecInfer-01/DecPyMC-1** : Utility foundations (axiomes von Neumann–Morgenstern) — courbes d'utilité, concavité/convexité, certainty equivalent
-- **DecInfer-02/DecInfer-09** : Lean 4 formel (preuve sound représentation vNM + Gittins index) — fondation mathématique
-- **DecInfer-03/DecPyMC-2** : Utility of money — Saint-Petersbourg paradoxe, Friedman-Savage, Arrow-Pratt RRA, CARA/CRRA
-- **DecInfer-04/DecPyMC-3** : Multi-attribute utility (MAUT) — pondérations additives, dominance stochastique
-- **DecInfer-05/DecPyMC-4** : Decision networks (influence diagrams) — backward induction sur DAG décision/chance/valeur
-- **DecInfer-06/DecPyMC-5** : Value of information (EVPI) — Expected Value of Perfect Information, EVSI
-- **DecInfer-07/DecPyMC-6** : Expert systems — fusion de jugements experts par pondération bayésienne de précision
-- **DecInfer-08/DecPyMC-7** : Sequential decisions — dynamic programming, Bellman-style backward induction
+- **DecInfer-01/DecPyMC-01** : Utility foundations (axiomes von Neumann–Morgenstern) — courbes d'utilité, concavité/convexité, certainty equivalent
+- **DecInfer-01b/DecInfer-07b** : Lean 4 formel (preuve sound représentation vNM + Gittins index) — fondation mathématique
+- **DecInfer-02/DecPyMC-02** : Utility of money — Saint-Petersbourg paradoxe, Friedman-Savage, Arrow-Pratt RRA, CARA/CRRA
+- **DecInfer-03/DecPyMC-03** : Multi-attribute utility (MAUT) — pondérations additives, dominance stochastique
+- **DecInfer-04/DecPyMC-04** : Decision networks (influence diagrams) — backward induction sur DAG décision/chance/valeur
+- **DecInfer-05/DecPyMC-05** : Value of information (EVPI) — Expected Value of Perfect Information, EVSI
+- **DecInfer-06/DecPyMC-06** : Expert systems — fusion de jugements experts par pondération bayésienne de précision
+- **DecInfer-07/DecPyMC-07** : Sequential decisions — dynamic programming, Bellman-style backward induction
 - **DecInfer-10** : Thompson Sampling — bandits manchots bayésiens (Beta-Bernoulli conjugué, posterior updating)
 - **Do-Calculus-Bridge** : dowhy (Microsoft) + backdoor adjustment — causal inference Pearl
 
@@ -465,7 +465,7 @@ Couvre 5ᵉ famille du ledger (ML/ML.Net → Tweety → SymbolicLearning → Sem
 | **L289** (anti-doublon temporel) | OK | Entry #005 ≠ entry #001/#002/#003/#004 = substance distincte (DecisionTheory vs ML/ML.Net vs Tweety vs SymbolicLearning vs SemanticWeb) |
 | **L327** (`+N/-0` purement additif) | OK | Modifs = cumul table update (4 lignes remplacées) + entry #005 appendu, 0 ligne supprimée |
 | **L335** (anti-monoculture) | OK | pivot post-c.396 PR #5859 vers substance NEUVE audit axe-2 owner po-2025 strict, pas 11ᵉ+ PR i18n monotone gated, ≠ re-sweep monotone #5780, ≠ clôture admin #5661, ≠ Argumentum PR-A #5721 close c.371+c.393 |
-| **L378 durcie** (G.1 2× audit+commit) | OK | Audit direct G.1 lecture exhaustive 18 nb, 3 disclosures honnêtes vérifiées (Lean DecInfer-02 vNM sound 0-sorry, DecInfer-09 Gittins scaffolding, Do-Calculus-Bridge dowhy advisory), 0 violation C.1, 0 workaround dégradé |
+| **L378 durcie** (G.1 2× audit+commit) | OK | Audit direct G.1 lecture exhaustive 18 nb, 3 disclosures honnêtes vérifiées (Lean DecInfer-01b vNM sound 0-sorry, DecInfer-07b Gittins scaffolding, Do-Calculus-Bridge dowhy advisory), 0 violation C.1, 0 workaround dégradé |
 | **Stop & Repair** (no scrub) | OK | 0 modification de cellule, audit purement consultatif |
 | **SOTA 5 verdicts** | OK | 18/18 SOTA-OK (8 DecInfer Microsoft.Infer.NET, 2 Lean 4 WSL, 7 DecPyMC PyMC+ArviZ, 1 Causal-Bridges dowhy) |
 | **0 parasite CJK** | OK | 4 ranges Unicode scannés (CJK Unified U+4E00-U+9FFF, CJK Ext A U+3400-U+4DBF, Hangul U+AC00-U+D7AF, Fullwidth U+FF00-U+FFEF) = 0/18 .ipynb (notebook audit script python3 = 0/18) |
@@ -542,7 +542,7 @@ Famille `MyIA.AI.Notebooks/Probas/Infer/` = 19 notebooks `Infer-{1..19}-*.ipynb`
 
 ### Disclosures honnêtes vérifiées
 
-- (a) `Infer-5-Causal-Inference.ipynb` cellules 0/13/36/37 (markdown) = commentaires pédagogiques "cross-check avec PyMC-4" pointant `../PyMC/PyMC-04-Bayesian-Networks.ipynb`. Cellule 14 (code) contient côte à côte une comparaison `pm.sample()` PyMC et `Variable<bool> cloudySpr = Variable.Bernoulli(0.5)` Infer.NET sur le même réseau bayésien `Cloudy → Sprinkler → WetGrass`. **Le moteur primaire reste Infer.NET** (9 appels `.Infer<>()` avec outputs réels dans ce notebook). Ce n'est **pas** un fallback, c'est une **validation croisée cross-family** — force pédagogique, à discloser honnêtement dans le ledger mais **SOTA-OK (Infer.NET autonome)**.
+- (a) `Infer-05-Causal-Inference.ipynb` cellules 0/13/36/37 (markdown) = commentaires pédagogiques "cross-check avec PyMC-4" pointant `../PyMC/PyMC-04-Bayesian-Networks.ipynb`. Cellule 14 (code) contient côte à côte une comparaison `pm.sample()` PyMC et `Variable<bool> cloudySpr = Variable.Bernoulli(0.5)` Infer.NET sur le même réseau bayésien `Cloudy → Sprinkler → WetGrass`. **Le moteur primaire reste Infer.NET** (9 appels `.Infer<>()` avec outputs réels dans ce notebook). Ce n'est **pas** un fallback, c'est une **validation croisée cross-family** — force pédagogique, à discloser honnêtement dans le ledger mais **SOTA-OK (Infer.NET autonome)**.
 
 **Cross-check double-vérifié** : (1) audit sub-agent a identifié la présence de `PyMC` dans 4 markdown cells + 1 code cell mixt ; (2) vérification firsthand worker via `python -c` confirme ces 5 cellules — claim confirmée.
 
@@ -552,15 +552,15 @@ Chaque notebook pose un problème de **probabilistic programming** avancé qui e
 
 | Notebook | Problème posé (cellule-clef) | Capacité Infer.NET distinctive |
 |----------|------------------------------|--------------------------------|
-| Infer-1-Setup | Installation + sanity-check import | Setup — exception légitime Prong B |
-| Infer-2-Gaussian-Mixtures | Mélange de Gaussiennes, inférence de composantes | EP sur modèle mixte + BIC |
-| Infer-3-Factor-Graphs | Affaire Auburn/Grey, `Variable.Bernoulli(0.7)` | Marginal inference sur factor graph explicite |
-| Infer-4-Bayesian-Networks | Explaining-away diagnostic médical | Réseau bayésien, inférence causale |
-| Infer-5-Causal-Inference | **do-calculus Pearl** : observationnel vs interventionnel | Observationnel vs interventionnel — discriminant net |
-| Infer-2b-Debugging-Bonnes-Pratiques | Pédagogie debug "Model has no support" | Debugging — exception légitime Prong B |
-| Infer-7-Skills-IRT | IRT 2-PL, capacité par étudiant | EP sur modèle de traits latents |
-| Infer-8-TrueSkill | TrueSkill (Xbox Live), inférence de skill | Application canonique Microsoft Infer.NET |
-| Infer-9-Classification | Régression logistique bayésienne + multi-features | Posterior sur poids avec incertitude |
+| Infer-01-Setup | Installation + sanity-check import | Setup — exception légitime Prong B |
+| Infer-02-Gaussian-Mixtures | Mélange de Gaussiennes, inférence de composantes | EP sur modèle mixte + BIC |
+| Infer-03-Factor-Graphs | Affaire Auburn/Grey, `Variable.Bernoulli(0.7)` | Marginal inference sur factor graph explicite |
+| Infer-04-Bayesian-Networks | Explaining-away diagnostic médical | Réseau bayésien, inférence causale |
+| Infer-05-Causal-Inference | **do-calculus Pearl** : observationnel vs interventionnel | Observationnel vs interventionnel — discriminant net |
+| Infer-02b-Debugging-Bonnes-Pratiques | Pédagogie debug "Model has no support" | Debugging — exception légitime Prong B |
+| Infer-07-Skills-IRT | IRT 2-PL, capacité par étudiant | EP sur modèle de traits latents |
+| Infer-08-TrueSkill | TrueSkill (Xbox Live), inférence de skill | Application canonique Microsoft Infer.NET |
+| Infer-09-Classification | Régression logistique bayésienne + multi-features | Posterior sur poids avec incertitude |
 | Infer-10-Model-Selection | **Model evidence** : log evidence comparé | Evidence de modèle — capacité signature Infer.NET |
 | Infer-11-Topic-Models | LDA asymétrique, theta par doc | VMP sur modèle à composantes |
 | Infer-12-Modeles-Hierarchiques | Pooling partiel `theta[c] ~ N(mu, tau)` | Shrinkage hiérarchique |
@@ -733,7 +733,7 @@ Total .ipynb: 3
 - **Registre varié** : kernel utilisé = `pyphi` (3/3, conda Python 3.9). Vrai outil SOTA : **PyPhi 1.2.0** (Mayner et al., lib canonique IIT 3.0). **Zéro stub** `raise NotImplementedError` / `assert False` / `1/0` (vérification regex pre-commit clean sur 40 cellules code).
 - **Cumulatif** : 7 familles distinctes dans le registre axe-2 SOTA = ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory, Probas/Infer, **IIT/PyPhi**.
 
----
+***
 
 ## Entry #008 — Sudoku (owner po-2025 strict, c.401)
 
@@ -889,51 +889,51 @@ Total .ipynb: 36
 
 | Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | SOTA invoqué | Verdict |
 |----|-------|------|------|-----|-----------|--------|--------------|---------|
-| rl_1_intro_cartpole | 44 | 20 | 20/20 | 0 | 0 | python3 | stable-baselines3 + Gymnasium | **SOTA-OK** |
-| rl_2_wrappers_sauvegarde_callbacks | 24 | 10 | 10/10 | 0 | 0 | python3 | stable-baselines3 + Gymnasium (wrappers/callbacks) | **SOTA-OK** |
+| RL-01-Premiers-Pas-Stable-Baselines3-Python | 44 | 20 | 20/20 | 0 | 0 | python3 | stable-baselines3 + Gymnasium | **SOTA-OK** |
+| RL-02-Wrappers-Sauvegarde-Callbacks-Python | 24 | 10 | 10/10 | 0 | 0 | python3 | stable-baselines3 + Gymnasium (wrappers/callbacks) | **SOTA-OK** |
 | rl_3_experience_replay_dqn | 35 | 13 | 13/13 | 0 | 0 | python3 | stable-baselines3 + Gymnasium (DQN replay) | **SOTA-OK** |
-| rl_4_multi_armed_bandits | 41 | 21 | 21/21 | 0 | 0 | python3 | epsilon-greedy/UCB tabulaire (fondation) | **SOTA-OK** |
-| rl_5_mdp_dp_qlearning | 38 | 18 | 18/18 | 0 | 0 | python3 | Gymnasium (FrozenLake) + DP tabulaire | **SOTA-OK** |
-| rl_6_dqn_policy_gradient | 28 | 12 | 12/12 | 0 | 0 | python3 | Gymnasium + PyTorch (DQN/PG from scratch) | **SOTA-OK** |
-| rl_6b_actor_critic | 29 | 9 | 9/9 | 0 | 0 | python3 | Gymnasium + PyTorch (A2C from scratch) | **SOTA-OK** |
-| rl_6c_ppo_from_scratch | 27 | 10 | 10/10 | 0 | 0 | python3 | Gymnasium + PyTorch (PPO clipping) | **SOTA-OK** |
-| rl_6d_sac_from_scratch | 38 | 12 | 12/12 | 0 | 0 | python3 | Gymnasium + PyTorch (SAC twin-critic) | **SOTA-OK** |
-| rl_6e_grpo_from_scratch | 23 | 11 | 11/11 | 0 | 0 | python3 | PyTorch (GRPO group-relative) | **SOTA-OK** |
-| rl_7_multi_agent_rl | 30 | 12 | 12/12 | 0 | 0 | python3 | **PettingZoo** (TicTacToe) + matplotlib | **SOTA-OK** |
-| rl_8_model_based_dyna_q | 29 | 11 | 11/11 | 0 | 0 | python3 | Dyna-Q planning tabulaire | **SOTA-OK** |
-| rl_9_offline_rl | 29 | 12 | 12/12 | 0 | 0 | python3 | Behavior Cloning + extrapolation error | **SOTA-OK** |
-| rl_10_reward_shaping | 19 | 8 | 8/8 | 0 | 0 | python3 | reward shaping + curriculum (théorique) | **SOTA-OK** |
-| rl_11_pomdp | 25 | 10 | 10/10 | 0 | 0 | python3 | POMDP belief tracking (théorique) | **SOTA-OK** |
-| rl_12_distributional_rl | 29 | 12 | 12/12 | 0 | 0 | python3 | Gymnasium + PyTorch (C51/QR-DQN) | **SOTA-OK** |
-| rl_13_curiosity_exploration | 23 | 10 | 10/10 | 0 | 0 | python3 | PyTorch (ICM curiosity bonus) | **SOTA-OK** |
+| RL-04-Bandits-Manchots-Python | 41 | 21 | 21/21 | 0 | 0 | python3 | epsilon-greedy/UCB tabulaire (fondation) | **SOTA-OK** |
+| RL-05-MDP-Programmation-Dynamique-Q-Learning-Python | 38 | 18 | 18/18 | 0 | 0 | python3 | Gymnasium (FrozenLake) + DP tabulaire | **SOTA-OK** |
+| RL-06-DQN-Policy-Gradient-Python | 28 | 12 | 12/12 | 0 | 0 | python3 | Gymnasium + PyTorch (DQN/PG from scratch) | **SOTA-OK** |
+| RL-06b-Actor-Critic-Python | 29 | 9 | 9/9 | 0 | 0 | python3 | Gymnasium + PyTorch (A2C from scratch) | **SOTA-OK** |
+| RL-06c-PPO-Depuis-Zero-Python | 27 | 10 | 10/10 | 0 | 0 | python3 | Gymnasium + PyTorch (PPO clipping) | **SOTA-OK** |
+| RL-06d-SAC-Depuis-Zero-Python | 38 | 12 | 12/12 | 0 | 0 | python3 | Gymnasium + PyTorch (SAC twin-critic) | **SOTA-OK** |
+| RL-06e-GRPO-Depuis-Zero-Python | 23 | 11 | 11/11 | 0 | 0 | python3 | PyTorch (GRPO group-relative) | **SOTA-OK** |
+| RL-07-Apprentissage-Multi-Agent-Python | 30 | 12 | 12/12 | 0 | 0 | python3 | **PettingZoo** (TicTacToe) + matplotlib | **SOTA-OK** |
+| RL-08-Dyna-Q-Planification-Python | 29 | 11 | 11/11 | 0 | 0 | python3 | Dyna-Q planning tabulaire | **SOTA-OK** |
+| RL-09-RL-Offline-Behavior-Cloning-Python | 29 | 12 | 12/12 | 0 | 0 | python3 | Behavior Cloning + extrapolation error | **SOTA-OK** |
+| RL-10-Reward-Shaping-Curriculum-Python | 19 | 8 | 8/8 | 0 | 0 | python3 | reward shaping + curriculum (théorique) | **SOTA-OK** |
+| RL-11-POMDP-Croyances-Python | 25 | 10 | 10/10 | 0 | 0 | python3 | POMDP belief tracking (théorique) | **SOTA-OK** |
+| RL-12-Distributional-RL-C51-Python | 29 | 12 | 12/12 | 0 | 0 | python3 | Gymnasium + PyTorch (C51/QR-DQN) | **SOTA-OK** |
+| RL-13-Curiosite-RND-Python | 23 | 10 | 10/10 | 0 | 0 | python3 | PyTorch (ICM curiosity bonus) | **SOTA-OK** |
 
 ### Synthèse
 
 - **EXEC_PROVED global** : 17/17 (100%) — tous kernels `python3` exécutés, `execution_count != null` sur 218/218 cellules code, `outputs: [...]` cohérents.
 - **Erreurs runtime** : 0/17.
-- **Violations C.1** : 0/17 (audit script python3 — 0 `raise NotImplementedError`, 0 `assert False` réel ; 2 « hits » initiaux `1/0` dans rl_7 = **faux positif** matchant les récompenses `+1/-1/0` TicTacToe en markdown + commentaire TODO, vérifié G.1 firsthand).
+- **Violations C.1** : 0/17 (audit script python3 — 0 `raise NotImplementedError`, 0 `assert False` réel ; 2 « hits » initiaux `1/0` dans RL-07 = **faux positif** matchant les récompenses `+1/-1/0` TicTacToe en markdown + commentaire TODO, vérifié G.1 firsthand).
 - **Vrais outils SOTA invoqués** :
-  - **stable-baselines3 + Gymnasium** (Farama) — rl_1/2/3 (API industrielle canonique RL).
-  - **Gymnasium + PyTorch from scratch** — rl_5/6/6b/6c/6d/12 (implémentation pédagogique DQN/A2C/PPO/SAC/distributional sur vrais envs Gymnasium, pas réimplémentation jouet d'un env).
-  - **PettingZoo** (Farama multi-agent) — rl_7 (`pettingzoo.classic.tictactoe_v3`) = vrai SOTA multi-agent.
-  - **PyTorch** — rl_6e (GRPO from scratch), rl_13 (ICM curiosity).
-  - **RL tabulaire/théorique** — rl_4 (bandits epsilon-greedy/UCB), rl_8 (Dyna-Q), rl_10 (reward shaping/curriculum), rl_11 (POMDP belief). Ce sont les **fondations** qui précèdent sb3 dans le cursus, pas des workarounds (un notebook sur les bandits/UCB n'a pas besoin de stable-baselines3).
+  - **stable-baselines3 + Gymnasium** (Farama) — RL-01/2/3 (API industrielle canonique RL).
+  - **Gymnasium + PyTorch from scratch** — RL-05/6/6b/6c/6d/12 (implémentation pédagogique DQN/A2C/PPO/SAC/distributional sur vrais envs Gymnasium, pas réimplémentation jouet d'un env).
+  - **PettingZoo** (Farama multi-agent) — RL-07 (`pettingzoo.classic.tictactoe_v3`) = vrai SOTA multi-agent.
+  - **PyTorch** — RL-06e (GRPO from scratch), RL-13 (ICM curiosity).
+  - **RL tabulaire/théorique** — RL-04 (bandits epsilon-greedy/UCB), RL-08 (Dyna-Q), RL-10 (reward shaping/curriculum), RL-11 (POMDP belief). Ce sont les **fondations** qui précèdent sb3 dans le cursus, pas des workarounds (un notebook sur les bandits/UCB n'a pas besoin de stable-baselines3).
 - **Workaround dégradé** : 0/17 (pas d'ASCII à la place de figures, pas de réimplémentation jouet d'env là où Gymnasium est invoqué, pas de stub à la place d'un appel sb3).
 
 ### Prong B — problème non-trivial (sota-not-workaround §B)
 
 La suite RL **monte en complexité**, pas de plateau trivial :
-- rl_1 CartPole = point d'entrée canonique (acceptable comme intro, pas comme seul cas) ;
-- rl_6c/6d = **PPO et SAC from scratch** avec clipping et twin-critic (non-trivial, capacity-exercising) ;
-- rl_6e = **GRPO** (group-relative policy optimization, DeepSeek R1) — frontière research-grade ;
-- rl_7 = multi-agent **non-stationnaire** PettingZoo (TicTacToe) ;
-- rl_12/13 = distributional RL (C51) + curiosity-driven exploration (ICM).
-La paire `rl_6c` (PPO from scratch) + `rl_1` (sb3) illustre **explicitement** l'écart implémentation-pédagogique vs API industrielle — capacité distinctive exercée.
+- RL-01 CartPole = point d'entrée canonique (acceptable comme intro, pas comme seul cas) ;
+- RL-06c/6d = **PPO et SAC from scratch** avec clipping et twin-critic (non-trivial, capacity-exercising) ;
+- RL-06e = **GRPO** (group-relative policy optimization, DeepSeek R1) — frontière research-grade ;
+- RL-07 = multi-agent **non-stationnaire** PettingZoo (TicTacToe) ;
+- RL-12/13 = distributional RL (C51) + curiosity-driven exploration (ICM).
+La paire `RL-06c` (PPO from scratch) + `RL-01` (sb3) illustre **explicitement** l'écart implémentation-pédagogique vs API industrielle — capacité distinctive exercée.
 
 ### Notes de vérification G.1 (L378 durcie)
 
-- **Faux positifs C.1** : 0/17 réel (audit script `raise NotImplementedError` = 0 ; 2 hits `assert False`/`1/0` dans rl_7 = **faux positif** : regex a matché les récompenses TicTacToe `+1/-1/0` en cellule markdown + commentaire `# TODO etudiant`, vérifié G.1 firsthand par lecture directe cell24/cell27 — **pas une division par zéro**, pas un `assert False`).
-- **Faux négatif SOTA (script)** : rl_7 utilisait `pettingzoo.classic.tictactoe_v3` (vrai SOTA multi-agent Farama) non détecté par le premier scan (liste `pettingzoo` absente du regex) — corrigé par re-scan G.1, rl_7 = **SOTA-OK** confirmé.
+- **Faux positifs C.1** : 0/17 réel (audit script `raise NotImplementedError` = 0 ; 2 hits `assert False`/`1/0` dans RL-07 = **faux positif** : regex a matché les récompenses TicTacToe `+1/-1/0` en cellule markdown + commentaire `# TODO etudiant`, vérifié G.1 firsthand par lecture directe cell24/cell27 — **pas une division par zéro**, pas un `assert False`).
+- **Faux négatif SOTA (script)** : RL-07 utilisait `pettingzoo.classic.tictactoe_v3` (vrai SOTA multi-agent Farama) non détecté par le premier scan (liste `pettingzoo` absente du regex) — corrigé par re-scan G.1, RL-07 = **SOTA-OK** confirmé.
 - **Anti-régression** : aucun notebook strippé, aucun output hand-edité (Stop & Repair) ; 218/218 cellules code avec `execution_count != null` + `output_type: error = 0`.
 - **Audit consultatif purement additif** : safe owner-lane (L143 trivial — pas de modification des notebooks RL owner po-2025).
 
@@ -946,7 +946,7 @@ La paire `rl_6c` (PPO from scratch) + `rl_1` (sb3) illustre **explicitement** l'
 - **Substance RL = SOTA-OK 17/17**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. Stable-baselines3/Gymnasium/PettingZoo/PyTorch = moteurs SOTA canoniques RL, invoqués réellement (pas de workaround dégradé).
 - **Pas de fix nécessaire** : audit = SOTA-OK, aucun PR de substance.
 - **Pivot L335 légitimé** : 9ᵉ famille distincte, owner po-2025 strict, ≠ re-sweep monotone.
-- **L378 durcie** : G.1 firsthand (script python3 + re-lecture rl_7 pour faux-positif C.1 + faux-négatif SOTA PettingZoo) → 0 faux positif résiduel.
+- **L378 durcie** : G.1 firsthand (script python3 + re-lecture RL-07 pour faux-positif C.1 + faux-négatif SOTA PettingZoo) → 0 faux positif résiduel.
 - **Cumulatif** : **9 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, **RL**). Entry #009 RL ajoute **3 moteurs SOTA nouveaux** au registre (stable-baselines3, Gymnasium, PettingZoo) = **25 moteurs SOTA distincts cumulés**.
 
 Part of #3801
@@ -1209,11 +1209,11 @@ La série Search est **anti-dégénérée** : Applications/CSP = **NP-difficiles
 - **L378 durcie** : G.1 firsthand (script python3 structural 1651 cells + regex imports SOTA + nuance MetaGeneticSharp submodule documentée honnêtement).
 - **Cumulatif** : **13 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, **Search**). Entry #013 Search ajoute **2 moteurs SOTA nouveaux** au registre (**GeneticSharp** .NET GA framework, **MetaGeneticSharp** métaheuristique avancée ; OR-Tools déjà compté #005/#010, Z3 #010, python-constraint #002, AIMA #002, networkx #007) = **32 moteurs SOTA distincts cumulés**.
 
-## Entry #015 — Argument_Analysis (SymbolicAI, owner po-2023, c.108)
+## Entry #015 — ArgumentAnalysis (SymbolicAI, owner po-2023, c.108)
 
 | Métrique | Valeur |
 |----------|--------|
-| Famille | `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/` (17 .ipynb pédagogiques racine) |
+| Famille | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/` (17 .ipynb pédagogiques racine) |
 | Owner-lane | **po-2023** (lead série 5-NB, #3028 Rung 2-formal livré ; [CLAIMED] dashboard 23:09Z, post-pivot po-2025 → SAE↔J-space) |
 | Date audit | 2026-07-11 (c.108) |
 | Auditeur | `myia-po-2023:CoursIA` |
@@ -1256,7 +1256,7 @@ La série Search est **anti-dégénérée** : Applications/CSP = **NP-difficiles
 
 ### Prong B — problème non-trivial (sota-not-workaround §B)
 
-La série Argument_Analysis est **anti-dégénérée** : le problème posé (analyser un texte argumentatif → carte logique formelle validée par solveur, + détection systématique de sophismes) **exerce la capacité distinctive de chaque moteur** :
+La série ArgumentAnalysis est **anti-dégénérée** : le problème posé (analyser un texte argumentatif → carte logique formelle validée par solveur, + détection systématique de sophismes) **exerce la capacité distinctive de chaque moteur** :
 - TweetyProject ASPIC+/Dung = sémantiques d'acceptabilité (grounded/complete/preferred/stable) — non résolvable par un `if`, exige la théorie de l'argumentation abstraite.
 - AGM belief dynamics = révision de croyances (contraction/expansion) — opérateurs non-triviaux.
 - Semantic Kernel AgentGroupChat = orchestration multi-agents (informel→formel→verdict) — pattern hybride LLM + solveur, ≠ appel LLM unique.
@@ -1272,14 +1272,14 @@ La série Argument_Analysis est **anti-dégénérée** : le problème posé (ana
 
 ### Volet owner-lane
 
-**Argument_Analysis = po-2023** (lead série, [CLAIMED] 23:09Z post-pivot po-2025 → SAE↔J-space 22:59Z ; diligence anti-collision #5869 : `gh pr list --state all --search Argument_Analysis` = 0 PR SOTA en vol, 0 collision). Audit consultatif additif, 0 PR de substance. **15ᵉ famille distincte du ledger** (variété R6 : SymbolicAI ≠ GenAI/accents des 3 cycles précédents po-2023).
+**ArgumentAnalysis = po-2023** (lead série, [CLAIMED] 23:09Z post-pivot po-2025 → SAE↔J-space 22:59Z ; diligence anti-collision #5869 : `gh pr list --state all --search ArgumentAnalysis` = 0 PR SOTA en vol, 0 collision). Audit consultatif additif, 0 PR de substance. **15ᵉ famille distincte du ledger** (variété R6 : SymbolicAI ≠ GenAI/accents des 3 cycles précédents po-2023).
 
 ### Conclusions audit
 
-- **Substance Argument_Analysis = SOTA-OK 17/17**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. TweetyProject (ASPIC+/DeLP/Dung/AGM) + Microsoft Semantic Kernel (orchestration agentique) + OpenAI + networkx = moteurs SOTA réels sur banc argumentation formelle discriminant.
+- **Substance ArgumentAnalysis = SOTA-OK 17/17**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. TweetyProject (ASPIC+/DeLP/Dung/AGM) + Microsoft Semantic Kernel (orchestration agentique) + OpenAI + networkx = moteurs SOTA réels sur banc argumentation formelle discriminant.
 - **Pas de fix nécessaire** : audit = SOTA-OK, aucun PR de substance.
 - **L378 durcie** : G.1 firsthand (script python3 structural 165 cells + grep ground truth imports SOTA + discrepancy CATALOG documentée honnêtement).
-- **Cumulatif** : **15 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, Planners, **Argument_Analysis**). Entry #015 ajoute **1 moteur SOTA nouveau** au registre (**Microsoft Semantic Kernel** ; TweetyProject déjà compté #002, OpenAI #009, networkx #007) = **34 moteurs SOTA distincts cumulés**.
+- **Cumulatif** : **15 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, Planners, **ArgumentAnalysis**). Entry #015 ajoute **1 moteur SOTA nouveau** au registre (**Microsoft Semantic Kernel** ; TweetyProject déjà compté #002, OpenAI #009, networkx #007) = **34 moteurs SOTA distincts cumulés**.
 
 Part of #3801
 
@@ -1415,7 +1415,7 @@ Pas de cas dégénéré où un SOTA équivaut à une baseline triviale.
 
 ### Volet owner-lane strict
 
-**ML/DataScienceWithAgents = po-2025 strict** (lane Python native, partition ML/Probas/Argument_Analysis). Audit consultatif additif, 0 PR de substance. Pivot L335 anti-monoculture post-c.420 (#015 Argument_Analysis sweep §H.4 cross-team) : **16ᵉ famille distincte du ledger**. Différence avec #015 Argument_Analysis (17 nb SymbolicAI owner po-2023 = TweetyProject + SemanticKernel) : **#017 ML/DataScienceWithAgents = 27 nb ML/Python owner po-2025 strict** (scikit-learn + LangChain + LiteLLM multi-provider stack), paradigme distinct (data science + agents LLM vs argumentation formelle).
+**ML/DataScienceWithAgents = po-2025 strict** (lane Python native, partition ML/Probas/ArgumentAnalysis). Audit consultatif additif, 0 PR de substance. Pivot L335 anti-monoculture post-c.420 (#015 ArgumentAnalysis sweep §H.4 cross-team) : **16ᵉ famille distincte du ledger**. Différence avec #015 ArgumentAnalysis (17 nb SymbolicAI owner po-2023 = TweetyProject + SemanticKernel) : **#017 ML/DataScienceWithAgents = 27 nb ML/Python owner po-2025 strict** (scikit-learn + LangChain + LiteLLM multi-provider stack), paradigme distinct (data science + agents LLM vs argumentation formelle).
 
 Pivot L335 anti-monoculture double-axe sustained **16ᵉ cycle** : c.421 = **registre axe-2 SOTA OUTIL** (substance owner partition native ML pivot distinct du sweep §H.4 c.419-c.420). Famille revisitée (ML/DataScienceWithAgents vs Planners c.408 vs Search c.407 vs GameTheory c.406 = registre axe-2 SOTA tenu 4ᵉ cycle avec 4 familles distinctes). Sustained 16ᵉ cycle anti-monoculture.
 
@@ -1429,7 +1429,7 @@ Pivot L335 anti-monoculture double-axe sustained **16ᵉ cycle** : c.421 = **reg
 
 - **L378 durcie** : G.1 firsthand (script python3 structural 708 cells + 294 code + 0 err + 0 C.1 + multi-patterns regex imports SOTA + secrets-hygiene grep dédié).
 
-- **Cumulatif** : **16 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, Planners, Argument_Analysis, **ML/DataScienceWithAgents**). Entry #017 ajoute **5 moteurs SOTA nouveaux** au registre (**LiteLLM** multi-provider canon d'agents, **LangChain** agentique LLM, **LangChain-OpenAI** connecteur OpenAI, **LangChain-Experimental** agentique avancée, **DuckDuckGo-Search** moteur de recherche web agentique ; scikit-learn/pandas/numpy/matplotlib/seaborn déjà comptés dans entries précédentes, LiteLLM/LangChain/DuckDuckGo-Search + Optuna + Kaggle + Tavily-Python + Google-ADK nouveaux moteurs cumulés une fois entry #016 SmartContracts mergée cf cumul 34→47) = **47+ moteurs SOTA distincts cumulés** (selon PR #5994 SmartContracts entry #016, cumul = 47 moteurs ; entry #017 ajoute au-delà si PR #5994 pas encore mergée lors de l'audit, **10+ nouveaux moteurs cumulés** : LiteLLM, LangChain, LangChain-OpenAI, LangChain-Experimental, Optuna, Kaggle, Tavily-Python, DuckDuckGo-Search, Google-ADK, MLflow).
+- **Cumulatif** : **16 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, Planners, ArgumentAnalysis, **ML/DataScienceWithAgents**). Entry #017 ajoute **5 moteurs SOTA nouveaux** au registre (**LiteLLM** multi-provider canon d'agents, **LangChain** agentique LLM, **LangChain-OpenAI** connecteur OpenAI, **LangChain-Experimental** agentique avancée, **DuckDuckGo-Search** moteur de recherche web agentique ; scikit-learn/pandas/numpy/matplotlib/seaborn déjà comptés dans entries précédentes, LiteLLM/LangChain/DuckDuckGo-Search + Optuna + Kaggle + Tavily-Python + Google-ADK nouveaux moteurs cumulés une fois entry #016 SmartContracts mergée cf cumul 34→47) = **47+ moteurs SOTA distincts cumulés** (selon PR #5994 SmartContracts entry #016, cumul = 47 moteurs ; entry #017 ajoute au-delà si PR #5994 pas encore mergée lors de l'audit, **10+ nouveaux moteurs cumulés** : LiteLLM, LangChain, LangChain-OpenAI, LangChain-Experimental, Optuna, Kaggle, Tavily-Python, DuckDuckGo-Search, Google-ADK, MLflow).
 
 Part of #3801
 
@@ -1527,7 +1527,7 @@ La série SmartContracts est **anti-dégénérée** : chaque sous-série pose un
 - **Substance SmartContracts = SOTA-OK 27/27**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. Toolchain EVM complète (Foundry + Solidity + web3.py + solcx + OpenZeppelin + Vyper + eth-account) + couche crypto/privacy SOTA (Concrete FHE + TenSEAL + python-paillier + ElectionGuard + xrpl + PyCryptodome).
 - **Pas de fix nécessaire** : audit = SOTA-OK, aucun PR de substance.
 - **L378 durcie** : G.1 firsthand (script python3 structural 320 cells + grep ground truth imports SOTA + deep-check des 4 notebooks no engine).
-- **Cumulatif** : **16 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, Planners, Argument_Analysis, **SmartContracts**). Entry #016 SmartContracts ajoute **13 moteurs SOTA nouveaux** au registre (Foundry, Solidity, web3.py, py-solc-x, OpenZeppelin, Vyper, eth-account, Zama Concrete, TenSEAL, python-paillier, ElectionGuard, xrpl, PyCryptodome) = **47 moteurs SOTA distincts cumulés**.
+- **Cumulatif** : **16 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, Planners, ArgumentAnalysis, **SmartContracts**). Entry #016 SmartContracts ajoute **13 moteurs SOTA nouveaux** au registre (Foundry, Solidity, web3.py, py-solc-x, OpenZeppelin, Vyper, eth-account, Zama Concrete, TenSEAL, python-paillier, ElectionGuard, xrpl, PyCryptodome) = **47 moteurs SOTA distincts cumulés**.
 
 Part of #3801
 
@@ -1638,7 +1638,7 @@ Post-c.422 PR #6040 (entry #017 §H.4 sweep self-cross-team owner po-2025 strict
 
 **Cumul Probas/Infer-extension owner po-2025 strict** : 5ᵉ famille du registre axe-2 SOTA revisitée substance owner partition native cumulative (DecisionTheory #005 + Probas/Infer #006 + Do-Calculus-Bridge inclus + Sudoku #008 partim + **Probas/Infer-extension #018 THIS** = 9 notebooks Advanced).
 
-**Variante C421-L1 axe-2 SOTA OUTIL revisitée** : entry #018 = 5ᵉ cycle registre axe-2 SOTA (c.388 ML/ML.Net + c.389 Tweety + c.390 SymbolicLearning + c.391 SemanticWeb + c.397 DecisionTheory + c.400 Probas/Infer + c.402 IIT/PyPhi + c.401 Sudoku + c.403 RL + c.404 CaseStudies + c.405 ICT-Series + c.406 GameTheory + c.407 Search + c.408 Planners + c.108 Argument_Analysis + **c.423 Probas/Infer-extension THIS**) avec **5 familles distinctes** cumulées (ML → Tweety/SymbolicLearning/SemanticWeb SymbolicAI → DecisionTheory → Probas/Infer → Argument_Analysis). Anti-monoculture double-axe sustained = registre (axe-2 SOTA OUTIL) ET famille (Probas/Infer-extension ≠ 5 familles précédentes).
+**Variante C421-L1 axe-2 SOTA OUTIL revisitée** : entry #018 = 5ᵉ cycle registre axe-2 SOTA (c.388 ML/ML.Net + c.389 Tweety + c.390 SymbolicLearning + c.391 SemanticWeb + c.397 DecisionTheory + c.400 Probas/Infer + c.402 IIT/PyPhi + c.401 Sudoku + c.403 RL + c.404 CaseStudies + c.405 ICT-Series + c.406 GameTheory + c.407 Search + c.408 Planners + c.108 ArgumentAnalysis + **c.423 Probas/Infer-extension THIS**) avec **5 familles distinctes** cumulées (ML → Tweety/SymbolicLearning/SemanticWeb SymbolicAI → DecisionTheory → Probas/Infer → ArgumentAnalysis). Anti-monoculture double-axe sustained = registre (axe-2 SOTA OUTIL) ET famille (Probas/Infer-extension ≠ 5 familles précédentes).
 
 **Différence avec entry #006 Probas/Infer (c.400)** : #006 = **20 notebooks TOUS Infer.NET natif** (.net-csharp kernel unique), audit exhaustif de la famille Probas/Infer dans son ensemble ; #018 = **9 notebooks Advanced / extension** hétérogènes (4 Infer + 4 PyMC + 1 Do-Calculus-Bridge), registre distinct focalisé sur les modèles probabilistes avancés (SGP / Kalman / Change-Point / Survival + do-calculus) qui étendent la famille #006 avec paradigmes d'inférence supplémentaires (MCMC NUTS + causal inference Pearl).
 
@@ -1667,7 +1667,7 @@ Post-c.422 PR #6040 (entry #017 §H.4 sweep self-cross-team owner po-2025 strict
 | **Stop & Repair** (no scrub) | OK | 0 modification de cellule, audit purement consultatif |
 | **SOTA 5 verdicts** | OK | 9/9 SOTA-OK (4 Infer.NET Microsoft.ML.Probabilistic + 4 PyMC + ArviZ + 1 DoWhy Do-Calculus-Bridge) |
 | **0 parasite CJK** | OK | 4 ranges Unicode scannés (CJK Unified U+4E00-U+9FFF, CJK Ext A U+3400-U+4DBF, Hangul U+AC00-U+D7AF, Fullwidth U+FF00-U+FFEF) = 0/9 .ipynb (script python3 worker = 0/9) |
-| **Anti-monoculture R6** | OK | Entry #018 = **5ᵉ famille revisitée du registre axe-2 SOTA** dans le scope owner po-2025 strict (ML/ML.Net #001 + DecisionTheory #005 + Probas/Infer #006 + Sudoku #008 + **Probas/Infer-extension #018**) ; substance owner po-2025 strict ≠ owner-floue SymbolicAI #002/#003/#004 ≠ owner po-2023 Argument_Analysis #015 |
+| **Anti-monoculture R6** | OK | Entry #018 = **5ᵉ famille revisitée du registre axe-2 SOTA** dans le scope owner po-2025 strict (ML/ML.Net #001 + DecisionTheory #005 + Probas/Infer #006 + Sudoku #008 + **Probas/Infer-extension #018**) ; substance owner po-2025 strict ≠ owner-floue SymbolicAI #002/#003/#004 ≠ owner po-2023 ArgumentAnalysis #015 |
 | **model-delegation** (LMD) | OK | Sub-agent `ac1947a11387e372e` invoqué avec `model: "haiku"` explicite (tâche simple comptage + extraction format-imposé + grep + scan), ops git locales seulement ; worker a re-vérifié 5 angles-morts firsthand (chiffres pivots + SOTA counts + CJK + C.1 + anomalies §H.5) avant commit |
 
 ### CJK filter note
@@ -1691,7 +1691,7 @@ Total .ipynb: 9
 
 - **Registre varié** : kernels utilisés = `.net-csharp` (4), `python3` (4), `coursia-ml-training` (1) = **3 kernels distincts**. Vrais outils SOTA : **Microsoft.ML.Probabilistic (Infer.NET natif)** + **PyMC** + **ArviZ** + **DoWhy** (Microsoft pywhy.org) + **NetworkX** + **pandas + scipy + numpy**. **Zéro stub** `raise NotImplementedError` / `assert False` / `1/0` (vérification regex pre-commit clean sur 83 cellules code).
 
-- **Cumulatif** : entry #018 = **16ᵉ famille distincte** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, Planners, Argument_Analysis, **Probas/Infer-extension**). Entry #018 ajoute **2 moteurs SOTA nouveaux** au registre (**ArviZ** + **DoWhy**) = **36 moteurs SOTA distincts cumulés** (Microsoft.SemanticKernel déjà compté #015 ; PyMC + Microsoft.ML.Probabilistic déjà comptés #005/#006 ; NetworkX + pandas + scipy + numpy déjà comptés #005/#008/#015). Inférence : prochaine entry revisitera soit une autre substance owner po-2025 strict non-couverte, soit pivote registre (axe-3 GenAI backlog ou axe-2 Lean hashlife N3/N4 po-2024/po-2026 ou QC strategy library).
+- **Cumulatif** : entry #018 = **16ᵉ famille distincte** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, Planners, ArgumentAnalysis, **Probas/Infer-extension**). Entry #018 ajoute **2 moteurs SOTA nouveaux** au registre (**ArviZ** + **DoWhy**) = **36 moteurs SOTA distincts cumulés** (Microsoft.SemanticKernel déjà compté #015 ; PyMC + Microsoft.ML.Probabilistic déjà comptés #005/#006 ; NetworkX + pandas + scipy + numpy déjà comptés #005/#008/#015). Inférence : prochaine entry revisitera soit une autre substance owner po-2025 strict non-couverte, soit pivote registre (axe-3 GenAI backlog ou axe-2 Lean hashlife N3/N4 po-2024/po-2026 ou QC strategy library).
 
 Part of #3801
 
@@ -2050,6 +2050,8 @@ Part of #3801
 
 **Total** : 24 lakefiles · 282 fichiers · 59 710 lignes · 21 sorry tactiques (61 % dans knot_lean SCAFFOLDING) · 17 mentions docstring de "sorry-free" · 1 seul vrai `axiom` (`lean_game_defs/SocialChoice.lean:135 axiom arrow_impossibility`) · 23/24 toolchains v4.31.0-rc1 (1 seule divergence = `social_choice_lean_peters` v4.27.0-rc1) · 22/24 avec mathlib4 dep (4 self-contained).
 
+> **Péremption mesurée le 2026-10-28 (#23022)** — les deux mentions du « 1 seul vrai `axiom` » ci-dessus (ce total et la ligne 23) sont un **état daté**, plus l'état courant : `arrow_impossibility` est désormais un `theorem` prouvé dans `lean_game_defs`, sur les deux siblings FR/EN. Le recensement n'est pas refait ici ; l'état courant et ses mesures vivent dans [`lean-axiom-coverage.md` §4.1.1](../reference/lean-axiom-coverage.md) — dont la clôture axiomatique mesurée (`propext`, `Quot.sound`, `Classical.choice` hérité de `decisive_split`), qui n'est pas nulle et doit être lue avant tout câblage de gate sur ce lac.
+
 ### Métrique résumée (worker firsthand python3, vérifiée c.424)
 
 | Métrique | Valeur | Evidence |
@@ -2127,7 +2129,7 @@ Tous discriminants ≠ cas dégénéré (BFS vs A* uniforme / Z3 sur 1-clause / 
 
 ### Pivot L335 anti-monoculture — Sustained 20ᵉ cycle
 
-**Pivot registre axe-2 SOTA tenu MAIS family revisitée Lean 4** (≠ Probas/Infer-extension c.423, ≠ ML/DSWA c.421, ≠ SmartContracts c.11, ≠ Argument_Analysis c.108, ≠ Sudoku c.418, ≠ RL c.403). **Substance owner partition native cumulative Lean 4 axis** (15 lakes po-2025 strict partition native) couverte par audit READ-ONLY.
+**Pivot registre axe-2 SOTA tenu MAIS family revisitée Lean 4** (≠ Probas/Infer-extension c.423, ≠ ML/DSWA c.421, ≠ SmartContracts c.11, ≠ ArgumentAnalysis c.108, ≠ Sudoku c.418, ≠ RL c.403). **Substance owner partition native cumulative Lean 4 axis** (15 lakes po-2025 strict partition native) couverte par audit READ-ONLY.
 
 **Cross-granularité sustained** : c.420 top-level Probas/Infer sweep + c.422 leaf Probas/Infer sweep + c.423 Advanced Probas/Infer-extension audit + **c.424 Lean 4 axis** = registre axe-2 SOTA tenu MAIS family revisitée **multi-language** (Lean 4 axiomatic prover ≠ Infer.NET Bayesian ≠ PyMC twins ≠ SmartContracts). **17ᵉ famille revisitée** du registre.
 
@@ -2544,7 +2546,7 @@ Capacités distinctives du moteur QC exercées (QuantBook data pull, QC Framewor
 
 Part of #3801, #1621
 
----
+***
 
 ## Entry #028 — Probas/PyMC (1-15) (owner po-2025 strict, c.411)
 
@@ -2556,6 +2558,8 @@ Part of #3801, #1621
 | Date audit | 2026-07-12 (c.411) |
 | Auditeur | `myia-po-2025:CoursIA` |
 | Verdict agrégé | **SOTA-OK** (14/14 SOTA-OK, 14/14 DISCRIMINATING) |
+
+> **Note 2026-09-30 (post-audit)** : `PyMC-06-Debugging` a été renommé `PyMC-02b-Debugging-Python` (#17808, labellisation #14873, parité de numéro rétablie avec `Infer-2b`) — les noms du tableau ci-dessous sont ceux à la date d'audit (2026-07-12). Résidu de référence découvert par #18622.
 
 ### Synthèse (14 notebooks, 452 cellules, 187 cellules code)
 
@@ -2636,7 +2640,7 @@ La série PyMC **exerce des capacités MCMC distinctives** sans équivalent clos
 
 Part of #3801, #4956
 
----
+***
 
 ## Entry #029 — GenAI/SemanticKernel (01-10b) (owner-floue po-2025 consultatif, c.412)
 
@@ -2720,7 +2724,7 @@ Part of #3801, #1385
 
 | Métrique | Valeur |
 |----------|--------|
-| Famille | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb` (1 .ipynb — causalité bayésienne + do-calculus, parité Infer-5-Causal-Inference entry #006) |
+| Famille | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb` (1 .ipynb — causalité bayésienne + do-calculus, parité Infer-05-Causal-Inference entry #006) |
 | Kernel | `python3` |
 | Owner-lane | **po-2025 strict** (lane Python bayésienne native ; entry #028 PyMC 1-15 c.411 + Infer-extension #018 PyMC-16..19) |
 | Date audit | 2026-07-16 (c.538) |
@@ -2787,6 +2791,140 @@ Le do-calculus **est la capacité distinctive** de la causalité — il n'existe
 - **Collision-avoidance** : `gh pr list --state all --search` = 0 PR PyMC-5 SOTA en vol ; entry #030 stacked à la suite de #029.
 - **Cumulatif** : entry #030 = **PyMC-5 standalone** (1 nb) → **famille Probas/PyMC COMPLÈTE 15/15** dans le registre (entry #028 14 + entry #018 PyMC-16..19 + entry #030 PyMC-5 = 19 notebooks PyMC couverts). PyMC/ArviZ déjà comptés ; cette entry clôture le gap PyMC-5.
 
+## Entry #031 — GameTheory/13f-Ataraxos-Patron-Python (owner po-2027, grain A #20408)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/GameTheory/GameTheory-13f-Ataraxos-Patron-Python.ipynb` (1 .ipynb — patron Ataraxos Sokota et al. 2025 sur Kuhn poker, satellite Recherche tier 13f, précédents 13d/13e) |
+| Kernel | `python3` |
+| Owner-lane | **po-2027** (`myia-po-2027:CoursIA` ; création du notebook, pas un audit de série existante) |
+| Date | 2026-10-12 |
+| PR | #20435 |
+| Verdict agrégé | **SOTA-OK (périmètre jouet déclaré)** — copie pédagogique déclarée, organe natif = grain B de #20408 |
+
+### Synthèse
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
+|-----|-------|------|------|-----|-----------|--------|-------------|---------|
+| GameTheory-13f-Ataraxos-Patron-Python | 22 | 9 | 9/9 | 0 | 0 (3 ex.) | python3 | PyTorch (policy-value net + belief net entraînés réels) + évaluation exacte par énumération + pas miroir tabulaire avec projection KL | **SOTA-OK (déclaré)** |
+
+- **EXEC_PROVED** : 9/9 (100%) — `execution_count` 1–9 contigus, 0 erreur, 0 warning.
+- **Violations C.1** : 0 (regex = 0 hit ; 3 stubs `print("Exercice N a completer")` + `return None` conformes).
+
+### Vrais outils SOTA invoqués
+
+- **PyTorch** — réseau politique-valeur (7→64→64, 2 têtes) auto-entraîné (28 rounds × 256 parties, PG + reverse-KL vs table de collecte, amortissement dynamique lr/λ) ; réseau de croyances (7→32→3) supervisé sur 6000 parties d'auto-jeu. Entraînements réels, sorties committées.
+- **Évaluation exacte par énumération** — valeur par donnes × chemins terminaux, meilleure réponse card-aware par induction rétrograde sur les 12 infosets, **self-checks assertés à 1e-9** contre constantes dérivées à la main : valeur uniforme = +1/8, exploitabilité uniforme = 11/24 (les deux passent exactement).
+- **Pas miroir tabulaire** — descente miroir avec projection KL par bissection (budget δ = 0.25), témoin négatif argmax (recherche sans mise à jour).
+
+### Copie pédagogique déclarée (organ-first)
+
+Motif : montrer le patron 3 briques (policy-value self-play / croyances génératives / update equivalence au temps de test) en environ trois cents lignes lisibles sur le plus petit jeu d'information imparfaite non trivial. La sémantique n'existe dans aucune autre série (`git grep -iE "update.equiv|tts_policy|ataraxos" origin/main -- MyIA.AI.Notebooks/` = 0 hit). L'organe officiel du papier (`AtaraxosAI`, entraîné doudizhu à grande échelle) est le **grain B** de #20408, explicitement différé — déclaré dans le body de la PR.
+
+### Prong B — honnêteté mesurée
+
+La discrimination est attestée par le **témoin négatif interne** : exploitabilité base 0.3306 → TTS 0.2653 → témoin argmax 0.1667 — le pas miroir borné recouvre ≈ 40 % du chemin du témoin ; en face-à-face, la TTS en position J2 bat la base (+0.135) et le témoin (+0.131). Le carnet enseigne la lecture renversée (robustesse ≠ force, région de confiance = correction bornée) au lieu du récit attendu — jouet mono-seed assumé dans le texte.
+
+### Conformité aux règles
+
+| Règle | Statut | Preuve |
+|-------|--------|--------|
+| C.1 | **CONFORME** | 0 hit regex ; 3 stubs `print` + `return None` + `# TODO etudiant` |
+| C.2 | **CONFORME** | 9/9 exec_count réels, sorties mesurées committées (0.3306/0.2653/0.1667, CE 0.7042, KL 0.0008→0.0000) |
+| Stop & Repair | **CONFORME** | 0 hand-edit de sortie ; hooks pre-commit verts (papermill paths scrubbed) |
+| SOTA Prong A | **SOTA-OK (déclaré)** | PyTorch réel entraîné + énumération exacte ; organe natif différé au grain B (déclaré) |
+| SOTA Prong B | **CONFORME** | Témoin négatif mesuré, lecture honnête du renversement, mono-seed assumé |
+
+## Entry #032 — GameTheory/13g-Ataraxos-Organe-Natif (owner po-2027, grain B #20408)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/GameTheory/GameTheory-13g-Ataraxos-Organe-Natif.ipynb` (1 .ipynb — invocation de l'organe natif `AtaraxosAI/doudizhu` à budget réduit, satellite Recherche tier 13g, suite de 13f) |
+| Kernel | `python3` |
+| Owner-lane | **po-2027** (`myia-po-2027:CoursIA`) |
+| Date | 2026-10-12 (numérotation allouée à la livraison ; l'entrée #031 vit sur #20435, mergée) |
+| PR | #20446 |
+| Verdict agrégé | **SOTA-OK** — organe natif installé, validé par sa suite de tests, entraîné et invoqué à échelle réduite ; la limite PerfectDou de la brique evaluations est mesurée et documentée, pas contournée |
+
+### Synthèse
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
+|-----|-------|------|------|-----|-----------|--------|-------------|---------|
+| GameTheory-13g-Ataraxos-Organe-Natif | 16 | 8 | 8/8 | 0 | 0 (3 ex.) | python3 | organe `AtaraxosAI/doudizhu` natif : nanopokerlib C++20 (build MinGW), MARVEL VRPO 2 iter, Yomi 2 iter, Kagami update-equiv B in {4,16,64} | **SOTA-OK** |
+
+- **EXEC_PROVED** : 8/8 (100%) — `execution_count` 1–8 contigus, 0 erreur. Cellules organ-presence exécutées RÉELLEMENT à la re-exécution (constantes C++ lues depuis le module compilé ; `96 passed, 5 deselected, rc=0` — suite de tests native de l'organe rejouée en sous-processus pendant l'exécution du carnet).
+
+### Vrais outils SOTA invoqués (les quatre briques, nativement)
+
+- **nanopokerlib (C++20/pybind11)** — build MinGW-w64 g++ 16.2, générateur Ninja (patch local du `setup.py` : `-A x64` restreint aux générateurs multi-config ; `libwinpthread-1.dll` copiée près du `.pyd` après `-static-libstdc++ -static-libgcc`). 96/96 tests natifs.
+- **MARVEL (VRPO)** — entraînements réels 2 itérations : `doudizhu` full 202,4 s/iter (OOM 32,5 Go à défauts intacts — tampon de rejeu), `doudizhu_tiny` 40,2 s/iter (5 cartes/main, variante native de l'organe, défaut du moteur Kagami).
+- **Yomi (croyances)** — entraînement réel 2 itérations sur checkpoint MARVEL gelé (OOM 2,7 Go à batch 128 → batch 8).
+- **Kagami update-equiv** — `DoudizhuInferenceEngine` + `bind_marvel_model`/`bind_yomi_model` sur checkpoints réels, donnes racines construites par la méthode canonique des tests de l'organe (graines 0–5), budgets {4, 16, 64} vs défaut 512.
+
+### Mesures (relevées 2026-10-12, organ Windows/mingw, torch 2.14.1+cpu)
+
+KL(direct ‖ recherchée) par budget, 6 donnes : B=4 → 1,22 nat moyen (renversements 50 %) ; B=16 → 1,51 nat (max 4,04, 83 %) ; B=64 → 0,44 nat (67 %) ; direct 8 ms/requête vs 0,36–1,34 s recherchée.
+
+### Témoin négatif (Prong B — honnêteté mesurée)
+
+La divergence n'est **pas monotone en budget** (pic à B=16, chute à B=64 ; une donne sur six anti-converge, la donne 2 : 1,348 → 1,502 nat de B=4 a B=64) : à croyance sous-entraînée (2 iter vs 40 000 papier), chaque rollout hérite du bruit d'amont — le budget de recherche ne compense pas l'entraînement manquant. Le carnet enseigne cette lecture au lieu du récit « plus de budget = mieux ».
+
+### Limite mesurée, non contournée
+
+La brique `evaluations` (matches complets) exige le bootstrap externe PerfectDou (`from perfectdou.env.game import GameEnv` + données générées par son script) — import-chain + `CalledProcessError` relevés dans le carnet. La mesure passe par le moteur d'inference Kagami un-pas, sans dépôt externe. RECOVERABLE-MACHINE documenté pour les matches complets, pas substitué.
+
+### Conformité aux règles
+
+| Règle | Statut | Preuve |
+|-------|--------|--------|
+| C.1 | **CONFORME** | 3 stubs `print` + `return None` + `# TODO etudiant` ; 0 erreur d'exécution |
+| C.2 | **CONFORME** | 8/8 exec_count réels, sorties mesurées committées (96 passed natif, tableaux KL, figure) |
+| Stop & Repair | **CONFORME** | 0 hand-edit de sortie ; dégradation organ-absent = branche de code, pas un maquillage |
+| SOTA Prong A | **SOTA-OK** | organ-first : la sémantique update-equiv du patron 13f est remplacée par l'organe officiel ici (questions 1-3 répondues par construction) |
+| SOTA Prong B | **CONFORME** | échelle de budgets + témoin négatif non-monotonie mesuré, hétérogénéité par donne affichée |
+
+## Entry #033 — GameTheory/13h-Ataraxos-DynamicDamping (owner po-2027, grain C #20408)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/GameTheory/GameTheory-13h-Ataraxos-DynamicDamping-Python.ipynb` (1 .ipynb — ablation de la coordination temporelle d'Ataraxos, mesurée sur Kuhn par exploitabilité exacte ; satellite Recherche tier 13h, précédents 13d/13f/13g) |
+| Kernel | `python3` |
+| Owner-lane | **po-2027** (`myia-po-2027:CoursIA` ; création du notebook) |
+| Date | 2026-10-21 |
+| PR | #21824 — branche `feature/20408-13h-dynamic-damping` (grain C de #20408) |
+| Verdict agrégé | **SOTA-OK (périmètre jouet déclaré)** — instrument exact, témoin négatif mesuré, résultat négatif documenté |
+
+### Synthèse
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
+|-----|-------|------|------|-----|-----------|--------|-------------|---------|
+| GameTheory-13h-Ataraxos-DynamicDamping-Python | 20 | 9 | 9/9 | 0 | 0 (3 ex.) | python3 | CFR (regret matching, regrets contrefactuels) + exploitabilité exacte par énumération des 64 stratégies pures + témoin analytique `-1/18` | **SOTA-OK (déclaré)** |
+
+- **EXEC_PROVED** : 9/9 (100%) — `execution_count` 1–9 contigus, 0 erreur, papermill 41,85 s, `exception: None`.
+- **Violations C.1** : 0 (3 stubs `print("Exercice N a completer")` + `None  # TODO etudiant` conformes, le carnet s'exécute de bout en bout).
+
+### Ce que le carnet mesure
+
+Ablation à **budget égal** de quatre régimes de mise à jour (gap de Nash exact de la politique moyenne, six jalons) : `plain` (témoin négatif), `cfrplus`, `linavg`, `sched` (coordination planifiée des deux leviers). **Trois convergent** vers `-1/18` à `4e-4` près (`plain` et `linavg` à `6e-6`, `cfrplus` à `3,6e-4`) ; `sched` **n'y converge pas dans ce budget** — valeur finale `-0.05331`, écart `2,2e-3`, meilleur jalon à 400 : c'est une valeur de **budget fini**, pas un point fixe atteint. Mesures committées : à 200 itérations `linavg` 0,00900 contre `plain` 0,01225 (−26,5 %) ; à 2000 itérations `linavg` 0,00303 (−29,7 %), `sched` 0,03899 (+804 %). Reproductibilité : tous les chiffres se rejouent à l'identique, sauf le dernier jalon de `sched`, sensible aux ulp de plateforme au 4ᵉ décimale (0,03899 committé / 0,03895 en rejeu indépendant) — aucun verdict n'en dépend.
+
+### Témoin négatif (Prong B — honnêteté mesurée)
+
+Le régime « coordination planifiée » mène **très tôt** (25 itérations : 0,01755 contre 0,04494 pour `plain`), puis **perd** en fin de budget : son gap descend jusqu'à 0,00647 à 400 itérations, puis **remonte** à 0,03899 à 2000 — l'actualisation des regrets détruit l'accumulation qui fait converger le CFR. Le carnet enseigne ce résultat négatif au lieu du récit « coordination = mieux » ; `cfrplus` (agressivité constante) est le plus lent à 2000 itérations (+12,3 %).
+
+### Organe natif nommé (organ-first)
+
+Organe de référence pour Kuhn : `pyspiel` / OpenSpiel (CFR). Non invoqué ici : les quatre régimes mesurés sont des **variantes d'actualisation** que la librairie n'expose pas, et la validation de l'instrument passe par le **témoin analytique** `-1/18` (Kuhn 1950), indépendant de l'algorithme — plus fort qu'un second passage du même solveur. La sémantique Ataraxos elle-même reste portée par 13f (patron) et 13g (organe natif `AtaraxosAI/doudizhu`).
+
+### Conformité aux règles
+
+| Règle | Statut | Preuve |
+|-------|--------|--------|
+| C.1 | **CONFORME** | 3 stubs `print` + `None` + `# TODO etudiant` ; 0 erreur d'exécution |
+| C.2 | **CONFORME** | 9/9 exec_count réels, sorties mesurées committées |
+| Stop & Repair | **CONFORME** | 0 hand-edit de sortie ; l'arbre faux (`cbb`) a été corrigé à la source puis ré-exécuté |
+| SOTA Prong A | **SOTA-OK** | instrument exact, organe natif nommé, copie déclarée justifiée |
+| SOTA Prong B | **CONFORME** | problème non dégénéré (information imparfaite, 64 stratégies pures), témoin négatif et résultat négatif mesurés |
+
 ## Cumul entries (registre axe-2 SOTA)
 
 Tableau cumulatif unique du registre : une ligne par entry `## Entry #NNN`. Toute nouvelle entry doit etre ajoutee ici dans la meme PR (regle #14562).
@@ -2807,7 +2945,7 @@ Tableau cumulatif unique du registre : une ligne par entry `## Entry #NNN`. Tout
 | 012 | GameTheory (55 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 55/55 | #5944 MERGED |
 | 013 | Search (112 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 112/112 | #5949 MERGED |
 | 014 | Planners (23 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 23/23 | #5954 MERGED |
-| 015 | Argument_Analysis (17 nb) | SymbolicAI owner po-2023 | 2026-07-11 | SOTA-OK 17/17 | #5963 MERGED |
+| 015 | ArgumentAnalysis (17 nb) | SymbolicAI owner po-2023 | 2026-07-11 | SOTA-OK 17/17 | #5963 MERGED |
 | 016 | SmartContracts (27 nb, non cumul local) | po-2025 strict | 2026-07-11 | SOTA-OK 27/27 | #5994 MERGED |
 | 017 | ML/DataScienceWithAgents (27 nb, non cumul local) | po-2025 strict | 2026-07-11 | SOTA-OK 27/27 | #6034 MERGED |
 | 018 | Probas/Infer-extension (9 nb) | po-2025 strict | 2026-07-11 | SOTA-OK 9/9 | #6046 MERGED |
@@ -2823,5 +2961,8 @@ Tableau cumulatif unique du registre : une ligne par entry `## Entry #NNN`. Tout
 | 028 | Probas/PyMC 1-15 (14 nb) | po-2025 strict | 2026-07-12 | SOTA-OK 14/14 | #6286 MERGED |
 | 029 | GenAI/SemanticKernel 01-10b (12 nb) | owner-floue po-2025 consultatif | 2026-07-12 | SOTA-OK 12/12 | #6286 MERGED |
 | 030 | Probas/PyMC-05-Causal-Inference (1 nb) | po-2025 strict | 2026-07-16 | SOTA-OK 1/1 | #6808 MERGED |
+| 031 | GameTheory/13f-Ataraxos-Patron-Python (1 nb) | po-2027 | 2026-10-12 | SOTA-OK 1/1 (copie pédagogique déclarée) | #20435 |
+| 032 | GameTheory/13g-Ataraxos-Organe-Natif (1 nb) | po-2027 | 2026-10-12 | SOTA-OK 1/1 (organe natif invoqué, limite PerfectDou documentée) | #20446 |
+| 033 | GameTheory/13h-Ataraxos-DynamicDamping (1 nb) | po-2027 | 2026-10-21 | SOTA-OK 1/1 (instrument exact, résultat négatif mesuré) | #21824 — branche `feature/20408-13h-dynamic-damping` |
 
-**Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **30** (verifie le 2026-09-04). Ce tableau unique remplace les deux tableaux dupliques (8 lignes, entry #005 ; 22 lignes, entry #008) supprimes par #14562.
+**Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **33** (vérifié le 2026-10-21 ; l'entrée #033 arrive avec le grain C de #20408 ; l'entrée #032 était arrivée avec #20446). Ce tableau unique remplace les deux tableaux dupliqués (huit lignes, entry #005 ; vingt-deux lignes, entry #008) supprimés par #14562.

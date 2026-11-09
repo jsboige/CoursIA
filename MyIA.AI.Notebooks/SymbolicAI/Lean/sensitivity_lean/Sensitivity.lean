@@ -20,3 +20,5 @@ import Sensitivity.MainTheorem
 import Sensitivity.Fourier
 import Sensitivity.SpectralDegree
 import Sensitivity.TensorProductRepresentation
+import Sensitivity.Separations
+import Sensitivity.Sens2026

@@ -1,5 +1,8 @@
-# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
-# DISPOSITION: superseded | Successor: genai.py docker | Reason: PowerShell remplace par Python multi-plateforme
+# Archive header (standard _archive convention, 2026-08, docs/reference/_archive-convention.md)
+# - Date archived       : 2026-02 (consolidation genai-stack)
+# - Superseded by       : genai.py docker (scripts/genai-stack/genai.py)
+# - Verdict recorded in : _archive/ARCHIVE_README.md (registre 4 colonnes) ; #18838
+# - Reason              : PowerShell remplace par Python multi-plateforme
 #
 # ==============================================================================
 # GESTIONNAIRE UNIFIÉ DE LA STACK GENAI (PHASE 43)

@@ -9,7 +9,7 @@
 Sparse index tracking sous contrainte de cardinalité, sur **données réelles** : suivre SPY avec
 un sous-ensemble réduit d'actions (K ∈ {6, 8, 10}) plutôt que d'optimiser sans contrainte de cardinalité sur l'univers candidat complet.
 Versant « épreuve du réel » du compagnon de méthode
-[App-27 — Sparse index tracking walk-forward](../../../Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb)
+[App-27 — Sparse index tracking walk-forward](../../../Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb)
 (série Search), qui pose le même problème en CP-SAT sur données synthétiques à vérité
 connue. App-27 porte le modèle et le validateur ; ce projet porte le test sur prix réels avec un
 backtest QC Cloud et des coûts explicites. Les deux artefacts forment **une recherche, deux
@@ -65,6 +65,9 @@ walk-forward, trois exercices, comparaison des métriques actives (RMSE, biais, 
 
 ## Métriques de backtest (QC Cloud, 2026-09-01)
 
+Ces mesures précèdent le correctif du compteur de séances ; la section suivante donne les
+mesures après correctif, sur la même fenêtre.
+
 Compile post-fix `f0bae9eb9f6c939282d0a5bee3550c17-a949cff13b22a93502bd62ec59ac0e0a`
 (`BuildSuccess`, 0 erreur), mêmes dates 2015-01-01 → 2026-08-31, mêmes frais 5 bps —
 seule change la contrainte de cardinalité :
@@ -90,7 +93,7 @@ en moyenne). Le classement (full > sparse sur Sharpe et drawdown) est le même d
 et dans le cloud.
 
 **Verdict honnête : la sélection sparse ne domine pas la réplication complète ici.** Le sparse
-échange moitié moins d'ordres (703 vs 1414) mais concentre le portefeuille sur 5-10 lignes :
+échange moitié moins d'ordres (703 vs 1414) mais concentre le portefeuille sur un petit nombre de lignes :
 drawdown plus profond (34.7 % vs 30.7 %) et Sharpe plus faible (0.611 vs 0.698). **L'hypothèse de
 compression des coûts par la cardinalité est réfutée sur ces données** : la simulation révèle que
 la concentration fait migrer **plus de poids** par rebalance (139.5 vs 58.0 bps cumulés), donc la
@@ -98,8 +101,49 @@ contrainte économise des *ordres*, pas du *turnover*. Les PSR QC (3.749 % et 7.
 chaque Sharpe contre le benchmark probabiliste de la plateforme ; ils ne constituent pas un test
 pairé de la différence sparse–full. La hiérarchie observée reste donc descriptive, pas une preuve
 de séparation statistique entre les deux modes. Leçon pédagogique : la sparse tracking ne paie que si les coûts par ligne sont élevés,
-si l'univers de départ est large et bruité (500 lignes, pas 40 déjà corrélatées au marché), ou si
+si l'univers de départ est large et bruité, pas déjà réduit et corrélaté au marché, ou si
 la contrainte est exogène (budget, mandat).
+
+## Compteur de séances et historique de demi-séance
+
+Le rééquilibrage se déclenche dans `on_data` quand un compteur vaut 1 modulo 63. Deux défauts
+faussaient ce trimestre.
+
+- **Tranches de minuit** (#20264). En résolution journalière, `on_data` reçoit aussi des tranches
+  de minuit, porteuses d'avis de dividende mais d'aucune barre. Le compteur avançait sur elles :
+  le « trimestre » durait en moyenne 44,9 séances (de 42 à 49), et 21 des 65 déclenchements
+  tombaient à minuit.
+- **Historique de demi-séance** (#20286). Sur la clôture d'une demi-séance (13:00 New York), une
+  requête `history(316, DAILY)` rend environ 21 barres de moins. Le 2018-12-24, l'historique n'a
+  rendu que 261 barres : le rééquilibrage a été reporté, mais le compteur avait déjà avancé, et
+  ce trimestre a été perdu sans laisser de trace dans les compteurs.
+
+`main.py` ne compte plus que les tranches qui portent la barre de SPY. `_get_returns` demande
+deux fois la fenêtre et garde les 316 dernières lignes avant d'écarter les titres incomplets. Un
+compteur `postponed` et une ligne de journal `history` par déclenchement rendent les reports
+visibles. Mesure avant/après, selon un protocole posé avant les runs (#20286), sur les nœuds de
+backtest sponsorisés : fin effective 2026-07-15, la fenêtre codée y étant tronquée.
+
+| Mode | Backtest avant -> après | Déclenchements | Reportés | Sharpe | Rendement annuel composé | Pire baisse | Ordres |
+|---|---|---|---|---|---|---|---|
+| Sparse | `f47ad143…` -> `b41e290d…` | 65 -> 47 | 1 -> 0 | 0,635 -> 0,616 | 17,32 % -> 16,74 % | 34,7 % -> 35,3 % | 687 -> 536 |
+| Full | `5045a659…` -> `71ae29a8…` | 65 -> 47 | 1 -> 0 | 0,712 -> 0,709 | 17,26 % -> 17,15 % | 30,7 % -> 31,3 % | 1386 -> 1222 |
+
+Sur la fenêtre codée entière (2015-01-01 -> 2026-08-31), le correctif a aussi tourné sur un nœud
+de backtest qui ne la tronque pas. L'avant y est le run publié plus haut (2026-09-01), lancé sur un
+`main.py` identique à celui d'avant le correctif. Six semaines séparent les deux runs : le moteur
+ou les données ont pu changer entre-temps, et cette paire est moins contrôlée que la précédente.
+
+| Mode | Backtest avant -> après | Sharpe | Rendement annuel composé | Pire baisse | Ordres |
+|---|---|---|---|---|---|
+| Sparse | `a9bb668b…` -> `8d587433…` | 0,611 -> 0,601 | 17,00 % -> 16,35 % | 34,7 % -> 35,3 % | 703 -> 536 |
+| Full | `8e647c58…` -> `4f5c12db…` | 0,698 -> 0,710 | 17,26 % -> 17,16 % | 30,7 % -> 31,3 % | 1414 -> 1222 |
+
+Dans les quatre runs après correctif, l'écart entre deux déclenchements vaut exactement 63
+séances, chaque historique rend 316 barres, et aucun rééquilibrage n'est reporté. L'écart de
+métriques n'a pas de signe à retenir : il dépend du marché aux dates déplacées. Le classement entre les deux modes ne change pas : `full` garde le meilleur
+Sharpe et la pire baisse la plus faible. Le correctif apporte un rééquilibrage tous les 63 jours
+de séance, comme le décrit le protocole, sans trimestre perdu.
 
 ## Limites
 
@@ -123,6 +167,6 @@ la contrainte est exogène (budget, mandat).
 
 ## Renvois
 
-- **Méthode** : [App-27 — Sparse index tracking walk-forward](../../../Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) — modèle CP-SAT, validateur, fuite reproduite et lecture pédagogique des présents résultats QC.
+- **Méthode** : [App-27 — Sparse index tracking walk-forward](../../../Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) — modèle CP-SAT, validateur, fuite reproduite et lecture pédagogique des présents résultats QC.
 - **Issue** : #14062 (développement d'App-27 côté QuantConnect).
 - **Tracking error sans cardinalité** : [QC-Py-14 — Portfolio Construction & Execution](../../Python/QC-Py-14-Portfolio-Construction-Execution.ipynb) — l'arête manquante que ce projet ajoute.

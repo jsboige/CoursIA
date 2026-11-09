@@ -1,0 +1,196 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{enumitem}
+\usepackage{geometry}
+
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+
+\title{5BD ALT1 - Introduction au Trading Algorithmique \\ \textbf{QCM de Rattrapage 2024 - Corrigé}}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\vspace{1cm}
+
+\textbf{Nom de l'étudiant :} \underline{\hspace{10cm}}
+
+\vspace{1cm}
+
+\textbf{Instructions :} Sélectionnez la meilleure réponse parmi les choix proposés pour chaque question.
+
+\vspace{0.5cm}
+
+\section*{Section Théorique}
+
+\begin{enumerate}
+    \item Quel est l'objectif principal du trading algorithmique?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Automatiser l'achat et la vente de titres en utilisant des algorithmes pour prendre des décisions basées sur des règles prédéfinies et des données de marché en temps réel
+        \item Maximiser les profits en exécutant des transactions à haute fréquence pour capturer de petites fluctuations de prix
+        \item (CORRECT) Utiliser des algorithmes pour prendre des décisions d'achat et de vente de titres en se basant sur des données et des analyses quantitatives
+        \item Réduire les coûts de transaction en éliminant les intermédiaires et en exécutant des ordres directement sur le marché
+    \end{enumerate}
+
+    \item En quoi le High-Frequency Trading (HFT) diffère-t-il du Low-Frequency Trading (LFT) en termes de fréquence d'exécution des transactions?
+    \begin{enumerate}[label=(\Alph*)]
+        \item HFT se caractérise par des transactions exécutées en quelques millisecondes ou microsecondes, tandis que LFT se concentre sur des positions tenues sur des jours ou des semaines
+        \item HFT se concentre sur des volumes élevés de petites transactions exécutées rapidement, tandis que LFT cible des transactions plus rares avec des volumes plus importants
+        \item (CORRECT) HFT opère en millisecondes ou microsecondes, tandis que LFT se base sur des positions tenues pendant des jours, semaines ou mois
+        \item HFT utilise des ordres à cours limité pour maximiser les profits, tandis que LFT utilise principalement des ordres au marché
+    \end{enumerate}
+
+    \item Quel est un avantage clé du trading algorithmique par rapport au trading manuel?
+    \begin{enumerate}[label=(\Alph*)]
+        \item (CORRECT) Il permet une scalabilité élevée, permettant de gérer de nombreux ordres simultanément avec un minimum de supervision humaine
+        \item Il élimine le besoin de compétences en analyse de marché en utilisant des modèles automatisés pour prédire les mouvements de prix
+        \item Il garantit que les transactions sont toujours exécutées au meilleur prix possible grâce à une analyse continue des données de marché
+        \item Il réduit considérablement le temps nécessaire pour exécuter des transactions en automatisant le processus de décision basé sur des algorithmes préprogrammés
+    \end{enumerate}
+
+    \item Quelle est la fonction principale du backtesting dans le développement d'une stratégie de trading?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Évaluer la performance d'une stratégie avec des données futures pour vérifier son efficacité avant de l'utiliser en conditions réelles
+        \item (CORRECT) Évaluer la performance d'une stratégie en simulant ses résultats sur des données historiques pour vérifier son efficacité avant de l'utiliser en conditions réelles
+        \item Tester la robustesse d'une stratégie en conditions de marché extrêmes, comme les krachs boursiers ou les périodes de volatilité élevée
+        \item Simuler des transactions en temps réel sur un compte démo pour voir comment la stratégie fonctionnerait sans risque de perdre de l'argent
+    \end{enumerate}
+
+    \item Quel est le rôle du ratio de Sharpe dans l'évaluation des stratégies de trading?
+    \begin{enumerate}[label=(\Alph*)]
+        \item (CORRECT) Il évalue le rendement ajusté au risque d'une stratégie en comparant les rendements excédentaires au risque encouru
+        \item Il mesure la volatilité des rendements pour déterminer si une stratégie est trop risquée pour être utilisée dans des conditions de marché réelles
+        \item Il calcule l'efficacité d'une stratégie en termes de coût par transaction pour optimiser les frais de courtage
+        \item Il détermine la vitesse et la force du mouvement des prix pour identifier les meilleures opportunités d'achat ou de vente
+    \end{enumerate}
+
+    \item Comment l'analyse technique diffère-t-elle de l'analyse fondamentale dans le contexte du trading?
+    \begin{enumerate}[label=(\Alph*)]
+        \item L'analyse technique se base sur l'étude des indicateurs de marché tels que les moyennes mobiles, tandis que l'analyse fondamentale évalue les bilans financiers et les rapports d'entreprise
+        \item (CORRECT) L'analyse technique se concentre sur les indicateurs de prix et les modèles graphiques pour prévoir les mouvements de marché, tandis que l'analyse fondamentale évalue les états financiers et la performance des entreprises
+        \item L'analyse technique analyse les tendances historiques des prix et des volumes, tandis que l'analyse fondamentale se concentre sur la santé financière des entreprises
+        \item L'analyse technique utilise des modèles mathématiques pour prévoir les mouvements futurs des prix, tandis que l'analyse fondamentale analyse les tendances économiques et les conditions de marché
+    \end{enumerate}
+
+    \item Dans le cadre de la performance d'un portefeuille, que représente l'alpha?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Une mesure de la volatilité des rendements d'un portefeuille en fonction de la performance globale du marché
+        \item (CORRECT) Une mesure de la surperformance d'un portefeuille par rapport à un indice de référence ou benchmark, après ajustement du risque
+        \item Un indicateur de tendance utilisé pour suivre les performances passées d'un actif par rapport à sa moyenne historique
+        \item La différence entre le rendement réel d'un portefeuille et le rendement attendu basé sur les conditions du marché
+    \end{enumerate}
+
+    \item Quels sont les principaux risques à surveiller lors du développement d'une stratégie de trading algorithmique?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Latence, sélection de broker, et coûts de transaction élevés peuvent affecter les performances
+        \item Drawdown, coût de transaction, et liquidité du marché sont les facteurs principaux qui déterminent la viabilité d'une stratégie
+        \item (CORRECT) Slippage, drawdown, et overfitting sont des risques critiques qui peuvent fausser les résultats et réduire les gains
+        \item Sur-optimisation, frais de transaction, et régulation du marché sont des éléments clés à prendre en compte pour minimiser les pertes
+    \end{enumerate}
+
+    \item Quelle est la méthode appropriée pour utiliser les données historiques lors du test d'une stratégie de trading?
+    \begin{enumerate}[label=(\Alph*)]
+        \item (CORRECT) Télécharger des données historiques précises et les utiliser pour exécuter un backtest rigoureux sur une longue période afin d'analyser les performances
+        \item Comparer les résultats obtenus avec ceux d'autres algorithmes utilisant des données similaires pour valider l'efficacité de la stratégie
+        \item Utiliser des données simulées pour créer des scénarios de marché extrêmes et tester la robustesse de la stratégie face à la volatilité
+        \item Tester uniquement sur les données les plus récentes pour s'assurer que la stratégie est adaptée aux conditions de marché actuelles
+    \end{enumerate}
+
+    \item Pourquoi est-il essentiel d'intégrer une gestion des risques dans une stratégie de trading algorithmique?
+    \begin{enumerate}[label=(\Alph*)]
+        \item (CORRECT) Pour protéger le capital en limitant les pertes potentielles et en s'assurant que la stratégie reste viable même en cas de mouvements de marché défavorables
+        \item Pour maximiser les profits tout en réduisant le risque de perte de capital en limitant les transactions risquées
+        \item Pour garantir des rendements stables et prévisibles en minimisant la volatilité des transactions et les coûts associés
+        \item Pour réduire les coûts de transaction en évitant les ordres au marché qui peuvent entraîner des frais supplémentaires
+    \end{enumerate}
+
+\end{enumerate}
+
+\newpage
+
+\section*{Section Pratique - Utilisation de Lean}
+
+\begin{enumerate}
+    \item Quelle est l'importance de la méthode \texttt{Initialize} dans Lean pour le développement d'une stratégie de trading?
+    \begin{enumerate}[label=(\Alph*)]
+        \item (CORRECT) Elle est cruciale pour configurer les paramètres de base de l'algorithme, tels que les dates de backtest, les actifs à trader et les modèles de gestion des risques
+        \item Elle définit les règles de sortie et les critères d'arrêt qui permettent de gérer les transactions non performantes et de minimiser les pertes potentielles
+        \item Elle configure les paramètres de sortie du journal de l'algorithme pour une analyse post-mortem des performances
+        \item Elle est utilisée pour définir les paramètres essentiels, comme les dates de backtesting, les actifs sélectionnés et les modèles de gestion de portefeuille
+    \end{enumerate}
+
+    \item Comment configure-t-on les dates de backtesting dans Lean en C\# ou Python?
+    \begin{enumerate}[label=(\Alph*)]
+        \item On utilise la méthode \texttt{this.SetBacktestDates(startDate, endDate);} en C\# ou \texttt{self.SetBacktestDates(startDate, endDate);} en Python pour définir les dates de début et de fin du backtest
+        \item (CORRECT) On utilise la méthode \texttt{this.SetStartDate(startDate); this.SetEndDate(endDate);} en C\# ou \texttt{self.SetStartDate(startDate); self.SetEndDate(endDate);} en Python pour configurer les dates
+        \item On utilise la méthode \texttt{this.SetTestDates(startDate, endDate);} en C\# ou \texttt{self.SetTestDates(startDate, endDate);} en Python pour spécifier la période de test
+        \item On configure les dates dans le fichier de configuration JSON de Lean pour éviter les erreurs de code dans l'algorithme principal
+    \end{enumerate}
+
+    \item Comment ajuster un algorithme dans Lean pour réduire l'impact de la volatilité sur les signaux de trading?
+    \begin{enumerate}[label=(\Alph*)]
+        \item (CORRECT) En augmentant la période de calcul des indicateurs techniques pour lisser les signaux et éviter les fluctuations de court terme
+        \item En ajoutant des conditions supplémentaires dans la méthode \texttt{OnData} pour valider les signaux avant de passer des ordres afin de minimiser les faux signaux
+        \item En réduisant la résolution des données utilisées pour les calculs afin de limiter l'exposition aux fluctuations de prix à court terme
+        \item En utilisant des ordres conditionnels pour minimiser l'exposition au risque lors des périodes de volatilité accrue sur les marchés
+    \end{enumerate}
+
+    \item Quelle est la fonction de la méthode \texttt{SetHoldings} dans Lean, et comment l'utiliser correctement ?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Elle exécute un ordre de marché immédiat pour acheter ou vendre un actif en fonction des signaux de trading générés par l'algorithme
+        \item (CORRECT) Elle ajuste automatiquement la pondération d'un actif dans le portefeuille pour correspondre à un pourcentage cible de la valeur totale du portefeuille, en fonction de la stratégie définie
+        \item Elle vend automatiquement tous les actifs dans le portefeuille lorsque la valeur cible est atteinte, pour sécuriser les profits
+        \item Elle configure les frais de courtage pour chaque transaction, permettant de minimiser les coûts liés à l'achat et à la vente d'actifs
+    \end{enumerate}
+
+    \item Comment optimiser une stratégie de trading pour maximiser le ratio de Sharpe tout en minimisant les risques dans Lean?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Augmenter la fréquence des transactions pour capturer de petites inefficacités du marché, même si cela augmente la volatilité globale du portefeuille
+        \item (CORRECT) Utiliser les modules d'optimisation de Lean pour ajuster automatiquement les paramètres de l'algorithme et intégrer des modèles de gestion des risques pour contrôler la volatilité
+        \item Ajuster manuellement les poids du portefeuille après chaque période de performance en fonction des résultats obtenus et des conditions de marché prévues
+        \item Utiliser des ordres conditionnels et des modèles de prévision avancés pour protéger les positions sans modifier les paramètres de l'algorithme principal
+    \end{enumerate}
+
+    \item Qu'est-ce que le "lookahead bias" et comment Lean aide-t-il à l'éviter lors du backtesting?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Lean ajuste automatiquement les résultats de backtest pour éliminer tout "lookahead bias" et fournir une estimation plus réaliste des performances futures
+        \item (CORRECT) Lean empêche l'accès aux données futures lors de l'évaluation des indicateurs, assurant que les décisions de trading sont basées uniquement sur les informations disponibles à ce moment-là
+        \item Lean utilise des algorithmes spéciaux pour générer des données synthétiques basées sur des conditions de marché réelles, minimisant ainsi les risques de biais futurs
+        \item Le "lookahead bias" est inévitable lors du backtesting avec Lean, donc une attention particulière est requise lors de l'interprétation des résultats
+    \end{enumerate}
+
+    \item Comment Lean gère-t-il les événements comme les changements de titres dans un portefeuille de trading algorithmique?
+    \begin{enumerate}[label=(\Alph*)]
+        \item (CORRECT) Lean utilise des méthodes comme \texttt{OnSecuritiesChanged} pour ajuster automatiquement les positions du portefeuille en fonction des nouvelles conditions du marché
+        \item Lean automatise entièrement la gestion des changements de titre, sans besoin d'intervention manuelle pour ajuster les positions
+        \item Les changements de titre sont insignifiants dans un trading algorithmique basé principalement sur des ordres au marché, donc Lean ne les prend pas en charge
+        \item Lean n'offre pas de support pour la gestion des changements de titre dans un portefeuille, ce qui doit être fait manuellement par l'utilisateur
+    \end{enumerate}
+
+    \item Que faire si votre algorithme de trading fonctionne bien en backtest mais sous-performe en paper trading? Quels ajustements pouvez-vous apporter?
+    \begin{enumerate}[label=(\Alph*)]
+        \item (CORRECT) Ajuster les paramètres de gestion du risque et les modèles d'exécution pour mieux refléter les conditions réelles du marché et la variabilité de la liquidité
+        \item Le paper trading introduit des erreurs systématiques qui n'existent pas dans les backtests, donc il est préférable de continuer à affiner l'algorithme basé sur les résultats de backtest uniquement
+        \item Aucune divergence ne devrait exister entre les résultats de backtest et de paper trading si l'algorithme est correctement paramétré et testé
+        \item La divergence est souvent due à la qualité des données historiques utilisées pour les backtests, qui sont généralement meilleures que les données en temps réel disponibles pour le paper trading
+    \end{enumerate}
+
+    \item Comment choisir le bon modèle d'univers pour une stratégie de trading dans Lean?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Le modèle d'univers sélectionné fixe les frais de transaction, ce qui influence directement les coûts de trading et les marges de profit
+        \item (CORRECT) Le modèle d'univers détermine les actifs disponibles pour le trading, influençant directement les opportunités de marché et la diversification du portefeuille
+        \item Le choix du modèle d'univers n'affecte pas les performances globales de la stratégie si l'algorithme est bien conçu et optimisé pour le marché cible
+        \item Le modèle d'univers est principalement utilisé pour la visualisation des données et n'a que peu d'impact sur la performance globale de la stratégie de trading
+    \end{enumerate}
+
+    \item Comment intégrer une stratégie de gestion des risques dans Lean pour gérer les événements imprévus ("black swan events")?
+    \begin{enumerate}[label=(\Alph*)]
+        \item Utiliser des ordres conditionnels pour liquider instantanément toutes les positions si un certain seuil de perte est atteint, indépendamment du contexte du marché
+        \item (CORRECT) Intégrer un modèle de gestion des risques qui ajuste automatiquement les positions lors de mouvements extrêmes sur le marché pour limiter les pertes potentielles dues aux événements imprévus
+        \item La gestion des événements imprévus doit être manuelle, car Lean ne prend pas en charge les fonctionnalités de gestion automatique des risques pour ces situations
+        \item Ignorer les événements imprévus car leur occurrence est statistiquement rare et leur impact est souvent négligeable sur la performance globale du portefeuille
+    \end{enumerate}
+\end{enumerate}
+
+\end{document}

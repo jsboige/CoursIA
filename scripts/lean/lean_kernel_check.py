@@ -43,18 +43,64 @@ REPO_WRAPPER_REFERENCE = (
 )
 
 
+def windows_kernel_json_candidates(kernel_name="lean4-wsl",
+                                   windows_users_root="/mnt/c/Users"):
+    """Return the Windows-side kernel.json locations, from EITHER side.
+
+    The kernel that Jupyter actually drives is registered on the Windows side
+    (``%APPDATA%/jupyter/kernels/<name>/kernel.json``); the WSL-side Jupyter
+    registers its own copy under ``~/.local/share/jupyter``.  When the
+    validator runs INSIDE WSL (``--wsl``), ``%APPDATA%`` is not exported, so
+    the Windows registration was invisible and the check reported "aucun
+    kernel.json trouve" for a kernel that WAS registered (issue #21614,
+    defect 3).
+
+    From inside WSL the Windows profile is reachable under
+    ``/mnt/c/Users/<user>/AppData/Roaming``; that path is what this function
+    probes, so the check works on both sides without an interop call.
+    """
+    candidates = []
+    appdata = os.environ.get("APPDATA")
+    if appdata:
+        candidates.append(Path(appdata) / "jupyter" / "kernels" / kernel_name / "kernel.json")
+    root = Path(windows_users_root)
+    if root.is_dir():
+        for profile in sorted(root.iterdir()):
+            if not profile.is_dir():
+                continue
+            candidates.append(
+                profile / "AppData" / "Roaming" / "jupyter" / "kernels"
+                / kernel_name / "kernel.json"
+            )
+    return candidates
+
+
+def _safe_exists(path) -> bool:
+    """True si le chemin existe -- sans lever sur un profil inaccessible.
+
+    Depuis WSL, le probe `/mnt/c/Users/<profil>/...` rencontre des profils
+    Windows que l'utilisateur WSL ne peut pas statuer (`DefaultAppPool` par
+    exemple) : `Path.exists()` leve alors `PermissionError` au lieu de
+    renvoyer False, et le validateur meurt sur un chemin qui n'est meme pas
+    le sien (mesure #21614, run WSL du 2026-10-21).
+    """
+    try:
+        return Path(path).exists()
+    except OSError:
+        return False
+
+
 def candidate_kernel_json_paths(kernel_name="lean4-wsl"):
     """Return the kernel.json locations to probe, in priority order.
 
     Covers both the WSL-side install (~/.local/share/jupyter) and the
-    Windows-side registration (%APPDATA%/jupyter).
+    Windows-side registration (%APPDATA%/jupyter, or /mnt/c/Users/<u>/
+    AppData/Roaming when running inside WSL -- issue #21614).
     """
     candidates = [
         Path.home() / ".local" / "share" / "jupyter" / "kernels" / kernel_name / "kernel.json",
     ]
-    appdata = os.environ.get("APPDATA")
-    if appdata:
-        candidates.append(Path(appdata) / "jupyter" / "kernels" / kernel_name / "kernel.json")
+    candidates.extend(windows_kernel_json_candidates(kernel_name))
     return candidates
 
 
@@ -73,9 +119,9 @@ def inspect_kernel_wrapper(kernel_name="lean4-wsl", kernel_json_path=None):
         candidates = [kernel_json]
     else:
         candidates = candidate_kernel_json_paths(kernel_name)
-        kernel_json = next((p for p in candidates if p.exists()), None)
+        kernel_json = next((p for p in candidates if _safe_exists(p)), None)
 
-    if kernel_json is None or not kernel_json.exists():
+    if kernel_json is None or not _safe_exists(kernel_json):
         probed = [str(p) for p in candidates]
         return ("warning", f"kernel.json: aucun ({kernel_name}) trouve dans {probed}")
 
@@ -108,6 +154,34 @@ def _load_argv(kernel_json: Path):
     with open(kernel_json, "r", encoding="utf-8") as f:
         spec = json.load(f)
     return [str(a) for a in spec.get("argv", [])]
+
+
+def kernel_drives_wsl(kernel_name="lean4-wsl", kernel_json_path=None):
+    """True si le kernel.json enregistre pilote la chaine Lean a travers WSL.
+
+    Sur un poste installe en WSL, le kernel ``lean4-wsl`` est enregistre
+    COTE WINDOWS mais son argv appelle ``wsl.exe`` : la chaine elan/lean/
+    lake n'existe donc que dans la distro. C'est le marqueur qui permet au
+    validateur de ne pas compter les binaires Windows comme des composants
+    manquants (issue #21614, defaut 2).
+
+    Renvoie False si aucun kernel.json n'est trouve ou illisible.
+    """
+    if kernel_json_path is not None:
+        kernel_json = Path(kernel_json_path)
+        candidates = [kernel_json]
+    else:
+        candidates = candidate_kernel_json_paths(kernel_name)
+    kernel_json = next((p for p in candidates if _safe_exists(p)), None)
+    if kernel_json is None:
+        return False
+    try:
+        with open(kernel_json, "r", encoding="utf-8") as f:
+            spec = json.load(f)
+        argv = " ".join(str(a) for a in spec.get("argv", []))
+    except Exception:  # noqa: BLE001 - un kernel.json illisible ne prouve rien
+        return False
+    return "wsl" in argv.lower()
 
 
 def inspect_wrapper_content_drift(kernel_json_path, repo_reference=None):
@@ -180,7 +254,7 @@ def main():
     # Content drift is advisory: visible, never blocking (#13180).
     if status == "ok":
         candidates = candidate_kernel_json_paths(args.kernel)
-        kj = next((p for p in candidates if p.exists()), None)
+        kj = next((p for p in candidates if _safe_exists(p)), None)
         if kj is not None:
             drift_status, drift_message = inspect_wrapper_content_drift(kj)
             d_prefix = {"ok": "OK:", "warning": "WARNING:"}[drift_status]

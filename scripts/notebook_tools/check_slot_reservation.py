@@ -136,6 +136,57 @@ DIFFERE : un chemin identique est la reservation la plus forte qui soit, jamais
 un soi-meme. Le pendant est teste symetriquement (une cible que MA propre
 revision porte reste a moi).
 
+TROIS DIAGNOSTICS D'ACCRETION (advisory, #19144)
+------------------------------------------------
+Le meme organe porte depuis #19144 trois lectures de la regle
+`notebook-accretion-numbering.md`, toutes **informatives** : elles ne changent
+JAMAIS le code retour (main() ne rend 1 que sur les conflits de slot
+pre-existants) et n'empechent aucun merge. Elles rendent lisible, avant
+l'arbitrage humain, ce qu'une PR fait a la numerotation d'une branche :
+
+    DEPTH          une lettre d'accretion au-dela du plafond `f` (regle §4 :
+                   au-dela, fusionner en notebooks plus lourds, pas etendre)
+    NO_BASE        une lettre posee sur un numero qui n'a AUCUN notebook de
+                   base (sans lettre) -- la base occupe le slot `a` (regle §2) ;
+                   les trois defauts anciens (`GameTheory-03`, `Lean-16`,
+                   `Tweety-7`) ne sont signales QUE si cette PR y pose une
+                   lettre, jamais au titre de l'etat herite
+    PENDING_TABLE  la revision ajoute un notebook (ou edite le README) d'un
+                   repertoire dont la table de renommage est publiee et NON
+                   appliquee -- source : les entrees `reserved` de la table
+                   declaree portant le marqueur `pending_table` (regle §5.5)
+
+**§7 -- les twins ne sont jamais une accretion.** Un `-CSharp` ajoute au slot de
+son jumeau Python n'introduit ni lettre ni numero : `same_item` l'ecarte de tout
+diagnostic. Un test le prouve en falsifiabilite (cf `test_check_slot_reservation.py`).
+
+**Source indisponible.** La base illisible fait deja remonter `RuntimeError` ->
+sortie 2 (cf `main`) : l'accretion est calculee dans le meme bloc `try`, donc elle
+ne peut pas « ne rien trouver » la ou elle n'a rien pu lire. Les trois constats se
+lisent sur des sources git ; aucun ne depend d'une entree fournie par l'auteur.
+
+UNE SEULE CLE DE SLOT (#21959)
+------------------------------
+Le module a longtemps porte DEUX cles : `slot_of()` (le verdict par PR) et
+`_scan_slot()` (le balayage de `main`). Elles ne voyaient pas le meme depot :
+`slot_of()` passe par `index_key()`, qui ne produit d'index que pour un stem
+COMMENCANT PAR UN CHIFFRE -- tous les carnets a prefixe de serie
+alphabetique (`Z3-19`, `GameTheory-04c`, `ICT-48`, `SL-12b`) sortaient donc
+`no_slot`, et deux PRs qui revendiquaient le meme numero de carnet ne se
+voyaient qu'au conflit de merge (#20664 contre #20922, sur `Z3-19`).
+
+La cle du module est desormais `_scan_slot()`, pour TOUT le chemin de verdict
+(`group_by_slot`, `pr_claims`, `verdict_for`) comme pour le balayage :
+`_scan_slot` ne rend plus `None` sur une serie alphabetique, et decompose les
+prefixes chiffre-lettres (`3D-01` != `3D-02`) que `index_key` confond sous
+`3d`. Pour les prefixes purement chiffres, la cle reste `index_key()` -- la
+normalisation du zero-pad (`04-2` = `4.2`) que la table publiee (`declared`)
+utilise comme convention.
+
+`slot_of()` reste inchange : c'est l'API historique du module, et les autres
+organes qui l'importent doivent continuer a lire la meme cle. Aucun chemin de
+verdict de ce module ne l'emploie plus -- la cle unique, c'est `_scan_slot`.
+
 Sortie : 0 = tous les slots examines sont libres (ou exempts) ; 1 = au moins un
 conflit ; 2 = erreur d'invocation, ou controle de self-test non satisfait (le
 detecteur est casse -- distinct d'une collision reelle, qui sort 1).
@@ -154,6 +205,9 @@ Usage
     # Sans reseau (CI, voie rapide) : sources arbre + revision + declarees
     python scripts/notebook_tools/check_slot_reservation.py --offline
 
+    # Advisory SEUL (check-run dedie, ne redit pas le verdict de slot)
+    python scripts/notebook_tools/check_slot_reservation.py --offline --accretion-only
+
     python scripts/notebook_tools/check_slot_reservation.py --self-test
 """
 from __future__ import annotations
@@ -161,19 +215,29 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
 # Grammaire de nom partagee (#5081) : `index_key` normalise le zero-pad et les
-# separateurs de niveau (04-2 et 4.2 sont le meme slot) et `strip_lang` apparie
-# les rendus alternatifs d'un meme item (-Csharp, _en, -Lean). Redefinir un
-# motif ici rouvrirait le defaut 2 de #15489 : deux lectures du meme nom.
+# separateurs de niveau (04-2 et 4.2 sont le meme slot), `strip_lang` apparie
+# les rendus alternatifs d'un meme item (-Csharp, _en, -Lean) et `parse_name`
+# expose le numero ET la lettre d'accretion d'un nom a prefixe de serie
+# (`Search-03g` -> number `03`, accr `g`) sans qu'un second motif soit ecrit
+# ici. Redefinir un motif rouvrirait le defaut 2 de #15489 : deux lectures du
+# meme nom.
 _here = str(Path(__file__).resolve().parent)
 if _here not in sys.path:
     sys.path.insert(0, _here)
-from naming_canon import index_key, strip_lang  # noqa: E402
+from naming_canon import (  # noqa: E402
+    LANG_SUFFIXES,
+    _IPYNB_RE,
+    index_key,
+    parse_name,
+    strip_lang,
+)
 
 # Reprise bornee sur la pression de fork (#16213) : sous `pytest-xdist -n 4`, le
 # spawn de `git` est refuse par intermittence (`EAGAIN`). Meme raison de
@@ -188,6 +252,7 @@ SOURCE_REVISION = "revision"
 SOURCE_OPEN_PRS = "open_prs"
 SOURCE_OPEN_PRS_REMOVED = "open_prs_removed"
 SOURCE_DECLARED = "declared"
+SOURCE_ACCRETION = "accretion"
 
 # Precedence du verdict quand plusieurs sources se disputent le meme slot. Du
 # plus local au plus lointain : ce que la revision fait a elle-meme d'abord
@@ -239,6 +304,23 @@ def notebooks_at(ref):
     return _ipynb(_git(["ls-tree", "-r", "--name-only", ref]).splitlines())
 
 
+def changed_readmes_at(base, head):
+    """README de serie AJOUTES ou MODIFIES par la revision (diagnostic PENDING_TABLE).
+
+    Une table de renommage publiee se materialise par des `git mv` ET par la mise
+    a jour des liens du README de la serie : le README est donc la seconde moitie
+    de l'evenement, et une PR qui ne touche que lui doit sortir le diagnostic
+    autant qu'une PR qui ajoute un notebook (cf accretion_findings).
+    """
+    out = []
+    for line in _git(["diff", "--name-only", "--diff-filter=AM",
+                      "%s...%s" % (base, head)]).splitlines():
+        p = line.strip()
+        if split_dir(p)[1].lower() == "readme.md":
+            out.append(p)
+    return out
+
+
 def split_dir(path):
     """(repertoire, basename) en separateur POSIX -- les chemins git ne connaissent que '/'."""
     if "/" in path:
@@ -248,7 +330,13 @@ def split_dir(path):
 
 
 def slot_of(path):
-    """Slot d'un chemin : (repertoire, index normalise), ou None s'il ne porte pas d'index."""
+    """Slot d'un chemin : (repertoire, index normalise), ou None s'il ne porte pas d'index.
+
+    Cle SUPERFICIELLE, conservee telle quelle : c'est l'API historique du
+    module, et un carnet a prefixe de serie alphabetique (`Z3-19`) n'y porte
+    aucun index. Le chemin de VERDICT de ce module n'y passe plus -- il lit
+    `_scan_slot` (cf #21959 et la section « UNE SEULE CLE DE SLOT »).
+    """
     d, b = split_dir(path)
     key = index_key(b)
     if key is None:
@@ -257,7 +345,14 @@ def slot_of(path):
 
 
 def same_item(a, b):
-    """Deux rendus du meme item (suffixe de langue seul different) : pas concurrents."""
+    """Deux rendus du meme item (suffixe de langue seul different) : pas concurrents.
+
+    Regle du canon #5081, telle quelle : elle ne retire qu'UN suffixe de
+    langue. Le chemin de verdict lui prefere `_same_item_scan`, qui en retire
+    tous -- la forme composee (`-Python_en`) et le noyau en milieu de nom
+    (`-CSharp-RDFStar`) sont des faux positifs du canon que le verdict ne peut
+    pas se permettre depuis que les series alphabetiques ont un slot.
+    """
     return strip_lang(split_dir(a)[1]).lower() == strip_lang(split_dir(b)[1]).lower()
 
 
@@ -270,10 +365,14 @@ class Occupant:
 
 
 def group_by_slot(paths, source, detail=""):
-    """{slot: [Occupant, ...]} -- les chemins sans index sont ecartes (rien a reserver)."""
+    """{slot: [Occupant, ...]} -- les chemins sans position lisible sont ecartes.
+
+    La cle est `_scan_slot` (cf #21959) : un carnet a prefixe de serie
+    alphabetique (`Z3-19`) tient une position, il n'est plus ecarte.
+    """
     out: dict[tuple[str, str], list[Occupant]] = {}
     for p in paths:
-        slot = slot_of(p)
+        slot = _scan_slot(p)
         if slot is None:
             continue
         out.setdefault(slot, []).append(Occupant(p, source, detail))
@@ -301,7 +400,7 @@ def pr_claims(prs, removed=None):
                 continue
             if path in gone:
                 continue          # suppression PURE : ce slot est libere
-            slot = slot_of(path)
+            slot = _scan_slot(path)
             if slot is None:
                 continue
             claims.setdefault(slot, []).append(Occupant(path, SOURCE_OPEN_PRS, "#%s" % num))
@@ -371,7 +470,18 @@ def load_removed_paths(numbers, repo, status):
 
 
 def declared_claims(doc):
-    """Slots declares reserves par une table publiee (`slot_reservations.json`)."""
+    """Slots declares reserves par une table publiee (`slot_reservations.json`).
+
+    L'index declare est compare SANS EGARD A LA CASSE, des deux cotes : la
+    convention de la table est l'index normalise de `naming_canon.index_key`
+    (zero-pad resorbe) pour un index numerique, et le nom de serie
+    (`GameTheory-04c`) pour une entree qui nomme une serie -- or la position
+    d'un carnet de serie conserve la casse de son nom de fichier (`SL-12b`).
+    Comparer une entree de table a un slot par egalite STRICTE rendait la
+    reservation invisible des que les deux graphies differeient : une table de
+    slots declares qui ne declare rien en silence. La forme ECRITE est
+    conservee dans le chemin de l'occupant affiche.
+    """
     claims: dict[tuple[str, str], list[Occupant]] = {}
     for entry in (doc or {}).get("reserved") or []:
         d = (entry.get("dir") or "").strip("/")
@@ -381,7 +491,7 @@ def declared_claims(doc):
         holder = (entry.get("holder") or "").strip() or "sans detenteur nomme"
         note = (entry.get("note") or "").strip()
         detail = "%s%s" % (holder, (" -- %s" % note) if note else "")
-        claims.setdefault((d, key.lower()), []).append(
+        claims.setdefault((d.casefold(), key.casefold()), []).append(
             Occupant("%s/%s" % (d, entry.get("index")), SOURCE_DECLARED, detail))
     return claims
 
@@ -395,8 +505,13 @@ def merge(*maps):
 
 
 def verdict_for(target, occupants, releases):
-    """Verdict d'une cible contre l'ensemble des occupants de son slot."""
-    slot = slot_of(target)
+    """Verdict d'une cible contre l'ensemble des occupants de son slot.
+
+    La cle est `_scan_slot` comme partout ailleurs dans le module (#21959) :
+    une cible a prefixe de serie alphabetique a desormais une position, et
+    peut donc etre en conflit avec un occupant qui la revendique.
+    """
+    slot = _scan_slot(target)
     if slot is None:
         return {"target": target, "slot": None, "state": "no_slot",
                 "verdict": "ok", "conflicts": []}
@@ -404,7 +519,16 @@ def verdict_for(target, occupants, releases):
     conflicts = []
     exempt = False
     t_base = split_dir(target)[1].lower()
-    for occ in occupants.get(slot, []):
+    # Deux lectures : la forme EXACTE d'abord (c'est elle qui porte les
+    # occupants de la base et de la revision, dont la cle est la position
+    # analysee), puis la forme repliee -- la table declaree est indexee sans
+    # egard a la casse, une entree qui ecrit `sl-12b` doit reserver le slot
+    # `SL-12b` d'un carnet de serie, et l'inverse aussi.
+    occ_list = list(occupants.get(slot, []))
+    folded = (slot[0].casefold(), slot[1].casefold())
+    if folded != slot:
+        occ_list.extend(occupants.get(folded, []))
+    for occ in occ_list:
         # La cible se reconnait elle-meme UNIQUEMENT parmi les cibles de la
         # revision : en mode revision les deux ensembles sont le meme, et se
         # compter comme occupant de soi-meme ferait rougir chaque ligne. Un
@@ -420,7 +544,11 @@ def verdict_for(target, occupants, releases):
         # un sibling, c'est le meme fichier -- etre passe sous silence ici etait
         # le defaut revele par la mesure sur le pool vivant (target
         # `01_OpenAI_Intro.ipynb` : la PR qui l'ecrit etait exemptee).
-        if same_item(occ.path, target) and split_dir(occ.path)[1].lower() != t_base:
+        # La regle d'appariement est `_same_item_scan` (tous les suffixes de
+        # langue retires + noyau en milieu de nom), pas `same_item` : depuis
+        # que les series alphabetiques ont une position (#21959), un jumeau
+        # compose (`-Python_en`) deviendrait sinon un faux conflit.
+        if _same_item_scan(occ.path, target) and split_dir(occ.path)[1].lower() != t_base:
             exempt = True
             continue
         state = {
@@ -448,6 +576,372 @@ def verdict_for(target, occupants, releases):
 
 def examine(targets, occupants, releases):
     return [verdict_for(t, occupants, releases) for t in targets]
+
+
+# --------------------------------------------------------------- accretion
+#
+# Les trois diagnostics d'accretion (#19144). Ils lisent la regle
+# `notebook-accretion-numbering.md` sur les notebooks AJOUTES par la revision et
+# rendent des **constats**, jamais un verdict : `main` ne lit pas cette liste pour
+# son code retour (cf docstring -- un constat mal fonde coute une phrase a
+# refuter, un constat tu coute la regle entiere).
+
+ACCRETION_DEPTH = "DEPTH"
+ACCRETION_NO_BASE = "NO_BASE"
+ACCRETION_PENDING_TABLE = "PENDING_TABLE"
+
+# Plafond de branche de la regle §4. C'est une LETTRE, pas un compte : `03f` est
+# la derniere accretion licite de la branche `03`, et la mesure fondatrice est
+# exactement `03g` puis `03h` ajoutes a une branche portant deja `03b`..`03f`.
+ACCRETION_MAX_LETTER = "f"
+
+# Marqueur d'une entree `declared` annoncant une table de renommage publiee et NON
+# appliquee (les deux sources citees par #19144 sont les tables de #16231 pour
+# Tweety et de #17802 pour Search). Une telle entree ne porte pas d'`index` : elle
+# ne reserve aucun slot, elle declare un ETAT de la serie. C'est pourquoi
+# `declared_claims` l'ignore, et pourquoi ce diagnostic la relit pour son compte
+# plutot que de lui inventer un index.
+PENDING_TABLE_KIND = "pending_table"
+
+
+def _accretion_of(path):
+    """(serie, numero, lettre) d'un chemin a prefixe de serie alphabetique, sinon None.
+
+    Passe par `parse_name` -- la grammaire #5081 partagee. Redefinir `Search-(\\d+)`
+    ici ferait deux lectures du meme nom, le defaut 2 de #15489.
+    """
+    name = parse_name(split_dir(path)[1])
+    if not name.series or not name.number:
+        return None
+    return (name.series, name.number, name.accr)
+
+
+def _same_render(a, b):
+    """Meme repertoire et meme stem delangue : deux rendus du MEME item (§7)."""
+    return (split_dir(a)[0] == split_dir(b)[0]
+            and strip_lang(split_dir(a)[1]).lower() == strip_lang(split_dir(b)[1]).lower())
+
+
+def _twin_in_base(path, base_files):
+    """Le rendu alternatif de cet item existait DEJA dans la base (§7).
+
+    Exiger la BASE -- et non l'ensemble base+revision -- est ce qui separe deux
+    situations que le nom seul confond : « j'ajoute le jumeau C# d'un carnet
+    Python existant » (ni lettre ni numero neufs : pas une accretion) et « j'ajoute
+    les deux rendus d'un item neuf » (la lettre et le numero sont bel et bien
+    introduits par cette PR, et l'exemption les taire tous les deux).
+    """
+    return any(_same_render(path, b) for b in base_files)
+
+
+def _has_base(d, series, number, everything):
+    """Un notebook sans lettre porte-t-il deja ce numero dans ce repertoire ? (§2)"""
+    for o in everything:
+        if split_dir(o)[0] != d:
+            continue
+        info = _accretion_of(o)
+        if info and info[0] == series and info[1] == number and info[2] is None:
+            return True
+    return False
+
+
+def pending_tables(doc):
+    """Repertoires dont une table de renommage est publiee et NON appliquee."""
+    out = []
+    for entry in (doc or {}).get("reserved") or []:
+        if (entry.get("kind") or "").strip().lower() != PENDING_TABLE_KIND:
+            continue
+        d = (entry.get("dir") or "").strip("/")
+        if d:
+            out.append((d, (entry.get("note") or "").strip()))
+    return out
+
+
+def _finding(kind, path, detail, slot=None, d=None):
+    return {"kind": kind, "path": path, "dir": d if d is not None else split_dir(path)[0],
+            "slot": slot, "detail": detail}
+
+
+def accretion_findings(added, base_files, readmes, doc):
+    """Les trois constats d'accretion sur les notebooks ajoutes/renommes (#19144).
+
+    `--no-renames` cote appelant (comme le garde de slot) : un rename arrive donc
+    ici comme un ajout, et c'est voulu -- la modification du nom est precisement ce
+    que la regle borne.
+    """
+    base_files = list(base_files or [])
+    added = list(added or [])
+    everything = base_files + [p for p in added if p not in base_files]
+    findings = []
+
+    # PENDING_TABLE -- le seul diagnostic qui porte sur le REPERTOIRE et non sur un
+    # slot. Une PR qui n'edite QUE le README d'une serie en renommage doit sortir
+    # autant qu'une PR qui y ajoute un carnet : le README est la seconde moitie de
+    # l'evenement (les liens qui pointent les noms neufs).
+    for d, note in pending_tables(doc):
+        touched = [p for p in added + list(readmes or []) if p == d or p.startswith(d + "/")]
+        if touched:
+            findings.append(_finding(
+                ACCRETION_PENDING_TABLE, touched[0], d=d,
+                detail=("serie en renommage publie et non applique (%s) : lire la table "
+                        "avant d'ajouter un nom ici" % (note or d))))
+
+    # Les constats par carnet, dedoublonnes par ITEM : deux rendus neufs du meme
+    # item ne disent pas deux fois la meme chose (`Search-03g-...-Python` et son
+    # jumeau `-CSharp` ne font qu'une accretion).
+    seen = set()
+    for p in added:
+        if _twin_in_base(p, base_files):
+            continue
+        info = _accretion_of(p)
+        if info is None:
+            continue
+        series, number, accr = info
+        d = split_dir(p)[0]
+        item = (d, strip_lang(split_dir(p)[1]).lower())
+        if item in seen:
+            continue
+        seen.add(item)
+        slot = "%s-%s%s" % (series, number, accr or "")
+
+        if accr and accr.lower() > ACCRETION_MAX_LETTER:
+            findings.append(_finding(
+                ACCRETION_DEPTH, p, slot=slot,
+                detail=("lettre `%s` au-dela du plafond `%s` (regle §4) : au-dela, la regle "
+                        "demande de FUSIONNER en notebooks plus lourds, pas d'allonger la branche"
+                        % (accr, ACCRETION_MAX_LETTER))))
+
+        if accr and not _has_base(d, series, number, everything):
+            findings.append(_finding(
+                ACCRETION_NO_BASE, p, slot=slot,
+                detail=("aucun `%s-%s-*.ipynb` sans lettre dans le repertoire : la base occupe "
+                        "le slot `a` (regle §2), une lettre sans base ouvre une branche fantome"
+                        % (series, number))))
+
+    return findings
+
+
+# ---------------------------------------------------------------- scan-main (#20774, tranche 2)
+
+# Une "collision cross-PR sur slot de carnet" deja livree sur `main` est
+# exactement ce que la voie rapide --offline ne peut pas voir (la source
+# open_prs est vide en fast-lane) et que le merge_ready en ligne detecte
+# PR par PR, sans vision d'ensemble. Le scan-main est la troisieme
+# garde : il regarde ce que `main` PORTE deja, et liste les numeros
+# occupes par deux carnets de sujets differents dans une meme serie,
+# en excluant les jumeaux de la regle §7 (`-Python` / `-CSharp` /
+# `-Lean` / `-Lean-Python`) et les siblings i18n (`_en`, `-en`).
+
+SCAN_MAIN_KIND_COLLISION = "slot_collision_on_main"
+SCAN_MAIN_KIND_EMPTY = "empty"
+
+# La cle de slot du module est `_scan_slot` (cf #21959 et la section
+# « UNE SEULE CLE DE SLOT »). Elle est ROBUSTE là ou `slot_of(index_key)`
+# est insuffisant, parce qu'elle confond deux cas que la regle d'accretion
+# distingue -- (a) deux carnets a des numeros differents dans une serie
+# a prefixe chiffre (`3D-01-...` et `3D-02-...` bucket ensemble sous
+# `3d`), (b) deux carnets a prefixe alphabetique (`ICT-48-...`) qui ne
+# produisent AUCUN index. La cle utilise `parse_name` quand le prefixe
+# est une serie, et decompose manuellement le cas chiffre-lettres
+# (cf. tests `test_scan_main_...`). Pour un prefixe PUREMENT chiffre,
+# elle rend `index_key` -- c'est la normalisation du zero-pad (`04-2` =
+# `4.2`) que la table publiee (`declared`) utilise comme convention, et
+# que le zero-pad resorbe rend indispensable.
+_SCAN_SLOT_RE = re.compile(
+    r"^(\d+[A-Za-z]?)[-_.](\d+)([a-z]?)(?:[-_.]|$)"
+)
+
+# Jetons noyau qui apparaissent APRES le slot et AVANT le titre
+# (`SW-10-RDFStar-CSharp` : slot `SW-10`, kernel `CSharp`, titre
+# `RDFStar`). `strip_lang` ne les voit pas parce qu'ils sont en milieu
+# de nom, pas en suffixe. Le balayage les retire pour comparer deux
+# rendus du meme item. Les jetons correspondent aux suffixes noyau
+# reconnus par `KERNEL_LANG_SUFFIXES` ; on les cherche case-insensitive
+# pour neutraliser la variabilite observee (CSharp/csharp/CSHARP).
+_KERNEL_TOKENS = (
+    "lean-python",
+    "csharp",
+    "python",
+    "lean",
+)
+_KERNEL_TOKEN_RE = re.compile(
+    r"^(?P<prefix>.+?)[-_.](?P<kernel>" +
+    "|".join(re.escape(k) for k in _KERNEL_TOKENS) +
+    r")(?:[-_.](?P<rest>.+))?$",
+    re.IGNORECASE,
+)
+
+
+def _scan_slot(path: str) -> tuple[str, str] | None:
+    """Cle (repertoire, position) du module -- la SEULE cle de slot (#21959).
+
+    Pour les fichiers a prefixe de serie alphabetique (`ICT-48-...`,
+    `GameTheory-02c-...`, `SL-12b-...`, `Z3-19-...`) la position est
+    ``<series>-<number><accr>`` : c'est ce que `parse_name` rend et c'est
+    ce que le carnet designe dans sa serie. C'est cette forme qui manquait
+    au chemin de verdict -- une serie alphabetique n'a pas d'index, donc
+    pas de slot, donc pas de conflit possible.
+
+    Pour les fichiers a prefixe chiffre ET lettre (`3D-01-...`) on
+    decompose en ``<prefix>-<num><accr>`` : `3D-01` et `3D-02` sont
+    alors DEUX positions distinctes, ce que `index_key` confond sous
+    `3d`.
+
+    Pour un prefixe PUREMENT chiffre (`04-2-...`), la position est celle
+    de `index_key` (`4.2`) : c'est la normalisation du zero-pad que la
+    table publiee de reservations utilise comme convention, et une suite
+    plus longue (`04-2-3`) reste `4.2.3` -- c'est `index_key` qui la
+    donne, pas la decomposition.
+    """
+    d, basename = split_dir(path)
+    stem = _IPYNB_RE.sub("", basename)
+    name = parse_name(basename)
+    if name.series is not None:
+        slot = "%s-%s%s" % (name.series, name.number, name.accr or "")
+        return (d, slot)
+    m = _SCAN_SLOT_RE.match(stem)
+    if m and re.search(r"[A-Za-z]", m.group(1)):
+        # prefixe chiffre+lettres : la decomposition est la seule lecture qui
+        # distingue `3D-01` de `3D-02` (cf. le cas documente dans la zone de
+        # fix mesurable). Un prefixe purement chiffre tombe sur `index_key`.
+        prefix, num, accr = m.group(1), m.group(2), m.group(3)
+        return (d, "%s-%s%s" % (prefix, num, accr))
+    idx = index_key(basename)
+    if idx is None:
+        return None
+    return (d, idx)
+
+
+def _strip_all_lang(stem: str) -> str:
+    """Strip iteratif de TOUS les suffixes de langue reconnus.
+
+    `strip_lang` (canon #5081) ne retire qu'UN suffixe par appel, ce qui
+    rate les composes du genre `FT-01-...-Python_en` -- un carnet Python
+    ET sa version anglaise portent le suffixe `-Python` et `_en`, et un
+    seul strip laisse l'autre. Le balayage main doit considerer ces
+    paires comme le MEME item, sinon la moitie du depot remonte en
+    fausse collision. Local a ce module, parce que c'est un fix de
+    comparaison, pas une refonte de la grammaire #5081.
+    """
+    low = stem.lower()
+    while True:
+        for suf in LANG_SUFFIXES:
+            if low.endswith(suf):
+                stem = stem[: -len(suf)]
+                low = stem.lower()
+                break
+        else:
+            return stem
+
+
+def _strip_kernel_middle(stem: str) -> str:
+    """Strip un jeton noyau en milieu de nom (apres le slot, avant le titre).
+
+    Pour `SW-10-RDFStar-CSharp` la cle est `SW-10`, le noyau `CSharp`,
+    le titre `RDFStar`. La forme canonique « stem == prefix + '-' +
+    kernel + '-' + rest » est ce qu'on retrouve dans toutes les series
+    a jumeaux noyau (`SW-10/11/13`, `App-14`, `Tweety-03/04`). La
+    comparaison retient le `prefix-rest` pour neutraliser la difference
+    Python/CSharp. Echec du pattern (le token apres le slot n'est PAS un
+    noyau connu, ex. `App-14-ConnectFour-Adversarial`) : on rend le
+    stem inchange, et la collision est le SUJET different, pas un
+    jumeau a exclure.
+    """
+    m = _KERNEL_TOKEN_RE.match(stem)
+    if not m:
+        return stem
+    rest = m.group("rest")
+    if rest is None:
+        return m.group("prefix")
+    return "%s-%s" % (m.group("prefix"), rest)
+
+
+def _same_item_scan(a: str, b: str) -> bool:
+    """Meme item, suffixes de langue et de noyau tous retires (cf. §7)."""
+    d_a, b_a = split_dir(a)
+    d_b, b_b = split_dir(b)
+    if d_a != d_b:
+        return False
+    stem_a = _IPYNB_RE.sub("", b_a)
+    stem_b = _IPYNB_RE.sub("", b_b)
+    # 1. Lang suffix en fin de nom (composes inclus via strip iteratif).
+    sa = _strip_all_lang(stem_a)
+    sb = _strip_all_lang(stem_b)
+    # 2. Kernel en milieu de nom (apres le slot, avant le titre) :
+    #    le strip_lang ne le voit pas, on le retire a la main avant
+    #    la comparaison. Echec du pattern (le token n'est pas un noyau
+    #    connu) -> inchange, et la collision reste un vrai conflit de
+    #    sujet (ex. `App-14-ConnectFour-Adversarial` vs
+    #    `App-14-ConnectFour-CSharp` ne SONT PAS jumeaux).
+    sa = _strip_kernel_middle(sa)
+    sb = _strip_kernel_middle(sb)
+    return sa.lower() == sb.lower()
+
+
+def scan_main_collisions(ref: str = "origin/main") -> list[dict]:
+    """Liste les numeros occupes par 2+ carnets de sujets differents sur ``ref``.
+
+    Sortie : liste de constats, un par collision. Chaque constat porte la
+    serie, le slot, la liste des chemins en collision, et le detail
+    minimal pour l'audit. Les jumeaux (meme item sous des suffixes de
+    noyau differents : `GameTheory-02c-Twins-Python.ipynb` et son pendant
+    `-CSharp`) et les freres i18n (`-en`, `_en`) sont apparies par
+    `same_item` et ecartes du verdict -- un meme item sous plusieurs
+    rendus n'est pas une collision.
+
+    Implementation : un seul `git ls-tree -r --name-only <ref>` (cout
+    borne par la taille de l'arbre, pas par le nombre de collisions), un
+    groupement en memoire, et une comparaison pairwise des occupants
+    d'un meme slot. Les `_output.ipynb` de papermill sont filtres : ils
+    ne sont pas un ITEM de la serie, c'est la sortie d'un carnet source.
+    """
+    raw = _git(["ls-tree", "-r", "--name-only", ref]).splitlines()
+    # Filtre les sorties papermill : `_output.ipynb` (variante underscore)
+    # ET `-output.ipynb` (variante par defaut de papermill, tiret). Les
+    # deux formes apparaissent dans le depot -- les ignorer toutes les
+    # deux sinon le slot de la source parait occupe par sa propre
+    # sortie executee.
+    def _is_source_ipynb(p: str) -> bool:
+        low = p.lower()
+        if not low.endswith(".ipynb"):
+            return False
+        if low.endswith("_output.ipynb") or low.endswith("-output.ipynb"):
+            return False
+        return True
+    notebooks = [p.strip() for p in raw if _is_source_ipynb(p)]
+    # Bucket par (repertoire, position) : on elimine tout ce qui ne porte
+    # pas de position lisible. La cle est `_scan_slot`, pas `slot_of` :
+    # la premiere decompose les prefixes chiffre-lettres (`3D-01` /
+    # `3D-02`) que la seconde confond, et la seconde ignore les series
+    # alphabetiques (`ICT-48`) que la premiere traite.
+    buckets: dict[tuple[str, str], list[str]] = {}
+    for p in notebooks:
+        slot = _scan_slot(p)
+        if slot is None:
+            continue
+        buckets.setdefault(slot, []).append(p)
+    findings: list[dict] = []
+    for (d, slot), paths in sorted(buckets.items()):
+        if len(paths) < 2:
+            continue
+        # Appariement pairwise : tous les occupants sont des rendus du meme
+        # item ? Si oui, pas de collision (jumeau / frere i18n, y compris
+        # les composes `-Python_en` que `same_item` peut rater -- cf.
+        # `_same_item_scan`).
+        first = paths[0]
+        if all(_same_item_scan(first, other) for other in paths[1:]):
+            continue
+        findings.append({
+            "kind": SCAN_MAIN_KIND_COLLISION,
+            "dir": d,
+            "slot": slot,
+            "paths": sorted(paths),
+            "ref": ref,
+            "detail": ("deux carnets (ou plus) au meme slot avec des sujets "
+                       "differents : collision cross-PR deja livree sur "
+                       "%s" % ref),
+        })
+    return findings
 
 
 # ---------------------------------------------------------------- sources
@@ -483,17 +977,31 @@ def load_open_pr_claims(limit, repo, exclude_pr, offline, status):
     return pr_claims(prs, load_removed_paths(ambiguous_pr_numbers(prs), repo, status))
 
 
-def load_declared(path, status):
+def read_declared_doc(path, status):
+    """Le document publie, ou None -- en ECRIVANT dans `status` pourquoi.
+
+    La table est lue UNE fois et sert deux lecteurs : `declared_claims` (les slots
+    reserves) et `accretion_findings` (les series en renommage publie). Deux
+    lectures du meme fichier pourraient diverger sur un fichier qui change entre
+    les deux, et surtout rendre deux motifs d'indisponibilite differents.
+    """
     if path is None or not Path(path).exists():
         status[SOURCE_DECLARED] = {"status": "absent", "path": str(path) if path else ""}
-        return {}
+        return None
     try:
-        doc = json.loads(Path(path).read_text(encoding="utf-8"))
+        return json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as e:
         status[SOURCE_DECLARED] = {"status": "unavailable", "reason": str(e)[:160]}
-        return {}
+        return None
+
+
+def load_declared(doc, status):
+    """Slots reserves par la table publiee, a partir du document DEJA lu."""
     claims = declared_claims(doc)
-    status[SOURCE_DECLARED] = {"status": "ok", "reserved": sum(len(v) for v in claims.values())}
+    if status.get(SOURCE_DECLARED, {}).get("status") not in ("absent", "unavailable"):
+        status[SOURCE_DECLARED] = {"status": "ok",
+                                   "reserved": sum(len(v) for v in claims.values()),
+                                   "pending_tables": len(pending_tables(doc))}
     return claims
 
 
@@ -515,6 +1023,45 @@ _SLOT_CASES = [
 def _scenario(targets, occupants, releases, want):
     got = [v["state"] for v in examine(targets, occupants, releases)]
     return got == list(want), got
+
+
+# Chaque cas porte la FORME qui a produit le defaut reel, pas une forme inventee :
+# `Search-03g` (la tete de #19109 avant reparation), `Search-12a` (lettre sans
+# base, mesure du 04/10), le twin C# de `GT-02c` (negatif §7). Les temoins sont
+# rejoues sur l'historique par `scripts/tests/test_check_slot_reservation.py`.
+_ACCRETION_CASES = [
+    # (label, added, base, readmes, doc, want)
+    ("VRAI POSITIF  DEPTH : lettre au-dela de `f`",
+     ["s/Search-03g-Neuf.ipynb"],
+     ["s/Search-03-A.ipynb", "s/Search-03f-B.ipynb"], [], None,
+     ["DEPTH"]),
+    ("NEGATIF       DEPTH : `03f` est la derniere lettre licite",
+     ["s/Search-03f-B.ipynb"],
+     ["s/Search-03-A.ipynb", "s/Search-03e-C.ipynb"], [], None, []),
+    ("VRAI POSITIF  NO_BASE : lettre posee sans base dans la serie",
+     ["s/Search-12a-Neuf.ipynb"],
+     ["s/Search-11-A.ipynb"], [], None, ["NO_BASE"]),
+    ("NEGATIF       NO_BASE : la base existe (lettre legitime)",
+     ["s/Search-12a-Neuf.ipynb"],
+     ["s/Search-12-A.ipynb"], [], None, []),
+    ("NEGATIF       §7 twin : le -CSharp d'un Python DEJA dans la base",
+     ["g/GT-02c-Twins-Csharp.ipynb"],
+     ["g/GT-02c-Twins-Python.ipynb"], [], None, []),
+    ("VRAI POSITIF  §7 twins NEUFS : la lettre est bien introduite (UN constat)",
+     ["s/Search-03g-Neuf-Python.ipynb", "s/Search-03g-Neuf-CSharp.ipynb"],
+     ["s/Search-03-A.ipynb"], [], None, ["DEPTH"]),
+    ("VRAI POSITIF  PENDING_TABLE : carnet ajoute dans une serie en renommage",
+     ["t/Tweety-09-Neuf.ipynb"], [], [],
+     {"reserved": [{"kind": "pending_table", "dir": "t", "note": "#16231"}]},
+     ["PENDING_TABLE"]),
+    ("VRAI POSITIF  PENDING_TABLE : PR qui n'edite QUE le README de la serie",
+     [], [], ["t/README.md"],
+     {"reserved": [{"kind": "pending_table", "dir": "t", "note": "#16231"}]},
+     ["PENDING_TABLE"]),
+    ("NEGATIF       PENDING_TABLE : un `index` reserve n'active PAS le diagnostic",
+     ["t/Tweety-09-Neuf.ipynb"], [], [],
+     {"reserved": [{"index": "9", "dir": "t", "holder": "lane x"}]}, []),
+]
 
 
 def self_test():
@@ -572,9 +1119,35 @@ def self_test():
         ("FAUX POSITIF  lettre d'accretion differente 2.8b vs 2.8c",
          ["m/02-ML/2.8c-Borne.ipynb"],
          merge(group_by_slot(["m/02-ML/2.8b-Theorie.ipynb"], SOURCE_BASE)), set(), ["free"]),
-        ("FAUX POSITIF  cible sans index (prefixe alphabetique)",
-         ["s/MGS-27-Forensic.ipynb"],
+        ("FAUX POSITIF  cible sans position (nom qui ne porte ni serie ni index)",
+         ["s/notes-Sans-Position.ipynb"],
          merge(group_by_slot(["s/MGS-26-Equilibrium.ipynb"], SOURCE_BASE)), set(), ["no_slot"]),
+        # --- les series a prefixe alphabetique : le trou ferme par #21959 ---
+        ("VRAI POSITIF  deux series au meme numero dans une revision",
+         ["z/Z3-19-Machine-de-Goedel-Python.ipynb", "z/Z3-19-Optimization-Lexicographic-Python.ipynb"],
+         merge(group_by_slot(["z/Z3-19-Machine-de-Goedel-Python.ipynb",
+                              "z/Z3-19-Optimization-Lexicographic-Python.ipynb"],
+                             SOURCE_REVISION)), set(),
+         ["duplicate_within_revision", "duplicate_within_revision"]),
+        ("VRAI POSITIF  serie a prefixe alphabetique tenue par la base",
+         ["z/Z3-19-Machine-de-Goedel-Python.ipynb"],
+         merge(group_by_slot(["z/Z3-19-Optimization-Lexicographic-Python.ipynb"], SOURCE_BASE)),
+         set(), ["taken_on_base"]),
+        ("VRAI POSITIF  serie a prefixe alphabetique reservee par une PR ouverte",
+         ["z/Z3-19-Machine-de-Goedel-Python.ipynb"],
+         pr_claims([{"number": 20664, "files": [
+             {"path": "z/Z3-19-Optimization-Lexicographic-Python.ipynb",
+              "additions": 4, "deletions": 0}]}]), set(), ["reserved_by_open_pr"]),
+        ("FAUX POSITIF  deux numeros distincts de la meme serie",
+         ["z/Z3-19-Machine-de-Goedel-Python.ipynb"],
+         merge(group_by_slot(["z/Z3-20-Autre-Sujet-Python.ipynb"], SOURCE_BASE)), set(), ["free"]),
+        ("FAUX POSITIF  3D-01 et 3D-02 ne buckettent pas ensemble",
+         ["d/3D-01-NeRF-From-Scratch.ipynb"],
+         merge(group_by_slot(["d/3D-02-NeRF-Critic.ipynb"], SOURCE_BASE)), set(), ["free"]),
+        ("FAUX POSITIF  jumeau de noyau d'une serie alphabetique : non concurrent",
+         ["z/GameTheory-04c-NashExistence-CSharp.ipynb"],
+         merge(group_by_slot(["z/GameTheory-04c-NashExistence-Python.ipynb"], SOURCE_BASE)),
+         set(), ["exempt_sibling"]),
         ("NEGATIF       slot reellement libre",
          [A], merge(group_by_slot(["MyIA.AI.Notebooks/X/04-1-Previous.ipynb"], SOURCE_BASE)),
          set(), ["free"]),
@@ -634,7 +1207,18 @@ def self_test():
         print("  %-4s %-62s -> %s (attendu %s)"
               % ("OK" if ok else "KO", label, got, want))
 
-    total = len(_SLOT_CASES) + len(scenarios) + len(amb_cases)
+    print("")
+    print("--- accretion (advisory #19144) : trois constats, positifs ET negatifs ---")
+    for label, added, base, readmes, doc, want in _ACCRETION_CASES:
+        got = sorted({f["kind"] for f in accretion_findings(
+            added, base, readmes, doc)})
+        ok = got == sorted(want)
+        ko += 0 if ok else 1
+        print("  %-4s %-66s -> %s (attendu %s)"
+              % ("OK" if ok else "KO", label, got, sorted(want)))
+
+    total = (len(_SLOT_CASES) + len(scenarios) + len(amb_cases)
+             + len(_ACCRETION_CASES))
     print("")
     print("%s : %d cas, %d echec(s)" % ("ECHEC" if ko else "SUCCES", total, ko))
     return 2 if ko else 0
@@ -661,12 +1245,62 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=500,
                     help="plafond de PRs lues (defaut 500 ; le defaut de gh est 30)")
     ap.add_argument("--repo", default=None, help="override du depot pour gh")
+    ap.add_argument("--no-accretion", action="store_true",
+                    help="desactiver les trois constats d'accretion (advisory, #19144)")
+    ap.add_argument("--accretion-only", action="store_true",
+                    help="ne rendre QUE les constats d'accretion (code retour 0) -- "
+                         "le mode du check-run advisory, qui ne doit pas redire le "
+                         "verdict de slot deja porte par le garde bloquant")
+    ap.add_argument("--scan-main", action="store_true",
+                    help="mode standalone : liste les collisions de slot DEJA "
+                         "LIVREES sur origin/main (cross-PR). Sortie humaine par "
+                         "defaut, --json pour la sortie machine. Ne touche ni "
+                         "l'arbre de travail ni les PRs ouvertes ; c'est une "
+                         "troisieme garde, distincte du verdict de PR (#20774).")
+    ap.add_argument("--scan-ref", default="origin/main",
+                    help="ref a scanner (defaut: origin/main)")
     ap.add_argument("--json", action="store_true", help="sortie machine")
     ap.add_argument("--self-test", action="store_true", help="controles positifs et negatifs")
     a = ap.parse_args(argv)
 
     if a.self_test:
         return self_test()
+
+    if a.scan_main:
+        try:
+            collisions = scan_main_collisions(a.scan_ref)
+        except RuntimeError as e:
+            print("ERREUR git (--scan-main) : %s" % e, file=sys.stderr)
+            return 2
+        if a.json:
+            print(json.dumps({
+                "ref": a.scan_ref,
+                "kind": SCAN_MAIN_KIND_COLLISION,
+                "count": len(collisions),
+                "collisions": collisions,
+            }, indent=2, ensure_ascii=False))
+            # Mode standalone : le code retour reflete strictement la presence
+            # de collisions (1) ou non (0) -- on n'utilise PAS le rc=2 reserve
+            # aux erreurs d'arguments, pour qu'un consommateur machine puisse
+            # brancher la garde sans risquer de confondre une collision avec
+            # un usage invalide.
+            return 1 if collisions else 0
+        print("scan-main : ref=%s" % a.scan_ref)
+        if not collisions:
+            print("  aucune collision de slot sur %s" % a.scan_ref)
+            return 0
+        for c in collisions:
+            print("")
+            print("  COLLISION  dir=%s  slot=%s" % (c["dir"], c["slot"]))
+            for p in c["paths"]:
+                print("    - %s" % p)
+            print("  %s" % c["detail"])
+        return 1
+
+    if a.accretion_only and a.no_accretion:
+        print("ERREUR : --accretion-only et --no-accretion s'excluent.",
+              file=sys.stderr)
+        return 2
 
     mode = "target" if a.target else "revision"
     status: dict[str, dict] = {}
@@ -694,12 +1328,59 @@ def main(argv=None):
     status[SOURCE_BASE] = {"status": "ok", "notebooks": len(base_files),
                            "ref": a.base}
 
+    # Une seule lecture de la table publiee, deux lecteurs (slots reserves et
+    # series en renommage) : deux lectures pourraient diverger sur un fichier qui
+    # change entre les deux.
+    declared_doc = read_declared_doc(None if a.no_reservations else a.reservations, status)
+
     occ = merge(group_by_slot(base_files, SOURCE_BASE), rev_occ,
                 load_open_pr_claims(a.limit, a.repo, a.exclude_pr, a.offline, status),
-                load_declared(None if a.no_reservations else a.reservations, status))
+                load_declared(declared_doc, status))
 
     verdicts = examine(targets, occ, releases)
     conflicts = [v for v in verdicts if v["verdict"] == "conflict"]
+
+    # Fail-closed en mode en ligne : si la source `open_prs` est indisponible
+    # alors qu'on a au moins une cible (un carnet vise), la detection de
+    # collision cross-PR est incomplete -- on ne peut pas distinguer
+    # "aucune collision" de "collision masquee par la panne". Avant #20913-fixes,
+    # l'organe continuait son verdict sur sources residuelles (base + revision
+    # + declared) et pouvait laisser passer une collision que #20774 etait
+    # cense boucher. On rend rc=2 pour ramener le consommateur (merge_ready
+    # etape 5bis.bis) en mode `slot-collision-unreadable` -- fail-closed.
+    if (not a.offline) and targets and status.get(SOURCE_OPEN_PRS, {}).get("status") == "unavailable":
+        if a.json:
+            print(json.dumps({
+                "base": a.base, "head": a.head, "mode": mode,
+                "sources": status,
+                "targets_examined": len(targets),
+                "states": {s: sum(1 for v in verdicts if v["state"] == s)
+                           for s in sorted({v["state"] for v in verdicts})},
+                "verdicts": verdicts,
+                "conflicts": len(conflicts),
+                "accretion": [],
+                "accretion_count": 0,
+                "unavailable_open_prs": True,
+            }, indent=2, ensure_ascii=False))
+        else:
+            print("open_prs : INDISPONIBLE en mode en ligne avec %d cible(s) -- "
+                  "rc=2 fail-closed (collision cross-PR indetectable)"
+                  % len(targets), file=sys.stderr)
+        return 2
+
+    # Les constats d'accretion sont calcules AVANT le retour anticipe « aucune
+    # cible » : une PR qui n'edite que le README d'une serie en renommage n'a
+    # aucune cible et doit pourtant sortir son PENDING_TABLE.
+    if a.no_accretion:
+        accretion = []
+    else:
+        try:
+            readmes = changed_readmes_at(a.base, a.head)
+        except RuntimeError:
+            readmes = []          # le README est une source de confort, jamais un motif d'echec
+        accretion = accretion_findings(rev_added, base_files, readmes, declared_doc)
+    status[SOURCE_ACCRETION] = {"status": "disabled" if a.no_accretion else "ok",
+                                "count": len(accretion)}
 
     if a.json:
         print(json.dumps({
@@ -710,7 +1391,15 @@ def main(argv=None):
                        for s in sorted({v["state"] for v in verdicts})},
             "verdicts": verdicts,
             "conflicts": len(conflicts),
+            "accretion": accretion,
+            "accretion_count": len(accretion),
         }, indent=2, ensure_ascii=False))
+        # `--accretion-only` vaut aussi en JSON : le mode advisory ne porte aucun
+        # verdict, et un consommateur machine qui lirait un code retour 1 ici
+        # croirait a un echec de l'advisory alors qu'il lit un conflit de slot --
+        # c'est-a-dire le verdict de l'AUTRE garde.
+        if a.accretion_only:
+            return 0
         return 1 if conflicts else 0
 
     # Le denombrement de CHAQUE source est imprime, y compris quand il vaut
@@ -737,9 +1426,31 @@ def main(argv=None):
         print("  open_prs  : INDISPONIBLE (%s)" % pr_status.get("reason", "?"))
     dec_status = status.get(SOURCE_DECLARED, {})
     if dec_status.get("status") == "ok":
-        print("  declared  : %d reservation(s) publiee(s)" % dec_status.get("reserved", 0))
+        print("  declared  : %d reservation(s) publiee(s), %d serie(s) en renommage"
+              % (dec_status.get("reserved", 0), dec_status.get("pending_tables", 0)))
     else:
         print("  declared  : %s" % dec_status.get("status", "?"))
+
+    # Accretion -- imprimee AVANT le retour anticipe « aucune cible » : une PR qui
+    # n'edite que le README d'une serie en renommage n'a aucune cible et sort
+    # pourtant son PENDING_TABLE.
+    print("")
+    if a.no_accretion:
+        print("accretion : desactivee (--no-accretion)")
+    else:
+        print("accretion (advisory -- n'affecte AUCUN code retour) :")
+        if not accretion:
+            print("  aucun constat sur les notebooks ajoutes")
+        for f in accretion:
+            print("  %-14s %s" % (f["kind"], f["path"]))
+            print("      %s" % f["detail"])
+
+    # Le mode advisory du check-run : les constats d'accretion sont le SEUL
+    # signal, et ils sont informatifs -- redire ici le verdict de slot deja porte
+    # par le garde bloquant produirait deux check-runs qui rougissent ensemble
+    # pour une seule cause.
+    if a.accretion_only:
+        return 0
 
     if not targets:
         print("")

@@ -12,7 +12,7 @@ Son fichier `README.md` est l'autorité opérationnelle pour la nomenclature, le
 
 Un agent archive une publication dès qu'il la récupère pour une lecture substantielle, l'utilise comme source ou la cite dans un notebook, une issue, une PR ou un dispatch. Une publication ne doit pas rester uniquement dans Downloads, un scratchpad ou le cache d'un outil.
 
-Si la récupération échoue ou si l'accès est payant, l'agent le dit explicitement et indique le titre exact ainsi que le rayon de destination. Il ne fabrique ni présence locale ni preuve de lecture.
+Si la récupération échoue ou si l'accès est payant, l'agent le dit explicitement et indique le titre exact ainsi que le rayon de destination. Il ne fabrique ni présence locale ni preuve de lecture. Ce qu'il attribuerait à la publication ne s'écrit pas tant qu'elle n'a pas été lue : voir la clause « Lire avant d'attribuer » de la règle [bibliography-hygiene.md](../../.claude/rules/bibliography-hygiene.md).
 
 ## Procédure minimale
 
@@ -24,6 +24,16 @@ Si la récupération échoue ou si l'accès est payant, l'agent le dit explicite
 6. Ne jamais ajouter le PDF au dépôt Git public.
 
 Le chemin cité rend la source retrouvable par les autres machines, mais ne remplace pas une citation bibliographique dans le contenu pédagogique.
+
+## Chemin du gisement dans une source de carnet
+
+Un carnet donne deux choses pour une même publication : son **identifiant durable** (auteurs, année, titre, lien arXiv ou DOI) et, quand le cluster doit pouvoir rouvrir la copie sans la retélécharger, le **chemin** de cette copie dans le gisement partagé. Forme canonique, telle qu'elle s'écrit dans une cellule markdown :
+
+`G:\Mon Drive\MyIA\IA\Bibliographie IA\<Rayon>\<YYYY - Auteur(s) - Sujet.ext>`
+
+**Le chemin est un localisateur, pas une source.** L'identifiant durable porte l'information bibliographique et survit à un renommage ou à un déplacement du fichier ; le chemin ne vaut que tant que le gisement n'a pas bougé. Les deux se citent ensemble, jamais le chemin seul.
+
+**Pourquoi aucun organe ne mesure ces chemins.** `scripts/notebook_tools/scan_machine_path_outputs.py` lit les **sorties** des carnets, jamais leurs sources : un chemin dans une source est un choix d'auteur, dans une sortie c'est un résidu d'exécution. Une citation de source ne déclenche donc aucun rouge — et c'est aussi pourquoi sa mise à jour, après un renommage du gisement, reste à la charge de l'auteur du carnet. Chaque rayon qui en use renvoie ici depuis son `README.md`, pour que le carnet suivant retrouve la convention au lieu de la réinventer.
 
 ## Publications, code et données
 

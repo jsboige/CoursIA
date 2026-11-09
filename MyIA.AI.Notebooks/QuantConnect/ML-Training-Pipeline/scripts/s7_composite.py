@@ -47,6 +47,8 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import Ridge
 
+import strategy_metrics
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 RESULTS_DIR = SCRIPT_DIR / "results" / "s7_composite"
 
@@ -515,18 +517,18 @@ def stress_test(
 # ── Metrics helpers ──────────────────────────────────────────────────────────
 
 def _sharpe_ann(returns: np.ndarray) -> float:
-    if len(returns) < 10:
+    """Annualized Sharpe (``strategy_metrics.sharpe``: ddof=1, risk-free 0, 252 days).
+
+    Returns nan for fewer than 10 returns or a standard deviation <= 1e-12.
+    """
+    if len(returns) < 10 or float(np.std(returns, ddof=1)) <= 1e-12:
         return float("nan")
-    mu = float(np.mean(returns))
-    sigma = float(np.std(returns, ddof=1))
-    return (mu / sigma) * np.sqrt(252) if sigma > 1e-12 else float("nan")
+    return float(strategy_metrics.sharpe(returns))
 
 
 def _max_drawdown(returns: np.ndarray) -> float:
-    cum = np.cumprod(1 + returns)
-    peak = np.maximum.accumulate(cum)
-    dd = (cum - peak) / peak
-    return float(np.min(dd)) if len(dd) > 0 else 0.0
+    """Max drawdown, starting capital as first peak (``strategy_metrics.max_drawdown``)."""
+    return strategy_metrics.max_drawdown(returns)
 
 
 # ── Main multi-seed runner ───────────────────────────────────────────────────

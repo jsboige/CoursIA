@@ -32,7 +32,7 @@ Examples:
     python verify_lean.py --check-env                      # Check Lean installation
     python verify_lean.py --execute --verbose              # Full execution test
     python verify_lean.py --cell-by-cell --python-only     # Cell-by-cell Python notebooks
-    python verify_lean.py --notebook Lean-1-Setup.ipynb    # Single notebook
+    python verify_lean.py --notebook Lean-01-Setup-Lean-Python.ipynb    # Single notebook
     python verify_lean.py --notebook Lean-7,Lean-8         # Multiple notebooks
 """
 
@@ -52,14 +52,14 @@ from typing import Dict, List, Optional, Any, Tuple
 
 # Expected Lean notebooks in order
 LEAN_NOTEBOOKS = [
-    "Lean-1-Setup.ipynb",
-    "Lean-2-Dependent-Types.ipynb",
-    "Lean-3-Propositions-Proofs.ipynb",
-    "Lean-4-Quantifiers.ipynb",
-    "Lean-5-Tactics.ipynb",
-    "Lean-6-Mathlib-Essentials.ipynb",
-    "Lean-7-LLM-Integration.ipynb",
-    "Lean-8-Agentic-Proving.ipynb"
+    "Lean-01-Setup-Lean-Python.ipynb",
+    "Lean-02-Dependent-Types-Lean.ipynb",
+    "Lean-03-Propositions-Proofs-Lean.ipynb",
+    "Lean-04-Quantifiers-Lean.ipynb",
+    "Lean-05-Tactics-Lean.ipynb",
+    "Lean-06-Mathlib-Essentials-Lean.ipynb",
+    "Lean-07-LLM-Integration-Lean-Python.ipynb",
+    "Lean-08-Agentic-Proving-Python.ipynb"
 ]
 
 # Expected support files
@@ -82,18 +82,18 @@ EXPECTED_KERNEL = {
 
 # Notebooks that use Python kernel (for LLM/agentic parts)
 PYTHON_NOTEBOOKS = [
-    "Lean-1-Setup.ipynb",    # Setup/diagnostic uses Python
-    "Lean-7-LLM-Integration.ipynb",  # LLM integration uses Python
-    "Lean-8-Agentic-Proving.ipynb"   # Multi-agent system uses Python
+    "Lean-01-Setup-Lean-Python.ipynb",    # Setup/diagnostic uses Python
+    "Lean-07-LLM-Integration-Lean-Python.ipynb",  # LLM integration uses Python
+    "Lean-08-Agentic-Proving-Python.ipynb"   # Multi-agent system uses Python
 ]
 
 # Notebooks that require Lean4 kernel
 LEAN4_NOTEBOOKS = [
-    "Lean-2-Dependent-Types.ipynb",
-    "Lean-3-Propositions-Proofs.ipynb",
-    "Lean-4-Quantifiers.ipynb",
-    "Lean-5-Tactics.ipynb",
-    "Lean-6-Mathlib-Essentials.ipynb"
+    "Lean-02-Dependent-Types-Lean.ipynb",
+    "Lean-03-Propositions-Proofs-Lean.ipynb",
+    "Lean-04-Quantifiers-Lean.ipynb",
+    "Lean-05-Tactics-Lean.ipynb",
+    "Lean-06-Mathlib-Essentials-Lean.ipynb"
 ]
 
 
@@ -281,7 +281,7 @@ def get_lean_directory(repo_root: Path) -> Path:
     """Get the Lean notebooks directory"""
     # Si on est déjà dans le répertoire Lean, le retourner directement
     lean_dir = Path(__file__).parent.parent
-    if (lean_dir / "Lean-1-Setup.ipynb").exists():
+    if (lean_dir / "Lean-01-Setup-Lean-Python.ipynb").exists():
         return lean_dir
     # Sinon chercher dans la structure standard
     return repo_root / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean"
@@ -717,13 +717,16 @@ def filter_notebooks(notebook_list: List[str], filter_str: Optional[str],
     """Filter notebook list based on criteria."""
     result = notebook_list
 
-    # Filter by name if specified
+    # Filter by name if specified. Index padding is ignored on both sides, so
+    # `--filter Lean-2` still selects Lean-02-... after the zero-pad rename (#17545).
     if filter_str:
-        filters = [f.strip() for f in filter_str.split(',')]
+        def _unpad(s: str) -> str:
+            return re.sub(r"-0+(\d)", r"-\1", s.lower())
+        filters = [_unpad(f.strip()) for f in filter_str.split(',')]
         result = []
         for nb in notebook_list:
             for f in filters:
-                if f.lower() in nb.lower():
+                if f in _unpad(nb):
                     result.append(nb)
                     break
 

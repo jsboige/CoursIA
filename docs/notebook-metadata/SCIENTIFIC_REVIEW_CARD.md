@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-25
+
 # SCIENTIFIC_REVIEW_CARD — Template de revue scientifique
 
 **Statut** : template canonique (c.997, refondu #14831 — sign-off user 2026-09-21)
@@ -16,7 +18,7 @@
 > python scripts/audit/check_scientific_review.py --check   # classe STALE_APPRECIATION
 > ```
 
----
+***
 
 ## Identification du notebook
 
@@ -112,7 +114,7 @@ EOF
 - **Date de revue** : `<YYYY-MM-DD>` (ISO 8601)
 - **Notes** : `<libre, max 200 chars>`
 
----
+***
 
 **Note** : ce registre est volontairement plus restrictif que `EDITORIAL_REVIEW_CARD.md` — il exige une preuve de fond technique (algo/proba/demo/correctness), pas seulement pédagogique.
 

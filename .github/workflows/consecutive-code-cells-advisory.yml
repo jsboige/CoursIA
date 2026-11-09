@@ -24,16 +24,22 @@ name: Consecutive Code Cells Advisory
 # Promoting to a blocking gate is a separate decision, to revisit only once the
 # residual is at 0 and stable (issue #12797 "decision user").
 
+# ABSORBE PAR LA VOIE RAPIDE (#22209 tranche 1, registre TRANCHE27) : la
+# jambe per-PR vit desormais dans le job fast-lane d'always-on-guards.yml,
+# sous le MEME nom de check-run (contrat d'identite
+# `check_absorbed_check_run_identity.py`). Le declencheur `pull_request` est
+# retire ci-dessous ; ce fichier reste pour (a) la re-mesure manuelle via
+# `workflow_dispatch` et (b) la source du nom canonique. Le label
+# `consecutive-code-cells` n'est plus pose sur les PRs -- la payload (JSON
+# par carnet, champs consecutive/unmeasured) demenage dans le CORPS du
+# check-run absorbe, precedent TRANCHE6 (deaccent). Le bloc `paths:` d'origine
+# est conserve en commentaire pour tracabilite :
+#   pull_request:
+#     types: [opened, synchronize, edited, reopened]
+#     branches: [main]
+#     paths: ['**/*.ipynb', '.github/workflows/consecutive-code-cells-advisory.yml']
+
 on:
-  pull_request:
-    types: [opened, synchronize, edited, reopened]
-    branches: [main]
-    paths:
-      - '**/*.ipynb'
-      # Self-cover (#8822): a paths-filtered label-poser must list its own file,
-      # else it cannot re-run (so cannot remove its own label) once the matching
-      # paths leave the PR diff. Enforced by scripts/check_workflow_label_paths.py.
-      - '.github/workflows/consecutive-code-cells-advisory.yml'
   workflow_dispatch:
 
 permissions:
@@ -64,6 +70,7 @@ jobs:
         with:
           # Need base..head history for `git diff` of changed notebooks.
           fetch-depth: 0
+          filter: blob:none
 
       - name: Set up Python
         uses: actions/setup-python@v5

@@ -79,6 +79,24 @@ def test_extract_paths_in_body_dedupes():
     assert HELPER._extract_paths_in_body(body) == ["a.py", "b.py"]
 
 
+def test_extract_paths_in_body_normalizes_wrapped_paths():
+    """#23720 -- the mirror must normalize like the organ.
+
+    The claim side now strips the backticks/quotes around a declared path
+    (`check_lane_claim._normalize_path_token`). If this mirror did not, a
+    correctly-scoped claim would be reported HERE as a dead glob -- a false
+    positive introduced by the organ's own normalization.
+    """
+    body = (
+        "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+        "paths: `scripts/check_lane_claim.py`, \"scripts/grain_tag.py\""
+    )
+    assert HELPER._extract_paths_in_body(body) == [
+        "scripts/check_lane_claim.py",
+        "scripts/grain_tag.py",
+    ]
+
+
 def test_main_emits_one_warning_per_dead_glob(tmp_path, capsys):
     """End-to-end -- a body with one dead glob + one live glob yields ONE
     `::warning::` line. Live globs are intentionally silent (the channel

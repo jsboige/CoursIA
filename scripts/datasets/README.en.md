@@ -14,6 +14,7 @@ Collection of scripts for downloading and managing historical market data for Qu
 | `stitch_crypto.py` | Bitstamp + Binance + yfinance | BTC/USD 1h continuous CSV |
 | `build_panier_anti_bias.py` | yfinance (26 symbols, 7 asset classes) | Multi-asset panier CSVs |
 | `dezip_forex.py` | FXCM/Oanda zip archives | Forex bid/ask OHLCV CSVs |
+| `build_qc_custom_data.py` | Local tabular file (csv, tsv, json, jsonl) | `.py` module consumable by a QuantConnect Cloud project |
 
 ## Quick Start
 
@@ -80,6 +81,31 @@ python scripts/datasets/download_qc_data.py --mode object-store --key my-dataset
 Output: `MyIA.AI.Notebooks/QuantConnect/datasets/qc/`
 
 Prerequisite: `pip install lean` + `lean login` for lean-cli mode.
+
+### Converting a dataset into a QuantConnect module
+
+A QuantConnect Cloud project **rejects `.csv` files**: only `.py` is accepted.
+`build_qc_custom_data.py` converts a local tabular file into a `.py` module — the
+data constant, plus the `PythonData` class that reads it back if requested.
+
+```bash
+# A JSONL file (one JSON object per line) -> data module
+python scripts/datasets/build_qc_custom_data.py \
+    --input signals.jsonl --variable KAGGLE_SIGNALS --output signals_data.py
+
+# With a custom-data class: name the role of each column
+python scripts/datasets/build_qc_custom_data.py \
+    --input filings.csv --delimiter ';' --variable FILINGS \
+    --class-name FilingSignal --date-column accepted_at \
+    --ticker-column ticker --value-column similarity --output filing_data.py
+```
+
+Input formats: `csv`, `tsv`, `json` (list of objects), `jsonl`/`ndjson`.
+Values are kept as strings (the consumer types its own columns) and the output is
+deterministic: converting the same file twice is byte-identical. The emitted
+module targets a Cloud project; it is not runnable outside LEAN (`AlgorithmImports`).
+
+Tests: `python -m pytest scripts/datasets/tests/test_build_qc_custom_data.py -q`
 
 ### Crypto archive (multi-source)
 

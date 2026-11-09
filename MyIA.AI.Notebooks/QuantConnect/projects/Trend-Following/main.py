@@ -1,13 +1,19 @@
 # region imports
 from AlgorithmImports import *
+from datetime import datetime
 # endregion
 
 
 class TrendFollowingAQR(QCAlgorithm):
     """
-    Trend Following Multi-Asset v7 (BEST)
+    Trend Following Multi-Asset v7
     ======================================
-    v7: Sharpe 0.577, CAGR 11.52%, MaxDD 15.3% (safe haven + mom tilt) BEST
+    Measured (current code, fenêtre codée 2015-01-01 -> 2024-12-31, 2516 séances négociées (3653 jours calendaires), mode strategy): Sharpe 0.362, CAGR 7.294%, MaxDD 15.000%.
+    Source : QC Cloud, dossier #23315 (2026-10-29), projet de référence 20286-TF-baseline (2516 séances négociées, 451 ordres).
+
+    Iteration results (historique des iterations de conception, mesurees sous des
+    conditions anterieures ; non reproduites par le code actuel, refactors #21420/#22869/#22923) :
+    v7: Sharpe 0.577, CAGR 11.52%, MaxDD 15.3% (safe haven + mom tilt) < best de l'iteration
     v8: Sharpe 0.566, CAGR 10.38%, MaxDD 16.5% (regime + risk parity - worse)
     v9: Sharpe 0.535, CAGR 10.29%, MaxDD 14.6% (regime only - worse)
 
@@ -18,8 +24,16 @@ class TrendFollowingAQR(QCAlgorithm):
     """
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
-        self.set_end_date(2024, 12, 31)
+        # Mesure #22959 : mode `strategy` (defaut, decision inchangee), references
+        # detenues `spy` et `6040`, diagnostics `ew7` (sept ETF a poids egal) et
+        # `nobear` (regime baissier desactive) ; fenetre parametrable.
+        self._mode = self.get_parameter("mode", "strategy").lower()
+        if self._mode not in ("strategy", "spy", "6040", "ew7", "nobear"):
+            raise ValueError(f"unknown mode parameter: {self._mode} (strategy | spy | 6040 | ew7 | nobear)")
+        start = self.get_parameter("start_date", "2015-01-01")
+        end = self.get_parameter("end_date", "2024-12-31")
+        self.set_start_date(datetime.strptime(start, "%Y-%m-%d"))
+        self.set_end_date(datetime.strptime(end, "%Y-%m-%d"))
         self.set_cash(100_000)
 
         # Configurable brokerage for fee sweep (default: IBKR margin with real fees)
@@ -57,14 +71,55 @@ class TrendFollowingAQR(QCAlgorithm):
             self.rebalance,
         )
 
+        if self._mode in ("spy", "6040", "ew7"):
+            self.schedule.on(
+                self.date_rules.month_start("SPY"),
+                self.time_rules.after_market_open("SPY", 1),
+                self._rebalance_reference,
+            )
+
+        # Trace `shadow` : valeur du portefeuille a l'ouverture de chaque seance
+        # de SPY, entrelacee sur e0..e4 (contrat #18923).
+        self._closes = 0
+        self.schedule.on(
+            self.date_rules.every_day("SPY"),
+            self.time_rules.after_market_open("SPY", 0),
+            self._trace,
+        )
+
         self.set_warm_up(timedelta(days=300))
+
+    def _rebalance_reference(self):
+        if self.is_warming_up:
+            return
+        if self._mode == "spy":
+            targets = {"SPY": 1.0}
+        elif self._mode == "6040":
+            targets = {"SPY": 0.6, self.safe_ticker: 0.4}
+        else:
+            weight = 1.0 / len(self.all_tickers)
+            targets = {t: weight for t in self.all_tickers}
+        for ticker in self.all_tickers:
+            sym = self.symbols[ticker]
+            if ticker in targets:
+                self.set_holdings(sym, targets[ticker])
+            elif self.portfolio[sym].invested:
+                self.liquidate(sym)
+
+    def _trace(self):
+        if self.is_warming_up:
+            return
+        self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self._closes += 1
 
     def rebalance(self):
         if self.is_warming_up:
             return
+        if self._mode not in ("strategy", "nobear"):
+            return
 
         bear_market = False
-        if self.spy_sma.is_ready:
+        if self.spy_sma.is_ready and self._mode != "nobear":
             spy_price = self.securities[self.spy_sym].price
             bear_market = spy_price < self.spy_sma.current.value
 
@@ -77,13 +132,23 @@ class TrendFollowingAQR(QCAlgorithm):
             close = self.securities[self.symbols[ticker]].close
             if close <= sma_val:
                 continue
-            hist_6m = self.history(self.symbols[ticker], self.mom_lookback_6m + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte le titre. On demande le
+            # double puis on re-slice sur la fenetre d'origine : la garde porte
+            # sur la fenetre reellement utilisee, son verdict ne change pas.
+            hist_6m = self.history(self.symbols[ticker], 2 * (self.mom_lookback_6m + 5), Resolution.DAILY)
+            hist_6m = hist_6m.iloc[-(self.mom_lookback_6m + 5):]
             if len(hist_6m) < self.mom_lookback_6m * 0.8:
                 continue
             ret_6m = hist_6m["close"].iloc[-1] / hist_6m["close"].iloc[-self.mom_lookback_6m] - 1
             if ret_6m <= 0:
                 continue
-            hist_12m = self.history(self.symbols[ticker], self.mom_lookback_12m + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte le titre. On demande le
+            # double puis on re-slice sur la fenetre d'origine : la garde porte
+            # sur la fenetre reellement utilisee, son verdict ne change pas.
+            hist_12m = self.history(self.symbols[ticker], 2 * (self.mom_lookback_12m + 5), Resolution.DAILY)
+            hist_12m = hist_12m.iloc[-(self.mom_lookback_12m + 5):]
             if len(hist_12m) < self.mom_lookback_12m * 0.8:
                 ret_12m = ret_6m
             else:

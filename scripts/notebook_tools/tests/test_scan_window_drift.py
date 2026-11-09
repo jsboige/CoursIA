@@ -331,3 +331,74 @@ def test_cli_directory_arg_scans_tree_not_crash(tmp_path):
     verdicts = {rec["verdict"] for rec in records}
     assert "ERREUR" not in verdicts, f"directory path crashed a record: {records}"
     assert verdicts == {"DRIFT", "N-A"}, f"expected DRIFT+N-A, got {verdicts}"
+
+
+# --- Forme L ancree sur un set_start_date litteral (mecanisme A, #8772) ----
+def test_lookback_anchored_on_literal_start_is_pinned(tmp_path):
+    """qb.set_start_date(2020,1,1) puis qb.history(N) -> PINNED : les N barres
+    se comptent depuis qb.Time = 2020-01-01, la fenetre ne glisse pas."""
+    p = _write(tmp_path, [
+        ("code", "qb = QuantBook()\nqb.set_start_date(2020, 1, 1)\nqb.set_end_date(2024, 12, 31)\nspy = qb.add_equity('SPY').symbol"),
+        ("code", "history = qb.history(spy, 365*5, Resolution.DAILY)"),
+    ])
+    r = classify_notebook(p)
+    assert r["verdict"] == "PINNED", r
+    assert "L" not in r["forms"]
+    assert [h["lookback"] for h in r["anchored_lookbacks"]] == ["365*5"]
+
+
+def test_lookback_anchor_same_cell_before_call(tmp_path):
+    """SetStartDate plus haut dans la meme cellule ancre aussi (casse C#)."""
+    p = _write(tmp_path, [
+        ("code", "qb = QuantBook()\nqb.SetStartDate(datetime(2020, 1, 1))\nqb.SetEndDate(2024, 12, 31)\nh = qb.History(['SPY'], 252, Resolution.Daily)"),
+    ])
+    r = classify_notebook(p)
+    assert r["verdict"] == "PINNED", r
+
+
+def test_lookback_start_after_call_still_drifts(tmp_path):
+    """Falsifiabilite : un set_start_date pose APRES l'appel n'ancre rien."""
+    p = _write(tmp_path, [
+        ("code", "qb = QuantBook()\nh = qb.history('SPY', 252, Resolution.DAILY)"),
+        ("code", "qb.set_start_date(2020, 1, 1)"),
+    ])
+    r = classify_notebook(p)
+    assert r["verdict"] == "DRIFT"
+    assert "L" in r["forms"]
+
+
+def test_lookback_non_literal_start_still_drifts(tmp_path):
+    """Falsifiabilite : un set_start_date relatif a l'horloge n'ancre rien."""
+    p = _write(tmp_path, [
+        ("code", "qb = QuantBook()\nqb.set_start_date(datetime.now() - timedelta(days=365))"),
+        ("code", "h = qb.history('SPY', 252, Resolution.DAILY)"),
+    ])
+    r = classify_notebook(p)
+    assert r["verdict"] == "DRIFT"
+    assert "L" in r["forms"]
+
+
+def test_lookback_other_receiver_still_drifts(tmp_path):
+    """Falsifiabilite : l'ancre doit porter sur le meme receiver."""
+    p = _write(tmp_path, [
+        ("code", "qb = QuantBook()\nqb2 = QuantBook()\nqb2.set_start_date(2020, 1, 1)"),
+        ("code", "h = qb.history('SPY', 252, Resolution.DAILY)"),
+    ])
+    r = classify_notebook(p)
+    assert r["verdict"] == "DRIFT"
+    assert "L" in r["forms"]
+
+
+# --- Forme N par periode yfinance (mecanisme B, #8772) ---------------------
+def test_yfinance_period_is_drift_n_even_with_anchored_lookback(tmp_path):
+    """Le repli yf.Ticker(t).history(period='5y') se compte depuis NOW : il
+    derive meme quand le chemin QuantBook est ancre (Alpha-Correlation-Analysis)."""
+    p = _write(tmp_path, [
+        ("code", "qb = QuantBook()\nqb.set_start_date(2020, 1, 1)\nqb.set_end_date(2024, 12, 31)"),
+        ("code", "try:\n    h = qb.History(sym, 365*5, Resolution.Daily)\nexcept Exception:\n"
+                 "    raw = yf.Ticker('SPY').history(period=\"5y\", auto_adjust=True)"),
+    ])
+    r = classify_notebook(p)
+    assert r["verdict"] == "DRIFT"
+    assert r["forms"] == ["N"]
+    assert len(r["anchored_lookbacks"]) == 1
