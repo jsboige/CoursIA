@@ -97,7 +97,7 @@ dotnet --version
 ### 2. Kernel dotnet-interactive
 
 ```bash
-dotnet tool install -g Microsoft.dotnet-interactive
+dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 ```
 
@@ -983,7 +983,7 @@ Pour un guide complet, voir [Infer-02b-Debugging-Bonnes-Pratiques](Infer-02b-Deb
 | `Inference exception: Improper distribution` | Le modèle contient une boucle causale ou une observation contradictoire. Le notebook 6 (Debugging) détaille les stratégies de diagnostic |
 | `Algorithm compilation failed` | Infer.NET compile un algorithme d'inférence par reflection. Vérifier que le modèle est dans une famille supportée (conjugué). Modèles non-conjugués nécessitent EP ou VMP |
 | Performance lente sur les grands modèles | Utiliser `InferenceEngine.Compiler.ShowGeneratedSource = true` pour inspecter le code généré. Le notebook 6 compare les algorithmes EP/VMP/Gibbs |
-| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive` |
+| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` |
 
 ### Erreur de compilation
 

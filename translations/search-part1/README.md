@@ -1,6 +1,6 @@
 # CSV de synchro traduction — série Search/Part1-Foundations
 
-**Statut** : Phase 2 rollout (Epic #4957 / #1650). 7ᵉ série couverte par l'infrastructure i18n, après `SymbolicAI/Argument_Analysis/` (PR #5799), `Probas/Infer/` (PR #5801), `ML/ML.Net/` (PR #5805), `SymbolicAI/Planners/` (PR #5806), `SymbolicAI/SmartContracts/` (PR #5808) et `Sudoku/` (PR #5809).
+**Statut** : Phase 2 rollout (Epic #4957 / #1650). 7ᵉ série couverte par l'infrastructure i18n, après `SymbolicAI/ArgumentAnalysis/` (PR #5799), `Probas/Infer/` (PR #5801), `ML/ML.Net/` (PR #5805), `SymbolicAI/Planners/` (PR #5806), `SymbolicAI/SmartContracts/` (PR #5808) et `Sudoku/` (PR #5809).
 
 ## Couvert
 
@@ -45,7 +45,7 @@ Sortie = JSON `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYN
 
 - Issue #4957 — design infrastructure synchronisation traduction
 - Epic #1650 — traduction multilingue du dépôt
-- `translations/symbolicai/README.md` — 1ère série (Argument_Analysis)
+- `translations/symbolicai/README.md` — 1ère série (ArgumentAnalysis)
 - `translations/probas-infer/README.md` — 2ᵉ série (Probas/Infer)
 - `translations/mlnet/README.md` — 3ᵉ série (ML/ML.Net)
 - `translations/planners/README.md` — 4ᵉ série (Planners)

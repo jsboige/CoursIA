@@ -8,7 +8,7 @@ Ce laboratoire ouvre la **Journée 1** du workshop. Il pose les fondations techn
 
 À la fin de ce lab, vous saurez :
 
-1. Charger et manipuler un jeu de données avec **Pandas** (lecture CSV, `info`, `describe`, `head`)
+1. Construire et manipuler un jeu de données avec **Pandas** (construction d'un DataFrame, `info`, `describe`, `head`)
 2. Explorer, sélectionner et filtrer des données selon des conditions
 3. Visualiser des tendances avec **Matplotlib**
 4. Entraîner un modèle de **régression linéaire** simple avec Scikit-Learn (`train_test_split`, `r2_score`)
@@ -16,7 +16,9 @@ Ce laboratoire ouvre la **Journée 1** du workshop. Il pose les fondations techn
 
 ## Données fournies
 
-- `sales_data.csv` : jeu de ventes synthétique (ventes journalières par produit), support des exemples et des exercices.
+Le carnet génère lui-même son jeu de ventes synthétique (ventes journalières par produit, graine fixée) : aucun fichier n'est à charger, et les exemples comme les exercices travaillent sur ce DataFrame.
+
+- `sales_data.csv` : jeu de ventes synthétique conservé dans le dossier pour un usage libre ; le carnet ne le lit pas.
 
 ## Prérequis
 
