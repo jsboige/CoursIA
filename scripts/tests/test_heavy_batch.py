@@ -152,6 +152,64 @@ def test_la_taille_du_lot_est_bornee() -> None:
     assert "lot plein" in excluded[0]["motif"]
 
 
+def test_le_lot_ne_plafonne_pas_par_defaut() -> None:
+    """Pas de plafond par defaut : c'est la porte qui decide du lot.
+
+    Un plafond applique APRES la porte ne fait que retrancher des PRs que
+    le merge mergera (mesure du 2026-11-09 : 15 PRs inspectees, 1
+    selectionnee sous un plafond de 4).
+    """
+    entries = [_entry(n, created_at=f"2026-11-{n:02d}T00:00:00Z") for n in range(1, 8)]
+    selected, excluded = heavy_batch.select_batch(entries, 0)
+    assert len(selected) == 7
+    assert excluded == []
+
+
+def test_la_liste_des_candidates_est_cellule_des_prs_relues_par_le_coordinateur(
+    monkeypatch,
+) -> None:
+    """La population du lot est celle que le MERGE touche.
+
+    C'est la liste des PRs ouvertes que le coordinateur a relues : le lot
+    mesure la duree d'un lot reel, donc il ne mesure que des PRs qui
+    passent par la revue du coordinateur.
+    """
+    capture: dict[str, list[str]] = {}
+
+    def fake_run_gh(argv, *args, **kwargs):
+        capture["argv"] = list(argv)
+        return "[]"
+
+    monkeypatch.setattr(heavy_batch.pool, "run_gh", fake_run_gh)
+    heavy_batch.fetch_entries("jsboige/CoursIA", 100)
+    argv = capture["argv"]
+    assert "reviewed-by:myia-ai-01" in " ".join(argv)
+    assert "sort:created-asc" in " ".join(argv)
+
+
+def test_la_liste_des_candidates_n_est_pas_tronquee(monkeypatch) -> None:
+    """La liste n'est PAS tronquee a 15 PRs.
+
+    La troncature ecarte les PRs relues les plus recentes : elle decidait
+    du lot, alors que la porte en est une autre.
+    """
+    nodes = [
+        {"number": n, "title": f"PR {n}", "createdAt": f"2026-11-{n:02d}T00:00:00Z",
+         "isCrossRepository": False, "headRefOid": f"sha-{n}"}
+        for n in range(1, 21)
+    ]
+    monkeypatch.setattr(heavy_batch.pool, "run_gh",
+                        lambda argv, *a, **k: json.dumps(nodes))
+    monkeypatch.setattr(heavy_batch.pool, "fetch_prs",
+                        lambda repo, numbers: {
+                            n: {"verdict": "LGTM"} for n in numbers})
+    monkeypatch.setattr(heavy_batch, "has_coordinator_approval",
+                        lambda repo, number, head_sha=None: True)
+    entries = heavy_batch.fetch_entries("jsboige/CoursIA", 100)
+    assert len(entries) == 20
+    assert [e["number"] for e in entries][:3] == [1, 2, 3]
+
+
 # --- Lecture du verdict ----------------------------------------------------
 
 

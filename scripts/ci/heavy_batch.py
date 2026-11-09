@@ -39,6 +39,15 @@ Regles de selection (dans cet ordre) :
 - **Anciennete** : les plus anciennes d'abord -- une PR qui vieillit est une
   PR que le lot doit servir avant une autre.
 
+La **population candidates** est celle que le merge touche : les PRs
+ouvertes que le coordinateur a relues (`--search "reviewed-by:myia-ai-01
+sort:created-asc"`). Elle n'est **pas tronquee**, et le lot n'a **pas de
+plafond par defaut** (`--max-prs 0`) : un plafond applique apres la porte
+retranche des PRs que le merge mergera. Mesure du 2026-11-09 sur le pool
+reel : 16 PRs inspectees, 5 selectionnees, 11 exclusions nommees ; sous la
+liste tronquee et le plafond de 4, la meme mesure donnait 1 PR
+selectionnee sur 15.
+
 **L'arbre d'integration** (phase d'integration) :
 
 Le lot ne teste pas chaque PR isolement. Il construit l'arbre **qui va
@@ -66,7 +75,7 @@ que P4 le decrit) reste a venir : le lot n'emet aujourd'hui aucun check-run
 et ne juge aucune PR.
 
 Usage :
-    python scripts/ci/heavy_batch.py --repo jsboige/CoursIA --max-prs 4 --json
+    python scripts/ci/heavy_batch.py --repo jsboige/CoursIA --json
     python scripts/ci/heavy_batch.py --slot
     python scripts/ci/heavy_batch.py --results .tmp/batch_results.json
     python scripts/ci/heavy_batch.py --run --plan .tmp/plan.json --integration
@@ -113,11 +122,19 @@ COORDINATOR_LOGIN = "myia-ai-01"
 #: parce qu'il informe le rapport sur l'etat de la file.
 APPROVING_VERDICTS = frozenset({"APPROVED", "LGTM"})
 
-#: Nombre de PRs detaillees par lot. La liste complete des PRs ouvertes est
-#: lisible en une passe legere ; le detail (verdict, approbation) est lu sur
-#: une liste courte, parce que la lecture en une passe de 100 PRs fait
-#: echouer la requete GraphQL sur la limite de ressources.
-SHORTLIST = 15
+#: La **liste des candidates** : les PRs ouvertes que le COORDINATEUR a
+#: relues. C'est la meme population que celle que le merge touche -- le lot
+#: mesure la duree d'un lot **reel**, donc il ne mesure que des PRs qui
+#: passent par la revue du coordinateur.
+#:
+#: La liste n'est plus **tronquee** : une liste courte (les 15 plus
+#: anciennes) decideait du lot alors que la population utile etait plus
+#: large -- mesure du 2026-11-09 sur le pool reel : 15 PRs inspectees,
+#: 1 selectionnee, parce que la troncature avait ecarte les PRs relues les
+#: plus recentes. La lecture du detail est **par PR** (une requete GraphQL
+#: par PR), donc la population ne coute pas une requete : elle coute une
+#: requete de plus par PR.
+POOL_SEARCH = "reviewed-by:myia-ai-01 sort:created-asc"
 
 #: La suite **lourde** : ce que l'etage 2 joue sur l'arbre d'integration.
 #: C'est la suite de la jambe `Scripts Tests` -- lue dans le workflow, jamais
@@ -248,6 +265,12 @@ def select_batch(
     verdict de revue est lu et affiche (il informe le rapport), mais il ne
     selectionne plus.
 
+    **`max_prs <= 0` ne plafonne pas.** Le lot n'a pas de taille maximale
+    par defaut : c'est la porte qui decide de ce qui entre, et un plafond
+    applique APRES la porte ne fait que retrancher des PRs que le merge
+    mergera (mesure du 2026-11-09 : 15 PRs inspectees, 1 selectionnee sous
+    un plafond de 4 -- le plafond decideait du lot, pas la porte).
+
     Fonction pure : elle raisonne sur des fiches deja normalisees, sans lire
     l'API. L'ordre est l'anciennete (la plus ancienne d'abord) -- une PR qui
     vieillit passe avant les autres.
@@ -256,7 +279,7 @@ def select_batch(
     selected: list[dict[str, Any]] = []
     excluded: list[dict[str, Any]] = []
     for entry in ordered:
-        if len(selected) >= max_prs:
+        if max_prs > 0 and len(selected) >= max_prs:
             excluded.append({**entry, "motif": "lot plein (taille maximale atteinte)"})
             continue
         if entry["fork"] and not entry["approved_by_coordinator"]:
@@ -326,16 +349,21 @@ def has_coordinator_approval(repo: str, number: int, head_sha: str | None = None
 
 
 def fetch_entries(repo: str, limit: int) -> list[dict[str, Any]]:
-    """Lit les PRs ouvertes du depot, en deux phases bornees.
+    """Lit les PRs candidates du depot, en deux phases bornees.
 
-    Phase 1 : une liste legere (`number`, `createdAt`, `isCrossRepository`).
-    Phase 2 : les PRs les plus anciennes sont detaillees -- verdict lu par
-    l'organe `pool_review_verdicts`, approbation du coordinateur lue en REST.
+    Phase 1 : une liste legere (`number`, `createdAt`, `isCrossRepository`),
+    **restreinte aux PRs que le coordinateur a relues** (`POOL_SEARCH`) --
+    c'est la population que le merge touche.
+    Phase 2 : chaque PR est detaillee -- verdict lu par l'organe
+    `pool_review_verdicts` (une requete GraphQL **par PR**), approbation du
+    coordinateur lue en REST.
 
-    La lecture en une seule passe serait trop lourde : demander les reviews
-    ET les commentaires de 100 PRs d'un coup fait **echouer** la requete
-    GraphQL sur la limite de ressources (mesure firsthand sur ce depot le
-    2026-11-09). La liste courte est donc la forme qui passe.
+    La liste n'est **pas tronquee** : une liste courte decidait du lot alors
+    que la population utile etait plus large (mesure du 2026-11-09 sur le
+    pool reel : 15 PRs inspectees, 1 selectionnee, la troncature ayant ecarte
+    les PRs relues les plus recentes). Le detail est lu par PR, donc la
+    population ne coute pas une requete unique : elle coute une requete de
+    plus par PR.
     """
     raw = pool.run_gh(
         [
@@ -345,12 +373,13 @@ def fetch_entries(repo: str, limit: int) -> list[dict[str, Any]]:
             repo,
             "--state",
             "open",
-            # Les plus anciennes d'abord : c'est l'ordre du tapis, et c'est
-            # la liste qui agedit (une PR qui vieillit doit passer avant une
-            # PR fraiche). `gh pr list` n'a pas de `--sort` : le tri se
+            # Les PRs **relues par le coordinateur**, les plus anciennes
+            # d'abord : c'est la population que le merge touche, et c'est
+            # l'ordre qui agedit (une PR qui vieillit passe avant une PR
+            # fraiche). `gh pr list` n'a pas de `--sort` : le tri se
             # demande par la recherche.
             "--search",
-            "sort:created-asc",
+            POOL_SEARCH,
             "--limit",
             str(limit),
             "--json",
@@ -361,11 +390,10 @@ def fetch_entries(repo: str, limit: int) -> list[dict[str, Any]]:
     if not isinstance(nodes, list):
         raise RuntimeError("payload gh inattendu (liste attendue)")
     nodes.sort(key=lambda node: node.get("createdAt") or "")
-    shortlist = nodes[:SHORTLIST]
-    numbers = [int(node["number"]) for node in shortlist]
+    numbers = [int(node["number"]) for node in nodes]
     classified = pool.fetch_prs(repo, numbers)
     entries = []
-    for node in shortlist:
+    for node in nodes:
         number = int(node["number"])
         detail = classified.get(number) or {}
         entries.append(
@@ -1132,7 +1160,9 @@ def run_integration(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument("--repo", default=DEFAULT_REPO, help="depot cible")
-    parser.add_argument("--max-prs", type=int, default=4, help="taille maximale du lot")
+    parser.add_argument(
+        "--max-prs", type=int, default=0,
+        help="taille maximale du lot (0 = pas de plafond : la porte decide)")
     parser.add_argument("--limit", type=int, default=100, help="PRs ouvertes inspectees")
     parser.add_argument("--json", action="store_true", help="sortie JSON machine")
     parser.add_argument("--slot", action="store_true", help="afficher le creneau actif et son echeance")
@@ -1287,7 +1317,8 @@ def main(argv: list[str] | None = None) -> int:
     payload = {
         "maintenant_utc": now.isoformat(),
         "creneau": active_slot(now).as_dict() if active_slot(now) else None,
-        "taille_du_lot": args.max_prs,
+        "plafond": args.max_prs or None,
+        "taille_du_lot": len(selected),
         "selectionnees": selected,
         "exclues": excluded,
         "pool_inspecte": len(entries) if args.pr is None else 1,

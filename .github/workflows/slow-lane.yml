@@ -185,9 +185,9 @@ on:
   workflow_dispatch:
     inputs:
       max_prs:
-        description: "Taille maximale du lot"
+        description: "Taille maximale du lot (0 = pas de plafond : c'est la porte qui decide)"
         required: false
-        default: '4'
+        default: '0'
       pr:
         description: "Numeros de PR a tester seule (avance du coordinateur, vide = lot)"
         required: false
@@ -356,7 +356,7 @@ jobs:
           # explicite et le plan est vide, donc le lot ne peut pas se
           # presenter comme vert.
           PR: "${{ inputs.pr }}"
-          MAX_PRS: "${{ inputs.max_prs || '4' }}"
+          MAX_PRS: "${{ inputs.max_prs || '0' }}"
         run: |
           mkdir -p .tmp
           if [ -n "${PR}" ]; then

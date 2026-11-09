@@ -353,6 +353,28 @@ tête qui a bougé depuis ne couvre plus le contenu qui mergera. Et sur une
 même tête, c'est la **dernière** review du coordinateur qui fait foi — une
 APPROVE suivie d'une `CHANGES_REQUESTED` referme la porte.
 
+### La population du lot, et l'absence de plafond
+
+La population candidates est celle que le **merge** touche : les PRs
+ouvertes que le coordinateur a **relues** (`--search "reviewed-by:myia-ai-01
+sort:created-asc"`), les plus anciennes d'abord.
+
+Le lot n'a **pas de plafond par défaut**. Un plafond appliqué *après* la
+porte ne fait que retrancher des PRs que le merge mergera : la liste
+courte des 15 PRs les plus anciennes decidait du lot, alors que la
+population utile était plus large — mesure du 2026-11-09 sur le pool réel :
+**16 PRs inspectées, 5 sélectionnées**, 11 exclusions nommées. Sous la
+liste tronquée et le plafond de 4, la même mesure donnait 1 PR
+sélectionnée sur 15 : c'était la troncature et le plafond qui décidaient,
+pas la porte.
+
+Le détail (verdict, approbation) est lu **par PR** — une requête GraphQL
+par PR — donc élargir la population ne coûte pas une requête unique, elle
+coûte une requête de plus par PR.
+
+`--max-prs` reste disponible pour un lot volontairement restreint ; `0`
+signifie « pas de plafond ».
+
 ### L'environnement : celui de la suite, pas une liste recopiée
 
 Le lot installe son environnement avec le **même script** que la jambe
