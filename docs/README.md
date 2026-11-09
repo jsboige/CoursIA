@@ -452,7 +452,7 @@ Migration par tranches close (#17525) : Grothendieck lens et Leiden position (tr
 | Fichier | Description |
 |---------|-------------|
 | [ml/tsad-benchmark-flaws.md](ml/tsad-benchmark-flaws.md) | Défauts des benchmarks TSAD (détection d'anomalies sur séries temporelles) et place du *Matrix Profile* — note de référence compagnon des notebooks ML-10. Sert à ne pas présenter comme un résultat ce qui est un artefact de protocole d'évaluation |
-| [ml/bdh-evaluation.md](ml/bdh-evaluation.md) | Évaluation BDH (Dragon Hatchling) — verdict complet |
+| [ml/bdh-evaluation.md → transients/2026-09-15-…](transients/2026-09-15-bdh-evaluation.md) | Évaluation BDH (Dragon Hatchling) — verdict daté (mesures du 2026-09-03 au 2026-09-15, révision due ~2027-03 sous quatre conditions) — déplacé en lane transiente ; le noyau durable (la source réelle d'un claim n'est pas le papier qu'une issue cite, et la distinction *fidèle mais complaisant* / *fabriqué*) vit dans [reference/sota-verdicts-detail.md](reference/sota-verdicts-detail.md) §5 (vague 4 #14623) |
 
 ## Autres répertoires (docs/xai-shap-strategy/, docs/test-fixtures/)
 
