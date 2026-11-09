@@ -5945,7 +5945,7 @@ def test_lint_12327_run_check_11112_exact_scenario(capsys, monkeypatch):
             "MyIA.AI.Notebooks/Sudoku/SL-5-test.ipynb",
             "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-test.ipynb",
             "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-test.ipynb",
-            "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/I2_Contre-test.ipynb",
+            "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/I2_Contre-test.ipynb",
             "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama-test.ipynb",
         ],
     )
@@ -5972,7 +5972,7 @@ def test_lint_12327_run_check_11112_exact_scenario(capsys, monkeypatch):
          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7*.ipynb\n",
          "2026-08-22T14:12:00Z"),
         ("[CLAIMED] lane myia-po-2026:CoursIA-2 -- paths: "
-         "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/I2_Contre*.ipynb\n",
+         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/I2_Contre*.ipynb\n",
          "2026-08-22T14:13:00Z"),
     ]
     events = _events_for(*bodies_and_dates)

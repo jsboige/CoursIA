@@ -10,10 +10,11 @@ Ce module couvre les fondamentaux de la génération d'images par IA : modèles 
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 5 |
 | Kernel | Python 3 |
 | Durée estimée | ~3-4h |
 | GPU requis | 0-29GB |
+
+Le catalogue du dépôt (`COURSE_CATALOG.generated.md`) est la source des décomptes — ce README présente les carnets, il ne les compte pas.
 
 ## Notebooks
 

@@ -2108,7 +2108,7 @@ Les compétences développées sont directement transférables à d'autres domai
 ---
 **Retour au sommaire** : [Index CaseStudies](../../README.md)
 ",,,,,,,,4bc25d3e110f69d5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,d0f6d516,markdown,fr,8de9a12f223b76e7,"**Navigation** : [Index](../../README.md)
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,d0f6d516,markdown,fr,8de9a12f223b76e7,"**Navigation** : [Index](../../README.md)
 # CC2 : OncoPlan - Corrigé Type
 
 **Cours :** IA101 - Intelligence Artificielle (EPF 2026)
@@ -2118,13 +2118,13 @@ Ce notebook présente une solution complète pour le devoir OncoPlan. Il couvre 
 1.  **Symbolique** : Ontologie RDF et Planification OR-Tools.
 2.  **Probabiliste** : Modélisation Bayésienne avec Pyro.
 3.  **Bonus** : Traçabilité via Hashage.",,,,,,,,8de9a12f223b76e7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,a08547b6,markdown,fr,5276363db9e755d7,"## Installation des Dépendances
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,a08547b6,markdown,fr,5276363db9e755d7,"## Installation des Dépendances
 
 Ce cas d'étude assemble **trois paradigmes d'IA** distincts, chacun porté par une librairie Python dédiée : **RDFLib** (représentation des connaissances et raisonnement sur l'ontologie des médicaments), **OR-Tools** et son solveur **CP-SAT** (optimisation combinatoire pour planifier les cures sous contraintes de capacité), et **Pyro** (inférence bayésienne probabiliste sur le profil du patient). Pyro repose sur **PyTorch** comme backend tensoriel. Les dépendances sont pré-provisionnées via `CaseStudies/requirements.txt` : aucun `pip install` n'est requis, les imports se font directement à la cellule suivante.",,,,,,,,5276363db9e755d7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,82097291,code,fr,15a066e610185e31,"# Dependances pre-provisionnees (rdflib ortools pyro-ppl torch pandas matplotlib seaborn).
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,82097291,code,fr,15a066e610185e31,"# Dependances pre-provisionnees (rdflib ortools pyro-ppl torch pandas matplotlib seaborn).
 # Aucun install requis : voir CaseStudies/requirements.txt ; imports directs en cellule suivante.",,,,,,,,15a066e610185e31,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,5d84957e,markdown,fr,1ef206f7fa8d42c1,Import des bibliotheques necessaires.,,,,,,,,1ef206f7fa8d42c1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,d4253621,code,fr,361ab60bd89681a2,"import pandas as pd
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,5d84957e,markdown,fr,1ef206f7fa8d42c1,Import des bibliotheques necessaires.,,,,,,,,1ef206f7fa8d42c1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,d4253621,code,fr,361ab60bd89681a2,"import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -2142,8 +2142,8 @@ import json
 # Configuration
 sns.set_style(""whitegrid"")
 pyro.set_rng_seed(101)",,,,,,,,361ab60bd89681a2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,2a4648c4,markdown,fr,596f4162a52f315b,***,,,,,,,,596f4162a52f315b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,c90453dc,markdown,fr,f850967243bf8e2d,"## Partie 1 : Le Pharmacien Symbolique
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,2a4648c4,markdown,fr,596f4162a52f315b,***,,,,,,,,596f4162a52f315b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,c90453dc,markdown,fr,f850967243bf8e2d,"## Partie 1 : Le Pharmacien Symbolique
 
 La première partie relève de l'**IA symbolique** : on représente explicitement les connaissances du domaine (médicaments, toxicités, interactions) et on raisonne dessus par des règles déterministes. Elle se décompose en deux sous-parties complémentaires :
 
@@ -2151,8 +2151,8 @@ La première partie relève de l'**IA symbolique** : on représente explicitemen
 - **1.2. Planification des cures (OR-Tools CP-SAT)** — une fois les prescriptions validées, il faut les **placer dans le temps** : plusieurs protocoles concurrents se partagent des lits en nombre limité. CP-SAT co-optimise les dates de début pour respecter la capacité journalière tout en minimisant le makespan.
 
 L'approche symbolique garantit la **sûreté** (une interaction interdite est détectée à coup sûr), mais elle est rigide : elle ne sait pas gérer l'incertitude sur l'état réel du patient — ce sera le rôle de la Partie 2 (probabiliste).",,,,,,,,f850967243bf8e2d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,06db3521,markdown,fr,e9f2abe1b96e4898,### 1.1. Ontologie des Médicaments (RDFLib),,,,,,,,e9f2abe1b96e4898,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,f06d5175,code,fr,fb4f949712e3f486,"# Création du Namespace
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,06db3521,markdown,fr,e9f2abe1b96e4898,### 1.1. Ontologie des Médicaments (RDFLib),,,,,,,,e9f2abe1b96e4898,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,f06d5175,code,fr,fb4f949712e3f486,"# Création du Namespace
 ONCO = Namespace(""http://example.org/onco/"")
 g = Graph()
 
@@ -2177,8 +2177,8 @@ for med_name, props in medicaments.items():
         g.add((med_uri, ONCO.incompatible_avec, ONCO[inc]))
 
 print(f""Ontologie chargée avec {len(g)} triplets."")",,,,,,,,fb4f949712e3f486,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,3c78ffc1,markdown,fr,c519d63fe0a6b9e6,Verification de prescription basee sur l'ontologie.,,,,,,,,c519d63fe0a6b9e6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,34abf4d3,code,fr,64e2a7b945e4c8d1,"def verifier_prescription(protocole_noms, patient_insuffisance_renale):
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,3c78ffc1,markdown,fr,c519d63fe0a6b9e6,Verification de prescription basee sur l'ontologie.,,,,,,,,c519d63fe0a6b9e6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,34abf4d3,code,fr,64e2a7b945e4c8d1,"def verifier_prescription(protocole_noms, patient_insuffisance_renale):
     alertes = []
     
     # Vérification Néphrotoxicité
@@ -2207,13 +2207,13 @@ print(verifier_prescription([""Cisplatine""], True))
 
 print(""\n--- Test 3 : Incompatibilité ---"")
 print(verifier_prescription([""Cisplatine"", ""Gentamicine""], False))",,,,,,,,64e2a7b945e4c8d1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,0cd1d38e,code,fr,8b3931a0628218db,"# Exercice 1 : Etendre l'ontologie medicamenteuse
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,0cd1d38e,code,fr,8b3931a0628218db,"# Exercice 1 : Etendre l'ontologie medicamenteuse
 # TODO etudiant : Ajouter ""Paclitaxel"" et ""Carboplatine"" au dictionnaire medicaments
 # TODO etudiant : Peupler le graphe RDF avec les nouveaux triplets
 # TODO etudiant : Tester verifier_prescription avec les nouvelles combinaisons
 result = None  # TODO etudiant : remplacer par votre ontologie etendue
 print(""Exercice a completer : ontologie etendue"")",,,,,,,,8b3931a0628218db,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,6753eaa0,markdown,fr,2ac54510e0f11c38,"### Exercice 1 : Etendre l'ontologie avec de nouveaux medicaments et interactions
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,6753eaa0,markdown,fr,2ac54510e0f11c38,"### Exercice 1 : Etendre l'ontologie avec de nouveaux medicaments et interactions
 
 **Objectif** : Ajouter de nouveaux medicaments a l'ontologie RDF et implementer une verification d'interactions etendue.
 
@@ -2225,7 +2225,7 @@ MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb
 - **Étape 1** : Ajouter les nouveaux medicaments au dictionnaire `medicaments`
 - **Étape 2** : Peupler le graphe RDF avec les nouveaux triplets
 - **Étape 3** : Tester la fonction `verifier_prescription` avec des combinaisons incluant les nouveaux medicaments",,,,,,,,2ac54510e0f11c38,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,eeaeb406,markdown,fr,0bb2a59db62f0b31,"### 1.2. Planification des Cures (OR-Tools CP-SAT)
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,eeaeb406,markdown,fr,0bb2a59db62f0b31,"### 1.2. Planification des Cures (OR-Tools CP-SAT)
 
 En service d'oncologie de jour, **plusieurs protocoles de chimiothérapie se
 déroulent en parallèle** et partagent les mêmes ressources limitées (lits
@@ -2242,7 +2242,7 @@ de combinaisons. **CP-SAT** (OR-Tools) est l'outil SOTA approprié — il propag
 les contraintes (capacité cumulée par jour,
 fenêtres d'administration) et **minimise le makespan** (libérer les lits au plus
 tôt) via une recherche branch-and-bound guidée par les bornes LP.",,,,,,,,0bb2a59db62f0b31,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,31abc0f7,code,fr,c67124719094014a,"def planifier_chimio_multi(protocoles, capacite_max=3, occupations_existantes=None, horizon=90):
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,31abc0f7,code,fr,c67124719094014a,"def planifier_chimio_multi(protocoles, capacite_max=3, occupations_existantes=None, horizon=90):
     """"""Planifie N protocoles de chimiothérapie concurrents sous capacité journalière.
 
     Co-optimise les dates de début de chaque protocole pour respecter la capacité
@@ -2332,18 +2332,18 @@ else:
     print(f""\nDébuts distincts : {debuts}"")
     print(""Note : les protocoles ne commencent PAS tous à J1 — CP-SAT les a ""
           ""décalés pour ne pas saturer les lits (un for-loop trivial violerait la capacité)."")",,,,,,,,c67124719094014a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,ef761f0b,markdown,fr,24c61a72b2d9130b,"La cellule ci-dessus implémente un solveur CP-SAT qui planifie plusieurs protocoles de chimiothérapie concurrents sous une capacité journalière de lits. Le modèle minimise le makespan (dernier jour d'administration toutes protocoles confondues) tout en respectant la contrainte qu'aucun jour n'a plus de `capacite_max` administrations. Les occupations déjà présentes dans le service sont prises en compte.
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,ef761f0b,markdown,fr,24c61a72b2d9130b,"La cellule ci-dessus implémente un solveur CP-SAT qui planifie plusieurs protocoles de chimiothérapie concurrents sous une capacité journalière de lits. Le modèle minimise le makespan (dernier jour d'administration toutes protocoles confondues) tout en respectant la contrainte qu'aucun jour n'a plus de `capacite_max` administrations. Les occupations déjà présentes dans le service sont prises en compte.
 
 La sortie affiche le statut du solveur, le makespan optimal, et le planning détaillé (date de début + jours d'administration) pour chaque protocole. Les décalages entre les débuts des protocoles sont la signature de la co-optimisation : CP-SAT distribue les dates pour éviter de saturer la capacité.
 
 Note sur la co-optimisation : un enchaînement trivial de for-loops saturerait les lits (cf. la note du solveur dans la sortie) — c'est précisément ce que CP-SAT évite.",,,,,,,,24c61a72b2d9130b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,a8271cb1,code,fr,cb5da8bc4f7b5023,"# Exercice 2 : Sensibilite au prior du profil patient
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,a8271cb1,code,fr,cb5da8bc4f7b5023,"# Exercice 2 : Sensibilite au prior du profil patient
 # TODO etudiant : Creer une version parametrable du modele avec profil_probs en argument
 # TODO etudiant : Tester 3 configurations de prior differentes
 # TODO etudiant : Comparer les posterieurs dans un tableau
 result = None  # TODO etudiant : remplacer par votre analyse
 print(""Exercice a completer : sensibilite au prior"")",,,,,,,,cb5da8bc4f7b5023,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,0c540f63,markdown,fr,f9d45b9c97639385,"### Exercice 2 : Sensibilite du modèle bayesien au prior sur le profil patient
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,0c540f63,markdown,fr,f9d45b9c97639385,"### Exercice 2 : Sensibilite du modèle bayesien au prior sur le profil patient
 
 **Objectif** : Etudier comment le choix du prior sur les profils (Resistant/Normal/Sensible) influence le diagnostic posterieur.
 
@@ -2355,8 +2355,8 @@ MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb
 - **Étape 1** : Créer une fonction qui accepte le prior en paramètre
 - **Étape 2** : Tester 3 configurations de prior différentes
 - **Étape 3** : Afficher les posterieurs dans un tableau comparatif",,,,,,,,f9d45b9c97639385,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,b3f68345,markdown,fr,9adf1db011de8ba6,## Partie 2 : Le Médecin Probabiliste (Pyro),,,,,,,,9adf1db011de8ba6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,b8e1e297,code,fr,b29f552a3579c73d,"class OncoModel:
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,b3f68345,markdown,fr,9adf1db011de8ba6,## Partie 2 : Le Médecin Probabiliste (Pyro),,,,,,,,9adf1db011de8ba6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,b8e1e297,code,fr,b29f552a3579c73d,"class OncoModel:
     def __init__(self):
         pass
         
@@ -2432,14 +2432,14 @@ print(f""Sensible  : {post_probs[2]:.2f}"")
 
 if post_probs[2] > 0.8:
     print(""=> DIAGNOSTIC : Patient hypersensible. Réduction de dose impérative."")",,,,,,,,b29f552a3579c73d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,ed9440e8,markdown,fr,eeeec13696daa2a5,### 2.2. Prédiction et Prise de Décision,,,,,,,,eeeec13696daa2a5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,7868621b,code,fr,f7c69905c0506c5d,"# Exercice 3 : Journal d'audit pour le contrat intelligent
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,ed9440e8,markdown,fr,eeeec13696daa2a5,### 2.2. Prédiction et Prise de Décision,,,,,,,,eeeec13696daa2a5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,7868621b,code,fr,f7c69905c0506c5d,"# Exercice 3 : Journal d'audit pour le contrat intelligent
 # TODO etudiant : Etendre OncoContract avec un attribut historique
 # TODO etudiant : Implementer afficher_historique() qui liste toutes les modifications
 # TODO etudiant : Tester avec plusieurs modifications successives
 result = None  # TODO etudiant : remplacer par votre contrat avec audit
 print(""Exercice a completer : journal d'audit"")",,,,,,,,f7c69905c0506c5d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,09692326,markdown,fr,fffe1d887a161ad6,"### Exercice 3 : Ajouter un journal d'audit au contrat intelligent
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,09692326,markdown,fr,fffe1d887a161ad6,"### Exercice 3 : Ajouter un journal d'audit au contrat intelligent
 
 **Objectif** : Etendre la classe `OncoContract` pour maintenir un historique des modifications et detecter les tentatives de fraude.
 
@@ -2451,7 +2451,7 @@ MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb
 - **Étape 1** : Ajouter l'attribut `historique` et le mettre a jour a chaque appel de `enregistrer_plan`
 - **Étape 2** : Implementer une méthode `afficher_historique()` qui affiche le journal
 - **Étape 3** : Tester en modifiant le plan plusieurs fois et verifier que l'historique est complet",,,,,,,,fffe1d887a161ad6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,d6d5c2a5,code,fr,eddc54cdad06d482,"# --- TODO etudiant : simulation predictive de l'avenir avec le profil infere ---
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,d6d5c2a5,code,fr,eddc54cdad06d482,"# --- TODO etudiant : simulation predictive de l'avenir avec le profil infere ---
 # Indice :
 #   - predictive = Predictive(onco_model.model, guide=onco_model.guide,
 #                            num_samples=100, return_sites=['obs_gb_3'])
@@ -2468,12 +2468,12 @@ MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb
 #   - Imprimer les deux risques (en %) et conclure sur l'interet d'une reduction de dose.
 pass  # TODO etudiant
 ",,,,,,,,eddc54cdad06d482,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,2e2b5ff5,markdown,fr,596f4162a52f315b,***,,,,,,,,596f4162a52f315b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,5a90fc40,markdown,fr,7592e5c4b1db7d06,"## Partie 3 : Bonus Smart Contract
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,2e2b5ff5,markdown,fr,596f4162a52f315b,***,,,,,,,,596f4162a52f315b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,5a90fc40,markdown,fr,7592e5c4b1db7d06,"## Partie 3 : Bonus Smart Contract
 ---
 **Retour au sommaire** : [Index CaseStudies](../../README.md)
 ",,,,,,,,7592e5c4b1db7d06,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,3c24a439,code,fr,7debc8b4a4935ccb,"class OncoContract:
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,3c24a439,code,fr,7debc8b4a4935ccb,"class OncoContract:
     def __init__(self, medecin_id, patient_id):
         self.medecin_id = medecin_id
         self.patient_id = patient_id
@@ -2511,7 +2511,7 @@ contract.signer(""patient"", ""key456"")
 
 print(contract.verifier_execution(plan_final))
 print(contract.verifier_execution({""J1"": ""Cisplatine 100mg""})) # Tentative de fraude",,,,,,,,7debc8b4a4935ccb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,9a29eb84,markdown,fr,ea84f15fc31505f0,"**Navigation** : [Index](../../README.md)
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,9a29eb84,markdown,fr,ea84f15fc31505f0,"**Navigation** : [Index](../../README.md)
 # CC2 : OncoPlan - Squelette
 
 **Cours :** IA101 - Intelligence Artificielle (EPF 2026)
@@ -2521,7 +2521,7 @@ Ce notebook est le squelette à compléter pour le devoir OncoPlan. Il couvre :
 1.  **Symbolique** : Ontologie RDF et Planification OR-Tools.
 2.  **Probabiliste** : Modélisation Bayésienne avec Pyro.
 3.  **Bonus** : Traçabilité via Hashage.",,,,,,,,ea84f15fc31505f0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,4e16813a,markdown,fr,66fc1cbb34a14ac1,"## Installation des Dépendances
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,4e16813a,markdown,fr,66fc1cbb34a14ac1,"## Installation des Dépendances
 
 Les bibliothèques utilisées par ce devoir sont **pré-provisionnées** : aucune commande `pip install` n'est nécessaire dans ce notebook. L'environnement d'exécution référence `CaseStudies/requirements.txt`, qui déclare les versions retenues pour la cohorte.
 
@@ -2534,9 +2534,9 @@ Le trio de bibliothèques couvre les trois paradigmes de l'IA explorés dans ce 
 | `pyro` | Probabiliste | Modèle bayésien : inférence variationnelle (SVI) sur le profil patient |
 
 Les cellules suivantes font directement les imports ; aucune étape de build n'est requise avant d'exécuter.",,,,,,,,66fc1cbb34a14ac1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,c082cf28,code,fr,15a066e610185e31,"# Dependances pre-provisionnees (rdflib ortools pyro-ppl torch pandas matplotlib seaborn).
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,c082cf28,code,fr,15a066e610185e31,"# Dependances pre-provisionnees (rdflib ortools pyro-ppl torch pandas matplotlib seaborn).
 # Aucun install requis : voir CaseStudies/requirements.txt ; imports directs en cellule suivante.",,,,,,,,15a066e610185e31,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,ca83f5e5,markdown,fr,6bd06cdd5d392338,"Import des bibliothèques nécessaires.
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,ca83f5e5,markdown,fr,6bd06cdd5d392338,"Import des bibliothèques nécessaires.
 
 La cellule d'import charge tout l'écosystème du devoir et le configure :
 
@@ -2548,7 +2548,7 @@ La cellule d'import charge tout l'écosystème du devoir et le configure :
 - **Traçabilité** : `hashlib` + `json` pour le hash SHA-256 du contrat de la Partie 3.
 
 Notez la graine aléatoire fixée (`pyro.set_rng_seed(101)`) : elle rend l'inférence **reproductible** d'une exécution à l'autre — indispensable pour comparer deux runs du modèle bayésien.",,,,,,,,6bd06cdd5d392338,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,16131259,code,fr,361ab60bd89681a2,"import pandas as pd
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,16131259,code,fr,361ab60bd89681a2,"import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -2566,7 +2566,7 @@ import json
 # Configuration
 sns.set_style(""whitegrid"")
 pyro.set_rng_seed(101)",,,,,,,,361ab60bd89681a2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,31fce73e,markdown,fr,5c2b70f04a8feda3,"***
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,31fce73e,markdown,fr,5c2b70f04a8feda3,"***
 
 ## Les trois paradigmes d'OncoPlan
 
@@ -2577,8 +2577,8 @@ Le devoir traverse **trois familles de méthodes d'IA** sur un même fil conduct
 3. **Bonus** (Partie 3) : *intégrité* — le hash SHA-256 qui garantit qu'un plan signé n'a pas été altéré.
 
 Chaque partie s'appuie sur les sorties de la précédente : l'ontologie nourrit la vérification de prescription, le modèle bayésien alimente la décision de dose, le contrat scelle le résultat. Ce découpage illustre la complémentarité des approches plutôt que leur concurrence.",,,,,,,,5c2b70f04a8feda3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,e5eace1b,markdown,fr,afbe5be713f36438,## Partie 1 : Le Pharmacien Symbolique,,,,,,,,afbe5be713f36438,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,cb03cd33,markdown,fr,91a70854a86a1bc7,"### 1.1. Ontologie des Médicaments (RDFLib)
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,e5eace1b,markdown,fr,afbe5be713f36438,## Partie 1 : Le Pharmacien Symbolique,,,,,,,,afbe5be713f36438,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,cb03cd33,markdown,fr,91a70854a86a1bc7,"### 1.1. Ontologie des Médicaments (RDFLib)
 
 **Objectif :** Créer un graphe RDF contenant les médicaments et leurs propriétés (toxicité, incompatibilités).
 
@@ -2589,14 +2589,14 @@ L'ontologie est la brique **symbolique** du devoir : elle encode les connaissanc
 - **Les classes et propriétés** : `Medicament`, `estNephrotoxique`, `incompatibleAvec`, etc. — la structure de l'ontologie, qui doit couvrir les 4 molécules de base : **Cisplatine**, **5-FU**, **Docetaxel**, **Gentamicine**.
 
 L'objectif final est un graphe *requêtable* : la vérification de prescription (section suivante) interrogera cette ontologie pour décider si un protocole est sûr.",,,,,,,,91a70854a86a1bc7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,55fc3ca1,code,fr,b4729008361f6e64,"# TODO: Créer le Namespace ONCO
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,55fc3ca1,code,fr,b4729008361f6e64,"# TODO: Créer le Namespace ONCO
 # TODO: Initialiser le Graph
 # TODO: Définir les classes et propriétés
 # TODO: Peupler la base avec les médicaments (Cisplatine, 5-FU, Docetaxel, Gentamicine)
 
 # VOTRE CODE ICI
 pass",,,,,,,,b4729008361f6e64,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,b81448b2,markdown,fr,2f83e613d8f49480,"Vérification de prescription basée sur l'ontologie.
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,b81448b2,markdown,fr,2f83e613d8f49480,"Vérification de prescription basée sur l'ontologie.
 
 La fonction `verifier_prescription(protocole_noms, patient_insuffisance_renale)` consulte l'ontologie pour **rejeter un protocole dangereux**. Elle retourne une liste d'alertes — vide si la prescription est sûre, peuplée sinon. Deux règles de sécurité sont attendues :
 
@@ -2604,7 +2604,7 @@ La fonction `verifier_prescription(protocole_noms, patient_insuffisance_renale)`
 2. **Incompatibilités** : pour chaque paire de médicaments du protocole, si l'ontologie déclare `incompatibleAvec`, ajouter une alerte.
 
 **Lecture des sorties ci-dessous** : les trois tests affichent actuellement `[]` (aucune alerte) — c'est le comportement attendu du squelette *avant* implémentation : les `TODO` de l'ontologie (cellule précédente) et de la fonction sont encore vides, donc la vérification ne trouve rien à signaler. Une fois l'ontologie peuplée et les règles implémentées, le Test 2 (patient insuffisant rénal + Cisplatine) et le Test 3 (Cisplatine + Gentamicine) devront produire des alertes non vides.",,,,,,,,2f83e613d8f49480,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,498cb8cf,code,fr,420295c0c7f46ee2,"def verifier_prescription(protocole_noms, patient_insuffisance_renale):
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,498cb8cf,code,fr,420295c0c7f46ee2,"def verifier_prescription(protocole_noms, patient_insuffisance_renale):
     """"""
     Vérifie si une prescription est valide.
     Args:
@@ -2629,7 +2629,7 @@ print(verifier_prescription([""Cisplatine""], True))
 
 print(""\n--- Test 3 : Incompatibilité ---"")
 print(verifier_prescription([""Cisplatine"", ""Gentamicine""], False))",,,,,,,,420295c0c7f46ee2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,ef5ad9fe,markdown,fr,ecd187d1dc384048,"### 1.2. Planification des Cures (OR-Tools)
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,ef5ad9fe,markdown,fr,ecd187d1dc384048,"### 1.2. Planification des Cures (OR-Tools)
 
 **Objectif :** Planifier 4 cycles de chimiothérapie en respectant les contraintes de temps et de ressources.
 
@@ -2639,7 +2639,7 @@ Le problème est un **problème de satisfaction de contraintes** (CSP) résolu p
 2. **Capacité maximale de la salle** : `capacite_max=3` patients simultanés. La simulation fournit des `occupations_existantes` (`{10: 3, 11: 3, 12: 3}`) : les jours 10, 11 et 12 sont déjà pleins — le planning ne doit pas y ajouter de patient.
 
 **Lecture des sorties ci-dessous** : le squelette affiche `Jour 0` et un planning `[]` — là encore l'état *avant implémentation* : `debut = 0` est une valeur factice (le TODO de récupération de la valeur optimale n'est pas implémenté) et `planning` n'est jamais rempli. Un modèle complété doit retourner un début *après* les jours saturés et une liste d'administrations respectant la contrainte dominicale.",,,,,,,,ecd187d1dc384048,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,89e569ee,code,fr,669412ff826f9858,"def planifier_chimio(nb_cycles=4, duree_cycle=21, jours_admin=[1, 8], capacite_max=3, occupations_existantes={}):
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,89e569ee,code,fr,669412ff826f9858,"def planifier_chimio(nb_cycles=4, duree_cycle=21, jours_admin=[1, 8], capacite_max=3, occupations_existantes={}):
     model = cp_model.CpModel()
     horizon = nb_cycles * duree_cycle + 10 # Marge
     
@@ -2667,14 +2667,14 @@ occupations = {10: 3, 11: 3, 12: 3}
 debut, planning = planifier_chimio(occupations_existantes=occupations)
 print(f""Début optimal du traitement : Jour {debut}"")
 print(f""Jours d'administration : {planning}"")",,,,,,,,669412ff826f9858,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,7cf2a7ed,markdown,fr,1df80199bcc33346,"***
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,7cf2a7ed,markdown,fr,1df80199bcc33346,"***
 
 ## Transition : du symbolique au probabiliste
 
 La Partie 1 raisonnait avec des **connaissances certaines** : soit un médicament est incompatible, soit il ne l'est pas. Or la pratique clinique est dominée par l'**incertitude** : un même protocole peut être efficace chez un patient et toxique chez un autre, selon son profil biologique (Résistant / Normal / Sensible).
 
 La Partie 2 bascule donc de paradigme : au lieu de règles explicites, un **modèle probabiliste** (Pyro) apprend à partir de données — la chute des globules blancs observée après administration — à inférer le profil du patient. C'est le passage de la logique (vrai/faux) à la **distribution de probabilité** (degré de croyance).",,,,,,,,1df80199bcc33346,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,d43b403b,markdown,fr,9bba20230adf8c65,"## Partie 2 : Le Médecin Probabiliste (Pyro)
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,d43b403b,markdown,fr,9bba20230adf8c65,"## Partie 2 : Le Médecin Probabiliste (Pyro)
 
 **Objectif :** Modéliser la réponse du patient (Toxicité) en fonction des doses reçues et des observations (Globules Blancs).
 
@@ -2684,7 +2684,7 @@ Le modèle est un **modèle génératif bayésien** : on décrit *comment les do
 - **`guide(doses, observations)`** — le variationnel : l'approximation paramétrique de la distribution a posteriori (ici, un `Categorical` sur le profil). SVI aligne guide sur modèle via `Trace_ELBO`.
 
 Les données simulées illustrent le scénario : doses `[100, 0, 0]` (J1, J8, J15) et globules blancs `[7800, 2500]` — une chute de 7800 à 2500 entre J1 et J8, caractéristique d'une **neutropénie** (seuil d'alerte < 2000). L'inférence SVI (commentée, à débloquer une fois le modèle implémenté) estime alors les probabilités a posteriori du profil.",,,,,,,,9bba20230adf8c65,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,815f392f,code,fr,939e94c9e1d544f1,"class OncoModel:
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,815f392f,code,fr,939e94c9e1d544f1,"class OncoModel:
     def __init__(self):
         pass
         
@@ -2731,7 +2731,7 @@ observations_reelles = torch.tensor([7800.0, 2500.0]) # J1 Normal, J8 Neutropén
 # print(f""Résistant : {post_probs[0]:.2f}"")
 # print(f""Normal    : {post_probs[1]:.2f}"")
 # print(f""Sensible  : {post_probs[2]:.2f}"")",,,,,,,,939e94c9e1d544f1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,ebfd0923,markdown,fr,49016edfe76c08ea,"### 2.2. Prédiction et Prise de Décision
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,ebfd0923,markdown,fr,49016edfe76c08ea,"### 2.2. Prédiction et Prise de Décision
 
 **Objectif :** Comparer le risque de neutropénie sévère (< 2000) pour deux scénarios futurs.
 
@@ -2741,20 +2741,20 @@ Une fois le modèle bayésien calibré (Partie 2.1), il devient un **simulateur 
 - **Scénario 2 — Réduction** : réduire à 50 mg. Moins de toxicité cumulée → probabilité plus faible de neutropénie, au prix d'une efficacité potentiellement réduite.
 
 La cellule `Predictive` (à compléter) simule les deux futurs et compare les distributions de globules blancs. C'est le **raisonnement contrefactuel** que permet le bayésien : *« si on avait fait l'autre choix, quelle serait la distribution des observations ? »* — la base statistique de la prise de décision médicale.",,,,,,,,49016edfe76c08ea,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,e50bbbb7,code,fr,0efe41b4a37010e3,"# TODO: Utiliser Predictive pour simuler l'avenir
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,e50bbbb7,code,fr,0efe41b4a37010e3,"# TODO: Utiliser Predictive pour simuler l'avenir
 # Scénario 1 : Maintien de la dose (100mg)
 # Scénario 2 : Réduction de dose (50mg)
 
 # VOTRE CODE ICI
 pass",,,,,,,,0efe41b4a37010e3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,e1f87420,markdown,fr,82c514718fa4d0df,"***
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,e1f87420,markdown,fr,82c514718fa4d0df,"***
 
 ## Transition : de la décision à l'intégrité
 
 Le raisonnement probabiliste a produit une décision de dose ; il reste à s'assurer qu'elle est **appliquée telle quelle**. C'est le rôle de la Partie 3 : garantir l'**intégrité du plan de traitement** contre toute altération (erreur de transcription, modification malveillante, fraude).
 
 Le mécanisme est cryptographique : un **hash SHA-256** du plan signé par le médecin et le patient. Toute modification du plan — même d'un caractère — change le hash et fait échouer la vérification. C'est l'application du concept de *garde-fou* : le raisonnement (Parties 1-2) reste libre, mais son **résultat** est scellé.",,,,,,,,82c514718fa4d0df,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,009d112d,markdown,fr,a8190113dcb8cc5e,"## Partie 3 : Bonus Smart Contract
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,009d112d,markdown,fr,a8190113dcb8cc5e,"## Partie 3 : Bonus Smart Contract
 
 **Objectif :** Garantir l'intégrité du plan de traitement.
 
@@ -2768,7 +2768,7 @@ La classe `OncoContract` implémente un **contrat d'intégrité** à trois méth
 
 ***
 **Retour au sommaire** : [Index CaseStudies](../../README.md)",,,,,,,,a8190113dcb8cc5e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,977dbd22,code,fr,caea860fbffe0f15,"class OncoContract:
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,977dbd22,code,fr,caea860fbffe0f15,"class OncoContract:
     def __init__(self, medecin_id, patient_id):
         self.medecin_id = medecin_id
         self.patient_id = patient_id
@@ -3449,7 +3449,7 @@ par l'etudiant — le corrige (`../solution/`) montre la version exécutée de b
 ",,,,,,,,2cc087de31f35384,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,cell-e74315e1,markdown,fr,da1a97770d5ad237,Configuration et imports du notebook.,,,,,,,,da1a97770d5ad237,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,cell-1511bccd,markdown,fr,6140829a143f5b9f,Tests automatises a completer.,,,,,,,,6140829a143f5b9f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,cell-49e71cf1,markdown,fr,eaf9adf271e0eba5,"## Bilan — trois paradigmes IA pour un plan de cure sûr et explicable
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,cell-49e71cf1,markdown,fr,eaf9adf271e0eba5,"## Bilan — trois paradigmes IA pour un plan de cure sûr et explicable
 
 Ce cas-study assembling les trois familles d'IA vues en cours autour d'un même
 métier clinique — la planification de cures d'oncologie. Chacune y joue un rôle
@@ -3556,12 +3556,12 @@ MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipyn
 # TODO etudiant : Tester avec un patient hypoglycemique
 result = None  # TODO etudiant : remplacer par votre solution Z3
 print(""Exercice a completer : contraintes d'interaction medicamenteuse"")",,,,,,,,c033bd599c8db3dc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,heading21onco,markdown,fr,abdcf40ac4bcfac2,"Dans cette deuxième partie, nous adoptons une approche **probabiliste** : au lieu de règles déterministes, le médecin modélise son incertitude sur le profil du patient (résistant, normal, sensible) et la révise à mesure que les doses et les observations cliniques s'accumulent. Cette inférence bayésienne est implémentée avec **Pyro**.
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,heading21onco,markdown,fr,abdcf40ac4bcfac2,"Dans cette deuxième partie, nous adoptons une approche **probabiliste** : au lieu de règles déterministes, le médecin modélise son incertitude sur le profil du patient (résistant, normal, sensible) et la révise à mesure que les doses et les observations cliniques s'accumulent. Cette inférence bayésienne est implémentée avec **Pyro**.
 
 ### 2.1. Le modèle probabiliste de patient (Pyro)
 
 Le cœur du médecin probabiliste est `OncoModel`, un modèle génératif qui relie les doses de chimiothérapie aux observations (toxicité cumulée, taux de globules blancs) via le profil latent du patient. Il sert de base à la fois à l'inférence du profil et à la prédiction de la réponse aux doses futures.",,,,,,,,abdcf40ac4bcfac2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,f52d0996,markdown,fr,cfb7c6b10227d82f,"### Lecture de la prédiction : quantifier le risque par stratégie
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,f52d0996,markdown,fr,cfb7c6b10227d82f,"### Lecture de la prédiction : quantifier le risque par stratégie
 
 Une fois l'exercice ci-dessus complété, la sortie donne la **décision clinique** du modèle, à déchiffrer chiffre par chiffre :
 
@@ -3575,13 +3575,13 @@ La **réduction absolue du risque** entre les deux stratégies est l'apport conc
 **Pourquoi subsiste-t-il un risque résiduel à dose réduite ?** Réduire la 4ᵉ dose à 50 mg fait remonter `mu_gb` du profil Résistant (majoritaire dans le posterior) au-dessus du seuil 2 000 — son risque individuel devient faible. Mais une **incertitude résiduelle** subsiste : (1) la minorité de profils Normal/Sensible reste clampée près de 1 000, et (2) la prédiction est une distribution (`num_samples=100` tirages), pas une certitude. Ce risque résiduel n'est pas un échec du modèle : il **justifie la surveillance hospitalière** systématique après cure, car un risque faible n'est pas un risque nul.
 
 > **À retenir** : sur ce cas, la simulation prédictive **prime sur le diagnostic de profil** pour la décision. Que le patient soit classé « Résistant » ou non ne change pas la conclusion — la dose standard est intenable, la dose réduite est viable. C'est tout l'intérêt d'une approche **probabiliste et prospective** : elle ne se contente pas d'étiqueter le patient, elle **éclaire l'action** en chiffrant le risque de chaque option.",,,,,,,,cfb7c6b10227d82f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,2b8bbd38,code,fr,8b3931a0628218db,"# Exercice 1 : Etendre l'ontologie medicamenteuse
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,2b8bbd38,code,fr,8b3931a0628218db,"# Exercice 1 : Etendre l'ontologie medicamenteuse
 # TODO etudiant : Ajouter ""Paclitaxel"" et ""Carboplatine"" au dictionnaire medicaments
 # TODO etudiant : Peupler le graphe RDF avec les nouveaux triplets
 # TODO etudiant : Tester verifier_prescription avec les nouvelles combinaisons
 result = None  # TODO etudiant : remplacer par votre ontologie etendue
 print(""Exercice a completer : ontologie etendue"")",,,,,,,,8b3931a0628218db,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,ae5963c7,markdown,fr,2ac54510e0f11c38,"### Exercice 1 : Etendre l'ontologie avec de nouveaux medicaments et interactions
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,ae5963c7,markdown,fr,2ac54510e0f11c38,"### Exercice 1 : Etendre l'ontologie avec de nouveaux medicaments et interactions
 
 **Objectif** : Ajouter de nouveaux medicaments a l'ontologie RDF et implementer une verification d'interactions etendue.
 
@@ -3593,13 +3593,13 @@ MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,
 - **Étape 1** : Ajouter les nouveaux medicaments au dictionnaire `medicaments`
 - **Étape 2** : Peupler le graphe RDF avec les nouveaux triplets
 - **Étape 3** : Tester la fonction `verifier_prescription` avec des combinaisons incluant les nouveaux medicaments",,,,,,,,2ac54510e0f11c38,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,ce9bfce9,code,fr,cb5da8bc4f7b5023,"# Exercice 2 : Sensibilite au prior du profil patient
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,ce9bfce9,code,fr,cb5da8bc4f7b5023,"# Exercice 2 : Sensibilite au prior du profil patient
 # TODO etudiant : Creer une version parametrable du modele avec profil_probs en argument
 # TODO etudiant : Tester 3 configurations de prior differentes
 # TODO etudiant : Comparer les posterieurs dans un tableau
 result = None  # TODO etudiant : remplacer par votre analyse
 print(""Exercice a completer : sensibilite au prior"")",,,,,,,,cb5da8bc4f7b5023,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,0243637f,markdown,fr,f9d45b9c97639385,"### Exercice 2 : Sensibilite du modèle bayesien au prior sur le profil patient
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,0243637f,markdown,fr,f9d45b9c97639385,"### Exercice 2 : Sensibilite du modèle bayesien au prior sur le profil patient
 
 **Objectif** : Etudier comment le choix du prior sur les profils (Resistant/Normal/Sensible) influence le diagnostic posterieur.
 
@@ -3611,13 +3611,13 @@ MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,
 - **Étape 1** : Créer une fonction qui accepte le prior en paramètre
 - **Étape 2** : Tester 3 configurations de prior différentes
 - **Étape 3** : Afficher les posterieurs dans un tableau comparatif",,,,,,,,f9d45b9c97639385,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,302de264,code,fr,f7c69905c0506c5d,"# Exercice 3 : Journal d'audit pour le contrat intelligent
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,302de264,code,fr,f7c69905c0506c5d,"# Exercice 3 : Journal d'audit pour le contrat intelligent
 # TODO etudiant : Etendre OncoContract avec un attribut historique
 # TODO etudiant : Implementer afficher_historique() qui liste toutes les modifications
 # TODO etudiant : Tester avec plusieurs modifications successives
 result = None  # TODO etudiant : remplacer par votre contrat avec audit
 print(""Exercice a completer : journal d'audit"")",,,,,,,,f7c69905c0506c5d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,d2746864,markdown,fr,fffe1d887a161ad6,"### Exercice 3 : Ajouter un journal d'audit au contrat intelligent
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Oncology-Planning.ipynb,d2746864,markdown,fr,fffe1d887a161ad6,"### Exercice 3 : Ajouter un journal d'audit au contrat intelligent
 
 **Objectif** : Etendre la classe `OncoContract` pour maintenir un historique des modifications et detecter les tentatives de fraude.
 
@@ -3813,11 +3813,11 @@ Les compétences développées sont directement transférables à d'autres domai
 
 ***
 **Retour au sommaire** : [Index CaseStudies](../../README.md)",,,,,,,,041b57660d52ffee,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,a58315c0,markdown,fr,31efb232d44f170e,"L'ontologie ONCO a été chargée avec succès. Les 14 triplets définissent les médicaments d'oncologie, leurs propriétés de toxicité rénale et leurs incompatibilités médicamenteuses, formant la base de connaissances pour les vérifications de prescription.
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,a58315c0,markdown,fr,31efb232d44f170e,"L'ontologie ONCO a été chargée avec succès. Les 14 triplets définissent les médicaments d'oncologie, leurs propriétés de toxicité rénale et leurs incompatibilités médicamenteuses, formant la base de connaissances pour les vérifications de prescription.
 ",,,,,,,,31efb232d44f170e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,67cc32d8,markdown,fr,1e66b850cbb24916,"L'inférence bayésienne a convergé après 800 itérations. Les probabilités a posteriori indiquent que le patient a un profil Résistant à 92%, Normal à 4% et Sensible à 4%, reflétant l'adaptation du modèle aux doses administrées et aux observations cliniques.
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,67cc32d8,markdown,fr,1e66b850cbb24916,"L'inférence bayésienne a convergé après 800 itérations. Les probabilités a posteriori indiquent que le patient a un profil Résistant à 92%, Normal à 4% et Sensible à 4%, reflétant l'adaptation du modèle aux doses administrées et aux observations cliniques.
 ",,,,,,,,1e66b850cbb24916,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,6b6e70ec,markdown,fr,0ed04b2feaa5d3a3,"Le contrat intelligent permet d'enregistrer un plan de traitement avec un hash SHA-256 unique. Les signatures du médecin et du patient sont requises pour autoriser l'administration, et toute modification du plan invalide automatiquement les signatures existantes.
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Oncology-Planning.ipynb,6b6e70ec,markdown,fr,0ed04b2feaa5d3a3,"Le contrat intelligent permet d'enregistrer un plan de traitement avec un hash SHA-256 unique. Les signatures du médecin et du patient sont requises pour autoriser l'administration, et toute modification du plan invalide automatiquement les signatures existantes.
 ",,,,,,,,0ed04b2feaa5d3a3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c4b,markdown,fr,c39c30aa9f3c93e4,"Le réseau de démonstration arme trois centrales pilotables — Charbon
 (50–400 MW, 30 EUR/MWh, 900 kg CO2/MWh), Gaz (20–250 MW, 60 EUR/MWh,
