@@ -138,7 +138,7 @@ def launcher_vbs(cmd: list[str]) -> str:
         "' Genere par scripts/ci/install_prune_task.py -- ne pas editer a la main.\r\n"
         "Option Explicit\r\n"
         "Dim sh, rc\r\n"
-        'Set sh = CreateObject("WScript.Shell")\r\n'
+        "Set sh = CreateObject(\"WScript.Shell\")\r\n"
         f'rc = sh.Run("{_vbs_literal(command_line)}", 0, True)\r\n'
         "WScript.Quit rc\r\n"
     )
