@@ -18,7 +18,11 @@ function Download([string]$url, [string]$path) {
 function Extract([string]$archive, [string]$directory) {
     if (Test-Path -LiteralPath $directory) { Remove-Item -LiteralPath $directory -Recurse -Force }
     New-Item -ItemType Directory -Path $directory | Out-Null
-    [System.IO.Compression.ZipFile]::ExtractToDirectory($archive, $directory)
+    try {
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($archive, $directory)
+    } catch {
+        throw "Extraction impossible pour $archive : $($_.Exception.Message)"
+    }
 }
 function Patch([string]$path, [string]$old, [string]$new) {
     $path = (Resolve-Path -LiteralPath $path).Path

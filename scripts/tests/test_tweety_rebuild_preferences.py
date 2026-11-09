@@ -6,7 +6,7 @@ import zipfile
 
 import pytest
 
-SCRIPT = Path(__file__).with_name("rebuild-preferences.ps1")
+SCRIPT = Path(__file__).resolve().parents[2] / "MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/rebuild-preferences.ps1"
 PWSH = shutil.which("pwsh")
 pytestmark = pytest.mark.skipif(not PWSH, reason="PowerShell 7 absent")
 
@@ -29,5 +29,6 @@ def test_archive_corrompue_ne_produit_pas_de_jar(tmp_path):
     (sources / "plugin-1.30-sources.jar").write_bytes(b"invalid")
     result = subprocess.run([PWSH, "-NoProfile", "-File", str(work / SCRIPT.name)], text=True, capture_output=True, timeout=30)
     assert result.returncode != 0
-    assert "corrupt" in result.stderr.lower()
+    assert "Extraction impossible pour" in result.stderr
+    assert "plugin-1.30-sources.jar" in result.stderr
     assert not (work.parent / "libs" / "org.tweetyproject.tweety-preferences-java8-shade.jar").exists()
