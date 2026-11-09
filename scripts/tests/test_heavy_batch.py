@@ -339,3 +339,218 @@ def test_un_resultat_illisible_rend_une_erreur_explicite(tmp_path: Path) -> None
         errors="replace",
     )
     assert proc.returncode == 2
+
+
+# --- Arbre d'integration et bissection ------------------------------------
+
+
+def _git(cwd: Path, *args: str) -> str:
+    """Lance une commande git et echoue bruyamment si elle rate."""
+    proc = subprocess.run(
+        ["git", "-C", str(cwd), *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if proc.returncode != 0:
+        raise AssertionError(f"git {' '.join(args)} a echoue : {proc.stderr or proc.stdout}")
+    return proc.stdout
+
+
+def _repo(tmp_path: Path, contenus: dict[int, dict[str, str]]) -> tuple[Path, list[int]]:
+    """Depot jetable : une `main`, et une ref de fusion par PR.
+
+    Chaque PR est poussee dans le depot nu sous `refs/pull/N/merge` -- la
+    forme exacte que GitHub produit, et celle que le lot va chercher.
+    """
+    origin = tmp_path / "origin.git"
+    _git(tmp_path, "init", "--bare", "-b", "main", str(origin))
+    seed = tmp_path / "seed"
+    _git(tmp_path, "clone", str(origin), str(seed))
+    (seed / "racine.txt").write_text("base\n", encoding="utf-8")
+    _git(seed, "add", "racine.txt")
+    _git(seed, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-m", "base")
+    _git(seed, "branch", "-M", "main")
+    _git(seed, "push", "origin", "main")
+    numbers: list[int] = []
+    for number, files in sorted(contenus.items()):
+        _git(seed, "checkout", "-b", f"pr{number}", "main")
+        for name, content in files.items():
+            (seed / name).write_text(content, encoding="utf-8")
+            _git(seed, "add", name)
+        _git(seed, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-m", f"pr {number}")
+        _git(seed, "push", "origin", f"pr{number}:refs/pull/{number}/merge")
+        numbers.append(number)
+    clone = tmp_path / "clone"
+    _git(tmp_path, "clone", str(origin), str(clone))
+    return clone, numbers
+
+
+def test_le_sujet_dune_fusion_designe_la_pr() -> None:
+    assert heavy_batch.pr_number_from_subject("lot: PR #42") == 42
+    assert heavy_batch.pr_number_from_subject("lot: PR #42 (suite)") == 42
+
+
+def test_un_sujet_hors_marque_ne_designe_aucune_pr() -> None:
+    # un commit qui n'est pas une fusion du lot n'est jamais accuse
+    assert heavy_batch.pr_number_from_subject("Commit initial") is None
+    assert heavy_batch.pr_number_from_subject(None) is None
+
+
+def test_l_arbre_d_integration_fusionne_les_prs_dans_l_ordre(tmp_path: Path) -> None:
+    clone, numbers = _repo(tmp_path, {1: {"a.txt": "A\n"}, 2: {"b.txt": "B\n"}})
+    try:
+        record = heavy_batch.build_integration_tree(clone, numbers, tmp_path / "work")
+        assert record["statut"] == "construit"
+        assert record["prs_integrees"] == [1, 2]
+        assert record["conflits"] == []
+        assert [c["pr"] for c in record["commits"]] == [1, 2]
+        # chaque fusion porte le sujet qui la rend identifiable
+        tree = Path(record["chemin"])
+        for commit in record["commits"]:
+            sujet = heavy_batch._commit_subject(tree, commit["commit"])
+            assert heavy_batch.pr_number_from_subject(sujet) == commit["pr"]
+        # et le sujet seul suffit a nommer la PR quand le coupable est la
+        # fusion elle-meme
+        assert heavy_batch.pr_culpable(
+            tree, record["commits"][1]["commit"], record["commits"]
+        ) == 2
+    finally:
+        heavy_batch.run_git(
+            clone, ["worktree", "remove", "--force", str(tmp_path / "work" / "integration")],
+            check=False,
+        )
+
+
+def test_un_conflit_d_integration_est_nomme_et_sort_la_pr_de_l_arbre(tmp_path: Path) -> None:
+    clone, numbers = _repo(tmp_path, {1: {"meme.txt": "A\n"}, 2: {"meme.txt": "B\n"}})
+    try:
+        record = heavy_batch.build_integration_tree(clone, numbers, tmp_path / "work")
+        assert record["statut"] == "construit"
+        assert record["prs_integrees"] == [1]
+        assert [c["pr"] for c in record["conflits"]] == [2]
+    finally:
+        heavy_batch.run_git(
+            clone, ["worktree", "remove", "--force", str(tmp_path / "work" / "integration")],
+            check=False,
+        )
+
+
+def test_la_bissection_designe_la_pr_coupable(tmp_path: Path) -> None:
+    # Le script de bissection rend toujours 1 : tout ce qui est entre la base
+    # et la tete est donc « mauvais », et la bissection doit s'arreter sur le
+    # PREMIER commit de fusion -- donc nommer la PR #1. C'est le lien
+    # commit -> PR qui est verifie ici, pas le verdict de la suite.
+    clone, numbers = _repo(tmp_path, {1: {"a.txt": "A\n"}, 2: {"b.txt": "B\n"}})
+    arbre = heavy_batch.build_integration_tree(clone, numbers, tmp_path / "work")
+    faux = tmp_path / "faux.py"
+    faux.write_text("import sys\nsys.exit(1)\n", encoding="utf-8")
+    try:
+        record = heavy_batch.bisect_lot(
+            Path(arbre["chemin"]),
+            arbre["base"],
+            arbre["tip"],
+            faux,
+            ["scripts/tests"],
+            merges=arbre["commits"],
+        )
+        assert record["statut"] == "bissection-effectuee"
+        # La bissection s'arrete sur le commit de la BRANCHE de la PR #1 --
+        # ce commit est un ancetre de sa fusion, et c'est la lecture par
+        # ascendance qui rend le coupable nomme. Lire le sujet seul aurait
+        # rendu `None` ici.
+        assert record["pr_coupable"] == 1
+    finally:
+        heavy_batch.run_git(
+            clone, ["worktree", "remove", "--force", str(tmp_path / "work" / "integration")],
+            check=False,
+        )
+
+
+def test_le_code_de_bissection_est_0_sur_suite_verte(monkeypatch, tmp_path: Path) -> None:
+    (tmp_path / "cible").write_text("x", encoding="utf-8")
+    monkeypatch.setattr(heavy_batch, "run_heavy_suite", lambda *a, **k: (0, ""))
+    assert heavy_batch.bisect_run(tmp_path, ["cible"]) == heavy_batch.BISECT_GOOD
+
+
+def test_le_code_de_bissection_est_1_sur_suite_rouge(monkeypatch, tmp_path: Path) -> None:
+    (tmp_path / "cible").write_text("x", encoding="utf-8")
+    monkeypatch.setattr(heavy_batch, "run_heavy_suite", lambda *a, **k: (1, "FAILED tests/x.py"))
+    assert heavy_batch.bisect_run(tmp_path, ["cible"]) == heavy_batch.BISECT_BAD
+
+
+def test_le_code_de_bissection_est_125_quand_la_cible_est_absente(monkeypatch, tmp_path: Path) -> None:
+    # une dependance absente n'est pas une faute : c'est « indetermine »
+    monkeypatch.setattr(heavy_batch, "run_heavy_suite", lambda *a, **k: (1, "ModuleNotFoundError: numpy"))
+    assert heavy_batch.bisect_run(tmp_path, ["cible-absente"]) == heavy_batch.BISECT_SKIP
+
+
+def test_le_code_de_bissection_est_125_quand_la_dependance_manque(
+    monkeypatch, tmp_path: Path
+) -> None:
+    (tmp_path / "cible").write_text("x", encoding="utf-8")
+    monkeypatch.setattr(
+        heavy_batch, "run_heavy_suite", lambda *a, **k: (1, "ModuleNotFoundError: numpy")
+    )
+    assert heavy_batch.bisect_run(tmp_path, ["cible"]) == heavy_batch.BISECT_SKIP
+
+
+def test_la_cli_bisect_run_rend_125_quand_la_cible_est_absente(tmp_path: Path) -> None:
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(CI_DIR / "heavy_batch.py"),
+            "--bisect-run",
+            "--bisect-target",
+            "cible-absente",
+        ],
+        cwd=str(tmp_path),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    assert proc.returncode == heavy_batch.BISECT_SKIP
+
+
+def test_une_pr_de_fork_non_approuvee_est_refusee_meme_designee() -> None:
+    autorise, motif = heavy_batch.pr_dispatched_autorise(
+        {"fork": True, "approved_by_coordinator": False}
+    )
+    assert autorise is False
+    assert "fork" in motif
+
+
+def test_une_pr_de_fork_approuvee_passe() -> None:
+    autorise, motif = heavy_batch.pr_dispatched_autorise(
+        {"fork": True, "approved_by_coordinator": True}
+    )
+    assert autorise is True
+    assert motif == ""
+
+
+def test_une_pr_du_depot_passe_meme_sans_verdict() -> None:
+    autorise, _motif = heavy_batch.pr_dispatched_autorise(
+        {"fork": False, "approved_by_coordinator": False}
+    )
+    assert autorise is True
+
+
+def test_le_resume_nomme_la_pr_coupable() -> None:
+    results = {
+        "started_at": "2026-11-09T04:30:00+00:00",
+        "finished_at": "2026-11-09T05:00:00+00:00",
+        "prs": [],
+        "integration": {
+            "statut": "rouge",
+            "arbre": {"prs_integrees": [1, 2], "conflits": []},
+            "bissection": {"statut": "bissection-effectuee", "pr_coupable": 2},
+        },
+    }
+    payload = heavy_batch.summarize(
+        results, datetime(2026, 11, 9, 5, 5, tzinfo=timezone.utc)
+    )
+    assert payload["arbre_integration"]["pr_coupable"] == 2
+    assert payload["arbre_integration"]["prs_integrees"] == [1, 2]
+    assert payload["arbre_integration"]["statut"] == "rouge"
