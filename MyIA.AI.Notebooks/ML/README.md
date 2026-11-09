@@ -1,8 +1,8 @@
 ---
-pagetitle: "ML - Machine Learning"
+pagetitle: "Machine learning — données, modèles et agents"
 ---
 
-# ML - Machine Learning
+# Machine learning — données, modèles et agents
 
 <!-- CATALOG-STATUS
 series: ML
@@ -11,443 +11,183 @@ breakdown: DataScienceWithAgents=113, ML.Net=24
 maturity: BETA=122, ALPHA=10, DRAFT=5
 -->
 
-> **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit `[skip ci]` par `github-actions[bot]`). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README — par exemple si une sous-série a reçu de nouveaux notebooks mergés après la dernière régénération —, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage. Pour les **décomptes par kernel** (Python vs C#/.NET) au sein d'une sous-série, ce README reste autoritatif car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé.
+[↑ Parcours de notebooks](../README.md) · [Cours et supports sur l'apprentissage](../../slides/06-apprentissage/)
 
-[← Notebooks](../README.md) | [ML.NET (C#) →](ML.Net/README.md) | [Data Science with Agents (Python) →](DataScienceWithAgents/README.md) | [RL →](../RL/)
+Comment transformer des données en un modèle utile, puis vérifier que ses résultats tiennent au-delà de l'exemple d'entraînement ? Cette famille suit le cycle **données → représentation → entraînement → évaluation → usage**. Elle relie les pipelines classiques, les réseaux profonds et les agents de data science autour d'une même exigence : comprendre ce qui a été ajusté, sur quelles données et avec quel critère de réussite.
 
-Le monde regorge de données, mais les transformer en décisions éclairées demande plus qu'un tableur. Le Machine Learning offre un cadre systématique pour construire des modèles prédictifs à partir de données, en allant de la régression linéaire aux réseaux de neurones en passant par les systèmes de recommandation. Cette série vous forme au ML pratique avec trois fils complémentaires : **ML.NET** pour l'écosystème .NET/C#, **Python Data Science with Agents** pour les pipelines modernes enrichis de LLMs, et les **jumeaux de parité** qui confrontent un même concept aux deux écosystèmes.
+Trois portes s'adressent à des besoins différents. Les développeurs C# peuvent commencer par ML.NET ; les lecteurs Python peuvent construire leurs bases en manipulation de données puis en apprentissage ; les praticiens des agents apprennent à déléguer des opérations qu'ils savent contrôler. Les variantes C# et Python de ML.NET permettent de comparer les mêmes questions avec des bibliothèques différentes, sans imposer de suivre les deux langages.
 
-## Pourquoi cette série
+Les bases de programmation suffisent pour l'entrée. Algèbre linéaire, probabilités et dérivées deviennent utiles pour comprendre l'optimisation et la généralisation ; les parcours profonds et formels précisent leurs prérequis supplémentaires. Vous apprendrez à préparer un jeu de données sans fuite d'information, choisir une métrique, comparer des modèles, interpréter leurs limites et évaluer un workflow automatisé.
 
-Le Machine Learning est partout : recommandations Netflix, détection de spam, prévisions de vente, diagnostic médical. Mais passer de la théorie à la pratique reste un saut difficile. Cette série comble ce gap en proposant **trois angles d'attaque** :
+## Comment lire ce README — Découverte
 
-- **ML.NET (C#/.NET)** : Pour les développeurs déjà familiers avec l'écosystème .NET, ML.NET offre un pipeline ML natif en C#. Pas besoin d'apprendre Python pour faire du ML en entreprise. Les notebooks couvrent le pipeline complet, de `IDataView` au déploiement ONNX, avec une évaluation rigoureuse par cross-validation.
-- **Python + AI Agents** : Pour les data scientists et praticiens IA, le track Python combine les fondamentaux (NumPy, Pandas, scikit-learn) avec les agents LLM (LangChain, Google ADK). C'est le futur du data science workflow : l'automatisation par des agents capables de nettoyer, analyser et modéliser des données.
-- **Jumeaux de parité (C# ⇄ Python/scikit-learn)** : Pour saisir que les concepts ML sont universels, plusieurs notebooks avancés de la série ML.NET disposent d'un **jumeau Python** co-localisé (`*-Python.ipynb`) qui traite le **même problème** avec les outils canoniques Python (détection d'anomalies `RandomizedPca`↔`PCA`+résidu, recommandation `MatrixFactorization`↔`NMF`, séries temporelles `ForecastBySsa`↔`STL`+`SARIMA`). Voir la [feuille ML.NET](ML.Net/README.md).
+Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) sépare parcours principal, approfondissements et recherche.
 
-Avoir ces trois angles permet de comprendre que le ML n'est pas lié à un langage : les concepts (features, entraînement, évaluation, généralisation) sont universels, seuls les outils diffèrent.
+- **Vous découvrez** : choisissez ML.NET ou les fondations Python dans la table. La compréhension du cycle d'apprentissage précède le choix d'un modèle complexe.
+- **Vous approfondissez** : ouvrez un thème — séries temporelles, vision, représentations du signal ou orchestration — après ses prérequis. Les lettres et variantes spécialisées restent regroupées dans les README de sous-série.
+- **Vous cherchez des garanties ou des limites** : la section Recherche relie évaluation empirique, théorie de l'apprentissage et formalisations Lean. Elle distingue une observation sur un jeu de données d'un résultat sous hypothèses.
 
-**Applications réelles couvertes** : prévisions de ventes (régression bayésienne), systèmes de recommandation (collaborative filtering), séries temporelles (forecasting), analyse de CV (NLP + agents), compétitions Kaggle (MLE-STAR pipeline).
+Ce README donne les articulations de la famille. Les pages locales portent le parcours carnet par carnet, les exercices et les environnements spécifiques.
 
-## Public cible
+## Parcours principal — choisir son entrée
 
-| Section | Audience | Prérequis |
-|---------|----------|-----------|
-| **ML.NET** | Développeurs C#/.NET, environnements enterprise | C# base, .NET SDK 9.0+ |
-| **Python Data Science (Days 1-3)** | Analystes, data scientists, débutants-intermédiaires | Python base, Jupyter |
-| **AI Agents (Days 4-7)** | Praticiens IA souhaitant intégrer LLMs | Days 1-3 ou expérience équivalente |
+| Entrée | Ce qu'on y apprend | Public et prérequis | Suite naturelle |
+|---|---|---|---|
+| [ML.NET et jumeaux Python](ML.Net/README.md) | Construire des pipelines, entraîner et évaluer, puis aborder classification, prévision, recommandation, clustering et anomalies. | Développeur C# ; les jumeaux Python proposent une autre voie pour les mêmes questions. | Socle ML-01 à ML-04, puis thèmes ML-05 à ML-09 selon le besoin. |
+| [Fondations Python pour les données](DataScienceWithAgents/01-Python-For-Data-Science/README.md) | Manipuler tableaux et DataFrames, charger, nettoyer, joindre et explorer des données. | Débutant en data science avec des bases de Python. | Socle ML ou agents de données. |
+| [Socle de machine learning](DataScienceWithAgents/02-ML-Cours/README.md) | Comprendre le workflow, le gradient, les modèles classiques, la généralisation, l'explicabilité et la confidentialité. | Après les fondations ; probabilités et dérivées introduites selon les paliers. | Deep learning, évaluation des agents et approfondissements théoriques. |
+| [Deep learning](DataScienceWithAgents/03-Deep-Learning/README.md) | Construire la rétropropagation, les réseaux et l'attention, puis étudier entraînement et passage à l'échelle. | Après le socle ML ; NumPy, gradient et algèbre linéaire. | Vision ou approfondissements d'architecture et d'entraînement. |
+| [Vision](DataScienceWithAgents/04-Vision/README.md) | Relier convolution, réseaux résiduels, transfert et détection à des tâches d'image évaluables. | Après le deep learning ; PyTorch et manipulation des images. | Analyse d'erreurs, adaptation de modèles et représentations du signal. |
+| [Ondelettes et scattering](DataScienceWithAgents/05-Wavelet-Scattering/README.md) | Construire des représentations du signal et comparer invariances conçues et caractéristiques apprises. | Algèbre linéaire et traitement du signal ; les parcours ML et vision facilitent la comparaison. | Confronter une implémentation construite pas à pas à des bibliothèques de référence. |
+| [Agents de données — LangChain/LangGraph](DataScienceWithAgents/06-Data-Agents/README.md) | Passer de la manipulation manuelle aux outils d'un agent, puis vérifier les analyses produites. | Fondations Python nécessaires ; socle ML conseillé pour juger les résultats. | Orchestration de workflows plus longs. |
+| [Orchestration — Google ADK](DataScienceWithAgents/07-Agent-Orchestration/README.md) | Séparer planification, code, exécution et vérification ; gérer outils, mémoire et expériences. | Après les agents de données et les bases ML ; services externes selon le lab. | Comparaison de workflows, ablations, Kaggle et BigQuery. |
 
-## Positionnement pédagogique
-
-Cette série sert les cours d'introduction au Machine Learning appliqué. Elle se situe après les fondamentaux de programmation (Python ou C#) et avant les séries spécialisées ([QuantConnect](../QuantConnect/) pour le trading, [RL](../RL/) pour l'apprentissage par renforcement). Aucun prérequis en statistiques avancées : les concepts sont introduits au fil des notebooks.
-
-**Slides de cours associés** : [06-apprentissage/](../../slides/06-apprentissage/) | **Livre de référence** : [Hands-On AI Trading](https://www.hands-on-ai-trading.com/) (chapitres ML)
-
-## Objectifs d'apprentissage
-
-À l'issue de cette série, vous serez capable de :
-
-1. **Construire** un pipeline ML complet (chargement, features, entraînement, évaluation) en C# ou Python
-2. **Évaluer** rigoureusement un modèle (cross-validation, métriques, Permutation Feature Importance, surapprentissage)
-3. **Appliquer** le feature engineering adapté au problème (encodage, normalisation, sélection de variables)
-4. **Intégrer** des agents LLM dans un workflow data science (analyse automatisée, parsing, recommandation)
-5. **Déployer** un modèle en production (export ONNX, interop Python/.NET, BigQuery ML)
-
-## Figures — extraites des sorties réelles des notebooks
-
-Six figures illustrent les trois fils de la série : les fondations Python (Pandas, visualisation), le pipeline ML.NET (régression, séries temporelles, clustering) et l'angle émergent des agents data-science (Google ADK). Elles sont **réintégrées in-situ** dans les sections qui en commentent le concept — chacune en regard du notebook qu'elle illustre. La provenance exacte (cellule source, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
-
-## Parcours d'apprentissage
-
-### Track A : ML.NET (.NET/C#, parcours ML-01 à ML-09 + TP capstone, et leurs jumeaux Python scikit-learn, ~7h)
-
-Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introduisent ML.NET et la préparation de données (IDataView, encodage). Le notebook 3 couvre l'entraînement (SDCA, LightGBM, AutoML) — son **leaderboard AutoML** (cell 12-13) rend visible la discrimination entre entraîneurs : sur données quadratiques, `LightGbmRegression` gagne avec un RMSE de 90 262 contre 30,5 millions pour `FastTreeRegression`, soit un écart de **plus de 300×** qu'aucun tableau `Console.WriteLine` ne fait ressortir. Le notebook 4 est crucial : évaluation rigoureuse par cross-validation et Permutation Feature Importance. Les notebooks 5-7 abordent les séries temporelles, l'export ONNX pour la production, et les systèmes de recommandation. Les notebooks 8-9 ouvrent sur l'apprentissage non-supervisé : clustering K-Means (segmentation RFM, méthode du coude) puis détection d'anomalies par Randomized PCA (maintenance prédictive, choix du seuil de décision). Le TP final (prévision de ventes) combine ML.NET et Infer.NET pour une régression bayésienne. Ce track présuppose .NET 9.0 + dotnet-interactive.
-
-### Track B : Data Science with Agents (Python, ~21h)
-
-Le parcours Python s'articule en trois temps. Les **fondations** (NumPy/Pandas) installent la manipulation de données. Le **socle ML canonique** ([02-ML-Cours](DataScienceWithAgents/02-ML-Cours/), scikit-learn) pose ensuite les concepts fondamentaux — workflow et surapprentissage, descente de gradient, régressions et pont génératif, ensembles, biais-variance/calibration/équité, non supervisé, théorie PAC et ses compagnons formels, grokking, puis optimisation d'hyperparamètres, régularisation sparse et classes déséquilibrées — chacun rendant *visible* un concept-phare et ancrant un article fondateur. Viennent enfin les **labs agentic**, en deux sous-tracks : le sous-track **LangChain** (Labs 1-7) couvre le data wrangling, la visualisation, le ML classique et le NLP de base ; le sous-track **Google ADK** (Labs 8-18, extensions 12b-12d) monte en complexité avec le deep learning (PyTorch), le dashboarding et les pipelines multi-agents (agents LLM pour automatiser le workflow data science). Deux volets spécialisés complètent le parcours : [03-Deep-Learning](DataScienceWithAgents/03-Deep-Learning/) (PyTorch) et [04-Vision](DataScienceWithAgents/04-Vision/) (dont le transfer learning ResNet). Ce track présuppose Python 3.10+ avec PyTorch, scikit-learn et pandas.
-
-## Progression recommandée
-
-### Parcours Data Scientist classique (~12h)
-
-1. [ML-01](ML.Net/ML-01-Introduction-CSharp.ipynb) → comprendre le pipeline ML
-1. [NumPy](DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) + [Pandas](DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) → maîtriser les données
-1. [Socle ML canonique 2.1 → 2.8](DataScienceWithAgents/02-ML-Cours/) → les fondamentaux scikit-learn (gradient, régressions, ensembles, biais-variance, non supervisé, PAC)
-1. [ML-02](ML.Net/ML-02-Data-Features-CSharp.ipynb) + [ML-03](ML.Net/ML-03-Entrainement-AutoML-CSharp.ipynb) → entraîner des modèles
-1. [ML-04](ML.Net/ML-04-Evaluation-CSharp.ipynb) → évaluer rigoureusement
-
-### Parcours AI Agent Builder (~15h)
-
-1. Days 1-3 (Labs 1-7) : Data Science + LangChain
-1. Days 4-7 (Labs 8-18) : Google ADK + multi-agents
-1. Projets finaux : Kaggle + BigQuery
-
-### Parcours Enterprise .NET (~6h)
-
-1. [ML-01](ML.Net/ML-01-Introduction-CSharp.ipynb) à [ML-04](ML.Net/ML-04-Evaluation-CSharp.ipynb) : fondamentaux ML.NET
-1. [ML-05](ML.Net/ML-05-TimeSeries-CSharp.ipynb) : séries temporelles
-1. [ML-06](ML.Net/ML-06-ONNX-CSharp.ipynb) : interop Python → .NET
-1. [TP-Prevision-Ventes-CSharp](ML.Net/TP-Prevision-Ventes-CSharp.ipynb) : projet intégré
-
-## Quel parcours choisir
-
-| Profil | Parcours recommandé | Durée |
-| ------ | ------------------- | ----- |
-| Développeur C#/.NET en entreprise | Track A : ML.NET (ML-01 à ML-04 + TP) | ~6h |
-| Data scientist débutant | Track B (Days 1-3) : Python + scikit-learn | ~8h |
-| Praticien IA souhaitant automatiser | Track B complet : Python + Agents (Days 1-7) | ~17h |
-| Curieux voulant comparer les approches | ML.NET (ML-01 à ML-04) + Python (Labs 1-5) | ~10h |
-
-## Structure
-
-```
-ML/
-├── ML.Net/                           # Tutoriels ML.NET (C#)
-│   ├── ML-01-Introduction-CSharp.ipynb
-│   ├── ML-01-Introduction-Python.ipynb   # jumeau scikit-learn (regression/logistique) ⇄ ML.NET pipeline
-│   ├── ML-02-Data-Features-CSharp.ipynb
-│   ├── ML-02-Data-Features-Python.ipynb   # jumeau scikit-learn (ColumnTransformer) ⇄ IDataView/Transforms
-│   ├── ML-03-Entrainement-AutoML-CSharp.ipynb
-│   ├── ML-03-Entrainement-AutoML-Python.ipynb   # jumeau scikit-learn (SDCA/LightGBM ⇄ Linear/GradientBoosting)
-│   ├── ML-04-Evaluation-CSharp.ipynb
-│   ├── ML-04-Evaluation-Python.ipynb   # jumeau scikit-learn (cross_val_score + permutation_importance) ⇄ cross-validation/PFI
-│   ├── ML-05-TimeSeries-CSharp.ipynb
-│   ├── ML-05-TimeSeries-Python.ipynb   # jumeau scikit-learn (STL+SARIMA) ⇄ ForecastBySsa
-│   ├── ML-06-ONNX-CSharp.ipynb
-│   ├── ML-06-ONNX-Python.ipynb   # jumeau skl2onnx+onnxruntime ⇄ OnnxTransformer
-│   ├── ML-07-Recommendation-CSharp.ipynb
-│   ├── ML-07-Recommendation-Python.ipynb   # jumeau scikit-learn (NMF) ⇄ MatrixFactorization
-│   ├── ML-08-Clustering-CSharp.ipynb
-│   ├── ML-08-Clustering-Python.ipynb   # jumeau scikit-learn (KMeans) ⇄ K-Means ML.NET
-│   ├── ML-09-Anomaly-Detection-CSharp.ipynb
-│   ├── ML-09-Anomaly-Detection-Python.ipynb   # jumeau scikit-learn (PCA+résidu) ⇄ RandomizedPca
-│   ├── TP-Prevision-Ventes-CSharp.ipynb
-│   └── taxi-fare.csv
-│
-├── DataScienceWithAgents/            # Data Science Python + AI Agents
-│   ├── 01-Python-For-Data-Science/      # Fondations NumPy/Pandas
-│   ├── 02-ML-Cours/                  # Socle ML canonique (scikit-learn)
-│   │   ├── 2.8b-Theorie-PAC-Lean.ipynb   # compagnon Lean (lean4-wsl) du lake learning_theory_lean (moitie PAC)
-│   │   └── 2.8d-Lean-Novikoff-Convergence.ipynb   # compagnon Lean (lean4-wsl) du lake learning_theory_lean (moitie Perceptron)
-│   ├── 03-Deep-Learning/              # Deep learning PyTorch
-│   ├── 04-Vision/                    # Vision par ordinateur
-│   ├── 06-Data-Agents/   # Track LangChain (Labs 1-7)
-│   └── 07-Agent-Orchestration/           # Track Google ADK (Labs 8-18, extensions 12b-12d)
-│
-└── learning_theory_lean/                  # Lake Lean 4 — convergence du perceptron (Novikoff)
-```
-
-## Prérequis et installation
-
-### Installation ML.NET
-
-```bash
-# 1. Installer .NET SDK 9.0+ depuis https://dotnet.microsoft.com/download
-dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
-dotnet interactive jupyter install
-
-# Vérification
-jupyter kernelspec list  # doit montrer .net-csharp
-```
-
-Documentation complète : [ML.Net/README.md](ML.Net/README.md)
-
-### Installation Python DataScience Labs (Days 1-3)
-
-```bash
-pip install pandas numpy matplotlib seaborn scikit-learn ipywidgets
-# Labs 2-3 et 6-7 nécessitent aussi :
-pip install langchain langchain-openai langchain-experimental
-# + variable d'environnement OPENAI_API_KEY dans un fichier .env
-```
-
-### Installation 07-Agent-Orchestration Labs (Days 4-7)
-
-```bash
-pip install -r MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt
-cp .env.example .env  # puis configurer les clés API
-```
-
-Providers LLM supportés (Labs 8+) : Google Gemini (recommandé), OpenAI, OpenRouter, vLLM local, LM Studio.
-
-Documentation complète : [DataScienceWithAgents/README.md](DataScienceWithAgents/README.md)
-
-## ML.NET (C# / .NET Interactive)
-
-Pipeline ML.NET complet en C#, de l'introduction à l'évaluation avancée : du chargement de données au déploiement ONNX, en passant par l'entraînement, l'AutoML et l'évaluation rigoureuse.
-
-| # | Notebook | Contenu | Focus |
-|---|----------|---------|-------|
-| 1 | [ML-01-Introduction-CSharp](ML.Net/ML-01-Introduction-CSharp.ipynb) | Hello ML.NET World, pipeline de base | Fondamentaux |
-| 1-Py | [ML-01-Introduction-Python](ML.Net/ML-01-Introduction-Python.ipynb) | **Jumeau Python** : pipeline ML.NET ⇄ scikit-learn (régression + classification) | Parité .NET⇄Python |
-| 2 | [ML-02-Data-Features-CSharp](ML.Net/ML-02-Data-Features-CSharp.ipynb) | IDataView, TextLoader, encodage | Préparation données |
-| 2-Py | [ML-02-Data-Features-Python](ML.Net/ML-02-Data-Features-Python.ipynb) | **Jumeau Python** : `IDataView`/Transforms ⇄ `ColumnTransformer`+`Pipeline` (scikit-learn) | Parité .NET⇄Python |
-| 3 | [ML-03-Entrainement-AutoML-CSharp](ML.Net/ML-03-Entrainement-AutoML-CSharp.ipynb) | SDCA, LightGBM, AutoML + **leaderboard visuel** (Plotly) | Entraînement |
-| 3-Py | [ML-03-Entrainement-AutoML-Python](ML.Net/ML-03-Entrainement-AutoML-Python.ipynb) | **Jumeau Python** : SDCA/LightGBM/AutoML ⇄ `LinearRegression`/`GradientBoosting`/`GridSearchCV` | Parité .NET⇄Python |
-| 4 | [ML-04-Evaluation-CSharp](ML.Net/ML-04-Evaluation-CSharp.ipynb) | Cross-validation, métriques, PFI | Évaluation |
-| 4-Py | [ML-04-Evaluation-Python](ML.Net/ML-04-Evaluation-Python.ipynb) | **Jumeau Python** : cross-validation + métriques + PFI ⇄ `cross_val_score` + `permutation_importance` (scikit-learn) | Parité .NET⇄Python |
-| 5 | [ML-05-TimeSeries-CSharp](ML.Net/ML-05-TimeSeries-CSharp.ipynb) | Forecasts temporelles, windowing | Séries temporelles |
-| 5-Py | [ML-05-TimeSeries-Python](ML.Net/ML-05-TimeSeries-Python.ipynb) | **Jumeau Python** : `ForecastBySsa` ⇄ `STL`+`SARIMA` (statsmodels) | Parité .NET⇄Python |
-| 6 | [ML-06-ONNX-CSharp](ML.Net/ML-06-ONNX-CSharp.ipynb) | Export ONNX, inférence en production | Déploiement |
-| 6-Py | [ML-06-ONNX-Python](ML.Net/ML-06-ONNX-Python.ipynb) | **Jumeau Python** : `skl2onnx` export + `onnxruntime` inférence ⇄ `OnnxTransformer` (ML.NET) | Parité .NET⇄Python |
-| 7 | [ML-07-Recommendation-CSharp](ML.Net/ML-07-Recommendation-CSharp.ipynb) | Système de recommandation | Recommandations |
-| 7-Py | [ML-07-Recommendation-Python](ML.Net/ML-07-Recommendation-Python.ipynb) | **Jumeau Python** : `MatrixFactorization` ⇄ `NMF` (scikit-learn) | Parité .NET⇄Python |
-| 8 | [ML-08-Clustering-CSharp](ML.Net/ML-08-Clustering-CSharp.ipynb) | K-Means, segmentation RFM, méthode du coude | Non-supervisé |
-| 8-Py | [ML-08-Clustering-Python](ML.Net/ML-08-Clustering-Python.ipynb) | **Jumeau Python** : `ClusteringCatalog` ⇄ `KMeans` scikit-learn + méthode du coude | Parité .NET⇄Python |
-| 9 | [ML-09-Anomaly-Detection-CSharp](ML.Net/ML-09-Anomaly-Detection-CSharp.ipynb) | Randomized PCA, AUC, seuil de décision | Détection d'anomalies |
-| 9-Py | [ML-09-Anomaly-Detection-Python](ML.Net/ML-09-Anomaly-Detection-Python.ipynb) | **Jumeau Python** : `RandomizedPca` ⇄ `PCA`+résidu (scikit-learn) | Parité .NET⇄Python |
-| TP | [TP-Prevision-Ventes-CSharp](ML.Net/TP-Prevision-Ventes-CSharp.ipynb) | Régression bayésienne (Infer.NET) | Application pratique |
-
-#### AutoML : quand le leaderboard bat le `Console.WriteLine` ([#7642](https://github.com/jsboige/CoursIA/pull/7642), [#7707](https://github.com/jsboige/CoursIA/pull/7707), [#7839](https://github.com/jsboige/CoursIA/pull/7839))
-
-Le notebook **ML-03** AutoML produit, sur données non linéaires (`y = 100·x² + bruit`), **10 essais terminés** en 30 secondes, couvrant **5 entraîneurs distincts**. Sans visualisation, l'étudiant doit comparer 10 nombres à la main pour repérer le gagnant — exercice rébarbatif qui masque l'apport pédagogique de l'AutoML. La cellule 13 ([`NotebookMonitor.CompletedTrials`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.ml.automl.runtime.notebookmonitor) + `Plotly.NET.Interactive`) trace un **leaderboard** qui rend la discrimination visible :
-
-| Entraîneur | Essais | Meilleur RMSE |
-|---|---|---|
-| `LightGbmRegression` | 3 | **90 262** ← gagnant |
-| `FastForestRegression` | 4 | 5 932 134 |
-| `LbfgsPoissonRegressionRegression` | 1 | 6 303 500 |
-| `SdcaRegression` | 1 | 11 323 122 |
-| `FastTreeRegression` | 1 | 30 523 762 ← perdant |
-
-L'écart entre le pire et le meilleur essai est de **338×** — un fait pédagogique majeur, **invisible sans graphique**. La lecture honnête du classement nuance aussi le stéréotype « non-linéaire bat linéaire » : `FastTreeRegression` (lui aussi non-linéaire, à base d'arbres) finit **dernier** (30 M), pire que `SdcaRegression` linéaire (11 M). L'AutoML a donné **3 essais** à `LightGbmRegression` mais **un seul** à `FastTreeRegression` — moins d'occasions de bien le régler. La leçon : la *famille* d'algorithme ne garantit pas le succès, c'est l'association **bon algorithme + bons hyper-paramètres** que l'AutoML cherche conjointement. Cette nuance illustre l'**anti-fabrication** [#3801 Prong-B](https://github.com/jsboige/CoursIA/issues/3801) : la cellule trace un graphique à partir des vrais résultats `experiment.RunAsync()`, pas une simulation ASCII ni un workaround dégradé.
-
-### Trois figures du track ML.NET (scikit-learn, statsmodels)
-
-[![Régression linéaire (ML-01) : droite de régression verte apprise par scikit-learn superposée aux données d'entraînement (cercles bleus) et de test (carrés oranges) — l'étoile rouge matérialise la prédiction pour une maison de 2,5 milliers de pieds carrés (~2,76 centaines de milliers de dollars).](assets/readme/ml1-intro.png)](ML.Net/ML-01-Introduction-Python.ipynb)
-*ML-01 — Régression linéaire prix/surface (scikit-learn). On observe que les points `Test` (oranges) s'éloignent de la droite au-delà de ~4 milliers de pieds carrés : le modèle linéaire sous-extrapole les grandes maisons, ce que la métrique R² seule ne signalera pas.*
-
-[![Décomposition STL d'une série temporelle de ventes (ML-05) : quatre panneaux superposés — Observé (oscillations bruitées entre ~60 et ~190), Tendance (courbe orange lisse montant de ~110 début 2023 à ~160 fin 2023), Saisonnalité (sinusoïde verte d'amplitude ~40, période 7 jours), Bruit (résidu rouge, amplitude ~±25).](assets/readme/ml5-timeseries.png)](ML.Net/ML-05-TimeSeries-Python.ipynb)
-*ML-05 — Décomposition STL (`statsmodels.tsa.seasonal_decompose`, période 7). La saisonnalité hebdomadaire se lit immédiatement (amplitude ±40), et la tendance capture la croissance sous-jacente (~+50 sur 12 mois). Le TP-Prevision-Ventes-CSharp s'appuie sur ce découpage pour combiner signal et saisonnalité.*
-
-[![Clustering K-Means (ML-08) en deux panneaux : à gauche la vérité terrain (3 segments Dormants/Réguliers/VIP sur l'axe Frequency × Monetary) ; à droite les clusters 0/1/2 retrouvés par K-Means — on observe que les labels K-Means ne s'alignent PAS avec les segments sémantiques (Cluster 0 ≠ Dormants) : K-Means segmente l'espace géométrique, pas la sémantique métier.](assets/readme/ml8-clustering.png)](ML.Net/ML-08-Clustering-Python.ipynb)
-*ML-08 — Clustering K-Means sur données RFM (scikit-learn). Le notebook démontre la **limitation sémantique** du K-Means non supervisé : les segments de clientèle (Dormants/Réguliers/VIP) sont des catégories métier, pas des clusters géométriques. La concordance parfaite n'est possible que par chance — d'où l'intérêt d'un *mapping* a posteriori (et des méthodes supervisées dès qu'on connaît les segments).*
-
-## Python Data Science with Agents
-
-Formation complète en Data Science Python enrichie d'agents IA. Vous commencerez par les fondamentaux (NumPy, Pandas), puis construirez des agents LLM capables d'analyser des données, de nettoyer des datasets, et de participer à des compétitions Kaggle. La seconde moitié plonge dans les frameworks Google ADK pour construire des systèmes multi-agents avancés.
-
-### Fondations (01-Python-For-Data-Science)
-
-| Notebook | Contenu |
-|----------|---------|
-| [1.2-NumPy](DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | Arrays, vectorisation, opérations |
-| [1.3-Pandas](DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | DataFrames, filtrage, manipulation |
-
-#### Trois figures du track Data Science (Pandas, Seaborn, ADK)
-
-[![Fondations Pandas (Lab1) en deux panneaux — à gauche les ventes journalières du Widget A sur 20 jours (janvier 2024), courbe oscillant entre 123 et 188 ; à droite les ventes moyennes par catégorie en barres (Accessoires ≈ 45, Électronique ≈ 130, Premium ≈ 225).](assets/readme/lab1-foundations.png)](DataScienceWithAgents/06-Data-Agents/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb)
-*Lab1 — Pandas & Matplotlib : visualisation exploratoire des ventes (20 jours, série temporelle + barres par catégorie). Cette figure introduit le double-outil Pandas + Matplotlib qu'utilisent ensuite tous les notebooks ML du track.*
-
-[![Visualisation matplotlib (Lab5) : courbe de l'évolution du chiffre d'affaires journalier entre le 01-10 et le 04-10, décroissance de ~760 à ~230 puis remontée à ~480, tracée en matplotlib pur avec le style seaborn-v0_8-whitegrid.](assets/readme/lab5-viz.png)](DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb)
-*Lab5 — matplotlib pur : chiffre d'affaires journalier sur quatre jours — chute de ~760 à ~230 le premier jour, plateau, puis remontée à ~480. Sur une fenêtre aussi courte, aucune tendance ne peut en être déduite : la figure illustre le style `seaborn-v0_8-whitegrid` (un **style matplotlib**, pas un import `seaborn`) appliqué à un DataFrame Pandas.*
-
-[![Agent ADK (Lab9) : diagramme en barres du revenu total par produit — tri décroissant spontané de l'agent, Gadget Y (~46 000) > Widget B (~44 500) > Gadget X (~34 000) > Widget A (~27 500).](assets/readme/lab9-adk.png)](DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations/Lab9-First-ADK-Agent.ipynb)
-*Lab9 — Premier agent ADK : l'agent a généré et exécuté le code Matplotlib qui produit cette figure, à partir de la requête « Crée un graphique à barres montrant le revenu par produit. Utilise matplotlib. » (cellule 17). Le **tri décroissant** (`sort_values(ascending=False)`) n'était pas demandé : l'agent l'a ajouté spontanément, ce qui rend l'insight (Gadget Y bat Widget A de ~70%) immédiatement lisible — petit pas vers le « diagramme qui parle de lui-même ».*
-
-### Socle ML canonique (02-ML-Cours)
-
-Entre les fondations NumPy/Pandas et les labs agentic, le socle machine learning **canonique avec scikit-learn** : le workflow (train/test split, surapprentissage rendu visible), la descente de gradient (ouvrir la boîte noire de `fit()`), les régressions linéaire et logistique complétées par le pont génératif Naive Bayes et la grande dimension, les arbres et ensembles, l'évaluation rigoureuse (biais-variance, calibration, équité), le non supervisé, la théorie PAC et ses trois compagnons formel/concentration/Perceptron, puis trois chapitres de praticien (hyperparamètres, régularisation sparse, classes déséquilibrées) et l'analyse d'erreurs. Chaque notebook rend visible un concept-phare et ancre les articles fondateurs — le référent manuel qui rend *jugeable* ce qu'un agent produira ensuite.
-
-| # | Notebook | Concept rendu visible | Focus |
-|---|----------|----------------------|-------|
-| 2.1 | [Workflow ML](DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb) | Train/test split, surapprentissage rendu visible | Méthodologie |
-| 2.2 | [Descente de gradient](DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb) | Ouvrir la boîte noire de `fit()` | Optimisation |
-| 2.3 | [Régression linéaire & logistique](DataScienceWithAgents/02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb) | OLS vs maximum de vraisemblance | Modèles linéaires |
-| 2.3b | [Naive Bayes génératif](DataScienceWithAgents/02-ML-Cours/2.3b-Naive-Bayes-Generatif.ipynb) | L'indépendance conditionnelle qui décide la frontière (Bernoulli, multinomial, Gaussien) | Modèles génératifs |
-| 2.3c | [Régression grande dimension](DataScienceWithAgents/02-ML-Cours/2.3c-Regression-Grande-Dimension.ipynb) | p >> n : Ridge, PCR, PLS — var ≠ valeur prédictive | Modèles linéaires |
-| 2.3d | [Modèle gaussien LDA/QDA](DataScienceWithAgents/02-ML-Cours/2.3d-Modele-Gaussien-LDA-QDA.ipynb) | L'hypothèse de covariance décide la frontière : droite (LDA) vs conique (QDA) | Modèles génératifs |
-| 2.4 | [Arbres, forêts & ensembles](DataScienceWithAgents/02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb) | Réduction de variance (bagging, boosting) | Ensembles |
-| 2.5 | [Biais, variance, CV & ROC](DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb) | Compromis biais-variance, validation croisée, ROC/AUC | Évaluation |
-| 2.5b | [Calibration des probabilités](DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites.ipynb) | Reliability diagram, ECE — pourquoi 0.87 n'est pas 87 % de chances | Évaluation |
-| 2.5c | [Équité par sous-groupes](DataScienceWithAgents/02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb) | Parité démographique, equalized odds, post-traitement par seuils | Évaluation |
-| 2.6 | [Clustering & PCA](DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | KMeans, réduction de dimension | Non supervisé |
-| 2.7 | [Modèles non paramétriques](DataScienceWithAgents/02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb) | SVM, k plus proches voisins | Non paramétrique |
-| 2.8 | [Théorie PAC & VC](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) | Cadre PAC, dimension de Vapnik-Chervonenkis | Théorie de l'apprentissage |
-| 2.8b | [Théorie PAC — compagnon Lean](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) | La même borne PAC démontrée et interrogée depuis le lake (kernel `lean4-wsl`) | Théorie formelle |
-| 2.8c | [Borne témoin concentration](DataScienceWithAgents/02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb) | Carte transversale + mesure numérique : Novikoff, témoin extrémal, Hoeffding | Théorie de l'apprentissage |
-| 2.8d | [Lean Novikoff convergence](DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) | Novikoff `n·γ² ≤ R²` interrogé en direct : `#check` + `#print axioms` | Théorie formelle |
-| 2.9 | [Grokking — généralisation tardive](DataScienceWithAgents/02-ML-Cours/2.9-Grokking-Generalisation.ipynb) | Généralisation qui émerge après que le surapprentissage soit maximal (PyTorch + ACP) | Épilogue avancé |
-| 2.10 | [Optimisation hyperparamètres](DataScienceWithAgents/02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb) | Grille, hasard, bayésien (TPE) — et quand s'arrêter | Praticien |
-| 2.11 | [Régularisation sparse LASSO](DataScienceWithAgents/02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb) | La géométrie décide : polyèdre L1 → sparsité, boule L2 → shrink | Praticien |
-| 2.12 | [Données déséquilibrées](DataScienceWithAgents/02-ML-Cours/2.12-Donnees-Desequilibrees.ipynb) | La courbe PR dit la vérité quand la ROC flatte | Praticien |
-| 2.13 | [Analyse d'erreurs](DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.ipynb) | Tranches, worst-k : la poche invisible sous un score global correct | Praticien |
-
-Dossier : [`02-ML-Cours/`](DataScienceWithAgents/02-ML-Cours/). Le notebook 2.8 (borne PAC/VC) est le **pendant empirique** du lake [`learning_theory_lean/`](learning_theory_lean/) qui *prouve* la convergence du perceptron — voir la section [Théorie formelle (Lean)](#théorie-formelle-lean) ci-dessous. Le notebook 2.9 (grokking) est un **épilogue avancé** qui rend visible un phénomène empirique (la généralisation *après* surapprentissage complet) souvent cité dans la littérature récente (Power et al., 2022), positionné hors du parcours fundamentals par PR #7280.
-
-### Workshop 3 Jours (06-Data-Agents)
-
-| Jour | Lab | Nom | Objectif |
-|------|-----|-----|----------|
-| **Day 1** | 1 | Python for Data Science | Révision Pandas, Matplotlib, Scikit-Learn |
-| **Day 2** | 2 | RFP Analysis | Parser des appels d'offres avec agents LLM |
-| **Day 2** | 3 | CV Screening | Scoring CV avec agents IA |
-| **Day 3** | 4 | Data Wrangling | Nettoyage et transformation de données |
-| **Day 3** | 5 | Viz & ML | Visualisation et intro Scikit-Learn |
-| **Day 3** | 6 | First Agent | Construire un agent simple (LLM + Tools) |
-| **Day 3** | 7 | Data Analysis Agent | Agent pour interroger des DataFrames |
-
-### Track 07-Agent-Orchestration (Days 4-7)
-
-Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider (Gemini 3.1, vLLM, OpenAI).
-
-| Jour | Lab | Nom | Objectif |
-|------|-----|-----|----------|
-| **Day 4** | 8 | ADK Introduction | Architecture ADK, configuration providers |
-| **Day 4** | 9 | First ADK Agent | Premier agent pour Data Science |
-| **Day 5** | 10 | File Analyzer | Analyse de fichiers hétérogènes |
-| **Day 5** | 11 | Planner-Coder Loop | Boucle itérative multi-agents |
-| **Day 5** | 12 | DS-Star Workshop | Application complète DS-STAR |
-| **Day 5** | 12b | Sequential-Orchestration | Orchestration séquentielle (contrat C4 : désignation séquentielle) |
-| **Day 5** | 12c | Agent-Handoff | Handoff natif câblé (contrat C5) |
-| **Day 5** | 12d | Token-Usage | Traçabilité de la consommation LLM (contrat C6) |
-| **Day 5** | 18 | Session-Persistence | Persistance d'état de session |
-| **Day 6** | 13 | Web Search SOTA | Recherche de modèles SOTA |
-| **Day 6** | 14 | Ablation Refinement | Optimisation ciblée par ablation |
-| **Day 6** | 15 | Kaggle Challenge | Compétition Kaggle avec MLE-STAR |
-| **Day 7** | 16 | Data Science Agent | Agent BigQuery/BQML |
-| **Day 7** | 17 | Final Project | Projet intégré |
-
-Documentation complète : [DataScienceWithAgents/07-Agent-Orchestration/README.md](DataScienceWithAgents/07-Agent-Orchestration/README.md)
-
-## Théorie formelle (Lean)
-
-Au-delà des notebooks empiriques (ML.NET, Python), la série ML accueille un **lake Lean 4** qui formalise deux résultats théoriques canoniques de l'apprentissage : [`learning_theory_lean/`](learning_theory_lean/). Convention des **lakes frères** — le lake est le livrable formel, `lake build` SUCCESS en est la preuve d'exécution, et les notebooks pédagogiques viennent en pendant : ici [`02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) pour la moitié PAC et [`02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) pour la moitié Perceptron, compagnons **kernel Lean** (`lean4-wsl`) placés contre leur jumeau empirique [`2.8-Theorie-PAC.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) (EPIC #11703).
-
-- **[`learning_theory_lean/`](learning_theory_lean/)** — **théorème de convergence du perceptron** (Novikoff, 1962) : pour des données linéairement séparables de marge γ et de rayon R, l'algorithme du perceptron effectue au plus `(R/γ)²` mises à jour avant de trouver un classifieur correct. Preuve **géométrique élémentaire et entièrement 0-sorry** (croissance de l'alignement `⟨wₖ,u⟩ ≥ kγ` + croissance de la norme `‖wₖ‖² ≤ kR²` + Cauchy–Schwarz), sur un espace préhilbertien réel abstrait via Mathlib.
-- **Module `PacLearning`** — **théorie PAC** (Valiant, 1984) : la chaîne complète de la **borne de complexité d'échantillon** en classe finie `m ≥ (1/ε)(ln|H| + ln(1/δ))` (concentration de Hoeffding pour Bernoulli + borne de l'union) et la **borne de généralisation agnostic** — toutes deux **0-sorry**. C'est ce module que le notebook [2.8b](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) rend exécutable déclaration par déclaration, en pendant formel du [2.8](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) qui en mesure la prédiction empirique. Un second compagnon, côté série SymbolicAI, couvre la chaîne complète des bornes et toute la branche perceptron (Novikoff + serrage) avec exercices : [`SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb`](../SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb) (See #11703).
-
-C'est le **pendant prouvé** des notebooks de classification linéaire (`ML.Net/ML-03` entraîne des classifieurs, `02-ML-Cours/2.3` pose régression linéaire/logistique) : là où les notebooks *montrent* que le perceptron converge en pratique, le lake *prouve* la borne. Voir le [README du lake](learning_theory_lean/README.md) pour les modules et le détail de la preuve.
-
-### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
-
-La section ci-dessus focusse sur le **lake phare** `learning_theory_lean` (Novikoff perceptron). Le différenciant CoursIA tient à la **cartographie inter-familles** : chaque notebook ML (simulation/expérimentation) peut être doublé par un *lake* (preuve formelle) chez au moins une autre famille — décision, choix social, partage équitable, recherche de chemin. Cette double culture (empirique ML.NET / scikit-learn ↔ formelle Lean 4 / Mathlib) ancre mathématiquement les notebooks qui *montrent* par les résultats des *preuves* qu'ils invoquent.
-
-| Famille | Lake phare | Théorème | Branchement notebook ML |
-| --- | --- | --- | --- |
-| ML | `learning_theory_lean` | Convergence perceptron Novikoff 0 sorry #4140 | Ce hub (Novikoff marge γ rayon R) |
-| ML | `learning_theory_lean` | Tightness (borne optimale) #4301 MERGED | Ce hub (borne prouvée serrée : égalité atteinte) |
-| ML | `learning_theory_lean` | i18n-B tranche 5 (FR `.lean` + companion `.en.md`) MERGED #5009 | Convention i18n à étendre aux autres lakes |
-| Probas | `decision_theory_lean` | VNM résolu 0 sorry #4049, Coherence MERGED #4150, Peters Gittins ref v4.27.0-rc1, PAC iter-2 chaîne 0-sorry bout-en-bout | Notebooks PAC (02-ML-Cours 2.5 biais-variance / ERM sous incertitude) |
-| QuantConnect | `kelly_lean` | Kelly criterion Growth MERGED #5003, Calmar/IR/MDD #4223 / #4164 | `02-ML-Cours` lien finance/ML : allocation optimale sous i.i.d. |
-| GameTheory | `game_theory_lean/SocialChoice` (lake `social_choice_lean` absorbé post-#4365) | Arrow impossibilité, Sen, Voting | `02-ML-Cours` 2.7 ensembles (vote d'ensemble ≅ agrégation préférences) |
-| GameTheory | `game_theory_lean/CooperativeGames/Shapley.lean` (lake `cooperative_games_lean` supprimé post-#4365, contenu absorbé) | Bondareva-Shapley 0 sorry #3954 (noyau, attributions) | `02-ML-Cours` Shapley values (feature importance ≅ valeur de Shapley) |
-| Search | `search_lean` | Phase 1-3 SHIPPED #4090 / #4142 OPEN / #4144 OPEN | `02-ML-Cours` 2.4 descente de gradient / arêtes de coût ≅ heuristique admissible |
-| SymbolicAI | `argumentation_lean` | Extension Dung (complète, préférée, stable, fondée) | `02-ML-Cours` 2.5 / 02-ML-Cours 2.7 débat ≅ framework d'argumentation |
+Le portail [DataScienceWithAgents](DataScienceWithAgents/README.md) rassemble le fil Python et les ateliers agents. La progression deep learning → vision constitue une branche d'approfondissement ; elle n'est pas un passage obligatoire avant les premiers agents.
 
 ```mermaid
-flowchart LR
-    subgraph SIM["Simulation (notebooks ML)"]
-        NB1["ML-03 — SDCA classification"]
-        NB2["2.3 — régression linéaire/logistique"]
-        NB3["2.4 — descente de gradient"]
-        NB4["2.5 — biais-variance / ERM"]
-        NB5["2.7 — ensembles (vote, bagging)"]
-        NB6["2.6 — PAC / échantillons"]
-    end
-    subgraph LEAN["Preuves formelles (Lean 4)"]
-        L1["learning_theory_lean — Novikoff 0 sorry #4140"]
-        L2["learning_theory_lean — Tightness #4301 MERGED"]
-        L3["decision_theory_lean — VNM 0 sorry #4049 + Coherence #4150"]
-        L4["kelly_lean — Growth #5003 / #4223 / #4164"]
-        L5["game_theory_lean/SocialChoice + CooperativeGames — Arrow + Bondareva-Shapley<br/>(lakes #4365 absorbés)"]
-        L6["search_lean + argumentation_lean — heuristique + Dung"]
-    end
-    NB1 -. "marge γ ⊥ rayon R ⟹ convergence" .-> L1
-    NB2 -. "ERM minimise erreur empirique" .-> L3
-    NB3 -. "pas adaptatif + Lipschitz" .-> L1
-    NB4 -. "PAC ⇓ uniform_concentration" .-> L3
-    NB5 -. "vote ≅ préférences agrégées" .-> L5
-    NB6 -. "échantillon i.i.d. + Hoeffding" .-> L3
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
-    style L1 fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    style L2 fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    style L3 fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    style L4 fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    style L5 fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    style L6 fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+flowchart TD
+    CS["C# : ML.NET 01–04"] --> THEMES["Prévision, recommandation, clustering, anomalies"]
+    PY["Python : données"] --> ML["Socle ML : modèles et évaluation"]
+    ML --> DL["Deep learning"]
+    DL --> V["Vision"]
+    V -. "pont facultatif" .-> S["Ondelettes et scattering"]
+    PY --> A["Agents de données"]
+    ML -. "juger les résultats" .-> A
+    A --> O["Orchestration et vérification"]
 ```
 
-Lecture : chaque nœud **SIM** représente un notebook ML dont le résultat empirique (marge, ERM, ensemble, PAC) est *prouvé* par au moins un nœud **LEAN** via une flèche pointillée. Le **vert pâle** sur les nœuds Lean rappelle que la *preuve* est l'engagement de véracité du notebook — pas une décoration. Voir l'EPIC [#4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean) et le hub central [P0](../README.md#lean) pour la cartographie complète (PR #5049). Cross-réf hubs voisins déjà livrés : [QuantConnect (PR #5047)](../QuantConnect/README.md), [GameTheory (PR #5050)](../GameTheory/README.md), [Probas (PR #5053)](../Probas/README.md), [SymbolicAI Lean (#5043 MERGED)](../SymbolicAI/Lean/README.md).
+## Du pipeline aux décisions — Découverte et Licence
 
-## FAQ / Troubleshooting
+### Préparer et séparer les données
 
-### Quelle est la différence entre ML.NET et les notebooks Python ?
+Une table propre n'est pas encore une expérience valide. Les fondations Python enseignent le calcul sur tableaux, les types, les valeurs manquantes et les jointures ; le socle ML ajoute la séparation entre données d'entraînement et de test. Un normaliseur ajusté sur tout le jeu peut transmettre au modèle des informations qui devraient lui rester inconnues lors de l'évaluation. Le `Pipeline` de [2.1 — Workflow ML](DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb) montre comment ajuster les transformations sur l'entraînement puis les appliquer au test.
 
-**ML.NET** (C#/.NET 9.0) couvre le machine learning classique (classification, régression, clustering, anomaly detection) via le framework Microsoft.ML. Les notebooks Python couvrent les agents IA (LangChain, Google ADK, data wrangling avec Pandas). Les deux sous-séries sont indépendantes. ML.NET est pertinent si vous travaillez dans l'écosystème .NET ; les notebooks Python sont plus généraux.
+Le [Lab 1](DataScienceWithAgents/06-Data-Agents/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) offre une entrée concrète : construire un DataFrame de ventes synthétiques, grouper, tracer et examiner une première régression. Les données synthétiques rendent les opérations lisibles ; leur simplicité ne constitue pas une validation sur des ventes réelles.
 
-### Faut-il connaître le C# pour les notebooks ML.NET ?
+[![Ventes quotidiennes d'un produit et ventes moyennes par catégorie avec Pandas et Matplotlib](assets/readme/lab1-foundations.png)](DataScienceWithAgents/06-Data-Agents/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb)
 
-Oui, les notebooks ML.NET utilisent .NET Interactive (C#). Les concepts ML sont introduits depuis zéro, mais la syntaxe C# de base (variables, LINQ, classes) est supposée. Si vous ne connaissez pas C#, les notebooks Python (DataScienceWithAgents) couvrent des concepts similaires sans prérequis C#.
+**À essayer :** conserver un jeu de test intact, modifier une étape de préparation et expliquer pourquoi la métrique change. La question porte autant sur les données disponibles au moment de la prédiction que sur le choix de l'algorithme.
 
-### Quelle est la progression recommandée ?
+### Apprendre, comparer et regarder les erreurs
 
-1. **ML.NET** (notebooks 1-5) : comprendre les bases du ML supervisé/non supervisé
-2. **DataScienceWithAgents** (Day 1-7) : découvrir les agents IA et le RAG
-3. **07-Agent-Orchestration** (Day 4-7) : agents avancés avec Google ADK
+Dans [ML-01 — Introduction](ML.Net/ML-01-Introduction-Python.ipynb), une droite de régression relie une caractéristique à un prix immobilier. Les points d'entraînement, les points de test et la prédiction d'un nouvel exemple rendent visibles les rôles distincts de ces données.
 
-Les deux sous-séries sont indépendantes et peuvent être suivies dans n'importe quel ordre.
+[![Régression immobilière : points d'entraînement et de test, droite ajustée et nouvelle prédiction](assets/readme/ml1-intro.png)](ML.Net/ML-01-Introduction-Python.ipynb)
 
-| Problème | Solution |
-| -------- | -------- |
-| `dotnet-interactive` non trouvé | `dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001` puis `dotnet interactive jupyter install` |
-| Kernel `.net-csharp` absent | Vérifier avec `jupyter kernelspec list`. Réinstaller si nécessaire (cf. [docs/reference/kernels-runtime.md](../../docs/reference/kernels-runtime.md)) |
-| ML.NET : erreur `IDataView` au chargement | Vérifier le chemin du CSV (utilisez `Path.Combine` plutôt qu'un chemin absolu) |
-| `OPENAI_API_KEY` manquant (Labs 2-3) | Créer un fichier `.env` à la racine avec `OPENAI_API_KEY=sk-...` |
-| PyTorch lent sur CPU | Normal pour les Labs 8+. Le GPU est recommandé mais pas obligatoire |
-| `langchain` import error | `pip install langchain langchain-openai langchain-experimental` (versions compatibles) |
-| erreur `No module named 'google.adk'` | Installer le track 07-Agent-Orchestration : `pip install -r requirements.txt` dans le bon répertoire |
-| Plots ne s'affichent pas | Vérifier `ipywidgets` installé + extension Jupyter activée |
+La droite sous-estime visuellement certains prix élevés du jeu illustré. Cette observation motive l'examen des résidus et d'autres représentations ; elle ne suffit pas à décider qu'une famille de modèles est toujours inadaptée. Une métrique agrège des erreurs et peut masquer des régions où le comportement diffère.
 
-## Concepts clés
+[ML-03 — Entraînement et AutoML](ML.Net/ML-03-Entrainement-AutoML-CSharp.ipynb) compare plusieurs entraîneurs et configurations. Le classement dépend du jeu, de la métrique, des hyperparamètres essayés et du budget alloué. Un mauvais essai d'une famille ne démontre pas sa faiblesse générale ; augmenter le nombre d'essais ne dispense pas de conserver une évaluation indépendante. Les jumeaux Python et C# permettent d'examiner le même cycle avec leurs interfaces respectives.
 
-| Concept | Description |
-|---------|-------------|
-| **Pipeline ML** | Enchaînement data loading → features → training → évaluation |
-| **Feature Engineering** | One-hot encoding, normalisation, concatenation |
-| **AutoML** | Recherche automatique d'hyperparamètres |
-| **Evaluation** | R², MAE, RMSE, cross-validation |
-| **Agents IA** | LLM + Tools + Prompt + Executor |
+Le [socle Python](DataScienceWithAgents/02-ML-Cours/README.md) prolonge ces questions par la validation, les modèles supervisés et non supervisés, l'explicabilité et la confidentialité. Ses approfondissements sur calibration et équité invitent à dépasser le score global : une bonne précision moyenne peut coexister avec des probabilités mal calibrées ou des écarts entre sous-groupes.
 
-## Ressources
+### Temps, groupes et anomalies demandent des critères propres
 
-### ML.NET
+Une série temporelle impose de respecter l'ordre des observations. [ML-05 — Time Series](ML.Net/ML-05-TimeSeries-Python.ipynb) sépare tendance, saisonnalité et résidu avec une décomposition STL, puis examine la prévision. La décomposition du signal d'entraînement aide à comprendre sa structure ; la qualité prédictive se juge sur une période tenue à l'écart.
 
-- [Documentation ML.NET](https://docs.microsoft.com/en-us/dotnet/machine-learning/)
-- [ML.NET Samples](https://github.com/dotnet/machinelearning-samples)
-- [Hands-On AI Trading](https://www.hands-on-ai-trading.com/) — chapitres ML.NET et pipeline de trading
+[![Décomposition des ventes en signal observé, tendance, saisonnalité et résidu](assets/readme/ml5-timeseries.png)](ML.Net/ML-05-TimeSeries-Python.ipynb)
 
-### Python Data Science
+Le clustering soulève une autre difficulté : un numéro de cluster n'a pas de signification métier intrinsèque. Dans [ML-08](ML.Net/ML-08-Clustering-Python.ipynb), K-Means retrouve les groupes de clients synthétiques après normalisation. Les identifiants sont permutés : Dormants correspond au cluster 2, Réguliers au 0 et VIP au 1. Comparer directement ces numéros aux noms de groupe ferait conclure à tort à une erreur ; l'interprétation passe par les profils et les centroïdes.
 
-- [Pandas Documentation](https://pandas.pydata.org/docs/)
-- [Scikit-Learn User Guide](https://scikit-learn.org/stable/user_guide.html)
-- [LangChain Documentation](https://python.langchain.com/)
-- [Google ADK Documentation](https://google.github.io/adk-docs/)
+[![Groupes métier synthétiques et clusters K-Means : mêmes groupes, identifiants permutés](assets/readme/ml8-clustering.png)](ML.Net/ML-08-Clustering-Python.ipynb)
 
-## Conclusion / Prochaines étapes
+La recommandation et la détection d'anomalies du parcours ML.NET complètent cette diversité. Les approfondissements autour de 09 introduisent notamment des anomalies de forme et le Matrix Profile. Une anomalie signale une différence par rapport à une référence ; sa pertinence dépend de l'usage et doit être examinée avec les exemples détectés.
 
-### Ce que vous avez appris
+## Ouvrir les modèles profonds — Licence et Master
 
-Cette série vous a fait parcourir le **pipeline complet du Machine Learning appliqué**, en gardant toujours les deux pieds dans le code — depuis le chargement d'un `IDataView` ou d'un DataFrame jusqu'au déploiement et à l'automatisation par agents. L'arc pédagogique se déploie sur deux registres complémentaires :
+### Du gradient calculé à la représentation apprise
 
-- **Le geste fondamental** — construire un modèle, ce n'est pas invoquer une boîte noire, c'est enchaîner des étapes explicites : préparer les données (encodage, normalisation), choisir un algorithme adapté au problème, entraîner, puis **évaluer rigoureusement** par cross-validation et Permutation Feature Importance plutôt que sur une seule exécution.
-- **La double stack** — ML.NET (C#/.NET) et Python (scikit-learn, PyTorch) résolvent les mêmes problèmes avec des outils différents. Les concepts — features, surapprentissage, généralisation, compromis biais/variance — sont universels ; traverser les deux écosystèmes ancre cette universalité mieux qu'un seul le pourrait.
-- **Le passage à l'agent** — la seconde moitié franchit un seuil : l'agent LLM devient un collaborateur du workflow data science, capable d'interroger un DataFrame, de parser des fichiers hétérogènes, d'orchestrer une boucle planner-coder ou de se confronter à une compétition Kaggle. Le data scientist ne fait plus seulement du modèle, il **construit des systèmes** qui font du modèle.
+Le parcours [Deep Learning](DataScienceWithAgents/03-Deep-Learning/README.md) commence par rendre l'entraînement inspectable : une rétropropagation écrite à la main est confrontée à des gradients numériques et à l'autodifférentiation. Cette vérification prépare l'emploi de PyTorch et l'étude d'architectures plus riches. Le passage à l'attention puis à un mini-GPT relie les opérations élémentaires à un modèle de séquence entraînable.
 
-La thèse pratique est honnête : un bon modèle vit ou meurt par la qualité de son évaluation et de ses features, et l'automatisation par agents ne dispense ni de l'un ni de l'autre — elle les rend reproductibles à l'échelle.
+Les démonstrations accessibles sur CPU servent à comprendre les mécanismes. Les approfondissements sur l'entraînement distribué ajoutent des contraintes matérielles et des questions de synchronisation : un résultat sur une petite démonstration ne permet pas de prévoir seul le coût d'un entraînement à plusieurs GPU. Les README locaux distinguent ces expériences et leurs prérequis.
 
-### Prochaines étapes
+### Images : du filtre au transfert
 
-- **Approfondir le calcul bayésien** : le [TP prévision de ventes](ML.Net/TP-Prevision-Ventes-CSharp.ipynb) dresse un pont vers [Probas](../Probas/README.md) (Infer.NET, PyMC), où la régression bayésienne traitée ici comme cas d'application devient un langage à part entière — distributions, inférence, incertitude quantifiée.
-- **Passer à l'apprentissage par renforcement** : [RL](../RL/README.md) prend le relais quand l'apprentissage ne se fait plus sur des données statiques mais par **interaction** avec un environnement — le cadre naturel pour le trading ([QuantConnect](../QuantConnect/README.md)) et les systèmes décisionnels séquentiels.
-- **Mesurer l'incertitude, pas seulement la prédiction** : les notebooks d'évaluation (ML-04) introduisent métriques et PFI ; la série [Probas](../Probas/README.md) pousse plus loin en quantifiant l'incertitude d'une prédiction plutôt que son seul point estimé.
-- Pour la pratique : reprenez le TP prévision de ventes en remplaçant la régression ML.NET par une Infer.NET, puis comparez les intervalles de confiance — c'est le passage le plus formateur entre ML classique et modélisation probabiliste.
+Dans [Vision](DataScienceWithAgents/04-Vision/README.md), construire une convolution NumPy puis la comparer à PyTorch donne un premier contrôle de l'opérateur. Les réseaux résiduels et le transfert changent ensuite ce que l'on apprend : une tête peut être entraînée sur des caractéristiques gelées, ou une partie du réseau peut être ajustée à la tâche.
 
-### Le fil rouge
+La comparaison doit conserver les données, les métriques et les conditions d'évaluation. Un gain observé sur quelques graines reste une expérience locale, dont l'incertitude mérite d'être examinée. La détection ajoute localisation, seuils et erreurs par objet : une image réussie ne résume pas la qualité d'un détecteur. Les carnets conduisent ainsi du fonctionnement interne à l'analyse d'erreurs.
 
-Le Machine Learning appliqué, c'est l'art de transformer des données en **décisions reproductibles** — et cette série insiste sur le « reproductibles » : cross-validation, PFI, pipelines explicités plutôt que notebooks jetables. Que vous soyez développeur .NET en entreprise ou data scientist Python branchant ses premiers agents, le fil conducteur reste le même : un modèle qu'on ne sait pas évaluer honnêtement ne sert à rien, et un workflow qu'on ne sait pas automatiser ne passe pas à l'échelle.
+### Signal : concevoir une invariance ou l'apprendre
 
-## Licence
+La branche [Ondelettes et scattering](DataScienceWithAgents/05-Wavelet-Scattering/README.md) construit des ondelettes puis des représentations par convolutions, module et moyennage. Elle permet de demander quelles variations doivent être conservées, atténuées ou rendues invariantes. Cette question rejoint la vision, mais la représentation peut ici être construite à partir de propriétés mathématiques explicites.
 
-Voir la licence du repository principal.
+Les expériences confrontent une implémentation pédagogique à des bibliothèques telles que Kymatio. Comparer précision prédictive, coût et stabilité de la représentation donne plusieurs critères : un modèle plus rapide n'est pas nécessairement le meilleur sur le jeu choisi. Les paliers de construction et les approfondissements sont détaillés dans la feuille ; cette branche reste un choix thématique.
+
+## Des analyses aux agents — Licence et lectures avancées
+
+### Donner des outils dont on comprend les résultats
+
+Le parcours [Agents de données](DataScienceWithAgents/06-Data-Agents/README.md) relie calcul manuel et délégation. Les premiers travaux manipulent des données et des documents ; les suivants ajoutent un modèle de langage et des outils. Une extraction de champs ou une proposition générée sur un document synthétique permet de comprendre le flux, puis doit être évaluée sur des cas variés avant d'en déduire une fiabilité.
+
+Le [Lab 5](DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) réutilise le fichier de transactions fourni avec le Lab 4 et lui applique les opérations de nettoyage. Le graphique agrège le chiffre d'affaires par jour avec Pandas et Seaborn/Matplotlib. Cette dépendance entre les labs fait partie du parcours : le bon résultat suppose aussi que le bon fichier ait été chargé et correctement préparé.
+
+[![Chiffre d'affaires journalier sur la courte fenêtre des transactions fournies avec le Lab 4](assets/readme/lab5-viz.png)](DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb)
+
+Une courte fenêtre aide à examiner une agrégation ; elle ne suffit pas à établir une tendance durable. Lorsqu'un agent produit une analyse, vérifier les colonnes, les filtres, l'opération effectuée et les données utilisées permet de contrôler ce même raisonnement. Les labs précisent le périmètre des outils d'exécution de code ; choisir ce périmètre fait partie de la conception de l'agent.
+
+### Orchestrer une expérience et conserver une trace vérifiable
+
+Le parcours [Google ADK](DataScienceWithAgents/07-Agent-Orchestration/README.md) rend explicites les rôles de planification, de code, d'exécution et de vérification. Le [Lab 11](DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) étudie la boucle planificateur–codeur ; les approfondissements du Lab 12 examinent notamment plans, outils, évaluations et persistance de session. La séparation des rôles permet de localiser un échec : plan inadéquat, code invalide, mauvais résultat ou vérification insuffisante.
+
+Le [Lab 9](DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) introduit les outils de calcul sur les ventes. Le carnet actuel fournit notamment un classement textuel calculé par un outil Pandas. L'illustration ci-dessous est une figure archivée sur ce jeu de ventes ; elle n'est plus une sortie produite par la version actuelle du carnet.
+
+[![Illustration archivée du revenu par produit sur le jeu de ventes du parcours agents](assets/readme/lab9-adk.png)](DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations/Lab9-First-ADK-Agent.ipynb)
+
+Pour comparer deux workflows, conserver la tâche, les données et les critères, puis examiner les appels d'outils et leurs résultats. Une ablation — retirer un outil ou une étape de vérification — aide à comprendre ce qui contribue au résultat. Les expériences de mémoire distinguent la persistance au sein d'une session de l'isolation entre sessions. Les prolongements Kaggle et BigQuery ajoutent leurs propres données, accès et conditions d'exécution.
+
+## Installation — choisir l'environnement du parcours
+
+| Parcours | Préparation | Premier contrôle |
+|---|---|---|
+| ML.NET en C# | SDK .NET et noyau .NET Interactive ; directives NuGet dans les carnets. Voir [ML.Net](ML.Net/README.md). | Le carnet s'exécute avec le noyau C#, et ses données sont accessibles par les chemins relatifs attendus. |
+| Fondations et socle Python | Python, Jupyter, NumPy/Pandas/scikit-learn ; [dépendances du socle](DataScienceWithAgents/02-ML-Cours/requirements.txt). | Le noyau correspond à l'environnement installé ; les transformations sont ajustées sur les données prévues. |
+| Deep learning, vision et signal | PyTorch et dépendances de la feuille choisie ; [manifeste Vision](DataScienceWithAgents/04-Vision/requirements.txt). | CPU ou GPU selon le carnet ; vérifier le dispositif utilisé avant de lancer un entraînement. |
+| Agents LangChain/LangGraph | [Dépendances agents](DataScienceWithAgents/06-Data-Agents/requirements.txt) et configuration du fournisseur pour les labs qui appellent un LLM. | Commencer par les opérations locales de données, puis tester le service du modèle. |
+| Orchestration ADK | [Dépendances ADK](DataScienceWithAgents/07-Agent-Orchestration/requirements.txt), [exemple de configuration](DataScienceWithAgents/07-Agent-Orchestration/.env.example) et accès propres au lab. | Vérifier séparément modèle, outils et services externes avant le workflow complet. |
+| Formalisations | Noyau Lean et toolchain du projet ; instructions dans [learning_theory_lean](learning_theory_lean/README.md). | Construire le projet avec sa version de Lean avant d'ouvrir les compagnons formels. |
+
+Une première séance Python sur les données ne nécessite pas de clé API. Depuis la racine du dépôt :
+
+```bash
+python -m venv .venv-ml
+source .venv-ml/bin/activate
+python -m pip install jupyterlab ipykernel numpy pandas matplotlib scikit-learn
+python -m ipykernel install --user --name coursia-ml --display-name "Python — ML"
+jupyter lab MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.1-Python_pour_la_Data_Science.ipynb
+```
+
+Sous Windows, activer l'environnement avec `.\.venv-ml\Scripts\Activate.ps1`. Pour la suite, installer le manifeste du parcours choisi ; cette commande de départ ne couvre pas tous les ateliers. Si un import manque, vérifier le noyau Jupyter avant d'installer à nouveau le paquet. Si un CSV est absent, vérifier le répertoire de travail et le lab qui le produit.
+
+Pour les agents, la configuration est propre au fournisseur et au lab. L'exemple `.env.example` lié ci-dessus se trouve dans `07-Agent-Orchestration`, pas à la racine ML. Les appels externes, accès Kaggle et projets BigQuery demandent les identifiants correspondants. Les sorties conservées dans les carnets permettent la lecture, mais ne garantissent pas la disponibilité future d'un service.
+
+## Pour aller plus loin — Recherche
+
+### Généralisation : relier la mesure aux hypothèses
+
+Le carnet [2.8 — Théorie PAC](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) demande sous quelles hypothèses l'erreur observée renseigne l'erreur sur de nouvelles données. Dans le cas réalisable d'une classe finie d'hypothèses `H`, avec exemples indépendants et de même distribution, une borne classique pour un apprenant cohérent est `m ≥ (ln |H| + ln(1/δ)) / ε` : avec probabilité au moins `1 − δ`, l'erreur est au plus `ε`. Les hypothèses de réalisabilité, d'échantillonnage et de cohérence font partie de l'énoncé ; elles ne sont pas automatiquement satisfaites par un pipeline réel.
+
+La convergence du perceptron donne un autre type de garantie. Pour des exemples de norme au plus `R`, séparables avec une marge `γ` par un vecteur unitaire, chaque erreur augmente suffisamment l'alignement avec ce séparateur, tandis que la norme du vecteur appris croît de façon contrôlée. En combinant les deux inégalités avec Cauchy–Schwarz, on obtient la borne de Novikoff `(R/γ)²` sur les erreurs. Cette conclusion concerne ce modèle et ces hypothèses, pas tout réseau entraîné par descente de gradient.
+
+Le carnet [2.9 — Grokking et généralisation](DataScienceWithAgents/02-ML-Cours/2.9-Grokking-Generalisation.ipynb) ouvre sur des dynamiques où mémorisation et généralisation apparaissent à des moments différents. Les approfondissements explorent des mécanismes et modèles explicatifs ; une courbe particulière et une théorie effective doivent être confrontées à leurs conditions d'observation.
+
+### Formalisations Lean
+
+Le projet [learning_theory_lean](learning_theory_lean/README.md) accompagne ces questions avec des définitions et énoncés formels. Le carnet [2.8b — PAC en Lean](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) permet de lire les signatures et hypothèses des résultats ; [2.8d — Novikoff](DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) accompagne la borne de convergence ; [2.9f — Théorie effective du grokking](DataScienceWithAgents/02-ML-Cours/2.9f-Grokking-Theorie-Effective-Lean.ipynb) prolonge le fil théorique.
+
+Le statut des modules, leurs toolchains et leurs points d'entrée sont rassemblés dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md). Lire les hypothèses et dépendances d'un théorème permet de préciser ce qu'il certifie. Une preuve sur un modèle mathématique ne valide pas à elle seule les données, l'implémentation ou le résultat expérimental d'un autre carnet. Les exercices formels restent des activités à compléter lorsque le carnet les présente ainsi.
+
+### Concevoir une comparaison qui puisse être contredite
+
+Choisir une métrique avant les essais, réserver un jeu d'évaluation, fixer un budget et conserver les graines aide à rendre les comparaisons interprétables. Les répétitions d'un entraînement mesurent une variabilité différente de celle obtenue en changeant les données. Une ablation permet d'interroger un composant ; une analyse par sous-groupes peut révéler un défaut caché par la moyenne.
+
+Ces principes relient toutes les branches de la famille : comparer des entraîneurs AutoML, une représentation de scattering, un fine-tuning en vision ou un workflow d'agents exige de définir ce qui reste fixe et ce qui change. Une expérience qui échoue ou un modèle simple qui résiste à la comparaison peut être aussi instructif qu'un meilleur score.
+
+## Ressources — tous niveaux
+
+- [ML.NET](https://learn.microsoft.com/dotnet/machine-learning/) et [exemples officiels](https://github.com/dotnet/machinelearning-samples) pour les pipelines C#.
+- [Pandas](https://pandas.pydata.org/docs/) et [scikit-learn](https://scikit-learn.org/stable/user_guide.html) pour les données, modèles et protocoles d'évaluation.
+- [PyTorch](https://pytorch.org/tutorials/) pour les réseaux, l'autodifférentiation et l'entraînement.
+- [LangChain](https://docs.langchain.com/) et [Google ADK](https://google.github.io/adk-docs/) pour les outils et workflows des parcours agents.
+- [Supports du cours sur l'apprentissage](../../slides/06-apprentissage/) pour le fil théorique ; les README locaux portent la bibliographie de leurs approfondissements.
+- [Manifeste des figures](assets/readme/MANIFEST.md) pour les exports conservés ; les légendes ci-dessus précisent leur interprétation et le cas de la figure ADK archivée.
+
+[Retour aux notebooks](../README.md) · [Catalogue du dépôt](../../COURSE_CATALOG.generated.md) · [Licence](../../LICENSE)
