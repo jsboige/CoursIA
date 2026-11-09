@@ -632,74 +632,98 @@ Les trois problemes partagent des proprietes communes (observables, déterminist
 - Le passage de l'**aspirateur** (8 etats) au **8-puzzle** (181 440 etats) multiplie la complexite par 22 680 -- suffisant pour rendre la recherche exhaustive delicate mais encore realisable.
 - L'**itineraire** se distingue par son cout **non uniforme** : un trajet en 2 sauts peut couter plus cher qu'un detour en 5 sauts. Cela impose des algorithmes tenant compte des couts (UCS, A*).
 - Tous les exemples sont **reversibles** (chaque action a un inverse applicable) -- cela simplifie la recherche en permettant le backtracking sans conditions speciales.",,,,,,,,7d2437013dff60e9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,ac290c48,markdown,fr,10ba258024bccb1d,"## 7. Exercices
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,ac290c48,markdown,fr,c60195ee6639c490,"## 7. Exercices
 
-Trois exercices pour mettre en pratique la formalisation en C#. Chacun implemente une nouvelle sous-classe de `SearchProblem`. Les squelettes (stubs) sont fournis -- completez-les pour resoudre le problème.
+La section ouvre par un **exemple guidé** -- la résolution d'un étudiant, créditée et commentée comme les exemples des sections précédentes -- puis enchaîne sur des exercices ouverts. Chacun implemente une nouvelle sous-classe de `SearchProblem`. Les squelettes (stubs) sont fournis -- completez-les pour resoudre le problème.
 
-> **Convention [C.1]** : `raise NotImplementedError` / `assert False` / `1/0` sont **interdits** -- le notebook doit s'executer end-to-end même si les exercices sont incomplets. On utilise des **stubs `return null` + garde `try`** pour afficher un message clair.",,,,,,,,10ba258024bccb1d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,640f65e8,code,fr,37375c4c453ead55,"// Exercice 1 : Missionnaires et Cannibales
+> **Convention [C.1]** : `raise NotImplementedError` / `assert False` / `1/0` sont **interdits** -- le notebook doit s'executer end-to-end même si les exercices sont incomplets. On utilise des **stubs `return null` + garde `try`** pour afficher un message clair.",,,,,,,,c60195ee6639c490,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,640f65e8,code,fr,334e6b35c2acf37e,"// Exercice 1 : Missionnaires et Cannibales
 //
 // Trois missionnaires et trois cannibales veulent traverser une riviere.
 // Le bateau peut transporter 1 ou 2 personnes a la fois.
-// Sur chaque rive (et dans le bateau), si les missionnaires sont plus
-// nombreux que les cannibales, ils sont devores.
+// Sur chaque rive, si les cannibales sont plus nombreux que les
+// missionnaires (et qu'il y a au moins un missionnaire), ceux-ci sont devores.
 //
 // Etat : (missionnaires_gauche, cannibales_gauche, position_bateau)
 //   position_bateau : 'G' (gauche) ou 'D' (droite)
 //   missionnaires_gauche, cannibales_gauche : entiers entre 0 et 3.
+//   La rive droite se deduit de la gauche : (3 - mG, 3 - cG).
 //
-// Indices :
-// - initial_state() retourne (3, 3, 'G') -- tout le monde a gauche.
-// - IsValid(state) verifie 0 <= m, c <= 3 et securite (m >= c OU m == 0 sur chaque rive).
-// - actions(state) genere les paires (m, c) avec 1 <= m+c <= 2.
-// - transition(state, action) deplace (m, c) selon la position du bateau.
-// - is_goal(state) verifie (0, 0, 'D').
+// Action : (m, c) = nombre de missionnaires et de cannibales dans le bateau,
+//   avec 1 <= m + c <= 2.
 public class MissionariesCannibals : SearchProblem {
+
+    // Etat initial : tout le monde a gauche, bateau a gauche.
     public override object InitialState() {
-        // TODO etudiant : retourner le tuple (3, 3, 'G').
-        return null;
+        return (3, 3, 'G');
     }
 
     // Verifie que l'etat est valide (pas de missionnaire devore).
     private bool IsValid((int mG, int cG, char boat) state) {
-        // TODO etudiant :
-        //   - bornes : 0 <= mG, cG <= 3
-        //   - securite gauche : si mG > 0 alors mG >= cG
-        //   - securite droite : si (3-mG) > 0 alors (3-mG) >= (3-cG)
-        return false;
+        int mG = state.mG, cG = state.cG;
+        int mD = 3 - mG, cD = 3 - cG;          // la rive droite se deduit de la gauche
+
+        if (mG < 0 || mG > 3 || cG < 0 || cG > 3) return false;   // bornes
+        if (mG > 0 && cG > mG) return false;                      // securite rive gauche
+        if (mD > 0 && cD > mD) return false;                      // securite rive droite
+        return true;
     }
 
+    // Actions applicables : chargements (m, c) qui menent a un etat valide.
     public override IEnumerable<object> Actions(object state) {
-        // TODO etudiant :
-        //   - generer les paires (m, c) avec 1 <= m+c <= 2, 0 <= m, c <= 3
-        //   - selon la rive du bateau, envoyer dans un sens ou dans l'autre
-        //   - valider l'etat resultant avant de l'inclure dans les actions
-        return new List<object>();
+        var result = new List<object>();
+        for (int m = 0; m <= 2; m++) {
+            for (int c = 0; c <= 2; c++) {
+                if (m + c < 1 || m + c > 2) continue;              // 1 ou 2 personnes
+                // Les bornes de IsValid rejettent aussi les chargements impossibles
+                // (embarquer plus de monde qu'il n'y en a sur la rive du bateau).
+                var next = ((int, int, char))Transition(state, (m, c));
+                if (IsValid(next)) result.Add((m, c));
+            }
+        }
+        return result;
     }
 
+    // Transition : le bateau traverse avec (m, c) depuis sa rive.
     public override object Transition(object state, object action) {
-        // TODO etudiant :
-        //   - recuperer (m, c) de l'action
-        //   - selon la rive du bateau : ajouter ou soustraire (m, c)
-        //   - basculer la position du bateau
-        return null;
+        var (mG, cG, boat) = ((int, int, char))state;
+        var (m, c) = ((int, int))action;
+        if (boat == 'G')
+            return (mG - m, cG - c, 'D');   // gauche -> droite
+        else
+            return (mG + m, cG + c, 'G');   // droite -> gauche
     }
 
+    // But : tout le monde a droite, bateau a droite.
     public override bool IsGoal(object state) {
-        // TODO etudiant : retourner (mG, cG, boat) == (0, 0, 'D').
-        return false;
+        var (mG, cG, boat) = ((int, int, char))state;
+        return (mG, cG, boat) == (0, 0, 'D');
+    }
+
+    // Nombre d'etats valides parmi les 4 x 4 x 2 = 32 triplets.
+    public override int? StateSpaceSize() {
+        int count = 0;
+        for (int m = 0; m <= 3; m++)
+            for (int c = 0; c <= 3; c++)
+                foreach (var b in new[] { 'G', 'D' })
+                    if (IsValid((m, c, b))) count++;
+        return count;
     }
 }
 
-Console.WriteLine(""Classe MissionnairesCannibals definie (squelette)."");
-Console.WriteLine(""Completez les methodes pour resoudre le probleme."");",,,,,,,,37375c4c453ead55,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,832f9a17,markdown,fr,b562f520c0a00e99,"> **Indices pour l'exercice 1** :
+var mcDemo = new MissionariesCannibals();
+Console.WriteLine($""{mcDemo}"");
+Console.WriteLine($""Etat initial : {mcDemo.InitialState()}"");
+Console.WriteLine($""Actions depuis l'etat initial : {string.Join("", "", mcDemo.Actions(mcDemo.InitialState()))}"");",,,,,,,,334e6b35c2acf37e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,832f9a17,markdown,fr,680ca8b6a254cbe1,"### Résolution par recherche en largeur
 
-**Rappels** :
-- Utilisez une recherche en largeur (BFS) sur l'espace d'etats (16 etats possibles au total, 10 accessibles).
-- Le mystere classique : la solution optimale necessite **11 traversees** (et non 9), avec une configuration ou les cannibales commencent par partir pour reduire le nombre de missionnaires exposes.
-- Verifiez systematiquement la **securite** après chaque transition : si vous etes perdu sur un etat invalide, `IsValid` doit le rejeter.
-- Vous pouvez tester votre implementation avec la cellule suivante (BFS simple).",,,,,,,,b562f520c0a00e99,,,,,,,,,,,,,,,
+La cellule suivante définit `BfsSolve`, une recherche en largeur (BFS) que les exercices 6 et 7 réutilisent plus bas :
+
+- la file (`Queue`) contient des paires `(etat, liste d'actions)` ;
+- un `HashSet<object>` marque les états déjà rencontrés : sans lui, les allers-retours du bateau feraient tourner la recherche indéfiniment ;
+- la recherche s'arrête au premier état qui vérifie `IsGoal`.
+
+Comme chaque traversée coûte 1, le premier chemin trouvé par BFS est aussi le plus court en nombre de traversées. L'espace compte 20 états valides (10 répartitions sûres × 2 positions du bateau, parmi les 32 triplets possibles), et la solution optimale demande **11 traversées** -- le bateau doit parfois ramener des passagers vers la rive de départ pour y arriver.",,,,,,,,680ca8b6a254cbe1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,faa7ae8c,code,fr,566d3a87f5b9c7ee,"// BFS simple pour tester votre implementation de MissionnairesCannibals.
 // Retourne une liste d'actions et l'etat final, ou null si pas resolu.
 static (List<object> actions, object final) BfsSolve(SearchProblem problem) {
@@ -736,11 +760,11 @@ try {
 } catch (Exception ex) {
     Console.WriteLine(""Completez la classe MissionnairesCannibals pour voir la solution."");
 }",,,,,,,,566d3a87f5b9c7ee,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,9c93a89b,markdown,fr,ecca0eca88bbafb8,"### Interpretation : Missionnaires et Cannibales
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,9c93a89b,markdown,fr,fafb2bcf81dfe3e4,"### Interprétation : Missionnaires et cannibales
 
-**Sortie obtenue** : (Exercice non complete) le notebook affiche le message ""Completez la classe MissionnairesCannibals pour voir la solution."" -- c'est le comportement attendu pour un exercice a completer, conforme a la **convention [C.1]** (stubs sans erreur).
+**Sortie obtenue** : l'espace d'états compte **20 états valides** (10 répartitions sûres × 2 positions du bateau, parmi les 32 triplets possibles), seuls trois chargements sont autorisés au départ -- `(0, 1)`, `(0, 2)` et `(1, 1)` -- et BFS trouve une solution en **11 traversées**. C'est la solution optimale connue : BFS rend le chemin le plus court en nombre de traversées.
 
-**Resolution manuelle** (pour verification ulterieure) :
+**Lecture de la résolution manuelle** (pour suivre le chemin trouvé) :
 
 1. 2 cannibales passent a droite $\to (3, 1, 'D')$
 2. 1 cannibale revient a gauche $\to (3, 2, 'G')$
@@ -754,7 +778,13 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,9c9
 10. 1 cannibale revient a gauche $\to (0, 2, 'G')$
 11. 2 cannibales passent a droite $\to (0, 0, 'D') = $ but !
 
-Total : 11 traversees. C'est l'un des classiques de la litterature IA (cf. AIMA 3e ed., exercice 3.22).",,,,,,,,ecca0eca88bbafb8,,,,,,,,,,,,,,,
+**Points clés** :
+
+1. Les quatre premières traversées ne font passer que des cannibales : tant que les trois missionnaires restent ensemble sur la rive gauche, aucune rive n'est en danger.
+2. À l'étape 6, un missionnaire et un cannibale **reviennent** sur la rive de départ : la solution doit parfois s'éloigner du but pour l'atteindre.
+3. Après l'étape 7, les trois missionnaires sont à droite, et le bateau ne fait plus que des allers-retours de cannibales.
+
+C'est l'un des classiques de la littérature IA (cf. AIMA 3e éd., exercice 3.22).",,,,,,,,fafb2bcf81dfe3e4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,125e0529,markdown,fr,73fc789cd7592bc9,"### Exercice 2 : Taille de l'espace d'etats du 15-puzzle
 
 **Question** : Calculez la taille de l'espace d'etats des taquins $k \times k$ :
@@ -29762,13 +29792,13 @@ En pratique : poids tous ≥ 0 → Dijkstra (plus rapide, O((V+A) log V)) ; un p
 ",,,,,,,,3984c9ae1d9e8445,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,93a8daa3,markdown,fr,e9f62765c3a15d47,"**Lecture chiffree — le bruit annonce et le bruit observe.** La pleine grille 5x5 porte 80 aretes dirigees — 20 horizontales + 20 verticales, doublees par le graphe bidirectionnel — et la sortie rend `48/80 aretes (apres bruit 30 %)` : le parametre dit 30 %, le tirage seed 42 en supprime 32 (40 %), huit de plus que l'esperance 80 x 0,30 = 24 ; un tirage fixe a une realisation, pas sa moyenne. La ligne de Dijkstra se relit en cout moyen : `distance ponderee = 17,11 km` sur 8 sauts, soit 17,11 / 8 = 2,14 km par saut — dans la fourchette du terrain [1,0 ; 3,0], juste au-dessus de son milieu 2,0 : le chemin prefere des aretes plutot rapides sans pouvoir les avoir toutes.
 ",,,,,,,,e9f62765c3a15d47,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,bddb5bf5,markdown,fr,8ba6db5e9bd00be5,"## À retenir
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,bddb5bf5,markdown,fr,3ff3ea4268a2a392,"## À retenir
 
 1. La formalisation C# du 5-tuple passe par une classe abstraite `SearchProblem` : contrairement à Python, le **compilateur** impose l'implémentation des quatre méthodes abstraites (erreur `CS0534` sinon) — le contrat est vérifié à la compilation, pas à l'exécution.
 2. Trois exemples, trois échelles : aspirateur **8 états**, taquin **181 440** accessibles (branchement ~2,67), itinéraire **13 villes / 41 arcs dirigés** (branchement 3,15).
 3. Sur le graphe de ce carnet, l'optimum Bordeaux → Strasbourg vaut **1 045 km via Lyon** : le moteur de parcours **infirme** l'itinéraire déclaré vainqueur à la main — vérifier par un parcours systématique n'est jamais du luxe.
-4. Missionnaires et Cannibales : 16 états possibles dont 10 accessibles, mais la solution optimale exige **11 traversées** — la taille de l'espace ne fait pas la difficulté, les contraintes de validité si.
-5. Le retour `object` (non générique) reflète fidèlement le `Any` Python ; la variante générique `SearchProblem<TState, TAction>` reste disponible en commentaire.",,,,,,,,8ba6db5e9bd00be5,,,,,,,,,,,,,,,
+4. Missionnaires et Cannibales : 20 états valides, dont 16 atteignables depuis l'état initial, mais la solution optimale exige **11 traversées** — la taille de l'espace ne fait pas la difficulté, les contraintes de validité si.
+5. Le retour `object` (non générique) reflète fidèlement le `Any` Python ; la variante générique `SearchProblem<TState, TAction>` reste disponible en commentaire.",,,,,,,,3ff3ea4268a2a392,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,65c29248,markdown,fr,f2fd03cbe368c9f2,"## Vérifiez votre compréhension
 
 1. Que se passe-t-il si une sous-classe de `SearchProblem` n'implémente pas `IsGoal` ?
@@ -42375,3 +42405,81 @@ violations de l'ancien certificat — un morphisme les préserve toutes les deux
 non-morphisme en change au moins une. La cellule suivante confronte ce critère à trois
 expériences : percer le mur au point de traversée, rendre mur une feuille de sol éloignée, et
 balayer le coût du mur pour déplacer le point de passage.",,,,,,,,a7313521dad5e3eb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,75c6313a,markdown,fr,979536e89cfd2d9b,"### Exemple guidé 1 — Missionnaires et cannibales (crédité #25466 — ValentineH5)
+
+> Résolution originale : **ValentineH5**, PR étudiante [#25466](https://github.com/jsboige/CoursIA/pull/25466). Reprise telle quelle ; seule la mise en forme est harmonisée avec les sections voisines.
+
+Trois missionnaires et trois cannibales doivent traverser une rivière dans un bateau qui ne transporte que **1 ou 2 personnes** à la fois. Sur chaque rive, si les cannibales sont plus nombreux que les missionnaires (et qu'il y a au moins un missionnaire), les missionnaires sont dévorés.
+
+**Modélisation** :
+- État : `(missionnaires_gauche, cannibales_gauche, position_bateau)` ; les compteurs restent entre 0 et 3, et la rive droite se déduit de la gauche : `(3 - mG, 3 - cG)`.
+- Action : `(m, c)` = nombre de missionnaires et de cannibales dans le bateau, avec $1 \le m + c \le 2$.
+- But : tout le monde sur la rive droite, `(0, 0, 'D')`.
+
+**Ce que montre la solution** : `IsValid` contrôle les **deux** rives d'un seul coup d'œil — la rive droite se déduit de la gauche, inutile de la transporter dans l'état. `Actions` filtre les chargements en testant l'état résultant : embarquer plus de monde qu'il n'y en a sur la rive du bateau produit un état hors bornes, que `IsValid` rejette tout seul.",,,,,,,,979536e89cfd2d9b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,07839cfa,markdown,fr,649bc4cd7a92947c,"### Exercice 7 : Les cruches d'eau — tous les états ne sont pas atteignables
+
+On dispose d'une cruche A de 3 litres, d'une cruche B de 5 litres et d'un robinet. Les cruches n'ont pas de graduations. Le but est d'obtenir **exactement 4 litres** dans l'une des cruches.
+
+**Tâche** : compléter `WaterJugs`, dont l'état est `(litresA, litresB)`.
+- `InitialState` : les deux cruches sont vides
+- `Actions` : parmi « Remplir A », « Remplir B », « Vider A », « Vider B », « Verser A->B », « Verser B->A », ne garder que celles qui changent l'état
+- `Transition` : un versement s'arrête quand la cruche source est vide ou que la cruche destination est pleine
+- `IsGoal` : l'une des deux cruches contient exactement `cible` litres
+- `StateSpaceSize` : le nombre de contenus possibles, $(c_A + 1) \times (c_B + 1)$
+
+**Vérification** : avec les cruches de 3 et 5 litres, `StateSpaceSize` vaut 24 et `BfsSolve` (défini plus haut) doit trouver une solution en 6 actions.
+
+**Question** : avec des cruches de 2 et 4 litres et une cible de 3 litres, `BfsSolve` ne trouve aucune solution. Pourquoi ? Quelles quantités peuvent apparaître dans une cruche, quelles que soient les actions choisies ?",,,,,,,,649bc4cd7a92947c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,8ce002ed,code,fr,d4b85d91b136ec41,"// Exercice 7 : les cruches d'eau -- tous les etats ne sont pas atteignables.
+// Deux cruches de capacites capA et capB litres, un robinet, une cible.
+// Etat = (litresA, litresB). But : une cruche contient exactement 'cible' litres.
+public class WaterJugs : SearchProblem {
+
+    public static readonly string[] ACTIONS = {
+        ""Remplir A"", ""Remplir B"", ""Vider A"", ""Vider B"", ""Verser A->B"", ""Verser B->A""
+    };
+
+    private readonly int capA, capB, cible;
+
+    public WaterJugs(int capA = 3, int capB = 5, int cible = 4) {
+        this.capA = capA; this.capB = capB; this.cible = cible;
+    }
+
+    public override object InitialState() {
+        // TODO etudiant : les deux cruches sont vides
+        return null;  // TODO etudiant
+    }
+
+    public override IEnumerable<object> Actions(object state) {
+        // TODO etudiant : garder les actions de ACTIONS dont la transition change l'etat
+        return new List<object>();  // TODO etudiant
+    }
+
+    public override object Transition(object state, object action) {
+        // TODO etudiant : remplir a ras bord, vider completement, ou verser
+        //                  jusqu'a vider la source ou remplir la destination
+        return null;  // TODO etudiant
+    }
+
+    public override bool IsGoal(object state) {
+        // TODO etudiant : l'une des deux cruches contient exactement 'cible' litres
+        return false;  // TODO etudiant
+    }
+
+    public override int? StateSpaceSize() {
+        // TODO etudiant : (capA + 1) x (capB + 1) contenus possibles
+        return null;  // TODO etudiant
+    }
+}
+
+// --- Test (decommentez apres avoir complete l'exercice ci-dessus) ---
+// var cruches = new WaterJugs();
+// Console.WriteLine($""Contenus possibles : {cruches.StateSpaceSize()} (attendu 24)"");
+// var (cheminCruches, finalCruches) = BfsSolve(cruches);
+// Console.WriteLine($""Solution en {cheminCruches.Count} actions : {string.Join("" -> "", cheminCruches)} (attendu 6)"");
+// Console.WriteLine($""Etat final : {finalCruches}"");
+// var (chemin24, _) = BfsSolve(new WaterJugs(capA: 2, capB: 4, cible: 3));
+// Console.WriteLine($""Cruches de 2 et 4 litres, cible 3 : {(chemin24 == null ? ""aucune solution"" : chemin24.Count + "" actions"")}"");
+
+Console.WriteLine(""Exercice a completer"");",,,,,,,,d4b85d91b136ec41,,,,,,,,,,,,,,,
