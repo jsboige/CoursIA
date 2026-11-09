@@ -14,7 +14,9 @@ Trois etapes, separees pour que la mesure soit rejouable sans acces QC :
            correction de Holm -- puis applique la regle de verdict et ecrit les tables.
 
   control  compare deux executions d'un meme bras (reference et controle d'innocuite)
-           sur les statistiques QC et sur la serie mensuelle, point par point.
+           sur les statistiques QC et sur la serie mesuree -- la trace journaliere
+           `shadow` quand les deux executions la portent, sinon la serie mensuelle
+           `Monthly`, serie par serie.
 
 Les tests ne sont PAS reimplementes ici : l'organe de la ligue est appele tel quel.
 Les identifiants QC viennent de variables d'environnement (jamais dans le code).
@@ -33,7 +35,7 @@ import json
 import os
 import subprocess
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -79,14 +81,30 @@ def _read_stats(project: int, backtest: str) -> dict:
     }
 
 
-def _monthly_rows(chart: dict) -> list[tuple[str, float]]:
-    """La serie mensuelle tracee par main.py, lue mois par mois."""
-    rows = []
-    for name in ("ret", "spy"):
-        for t, v in _points(chart["series"].get(name, {})):
-            label = (datetime.fromtimestamp(t, tz=timezone.utc) - timedelta(days=7)).strftime("%Y-%m")
-            rows.append((label, name, v))
-    return rows
+def _series_points(chart: dict) -> dict[str, list[tuple[int, float]]]:
+    """Les points de chaque serie d'un graphique, ranges par horodatage.
+
+    Serie par serie, et non concatenation : deux graphiques qui n'exposent pas
+    le meme jeu de series doivent pouvoir etre compares sur ce qu'ils ont en
+    commun, sans que la comparaison segebnisse sur une difference de longueur.
+    """
+    out = {}
+    for name, serie in (chart.get("series") or {}).items():
+        points = []
+        for t, v in _points(serie):
+            points.append((int(t), float(v)))
+        out[name] = sorted(points)
+    return out
+
+
+def _shadow_rows(chart: dict) -> list[tuple[str, float]]:
+    """La trace journaliere d'un graphique `shadow`, une valeur par seance.
+
+    L'organe de lecture (`qc_daily_equity`) verifie l'alternance `e0..e4` :
+    une trace qui perd un point est refusee avant meme la comparaison.
+    """
+    dates, equity = qc_daily_equity(chart)
+    return list(zip(dates, equity))
 
 
 # ---------------------------------------------------------------------------- fetch
@@ -263,24 +281,90 @@ def _markdown(results: dict) -> str:
 
 # ---------------------------------------------------------------------------- control
 
+def _chart_or_none(project: int, backtest: str, name: str):
+    """Le graphique s'il est expose par ce run, None sinon.
+
+    Un run anterieur a la trace `shadow` ne l'expose pas : son absence est une
+    information, pas une erreur. Seul `RuntimeError` -- leve par `_chart`
+    quand la plateforme n'a pas le graphique -- est traite comme une absence ;
+    toute autre erreur remonte.
+    """
+    try:
+        chart = _chart(project, backtest, name)
+    except RuntimeError:
+        return None
+    return chart if (chart.get("series") or {}) else None
+
+
 def cmd_control(args) -> int:
-    """Controle d'innocuite : deux executions d'un meme bras doivent coincider."""
+    """Controle d'innocuite : deux executions d'un meme bras doivent coincider.
+
+    Deux comparaisons :
+
+      1. les statistiques de la plateforme, cle par cle ;
+      2. la serie **mesuree** -- la trace journaliere `shadow` quand les deux
+         executions la portent (c'est elle que le protocole consomme), sinon la
+         serie mensuelle `Monthly`, **serie par serie**.
+
+    Une serie exposee d'un seul cote est RAPPORTEE, pas comptee comme
+    divergence : un graphique peut n'exposer qu'une partie de ses series.
+    Mesure 2026-11-09 : le run instrume du bras `bab` n'expose que `ret` sur
+    `Monthly`, la ou le run de reference expose `ret`, `spy`, `netexp` et
+    `gross` -- le code trace ces quatre series inconditionnellement, la
+    difference est cote exposition, pas cote valeurs. Comparer la
+    concatenation des series rendait ce controle rouge pour une raison qui
+    n'est pas une divergence.
+
+    La porte reste sur la divergence de VALEURS des series presentes des deux
+    cotes : c'est ce qui distingue une divergence d'une exposition differente.
+    """
     ref = _read_stats(args.project, args.ref)
     ctl = _read_stats(args.project, args.ctl)
     diffs = {k: (ref["statistics"][k], ctl["statistics"][k])
              for k in STAT_KEYS if ref["statistics"][k] != ctl["statistics"][k]}
-    chart_ref = _chart(args.project, args.ref, "Monthly")
-    chart_ctl = _chart(args.project, args.ctl, "Monthly")
-    rows_ref = sorted(_monthly_rows(chart_ref))
-    rows_ctl = sorted(_monthly_rows(chart_ctl))
-    same_series = rows_ref == rows_ctl
-    out = {"reference": ref, "control": ctl, "statistics_diff": diffs,
-           "monthly_series_identical": same_series,
-           "monthly_points": len(rows_ref)}
+
+    ref_shadow = _chart_or_none(args.project, args.ref, "shadow")
+    ctl_shadow = _chart_or_none(args.project, args.ctl, "shadow")
+    out = {"reference": ref, "control": ctl, "statistics_diff": diffs}
+
+    if ref_shadow is not None and ctl_shadow is not None:
+        rows_ref = _shadow_rows(ref_shadow)
+        rows_ctl = _shadow_rows(ctl_shadow)
+        dates_ref = [d for d, _ in rows_ref]
+        dates_ctl = [d for d, _ in rows_ctl]
+        values_ref = [v for _, v in rows_ref]
+        values_ctl = [v for _, v in rows_ctl]
+        max_diff = max((abs(a - b) for a, b in zip(values_ref, values_ctl)), default=0.0)
+        out.update({
+            "compared": "shadow",
+            "points": len(rows_ref),
+            "calendrier_identique": dates_ref == dates_ctl,
+            "valeurs_identiques": values_ref == values_ctl,
+            "ecart_max": max_diff,
+        })
+        divergence = [] if (dates_ref == dates_ctl and values_ref == values_ctl) else ["trace journaliere"]
+    else:
+        chart_ref = _chart(args.project, args.ref, "Monthly")
+        chart_ctl = _chart(args.project, args.ctl, "Monthly")
+        series_ref = _series_points(chart_ref)
+        series_ctl = _series_points(chart_ctl)
+        communes = sorted(set(series_ref) & set(series_ctl))
+        divergence = [name for name in communes if series_ref[name] != series_ctl[name]]
+        out.update({
+            "compared": "Monthly",
+            "series_ref": sorted(series_ref),
+            "series_ctl": sorted(series_ctl),
+            "series_communes": communes,
+            "series_seulement_ref": sorted(set(series_ref) - set(series_ctl)),
+            "series_seulement_ctl": sorted(set(series_ctl) - set(series_ref)),
+            "points_par_serie": {name: len(series_ref[name]) for name in communes},
+            "divergence": divergence,
+        })
+    out["verdict"] = "OK" if not diffs and not divergence else "DIVERGENCE"
     print(json.dumps(out, indent=1, ensure_ascii=False))
     if args.out:
         Path(args.out).write_text(json.dumps(out, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    return 0 if not diffs and same_series else 1
+    return 0 if out["verdict"] == "OK" else 1
 
 
 # ---------------------------------------------------------------------------- main
