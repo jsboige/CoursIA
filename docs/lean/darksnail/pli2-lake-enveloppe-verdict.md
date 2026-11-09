@@ -161,7 +161,7 @@ L'EPIC n'est **pas terminée** par l'échec de Pli 2. Pli 3 (et indirectement Pl
 - **Court terme** : PR DEEP/lean portant ce document ; l'arbitrage option (c) est rendu (§4).
 - **Moyen terme** : Pli 2 arrêté, basculer les ressources sur Pli 3 (PostTraining), spécifiquement la mesure de **Cloudflare Clef** sur `jabr/classifier-benchmark` (#17883, #327 benchmark dans le dépôt).
 - **Action user** : **aucune attendue**. L'option (d) — écrire sur le dépôt amont sous notre identité — resterait subordonnée à un accord explicite du user ; elle n'est pas engagée et ne l'est pas dans ce cycle.
-- *Mise à jour 2026-11-08* : la réouverture arbitrée (§8) supersède le pivot `so(M)` ci-dessus pour la branche Lean DarkSnail ; upstream a publié de lui-même, sans sollicitation d'aucune sorte (le §7 est resté respecté), donc **aucune action user n'a été requise**. Les Plis 2.2-2.4 et le déploiement de Pli 3 restent non déployés tant que les issues ouvertes ≥ 400 ; critère de reprise : passer sous 400, ou décision user.
+- *Mise à jour 2026-11-08* : la réouverture arbitrée (§8) supersède le pivot `so(M)` ci-dessus pour la branche Lean DarkSnail ; upstream a publié de lui-même, sans sollicitation d'aucune sorte (le §7 est resté respecté), donc **aucune action user n'a été requise**. Les Plis 2.2-2.4 restent non déployés tant que les issues ouvertes ≥ 400 (critère de reprise : passer sous 400, ou décision user) ; le déploiement de Pli 3 est arbitré « pas maintenant », sans critère de reprise fixé pour lui.
 
 ---
 
@@ -179,7 +179,7 @@ Le code amont n'est pas livré ici : ce répertoire ne porte que la requête, la
 
 **Arbitrage coordinateur** (commentaire c.6725327653, 2026-11-08) : l'**option (d) du §3 est accordée** — c'est le cas de figure qu'elle prévoyait (« Si upstream répond, Pli 2 peut être ré-ouvert »), et upstream a répondu de lui-même, sans sollicitation. Le verdict `INSUFFISANT_BLOQUANT` rendu le 2026-10-22 est **caduc** ; le gel du Pli 2 est levé.
 
-**Portée — dépliage borné.** Les Plis **2.2 à 2.4** — dont 2.2, le lake d'enveloppe in-tree par dépendance — ne sont **pas** déployés, et aucune sous-issue ne leur est créée, tant que le dépôt porte **≥ 400 issues ouvertes** (547 au jour de l'arbitrage). Le déploiement de **Pli 3** est soumis au même critère. **Critère de reprise** : le compte d'issues ouvertes passe sous 400, ou décision user.
+**Portée — dépliage borné.** Les Plis **2.2 à 2.4** — dont 2.2, le lake d'enveloppe in-tree par dépendance — ne sont **pas** déployés, et aucune sous-issue ne leur est créée, tant que le dépôt porte **≥ 400 issues ouvertes** (547 au jour de l'arbitrage). **Critère de reprise** : le compte d'issues ouvertes passe sous 400, ou décision user. Le déploiement de **Pli 3** est arbitré « pas maintenant » ; l'arbitrage ne fixe de critère de reprise que pour les plis 2.2 à 2.4.
 
 ---
 
