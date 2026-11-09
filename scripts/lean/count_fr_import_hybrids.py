@@ -95,7 +95,17 @@ import sys
 import tempfile
 from pathlib import Path
 
-from lake_selectors import LakefileError, Selector, lake_selectors, selected as _selected
+# Le census est aussi chargé par chemin par ses consommateurs et ses tests.
+# Dans ce mode, Python n'ajoute pas automatiquement le dossier du module.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from lake_selectors import (
+    LakefileError,
+    Selector,
+    _selector as _glob_to_selector,
+    lake_selectors,
+    selected as _selected,
+)
 
 RC_OK = 0
 RC_INCIDENT = 2
