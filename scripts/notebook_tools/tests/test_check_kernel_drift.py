@@ -1001,3 +1001,69 @@ class TestDiffSignatures:
         head2 = _nb_ulp("[1.0, 2.0]")
         head2["cells"][0].pop("id")
         assert _diff_signatures_ordinal(b_sig, float_signatures(head2)) == [0]
+
+@pytest.mark.parametrize("alignment", ["id", "ordinal", "reidentified"])
+def test_output_added_is_advisory_but_existing_output_still_drifts(monkeypatch, alignment):
+    import types
+
+    base = _nb("python3", "3.11", "")
+    head = _nb("python3", "3.11", "[1.0, 2.0]")
+    base["cells"][0]["outputs"] = []
+    if alignment != "ordinal":
+        base["cells"][0].update(id="old", source="print(values)")
+        head["cells"][0].update(id="new" if alignment == "reidentified" else "old",
+                                source="print(values)")
+        if alignment == "reidentified":
+            # A common ID activates ID alignment and source-based matching.
+            shared = {"cell_type": "code", "id": "shared", "outputs": []}
+            base["cells"].insert(0, shared.copy())
+            head["cells"].insert(0, shared.copy())
+    monkeypatch.setattr(ckd, "changed_notebooks", lambda _: ["test.ipynb"])
+    monkeypatch.setattr(ckd, "read_blob", lambda ref, _: base if ref == "base" else head)
+    args = types.SimpleNamespace(explain=True)
+    result = ckd._measure("base", args)
+    assert result["findings"] == []
+    expected = {"ordinal": 0, "id": "old", "reidentified": "new"}
+    assert result["output_added"][0]["cells"] == [expected[alignment]]
+
+    base["cells"][-1]["outputs"] = [{"text": "[1.0, 1.0]"}]
+    result = ckd._measure("base", args)
+    assert result["findings"][0]["signature_drift_cells"]
+    assert "NumPy" in result["findings"][0]["probable_causes"][0]
+
+
+def test_output_added_does_not_hide_kernel_drift(monkeypatch):
+    base = _nb("python3", "3.11", "")
+    base["cells"][0]["outputs"] = []
+    head = _nb("other-kernel", "3.11", "[1.0, 2.0]")
+    result = _patched_run(monkeypatch, base, head)
+    assert result["findings"][0]["kernel_diffs"]
+    assert result["findings"][0]["signature_drift_cells"] == []
+
+
+def test_output_added_cli_green_and_mixed_drift_red(monkeypatch, capsys):
+    base = _nb("python3", "3.11", "")
+    base["cells"][0]["outputs"] = []
+    head = _nb("python3", "3.11", "[1.0, 2.0]")
+    monkeypatch.setattr(ckd, "resolve_base", lambda _: "base")
+    monkeypatch.setattr(ckd, "changed_notebooks", lambda _: ["test.ipynb"])
+    monkeypatch.setattr(ckd, "read_blob", lambda ref, _: base if ref == "base" else head)
+    assert ckd.main_with_args(["base", "--json", "--explain"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["output_added"] == [{"notebook": "test.ipynb", "cells": [0]}]
+    assert report["findings"] == []
+
+    base["cells"].append({"cell_type": "code", "outputs": [{"text": "[1.0, 1.0]"}]})
+    head["cells"].append({"cell_type": "code", "outputs": [{"text": "[2.0, 2.0]"}]})
+    assert ckd.main_with_args(["base", "--json", "--explain"]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report["findings"][0]["signature_drift_cells"] == [1]
+    assert report["output_added"][0]["cells"] == [0]
+
+
+def test_existing_non_float_output_is_not_treated_as_empty(monkeypatch):
+    base = _nb("python3", "3.11", "ready")
+    head = _nb("python3", "3.11", "[1.0, 2.0]")
+    result = _patched_run(monkeypatch, base, head)
+    assert result["findings"][0]["signature_drift_cells"] == [0]
+    assert result["output_added"] == []

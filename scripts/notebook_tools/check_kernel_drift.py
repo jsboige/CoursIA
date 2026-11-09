@@ -878,6 +878,36 @@ def _diff_signatures_ordinal(base_sig, head_sig):
     return diffs
 
 
+def _partition_output_added(diffs, base_nb, head_nb):
+    """Separate signatures introduced by a first output from actual drift."""
+    base_cells = [c for c in base_nb.get("cells", [])
+                  if c.get("cell_type") == "code"]
+    head_cells = [c for c in head_nb.get("cells", [])
+                  if c.get("cell_type") == "code"]
+    base_ids = _code_index_by_id(base_nb)
+    head_ids = _code_index_by_id(head_nb)
+    base_sources = _code_source_by_id(base_nb)
+    head_sources = _code_source_by_id(head_nb)
+    base_only = set(base_ids) - set(head_ids)
+    added, drift = [], []
+    for cell in diffs:
+        if isinstance(cell, int):
+            b_idx = h_idx = cell
+        else:
+            h_idx = head_ids[cell]
+            twin = cell if cell in base_ids else next(
+                (b for b in sorted(base_only)
+                 if base_sources.get(b) == head_sources.get(cell)), None)
+            b_idx = base_ids.get(twin, -1)
+        if (0 <= b_idx < len(base_cells) and 0 <= h_idx < len(head_cells)
+                and base_cells[b_idx].get("outputs") == []
+                and head_cells[h_idx].get("outputs")):
+            added.append(cell)
+        else:
+            drift.append(cell)
+    return drift, added
+
+
 # Artefacts qui portent un environnement EPINGLE pour une serie. pyproject.toml
 # d'abord : il porte l'intention (requires-python, dependances) la ou un
 # requirements.txt peut n'etre qu'une liste d'install.
@@ -1103,6 +1133,7 @@ def _measure(base, args_obj):
     body_exempts = body_has_derive_exemption(pr_body)
 
     findings = []
+    output_added = []
     for nb_path in notebooks:
         base_nb = read_blob(base, nb_path)
         head_nb = read_blob("HEAD", nb_path)
@@ -1123,6 +1154,9 @@ def _measure(base, args_obj):
         # Defect 2: pass notebooks for id-based alignment
         sig_diffs = diff_signatures(base_sig, head_sig,
                                      base_nb=base_nb, head_nb=head_nb)
+        sig_diffs, added = _partition_output_added(sig_diffs, base_nb, head_nb)
+        if added:
+            output_added.append({"notebook": nb_path, "cells": added})
         if kernel_diffs or sig_diffs:
             finding = {
                 "notebook": nb_path,
@@ -1188,7 +1222,8 @@ def _measure(base, args_obj):
                 finding["probable_causes"] = causes
             findings.append(finding)
 
-    return {"findings": findings, "base": base, "body_exempts": body_exempts,
+    return {"findings": findings, "output_added": output_added,
+            "base": base, "body_exempts": body_exempts,
             "changed_notebooks": len(notebooks)}
 
 
