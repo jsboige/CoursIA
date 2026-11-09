@@ -151,9 +151,14 @@ else
   sed 's/^/      /' "$TEST_DIR/case_a.err"
 fi
 if [ -s "$INSTALL_LOG" ]; then
-  ko "(a) le dry-run a ecrit (install(1) journalise) -- le dry-run ne doit rien ecrire"
+  ko "(a) le dry-run a appele install(1) -- aucun site d'ecriture ne doit s'executer"
 else
-  ok "(a) dry-run : aucune ecriture (install(1) non journalise)"
+  ok "(a) dry-run : install(1) jamais appele"
+fi
+if [ -s "$SYSTEMCTL_LOG" ]; then
+  ko "(a) le dry-run a appele systemctl ($(tr '\n' ',' < "$SYSTEMCTL_LOG")) -- aucun site d'ecriture ne doit s'executer"
+else
+  ok "(a) dry-run : systemctl jamais appele (les sites d'ecriture sont gates)"
 fi
 
 # (b) mode reel non privilegue -> rc=1, die "root requis".

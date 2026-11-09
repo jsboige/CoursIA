@@ -42,8 +42,8 @@ def test_two_nonprivileged_modes() -> None:
     assert proc.returncode == 0, (
         f"harness rc={proc.returncode}\n{proc.stdout}\n{proc.stderr}"
     )
-    # Second signal : le harnais affiche son propre tallie ; exiger la forme 5/0.
-    assert "5 PASS / 0 FAIL" in proc.stdout, proc.stdout
+    # Le harnais affiche son propre compte de contrôles réussis.
+    assert "6 PASS / 0 FAIL" in proc.stdout, proc.stdout
 
 
 def test_write_guard_organ_green_on_shipped_script() -> None:
@@ -76,3 +76,18 @@ def test_write_guard_organ_red_on_unguarded_script(tmp_path: Path) -> None:
     assert "daemon-reload" not in proc.stderr, (
         "l'organe a signale la ligne GARDEE -- faux positif"
     )
+
+
+def test_write_guard_organ_fails_closed_on_unmatched_backtick(tmp_path: Path) -> None:
+    """Une coquille de formatage ne doit pas blanchir les écritures suivantes."""
+    sample = tmp_path / "unparseable.sh"
+    sample.write_text(
+        "# unmatched ` backtick\n"
+        "systemctl restart docker.service\n",
+        encoding="utf-8",
+    )
+    proc = _run([sys.executable, str(ORGAN), str(sample)], timeout=60)
+    assert proc.returncode == 1, (
+        f"organe vert malgré une source non parsable:\n{proc.stdout}\n{proc.stderr}"
+    )
+    assert "source non parsable" in proc.stderr, proc.stderr

@@ -58,6 +58,8 @@ def blank_code_spans(text: str) -> str:
             out.append(" ")
         else:
             out.append(ch)
+    if in_code:
+        raise ValueError("unmatched backtick: source is not parseable")
     return "".join(out)
 
 
@@ -86,7 +88,11 @@ def main(argv: list[str]) -> int:
         print(f"[write-guards] script absent : {target}", file=sys.stderr)
         return 1
     text = target.read_text(encoding="utf-8")
-    bad = unguarded_writes(text)
+    try:
+        bad = unguarded_writes(text)
+    except ValueError as exc:
+        print(f"[write-guards] source non parsable : {exc}", file=sys.stderr)
+        return 1
     if bad:
         print(f"[write-guards] {len(bad)} commande(s) d'ecriture HORS garde icc_DRY_RUN :", file=sys.stderr)
         for n, line in bad:
