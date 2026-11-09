@@ -26,7 +26,7 @@ Pour la pédagogie Lean (notebooks étudiants), voir [`MyIA.AI.Notebooks/Symboli
 
 | Document | Sujet |
 |---|---|
-| [life-sat-cost-frontier.md](life-sat-cost-frontier.md) | Frontière de coût reproductible du synthétiseur SAT de motifs Life : `FOUND`, `IMPOSSIBLE` borné et `TIMEOUT` honnête. |
+| [life-sat-cost-frontier.md → transients/2026-09-11-…](../transients/2026-09-11-life-sat-cost-frontier.md) | Frontière de coût du synthétiseur SAT de motifs Life (`FOUND`, `IMPOSSIBLE` borné, `TIMEOUT` honnête), campagne du 2026-09-11 — déplacé en lane transiente ; les règles de lecture durables vivent dans [life-components-schema.md](life-components-schema.md), section « Frontière de la synthèse bornée — trois verdicts, jamais deux » (vague 4 #14623) |
 
 ## i18n FR/EN (EPIC #4980)
 
