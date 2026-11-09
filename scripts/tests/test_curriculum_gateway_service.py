@@ -57,26 +57,55 @@ def test_shacl_rejects_invalid_graph(generated_graph, tmp_path):
         service.load(broken)
 
 
-def test_http_gateway(generated_graph):
+def await_gateway(post, process, log, log_path, timeout=90):
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            return post({'action': 'series'})
+        except (URLError, TimeoutError):
+            if process.poll() is not None or time.monotonic() >= deadline:
+                log.flush()
+                pytest.fail("Gateway indisponible :\n" + log_path.read_text(encoding="utf-8"))
+            time.sleep(.25)
+
+
+def test_gateway_failure_shows_log(tmp_path):
+    log_path = tmp_path / 'failed.log'
+    class DeadProcess:
+        def poll(self):
+            return 1
+    def fail_post(_request):
+        raise URLError('refus')
+    with log_path.open('w+', encoding='utf-8') as log:
+        log.write('kernel error: explicit test witness')
+        with pytest.raises(pytest.fail.Exception, match='kernel error: explicit test witness'):
+            await_gateway(fail_post, DeadProcess(), log, log_path)
+
+
+def test_http_gateway(generated_graph, tmp_path):
+    # Le kernel doit employer le même Python que pytest, même si le runner
+    # possède un autre kernelspec python3 dans son environnement partagé.
+    kernelspec = tmp_path / "jupyter" / "kernels" / "python3"
+    kernelspec.mkdir(parents=True)
+    (kernelspec / "kernel.json").write_text(json.dumps({
+        "argv": [sys.executable, "-m", "ipykernel_launcher", "-f", "{connection_file}"],
+        "display_name": "Python du test", "language": "python",
+    }), encoding="utf-8")
+    env = os.environ.copy()
+    env["JUPYTER_PATH"] = str(tmp_path / "jupyter")
+    log_path = tmp_path / "gateway.log"
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
         port = sock.getsockname()[1]
-    process = subprocess.Popen([sys.executable, str(Path(service.__file__)), '--graph', str(generated_graph), '--port', str(port)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    log = log_path.open('w+', encoding='utf-8')
+    process = subprocess.Popen([sys.executable, str(Path(service.__file__)), '--graph', str(generated_graph), '--port', str(port)], stdout=log, stderr=subprocess.STDOUT, env=env, start_new_session=True)
     url = f'http://127.0.0.1:{port}/curriculum/query'
     def post(body):
         request = Request(url, data=json.dumps(body).encode(), headers={'Content-Type': 'application/json'})
         with urlopen(request, timeout=5) as response:
             return json.load(response)
     try:
-        deadline = time.monotonic() + 35
-        while True:
-            try:
-                result = post({'action': 'series'})
-                break
-            except (URLError, TimeoutError):
-                if process.poll() is not None or time.monotonic() >= deadline:
-                    raise
-                time.sleep(.25)
+        result = await_gateway(post, process, log, log_path)
         assert result['status'] == 'ok' and len(result['results']) == 1
         assert post({'action': 'path', 'path': 'Demo/Part/A.ipynb'})['results'] == ['Demo', 'Part', 'Premier']
         assert post({'action': 'prerequisites', 'path': 'Demo/Part/A.ipynb'})['results'] == ['Bases']
@@ -89,3 +118,4 @@ def test_http_gateway(generated_graph):
         except ProcessLookupError:
             pass
         process.wait(timeout=10)
+        log.close()
