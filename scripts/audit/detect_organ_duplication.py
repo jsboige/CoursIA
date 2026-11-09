@@ -174,16 +174,27 @@ def resolve_series(path: str, owners: dict):
     return best
 
 
-def _mask_csharp_line(line: str, in_block_comment: bool) -> tuple[str, bool]:
+def _mask_csharp_line(
+    line: str, in_block_comment: bool, raw_delimiter: int
+) -> tuple[str, bool, int]:
     """Retire commentaires et chaines C# d'une ligne avant la detection de type."""
     out = []
     i = 0
     while i < len(line):
+        if raw_delimiter:
+            end = line.find('"' * raw_delimiter, i)
+            if end < 0:
+                out.append(" " * (len(line) - i))
+                return "".join(out), in_block_comment, raw_delimiter
+            out.append(" " * (end + raw_delimiter - i))
+            i = end + raw_delimiter
+            raw_delimiter = 0
+            continue
         if in_block_comment:
             end = line.find("*/", i)
             if end < 0:
                 out.append(" " * (len(line) - i))
-                return "".join(out), True
+                return "".join(out), True, raw_delimiter
             out.append(" " * (end + 2 - i))
             i = end + 2
             in_block_comment = False
@@ -193,6 +204,13 @@ def _mask_csharp_line(line: str, in_block_comment: bool) -> tuple[str, bool]:
             break
         if line.startswith("/*", i):
             in_block_comment = True
+            continue
+        if line.startswith('"""', i):
+            start = i
+            while i < len(line) and line[i] == '"':
+                i += 1
+            raw_delimiter = i - start
+            out.append(" " * raw_delimiter)
             continue
         if line[i] in {'"', "'"}:
             quote = line[i]
@@ -210,7 +228,7 @@ def _mask_csharp_line(line: str, in_block_comment: bool) -> tuple[str, bool]:
             continue
         out.append(line[i])
         i += 1
-    return "".join(out), in_block_comment
+    return "".join(out), in_block_comment, raw_delimiter
 
 
 def parse_patch(patch_text: str, owners: dict, symbol_owners: dict):
@@ -218,11 +236,17 @@ def parse_patch(patch_text: str, owners: dict, symbol_owners: dict):
     collisions = []
     current_file = None
     csharp_block_comment = False
+    csharp_raw_delimiter = 0
     for line in patch_text.splitlines():
         m = DIFF_FILE_RE.match(line)
         if m:
             current_file = m.group(2)
             csharp_block_comment = False
+            csharp_raw_delimiter = 0
+            continue
+        if line.startswith("@@ "):
+            csharp_block_comment = False
+            csharp_raw_delimiter = 0
             continue
         if current_file is None or current_file in SELF_FIXTURE_FILES:
             continue
@@ -230,8 +254,8 @@ def parse_patch(patch_text: str, owners: dict, symbol_owners: dict):
             continue
         if current_file.endswith(".cs"):
             if line.startswith(" "):
-                _, csharp_block_comment = _mask_csharp_line(
-                    line[1:], csharp_block_comment
+                _, csharp_block_comment, csharp_raw_delimiter = _mask_csharp_line(
+                    line[1:], csharp_block_comment, csharp_raw_delimiter
                 )
                 continue
             if not line.startswith("+"):
@@ -242,8 +266,8 @@ def parse_patch(patch_text: str, owners: dict, symbol_owners: dict):
         if content.startswith("#"):
             continue
         if current_file.endswith(".cs"):
-            content, csharp_block_comment = _mask_csharp_line(
-                line[1:], csharp_block_comment
+            content, csharp_block_comment, csharp_raw_delimiter = _mask_csharp_line(
+                line[1:], csharp_block_comment, csharp_raw_delimiter
             )
             matches = list(CSHARP_TYPE_RE.finditer(content))
         else:

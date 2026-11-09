@@ -802,3 +802,50 @@ def test_emit_lean_index_roundtrip(tmp_path, capsys):
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+def test_csharp_multiline_raw_strings_mask_types_and_leave_real_types_visible():
+    """Les délimiteurs longs, le contexte et le code après fermeture sont lus."""
+    mod = _load_detector()
+    patch = '''diff --git a/Example.cs b/Example.cs
+--- a/Example.cs
++++ b/Example.cs
+@@ -1,4 +1,8 @@
+ var sample = $$""""
++public record Fallacy(string Text);
++""" encore du texte
++public class VettingLevel { }
++""""; public enum Fallacy { None }
++var single = """public record VettingLevel(int Value);"""; public class VettingLevel { }
+'''
+    owners = {"Argumentum": "owner/argumentum", "Fleet": "owner/fleet"}
+    symbols = {"Fallacy": "Argumentum", "VettingLevel": "Fleet"}
+    assert mod.parse_patch(patch, owners, symbols) == [
+        ("Example.cs", None, "Argumentum", "Fallacy"),
+        ("Example.cs", None, "Fleet", "VettingLevel"),
+    ]
+
+
+def test_csharp_raw_string_state_is_reset_at_new_hunk_and_file():
+    """Un état tronqué par le diff ne doit pas masquer les déclarations suivantes."""
+    mod = _load_detector()
+    patch = '''diff --git a/First.cs b/First.cs
+--- a/First.cs
++++ b/First.cs
+@@ -1,0 +1,1 @@
++var sample = """
+@@ -20,0 +21,1 @@
++public record Fallacy(string Text);
++var second = """
+diff --git a/Second.cs b/Second.cs
+--- a/Second.cs
++++ b/Second.cs
+@@ -0,0 +1,1 @@
++public class VettingLevel { }
+'''
+    owners = {"Argumentum": "owner/argumentum", "Fleet": "owner/fleet"}
+    symbols = {"Fallacy": "Argumentum", "VettingLevel": "Fleet"}
+    assert mod.parse_patch(patch, owners, symbols) == [
+        ("First.cs", None, "Argumentum", "Fallacy"),
+        ("Second.cs", None, "Fleet", "VettingLevel"),
+    ]
