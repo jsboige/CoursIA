@@ -17438,43 +17438,49 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,interp-co
 | problème combinatoire structure, cycles a eviter | Tabu Search |
 | Parallelisme facile requis | Random-Restart Hill Climbing |
 | très grand espace, population de solutions | Algorithmes génétiques (voir Search-5) |",,,,,,,,99c1cbefa056f786,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,section-6-exercises,markdown,fr,8c24de8d135f8de0,"***
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,section-6-exercises,markdown,fr,4aa6e6d523572541,"***
 
-## 6. Exercices
-
-### Exercice 1 : Random-Restart Hill Climbing pour 8-Reines
-
-**Enonce** : Implementez un Random-Restart Hill Climbing pour le 8-Reines. L'algorithme doit :
-1. Lancer `hill_climbing_nqueens(8)` depuis un etat aleatoire
-2. Si echec (conflits > 0), relancer avec un nouvel etat aleatoire
-3. Repeter jusqu'a succes ou un nombre max de redemarrages
-4. Compter le nombre total de redemarrages et le temps total
-
-**Question** : combien de redemarrages faut-il en moyenne pour trouver une solution ?",,,,,,,,8c24de8d135f8de0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,exercise-1,code,fr,4df78082c925f08f,"# Exercice 1 : Random-Restart Hill Climbing
-
-# Indice : utiliser hill_climbing_nqueens(n) dans une boucle
+## 6. Exemple guidé et exercices",,,,,,,,4aa6e6d523572541,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,exercise-1,code,fr,0aeea987130afc26,"# Exercice 1 : Random-Restart Hill Climbing
+import time
+import statistics
 
 def random_restart_hc_nqueens(n=8, max_restarts=100):
     """"""Random-Restart Hill Climbing pour N-Reines.
 
     Retourne : (queens, conflits, nombre_redemarrages, temps_total_ms)
     """"""
-    # TODO etudiant : boucler en appelant hill_climbing_nqueens(n)
-    # jusqu'a obtenir conflits == 0 ou atteindre max_restarts
-    return None  # TODO etudiant
+    start = time.perf_counter()
+    best_queens, best_conflicts = None, float(""inf"")
+
+    for restart in range(max_restarts + 1):   # 1er essai + max_restarts relances
+        queens, conflicts, _, _ = hill_climbing_nqueens(n)
+        if conflicts < best_conflicts:        # garder le meilleur en cas d'echec total
+            best_queens, best_conflicts = queens, conflicts
+        if conflicts == 0:
+            break
+
+    temps_ms = (time.perf_counter() - start) * 1000
+    return best_queens, best_conflicts, restart, temps_ms
 
 
-# --- Test (decommentez apres avoir complete l'exercice) ---
-# q, c, restarts, t = random_restart_hc_nqueens(8)
-# print(f""Solution trouvee : {q}"")
-# print(f""Conflits : {c}"")
-# print(f""Redemarrages : {restarts}"")
-# print(f""Temps : {t:.2f} ms"")
+n_runs = 50
+results = [random_restart_hc_nqueens(8) for _ in range(n_runs)]
 
-print(""Exercice a completer"")",,,,,,,,4df78082c925f08f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,2a520a9a,markdown,fr,1e7b6b4e95487f5e,"(Exercice non complete) - la fonction `random_restart_hc_nqueens` etant un squelette, aucun benchmark n'a ete execute. Une fois completee, l'etudiant doit mesurer le nombre moyen de redemarrages necessaires pour resoudre le problème des 8-Reines sur plusieurs essais.
-",,,,,,,,1e7b6b4e95487f5e,,,,,,,,,,,,,,,
+print(f""{'Run':<6} {'Conflits':<10} {'Redemarrages':<14} {'Temps (ms)':<10}"")
+print(""-"" * 42)
+for i, (q, c, restarts, t) in enumerate(results, 1):
+    print(f""{i:<6} {c:<10} {restarts:<14} {t:<10.2f}"")
+print(""-"" * 42)
+print(f""{'Moy.':<6} {statistics.mean(r[1] for r in results):<10.2f} ""
+      f""{statistics.mean(r[2] for r in results):<14.2f} ""
+      f""{statistics.mean(r[3] for r in results):<10.2f}"")
+print(f""Taux de succes : {sum(r[1] == 0 for r in results)}/{n_runs}"")
+",,,,,,,,0aeea987130afc26,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,2a520a9a,markdown,fr,5c780799b4779349,"### Lecture du résultat : Random-Restart sur le 8-Reines
+
+Le Random-Restart Hill Climbing trouve une solution au 8-Reines dans tous les runs (0 conflit), là où le hill climbing seul reste souvent bloqué dans un optimum local.
+Il faut en moyenne entre 5,5 et 6 redémarrages pour trouver une solution. Cela correspond à la théorie : une tentative de hill climbing réussit environ 14 % du temps.",,,,,,,,5c780799b4779349,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,exercise-2-intro,markdown,fr,88df71c9889a325f,"### Exercice 2 : Experimenter les programmes de refroidissement SA
 
 **Enonce** : Comparez trois valeurs de $\alpha$ (0.99, 0.995, 0.999) pour le refroidissement exponentiel de SA sur le 20-Reines. Pour chaque valeur, lancez 20 essais et mesurez :
@@ -17547,7 +17553,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,2a8af4c1,
 4. Commentez : dans quels cas le stochastic hill climbing est-il preferable au steepest-ascent ?
 
 **Indice** : le voisinage d'un seul mouvement aleatoire est beaucoup plus petit a explorer que l'ensemble de tous les mouvements possibles. Cela rend chaque itération plus rapide mais peut necessiter plus d'itérations totales.",,,,,,,,b8e6dc28b667ae70,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,b0973556,code,fr,dfa402465420323d,"# Exercice 4 : Stochastic Hill Climbing pour N-Reines
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,b0973556,code,fr,3017b80baa32fe66,"# Exercice 4 : Stochastic Hill Climbing pour N-Reines
 
 def stochastic_hc_nqueens(n, max_iter=5000):
     """"""Stochastic Hill Climbing pour N-Reines (minimise les conflits).
@@ -17573,7 +17579,7 @@ def stochastic_hc_nqueens(n, max_iter=5000):
 # TODO etudiant : lancer 20 essais pour chaque algorithme
 # - hill_climbing_nqueens (steepest-ascent, deja implemente)
 # - stochastic_hc_nqueens (votre implementation)
-# - random_restart_hc_nqueens (deja implemente a l'exercice 1)
+# - random_restart_hc_nqueens (deja implemente a l'exemple guide 1)
 #
 # Pour chaque algorithme, collecter :
 # - taux de succes (conflits == 0)
@@ -17582,7 +17588,8 @@ def stochastic_hc_nqueens(n, max_iter=5000):
 #
 # Afficher les resultats dans un tableau comparatif
 
-print(""Exercice a completer"")",,,,,,,,dfa402465420323d,,,,,,,,,,,,,,,
+print(""Exercice a completer"")
+",,,,,,,,3017b80baa32fe66,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,dc4c7a01,markdown,fr,8310965b69973e65,"Le stochastic hill climbing est preferable lorsque l'espace de recherche contient beaucoup de plateaux ou minima locaux, ou lorsque l'on veut eviter le cout eleve d'explorer tous les voisins (comme steepest-ascent).
 
 (Exercice non complete) - la fonction `stochastic_hc_nqueens` etant un squelette, la comparaison du taux de succes par rapport au steepest-ascent n'a pas ete mesuree. Une fois complete, l'etudiant doit executer les deux variantes sur plusieurs essais et comparer le taux de succes ainsi que le nombre d'itérations.
@@ -42483,3 +42490,47 @@ public class WaterJugs : SearchProblem {
 // Console.WriteLine($""Cruches de 2 et 4 litres, cible 3 : {(chemin24 == null ? ""aucune solution"" : chemin24.Count + "" actions"")}"");
 
 Console.WriteLine(""Exercice a completer"");",,,,,,,,d4b85d91b136ec41,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,997b5bb3,markdown,fr,2e41b1d47ea3f28a,"### Exemple guidé 1 — Random-Restart Hill Climbing pour 8-Reines (crédité #25344 — Shinigamy12)
+
+> Résolution originale : **Shinigamy12**, PR étudiante
+> [#25344](https://github.com/jsboige/CoursIA/pull/25344). Reprise telle quelle ;
+> seule la mise en forme est harmonisée avec les sections voisines.
+
+Le Hill Climbing de la section 4 s'arrête souvent sur un optimum local : sur le
+8-Reines, une tentative isolée n'atteint pas toujours zéro conflit. Le remède est
+de relancer la recherche depuis un nouvel état aléatoire, autant de fois qu'il le
+faut — c'est le **Random-Restart Hill Climbing**, déjà croisé sur une fonction 1D
+en section 2 et appliqué ici aux N-Reines.
+
+**Ce que fait la résolution** :
+1. Lancer `hill_climbing_nqueens(8)` depuis un état aléatoire
+2. Si échec (conflits > 0), relancer avec un nouvel état aléatoire
+3. Répéter jusqu'à succès ou nombre max de redémarrages
+4. Compter le nombre total de redémarrages et le temps total
+
+**Question posée** : combien de redémarrages faut-il en moyenne pour trouver une
+solution ? La mesure porte sur une série d'exécutions complètes.",,,,,,,,2e41b1d47ea3f28a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,2b08e5e8,markdown,fr,aa01cf0b95609c1b,"### Exercice 5 : Le coût du redémarrage quand la taille du problème croît
+
+**Enoncé** : l'exemple guidé 1 mesure le nombre moyen de redémarrages pour le 8-Reines. Que devient ce coût quand la taille du problème change ? Pour `n` parmi 6, 8, 10 et 12 :
+1. Lancez 20 exécutions de `random_restart_hc_nqueens(n, max_restarts=200)` pour chaque valeur de `n`
+2. Mesurez le nombre moyen de redémarrages et le taux de succès par valeur de `n`
+3. Affichez les résultats dans un tableau à une ligne par valeur de `n`
+
+**Question** : le nombre moyen de redémarrages évolue-t-il régulièrement avec `n` ? Reliez la tendance observée au taux de succès `p(n)` d'une tentative isolée de Hill Climbing, que vous mesurerez directement sur quelques centaines d'appels à `hill_climbing_nqueens(n)`. Le 8-Reines est-il un cas représentatif ?
+
+**Indice** : si `p(n)` est la probabilité qu'une tentative isolée trouve une solution, le nombre moyen de redémarrages avant succès vaut environ `(1 - p) / p`. Vérifiez cette relation sur vos mesures. Attention au coût : une tentative coûte de plus en plus cher quand `n` croît (chaque pas examine tous les déplacements d'une reine), restez donc sur ces tailles avant de vous aventurer plus loin.",,,,,,,,aa01cf0b95609c1b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,3870ce3b,code,fr,5067c6dd461dafce,"# Exercice 5 : Effet de la taille du probleme sur le cout du redemarrage
+
+# TODO etudiant : pour chaque n dans [6, 8, 10, 12] :
+#   - lancer 20 executions de random_restart_hc_nqueens(n, max_restarts=200)
+#   - collecter pour chaque execution le nombre de redemarrages
+#     et le succes (conflits == 0)
+#   - afficher une ligne par n : redemarrages moyens, taux de succes
+# Puis : mesurer le taux de succes p(n) d'une tentative isolee
+#   (quelques centaines d'appels a hill_climbing_nqueens(n))
+#   et comparer (1 - p) / p aux redemarrages moyens mesures
+
+resultats_par_taille = None  # TODO etudiant
+
+print(""Exercice 5 a completer"")",,,,,,,,5067c6dd461dafce,,,,,,,,,,,,,,,
