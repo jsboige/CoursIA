@@ -12,9 +12,12 @@
 # lean-i18n-drift.yml:i18n-drift (5 min), validation-matrix.yml:validate
 # (10 min). Une cle laissee sur un job borne n'est pas inerte : elle compte
 # le job comme « baseline » et absorbe silencieusement toute regression qui
-# retirerait sa borne. lean-formal-logic.yml:target-coverage reste : le
-# fichier n'existe plus, la cle ne couvre donc aucun site vivant, et la
-# laisser ne peut masquer aucune borne.
+# retirerait sa borne.
+#
+# 2026-11-08 (#23349, maintenance) : retiree la cle orpheline
+# lean-formal-logic.yml:target-coverage : le workflow n'existe plus. Le mode
+# --show-stale-baseline du verificateur aide a reperer ces entrees mortes sans
+# modifier la baseline ni changer le cliquet bloquant.
 #
 # 2026-11-09 (#23349, tranche 3) : retirees les douze cles dont le job porte
 # desormais une borne -- grain-orphans-sweep, lane-claim-epic-wide-advisory,
@@ -22,8 +25,6 @@
 # machine-dep-timing-inventory, markdown-claims-output-advisory,
 # markdown-deaccent-advisory, markdown-table-guard, md-content-loss-gate,
 # mermaid-fill-color-advisory, notebook-output-collapse-ratchet.
-# `lean-formal-logic.yml:target-coverage` reste : le fichier n'existe plus,
-# la cle ne couvre aucun site vivant.
 bare-cross-dir-load-gate.yml:bare-cross-dir-load
 base-not-main-advisory.yml:signal
 candidate-delivered-advisory.yml:sweep
@@ -39,7 +40,6 @@ epic-charter-advisory.yml:charter
 epic-neglect-sweep.yml:sweep
 exercises-advisory.yml:exercises-advisory
 fabricated-output-gate.yml:fabricated-output
-lean-formal-logic.yml:target-coverage
 notebook-output-failure-ratchet.yml:ratchet
 notebook-output-flood-ratchet.yml:ratchet
 orphan-branch-scan.yml:sweep
