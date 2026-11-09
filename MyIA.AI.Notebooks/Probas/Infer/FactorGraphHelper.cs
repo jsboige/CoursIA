@@ -128,7 +128,7 @@ public static class FactorGraphHelper
     /// endroits (cwd du process, cwd alternatif, dossier courant, dossier du
     /// binaire) et on agrege. Voir issue #18672.
     /// </summary>
-    private static string[] GetFactorGraphSearchDirectories()
+    internal static string[] GetFactorGraphSearchDirectories(string? scope = null)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var list = new List<string>();
@@ -164,6 +164,15 @@ public static class FactorGraphHelper
         foreach (var root in roots)
         {
             Add(Path.Combine(root, "GeneratedSource"));
+            // Portee par carnet/modele : les artefacts ecrits sous un sous-dossier de
+            // nom de portee (ConfigureEngine(engine, scope) -> GeneratedSource/<scope>/)
+            // ne sont pas vus par TopDirectoryOnly au niveau GeneratedSource/ ; on
+            // l'ajoute explicitement pour que la portee devienne effective (defaut
+            // #25276, remede 1+2).
+            if (!string.IsNullOrEmpty(scope))
+            {
+                Add(Path.Combine(root, "GeneratedSource", scope));
+            }
         }
 
         return list.ToArray();
@@ -171,11 +180,11 @@ public static class FactorGraphHelper
 
     public static string GetLatestFactorGraphHtml(int maxWidth = 800, string? modelScope = null)
     {
-        var gvFiles = GetFactorGraphSearchDirectories()
+        var gvFiles = GetFactorGraphSearchDirectories(modelScope)
             .SelectMany(d => SafeEnumerateFiles(d, "Model_*.gv"))
             .Distinct()
             .ToArray();
-        var svgFiles = GetFactorGraphSearchDirectories()
+        var svgFiles = GetFactorGraphSearchDirectories(modelScope)
             .SelectMany(d => SafeEnumerateFiles(d, "Model_*.svg"))
             .Distinct()
             .ToArray();
@@ -377,7 +386,7 @@ public static class FactorGraphHelper
     /// </summary>
     public static string ConvertAndGetLatestGvHtml(int maxWidth = 800, string? modelScope = null)
     {
-        var gvFiles = GetFactorGraphSearchDirectories()
+        var gvFiles = GetFactorGraphSearchDirectories(modelScope)
             .SelectMany(d => SafeEnumerateFiles(d, "Model_*.gv"))
             .Distinct()
             .ToArray();
@@ -418,10 +427,17 @@ public static class FactorGraphHelper
     /// <summary>
     /// Configure un InferenceEngine pour generer des factor graphs
     /// </summary>
-    public static void ConfigureEngine(dynamic engine)
+    public static void ConfigureEngine(dynamic engine, string? scope = null)
     {
         engine.ShowFactorGraph = true;
         engine.Compiler.WriteSourceFiles = true;
-        engine.Compiler.GeneratedSourceFolder = "GeneratedSource";
+        // Portee par carnet/modele : ecrire les artefacts sous GeneratedSource/<scope>/
+        // pour que la selection par portee (SelectFactorGraphFile) devienne effective.
+        // Les noms de fichiers Infer.NET sont des horodatages purs (Model_<ts>.gv),
+        // sans identite de modele : la portee ne peut matcher que le chemin, donc le
+        // dossier d'ecriture doit le porter (defaut #25276, remede 1+2).
+        engine.Compiler.GeneratedSourceFolder = string.IsNullOrEmpty(scope)
+            ? "GeneratedSource"
+            : Path.Combine("GeneratedSource", scope);
     }
 }
