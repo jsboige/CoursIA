@@ -448,7 +448,7 @@ IIT/
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
 │   ├── ICT-*.ipynb             # Notebooks numérotés (ICT-1 à ICT-39) + raffinement/extension (suffixes lettrés + non-numérotés), 7 strates — cf son README pour la liste complète (Epic #4588)
-│   ├── ict/                    # Package Python autonome (simulations + mesures, 88 modules — pip install -e .)
+│   ├── ict/                    # Package Python autonome (simulations + mesures — pip install -e .)
 │   ├── assets/                 # Figures in-situ du README + MANIFEST de provenance
 │   ├── runs/                   # Artefacts d'exécution (ex. scale-up GRPO d'ICT-25)
 │   ├── scripts/                # Extraction des traces GPU (SAE, J-Lens) et scripts pilotes
@@ -587,7 +587,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 112
-breakdown: ICT-Series=102, root=10
-maturity: BETA=90, DRAFT=18, ALPHA=4
+pedagogical_count: 113
+breakdown: ICT-Series=103, root=10
+maturity: BETA=91, DRAFT=18, ALPHA=4
 -->

@@ -22,8 +22,8 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 |----------|--------|
 | Notebooks | 385 |
 | PRODUCTION | 0 |
-| BETA | 374 |
-| ALPHA | 11 |
+| BETA | 373 |
+| ALPHA | 12 |
 
 ## SymbolicAI (1 notebooks)
 
@@ -120,7 +120,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 41 | [Geometry 04b — IMO-AG-30 : la revanche de la méthode de…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-04b-IMO-AG-30-Python.ipynb) | BETA | Non |
 | 42 | [Geometry 05 — Prouvé par Gröbner, prouvé par le noyau](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-05-Pont-Formel-Python.ipynb) | BETA | Non |
 | 43 | [KNOTS-01 — Conway, les Nœuds et la Preuve de Piccirillo](../../MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb) | BETA | Non |
-| 44 | [KNOTS-02 — Invariants de Nœuds : Calcul et Vérification](../../MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb) | BETA | Non |
+| 44 | [KNOTS-02 — Invariants de Nœuds : Calcul et Vérification](../../MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb) | ALPHA | Non |
 | 45 | [KNOTS-03 — Le lake knot_lean par ses déclarations…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb) | BETA | Non |
 | 46 | [KNOTS-04 — Géométrie hyperbolique : tétraèdres idéaux,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-04-Geometrie-Hyperbolique-Python.ipynb) | BETA | Non |
 | 47 | [KNOTS-05 — Dynamique des tresses : action d'Artin,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-05-Dynamique-Tresses-Python.ipynb) | BETA | Non |
@@ -230,26 +230,26 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 |---|----------|----------|------------|
 | 1 | [Planners-00-Setup-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb) | BETA | Oui |
 | 2 | [Planners-01-Introduction-Csharp : la planification…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb) | BETA | Oui |
-| 3 | [Planners-01-Introduction-Python a la Planification Automatique](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb) | BETA | Oui |
+| 3 | [Planners-01-Introduction-Python a la Planification…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb) | BETA | Oui |
 | 4 | [Planners-02-PDDL-Basics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb) | BETA | Oui |
 | 5 | [Planners-02-PDDL-Basics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb) | BETA | Oui |
 | 6 | [Planners-3 : Recherche dans l'Espace d'États — twin C#…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb) | BETA | Oui |
-| 7 | [Planners-03-State-Space-Python - Recherche dans l'Espace…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb) | BETA | Oui |
+| 7 | [Planners-03-State-Space-Python - Recherche dans…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb) | BETA | Oui |
 | 8 | [Planners-04-Fast-Downward-Python (C#)](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb) | BETA | Oui |
-| 9 | [Planners-04-Fast-Downward-Python - Planificateur Classique](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb) | BETA | Oui |
+| 9 | [Planners-04-Fast-Downward-Python - Planificateur…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb) | BETA | Oui |
 | 10 | [Planners-05-Heuristics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb) | BETA | Oui |
 | 11 | [Planners-5-Heuristiques en Planification](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb) | BETA | Oui |
 | 12 | [Planners-5b — Admissibilité de la relaxation…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb) | BETA | Non |
 | 13 | [Planners-5c — Le différentiel d'atteignabilité : ce que…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb) | BETA | Oui |
 | 14 | [Planners-06-Domains-Csharp — Jumeau C# : planificateur…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb) | BETA | Oui |
 | 15 | [Planners-06-Domains-Python - Domaines Classiques de…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb) | BETA | Oui |
-| 16 | [Planners-13 — Mesurer la qualité des plans (benchmark…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb) | BETA | Oui |
-| 17 | [Planners-07-OR-Tools-Csharp — Jumeau C# : solveur CP…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb) | BETA | Oui |
-| 18 | [Planners-07-OR-Tools-Python - Programmation par Contraintes](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb) | BETA | Oui |
-| 19 | [Planners-08-Temporal-Python — Planification Temporelle (twin…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb) | BETA | Oui |
-| 20 | [Planners-08-Temporal-Python - Planification Temporelle](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb) | BETA | Oui |
-| 21 | [Planners-09-HTN-Python (C#)](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb) | BETA | Oui |
-| 22 | [Planners-09-HTN-Python - Planification Hiérarchique](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb) | BETA | Oui |
+| 16 | [Planners-07-OR-Tools-Csharp — Jumeau C# : solveur CP…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb) | BETA | Oui |
+| 17 | [Planners-07-OR-Tools-Python - Programmation par…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb) | BETA | Oui |
+| 18 | [Planners-08-Temporal-Python — Planification Temporelle…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb) | BETA | Oui |
+| 19 | [Planners-08-Temporal-Python - Planification Temporelle](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb) | BETA | Oui |
+| 20 | [Planners-09-HTN-Python (C#)](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb) | BETA | Oui |
+| 21 | [Planners-09-HTN-Python - Planification Hiérarchique](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb) | BETA | Oui |
+| 22 | [Planners-13 — Mesurer la qualité des plans (benchmark…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb) | BETA | Oui |
 | 23 | [Planners-10: LLMs pour la Planification](../../MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb) | BETA | Non |
 | 24 | [Planners-10b: Le LLM comme reducteur d'espace de…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb) | BETA | Non |
 | 25 | [Planners-11: Unified Planning](../../MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb) | BETA | Oui |
@@ -316,32 +316,32 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 |---|----------|----------|------------|
 | 1 | [Introduction au web sémantique avec RDF.Net](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb) | BETA | Non |
 | 2 | [SW-1-Setup](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-01-Setup-CSharp.ipynb) | BETA | Oui |
-| 3 | [SW-10-RDFStar-CSharp — Jumeau C# : annoter des triplets…](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb) | BETA | Oui |
-| 4 | [SW-10-RDFStar-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb) | BETA | Oui |
-| 5 | [SW-11-CSharp-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb) | ALPHA | Oui |
-| 6 | [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) | ALPHA | Oui |
-| 7 | [SW-12-GraphRAG-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb) | BETA | Non |
-| 8 | [SW-13-Reasoners](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb) | BETA | Oui |
-| 9 | [SW-13 (C#) : Raisonneurs RDF/OWL — Inferer des…](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb) | BETA | Oui |
-| 10 | [SW-14 — Le coup ontologique comme diff de graphe…](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-Python.ipynb) | BETA | Oui |
-| 11 | [SW-15 — Le coup argumentatif : greffer AIF sur le coup…](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-15-Coup-Argumentatif-Python.ipynb) | BETA | Oui |
-| 12 | [SW-16 — Proof-Carrying Ontologies : le certificat…](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-16-ProofCarryingOntologies-Python.ipynb) | BETA | Oui |
-| 13 | [SW-2-RDFBasics](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb) | BETA | Oui |
-| 14 | [SW-02b-RDFBasics-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02b-RDFBasics-Python.ipynb) | BETA | Oui |
-| 15 | [SW-3-GraphOperations](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb) | BETA | Oui |
-| 16 | [SW-03b-GraphOperations-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03b-GraphOperations-Python.ipynb) | BETA | Oui |
-| 17 | [SW-4-SPARQL](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04-SPARQL-CSharp.ipynb) | BETA | Oui |
-| 18 | [SW-04b-SPARQL-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04b-SPARQL-Python.ipynb) | BETA | Oui |
-| 19 | [SW-5-LinkedData](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb) | BETA | Non |
-| 20 | [SW-05b-LinkedData-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05b-LinkedData-Python.ipynb) | BETA | Non |
-| 21 | [SW-6-RDFS](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-CSharp.ipynb) | BETA | Oui |
-| 22 | [SW-06b-RDFS-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06b-RDFS-Python.ipynb) | BETA | Oui |
-| 23 | [SW-7-OWL](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb) | BETA | Oui |
-| 24 | [SW-07b-OWL-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb) | BETA | Non |
-| 25 | [SW-08-SHACL-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb) | BETA | Oui |
-| 26 | [SW-08-SHACL-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-Python.ipynb) | BETA | Oui |
-| 27 | [SW-09-JSONLD-CSharp -- JSON-LD avec dotNetRDF (twin C#)](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb) | BETA | Oui |
-| 28 | [SW-09-JSONLD-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb) | BETA | Oui |
+| 3 | [SW-2-RDFBasics](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb) | BETA | Oui |
+| 4 | [SW-02b-RDFBasics-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02b-RDFBasics-Python.ipynb) | BETA | Oui |
+| 5 | [SW-3-GraphOperations](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb) | BETA | Oui |
+| 6 | [SW-03b-GraphOperations-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03b-GraphOperations-Python.ipynb) | BETA | Oui |
+| 7 | [SW-4-SPARQL](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04-SPARQL-CSharp.ipynb) | BETA | Oui |
+| 8 | [SW-04b-SPARQL-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04b-SPARQL-Python.ipynb) | BETA | Oui |
+| 9 | [SW-5-LinkedData](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb) | BETA | Non |
+| 10 | [SW-05b-LinkedData-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05b-LinkedData-Python.ipynb) | BETA | Non |
+| 11 | [SW-6-RDFS](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-CSharp.ipynb) | BETA | Oui |
+| 12 | [SW-06b-RDFS-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06b-RDFS-Python.ipynb) | BETA | Oui |
+| 13 | [SW-7-OWL](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb) | BETA | Oui |
+| 14 | [SW-07b-OWL-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb) | BETA | Non |
+| 15 | [SW-08-SHACL-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb) | BETA | Oui |
+| 16 | [SW-08-SHACL-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-Python.ipynb) | BETA | Oui |
+| 17 | [SW-09-JSONLD-CSharp -- JSON-LD avec dotNetRDF (twin C#)](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb) | BETA | Oui |
+| 18 | [SW-09-JSONLD-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb) | BETA | Oui |
+| 19 | [SW-10-RDFStar-CSharp — Jumeau C# : annoter des triplets…](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb) | BETA | Oui |
+| 20 | [SW-10-RDFStar-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb) | BETA | Oui |
+| 21 | [SW-11-CSharp-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb) | ALPHA | Oui |
+| 22 | [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) | ALPHA | Oui |
+| 23 | [SW-12-GraphRAG-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb) | BETA | Non |
+| 24 | [SW-13 (C#) : Raisonneurs RDF/OWL — Inferer des…](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb) | BETA | Oui |
+| 25 | [SW-13-Reasoners](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb) | BETA | Oui |
+| 26 | [SW-14 — Le coup ontologique comme diff de graphe…](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-Python.ipynb) | BETA | Oui |
+| 27 | [SW-15 — Le coup argumentatif : greffer AIF sur le coup…](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-15-Coup-Argumentatif-Python.ipynb) | BETA | Oui |
+| 28 | [SW-16 — Proof-Carrying Ontologies : le certificat…](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-16-ProofCarryingOntologies-Python.ipynb) | BETA | Oui |
 
 ## SymbolicAI/SmartContracts (31 notebooks)
 
