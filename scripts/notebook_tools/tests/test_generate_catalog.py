@@ -2351,14 +2351,14 @@ class TestGenerateMarkdownReport:
             "{}", encoding="utf-8"
         )
         report = generate_markdown_report(entries, repo_root=tmp_path)
-        # No UNESCAPED pipe inside cells: the row still has exactly 8 columns
-        # (9 structural pipes incl. edges). Escaped `\|` pipes are excluded by
+        # No UNESCAPED pipe inside cells: the row still has exactly 10 columns
+        # (11 structural pipes incl. edges). Escaped `\|` pipes are excluded by
         # the lookbehind, so 1 escaped pipe in the title + 1 in the kernel
         # must not widen the row.
         title_row = next(
             ln for ln in report.splitlines() if "Title with" in ln
         )
-        assert len(_re.findall(r"(?<!\\)\|", title_row)) == 9
+        assert len(_re.findall(r"(?<!\\)\|", title_row)) == 11
         assert "\\|" in title_row
         assert "\\`" in title_row and "\\[bracket\\]" in title_row
 
@@ -2391,7 +2391,7 @@ class TestGenerateMarkdownReport:
         )
         # 8 columns => 9 structural `|` chars (no escaped). Any new unescaped pipe
         # in status/maturity/duration/owner would widen the row.
-        assert len(_re.findall(r"(?<!\\)\|", row)) == 9, (
+        assert len(_re.findall(r"(?<!\\)\|", row)) == 11, (
             f"unescaped pipe in status/maturity/duration/owner widened the row:\n{row}"
         )
         # The dangerous payloads survive the escape and stay visible in the cell.
@@ -2823,3 +2823,69 @@ class TestBuildGitMetadataOfflinePartialClone:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_qualification_axes_follow_manifest_not_path(tmp_path, monkeypatch):
+    import generate_catalog as catalog
+
+    notebooks = tmp_path / "MyIA.AI.Notebooks"
+    monkeypatch.setattr(catalog, "NOTEBOOKS_DIR", notebooks)
+    notebook = notebooks / "NLP" / "cours.ipynb"
+    notebook.parent.mkdir(parents=True)
+    notebook.write_text(json.dumps(_nb([_code("print(1)", outputs=[{"output_type": "stream", "text": "1"}])])), encoding="utf-8")
+    manifest = {"series": [{"notebooks": [{
+        "path": "MyIA.AI.Notebooks/NLP/cours.ipynb", "difficulte": "D2",
+        "recherche": "R2", "criteres": {}, "justification": "Question mesurée",
+    }]}]}
+    entry = catalog.analyze_notebook(notebook, True, qualification_manifest=manifest)
+    assert (entry["difficulte"], entry["recherche"]) == ("D2", "R2")
+    assert entry["qualification_justification"] == "Question mesurée"
+    assert entry["status"] != "RESEARCH"
+    unknown = catalog.analyze_notebook(notebook, True, qualification_manifest={})
+    assert unknown["difficulte"] is None and unknown["recherche"] is None
+
+
+def test_qualification_appears_in_markdown(tmp_path):
+    entry = {"path": "NLP/example.ipynb", "title": "Exemple", "serie": "NLP",
+             "kernel": "Python", "status": "READY", "maturity": "BETA",
+             "difficulte": "D2", "recherche": "R2", "requires_api": False,
+             "requires_gpu": False, "requires_cloud": False, "requires_wsl": False,
+             "executable_locally": True}
+    report = generate_markdown_report([entry], repo_root=tmp_path)
+    assert "| Difficulté | Recherche |" in report
+    assert "| D2 | R2 |" in report
+
+
+def test_scan_loads_manifest_once_and_keeps_unknown_unqualified(tmp_path, monkeypatch):
+    import generate_catalog as catalog
+
+    root = tmp_path
+    notebooks = root / "MyIA.AI.Notebooks"
+    monkeypatch.setattr(catalog, "REPO_ROOT", root)
+    monkeypatch.setattr(catalog, "NOTEBOOKS_DIR", notebooks)
+    folder = notebooks / "NLP"
+    folder.mkdir(parents=True)
+    for name in ("a", "b"):
+        (folder / f"{name}.ipynb").write_text(json.dumps(_nb([_code("pass")])), encoding="utf-8")
+    manifest_file = root / "docs/curriculum/qualification/manifest.json"
+    manifest_file.parent.mkdir(parents=True)
+    manifest_file.write_text(json.dumps({"series": [{"notebooks": [{
+        "path": "MyIA.AI.Notebooks/NLP/a.ipynb", "difficulte": "D3",
+        "recherche": "R0", "justification": "Justification", "criteres": {},
+    }]}]}), encoding="utf-8")
+    entries = catalog.scan_all_notebooks(series_filter="NLP")
+    assert [(e["difficulte"], e["recherche"]) for e in entries] == [("D3", "R0"), (None, None)]
+    manifest_file.unlink()
+    assert all(e["recherche"] is None for e in catalog.scan_all_notebooks(series_filter="NLP"))
+    manifest_file.write_text("{", encoding="utf-8")
+    with pytest.raises(json.JSONDecodeError):
+        catalog.scan_all_notebooks(series_filter="NLP")
+
+
+def test_catalog_importable_as_package_from_repo_root():
+    root = Path(__file__).resolve().parents[3]
+    result = subprocess.run(
+        [sys.executable, "-c", "from scripts.notebook_tools import generate_catalog"],
+        cwd=root, capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stderr

@@ -147,6 +147,18 @@ PIDS="${COURSIA_RUNNER_PIDS:-384}"
 # re-telechargerait interpretes et outils via les actions setup-*. Le volume
 # nomme survit aux conteneurs ; RUNNER_TOOL_CACHE dit aux actions ou chercher.
 # Sa propriete runner:runner vient du point de montage du Dockerfile.
+#
+# GARDE COURSE PIP (#22502) : ce volume est PARTAGE par tous les slots et les
+# waiters -- son site-packages servait donc chaque job, et deux jobs
+# pip-installant en parallele y corrompaient des paquets (pygments a 0 octet
+# sous dist-info 2.21.0, ImportError aleatoires retombes sur la PR mesuree,
+# instance #22281). L'isolation vit cote CONTENEUR, pas cote volume :
+# entrypoint.sh exporte PIP_USER=1, chaque pip installe dans le site
+# utilisateur ephemere (~/.local du conteneur, detruit avec lui) et le
+# site-packages partage n'est plus jamais ecrit par un job. Les exceptions
+# (etapes a venv propre sous $RUNNER_TEMP) posent PIP_USER=0 localement dans
+# le workflow. Ne pas re-introduire d'ecriture pip dans ce volume sans
+# re-ouvrir #22502 : la course redevenait possible par construction.
 TOOLCACHE_VOLUME="${COURSIA_RUNNER_TOOLCACHE_VOLUME:-coursia-runner-toolcache}"
 TOOLCACHE_MOUNT="${COURSIA_RUNNER_TOOLCACHE_MOUNT:-/opt/hostedtoolcache}"
 
