@@ -28,6 +28,13 @@ Recette d'execution (rule F — vrai outil, pas de contournement) ::
     # (mode stdin, admission + budget) ; un projet lake minimal (lakefile.toml
     # + lean-toolchain) est cree automatiquement comme cwd.
 
+Epinglage de la toolchain (organe ``scripts/lean/lean_toolchain.py``) : le pin
+effectif est resolu dans l'ordre ``ELAN_TOOLCHAIN`` (lu tel quel) >
+``lean-toolchain`` du projet > declaration par environnement (fichier JSON
+lu par le code) > pin de flotte > defaut elan mesure (**non fige**) > repli
+alerte. Le tag et sa provenance sont journalises a la creation du
+verificateur (``toolchain=... pin=...``).
+
 Exemple ::
 
     from verifiers.lean_rlvr_verifier import LeanRLVRVerifier
@@ -78,34 +85,70 @@ _AXIOMS_RE = re.compile(r"depends on axioms: \[([^\]]*)\]")
 #  - cas sans axiome : "'name' does not depend on any axioms"
 _NO_AXIOMS_RE = re.compile(r"does not depend on any axioms")
 
-# Repli documente seulement : le pin PAR DEFAUT est la toolchain reellement
-# installee sur le runner (``_installed_toolchain``, regle F). Ce tag a ete le
-# defaut historique ; mesure 2026-11-03 (po-2027) : absent des toolchains
-# installees, chaque rollout partait en download elan.
-DEFAULT_TOOLCHAIN = "leanprover/lean4:v4.27.0"
+# Epinglage de la toolchain : l'organe ``scripts/lean/lean_toolchain.py``
+# detient la declaration par environnement (JSON lu par le code) ET l'ordre
+# de resolution. Mesure 2026-11-10 (poste ai-01) : le defaut elan de ce poste
+# est ``v4.11.0`` alors que le pin des lakes du depot est ``v4.33.0`` — deux
+# postes jugeant les memes rollouts sur des moteurs differents. Le repli
+# historique ``v4.27.0`` n'etait installe sur aucun poste mesure : chaque
+# rollout partait en download elan.
 _LOGGER = logging.getLogger(__name__)
+
+#: Sources de pin REPRODUCTIBLES entre postes (seules celles-la sont ecrites
+#: dans le squelette) ; le defaut elan mesure n'en fait pas partie.
+PINNED_SOURCES = frozenset({"env", "projet", "declaration", "declaration_flotte"})
+
+_lean_toolchain_mod = None
+
+
+def _find_lean_toolchain() -> Path:
+    """Localise l'organe d'epinglage ``scripts/lean/lean_toolchain.py``.
+
+    Marche de parents depuis ce fichier (verifiers/ -> PostTraining ->
+    GenAI -> ... -> racine du depot), meme strategie que
+    ``scripts/lean/lean_exec.py`` (#23054).
+    """
+    current = Path(__file__).resolve().parent
+    for _ in range(14):
+        candidate = current / "scripts" / "lean" / "lean_toolchain.py"
+        if candidate.exists():
+            return candidate.resolve()
+        current = current.parent
+        if current == current.parent:
+            break
+    raise FileNotFoundError(
+        "scripts/lean/lean_toolchain.py introuvable — organe d'epinglage "
+        "requis par LeanRLVRVerifier (See #15666, #24568)"
+    )
+
+
+def _get_lean_toolchain():
+    """Charge (1er usage) l'organe d'epinglage de la toolchain.
+
+    Chargement LAZY par chemin direct : ce module est importe par le corpus
+    et les tests sur des runners nus — l'organe ne doit peser qu'au premier
+    rollout reel (meme discipline que ``lean_server._lean_utils``).
+    """
+    global _lean_toolchain_mod
+    if _lean_toolchain_mod is None:
+        import importlib.util as ilu
+
+        path = _find_lean_toolchain()
+        spec = ilu.spec_from_file_location("_lean_toolchain_organ", path)
+        mod = ilu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _lean_toolchain_mod = mod
+    return _lean_toolchain_mod
 
 
 def _installed_toolchain() -> str | None:
     """Toolchain reellement installee, ou ``None`` si non mesurable.
 
-    Le tag reconstruit depuis ``lean --version`` décrit le défaut elan résolu ;
-    il ne constitue pas un pin reproductible entre environnements.
+    Delegue a l'organe d'epinglage. Le tag reconstruit depuis
+    ``lean --version`` décrit le défaut elan résolu ; il ne constitue pas un
+    pin reproductible entre environnements.
     """
-    bin_dir = str(Path.home() / ".elan" / "bin")
-    try:
-        proc = subprocess.run(
-            ["lean", "--version"], capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=30,
-            env={**os.environ,
-                 "PATH": bin_dir + os.pathsep + os.environ.get("PATH", "")},
-        )
-        match = re.search(r"version (\d+\.\d+\.\d+)", proc.stdout + proc.stderr)
-        if match:
-            return f"leanprover/lean4:v{match.group(1)}"
-    except (OSError, subprocess.SubprocessError):
-        pass
-    return None
+    return _get_lean_toolchain().installed_toolchain()
 
 
 class OrganRefusedError(RuntimeError):
@@ -227,9 +270,11 @@ class LeanRLVRVerifier:
         temporaire (``~/.cache/rlvr-lean``). Le squelette ne depend PAS de
         Mathlib : elaboration du coeur Lean uniquement (~4 s/rollout).
     toolchain:
-        Version Lean a pinner dans le squelette. Defaut = toolchain presente
-        sur le runner (regle F : on pinne ce qui est installe, pas un tag
-        qui forcerait un download).
+        Version Lean a pinner dans le squelette. Defaut = le pin **resolu**
+        par l'organe d'epinglage (``ELAN_TOOLCHAIN`` > pin du projet >
+        declaration par environnement > pin de flotte > defaut elan mesure
+        non fige > repli averti) ; une valeur passed ici court-circuite la
+        resolution (provenance ``argument``).
     timeout:
         Timeout par rollout en secondes. Tier-2 accepte quelques secondes ;
         au-dela on renvoie reward 0 (la politique a produit du code qui
@@ -260,34 +305,20 @@ class LeanRLVRVerifier:
 
     @staticmethod
     def _resolve_toolchain(project_dir: str | os.PathLike | None) -> tuple[str, str]:
-        """Résout env > pin du projet > défaut elan, avec provenance explicite."""
-        environment_pin = os.environ.get("ELAN_TOOLCHAIN")
-        if environment_pin:
-            return environment_pin, "env"
+        """Résout le pin et rend ``(tag, provenance)``.
 
-        project_root = (
-            Path(project_dir)
-            if project_dir is not None
-            else Path.home() / ".cache" / "rlvr-lean"
+        Délègue à l'organe d'épinglage ``scripts/lean/lean_toolchain.py``,
+        qui tient l'ordre complet : ``ELAN_TOOLCHAIN`` (lu tel quel) > pin du
+        projet > declaration par environnement > pin de flotte > défaut elan
+        mesuré (**non figé**) > repli averti.
+
+        La mesure du défaut elan passe par ``_installed_toolchain``
+        (interposable par les tests).
+        """
+        return _get_lean_toolchain().resolve_pin(
+            project_dir,
+            installed=_installed_toolchain(),
         )
-        toolchain_file = project_root / "lean-toolchain"
-        try:
-            project_pin = toolchain_file.read_text(encoding="utf-8").strip()
-        except OSError:
-            project_pin = ""
-        if project_pin:
-            return project_pin, "projet"
-
-        resolved_default = _installed_toolchain()
-        if resolved_default:
-            return resolved_default, "default_resolu"
-
-        _LOGGER.warning(
-            "RLVR Lean: aucun pin env/projet ni défaut elan mesurable; "
-            "repli explicite vers %s (un téléchargement elan peut être requis)",
-            DEFAULT_TOOLCHAIN,
-        )
-        return DEFAULT_TOOLCHAIN, "fallback_averti"
 
     # -- squelette lake minimal ------------------------------------------------
 
@@ -308,11 +339,12 @@ class LeanRLVRVerifier:
         lakefile = root / "lakefile.toml"
         if not lakefile.exists():
             lakefile.write_text('name = "RlvrSkeleton"\n', encoding="utf-8")
-        # Squelette géré : écrire les pins explicites, mais garder le défaut
-        # elan comme défaut de résolution plutôt que de le figer dans le cache.
+        # Squelette géré : écrire les pins REPRODUCTIBLES (env, projet,
+        # declaration), mais garder le défaut elan comme défaut de résolution
+        # plutôt que de le figer dans le cache.
         managed = project_dir is None
         toolchain_file = root / "lean-toolchain"
-        if self.pin_source != "default_resolu" and (managed or not toolchain_file.exists()):
+        if self.pin_source in PINNED_SOURCES and (managed or not toolchain_file.exists()):
             toolchain_file.write_text(f"{self.toolchain}\n", encoding="utf-8")
         # Rechauffement : un premier `lake env` cree le manifest du projet
         # (sinon il est cree au 1er rollout, faussant la mesure de latence).
