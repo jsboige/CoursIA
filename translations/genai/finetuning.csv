@@ -8412,8 +8412,10 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,20e30
 **TP takeaway**: the base model described the images in correct prose — the three readable excerpts from section 3 (quoted verbatim, in French: “un cercle bleu pur”, “un cercle rouge centré”, “un triangle vert simple”) contain the exact shape and color — the failure was purely contractual, not perceptual. By freezing vision and adapting 0.85% of the decoder parameters, LoRA installed the contract **and** the structured reading of visual features: 6/6 never-before-seen images described exactly in the required format. The architectural lesson: when the task is a perception-conditioned *language behavior*, adapting the decoder is enough — the pretrained perception is already good.
 
 **Next steps**: the exercises extend the contract (4th shape, position field), then test the boundary of this conclusion (also target the merger — exercise 3 measures what adapted vision adds when it already has everything it needs).",,,,,,,49c8ea3038c4e880,d0b69f9ec7829e9b,,,,,,,49c8ea3038c4e880,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-00a-LoRA-from-scratch-Python.ipynb,69e1be9a,markdown,fr,e6a1084647c1cb72,"# FT-00a : LoRA from scratch — démonter l'adaptation bas-rang
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00a-LoRA-from-scratch-Python.ipynb,69e1be9a,markdown,fr,87429ce0ece9bd69,"# FT-00a : LoRA from scratch — démonter l'adaptation bas-rang
 **Navigation** : [Index](README.md) | [Suivant >>](FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb)
+
+**Version anglaise** : [FT-00a — LoRA from scratch (en)](FT-00a-LoRA-from-scratch-Python_en.ipynb)
 
 **Objectif** : comprendre LoRA en le construisant, sans `peft`. À la fin de ce notebook vous saurez écrire un `LoRALinear` en PyTorch pur, prouver que l'initialisation canonique ne change pas le modèle, l'entraîner sur une mini-tâche réelle, et expliquer pourquoi la fusion de l'adaptateur n'est **pas** bit-exacte.
 
@@ -8432,7 +8434,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-00a-LoRA-from-scratch-Python.ipynb,69e1be9
 
 **Duration**: ~30 min · **Level**: intermediate · **Hardware**: CPU is enough (the displayed timings are measured on GPU, a few seconds per epoch).
 
-**Position in the series**: FT-01 to FT-06 use `peft` and ready-to-use HuggingFace models. This notebook takes the mechanism apart — the `W' = W + (alpha/r) * B @ A` decomposition, the `A ~ N, B = 0` initialization, gradient propagation, merging — so that the SOTA notebooks stop being black boxes. The following notebooks remain the reference for industrial use: [FT-01](FT-01-Introduction-FineTuning-Python.ipynb) (LoRA with `peft` on GPT-2), [FT-02](FT-02-QLoRA-Quantization-Python.ipynb) (4-bit QLoRA), [FT-06](FT-06-Vision-Language-LoRA-Python.ipynb) (vision-language).",,,,,,,e6a1084647c1cb72,a9fadf58dafff97a,,,,,,,,,,,,,,
+**Position in the series**: FT-01 to FT-06 use `peft` and ready-to-use HuggingFace models. This notebook takes the mechanism apart — the `W' = W + (alpha/r) * B @ A` decomposition, the `A ~ N, B = 0` initialization, gradient propagation, merging — so that the SOTA notebooks stop being black boxes. The following notebooks remain the reference for industrial use: [FT-01](FT-01-Introduction-FineTuning-Python.ipynb) (LoRA with `peft` on GPT-2), [FT-02](FT-02-QLoRA-Quantization-Python.ipynb) (4-bit QLoRA), [FT-06](FT-06-Vision-Language-LoRA-Python.ipynb) (vision-language).",,,,,,,87429ce0ece9bd69,a9fadf58dafff97a,,,,,,,87429ce0ece9bd69,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-00a-LoRA-from-scratch-Python.ipynb,11b43a87,markdown,fr,67e280c675eb419f,"### Vérification de l'environnement
 
 Avant tout calcul, on vérifie le moteur effectif : version de PyTorch, présence d'un GPU, et graine fixée pour que les mesures soient reproductibles.","### Checking the environment
@@ -8973,8 +8975,10 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-00a-LoRA-from-scratch-Python.ipynb,9d0854e
 | the merge | equivalent up to epsilon, **never bit-exact**: re-association is not identity |
 
 **Next step**: the same mechanism at industrial scale — [FT-01](FT-01-Introduction-FineTuning-Python.ipynb) (LoRA `peft` on GPT-2), [FT-02](FT-02-QLoRA-Quantization-Python.ipynb) (QLoRA: 4-bit base + adapters), [FT-06](FT-06-Vision-Language-LoRA-Python.ipynb) (vision-language). You will recognize in them every piece you have just written by hand.",,,,,,,1d9edb30c5cbe667,459271a5eb32f1ad,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,aad8b69c,markdown,fr,0cb20ae44d6802a9,"# FT-00b : LoRA hyperparams from scratch — ablation rang × alpha
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,aad8b69c,markdown,fr,fae82fb0c92d6522,"# FT-00b : LoRA hyperparams from scratch — ablation rang × alpha
 **Navigation** : [Index](README.md) | [<< Précédent](FT-00a-LoRA-from-scratch-Python.ipynb) | [Suivant >>](FT-00c-LoRA-SOTA-Comparison-Python.ipynb)
+
+**Version anglaise** : [FT-00b — LoRA hyperparams (en)](FT-00b-LoRA-Hyperparams-from-scratch-Python_en.ipynb)
 
 **Objectif** : mesurer firsthand comment le couple `(r, alpha)` — rang de la décomposition et *scaling* — borne la qualité d'adaptation d'un réseau gelé. Pas de `peft`, pas de `loralib` — la même `LoRALinear` que [FT-00a](FT-00a-LoRA-from-scratch-Python.ipynb), entraînée sur **6 valeurs de `r`** × **3 valeurs d'`alpha`/r** = 18 configurations, sur la même mini-tâche jouet (Fashion-MNIST inversé, classifieur gelé 512→10).
 
@@ -8984,8 +8988,10 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.i
 
 **Position dans la série** : FT-00a démontait le mécanisme ; ce notebook ferme la question du **réglage** — quand un rang trop petit sous-adapte, quand un alpha trop grand déstabilise, et pourquoi le scaling `alpha/r` est ce qui rend le rang et la magnitude **découplables**.
 
-**Au programme** : 1. réutiliser `LoRALinear` sans la redéfinir · 2. assembler la mini-tâche (Fashion-MNIST inversé, classifieur gelé) · 3. pré-entraîner le modèle sur le domaine inversé · 4. lancer l'ablation des 18 configurations · 5. lire la table exactitude × budget × scaling · 6. situer les trois baselines · 7. trois exemples guidés, puis trois exercices.","# FT-00b: LoRA hyperparams from scratch — rank × alpha ablation
+**Au Programme** : 1. réutiliser `LoRALinear` sans la redéfinir · 2. assembler la mini-tâche (Fashion-MNIST inversé, classifieur gelé) · 3. pré-entraîner le modèle sur le domaine inversé · 4. lancer l'ablation des 18 configurations · 5. lire la table exactitude × budget × scaling · 6. situer les trois baselines · 7. trois exemples guidés, puis trois exercices.","# FT-00b: LoRA hyperparams from scratch — rank × alpha ablation
 **Navigation**: [Index](README.md) | [<< Previous](FT-00a-LoRA-from-scratch-Python.ipynb) | [Next >>](FT-00c-LoRA-SOTA-Comparison-Python.ipynb)
+
+**French version**: [FT-00b — LoRA hyperparams](FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb)
 
 **Objective**: measure firsthand how the `(r, alpha)` couple — rank of the decomposition and *scaling* — bounds the adaptation quality of a frozen network. No `peft`, no `loralib` — the same `LoRALinear` as [FT-00a](FT-00a-LoRA-from-scratch-Python.ipynb), trained over **6 values of `r`** × **3 values of `alpha`/r** = 18 configurations, on the same toy mini-task (inverted Fashion-MNIST, frozen 512→10 classifier).
 
@@ -8995,7 +9001,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.i
 
 **Position in the series**: FT-00a demonstrated the mechanism; this notebook closes the **tuning** question — when too small a rank under-adapts, when too large an alpha destabilizes, and why the `alpha/r` scaling is what makes rank and magnitude **decouplable**.
 
-**On the menu**: 1. reuse `LoRALinear` without redefining it · 2. assemble the mini-task (inverted Fashion-MNIST, frozen classifier) · 3. pre-train the model on the inverted domain · 4. run the 18-configuration ablation · 5. read the accuracy × budget × scaling table · 6. place the three baselines · 7. three guided examples, then three exercises.",,,,,,,0cb20ae44d6802a9,f4567a7d96b8c874,,,,,,,,,,,,,,
+**On the menu**: 1. reuse `LoRALinear` without redefining it · 2. assemble the mini-task (inverted Fashion-MNIST, frozen classifier) · 3. pre-train the model on the inverted domain · 4. run the 18-configuration ablation · 5. read the accuracy × budget × scaling table · 6. place the three baselines · 7. three guided examples, then three exercises.",,,,,,,fae82fb0c92d6522,98dde035191d7b9a,,,,,,,fae82fb0c92d6522,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,b42fee96,markdown,fr,b2e02648cc56f443,### Vérification de l'environnement,### Environment check,,,,,,,b2e02648cc56f443,e461805ccdc441b0,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,143c50c3,code,fr,c7d3540fc4bdaa8d,"import copy, time, itertools
 import numpy as np
@@ -9330,9 +9336,9 @@ match = [v for v in results if v[0] == 4 and v[2] == 1.0]
 if match:
     r4_acc = match[0][4]
     print(f""LoRA r=4 alpha/r=1.0 (FT-00a config)  : {r4_acc:.4f} (params = {match[0][3]})"")",,,,,,,,e754eb2eda513fb4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,454b3785,markdown,fr,026eb8e73100da9d,"### Lecture du résultat : trois repères
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,454b3785,markdown,fr,791553217749779a,"### Lecture du résultat : trois repères
 
-Trois repères pour lire les 18 cellules du tableau :
+Trois repères pour lire le tableau :
 
 - Le **sous le hasard** donne le plancher (le modèle non adapté).
 - Le **full** donne le **plafond atteignable** avec le budget complet (5130 params, sans contrainte de rang).
@@ -9340,13 +9346,13 @@ Trois repères pour lire les 18 cellules du tableau :
 
 La sortie fixe les trois repères chiffrés : 0.0360 (base gelée, sous le hasard), 0.5270 (full, 5130 params) et 0.4145 (LoRA r=4, 2088 params) — le sacrifice consenti en passant de full à LoRA est mesuré ici, pas deviné.","### Reading the result: three landmarks
 
-Three landmarks for reading the 18 cells of the table:
+Three landmarks for reading the table:
 
 - **Below chance** gives the floor (the un-adapted model).
 - **Full** gives the **reachable ceiling** with the complete budget (5130 params, no rank constraint).
 - **LoRA r=4 alpha/r=1.0** is FT-00a's pedagogical configuration — how much do we **sacrifice** going from full to LoRA? The answer depends on the task, but it is **measured** in this notebook.
 
-The output fixes the three quantified landmarks: 0.0360 (frozen base, below chance), 0.5270 (full, 5130 params) and 0.4145 (LoRA r=4, 2088 params) — the sacrifice accepted going from full to LoRA is measured here, not guessed.",,,,,,,026eb8e73100da9d,412aa4f2ae6a8f2c,,,,,,,,,,,,,,
+The output fixes the three quantified landmarks: 0.0360 (frozen base, below chance), 0.5270 (full, 5130 params) and 0.4145 (LoRA r=4, 2088 params) — the sacrifice accepted going from full to LoRA is measured here, not guessed.",,,,,,,791553217749779a,332c9ffd85257e2c,,,,,,,791553217749779a,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,694b7f61,markdown,fr,8a3c277282b331a5,"## 7. Exemples guidés et exercices
 
 Trois exemples guidés, suivis de trois exercices de portée distincte. Chaque exemple démontre une technique ; chaque exercice demande à l'étudiant de mesurer une grandeur **différente** de celle de l'exemple correspondant. Les corrigés des exemples sont **dans** les exemples (ils s'exécutent et impriment leurs sorties réelles), pas dans une section voisine.
