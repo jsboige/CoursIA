@@ -102,6 +102,8 @@ Le compose canonique ci-dessus est la route fp16 (`--half`, ~20,3 Go). La **vari
 | init en fp32 (sans correctif) | **14 120 MiB** |
 | init en bf16 (`set_default_dtype(bfloat16)` autour de `init_model`) | **10 352 MiB** |
 
+> Le **10 352 MiB** du tableau est la probe d'init bf16 isolée ; le **10 536 MiB** cité dans `docker-compose.int4.yml` est le pic de chargement complet mesuré sous la borne 12 g. Ce sont deux mesures distinctes (probe isolée vs chargement sous borne) — d'où l'écart de 184 MiB entre les deux chiffres, et non une incohérence.
+
 Avec le pic fp32 à 14 120 MiB, **toute** borne mémoire de 6 g / 8 g / 12 g / 14 g tue le démarrage : le conteneur est OOM-killé (exit 137) toutes les ~30 s (`docker events` : `oom` + `die` en boucle, RestartCount dans les milliers). Le service ne survivait avant #303 que parce qu'il n'avait **aucune** borne.
 
 Le correctif, porté dans `serve_int4.py` : `torch.set_default_dtype(torch.bfloat16)` autour de l'appel `init_model`, restauré en `finally`. Ça divise le pic (14 120 → 10 352 MiB) **sans changer le modèle servi** : le `load_state_dict(assign=True)` final remplace tous les tenseurs par ceux du checkpoint int4, le dtype d'init n'a d'effet que sur le transitoire de chargement. Après correctif, sous une borne 12 g : poids « All keys matched successfully », `/v1/health` 200, chargement ~3,5 min ; l'état stationnaire reste ~2,8-3 GiB, swap désactivé.
