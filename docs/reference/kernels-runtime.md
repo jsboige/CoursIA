@@ -182,6 +182,83 @@ Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` con
 
 Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/SemanticWeb/` (Python).
 
+### Relever le runtime effectif des kernelspecs Python (#24883)
+
+Le nom d'un kernelspec identifie une entrée Jupyter sur une machine ; il ne
+garantit ni l'interpréteur ni les bibliothèques réellement chargés. Le relevé
+doit donc démarrer le noyau, exécuter une sonde dedans, et enregistrer ensemble
+le nom, `argv[0]` déclaré, `sys.executable` résolu, `sys.version` et la version
+de NumPy. L'outil ci-dessous énumère les kernelspecs locaux et écrit un JSON
+réutilisable. Il rapporte les noyaux non Python et les incidents avec un état
+structuré ; il ne journalise pas le texte des exceptions ni l'environnement du
+noyau. Après démarrage, il demande au noyau son `kernel_info_reply` et ne lance
+la sonde que si `language_info.name` annonce Python. Les autres langages sont
+rapportés comme `not_python` avec leur langage effectif. Pour un noyau annoncé
+Python, toute erreur, absence de sortie ou sortie JSON invalide reste un
+incident de sonde, jamais un faux classement non Python.
+
+```bash
+source /workspace/coursia-cloud/activate.sh
+python scripts/notebook_tools/measure_kernels_runtime.py \
+  --timeout 60 --output /tmp/kernels-runtime.json
+# Pour borner le sondage : répéter --kernel <nom> ; sans --kernel, tous sont sondés.
+```
+
+La mesure porte sur la configuration et l'instant où la commande s'exécute.
+`ok` signifie que la sonde Python s'est exécutée ; `not_python` identifie,
+d'après le `kernel_info_reply` effectif, un noyau d'un autre langage ;
+`probe_output_missing` signale un noyau Python qui n'a pas rendu la sonde ; `timeout`,
+`startup_error`, `kernel_info_error`, `probe_error`, `invalid_probe_output` et
+`kernelspec_missing` signalent des lignes à examiner. Les kernels démarrés par
+l'outil sont arrêtés à la fin de leur sonde.
+Le code de sortie vaut 0 si chaque ligne est `ok` ou `not_python`, 1 en présence
+d'un incident. Le JSON est écrit hors du dépôt pour qu'un relevé local daté ne
+soit pas confondu avec une valeur canonique.
+
+#### Échantillon de l'environnement cloud (mesuré le 2026-11-08)
+
+La commande a réellement démarré les deux kernelspecs installés dans
+l'environnement cloud de cette session. Les deux noms ont résolu vers le même
+exécutable et les mêmes versions **dans cet échantillon** :
+
+| Kernelspec | `argv[0]` déclaré | Exécutable effectif | Python | NumPy |
+|---|---|---|---|---|
+| `coursia` | `/workspace/coursia-cloud/venv/bin/python` | `/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3.12` | 3.12.14 | 2.4.4 |
+| `python3` | `python` | `/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3.12` | 3.12.14 | 2.4.4 |
+
+Cette observation décrit uniquement l'environnement cloud temporaire de la
+session (`bb1b6860b79a`, relevé UTC `2026-11-08T00:02:59Z`). Elle ne mesure aucun
+poste de la flotte et ne doit pas servir à nommer un environnement de
+ré-exécution sur un autre siège.
+
+**Vérification mixte après ajout de la détection par langage effectif**
+(`2026-11-08T00:18:08Z`) : le lancement réel de `.net-csharp` et `python3` a
+rendu `not_python`, langage `C#`, pour le premier sans lui envoyer de code
+Python, puis `ok`, Python 3.12.14 / NumPy 2.4.4, pour le second. Les journaux de
+démarrage .NET ne font pas partie du JSON de mesure.
+
+#### Procédure de collecte de la flotte
+
+Sur **chaque siège**, dans son propre environnement Jupyter, récupérer la
+branche contenant l'outil puis exécuter la commande complète sans filtre :
+
+```bash
+python scripts/notebook_tools/measure_kernels_runtime.py \
+  --timeout 120 --output kernels-runtime-<siege>-<date-utc>.json
+```
+
+Transmettre le JSON ainsi produit avec le nom du siège et l'heure UTC du
+relevé. Un lancement non réussi reste une ligne d'incident et ne devient pas
+une mesure par lecture de `kernel.json`. Répéter le relevé après une réparation
+d'environnement ; conserver la mesure datée antérieure comme historique.
+
+**Inventaire flotte complet : non mesuré dans cette session.** Les mesures
+cloud ci-dessus ne remplissent aucune ligne de flotte. Le commentaire de suivi
+MYIA-PO-2028 du 2026-11-05 dans [#24883](https://github.com/jsboige/CoursIA/issues/24883)
+fournit une observation datée de ce seul siège ; il ne constitue pas un relevé
+actuel ni exhaustif des autres sièges. L'issue reste ouverte jusqu'à la collecte
+des sièges manquants et à la publication de leurs mesures réelles.
+
 ### Envs Conda dédiés (ai-01, référence)
 
 | Env | Python | Path | Usage principal |
