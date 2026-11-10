@@ -473,6 +473,9 @@ MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Value-Information.i
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-07-Expert-Systems.ipynb	MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Expert-Systems.ipynb	2026-11-05	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Sequential.ipynb	MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-07-Sequential.ipynb	2026-11-05	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb	MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb	2026-11-05	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/Probas/Probas-CLT-Theoreme-Central-Limite.ipynb	MyIA.AI.Notebooks/Probas/Fondations/Probas-CLT-Theoreme-Central-Limite.ipynb	2026-11-07	myia-po-2028:CoursIA
+MyIA.AI.Notebooks/Probas/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb	MyIA.AI.Notebooks/Probas/Fondations/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb	2026-11-07	myia-po-2028:CoursIA
+MyIA.AI.Notebooks/Probas/Probas-KLS-Concentration.ipynb	MyIA.AI.Notebooks/Probas/Applications/Probas-KLS-Concentration.ipynb	2026-11-07	myia-po-2028:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-0-Setup.ipynb	MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb	2026-11-08	myia-po-2028:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb	2026-11-08	myia-po-2028:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb	MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb	2026-11-08	myia-po-2028:CoursIA
@@ -549,3 +552,6 @@ MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb
 MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer.ipynb	MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb	2026-11-09	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent.ipynb	MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb	2026-11-09	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling.ipynb	MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb	2026-11-09	myia-ai-01:CoursIA-2
+MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/c1330_xrp_dt_foldwise_research.ipynb	MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/xrp_dt_foldwise_research.ipynb	2026-11-09	myia-ai-01:CoursIA-2
+MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/c875_hmm_alpha_dm_research.ipynb	MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/hmm_alpha_dm_research.ipynb	2026-11-09	myia-ai-01:CoursIA-2
+MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/c875_per_fold_diag.py	MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/per_fold_diag.py	2026-11-09	myia-ai-01:CoursIA-2

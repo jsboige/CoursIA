@@ -1,0 +1,640 @@
+{
+  "schema_version": 1,
+  "series": "GameTheory",
+  "hierarchy": [
+    "series",
+    "subseries",
+    "notebook",
+    "example",
+    "exercise"
+  ],
+  "notebooks": [
+    "MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup-Python.ipynb",
+    "MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb",
+    "MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb",
+    "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb",
+    "MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb",
+    "MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb",
+    "MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Python.ipynb",
+    "MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Python.ipynb",
+    "MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb"
+  ],
+  "notebook_tree": [
+    {
+      "level": "series",
+      "path": "GameTheory",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Théorie des jeux"
+    },
+    {
+      "level": "notebook",
+      "path": "GameTheory/01",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Setup et premier dilemme",
+      "repository_path": "MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "GameTheory/02",
+      "decimal_path": "1.2",
+      "depth": 1,
+      "label_fr": "Jeu en forme normale",
+      "repository_path": "MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "GameTheory/03",
+      "decimal_path": "1.3",
+      "depth": 1,
+      "label_fr": "Topologie des jeux 2x2",
+      "repository_path": "MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "GameTheory/04",
+      "decimal_path": "1.4",
+      "depth": 1,
+      "label_fr": "Équilibres de Nash",
+      "repository_path": "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "GameTheory/05",
+      "decimal_path": "1.5",
+      "depth": 1,
+      "label_fr": "Jeux à somme nulle et minimax",
+      "repository_path": "MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "GameTheory/06",
+      "decimal_path": "1.6",
+      "depth": 1,
+      "label_fr": "Jeux évolutionnaires et confiance",
+      "repository_path": "MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "GameTheory/07",
+      "decimal_path": "1.7",
+      "depth": 1,
+      "label_fr": "Jeux en forme extensive",
+      "repository_path": "MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "GameTheory/09",
+      "decimal_path": "1.8",
+      "depth": 1,
+      "label_fr": "Induction arrière et paradoxes",
+      "repository_path": "MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "GameTheory/10",
+      "decimal_path": "1.9",
+      "depth": 1,
+      "label_fr": "Perfection et induction avant (SPE)",
+      "repository_path": "MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb"
+    }
+  ],
+  "concepts": [
+    {
+      "id": "65049e8b-ec7c-4c90-999f-35c7eabedaf3",
+      "path": "gametheory/jeux",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Théorie des jeux",
+      "label_en": "Game theory",
+      "definition_fr": "Étude mathématique des situations stratégiques où des agents rationnels interagissent ; le point d'entrée de la série est le dilemme du prisonnier. Cf. AIMA 4e ch. 17 (3e ch. 16).",
+      "definition_en": "The mathematical study of strategic situations in which rational agents interact; the series enters through the Prisoner's dilemma. See AIMA 4e ch. 17 (3e ch. 16).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup-Python.ipynb",
+          "cell_id": "db1bae74"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "1b5bcd55-9d68-4a80-b855-8df0b8893ca7",
+      "path": "gametheory/jeux/dilemme-prisonnier",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Dilemme du prisonnier",
+      "label_en": "Prisoner's dilemma",
+      "definition_fr": "Jeu 2x2 où l'équilibre de Nash (défection, défection) est Pareto-inférieur à la coopération ; jeu canonique du conflit entre intérêt individuel et collectif. Cf. AIMA 4e ch. 17 (3e ch. 16).",
+      "definition_en": "2x2 game whose Nash equilibrium (defect, defect) is Pareto-inferior to cooperation; the canonical game of the individual-versus-collective conflict. See AIMA 4e ch. 17 (3e ch. 16).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup-Python.ipynb",
+          "cell_id": "1f435467"
+        }
+      ],
+      "prerequisites": [
+        "65049e8b-ec7c-4c90-999f-35c7eabedaf3"
+      ]
+    },
+    {
+      "id": "5f930f6f-76e8-4a9f-be11-f8d428a9487c",
+      "path": "gametheory/forme-normale",
+      "decimal_path": "2",
+      "depth": 0,
+      "label_fr": "Jeu en forme normale",
+      "label_en": "Normal-form game",
+      "definition_fr": "Représentation d'un jeu par la liste des joueurs, leurs ensembles de stratégies et la fonction de gains (matrice pour un jeu bimatrix) ; forme de référence de la série. Cf. AIMA 4e ch. 17 (3e ch. 16).",
+      "definition_en": "Representation of a game by its players, strategy sets, and payoff function (a bimatrix for a two-player game); the series' reference form. See AIMA 4e ch. 17 (3e ch. 16).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb",
+          "cell_id": "133a6fb2"
+        }
+      ],
+      "prerequisites": [
+        "65049e8b-ec7c-4c90-999f-35c7eabedaf3"
+      ]
+    },
+    {
+      "id": "2c590a1d-9199-4eb9-907b-784413a6e252",
+      "path": "gametheory/forme-normale/dominance",
+      "decimal_path": "2.1",
+      "depth": 1,
+      "label_fr": "Stratégie dominante",
+      "label_en": "Dominant strategy",
+      "definition_fr": "Stratégie qui assure un gain au moins aussi bon que toute autre, quelle que soit la stratégie des autres joueurs ; sa détection simplifie l'analyse du jeu.",
+      "definition_en": "A strategy that guarantees a payoff at least as good as any other, regardless of the opponents' strategies; detecting it simplifies the game's analysis.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb",
+          "cell_id": "5aaa76ce"
+        }
+      ],
+      "prerequisites": [
+        "5f930f6f-76e8-4a9f-be11-f8d428a9487c"
+      ]
+    },
+    {
+      "id": "19c21a24-aec7-4fb2-a118-0dc9eb69b470",
+      "path": "gametheory/forme-normale/meilleure-reponse",
+      "decimal_path": "2.2",
+      "depth": 1,
+      "label_fr": "Meilleure réponse",
+      "label_en": "Best response",
+      "definition_fr": "Stratégie qui maximise le gain d'un joueur à stratégie des autres fixée ; l'intersection des meilleures réponses caractérise les équilibres.",
+      "definition_en": "The strategy maximizing a player's payoff given the others' strategies; the intersection of best responses characterizes equilibria.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb",
+          "cell_id": "d9b99f44"
+        }
+      ],
+      "prerequisites": [
+        "5f930f6f-76e8-4a9f-be11-f8d428a9487c"
+      ]
+    },
+    {
+      "id": "8664ecd0-1d70-4d1c-ac4d-22add8b5922d",
+      "path": "gametheory/forme-normale/iesds",
+      "decimal_path": "2.3",
+      "depth": 1,
+      "label_fr": "Élimination itérée des stratégies dominées",
+      "label_en": "Iterated elimination of dominated strategies (IESDS)",
+      "definition_fr": "Procédure qui simplifie un jeu en supprimant successivement les stratégies dominées ; le sous-jeu résiduel concentre les équilibres.",
+      "definition_en": "Procedure that simplifies a game by successively removing dominated strategies; the residual subgame concentrates the equilibria.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb",
+          "cell_id": "5f2cddcb"
+        }
+      ],
+      "prerequisites": [
+        "2c590a1d-9199-4eb9-907b-784413a6e252"
+      ]
+    },
+    {
+      "id": "858a5a67-98ee-4527-8aac-8765900a777c",
+      "path": "gametheory/topologie-2x2",
+      "decimal_path": "3",
+      "depth": 0,
+      "label_fr": "Topologie des jeux 2x2",
+      "label_en": "Topology of 2x2 games",
+      "definition_fr": "L'ensemble des 576 jeux 2x2 ordinaux vu comme un espace : voisinage par échanges de gains (swaps), distances, et classification par structure d'équilibres.",
+      "definition_en": "The set of 576 ordinal 2x2 games viewed as a space: neighborhood by payoff swaps, distances, and classification by equilibrium structure.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb",
+          "cell_id": "6c9f6896"
+        }
+      ],
+      "prerequisites": [
+        "5f930f6f-76e8-4a9f-be11-f8d428a9487c"
+      ]
+    },
+    {
+      "id": "f21c31d2-761c-45f4-8df1-a8a4b5baef25",
+      "path": "gametheory/topologie-2x2/quotient",
+      "decimal_path": "3.1",
+      "depth": 1,
+      "label_fr": "Quotient des 576 jeux (144 classes)",
+      "label_en": "Quotient of the 576 games (144 classes)",
+      "definition_fr": "Classes d'équivalence obtenues en factorisant le renommage des stratégies : 576 jeux tombent à 144, dérivé par le lemme de Burnside plutôt que recopié.",
+      "definition_en": "Equivalence classes obtained by factoring out strategy renaming: 576 games collapse to 144, derived via Burnside's lemma rather than copied.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb",
+          "cell_id": "gt03g-fused-intro"
+        }
+      ],
+      "prerequisites": [
+        "858a5a67-98ee-4527-8aac-8765900a777c"
+      ]
+    },
+    {
+      "id": "27c9f896-1713-4f0a-80a4-ff3b2ac6c3f5",
+      "path": "gametheory/topologie-2x2/pareto",
+      "decimal_path": "3.2",
+      "depth": 1,
+      "label_fr": "Optimalité de Pareto",
+      "label_en": "Pareto optimality",
+      "definition_fr": "Issue où aucun joueur ne peut être amélioré sans en pénaliser un autre ; contraste structurel avec l'équilibre de Nash, illustré par le dilemme du prisonnier.",
+      "definition_en": "Outcome where no player can be made better off without making another worse off; structural contrast with Nash equilibrium, illustrated by the Prisoner's dilemma.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb",
+          "cell_id": "0ddb6034"
+        }
+      ],
+      "prerequisites": [
+        "858a5a67-98ee-4527-8aac-8765900a777c"
+      ]
+    },
+    {
+      "id": "74ee35b2-dd51-4877-9cf0-140e54bc71d4",
+      "path": "gametheory/nash",
+      "decimal_path": "4",
+      "depth": 0,
+      "label_fr": "Équilibre de Nash",
+      "label_en": "Nash equilibrium",
+      "definition_fr": "Profil de stratégies où aucun joueur ne peut améliorer son gain en déviant unilatéralement ; fondement de la prédiction en théorie des jeux. Cf. AIMA 4e ch. 17 (3e ch. 16).",
+      "definition_en": "Strategy profile where no player can improve their payoff by a unilateral deviation; the foundation of prediction in game theory. See AIMA 4e ch. 17 (3e ch. 16).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb",
+          "cell_id": "95f96fe5"
+        }
+      ],
+      "prerequisites": [
+        "5f930f6f-76e8-4a9f-be11-f8d428a9487c",
+        "19c21a24-aec7-4fb2-a118-0dc9eb69b470"
+      ]
+    },
+    {
+      "id": "9ba3a38b-9d89-4c2c-a934-9c8bc5a0d927",
+      "path": "gametheory/nash/purs",
+      "decimal_path": "4.1",
+      "depth": 1,
+      "label_fr": "Équilibre de Nash pur",
+      "label_en": "Pure-strategy Nash equilibrium",
+      "definition_fr": "Équilibre de Nash en stratégies pures, intersection des meilleures réponses pures ; trouvé par énumération sur les jeux finis.",
+      "definition_en": "Nash equilibrium in pure strategies, the intersection of pure best responses; found by enumeration on finite games.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb",
+          "cell_id": "1ef44828"
+        }
+      ],
+      "prerequisites": [
+        "74ee35b2-dd51-4877-9cf0-140e54bc71d4"
+      ]
+    },
+    {
+      "id": "d42e92ef-3093-40fb-9108-d414f67e9cad",
+      "path": "gametheory/nash/mixtes",
+      "decimal_path": "4.2",
+      "depth": 1,
+      "label_fr": "Équilibre en stratégies mixtes",
+      "label_en": "Mixed-strategy equilibrium",
+      "definition_fr": "Équilibre de Nash en distributions sur les stratégies, où chaque joueur rend l'adversaire indifférent entre ses actions support ; résout les jeux sans équilibre pur.",
+      "definition_en": "Nash equilibrium in distributions over strategies, where each player makes the opponent indifferent among their support actions; resolves games with no pure equilibrium.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb",
+          "cell_id": "66997a2b"
+        }
+      ],
+      "prerequisites": [
+        "74ee35b2-dd51-4877-9cf0-140e54bc71d4"
+      ]
+    },
+    {
+      "id": "db818917-3cb9-4b76-833f-18827786c843",
+      "path": "gametheory/nash/existence",
+      "decimal_path": "4.3",
+      "depth": 1,
+      "label_fr": "Théorème d'existence de Nash",
+      "label_en": "Nash existence theorem",
+      "definition_fr": "Tout jeu fini admet au moins un équilibre de Nash (en stratégies mixtes) ; formalisé en Lean dans la série.",
+      "definition_en": "Every finite game admits at least one Nash equilibrium (in mixed strategies); formalized in Lean in the series.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb",
+          "cell_id": "50abde10"
+        }
+      ],
+      "prerequisites": [
+        "74ee35b2-dd51-4877-9cf0-140e54bc71d4"
+      ]
+    },
+    {
+      "id": "db683fb0-55ab-4fdd-88f0-448532b6fa93",
+      "path": "gametheory/somme-nulle",
+      "decimal_path": "5",
+      "depth": 0,
+      "label_fr": "Jeu à somme nulle",
+      "label_en": "Zero-sum game",
+      "definition_fr": "Jeu dont les gains s'annulent (ce que gagne l'un, l'autre le perd) ; les intérêts sont strictement opposés. Cf. AIMA 4e ch. 17 (3e ch. 16).",
+      "definition_en": "Game whose payoffs sum to zero (what one gains, the other loses); strictly opposed interests. See AIMA 4e ch. 17 (3e ch. 16).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb",
+          "cell_id": "98aac7d0"
+        }
+      ],
+      "prerequisites": [
+        "5f930f6f-76e8-4a9f-be11-f8d428a9487c"
+      ]
+    },
+    {
+      "id": "4a2479ce-c2f7-40e5-b618-7d0dea4db2cf",
+      "path": "gametheory/somme-nulle/minimax",
+      "decimal_path": "5.1",
+      "depth": 1,
+      "label_fr": "Théorème minimax de von Neumann",
+      "label_en": "Von Neumann minimax theorem",
+      "definition_fr": "Dans un jeu à somme nulle, la valeur maximin du joueur maximiseur égale la valeur minimax du joueur minimiseur ; résolution par programmation linéaire duale.",
+      "definition_en": "In a zero-sum game, the maximizer's maximin value equals the minimizer's minimax value; solved by dual linear programming.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb",
+          "cell_id": "4fd3cc80"
+        }
+      ],
+      "prerequisites": [
+        "db683fb0-55ab-4fdd-88f0-448532b6fa93"
+      ]
+    },
+    {
+      "id": "fb5a5671-f901-483e-809c-5dc0ca5b9e9a",
+      "path": "gametheory/somme-nulle/point-selle",
+      "decimal_path": "5.2",
+      "depth": 1,
+      "label_fr": "Point-selle",
+      "label_en": "Saddle point",
+      "definition_fr": "Cellule d'une matrice de gains qui est à la fois le minimum de sa ligne et le maximum de sa colonne : équilibre en stratégies pures d'un jeu à somme nulle.",
+      "definition_en": "Payoff-matrix cell that is simultaneously the minimum of its row and the maximum of its column: a pure-strategy equilibrium of a zero-sum game.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb",
+          "cell_id": "56a1ef29"
+        }
+      ],
+      "prerequisites": [
+        "db683fb0-55ab-4fdd-88f0-448532b6fa93"
+      ]
+    },
+    {
+      "id": "fb2b0d55-ebe8-417b-90e9-58438c08938a",
+      "path": "gametheory/evolution",
+      "decimal_path": "6",
+      "depth": 0,
+      "label_fr": "Théorie des jeux évolutionnaires",
+      "label_en": "Evolutionary game theory",
+      "definition_fr": "Relecture dynamique de la théorie des jeux : les stratégies se propagent dans une population selon leur succès reproductif, à partir du dilemme du prisonnier itéré.",
+      "definition_en": "Dynamic reading of game theory: strategies spread in a population according to their reproductive success, starting from the iterated Prisoner's dilemma.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb",
+          "cell_id": "82e5603f"
+        }
+      ],
+      "prerequisites": [
+        "74ee35b2-dd51-4877-9cf0-140e54bc71d4",
+        "1b5bcd55-9d68-4a80-b855-8df0b8893ca7"
+      ]
+    },
+    {
+      "id": "cb66ba99-74ba-4c8e-b7e0-0dad8219d741",
+      "path": "gametheory/evolution/axelrod",
+      "decimal_path": "6.1",
+      "depth": 1,
+      "label_fr": "Tournoi d'Axelrod",
+      "label_en": "Axelrod tournament",
+      "definition_fr": "Tournoi par ordinateur comparant des stratégies du dilemme du prisonnier itéré ; a mis en évidence la robustesse de Tit-for-Tat.",
+      "definition_en": "Computer tournament comparing iterated Prisoner's-dilemma strategies; highlighted the robustness of Tit-for-Tat.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb",
+          "cell_id": "997e52b8"
+        }
+      ],
+      "prerequisites": [
+        "fb2b0d55-ebe8-417b-90e9-58438c08938a"
+      ]
+    },
+    {
+      "id": "597a5cce-364d-4484-a70b-3dff06a9f209",
+      "path": "gametheory/evolution/replicateur",
+      "decimal_path": "6.2",
+      "depth": 1,
+      "label_fr": "Dynamique du réplicateur",
+      "label_en": "Replicator dynamics",
+      "definition_fr": "Équation différentielle décrivant la fraction de la population jouant chaque stratégie en fonction des gains moyens ; pont entre jeux et dynamique des populations.",
+      "definition_en": "Differential equation describing the population share playing each strategy from the average payoffs; the bridge between games and population dynamics.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb",
+          "cell_id": "de309499"
+        }
+      ],
+      "prerequisites": [
+        "fb2b0d55-ebe8-417b-90e9-58438c08938a"
+      ]
+    },
+    {
+      "id": "b834567d-6811-40b9-b4a8-5c85d00cc5cd",
+      "path": "gametheory/evolution/ess",
+      "decimal_path": "6.3",
+      "depth": 1,
+      "label_fr": "Stratégie évolutivement stable (ESS)",
+      "label_en": "Evolutionarily stable strategy (ESS)",
+      "definition_fr": "Stratégie qu'une petite proportion de mutants ne peut envahir ; raffinement évolutionnaire de l'équilibre de Nash, réfutable par un seul mutant.",
+      "definition_en": "Strategy that a small fraction of mutants cannot invade; an evolutionary refinement of Nash equilibrium, refutable by a single mutant.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb",
+          "cell_id": "609d6981"
+        }
+      ],
+      "prerequisites": [
+        "fb2b0d55-ebe8-417b-90e9-58438c08938a",
+        "74ee35b2-dd51-4877-9cf0-140e54bc71d4"
+      ]
+    },
+    {
+      "id": "3626bf11-66ff-452e-8a0c-b696674329bd",
+      "path": "gametheory/forme-extensive",
+      "decimal_path": "7",
+      "depth": 0,
+      "label_fr": "Jeu en forme extensive",
+      "label_en": "Extensive-form game",
+      "definition_fr": "Représentation d'un jeu séquentiel par un arbre de décision (nœuds de joueurs, de hasard, terminaux) ; convertible en forme normale. Cf. AIMA 4e ch. 18 (3e ch. 5).",
+      "definition_en": "Representation of a sequential game by a decision tree (player, chance, and terminal nodes); convertible to normal form. See AIMA 4e ch. 18 (3e ch. 5).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Python.ipynb",
+          "cell_id": "a7a53f4d"
+        }
+      ],
+      "prerequisites": [
+        "5f930f6f-76e8-4a9f-be11-f8d428a9487c"
+      ]
+    },
+    {
+      "id": "9b822eb2-a426-461e-9216-32039453c686",
+      "path": "gametheory/forme-extensive/ensembles-information",
+      "decimal_path": "7.1",
+      "depth": 1,
+      "label_fr": "Ensembles d'information",
+      "label_en": "Information sets",
+      "definition_fr": "Groupes de nœuds qu'un joueur ne peut distinguer : ils encodent l'information parfaite ou imparfaite et les coups simultanés d'un jeu extensif.",
+      "definition_en": "Groups of nodes a player cannot distinguish: they encode perfect or imperfect information and the simultaneous moves of an extensive game.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Python.ipynb",
+          "cell_id": "d80fe483"
+        }
+      ],
+      "prerequisites": [
+        "3626bf11-66ff-452e-8a0c-b696674329bd"
+      ]
+    },
+    {
+      "id": "5b320118-4af9-4c86-b551-2cae581dc9ac",
+      "path": "gametheory/induction-arriere",
+      "decimal_path": "8",
+      "depth": 0,
+      "label_fr": "Induction arrière",
+      "label_en": "Backward induction",
+      "definition_fr": "Résolution d'un jeu extensif à information parfaite en remontant l'arbre depuis les terminaux ; donne l'équilibre de la stratégie séquentielle optimale. Cf. AIMA 4e ch. 18 (3e ch. 5).",
+      "definition_en": "Solving a perfect-information extensive game by climbing the tree from the terminals; yields the equilibrium of the optimal sequential strategy. See AIMA 4e ch. 18 (3e ch. 5).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Python.ipynb",
+          "cell_id": "a40d7153"
+        }
+      ],
+      "prerequisites": [
+        "3626bf11-66ff-452e-8a0c-b696674329bd"
+      ]
+    },
+    {
+      "id": "47045218-488b-4769-a75d-0c8c039d9f7d",
+      "path": "gametheory/induction-arriere/centipede",
+      "decimal_path": "8.1",
+      "depth": 1,
+      "label_fr": "Paradoxe du Mille-Pattes",
+      "label_en": "Centipede-game paradox",
+      "definition_fr": "Jeu où l'induction arrière prédit un arrêt immédiat, en contradiction avec le comportement observé ; borne de la théorie séquentielle.",
+      "definition_en": "Game where backward induction predicts immediate stopping, at odds with observed behaviour; a boundary of sequential theory.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Python.ipynb",
+          "cell_id": "228e3a7a"
+        }
+      ],
+      "prerequisites": [
+        "5b320118-4af9-4c86-b551-2cae581dc9ac"
+      ]
+    },
+    {
+      "id": "257888b4-6a4d-4a55-9a03-ca2c448c6aa4",
+      "path": "gametheory/perfection",
+      "decimal_path": "9",
+      "depth": 0,
+      "label_fr": "Raffinements de l'équilibre",
+      "label_en": "Equilibrium refinements",
+      "definition_fr": "Famille de critères qui resserrent l'équilibre de Nash sur les jeux séquentiels : perfection en sous-jeux, induction avant, mains tremblantes.",
+      "definition_en": "Family of criteria that tighten Nash equilibrium on sequential games: subgame perfection, forward induction, trembling-hand.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb",
+          "cell_id": "f926c314"
+        }
+      ],
+      "prerequisites": [
+        "74ee35b2-dd51-4877-9cf0-140e54bc71d4",
+        "5b320118-4af9-4c86-b551-2cae581dc9ac"
+      ]
+    },
+    {
+      "id": "39e4cf75-8f73-42c0-8d04-9e15f3c7efd1",
+      "path": "gametheory/perfection/spe",
+      "decimal_path": "9.1",
+      "depth": 1,
+      "label_fr": "Équilibre parfait en sous-jeux (SPE)",
+      "label_en": "Subgame-perfect equilibrium (SPE)",
+      "definition_fr": "Profil qui constitue un équilibre de Nash dans chaque sous-jeu de l'arbre ; élimine les menaces non crédibles que l'induction arrière ne suffit pas à exclure.",
+      "definition_en": "Profile that is a Nash equilibrium in every subgame of the tree; rules out non-credible threats that backward induction alone does not exclude.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb",
+          "cell_id": "8c0875f4"
+        }
+      ],
+      "prerequisites": [
+        "257888b4-6a4d-4a55-9a03-ca2c448c6aa4",
+        "3626bf11-66ff-452e-8a0c-b696674329bd"
+      ]
+    },
+    {
+      "id": "86470690-2e85-4cd1-975b-a79ea9853651",
+      "path": "gametheory/perfection/induction-avant",
+      "decimal_path": "9.2",
+      "depth": 1,
+      "label_fr": "Induction avant",
+      "label_en": "Forward induction",
+      "definition_fr": "Raisonnement qui exploite le fait qu'un coup observé informe sur la rationalité future de son auteur ; raffinement au-delà de la perfection en sous-jeux.",
+      "definition_en": "Reasoning that exploits the fact that an observed move informs about the mover's future rationality; a refinement beyond subgame perfection.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb",
+          "cell_id": "a19d6b63"
+        }
+      ],
+      "prerequisites": [
+        "257888b4-6a4d-4a55-9a03-ca2c448c6aa4"
+      ]
+    },
+    {
+      "id": "028a4534-b075-4723-b7cf-872f4589f4a5",
+      "path": "gametheory/perfection/mains-tremblantes",
+      "decimal_path": "9.3",
+      "depth": 1,
+      "label_fr": "Perfection en mains tremblantes",
+      "label_en": "Trembling-hand perfection",
+      "definition_fr": "Équilibre robuste à de petites probabilités d'erreur (tremblements) de chaque joueur ; sélectionne les équilibres survivant à l'imprécision des coups.",
+      "definition_en": "Equilibrium robust to small (trembling) error probabilities of each player; selects the equilibria surviving imprecise moves.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb",
+          "cell_id": "143b196a"
+        }
+      ],
+      "prerequisites": [
+        "257888b4-6a4d-4a55-9a03-ca2c448c6aa4"
+      ]
+    }
+  ]
+}
