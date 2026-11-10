@@ -1781,9 +1781,11 @@ class TestAnchorRestRoute:
     """#23636 : l'ancre passe par le seau `core` (REST `pulls?head=`), qui
     reste sain quand le seau `graphql` est epuise sous le compte partage.
 
-    L'ancre GraphQL reste le repli (branches de fork : leur head
-    appartient a un autre proprietaire, donc hors du filtre `head=`), mais
-    son echec ne doit plus LEVER : une levee avortait toute la passe.
+    L'ancre GraphQL reste le repli des branches de fork dont le
+    proprietaire du head est inconnu : le filtre `head=` accepte bien
+    `<fork-owner>:<branch>`, mais la voie REST de l'organe ne connait que
+    le proprietaire du depot courant. Son echec ne doit plus LEVER : une
+    levee avortait toute la passe.
     """
 
     def test_rest_route_resolves_before_graphql(self, monkeypatch):
