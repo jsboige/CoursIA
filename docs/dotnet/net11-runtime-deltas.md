@@ -349,13 +349,17 @@ indépendante de la lane `myia-po-2023:CoursIA-2` (dashboard #18695, commentaire
 établit qu'une seconde cause, **inscrite dans la configuration des bancs**, suffit à elle seule à
 empêcher la conclusion — et qu'un hôte au repos ne la lèverait pas.
 
-`InProcessShortConfig` épingle `.WithInvocationCount(1).WithUnrollFactor(1)`
-(`semantic-fleet/benchmarks/SemanticFleet.Benchmarks/PromptSettingsBenchmarks.cs:33-34` ; même
+Dans la configuration mesurée le 29/10, `InProcessShortConfig` épinglait
+`.WithInvocationCount(1).WithUnrollFactor(1)`
+(dans `semantic-fleet/benchmarks/SemanticFleet.Benchmarks/PromptSettingsBenchmarks.cs` ; même
 choix dans `MetaGeneticSharp.Benchmarks/OptimizerBenchmarks.cs`, justifié au fichier par un
-contournement antivirus). Conséquence : **une itération vaut exactement une invocation**, soit
+contournement antivirus). Conséquence à cette date : **une itération valait exactement une invocation**, soit
 3,7 à 90 µs selon la cellule — deux à quatre ordres de grandeur sous les ~100 ms que BDN
 recommande, et qu'il réclame lui-même dans les journaux. À cette granularité, le bruit n'est pas
-réduit par une machine calme : il est structurel.
+réduit par une machine calme : il est structurel. Le gitlink `semantic-fleet`
+`e675df97c4c5`, présent sur `main` au 09/11, a depuis retiré ce plafond d’invocation et ajouté
+des variantes par opération ; voir la campagne Linux ci-dessous. Cette évolution ne modifie pas
+les résultats historiques ci-dessus et ne prouve pas, à elle seule, les deltas entre runtimes.
 
 Ce que cette correction ne dit pas — et **deux mécanismes déjà publiés puis réfutés par la mesure**.
 La même lane a d'abord avancé deux explications de l'écart entre régimes, puis les a testées et
@@ -366,9 +370,16 @@ défaut, ni une fusion d'appels purs par le JIT n'en rendent compte. Même job l
 sur 8 jobs de contenu distinct, où le hissage est impossible par construction, ne ralentit rien :
 rapport variable/constant de 0,9× sur les trois runtimes. Ce qui subsiste est un **fait**, pas une
 explication — deux régimes de mesure du même appel diffèrent d'un facteur 13× à près de 300×, et le
-mécanisme en est **ouvert**. Le test qui départagerait « coût fixe par itération » de « coût réel »
-— `OperationsPerInvoke` fixe et croissant sur le même appel (N = 1, 100, 10 000) — n'est pas fait ;
-ce document ne cite donc aucun mécanisme.
+mécanisme en est **ouvert**.
+
+Le [test à N croissant rapporté le 29/10 sur #18695](https://github.com/jsboige/CoursIA/issues/18695#issuecomment-6507128099)
+a depuis comparé N = 1, 100 et 10 000 appels par invocation, en job long, sur les trois
+runtimes (deux passes entrelacées par runtime). Les médianes rapportées pour `Matches` vont de
+13,5 à 22,1 ns/opération et celles de `Serialize` de 3 799 à 4 671 ns/opération ; elles ne
+chutent pas lorsque N augmente. Cette expérience appuie la lecture du **coût marginal** du job
+long, sans établir la nature du résidu du `ShortRun`. Elle porte sur un seul siège et une seule
+journée ; ses journaux et CSV sont restés en scratch hors dépôt. Il s'agit ici d'une reprise du
+compte rendu, non d'une reproduction indépendante ni d'un nouveau verdict inter-runtimes.
 
 **Ce que cela change pour les chiffres de ce document.** Ni la direction ni les valeurs ne sont
 renversées ; c'est leur **solidité** qui n'est pas celle qui était écrite. Les deux régimes
@@ -377,11 +388,65 @@ disponibles se contredisent en signe sur `Serialize` 9→10 (ShortRun apparié �
 n'est donc **établi** : le drapeau INCONCLUSIF est confirmé, mais pour une raison de plus, et la
 re-mesure à programmer ne se réduit pas à « trouver une machine calme ».
 
-Le correctif porte sur la source des bancs, `semantic-fleet` et `MetaGeneticSharp` — donc des
-sous-modules : il relève de la coordination `ai-01` et n'est pas ouvert par cette PR. Sa forme
-précise dépend du régime à N croissant, non encore mesuré. `UnrollFactor(1)` étant **déjà** la
-valeur du dépôt côté `ShortRun`, le changer n'est pas le correctif ; l'argument variable non plus,
-la mesure ci-dessus le montre inopérant.
+La correction du banc relève des sous-modules. `semantic-fleet` a depuis retiré le plafond
+d'invocation ; l'effet sur le bruit et sur les deltas reste à apprécier par des campagnes
+indépendantes. `UnrollFactor(1)` était **déjà** la valeur du dépôt côté `ShortRun` ; le changer
+n'expliquait pas l'écart de régimes, pas plus que la variation des arguments à elle seule.
+
+## Banc 4 actualisé — mesure Linux des runtimes 9, 10 et 11 (09/11)
+
+Sur le gitlink `semantic-fleet` **e675df97c4c511681c98d2d60ccd5fd26ce1b899** de `main`,
+le banc existant utilise maintenant un nombre automatique d'invocations et propose les variantes
+`Signature_Matches_PerOp` (10 000 appels, arguments tournants) et `JsonSerialize_PerOp`
+(1 000 appels). Nous avons exécuté ces deux méthodes et leurs variantes à un appel :
+BenchmarkDotNet 0.15.8, `InProcessEmitToolchain`, 5 warmups, 15 itérations ciblant 100 ms,
+`UnrollFactor=1`. La compilation Release du projet `benchmarks/SemanticFleet.Benchmarks` a réussi
+avec SDK 10.0.403 ; `GITHUB_ACTIONS=true` désactive la cible `dotnet format` du sous-module.
+Chaque processus a été lancé avec `dotnet exec --fx-version <version> <dll> --filter
+'*Signature_Matches*' '*JsonSerialize*' --exporters json`. Le code et les données du banc ne
+sont pas modifiés.
+
+Six paires : les trois premières dans l'ordre 10 puis 9, les trois suivantes 9 puis 10.
+Hôte Linux Debian 13, Xeon Platinum 8370C, 5 cœurs logiques disponibles ; runtimes 9.0.22 et
+10.0.14, même binaire net9.0. Le tableau donne les moyennes BDN en **ns/opération** ; les
+variantes par opération divisent déjà par leur nombre d'appels. Les écarts inter-passes ne sont
+pas des intervalles de confiance ; les statistiques BDN et mesures d'itérations effectives sont
+conservées dans [`scripts/results/net11-semantic-fleet-2026-11-09/`](../../scripts/results/net11-semantic-fleet-2026-11-09/)
+(18 exports JSON, étapes hors `Workload/Actual` omises). La première passe exploratoire, hors
+protocole équilibré, n'est pas dans le tableau.
+
+| Paire | Matches 9 / 10 | Matches ×10000 9 / 10 | Serialize 9 / 10 | Serialize ×1000 9 / 10 |
+|---:|---:|---:|---:|---:|
+| 1 | 37,21 / 28,54 | 37,48 / 28,45 | 6 341 / 11 146 | 6 327 / 8 613 |
+| 2 | 36,82 / 32,67 | 38,79 / 37,70 | 6 719 / 9 961 | 15 877 / 15 449 |
+| 3 | 48,24 / 26,57 | 39,50 / 29,81 | 6 827 / 10 791 | 6 654 / 9 395 |
+| 4 | 37,56 / 36,52 | 51,03 / 28,35 | 7 569 / 9 602 | 6 447 / 8 613 |
+| 5 | 40,25 / 36,99 | 48,63 / 29,57 | 8 942 / 9 538 | 8 525 / 9 014 |
+| 6 | 37,34 / 30,67 | 47,63 / 30,90 | 7 575 / 9 817 | 6 722 / 9 063 |
+
+Pour `Serialize ×1000`, le delta apparié 10/9 varie de −2,7 % à +41,2 %, avec changement de
+signe. Pour `Matches ×10000` il varie de −44,4 % à −2,8 %. Les deux tailles d'invocation ne
+sont pas une réplication exacte de l'expérience historique N=1/100/10000 : la variante Matches
+fait aussi tourner ses entrées.
+
+Le runtime officiel **11.0.0-rc.3.26522.148** a ensuite été installé à part et le même binaire
+net9.0 exécuté six fois avec la même commande et configuration BDN. Ces passes suivent toutes
+les passes 9/10 : elles ne sont **pas appariées** à elles et ne permettent pas de séparer un
+effet du runtime d'une dérive de la machine dans le temps.
+
+| Passe 11 | Matches | Matches ×10000 | Serialize | Serialize ×1000 |
+|---:|---:|---:|---:|---:|
+| 1 | 36,65 | 40,25 | 9 334 | 10 264 |
+| 2 | 30,52 | 27,59 | 12 681 | 7 366 |
+| 3 | 32,32 | 28,52 | 8 620 | 7 471 |
+| 4 | 27,20 | 29,92 | 8 280 | 7 644 |
+| 5 | 29,28 | 29,85 | 9 150 | 8 777 |
+| 6 | 29,43 | 29,45 | 7 342 | 7 584 |
+
+Cette campagne est limitée à une VM partagée ; elle ne contrôle ni la charge de l'hôte ni l'ordre
+à l'intérieur d'une paire. La série 11 est tardive et la dispersion est visible : elle ne justifie
+pas un gain généralisable. **INCONCLUSIF** reste le verdict inter-runtimes. Une campagne isolée
+et entrelacée 9/10/11 reste nécessaire.
 
 ## Re-mesure du banc 4 (semantic-fleet) — fenêtre du 30/10 (myia-po-2024)
 
