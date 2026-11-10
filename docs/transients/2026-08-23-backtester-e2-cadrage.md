@@ -25,7 +25,7 @@ Ce sont les **deux seuls** modules du patrimoine atterris à ce jour ; tous deux
 
 ### 2.1 Ce que le fork consomme réellement (mesuré, pas supposé)
 
-Source : `MyIntelligenceAgency/Lean`, branche `MyIABacktesting_integration`, checkout sparse de `dotnet/MyIA.Trading.Backtester/` — 16 Mo (les chiffres de la recon po-2024 c.708 sont exacts).
+Source : `MyIntelligenceAgency/Lean`, branche `MyIABacktesting_integration`, checkout sparse de `MyIA.Trading.Backtester/` — 16 Mo (les chiffres de la recon po-2024 c.708 sont exacts).
 
 | Dépendance | Empreinte mesurée |
 |---|---|
