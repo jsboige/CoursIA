@@ -144,10 +144,6 @@
       "ML/ML.Net/ML-01-Introduction-Python.ipynb",
       "ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb"
     ],
-    "Probas": [
-      "Probas/Probas-CLT-Theoreme-Central-Limite.ipynb",
-      "Probas/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb"
-    ],
     "Probas/Applications": [
       "Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb"
     ],
