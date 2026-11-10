@@ -1976,6 +1976,7 @@ query {
       pageInfo { hasNextPage endCursor }
       nodes {
         number title headRefName body additions deletions
+        headRefOid
         files(first:100) { totalCount nodes { path } }
       }
     }
@@ -1990,6 +1991,7 @@ query($cursor: String) {
       pageInfo { hasNextPage endCursor }
       nodes {
         number title headRefName body additions deletions
+        headRefOid
         files(first:100) { totalCount nodes { path } }
       }
     }
@@ -2189,6 +2191,7 @@ def _gh_open_prs_complete() -> list[dict]:
                 "number": number,
                 "title": node.get("title"),
                 "headRefName": node.get("headRefName"),
+                "headRefOid": node.get("headRefOid"),
                 "body": node.get("body"),
                 "additions": node.get("additions"),
                 "deletions": node.get("deletions"),
@@ -2528,6 +2531,118 @@ def _open_prs_by_referenced_issue(
     return index
 
 
+def _pr_files_against_main(pr: dict) -> list[str] | None:
+    """Return paths touched by first-parent PR commits absent from main.
+
+    The PR-files API describes the branch diff against its declared base. For a
+    stacked branch that has absorbed main, this can include files changed only
+    by main. The head commit is supplied by GraphQL; a missing local object is
+    fetched by its pull ref. The first-parent, non-merge log lists ordinary PR
+    commits absent from main; merge commits are compared with a main ancestor
+    parent so their conflict resolutions and additions are retained without
+    counting files simply imported from main. Git has no 100-file API ceiling.
+
+    ``None`` means provenance could not be established. Callers then retain
+    the API paths (fail-closed); an unavailable ref or Git error must never
+    release an implicit occupation. An empty list means there is no path
+    touched by an ordinary first-parent commit or contributed by a merge.
+    """
+    head = pr.get("headRefOid")
+    number = pr.get("number")
+    if not isinstance(head, str) or not re.fullmatch(r"[0-9a-fA-F]{40,64}", head):
+        return None
+
+    def git(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["git", *args], capture_output=True, check=False,
+            encoding="utf-8", errors="strict",
+            timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+
+    try:
+        has_head = git("cat-file", "-e", f"{head}^{{commit}}")
+        if has_head.returncode != 0:
+            if not isinstance(number, int) or number <= 0:
+                return None
+            fetched = git("fetch", "--no-tags", "origin",
+                          f"refs/pull/{number}/head")
+            if fetched.returncode != 0:
+                return None
+            fetched_head = git("rev-parse", "--verify", "FETCH_HEAD")
+            if (fetched_head.returncode != 0
+                    or fetched_head.stdout.strip().lower() != head.lower()):
+                return None
+        main = git("rev-parse", "--verify", "origin/main")
+        if main.returncode != 0:
+            return None
+        main_oid = main.stdout.strip()
+        commits = subprocess.run(
+            ["git", "log", "--first-parent", "--no-merges", "--format=",
+             "--name-only", "-z", f"origin/main..{head}", "--"],
+            capture_output=True, check=False, timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+        if commits.returncode != 0:
+            return None
+        paths = {path.decode("utf-8") for path in commits.stdout.split(b"\0") if path}
+
+        # A merge commit can carry the PR's only change (conflict resolution,
+        # an `ours` choice, or a file created during resolution). For each
+        # first-parent merge outside main, diff its tree against a parent that
+        # is already on main. This includes the merge's own tree contribution
+        # while ignoring files merely imported from that main parent.
+        merges = git("rev-list", "--first-parent", "--merges",
+                     f"origin/main..{head}")
+        if merges.returncode != 0:
+            return None
+        for merge in merges.stdout.splitlines():
+            ancestry = git("rev-list", "--parents", "-n", "1", merge)
+            if ancestry.returncode != 0:
+                return None
+            commits_and_parents = ancestry.stdout.split()
+            parents = commits_and_parents[1:]
+            if len(parents) < 2 or commits_and_parents[0] != merge:
+                return None
+            main_parents = []
+            for parent in parents:
+                is_main_ancestor = git("merge-base", "--is-ancestor", parent, main_oid)
+                if is_main_ancestor.returncode == 0:
+                    main_parents.append(parent)
+                elif is_main_ancestor.returncode != 1:
+                    return None
+            # Several parents can already be on main while this merge
+            # deliberately chooses an older parent's content (e.g. ours).
+            # Matching one ancestor is not proof of inheriting main's tree.
+            # Compare with current main in this ambiguous case; this can
+            # conservatively retain later main paths, never release work.
+            comparison_parents = (
+                [main_oid] if len(main_parents) > 1
+                else main_parents or [parents[0]]
+            )
+            merge_contribution: set[str] | None = None
+            for parent in comparison_parents:
+                merge_diff = subprocess.run(
+                    ["git", "diff", "--name-only", "-z", parent, merge, "--"],
+                    capture_output=True, check=False, timeout=_GH_OPEN_PRS_TIMEOUT_S,
+                )
+                if merge_diff.returncode != 0:
+                    return None
+                changed_from_parent = {
+                    path.decode("utf-8")
+                    for path in merge_diff.stdout.split(b"\0") if path
+                }
+                # Compare against the selected main reference; a merge
+                # resolution matching an old ancestor still occupies a path
+                # when current main carries another resolution.
+                merge_contribution = (
+                    changed_from_parent if merge_contribution is None
+                    else merge_contribution & changed_from_parent
+                )
+            paths.update(merge_contribution or set())
+        return sorted(paths)
+    except (OSError, UnicodeDecodeError, subprocess.SubprocessError):
+        return None
+
+
 def _open_prs_by_issue_and_lane(
     prs: list[dict],
 ) -> dict[tuple[int, str | None], list[dict]]:
@@ -2569,10 +2684,14 @@ def _find_open_prs_referencing_issue(
     """Open PRs of OTHER lanes whose body references `issue_number`.
 
     Own-lane PRs are omitted (a lane does not collide with itself -- the
-    same exclusion the `--paths` leg applies). A PR whose lane tag is
-    unreadable counts as another lane (`extract_lane` returns None,
-    None != my_lane): fail-closed, mirroring `--paths`, where an
-    unreadable lane tag also counts as a collision. Sorted by PR number
+    same exclusion the `--paths` leg applies). When Git can establish the
+    head's non-merge first-parent commits absent from `origin/main`, an empty
+    path set is omitted and the reported paths are complete (not the API's
+    100-path preview). Unresolvable provenance keeps API paths and occupation.
+    A PR whose lane tag is unreadable counts as another lane
+    (`extract_lane` returns None, None != my_lane): fail-closed, mirroring
+    `--paths`, where an unreadable lane tag also counts as a collision.
+    Sorted by PR number
     (deterministic verdict order). Test injection: pass `prs` to avoid the
     `gh` round-trip; pass `threshold` to pin the enumeration guard (#24788).
 
@@ -2590,8 +2709,17 @@ def _find_open_prs_referencing_issue(
         lane = extract_lane(body)
         if lane == my_lane:
             continue
-        files = [f.get("path") for f in (pr.get("files") or [])
-                 if f.get("path")]
+        files = _pr_files_against_main(pr)
+        if files is None:
+            # Transport, SHA, or local object failure: preserve legacy paths
+            # and therefore the conservative occupation verdict.
+            files = [f.get("path") for f in (pr.get("files") or [])
+                     if f.get("path")]
+        elif not files:
+            # No file changed by a PR-line commit absent from main: inherited
+            # main changes cannot occupy this grain. The fallback above is
+            # intentionally unavailable once Git proved the empty diff.
+            continue
         cited = len(_referenced_issue_numbers(body))
         out.append({
             "number": pr.get("number"),

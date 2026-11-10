@@ -17,6 +17,7 @@ from regime_detector import (
     HMMRegimeResult,
     detect_regimes,
     detect_regimes_hmm,
+    detect_regimes_hmm_causal,
     detect_regimes_price,
 )
 
@@ -642,3 +643,92 @@ class TestDetectRegimes:
     def test_invalid_method_raises(self, prices):
         with pytest.raises(ValueError, match="Unknown method"):
             detect_regimes(prices, method="invalid")
+
+
+# ---------------------------------------------------------------------------
+# Causal regime detection (#21054) — the look-ahead witnesses
+# ---------------------------------------------------------------------------
+
+
+class TestDetectRegimesHmmCausal:
+    """The causal path must be a function of the past only.
+
+    The witness is the perturbation: a shock applied to the series *after*
+    a given day must not move the labels of the days before it. The legacy
+    path is checked in the same conditions to prove the fix is not a no-op.
+    """
+
+    @pytest.fixture
+    def prices(self):
+        rng = np.random.default_rng(7)
+        returns = rng.normal(0.0002, 0.009, 320)
+        return pd.Series(100 * np.cumprod(1 + returns))
+
+    def test_labels_length_and_decode_mode(self, prices):
+        result = detect_regimes_hmm_causal(prices, n_states=3)
+        assert len(result.labels) == len(prices)
+        assert result.decode_mode == "causal-expanding"
+
+    def test_regime_names_are_canonical(self, prices):
+        result = detect_regimes_hmm_causal(prices, n_states=3)
+        assert result.regime_names == ["bull", "neutral", "bear"]
+
+    def test_produces_labels(self, prices):
+        result = detect_regimes_hmm_causal(prices, n_states=3)
+        assert len(set(result.labels.tolist())) > 1
+
+    def test_label_convention_reserves_zero_for_warmup(self, prices):
+        """0 = "no regime yet"; the canonical slots are 1..n_states.
+
+        The pipeline consumers select the labelled rows with
+        ``labels > 0``; the convention must therefore leave slot 0 free.
+        """
+        result = detect_regimes_hmm_causal(prices, n_states=3)
+        observed = set(np.unique(result.labels).tolist())
+        assert observed <= {0, 1, 2, 3}
+        # The rows carrying a regime are a contiguous tail (the rows before
+        # the first training window have no regime and stay at 0).
+        labelled = np.flatnonzero(result.labels > 0)
+        assert len(labelled) > 0
+        assert labelled.max() == len(result.labels) - 1
+        assert labelled.min() > 0
+
+    def test_one_hot_leaves_warmup_rows_empty(self, prices):
+        """The one-hot frame must show "no regime" as an all-zero row."""
+        result = detect_regimes_hmm_causal(prices, n_states=3)
+        warmup = result.labels == 0
+        assert warmup.any()
+        for slot, name in enumerate(result.regime_names, start=1):
+            column = (result.labels == slot).astype(float)
+            assert column[warmup].sum() == 0
+
+    def test_future_shock_does_not_move_past_labels(self, prices):
+        cut = 200
+        shocked = prices.copy()
+        shocked.iloc[cut] = shocked.iloc[cut] * 1.5
+        base = detect_regimes_hmm_causal(prices, n_states=3)
+        after = detect_regimes_hmm_causal(shocked, n_states=3)
+        assert np.array_equal(base.labels[:cut], after.labels[:cut])
+
+    def test_tail_perturbation_does_not_move_past_labels(self, prices):
+        cut = int(len(prices) * 0.75)
+        shocked = prices.copy()
+        shocked.iloc[cut:] = shocked.iloc[cut:] * 1.25
+        base = detect_regimes_hmm_causal(prices, n_states=3)
+        after = detect_regimes_hmm_causal(shocked, n_states=3)
+        assert np.array_equal(base.labels[:cut], after.labels[:cut])
+
+    def test_legacy_path_is_still_retrospective(self, prices):
+        """Contrast: the legacy path moves its past labels (the leak we fix)."""
+        cut = 200
+        shocked = prices.copy()
+        shocked.iloc[cut : cut + 5] = shocked.iloc[cut : cut + 5] * 1.35
+        base = detect_regimes_hmm(prices, n_states=3)
+        after = detect_regimes_hmm(shocked, n_states=3)
+        assert not np.array_equal(base.labels[:cut], after.labels[:cut])
+
+    def test_insufficient_data(self):
+        prices = pd.Series([100, 101, 102])
+        result = detect_regimes_hmm_causal(prices, n_states=3, min_samples=80)
+        assert all(name == "unknown" for name in result.regime_names)
+        assert result.decode_mode == "causal-expanding"
