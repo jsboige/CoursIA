@@ -58,6 +58,10 @@ jobs:
     # same-repo n'est requise (cf en-tete de check_self_hosted_runner_policy.py).
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # #23349 : borne explicite. Mesure du 2026-11-09 sur les 15 derniers
+    # runs, 1 vert mesure : max 60.9 min (run 39236127105). Le defaut
+    # d'Actions est 6 h, et un job fige tient son slot tout ce temps.
+    timeout-minutes: 125
     steps:
       - name: Checkout
         uses: actions/checkout@v4
