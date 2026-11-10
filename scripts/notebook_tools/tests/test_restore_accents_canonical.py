@@ -929,3 +929,45 @@ class Test21277CitationMask:
         assert "the element of the group" in src
         assert "élément" not in src
         assert "modèle" in src
+
+    def test_english_quote_with_de_name_not_cured(self, tmp_path):
+        # Contre-exemple adjoint #25613 : une citation ANGLAISE portant le token
+        # "de" (nom propre « de Finetti ») ne doit PAS etre prise pour francaise.
+        # Avant le fix : "de" etait dans _FR_MARKER_RE, la citation etait jugee FR
+        # et "element" y etait accentue. Les marqueurs d'une citation excluent
+        # "de"/"en" (collision avec l'anglais) -> la citation reste intacte.
+        nb = _nb([("markdown",
+                   "Le memoire de 1859 cite le resultat :\n"
+                   "> the element defined by de Finetti is central\n"
+                   "Le modele reste la reference.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        # la citation anglaise (avec "de Finetti") est intacte
+        assert "the element defined by de Finetti is central" in src
+        assert "élément" not in src
+        # la prose FR avoisinante reste curee
+        assert "modèle" in src
+
+    def test_link_title_in_quotes_not_corrupted(self, tmp_path):
+        # Contre-exemple adjoint #25613 : un lien dont le TITRE est entre guillemets
+        # ne doit pas faire fuiter le placeholder de masquage (\x00MS0\x00) dans la
+        # cible. Avant le fix : la citation etait masquee en premier, puis la cible
+        # de lien masquee autour d'elle -> placeholder imbrique non restaure.
+        # Les guillemets sont masques APRES la cible de lien (masquee en bloc,
+        # titre inclus) -> restauree byte-identique, pas de fuite.
+        nb = _nb([("markdown",
+                   'Voir le modele de base : [la reference]'
+                   '(notes/model.md "The Selection Model") pour le detail.')])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        # le placeholder de masquage ne doit JAMAIS fuiter dans la sortie
+        assert "\x00" not in src
+        assert "MS0" not in src
+        # la cible de lien (titre entre guillemets inclus) est integre
+        assert '[la reference](notes/model.md "The Selection Model")' in src
+        # la prose FR avoisinante reste curee
+        assert "modèle" in src
