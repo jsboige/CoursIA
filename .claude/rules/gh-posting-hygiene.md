@@ -53,7 +53,7 @@ L'organe couvre **les deux membres** de la famille — le littéral `@<path>` (c
 
 ## Incidents de référence
 
-Quatre occurrences mesurées sur 2 sièges et 2 OS — la classe n'est ni spécifique à un siège ni à
+Quatre occurrences mesurées sur 3 sièges et 2 OS — la classe n'est ni spécifique à un siège ni à
 un OS, elle frappe toute lane qui poste un corps de fichier via `-f`. Le récit détaillé (sièges,
 chemins, remédiation, le trompe-l'œil du rouge `tag_required` sur #17270/#17326) :
 [docs/reference/gh-posting-hygiene-detail.md](../../docs/reference/gh-posting-hygiene-detail.md).

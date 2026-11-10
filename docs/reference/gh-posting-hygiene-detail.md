@@ -7,7 +7,7 @@ récit des incidents mesurés qui la fondent.
 ## Incidents de référence (2026-09-18/19 · 2026-09-21)
 
 - #16855 c.5740907673 — `@/tmp/…` — siège NanoClaw (conteneur Linux) — corrigé par PATCH au constat.
-- #16766 — `@C:\Users\jsboi\AppData\Local\Temp\a16766.md` — siège po-2025 (Windows).
+- #16766 — `@C:\Users\jsboi\AppData\Local\Temp/a16766.md` — siège po-2025 (Windows).
 - #16723 c.5736850630 — idem, même batch 14 s plus tôt (Windows).
 
 La classe n'est ni spécifique à un siège ni à un OS : elle frappe toute lane qui poste un corps
