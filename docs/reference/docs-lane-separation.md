@@ -1,14 +1,15 @@
 # Séparation des lanes de documentation — pérenne / transiente
 
-> REFERENCE — vivante — dernière révision 2026-11-08
+> REFERENCE — vivante — dernière révision 2026-11-10
 
 L'arbre `docs/` vit deux lanes distinctes (design #14623) : des **documents pérennes**
 (références, procédures, règles — vivants, mis à jour sur place) et des **rapports
 transients** (mesures datées, figées). La convention complète de la lane transiente
 — nom daté, en-tête gelé, les trois destinations, le contrat de distillation — vit
 dans le [README de la lane](../transients/README.md). Cette référence pérenne porte
-la **méthode de tri** qui alimente la lane et l'**état courant de la resorption**,
-deux choses que le README de lane (description de soi) ne porte pas.
+la **méthode de tri** qui alimente la lane et renvoie le suivi des vagues de
+distillation à l'issue #14623, deux choses que le README de lane (description de soi)
+ne porte pas.
 
 ## La méthode de tri de l'arbre pérenne
 
