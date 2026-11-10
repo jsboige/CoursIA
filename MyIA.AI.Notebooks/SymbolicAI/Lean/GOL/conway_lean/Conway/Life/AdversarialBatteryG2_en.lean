@@ -68,9 +68,9 @@ import Conway.Life.AdversarialBattery_en
 import Conway.Life.HashlifeCorrectness
 
 namespace Conway_en
-open Conway
+open Conway_en
 namespace Life_en
-open Life
+open Life_en
 
 /-! ## Ingredient (H) — the `centralCorrect` hypothesis is INTRINSIC
 

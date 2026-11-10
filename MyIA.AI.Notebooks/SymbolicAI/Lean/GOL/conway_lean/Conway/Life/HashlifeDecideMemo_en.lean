@@ -87,8 +87,8 @@ T12.
   block differ between the two files.
 -/
 
-import Conway.Life
-import Conway.Life.MacroCell
+import Conway.Life_en
+import Conway.Life.MacroCell_en
 import Std.Data.HashMap
 
 namespace Conway

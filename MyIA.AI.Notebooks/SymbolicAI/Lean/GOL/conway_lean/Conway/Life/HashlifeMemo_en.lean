@@ -51,8 +51,8 @@ million, within `native_decide` budget.
   signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
-import Conway.Life.MacroCell
-import Conway.Life.Hashlife
+import Conway.Life.MacroCell_en
+import Conway.Life.Hashlife_en
 import Std.Data.HashMap
 
 namespace Conway

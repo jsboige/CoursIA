@@ -51,14 +51,14 @@ The parser returns a `Grid` (sorted lexicographic list of
 This module is fully proven (no gaps).
 -/
 
-import Conway.Life
-import Conway.Life.Spaceships
-import Conway.Life.Oscillators
+import Conway.Life_en
+import Conway.Life.Spaceships_en
+import Conway.Life.Oscillators_en
 
 namespace Conway_en
-open Conway
+open Conway_en
 namespace Life_en
-open Life
+open Life_en
 namespace RLE_en
 
 /-! ## Internal parser state -/

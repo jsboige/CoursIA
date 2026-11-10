@@ -32,12 +32,12 @@ This module is fully proven (no gaps).
   signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
-import Conway.Life
+import Conway.Life_en
 
 namespace Conway_en
-open Conway
+open Conway_en
 namespace Life_en
-open Life
+open Life_en
 
 /-! ## Lightweight Spaceship (LWSS)
 

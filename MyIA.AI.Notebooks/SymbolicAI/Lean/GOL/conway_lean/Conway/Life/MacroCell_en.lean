@@ -40,7 +40,7 @@ and conversions. The Hashlife algorithm lives in
 `Conway.Life.Hashlife`.
 -/
 
-import Conway.Life
+import Conway.Life_en
 
 
 /-
@@ -53,10 +53,10 @@ import Conway.Life
 
 namespace Conway_en
 
-open Conway
+open Conway_en
 
 namespace Life_en
-open Life
+open Life_en
 
 /-! ## The quadtree data structure -/
 

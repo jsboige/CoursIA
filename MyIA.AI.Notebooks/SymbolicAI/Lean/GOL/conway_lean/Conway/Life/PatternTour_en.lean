@@ -24,17 +24,17 @@ English mirror; the French canonical lives in `PatternTour.lean`. Only docstring
 comments differ; statements, tactics and proofs are byte-identical across the two files.
 -/
 
-import Conway.Life
-import Conway.Life.Oscillators
-import Conway.Life.Spaceships
-import Conway.Life.RLE
-import Conway.Life.Computation
+import Conway.Life_en
+import Conway.Life.Oscillators_en
+import Conway.Life.Spaceships_en
+import Conway.Life.RLE_en
+import Conway.Life.Computation_en
 
 namespace Conway_en
-open Conway
+open Conway_en
 namespace Life_en
-open Life
-open Conway.Life.RLE
+open Life_en
+open Conway_en.Life_en.RLE_en
 
 /-! ## §1. Equilibrium — still lifes
 

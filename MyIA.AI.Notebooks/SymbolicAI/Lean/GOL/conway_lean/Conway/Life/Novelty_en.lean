@@ -45,14 +45,14 @@ This module is fully proved (no `sorry`, no native axioms).
   header block differ between the two files.
 -/
 
-import Conway.Life
-import Conway.Life.MacroCell
+import Conway.Life_en
+import Conway.Life.MacroCell_en
 import Conway.Life.HashlifeCorrectness.Foundation
 
 namespace Conway_en
-open Conway
+open Conway_en
 namespace Life_en
-open Life
+open Life_en
 
 /-! ## Multiples of the period
 
@@ -128,7 +128,7 @@ theorem blinker_h_trajectory_states_le :
     ∃ s : Finset Grid, s.card ≤ 2 ∧ ∀ t : Nat, evolve t blinker_h ∈ s :=
   trajectory_states_le_of_period _ 2 (by norm_num) (by decide)
 
-open Conway.Life.MacroCell
+open Conway_en.Life_en.MacroCell
 
 /-! ## Novelty bound at the node level (macrocells)
 

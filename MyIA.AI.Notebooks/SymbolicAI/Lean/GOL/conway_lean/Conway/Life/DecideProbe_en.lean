@@ -51,13 +51,13 @@
   tactics and proofs are byte-identical; only docstrings and comments differ.
 -/
 
-import Conway.Life
-import Conway.Life.Computation
+import Conway.Life_en
+import Conway.Life.Computation_en
 
 namespace Conway_en
-open Conway
+open Conway_en
 namespace Life_en
-open Life
+open Life_en
 
 set_option maxRecDepth 1000000
 
