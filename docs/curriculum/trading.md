@@ -40,8 +40,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 9 | [2.11 — Régularisation sparse : LASSO (L1) vs Ridge…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb) | BETA | Oui |
 | 10 | [2.11b — Operateurs proximaux : ISTA et FISTA from…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11b-Proximal-Operators-From-Scratch.ipynb) | BETA | Oui |
 | 11 | [2.11c — Lasso SOTA : coordinate descent, LassoCV, et…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11c-Lasso-SOTA-Comparison.ipynb) | ALPHA | Oui |
-| 12 | [2.11d — ADMM from scratch](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11d-Optimisation-ADMM-From-Scratch.ipynb) | ALPHA | Oui |
-| 13 | [2.11f — Comparaison bloc A / bloc B : le tableau croisé…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11f-Comparaison-Optimisation-Convexe.ipynb) | BETA | Oui |
+| 12 | [2.11d — ADMM from scratch : LASSO sous contrainte β =…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11d-Optimisation-ADMM-From-Scratch.ipynb) | ALPHA | Oui |
+| 13 | [2.11f — Comparaison from scratch / SOTA : le tableau…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11f-Comparaison-Optimisation-Convexe.ipynb) | BETA | Oui |
 | 14 | [2.12 — Données déséquilibrées : la courbe PR, les…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.12-Donnees-Desequilibrees.ipynb) | BETA | Oui |
 | 15 | [2.13 — Analyse d'erreurs : diagnostiquer un modèle…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.ipynb) | BETA | Oui |
 | 16 | [2.14 — Explicabilité (XAI) : SHAP, LIME et…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb) | BETA | Oui |
@@ -199,7 +199,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 2 | [Actuariat-02 — Fréquence × sévérité hiérarchique : le…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-02-Freq-Sev-Hierarchique.ipynb) | BETA | Oui |
 | 3 | [Actuariat-03 — Crédibilité actuarielle de…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-03-Actuarial-Credibility.ipynb) | BETA | Oui |
 | 4 | [Actuariat-04 : Ruine et capital — le processus de…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-04-Ruine-Lundberg.ipynb) | BETA | Oui |
-| 5 | [Actuariat-05 — Valeur de l'Information en Souscription](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb) | BETA | Oui |
+| 5 | [Actuariat-05 — Valeur de l'information en souscription](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb) | BETA | Oui |
 | 6 | [CausalBridges-00 — Du graphe causal a l'echelle de…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-00-PearlLadder-Intro-Python.ipynb) | ALPHA | Oui |
 | 7 | [Du graphe causal au do-calculus — le pont entre les…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) | BETA | Oui |
 | 8 | [CausalBridges-02 — Exiger un estimand :…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-02-Dowhy-Estimand-Intervention.ipynb) | BETA | Oui |
