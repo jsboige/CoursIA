@@ -118,6 +118,20 @@ def test_regression_dir_in_site_tree_is_not_servable(tmp_path):
     assert page[0].endswith("Audio/ -> Audio/README.html")
 
 
+def test_regression_dir_href_with_fragment_is_still_a_dir(tmp_path):
+    """Un href ancre ``Audio/#creer`` reste un lien de REPERTOIRE : le test
+    doit s'entendre sur le chemin epice de son fragment (un rstrip("#") sur
+    une chaine finissant par "creer" ne detectait rien), et le fragment se
+    reconduit sur la cible -- le perdre casserait la navigation."""
+    site = _tree(tmp_path)
+    _write(site, "MyIA.AI.Notebooks/GenAI/README.html", ["Audio/#creer"])
+    n, page = mod.process_html(
+        site / "MyIA.AI.Notebooks/GenAI/README.html",
+        site, tmp_path, apply=False)
+    assert n == 1
+    assert page[0].endswith("Audio/#creer -> Audio/README.html#creer")
+
+
 def test_idempotence_second_pass_rewrites_nothing(tmp_path):
     site = _tree(tmp_path)
     _write(site, "MyIA.AI.Notebooks/Search/README.html",

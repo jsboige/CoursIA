@@ -93,7 +93,7 @@ def _resolve_under(base_dir: Path, href: str) -> Path | None:
 def _relative_href(from_dir: Path, target: Path) -> str:
     """Href relatif lisible (``Audio/README.html``, ``../x/README.html``)."""
     rel = Path(os.path.relpath(target, from_dir)).as_posix()
-    return rel if not rel.startswith(".") else rel
+    return rel
 
 
 def rewrite_href(
@@ -121,13 +121,20 @@ def rewrite_href(
     if (site_root / rel).is_file():
         return None  # servable tel quel (un repertoire dans _site/ n'est pas servable)
 
-    is_dir_href = href.split("?")[0].rstrip("#").endswith("/")
+    # Dir-href : le test s'entend sur le chemin epuice de son fragment et de
+    # sa query -- "X/#section" est un lien de repertoire (le rstrip("#") d'une
+    # chaine finissant par "section" ne detectait rien). Le fragment est
+    # reconduit sur la cible : perdre "#section" casserait la navigation.
+    base_href = href.split("#")[0].split("?")[0]
+    fragment = href.split("#", 1)[1] if "#" in href else ""
+    suffix = f"#{fragment}" if fragment else ""
+    is_dir_href = base_href.endswith("/")
     if is_dir_href:
         readme = rel / "README.html"
         if (site_root / readme).exists():
-            return _relative_href(html_repo_dir, readme)
+            return _relative_href(html_repo_dir, readme) + suffix
         if (repo_root / rel).is_dir():
-            return f"{GITHUB_BASE}/tree/main/{norm_href}"
+            return f"{GITHUB_BASE}/tree/main/{norm_href}{suffix}"
         return None
 
     # Chemin de fichier absent du site : present dans le depot -> blob.
@@ -145,7 +152,14 @@ def process_html(
     """Reecrit les href d'une page rendue ; rend (reecritures, details)."""
     repo_rel = html_path.relative_to(site_root)
     html_repo_dir = repo_rel.parent
-    text = html_path.read_text(encoding="utf-8", errors="replace")
+    try:
+        text = html_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        # Sortie Quarto = UTF-8. Une page qui ne decode pas est un signal
+        # d'instrument, pas un contenu a reecrire : la laisser intacte plutot
+        # que de consoler des octets remplaces (read+write en replace fige
+        # la corruption). Le detail la nomme pour le rapport.
+        return 0, [f"SKIP non-UTF8: {html_path.name}"]
     changes: list[str] = []
 
     def sub(m: re.Match[str]) -> str:
