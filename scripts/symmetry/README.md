@@ -79,6 +79,12 @@ cosets), et la page archivée sert de **référence de valeurs** — les
 citations verbatim figurent dans les commentaires de
 `scripts/tests/test_wallpaper_groups.py`.
 
+Le dépôt d'origine `aberke/coloring-book` (« A Coloring Book about Group
+Theory », art génératif de symétrie) est cité comme **inspiration** seule :
+sa licence n'est **pas** déclarée, donc aucun code, aucun asset et aucune
+illustration n'en est repris ici. La réimplémentation est **indépendante**
+(voie a).
+
 Une recherche de référence historique n'a **pas** abouti : l'ouvrage
 « Armstrong 1908 » sur les groupes de symétrie est introuvable (aucune
 occurrence dans les archives consultées). Les références probablement
