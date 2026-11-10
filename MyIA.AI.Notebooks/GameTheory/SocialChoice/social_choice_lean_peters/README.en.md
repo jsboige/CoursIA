@@ -100,7 +100,7 @@ results, the current reference implementation of social-choice theory in Lean 4.
 
 ### Complementary, not duplicate
 
-This project and the `PrefOrder` proofs — [`social_choice_core_lean/SocialChoice/`](../../social_choice_core_lean/SocialChoice/) —
+This project and the `PrefOrder` proofs — [`social_choice_core_lean/SocialChoice/`](../social_choice_core_lean/SocialChoice/) —
 cover the same theory through **different frameworks**: Peters uses Mathlib's strict
 `LinearOrder`, while the reflexive-total-transitive `PrefOrder` (closer to the welfare-economics
 tradition) carries Arrow / Sen / the median voter. Reading both shows how the framework choice
@@ -115,5 +115,5 @@ lake `social_choice_core_lean/` (#24183, T3).
 - **Companion notebook**: planned (not yet created) — a teaching tour of Peters'
   results, which this project would back.
 - **Upstream**: [DominikPeters/SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) (MIT).
-- **Our proofs**: [`social_choice_core_lean/SocialChoice/`](../../social_choice_core_lean/SocialChoice/) — Arrow / Sen /
+- **Our proofs**: [`social_choice_core_lean/SocialChoice/`](../social_choice_core_lean/SocialChoice/) — Arrow / Sen /
   median voter in the `PrefOrder` framework.

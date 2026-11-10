@@ -32,5 +32,5 @@ dans le carnet `../01b-Lean-SocialChoice-Formal.ipynb`.
 
 ## CI
 
-Entrée `socialchoice` dans `scripts/lean/ci_lakes.json` : sorry-baseline 0,
+Entrée `socialchoicecore` dans `scripts/lean/ci_lakes.json` : sorry-baseline 0,
 `axiom-fail-on-sorry`, Mathlib au pin du hub d'origine (`db584cd6`).
