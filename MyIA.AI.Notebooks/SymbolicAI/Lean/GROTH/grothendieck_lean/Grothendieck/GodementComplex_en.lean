@@ -205,11 +205,34 @@ variable {X : TopCat.{u}}
 -- `S` yields a short exact sequence `S.map godementFunctor` — at the level
 -- of natural transformations, not only open by open (Part 98); mono from
 -- Part 86, epi and pointwise exactness from Part 98.
--- **Not posed** — the named frontier: rank `n + 1`. The canonical stages
--- are `C^{n+2} = C⁰(coker dⁿ)` (P92), so iterating requires the short
--- exact sequence of cokernels, whose connecting morphism
--- `δ = -kernel.ι ≫ cokernel.π` (`kernelCokernelCompSequence`) must
--- vanish — flabby lifting (Part 94) or the separatedness ladder; that is
--- the next tranche.
+-- **Part 100 — rank `n + 1`: the short exact sequence of cokernels, the
+-- separatedness ladder.** Iterating rank 0 requires the SES of cokernels
+-- `0 → coker dⁿ_A → coker dⁿ_B → coker dⁿ_C → 0`, whose snake connector
+-- `δ : ker dⁿ_C → coker dⁿ_A` must vanish. The mathematical point: the
+-- seeding step is NOT free, and it fixes the hypothesis of the statement.
+-- For `n ≥ 1`, `δ = 0` follows from the exactness of the canonical
+-- resolution of the right term (`ker dⁿ = im d^{n-1}`): a cocycle of `C`
+-- lifts one degree down through the epi of the SES at step `n - 1`, the
+-- lift composed with `dⁿ` is zero, and the connector representative
+-- cancels — a purely abelian argument. For `n = 0` one needs
+-- `ker d⁰_{X₃} = 0`, i.e. **separatedness of the right term**: a
+-- non-separated presheaf carries sections with zero stalks that keep `δ`
+-- alive, and the general iteration is a **separatedness ladder** — seeded
+-- by `Mono (toGodement S.X₃)` (separated in Godement's sense: stalks
+-- separate sections; `IsSheaf` implies it via `mono_toGodement_of_isSheaf`,
+-- Part 93 — Mathlib at the lake pin declares no
+-- `TopCat.Presheaf.IsSeparated` class), carried on by the unconditional
+-- exactness of the resolution (hypothesis `hres`, Part 93 stalk side).
+-- The execution organ is Mathlib's snake lemma
+-- (`Mathlib.Algebra.Homology.ShortComplex.SnakeLemma`, verified present at
+-- the lake pin): a `SnakeInput (X.Presheaf AddCommGrpCat)` instance on the
+-- stage SES's of steps `n` and `n + 1`, connector `S.δ` killed by
+-- `cancel_epi` along `im d^{n-1}`, then `L₃_exact` closes the cokernel SES
+-- and rank 0 iterates it into the stage SES of step `n + 1` — the stage
+-- arrow `godementCanonicalMap (n + 2)` being `godementMapHom (cokernel.map …)`
+-- by `godementDChainMap_succ_right` (an `rfl`). Posed as a maquette with
+-- documented prover targets (`godementCanonicalMap_comp_zero`, easy;
+-- `shortExact_godementCanonicalObj`, hard); sorry-baseline of the lake: 0
+-- before this tranche.
 
 end Grothendieck_en

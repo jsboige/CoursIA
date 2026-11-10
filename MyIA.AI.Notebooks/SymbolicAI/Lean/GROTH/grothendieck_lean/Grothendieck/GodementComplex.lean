@@ -6,6 +6,7 @@ import Grothendieck.GodementExactness
 import Mathlib.Algebra.Homology.HomologicalComplex
 import Mathlib.Algebra.Homology.ShortComplex.HomologicalComplex
 import Mathlib.Algebra.Homology.ShortComplex.PreservesHomology
+import Mathlib.Algebra.Homology.ShortComplex.SnakeLemma
 import Mathlib.CategoryTheory.Comma.Arrow
 import Mathlib.CategoryTheory.Limits.Preserves.Shapes.Zero
 import Mathlib.CategoryTheory.Limits.FunctorCategory.Finite
@@ -794,5 +795,83 @@ theorem shortExact_map_godementFunctor {S : ShortComplex (X.Presheaf AddCommGrpC
   exact ShortComplex.ShortExact.mk' (shortComplex_exact_iff_app.mpr
     fun U => exact_app_godementMapHom hS.exact U)
     (godementMapHom_mono S.f) (epi_godementMapHom_of_epi S.g)
+
+/-!
+### Partie 100 — rang `n + 1` : la SES des conoyaux, l'échelle de séparabilité
+
+Le rang 0 (`shortExact_map_godementFunctor`) itère `C⁰` : les étages sont
+`C^{n+2} = C⁰(coker dⁿ)` (P92), donc le cran `n + 1` exige la SES des
+conoyaux `0 → coker dⁿ_A → coker dⁿ_B → coker dⁿ_C → 0`, dont le connecteur
+serpent `δ : ker dⁿ_C → coker dⁿ_A` doit s'annuler.
+
+**Le point mathématique** (frontière nommée depuis la Partie 99) : l'amorçage
+n'est PAS gratuit, et c'est lui qui fixe l'hypothèse de l'énoncé. Pour
+`n ≥ 1`, l'annulation de `δ` suit de l'exactitude de la résolution canonique
+du terme droit (`ker dⁿ = im d^{n-1}`) : un cocycle de `C` remonte d'un
+degré par l'épi de la SES au cran `n - 1`, le relevé composé par `dⁿ` est
+nul, et le représentant du connecteur s'annule — l'argument est purement
+abélien. Pour `n = 0`, il faut `ker d⁰_{X₃} = 0`, c'est-à-dire la
+**séparéité du terme droit** : un préfaisceau non séparé porte des sections
+à tiges nulles qui font vivre `δ`, et l'itération générale est une **échelle
+de séparabilité** — amortie par `Mono (toGodement S.X₃)` (le « séparé » au
+sens Godement : les tiges séparent les sections ; `IsSheaf` l'entraîne par
+`mono_toGodement_of_isSheaf`, Partie 93), poursuivie par l'exactitude
+inconditionnelle de la résolution (hypothèse `hres`, disponible depuis la
+Partie 93 côté tiges). Mathlib au pin du lake ne déclare aucune classe
+`TopCat.Presheaf.IsSeparated` : `Mono toGodement` en est la formulation
+définitionnelle.
+
+L'organe d'exécution est le lemme du serpent de Mathlib
+(`Mathlib.Algebra.Homology.ShortComplex.SnakeLemma`, vérifié présent au pin
+du lake) : une instance `SnakeInput (X.Presheaf AddCommGrpCat)` sur les SES
+d'étages des crans `n` et `n + 1`, connecteur `S.δ` tué par
+`cancel_epi` le long de `im d^{n-1}`, puis `L₃_exact` referme la SES des
+conoyaux et le rang 0 l'itère en SES des étages `n + 1` — la flèche
+d'étage `godementCanonicalMap (n + 2)` étant `godementMapHom (cokernel.map …)`
+par `godementDChainMap_succ_right` (un `rfl`). Maquette posée ici en cibles
+prover ; sorry-baseline du lake : 0 avant cette PR.
+-/
+
+/-- **Cible prover : easy — le composé des flèches d'étages d'une SES est
+nul** : pour un short complexe `S` de préfaisceaux, les flèches d'étages
+composées `godementCanonicalMap S.f n ≫ godementCanonicalMap S.g n` sont
+nulles à tout degré — le champ `zero` des SES d'étages de la Partie 100.
+Récursion à deux temps sur `godementDChainMap` : la flèche gauche du cran
+`n + 1` est la flèche droite du cran `n`, elle-même un `godementMapHom`
+d'un `cokernel.map` — la nullité se transporte par fonctorialité du conoyau
+(`cokernel.map` d'un morphisme nul est nul) et `godementMapHom_zero`
+(Partie 86). Ce qui a été tenté : récursion directe sur `n` — bloque au
+cran `n + 1` car le morphisme `cokernel.map` n'y est pas syntaxiquement
+`0`, il faut le factoriser par la fonctorialité avant d'appliquer
+`godementMapHom_zero`. -/
+theorem godementCanonicalMap_comp_zero {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (n : ℕ) :
+    godementCanonicalMap S.X₁ S.X₂ S.f n ≫ godementCanonicalMap S.X₂ S.X₃ S.g n = 0 := by
+  sorry
+
+/-- **Cible prover : hard — la SES des étages à tout degré, par récursion**
+(P99 rang `n + 1`). Pour une SES `S` de préfaisceaux dont le terme droit est
+**séparé** (`hsep : Mono (toGodement S.X₃)` : tue le connecteur à
+l'amorçage, `ker μ_{X₃} = 0` sur les verticales `μ = toGodement`) et dont la
+résolution canonique est exacte en chaque degré (`hres` : tue le connecteur
+aux crans suivants, `ker dⁿ = im d^{n-1}`), la suite des étages
+`0 → Cⁿ(S.X₁) → Cⁿ(S.X₂) → Cⁿ(S.X₃) → 0` est courte exacte à tout degré `n`.
+Le rang 0 est `shortExact_map_godementFunctor` ; le cran `n + 1` exige la SES
+des conoyaux (serpent, `δ = 0`), que le rang 0 itère ensuite — c'est le
+théorème d'exactitude degreewise du foncteur « complexe canonique de
+Godement » [God58, Chap. II §4.1]. Ce qui a été tenté : architecture
+consignée (instance `SnakeInput` sur les SES d'étages `n`/`n+1` — dix champs,
+`h₀`/`h₃` par `kernel.isLimit`/`cokernel.isColimit` — puis annulation de
+`S.δ` par remontée le long de `im d^{n-1}` et lecture de `L₃_exact`) ;
+aucune exécution encore, c'est la pose de l'énoncé. -/
+theorem shortExact_godementCanonicalObj {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.ShortExact) (hsep : Mono (toGodement S.X₃))
+    (hres : ∀ m : ℕ, (ShortComplex.mk (godementCanonicalD S.X₃ m)
+        (godementCanonicalD S.X₃ (m + 1)) (godementCanonicalD_comp_zero S.X₃ m)).Exact)
+    (n : ℕ) :
+    (ShortComplex.mk (godementCanonicalMap S.X₁ S.X₂ S.f n)
+      (godementCanonicalMap S.X₂ S.X₃ S.g n)
+      (godementCanonicalMap_comp_zero n)).ShortExact := by
+  sorry
 
 end Grothendieck
