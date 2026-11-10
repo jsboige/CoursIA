@@ -121,8 +121,7 @@ jetable et garde les sorties en mémoire.
 
 ## Renvoi croisé dans le document de famille
 
-Le tableau de l'axe 1 de [`net11-runtime-deltas.md`](net11-runtime-deltas.md) ne contient pas encore
-cette mesure. Son intégration est à faire dans la PR qui porte actuellement ce document, afin de ne
-pas créer une modification concurrente. La ligne à reporter est :
+Le tableau de l'axe 1 de [`net11-runtime-deltas.md`](net11-runtime-deltas.md) porte désormais
+cette mesure, intégrée dans la même PR que le présent document. La ligne reportée est :
 
-> `08-Aspire-AsyncFFI-Dotnet.ipynb` | 11,0 s | **80,04 ms [71,82 – 103,48] (n=25, instrument §4)** | **+1,76 %** — **INCONCLUSIF** (intervalles chevauchants) ; compat .NET 11 **établie** (RC 11.0.0-rc.3.26522.148) | voir `net11-async-ffi-deltas.md`
+> `08-Aspire-AsyncFFI-Dotnet.ipynb` | 11,0 s (mur) ; **80,04 ms [71,82 – 103,48]** (n=25, instrument §4) | **81,45 ms [70,59 – 116,79]** (n=25, instrument §4) | **+1,76 %** — **INCONCLUSIF** (intervalles chevauchants) ; compat .NET 11 **établie** (RC 11.0.0-rc.3.26522.148, instrument canon de la §4) ; voir `net11-async-ffi-deltas.md`

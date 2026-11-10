@@ -205,7 +205,7 @@ carnet est celle décrite plus haut (kernel + Roslyn dominent).
 
 | Carnet (axe 1) | net10 (canon) | net11 (RC) | Delta | État |
 |---|---:|---:|---:|---|
-| `08-Aspire-AsyncFFI-Dotnet.ipynb` | 11,0 s | — | **non mesuré** | rejouable hors ligne ; compat .NET 11 **à établir** par l'instrument non-canon `1.0.617701` décrit plus haut (aucun runtime isolé .NET 9/11 sur la machine de mesure) |
+| `08-Aspire-AsyncFFI-Dotnet.ipynb` | 11,0 s (mur) ; **80,04 ms [71,82 – 103,48]** (n=25, instrument §4) | **81,45 ms [70,59 – 116,79]** (n=25, instrument §4) | **+1,76 %** — **INCONCLUSIF** (intervalles chevauchants) | rejouable hors ligne ; compat .NET 11 **établie** (RC 11.0.0-rc.3.26522.148, instrument canon de la §4) ; voir `net11-async-ffi-deltas.md` |
 | `01-GitHub-Copilot-SDK-Binding.ipynb` | 39,7 s (po-2023, 14/10) | — | **non mesuré** | **non rejouable hors machine équilibrée** ; quand le CLI manque, l'exécution « passe » (0 erreur) sans produire la moindre mesure — un vert qui ne prouve rien |
 
 **Commande de rejeu** (depuis la racine d'un checkout à jour ; le `--cwd` par défaut est le
@@ -348,7 +348,7 @@ CI auto-hébergés — **charge processeur 91 % à 18:05Z, 62 % à 18:15Z, 76 % 
 | `RandomSearch_Sphere10D_50k` (MGS) | **toujours non concluant** — 9→11 à −0,5 %, pour une dispersion de 28 à 38 % ; le delta est dans le bruit |
 | `PromptSignature.Matches` (semantic-fleet) | **toujours non concluant** — 9→11 à +1,7 %, dispersion 42 à 102 % (le 9→10 apparent de +22 % est un artefact de bruit) |
 | `PromptTransform.InterpolateKeys` (semantic-fleet) | **toujours non concluant** — le −21,8 % apparent est **incohérent avec la dispersion de 123 %** sur net9 : la session ne permet pas de le retenir |
-| La fenêtre **calme** | **non obtenable sur ce siège** — fait mesuré, pas une hypothèse : la charge de l'hôte (62-91 %) et les 149-150 processus-resident ne laissent pas de fenêtre de mesure propre. La re-mesure qui doit lever ces trois drapeaux doit se faire sur un **siège sans runners CI** (po-2023 ou po-2026), pas être rejouée ici |
+| La fenêtre **calme** | **non obtenable sur ce siège** — fait mesuré, pas une hypothèse : la charge de l'hôte (62-91 %) et les 149-150 processus-résidents ne laissent pas de fenêtre de mesure propre. La re-mesure qui doit lever ces trois drapeaux doit se faire sur un **siège sans runners CI** (po-2023 ou po-2026), pas être rejouée ici |
 | Comparabilité avec les sessions du 02/10 et du 20/10 | **aucune** — machine différente, versions patch des runtimes différentes, .NET 11 en rc.3 (contre rc.1 puis rc.2). Ces chiffres sont une **troisième session**, pas une prolongation des précédentes ; ils se lisent session par session, comme les deux autres |
 
 Les trois drapeaux INCONCLUSIF **restent donc posés** : cette tentative n'apporte pas de verdict, elle apporte la
@@ -387,8 +387,6 @@ antérieure**, seulement à elles-mêmes.
 
 #### Mesures (médiane des 5 moyennes)
 
-| Benchmark | net8.0 | net9.0 | net10.0 | net11.0 (rc.3) | 8→9 | 9→10 | 10→11 | Allocated (8 / 9 / 10 / 11) |
-|---|---:|---:|---:|---:|---:|---:|---:|---|
 | Benchmark | net8.0 | net9.0 | net10.0 | net11.0 (rc.3) | 8→9 | 9→10 | 10→11 | Allocated (8 / 9 / 10 / 11) |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
 | `Determinize_NFA_L15` (ms) | 12.77 | 13.62 | 14.26 | 11.81 | +6.7 % | +4.7 % | -17.2 % | 11.42 MB / 11.42 MB / 11.42 MB / 11.41 MB |
@@ -436,7 +434,7 @@ consécutives), **3 séparables** :
    runtime.
 5. **La fenêtre n'est toujours pas calme, et c'est mesuré** : CPU 66 % à 93 %
    sur 20 échantillons (un échantillon isolé à 11 %), 1081 à 1098 processus
-   resident dont 104 `dotnet`/`node`/`Runner`. Le poste `myia-ai-01` héberge le
+   résidents dont 104 `dotnet`/`node`/`Runner`. Le poste `myia-ai-01` héberge le
    vLLM de la flotte et les runners CI auto-hébergés. La session **confirme** le
    constat du 29/10 sur ce siège : ce poste n'est pas une fenêtre calme. La
    comparaison intra-session en est d'autant moins affectée que tous les
@@ -526,7 +524,7 @@ effets et dire ce qui survit.
 | Config BDN | 0.15.8, `InProcessEmitToolchain`, `ShortRun` 5 warmup / 15 itérations / 1 invocation / unroll 1 — identique à la session du 11/10 |
 | Passes | **5** passes, ordre **interlacé** (net9 → net10 → net11), **médiane des 5 moyennes** |
 | Critère | inchangé : deux runtimes sont séparables si leurs intervalles [min, max] des 5 moyennes ne se recouvrent pas |
-| Charge d'hôte | CPU 52 % à 91 % sur 15 échantillons, 1079 à 1099 processus resident (session du 11/10 : 66–93 %, 1081–1098) |
+| Charge d'hôte | CPU 52 % à 91 % sur 15 échantillons, 1079 à 1099 processus résidents (session du 11/10 : 66–93 %, 1081–1098) |
 
 #### Mesures (médiane des 5 moyennes ; intervalle [min, max] des 5 passes ; unités : us)
 
@@ -754,7 +752,7 @@ Le **gitlink épinglé** dans CoursIA suit `stable-from-v0343` (`.gitmodules`) e
 `git merge-base --is-ancestor d53f533 origin/stable-from-v0343` → vrai).
 
 Mais les sessions de ce document ont mesuré **autre chose** : la session du 30/10
-(`myia-po-2024`) et celle du 11/10 (`myia-ai-01`) ont cloning
+(`myia-po-2024`) et celle du 11/10 (`myia-ai-01`) ont cloné
 `feature/benchmarkdotnet-baseline` @ `6f965904854b` — branche **qui n'est pas un descendant
 de `d53f533`** (`git merge-base --is-ancestor` → faux), où le fichier de banc **porte encore**
 le pin (lignes 135-136 : `.WithInvocationCount(1)` / `.WithUnrollFactor(1)`).
@@ -782,7 +780,7 @@ protocole par rapport aux sessions précédentes : **une classe de banc par proc
 | Runtimes | net9.0.22 · net10.0.14 · net11.0.0 (rc.3.26522.148) — en-tête `// Runtime=` relevé sur les 60 journaux |
 | Config BDN | **0.14.0** (version du `csproj` de cette branche), `InProcessEmitToolchain` |
 | Passes | 5, entrelacées, **médiane des 5 moyennes** par (classe × runtime × cellule) |
-| Charge d'hôte | relevée avant chaque run : 63 % à 88 % de CPU, 1 065 à 1 073 processus resident |
+| Charge d'hôte | relevée avant chaque run : 63 % à 88 % de CPU, 1 065 à 1 073 processus résidents |
 
 **Mesures — coût par invocation, en ms (médiane des 5 moyennes)**
 
