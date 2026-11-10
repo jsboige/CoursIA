@@ -70,7 +70,7 @@ on:
       - "MyIA.AI.Notebooks/Search/MetaGeneticSharp"
       - "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq"
       - "MyIA.AI.Notebooks/SymbolicAI/SMT/Automata"
-      - "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"
+      - "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum"
       - "MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet"
   pull_request:
     paths:
@@ -78,7 +78,7 @@ on:
       - "MyIA.AI.Notebooks/Search/MetaGeneticSharp"
       - "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq"
       - "MyIA.AI.Notebooks/SymbolicAI/SMT/Automata"
-      - "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"
+      - "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum"
       - "MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet"
 
 permissions:

@@ -1,0 +1,54 @@
+{
+ "reference": {
+  "backtestId": "c221610a44f9fe4ae53a0ddae0630aeb",
+  "name": "bab-league-R2-bab-2026-11-09",
+  "parameterSet": {
+   "arm": "bab"
+  },
+  "completed": true,
+  "statistics": {
+   "Sharpe Ratio": "-0.376",
+   "Probabilistic Sharpe Ratio": "0.000%",
+   "Compounding Annual Return": "0.311%",
+   "Drawdown": "16.600%",
+   "Annual Standard Deviation": "0.043",
+   "Alpha": "-0.014",
+   "Beta": "-0.03",
+   "Total Fees": "$250384.28",
+   "Total Orders": "93987",
+   "Portfolio Turnover": "0.71%",
+   "Net Profit": "5.317%",
+   "End Equity": "10531699.52"
+  }
+ },
+ "control": {
+  "backtestId": "463fd3fc73844966756dbfd71a599b11",
+  "name": "bab-league-C-bab-2026-11-09",
+  "parameterSet": {
+   "arm": "bab"
+  },
+  "completed": true,
+  "statistics": {
+   "Sharpe Ratio": "-0.376",
+   "Probabilistic Sharpe Ratio": "0.000%",
+   "Compounding Annual Return": "0.311%",
+   "Drawdown": "16.600%",
+   "Annual Standard Deviation": "0.043",
+   "Alpha": "-0.014",
+   "Beta": "-0.03",
+   "Total Fees": "$250384.28",
+   "Total Orders": "93987",
+   "Portfolio Turnover": "0.71%",
+   "Net Profit": "5.317%",
+   "End Equity": "10531699.52"
+  }
+ },
+ "statistics_diff": {},
+ "points": 4190,
+ "calendrier_identique": true,
+ "valeurs_identiques": true,
+ "ecart_max": 0.0,
+ "divergence": [],
+ "compared": "shadow",
+ "verdict": "OK"
+}
