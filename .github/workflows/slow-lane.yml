@@ -122,8 +122,16 @@ name: Slow lane (voie asynchrone, tranches 1-2 #12856)
 #   d'integration (`main` + les PRs du lot) et la suite COMPLETE de la jambe
 #   `Scripts Tests`, jouee dans le MEME environnement qu'elle (script
 #   d'installation partage `scripts/ci/install_scripts_tests_deps.sh`,
-#   memes options pytest). Ce qui reste pour la tranche 2 : le check-run sur
-#   chaque tete du lot. Le lot n'emet aucun check-run et ne juge aucune PR.
+#   memes options pytest).
+#
+#   TRANCHE LIVREE (P3, tranche 2) : le lot emet un check-run par tete du
+#   lot. Il est **advisory** -- son nom porte le marqueur que le PR gate
+#   route hors porte (`scripts/pr_gate.py::is_advisory`) -- donc il ne
+#   bloque AUCUN merge : le PR gate reste le seul juge. Le check-run porte
+#   le verdict de l'ARBRE (main + les PRs du lot), pas un verdict
+#   d'isolement, et il nomme la troncature du pool quand la population
+#   inspectee a atteint le plafond (`pool_inspecte == limit`). La bascule du
+#   gate sur « etage 2 vert » reste P4, apres la semaine d'ombre.
 #
 #   LA CADENCE (quatre creneaux UTC, anti-stampede sur la minute) :
 #     04:30Z, 10:30Z, 16:30Z, 21:30Z. Les creneaux sont volontairement hors
@@ -322,6 +330,16 @@ jobs:
     runs-on: ubuntu-latest
     # Fenetre du lot : le creneau le plus long est de 150 min (21:30 -> 00:00).
     timeout-minutes: 160
+    # `checks: write` est ajoute **par ce job** : la tranche 2 de P3 publie un
+    # check-run advisory sur chaque tete du lot. Les permissions du job
+    # remplacent celles du workflow : les deux lectures sont donc declarees
+    # explicitement, sinon la lecture des PRs disparaitrait. Aucun
+    # `secrets.*` n'est lu : le check-run est porte par le `GITHUB_TOKEN` du
+    # run, et son contenu est le verdict du lot, rien de sensible.
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: write
 
     steps:
       - uses: actions/checkout@v4
@@ -377,6 +395,29 @@ jobs:
             --integration \
             --results-out .tmp/batch_results.json \
             --json > .tmp/batch_summary.json
+
+      - name: "Publier les check-runs du lot (advisory)"
+        # Tranche 2 de P3 : le lot porte son verdict sur chaque tete du lot.
+        # Le check-run est **advisory** (son nom porte le marqueur que le
+        # PR gate route hors porte) : il ne bloque aucun merge. La bascule
+        # du gate sur « etage 2 vert » est P4, apres la semaine d'ombre.
+        # `continue-on-error` : une publication qui echoue est un incident
+        # de publication, pas une mesure du lot ratee.
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DETAILS_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        run: |
+          if [ ! -f .tmp/batch_results.json ]; then
+            echo "::notice title=Lot en ombre::Aucun resultat de lot : aucun check-run publie."
+            exit 0
+          fi
+          python scripts/ci/heavy_batch.py --publish-check-runs \
+            --plan .tmp/batch_plan.json \
+            --results .tmp/batch_results.json \
+            --details-url "${DETAILS_URL}" \
+            --json
 
       - name: "Publier la mesure (toujours vert)"
         if: always()

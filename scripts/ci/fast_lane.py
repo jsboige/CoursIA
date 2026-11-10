@@ -314,7 +314,17 @@ def stale_added_paths(porcelain: str) -> list[str]:
 # ---------------------------------------------------------------------------
 
 def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
-                   title: str, summary: str, dry_run: bool) -> None:
+                   title: str, summary: str, dry_run: bool,
+                   details_url: str | None = None) -> bool:
+    """Emet un check-run sur une tete. Renvoie `True` si le check-run est parti.
+
+    Le retour est **additif** (l'appelant d'origine ignore la valeur) : il
+    permet a un autre organe — le lot quotidien en ombre, P3 tranche 2 — de
+    reutiliser cette fonction au lieu de reimplementer le POST, et de
+    consigner le resultat de la publication dans son propre journal.
+    `details_url` est egalement additif : il pointe le run qui a produit le
+    verdict (l'API Checks l'accepte, il est optionnel).
+    """
     payload = {
         "name": name,
         "head_sha": head_sha,
@@ -325,9 +335,11 @@ def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
             "summary": summary[:OUTPUT_LIMIT],
         },
     }
+    if details_url:
+        payload["details_url"] = details_url
     if dry_run:
         print(f"[fast-lane][a-blanc] check-run {name!r} -> {conclusion} ({title})")
-        return
+        return True
     proc = subprocess.run(
         ["gh", "api", "-X", "POST", f"repos/{repo}/check-runs", "--input", "-"],
         input=json.dumps(payload), capture_output=True, text=True, encoding="utf-8", errors="replace",
@@ -337,8 +349,9 @@ def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
         # rester visible dans le log plutot que de masquer les autres.
         print(f"[fast-lane] ECHEC de publication du check-run {name!r} : "
               f"{proc.stderr.strip()}", file=sys.stderr)
-    else:
-        print(f"[fast-lane] check-run publie : {name} -> {conclusion}")
+        return False
+    print(f"[fast-lane] check-run publie : {name} -> {conclusion}")
+    return True
 
 
 # ---------------------------------------------------------------------------
