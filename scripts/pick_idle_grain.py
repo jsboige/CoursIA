@@ -11232,7 +11232,11 @@ def draw_belt(
     filtered = belt_filter(admitted, args, epic_load=epic_load,
                            drops=drops, notes=notes)
     filtered.sort(key=belt_sort_key)
-    return filtered[:args.grains]
+    # #21436 : tri AVANT slice -- la tete du tri (le grain le plus ripe)
+    # reste dans le slice quel que soit N >= 1. max(1, ...) aligne ce
+    # chemin sur le board-consumer (l.11735) : --grains 0 ou negatif ne
+    # doit jamais vider la sortie ni tronquer le bout de liste.
+    return filtered[:max(1, args.grains)]
 
 
 def _origami_parking_state(pool: list[dict]) -> tuple[dict[int, str], dict]:
@@ -13459,7 +13463,10 @@ def main(argv: list[str] | None = None) -> int:
                     help="#14591 Volet A : ecrire le CSV au moment du tirage "
                          "('candidate'). Defaut : aucun. L'ancien choix 'merged' "
                          "etait un no-op et a ete retire (#14704).")
-    ap.add_argument("--grains", type=int, default=4, help="candidats urne 'grain' (defaut 4)")
+    ap.add_argument("--grains", type=int, default=4,
+                    help="candidats urne 'grain' (defaut 4, plafonne a 200 -- "
+                         "#21436 : le grain le plus ripe reste servi en tete "
+                         "quel que soit ce nombre, le tri precede le slice)")
     ap.add_argument("--belt-time-budget", dest="belt_time_budget", type=float,
                     default=float(os.environ.get("PICK_BELT_TIME_BUDGET_S") or 240),
                     help="#21436 mur de temps du mode --belt, en SECONDES pour la "
@@ -13660,6 +13667,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.set_defaults(check_claims=True)
     args = ap.parse_args(argv)
     args.prev_genre = sorted(normalize_prev_genres(args.prev_genre))
+    # #21436 : la borne de --grains est enforcee, pas seulement documentee.
+    # Au-dela, la fenetre de service (grains*5+50) explose le mur de temps
+    # du tapis ; en dessous de 1, le slice viderait la sortie (le tri
+    # precedent le slice garantit par ailleurs 0 faux negatif sur un grain
+    # ripe quel que soit ce nombre -- cf test_pick_idle_grain_21436_grains).
+    if not 1 <= args.grains <= 200:
+        ap.error("--grains doit valoir entre 1 et 200 (defaut 4)")
     if args.apply_comment is not None and not args.orphans_report:
         ap.error("--apply-comment n'a de sens qu'avec --orphans-report")
     # Q41 : l'echappatoire du plafond de WIP est AUDITEE a la difference de
