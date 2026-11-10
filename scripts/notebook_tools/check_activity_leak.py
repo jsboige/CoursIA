@@ -89,9 +89,39 @@ _WORKSPACE_RE = re.compile(r"\bCoursIA-\d\b")
 # jsboige volontairement absent : les URLs de depots (github.com/jsboige/...)
 # sont du contenu legitime.
 _BOT_RE = re.compile(r"\bNanoClaw\b|\bHermes\b|\bclusterManager(?:-Myia)?\b")
+# La forme « axe 2 » n'est un VERDICT que si elle porte son ETAT
+# (« axe 2 : fail ») OU si elle se trouve dans un CONTEXTE DE REVIEW.
+# Le mot seul n'est pas un verdict : un carnet de recherche legitime
+# emploie « Axe 2 » comme STRUCTURE de travail (« ### Axe 2 :
+# sophistication structurelle (OLS augmente) », carnet
+# `m5_hmm_regime_research.ipynb`, mesure du 2026-11-09 : passage dense par
+# le SEUL marqueur `verdict`, score 2, densite 37).
+#
+# Les deux conditions sont necessaires, chacune pour un cas mesure :
+#   - l'ETAT : « axe 2 : fail » est la forme canonique d'un verdict de
+#     review, ecrite hors de tout autre mot-cle ;
+#   - le CONTEXTE : « ... conformement a l'acceptance REPAIR axe 2
+#     (c.989) » porte son etat dans le cycle (« c.989 ») et non dans le
+#     mot-cle — sans la garde de contexte, ce passage legitime perdait son
+#     marqueur et son statut (mesure du 2026-11-09 : Dynamics-04, un
+#     passage dense en perdait un).
+#
+# La garde de contexte reprend le mecanisme deja utilise pour `dm`,
+# `dispatch` et `adjoint` : meme fenetre de contexte (_GUARD_WINDOW).
+_AXE2_RE = re.compile(r"axe\s?2\b", re.IGNORECASE)
+_AXE2_STATE_RE = re.compile(
+    r"axe\s?2\b[ \t:,;=–—>\-]*"
+    r"(?:fail(?:ed|s)?|pass(?:ed|s)?|ko|ok|refus(?:e|é|ée|es)?"
+    r"|[ée]chec(?:s)?|succ[eè]s|reussi(?:e|es)?)\b",
+    re.IGNORECASE,
+)
+_AXE2_REVIEW_CONTEXT = re.compile(
+    r"verdict|CHANGES_REQUESTED|COMMENT_WITH_CONCERNS"
+    r"|domain\s*:|REPAIR|SOTA-(?:OK|INTRINSIC|RECOVERABLE)",
+    re.IGNORECASE,
+)
 _VERDICT_RE = re.compile(
     r"SOTA-(?:OK|INTRINSIC|RECOVERABLE-\w+)"
-    r"|axe\s?2\b"
     r"|domain:\s*`?(?:fail|pass)`?"
     r"|CHANGES_REQUESTED"
     r"|COMMENT_WITH_CONCERNS",
@@ -429,6 +459,15 @@ def markers_in_text(text: str,
             if name == "adjoint" and _context_guarded(text, m.start(), m.end(), _ADJOINT_OK_CONTEXT):
                 continue
             out.append((name, m.group(0), weight))
+    # La forme « axe 2 » est traitee APRES le lot : elle n'est un verdict que
+    # si elle porte son ETAT (« axe 2 : fail ») ou si elle est dans un
+    # CONTEXTE DE REVIEW (mesure #25431 : « ... acceptance REPAIR axe 2
+    # (c.989) » porte son etat dans le cycle, pas dans le mot-cle).
+    for m in _AXE2_RE.finditer(text):
+        if _AXE2_STATE_RE.match(text, m.start()) or _context_guarded(
+            text, m.start(), m.end(), _AXE2_REVIEW_CONTEXT
+        ):
+            out.append(("verdict", m.group(0), 2))
     if any(name in CO_MARKER_ONLY for name, _, _ in out):
         others = [m for m in out if m[0] not in CO_MARKER_ONLY]
         if not others:

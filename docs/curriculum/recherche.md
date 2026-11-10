@@ -283,9 +283,9 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Le théorème central limite, mesuré](../../MyIA.AI.Notebooks/Probas/Probas-CLT-Theoreme-Central-Limite.ipynb) | BETA | Oui |
-| 2 | [Probas-KLS-Concentration : gap spectral, constante de…](../../MyIA.AI.Notebooks/Probas/Probas-KLS-Concentration.ipynb) | BETA | Oui |
-| 3 | [Le MCMC, mesuré — Metropolis–Hastings et Gibbs…](../../MyIA.AI.Notebooks/Probas/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb) | BETA | Oui |
+| 1 | [Le théorème central limite, mesuré](../../MyIA.AI.Notebooks/Probas/Fondations/Probas-CLT-Theoreme-Central-Limite.ipynb) | BETA | Oui |
+| 2 | [Probas-KLS-Concentration : gap spectral, constante de…](../../MyIA.AI.Notebooks/Probas/Applications/Probas-KLS-Concentration.ipynb) | BETA | Oui |
+| 3 | [Le MCMC, mesuré — Metropolis–Hastings et Gibbs…](../../MyIA.AI.Notebooks/Probas/Fondations/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb) | BETA | Oui |
 
 ## Probas/Applications (11 notebooks)
 

@@ -47,6 +47,12 @@ def _no_shell_escape(forbid_shell_escape, monkeypatch):
     # par le test, jamais resolu par le code sous test : le module ne depend
     # ni de l'environnement ambiant, ni de l'ORDRE de ses fichiers.
     monkeypatch.setenv("GH_TOKEN", "tok-fake-picker-test")
+    # #25522 : la lecture de perimetrie du picker (deux `git` locaux) passe
+    # par ce point de couture. Elle est hors du comportement sous test, et
+    # la sentinelle refuse tout processus : sans cette neutralisation, une
+    # dizaine de tests de ce module echoueraient sur une lecture de
+    # perimetrie sans rapport avec eux.
+    monkeypatch.setattr(pig, "_git_read", lambda *a, **k: None)
     return forbid_shell_escape
 
 
@@ -730,6 +736,11 @@ def _neutralize_organs(monkeypatch, states, nits=None):
     # echec -- indistinguable d'un « aucun plancher a lever ». Les tests qui
     # veulent un plancher precis la re-patchent (`_patch_dwell`).
     monkeypatch.setattr(pig, "fetch_check_dwell", lambda rid: None)
+    # #25522 : le classement des PRs rouges lit le FIL de chaque PR (une
+    # requete REST) pour y trouver le marqueur `[FROZEN]` et la declaration
+    # `[ASK]`. Les tests qui n'en dependent pas neutralisent la source ;
+    # ceux qui en dependent la patchent eux-memes (cf le fichier #25522).
+    monkeypatch.setattr(pig, "_red_pr_comments", lambda n: [])
 
 
 def _patch_backlog(monkeypatch, prs, states, nits=None):
@@ -2883,13 +2894,19 @@ def test_file_saturation_not_detected_when_not_mergeable():
 
 
 def test_file_saturation_trigger_in_red_backlog(monkeypatch):
-    """Le 4ᵉ declencheur remonte dans `triggers` quand au moins une PR de la
-    lane est file-saturee et a l'age du seuil.
+    """La file-saturation devient une CLASSE, plus un trigger (#25522).
 
-    Ce test est l'integration : `red_backlog` doit appeler `blocking_causes`
-    avec `age_hours` et `saturation_hours` derives du seuil, et ajouter
-    `"file_saturation"` aux triggers. C'est ce qui rend le narrow
-    diagnostique enfin visible a la lane.
+    #12830 demandait que le narrow soit VISIBLE pour la lane : elle l'est,
+    mais par la porte de la classification. #25522 range explicitement
+    `file_saturation` dans la classe `infra` -- le geste est un commentaire
+    + `--ignore-red`, la lane ne peut pas le reparer, et la PR ne doit donc
+    pas RETENIR le tapis (seule la classe `lane` arme `nits`, `aged` et
+    `count`).
+
+    Le test passe donc de « le trigger existe » a « la classe est `infra`,
+    la cause est rendue dans la liste « en attente d'autrui », le tapis
+    n'est pas retenu ». L'intention de #12830 (la visibilite du narrow) est
+    preservee : la cause est toujours rendue, avec sa PR.
     """
     red = _state_with_started_at(checks=[
         ("PR gate", "PENDING", True),
@@ -2901,14 +2918,13 @@ def test_file_saturation_trigger_in_red_backlog(monkeypatch):
     ], {1: red, 2: red})
     out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=10)
     # La PR #1 est file-saturee (28 h > 24 h, tous PENDING, MERGEABLE).
-    # La PR #2 ne l'est pas (2 h < 24 h).
-    assert "file_saturation" in out["triggers"]
-    assert any(any("file_saturation" in c for c in r["causes"])
-               for r in out["red"] if r["number"] == 1)
-    # Et l'ordre respecte la docstring : file_saturation precede `aged`
-    # dans la liste des triggers (les deux sont vrais ici, file_saturation
-    # doit apparaitre AVANT `aged`).
-    assert out["triggers"].index("file_saturation") < out["triggers"].index("aged")
+    # La PR #2 ne l'est pas (2 h < 24 h) et n'a donc aucune cause.
+    assert out["triggers"] == []
+    assert out["red"] == []
+    waiting = {item["number"]: item for item in out["waiting_others"]}
+    assert waiting[1]["class"] == "infra"
+    assert any("file_saturation" in c for c in waiting[1]["causes"])
+    assert out["red_classes"]["1"]["class"] == "infra"
 
 
 def test_file_saturation_signature_backward_compatible():
@@ -3930,11 +3946,19 @@ def test_unaddressed_review_points_detail_carries_authors_and_verdict(monkeypatc
     out = pig.unaddressed_review_points_detail([20961, 18829, 15081])
     # auteurs dedoublonnes et tries ; verdict de l'organe ; #18829 evaluee
     # claire garde son count 0 ; 15081 illisible reste ABSENTE.
+    # #25522 : le detail porte desormais `last_reserve_at` (l'horodatage de
+    # la DERNIERE reserve) -- c'est lui qui permet de verifier qu'une
+    # declaration `[ASK]` de la lane est bien posterieure a la reserve
+    # qu'elle repond. Ici les entrees de test n'ont pas d'horodatage : la
+    # valeur est None (fail-closed : sans date lisible, la PR reste
+    # classee `lane`). Contrat etendu explicitement par #25522.
     assert out[20961] == {"count": 3,
                           "authors": ["clusterManager-Myia", "jsboige"],
-                          "verdict": "CONCERNS", "verdict_surface": "review-body"}
+                          "verdict": "CONCERNS", "verdict_surface": "review-body",
+                          "last_reserve_at": None}
     assert out[18829] == {"count": 0, "authors": [],
-                          "verdict": None, "verdict_surface": None}
+                          "verdict": None, "verdict_surface": None,
+                          "last_reserve_at": None}
     assert 15081 not in out
     # la voix n'est cherchee que sur les PRs a points -- pas sur la claire.
     assert calls == [("jsboige/CoursIA", [20961])]

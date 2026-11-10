@@ -68,6 +68,12 @@ def _patch_guard(monkeypatch, prs, states=None, nits=None):
                         lambda nums: _as_detail(nits))
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
     monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
+    # #25522 : le classement des PRs rouges lit le fil de chaque PR (une
+    # requete REST) -- source neutralisee ici, comme les autres.
+    monkeypatch.setattr(pig, "_red_pr_comments", lambda n: [])
+    # #25522 : la lecture de perimetrie du picker (deux `git` locaux) --
+    # meme raison, source neutralisee.
+    monkeypatch.setattr(pig, "_git_read", lambda *a, **k: None)
 
 
 def _patch_draw(monkeypatch):
