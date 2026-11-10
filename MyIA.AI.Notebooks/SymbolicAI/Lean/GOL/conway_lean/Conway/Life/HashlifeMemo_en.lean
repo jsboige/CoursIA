@@ -55,8 +55,10 @@ import Conway.Life.MacroCell_en
 import Conway.Life.Hashlife_en
 import Std.Data.HashMap
 
-namespace Conway
-namespace Life
+namespace Conway_en
+open Conway_en
+namespace Life_en
+open Life_en
 
 open MacroCell
 
@@ -352,5 +354,5 @@ kernel-checked theorems above). -/
 #eval evolveHashlifeFastMemo 4 blinker_h == evolve 4 blinker_h        -- true
 #eval evolveHashlifeFastMemo 3 toad == evolve 3 toad                  -- true
 
-end Life
-end Conway
+end Life_en
+end Conway_en
