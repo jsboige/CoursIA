@@ -2206,9 +2206,10 @@ TRANCHE21: list[Guard] = [
 # Forme : iter par carnet modifie (`--check {changed_paths}`). Un carnet
 # modifie qui porte encore la cle fait remonter le defaut sur la PR.
 #
-# ADVISORY (`blocking=False`) : le corpus n'est pas encore entierement corrige
-# (lots B et C de l'issue #20167). La bascule en bloquant se fera quand `main`
-# ne portera plus aucune cellule fautive, comme geste trace.
+# Ratchet bloquant (#24090) : pour chaque carnet modifie, comparer le nombre
+# de cellules markdown portant execution_count/outputs au blob de la base PR.
+# Les residus preexistants ailleurs dans le corpus (ou dans le meme carnet)
+# restent toleres tant que leur compte n'augmente pas.
 #
 # `absorbed=True` : sans absorption, le job always-on lancerait `fast_lane.py
 # --shadow` et la conclusion serait neutre sous le prefixe d'ombre. Meme
@@ -2216,21 +2217,23 @@ TRANCHE21: list[Guard] = [
 # ---------------------------------------------------------------------------
 TRANCHE22: list[Guard] = [
     Guard(
-        name="Markdown-cell schema advisory (cles interdites, #20167)",
+        name="Markdown-cell schema ratchet (base vs PR, #24090)",
         source=FAST_LANE_NATIVE,
         paths=[
             "MyIA.AI.Notebooks/**/*.ipynb",
             "scripts/notebook_tools/fix_markdown_cell_schema.py",
+            "scripts/notebook_tools/check_markdown_cell_schema_ratchet.py",
             "scripts/notebook_tools/tests/test_fix_markdown_cell_schema.py",
+            "scripts/notebook_tools/tests/test_check_markdown_cell_schema_ratchet.py",
             "scripts/ci/fast_lane.py",
             "scripts/ci/fast_lane_registry.py",
         ],
         iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
         argv=[
-            "python", "scripts/notebook_tools/fix_markdown_cell_schema.py",
-            "--check", "{changed_paths}",
+            "python", "scripts/notebook_tools/check_markdown_cell_schema_ratchet.py",
+            "--base-ref", "{base_ref}", "{changed_paths}",
         ],
-        blocking=False,
+        blocking=True,
         iterates_paths=True,
         absorbed=True,
     ),
@@ -3634,6 +3637,7 @@ TRANCHE36: list[Guard] = [
 
 
 
+
 # ---------------------------------------------------------------------------
 # TRANCHE 38 (#22012, bascule graduelle option 4, sign-off user 2026-11-02) --
 # premiere bascule ADVISORY -> BLOQUANT du scanner md-hierarchy : la classe
@@ -3678,6 +3682,82 @@ TRANCHE38: list[Guard] = [
         ],
         blocking=True,
         needs_base=True,
+
+        absorbed=True,
+    ),
+]
+
+
+
+# ---------------------------------------------------------------------------
+# Garde de source unique du PCM par poches (#20188, critere 2).
+#
+# Le modele de construction de portefeuille par poches a existe en neuf copies
+# sous `MyIA.AI.Notebooks/QuantConnect/`, en six variantes, et le correctif
+# `additive` (#19740) n'etait present que dans trois d'entre elles : un
+# correctif pose sur une copie ne se propageait pas, et rien ne le signalait.
+#
+# L'extraction a ete livree (#21134) : `projects/SharedPCM/pouches_pcm.py` est
+# la source canonique, importee par les composites. Deux copies subsistent, et
+# chacune a une raison qui ne se corrige pas par un copier-coller : le kit
+# pedagogique `03-Framework-Composite` est autonome (le code est copie par
+# l'apprenant, sans bibliotheque QC attachee), et `TrendWeatherPointInTime`
+# est une candidate gelee du registre de l'ombre (entree `tw-pit`, code rejoue
+# au SHA gele) que #20188 interdit de toucher.
+#
+# La garde ne pretend donc pas supprimer ces copies : elle refuse qu'une
+# **nouvelle** copie apparaisse sans declaration, et qu'une copie **declaree**
+# soit modifiee sans re-declaration. Les declarations vivent dans
+# `scripts/quantconnect/pcm_single_source.json` (le manifeste), qui porte la
+# source canonique, les copies declarees et la raison de chacune.
+#
+# Pourquoi la voie rapide et pas un workflow dedie : un workflow
+# `pull_request` auto-heberge doit etre enregistre dans l'allowlist de
+# `check_self_hosted_runner_policy.py`, et le cliquet refuse `ubuntu-latest`
+# sur une PR. La voie rapide emet le check-run sous son nom canonique
+# (`absorbed=True`), donc avec une conclusion REELLE, sans payer un second
+# clone du depot.
+#
+# Le manifeste figure dans `paths` : une revision qui change les declarations
+# doit rejouer la garde, sinon une declaration perimee passerait sans temoin
+# (lecon #11685/#12817). Idem pour le corps de tests, qui porte le controle
+# positif exige par #20188 : une copie volontairement modifiee fait rougir.
+# Les deux fichiers de l'organe lui-meme figurent aussi dans `paths` (le
+# registre et le moteur) : une revision qui etend ou retrecit la portee de la
+# garde doit la rejouer — les gardes natifs voisins font de meme.
+#
+# rc=2 = manifeste illisible ou organe absent : c'est un **defaut du depot**,
+# pas un incident d'entree comme le base injoignable d'un garde de delta. La
+# garde le declare donc en rouge : un manifeste casse est une garde debranchee.
+#
+# Numero : TRANCHE41. TRANCHE38 est pris par le md-hierarchy HINT-AS-HEADING
+# (bascule #22012, sur main), TRANCHE39 par la garde cell-ordering (sur main),
+# et TRANCHE40 par une autre garde tombee sur main apres le coupe de cette
+# branche ; collision d'index levee en re-allocant cette garde au premier slot
+# libre (41) -- main garde le 40 (convention de collision TRANCHE, c.852/c.854).
+# ---------------------------------------------------------------------------
+TRANCHE41: list[Guard] = [
+    Guard(
+        name="pcm-single-source-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            # Toute definition nouvelle de la famille du PCM par poches est
+            # declencheuse : le motif `/**/` couvre ici la racine comme les
+            # sous-repertoires (semantique GitHub, cf path_matches).
+            "MyIA.AI.Notebooks/QuantConnect/**/*.py",
+            "scripts/quantconnect/check_pcm_single_source.py",
+            "scripts/quantconnect/pcm_single_source.json",
+            "scripts/quantconnect/tests/test_check_pcm_single_source.py",
+            # L'organe lui-meme : une revision qui change sa portee doit la
+            # rejouer (les 21 gardes natifs voisins declarent la meme paire).
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/quantconnect/check_pcm_single_source.py",
+        ],
+        blocking=True,
+
         absorbed=True,
     ),
 ]
