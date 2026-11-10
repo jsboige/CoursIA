@@ -1,6 +1,6 @@
 # Jonctions Mathlib po-2027 — vérification build du groupe `db584cd6` (suite de #21319)
 
-**Statut** : runs 1-6 du 2026-11-09 — **21/26 membres verts à travers la jonction** (runs 5-6, EXIT=0 chacun) ; 5 traînards en suivi (run 7 `LAKE_JOBS=1` en vol). Ce document est le compte-rendu de la tranche « suite ordonnée de #21319 » annoncée sur #4362 (claim c.6734239837).
+**Statut** : runs 1-7 (2026-11-09/10) — **22/26 membres verts à travers la jonction** (run 7 `LAKE_JOBS=1`, EXIT=0) ; 4 traînards en suivi. Ce document est le compte-rendu de la tranche « suite ordonnée de #21319 » annoncée sur #4362 (claim c.6734239837).
 
 ## Pourquoi cette tranche
 
@@ -49,7 +49,7 @@ Lignée (commande identique : `pwsh -NoProfile -File scripts/lean/setup_shared_m
 | 4 | ~19:2x → 20:22 | défaut (20 cœurs) | **EXIT=0 — 20 SUCCESS / 6 FAILED** (log `.tmp/junction_build_run4.log`) |
 | 5 | ~21:05 | `LAKE_JOBS=4` | **EXIT=0 — 21 SUCCESS / 5 FAILED** (log `.tmp/junction_build_run5.log`) |
 | 6 | 22:1x → 23:1x | `LAKE_JOBS=2` | **EXIT=0 — 21 SUCCESS / 5 FAILED** (log `.tmp/junction_build_run6.log` ; GROTH réduit à 2 cibles) |
-| 7 | 00:1x (10/11) | `LAKE_JOBS=1` | en vol — suite du suivi des 5 traînards |
+| 7 | 00:1x (10/11) | `LAKE_JOBS=1` | **EXIT=0 — 22 SUCCESS / 4 FAILED** (log `.tmp/junction_build_run7.log`) ; GROTH repassé VERT |
 
 ### Run 4 (défaut, 20 workers) — 20/26
 
@@ -65,17 +65,29 @@ Les 6 FAILED (game_theory, learning_theory, GOL/conway, GROTH/grothendieck, KNOT
 
 Terminé 23:09 locale (EXIT=0). Les mêmes 5 membres ré-échouent, mais l'écart se resserre : **GROTH passe de « tous modules en échec » à 2 cibles seulement** (`Grothendieck.CoversEtaleArrow_en`, `Grothendieck.FlasqueRetract_en`) — le module principal `Grothendieck` est **BUILT** (21 s), et le log montre une élaboration réelle (signatures Mathlib `IsDiscreteValuationRing`… résolues). KNOTS échoue toujours sur ses 2 seules cibles `Knots.AlexanderTrivial`(+`_en`), crash `4294967295` à **1494 s** chacun — soit 2× plus long qu'à `LAKE_JOBS=4` (699 s) : plus de mémoire disponible retarde le crash sans l'éviter. Tweety : 6 cibles à 168-169 s, même signature. learning_theory et conway : tous modules, inchangés. La progression GROTH (et le flip game_theory du run 5) confirment la lecture ressources ; le cas KNOTS à 1494 s en parallélisme 2 commence à ressembler à un plafond du module lui-même — le run 7 (`LAKE_JOBS=1`) tranche.
 
+### Run 7 (`LAKE_JOBS=1`) — 22/26, GROTH repasse, le palier parallélisme est épuisé
+
+Terminé EXIT=0 (log `.tmp/junction_build_run7.log`), cache `db584cd6` réutilisé.
+
+- **GROTH/grothendieck_lean repassé VERT** (échec runs 4-6) : à un seul worker, les 2 cibles récalcitrantes (`CoversEtaleArrow_en`, `FlasqueRetract_en`) passent et le membre est re-jonctionné. Troisième flip de la lignée (game_theory au run 5, GROTH au run 7) — la lecture « borné par les ressources » tient pour ce membre.
+- **learning_theory** : 16 cibles en échec (`Perceptron.Data`, `PacLearning.{Data,BernoulliMGF}` ± `_en`, `GradientFlow.{Plain,Residual}`, `EffectiveTheory.{CircleOfDays,Grokking,InfoBits,Repons}` ± `_en`, `MathUniverse`, `Generators_en`) — tous modules, inchangé depuis le run 4.
+- **GOL/conway** : 14 cibles `Conway.*` en échec (`Life` ± `_en`, `Life.{Torus,GridCanonical,Oscillators,Spaceships,Hashlife,HashlifeDecideMemo,AdversarialBattery}` ± `_en`, `FreeWillTheorem` ± `_en`) — tous modules, inchangé.
+- **KNOTS/knot** : seules cibles en échec `Knots.AlexanderTrivial` (+ jumeau `_en`). À `LAKE_JOBS=1` — plus aucun autre worker lean sur la machine — `✖ [3032/3054] Building Knots.AlexanderTrivial (1927s)` puis **`INTERNAL PANIC: out of memory`**, exit 1 ; `_en` exit `4294967295` à 1933 s. **Le levier parallélisme est épuisé : l'OOM survient même à un worker.** Hypothèse de travail : plafond d'élaboration du module (1927 s d'élaboration avant le crash, là où les 21 membres verts tiennent dans la même configuration). Mais la règle [lean-merge-discipline] tranche la suite : un `INTERNAL PANIC: out of memory` sous Windows n'est **pas** un verdict — la migration WSL Ubuntu est le geste requis avant de conclure à un plafond intrinsèque du module.
+- **Tweety/argumentation** : 6 cibles (`Grounded`, `Fundamental`, `Synthesis` ± `_en`), exit `4294967295`, `Synthesis` à 84-85 s (`[8717/8719]`) — crash rapide et constant, signature distincte de KNOTS.
+- Les 4 membres rollbackés **sans backup** (`.lake/packages/mathlib` absent) : à re-provisionner (~5 Go de Mathlib chacun) pour toute reprise hors jonction.
+- Bruit sans effet : un warning linter `defProp` (`ReidemeisterCombinatorial_en.lean:156`) dans la sortie knot — pas une erreur de build.
+
 ### Verdict sur les deux causes héritées de #21319
 
 - **(a) artefacts manquants — réfuté.** Le cache (8 322 `.olean` / 8 312 `.private`, les 10 manquants sous `Cache\*` hors Mathlib) est **consommé vert par 21 membres sur 26**, dont **5 des 6 rollbackés de #21319** (game_theory — après `LAKE_JOBS=4`, decision_theory, kelly, search, sudoku) ; seul learning_theory reste en échec, pour des raisons de ressources (b). Les échecs de lecture du run 4 désignaient un fichier sain sous pression mémoire.
-- **(b) échecs de compilation — bornés par les ressources, pas par le contenu.** Le même membre (game_theory) passe de rouge à vert en baissant le parallélisme 20 → 4 ; les 5 traînards restants sont les closures Mathlib les plus lourdes du groupe. Levier suivant : `LAKE_JOBS=2` (run 6 en vol), puis `1` ; à défaut, provisioning autonome de ces 5 (re-téléchargement Mathlib, ~5 Go chacun — ce que la jonction existe pour éviter).
+- **(b) échecs de compilation — bornés par les ressources, pas par le contenu, jusqu'au palier final.** Le même membre (game_theory) passe de rouge à vert en baissant le parallélisme 20 → 4 ; GROTH suit au run 7 (`LAKE_JOBS=1`). Il reste 4 traînards, dont KNOTS pour lequel le levier parallélisme est **épuisé** (OOM à un worker). Suite : migration WSL Ubuntu (discrimine infra vs plafond de module, règle lean-merge-discipline), provisioning autonome en repli (~5 Go chacun).
 
 ## Après le run
 
-- **Sorry après** : `distinct_code_sorry` = 17 (mesuré `count_code_sorry.py --json` post-run 5) — **17 → 17, inchangé** vs baseline du matin. Aucune source `*.lean` touchée.
-- **État des jonctions** (`share-state.json`, persisté par membre) : 21 membres jonctionnés ; 5 rollbackés (`needsProvision: true`) : learning_theory, GOL/conway_lean, GROTH/grothendieck_lean, KNOTS/knot_lean, Tweety/argumentation_lean.
-- **Run 6 (`LAKE_JOBS=2`), terminé 23:09 locale** : mêmes 5 traînards, GROTH réduit à 2 cibles (voir section dédiée). **Run 7 (`LAKE_JOBS=1`) lancé** — dernier palier de parallélisme avant l'alternative du provisioning autonome de ces 5 (~5 Go de Mathlib chacun, ce que la jonction existe pour éviter).
-- **Purge `520045ab` (11,79 Go)** : reste **interdite** — le build vert n'est pas établi sur les 5 re-pointés.
+- **Sorry après** : `distinct_code_sorry` = 17 (mesuré `count_code_sorry.py --json` post-run 5) — **17 → 17, inchangé** vs baseline du matin. Aucune source `*.lean` touchée par la lignée entière (runs 1-7).
+- **État des jonctions** (`share-state.json`, persisté par membre) : **22 membres jonctionnés** ; 4 rollbackés (`needsProvision: true`) : learning_theory, GOL/conway_lean, KNOTS/knot_lean, Tweety/argumentation_lean — GROTH sorti de la liste au run 7.
+- **Run 7 (`LAKE_JOBS=1`) terminé, EXIT=0 — 22/26.** Pour les 4 traînards restants : migration WSL en premier geste (tranche la question KNOTS), provisioning autonome (~5 Go de Mathlib chacun) en repli.
+- **Purge `520045ab` (11,79 Go)** : reste **interdite** — le build vert n'est pas établi sur les 4 re-pointés restants.
 
 ## Garde-fous reconduits de #21319
 
