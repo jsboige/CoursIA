@@ -268,13 +268,13 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 13b | CHSH-Tsirelson-Native | ~8 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
 | 13c | CHSH-Landau-Saturation | ~11 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
 | 13d | CHSH-Indeterminisme-Native | ~10 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
-| 13e | Conway-Free-Will-Theorem-Lean-Python | ~28 | 3 | 0 | **NOUVEAU** (hommage) |
+| 13e | Conway-Theoreme-Libre-Arbitre-Lean-Python | ~28 | 3 | 0 | **NOUVEAU** (hommage) |
 | 14 | Finiteness-Derivatives | ~12 | 1 | - | **NOUVEAU** |
 | 14b | Finiteness-Lean-Companion | ~19 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 15 | Grothendieck-Tribute | ~23 | 0 | - | **NOUVEAU** (hommage) |
 | 15b | Lean-Grothendieck (atelier) | ~40 | 4 | Oui | **NOUVEAU** |
 | 15c | Lean-Grothendieck-Companion | ~25 | 2 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
-| 16 | Conway-Man-and-Work-Lean-Python | ~39 | 3 | 0 | **NOUVEAU** (hommage) |
+| 16 | Conway-Homme-et-Oeuvre-Lean-Python | ~39 | 3 | 0 | **NOUVEAU** (hommage) |
 | GOL-01 | Regles-Vie-Lean | ~26 | 0 | - | **NOUVEAU** (hommage) |
 | GOL-02 | Golly | ~47 | 5 | - | **NOUVEAU** (hommage) |
 | GOL-03 | Vie-Native | ~32 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
