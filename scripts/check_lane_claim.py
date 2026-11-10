@@ -104,6 +104,7 @@ import sys
 import tempfile
 import time
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
@@ -177,9 +178,16 @@ _OPEN_PRS_MEMO: list[dict] | None = None
 # memoisee par `_OPEN_PRS_MEMO`, donc l'identite est stable pendant un
 # tirage). Sans cet index, la jambe IMPLICIT rescannait tous les bodies
 # pour chaque candidat (~0,6 s x 150 = ~105 s mesures).
-_OPEN_PRS_INDEX_MEMO: (
-    tuple[list[dict], int, dict[int, list[dict]]] | None
-) = None
+_OPEN_PRS_INDEX_MEMO: tuple[list[dict], int, dict[int, list[dict]]] | None = None
+# Index local des PRs par couple (issue citee, lane). Contrairement a la
+# simple index d'issues ci-dessus, celui-ci evite aussi de re-parser la lane
+# de chaque PR a chaque issue du batch. Le fingerprint de valeur est recalcule
+# a chaque lecture: l'identite d'une liste ne suffit pas si son contenu change
+# en place (body, numero, remplacement, ajout ou retrait d'une PR).
+_OPEN_PRS_LANE_INDEX_MEMO: tuple[
+    list[dict], str, tuple[tuple[int, str, str], ...],
+    dict[tuple[int, str | None], list[dict]],
+] | None = None
 
 # --- markers -----------------------------------------------------------------
 
@@ -683,6 +691,7 @@ def _intent_from_line(line: str | None) -> str | None:
     return text
 
 
+@lru_cache(maxsize=8192)
 def _unwrap_trapped_body(body: str) -> str:
     """Le corps REEL quand la publication a piege son propre payload (#19971).
 
@@ -2519,6 +2528,38 @@ def _open_prs_by_referenced_issue(
     return index
 
 
+def _open_prs_by_issue_and_lane(
+    prs: list[dict],
+) -> dict[tuple[int, str | None], list[dict]]:
+    """Indexe references et lanes, en invalidant sur tout changement visible.
+
+    La liste de PRs est mutable. Le fingerprint capture l'ordre, l'identite
+    de chaque dictionnaire, son numero et la valeur du body; il est recalcule
+    a chaque lecture pour voir aussi les modifications en place. La racine
+    courante fait partie de la cle, car le cache ouvert peut changer avec le
+    depot de travail.
+    """
+    global _OPEN_PRS_LANE_INDEX_MEMO
+    fingerprint = tuple(
+        (id(pr), repr(pr.get("number")), repr(pr.get("body") or ""))
+        for pr in prs
+    )
+    root = os.getcwd()
+    memo = _OPEN_PRS_LANE_INDEX_MEMO
+    if (memo is not None and memo[0] is prs and memo[1] == root
+            and memo[2] == fingerprint):
+        return memo[3]
+
+    index: dict[tuple[int, str | None], list[dict]] = {}
+    for pr in prs:
+        body = _unwrap_trapped_body(pr.get("body") or "")
+        lane = extract_lane(body)
+        for issue_number in _referenced_issue_numbers(body):
+            index.setdefault((issue_number, lane), []).append(pr)
+    _OPEN_PRS_LANE_INDEX_MEMO = (prs, root, fingerprint, index)
+    return index
+
+
 def _find_open_prs_referencing_issue(
     issue_number: int,
     my_lane: str,
@@ -2614,12 +2655,9 @@ def _lane_open_prs_referencing(
     if prs is None:
         prs = _gh_open_prs_with_files()
     out: list[int] = []
-    for pr in prs:
-        body = _unwrap_trapped_body(pr.get("body") or "")
-        if extract_lane(body) != lane:
-            continue
-        if not _pr_body_references_issue(body, issue_number):
-            continue
+    candidates = _open_prs_by_issue_and_lane(prs).get(
+        (issue_number, lane), [])
+    for pr in candidates:
         try:
             out.append(int(pr["number"]))
         except (KeyError, ValueError, TypeError):
@@ -2979,6 +3017,37 @@ def _find_open_pr_for_issue_by_lane(
     return matches[0]
 
 
+@lru_cache(maxsize=8192)
+def _compiled_path_pattern(pattern: str) -> re.Pattern[str]:
+    """fnmatch regex for one raw pattern under the current platform rules."""
+    from fnmatch import translate
+    return re.compile(translate(os.path.normcase(pattern)))
+
+
+@lru_cache(maxsize=65536)
+def _normcase_path(path: str) -> str:
+    return os.path.normcase(path)
+
+
+def _path_matches_pair(path: str, pattern: str) -> bool:
+    """Match one immutable path/pattern pair with fnmatch's platform rules.
+
+    Only the normalized regex and path strings are cached; the pair verdict
+    is recomputed. This keeps the cache independent of mutable caller lists
+    and retains Windows normcase and separator behavior.
+    """
+    basename = path.rsplit("/", 1)[-1]
+    regex = _compiled_path_pattern(pattern)
+    return (regex.match(_normcase_path(path)) is not None
+            or regex.match(_normcase_path(basename)) is not None)
+
+
+@lru_cache(maxsize=8192)
+def _expanded_path_pattern(pattern: str) -> tuple[str, ...]:
+    """Brace expansion for one immutable caller pattern."""
+    return tuple(_expand_brace_groups(pattern))
+
+
 def _path_matches(path: str, patterns: list[str]) -> bool:
     """Return True if `path` matches any of the caller-provided patterns.
 
@@ -2998,13 +3067,35 @@ def _path_matches(path: str, patterns: list[str]) -> bool:
     existing `grep`/git commands used in the cluster for "where does this
     file live" queries.
     """
-    from fnmatch import fnmatch
-    basename = path.rsplit("/", 1)[-1]
     for pat in patterns:
-        for p in _expand_brace_groups(pat):
-            if fnmatch(path, p) or fnmatch(basename, p):
+        for p in _expanded_path_pattern(pat):
+            if _path_matches_pair(path, p):
                 return True
     return False
+
+
+def _matching_tracked_indices(
+    patterns: list[str], tracked: list[str]
+) -> set[int]:
+    """Indices des chemins suivis qui correspondent aux motifs.
+
+    Cette forme en lot est utilisee par `_scopes_intersect`: les motifs
+    sont developpes/normalises/compiles une fois par scope, puis chaque
+    chemin est normalise une seule fois (par `_TrackedFiles`) et teste
+    contre ces regex. La separation du basename se fait toujours sur le
+    chemin brut, avant `normcase`, comme dans `fnmatch(path, pattern)` sous
+    Windows.
+    """
+    expanded = [p for pattern in patterns
+                for p in _expanded_path_pattern(pattern)]
+    regexes = [_compiled_path_pattern(p) for p in expanded]
+    if not regexes:
+        return set()
+    pairs = _norm_pairs(tracked)
+    return {
+        index for index, (path, basename) in enumerate(pairs)
+        if any(rx.match(path) or rx.match(basename) for rx in regexes)
+    }
 
 
 def _compute_scope_intersection_paths(
@@ -3044,9 +3135,11 @@ def _compute_scope_intersection_paths(
         # The claim (or the caller) is wildcards-free, so the BLOCKED
         # verdict stays binary from the file-list perspective.
         return [], False
+    common = (_matching_tracked_indices(my_scope, tracked)
+              & _matching_tracked_indices(claim_scope, tracked))
     matches: list[str] = []
-    for path in tracked:
-        if _path_matches(path, my_scope) and _path_matches(path, claim_scope):
+    for index, path in enumerate(tracked):
+        if index in common:
             matches.append(path)
             if len(matches) > limit:
                 return matches[:-1], True
@@ -3088,19 +3181,15 @@ def _compute_free_paths(
     # collect the matches. This is the disjoint case the lane-claim
     # guard relies on: rc=0 (clear), free_paths = the whole caller scope.
     if not scoped_claims:
-        free: list[str] = []
-        for path in tracked:
-            if not _path_matches(path, my_scope):
-                continue
-            free.append(path)
-            if len(free) > limit:
-                return free[:-1], True
-        return free, False
+        blockers: set[int] = set()
+    else:
+        blockers = set()
+        for scopes in scoped_claims:
+            blockers.update(_matching_tracked_indices(scopes, tracked))
+    in_scope = _matching_tracked_indices(my_scope, tracked)
     free: list[str] = []
-    for path in tracked:
-        if not _path_matches(path, my_scope):
-            continue
-        if any(_path_matches(path, scopes) for scopes in scoped_claims):
+    for index, path in enumerate(tracked):
+        if index not in in_scope or index in blockers:
             continue
         free.append(path)
         if len(free) > limit:
@@ -3252,6 +3341,64 @@ class _TrackedFiles(list):
         self._norm = None
         self._exact = None
         self._bases = None
+
+    def _invalidate(self):
+        self._norm = self._exact = self._bases = None
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        self._invalidate()
+
+    def __delitem__(self, key):
+        super().__delitem__(key)
+        self._invalidate()
+
+    def append(self, item):
+        super().append(item)
+        self._invalidate()
+
+    def extend(self, items):
+        # An iterator can fail after partially extending the list.
+        try:
+            super().extend(items)
+        finally:
+            self._invalidate()
+
+    def insert(self, index, item):
+        super().insert(index, item)
+        self._invalidate()
+
+    def pop(self, index=-1):
+        item = super().pop(index)
+        self._invalidate()
+        return item
+
+    def remove(self, item):
+        super().remove(item)
+        self._invalidate()
+
+    def clear(self):
+        super().clear()
+        self._invalidate()
+
+    def reverse(self):
+        super().reverse()
+        self._invalidate()
+
+    def sort(self, *args, **kwargs):
+        try:
+            super().sort(*args, **kwargs)
+        finally:
+            self._invalidate()
+
+    def __iadd__(self, items):
+        self.extend(items)
+        return self
+
+    def __imul__(self, count):
+        super().__imul__(count)
+        self._invalidate()
+        return self
 
     @property
     def norm_pairs(self) -> list[tuple[str, str]]:
@@ -6265,9 +6412,9 @@ def _scopes_intersect(
     if not a or not b:
         return False
     if tracked is not None:
-        for path in tracked:
-            if _path_matches(path, a) and _path_matches(path, b):
-                return True
+        if (_matching_tracked_indices(a, tracked)
+                & _matching_tracked_indices(b, tracked)):
+            return True
         if _scope_is_creation(a, tracked) or _scope_is_creation(b, tracked):
             return _scopes_may_overlap_by_pattern(a, b)
         return False
