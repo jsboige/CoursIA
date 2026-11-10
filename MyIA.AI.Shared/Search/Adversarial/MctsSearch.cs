@@ -82,7 +82,7 @@ public sealed record MctsOptions
 /// </para>
 /// <para>
 /// <b>Deux formulations equivalentes, et pourquoi celle-ci.</b> L'organe natif Python
-/// de la serie Search (la classe <c>MCTS</c> de <c>App-14-ConnectFour-Adversarial.ipynb</c>)
+/// de la serie Search (la classe <c>MCTS</c> de <c>App-14-ConnectFour-Adversarial-Python.ipynb</c>)
 /// procede a l'inverse : il <i>negate a la retropropagation</i> -- chaque noeud accumule
 /// la valeur du point de vue de <b>son propre</b> joueur -- puis maximise partout. Les
 /// deux formes sont correctes et reposent sur le meme invariant de somme nulle ; elles
@@ -109,7 +109,7 @@ public sealed record MctsOptions
 /// </para>
 /// <para>
 /// <b>Operateur natif nomme (doctrine organ-first).</b> Le depot portait deja un MCTS
-/// <i>Python</i> : les cellules de <c>App-14-ConnectFour-Adversarial.ipynb</c> et de ses
+/// <i>Python</i> : les cellules de <c>App-14-ConnectFour-Adversarial-Python.ipynb</c> et de ses
 /// variantes, ecrites pour le seul ConnectFour et non importables (cellules de carnet,
 /// pas module). La version C# ci-dessous est <b>generique sur le contrat de jeu</b> et
 /// n'importe donc aucune regle de ConnectFour ; c'est la fonction que le carnet rendait

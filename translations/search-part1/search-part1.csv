@@ -2359,7 +2359,7 @@ Ce notebook a pose les fondements de la recherche dans les espaces d'etats : la 
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb,nav-footer,markdown,fr,ee8a5e1c749236c1,"***
 
 **Navigation** : [Index](../README.md) | [Suivant >>](Search-02-Uninformed.ipynb)",,,,,,,,ee8a5e1c749236c1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,1b2fe231-df48-4cf9-8103-51c13128d979,markdown,fr,91a6d098e34b5af9,"<< [Search-09-LinearProgramming](Search-09-LinearProgramming.ipynb) | [Index](../README.md) | [App-1-NQueens](../Part3-Cas-pratiques/App-1-NQueens.ipynb) >>
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb,1b2fe231-df48-4cf9-8103-51c13128d979,markdown,fr,91a6d098e34b5af9,"<< [Search-09-LinearProgramming](Search-09-LinearProgramming.ipynb) | [Index](../README.md) | [App-01-NQueens-Python](../Part3-Cas-pratiques/App-01-NQueens-Python.ipynb) >>
 
 # Search-10 (C#) : Automates Finis Classiques — jumeau .NET (tranche 1)
 
@@ -3091,11 +3091,11 @@ vraie librairie SOTA **`Microsoft.Z3`** (NuGet 4.12.2) pour la partie symbolique
 > délibéré** (pas de lib .NET maintenue et didactique équivalente à `automata-lib`). En revanche,
 > la partie symbolique utilise bien la vraie librairie SOTA `Microsoft.Z3` — aucun workaround.
 ",,,,,,,,96af9ad6a1afb587,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb,51a1e954,markdown,fr,8abb71a36b50a560,"<< [Search-09-LinearProgramming](Search-09-LinearProgramming.ipynb) | [Index](../README.md) | [App-1-NQueens](../Part3-Cas-pratiques/App-1-NQueens.ipynb) >>
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb,51a1e954,markdown,fr,8abb71a36b50a560,"<< [Search-09-LinearProgramming](Search-09-LinearProgramming.ipynb) | [Index](../README.md) | [App-01-NQueens-Python](../Part3-Cas-pratiques/App-01-NQueens-Python.ipynb) >>
 
 # Search-10 : Automates Symboliques avec Z3
 
-**Navigation** : [Index](../README.md) | [Suivant >>](../Part3-Cas-pratiques/App-1-NQueens.ipynb)
+**Navigation** : [Index](../README.md) | [Suivant >>](../Part3-Cas-pratiques/App-01-NQueens-Python.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -4784,7 +4784,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb,8164
 
 - **Sudoku** : [Sudoku-13-SymbolicAutomata-CSharp](../../Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb)
 - **SymbolicAI** : [SymbolicAI/SymbolicAI](../../SymbolicAI/README.md)
-- **Applications** : [App-1-NQueens](../Part3-Cas-pratiques/App-1-NQueens.ipynb)
+- **Applications** : [App-01-NQueens-Python](../Part3-Cas-pratiques/App-01-NQueens-Python.ipynb)
 
 - **Génération de témoin** : [Z3-Linq2Z3/10 — Witness Generation Automata](../../SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb) — ce carnet décide l'appartenance ; le notebook 10 **produit** un mot du langage, la case que la reconnaissance laisse vide.",,,,,,,,e2bb5e38084ac9b2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb,05b6c839,markdown,fr,b62d4e7abdb999da,"## 9. Exemple guide
@@ -5005,7 +5005,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb,r3l7
 ",,,,,,,,0dbfeab25035ceb4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb,b652dfd6,markdown,fr,390d1ff04b5dbcf4,"***
 
-**Navigation** : [Index](../README.md) | [Suivant >>](../Part3-Cas-pratiques/App-1-NQueens.ipynb)
+**Navigation** : [Index](../README.md) | [Suivant >>](../Part3-Cas-pratiques/App-01-NQueens-Python.ipynb)
 
 **Series connexes** : 
 - [Sudoku-12-Z3-Python](../../Sudoku/Sudoku-12-Z3-Python.ipynb) - Bases de Z3
@@ -5679,7 +5679,7 @@ Les **valeurs numériques exactes** (fitness finale, temps) différent C# vs Pyt
 
 - [Search-03-Informed (A*)](Search-03-Informed-CSharp.ipynb) : recherche informe avec heuristiques (cas ou l'optimalite est garantie, contrairement aux métaheuristiques).
 - [Search-04-LocalSearch](Search-04-LocalSearch.ipynb) : fondements du recuit simule et hill-climbing.
-- Applications métaheuristiques : [App-13-TSP](../Part3-Cas-pratiques/App-13-TSP-Metaheuristics.ipynb), [App-9-EdgeDetection](../Part3-Cas-pratiques/App-9-EdgeDetection.ipynb).
+- Applications métaheuristiques : [App-13-TSP](../Part3-Cas-pratiques/App-13-TSP-Metaheuristics-Python.ipynb), [App-9-EdgeDetection](../Part3-Cas-pratiques/App-9-EdgeDetection.ipynb).
 
 ***
 
@@ -5687,7 +5687,7 @@ Les **valeurs numériques exactes** (fitness finale, temps) différent C# vs Pyt
 ",,,,,,,,bd00a4631e3bffa9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb,nav-header,markdown,fr,96aa1c847764905c,"# Search-11-métaheuristiques : Optimisation avec MEALPy
 
-**Navigation** : [<< Recherche locale](Search-04-LocalSearch.ipynb) | [Index](../README.md) | [App-1-NQueens >>](../Part3-Cas-pratiques/App-1-NQueens.ipynb)
+**Navigation** : [<< Recherche locale](Search-04-LocalSearch.ipynb) | [Index](../README.md) | [App-01-NQueens-Python >>](../Part3-Cas-pratiques/App-01-NQueens-Python.ipynb)
 
 ## métaheuristiques : PSO, ABC, SA et au-dela
 
@@ -6956,12 +6956,12 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb,sectio
 
 ### Pour aller plus loin
 
-- **Notebook suivant** : [App-1-NQueens](../Part3-Cas-pratiques/App-1-NQueens.ipynb) - Application des métaheuristiques au N-Reines
+- **Notebook suivant** : [App-01-NQueens-Python](../Part3-Cas-pratiques/App-01-NQueens-Python.ipynb) - Application des métaheuristiques au N-Reines
 - **MEALPy documentation** : https://mealpy.readthedocs.io/ - Liste complete des 200+ algorithmes
 - **Reference** : Yang, X.-S. (2010). *Nature-Inspired Metaheuristic Algorithms*. Luniver Press",,,,,,,,a525fc1e70d5d729,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb,nav-footer,markdown,fr,b04496f5e00b8754,"***
 
-**Navigation** : [<< Recherche locale](Search-04-LocalSearch.ipynb) | [Index](../README.md) | [App-1-NQueens >>](../Part3-Cas-pratiques/App-1-NQueens.ipynb)",,,,,,,,b04496f5e00b8754,,,,,,,,,,,,,,,
+**Navigation** : [<< Recherche locale](Search-04-LocalSearch.ipynb) | [Index](../README.md) | [App-01-NQueens-Python >>](../Part3-Cas-pratiques/App-01-NQueens-Python.ipynb)",,,,,,,,b04496f5e00b8754,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb,ea6682c9,markdown,fr,8d5360395f7e32cb,"## Conclusion
 
 Ce notebook a presente les **métaheuristiques** via la bibliotheque MEALPy, en comparant quatre algorithmes sur des fonctions de benchmark classiques.
@@ -6997,7 +6997,7 @@ sait ce qu'elles mesurent.
 
 MEALPy offre une interface uniforme pour 100+ métaheuristiques, facilite les comparaisons systématiques, et permet l'analyse de sensibilite aux paramètres.
 
-**Suite** : [App-13 - TSP métaheuristiques](../Part3-Cas-pratiques/App-13-TSP-Metaheuristics.ipynb) | [Retour au sommaire](../README.md)
+**Suite** : [App-13 - TSP métaheuristiques](../Part3-Cas-pratiques/App-13-TSP-Metaheuristics-Python.ipynb) | [Retour au sommaire](../README.md)
 
 ### References academiques
 
@@ -18715,7 +18715,7 @@ Les algorithmes génétiques se declinent en de nombreuses variantes avancees :
 
 Les algorithmes génétiques sont appliques dans la suite de cette serie :
 - **App-9 (Edge Detection)** : GA pour optimiser un filtre de convolution de detection de bords (voir [App-9-EdgeDetection](../Part3-Cas-pratiques/App-9-EdgeDetection.ipynb))
-- **App-10 (Portfolio)** : GA pour l'optimisation de portefeuille financier (voir [App-10-Portfolio](../Part3-Cas-pratiques/App-10-Portfolio.ipynb))
+- **App-10 (Portfolio)** : GA pour l'optimisation de portefeuille financier (voir [App-10-Portfolio-Python](../Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb))
 
 Ces applications montrent la puissance des AG sur des problemes reels ou la fonction objectif est complexe et l'espace de recherche est vaste.",,,,,,,,e0f1257e86ab38fd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms.ipynb,section-7-summary,markdown,fr,59a1da07c37e4df4,"***
@@ -19389,7 +19389,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms.ipynb,con
 ### Pour aller plus loin
 
 - **Notebook suivant** : [CSP-1-Fondamentaux](../Part2-CSP/CSP-1-Fundamentals.ipynb) - Problemes de satisfaction de contraintes
-- **Applications** : [App-9 Edge Detection](../Part3-Cas-pratiques/App-9-EdgeDetection.ipynb), [App-10 Portfolio](../Part3-Cas-pratiques/App-10-Portfolio.ipynb)
+- **Applications** : [App-9 Edge Detection](../Part3-Cas-pratiques/App-9-EdgeDetection.ipynb), [App-10 Portfolio](../Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb)
 - **références** :
   - Goldberg, D. *Genetic Algorithms in Search, Optimization, and Machine Learning*, 1989
   - DEAP documentation : https://deap.readthedocs.io/
@@ -23960,14 +23960,14 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,1w8yt0v6
 - **Papier original** : Knuth, D. E. (2000). *Dancing Links*. [arXiv:cs/0011047](https://arxiv.org/abs/cs/0011047)
 - **Notebook Sudoku** : [Sudoku-02-DancingLinks-Python](../../Sudoku/Sudoku-02-DancingLinks-Python.ipynb)
 - **Notebook suivant** : [Search-09-LinearProgramming](Search-09-LinearProgramming.ipynb) - Programmation lineaire
-- **Applications** : [App-11-Picross](../Part3-Cas-pratiques/App-11-Picross.ipynb) - DLX pour Picross",,,,,,,,22cfc5cbf2456389,,,,,,,,,,,,,,,
+- **Applications** : [App-11-Picross-Python](../Part3-Cas-pratiques/App-11-Picross-Python.ipynb) - DLX pour Picross",,,,,,,,22cfc5cbf2456389,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,ly6c9tsgai,markdown,fr,48481ccfd656e55f,"***
 
 **Navigation** : [<< MCTS](Search-07-MCTS-And-Beyond.ipynb) | [Index](../README.md) | [Programmation lineaire >>](Search-09-LinearProgramming.ipynb)
 
 **Series connexes** : 
 - [Sudoku-02-DancingLinks-Python](../../Sudoku/Sudoku-02-DancingLinks-Python.ipynb) - Application complete pour Sudoku
-- [Search-App-11-Picross](../Part3-Cas-pratiques/App-11-Picross.ipynb) - DLX pour Picross",,,,,,,,48481ccfd656e55f,,,,,,,,,,,,,,,
+- [Search-App-11-Picross](../Part3-Cas-pratiques/App-11-Picross-Python.ipynb) - DLX pour Picross",,,,,,,,48481ccfd656e55f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,d1a4b81e,markdown,fr,224c6728cbdbb432,"## Conclusion
 
 Ce notebook a presente l'**Algorithme X** de Knuth et les **Dancing Links (DLX)**, la structure de données qui le rend efficace pour les problemes de couverture exacte.
@@ -24514,7 +24514,7 @@ A la fin de ce notebook, vous saurez :
 - **PuLP documentation** : https://coin-or.github.io/pulp/
 - **Solver** : CBC (Coin-OR Branch and Cut), inclus par defaut
 - **Théorie** : Algorithme du simplexe, theoreme de dualite
-- **Notebook connexe** : [App-10-Portfolio](../Part3-Cas-pratiques/App-10-Portfolio.ipynb)",,,,,,,,5bdb12391c6157ef,,,,,,,,,,,,,,,
+- **Notebook connexe** : [App-10-Portfolio-Python](../Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb)",,,,,,,,5bdb12391c6157ef,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb,11343904,code,fr,aab0633ea15db9fd,"# Imports
 import sys
 import numpy as np
@@ -25842,8 +25842,8 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb,124
 - Scheduling et ordonnancement
 
 **Notebooks connexes** :
-- [App-10-Portfolio](../Part3-Cas-pratiques/App-10-Portfolio.ipynb) - PL pour la finance
-- [App-4-JobShopScheduling](../Part3-Cas-pratiques/App-4-JobShopScheduling.ipynb) - Chaînes d'approvisionnement
+- [App-10-Portfolio-Python](../Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb) - PL pour la finance
+- [App-04-JobShopScheduling-Python](../Part3-Cas-pratiques/App-04-JobShopScheduling-Python.ipynb) - Chaînes d'approvisionnement
 - [Sudoku-10-ORTools-Python](../../Sudoku/Sudoku-10-ORTools-Python.ipynb) - PLNE pour CSP
 
 **References** :
@@ -25857,7 +25857,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb,124
 
 **Series connexes** :
 - [Sudoku-10-ORTools-Python](../../Sudoku/Sudoku-10-ORTools-Python.ipynb) - Constraint Programming
-- [App-10-Portfolio](../Part3-Cas-pratiques/App-10-Portfolio.ipynb) - PL pour la finance",,,,,,,,50690fbd9071333e,,,,,,,,,,,,,,,
+- [App-10-Portfolio-Python](../Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb) - PL pour la finance",,,,,,,,50690fbd9071333e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed-CSharp.ipynb,a1b2rennes,markdown,fr,fa50eddff0fdec1f,"### Le piège Greedy : Rennes → Paris (miroir du piège BFS de Search-2)
 
 Le couple **Lille → Toulouse** ci-dessus diverge déjà (~14 %), mais le piège le plus net se voit sur **Rennes → Paris** : c'est le **miroir exact** du trajet **Paris → Rennes** étudié dans le jumeau *Search-02-Uninformed-CSharp* (où BFS préférait Lille et UCS préférait Nantes).
@@ -36848,7 +36848,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09f-ConvexOptimisation-Python.
 
 **Navigation** : [<< Search-09 (LP)](Search-09-LinearProgramming.ipynb) | [↑ Série Search](../README.md) | [Search-10 (Automates) >>](Search-10-SymbolicAutomata.ipynb)
 
-> **Durée estimée** : 45 min · **Prérequis** : [Search-09 (programmation linéaire)](Search-09-LinearProgramming.ipynb) ; la mesure comparée se lit mieux après [App-10 (portefeuille)](../Part3-Cas-pratiques/App-10-Portfolio.ipynb).
+> **Durée estimée** : 45 min · **Prérequis** : [Search-09 (programmation linéaire)](Search-09-LinearProgramming.ipynb) ; la mesure comparée se lit mieux après [App-10 (portefeuille)](../Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb).
 
 **Question centrale.** Search-09 a résolu des programmes **linéaires** — objectif et contraintes tous linéaires. C'est un cas particulier d'une famille plus large, l'**optimisation convexe**, dont chaque étage ajoute une forme d'expression : le programme **quadratique** (QP), le programme **conique du second ordre** (SOCP). Ce carnet nomme ce cadre, le démontre étage par étage sur des instances déjà présentes dans la série, et mesure ce que le solveur exact apporte — et n'apporte pas — face aux métaheuristiques.
 
@@ -36921,7 +36921,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09f-ConvexOptimisation-Python.
 Même optimum (sommet $(2, 1)$, $z = 8$) — il n'y avait qu'un problème. La lecture convexe ajoute ce que la lecture « recette LP » ne disait pas : la région admissible est un polyèdre **convexe**, l'objectif est à la fois linéaire et convexe, donc le simplexe de Search-09 était déjà un algorithme convexe — spécialisé au point que son optimum se trouve en un sommet. Montera-t-on d'un étage, l'optimum quittera les sommets pour l'**intérieur** : c'est le portefeuille de Markowitz.",,,,,,,,6cdbe9617b82c330,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09f-ConvexOptimisation-Python.ipynb,f09-8,markdown,fr,37ad747589404775,"## 3. Un étage au-dessus : la QP de Markowitz
 
-L'optimisation de portefeuille d'[App-10](../Part3-Cas-pratiques/App-10-Portfolio.ipynb) y est résolue par algorithme génétique et échantillonnage. Sa formulation canonique (Markowitz, 1952) est un **programme quadratique convexe** :
+L'optimisation de portefeuille d'[App-10](../Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb) y est résolue par algorithme génétique et échantillonnage. Sa formulation canonique (Markowitz, 1952) est un **programme quadratique convexe** :
 
 $$\min_{w}\; w^T \Sigma w \quad \text{s.c.} \quad \mu^T w \ge r,\; \mathbf{1}^T w = 1,\; w \ge 0$$
 
@@ -37098,14 +37098,14 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09f-ConvexOptimisation-Python.
 | SOCP | boules euclidiennes en contraintes | plafond de risque §4 |
 | SDP | matrices semidéfinies positives | Search-09b (MaxCut relaxé) |
 
-**La phrase à retenir** : le LP de Search-09 est le cas spécial entièrement linéaire d'une famille convexe ; chaque étage supplémentaire achète de l'expressivité (variance, normes, matrices) en conservant la propriété qui fonde la certification — *tout optimum local est global*. Le choix d'outil devient une règle simple : problème convexe standard → solveur exact (certificat, coût minuscule) ; convexité cassée petit → énumération ; convexité cassée grand → métaheuristique, comme [App-10](../Part3-Cas-pratiques/App-10-Portfolio.ipynb) le mesure sur la cardinalité et NSGA-II.
+**La phrase à retenir** : le LP de Search-09 est le cas spécial entièrement linéaire d'une famille convexe ; chaque étage supplémentaire achète de l'expressivité (variance, normes, matrices) en conservant la propriété qui fonde la certification — *tout optimum local est global*. Le choix d'outil devient une règle simple : problème convexe standard → solveur exact (certificat, coût minuscule) ; convexité cassée petit → énumération ; convexité cassée grand → métaheuristique, comme [App-10](../Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb) le mesure sur la cardinalité et NSGA-II.
 
 ***
 
 **Références** :
 - Boyd & Vandenberghe, *Convex Optimization* (Cambridge UP, 2004) — chapitres 4 (problèmes convexes, QP/SOCP) ; [pdf gratuit Stanford](https://web.stanford.edu/~boyd/cvxbook/) ; le LP y est défini comme cas particulier (§4.8.2... p. 146 sq.)
 - [cvxpy](https://www.cvxpy.org/) — modélisation convexe (CLARABEL, solveur conique)
-- [App-10 — Optimisation de portefeuille](../Part3-Cas-pratiques/App-10-Portfolio.ipynb) — la mesure complète GA / échantillonnage / NSGA-II sur la même instance
+- [App-10 — Optimisation de portefeuille](../Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb) — la mesure complète GA / échantillonnage / NSGA-II sur la même instance
 - Search-09 §5 — dualité et shadow prices, la version LP des certificats",,,,,,,,f4208150b5d38c39,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,e84db9f5,markdown,fr,1fbf7239543efc0d,"# Search-11c — Sélection empirique d'algorithmes : deux terrains — Sudoku et Puissance 4
 
@@ -38223,7 +38223,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Select
 
 La tranche 1 a comparé six paradigmes sur un problème de **satisfaction de contraintes**. Le projet étudiant distillé (cf. §9) en couvre deux autres ; cette tranche applique le même protocole au **Puissance 4** — un **jeu adversarial à somme nulle, information parfaite**.
 
-Les algorithmes eux-mêmes (minimax, élagage alpha-beta, MCTS) sont enseignés en détail dans [`App-12b-ConnectFour`](../Part3-Cas-pratiques/App-12b-ConnectFour.ipynb) (moteur de jeu, baseline aléatoire, alpha-beta) et [`App-14-ConnectFour-Adversarial`](../Part3-Cas-pratiques/App-14-ConnectFour-Adversarial.ipynb) (minimax, alpha-beta, MCTS, benchmark mono-position). **Ce notebook ne les ré-enseigne pas** : il pose la question de la **sélection** — même harnais, même timeout, mêmes métriques, mais un terrain dont la nature change ce que « bien résoudre » veut dire.
+Les algorithmes eux-mêmes (minimax, élagage alpha-beta, MCTS) sont enseignés en détail dans [`App-12b-ConnectFour-Python`](../Part3-Cas-pratiques/App-12b-ConnectFour-Python.ipynb) (moteur de jeu, baseline aléatoire, alpha-beta) et [`App-14-ConnectFour-Adversarial-Python`](../Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb) (minimax, alpha-beta, MCTS, benchmark mono-position). **Ce notebook ne les ré-enseigne pas** : il pose la question de la **sélection** — même harnais, même timeout, mêmes métriques, mais un terrain dont la nature change ce que « bien résoudre » veut dire.
 ",,,,,,,,5825b2e91df29fd6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,fc545090,markdown,fr,f15edc9d81c4f51b,"### 8.1 Ce qui change quand le problème devient adversarial
 
@@ -38656,8 +38656,8 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Select
 Recommandation pratique, terrain 2 : budget serré → `alphabeta_d2` ; budget médian → `mcts_1000` ; qualité maximale → `alphabeta_d6` ; jamais `minimax` sans élagage — même accord qu'`alphabeta_d4` (0.50 = 0.50) pour 3.4× les nœuds, la mesure du profit de l'élagage.",,,,,,,,e5d60f594d1a1700,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,61dba7b2,markdown,fr,721ef75cb3843d45,"### 8.7 Renvois
 
-- [`App-12b-ConnectFour`](../Part3-Cas-pratiques/App-12b-ConnectFour.ipynb) — moteur, baseline aléatoire, alpha-beta (cours détaillé).
-- [`App-14-ConnectFour-Adversarial`](../Part3-Cas-pratiques/App-14-ConnectFour-Adversarial.ipynb) — minimax, alpha-beta, MCTS et benchmark mono-position par profondeur.
+- [`App-12b-ConnectFour-Python`](../Part3-Cas-pratiques/App-12b-ConnectFour-Python.ipynb) — moteur, baseline aléatoire, alpha-beta (cours détaillé).
+- [`App-14-ConnectFour-Adversarial-Python`](../Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb) — minimax, alpha-beta, MCTS et benchmark mono-position par profondeur.
 - Tranche 3/3 (Wordle — élimination bayésienne / entropie / CSP) : à venir, même protocole.
 ",,,,,,,,721ef75cb3843d45,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,36eb0d8b,markdown,fr,b43505fb4056e37a,## Exercices,,,,,,,,b43505fb4056e37a,,,,,,,,,,,,,,,

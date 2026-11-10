@@ -1,6 +1,6 @@
 """Tests de l'organe factual-mislabel (#18354 tranche 2).
 
-Canon mesure sur App-5-Timetabling : « 3 salles » (x2, cellules 2 et 4)
+Canon mesure sur App-05-Timetabling-Python : « 3 salles » (x2, cellules 2 et 4)
 et « (3 \\times 20)^8 » contredits par le stream committé
 « Salles : 4 » / « (4 x 20)^8 = 1.68e+15 ». Echantillon sain : 0 FP / 30
 carnets (GenAI/ML/GameTheory/IIT/Probas, seed 42).

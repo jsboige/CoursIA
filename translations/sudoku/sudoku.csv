@@ -2433,7 +2433,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb,4b8e695f,markdown,fr,423
 **Voir aussi** : 
 - [CSP-1-Fondamentaux](../Search/Part2-CSP/CSP-1-Fundamentals.ipynb) - Fondamentaux CSP
 - [CSP-2-Consistance](../Search/Part2-CSP/CSP-2-Consistency.ipynb) - Propagation de contraintes
-- [App-1-NQueens](../Search/Applications/CSP/App-1-NQueens.ipynb) - Autre application CSP",,,,,,,,423169cb29a19105,,,,,,,,
+- [App-01-NQueens-Python](../Search/Applications/CSP/App-01-NQueens-Python.ipynb) - Autre application CSP",,,,,,,,423169cb29a19105,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Python.ipynb,2455ea10,markdown,fr,602e2409fee13a64,"# Sudoku-10-ORTools-Python : OR-Tools CP-SAT (Python)
 
 **Navigation** : [<< Python Backtracking](Sudoku-01-Backtracking-Python.ipynb) | [Index](README.md) | [Z3 Python >>](Sudoku-12-Z3-Python.ipynb)
@@ -10295,7 +10295,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-CSharp.ipynb,1f5ac673,markdown,fr,4e03d
 
 **Voir aussi** :
 - [Probas](../Probas/README.md) - Série complète sur la programmation probabiliste
-- [Search-App-3-NurseScheduling](../Search/Applications/CSP/App-3-NurseScheduling.ipynb) - Approche probabiliste alternative
+- [Search-App-3-NurseScheduling](../Search/Applications/CSP/App-03-NurseScheduling-Python.ipynb) - Approche probabiliste alternative
 ",,,,,,,,4e03de21bc8d9ac1,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-CSharp.ipynb,c51a81e1,markdown,fr,d8e0a1d4fdfa856d,"### 9. Exercices
 
@@ -18474,7 +18474,7 @@ Les résultats de la comparaison de performance montrent les différences entre 
 MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-CSharp.ipynb,20cb76bd,markdown,fr,14be04ea9b3283df,"***
 
 **Voir aussi** :
-- [Search-App-11-Picross](../Search/Applications/CSP/App-11-Picross.ipynb) - Application spectaculaire de DLX
+- [Search-App-11-Picross](../Search/Applications/CSP/App-11-Picross-Python.ipynb) - Application spectaculaire de DLX
 ",,,,,,,,14be04ea9b3283df,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-CSharp.ipynb,3996c1a5,markdown,fr,5b7056eb9ded2e4c,"## Exemple guide : Adapter Dancing Links pour le problème des N-Reines
 
@@ -18547,7 +18547,7 @@ Ce notebook a présente deux implémentations de l'algorithme Dancing Links (DLX
 
 Les benchmarks ont révèle un contraste surprenant : l'implémentation personnalisée est environ 30 a 90 fois plus rapide que DlxLib selon la difficulte (de ~33x sur les grilles difficiles a ~91x, soit 2-5 ms contre 160-290 ms). Les deux approches utilisent pourtant le même algorithme (Algorithm X) avec la même heuristique de colonne minimum : l'ecart ne vient donc pas de l'algorithmique mais du cout de construction de la matrice, DlxLib matérialisant une matrice dense de 324 colonnes par ligne la ou l'implémentation personnalisée bâtit directement la structure creuse, sans abstraction superflue. Ces temps murals varient d'une exécution a l'autre ; seul l'ordre de grandeur de l'ecart est significatif. L'exercice sur les N-Reines illustre la généralité de l'approche : tout problème de couverture exacte peut etre resolu par DLX, des pentominos au Picross.
 
-Le notebook [Search-App-11-Picross](../Search/Applications/CSP/App-11-Picross.ipynb) approfondit l'application de Dancing Links au problème du Picross, un autre cas d'usage spectaculaire de la couverture exacte.",,,,,,,,183feb891cb4ef80,,,,,,,,
+Le notebook [Search-App-11-Picross](../Search/Applications/CSP/App-11-Picross-Python.ipynb) approfondit l'application de Dancing Links au problème du Picross, un autre cas d'usage spectaculaire de la couverture exacte.",,,,,,,,183feb891cb4ef80,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-Python.ipynb,cell-0,markdown,fr,3074cb95eae1367b,"# Sudoku-Python-DancingLinks : Dancing Links / Algorithm X (Python)
 
 **Navigation** : [<< Sudoku-01 Backtracking Python](Sudoku-01-Backtracking-Python.ipynb) | [Index](README.md) | [Sudoku-03 Genetic Python >>](Sudoku-03-Genetic-Python.ipynb)

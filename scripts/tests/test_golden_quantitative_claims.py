@@ -39,7 +39,7 @@ GOLDEN = HERE / "golden_quantitative_claims.json"
 XFAIL_KNOWN_GAPS: dict[str, str] = {
     "m7": "ANGLE-MORT machine (FN): '30s' sans \\ss (espace avant 's') n'est pas matche",
     "s6": "ANGLE-MORT stochastic (FN): 42.5 a 1 decimale, STOCHASTIC_NUM exige >=2",
-    "s8": "ANGLE-MORT stochastic (FN): 'tentatives' hors KW + 1 decimale (App-7-Wordle)",
+    "s8": "ANGLE-MORT stochastic (FN): 'tentatives' hors KW + 1 decimale (App-07-Wordle-Python)",
     "m9": "ANGLE-MORT machine (FP): '15.33 min' = posterieur Bayesian DETERMINISTE (Infer-101, moyenne de trajet-vélo), PAS runtime. L'unite 'min' est une UNITE-DE-DONNEE du domaine, indistinguable d'une latence a la regex. Arbitrage #9434 2026-08-06 : frontiere = machine-dependance, pas 'nombre+unite'. ADVISORY — le triage humain tranche.",
     "m10": "ANGLE-MORT machine (FP): '30 sec' = duree du CONTENU audio (longueur de clip), PAS un runtime. Unite-de-donnee indistinguable d'une latence a la regex. ADVISORY — le triage humain tranche.",
     # "t1" (2.78e24x notation scientifique + x) retire : FIXE par #9564

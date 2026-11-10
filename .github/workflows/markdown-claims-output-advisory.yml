@@ -16,7 +16,7 @@ name: Markdown claims anchored to previous output (advisory)
 #     carrying a claim marker) absent from ALL committed outputs of the
 #     notebook. The detector above only looks BACKWARD, so a claim in a cell
 #     that PRECEDES its code is invisible to it -- measured CLEAN by ai-01 on
-#     App-5-Timetabling (c.2/c.4 precede the code they describe).
+#     App-05-Timetabling-Python (c.2/c.4 precede the code they describe).
 #   - scripts/check_factual_mislabel.py: a markdown entity count or tuple
 #     formula CONTRADICTED by the committed stream of the adjacent code cell
 #     (typically copied from a twin notebook whose data differs).
@@ -276,7 +276,7 @@ jobs:
           ${{ steps.stale.outputs.trunc_note }}
 
           Scope = notebooks CHANGED in this PR, not the whole corpus. The `stale-claim-report` run artifact holds the structured JSON.
-          Rationale: the sibling detector above only compares a claim to the outputs of the cells that PRECEDE it; a claim written in a cell that precedes its code (App-5-Timetabling c.2/c.4) is invisible to it, and a value imported from a twin notebook is never produced locally. See `python scripts/check_stale_claims.py --help`.
+          Rationale: the sibling detector above only compares a claim to the outputs of the cells that PRECEDE it; a claim written in a cell that precedes its code (App-05-Timetabling-Python c.2/c.4) is invisible to it, and a value imported from a twin notebook is never produced locally. See `python scripts/check_stale_claims.py --help`.
           EOF
             python3 scripts/ci/advisory_sticky.py --pr "$PR" --organ stale-claim-advisory --body-file /tmp/advisory_body.md
           fi

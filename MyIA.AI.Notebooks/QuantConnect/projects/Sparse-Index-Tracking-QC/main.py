@@ -10,7 +10,7 @@ from scipy.optimize import nnls
 # Sparse Index Tracking under a cardinality constraint -- QC Cloud edition
 # ===========================================================================
 # Real-data companion of App-27 (Search/Part3-Cas-pratiques/
-# App-27-Sparse-Index-Tracking-Walk-Forward.ipynb, PR #14046).
+# App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb, PR #14046).
 # App-27 carries the METHOD on synthetic data with known truth (CP-SAT model,
 # independent validator, walk-forward protocol, leak counter-example);
 # this project carries the TEST AGAINST REAL DATA via a real QC Cloud

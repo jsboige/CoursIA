@@ -17,7 +17,7 @@
     "counts": { "total": 34, "machine": 10, "env": 7, "stochastic": 9, "structural": 8 }
   },
   "cases": [
-    {"id": "m1", "text": "Le tri prend 24-127 ms selon la taille.", "cls": "machine", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "PR #9427 App-11-Picross. Scanner matche '127 ms' (la 2eme valeur) — la 1ere '24-' n'a pas d'unite accolée."},
+    {"id": "m1", "text": "Le tri prend 24-127 ms selon la taille.", "cls": "machine", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "PR #9427 App-11-Picross-Python. Scanner matche '127 ms' (la 2eme valeur) — la 1ere '24-' n'a pas d'unite accolée."},
     {"id": "m2", "text": " temps de ~144 ms en moyenne", "cls": "machine", "expect": "match", "kind": "TP", "source": "real-genai", "note": "Forme canonique avec tilde."},
     {"id": "m3", "text": "latence de 0.006 ms", "cls": "machine", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "Sous-milliseconde (3 decimales)."},
     {"id": "m4", "text": "generation en ~1.9 sec", "cls": "machine", "expect": "match", "kind": "TP", "source": "real-genai", "note": "Unite 'sec' (multiletire)."},
@@ -43,16 +43,16 @@
     {"id": "s5", "text": "F1-score atteint 0.88", "cls": "stochastic", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "KW 'f1' borne."},
     {"id": "s6", "text": "moyenne de 42.5 sur 10 runs", "cls": "stochastic", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "KW 'moyenne'. GROUND TRUTH: stochastique (derive sur 10 runs). ANGLE-MORT: 42.5 a 1 decimale, STOCHASTIC_NUM exige >=2 -> le scanner le rate. xfail documente."},
     {"id": "s7", "text": "score de 3 etoiles", "cls": "stochastic", "expect": "nomatch", "kind": "TN", "source": "synthetic-boundary", "note": "TN: entier (pas de decimale) — ne derive pas comme un flottant stochastique."},
-    {"id": "s8", "text": "3.3 tentatives en moyenne", "cls": "stochastic", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "PR #9426 App-7-Wordle. GROUND TRUTH: stochastique (moyenne qui derive). ANGLE-MORT double: 'tentatives' n'est pas un KW, et 1 seule decimale -> le scanner le rate. xfail documente."},
+    {"id": "s8", "text": "3.3 tentatives en moyenne", "cls": "stochastic", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "PR #9426 App-07-Wordle-Python. GROUND TRUTH: stochastique (moyenne qui derive). ANGLE-MORT double: 'tentatives' n'est pas un KW, et 1 seule decimale -> le scanner le rate. xfail documente."},
     {"id": "s9", "text": "l'entropie de Shannon vaut 2.31 bits", "cls": "stochastic", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "KW 'entropie' + 2 decimales."},
 
-    {"id": "t1", "text": "soit un speedup de 2.78e24x", "cls": "structural", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "PR #9427 App-11-Picross. ANGLE-MORT MAJEUR: '2.78e24x' (notation scientifique + x) N'EST PAS matche par le scanner — xfail documente. La regex bute sur le '\\b' apres 'e24' avant le 'x'."},
+    {"id": "t1", "text": "soit un speedup de 2.78e24x", "cls": "structural", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "PR #9427 App-11-Picross-Python. ANGLE-MORT MAJEUR: '2.78e24x' (notation scientifique + x) N'EST PAS matche par le scanner — xfail documente. La regex bute sur le '\\b' apres 'e24' avant le 'x'."},
     {"id": "t2", "text": "acceleration de 4x", "cls": "structural", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "Forme canonique simple."},
     {"id": "t3", "text": "gain de 1,5x", "cls": "structural", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "Virgule decimale francaise."},
     {"id": "t4", "text": "ratio de plus de 300x", "cls": "structural", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "Issue #9434 mentionne '300x' comme structurel legitime."},
     {"id": "t5", "text": "ordre de grandeur 2.78e24", "cls": "structural", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "Notation scientifique SANS le 'x' — celle-la matche (frontiere revelant que c'est le 'x' apres 'e24' qui coince)."},
     {"id": "t6", "text": "la variable x vaut 5", "cls": "structural", "expect": "nomatch", "kind": "TN", "source": "synthetic-boundary", "note": "TN propre: 'x' comme variable, pas un facteur."},
     {"id": "t7", "text": "grille de 100x100 pixels", "cls": "structural", "expect": "nomatch", "kind": "TN", "source": "synthetic-boundary", "note": "TN propre: dimensions (WxH), pas un speedup. Le scanner ne matche PAS '100x100' car le \\b apres 'x' echoue (suivi du chiffre '1'). TN convergent — frontiere revelant que STRUCTURAL_RE est robuste aux dimensions."},
-    {"id": "t8", "text": "soit 16x plus rapide", "cls": "structural", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "PR #9427 App-11-Picross ('~68x -> ~16x')."}
+    {"id": "t8", "text": "soit 16x plus rapide", "cls": "structural", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "PR #9427 App-11-Picross-Python ('~68x -> ~16x')."}
   ]
 }

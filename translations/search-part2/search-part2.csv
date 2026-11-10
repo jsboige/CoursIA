@@ -2261,7 +2261,7 @@ Ce notebook a introduit les **problèmes de satisfaction de contraintes (CSP)**,
 
 **Voir aussi** :
 - [CSP-2-Consistency.ipynb](CSP-2-Consistency.ipynb) pour les algorithmes de consistance (AC-3, forward checking)
-- [App-1-NQueens.ipynb](../Part3-Cas-pratiques/App-1-NQueens.ipynb) - Application classique",,,,,,,,401ab0d27fde27a4,,,,,,,,,,,,,,,
+- [App-01-NQueens-Python.ipynb](../Part3-Cas-pratiques/App-01-NQueens-Python.ipynb) - Application classique",,,,,,,,401ab0d27fde27a4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb,ff8c1476,markdown,fr,fd0dc40e7092b47b,"# CSP-2 : Propagation de Contraintes et Consistance - Version .NET
 
 **Navigation** : [<< CSP-1-Fundamentals](CSP-1-Fundamentals.ipynb) | [Index](../README.md) | [CSP-3-Advanced >>](CSP-3-Advanced.ipynb) | [Version Python](CSP-2-Consistency.ipynb)
@@ -8406,7 +8406,7 @@ Ce notebook a appliqué les CSP aux **problèmes d'ordonnancement**, omniprésen
 
 **Voir aussi** :
 - [CSP-5-Optimization.ipynb](CSP-5-Optimization.ipynb) pour les problèmes d'optimisation
-- [App-4-JobShopScheduling.ipynb](../Part3-Cas-pratiques/App-4-JobShopScheduling.ipynb) - Application détaillée
+- [App-04-JobShopScheduling-Python.ipynb](../Part3-Cas-pratiques/App-04-JobShopScheduling-Python.ipynb) - Application détaillée
 
 ",,,,,,,,0f3e34e0e7bc4394,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb,d4aa935a,markdown,fr,54412abf236e797d,"# CSP-5-Optimization-CSharp : Optimisation Combinatoire avec Choco-solver via IKVM
@@ -15794,7 +15794,7 @@ Ce notebook a couvert **3 paradigmes de raisonnement temporel** :
   TCSP partage)
 - `CSP-6-Hybridization-CSharp` : hybridation CP-SAT avec recherche locale (LNS = Large
   Neighborhood Search)
-- `App-13-TSP-Metaheuristics` :.planification de tournees avec fenetres temporelles
+- `App-13-TSP-Metaheuristics-Python` :.planification de tournees avec fenetres temporelles
   (TSP-TW), cas industriel classique
 - Documentation OR-Tools : https://developers.google.com/optimization (reference CP-SAT)
 
