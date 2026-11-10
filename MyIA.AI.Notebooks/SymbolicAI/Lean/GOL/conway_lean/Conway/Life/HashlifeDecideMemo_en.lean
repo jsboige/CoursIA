@@ -91,8 +91,10 @@ import Conway.Life_en
 import Conway.Life.MacroCell_en
 import Std.Data.HashMap
 
-namespace Conway
-namespace Life
+namespace Conway_en
+open Conway_en
+namespace Life_en
+open Life_en
 
 open MacroCell
 
@@ -197,5 +199,5 @@ theorem decideMemoRun_to_decide (g : Grid) (p : Grid → Bool) (m : DecideMemoCa
   rw [decideMemoRun_correct g p m hm]
   exact decide_eq_true rfl
 
-end Life
-end Conway
+end Life_en
+end Conway_en
