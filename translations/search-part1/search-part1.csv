@@ -37896,14 +37896,14 @@ for paradigm, solver_fn in SOLVERS:
 print()
 print(f""\nBenchmark termine en {time.perf_counter() - t_global:.1f}s, {len(results)} mesures."")
 ",,,,,,,,1e4eea33d4436537,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,interp-bench-run,markdown,fr,d0068a21351f0340,"### Lecture — 210 mesures en 752,9 s : ce que le log brut revele avant toute agregation
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,interp-bench-run,markdown,fr,fe3a746a4dbecc7c,"### Lecture — 210 mesures en 620,5 s : ce que le log brut revele avant toute agregation
 
 210 = **7 solveurs x 30 instances** (les 6 paradigmes de la section 4 comptent le backtracking deux fois : naive et MRV). Trois signaux sautent du log AVANT meme la section 6 :
 
-- **Les echecs du naif sont des coupes budget** : sur medium_hard, cinq lignes rendent `nodes=2000001` — le plafond de la section 2, pas un temps arbitraire. L'echec est donc defini par le protocole, pas par un crash.
+- **Les echecs du naif sont des coupes budget** : sur medium_hard, six lignes rendent `nodes=2000001` — le plafond de la section 2, pas un temps arbitraire. L'echec est donc defini par le protocole, pas par un crash.
 - **GA echoue 30/30** en brulant exactement `400200` evaluations chaque fois (200 individus x 2001 generations) — l'echec est systematique, pas un coup de malchance.
 - **Le recuit ne reussit que 6/10 en easy et 0/20 au-dela** (300001 = MAX_ITERATIONS atteint) : la demo de la section 4.6 (une seule grille) enjambait la variance inter-instances — c'est le benchmark complet, pas la demo, qui fonde le verdict.
-- Noter enfin la dispersion du naif : 445 a 703 681 noeuds SUR easy seul — la difficulte observable varie plus ENTRE instances d'une classe qu'entre classes.",,,,,,,,d0068a21351f0340,,,,,,,,,,,,,,,
+- Noter enfin la dispersion du naif : 330 a 703 681 noeuds SUR easy seul — la difficulte observable varie plus ENTRE instances d'une classe qu'entre classes.",,,,,,,,fe3a746a4dbecc7c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,bfcc5c8a,markdown,fr,db3e4fc5550f2baf,## 6. Analyse des résultats,,,,,,,,db3e4fc5550f2baf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,d2ad2bfc,markdown,fr,227b9460cbc32c88,### 6.1 Taux de succès par paradigme et difficulté,,,,,,,,227b9460cbc32c88,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,704f5154,code,fr,6dcbc750d770e1b6,"df = pd.DataFrame([m.to_row() for m in results])
@@ -38052,13 +38052,13 @@ print(""3. Sur 'diabolical' : backtracking_naif atteint souvent le budget 2M noe
 print(""   DLX tient encore grace a la propagation exacte-cover ; CP-SAT et Z3"")
 print(""   dependent de la structure ; GA et SA peinent a converger en 5s."")
 ",,,,,,,,67364b12b1ddc718,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,interp-verdict,markdown,fr,6523198a333a2d4f,"### Lecture — easy : Dancing Links gagne, et le naif bat MRV
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,interp-verdict,markdown,fr,22c66ba06fec67cb,"### Lecture — easy : Dancing Links gagne, et le naif bat MRV
 
-Le podium easy (temps median parmi les reussites) : **dancing_links 4,16 ms < backtracking_naive 12,29 ms < backtracking_mrv 18,18 ms < cp_sat 25,97 ms** (10/10 reussites pour les quatre).
+Le podium easy (temps median parmi les reussites) : **dancing_links 2,41 ms < backtracking_naive 7,56 ms < backtracking_mrv 12,55 ms < cp_sat 15,61 ms** (10/10 reussites pour les quatre).
 
-- **DLX confirme a l'echelle** le facteur ~450 vu en demo — le median etend la lecon au-dela d'une grille chanceuse.
+- **DLX confirme a l'echelle** l'ecart vu en demo (quelques millisecondes par grille) — le median etend la lecon au-dela d'une grille chanceuse.
 - **Le naif DEVANT MRV** est le resultat le plus instructif : choisir la case la plus contrainte reduit les noeuds (visible dans le log : 254 contre 2 576 sur easy_0) mais paie un cout par noeud (re-scan des contraintes) qui n'est pas amorti sur des grilles faciles. Sur medium_hard, le log montre l'inverse — MRV resout 7/10 quand le naif n'en resout que 4/10 (six coupes budget). Le classement S'INVERSE avec la difficulte : c'est le No Free Lunch en acte, pas en theorie.
-- **cp_sat a 25,97 ms malgre branches=0** : le cout fixe de modelisation (construire les 81 variables et les 27 AllDifferent) plafonne son plancher temporel — imbattable en robustesse, jamais le plus rapide sur easy.",,,,,,,,6523198a333a2d4f,,,,,,,,,,,,,,,
+- **cp_sat a 15,61 ms malgre branches=0** : le cout fixe de modelisation (construire les 81 variables et les 27 AllDifferent) plafonne son plancher temporel — imbattable en robustesse, jamais le plus rapide sur easy.",,,,,,,,22c66ba06fec67cb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,c89a4fc2,markdown,fr,f5b13afa6783e664,## 7. Discussion : No Free Lunch en pratique,,,,,,,,f5b13afa6783e664,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,f6f13a90,markdown,fr,8247eebcad69dc54,"### 7.1 Aucun algorithme ne domine tous les autres
 
@@ -38530,16 +38530,84 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Select
 - Tranche 3/3 (Wordle — élimination bayésienne / entropie / CSP) : à venir, même protocole.
 ",,,,,,,,721ef75cb3843d45,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,36eb0d8b,markdown,fr,b43505fb4056e37a,## Exercices,,,,,,,,b43505fb4056e37a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,b3b46f2f,markdown,fr,4019848d804b19fe,"### Exercice 1 : Mesurer l'effet du timeout sur la sélection
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,b3b46f2f,markdown,fr,4fe07791c02e33e8,"### Exemple guidé 1 — L'effet du budget temps sur la sélection (crédité #25579 — janok181)
 
-**Énoncé** : Ré-exécutez le benchmark avec un timeout de **0.5 seconde** par appel (au lieu de 5s). Quel paradigme sort gagnant sur 'diabolical' ? Est-ce toujours CP-SAT ?
+> Résolution originale : **janok181**, PR étudiante
+> [#25579](https://github.com/jsboige/CoursIA/pull/25579). Reprise telle quelle ;
+> seule la mise en forme est harmonisée avec les sections voisines.
 
-**Indice** : à 0.5s, les solveurs exacts qui n'ont pas terminé sont comptés en échec. Les métaheuristiques (GA, SA) peuvent tenir plus longtemps (avec qualité dégradée).",,,,,,,,4019848d804b19fe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,cd68bb5f,code,fr,c7245a035b5a3869,"# Exercice a completer : relancer le benchmark avec timeout=0.5s
-# Comparer les resultats (pareto, succes par difficulte) avec timeout=5.0
+La section 6 compare les sept solveurs sous un budget généreux de 5 secondes par appel. Mais un budget réel est rarement généreux : un solveur embarqué, un service avec garantie de latence, un batch nocturne — chacun impose sa propre limite. La question de la sélection devient alors : **le classement survit-il à la division du budget par dix ?**
 
-print(""Exercice a completer : relancer SOLVERS avec run_one(..., timeout_s=0.5)."")
-",,,,,,,,c7245a035b5a3869,,,,,,,,,,,,,,,
+**Ce que fait la résolution** :
+1. Relancer le benchmark complet (7 solveurs × 30 instances) avec `timeout_s=0.5`
+2. Conserver les résultats à 5 s de la section 5.2 et juxtaposer les taux de succès aux deux budgets
+3. Classer les solveurs sur 'diabolical' (taux de succès décroissant, puis temps moyen croissant) à 5 s puis à 0,5 s
+4. Visualiser l'effet du budget sur le taux de succès global et sur 'diabolical'
+
+**Question posée** : à 0,5 s par appel, quel paradigme sort gagnant sur 'diabolical' ? Le classement de la section 6.6 survit-il, et que devient Z3, parfait à 5 s ?",,,,,,,,4fe07791c02e33e8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,cd68bb5f,code,fr,40b155d450c1774a,"# Exercice 1 : effet du timeout (5 s -> 0.5 s) sur la selection
+TIMEOUT_COURT = 0.5
+
+# On garde les resultats a 5 s calcules en section 5.2
+df_5s = df.copy()
+
+# Meme benchmark, meme protocole, seul le budget change
+results_05: list[Metrics] = []
+t0 = time.perf_counter()
+for paradigm, solver_fn in SOLVERS:
+    for instance_id, difficulty, grid in instances:
+        results_05.append(run_one(paradigm, solver_fn, instance_id, difficulty, grid,
+                                  timeout_s=TIMEOUT_COURT))
+print(f""Benchmark a {TIMEOUT_COURT}s termine en {time.perf_counter() - t0:.1f}s, ""
+      f""{len(results_05)} mesures.\n"")
+df_05 = pd.DataFrame([m.to_row() for m in results_05])
+
+ordre = [""easy"", ""medium_hard"", ""diabolical""]
+def taux_succes(d):
+    return d.groupby([""paradigm"", ""difficulty""])[""success""].mean().unstack()[ordre]
+
+# Tableau comparatif : taux de succes a 5 s et a 0.5 s, cote a cote
+comparaison = pd.concat({""5s"": taux_succes(df_5s), ""0.5s"": taux_succes(df_05)}, axis=1)
+print(""Taux de succes par paradigme et difficulte (5 s vs 0.5 s) :"")
+print(comparaison.round(2))
+
+# Gagnant sur 'diabolical' : meilleur taux de succes, puis temps moyen le plus court
+def classement_diabolical(d):
+    sub = d[d[""difficulty""] == ""diabolical""]
+    return (sub.groupby(""paradigm"")
+               .agg(succes=(""success"", ""mean""), temps_moyen_s=(""time_seconds"", ""mean""))
+               .sort_values([""succes"", ""temps_moyen_s""], ascending=[False, True]))
+
+for label, d in [(""5 s"", df_5s), (""0.5 s"", df_05)]:
+    cl = classement_diabolical(d)
+    print(f""\nClassement 'diabolical' avec timeout {label} :"")
+    print(cl.round(4))
+    print(f""-> Gagnant : {cl.index[0]}"")
+
+# Graphique : taux de succes global par paradigme, 5 s vs 0.5 s
+glob = pd.DataFrame({
+    ""timeout 5 s"":   df_5s.groupby(""paradigm"")[""success""].mean(),
+    ""timeout 0.5 s"": df_05.groupby(""paradigm"")[""success""].mean(),
+}).sort_values(""timeout 5 s"", ascending=False)
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+glob.plot.bar(ax=axes[0], color=[""#4C72B0"", ""#DD8452""])
+axes[0].set_title(""Taux de succes global (30 grilles)"")
+axes[0].set_ylabel(""Taux de succes"")
+axes[0].set_ylim(0, 1.05)
+axes[0].tick_params(axis=""x"", rotation=30)
+
+diab = pd.DataFrame({
+    ""timeout 5 s"":   taux_succes(df_5s)[""diabolical""],
+    ""timeout 0.5 s"": taux_succes(df_05)[""diabolical""],
+}).reindex(glob.index)
+diab.plot.bar(ax=axes[1], color=[""#4C72B0"", ""#DD8452""])
+axes[1].set_title(""Taux de succes sur 'diabolical' (10 grilles)"")
+axes[1].set_ylim(0, 1.05)
+axes[1].tick_params(axis=""x"", rotation=30)
+plt.tight_layout()
+plt.show()
+",,,,,,,,40b155d450c1774a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,a9be735c,markdown,fr,2c4f915951ab2246,"### Exercice 2 : Implémenter un sélecteur PASE
 
 **Énoncé** : Implémentez un petit sélecteur d'algorithmes basé sur les features d'instance :
@@ -42534,3 +42602,47 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,3870ce3b,
 resultats_par_taille = None  # TODO etudiant
 
 print(""Exercice 5 a completer"")",,,,,,,,5067c6dd461dafce,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,489d238f,markdown,fr,dde16e3bbbad7899,"### Lecture du résultat : le budget déplace la sélection
+
+**Ce qui change en passant de 5 s à 0,5 s** (taux de succès medium_hard / diabolical, mesurés dans la sortie ci-dessus) :
+
+| Paradigme | 5 s | 0,5 s | Verdict |
+|---|---|---|---|
+| Dancing Links | 100 % / 100 % | 100 % / 100 % | intact (~4 ms par grille) |
+| CP-SAT | 100 % / 100 % | 100 % / 100 % | intact (~17 ms par grille) |
+| Backtracking MRV | 70 % / 100 % | 50 % / 90 % | recule |
+| Z3 (SMT) | 100 % / 100 % | 60 % / 100 % | **recule nettement** sur medium_hard |
+| Backtracking naïf | 40 % / 80 % | 20 % / 50 % | recule |
+| Recuit simulé | 0 % / 0 % | 0 % / 0 % | inchangé (déjà en échec ; easy recule de 60 % à 30 %) |
+| Génétique | 0 % / 0 % | 0 % / 0 % | inchangé (déjà en échec) |
+
+**Gagnant sur 'diabolical'** : **Dancing Links** dans les deux cas, avec 100 % de succès et le temps le plus court. CP-SAT arrive deuxième, lui aussi à 100 %. La réponse à la question de l'énoncé est donc : non, CP-SAT n'est pas le gagnant. Il est le seul solveur généraliste à rester à 100 % partout, mais l'algorithme spécialisé (DLX) reste environ 5 fois plus rapide. Z3 reste à 100 % sur 'diabolical' à 0,5 s, mais il plonge de 100 % à 60 % sur medium_hard : la marge que 5 s lui offrait a disparu.
+
+**Ce que ça montre** :
+- **Le classement dépend du budget.** À 5 s, quatre solveurs sont ex aequo à 100 % sur 'diabolical'. À 0,5 s, ils ne sont plus que trois — et sur medium_hard, Z3 tombe de 100 % à 60 %. C'est le principe *No Free Lunch* appliqué au temps : le « meilleur » algorithme n'existe que pour un budget donné.
+- **Le budget révèle les marges.** Un solveur qui réussit en 0,3 s « en moyenne » échoue dès que la limite passe sous sa queue de distribution. La moyenne ne suffit pas, il faut regarder les pires instances : sur medium_hard, Z3 dépasse 0,5 s sur quatre grilles sur dix, et chacune devient un échec.
+- **Les métaheuristiques n'en profitent pas ici.** Contrairement à l'indice de l'énoncé, GA et recuit ne « tiennent » pas mieux : sur le Sudoku, qui a une seule solution exacte, une solution presque bonne compte comme un échec. Le recuit perd même la moitié de ses réussites sur 'easy' (60 % à 30 %).
+
+**Limite de la mesure** : ces taux dépendent de la machine et de sa charge — c'est précisément le sujet de l'exercice. Sur la course d'origine de janok181 (autre machine), Z3 s'effondrait plus fortement encore : 10 % sur medium_hard et 80 % sur 'diabolical' à 0,5 s, contre 60 % et 100 % ici. Les solveurs proches de la limite des 0,5 s (Z3, backtracking) peuvent donc changer sensiblement d'une exécution à l'autre ; les conclusions sur DLX et CP-SAT, très loin de la limite, restent solides.",,,,,,,,dde16e3bbbad7899,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,e613b2d9,markdown,fr,5592d2ed5fc84b0e,"### Exercice 1 : La stabilité du classement quand l'échantillon change
+
+**Énoncé** : le classement de la section 6 repose sur 30 grilles tirées avec la graine 42. Le gagnant survivrait-il à un autre tirage ? Re-tirez 10 grilles par difficulté avec une **graine différente** (par exemple 1337) et relancez les 7 solveurs avec `run_one(..., timeout_s=5.0)` :
+1. Affichez le taux de succès par (paradigme, difficulté) sur le nouvel échantillon, comme en section 6.1 ;
+2. Recalculez le classement 'diabolical' (taux de succès décroissant, puis temps moyen croissant) et comparez-le aux classements à 5 s de l'exemple guidé 1 ;
+3. Mesurez, pour chaque paradigme, l'écart de taux de succès global entre la graine 42 et la graine 1337.
+
+**Question** : le gagnant change-t-il d'un échantillon à l'autre ? Quels paradigmes ont le classement le plus sensible au tirage, et pourquoi (10 grilles par difficulté seulement, queue de distribution des temps) ?
+
+**Indice** : le tirage de la section 3.2 utilise `random.Random(42)` puis `.sample(puzzles, 10)`. Refaites le même geste avec `random.Random(1337)` ; le `df` de la section 5.2 contient déjà toutes les mesures de la graine 42.",,,,,,,,5592d2ed5fc84b0e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,c84af228,code,fr,b3d4c9dd44a67459,"# Exercice a completer : stabilite du classement sous re-echantillonnage
+# Etape 1 : re-tirer 10 grilles par difficulte avec random.Random(1337)
+#           (meme pattern que la section 3.2 : load_puzzles + .sample(puzzles, 10))
+# Etape 2 : relancer les 7 solveurs avec run_one(..., timeout_s=5.0)
+# Etape 3 : taux de succes par (paradigm, difficulty) puis classement 'diabolical',
+#           comme dans l'exemple guide 1, et ecarts avec le df de la section 5.2
+# Indice : construire instances_1337 puis df_1337 ; l'ecart global par paradigme
+#           se lit en soustrayant les deux moyennes de la colonne 'success'
+
+df_1337 = None  # TODO etudiant
+
+print(""Exercice a completer : stabilite du classement, graine 1337 vs 42"")",,,,,,,,b3d4c9dd44a67459,,,,,,,,,,,,,,,
