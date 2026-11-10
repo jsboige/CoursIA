@@ -163,51 +163,45 @@ L'organe du trousseau réutilise cette mesure pour `get` au lieu d'en tenir une 
 générale reste : **un test d'ignorance lancé dans ce clone mesure ce clone, pas le dépôt** — et une
 énumération est par construction aveugle au fichier qu'on ajoutera demain.
 
-## Quand le coffre est absent — lire la ligne, pas le code de retour (2026-11-09)
+## Quand le coffre semble absent — mesurer la synchronisation avant de conclure
 
-`doctor` peut rendre **`coffre : ABSENT` avec `rc=0`**. Le code de retour ne dit pas « dispositif
-opérationnel », il dit « la mesure a pu être faite » : les outils, la passphrase et l'empreinte sont
-sains même quand le fichier n'est pas là. Une automatisation qui teste `doctor && …` conclut donc
-l'inverse de la vérité. **La ligne `coffre` fait foi, jamais le code.**
+Le diagnostic du 2026-11-09 illustre deux pièges distincts : **un `ABSENT` est un défaut, pas un
+succès de mesure**, et **l'absence au chemin attendu ne prouve pas la perte du coffre**.
+
+`cmd_doctor()` incrémente `defects` quand `path.is_file()` est faux ; toute valeur non nulle rend
+`EXIT_DEFECT`, soit **1**. Un `coffre : ABSENT` suivi de `rc=0` n'est donc pas un état prévu par
+l'organe : relire la sortie et sa commande avant d'en tirer une conclusion. `EXIT_UNKNOWN` (2)
+signale une autre situation — la mesure n'a pas pu être faite — et n'est pas un feu vert non plus.
+
+### Chercher l'arbre Drive fourché, pas seulement le chemin par défaut
+
+Le Drive porte deux racines `.shared-state` : `Synchronisation\` et `Synchronisation (1)\`.
+`vault_candidates()` les énumère et `vault_path()` choisit la première copie existante ; la copie
+vivante peut donc être dans l'arbre jumeau. `doctor` signale plusieurs copies par `CONFLIT` : c'est
+un motif d'arrêt **avant toute écriture**, même si leur contenu est ensuite mesuré identique.
+
+Mesure sur po-2023, 2026-11-10T00:57:11Z, après synchronisation : les deux fichiers
+`MyIA-Keys.kdbx` existent, font **7 127 octets**, portent le même `LastWriteUtc` et le **même
+SHA-256**. Le `doctor` relancé dans le même état rend :
 
 ```text
-machine   : myia-po-2023
-coffre    : ABSENT  G:\Mon Drive\Synchronisation\RooSync\.shared-state\MyIA-Keys.kdbx
-outil     : OK  pykeepass / keyring / pypdf
-passphrase: OK  posee dans le gestionnaire d identifiants
-empreinte : <32 car.> pbkdf2:85bd9366fb37
+coffre    : OK  G:\Mon Drive\Synchronisation\RooSync\.shared-state\MyIA-Keys.kdbx  (7127 octets)
+coffre    : CONFLIT  2 copies visibles -- comparer leurs empreintes AVANT toute ecriture
 1 defaut(s).
 ```
 
-Trois causes possibles, et la mesure qui les sépare — dans cet ordre, parce que la première est de
-loin la plus fréquente et la seule qui se répare en remontant le Drive :
+Le code de retour mesuré est **1**, causé ici par le seul `CONFLIT` structurel — pas par une
+absence. Cette égalité de contenu résout la question « une copie a-t-elle divergé ? », pas la
+duplication des arbres : **aucune écriture au coffre tant que l'écrivain désigné n'a pas arbitré
+leur consolidation**. Aucune copie, suppression ou reconstruction locale ne se fait depuis cette
+seule observation.
 
-| Hypothèse | Mesure | Verdict du 2026-11-09 sur po-2023 |
-|---|---|---|
-| Drive non monté / démonté | le dossier `.shared-state\` est-il peuplé, avec des mtimes du jour ? | **écartée** — dashboards, messages, inventories et baselines à jour, mtimes jusqu'au jour même |
-| Chemin déplacé | `MYIA_KEYS_VAULT` est-elle posée ? sinon `DEFAULT_VAULT` est bien le chemin interrogé | **écartée** — variable non posée, chemin canonique interrogé |
-| Fichier déplacé ou absent | `find "<Mon Drive>" -maxdepth 6 -iname "*.kdbx"` + recherche locale sous `.secrets\` | **retenue** — 0 résultat, aucun `.kdbx` local |
-
-**La conséquence n'est pas « le trousseau est en panne », c'est « la source unique n'existe plus ».**
-Les clés partagées ne vivent alors plus que dans les `master.env` en clair — exactement l'état que
-le mandat de #17558 voulait supprimer. Deux phases en dépendent :
-
-- **la phase 4** (`render_envs.py --check` coffre ↔ `master.env`) rend `UNKNOWN` : par design elle
-  ne rougit pas sur un coffre injoignable, donc elle cesse de couvrir quoi que ce soit ;
-- **la phase 6** (retrait des `master.env` et des `.env` rendus) doit **rester bloquée**. Sa
-  condition de sortie suppose un coffre vivant ; l'appliquer sur la foi du plan détruirait des
-  secrets que plus rien ne porte. Un coffre absent est un motif d'arrêt pour toute lane qui
-  s'apprêtait à retirer un fichier en clair, pas un détail à signaler en passant.
-
-**Ce qu'on ne fait pas** : reconstruire le coffre depuis le `master.env` d'une seule machine. Le
-body de #17558 pose un **écrivain unique** (le user ou ai-01) et une garde de copie en conflit,
-précisément parce que le fichier est binaire et synchronisé : une reconstruction locale aveugle
-écraserait une copie encore vivante sur une autre machine. La voie est le signalement — issue +
-registre user — puis l'arbitrage de l'écrivain désigné.
-
-L'empreinte et la passphrase **survivent** à la perte du fichier : le jour où le coffre est
-restauré, aucune machine n'a à re-bootstrapper, et la comparaison d'empreinte redevient
-immédiatement parlante.
+Si `doctor` rend réellement `ABSENT` : laisser Drive synchroniser, relancer `doctor`, puis comparer
+les copies des deux arbres par taille et SHA-256. Un `UNKNOWN` de la phase 4
+(`render_envs.py --check` coffre ↔ `master.env`) ne couvre pas l'état du coffre. La phase 6
+(retrait des `master.env` et `.env` rendus) reste bloquée tant qu'un coffre vivant n'est pas
+mesuré. L'empreinte de la passphrase et sa présence DPAPI survivent à la synchronisation du
+fichier ; elles ne prouvent pas à elles seules que le coffre est disponible.
 
 ## Voir aussi
 
