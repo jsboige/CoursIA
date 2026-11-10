@@ -63,13 +63,13 @@
       "note": "Statistiques des modules Life -- Oscillators.lean"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16-Conway-Man-and-Work-Lean-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb",
       "cell_id": "9de9dd11",
       "source": "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/CGTTour.lean",
       "note": "Lecture directe de CGTTour.lean (lakefile.lean du meme lac est ambigu par basename)"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13e-Conway-Free-Will-Theorem-Lean-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb",
       "cell_id": "d194d5fe",
       "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/FreeWillTheorem.lean",
       "note": "Declarations reelles de FreeWillTheorem.lean (source de verite, pas une paraphrase)"
@@ -111,13 +111,13 @@
       "note": "Vue d'ensemble du projet -- compte des lignes du module racine Grothendieck.lean (#22129)"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13e-Conway-Free-Will-Theorem-Lean-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb",
       "cell_id": "chsh-code-inv",
       "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CHSH.lean",
       "note": "Inventaire des declarations reelles de CHSH.lean et CHSHRandomized.lean -- comptes de lignes et numeros L<n> (#22129)"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13e-Conway-Free-Will-Theorem-Lean-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb",
       "cell_id": "chsh-code-inv",
       "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CHSHRandomized.lean",
       "note": "Seconde source lue par la meme cellule : ses citations L43-L167 sont celles de CHSHRandomized.lean, pas de CHSH.lean (#22129)"
