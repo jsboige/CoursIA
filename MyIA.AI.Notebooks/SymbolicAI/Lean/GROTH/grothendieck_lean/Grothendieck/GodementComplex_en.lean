@@ -187,5 +187,29 @@ variable {X : TopCat.{u}}
 -- sections at one open); it needs the flabby lifting
 -- (`epi_of_shortExact_of_isFlasqueSieves`, Part 94) or the separatedness
 -- ladder — tranche 2, feeding Part 99 (long exact sequence assembly).
+--
+-- **Part 99, the pointwise exactness bridge and rank 0 landed in the FR
+-- twin**: Mathlib (at the pin) does not provide "a short complex of
+-- presheaves is exact iff its evaluated sequence of abelian groups is exact
+-- at every open" — evaluation is not faithful (it cannot see the other
+-- opens), so no reflection argument applies. The bridge
+-- (`shortComplex_exact_iff_app`) is built by **homology**, without
+-- transporting a diagram inside a `limit.π`: exactness is null homology
+-- (`ShortComplex.exact_iff_isZero_homology`); `mapHomologyIso` identifies
+-- the homology of `S.map (eval U)` with the evaluation of `S.homology`,
+-- using preservation of finite (co)limits by evaluation; and
+-- `Functor.isZero_iff` detects a zero functor object by object.
+-- `IsZero.of_iso` transports nullity in both directions, avoiding dependent
+-- rewrites of `parallelPair` diagrams. On top of it, **rank 0 of the iteration**
+-- (`shortExact_map_godementFunctor`): a short exact sequence of presheaves
+-- `S` yields a short exact sequence `S.map godementFunctor` — at the level
+-- of natural transformations, not only open by open (Part 98); mono from
+-- Part 86, epi and pointwise exactness from Part 98.
+-- **Not posed** — the named frontier: rank `n + 1`. The canonical stages
+-- are `C^{n+2} = C⁰(coker dⁿ)` (P92), so iterating requires the short
+-- exact sequence of cokernels, whose connecting morphism
+-- `δ = -kernel.ι ≫ cokernel.π` (`kernelCokernelCompSequence`) must
+-- vanish — flabby lifting (Part 94) or the separatedness ladder; that is
+-- the next tranche.
 
 end Grothendieck_en

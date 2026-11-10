@@ -7,6 +7,8 @@ import Mathlib.Algebra.Homology.HomologicalComplex
 import Mathlib.Algebra.Homology.ShortComplex.HomologicalComplex
 import Mathlib.Algebra.Homology.ShortComplex.PreservesHomology
 import Mathlib.CategoryTheory.Comma.Arrow
+import Mathlib.CategoryTheory.Limits.Preserves.Shapes.Zero
+import Mathlib.CategoryTheory.Limits.FunctorCategory.Finite
 
 /-!
 # Le complexe de Godement : l'itération du pas canonique à tous les degrés
@@ -622,5 +624,175 @@ theorem shortExact_app_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrpCa
   exact ShortComplex.ShortExact.mk' (exact_app_godementMapHom hS.exact U)
     ((NatTrans.mono_iff_mono_app _).mp (godementMapHom_mono S.f) (op U))
     ((NatTrans.epi_iff_epi_app _).mp (epi_godementMapHom_of_epi S.g) (op U))
+
+/-!
+### Partie 99 — le pont d'exactitude composante par composante ; rang 0 : `C⁰` préserve les SES
+
+Mathlib (au pin) ne fournit pas le pont « un short complexe de préfaisceaux est
+exact si et seulement si sa suite de groupes abéliens évaluée en chaque ouvert
+est exacte » : l'évaluation n'est pas fidèle (elle ne voit pas les autres
+ouverts), donc aucun argument de réflexion ne s'applique. Le pont se construit
+par **homologie**, sans transporter un diagramme à l'intérieur d'un `limit.π` :
+`S.Exact ↔ IsZero S.homology`, puis `mapHomologyIso` identifie l'homologie de
+`S.map (eval U)` à l'évaluation de `S.homology` (l'évaluation préserve les
+(co)limites finies), et `Functor.isZero_iff` teste la nullité objet par objet.
+`IsZero.of_iso` transporte la nullité dans les deux sens, sans réécriture
+dépendante de `parallelPair`.
+
+Ce pont est la **fondation rang 0** de l'itération : une SES de préfaisceaux
+`S` donne une SES `S.map godementFunctor` — pas seulement ouvert par ouvert
+(Partie 98), mais au niveau des transformations naturelles. Le mono est la
+Partie 86, l'épi et l'exactitude pointwise la Partie 98.
+
+La **frontière nommée** reste le rang `n + 1` : les étages du complexe
+canonique sont `C^{n+2} = C⁰(coker dⁿ)` (P92), donc l'itération exige la SES
+des conoyaux, dont le connecteur serpent `δ = -kernel.ι ≫ cokernel.π`
+(`kernelCokernelCompSequence`) doit s'annuler — relèvement flasque (Partie 94)
+ou échelle de séparabilité. C'est la tranche suivante.
+-/
+
+/-- Le composant en un ouvert d'une composition nulle de transformations
+naturelles est nul : le champ `zero` du short complexe, évalué. -/
+theorem shortComplex_app_zero {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (U : Opens X) :
+    S.f.app (op U) ≫ S.g.app (op U) = 0 := by
+  have h : (S.f ≫ S.g).app (op U) = 0 := by rw [S.zero]; simp
+  rwa [NatTrans.comp_app] at h
+
+/-- **Le `parallelPair` du noyau s'évalue composante par composante** :
+`parallelPair g 0` suivi de l'évaluation en `U` est le `parallelPair` de la
+composante et de zéro. Pont de transport entre (co)limites de préfaisceaux et
+(co)limites de groupes : sans lui, le foncteur indexé côté foncteurs
+(`parallelPair g 0 ⋙ évaluation`) et le `parallelPair` côté groupes
+(`parallelPair (g.app _) 0`) ne sont même pas le même foncteur au sens
+syntaxique, et les `limit.π` des deux mondes ne s'apparient pas. La preuve
+est un `Functor.ext` : les trois morphismes de l'index (`left`, `right`,
+`id`) se vérifient par réduction définitionnelle. -/
+theorem parallelPair_comp_zero_eval {F G : X.Presheaf AddCommGrpCat.{u}} (g : F ⟶ G)
+    (U : Opens X) :
+    parallelPair g 0 ⋙ (evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U) =
+      parallelPair (g.app (op U)) 0 := by
+  fapply CategoryTheory.Functor.ext
+  · intro j
+    cases j <;> rfl
+  · intro a b f
+    cases f
+    · rfl
+    · rfl
+    · simp
+      rfl
+
+/-- **Le `parallelPair` du conoyau s'évalue composante par composante** : le
+jumeau du lemme précédent pour la forme `parallelPair 0 f` du conoyau. -/
+theorem parallelPair_zero_comp_eval {F G : X.Presheaf AddCommGrpCat.{u}} (f : F ⟶ G)
+    (U : Opens X) :
+    parallelPair 0 f ⋙ (evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U) =
+      parallelPair 0 (f.app (op U)) := by
+  fapply CategoryTheory.Functor.ext
+  · intro j
+    cases j <;> rfl
+  · intro a b f
+    cases f
+    · rfl
+    · rfl
+    · simp
+      rfl
+
+/-- **Le composant en `U` du `kernel.ι` de la catégorie de foncteurs** : le
+`limit.π` du foncteur évalué, l'isomorphisme `limitObjIsoLimitCompEvaluation`
+étant consommé côté gauche. Brique Mathlib (`FunctorCategory`) reposée ici
+avec le `parallelPair g 0` du noyau, pour l'interface de cette Partie. -/
+theorem kernel_ι_app {F G : X.Presheaf AddCommGrpCat.{u}} (g : F ⟶ G) (U : Opens X) :
+    (limitObjIsoLimitCompEvaluation (parallelPair g 0) (op U)).hom ≫
+      limit.π (parallelPair g 0 ⋙ (evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U))
+        WalkingParallelPair.zero =
+      (limit.π (parallelPair g 0) WalkingParallelPair.zero).app (op U) :=
+  limitObjIsoLimitCompEvaluation_hom_π (parallelPair g 0) WalkingParallelPair.zero (op U)
+
+/-- **Le composant en `U` du `cokernel.π` de la catégorie de foncteurs** : le
+`colimit.ι` du foncteur évalué, l'isomorphisme
+`colimitObjIsoColimitCompEvaluation` étant consommé côté droit. -/
+theorem cokernel_π_app {F G : X.Presheaf AddCommGrpCat.{u}} (f : F ⟶ G) (U : Opens X) :
+    (colimit.ι (parallelPair 0 f) WalkingParallelPair.one).app (op U) ≫
+      (colimitObjIsoColimitCompEvaluation (parallelPair 0 f) (op U)).hom =
+        colimit.ι (parallelPair 0 f ⋙ (evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U))
+          WalkingParallelPair.one :=
+  colimitObjIsoColimitCompEvaluation_ι_app_hom (parallelPair 0 f) WalkingParallelPair.one (op U)
+
+/-- **Le composant en `U` du `cokernel.π`, forme `parallelPair f 0`** : jumeau
+f-first du précédent — la forme sous laquelle `cokernel.π` se déplie
+réellement (`cokernel.π f = coequalizer.π f 0 = colimit.ι (parallelPair f 0)
+one`, par `rfl` au pin Mathlib), utilisée quand le but vit déjà côté
+catégorie de foncteurs. -/
+theorem cokernel_π_app' {F G : X.Presheaf AddCommGrpCat.{u}} (f : F ⟶ G) (U : Opens X) :
+    (colimit.ι (parallelPair f 0) WalkingParallelPair.one).app (op U) ≫
+      (colimitObjIsoColimitCompEvaluation (parallelPair f 0) (op U)).hom =
+        colimit.ι (parallelPair f 0 ⋙ (evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U))
+          WalkingParallelPair.one :=
+  colimitObjIsoColimitCompEvaluation_ι_app_hom (parallelPair f 0) WalkingParallelPair.one (op U)
+
+/-- **Le pont d'exactitude composante par composante** : un short complexe de
+préfaisceaux de groupes abéliens sur `X` est exact si et seulement si sa suite
+de groupes abéliens évaluée en chaque ouvert est exacte.
+
+Preuve par l'homologie : `S.Exact ↔ IsZero S.homology`
+(`ShortComplex.exact_iff_isZero_homology`), l'homologie se calcule composante
+par composante (`S.map (eval U)` a pour homologie `(eval U).obj S.homology`
+via `mapHomologyIso`, l'évaluation préservant limites et colimites finies), et
+un foncteur est nul ssi il l'est en chaque objet (`Functor.isZero_iff`). On
+évite ainsi tout transport de diagramme (le `rw` d'un `parallelPair` à
+l'intérieur d'un `limit.π` casse le motive dépendant). -/
+theorem shortComplex_exact_iff_app {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    [S.HasHomology] :
+    S.Exact ↔ ∀ U : Opens X,
+      (ShortComplex.mk (S.f.app (op U)) (S.g.app (op U)) (shortComplex_app_zero U)).Exact := by
+  rw [ShortComplex.exact_iff_isZero_homology]
+  constructor
+  · intro h U
+    rw [ShortComplex.exact_iff_isZero_homology]
+    haveI hz : ((evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U)).PreservesZeroMorphisms :=
+      CategoryTheory.Functor.preservesZeroMorphisms_evaluation_obj (op U)
+    haveI hh : ((evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U)).PreservesHomology :=
+      @CategoryTheory.Functor.preservesHomologyOfExact _ _ _ _ _ _ _ hz
+        (by infer_instance) (by infer_instance)
+    have hU : IsZero (((evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U)).obj S.homology) :=
+      h.obj (op U)
+    have e := @ShortComplex.mapHomologyIso _ _ _ _ _ _ S
+      ((evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U)) hz inferInstance
+      (ShortComplex.hasHomology_of_preserves S _) (CategoryTheory.Functor.PreservesHomology.preservesLeftHomologyOf _ S)
+    exact hU.of_iso e
+  · intro h
+    rw [Functor.isZero_iff]
+    intro U
+    haveI hz : ((evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj U).PreservesZeroMorphisms :=
+      CategoryTheory.Functor.preservesZeroMorphisms_evaluation_obj U
+    haveI hh : ((evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj U).PreservesHomology :=
+      @CategoryTheory.Functor.preservesHomologyOfExact _ _ _ _ _ _ _ hz
+        (by infer_instance) (by infer_instance)
+    have e := @ShortComplex.mapHomologyIso _ _ _ _ _ _ S
+      ((evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj U) hz inferInstance
+      (ShortComplex.hasHomology_of_preserves S _) (CategoryTheory.Functor.PreservesHomology.preservesLeftHomologyOf _ S)
+    have hU : IsZero (ShortComplex.mk (S.f.app U) (S.g.app U)
+        (shortComplex_app_zero U.unop)).homology :=
+      (ShortComplex.exact_iff_isZero_homology _).1 (h U.unop)
+    exact hU.of_iso e.symm
+
+/-- **Lemme (a), rang 0 : `C⁰` préserve les suites exactes courtes** de
+préfaisceaux de groupes abéliens — pas seulement ouvert par ouvert (Partie
+98), mais au niveau des transformations naturelles : une SES `S` donne une SES
+`S.map godementFunctor`. Le mono est la Partie 86 (`godementMapHom_mono`),
+l'épi (`epi_godementMapHom_of_epi`) et l'exactitude pointwise (`exact_app_`
+`godementMapHom`) la Partie 98, l'assemblage par le pont
+`shortComplex_exact_iff_app` de cette Partie. C'est la fondation rang 0 de
+l'itération ; le rang `n + 1` (étages `C^{n+2} = C⁰(coker dⁿ)`, P92) exige en
+plus l'annulation du connecteur serpent — relèvement flasque (P94) ou échelle
+de séparabilité, tranche suivante. -/
+theorem shortExact_map_godementFunctor {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.ShortExact) : (S.map godementFunctor).ShortExact := by
+  have : Mono S.f := hS.mono_f
+  have : Epi S.g := hS.epi_g
+  exact ShortComplex.ShortExact.mk' (shortComplex_exact_iff_app.mpr
+    fun U => exact_app_godementMapHom hS.exact U)
+    (godementMapHom_mono S.f) (epi_godementMapHom_of_epi S.g)
 
 end Grothendieck
