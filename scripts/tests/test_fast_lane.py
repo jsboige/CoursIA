@@ -1860,12 +1860,10 @@ def test_check_hr_substitution_gh_failure_exits_two(monkeypatch):
     )
 
 
-def test_tranche22_markdown_schema_advisory_guard_is_wired():
-    """Tranche 22 = schema des cellules markdown (#20167), advisory. Contrat :
-    native, absorbe, non bloquant (calibration avant bascule), iteration par
-    carnet modifie. Le detecteur DOIT tirer sur un carnet fautif et rester
-    muet sur un carnet propre : un organe qui ne dit jamais rien est
-    indiscernable d'un organe debranche (lecon #11685).
+def test_tranche22_markdown_schema_ratchet_guard_is_wired():
+    """Tranche 22 = ratchet de schema des cellules markdown (#24090).
+    Contrat : native, absorbe, bloquant et compare chaque carnet modifie a sa
+    version sur la base PR; les dettes preexistantes restent tolerées.
     """
     import json
     import tempfile
@@ -1874,15 +1872,14 @@ def test_tranche22_markdown_schema_advisory_guard_is_wired():
     guard = TRANCHE22[0]
     assert guard.source == FAST_LANE_NATIVE
     assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
-    assert not guard.blocking, (
-        f"{guard.name} est advisory : bascule en bloquant seulement quand main "
-        f"ne porte plus aucune cellule markdown fautive"
-    )
+    assert guard.blocking, f"{guard.name} doit bloquer toute hausse de la classe cible"
     assert guard.iterates_paths and "{changed_paths}" in guard.argv
-    assert "--check" in guard.argv
+    assert "--base-ref" in guard.argv and "{base_ref}" in guard.argv
     assert "MyIA.AI.Notebooks/**/*.ipynb" in guard.iterate_paths
     for needle in (
         "scripts/notebook_tools/fix_markdown_cell_schema.py",
+        "scripts/notebook_tools/check_markdown_cell_schema_ratchet.py",
+        "scripts/notebook_tools/tests/test_check_markdown_cell_schema_ratchet.py",
         "scripts/notebook_tools/tests/test_fix_markdown_cell_schema.py",
         "scripts/ci/fast_lane_registry.py",
     ):
