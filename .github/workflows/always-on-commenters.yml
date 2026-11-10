@@ -182,12 +182,13 @@ jobs:
         env:
           PAYLOAD_BODY: ${{ github.event.pull_request.body }}
         run: |
-          LIVE=""
-          if [ -n "${PR_NUMBER:-}" ]; then
-            LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null) || LIVE=""
-          fi
-          if [ -z "$LIVE" ]; then
-            echo "::warning::[body-live] lecture API vide/echouee -- repli sur le payload de l'evenement"
+          # Une reponse vide reussie est un corps vide, pas une panne.
+          # En cas d'echec, gh peut ecrire une erreur sur stdout ; le repli ci-dessous
+          # remplace LIVE par le payload avant son utilisation.
+          if [ -n "${PR_NUMBER:-}" ] && LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null); then
+            echo "[body-live] corps courant lu via API : ${#LIVE} chars (#15697)"
+          else
+            echo "::warning::[body-live] lecture API echouee -- repli sur le payload de l'evenement (photographie)"
             LIVE="${PAYLOAD_BODY:-}"
           fi
           delim="PR_BODY_EOF_$$"
