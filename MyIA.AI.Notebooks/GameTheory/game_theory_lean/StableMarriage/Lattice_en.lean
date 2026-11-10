@@ -23,6 +23,11 @@
   - meet μ ν: each man gets his less-preferred partner between μ and ν
   - Wu-Roth Lemma 3.2 (one-to-one): join and meet of stable matchings are stable
   - Stanley lemma: finite join-semilattice with min = lattice
+
+  i18n convention (Option A ratified by ai-01, Epic #4980):
+  section headers, definition/theorem docstrings, lemma comments are
+  **French-first**; the Lean tactic code (tactic names, Mathlib lemmas,
+  identifiers) stays in English, Lean's canonical language.
 -/
 
 import Mathlib.Order.Lattice

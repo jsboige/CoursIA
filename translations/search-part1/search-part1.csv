@@ -10414,9 +10414,9 @@ DFS suit la **branche la plus a gauche** jusqu'a une feuille puis remonte. Sur B
 
 **Avantage clé de DFS** : empreinte mémoire bien moindre (la pile ne contient que le chemin courant + quelques freres). Sur un arbre très profond et peu large ou la solution est sur la première branche explorée, DFS peut etre **strictement meilleur que BFS** -- c'est ce que montre l'**Exemple guide 2** plus bas.
 ",,,,,,,,2fa59ad7f0300800,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,ff134544,markdown,fr,4029f47b67d0b765,"### Exemple guide : DFS avec limite de profondeur (rendu TP PR #22681)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,ff134544,markdown,fr,7021b985c51edb40,"### Exemple guide : DFS avec limite de profondeur (rendu TP PR #22681)
 
-**Crédit** : rendu de TP intégré ici en exemple guidé — PR #22681 (une soumission identique du même groupe est arrivée en #22676). L'énoncé d'origine reste conservé ci-dessous.
+**Crédit** : rendu de TP intégré ici en exemple guidé — PR #22681 (des soumissions identiques du même groupe — Caroline et Juliana — sont aussi arrivées en #22676 et #25531). L'énoncé d'origine reste conservé ci-dessous.
 
 
 **Enonce** : implementez `DfsLimited(problem, maxDepth)` -- un DFS qui s'arrete des qu'un noeud atteint la profondeur `maxDepth` (sans l'expanser). C'est la brique elementaire d'IDDFS (section 5).
@@ -10428,7 +10428,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,ff1
 4. Pour distinguer *solution trouvee* de *solution inexistante*, vous pouvez retourner `(SearchResult? result, bool cutoffOccurred)`.
 
 **Test attendu** : sur `Bordeaux -> Strasbourg`, `DfsLimited(..., maxDepth=2)` doit retourner une solution (2 sauts suffisent), tandis que `maxDepth=1` doit retourner une coupure.
-",,,,,,,,4029f47b67d0b765,,,,,,,,,,,,,,,
+",,,,,,,,7021b985c51edb40,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,3f9fac8d,code,fr,1503ed15d11893c9,"#nullable enable
 
 // DFS avec limite de profondeur. Une meilleure profondeur connue par état permet
@@ -10549,9 +10549,9 @@ Sur Bordeaux -> Strasbourg, UCS confirme le chemin de BFS : **Bordeaux -> Paris 
 
 **Coût temps/espace** : UCS exploré les noeuds par ordre de coût croissant. Sur un graphe ou toutes les arêtes valent 1 (cas BFS), UCS degeneré en BFS. Sur un graphe fortement pondéré, UCS exploré typiquement beaucoup plus de noeuds que BFS pour le même problème, car il doit explorer tous les chemins partiels dont le coût est inférieur au coût optimal.
 ",,,,,,,,0b76fe61288bd407,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,62213596,markdown,fr,11dcd33bad669251,"### Exemple guide : écart de coût BFS vs UCS — Montpellier -> Lyon (rendu TP PR #22681)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,62213596,markdown,fr,75385afdf15a49ca,"### Exemple guide : écart de coût BFS vs UCS — Montpellier -> Lyon (rendu TP PR #22681)
 
-**Crédit** : rendu de TP intégré ici en exemple guidé — PR #22681 (une soumission identique du même groupe est arrivée en #22676). L'énoncé d'origine reste conservé ci-dessous.
+**Crédit** : rendu de TP intégré ici en exemple guidé — PR #22681 (des soumissions identiques du même groupe — Caroline et Juliana — sont aussi arrivées en #22676 et #25531). L'énoncé d'origine reste conservé ci-dessous.
 
 **Enonce** : choisissez un trajet ou BFS et UCS donnent **un coût différent**. Le candidat naturel est **Montpellier -> Lyon** : deux chemins en 2 sauts existent, avec des coûts très différents selon les arêtes empruntées.
 
@@ -10559,7 +10559,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,622
 1. `var problem6 = new GraphProblem(""Montpellier"", ""Lyon"", franceGraph);`
 2. Lancez `BFS(problem6)` et `UCS(problem6)` puis comparez `result.Cost`.
 3. Affichez les deux chemins et expliquez pourquoi UCS est strictement meilleur (ou pas).
-",,,,,,,,11dcd33bad669251,,,,,,,,,,,,,,,
+",,,,,,,,75385afdf15a49ca,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,6f60e28f,code,fr,e34aa7346bf99885,"// Exercice 2 : comparer BFS et UCS sur Montpellier -> Lyon.
 var problemMontpellierLyon = new GraphProblem(""Montpellier"", ""Lyon"", franceGraph);
 var bfsMontpellierLyon = BFS(problemMontpellierLyon);
@@ -10723,9 +10723,9 @@ foreach (var row in rows)
     Console.WriteLine($""{row.algo,-12} {row.complete,-12} {row.optimal,-15} {row.time,-22} {row.space,-18} {row.front,-10}"");
 Console.WriteLine(""\n* Optimal uniquement si tous les couts d'action sont identiques."");
 ",,,,,,,,f50312d04b47888a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,7bdc029c,markdown,fr,dfed8f38e69468e1,"### Exemple guide : comparaison expérimentale des quatre algorithmes — Grenoble -> Lille (rendu TP PR #22681)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,7bdc029c,markdown,fr,7d0c07bdbdc66b8d,"### Exemple guide : comparaison expérimentale des quatre algorithmes — Grenoble -> Lille (rendu TP PR #22681)
 
-**Crédit** : rendu de TP intégré ici en exemple guidé — PR #22681 (une soumission identique du même groupe est arrivée en #22676). L'énoncé d'origine reste conservé ci-dessous.
+**Crédit** : rendu de TP intégré ici en exemple guidé — PR #22681 (des soumissions identiques du même groupe — Caroline et Juliana — sont aussi arrivées en #22676 et #25531). L'énoncé d'origine reste conservé ci-dessous.
 
 **Enonce** : choisissez un trajet **non couvert** par les 5 cas ci-dessus (par exemple **Grenoble -> Lille** ou **Montpellier -> Rennes**) et executez les quatre algorithmes. Construisez un tableau comparatif.
 
@@ -10733,7 +10733,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,7bd
 1. `var problemC = new GraphProblem(depart, arrivee, franceGraph);`
 2. `BFS(problemC)` / `DFS(problemC)` / `UCS(problemC)` / `IDDFS(problemC, maxDepth: 15)`.
 3. Affichez pour chacun : chemin, coût, noeuds explorés, noeuds générés, temps.
-",,,,,,,,dfed8f38e69468e1,,,,,,,,,,,,,,,
+",,,,,,,,7d0c07bdbdc66b8d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,19b46fd7,code,fr,2b68e09768b16b23,"// Exercice 3 : comparer les quatre algorithmes sur Grenoble -> Lille.
 var problemGrenobleLille = new GraphProblem(""Grenoble"", ""Lille"", franceGraph);
 var resultBfsGrenobleLille = BFS(problemGrenobleLille);
@@ -22478,24 +22478,14 @@ L'algorithme X trouve correctement la solution {S2, S4, S6}.
 - Pas de structure de données optimisee pour les matrices creuses
 
 C'est précisément pour resoudre ces problemes que Knuth a invente **Dancing Links**.",,,,,,,,02f8f88e6f0bf21c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,aba40b0b,markdown,fr,a240ff9f5addaddc,"### Exercice 1 : Implementer l'heuristique MRV pour le choix de colonne
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,aba40b0b,markdown,fr,80be7760224df3c8,"### Exemple guidé 2 — Choisir la colonne la plus contrainte (heuristique MRV)
 
-L'heuristique **MRV (Minimum Remaining Values)** consiste a choisir la colonne avec le **moins de 1** restants, car elle offre le moins de choix possibles et donc reduit l'arbre de recherche.
+Contribution du groupe 3 — Antonin, Daphnée et Pauline (TP, PR #25572).
 
-La fonction `algorithm_x_simple` utilise déjà cette heuristique via `np.argmin(col_sums)`. Implementez votre propre fonction `choose_column_mrv` qui :
+L'heuristique **MRV (Minimum Remaining Values)** choisit la colonne qui offre le moins de choix : compter les 1 de chaque colonne avec `np.sum(matrix, axis=0)`, rendre `-1` dès qu'une colonne est vide (la branche est sans issue), sinon rendre l'index du minimum avec `np.argmin`. L'exemple applique la fonction à l'instance de référence `matrix_test`, puis à une matrice comportant une colonne vide pour montrer le cas d'échec.
 
-1. Parcourt toutes les colonnes de la matrice
-2. Pour chaque colonne, compte le nombre de 1
-3. Retourne l'index de la colonne avec le minimum de 1 (strictement positif)
-4. Si une colonne a 0 choix, retourne -1 (impossible)
-
-**Indices** :
-- Utilisez `np.sum(matrix, axis=0)` pour obtenir le nombre de 1 par colonne
-- Eliminez les colonnes avec 0 choix (erreur) avec un masque booléen
-- Testez votre fonction sur `matrix_test` définie precedemment — la colonne avec le moins de 1 est la colonne 1 (index 1, deux 1)
-
-**Pourquoi c'est important** : Sans MRV, l'algorithme explore beaucoup plus de branches inutiles. C'est l'equivalent du ""fail-first"" dans les CSP.",,,,,,,,a240ff9f5addaddc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,77892920,code,fr,2ed0ec7cec374100,"def choose_column_mrv(matrix: np.ndarray) -> int:
+> Résolution originale reprise telle quelle ; seule la démonstration d'appel a été ajoutée sous la fonction.",,,,,,,,80be7760224df3c8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,77892920,code,fr,ece4592da92e276c,"def choose_column_mrv(matrix: np.ndarray) -> int:
     """"""Choisit la colonne avec le moins de 1 (heuristique MRV).
 
     Args:
@@ -22505,25 +22495,27 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,77892920
         Index de la colonne avec le minimum de 1 (strictement positif),
         ou -1 si une colonne a 0 choix (impossible)
     """"""
-    # TODO etudiant : implementer l'heuristique MRV
-    # Etape 1 : compter les 1 par colonne
-    # Etape 2 : si une colonne a 0 choix, retourner -1
-    # Etape 3 : trouver la colonne avec le minimum positif
-    return -1  # TODO etudiant : remplacer par l'implementation
+    col_sums = np.sum(matrix, axis=0)
+    if np.any(col_sums == 0):
+        return -1
+    return int(np.argmin(col_sums))
 
-print(""Exercice a completer : heuristique MRV pour le choix de colonne"")",,,,,,,,2ed0ec7cec374100,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,c708911e,markdown,fr,e029f617528365f8,"### Exercice 2 : Verifier une solution de couverture exacte
+# Demonstration : instance de reference, puis cas d'echec (colonne vide)
+print(""MRV sur matrix_test : colonne"", choose_column_mrv(matrix_test))
 
-Etant donnee une matrice binaire et un ensemble de lignes suppose etre une solution, implementez une fonction `is_exact_cover` qui verifie que :
-1. Chaque colonne est couverte exactement une fois (somme = 1)
-2. Aucune colonne n'est decouverte (somme = 0)
-3. Aucune colonne n'est sur-couverte (somme > 1)
+matrice_colonne_vide = np.array([
+    [1, 0, 1],
+    [1, 0, 0],
+])
+print(""MRV avec une colonne vide :"", choose_column_mrv(matrice_colonne_vide))",,,,,,,,ece4592da92e276c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,c708911e,markdown,fr,1c94744fb1f07043,"### Exemple guidé 3 — Verifier une solution de couverture exacte
 
-**Indices** :
-- Selectionnez les lignes de la solution dans la matrice avec `matrix[solution_rows]`
-- Utilisez `np.sum(axis=0)` pour obtenir le nombre de 1 par colonne
-- Verifiez que le résultat est un vecteur de 1 partout avec `np.all(result == 1)`",,,,,,,,e029f617528365f8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,83e980f4,code,fr,5cf03c7d830aa107,"def is_exact_cover(matrix: np.ndarray, solution_rows: List[int]) -> bool:
+Contribution du groupe 3 — Antonin, Daphnée et Pauline (TP, PR #25572).
+
+Le vérificateur sélectionne les lignes candidates (`matrix[solution_rows]`), somme colonne par colonne (`np.sum(axis=0)`) et exige exactement 1 partout (`np.all(coverage == 1)`). L'exemple oppose la vraie solution {S2, S4, S6} à une sous-couverture (S2 et S4 seuls) et à une sur-couverture (S1 ajouté à la solution) : les trois appels distinguent les deux façons symétriques de ne pas être une couverture exacte.
+
+> Résolution originale reprise telle quelle, appels de démonstration compris.",,,,,,,,1c94744fb1f07043,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,83e980f4,code,fr,f772f5e463c0d70a,"def is_exact_cover(matrix: np.ndarray, solution_rows: List[int]) -> bool:
     """"""Verifie qu'un ensemble de lignes forme une couverture exacte de la matrice.
 
     Args:
@@ -22533,13 +22525,13 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,83e980f4
     Returns:
         True si les lignes forment une couverture exacte, False sinon
     """"""
-    # TODO etudiant : implementer la verification
-    # Etape 1 : extraire les lignes de la solution
-    # Etape 2 : sommer les colonnes
-    # Etape 3 : verifier que chaque colonne a exactement un 1
-    return False  # TODO etudiant : remplacer par la verification
+    selected = matrix[solution_rows]
+    coverage = np.sum(selected, axis=0)
+    return bool(np.all(coverage == 1))
 
-print(""Exercice a completer : verification d'une couverture exacte"")",,,,,,,,5cf03c7d830aa107,,,,,,,,,,,,,,,
+print(""Solution [S2, S4, S6] :"", is_exact_cover(matrix_test, [1, 3, 5]))
+print(""Sous-couverture [S2, S4] :"", is_exact_cover(matrix_test, [1, 3]))
+print(""Sur-couverture [S1, S2, S4, S6] :"", is_exact_cover(matrix_test, [0, 1, 3, 5]))",,,,,,,,f772f5e463c0d70a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,3b46iaed6qg,markdown,fr,3c7dca3e96756c45,"## 3. Dancing Links - La Structure de données (~20 min)
 
 ### L'idee geniale de Knuth
@@ -23099,17 +23091,14 @@ L'implementation DLX trouve correctement la solution {S2, S4, S6}.
 - **Matrices creuses** : ne stocke que les 1, pas les 0
 
 **Point cle** : La structure circulaire et le fait que uncover soit l'inverse exact de cover garantissent que le backtracking fonctionne correctement.",,,,,,,,d6dcafc282e00559,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,2edfbfe2,markdown,fr,deacb4b02c82fd02,"### Exercice 3 : Compter toutes les solutions d'un problème de couverture exacte
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,2edfbfe2,markdown,fr,097b558fbe91925f,"### Exemple guidé 4 — Compter toutes les solutions d'une instance
 
-La fonction `solve_dlx` s'arrete a la première solution trouvee. Modifiez l'algorithme pour **compter le nombre total de solutions** d'un problème de couverture exacte.
+Contribution du groupe 3 — Antonin, Daphnée et Pauline (TP, PR #25572).
 
-**Indices** :
-- Inspirez-vous de la fonction `search(header, solution, k)` définie ci-dessus
-- Au lieu de retourner `True` a la première solution, incrementez un compteur et continuez l'exploration
-- Utilisez une variable `count` passée par reference (liste mutable `[0]`) pour accumuler le résultat
-- La condition d'arret change : on n'arrete jamais prematurely, on explore toutes les branches
-- Testez sur la matrice `matrix_test` (6x7) définie precedemment — le résultat attendu est 1 solution unique",,,,,,,,deacb4b02c82fd02,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,a50c0faf,code,fr,7c7aea99290414d4,"def count_all_solutions(matrix: np.ndarray) -> int:
+La fonction `search` de la section 4 s'arrête à la première solution trouvée. La variante « énumérante » reprend la même récursion — choix de colonne par taille croissante, `cover`/`uncover` symétriques — mais au lieu de s'arrêter à la première feuille, elle incrémente un compteur mutable et **continue l'exploration** : aucune branche n'est coupée après une solution. L'exemple compte sur trois instances : l'instance de référence `matrix_test`, une instance 3x2 admettant deux solutions distinctes, et l'identité 4x4.
+
+> Résolution originale reprise telle quelle, instances de test comprises.",,,,,,,,097b558fbe91925f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,a50c0faf,code,fr,7e7617b235882b6e,"def count_all_solutions(matrix: np.ndarray) -> int:
     """"""Compte le nombre total de solutions d'un probleme de couverture exacte.
 
     Args:
@@ -23118,13 +23107,56 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,a50c0faf
     Returns:
         Nombre total de solutions distinctes
     """"""
-    # TODO etudiant : implementer le comptage de toutes les solutions
-    # Etape 1 : construire la structure DLX avec build_dlx_structure_with_indices
-    # Etape 2 : modifier la fonction search pour compter au lieu de s'arreter
-    # Etape 3 : lancer la recherche exhaustive et retourner le compteur
-    return 0  # TODO etudiant : remplacer par le vrai comptage
+    header, _ = build_dlx_structure_with_indices(matrix)
+    count = [0]
 
-print(""Exercice a completer : comptage de toutes les solutions"")",,,,,,,,7c7aea99290414d4,,,,,,,,,,,,,,,
+    def search_count(k: int) -> None:
+        if header.R == header:
+            count[0] += 1
+            return
+
+        c = None
+        min_size = float('inf')
+        j = header.R
+        while j != header:
+            if j.size < min_size:
+                min_size = j.size
+                c = j
+            j = j.R
+
+        if min_size == 0:
+            return
+
+        cover(c)
+        r = c.D
+        while r != c:
+            j = r.R
+            while j != r:
+                cover(j.C)
+                j = j.R
+
+            search_count(k + 1)
+
+            j = r.L
+            while j != r:
+                uncover(j.C)
+                j = j.L
+
+            r = r.D
+        uncover(c)
+
+    search_count(0)
+    return count[0]
+
+matrix_multi = np.array([
+    [1, 0],
+    [0, 1],
+    [1, 1],
+])
+
+print(""matrix_test (6x7) :"", count_all_solutions(matrix_test), ""solution(s)"")
+print(""matrix_multi (3x2) :"", count_all_solutions(matrix_multi), ""solution(s)"")
+print(""matrice identite 4x4 :"", count_all_solutions(np.eye(4, dtype=int)), ""solution(s)"")",,,,,,,,7e7617b235882b6e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,08csjx46zogc,markdown,fr,09066f7916a8e645,"## 5. Application - Sudoku Solver (~10 min)
 
 Le Sudoku est l'une des applications les plus celebres de Dancing Links. Un Sudoku 9x9 peut etre modelise comme un problème de couverture exacte.
@@ -23958,6 +23990,189 @@ L'implementation DLX surpasse l'Algorithme X naif dès que l'arbre de recherche 
 La couverture exacte modelise naturellement le **Sudoku** (chaque cellule, ligne, colonne, bloc = colonne de contrainte) et le **pavage de polyominos** (pentominoes 6x10). Attention : **N-Queens n'est PAS un problème de couverture exacte**.
 
 **Suite** : [Search-9 - Programmation lineaire](Search-09-LinearProgramming.ipynb) | [Retour au sommaire](../README.md)",,,,,,,,224c6728cbdbb432,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,247a2c4c,code,fr,a43f7541abe6b599,"# Benchmark discriminant : pentominoes (la ou le DLX prend son avantage)
+
+# Les instances triviales precedentes (triominos, carres) ne sollicitent pas
+# reellement la recherche : le cout fixe de construction de la structure DLX
+# (liste doublement chainee + heuristique MRV) depasse celui d'un backtracking
+# quasi immediat. Pour reveler l'avantage du DLX, il faut un probleme dont
+# l'arbre de recherche est assez vaste pour que la selection de colonne MRV et
+# les operations cover/uncover en O(1) comptent reellement. Les pentominoes
+# (formes de 5 carres, nombreuses positions possibles par piece) sont ce cas.
+
+# Sous-ensemble de pentominoes (F asymetrique, desormais distinct de X)
+pento_pavage = {
+    'F': pentominos['F'],
+    'L': pentominos['L'],
+    'P': pentominos['P'],
+    'Y': pentominos['Y'],
+}
+
+print(""Benchmark : pavage par pentominoes (min de 3 executions)"")
+print(""="" * 64)
+
+instances = [
+    (4, 5, ""4x5 (F,L,P,Y)""),
+    (5, 4, ""5x4 (F,L,P,Y)""),
+]
+
+pento_res = []
+for width, height, name in instances:
+    mat, _ = build_tiling_matrix(width, height, pento_pavage)
+    # DLX - meilleur de 3 runs
+    t_dlx = None
+    for _ in range(3):
+        s = time.perf_counter(); solve_tiling_dlx(width, height, pento_pavage); e = time.perf_counter()
+        t_dlx = (e - s) * 1000 if t_dlx is None else min(t_dlx, (e - s) * 1000)
+    # Backtracking - meilleur de 3 runs
+    t_bt = None
+    for _ in range(3):
+        s = time.perf_counter(); solve_tiling_backtrack(width, height, pento_pavage); e = time.perf_counter()
+        t_bt = (e - s) * 1000 if t_bt is None else min(t_bt, (e - s) * 1000)
+    ratio = t_dlx / t_bt
+    winner = ""DLX"" if t_dlx < t_bt else ""Backtrack""
+    sol = solve_tiling_dlx(width, height, pento_pavage)
+    used = sorted(set(p['name'] for p in sol[0]))
+    pento_res.append((name, mat.shape, t_dlx, t_bt, ratio, winner, used))
+    print(f""{name:18} matrice {mat.shape[0]}x{mat.shape[1]:3} | ""
+          f""DLX {t_dlx:7.2f} ms | Backtrack {t_bt:8.2f} ms | ""
+          f""ratio {ratio:5.2f} | {winner} gagne"")
+    print(f""                    pieces utilisees : {used}"")
+
+# Visualisation
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 4.5))
+labels = [r[0] for r in pento_res]
+dlx_v = [r[2] for r in pento_res]
+bt_v = [r[3] for r in pento_res]
+xpos = np.arange(len(labels)); w = 0.35
+ax1.bar(xpos - w/2, dlx_v, w, label='DLX', color='#4CAF50', alpha=0.8)
+ax1.bar(xpos + w/2, bt_v, w, label='Backtracking', color='#FF6B6B', alpha=0.8)
+ax1.set_xticks(xpos); ax1.set_xticklabels(labels, rotation=10, ha='right')
+ax1.set_ylabel('Temps (ms)'); ax1.set_title('Temps de resolution (pentominoes)')
+ax1.legend(); ax1.grid(axis='y', alpha=0.3)
+
+ratios_v = [r[4] for r in pento_res]
+ax2.bar(labels, ratios_v, color=['#4CAF50' if r < 1 else '#FF6B6B' for r in ratios_v],
+        alpha=0.7, edgecolor='black')
+ax2.axhline(1, color='black', linestyle='--', linewidth=1, alpha=0.5)
+ax2.set_ylabel('Ratio DLX / Backtrack'); ax2.set_title('Avantage du DLX (< 1 = DLX gagne)')
+for i, rv in enumerate(ratios_v):
+    ax2.text(i, rv + 0.02, f'{rv:.2f}', ha='center', fontsize=10)
+plt.tight_layout(); plt.show()
+
+print()
+# Le facteur d'acceleration est DERIVE de la mesure affichee juste au-dessus :
+# un multiplicateur ecrit en dur decrirait un run qui n'est plus celui-la.
+facteurs = [r[3] / r[2] for r in pento_res if r[2] > 0]
+facteur_moyen = sum(facteurs) / len(facteurs)
+print(f""Constat : sur les pentominoes, le DLX est en moyenne environ {facteur_moyen:.1f}x"")
+print(""plus rapide que le backtracking (ratio DLX / Backtrack < 1 sur les deux instances)."")
+print(""Contrairement aux instances triviales, l'arbre de recherche est assez vaste pour que"")
+print(""l'heuristique MRV (case la plus contrainte d'abord) et les operations cover/uncover"")
+print(""en O(1) dominent le cout fixe de construction."")
+",,,,,,,,a43f7541abe6b599,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,ddbb0237,markdown,fr,df4b25c3d62ddf59,"### Benchmark discriminant : pentominoes
+
+Le benchmark ci-dessus resout un pavage par pentominoes (sous-ensemble F, L, P, Y) sur une grille 4x5 et 5x4 avec les deux methodes. C'est ici - et non sur les instances triviales - que l'avantage du DLX devient visible : le rapport DLX / Backtrack passe sous 1 (DLX plus rapide), la ou il restait superieur a 1 sur les triominos et les carres.",,,,,,,,df4b25c3d62ddf59,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,f44a301c,markdown,fr,1d20c175c446b509,"### Lecture du résultat
+
+Sur `matrix_test`, la fonction rend la colonne **0** : cinq colonnes sont ex aequo à deux 1 (les colonnes 0, 1, 2, 4 et 5) et `np.argmin` garde la première rencontrée. Ce sont bien des colonnes serrées, qui ne laissent que deux candidats chacune. Sur la seconde matrice, la colonne 1 ne contient aucun 1 : le test `np.any(col_sums == 0)` rend `-1` **avant** tout choix — c'est ce signal qui permet à l'algorithme X d'abandonner immédiatement une branche sans issue, au lieu d'explorer toutes les lignes pour rien.",,,,,,,,1d20c175c446b509,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,b02146d9,markdown,fr,f3646c180a6c0046,"### Exercice 1 : Mesurer l'effet du choix de colonne sur l'arbre de recherche
+
+L'Exemple guidé 2 choisit la colonne la plus contrainte, en promettant que cela « réduit l'arbre de recherche ». Vérifiez-le : implémentez `count_explored_nodes(matrix, use_mrv)` qui résout une instance de couverture exacte **en comptant les noeuds explorés** jusqu'à la première solution, où le choix de colonne dépend du drapeau :
+
+1. `use_mrv=True` : la colonne choisie est celle avec le **moins** de 1 (heuristique MRV)
+2. `use_mrv=False` : la colonne choisie est celle avec le **plus** de 1 (l'anti-heuristique)
+
+**Indices** :
+- Reprenez la structure récursive de `algorithm_x_simple` ci-dessus : le squelette ne change pas, seule la ligne du choix de colonne devient `np.argmin(...)` ou `np.argmax(...)`
+- Comptez avec une liste mutable `[0]`, incrémentée à chaque appel de la fonction interne (une branche qui échoue sur une colonne vide compte aussi pour un noeud exploré)
+- Testez sur `matrix_test` : MRV doit explorer **moins** de noeuds que l'anti-heuristique pour atteindre {S2, S4, S6}
+
+**Pourquoi c'est important** : le nombre de noeuds explorés est exactement ce que la section 8 mesurera en millisecondes entre DLX et le backtracking — l'heuristique est la première moitié de l'écart, Dancing Links la seconde.",,,,,,,,f3646c180a6c0046,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,7606e81a,code,fr,fbc976fd16c68527,"def count_explored_nodes(matrix: np.ndarray, use_mrv: bool = True) -> int:
+    """"""Resout une couverture exacte en comptant les noeuds explores.
+
+    Args:
+        matrix: Matrice binaire de shape (n_rows, n_cols)
+        use_mrv: True pour choisir la colonne la plus contrainte (argmin),
+                 False pour la moins contrainte (argmax)
+
+    Returns:
+        Nombre de noeuds explores avant d'atteindre la premiere solution
+    """"""
+    # TODO etudiant : adapter algorithm_x_simple en instrumentant le comptage
+    # Etape 1 : fonction recursive avec un compteur mutable compte = [0]
+    # Etape 2 : choix de colonne par np.argmin (MRV) ou np.argmax (anti-heuristique)
+    # Etape 3 : colonne sans 1 -> branche en echec, compter le noeud puis remonter
+    # Indice : renvoyer compte[0] une fois la premiere solution atteinte
+    return 0  # TODO etudiant : remplacer par le vrai comptage de noeuds
+
+print(""Exercice a completer : effet du choix de colonne sur le nombre de noeuds explores"")",,,,,,,,fbc976fd16c68527,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,8d7009e5,markdown,fr,93917714979727e1,"### Lecture du résultat
+
+La solution {S2, S4, S6} rend `True` : chaque élément de l'univers est couvert exactement une fois. Les deux autres essais rendent `False`, pour des raisons symétriques : sans S6, les éléments 2 et 7 restent à 0 — c'est une **sous-couverture** ; avec S1 en plus, l'élément 1 est couvert deux fois, par S1 et S2 — c'est une **sur-couverture**. Le prédicat unique `np.all(coverage == 1)` rejette les deux défauts à la fois : chaque colonne doit valoir exactement 1, ni 0 ni 2.",,,,,,,,93917714979727e1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,565073e3,markdown,fr,e8e9a064936094d1,"### Exercice 2 : Verifier qu'une selection partielle reste extensible
+
+Une solution de couverture exacte se construit ligne par ligne : pendant la recherche, la sélection en cours n'est pas encore une couverture exacte, mais elle ne doit **jamais sur-couvrir** une colonne — aucune ligne future ne peut réparer un doublon, la branche est morte. Implémentez `is_partial_cover(matrix, selected_rows)` qui vérifie cet invariant :
+
+1. Sélectionne les lignes déjà choisies
+2. Somme les colonnes de la sélection
+3. Rend `True` si aucune colonne n'atteint 2 ou plus (les colonnes à 0 sont permises : la sélection n'est pas finie)
+
+**Indices** :
+- Même squelette que le vérificateur de l'Exemple guidé 3 : `matrix[selected_rows]` puis `np.sum(axis=0)`
+- Seul le prédicat change : des sommes `<= 1` au lieu de `== 1`
+- Sur `matrix_test`, tout préfixe de [1, 3, 5] doit rendre `True`, et [0, 1] doit rendre `False` (S1 et S2 couvrent toutes deux l'élément 1)
+
+**Pourquoi c'est important** : c'est exactement l'invariant que les opérations `cover`/`uncover` de la section 3 maintiennent mécaniquement — sur-couvrir une colonne rendrait le backtrack incohérent.",,,,,,,,e8e9a064936094d1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,65c0adae,code,fr,9ab6027662da2432,"def is_partial_cover(matrix: np.ndarray, selected_rows: List[int]) -> bool:
+    """"""Verifie qu'une selection partielle ne sur-couvre aucune colonne.
+
+    Args:
+        matrix: Matrice binaire (numpy array) de shape (n_rows, n_cols)
+        selected_rows: Indices des lignes deja selectionnees
+
+    Returns:
+        True si aucune colonne n'est couverte deux fois ou plus, False sinon
+    """"""
+    # TODO etudiant : implementer la verification d'extensibilite
+    # Etape 1 : extraire les lignes deja selectionnees
+    # Etape 2 : sommer les colonnes
+    # Etape 3 : verifier qu'aucune somme ne depasse 1
+    return False  # TODO etudiant : remplacer par la verification
+
+print(""Exercice a completer : selection partielle sans sur-couverture"")",,,,,,,,9ab6027662da2432,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,89c15378,markdown,fr,ac936e2173cb17b3,"### Lecture du résultat
+
+`matrix_test` n'admet qu'**une** couverture exacte — cohérent avec la section 4, qui trouvait {S2, S4, S6} : si l'instance avait eu une seconde solution, `solve_dlx` l'aurait simplement ignorée. L'instance 3x2 en admet **deux** : soit les deux lignes unité S1 et S2, chacune couvrant une colonne, soit la ligne S3 seule, qui couvre les deux colonnes d'un coup. L'identité 4x4 en admet **une** : chaque colonne ne contient qu'un seul 1, les quatre lignes sont donc toutes obligatoires. C'est le même squelette de récursion que `search` — seul le traitement de la feuille change, un compteur incrémenté au lieu d'un retour immédiat.",,,,,,,,ac936e2173cb17b3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,4573069c,markdown,fr,acaf903c1abedafc,"### Exercice 3 : Enumerer toutes les solutions, pas seulement les compter
+
+L'Exemple guidé 4 compte les solutions sans les mémoriser. Allez au bout : implémentez `find_all_solutions(matrix)` qui rend la **liste des solutions**, chaque solution étant la liste des indices de lignes — `[[1, 3, 5]]` pour `matrix_test`, et les deux solutions `[0, 1]` et `[2]` pour l'instance 3x2 de l'Exemple guidé 4.
+
+**Indices** :
+- Même récursion que `count_all_solutions` : à la feuille (`header.R == header`), au lieu d'incrémenter un compteur, ajoutez une **copie** de la solution partielle à la liste des solutions (`solution.copy()`, sinon toutes les entrées finissent identiques)
+- Les noeuds de la structure portent leur ligne d'origine : `node.row_index`, comme dans `solve_dlx` (section 4)
+- Construisez la structure avec `build_dlx_structure_with_indices(matrix)` ; vérifiez chaque solution rendue avec `is_exact_cover` (Exemple guidé 3)
+
+**Pourquoi c'est important** : énumérer au lieu de compter, c'est ce que réclame l'Exercice 4 (afficher la première solution d'un pavage parmi plusieurs) — et vérifier chaque solution avec `is_exact_cover` boucle le circuit complet choix → exécution → vérification.",,,,,,,,acaf903c1abedafc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,cf84ffd8,code,fr,600bcca8a50bd02a,"def find_all_solutions(matrix: np.ndarray) -> List[List[int]]:
+    """"""Enumere toutes les solutions d'un probleme de couverture exacte.
+
+    Args:
+        matrix: Matrice binaire (lignes = sous-ensembles, colonnes = elements)
+
+    Returns:
+        Liste des solutions, chaque solution etant la liste des indices de lignes
+    """"""
+    # TODO etudiant : enumerer les solutions au lieu de les compter
+    # Etape 1 : construire la structure avec build_dlx_structure_with_indices
+    # Etape 2 : a la feuille, ajouter solution.copy() a la liste des solutions
+    # Etape 3 : reprendre cover/uncover de count_all_solutions sans s'arreter a la premiere
+    # Indice : node.row_index donne l'indice de ligne d'un noeud solution
+    return []  # TODO etudiant : remplacer par la vraie enumeration
+
+print(""Exercice a completer : enumeration de toutes les solutions"")",,,,,,,,600bcca8a50bd02a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming-CSharp.ipynb,s9c01,markdown,fr,3a5ab85612b1db22,"# Search-09 : Programmation Linéaire et Simplexe (C# / .NET)
 
 **Navigation** : [<< Search-8 Dancing Links](Search-08-DancingLinks-CSharp.ipynb) | [Index](../README.md) | [Search-10 SymbolicAutomata >>](Search-10-SymbolicAutomata-CSharp.ipynb)
@@ -28766,90 +28981,6 @@ Resultat : MCTS evalue la position comme gagnante (valeur positive) mais ne parv
 **Le remede -- injecter de la connaissance dans le rollout.** C'est l'objet de l'Exercice 2 qui suit (« Rollout intelligent ») : remplacer le choix purement aleatoire par un rollout **guide par une heuristique**. Des que le rollout devient informatif, le coup gagnant se detache et MCTS retrouve la capacite de jouer la strategie mod-4 de facon fiable.
 
 > **Lecon generale.** MCTS combine deux choses : une *evaluation* (la valeur estimee) et une *selection* (le coup joue). Avec des rollouts aleatoires, l'evaluation reste grossièrement juste (Nim(15) = gagnant) mais la selection patit du bruit. C'est l'intuition fondatrice d'**AlphaGo** : remplacer le rollout aleatoire par des reseaux (policy + valeur) appris, pour offrir a MCTS un signal de qualite sur les jeux ou le hasard reste aveugle (le Go, et plus largement les jeux a structure globale opaque au coup-par-coup comme Nim).",,,,,,,,6da208fa901ce364,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,247a2c4c,code,fr,a43f7541abe6b599,"# Benchmark discriminant : pentominoes (la ou le DLX prend son avantage)
-
-# Les instances triviales precedentes (triominos, carres) ne sollicitent pas
-# reellement la recherche : le cout fixe de construction de la structure DLX
-# (liste doublement chainee + heuristique MRV) depasse celui d'un backtracking
-# quasi immediat. Pour reveler l'avantage du DLX, il faut un probleme dont
-# l'arbre de recherche est assez vaste pour que la selection de colonne MRV et
-# les operations cover/uncover en O(1) comptent reellement. Les pentominoes
-# (formes de 5 carres, nombreuses positions possibles par piece) sont ce cas.
-
-# Sous-ensemble de pentominoes (F asymetrique, desormais distinct de X)
-pento_pavage = {
-    'F': pentominos['F'],
-    'L': pentominos['L'],
-    'P': pentominos['P'],
-    'Y': pentominos['Y'],
-}
-
-print(""Benchmark : pavage par pentominoes (min de 3 executions)"")
-print(""="" * 64)
-
-instances = [
-    (4, 5, ""4x5 (F,L,P,Y)""),
-    (5, 4, ""5x4 (F,L,P,Y)""),
-]
-
-pento_res = []
-for width, height, name in instances:
-    mat, _ = build_tiling_matrix(width, height, pento_pavage)
-    # DLX - meilleur de 3 runs
-    t_dlx = None
-    for _ in range(3):
-        s = time.perf_counter(); solve_tiling_dlx(width, height, pento_pavage); e = time.perf_counter()
-        t_dlx = (e - s) * 1000 if t_dlx is None else min(t_dlx, (e - s) * 1000)
-    # Backtracking - meilleur de 3 runs
-    t_bt = None
-    for _ in range(3):
-        s = time.perf_counter(); solve_tiling_backtrack(width, height, pento_pavage); e = time.perf_counter()
-        t_bt = (e - s) * 1000 if t_bt is None else min(t_bt, (e - s) * 1000)
-    ratio = t_dlx / t_bt
-    winner = ""DLX"" if t_dlx < t_bt else ""Backtrack""
-    sol = solve_tiling_dlx(width, height, pento_pavage)
-    used = sorted(set(p['name'] for p in sol[0]))
-    pento_res.append((name, mat.shape, t_dlx, t_bt, ratio, winner, used))
-    print(f""{name:18} matrice {mat.shape[0]}x{mat.shape[1]:3} | ""
-          f""DLX {t_dlx:7.2f} ms | Backtrack {t_bt:8.2f} ms | ""
-          f""ratio {ratio:5.2f} | {winner} gagne"")
-    print(f""                    pieces utilisees : {used}"")
-
-# Visualisation
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 4.5))
-labels = [r[0] for r in pento_res]
-dlx_v = [r[2] for r in pento_res]
-bt_v = [r[3] for r in pento_res]
-xpos = np.arange(len(labels)); w = 0.35
-ax1.bar(xpos - w/2, dlx_v, w, label='DLX', color='#4CAF50', alpha=0.8)
-ax1.bar(xpos + w/2, bt_v, w, label='Backtracking', color='#FF6B6B', alpha=0.8)
-ax1.set_xticks(xpos); ax1.set_xticklabels(labels, rotation=10, ha='right')
-ax1.set_ylabel('Temps (ms)'); ax1.set_title('Temps de resolution (pentominoes)')
-ax1.legend(); ax1.grid(axis='y', alpha=0.3)
-
-ratios_v = [r[4] for r in pento_res]
-ax2.bar(labels, ratios_v, color=['#4CAF50' if r < 1 else '#FF6B6B' for r in ratios_v],
-        alpha=0.7, edgecolor='black')
-ax2.axhline(1, color='black', linestyle='--', linewidth=1, alpha=0.5)
-ax2.set_ylabel('Ratio DLX / Backtrack'); ax2.set_title('Avantage du DLX (< 1 = DLX gagne)')
-for i, rv in enumerate(ratios_v):
-    ax2.text(i, rv + 0.02, f'{rv:.2f}', ha='center', fontsize=10)
-plt.tight_layout(); plt.show()
-
-print()
-# Le facteur d'acceleration est DERIVE de la mesure affichee juste au-dessus :
-# un multiplicateur ecrit en dur decrirait un run qui n'est plus celui-la.
-facteurs = [r[3] / r[2] for r in pento_res if r[2] > 0]
-facteur_moyen = sum(facteurs) / len(facteurs)
-print(f""Constat : sur les pentominoes, le DLX est en moyenne environ {facteur_moyen:.1f}x"")
-print(""plus rapide que le backtracking (ratio DLX / Backtrack < 1 sur les deux instances)."")
-print(""Contrairement aux instances triviales, l'arbre de recherche est assez vaste pour que"")
-print(""l'heuristique MRV (case la plus contrainte d'abord) et les operations cover/uncover"")
-print(""en O(1) dominent le cout fixe de construction."")
-",,,,,,,,a43f7541abe6b599,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,ddbb0237,markdown,fr,df4b25c3d62ddf59,"### Benchmark discriminant : pentominoes
-
-Le benchmark ci-dessus resout un pavage par pentominoes (sous-ensemble F, L, P, Y) sur une grille 4x5 et 5x4 avec les deux methodes. C'est ici - et non sur les instances triviales - que l'avantage du DLX devient visible : le rapport DLX / Backtrack passe sous 1 (DLX plus rapide), la ou il restait superieur a 1 sur les triominos et les carres.",,,,,,,,df4b25c3d62ddf59,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming-CSharp.ipynb,melange-industriel-enonce,markdown,fr,172da5176e4c6be9,"### Exercice : Problème de mélange industriel
 
 **Énoncé** : une raffinerie produit de l'essence en mélangeant 3 crudes (C1, C2, C3) aux caractéristiques différentes. L'objectif est de minimiser le coût tout en respectant les spécifications du produit final.
@@ -37896,14 +38027,14 @@ for paradigm, solver_fn in SOLVERS:
 print()
 print(f""\nBenchmark termine en {time.perf_counter() - t_global:.1f}s, {len(results)} mesures."")
 ",,,,,,,,1e4eea33d4436537,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,interp-bench-run,markdown,fr,d0068a21351f0340,"### Lecture — 210 mesures en 752,9 s : ce que le log brut revele avant toute agregation
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,interp-bench-run,markdown,fr,fe3a746a4dbecc7c,"### Lecture — 210 mesures en 620,5 s : ce que le log brut revele avant toute agregation
 
 210 = **7 solveurs x 30 instances** (les 6 paradigmes de la section 4 comptent le backtracking deux fois : naive et MRV). Trois signaux sautent du log AVANT meme la section 6 :
 
-- **Les echecs du naif sont des coupes budget** : sur medium_hard, cinq lignes rendent `nodes=2000001` — le plafond de la section 2, pas un temps arbitraire. L'echec est donc defini par le protocole, pas par un crash.
+- **Les echecs du naif sont des coupes budget** : sur medium_hard, six lignes rendent `nodes=2000001` — le plafond de la section 2, pas un temps arbitraire. L'echec est donc defini par le protocole, pas par un crash.
 - **GA echoue 30/30** en brulant exactement `400200` evaluations chaque fois (200 individus x 2001 generations) — l'echec est systematique, pas un coup de malchance.
 - **Le recuit ne reussit que 6/10 en easy et 0/20 au-dela** (300001 = MAX_ITERATIONS atteint) : la demo de la section 4.6 (une seule grille) enjambait la variance inter-instances — c'est le benchmark complet, pas la demo, qui fonde le verdict.
-- Noter enfin la dispersion du naif : 445 a 703 681 noeuds SUR easy seul — la difficulte observable varie plus ENTRE instances d'une classe qu'entre classes.",,,,,,,,d0068a21351f0340,,,,,,,,,,,,,,,
+- Noter enfin la dispersion du naif : 330 a 703 681 noeuds SUR easy seul — la difficulte observable varie plus ENTRE instances d'une classe qu'entre classes.",,,,,,,,fe3a746a4dbecc7c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,bfcc5c8a,markdown,fr,db3e4fc5550f2baf,## 6. Analyse des résultats,,,,,,,,db3e4fc5550f2baf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,d2ad2bfc,markdown,fr,227b9460cbc32c88,### 6.1 Taux de succès par paradigme et difficulté,,,,,,,,227b9460cbc32c88,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,704f5154,code,fr,6dcbc750d770e1b6,"df = pd.DataFrame([m.to_row() for m in results])
@@ -38052,13 +38183,13 @@ print(""3. Sur 'diabolical' : backtracking_naif atteint souvent le budget 2M noe
 print(""   DLX tient encore grace a la propagation exacte-cover ; CP-SAT et Z3"")
 print(""   dependent de la structure ; GA et SA peinent a converger en 5s."")
 ",,,,,,,,67364b12b1ddc718,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,interp-verdict,markdown,fr,6523198a333a2d4f,"### Lecture — easy : Dancing Links gagne, et le naif bat MRV
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,interp-verdict,markdown,fr,22c66ba06fec67cb,"### Lecture — easy : Dancing Links gagne, et le naif bat MRV
 
-Le podium easy (temps median parmi les reussites) : **dancing_links 4,16 ms < backtracking_naive 12,29 ms < backtracking_mrv 18,18 ms < cp_sat 25,97 ms** (10/10 reussites pour les quatre).
+Le podium easy (temps median parmi les reussites) : **dancing_links 2,41 ms < backtracking_naive 7,56 ms < backtracking_mrv 12,55 ms < cp_sat 15,61 ms** (10/10 reussites pour les quatre).
 
-- **DLX confirme a l'echelle** le facteur ~450 vu en demo — le median etend la lecon au-dela d'une grille chanceuse.
+- **DLX confirme a l'echelle** l'ecart vu en demo (quelques millisecondes par grille) — le median etend la lecon au-dela d'une grille chanceuse.
 - **Le naif DEVANT MRV** est le resultat le plus instructif : choisir la case la plus contrainte reduit les noeuds (visible dans le log : 254 contre 2 576 sur easy_0) mais paie un cout par noeud (re-scan des contraintes) qui n'est pas amorti sur des grilles faciles. Sur medium_hard, le log montre l'inverse — MRV resout 7/10 quand le naif n'en resout que 4/10 (six coupes budget). Le classement S'INVERSE avec la difficulte : c'est le No Free Lunch en acte, pas en theorie.
-- **cp_sat a 25,97 ms malgre branches=0** : le cout fixe de modelisation (construire les 81 variables et les 27 AllDifferent) plafonne son plancher temporel — imbattable en robustesse, jamais le plus rapide sur easy.",,,,,,,,6523198a333a2d4f,,,,,,,,,,,,,,,
+- **cp_sat a 15,61 ms malgre branches=0** : le cout fixe de modelisation (construire les 81 variables et les 27 AllDifferent) plafonne son plancher temporel — imbattable en robustesse, jamais le plus rapide sur easy.",,,,,,,,22c66ba06fec67cb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,c89a4fc2,markdown,fr,f5b13afa6783e664,## 7. Discussion : No Free Lunch en pratique,,,,,,,,f5b13afa6783e664,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,f6f13a90,markdown,fr,8247eebcad69dc54,"### 7.1 Aucun algorithme ne domine tous les autres
 
@@ -38530,16 +38661,84 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Select
 - Tranche 3/3 (Wordle — élimination bayésienne / entropie / CSP) : à venir, même protocole.
 ",,,,,,,,721ef75cb3843d45,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,36eb0d8b,markdown,fr,b43505fb4056e37a,## Exercices,,,,,,,,b43505fb4056e37a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,b3b46f2f,markdown,fr,4019848d804b19fe,"### Exercice 1 : Mesurer l'effet du timeout sur la sélection
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,b3b46f2f,markdown,fr,4fe07791c02e33e8,"### Exemple guidé 1 — L'effet du budget temps sur la sélection (crédité #25579 — janok181)
 
-**Énoncé** : Ré-exécutez le benchmark avec un timeout de **0.5 seconde** par appel (au lieu de 5s). Quel paradigme sort gagnant sur 'diabolical' ? Est-ce toujours CP-SAT ?
+> Résolution originale : **janok181**, PR étudiante
+> [#25579](https://github.com/jsboige/CoursIA/pull/25579). Reprise telle quelle ;
+> seule la mise en forme est harmonisée avec les sections voisines.
 
-**Indice** : à 0.5s, les solveurs exacts qui n'ont pas terminé sont comptés en échec. Les métaheuristiques (GA, SA) peuvent tenir plus longtemps (avec qualité dégradée).",,,,,,,,4019848d804b19fe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,cd68bb5f,code,fr,c7245a035b5a3869,"# Exercice a completer : relancer le benchmark avec timeout=0.5s
-# Comparer les resultats (pareto, succes par difficulte) avec timeout=5.0
+La section 6 compare les sept solveurs sous un budget généreux de 5 secondes par appel. Mais un budget réel est rarement généreux : un solveur embarqué, un service avec garantie de latence, un batch nocturne — chacun impose sa propre limite. La question de la sélection devient alors : **le classement survit-il à la division du budget par dix ?**
 
-print(""Exercice a completer : relancer SOLVERS avec run_one(..., timeout_s=0.5)."")
-",,,,,,,,c7245a035b5a3869,,,,,,,,,,,,,,,
+**Ce que fait la résolution** :
+1. Relancer le benchmark complet (7 solveurs × 30 instances) avec `timeout_s=0.5`
+2. Conserver les résultats à 5 s de la section 5.2 et juxtaposer les taux de succès aux deux budgets
+3. Classer les solveurs sur 'diabolical' (taux de succès décroissant, puis temps moyen croissant) à 5 s puis à 0,5 s
+4. Visualiser l'effet du budget sur le taux de succès global et sur 'diabolical'
+
+**Question posée** : à 0,5 s par appel, quel paradigme sort gagnant sur 'diabolical' ? Le classement de la section 6.6 survit-il, et que devient Z3, parfait à 5 s ?",,,,,,,,4fe07791c02e33e8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,cd68bb5f,code,fr,40b155d450c1774a,"# Exercice 1 : effet du timeout (5 s -> 0.5 s) sur la selection
+TIMEOUT_COURT = 0.5
+
+# On garde les resultats a 5 s calcules en section 5.2
+df_5s = df.copy()
+
+# Meme benchmark, meme protocole, seul le budget change
+results_05: list[Metrics] = []
+t0 = time.perf_counter()
+for paradigm, solver_fn in SOLVERS:
+    for instance_id, difficulty, grid in instances:
+        results_05.append(run_one(paradigm, solver_fn, instance_id, difficulty, grid,
+                                  timeout_s=TIMEOUT_COURT))
+print(f""Benchmark a {TIMEOUT_COURT}s termine en {time.perf_counter() - t0:.1f}s, ""
+      f""{len(results_05)} mesures.\n"")
+df_05 = pd.DataFrame([m.to_row() for m in results_05])
+
+ordre = [""easy"", ""medium_hard"", ""diabolical""]
+def taux_succes(d):
+    return d.groupby([""paradigm"", ""difficulty""])[""success""].mean().unstack()[ordre]
+
+# Tableau comparatif : taux de succes a 5 s et a 0.5 s, cote a cote
+comparaison = pd.concat({""5s"": taux_succes(df_5s), ""0.5s"": taux_succes(df_05)}, axis=1)
+print(""Taux de succes par paradigme et difficulte (5 s vs 0.5 s) :"")
+print(comparaison.round(2))
+
+# Gagnant sur 'diabolical' : meilleur taux de succes, puis temps moyen le plus court
+def classement_diabolical(d):
+    sub = d[d[""difficulty""] == ""diabolical""]
+    return (sub.groupby(""paradigm"")
+               .agg(succes=(""success"", ""mean""), temps_moyen_s=(""time_seconds"", ""mean""))
+               .sort_values([""succes"", ""temps_moyen_s""], ascending=[False, True]))
+
+for label, d in [(""5 s"", df_5s), (""0.5 s"", df_05)]:
+    cl = classement_diabolical(d)
+    print(f""\nClassement 'diabolical' avec timeout {label} :"")
+    print(cl.round(4))
+    print(f""-> Gagnant : {cl.index[0]}"")
+
+# Graphique : taux de succes global par paradigme, 5 s vs 0.5 s
+glob = pd.DataFrame({
+    ""timeout 5 s"":   df_5s.groupby(""paradigm"")[""success""].mean(),
+    ""timeout 0.5 s"": df_05.groupby(""paradigm"")[""success""].mean(),
+}).sort_values(""timeout 5 s"", ascending=False)
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+glob.plot.bar(ax=axes[0], color=[""#4C72B0"", ""#DD8452""])
+axes[0].set_title(""Taux de succes global (30 grilles)"")
+axes[0].set_ylabel(""Taux de succes"")
+axes[0].set_ylim(0, 1.05)
+axes[0].tick_params(axis=""x"", rotation=30)
+
+diab = pd.DataFrame({
+    ""timeout 5 s"":   taux_succes(df_5s)[""diabolical""],
+    ""timeout 0.5 s"": taux_succes(df_05)[""diabolical""],
+}).reindex(glob.index)
+diab.plot.bar(ax=axes[1], color=[""#4C72B0"", ""#DD8452""])
+axes[1].set_title(""Taux de succes sur 'diabolical' (10 grilles)"")
+axes[1].set_ylim(0, 1.05)
+axes[1].tick_params(axis=""x"", rotation=30)
+plt.tight_layout()
+plt.show()
+",,,,,,,,40b155d450c1774a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,a9be735c,markdown,fr,2c4f915951ab2246,"### Exercice 2 : Implémenter un sélecteur PASE
 
 **Énoncé** : Implémentez un petit sélecteur d'algorithmes basé sur les features d'instance :
@@ -39694,29 +39893,22 @@ $(-1,-2), (0,-2)$ (coût 10, puis +2 par unité de $c_w$). La sortie conclut : l
 point de passage existe — le prix du mur décide des préférences du paysage. Ainsi se boucle le
 test négatif : un swap qui change les préférences est rejeté, un swap silencieux est un
 morphisme, un swap de coût déplace le point de passage.",,,,,,,,95e737f4507d466b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,search13a-15,markdown,fr,48ecd650315df4cc,"## Exercices (C.1 — à compléter)
-
-Trois exercices pour reconstruire la mécanique sur d'autres murs. Chacun repart du plateau et
-des fonctions déjà en place — Dijkstra, 0-1 BFS, flot max, audit de potentiels — et les
-réexécute sur une variante du mur : mur plus épais, coût du mur modifié, seuil de bascule à
-localiser. Le format est celui du dépôt : un stub à compléter, sans corrigé. Les exercices sont
-indépendants : vous pouvez les aborder dans l'ordre, ou cibler celui qui vous manque.",,,,,,,,48ecd650315df4cc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,search13a-16,code,fr,3b03fa1c1ddf5d62,"# Exercice 1 : construire un mur plus epais (trois colonnes pleines) et certifier m_path = 3.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,88a080d0,code,fr,3b03fa1c1ddf5d62,"# Exercice 1 : construire un mur plus epais (trois colonnes pleines) et certifier m_path = 3.
 # Etape 1 : copier le plateau ; remplacer aussi la colonne q = 1 par du mur.
 # Etape 2 : recalculer m_path (0-1 BFS) et verifier m_path == 3 ; mesurer aussi le flot m :
 #           la coupure minimale grandit-elle autant que l'epaisseur ? (reponse attendue : non)
 # Etape 3 : refaire Dijkstra et verifier que le chemin optimal coupe le mur en 3 cellules.
 print(""Exercice a completer"")",,,,,,,,3b03fa1c1ddf5d62,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,search13a-17,code,fr,c592aa5b702a6c66,"# Exercice 2 : au cout c_w = 5, refaire Dijkstra + audit de potentiels.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,874928ee,code,fr,c592aa5b702a6c66,"# Exercice 2 : au cout c_w = 5, refaire Dijkstra + audit de potentiels.
 # Etape 1 : re-executer dijkstra avec un cout de mur 5.
 # Etape 2 : rejouer l'audit de potentiels (0 violation, egalites serrees le long du chemin).
 # Etape 3 : comparer la traversee choisie a celle du cout 3 (meme endroit ? plus loin ?).
 print(""Exercice a completer"")",,,,,,,,c592aa5b702a6c66,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,search13a-18,code,fr,add5dd0e8c2a53e3,"# Exercice 3 : trouver le seuil de bascule du point de passage (dichotomie sur c_w).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,098ba304,code,fr,add5dd0e8c2a53e3,"# Exercice 3 : trouver le seuil de bascule du point de passage (dichotomie sur c_w).
 # Indice : l'experience (c) montre que le choix de la traversee change au-dela d'un c_w.
 # Objectif : le plus petit c_w pour lequel le chemin optimal change de point de passage.
 print(""Exercice a completer"")",,,,,,,,add5dd0e8c2a53e3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,search13a-19,markdown,fr,d6e37e30350d9309,"## Conclusion
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,02b1e84d,markdown,fr,d6e37e30350d9309,"## Conclusion
 
 L'opération 13 « Traverser un mur » tient ici sa **2e attestation directe**, sur un substrat
 indépendant de GT-24 :
@@ -39739,6 +39931,213 @@ une simple mesure ne se vérifie pas. Retenons le schéma : un algorithme propos
 dispose.
 
 Voir #12204 (tranche op 13, 2e attestation) — convention op 7 : comptée dès merge.",,,,,,,,d6e37e30350d9309,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,search13a-08b,markdown,fr,0612944356ba6fa3,"### Le certificat de minimalité
+
+Dire « ce chemin est le plus court » ne suffit pas : un algorithme affirme, un certificat prouve.
+L'audit de potentiels produit une fonction $\varphi$ sur les salles — ici la distance depuis $S$,
+calculée par Dijkstra — et vérifie qu'elle est **admissible** : $\varphi(v) \leq \varphi(u) +
+c(u,v)$ sur chaque arête $u \to v$. Si toutes les inégalités sont satisfaites et si, le long du
+chemin candidat, elles sont toutes **serrées** (égalité partout), alors le coût du chemin se
+télescope en $\varphi(T) - \varphi(S)$ : aucune autre route ne peut coûter moins. Le contrôle
+est linéaire : une fois $\varphi$ calculée, vérifier l'absence de violation sur toutes les arêtes
+est un simple balayage — c'est ce qui rend le certificat vérifiable, et pas seulement affirmable.
+La cellule suivante applique ce principe sur l'instance.",,,,,,,,0612944356ba6fa3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,search13a-12b,markdown,fr,a7313521dad5e3eb,"### Le test négatif : morphisme ou pas ?
+
+L'opération 13 se termine par un test négatif. Un **swap** — changer une cellule de place, ou
+changer un coût — est un **morphisme du paysage** s'il préserve les préférences, c'est-à-dire
+les distances et le certificat ; sinon, les préférences ont changé et l'ancien certificat doit
+être rejeté. Formellement, le verdict se lit sur deux mesures : la distance $L$ et le nombre de
+violations de l'ancien certificat — un morphisme les préserve toutes les deux ($\Delta = 0$), un
+non-morphisme en change au moins une. La cellule suivante confronte ce critère à trois
+expériences : percer le mur au point de traversée, rendre mur une feuille de sol éloignée, et
+balayer le coût du mur pour déplacer le point de passage.",,,,,,,,a7313521dad5e3eb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,a307af03,markdown,fr,5bf0c306455752b2,"### Lien avec la topologie des jeux 2×2
+
+L'opération « traverser un mur » n'est pas née ici : elle vient de la **topologie des jeux 2×2 de
+Robinson-Goforth**, construite dans la série GameTheory. La correspondance terme à terme :
+
+| Ici (pavage hexagonal) | Chez Robinson-Goforth |
+|---|---|
+| **chambre** : composante de salles de sol | **chambre** : jeu strict, composante ouverte de l'espace des paiements (les 576 jeux sans égalité) |
+| **mur** : bande de cellules coûteuses séparant deux chambres | **mur** : jeu à égalités, strate de codimension ≥ 1 sur laquelle des chambres se raccordent |
+| **six swaps générateurs** : les six directions du voisinage hexagonal | **six swaps générateurs** : les six échanges de valeurs adjacentes (trois par table de paiements), arêtes du permutaèdre S₄ |
+| **chemin minimal certifié** : Dijkstra + audit de potentiels | **chemin minimal certifié** : un constructeur produit le chemin, un vérificateur séparé prouve validité et minimalité par énumération exhaustive |
+
+Deux leçons traversent la frontière. D'abord la **certification** : dans les deux mondes,
+l'algorithme propose et un contrôle indépendant dispose — l'audit de potentiels ici, le
+vérificateur séparé là-bas. Ensuite le **prix des murs** : dans l'univers à rangs complet de
+Robinson-Goforth, descendre sur un mur et le retraverser coûte deux pas, et l'énumération
+exhaustive établit que les murs ne raccourcissent jamais aucun chemin ; ici, chaque cellule de
+mur traversée coûte $c_w$, et les exemples guidés ci-dessous mesurent exactement à quel prix le
+détour par une traversée plus économe devient rentable.
+
+Pour la géométrie complète : [GameTheory-03-Topology2x2-Python](../../GameTheory/GameTheory-03-Topology2x2-Python.ipynb),
+[GameTheory-03b — Chambres, murs et chemins](../../GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb)
+et [GameTheory-20 — Le chemin minimal](../../GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb).
+",,,,,,,,5bf0c306455752b2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,0290e5fd,markdown,fr,fa0540dc1f727a5e,"## Exemples guidés et exercices
+
+Trois exemples guidés reconstruisent la mécanique sur d'autres murs, trois exercices la
+prolongent. Chaque exemple repart du plateau et des fonctions déjà en place — Dijkstra, 0-1 BFS,
+flot max, audit de potentiels — et les réexécute sur une variante du mur : mur plus épais, coût
+du mur modifié, seuil de bascule à localiser. Les exemples guidés 1 à 3 sont des résolutions
+d'étudiant, créditées ci-dessous ; les exercices 1b à 3b qui les suivent sont à compléter, sans
+corrigé — le format du dépôt. Tout est indépendant : abordez-les dans l'ordre, ou ciblez celui
+qui vous manque.",,,,,,,,fa0540dc1f727a5e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,4fee22af,markdown,fr,37b0edd03b7767ca,"### Exemple guidé 1 — Un mur plus épais, et ce que la coupure minimale en dit (crédité #25535 — TristanBrouille)
+
+> Contribution de **Tristan Dhersin** (TP1, PR étudiante
+> [#25535](https://github.com/jsboige/CoursIA/pull/25535)) — résolution reprise telle quelle.
+
+**Ce que montre l'exemple** : une troisième colonne pleine de mur (q = 1) est ajoutée aux deux
+chaînes A et B. L'épaisseur $m_{path}$ passe de 2 à 3 — tout chemin doit maintenant traverser
+les trois colonnes — mais la coupure minimale $m$ reste 8 : on a ajouté une couche, pas élargi
+la plus petite coupure. Le Dijkstra final vérifie que le chemin optimal coupe exactement les
+trois murs, et le plateau est restauré à la fin pour ne pas polluer la suite.",,,,,,,,37b0edd03b7767ca,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,6891fb09,markdown,fr,9e9b8ea0a5dcac92,"### Lecture du résultat : l'épaisseur croît, la coupure non
+
+La sortie donne les deux mesures du même geste : $m_{path}$ passe de **2 à 3** (trois colonnes
+pleines : tout chemin en traverse trois), mais $m$ **reste à 8** — la coupure minimale reste la
+chaîne A tout entière, ajouter une couche derrière une double épaisseur ne change pas le plus
+petit ensemble de murs à démolir pour séparer $S$ de $T$. Le chemin optimal confirme : $L = 14$
+en 8 pas, traversant exactement $[(-1,-2), (0,-2), (1,-2)]$ — une cellule par colonne.
+
+Lu dans la topologie de Robinson-Goforth, où la distance se mesure en murs traversés : $m_{path}$
+est cette distance, et le chemin qui franchit une cellule par colonne est la version pavage d'un
+chemin traversant ses strates une à une.",,,,,,,,9e9b8ea0a5dcac92,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,ebff628a,markdown,fr,7f5b94e7817610e3,"### Exercice 1b : Percer une porte dans le mur
+
+**Enoncé** : Percez une **porte** de deux cellules dans la chaîne A (transformez $(-1, 0)$ et
+$(-1, 1)$ en sol) et mesurez ce que le mur perd.
+
+Étapes :
+1. Sauvegardez le plateau, percez la porte, vérifiez que $S$ et $T$ restent du sol
+2. Recalculez $m_{path}$ (0-1 BFS) — toute traversée ne paie plus qu'une seule colonne ?
+3. Mesurez le nouveau $m$ (flot max) : la coupure minimale a-t-elle bougé, et dans quel sens ?
+   (indice : la chaîne B seule sépare encore $S$ de $T$)
+4. Refaites Dijkstra : le chemin optimal passe-t-il par la porte ?
+
+**Question** : pourquoi $m_{path}$ chute-t-il immédiatement tandis que $m$ ne diminue pas ?
+
+Restaurez le plateau avant de passer à la suite.",,,,,,,,7f5b94e7817610e3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,427287ca,code,fr,0b6b231ca1c81eff,"# Exercice 1b : percer une porte de deux cellules dans la chaine A et mesurer ce que le mur perd.
+# Etape 1 : sauvegarder le plateau ; transformer (-1, 0) et (-1, 1) en sol ; verifier S et T.
+# Etape 2 : recalculer m_path (0-1 BFS) -- toute traversee ne paie plus qu'une seule colonne ?
+# Etape 3 : mesurer le nouveau m (flot max) : la coupure minimale a-t-elle bouge, dans quel sens ?
+#           Indice : la chaine B seule separe encore S de T.
+# Etape 4 : refaire Dijkstra (c_w = 3) : le chemin optimal passe-t-il par la porte ?
+# Question : pourquoi m_path chute immediatement quand m ne diminue pas ?
+
+# TODO etudiant : ecrire les etapes 1 a 4, puis restaurer le plateau d'origine.
+# Indice : copier le plateau comme a l'exemple guide 1 (salles_origine = dict(salles)).
+
+resultats_1b = None  # TODO etudiant : (m_path, m, L, murs_traverses) apres percement
+print(""Exercice a completer"")",,,,,,,,0b6b231ca1c81eff,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,dd22c7a3,markdown,fr,0c4e7ce32ef2c056,"### Exemple guidé 2 — Ré-auditer le certificat au coût c_w = 5 (crédité #25535 — TristanBrouille)
+
+> Contribution de **Tristan Dhersin** (TP1, PR étudiante
+> [#25535](https://github.com/jsboige/CoursIA/pull/25535)) — résolution reprise telle quelle.
+
+**Ce que montre l'exemple** : le coût du mur passe à $c_w = 5$. Un Dijkstra sans cible produit
+les potentiels $\varphi$ sur toutes les salles, puis l'audit rejoue l'inégalité
+$\varphi(v) \le \varphi(u) + cout(v)$ sur chacune des 312 arêtes : zéro violation, et les huit
+inégalités du chemin optimal sont serrées — le certificat tient au nouveau prix, au même point
+de passage, et $L$ grimpe exactement de $2 \times (5 - 3)$.",,,,,,,,0c4e7ce32ef2c056,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,a235e31d,markdown,fr,bf77b62316643118,"### Lecture du résultat : le certificat survit au changement de prix
+
+À $c_w = 5$ : $L = 16$ en 8 pas, l'audit couvre **312 arêtes** sans une violation, et les **8/8**
+inégalités le long du chemin optimal sont serrées — le certificat est re-validé, pas seulement
+re-estimé. La traversée reste $[(-1,-2), (0,-2)]$, le même point de passage qu'à $c_w = 3$, et
+$L$ passe de 12 à 16 : **+4 = 2 murs × (5 − 3)** — le chemin garde sa forme, seule la facture
+change.
+
+Lu dans la topologie de Robinson-Goforth, chaque mur traversé y coûte exactement un pas : le
+prix y est fixe. Ici le prix est un paramètre — mais entre $c_w = 3$ et $c_w = 5$ on reste du
+même côté du seuil de bascule (l'exemple guidé 3 le localisera), et seul le montant de la
+facture bouge.",,,,,,,,bf77b62316643118,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,f47c5a53,markdown,fr,b4314d4ece3d52f9,"### Exercice 2b : Auditer l'égalité — le certificat à c_w = 1
+
+**Enoncé** : À $c_w = 1$, deux routes différentes coûtent le même prix. Auditez ce cas
+d'égalité.
+
+Étapes :
+1. `set_cout_mur(1)`, puis Dijkstra **sans cible** : potentiels $\varphi_1$ sur toutes les salles
+2. Rejouez l'audit complet (toutes les arêtes) : combien de violations ?
+3. Comptez les arêtes **serrées** ($\varphi_1(v) = \varphi_1(u) + cout(v)$) le long du chemin
+   optimal retenu, puis le long de la route du passage
+   $S \to \ldots \to (-1,-2) \to (0,-2) \to \ldots \to T$ (indice : 6 pas de sol + 2 murs,
+   elle coûte aussi 8)
+4. Restaurez `set_cout_mur(COUT_MUR)`
+
+**Question** : le certificat prouve-t-il que le chemin retenu est le seul optimal, ou seulement
+qu'il est optimal ?",,,,,,,,b4314d4ece3d52f9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,387a14a8,code,fr,b298ee786d26418a,"# Exercice 2b : auditer le certificat au cas d'egalite -- c_w = 1.
+# Etape 1 : set_cout_mur(1) puis Dijkstra sans cible : phi_1 sur toutes les salles.
+# Etape 2 : rejouer l'audit sur toutes les aretes : compter les violations.
+# Etape 3 : compter les aretes serrees le long du chemin optimal retenu, puis le long de la
+#           route du passage S -> (-1,-2) -> (0,-2) -> T (indice : 6 pas de sol + 2 murs = 8,
+#           le meme cout que la route sud).
+# Etape 4 : restaurer set_cout_mur(COUT_MUR).
+# Question : le certificat prouve-t-il l'optimalite du chemin retenu, ou aussi son unicite ?
+
+# TODO etudiant : ecrire les etapes 1 a 4.
+violations_egalite = None  # TODO etudiant : violations de l'audit a c_w = 1
+serrees_hors_chemin = None  # TODO etudiant : aretes serrees sur une autre route de cout 8
+print(""Exercice a completer"")",,,,,,,,b298ee786d26418a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,54c8c9a0,markdown,fr,f7210d9e2b6944ad,"### Exemple guidé 3 — Localiser le seuil de bascule du point de passage (crédité #25535 — TristanBrouille)
+
+> Contribution de **Tristan Dhersin** (TP1, PR étudiante
+> [#25535](https://github.com/jsboige/CoursIA/pull/25535)) — résolution reprise telle quelle.
+
+**Ce que montre l'exemple** : une fonction `traversee(c_w)` renvoie les cellules de mur du
+chemin optimal au prix $c_w$. Par dichotomie entière puis réelle sur $c_w$, la résolution
+localise le seuil où le point de passage bascule de la route sud (trois murs à $c_w = 1$ :
+$[(-1,-3), (0,-4), (2,-4)]$) à la route du passage (deux murs : $[(-1,-2), (0,-2)]$) — seuil
+entier $c_w = 2$, seuil réel $c^* \approx 1$. Un petit modèle affine — palissade $5 + 3c$
+contre passage $6 + 2c$ — prédit exactement le croisement.",,,,,,,,f7210d9e2b6944ad,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,722da7e2,markdown,fr,20689cb7cdd7a9a2,"### Lecture du résultat : le seuil c* = 1, un croisement de deux droites affines
+
+La dichotomie entière trouve la bascule dès $c_w = 2$ ; la dichotomie réelle converge vers
+$c^* \approx 1{,}000000$ — et la table finale l'explique : la route sud coûte $5 + 3c$ (cinq pas
+de sol, trois murs), la route du passage $6 + 2c$ (six pas, deux murs). À $c = 0{,}5$ la
+palissade gagne ($6{,}5 < 7{,}0$), à $c = 1$ les deux droites se croisent (8 partout), à
+$c = 2$ le passage gagne ($10 < 11$). À l'égalité, Dijkstra rend la route sud — la référence —
+et le seuil entier passe donc à 2.
+
+Lu dans la topologie de Robinson-Goforth, la distance se compte en murs traversés — la seule
+monnaie qui y circule — et GT-20 y montre qu'aucun chemin ne gagne un pas en passant par un
+mur. Notre seuil $c^*$ est le prix auquel le pavage cesse d'imiter cette topologie : en
+dessous, un mur de plus coûte moins cher qu'un pas de sol économisé, et la route qui cumule
+les murs reprend la main.",,,,,,,,20689cb7cdd7a9a2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,45480ceb,markdown,fr,52be0f423ed75987,"### Exercice 3b : Le seuil de bascule dans un mur plus épais
+
+**Enoncé** : Reprenez le plateau à **trois colonnes** de l'exemple guidé 1 (chaînes A et B, plus
+la colonne $q = 1$). Le seuil de bascule du point de passage y est-il le même que dans le
+plateau à deux colonnes ?
+
+Étapes :
+1. Reconstruisez le plateau à trois colonnes (sauvegardez le plateau d'origine, comme à
+   l'exemple guidé 1) et adaptez `traversee(c_w)` à ce plateau
+2. Prenez la traversée à $c_w = 1$ comme référence — combien de murs franchit-elle ?
+3. Dichotomie entière sur $[1, 9]$ : plus petit $c_w$ qui change le point de passage
+4. Dichotomie réelle : où tombe exactement le seuil ?
+5. Restaurez le plateau d'origine
+
+**Question** : écrivez le coût des deux routes en fonction de $c_w$ (pas de sol, murs
+traversés) et vérifiez que leur croisement prédit la mesure.",,,,,,,,52be0f423ed75987,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,54a207e0,code,fr,3f3d249f07287a5d,"# Exercice 3b : le seuil de bascule du point de passage dans un mur a trois colonnes.
+# Etape 1 : reconstruire le plateau a trois colonnes de l'exemple guide 1 (sauvegarder
+#           l'origine dans salles_origine avant de modifier `salles`).
+# Etape 2 : adapter traversee(c_w) a ce plateau ; reference = traversee a c_w = 1.
+# Etape 3 : dichotomie entiere sur [1, 9] : plus petit c_w qui change le point de passage.
+# Etape 4 : dichotomie reelle : ou tombe exactement le seuil ?
+# Etape 5 : restaurer le plateau d'origine.
+# Question : ecrire le cout des deux routes en fonction de c_w et verifier le croisement.
+
+# TODO etudiant : ecrire les etapes 1 a 5.
+seuil_trois_colonnes = None  # TODO etudiant : seuil reel mesure dans le plateau a 3 colonnes
+print(""Exercice a completer"")",,,,,,,,3f3d249f07287a5d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,57c2e19d,code,fr,319c440c0caf5547,"// Exemple guidé 1 : le tournoi (contribution TP, PR #22577)
 var rng = new Random(42);
 var jeuT = new TicTacToe();
@@ -42391,27 +42790,6 @@ def verifier_longueur(texte):
 
 print(""Exercice 9 a completer :"", verifier_longueur(reponse_exercice_9), ""phrase(s) detectee(s)"")",,,,,,,,909ebb4e123747d5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11d-Descente-Sous-Budget.ipynb,nav-search12-suivant-11d,markdown,fr,d912ce5d0f066cd2,**Suivant** : [Search-12 — Branch-and-bound et borne LP](Search-12-BranchAndBound-Borne-LP-Python.ipynb),,,,,,,,d912ce5d0f066cd2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,search13a-08b,markdown,fr,0612944356ba6fa3,"### Le certificat de minimalité
-
-Dire « ce chemin est le plus court » ne suffit pas : un algorithme affirme, un certificat prouve.
-L'audit de potentiels produit une fonction $\varphi$ sur les salles — ici la distance depuis $S$,
-calculée par Dijkstra — et vérifie qu'elle est **admissible** : $\varphi(v) \leq \varphi(u) +
-c(u,v)$ sur chaque arête $u \to v$. Si toutes les inégalités sont satisfaites et si, le long du
-chemin candidat, elles sont toutes **serrées** (égalité partout), alors le coût du chemin se
-télescope en $\varphi(T) - \varphi(S)$ : aucune autre route ne peut coûter moins. Le contrôle
-est linéaire : une fois $\varphi$ calculée, vérifier l'absence de violation sur toutes les arêtes
-est un simple balayage — c'est ce qui rend le certificat vérifiable, et pas seulement affirmable.
-La cellule suivante applique ce principe sur l'instance.",,,,,,,,0612944356ba6fa3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,search13a-12b,markdown,fr,a7313521dad5e3eb,"### Le test négatif : morphisme ou pas ?
-
-L'opération 13 se termine par un test négatif. Un **swap** — changer une cellule de place, ou
-changer un coût — est un **morphisme du paysage** s'il préserve les préférences, c'est-à-dire
-les distances et le certificat ; sinon, les préférences ont changé et l'ancien certificat doit
-être rejeté. Formellement, le verdict se lit sur deux mesures : la distance $L$ et le nombre de
-violations de l'ancien certificat — un morphisme les préserve toutes les deux ($\Delta = 0$), un
-non-morphisme en change au moins une. La cellule suivante confronte ce critère à trois
-expériences : percer le mur au point de traversée, rendre mur une feuille de sol éloignée, et
-balayer le coût du mur pour déplacer le point de passage.",,,,,,,,a7313521dad5e3eb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb,75c6313a,markdown,fr,979536e89cfd2d9b,"### Exemple guidé 1 — Missionnaires et cannibales (crédité #25466 — ValentineH5)
 
 > Résolution originale : **ValentineH5**, PR étudiante [#25466](https://github.com/jsboige/CoursIA/pull/25466). Reprise telle quelle ; seule la mise en forme est harmonisée avec les sections voisines.
@@ -42534,3 +42912,47 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,3870ce3b,
 resultats_par_taille = None  # TODO etudiant
 
 print(""Exercice 5 a completer"")",,,,,,,,5067c6dd461dafce,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,489d238f,markdown,fr,dde16e3bbbad7899,"### Lecture du résultat : le budget déplace la sélection
+
+**Ce qui change en passant de 5 s à 0,5 s** (taux de succès medium_hard / diabolical, mesurés dans la sortie ci-dessus) :
+
+| Paradigme | 5 s | 0,5 s | Verdict |
+|---|---|---|---|
+| Dancing Links | 100 % / 100 % | 100 % / 100 % | intact (~4 ms par grille) |
+| CP-SAT | 100 % / 100 % | 100 % / 100 % | intact (~17 ms par grille) |
+| Backtracking MRV | 70 % / 100 % | 50 % / 90 % | recule |
+| Z3 (SMT) | 100 % / 100 % | 60 % / 100 % | **recule nettement** sur medium_hard |
+| Backtracking naïf | 40 % / 80 % | 20 % / 50 % | recule |
+| Recuit simulé | 0 % / 0 % | 0 % / 0 % | inchangé (déjà en échec ; easy recule de 60 % à 30 %) |
+| Génétique | 0 % / 0 % | 0 % / 0 % | inchangé (déjà en échec) |
+
+**Gagnant sur 'diabolical'** : **Dancing Links** dans les deux cas, avec 100 % de succès et le temps le plus court. CP-SAT arrive deuxième, lui aussi à 100 %. La réponse à la question de l'énoncé est donc : non, CP-SAT n'est pas le gagnant. Il est le seul solveur généraliste à rester à 100 % partout, mais l'algorithme spécialisé (DLX) reste environ 5 fois plus rapide. Z3 reste à 100 % sur 'diabolical' à 0,5 s, mais il plonge de 100 % à 60 % sur medium_hard : la marge que 5 s lui offrait a disparu.
+
+**Ce que ça montre** :
+- **Le classement dépend du budget.** À 5 s, quatre solveurs sont ex aequo à 100 % sur 'diabolical'. À 0,5 s, ils ne sont plus que trois — et sur medium_hard, Z3 tombe de 100 % à 60 %. C'est le principe *No Free Lunch* appliqué au temps : le « meilleur » algorithme n'existe que pour un budget donné.
+- **Le budget révèle les marges.** Un solveur qui réussit en 0,3 s « en moyenne » échoue dès que la limite passe sous sa queue de distribution. La moyenne ne suffit pas, il faut regarder les pires instances : sur medium_hard, Z3 dépasse 0,5 s sur quatre grilles sur dix, et chacune devient un échec.
+- **Les métaheuristiques n'en profitent pas ici.** Contrairement à l'indice de l'énoncé, GA et recuit ne « tiennent » pas mieux : sur le Sudoku, qui a une seule solution exacte, une solution presque bonne compte comme un échec. Le recuit perd même la moitié de ses réussites sur 'easy' (60 % à 30 %).
+
+**Limite de la mesure** : ces taux dépendent de la machine et de sa charge — c'est précisément le sujet de l'exercice. Sur la course d'origine de janok181 (autre machine), Z3 s'effondrait plus fortement encore : 10 % sur medium_hard et 80 % sur 'diabolical' à 0,5 s, contre 60 % et 100 % ici. Les solveurs proches de la limite des 0,5 s (Z3, backtracking) peuvent donc changer sensiblement d'une exécution à l'autre ; les conclusions sur DLX et CP-SAT, très loin de la limite, restent solides.",,,,,,,,dde16e3bbbad7899,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,e613b2d9,markdown,fr,5592d2ed5fc84b0e,"### Exercice 1 : La stabilité du classement quand l'échantillon change
+
+**Énoncé** : le classement de la section 6 repose sur 30 grilles tirées avec la graine 42. Le gagnant survivrait-il à un autre tirage ? Re-tirez 10 grilles par difficulté avec une **graine différente** (par exemple 1337) et relancez les 7 solveurs avec `run_one(..., timeout_s=5.0)` :
+1. Affichez le taux de succès par (paradigme, difficulté) sur le nouvel échantillon, comme en section 6.1 ;
+2. Recalculez le classement 'diabolical' (taux de succès décroissant, puis temps moyen croissant) et comparez-le aux classements à 5 s de l'exemple guidé 1 ;
+3. Mesurez, pour chaque paradigme, l'écart de taux de succès global entre la graine 42 et la graine 1337.
+
+**Question** : le gagnant change-t-il d'un échantillon à l'autre ? Quels paradigmes ont le classement le plus sensible au tirage, et pourquoi (10 grilles par difficulté seulement, queue de distribution des temps) ?
+
+**Indice** : le tirage de la section 3.2 utilise `random.Random(42)` puis `.sample(puzzles, 10)`. Refaites le même geste avec `random.Random(1337)` ; le `df` de la section 5.2 contient déjà toutes les mesures de la graine 42.",,,,,,,,5592d2ed5fc84b0e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,c84af228,code,fr,b3d4c9dd44a67459,"# Exercice a completer : stabilite du classement sous re-echantillonnage
+# Etape 1 : re-tirer 10 grilles par difficulte avec random.Random(1337)
+#           (meme pattern que la section 3.2 : load_puzzles + .sample(puzzles, 10))
+# Etape 2 : relancer les 7 solveurs avec run_one(..., timeout_s=5.0)
+# Etape 3 : taux de succes par (paradigm, difficulty) puis classement 'diabolical',
+#           comme dans l'exemple guide 1, et ecarts avec le df de la section 5.2
+# Indice : construire instances_1337 puis df_1337 ; l'ecart global par paradigme
+#           se lit en soustrayant les deux moyennes de la colonne 'success'
+
+df_1337 = None  # TODO etudiant
+
+print(""Exercice a completer : stabilite du classement, graine 1337 vs 42"")",,,,,,,,b3d4c9dd44a67459,,,,,,,,,,,,,,,
