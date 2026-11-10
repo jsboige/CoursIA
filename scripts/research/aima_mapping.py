@@ -34,15 +34,11 @@ import csv
 import difflib
 import json
 import re
+import shutil
 import sys
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-
-try:
-    import pymupdf
-except ImportError:  # pragma: no cover - dependance absente = repair, jamais contourner
-    sys.stderr.write("pymupdf absent : `pip install pymupdf` (regle F : reparer, pas contourner)\n")
-    raise
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -116,6 +112,18 @@ def _title_on_page(page_text: str, title: str, number: str = "") -> bool:
 
 # --------------------------------------------------------------------------- TOC
 
+def _require_pymupdf() -> None:
+    """Charge PyMuPDF uniquement pour les commandes qui lisent les PDF."""
+    global pymupdf
+    try:
+        import pymupdf
+    except ImportError as exc:  # dependance requise par `toc`, pas par `map` ou `check`
+        sys.stderr.write(
+            "pymupdf absent : installez-le avec `pip install pymupdf` pour la commande toc\n"
+        )
+        raise SystemExit(1) from exc
+
+
 @dataclass
 class Entry:
     kind: str
@@ -129,6 +137,7 @@ class Entry:
 
 
 def extract_3e(pdf_path: Path) -> list[Entry]:
+    _require_pymupdf()
     doc = pymupdf.open(pdf_path)
     try:
         entries: list[Entry] = []
@@ -186,6 +195,7 @@ def _find_part_in_printed_toc(doc, entry) -> int:
 
 
 def verify_3e(pdf_path: Path, entries: list[Entry]) -> None:
+    _require_pymupdf()
     doc = pymupdf.open(pdf_path)
     try:
         for e in entries:
@@ -229,6 +239,7 @@ def verify_3e(pdf_path: Path, entries: list[Entry]) -> None:
 
 
 def parse_4e_toc(pdf_path: Path) -> list[Entry]:
+    _require_pymupdf()
     doc = pymupdf.open(pdf_path)
     try:
         lines: list[str] = []
@@ -292,6 +303,7 @@ def anchor_4e(pdf_path: Path, entries: list[Entry]) -> None:
     avancees dans l'ordre, page par page, ce qui rend l'ancre non ambigue. Un repli
     « souple » (titre present dans le texte sans ligne isolee) est note comme tel.
     """
+    _require_pymupdf()
     doc = pymupdf.open(pdf_path)
     try:
         cursor = 0
@@ -324,6 +336,7 @@ def anchor_4e(pdf_path: Path, entries: list[Entry]) -> None:
 
 
 def verify_4e(pdf_path: Path, entries: list[Entry]) -> None:
+    _require_pymupdf()
     doc = pymupdf.open(pdf_path)
     try:
         for e in entries:
@@ -1053,6 +1066,57 @@ def cmd_check(args) -> int:
         for r in bad:
             print(f"   non verifiee : {r['kind']} {r['number']} {r['title'][:60]} (pdf {r['pdf_page']})")
         rc = 1 if bad else rc
+
+    # Rejoue uniquement `map` avec les TOC épinglées : aucun PDF n'est rouvert.
+    # Les fichiers produits restent dans un répertoire temporaire, jamais dans
+    # le dossier des artefacts commités.
+    map_artifacts = (
+        "aima-walk-sections.csv",
+        "aima-walk-chapitres.csv",
+        "aima-hors-livre.csv",
+        "aima-mapping-resume.json",
+    )
+    toc_paths = [args.out_dir / name for name in ("aima3e-toc.csv", "aima4e-toc.csv")]
+    if all(path.is_file() for path in toc_paths):
+        with tempfile.TemporaryDirectory(prefix="aima-mapping-check-") as temp:
+            replay_dir = Path(temp)
+            for path in toc_paths:
+                shutil.copyfile(path, replay_dir / path.name)
+            cmd_map(argparse.Namespace(out_dir=replay_dir))
+
+            for name in map_artifacts:
+                committed = args.out_dir / name
+                replayed = replay_dir / name
+                if not committed.is_file():
+                    sys.stderr.write(f"artefact absent : {name}\n")
+                    rc = 1
+                    continue
+                # Les CSV/JSON commités peuvent être en CRLF selon le checkout ;
+                # les fins de ligne ne constituent pas un drift de contenu.
+                contenu_commite = committed.read_bytes().replace(b"\r\n", b"\n")
+                contenu_rejoue = replayed.read_bytes().replace(b"\r\n", b"\n")
+                if contenu_commite == contenu_rejoue:
+                    continue
+
+                sys.stderr.write(f"drift détecté : {name}\n")
+                committed_lines = committed.read_text(encoding="utf-8").splitlines(keepends=True)
+                replayed_lines = replayed.read_text(encoding="utf-8").splitlines(keepends=True)
+                diff = list(difflib.unified_diff(
+                    committed_lines,
+                    replayed_lines,
+                    fromfile=f"commité/{name}",
+                    tofile=f"map rejoué/{name}",
+                ))
+                extrait = diff[:40]
+                sys.stderr.writelines(extrait)
+                if len(diff) > len(extrait):
+                    sys.stderr.write("... extrait tronqué ...\n")
+                rc = 1
+    else:
+        for path in toc_paths:
+            if not path.is_file():
+                sys.stderr.write(f"source épinglée absente : {path.name}\n")
+        rc = 1
 
     # coherence : chaque ligne de couverture renvoie a une section presente dans la TOC
     couverture = args.out_dir / "aima-walk-sections.csv"
