@@ -159,14 +159,9 @@ def _cap(suffix: str) -> str:
 # ---------------------------------------------------------------------------
 
 def repo_root() -> Path:
-    try:
-        r = subprocess.run(["git", "rev-parse", "--show-toplevel"],
-                           capture_output=True, text=True, encoding="utf-8",
-                           errors="replace")
-        if r.returncode == 0:
-            return Path(r.stdout.strip())
-    except OSError:
-        pass
+    # The script location identifies its own checkout. Resolving git from an
+    # inherited cwd silently targets the caller's clone when invoked by absolute
+    # path, including from an isolated worktree.
     return Path(__file__).resolve().parents[2]
 
 
