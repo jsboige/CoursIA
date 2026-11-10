@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tests du module limit_sets.py (GameTheory-26, Poincare-Bendixson).
+"""Tests du module limit_sets.py (GameTheory-06i, Poincare-Bendixson).
 
 Backing notebook : GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb.
 

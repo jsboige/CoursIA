@@ -165,6 +165,149 @@ def test_pick_distractors_refuse_quand_la_polarite_est_trop_pauvre():
         G.pick_distractors("F1", ["F1", "F2", "V1"], 3, random.Random(0))
 
 
+# --------------------------------------------------------------------------
+# Distracteurs difficiles (revue amont 2026-10-21, point 2)
+# --------------------------------------------------------------------------
+
+def _taxonomy():
+    """Mini-taxonomie synthetique : freres, parent, cousin, homonyme, vertu.
+
+    ``F1`` (``1.1``) et ``F2`` (``1.2``) sont freres ; ``F3`` (``1``) est leur
+    parent ; ``F4`` (``2.1``) est un cousin (famille distincte) ; ``F5`` (``3``)
+    porte le meme titre FR que ``F1`` (homonyme) ; ``V1`` est une vertu.
+    """
+    fallacies = [
+        B.Node("fallacy", 3, "1", 0, "Famille 1", False),
+        B.Node("fallacy", 1, "1.1", 1, "Famille 1", True),
+        B.Node("fallacy", 2, "1.2", 1, "Famille 1", True),
+        B.Node("fallacy", 4, "2.1", 1, "Famille 2", True),
+        B.Node("fallacy", 5, "3", 0, "Famille 3", True),
+    ]
+    virtues = [B.Node("virtue", 1, "1.1", 1, "Vertus", True)]
+    return fallacies, virtues
+
+
+def _hard_texts():
+    nodes = {}
+    titles = {"F1": "Homonyme", "F2": "Sophisme B", "F3": "Sophisme parent",
+              "F4": "Sophisme cousin", "F5": "Homonyme", "V1": "Vertu A"}
+    for key, title in titles.items():
+        nodes[key] = {"fr": (title, f"Definition de {title}.", []),
+                      "en": (title, f"Definition of {title}.", [])}
+    return {"nodes": nodes, "scenarios": {}}
+
+
+def test_build_hard_peers_derive_freres_parent_et_homonymes_sans_colonne_editoriale():
+    fallacies, virtues = _taxonomy()
+    hard = G.build_hard_peers(_hard_texts(), fallacies, virtues)
+    # Frere (meme parent), parent (noeud 1), homonyme (titre FR partage).
+    assert "F2" in hard["F1"] and "F3" in hard["F1"] and "F5" in hard["F1"]
+    # Le cousin d'une autre famille n'est pas difficile, la vertu non plus
+    # (polarite respectee), et la cle n'est jamais son propre pair.
+    assert "F4" not in hard["F1"] and "V1" not in hard["F1"] and "F1" not in hard["F1"]
+    # Symetrie frere/frere et parent pointe vers ses enfants.
+    assert "F1" in hard["F2"] and "F2" in hard["F3"]
+
+
+def test_pick_distractors_tire_les_difficiles_d_abord_puis_complete():
+    import random
+    keys = ["F1", "F2", "F3", "F4", "F5", "F6"]
+    hard_peers = {"F1": ["F2", "F3"]}
+    picked = G.pick_distractors("F1", keys, 4, random.Random(0), hard_peers=hard_peers)
+    assert len(picked) == 4
+    # Les deux difficiles sont pris, le reste complete au hasard.
+    assert "F2" in picked and "F3" in picked
+    # Moins de difficiles que k : completion aleatoire, jamais de doublon.
+    short = G.pick_distractors("F1", keys, 5, random.Random(0), hard_peers={"F1": ["F2"]})
+    assert short.count("F2") == 1 and len(short) == 5
+    # exclude retire les difficiles du tirage aleatoire (controle propre).
+    clean = G.pick_distractors("F1", keys, 3, random.Random(0), exclude={"F2", "F3"})
+    assert "F2" not in clean and "F3" not in clean and len(clean) == 3
+
+
+def test_pick_distractors_sans_hard_peers_garde_le_tirage_historique():
+    """Le defaut ne doit pas deriver : memes ``rng``, memes distracteurs qu'avant."""
+    import random
+    keys = ["F1", "F2", "F3", "F4", "F5", "F6"]
+    via_function = G.pick_distractors("F1", keys, 3, random.Random(42))
+    direct = random.Random(42).sample([k for k in keys if k != "F1"], 3)
+    assert via_function == direct
+
+
+def test_generate_one_mesure_deux_controles_aux_distracteurs_difficiles():
+    """En mode difficile : une question a pairs difficiles, une question aleatoire
+    propre, sur le MEME texte. Le verdict du corpus reste celui de l'aleatoire ;
+    le verdict difficile vit dans ``record.roundtrip_hard``."""
+    import random
+    texts = _texts()
+    texts["nodes"]["F4"] = {"fr": ("Sophisme D", "Definition du sophisme D.", []),
+                            "en": ("Fallacy D", "Definition of fallacy D.", [])}
+    # F2 (Sophisme B) est declare difficile pour F1 ; F3/F4 ne le sont pas.
+    hard_peers = {"F1": ["F2"], "F2": [], "F3": [], "F4": []}
+    teacher = FakeTeacher([
+        _reply("Un texte genere pour le sophisme A, en deux phrases.", tokens=60),
+        _oracle("Sophisme B"),   # question difficile : le vote va au pair
+        _oracle("Sophisme A"),   # question aleatoire : le vote revient a la cible
+    ])
+    record, verdict, picks = G.generate_one(
+        _pair(), texts, teacher, lang="fr", rng=random.Random(0),
+        votes=1, distractors=2, hard_peers=hard_peers)
+    assert verdict is True and picks == ["F1"]        # porte par la question aleatoire
+    assert record.roundtrip_hard is False             # mesure par la question difficile
+    assert len(teacher.calls) == 3                    # generation + deux questions
+    hard_question, clean_question = teacher.calls[1][0], teacher.calls[2][0]
+    assert "Sophisme B" in hard_question              # le pair difficile y figure
+    assert "Sophisme B" not in clean_question         # et jamais dans l'aleatoire
+    assert "Sophisme A" in clean_question             # la cible, elle, y est
+
+
+def test_generate_one_sans_hard_peers_ne_pose_qu_une_question():
+    """Defaut inchange : un seul passage de vote par tour, ``roundtrip_hard`` None."""
+    import random
+    teacher = FakeTeacher([
+        _reply("Un texte conforme, assez long pour porter les phrases.", tokens=63),
+        _oracle("Sophisme A"),
+    ])
+    record, verdict, _picks = G.generate_one(
+        _pair(), _texts(), teacher, lang="fr", rng=random.Random(0),
+        votes=1, distractors=1)
+    assert len(teacher.calls) == 2
+    assert record.roundtrip_hard is None
+
+
+def test_summarise_publie_deux_taux_separes():
+    _t, records = _records_and_verdicts()
+    records[0].roundtrip_hard = True
+    records[1].roundtrip_hard = False
+    summary = G.summarise(records, [True, False, None])
+    # Les deux controles portent les memes textes : deux taux, deux denominateurs.
+    assert summary["roundtrip_rate"] == 0.5
+    assert summary["roundtrip_hard_measured"] == 2
+    assert summary["roundtrip_hard_hits"] == 1
+    assert summary["roundtrip_hard_rate"] == 0.5
+    # Sans mode difficile (tout None) : non mesure, pas un taux nul.
+    plain = G.summarise(_records_and_verdicts()[1], [True, False, None])
+    assert plain["roundtrip_hard_measured"] == 0 and plain["roundtrip_hard_rate"] is None
+
+
+def test_run_porte_le_verdict_difficile_dans_le_checkpoint(tmp_path):
+    import random
+    texts = _texts()
+    hard_peers = {"F1": ["F2"], "F2": [], "F3": []}
+    checkpoint = tmp_path / "val_fr.jsonl"
+    teacher = FakeTeacher([
+        _reply("Un texte en deux phrases.", 60),
+        _oracle("Sophisme B"), _oracle("Sophisme A"),
+    ])
+    records, verdicts = G.run([_pair()], texts, teacher, lang="fr", seed=0, votes=1,
+                              distractors=1, hard_peers=hard_peers, checkpoint=checkpoint)
+    assert verdicts == [True] and records[0].roundtrip_hard is False
+    row = json.loads(checkpoint.read_text(encoding="utf-8").strip().splitlines()[0])
+    assert row["roundtrip"] is True and row["roundtrip_hard"] is False
+    summary = G.summarise(records, verdicts)
+    assert summary["roundtrip_hard_rate"] == 0.0
+
+
 def test_build_choice_question_porte_le_texte_les_candidats_et_la_consigne():
     texts = _texts()
     question = G.build_choice_question("Le texte genere.", ["F1", "F2"], texts, "fr")
@@ -174,6 +317,60 @@ def test_build_choice_question_porte_le_texte_les_candidats_et_la_consigne():
     assert "uniquement par la lettre" in question
     # La definition du noeud est transmise (le controle doit discriminer sur elle).
     assert "Definition du sophisme A." in question
+
+
+def test_build_choice_question_fr_reste_octet_pour_octet_celle_du_corpus_committe():
+    # Le corpus committe (data/teacher/val_fr.jsonl) a ete reclasse par cette
+    # question exacte : la changer rendrait les mesures FR incomparables.
+    question = G.build_choice_question("Le texte genere.", ["F1", "F2"], _texts(), "fr")
+    assert question == (
+        "Voici un texte :\n\nLe texte genere.\n\n"
+        "Quel sophisme/caractere argumentatif illustre-t-il le mieux ?\n"
+        "A. Sophisme A : Definition du sophisme A.\n"
+        "B. Sophisme B : Definition du sophisme B."
+        "\n\nReponds uniquement par la lettre."
+    )
+
+
+def test_build_choice_question_en_ne_melange_plus_les_langues():
+    # Avant le correctif, --lang en posait une question francaise sur des
+    # candidats anglais (ecart n.1 de la proposition EPITA, #10355).
+    question = G.build_choice_question("The generated text.", ["F1", "V1"], _texts(), "en")
+    assert question == (
+        "Here is a text:\n\nThe generated text.\n\n"
+        "Which fallacy or argumentative virtue does it illustrate best?\n"
+        "A. Fallacy A: Definition of fallacy A.\n"
+        "B. Virtue A: Definition of virtue A."
+        "\n\nAnswer with the letter only."
+    )
+    for french in ("Voici", "Quel sophisme", "Reponds"):
+        assert french not in question
+
+
+def test_build_choice_question_autre_langue_recoit_le_cadre_anglais():
+    # Les langues sans cadre propre suivent la convention de render_prompt :
+    # consigne en anglais, candidats dans la langue du corpus.
+    texts = _texts()
+    for key, title in (("F1", "Ошибка A"), ("F2", "Ошибка B")):
+        texts["nodes"][key]["ru"] = (title, "Определение.", [])
+    question = G.build_choice_question("Текст.", ["F1", "F2"], texts, "ru")
+    assert question.startswith("Here is a text:\n\nТекст.\n\n")
+    assert "A. Ошибка A: Определение." in question
+    assert question.endswith("Answer with the letter only.")
+
+
+def test_toute_langue_du_perimetre_a_un_cadre_coherent():
+    # Aucune langue autre que le francais ne doit recevoir le cadre francais.
+    for lang in B.LANGS:
+        intro = G._CHOICE_FRAMES.get(lang, G._CHOICE_FRAMES["en"])[0]
+        assert (intro == "Voici un texte :") == (lang == "fr"), lang
+
+
+def test_reponse_a_la_consigne_anglaise_est_lue():
+    # La consigne anglaise appelle « B » ou « Answer: B » : les deux passes de
+    # parse_choice les lisent deja.
+    assert G.parse_choice("B", ["F1", "F2"]) == "F2"
+    assert G.parse_choice("Answer: A", ["F1", "F2"]) == "F1"
 
 
 # --------------------------------------------------------------------------

@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 import time
 from pathlib import Path
@@ -57,9 +58,16 @@ from train_rl_dt import (
     DecisionTransformerModel,
     build_trajectories,
     compute_majority_class_baseline,
-    create_sequence_batches,
     evaluate_dt,
     train_dt,
+)
+from validate_xrp_dt import CAUSAL_EVAL_PROTOCOL, teacher_actions, train_rtg_per_step
+from m11c_sharpe_test import ledoit_wolf_sharpe_diff_se
+from ablation_rtg_leak import (
+    causal_condition_actions,
+    causal_eval_returns,
+    score_actions,
+    simulate_dt_portfolio,
 )
 
 sys.path.insert(0, str(SCRIPTS_DIR.parent / "shared"))
@@ -89,36 +97,34 @@ def compute_sharpe(returns: np.ndarray, annual_factor: int = 252) -> float:
     return float(strategy_metrics.sharpe(returns, periods_per_year=annual_factor))
 
 
-def simulate_dt_portfolio(
-    prices: np.ndarray,
-    actions: np.ndarray,
-    commission_bps: float = 5.0,
-) -> np.ndarray:
-    """Simulate portfolio returns from DT action predictions.
+def sharpe_diff_test(r_a: np.ndarray, r_b: np.ndarray, annual_factor: int = 252) -> dict:
+    """Ledoit-Wolf 2008 test of the Sharpe difference a - b on paired daily returns.
 
-    Actions: 0=hold, 1=buy (long), 2=sell (short/flat).
-    Transaction cost in basis points per trade.
+    HAC lag floor(T^0.25), as in ``Paradox46Benchmarks/significance.py``.
+    Sharpes are annualized with a zero risk-free rate; the p-value is
+    two-sided and uncorrected (multiple-testing correction is left to the
+    reader of the results).
     """
-    n = len(actions)
-    commission = commission_bps / 10000.0
-    position = 0.0
-    portfolio_returns = np.zeros(n, dtype=np.float64)
-
-    for i in range(1, n):
-        price_ret = (prices[i] - prices[i - 1]) / (prices[i - 1] + 1e-8)
-
-        if actions[i] == 1:
-            target_pos = 1.0
-        elif actions[i] == 2:
-            target_pos = 0.0  # flat, not short (conservative)
-        else:
-            target_pos = position
-
-        trade_cost = abs(target_pos - position) * commission
-        portfolio_returns[i] = position * price_ret - trade_cost
-        position = target_pos
-
-    return portfolio_returns
+    r_a = np.asarray(r_a, dtype=float)
+    r_b = np.asarray(r_b, dtype=float)
+    t = len(r_a)
+    if t < 30:
+        return {"n_days": t, "error": "fewer than 30 paired returns"}
+    lag = max(1, int(t ** 0.25))
+    sa, sb, diff, se = ledoit_wolf_sharpe_diff_se(r_a, r_b, q=lag)
+    if not np.isfinite(se) or se <= 0:
+        return {"n_days": t, "error": "degenerate standard error"}
+    z = diff / se
+    ann = float(np.sqrt(annual_factor))
+    return {
+        "n_days": t,
+        "sharpe_a": round(sa * ann, 4),
+        "sharpe_b": round(sb * ann, 4),
+        "sharpe_diff": round(diff * ann, 4),
+        "z": round(float(z), 4),
+        "p_two_sided": float(math.erfc(abs(z) / math.sqrt(2.0))),
+        "lag": lag,
+    }
 
 
 def run_single_combo(
@@ -138,13 +144,31 @@ def run_single_combo(
 ) -> dict:
     """Run walk-forward DT training for one (symbol, seed) combo.
 
+    Evaluation protocol ``causal-v1`` (#21187): one DT decision per test
+    return, computed on states up to the previous row, with the RTG schedule
+    fixed from the training fold (mean teacher reward per step times the
+    remaining steps). Positions are long/flat (sell = flat), each one applied
+    to the return it drives; buy-and-hold is scored on the same returns.
+    Until #21187 the sweep fed the realized test RTG, which sums future test
+    rewards, and paired each window's last decision with a return about
+    ``context_length`` rows earlier.
+
     Returns dict with:
         sharpe_dt: annualized Sharpe from DT-driven portfolio
         sharpe_bh: annualized Sharpe from buy-and-hold
+        sharpe_teacher: annualized Sharpe of the momentum teacher alone,
+            long/flat on the same returns
         delta_sharpe: sharpe_dt - sharpe_bh
-        auc_dt: direction accuracy of DT predictions
+        delta_vs_teacher: sharpe_dt - sharpe_teacher
+        mean_auc: direction accuracy of the buy label (not an AUC; the key
+            name is kept for continuity)
+        mean_hit_rate: accuracy of the held position's sign
+        mean_exposure: share of returns held long
+        mean_teacher_exposure: same for the teacher alone
         n_folds: number of completed folds
-        n_trades: total trades across folds
+        n_trades: total position changes across folds
+        fold_deltas, fold_deltas_vs_teacher: per-fold Sharpe deltas
+        _series: daily DT / B&H / teacher returns, consumed by main()
     """
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -176,9 +200,14 @@ def run_single_combo(
 
     fold_deltas = []
     fold_auc = []
+    fold_hit = []
+    fold_exposure = []
     fold_trades = []
+    fold_deltas_vs_teacher = []
+    fold_teacher_exposure = []
     all_dt_rets = []
     all_bh_rets = []
+    all_teacher_rets = []
 
     for fold_idx, (train_idx, test_idx) in enumerate(splitter.split(np.arange(n))):
         if len(test_idx) < context_length + window + 10:
@@ -222,6 +251,7 @@ def run_single_combo(
             device=device,
         )
         model = result["model"]
+        n_params = sum(p.numel() for p in model.parameters())
 
         # Evaluate on test set
         test_trajs = build_trajectories(
@@ -233,70 +263,46 @@ def run_single_combo(
         if len(test_trajs["states"]) <= context_length:
             continue
 
+        # Input RTG fixed from the training fold: the realized test RTG sums
+        # future test rewards (#21187).
+        rtg_step = train_rtg_per_step(train_trajs)
         eval_result = evaluate_dt(
             model, test_trajs,
             context_length=context_length,
             device=device,
+            rtg_per_step=rtg_step,
         )
 
-        # Get predicted actions for portfolio simulation
-        model.eval()
-        with torch.no_grad():
-            batches = create_sequence_batches(
-                test_trajs, context_length=context_length, batch_size=64, shuffle=False,
-            )
-            all_preds = []
-            for batch in batches:
-                states = batch["states"].to(device)
-                actions = batch["actions"].to(device)
-                rtg = batch["rtg"].to(device)
-                mask = batch["attention_mask"].to(device)
-                logits = model(states, actions, rtg, attention_mask=mask)
-                preds = logits.argmax(dim=-1)[:, -1].cpu().numpy()
-                all_preds.extend(preds.tolist())
-
-        # Align predictions with test prices
-        n_preds = len(all_preds)
-        if n_preds < 10:
+        # One decision per return k -> k+1, read on rows <= k-2.
+        rtg_rows = rtg_step * (len(test_prices) - np.arange(len(test_prices)))
+        actions = causal_condition_actions(
+            model, test_prices, test_features_norm, rtg_rows,
+            context_length=context_length, window=window, device=device,
+        )
+        if len(actions) < 10:
             continue
+        returns = causal_eval_returns(test_prices, window, context_length)
 
-        # Use last prediction from each sequence for portfolio
-        test_prices_subset = test_prices[window:window + n_preds]
+        dt_rets = simulate_dt_portfolio(actions, returns, commission_bps=commission_bps)
+        scores = score_actions(actions, returns, commission_bps=commission_bps)
+        all_dt_rets.extend(dt_rets.tolist())
+        all_bh_rets.extend(returns.tolist())
 
-        if len(test_prices_subset) < n_preds:
-            n_preds = len(test_prices_subset)
-            all_preds = all_preds[:n_preds]
-        test_prices_subset = test_prices_subset[:n_preds]
+        # Teacher alone (the momentum rule the DT imitates), same returns and
+        # same action semantics: the action of row k reads prices <= k-1 and
+        # sets the position held over return k -> k+1.
+        teacher_acts = teacher_actions(test_prices, window)[:-1][window + context_length:]
+        teacher_rets = simulate_dt_portfolio(teacher_acts, returns, commission_bps=commission_bps)
+        teacher_scores = score_actions(teacher_acts, returns, commission_bps=commission_bps)
+        all_teacher_rets.extend(teacher_rets.tolist())
 
-        # Simulate DT portfolio
-        dt_rets = simulate_dt_portfolio(
-            test_prices_subset, np.array(all_preds, dtype=np.int64),
-            commission_bps=commission_bps,
-        )
-        # Buy-and-hold returns
-        bh_rets = np.diff(test_prices_subset) / (test_prices_subset[:-1] + 1e-8)
-        bh_rets = np.concatenate([[0.0], bh_rets])
-
-        min_len = min(len(dt_rets), len(bh_rets))
-        all_dt_rets.extend(dt_rets[:min_len].tolist())
-        all_bh_rets.extend(bh_rets[:min_len].tolist())
-
-        # Per-fold metrics
-        fold_sharpe_dt = compute_sharpe(dt_rets[:min_len])
-        fold_sharpe_bh = compute_sharpe(bh_rets[:min_len])
-        fold_deltas.append(fold_sharpe_dt - fold_sharpe_bh)
-
-        # Direction accuracy
-        actual_dir = (np.diff(test_prices_subset[:min_len]) > 0).astype(int)
-        pred_dir = np.array(all_preds[:len(actual_dir)])
-        if len(pred_dir) >= len(actual_dir):
-            pred_dir = pred_dir[:len(actual_dir)]
-            correct = (pred_dir == 1) == (actual_dir == 1)
-            fold_auc.append(float(correct.mean()) if len(correct) > 0 else 0.5)
-        else:
-            fold_auc.append(0.5)
-
-        fold_trades.append(int(np.sum(np.diff(all_preds[:min_len]) != 0)))
+        fold_deltas.append(compute_sharpe(dt_rets) - compute_sharpe(returns))
+        fold_deltas_vs_teacher.append(compute_sharpe(dt_rets) - compute_sharpe(teacher_rets))
+        fold_auc.append(scores["auc"])
+        fold_hit.append(scores["hit_rate"])
+        fold_exposure.append(scores["exposure"])
+        fold_teacher_exposure.append(teacher_scores["exposure"])
+        fold_trades.append(scores["n_trades"])
 
     if not fold_deltas:
         return {"error": "no valid folds completed"}
@@ -304,17 +310,34 @@ def run_single_combo(
     # Aggregate across folds
     sharpe_dt = compute_sharpe(np.array(all_dt_rets))
     sharpe_bh = compute_sharpe(np.array(all_bh_rets))
+    sharpe_teacher = compute_sharpe(np.array(all_teacher_rets))
 
     return {
         "sharpe_dt": round(sharpe_dt, 4),
         "sharpe_bh": round(sharpe_bh, 4),
+        "sharpe_teacher": round(sharpe_teacher, 4),
         "delta_sharpe": round(sharpe_dt - sharpe_bh, 4),
+        "delta_vs_teacher": round(sharpe_dt - sharpe_teacher, 4),
         "mean_fold_delta": round(float(np.mean(fold_deltas)), 4),
         "std_fold_delta": round(float(np.std(fold_deltas)), 4),
         "mean_auc": round(float(np.mean(fold_auc)), 4),
+        "mean_hit_rate": round(float(np.mean(fold_hit)), 4),
+        "mean_exposure": round(float(np.mean(fold_exposure)), 4),
+        "mean_teacher_exposure": round(float(np.mean(fold_teacher_exposure)), 4),
+        "eval_protocol": CAUSAL_EVAL_PROTOCOL,
+        "n_params": n_params,
+        "state_dim": state_dim,
         "n_folds": len(fold_deltas),
         "n_trades": sum(fold_trades),
         "fold_deltas": [round(d, 4) for d in fold_deltas],
+        "fold_deltas_vs_teacher": [round(d, 4) for d in fold_deltas_vs_teacher],
+        # Daily series for the significance tests of main(); popped there,
+        # never written to the JSON output.
+        "_series": {
+            "dt": np.array(all_dt_rets),
+            "bh": np.array(all_bh_rets),
+            "teacher": np.array(all_teacher_rets),
+        },
     }
 
 
@@ -422,8 +445,9 @@ def main():
                     auc = result["mean_auc"]
                     nf = result["n_folds"]
                     nt = result["n_trades"]
-                    print(f"dSharpe={d:+.4f} dtSharpe={s:.4f} auc={auc:.4f} "
-                          f"folds={nf} trades={nt}")
+                    dvt = result["delta_vs_teacher"]
+                    print(f"dSharpe={d:+.4f} dvsT={dvt:+.4f} dtSharpe={s:.4f} "
+                          f"auc={auc:.4f} folds={nf} trades={nt}")
                     symbol_seed_results[symbol][seed] = result
 
             except Exception as e:
@@ -447,6 +471,22 @@ def main():
 
         aucs = [r["mean_auc"] for r in seed_results.values()
                 if "mean_auc" in r]
+        deltas_vs_teacher = [r["delta_vs_teacher"] for r in seed_results.values()
+                             if "delta_vs_teacher" in r]
+
+        # Significance: the sigma above only measures dispersion across seeds,
+        # which share the same data. The test is run on the equal-weight
+        # portfolio of the seed policies against B&H and against the teacher.
+        series = [r.pop("_series") for r in seed_results.values() if "_series" in r]
+        if series and len({len(s["dt"]) for s in series}) == 1:
+            dt_mean = np.mean([s["dt"] for s in series], axis=0)
+            seed_mean_tests = {
+                "n_policies": len(series),
+                "vs_bh": sharpe_diff_test(dt_mean, series[0]["bh"]),
+                "vs_teacher": sharpe_diff_test(dt_mean, series[0]["teacher"]),
+            }
+        else:
+            seed_mean_tests = {"error": "missing or misaligned seed series"}
 
         edges.append({
             "symbol": symbol,
@@ -456,10 +496,14 @@ def main():
             "is_signal": sigma >= 2.0 and mean_d > 0,
             "n_seeds": len(deltas),
             "mean_auc": round(float(np.mean(aucs)), 4) if aucs else 0.0,
+            "mean_delta_vs_teacher": (
+                round(float(np.mean(deltas_vs_teacher)), 4) if deltas_vs_teacher else None
+            ),
+            "seed_mean_tests": seed_mean_tests,
+            # Full per-seed result: B&H Sharpe, exposure, hit rate, trades and
+            # per-fold deltas are needed to read a "beats B&H" claim.
             "seed_details": {
-                str(s): {"delta_sharpe": r.get("delta_sharpe"),
-                         "sharpe_dt": r.get("sharpe_dt"),
-                         "n_folds": r.get("n_folds")}
+                str(s): dict(r)
                 for s, r in seed_results.items()
                 if "delta_sharpe" in r
             },
@@ -477,6 +521,7 @@ def main():
     elapsed = time.time() - t0
 
     output = {
+        "eval_protocol": CAUSAL_EVAL_PROTOCOL,
         "verdict": verdict,
         "n_signal": n_signal,
         "n_cells": len(edges),
@@ -486,6 +531,10 @@ def main():
         "elapsed_s": round(elapsed, 2),
         "device": device,
         "smoke": args.smoke,
+        "data": {
+            "first_day": str(min(panier[s].index.min() for s in symbols).date()) if symbols else None,
+            "last_day": str(max(panier[s].index.max() for s in symbols).date()) if symbols else None,
+        },
         "config": {
             "model": "DecisionTransformer",
             "d_model": args.d_model,

@@ -2,18 +2,19 @@
 
 [← Image Foundation](../01-Foundation/) | [↑ Image](../README.md) | [→ Image Orchestration](../03-Orchestration/)
 
-Ce module explore les modèles de pointe : Qwen Image Edit avancé, FLUX, SD 3.5, Z-Image/Lumina, et la quantification extrême (Bonsai ternaire 1.58-bit).
+Ce module explore les modèles de pointe : Qwen Image Edit avancé, FLUX, SD 3.5, Z-Image/Lumina, la quantification extrême (Bonsai ternaire 1.58-bit) et les modèles *few-step* (IMM, TVM).
 
-**Dans le cadre du fil rouge contenu visuel éducatif** : un visuel de qualité demande des outils précis. [01-5b](../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb) édite une image existante pour corriger ou enrichir un diagramme. [02-2](02-2-FLUX-1-Advanced-Generation.ipynb) génère des images haute qualité. [02-4](02-4-Z-Image-Lumina2.ipynb) offre une génération rapide pour le prototypage itératif. [02-5](02-5-Bonsai-Image-Ternary.ipynb) aborde la quantification ternaire 1.58-bit : un modèle 4B dont le transformer ternaire pèse ~1.21 GB on-disk (0.74 GB en strict 1.58-bit) et se génère en ~2s, parfait pour déployer la génération d'images sur du matériel modeste (formation, demos) sans sacrifier la qualité.
+**Dans le cadre du fil rouge contenu visuel éducatif** : un visuel de qualité demande des outils précis. [01-5b](../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb) édite une image existante pour corriger ou enrichir un diagramme. [02-2](02-2-FLUX-1-Advanced-Generation.ipynb) génère des images haute qualité. [02-4](02-4-Z-Image-Lumina2.ipynb) offre une génération rapide pour le prototypage itératif. [02-5](02-5-Bonsai-Image-Ternary.ipynb) aborde la quantification ternaire 1.58-bit : un modèle 4B dont le transformer ternaire pèse ~1.21 GB on-disk (0.74 GB en strict 1.58-bit) et se génère en ~2s, parfait pour déployer la génération d'images sur du matériel modeste (formation, demos) sans sacrifier la qualité. [02-6](02-6-Few-Step-Generative-Models-IMM-TVM.ipynb) ferme le module par l'autre extrême de la contrainte : non plus réduire la précision ni le nombre de codes, mais **le nombre d'évaluations du réseau** — avec le code et les poids officiels de deux modèles *few-step* (IMM, TVM), et une mesure du compromis qualité / latence plutôt qu'une citation.
 
 ## Vue d'overview
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 5 |
 | Kernel | Python 3 |
-| Durée estimée | ~5-7h |
-| GPU requis | 5-29GB |
+| Durée estimée | ~7-9h |
+| GPU requis | ~4-29GB |
+
+> Le décompte canonique des notebooks de la série réside dans `CATALOG-STATUS.json` du dépôt, pas dans cette page.
 
 ## Notebooks
 
@@ -24,6 +25,7 @@ Ce module explore les modèles de pointe : Qwen Image Edit avancé, FLUX, SD 3.5
 | 3 | [02-3-Stable-Diffusion-3-5](02-3-Stable-Diffusion-3-5.ipynb) | SD 3.5 | ComfyUI | Variable |
 | 4 | [02-4-Z-Image-Lumina2](02-4-Z-Image-Lumina2.ipynb) | Z-Image/Lumina | ComfyUI | ~10GB |
 | 5 | [02-5-Bonsai-Image-Ternary](02-5-Bonsai-Image-Ternary.ipynb) | Quantification ternaire 1.58-bit (BitNet), custom node | ComfyUI (custom node) | ~5GB |
+| 6 | [02-6-Few-Step-Generative-Models-IMM-TVM](02-6-Few-Step-Generative-Models-IMM-TVM.ipynb) | Few-step : IMM (CIFAR-10) et TVM (ImageNet-256), compromis nombre d'évaluations / qualité / latence **mesuré** | Code officiel des dépôts clonés, poids officiels | ~4GB |
 
 ## Prérequis
 
@@ -40,6 +42,8 @@ pip install -r requirements.txt
 pip install -r requirements-comfyui.txt
 ```
 
+Le notebook **02-6** a ses propres dépendances Python (`diffusers`, `transformers`, `jaxtyping`, `pyarrow`) et **télécharge au premier lancement** les dépôts officiels, leurs poids et le détecteur de métrique dans un cache utilisateur : prévoir une connexion réseau pour ce premier passage.
+
 ## Progression recommandée
 
 1. **01-5b-Qwen-Image-Edit-2509** - Édition multimodale avancée
@@ -47,6 +51,7 @@ pip install -r requirements-comfyui.txt
 3. **02-3-Stable-Diffusion-3.5** - SD 3.5 pour contrôle fin
 4. **02-4-Z-Image-Lumina2** - Modèle léger et rapide
 5. **02-5-Bonsai-Image-Ternary** - Quantification extrême pour déploiement sobre en VRAM
+6. **02-6-Few-Step-Generative-Models-IMM-TVM** - Génération en une à quatre évaluations du réseau, compromis mesuré
 
 ## Technologies clés
 
@@ -102,6 +107,12 @@ pip install -r requirements-comfyui.txt
   <em>Sortie du notebook <a href="02-5-Bonsai-Image-Ternary.ipynb">02-5</a> (cellule 7) : Bonsai ternaire 1,58-bit — génération en ~2 s sur ~5 GB de VRAM.</em>
 </p>
 
+### Few-step : IMM et TVM
+- **Architecture** : IMM = SongUNet sur CIFAR-10 (32 px) ; TVM = DiT-XL/2 dans l'espace latent d'un VAE Stable Diffusion (ImageNet-256)
+- **Points forts** : l'image est produite en une à quatre évaluations du réseau au lieu de dizaines — le poste dominant d'une diffusion disparaît ; le carnet **mesure** le compromis qualité / latence au lieu de le citer
+- **VRAM** : ~4GB
+- **Accès** : code et poids officiels (`lumalabs/imm`, `lumalabs/tvm`) clonés dans un cache utilisateur et importés à l'exécution — aucun code officiel n'est recopié dans le dépôt
+
 ## Comparatif
 
 | Modèle | Spécialité | VRAM | Qualité | Vitesse |
@@ -111,6 +122,7 @@ pip install -r requirements-comfyui.txt
 | SD 3.5 | Polyvalent | Variable | Bon | Rapide |
 | Z-Image | Léger | ~10GB | Bon | Très rapide |
 | Bonsai | Quantifié (1.58-bit) | ~5GB | Bon | Très rapide |
+| Few-step (IMM/TVM) | Génération en 1 à 4 évaluations | ~4GB | Excellent | Très rapide |
 
 ## Ressources
 

@@ -218,4 +218,52 @@ theorem supportContained_pushUp_split_three {d : ℕ} (w u : Fin d → ℤ)
     funext j
     induction j using Fin.lastCases <;> simp [Pi.neg_apply]
 
+/-- **Transfert de contenance à travers la scission, sans aucune stabilité** :
+si `S` contient le support de `P` et ses translatés par un ensemble fini
+quelconque `B` — sans la moindre hypothèse de stabilité de `B` par `± w` —
+alors l'image liftée `(S ×ˢ univ).map liftUpEmb` contient le support de la
+scission-poussée `pushUp (split w P)` et ses translatés par les décalages
+embarqués `Fin.snoc · 0` de l'ensemble **rétréci** `B.map (· + w) ∩
+B.map (· - w)`.
+
+C'est la pièce de transmission du chantier #21417 : le transfert générique
+`supportContained_pushUp_split` exige que `A` soit stable par `± w` — une
+classe d'orbite, insatisfaisable sur un `Finset` pour `w ≠ 0` dès qu'un
+point de la famille y vit (le mécanisme du témoin
+`contention_stability_forces_zero`). Ici l'agrandissement est payé par
+l'appelant (l'hypothèse de contenance porte sur `B` tout entier, que le
+théorème public instancie par une boîte assez grande) et la conclusion
+rend l'intersection des translatés : les deux branches de la disjonction
+`P (x + w) ≠ 0 ∨ P (x - w) ≠ 0` de `pushUp_split_ne_zero` doivent clore,
+et chacune n'atteint que son propre translaté — `x + w + b = x + (b + w)`
+pour la première, `x - w + b = x + (b - w)` pour la seconde. D'où
+l'**intersection**, pas l'union : un décalage `a` de la conclusion doit
+être atteignable par les DEUX branches. -/
+theorem supportContained_pushUp_split_enlarged {d : ℕ} (w : Fin d → ℤ)
+    {P : (Fin d → ℤ) → ℝ} {S B : Finset (Fin d → ℤ)}
+    (hS : SupportContained S P B) :
+    SupportContained ((S ×ˢ (Finset.univ : Finset Bool)).map liftUpEmb)
+      (pushUp (split w P))
+      ((B.image (fun b => b + w) ∩ B.image (fun b => b - w)).image
+        (fun a => Fin.snoc a 0)) := by
+  intro z hz t ht
+  obtain ⟨a, ha, rfl⟩ := Finset.mem_image.mp ht
+  obtain ⟨x, b, rfl, hPw⟩ := pushUp_split_ne_zero w hz
+  rw [liftUp_add_snoc]
+  show liftUp (x + a, b) ∈ (S ×ˢ (Finset.univ : Finset Bool)).map liftUpEmb
+  refine Finset.mem_map.mpr ⟨(x + a, b), ?_, liftUpEmb_apply _⟩
+  refine Finset.mem_product.mpr ⟨?_, Finset.mem_univ _⟩
+  simp only [Finset.mem_inter] at ha
+  rcases hPw with h | h
+  · obtain ⟨b₁, hb₁, rfl⟩ := Finset.mem_image.mp ha.1
+    have hxw := hS (x + w) h b₁ hb₁
+    have hxa : (x + w) + b₁ = x + (b₁ + w) := by
+      funext j; simp only [Pi.add_apply]; ring
+    rw [← hxa]; exact hxw
+  · obtain ⟨b₂, hb₂, rfl⟩ := Finset.mem_image.mp ha.2
+    have hxw := hS (x - w) h b₂ hb₂
+    have hxa : (x - w) + b₂ = x + (b₂ - w) := by
+      funext j; simp only [Pi.add_apply, Pi.sub_apply]; ring
+    rw [← hxa]; exact hxw
+
 end Discrepancy.Komlos

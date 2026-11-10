@@ -31,7 +31,7 @@ Lake = elan installe sous `C:\Users\MYIA\.elan\bin\`. Toolchain courante **v4.31
 
 Les oleans Mathlib sont **deja presents localement** via un cache mutualise junctionne. Le defaut est de **reutiliser** ce cache ; `cache get` est un fallback.
 
-- **Emplacement** : `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/.lake/packages/mathlib/.lake/build/lib/lean/` — le `conway_lean` (lake-pivot) porte le checkout Mathlib a rev **v4.31.0-rc1**.
+- **Emplacement** : `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/.lake/packages/mathlib/.lake/build/lib/lean/` — le `conway_lean` (lake-pivot) porte le checkout Mathlib a rev **v4.31.0-rc1**.
 - **Mutualisation** : les autres lakes junctionnent leur `.lake/packages` vers celui de `conway_lean` (ex. `game_theory_lean/.lake/packages` est une `Junction` -> `conway_lean/.lake/packages`). Verifier : `(Get-Item <lake>/.lake/packages).LinkType` doit valoir `Junction`.
 - **Lake reutilise les oleans** : un `lake build <module-set>` sur un worktree propre compile en ~1min (ex. `RepeatedGames.GrimTrigger` = 2948 jobs ~49s, Mathlib reused integralement), PAS 30-60min de recompile frais.
 

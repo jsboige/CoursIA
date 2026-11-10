@@ -91,7 +91,8 @@ $webConfig = @"
 </configuration>
 "@
 
-$webConfig | Out-File -FilePath "$SitePath\web.config" -Encoding UTF8 -Force
+# UTF8Encoding($false) : sans BOM -- un BOM en tete d'un XML lu par IIS (#21896)
+[System.IO.File]::WriteAllText("$SitePath\web.config", $webConfig, (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "[OK] web.config cree" -ForegroundColor Green
 
 # Verifier si le site existe deja

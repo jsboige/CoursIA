@@ -7,7 +7,7 @@
   "_not_declared": {
     "_why": "Cartographie de la meme mesure, conservee ici pour que personne ne les ajoute 'pour elargir la couverture' : chacune de ces familles fabriquerait aujourd'hui le mur rouge que l'issue interdit. Les declarer demande d'abord de les MIGRER.",
     "unproven_no_leading_zero": [
-      "App -- Search/Applications/Search (4 numeros, tous >= 10 : aucun zero de tete, donc aucune preuve d'adoption)",
+      "App -- Search/Applications/Adversarial (4 numeros, tous >= 10 : aucun zero de tete, donc aucune preuve d'adoption)",
       "MGS -- Search/Part4-Metaheuristics/MGS-vs-mealpy (10, tous >= 10)",
       "Planners -- SymbolicAI/Planners/04-NeuroSymbolic (4, tous >= 10)",
       "SC -- SymbolicAI/SmartContracts/03-Foundry-Testing (3, tous >= 10)",
@@ -23,9 +23,7 @@
       "SW -- SymbolicAI/SemanticWeb (17)",
       "SL -- SymbolicAI/SymbolicLearning (17)",
       "Lean -- SymbolicAI/Lean (11)",
-      "Infer -- Probas/Infer (10)",
       "ICT -- IIT/ICT-Series (9)",
-      "DecPyMC -- Probas/DecisionTheory/DecPyMC (9)",
       "Planners -- SymbolicAI/Planners/02-Classical (8)",
       "Planners -- SymbolicAI/Planners/01-Foundation (6)",
       "Planners -- SymbolicAI/Planners/03-Advanced (6)",
@@ -41,7 +39,7 @@
     {
       "series": "GameTheory",
       "dir": "MyIA.AI.Notebooks/GameTheory",
-      "note": "Serie fondatrice du garde (#11840/#12241). 48 noms zero-pades, 44 numeros a deux chiffres non pades (GameTheory-26)."
+      "note": "Serie fondatrice du garde (#11840/#12241). 48 noms zero-pades, 44 numeros a deux chiffres non pades (GameTheory-22)."
     },
     {
       "series": "FT",
@@ -77,6 +75,16 @@
       "series": "Sudoku",
       "dir": "MyIA.AI.Notebooks/Sudoku",
       "note": "19 noms zero-pades, 19 numeros a deux chiffres. Le pendant Python de la serie suit la meme convention."
+    },
+    {
+      "series": "Infer",
+      "dir": "MyIA.AI.Notebooks/Probas/Infer",
+      "note": "11 noms zero-pades (socle 01..09 sans le 6 -- trou symetrique conserve avec la serie Python PyMC --, accretions 01b/02b et extension 08b migrees avec leur numero de socle), 10 numeros a deux chiffres (10..19). Tranche A de l'EPIC #12933 (mapping PARITY-INVENTORY.md 5)."
+    },
+    {
+      "series": "DecPyMC",
+      "dir": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC",
+      "note": "8 noms zero-pades (01..07 migres par la tranche zero-pad DecPyMC de l'EPIC #12933, 08 deja a deux chiffres), aucun numero a un chiffre. Serie Python jumelle de DecInfer (meme arc decisionnel, kernels differents). Le capstone actuariel reste DecPyMC-08 ; la sous-serie Actuariat/ est un repertoire distinct, hors de ce perimetre."
     }
   ]
 }

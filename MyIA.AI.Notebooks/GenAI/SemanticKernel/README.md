@@ -27,8 +27,8 @@ Parcours pédagogique complet sur Semantic Kernel en Python :
 | 04 | [SK-4-Filters](04-SemanticKernel-Filters-Observability.ipynb) | Filtres, Logging, OpenTelemetry | 45 min |
 | 05 | [SK-5-VectorStores](05-SemanticKernel-VectorStores.ipynb) | RAG, Embeddings, Qdrant | 50 min |
 | 06 | [SK-6-ProcessFramework](06-SemanticKernel-ProcessFramework.ipynb) | Workflows, Orchestration, State | 40 min |
-| 07 | [SK-7-MultiModal](07-SemanticKernel-MultiModal.ipynb) | DALL-E, Whisper, GPT-4 Vision | 45 min |
-| 08 | [SK-8-MCP](08-SemanticKernel-MCP.ipynb) | Model Context Protocol, Interopérabilité | 45 min |
+| 07 | [SK-7-MultiModal](07-SemanticKernel-MultiModal.ipynb) | DALL-E, Whisper, GPT-5.6 Vision | 45 min |
+| 08 | [SK-8-MCP](08-SemanticKernel-MCP.ipynb) | Model Context Protocol, Interopérabilité | 50 min |
 
 ## Notebooks avancés (Python/C# Interop)
 
@@ -67,7 +67,7 @@ Ces notebooks appliquent Semantic Kernel à des cas d'usage concrets. Ils font p
 
 | Fichier | Nature | Origine |
 |---------|--------|---------|
-| [Notebook-Generated](Notebook-Generated.ipynb) | Scaffold généré (dataset Iris générique) | Output du [NotebookMaker](10-SemanticKernel-NotebookMaker.ipynb) / [AutoInteractive](Semantic-kernel-AutoInteractive.ipynb) |
+| [Notebook-Generated](Notebook-Generated.ipynb) | Scaffold généré (dataset Titanic) | Output du [NotebookMaker](10-SemanticKernel-NotebookMaker.ipynb) / [AutoInteractive](Semantic-kernel-AutoInteractive.ipynb) |
 | `Créateur de mail personnalisé_output.ipynb` | Copie exécutée Papermill | Artefact d'exécution de [Créateur de mail personnalisé](Cr%C3%A9ateur%20de%20mail%20personnalis%C3%A9.ipynb) (suffixe `_output`, non tracké : produit local d'une exécution Papermill) |
 
 Le notebook canonique « Créateur de mail personnalisé » (sans suffixe `_output`) est, lui, un vrai notebook de curriculum (cf. table [Démos interactives](#démos-interactives-curriculum)).

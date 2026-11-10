@@ -1,95 +1,104 @@
 # Tableau de santé du dépôt — snapshot dérivé du catalogue
 
-> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-10-13**).
+> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-11-09**).
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
-**1415** notebooks référencés au catalogue.
+**1622** notebooks référencés au catalogue.
 
 ## État global
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 1195 | 84.5% |
-| DEMO | 218 | 15.4% |
+| READY | 1401 | 86.4% |
+| DEMO | 219 | 13.5% |
 | BROKEN | 2 | 0.1% |
 
 ## Exigences d'environnement (badges)
 
 | Exigence | Notebooks concernés |
 |----------|---------------------|
-| **local** (exécutable sans GPU/cloud/WSL) | 844 |
-| WSL requis | 135 |
-| GPU requis | 195 |
-| Cloud requis (QC / GenAI Docker) | 125 |
-| API key requise | 204 |
+| **local** (exécutable sans GPU/cloud/WSL) | 954 |
+| WSL requis | 201 |
+| GPU requis | 212 |
+| Cloud requis (QC / GenAI Docker) | 128 |
+| API key requise | 224 |
 
 ## Distribution par série
 
 | Série | READY | DEMO | BROKEN | Total | % READY |
 |-------|-------|------|--------|-------|---------|
 | CaseStudies | 6 | 0 | 0 | 6 | 100% |
-| Complexity | 14 | 0 | 0 | 14 | 100% |
-| Compression | 1 | 0 | 0 | 1 | 100% |
-| GameTheory | 112 | 1 | 0 | 113 | 99% |
-| GenAI | 141 | 133 | 2 | 276 | 51% |
-| IIT | 92 | 6 | 0 | 98 | 94% |
-| ML | 116 | 21 | 0 | 137 | 85% |
-| NLP | 5 | 0 | 0 | 5 | 100% |
-| Probas | 83 | 0 | 0 | 83 | 100% |
-| QuantConnect | 74 | 47 | 0 | 121 | 61% |
-| RL | 31 | 4 | 0 | 35 | 89% |
-| Search | 157 | 0 | 0 | 157 | 100% |
-| Sudoku | 37 | 1 | 0 | 38 | 97% |
-| SymbolicAI | 324 | 5 | 0 | 329 | 98% |
-| cross-series | 2 | 0 | 0 | 2 | 100% |
+| Complexity | 20 | 2 | 0 | 22 | 91% |
+| Compression | 8 | 0 | 0 | 8 | 100% |
+| GameTheory | 139 | 2 | 0 | 141 | 99% |
+| GenAI | 165 | 141 | 2 | 308 | 54% |
+| IIT | 106 | 7 | 0 | 113 | 94% |
+| ML | 117 | 20 | 0 | 137 | 85% |
+| NLP | 11 | 0 | 0 | 11 | 100% |
+| Physique | 10 | 0 | 0 | 10 | 100% |
+| Probas | 92 | 1 | 0 | 93 | 99% |
+| QuantConnect | 90 | 34 | 0 | 124 | 73% |
+| RL | 33 | 5 | 0 | 38 | 87% |
+| Search | 165 | 0 | 0 | 165 | 100% |
+| Sudoku | 38 | 1 | 0 | 39 | 97% |
+| SymbolicAI | 400 | 5 | 0 | 405 | 99% |
+| cross-series | 1 | 1 | 0 | 2 | 50% |
 
 ## Kernels
 
 | Kernel | Count |
 |--------|-------|
-| Python 3 | 925 |
-| .NET (C#) | 268 |
-| Python 3 (ipykernel) | 53 |
-| Lean 4 (WSL) | 50 |
-| Python 3 (coursia-ml-training) | 18 |
-| Python (coursia-ml-training) | 18 |
-| coursia-ml-training | 12 |
-| unknown | 7 |
+| Python 3 | 1067 |
+| .NET (C#) | 274 |
+| Python 3 (ipykernel) | 74 |
+| Lean 4 (WSL) | 65 |
+| Python (coursia-ml-training) | 21 |
+| Python 3 (coursia-ml-training) | 15 |
+| coursia-ml-training | 11 |
+| Python3 | 10 |
+| unknown | 10 |
 | Python 3 (WSL) | 6 |
+| Python 3 (PyPhi/IIT) | 5 |
 | Python 3.13.x (CPython canonique serie Lean) | 5 |
 | Python 3.9 (PyPhi/IIT) | 4 |
-| Python 3 (PyPhi/IIT) | 4 |
+| Python 3 (venv projet) | 3 |
 | Coursia ML Training | 3 |
-| Lean 4 | 3 |
+| Python 3.13.15 (CPython canonique serie Lean) | 3 |
 | Python (GameTheory WSL + OpenSpiel) | 2 |
+| Python 3.10 (gsplat) | 2 |
 | base | 2 |
 | Python 3 (coursia2) | 2 |
-| Python 3.13.15 (CPython canonique serie Lean) | 2 |
-| Python3 | 2 |
+| Lean 4 (WSL, percolation) | 2 |
+| Lean 4 | 2 |
 | .venv | 2 |
-| Python 3 (venv projet) | 1 |
-| Lean (WSL) | 1 |
+| Python 3.13 (coursia-py313) | 1 |
 | Python 3 (c820) | 1 |
-| .venv (3.12.14) | 1 |
+| Lean (WSL) | 1 |
 | Python (dia-tts) | 1 |
 | Python 3 (mert2-gpu) | 1 |
 | Python (sheetsage2-gpu) | 1 |
+| Python (basicpitch-t4) | 1 |
 | Python 3 (PyTorch) | 1 |
 | Python 3 (coursia-sae) | 1 |
 | Python 3 (venv) | 1 |
+| Ict-Py313 | 1 |
 | Python 3 (py310-gpu) | 1 |
+| Python 3 (pyphi) | 1 |
+| Python 3 (coursia-canonical) | 1 |
 | pyphi | 1 |
 | Python 3.11 (coursia-drift) | 1 |
 | Py310-Gpu | 1 |
-| Lean 4 (WSL, percolation) | 1 |
+| Python 3 (CoursIA venv) | 1 |
 | Python 3 (PyMC 3.11) | 1 |
 | Python 3 (CoursIA-2) | 1 |
 | Foundation-Py-Default | 1 |
 | .venv (3.14.3) | 1 |
+| Python 3.13 (coursia-py313, argumentation) | 1 |
 | Lean 4 (WSL, grothendieck-16200) | 1 |
 | Python 3 (leandojo-v2) | 1 |
 | Lean 4 (WSL, conway-build) | 1 |
+| Python 3.11 (po-2028) | 1 |
 | .venv (3.12.3) | 1 |
 | cours-ia | 1 |
 | Python 3 (SC-16 Concrete, WSL) | 1 |
@@ -100,7 +109,7 @@
 
 | Série | Notebook | Maturité | Dernière validation |
 |-------|----------|----------|---------------------|
-| GenAI | Notebook de travail | TEMPLATE | 2026-07-30 |
+| GenAI | Notebook de travail | TEMPLATE | 2026-11-04 |
 | GenAI | Notebook de travail | TEMPLATE | 2026-07-30 |
 
 ## Voir aussi

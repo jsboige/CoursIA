@@ -20,7 +20,7 @@
   commentaires intra-preuve restent en anglais (références Mathlib, notation
   formelle). Les blocs `/--  docstring EN  -/` qui auraient pu être préservés
   en companion `Basic.en.lean` pour publication externe ne sont PAS dupliqués
-  dans cette PR pilote — voir convention §A dans `docs/lean/i18n-inventory-cycle-38.md`.
+  dans cette PR pilote — voir convention §A dans `../../../../docs/transients/2026-07-04-lean-i18n-inventory-cycle-38.md`.
 -/
 
 import Mathlib.Data.Finset.Basic

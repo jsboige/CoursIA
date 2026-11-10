@@ -1,5 +1,5 @@
 """
-slide_tools.py - Outils d'extraction, de rendu et d'analyse de slides PowerPoint et Marp.
+slide_tools.py - Outils d'extraction, de rendu et d'analyse de slides PowerPoint.
 
 Usage:
     python slide_tools.py render <pptx_path> [--outdir DIR] [--width W] [--height H]
@@ -7,8 +7,6 @@ Usage:
     python slide_tools.py inventory <pptx_path> [--output JSON_PATH]
     python slide_tools.py batch-render <directory> [--outdir DIR]
     python slide_tools.py batch-extract <directory> [--outdir DIR]
-    python slide_tools.py marp-render <deck_path> [--scale N]
-    python slide_tools.py marp-render-all [--scale N]
     python slide_tools.py check-refs <deck_path>
     python slide_tools.py compare <deck_path>
 
@@ -16,12 +14,12 @@ Requires:
     - pywin32 (COM automation for PowerPoint rendering)
     - python-pptx (PPTX reading/writing)
     - markitdown (text extraction to markdown)
-    - marp-cli (npm: @marp-team/marp-cli, for Marp rendering)
 """
 
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from dataclasses import dataclass, field, asdict
@@ -164,12 +162,11 @@ def batch_render(directory: str, output_base: str = None, width: int = 1920, hei
 
 
 # ---------------------------------------------------------------------------
-# Marp rendering (marp-cli)
+# Decks Slidev
 # ---------------------------------------------------------------------------
 
 # Root of the slides directory (relative to this script)
 SLIDES_ROOT = Path(__file__).resolve().parent.parent
-THEME_PATH = SLIDES_ROOT / "themes" / "ia101.css"
 
 # All deck directory names
 DECK_NAMES = [
@@ -179,82 +176,6 @@ DECK_NAMES = [
     "S1-argumentation", "S2-ia-exploratoire-symbolique",
     "S3-acculturation", "S4-trading-algorithmique",
 ]
-
-
-def render_marp(deck_path: str, scale: int = 2) -> list:
-    """Render a Marp slides.md to individual PNG images via marp-cli.
-
-    Args:
-        deck_path: Path to the deck directory (must contain slides.md).
-        scale: Image scale factor (default 2 for high-DPI).
-
-    Returns:
-        List of generated PNG file paths.
-    """
-    import subprocess
-
-    deck_path = Path(deck_path).resolve()
-    slides_md = deck_path / "slides.md"
-    output_dir = deck_path / "output" / "marp_renders"
-
-    if not slides_md.exists():
-        print(f"ERROR: {slides_md} not found")
-        return []
-
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Output base: slide.png -> produces slide.001.png, slide.002.png, ...
-    output_base = output_dir / "slide.png"
-
-    cmd = [
-        "npx", "@marp-team/marp-cli",
-        str(slides_md),
-        "--images", "png",
-        "--image-scale", str(scale),
-        "--html",
-        "--allow-local-files",
-        "--theme-set", str(THEME_PATH),
-        "-o", str(output_base),
-    ]
-
-    print(f"Rendering Marp: {deck_path.name}")
-    try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
-            cwd=str(SLIDES_ROOT),
-        )
-        if result.returncode != 0:
-            print(f"  ERROR: marp-cli failed:\n{result.stderr}")
-            return []
-    except subprocess.TimeoutExpired:
-        print("  ERROR: marp-cli timed out (120s)")
-        return []
-    except FileNotFoundError:
-        print("  ERROR: marp-cli not found. Install with: npm i -g @marp-team/marp-cli")
-        return []
-
-    # Collect generated PNGs
-    pngs = sorted(output_dir.glob("slide.*.png"))
-    print(f"  Generated {len(pngs)} slides -> {output_dir}")
-    return [str(p) for p in pngs]
-
-
-def render_all_marp(scale: int = 2) -> dict:
-    """Render all Marp decks to PNG.
-
-    Returns:
-        Dict mapping deck name -> number of slides rendered.
-    """
-    results = {}
-    for deck_name in DECK_NAMES:
-        deck_path = SLIDES_ROOT / deck_name
-        if (deck_path / "slides.md").exists():
-            pngs = render_marp(str(deck_path), scale)
-            results[deck_name] = len(pngs)
-        else:
-            print(f"  SKIP: {deck_name} (no slides.md)")
-            results[deck_name] = 0
-    return results
 
 
 def check_image_refs(deck_path: str) -> dict:
@@ -316,14 +237,71 @@ def check_image_refs(deck_path: str) -> dict:
     return result
 
 
+def count_slidev_slides(content: str) -> int:
+    """Count the slides Slidev actually renders in a deck source.
+
+    A bare ``---`` line is not a slide boundary in two cases: it belongs to a
+    fenced code block, or it opens/closes a per-slide frontmatter block
+    (``---`` / ``layout: section`` / ``---``), which Slidev attaches to the
+    slide that follows. Counting every ``---`` therefore over-reports — 236
+    against the 134 slides Slidev really renders on ``03-logique``.
+
+    Args:
+        content: Raw markdown of the deck.
+
+    Returns:
+        Number of slides, frontmatter blocks excluded.
+    """
+    chunks = []
+    current = []
+    fence = None
+    in_frontmatter = False
+    for i, line in enumerate(content.split("\n")):
+        stripped = line.strip()
+        marker = stripped[:3]
+        if marker in ("```", "~~~"):
+            if fence is None:
+                fence = marker
+            elif fence == marker:
+                fence = None
+            current.append(line)
+            continue
+        if fence is not None:
+            current.append(line)
+            continue
+        if i == 0 and stripped == "---":
+            in_frontmatter = True
+            continue
+        if in_frontmatter and stripped == "---":
+            in_frontmatter = False
+            continue
+        if not in_frontmatter and stripped == "---":
+            chunks.append(current)
+            current = []
+            continue
+        current.append(line)
+    chunks.append(current)
+
+    yaml_key = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*:")
+    slides = 0
+    for chunk in chunks:
+        body = [line.strip() for line in chunk if line.strip()]
+        is_frontmatter = bool(body) and len(body) <= 12 and all(
+            yaml_key.match(line) for line in body
+        )
+        if not is_frontmatter:
+            slides += 1
+    return slides
+
+
 def compare_slide_counts(deck_path: str) -> dict:
-    """Compare PPTX vs Marp slide counts for a deck.
+    """Compare PPTX vs Slidev slide counts for a deck.
 
     Args:
         deck_path: Path to the deck directory.
 
     Returns:
-        Dict with pptx_count, marp_count, and drift.
+        Dict with pptx_slides, slidev_slides, and drift.
     """
     deck_path = Path(deck_path).resolve()
 
@@ -331,34 +309,21 @@ def compare_slide_counts(deck_path: str) -> dict:
     pptx_renders = sorted((deck_path / "extracted" / "renders").glob("slide_*.png"))
     pptx_count = len(pptx_renders)
 
-    # Count Marp slides (by --- separators)
+    # Count Slidev slides
     slides_md = deck_path / "slides.md"
-    marp_count = 0
+    slidev_count = 0
     if slides_md.exists():
-        content = slides_md.read_text(encoding="utf-8")
-        # Count slide separators (--- at start of line, not in frontmatter)
-        lines = content.split("\n")
-        in_frontmatter = False
-        for i, line in enumerate(lines):
-            if i == 0 and line.strip() == "---":
-                in_frontmatter = True
-                continue
-            if in_frontmatter and line.strip() == "---":
-                in_frontmatter = False
-                continue
-            if not in_frontmatter and line.strip() == "---":
-                marp_count += 1
-        marp_count += 1  # First slide (before any ---)
+        slidev_count = count_slidev_slides(slides_md.read_text(encoding="utf-8"))
 
     result = {
         "deck": deck_path.name,
         "pptx_slides": pptx_count,
-        "marp_slides": marp_count,
-        "drift": marp_count - pptx_count,
+        "slidev_slides": slidev_count,
+        "drift": slidev_count - pptx_count,
     }
 
     drift_str = f"+{result['drift']}" if result['drift'] > 0 else str(result['drift'])
-    print(f"{deck_path.name}: PPTX={pptx_count}, Marp={marp_count}, drift={drift_str}")
+    print(f"{deck_path.name}: PPTX={pptx_count}, Slidev={slidev_count}, drift={drift_str}")
     return result
 
 
@@ -602,21 +567,12 @@ def main():
     p_batchex.add_argument("--outdir", help="Base output directory", default=None)
     p_batchex.add_argument("--no-render", action="store_true", help="Skip PNG rendering")
 
-    # marp-render
-    p_marp = subparsers.add_parser("marp-render", help="Render Marp slides.md to PNG")
-    p_marp.add_argument("deck_path", help="Path to deck directory (e.g., slides/01-introduction)")
-    p_marp.add_argument("--scale", type=int, default=2, help="Image scale factor (default: 2)")
-
-    # marp-render-all
-    p_marp_all = subparsers.add_parser("marp-render-all", help="Render all Marp decks to PNG")
-    p_marp_all.add_argument("--scale", type=int, default=2, help="Image scale factor (default: 2)")
-
     # check-refs
     p_check = subparsers.add_parser("check-refs", help="Check image references in slides.md")
     p_check.add_argument("deck_path", help="Path to deck directory")
 
     # compare
-    p_compare = subparsers.add_parser("compare", help="Compare PPTX vs Marp slide counts")
+    p_compare = subparsers.add_parser("compare", help="Compare PPTX vs Slidev slide counts")
     p_compare.add_argument("deck_path", nargs="?", help="Path to deck directory (or all if omitted)")
 
     args = parser.parse_args()
@@ -654,15 +610,6 @@ def main():
                 outdir = os.path.join(os.path.dirname(str(pptx_path)), "extracted")
             print(f"\n--- Processing: {pptx_path.name} ---")
             full_extract(str(pptx_path), outdir, render=not args.no_render)
-
-    elif args.command == "marp-render":
-        render_marp(args.deck_path, args.scale)
-
-    elif args.command == "marp-render-all":
-        results = render_all_marp(args.scale)
-        print(f"\nBatch Marp render complete:")
-        for name, count in results.items():
-            print(f"  {name}: {count} slides")
 
     elif args.command == "check-refs":
         check_image_refs(args.deck_path)

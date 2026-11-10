@@ -16,7 +16,7 @@ les lire depuis un repertoire de cache : on les embarque donc dans l'image.
 La cle de cache, lue dans le source du runner (pas devinee)
 -----------------------------------------------------------
 `src/Runner.Worker/ActionManager.cs`, `PrepareRepositoryAsync`, verifie au pin
-`v2.337.0` (celui du `RUNNER_VERSION` du Dockerfile) ET sur `main` :
+`v2.337.0` (predecesseur du `RUNNER_VERSION` courant du Dockerfile) ET sur `main` :
 
     var cacheArchiveFile = Path.Combine(
         actionArchiveCacheDir,
@@ -97,14 +97,22 @@ ACTIONS = (
     "actions/cache/save@v4",
     "actions/checkout@v4",
     "actions/deploy-pages@v4",
+    # #11508 L5 : quarto-pages-deploy recupere l'archive des builds
+    # (download-artifact@v4) -- declaree ici sinon le garde #14853 A1 la
+    # signale et le job telecharge a la volee.
+    "actions/download-artifact@v4",
     "actions/github-script@v7",
     "actions/setup-dotnet@v4",
     "actions/setup-node@v4",
     "actions/setup-python@v5",
     "actions/upload-artifact@v4",
     "actions/upload-pages-artifact@v3",
+    # #22548 : CodeQL passe en advanced setup et n'utilise plus `autobuild`
+    # (C# analyse en `build-mode: none`, cf `.github/workflows/codeql.yml`).
+    # L'entree `github/codeql-action/autobuild@v4` est retiree avec le dernier
+    # `uses:` qui la portait : `test_seed_list_matches_workflows_exactly`
+    # mesure les deux sens, une entree declaree sans usage est un « obsolete ».
     "github/codeql-action/init@v4",
-    "github/codeql-action/autobuild@v4",
     "github/codeql-action/analyze@v4",
     "marocchino/sticky-pull-request-comment@v2",
 )

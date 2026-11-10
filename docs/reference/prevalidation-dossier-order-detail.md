@@ -20,7 +20,7 @@ Distinction à tenir : le **fait** « 17/17, aucun défaut de PR » est un témo
 
 `scripts/check_adjoint_prevalidation.py` épingle dans le dossier des **surfaces mesurées à l'instant T**, puis refuse si elles ont bougé.
 
-Surfaces comparées — `diff-files`, `diff-additions`, `diff-deletions` :
+Surfaces comparées — `diff-files`, `diff-additions`, `diff-deletions` — plus l'empreinte `surfaces-sha256` des corps de discussion, qui atteste que les surfaces lues par B.0 n'ont pas bougé :
 
 ```python
 # validate_dossier() : surfaces comptees relevees a l'instant T

@@ -28,6 +28,10 @@ class SectorMomentumAlpha(AlphaModel):
         # Monthly emission
         if algorithm.time.month == self._last_month:
             return []
+        # A dividend notice arrives alone in a midnight slice, with no bar (#20264):
+        # it must not consume the month's emission.
+        if not any(data.bars.contains_key(s) for s in self.symbols.values()):
+            return []
         self._last_month = algorithm.time.month
 
         if algorithm.is_warming_up:
@@ -98,9 +102,13 @@ class SectorMomentumAlpha(AlphaModel):
 
     def _composite_momentum(self, algorithm, symbol, current_price):
         """Weighted composite momentum across 1/3/6/12 month lookbacks."""
-        history = algorithm.history(symbol, self.max_lookback, Resolution.DAILY)
+        # On the closing slice of a half session (13:00), history(N, DAILY) returns
+        # fewer than N bars (#20286; on 2023-07-03, 418 rows for 504 requested):
+        # ask for 2N, keep the last N.
+        history = algorithm.history(symbol, 2 * self.max_lookback, Resolution.DAILY)
         if len(history) < self.max_lookback:
             return None
+        history = history.iloc[-self.max_lookback:]
 
         score = 0.0
         for window, weight in zip(self.lookback_windows, self.lookback_weights):
@@ -151,6 +159,11 @@ class RegimeSwitchingAlpha(AlphaModel):
     def update(self, algorithm, data):
         # Store algorithm reference for price access
         self.algorithm = algorithm
+
+        # A midnight slice carries no bar (#20264): it must neither consume the
+        # month's emission nor test the regime on the previous close.
+        if not any(data.bars.contains_key(s) for s in self.symbols.values()):
+            return []
 
         # Monthly emission
         if algorithm.time.month == self._last_month:
@@ -227,12 +240,17 @@ class RegimeSwitchingAlpha(AlphaModel):
             if price <= 0:
                 continue
 
-            history = algorithm.history(symbol, self.momentum_lookback + 5, Resolution.DAILY)
+            # Half-session closing slice: history comes back short (#20286; on
+            # 2023-07-03, 113 rows for 136 requested). Ask for twice the window,
+            # keep the last lookback + 5 for the same volatility.
+            bars = self.momentum_lookback + 5
+            history = algorithm.history(symbol, 2 * bars, Resolution.DAILY)
             if len(history) < self.momentum_lookback:
                 continue
 
             try:
                 prices = history.loc[symbol]["close"] if symbol in history.index else history["close"]
+                prices = prices.iloc[-bars:]
                 if len(prices) >= self.momentum_lookback:
                     raw_return = prices.iloc[-1] / prices.iloc[-self.momentum_lookback] - 1
                     daily_returns = prices.pct_change().dropna()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Refuser un notebook AJOUTE dont l'index de serie est deja pris dans son repertoire.
 
-Origine -- #12753. Le 2026-08-24, la sous-serie `03-DeepLearning` a recu deux
+Origine -- #12753. Le 2026-08-24, la sous-serie `03-Deep-Learning` a recu deux
 notebooks `3.1` a vingt-neuf minutes d'intervalle : `3.1-Retropropagation.ipynb`
 (#12736) puis `3.1-Retropropagation-From-Scratch.ipynb` (#12468). Meme lane, meme
 issue, et les deux mergés par le coordinateur. La lane n'avait pas faute : elle avait
@@ -23,11 +23,29 @@ machine peut trancher sans se tromper. La redondance de CONTENU reste un jugemen
 humain, et ce garde ne la certifie pas -- un vert dit « aucun index en conflit », il
 ne dit jamais « aucun doublon ».
 
-Portee : **uniquement les fichiers AJOUTES** par la revision examinee, confrontes a
-la base. Les collisions deja presentes sur `main` ne le font pas rougir -- sinon il
-serait rouge des sa naissance et chaque PR echouerait sur une dette qu'elle n'a pas
-creee. Il empeche la recurrence, il ne solde pas le passe. Les collisions existantes
-se traitent par une issue (cf. #12753), pas par un gate qui bloque tout le monde.
+Portee : **uniquement les fichiers AJOUTES** par la revision examinee, confrontes
+d'une part a la base, d'autre part **entre eux**. Les collisions deja presentes sur
+`main` ne le font pas rougir -- sinon il serait rouge des sa naissance et chaque PR
+echouerait sur une dette qu'elle n'a pas creee. Il empeche la recurrence, il ne solde
+pas le passe. Les collisions existantes se traitent par une issue (cf. #12753), pas
+par un gate qui bloque tout le monde.
+
+La comparaison ajoute/ajoute manquait (#22059). Mesure sur la collision `04-17` de
+`GenAI/Audio/04-Applications` : deux carnets neufs y prennent le meme index dans la
+meme fenetre de diff -- `04-17-MIR-Classique` et `04-17-Basic-Pitch-Transcription` --
+et l'organe rendait `collisions: 0`. Chacun etait libre dans la base ; aucun ne voyait
+l'autre. L'organe frere `check_slot_reservation.py` documentait deja ce trou (defaut 4
+de #15489) et le couvre en PREFLIGHT ; un preflight ne remplace pas un gate, parce
+qu'il se saute. Le garde de merge doit voir la meme chose que lui, sinon le defaut
+arrive jusqu'a `main` -- ou il n'a plus aucun organe pour le rattraper.
+
+Cette comparaison a fait remonter un TROISIERME faux positif, cette fois cote index :
+`GenAI/3D` porte `3D-01-NeRF-From-Scratch` et `3D-02-NeRF-Critic`, deux items
+distincts (01 et 02) que la revue independante de #22118 (lane po-2025, temoin
+f46403eb25b) a vus retomber sur la meme cle `3d`. Le `D` de `3D` n'est pas une
+variante d'index mais la queue d'un prefixe de serie mixte ; la borne du canon
+(`INDEX_RE`, lookahead negatif) rend ces noms `None` au lieu de les faire
+collider. Le controle negatif ci-dessous le verrouille.
 
 PORTEE DE LECTURE -- un vert ne dit pas « aucune collision dans cette serie » (#16040)
 --------------------------------------------------------------------------------------
@@ -36,7 +54,7 @@ lecteur d'index sait LIRE. Or `index_key` n'accepte que les noms dont l'index OU
 le nom. Mesure du 2026-09-13 sur `origin/main`, 1266 notebooks :
 
     223 lisibles par ce garde (17,6 %)      3.1-Retropropagation, 04-1-Educational
-    641 a prefixe de serie, HORS portee     GameTheory-04c-NashExistence, SW-8-Python-SHACL
+    641 a prefixe de serie, HORS portee     GameTheory-04c-NashExistence, SW-08-SHACL-Python
     402 sans index du tout, HORS portee     README-notes, MGS-26-Equilibrium
 
 Autrement dit le garde ne couvre PAS la convention majoritaire du depot, celle que
@@ -50,8 +68,8 @@ Elargir `index_key` a la forme prefixee a ete mesure puis ECARTE (#16040 point 2
 sur les 641 noms hors portee, un lecteur prefixe revelerait 16 groupes preexistants
 dont l'essentiel sont des faux positifs des classes que ce garde a DEJA apprises --
 categories a deux niveaux (`Tweety-3-advanced-logics` / `-dung` : le `3` est une
-categorie), paires de langue ecrites au MILIEU du nom (`SW-8-CSharp-SHACL` contre
-`SW-8-Python-SHACL`, que `strip_lang` ne voit pas puisqu'il ne retire qu'un suffixe
+categorie), paires de langue ecrites au MILIEU du nom (`SW-08-SHACL-CSharp` contre
+`SW-08-SHACL-Python`, que `strip_lang` ne voit pas puisqu'il ne retire qu'un suffixe
 TERMINAL), artefacts `-output` et decoupages `-part2`. Elargir le filet demanderait
 d'abord d'apprendre ces classes au nouveau lecteur ; le faire au passage aurait
 transforme un garde a portee connue en garde bruyant a portee inconnue. Les cas qui
@@ -145,32 +163,56 @@ def notebooks_at(ref):
     return [l.strip() for l in out.splitlines() if l.strip().lower().endswith(".ipynb")]
 
 
+def _same_slot(b, other):
+    """Deux noms se disputent-ils le meme index dans le meme repertoire ?
+
+    Trois conditions : index lisible et identique, noms distincts, et pas deux
+    rendus du meme item (`strip_lang` couvre les paires de langue et les siblings
+    i18n `_en`, cf. #15489). Elles sont celles deja appliquees a la base ; la
+    comparaison ajoute/ajoute les reutilise telles quelles plutot que d'en ecrire
+    une variante -- deux jeux de regles divergeraient au premier amendement.
+    """
+    key = index_key(b)
+    if key is None or other == b or index_key(other) != key:
+        return False
+    return strip_lang(other).lower() != strip_lang(b).lower()
+
+
 def collisions(added, base_files):
-    """Chaque fichier ajoute dont l'index est deja tenu dans SON repertoire."""
+    """Chaque fichier ajoute dont l'index est deja tenu -- dans la base OU par un
+    autre ajout de la MEME revision (#22059)."""
     by_dir = {}
     for p in base_files:
         d, b = os.path.split(p)
-        by_dir.setdefault(d, []).append(b)
+        by_dir.setdefault(d, []).append((b, "base"))
+    for p in added:
+        d, b = os.path.split(p)
+        by_dir.setdefault(d, []).append((b, "added"))
 
     found = []
+    seen = set()
     for p in added:
         d, b = os.path.split(p)
         key = index_key(b)
         if key is None:
             continue
-        mine = strip_lang(b).lower()
-        for other in by_dir.get(d, []):
-            if other == b:
+        for other, origin in by_dir.get(d, []):
+            if not _same_slot(b, other):
                 continue
-            if index_key(other) != key:
-                continue
-            if strip_lang(other).lower() == mine:
-                continue  # rendu alternatif du meme item : legitime
             # Chemin de depot : separateur POSIX, jamais os.sep (backslash sous
             # Windows). La sortie est lue par des humains ET comparee a des chemins
             # git, qui n'utilisent que "/".
+            conflict = "%s/%s" % (d, other) if d else other
+            # La relation se lit deux fois (A contre B, puis B contre A). Une
+            # collision est une relation, pas deux evenements : la rapporter une
+            # fois garde le compte lisible quand les deux cotes sont ajoutes.
+            pair = tuple(sorted((p, conflict)))
+            if pair in seen:
+                continue
+            seen.add(pair)
             found.append({"added": p, "index": key,
-                          "conflicts_with": "%s/%s" % (d, other) if d else other})
+                          "conflicts_with": conflict,
+                          "conflicts_with_origin": origin})
     return found
 
 
@@ -189,7 +231,7 @@ def perimeter(files):
     dire est le livrable (cf. #16040 point 1), pas elargir a l'aveugle (point 2 :
     un elargissement revelerait 16 groupes preexistants dont l'essentiel sont des
     faux positifs des classes DEJA connues -- categories a deux niveaux, paires de
-    langue ecrites au MILIEU du nom (`SW-8-CSharp-SHACL`), artefacts `-output`).
+    langue ecrites au MILIEU du nom (`SW-08-SHACL-CSharp`), artefacts `-output`).
     """
     readable = prefix = 0
     for p in files:
@@ -223,6 +265,11 @@ _CASES = [
     ("22_Evaluating_Generated_Text.ipynb", "22"),
     ("22_TensorSharp_DotNet_Inference.ipynb", "22"),
     ("01-Arrow-Impossibility-Theorem.ipynb", "1"),
+    # Prefixe de serie mixte (chiffre + lettre) : `3D` est un prefixe, `01`/`02` le
+    # vrai index. Le lookahead de INDEX_RE rend ces noms None (hors portee) au lieu
+    # de les faire retomber sur une cle `3d` commune -- le faux positif #22118.
+    ("3D-01-NeRF-From-Scratch.ipynb", None),
+    ("3D-02-NeRF-Critic.ipynb", None),
     # Variantes a suffixe de lettre (serie 02-ML-Cours). Trouvees par le balayage
     # repo-wide, pas par ce jeu de cas : c'est pourquoi le balayage existe.
     ("2.3b-Naive-Bayes-Generatif.ipynb", "2.3b"),
@@ -262,6 +309,29 @@ _SCENARIOS = [
      ["m/02-ML/2.8b-Theorie-PAC-Lean.ipynb"], 1),
     ("NEGATIF       aucun ajout",
      [], ["a/03-DL/3.1-Retropropagation.ipynb"], 0),
+    # --- ajoute contre ajoute (#22059) : la base ne porte AUCUN des deux index
+    # en conflit, c'est la fenetre de diff elle-meme qui les met face a face.
+    ("VRAI POSITIF  deux AJOUTS, meme index, meme repertoire",
+     ["g/Audio/04-17-MIR-Classique.ipynb",
+      "g/Audio/04-17-Basic-Pitch-Transcription.ipynb"],
+     ["g/Audio/04-16-SheetSage2.ipynb"], 1),
+    ("FAUX POSITIF  deux ajouts, meme index, repertoires differents",
+     ["g/Audio/04-17-MIR.ipynb", "q/Audio/04-17-Basic.ipynb"],
+     ["g/Audio/04-16-SheetSage2.ipynb"], 0),
+    ("FAUX POSITIF  deux ajouts, siblings de langue du meme item",
+     ["s/07-Shapley.ipynb", "s/07-Shapley_en.ipynb"],
+     ["s/06-Trust.ipynb"], 0),
+    ("VRAI POSITIF  deux ajouts, meme index, la base en tient deja un troisieme",
+     ["a/03-DL/3.1-From-Scratch.ipynb", "a/03-DL/3.1-Autre.ipynb"],
+     ["a/03-DL/3.1-Retropropagation.ipynb"], 3),
+    # Controle negatif #22118 (revue independante po-2025, temoin f46403eb25b) :
+    # deux ajouts de la MEME fenetre, meme repertoire, prefixe mixte 3D -- indices
+    # reels 01 et 02 distincts. Sans la borne du canon, les deux retombaient sur la
+    # cle `3d` et cette comparaison les faisait rougir. Attendu : 0.
+    ("FAUX POSITIF  deux ajouts, prefixe mixte 3D-01 vs 3D-02",
+     ["g/3D/3D-01-NeRF-From-Scratch.ipynb",
+      "g/3D/3D-02-NeRF-Critic.ipynb"],
+     [], 0),
 ]
 
 
@@ -276,7 +346,7 @@ _PERIMETER_CASES = [
     ("POSITIF    la convention majoritaire compte bien comme HORS portee",
      ["g/GameTheory-04c-NashExistence.ipynb",
       "g/GameTheory-06f-Bounded-Agents.ipynb",
-      "G/SW-8-Python-SHACL.ipynb"], (0, 3, 0)),
+      "G/SW-08-SHACL-Python.ipynb"], (0, 3, 0)),
     ("FRONTIERE  prefixe alphabetique et index nu s'excluent (^\\d vs ^[A-Za-z])",
      ["g/MGS-26-Equilibrium.ipynb", "m/22_Evaluating_Generated_Text.ipynb"],
      (1, 1, 0)),
@@ -371,7 +441,13 @@ def main():
     print("VERDICT: COLLISION D'INDEX (%d)" % len(hits))
     for h in hits:
         print("   %s" % h["added"])
-        print("      index %s deja tenu par %s" % (h["index"], h["conflicts_with"]))
+        # La provenance change le geste de reparation : un index tenu par la base
+        # se libere en renoncant, un index tenu par la meme revision se libere en
+        # accordant les DEUX cotes -- renommer un seul laisse l'autre en place.
+        origin = (" (ajoute par la MEME revision)"
+                  if h.get("conflicts_with_origin") == "added" else "")
+        print("      index %s deja tenu par %s%s"
+              % (h["index"], h["conflicts_with"], origin))
     print("")
     print("Un index de serie designe une position, et deux notebooks ne peuvent pas")
     print("occuper la meme. Renommer l'ajout vers un index libre, OU -- si les deux")

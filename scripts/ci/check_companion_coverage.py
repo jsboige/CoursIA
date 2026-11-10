@@ -66,14 +66,28 @@ EXEMPT_PREFIXES = (
 # Hors scope par segment de chemin : conventions _archive/ du depot.
 EXEMPT_MARKERS = ("/_archive/",)
 
-# .ps1 Windows par nature : win-acme (certificats Windows), IIS, et les
-# sondes cotE hote Windows qui pilotent le runner Linux depuis Windows.
+# .ps1 Windows par nature : win-acme (certificats Windows), IIS, les
+# sondes cotE hote Windows qui pilotent le runner Linux depuis Windows, et
+# le lanceur a plafond memoire Natif (Job Object Windows, `run_guarded.py`)
+# dont le plafond n'a pas d'equivalent POSIX : un compagnon .sh serait une
+# imitation sans lecture derriere.
+#
+# `persist/po-2027/install-keepalive-task.ps1` releve de la meme classe, et
+# c'est mesure : il installe une tache planifiee Windows qui re-invoque le
+# pont WSL toutes les N minutes, parce que le porteur du runner vit
+# exactement aussi longtemps que la distro. Le compagnon .sh qui viendrait a
+# cote est celui qui tourne DANS la distro (`coursia-runner-start.sh`) --
+# c'est-a-dire precisement le processus que le `wsl --shutdown` tue, donc
+# celui qui ne peut pas se re-armer lui-meme. Un `.sh` compagnon ici serait
+# la copie d'un geste que seul l'hote Windows peut executer.
 EXEMPT_FILES = {
     "docker-configurations/scripts/setup-win-acme-renewal.ps1",
     "docker-configurations/services/tts-multi/setup-iis-reverse-proxy.ps1",
     "scripts/genai-stack/Configure-IISAuthentication.ps1",
     "scripts/ci/docker/linux-runner/persist/hold-runner.ps1",
     "scripts/ci/docker/linux-runner/persist/host-distress-probe.ps1",
+    "scripts/ci/docker/linux-runner/persist/po-2027/install-keepalive-task.ps1",
+    "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/launchers/launch_capped.ps1",
 }
 
 # Marqueurs d'invocation OS dans les cellules CODE d'un carnet Setup.

@@ -1,0 +1,2 @@
+z3-solver>=4.13
+jupyter_kernel_gateway>=3.0,<4

@@ -7,14 +7,24 @@
 > (FR canonique + miroirs `_en.lean` Pattern A [#4980](https://github.com/jsboige/CoursIA/issues/4980)),
 > qui est désormais le home canonique (`@[default_target] lean_lib SocialChoice` dans le lakefile de
 > `game_theory_lean`). La certification no-sorry et le build Lake y sont repris via
-> `.github/workflows/lean-social-choice.yml`.
+> `.github/workflows/lean-ci-matrix.yml` (le wrapper `lean-social-choice.yml` a été absorbé dans
+> la matrice par #17374).
 >
 > **Ce répertoire n'est plus un lake.** La coquille technique (`lakefile.lean`, `lean-toolchain`,
 > `lake-manifest.json`) a été retirée (follow-up #4365) : elle faisait passer le dossier pour un lake
 > vivant auprès de tout outil énumérant les lakes par leur `lakefile*` (p. ex. `check_i18n_siblings`),
-> alors qu'il ne contenait **plus aucun module** depuis l'absorption. Ne subsistent que les 4
-> markdown (`README`, `STATUS`, `NOTICE`, `LEAN_PREREQUISITES`) — documentation historique, choix de
-> design et prérequis pédagogiques — conservés intentionnellement comme tombstone. Le contenu
+> alors qu'il ne contenait **plus aucun module** depuis l'absorption. Ne subsistent que les 3
+> markdown (`README`, `STATUS`, `LEAN_PREREQUISITES`) — documentation historique, choix de
+> design et prérequis pédagogiques — conservés comme tombstone. La **NOTICE
+> d'attribution** a rejoint son code le 2026-11-02 : [`game_theory_lean/SocialChoice/NOTICE.md`](../game_theory_lean/SocialChoice/NOTICE.md).
+>
+> **⚑ Sortie programmée — tranche T3 de [#24183](https://github.com/jsboige/CoursIA/issues/24183).**
+> T3 (« une arborescence qu'on lit ») prévoit de **retirer cette coquille**, *après une preuve de
+> préservation de ses documents*. La preuve est livrée plus bas, section « Preuve de
+> préservation » : elle établit que **le retrait ne peut pas avoir lieu en l'état** — deux des
+> trois markdown restants portent un contenu qui n'existe nulle part ailleurs et sont atteints
+> par des liens entrants actifs. La conservation est donc motivée, et datée.
+> Le contenu
 > mathématique (théorèmes, preuves) vit dans le home canonique ; la suite de ce README le décrit
 > tel qu'il existait **historiquement** ici, et reste **entièrement valable**.
 
@@ -24,9 +34,9 @@ Ce répertoire est l'**archive** des formalisations mathématiques de la théori
 
 | Statistique | Valeur |
 |-------------|--------|
-| Théorèmes/Lemmas | 76 (0 sorry, 7 modules) |
+| Théorèmes/Lemmas | voir catalogue (0 sorry, modules absorbés) |
 | sorry restants | 0 |
-| Toolchain | `leanprover/lean4:v4.31.0-rc1` |
+| Toolchain | celle du home canonique, [`game_theory_lean/`](../game_theory_lean/) — `leanprover/lean4:v4.33.0` |
 | Dépendances | Mathlib4, Lake |
 
 **Statut formel** : les **sept** modules (Basic, Framework, Arrow, Sen, Voting,
@@ -35,7 +45,7 @@ le home canonique [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialC
 
 ## Théorèmes formalisés
 
-*Les quatre résultats fondateurs formalisés (0 sorry, 7 modules) — de l'impossibilité de
+*Les quatre résultats fondateurs formalisés (0 sorry, modules absorbés) — de l'impossibilité de
 Arrow et du paradoxe de Sen jusqu'au théorème de l'électeur médian et à la véridicité de
 l'enchère de Vickrey :*
 
@@ -121,7 +131,7 @@ flowchart TD
 
 ### 3. Théorie du vote (Voting.lean)
 
-**Dans `SocialChoice/Voting.lean`** (port de chasenorman/Formalized-Voting, 19 théorèmes,
+**Dans `SocialChoice/Voting.lean`** (port de chasenorman/Formalized-Voting, voir catalogue,
 0 sorry). Le module couvre bien au-delà du seul électeur médian :
 
 - **Marges** (`margin_pos`, `margin_antisymm`, `margin_pos_iff_neg_rev`) : la marge
@@ -141,7 +151,7 @@ flowchart TD
 
 ### 4. Théorie des mécanismes — Enchère de Vickrey (MechanismDesign.lean)
 
-**Dans `SocialChoice/MechanismDesign.lean`** (4 théorèmes, 0 sorry). Le projet s'étend
+**Dans `SocialChoice/MechanismDesign.lean`** (voir catalogue, 0 sorry). Le projet s'étend
 au-delà du choix social pur vers la **théorie des mécanismes** (incitations et véridicité) :
 
 - **Véridicité de Vickrey** (`vickrey_truthful_bidder0`, `vickrey_truthful_bidder1`,
@@ -152,6 +162,33 @@ au-delà du choix social pur vers la **théorie des mécanismes** (incitations e
   **premier prix** n'est **pas** véridique (contre-exemple direct) — l'enchérisseur a
   intérêt à sous-évaluer sa vraie valeur.
 
+## Preuve de préservation — prérequis de la tranche T3 de #24183
+
+La tranche T3 de [#24183](https://github.com/jsboige/CoursIA/issues/24183) (« une arborescence
+qu'on lit ») prévoit de **retirer cette coquille**, *après une preuve de préservation de ses
+documents*. La `NOTICE` d'attribution était le quatrième de ces documents avant de rejoindre son
+code le 2026-11-02 (#24193) ; il en reste trois ici.
+
+| Document | Contenu propre | Références entrantes vivantes | Disposition pour T3 |
+|----------|----------------|------------------------------|---------------------|
+| `NOTICE.md` | attribution : licences, sources (Geanakoplos 2005, Sen 1970), mesure de reprise depuis Lean 3 | — | **déjà préservé** — déplacé le 2026-11-02 dans [`game_theory_lean/SocialChoice/NOTICE.md`](../game_theory_lean/SocialChoice/NOTICE.md) |
+| `STATUS.md` | instantané historique du lake (toolchain, table des sources, historique des commits) | aucune | **absorbable** — l'état actif est tenu par `game_theory_lean/` (README du lake, et §3 de [`LEAN_INVENTORY.md`](../LEAN_INVENTORY.md)) |
+| `LEAN_PREREQUISITES.md` | trois parcours progressifs Lean 4 / Mathlib (débutant, intermédiaire, avancé), durées et prérequis par module | [`docs/curriculum/symbolic-formalization.md`](../../../docs/curriculum/symbolic-formalization.md) (liens de parcours) | **non absorbable en l'état** — destination déjà désignée par l'inventaire du 2026-09-02 ([entrée #8](../../../docs/transients/2026-09-02-curriculum-inventory.md), mention « RELOCATE », vers `docs/curriculum/symbolic-formalization.md`) |
+| `README.md` | choix de design, sources académiques, tableau de reprise depuis Lean 3, structure historique | [`game_theory_lean/README.md`](../game_theory_lean/README.md) §« Voir aussi » et entrée de navigation du site (`_quarto.yml`) | **non absorbable en l'état** — contenu unique, et deux liens vivants pointent vers ce fichier |
+| `scripts/validate_lean_setup.py` (`check_social_choice_lean()`) | un check de setup qui vérifie l'existence de `social_choice_lean/lakefile.lean` | appelé par l'entrée du validateur de setup | **dépendance code** — cherche encore `social_choice_lean/lakefile.lean`, retiré depuis #4365 (le check échoue déjà sur main) ; à corriger avant le retrait de la coquille |
+
+**Conséquence pour T3.** La coquille **ne peut pas être retirée aujourd'hui** : deux des trois
+documents restants portent un contenu qui n'existe nulle part ailleurs et sont atteints par des
+liens actifs. Le retrait suppose, dans l'ordre : (a) la relocation de `LEAN_PREREQUISITES.md`
+vers le curriculum symbolique (destination déjà nommée par l'inventaire du 2026-09-02) ; (b)
+l'absorption du contenu propre de ce `README.md` — sections « Choix de design » et « Sources
+académiques » ; (c) la reprise des liens entrants (README du lake, navigation du site) ;
+(d) la correction de la dépendance code — `check_social_choice_lean()` cherche encore
+`social_choice_lean/lakefile.lean`, retiré depuis #4365.
+`STATUS.md` peut partir seul : son contenu est un instantané déjà tenu ailleurs. Jusque-là, les
+trois documents sont **conservés à titre de tombstone** — la
+[NOTICE canonique](../game_theory_lean/SocialChoice/NOTICE.md) porte la date du déplacement.
+
 ## Structure des fichiers
 
 > **⚑ Archive** — l'arborescence ci-dessous reflète la structure **historique** de ce lake.
@@ -159,21 +196,21 @@ au-delà du choix social pur vers la **théorie des mécanismes** (incitations e
 > `SocialChoice.lean`, `SocialChoice/*.lean` et `examples/*.lean` ne sont **plus présents
 > ici** : ils vivent dans [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/).
 > La coquille technique (`lakefile.lean`, `lean-toolchain`, `lake-manifest.json`) a en outre été
-> retirée (follow-up #4365) : ce répertoire n'est plus un lake. Ne subsistent que les 4 markdown
-> (`README.md`, `STATUS.md`, `NOTICE.md`, `LEAN_PREREQUISITES.md`) comme tombstone documentaire.
+> retirée (follow-up #4365) : ce répertoire n'est plus un lake. Ne subsistent que les 3 markdown
+> (`README.md`, `STATUS.md`, `LEAN_PREREQUISITES.md`) comme tombstone documentaire — la `NOTICE`
+> d'attribution a rejoint son code le 2026-11-02 (#24183), voir le renvoi en tête de ce fichier.
 
 ```text
 social_choice_lean/                     (tombstone documentaire — plus un lake)
 ├── README.md                          # Documentation historique (cette tombstone)
 ├── STATUS.md                          # Statut (historique, figé à l'absorption)
-├── NOTICE.md                          # Licence MIT (DominikPeters)
 ├── LEAN_PREREQUISITES.md              # Prérequis pédagogiques Lean 4 / Mathlib
 │
 │   ── retiré (follow-up #4365) : lakefile.lean, lean-toolchain, lake-manifest.json ──
 │   ── sources déplacées vers game_theory_lean/SocialChoice/ (PR #6058) ──
 │
 ├── SocialChoice.lean                  # [DÉPLACÉ] Fichier d'imports principaux
-└── SocialChoice/                      # [DÉPLACÉ] Module principal (7 fichiers, 0 sorry)
+└── SocialChoice/                      # [DÉPLACÉ] Module principal (fichiers absorbés, 0 sorry)
     ├── Basic.lean                    # Définitions de base (P, I, PrefOrder, QuasiOrder,
     │                                 # lemmes de transitivité, best/maximal elements)
     ├── Framework.lean                # Cadre SWF (Profile, SWF, weak_pareto, IIA,
@@ -213,9 +250,9 @@ Le paradoxe de Sen (`Sen.lean`) utilise `is_decisive_over` comme décisivité **
 | Median Voter | Black (1948), "On the Rationale of Group Decision-making" | Comptage majoritaire sur single-peaked |
 | Split Cycle | Holliday & Pacuit (2023) | Élimination des défaites dans les cycles |
 
-### Port depuis Lean 3
+### Reprise depuis Lean 3 — partielle et mesurée
 
-Ce projet est un port depuis [asouther4/lean-social-choice](https://github.com/asouther4/lean-social-choice) (Lean 3). Les adaptations principales :
+Ce répertoire n'est pas un portage intégral de [asouther4/lean-social-choice](https://github.com/asouther4/lean-social-choice) : seuls `Basic.lean` (25 noms de déclarations repris sur 29) et `Arrow.lean` (19 sur 29) sont des portages ; `Voting.lean` (4 sur 53) est une réécriture, et `Sen.lean` (0 sur 4 — le paradoxe libéral est absent de l'amont, qui porte le théorème de Sen sur la fonction de choix), `MechanismDesign.lean`, `AMD.lean` et `SortedListCounting.lean` (0 chacun) sont des ajouts CoursIA. Taux complets et règle de comptage : [NOTICE.md](../game_theory_lean/SocialChoice/NOTICE.md) (mesures du 2026-10-25). Sur la partie réellement portée, les adaptations principales :
 
 - Remplacement des `definition` Lean 3 par `def` Lean 4
 - Migration des tactiques Lean 3 vers Lean 4 (syntaxe `split_ifs`, `rcases`)
@@ -239,7 +276,7 @@ Ce projet est un port depuis [asouther4/lean-social-choice](https://github.com/a
 ```bash
 cd MyIA.AI.Notebooks/GameTheory/game_theory_lean
 lake exe cache get      # cache Mathlib (première fois)
-lake build SocialChoice # compile les 7 modules absorbés (0 sorry)
+lake build SocialChoice # compile les modules absorbés (0 sorry)
 ```
 
 ## Concepts clés formels
@@ -276,12 +313,12 @@ Voir la licence du repository principal.
 
 ## Conclusion
 
-Ce projet formalise en Lean 4 (**0 `sorry`**, 76 théorèmes/lemmas sur 7 modules) les
+Ce projet formalise en Lean 4 (**0 `sorry`**, voir catalogue en modules absorbés) les
 résultats fondateurs de la théorie du choix social : le **théorème d'impossibilité
 d'Arrow**, le **paradoxe libéral de Sen**, la **théorie du vote** (Condorcet, électeur
 médian, Split Cycle) et la **véridicité de l'enchère de Vickrey** (théorie des mécanismes).
 Tous les modules sont FORMAL-CERTIFIED et recompilables via `lake build SocialChoice` dans le home
-canonique [`game_theory_lean/`](../game_theory_lean/) (toolchain `v4.31.0-rc1`).
+canonique [`game_theory_lean/`](../game_theory_lean/) (toolchain `v4.33.0`).
 
 ### Ce qui est prouvé
 

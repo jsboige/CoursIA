@@ -88,13 +88,12 @@ Cette série ne propose pas de choisir l'un ou l'autre, mais de **comprendre les
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 38 racine (13 Python + 7 Lean companion + 18 C#) + 1 probe |
-| Cellules totales | 1170 (dont 446 code) — 38 racine + 1 probe |
+| Inventaire notebooks | délégué au bloc `CATALOG-STATUS` en tête de page (règle E — comptes non entretenus en prose) |
 | Durée estimée | ~6h (tutorat) |
 | Kernel | Python 3 (JPype/Java) |
 | Version Tweety | 1.30 recommandée |
 | Solveurs externes | Clingo, SPASS, EProver, Z3, PySAT |
-| JARs Java | 42 (39 modules Tweety 1.30 + 3 deps externes) |
+| JARs Java | modules Tweety 1.30 + deps externes (args4j, commons-math, sat4j) |
 
 ## Parcours d'apprentissage
 
@@ -172,16 +171,16 @@ Numéros nus uniquement, lisibles de haut en bas. Le compte et la maturité exac
 
 | # | Notebook | Ce qu'on y apprend | Stack |
 |---|----------|--------------------|-------|
-| 1  | [Tweety-01-Setup-Python](Tweety-01-Setup-Python.ipynb) | Configuration JVM, JARs, solveurs externes | Python |
-| 2  | [Tweety-02-Basic-Logics-Python](Tweety-02-Basic-Logics-Python.ipynb) | Logique propositionnelle (SAT) et du premier ordre (FOL) | Python |
-| 3  | [Tweety-03-Advanced-Logics-Python](Tweety-03-Advanced-Logics-Python.ipynb) | DL, Modale, QBF, Conditionnelle | Python |
+| 1  | [Tweety-01-Setup-Python](Tweety-01-Setup-Python.ipynb) | Chaîne JVM → JPype → JARs → solveurs externes | Python |
+| 2  | [Tweety-02-Basic-Logics-Python](Tweety-02-Basic-Logics-Python.ipynb) | Logique propositionnelle (SAT, pySAT) et du premier ordre (FOL, EProver) | Python |
+| 3  | [Tweety-03-Advanced-Logics-Python](Tweety-03-Advanced-Logics-Python.ipynb) | Ontologies OWL (DL), logique modale (SPASS), QBF, conditionnelle | Python |
 | 4  | [Tweety-04-Belief-Revision-Python](Tweety-04-Belief-Revision-Python.ipynb) | MUS, MaxSAT, Mesures d'incohérence, AGM | Python |
-| 5  | [Tweety-05-Abstract-Argumentation-Python](Tweety-05-Abstract-Argumentation-Python.ipynb) | Dung AF, sémantiques grounded/stable/CF2 | Python |
-| 6  | [Tweety-06-Structured-Argumentation-Python](Tweety-06-Structured-Argumentation-Python.ipynb) | ASPIC+, DeLP, ABA, ASP | Python |
+| 5  | [Tweety-05-Abstract-Argumentation-Python](Tweety-05-Abstract-Argumentation-Python.ipynb) | Dung AF, sémantiques grounded/stable/CF2, frameworks aléatoires | Python |
+| 6  | [Tweety-06-Structured-Argumentation-Python](Tweety-06-Structured-Argumentation-Python.ipynb) | ASPIC+, DeLP, ABA, ASP — quel cadre selon le domaine | Python |
 | 7  | [Tweety-07a-Extended-Frameworks-Python](Tweety-07a-Extended-Frameworks-Python.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended | Python |
 | 8  | [Tweety-08-Agent-Dialogues-Python](Tweety-08-Agent-Dialogues-Python.ipynb) | Agents, dialogues argumentatifs, loteries | Python |
-| 9  | [Tweety-09-Preferences-Python](Tweety-09-Preferences-Python.ipynb) | Préférences, théorie du vote | Python |
-| 10 | [Tweety-10-MLN-Python](Tweety-10-MLN-Python.ipynb) | Markov Logic Networks (FOL pondérée) | Python |
+| 9  | [Tweety-09-Preferences-Python](Tweety-09-Preferences-Python.ipynb) | Préférences, théorie du vote (Borda, Condorcet) | Python |
+| 10 | [Tweety-10-MLN-Python](Tweety-10-MLN-Python.ipynb) | Markov Logic Networks : FOL pondérée, marginales, exceptions (le pingouin) | Python |
 | 11 | [Tweety-11-Causal-Python](Tweety-11-Causal-Python.ipynb) | do-calculus de Pearl, interventions, contrefactuels | Python |
 | 12 | [Tweety-12-Grounded-Via-TweetyProject-Python](Tweety-12-Grounded-Via-TweetyProject-Python.ipynb) | Bouclage de la sémantique grounded entre Python et Lean | Python |
 
@@ -261,53 +260,9 @@ Le palier 07 est porté par le **07a** (Python) et son jumeau **07ac** (C#) ; le
 
 ### Sous-série Argumentation — Argumentum
 
-Les notebooks 5 et 6 sont la **couche Tweety** de la sous-série Argumentation : ils portent les fondations de Dung et d'ASPIC+. **Argumentum**, le partenaire agentique, vit dans un dépôt externe et applique ces sémantiques à des textes. Voir [Argument_Analysis](../Argument_Analysis/) pour la série partenaire, et le sous-module pour le code source de l'agent.
+Les notebooks 5 et 6 sont la **couche Tweety** de la sous-série Argumentation : ils portent les fondations de Dung et d'ASPIC+. **Argumentum**, le partenaire agentique, vit dans un dépôt externe et applique ces sémantiques à des textes. Voir [ArgumentAnalysis](../ArgumentAnalysis/) pour la série partenaire, et le sous-module pour le code source de l'agent.
 
-**Durée totale indicative** : ~13 h (Python) + ~10 h (C#/.NET). Le tableau ci-dessus couvre les notebooks principaux (12 Python + 18 C#/.NET + 7 Lean companion) ; voir aussi `_probes/Tweety-IKVM-Init-Probe.ipynb` (BETA smoke-test IKVM) et `argumentation_lean/` (lake Lean 4, toolchain `v4.32.1` depuis #11587, avec les fichiers `.lean` du dossier `Argumentation/` — les modules FR : Basic, Characteristic, Extensions, Fundamental, Grounded, Synthesis + leurs siblings `_en` i18n #4980).
-
-## En quoi chaque notebook est unique
-
-Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — couvrant les notebooks principaux (12 Python + 18 C#/.NET + 7 Lean companion) :
-
-| #  | Notebook                      | Concept clé enseigné                                                    |
-|----|-------------------------------|--------------------------------------------------------------------------|
-| 1  | Setup                         | Boucle configuration : JVM → JPype → JARs → solveurs externes          |
-| 2  | Basic Logics                  | SAT solving en pratique (pySAT) + formalisme FOL avec EProver            |
-| 2a | Basic Logics (C#, pilote)     | Logique propositionnelle .NET — port pilote IKVM (#4792), premier pont Java→.NET de la série |
-| 2b | Semantics (C#)                | Sémantique propositionnelle .NET (mondes possibles) — port IKVM 8.15.0  |
-| 2c | Basic Logics (C#)             | FOL porté .NET via IKVM 8.15.0 : `tweetyproject.logics.fol.*` réel      |
-| 2d | FOL Lab (Python+Lean)         | Un syllogisme, deux moteurs : `SimpleFolReasoner` exécute six verdicts, le noyau Lean **certifie** conséquences (théorèmes) et non-conséquences (contre-modèles finis) — `FALSE` n'est pas « négation prouvée » |
-| 2e | Preuves Hilbert/LK (Python+Lean) | Deux calculs de preuve mesurés : Hilbert (axiomes + MP, recherche par chaînage avant, coût en instances/MP) et séquents LK (hauteur/taille d'arbre **avant/après** élimination des coupures, Hauptsatz = théorème du noyau) |
-| 2f | Zoo modal (Python+Lean) | Huit systèmes modaux et leur **ordre partiel** : les données du module exportées par `lake env lean`, l'ordre recalculé sur les profils, puis la carte — 11 arêtes de couverture contre 7 paires **incomparables** ; « incomparable » n'est ni « un peu plus faible » ni « on ne sait pas » |
-| 3  | Advanced Logics               | Ontologies OWL (DL) + raisonnement modale (SPASS) + QBF                 |
-| 3b | Modal Lab (Python+Lean)       | Théorie de la correspondance mesurée : énumération exhaustive 512 cadres ↔ contre-modèles kernel-vérifiés (pont ModalBridge) |
-| 3c-DL | Advanced Logics (C#)         | DL/ML/QBF/CL .NET — **DRAFT** : conflits de noms DLL entre `logics.ml` + `logics.cl` + `logics.qbf` simultanés |
-| 3c-CL | Conditional Logics (C#)      | Logique conditionnelle .NET (IKVM) — raisonneur `cl` réel               |
-| 3c-Dung | Dung (C#)                   | Argumentation de Dung .NET (IKVM, c.182 PR #5194) — `NaiveDlReasoner`  |
-| 3c-ML | Modal Logic (C#)             | Logique modale .NET (IKVM) — `MlReasoner` réel                          |
-| 3c-QBF | QBF (C#)                    | QBF .NET (IKVM, c.185 PR #5202) — solveur QBF réel                       |
-| 4  | Belief Revision               | Identification de conflits (MUS) + révision AGM + MaxSAT                |
-| 4c-BR | Belief Revision (C#)         | Belief Revision .NET (IKVM) : `Revision`/`MUSMaxSAT` réels, BETA        |
-| 4c-Aspic | Aspic (C#)                 | ASPIC+ .NET (IKVM) — `AspicArgumentation` réel                          |
-| 5  | Abstract Argumentation        | Sémantiques de Dung (grounded/stable/CF2) + frameworks aléatoires      |
-| 5b | Lean Argumentation            | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de Dung dans le lake `argumentation_lean`, BETA |
-| 5c | Abstract Argumentation (C#)   | Dung AF **from-scratch** BCL .NET (sans IKVM/JVM) : sémantiques grounded/stable/preferred, labeling 3 valeurs |
-| 5d | Stable Synthesis (Lean)       | Synthèse certifiée d'extensions stables : spécification → générateur **Z3** → témoin → certificat Lean `by decide` dans le lake `argumentation_lean` (module `Argumentation.Synthesis`), cas UNSAT du 3-cycle certifié |
-| 5e | Propositional Lab (Lean)      | Trois lectures d'une même formule — Tweety (verdicts et contre-modèles **calculés**), recomptage Python des 8 mondes, certification **Lean sur Foundation (FFL)** au commit épinglé ; théâtre des trois verdicts `valid` / `satisfiable non valide` / `insatisfiable` |
-| 6  | Structured Argumentation      | Comparaison ASPIC+/DeLP/ABA/ASP — le cadre idéal selon le domaine      |
-| 6c | Structured Argumentation (C#) | ASPIC+ **from-scratch** BCL .NET (sans IKVM) — DeLP/ABA/ASP en contrepoint conceptuel |
-| 7a | Extended Frameworks           | Au-delà de Dung : ADF, bipolarité, attaques pondérées et collectives   |
-| 7ac| Extended Frameworks (C#)      | Hybride : ADF/SetAF/EAF/VAF **from-scratch** BCL .NET (logique de Kleene 3 valeurs) + tranche 2 Dung/Weighted/Social/ADF via la lib Tweety reelle (IKVM, DLL shade 7a versionnee) |
-| 7b | Ranking & Probabilistic       | Classement graduel des arguments + incertitude sur les arguments        |
-| 7bc| Ranking & Probabilistic (C#)  | Ranking/Probabiliste .NET (IKVM) — `Ranking`, `SubgraphProbability` réels |
-| 8  | Agent Dialogues               | Protocoles d'échange entre agents + négociation argumentative          |
-| 8c | Agent Dialogues (C#)          | Dialogues argumentatifs **from-scratch** BCL .NET : protocole Claim/Argue/Concede/Retract + loterie Monte-Carlo |
-| 9  | Preferences                   | Agrégation de préférences (Borda, Condorcet) + théorie du vote          |
-| 9c | Preferences (C#)              | Préférences .NET (IKVM, EPIC #4667 PR #5268)                            |
-| 10 | MLN                           | Pont symbolique/statistique : FOL + poids, marginales, exceptions (pingouin) |
-| 10c| MLN (C#)                      | MLN porté .NET (IKVM) : `MarkovLogicNetwork`, vrais appels              |
-| 11 | Causalité                     | do-calculus de Pearl : intervention `do(X)` vs observation, contrefactuels |
-| 11c| Causalité (C#)                | Moteur causal booléen **from-scratch** .NET : do-operator, contrefactuels par mondes jumeaux |
+**Durée totale indicative** : ~13 h (Python) + ~10 h (C#/.NET). L'inventaire exact par langage vit dans le bloc `CATALOG-STATUS` en tête de page ; voir aussi `_probes/Tweety-IKVM-Init-Probe.ipynb` (BETA smoke-test IKVM) et `argumentation_lean/` (lake Lean 4, toolchain `v4.32.1` depuis #11587, avec les fichiers `.lean` du dossier `Argumentation/` — les modules FR : Basic, Characteristic, Extensions, Fundamental, Grounded, Synthesis + leurs siblings `_en` i18n #4980).
 
 ## Le pont symbolique/statistique (notebook 10 — MLN)
 
@@ -343,7 +298,7 @@ La signature du do-calculus — **P(rain | drops) ≠ P(rain | do(drops))** — 
 
 Tweety raisonne sur le do-calculus en **logique propositionnelle** : `do(X)` y est *qualitatif* — un atome forcé, un SCM réécrit, une réponse vrai/faux. C'est idéal pour *voir* la différence entre `observe` et `do` sans nombres, mais Tweety **ne chiffre pas** un effet causal ni ne lève quantitativement un paradoxe de Simpson. Les séries probabilistes du dépôt reprennent **exactement ce notebook** avec des distributions :
 
-- [Infer-5-Causal-Inference](../../Probas/Infer/Infer-5-Causal-Inference.ipynb) — le **jumeau distributionnel par message passing** : `P(Y|do(X))` calculé par mutilation de graphe en Infer.NET (EP/VMP), ajustements backdoor / front-door, paradoxe de Simpson résolu numériquement.
+- [Infer-05-Causal-Inference](../../Probas/Infer/Infer-05-Causal-Inference.ipynb) — le **jumeau distributionnel par message passing** : `P(Y|do(X))` calculé par mutilation de graphe en Infer.NET (EP/VMP), ajustements backdoor / front-door, paradoxe de Simpson résolu numériquement.
 - [PyMC-05-Causal-Inference](../../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) — la version **MCMC** avec l'opérateur natif `pm.do` et le contrefactuel par abduction.
 - [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb) — le même `do` monte d'un cran : à **quelle échelle** un système fait-il le plus de travail causal ?
 
@@ -414,7 +369,7 @@ jupyter notebook Tweety-01-Setup-Python.ipynb
 # 3. Exécuter toutes les cellules, puis passer à Tweety-2
 ```
 
-JDK 17 et les 42 JARs (39 modules TweetyProject 1.30 + 3 dépendances externes : args4j, commons-math, sat4j) sont téléchargés automatiquement par le notebook de setup. Aucune installation système requise.
+JDK 17 et les JARs (modules TweetyProject 1.30 + dépendances externes : args4j, commons-math, sat4j) sont téléchargés automatiquement par le notebook de setup. Aucune installation système requise.
 
 ## Prérequis
 
@@ -475,7 +430,7 @@ cd scripts
 python verify_all_tweety.py --quick
 ```
 
-JDK 17 et les 42 JARs (39 modules TweetyProject 1.30 + 3 dépendances externes : args4j, commons-math, sat4j) sont téléchargés automatiquement par le notebook de setup. Aucune installation système requise.
+JDK 17 et les JARs (modules TweetyProject 1.30 + dépendances externes : args4j, commons-math, sat4j) sont téléchargés automatiquement par le notebook de setup. Aucune installation système requise.
 
 ## Architecture
 
@@ -522,7 +477,7 @@ Tweety/
 ├── requirements.txt                               # Dépendances Python (JPype1, etc.)
 ├── org.tweetyproject.tweety-*.dll                 # 19 assemblages .NET (shades IKVM, EPIC #4667)
 ├── dotnet-build/                                  # Build Maven/.csproj des shades IKVM (EPIC #4667)
-├── libs/                                          # JARs Tweety (42 : 39 modules 1.30 + 3 deps) — téléchargé
+├── libs/                                          # JARs Tweety (modules 1.30 + deps externes) — téléchargé
 ├── jdk-17-portable/                               # JDK Zulu — téléchargé auto par le setup
 ├── ext_tools/                                     # Solveurs externes (Clingo, SPASS, EProver) — téléchargé
 ├── resources/                                     # Fichiers d'exemples — téléchargé
@@ -535,11 +490,38 @@ Tweety/
 │   ├── test_*.py                                  # 4 tests unitaires (sat_calibration, sat_comparison_demo, validate_syntax, verify_tweety_iopub)
 │   └── _archive/                                  # Scripts archivés (reorganize_tweety.py)
 ├── _probes/                                       # Smoke-tests (1 nb : Tweety-IKVM-Init-Probe)
-├── argumentation_lean/                            # Lake Lean 4 (6 modules .lean + 6 siblings _en, i18n #4980)
+├── argumentation_lean/                            # Lake Lean 4 (modules .lean + siblings _en, i18n #4980)
 └── README.md                                      # Ce fichier
 ```
 
 > **Note** : les dossiers `libs/`, `jdk-17-portable/`, `ext_tools/` et `resources/` sont des répertoires d'exécution (non suivis par Git, téléchargés automatiquement par `Tweety-01-Setup-Python.ipynb` ou `scripts/download_tweety_tools.py`). L'ancien dossier `templates student/` n'existe plus dans cette partition. `scripts/` contient 5 scripts `.py` au premier niveau (`download_tweety_tools.py`, `verify_all_tweety.py`, `validate_syntax.py`, `sat_calibration.py`, `sat_comparison_demo.py`), 4 tests `test_*.py` et un `README.md`, plus un sous-dossier `_archive/` (qui contient `reorganize_tweety.py`, déplacé depuis le premier niveau — plus de doublon). Le dossier `_output/` n'est pas présent dans cette partition (les traces Papermill ne sont pas conservées). Audit §E whole-file gate 2026-07-15, re-audit 2026-08-15, re-audit fichier-entier 2026-09-25 (comptes de notebooks, cellules et durées re-mesurés sur disque — périmètre et résidus déclarés dans l'entrée de changelog).
+
+### Carnets qui importent `tweety_init`
+
+Les carnets listés ci-dessous importent le module d'initialisation `tweety_init` (JVM JPype) au lieu de dérouler eux-mêmes la configuration de la JVM :
+
+| Carnet | Cellule | Import |
+|---|---|---|
+| `Tweety-02d-FOL-Lab-Lean-Python.ipynb` | 2 | `from tweety_init import init_tweety` |
+| `Tweety-02e-Preuves-Hilbert-Gentzen-Lean-Python.ipynb` | 2 | `from tweety_init import init_tweety` |
+| `Tweety-03b-Modal-Lab-Lean-Python.ipynb` | 2 | `from tweety_init import init_tweety` |
+| `Tweety-07a-Extended-Frameworks-Python.ipynb` | 1 | `from tweety_init import init_tweety, EXTERNAL_TOOLS, get_tool_path, print_tools_summary` |
+| `Tweety-10-MLN-Python.ipynb` | 1 | `from tweety_init import init_tweety` |
+| `Tweety-11-Causal-Python.ipynb` | 4 | `from tweety_init import init_tweety` |
+
+Les autres carnets Python de la série configurent la JVM eux-mêmes, dans une cellule de code dédiée — c'est le cas de `Tweety-09-Preferences-Python.ipynb` (cellule 1, « Initialisation JVM Tweety + Outils Externes »). Bilan mesuré sur les 18 carnets `Tweety-*-Python.ipynb` de la série : **6** importent `tweety_init` (tableau ci-dessus), **11** configurent la JVM en ligne, et `Tweety-05d-Stable-Synthesis-Lean-Python.ipynb` n'utilise pas la JVM.
+
+> **À maintenir** : toute addition de carnet qui importe `tweety_init` doit être reportée dans ce tableau. La liste se remesure par recherche de la chaîne `from tweety_init import` dans les cellules de **code** des carnets de la série (les occurrences en prose ne comptent pas).
+
+Pour re-mesurer après l'ajout d'un carnet :
+
+```python
+import glob, nbformat
+for p in sorted(glob.glob("Tweety-*-Python.ipynb")):
+    nb = nbformat.reads(open(p, encoding="utf-8").read(), as_version=4)
+    if any(c.cell_type == "code" and "tweety_init" in (c.source or "") for c in nb.cells):
+        print(p)
+```
 
 ## Outils Externes
 
@@ -793,7 +775,7 @@ La version est configurable dans `Tweety-01-Setup-Python.ipynb` (variable `TWEET
 
 | Série | Connection | Détails |
 |-------|------------|---------|
-| **[Argument_Analysis](../Argument_Analysis/)** | Argumentation agentique | Utilise Tweety comme backend Java pour le raisonnement argumentatif. Les sémantiques de Dung (notebook 5) sont directement appliquées dans l'analyse de textes. |
+| **[ArgumentAnalysis](../ArgumentAnalysis/)** | Argumentation agentique | Utilise Tweety comme backend Java pour le raisonnement argumentatif. Les sémantiques de Dung (notebook 5) sont directement appliquées dans l'analyse de textes. |
 | **[Lean](../Lean/)** | Vérification formelle | Les logiques propositionnelles et FOL (notebooks 2-3) correspondent aux tactiques de preuve Lean. Les SAT solvers de Tweety complètent la vérification Lean. |
 | **[SmartContracts](../SmartContracts/)** | Méthodes formelles | La vérification formelle SC-14 (Certora/SMTChecker) utilise les mêmes solveurs SAT/SMT. La logique propositionnelle de Tweety est la base des invariants Solidity. |
 | **[SemanticWeb](../SemanticWeb/)** | Logique de Description / OWL | La logique de Description (Tweety-3) est le fondement du raisonnement OWL : les ontologies OWL DL (SW-6/SW-7) utilisent les mêmes solveurs DL que Tweety. |
@@ -813,7 +795,7 @@ Tweety est l'outil où **le raisonnement devient explicite et vérifiable** — 
 
 ### Prochaines étapes
 
-- **Appliquez l'argumentation à du texte réel** : la série **[Argument_Analysis](../Argument_Analysis/)** utilise Tweety comme backend pour analyser des argumentations naturelles — c'est le terrain où les sémantiques de Dung rencontrent du langage humain.
+- **Appliquez l'argumentation à du texte réel** : la série **[ArgumentAnalysis](../ArgumentAnalysis/)** utilise Tweety comme backend pour analyser des argumentations naturelles — c'est le terrain où les sémantiques de Dung rencontrent du langage humain.
 - **Certifiez** : les SAT/SMT solvers de Tweety et la vérification formelle partagent le même socle. La série **[Lean](../Lean/)** pousse la logique jusqu'à la preuve de programmes ; **[SmartContracts](../SmartContracts/)** (SC-14) l'applique aux invariants Solidity.
 - **Reliez aux ontologies** : la logique de description de Tweety-3 est le moteur de raisonnement OWL. La série **[SemanticWeb](../SemanticWeb/)** (SW-6/SW-7) en fait le cœur des graphes de connaissances.
 - **Élargissez au choix social** : le notebook 9 (vote, préférences) est la porte d'entrée vers la théorie du choix social formalisée en Lean dans la série **[GameTheory](../../GameTheory/)** (Arrow, Sen, Voting).
@@ -824,8 +806,6 @@ Tweety est l'outil où **le raisonnement devient explicite et vérifiable** — 
 Le pitch de Tweety tient en un mot : **explicabilité**. Là où un LLM produit une réponse, Tweety produit un *argument* — une chaîne de raisonnement inspectable, attaquable, défendable. Les logiques changent (propositionnelle, FOL, modale, DL), les *frameworks* changent (Dung, ASPIC+, ABA), mais l'exigence reste — *raisonner de façon transparente, pas opaquement*. C'est elle que vous emportez au-delà de cette série, et c'est ce qui fait de l'IA symbolique un garde-fou naturel pour l'IA générative.
 
 ---
-
-**Version 1.2.6 — Septembre 2026 — entrée README de `Tweety-02f-Modal-Zoo-Lean-Python` (tranche G de l'EPIC #15066, sous-cube modal certifié : le module `FormalLogic.ModalZoo` (#17642) porte huit systèmes normaux et **l'ordre** qui les relie ; le notebook **exporte** ses trois listes par `lake env lean` (`toJson`, récupéré entre marqueurs — aucune recopie), **recalcule** l'ordre en Python à partir des seuls profils exportés (le droit de le faire étant le théorème `weakerThan_iff_profile`), puis **dessine** le diagramme de Hasse — 11 arêtes de couverture et 7 paires incomparables, sur les 28 paires du cube, 21 inclusions strictes dont 10 par transitivité ; trois exercices stubs C.1). Surfaces touchées : table Structure (+ entrée 2f), table « En quoi chaque notebook est unique » (+ entrée), arbre de structure, tableau des stacks (colonne Python) et statistiques par sous-catégorie (Lean companion 6 → 7, total 38 → 39). **Écart mesuré et corrigé au passage** : la vue d'ensemble annonçait 1165 cellules pour 37 racine + 1 probe ; le disque en portait **1150** (1138 racine + 12 probe) — l'addition du notebook porte le compte à 1170 (446 code). Les 438 cellules de code, elles, étaient exactes. Résidus déclarés, non comblés ici : `Tweety-12-Grounded-Via-TweetyProject-Python` reste absent des deux tables (13e notebook Python, durée jamais déclarée — même résidu que v1.2.3 à v1.2.5, aucune ligne inventée) ; la ligne « Durée estimée ~6h (tutorat) » n'est pas re-dérivée (notion distincte de la somme par notebook) ; et le bloc `CATALOG-STATUS` (`pedagogical_count: 36`) n'est pas réécrit à la main — il décrit `main` avant l'ajout et se résorbera à la prochaine régénération (catalog-pr-hygiene). Précédent : Version 1.2.5 — Septembre 2026 — entrée README de `Tweety-02e-Preuves-Hilbert-Gentzen-Lean-Python` (tranche D de l'EPIC #15066, atelier calculs de preuve : les trois axiomes de Hilbert vérifiés par deux oracles réels, une preuve construite par chaînage avant — coût mesuré en instances/MP, plus une contre-expérience qui **réfute par la mesure** l'hypothèse d'un vivier simplement trop étroit — le syllogisme hypothétique, valide pour les deux oracles, n'est pas dérivé par le moteur, et l'élargir aux sous-formules de la cible ne suffit pas — puis le calcul des séquents LK dont la hauteur et la taille sont mesurées **avant/après** élimination des coupures, le Hauptsatz étant invoqué comme théorème du noyau `Derivation.Canonical.constructiveHauptsatz`, témoin `IsCutFree` inclus). Surfaces touchées : table Structure (+ entrée 2e), table « En quoi chaque notebook est unique » (+ entrée), arbre de structure, statistiques par sous-catégorie (Lean companion 4 → 6, total 35 → 38 — le recensement inclut désormais `Tweety-12-Grounded-Via-TweetyProject-Python`, jusqu'ici hors comptes, avec sa maturité déclarée absente plutôt qu'inventée) et colonne Python du tableau des stacks (16 → 18). Le même geste comble un écart **non déclaré** : `Tweety-02d-FOL-Lab-Lean-Python` (tranche B, #16877), présent sur disque depuis sa livraison mais absent des deux tables, y entre avec sa **propre** durée déclarée (45 minutes, lue dans le notebook) — aucune durée inventée. Trois écarts mesurés et corrigés au passage : les comptes de notebooks (« 32 » de la vue d'ensemble → 37 racine, dont 36 tabulés ; 34 → 36 principaux), les cellules totales (916 → 1165, mesurées sur l'ensemble des fichiers de la série) et les durées agrégées (Python ~13h, C#/.NET ~10h — la somme de la colonne C# valait déjà 585 min contre « ~7h » annoncées) ; l'arbre annonçait par ailleurs 18 assemblages .NET, `git ls-tree origin/main` en compte **19**. Résidus déclarés, non comblés ici : `Tweety-12-Grounded-Via-TweetyProject-Python` reste absent des tables (13e notebook Python ; sa durée n'est déclarée nulle part — même résidu que v1.2.3 et v1.2.4, aucune ligne inventée) ; la ligne « Durée estimée ~6h (tutorat) » de la vue d'ensemble n'est pas re-dérivée (notion distincte de la somme par notebook, non mesurable depuis le disque) ; et le versant Lean de la tranche D reste **dans le notebook** — les deux fichiers d'index du lake (`FormalLogic/../FormalLogic.lean` et son `README.md`) sont sous claim actif d'une autre lane (`check_lane_claim.py`, verdict `BLOCKED` au 2026-09-25), aucun module de pont n'a donc été ajouté à `formal_logic_lean/`. Précédent : Version 1.2.4 — Septembre 2026 — entree README de `Tweety-03b-Modal-Lab-Lean-Python` (tranche C de l'EPIC #15066, laboratoire modal croise Python/Kripke <-> Lean/ModalBridge #17017) : table Structure (+ entrée 3b, notebooks principaux 33 → 34), table « En quoi chaque notebook est unique » (+ entrée), arbre de structure, statistiques par sous-categorie (Lean companion 3 → 4, total 34 → 35) et colonne Python du tableau des stacks (15 → 16). Residu declare, non comble ici : `Tweety-12-Grounded-Via-TweetyProject-Python` reste absent des tables (duree non declaree, cf. v1.2.3). Precedent : Version 1.2.3 — Septembre 2026 — entree README de `Tweety-05e-Propositional-Lab-Lean-Python` (tranche A de l'EPIC #15066, laboratoire propositionnel Tweety/Lean) : table Structure (notebooks principaux 32 → 33), table « En quoi chaque notebook est unique » (ajout de 5d et 5e, lignes 31 → 33), arbre de structure, statistiques par sous-categorie (Lean companion 2 → 3, total 33 → 34) et colonne Python du tableau des stacks (14 → 15). Residu declare, non comble ici : `Tweety-12-Grounded-Via-TweetyProject-Python` (13e notebook Python, kernel `python3`, execute 8/8 sans erreur) reste absent des tables — sa duree n'est declaree nulle part dans le notebook, aucune ligne n'a donc ete inventee. Precedent : Version 1.2.2 — Août 2026 — ajout Tweety-5d (synthèse certifiée Z3→Lean, Loi II #12205/#13597) : lake `argumentation_lean` 6+6 siblings `_en` (module `Synthesis`), toolchain corrigée v4.32.1 (#11587), comptes re-mesurés : notebooks 33, cellules 969 dont 390 code (périmètre : 32 `Tweety-*` + 1 probe). Précédent : Version 1.2.1 — re-audit fichier-entier §E : 18 DLLs shades, scripts/ 5+4+`_archive`, pin IKVM 8.14, limitations re-ancrées 1.30. EPIC #3975 tranche tweety.**
 
 ## Statistiques catalogue à jour
 
@@ -863,13 +843,17 @@ La sous-série Tweety s'inscrit dans un **réseau cross-lane structuré** autour
 | Cette sous-série                  | Symétrie dans                                      | Pont pédagogique                                                                |
 |-----------------------------------|----------------------------------------------------|----------------------------------------------------------------------------------|
 | Tweety-3 (logique de description) | [SemanticWeb](../SemanticWeb/) (SW-6/SW-7 OWL)      | DL = moteur de raisonnement OWL ; même formalisme, deux écosystèmes              |
-| Tweety-3 (Dung frameworks)        | [Argument_Analysis](../Argument_Analysis/)         | Détection de sophismes via cadres de Dung + Semantic Kernel (LLM-contrôle)      |
+| Tweety-3 (Dung frameworks)        | [ArgumentAnalysis](../ArgumentAnalysis/)         | Détection de sophismes via cadres de Dung + Semantic Kernel (LLM-contrôle)      |
 | Tweety-3 (logique modale/QBF)     | [Lean](../Lean/) (mathlib4)                          | Formalisation des logiques Tweety dans l'assistant de preuve Lean 4              |
 | Tweety-9 (préférences, vote)      | [GameTheory](../../GameTheory/SocialChoice/)        | Préférences individuelles → fonction de choix social (Borda, Condorcet, Arrow)   |
 | Tweety-4 (révision AGM)           | [SmartContracts](../SmartContracts/) (SC-14)       | Mise à jour de croyances → invariants Solidity, logique de révision on-chain    |
 | Tweety-11 (Causalité, do-calculus)| [ML](../../ML/) (inférence causale)                | do-calculus Pearl ↔ modèles causaux structurels (Pearl 2009)                     |
 
-**Effet de composition** : Tweety est le **carrefour logique** du dépôt — chaque sous-série partenaire (Lean, SemanticWeb, Argument_Analysis, GameTheory, SmartContracts, ML) y trouve un point d'entrée formel vers l'argumentation computationnelle. Le pipeline complet relie les **notebooks** (qui motivent la pertinence du raisonnement explicite) aux **ports C#/.NET** (qui rendent Tweety invocable sans JVM, via IKVM 8.14, EPIC #4667) et aux **lakes** (qui formalisent les théorèmes sous-jacents, ex. Arrow en Lean 4).
+**Effet de composition** : Tweety est le **carrefour logique** du dépôt — chaque sous-série partenaire (Lean, SemanticWeb, ArgumentAnalysis, GameTheory, SmartContracts, ML) y trouve un point d'entrée formel vers l'argumentation computationnelle. Le pipeline complet relie les **notebooks** (qui motivent la pertinence du raisonnement explicite) aux **ports C#/.NET** (qui rendent Tweety invocable sans JVM, via IKVM 8.14, EPIC #4667) et aux **lakes** (qui formalisent les théorèmes sous-jacents, ex. Arrow en Lean 4).
+
+## Historique des versions
+
+**Version 1.2.6 — Septembre 2026 — entrée README de `Tweety-02f-Modal-Zoo-Lean-Python` (tranche G de l'EPIC #15066, sous-cube modal certifié : le module `FormalLogic.ModalZoo` (#17642) porte huit systèmes normaux et **l'ordre** qui les relie ; le notebook **exporte** ses trois listes par `lake env lean` (`toJson`, récupéré entre marqueurs — aucune recopie), **recalcule** l'ordre en Python à partir des seuls profils exportés (le droit de le faire étant le théorème `weakerThan_iff_profile`), puis **dessine** le diagramme de Hasse — 11 arêtes de couverture et 7 paires incomparables, sur les 28 paires du cube, 21 inclusions strictes dont 10 par transitivité ; trois exercices stubs C.1). Surfaces touchées : table Structure (+ entrée 2f), table « En quoi chaque notebook est unique » (+ entrée), arbre de structure, tableau des stacks (colonne Python) et statistiques par sous-catégorie (Lean companion 6 → 7, total 38 → 39). **Écart mesuré et corrigé au passage** : la vue d'ensemble annonçait 1165 cellules pour 37 racine + 1 probe ; le disque en portait **1150** (1138 racine + 12 probe) — l'addition du notebook porte le compte à 1170 (446 code). Les 438 cellules de code, elles, étaient exactes. Résidus déclarés, non comblés ici : `Tweety-12-Grounded-Via-TweetyProject-Python` reste absent des deux tables (13e notebook Python, durée jamais déclarée — même résidu que v1.2.3 à v1.2.5, aucune ligne inventée) ; la ligne « Durée estimée ~6h (tutorat) » n'est pas re-dérivée (notion distincte de la somme par notebook) ; et le bloc `CATALOG-STATUS` (`pedagogical_count: 36`) n'est pas réécrit à la main — il décrit `main` avant l'ajout et se résorbera à la prochaine régénération (catalog-pr-hygiene). Précédent : Version 1.2.5 — Septembre 2026 — entrée README de `Tweety-02e-Preuves-Hilbert-Gentzen-Lean-Python` (tranche D de l'EPIC #15066, atelier calculs de preuve : les trois axiomes de Hilbert vérifiés par deux oracles réels, une preuve construite par chaînage avant — coût mesuré en instances/MP, plus une contre-expérience qui **réfute par la mesure** l'hypothèse d'un vivier simplement trop étroit — le syllogisme hypothétique, valide pour les deux oracles, n'est pas dérivé par le moteur, et l'élargir aux sous-formules de la cible ne suffit pas — puis le calcul des séquents LK dont la hauteur et la taille sont mesurées **avant/après** élimination des coupures, le Hauptsatz étant invoqué comme théorème du noyau `Derivation.Canonical.constructiveHauptsatz`, témoin `IsCutFree` inclus). Surfaces touchées : table Structure (+ entrée 2e), table « En quoi chaque notebook est unique » (+ entrée), arbre de structure, statistiques par sous-catégorie (Lean companion 4 → 6, total 35 → 38 — le recensement inclut désormais `Tweety-12-Grounded-Via-TweetyProject-Python`, jusqu'ici hors comptes, avec sa maturité déclarée absente plutôt qu'inventée) et colonne Python du tableau des stacks (16 → 18). Le même geste comble un écart **non déclaré** : `Tweety-02d-FOL-Lab-Lean-Python` (tranche B, #16877), présent sur disque depuis sa livraison mais absent des deux tables, y entre avec sa **propre** durée déclarée (45 minutes, lue dans le notebook) — aucune durée inventée. Trois écarts mesurés et corrigés au passage : les comptes de notebooks (« 32 » de la vue d'ensemble → 37 racine, dont 36 tabulés ; 34 → 36 principaux), les cellules totales (916 → 1165, mesurées sur l'ensemble des fichiers de la série) et les durées agrégées (Python ~13h, C#/.NET ~10h — la somme de la colonne C# valait déjà 585 min contre « ~7h » annoncées) ; l'arbre annonçait par ailleurs 18 assemblages .NET, `git ls-tree origin/main` en compte **19**. Résidus déclarés, non comblés ici : `Tweety-12-Grounded-Via-TweetyProject-Python` reste absent des tables (13e notebook Python ; sa durée n'est déclarée nulle part — même résidu que v1.2.3 et v1.2.4, aucune ligne inventée) ; la ligne « Durée estimée ~6h (tutorat) » de la vue d'ensemble n'est pas re-dérivée (notion distincte de la somme par notebook, non mesurable depuis le disque) ; et le versant Lean de la tranche D reste **dans le notebook** — les deux fichiers d'index du lake (`FormalLogic/../FormalLogic.lean` et son `README.md`) sont sous claim actif d'une autre lane (`check_lane_claim.py`, verdict `BLOCKED` au 2026-09-25), aucun module de pont n'a donc été ajouté à `formal_logic_lean/`. Précédent : Version 1.2.4 — Septembre 2026 — entree README de `Tweety-03b-Modal-Lab-Lean-Python` (tranche C de l'EPIC #15066, laboratoire modal croise Python/Kripke <-> Lean/ModalBridge #17017) : table Structure (+ entrée 3b, notebooks principaux 33 → 34), table « En quoi chaque notebook est unique » (+ entrée), arbre de structure, statistiques par sous-categorie (Lean companion 3 → 4, total 34 → 35) et colonne Python du tableau des stacks (15 → 16). Residu declare, non comble ici : `Tweety-12-Grounded-Via-TweetyProject-Python` reste absent des tables (duree non declaree, cf. v1.2.3). Precedent : Version 1.2.3 — Septembre 2026 — entree README de `Tweety-05e-Propositional-Lab-Lean-Python` (tranche A de l'EPIC #15066, laboratoire propositionnel Tweety/Lean) : table Structure (notebooks principaux 32 → 33), table « En quoi chaque notebook est unique » (ajout de 5d et 5e, lignes 31 → 33), arbre de structure, statistiques par sous-categorie (Lean companion 2 → 3, total 33 → 34) et colonne Python du tableau des stacks (14 → 15). Residu declare, non comble ici : `Tweety-12-Grounded-Via-TweetyProject-Python` (13e notebook Python, kernel `python3`, execute 8/8 sans erreur) reste absent des tables — sa duree n'est declaree nulle part dans le notebook, aucune ligne n'a donc ete inventee. Precedent : Version 1.2.2 — Août 2026 — ajout Tweety-5d (synthèse certifiée Z3→Lean, Loi II #12205/#13597) : lake `argumentation_lean` 6+6 siblings `_en` (module `Synthesis`), toolchain corrigée v4.32.1 (#11587), comptes re-mesurés : notebooks 33, cellules 969 dont 390 code (périmètre : 32 `Tweety-*` + 1 probe). Précédent : Version 1.2.1 — re-audit fichier-entier §E : 18 DLLs shades, scripts/ 5+4+`_archive`, pin IKVM 8.14, limitations re-ancrées 1.30.**
 
 ## Licence
 

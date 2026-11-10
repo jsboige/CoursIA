@@ -133,6 +133,26 @@ Pour chaque notebook compare entre sa base git (defaut origin/main) et sa tete
      -- un fichier edite a la main qui porterait le nom sans avoir ete
      execute par papermill reste verifie.
 
+ 10. DEPLACEMENT DE FRONTIERE (#22307) : l'appariement par index compare deux
+     POSITIONS. Quand un bloc de prose quitte une cellule pour sa voisine --
+     exactement le geste que demande #17040 (fusionner deux lectures
+     consecutives) -- la cellule source parait tronquee alors que le texte est
+     intact dans le fichier. Le garde nomme "pas de perte de contenu" doit
+     repondre a la question litterale -- ce texte existe-t-il encore ? -- donc
+     quand une cellule tombe sous le seuil, le texte RETIRE est calcule
+     (``difflib`` sur les lignes, opcodes ``delete``/``replace``), decoupe en
+     paragraphes, et cherche verbatim dans les AUTRES cellules markdown de la
+     tete. Tout retrouve -> ``RELOCATED_CELL``, informatif, hors du verdict
+     ``--check``, avec la cellule cible et les volumes nommes.
+
+     Deux bornes interdisent le blanc-seing : la presence est cherchee HORS de
+     la cellule appariee (se deplacer dans soi-meme n'est pas un deplacement),
+     et un paragraphe retire de moins de ``RELOC_MIN_SEGMENT_CHARS`` caracteres
+     normalises ne beneficie pas de l'excuse -- il pese au denominateur sans
+     jamais grossir le numerateur, donc une cellule qui perd 900 c dont 100 c
+     sont retrouves ailleurs reste une perte bloquante. Le marqueur de body
+     (#13491) reste honore tel quel : la voie declarative n'est pas retiree.
+
 Usage
 -----
     # un notebook, diff vs origin/main (head = working tree)
@@ -154,6 +174,9 @@ Exit codes
          ``TRUNCATED_CELL_JUSTIFIED_BY_BODY`` /
          ``LOST_NAV_LINKS_JUSTIFIED_BY_BODY`` (transparence : la PR a
          assume la reecriture ou la re-cible, le garde ne masque rien).
+         Un ``RELOCATED_CELL`` (#22307, texte retire retrouve verbatim dans
+         une autre cellule) ne produit PAS ce code : il est mesure, nomme
+         dans la sortie, et hors du verdict.
     2 -- erreur (notebook EXISTANT illisible, ref git introuvable). Un notebook
          absent a la base (nouveau fichier) ne declenche PAS rc=2 : il est exempt.
 
@@ -171,6 +194,7 @@ Voir aussi
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import os
 import posixpath
@@ -186,6 +210,25 @@ DROP_THRESHOLD = 0.75
 # Volume normalise minimal d'origine pour qu'une chute soit signalee : evite
 # le bruit sur les cellules triviales (un titre seul, un separateur).
 MIN_ORIG_CHARS = 100
+
+# Deplacement de frontiere (#22307). Un garde nomme "pas de perte de contenu"
+# doit repondre a la question litterale -- ce texte existe-t-il encore dans la
+# tete ? L'appariement par index compare deux POSITIONS ; quand un bloc quitte
+# une cellule pour sa voisine (geste de #17040 : fusionner deux lectures
+# consecutives), la cellule source parait tronquee alors que le texte est
+# intact dans le fichier. Le finding devient alors RELOCATED_CELL, informatif.
+# Deux bornes empechent le blanc-seing : la presence est cherchee HORS de la
+# cellule appariee (se deplacer dans soi-meme n'est pas un deplacement), et un
+# segment retire trop court ne compte pas comme explique -- seule une quantite
+# significative et continue est reconnue comme deplacee.
+RELOC_MIN_SEGMENT_CHARS = 80
+RELOC_MIN_ACCOUNTED_RATIO = 0.85
+
+# Findings informatifs : conserves dans result["findings"] pour la transparence
+# (un auditeur voit ce que l'organe a mesure), mais hors du verdict binaire
+# --check. RELOCATED_CELL qualifie un deplacement de frontiere mesure, pas une
+# perte ; les *_JUSTIFIED_BY_BODY sont la porte assumee par l'auteur (#13491).
+NON_BLOCKING_KINDS = frozenset({"RELOCATED_CELL"})
 
 # ---------------------------------------------------------------------------
 # Mode traduction (#13548). Un artefact *_<lang>.ipynb dont le sibling FR
@@ -737,6 +780,14 @@ def _compare_cells(base_md: list[tuple[int, str | None, str]],
     if len(base_md) != len(head_md):
         return findings  # compte modifie -> la comparaison fichier suffit
 
+    # #22307 : vue (index, texte NORMALISE) de TOUTES les cellules markdown de
+    # la tete, utilisee pour reconnaitre un deplacement de frontiere entre deux
+    # cellules voisines. Construite une fois : la recherche du texte retire est
+    # un balayage sur du texte deja normalise, pas une re-normalisation par
+    # couple (segment x cellule) -- #22308 (review, reserve 2) : le commentaire
+    # decrivait deja cette optimisation, il est maintenant vrai.
+    head_cells_view = [(h_idx, _normalize(h_src)) for h_idx, _cid, h_src in head_md]
+
     # Fix #10873 (court-circuit multiset) : si le multiset des contenus
     # normalises est identique entre base et head, aucune perte de contenu
     # n'est possible -- c'est une permutation pure. On retourne zero finding
@@ -763,6 +814,11 @@ def _compare_cells(base_md: list[tuple[int, str | None, str]],
     head_with_id = [(h_idx, cid, h_src) for h_idx, cid, h_src in head_md if cid is not None]
     base_id_set = {cid for _, cid, _ in base_with_id}
     head_id_set = {cid for _, cid, _ in head_with_id}
+    # Paires (b_idx, b_src, h_idx, h_src) retenues par la strategie
+    # d'appariement. On les COLLECTE avant d'emettre : le budget de croissance
+    # par cellule cible (#22307) se calcule sur l'ensemble des paires, donc il
+    # doit etre connu avant le premier finding.
+    pairs: list[tuple[int, str, int, str]] = []
     if base_id_set == head_id_set and base_id_set:
         # Meme ensemble d'IDs (non vide) : on apparie par ID le sous-ensemble
         # id-e (iterant sur head, donc h_idx = position actuelle dans le
@@ -773,11 +829,11 @@ def _compare_cells(base_md: list[tuple[int, str | None, str]],
         base_by_id = {cid: (b_idx, b_src) for b_idx, cid, b_src in base_with_id}
         for h_idx, h_cid, h_src in head_with_id:
             b_idx, b_src = base_by_id[h_cid]
-            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings, drop_threshold)
+            pairs.append((b_idx, b_src, h_idx, h_src))
         base_residue = [t for t in base_md if t[1] is None]
         head_residue = [t for t in head_md if t[1] is None]
         for (b_idx, _, b_src), (h_idx, _, h_src) in zip(base_residue, head_residue):
-            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings, drop_threshold)
+            pairs.append((b_idx, b_src, h_idx, h_src))
     else:
         # IDs absents OU ensembles differents (#19870 substitution pure) : on
         # ne peut pas apparier par ID. Avant l'appariement par index legacy,
@@ -827,47 +883,212 @@ def _compare_cells(base_md: list[tuple[int, str | None, str]],
         # sur le residu -- c'est l'appariement trivial : seules les cellules
         # reellement modifiees y figurent, dans l'ordre du notebook.
         for (b_idx, _, b_src), (h_idx, _, h_src) in zip(base_residue, head_residue):
-            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings, drop_threshold)
+            pairs.append((b_idx, b_src, h_idx, h_src))
         # Comptes inegaux apres intersection : la difference releve de la
         # comparaison fichier (deja faite par l'appelant au-dela de
         # ``_compare_cells``) -- ici on ne double-compte pas.
+
+    # #22307 : budget de croissance par cellule de tete. Un deplacement de
+    # frontiere ne peut etre credite qu'a une cellule qui a REELLEMENT grossi
+    # par rapport a sa version de base ; sans cette mesure, une cellule qui
+    # perd son texte alors qu'une AUTRE cellule en portait deja une copie
+    # identique (duplication en base) passerait pour un deplacement -- c'est
+    # le faux negatif que les temoins de troncature mesurent.
+    head_growth: dict[int, int] = {}
+    for _b_idx, b_src, h_idx, h_src in pairs:
+        # #22308 (review, reserve 1) : la croissance se mesure sur le MEME
+        # texte de base que le ratio -- le frontmatter cost migre (#8919)
+        # n'est pas une decroissance de la cellule d'accueil.
+        ratio_src, _div = _cost_migration_view(b_src, head_cost)
+        head_growth[h_idx] = head_growth.get(h_idx, 0) + (
+            _norm_len(h_src) - _norm_len(ratio_src))
+
+    for b_idx, b_src, h_idx, h_src in pairs:
+        _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings,
+                           drop_threshold, head_cells=head_cells_view,
+                           head_growth=head_growth)
     return findings
+
+
+def _is_blocking_finding(finding: dict) -> bool:
+    """True si ce finding participe au verdict binaire ``--check``.
+
+    Deux familles n'y participent pas : les ``*_JUSTIFIED_BY_BODY`` (porte
+    assumee par l'auteur de la PR, #13491/#17727) et les
+    ``NON_BLOCKING_KINDS`` (``RELOCATED_CELL``, #22307). Les trois restent
+    dans ``result["findings"]`` : le garde ne masque rien, il qualifie.
+    """
+    kind = str(finding.get("kind", ""))
+    if kind.endswith("JUSTIFIED_BY_BODY"):
+        return False
+    return kind not in NON_BLOCKING_KINDS
+
+
+def _cost_migration_view(b_src: str, head_cost: dict | None) -> tuple[str, list[str] | None]:
+    """Texte de base pour tout calcul de volume (ratio, croissance).
+
+    Applique la migration frontmatter ``cost:`` (#8919) : si la cellule base
+    porte un bloc cost equivalent au ``head_cost`` et qu'aucune cle
+    informative colocataire n'est restee sur le carreau (#8921-4), le
+    frontmatter est retire -- une migration n'est ni une perte ni une
+    decroissance. Retourne ``(texte de base, divergences)`` ; les divergences
+    ne servent qu'a l'emission du finding FRONTMATTER_COST_DIVERGENCE.
+
+    #22308 (review NanoClaw, reserve 1) : ``head_growth`` doit se mesurer sur
+    CE meme texte. Calcule sur le ``b_src`` brut, la croissance d'une cellule
+    d'accueil qui avait le frontmatter dans sa propre base est sous-estimee
+    du volume du frontmatter absorbe, et la garde comptable peut refuser un
+    deplacement legitime (TRUNCATED_CELL bloquant a tort).
+    """
+    base_cost = _parse_frontmatter_cost(b_src)
+    if base_cost is None:
+        return b_src, None
+    equiv, divergent = _cost_equivalent(base_cost, head_cost)
+    unmigrated = [k for k in _frontmatter_non_cost_keys(b_src)
+                  if not (head_cost and k in head_cost)]
+    if equiv and not unmigrated:
+        return FRONTMATTER_RE.sub("", b_src, count=1), None
+    return b_src, divergent + unmigrated
+
+
+def _relocated_targets(b_src: str, h_idx: int, h_src: str,
+                       head_cells: list[tuple[int, str]],
+                       head_growth: dict[int, int] | None = None) -> dict | None:
+    """Ce que la cellule a perdu survit-il verbatim dans une AUTRE cellule ?
+
+    Compare les lignes de la cellule de base a celles de la cellule appariee
+    (``difflib.SequenceMatcher``, opcodes ``delete``/``replace``), decoupe le
+    retire en paragraphes (separateur : ligne blanche) et cherche chaque
+    paragraphe d'au moins ``RELOC_MIN_SEGMENT_CHARS`` caracteres normalises
+    dans le texte normalise d'une cellule markdown de la tete **dont l'index
+    differe de** ``h_idx``.
+
+    ``head_growth`` est le discriminant qui empeche le blanc-seing : le texte
+    « deplace » doit avoir fait **grossir** sa cellule d'accueil par rapport a
+    la version de base de celle-ci. Chercher une simple presence verbatim
+    suffirait a absoudre une vraie troncature des lors qu'une cellule du carnet
+    portait deja une copie identique du meme texte (duplication) : le contenu
+    perdu y serait « retrouve » sans avoir jamais bouge. Trois temoins de
+    troncature mesurent exactement cette forme -- une cellule ``alpha`` et une
+    cellule ``bravo`` de meme corps, ``bravo`` tronquee : sans ce budget, la
+    copie d'``alpha`` absoudrait la perte de ``bravo``.
+
+    Retourne ``None`` -- donc ``TRUNCATED_CELL`` bloquant -- des qu'un
+    paragraphe significatif ne se retrouve nulle part ailleurs, quand une
+    cellule d'accueil n'a pas grossi, ou quand la fraction expliquee n'atteint
+    pas ``RELOC_MIN_ACCOUNTED_RATIO`` : une cellule qui perd 900 c dont 100 c
+    sont retrouves ailleurs reste une perte. Les paragraphes courts ne sont
+    jamais « excuses » ; ils pesent au denominateur sans jamais grossir le
+    numerateur.
+
+    ``b_src`` est le texte de base APRES strip du frontmatter ``cost:`` migre
+    (#8919/#8921) : une migration de frontmatter n'est pas un retrait.
+
+    ``head_cells`` porte le texte deja NORMALISE (vue construite une fois par
+    l'appelant) : la recherche interne est un balayage, sans re-normalisation.
+
+    Le finding parle du **corpus**, pas de la cellule citee (#22308 review,
+    reserve 4) : un bloc deplace vers une cellule sans rapport avec son
+    origine est quand meme un contenu conserve -- c'est l'arbitrage assume
+    face a #17040 (fusion de lectures voisines), qui justifie de sortir
+    RELOCATED_CELL du verdict binaire.
+    """
+    b_lines = b_src.splitlines()
+    if not b_lines:
+        return None
+    matcher = difflib.SequenceMatcher(a=b_lines, b=h_src.splitlines(), autojunk=False)
+    removed: list[str] = []
+    for tag, i1, i2, _j1, _j2 in matcher.get_opcodes():
+        if tag in ("delete", "replace"):
+            removed.extend(b_lines[i1:i2])
+    if not removed:
+        return None
+    removed_chars = len(_normalize("\n".join(removed)))
+    if removed_chars < RELOC_MIN_SEGMENT_CHARS:
+        return None
+
+    # Decoupage en paragraphes : une ligne blanche separe deux blocs de prose.
+    # Le separateur lui-meme n'est jamais du contenu a retrouver.
+    segments: list[str] = []
+    current: list[str] = []
+    for line in removed:
+        if line.strip():
+            current.append(line)
+        elif current:
+            segments.append("\n".join(current))
+            current = []
+    if current:
+        segments.append("\n".join(current))
+
+    hits: list[int] = []
+    accounted = 0
+    for seg in segments:
+        seg_norm = _normalize(seg)
+        if len(seg_norm) < RELOC_MIN_SEGMENT_CHARS:
+            continue  # trop court pour beneficier de l'excuse
+        found_in: int | None = None
+        for other_idx, other_norm in head_cells:
+            if other_idx == h_idx:
+                continue  # se deplacer dans sa propre cellule n'est pas un deplacement
+            if head_growth is not None and head_growth.get(other_idx, 0) <= 0:
+                # La cellule d'accueil n'a pas grossi : elle portait deja ce
+                # texte en base (duplication), rien n'y a ete deplace.
+                continue
+            if seg_norm in other_norm:
+                found_in = other_idx
+                break
+        if found_in is None:
+            return None
+        accounted += len(seg_norm)
+        if found_in not in hits:
+            hits.append(found_in)
+    if not hits:
+        return None
+    if accounted < RELOC_MIN_ACCOUNTED_RATIO * removed_chars:
+        return None
+    # Comptabilite : ce qui est declare deplace doit tenir dans la croissance
+    # reellement mesuree des cellules d'accueil.
+    if head_growth is not None and accounted > sum(head_growth.get(i, 0) for i in hits):
+        return None
+    return {
+        "relocated_to": sorted(hits),
+        "relocated_chars": accounted,
+        "removed_chars": removed_chars,
+    }
 
 
 def _emit_cell_finding(b_idx: int, b_src: str,
                        h_idx: int, h_src: str,
                        head_cost: dict | None,
                        findings: list[dict],
-                       drop_threshold: float = DROP_THRESHOLD) -> None:
-    """Emet un finding TRUNCATED_CELL ou FRONTMATTER_COST_DIVERGENCE si applicable.
+                       drop_threshold: float = DROP_THRESHOLD,
+                       head_cells: list[tuple[int, str]] | None = None,
+                       head_growth: dict[int, int] | None = None) -> None:
+    """Emet un finding TRUNCATED_CELL, RELOCATED_CELL ou FRONTMATTER_COST_DIVERGENCE.
 
     Facteur commun aux deux strategies d'appariement (ID stable / index legacy)
     dans ``_compare_cells``. La migration frontmatter cost (#8919) et le strip
     des cles informatives colocataires (#8921) s'appliquent identiquement.
+
+    ``head_cells`` = toutes les cellules markdown de la tete, ``(idx, texte
+    normalise)`` -- la normalisation est faite une fois par l'appelant.
+    Fourni, il permet de reconnaitre un **deplacement de frontiere** (#22307) :
+    le texte retire d'ici existe-t-il encore ailleurs dans le carnet ? Si oui,
+    le finding est qualifie ``RELOCATED_CELL`` et sort du verdict binaire.
+    Omis (``None``), le comportement historique est preserve a l'identique.
     """
-    # Migration frontmatter cost -> metadata.cost (#8919) : si la cellule base
-    # porte un bloc cost equivalent au head_cost, on retire le frontmatter du
-    # ratio. #8921-4 : on ne le fait QUE si aucune cle informative colocataire
-    # (ex: ``notes:``) n'est reste sur le carreau -- sinon le strip retirait le
-    # frontmatter ENTIER et faisait disparaitre ``notes:`` en silence (Claudish).
-    b_src_ratio = b_src
-    divergent_cost: list[str] | None = None
-    base_cost = _parse_frontmatter_cost(b_src)
-    if base_cost is not None:
-        equiv, divergent = _cost_equivalent(base_cost, head_cost)
-        unmigrated = [k for k in _frontmatter_non_cost_keys(b_src)
-                       if not (head_cost and k in head_cost)]
-        if equiv and not unmigrated:
-            b_src_ratio = FRONTMATTER_RE.sub("", b_src, count=1)
-        else:
-            divergent_cost = divergent + unmigrated
+    # Migration frontmatter cost -> metadata.cost (#8919, #8921-4) : le texte
+    # de base pour le ratio est calcule par _cost_migration_view, PARTAGE avec
+    # le budget de croissance head_growth (#22308 review, reserve 1) -- meme
+    # texte, meme mesure, sinon la garde comptable du deplacement desynchronise.
+    b_src_ratio, divergent_cost = _cost_migration_view(b_src, head_cost)
     b_norm = _norm_len(b_src_ratio)
     h_norm = _norm_len(h_src)
     if b_norm < MIN_ORIG_CHARS:
         return  # cellule d'origine trop courte pour qu'une chute soit du bruit
     if h_norm < drop_threshold * b_norm:
         ratio = (h_norm / b_norm) if b_norm else 0.0
-        findings.append({
+        finding = {
             "kind": "TRUNCATED_CELL",
             "cell_idx": h_idx,
             "before_chars": b_norm,
@@ -876,7 +1097,18 @@ def _emit_cell_finding(b_idx: int, b_src: str,
             "threshold": drop_threshold,
             "before_excerpt": b_src.strip().split("\n", 1)[0][:90],
             "after_excerpt": h_src.strip().split("\n", 1)[0][:90],
-        })
+        }
+        # #22307 : avant de declarer une perte, verifier que le texte retire
+        # n'a pas simplement change de cellule. La question du garde est
+        # "ce contenu existe-t-il encore dans la tete ?", pas "cette position
+        # a-t-elle garde son volume".
+        if head_cells:
+            relocated = _relocated_targets(b_src_ratio, h_idx, h_src, head_cells,
+                                           head_growth)
+            if relocated:
+                finding["kind"] = "RELOCATED_CELL"
+                finding.update(relocated)
+        findings.append(finding)
     if divergent_cost:
         # Le bloc cost a disparu de la cellule SANS migration equivalente :
         # perte reelle de cost (le squelette metadata.cost ne suffit pas).
@@ -1168,7 +1400,12 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
             "cell_count_stable": len(base_md) == len(head_md),
             "base_total_normalized_chars": base_total,
             "head_total_normalized_chars": head_total,
-            "findings_count": len(findings),
+            # Compte des findings BLOQUANTS : RELOCATED_CELL et les
+            # *_JUSTIFIED_BY_BODY restent visibles dans "findings" mais ne
+            # pesent pas sur le verdict (#22307/#13491).
+            "findings_count": sum(1 for f in findings if _is_blocking_finding(f)),
+            "relocated_cells": sorted({f["cell_idx"] for f in findings
+                                       if f.get("kind") == "RELOCATED_CELL"}),
         },
     }
 
@@ -1421,8 +1658,7 @@ def main(argv: list[str] | None = None) -> int:
             # les JUSTIFIED_BY_BODY : le marqueur est la PORTE assumee par
             # l'auteur, pas une dispense systematique.
             result["stats"]["findings_count"] = sum(
-                1 for f in result["findings"]
-                if not str(f.get("kind", "")).endswith("JUSTIFIED_BY_BODY")
+                1 for f in result["findings"] if _is_blocking_finding(f)
             )
             result["stats"]["findings_count_with_justified"] = len(result["findings"])
             if justified:
@@ -1477,6 +1713,16 @@ def main(argv: list[str] | None = None) -> int:
                           "reecriture assumee par marqueur de body (#13491).")
                     print(f"      before: {f['before_excerpt']!r}")
                     print(f"      after:  {f['after_excerpt']!r}")
+                elif f["kind"] == "RELOCATED_CELL":
+                    cibles = ", ".join(str(i) for i in f.get("relocated_to", []))
+                    print(f"  - cell {f['cell_idx']} {f['kind']}: "
+                          f"{f['before_chars']}c -> {f['after_chars']}c "
+                          f"(ratio {f['ratio']}, seuil {f.get('threshold', DROP_THRESHOLD)}) -- "
+                          f"{f['relocated_chars']}c sur {f['removed_chars']}c retires "
+                          f"retrouves verbatim en cellule(s) {cibles} : contenu "
+                          "deplace, pas perdu (#22307).")
+                    print(f"      before: {f['before_excerpt']!r}")
+                    print(f"      after:  {f['after_excerpt']!r}")
                 elif f["kind"] == "LOST_MOTIF":
                     print(f"  - {f['kind']}: '{f['motif']}' disparu "
                           f"(base={f['before_count']})")
@@ -1504,11 +1750,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.check and result["findings"]:
         # Les findings marques *_JUSTIFIED_BY_BODY ne bloquent PAS le verdict
         # binaire : le marker de body est la PORTE assumee par l'auteur de la
-        # PR (#13491). La trace reste dans result["findings"] et est listee
-        # dans la sortie non-JSON, ce qui preserve la transparence pour un
-        # auditeur en review.
-        blocking = [f for f in result["findings"]
-                     if not str(f.get("kind", "")).endswith("JUSTIFIED_BY_BODY")]
+        # PR (#13491). Idem RELOCATED_CELL (#22307) : le contenu retire a ete
+        # retrouve verbatim ailleurs dans la tete, c'est un deplacement mesure.
+        # La trace reste dans result["findings"] et est listee dans la sortie
+        # non-JSON, ce qui preserve la transparence pour un auditeur en review.
+        blocking = [f for f in result["findings"] if _is_blocking_finding(f)]
         if blocking:
             return 1
     return 0

@@ -27,17 +27,29 @@ Parcours definitions:
 """
 
 import argparse
+import hashlib
 import json
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 from urllib.parse import quote
 
-from generate_catalog import truncate_at_word
+from generate_catalog import (
+    EXCLUDE_ALWAYS,
+    EXCLUDE_PEDAGOGICAL,
+    code_source_sha,
+    extract_title,
+    truncate_at_word,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CATALOG_PATH = REPO_ROOT / "COURSE_CATALOG.generated.json"
 PARCOURS_DIR = REPO_ROOT / "docs" / "curriculum"
+
+# Ancre de code d'un carnet sans aucune cellule de code : deux carnets
+# purement markdown partageraient ce digest, il ne prouve aucune identite.
+_EMPTY_CODE_SHA = hashlib.sha256(b"").hexdigest()
 
 # Fail-closed (#15882): docs/curriculum/ mixes generated pages (ids of the
 # PARCOURS dict, rewritten daily by catalog-cron.yml) with manual pages, and
@@ -136,6 +148,81 @@ def load_catalog() -> list[dict]:
     return json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
 
 
+def _code_anchor(entry: dict) -> str:
+    """Ancre de code portee par l'entree du catalogue ('' si absente)."""
+    return (entry.get("scientific_review_detail") or {}).get("code_sha", "") or ""
+
+
+def _is_indexed_candidate(parts: tuple[str, ...], stem: str) -> bool:
+    """Memes exclusions que generate_catalog.scan_all_notebooks.
+
+    Un carnet d'archive ou de recherche ne peut pas devenir la nouvelle cible
+    d'une entree : le catalogue ne l'indexe pas non plus.
+    """
+    if any(part in EXCLUDE_ALWAYS or part.startswith(".") for part in parts):
+        return False
+    if stem.endswith("_executed"):
+        return False
+    inside_series = "/".join(parts[1:])
+    return not any(exc in inside_series for exc in EXCLUDE_PEDAGOGICAL)
+
+
+def resolve_moved_entries(entries: list[dict], root: Path | None = None) -> list[dict]:
+    """Repointe les entrees dont le carnet a ete deplace sur disque.
+
+    Un renommage pose sur `main` laisse l'entree du catalogue en retard : son
+    chemin n'existe plus, et la page degradait le lien en libelle nu avec le
+    titre perime du catalogue (#14880). Le carnet est retrouve a son emplacement
+    reel par son ancre de CODE (`code_source_sha`, l'ancre que le catalogue
+    utilise pour suivre un carnet a travers ses modifications markdown) : un
+    carnet que le catalogue n'indexe pas encore, au code identique, et unique,
+    en est le nouvel emplacement. Le titre est alors celui du carnet lui-meme,
+    comme la regeneration du catalogue l'aurait calcule.
+
+    Pas d'historique git ni de registre : la sortie ne depend ni de la
+    profondeur du clone ni d'un fichier de renommage incomplet. Sans
+    correspondance unique, l'entree reste telle quelle (libelle nu).
+    """
+    root = root if root is not None else REPO_ROOT / "MyIA.AI.Notebooks"
+    moved = [e for e in entries if not (root / e["path"]).exists()]
+    if not moved:
+        return entries
+
+    indexed = {e["path"] for e in entries}
+    by_code: dict[str, list[tuple[str, str]]] = {}
+    for nb_path in sorted(root.rglob("*.ipynb")):
+        rel_parts = nb_path.relative_to(root).parts
+        rel = "/".join(rel_parts)
+        if rel in indexed or not _is_indexed_candidate(rel_parts, nb_path.stem):
+            continue
+        try:
+            notebook = json.loads(nb_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        sha = code_source_sha(notebook)
+        if sha != _EMPTY_CODE_SHA:
+            by_code.setdefault(sha, []).append(
+                (rel, extract_title(notebook) or nb_path.stem)
+            )
+
+    # Deux entrees manquantes au meme code = pas d'attribution fiable : aucune.
+    moved_counts = Counter(_code_anchor(e) for e in moved)
+
+    resolved = []
+    for e in entries:
+        if (root / e["path"]).exists():
+            resolved.append(e)
+            continue
+        anchor = _code_anchor(e)
+        hits = by_code.get(anchor, []) if anchor else []
+        if len(hits) != 1 or moved_counts[anchor] != 1:
+            resolved.append(e)
+            continue
+        new_path, new_title = hits[0]
+        resolved.append({**e, "path": new_path, "title": new_title})
+    return resolved
+
+
 def filter_for_parcours(entries: list[dict], parcours_id: str) -> list[dict]:
     """Filter catalog entries for a specific parcours."""
     config = PARCOURS[parcours_id]
@@ -160,13 +247,35 @@ def generate_parcours_page(
     parcours_id: str,
     entries: list[dict],
     unresolved: list[str] | None = None,
+    notebooks_root: Path | None = None,
 ) -> str:
     """Generate markdown page for a single parcours.
 
     ``unresolved`` (optional) collects the ``path`` of every catalog entry whose
-    notebook is absent from disk; such entries get a BARE label (no markdown
-    link) rather than an href that 404s until the next catalogue regeneration.
+    notebook is absent from disk even after resolve_moved_entries(); such stale
+    entries are SKIPPED entirely -- not counted in the stats, not emitted as a
+    row. A stale catalogue (famine-delayed cron regen merging on ``main`` after
+    a rename, #20552) would otherwise re-inject a ghost row on every
+    regeneration and drift the page away from the committed tree.
+
+    ``notebooks_root`` (optional) overrides the disk root the existence checks
+    run against (same contract as ``resolve_moved_entries``); tests materialize
+    their fixture entries under a tmp_path instead of relying on the real tree.
     """
+    root = notebooks_root if notebooks_root is not None else REPO_ROOT / "MyIA.AI.Notebooks"
+    # #14880 hardened the emission (bare label, no 404ing href); #20552 showed
+    # the bare row itself is the non-idempotence: the committed page carries no
+    # row for the ghost notebook, so every regen from the stale catalogue
+    # produces a +1 diff. Skip absent entries BEFORE the stats block so counts
+    # and rows stay consistent with what the page actually emits.
+    present: list[dict] = []
+    for e in entries:
+        if (root / e["path"]).exists():
+            present.append(e)
+        elif unresolved is not None:
+            unresolved.append(e["path"])
+    entries = present
+
     config = PARCOURS[parcours_id]
     lines = [
         "<!--",
@@ -228,11 +337,11 @@ def generate_parcours_page(
             label = name.replace("[", "\\[").replace("]", "\\]")
             maturity = e.get("maturity", "?")
             exe = "Oui" if e.get("executable_locally") else "Non"
-            # Harden against the regen window (#14880): between a rename landing
-            # on `main` and the next catalogue regeneration, an entry's path can
-            # be absent from disk. Emit a BARE label (no href) rather than a
-            # link that 404s, and collect it for the stderr report.
-            if (REPO_ROOT / "MyIA.AI.Notebooks" / e["path"]).exists():
+            # Defense in depth (#14880): absent-path entries are skipped before
+            # the stats block (top of function), so this guard should not fire
+            # on catalogue entries; it still covers a path vanishing between
+            # the partition and the emission.
+            if (root / e["path"]).exists():
                 href = quote(f"../../MyIA.AI.Notebooks/{e['path']}")
                 cell = f"[{label}]({href})"
             else:
@@ -450,8 +559,9 @@ def main():
 
     refused: list[Path] = []
     unresolved: list[str] = []
+    located = resolve_moved_entries(entries)
     for pid in targets:
-        filtered = filter_for_parcours(entries, pid)
+        filtered = filter_for_parcours(located, pid)
         page = generate_parcours_page(pid, filtered, unresolved)
 
         if args.dry_run:
@@ -483,7 +593,7 @@ def main():
     if unresolved:
         print(
             "WARNING: catalog entries whose notebook path is absent from disk "
-            f"(emitted as bare label, {len(set(unresolved))} unique):",
+            f"(skipped from pages and stats, {len(set(unresolved))} unique):",
             file=sys.stderr,
         )
         for p in sorted(set(unresolved)):

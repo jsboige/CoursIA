@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "description": "Versions canoniques des bibliotheques chargees par les cellules des carnets (organe #23073). Quand un organe de serie fixe deja la version, le manifeste POINTE vers lui (canonical_source=organ) et ne recopie pas la valeur : deux surfaces qui recopient la meme valeur finissent par diverger. AUCUN DECOMPIL N'EST RECOPIE DANS CE FICHIER : le nombre de carnets par version vient du recensement (`python scripts/notebook_tools/check_lib_versions.py --census`), seul a jour sur le corpus. Les motifs ecrivent POURQUOI un ecart est justifie ou a converger, pas combien de carnets le portent.",
+  "libraries": [
+    {
+      "id": "Tweety",
+      "ecosystem": "tweety",
+      "canonical_source": "organ",
+      "organ_path": "MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/download_tweety_tools.py",
+      "organ_symbol": "TWEETY_VERSION",
+      "local_symbol": "TWEETY_VERSION",
+      "foreign_provisioning": [
+        {
+          "pattern": "tweetyproject\\.org/builds/",
+          "reason": "Source de provisionnement hors de l'organe de serie : le chemin tweetyproject.org/builds/<version>/ repond 404 depuis #12789 ; l'organe de serie telecharge depuis Maven Central (TWEETY_MAVEN_BASE). C'est le cas declencheur de #23047 (archive : TWEETY_VERSION redeclaree a 1.28 dans le carnet) -- cas CORPSUS repare depuis sur `main` par #23047 (commit d5e44a0919d6 : le carnet archive est desormais provisionne par l'organe de la serie). Le motif est conserve : il decrit la CLASSE de defaut que l'organe doit voir, pas un carnet particulier."
+        }
+      ]
+    },
+    {
+      "id": "IKVM",
+      "ecosystem": "nuget",
+      "canonical": "8.15.0",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "8.14.0",
+          "decision": "justified",
+          "reason": "Ecart justifie, NON convergent : les carnets concernes chargent une DLL Tweety ombree precompilee contre IKVM 8.14.0 (recette de shade : dotnet-build/build-TweetyMlnShade.csproj pour Tweety-10) et figent ikvmVer = \"8.14.0\" dans leur cellule de setup. Monter la ligne d'epinglage a 8.15.0 sans recompiler l'artefact ombre charge une DLL compilee en 8.14.0 dans un runtime 8.15.0 : la convergence serait une regression fonctionnelle, pas un alignement. Les carnets concernes sont nommes dans les entrees d'allowlist."
+        }
+      ]
+    },
+    {
+      "id": "IKVM.Image",
+      "ecosystem": "nuget",
+      "canonical": "8.15.0",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "8.14.0",
+          "decision": "justified",
+          "reason": "Ecart justifie, NON convergent : meme motif que IKVM 8.14.0 -- l'artefact ombre (DLL + runtime IKVM) est compile et prepare en 8.14.0 ; IKVM.Image suit la meme version que IKVM dans la recette de build."
+        }
+      ]
+    },
+    {
+      "id": "pythonnet",
+      "ecosystem": "nuget",
+      "canonical": "3.1.0",
+      "canonical_source": "manifest",
+      "divergences": []
+    },
+    {
+      "id": "Google.OrTools",
+      "ecosystem": "nuget",
+      "canonical": "9.15.6755",
+      "canonical_source": "manifest",
+      "divergences": []
+    },
+    {
+      "id": "dotNetRDF",
+      "ecosystem": "nuget",
+      "canonical": "3.5.2",
+      "canonical_source": "manifest",
+      "divergences": []
+    },
+    {
+      "id": "Microsoft.ML",
+      "ecosystem": "nuget",
+      "canonical": "5.0.0",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "3.0.0",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : aucun motif ecrit dans le depot ne rattache l'epingle 3.0.0 a une contrainte de la serie, donc l'ecart est classe « a converger »."
+        }
+      ]
+    },
+    {
+      "id": "SkiaSharp",
+      "ecosystem": "nuget",
+      "canonical": "3.119.4",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "2.88.3",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : aucun motif ecrit dans le depot ne rattache l'epingle 2.88.3 a une contrainte de la serie, donc l'ecart est classe « a converger »."
+        }
+      ]
+    },
+    {
+      "id": "Microsoft.ML.AutoML",
+      "ecosystem": "nuget",
+      "canonical": "0.23.0",
+      "canonical_source": "manifest",
+      "divergences": []
+    },
+    {
+      "id": "CsvHelper",
+      "ecosystem": "nuget",
+      "canonical": "33.0.1",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "27.1.1",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : aucune dependance documentee a CsvHelper 27.x dans le depot, donc l'ecart est classe « a converger »."
+        }
+      ]
+    },
+    {
+      "id": "mealpy",
+      "ecosystem": "pip",
+      "canonical": "3.0.2",
+      "canonical_source": "manifest",
+      "note": "Version du paquet Python mealpy, celle que doit exposer l'environnement charge par `Config/PythonNetLoader.cs` pour les carnets qui l'importent. Depuis #23104 l'organe lit aussi les lignes-commandes des cellules MARKDOWN : le corpus declare mealpy sur deux d'entre elles, et sur aucune avec une version (`pip install mealpy>=3.0` dans Search-11-Metaheuristics, `pip install mealpy numpy matplotlib` dans Sudoku-05-PSO-Python) -- ce sont des epinglages flottants, signales comme tels. Les deux occurrences de 3.0.2 en cellule code restent de la prose (un `print` et un commentaire C#), donc pas des epinglages. L'entree de manifeste ne pretend pas que le corpus declare la version exacte : c'est un contrat d'environnement."
+    },
+    {
+      "id": "torch",
+      "ecosystem": "observed",
+      "observe_outputs": true,
+      "canonical_source": "manifest",
+      "canonical_by_series": [
+        {
+          "series": "RL",
+          "canonical": "2.13.0",
+          "note": "Plancher de convergence de la serie RL. La serie tourne sous 2.13/2.14 sur main (mesure du coordinateur du 06/11, #23073) ; les versions 2.6/2.8/2.9/2.11 relevees dans ses sorties commitees sont des reculs, dont la 2.6 qui a traverse les gardes le 01/11 (#23941). Le `requirements.txt` de la serie ne porte qu'un plancher (`torch>=2.0`), trop bas pour servir de cible : c'est la declaration du manifeste qui fixe le seuil a converger."
+        },
+        {
+          "series": "ML/DataScienceWithAgents/04-Vision",
+          "canonical_source": "artifact",
+          "organ_path": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/requirements.txt",
+          "note": "Version lue dans le `requirements.txt` de la serie (`torch==2.14.0`) -- le seul epinglage dur de torch du depot. Le manifeste POINTE vers l'artefact, il ne recopie pas la valeur."
+        }
+      ],
+      "note": "Version **chargeee**, relevee dans les sorties commitees (ecosysteme `observed`) : torch n'est epingle dans aucune cellule du corpus, et le `requirements.txt` de la serie RL ne porte qu'un plancher. Sans cette entree, une re-execution sous torch 2.9.0 (#23941) traversait toutes les gardes. Pour une serie observee, la canonique est un **plancher** : la serie tourne legitimement sous plusieurs versions voisines, et seule une version inferieure est un recul."
+    },
+    {
+      "id": "numpy",
+      "ecosystem": "observed",
+      "observe_outputs": true,
+      "canonical_source": "manifest",
+      "canonical_by_series": [
+        {
+          "series": "RL",
+          "canonical_source": "artifact",
+          "organ_path": "MyIA.AI.Notebooks/RL/requirements.txt",
+          "note": "Plancher de convergence lu dans le `requirements.txt` de la serie (`numpy>=1.24`). Le depot n'ecrit aucun epinglage dur de numpy : seule une contrainte de version existe, et c'est elle qui fait foi."
+        }
+      ],
+      "note": "Version **chargeee**, relevee dans les sorties commitees (ecosysteme `observed`). Le depot n'ecrit aucun pin dur de numpy -- seulement des planchers (`numpy>=1.24`) et deux plafonds (`IIT/requirements.txt` : `numpy<2.0`, `SymbolicLearning/requirements.txt` : `numpy<2.5`) : la dispersion se lit donc dans le recensement, la convergence se decide serie par serie."
+    }
+  ],
+  "allowlist": [
+    {
+      "library": "IKVM",
+      "version": "8.14.0",
+      "notebooks": [
+        "Tweety-03-Advanced-Logics-CSharp.ipynb",
+        "Tweety-03-Conditional-Logics-CSharp.ipynb",
+        "Tweety-03-ModalLogic-CSharp.ipynb",
+        "Tweety-03-QBF-CSharp.ipynb",
+        "Tweety-07b-Ranking-Probabilistic-CSharp.ipynb",
+        "Tweety-10-MLN-CSharp.ipynb"
+      ],
+      "reason": "Carnet Tweety chargeant une DLL ombree precompilee contre IKVM 8.14.0 et figeant ikvmVer = \"8.14.0\" : l'epinglage ne peut pas bouger sans recompiler l'artefact ombre. Converger a 8.15.0 serait une regression fonctionnelle, pas un alignement."
+    },
+    {
+      "library": "IKVM.Image",
+      "version": "8.14.0",
+      "notebooks": [
+        "Tweety-03-Advanced-Logics-CSharp.ipynb",
+        "Tweety-03-Conditional-Logics-CSharp.ipynb",
+        "Tweety-03-ModalLogic-CSharp.ipynb",
+        "Tweety-03-QBF-CSharp.ipynb",
+        "Tweety-07b-Ranking-Probabilistic-CSharp.ipynb",
+        "Tweety-10-MLN-CSharp.ipynb"
+      ],
+      "reason": "Carnet Tweety chargeant une DLL ombree precompilee contre IKVM 8.14.0 et figeant ikvmVer = \"8.14.0\" : l'epinglage ne peut pas bouger sans recompiler l'artefact ombre. Converger a 8.15.0 serait une regression fonctionnelle, pas un alignement."
+    }
+  ]
+}

@@ -1,6 +1,9 @@
 # MCP Claudish — Capability Negotiation (ledger propositional · #11556)
 
-> **Statut : proposition architecturale**, pas une implémentation. Ce ledger décrit un serveur
+> **Statut au 2026-10-21 : proposition d'août 2026, construite depuis côté fork sous une autre
+> forme — voir le §0 ci-dessous.** Le reste du document est conservé tel que proposé.
+>
+> **Statut d'origine : proposition architecturale**, pas une implémentation. Ce ledger décrit un serveur
 > MCP que les agents du cluster **appelleraient** sur Claudish pour négocier leurs capacités,
 > déclenché à la prochaine condensation du contexte d'un agent. L'implémentation du serveur
 > MCP lui-même relève du **fork `jsboige/claudish`** (mono-repo séparé) ; ce ticket est ouvert
@@ -12,6 +15,23 @@
 > spécification**, à lire avant tout `git clone jsboige/claudish`.
 >
 > `See #11556`
+
+## 0. Ce que le fork en a construit (mise à jour 2026-10-21)
+
+La proposition a été acceptée au *design gate* du 2026-09-02 (E0), puis portée dans le fork, où vit désormais la conception (consigne du 2026-09-16 : la doc de conception reste chez Claudish, ce dépôt en garde la distillation). Elle y a pris la forme de **claudish#83**, close le 2026-09-18 : un **vocabulaire de capacités négocié à la condensation**.
+
+| Ce que proposait ce ledger | Ce qui a été construit |
+|---|---|
+| Un serveur MCP que l'agent appelle (`claudish_request_capability`) | Un **bloc de code balisé `claudish-needs`** (un court JSON) que le modèle écrit dans son message suivant, et que le proxy lit au passage |
+| Des besoins nommés (`vision`, `long-context`, `cheap-bulk`, `heavy-reasoning`) | Cinq champs sur liste blanche, chacun branché sur un levier de routage qui existait déjà : `vision`, `context_tokens_min`, `reasoning_depth`, `tool_call_density`, `cost_class` |
+| Effet à la prochaine condensation | La question est posée **à la condensation** (au plus 3 fois par session tant qu'elle n'a rien déclaré) ; la déclaration vaut pour la session et expire avec elle |
+| Le hub reste arbitre | Une déclaration se classe **sous** toute mesure : elle peut réordonner des préférences entre marches servables ou relever un plancher de contexte, **jamais** contourner la politique d'usage des modèles Anthropic, l'armement sur quota, un mur, ni promouvoir le paiement à l'usage |
+
+**Pourquoi un bloc de texte plutôt qu'un outil MCP.** Un outil injecté par le proxy aurait exigé de modifier la conversation de façon invisible (déclarer l'outil, intercepter l'appel, fabriquer un résultat d'outil) pour un signal par nature faible. Le bloc de texte ne mute rien : il reste visible, ne demande aucune coopération du client, et survit à la réécriture de condensation. L'outil MCP reste le candidat d'une v2, si les déclarations en texte se révèlent bruyantes.
+
+**État** : câblé, mais **désactivé par défaut** (`CLAUDISH_CAPABILITY_VOCAB`) — inerte sur toutes les machines tant qu'un opérateur ne l'active pas. Ce qui manque encore, c'est d'**agir** sur les déclarations dans le routage : c'est l'objet de claudish#21 (routage selon le coût), et d'une proposition de routage par signature (claudish#82) non encore arbitrée. Côté lecture, il n'existe pas de `claudish_status` ; les questions de trafic passent par l'outil `claudish_traffic` du serveur MCP de coordination du cluster, ce qui se rapproche le plus du `claudish_my_traffic` envisagé au §3.1.
+
+*Leçon de conception : face à un signal faible, préférer le canal qui mute le moins la conversation, même s'il est moins élégant qu'un appel d'outil.*
 
 ## 1. Pourquoi cette couture maintenant
 

@@ -21,7 +21,9 @@ from audit_consolidation_orphans import (  # noqa: E402
     attachment_proofs,
     audit,
     classify_axes,
+    fetch_state,
     load_input,
+    load_pool,
     main,
     mention_lines,
     render_markdown,
@@ -215,3 +217,154 @@ def test_load_input_roundtrip(tmp_path):
     assert issues[0]["number"] == 9001
     assert 5081 in chaperones
     assert comments is not None and 9001 in comments
+
+
+# --- attached_specific (organ v2, issue #21267) ---------------------------
+# Classe mesurée sur le lot 4 (c.1651, 2026-10-17) : 7/14 « orphelines »
+# citaient un parent EPIC vivant non-chaperon dans leur body (« Part of #N »),
+# invisible à la recherche de preuves chaperon.
+
+
+def test_parent_links_extraction():
+    from audit_consolidation_orphans import parent_links
+    body = "Tranche du lot.\nPart of #4362 et See #9999.\nRattachée à #13737."
+    assert parent_links(body) == {
+        4362: "Part of #4362 et See #9999.",
+        9999: "Part of #4362 et See #9999.",
+        13737: "Rattachée à #13737.",
+    }
+    assert parent_links("") == {}
+    # Frontiere de mot : "Dsee" n'est pas "See"
+    assert parent_links("Dsee #5 ne matche pas") == {}
+
+
+def test_audit_attached_specific_live_parent():
+    # Parent EPIC vivant non-chaperon cite dans le body -> attached_specific,
+    # pas orpheline ; le parent lui-meme reste une issue a part entiere.
+    issues = [
+        _issue(7100, title="EPIC vivante", body="parapluie de serie"),
+        _issue(7101, title="sous-grain", body="Part of #7100"),
+    ]
+    report = audit(issues, CHAPERONES_STATE)
+    assert report["attached"] == 0
+    assert report["attached_specific"] == 1
+    entry = report["attached_specific_details"][0]
+    assert entry["number"] == 7101
+    assert entry["parents"] == [7100]
+    assert report["orphans"] == 1  # 7100, sans preuve elle-meme
+
+
+def test_audit_chaperone_proof_beats_parent_marker():
+    # Priorite chaperon > parent specifique : pas de double comptage.
+    issues = [
+        _issue(7200, title="EPIC vivante", body="parapluie"),
+        _issue(7201, title="sous-grain", body="See #5081 aussi\nPart of #7200"),
+    ]
+    report = audit(issues, CHAPERONES_STATE)
+    assert report["attached"] == 1
+    assert report["attached_specific"] == 0
+    assert any(d["number"] == 7201 for d in report["attached_details"])
+
+
+def test_audit_stale_parent_stays_orphan():
+    # Parent absent du fetch (ferme ou inexistant) : le marqueur ne rattache rien.
+    issues = [_issue(7301, title="sous-grain veuf", body="Part of #7399")]
+    report = audit(issues, CHAPERONES_STATE)
+    assert report["attached_specific"] == 0
+    assert report["orphans"] == 1
+
+
+def test_audit_two_parents_one_entry():
+    issues = [
+        _issue(7400, title="EPIC A", body="a"),
+        _issue(7401, title="EPIC B", body="b"),
+        _issue(7402, title="multi-parent", body="Part of #7400 et Rattaché à #7401"),
+    ]
+    report = audit(issues, CHAPERONES_STATE)
+    entry = report["attached_specific_details"][0]
+    assert entry["number"] == 7402
+    assert entry["parents"] == [7400, 7401]
+    assert len(entry["proofs"]) == 2
+
+
+def test_audit_self_link_ignored_chaperone_parent_reclassified():
+    # Auto-reference : pas de rattachement. Parent chaperon : capte par la
+    # preuve chaperon (mention simple #9535), pas par attached_specific.
+    issues = [
+        _issue(7500, title="boucle", body="Part of #7500"),
+        _issue(7501, title="vers chaperon", body="Rattachés à #9535"),
+    ]
+    report = audit(issues, CHAPERONES_STATE)
+    assert report["attached_specific"] == 0
+    assert report["attached"] == 1
+    assert report["orphans"] == 1  # 7500
+
+
+def test_render_markdown_shows_attached_specific_counter():
+    issues = [
+        _issue(7600, title="EPIC vivante", body="x"),
+        _issue(7601, title="sous-grain", body="Part of #7600"),
+    ]
+    md = render_markdown(audit(issues, CHAPERONES_STATE))
+    assert "rattachées (parent spécifique) : 1" in md
+
+
+# --- pool cap / truncation provenance (reserve written in the Epic body) --
+# L'Epic #16473 note que l'organe s'arrêtait à --limit 400 quand le dépôt
+# portait 599 issues ouvertes, donc son verdict « orphelin » était un minorant
+# SILENCIEUX. gh sert les plus récentes d'abord : un plafond saturé cache les
+# plus anciennes, exactement le stock que l'audit existe pour voir.
+
+
+def _patch_gh(monkeypatch, issues):
+    import audit_consolidation_orphans as organ
+
+    def fake(repo, args):
+        if args[:2] == ["issue", "list"]:
+            return issues
+        return {"body": "", "comments": []}
+
+    monkeypatch.setattr(organ, "_gh_json", fake)
+
+
+def test_fetch_state_flags_saturated_cap(monkeypatch):
+    _patch_gh(monkeypatch, [_issue(n) for n in range(1, 5)])
+    state = fetch_state("jsboige/CoursIA", 4, False)
+    assert state["pool"] == {"count": 4, "limit": 4, "truncated": True}
+
+
+def test_fetch_state_pool_complete_below_cap(monkeypatch):
+    _patch_gh(monkeypatch, [_issue(n) for n in range(1, 5)])
+    state = fetch_state("jsboige/CoursIA", 5, False)
+    assert state["pool"]["count"] == 4
+    assert state["pool"]["truncated"] is False
+
+
+def test_render_markdown_warns_when_pool_truncated():
+    report = audit([_issue(7700, body="x")], CHAPERONES_STATE,
+                   pool={"count": 400, "limit": 400, "truncated": True})
+    md = render_markdown(report)
+    assert "Scan TRONQUÉ" in md and "minorant" in md
+
+
+def test_render_markdown_states_complete_pool():
+    report = audit([_issue(7700, body="x")], CHAPERONES_STATE,
+                   pool={"count": 3, "limit": 1000, "truncated": False})
+    md = render_markdown(report)
+    assert "scan est complet" in md
+    assert "TRONQUÉ" not in md
+
+
+def test_audit_omits_pool_when_unknown():
+    # Une capture hors-ligne antérieure au bloc `pool` ne doit jamais être
+    # rendue comme un scan complet : elle n'en sait rien.
+    report = audit([_issue(7700, body="x")], CHAPERONES_STATE)
+    assert "pool" not in report
+    md = render_markdown(report)
+    assert "TRONQUÉ" not in md and "scan est complet" not in md
+
+
+def test_load_pool_absent_is_empty(tmp_path):
+    path = tmp_path / "s.json"
+    path.write_text(json.dumps({"issues": []}), encoding="utf-8")
+    assert load_pool(str(path)) == {}

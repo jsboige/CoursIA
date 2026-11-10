@@ -36,12 +36,18 @@ Cauchy–Schwarz `sum_mul_sq_le_sq_mul_sq` et `Σ (p + q)² ≤ 4`),
 `one_sub_sum_le_prod` (l'**inégalité produit de Weierstrass**
 `1 − Σ a ≤ Π (1 − a)` sur `[0, 1]`, via `prod_one_sub_ordered`).
 
-**Reporté à k4.2** : la version « distribution » de la borne — celle qui
+**Livré par k4.2b** : la version « distribution » de la borne — celle qui
 remplace les poids par les distributions et le facteur `2⁻¹` par
-`tvDistance S P Q` en vocabulaire Finset — dès que `Komlos.Cube` en fixe
-l'appel ; puis la chaîne `Cube` → `NearInvariant` (Lemme 1.5), dont le
-substrat `Transport` est en cours d'arbitrage (#19081). L'état détaillé
-vit dans `FORMAL_STATUS.md`.
+`tvDistance S P Q` en vocabulaire Finset — vit désormais dans
+`Komlos/TvDistance.lean` (`tvDistance`, `tvDistance_sq_le`), où l'appel de
+`Komlos.Cube` l'a fixée ; ce module-ci n'en porte plus que le noyau
+analytique, énoncé sur les poids. Reste la chaîne `Cube` → `NearInvariant`
+(Lemme 1.5, k4.3). Le substrat
+`Transport` est **livré** (k2.3, PR #19081 **mergée** le 2026-10-08) ; un
+seul de ses énoncés reste reporté, `shiftDist_push`, avec sa raison mesurée
+dans le module lui-même (la ré-indexation de `S ∪ (S + u)` sous la
+convention `Finset` explicite du lake). C'est lui, et non un arbitrage
+ouvert, que k4.3 attend. L'état détaillé vit dans `FORMAL_STATUS.md`.
 -/
 
 import Discrepancy.Basic

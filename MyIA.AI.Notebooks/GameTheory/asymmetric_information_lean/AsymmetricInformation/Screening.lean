@@ -48,7 +48,7 @@ structure Contract where
 /-- Profit attendu d'un contrat `c` pour un profil `r` et un type `q`.
     Hypothese simplificatrice de premiere tranche : on travaille en `Int`
     plutot qu'en `Rat`, ce qui evite la dependance Mathlib. Encodage :
-    prime en centimes pour rester en entier. -/
+    prime en centimes (×100) pour rester en entier. -/
 def expectedProfit (c : Contract) (r : RiskProfile) (q : RiskType) : Int :=
   c.premium * 100 - match q with
     | .high => r.pHigh * c.coverage

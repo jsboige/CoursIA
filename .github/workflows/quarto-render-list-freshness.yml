@@ -34,7 +34,6 @@ name: quarto-render-list-freshness
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/**/README.md'
       - 'MyIA.AI.Notebooks/**/*.ipynb'
@@ -78,7 +77,15 @@ jobs:
     # regeneration de _quarto.yml -- exactement le conflit que ce garde veut
     # eteindre (arbitrage ai-01, review 5469480925 sur #19901).
     name: _quarto.yml render list freshness (advisory)
-    runs-on: ubuntu-latest
+    # 2026-10-27 (#22937 vague 2, phase A) : forme hybride de debordement --
+    # PR meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ;
+    # tout le reste (variable absente ou fausse, forks, push/schedule/
+    # dispatch) retombe sur ubuntu-latest (l'etat du 27/10). Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 %
+    # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
+    # creation du job, les runs deja en file ne bougent pas.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 5
     steps:
       - name: Checkout
@@ -127,7 +134,7 @@ jobs:
           set -euo pipefail
           : > /tmp/scan_status.txt
           set +e
-          python scripts/regen_quarto_render.py --check 2>&1 | sed 's/^::error::/[quarto-drift] /'
+          python3 scripts/regen_quarto_render.py --check 2>&1 | sed 's/^::error::/[quarto-drift] /'
           PY_RC=${PIPESTATUS[0]}
           set -e
           echo "python_rc=${PY_RC}" >> /tmp/scan_status.txt
@@ -157,5 +164,5 @@ jobs:
         # _quarto.yml. La sortie `--check` post-regen doit etre rc=0.
         run: |
           set -euo pipefail
-          python scripts/regen_quarto_render.py 2>&1 | tail -1
-          python scripts/regen_quarto_render.py --check 2>&1 | tail -1
+          python3 scripts/regen_quarto_render.py 2>&1 | tail -1
+          python3 scripts/regen_quarto_render.py --check 2>&1 | tail -1

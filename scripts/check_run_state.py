@@ -168,7 +168,26 @@ def collect(pr: int | None = None, sha: str | None = None) -> tuple[str, list[di
     return sha, legs
 
 
-def render(sha: str, legs: list[dict]) -> dict:
+def _required_contexts(repo: str = REPO, base: str = "main") -> set[str] | None:
+    """Noms de checks requis sur la branche `base`, lus a la protection de
+    branche. `None` si l'appel echoue (permission, 404, reseau) : l'ABSENCE de
+    la donnee n'est PAS une absence de check requis -- un lecteur qui
+    transformerait un 403 en « aucun check requis » blanchirait la classe
+    #21463 (PR BLOCKEE sans check rendu, le check requis etant simplement
+    illisible). Fail-closed cote determination, pas cote verdict."""
+    try:
+        doc = json.loads(_run_gh(["api", f"repos/{repo}/branches/{base}/protection"]))
+    except (RuntimeError, ValueError, KeyError, TypeError):
+        return None
+    rsc = doc.get("required_status_checks") or {}
+    contexts = rsc.get("contexts")
+    if not isinstance(contexts, list):
+        return None
+    return {c for c in contexts if isinstance(c, str)}
+
+
+def render(sha: str, legs: list[dict],
+           required: set[str] | None = None) -> dict:
     latest = fold_latest(legs)
     reds = sorted(name for name, leg in latest.items()
                   if leg.get("conclusion") in RED)
@@ -177,6 +196,16 @@ def render(sha: str, legs: list[dict]) -> dict:
     for leg in legs:
         counts[leg.get("name") or leg.get("context") or "?"] = \
             counts.get(leg.get("name") or leg.get("context") or "?", 0) + 1
+    # #21463 -- un check requis JAMAIS POSTE est invisible au fold : la liste
+    # plate `commits/<head>/check-runs` ne le contient tout simplement pas,
+    # donc `latest` le montre ni rouge ni vert. Si le jeu des checks requis est
+    # connu (`required` non-None), le rendre explicite : `missing_required` =
+    # requis - presents. `None` (indeterminable, protection illisible) et `[]`
+    # (aucun manque) sont distincts -- ne pas les confondre.
+    if required is None:
+        missing_required: set[str] | None = None
+    else:
+        missing_required = sorted(required - set(latest.keys()))
     return {
         "head": sha,
         "n_legs": len(legs),
@@ -187,6 +216,7 @@ def render(sha: str, legs: list[dict]) -> dict:
         "legs_per_name": counts,
         "latest_reds": reds,
         "residual_reds": residuals,
+        "missing_required": missing_required,
     }
 
 
@@ -202,7 +232,11 @@ def main(argv: list[str] | None = None) -> int:
     except RuntimeError as exc:
         print(f"instrument error: {exc}", file=sys.stderr)
         return 2
-    state = render(sha, legs)
+    # #21463 -- le jeu des checks requis, lu a la protection de branche
+    # (best-effort : None si illisible, alors missing_required reste None et
+    # n'influence ni la sortie ni le code de sortie).
+    required = _required_contexts()
+    state = render(sha, legs, required)
     if args.as_json:
         print(json.dumps(state, ensure_ascii=False, indent=1))
     else:
@@ -221,7 +255,20 @@ def main(argv: list[str] | None = None) -> int:
                   f"#16232 a merge malgre) :")
             for r in state["residual_reds"]:
                 print(f"    {r['name']}: {r['conclusion']} @{r['started_at']}")
-    return 1 if state["latest_reds"] else 0
+        if state["missing_required"]:
+            print(f"missing_required ({len(state['missing_required'])}) -- checks "
+                  f"REQUIS absents de la tete (jamais postes) ; la PR est "
+                  f"BLOCHEE sans rouge visible (#21463) :")
+            for name in state["missing_required"]:
+                print(f"    [MISSING-REQUIRED] {name}")
+        elif state["missing_required"] is None:
+            print("missing_required: indeterminable (protection de branche "
+                  "illisible) -- aucune absence n'est affirmee")
+    # #21463 -- « pas un vert » : un check requis absent de la tete rend le
+    # verdict NON-vert (exit 1), au meme titre qu'un rouge. `missing_required`
+    # n'est truthy que s'il est une liste NON VIDE : None (indeterminable) et
+    # [] (aucun manque) restent verts.
+    return 1 if (state["latest_reds"] or state["missing_required"]) else 0
 
 
 if __name__ == "__main__":

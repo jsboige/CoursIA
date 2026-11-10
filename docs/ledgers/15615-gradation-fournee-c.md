@@ -1,10 +1,12 @@
 # Ledger — Issue #15615 (gradation GameTheory, fournée C : blocs 11 à 15)
 
-> **Bornage strict** : ce ledger couvre les **carnets des blocs 11, 12, 13, 14 et 15** de la série GameTheory sur `origin/main` au 2026-10-11 (head `5e96ffec4cb`). Il poursuit la fournée A (`15615-gradation-fournee-a.md`, PR #20288 — carnets 01/04/05), la fournée B (`15615-gradation-fournee-b.md`, PR #20289 — blocs 06-10) et la strate « Fondations » (`15615-gradation-foundations.md`, carnets 02 + 03).
+> **Bornage strict** : ce ledger couvre les **carnets des blocs 11, 12, 13, 14 et 15** de la série GameTheory sur `origin/main` au 2026-10-10 (head `5e96ffec4cb`). Il poursuit la fournée A (`15615-gradation-fournee-a.md`, PR #20288 — carnets 01/04/05), la fournée B (`15615-gradation-fournee-b.md`, PR #20289 — blocs 06-10) et la strate « Fondations » (`15615-gradation-foundations.md`, carnets 02 + 03).
 
 ## Origine
 
-Issue #15615 — audit de gradation, plan en fournées A-D posté au fil. Fournée C annoncée « ~25 carnets » au cadrage ; **l'arbre au 2026-10-11 en porte 21** (11×3, 12×2, 13×5, 14×2, 15×9) — l'arbre fait foi, même règle qu'en fournées A et B.
+Issue #15615 — audit de gradation, plan en fournées A-D posté au fil. Fournée C annoncée « ~25 carnets » au cadrage ; **l'arbre au 2026-10-10 en porte 21** (11×3, 12×2, 13×5, 14×2, 15×9) — l'arbre fait foi, même règle qu'en fournées A et B.
+
+> **Addendum (2026-10-18)** : `GameTheory-13e-Revision-Croyances-Adversaire-Python` est arrivé sur main via PR #20215 **après** le snapshot `5e96ffec4cb` (2026-10-10) qui bornait la fournée C. Le périmètre blocs 11-15 porte donc en réalité **22 carnets** (11×3, 12×2, 13×6, 14×2, 15×9). L'addendum **ajoute** une ligne 13e au tableau de gradation **sans réécrire** l'instantané historique (cf. ligne « Totaux » ci-dessous et observation dédiée). La gradation du 13e elle-même est un grain séparé.
 
 ## Méthode
 
@@ -24,6 +26,7 @@ Identique aux ledgers précédents : prérequis déclarés (section dédiée ou 
 | 13b | [GameTheory-13b-Safe-Subgame-Solving-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) | Aucune déclarée — compagnon du 13 | Safe subgame solving : blueprint, recollement naïf vs safe, loi obstruction→témoin | 26 (12 code) | Haute | Oui (13c) |
 | 13c | [GameTheory-13c-Safe-Subgame-Solving-CSharp](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-13c-Safe-Subgame-Solving-CSharp.ipynb) | Aucune déclarée (twin de 13b) | « Le twin qui vérifie, puis qui casse » : reproduction fidèle de 13b, puis audit (double comptage, vraie best-response — le « Nash » de 13b n'en est pas un), énumération corrigée | 24 (10 code) | Haute | Oui (13b) |
 | 13d | [GameTheory-13d-Optimistic-CFR-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb) | Aucune déclarée — compagnon du 13, socle #13350 réutilisé | CFR optimiste : OFTRL stable-prédictif, DCFR (mémoire oublieuse), verdict honnête, 3 exercices | 17 (7 code) | Haute | Non |
+| 13e | [GameTheory-13e-Revision-Croyances-Adversaire-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb) | Aucune déclarée — compagnon du 13, **ajouté post-snapshot** via PR #20215 (commit `500473d8132`, head `2e4103505486`) | **Révision d'un modèle d'adversaire sous information imparfaite** : base de croyances réseau (atomes sur le type caché de l'adversaire), **noyaux** (Alchourrón-Gärdenfors-Makinson) énumérés par Z3, fonction d'incision sous ordre d'enracinement, témoin vs type vrai, 3 exercices | 28 (13 code) | Haute | Non |
 | 14 | [GameTheory-14-DifferentialGames-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Python.ipynb) | Notebooks 1-12, calcul différentiel | Jeux différentiels : boucle ouverte/fermée, LQ et équations de Riccati, feedback Nash, Stackelberg dynamique (open-loop/feedback, capital durable), étude policy-gradient : non-convergence + contrôles négatifs (mono-agent, zéro-somme), 6 exercices | 51 (19 code) | **Très haute** | Oui (C#) |
 | 14-cs | [GameTheory-14-DifferentialGames-CSharp](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-CSharp.ipynb) | Aucune déclarée (twin) | Twin C# : intégrateur **RK4 from-scratch**, Cournot/Stackelberg analytiques, LQ stationnaire vérifié (Math Verification), poursuite-évasion d'Isaacs (3 cas dont un non résoluble analytiquement), tranche 2 cross-check **MathNet.Numerics** (moteur SOTA .NET), 4 exercices | 29 (12 code) | **Très haute** | Oui (Py) |
 | 15 | [GameTheory-15-CooperativeGames-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) | Notebooks 1-13, en particulier 14 (transition coopération) ; coalition, utilité transférable | Jeux coopératifs TU : fonction caractéristique, **valeur de Shapley** (axiomes, complexité, Monte Carlo), Banzhaf, core + Bondareva-Shapley, visualisation 3D du core, jeux convexes, **jeux d'assistance** (Off-Switch Game, POLA/SUR), coalition de gauche 2024 | 69 (30 code) | **Très haute** | Oui (C#) |
@@ -36,13 +39,13 @@ Identique aux ledgers précédents : prérequis déclarés (section dédiée ou 
 | 15f | [GameTheory-15f-Shapley-Groupes-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-15f-Shapley-Groupes-Python.ipynb) | Aucune déclarée — article distillé Flores/Molina/Tejeda 2019 (4OR) | **Shapley de groupe** : jeu fusionné, axiome G-SPB, exemple 1 en arithmétique exacte, profitabilité/complémentarité, mariages florentins (Médicis), club de karaté de Zachary, estimation Monte Carlo quand 2^n explose | 44 (17 code) | Haute | Non |
 | 15g | [GameTheory-15g-AssistanceGames-2026-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-15g-AssistanceGames-2026-Python.ipynb) | Aucune déclarée | Assistance games (résultat 2026) : modèle formel §3, instance jouet, politique jointe optimale oracle, **EXP3** (no-regret) pour l'assistant, bench empirique √T vs T^(3/4) | 15 (8 code) | Haute | Non |
 
-**Totaux** : 21 carnets. Répartition difficulté : 7 Très haute (11b, 13, 14, 14-cs, 15, 15-cs, 15b), 14 Haute, aucune Moyenne ni Basse — la série y atteint son plateau maximal.
+**Totaux** : 21 carnets au snapshot historique `5e96ffec4cb` (2026-10-10), **22 carnets** sur `origin/main` à 2026-10-18 après ajout du 13e (PR #20215, addendum cf. issue #20370). Répartition difficulté (sur 22) : 7 Très haute (11b, 13, 14, 14-cs, 15, 15-cs, 15b), **15 Haute**, aucune Moyenne ni Basse — la série y atteint son plateau maximal.
 
 ## Observations
 
 ### Le bloc 13 est le sommet algorithmique de la série
 
-Le 13-Python est **le plus gros carnet de la fournée** : CFR complet jusqu'aux circuits de regret et au treeplex (théorème 4.1), Deep CFR, OpenSpiel, Leduc. Il porte quatre side-tracks dont deux objets pédagogiques uniques dans la série : la paire **13b/13c « qui vérifie, puis qui casse »** (le twin C# audite son modèle Python — double comptage, fausse best-response — puis corrige l'énumération), et 13d qui enseigne le **verdict honnête** (l'optimisme aide en théorie, le champion empirique est DCFR).
+Le 13-Python est **le plus gros carnet de la fournée** : CFR complet jusqu'aux circuits de regret et au treeplex (théorème 4.1), Deep CFR, OpenSpiel, Leduc. Il porte quatre side-tracks dont deux objets pédagogiques uniques dans la série : la paire **13b/13c « qui vérifie, puis qui casse »** (le twin C# audite son modèle Python — double comptage, fausse best-response — puis corrige l'énumération), 13d qui enseigne le **verdict honnête** (l'optimisme aide en théorie, le champion empirique est DCFR), et **13e** (ajouté post-snapshot via PR #20215) qui transpose l'incertitude sur l'adversaire en **logique épistémique** : base de croyances réseau, **noyaux AGM** énumérés par Z3, fonction d'incision sous ordre d'enracinement, témoin vs type vrai. 13e est l'**addendum de la fournée C** (cf. issue #20370, bornage strict preserve).
 
 ### Le bloc 15 est le second continent de la série
 
@@ -73,7 +76,7 @@ Les carnets 11 à 15 déclarent leurs prérequis en plages (« Notebooks 1-10 »
 
 ## Source des données
 
-- Lecture firsthand des 21 carnets (front-matter + section 1 + navigation) via `git show origin/main:<carnet>` au 2026-10-11, head `5e96ffec4cb`.
+- Lecture firsthand des 21 carnets (front-matter + section 1 + navigation) via `git show origin/main:<carnet>` au 2026-10-10, head `5e96ffec4cb`.
 - Statistiques cellules : extraction JSON par script de session (kernelspec, comptes code/markdown, headers).
 - Comptage de périmètre : `git ls-tree origin/main MyIA.AI.Notebooks/GameTheory/` filtré blocs 11-15 (11×3, 12×2, 13×5, 14×2, 15×9).
 

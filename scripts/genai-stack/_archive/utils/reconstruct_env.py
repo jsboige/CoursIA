@@ -145,13 +145,22 @@ class EnvReconstructor:
             if "password" in source_config:
                 env_vars["COMFYUI_PASSWORD"] = source_config["password"]
             else:
-                env_vars["COMFYUI_PASSWORD"] = "rZDS3XQa/8!v9L"  # Mot de passe par défaut
+                # Plus de mot de passe par defaut en dur (cf. #21839) : la valeur vient
+                # de l'environnement, et son absence est signalee juste apres.
+                env_vars["COMFYUI_PASSWORD"] = os.getenv("COMFYUI_PASSWORD", "")
         else:
             self.log("Aucune configuration source fournie, utilisation des valeurs par défaut", "WARNING")
             env_vars["COMFYUI_BEARER_TOKEN"] = ""
             env_vars["COMFYUI_RAW_TOKEN"] = ""
-            env_vars["COMFYUI_PASSWORD"] = "rZDS3XQa/8!v9L"
+            env_vars["COMFYUI_PASSWORD"] = os.getenv("COMFYUI_PASSWORD", "")
             env_vars["SECRET_KEY"] = f"auto_generated_secure_key_{datetime.now().strftime('%Y%m%d')}"
+
+        if not env_vars.get("COMFYUI_PASSWORD"):
+            self.log(
+                "COMFYUI_PASSWORD absent de l'environnement : le .env reconstruit portera "
+                "une valeur vide (cf. #21839)",
+                "WARNING",
+            )
         
         # Construire le contenu du fichier .env
         content_lines = [

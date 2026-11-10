@@ -1,5 +1,5 @@
 {
- "about": "Membres de la matrice de correlation hebdomadaire de la ligue (#19821 brique 4, protocole #20083). Une variante par strategie mesuree : celle que la PR de mesure declare par defaut. `trace` est relatif au dossier des traces QC (hors depot) ; `series` vaut `b` pour une reference detenue tracee dans b0..b4 ; `kind` vaut `local` pour une serie calculee hors QC (`series.csv`), comme le coeur actions de #20365, tenu sur un compte en USD.",
+ "about": "Membres de la matrice de correlation hebdomadaire de la ligue (#19821 brique 4, protocole #20083). Une variante par strategie mesuree : celle que la PR de mesure declare par defaut. `trace` est relatif au dossier des traces QC (hors depot) ; `series` vaut `b` pour une reference detenue tracee dans b0..b4 ; `kind` vaut `local` pour une serie calculee hors QC (`series.csv`), comme le coeur actions de #20365, tenu sur un compte en USD. Au 2026-11-08, les traces de `crypto-short-reversion` (#21130) et `btc-voltarget` (#21144) sont absentes du dossier partage des traces QC : la matrice se mesure sur les 28 autres membres en filtrant ces deux entrees (`--members`), jusqu'a depot des traces par la lane de mesure (defaut signale sur #19821).",
  "members": [
   {"id": "four-sleeve-774", "role": "candidate", "trace": "18904-four-sleeve-774/base", "issue": 18904, "pr": 19139},
   {"id": "multi-horizon-676", "role": "candidate", "trace": "19174-multi-horizon-676/base", "issue": 19174, "pr": 19182},
@@ -19,7 +19,14 @@
   {"id": "adaptive-momentum-775", "role": "candidate", "trace": "20168-adaptive-momentum-775/base", "issue": 20168, "pr": 20171},
   {"id": "btc-eth-rotation", "role": "candidate", "trace": "20189-btc-eth-rotation/base", "issue": 20189, "pr": 20192},
   {"id": "crypto-momentum-topn", "role": "candidate", "trace": "20214-crypto-momentum-topn/L14N2", "issue": 20214, "pr": 20216},
+  {"id": "crypto-short-reversion", "role": "candidate", "trace": "21129-crypto-shortterm-reversion/base", "issue": 21129, "pr": 21130},
+  {"id": "btc-voltarget", "role": "candidate", "trace": "21143-btc-voltarget/base", "issue": 21143, "pr": 21144},
   {"id": "ema-cross-stocks", "role": "candidate", "trace": "20258-ema-cross-stocks/pit-ema", "issue": 20258, "pr": 20261},
+  {"id": "assetclass-momentum", "role": "candidate", "trace": "22828-assetclassmomentum-held-references/w1-strategy", "issue": 22828, "pr": 22846},
+  {"id": "globalmacro-regime", "role": "candidate", "trace": "22869-globalmacro-regime-held-references/w1-strategy", "issue": 22869, "pr": 22876},
+  {"id": "voltarget-momentum", "role": "candidate", "trace": "22923-voltarget-momentum-held-references/w1-strategy", "issue": 22923, "pr": 22927},
+  {"id": "trend-following", "role": "candidate", "trace": "22959-trend-following-held-references/w1-strategy", "issue": 22959, "pr": 22963},
+  {"id": "hmm-kmeans-voting", "role": "candidate", "trace": "23012-hmm-kmeans-voting-held-references/w1-strategy", "issue": 23012, "pr": 23015},
   {"id": "core-equity", "role": "core", "kind": "local", "trace": "20365-league-core/core-equity", "issue": 20365},
   {"id": "spy", "role": "reference", "trace": "19587-leveraged-etf-momentum/spy", "issue": 19587, "pr": 19599},
   {"id": "sixty40", "role": "reference", "trace": "19621-famafrench-allweather/sixty40", "issue": 19621, "pr": 19633},

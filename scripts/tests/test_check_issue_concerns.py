@@ -24,6 +24,13 @@ Les cas sont calques sur les fils de controle mesures le 2026-10-10 :
 Couvre aussi le plancher fail-closed : un acquittement nu ne repond pas, et un
 fil qui ne porte que des gestes laisse le Concern NON REPONDU.
 
+Classe ``user-remark`` (#20185, classe 2) : sous le login partage, l'auteur ne
+separe pas un post de lane d'une remarque du mainteneur — c'est la FORME du corps
+qui tranche (six signatures mesurees, ``lane_signature``). Une reponse non signee
+sans reponse reste ouverte ; un post de lane signe n'est jamais un candidat ; une
+citation forte (horodatage) referme ; le mot « Concern » ne referme pas une
+remarque ; un geste de lane apres la remarque leve ``gesture-after``.
+
 Le module est charge par chemin (`importlib`) : `scripts/ci/` n'est pas un
 paquet importable, et deux organes peuvent partager un nom de module.
 """
@@ -64,6 +71,18 @@ CONCERN_2 = (
 REPLY_19898 = (
     "**Reponse ai-01 a tes deux Concerns (08/10, 10:11Z et 21:00Z).** Elle "
     "arrive avec plus d'une journee de retard, et c'est un manquement."
+)
+#: #2159 — le Concern du 2026-10-18T22:26Z et la reponse de lane du
+#: 2026-10-19T03:56Z qui le cite (faux NON REPONDU mesure avant le correctif).
+CONCERN_2159 = (
+    "Concern: Alors qu'on continue empiler des modules dans le cadre de cet "
+    "Epic, est-ce qu'il ne serait pas temps de faire une pause pour voir ou "
+    "en est la toute derniere version de Mathlib sur le sujet ?"
+)
+REPLY_2159 = (
+    "[INFO] Reponse au Concern du 2026-10-18T22:26Z — releve mesure "
+    "Mathlib-vs-lac + projets externes — Grain: DEEP/research-code — lane "
+    "myia-po-2025:CoursIA\n\nAucun fichier edite, aucun module ajoute."
 )
 
 
@@ -223,6 +242,122 @@ class ResponseCandidateTests(unittest.TestCase):
     def test_gesture_is_not_a_response(self):
         self.assertFalse(mod.is_response_candidate("gesture", c(18, "2026-10-01T10:00:00Z", CLAIM)))
 
+    def test_gesture_without_the_concern_is_never_a_candidate(self):
+        """Le comportement historique est conserve quand le Concern n'est pas fourni."""
+        self.assertFalse(
+            mod.is_response_candidate("gesture", c(18, "2026-10-01T10:00:00Z", CLAIM))
+        )
+
+    def test_gesture_that_cites_the_concern_strongly_is_a_response(self):
+        """#2159 : un geste de lane qui cite l'horodatage du Concern y repond."""
+        concern = c(30, "2026-10-18T22:26:03Z", CONCERN_2159)
+        reply = c(31, "2026-10-19T03:56:43Z", REPLY_2159)
+        self.assertEqual(mod.classify(reply), "gesture")
+        self.assertTrue(mod.cites_concern(concern, reply))
+        self.assertTrue(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_lane_signature_contract_requires_utc_minute(self):
+        """Le format observé des lanes inclut heure et minute UTC (#2159)."""
+        concern = c(30, "2026-10-18T22:26:03Z", CONCERN_2159)
+        dated_reply = c(
+            31,
+            "2026-10-19T03:56:43Z",
+            "[INFO] Reponse au Concern du 2026-10-18T22:26Z — releve mesure.",
+        )
+        date_only_reply = c(
+            32,
+            "2026-10-19T03:56:43Z",
+            "[INFO] Reponse au Concern du 2026-10-18 — releve mesure.",
+        )
+
+        self.assertTrue(mod.cites_concern(concern, dated_reply))
+        self.assertFalse(mod.cites_concern(concern, date_only_reply))
+
+    def test_gesture_that_does_not_cite_the_concern_stays_excluded(self):
+        concern = c(32, "2026-10-18T22:26:03Z", CONCERN_2159)
+        reply = c(33, "2026-10-19T03:56:43Z", "[INFO] Releve mesure — aucun fichier edite.")
+        self.assertEqual(mod.classify(reply), "gesture")
+        self.assertFalse(mod.cites_concern(concern, reply))
+        self.assertFalse(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_incidental_short_window_is_not_a_citation(self):
+        """Une fenetre courte partagee par coincidence ne referme rien.
+
+        Mesure sur 624 issues : la fenetre de 40 caracteres attrapait des
+        fragments sans lien (« 46`, `37642385421`, `37642397358` » — une suite
+        de numeros de PR). Le geste n'est candidat que par horodatage ou par
+        extrait long.
+        """
+        concern = c(
+            34,
+            "2026-10-20T16:08:51Z",
+            "Diagnostic — la derive portee par une classe « scheduled-orphan », "
+            "mesuree sur 4 snapshots. Les ids 37642385421 et 37642397358 "
+            "portent la derive.",
+        )
+        reply = c(
+            35,
+            "2026-10-22T16:57:47Z",
+            "[INFO] candidate-delivered — deja livre par PR #21634. "
+            "Voir 46`, `37642385421`, `37642397358`, `3764.",
+        )
+        self.assertFalse(mod.cites_concern(concern, reply))
+        self.assertFalse(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_long_quote_is_a_citation(self):
+        """Un extrait long du texte du Concern reste une citation."""
+        body = (
+            "Diagnostic — la derive portee par une classe « scheduled-orphan », "
+            "mesuree sur 4 snapshots. Les ids 37642385421 et 37642397358 "
+            "portent la derive."
+        )
+        concern = c(36, "2026-10-20T16:08:51Z", body)
+        reply = c(
+            37,
+            "2026-10-22T16:57:47Z",
+            "[INFO] Reponse au diagnostic : « " + body + " » — traite par PR #21634.",
+        )
+        self.assertTrue(mod.cites_concern(concern, reply))
+        self.assertTrue(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_long_quote_keeps_gesture_candidate_without_minute_signature(self):
+        """#24672 : l'extrait fort garde la voie ouverte sans HH:MMZ."""
+        body = (
+            "Le diagnostic mesure une derive persistante dans les quatre snapshots "
+            "et montre que les identifiants de suivi ne suffisent pas a expliquer "
+            "le changement observe dans les resultats."
+        )
+        concern = c(38, "2026-10-18T22:26:03Z", body)
+        signature = "[INFO] Reponse au Concern du 2026-10-18 — "
+
+        # L'absence de minutes ne neutralise pas une citation assez longue.
+        quoted_80 = c(39, "2026-10-19T03:56:43Z", signature + body[20:100])
+        self.assertNotIn("22:26Z", quoted_80.body)
+        self.assertTrue(mod.cites_concern(concern, quoted_80))
+        self.assertTrue(mod.is_response_candidate("gesture", quoted_80, concern))
+
+        # La date seule n'est pas une citation forte, et 40–79 caractères
+        # restent sous le seuil mesuré.
+        for length in (40, 79):
+            with self.subTest(length=length):
+                short_quote = c(
+                    40 + length,
+                    "2026-10-19T03:56:43Z",
+                    signature + body[:length],
+                )
+                self.assertFalse(mod.cites_concern(concern, short_quote))
+                self.assertFalse(
+                    mod.is_response_candidate("gesture", short_quote, concern)
+                )
+
+    def test_quote_strength_keeps_the_80_character_boundary(self):
+        concern = c(38, "2026-10-01T10:00:00Z", "x" * 80)
+        short_quote = c(39, "2026-10-02T10:00:00Z", "[INFO] " + "x" * 79)
+        boundary_quote = c(40, "2026-10-02T10:00:00Z", "[INFO] " + "x" * 80)
+
+        self.assertFalse(mod.cites_concern(concern, short_quote))
+        self.assertTrue(mod.cites_concern(concern, boundary_quote))
+
     def test_ordinary_comment_is_a_response_candidate(self):
         self.assertTrue(mod.is_response_candidate("other", c(19, "2026-10-01T10:00:00Z", "Voici l'arbitrage.")))
 
@@ -300,12 +435,43 @@ class AnalyseTests(unittest.TestCase):
         report = mod.analyse_comments(42, comments)
         self.assertEqual(report.concerns[0].status, "NON REPONDU")
 
+    def test_the_2159_shape_is_answered(self):
+        """#2159 : le geste de lane qui cite le Concern le referme."""
+        comments = [
+            c(6255920966, "2026-10-18T22:26:03Z", CONCERN_2159),
+            c(6259310809, "2026-10-19T03:56:43Z", REPLY_2159),
+        ]
+        report = mod.analyse_comments(2159, comments)
+        self.assertEqual(len(report.concerns), 1)
+        self.assertEqual(report.concerns[0].status, "REPONDU")
+        self.assertEqual(report.concerns[0].proof, 6259310809)
+        # Le geste qui referme n'aggrave pas : le drapeau vise les gestes
+        # poses apres le Concern et qui n'y repondent pas.
+        self.assertFalse(report.concerns[0].gesture_after)
+        self.assertFalse(report.gesture_after)
+
+    def test_the_2159_shape_control_without_citation(self):
+        """Controle : sans citation, le meme geste ne referme rien."""
+        comments = [
+            c(6255920966, "2026-10-18T22:26:03Z", CONCERN_2159),
+            c(
+                6259310809,
+                "2026-10-19T03:56:43Z",
+                "[INFO] Releve mesure — aucun fichier edite.",
+            ),
+        ]
+        report = mod.analyse_comments(2159, comments)
+        self.assertEqual(report.concerns[0].status, "NON REPONDU")
+        self.assertTrue(report.concerns[0].gesture_after)
+
     def test_unrelated_later_comment_is_manual_review(self):
         comments = [
             c(1, "2026-10-01T10:00:00Z", CONCERN_1),
             c(2, "2026-10-01T11:00:00Z", "Pousse la branche, les tests passent."),
         ]
-        report = mod.analyse_comments(43, comments)
+        # Classe 1 seule : le second commentaire est lui-meme un candidat de la
+        # classe 2 (post non signe du compte partage) — hors scope de ce test.
+        report = mod.analyse_comments(43, comments, classes=("user-concern",))
         self.assertEqual(report.concerns[0].status, "MANUAL_REVIEW")
         self.assertEqual(len(report.unresolved), 1, "fail-closed : MANUAL_REVIEW reste dans la liste")
 
@@ -330,7 +496,7 @@ class AnalyseTests(unittest.TestCase):
                 "je n'ai pas encore eu le temps de regarder le depot annonce. " * 3,
             ),
         ]
-        report = mod.analyse_comments(71, comments)
+        report = mod.analyse_comments(71, comments, classes=("user-concern",))
         self.assertEqual(report.concerns[0].status, "MANUAL_REVIEW")
         self.assertEqual(len(report.unresolved), 1)
 
@@ -358,6 +524,216 @@ class AnalyseTests(unittest.TestCase):
         self.assertLessEqual(len(report.concerns[0].excerpt), 200)
 
 
+class LaneSignatureTests(unittest.TestCase):
+    """Classe 2 : les signatures mesurees qui ecartent un post de lane."""
+
+    def test_lane_near_seat(self):
+        self.assertEqual(
+            mod.lane_signature("[CLAIMED] lane myia-po-2024:CoursIA-2 — reprise du pli"),
+            "lane-near-seat",
+        )
+
+    def test_seat_token_even_backticked(self):
+        # Un jeton de siege encage reste une signature : c'est la lane qui
+        # l'ecrit, l'encagement ne change pas l'auteur.
+        self.assertEqual(
+            mod.lane_signature("Rapport de `myia-po-2024:CoursIA-2`, pousse ce matin."),
+            "seat-token",
+        )
+
+    def test_grain_tag(self):
+        self.assertEqual(
+            mod.lane_signature("Grain: LIGHT/guard — passe de garde"), "grain-tag"
+        )
+
+    def test_cycle_watermark(self):
+        self.assertEqual(
+            mod.lane_signature("Point de situation (c.278)."), "cycle-watermark"
+        )
+
+    def test_cycle_watermark_bounded_does_not_eat_a_comment_id(self):
+        # #21621 : un id de commentaire n'est pas un numero de cycle. Le motif
+        # borne a quatre chiffres prend c.2199 (controle positif) et laisse
+        # c.6280946388 a la classe user-remark (controle negatif) — sinon une
+        # remarque du mainteneur qui cite un id est ecartee en silence.
+        self.assertEqual(
+            mod.lane_signature("Point de situation (c.2199)."), "cycle-watermark"
+        )
+        self.assertEqual(
+            mod.lane_signature("Voir la remarque c.6280946388 sur ce point."), ""
+        )
+
+    def test_head_tag_after_decoration(self):
+        self.assertEqual(
+            mod.lane_signature("**[LIVRAISON] Pli 1 — lecture du depot**"), "head-tag"
+        )
+
+    def test_maintainer_voice_is_unsigned(self):
+        self.assertEqual(
+            mod.lane_signature(
+                "Reponse ecrite qui tranche : option 1 — garder l'indice tel quel. "
+                "La valeur 8 n'est pas un spoiler : c'est un parametre de l'experience."
+            ),
+            "",
+        )
+
+
+class RemarkActTests(unittest.TestCase):
+    """L'intention declaree est enregistree, pas filtrante."""
+
+    def test_question(self):
+        self.assertEqual(mod.remark_act("Est-ce qu'on garde l'indice ?"), mod.ACT_QUESTION)
+
+    def test_directive(self):
+        self.assertEqual(
+            mod.remark_act("Decision : on reste sur l'option 1."), mod.ACT_DIRECTIVE
+        )
+
+    def test_statement(self):
+        self.assertEqual(
+            mod.remark_act("Le rendu est propre sur cette serie."), mod.ACT_STATEMENT
+        )
+
+
+class RemarkAnalysisTests(unittest.TestCase):
+    """Classe 2 : la machinerie de reponse s'applique telle quelle aux remarques."""
+
+    REMARK = (
+        "Reponse ecrite qui tranche : option 1 — garder l'indice tel quel. "
+        "La valeur 8 n'est pas un spoiler : c'est un parametre de l'experience."
+    )
+
+    def test_maintainer_remark_without_answer_is_open(self):
+        report = mod.analyse_comments(
+            21092,
+            [c(6233713025, "2026-10-17T12:09:20Z", self.REMARK)],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        finding = report.remarks[0]
+        self.assertEqual(finding.status, "NON REPONDU")
+        self.assertEqual(finding.act, mod.ACT_DIRECTIVE)
+        self.assertEqual(finding.slug, "user-remark")
+
+    def test_lane_signed_comment_is_never_a_remark(self):
+        # Aucun de ces corps n'est un geste (le seau les garderait sinon hors
+        # classe par le genre) : c'est bien ``lane_signature`` qui les ecarte.
+        for body in (
+            "Point de situation (c.278), cote myia-po-2024:CoursIA-2 : le pli avance.",
+            "Point de situation (c.278) : rien de neuf sur cette serie.",
+            "Grain: LIGHT/guard -- passe de garde sur les liens.",
+        ):
+            report = mod.analyse_comments(
+                7, [c(2, "2026-10-18T01:25:00Z", body)], classes=("user-remark",)
+            )
+            self.assertEqual(report.remarks, [], f"corps signe retenu : {body[:60]}")
+
+    def test_head_tag_is_routed_to_manual_review_not_excluded(self):
+        # #21621 : « [NanoClaw] a raison… » est une vraie remarque du
+        # mainteneur ; le tag entre crochets, sans autre signature de lane, est
+        # ambigu — il est route vers MANUAL_REVIEW au lieu d'etre ecarte.
+        report = mod.analyse_comments(
+            11,
+            [c(20, "2026-10-18T09:00:00Z", "[NanoClaw] a raison de pousser ce point.")],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "MANUAL_REVIEW")
+        self.assertEqual(report.excluded, {})
+
+    def test_excluded_comments_are_counted_by_signature(self):
+        # #21621 : l'ecart cesse d'etre silencieux — il est compte et publie,
+        # en texte comme en JSON, pour que le total ne passe pas pour exhaustif.
+        report = mod.analyse_comments(
+            12,
+            [
+                c(30, "2026-10-18T09:00:00Z", "Point de situation (c.278)."),
+                c(31, "2026-10-18T10:00:00Z", self.REMARK),
+            ],
+            classes=("user-remark",),
+        )
+        self.assertEqual(report.excluded, {"cycle-watermark": 1})
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(
+            report.as_dict()["excluded_by_signature"], {"cycle-watermark": 1}
+        )
+
+    def test_remark_closed_by_a_strong_citation(self):
+        report = mod.analyse_comments(
+            8,
+            [
+                c(10, "2026-10-17T12:09:20Z", self.REMARK),
+                c(
+                    11,
+                    "2026-10-17T13:00:00Z",
+                    "Sur ta reponse du 12:09Z : option 1 retenue, je la mets en oeuvre.",
+                ),
+            ],
+            classes=("user-remark",),
+        )
+        self.assertEqual(report.remarks[0].status, "REPONDU")
+        self.assertEqual(report.remarks[0].proof, 11)
+
+    def test_remark_with_unrelated_later_comment_is_manual_review(self):
+        report = mod.analyse_comments(
+            9,
+            [
+                c(10, "2026-10-17T12:09:20Z", self.REMARK),
+                c(11, "2026-10-17T13:00:00Z", "J'ai pousse la branche, les tests passent."),
+            ],
+            classes=("user-remark",),
+        )
+        statuses = [r.status for r in report.remarks]
+        # Le second commentaire est lui-meme un candidat (meme forme, compte
+        # partage) : le plancher sur-signale au lieu de filtrer — assume (#20185).
+        self.assertEqual(statuses, ["MANUAL_REVIEW", "NON REPONDU"])
+
+    def test_the_word_concern_does_not_close_a_remark(self):
+        report = mod.analyse_comments(
+            10,
+            [
+                c(10, "2026-10-17T12:09:20Z", self.REMARK),
+                c(11, "2026-10-17T13:00:00Z", "Ce Concern est note pour la prochaine passe."),
+            ],
+            classes=("user-remark",),
+        )
+        self.assertNotEqual(report.remarks[0].status, "REPONDU")
+
+    def test_a_foreign_login_is_not_a_maintainer_remark(self):
+        report = mod.analyse_comments(
+            5,
+            [c(1, "2026-10-17T12:09:20Z", self.REMARK, author="un-contributeur")],
+            classes=("user-remark",),
+        )
+        self.assertEqual(report.remarks, [])
+
+    def test_lane_gesture_after_a_remark_is_the_aggravating_flag(self):
+        report = mod.analyse_comments(
+            6,
+            [
+                c(1, "2026-10-17T12:09:20Z", self.REMARK),
+                c(2, "2026-10-18T01:25:00Z", CLAIM),
+            ],
+            classes=("user-remark",),
+        )
+        self.assertEqual(report.remarks[0].status, "NON REPONDU")
+        self.assertTrue(report.remarks[0].gesture_after)
+        self.assertTrue(report.gesture_after)
+
+    def test_class_scoping_keeps_the_classes_independent(self):
+        comments = [
+            c(1, "2026-10-01T10:00:00Z", CONCERN_1),
+            c(2, "2026-10-01T11:00:00Z", "Le rendu est propre."),
+        ]
+        only_concerns = mod.analyse_comments(3, comments, classes=("user-concern",))
+        only_remarks = mod.analyse_comments(3, comments, classes=("user-remark",))
+        self.assertEqual(len(only_concerns.concerns), 1)
+        self.assertEqual(only_concerns.remarks, [])
+        self.assertEqual(only_remarks.concerns, [])
+        self.assertEqual(len(only_remarks.remarks), 1)
+        self.assertEqual(only_remarks.remarks[0].status, "NON REPONDU")
+
+
 class RenderTests(unittest.TestCase):
     def test_clean_thread(self):
         text = mod.render_text([], "2026-09-25", "open", 581)
@@ -372,6 +748,59 @@ class RenderTests(unittest.TestCase):
         text = mod.render_text([plain, flagged], "2026-09-25", "open", 2)
         self.assertLess(text.index("#11"), text.index("#10"))
         self.assertIn("gesture-after", text)
+
+    def test_remark_renders_with_its_act(self):
+        report = mod.analyse_comments(
+            12,
+            [c(1, "2026-10-17T12:09:20Z", "Decision : on garde l'option 1.")],
+            classes=("user-remark",),
+        )
+        text = mod.render_text([report], "2026-09-25", "open", 1)
+        self.assertIn("[directive]", text)
+        self.assertIn("remarque(s)", text)
+
+    def test_exclusions_are_published_in_the_text_output(self):
+        # #21621 : le nombre d'ecartes par signature figure dans la sortie.
+        report = mod.analyse_comments(
+            13,
+            [
+                c(40, "2026-10-18T09:00:00Z", "Point de situation (c.278)."),
+                c(41, "2026-10-18T10:00:00Z", "Le rendu est propre."),
+            ],
+            classes=("user-remark",),
+        )
+        text = mod.render_text([report], "2026-09-25", "open", 1)
+        self.assertIn("1 commentaire(s) ecarte(s) par signature de lane", text)
+        self.assertIn("cycle-watermark 1", text)
+
+
+class Utf8OutputTests(unittest.TestCase):
+    def test_emoji_excerpt_survives_a_cp1252_stdout(self):
+        # Mesure 2026-10-30 : un emoji dans un extrait de commentaire crashait
+        # le print sur un stdout redirige en page de codes ANSI (cp1252,
+        # UnicodeEncodeError apres lecture de 686 issues) -- exactement le
+        # canal de la ligne [CONCERNS] de la restitution coordinateur (#20183).
+        import io as _io
+
+        emoji_concern = "Concern: le rendu casse \U0001f680 partout"
+        original = sys.stdout
+        original_fetch = mod.fetch_comments
+        raw = _io.BytesIO()
+        sys.stdout = _io.TextIOWrapper(raw, encoding="cp1252")
+        try:
+            mod.fetch_comments = lambda number: [
+                c(60, "2026-10-19T09:00:00Z", emoji_concern)
+            ]
+            rc = mod.main(["--issues", "15"])
+            sys.stdout.flush()
+            payload = raw.getvalue()
+        finally:
+            sys.stdout = original
+            mod.fetch_comments = original_fetch
+        self.assertEqual(rc, 0)
+        out = payload.decode("utf-8")
+        self.assertIn("non resolu", out)
+        self.assertIn("\U0001f680", out)
 
 
 if __name__ == "__main__":

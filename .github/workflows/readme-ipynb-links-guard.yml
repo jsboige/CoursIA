@@ -87,6 +87,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       # La PR ne doit PAS introduire de nouvelle violation HTML_404
       # (#18911 geste 2, 2026-10-09). On compare la PR (head) a la base (main)
@@ -169,7 +170,7 @@ jobs:
           # dans le pipe pour que grep les voie (sinon faux vert structurel).
           # F8 (#19631, retained) : la liste PR-added ne change plus la classe
           # bloquante (cf. ci-dessus) ; elle reste passée aux deux passes.
-          python scripts/regen_quarto_render.py --check-readme-links \
+          python3 scripts/regen_quarto_render.py --check-readme-links \
                --pr-added-files /tmp/pr_added_files.txt 2>&1 \
             | tee /tmp/python_stdout.txt \
             | grep -E '^::error::HTML_404 ' \
@@ -237,7 +238,7 @@ jobs:
           # touchant un README rougirait. Mesurer le MEME predicat sur les
           # deux contenus est la condition du delta. `--pr-added-files`
           # n'est pas passe ici : la base n'ajoute aucun fichier.
-          python scripts/regen_quarto_render.py --check-readme-links 2>&1 \
+          python3 scripts/regen_quarto_render.py --check-readme-links 2>&1 \
             | tee /tmp/python_stdout_base.txt \
             | grep -E '^::error::HTML_404 ' \
             | sort -u > /tmp/base_violations.txt
@@ -320,8 +321,8 @@ jobs:
         # Le runner Ubuntu n'a pas pytest par defaut (#18970 -- "No module
         # named pytest") : on l'installe avant d'executer les tests.
         run: |
-          python -m pip install --quiet pytest
-          python -m pytest scripts/notebook_tools/tests/test_fix_ipynb_links.py \
+          python3 -m pip install --quiet pytest
+          python3 -m pytest scripts/notebook_tools/tests/test_fix_ipynb_links.py \
             scripts/notebook_tools/tests/test_readme_links_guard_workflow.py -v
 
       - name: Audit total (advisory -- backlog connu de 618 HTML_404)
@@ -330,5 +331,5 @@ jobs:
         # historique reste un travail de sweep en aval (voir #18911 acceptation #2).
         continue-on-error: true
         run: |
-          python scripts/regen_quarto_render.py --check-readme-links 2>&1 \
+          python3 scripts/regen_quarto_render.py --check-readme-links 2>&1 \
             | tail -3 || true

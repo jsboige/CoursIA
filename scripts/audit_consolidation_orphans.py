@@ -15,6 +15,20 @@ Attachment semantics (a TRIAGE, deliberately generous -- a human arbitrates):
   - ``issue_comment``   (``--deep`` only) a comment on the issue cites
                         ``#<chaperone>``.
 
+A SECOND, distinct attachment channel (issue #21267, organ v2): an issue whose
+body carries a parent-specific marker -- ``Part of #N`` / ``Rattaché(e)(s) à
+#N`` / ``See #N`` -- where ``#N`` is an OPEN non-chaperone issue of the same
+fetch, counts as ``attached_specific`` (the "fausse orpheline" class measured
+2026-10-17 on lot 4: a live parent EPIC cited in the body but invisible to the
+chaperone proof search). Priority: a chaperone proof wins (no double-count);
+a closed or nonexistent parent attaches nothing -- the issue stays an orphan.
+
+``attached_specific`` is resolved against the issues of the SAME fetch, so a
+parent older than the fetched window declassifies its child to orphan. That is
+the second cost of the ``--limit`` cap, and the larger one: measured
+2026-10-30, the 400-cap run reported 276 orphans of which 122 were attached to
+a parent the cap had excluded -- false orphans, not merely missing ones.
+
 A bare ``#N`` mention counts as attachment here even when the prose around it
 is negative ("ne pas dupliquer #5081") -- the report surfaces the line, the
 reader decides. This is the opposite failure mode of a verdict tool: a false
@@ -22,6 +36,14 @@ reader decides. This is the opposite failure mode of a verdict tool: a false
 
 Chaperones (from the Epic body): #5081 (notebook canon), #4362 (Lean lakes),
 #13737 (structural, 30 perimeters), #9535 (cleanup), #16473 (this umbrella).
+
+The open-issue pool is read with a HARD cap (``--limit``) and ``gh`` returns
+the NEWEST issues first: when the cap is reached, the missing stock is the
+OLDEST -- precisely the stock an orphan audit exists to see. The report
+therefore carries a ``pool`` block (``count`` / ``limit`` / ``truncated``) and
+the markdown carries a warning line, so growth beyond the cap is VISIBLE
+instead of silently shrinking the scan (reserve written in the Epic #16473
+body, 2026-10-17: "599 issues ouvertes" against a 400 cap).
 
 ADVISORY by default (same posture as orphan_branch_scan.py): exit 0 whatever
 the orphan count; the payload is the report. ``--fail-on-orphans`` exists for
@@ -132,6 +154,31 @@ def mention_lines(text: str, number: int) -> list[str]:
     return [line.strip() for line in text.splitlines() if pattern.search(line)]
 
 
+# Marqueurs de rattachement a un parent SPECIFIQUE (non chaperon) dans le body
+# de l'issue elle-meme : convention de lane ("Part of #N", cf CLAUDE.md /continue
+# Phase 3), formulaire de tri ("Rattache(e)(s) a #N") et renvoi de lien
+# ("See #N"). Le parent doit etre OPEN dans le meme fetch pour compter.
+PARENT_LINK_RE = re.compile(r"\b(?:Part of|Rattach[ée]e?s? [aà]|See)\s+#(\d+)", re.IGNORECASE)
+
+
+def parent_links(body: str) -> dict[int, str]:
+    """Parent-specific markers in an issue body: parent number -> proof line.
+
+    Word-bounded prefix (``Dsee #5`` does not match); one entry per parent
+    even when cited twice (first line wins, same dedup posture as
+    ``attachment_proofs``).
+    """
+    if not body:
+        return {}
+    links: dict[int, str] = {}
+    for line in body.splitlines():
+        for match in PARENT_LINK_RE.finditer(line):
+            parent = int(match.group(1))
+            if parent not in links:
+                links[parent] = line.strip()
+    return links
+
+
 def attachment_proofs(
     issue: dict[str, Any],
     chaperones: dict[int, dict[str, Any]],
@@ -196,6 +243,7 @@ def audit(
     chaperones: dict[int, dict[str, Any]],
     issues_comments: dict[int, list[dict[str, Any]]] | None = None,
     suggest: bool = False,
+    pool: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Pure core: tri of open issues into attached / orphaned-by-axis.
 
@@ -203,9 +251,15 @@ def audit(
     ``suggested_chaperon`` list derived from its axes via AXIS_TO_CHAPERON.
     The field is omitted entirely when ``suggest`` is False (default) to
     preserve existing report consumers (acceptance 1 wire).
+
+    ``pool`` (advisory): ``{"count", "limit", "truncated"}`` provenance of the
+    scanned pool. Omitted when unknown, so an offline capture predating this
+    block never renders as a complete scan.
     """
     chaperone_numbers = {i["number"] for i in issues} & set(CHAPERONES)
+    open_numbers = {i["number"] for i in issues}
     attached: list[dict[str, Any]] = []
+    attached_specific: list[dict[str, Any]] = []
     orphans: list[dict[str, Any]] = []
     for issue in issues:
         number = issue["number"]
@@ -221,6 +275,20 @@ def audit(
                     {"type": p["type"], "chaperone": p["chaperone"], "line": p["lines"][0]}
                     for p in proofs
                 ],
+            })
+            continue
+        parents = {
+            parent: line
+            for parent, line in parent_links(issue.get("body") or "").items()
+            if parent in open_numbers and parent != number and parent not in CHAPERONES
+        }
+        if parents:
+            attached_specific.append({
+                "number": number,
+                "title": issue.get("title") or "",
+                "parents": sorted(parents),
+                "proofs": [{"parent": parent, "line": parents[parent]}
+                           for parent in sorted(parents)],
             })
             continue
         absence = ["body: 0 citation des chaperons (#%s)" % " #".join(map(str, CHAPERONES))]
@@ -244,15 +312,20 @@ def audit(
                 by_axis[axis].append(orphan)
         else:
             by_axis["UNCLASSIFIED"].append(orphan)
-    return {
+    report = {
         "chaperones": list(CHAPERONES),
         "scanned": len(issues) - len(chaperone_numbers),
         "attached": len(attached),
+        "attached_specific": len(attached_specific),
         "orphans": len(orphans),
         "deep": issues_comments is not None,
         "attached_details": attached,
+        "attached_specific_details": attached_specific,
         "orphans_by_axis": by_axis,
     }
+    if pool:
+        report["pool"] = pool
+    return report
 
 
 def render_markdown(report: dict[str, Any]) -> str:
@@ -260,12 +333,27 @@ def render_markdown(report: dict[str, Any]) -> str:
         "# Audit consolidation-orphans (#16473, acceptance 1)",
         "",
         "Chaperons : %s" % " ".join(f"#{c}" for c in report["chaperones"]),
-        f"Issues ouvertes scannées : {report['scanned']} ; rattachées : {report['attached']} ; orphelines : {report['orphans']}"
+        f"Issues ouvertes scannées : {report['scanned']} ; rattachées : {report['attached']} ; rattachées (parent spécifique) : {report['attached_specific']} ; orphelines : {report['orphans']}"
         + (" (scan --deep : commentaires inclus)" if report["deep"] else " (bodies seulement, lancer --deep pour les commentaires)"),
         "",
         "Un tri, pas un verdict : chaque ligne orpheline liste la preuve de ce qui a été cherché. L'arbitrage de rattachement (acceptance 2) reste humain.",
         "",
     ]
+    pool = report.get("pool") or {}
+    if pool.get("truncated"):
+        lines.extend([
+            f"> **Scan TRONQUÉ** : le pool a rendu {pool.get('count')} issues pour un plafond "
+            f"`--limit {pool.get('limit')}`, et `gh` sert les plus RÉCENTES d'abord — les plus "
+            "ANCIENNES manquent, c'est-à-dire précisément le stock que cet audit existe pour voir. "
+            "Le compte d'orphelines ci-dessous est un **minorant**. Relancer avec un `--limit` plus haut.",
+            "",
+        ])
+    elif pool:
+        lines.extend([
+            f"Pool lu : {pool.get('count')} issues ouvertes pour un plafond `--limit {pool.get('limit')}` "
+            "— non saturé, le scan est complet.",
+            "",
+        ])
     for axis in [*AXIS_LABELS, "UNCLASSIFIED"]:
         entries = report["orphans_by_axis"][axis]
         if not entries:
@@ -295,9 +383,16 @@ def _gh_json(repo: str, args: list[str]) -> Any:
 
 
 def fetch_state(repo: str, limit: int, deep: bool) -> dict[str, Any]:
-    """Collect live state: open issues + chaperone bodies/comments (+ per-issue comments with --deep)."""
+    """Collect live state: open issues + chaperone bodies/comments (+ per-issue comments with --deep).
+
+    ``limit`` is a HARD cap, and ``gh issue list`` sorts newest-first: a
+    saturated cap drops the OLDEST issues, so the orphan count it produces is a
+    LOWER BOUND, never a total. ``pool["truncated"]`` carries that fact instead
+    of letting the report look complete.
+    """
     issues = _gh_json(repo, ["issue", "list", "--state", "open", "--limit", str(limit),
                              "--json", "number,title,body"]) or []
+    pool = {"count": len(issues), "limit": limit, "truncated": len(issues) >= limit}
     chaperones: dict[int, dict[str, Any]] = {}
     for chap in CHAPERONES:
         detail = _gh_json(repo, ["issue", "view", str(chap), "--json", "body,comments"]) or {}
@@ -311,6 +406,7 @@ def fetch_state(repo: str, limit: int, deep: bool) -> dict[str, Any]:
             issues_comments[number] = detail.get("comments") or []
     return {"issues": issues, "chaperones": {str(k): v for k, v in chaperones.items()},
             "issues_comments": {str(k): v for k, v in (issues_comments or {}).items()},
+            "pool": pool,
             "deep": deep}
 
 
@@ -327,13 +423,26 @@ def load_input(path: str) -> tuple[list[dict[str, Any]], dict[int, dict[str, Any
     return issues, chaperones, issues_comments
 
 
+def load_pool(path: str) -> dict[str, Any]:
+    """Optional ``pool`` block of an offline state file (truncation provenance).
+
+    Absent from older captures: an empty dict then means "unknown", never
+    "complete" -- the report omits the warning rather than asserting a full
+    scan it cannot prove.
+    """
+    with open(path, encoding="utf-8") as handle:
+        return json.load(handle).get("pool") or {}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--fetch", action="store_true", help="collect live state via gh")
     source.add_argument("--input", metavar="FILE", help="offline JSON state (see module docstring)")
     parser.add_argument("--repo", default="jsboige/CoursIA")
-    parser.add_argument("--limit", type=int, default=400)
+    parser.add_argument("--limit", type=int, default=1000,
+                        help="hard cap on the fetched pool (gh serves newest first: a saturated "
+                             "cap hides the OLDEST issues and makes the orphan count a lower bound)")
     parser.add_argument("--deep", action="store_true", help="also scan comments on open issues (N+5 gh calls)")
     parser.add_argument("--format", choices=("md", "json"), default="md")
     parser.add_argument("--out", help="write the report to FILE instead of stdout")
@@ -347,13 +456,16 @@ def main(argv: list[str] | None = None) -> int:
         state = fetch_state(args.repo, args.limit, args.deep)
         issues = state["issues"]
         chaperones = {int(k): v for k, v in state["chaperones"].items()}
+        pool = state["pool"]
         issues_comments = None
         if state["issues_comments"]:
             issues_comments = {int(k): v for k, v in state["issues_comments"].items()}
     else:
         issues, chaperones, issues_comments = load_input(args.input)
+        pool = load_pool(args.input)
 
-    report = audit(issues, chaperones, issues_comments, suggest=args.suggest_rattachement)
+    report = audit(issues, chaperones, issues_comments,
+                   suggest=args.suggest_rattachement, pool=pool)
     rendered = json.dumps(report, ensure_ascii=False, indent=2) if args.format == "json" else render_markdown(report)
     if args.out:
         with open(args.out, "w", encoding="utf-8", newline="\n") as handle:

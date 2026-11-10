@@ -255,3 +255,100 @@ def test_a_fully_corrupt_archive_is_without_metadata_not_a_crash(tmp_path):
     report = _run(tmp_path)
     assert [v.status for v in report.verdicts] == ["ok"]
     assert "pourri.npz" in report.skipped
+
+
+def test_a_null_clamp_scale_is_declared_incomplete_not_assumed_full(tmp_path):
+    """`clamp_scale: null` SANS `clamp_ramp` n'est pas « clamp plein » : c'est
+    une intensite que rien ne declare.
+
+    L'ancien code faisait ``float(self.meta.get("clamp_scale", 1.0))`` : la
+    cle ETANT presente avec la valeur ``null``, le defaut ``1.0`` ne
+    s'appliquait jamais et ``float(None)`` tuait l'audit en traceback
+    (#21907). Le bras doit maintenant sortir du verdict avec un statut
+    explicite -- et jamais etre valide « conforme » sur la seule foi d'un
+    defaut de parsing.
+    """
+    _write(tmp_path / "ref.npz", _meta(clamp_ids=[], scale=1.0))
+    _write(tmp_path / "arm.npz", _meta(scale=None), values=(9.0, 2.0, 3.0))
+    report = _run(tmp_path)
+    v = report.verdicts[0]
+    assert v.status == "META-INCOMPLETE"
+    assert v.trace.scale is None
+    assert report.failures, "une meta incomplete doit faire echouer le controle"
+    assert "sans clamp_ramp" in v.detail
+    # Le bras differe pourtant de sa reference : cela ne suffit pas a le
+    # valider, l'intensite annoncee reste inconnue.
+    assert v.status != "ok"
+
+
+def test_a_ramp_arm_is_judged_on_the_measured_divergence(tmp_path):
+    """Un bras de RAMPE porte une intensite alpha(t) : l'extracteur ecrit
+    alors ``clamp_scale: null`` ET ``clamp_ramp`` (cycles, peak) -- son
+    information est COMPLETE, ce n'est pas un defaut de parsing (#20253,
+    hysteresis).
+
+    Le declarer « meta incomplete » serait faux : il se juge sur la
+    divergence mesuree avec sa reference -- visible -> conforme, invisible
+    -> muet.
+    """
+    ramp = {"cycles": 2, "peak": 1.0}
+    _write(tmp_path / "ref.npz", _meta(clamp_ids=[], scale=1.0))
+    _write(tmp_path / "rampe.npz", _meta(scale=None, clamp_ramp=ramp),
+           values=(9.0, 2.0, 3.0))
+    report = _run(tmp_path)
+    v = report.verdicts[0]
+    assert v.status == "ok"
+    assert v.trace.ramp == ramp
+    assert "rampe" in v.trace.scale_label
+    assert not report.failures
+
+    # Meme rampe, mais la trace n'a pas bouge : le clamp reste invisible.
+    _write(tmp_path / "muette.npz", _meta(scale=None, clamp_ramp=ramp))
+    statuses = {v.trace.name: v.status for v in _run(tmp_path).verdicts}
+    assert statuses["muette.npz"] == "MUET"
+
+
+def test_a_non_numeric_clamp_scale_is_incomplete_not_a_crash(tmp_path):
+    """Un champ `clamp_scale` illisible (texte) est traite comme une
+    intensite manquante : un defaut de parsing ne doit jamais tuer l'audit
+    des autres bras."""
+    _write(tmp_path / "ref.npz", _meta(clamp_ids=[], scale=1.0))
+    _write(tmp_path / "arm.npz", _meta(scale="beaucoup"), values=(9.0, 2.0, 3.0))
+    report = _run(tmp_path)
+    assert [v.status for v in report.verdicts] == ["META-INCOMPLETE"]
+    assert report.failures
+
+
+def test_an_absent_clamp_scale_still_means_a_full_clamp(tmp_path):
+    """L'absence de la cle reste « clamp plein » (comportement de
+    l'extraction) : le durcissement ne change pas ce contrat."""
+    meta = _meta(clamp_ids=[], scale=1.0)
+    del meta["clamp_scale"]
+    _write(tmp_path / "ref.npz", meta)
+    arm = _meta(scale=1.0)
+    del arm["clamp_scale"]
+    _write(tmp_path / "arm.npz", arm, values=(9.0, 2.0, 3.0))
+    report = _run(tmp_path)
+    assert [v.status for v in report.verdicts] == ["ok"]
+    assert report.verdicts[0].trace.scale == 1.0
+
+
+def test_a_meta_stored_as_bytes_is_read(tmp_path):
+    """La meta peut etre ecrite en bytes : elle doit etre lue comme le texte
+    JSON qu'elle est, pas rejetee (#21907, durcissement du parsing)."""
+    meta = json.dumps(_meta(clamp_ids=[], scale=1.0)).encode("utf-8")
+    np.savez(tmp_path / "ref.npz", a__topk_ids=np.array([1.0, 2.0]),
+             __meta__=np.array(meta))
+    np.savez(tmp_path / "arm.npz", a__topk_ids=np.array([9.0, 2.0]),
+             __meta__=np.array(json.dumps(_meta(scale=1.0)).encode("utf-8")))
+    report = _run(tmp_path)
+    assert [v.status for v in report.verdicts] == ["ok"]
+    assert not report.failures
+
+
+def test_the_cli_exits_non_zero_on_an_incomplete_meta(tmp_path):
+    """Le code de sortie reste coherent : un bras non verifiable est un
+    echec declare, pas un silence."""
+    _write(tmp_path / "ref.npz", _meta(clamp_ids=[], scale=1.0))
+    _write(tmp_path / "arm.npz", _meta(scale=None), values=(9.0, 2.0, 3.0))
+    assert vct.main(["--traces-dir", str(tmp_path)]) == 1

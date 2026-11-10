@@ -26,8 +26,9 @@ La population décrite ici est celle des machines qui portent des grains CoursIA
 | `myia-po-2023` | RTX 3080 + eGPU RTX 3090 (24 Go) | les services GenAI image, audio et vidéo ([genai-services.md](../genai/genai-services.md)) |
 | `myia-po-2024` | RTX 3070 (8 Go) | jeton QuantConnect MCP ; la lane QC isolée |
 | `myia-po-2025` | RTX 3080 Ti laptop (16 Go), sous garde thermique | le titulaire de la coordination ; des workspaces hors CoursIA (claudish, maintenance, workspaces d'école) |
-| `myia-po-2026` | RTX 3080 | le service d'embedding (port `8004`) ; jeton QuantConnect MCP ; le secrétariat ; Hermes |
+| `myia-po-2026` | RTX 3080 | **hors service depuis le 2026-10-09** (panne matérielle). Portait le service d'embedding (port `8004`), un jeton QuantConnect MCP, le secrétariat et Hermes |
 | `myia-po-2027` | RTX 4060 laptop (8 Go) | des lanes worker ; hors du LAN d'ai-01 (voir « Réseau ») |
+| `myia-po-2028` | RTX 3070 Ti laptop (8 Go), 64 Go de RAM ; pas de disque D: (SSD à venir) | remplace `po-2026` depuis le 2026-10-20 : le secrétariat (`CoursIA-3`) et deux lanes worker (`CoursIA`, `CoursIA-2`) en cours d'installation |
 
 La capacité GPU des machines `po-*` est **déclarée** ; elle se confirme par la lane propriétaire avant toute réservation, pas par cette table.
 
@@ -39,7 +40,7 @@ Une lane est un couple `machine:workspace`, animé par un seul agent actif à la
 |---|---|
 | `myia-ai-01:CoursIA` | coordinateur : merges, fermetures, arbitrages, politique de flotte |
 | `myia-po-2025:CoursIA-2` | titulaire : dossiers de prévalidation exact-head, vérifications avant fermeture ; ne merge ni ne ferme |
-| `myia-po-2026:CoursIA-3` | secrétariat : attestations tierces, circulation (DM nominatifs, alertes). Il refuse par contrat les dossiers des PRs `DEEP`, qui reviennent au titulaire |
+| `myia-po-2028:CoursIA-3` | secrétariat (siège de `myia-po-2026:CoursIA-3` jusqu'au 2026-10-20) : attestations tierces, circulation (DM nominatifs, alertes). Il refuse par contrat les dossiers des PRs `DEEP`, qui reviennent au titulaire |
 | `myia-ai-01:CoursIA-2` | worker sur la machine du coordinateur ; régisseur des GPU de la flotte depuis le 2026-10-05. Ne merge ni ne ferme |
 | `myia-po-2024:CoursIA-3` | lane QuantConnect isolée : déploiement des portefeuilles et maintenance de la partie QC, hors du tapis des workers. Elle partage le dashboard `workspace-CoursIA-3` avec le secrétariat : lire l'auteur (`machineId`) avant d'attribuer un message |
 | autres `*:CoursIA` et `*:CoursIA-2` | workers |
@@ -51,6 +52,24 @@ Le trio coordinateur, titulaire et secrétaire est décrit, avec la circulation 
 **Workspaces d'école.** Les workspaces des cours (EPITA, EPF, etc.) ont leur propre dashboard. Exception user du 2026-05-16 : le coordinateur peut y envoyer `[INFO]`, `[ASK]` ou `[DIRECTIVE]` par message direct ; il n'y merge pas, n'y committe pas et n'écrit pas sur leur dashboard. Scope par école : [teaching-context.md](teaching-context.md).
 
 **Anti-collision.** Un seul éditeur par notebook ou par série à la fois ; deux sessions sur une même machine (`CoursIA` et `CoursIA-2`) sont deux lanes distinctes, et un worker qui refuse un pivot vers la session voisine a raison.
+
+### Établir qu'une lane est active — quatre familles de preuves
+
+Une lane n'est ni « vivante » ni « morte » sur un coup d'œil au dashboard : la question se tranche sur quatre preuves, et une seule ne suffit pas.
+
+| Preuve | Ce qu'elle demande |
+|---|---|
+| **EXISTS** | la machine et le workspace existent : cette page, plus `roosync_inventory(type:"machines")` |
+| **RECENT** | activité documentée sur les 7 derniers jours : DM, dashboard, cron, commit |
+| **CONTRIBUTES** | production mesurable : grain livré, dossier de prévalidation posé, PR mergée, ou service rendu au cluster |
+| **REACHABLE** | joignable par l'un des canaux : LAN, dashboard, DM, ou l'un des mécanismes de réveil |
+
+Les quatre preuves se lisent ensemble, et le croisement range la lane dans l'un de quatre groupes : **active et joignable**, **dormante côté VS Code mais joignable par cession ou réveil**, **joignable sans activité connue**, **optionnelle ou redondante** (ses canaux sont déjà couverts par une autre lane). Le dernier groupe est le seul qui autorise à proposer une extinction ; il ne l'autorise pas à l'exécuter — un redémarrage ou un réveil reste une décision user.
+
+Deux garde-fous, l'un et l'autre mesurés à l'usage :
+
+- **Le silence n'est pas la dormance.** Une lane dont le dashboard est muet peut être en train de servir un grain long ; une absence de message ne vaut pas absence d'activité, et une grille qui la classe « dormante » sur ce seul signe se trompe.
+- **Une classification est datée.** Le roster complet, avec sa grille remplie au 2026-10-08 et les quatre familles de preuves telles qu'elles ont servi à l'acceptance de #14527, est conservé comme rapport figé : [2026-10-08-roster-machine-workspace.md](../transients/2026-10-08-roster-machine-workspace.md). La **méthode** est ici ; les verdicts par lane y sont périmés par construction et ne se recopient pas dans cette page.
 
 ## D'où vient le grain d'une lane
 
@@ -87,6 +106,7 @@ La capacité de voir une image appartient au **modèle**, pas à la machine ni �
 - **GPU 2** : le régisseur (`myia-ai-01:CoursIA-2`) tient la file des expériences (rendez-vous [#1454](https://github.com/jsboige/CoursIA/issues/1454)). Un GPU 2 vide sans raison écrite est une dette du cycle.
 - **Désignation du device.** Les variables vont sur la commande elle-même, pas sur une chaîne de commandes qui les perdrait : `CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=2 <commande>`. Ensuite, vérifier le placement réel avec `nvidia-smi --query-compute-apps`.
 - **Mémoire de la machine.** ai-01 sert la flotte : avant un run lourd, lire le taux d'engagement mémoire juste avant le lancement, pas une valeur lue plus tôt dans le cycle.
+- **Enveloppe VRAM mesurée par palier de modèle.** Le palier `4b` du Decision Index (`eljiwo/jiwo-4b`, révisions `v1` et `v2`) est servi **sur GPU** avec un pic de **8,02 Gio** alloués (bfloat16, contexte 8192), mesuré sur 900 items d'une tranche reconstruite : le seuil « 24 Go » est **réfuté pour ce palier**. Ce pic dépasse en revanche les 8,00 Gio d'une carte 8 Go — il faut une carte 16 Go. Mesure, limites et commande : [decision-models-4b-local-verification.md](../genai/decision-models-4b-local-verification.md).
 
 ## po-2025 — garde thermique
 
@@ -129,7 +149,7 @@ curl.exe -s -o NUL -w "%{http_code}`n" --max-time 6 http://<adresse>:<port>/v1/m
 
 - **QuantConnect MCP** (`quantconnect/mcp-server`, jetons sur `po-2024` et `po-2026`) : au plus 10 appels par minute pour **toute** la flotte ; annoncer un backtest sur le dashboard avant de le lancer. Détail : [quantconnect.md](../qc/quantconnect.md).
 - **GenAI image, audio, vidéo** (`po-2023`) : registre des services, ports et sous-domaines dans [genai-services.md](../genai/genai-services.md). Un notebook qui appelle ces services se valide contre eux, pas contre une sortie de substitution.
-- **Embedding** (`po-2026`, Qwen3-Embedding-4B AWQ, port `8004`) : consommable depuis le LAN d'ai-01. Son rapatriement aux côtés du vLLM est à l'étude.
+- **Embedding** (`po-2023`, conteneur `qwen3_4b_awq_embedding_server`, Qwen3-Embedding-4B AWQ, port hôte `8005` -> conteneur `8000`, vecteurs 2560 d) : consommable depuis le LAN d'ai-01 ; `/health` répond sans clé (mesuré le 2026-10-26). Le service vivait sur `po-2026` (port `8004`) avant sa panne du 2026-10-09 ; un `embedding-proxy-logger` occupe toujours le port 8004 sur `po-2023`.
 - **Lean et Mathlib** : installables sur toutes les machines (CLAUDE.md §F). Sur ai-01, un `lake build` vise une cible, jamais le lake entier.
 
 ## Pointeurs

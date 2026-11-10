@@ -555,3 +555,101 @@ def test_drone_does_not_also_raise_global_flat_warn():
 def test_moderate_still_passes_so_drone_is_not_a_blanket_reject():
     """Guard against over-correction: MODERATE must remain acceptable."""
     assert classify_segment(**_healthy(melody_verdict="MODERATE"))["gate"] == "PASS-TO-EAR"
+
+
+# ---------------------------------------------------------------------------
+# #21521 — three residual reserves on the long-form path.
+# ---------------------------------------------------------------------------
+
+import verify_prosody as vp  # noqa: E402
+
+
+def _window(label, verdict="MODERATE", motif=10.0, span=8.0, motion=1.0,
+            rng=9.0, syllables=10):
+    return {
+        "label": label,
+        "melody_verdict": verdict,
+        "motif3_repeat_pct": motif,
+        "melodic_span_st": span,
+        "mean_abs_interval_st": motion,
+        "global_range_st": rng,
+        "n_syllables": syllables,
+    }
+
+
+def test_widest_window_names_the_span_maximum_not_the_concentration_winner():
+    """Reserve 3: the lexicographic tie-break reports concentration, so the
+    widest window must be reachable by its own name — otherwise a very wide
+    but low-motif window is simply absent from the report."""
+    windows = [
+        _window("w00", span=20.0, motif=10.0),
+        _window("w01", verdict="FLAT", span=3.0, motif=60.0),
+    ]
+    agg = vp.aggregate_window_measurements(windows)
+    assert agg["worst_window"]["label"] == "w01"      # severity wins
+    assert agg["widest_window"]["label"] == "w00"     # span maximum named
+    assert agg["widest_window"]["melodic_span_st"] == 20.0
+    assert agg["melodic_span_st"] == 20.0             # gate still reads the max
+
+
+def test_widest_window_is_none_when_there_are_no_windows():
+    agg = vp.aggregate_window_measurements([])
+    assert agg["widest_window"] is None
+
+
+def _fake_segment(gate, **extra):
+    return {"gate": gate, "reasons": [], "reason_kinds": [], "erratic_axes": [],
+            **extra}
+
+
+@pytest.fixture
+def unprobeable(monkeypatch):
+    """Neither backend can read the header — the #21521 reserve-1 situation."""
+    monkeypatch.setattr(vp, "_probe_duration_s", lambda path: None)
+
+
+def _write_sized(tmp_path, size):
+    p = tmp_path / "chapter.bin"
+    p.write_bytes(b"\0" * size)
+    return p
+
+
+def test_unknown_duration_large_file_never_reads_as_pass(unprobeable, monkeypatch, tmp_path):
+    """A file big enough to be several windows, unreadable by both backends,
+    used to fall through to the short path silently — the pre-#21485 defect."""
+    monkeypatch.setattr(vp, "analyze_segment", lambda path, instruments: _fake_segment("PASS-TO-EAR"))
+    out = vp.analyze_file(str(_write_sized(tmp_path, vp.UNKNOWN_DURATION_WARN_BYTES)), None)
+    assert out["gate"] == "WARN"
+    assert "LONG-FORM-UNVERIFIED" in out["reasons"]
+    assert out["reason_kinds"][-1] == "finding"
+    assert out["duration_unknown"] is True
+    assert out["size_bytes"] == vp.UNKNOWN_DURATION_WARN_BYTES
+
+
+def test_unknown_duration_small_file_is_still_flagged_but_keeps_its_gate(unprobeable, monkeypatch, tmp_path):
+    """Below the threshold the silence is an instrument problem, not a missed
+    long-form read: the signal is recorded, the gate is not moved."""
+    monkeypatch.setattr(vp, "analyze_segment", lambda path, instruments: _fake_segment("PASS-TO-EAR"))
+    out = vp.analyze_file(str(_write_sized(tmp_path, 1024)), None)
+    assert out["gate"] == "PASS-TO-EAR"
+    assert "LONG-FORM-UNVERIFIED" not in out["reasons"]
+    assert out["duration_unknown"] is True
+
+
+def test_unknown_duration_does_not_downgrade_a_reject(unprobeable, monkeypatch, tmp_path):
+    monkeypatch.setattr(vp, "analyze_segment", lambda path, instruments: _fake_segment("REJECT", reasons=["MONOTONE"], reason_kinds=["finding"]))
+    out = vp.analyze_file(str(_write_sized(tmp_path, vp.UNKNOWN_DURATION_WARN_BYTES)), None)
+    assert out["gate"] == "REJECT"
+    assert out["reasons"] == ["MONOTONE"]
+
+
+def test_known_long_duration_takes_the_windowed_path(monkeypatch, tmp_path):
+    """Control: when the header IS readable, the guard never fires and the
+    long-form route is the one taken (nothing regressed in the dispatch)."""
+    monkeypatch.setattr(vp, "_probe_duration_s", lambda path: vp.LONG_FORM_WINDOW_S + 1)
+    monkeypatch.setattr(vp, "analyze_long_form", lambda path, instruments, window_s=0: {"gate": "WINDOWED"})
+    monkeypatch.setattr(vp, "analyze_segment", lambda path, instruments: _fake_segment("PASS-TO-EAR"))
+    out = vp.analyze_file("chapter.mp3", None)
+    assert out["gate"] == "WINDOWED"
+    assert "duration_unknown" not in out
+

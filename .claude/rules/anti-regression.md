@@ -12,11 +12,22 @@ Commits "fix compilation" / "Mathlib fix" / "lint fix" / "simplify" avec **delet
 
 ## Red-flag rapides
 
-- **Lean/Coq/Agda** : `theorem foo := by <tactics>` → `:= by sorry` = régression. Un compte de `sorry` **réel** qui monte sans justification = PR contestée — mesuré avec `python scripts/lean/count_code_sorry.py --json` (champ `distinct_code_sorry`), **jamais** `grep -c sorry`. Détail de l'instrument ci-dessous.
+- **Lean/Coq/Agda** : `theorem foo := by <tactics>` → `:= by sorry` = régression. Un compte de `sorry` **réel** qui monte sans justification = PR contestée (la justification recevable : un sorry-cible, section suivante) — mesuré avec `python scripts/lean/count_code_sorry.py --json` (champ `distinct_code_sorry`), **jamais** `grep -c sorry`. Détail de l'instrument ci-dessous.
 - **Python production** : corps calculé → `pass` (fonction encore appelée) ; `@pytest.skip` sans issue référencée ; `return None` à la place du calcul.
 - **Notebooks pédagogiques** : `raise NotImplementedError` → `pass`/`print`/`return None` = **conforme** (règle user 2026-04-26). Mais cellule `# Solution` / `# Exemple résolu` supprimée = **régression de contenu INTERDITE**.
 
 Tables complètes par langage : [docs/anti-regression-detail.md](../../docs/reference/anti-regression-detail.md#patterns-red-flag-détaillés-tables-complètes).
+
+## Sorry-cibles documentés (mandat user 2026-11-03)
+
+« quelques sorry de difficultés variées documentés étant tout à fait acceptable dans chacune de nos sous-séries » (verbatim). Un `sorry` ajouté est recevable quand il remplit les quatre conditions suivantes :
+
+1. il ferme un **énoncé neuf**, jamais une preuve existante (la règle HARD ci-dessus reste entière) ;
+2. sa docstring porte la ligne `Cible prover : <easy|medium|hard|very_hard> — <ce qui a été tenté>` (jumeau `_en` : `Prover target:`) ;
+3. son module n'est pas certifié (`CERTIFIED.txt`), et le plancher `sorry-baseline` du lake monte dans la même PR, avec le compte avant/après dans le body ;
+4. la sous-série en porte **quelques-uns, de niveaux variés**.
+
+Format, niveaux, inventaire et lien avec le harnais prover (#1453) : [docs/lean/sorry-cibles.md](../../docs/lean/sorry-cibles.md).
 
 ## Protocole avant suppression (HARD)
 

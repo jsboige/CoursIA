@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-31
+
 # Audio FADING — remédiation et SOTA verdicts (issue #11719)
 
 > **Statut** : référence opérationnelle. Le détecteur FADING est dans

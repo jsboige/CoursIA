@@ -17,10 +17,122 @@ import subprocess
 import json
 import shutil
 import sys
+import os
 from typing import Tuple, Dict, Any, Optional, List
 
 # Mode simulation : si True, les appels a Claude sont simules
 SIMULATION_MODE = False
+
+# Sur Windows, la creation d'un nouveau process group permet de tuer l'arbre
+# complet (cmd.exe + shim + node) avec une seule commande taskkill /T.
+# Creationflags=0x00000200 = CREATE_NEW_PROCESS_GROUP (cf. MSDN).
+if sys.platform == "win32":
+    _CREATE_NEW_PROCESS_GROUP = 0x00000200
+else:
+    _CREATE_NEW_PROCESS_GROUP = 0
+
+
+def _kill_process_tree(proc: "subprocess.Popen") -> None:
+    """
+    Tue l'arbre de processus complet engendre par `proc`.
+
+    Sur Windows : `taskkill /T /F /PID <pid>` tue le process et TOUS ses
+    descendants (cmd.exe -> shim -> node). Sans /T, seul le direct child
+    cmd.exe est tue, et la CLI reste vivante (cf. issue #20879).
+
+    Sur POSIX : le Popen a ete lance avec start_new_session=True, donc
+    `os.killpg(proc.pid, SIGTERM)` envoie le signal au groupe entier.
+
+    Idempotent : peut etre appele plusieurs fois sans risque.
+    """
+    if proc.poll() is not None:
+        return  # deja termine
+    if sys.platform == "win32":
+        try:
+            subprocess.run(
+                ["taskkill", "/T", "/F", "/PID", str(proc.pid)],
+                capture_output=True,
+                timeout=5
+            )
+        except Exception:
+            pass
+    else:
+        try:
+            os.killpg(proc.pid, 15)  # SIGTERM
+        except (ProcessLookupError, PermissionError, OSError):
+            pass
+    # Attendre la mort effective (sinon le petit-enfant peut garder les tubes)
+    try:
+        proc.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        try:
+            proc.kill()
+        except Exception:
+            pass
+
+
+def _run_with_timeout(
+    cmd: List[str],
+    timeout: int,
+    input_text: Optional[str] = None,
+    cwd: Optional[str] = None
+) -> Tuple[str, str, int]:
+    """
+    Execute `cmd` avec un timeout strict qui tue l'ARBRE complet a l'expiration.
+
+    Subprocess.run(timeout=...) ne tue que le process direct : sous Windows,
+    quand cmd.exe enveloppe un shim .cmd, le petit-enfant reste vivant et
+    stdout/stderr ouverts, ce qui fait que communicate() n'aboutit pas et
+    l'appel ne rend jamais l'erreur de timeout (cf. issue #20879).
+
+    On utilise Popen + communicate(timeout=...) ; sur TimeoutExpired, on tue
+    l'arbre, on vide les tubes, puis on rend le triplet (stdout, stderr, -1)
+    avec un message d'erreur standard.
+
+    Args:
+        cmd: Liste d'arguments (forme exec, pas shell).
+        timeout: Secondes avant timeout strict.
+        input_text: Prompt a envoyer sur stdin (None si inutile).
+        cwd: Repertoire de travail (None = herite du parent).
+
+    Returns:
+        Tuple[str, str, int]: (stdout, stderr, returncode). Sur timeout,
+        returncode=-1 et stderr porte le message d'erreur.
+
+    Raises:
+        FileNotFoundError: si l'executable n'existe pas (propage de Popen).
+    """
+    popen_kwargs = {
+        "stdin": subprocess.PIPE if input_text is not None else None,
+        "stdout": subprocess.PIPE,
+        "stderr": subprocess.PIPE,
+        "cwd": cwd,
+        "text": True,
+        "encoding": "utf-8",
+        "errors": "replace",
+    }
+    if sys.platform == "win32":
+        popen_kwargs["creationflags"] = _CREATE_NEW_PROCESS_GROUP
+    else:
+        popen_kwargs["start_new_session"] = True
+
+    proc = subprocess.Popen(cmd, **popen_kwargs)
+    try:
+        stdout, stderr = proc.communicate(input=input_text, timeout=timeout)
+        return stdout or "", stderr or "", proc.returncode
+    except subprocess.TimeoutExpired:
+        # Tuer l'arbre AVANT de vider les tubes, sinon le petit-enfant
+        # les garde ouverts et communicate() ne rend jamais.
+        _kill_process_tree(proc)
+        try:
+            stdout, stderr = proc.communicate(timeout=2)
+        except subprocess.TimeoutExpired:
+            stdout, stderr = "", ""
+        return (
+            stdout or "",
+            (stderr or "") + f"\nErreur: Timeout apres {timeout} secondes (arbre tue)",
+            -1,
+        )
 
 
 def _resolve_claude_command() -> List[str]:
@@ -50,22 +162,20 @@ def installation_status() -> Dict[str, Any]:
         return {"state": "introuvable", "message": "Claude CLI n'est pas installe (shutil.which ne le trouve pas)"}
     cmd = _resolve_claude_command()
     try:
-        result = subprocess.run(
+        stdout, stderr, returncode = _run_with_timeout(
             cmd + ["--version"],
-            capture_output=True,
-            text=True, encoding="utf-8", errors="replace",
             timeout=15
         )
-        if result.returncode == 0:
+        if returncode == 0:
             return {
                 "state": "executable",
                 "message": "Claude CLI installe et executable",
-                "version": result.stdout.strip(),
+                "version": stdout.strip(),
                 "resolved_path": resolved
             }
         return {
             "state": "non-executable",
-            "message": f"Claude CLI trouve ({resolved}) mais 'claude --version' echoue (code {result.returncode})",
+            "message": f"Claude CLI trouve ({resolved}) mais 'claude --version' echoue (code {returncode})",
             "resolved_path": resolved
         }
     except (FileNotFoundError, subprocess.TimeoutExpired, OSError) as e:
@@ -164,17 +274,13 @@ def run_claude(
         cmd.extend(extra_args)
 
     try:
-        result = subprocess.run(
+        stdout, stderr, returncode = _run_with_timeout(
             cmd,
-            input=prompt,
-            capture_output=True,
-            text=True, encoding="utf-8", errors="replace",
             timeout=timeout,
+            input_text=prompt,
             cwd=working_dir
         )
-        return result.stdout, result.stderr, result.returncode
-    except subprocess.TimeoutExpired:
-        return "", f"Erreur: Timeout apres {timeout} secondes", -1
+        return stdout, stderr, returncode
     except FileNotFoundError:
         return "", "Erreur: Claude CLI n'est pas installe ou pas dans le PATH", 1
     except Exception as e:
@@ -254,23 +360,21 @@ def check_claude_status(timeout: int = 60) -> Dict[str, Any]:
     # this environment" en one-shot) ; la sonde de vie canonique ici est un
     # mini-appel -p : il valide installation, authentification et routage.
     try:
-        result = subprocess.run(
+        stdout, stderr, returncode = _run_with_timeout(
             _resolve_claude_command() + ["-p", "Reponds uniquement: OK"],
-            capture_output=True,
-            text=True, encoding="utf-8", errors="replace",
             timeout=timeout
         )
 
-        if result.returncode == 0 and result.stdout.strip():
+        if returncode == 0 and stdout.strip():
             return {
                 "connected": True,
                 "model": "detected",
                 "base_url": "detected",
-                "raw_output": result.stdout.strip()
+                "raw_output": stdout.strip()
             }
         return {
             "connected": False,
-            "error": result.stderr.strip() or f"Erreur de connexion (code {result.returncode})"
+            "error": stderr.strip() or f"Erreur de connexion (code {returncode})"
         }
 
     except subprocess.TimeoutExpired:
@@ -297,13 +401,11 @@ def get_claude_version() -> str:
         return "Claude CLI n'est pas installe"
 
     try:
-        result = subprocess.run(
+        stdout, stderr, returncode = _run_with_timeout(
             _resolve_claude_command() + ["--version"],
-            capture_output=True,
-            text=True, encoding="utf-8", errors="replace",
             timeout=10
         )
-        return result.stdout.strip() if result.returncode == 0 else f"Erreur: {result.stderr}"
+        return stdout.strip() if returncode == 0 else f"Erreur: {stderr}"
     except subprocess.TimeoutExpired:
         return "Erreur: Timeout"
     except FileNotFoundError:
@@ -350,16 +452,12 @@ def run_claude_continue(
         cmd.append("--fork-session")
 
     try:
-        result = subprocess.run(
+        stdout, stderr, returncode = _run_with_timeout(
             cmd,
-            input=prompt,
-            capture_output=True,
-            text=True, encoding="utf-8", errors="replace",
-            timeout=timeout
+            timeout=timeout,
+            input_text=prompt
         )
-        return result.stdout, result.stderr, result.returncode
-    except subprocess.TimeoutExpired:
-        return "", f"Erreur: Timeout apres {timeout} secondes", -1
+        return stdout, stderr, returncode
     except FileNotFoundError:
         return "", "Erreur: Claude CLI introuvable dans le PATH", 1
     except Exception as e:
@@ -398,15 +496,11 @@ def run_claude_command(
         return "", "Erreur: Claude CLI n'est pas installe", 1
 
     try:
-        result = subprocess.run(
+        stdout, stderr, returncode = _run_with_timeout(
             _resolve_claude_command() + [command],
-            capture_output=True,
-            text=True, encoding="utf-8", errors="replace",
             timeout=timeout
         )
-        return result.stdout, result.stderr, result.returncode
-    except subprocess.TimeoutExpired:
-        return "", f"Erreur: Timeout apres {timeout} secondes", -1
+        return stdout, stderr, returncode
     except FileNotFoundError:
         return "", "Erreur: Claude CLI introuvable dans le PATH", 1
     except Exception as e:

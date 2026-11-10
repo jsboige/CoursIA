@@ -2,6 +2,8 @@
 
 Régime validé par le mainteneur le 2026-10-05 (issue de suivi #19297). Une série passe en **finition** quand on cesse d'y ajouter des carnets pour la rendre lisible de bout en bout. Elle en sort quand les critères ci-dessous sont remplis.
 
+**Voisin** : [niveau-serie.md](niveau-serie.md) — la règle de niveau (quand un dossier de sous-série mérite d'exister, quand un carnet reste à la racine d'une série, comment une série jumelle se déclare), issue #24197.
+
 ## Critères
 
 1. **Objectifs de série.** Le README de la série a une section `## Objectifs d'apprentissage`. Elle dit ce que le lecteur saura faire à la fin, en phrases vérifiables (« implémenter A* et justifier son admissibilité »), jamais en thèmes (« la recherche heuristique »).

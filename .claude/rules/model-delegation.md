@@ -1,20 +1,22 @@
-# Delegation a des sous-agents — modele explicite obligatoire (sonnet/haiku par defaut)
+# Delegation a des sous-agents — modele explicite obligatoire (Swift d'abord pour la lecture, sonnet sinon)
 
 S'applique a **tout agent qui delegue du travail a un sous-agent** (`Agent()` tool), quel que soit le role (coordinateur ai-01 ou worker po-*). Source : mandat user 2026-06-09 (« tout sous-agent doit avoir un modele explicite, sonnet ou haiku typiquement, et uniquement Opus dans des cas exceptionnels qui le justifient »), consolide avec le mandat 2026-06-07 sur la delegation read-heavy, **resserre le 2026-10-10 (« Pas du tout ») : sur les postes po-*, plus aucun cas exceptionnel** (cf point 3). Les angles morts observes par classe de tache sont synthetises ci-dessous (section « Angles morts connus »).
 
 ## Regle HARD — modele explicite obligatoire
 
-1. **Tout appel `Agent()` DOIT specifier un `model` explicite.** L'argument `model` n'est jamais omis — un sous-agent sans modele explicite herite du modele parent (typiquement opus-tier), ce qui annule l'economie de la delegation et contredit la regle.
+1. **Tout appel `Agent()` DOIT porter un modele explicite** : l'argument `model`, ou le `model:` du fichier d'agent appele. Un sous-agent sans l'un ni l'autre herite du modele parent (typiquement opus-tier), ce qui annule l'economie de la delegation et contredit la regle. L'argument de l'appel l'emporte sur le fichier d'agent : un agent dont le fichier fixe le modele (`swift-reader`) s'appelle **sans** argument `model`.
 
-2. **`sonnet` ou `haiku` par defaut.** Sauf justification ecrite (voir point 3), le model d'un sous-agent est :
-   - **`"sonnet"`** : taches intermediaires (audit, recensement, diagnostic, redaction, enrichissement notebook, review structurelle)
-   - **`"haiku"`** : taches simples (comptage, extraction format-impose, grep/scan, verification mecanique, listing)
+2. **Swift d'abord pour la lecture, `sonnet` ou `haiku` sinon** (mandat user 2026-10-27 : « utiliser des sous-agents swift et pas juste haiku »). Sauf justification ecrite (voir point 3), le modele d'un sous-agent est :
+   - **`subagent_type: "swift-reader"`** : lecture en volume a critere objectif (fils de PR, dossiers, logs, recensements, verification de references). L'agent est en lecture seule, et son fichier fixe le modele local Swift (`qwen3.6-35b-a3b`, alias que claudish route vers le vLLM). C'est le seul gratuit. Il porte tout le harnais dans son prompt (~100k tokens, ~50 s par tour) et Swift ne sert que **2 requetes paralleles** : au plus deux agents Swift a la fois.
+   - **`"sonnet"`** : taches intermediaires (audit, diagnostic, redaction, enrichissement notebook, review structurelle), et toute tache qui ecrit.
+   - **`"haiku"`** : taches simples (comptage, extraction format-impose, grep/scan, verification mecanique, listing). Ce n'est pas le Haiku d'Anthropic : derriere `haiku`, claudish sert MiniMax ou Swift, selon la fenetre de compaction de la machine (MiniMax quand elle depasse la fenetre de 262k de Swift, comme sur ai-01).
+   - Si l'alias de Swift n'est pas route sur la machine, l'appel `swift-reader` echoue : retomber sur `sonnet`, et le signaler sur le dashboard de la lane.
 
 3. **`"opus"` : jamais sur les postes po-*, meme justifie (mandat user 2026-10-10).** Une tache qui paraissait justifier l'Opus **remonte a ai-01** — le coordinateur l'execute lui-meme ou obtient une autorisation user nommee pour la lane. Sur ai-01 et les lanes autorisees nommement par le user (a ce jour : `myia-po-2024:CoursIA-3`, autorisee le 04/10, rappel du 10/10), l'Opus sous-agent reste possible sur justification ecrite d'une ligne dans le prompt (ex: `// opus justified: needs cross-file architectural judgment beyond sonnet capability`).
 
    **Origine (mesure, 10/10)** : 6 requetes sous-agent Opus parties de po-2027 entre 10:54 et 11:08Z, toutes avec le parametre `model` explicite — l'ordre de resolution (`model` de l'appel > `model:` du fichier agent > env > modele de session) fait que la justification ecrite n'etait pas un detournement de la regle, c'etait la regle ; le user l'a retiree (« Pas du tout »). Sur ai-01, la justification ecrite reste requise ; les cas typiques (decision architecturale cross-fichier, synthese multi-sources, investigation de regression profonde) ne changent pas de threshold, seulement de siege.
 
-4. **Deleguer le READ-HEAVY borne et verifiable, garder la DECISION.** Les taches a fort volume de lecture mais a critere de sortie objectif — recensement, audit d'issues, verification de diffs, diagnostic, comptage, extraction format-impose — vont a un sous-agent `sonnet` ou `haiku`. L'agent appelant garde : les **jugements** (labeling exercice/exemple, scope-vs-titre, WIP-acceptable, anti-regression Lean/preuve), les **merges/closes/dispatches**, et le **cross-check G.1** systematique.
+4. **Deleguer le READ-HEAVY borne et verifiable, garder la DECISION.** Les taches a fort volume de lecture mais a critere de sortie objectif — recensement, audit d'issues, verification de diffs, diagnostic, comptage, extraction format-impose — vont a un sous-agent `swift-reader` d'abord, `sonnet` ou `haiku` sinon. L'agent appelant garde : les **jugements** (labeling exercice/exemple, scope-vs-titre, WIP-acceptable, anti-regression Lean/preuve), les **merges/closes/dispatches**, et le **cross-check G.1** systematique.
 
 5. **Format impose + evidence-cited dans le prompt.** Le prompt du sous-agent doit exiger un livrable structure (tableau, schema JSON, verdict par item) **avec preuve citee** (`file:line`, sha1, sortie de commande), pas une prose libre. Un livrable sans evidence se re-verifie ; un livrable evidence-cited se spot-checke.
 
@@ -30,6 +32,7 @@ S'applique a **tout agent qui delegue du travail a un sous-agent** (`Agent()` to
 | Recensement / comptage | Nombres approximes a l'oeil (lignes, fichiers) | Re-`wc -l` / re-grep les chiffres pivots |
 | Audit d'issues / deconfliction | Regressions de sequence fines, faux-positifs residuels | Self-verify la sequence + les FP |
 | Labeling exercice/exemple | Ne tranche pas le contenu (et NE DOIT PAS) | Lire la cellule, juger par CONTENU (cf [exercise-example-labeling.md](exercise-example-labeling.md)) |
+| Lecture par Swift (`swift-reader`) | Juge le texte, pas le code : a pris un renvoi « a l'autre PR » pour une reponse (#21892) ; a invente l'amendement d'un critere d'acceptance (pilote de l'adjoint, 2026-10-27) | Recouper chaque verdict a la tete (`git grep`, `git show`) avant une levee ou une fermeture |
 
 **Comportement attendu du sous-agent (bon signe)** : deferer explicitement les jugements hors de sa portee (« the coordinator should assess ») plutot qu'halluciner un verdict. Un sous-agent qui defere sur un blind-spot connu est plus fiable, pas moins.
 

@@ -1,0 +1,62 @@
+{
+  "k2_coupling": 48.0,
+  "source": "fenetre v(u=1) scellee",
+  "v_u1_median": 0.75,
+  "v_variance": null,
+  "trace": [
+    {
+      "k2": 4.0,
+      "v_u1_median": 0.08928571428571427,
+      "n_exact": 4,
+      "v_variance_mean": 0.001545670351473923
+    },
+    {
+      "k2": 8.0,
+      "v_u1_median": 0.017857142857142856,
+      "n_exact": 4,
+      "v_variance_mean": 0.0003912155139833711
+    },
+    {
+      "k2": 16.0,
+      "v_u1_median": 0.0,
+      "n_exact": 4,
+      "v_variance_mean": 0.0001557480631141345
+    },
+    {
+      "k2": 24.0,
+      "v_u1_median": 0.10714285714285714,
+      "n_exact": 4,
+      "v_variance_mean": 0.006593088624338624
+    },
+    {
+      "k2": 32.0,
+      "v_u1_median": 0.35714285714285715,
+      "n_exact": 4,
+      "v_variance_mean": 0.00881194491685563
+    },
+    {
+      "k2": 48.0,
+      "v_u1_median": 0.75,
+      "n_exact": 4,
+      "v_variance_mean": 0.009858630952380954
+    },
+    {
+      "k2": 64.0,
+      "v_u1_median": 1.0,
+      "n_exact": 4,
+      "v_variance_mean": 0.0
+    },
+    {
+      "k2": 96.0,
+      "v_u1_median": 1.0,
+      "n_exact": 4,
+      "v_variance_mean": 0.0
+    },
+    {
+      "k2": 128.0,
+      "v_u1_median": 1.0,
+      "n_exact": 4,
+      "v_variance_mean": 0.0
+    }
+  ]
+}

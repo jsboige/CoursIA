@@ -2792,7 +2792,18 @@ def test_16005_narration_en_titre_ne_pose_pas():
 def test_16005_emissions_reelles_restent_detectees():
     """#16005 contre-épreuve : la fenêtre pré-marqueur ne neutralise que la
     narration liée au nom par une courte proposition — les émissions réelles
-    (verdict gras, injonction nue, tenue du blocage) restent BLOCK."""
+    (verdict gras, injonction nue, mention en capitales) restent BLOCK.
+
+    #22245 — la ligne « Le blocage tient jusqu'au sign-off user. » a quitté ce
+    lot. Elle est en casse de phrase, comme les deux diagnostics de lane que
+    l'organe a classés BLOCK à tort (#15846 « Chronologie du blocage »,
+    c.6365851694 sur #21252 « Cause du blocage identifiee ») : aucune garde de
+    tournure ne sépare « le blocage tient » de « le blocage vient du pool »,
+    et la liste des tournures françaises n'est pas close. Le discriminant
+    retenu est donc la CASSE DE LA SOURCE, déjà utilisée pour HOLD dans ce
+    module : une tenue de blocage s'écrit `**BLOCAGE …**`, `[BLOCAGE] lane …`
+    ou en capitales. Le cas négatif est épinglé juste en dessous.
+    """
     assert mod.classify(
         "myia-ai-01", "**BLOCAGE MERGE (ai-01)** — defaut de chemin."
     ) == "BLOCK"
@@ -2804,10 +2815,22 @@ def test_16005_emissions_reelles_restent_detectees():
         "myia-ai-01", "## BLOCAGE — attente arbitrage, ne pas merger."
     ) == "BLOCK"
     assert mod.classify(
-        "myia-ai-01", "Le blocage tient jusqu'au sign-off user."
-    ) == "BLOCK"
-    assert mod.classify(
         "myia-ai-01", "Suite : BLOCAGE — ne pas merger."
+    ) == "BLOCK"
+    # #22245 — cas fondateur, mot ordinaire en casse de phrase : n'émet pas.
+    assert mod.classify(
+        "myia-ai-01", "Le blocage vient du pool de runners, pas du diff."
+    ) is None
+    assert mod.classify(
+        "jsboige", "Cause du blocage identifiee — et ce n'est pas reparable "
+        "par un rejeu."
+    ) is None
+    # … et sa forme verdict, elle, émet toujours.
+    assert mod.classify(
+        "myia-ai-01", "**Le blocage vient du pool de runners** — pas du diff."
+    ) is None, "le gras ne promeut pas une phrase en casse de phrase"
+    assert mod.classify(
+        "myia-ai-01", "**BLOCAGE** — le pool de runners, pas le diff."
     ) == "BLOCK"
 
 
@@ -4283,6 +4306,78 @@ def test_15973_artefact_rebase_ne_masque_pas_un_vrai_refus():
     assert res["rewind_artifacts"] == []
 
 
+# --- #20066 piste 2 complete : survie des symboles au-dela du blob ---------
+#
+# Instance fondatrice de l'issue : le commit rembobine introduit
+# `fetch_latest_claim_stamps_bulk` + ses tests, la PR CONTINUE de travailler
+# le meme fichier (blob differ), mais la substance citee par la levee est
+# intacte a la tete. La survie complete des symboles transforme le refus en
+# artefact non bloquant ; un symbole disparu garde le refus, NOMME.
+
+def test_20066_symboles_survivants_conservent_la_levee():
+    """Blob different (la PR a continue) mais tous les symboles introduits
+    par le commit rembobine existent a la tete : artefact symbols_survive,
+    levee conservée, non bloquant."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("scripts/pick_idle_grain.py",
+                                  BLOB_NB, "modified", "")]},
+              _head_blobs={"scripts/pick_idle_grain.py": BLOB_NB2},
+              _absent_sha_symbols={
+                  "2d6e4c3642": {"verdict": "all_survive", "checked": 4,
+                                 "files": 2}})
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+    assert [(a["sha"], a["reason"]) for a in res["rewind_artifacts"]] == \
+        [("2d6e4c3642", "symbols_survive")]
+
+
+def test_20066_symbole_disparu_garde_le_refus_en_le_nommant():
+    """Le commit rembobine a introduit un symbole qui n'existe plus a la
+    tete : le fond a VRAIMENT disparu, le refus reste et le resultat porte
+    le nom du symbole disparu."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("scripts/pick_idle_grain.py",
+                                  BLOB_NB, "modified", "")]},
+              _head_blobs={"scripts/pick_idle_grain.py": BLOB_NB2},
+              _absent_sha_symbols={
+                  "2d6e4c3642": {"verdict": "missing",
+                                 "missing": ["fetch_latest_claim_stamps_bulk"],
+                                 "checked": 4}})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+    assert res["voided_lifts"][0]["symbols"]["missing"] == \
+        ["fetch_latest_claim_stamps_bulk"]
+    assert res["rewind_artifacts"] == []
+
+
+def test_20066_sans_carte_de_symboles_comportement_inchange():
+    """Compatibilite : sans `_absent_sha_symbols` (audit retro, resolution
+    impossible), le refus `differs` de la piste 1 reste exactement le
+    meme -- fail-closed, la piste 2 ne desserre rien par defaut."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("scripts/pick_idle_grain.py",
+                                  BLOB_NB, "modified", "")]},
+              _head_blobs={"scripts/pick_idle_grain.py": BLOB_NB2})
+    assert res["blocked"] is True
+    assert res["voided_lifts"][0]["blob_state"] == mod._BLOB_DIFFERS
+    assert res["voided_lifts"][0].get("symbols") is None
+
+
 def test_13641_ref_par_prefixe_ne_compte_pas():
     """NanoClaw c.702 sur #13641 : le substring check `any(f"#{n}" in message)`
     matchait `#13639` dans un message contenant `#136390` (ticket adjacent
@@ -5277,7 +5372,7 @@ def test_14199_fp1_qualifier_non_bloquant_neutralise():
     body = (
         "Concern (non bloquant) : mergeable_state=blocked au moment de la "
         "review — checks en cours sur une PR de 18:04Z, standard, à confirmer "
-        "[BEFORE-MERGE]. Ball merge : Emerjesse."
+        "[BEFORE-MERGE]. Ball merge : Jean-Sylvain."
     )
     assert mod.classify("jsboige", body) is None, (
         f"FP1 devrait etre neutralise (qualifier non bloquant), "
@@ -5461,7 +5556,7 @@ def test_14199_ce1_mutation_position_i_desactivee_fp1_rougit_bracketed():
     """Variante de couverture : la meme reserve portee par le marqueur canonique [BEFORE-MERGE]."""
     body = (
         "Concern (non bloquant) : mergeable_state=blocked, a confirmer "
-        "[BEFORE-MERGE]. Ball merge : Emerjesse."
+        "[BEFORE-MERGE]. Ball merge : Jean-Sylvain."
     )
     # Baseline : avec Position I, FP1 est neutralise
     assert mod.classify("jsboige", body) is None
@@ -5574,7 +5669,7 @@ def test_14199_remesure_3_fp_window_neutralise():
         ("13537", "clusterManager-Myia",
          "Concern (non bloquant) : mergeable_state=blocked au moment de "
          "la review — checks en cours sur une PR de 18:04Z, standard, a "
-         "confirmer [BEFORE-MERGE]. Ball merge : Emerjesse."),
+         "confirmer [BEFORE-MERGE]. Ball merge : Jean-Sylvain."),
         ("13498", "jsboige",
          "Passe de merge ai-01 — le concern NanoClaw est traite par la "
          "voie B.0 « issue de suivi ouverte et nommee AVANT LE MERGE ». "
@@ -7311,3 +7406,106 @@ def test_19810_no_regression_on_existing_crlf_positive_verdict():
     court-circuite le CRLF proxy."""
     body = "**Verdict** : OK (post-rebase, 11/11 CI).\r\nDecision ai-01 REQUISE : merge."
     assert mod.classify("jsboige", body) is None
+
+
+# ---------------------------------------------------------------------------
+# #21882 (Option C) : budget de temps de passe nits
+# ---------------------------------------------------------------------------
+
+def test_21882_budget_arms_on_first_call():
+    """Premier appel : arme la deadline (now + budget), ne rend pas « exhauste ».
+    L'armement est idempotent (une deadline deja posee n'est pas sur-ecrite)."""
+    import time
+    mod._NITS_PASS_DEADLINE = None
+    try:
+        assert mod._nits_budget_exhausted() is False
+        assert mod._NITS_PASS_DEADLINE is not None
+        assert mod._NITS_PASS_DEADLINE >= time.monotonic()
+    finally:
+        mod._NITS_PASS_DEADLINE = None
+
+
+def test_21882_gh_json_raises_when_past_deadline(monkeypatch):
+    """Deadline forcee dans le passe : gh_json leve NitsBudgetExhausted AVANT
+    de lancer le sous-processus (aucun appel reseau)."""
+    import time
+    monkeypatch.setattr(mod, "_NITS_PASS_DEADLINE", time.monotonic() - 1.0)
+    with pytest.raises(mod.NitsBudgetExhausted):
+        mod.gh_json(["pr", "view", "1"])
+
+
+def test_21882_analyse_pr_rend_absent_quand_budget_depasse(monkeypatch):
+    """La PR non evaluee est rendue ABSENTE (non evaluee, #18829) : blocked faux,
+    aucun point. Le picker la lit comme absente (.get('blocking')/['blocked']).
+    Jamais un verdict « claire » fabrique a partir d'un budget depasse."""
+    import time
+    monkeypatch.setattr(mod, "_NITS_PASS_DEADLINE", time.monotonic() - 1.0)
+    res = mod.analyse_pr(4242)
+    assert res == {"pr": 4242, "blocked": False, "blocking": [],
+                   "unevaluated": [], "unevaluated_total": 0,
+                   "budget_exhausted": True}
+    # Contrat picker : absente, non bloquee.
+    assert (res.get("blocking") or []) == []
+    assert bool(res.get("blocked")) is False
+
+
+# --- #17315 : compteur REST/GraphQL et lecture REST des commits -------------
+
+
+def test_17315_classement_des_appels_gh(monkeypatch):
+    """`api graphql`, `pr view --json` et `pr list --json` paient le BUCKET
+    PARTAGE (GraphQL) ; les endpoints `api repos/...` paient le bucket core.
+
+    Compter les `--json` comme du REST sous-reportait la consommation du
+    bucket que le levier 4 cherche a reduire : le compte etait faux.
+    """
+    monkeypatch.setattr(mod, "API_USAGE", {"rest": 0, "graphql": 0})
+    for args in (
+        ["api", "graphql", "-f", "query={...}"],
+        ["pr", "view", "1", "--json", "state"],
+        ["pr", "list", "--json", "number"],
+        ["issue", "view", "1", "--json", "title"],
+    ):
+        mod._count_api_call(args)
+    for args in (
+        ["api", "repos/o/r/pulls/1"],
+        ["api", "repos/o/r/commits/deadbeef/check-runs"],
+    ):
+        mod._count_api_call(args)
+    assert mod.API_USAGE == {"rest": 2, "graphql": 4}
+
+
+def test_17315_commits_rest_normalises_a_la_forme_attendue(monkeypatch):
+    """La lecture REST des commits rend la forme que `analyse` attendait :
+    `oid` (sha) et `committedDate` (commit.committer.date).
+
+    L'equivalence avec la forme GraphQL (`gh pr view --json commits`) est
+    mesuree sur des commits reels : sur le commit dont l'heure d'auteur
+    differe de l'heure de commit, `committedDate` suit bien l'heure de
+    COMMIT, pas celle d'auteur.
+    """
+    page = [{
+        "sha": "aaaa1111",
+        "commit": {
+            "author": {"date": "2026-11-05T09:15:12Z"},
+            "committer": {"date": "2026-11-05T09:16:37Z"},
+        },
+    }]
+    monkeypatch.setattr(mod, "gh_json", lambda args: [page])
+    out = mod._pr_commits_rest(24803)
+    assert out == [{
+        "oid": "aaaa1111",
+        "committedDate": "2026-11-05T09:16:37Z",
+        "authoredDate": "2026-11-05T09:15:12Z",
+    }]
+
+
+def test_17315_commits_rest_aplati_les_pages(monkeypatch):
+    """`--paginate --slurp` rend une liste de pages : l'aplatissement garde
+    tous les commits, sans troncature silencieuse au-dela de 100."""
+    pages = [[{"sha": "a", "commit": {"committer": {"date": "1"}}},
+              {"sha": "b", "commit": {"committer": {"date": "2"}}}],
+             [{"sha": "c", "commit": {"committer": {"date": "3"}}}]]
+    monkeypatch.setattr(mod, "gh_json", lambda args: pages)
+    out = mod._pr_commits_rest(1)
+    assert [c["oid"] for c in out] == ["a", "b", "c"]

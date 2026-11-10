@@ -49,16 +49,31 @@
   line-height: 1.25;
 }
 
-/* 5. Utilitaire densité maximale pour les slides les plus chargées :
- *    envelopper la liste dans <div class="dense-list">…</div>. */
-.slidev-layout .dense-list ul,
-.slidev-layout .dense-list ol {
-  font-size: 0.82em;
-  line-height: 1.22;
+/* 5. Utilitaire densité maximale : envelopper la liste dans
+ *    <div class="dense-list">…</div>. Définition portée par le thème
+ *    (`theme-ia101/styles/index.css`, #22286) avec les valeurs qui étaient
+ *    rendues ici — 0.82em, interligne 1.22, marge d'item 0.02em, marge de
+ *    H2 0.3em. La garder en double faisait naître une deuxième définition
+ *    de la même classe, divergente des autres decks. */
+
+/* 6. Slide « Exploration locale d'espaces continus » : quatre sections H2,
+ *    trois niveaux de sous-listes et un bloc Corpus de quatre liens ne
+ *    tenaient pas sous la compression générale — le corps dépassait le bas
+ *    de page et recouvrait le pied de page du thème (mesuré au rendu PNG,
+ *    scan_slidev_overflow : diapo 48/88, ink_ratio 0.0138, seul signalement
+ *    du deck). La diapo d'origine (PPTX, slide 51) porte bien tout ce
+ *    contenu sur une seule page : la découper casserait l'alignement 1:1
+ *    avec la référence, donc on resserre au lieu de scinder. Aucun contenu
+ *    retiré : .dense-list--tight récupère la marge des H2 que la classe
+ *    générique laisse à 0.3em, .corpus-note ramène le bloc de sources à un
+ *    interligne de note. */
+.dense-list--tight h2 {
+  margin-top: 0.15em;
+  margin-bottom: 0.05em;
 }
-.slidev-layout .dense-list li {
-  margin: 0.02em 0;
-}
-.slidev-layout .dense-list h2 {
-  margin-top: 0.3em;
+.corpus-note {
+  display: block;
+  font-size: 0.62em;
+  line-height: 1.2;
+  margin-top: 0.2em;
 }

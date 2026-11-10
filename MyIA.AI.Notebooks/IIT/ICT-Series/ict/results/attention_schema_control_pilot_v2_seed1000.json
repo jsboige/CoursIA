@@ -1,0 +1,114 @@
+{
+ "phase": "pilot",
+ "seed": 1000,
+ "seed_result": {
+  "seed": 1000,
+  "arms": {
+   "reactive": {
+    "stabilite": 0.005537421667175379,
+    "correction": 5.777777777777778,
+    "correction_par_perturbation": [
+     5,
+     13,
+     10,
+     0,
+     0,
+     0,
+     0,
+     0,
+     24
+    ],
+    "adaptation": 1.2599210498948732
+   },
+   "schema": {
+    "stabilite": 0.009681418925856161,
+    "correction": 19.333333333333332,
+    "correction_par_perturbation": [
+     70,
+     64,
+     26,
+     10,
+     4,
+     0,
+     0,
+     0,
+     0
+    ],
+    "adaptation": 7.188281938513178e-05,
+    "erreur_pred": 0.03152307172116937,
+    "baseline_persistance": 0.010955380615420012,
+    "baseline_ema_vitesse": 0.00981539371654528,
+    "erreur_rapport": 0.0025134082418637026,
+    "confiance_moyenne": 0.7121527694175644
+   },
+   "schema_shuffled": {
+    "stabilite": 0.12281787241173955,
+    "correction": 8.444444444444445,
+    "correction_par_perturbation": [
+     20,
+     2,
+     0,
+     6,
+     0,
+     25,
+     0,
+     0,
+     23
+    ],
+    "adaptation": 0.00016091489743427163,
+    "erreur_pred": 0.18600927909610684,
+    "baseline_persistance": 0.09237570880935551,
+    "baseline_ema_vitesse": 0.1072363600199705,
+    "erreur_rapport": 0.0025103526875902495,
+    "confiance_moyenne": 0.18433498274642635
+   },
+   "schema_distorted_d0.025": {
+    "stabilite": 0.0165223111536775,
+    "correction": 12.666666666666666,
+    "correction_par_perturbation": [
+     0,
+     66,
+     31,
+     11,
+     6,
+     0,
+     0,
+     0,
+     0
+    ],
+    "adaptation": 0.00010000000000000009,
+    "erreur_pred": 0.030853121016823526,
+    "baseline_persistance": 0.011213343584010976,
+    "baseline_ema_vitesse": 0.009864872148146868,
+    "erreur_rapport": 0.025012916682360616,
+    "confiance_moyenne": 0.7185524427863862
+   },
+   "schema_distorted_d0.050": {
+    "stabilite": 0.01732818550125767,
+    "correction": 9.555555555555555,
+    "correction_par_perturbation": [
+     0,
+     26,
+     60,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "adaptation": 1.0,
+    "erreur_pred": 0.028998744008010075,
+    "baseline_persistance": 0.010720680947722562,
+    "baseline_ema_vitesse": 0.009420996755759718,
+    "erreur_rapport": 0.0499641278881743,
+    "confiance_moyenne": 0.7352835314576077
+   }
+  }
+ },
+ "note": "pilote disjoint, jamais compte dans un verdict",
+ "P5_conditions_reactif": {
+  "stabilite_le_0.03": true,
+  "correction_le_10": true
+ }
+}

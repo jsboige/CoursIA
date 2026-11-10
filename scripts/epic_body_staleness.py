@@ -126,10 +126,16 @@ class MergedPullRequest:
         )
 
     def cited_issues(self) -> set[int]:
-        return {
-            int(number)
-            for number in ISSUE_REF_RE.findall(f"{self.title}\n{self.body}")
-        }
+        """Issue numbers this PR mentions in its own prose.
+
+        Quoted and code-borne references are excluded: a number wrapped in
+        inline code is this repository's own convention for "not a mention"
+        (#18203), and GitHub itself raises no "mentioned this" event for one.
+        Counting them turned a PR that only quoted an EPIC inside a template
+        literal into a recorded delivery for that EPIC (#13906).
+        """
+        prose = "\n".join(prose_lines(self.title, self.body))
+        return {int(number) for number in ISSUE_REF_RE.findall(prose)}
 
 
 @dataclass(frozen=True)
@@ -162,8 +168,8 @@ def is_epic(row: dict) -> bool:
     )
 
 
-def prose_lines_for_stance(title: str, body: str) -> list[str]:
-    """Return non-quoted, non-code lines that may declare a live stance.
+def prose_lines(title: str, body: str) -> list[str]:
+    """Return non-quoted, non-code lines carrying the author's own words.
 
     Historical prose is often retained in block quotes when an EPIC is updated.
     Treating such a quotation as current recreates the exact false positive that
@@ -195,7 +201,7 @@ def dormant_stance(title: str, body: str) -> str | None:
     """Return the first live dormant-stance pattern, if any."""
     if RETRACTION_MARKER_RE.search(body):
         return None
-    lines = prose_lines_for_stance(title, body)
+    lines = prose_lines(title, body)
     prose = "\n".join(lines)
     for name, pattern in STRONG_DORMANT_PATTERNS:
         if pattern.search(prose):
@@ -427,6 +433,38 @@ def list_merged_prs(repo: str, limit: int) -> list[MergedPullRequest]:
     )[:limit]
 
 
+def _emit_utf8(text: str, indent: int | None = None) -> None:
+    """Ecrit `text` sur stdout en UTF-8, quel que soit le codepage de la console.
+
+    Les titres d'EPIC du depot portent des caracteres hors cp1252 (U+21C4 par
+    exemple). Sur une console Windows cp1252, un `json.dump(..., sys.stdout)`
+    leve alors UnicodeEncodeError et le rapport entier est perdu, y compris
+    pour les EPIC dont le titre est encodable.
+    """
+    stream = sys.stdout
+    reconfigure = getattr(stream, "reconfigure", None)
+    if reconfigure is not None:
+        try:
+            reconfigure(encoding="utf-8")
+        except (ValueError, OSError):
+            # Flux deja detache ou non reconfigurable : on tente l'ecriture,
+            # le repli ASCII ci-dessous prendra le relais si besoin.
+            pass
+    try:
+        stream.write(text)
+    except UnicodeEncodeError:
+        # Dernier recours : ne jamais perdre le rapport pour un caractere.
+        # On re-serialise en JSON ASCII plutot qu'echapper le texte deja rendu :
+        # backslashreplace produisait \U0001f9ed pour un caractere astral
+        # (emoji de titre, mesure : U+1F9ED dans le corpus du 2026-11-05), et
+        # \Uxxxxxxxx n'est PAS un echappement JSON valide (\uXXXX, 4 chiffres)
+        # -- le repli cassait lui-meme le contrat qu'il gardait.
+        stream.write(
+            json.dumps(json.loads(text), ensure_ascii=True, indent=indent)
+        )
+    stream.flush()
+
+
 def _cli(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--repo", default=None)
@@ -453,13 +491,14 @@ def _cli(argv: list[str] | None = None) -> int:
         print(f"epic_body_staleness: {exc}", file=sys.stderr)
         return 1
 
-    json.dump(
-        build_payload(epics, merged_prs),
-        sys.stdout,
+    payload = build_payload(epics, merged_prs)
+    indent = 2 if args.pretty else None
+    rendered = json.dumps(
+        payload,
         ensure_ascii=False,
-        indent=2 if args.pretty else None,
+        indent=indent,
     )
-    print()
+    _emit_utf8(rendered + "\n", indent)
     return 0
 
 

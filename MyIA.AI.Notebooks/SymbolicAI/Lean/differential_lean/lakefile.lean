@@ -37,4 +37,10 @@ lean_lib «DifferentialTour» where
   -- aussi : sans cela, DifferentialTour_en.lean n'est jamais compile et un
   -- Lean CI vert est un faux pass (orphan-trap #6749). Meme pattern que
   -- social_choice_lean_peters et sudoku_lean.
-  globs := #[`DifferentialTour, `DifferentialTour_en]
+  --
+  -- `Poincare` et `Poincare_en` (Pli 1 sub-grain 2, meme issue) suivent la
+  -- meme regle : un temoin declare hors des globs n'est jamais elabore, donc
+  -- son `#print axioms` ne prouve rien.
+  globs := #[
+    `DifferentialTour, `DifferentialTour_en,
+    `Poincare, `Poincare_en]

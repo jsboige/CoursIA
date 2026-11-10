@@ -1,0 +1,7 @@
+date: '2026-10-20'
+by: myia-po-2024:CoursIA-2
+python_sha: 926b9d141cca9e01d0636ac59a2e315a365c11a8
+csharp_sha: bab481a60cc1f84456c16da670cb26913e2e96a1
+content_python_sha: e1108f0be702cafbf59c33b6e1ab17831446b2073e6f4b752023cc68e89eb78d
+content_csharp_sha: 177e789f533df7387464d503e3a72feb0ae0ab75808854b3609647c05d97c52b
+reason: "2026-10-20 (myia-po-2024:CoursIA-2) #20262/#20190 : REBASELINE cote C# -- strip des enveloppes display_data vides (text/html vide) laissees par dotnet-interactive (banniere probeAddresses), 7 lignes retirees par carnet, 0 cellule source et 0 sortie utile touchee ; re-attestation en DERNIER apres le merge de main (#8957)."

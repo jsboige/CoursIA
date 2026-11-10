@@ -1,10 +1,11 @@
-# GenAI Security — Oversight scalable et contrôle par interprétabilité
+# GenAI Security — Oversight scalable, contrôle par interprétabilité et red team
 
-Cette section héberge la distillation GenAI/sécurité issue de l'EPIC #16741 (distillation corpus Tegmark), complétée par un axe sécurité des outils d'agents. Trois axes y cohabitent :
+Cette section héberge la distillation GenAI/sécurité issue de l'EPIC #16741 (distillation corpus Tegmark), complétée par un axe sécurité des outils d'agents et un axe red team opérationnelle. Quatre axes y cohabitent :
 
 - **Oversight scalable** (sub-grain #16754) — la surveillance d'agents plus forts par des agents plus faibles — et ses statistiques d'accompagnement (Elo oversight-spécifique, scaling laws double-ReLU, NSO imbriqué). Source : R12.
 - **Contrôle par interprétabilité** (sub-grain #16758) — direction du refus, ablation directionnelle, steering, finetuning shallow, machine unlearning et évaluation awareness, mesurés sur un témoin synthétique. Sources : R11 et R14.
 - **Surface d'attaque des outils** (issue #18213) — les attaques du client MCP sur la couche outils : injection par description (tool poisoning), rug pull (mutation du catalogue après approbation), collision de noms entre serveurs — et leurs défenses (empreinte SHA-256, diff d'inventaire, allowlist qualifiée), démontrées sur des serveurs MCP locaux réels.
+- **Red team au-delà de l'injection** (pli 3 de #19543, thème 9) — les familles d'attaque que l'injection ne couvre pas : jailbreaks mesurés sur un modèle local réel, empoisonnement de corpus et backdoor de données d'entraînement, typosquatting et intégrité de la chaîne d'approvisionnement, bac à sable et permissions d'un agent outillé.
 
 ## Sources canoniques
 
@@ -30,6 +31,7 @@ Notre cluster CoursIA-2 héberge plusieurs agents reviewers (Hermes, NanoClaw, j
 | [`Oversight/Oversight-Scaling-Laws-Statistics.ipynb`](Oversight/Oversight-Scaling-Laws-Statistics.ipynb) | Notebook pratique | Consolidation du module statistique du sub-grain #16754 (Elo L-BFGS-B, double-ReLU 3 phases + AIC, NSO imbriqué n*) et relecture des trois notebooks précédents. |
 | [`Control/Control-Refusal-Direction.ipynb`](Control/Control-Refusal-Direction.ipynb) | Notebook pratique | Contrôle par interprétabilité (R11 §2.2.5, R14 §3.1-3.2) sur un témoin synthétique entraîné from scratch : direction du refus par différence de moyennes, ablation directionnelle (brute vs centrée) et son contrôle aléatoire, dose-réponse de steering, finetuning shallow à dix exemples avec contrôle négatif, tableau forget/retain et simulation du biais d'évaluation awareness. Auto-contenu, exécutable sans GPU ni LLM externe ; le passage à une famille open-weights réelle est déclaré `RECOVERABLE-MACHINE`. |
 | [`Tooling/Tooling-MCP-Attack-Surface.ipynb`](Tooling/Tooling-MCP-Attack-Surface.ipynb) | Notebook pratique | Surface d'attaque des outils MCP (issue #18213) : trois attaques démontrées de bout en bout sur des serveurs MCP stdio locaux écrits puis exécutés dans le notebook (injection par description, rug pull après approbation, collision de noms entre serveurs), et trois défenses mesurables (empreinte SHA-256 par outil, diff d'inventaire AJOUT/RETRAIT/MUTATION, allowlist qualifiée par serveur). Auto-contenu, exécutable sans GPU ni LLM externe. |
+| [`RedTeam/RedTeam-Beyond-Injection.ipynb`](RedTeam/RedTeam-Beyond-Injection.ipynb) | Notebook pratique | Red team au-delà de l'injection (pli 3 de #19543) : quatre familles mesurées une par une — jailbreaks (six gabarits d'attaque × deux cibles de politique bénignes contre `qwen2.5:7b` servi en local par Ollama, juge déterministe, température nulle), empoisonnement (détournement d'un TF-IDF from scratch par trois documents piégés, backdoor d'un classifieur de sentiment à 10 % de données contaminées avec contrôle), chaîne d'approvisionnement (détection de typosquatting par distance de Levenshtein, vérification SHA-256), bac à sable (allow-list + prison de chemins opposées à huit tentatives d'injection par résultat d'outil, trou de quota mesuré). Trois exercices C.1. Auto-contenu ; la section jailbreak exige Ollama en local (`RECOVERABLE-LOCAL` sinon). |
 
 ## État des livraisons du sub-grain #16754
 
@@ -39,7 +41,7 @@ La vérification tierce du 2026-10-07 (commentaire `[PARTIAL]` sur #16754) a nom
 
 ## Pourquoi ces notebooks ne rejouent pas les LLMs d'Engels
 
-R12 utilise des LLMs réels (GPT-4, Claude, Mistral) comme Houdini et Guard. po-2024 n'a pas la stack GenAI (Tell c.1261-L1 ★★★ strict), et l'exécution réelle demanderait :
+R12 utilise des LLMs réels (GPT-4, Claude, Mistral) comme Houdini et Guard. po-2024 n'a pas la stack GenAI ([cluster-agents.md](../../../docs/reference/cluster-agents.md)), et l'exécution réelle demanderait :
 - API OpenAI/Anthropic/Mistral (token-bound, hors scope session worker)
 - ou stack vLLM locale sur ai-01 (91,9% idle mais sk-agent/RX9 collision non résolue)
 - ou stack ComfyUI/docker sur po-2023 (GenAI dédié)

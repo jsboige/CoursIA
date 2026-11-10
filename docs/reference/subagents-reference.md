@@ -1,10 +1,18 @@
 # Sous-agents spécialistes — référence + mandat d'usage side-tracks
 
-Les 23 sous-agents définis dans [.claude/agents/](../../.claude/agents/) sont des **spécialistes** invoquables via l'outil `Agent` (`subagent_type: "<nom>"`). Plusieurs sont **orientés side-tracks long-cours** : ils peuvent être lancés en **asynchrone** (`run_in_background: true`) pour faire avancer une Epic side-track pendant que le worker interactif tient sa track principale sur wakeup horaire.
+Les sous-agents définis dans [.claude/agents/](../../.claude/agents/) sont des **spécialistes** invoquables via l'outil `Agent` (`subagent_type: "<nom>"`). Plusieurs sont **orientés side-tracks long-cours** : ils peuvent être lancés en **asynchrone** (`run_in_background: true`) pour faire avancer une Epic side-track pendant que le worker interactif tient sa track principale sur wakeup horaire.
 
 **3 spécialistes side-track créés 2026-05-23** (corollaire du mandat Epics) : `prover-forensic` (#1453, comble le GAP prover), `training-specialist` + skill `train-model` (#1454), `genai-iterator` + skill `genai-iterate` (#1385). Chacun encode les artefacts réels du dépôt (pipeline, CLI, configs) — voir leur fiche.
 
 **Mandat (mandat user 2026-05-23)** : les Epics side-tracks DOIVENT déléguer aux sous-agents spécialistes async quand un specialist existe. Ne pas refaire à la main ce qu'un specialist fait mieux. Voir [.claude/rules/proactive-coordination.md](../../.claude/rules/proactive-coordination.md).
+
+## Lecteur gratuit — `swift-reader` (mandat user 2026-10-27)
+
+`swift-reader` est un lecteur **en lecture seule**. Son fichier fixe le modèle `qwen3.6-35b-a3b`, l'alias que claudish route vers Swift, le vLLM local. C'est le seul sous-agent qui ne coûte rien. On l'appelle par `Agent(subagent_type: "swift-reader")`, **sans** argument `model`, qui écraserait celui du fichier.
+
+- **Usage** : lecture en volume à critère objectif, avec un livrable au format imposé et des preuves citées. Exemples : fils de PR et réserves, dossiers, logs de CI, recensements, vérification de références.
+- **Mesure du 2026-10-27 sur ai-01** : trois champs demandés sur une règle du dépôt, trois réponses exactes avec leurs numéros de ligne, en 46 s. Le sidecar claudish journalise bien `model=qwen3.6-35b-a3b` à l'heure de l'appel.
+- **Limites** : le prompt porte tout le harnais (~100k tokens) et ce qui reste de la fenêtre de 262k borne la tâche. Swift ne sert que **2 requêtes parallèles**. Il juge le texte, pas le code : chaque verdict se recoupe à la tête avant une levée ou une fermeture ([model-delegation.md](../../.claude/rules/model-delegation.md), angles morts).
 
 ## Orchestrateurs persistants — idéaux pour side-tracks async
 
@@ -41,7 +49,7 @@ Distinction : `corrective-auditor` = audit sémantique profond d'une cible ; `co
 
 ### Cross-cutting maintenance (toutes machines, alignement env)
 - `readme-hierarchy-auditor` (audit/maj hiérarchie README bottom-up), `readme-updater` (maj README d'une série après ajout/modif notebooks).
-- `slide-analyzer` / `slide-improver` (decks PPTX/Marp, vision sk-agent) pour les tracks slides EPITA/ECE.
+- `slide-analyzer` / `slide-improver` (decks Slidev : organes structure/composition puis vision sk-agent, #19578) pour les tracks slides EPITA/ECE.
 - `general-purpose` (catch-all, exploration/analyse async non couverte par un specialist).
 
 ## Usage async (pattern)
@@ -75,7 +83,7 @@ Les skills sont les slash-commands de `.claude/skills/`, plus un module de réf�
 | `/execute-notebook` | Exécution (scripts locaux ou MCP Jupyter). `--mode`, `--batch`, `--save` | validation toutes séries |
 | `/verify-notebooks` | Vérif + fix itératif (`--quick`, `--fix`, `--python-only`, `--dotnet-only`) | gate avant PR |
 | `/validate-genai` | Valider stack GenAI (services, auth, modèles, notebooks, VRAM). `--local`, `--remote`, `--quick` | GenAI hosting, #1385 |
-| `/analyze-slides` | Analyse qualitative deck PPTX via vision AI. `--render`, `--slides` | tracks slides EPITA/ECE |
+| `/analyze-slides` | Analyse qualitative deck Slidev (organes + vision AI). `--slides` | tracks slides EPITA/ECE |
 | `/qc-iterative-improve` | Workflow amélioration stratégies QC (`[strategy\|issue#]`, `--iterations`, `--backtest`) | #1409 trading |
 | `/train-model` | Entraîner un modèle ML (thermal-safe GPU, walk-forward + multi-seed + DM). `--dry-run`, `--seeds`, `--folds`, `--bg` | #1454 Training |
 | `/genai-iterate` | Itérer un notebook GenAI contre la stack (auth, sous-domaines, quant, GPU/VRAM) via CLI genai-stack. `--service`, `--quant`, `--validate`, `--bg` | #1385 GenAI |

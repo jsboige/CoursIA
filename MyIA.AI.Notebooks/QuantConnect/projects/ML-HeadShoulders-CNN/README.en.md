@@ -5,7 +5,7 @@
 
 ## Description
 
-Keras CNN for head-and-shoulders pattern detection on USDCAD. Requires pre-trained model from research.ipynb.
+Keras CNN for head-and-shoulders pattern detection on USDCAD. `main.py` loads the model from the Object Store (key `head-and-shoulders-model.keras`); if it is absent, it trains a small CNN on synthetic patterns at startup.
 
 ## How to Run
 

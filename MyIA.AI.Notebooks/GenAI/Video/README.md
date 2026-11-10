@@ -4,7 +4,7 @@
 series: GenAI-Video
 pedagogical_count: 22
 breakdown: Video=22
-maturity: BETA=17, ALPHA=5
+maturity: BETA=19, ALPHA=3
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb)
@@ -70,10 +70,18 @@ On ne peut pas créer ce qu'on ne comprend pas. Ce niveau pose les bases techniq
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [01-1-Video-Operations-Basics](01-Foundation/01-1-Video-Operations-Basics.ipynb) | moviepy, ffmpeg, decord, codecs | Local | 0 |
+| [01-1b-Video-Slideshow-Bonus](01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb) | *Bonus* — slideshow : frames PIL centrées, assemblage imageio à `fps` choisi | Local | 0 |
 | [01-2-GPT-5-Video-Understanding](01-Foundation/01-2-GPT-5-Video-Understanding.ipynb) | GPT-5 vidéo, scènes, Q&A | OpenAI API | 0 |
 | [01-3-Qwen-VL-Video-Analysis](01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb) | Qwen2.5-VL 7B local, grounding | Local GPU | ~18 GB |
 | [01-4-Video-Enhancement-ESRGAN](01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb) | Real-ESRGAN, RIFE interpolation | Local GPU | ~4 GB |
 | [01-5-AnimateDiff-Introduction](01-Foundation/01-5-AnimateDiff-Introduction.ipynb) | AnimateDiff, text-to-video basique | Local GPU | ~12 GB |
+
+**01-1b — quand le lire, quand le sauter.** Le bonus est une accrétion optionnelle détachée de la conclusion de
+[01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb) : le challenge du slideshow y a trouvé un espace de travail,
+avec des exemples guidés — dont ceux crédités au Groupe G15 (PR #21040) — et des exercices neufs. On le lit quand on veut
+mettre les mains dans les primitives de 01-1 sans rouvrir le carnet principal : centrer un texte sur sa boîte englobante
+réelle dans une frame PIL, puis assembler les frames avec `imageio` à un `fps` qui fixe la durée. On le saute quand on suit
+le fil compréhension → génération : il n'ajoute aucune API au-delà de 01-1, sa valeur est l'entraînement, pas la découverte.
 
 ### 02-Advanced - Générer du mouvement à partir de texte ou d'images
 
@@ -90,7 +98,7 @@ Il est donc **descriptif sur la licence** (architecture + raisonnement de confor
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [02-1-HunyuanVideo-Generation](02-Advanced/02-1-HunyuanVideo-Generation.ipynb) | HunyuanVideo, quantization 24GB | Local GPU | ~18 GB |
-| [02-2-LTX-Video-Lightweight](02-Advanced/02-2-LTX-Video-Lightweight.ipynb) | LTX-Video, génération rapide | Local GPU | ~8 GB |
+| [02-2-LTX-Video-Lightweight](02-Advanced/02-2-LTX-Video-Lightweight.ipynb) | LTX-Video, génération rapide | Local GPU | 16 GB (pic mesuré : 14.1 GB) |
 | [02-3-Wan-Video-Generation](02-Advanced/02-3-Wan-Video-Generation.ipynb) | Wan 2.1/2.2, prompts FR/EN | Local GPU | ~10 GB |
 | [02-4-SVD-Image-to-Video](02-Advanced/02-4-SVD-Image-to-Video.ipynb) | Stable Video Diffusion, animation | Local GPU | ~10 GB |
 | [02-5-LTX2-Audiovisual](02-Advanced/02-5-LTX2-Audiovisual.ipynb) | LTX-2 (Lightricks 22B), vidéo + audio conjoint | Local GPU | ~16-24 GB |
@@ -190,7 +198,7 @@ flowchart TD
 | **Real-ESRGAN / RIFE** | 01-4 | GPU ~4 GB VRAM |
 | **AnimateDiff** | 01-5 | GPU ~12 GB VRAM |
 | **HunyuanVideo** | 02-1 | GPU ~18 GB VRAM |
-| **LTX-Video** | 02-2 | GPU ~8 GB VRAM |
+| **LTX-Video** | 02-2 | GPU ~16 GB VRAM (pic mesuré : 14.1 GB) |
 | **Wan 2.1/2.2** | 02-3 | GPU ~10 GB VRAM |
 | **SVD** | 02-4 | GPU ~10 GB VRAM |
 | **LTX-2 (Lightricks)** | 02-5 | GPU ~14-24 GB VRAM (GGUF Q4 / fp8-cast) |
@@ -216,7 +224,7 @@ HunyuanVideo (notebook [02-1](02-Advanced/02-1-HunyuanVideo-Generation.ipynb)) e
 
 - Utiliser la quantization intégrée au notebook pour réduire à ~18 GB.
 - Générer des clips courts (2-3 secondes) plutôt que des séquences longues.
-- Si votre GPU a 12 GB ou moins, utiliser **LTX-Video** (notebook [02-2](02-Advanced/02-2-LTX-Video-Lightweight.ipynb), ~8 GB) ou **Wan** (notebook [02-3](02-Advanced/02-3-Wan-Video-Generation.ipynb), ~10 GB) comme alternatives légères.
+- Si votre GPU a 12 GB ou moins, utiliser **Wan** (notebook [02-3](02-Advanced/02-3-Wan-Video-Generation.ipynb), ~10 GB) comme alternative légère. **LTX-Video** ([02-2](02-Advanced/02-2-LTX-Video-Lightweight.ipynb)) n'entre pas dans cette catégorie : son pic mesuré est de 14.1 GB et sa cellule de chargement bascule en offload CPU sous 16 GB.
 - Fermer tous les autres processus GPU avant la génération (`nvidia-smi` pour vérifier).
 
 ### FFmpeg non trouvé ou erreurs de codec
@@ -245,7 +253,7 @@ ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
 | **Coût** | $0.10-1.00/vidéo | Gratuit (local) | Gratuit (local) | Gratuit (local) |
 | **Qualité** | Excellente | Haute | Bonne | Correcte |
 | **Durée max** | 20s | 5-10s | 5-10s | 3-5s |
-| **VRAM** | 0 (API) | ~18-24 GB | ~10 GB | ~8 GB |
+| **VRAM** | 0 (API) | ~18-24 GB | ~10 GB | ~16 GB (pic mesuré : 14.1 GB) |
 | **Latence** | 30s-2min | 1-5min | 30s-2min | 10-30s |
 
 Pour du prototypage ou des résultats rapides, Sora 2 (notebook [04-3](04-Applications/04-3-Sora-API-Cloud-Video.ipynb)) est idéal. Pour un contrôle fin, une production répétitive, ou des données sensibles, les modèles locaux sont indispensables.

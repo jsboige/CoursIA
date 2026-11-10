@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import sys
 from pathlib import Path
@@ -105,6 +106,56 @@ def test_breadth_zero_when_the_citing_pr_is_already_recorded():
     assert len(findings) == 1
     assert findings[0].unrecorded_merged == ()
     assert findings[0].citation_breadth == 0
+
+
+def test_citation_wrapped_in_inline_code_is_not_a_citation():
+    """#13906: a number in inline code is not a mention, so it is not a citation.
+
+    Measured on PR #18300, whose only mention of #4208 was the escaped
+    template literal ``axe A `#4208` `` -- it delivered nothing of that EPIC.
+    """
+    epic = Epic(4208, "[EPIC] Reference publique", "## Livré\n- #4209 — axe A")
+
+    findings = analyze_epics(
+        [epic],
+        [_pr(18300, "axe A `#4208` echappe en code inline")],
+    )
+
+    assert findings == []
+
+
+def test_citation_inside_a_fenced_block_is_not_a_citation():
+    """A template shown in a fenced block is quoted text, not a mention."""
+    epic = Epic(4208, "[EPIC] Reference publique", "## Livré\n- #4209 — axe A")
+
+    findings = analyze_epics(
+        [epic],
+        [_pr(18300, "```yaml\nrationale: #4208\n```")],
+    )
+
+    assert findings == []
+
+
+def test_citation_inside_a_blockquote_is_not_a_citation():
+    """A quoted passage reproduces the EPIC body, it does not deliver it."""
+    epic = Epic(4208, "[EPIC] Reference publique", "## Livré\n- #4209 — axe A")
+
+    findings = analyze_epics(
+        [epic],
+        [_pr(18300, "> reliquat du corps : #4208")],
+    )
+
+    assert findings == []
+
+
+def test_prose_citation_still_counts_after_the_quoting_filter():
+    """Positive control: an ordinary prose mention is still a citation."""
+    epic = Epic(4208, "[EPIC] Reference publique", "## Livré\n- #4209 — axe A")
+
+    findings = analyze_epics([epic], [_pr(18301, "Delivers the axis A of #4208")])
+
+    assert len(findings) == 1
+    assert findings[0].unrecorded_merged == (18301,)
 
 
 def test_payload_exposes_citation_breadth():
@@ -367,6 +418,67 @@ def test_cli_prints_json_and_never_writes(monkeypatch, capsys):
     assert _MODULE._cli(["--repo", "example/repo", "--pretty"]) == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["corpus"]["open_epics_examined"] == 1
+
+
+def test_cli_writes_utf8_even_on_a_cp1252_stdout(monkeypatch):
+    """Regression: un titre d'EPIC hors cp1252 faisait perdre le rapport entier.
+
+    Sur une console Windows cp1252, `json.dump(..., sys.stdout)` levait
+    UnicodeEncodeError sur U+21C4 et n'ecrivait rien du tout -- pas meme les
+    EPIC dont le titre etait encodable.
+    """
+    epic = Epic(42, "[EPIC] chaine ⇄ collision", "")
+    pr = _pr(101, "See #42")
+    monkeypatch.setattr(_MODULE, "list_open_epics", lambda repo: [epic])
+    monkeypatch.setattr(_MODULE, "list_merged_prs", lambda repo, limit: [pr])
+
+    raw = io.BytesIO()
+    console = io.TextIOWrapper(raw, encoding="cp1252", newline="")
+    monkeypatch.setattr(_MODULE.sys, "stdout", console)
+
+    assert _MODULE._cli(["--repo", "example/repo"]) == 0
+    payload = json.loads(raw.getvalue().decode("utf-8"))
+    assert payload["finding_count"] == 1
+    assert "⇄" in payload["findings"][0]["title"]
+
+
+class _StreamSansReconfigure:
+    """Flux cp1252 sans ``reconfigure`` : force le repli ASCII de ``_emit_utf8``."""
+
+    def __init__(self) -> None:
+        self._raw = io.BytesIO()
+
+    @property
+    def encoding(self) -> str:
+        return "cp1252"
+
+    def write(self, text: str) -> int:
+        data = text.encode("cp1252")  # strict : leve comme une vraie console
+        self._raw.write(data)
+        return len(data)
+
+    def flush(self) -> None:
+        pass
+
+    def ascii_text(self) -> str:
+        return self._raw.getvalue().decode("ascii")
+
+
+def test_ascii_fallback_stays_valid_json_for_an_astral_title(monkeypatch):
+    """Regression (repli de #24622) : un emoji astral cassait l'echappement.
+
+    Le repli encodait le texte rendu en ``backslashreplace``, qui produit
+    ``\\U0001f9ed`` pour un caractere astral -- pas un echappement JSON
+    valide (``\\uXXXX``, 4 chiffres). Le repli devait alors un document
+    indechiffrable, exactement ce qu'il existait pour eviter.
+    """
+    stream = _StreamSansReconfigure()
+    monkeypatch.setattr(_MODULE.sys, "stdout", stream)
+
+    _MODULE._emit_utf8(json.dumps({"title": "constellation 🧭 07"}, ensure_ascii=False))
+
+    payload = json.loads(stream.ascii_text())
+    assert payload["title"] == "constellation 🧭 07"
 
 
 def test_cli_reports_read_failure(monkeypatch, capsys):

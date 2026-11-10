@@ -1,0 +1,37 @@
+# Unite systemd de persistance du superviseur de runners Linux CoursIA.
+# Deploiement po-2028 (2026-10-20) -- copie de reference ; l'original vit dans
+# la distro Ubuntu sous /etc/systemd/system/coursia-runner.service.
+# Adaptee de persist/coursia-runner.service (po-2024, 2026-09-02) : structure
+# et gardes conformes (#15095 fail-closed, #15091 IOWeight, #15163 sentinel),
+# seul le dimensionnement change -- start 3 (composition et historique dans
+# coursia-runner-start.sh, deltas po-2028).
+[Unit]
+Description=CoursIA Linux runners supervisor (docker slots, po-2028)
+# #15095 : Requires+BindsTo fail-closed -- docker tombe ou echoue au boot =>
+# le superviseur est ARRETE (propagation), pas laisse a marteler docker/gh.
+# Retour du daemon = geste operateur explicite (systemctl start coursia-runner)
+# -- l'hote prime sur la CI.
+Requires=docker.service
+BindsTo=docker.service
+After=docker.service
+# Borne de rafale : 5 tentatives / 300 s, puis failed et SORTIE de boucle.
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/coursia-runner-start.sh start 3
+ExecStop=/usr/local/bin/coursia-runner-start.sh stop
+Restart=always
+RestartSec=30
+Nice=10
+# ExecStop est gracieux (sentinel supervise.sh) : un job en vol va a son terme.
+TimeoutStopSec=900
+# #15091 : IOWeight fait ceder le parc sous contention. Le plafond DUR vit
+# dans la slice (les conteneurs sont les neveux de ce service) :
+# coursia-ci.slice po-2028 porte IOWrite/ReadBandwidthMax + murs memoire.
+IOAccounting=yes
+IOWeight=50
+
+[Install]
+WantedBy=multi-user.target

@@ -1,6 +1,6 @@
 # Partie 2 : Programmation par Contraintes
 
-[← Partie 1 : Search](../Part1-Foundations/README.md) | [↑ Série Search](../README.md) | [Partie 4 : Métaheuristiques →](../Part4-Metaheuristics/README.md)
+[← Partie 1 : Search](../Part1-Foundations/README.md) | [↑ Série Search](../README.md) | [Partie 3 : Cas pratiques →](../Part3-Cas-pratiques/README.md)
 
 Au lieu de concevoir un algorithme d'exploration, que se passe-t-il si l'on déclare les contraintes du problème et que l'on laisse le solveur trouver les solutions ? La programmation par contraintes (CSP) représente ce changement de paradigme : on ne cherche plus, on contraint. Ce modèle déclaratif est au coeur des outils industriels (ordonnancement, logistique, vérification) et s'applique naturellement aux problèmes NP-difficiles.
 
@@ -63,10 +63,11 @@ Si la Partie 1 enseigne à chercher, celle-ci enseigne à modéliser — et c'es
 | 7 | [CSP-7-Soft](CSP-7-Soft.ipynb) | Python 3 | Contraintes souples : Fuzzy CSP, Weighted CSP, Semiring-based CSP | ~1h |
 | 8 | [CSP-8-Temporal](CSP-8-Temporal.ipynb) | Python 3 | Algèbre d'intervalles d'Allen, Simple Temporal Problems (STP), TCSP | ~1h |
 | 9 | [CSP-9-Distributed](CSP-9-Distributed.ipynb) | Python 3 | Asynchronous Backtracking (ABT), AWC, Privacy-preserving CSP | ~1h30 |
+| 10 | [CSP-10-Optimisation-Z3](CSP-10-Optimisation-Z3.ipynb) | Python 3 | Couverture minimale (set cover) en SMT d'optimisation Z3 : preuve de minimalité, pont CP↔SMT | ~1h30 |
 
 ### Parité Python ⇄ .NET
 
-Les neuf notebooks de cette partie existent en **binôme bilingue** : une version Python (OR-Tools CP-SAT) et une version C# / .NET, dans l'esprit de l'Epic de parité #4956. Le port .NET invoque la **vraie lib** — jamais une réimplémentation jouet : Choco-solver bridgé via IKVM (jurisprudence #4667), OR-Tools natif, ou port from-scratch d'un algorithme sans solveur off-the-shelf selon le terrain.
+Les neuf notebooks de cette partie existent en **binôme bilingue** : une version Python (OR-Tools CP-SAT) et une version C# / .NET, dans l'esprit de l'Epic de parité #4956. CSP-10 (SMT Z3) est en **Python seul** — c'est le pont CP↔SMT de la partie, sans jumeau .NET. Le port .NET invoque la **vraie lib** — jamais une réimplémentation jouet : Choco-solver bridgé via IKVM (jurisprudence #4667), OR-Tools natif, ou port from-scratch d'un algorithme sans solveur off-the-shelf selon le terrain.
 
 | # | Python (OR-Tools CP-SAT) | .NET (C#) | Solveur .NET |
 |---|--------------------------|-----------|--------------|
@@ -120,7 +121,7 @@ Pour le setup complet, voir le [README de la série Search](../README.md).
 | Solveur CP-SAT trop lent sur les grandes instances | Préférer les contraintes globales (AllDifferent, Cumulative) aux contraintes binaires équivalentes ; utiliser LNS (CSP-3) |
 | Comment choisir entre CP-SAT et un solveur SAT ? | CP-SAT pour les contraintes globales et l'optimisation (objectif), SAT pour la décision pure ; CSP-6 détaille les compromis |
 | CSP-9 : les algorithmes distribués ne convergent pas | Vérifier que le réseau de contraintes est un arbre, ou utiliser AWC (Weak-Commitment) au lieu d'ABT |
-| Où sont les applications concrètes ? | Voir [Applications](../Applications/README.md) : 40 notebooks (N-Queens, Nurse Scheduling, VRP, TSP...) |
+| Où sont les applications concrètes ? | Voir [Applications](../Part3-Cas-pratiques/README.md) : notebooks d'application (N-Queens, Nurse Scheduling, VRP, TSP...) |
 
 ## Ponts vers SymbolicAI
 
@@ -160,7 +161,7 @@ CSP-1 (Fundamentals) ──> CSP-2 (Consistency) ──> CSP-3 (Advanced)
 | Série | Lien | Relation |
 | ------- | ------ | ---------- |
 | [Partie 1 : Search](../Part1-Foundations/README.md) | Fondamentaux | Prérequis : backtracking, heuristiques |
-| [Applications](../Applications/README.md) | 40 notebooks d'application | Mise en pratique des CSP |
+| [Applications](../Part3-Cas-pratiques/README.md) | Notebooks d'application | Mise en pratique des CSP |
 | [Search (parent)](../README.md) | Vue d'ensemble | Contexte et parcours global |
 | [Sudoku](../../Sudoku/) | Résolution par contraintes | Application directe des CSP |
 | [SymbolicAI/SMT/Z3-Linq2Z3](../../SymbolicAI/SMT/Z3-Linq2Z3/README.md) | Solveur SMT | CSP-6 (LCG) et automates symboliques |
@@ -191,7 +192,12 @@ Couverture par notebook des sources fondatrices de la programmation par contrain
 | CSP-6 (Hybridization) | Ohrimenko, I., Stuckey, P. J., & Codish, M. (2009) — « Propagation via Lazy Clause Generation », *Constraints* 14(3). Origine de la Lazy Clause Generation. |
 | CSP-1, CSP-2, CSP-8 | Dechter, R. (2003) — *Constraint Processing*. Morgan Kaufmann. Socle de la propagation de contraintes et des niveaux de consistance, en amont de la série. |
 | CSP-3 à CSP-8 | Krupke, D. et al. (2023) — *The CP-SAT Primer: Using and Understanding Google OR-Tools' CP-SAT Solver* (CC-BY). Le manuel du solveur CP-SAT, aval de la série. |
-| CSP-3, CSP-5, CSP-7 | Rossi, F., van Beek, P. & Walsh, T. (dir., 2006) — *Handbook of Constraint Programming*. Elsevier. Ouvrage de référence organisé par thème (propagation, contraintes globales, contraintes souples, temporel) — le découpage que suit la série. |
+| CSP-3 (Advanced) | Rossi, F., van Beek, P. & Walsh, T. (dir., 2006) — *Handbook of Constraint Programming* (Elsevier), **Ch. 7 *Global Constraints*** (Willem-Jan van Hoeve, Irit Katriel, p. 205) — la presentation canonique d'AllDifferent/Cumulative/Circuit/Table reprise dans le carnet. |
+| CSP-3 (Advanced) | id. **Ch. 4 *Backtracking Search Algorithms*** (Peter van Beek, p. 83) — socle de recherche utilise dans la serie. |
+| CSP-5 (Optimization) | id. **Ch. 15 *Operations Research Methods in Constraint Programming*** (J.N. Hooker, p. 525) — couplage CP / RO. |
+| CSP-7 (Soft) | id. **Ch. 9 *Soft Constraints*** (Meseguer, Rossi, Schiex, p. 279) — semiring-based CSP, classic/fuzzy/weighted. |
+| CSP-8 (Temporal) | id. **Ch. 19 *Temporal CSPs*** (Manolis Koubarakis, p. 663) — formalisation des CSP temporels. |
+| Toute la série | id. **Ch. 1 *Introduction*** (Rossi, van Beek, Walsh, p. 3) — carte thematique de l'ouvrage alignee sur le decoupage de la serie. |
 | CSP-9 (Distributed) | **Distributed Constraint Processing** (support de cours, 2018) — `2018 - lecture-Distributed Constraint Processing.pdf`, rayon *Constraint Programming* du gisement documentaire (auteur non lisible : PDF non hydraté). Série homonyme en ligne : [G. Picard, Mines Saint-Étienne](https://www.gauthier-picard.info/files/lecture-DCSP-2025.pdf). Passage du CSP centralisé aux formulations distribuées (DisCSP, DCOP). |
 | Toute la série | Bardin, S., Bjørner, N. & Cadar, C. (2019) — *Bringing CP, SAT and SMT together: Next Challenges in Constraint Solving* (Dagstuhl Seminar 19062), Dagstuhl Reports 9(2):27. Le pont CP↔SAT↔SMT. |
 
@@ -215,10 +221,10 @@ Le véritable enseignement est une **sensibilité à la modélisation** : le mê
 
 ### Prochaines étapes
 
-- **Les applications** : les [40 notebooks d'application](../Applications/README.md) (N-Queens, Nurse Scheduling, VRP, TSP, Picross, Minesweeper CSP) mettent en pratique CP-SAT sur des problèmes concrets avec benchmark baseline-comparison.
+- **Les applications** : les [notebooks d'application](../Part3-Cas-pratiques/README.md) (N-Queens, Nurse Scheduling, VRP, TSP, Picross, Minesweeper CSP) mettent en pratique CP-SAT sur des problèmes concrets avec benchmark baseline-comparison.
 - **Vers le raisonnement symbolique** : la modélisation déclarative de cette partie est le premier contact avec un mode de raisonnement qu'approfondissent [Z3/SMT](../../SymbolicAI/SMT/Z3-Linq2Z3/README.md) (SMT solving), les [Planners](../../SymbolicAI/Planners/) (PDDL, HTN) et [Tweety](../../SymbolicAI/Tweety/) (logique formelle) côté SymbolicAI. CSP-6 (LCG) fait explicitement le pont vers SAT.
 - **Retour aux fondamentaux** : après avoir vu la puissance de la propagation, reprendre [Search-2 (backtracking)](../Part1-Foundations/Search-02-Uninformed.ipynb) — le DFS y apparaît comme un cas particulier de CSP sans propagation, et l'on mesure le saut qu'apportent AC-3/MAC.
-- **La série dans son ensemble** : le [sommaire Search](../README.md) cartographie les quatre parties et les applications — celle-ci est le socle déclaratif qui prolonge la Partie 1 (recherche) et prépare la Partie 4 (métaheuristiques) et les Applications.
+- **La série dans son ensemble** : le [sommaire Search](../README.md) cartographie les quatre parties et les applications — celle-ci est le socle déclaratif qui prolonge la Partie 1 (recherche) et prépare la Partie 4 (métaheuristiques) et la Partie 3 (cas pratiques).
 
 ### Le fil rouge
 
@@ -226,4 +232,4 @@ La programmation par contraintes propose un changement de regard sur la résolut
 
 ## Navigation
 
-[<- Partie 1 : Search Fondamental](../Part1-Foundations/README.md) | [Retour à la série Search](../README.md) | [Partie 4 : Métaheuristiques ->](../Part4-Metaheuristics/README.md)
+[<- Partie 1 : Search Fondamental](../Part1-Foundations/README.md) | [Retour à la série Search](../README.md) | [Partie 3 : Cas pratiques ->](../Part3-Cas-pratiques/README.md)

@@ -10,7 +10,6 @@ on:
       - 'MyIA.AI.Shared/**'
       - '.github/workflows/dotnet-trading-backtester-tests.yml'
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.Trading.Backtester/**'
@@ -37,6 +36,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # B2-T2 (#24320) : Backtester.Tests construit MyIA.Trading.Backtester ->
+      # MyIA.AI.Shared, qui reference les binaires .deploy du sous-module Z3.Linq
+      # (HintPath) -- le checkout nu ne les embarque pas (MSB3245 -> CS0246, run
+      # 41534502040). Init ciblee du seul sous-module concerne ; sous Windows le
+      # natif libz3.dll est copie au sortie par le csproj de Shared.
+      - name: Init Z3.Linq submodule (.deploy binaries for the FOL bridge)
+        shell: bash
+        run: git submodule update --init MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq
 
       - uses: actions/setup-dotnet@v4
         with:

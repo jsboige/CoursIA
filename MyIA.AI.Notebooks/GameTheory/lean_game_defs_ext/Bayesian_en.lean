@@ -6,6 +6,8 @@ import Bayesian.Auction
 import Bayesian.Vickrey
 import Bayesian.Max
 import Bayesian.Information
+import Bayesian.InformationNoisy
+import Bayesian.VoiBench
 import Bayesian.InfoGames
 import Bayesian.Reputation
 import Bayesian.Regret
@@ -41,6 +43,15 @@ import Bayesian.FictitiousPlay
   - `Bayesian.Information` — value of information for a single decision
                           maker: signals as partitions, Blackwell
                           monotonicity, no-info ≤ signal ≤ perfect (phase 4)
+  - `Bayesian.InformationNoisy` — noisy signals: finite joint table over
+                          state × realization, no-info ≤ signal ≤ perfect,
+                          raw values non-negative under nonnegative payoffs,
+                          strictly positive gain example (phase 4, #22374)
+  - `Bayesian.VoiBench` — `voi` bench: the two JSON instances of the
+                          cross-engine bench (Infer.NET x PyMC) transcribed
+                          exactly by the adapter, raw EVSI of 253,000 EUR
+                          certified and factored negative control at exact
+                          zero (#22374)
   - `Bayesian.InfoGames` — counterexample: in a *game*, more information
                           can strictly hurt the informed player (unique
                           BNE payoffs 3 < 5, kernel-checked) (phase 4)

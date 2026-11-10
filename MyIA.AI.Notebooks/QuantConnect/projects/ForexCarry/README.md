@@ -1,7 +1,7 @@
 # ForexCarry
 
 **Asset class:** G10 Currencies (FX)
-**Cloud project ID:** None (local only)
+**Cloud project ID:** 38228367 (banc `21759-forexcarry-fix`)
 
 ## Description
 
@@ -109,21 +109,41 @@ Le gap **baseline −0.156 → v3e +1.687** = delta Sharpe de 1.84, soit ~5× la
 lean backtest --project .
 ```
 
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**QC Cloud:** déployé (projet 38228367). Un backtest sans paramètre `brokerage` utilise le brokerage QC par défaut — le seul mode où `set_holdings` **remplit** (cf §Backtest mesuré, #21759).
 
-## Backtest Metrics (2018-2026)
+## Backtest mesuré de `main.py` (QC Cloud, 2015-2024)
 
-| Configuration | Sharpe | CAGR | MaxDD | Verdict |
+Mesure réelle de `main.py` v4.0 sur QC Cloud — banc dédié `21759-forexcarry-fix` (projet cloud 38228367, run `3082c0a9`, 2026-10-21) — **après** la correction du no-fill (#21759). Le brokerage par défaut (QC) est désormais utilisé par défaut, et les ordres `set_holdings` **remplissent** :
+
+| Metric | Valeur mesurée |
+|--------|----------------|
+| **Sharpe** | −0.381 |
+| **CAGR** | +1.05 % |
+| **Max drawdown** | −9.60 % |
+| **Retour total (2015-2024)** | +11.01 % |
+| **Profit net (réalisé)** | +$8 973.97 — l'équité passe de $100 000 à $111 008 ; l'écart de ≈ $2 034 est le P&L **non réalisé** sur les positions encore ouvertes en fin de backtest (l'équité de fin = départ + réalisé + non réalisé) |
+| **Volume échangé** | $6 800 369.77 (136 ordres, tous remplis) |
+| **Positions investies (fin)** | $107 857.69 |
+
+**Avant la correction** (OANDA-MARGIN, mesuré dans #21755 / #21759) : 166 ordres soumis, **0 rempli**, volume $0, équité plate à $100 000 — la stratégie était **cloud-inerte** depuis sa création. La mesure ci-dessus prouve que la correction la rend **active** (volume $6.8 M, positions investies).
+
+**Honnêteté** : la performance mesurée (Sharpe −0.381, CAGR +1.05 %) est **cohérente avec l'assessment honnête** du `main.py` (« ~1-2 % CAGR », « target Sharpe −0.5 à −0.3 »). La stratégie n'est pas un gagnant — mais elle **trade de façon réelle** et mesure ce qu'elle documente, au lieu de rester inerte sous un brokerage qui ne remplit jamais.
+
+## Backtest Metrics de recherche (2018-2026)
+
+Les valeurs de ce tableau proviennent **uniquement** de `research.ipynb` (cell[24]) — elles ne sont **pas** issues d'un backtest de `main.py`.
+
+| Configuration (recherche) | Sharpe | CAGR | MaxDD | Verdict |
 |---------------|--------|------|-------|---------|
-| **Baseline (current main.py v4.0)** | −0.156 | −0.6 % | −13.95 % | BROKEN — confirmé |
-| **v3a (4 div + DXY filter)** | +0.501 | +1.5 % | −3.2 % | **Live candidate modeste** |
-| **v3e (3 paires + DXY<SMA50)** | **+1.687** | **+3.5 %** | **−1.76 %** | **Live candidate recommandé** |
+| Baseline recherche (composite 3M/12M, 7 paires) | −0.156 | −0.6 % | −13.95 % | BROKEN — confirmé |
+| v3a (4 div + DXY filter) | +0.501 | +1.5 % | −3.2 % | **Live candidate modeste** |
+| v3e (3 paires + DXY<SMA50) | **+1.687** | **+3.5 %** | **−1.76 %** | **Live candidate recommandé** |
 
-**Note d'investigation** : les valeurs v3a/v3e ci-dessus sont issues de `research.ipynb` cell[24] (interprétation verbatim). **Aucune n'est encore migrée dans `main.py`** — le `main.py` actuel applique toujours la baseline L/S perdante. La migration v3e → main.py = chantier de suivi hors-scope de cette PR (touche au code, pas à la doc figures).
+**Note d'investigation** : les valeurs v3a/v3e ci-dessus sont issues de `research.ipynb` cell[24] (interprétation verbatim). **Aucune n'est encore migrée dans `main.py`** — le `main.py` actuel applique la configuration long-only top-2 IR skip-month mesurée au-dessus (pas la baseline L/S de recherche). La migration v3e → main.py = chantier de suivi hors-scope de cette PR (touche au code, pas à la doc figures).
 
 ## Files
 
-- `main.py` - Strategy (v4.0, baseline L/S) — migration v3e à étudier hors-scope PR
+- `main.py` - Strategy (v4.0, long-only top-2, IR skip-month) — brokerage par défaut = QC (trade réel, #21759) ; migration v3e à étudier hors-scope PR
 - `research.ipynb` - FX momentum signal analysis (H1-H6 + synthèse)
 - `quantbook.ipynb` - Reproduction de l'analyse FX momentum sous QuantConnect Research (données natives QC)
 

@@ -12,6 +12,7 @@ Two counts, depending on the filter:
 | File | real sorries | sorry (prose, CI) |
 |------|-------------|-------------------|
 | `Knots/Basic.lean` | 0 | 3 |
+| `Knots/Tangle.lean` | 0 | 0 |
 | `Knots/Reidemeister.lean` | 2 | 2 |
 | `Knots/Invariant.lean` | **0** | 5 |
 | `Knots/Conway.lean` | 4 | 9 |
@@ -349,9 +350,11 @@ Reference: Fox (1962), *A quick trip through knot theory*; Adams,
 | File | Contents | real sorries |
 |------|----------|-------------|
 | `Knots/Basic.lean` | Definitions (Knot, Link, PD-code, named knots), `KnotDiagram.wf` | 0 |
+| `Knots/Tangle.lean` | Four-ended tangles (EPIC Phase 3): zero/infinity/`1`/mirror tangles + `wf` (per-label parity, no contiguity), rotation (involution, preserves `wf`), relabel2/shift, vertical/horizontal compositions (counting lemmas), numerator/denominator closures with canonical label compression (`wf` examples by `decide`) | 0 |
 | `Knots/Reidemeister.lean` | R1/R2/R3 moves (Phase 5 model), `ReidemeisterEquiv`, symmetries | 2 |
 | `Knots/Invariant.lean` | 3-colorability (Fox), crossing number, PR1 counter-example, connected R1 bi-implication (#3000 + #3124/#11227), R2-up transfer + named walls (#11276), master `tricolorable_invariant` (#11958), `unknottingNumber` via `Nat.sInf` (#15082) | 0 |
 | `Knots/Conway.lean` | Conway knot (11n34), mutation, Conway/KT PD codes, arcPartition, trivial Alexander | 0 |
+| `Knots/ConwayKTMutation.lean` | Combinatorial mutants of Conway (window 5-11, Klein rotations), window-normalisation lemmas, Conway/KT one-shot impossibility — the NOTE of `Mutation.lean` turned into a proof (EPIC #2874, slice 1) | 0 |
 | `Knots/Slice.lean` | Slice knots, Piccirillo, Freedman, smooth/topological dichotomy (extracted from Conway, #18397) | 4 |
 | `Knots/Lidman.lean` | 11n102, unknotting number = 2 | 2 |
 | `Knots/MathlibPrerequisites.lean` | Index of missing Mathlib prerequisites by tier | 0 |
@@ -391,7 +394,29 @@ Three notebooks in `SymbolicAI/Lean/` carry the transmission, one per level:
 
 **Prerequisites**: none for 17-a; elementary PD-codes for 17-b; basic Lean 4 (tactics, structures) for 17-c.
 
-**Human review — honest state**: to date the lake has been reviewed by bot organs (Hermes, proof-integrity CI) and merged by the coordinator, but **no named human review of the whole lake** has taken place. This is a declared limitation of the present digestion (grid #13106 point 10): the human review remains to be done and should be recorded here when it happens.
+**Human review — honest state**: to date the lake has been reviewed by bot organs (Hermes, proof-integrity CI) and merged by the coordinator, but **no named human review of the whole lake** has taken place. This is a declared limitation of the present digestion (grid **EPIC #13106 criterion 2**): the human review remains to be done and should be recorded here when it happens. To prepare for that review, two cheat sheets follow, to be cross-referenced with the "Structure" table above: who is already covered by the transmission, and under which form a named human-review act will be recorded.
+
+**Coverage by transmission**: the three notebooks listed above cover the lake only partially. This matrix cross-references the modules that `lakefile.lean` compiles (`globs := #[.submodules \`Knots, \`Knots_en]`, source of truth: the lakefile glob, not a memorised list) with their coverage and the remaining review gap.
+
+| Module | Covered by | Review gap |
+|--------|------------|------------|
+| `Knots/Basic.lean` (Knot, Link, PD-code, `KnotDiagram.wf`) | KNOTS-01 (visualizations), KNOTS-02 (PD-codes) | Equivalence of representations, `KnotDiagram.wf` |
+| `Knots/Reidemeister.lean` (R1/R2/R3, `ReidemeisterEquiv`) | KNOTS-02 (moves), KNOTS-03 (walls) | Symmetries, formalization of the moves |
+| `Knots/Invariant.lean` (Fox 3-color, transfer R1/R2) | KNOTS-02 (Fox), KNOTS-03 (transfer + marquee) | Marquee `tricolorable_invariant`, named R2 walls |
+| `Knots/Conway.lean` (11n34, mutation, Alexander) | KNOTS-01 (history + Piccirillo) | Formal mutation, Alexander polynomial |
+| `Knots/Slice.lean` (slice, Piccirillo, Freedman) | KNOTS-01 (Piccirillo) | Slice/non-slice proofs, smooth/topological dichotomy |
+| `Knots/Lidman.lean` (11n102, unknotting = 2) | KNOTS-01 (Lidman) | Unknotting-number proofs, `Nat.sInf` |
+| `Knots/MathlibPrerequisites.lean` (prerequisite index) | Not covered by the notebooks | Index only, to be re-read against Mathlib v4.33.0 (`db584cd6`) |
+| `Knots/ArcPartition.lean` (`arcPartition` block + `alexanderRow_sum_zero`, polynomial basis) | KNOTS-03 (R2/R3 walls) | Integrations with `Mathlib.Algebra.Polynomial`, soundness of the polynomial block |
+| `Knots/ConwayPD.lean` (concrete PD codes: 11n34, 11n42 — mutants with trivial Alexander) | KNOTS-01 (Conway + KT), KNOTS-03 (codes) | Formal mutation spheres, complete polynomial computation |
+| `Knots/FigureEight.lean` (4_1 invariants: signed Alexander, determinant 5, non-tricolorability) | KNOTS-01 (4_1 historical), KNOTS-03 (Jones) | Formal soundness of Phase 3 crossing count |
+| `Knots/Jones.lean` (Kauffman bracket, Jones polynomial, Euler planarity) | KNOTS-02 (Fox), KNOTS-03 (Jones) | Formal soundness across all named diagrams |
+| `Knots/Mutation.lean` (Conway mutation: 4-point sphere, 180° rotation) | KNOTS-01 (Conway/KT mutants), KNOTS-03 (mutation) | Soundness of regluing isotopy, formal sphere structure |
+| `Knots/ReidemeisterCombinatorial.lean` (`MoveSequence`, `movesConnects`, `verifyMoves`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Soundness of bounded verifier, enumeration completeness |
+| `Knots/ReidemeisterInvariance.lean` (invariance of `alexanderPolynomialSigned` under R1/R2/R3) | KNOTS-02 (moves), KNOTS-03 (invariance) | Full soundness, Conway ↔ Reidemeister junction |
+| `Knots/ReidemeisterMoves.lean` (`ReidemeisterMove` + `verifyR1Fwd`/`R2Fwd`/`R3Fwd`, `movesConnects_sound`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Bridge to the 8 real `sorry` of the lake (2 Reidemeister, 4 Slice, 2 Lidman), CI baseline `lean-knot.yml` at `"8"` |
+
+**Human-review act to be signed**: when the human review is carried out, it will take the form `Review by <name, affiliation> — date <YYYY-MM-DD> — scope <whole lake / module> — checks: structure / main proofs / i18n FR-EN — overall verdict` and will be inserted into this README. Grid **#13106 criterion 2** is satisfied by the first signed act; no partial act is recorded silently, and the present section remains honest until the act is written.
 
 ## References
 

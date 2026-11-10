@@ -6,7 +6,7 @@ name: Notebook outputs required (H.4 schema)
 #   'Invalid Notebook / outputs is a required property /
 #    Using nbformat v5.10.4 and nbconvert v7.17.1'
 #
-# Le notebook livre (GameTheory-06f-Bounded-Agents-Lean.ipynb) avait 9/9
+# Le notebook livre (Dynamics-05-Agents-Bornes-Lean.ipynb) avait 9/9
 # cellules code SANS la cle `outputs` (pas `outputs: []` vide -- la cle etait
 # absente du dict). Papermill a accepte (validator permissif), n'a rien
 # produit en sortie (kernel `lean4-wsl` hang faute de `.lake/`), et la cle
@@ -31,7 +31,6 @@ name: Notebook outputs required (H.4 schema)
 
 on:
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/**/*.ipynb'
@@ -55,7 +54,7 @@ concurrency:
 jobs:
   detect-changes:
     name: Detect notebook changes (outputs-required)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     # Garde anti-fork : un PR depuis un fork externe ne doit pas declencher
     # ce job. Pattern repris de `notebook-execution-required.yml` pour
     # coherence. Le job est GitHub-hosted (ubuntu-latest) -- le detecteur
@@ -65,6 +64,10 @@ jobs:
     outputs:
       notebooks: ${{ steps.detect.outputs.notebooks }}
       has_notebooks: ${{ steps.detect.outputs.has_notebooks }}
+    # #23349 : borne explicite. Mesure du 2026-11-04 sur les 3 derniers
+    # runs verts de ce job : max 0.22 min. Marge large (le defaut
+    # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -79,7 +82,7 @@ jobs:
             NOTEBOOKS="${{ github.event.inputs.notebook_paths }}"
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
             NOTEBOOKS=$(git diff --name-only --diff-filter=ACM \
-              origin/${{ github.base_ref }} HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+              origin/${{ github.base_ref }}...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
           else
             # push to main : scan complet via git ls-tree du tree courant.
             NOTEBOOKS=$(git ls-tree -r --name-only HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
@@ -103,10 +106,14 @@ jobs:
 
   validate:
     name: Validate 'outputs' key on every code cell
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     needs: detect-changes
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.detect-changes.outputs.has_notebooks > 0
 
+    # #23349 : borne explicite. Mesure du 2026-11-04 sur les 3 derniers
+    # runs verts de ce job : max 3.13 min. Marge large (le defaut
+    # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -128,7 +135,7 @@ jobs:
         # le rc reel).
         run: |
           set +e
-          python scripts/notebook_tools/check_notebook_outputs_required.py \
+          python3 scripts/notebook_tools/check_notebook_outputs_required.py \
             --pr-diff origin/${{ github.base_ref }} HEAD \
             --json 2>&1 | tee /tmp/outputs_required.json
           VALIDATOR_EXIT=${PIPESTATUS[0]}
@@ -146,7 +153,7 @@ jobs:
             exit 1
           fi
 
-          OCCURRENCES=$(python -c "import json; print(json.load(open('/tmp/outputs_required.json'))['occurrences'])")
+          OCCURRENCES=$(python3 -c "import json; print(json.load(open('/tmp/outputs_required.json'))['occurrences'])")
           echo "All notebooks pass: $OCCURRENCES defective code-cell(s) found."
 
       - name: Post validation summary
@@ -200,31 +207,52 @@ jobs:
             }
             core.info(summary);
 
-            // Post/update the PR comment. Wrap in try/catch : un 403 sur
-            // createComment ne doit JAMAIS rougir la gate (cf. lecon
-            // notebook-execution-required -- un cosmetic step ne rougit
+            // #15511 -- le SUCCES ne parle plus. Le resume part dans un
+            // FICHIER ; l'etape suivante decide : section ecrite si
+            // l'organe a quelque chose a signaler, section RETIREE (et rien
+            // ecrit si elle n'existe pas) sur un run vert.
+            // L'echec de cette ecriture ne doit JAMAIS rougir la gate (lecon
+            // notebook-execution-required : un step cosmique ne rougit
             // jamais une execution-verdict step).
             try {
-              if (context.eventName === 'pull_request') {
-                const { data: comments } = await github.rest.issues.listComments({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number,
-                });
-                const marker = 'Notebook outputs-required (H.4 schema):';
-                const existing = comments.find(c =>
-                  c.user.type === 'Bot' && c.body.includes(marker));
-                if (existing) {
-                  await github.rest.issues.updateComment({
-                    owner: context.repo.owner, repo: context.repo.repo,
-                    comment_id: existing.id, body: summary,
-                  });
-                } else {
-                  await github.rest.issues.createComment({
-                    owner: context.repo.owner, repo: context.repo.repo,
-                    issue_number: context.issue.number, body: summary,
-                  });
-                }
-              }
+              fs.writeFileSync('/tmp/outputs_required_summary.md', summary);
+              fs.writeFileSync(
+                '/tmp/outputs_required_state',
+                (status === 'PASS' ? 'success' : 'advisory'));
             } catch (e) {
-              core.warning('Could not post outputs-required summary comment: ' + e.message);
+              core.warning('Could not stage outputs-required summary: ' + e.message);
             }
+
+      # #15511 -- UN SEUL commentaire collant par PR, une section par
+      # organe (`scripts/ci/advisory_sticky.py`). Le succes ne cree aucun
+      # commentaire : il retire sa section, ou ne fait rien s'il n'y en a
+      # pas. Le signal BLOQUANT reste dans le check-run rouge de l'etape
+      # "Run outputs-required check" : ce commentaire n'en est qu'un
+      # recapitulatif, jamais son canal.
+      - name: Publish (or retract) the outputs-required advisory section
+        if: always() && github.event_name == 'pull_request'
+        # #24441 -- la publication est COSMETIQUE : elle ne porte ni le
+        # verdict outputs (qui reste dans le check-run rouge de l'etape
+        # "Run outputs-required check") ni aucun canal de blocage. Une
+        # erreur d'API ici (quota, 5xx, PR fermee entre-temps) ne doit
+        # donc JAMAIS rougir la gate -- c'est le contrat que le commentaire
+        # :206-208 pose pour l'ecriture du resume, et l'etape qui publie
+        # ce resume portait l'inverse. Motif maison : `continue-on-error`
+        # (cf. always-on-guards.yml, always-on-metadata-guards.yml).
+        # `if: always()` reste : un verdict ROUGE doit toujours pouvoir
+        # publier son recapitulatif.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -e
+          if [ ! -f /tmp/outputs_required_state ]; then
+            echo "::warning::outputs-required: no staged summary (validator did not run)."
+            exit 0
+          fi
+          if [ "$(cat /tmp/outputs_required_state)" = "success" ]; then
+            python3 scripts/ci/advisory_sticky.py --pr "$PR" --organ notebook-outputs-required --clear
+          else
+            python3 scripts/ci/advisory_sticky.py --pr "$PR" --organ notebook-outputs-required --body-file /tmp/outputs_required_summary.md
+          fi

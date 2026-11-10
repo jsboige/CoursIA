@@ -143,10 +143,11 @@ jobs:
             MAPS=$(find slides -name slides.md -not -path '*/node_modules/*' -not -path '*/archive/*' -not -path '*/_composition-control/*')
           else
             # Découverte par DIR (intention du commentaire ci-dessus) : un diff qui
-            # touche slides/<dir>/ via son jumeau Marp (slides.marp.md), analysis/
-            # ou images/ impacte le deck Slidev du dir même si slides.md lui-même
-            # n'est pas dans le diff. L'ancien grep fichier-exact faisait sortir
-            # trap 1 (meta-failure) sur ces diffs dir-seulement.
+            # touche slides/<dir>/ via analysis/ ou images/ impacte le deck Slidev
+            # du dir même si slides.md lui-même n'est pas dans le diff. L'ancien
+            # grep fichier-exact faisait sortir trap 1 (meta-failure) sur ces
+            # diffs dir-seulement. (post-#21318 : jumeau Marp retiré -- restent
+            # analysis/ et images/ comme triggers secondaires.)
             DIRS=$(grep -oE '^slides/[^/]+/' <<< "$CHANGED" | grep -v '^slides/_composition-control/' | sort -u || true)
             MAPS=$(for d in $DIRS; do [ -f "${d}slides.md" ] && printf '%s\n' "${d}slides.md"; done)
           fi

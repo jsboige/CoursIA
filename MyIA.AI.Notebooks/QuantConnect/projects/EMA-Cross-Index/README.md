@@ -1,7 +1,7 @@
 # EMA-Cross-Index
 
 **Asset class:** US Equities (S&P 500 ETF)
-**Cloud project ID:** None (local only)
+**Cloud project ID:** 38090937 (mesure #21392 ; projet de contrôle, code d'origine : 38090932)
 
 ## Description
 
@@ -11,9 +11,66 @@ Includes a 3-day cooldown after exit to prevent immediate re-entry on false sign
 EMA 20/60 selected over 20/50 based on robustness testing (IS/OOS ratio = 1.55).
 Slow=60 captures quarterly trends and reduces whipsaws compared to the standard 50-period.
 
+## Paramètres
+
+| Paramètre | Valeurs | Défaut | Rôle |
+|---|---|---|---|
+| `mode` | `strategy`, `spy`, `6040` | `strategy` | `strategy` garde la décision du code ; `spy` détient SPY à 100 % ; `6040` détient SPY à 60 % et BND à 40 %, rééquilibrés au début de chaque mois, une minute après l'ouverture |
+| `start_date` | date `%Y%m%d` | 2015-01-01 | début de la fenêtre |
+| `end_date` | date `%Y%m%d` | 2024-12-31 | fin de la fenêtre |
+
+Les trois modes tracent chaque jour la valeur du portefeuille à l'ouverture de SPY (graphique `shadow`, séries `e0` à `e4`). Sans paramètre, la décision de la stratégie ne change pas : le contrôle ci-dessous le vérifie ordre par ordre.
+
+## Verdict contre références détenues (#21392)
+
+Le protocole a été écrit dans #21392 avant le premier backtest, sur le modèle de #21329. Les deux références tournent dans le même algorithme que la stratégie, sous le même modèle de courtage et avec le même préchauffage de 70 séances. La stratégie investit 95 % du portefeuille, les références 100 % : cet écart fait partie de la règle codée.
+
+Les séries comparées sont la valeur du portefeuille à chaque ouverture de SPY. Les tests passent par `Paradox46Benchmarks/significance.py`, avec un taux sans risque nul :
+
+- écart de Sharpe de Ledoit-Wolf ;
+- bootstrap stationnaire ;
+- écart de moyennes de Newey-West.
+
+Sur chaque fenêtre, la correction de Holm porte sur les six p-valeurs.
+
+Règle de verdict, écrite avant la mesure :
+
+- `BEATS` : écart de Sharpe positif et significatif (Holm < 0,05) contre les deux références ;
+- `NO BEATS` : Sharpe de la stratégie inférieur à celui de SPY détenu ;
+- `INCONCLUSIVE` : tous les autres cas.
+
+**Contrôle d'innocuité : tenu.** En mode `strategy`, sur la fenêtre codée, le code instrumenté reproduit le backtest du code d'origine (`101f5fa746c36af72d10a84efa147289`, projet 38090932) :
+
+- 33 ordres sur 33, sans écart de date, de symbole ni de quantité ;
+- 27 statistiques QC sur 27.
+
+Les ordres de la stratégie (fenêtre codée et hors échantillon) sont tous horodatés à la clôture de New York ; aucun n'est passé à minuit.
+
+| Fenêtre | Séances | Sharpe stratégie (taux nul) | SPY détenu (taux nul) | 60/40 (taux nul) | p Holm (Ledoit-Wolf, SPY / 60/40) | Verdict |
+|---|---|---|---|---|---|---|
+| Codée, 2015-01-02 → 2024-12-31 | 2516 | 0,862 | 0,786 | 0,802 | 1,0 / 1,0 | **INCONCLUSIVE** |
+| Hors échantillon, 2025-01-02 → 2026-07-21 | 387 | 1,010 | 1,034 | 1,158 | 1,0 / 1,0 | **NO BEATS** |
+
+Statistiques QC (calculées par QC avec son propre taux sans risque). Leurs Sharpe ne se comparent pas à ceux de la table du dessus : QC retranche un taux sans risque non nul et part de ses propres séries quotidiennes, alors que le protocole prend un taux nul sur la valeur du portefeuille à l'ouverture. Le classement des portefeuilles peut donc changer d'une table à l'autre, et le verdict se lit sur la table du dessus.
+
+| Fenêtre | Mode | Sharpe QC (taux de QC, autre échelle) | CAGR | Pire baisse | Ordres | Backtest |
+|---|---|---|---|---|---|---|
+| Codée | stratégie | 0,501 | 9,33 % | 17,5 % | 33 | `39d9b0dd71da386114fc64d0046af1f1` |
+| Codée | SPY détenu | 0,533 | 12,97 % | 33,7 % | 1 | `9f91c49c8e124ea3141ea370823bba43` |
+| Codée | 60/40 | 0,441 | 8,41 % | 21,7 % | 201 | `30e513cd0cb6fc38161897a4a2b40a21` |
+| Hors échantillon | stratégie | 0,419 | 10,77 % | 8,3 % | 5 | `fbbed475cd485afc8ec04749c37c638b` |
+| Hors échantillon | SPY détenu | 0,651 | 18,49 % | 18,7 % | 2 | `c4c28921f8ae0a6f2d1413a02da707b7` |
+| Hors échantillon | 60/40 | 0,554 | 12,80 % | 11,2 % | 30 | `5622c03350124887af1d7173efcd8a3a` |
+
+Le backtest hors échantillon a été demandé jusqu'au 2026-10-19, mais il s'arrête le 2026-07-21 : les nœuds QC utilisés coupent les backtests environ 90 jours avant la date du jour. Aucun paramètre n'a été réglé sur cette période.
+
+**Lecture.** Sur la fenêtre codée, la stratégie a le Sharpe ponctuel le plus élevé des trois portefeuilles. Sa pire baisse est près de deux fois plus faible que celle de SPY détenu, mais son CAGR est inférieur. L'écart de Sharpe n'est pas significatif : p brute de Ledoit-Wolf 0,77 contre SPY détenu, intervalle bootstrap à 95 % de −0,38 à +0,52. Hors échantillon, son Sharpe passe sous celui de SPY détenu. Le code actuel ne bat donc aucune des deux références de façon mesurable.
+
 ## Figures du notebook de recherche
 
 Le notebook [`research.ipynb`](research.ipynb) documente la sélection des périodes EMA et la validation de robustesse : grille de Sharpe par périodes (fast/slow), backtest de référence, hypothèses H2 (triple EMA), H3 (filtre volume), H4 (cooldown post-faux-signal), H5 (trailing stop vs sortie EMA), H6 (ajout QQQ), classification des régimes de marché et filtre SPY SMA200. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
+
+Les chiffres de cette section et du tableau « Backtest Metrics » viennent de ce carnet. Ils sont calculés en pandas sur 2015-2026, hors moteur Lean. Plusieurs configurations testées ne sont pas le code actuel : la baseline 20/50 précède la v2.0, et le stop suiveur a été écarté. Ce ne sont pas des verdicts. La mesure du code actuel est la section précédente.
 
 ### H1 — la grille de périodes EMA confirme-t-elle que 20/50 n'est pas optimal ?
 
@@ -82,7 +139,7 @@ Le notebook [`research.ipynb`](research.ipynb) documente la sélection des péri
 
 | Configuration | Sharpe | CAGR | MaxDD | Verdict |
 |---------------|--------|------|-------|---------|
-| **Baseline EMA 20/50** | 0.765 | 8.7 % | -25.5 % | LIVE-current (baseline) |
+| **Baseline EMA 20/50** | 0.765 | 8.7 % | -25.5 % | Ancienne baseline (avant la v2.0) |
 | **EMA 20/60 (OOS robustesse 1.55)** | 0.853 | 9.8 % | -25.6 % | **Live candidate** |
 | **EMA 20/60 + trail 5 % (optimal)** | 0.797 | 9.0 % | -24.2 % | **Live candidate défensif** |
 | SPY Buy & Hold (2015-2026) | ~0.80* | 12.4 % | -33.7 % | Référence |
@@ -98,13 +155,15 @@ Le notebook [`research.ipynb`](research.ipynb) documente la sélection des péri
 lean backtest --project .
 ```
 
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**QC Cloud:** mesuré le 2026-10-19 (#21392), voir la section « Verdict contre références détenues ». Les paramètres `mode`, `start_date` et `end_date` se passent au backtest.
 
 ## Backtest Metrics (2015-2026)
 
+Mesures du carnet de recherche (pandas, hors moteur Lean), pas du code actuel : voir la note de la section « Figures du notebook de recherche ».
+
 | Configuration | Sharpe | CAGR | MaxDD | Verdict |
 |---------------|--------|------|-------|---------|
-| Baseline EMA 20/50 (current main.py) | 0.765 | 8.7 % | -25.5 % | LIVE |
+| Baseline EMA 20/50 (avant la v2.0) | 0.765 | 8.7 % | -25.5 % | Ancienne baseline |
 | **EMA 20/60 (OOS robustesse 1.55)** | **0.853** | **9.8 %** | -25.6 % | **Recommandé** |
 | EMA 20/60 + trail 5 % (optimal défensif) | 0.797 | 9.0 % | -24.2 % | Live candidate |
 | SPY Buy & Hold | ~0.80 | 12.4 % | -33.7 % | Référence bull market |

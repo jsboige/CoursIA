@@ -104,7 +104,7 @@ La reconciliation naturelle padding la série **Infer** sur la série **PyMC** :
 - **Tranche C — `Infer-08b-TrueSkill-Formules-Fermees-CSharp`** : après Tranche A, le
   zero-pad devient cohérent ; reste à retirer le suffixe `-CSharp` redondant →
   `Infer-08b-TrueSkill-Formules-Fermees`. Décider en même temps si l'accrétion `08b` doit
-  être rapprochée de la paire 8 (companion formel de TrueSkill, comme `DecInfer-02-Lean-…`
+  être rapprochée de la paire 8 (companion formel de TrueSkill, comme `DecInfer-01b-Lean-…`
   dans DecisionTheory) et enregistrée comme extension unilatérale.
 - **Tranche D — `Infer-1b-Premiers-Modeles`** : zero-paddé par la Tranche A (`01b`) ;
   statut (extension unilatérale C# vs future paire `PyMC-01b`) à trancher au moment de la
@@ -113,6 +113,14 @@ La reconciliation naturelle padding la série **Infer** sur la série **PyMC** :
 Ordre recommandé : A (mécanique, guard vérifiable) puis C et D (même geste de renommage,
 décisions légères), B en dernier (arbitrage de fond). Chaque tranche = une PR dédiée,
 jamais de composite renommage + contenu.
+
+> **État mesuré au 2026-10-10** — Tranche A exécutée (lane `myia-po-2024:CoursIA-2`, PR dédiée)
+> : les 10 renommages zero-pad sont livrés avec leurs accompagnements (README, navlinks,
+> `zero_pad_series.json` déclare `Infer`, `numbering_exception` retiré des 9 paires twin,
+> guard `check_series_zero_pad.py` exit 0). Le trou symétrique du numéro 6 est conservé.
+> Les tranches B, C et D restent **non couvertes** — arbitrages coordinateur, mapping inchangé
+> ci-dessus. Le statut D (extension unilatérale de `01b`) est laissé ouvert : la Tranche A
+> a paddé le nom, sans trancher le statut de paire.
 
 ## 6. Ce que cette tranche ne fait pas
 

@@ -83,6 +83,14 @@ def test_hot_subset_is_zero():
     If this fails: an FR notebook edit landed on a cell that has a
     translation, without resyncing its CSV row. Fix per-cell (see the issue
     procedure) — do NOT run a global re-extraction, it orphans translations.
+
+    The per-cell resync edits ``translations/**/*.csv``, which
+    ``translation-guard.yml`` flags as a translation-owned hand-edit. Both
+    organs are sound; the contradiction is resolved by the guard's dual-key
+    override (#10332): comment marker ``[TRANSLATION-OVERRIDE] <motif>`` AND
+    label ``translation-override``. With ``translation-sync.yml`` on maintainer
+    hold since 2026-08-12 (#15198, #10038), the override is the only open path
+    while the hold stands — never a silent hand-edit.
     """
     translations = REPO_ROOT / "translations"
     notebooks = REPO_ROOT / "MyIA.AI.Notebooks"
@@ -94,6 +102,10 @@ def test_hot_subset_is_zero():
     assert hot == [], (
         f"{len(hot)} hot cell(s): SRC_DRIFT on rows with deposited "
         f"translations — resync per-cell (never global extraction, #13551). "
+        f"That resync edits translations/**, which translation-guard.yml "
+        f"flags: take its dual-key override (label `translation-override` + "
+        f"comment marker `[TRANSLATION-OVERRIDE] <motif>`, #10332) while "
+        f"translation-sync.yml is on hold (#15198/#10038). "
         f"First offenders: {[ (a['notebook'], a['cell_id']) for a in hot[:5] ]}"
     )
 

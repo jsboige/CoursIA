@@ -119,6 +119,26 @@ Les traces des runs (plans, empreintes, graphiques, statistiques, compteurs) son
 
 Le point 6 de #19450 demandait le gel de `base` à la date du verdict. `base` lisant le VIX du jour même, c'est la variante `lag`, défaut du code depuis #19837, qui est gelée à sa place, à la date de son verdict. Le commit gelé est celui de `main` qui porte ce `main.py` (empreinte revérifiée : `09918b3f087c…`, celle des runs du verdict). Elle est inscrite au [registre du suivi en ombre](../../ML-Training-Pipeline/shadow/registry.json) (#18923) sous l'identifiant `lsh-lag`, sans paramètre, gelée au 2026-10-09 ; premier passage à la première séance de novembre.
 
+## Stop de la jambe courte (#19455) — mesure du 2026-10-14, verdict MÉCANIQUEMENT PROUVÉ ET RETENU
+
+**Ce qui est mesuré.** Le défaut diagnostiqué par #19450 : en données journalières, l'ordre de vente de la rotation courte du lundi (`Rebalance_Short`, passé +30 min) ne s'exécute qu'à la clôture du jour même ; `RiskCheck_Short` (+160 min) trouve alors `not Invested` et efface le suivi `_entry` — la position vendue à la clôture se retrouve **sans stop** jusqu'à la rotation suivante. Le constat de #19450 : 0 position courte sur 95 sortie par stop. La correction minimale #19481 (`_short_pending` : estampillée à la commande, purgée à la rotation, le garde « ordre en attente » conserve `_entry`) est sur `main` depuis le 2026-10-08. #19837 en a mesuré l'effet sur la fenêtre 2018-2026 (Sharpe quasi inchangé, pire baisse −61,6 % → −58,1 %), sans mesurer le mécanisme lui-même. Cette section mesure **la mécanique** du correctif sur une fenêtre jamais servie.
+
+**Protocole** (règle inscrite sur #19455 avant le premier backtest, c.6171458779) : fenêtre `2010-01-01 → 2017-12-31` — antérieure à celle de #19450 (2018-01-01 → 2026-09-25). **Correction minimale seule** : plafond court 60 % inchangé, mode VIX `lag` (défaut du code depuis #19837) — une seule variable par run ; la variante de taille, si le fix minimal s'avère insuffisant, sera un grain séparé avec sa propre préinscription. Deux bras, même harnais QC Cloud que #19450, frais du courtier par défaut, cash 100 000 $ : bras `base` = `main` **moins** les 4 retouches de #19481 (projet 37826954, empreinte `c4e6a870f8d7`), bras `fix` = `main` (projet 37826955, empreinte `1869a3af73f1`) — l'écart entre les deux fichiers, vérifié par diff, porte exactement le correctif et rien d'autre. Instrumentation identique dans les deux bras (compteurs `Short entries` / `Short stop exits` exposés en statistiques d'exécution), posée uniquement dans les copies QC Cloud, jamais dans le dépôt. Référence : SPY détenu, même fenêtre, même harnais (`FourSleeve774Benchmarks`, mode `spy`, projet 37353266).
+
+**Résultats.**
+
+| Bras | Sharpe (rf nul) | CAGR | Pire baisse | Entrées courtes | Sorties par stop |
+|---|---|---|---|---|---|
+| `base` (sans le correctif) | 0,642 | 11,483 % | 22,500 % | 59 | 0 |
+| `fix` (main) | 0,698 | 12,366 % | 20,400 % | 58 | 10 |
+| SPY détenu | 0,783 | 14,113 % | 18,600 % | — | — |
+
+La signature du défaut se reproduit à l'identique sur la fenêtre fraîche : le bras `base` n'enregistre **aucune** sortie par stop en 59 entrées courtes — le garde `RiskCheck_Short` purge le `_entry` de chaque position vendue à la clôture avant que le stop puisse jamais servir (le constat de #19450 sur 2018-2026 : 0/95). Le bras `fix` en enregistre **10 sur 58** (≈ 17 % des entrées courtes) : le stop de la jambe courte opère désormais. Et il ne coûte rien : Sharpe 0,642 → 0,698, CAGR +0,9 point, pire baisse 22,5 % → 20,4 % — les sorties par stop coupent des positions qui dérivaient sans protection. Le contrôle SPY (détenu, même fenêtre : 0,783 / 14,1 % / 18,6 %) reste au-dessus des deux bras : cohérent avec #19450 et #19837, le correctif répare le mécanisme de gestion du risque, il ne fabrique pas d'edge — la stratégie ne bat pas l'indice détenu sur cette fenêtre non plus.
+
+**Verdict : MÉCANIQUEMENT PROUVÉ ET RETENU.** Selon la règle préinscrite (c.6171458779) : 10 sorties par stop ≥ 1 → le mécanisme est prouvé ; Sharpe du `fix` 0,698 ≥ Sharpe de la `base` 0,642 → le correctif minimal #19481 est retenu sans arbitrage supplémentaire — il est déjà sur `main` depuis le 2026-10-08, la mesure confirme l'adoption. La variante de taille de la jambe courte reste un grain séparé si le plafond de 60 % doit être réexaminé.
+
+Les traces des runs (plans, empreintes, statistiques, compteurs) sont conservées hors dépôt, sous `QC-traces/19455-lsh-stop-short/`.
+
 ## Figures du notebook de recherche
 
 Ces figures sortent du moteur simplifié `backtest_lsh()` (SPY à la place des 4 titres, pas de vente à découvert) : elles décrivent le régime VIX/SPY, pas le code de `main.py` (voir la section précédente). Le notebook [`research.ipynb`](research.ipynb) documente l'analyse complète : backtest de référence sur SPY/GLD/VIX, sensibilité aux hyperparamètres (sweep `score_threshold` H1, `ext_k` H2), validation walk-forward et performance par régime de marché. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).

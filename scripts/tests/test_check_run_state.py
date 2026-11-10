@@ -171,6 +171,12 @@ def test_main_exit_codes_sans_reseau(monkeypatch, capsys):
     dans la vue latest, 2 = erreur d'instrument."""
     import scripts.check_run_state as m
 
+    # #21463 : main() lit AUSSI le jeu des checks requis (protection de
+    # branche). On le moque a None (indeterminable) pour garder ce test SANS
+    # RESEAU : le code de sortie porte sur la vue latest seule, et
+    # missing_required (None) n'y participe pas.
+    monkeypatch.setattr(m, "_required_contexts", lambda *a, **k: None)
+
     monkeypatch.setattr(m, "collect", lambda pr=None, sha=None:
                         ("94e31d7e", REST_16232_ALWAYS_ON))
     assert m.main(["--sha", "94e31d7e"]) == 0
@@ -188,6 +194,50 @@ def test_main_exit_codes_sans_reseau(monkeypatch, capsys):
         raise RuntimeError("gh api ... -> 1: not found")
     monkeypatch.setattr(m, "collect", boom)
     assert m.main(["--sha", "ab"]) == 2
+
+
+def test_main_missing_required_check_is_non_green(monkeypatch, capsys):
+    """#21463 : un check requis ABSENT de la tete (jamais poste) rend le
+    verdict NON-vert (exit 1), meme si la vue latest est toute verte -- la
+    classe 'gate absent' que le fold par nom ne voit pas (la liste plate ne la
+    contient tout simplement pas)."""
+    import scripts.check_run_state as m
+
+    vert = [{"name": "Always-on guards", "conclusion": "success",
+             "started_at": "T", "id": 1}]
+    monkeypatch.setattr(m, "collect", lambda pr=None, sha=None: ("ab", vert))
+    # La tete ne porte PAS `PR gate`, mais la branche l'exige :
+    monkeypatch.setattr(m, "_required_contexts", lambda *a, **k: {"PR gate"})
+    assert m.main(["--sha", "ab"]) == 1
+    out = capsys.readouterr().out
+    assert "missing_required" in out and "PR gate" in out
+
+
+def test_main_missing_required_indeterminable_stays_green(monkeypatch, capsys):
+    """#21463 : protection de branche illisible (None) = aucune absence n'est
+    AFFIRMEE -- le verdict reste vert si la vue latest l'est. Un 403 ne doit
+    ni blanchir ni rougir la classe gate-absent (fail-closed cote
+    determination, pas cote verdict)."""
+    import scripts.check_run_state as m
+
+    vert = [{"name": "Always-on guards", "conclusion": "success",
+             "started_at": "T", "id": 1}]
+    monkeypatch.setattr(m, "collect", lambda pr=None, sha=None: ("ab", vert))
+    monkeypatch.setattr(m, "_required_contexts", lambda *a, **k: None)
+    assert m.main(["--sha", "ab"]) == 0
+
+
+def test_render_missing_required_tri_state():
+    """#21463 : `missing_required` distingue TROIS etats -- None (protection
+    illisible), [] (aucun manque), et une liste non vide (absence reelle). Les
+    deux premiers doivent rester indiscernables d'un vert."""
+    import scripts.check_run_state as m
+
+    legs = [{"name": "Always-on guards", "conclusion": "success",
+             "started_at": "T", "id": 1}]
+    assert m.render("ab", legs, None)["missing_required"] is None
+    assert m.render("ab", legs, {"Always-on guards"})["missing_required"] == []
+    assert m.render("ab", legs, {"PR gate"})["missing_required"] == ["PR gate"]
 
 
 def test_collect_reads_every_page(monkeypatch):

@@ -2,8 +2,8 @@
   Chemins de swaps sur les jeux 2×2 ordinaux — vérificateur certifié
   =================================================================
 
-  Compagnon Lean du notebook `GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb`
-  (grain #12222, suite de GameTheory-3b « Chambres et Murs »).
+  Compagnon Lean du notebook `GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb`
+  (grain #12222, section 10-bis du carnet fusionné).
 
   Répartition des rôles, que le notebook documente explicitement :
   - le **générateur** (Python, dans le notebook) explore l'espace des

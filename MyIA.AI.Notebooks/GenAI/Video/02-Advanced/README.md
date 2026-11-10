@@ -12,7 +12,7 @@ Ce module explore les modèles de génération vidéo de pointe : HunyuanVideo, 
 |-------------|--------|
 | Kernel | Python 3 |
 | Durée estimée | ~6-8h |
-| GPU requis | 8-24GB |
+| GPU requis | 10-24GB selon le carnet (voir le tableau ci-dessous) |
 
 > Le décompte canonique des notebooks de la série réside dans `CATALOG-STATUS.json` du dépôt, pas dans cette page.
 
@@ -21,9 +21,9 @@ Ce module explore les modèles de génération vidéo de pointe : HunyuanVideo, 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------ |
 | 1 | [02-1-HunyuanVideo-Generation](02-1-HunyuanVideo-Generation.ipynb) | Génération Hunyuan | Local GPU | ~18GB |
-| 2 | [02-2-LTX-Video-Lightweight](02-2-LTX-Video-Lightweight.ipynb) | Génération légère LTX | Local GPU | ~8GB |
+| 2 | [02-2-LTX-Video-Lightweight](02-2-LTX-Video-Lightweight.ipynb) | Génération légère LTX | Local GPU | 16GB (pic mesuré : 14.1GB) |
 | 3 | [02-3-Wan-Video-Generation](02-3-Wan-Video-Generation.ipynb) | Génération Wan | Local GPU | ~10GB |
-| 4 | [02-4-SVD-Image-to-Video](02-4-SVD-Image-to-Video.ipynb) | SVD (Image → Vidéo) | ComfyUI | ~10GB |
+| 4 | [02-4-SVD-Image-to-Video](02-4-SVD-Image-to-Video.ipynb) | SVD (Image → Vidéo) | Local GPU (diffusers) | ~10GB |
 | 5 | [02-5-LTX2-Audiovisual](02-5-LTX2-Audiovisual.ipynb) | LTX-2 audio+vidéo conjoint (22B) | Local GPU | ~14-24GB (fp8-cast natif, GGUF Q4 en prod) |
 | 6 | [02-6-MiniMax-H3-Architecture-Licensing](02-6-MiniMax-H3-Architecture-Licensing.ipynb) | Architecture et bifurcation juridique MiniMax H3 (licence poids ≠ ToS service) | Étude documentaire (CPU) | — |
 | 7 | [02-7-CogVideoX-Text-to-Video](02-7-CogVideoX-Text-to-Video.ipynb) | Génération texte → vidéo CogVideoX-2b (Apache-2.0, couple discriminant Prong B) | Local GPU | ~16-20GB |
@@ -38,8 +38,8 @@ docker-compose up -d
 Accès : http://localhost:8188
 
 ### GPU Requirements
-- **Minimum** : 8 GB VRAM (LTX Video)
-- **Recommandé** : 10-12 GB VRAM (SVD, Wan Video)
+- **Minimum** : 10 GB VRAM pour 02-3 (Wan) et 02-4 (SVD) ; **16 GB pour le carnet 02-2** (LTX Video), pic mesuré 14.1 GB (RTX 4090, 704x480, 25 frames, bf16) — sous 16 GB, la cellule de chargement du carnet bascule en offload CPU
+- **Recommandé** : 10-12 GB VRAM (SVD, Wan Video), 16-24 GB dès que 02-2 est au programme
 - **Optimal** : 18+ GB VRAM (HunyuanVideo, CogVideoX-2b)
 
 ### Dépendances
@@ -69,7 +69,7 @@ pip install -r requirements-comfyui.txt
 ### LTX Video (Lightweight)
 - **Spécialité** : Rapidité, efficacité
 - **Durée** : Courtes vidéos
-- **VRAM** : ~8GB
+- **VRAM** : 16 GB ou plus (pic mesuré : 14.1 GB sur RTX 4090, 704x480, 25 frames, bf16)
 
 ### Wan Video
 - **Spécialité** : Animation, mouvement fluide
@@ -104,7 +104,7 @@ pip install -r requirements-comfyui.txt
 | Modèle | Qualité | Vitesse | VRAM | Cas d'usage |
 |--------|---------|---------|------|-------------|
 | HunyuanVideo | Exceptionnelle | Lent | ~18GB | Production premium |
-| LTX Video | Bonne | Rapide | ~8GB | Prototypage rapide |
+| LTX Video | Bonne | Rapide | 16GB (pic mesuré : 14.1GB) | Prototypage rapide |
 | Wan Video | Bonne | Moyen | ~10GB | Animation fluide |
 | SVD | Variable | Moyen | ~10GB | Animation d'images |
 | CogVideoX-2b | Bonne | Moyen | ~16-20GB | Texte → vidéo open weights (Apache-2.0) |

@@ -123,6 +123,7 @@ Sur la fenêtre codée, l'écart de Sharpe (+0,067) dépasse le seuil de 0,05 : 
 
 - `main.py` - Stratégie (v3.2, confirmée comme la meilleure)
 - `research.ipynb` - Optimisation multi-lookback et tests d'univers étendu
+- `quantbook.ipynb` - Reprise de l'analyse de `research.ipynb` sur les données natives QuantConnect (lookback simple ou composite, actif risk-off, quatrième actif, filtre VIX)
 
 ## Références
 

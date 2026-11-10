@@ -7,11 +7,10 @@
   slices 4+ (polynomial computation `alexander_unknot`, `alexander_trefoil`,
   `det_two_aux`/`det_three_aux`) remain in Conway.lean. The FR sibling
   `Knots/ArcPartition.lean` reproduces the body verbatim; only this file's
-  header, its `_en` imports and its `Knots_en` namespace are translated.
-  The body docstrings are, at this slice, the French text verbatim on both
-  sides — an English translation of them is optional (`code-style.md`) and
-  is not claimed here. `check_i18n_siblings.py` flags the pair `HALF-DONE`,
-  the only such pair in the lake; body byte-identity is preserved.
+  header, its `_en` imports, its `Knots_en` namespace and its docstrings are
+  translated. The body docstrings are the English translation of the French
+  ones — `check_i18n_siblings.py` no longer flags the pair `HALF-DONE`, and
+  the byte-identity of the body is preserved.
 
   Origin: Conway.lean l.65-979 (915 lines), reference commit origin/main
   71514d576. No reformatting, no tactic modified. -/
@@ -23,31 +22,31 @@ import Mathlib.Algebra.Polynomial.Basic
 
 namespace Knots_en
 
-/-- Fusionne les classes contenant x et y d'une partition d'étiquettes. -/
+/-- Merges the classes containing x and y of a partition of labels. -/
 def mergePair (P : List (List Nat)) (x y : Nat) : List (List Nat) :=
   let keep := P.filter (fun C => !C.contains x && !C.contains y)
   let hit := P.filter (fun C => C.contains x || C.contains y)
   keep ++ [hit.flatten.eraseDups]
 
-/-- Les arcs d'un diagramme : partition des étiquettes d'arêtes par la
-fermeture des paires de passage-dessus (e2 ~ e4 en chaque croisement). -/
+/-- The arcs of a diagram: partition of the edge labels by closing the
+over-strand pairs (e2 ~ e4 at each crossing). -/
 def arcPartition (d : KnotDiagram) : List (List Nat) :=
   let singles := (List.range d.numEdges).map (fun i => [i + 1])
   let pairs := d.crossings.map (fun c => (c.e2, c.e4))
   pairs.foldl (fun P p => mergePair P p.1 p.2) singles
 
-/-- La fusion de classes est symétrique : fusionner selon `(x, y)` ou `(y, x)`
-    produit la même partition. Première brique de l'invariance R3
-    (issue #16650) : la chirurgie réécrit les paires de passage-dessus du
-    triangle avec des orientations qui diffèrent d'un diagramme à l'autre,
-    et l'argument de réindexation exige que l'orientation d'une paire ne
-    change pas la partition obtenue. -/
+/-- Merging classes is symmetric: merging by `(x, y)` or by `(y, x)`
+    yields the same partition. First brick of the R3 invariance
+    (issue #16650): the surgery rewrites the over-strand pairs of the
+    triangle with orientations that differ from one diagram to another,
+    and the reindexing argument requires that the orientation of a pair
+    does not change the partition obtained. -/
 theorem mergePair_symm (P : List (List Nat)) (x y : Nat) :
     mergePair P x y = mergePair P y x := by
   simp [mergePair, Bool.and_comm, Bool.or_comm]
 
-/-- La découpe en `take`/cons/`drop` restitue la liste : lecture « liste
-    pure » du voisinage de l'indice `i`, prouvée par induction sur la liste. -/
+/-- The `take`/cons/`drop` split gives the list back: a "pure list"
+    reading of the neighbourhood of index `i`, proved by induction on the list. -/
 theorem take_cons_drop_eq {α : Type _} (l : List α) (i : Nat)
     (hi : i < l.length) :
     l.take i ++ [l.get ⟨i, hi⟩] ++ l.drop (i + 1) = l := by
@@ -63,12 +62,12 @@ theorem take_cons_drop_eq {α : Type _} (l : List α) (i : Nat)
       rw [List.take_succ_cons, List.drop_succ_cons, hget, List.cons_append]
       exact congrArg (fun t => a :: t) (ih n hn)
 
-/-- Le repli `arcPartition` est insensible à l'orientation d'une paire
-    isolée : renverser la paire en position `i` ne change pas la partition
-    produite. C'est la traduction au niveau du repli de `mergePair_symm` —
-    la chirurgie R3 connexe réécrit les paires du triangle avec des
-    orientations qui diffèrent d'un diagramme à l'autre, et ce lemme absorbe
-    ces différences (issue #16650, deuxième brique). -/
+/-- The `arcPartition` fold is insensitive to the orientation of an
+    isolated pair: reversing the pair at position `i` does not change the
+    produced partition. This is the fold-level counterpart of
+    `mergePair_symm` — the related R3 surgery rewrites the triangle's pairs
+    with orientations that differ from one diagram to another, and this
+    lemma absorbs those differences (issue #16650, second brick). -/
 theorem foldl_mergePair_swap (pairs : List (Nat × Nat)) (i : Nat)
     (hi : i < pairs.length) (P₀ : List (List Nat)) :
     (pairs.take i ++ [(pairs.get ⟨i, hi⟩).swap] ++ pairs.drop (i + 1)).foldl
@@ -86,51 +85,49 @@ theorem foldl_mergePair_swap (pairs : List (Nat × Nat)) (i : Nat)
     rw [mergePair_symm]
   rw [← hmid, take_cons_drop_eq pairs i hi]
 
-/-! #### Le fait de Fox : la paire de dessus partage une classe d'arcs
+/-! #### Fox's fact: the over-strand pair shares an arc class
 
-La docstring d'`alexanderEntry` avance que « chaque ligne somme à zéro ».
-Ce n'est pas une propriété de la ligne seule : c'est la conséquence d'un fait
-structurel de `arcPartition` — en chaque croisement, les deux étiquettes de
-dessus `e2` et `e4` appartiennent à une même classe. `mergePair` fusionne
-précisément cette paire, et le repli ne fait ensuite qu'unir des classes,
-jamais en scinder une : c'est la traduction combinatoire de la relation de
-Wirtinger. Les lemmes qui suivent l'établissent pour tout diagramme dont les
-étiquettes d'arêtes vivent dans la plage `1..numEdges` (cf `EdgesInRange`).
--/
+The docstring of `alexanderEntry` states that "each row sums to zero".
+This is not a property of the row alone: it is the consequence of a
+structural fact about `arcPartition` — at each crossing, the two over-strand
+labels `e2` and `e4` belong to the same class. `mergePair` merges precisely
+that pair, and the fold then only ever joins classes, never splits one: this
+is the combinatorial translation of the Wirtinger relation. The lemmas that
+follow establish it for every diagram whose edge labels live in the range
+`1..numEdges` (cf `EdgesInRange`).-/
 
-/-- Deux étiquettes d'arêtes partagent une classe de la partition `P`. -/
+/-- Two edge labels share a class of the partition `P`. -/
 def SameClass (P : List (List Nat)) (x y : Nat) : Prop :=
   ∃ C ∈ P, x ∈ C ∧ y ∈ C
 
-/-- L'étiquette `z` est portée par au moins une classe de `P`. -/
+/-- The label `z` is carried by at least one class of `P`. -/
 def Covered (P : List (List Nat)) (z : Nat) : Prop := ∃ C ∈ P, z ∈ C
 
-/-- Étape du repli de `arcPartition` : fusionner la paire de dessus. -/
+/-- Step of the `arcPartition` fold: merge the over-strand pair. -/
 def mergeStep (P : List (List Nat)) (p : Nat × Nat) : List (List Nat) :=
   mergePair P p.1 p.2
 
-/-- Forme dépliée de `mergePair` : les classes intactes, puis la classe
-fusionnée. -/
+/-- Unfolded form of `mergePair`: the intact classes, then the merged class. -/
 lemma mergePair_eq (P : List (List Nat)) (x y : Nat) :
     mergePair P x y =
       (P.filter (fun C => !C.contains x && !C.contains y)) ++
       [(P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups] := rfl
 
-/-- La classe fusionnée porte toute étiquette d'une classe du filtre `hit`. -/
+/-- The merged class carries every label of a class of the `hit` filter. -/
 lemma mem_merged {P : List (List Nat)} {C : List Nat} {z x y : Nat}
     (hC : C ∈ P) (hz : z ∈ C) (hxy : (C.contains x || C.contains y) = true) :
     z ∈ (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups := by
   rw [List.mem_eraseDups, List.mem_flatten]
   exact ⟨C, List.mem_filter.mpr ⟨hC, hxy⟩, hz⟩
 
-/-- Une classe qui ne porte ni `x` ni `y` reste intacte dans `keep`. -/
+/-- A class carrying neither `x` nor `y` stays intact in `keep`. -/
 lemma keep_filter {P : List (List Nat)} {C : List Nat} {x y : Nat}
     (hC : C ∈ P) (hmem : ¬(C.contains x || C.contains y) = true) :
     C ∈ (P.filter (fun C => !C.contains x && !C.contains y)) := by
   refine List.mem_filter.mpr ⟨hC, ?_⟩
   simpa using hmem
 
-/-- `mergePair` ne fait pas disparaître une étiquette déjà couverte. -/
+/-- `mergePair` does not make an already covered label disappear. -/
 lemma covered_mergePair {P : List (List Nat)} {x y z : Nat} (h : Covered P z) :
     Covered (mergePair P x y) z := by
   obtain ⟨C, hC, hz⟩ := h
@@ -141,8 +138,7 @@ lemma covered_mergePair {P : List (List Nat)} {x y z : Nat} (h : Covered P z) :
     rw [mergePair_eq, List.mem_append]; left
     exact keep_filter hC hmem
 
-/-- `mergePair` ne scinde aucune classe : deux étiquettes qui partageaient une
-classe continuent de la partager. -/
+/-- `mergePair` splits no class: two labels that shared a class keep sharing it. -/
 lemma sameClass_mergePair {P : List (List Nat)} {x y a b : Nat}
     (h : SameClass P a b) : SameClass (mergePair P x y) a b := by
   obtain ⟨C, hC, ha, hb⟩ := h
@@ -153,9 +149,9 @@ lemma sameClass_mergePair {P : List (List Nat)} {x y a b : Nat}
     rw [mergePair_eq, List.mem_append]; left
     exact keep_filter hC hmem
 
-/-- `mergePair` réunit effectivement `x` et `y` dans une même classe, dès lors
-que l'un et l'autre sont couverts (le filtre `hit` n'est alors pas vide et la
-classe fusionnée les porte tous les deux). -/
+/-- `mergePair` does put `x` and `y` into the same class, as soon as both are
+covered (the `hit` filter is then non-empty and the merged class carries both
+of them). -/
 lemma sameClass_mergePair_self {P : List (List Nat)} {x y : Nat}
     (hx : Covered P x) (hy : Covered P y) : SameClass (mergePair P x y) x y := by
   obtain ⟨Cx, hCx, hx'⟩ := hx
@@ -167,14 +163,14 @@ lemma sameClass_mergePair_self {P : List (List Nat)} {x y : Nat}
   refine ⟨_, ?_, mem_merged hCx hx' hmx, mem_merged hCy hy' hmy⟩
   rw [mergePair_eq, List.mem_append]; right; exact List.mem_singleton.mpr rfl
 
-/-- Le repli préserve l'appartenance partagée. -/
+/-- The fold preserves shared membership. -/
 lemma sameClass_foldl {pairs : List (Nat × Nat)} {P : List (List Nat)} {a b : Nat}
     (h : SameClass P a b) : SameClass (pairs.foldl mergeStep P) a b := by
   induction pairs generalizing P with
   | nil => exact h
   | cons p ps ih => rw [List.foldl_cons]; exact ih (sameClass_mergePair h)
 
-/-- Toute paire rencontrée pendant le repli finit dans une même classe. -/
+/-- Every pair met during the fold ends up in the same class. -/
 lemma sameClass_foldl_of_mem {pairs : List (Nat × Nat)} {P : List (List Nat)}
     (hcover : ∀ q ∈ pairs, Covered P q.1 ∧ Covered P q.2) :
     ∀ q ∈ pairs, SameClass (pairs.foldl mergeStep P) q.1 q.2 := by
@@ -192,40 +188,39 @@ lemma sameClass_foldl_of_mem {pairs : List (Nat × Nat)} {P : List (List Nat)}
                         covered_mergePair (hcover r (List.mem_cons.mpr (Or.inr hr))).2⟩)
           q hqs
 
-/-! ### Commutation de deux fusions — la reformulation `SameClass`
+/-! ### Commutation of two merges — the `SameClass` reformulation
 
-Le repli de `arcPartition` applique les paires de dessus dans l'ordre des
-croisements. `foldl_mergePair_swap` (ci-dessus) montre qu'un échange
-adjacent de paires préserve la liste à un `take`/`drop` près — ce n'est pas
-l'égalité des listes : l'ordre d'apparition dans la classe fusionnée
-diffère (contre-exemple `P = [[1,3],[2],[4]]`, paires `(1,2)` puis `(3,4)` :
-la classe géante est `[4,1,3,2]` dans un ordre et `[2,1,3,4]` dans l'autre
-— issue #16650). Ce qui commute exactement, c'est la relation d'équivalence
-sous-jacente : deux étiquettes partagent une classe finale dans un ordre
-d'application ssi elles en partagent une dans l'autre. Le théorème
-`mergePair_mergePair_comm_equiv` l'établit via une caractérisation complète
-de `SameClass` après deux fusions (`sameClass_two_merges_iff`), dont la
-forme est invariante par échange des deux groupes.
--/
+The fold of `arcPartition` applies the over-strand pairs in the order of the
+crossings. `foldl_mergePair_swap` (above) shows that an adjacent swap of
+pairs preserves the list up to a `take`/`drop` — this is not list equality:
+the order of appearance in the merged class differs (counter-example
+`P = [[1,3],[2],[4]]`, pairs `(1,2)` then `(3,4)`: the giant class is
+`[4,1,3,2]` in one order and `[2,1,3,4]` in the other — issue #16650). What
+commutes exactly is the underlying equivalence relation: two labels share a
+final class under one application order if and only if they share one under
+the other. The theorem `mergePair_mergePair_comm_equiv` establishes it via a
+complete characterisation of `SameClass` after two merges
+(`sameClass_two_merges_iff`), whose form is invariant under swapping the
+two groups.-/
 
-/-- `z` vit dans une classe de `P` qui porte `x` ou `y` : c'est exactement
-la condition d'atterrir dans la classe fusionnée de `mergePair P x y`. -/
+/-- `z` lives in a class of `P` carrying `x` or `y`: this is exactly the
+condition for landing in the merged class of `mergePair P x y`. -/
 def Touches (P : List (List Nat)) (x y z : Nat) : Prop :=
   ∃ C ∈ P, z ∈ C ∧ ((C.contains x || C.contains y) = true)
 
-/-- Une même classe de `P` porte une étiquette du groupe `{a, b}` et une du
-groupe `{c, d}` : les deux fusions produisent alors une classe unique au
-lieu de deux classes séparées. -/
+/-- One and the same class of `P` carries a label of the group `{a, b}` and one
+of the group `{c, d}`: the two merges then produce a single class instead of
+two separate classes. -/
 def GroupsLinked (P : List (List Nat)) (a b c d : Nat) : Prop :=
   ∃ C ∈ P, ((C.contains a || C.contains b) = true) ∧
     ((C.contains c || C.contains d) = true)
 
-/-- Un « hit » de classe, lu en appartenances. -/
+/-- A class "hit", read as memberships. -/
 lemma hit_iff_mem {C : List Nat} {x y : Nat} :
     ((C.contains x || C.contains y) = true) ↔ (x ∈ C ∨ y ∈ C) := by
   rw [Bool.or_eq_true, List.contains_iff_mem, List.contains_iff_mem]
 
-/-- Appartenance à la classe fusionnée, caractérisée sur `P`. -/
+/-- Membership in the merged class, characterised on `P`. -/
 lemma mem_fused_iff {P : List (List Nat)} {x y z : Nat} :
     z ∈ (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups ↔
       Touches P x y z := by
@@ -237,8 +232,8 @@ lemma mem_fused_iff {P : List (List Nat)} {x y z : Nat} :
   · rintro ⟨C, hC, hz, hcond⟩
     exact ⟨C, List.mem_filter.mpr ⟨hC, hcond⟩, hz⟩
 
-/-- `GroupsLinked` se lit depuis le groupe `{a, b}` : une classe porte
-alors `c` ou `d`. -/
+/-- `GroupsLinked` reads from the group `{a, b}`: a class then carries
+`c` or `d`. -/
 lemma groupsLinked_iff {P : List (List Nat)} {a b c d : Nat} :
     GroupsLinked P a b c d ↔ (Touches P a b c ∨ Touches P a b d) := by
   constructor
@@ -251,13 +246,13 @@ lemma groupsLinked_iff {P : List (List Nat)} {a b c d : Nat} :
     · exact ⟨C, hC, hab, by rw [hit_iff_mem]; exact Or.inl hc⟩
     · exact ⟨C, hC, hab, by rw [hit_iff_mem]; exact Or.inr hd⟩
 
-/-- `GroupsLinked` est symétrique dans l'échange des deux groupes. -/
+/-- `GroupsLinked` is symmetric under swapping the two groups. -/
 lemma groupsLinked_symm {P : List (List Nat)} {a b c d : Nat} :
     GroupsLinked P a b c d ↔ GroupsLinked P c d a b := by
   constructor <;> rintro ⟨C, hC, h1, h2⟩ <;> exact ⟨C, hC, h2, h1⟩
 
-/-- Quand les groupes ne sont pas reliés, la classe fusionnée du groupe
-`{a, b}` ne porte ni `c` ni `d`. -/
+/-- When the groups are not linked, the merged class of the group `{a, b}`
+carries neither `c` nor `d`. -/
 lemma not_mem_fused_of_not_linked {P : List (List Nat)} {a b c d : Nat}
     (h : ¬ GroupsLinked P a b c d) :
     ¬ (c ∈ (P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups ∨
@@ -266,9 +261,8 @@ lemma not_mem_fused_of_not_linked {P : List (List Nat)} {a b c d : Nat}
     (hmem.elim (fun hc => Or.inl (mem_fused_iff.mp hc))
                (fun hd => Or.inr (mem_fused_iff.mp hd))))
 
-/-- `SameClass` après une fusion, caractérisé sur la partition d'origine :
-une classe commune laissée intacte, ou deux étiquettes happées toutes deux
-par la fusion. -/
+/-- `SameClass` after a merge, characterised on the original partition: a common
+class left intact, or two labels both swallowed by the merge. -/
 lemma sameClass_mergePair_iff {P : List (List Nat)} {x y u v : Nat} :
     SameClass (mergePair P x y) u v ↔
       (∃ C ∈ P, u ∈ C ∧ v ∈ C ∧ ¬((C.contains x || C.contains y) = true)) ∨
@@ -289,9 +283,9 @@ lemma sameClass_mergePair_iff {P : List (List Nat)} {x y u v : Nat} :
     · exact ⟨_, by rw [List.mem_append]; exact Or.inr (List.mem_singleton.mpr rfl),
         mem_fused_iff.mpr hu, mem_fused_iff.mpr hv⟩
 
-/-- `Touches` à travers une première fusion `{a, b}` : soit une classe
-intacte (hors du groupe `{a, b}`) qui porte `c` ou `d`, soit la classe
-fusionnée du groupe `{a, b}` elle-même. -/
+/-- `Touches` across a first merge `{a, b}`: either an intact class (outside the
+group `{a, b}`) carrying `c` or `d`, or the merged class of the group
+`{a, b}` itself. -/
 lemma touches_mergePair_iff {P : List (List Nat)} {a b c d z : Nat} :
     Touches (mergePair P a b) c d z ↔
       (∃ C ∈ P, z ∈ C ∧ ¬((C.contains a || C.contains b) = true) ∧
@@ -321,12 +315,12 @@ lemma touches_mergePair_iff {P : List (List Nat)} {a b c d z : Nat} :
       · exact Or.inl (mem_fused_iff.mpr hc)
       · exact Or.inr (mem_fused_iff.mpr hd)
 
-/-- Caractérisation complète de `SameClass` après deux fusions `{a, b}`
-puis `{c, d}`, lue sur la partition d'origine `P`. Trois voies seulement :
-(i) une classe commune — une classe n'est jamais scindée ; ou (ii) `x` et
-`y` happés par les fusions, avec soit groupes reliés (une seule classe
-géante), soit `x` et `y` happés par le même groupe. La forme est invariante
-par échange des deux groupes — c'est elle qui donne la commutation. -/
+/-- Complete characterisation of `SameClass` after two merges `{a, b}` then
+`{c, d}`, read on the original partition `P`. Only three ways: (i) a common
+class — a class is never split; or (ii) `x` and `y` swallowed by the merges,
+with either linked groups (a single giant class), or `x` and `y` swallowed by
+the same group. The form is invariant under swapping the two groups — this is
+what yields the commutation. -/
 lemma sameClass_two_merges_iff {P : List (List Nat)} {a b c d x y : Nat} :
     SameClass (mergePair (mergePair P a b) c d) x y ↔
       (∃ C ∈ P, x ∈ C ∧ y ∈ C) ∨
@@ -425,8 +419,8 @@ lemma sameClass_two_merges_iff {P : List (List Nat)} {a b c d x y : Nat} :
               ⟨touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hxc, habC, hcdx⟩),
                touches_mergePair_iff.mpr (Or.inl ⟨D, hD, hyc, habD, hcdy⟩)⟩
 
-/-- La forme caractérisante de `sameClass_two_merges_iff` est invariante
-par échange des deux groupes. -/
+/-- The characterising form of `sameClass_two_merges_iff` is invariant under
+swapping the two groups. -/
 lemma sameClass_two_merges_comm_form {P : List (List Nat)} {a b c d x y : Nat} :
     ((∃ C ∈ P, x ∈ C ∧ y ∈ C) ∨
       ((Touches P a b x ∨ Touches P c d x) ∧ (Touches P a b y ∨ Touches P c d y) ∧
@@ -448,23 +442,23 @@ lemma sameClass_two_merges_comm_form {P : List (List Nat)} {a b c d x y : Nat} :
     · exact Or.inr ⟨hx.symm, hy.symm, Or.inr (Or.inr hcd)⟩
     · exact Or.inr ⟨hx.symm, hy.symm, Or.inr (Or.inl hab)⟩
 
-/-- **Commutation de deux fusions** : l'ordre d'application des paires
-`{a, b}` puis `{c, d}` ne change pas la relation « partager une classe ».
-Les listes produites diffèrent (ordre d'apparition dans la classe
-fusionnée — contre-exemple documenté sur l'issue #16650), mais la partition
-vue comme relation d'équivalence est la même. C'est la reformulation
-correcte du lemme de commutation cherché : la commutation vit au niveau de
-`SameClass`, pas de l'égalité des listes. -/
+/-- **Commutation of two merges**: the order of applying the pairs `{a, b}` then
+`{c, d}` does not change the "share a class" relation. The produced lists
+differ (order of appearance in the merged class — counter-example documented
+on issue #16650), but the partition seen as an equivalence relation is the
+same. This is the correct reformulation of the commutation lemma that was
+sought: the commutation lives at the level of `SameClass`, not of list
+equality. -/
 theorem mergePair_mergePair_comm_equiv (P : List (List Nat)) (a b c d x y : Nat) :
     SameClass (mergePair (mergePair P a b) c d) x y ↔
     SameClass (mergePair (mergePair P c d) a b) x y := by
   rw [sameClass_two_merges_iff, sameClass_two_merges_comm_form,
       ← sameClass_two_merges_iff (a := c) (b := d) (c := a) (d := b)]
 
-/-- `Touches` lu en `SameClass` : une étiquette est happée par la fusion
-    `{x, y}` exactement quand elle partage une classe avec `x` ou avec `y`.
-    C'est la cle qui rend la caractérisation de `SameClass` après fusion
-    transportable d'une partition à une autre. -/
+/-- `Touches` read in `SameClass`: a label is swallowed by the merge `{x, y}`
+    exactly when it shares a class with `x` or with `y`. This is the key that
+    makes the characterisation of `SameClass` after a merge transportable from
+    one partition to another. -/
 lemma touches_iff_sameClass {P : List (List Nat)} {x y z : Nat} :
     Touches P x y z ↔ (SameClass P x z ∨ SameClass P y z) := by
   constructor
@@ -477,10 +471,9 @@ lemma touches_iff_sameClass {P : List (List Nat)} {x y z : Nat} :
     · exact ⟨C, hC, hz, by rw [hit_iff_mem]; exact Or.inl hx⟩
     · exact ⟨C, hC, hz, by rw [hit_iff_mem]; exact Or.inr hy⟩
 
-/-- Caractérisation pure de `SameClass` après une fusion : une classe
-    commune conservée, ou deux étiquettes toutes deux happées — lu
-    entièrement en `SameClass` de la partition d'origine. C'est cette forme
-    qui fait du repli une congruence pour `SameClass`. -/
+/-- Pure characterisation of `SameClass` after a merge: a common class kept, or
+    two labels both swallowed — read entirely in `SameClass` of the original
+    partition. It is this form that makes the fold a congruence for `SameClass`. -/
 lemma sameClass_mergePair_pure {P : List (List Nat)} {x y u v : Nat} :
     SameClass (mergePair P x y) u v ↔
       SameClass P u v ∨
@@ -500,10 +493,10 @@ lemma sameClass_mergePair_pure {P : List (List Nat)} {x y u v : Nat} :
       · exact Or.inl ⟨C, hC, hu, hv, hcond⟩
     · exact Or.inr h
 
-/-- **Congruence du repli** : si deux partitions sont indiscernables par
-    `SameClass`, le repli d'une même liste de paires les laisse
-    indiscernables. Le repli ne voit jamais la forme des listes de classes,
-    seulement qui partage une classe. -/
+/-- **Congruence of the fold**: if two partitions are indistinguishable by
+    `SameClass`, folding the same list of pairs over them leaves them
+    indistinguishable. The fold never sees the shape of the class lists, only
+    who shares a class. -/
 lemma foldl_mergeStep_congr {Q₁ Q₂ : List (List Nat)}
     (h : ∀ w z, SameClass Q₁ w z ↔ SameClass Q₂ w z)
     (pairs : List (Nat × Nat)) :
@@ -518,15 +511,15 @@ lemma foldl_mergeStep_congr {Q₁ Q₂ : List (List Nat)}
     rw [sameClass_mergePair_pure, sameClass_mergePair_pure,
         h w z, h p.1 w, h p.2 w, h p.1 z, h p.2 z]
 
-/-- **Le repli est insensible à la permutation de deux paires adjacentes** :
-    échanger les positions `i` et `i + 1` de la liste de paires ne change
-    pas la relation `SameClass` du résultat du repli. Troisième brique de
-    l'invariance R3 (issue #16650) : la chirurgie R3 connexe déplace les
-    croisements réécrits dans la liste du repli, `foldl_mergePair_swap`
-    absorbe l'orientation, `mergePair_mergePair_comm_equiv` la commutation
-    des deux fusions, et la congruence `foldl_mergeStep_congr` transporte
-    l'équivalence à travers le reste du repli. Ensemble, elles fondent la
-    préservation de la partition d'arcs sur le témoin du lake. -/
+/-- **The fold is insensitive to the permutation of two adjacent pairs**:
+    swapping positions `i` and `i + 1` of the pair list does not change the
+    `SameClass` relation of the fold's result. Third brick of the R3 invariance
+    (issue #16650): the related R3 surgery moves the rewritten crossings in the
+    fold's list, `foldl_mergePair_swap` absorbs the orientation,
+    `mergePair_mergePair_comm_equiv` the commutation of the two merges, and the
+    congruence `foldl_mergeStep_congr` transports the equivalence through the
+    rest of the fold. Together, they ground the preservation of the arc partition
+    on the lake's witness. -/
 theorem foldl_mergePair_permute_adjacent (pairs : List (Nat × Nat)) (i : Nat)
     (hi : i + 1 < pairs.length) (P₀ : List (List Nat)) (w z : Nat) :
     SameClass
@@ -554,31 +547,31 @@ theorem foldl_mergePair_permute_adjacent (pairs : List (Nat × Nat)) (i : Nat)
       (pairs.get ⟨i + 1, hi⟩).2)
     (pairs.drop (i + 2)) w z
 
-/-- Toute étiquette de la plage `1..n` est couverte par les singletons initiaux. -/
+/-- Every label of the range `1..n` is covered by the initial singletons. -/
 lemma covered_singles {n z : Nat} (h1 : 1 ≤ z) (h2 : z ≤ n) :
     Covered ((List.range n).map (fun i => [i + 1])) z := by
   refine ⟨[z], ?_, by simp⟩
   rw [List.mem_map]
   exact ⟨z - 1, by rw [List.mem_range]; omega, by simp only [Nat.sub_add_cancel h1]⟩
 
-/-- Les quatre étiquettes d'arête de chaque croisement vivent dans la plage
-`1..numEdges` du diagramme. -/
+/-- The four edge labels of each crossing live in the range `1..numEdges` of the
+diagram. -/
 def EdgesInRange (d : KnotDiagram) : Prop :=
   ∀ c ∈ d.crossings, 1 ≤ c.e1 ∧ c.e1 ≤ d.numEdges ∧
     1 ≤ c.e2 ∧ c.e2 ≤ d.numEdges ∧
     1 ≤ c.e3 ∧ c.e3 ≤ d.numEdges ∧
     1 ≤ c.e4 ∧ c.e4 ≤ d.numEdges
 
-/-- Le repli de `arcPartition` en forme de `foldl` sur `mergeStep`. -/
+/-- The fold of `arcPartition` in `foldl` form over `mergeStep`. -/
 lemma arcPartition_eq (d : KnotDiagram) :
     arcPartition d = (d.crossings.map (fun c => (c.e2, c.e4))).foldl mergeStep
       ((List.range d.numEdges).map (fun i => [i + 1])) := rfl
 
-/-- **Le fait de Fox** : en chaque croisement d'un diagramme à étiquettes en
-plage, les deux étiquettes de dessus appartiennent à une même classe de la
-partition d'arcs. C'est ce fait — et non la seule garde de cardinal de
-`alexanderPolynomialAux` — qui porte la somme de ligne nulle de la matrice
-d'Alexander (cf `alexanderEntry_sum_zero` ci-dessous). -/
+/-- **Fox's fact**: at each crossing of a diagram with labels in range, the two
+over-strand labels belong to the same class of the arc partition. It is this
+fact — and not the mere cardinality guard of `alexanderPolynomialAux` — that
+carries the zero row sum of the Alexander matrix (cf `alexanderEntry_sum_zero`
+below). -/
 theorem arcPartition_sameClass_overStrand (d : KnotDiagram) (h : EdgesInRange d)
     {c : PDCrossing} (hc : c ∈ d.crossings) :
     SameClass (arcPartition d) c.e2 c.e4 := by
@@ -593,53 +586,61 @@ theorem arcPartition_sameClass_overStrand (d : KnotDiagram) (h : EdgesInRange d)
     exact ⟨covered_singles h2lo h2hi, covered_singles h4lo h4hi⟩
   exact sameClass_foldl_of_mem hcover (c.e2, c.e4) (List.mem_map.mpr ⟨c, hc, rfl⟩)
 
-/-- Contrôle : la partition d'arcs du code Conway corrigé — 11 arcs couvrant
-les 22 arêtes (condition de non-dégénérescence du mineur d'Alexander : la
-garde `arcs'.length = rest.length + 1` de `alexanderPolynomialAux` passe).
-Le code non connexe précédent produisait un arc isolé {21, 22} absorbé par
-la colonne éliminée du mineur désigné → déterminant 0. -/
+/-- Check: arc partition of the fixed Conway code — 11 arcs covering the 22 edges
+(the non-degeneracy condition of the Alexander minor: the guard
+`arcs'.length = rest.length + 1` of `alexanderPolynomialAux` passes). The
+previous disconnected code produced an isolated arc {21, 22} absorbed by the
+deleted column of the designated minor → determinant 0. -/
 theorem conway_arcPartition :
     arcPartition conwayKnotDiagram =
       [[13], [22], [3, 4], [1, 2], [5, 6], [9, 7, 8], [20, 21], [10, 11, 12],
        [18, 19], [14, 15], [16, 17]] := by
   decide
 
-/-- Contrôle : partition d'arcs du code KT corrigé — 11 arcs, structure
-partagée avec Conway sur les croisements 1-5, divergente au-delà. -/
+/-- Check: arc partition of the fixed KT code — 11 arcs, sharing the structure
+with Conway on crossings 1-5 and diverging beyond. -/
 theorem kinoshitaTerasaka_arcPartition :
     arcPartition kinoshitaTerasakaDiagram =
       [[13], [22], [3, 4], [1, 2], [5, 6], [9, 7, 8], [14, 15], [10, 11, 12],
        [18, 19], [20, 21], [16, 17]] := by
   decide
 
-/-- Entrée de la matrice d'Alexander : ligne du croisement `c`, colonne de
-l'arc `C`. Convention positive (Fox de la relation de Wirtinger) : `+t`
-(arc entrant du dessous), `−1` (arc sortant du dessous), `1−t` (arc du
-dessus) — chaque ligne somme à zéro, condition qui garantit que deux
-mineurs (n−1)×(n−1) diffèrent d'une unité ±t^k. Le code PD ne code pas la
-chiralité du croisement, aussi les deux conventions différeraient-elles
-d'un facteur unité — la présente est désignée. -/
+/-- Control: arc partition of the sphere mutant — 11 arcs; the boundary
+arcs [13] and [22] are preserved, the census-Conway arc [9, 7, 8] becomes
+[9, 11, 12] (boundary point 9 re-attaches into the 10-11-12 arc), the
+signature of the (8 ↔ 11) (13 ↔ 22) re-attachment. -/
+theorem conwayMutant_arcPartition :
+    arcPartition conwayMutantDiagram =
+      [[13], [22], [3, 4], [1, 2], [5, 6], [9, 11, 12], [20, 21], [10, 7, 8],
+       [18, 19], [14, 15], [16, 17]] := by
+  decide
+
+/-- Entry of the Alexander matrix: row of the crossing `c`, column of the arc
+`C`. Positive convention (Fox of the Wirtinger relation): `+t` (incoming
+under-strand arc), `−1` (outgoing under-strand arc), `1−t` (over-strand arc) —
+each row sums to zero, the condition that guarantees two (n−1)×(n−1) minors
+differ by a unit ±t^k. The PD code does not encode the chirality of the
+crossing, so the two conventions would differ by a unit factor — the present
+one is designated. -/
 noncomputable def alexanderEntry (c : PDCrossing) (C : List Nat) : Polynomial ℤ :=
   (if C.contains c.e1 then Polynomial.X else 0)
     + (if C.contains c.e3 then -(1 : Polynomial ℤ) else 0)
     + (if C.contains c.e2 || C.contains c.e4 then 1 - Polynomial.X else 0)
 
-/-! #### Les lignes d'Alexander somment à zéro
+/-! #### The Alexander rows sum to zero
 
-Sous les hypothèses d'unicité — chaque étiquette du dessous portée par
-exactement une classe, la paire de dessus rencontrant exactement une classe —
-chaque ligne de la matrice d'Alexander somme à zéro : `t − 1 + (1 − t) = 0`.
-C'est ce fait qui rend le mineur (n−1)×(n−1) indépendant, à un signe près, du
-choix de la colonne frappée : l'affirmation normative de la docstring
-d'`alexanderEntry` devient ici un théorème. `arcPartition_sameClass_overStrand`
-fournit la moitié combinatoire (la paire de dessus partage une classe) ;
-la vérification que `arcPartition` satisfait les hypothèses d'unicité
-(`countP` = 1 par étiquette) est établie dans la section suivante
-(`arcPartition_countP_label`).
--/
+Under the uniqueness hypotheses — each under-strand label carried by exactly
+one class, the over-strand pair meeting exactly one class — every row of the
+Alexander matrix sums to zero: `t − 1 + (1 − t) = 0`.
+It is this fact that makes the (n−1)×(n−1) minor independent, up to a sign, of
+the choice of the deleted column: the normative claim of the docstring of
+`alexanderEntry` becomes a theorem here. `arcPartition_sameClass_overStrand`
+supplies the combinatorial half (the over-strand pair shares a class);
+the verification that `arcPartition` satisfies the uniqueness hypotheses
+(`countP` = 1 per label) is established in the next section
+(`arcPartition_countP_label`).-/
 
-/-- Somme d'une carte indicatrice : le `w` est compté une fois par classe
-porteuse. -/
+/-- Sum of an indicator map: `w` is counted once per carrying class. -/
 lemma sum_map_indicator (P : List (List Nat)) (p : List Nat → Bool) (w : Polynomial ℤ) :
     (P.map (fun C => if p C then w else 0)).sum = w * (P.countP p : Polynomial ℤ) := by
   induction P with
@@ -654,7 +655,7 @@ lemma sum_map_indicator (P : List (List Nat)) (p : List Nat → Bool) (w : Polyn
         push_cast
         ring
 
-/-- La somme d'une carte à trois termes se distribue sur les trois sommes. -/
+/-- The sum of a three-term map distributes over the three sums. -/
 lemma sum_map_three (P : List (List Nat)) (f g h : List Nat → Polynomial ℤ) :
     (P.map (fun C => f C + g C + h C)).sum =
       (P.map f).sum + (P.map g).sum + (P.map h).sum := by
@@ -662,12 +663,11 @@ lemma sum_map_three (P : List (List Nat)) (f g h : List Nat → Polynomial ℤ) 
   | nil => simp
   | cons D Ps ih => simp only [List.map_cons, List.sum_cons, ih]; abel
 
-/-- **Somme de ligne nulle** : si chaque étiquette du dessous est portée par
-exactement une classe et si la paire de dessus rencontre exactement une
-classe, alors la ligne d'`alexanderEntry` somme à zéro. C'est le fait de Fox
-qui rend le mineur (n−1)×(n−1) indépendant, à un signe près, du choix de la
-colonne frappée — le socle demandé par See #14962 avant toute correction de
-normalisation. -/
+/-- **Zero row sum**: if every under-strand label is carried by exactly one class
+and the over-strand pair meets exactly one class, then the row of
+`alexanderEntry` sums to zero. It is Fox's fact that makes the (n−1)×(n−1)
+minor independent, up to a sign, of the choice of the deleted column — the
+foundation requested by See #14962 before any normalisation correction. -/
 theorem alexanderEntry_sum_zero (P : List (List Nat)) (c : PDCrossing)
     (h1 : P.countP (fun C => C.contains c.e1) = 1)
     (h3 : P.countP (fun C => C.contains c.e3) = 1)
@@ -683,20 +683,20 @@ theorem alexanderEntry_sum_zero (P : List (List Nat)) (c : PDCrossing)
   push_cast
   ring
 
-/-! #### `arcPartition` est une partition : l'unicité `countP` = 1
+/-! #### `arcPartition` is a partition: the uniqueness `countP` = 1
 
-La section précédente reposait sur des hypothèses d'unicité (`countP` = 1).
-Cette section les établit pour la vraie `arcPartition` : les classes sont deux
-à deux disjointes (un invariant que `mergePair` préserve), sans doublon, et
-couvrent toute la plage `1..numEdges`. Il en découle que chaque ligne de la
-matrice d'Alexander somme à zéro sans hypothèse additionnelle — le résiduel
-nommé sur See #14962 est levé. -/
+The previous section rested on uniqueness hypotheses (`countP` = 1).
+This section establishes them for the real `arcPartition`: the classes are
+pairwise disjoint (an invariant that `mergePair` preserves), free of
+duplicates, and cover the whole range `1..numEdges`. It follows that every row
+of the Alexander matrix sums to zero without any additional hypothesis — the
+residual named on See #14962 is lifted. -/
 
-/-- Deux classes distinctes de `P` sont disjointes. -/
+/-- Two distinct classes of `P` are disjoint. -/
 def ClassesDisjoint (P : List (List Nat)) : Prop :=
   ∀ C ∈ P, ∀ D ∈ P, C ≠ D → ∀ z, z ∈ C → z ∉ D
 
-/-- Les singletons initiaux sont deux à deux disjoints. -/
+/-- The initial singletons are pairwise disjoint. -/
 lemma classesDisjoint_singles {n : Nat} :
     ClassesDisjoint ((List.range n).map (fun i => [i + 1])) := by
   intro C hC D hD hne z hzC hzD
@@ -706,8 +706,8 @@ lemma classesDisjoint_singles {n : Nat} :
   simp only [List.mem_singleton] at hzC hzD
   exact hne (by congr 1; omega)
 
-/-- Le filtre `keep` (classes ne portant ni `x` ni `y`) ne rencontre jamais le
-bloc fusionné : un `z` d'une classe intacte n'appartient à aucune classe touchée. -/
+/-- The `keep` filter (classes carrying neither `x` nor `y`) never meets the
+merged block: a `z` of an intact class belongs to no touched class. -/
 lemma not_mem_merged_of_keep {P : List (List Nat)} {C : List Nat} {x y z : Nat}
     (hP : ClassesDisjoint P)
     (hC : C ∈ P) (hkeep : (C.contains x || C.contains y) ≠ true) :
@@ -721,7 +721,7 @@ lemma not_mem_merged_of_keep {P : List (List Nat)} {C : List Nat} {x y z : Nat}
     intro heq; subst heq; exact hkeep hDhit
   exact hP C hC D hDP hne z hz hzD
 
-/-- `mergePair` préserve la disjonction des classes. -/
+/-- `mergePair` preserves the disjointness of the classes. -/
 lemma classesDisjoint_mergePair {P : List (List Nat)} {x y : Nat}
     (hP : ClassesDisjoint P) : ClassesDisjoint (mergePair P x y) := by
   intro C hC D hD hne z hzC hzD
@@ -742,14 +742,14 @@ lemma classesDisjoint_mergePair {P : List (List Nat)} {x y : Nat}
   · rw [List.mem_singleton] at hC hD
     exact hne (hC.trans hD.symm)
 
-/-- La disjonction des classes survit au repli complet. -/
+/-- The disjointness of the classes survives the complete fold. -/
 lemma classesDisjoint_foldl {pairs : List (Nat × Nat)} {P : List (List Nat)}
     (h : ClassesDisjoint P) : ClassesDisjoint (pairs.foldl mergeStep P) := by
   induction pairs generalizing P with
   | nil => exact h
   | cons p ps ih => rw [List.foldl_cons]; exact ih (classesDisjoint_mergePair h)
 
-/-- Les singletons initiaux sont deux à deux distincts. -/
+/-- The initial singletons are pairwise distinct. -/
 lemma pairwise_singles {n : Nat} :
     ((List.range n).map (fun i => [i + 1])).Pairwise (fun C D => C ≠ D) :=
   List.Pairwise.map (fun i => [i + 1])
@@ -758,7 +758,7 @@ lemma pairwise_singles {n : Nat} :
       exact h (by omega))
     List.nodup_range
 
-/-- Une étiquette couverte reste dans le bloc fusionné. -/
+/-- A covered label stays in the merged block. -/
 lemma mem_merged_of_covered {P : List (List Nat)} {x y : Nat} (hx : Covered P x) :
     x ∈ (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups := by
   obtain ⟨C, hCP, hx'⟩ := hx
@@ -767,8 +767,8 @@ lemma mem_merged_of_covered {P : List (List Nat)} {x y : Nat} (hx : Covered P x)
   rw [Bool.or_eq_true]
   exact Or.inl (List.contains_iff_mem.mpr hx')
 
-/-- `mergePair` préserve l'absence de doublon : le bloc fusionné, qui porte `x`,
-ne peut pas être une classe intacte, qui ne porte pas `x`. -/
+/-- `mergePair` preserves the absence of duplicates: the merged block, which
+carries `x`, cannot be an intact class, which does not carry `x`. -/
 lemma pairwise_mergePair {P : List (List Nat)} {x y : Nat}
     (hnd : P.Pairwise (fun C D => C ≠ D)) (hx : Covered P x) :
     (mergePair P x y).Pairwise (fun C D => C ≠ D) := by
@@ -790,7 +790,7 @@ lemma pairwise_mergePair {P : List (List Nat)} {x y : Nat}
   rw [h1] at hfx
   exact Bool.noConfusion hfx
 
-/-- Les deux invariants de partition traversent le repli complet. -/
+/-- The two partition invariants survive the complete fold. -/
 lemma foldl_partition_inv {pairs : List (Nat × Nat)} {P : List (List Nat)}
     (hd : ClassesDisjoint P) (hnd : P.Pairwise (fun C D => C ≠ D))
     (hcov : ∀ q ∈ pairs, Covered P q.1 ∧ Covered P q.2) :
@@ -806,15 +806,14 @@ lemma foldl_partition_inv {pairs : List (Nat × Nat)} {P : List (List Nat)}
       have hc := hcov q (List.mem_cons_of_mem _ hq)
       exact ⟨covered_mergePair hc.1, covered_mergePair hc.2⟩
 
-/-- La couverture d'une étiquette survit au repli complet. -/
+/-- The coverage of a label survives the complete fold. -/
 lemma covered_foldl {pairs : List (Nat × Nat)} {P : List (List Nat)} {z : Nat}
     (h : Covered P z) : Covered (pairs.foldl mergeStep P) z := by
   induction pairs generalizing P with
   | nil => exact h
   | cons p ps ih => rw [List.foldl_cons]; exact ih (covered_mergePair h)
 
-/-- Une liste deux-à-deux distincte dont tous les éléments valent `a` est de
-longueur au plus un. -/
+/-- A pairwise-distinct list whose elements all equal `a` has length at most one. -/
 lemma pairwise_all_eq_length_le_one {α : Type} {l : List α} {a : α}
     (hnd : l.Pairwise (fun x y => x ≠ y)) (hall : ∀ x ∈ l, x = a) : l.length ≤ 1 := by
   cases l with
@@ -828,7 +827,7 @@ lemma pairwise_all_eq_length_le_one {α : Type} {l : List α} {a : α}
           cases hnd with
           | cons hhead _ => exact absurd hbc (hhead c (by simp))
 
-/-- Pont `countP`/`filter`, autonome. -/
+/-- The `countP`/`filter` bridge, standalone. -/
 lemma countP_length_filter {α : Type} {p : α → Bool} (l : List α) :
     l.countP p = (l.filter p).length := by
   induction l with
@@ -838,8 +837,8 @@ lemma countP_length_filter {α : Type} {p : α → Bool} (l : List α) :
       · simp [h, ih]
       · simp [h, ih]
 
-/-- **Unicité sous-strand** : dans une partition sans doublon, une étiquette
-couverte appartient à exactement une classe. -/
+/-- **Under-strand uniqueness**: in a duplicate-free partition, a covered label
+belongs to exactly one class. -/
 lemma countP_contains_eq_one {P : List (List Nat)} {z : Nat}
     (hd : ClassesDisjoint P) (hnd : P.Pairwise (fun C D => C ≠ D)) (hcov : Covered P z) :
     P.countP (fun C => C.contains z) = 1 := by
@@ -861,8 +860,8 @@ lemma countP_contains_eq_one {P : List (List Nat)} {z : Nat}
   rw [countP_length_filter]
   omega
 
-/-- **Unicité over-strand** : si `x` et `y` partagent une classe d'une partition
-sans doublon, exactement une classe porte `x` ou `y`. -/
+/-- **Over-strand uniqueness**: if `x` and `y` share a class of a duplicate-free
+partition, exactly one class carries `x` or `y`. -/
 lemma countP_over_eq_one {P : List (List Nat)} {x y : Nat}
     (hd : ClassesDisjoint P) (hnd : P.Pairwise (fun C D => C ≠ D)) (hsc : SameClass P x y) :
     P.countP (fun C => C.contains x || C.contains y) = 1 := by
@@ -892,7 +891,7 @@ lemma countP_over_eq_one {P : List (List Nat)} {x y : Nat}
   rw [countP_length_filter]
   omega
 
-/-- Chaque paire du repli est couverte par les singletons initiaux. -/
+/-- Every pair of the fold is covered by the initial singletons. -/
 lemma crossings_covered_singles {d : KnotDiagram} (h : EdgesInRange d) :
     ∀ q ∈ d.crossings.map (fun c => (c.e2, c.e4)),
       Covered ((List.range d.numEdges).map (fun i => [i + 1])) q.1 ∧
@@ -903,14 +902,14 @@ lemma crossings_covered_singles {d : KnotDiagram} (h : EdgesInRange d) :
   obtain ⟨_, _, h2lo, h2hi, _, _, h4lo, h4hi⟩ := h c' hc'
   exact ⟨covered_singles h2lo h2hi, covered_singles h4lo h4hi⟩
 
-/-- Toute étiquette de la plage `1..numEdges` est couverte par la partition. -/
+/-- Every label of the range `1..numEdges` is covered by the partition. -/
 lemma arcPartition_covered {d : KnotDiagram} {z : Nat}
     (hz1 : 1 ≤ z) (hz2 : z ≤ d.numEdges) :
     Covered (arcPartition d) z := by
   rw [arcPartition_eq]
   exact covered_foldl (covered_singles hz1 hz2)
 
-/-- **`arcPartition` est une partition** : classes disjointes, sans doublon. -/
+/-- **`arcPartition` is a partition**: disjoint classes, without duplicates. -/
 theorem arcPartition_classes (d : KnotDiagram) (h : EdgesInRange d) :
     ClassesDisjoint (arcPartition d) ∧
       (arcPartition d).Pairwise (fun C D => C ≠ D) := by
@@ -918,18 +917,17 @@ theorem arcPartition_classes (d : KnotDiagram) (h : EdgesInRange d) :
   exact foldl_partition_inv classesDisjoint_singles pairwise_singles
     (crossings_covered_singles h)
 
-/-- **L'hypothèse `h1`/`h3` est un théorème** : chaque étiquette de la plage
-est portée par exactement une classe de `arcPartition`. -/
+/-- **The `h1`/`h3` hypothesis is a theorem**: every label of the range is carried
+by exactly one class of `arcPartition`. -/
 theorem arcPartition_countP_label (d : KnotDiagram) (h : EdgesInRange d) {z : Nat}
     (hz1 : 1 ≤ z) (hz2 : z ≤ d.numEdges) :
     (arcPartition d).countP (fun C => C.contains z) = 1 := by
   obtain ⟨hd, hnd⟩ := arcPartition_classes d h
   exact countP_contains_eq_one hd hnd (arcPartition_covered hz1 hz2)
 
-/-- **Somme de ligne inconditionnelle** : pour tout diagramme à étiquettes en
-plage, chaque ligne de la matrice d'Alexander somme à zéro — la boucle entre
-le fait de Fox et la somme nulle se referme, sans hypothèse d'unicité restée
-à la main du lecteur. -/
+/-- **Unconditional row sum**: for any diagram with labels in range, every row of
+the Alexander matrix sums to zero — the loop between Fox's fact and the zero
+sum closes, with no uniqueness hypothesis left to the reader. -/
 theorem alexanderRow_sum_zero (d : KnotDiagram) (h : EdgesInRange d)
     {c : PDCrossing} (hc : c ∈ d.crossings) :
     ((arcPartition d).map (alexanderEntry c)).sum = 0 := by

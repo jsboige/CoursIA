@@ -49,6 +49,14 @@ import sys
 from pathlib import Path
 from typing import Iterable, List, Optional, Tuple
 
+# Shared rename probe (#24068): a notebook staged as a pure rename was only
+# MOVED, so the cells it carries pre-date the move -- a consolidation-by-move
+# must not be blamed for a parse error it did not introduce. Same family as
+# #24039 (scripts/check_subprocess_encoding.py).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import git_index_renames  # noqa: E402
+from git_index_renames import skip_pure_renames  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
@@ -112,6 +120,19 @@ def _scan_line(line: str, depth: int, in_triple: Optional[str]) -> Tuple[int, Op
     return depth, in_triple
 
 
+def _is_line_continuation(line: str) -> bool:
+    """True when the physical line ends with an odd number of backslashes:
+    a single trailing backslash continues the logical line, an escaped
+    backslash (``\\\\``) does not."""
+    n = 0
+    for ch in reversed(line.rstrip()):
+        if ch == "\\":
+            n += 1
+        else:
+            break
+    return n % 2 == 1
+
+
 def _strip_ipython_magics(src: str) -> str:
     """Drop lines starting with `!` (shell) or `%` (magics incl. `%%`). The
     cell source may legitimately contain `!pip install` or `%%time` -- those
@@ -126,17 +147,43 @@ def _strip_ipython_magics(src: str) -> str:
     ``print("..."\\n      % (a, b))`` lost its argument line and the cell
     was flagged "'(' was never closed"). The stripper therefore tracks
     bracket depth and triple-quote state and only drops a magic line at
-    logical-line start."""
+    logical-line start.
+
+    A dropped magic line may chain physical continuations with trailing
+    backslashes (``%pip install a \\\\<newline>    b c``): those physical
+    lines belong to the magic's logical line, not to Python. Leaving them
+    behind used to compile to "unexpected indent" (TP #21036, install cell).
+    The stripper consumes the whole backslash run of a dropped magic.
+
+    A magic may also be INDENTED -- the body of an ``if``/``try`` block
+    (TP #21036: ``if run_inflect_nano:`` guarded install). Dropping it
+    entirely would leave the block header without a body and compile to
+    IndentationError; an indented magic is replaced by ``pass`` at the
+    same indentation. At depth 0 a statement can never start with ``%`` or
+    ``!`` in valid Python, so the replacement cannot shadow real code."""
     out_lines = []
     depth = 0
     in_triple: Optional[str] = None
+    in_continuation = False
+    pending_pass_indent: Optional[str] = None
     for line in src.splitlines():
+        if in_continuation:
+            in_continuation = _is_line_continuation(line)
+            continue
         if depth == 0 and in_triple is None:
             stripped = line.lstrip()
             if stripped.startswith("!") or stripped.startswith("%"):
+                in_continuation = _is_line_continuation(line)
+                if line[: len(line) - len(line.lstrip())]:
+                    pending_pass_indent = line[: len(line) - len(line.lstrip())]
                 continue
+        if pending_pass_indent is not None:
+            out_lines.append(pending_pass_indent + "pass")
+            pending_pass_indent = None
         depth, in_triple = _scan_line(line, depth, in_triple)
         out_lines.append(line)
+    if pending_pass_indent is not None:
+        out_lines.append(pending_pass_indent + "pass")
     return "\n".join(out_lines)
 
 
@@ -206,7 +253,7 @@ def _compile_cell(src: str, target_py: Tuple[int, int] = (3, 10)) -> Tuple[Optio
 
 
 def _cells_touched_by_pr(diff_range: Iterable[str]) -> List[Path]:
-    """Return the .ipynb paths modified between two refs (e.g. origin/main..HEAD)."""
+    """Return the .ipynb paths modified between two refs (merge-base..HEAD)."""
     out: List[Path] = []
     for line in diff_range:
         # `git diff --name-only` line shape: 'MyIA.AI.Notebooks/.../foo.ipynb'
@@ -217,10 +264,22 @@ def _cells_touched_by_pr(diff_range: Iterable[str]) -> List[Path]:
 
 
 def _diff_range(base: str, head: str) -> Iterable[str]:
-    """`git diff --name-only <base>..<head>`, or HEAD if no diff available."""
+    """`git diff --name-only <base>...<head>`, or [] if no diff available.
+
+    Trois points et non deux (residu de #10403) : `<base>..<head>` compare deux arbres,
+    donc sur une PR empilee dont la base a gagne des commits depuis le fork,
+    il liste aussi les notebooks que `main` a modifies -- la PR se voit
+    imputer des findings sur des fichiers qu'elle n'a pas touches. La forme en
+    trois points ne rend que l'apport de la PR (merge-base..head).
+
+    Un echec git (merge-base indeterminable dans un clone superficiel) n'est
+    pas rattrape par un repli en deux points : la fonction rend une liste
+    vide, et l'appelant doit lire ce vide comme "aucun diff disponible", pas
+    comme "aucun notebook touche".
+    """
     try:
         cp = subprocess.run(
-            ["git", "diff", "--name-only", f"{base}..{head}"],
+            ["git", "diff", "--name-only", f"{base}...{head}"],
             cwd=REPO_ROOT,
             capture_output=True,
             text=True,
@@ -324,8 +383,33 @@ def main() -> int:
         paths = [args.path]
     elif args.paths:
         paths = [p for p in args.paths if p.exists()]
+        # A notebook staged as a pure rename was only MOVED (#24068): the
+        # cells it carries pre-date the move, so a consolidation-by-move must
+        # not be reported for a parse error it did not introduce.
+        kept, skipped = skip_pure_renames([p.as_posix() for p in paths])
+        if skipped:
+            print(f"cell-source-parses: {len(skipped)} pure rename(s) "
+                  "ignored -- their cells pre-date the move (#24068)",
+                  file=sys.stderr)
+        paths = [Path(p) for p in kept]
     elif args.pr_diff:
         names = _diff_range(args.pr_diff[0], args.pr_diff[1])
+        # CI half (#24068): this mode scans the WHOLE notebook of every
+        # changed file, so a notebook that was merely MOVED between the base
+        # and the head would resurrect the parse error it inherited -- the
+        # same defect as the pre-commit half, on the CI surface. A pure
+        # rename (R100) adds no line and changes no cell: it is excluded.
+        # A rename WITH edits stays in the target: the lane did touch it.
+        pure = git_index_renames.pure_renames_between(
+            args.pr_diff[0], args.pr_diff[1])
+        if pure:
+            kept_names = [n for n in names if n.strip() not in pure]
+            skipped_n = len(names) - len(kept_names)
+            if skipped_n:
+                print(f"cell-source-parses: {skipped_n} pure rename(s) "
+                      "ignored -- their cells pre-date the move (#24068)",
+                      file=sys.stderr)
+            names = kept_names
         paths = _cells_touched_by_pr(names)
     else:
         paths = list(_iter_python_notebooks([NOTEBOOKS_DIR]))

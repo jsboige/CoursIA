@@ -7,6 +7,19 @@ sur tout testpath ni couvert ni déclaré CI-EXCLUDED.
 #17250 : ajoute la séparation entre étapes `pytest --collect-only` (floors,
 qui sondent la collecte sans exécuter) et étapes d'exécution effectives.
 Un dossier qui n'apparaît que dans un floor ne couvre pas un testpath.
+
+#22735 : ajoute le second sens — l'ARBorescence confrontée à la couverture.
+Le sens historique ne voit que les testpaths DÉCLARÉS ; une suite présente
+sur le disque sous `scripts/**/tests/` mais absente de pytest.ini ET de la
+couverture CI lui était invisible (huit suites vertes en local, jamais
+rejouées). Les tests de cette section prouvent que ce second sens rougit
+quand il doit — un contrôle incapable de rougir n'est pas un contrôle.
+
+#22735 : ajoute le troisième sens — l'INVARIANT de résolution des noms de
+modules pytest. Deux suites `tests/` sans paquet parent résolvent le même nom
+de module (`tests.conftest`) et la collecte tombe en "Plugin already
+registered under a different name" ; l'option ini
+`consider_namespace_packages` (pytest >= 8.0) ferme la classe.
 """
 
 from __future__ import annotations
@@ -20,10 +33,15 @@ from check_testpaths_coverage import (  # noqa: E402
     REPO_ROOT,
     WORKFLOW_COVERAGE,
     _partition_run_blocks,
+    check_namespace_option,
+    discover_suites,
     extract_run_targets,
     is_covered,
     load_ci_excluded,
     load_testpaths,
+    missing_declared_suites,
+    uncovered_suites,
+    verify_declared_test_cwd,
 )
 
 
@@ -101,6 +119,99 @@ def test_guard_green_on_current_main() -> None:
     assert uncovered == [], f"testpaths non couverts: {uncovered}"
     # Le testpath `tests` racine a été retiré de pytest.ini (reliquat vide).
     assert "tests" not in testpaths
+    # Second sens (#22735) : aucune suite sur le disque sans exécution CI.
+    assert uncovered_suites(REPO_ROOT) == [], "suites sur disque non exécutées"
+    assert missing_declared_suites(REPO_ROOT) == [], "suites déclarées absentes"
+
+
+# --- #22735 : second sens, l'arborescence confrontée à la couverture ---
+
+
+def _make_suite(root: Path, rel: str) -> None:
+    """Pose une suite de tests (un répertoire + un `test_*.py`)."""
+    target = root / rel
+    target.mkdir(parents=True, exist_ok=True)
+    (target / "test_x.py").write_text("def test_x():\n    assert True\n", encoding="utf-8")
+
+
+def _make_workflow(root: Path, targets: list[str]) -> None:
+    """Pose un workflow dont le run pytest invoque exactement `targets`."""
+    wf_dir = root / ".github" / "workflows"
+    wf_dir.mkdir(parents=True, exist_ok=True)
+    body = " \\\n            ".join(targets)
+    (wf_dir / "w.yml").write_text(
+        "name: t\non: [push]\njobs:\n  t:\n    steps:\n"
+        "      - name: Run tests\n"
+        "        run: |\n"
+        "          python -m pytest \\\n            " + body + " -q\n",
+        encoding="utf-8",
+    )
+
+
+def test_discover_suites_only_counts_family_dirs(tmp_path: Path) -> None:
+    """Seul `scripts/**/tests` contenant un `test_*.py` compte comme suite."""
+    _make_suite(tmp_path, "scripts/foo/tests")
+    _make_suite(tmp_path, "scripts/bar/baz/tests")
+    (tmp_path / "scripts" / "notasuite").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "scripts" / "notasuite" / "test_x.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts" / "vide" / "tests").mkdir(parents=True, exist_ok=True)
+    assert discover_suites(tmp_path) == [
+        "scripts/bar/baz/tests",
+        "scripts/foo/tests",
+    ]
+
+
+def test_uncovered_suite_is_detected(tmp_path: Path) -> None:
+    """Une suite sur le disque qu'aucun workflow n'exécute doit être signalée."""
+    _make_suite(tmp_path, "scripts/foo/tests")
+    _make_workflow(tmp_path, ["scripts/other/tests"])
+    assert uncovered_suites(tmp_path) == ["scripts/foo/tests"]
+
+
+def test_wired_suite_is_not_reported(tmp_path: Path) -> None:
+    """Une suite sur le disque exécutée par un workflow n'est pas signalée."""
+    _make_suite(tmp_path, "scripts/foo/tests")
+    _make_workflow(tmp_path, ["scripts/foo/tests"])
+    assert uncovered_suites(tmp_path) == []
+
+
+def test_ci_excluded_suite_is_not_reported(tmp_path: Path) -> None:
+    """Une suite volontairement exclue (marqueur CI-EXCLUDED) n'est pas signalée."""
+    _make_suite(tmp_path, "scripts/foo/tests")
+    _make_workflow(tmp_path, ["scripts/other/tests"])
+    wf = tmp_path / ".github" / "workflows" / "w.yml"
+    wf.write_text(
+        wf.read_text(encoding="utf-8")
+        + "# CI-EXCLUDED: scripts/foo/tests — motif ecrit\n",
+        encoding="utf-8",
+    )
+    assert uncovered_suites(tmp_path) == []
+
+
+def test_missing_declared_suite_is_detected(tmp_path: Path) -> None:
+    """Une suite déclarée câblée mais absente de l'arbre doit être signalée."""
+    coverage = {".github/workflows/w.yml": ["scripts/foo/tests"]}
+    assert missing_declared_suites(tmp_path, coverage) == ["scripts/foo/tests"]
+    _make_suite(tmp_path, "scripts/foo/tests")
+    assert missing_declared_suites(tmp_path, coverage) == []
+
+
+def test_cli_is_red_on_an_uncovered_suite(tmp_path: Path) -> None:
+    """Le code de sortie de la CLI suit le verdict : 1 sur une suite non jouée."""
+    import subprocess
+
+    _make_suite(tmp_path, "scripts/foo/tests")
+    _make_workflow(tmp_path, ["scripts/other/tests"])
+    (tmp_path / "pytest.ini").write_text(
+        "[pytest]\ntestpaths =\n    scripts/other/tests\n", encoding="utf-8"
+    )
+    proc = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts/check_testpaths_coverage.py"),
+         "--repo-root", str(tmp_path)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode == 1, proc.stdout
+    assert "FAIL scripts/foo/tests" in proc.stdout
 
 
 # --- #17250 : séparation des floors `--collect-only` ---
@@ -186,3 +297,445 @@ def test_partition_neutralite_lignes_non_pytest() -> None:
     covered, floors = _partition_run_blocks(text)
     assert "scripts/audit/tests" in floors
     assert "scripts/audit/tests" not in covered
+
+
+# --- Inventaire des suites non declarees (#23359, perimetre restant) ---------
+#
+# Le guard ne compare que les testpaths DECLARES : un dossier de tests present
+# dans le depot mais absent de pytest.ini lui est invisible, et il reste vert
+# dessus (cas mesure : SymbolicAI/ArgumentAnalysis, 174 tests non collectes).
+# `--inventory` part du depot au lieu de la declaration.
+
+
+def test_discover_test_dirs_borne_la_convention(tmp_path: Path) -> None:
+    """Seuls les dossiers nommes `tests`/`test` portant un `test_*.py` sortent.
+
+    Un module `test_*.py` co-localise avec du code (gateway, helpers) est un
+    test de voisinage, pas une suite : l'inventaire ne le nomme pas.
+    """
+    from check_testpaths_coverage import discover_test_dirs
+
+    (tmp_path / "scripts" / "alpha" / "tests").mkdir(parents=True)
+    (tmp_path / "scripts" / "alpha" / "tests" / "test_a.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts" / "beta" / "gateway").mkdir(parents=True)
+    (tmp_path / "scripts" / "beta" / "gateway" / "test_g.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts" / "gamma" / "tests" / "_archive").mkdir(parents=True)
+    (tmp_path / "scripts" / "gamma" / "tests" / "_archive" / "test_z.py").write_text("", encoding="utf-8")
+
+    found = discover_test_dirs(tmp_path)
+
+    assert found == ["scripts/alpha/tests"]
+
+
+def test_run_inventory_un_testpath_declare_couvre_ses_sous_dossiers(
+    tmp_path: Path,
+) -> None:
+    """Un dossier inclus dans un testpath declare n'est pas un trou."""
+    from check_testpaths_coverage import run_inventory
+
+    (tmp_path / "scripts" / "alpha" / "tests" / "unit").mkdir(parents=True)
+    (tmp_path / "scripts" / "alpha" / "tests" / "unit" / "test_u.py").write_text(
+        "", encoding="utf-8"
+    )
+    (tmp_path / "scripts" / "beta" / "tests").mkdir(parents=True)
+    (tmp_path / "scripts" / "beta" / "tests" / "test_b.py").write_text("", encoding="utf-8")
+
+    unwatched = run_inventory(
+        tmp_path, ["scripts/alpha/tests"], {}, strict=True
+    )
+
+    assert unwatched == ["scripts/beta/tests"]
+
+
+def test_run_inventory_est_advisory_par_defaut(tmp_path: Path) -> None:
+    """Sans `--strict`, un trou d'inventaire n'est pas un echec : il est liste."""
+    from check_testpaths_coverage import run_inventory
+
+    (tmp_path / "scripts" / "beta" / "tests").mkdir(parents=True)
+    (tmp_path / "scripts" / "beta" / "tests" / "test_b.py").write_text("", encoding="utf-8")
+
+    assert run_inventory(tmp_path, [], {}, strict=False) == []
+    assert run_inventory(tmp_path, [], {}, strict=True) == ["scripts/beta/tests"]
+
+
+def test_run_inventory_une_cible_dossier_de_workflow_couvre(tmp_path: Path) -> None:
+    """Controle positif : un dossier joue par un workflow dedie ne sort pas.
+
+    C'est le defaut fondateur de #23648 : l'inventaire ne lisait que
+    `pytest.ini` et annoncait comme non surveillees des suites qu'un workflow
+    joue, dont `Geometry/tests` qui figure pourtant dans WORKFLOW_COVERAGE.
+    """
+    from check_testpaths_coverage import run_inventory
+
+    _make_suite(tmp_path, "MyIA.AI.Notebooks/Geometry/tests")
+    _make_suite(tmp_path, "scripts/beta/tests")
+
+    unwatched = run_inventory(
+        tmp_path,
+        [],
+        {},
+        strict=True,
+        workflow_coverage={"w.yml": ["MyIA.AI.Notebooks/Geometry/tests"]},
+        workflow_test_cwd={},
+    )
+
+    assert unwatched == ["scripts/beta/tests"]
+
+
+def test_run_inventory_un_perimetre_test_cwd_couvre(tmp_path: Path) -> None:
+    """Un perimetre `test-cwd` declare couvre le dossier qu'il designe."""
+    from check_testpaths_coverage import run_inventory
+
+    _make_suite(tmp_path, "MyIA.AI.Notebooks/IIT/ICT-Series/tests")
+    _make_suite(tmp_path, "MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests")
+
+    unwatched = run_inventory(
+        tmp_path,
+        [],
+        {},
+        strict=True,
+        workflow_coverage={},
+        workflow_test_cwd={"ict-tests.yml": ["MyIA.AI.Notebooks/IIT/ICT-Series/tests"]},
+    )
+
+    assert unwatched == ["MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests"]
+
+
+def test_run_inventory_une_cible_fichier_rend_partiellement_surveille(
+    tmp_path: Path,
+) -> None:
+    """Une cible-fichier dedans ne couvre pas le dossier, mais l'en retire pas.
+
+    Le dossier n'est pas declare couvert (les autres tests du dossier ne
+    tournent pas), il n'est pas declare trou non plus (un test tourne) : le
+    sortir comme l'un ou l'autre affirmerait plus que la mesure.
+    """
+    from check_testpaths_coverage import run_inventory
+
+    _make_suite(tmp_path, "MyIA.AI.Notebooks/Sudoku/tests")
+
+    unwatched = run_inventory(
+        tmp_path,
+        [],
+        {},
+        strict=True,
+        workflow_coverage={"w.yml": ["MyIA.AI.Notebooks/Sudoku/tests/test_dlx.py"]},
+        workflow_test_cwd={},
+    )
+
+    assert unwatched == []
+
+
+def _make_matrix_workflow(root: Path, cwd: str, args: str) -> None:
+    """Pose un workflow a matrice portant un couple test-cwd / test-args."""
+    wf_dir = root / ".github" / "workflows"
+    wf_dir.mkdir(parents=True, exist_ok=True)
+    (wf_dir / "w.yml").write_text(
+        "name: t\non: [push]\njobs:\n  t:\n    strategy:\n      matrix:\n"
+        "        include:\n"
+        f"          - test-cwd: {cwd}\n"
+        f'            test-args: "{args}"\n',
+        encoding="utf-8",
+    )
+
+
+def test_verify_declared_test_cwd_accepte_la_jointure(tmp_path: Path) -> None:
+    """Le perimetre se valide par le `test-cwd` ou par la jointure cwd/args."""
+    from check_testpaths_coverage import verify_declared_test_cwd
+
+    _make_matrix_workflow(tmp_path, "S/tests", ".")
+    assert (
+        verify_declared_test_cwd(
+            tmp_path, False, test_cwd={".github/workflows/w.yml": ["S/tests"]}
+        )
+        == []
+    )
+
+    (tmp_path / ".github" / "workflows" / "w.yml").unlink()
+    _make_matrix_workflow(tmp_path, "S", "tests")
+    assert (
+        verify_declared_test_cwd(
+            tmp_path, False, test_cwd={".github/workflows/w.yml": ["S/tests"]}
+        )
+        == []
+    )
+
+
+def test_verify_declared_test_cwd_rougit_sur_un_perimetre_absent(
+    tmp_path: Path,
+) -> None:
+    """Un perimetre declare que le workflow ne joue plus est une derive."""
+    from check_testpaths_coverage import verify_declared_test_cwd
+
+    _make_matrix_workflow(tmp_path, "S/tests", ".")
+
+    problems = verify_declared_test_cwd(
+        tmp_path, False, test_cwd={".github/workflows/w.yml": ["S/other/tests"]}
+    )
+
+    assert len(problems) == 1
+    assert "S/other/tests" in problems[0]
+# --- #22735 : troisième sens, l'invariant de résolution des noms de modules ---
+
+
+def _make_repo_with_option(root: Path, *, option: bool, pin: bool) -> None:
+    """Repo minimal : pytest.ini (avec ou sans option) + workflow (avec ou sans pin)."""
+    ini = "[pytest]\ntestpaths =\n    scripts/tests\n"
+    if option:
+        ini += "consider_namespace_packages = true\n"
+    (root / "pytest.ini").write_text(ini, encoding="utf-8")
+    wf_dir = root / ".github" / "workflows"
+    wf_dir.mkdir(parents=True, exist_ok=True)
+    pip = (
+        '          pip install "pytest>=8" pytest-xdist\n'
+        if pin
+        else "          pip install pytest-xdist\n"
+    )
+    (wf_dir / "w.yml").write_text(
+        "name: t\non: [push]\njobs:\n  t:\n    steps:\n" + pip, encoding="utf-8"
+    )
+
+
+def test_namespace_option_green_on_current_repo() -> None:
+    """Sur l'état actuel, l'invariant de résolution des noms de modules est tenu."""
+    assert check_namespace_option(REPO_ROOT) == []
+
+
+def test_missing_namespace_option_is_detected(tmp_path: Path) -> None:
+    """Sans l'option dans pytest.ini, l'invariant est violé et signalé."""
+    _make_repo_with_option(tmp_path, option=False, pin=True)
+    problems = check_namespace_option(tmp_path)
+    assert len(problems) == 1
+    assert "consider_namespace_packages" in problems[0]
+
+
+def test_missing_pytest_pin_is_detected(tmp_path: Path) -> None:
+    """Sans pin `pytest >= 8` dans un workflow, l'option serait ignorée sans bruit.
+
+    Le défaut ne laisserait aucune trace (simple `PytestConfigWarning`) : le
+    garde le rend donc visible avant qu'il ne revienne en CI.
+    """
+    _make_repo_with_option(tmp_path, option=True, pin=False)
+    problems = check_namespace_option(tmp_path)
+    assert len(problems) == 1
+    assert "pytest>=8" in problems[0]
+
+
+def test_scripts_workflow_triggers_native_decide_changes_without_scoping_main_pushes() -> None:
+    """The Conway ratchet must run for its own source changes on PRs and main.
+
+    Main pushes are intentionally unfiltered for #24828's red-main sentinel;
+    pull requests retain the scoped trigger, including the native_decide subject.
+    """
+    yaml = __import__("pytest").importorskip("yaml")
+    wf_path = REPO_ROOT / ".github/workflows/scripts-tests.yml"
+    with wf_path.open(encoding="utf-8") as fh:
+        workflow = yaml.load(fh, Loader=yaml.BaseLoader)
+
+    triggers = workflow["on"]
+    assert "paths" not in triggers["push"]
+    pr_paths = triggers["pull_request"]["paths"]
+    assert "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean" in pr_paths
+    # Keep both the original ADK contracts tree and the #25201 refactor target.
+    assert "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**" in pr_paths
+    assert "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/**" in pr_paths
+
+    job = workflow["jobs"]["scripts-tests"]
+    assert job["name"] == "Scripts Tests (CPU)"
+    assert job["runs-on"] == ["self-hosted", "coursia-ephemeral", "coursia-linux"]
+
+
+def test_adk_job_targets_existing_refactor_files_for_run_and_collection() -> None:
+    """The ADK steps must execute and collect tests from their live tree."""
+    import pytest
+
+    yaml = pytest.importorskip("yaml")
+    wf_path = REPO_ROOT / ".github/workflows/scripts-tests.yml"
+    with wf_path.open(encoding="utf-8") as fh:
+        workflow = yaml.load(fh, Loader=yaml.BaseLoader)
+
+    steps = workflow["jobs"]["adk-contracts"]["steps"]
+    runs = "\n".join(step.get("run", "") for step in steps)
+    root = "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
+    contract = f"{root}/utils/test_adk_runtime_contracts.py"
+    providers = f"{root}/config/test_providers.py"
+    assert runs.count(contract) == 2, "runtime contract run and collection floor must target the live tree"
+    assert runs.count(providers) == 2, "provider test run and collection floor must target the live tree"
+    assert "Track2-GoogleADK" not in runs
+    assert (REPO_ROOT / contract).is_file()
+    assert (REPO_ROOT / providers).is_file()
+# --- #25366 T0 : basenames dupliqués + convergence CI -> testpaths ----------
+#
+# Cinquième sens : deux répertoires de tests découverts qui portent le même
+# basename de module obligent tout le dépôt à `--import-mode importlib`
+# (le workflow le documente comme load-bearing à cause de ces doublons).
+# Sixième sens : une cible-dossier CI absente des testpaths est invisible
+# d'un `pytest` racine — l'inverse du sens historique. T0 rend ces deux
+# mesures possibles et strict par défaut sous `--inventory` ; T1/T2 trient
+# la dette, T4 câble les sens dans la garde CI.
+
+
+def test_duplicate_basenames_detecte_la_collision(tmp_path: Path) -> None:
+    """Deux suites découvertes portant le même module sont signalées."""
+    from check_testpaths_coverage import duplicate_basenames
+
+    _make_suite(tmp_path, "scripts/alpha/tests")
+    _make_suite(tmp_path, "scripts/beta/tests")
+
+    assert duplicate_basenames(tmp_path) == {
+        "test_x.py": ["scripts/alpha/tests", "scripts/beta/tests"]
+    }
+
+
+def test_duplicate_basenames_compte_les_modules_dappui(tmp_path: Path) -> None:
+    """Un module d'appui non-test compte autant : c'est lui aussi un nom de
+    module top-level en collision (cas mesuré : `scan_slidev_composition`,
+    cité sans préfixe test_ par le commentaire du run partagé)."""
+    from check_testpaths_coverage import duplicate_basenames
+
+    _make_suite(tmp_path, "scripts/alpha/tests")
+    _make_suite(tmp_path, "scripts/beta/tests")
+    # Des noms de test distincts : seule la collision helpers.py doit sortir.
+    (tmp_path / "scripts/alpha/tests/test_x.py").unlink()
+    (tmp_path / "scripts/beta/tests/test_x.py").unlink()
+    (tmp_path / "scripts/alpha/tests/test_a.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts/beta/tests/test_b.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts/alpha/tests/helpers.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts/beta/tests/helpers.py").write_text("", encoding="utf-8")
+
+    assert duplicate_basenames(tmp_path) == {
+        "helpers.py": ["scripts/alpha/tests", "scripts/beta/tests"]
+    }
+
+
+def test_duplicate_basenames_exempte_init_et_conftest(tmp_path: Path) -> None:
+    """`__init__.py` (marqueur de paquet) et `conftest.py` (spécial-casé par
+    pytest) ne créent pas de collision — critère 3 de #25366 les excepte."""
+    from check_testpaths_coverage import duplicate_basenames
+
+    _make_suite(tmp_path, "scripts/alpha/tests")
+    _make_suite(tmp_path, "scripts/beta/tests")
+    (tmp_path / "scripts/alpha/tests/test_x.py").unlink()
+    (tmp_path / "scripts/beta/tests/test_x.py").unlink()
+    (tmp_path / "scripts/alpha/tests/test_a.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts/beta/tests/test_b.py").write_text("", encoding="utf-8")
+    for rel in ("scripts/alpha/tests", "scripts/beta/tests"):
+        for name in ("__init__.py", "conftest.py"):
+            (tmp_path / rel / name).write_text("", encoding="utf-8")
+
+    assert duplicate_basenames(tmp_path) == {}
+
+
+def test_duplicate_basenames_ne_compte_que_les_enfants_directs(
+    tmp_path: Path,
+) -> None:
+    """Un fichier dans un sous-dossier non découvert ne collisionne pas au
+    niveau du parent : seuls les enfants directs des répertoires découverts
+    entrent en collision comme modules top-level."""
+    from check_testpaths_coverage import duplicate_basenames
+
+    _make_suite(tmp_path, "scripts/alpha/tests")
+    _make_suite(tmp_path, "scripts/beta/tests")
+    (tmp_path / "scripts/alpha/tests/test_x.py").unlink()
+    (tmp_path / "scripts/alpha/tests/test_a.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts/alpha/tests/unit").mkdir()
+    (tmp_path / "scripts/alpha/tests/unit/test_b.py").write_text("", encoding="utf-8")
+
+    assert duplicate_basenames(tmp_path) == {}
+
+
+def test_duplicate_basenames_plafond_sur_main_actuel() -> None:
+    """Contrôle positif sur le dépôt réel : le sens voit la dette connue.
+
+    36 basenames mesurés le 2026-11-09 (#25366), dont un triple. Le plafond
+    est un cliquet inversé : il rougit sur un doublon NOUVEAU, verdit quand
+    T2 en supprime — jamais l'inverse.
+    """
+    from check_testpaths_coverage import duplicate_basenames
+
+    dupes = duplicate_basenames(REPO_ROOT)
+    assert len(dupes) <= 36, f"dette de doublons en hausse : {len(dupes)} > 36"
+    assert "test_scan_slidev_composition.py" in dupes
+    assert len(dupes["test_scan_slidev_composition.py"]) == 3
+
+
+def test_discover_test_dirs_voit_la_racine_tests(tmp_path: Path) -> None:
+    """#25366 T0 : `tests/` à la racine du dépôt fait partie de l'inventaire."""
+    from check_testpaths_coverage import discover_test_dirs
+
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_r.py").write_text("", encoding="utf-8")
+    _make_suite(tmp_path, "scripts/alpha/tests")
+
+    assert discover_test_dirs(tmp_path) == ["scripts/alpha/tests", "tests"]
+
+
+def test_coverage_without_testpaths_rougit_sur_la_racine_tests() -> None:
+    """Contrôle positif sur le dépôt réel : `tests` (racine) est joué par le
+    run partagé de la CI mais absent des testpaths — critère 1 de #25366,
+    le trou le plus étroit. Ce test rougira en vertu une fois T1 tranché."""
+    from check_testpaths_coverage import coverage_without_testpaths
+
+    testpaths = load_testpaths(REPO_ROOT / "pytest.ini")
+    excluded = load_ci_excluded(REPO_ROOT)
+
+    assert coverage_without_testpaths(testpaths, excluded) == ["tests"]
+
+
+def test_coverage_without_testpaths_vert_quand_declare(tmp_path: Path) -> None:
+    """Une cible-dossier dans les testpaths ne sort pas ; une cible-fichier
+    n'est pas concernée ; une exclusion écrite compte comme triée."""
+    from check_testpaths_coverage import coverage_without_testpaths
+
+    coverage = {
+        "w.yml": ["scripts/alpha/tests", "Sudoku/tests/test_dlx.py"]
+    }
+
+    assert coverage_without_testpaths(["scripts/alpha/tests"], {}, coverage) == []
+    assert coverage_without_testpaths(["scripts/other/tests"], {}, coverage) == [
+        "scripts/alpha/tests"
+    ]
+    assert (
+        coverage_without_testpaths(
+            [], {"scripts/alpha/tests": "motif ecrit"}, coverage
+        )
+        == []
+    )
+
+
+def test_cli_inventory_est_strict_par_defaut(tmp_path: Path) -> None:
+    """#25366 T0 : sans drapeau, --inventory marque les trous FAIL ; avec
+    --advisory, il les marque INFO (le downgrade se voit dans la sortie)."""
+    import subprocess
+
+    _make_suite(tmp_path, "scripts/beta/tests")
+    (tmp_path / "pytest.ini").write_text(
+        "[pytest]\ntestpaths =\n    scripts/alpha/tests\n", encoding="utf-8"
+    )
+
+    def _run(*flags: str) -> str:
+        proc = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scripts/check_testpaths_coverage.py"),
+             "--repo-root", str(tmp_path), "--inventory", *flags],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        return proc.stdout
+
+    assert "FAIL scripts/beta/tests" in _run()
+    assert "INFO scripts/beta/tests" in _run("--advisory")
+
+
+def test_cli_inventory_advisory_est_vert_sur_main() -> None:
+    """Sur le dépôt réel, la dette connue (25 répertoires, 36 basenames,
+    `tests` racine) listée en advisory ne fait pas échouer : c'est le mode
+    mesure de T1/T2, exit 0 garanti."""
+    import subprocess
+
+    proc = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts/check_testpaths_coverage.py"),
+         "--repo-root", str(REPO_ROOT), "--inventory", "--advisory"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode == 0, proc.stdout
+    assert "INFO tests" in proc.stdout
+    assert "FAIL" not in proc.stdout

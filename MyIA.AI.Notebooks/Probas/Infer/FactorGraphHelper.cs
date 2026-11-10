@@ -157,6 +157,15 @@ public static class FactorGraphHelper
         // %TEMP% local : dernier recours quand aucun cwd n'est defini
         try { Add(Path.GetTempPath()); } catch { }
 
+        // Sous-dossier GeneratedSource : Infer.NET.Compiler.GeneratedSourceFolder
+        // vaut "GeneratedSource" par defaut, donc les .gv sont sous {cwd}/GeneratedSource/
+        // et le pattern Model_*.gv ne les trouve pas au niveau superieur. Voir #18672.
+        var roots = list.ToArray();
+        foreach (var root in roots)
+        {
+            Add(Path.Combine(root, "GeneratedSource"));
+        }
+
         return list.ToArray();
     }
 

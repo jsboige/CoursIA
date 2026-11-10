@@ -89,8 +89,8 @@ class RLPortfolioAlgorithm(QCAlgorithm):
         high_vol = 1 if spy_vol > vol_threshold else 0
 
         # Feature 5-6: Momentum
-        momentum_5 = 1 if spy_returns.rolling(5).sum() > 0 else 0
-        momentum_20 = 1 if spy_returns.rolling(20).sum() > 0 else 0
+        momentum_5 = 1 if spy_returns.rolling(5).sum().iloc[-1] > 0 else 0
+        momentum_20 = 1 if spy_returns.rolling(20).sum().iloc[-1] > 0 else 0
 
         # Feature 7-8: Flight to safety (TLT outperforming SPY)
         spy_return_20 = spy_returns.rolling(20).sum().iloc[-1]

@@ -4,7 +4,11 @@
 
   This file lays out the basic structures and functions for the formalisation
   of the approval core, following the result by Becker, Greger and Peters
-  (2026), arXiv 2609.11912.
+  (2026), arXiv 2609.11912 (p. 1).
+
+  Archived source: the reference PDF has been deposited in the shared
+  repository since 2026-10-20 (20 pages); the "p. N" references below
+  point into that archived PDF.
 
   Tranche 1 of the execution plan for issue #17988 :
   - `ApprovalBallot`     — subset of approved candidates per voter
@@ -64,14 +68,15 @@ structure PaymentFunction (V : Type) [Fintype V] where
 /-- Aggregate approval utility: weighted sum of individual happinesses,
     where each voter's coefficient is `1 / (1 + p.v)` (interpretation: a
     positive payment reduces the voter's weight, a negative payment raises
-    it — the **base** of the BGP 2026 objective function without the
-    logarithm).
+    it — the **base** of the BGP 2026 objective function (harmonic entropy,
+    § 4, p. 6) without the logarithm).
 
     This definition serves as a **proxy** for `HarmonicEntropy` (which will
     introduce the logarithm via `Mathlib.Analysis.SpecialFunctions.Log` in
-    Tranche 3). The proxy is sufficient to express the technical lemmas of
-    Tranche 2 (monotonicity in committee composition) that do not depend on
-    the log itself.
+    Tranche 3); the paper's harmonic entropy is introduced on p. 6 and
+    formalised in Def. 4.3, p. 8. The proxy is sufficient to express the
+    technical lemmas of Tranche 2 (monotonicity in committee composition)
+    that do not depend on the log itself.
 
     No concavity is claimed in the payment dimension: for two voters with
     equal happiness and `p = (a, -a)`, the aggregate equals

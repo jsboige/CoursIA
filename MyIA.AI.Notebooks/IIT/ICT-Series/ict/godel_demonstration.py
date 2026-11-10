@@ -99,25 +99,46 @@ def godel_pythagore(version: int) -> str:
     # On itere k fois la substitution @ <- repr(s). A chaque iteration, le
     # nombre de @ dans s est **carre** (chaque @ est remplace par une copie
     # de s qui contient elle-meme plusieurs @), donc la longueur explose
-    # super-lineairement. Mesure : 3 iterations sur la base ci-dessous
-    # produisent 256 @ et ~120k caracteres. L'article de Sheydvasser continue
-    # l'iteration jusqu'a > 10^212077 chiffres numeriques, ce qui necessiterait
-    # k ~ 30 iterations (chaine de ~10^9 chars) -- hors de portee d'un
-    # notebook pedagogique. Le verdict garde l'esprit du critere : la
-    # diagonale fait exploser la longueur.
+    # super-lineairement. Mesure (base ci-dessous, 1783 chars, 2 @) :
+    # 4 iterations -> 256 @ remplaces, chaine de 120 938 591 chars,
+    # len(repr(s)) = 125 661 783 > 10^8 (construction ~0,4 s). La base est
+    # developpee en matiere Tarski reelle (langage, axiomes nommes, definition
+    # Tarski-Gupta de l'angle droit par reflexion) d'apres Sheydvasser : le
+    # seuil 10^8 n'est franchissable qu'a la 4e iteration, et uniquement si
+    # la base depasse ~1500 chars -- l'escalier des longueurs (les seuils
+    # accessibles sont ~1e5, ~2,7e7 puis ~1,7e12 chars) ne permet aucune
+    # valeur intermediaire.
     base = (
-        "Informal paraphrase (not strict Tarski language): "
-        "B3(x, y, z) means 'y is between x and z'. "
-        "Theorem (Pythagoras, self-referential encoding v5): "
-        "For any points A, B, C such that B3(A, C, B) "
-        "and AC perpendicular to BC, AB^2 = AC^2 + BC^2. "
+        "Informal paraphrase (not strict Tarski language), developed per Sheydvasser "
+        "(The Godel Number of a Non-Trivial Sentence, 04/07/2026). "
+        "Language of Tarski: equality, betweenness B3(x, y, z) read as 'y lies between "
+        "x and z, possibly at an endpoint', and congruence Cong(x, y, z, w) read as "
+        "'segment xy has the same length as segment zw'. There is no distance function "
+        "and no angle predicate in the bare language: everything is expressed through "
+        "B3 and Cong, the two geometric primitives of Tarski's axiom system (1959). "
+        "Axioms invoked upstream: reflexivity of congruence, Cong(x, y, y, x); "
+        "transitivity of congruence; identity of segments; segment construction; "
+        "the outer Pasch axiom; and the Euclidean axiom handling parallels. "
+        "Right angle (Tarski-Gupta definition, by reflection): angle BAC is right "
+        "when C has a mirror image C' through point A, that is B3(C, A, C') with "
+        "Cong(A, C, A, C'), such that C' lies on the ray of B; perpendicularity of "
+        "AC and BC is then expressed by B3 and Cong alone, without any appeal to "
+        "angles or distances. "
+        "Theorem (Pythagoras, self-referential encoding v5): for any points A, B, C "
+        "such that B3(A, C, B) holds and AC is perpendicular to BC in the sense of "
+        "the Tarski-Gupta reflection definition above, the squared length of AB "
+        "equals the sum of the squared lengths of AC and BC, the squaring and the "
+        "sum being themselves paraphrased through iterated congruences. "
         "Encoded statement: <@> "
-        "Note: <@> refers to the Gödel code of THIS very sentence. "
-        "The diagonal lemma guarantees that such a self-referential "
-        "encoding exists."
+        "Note: <@> refers to the Godel code of THIS very sentence, obtained by "
+        "substituting the sentence for its own placeholder -- the diagonal lemma "
+        "of Godel guarantees that such a self-referential encoding exists, and "
+        "Sheydvasser's article carries the analogous computation through, showing "
+        "that the Godel number of the plain Pythagoras sentence already exceeds "
+        "10^212077."
     )
     s = base
-    n_iter = 3  # 3 iterations -> 256 @ (k**2 par iter), ~120k caracteres
+    n_iter = 4  # 4 iterations -> 256 @ remplaces, ~1,21e8 chars (mesure)
     for _ in range(n_iter):
         s = s.replace("@", repr(s))
     return s
@@ -130,14 +151,16 @@ def godel_number(s: str, n_primes: int | None = None) -> int:
 
     Le +1 evite l'exposant 0 (qui ferait disparaitre le facteur premier).
     Les premiers sont pre-calcules (_PRIMES_10K en fournit 1229). Pour des
-    chaînes > 1229 caractères, il faut etendre le crible -- pour la version
-    5 (longueur 10^8+), cette fonction renvoie une borne log10 et -1.
+    chaînes plus longues, il faut etendre le crible -- pour la version 5
+    (longueur ~1,2e8), le crible serait de plusieurs GB : la fonction
+    renvoie alors la sentinelle -1, et les bornes vivent dans
+    godel_number_log10_bounds.
     """
     if n_primes is None:
         n_primes = len(_PRIMES_10K)
     if len(s) > n_primes:
-        # Trop long pour un calcul exact -- on retourne une borne log10.
-        return -1  # sentinel : voir godel_number_log10
+        # Trop long pour un calcul exact -- sentinelle.
+        return -1  # voir godel_number_log10 et godel_number_log10_bounds
     prod = 1
     for i, c in enumerate(s):
         prod *= _PRIMES_10K[i] ** (ord(c) + 1)
@@ -167,8 +190,36 @@ def godel_number_log10(s: str) -> float:
     return sum((ord(c) + 1) * log10(p) for i, (c, p) in enumerate(zip(s, _PRIMES_10K)))
 
 
+def godel_number_log10_bounds(s: str) -> tuple[float, float]:
+    """Bornes exactes de log10(N) SANS crible, robustes aux chaines enormes.
+
+    log10(N) = Σ_{i=0}^{len(s)-1}  (ord(s[i]) + 1) * log10(p_i)
+
+    Borne inferieure : p_i >= 2 pour tout i, donc log10(N) >= S * log10(2)
+    avec S = Σ (ord(s[i]) + 1). Borne superieure : Rosser-Schoenfeld,
+    p_n < n * (ln n + ln ln n) pour n >= 6 (la meme borne que celle utilisee
+    par godel_number_log10 pour dimensionner son crible). Pour la version 5
+    (~1,2e8 chars), le calcul exact exigerait les 1,2e8 premiers nombres
+    premiers (crible de plusieurs GB) : ces bornes O(n) sans memoire sont la
+    verification independante du meme ordre de grandeur.
+    """
+    total = sum(ord(c) + 1 for c in s)
+    n = len(s)
+    if n < 6:
+        p_max_log10 = log10(15)
+    else:
+        p_max = n * (math.log(n) + math.log(math.log(n)))
+        p_max_log10 = log10(p_max)
+    return total * log10(2), total * p_max_log10
+
+
 if __name__ == "__main__":
     for v in range(1, 6):
         s = godel_pythagore(v)
-        n_digits_est = godel_number_log10(s)
-        print(f"version {v}: len(s) = {len(s):>10}  log10(N) ~ {n_digits_est:.3e}")
+        if v <= 4:
+            n_digits_est = godel_number_log10(s)
+            print(f"version {v}: len(s) = {len(s):>12,}  log10(N) ~ {n_digits_est:.3e}")
+        else:
+            lo, hi = godel_number_log10_bounds(s)
+            print(f"version {v}: len(s) = {len(s):>12,}  len(repr(s)) = {len(repr(s)):,}")
+            print(f"           log10(N) dans [{lo:.3e}, {hi:.3e}] (bornes Rosser-Schoenfeld)")

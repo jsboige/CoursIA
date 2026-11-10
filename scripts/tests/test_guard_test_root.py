@@ -89,7 +89,7 @@ def test_real_workflow_still_matches():
 def test_drifted_real_workflow_fails_loud(tmp_path, capsys, monkeypatch):
     """Cas 1 de l'issue : le vrai workflow prive de son `-n ` => rc=2 + message PYTEST_BLOCK_RE."""
     drifted = REAL_WORKFLOW.read_text(encoding="utf-8").replace(
-        " -n 4 --dist loadscope", " --dist loadscope")
+        ' -n "$xdist_n" --dist loadscope', " --dist loadscope")
     assert " -n " not in drifted, "mutation de test sans effet"
     wf = tmp_path / "drifted.yml"
     wf.write_text(drifted, encoding="utf-8")

@@ -2,7 +2,7 @@
 from AlgorithmImports import *
 from datetime import datetime
 from alpha_models import FamaFrenchAlpha, AllWeatherAlpha
-from portfolio_construction import MultiStrategyPCM
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
 # endregion
 
 FF_TICKERS = ["VLUE", "MTUM", "SIZE", "QUAL", "USMV"]
@@ -116,12 +116,14 @@ class FrameworkCompositeFamaFrenchAllWeather(QCAlgorithm):
             ff_allocation = float(self.GetParameter("ff_allocation", 0.20))
             aw_allocation = float(self.GetParameter("aw_allocation", 0.80))
 
-            self.set_portfolio_construction(MultiStrategyPCM(
+            self.set_portfolio_construction(MultiStrategyPouchesPCM(
                 alpha_allocations={
                     "FamaFrench": ff_allocation,
                     "AllWeather": aw_allocation,
                 },
-                rebalance=timedelta(days=31)  # Monthly rebalance
+                rebalance=timedelta(days=31),  # Monthly rebalance
+                additive=True,  # Univers disjoints : identique au mode base
+                algorithm=self,
             ))
 
             self.set_risk_management(NullRiskManagementModel())

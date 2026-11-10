@@ -8,15 +8,27 @@ $LogDir = $OutDir
 $Python = "C:\Users\MYIA\miniconda3\envs\coursia-ml-training\python.exe"
 $Train = Join-Path $ScriptDir "train_multiscale_gnn.py"
 
+# Ecriture sans BOM (PowerShell 5.1) : la forme `Out-File` avec l'encodage
+# `utf8` ecrit un BOM sous 5.1 (EF BB BF), visible sur la premiere ligne affichee
+# du fichier. L'append
+# est preserve : le contenu deja present est relu, puis le fichier est reecrit.
+function Add-LogNoBom {
+    param([string]$Path, [string]$Text)
+    $enc = New-Object System.Text.UTF8Encoding($false)
+    $existing = ""
+    if (Test-Path -LiteralPath $Path) { $existing = [System.IO.File]::ReadAllText($Path) }
+    [System.IO.File]::WriteAllText($Path, ($existing + $Text + "`r`n"), $enc)
+}
+
 function Run-Sweep {
     param([string]$Name, [string[]]$Args)
     $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
     $log = Join-Path $LogDir "$Name.log"
     $json = Join-Path $OutDir "$Name.json"
-    "[$(Get-Date -Format o)] START $Name" | Out-File -Append -Encoding utf8 (Join-Path $LogDir "_overall.log")
+    Add-LogNoBom -Path (Join-Path $LogDir "_overall.log") -Text "[$(Get-Date -Format o)] START $Name"
     & $Python $Train @Args --out-json $json *>&1 | Tee-Object -FilePath $log
     $exit = $LASTEXITCODE
-    "[$(Get-Date -Format o)] END   $Name exit=$exit" | Out-File -Append -Encoding utf8 (Join-Path $LogDir "_overall.log")
+    Add-LogNoBom -Path (Join-Path $LogDir "_overall.log") -Text "[$(Get-Date -Format o)] END   $Name exit=$exit"
 }
 
 # Run 1 — extended horizons (10 instead of 6), 8 seeds, 5 splits, 1000 epochs
@@ -59,4 +71,4 @@ Run-Sweep "run4_longer_training" @(
     "--skip-remote"
 )
 
-"[$(Get-Date -Format o)] ALL DONE" | Out-File -Append -Encoding utf8 (Join-Path $LogDir "_overall.log")
+Add-LogNoBom -Path (Join-Path $LogDir "_overall.log") -Text "[$(Get-Date -Format o)] ALL DONE"

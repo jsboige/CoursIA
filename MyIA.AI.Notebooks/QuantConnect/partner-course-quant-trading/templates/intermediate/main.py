@@ -78,7 +78,7 @@ class IntermediateMomentumAlgorithm(QCAlgorithm):
 
         # 2) Construction de portefeuille : ponderation egale
         self.set_portfolio_construction(
-            EqualWeightingPortfolioConstructionModel(self.date_rules.month_start())
+            EqualWeightingPortfolioConstructionModel(self.date_rules.month_start("SPY"))
         )
 
         # 3) Gestion du risque : trailing stop a 5 %

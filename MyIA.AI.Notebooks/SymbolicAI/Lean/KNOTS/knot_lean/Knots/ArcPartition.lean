@@ -7,12 +7,11 @@
   `arcPartition` ; les tranches 4+ (calcul polynomial `alexander_unknot`,
   `alexander_trefoil`, `det_two_aux`/`det_three_aux`) restent dans
   Conway.lean. Le sibling EN `Knots/ArcPartition_en.lean` reprend le corps
-  à l'identique ; seuls son en-tête, ses imports (`_en`) et son namespace
-  (`Knots_en`) sont traduits. Les docstrings du corps sont, à cette
-  tranche, le texte français verbatim des deux côtés : la traduction
-  anglaise est optionnelle (`code-style.md`) et n'est pas revendiquée ici
-  — `check_i18n_siblings.py` désigne la paire `HALF-DONE`, la seule du lake
-  dans ce cas, et la byte-identity du corps est conservée.
+  à l'identique ; seuls son en-tête, ses imports (`_en`), son namespace
+  (`Knots_en`) et ses docstrings sont traduits. Les docstrings du corps sont
+  la traduction anglaise de celles du fichier français —
+  `check_i18n_siblings.py` ne désigne plus la paire `HALF-DONE`, et la
+  byte-identity du corps est conservée.
 
   Origine : Conway.lean l.65-979 (915 lignes), commit de référence
   origin/main 71514d576. Aucun reformatage, aucune tactique modifiée. -/
@@ -611,6 +610,16 @@ theorem kinoshitaTerasaka_arcPartition :
     arcPartition kinoshitaTerasakaDiagram =
       [[13], [22], [3, 4], [1, 2], [5, 6], [9, 7, 8], [14, 15], [10, 11, 12],
        [18, 19], [20, 21], [16, 17]] := by
+  decide
+
+/-- Contrôle : partition d'arcs du mutant de sphère — 11 arcs ; les arcs de
+bord [13] et [22] sont préservés, l'arc [9, 7, 8] du census Conway devient
+[9, 11, 12] (le point de bord 9 se recolle dans l'arc 10-11-12), signature
+du recollement (8 ↔ 11) (13 ↔ 22). -/
+theorem conwayMutant_arcPartition :
+    arcPartition conwayMutantDiagram =
+      [[13], [22], [3, 4], [1, 2], [5, 6], [9, 11, 12], [20, 21], [10, 7, 8],
+       [18, 19], [14, 15], [16, 17]] := by
   decide
 
 /-- Entrée de la matrice d'Alexander : ligne du croisement `c`, colonne de

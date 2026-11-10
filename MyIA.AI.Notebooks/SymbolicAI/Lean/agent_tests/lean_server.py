@@ -4,22 +4,23 @@ Provides LeanVerifier class with verify_project_file() interface
 expected by multi_agent_proof.py. Build results are cached by file content
 hash and shared across all LeanVerifier instances.
 
-Lake invocation (2026-05-11): the original implementation called WSL with
-``source ~/.elan/env && lake build`` — but on this machine elan is installed
-Windows-side under ``%USERPROFILE%/.elan/bin``, not in any WSL distro. The
-WSL ``source`` failed silently (exit 1, output empty), short-circuited the
-``&&``, and the verifier saw 0 errors → reported SUCCESS without ever
-building. ``_resolve_lake_command`` now prefers Windows-side ``lake.exe`` so
-prover builds and operator builds both write to the same ``.lake/build/lib``
-cache (verified ~2s for a Voting.lean cache hit).
+Lake invocation (2026-10-20, #15666 migration prioritaire): toute execution
+est confiee a l'organe canonique ``scripts/lean/lean_exec.py`` (admission
+machine-wide, budget, kill-tree, backend epingle par lake) via le client
+partage ``lean_notebook_utils._organ_run``. L'historique (2026-05-11) :
+l'implementation appelait WSL avec ``source ~/.elan/env && lake build``, puis
+``_resolve_lake_command`` preferait ``lake.exe`` Windows — deux voies
+improvisees qui echappaient au budget commun (incident fondateur 2026-09-12).
+La substitution des env-knobs ``LEAN_LAKE_BIN``/``LEAN_USE_WSL`` est
+l'epinglage par lake de l'organe (``lean_exec backends``, mesure WSL 8,4 s vs
+natif 36,9 s a froid) : le choix backend n'est plus decide par appelant.
 """
 
 import hashlib
 import math
 import os
-import platform
-import subprocess
 import re
+import tempfile
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -55,52 +56,65 @@ def _get_strip_lean_comments():
     return _strip_lean_comments
 
 
-def _to_wsl_path(win_path: str) -> str:
-    """Convert ``C:\\foo\\bar`` to ``/mnt/c/foo/bar`` for use inside WSL bash."""
-    p = str(win_path).replace("\\", "/")
-    if len(p) >= 2 and p[1] == ":":
-        return f"/mnt/{p[0].lower()}{p[2:]}"
-    return p
+# Client partage de l'organe confine, charge LAZILY par chemin direct — meme
+# discipline que ``_lean_utils`` ci-dessus : le gate CI lean-axiom fait
+# ``from lean_server import LeanVerifier`` sur un runner nu, et l'import
+# du client ne doit peser qu'au premier appel reel de build.
+_lean_nbu = None
+_LEAN_NOTEBOOK_UTILS_PATH = (
+    Path(__file__).resolve().parent.parent / "lean_notebook_utils.py"
+)
 
 
-def _resolve_lake_command(extra_args: List[str], cwd: str = None) -> Tuple[List[str], dict]:
-    """Return (argv, env) for invoking ``lake <extra_args>``.
+def _get_lean_notebook_utils():
+    """Return le module client ``lean_notebook_utils``, charge au 1er usage."""
+    global _lean_nbu
+    if _lean_nbu is None:
+        import importlib.util as ilu
 
-    Strategy (in order):
-    1. ``$LEAN_LAKE_BIN`` if set and executable — operator override.
-    2. Native Windows ``lake.exe`` under ``%USERPROFILE%/.elan/bin`` — fastest
-       path, shares the on-disk ``.lake/build`` cache with manual builds.
-    3. WSL ``lake`` if the Linux toolchain is available (sourced from
-       ``~/.elan/env`` inside WSL).
-    4. Bare ``lake`` on PATH — assumes lake is otherwise reachable.
+        spec = ilu.spec_from_file_location(
+            "_lean_nbu_client", _LEAN_NOTEBOOK_UTILS_PATH)
+        mod = ilu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _lean_nbu = mod
+    return _lean_nbu
 
-    The returned env injects elan's bin directory into PATH for option 2 so
-    sub-tools (lean, leanc) resolve without a separate elan setup.
+
+def _find_lean_exec() -> Path:
+    """Localise l'organe canonique ``scripts/lean/lean_exec.py``.
+
+    Marche de parents depuis ce fichier (agent_tests/ -> Lean/ -> SymbolicAI
+    -> ... -> racine du depot), meme strategie que le client partage.
     """
-    env = os.environ.copy()
+    current = Path(__file__).resolve().parent
+    for _ in range(14):
+        candidate = current / "scripts" / "lean" / "lean_exec.py"
+        if candidate.exists():
+            return candidate.resolve()
+        current = current.parent
+        if current == current.parent:
+            break
+    raise FileNotFoundError(
+        "scripts/lean/lean_exec.py introuvable — organe d'execution confine "
+        "requis par LeanVerifier (See #15666)"
+    )
 
-    override = os.getenv("LEAN_LAKE_BIN")
-    if override and Path(override).exists():
-        return [override, *extra_args], env
 
-    # WSL preferred when LEAN_USE_WSL=1 (Conway KS Pilier 1 #1651: WSL .lake
-    # cache is already warm, Windows lake.exe would trigger 1-2h Mathlib
-    # rebuild because OS-specific .c IR files differ).
-    if os.getenv("LEAN_USE_WSL") == "1":
-        cd_prefix = f"cd '{_to_wsl_path(cwd)}' && " if cwd else ""
-        wsl_cmd = cd_prefix + "source ~/.elan/env 2>/dev/null; lake " + " ".join(
-            f"'{a}'" for a in extra_args
-        )
-        return ["wsl", "-d", "Ubuntu", "bash", "-lc", wsl_cmd], env
+def _organ_run(project: str, cmd_args: List[str], timeout: int,
+               stdin_file: str = None) -> Tuple[int, str, str]:
+    """Confie ``cmd_args`` a l'organe confine (See #15666, migration prioritaire).
 
-    if platform.system() == "Windows":
-        elan_bin = Path.home() / ".elan" / "bin"
-        lake_exe = elan_bin / "lake.exe"
-        if lake_exe.exists():
-            env["PATH"] = f"{elan_bin}{os.pathsep}{env.get('PATH', '')}"
-            return [str(lake_exe), *extra_args], env
-
-    return ["lake", *extra_args], env
+    Le payload decrit ce que L'ORGANE lancera (admission machine-wide, budget,
+    kill-tree, backend epingle) — ce fichier ne spawn aucun processus lake.
+    Contrat du client partage : ``(rc_enfant, out, err)``, -1 = timeout, -2 =
+    organe refuse/injoignable (raison dans err).
+    """
+    nbu = _get_lean_notebook_utils()
+    organ = _find_lean_exec()
+    return nbu._organ_run(
+        project, cmd_args, timeout,
+        stdin_file=stdin_file, organ=organ,
+    )
 
 
 def _lake_build_timeout_s() -> float:
@@ -186,6 +200,33 @@ def _find_lake_root(start: Path) -> Optional[Path]:
 # exactly what breaks the gate. Pinned by tests/test_check_axioms.py.
 _LEAN_ID = r"[^\W\d][\w'.!?]*"
 _LEAN_NS = r"[^\W\d][\w'.]*"
+
+# Lean may append a diagnostic decoration to a declaration name in the
+# `#print axioms` output -- e.g. the U+2020 dagger on
+# `Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝`. The
+# allow-list spells that anchor without the glyph, so an exact string
+# comparison reports an already-recounted `native_decide` as forbidden
+# (#21947). Normalizing BOTH sides of the comparison removes the decoration
+# instead of widening the allow-list: a new `native_decide` still has to be
+# listed explicitly.
+# The preserved set is the identifier alphabet itself (`_LEAN_ID` above):
+# `?` and `!` are legal trailing characters of a Lean name, not decorations
+# -- Lean 4.35 emits a distinct axiom ending in `?` (adjoint dossier on
+# #21955), and stripping it fused that axiom with a DIFFERENT allow-listed
+# name, a false PASS. Only characters outside the alphabet (the dagger,
+# whitespace) are decorations.
+_AXIOM_NAME_DECORATION_RE = re.compile(r"[^\w.'!?]+$")
+
+
+def normalize_axiom_name(name: str) -> str:
+    """Return the comparable form of an axiom / anchor name.
+
+    Strips the surrounding whitespace, the trailing dot the extractor drops,
+    and any trailing decoration Lean appended to the name. Applied to the
+    extracted names AND to the allow-list entries, so the two sides are
+    compared on the anchor itself.
+    """
+    return _AXIOM_NAME_DECORATION_RE.sub("", name.strip().rstrip("."))
 
 _DECL_HEAD_RE = re.compile(
     r"^(?:@\[[^\]]*\]\s*)*"                                     # attributes (zero or more)
@@ -518,9 +559,11 @@ class LeanVerifier:
     def _run_lake_build(self, project: Path, relative_path: str) -> dict:
         """Execute ``lake build`` for a module, sharing the on-disk cache.
 
-        Uses Windows-side lake.exe by default (see ``_resolve_lake_command``);
-        the cwd is the Lake project root so ``.lake/build/lib/<module>.olean``
-        is written/read at the same path as manual builds.
+        Migration #15666 : le build passe par l'organe confine
+        ``scripts/lean/lean_exec.py`` (voir ``_organ_run``) — admission
+        machine-wide, budget, kill-tree, backend epingle par lake ; le
+        cwd est la racine du projet pour ecrire/lire le meme cache
+        ``.lake/build/lib/<module>.olean`` que les builds manuels.
 
         Timeout defaults to 600s (increased from 300s). WSL builds via
         ``/mnt/c/`` suffer 9P/NTFS overhead (~10x slower than native), so a
@@ -537,78 +580,31 @@ class LeanVerifier:
         if module_name.endswith(".lean"):
             module_name = module_name[:-5]
 
-        cmd, env = _resolve_lake_command(["build", "-R", module_name], cwd=str(project))
-
-        # #18432: capture the budget ONCE — the subprocess timeout and the
-        # TimeoutExpired report must cite the exact same value (no second
-        # getenv, no truncation).
+        # #18432: capture the budget ONCE — la commande et le rapport de
+        # timeout doivent citer la meme valeur (pas de second getenv,
+        # pas de troncature).
         budget = _lake_build_timeout_s()
 
-        try:
-            start = time.time()
-            result = subprocess.run(
-                cmd,
-                cwd=str(project),
-                capture_output=True,
-                text=True, encoding="utf-8", errors="replace",
-                timeout=budget,
-                env=env,
-            )
-            duration = time.time() - start
-            # Credit this compile against the prover's reasoning budget.
-            LeanVerifier._total_build_seconds += duration
+        # Migration #15666 (prioritaire) : le build est confie a l'organe
+        # confine (admission + budget machine-wide, kill-tree). Le contrat
+        # du client : rc = code enfant, -1 = timeout (sortie partielle dans
+        # out/err — les fichiers de capture ont recu l'ecriture pre-kill,
+        # equivalent du partial de l'ancien TimeoutExpired), -2 = organe
+        # refuse/injoignable (raison dans err).
+        start = time.time()
+        rc, out, err = _organ_run(
+            str(project), ["lake", "build", "-R", module_name], int(budget))
+        duration = time.time() - start
+        # Credit this compile against the prover's reasoning budget
+        # (englobe l'admission de l'organe, ~ < 1 s).
+        LeanVerifier._total_build_seconds += duration
 
-            output = result.stdout + "\n" + result.stderr
-
-            # Filter out the stale-config warning that lake emits when the
-            # cached configuration is out of date — it is NOT a proof error.
-            config_stale = "compiled configuration is invalid" in output
-            if config_stale:
-                output_lines = []
-                for line in output.split("\n"):
-                    if "compiled configuration is invalid" not in line:
-                        output_lines.append(line)
-                output = "\n".join(output_lines)
-
-            errors = self._extract_errors(output)
-
-            # If lake itself failed (returncode != 0) but no parsed errors,
-            # surface a synthetic error so callers don't think this was a
-            # silent success — protects against the regression where missing
-            # toolchain returned 0 errors and was treated as success.
-            # Exception: if the only issue was a stale config (now fixed by
-            # -R), and -R succeeded (returncode 0), this branch is skipped.
-            if not errors and result.returncode != 0 and not config_stale:
-                errors = [
-                    f"lake exit={result.returncode}; output: {output[:500] or '(empty)'}"
-                ]
-
-            return {
-                "success": len(errors) == 0,
-                "errors": "\n".join(errors),
-                "raw_output": output,
-                "build_time_s": round(duration, 1),
-                "lake_cmd": cmd[0],
-            }
-        except subprocess.TimeoutExpired as _te:
+        if rc == -1:
             # #18432: a wall-clock exhaustion is NOT by itself a compile
-            # verdict. But subprocess hands us the PARTIAL stdout/stderr
-            # captured before the kill — a real Lean diagnostic may already
-            # be in there, in which case the failure is CONFIRMED (errors
-            # win over UNKNOWN). Only a timeout with no parseable error is
-            # the verdict-less UNKNOWN (wall_clock_timeout marker).
-            def _decode(data) -> str:
-                if data is None:
-                    return ""
-                if isinstance(data, bytes):
-                    return data.decode("utf-8", errors="replace")
-                return str(data)
-
-            # TimeoutExpired carries the pre-kill capture in `.output`
-            # (alias for stdout — there is no `.stdout` attribute) and
-            # `.stderr`; either may be bytes (undecoded) or str.
-            partial = _decode(getattr(_te, "output", None)) + "\n" \
-                + _decode(getattr(_te, "stderr", None))
+            # verdict. La capture partielle (fichiers pre-kill) peut deja
+            # porter un diagnostic reel — errors win over UNKNOWN ; seul un
+            # timeout sans erreur parsable est le verdict-less UNKNOWN.
+            partial = (out or "") + "\n" + (err or "")
             partial_errors = self._extract_errors(partial)
             if partial_errors:
                 return {
@@ -630,15 +626,50 @@ class LeanVerifier:
                 "wall_clock_timeout": True,
                 "timeout_s": budget,
             }
-        except FileNotFoundError:
+        if rc == -2:
+            # Organe refuse (cap sature, telemetrie illisible...) ou
+            # injoignable : echec visible, jamais de faux succes.
             return {
                 "success": False,
                 "errors": (
-                    f"lake not found (tried {cmd[0]!r}). Set LEAN_LAKE_BIN or install "
-                    f"elan, then retry."
+                    f"lean_exec refused build: {err or '(no reason)'} "
+                    f"(See #15666)"
                 ),
-                "raw_output": "",
+                "raw_output": out or "",
             }
+
+        output = out + "\n" + err
+
+        # Filter out the stale-config warning that lake emits when the
+        # cached configuration is out of date — it is NOT a proof error.
+        config_stale = "compiled configuration is invalid" in output
+        if config_stale:
+            output_lines = []
+            for line in output.split("\n"):
+                if "compiled configuration is invalid" not in line:
+                    output_lines.append(line)
+            output = "\n".join(output_lines)
+
+        errors = self._extract_errors(output)
+
+        # If lake itself failed (returncode != 0) but no parsed errors,
+        # surface a synthetic error so callers don't think this was a
+        # silent success — protects against the regression where missing
+        # toolchain returned 0 errors and was treated as success.
+        # Exception: if the only issue was a stale config (now fixed by
+        # -R), and -R succeeded (returncode 0), this branch is skipped.
+        if not errors and rc != 0 and not config_stale:
+            errors = [
+                f"lake exit={rc}; output: {output[:500] or '(empty)'}"
+            ]
+
+        return {
+            "success": len(errors) == 0,
+            "errors": "\n".join(errors),
+            "raw_output": output,
+            "build_time_s": round(duration, 1),
+            "lake_cmd": "lean_exec",
+        }
 
     @classmethod
     def invalidate(cls, filepath: str):
@@ -696,6 +727,7 @@ class LeanVerifier:
         whitelist: list = None,
         fail_on_sorry: bool = False,
         timeout: int = 300,
+        declarations: list = None,
     ) -> dict:
         """Check axioms used by a module via ``#print axioms``.
 
@@ -726,11 +758,20 @@ class LeanVerifier:
                 behaviour -- sorry is tracked at Level 2, so Level 3 stays green
                 on a parse gap to avoid flipping historical results).
             timeout: Seconds before elaborating the enumerated declarations
-                against prebuilt oleans times out (passed to ``subprocess.run``).
+                against prebuilt oleans times out (passe en ``--timeout`` a
+                l'organe confine, See #15666).
                 Default 300: ``#print axioms`` elaborates each declaration, which
                 on a cold Mathlib cache can exceed the previous hard-coded 60 s
                 (issue #8677). Callers -- e.g. the CI review gate -- can raise it
                 without re-editing this module.
+            declarations: Optional pinned declaration list (namespace-qualified
+                names). When given, enumeration is skipped entirely and ONLY
+                these declarations are probed — a scoped check for callers that
+                need the axioms of ONE target, not the whole module (#21298:
+                ``verify_sorry_replacement`` probes the single declaration it
+                just proved, so the file's other — workflow-legitimate —
+                sorries never false-positive). Default None = enumerate the
+                module as before.
 
         Returns:
             dict with 'success', 'axioms', 'forbidden', 'has_sorry',
@@ -763,7 +804,23 @@ class LeanVerifier:
             if root is not None:
                 project = root
 
-        declarations = _enumerate_module_declarations(project, module_name)
+        if declarations is not None:
+            # Pinned list (#21298): caller-scoped check — skip both the module
+            # enumeration and the empty-enumeration classification below (the
+            # caller named what it wants probed; the module's OTHER
+            # declarations, including its other sorries, are out of scope).
+            declarations = list(declarations)
+            if not declarations:
+                # Pinned-empty: the caller scoped the check to nothing —
+                # vacuously clean, not a parse gap to classify.
+                return {
+                    "success": True, "axioms": [], "forbidden": [],
+                    "whitelist": whitelist, "has_sorry": False,
+                    "fail_on_sorry": fail_on_sorry, "declarations": [],
+                    "enumerated": False, "raw_output": "",
+                }
+        else:
+            declarations = _enumerate_module_declarations(project, module_name)
         if not declarations:
             # An empty enumeration is not one situation but two (see
             # ``_classify_empty_enumeration``): the gate could not run, or the
@@ -805,64 +862,32 @@ class LeanVerifier:
                 return {**base, "success": False, "error": empty_reason}
             return {**base, "success": True}
 
-        cmd, env = _resolve_lake_command(["env", "lean", "--stdin"], cwd=str(project))
+        # Migration #15666 (mode stdin) : le snippet passe par un fichier
+        # branche sur l'entree standard de l'enfant confine — le pipe d'un
+        # spawn confine herite mal sous Windows, un handle fichier jamais
+        # (meme famille que la capture par fichiers de la mesure case 1).
         stdin_lines = [f"import {module_name}"] + [
             f"#print axioms {decl}" for decl in declarations
         ]
         stdin_input = "\n".join(stdin_lines) + "\n"
-
+        snippet_f = tempfile.NamedTemporaryFile(
+            "w", delete=False, suffix=".lean", encoding="utf-8")
+        snippet_f.write(stdin_input)
+        snippet_f.close()
         try:
-            result = subprocess.run(
-                cmd,
-                cwd=str(project),
-                capture_output=True,
-                text=True, encoding="utf-8", errors="replace",
-                timeout=timeout,
-                env=env,
-                input=stdin_input,
+            rc, out, err = _organ_run(
+                str(project), ["lake", "env", "lean", "--stdin"], int(timeout),
+                stdin_file=snippet_f.name,
             )
-            output = result.stdout + "\n" + result.stderr
+        finally:
+            try:
+                Path(snippet_f.name).unlink()
+            except OSError:
+                pass
 
-            # Gate de build (trou #8681, ai-01 c.32) : si ``lean --stdin``
-            # termine en echec (returncode != 0), la sortie ne contient pas
-            # de lignes ``depends on axioms:`` -- ``_extract_axioms`` renvoie
-            # alors ``[]`` et ``success`` tombe a ``True`` : un build MORT
-            # validait l'integrite de preuve. Le garde ``no_declarations_enumerated``
-            # ne couvre pas ce cas (l'enumeration lit le SOURCE, pas le build,
-            # donc elle compte 37 declarations pendant que l'elaboration est
-            # morte). On lit ``returncode`` AVANT le parsing : un process
-            # sortie-en-non-zero ne peut JAMAIS valider l'integrite.
-            if result.returncode != 0:
-                return {
-                    "success": False,
-                    "axioms": [],
-                    "forbidden": [],
-                    "whitelist": whitelist,
-                    "has_sorry": False,
-                    "fail_on_sorry": fail_on_sorry,
-                    "declarations": declarations,
-                    "enumerated": True,
-                    "raw_output": output,
-                    "error": f"build_failed_returncode_{result.returncode}",
-                }
-
-            axioms = self._extract_axioms(output)
-            forbidden = [a for a in axioms if a not in whitelist and a != "sorryAx"]
-            has_sorry = "sorryAx" in axioms
-            success = len(forbidden) == 0 and not (fail_on_sorry and has_sorry)
-
-            return {
-                "success": success,
-                "axioms": axioms,
-                "forbidden": forbidden,
-                "whitelist": whitelist,
-                "has_sorry": has_sorry,
-                "fail_on_sorry": fail_on_sorry,
-                "declarations": declarations,
-                "enumerated": True,
-                "raw_output": output,
-            }
-        except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+        if rc == -1 or rc == -2:
+            # Timeout ou organe refuse : echec visible, pas de verdict
+            # d'integrite (un process mort ne valide JAMAIS rien, #8681).
             return {
                 "success": False,
                 "axioms": [],
@@ -872,9 +897,60 @@ class LeanVerifier:
                 "fail_on_sorry": fail_on_sorry,
                 "declarations": declarations,
                 "enumerated": True,
-                "error": str(e),
-                "raw_output": "",
+                "error": (
+                    "lean_exec timeout" if rc == -1
+                    else f"lean_exec refused: {err or '(no reason)'}"
+                ),
+                "raw_output": out or "",
             }
+        output = out + "\n" + err
+
+        # Gate de build (trou #8681, ai-01 c.32) : si ``lean --stdin``
+        # termine en echec (returncode != 0), la sortie ne contient pas
+        # de lignes ``depends on axioms:`` -- ``_extract_axioms`` renvoie
+        # alors ``[]`` et ``success`` tombe a ``True`` : un build MORT
+        # validait l'integrite de preuve. Le garde ``no_declarations_enumerated``
+        # ne couvre pas ce cas (l'enumeration lit le SOURCE, pas le build,
+        # donc elle compte 37 declarations pendant que l'elaboration est
+        # morte). On lit ``rc`` AVANT le parsing : un process
+        # sortie-en-non-zero ne peut JAMAIS valider l'integrite.
+        if rc != 0:
+            return {
+                "success": False,
+                "axioms": [],
+                "forbidden": [],
+                "whitelist": whitelist,
+                "has_sorry": False,
+                "fail_on_sorry": fail_on_sorry,
+                "declarations": declarations,
+                "enumerated": True,
+                "raw_output": output,
+                "error": f"build_failed_returncode_{rc}",
+            }
+
+        axioms = self._extract_axioms(output)
+        # #21947 : comparer l'ancre NORMALISEE — `#print axioms` peut rendre une
+        # forme decoree (`propext`, `Classical.choice.{u}`) qu'une comparaison
+        # brute au nom ecrit dans la whitelist laisserait passer pour interdite.
+        normalized_whitelist = {normalize_axiom_name(a) for a in whitelist}
+        forbidden = [
+            a for a in axioms
+            if normalize_axiom_name(a) not in normalized_whitelist and a != "sorryAx"
+        ]
+        has_sorry = "sorryAx" in axioms
+        success = len(forbidden) == 0 and not (fail_on_sorry and has_sorry)
+
+        return {
+            "success": success,
+            "axioms": axioms,
+            "forbidden": forbidden,
+            "whitelist": whitelist,
+            "has_sorry": has_sorry,
+            "fail_on_sorry": fail_on_sorry,
+            "declarations": declarations,
+            "enumerated": True,
+            "raw_output": output,
+        }
 
     def search_lean(self, module_name: str, goal: str, tactic: str = "exact?") -> dict:
         """Search Mathlib using Lean's suggestion tactics (exact?, apply?, library_search).
@@ -914,33 +990,41 @@ class LeanVerifier:
             f"example : {goal} := by\n"
             f"  {tactic}\n"
         )
-        cmd, env = _resolve_lake_command(["env", "lean", "--stdin"], cwd=str(project))
+        # Migration #15666 (mode stdin) : snippet par fichier branche sur
+        # l'entree standard de l'enfant confine, comme check_axioms.
+        snippet_f = tempfile.NamedTemporaryFile(
+            "w", delete=False, suffix=".lean", encoding="utf-8")
+        snippet_f.write(snippet)
+        snippet_f.close()
         try:
-            result = subprocess.run(
-                cmd,
-                cwd=str(project),
-                capture_output=True,
-                text=True, encoding="utf-8", errors="replace",
-                timeout=120,
-                env=env,
-                input=snippet,
+            rc, out, err = _organ_run(
+                str(project), ["lake", "env", "lean", "--stdin"], 120,
+                stdin_file=snippet_f.name,
             )
-            output = result.stdout + "\n" + result.stderr
-            suggestions = self._extract_suggestions(output, tactic)
-            return {
-                "success": len(suggestions) > 0,
-                "suggestions": suggestions,
-                "tactic_used": tactic,
-                "goal": goal[:200],
-                "raw_output": output[:1000],
-            }
-        except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+        finally:
+            try:
+                Path(snippet_f.name).unlink()
+            except OSError:
+                pass
+        if rc == -1 or rc == -2:
             return {
                 "success": False,
                 "suggestions": [],
-                "error": str(e),
-                "raw_output": "",
+                "error": (
+                    "lean_exec timeout" if rc == -1
+                    else f"lean_exec refused: {err or '(no reason)'}"
+                ),
+                "raw_output": out or "",
             }
+        output = out + "\n" + err
+        suggestions = self._extract_suggestions(output, tactic)
+        return {
+            "success": len(suggestions) > 0,
+            "suggestions": suggestions,
+            "tactic_used": tactic,
+            "goal": goal[:200],
+            "raw_output": output[:1000],
+        }
 
     @staticmethod
     def _extract_suggestions(output: str, tactic: str) -> list:

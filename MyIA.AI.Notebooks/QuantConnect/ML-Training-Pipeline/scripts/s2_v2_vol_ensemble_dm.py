@@ -48,7 +48,7 @@ from sklearn.preprocessing import StandardScaler
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
-from diebold_mariano import diebold_mariano_test  # noqa: E402
+from dm_test import diebold_mariano_test  # noqa: E402
 from garch_baseline import compute_realized_vol, fit_garch_rolling  # noqa: E402
 from har_model import walk_forward_har  # noqa: E402
 from m11g_fee_aware_kelly import (  # noqa: E402
@@ -111,11 +111,13 @@ def _dm_weights(
     eps = 1e-12
     raw_weights: dict[str, float] = {}
     for name, errs in errors_models.items():
-        dm = diebold_mariano_test(
-            errs, errors_baseline, h=horizon, small_sample=True
-        )
-        p = dm.get("p_value", 1.0)
-        dm_stat = dm.get("dm_stat", 0.0)
+        # Canonical API raises on n<10; the legacy NaN path meant weight 0.
+        if len(errs) < 10 or len(errors_baseline) < 10:
+            raw_weights[name] = 0.0
+            continue
+        dm = diebold_mariano_test(errs, errors_baseline, horizon=horizon)
+        p = dm.p_value
+        dm_stat = dm.dm_statistic
         if dm_stat < 0:
             raw_weights[name] = max(-np.log(p + eps), 0.0) * abs(dm_stat)
         else:
@@ -406,9 +408,24 @@ def run_one_combo(
     if use_mlp:
         best_errors["MLP"] = model_errors["MLP"]
 
-    dm_ens_vs_best = diebold_mariano_test(
-        ensemble_errors, best_errors[best_name], h=horizon, small_sample=True
-    )
+    # DM test ensemble vs best single. Canonical API raises on n<10; the
+    # legacy NaN path reported NaN/False without failing the combo.
+    n_dm = min(len(ensemble_errors), len(best_errors[best_name]))
+    if n_dm >= 10:
+        dm_ens = diebold_mariano_test(
+            ensemble_errors, best_errors[best_name], horizon=horizon
+        )
+        dm_block = {
+            "dm_stat": round(dm_ens.dm_statistic, 4),
+            "p_value": round(dm_ens.p_value, 6),
+            "significant_05": dm_ens.p_value < 0.05,
+        }
+    else:
+        dm_block = {
+            "dm_stat": float("nan"),
+            "p_value": float("nan"),
+            "significant_05": False,
+        }
 
     return {
         "coin": coin,
@@ -421,11 +438,7 @@ def run_one_combo(
         "best_single_sharpe": best_sharpe_name,
         "delta_mse_pct": round(delta_mse, 2),
         "delta_sharpe": round(delta_sharpe, 4) if np.isfinite(delta_sharpe) else None,
-        "dm_ensemble_vs_best": {
-            "dm_stat": round(dm_ens_vs_best.get("dm_stat", float("nan")), 4),
-            "p_value": round(dm_ens_vs_best.get("p_value", float("nan")), 6),
-            "significant_05": dm_ens_vs_best.get("significant_05", False),
-        },
+        "dm_ensemble_vs_best": dm_block,
         "n_obs": len(common_idx),
         "models_included": list(model_forecasts.keys()),
     }

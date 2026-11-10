@@ -129,7 +129,8 @@ MyIA.AI.Notebooks/GenAI/
     │   ├── 02-2-FLUX-1-Advanced-Generation.ipynb
     │   ├── 02-3-Stable-Diffusion-3-5.ipynb
     │   ├── 02-4-Z-Image-Lumina2.ipynb
-    │   └── 02-5-Bonsai-Image-Ternary.ipynb
+    │   ├── 02-5-Bonsai-Image-Ternary.ipynb
+    │   └── 02-6-Few-Step-Generative-Models-IMM-TVM.ipynb
     │
     ├── 03-Orchestration/             # 🔴 Orchestration (Docker)
     │   ├── 03-1-Multi-Model-Comparison.ipynb
@@ -205,6 +206,7 @@ MyIA.AI.Notebooks/GenAI/
 | **02-3-Stable-Diffusion-3-5** | SD 3.5 | 3h | ⭐⭐ | ✅ Requis |
 | **02-4-Z-Image-Lumina2** | Z-Image (Lumina-2) | — | ⭐⭐ | ✅ Requis (ComfyUI) |
 | **02-5-Bonsai-Image-Ternary** | Bonsai-Image (1.58-bit) | — | ⭐⭐ | ✅ Requis (quantization ternaire) |
+| **02-6-Few-Step-Generative-Models-IMM-TVM** | IMM (CIFAR-10), TVM (ImageNet-256) | — | ⭐⭐ | — (exécution locale, poids officiels) |
 
 **Status** : 🚧 Infrastructure Docker en cours de déploiement (agent parallèle)
 

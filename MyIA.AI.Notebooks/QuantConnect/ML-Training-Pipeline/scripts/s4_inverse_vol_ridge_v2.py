@@ -17,10 +17,16 @@ Methodology
     Bull: overweight high-momentum sectors via inverse-vol Ridge
     Bear: rotate to defensive sectors (XLU, XLP, XLV) + TLT
 - Walk-forward 5-fold expanding window
+- CAUSAL regime read (#21633): the regime for each test block is fitted on
+  data STRICTLY BEFORE the block, named on that training window, and held
+  across the block (S5 "probabilité tenue"); the fold boundary supplies the
+  decision lag. The original in-sample version (HMM refit on the labelled
+  test block) is replayed with --witness and published as the leak witness.
 - Multi-seed block bootstrap (22-day blocks) 0/1/7/42
 - OOS strict 2027
 - Tx costs: 5bps SPY/sectors, 50bps stress scenario
-- Gate: Sharpe regime-ridge > equal-weight + 0.10 cross-seed
+- Significance (pre-registered, #21633): Ledoit-Wolf (HAC) + Holm delta-Sharpe
+  vs equal-weight AND SPY held; verdict BEATS/NO BEATS/INCONCLUSIVE
 
 Output
 ------
@@ -44,6 +50,7 @@ import pandas as pd
 from sklearn.linear_model import Ridge
 
 import strategy_metrics
+import hmm_regime_significance as hmm_sig
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 RESULTS_DIR = SCRIPT_DIR / "results" / "s4_inverse_vol_ridge_v2"
@@ -225,8 +232,15 @@ def equal_weights(n: int) -> np.ndarray:
 def walk_forward(
     prices: pd.DataFrame,
     seed: int = 0,
+    witness: bool = False,
 ) -> dict:
-    """Walk-forward 5-fold expanding with HMM regime + inverse-vol Ridge."""
+    """Walk-forward 5-fold expanding with HMM regime + inverse-vol Ridge.
+
+    Causal regime read (#21633): the regime for each test block is fitted on
+    data strictly before the block and held across it. With ``witness=True``
+    the ORIGINAL in-sample algorithm (HMM refit on the labelled test block)
+    is replayed per fold and its Sharpe gap is reported as the leak witness.
+    """
     returns = prices.pct_change().dropna()
 
     oos_mask = returns.index >= f"{OOS_YEAR}-01-01"
@@ -242,6 +256,8 @@ def walk_forward(
     ridge_ret_all = []
     invvol_ret_all = []
     eq_ret_all = []
+    spy_held_all = []
+    ins_ret_all = [] if witness else None
     regime_counts = {0: 0, 1: 0}
     n_switches = 0
     prev_regime = None
@@ -279,18 +295,35 @@ def walk_forward(
         else:
             train_labels = hmm_result["labels"]
 
-        # Predict regime for test block using last training regime
-        # Walk-forward: refit HMM on test block separately
+        # Causal regime for the test block (#21633): fit the HMM on data
+        # STRICTLY BEFORE the block ([0, test_start)), name the regimes on
+        # that training window, and hold the last training-day regime across
+        # the block (S5 "probabilité tenue"). The fold boundary supplies the
+        # decision lag: the regime is decided at the close of the day before
+        # the block's first return.
         spy_ret_test = test_block.iloc[:, 0].values
-        tlt_ret_test = test_block.iloc[:, 1].values
-        spy_vol_test = pd.Series(spy_ret_test).rolling(VOL_WINDOW).std().values
-        spy_vol_test = np.nan_to_num(spy_vol_test, nan=np.nanmean(spy_vol_test) if not np.all(np.isnan(spy_vol_test)) else 0.01)
+        spy_pre = is_returns.iloc[:test_start, 0].values
+        tlt_pre = is_returns.iloc[:test_start, 1].values
+        spy_vol_pre = pd.Series(spy_pre).rolling(VOL_WINDOW).std().values
+        spy_vol_pre = np.nan_to_num(spy_vol_pre, nan=float(np.nanmean(spy_vol_pre)) if not np.all(np.isnan(spy_vol_pre)) else 0.01)
 
-        test_hmm = fit_hmm_regime(spy_ret_test, tlt_ret_test, spy_vol_test, seed)
-        if test_hmm.get("converged", False):
-            test_labels = jitter_regime(test_hmm["labels"], seed)
+        pre_hmm = fit_hmm_regime(spy_pre, tlt_pre, spy_vol_pre, seed)
+        if pre_hmm.get("converged", False):
+            test_labels = np.full(len(spy_ret_test), int(pre_hmm["labels"][-1]), dtype=int)
         else:
             test_labels = np.where(spy_ret_test > 0, 0, 1).astype(int)
+
+        # Leak witness: replay the ORIGINAL in-sample regime (HMM refit on
+        # the labelled test block, smoothed probs, jitter) for the gap only.
+        if witness:
+            tlt_ret_test = test_block.iloc[:, 1].values
+            spy_vol_test = pd.Series(spy_ret_test).rolling(VOL_WINDOW).std().values
+            spy_vol_test = np.nan_to_num(spy_vol_test, nan=float(np.nanmean(spy_vol_test)) if not np.all(np.isnan(spy_vol_test)) else 0.01)
+            ins_hmm = fit_hmm_regime(spy_ret_test, tlt_ret_test, spy_vol_test, seed)
+            if ins_hmm.get("converged", False):
+                ins_labels = jitter_regime(ins_hmm["labels"], seed)
+            else:
+                ins_labels = np.where(spy_ret_test > 0, 0, 1).astype(int)
 
         # Cross-validate alpha on last 20% of training
         val_start = int(n_train * 0.8)
@@ -314,10 +347,15 @@ def walk_forward(
         invvol_w = inv_vol_weights(boot_train)
         eq_w = equal_weights(n_assets)
 
+        ins_fold = np.zeros(len(test_arr)) if witness else None
         for t in range(len(test_arr)):
             regime = test_labels[t]
             w = regime_conditional_weights(boot_train, regime, best_alpha)
             ridge_fold[t] = test_arr[t] @ w
+            if witness:
+                ins_fold[t] = test_arr[t] @ regime_conditional_weights(
+                    boot_train, int(ins_labels[t]), ALPHAS[0]
+                )
             regime_counts[regime] = regime_counts.get(regime, 0) + 1
             if prev_regime is not None and regime != prev_regime:
                 n_switches += 1
@@ -335,6 +373,9 @@ def walk_forward(
         ridge_ret_all.extend(ridge_fold)
         invvol_ret_all.extend(invvol_fold)
         eq_ret_all.extend(eq_fold)
+        spy_held_all.extend(spy_ret_test)
+        if witness:
+            ins_ret_all.extend(ins_fold)
 
     if not ridge_ret_all:
         return {"error": "No folds produced results"}
@@ -342,6 +383,7 @@ def walk_forward(
     ridge_ret = np.array(ridge_ret_all)
     invvol_ret = np.array(invvol_ret_all)
     eq_ret = np.array(eq_ret_all)
+    spy_held_ret = np.array(spy_held_all)
 
     # Per-regime analysis
     regime_labels_full = np.zeros(len(ridge_ret), dtype=int)
@@ -355,12 +397,14 @@ def walk_forward(
             continue
         test_block = is_returns.iloc[test_start:test_end]
         spy_test = test_block.iloc[:, 0].values
-        tlt_test = test_block.iloc[:, 1].values
-        spy_vol_t = pd.Series(spy_test).rolling(VOL_WINDOW).std().values
-        spy_vol_t = np.nan_to_num(spy_vol_t, nan=0.01)
-        hmm_t = fit_hmm_regime(spy_test, tlt_test, spy_vol_t, seed)
+        # Causal (#21633): regime named on the strictly-past window, held
+        spy_pre = is_returns.iloc[:test_start, 0].values
+        tlt_pre = is_returns.iloc[:test_start, 1].values
+        spy_vol_pre = pd.Series(spy_pre).rolling(VOL_WINDOW).std().values
+        spy_vol_pre = np.nan_to_num(spy_vol_pre, nan=0.01)
+        hmm_t = fit_hmm_regime(spy_pre, tlt_pre, spy_vol_pre, seed)
         if hmm_t.get("converged", False):
-            regime_labels_full[idx:idx + len(spy_test)] = jitter_regime(hmm_t["labels"], seed)
+            regime_labels_full[idx:idx + len(spy_test)] = int(hmm_t["labels"][-1])
         else:
             regime_labels_full[idx:idx + len(spy_test)] = np.where(spy_test > 0, 0, 1)
         idx += len(spy_test)
@@ -393,6 +437,13 @@ def walk_forward(
     results["regime_counts"] = {int(k): int(v) for k, v in regime_counts.items()}
     results["bull_pct"] = float(bull_mask.mean())
 
+    # Raw daily return arrays (for the significance organ + leak witness)
+    results["_ridge_ret"] = ridge_ret
+    results["_eq_ret"] = eq_ret
+    results["_spy_held_ret"] = spy_held_ret
+    if witness:
+        results["in_sample_sharpe"] = float(_sharpe(np.array(ins_ret_all)))
+
     return results
 
 
@@ -413,7 +464,7 @@ def _max_drawdown(returns: np.ndarray) -> float:
 
 # ── Multi-seed runner ────────────────────────────────────────────────────────
 
-def run_experiment(seeds: list[int] | None = None) -> dict:
+def run_experiment(seeds: list[int] | None = None, witness: bool = False) -> dict:
     if seeds is None:
         seeds = SEEDS
 
@@ -424,15 +475,29 @@ def run_experiment(seeds: list[int] | None = None) -> dict:
     print(f"  {returns.index[0].date()} to {returns.index[-1].date()}\n")
 
     seed_results = []
+    seed0_arrays = None
+    seed0_result = None
     for seed in seeds:
-        print(f"  Seed {seed}...", end=" ", flush=True)
+        label = f"Seed {seed} (causal walk-forward)" if seed == 0 else f"Seed {seed}"
+        print(f"  {label}...", end=" ", flush=True)
         t0 = time.time()
-        result = walk_forward(prices, seed=seed)
+        result = walk_forward(prices, seed=seed, witness=witness)
         elapsed = time.time() - t0
 
         if "error" in result:
             print(f"ERROR: {result['error']}")
             continue
+
+        if seed == 0:
+            seed0_arrays = (
+                result.pop("_ridge_ret"),
+                result.pop("_eq_ret"),
+                result.pop("_spy_held_ret"),
+            )
+            seed0_result = result
+        else:
+            for key in ("_ridge_ret", "_eq_ret", "_spy_held_ret"):
+                result.pop(key, None)
 
         result["elapsed_s"] = round(elapsed, 1)
         seed_results.append(result)
@@ -460,11 +525,29 @@ def run_experiment(seeds: list[int] | None = None) -> dict:
     from scipy.stats import binom
     p_value = float(binom.sf(n_positive - 1, n_seeds, 0.5))
 
-    verdict = "BEATS" if (
-        mean_delta > GATE_SHARPE_DELTA
-        and t_stat >= 2.0
-        and n_positive >= 3
-    ) else "NO BEATS"
+    # Pre-registered significance (#21633 protocol point 5): Ledoit-Wolf (HAC)
+    # + Holm of the delta-Sharpe vs BOTH references, on the seed-0 series.
+    significance = None
+    verdict = "NO BEATS"
+    if seed0_arrays is not None:
+        ridge_arr, eq_arr, spy_arr = seed0_arrays
+        significance = hmm_sig.compare_to_references(
+            ridge_arr,
+            {"equal_weight": eq_arr, "spy_held": spy_arr},
+            seed=0,
+        )
+        verdict = significance["verdict"]
+
+    # Leak witness (#21633 protocol point 7): in-sample replay vs causal.
+    leak_witness = None
+    if witness and seed0_result is not None and "in_sample_sharpe" in seed0_result:
+        in_sample = float(seed0_result["in_sample_sharpe"])
+        causal = float(seed0_result["ridge_sharpe"])
+        leak_witness = {
+            "in_sample_sharpe": in_sample,
+            "causal_sharpe_seed0": causal,
+            "gap_future_read": round(in_sample - causal, 6),
+        }
 
     agg = {
         "n_seeds": n_seeds,
@@ -478,7 +561,8 @@ def run_experiment(seeds: list[int] | None = None) -> dict:
         "p_value": round(p_value, 6),
         "mean_delta_bear": round(float(np.mean(deltas_bear)), 4),
         "verdict": verdict,
-        "gate_delta": GATE_SHARPE_DELTA,
+        "significance": significance,
+        "leak_witness": leak_witness,
         "seed_results": seed_results,
     }
 
@@ -501,14 +585,36 @@ def write_verdict(results: dict, output_dir: Path) -> Path:
     lines.append(f"Walk-forward: {N_SPLITS}-fold expanding, OOS {OOS_YEAR} strict")
     lines.append(f"Multi-seed: block bootstrap ({BLOCK_SIZE}-day), seeds {SEEDS}\n")
 
+    lines.append("Method (causal, #21633): regime fitted on data strictly before each test block, "
+                 "named on the training window, held across the block; 1-day decision lag at the fold boundary")
+    lines.append("Significance: Ledoit-Wolf (HAC) + Holm vs equal-weight and SPY held\n")
+
     lines.append("## Results\n")
     lines.append(f"- **Verdict**: {results['verdict']}")
     lines.append(f"- Ridge Sharpe: {results['mean_ridge_sharpe']:.4f}")
     lines.append(f"- Equal-Weight Sharpe: {results['mean_eq_sharpe']:.4f}")
-    lines.append(f"- Delta: {results['mean_delta']:+.6f} (SE={results['se_delta']:.6f}, t={results['t_stat']:.3f})")
+    lines.append(f"- Mean delta (multi-seed): {results['mean_delta']:+.6f} (SE={results['se_delta']:.6f}, t={results['t_stat']:.3f})")
     lines.append(f"- Delta bear regime: {results['mean_delta_bear']:+.4f}")
-    lines.append(f"- Seeds positive: {results['n_positive']}/{results['n_seeds']} (p={results['p_value']:.4f})")
-    lines.append(f"- Gate: delta > {results['gate_delta']:.2f}, t >= 2.0, >= 3/4 seeds positive\n")
+    lines.append(f"- Seeds positive: {results['n_positive']}/{results['n_seeds']} (p={results['p_value']:.4f})\n")
+
+    sig = results.get("significance")
+    if sig:
+        lines.append("### Significance (seed 0, pre-registered)\n")
+        for name, c in sig["comparisons"].items():
+            ci = c["bootstrap_ci95"]
+            lines.append(
+                f"- vs {name}: delta-Sharpe {c['sharpe_diff']:+.4f} "
+                f"(Ledoit-Wolf p={c['ledoit_wolf_p']:.4f}, Holm p={c['holm_p']:.4f}, "
+                f"bootstrap CI95 [{ci[0]:+.3f}, {ci[1]:+.3f}])"
+            )
+        lines.append("")
+
+    lw = results.get("leak_witness")
+    if lw:
+        lines.append("### Témoin de fuite (in-sample replay)\n")
+        lines.append(f"- Sharpe in-sample (ré-ajusté sur le bloc de test): {lw['in_sample_sharpe']:.4f}")
+        lines.append(f"- Sharpe causal (seed 0): {lw['causal_sharpe_seed0']:.4f}")
+        lines.append(f"- **Écart porté par la lecture du futur**: {lw['gap_future_read']:+.4f}\n")
 
     lines.append("## Per-seed detail\n")
     lines.append("| Seed | Ridge | EqW | Delta | Delta-Bear | Bull% | Alpha |")
@@ -533,6 +639,8 @@ def main():
     parser = argparse.ArgumentParser(description="S4 v2 Inverse Vol Ridge + HMM")
     parser.add_argument("--seeds", type=str, default="0,1,7,42")
     parser.add_argument("--output", type=str, default=None)
+    parser.add_argument("--witness", action="store_true",
+                        help="replay the original in-sample algorithm as the leak witness")
     args = parser.parse_args()
 
     seeds = [int(s) for s in args.seeds.split(",")]
@@ -540,7 +648,7 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     t_start = time.time()
-    results = run_experiment(seeds)
+    results = run_experiment(seeds, witness=args.witness)
 
     (output_dir / "results.json").write_text(
         json.dumps(results, indent=2, default=str), encoding="utf-8"

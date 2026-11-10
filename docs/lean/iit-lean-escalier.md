@@ -1,7 +1,12 @@
 # Escalier du lake `iit_lean` — note de conception
 
 **Statut** : étape 0 de l'escalier (aucun carnet consommateur n'existe encore).
-**Lake** : `MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/`, livré par #18599 (veine 5 de l'Epic Aaronson #16781, moitié formelle).
+**Lake** : `MyIA.AI.Notebooks/IIT/iit_lean/`, livré par #18599 (veine 5 de l'Epic Aaronson #16781, moitié formelle).
+
+> **Déplacement 2026-10-22 (#20649).** Le lake vivait sous
+> `MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/` : il est désormais dans sa série
+> consommatrice, `MyIA.AI.Notebooks/IIT/`. Les mesures datées plus bas restent
+> celles de leur date ; les chemins de reproduction se lisent au chemin courant.
 **Sous-grain** : #20414.
 **Mesures** : 2026-10-12, sur `main`, lane `myia-po-2024:CoursIA`.
 

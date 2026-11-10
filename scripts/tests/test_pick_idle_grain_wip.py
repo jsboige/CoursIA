@@ -58,9 +58,22 @@ def _patch_guard(monkeypatch, prs, states=None, nits=None):
     states = states or {}
     monkeypatch.setattr(pig, "fetch_pr_states",
                         lambda nums: {n: states[n] for n in nums if n in states})
-    monkeypatch.setattr(pig, "unaddressed_review_points", lambda nums: dict(nits or {}))
+    # #16926 : red_backlog consomme la variante detaillee ; les appelants
+    # historiques passent des comptes nus, on les translate.
+    def _as_detail(raw):
+        return {k: (v if isinstance(v, dict)
+                    else {"count": v, "authors": [], "verdict": None, "verdict_surface": None})
+                for k, v in (raw or {}).items()}
+    monkeypatch.setattr(pig, "unaddressed_review_points_detail",
+                        lambda nums: _as_detail(nits))
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
     monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
+    # #25522 : le classement des PRs rouges lit le fil de chaque PR (une
+    # requete REST) -- source neutralisee ici, comme les autres.
+    monkeypatch.setattr(pig, "_red_pr_comments", lambda n: [])
+    # #25522 : la lecture de perimetrie du picker (deux `git` locaux) --
+    # meme raison, source neutralisee.
+    monkeypatch.setattr(pig, "_git_read", lambda *a, **k: None)
 
 
 def _patch_draw(monkeypatch):
@@ -392,7 +405,7 @@ def test_wip_guard_survives_a_fetch_failure(monkeypatch, capsys):
         raise OSError("gh injoignable")
 
     monkeypatch.setattr(pig, "fetch_open_prs", boom)
-    monkeypatch.setattr(pig, "unaddressed_review_points", lambda nums: {})
+    monkeypatch.setattr(pig, "unaddressed_review_points_detail", lambda nums: {})
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
     _patch_draw(monkeypatch)
     rc = pig.main(["--lane", LANE, "--wip-cap", str(CAP)])

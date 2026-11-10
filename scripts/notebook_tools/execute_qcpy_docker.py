@@ -44,8 +44,84 @@ def _save_executed(nb: dict, nb_path: Path) -> None:
     d'ecriture de cet executeur, le strip doit y vivre.
     """
     strip_stale_papermill_metadata(nb)
-    nb_path.write_text(json.dumps(nb, indent=1, ensure_ascii=False),
+    nb_path.write_text(json.dumps(nb, indent=1, ensure_ascii=False) + "\n",
                        encoding="utf-8")
+
+
+def _stream_output(text: str) -> dict:
+    """Sortie nbformat d'un flux stdout, chaque ligne gardant sa fin de ligne.
+
+    nbformat concatene les elements de la liste ``text`` sans separateur :
+    ``text.split("\\n")`` retirait les fins de ligne, et un rapport de vingt
+    lignes s'affichait sur une seule (#21836, QC-Py-27).
+    """
+    return {"output_type": "stream", "name": "stdout",
+            "text": text.splitlines(keepends=True)}
+
+
+def _build_outputs(result: dict, exec_count: int) -> list:
+    """Sorties nbformat d'un resultat d'execution, quel que soit son statut.
+
+    Le meme constructeur sert la reussite ET l'echec. Ce n'est pas une
+    factorisation cosmetique : la branche d'echec construisait sa liste a
+    partir des seules erreurs, donc un flux deja collecte etait **jete**.
+    Un `timeout` (cellule plus longue que `--timeout`) n'emet aucune entree
+    `error` : la cellule sortait avec un `execution_count` conserve et
+    `outputs == []`, c'est-a-dire l'aspect exact d'une sortie effacee a la
+    main (#22181, QC-Py-32 cellule de boucle DQN : 1337 -> 0 caracteres,
+    reproduit au defaut de 120 s puis a 900 s). Les flux captures avant
+    l'interruption sont une preuve, pas un dechet : ils sont ecrits.
+    """
+    outputs = []
+    for text in result["streams"]:
+        outputs.append(_stream_output(text))
+    for err in result["errors"]:
+        outputs.append({
+            "output_type": "error",
+            "ename": err["ename"],
+            "evalue": err["evalue"],
+            "traceback": err.get("traceback", [])
+        })
+    if result["result"]:
+        outputs.append({
+            "output_type": "execute_result",
+            "execution_count": exec_count,
+            "data": result["result"],
+            "metadata": {}
+        })
+    for dd in result["display_data"]:
+        outputs.append({
+            "output_type": "display_data",
+            "data": dd,
+            "metadata": {}
+        })
+    return outputs
+
+
+def _summarize_cell(cell_index: int, result: dict, exec_count: int
+                    ) -> tuple[list, dict]:
+    """Sorties et ligne de rapport d'une cellule, issues du MEME constructeur.
+
+    `outputs_count` vaut `len(_build_outputs(...))` par construction : la
+    metrique du rapport ne peut plus diverger de ce qui est ecrit dans le
+    notebook. C'est la reserve du contre-audit NanoClaw sur #22181, qui
+    portait exactement sur cette divergence — la liste etait recomposee a la
+    main pour le rapport, donc aveugle aux `display_data`.
+
+    Extraire ce calcul de la boucle d'execution est ce qui le rend testable
+    sans kernel : c'est le seul point de la reprise qui n'exige ni websocket
+    ni conteneur.
+    """
+    outputs = _build_outputs(result, exec_count)
+    is_error = (result["status"] == "error" or result["status"] == "timeout"
+                or len(result["errors"]) > 0)
+    summary = {
+        "cell_index": cell_index,
+        "status": "error" if is_error else "ok",
+        "exec_count": exec_count,
+        "outputs_count": len(outputs),
+    }
+    return outputs, summary
 
 # Shared session for XSRF token handling
 _http_session = None
@@ -110,7 +186,12 @@ def exec_code(ws: websocket.WebSocket, code: str, session_id: str,
 
     result = {"status": "unknown", "streams": [], "errors": [],
               "result": None, "display_data": []}
+    # execute_reply (shell) et le statut idle (iopub) arrivent sur deux canaux
+    # sans ordre garanti : attendre les deux, dans n'importe quel ordre. Sinon un
+    # idle recu avant la reponse laissait la boucle courir jusqu'au timeout, et
+    # la cellule etait comptee en erreur, ses sorties perdues (#21836, QC-Py-27).
     got_reply = False
+    got_idle = False
     start = time.time()
 
     while time.time() - start < timeout:
@@ -142,9 +223,9 @@ def exec_code(ws: websocket.WebSocket, code: str, session_id: str,
                 got_reply = True
                 result["status"] = content.get("status", "unknown")
             elif mt == "status":
-                state = content.get("execution_state", "")
-                if state == "idle" and got_reply:
-                    return result
+                got_idle = got_idle or content.get("execution_state", "") == "idle"
+            if got_reply and got_idle:
+                return result
         except websocket.WebSocketTimeoutException:
             continue
         except Exception as e:
@@ -199,64 +280,21 @@ def execute_notebook(nb_path: Path, base_url: str, kernel_id: str,
         src = "".join(cell.get("source", []))
         result = exec_code(ws, src, ws_session, timeout=timeout)
 
-        is_error = (result["status"] == "error" or result["status"] == "timeout"
-                    or len(result["errors"]) > 0)
+        # Le rapport et la cellule relevent du MEME constructeur : la metrique
+        # ne peut plus diverger de ce qui est ecrit (display_data compris).
+        outputs, summary = _summarize_cell(i, result, exec_count)
+        is_error = summary["status"] == "error"
 
-        cell_results.append({
-            "cell_index": i,
-            "status": "error" if is_error else "ok",
-            "exec_count": exec_count,
-            "outputs_count": (len(result["streams"]) +
-                              len(result["errors"]) +
-                              (1 if result["result"] else 0))
-        })
+        cell_results.append(summary)
 
         if not is_error:
             cells_ok += 1
-            cell["execution_count"] = exec_count
-
-            # Build outputs
-            outputs = []
-            for text in result["streams"]:
-                outputs.append({
-                    "output_type": "stream",
-                    "name": "stdout",
-                    "text": text.split("\n")
-                })
-            for err in result["errors"]:
-                outputs.append({
-                    "output_type": "error",
-                    "ename": err["ename"],
-                    "evalue": err["evalue"],
-                    "traceback": err.get("traceback", [])
-                })
-            if result["result"]:
-                outputs.append({
-                    "output_type": "execute_result",
-                    "execution_count": exec_count,
-                    "data": result["result"],
-                    "metadata": {}
-                })
-            for dd in result["display_data"]:
-                outputs.append({
-                    "output_type": "display_data",
-                    "data": dd,
-                    "metadata": {}
-                })
-            cell["outputs"] = outputs
         else:
             cells_err += 1
-            # Keep execution_count even on error
-            cell["execution_count"] = exec_count
-            outputs = []
-            for err in result["errors"]:
-                outputs.append({
-                    "output_type": "error",
-                    "ename": err["ename"],
-                    "evalue": err["evalue"],
-                    "traceback": err.get("traceback", [])
-                })
-            cell["outputs"] = outputs
+        # Meme constructeur dans les deux branches : sur echec (dont le
+        # timeout) les flux capturables avant l'interruption sont conserves.
+        cell["execution_count"] = exec_count
+        cell["outputs"] = outputs
 
         exec_count += 1
         cells_executed += 1

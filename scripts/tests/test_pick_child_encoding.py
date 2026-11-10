@@ -1,10 +1,13 @@
 """Tests for the UTF-8 environment passed to pick_idle_grain.py's Python child.
 
-Le picker lance ``check_lane_claim.py`` en sous-process et lit son stdout en
-UTF-8. Le parametre ``encoding="utf-8"`` de ``subprocess.run`` ne dit que
+Le picker lance parfois un enfant PYTHON et lit son stdout en UTF-8 (aujourd'hui : la porte GPU, qui lit ``debt_ledger.py``). Le parametre ``encoding="utf-8"`` de ``subprocess.run`` ne dit que
 comment le PARENT decode -- il ne dit rien de ce que l'ENFANT encode. Un
 `python` enfant dont stdout est un tube choisit
 ``locale.getpreferredencoding()``, soit **cp1252** sur un Windows francais.
+
+Historique : le picker lancait ``check_lane_claim.py`` en sous-process (#22983
+a retire ce transport ; le LECTEUR est maintenant importe dans le processus du
+tapis). Le defaut decrit ci-dessous reste le meme pour tout enfant Python.
 
 Incident fondateur (2026-09-01, lane myia-po-2027:CoursIA-2) : le picker est
 mort en ``UnicodeDecodeError: 'utf-8' codec can't decode byte 0x97`` -- 0x97
@@ -65,31 +68,130 @@ def test_child_round_trips_non_ascii_through_a_pipe():
 
 
 def test_call_site_passes_the_utf8_env():
-    """T3 -- le gate anti-regression, et le seul qui rougisse sous Linux.
+    """T3 -- v7 (#22983) : l'invariant des claims est INVERSE, et celui
+    de l'encodage est GENERALISE a tout le module.
+
+    v6 affirmait que la phase claims lance un sous-processus Python avec
+    l'env UTF-8. C'etait vrai tant que le transport `subprocess` de
+    `check_lane_claim.py` existait. #22983 le RETIRE : le LECTEUR est
+    importe dans le processus du tapis, et la fenetre de claims est
+    servie par l'instantane local. L'invariant devient donc :
+
+    - **A** la phase claims ne lance plus AUCUN enfant -- ni
+      `subprocess.run`, ni `_run_bounded` ;
+    - **B** tout enfant PYTHON encore lance par le module (le gate GPU
+      lit `scripts/coordination/debt_ledger.py`) porte l'env UTF-8. Un
+      `gh` n'en a pas besoin : c'est le PARENT qui decode, et
+      `encoding="utf-8"` suffit.
 
     On lit l'AST plutot que le texte : un ``grep`` sur "env=" passerait au
     vert sur une occurrence en commentaire ou dans une autre fonction.
     """
     tree = ast.parse((REPO / "scripts" / "pick_idle_grain.py").read_text(encoding="utf-8"))
 
-    fn = next(n for n in tree.body
-              if isinstance(n, ast.FunctionDef) and n.name == "check_claims")
+    def fn_of(name):
+        return next(n for n in tree.body
+                    if isinstance(n, ast.FunctionDef) and n.name == name)
 
-    runs = [n for n in ast.walk(fn)
-            if isinstance(n, ast.Call)
-            and isinstance(n.func, ast.Attribute)
-            and n.func.attr == "run"]
-    assert len(runs) == 1, f"attendu 1 subprocess.run dans check_claims, vu {len(runs)}"
+    def child_calls(scope):
+        bounded = [n for n in ast.walk(scope)
+                   if isinstance(n, ast.Call)
+                   and isinstance(n.func, ast.Name)
+                   and n.func.id == "_run_bounded"]
+        runs = [n for n in ast.walk(scope)
+                if isinstance(n, ast.Call)
+                and isinstance(n.func, ast.Attribute)
+                and n.func.attr == "run"]
+        return bounded + runs
 
-    kwargs = {kw.arg for kw in runs[0].keywords}
-    assert "env" in kwargs, (
-        "check_claims lance un enfant Python sans env= : son stdout sera encode "
-        "en cp1252 sous Windows FR et le decodage UTF-8 du parent plantera"
+    # --- A : la phase claims ne lance plus d'enfant ------------------------
+    for name in ("check_claims", "_claims_in_process"):
+        scope = fn_of(name)
+        calls = child_calls(scope)
+        assert not calls, (
+            f"{name} lance encore un sous-processus "
+            f"({len(calls)} appel(s)) : le transport `subprocess` de "
+            "check_lane_claim.py doit rester retire")
+
+    # --- B : tout enfant Python du module porte l'env UTF-8 ---------------
+    def _is_sys_executable(node):
+        return (isinstance(node, ast.Attribute)
+                and node.attr == "executable"
+                and isinstance(node.value, ast.Name)
+                and node.value.id == "sys")
+
+    def _python_cmd_names(scope):
+        """Noms locaux dont la valeur est une commande commencant par
+        ``sys.executable`` (la commande est parfois construite dans une
+        variable, comme la porte GPU)."""
+        found = set()
+        for n in ast.walk(scope):
+            if not isinstance(n, ast.Assign):
+                continue
+            value = n.value
+            if not (isinstance(value, (ast.List, ast.Tuple))
+                    and value.elts and _is_sys_executable(value.elts[0])):
+                continue
+            for tgt in n.targets:
+                if isinstance(tgt, ast.Name):
+                    found.add(tgt.id)
+        return found
+
+    python_children = []
+    for scope in tree.body:
+        if not isinstance(scope, ast.FunctionDef):
+            continue
+        cmd_names = _python_cmd_names(scope)
+        for call in child_calls(scope):
+            if not call.args:
+                continue
+            head = call.args[0]
+            is_python = False
+            if isinstance(head, (ast.List, ast.Tuple)):
+                is_python = bool(head.elts) and _is_sys_executable(head.elts[0])
+            elif isinstance(head, ast.Name):
+                is_python = head.id in cmd_names
+            if is_python:
+                python_children.append((scope.name, call))
+
+    assert python_children, (
+        "aucun enfant Python n'est plus lance par le module : l'invariant "
+        "d'encodage ne porterait plus sur rien (la porte GPU lit "
+        "debt_ledger.py -- elle a disparu ?)")
+
+    for scope_name, call in python_children:
+        env_kw = next((kw for kw in call.keywords if kw.arg == "env"), None)
+        assert env_kw is not None, (
+            f"{scope_name} lance un enfant Python sans env= : son stdout "
+            "sera encode en cp1252 sous Windows FR et le decodage UTF-8 du "
+            "parent plantera")
+        value = env_kw.value
+        ok = (isinstance(value, ast.Call)
+              and isinstance(value.func, ast.Name)
+              and value.func.id == "_utf8_child_env")
+        assert ok, (
+            f"{scope_name} lance un enfant Python avec un env= qui n'est pas "
+            f"_utf8_child_env() : {ast.dump(value)[:80]}")
+
+    # --- second saut : _run_bounded transmet son env ---------------------
+    helper = fn_of("_run_bounded")
+    helper_runs = [n for n in ast.walk(helper)
+                   if isinstance(n, ast.Call)
+                   and isinstance(n.func, ast.Attribute)
+                   and n.func.attr == "run"]
+    assert helper_runs, (
+        "_run_bounded ne lance aucun subprocess.run : le seam ne "
+        "demarre plus d'enfant, la chaine d'env est cassee par "
+        "construction"
     )
-
-    env_kw = next(kw for kw in runs[0].keywords if kw.arg == "env")
-    assert isinstance(env_kw.value, ast.Call), "env= doit appeler _utf8_child_env()"
-    assert env_kw.value.func.id == "_utf8_child_env"
+    forwarded = [kw for run in helper_runs for kw in run.keywords
+                 if kw.arg == "env" and isinstance(kw.value, ast.Name)
+                 and kw.value.id == "env"]
+    assert len(forwarded) == len(helper_runs), (
+        f"_run_bounded ne transmet pas env= a chacun de ses "
+        f"{len(helper_runs)} subprocess.run : l'UTF-8 pose en amont "
+        f"n'atteint jamais l'enfant"
+    )
 
 
 def test_helper_is_defined_at_module_scope():

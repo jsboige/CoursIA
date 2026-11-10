@@ -1,6 +1,6 @@
 # SOTA — détail : mandat verbatim, incidents d'axes, mesures anti-fabrication
 
-Détail durable de [`.claude/rules/sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) (harness-hygiene tier 2). La règle porte les tables opératoires (5 verdicts, checklist 6 axes, enforcement) ; ce fichier porte les verbatims, les incidents fondateurs et les mesures qui les justifient.
+Détail durable de [`.claude/rules/sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) (harness-hygiene tier 2). La règle porte les tables opératoires (5 verdicts, interdit, enforcement) et l'exigence nominative des 6 axes ; ce fichier porte la **grille des 6 questions (§2)**, les verbatims, les incidents fondateurs et les mesures qui les justifient.
 
 Registre des audits par famille : [`docs/ledgers/3801-sota-axe2.md`](../ledgers/3801-sota-axe2.md).
 
@@ -14,7 +14,26 @@ Registre des audits par famille : [`docs/ledgers/3801-sota-axe2.md`](../ledgers/
 
 Les trois prongs de la règle en dérivent directement : msg1 → Prong A (5 verdicts), msg2 → registre #3801 + enforcement bots, msg3 → Prong B (problème non-trivial).
 
-## 2. Checklist 6 axes — origine de la 6ᵉ entrée (#10459)
+## 2. Checklist 6 axes — grille nominative et origine de la 6ᵉ entrée (#10459)
+
+**Grille de référence — la règle y renvoie par « [detail §2](../../docs/reference/sota-verdicts-detail.md) ».**
+
+`INTRINSIC` déclare une impossibilité : il justifie une substitution durable, invisible pour les auditeurs suivants — d'où la grille nominative, qui rend l'omission visible au reviewer.
+
+**Condition d'entrée, avant la grille** : prouver que l'outil visé n'est pas disponible, par une recherche à la source (dépôt, registre de paquets, page du projet), URL et date dans le body. Une grille remplie « N/A » sur un outil qui existe est un faux `INTRINSIC` (#21121 : TorchLean, public depuis le 2026-05-11).
+
+Chaque verdict `INTRINSIC` doit répondre **nominativement** les 6 axes suivants, par « non applicable, parce que… » ou « oui, mais testé, résultat : ... ». Une réponse « N/A » valide **nomme sa preuve** — ex : « axe 5 N/A parce que la cible n'a pas de binding Python, vérifié sur PyPI au commit SHA … » :
+
+| # | Axe | Question a repondre dans le body PR |
+|---|---|---|
+| 1 | **Binding .NET / NuGet** | Un package officiel existe-t-il pour la cible ? (ex : `OR-Tools`, `Accord.NET`) |
+| 2 | **`P/Invoke`** | Une API C stable est-elle exposee par la lib ? (cf `libtesseract`, `libsodium`) |
+| 3 | **CLI `Process.Start`** | Un binaire invocable existe-t-il ? (ex : `gambit`, `minizinc`, `clingo`) |
+| 4 | **`IKVM`** (pont Java) | La lib est-elle en Java ? Si oui, est-elle deja shadee ? ([`../ledgers/3801-sota-axe2.md`](../ledgers/3801-sota-axe2.md)) |
+| 5 | **`PythonNet`** (pont CPython) **(NEW c.8243)** | **La lib a-t-elle un binding Python ?** Si oui, le pont `.NET → CPython → pyspiel`-like est disponible via `pythonnet 3.0.5` + `Runtime.PythonDLL` — pas d'`INTRINSIC` sans l'avoir teste. |
+| 6 | **Lib differente a role equivalent** | Un autre moteur SOTA .NET tient-il le role ? (cf PyMC ↔ Infer.NET, OR-Tools ↔ choco, mealpy ↔ MetaGeneticSharp) |
+
+### Origine de la grille — la 6ᵉ entrée
 
 Trois verdicts `INTRINSIC` OpenSpiel **convergents** dans 3 PRs distinctes (#10390 / #10394 / #10454) — aucun n'avait examiné l'axe **PythonNet**. Aucun des trois auteurs n'a menti ni bâclé : l'axe était simplement absent de la taxonomie d'audit, donc sauté par tous.
 
@@ -89,6 +108,18 @@ entries` (l.485) s'arrête à l'entrée **8** (2026-07-10) et `### Cumul entries
 (l.854) à l'entrée **22** (2026-07-11), alors que le fichier porte **30** entrées. Le plus récent
 sous-compte d'un facteur ~1,4 ; le plus ancien, d'un facteur ~3,8. Rafraîchir et **fusionner les deux
 tableaux en un seul** est un grain à part (le fichier dépasse #14519).
+
+## 5. Évaluer un claim externe — la source réelle n'est pas le papier qu'une issue cite
+
+Un audit d'axe-2 part parfois d'une **issue qui cite un papier**. Le premier geste n'est pas de lire le papier : c'est de **vérifier que les chiffres invoqués y sont**. Sur l'évaluation BDH (Dragon Hatchling, #14489, 2026-09), les trois nombres mis en avant par l'issue étaient **tous absents** du papier de 62 pages cité — recherche du fulltext extrait (~250 K caractères) sur `ARC`, `Sudoku`, `BABILong`, `pass@2`, `29.5`, `97.4`, `150M`, `134M` → **0 occurrence**. Ils venaient de trois endroits différents : un **second papier** et son blog (ARC-AGI), le **README d'un dépôt** qui déclare lui-même ne pas reproduire le résultat (Sudoku), et la **page d'accueil commerciale** (BABILong, ni papier ni méthodologie).
+
+Trois conséquences durables, applicables à tout audit de claim externe :
+
+1. **Tracer chaque headline à sa source réelle, une par une.** Une issue qui cite un papier ne prouve pas que le papier porte ses chiffres ; les regrouper en un seul « le papier dit » fabrique un verdict faux, dans les deux sens — on crédite le papier d'un résultat qu'il n'a pas, et on instruit à charge un travail qui divulgue honnêtement ses limites.
+2. **Lire ce que la source avoue.** Les nombres étaient exacts et les préconditions écrites noir sur blanc ; c'est la reprise qui les efface : coût calculé comparé à des coûts d'API, « independent evaluation » conduite par des co-auteurs sans accès aux poids, page d'accueil portant elle-même « pending final contamination checks », mixture d'entraînement incluant le set d'évaluation. **Fidèle sur les nombres, perte par complaisance sur le contexte** est un verdict distinct de **fabriqué** — confondre les deux disqualifie l'audit au lieu du claim.
+3. **Séparer le claim du produit.** Un artefact reproductible (un dépôt public qui tourne) et des benchmarks produit non reproductibles (implémentation interne, recipe propriétaire) coexistent dans le même dossier : le verdict est `RECOVERABLE-LOCAL` sur l'un et `INTRINSIC` sur l'autre, établis par l'**échec des voies d'accès** — la voie manquante est l'**artefact** (poids, recipe), pas un binding (section 2).
+
+La forme du livrable qui rend ces verdicts relisibles est une **note datée**, avec son axe de révision échéancé : l'évaluation BDH se re-joue vers 2027-03 sous quatre conditions nommées, et elle le dit elle-même. Protocoles, mesures et conditions : [`2026-09-15-bdh-evaluation.md`](../transients/2026-09-15-bdh-evaluation.md).
 
 ## Voir aussi
 

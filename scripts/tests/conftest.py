@@ -1,4 +1,5 @@
 """Conftest : ajoute scripts/ au sys.path pour les imports des tests."""
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -56,3 +57,77 @@ def forbid_shell_escape(monkeypatch):
     monkeypatch.setattr(subprocess, "run", _refuse)
     monkeypatch.setattr(subprocess, "Popen", _RefusedPopen)
     monkeypatch.setattr(subprocess, "check_output", _refuse)
+
+
+class GhTokenEnv:
+    """Capture de ``GH_TOKEN`` autour d'un test, avec restauration explicite.
+
+    ``gh_identity.pin_gh_token()`` ecrit ``os.environ["GH_TOKEN"]`` DIRECTEMENT :
+    quand la variable etait ABSENTE, ni ``monkeypatch.setenv`` ni
+    ``monkeypatch.delenv`` n'enregistrent rien a restaurer -- l'ecriture
+    survit donc au test qui l'a provoque. Un jeton fictif restait ainsi pose
+    pour TOUTE la session pytest, et il masquait des echecs REELS : 12 tests
+    du picker qui, sans jeton dans l'environnement, tentaient un vrai
+    ``gh auth token`` (processus refuse par la sentinelle) passaient des que
+    le fichier polluant ait ete execute avant eux. La suite devenait
+    dependante de l'ORDRE de ses fichiers (#21994).
+    """
+
+    def __init__(self, saved):
+        self.saved = saved
+
+    def restore(self):
+        """Remet ``GH_TOKEN`` dans l'etat capture ; rend sa valeur finale."""
+        if self.saved is None:
+            os.environ.pop("GH_TOKEN", None)
+        else:
+            os.environ["GH_TOKEN"] = self.saved
+        return os.environ.get("GH_TOKEN")
+
+
+@pytest.fixture
+def gh_token_env():
+    """Capture et restaure ``GH_TOKEN`` autour du test (#21994)."""
+    env = GhTokenEnv(os.environ.get("GH_TOKEN"))
+    yield env
+    env.restore()
+
+
+@pytest.fixture(autouse=True)
+def _gh_token_hermetique():
+    """Filet de securite : aucun test ne laisse de jeton derriere lui.
+
+    Un test qui ecrit ``GH_TOKEN`` dans ``os.environ`` sans passer par
+    ``monkeypatch`` contaminerait tous les tests suivants -- et la suite
+    deviendrait dependante de l'ordre de ses fichiers. Le filet restaure
+    silencieusement l'etat capture : la contamination devient impossible,
+    meme chez un test qui l'ignore.
+    """
+    env = GhTokenEnv(os.environ.get("GH_TOKEN"))
+    yield
+    env.restore()
+
+
+def _reset_belt_deadline() -> None:
+    mod = sys.modules.get("pick_idle_grain")
+    deadline = getattr(mod, "_BELT_DEADLINE", None) if mod else None
+    if deadline:
+        deadline[0] = None
+
+
+@pytest.fixture(autouse=True)
+def _belt_deadline_hermetique():
+    """Filet de securite : aucun test n'herite du mur du tapis d'un autre.
+
+    ``pick_idle_grain._BELT_DEADLINE`` est un etat de module, lu par
+    ``_clamp_timeout`` a chaque sonde. Un test qui l'arme sans le desarmer
+    (un ``main(--belt)`` sorti avant son ``_disarm_belt_run_clock``, par
+    exemple) borne les timeouts de tous les tests suivants du meme worker
+    xdist : ``test_timeout_valeur_explicite_120_pour_transport_principal``
+    lisait alors le budget restant (43,8 s) au lieu de 120 (CI du
+    2026-11-01, job 124823477304). Remis a ``None`` avant ET apres chaque
+    test : le test suivant part d'un mur desarme, quel que soit l'ordre.
+    """
+    _reset_belt_deadline()
+    yield
+    _reset_belt_deadline()

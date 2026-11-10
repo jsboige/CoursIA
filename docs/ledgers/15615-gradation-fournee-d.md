@@ -36,10 +36,24 @@ Identique aux ledgers précédents : prérequis déclarés (section dédiée ou 
 | 20 | [GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb) | Aucune déclarée — Loi II du deuxième voyage | Le **chemin minimal entre jeux** (Robinson-Goforth) : univers fini re-dérivé, six swaps générateurs (permutaèdre des chambres), **constructeur et vérificateur séparé** (témoin), compter les géodésiques, traverser les murs, épaisseur des chambres, 4 exercices | 44 (17 code) | **Très haute** | Oui (20b, 20c) |
 | 20b | [GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb) | Aucune déclarée — conventions reprises de GT-20 | Le **témoin d'impossibilité** (question duale de 20) : structure produit des chambres, certificat analytique, vérification BFS tronqué, inventaire des triplets IMPOSSIBLE, frontière et bornes, 3 exercices | 30 (13 code) | Haute | Oui (20) |
 | 20c | [GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb) | Aucune déclarée — seconde attestation (ex-24/24b) | **Second substrat** — jeux ordinaux 3×2 : nombres de Fubini (720 tables strictes, 4 683 ordres faibles), trois familles de générateurs, diamètres mesurés, le verdict 2×2 survit au modèle fermé, **généralisation réfutée** (77 760 raccourcis), lemme de décomposition contrôlé par BFS, contrôle négatif, 292 864 géodésiques | 32 (15 code) | Haute | Oui (20) |
-| 20d | [GameTheory-20d-Loi-II-Translateur-Life-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-20d-Loi-II-Translateur-Life-Python.ipynb) | Aucune déclarée — seconde jambe de la Loi II | **Synthétiser un translateur Life** : vérificateur indépendant, générateur par énumération exhaustive bornée, cas sans témoin (impossibilité physique), leçon de scope du certificat, contrôle positif (témoin faux injecté), 3 exercices | 25 (10 code) | Haute | Non |
-| 20e | [GameTheory-20e-Perplexite-Structurelle-Hashlife-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-20e-Perplexite-Structurelle-Hashlife-Python.ipynb) | Aucune déclarée — consomme `scripts/hashlife` (tranche 3, #19227) | **Perplexité structurelle Hashlife** : instrument `k_trajectory.py`, pentes mesurées en log-log, pourquoi les périodiques courts sont classés PROGRAM-PERIODIC-COLLAPSED, le test Turing-complet qui manque (OTCA, Spartan), verdict falsifiable, bornes de taille de programme | 18 (5 code) | Haute | Non |
+| 20d | [GameTheory-20d-Loi-II-Translateur-Life-Python → GOL-08](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb) | Aucune déclarée — seconde jambe de la Loi II | **Synthétiser un translateur Life** : vérificateur indépendant, générateur par énumération exhaustive bornée, cas sans témoin (impossibilité physique), leçon de scope du certificat, contrôle positif (témoin faux injecté), 3 exercices | 25 (10 code) | Haute | Non |
+| 20e | [GameTheory-20e-Perplexite-Structurelle-Hashlife-Python → GOL-09](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb) | Aucune déclarée — consomme `scripts/hashlife` (tranche 3, #19227) | **Perplexité structurelle Hashlife** : instrument `k_trajectory.py`, pentes mesurées en log-log, pourquoi les périodiques courts sont classés PROGRAM-PERIODIC-COLLAPSED, le test Turing-complet qui manque (OTCA, Spartan), verdict falsifiable, bornes de taille de programme | 18 (5 code) | Haute | Non |
 
-**Totaux** : 24 carnets — 750 (286 code). Répartition difficulté : 7 Très haute (16, 16e, 16f-Lean, 17, 17c-Lean, 18c, 20), 17 Haute — la série termine sur le plateau maximal entamé en fournée C. La série s'arrête au bloc 20 : **l'audit est clos sur son périmètre complet**.
+Navigation : les liens 20d/20e pointent la **navigation actuelle** — ces deux carnets ont rejoint la sous-série GOL (#20515, commit `c4148fa6be4`) sous `SymbolicAI/Lean/GOL/` (`GOL-08` ex-20d, `GOL-09` ex-20e). Les comptes et snapshots de ce ledger restent indexés sur la **numérotation historique** de la fournée D.
+
+**Totaux** : 24 carnets — 750 (286 code). Répartition difficulté : 7 Très haute (16, 16e, 16f-Lean, 17, 17c-Lean, 18c, 20), 17 Haute — la série termine sur le plateau maximal entamé en fournée C. La série s'arrête au bloc 20 : l'audit est clos sur son périmètre complet **au snapshot `cfa6bbaea4ca`** — l'[addendum du 2026-10-14](#addendum-2026-10-14--le-16g-est-hors-snapshot) rouvre le compte (25 carnets, 16g non gradé).
+
+## Addendum (2026-10-14) — le 16g est hors snapshot
+
+[`GameTheory-16g-Populations-Othman-Sandholm-Python.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-16g-Populations-Othman-Sandholm-Python.ipynb) a atterri sur main **après le bornage** : commit `0c665bd5cd` (PR #19888, issue #19883), généralisation en populations du pilote LLM de 16e — même lignée Othman-Sandholm (§4.6 de GT-16). Mesuré sur `origin/main` au 2026-10-14 : **25 carnets** dans les blocs 16-20 (16×9, 17×7, 18×3, 19×1, 20×5).
+
+Conséquences sur les affirmations de clôture :
+
+- la fournée D couvre **25 carnets**, pas 24 ;
+- le total de la série passe de **99 à 100** (Fondations 15 + A 12 + B 27 + C 21 + **D 25**) ;
+- **le 16g est non gradé** : son entrée de gradation (ligne de grading en addendum ou fournée E) est un grain séparé, hors du périmètre de cet addendum (issue #20366).
+
+Le tableau consolidé conditionné à #18001 doit donc partir de **100**, pas de 99.
 
 ## Observations
 
@@ -79,8 +93,8 @@ Seuls 16, 16b, 17, 17b et 19 déclarent des prérequis (plages « 1-13 », « 1-
 
 ## Hors périmètre
 
-- **Aucune fournée suivante** : la série s'arrête au bloc 20, l'audit de gradation est clos sur ses quatre fournées + strate Fondations — **99 carnets au total** (Fondations 15 + A 12 + B 27 + C 21 + D 24), périmètre intégralement couvert. La série a grandi de 6 carnets depuis la renum #18001 (93 à sa date du 2026-09-29), tous absorbés par les fournées C et D.
-- **Tableau consolidé** des 99 carnets : conditionné à l'arbitrage #18001 (cf. ledger Fondations), à livrer comme étape finale de l'issue.
+- **Aucune fournée suivante** : la série s'arrête au bloc 20, l'audit de gradation est clos sur ses quatre fournées + strate Fondations — 99 carnets au total **au bornage D** (Fondations 15 + A 12 + B 27 + C 21 + D 24) ; **100 après l'addendum 16g** (D 25, [ci-dessus](#addendum-2026-10-14--le-16g-est-hors-snapshot)). La série a grandi de 6 carnets depuis la renum #18001 (93 à sa date du 2026-09-29), tous absorbés par les fournées C et D — puis du 16g, hors snapshot.
+- **Tableau consolidé** des 100 carnets : conditionné à l'arbitrage #18001 (cf. ledger Fondations), à livrer comme étape finale de l'issue.
 
 ## Source des données
 
