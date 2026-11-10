@@ -17474,7 +17474,7 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.ipyn
 7. **La correction ciblée gagne** — −42.3 points sur la poche, coût mesuré ailleurs (+0.7), reliquat documenté.
 
 Le transfert vers les notebooks de recherche et les labs agentic est direct : devant toute régression ou tout modèle décevant, la séquence **tranches → worst-k → confiance → cause → action mesurée** est le workflow qui convertit un diagnostic en décision. C'est aussi la boucle qu'un agent data-scientist doit savoir exécuter — et que son superviseur doit savoir juger.",,,,,,,,e621d5cc3bb1d0f3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb,51ba03b6,markdown,fr,79b70339cff1fa9e,"# 2.14 — Explicabilité (XAI) : SHAP, LIME et contrefactuels
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb,51ba03b6,markdown,fr,59b3cb8e4a931c1d,"# 2.14 — Explicabilité (XAI) : SHAP, LIME et contrefactuels
 
 **Navigation** : [<< 2.13-Analyse-Erreurs](2.13-Analyse-Erreurs.ipynb) | [Index](../README.md) | [Suivant >> 2.14b-XAI-Shap-Attribution-Causal-Bridge](2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb)
 
@@ -17492,7 +17492,7 @@ Trois familles complémentaires, dans l'ordre pédagogique :
 
 Le fil rouge : le **German Credit** (UCI Statlog, 1000 dossiers, 20 variables, cible bon/mauvais risque) — un vrai jeu de données, petit, tabulaire, à variables catégorielles réalistes, fourni localement dans `data/german_credit.csv`.
 
-> **Thèse du notebook, annoncée d'entrée** : ces trois familles produisent des *explications*, pas des *causes*. L'attribution SHAP dit quelles features ont pesé dans la prédiction ; elle ne dit pas ce qui *détermine* le risque. La section 7 (Ponts) relie explicitement cette limite à notre série causalité — et deux sections mesurent des limites bien réelles : la section 3 pour l'instabilité de LIME (le même dossier, six récits) et la section 5 pour la dépendance de Kernel SHAP à son jeu de données d'arrière-plan.",,,,,,,,79b70339cff1fa9e,,,,,,,,,,,,,,,
+> **Thèse du notebook, annoncée d'entrée** : ces trois familles produisent des *explications*, pas des *causes*. L'attribution SHAP dit quelles features ont pesé dans la prédiction ; elle ne dit pas ce qui *détermine* le risque. La section 7 (Ponts) relie explicitement cette limite à notre série causalité — et la section 5 mesure deux limites bien réelles : l'instabilité de LIME et la dépendance de Kernel SHAP à son jeu de données d'arrière-plan.",,,,,,,,59b3cb8e4a931c1d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb,3a2c0453,markdown,fr,93456884a41204c1,"## Garde-fous d'honnêteté
 
 1. **Un modèle volontairement simple** : forêt aléatoire sur features brutes encodées (accuracy ~0.74-0.76 mesurée). Ce notebook enseigne l'*explication*, pas la maximisation de score — un modèle plus fort rendrait les explications plus denses, pas plus justes.
