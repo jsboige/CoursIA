@@ -73,8 +73,8 @@ construction, donc `LawfulHashable` est automatique. -/
 def MacroCell.contentHash : MacroCell → UInt64
   | .leaf b => if b then 1 else 0
   | .node nw ne sw se =>
-    mixHash 2 (mixHash (mixHash nw.contentHash ne.contentHash)
-                       (mixHash sw.contentHash se.contentHash))
+    mixHash 2 (mixHash (mixHash (MacroCell.contentHash nw) (MacroCell.contentHash ne))
+                       (mixHash (MacroCell.contentHash sw) (MacroCell.contentHash se)))
 
 instance : Hashable MacroCell := ⟨MacroCell.contentHash⟩
 
