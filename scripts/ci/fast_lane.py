@@ -47,7 +47,7 @@ from fast_lane_registry import (  # noqa: E402
     TRANCHE20, TRANCHE21, TRANCHE22, TRANCHE23, TRANCHE24, TRANCHE25, TRANCHE26,
     TRANCHE27, TRANCHE28, TRANCHE29, TRANCHE30, TRANCHE31, TRANCHE32,
     TRANCHE33, TRANCHE34, TRANCHE35, TRANCHE36, TRANCHE37, TRANCHE38,
-    TRANCHE39, TRANCHE40, Guard,
+    TRANCHE39, TRANCHE40, TRANCHE41, Guard,
 )
 
 SHADOW_PREFIX = "fast-lane (ombre): "
@@ -637,7 +637,7 @@ def main(argv: list[str] | None = None) -> int:
               + TRANCHE20 + TRANCHE21 + TRANCHE22 + TRANCHE23 + TRANCHE24 + TRANCHE25
               + TRANCHE26 + TRANCHE27 + TRANCHE28 + TRANCHE29 + TRANCHE30
               + TRANCHE31 + TRANCHE32 + TRANCHE33 + TRANCHE34 + TRANCHE35
-              + TRANCHE36 + TRANCHE37 + TRANCHE38 + TRANCHE39 + TRANCHE40
+              + TRANCHE36 + TRANCHE37 + TRANCHE38 + TRANCHE39 + TRANCHE40 + TRANCHE41
               if not args.only or g.name == args.only]
     if args.effects:
         guards = [g for g in guards if g.commenters]
