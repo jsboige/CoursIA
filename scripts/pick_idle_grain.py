@@ -3623,46 +3623,24 @@ def anchor_is_citation(text: str, issue_number: int) -> bool:
     return False
 
 
-def merged_pr_signal(issue_number: int, lane: str | None = None):
-    """Une PR MERGEE citant `#N` est-elle dans la fenetre de 90 jours ?
+def _newest_merged_citation(prs, issue_number: int,
+                            now: dt.datetime) -> str | bool:
+    """Post-filtre commun aux deux voies de ``merged_pr_signal`` (#24823).
 
-    TRI-ETAT, meme doctrine que ``has_delivered_signal`` et
-    ``open_cover_signal`` :
-    - ``str`` : au moins une PR MERGED cite `#N`, `mergedAt` est dans les
-      90 derniers jours (jour UTC), et la valeur rendue est ce `mergedAt`
-      ISO-8601 le plus recent. La DATE est rendue, pas un simple `True`,
-      parce que la surface « PR MERGEE » n'est pas terminale : un
-      `[NOT-DELIVERED]` poste APRES cette fusion la revoque (#22987), et
-      cette comparaison a besoin de l'instant de fusion ;
-    - ``False`` : aucune PR MERGED ne cite `#N`, OU toutes les PRs
-      MERGEes qui la citent datent de plus de 90 jours ;
-    - ``None`` : la requete a echoue (reseau, 403, payload illisible) --
-      l'appelant doit tirer quand meme EN LE DISANT.
+    La MEME ancre ``#N\\b`` (#17760, #24418 : la citation est exigeante sur
+    la forme) et la MEME fenetre de 90 jours pour la voie serveur (payload
+    plafonne a 20 resultats par le ``--search``) et pour l'index local
+    precharge : la boucle de decision est ecrite une fois, aucune
+    divergence de semantique n'est possible entre les deux voies.
 
-    Le `--search "N in:title,body"` est un filtre serveur (GitHub ne peut
-    pas tenir la borne de 90 jours cote serveur) ; le post-filtre temporel
-    se fait ici, sur le payload limite a 20 resultats. Meme doctrine
-    d'ancre `#N\\b` que ``open_cover_signal`` (post-filtre, #17760) pour
-    eviter les collisions de sous-chaine (ex. #11703 vs #1170391).
+    L'absence de cle ``state`` est toleree (l'index local est telecharge
+    par ``--state merged`` sans demander le champ) ; un ``state`` explicite
+    autre que ``MERGED`` est ecarte, comme le faisait la voie serveur.
     """
-    try:
-        out = subprocess.run(
-            ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
-             "--limit", "20", "--search", f"{issue_number} in:title,body",
-             "--json", "number,state,mergedAt,title,body"],
-            capture_output=True, text=True, encoding="utf-8", check=True,
-            timeout=30,
-        ).stdout
-        prs = json.loads(out)
-    except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
-        return None
-    if not isinstance(prs, list):
-        return None
-    now = dt.datetime.now(dt.timezone.utc)
     window = dt.timedelta(days=MERGED_PR_WINDOW_DAYS)
     newest = None
     for pr in prs:
-        if pr.get("state") != "MERGED":
+        if pr.get("state") not in (None, "MERGED"):
             continue
         # #24418 : `anchor.search` retenait une enumeration de prose comme
         # une livraison. La citation est desormais exigeante sur la forme.
@@ -3684,6 +3662,102 @@ def merged_pr_signal(issue_number: int, lane: str | None = None):
     if newest is None:
         return False
     return newest[1]
+
+
+def merged_pr_signal(issue_number: int, lane: str | None = None,
+                     index: list | None = None):
+    """Une PR MERGEE citant `#N` est-elle dans la fenetre de 90 jours ?
+
+    TRI-ETAT, meme doctrine que ``has_delivered_signal`` et
+    ``open_cover_signal`` :
+    - ``str`` : au moins une PR MERGED cite `#N`, `mergedAt` est dans les
+      90 derniers jours (jour UTC), et la valeur rendue est ce `mergedAt`
+      ISO-8601 le plus recent. La DATE est rendue, pas un simple `True`,
+      parce que la surface « PR MERGEE » n'est pas terminale : un
+      `[NOT-DELIVERED]` poste APRES cette fusion la revoque (#22987), et
+      cette comparaison a besoin de l'instant de fusion ;
+    - ``False`` : aucune PR MERGED ne cite `#N`, OU toutes les PRs
+      MERGEes qui la citent datent de plus de 90 jours ;
+    - ``None`` : la requete a echoue (reseau, 403, payload illisible) --
+      l'appelant doit tirer quand meme EN LE DISANT.
+
+    Deux voies (#24823), meme verdict :
+    - ``index=None`` (defaut) : recherche serveur PAR NUMERO, voie
+      historique. Le `--search "N in:title,body"` est un filtre serveur
+      (GitHub ne peut pas tenir la borne de 90 jours cote serveur) ; le
+      post-filtre temporel se fait ici, sur le payload limite a 20
+      resultats. Meme doctrine d'ancre `#N\\b` que
+      ``open_cover_signal`` (post-filtre, #17760) pour eviter les
+      collisions de sous-chaine (ex. #11703 vs #1170391).
+    - ``index=[...]`` : index local des PRs mergees precharge en phase
+      reseau (``merged_prs_index``) -- la reponse est LOCALE et
+      concluante (``str`` | ``False``), jamais ``None`` : le corpus est
+      la. L'index couvre TOUTE la fenetre sans la limite de 20 du
+      ``--search`` serveur : la voie locale est au moins aussi complete.
+    """
+    now = dt.datetime.now(dt.timezone.utc)
+    if index is not None:
+        return _newest_merged_citation(index, issue_number, now)
+    try:
+        out = subprocess.run(
+            ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
+             "--limit", "20", "--search", f"{issue_number} in:title,body",
+             "--json", "number,state,mergedAt,title,body"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=30,
+        ).stdout
+        prs = json.loads(out)
+    except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
+        return None
+    if not isinstance(prs, list):
+        return None
+    return _newest_merged_citation(prs, issue_number, now)
+
+
+def merged_prs_index(cache: PayloadCache | None = None,
+                     cache_mode: str = "off",
+                     cache_status: dict[str, dict[str, Any]] | None = None,
+                     ) -> list[dict] | None:
+    """Precharge l'index local des PRs MERGEEs sur la fenetre de la sonde.
+
+    #24823 : la sonde par candidat « une PR MERGEE cite-t-elle #N ? » etait
+    une recherche serveur PAR NUMERO dans la boucle de tirage -- 41 appels
+    `gh pr list --search` mesures sur un tirage de 50 grains. La question se
+    repond desormais localement : ce helper precharge le corpus des PRs
+    mergees de la fenetre, et ``merged_pr_signal(..., index=...)`` y lit la
+    reponse pour CHAQUE numero sans un seul appel reseau.
+
+    La voie du prechargement est ``fetch_merged`` (meme corpus que la mesure
+    de livraison du tapis, au-dessus du site d'appel : filtre serveur
+    `merged:>=` -- le tri de `gh pr list` etant par CREATION, un filtre
+    client laisserait tomber les PRs creees avant la coupe, faux silencieux
+    mesure #19209 -- cache PAR TRANCHE #19236). Partager cette voie veut
+    dire qu'a chaud l'index ne coute AUCUN appel de plus : la tranche vive
+    vient du cache que ``delivery_prs`` vient deja de payer.
+
+    Rend ``None`` quand la passe groupee echoue : l'appelant garde alors
+    la sonde reseau par numero (voie historique) et le dit -- un index
+    absent ne se lit JAMAIS comme « aucune PR mergee ».
+    """
+    try:
+        prs, fetch_err = fetch_merged(
+            MERGED_PR_WINDOW_DAYS,
+            now=NOW,
+            cache=cache,
+            cache_mode=cache_mode,
+            cache_status=cache_status,
+            cache_ttl_seconds=SERIES_CACHE_TTL_SECONDS,
+        )
+        # Un echec de fetch rend un corpus vide AVEC erreur (`fetch_merged`
+        # attrape deja les exceptions). L'index indisponible se declenche
+        # sur l'ERREUR, jamais sur un corpus vide (qui est une reponse
+        # legitime du serveur -- le depot peut n'avoir rien merge).
+        if fetch_err or not isinstance(prs, list):
+            return None
+        return prs
+    except Exception:  # noqa: BLE001 - prechargement best-effort, echec DIT
+        return None
+    return prs if isinstance(prs, list) else None
 
 
 def revocation_probe_inert(issue_number: int, lane: str | None = None,
@@ -5277,6 +5351,12 @@ def _claims_in_process(
     instantane illisible, exception) ; l'appelant tranche alors. Chaque
     sortie None NOMME sa cause sur stderr (prefixe ``[22983]``) : un refus
     fail-CLOSED intermittent doit etre diagnosticable, pas devine.
+
+    #22983 (v3) -- en mode STRICT, le refus est **par numero** : les
+    numeros que l'instantane sert sont servis, et les autres rendent
+    `BLOCKED` avec leur MOTIF (absent / perime / payload absent). Le
+    refus reste fail-CLOSED, mais il ne condamne plus les numeros que
+    l'instantane prouve.
     """
     if not numbers:
         return {}
@@ -5289,6 +5369,11 @@ def _claims_in_process(
             f"({type(exc).__name__}: {exc})")
     import contextlib
     import io
+    # #22983 (v3) -- le refus STRICT est PAR NUMERO (voir la branche
+    # STRICT plus bas). Hors STRICT, l'instantane est rafraichi : il sert
+    # la fenetre entiere, et aucun refus nominatif n'a de motif a porter.
+    _refuses: dict[int, str] = {}
+    _servables = list(numbers)
     try:
         if local_only:
             # #22983 -- mode STRICT : l'instantane est lu TEL QUEL. Le
@@ -5299,54 +5384,107 @@ def _claims_in_process(
             snapshot = (globals().get("_BELT_SNAPSHOT")
                         or gh_snapshot.load_snapshot(REPO))
             clc.set_snapshot(snapshot)
-            if not gh_snapshot.serves(snapshot, [int(n) for n in numbers]):
-                # #22983 -- la cause se NOMME : manquant (jamais lu) et
-                # perime (stamp plus vieux que le TTL) ne se soignent pas
-                # de la meme facon, et `serves()` ne rend qu'un booleen.
-                stamps = ((snapshot.get("meta") or {})
-                          .get("comment_stamps") or {})
-                _manque, _perime = [], []
-                for n in numbers:
-                    stamp = stamps.get(str(n))
-                    if not isinstance(stamp, (int, float)):
-                        _manque.append(str(n))
-                    elif (time.time() - stamp) > gh_snapshot.DEFAULT_TTL_SECONDS:
-                        _perime.append(str(n))
-                # #22983 (v2) -- manquant/perime est un SYMPTOME : quand le
-                # fetch de la phase reseau a echoue sur quota REST, c'est la
-                # CAUSE, et elle ne se soigne pas comme un TTL (recycler les
-                # stamps peres ne repand pas un quota). Les echecs sont deja
-                # nommes dans l'instantane (``meta.fetch_failures``) -- on
-                # les releve au lieu de les reinventer. Borne a 1 h pour ne
-                # pas citer un exhaust ancien comme cause du refus present.
-                _fails = ((snapshot.get("meta") or {})
-                          .get("fetch_failures") or {})
-                _quota = sorted(
-                    k for k, v in _fails.items()
-                    if isinstance(v, dict)
-                    and "rate limit" in str(v.get("error") or "").lower()
-                    and isinstance(v.get("at"), (int, float))
-                    and (time.time() - v["at"]) < 3600.0)
-                _quota_note = (f" ; echecs quota REST < 1 h : {len(_quota)}"
-                               + (f" (ex : {', '.join('#' + k for k in _quota[:3])})"
-                                  if _quota else ""))
+            # #22983 (v3) -- le refus STRICT est PAR NUMERO, pas par
+            # fenetre.
+            #
+            # La validite de l'instantane est une propriete PAR ISSUE
+            # (`serves()` : un stamp frais par issue, ET les commentaires
+            # de cette issue) ; l'appliquer a la fenetre entiere faisait
+            # qu'UN seul numero perime refusait TOUS les autres. Mesure
+            # du 09/11 (run c3010 de cette lane, sur `main` a jour) : 11
+            # numeros perimes sur 70, et « 0 retenu(s), 70 witheld » --
+            # le tapis servait ZERO grain pour une fenetre dont 59
+            # numeros etait lisibles.
+            #
+            # On interroge donc `serves()` NUMERO PAR NUMERO -- le
+            # predicat canonique, avec son propre contrat -- plutot que de
+            # reputer sa validite dans le tapis : le contrat de
+            # l'instantane reste porte par un seul code. Le refus reste
+            # fail-CLOSED, mais il devient PROPRE : un numero dont
+            # l'instantane ne prouve rien est refuse avec son MOTIF, et
+            # les autres sont servis.
+            _ttl = getattr(gh_snapshot, "DEFAULT_TTL_SECONDS", 1800)
+            stamps = ((snapshot.get("meta") or {})
+                      .get("comment_stamps") or {})
+            comments = (snapshot.get("comments") or {})
+            _manque, _perime, _autres = [], [], []
+            _refuses: dict[int, str] = {}
+            _servables = []
+            for n in numbers:
+                key = str(n)
+                if gh_snapshot.serves(snapshot, [int(n)]):
+                    _servables.append(n)
+                    continue
+                stamp = stamps.get(key)
+                if not isinstance(stamp, (int, float)):
+                    _manque.append(key)
+                    cause = "absent de l'instantane (jamais lu)"
+                elif (time.time() - stamp) > _ttl:
+                    _perime.append(key)
+                    cause = (f"perime (stamp plus vieux que le TTL de "
+                             f"{int(_ttl)} s)")
+                elif key not in comments:
+                    _autres.append(key)
+                    cause = "commentaires absents de l'instantane"
+                else:
+                    _autres.append(key)
+                    cause = "non servi par l'instantane"
+                _refuses[int(key)] = f"instantane STRICT : numero #{key} {cause}"
+            # #22983 (v2) -- manquant/perime est un SYMPTOME : quand le
+            # fetch de la phase reseau a echoue sur quota REST, c'est la
+            # CAUSE, et elle ne se soigne pas comme un TTL (recycler les
+            # stamps peres ne repand pas un quota). Les echecs sont deja
+            # nommes dans l'instantane (``meta.fetch_failures``) -- on
+            # les releve au lieu de les reinventer. Borne a 1 h pour ne
+            # pas citer un exhaust ancien comme cause du refus present.
+            _fails = ((snapshot.get("meta") or {})
+                      .get("fetch_failures") or {})
+            _quota = sorted(
+                k for k, v in _fails.items()
+                if isinstance(v, dict)
+                and "rate limit" in str(v.get("error") or "").lower()
+                and isinstance(v.get("at"), (int, float))
+                and (time.time() - v["at"]) < 3600.0)
+            _quota_note = (f" ; echecs quota REST < 1 h : {len(_quota)}"
+                           + (f" (ex : {', '.join('#' + k for k in _quota[:3])})"
+                              if _quota else ""))
+            # `serves` garantit les commentaires ; le LECTEUR a besoin du
+            # PAYLOAD. Un payload absent le ferait retomber sur
+            # `gh issue view` -- un appel reseau pendant le tirage.
+            _absents = [str(n) for n in _servables
+                        if clc._snapshot_issue_payload(str(n)) is None]
+            for key in _absents:
+                _refuses[int(key)] = (
+                    f"instantane STRICT : numero #{key} : payload absent de "
+                    f"l'instantane")
+                _servables.remove(int(key))
+            if not _servables:
+                # RIEN de servable : la fenetre entiere est refusee, et le
+                # contrat fail-CLOSED d'avant est conserve tel quel (None
+                # => l'appelant rend le verdict opaque de panne de
+                # fenetre). Le refus par numero ne concerne que le MIXTE.
                 return _claims_none(
                     f"instantane STRICT ne sert pas les numeros "
                     f"(manquants: {', '.join(_manque) or '-'} ; "
                     f"perimes: {', '.join(_perime) or '-'})"
                     + _quota_note)
-            # `serves` garantit les commentaires ; le LECTEUR a besoin du
-            # PAYLOAD. Un payload absent le ferait retomber sur
-            # `gh issue view` -- un appel reseau pendant le tirage.
-            _absents = [str(n) for n in numbers
-                        if clc._snapshot_issue_payload(str(n)) is None]
-            if _absents:
-                return _claims_none(
-                    f"payload absent de l'instantane STRICT : "
-                    f"{', '.join(_absents)}")
+            if _refuses:
+                for _num in list(_refuses):
+                    _refuses[_num] += _quota_note
+                _autres_note = (f" ; autres: {', '.join(_autres)}"
+                                if _autres else "")
+                print(f"[22983] refus STRICT par numero "
+                      f"(manquants: {', '.join(_manque) or '-'} ; "
+                      f"perimes: {', '.join(_perime) or '-'})"
+                      f"{_autres_note}{_quota_note}",
+                      file=sys.stderr, flush=True)
         else:
             snapshot = gh_snapshot.refresh(REPO, issue_numbers=list(numbers))
             clc.set_snapshot(snapshot)
+            # Hors STRICT : l'instantane vient d'etre rafraichi, il sert
+            # la fenetre entiere ; aucun refus nominatif n'a de motif a
+            # porter.
+            _servables = list(numbers)
         if open_prs_cache:
             # Le LECTEUR lit le cache des PRs ouvertes au moment de son
             # import ; on le pose dans l'environnement ET dans le module
@@ -5355,33 +5493,40 @@ def _claims_in_process(
             os.environ["CHECK_LANE_CLAIM_OPEN_PRS_JSON"] = open_prs_cache
             if getattr(clc, "_OPEN_PRS_CACHE_PATH", None) != open_prs_cache:
                 clc._OPEN_PRS_CACHE_PATH = open_prs_cache
-        if len(numbers) > 1:
+        if len(_servables) > 1:
             payload = clc.check_issues_batch(
-                [str(n) for n in numbers], lane,
+                [str(n) for n in _servables], lane,
                 stale_threshold=48.0, from_json=None, my_paths=None,
             )
-            return {n: _summarize_claim_from_batch(payload, n)
-                    for n in numbers}
-        # Un seul numero : la CLI mono-issue passe par `_run_check` et rend
-        # un JSON de synthese suivi de la phrase-verdict. On reproduit
-        # EXACTEMENT cette voie, et on relit la sortie avec le meme
-        # reducteur.
-        n = numbers[0]
-        buf_out = io.StringIO()
-        buf_err = io.StringIO()
-        with contextlib.redirect_stdout(buf_out), \
-                contextlib.redirect_stderr(buf_err):
-            # #22983 -- l'instantane sert le payload quand il le peut ;
-            # sinon on retombe sur la lecture reseau (meme contrat que le
-            # mode batch de `check_issues_batch`).
-            issue_payload = clc._snapshot_issue_payload(str(n))
-            if issue_payload is None:
-                issue_payload = clc._gh_issue_comments(str(n))
-            rc = clc._run_check(
-                issue_payload, lane, stale_threshold=48.0,
-                my_paths=None, check_open_pr_paths=True,
-            )
-        return {n: _summarize_claim(buf_out.getvalue(), rc)}
+            verdicts = {n: _summarize_claim_from_batch(payload, n)
+                        for n in _servables}
+        else:
+            # Un seul numero : la CLI mono-issue passe par `_run_check` et
+            # rend un JSON de synthese suivi de la phrase-verdict. On
+            # reproduit EXACTEMENT cette voie, et on relit la sortie avec
+            # le meme reducteur.
+            n = _servables[0]
+            buf_out = io.StringIO()
+            buf_err = io.StringIO()
+            with contextlib.redirect_stdout(buf_out), \
+                    contextlib.redirect_stderr(buf_err):
+                # #22983 -- l'instantane sert le payload quand il le peut ;
+                # sinon on retombe sur la lecture reseau (meme contrat que
+                # le mode batch de `check_issues_batch`).
+                issue_payload = clc._snapshot_issue_payload(str(n))
+                if issue_payload is None:
+                    issue_payload = clc._gh_issue_comments(str(n))
+                rc = clc._run_check(
+                    issue_payload, lane, stale_threshold=48.0,
+                    my_paths=None, check_open_pr_paths=True,
+                )
+            verdicts = {n: _summarize_claim(buf_out.getvalue(), rc)}
+        # Les refus nominatifs s'ajoutent aux verdicts servis : un numero
+        # refuse l'est avec son MOTIF, jamais avec le verdict opaque d'une
+        # panne de fenetre.
+        for _num, _motif in _refuses.items():
+            verdicts[int(_num)] = (CLAIM_CODE_BLOCKED, _motif)
+        return verdicts
     except Exception as exc:  # noqa: BLE001 - l'appelant tranche (fail-CLOSED)
         return _claims_none(
             f"exception dans la voie en processus "
@@ -5412,9 +5557,13 @@ def check_claims(numbers: list[int], lane: str, *,
 
     - **STRICT** (le tapis) : l'instantane est lu TEL QUEL -- il ne se
       rafraichit pas ici (le rafraichissement est la phase reseau, qui
-      precede le tirage). S'il ne peut pas servir la fenetre, le tapis ne
-      complete PAS a la volee : tous les numeros rendent `BLOCKED`, donc
-      AUCUN grain n'est servi, et l'appelant le dit ;
+      precede le tirage). Le tapis ne complete PAS a la volee : un numero
+      que l'instantane ne prouve pas rend `BLOCKED`, **avec son motif**
+      (absent / perime / payload absent), et les numeros que
+      l'instantane sert sont servis normalement. Le refus est donc **par
+      numero**, pas par fenetre (#22983 v3 : la validite de l'instantane
+      est une propriete par issue ; l'appliquer a la fenetre entiere
+      faisait qu'un numero perime refusait tous les autres) ;
     - **hors STRICT** (tirage pondere, board) : l'instantane est lu, ou
       rafraichi quand il ne peut pas servir. Une indisponibilite rend
       `ERROR` -- jamais `FREE`.
@@ -14032,6 +14181,42 @@ def main(argv: list[str] | None = None) -> int:
         for num, item in delivery_sig["items"].items()
     }
 
+    # #24823 -- index local des PRs MERGEEs pour la sonde par candidat du
+    # tapis : la question « une PR MERGEE cite-t-elle #N ? » etait une
+    # recherche serveur PAR NUMERO dans la boucle (41 appels mesures sur
+    # un tirage de 50 grains). Le meme materiaux se precharge ici en une
+    # PASSE GROUPEE par tranches -- la meme voie que `delivery_prs` au-
+    # dessus -- et la boucle repond ensuite localement (fail-CLOSED
+    # preserve : l'echec de la passe laisse la sonde sur sa voie reseau
+    # historique, il ne se lit jamais comme « aucune PR mergee »).
+    # Commutateur pytest identique aux sondes ci-dessus : un test qui
+    # veut la voie locale injecte sa sonde explicitement, le CLI n'y
+    # construit pas d'index (la passe groupee est un appel gh reel).
+    belt_merged_pr_probe = merged_pr_signal
+    merged_prs_local = None
+    if args.belt and not (
+            "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None):
+        merged_prs_local = merged_prs_index(
+            cache=payload_cache,
+            cache_mode=effective_cache_mode,
+            cache_status=cache_status,
+        )  # slice_stats: fetch_merged l'enrichit via son propre compteur
+        if merged_prs_local is not None:
+            # Capture par defaut : la sonde transporte l'index, la boucle
+            # ne le connait pas -- meme signature qu'avant, aucun autre
+            # site d'appel ne change.
+            belt_merged_pr_probe = (
+                lambda issue_number, lane=None, _idx=merged_prs_local:
+                    merged_pr_signal(issue_number, lane, index=_idx)
+            )
+            print(f"(index local des PRs mergees : {len(merged_prs_local)} "
+                  f"PRs sur {MERGED_PR_WINDOW_DAYS} j -- la sonde par "
+                  f"candidat ne sort plus sur le reseau, #24823)")
+        else:
+            print("(index local des PRs mergees INDISPONIBLE (echec de la "
+                  "passe groupee) -- repli sur la sonde reseau par numero, "
+                  "#24823)", file=sys.stderr)
+
     # Geste 3 #18203 : `idle_since_delivery` pour TOUT le pool, pas seulement
     # les umbrellas. `measure_delivery` ne couvre que les umbrellas et ignore
     # les grains -- or le facteur de poids du tirage veut une mesure sur la
@@ -14543,7 +14728,7 @@ def main(argv: list[str] | None = None) -> int:
                                         belt_probe_budget(belt_check_window),
                                         delivered_probe=has_delivered_signal,
                                         cover_probe=cover_probe,
-                                        merged_pr_probe=merged_pr_signal,
+                                        merged_pr_probe=belt_merged_pr_probe,
                                         revocation_probe=(
                                             revoked_after_merge_signal),
                                         recent_marker_probe=(
