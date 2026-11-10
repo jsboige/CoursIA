@@ -264,9 +264,9 @@ Les modèles de décision posés sur un encodeur (famille `laya`, `Lavoir`, `GLi
 
 > **Critère de shortlistoire** (Pli 1 sortie) : score `balanced_skill` ≥ 40 (palier autorégressif) **ET** servabilité sur cartes 24 Go **ET** présentation reproductible disponible (à vérifier Pli 2).
 >
-> **Cases « à confirmer » levées le 2026-11-10** (lane `myia-po-2027:CoursIA`, grain #18204) : repo HF, licence et disponibilité des poids vérifiés **firsthand** — index `data/index.json` régénéré le **2026-11-06** (édition `0.4.1` / `release-v4`, base `release-v2.1`, 274 entrées, corpus `b2b56d6f…`), API Hugging Face interrogée par dépôt. Les scores du tableau initial (édition 0.2.1 du 2026-09-28) ont **dévié** à la régénération : la colonne Score ci-dessous donne le score **courant**, l'ancien en barré.
+> **Cases « à confirmer » levées le 2026-11-10** : repo HF, licence et disponibilité des poids vérifiés **firsthand** — index `data/index.json` régénéré le **2026-11-06** (édition `0.4.1` / `release-v4`, base `release-v2.1`, 274 entrées, corpus `b2b56d6f…`), API Hugging Face interrogée par dépôt. Les scores du tableau initial (édition 0.2.1 du 2026-09-28) ont **dévié** à la régénération : la colonne Score ci-dessous donne le score **courant**, l'ancien en barré.
 
-| # | Modèle | Repo HF (poids) | Licence (API HF) | Gated | Poids | Score courant (0.2.1) | Servabilité 24 Go | Présentation | Verdict |
+| # | Modèle | Repo HF (poids) | Licence (API HF) | Gated | Poids | Score courant (0.4.1) | Servabilité 24 Go | Présentation | Verdict |
 |---:|---|---|---|---|---|---:|---|---|---|
 | 1 | **Surogate Rune 26B-A4B v3** | `surogate/rune-26b-a4b-GGUF` | `apache-2.0` | **`auto`** (étape manuelle d'acceptation, y compris en CI) | OUI (`.gguf`) | 56,42 (~~57,4~~) | oui (**GGUF → llama.cpp**, pas vLLM) | Pli 2 | **candidat confirmé** |
 | 2 | **Winnow-12B** (Q8_0) | `EldanRing/Winnow-12B` | `apache-2.0` | non | OUI | 46,57 (~~50,0~~) | oui (vLLM quantisé, base `gemma-4-12B`) | Pli 2 | **candidat confirmé** |
