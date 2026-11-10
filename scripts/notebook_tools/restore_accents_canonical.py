@@ -488,6 +488,13 @@ def _fr_markers(text: str) -> set[str]:
 # (francais non accentue, "de" est son SEUL marqueur FR) sont a l'identique sur
 # ce critere. Un mot-outil anglais ne figure jamais dans une phrase francaise :
 # c'est le discriminateur fiable.
+# COMPROMIS CONSERVATEUR : or, in, as, at, by, it, is sont AUSSI des mots
+# francais legitimes. Une citation FR qui en porte un est classee ANGLAISE par
+# le discriminateur ci-dessus et retournee telle quelle (non curee) -- temoin
+# « Un probleme en or » (or = le metal) conserve "probleme". On prefere
+# SOUS-curer ce cas rare (citation FR courte sans autre marqueur) a risquer de
+# curer une citation EN genuine portant le meme mot. Le temoin de test le fige
+# comme comportement ATTENDU, pas un defaut.
 _EN_QUOTE_MARKER_RE = re.compile(
     r"\b(the|by|of|to|in|and|for|with|that|this|it|is|are|was|were|been|"
     r"from|as|at|we|you|or)\b")

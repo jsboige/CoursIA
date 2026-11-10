@@ -898,6 +898,26 @@ class Test21277CitationMask:
         assert "modèle" in src
         assert "sélection" in src
 
+    def test_french_blockquote_with_or_kept_unaccented(self, tmp_path):
+        # Temoin FR du compromis conservateur (#25613, rejeu c.2008) : `or`
+        # (le metal) est AUSSI un mot fonctionnel anglais dans
+        # `_EN_QUOTE_MARKER_RE`. Une citation FR qui en porte un est classee
+        # ANGLAISE et retournee telle quelle -- « Un probleme en or » conserve
+        # "probleme" (non accentue). Fige comme comportement ATTENDU, pas un
+        # defaut : on prefere sous-curer ce cas rare a corrompre une citation
+        # EN genuine portant le meme mot.
+        nb = _nb([("markdown",
+                   "Le metal en jeu :\n"
+                   "> Un probleme en or\n"
+                   "La suite est claire.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        # la citation FR portant "or" est retournee telle quelle (sous-curee)
+        assert "Un probleme en or" in src
+        assert "problème" not in src
+
     def test_inline_double_quotes_language_aware(self, tmp_path):
         # Une ligne FR cite en double-quotes : la citation FR est curee, la
         # citation anglaise est masquee (element non accentue).
