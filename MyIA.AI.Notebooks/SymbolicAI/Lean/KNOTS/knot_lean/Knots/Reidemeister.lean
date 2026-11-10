@@ -632,11 +632,11 @@ theorem reidemeister3Determined_satisfiable :
     -- the underlying `List.Perm` on `List Nat`, which IS decidable.
     exact by unfold PDCrossing.isSlotPermOf; decide
   · -- surgery, left arm: d₂.crossings = d₁.crossings.set 0 ⟨1,3,2,4⟩.
-    -- `d₁.crossings` et `d₂.crossings` sont concrets (`simp only [List.set]`
-    -- unfold les deux et réduit `set 0` sur la liste `[_, _]` au but
-    -- defeq `[c', b] = [c', b]`). Pas besoin de `DecidableEq (List PDCrossing)`
-    -- (instance absente ; `decide` échouerait avec `failed to synthesize
-    -- Decidable`).
+    -- `d₁.crossings` et `d₂.crossings` sont concrets
+    -- (`simp only [List.set]` unfold les deux et réduit `set 0` sur la liste
+    -- `[_, _]` au but defeq `[c', b] = [c', b]`). Pas besoin de
+    -- `DecidableEq (List PDCrossing)` (instance absente ; `decide` échouerait
+    -- avec `failed to synthesize Decidable`).
     exact Or.inl (by simp only [List.set])
   · -- d₁.wf = true (each of {1,2,3,4} appears exactly twice)
     exact by decide

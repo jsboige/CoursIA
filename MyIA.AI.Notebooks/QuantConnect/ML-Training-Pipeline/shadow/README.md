@@ -163,7 +163,7 @@ Un passage par mois, à la première séance du mois. Chaque passage est une PR 
 
 ## Ce qui n'est pas encore là
 
-- **Le premier passage des candidates QuantConnect** (étape 2 de #18923) : `mhm676`, `fs774`, `splits-lo`, `lsh-lag`, `tw-pit` et `btc-voltarget-base` sont gelées et `due`, mais un passage QC demande le MCP QuantConnect, absent de plusieurs sièges ; sur un siège sans MCP, elles restent dues. Les deux candidates locales (`ivol-U`, `ivol-F`) ont eu le leur le 2026-10-25, et l'organe ne les rend plus dues avant novembre.
+- **Le premier passage de `btc-voltarget-base`** (étape 2 de #18923) : `ingest-qc` refuse son graphique, dont la première valeur est tracée dans `e1` et non dans `e0`, parce que le compteur de barres est incrémenté avant le tracé. Le cycle est complet mais décalé d'un cran ; la candidate reste due tant que le harnais n'admet pas ce décalage (#24153). Un passage QC demande le MCP QuantConnect, absent de plusieurs sièges : sur un siège sans MCP, les candidates QC restent dues.
 - **Le rythme automatique** (étape 3 de #18923) : le décideur existe (`scripts/shadow_schedule.py`), aucun déclencheur planifié ne l'appelle — la cadence est encore tenue à la main.
 
 Un passage pris en cours de mois plutôt qu'à la première séance ne fausse pas la lecture : la fenêtre hors échantillon ne fait que s'allonger de D à la date du passage, et `due` ne l'ouvre qu'une fois par mois et par candidate.

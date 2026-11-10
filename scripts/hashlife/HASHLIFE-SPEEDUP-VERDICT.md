@@ -31,7 +31,7 @@ generations sans calculer les etats intermediaires.
 
 ## Methode
 
-- **Organe** : `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/scripts/hashlife.py`
+- **Organe** : `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/hashlife.py`
   (`construct` / `advance`), importe -- jamais reimplemente (regle *organ-first*).
   Le sha256 de l'organe mesure est committe dans le JSON.
 - **Ligne de base** : simulation naive par ensemble de cellules, `Theta(G x

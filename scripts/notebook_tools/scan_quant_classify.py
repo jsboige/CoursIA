@@ -173,7 +173,7 @@ MODELED_MINUTE_EXTRA_KEYWORDS = (
     "ordinaire", "événement", "evenement",
 )
 
-# v3 (c.1275): anti-FP Argument_Analysis — STRUCTURAL_LOCATIONS sont des
+# v3 (c.1275): anti-FP ArgumentAnalysis — STRUCTURAL_LOCATIONS sont des
 # mots-cles SECONDAIRES (localisent un numero, n'expliquent pas pourquoi il
 # est stable). Ils sont evalues APRES MACHINE-DEP (regle 4) pour ne pas
 # absorber les timings runtime adjacents aux numerotations pedagogiques.
@@ -183,7 +183,7 @@ MODELED_MINUTE_EXTRA_KEYWORDS = (
 # - `epic` / `phase` : 5 FPs → 0 apres (`raw=2137` adjacent `epic #2137`
 #   n'est PAS une annee runtime ; `phase N` est une numerotation structurelle).
 # - `%` / `pourcent` : 1 FP → 0 apres (`100%` n'est PAS un timing).
-# Scope : Argument_Analysis (SymbolicAI). Cross-famille aucune regression
+# Scope : ArgumentAnalysis (SymbolicAI). Cross-famille aucune regression
 # (rung/epic/phase sont des termes pedagogiques/epistemiques qui ne matchent
 # pas dans Probas/Search/ML/GenAI/Sudoku — verifie par absence de double-compat).
 STRUCTURAL_LOCATIONS = (
@@ -565,12 +565,12 @@ def _classify_quant_value(
             return ("STRUCTUREL", "unité « min » = variable modélisée du domaine, pas runtime (guard min-domaine v8)")
         return ("MACHINE-DEP", f"unite temporelle detectee: {raw!r}")
 
-    # 5. STRUCTURAL_LOCATIONS (c.1275) — anti-FP Argument_Analysis : mots-cles
+    # 5. STRUCTURAL_LOCATIONS (c.1275) — anti-FP ArgumentAnalysis : mots-cles
     #    SECONDAIRES qui localisent un numero (pas expliquent sa stabilite).
     #    Appliques APRES TIME_UNIT_RE (anti-FP c.1275 : ne pas absorber les
     #    timings runtime adjacents) et AVANT MACHINE_DEP_KEYWORDS (mots-cles
     #    perf tel `run`/`run` contenu dans `rung`, `episode` dans `epic`).
-    #    Scope : Argument_Analysis. Mesure : -92 FPs resolus sans cross-famille
+    #    Scope : ArgumentAnalysis. Mesure : -92 FPs resolus sans cross-famille
     #    regression (rung/epic/phase/% ne matchent pas dans Probas/Search/ML).
     for kw in STRUCTURAL_LOCATIONS:
         if kw in full_context:

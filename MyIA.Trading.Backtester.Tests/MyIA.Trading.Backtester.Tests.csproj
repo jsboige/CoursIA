@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Paire AutoML figee (docs/reference/backtester-e2-cadrage.md 2.2) : seule combinaison
+    <!-- Paire AutoML figee (docs/transients/2026-08-23-backtester-e2-cadrage.md 2.2) : seule combinaison
          Restore+build+exec verifiee bout-en-bout sur net9.0 ; pas de build stable apparie
          recent (NU1102 mesure). Le pin ML explicite garantit la paire malgre la resolution
          transitoire. -->

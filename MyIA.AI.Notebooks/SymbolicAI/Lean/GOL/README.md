@@ -23,9 +23,16 @@ prouvée en Lean — en gardant chaque barreau exécutable : un carnet, un moteu
 | GOL-05 | [GOL-05-Pattern-Tour](GOL-05-Pattern-Tour.ipynb) | Tournée des motifs du lake `conway_lean` | `lean4-wsl` |
 | GOL-06 | [GOL-06-Translateur-Life](GOL-06-Translateur-Life.ipynb) | Le translateur : de Life vers le calcul universel | `python3-lean` |
 | GOL-07 | [GOL-07-Hashlife-Correctness](GOL-07-Hashlife-Correctness.ipynb) | La correction de Hashlife comme théorème Lean | `lean4-wsl` |
-| GOL-08 | [GOL-08-Loi-II-Translateur-Life](GOL-08-Loi-II-Translateur-Life.ipynb) | La Loi II sur substrat Life : synthèse d'un translateur, certificat d'impossibilité scopé | `python3` |
-| GOL-08b | [GOL-08b-Certificat-Translateur-Lean](GOL-08b-Certificat-Translateur-Lean.ipynb) | Le variant `-b` annoncé par GOL-08 : témoin, impossibilité et frontière de famille en théorèmes du lake (`Conway.Life.Translateur`) | `lean4-wsl` |
+| GOL-08 | [GOL-08-Loi-II-Translateur-Life](GOL-08-Loi-II-Translateur-Life.ipynb) | La Loi II sur substrat Life : synthèse d'un translateur, certificat d'impossibilité scopé — [approfondissement GOL-08b](#approfondissements) | `python3` |
 | GOL-09 | [GOL-09-Perplexite-Structurelle-Hashlife](GOL-09-Perplexite-Structurelle-Hashlife.ipynb) | Capstone perplexité T12 : la taille comprimée des trajectoires et le coût en temps (exposant α HashLife) comme mesures | `python3` |
+
+## Approfondissements
+
+### Autour de GOL-08 — formaliser le certificat
+
+| Extension | Notebook | Ce qu'elle ajoute | Prérequis en plus | Outil |
+|-----------|----------|------------------|-------------------|-------|
+| GOL-08b | [GOL-08b-Certificat-Translateur-Lean](GOL-08b-Certificat-Translateur-Lean.ipynb) | Le variant `-b` annoncé par GOL-08 : témoin, impossibilité et frontière de famille en théorèmes du lake (`Conway.Life.Translateur`) | [GOL-08](GOL-08-Loi-II-Translateur-Life.ipynb) : synthèse Python et certificat d'impossibilité scopé à une famille finie | `lean4-wsl` |
 
 Les voisins hors sous-série : [Lean-16a](../Lean-16a-Conway-Man-and-Work.ipynb)
 (l'homme et l'œuvre, en amont), [Lean-16b](../Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb)
@@ -44,5 +51,5 @@ Le carnet d'escalier qui survole la sous-série est
   `raise NotImplementedError`.
 - Les carnets sont committés **avec leurs sorties** (règle C.2) : une cellule
   modifiée est re-exécutée avant commit.
-- Le versant preuves vit dans le lake [`conway_lean`](../conway_lean/) — les
+- Le versant preuves vit dans le lake [`conway_lean`](conway_lean/) — les
   carnets invoquent ses modules, ils ne les réimplémentent pas.

@@ -1,0 +1,73 @@
+# Sonde d'API courante -- moteur maf
+# generee le 2026-11-04 par current_api_probe.py --engine maf
+# aucune requete LLM, aucune cle API ; environnement de mesure dedie
+VERSION agent-framework-core=1.24.0
+VERSION agent-framework-orchestrations=1.4.1
+VERSION agent-framework-openai=1.18.0
+DEPRECATIONS_A_L_IMPORT 0
+SYMBOLES_PUBLICS 715
+CONTROLE NEGATIF INTER-MOTEURS (doivent etre NON importables)
+  NEGATIF absent OK  semantic_kernel
+  NEGATIF absent OK  google.adk
+CAPACITE topologies_orchestration
+  POSITIF PRESENT OK  agent_framework.orchestrations.SequentialBuilder  (ok)
+  POSITIF PRESENT OK  agent_framework.orchestrations.ConcurrentBuilder  (ok)
+  POSITIF PRESENT OK  agent_framework.orchestrations.GroupChatBuilder  (ok)
+  POSITIF PRESENT OK  agent_framework.orchestrations.MagenticBuilder  (ok)
+  POSITIF PRESENT OK  agent_framework.orchestrations.HandoffBuilder  (ok)
+CAPACITE graphe_workflow
+  POSITIF PRESENT OK  agent_framework.WorkflowBuilder  (ok)
+  POSITIF PRESENT OK  agent_framework.Agent  (ok)
+  SYMBOLE AgentExecutor (agent_framework)
+  SYMBOLE AgentExecutorCheckpointState (agent_framework)
+  SYMBOLE AgentExecutorRequest (agent_framework)
+  SYMBOLE AgentExecutorResponse (agent_framework)
+  SYMBOLE Executor (agent_framework)
+  SYMBOLE ExecutorT (agent_framework._workflows._executor)
+  SYMBOLE FunctionExecutor (agent_framework)
+  SYMBOLE HandoffAgentExecutor (agent_framework.orchestrations)
+  SYMBOLE MagenticAgentExecutor (agent_framework.orchestrations)
+  SYMBOLE WorkflowBuilder (agent_framework)
+  SYMBOLE WorkflowContext (agent_framework)
+  SYMBOLE WorkflowExecutor (agent_framework)
+  SYMBOLE ... (+3 autres)
+CAPACITE checkpoint_reprise
+  SYMBOLE AgentExecutorCheckpointState (agent_framework)
+  SYMBOLE CheckpointID (agent_framework)
+  SYMBOLE CheckpointStorage (agent_framework)
+  SYMBOLE FileCheckpointStorage (agent_framework)
+  SYMBOLE InMemoryCheckpointStorage (agent_framework)
+  SYMBOLE WorkflowCheckpoint (agent_framework)
+  SYMBOLE WorkflowCheckpointException (agent_framework)
+  SYMBOLE decode_checkpoint_value (agent_framework._workflows._checkpoint_encoding)
+  SYMBOLE encode_checkpoint_value (agent_framework._workflows._checkpoint_encoding)
+  SYMBOLE register_checkpoint_type (agent_framework)
+CAPACITE observabilite
+  SYMBOLE AgentTelemetryLayer (agent_framework._agents)
+  SYMBOLE ChatTelemetryLayer (agent_framework.observability)
+  SYMBOLE EmbeddingTelemetryLayer (agent_framework.observability)
+  SYMBOLE enable_sensitive_telemetry (agent_framework.observability)
+  SYMBOLE get_tracer (agent_framework.observability)
+  SYMBOLE workflow_tracer (agent_framework.observability)
+CAPACITE comptage_tokens
+  SYMBOLE UsageDetails (agent_framework)
+CAPACITE endpoint_local
+  SYMBOLE OpenAIChatCompletionClient (agent_framework.openai)
+  SYMBOLE RawOpenAIChatCompletionClient (agent_framework.openai)
+CAPACITE magentic_ledger
+  SYMBOLE MagenticProgressLedger (agent_framework.orchestrations)
+  SYMBOLE MagenticProgressLedgerItem (agent_framework.orchestrations)
+CAPACITE comptage_tokens (CHAMPS de classe, pas symboles)
+  CHAMPS PRESENT OK  agent_framework.UsageDetails
+      champ input_token_count
+      champ output_token_count
+      champ total_token_count
+      champ cache_creation_input_token_count
+      champ cache_read_input_token_count
+      champ reasoning_output_token_count
+  CHAMPS ABSENT  agent_framework.Content
+CONSTRUCTION (sans requete)
+  SIGNATURE OpenAIChatCompletionClient.__init__ params=['self', 'model', 'api_key', 'credential', 'org_id', 'default_headers', 'async_client', 'instruction_role', 'response_parser', 'message_preparer', 'base_url', 'azure_endpoint', 'api_version', 'middleware', 'function_invocation_configuration', 'env_file_path', 'env_file_encoding']
+  ACCEPTE base_url=True
+  CONSTRUCTION OK OpenAIChatCompletionClient(base_url=...)
+SONDE FIN maf

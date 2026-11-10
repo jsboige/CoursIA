@@ -127,6 +127,11 @@ def _patch_fake_prover(monkeypatch, prove_behavior=None, init_raises=None):
             return {"success": True, "iterations": 1}
 
     monkeypatch.setattr(launcher, "MultiAgentSorryProver", _FakeProver)
+    # The credential gate (#18709) sits in front of the prover: with no key in
+    # the test env it returned ``provider_gate`` before the lifecycle under
+    # test ever ran. The fake prover needs no key, so the gate passes here.
+    monkeypatch.setattr(launcher, "validate_provider_credentials",
+                        lambda *a, **k: [])
     return calls
 
 

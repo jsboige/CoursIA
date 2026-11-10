@@ -387,11 +387,15 @@ def test_linux_label_set_is_accepted_in_allowlisted_workflow(tmp_path):
     assert result.self_hosted_jobs == 1
 
 
-def test_lean_label_set_is_accepted_in_allowlisted_workflow(tmp_path):
-    # #14337: the specialised Lean pool (po-2024) carries its own dedicated
-    # label set -- coursia-lean routes lake builds to the elan image with the
-    # warm .lake work volume, never to the minimal linux image or the Windows
-    # runners.
+def test_retired_lean_label_set_is_rejected_in_allowlisted_workflow(tmp_path):
+    # #14337: the specialised Lean pool (po-2024) had its own dedicated label
+    # set -- coursia-lean routed lake builds to the elan image with the warm
+    # .lake work volume. The pool is EXTINCT (measurement 2026-11-04:
+    # `gh api .../actions/runners` renders 48 runners and ZERO carrier of
+    # `coursia-lean`; the repository's own probe had already measured the
+    # extinction on 2026-10-23). A routing that no runner can serve must be
+    # refused by the guard, not admitted: the job would otherwise wait in the
+    # queue forever while the guard had certified it.
     write_workflow(tmp_path, "linux-self-hosted-tests", """
         name: lean
         on: workflow_dispatch
@@ -399,16 +403,31 @@ def test_lean_label_set_is_accepted_in_allowlisted_workflow(tmp_path):
           test:
             runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
             steps:
-              - run: echo safe
+              - run: echo unsafe
         """)
     result = policy.scan_workflows(tmp_path)
-    assert result.violations == []
-    assert result.self_hosted_jobs == 1
+    assert codes(result) == {"RUNNER_LABELS"}
+
+
+def test_retired_label_sets_are_not_authorised():
+    # Non-regression: a retired set must never re-enter the authorisation
+    # list without a fresh measurement of the fleet. This is the assertion
+    # that keeps the removal from being undone by a later edit.
+    #
+    # Non-vacuity: the loop below is vacuous when RETIRED_LABEL_SETS is
+    # empty -- emptying the tuple loses the very knowledge the removal
+    # preserves, and the test would still pass on that one-character edit.
+    # The membership assertion is what makes it fail.
+    assert policy.RETIRED_LEAN_RUNNER_LABELS in policy.RETIRED_LABEL_SETS
+    for retired in policy.RETIRED_LABEL_SETS:
+        assert retired not in policy.DEDICATED_LABEL_SETS
+    assert policy.RETIRED_LEAN_RUNNER_LABELS not in policy.DEDICATED_LABEL_SETS
 
 
 def test_mixed_lean_and_linux_labels_are_rejected(tmp_path):
     # Mixing the lean and linux dedicated sets must stay a violation: a job
-    # eligible for both pools would make the routing guarantee meaningless.
+    # eligible for both pools would make the routing guarantee meaningless --
+    # and the lean set is retired anyway, so it is refused on both counts.
     write_workflow(tmp_path, "linux-self-hosted-tests", """
         name: mixed
         on: workflow_dispatch
@@ -1545,6 +1564,47 @@ def test_22954_baselined_job_is_tolerated_but_named_in_the_report(tmp_path):
     assert result.violations == []
     assert result.timeout_missing == 1
     assert result.timeout_baselined == 1
+
+
+def test_23349_stale_timeout_baseline_diagnostic_is_read_only(tmp_path, capsys):
+    """Le diagnostic repere les cles mortes sans muter la baseline."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: safe scheduled workflow
+        on:
+          schedule:
+            - cron: '0 0 * * *'
+        jobs:
+          current-debt:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo still unbounded
+          already-bounded:
+            timeout-minutes: 10
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo bounded
+        """)
+    baseline = tmp_path / "baseline.txt"
+    original = (
+        "pr-gate-stale-sweep.yml:current-debt\n"
+        "pr-gate-stale-sweep.yml:already-bounded\n"
+        "removed-workflow.yml:old-job\n"
+    )
+    baseline.write_text(original, encoding="utf-8")
+
+    rc = policy.main([
+        "--show-stale-baseline",
+        "--workflows-dir", str(tmp_path),
+        "--baseline", str(baseline),
+    ])
+
+    assert rc == policy.EXIT_OK
+    output = capsys.readouterr().out
+    assert "cles obsoletes dans la baseline: 2" in output
+    assert "ORPHELINE pr-gate-stale-sweep.yml:already-bounded" in output
+    assert "ORPHELINE removed-workflow.yml:old-job" in output
+    assert "current-debt" not in output
+    assert baseline.read_text(encoding="utf-8") == original
 
 
 def test_22954_ratchet_is_opt_in_so_synthetic_workflows_stay_single_purpose(tmp_path):

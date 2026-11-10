@@ -72,6 +72,18 @@ REPLY_19898 = (
     "**Reponse ai-01 a tes deux Concerns (08/10, 10:11Z et 21:00Z).** Elle "
     "arrive avec plus d'une journee de retard, et c'est un manquement."
 )
+#: #2159 — le Concern du 2026-10-18T22:26Z et la reponse de lane du
+#: 2026-10-19T03:56Z qui le cite (faux NON REPONDU mesure avant le correctif).
+CONCERN_2159 = (
+    "Concern: Alors qu'on continue empiler des modules dans le cadre de cet "
+    "Epic, est-ce qu'il ne serait pas temps de faire une pause pour voir ou "
+    "en est la toute derniere version de Mathlib sur le sujet ?"
+)
+REPLY_2159 = (
+    "[INFO] Reponse au Concern du 2026-10-18T22:26Z — releve mesure "
+    "Mathlib-vs-lac + projets externes — Grain: DEEP/research-code — lane "
+    "myia-po-2025:CoursIA\n\nAucun fichier edite, aucun module ajoute."
+)
 
 
 class ClassifyTests(unittest.TestCase):
@@ -230,6 +242,122 @@ class ResponseCandidateTests(unittest.TestCase):
     def test_gesture_is_not_a_response(self):
         self.assertFalse(mod.is_response_candidate("gesture", c(18, "2026-10-01T10:00:00Z", CLAIM)))
 
+    def test_gesture_without_the_concern_is_never_a_candidate(self):
+        """Le comportement historique est conserve quand le Concern n'est pas fourni."""
+        self.assertFalse(
+            mod.is_response_candidate("gesture", c(18, "2026-10-01T10:00:00Z", CLAIM))
+        )
+
+    def test_gesture_that_cites_the_concern_strongly_is_a_response(self):
+        """#2159 : un geste de lane qui cite l'horodatage du Concern y repond."""
+        concern = c(30, "2026-10-18T22:26:03Z", CONCERN_2159)
+        reply = c(31, "2026-10-19T03:56:43Z", REPLY_2159)
+        self.assertEqual(mod.classify(reply), "gesture")
+        self.assertTrue(mod.cites_concern(concern, reply))
+        self.assertTrue(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_lane_signature_contract_requires_utc_minute(self):
+        """Le format observé des lanes inclut heure et minute UTC (#2159)."""
+        concern = c(30, "2026-10-18T22:26:03Z", CONCERN_2159)
+        dated_reply = c(
+            31,
+            "2026-10-19T03:56:43Z",
+            "[INFO] Reponse au Concern du 2026-10-18T22:26Z — releve mesure.",
+        )
+        date_only_reply = c(
+            32,
+            "2026-10-19T03:56:43Z",
+            "[INFO] Reponse au Concern du 2026-10-18 — releve mesure.",
+        )
+
+        self.assertTrue(mod.cites_concern(concern, dated_reply))
+        self.assertFalse(mod.cites_concern(concern, date_only_reply))
+
+    def test_gesture_that_does_not_cite_the_concern_stays_excluded(self):
+        concern = c(32, "2026-10-18T22:26:03Z", CONCERN_2159)
+        reply = c(33, "2026-10-19T03:56:43Z", "[INFO] Releve mesure — aucun fichier edite.")
+        self.assertEqual(mod.classify(reply), "gesture")
+        self.assertFalse(mod.cites_concern(concern, reply))
+        self.assertFalse(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_incidental_short_window_is_not_a_citation(self):
+        """Une fenetre courte partagee par coincidence ne referme rien.
+
+        Mesure sur 624 issues : la fenetre de 40 caracteres attrapait des
+        fragments sans lien (« 46`, `37642385421`, `37642397358` » — une suite
+        de numeros de PR). Le geste n'est candidat que par horodatage ou par
+        extrait long.
+        """
+        concern = c(
+            34,
+            "2026-10-20T16:08:51Z",
+            "Diagnostic — la derive portee par une classe « scheduled-orphan », "
+            "mesuree sur 4 snapshots. Les ids 37642385421 et 37642397358 "
+            "portent la derive.",
+        )
+        reply = c(
+            35,
+            "2026-10-22T16:57:47Z",
+            "[INFO] candidate-delivered — deja livre par PR #21634. "
+            "Voir 46`, `37642385421`, `37642397358`, `3764.",
+        )
+        self.assertFalse(mod.cites_concern(concern, reply))
+        self.assertFalse(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_long_quote_is_a_citation(self):
+        """Un extrait long du texte du Concern reste une citation."""
+        body = (
+            "Diagnostic — la derive portee par une classe « scheduled-orphan », "
+            "mesuree sur 4 snapshots. Les ids 37642385421 et 37642397358 "
+            "portent la derive."
+        )
+        concern = c(36, "2026-10-20T16:08:51Z", body)
+        reply = c(
+            37,
+            "2026-10-22T16:57:47Z",
+            "[INFO] Reponse au diagnostic : « " + body + " » — traite par PR #21634.",
+        )
+        self.assertTrue(mod.cites_concern(concern, reply))
+        self.assertTrue(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_long_quote_keeps_gesture_candidate_without_minute_signature(self):
+        """#24672 : l'extrait fort garde la voie ouverte sans HH:MMZ."""
+        body = (
+            "Le diagnostic mesure une derive persistante dans les quatre snapshots "
+            "et montre que les identifiants de suivi ne suffisent pas a expliquer "
+            "le changement observe dans les resultats."
+        )
+        concern = c(38, "2026-10-18T22:26:03Z", body)
+        signature = "[INFO] Reponse au Concern du 2026-10-18 — "
+
+        # L'absence de minutes ne neutralise pas une citation assez longue.
+        quoted_80 = c(39, "2026-10-19T03:56:43Z", signature + body[20:100])
+        self.assertNotIn("22:26Z", quoted_80.body)
+        self.assertTrue(mod.cites_concern(concern, quoted_80))
+        self.assertTrue(mod.is_response_candidate("gesture", quoted_80, concern))
+
+        # La date seule n'est pas une citation forte, et 40–79 caractères
+        # restent sous le seuil mesuré.
+        for length in (40, 79):
+            with self.subTest(length=length):
+                short_quote = c(
+                    40 + length,
+                    "2026-10-19T03:56:43Z",
+                    signature + body[:length],
+                )
+                self.assertFalse(mod.cites_concern(concern, short_quote))
+                self.assertFalse(
+                    mod.is_response_candidate("gesture", short_quote, concern)
+                )
+
+    def test_quote_strength_keeps_the_80_character_boundary(self):
+        concern = c(38, "2026-10-01T10:00:00Z", "x" * 80)
+        short_quote = c(39, "2026-10-02T10:00:00Z", "[INFO] " + "x" * 79)
+        boundary_quote = c(40, "2026-10-02T10:00:00Z", "[INFO] " + "x" * 80)
+
+        self.assertFalse(mod.cites_concern(concern, short_quote))
+        self.assertTrue(mod.cites_concern(concern, boundary_quote))
+
     def test_ordinary_comment_is_a_response_candidate(self):
         self.assertTrue(mod.is_response_candidate("other", c(19, "2026-10-01T10:00:00Z", "Voici l'arbitrage.")))
 
@@ -306,6 +434,35 @@ class AnalyseTests(unittest.TestCase):
         ]
         report = mod.analyse_comments(42, comments)
         self.assertEqual(report.concerns[0].status, "NON REPONDU")
+
+    def test_the_2159_shape_is_answered(self):
+        """#2159 : le geste de lane qui cite le Concern le referme."""
+        comments = [
+            c(6255920966, "2026-10-18T22:26:03Z", CONCERN_2159),
+            c(6259310809, "2026-10-19T03:56:43Z", REPLY_2159),
+        ]
+        report = mod.analyse_comments(2159, comments)
+        self.assertEqual(len(report.concerns), 1)
+        self.assertEqual(report.concerns[0].status, "REPONDU")
+        self.assertEqual(report.concerns[0].proof, 6259310809)
+        # Le geste qui referme n'aggrave pas : le drapeau vise les gestes
+        # poses apres le Concern et qui n'y repondent pas.
+        self.assertFalse(report.concerns[0].gesture_after)
+        self.assertFalse(report.gesture_after)
+
+    def test_the_2159_shape_control_without_citation(self):
+        """Controle : sans citation, le meme geste ne referme rien."""
+        comments = [
+            c(6255920966, "2026-10-18T22:26:03Z", CONCERN_2159),
+            c(
+                6259310809,
+                "2026-10-19T03:56:43Z",
+                "[INFO] Releve mesure — aucun fichier edite.",
+            ),
+        ]
+        report = mod.analyse_comments(2159, comments)
+        self.assertEqual(report.concerns[0].status, "NON REPONDU")
+        self.assertTrue(report.concerns[0].gesture_after)
 
     def test_unrelated_later_comment_is_manual_review(self):
         comments = [

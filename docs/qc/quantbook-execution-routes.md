@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-10-30
+> REFERENCE — vivante — dernière révision 2026-11-08
 
 # Exécuter un carnet QuantBook et rapporter ses sorties
 
@@ -16,6 +16,8 @@ Plusieurs lanes ont buté sur le même point : faire tourner le carnet sur QC Cl
 | **D** — Research Assistant | serveur Research QC | toutes les données QC | non persistées le 16/05/2026 (#1177) | environ 800 à 1200 QCC par session (estimation, #1195) | explorer, déboguer, reconstruire un carnet |
 
 Les routes se combinent. L'assistant (D) corrige le code d'un carnet qui ne tourne pas ; la route B l'exécute ensuite pour produire les sorties à committer.
+
+Une cinquième voie est **candidate, non qualifiée** : le MCP distant officiel de QC annonce l'exécution d'un carnet côté serveur (outil `jupyter_execute_notebook`), sans navigateur — ce serait une variante des routes B/C. Son accès exige un nœud assistant payant (A1-1 minimum, $24/mo) que l'organisation ne possède pas (qualification du 2026-11-08, #24679) ; elle ne se compte donc pas comme route disponible tant que la décision d'upgrade n'est pas tranchée. Détail : section « Troisième voie » de [quantconnect.md](quantconnect.md).
 
 ## Route A — LEAN Research local
 

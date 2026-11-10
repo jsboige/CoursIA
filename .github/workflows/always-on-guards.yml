@@ -95,7 +95,7 @@ concurrency:
 
 jobs:
   always-on-guards:
-    name: "Always-on guards -- 18 organes, 1 checkout"
+    name: "Always-on guards -- 19 organes, 1 checkout"
     # Routage #14283 : premier consommateur GitHub-hosted du depot une fois
     # secret-scan bascule -- 2650 runs same-repo en 5 jours (2026-08-28 ->
     # 2026-09-02), timeout 25 min, aucun filtre `paths:`. Le pool Linux
@@ -195,6 +195,33 @@ jobs:
             echo "[heal] aucun work dir preexistant -- checkout fera un clone neuf"
             exit 0
           fi
+          # --- Etat sparse herite du job precedent (#24959) ------------------
+          # Le pool de runners reutilise son work dir. Un work dir laisse en
+          # etat sparse ARME (core.sparseCheckout a vrai) fait materialiser
+          # l'ARBRE ENTIER par le checkout suivant : avec `filter: blob:none`,
+          # le desarmement du sparse telecharge les blobs -- mesure po-2024 du
+          # 2026-11-06 (consignee dans always-on-guards-body.yml) : 8 min 57 s
+          # sur la seule commande `git checkout --force refs/pull/<N>/merge`,
+          # sans une ligne de log, puis annulation ; sur deux runners
+          # differents (myia-ai-01-wsl-2 : 9 min 55 s ; myia-po-2024-linux-
+          # persist-6 : 9 min 49 s). Un clone frais `blob:none` laisse les
+          # blobs paresseux : il est moins cher que la materialisation.
+          # Meme arbitrage que le hook job-started de l'entrypoint du runner
+          # conteneurise (scripts/ci/docker/linux-runner/entrypoint.sh) : le
+          # FLAG ARME est le seul etat cassant (purge du clone) ; le fichier
+          # de motifs seul est inerte (il est retire, le cache est conserve).
+          sparse=$(git config --local --get core.sparseCheckout 2>/dev/null || true)
+          case "$sparse" in
+            true|1|on)
+              echo "::notice::[heal] work dir SPARSE arme -- purge du work dir"
+              rm -rf .git
+              exit 0
+              ;;
+          esac
+          if [ -f .git/info/sparse-checkout ]; then
+            echo "[heal] motifs sparse inertes -- retrait du fichier, work dir conserve"
+            rm -f .git/info/sparse-checkout
+          fi
           if [ -f .git/shallow ]; then
             echo "::notice::[heal] work dir SHALLOW reutilise -- purge avant unshallow"
             rm -rf .git
@@ -238,7 +265,7 @@ jobs:
       # 72 h sur #15303, 15 h sur #15587, les deux sans faute de lane.
       # Une seule lecture en tete de job, exportee dans PR_BODY : les
       # neuf sites ecrivant /tmp/pr_body.txt sont inchanges.
-      # Repli : appel API vide/echoue -> payload de l'evenement (photo-
+      # Repli : appel API echoue -> payload de l'evenement (photo-
       # graphie au declenchement). Jamais bloquant sur une panne de
       # lecture. `// empty` : un corps null rendrait le literal "null".
       # -----------------------------------------------------------------
@@ -246,28 +273,21 @@ jobs:
         env:
           PAYLOAD_BODY: ${{ github.event.pull_request.body }}
         run: |
-          LIVE=""
-          if [ -n "${PR_NUMBER:-}" ]; then
-            # Le CODE DE SORTIE distingue panne et corps vide (#17197) --
-            # PAS la vacuite de la sortie. `gh api` ecrit le DOCUMENT
-            # D'ERREUR sur stdout en rc=1 (mesure 2026-09-21) :
-            #   {"message":"API rate limit exceeded for installation.","status":"403"}
-            # et `--jq` n'y est PAS applique. Tester `-n "$LIVE"` prenait
-            # donc ce document pour le corps de la PR : le repli ci-dessous
-            # ne se declenchait JAMAIS sur panne d'API -- exactement le cas
-            # pour lequel il est ecrit -- et les organes bloquants en
-            # tiraient un verdict de contenu (« Grain tag absent »,
-            # « perimeter assertion contradictoire ») sur un simple quota
-            # epuise. Quatre PRs bloquees ainsi le 2026-09-21.
-            LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null) || LIVE=""
-          fi
-          if [ -n "$LIVE" ]; then
+          # Le CODE DE SORTIE distingue panne et corps vide (#17197) :
+          # `gh api` ecrit le DOCUMENT D'ERREUR sur stdout en rc=1
+          # (mesure 2026-09-21), sans appliquer `--jq` :
+          #   {"message":"API rate limit exceeded for installation.","status":"403"}
+          # Un test de sortie non vide prenait ce document pour le corps,
+          # et les organes bloquants rendaient un verdict de contenu sur un
+          # simple quota epuise. Quatre PRs bloquees ainsi le 2026-09-21.
+          # Une reponse vide reussie est un corps vide, pas une panne.
+          if [ -n "${PR_NUMBER:-}" ] && LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null); then
             echo "[body-live] corps courant lu via API : ${#LIVE} chars (#15697)"
-            BODY="$LIVE"
           else
-            echo "::warning::[body-live] lecture API vide/echouee -- repli sur le payload de l'evenement (photographie)"
-            BODY="${PAYLOAD_BODY:-}"
+            echo "::warning::[body-live] lecture API echouee -- repli sur le payload de l'evenement (photographie)"
+            LIVE="${PAYLOAD_BODY:-}"
           fi
+          BODY="$LIVE"
           delim="BODY_LIVE_EOF_$$"
           printf 'PR_BODY<<%s\n%s\n%s\n' "$delim" "$BODY" "$delim" >> "$GITHUB_ENV"
 
@@ -458,18 +478,28 @@ jobs:
             CB=$(python3 -c "import json; s=json.load(open('/tmp/status.json')); c=s.get('consumed_by') or None; print(s.get('budget_spent_by') or ((f\"#{c.get('number','?')} (merge a {c.get('mergedAt','?')})\") if c else 'une LIGHT anterieure de cette lane'))" 2>/dev/null || echo "une LIGHT anterieure de cette lane")
             # Commentaire idempotent (marqueur HTML invisible anti-spam).
             MARK="<!-- gvar2-light-cap -->"
-            if ! gh pr view "$PR_NUMBER" --json comments --jq '.comments[].body' 2>/dev/null | grep -qF "$MARK"; then
-              BODY="${MARK}
+            # #15511 -- UN SEUL commentaire collant par PR, une section par
+            # organe (`scripts/ci/advisory_sticky.py`). L'upsert remplace le
+            # create-only : plus de POST a chaque run.
+            cat > /tmp/advisory_gvar2.md <<EOF
+          ${MARK}
           **G-VAR-2 light cap reached** (advisory, non bloquant).
           La lane \`${LANE}\` a deja consomme son budget LIGHT du jour (${CB}).
           G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour,
           toutes categories LIGHT confondues** (guard, doc, refs, ... partagent un seul budget) :
-          c'est un RATIO, pas un plafond plat. La decision de merge reste au coordinateur."
-              gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || true
-            fi
+          c'est un RATIO, pas un plafond plat. La decision de merge reste au coordinateur.
+          EOF
+            python3 scripts/ci/advisory_sticky.py --pr "$PR_NUMBER" \
+              --organ variation-light-cap --body-file /tmp/advisory_gvar2.md \
+              || echo "::warning::G-VAR-2 light-cap : section non ecrite (quota/API ?)."
             echo "::notice::G-VAR-2 cap reached pour la lane ${LANE} (consomme par ${CB})."
           elif [ "$CAP" = "False" ]; then
             gh pr edit "$PR_NUMBER" --remove-label variation-light-cap-reached 2>/dev/null || true
+            # L'organe redevient vert : sa section est RETIREE ; rien n'est
+            # ecrit si elle n'existe pas (le succes ne parle pas).
+            python3 scripts/ci/advisory_sticky.py --pr "$PR_NUMBER" \
+              --organ variation-light-cap --clear \
+              || echo "::warning::G-VAR-2 light-cap : section non retiree."
           else
             # #14849 : UNKNOWN (replay absent/invalide, detector crash, ou PR
             # inassessable sans tag Grain). On ne pose NI ne retire le label
@@ -641,40 +671,28 @@ jobs:
           fi
 
           if [ -n "$ACTIVE_LINES" ]; then
-            BODY="${MARK}
+            # #15511 -- UN SEUL commentaire collant par PR, une section par
+            # organe (`scripts/ci/advisory_sticky.py`). L'upsert remplace le
+            # couple EXISTING_ID/PATCH/DELETE : le succes (aucun signal actif)
+            # RETIRE la section au lieu de supprimer le commentaire
+            # (l'historique reste, #15372).
+            cat > /tmp/advisory_genre.md <<EOF
+          ${MARK}
           **G-VAR-2/3 GENRE signals** (advisory, non bloquant, #10020).
           La lane \\\`${LANE}\\\` voit ces signaux actifs sur les mergees du jour (UTC ${TODAY}) :${ACTIVE_LINES}
 
-          G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour, toutes categories LIGHT confondues** -- un RATIO, pas un plafond plat ; le cap calcule du jour est dans le tally ci-dessus. G-VAR-3 interdit deux genres LIGHT consecutifs. Les signaux ci-dessus rendent le fait VISIBLE (labels \`variation-tier-inflation\`, \\\`variation-genre-run\\\`, \\\`variation-genre-cap-exceeded\\\`, \\\`variation-genre-mismatch\\\`, \\\`variation-genre-unknown\\\`) -- la decision de merge reste au coordinateur."
-            # #17265 -- le rc de `gh` decide, jamais la vacuite de sa sortie :
-            # sous panne de quota `gh` ecrit son document d'erreur sur STDOUT en
-            # rc=1, et un repli DANS la substitution (`|| echo ""`) ne peut pas
-            # effacer un stdout deja ecrit -- EXISTING_ID valait le document, la
-            # branche PATCH etait prise, l'appel echouait, `|| true` l'avalait,
-            # et le commentaire n'etait jamais poste pendant que le ::notice:
-            # affirmait le contraire (les deux bras sont mesures sur la PR).
-            EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null) || EXISTING_ID=""
-            EXISTING_ID=$(printf '%s\n' "$EXISTING_ID" | head -1)
-            POSTED=1
-            if [ -n "$EXISTING_ID" ]; then
-              gh api -X PATCH "repos/${GH_REPO}/issues/comments/${EXISTING_ID}" \
-                -f body="$BODY" 2>/dev/null || POSTED=0
-            else
-              gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || POSTED=0
-            fi
-            if [ "$POSTED" = "1" ]; then
+          G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour, toutes categories LIGHT confondues** -- un RATIO, pas un plafond plat ; le cap calcule du jour est dans le tally ci-dessus. G-VAR-3 interdit deux genres LIGHT consecutifs. Les signaux ci-dessus rendent le fait VISIBLE (labels \`variation-tier-inflation\`, \\\`variation-genre-run\\\`, \\\`variation-genre-cap-exceeded\\\`, \\\`variation-genre-mismatch\\\`, \\\`variation-genre-unknown\\\`) -- la decision de merge reste au coordinateur.
+          EOF
+            if python3 scripts/ci/advisory_sticky.py --pr "$PR_NUMBER" \
+              --organ variation-genre-signals --body-file /tmp/advisory_genre.md; then
               echo "::notice::G-VAR-2/3-by-GENRE signale sur ${LANE} (tally ${TALLY})."
             else
-              echo "::warning::G-VAR-2/3-by-GENRE NON signale sur ${LANE} (echec gh -- quota/API ?) : aucun commentaire n'a ete pose."
+              echo "::warning::G-VAR-2/3-by-GENRE NON signale sur ${LANE} (echec gh -- quota/API ?) : aucune section n'a ete ecrite."
             fi
           else
-            # #17265 -- meme correctif : le rc de `gh` decide, pas la vacuite.
-            EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null) || EXISTING_ID=""
-            EXISTING_ID=$(printf '%s\n' "$EXISTING_ID" | head -1)
-            if [ -n "$EXISTING_ID" ]; then
-              gh api -X DELETE "repos/${GH_REPO}/issues/comments/${EXISTING_ID}" 2>/dev/null \
-                || echo "::warning::marqueur perime NON retire sur ${LANE} (echec gh -- quota/API ?) : il sera repris au prochain run."
-            fi
+            python3 scripts/ci/advisory_sticky.py --pr "$PR_NUMBER" \
+              --organ variation-genre-signals --clear \
+              || echo "::warning::marqueur perime NON retire sur ${LANE} (echec gh -- quota/API ?) : il sera repris au prochain run."
             echo "Aucun signal actif pour ${LANE} aujourd'hui (tally ${TALLY})."
           fi
           exit 0
@@ -727,6 +745,10 @@ jobs:
               echo "Verdict trivial-diff : ${VERDICT} -- rien a signaler."
               gh pr edit "$PR_NUMBER" --remove-label trivial-diff-advisory 2>/dev/null || true
               gh pr edit "$PR_NUMBER" --remove-label empty-diff-advisory 2>/dev/null || true
+              # #15511 -- l'organe redevient vert : ses deux sections sont
+              # RETIREES. Rien n'est ecrit si elles n'existent pas.
+              python3 scripts/ci/advisory_sticky.py --pr "$PR_NUMBER" --organ trivial-diff-15740 --clear || true
+              python3 scripts/ci/advisory_sticky.py --pr "$PR_NUMBER" --organ empty-diff-17359 --clear || true
               exit 0
               ;;
           esac
@@ -743,6 +765,8 @@ jobs:
             LABEL=empty-diff-advisory
             LABEL_DESC="PR a diff nul : aucun fichier livre, tout genre confondu (#17359)"
             MARK="<!-- empty-diff-17359 -->"
+            ORGAN=empty-diff-17359
+            OTHER_ORGAN=trivial-diff-15740
             WARN_TAG="Empty-diff"
             TITLE="Empty-diff advisory"
             REF="#17359"
@@ -752,6 +776,8 @@ jobs:
             LABEL=trivial-diff-advisory
             LABEL_DESC="Diff trivial : grain META mecanique sans fournee ni exception ecrite (#15740)"
             MARK="<!-- trivial-diff-15740 -->"
+            ORGAN=trivial-diff-15740
+            OTHER_ORGAN=empty-diff-17359
             WARN_TAG="Trivial-diff"
             TITLE="Trivial-diff advisory"
             REF="#15740"
@@ -762,13 +788,22 @@ jobs:
           gh label create "$LABEL" --description "$LABEL_DESC" --color C2A76D --force || true
           gh pr edit "$PR_NUMBER" --add-label "$LABEL" 2>/dev/null || true
 
-          if ! gh pr view "$PR_NUMBER" --json comments --jq '.comments[].body' 2>/dev/null | grep -qF "$MARK"; then
-            BODY="${MARK}
+          # #15511 -- UN SEUL commentaire collant par PR, une section par
+          # organe (`scripts/ci/advisory_sticky.py`). L'upsert remplace le
+          # create-only ; la section de la famille concurrente est RETIREE
+          # (le verdict a change de famille -> pas de section morte).
+          cat > /tmp/advisory_trivial.md <<EOF
+          ${MARK}
           **${TITLE}** (${REF}, non bloquant).
           ${REASON}
-          ${ACTION}"
-            gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || true
-          fi
+          ${ACTION}
+          EOF
+          python3 scripts/ci/advisory_sticky.py --pr "$PR_NUMBER" \
+            --organ "$ORGAN" --body-file /tmp/advisory_trivial.md \
+            || echo "::warning::${WARN_TAG} : section non ecrite (quota/API ?)."
+          python3 scripts/ci/advisory_sticky.py --pr "$PR_NUMBER" \
+            --organ "$OTHER_ORGAN" --clear \
+            || echo "::warning::${WARN_TAG} : section concurrente non retiree."
 
           echo "::warning::${WARN_TAG} (${REF}) : ${REASON}"
           exit 0
@@ -1240,7 +1275,7 @@ jobs:
       # *.env.sample / *.env.template. gitleaks reconnait les formats de cles
       # connus (sk-..., ghp_..., AIza...), il ne voit pas une phrase secrete
       # faite d'un mot ordinaire (cas fondateur 'Propaganda' sur
-      # TEXT_CONFIG_PASSPHRASE dans SymbolicAI/Argument_Analysis/.env.example).
+      # TEXT_CONFIG_PASSPHRASE dans SymbolicAI/ArgumentAnalysis/.env.example).
       # L'organe verifie 32 fichiers traces git : pour chaque cle dont le nom
       # matche (?i)(PASS|SECRET|TOKEN|KEY|PWD), la valeur doit etre un marqueur
       # (vide, your_..._here, <...>, hf_..., sk-..., 0x<...>, URL, chemin,

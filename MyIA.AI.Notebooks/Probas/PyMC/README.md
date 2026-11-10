@@ -20,6 +20,8 @@ Cette série couvre les **mêmes modèles** que la série [Infer.NET](../Infer/)
 | **Diagnostics** | Factor graphs | ArviZ (trace, ESS, R-hat) |
 | **Écosystème** | .NET | NumPy/Pandas/Matplotlib |
 
+> **Paires jumelles (Infer.NET ↔ PyMC)** — déclaration de maintenance (EPIC #24197, section C) : ces deux séries enseignent le *même plan* sur *deux moteurs* (message passing compilé vs échantillonnage MCMC) ; elles ne sont pas des doublons. Un changement pédagogique commun (un modèle ajouté ou retiré du plan, une notion renvoyée de l'une à l'autre) se porte **dans les deux** : si tu modifies l'une, vérifie l'autre. Exceptions connues au plan commun (carnet sans jumeau de l'autre côté) : Infer `01b-Premiers-Modeles` et `08b-TrueSkill-Formules-Fermees` ; PyMC `Observabilite-OTel`.
+
 Aucune des deux librairies n'est purement déterministe ou purement stochastique — Infer.NET propose aussi un échantillonneur de **Gibbs**, PyMC une inférence variationnelle (**ADVI**) — mais leur moteur *par défaut* incarne deux familles d'algorithmes : le message passing sur graphe de facteurs (Infer.NET/EP) et l'échantillonnage MCMC (PyMC/NUTS). Avoir les deux sur les mêmes modèles permet de comprendre ce **compromis**, une compétence clé pour tout praticien.
 
 ```mermaid
@@ -323,7 +325,7 @@ Cette série vous a fait passer des **fondamentaux de l'inférence bayésienne**
 
 ### Prochaines étapes
 
-- **Approfondir la théorie de la décision** — [Infer-4-Multi-Attribute](../DecisionTheory/DecInfer/DecInfer-04-Multi-Attribute.ipynb) et [Infer-8-Sequential](../DecisionTheory/DecInfer/DecInfer-08-Sequential.ipynb) reprennent ces modèles en message passing pour comparer les deux moteurs sur les mêmes problèmes.
+- **Approfondir la théorie de la décision** — [Infer-4-Multi-Attribute](../DecisionTheory/DecInfer/DecInfer-03-Multi-Attribute.ipynb) et [Infer-8-Sequential](../DecisionTheory/DecInfer/DecInfer-07-Sequential.ipynb) reprennent ces modèles en message passing pour comparer les deux moteurs sur les mêmes problèmes.
 - **Aller plus loin en inférence bayésienne** — *Statistical Rethinking* (McElreath, cité en Ressources) est le prolongement naturel de cette série pour les modèles hiérarchiques et la réflexion épistémologique sur les priors.
 - **Appliquer au trading et au ML** — les ponts vers [QuantConnect](../../QuantConnect/) et [ML](../../ML/) ouvrent la mise en production : modèles bayésiens de stratégie, régression logistique bayésienne, incertitude calibrée en prédiction.
 

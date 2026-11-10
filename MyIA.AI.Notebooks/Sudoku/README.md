@@ -1,3 +1,7 @@
+---
+pagetitle: "Sudoku - Résolution par Différentes Approches Algorithmiques"
+---
+
 # Sudoku - Résolution par Différentes Approches Algorithmiques
 
 <!-- CATALOG-STATUS
@@ -279,7 +283,7 @@ La liste précise vit dans [`requirements.txt`](requirements.txt).
 
 ### Dépannage
 
-**Les notebooks C# ne s'exécutent pas** — vérifiez `dotnet --version` (SDK 9.0+), installez le kernel (`dotnet tool install -g Microsoft.dotnet-interactive && dotnet interactive jupyter install`), et `jupyter kernelspec list` doit afficher `.net-csharp`. Le notebook 00 définit les classes de base utilisées par les notebooks C# suivants : exécutez-le en premier.
+**Les notebooks C# ne s'exécutent pas** — vérifiez `dotnet --version` (SDK 9.0+), installez le kernel (`dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001 && dotnet interactive jupyter install`), et `jupyter kernelspec list` doit afficher `.net-csharp`. Le notebook 00 définit les classes de base utilisées par les notebooks C# suivants : exécutez-le en premier.
 
 **OR-Tools ou Z3 ne s'installent pas** — OR-Tools : `pip install ortools` (wheels précompilés ; sinon `conda install -c conda-forge ortools-python`). Z3 : le package s'appelle `z3-solver`, pas `z3`.
 
@@ -370,11 +374,11 @@ Les notebooks sont adaptés de projets étudiants :
 |-----------|---------|------------|
 | **Norvig** | Solveur Norvig + variante BitArray | `Sudoku.Norvig` + `Sudoku.NorvigBitArray` |
 | **Simulated Annealing** | Recuit simulé | `Sudoku.SimulatedAnnealing` |
-| **Human Stratégies** | Stratégies humaines | `Sudoku.Human` (23 fichiers, 13 techniques) |
+| **Human Stratégies** | Stratégies humaines | `Sudoku.Human` (13 techniques) |
 | **Neural Network** | 4 architectures de réseaux de neurones | `Sudoku.NeuralNetwork` |
-| **PSO** | Optimisation par essaim de particules | `Sudoku.PSO` (7 fichiers) |
+| **PSO** | Optimisation par essaim de particules | `Sudoku.PSO` |
 | **AIMA CSP** | CSP inspiré de AIMA | `Sudoku.CspAima` |
-| **Graph Coloring** | Coloration de graphe | `Sudoku.GraphColoring` (11 fichiers) |
+| **Graph Coloring** | Coloration de graphe | `Sudoku.GraphColoring` |
 | **Choco** | 5 implémentations Choco | `Sudoku.ChocoSolvers` |
 | **LLM** | Résolution par LLM | `Sudoku.LLM-ChatGPTenzin` |
 

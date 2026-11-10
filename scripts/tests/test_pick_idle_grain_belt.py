@@ -14,6 +14,7 @@ qui est shime par les tests existants).
 """
 
 import json
+import time
 import re
 import subprocess
 import sys
@@ -198,7 +199,7 @@ def test_belt_claim_holder_is_skipped_replaced(monkeypatch):
     ]
     # 30 et 31 sont tenus par d'autres lanes ; 32 et 33 sont libres.
     # Le fake_check rend la NOUVELLE forme (code, human).
-    def fake_check(numbers, lane):
+    def fake_check(numbers, lane, **kwargs):
         return {n: (pig.CLAIM_CODE_BLOCKED if n < 32 else pig.CLAIM_CODE_FREE,
                     "BLOQUE par autre lane" if n < 32 else "libre")
                 for n in numbers}
@@ -302,6 +303,40 @@ def test_summarize_claim_machine_codes():
     assert code == pig.CLAIM_CODE_ERROR
 
 
+def test_summarize_claim_free_names_what_was_measured():
+    """#23500 -- le libellé FREE nomme ce que le tirage mesure.
+
+    Un candidat sans claim n'est PAS « libre » (qui se lit « personne ne
+    travaille dessus ») : seule l'absence de claim est mesurée. Le code
+    machine FREE ne change pas ; seule la phrase humaine doit cesser de
+    prétendre à l'absence d'activité. Le mot « libre » disparaît du
+    libellé FREE (et du FREE_STALE, qui partageait l'abus tout en nommant
+    le claim périmé qu'il mesure).
+    """
+    free_json = ('{"blocking_lanes": [], "my_active_claim": false,'
+                '"stale_claims": []}')
+    code, human = pig._summarize_claim(free_json + "\n", 0)
+    assert code == pig.CLAIM_CODE_FREE
+    assert human == pig.CLAIM_HUMAN_FREE
+    assert "libre" not in human
+
+    # FREE_STALE : l'abus « libre » était partagé ; le claim périmé reste
+    # nommé (c'est un fait mesuré), l'absence d'activité ne l'est pas.
+    stale_json = ('{"blocking_lanes": [], "my_active_claim": false,'
+                  '"stale_claims": [42]}')
+    code, human = pig._summarize_claim(stale_json + "\n", 0)
+    assert code == pig.CLAIM_CODE_FREE_STALE
+    assert "libre" not in human
+    assert "42" in human
+
+    # Jambée batch (#19643) : même libellé, même absence de « libre ».
+    batch = {"results": {"42": {"code": "FREE", "human": "x"}}}
+    code, human = pig._summarize_claim_from_batch(batch, 42)
+    assert code == pig.CLAIM_CODE_FREE
+    assert human == pig.CLAIM_HUMAN_FREE
+    assert "libre" not in human
+
+
 def test_belt_head_of_queue_free_surfaces_as_pick_one(monkeypatch):
     """Le scenario fondateur du steer coordinateur : la tete de file est
     ``libre``, le tapis DOIT la sortir en pick #1 (et pas les positions 9+
@@ -339,7 +374,7 @@ def test_belt_head_of_queue_free_surfaces_as_pick_one(monkeypatch):
     )
     # fake_check reproduit le contrat reel : 5105 libre (scenario du steer),
     # 5106/5107/5108 BLOQUE, le reste libre.
-    def fake_check(numbers, lane):
+    def fake_check(numbers, lane, **kwargs):
         out = {}
         for n in numbers:
             if n in (5106, 5107, 5108):
@@ -401,7 +436,7 @@ def test_belt_verifies_outside_window_on_the_fly(monkeypatch):
 
     calls = []
 
-    def fake_check(numbers, lane):
+    def fake_check(numbers, lane, **kwargs):
         calls.append(list(numbers))
         out = {}
         for n in numbers:
@@ -590,11 +625,17 @@ def _patch_belt_network(monkeypatch, prs, red_state):
                         lambda nums: {18844: {"count": 1, "authors": [],
                                               "verdict": None, "verdict_surface": None}} if prs else {})
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
+    # #21067 tranche 1 : la charge EN VOL compte les PRs OUVERTES de la lane
+    # a cote des livraisons mergees. L'enumeration complete des PRs ouvertes
+    # (GraphQL pagine) est une surface reseau comme les autres : elle est
+    # stubee ici, sinon le tapis atteint un `gh` reel -- ce que la garde
+    # `_no_real_gh` interdit.
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: list(prs))
     monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
     # Le tapis fait un check_claims : on rend toujours FREE.
     monkeypatch.setattr(pig, "check_claims",
-                        lambda nums, lane: {n: (pig.CLAIM_CODE_FREE, "libre")
-                                            for n in nums})
+                        lambda nums, lane, **kwargs: {
+                            n: (pig.CLAIM_CODE_FREE, "libre") for n in nums})
     # Le tapis lit aussi les claims comme visites : jamais de reseau en test.
     monkeypatch.setattr(pig, "latest_claim_stamp", lambda n: None)
     # `fetch_visits` (visits + long_visits, l.6024/6029 de main) etait le
@@ -617,6 +658,12 @@ def _patch_belt_network(monkeypatch, prs, red_state):
     # passe par gh_payload_cache -> run_gh. `measure_delivery`, en aval,
     # est pure : elle ne fait que lire ce corpus. Forme `(prs, err)`.
     monkeypatch.setattr(pig, "fetch_merged", lambda *a, **k: ([], None))
+    # #25082 A -- la recompense de fermeture lit les issues FERMEES de la
+    # fenetre (`gh issue list --state closed`). C'est une surface reseau de
+    # plus, de la meme famille : elle est stubee ici, sinon le tapis
+    # atteint un `gh` reel. `([], None)` = mesure faite, aucune fermeture.
+    monkeypatch.setattr(pig, "fetch_closed_issues",
+                        lambda *a, **k: ([], None))
     # `pin_gh_token()` (gh_identity, appele au demarrage de main) : le
     # VRAI hang des tests `main --belt` (mesure 2026-10-09 : ~300 s par
     # test, 5 tests). Le garde `_no_real_gh` l'a nomme en 0,8 s -- un
@@ -632,6 +679,15 @@ def _patch_belt_network(monkeypatch, prs, red_state):
     # rafraichir, et l'ecriture du cache reste desactivee sous pytest
     # (`_PASS_SNAPSHOT`).
     monkeypatch.setattr(pig, "_belt_snapshot_prime", lambda repo, numbers: None)
+    # #25522 : le classement des PRs rouges lit le FIL de chaque PR (une
+    # requete REST par PR) -- une surface reseau de plus, de la meme famille :
+    # elle est stubee ici, sinon le garde `_no_real_gh` leve (il refuse tout
+    # `gh`, et son exception n'est pas un `Exception` : elle se propage).
+    monkeypatch.setattr(pig, "_red_pr_comments", lambda n: [])
+    # #25522 : la lecture de perimetrie du picker (`git rev-parse`,
+    # `git hash-object`) passe par ce point de couture. On le neutralise :
+    # le test ne mesure pas le perimetre, et le `git` reel n'apporte rien ici.
+    monkeypatch.setattr(pig, "_git_read", lambda *a, **k: None)
 
 
 def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
@@ -672,6 +728,34 @@ def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
     assert payload["repair"]["grain"]["number"] == 18844
     # La fenetre de livraisons en mode belt fait 90 j, pas 14 j.
     assert payload["last_delivery_window_days"] == 90
+
+
+def test_belt_json_names_the_service_window_and_the_pending_deliveries(monkeypatch, capsys):
+    """#25522 point 4 : la sortie nomme ce que la boucle a COUVERT.
+
+    « 0 retenu » ne doit pas etre muet : la lane doit pouvoir distinguer
+    « le pool est vide » de « les positions vues etaient toutes livrees ».
+    Les trois nombres sont dans le JSON (positions parcourues, fenetre,
+    livraisons en attente).
+    """
+    red = _state_red()
+    prs = [{
+        "number": 18844,
+        "title": "PR rouge de la lane",
+        "body": "Grain: MED/guard -- lane myia-po-2024:CoursIA-2",
+        "createdAt": "2026-09-30T12:00:00Z",
+        "isDraft": False,
+    }]
+    _patch_belt_network(monkeypatch, prs, red)
+
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    svc = payload["service_window"]
+    assert svc["positions"] == 0        # pool vide dans ce test
+    assert svc["extended"] is False
+    assert svc["pending_deliveries"] == 0
 
 
 def test_belt_json_repair_key_absent_when_no_red(monkeypatch, capsys):
@@ -789,6 +873,25 @@ def test_belt_main_json_path_never_reaches_real_probes(monkeypatch, capsys):
     assert payload["repair"]["grain"]["number"] == 18844
 
 
+def _mini_snapshot(numbers):
+    """Instantane minimal qui SERVE une fenetre (commentaires + payload).
+
+    `serves` exige un horodatage de lecture frais PAR issue et la presence
+    des commentaires ; le LECTEUR exige le PAYLOAD de l'issue. Les deux
+    formes sont donc construites ici.
+    """
+    now = time.time()
+    comments = {str(n): [{"body": "rien de notable",
+                           "createdAt": "2026-11-05T00:00:00Z"}]
+                for n in numbers}
+    return {
+        "meta": {"comment_stamps": {str(n): now for n in numbers}},
+        "comments": comments,
+        "issues": {str(n): {"number": n, "title": f"issue #{n}",
+                            "labels": []} for n in numbers},
+    }
+
+
 def test_belt_main_injects_the_real_snapshot_prime(monkeypatch, capsys):
     """Le cache reste utilise en production : `main` injecte le vrai prime.
 
@@ -815,6 +918,11 @@ def test_belt_main_injects_the_real_snapshot_prime(monkeypatch, capsys):
 
     def spy_prime(repo, numbers):
         primed.append(list(numbers))
+        # L'instantane que le vrai rafraichissement aurait ecrit : il doit
+        # SERVIR la fenetre (commentaires ET payload), sinon le repli de la
+        # fenetre de claims partirait -- a raison, car le rafraichissement
+        # aurait alors echoue.
+        pig._BELT_SNAPSHOT = _mini_snapshot(numbers)
 
     monkeypatch.setattr(pig, "_belt_snapshot_prime", spy_prime)
     rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
@@ -823,7 +931,257 @@ def test_belt_main_injects_the_real_snapshot_prime(monkeypatch, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["mode"] == "belt"
     assert primed, "main n'a pas branche le rafraichissement d'instantane"
-    assert primed == [[19101]], "une seule passe, sur les candidats tires"
+    # #22983 -- UNE seule passe QUAND LA FENETRE EST COUVERTE. Sur un pool
+    # a une seule tete, les tris post-priming (settle, repondersion) ne
+    # font entrer AUCUN numero en fenetre : le delta de re-prime est vide
+    # et la seconde passe NE DOIT PAS partir. Le spy installe l'instantane
+    # que le vrai rafraichissement aurait ecrit -- sans quoi il simulerait
+    # un rafraichissement rate, et le repli partirait legitimement.
+    assert primed == [[19101]], (
+        f"une seule passe, sur les candidats tires (got {primed})")
+
+
+def test_belt_reprime_claims_delta_primes_only_the_entrants(monkeypatch):
+    """#22983 -- les numeros ENTRES en fenetre par les tris sont re-primes.
+
+    Mesure du 08/11 : le pool est re-trie EN PLACE entre le priming et la
+    lecture de la fenetre de claims (settle_belt_head, puis
+    apply_belt_weights) ; 56 des 70 numeros de la fenetre finale n'etaient
+    pas dans la fenetre primee, et STRICT refusait des numeros jamais
+    rafraichis -- fail-CLOSED total, 0 grain servi, sans aucun echec de
+    lecture. Le re-prime ne doit cibler QUE les entrants (les communs sont
+    deja frais), et les declarer primés pour la garde de la boucle.
+    """
+    monkeypatch.setattr(pig, "_BELT_PRIMED_WINDOW", {1, 2, 3})
+    seen: list[list[int]] = []
+    monkeypatch.setattr(
+        pig, "_belt_snapshot_prime",
+        lambda repo, numbers, seed=None: seen.append(list(numbers)))
+    # 9 et 7 entrent en fenetre par le tri ; 2 et 3 etaient deja primes ;
+    # 1 est sorti de la fenetre -- il ne doit PAS etre re-lu.
+    pig._belt_reprime_claims_delta([9, 2, 7, 3])
+    assert seen == [[9, 7]], (
+        f"seuls les entrants sont re-primes (got {seen})")
+    assert pig._BELT_PRIMED_WINDOW == {1, 2, 3, 7, 9}, (
+        "la garde de la boucle (`wanted subset _BELT_PRIMED_WINDOW`) doit "
+        f"voir les entrants declares primés (got {sorted(pig._BELT_PRIMED_WINDOW)})")
+
+
+def test_belt_reprime_claims_delta_noop_when_covered(monkeypatch):
+    """#22983 -- fenetre couverte : aucune seconde passe.
+
+    C'est le contrat « UNE seule passe » du temoin main : quand les tris
+    post-priming ne font entrer aucun numero (fenetre stable, pool a tete
+    unique), le delta est vide et le re-prime ne doit RIEN faire -- ni
+    appel, ni evenement de phase.
+    """
+    monkeypatch.setattr(pig, "_BELT_PRIMED_WINDOW", {11, 12})
+    seen: list[list[int]] = []
+    monkeypatch.setattr(
+        pig, "_belt_snapshot_prime",
+        lambda repo, numbers, seed=None: seen.append(list(numbers)))
+    pig._belt_reprime_claims_delta([12, 11])
+    assert seen == [], (
+        f"aucune seconde passe quand la fenetre est couverte (got {seen})")
+    assert pig._BELT_PRIMED_WINDOW == {11, 12}
+
+
+def test_belt_reprime_claims_delta_seeds_from_memory(monkeypatch):
+    """#22983 -- la re-prime part de l'instantane MEMOIRE, pas du disque.
+
+    Cas pathologique nomme en rectification (08/11) : le priming initial
+    a subi un lock-timeout -> ses lectures fraiches ne vivent qu'en
+    memoire (`_BELT_SNAPSHOT`). Un second appel qui rechargerait le
+    disque les perdrait, et STRICT retrouverait un refus fail-CLOSED
+    que la re-prime etait censee clore. Le helper doit SEED le prime
+    avec l'etat memoire -- et passer None quand il n'y en a pas.
+    """
+    seeds: list = []
+    monkeypatch.setattr(pig, "_BELT_PRIMED_WINDOW", {1})
+    monkeypatch.setattr(
+        pig, "_belt_snapshot_prime",
+        lambda repo, numbers, seed=None: seeds.append(seed))
+    mem = {"meta": {"comment_stamps": {"1": "2026-11-08T20:00:00Z"}}}
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", mem)
+    pig._belt_reprime_claims_delta([7, 1])
+    assert seeds == [mem], (
+        f"la re-prime doit partir de l'instantane memoire du priming "
+        f"precedent (got {seeds})")
+    # Sans etat memoire (premier appel totalement echoue) : seed None,
+    # le prime repart du disque comme avant.
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", None)
+    monkeypatch.setattr(pig, "_BELT_PRIMED_WINDOW", {1})
+    pig._belt_reprime_claims_delta([7, 1])
+    assert seeds == [mem, None], (
+        f"sans instantane memoire, le seed doit etre None (got {seeds})")
+
+
+def test_belt_reprime_seed_survives_merge_when_lock_obtained(monkeypatch):
+    """#22983 (review e468eec) -- le seed SURVIT a la fusion sous verrou.
+
+    Sous-cas le plus probable du bord memoire : premier priming en
+    lock-timeout (lectures fraiches en memoire seulement), puis re-prime
+    qui OBTIENT le verrou -- celui de l'autre lane se liberant quelques
+    secondes plus tard. `merge_snapshots` ne prend de `fresh` que les
+    numeros qu'on lui nomme : fusionner sur le seul delta laisserait le
+    disque relu ecraser l'entree fraiche du premier appel, dans
+    `_BELT_SNAPSHOT` comme dans l'ecriture disque. La fusion doit porter
+    sur l'UNION (delta + numeros frais du seed).
+
+    Temoin au plus proche du reel : le VRAI `_belt_snapshot_prime` (garde
+    pytest retiree) et la VRAIE `merge_snapshots` du module d'instantane ;
+    seuls `load_snapshot`, `ensure_comments`, `snapshot_lock` et
+    `save_snapshot` sont simules.
+    """
+    class _Timeout(Exception):
+        pass
+
+    real = pig._gh_snapshot_module()  # avant le patch : module reel
+    seed = {
+        "meta": {"comment_stamps": {"1": 200}},
+        "comments": {"1": ["fresh"]},
+        "issues": {"1": {"titre": "fenetre du premier appel"}},
+    }
+    disk = {
+        "meta": {"comment_stamps": {"1": 100}},
+        "comments": {"1": ["old"]},
+        "issues": {"1": {"titre": "disque perime"}},
+    }
+    saved: dict = {}
+
+    class _OkLock:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    class _FakeGhSnapshot:
+        SnapshotLockTimeout = _Timeout
+
+        @staticmethod
+        def load_snapshot(repo):
+            return dict(disk)
+
+        @staticmethod
+        def ensure_comments(repo, numbers, snapshot):
+            up = dict(snapshot)
+            up["meta"] = {"comment_stamps": {"1": 200, "7": 300}}
+            up["comments"] = {"1": ["fresh"], "7": ["y"]}
+            return up, 0, {}
+
+        @staticmethod
+        def snapshot_lock(repo):
+            return _OkLock()
+
+        # la VRAIE fusion du module d'instantane -- c'est elle que le bord
+        # contourne ; la simuler cacherait exactement ce qu'on temoigne.
+        merge_snapshots = staticmethod(real.merge_snapshots)
+
+        @staticmethod
+        def save_snapshot(repo, merged):
+            saved.update(merged)
+
+    monkeypatch.setitem(sys.modules, "coordination.gh_snapshot",
+                        _FakeGhSnapshot)
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", seed)
+
+    pig._belt_snapshot_prime("jsboige/CoursIA", [7], seed=seed)
+
+    for label, snap in (("_BELT_SNAPSHOT", pig._BELT_SNAPSHOT),
+                        ("ecriture disque", saved)):
+        comments = snap["comments"]
+        stamps = snap["meta"]["comment_stamps"]
+        assert comments.get("1") == ["fresh"], (
+            f"{label} : l'entree fraiche du premier appel doit survivre a "
+            f"la fusion sous verrou (got {comments.get('1')})")
+        assert stamps.get("1") == 200, (
+            f"{label} : le stamp frais doit survivre (got {stamps.get('1')})")
+        assert comments.get("7") == ["y"], (
+            f"{label} : le delta doit aussi etre fusionne "
+            f"(got {comments.get('7')})")
+
+
+def test_belt_snapshot_prime_lock_timeout_names_cause(monkeypatch, capsys):
+    """#22983 volet 3 : le repli lock-timeout du priming NOMME sa cause.
+
+    Mesure fondatrice (08/11, c.6719023627) : le priming tenait
+    `refresh.lock` pendant toute sa phase reseau (~7 min) ; les autres
+    lanes de la machine epuisaient leurs 120 s d'attente et retombaient
+    sur un repli MUET -- ni `fetch_failures`, ni message, alors que le
+    quota REST paraissait sain. Le repli doit ecrire sur stderr POURQUOI
+    il est parti, pour qu'un fail-CLOSED eventuel se lise au premier
+    coup d'oeil.
+
+    Divergence assumee avec le spec initial de #25217 : l'issue ecrivait
+    « repli sur l'instantane disque » ; le volet 4 (#25224, arbitrage
+    option 2, c.6719405401) a deplace la phase reseau HORS verrou -- le
+    repli sert desormais les lectures fraiches EN MEMOIRE de CE tirage
+    (ses stamps couvrent NOTRE fenetre, pas celle de la lane qui tient
+    le verrou). Le temoin suit le contrat du code actuel.
+    """
+    class _LockTimeout(Exception):
+        pass
+
+    calls = {"save": 0}
+    in_memory = _mini_snapshot([4242])
+    stale_disk = _mini_snapshot([1111])
+
+    class _RaisingLock:
+        def __enter__(self):
+            raise _LockTimeout(
+                "verrou refresh.lock non obtenu apres 120 s")
+
+        def __exit__(self, *exc):
+            return False
+
+    class _FakeGhSnapshot:
+        SnapshotLockTimeout = _LockTimeout
+
+        @staticmethod
+        def load_snapshot(repo):
+            return dict(stale_disk)
+
+        @staticmethod
+        def ensure_comments(repo, numbers, snapshot):
+            return dict(in_memory), 0, {}
+
+        @staticmethod
+        def snapshot_lock(repo):
+            return _RaisingLock()
+
+        @staticmethod
+        def merge_snapshots(disk, mem, numbers):
+            raise AssertionError(
+                "la fusion ne doit pas courir : le verrou a leve avant")
+
+        @staticmethod
+        def save_snapshot(repo, merged):
+            calls["save"] += 1
+            raise AssertionError("l'ecriture disque doit etre reportee")
+
+    monkeypatch.setitem(sys.modules, "coordination.gh_snapshot",
+                        _FakeGhSnapshot)
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    # Restauration automatique du global par monkeypatch en teardown.
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", pig._BELT_SNAPSHOT)
+
+    pig._belt_snapshot_prime("jsboige/CoursIA", [4242])
+
+    err = capsys.readouterr().err
+    assert "[22983] priming ecarte" in err, (
+        f"le repli doit NOMMER sa cause sur stderr (got: {err!r})")
+    assert "verrou refresh.lock non obtenu apres 120 s" in err, (
+        f"le message doit porter la cause exacte du repli (got: {err!r})")
+    assert calls["save"] == 0, (
+        "l'ecriture disque est reportee au prochain priming, pas tentee")
+    # Le repli sert les lectures fraiches EN MEMOIRE de CE tirage (volet
+    # 4), pas l'instantane disque dont les stamps couvrent l'AUTRE lane.
+    stamps = pig._BELT_SNAPSHOT["meta"]["comment_stamps"]
+    assert "4242" in stamps and "1111" not in stamps, (
+        f"le repli doit servir la fenetre de CE tirage (got stamps: "
+        f"{sorted(stamps)})")
 
 
 def test_non_belt_json_red_still_emits_standalone_repair(monkeypatch, capsys):
@@ -1007,6 +1365,51 @@ def test_claim_visit_stamp_counts_every_lane():
                "[RELEASED] lane myia-po-2023:CoursIA -- ancien"),
     ]
     assert pig.claim_visit_stamp(comments) == "2026-10-04T09:00:00Z"
+
+
+# --- #22687 constat 1 : la visite rend sa DATE **et** son MARQUEUR ----------
+
+def test_claim_visit_pair_names_the_event_that_produced_the_date():
+    """La paire ne peut pas designer deux evenements differents.
+
+    `claim_visit_stamp` ne disait que QUAND une lane avait servi l'issue ; la
+    cause du plafond EPIC en deduisait « claim », donc un `[RELEASED]` etait
+    lu comme une prise (#22687). La paire sort du MEME evenement.
+    """
+    comments = [
+        _claim("2026-10-04T09:00:00Z",
+               "[CLAIMED] lane myia-po-2027:CoursIA -- T1"),
+        _claim("2026-10-04T12:00:00Z",
+               "[RELEASED] lane myia-po-2027:CoursIA -- T1 rendue"),
+    ]
+    assert pig.claim_visit(comments) == ("2026-10-04T12:00:00Z", "RELEASED")
+    # Le stamp public reste la moitie-date, inchangee.
+    assert pig.claim_visit_stamp(comments) == "2026-10-04T12:00:00Z"
+
+
+def test_claim_visit_without_any_lane_marker_is_a_measure_not_a_guess():
+    assert pig.claim_visit([_claim("2026-10-04T09:00:00Z",
+                                   "commentaire ordinaire")]) == (None, None)
+    assert pig.claim_visit([]) == (None, None)
+
+
+def test_marker_label_never_falls_back_to_claim():
+    """Le repli ne doit pas etre le mot que #22687 retire."""
+    assert pig.marker_label("CLAIMED") == "prise"
+    assert pig.marker_label("RELEASED") == "rendu de main"
+    assert pig.marker_label(None) == "marqueur de lane"
+    assert pig.marker_label("") == "marqueur de lane"
+    # Un code que l'organe ne produit pas se cite tel quel, entre crochets.
+    assert pig.marker_label("SOMETHINGELSE") == "marqueur [SOMETHINGELSE]"
+
+
+def test_every_marker_keyword_of_the_organ_has_a_translation():
+    """La table suit `_KEYWORDS` de l'organe : un code lu par lui sans
+    traduction serait un trou, et ce test le voit avant une lane."""
+    from check_lane_claim import _KEYWORDS
+
+    missing = [k for k in _KEYWORDS if k not in pig._MARKER_LABELS]
+    assert not missing, f"marqueurs de l'organe sans traduction : {missing}"
 
 
 def test_belt_released_issue_stays_behind_7742_scenario():
@@ -1586,6 +1989,39 @@ def test_le_rapport_marqueur_est_muet_sans_lecture_ratee(capsys):
     assert capsys.readouterr().out == ""
 
 
+def test_le_rapport_gel_rend_la_trace_visible(capsys):
+    """Le rendu du pendant du GEL : un gel non lu doit etre DIT, comme les
+    trois autres lectures non lues (#24516).
+
+    Le gel est un veto transversal : un gel non lu laisse passer un
+    candidat que le gel aurait ecarte. L'operateur doit donc voir le
+    numero ET la nature de l'incertitude.
+    """
+    pig.print_frozen_unread_report([19309], "myia-ai-01:CoursIA-2")
+    out = capsys.readouterr().out
+    assert "GEL NON LU" in out
+    assert "#19309" in out
+    assert "FROZEN" in out
+
+
+def test_le_rapport_gel_est_muet_sans_lecture_ratee(capsys):
+    """Controle negatif du rendu : aucun bruit quand tout s'est bien passe."""
+    pig.print_frozen_unread_report([], "myia-ai-01:CoursIA-2")
+    pig.print_frozen_unread_report(None, "myia-ai-01:CoursIA-2")
+    assert capsys.readouterr().out == ""
+
+
+def test_le_rapport_gel_deduplique_les_numeros(capsys):
+    """Meme contrat que les autres rapports : un numero mesure deux fois
+    n'est annonce qu'une fois."""
+    pig.print_frozen_unread_report([19309, 19309, 19001],
+                                    "myia-ai-01:CoursIA-2")
+    out = capsys.readouterr().out
+    assert out.count("#19309") == 1
+    assert "#19001" in out
+    assert "2 candidat(s)" in out
+
+
 def test_belt_marker_KO_and_budget_epuise_ne_sert_pas_silencieusement():
     """Le COUPLE de fail-OPEN, mesure par la session jumelle `coursia-2-25`
     (2026-10-26, #17528) : deux verifications ratees qui se COMBINENT.
@@ -1739,6 +2175,57 @@ def test_container_marker_read_failure_is_none(monkeypatch):
 def test_container_marker_without_comment_is_false(monkeypatch):
     """Aucun commentaire : pas de marqueur (False, pas None)."""
     _stub_last_comment(monkeypatch, "")
+    assert pig.has_recent_container_delivery_marker(17528) is False
+
+
+def _stub_comments(monkeypatch, bodies):
+    """Force le transport : le fil porte `bodies`, dans cet ordre."""
+    payload = json.dumps({"comments": [{"body": b} for b in bodies]})
+
+    def fake_run(cmd, *args, **kwargs):
+        assert cmd[:3] == ["gh", "issue", "view"], f"transport : {cmd}"
+        return subprocess.CompletedProcess(cmd, 0, stdout=payload, stderr="")
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+
+def test_container_marker_survit_a_un_released_de_queue(monkeypatch):
+    """#24590 -- un `[RELEASED]` de queue sans marqueur ne masque plus le
+    `[INFO] candidate-delivered` qu'il suit.
+
+    Sur une umbrella, ce masquage rendait le conteneur « non livre » : l'issue
+    redevenait servable alors qu'elle etait close. C'est exactement le defaut
+    que #24516 avait corrige sur la sonde de livraison, et qui restait ouvert
+    ici -- les deux filtres lisent le meme octet, ils doivent sauter le meme
+    commentaire.
+
+    Mesure du 2026-11-04 sur #19309 : 46 commentaires, **40** commencant par
+    `[RELEASED]`, **aucun** porteur d'un marqueur d'etat.
+    """
+    _stub_comments(monkeypatch, [
+        "[INFO] candidate-delivered — les cinq arcs sont clos.",
+        "[RELEASED] lane myia-po-2028:CoursIA -- barriere reelle : EPIC gelee",
+    ])
+    assert pig.has_recent_container_delivery_marker(17528) is True
+
+
+def test_container_marker_lit_un_released_qui_porte_un_marqueur(monkeypatch):
+    """Controle negatif : le saut ne porte pas sur l'EN-TETE seul.
+
+    Un `[RELEASED]` dont le corps porte lui-meme un marqueur d'etat est un
+    evenement : il reste le dernier commentaire LU, et ce qu'il dit compte.
+    Ce controle discrimine les deux lectures -- si le `[RELEASED]` etait saute
+    sur son en-tete, la sonde remonterait au `[INFO] candidate-delivered` de
+    tete et rendrait True ; en lisant le corps de queue, elle rend False.
+    """
+    _stub_comments(monkeypatch, [
+        "[INFO] candidate-delivered -- les cinq arcs sont clos.",
+        chr(10).join([
+            "[RELEASED] lane myia-po-2028:CoursIA -- EPIC rouverte",
+            "",
+            "[DELIVERED] lane myia-po-2028:CoursIA -- PR #21212",
+        ]),
+    ])
     assert pig.has_recent_container_delivery_marker(17528) is False
 
 
@@ -2025,6 +2512,37 @@ def test_fetch_latest_claim_stamps_bulk_parity_with_latest_claim_stamp(monkeypat
     assert pig.latest_claim_stamp(12) is None
 
 
+def test_fetch_latest_claim_stamps_bulk_carries_the_marker_with_the_date(monkeypatch):
+    """#22687 : la charge bulk porte le marqueur, pas seulement la date.
+
+    Une date sans marqueur obligeait la cause du plafond EPIC a inventer un
+    verbe -- « claim » sur un `[RELEASED]`. Le marqueur voyage dans la MEME
+    requete : couter une seconde sonde pour nommer la visite serait payer un
+    aller-retour par EPIC plafonne.
+    """
+    issue_payloads = {
+        20: [_claim("2026-10-04T09:00:00Z",
+                    "[CLAIMED] lane myia-po-2027:CoursIA -- T1"),
+             _claim("2026-10-04T12:00:00Z",
+                    "[RELEASED] lane myia-po-2027:CoursIA -- T1 rendue")],
+        21: [_claim("2026-10-05T10:00:00Z", "aucun marqueur")],
+    }
+
+    def fake_run(cmd, *a, **k):
+        class _R:
+            stdout = json.dumps(_graphql_payload_for(issue_payloads))
+        return _R()
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+    markers: dict[int, str | None] = {}
+    stamps, err = pig.fetch_latest_claim_stamps_bulk([20, 21],
+                                                     markers_out=markers)
+    assert err is None, err
+    assert stamps == {20: "2026-10-04T12:00:00Z", 21: None}
+    assert markers == {20: "RELEASED", 21: None}, markers
+
+
 def test_fetch_latest_claim_stamps_bulk_falls_back_on_subprocess_error(monkeypatch):
     """Repli : une exception subprocess rend ({}, err) ; le caller peut degrader.
 
@@ -2300,59 +2818,59 @@ def _fake_run_recorder(stdout_for):
     return calls, fake_run
 
 
-def test_check_claims_single_number_reads_mono_issue_output(monkeypatch):
-    """`check_claims([n])` (verification au fil de l'eau) lit la sortie
-    mono-issue au lieu de la rendre en ERROR.
+def test_check_claims_ne_lance_plus_de_sous_processus(monkeypatch):
+    """#22983 -- le TRANSPORT `subprocess` du LECTEUR est RETIRE.
 
-    Avant le correctif, l'appel passait par le chemin batch, `json.loads`
-    levait `Extra data` sur la phrase « CLEAR: ... », et le verdict valait
-    ERROR : 30 issues sur 50 du tirage du 2026-10-20 ont ete servies sans
-    que leur claim soit lu.
+    La voie historique (un sous-processus `check_lane_claim.py` par issue,
+    avec repli unitaire) n'existe plus. Quand la voie en processus ne peut
+    pas rendre de verdict, `check_claims` rend `ERROR` -- il ne rebascule
+    PAS dans un sous-processus : le tirage ne doit jamais ouvrir de
+    processus `gh`, et une lane ne doit jamais voir un candidat servi sur
+    une lecture qui n'a pas eu lieu.
+
+    Le test qui precedait celui-ci verifiait la sortie mono-issue du
+    sous-processus (`_SINGLE_ISSUE_STDOUT`) : il verifiait un chemin qui
+    n'existe plus. Il est remplace par son CONTROLE NEGATIF : aucun
+    sous-processus, aucun repli.
     """
     monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt", lambda lane: None)
-    # #22630 : la voie en processus (instantane local) est PRIORITAIRE dans
-    # `check_claims` -- sans ce shunt, elle consomme deux subprocess (`gh api`
-    # du rafraichissement, `gh issue view` du lecteur) avant la voie
-    # historique instrumentee ici, et le compte d'appels n'a plus de sens.
-    # La voie en processus a ses propres tests (test_gh_snapshot_22630.py) ;
-    # ces trois tests verifient le contrat de la voie subprocess.
     monkeypatch.setattr(pig, "_claims_in_process",
-                        lambda numbers, lane, cache=None: None)
-    calls, fake_run = _fake_run_recorder(lambda cmd: _SINGLE_ISSUE_STDOUT)
-    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+                        lambda numbers, lane, cache=None, **kw: None)
+
+    def refuse(*a, **k):
+        raise AssertionError(
+            "aucun sous-processus ne doit etre lance (le transport est "
+            "retire)")
+
+    monkeypatch.setattr(pig.subprocess, "run", refuse)
 
     verdicts = pig.check_claims([20909], "myia-ai-01:CoursIA")
 
-    assert verdicts[20909][0] == pig.CLAIM_CODE_FREE
-    # Un seul appel, mono-issue : pas de batch suivi d'un repli.
-    assert len(calls) == 1
-    assert calls[0][-3:] == ["--lane", "myia-ai-01:CoursIA", "20909"]
+    assert verdicts[20909][0] == pig.CLAIM_CODE_ERROR
+    assert verdicts[20909][1], "la raison du verdict ERROR doit etre dite"
 
 
-def test_check_claims_unreadable_batch_falls_back_per_issue(monkeypatch):
-    """Une sortie batch illisible ne rend plus ERROR : chaque issue est
-    relue seule, comme le commentaire du code l'annoncait deja."""
+def test_check_claims_na_plus_de_repli_unitaire(monkeypatch):
+    """#22983 -- le repli unitaire disparait avec le transport.
+
+    Une sortie batch illisible ne relit plus chaque issue seule : il n'y a
+    plus de sous-processus a relancer. La voie en processus ne peut pas
+    echouer de cette maniere (elle reduit des payloads en memoire) ; quand
+    elle ne peut pas rendre de verdict, le candidat est marque `ERROR` et
+    la sortie le dit -- il n'est jamais servi comme verifie.
+    """
     monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt", lambda lane: None)
-    # #22630 : voie en processus ecartee -- ce test instrumente la voie
-    # subprocess historique (cf. test_check_claims_single_number_...).
     monkeypatch.setattr(pig, "_claims_in_process",
-                        lambda numbers, lane, cache=None: None)
+                        lambda numbers, lane, cache=None, **kw: None)
 
-    def stdout_for(cmd):
-        if cmd.count("--lane") and len(cmd) > 5:  # batch : 2 numeros ou plus
-            return "pas du JSON\n"
-        n = cmd[-1]
-        return _SINGLE_ISSUE_STDOUT.replace("20909", n)
-
-    calls, fake_run = _fake_run_recorder(stdout_for)
+    calls, fake_run = _fake_run_recorder(lambda cmd: "pas du JSON\n")
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
 
     verdicts = pig.check_claims([101, 102], "myia-ai-01:CoursIA")
 
-    assert verdicts == {101: verdicts[101], 102: verdicts[102]}
-    assert all(v[0] == pig.CLAIM_CODE_FREE for v in verdicts.values())
-    # 1 batch + 2 relectures mono-issue.
-    assert len(calls) == 3
+    assert set(verdicts) == {101, 102}
+    assert all(v[0] == pig.CLAIM_CODE_ERROR for v in verdicts.values())
+    assert calls == [], "aucun repli unitaire ne doit partir"
 
 
 # --- #19969 : la banniere d'epuisement du budget reste IMPRIMEE -------------
@@ -2496,9 +3014,14 @@ def test_belt_time_budget_stops_probing_mid_loop(monkeypatch):
         recent_marker_probe=lambda n: calls["recent"].append(n) or False,
         time_budget_s=1.0)
 
-    # Le mur ne retire JAMAIS un candidat : les trois sont servis.
-    assert [p["number"] for p in picks] == [30001, 30002, 30003]
-    assert withheld == []
+    # #22983 -- le mur n'est PLUS fail-OPEN : un candidat dont une sonde
+    # n'a pas pu etre emise est ECARTE, avec la raison nommee. Les trois
+    # sont donc ecartes : le premier avait paye sa sonde de livraison,
+    # mais sa sonde « PR MERGEE » est tombee sur l'echeance -- et une
+    # livraison qu'on n'a pas lue ne se presume pas absente.
+    assert [p["number"] for p in picks] == []
+    assert [w[0]["number"] for w in withheld] == [30001, 30002, 30003]
+    assert all("mur de temps atteint" in w[1] for w in withheld)
     # Une seule sonde de chaque espece, celle du premier candidat.
     assert calls["delivered"] == [30001]
     assert calls["recent"] == [30001]
@@ -2527,10 +3050,15 @@ def test_belt_time_budget_skips_on_the_fly_claim_check_and_reports(monkeypatch):
         recent_marker_probe=lambda n: False,
         time_budget_s=0.0)
 
-    assert [p["number"] for p in picks] == [30011, 30012]
-    assert withheld == []
+    # #22983 -- fail-CLOSED : les deux candidats sont ECARTES (le claim
+    # n'a pas ete verifie), ils ne sont pas servis. `claim_unread` ne les
+    # porte plus : ce champ signifie « SERVI sur une lecture en echec »,
+    # et ils ne sont pas servis.
+    assert [p["number"] for p in picks] == []
+    assert [w[0]["number"] for w in withheld] == [30011, 30012]
+    assert all("claim non verifie" in w[1] for w in withheld)
     assert claim_calls == [], "aucune verification de claim apres l'echeance"
-    assert state["claim_unread"] == [30011, 30012]
+    assert state["claim_unread"] == []
     assert state["time_budget_hit"] is True
 
 
@@ -2608,7 +3136,6 @@ def test_check_claims_reads_the_belt_deadline(monkeypatch):
     a gele quatre runs consecutifs le 24/10.
     """
     clock = _patched_clock(monkeypatch)
-    seen: list[float] = []
 
     class _Done:
         returncode = 0
@@ -2616,27 +3143,42 @@ def test_check_claims_reads_the_belt_deadline(monkeypatch):
         stderr = ""
 
     def fake_run(cmd, **kwargs):
-        # Seul `check_lane_claim.py` nous interesse : le pourtour de
-        # `check_claims` (cache des PRs ouvertes) a ses propres timeouts et
-        # n'est pas la sonde que le mur doit clamper.
-        if any("check_lane_claim.py" in str(part) for part in cmd):
-            seen.append(kwargs.get("timeout"))
-        return _Done()
+        raise AssertionError(
+            "aucun sous-processus ne doit etre lance (le transport est "
+            "retire)")
 
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
-    # #22630 : voie en processus ecartee -- le mur de temps se mesure sur le
-    # subprocess `check_lane_claim.py` de la voie historique, pas sur la voie
-    # en processus (qui n'ouvre aucun subprocess de ce nom).
-    monkeypatch.setattr(pig, "_claims_in_process",
-                        lambda numbers, lane, cache=None: None)
+    # #22983 -- le mur de temps ne clampe PLUS un timeout de
+    # sous-processus : il n'y a plus de sous-processus. Il borne le
+    # RESEAU (les sondes de livraison et de marqueur), et il borne la
+    # DUREE du tirage par le chemin fail-CLOSED : un candidat dont une
+    # lecture n'a pas pu etre emise est ecarte.
+    # La voie STRICT se comporte autrement : elle lit l'instantane, et
+    # quand il ne peut pas servir la fenetre, elle REFUSE (fail-CLOSED)
+    # au lieu de lancer une lecture.
+    class _InstantanePerime:
+        """Instantane qui ne sert rien : la machine ne l'a pas rafraichi."""
+
+        @staticmethod
+        def load_snapshot(repo):
+            return {}
+
+        @staticmethod
+        def serves(snapshot, numbers, ttl_seconds=None):
+            return False
+
+    monkeypatch.setattr(pig, "_gh_snapshot_module", lambda: _InstantanePerime)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", None)
     pig._BELT_DEADLINE[0] = clock[0] + 2.0
     try:
-        pig.check_claims([30031], "myia-po-2024:CoursIA")
+        verdicts = pig.check_claims([30031], "myia-po-2024:CoursIA",
+                                     strict_snapshot=True)
     finally:
         pig._BELT_DEADLINE[0] = None
 
-    assert seen, "aucun subprocess n'a ete lance"
-    assert max(t for t in seen if t is not None) <= 2.0 + 0.05
+    assert verdicts[30031][0] == pig.CLAIM_CODE_BLOCKED
+    assert "instantane" in verdicts[30031][1].lower(), (
+        f"la raison doit nommer l'instantane : {verdicts[30031][1]!r}")
 
 
 def test_belt_loop_restores_the_published_deadline():
@@ -2675,7 +3217,7 @@ def test_belt_publishes_the_run_deadline_before_the_claims_phase(
     _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
     published: list = []
 
-    def spy(numbers, lane):
+    def spy(numbers, lane, **kwargs):
         published.append(pig._BELT_DEADLINE[0])
         return {n: (pig.CLAIM_CODE_FREE, "libre") for n in numbers}
 
@@ -2689,17 +3231,20 @@ def test_belt_publishes_the_run_deadline_before_the_claims_phase(
     assert pig._BELT_DEADLINE[0] is None, "l'echeance fuit apres le run"
 
 
-def test_belt_arms_the_run_wall_before_the_pool_load(monkeypatch, capsys):
-    """#23090 : le mur est DEJA publie quand `fetch_pool` s'ouvre.
+def test_belt_arms_the_pool_ceiling_before_the_pool_load(monkeypatch, capsys):
+    """#23090 + #25449 : une echeance est publiee quand `fetch_pool` s'ouvre.
 
-    Mesure fondatrice (po-2025, clone superficiel) : `--belt --lane` lance en
-    debut de cycle n'a rien rendu dans les 900 s de son propre budget, puis
-    plus de 40 min. Le diagnostic de l'issue est exact -- `_BELT_DEADLINE`
-    etait arme dans la branche `--belt`, donc apres le chargement du pool, et
-    les phases d'amont couraient sans aucune borne.
+    #23090 : le mur doit etre arme AVANT le chargement du pool, sinon les
+    phases d'amont courent sans aucune borne. Mesure fondatrice
+    (po-2025, clone superficiel) : `--belt --lane` lance en debut de cycle
+    n'a rien rendu dans les 900 s de son propre budget, puis plus de 40 min.
 
-    Le predicat est l'INTERIEUR de `fetch_pool` : c'est la que la sonde doit
-    deja lire une echeance, et lire un timeout ramene au budget du run.
+    #25449 : cette echeance d'amont n'est PLUS le budget de boucle -- celui-ci
+    s'arme a l'entree de la boucle, sinon un pool lent le vide (defaut de
+    l'issue : 0 s restants, 70 candidats ecartes comme si un filtre l'avait
+    decide). L'echeance d'amont est le PLAFOND PROPRE du pool : la sonde
+    garde son timeout par defaut tant que ce plafond n'est pas atteint, et
+    le run reste borne (fail-CLOSED) quand il l'est.
     """
     _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
     clock = _patched_clock(monkeypatch, start=3000.0)
@@ -2716,11 +3261,13 @@ def test_belt_arms_the_run_wall_before_the_pool_load(monkeypatch, capsys):
         rc = pig.main(["--lane", "myia-po-2025:CoursIA", "--belt",
                        "--belt-time-budget", "60", "--json"])
         assert rc == 0
-        assert seen["deadline"] == pytest.approx(3060.0), (
+        assert seen["deadline"] == pytest.approx(
+            3000.0 + pig._belt_pool_ceiling()), (
             "le chargement du pool s'ouvre sans echeance publiee (#23090) : "
-            "le budget du run ne borne pas ses phases d'amont")
-        assert seen["clamped"] == pytest.approx(60.0), (
-            "la sonde de pool garde son timeout par defaut malgre un budget")
+            "le plafond du pool ne borne pas ses phases d'amont")
+        assert seen["clamped"] == pytest.approx(90.0), (
+            "la sonde de pool est affamee par le budget de boucle (#25449) : "
+            "c'est le plafond PROPRE du pool qui doit la borner")
         assert pig._BELT_DEADLINE[0] is None, "l'echeance fuit apres le run"
     finally:
         pig._BELT_DEADLINE[0] = None
@@ -2895,6 +3442,9 @@ def test_main_runs_the_repair_phase_inside_its_own_deadline(monkeypatch):
 
     monkeypatch.setattr(pig, "red_backlog", fake_red_backlog)
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **kw: ([], None))
+    # #21067 tranche 1 : la charge en vol compte aussi les PRs ouvertes
+    # (surface reseau comme le reste -- cf _patch_belt_network).
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: [])
     monkeypatch.setattr(pig.gh_identity, "pin_gh_token", lambda: None)
     pig._BELT_DEADLINE[0] = None
     previous_budget = nits.NITS_PASS_BUDGET_S
@@ -3133,3 +3683,502 @@ def test_belt_disarms_on_the_report_exit(monkeypatch):
             "l'echeance fuit apres la sortie --report (#23340 point 1)")
     finally:
         pig._BELT_DEADLINE[0] = None
+
+
+# --- #24461 : le LABEL `candidate-delivered` exclu A LA LECTURE de la liste --
+#
+# Le label est DEJA dans le payload du pool (une seule requete
+# `gh issue list --json labels` pour tout le pool). L'exclure ici ne coute
+# donc AUCUNE sonde par issue, la ou la sonde de livraison en coute une et
+# sature -- et quand le budget ou le mur de temps est atteint, elle rend
+# fail-OPEN et l'issue est servie comme un grain neuf (mesure #24461 : 37
+# des 120 grains servis portaient un marqueur vivant).
+#
+# L'exclusion vise les lanes HORS `DELIVERED_URN_LANES` (#15069) : l'urne
+# `delivered` et la lecture du label sont reservees au coordinateur et a
+# l'adjoint, qui decident de la fermeture.
+
+
+def _labelled_delivered_pool():
+    pool = [_make_item(80, age_days=10, idle=1, klass="grain"),
+            _make_item(81, age_days=10, idle=1, klass="grain")]
+    pool[0]["labels"].append("candidate-delivered")
+    return pool
+
+
+def test_belt_filter_exclut_le_label_pour_une_lane_worker():
+    args = _FakeArgs()
+    args.lane = "myia-po-2023:CoursIA"
+    args.include_delivered = False
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    assert [it["number"] for it in kept] == [81]
+    assert [it["number"] for it, _ in drops] == [80]
+    assert "LIVRAISON" in drops[0][1]
+
+
+def test_belt_filter_conserve_le_label_pour_une_lane_habilitee():
+    args = _FakeArgs()
+    args.lane = "myia-ai-01:CoursIA"
+    args.include_delivered = False
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    assert [it["number"] for it in kept] == [80, 81]
+    assert drops == []
+
+
+def test_include_delivered_leve_l_exclusion_par_label():
+    """L'echappatoire nommee reste l'echappatoire : `--include-delivered`
+    leve l'exclusion comme il leve les exclusions par sonde."""
+    args = _FakeArgs()
+    args.lane = "myia-po-2023:CoursIA"
+    args.include_delivered = True
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    assert [it["number"] for it in kept] == [80, 81]
+    assert drops == []
+
+
+def test_l_exclusion_par_label_ne_coute_aucune_sonde():
+    """L'exclusion est LUE dans le payload : elle ne passe pas par la sonde
+    de livraison, donc elle ne peut pas s'eteindre sur un budget epuise."""
+    args = _FakeArgs()
+    args.lane = "myia-po-2023:CoursIA"
+    args.include_delivered = False
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    # l'item ecarte est rendu dans les drops : une exclusion invisible est
+    # un silence, et un silence se lit comme une absence.
+    assert len(drops) == 1
+    assert kept[0]["number"] == 81
+
+
+# --- #24461 (c) point 4 : le MOTIF d'ecartement est NOMME dans le tapis ---
+#
+# Le correctif initial nommait le motif dans les causes du chemin PONDERE
+# (`conflicts.append`), pas dans celles du TAPIS (`belt_withheld.append`) :
+# le tapis ecarte dans une autre famille de sites, et `delivery_motifs`
+# rendait deux listes VIDES alors que le tapis ecarte reellement des issues
+# pour ces deux motifs. Ces tests_branchent le chemin du tapis.
+
+def test_belt_nomme_le_motif_du_dossier_vivant(monkeypatch):
+    """Le filtre recent du tapis nomme le motif du dossier VIVANT."""
+    marked = _make_item(7742, age_days=90, idle=9, last=None)
+    clean = _make_item(19008, age_days=40, idle=4, last=None)
+    motif = ("dossier `[CLOSURE PREFLIGHT]` VIVANT (verdict KEEP) : la "
+             "cloture est en cours, l'issue n'est pas un grain de production.")
+    monkeypatch.setattr(pig, "_delivery_motif", lambda n: motif)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [marked, clean], _free_claims([marked, clean]),
+        _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: n == 7742)
+    assert [p["number"] for p in picks] == [19008]
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert causes[7742].startswith("LIVRAISON (recent)")
+    assert pig.delivery_grammar.MOTIF_SUFFIX + motif in causes[7742]
+    assert pig.delivery_grammar.motif_class(causes[7742]) == "living_dossier"
+
+
+def test_belt_nomme_le_motif_de_la_livraison_epic_wide(monkeypatch):
+    """La sonde pleine du tapis nomme le motif de la livraison ENTIERE."""
+    marked = _make_item(16048, age_days=99, idle=9, last=None)
+    clean = _make_item(19009, age_days=41, idle=4, last=None)
+    motif = ("livraison epic-wide : un `[DELIVERED]` sans clause `paths:` "
+             "livre l'issue ENTIERE.")
+    monkeypatch.setattr(pig, "_delivery_motif", lambda n: motif)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [marked, clean], _free_claims([marked, clean]),
+        _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: n == 16048,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False)
+    assert [p["number"] for p in picks] == [19009]
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert 16048 in causes
+    assert pig.delivery_grammar.MOTIF_SUFFIX + motif in causes[16048]
+    assert pig.delivery_grammar.motif_class(causes[16048]) == "epic_wide"
+
+
+def test_belt_sans_motif_ne_fabrique_pas_de_motif(monkeypatch):
+    """Pas d'instantane -> pas de motif : la cause reste generique.
+
+    fail-OPEN : un motif fabrique serait pire qu'un motif absent.
+    """
+    marked = _make_item(7743, age_days=91, idle=9, last=None)
+    clean = _make_item(19010, age_days=42, idle=4, last=None)
+    monkeypatch.setattr(pig, "_delivery_motif", lambda n: None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [marked, clean], _free_claims([marked, clean]),
+        _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: n == 7743)
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert "motif" not in causes[7743]
+    assert pig.delivery_grammar.motif_class(causes[7743]) is None
+
+
+def test_belt_deadline_keeps_the_marker_filter_when_the_read_is_local(monkeypatch):
+    """Le mur de temps arrete le RESEAU ; il n'a aucune raison d'arreter une
+    lecture deja en memoire.
+
+    Defaut mesure le 2026-11-03 (draw `32e6c570269a`, lane
+    `myia-po-2027:CoursIA`) : les deux filtres de marqueur (recent, conteneur)
+    etaient sautes des que `expired()` rendait vrai, alors que l'instantane
+    de la passe avait deja lu les commentaires de la fenetre (36 stamps sur
+    36 servis sans une seule requete). Le tapis a servi 4 candidats sur 4
+    portant chacun un marqueur de livraison dans leur dernier commentaire, et
+    la lane recevait « ACTION REQUISE : poser [CLAIMED] sur #19694 » pour une
+    issue livree depuis le 20/10.
+
+    Ici `30201` a ses commentaires en memoire et porte un marqueur : il doit
+    etre ECARTE malgre l'echeance. `30202` n'a pas d'entree locale : sa sonde
+    reste sautee (comportement d'avant, fail-OPEN rapporte).
+    """
+    _patched_clock(monkeypatch)
+    local = _make_item(30201, age_days=100, idle=9, last=None)
+    remote = _make_item(30202, age_days=99, idle=9, last=None)
+    monkeypatch.setattr(
+        pig, "_snapshot_comments",
+        lambda n: ([{"body": "[INFO] candidate-delivered -- lane x",
+                     "createdAt": "2026-11-03T10:00:00Z"}]
+                   if n == 30201 else None))
+    calls = []
+
+    def marker(n):
+        calls.append(n)
+        return n == 30201
+
+    # Les verdicts de claim sont fournis (fenetre de claims du tirage) :
+    # l'etage des claims est alors saute, et c'est le FILTRE DE MARQUEUR
+    # qui est sous test -- celui que #24505 veut voir applique apres
+    # l'echeance.
+    claims = {it["number"]: (pig.CLAIM_CODE_FREE, "libre")
+              for it in (local, remote)}
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [local, remote], claims, _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=marker,
+        time_budget_s=0.0)
+
+    assert calls == [30201], (
+        "seul un candidat dont la lecture est LOCALE est filtre apres le mur")
+    # #22983 -- fail-CLOSED : le candidat dont la lecture n'est pas locale
+    # (30202) n'est PAS servi -- il est ecarte, avec la raison nommee. Le
+    # candidat dont la lecture est locale (30201) reste filtre comme avant :
+    # c'est la garantie de #24505, elle n'est pas touchee.
+    assert [p["number"] for p in picks] == []
+    assert [w[0]["number"] for w in withheld] == [30201, 30202]
+    assert "LIVRAISON (recent)" in withheld[0][1]
+    assert "mur de temps atteint" in withheld[1][1]
+    assert state["time_budget_hit"] is True
+
+
+def test_belt_deadline_still_skips_the_marker_filter_without_local_read(monkeypatch):
+    """Controle negatif : sans instantane, le filtre coute une requete et
+    reste soumis au mur. Le correctif ne rallume pas le reseau apres
+    l'echeance."""
+    _patched_clock(monkeypatch)
+    a = _make_item(30211, age_days=100, idle=9, last=None)
+    b = _make_item(30212, age_days=99, idle=9, last=None)
+    monkeypatch.setattr(pig, "_snapshot_comments", lambda n: None)
+    calls = []
+
+    claims = {it["number"]: (pig.CLAIM_CODE_FREE, "libre") for it in (a, b)}
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [a, b], claims, _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=lambda n: calls.append(n) or True,
+        time_budget_s=0.0)
+
+    assert calls == [], "aucune sonde de marqueur ne part apres le mur"
+    # #22983 -- fail-CLOSED : sans lecture locale, la sonde est sautee ET
+    # le candidat est ecarte -- il n'est pas servi sur une lecture faite.
+    assert [p["number"] for p in picks] == []
+    assert [w[0]["number"] for w in withheld] == [30211, 30212]
+    assert all("mur de temps atteint" in w[1] for w in withheld)
+
+
+# Corps reel d'un dossier de cloture CLOSE (grammaire canonique de
+# `check_closure_dossier.py` -- meme fixture que test_pick_closure_reopened).
+DOSSIER_CLOSE_24505 = """[CLOSURE PREFLIGHT]
+schema: 1
+lane: myia-po-2025:CoursIA
+issue: 40003
+verdict: CLOSE
+acceptance:
+  - "criteres confrontes a main avec preuve citee"
+residue: none
+open-prs: 0
+comments-reviewed: 3
+[/CLOSURE PREFLIGHT]"""
+
+
+def test_belt_deadline_skips_the_marker_filter_on_closure_dossier(monkeypatch):
+    """Reserve review #24505, reproduite par execution : un dossier de
+    cloture en dernier commentaire rallume le RESEAU meme apres le mur.
+
+    Le corps CLOSE declenche dans `has_recent_delivery_marker` la regle de
+    reouverture (#24250) -> `_reopen_events` -> une requete REST du timeline.
+    Le predicat `marker_read_is_local` d'avant la correction repondait
+    « True » des que l'instantane existait : le filtre de marqueur passait,
+    et la requete timeline partait au-dela de l'echeance (reproduit par
+    Hermes sur un dossier CLOSE valide ET sur l'annonce en prose : appels
+    `gh api --paginate ... issues/<N>/timeline` malgre le mur).
+
+    Apres correction, les deux classes dans le meme tirage : le porteur du
+    dossier n'est PAS sonde (lecture non locale -> filtre saute, fail-OPEN
+    historique, silence rapporte) ; le porteur d'un marqueur ordinaire reste
+    filtre comme avant le mur -- le correctif ne dessert pas la classe que
+    la mesure fondatrice (#21436) couvrait."""
+    _patched_clock(monkeypatch)
+    dossier = _make_item(30301, age_days=100, idle=9, last=None)
+    ordinary = _make_item(30302, age_days=99, idle=9, last=None)
+    bodies = {
+        30301: [{"body": DOSSIER_CLOSE_24505,
+                 "createdAt": "2026-11-03T10:00:00Z"}],
+        30302: [{"body": "[INFO] candidate-delivered -- lane x",
+                 "createdAt": "2026-11-03T10:00:00Z"}],
+    }
+    monkeypatch.setattr(pig, "_snapshot_comments", lambda n: bodies.get(n))
+    calls = []
+
+    def marker(n):
+        calls.append(n)
+        return True
+
+    claims = {it["number"]: (pig.CLAIM_CODE_FREE, "libre")
+              for it in (dossier, ordinary)}
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [dossier, ordinary], claims, _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=marker,
+        time_budget_s=0.0)
+
+    assert calls == [30302], (
+        "seul le marqueur ordinaire (lecture locale) est sonde apres le mur ; "
+        "le dossier CLOSE ne doit pas y rattacher une requete timeline")
+    # #22983 -- fail-CLOSED : le porteur du dossier n'est plus servi (le
+    # filtre est saute, mais le candidat est ecarte : rien n'a ete lu).
+    # La garantie de #24505 -- aucune requete timeline apres le mur -- est
+    # intacte : `calls` ne porte que le marqueur ordinaire.
+    assert [p["number"] for p in picks] == []
+    assert [w[0]["number"] for w in withheld] == [30301, 30302]
+    assert "mur de temps atteint" in withheld[0][1]
+    assert "LIVRAISON (recent)" in withheld[1][1]
+    assert state["time_budget_hit"] is True
+
+
+def test_belt_deadline_skips_marker_filter_on_prose_close_announcement(
+        monkeypatch):
+    """Meme reserve #24505, seconde classe reproduite par Hermes : l'annonce
+    de fermeture EN PROSE (« Fermeture sur dossier ... verdict CLOSE »)-
+    declenche la meme regle de reouverture qu'un dossier qui parse. Le
+    predicat doit la traiter pareil : lecture non locale -> filtre saute
+    apres le mur, aucune sonde."""
+    _patched_clock(monkeypatch)
+    annonce = _make_item(30311, age_days=100, idle=9, last=None)
+    body = ("Fermeture sur dossier `[CLOSURE PREFLIGHT]` (verdict CLOSE, "
+            "gate `check_closure_dossier.py` rc=0, commentaire ci-dessus).")
+    monkeypatch.setattr(
+        pig, "_snapshot_comments",
+        lambda n: ([{"body": body, "createdAt": "2026-11-03T10:00:00Z"}]
+                   if n == 30311 else None))
+    calls = []
+
+    claims = {annonce["number"]: (pig.CLAIM_CODE_FREE, "libre")}
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [annonce], claims, _belt_args(grains=1), probe_budget=4,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=lambda n: calls.append(n) or True,
+        time_budget_s=0.0)
+
+    assert calls == [], (
+        "l'annonce en prose ne doit pas rattacher une sonde apres le mur")
+    # #22983 -- fail-CLOSED : le candidat est ecarte, pas servi.
+    assert [p["number"] for p in picks] == []
+    assert [w[0]["number"] for w in withheld] == [30311]
+    assert "mur de temps atteint" in withheld[0][1]
+    assert state["time_budget_hit"] is True
+
+
+def test_un_RELEASED_de_queue_ne_masque_plus_le_DELIVERED_quil_suit(monkeypatch):
+    """#24590 -- la position du dernier commentaire n'est pas un etat.
+
+    Le `[DELIVERED]` est bien dans le fil, suivi d'un `[RELEASED]` de la meme
+    lane sur une barriere. Lire `comments[-1]` rendait « pas de marqueur » :
+    l'item repartait en tete du tapis comme s'il n'avait jamais ete rendu.
+    """
+    delivered = {"body": "[INFO] candidate-delivered -- livree, PR #24000",
+                 "createdAt": "2026-11-04T08:00:00Z"}
+    released = {"body": "[RELEASED] lane myia-po-2024:CoursIA -- barriere reelle",
+                "createdAt": "2026-11-04T09:00:00Z"}
+    monkeypatch.setattr(pig, "_issue_comments", lambda n: ([delivered, released], ""))
+    monkeypatch.setattr(pig, "_issue_body", lambda n: "")
+    assert pig.has_recent_delivery_marker(24590) is True
+
+
+def test_un_fil_sans_marqueur_reste_servable_malgre_les_RELEASED(monkeypatch):
+    """Controle negatif du saut : un fil qui ne porte QUE des `[RELEASED]` ne
+    declare aucune cloture -- le saut ne doit pas fabriquer un marqueur."""
+    released = {"body": "[RELEASED] lane myia-po-2024:CoursIA -- barriere reelle",
+                "createdAt": "2026-11-04T09:00:00Z"}
+    monkeypatch.setattr(pig, "_issue_comments", lambda n: ([released], ""))
+    monkeypatch.setattr(pig, "_issue_body", lambda n: "")
+    assert pig.has_recent_delivery_marker(24590) is False
+
+
+def test_un_RELEASED_qui_porte_un_marqueur_plus_bas_nest_pas_saute(monkeypatch):
+    """Le saut porte sur l'en-tete SEUL : un corps qui commence par
+    `[RELEASED]` et porte plus bas un marqueur d'etat EST un evenement, et le
+    sauter rendrait cette declaration invisible."""
+    mixed = {"body": ("[RELEASED] lane myia-po-2024:CoursIA\n\n"
+                      "[INFO] candidate-delivered -- livree, PR #24000"),
+             "createdAt": "2026-11-04T09:00:00Z"}
+    monkeypatch.setattr(pig, "_issue_comments", lambda n: ([mixed], ""))
+    monkeypatch.setattr(pig, "_issue_body", lambda n: "")
+    assert pig.has_recent_delivery_marker(24590) is True
+
+
+def test_belt_json_withheld_complete_reflects_probe_ceilings(
+        monkeypatch, capsys):
+    """#16589 (releve po-2025 du 2026-11-03) : quand un plafond a coupe la
+    sonde (budget de sondes OU mur de temps), `delivered_signal.withheld`
+    est une borne inferieure -- la cle `withheld_complete` le dit, sinon un
+    `[]` se lit « rien a signaler » alors que la fin d'urne n'a pas ete
+    verifiee."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    pool = [_make_item(19155, age_days=50, idle=5, last=None)]
+    monkeypatch.setattr(pig, "fetch_pool", lambda **k: (list(pool), None))
+    monkeypatch.setattr(pig, "fetch_latest_claim_stamps_bulk",
+                        lambda *a, **k: ({}, None))
+    monkeypatch.setattr(pig, "has_delivered_signal", lambda n, lane=None: False)
+    monkeypatch.setattr(pig, "merged_pr_signal", lambda n, lane=None: False)
+    monkeypatch.setattr(pig, "has_recent_delivery_marker", lambda n: False)
+
+    def fake_belt_pick(belt_pool, belt_claims, a, probe_budget, *rest, **kw):
+        item = dict(pool[0])
+        item.update({"klass": "grain", "genre": "guard", "weight": 1.0,
+                     "visits": 0, "visits_long": 0})
+        state = {"budget_hit": True, "time_budget_hit": True,
+                 "failures": [], "cover_failures": [], "claim_unread": [],
+                 "gpu_target_unresolved": [], "recent_filtered": 0}
+        return [item], [], state
+
+    monkeypatch.setattr(pig, "belt_pick_with_replacements", fake_belt_pick)
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    sig = payload["delivered_signal"]
+    assert sig["budget_hit"] is True
+    assert sig["time_budget_hit"] is True
+    assert sig["withheld_complete"] is False, (
+        "un plafond coupe : withheld est une borne inferieure, la cle doit "
+        "dire INCOMPLET, pas laisser un [] se lire « propre »")
+
+    # Sans plafond coupe : la liste est complete, la cle le dit.
+    def fake_belt_pick_clean(belt_pool, belt_claims, a, probe_budget,
+                             *rest, **kw):
+        item = dict(pool[0])
+        item.update({"klass": "grain", "genre": "guard", "weight": 1.0,
+                     "visits": 0, "visits_long": 0})
+        state = {"budget_hit": False, "time_budget_hit": False,
+                 "failures": [], "cover_failures": [], "claim_unread": [],
+                 "gpu_target_unresolved": [], "recent_filtered": 0}
+        return [item], [], state
+
+    monkeypatch.setattr(pig, "belt_pick_with_replacements",
+                        fake_belt_pick_clean)
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["delivered_signal"]["withheld_complete"] is True
+
+
+def test_le_refus_strict_est_par_numero_et_non_par_fenetre(monkeypatch, capsys):
+    """#22983 (v3) : le fail-CLOSED STRICT refuse le NUMERO perime, pas la
+    FENETRE entiere.
+
+    Mesure fondatrice (09/11, run c3010 de cette lane, sur `main` a jour) :
+    le tapis a rendu sur stderr
+
+        [22983] voie en processus indisponible : instantane STRICT ne sert
+        pas les numeros (manquants: - ; perimes: 20188, 18258, 23175, 7423,
+        11556, 20387, 19341, 23310, 14318, 16886, 13737) ; echecs quota
+        REST < 1 h : 0
+        [t=235.14s] belt pick_with_replacements fait: 0 retenu(s), 70 witheld
+
+    Onze numeros perimes sur 70 -- et **les 59 autres ont ete refuses
+    eux aussi** : « 0 retenu(s), 70 witheld », « picks : 0 ». Le message ne
+    nomme que les 11, mais le refus portait sur la fenetre entiere.
+
+    La lecture du code nomme la mecanique : `gh_snapshot.serves()` est une
+    validite **par issue** (un stamp frais par issue, ET les commentaires
+    de cette issue), mais l'appelant l'appliquait a la fenetre entiere --
+    un seul numero perime faisait echouer `serves()` pour les 70, et la
+    voie STRICT rendait alors `BLOCKED` pour les 70 : aucun grain servi,
+    le tapis fail-CLOSED sur une fenetre dont 59 numeros etait lisibles.
+
+    Ce temoin est le temoin INVERSE : les deux numeros frais sont
+    **servis**, et le numero perime est refuse **avec son motif**.
+
+    Ce que ce temoin NE dit pas : que la porte
+    `MAX_SWEEP_LOOKBACK_SECONDS` serait en cause. Elle ecarte le
+    **balayage**, elle ne refuse rien -- temoin jumeau dans
+    `test_gh_snapshot_sweep_22983.py`
+    (`test_le_stamp_extreme_ferme_le_balayage_mais_laisse_la_fenetre_servable`).
+    """
+    clc = pig._claim_reader_module()
+    # L'instantane du LECTEUR est un global du module : on le pose pour que
+    # le teardown le restaure (monkeypatch restaure la valeur qu'il a
+    # relevee, pas celle que le code a ensuite ecrite).
+    monkeypatch.setattr(clc, "_SNAPSHOT", None)
+    # La jambe IMPLICIT (#14300) partirait sur `gh pr list` : elle est
+    # neutralisee ici -- ce temoin mesure le refus STRICT, pas les PRs
+    # ouvertes qui referencent l'issue.
+    monkeypatch.setattr(clc, "_find_open_prs_referencing_issue",
+                        lambda number, my_lane, prs=None, threshold=None: [])
+
+    snapshot = _mini_snapshot([11, 12, 13])
+    # 12 est perime (2 h > le TTL de 30 min) ; 11 et 13 sont frais.
+    snapshot["meta"]["comment_stamps"]["12"] = time.time() - 2 * 3600
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", snapshot)
+
+    verdicts = pig.check_claims([11, 12, 13], "myia-ai-01:CoursIA-2",
+                                strict_snapshot=True)
+
+    err = capsys.readouterr().err
+    assert "[22983] refus STRICT par numero" in err, (
+        f"le refus doit NOMMER sa cause sur stderr (got: {err!r})")
+    perimes = re.search(r"perimes: ([^)]*)", err)
+    assert perimes is not None, f"la cause doit nommer les perimes ({err!r})"
+    assert perimes.group(1).strip() == "12", (
+        f"seul le numero perime doit etre nomme ({perimes.group(1)!r})")
+
+    # Les deux numeros frais sont SERVIS : le refus ne les concerne pas.
+    for numero in (11, 13):
+        code, _human = verdicts[numero]
+        assert code in (pig.CLAIM_CODE_FREE, pig.CLAIM_CODE_FREE_STALE), (
+            f"le numero frais {numero} doit etre servi (verdict: "
+            f"{verdicts[numero]!r})")
+
+    # Le numero perime est refuse, ET son refus porte son MOTIF : un refus
+    # muet serait indistinguable d'une panne de fenetre.
+    code, human = verdicts[12]
+    assert code == pig.CLAIM_CODE_BLOCKED, verdicts[12]
+    assert "perime" in human, f"le refus doit porter son motif ({human!r})"
+    assert "#12" in human, f"le motif doit nommer le numero ({human!r})"

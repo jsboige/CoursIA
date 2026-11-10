@@ -79,8 +79,19 @@ def test_le_census_ignore_un_workflow_sans_declencheur_edited(rows):
 @pytest.mark.parametrize(
     "workflow",
     [
-        ".github/workflows/lean-knot.yml",
-        ".github/workflows/lean-conway.yml",
+        # lean-knot.yml : retire de la liste a sa migration matricielle
+        # (#13751) -- le wrapper est supprime, et c'est lean-ci-matrix.yml
+        # qui porte desormais le declencheur `edited` du lake. Idem
+        # lean-conway.yml, DERNIER wrapper autonome, supprime a la migration
+        # matricielle de conway_lean (#25256) : le garant `edited` migre ici
+        # sur le dispatcher lui-meme. Plus fort que le precedent knot (dont
+        # le pin "matriciel" de test_axiom_matrix_wiring.py couvre les
+        # `paths` mais PAS la liste `types`) : le dispatcher est filtre par
+        # `paths:` -- le defaut #15652 (retarget d'une PR empilee change la
+        # base-relative du filtre) lui applique EXACTEMENT, et un retrait
+        # de `edited` de sa liste `types` serait une regression CI Lean
+        # silencieuse sur TOUT le manifeste, pas sur un lake.
+        ".github/workflows/lean-ci-matrix.yml",
     ],
 )
 def test_les_wrappers_lean_continuent_d_ecouter_edited(rows, workflow):

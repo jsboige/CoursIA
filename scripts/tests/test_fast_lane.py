@@ -157,10 +157,37 @@ def test_le_garde_live_read_declenche_sur_la_seule_source_lue():
     propres fichiers : la revision #21899, qui reecrivait `Pillars.lean`
     sans toucher un carnet, ne declenchait rien.
     """
-    sources = [cell["source"] for cell in _live_read_cells()]
+    sources = [cell["source"] for cell in _live_read_cells()
+               if cell.get("source_kind", "repo") != "external"]
     assert sources, "registre live-read vide : l'invariant ne serait pas epingle"
     for source in sources:
         assert fast_lane.guard_applies(LIVE_READ_GUARD, [source]), source
+
+
+def test_une_source_externe_declenche_le_garde_sur_le_carnet(tmp_path):
+    """Une lecture EXTERNE (clone Lake amont epingle) n'a pas de fichier a
+    surveiller dans le depot : le declencheur est le CARNET, ou vit la sortie
+    commitee. Declarer le chemin amont comme declencheur rendrait le garde
+    eteint en silence sur ce carnet (#23499)."""
+    registre = tmp_path / "registre.json"
+    registre.write_text(json.dumps({"version": 1, "cells": [
+        {"notebook": "MyIA.AI.Notebooks/Serie/Carnet.ipynb", "cell_id": "abc",
+         "source": "DifferentialGeometry/Topology/ThreeManifold/Poincare.lean",
+         "source_kind": "external", "pin": "amont@v0.1.3", "sha256": "a" * 64}]}),
+        encoding="utf-8")
+    assert live_read_source_paths(registre) == [
+        "MyIA.AI.Notebooks/Serie/Carnet.ipynb"]
+
+
+def test_une_entree_externe_sans_notebook_echoue_ferme(tmp_path):
+    """Fail-closed : une entree externe sans carnet ne peut pas dire ce que le
+    garde doit surveiller -- elle leve plutot que de rendre le garde muet."""
+    registre = tmp_path / "registre.json"
+    registre.write_text(json.dumps({"version": 1, "cells": [
+        {"cell_id": "abc", "source": "amont/Poincare.lean",
+         "source_kind": "external"}]}), encoding="utf-8")
+    with pytest.raises(RuntimeError):
+        live_read_source_paths(registre)
 
 
 def test_controle_positif_le_controle_negatif_un_lean_voisin_non_declare():
@@ -170,14 +197,14 @@ def test_controle_positif_le_controle_negatif_un_lean_voisin_non_declare():
     sources declarees : le test reste valide si le registre evolue.
     """
     declares = {cell["source"] for cell in _live_read_cells()}
-    dossier = REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life"
+    dossier = REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life"
     voisins = sorted(
         p.relative_to(REPO_ROOT).as_posix()
         for p in dossier.glob("*.lean")
         if p.relative_to(REPO_ROOT).as_posix() not in declares
     )
     assert voisins, "aucun .lean voisin non declare : le controle negatif serait vide"
-    assert fast_lane.guard_applies(LIVE_READ_GUARD, ["MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Pillars.lean"])
+    assert fast_lane.guard_applies(LIVE_READ_GUARD, ["MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Pillars.lean"])
     assert not fast_lane.guard_applies(LIVE_READ_GUARD, [voisins[0]])
 
 
@@ -1833,12 +1860,10 @@ def test_check_hr_substitution_gh_failure_exits_two(monkeypatch):
     )
 
 
-def test_tranche22_markdown_schema_advisory_guard_is_wired():
-    """Tranche 22 = schema des cellules markdown (#20167), advisory. Contrat :
-    native, absorbe, non bloquant (calibration avant bascule), iteration par
-    carnet modifie. Le detecteur DOIT tirer sur un carnet fautif et rester
-    muet sur un carnet propre : un organe qui ne dit jamais rien est
-    indiscernable d'un organe debranche (lecon #11685).
+def test_tranche22_markdown_schema_ratchet_guard_is_wired():
+    """Tranche 22 = ratchet de schema des cellules markdown (#24090).
+    Contrat : native, absorbe, bloquant et compare chaque carnet modifie a sa
+    version sur la base PR; les dettes preexistantes restent tolerées.
     """
     import json
     import tempfile
@@ -1847,15 +1872,14 @@ def test_tranche22_markdown_schema_advisory_guard_is_wired():
     guard = TRANCHE22[0]
     assert guard.source == FAST_LANE_NATIVE
     assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
-    assert not guard.blocking, (
-        f"{guard.name} est advisory : bascule en bloquant seulement quand main "
-        f"ne porte plus aucune cellule markdown fautive"
-    )
+    assert guard.blocking, f"{guard.name} doit bloquer toute hausse de la classe cible"
     assert guard.iterates_paths and "{changed_paths}" in guard.argv
-    assert "--check" in guard.argv
+    assert "--base-ref" in guard.argv and "{base_ref}" in guard.argv
     assert "MyIA.AI.Notebooks/**/*.ipynb" in guard.iterate_paths
     for needle in (
         "scripts/notebook_tools/fix_markdown_cell_schema.py",
+        "scripts/notebook_tools/check_markdown_cell_schema_ratchet.py",
+        "scripts/notebook_tools/tests/test_check_markdown_cell_schema_ratchet.py",
         "scripts/notebook_tools/tests/test_fix_markdown_cell_schema.py",
         "scripts/ci/fast_lane_registry.py",
     ):
@@ -1945,12 +1969,16 @@ def test_tranche25_added_axioms_cliquet_guard_is_wired():
     )
 
 
-def test_tranche25_cliquet_detector_tire_sur_une_ancre_nommee_et_rie_tient_sur_un_example(tmp_path):
-    """Controle de bout en bout du detecteur **via sa CLI**, dans les deux
-    sens : une ancre `native_decide` ajoutee dans un `theorem` nomme doit
-    faire sortir rc=1 (rouge), une ancre dans un `example` rc=0 (vert --
-    la pile #18706 ne doit pas rougir), et une base qui ne resout pas rc=2
-    (incident d'entree, fail-closed)."""
+def test_tranche25_cliquet_detector_rougit_toute_ancre_non_declaree_meme_en_example(tmp_path):
+    """Controle de bout en bout du detecteur **via sa CLI**, dans les quatre
+    sens du cliquet declaratif #21387 : une ancre `native_decide` ajoutee
+    dans un `theorem` nomme NON declaree fait sortir rc=1 (rouge), une ancre
+    dans un `example` NON declaree rougit AUSSI (residu #21387 : check_axioms
+    est aveugle aux examples par construction, le rouge declaratif est la
+    seule gate qui les voit), la MEME ancre declaree par une ligne
+    [LEAN-ANCHOR-DECLARED] du corps passe rc=0 (le jugement du motif reste
+    au reviewer), et une base qui ne resout pas rc=2 (incident d'entree,
+    fail-closed)."""
     repo = tmp_path / "repo"
     repo.mkdir()
 
@@ -1971,13 +1999,20 @@ def test_tranche25_cliquet_detector_tire_sur_une_ancre_nommee_et_rie_tient_sur_u
     detector = (Path(__file__).resolve().parents[2] / "scripts" / "lean"
                 / "check_added_axioms_cliquet.py")
 
-    def _run(base):
+    def _run(base, declared=None):
+        cmd = ["python", str(detector), "--base", base, "--head", "HEAD"]
+        if declared is not None:
+            body_path = repo / "body.md"
+            body_path.write_text(
+                chr(10).join(
+                    "[LEAN-ANCHOR-DECLARED] " + d for d in declared) + chr(10),
+                encoding="utf-8")
+            cmd += ["--body-file", str(body_path)]
         return subprocess.run(
-            ["python", str(detector), "--base", base, "--head", "HEAD"],
-            cwd=repo, capture_output=True, text=True, encoding="utf-8",
+            cmd, cwd=repo, capture_output=True, text=True, encoding="utf-8",
         ).returncode
 
-    # 1. ancre dans une declaration NOMMEE -> rc=1 (rouge)
+    # 1. ancre dans une declaration NOMMEE, non declaree -> rc=1 (rouge)
     (repo / "Base.lean").write_text(
         "theorem base_ok : True := by trivial" + chr(10)
         + "theoremAdded : True := by native_decide" + chr(10), encoding="utf-8")
@@ -1985,15 +2020,23 @@ def test_tranche25_cliquet_detector_tire_sur_une_ancre_nommee_et_rie_tient_sur_u
     _git("commit", "-q", "-m", "named anchor")
     assert _run("HEAD~1") == 1, "une ancre dans un theorem nomme doit rougir"
 
-    # 2. ancre dans un `example` -> rc=0 (vert) : la pile #18706 ne rougit pas
+    # 2. ancre dans un `example`, non declaree -> rc=1 : le residu #21387 --
+    # check_axioms ne voit pas les examples, le rouge declaratif est la
+    # seule gate qui les voit.
     (repo / "Base.lean").write_text(
         "theorem base_ok : True := by trivial" + chr(10)
         + "example : True := by native_decide" + chr(10), encoding="utf-8")
     _git("add", "-A")
     _git("commit", "-q", "-m", "example anchor")
-    assert _run("HEAD~1") == 0, "une ancre dans un example doit rester verte"
+    assert _run("HEAD~1") == 1, "une ancre dans un example doit rougir sans declaration"
 
-    # 3. base qui ne resout pas -> rc=2 (fail-closed, jamais un vert)
+    # 3. la MEME ancre, declaree dans le corps -> rc=0 : la declaration
+    # l'acquitte, le jugement du motif reste au reviewer.
+    assert _run(
+        "HEAD~1", declared=["Base.lean:example -- motif de test"]) == 0, (
+        "une ancre declaree par une ligne [LEAN-ANCHOR-DECLARED] doit passer")
+
+    # 4. base qui ne resout pas -> rc=2 (fail-closed, jamais un vert)
     assert _run("ref-qui-nexiste-pas") == 2, "une base non resolue doit sortir 2"
 
 
@@ -2171,6 +2214,11 @@ _TRANCHE33_PATHS = {
         "scripts/tests/test_check_stale_claims.py",
         "scripts/check_factual_mislabel.py",
         "scripts/tests/test_check_factual_mislabel.py",
+        # #23394 : le quatrieme detecteur frere vit dans le meme job, donc son
+        # propre code et ses tests elargissent le perimetre du garde -- epingle
+        # ici pour que l'elargissement reste confronte au declencheur.
+        "scripts/check_listing_coherence.py",
+        "scripts/tests/test_check_listing_coherence.py",
         ".github/workflows/markdown-claims-output-advisory.yml",
     ],
     "Organ-duplication advisory (non-blocking)": [
@@ -2206,6 +2254,35 @@ def test_tranche28_paths_are_reproduced_and_absorbed():
         assert guard.argv == [], (
             f"{guard.name} : le verdict est rendu par `commenters` ; un argv "
             "en plus produirait un second emetteur")
+
+
+def test_tranche39_cell_order_gate_est_absorbe_avec_sa_semantique():
+    """#22209 : le Cell-order gate (bloquant, >= 800 runs/7 j) rejoint la voie
+    rapide. La semantique de REGRESSION seule est portee par le detecteur
+    (--base-ref) ; le perimetre doit COUVRIR le declencheur retire (garde de
+    migration #12567 : sinon le garde cesse d'etre selectionne sur les
+    fichiers qu'il surveillait)."""
+    from fast_lane_registry import TRANCHE39
+
+    assert len(TRANCHE39) == 1, "la tranche 39 porte le seul Cell-order gate"
+    g = TRANCHE39[0]
+    assert g.absorbed, "le garde doit porter absorbed=True (blocage reel)"
+    assert g.blocking, "le gate source est bloquant : ne pas le bloquer changerait sa semantique"
+    assert g.needs_base, "le gate compare base vs tete : sans base, pas de regression mesurable"
+    assert g.iterates_paths, "le gate source boucle par carnet change"
+    assert g.iterate_paths == ["MyIA.AI.Notebooks/**/*.ipynb"], (
+        "l'iteration doit etre restreinte au glob d'actifs de la boucle "
+        "d'origine (le detecteur .py du declencheur ne doit pas y passer, #13220)")
+    assert "--base-ref" in g.argv and "{base_ref}" in g.argv
+    assert "{changed_paths}" in g.argv
+    for p in ("MyIA.AI.Notebooks/**/*.ipynb",
+              "scripts/notebook_tools/scan_cell_ordering.py",
+              "scripts/notebook_tools/cell_order_ci.py"):
+        assert p in g.paths, (
+            f"le declencheur retire couvrait {p} : Guard.paths doit le "
+            "reprendre, sinon le garde perd ces fichiers (garde #12567)")
+    assert any("test_scan_cell_ordering.py" in tok for tok in g.pre_argv), (
+        "pre_argv doit prouver que le scanner tire (lecon #11685/#12817)")
 
 
 def test_every_commenter_header_is_a_known_bot_sticky():
@@ -2258,47 +2335,164 @@ def _sticky_api(monkeypatch, comments, patch_rc=0):
     return calls
 
 
-def test_upsert_updates_an_existing_sticky_instead_of_posting(monkeypatch):
-    """Le cas d'une PR qui porte DEJA le sticky : PATCH, jamais un doublon."""
+class _FakeOrgan:
+    """Doublure de l'organe partage : enregistre les ecritures, ne parle pas."""
+
+    FORWARD_MARKER = "<!-- coursia:advisory-sticky:forwarded -->"
+
+    def __init__(self, upsert_exc=None):
+        self.upserts, self.clears = [], []
+        self._upsert_exc = upsert_exc
+
+    def upsert_section(self, organ, body, pr, repo, **kw):
+        self.upserts.append((organ, body, pr, repo))
+        if self._upsert_exc:
+            raise self._upsert_exc
+        return {"action": "created", "comment_id": 1, "verified": True}
+
+    def clear_section(self, organ, pr, repo, **kw):
+        self.clears.append((organ, pr, repo))
+        return {"action": "silent", "comment_id": None}
+
+
+def test_publish_advisory_section_upserts_the_signal(monkeypatch):
+    organ = _FakeOrgan()
+    monkeypatch.setattr(fast_lane, "advisory_sticky", organ)
+    action = fast_lane.publish_advisory_section(
+        "o/r", "7", "stale-claim-advisory", "corps du constat", False)
+    assert action == "created"
+    assert organ.upserts == [
+        ("stale-claim-advisory", "corps du constat", 7, "o/r")]
+    assert not organ.clears
+
+
+def test_publish_advisory_section_clears_on_green_without_creating(monkeypatch):
+    """#24514 : un corps vide ne cree RIEN et RETIRE la section d'un signal
+    passe -- le succes ne parle pas."""
+    organ = _FakeOrgan()
+    monkeypatch.setattr(fast_lane, "advisory_sticky", organ)
+    action = fast_lane.publish_advisory_section(
+        "o/r", "7", "claims-output-advisory", "", False)
+    assert action == "silent"
+    assert not organ.upserts, "le vert ne doit jamais creer de commentaire"
+    assert organ.clears == [("claims-output-advisory", 7, "o/r")]
+
+
+def test_publish_advisory_failure_is_cosmetic(monkeypatch):
+    """Une erreur d'API ne rougit pas le job : le verdict vit dans le
+    check-run nomme, le commentaire n'est qu'un resume (#24441)."""
+    organ = _FakeOrgan(upsert_exc=RuntimeError("quota epuise"))
+    monkeypatch.setattr(fast_lane, "advisory_sticky", organ)
+    assert fast_lane.publish_advisory_section(
+        "o/r", "7", "md-hierarchy-drift-advisory", "derive", False) == "error"
+
+
+def test_retire_legacy_sticky_rewrites_the_marocchino_comment(monkeypatch):
+    """Le sticky pose avant le branchement devient un RENVOI, jamais un
+    delete (#15372) -- et la forme de renvoi reste lisible par le dossier de
+    prevalidation."""
     header = "stale-claim-advisory"
     marker = fast_lane.sticky_marker(header)
     calls = _sticky_api(monkeypatch, [
         {"id": 11, "body": "un autre bot"},
-        {"id": 42, "body": "ancien corps\n\n" + marker},
+        {"id": 42, "body": "phrase de succes d'avant le branchement\n\n" + marker},
     ])
-    action = fast_lane.upsert_sticky_comment(
-        "o/r", "7", header, "nouveau corps", dry_run=False)
-    assert action == "updated"
+    assert fast_lane.retire_legacy_sticky("o/r", "7", header, False) == "retired"
     writes = [c for c in calls if not c["paginate"]]
-    assert len(writes) == 1, f"attendu une seule ecriture, vu {writes}"
-    assert "PATCH" in writes[0]["args"]
+    assert len(writes) == 1 and "PATCH" in writes[0]["args"], (
+        f"reecriture EN PLACE attendue, vu {writes}")
     assert "repos/o/r/issues/comments/42" in writes[0]["args"]
-    body = __import__("json").loads(writes[0]["stdin"])["body"]
-    assert body.startswith("nouveau corps")
-    assert body.rstrip().endswith(marker), "marqueur en FIN de corps"
+    body = json.loads(writes[0]["stdin"])["body"]
+    assert body.startswith(fast_lane.advisory_sticky.FORWARD_MARKER)
+    assert marker not in body, "le marqueur d'origine doit disparaitre du corps"
 
 
-def test_upsert_posts_when_the_pr_carries_no_sticky(monkeypatch):
-    calls = _sticky_api(monkeypatch, [{"id": 1, "body": "un autre bot"}])
-    action = fast_lane.upsert_sticky_comment(
-        "o/r", "7", "organ-duplication-advisory", "corps", dry_run=False)
-    assert action == "created"
-    writes = [c for c in calls if not c["paginate"]]
-    assert len(writes) == 1
-    assert "POST" in writes[0]["args"]
-    assert "repos/o/r/issues/7/comments" in writes[0]["args"]
+def test_retire_legacy_sticky_est_idempotent(monkeypatch):
+    """Un corps deja reecrit ne se termine plus par le marqueur : il n'est
+    ni retrouve ni re-ecrit."""
+    header = "organ-duplication-advisory"
+    tombstone = (fast_lane.advisory_sticky.FORWARD_MARKER
+                 + "\n\nrenevoi vers le commentaire unique.")
+    calls = _sticky_api(monkeypatch, [{"id": 42, "body": tombstone}])
+    assert fast_lane.retire_legacy_sticky("o/r", "7", header, False) == "noop"
+    assert not [c for c in calls if not c["paginate"]]
 
 
-def test_upsert_never_falls_back_to_post_when_patch_fails(monkeypatch):
-    """Un PATCH refuse ne doit pas fabriquer le doublon que l'upsert evite."""
-    header = "factual-mislabel-advisory"
-    calls = _sticky_api(
-        monkeypatch, [{"id": 5, "body": "x\n\n" + fast_lane.sticky_marker(header)}],
-        patch_rc=1)
-    action = fast_lane.upsert_sticky_comment("o/r", "7", header, "c", False)
-    assert action == "error"
-    writes = [c for c in calls if not c["paginate"]]
-    assert len(writes) == 1 and "POST" not in writes[0]["args"]
+def test_post_perime_le_legacy_apres_une_publication_reussie(monkeypatch):
+    from fast_lane_registry import TRANCHE33
+
+    guard = TRANCHE33[0]
+    ctx = {"repo": "o/r", "pr_number": "7", "merge_base": "",
+           "pr_body_file": "", "name_status_file": "", "base_sha": "abc",
+           "head_sha": "def", "base_ref": "origin/main"}
+    retired = []
+    monkeypatch.setattr(fast_lane, "run_argv",
+                        lambda a, c: (_ for _ in ()).throw(
+                            AssertionError("le detecteur ne doit pas tourner")))
+    monkeypatch.setattr(fast_lane, "publish_advisory_section",
+                        lambda *a: "created")
+    monkeypatch.setattr(fast_lane, "retire_legacy_sticky",
+                        lambda *a: retired.append(a) or "retired")
+    fast_lane.run_effects(guard, ctx, dry_run=False)
+    assert len(retired) == len(guard.commenters), (
+        "chaque emetteur perime son ancien support apres publication")
+
+
+def test_post_ne_perime_pas_le_legacy_si_la_publication_echoue(monkeypatch):
+    """Sans publication reussie, perimer l'ancien sticky effacerait le seul
+    endroit ou le signal vit encore."""
+    from fast_lane_registry import TRANCHE33
+
+    guard = TRANCHE33[0]
+    ctx = {"repo": "o/r", "pr_number": "7", "merge_base": "",
+           "pr_body_file": "", "name_status_file": "", "base_sha": "abc",
+           "head_sha": "def", "base_ref": "origin/main"}
+    retired = []
+    monkeypatch.setattr(fast_lane, "run_argv",
+                        lambda a, c: (_ for _ in ()).throw(
+                            AssertionError("le detecteur ne doit pas tourner")))
+    monkeypatch.setattr(fast_lane, "publish_advisory_section",
+                        lambda *a: "error")
+    monkeypatch.setattr(fast_lane, "retire_legacy_sticky",
+                        lambda *a: retired.append(a) or "retired")
+    fast_lane.run_effects(guard, ctx, dry_run=False)
+    assert not retired
+
+
+def test_les_corps_de_succes_sont_vides():
+    """#24514, critere 2 : le succes ne parle pas -- chaque builder rend une
+    chaine vide sur vert, et la phrase n'est recopiee NULLE PART."""
+    vert = {"merge_base": "abc", "trunc_note": ""}
+    assert fast_lane_registry._body_claims_output(0, "", dict(vert)) == ""
+    assert fast_lane_registry._body_stale_claim(0, "", dict(vert)) == ""
+    assert fast_lane_registry._body_factual_mislabel(0, "", dict(vert)) == ""
+    assert fast_lane_registry._body_listing_coherence(0, "{}", dict(vert)) == ""
+    assert fast_lane_registry._body_organ_duplication(0, "CLEAN", dict(vert)) == ""
+    assert fast_lane_registry._body_md_hierarchy(0, "", dict(vert)) == ""
+
+
+def test_les_signaux_non_verts_parlent_toujours():
+    """Abstention, panne d'usage, constat, exemption, vert PARTIEL : chacun
+    reste un signal et garde la parole."""
+    vert = {"merge_base": "abc", "trunc_note": ""}
+    cas = [
+        (fast_lane_registry._body_claims_output, 0, "", dict(vert, merge_base="")),
+        (fast_lane_registry._body_claims_output, 2, "", dict(vert)),
+        (fast_lane_registry._body_claims_output, 1, "", dict(vert)),
+        (fast_lane_registry._body_stale_claim, 1, "", dict(vert)),
+        (fast_lane_registry._body_factual_mislabel, 1, "", dict(vert)),
+        (fast_lane_registry._body_listing_coherence, 1, "{}", dict(vert)),
+        (fast_lane_registry._body_listing_coherence, 2, "{}", dict(vert)),
+        # Vert PARTIEL : les carnets non lus gardent la parole (#23394 r.1)
+        (fast_lane_registry._body_listing_coherence, 0, '{"non_lus": 2}', dict(vert)),
+        (fast_lane_registry._body_organ_duplication, 0, "EXEMPTED: copie declaree", dict(vert)),
+        (fast_lane_registry._body_organ_duplication, 0, "BLOCKED: x", dict(vert)),
+        (fast_lane_registry._body_organ_duplication, 0, "", dict(vert)),
+        (fast_lane_registry._body_md_hierarchy, 2, "", dict(vert, base_sha="deadbeef99")),
+    ]
+    for fn, rc, payload, ctx in cas:
+        corps = fn(rc, payload, dict(ctx))
+        assert corps, f"{fn.__name__}(rc={rc}) doit parler, rendu vide"
 
 
 def test_effect_guards_run_only_in_the_effects_job(monkeypatch):
@@ -2353,7 +2547,7 @@ def test_fatal_rc_rougit_le_job_meme_en_mode_ombre(monkeypatch):
            "pr_body_file": "", "name_status_file": "", "base_sha": "abc",
            "head_sha": "def", "base_ref": "origin/main"}
     monkeypatch.setattr(fast_lane, "run_argv", lambda a, c2: (1, "hdr\n\nboom"))
-    monkeypatch.setattr(fast_lane, "upsert_sticky_comment",
+    monkeypatch.setattr(fast_lane, "publish_advisory_section",
                         lambda *a, **k: "created")
     monkeypatch.setattr(fast_lane, "git",
                         lambda *a: subprocess.CompletedProcess(a, 0, "", ""))
@@ -2376,11 +2570,16 @@ def test_abstention_sans_merge_base_ne_lance_pas_le_detecteur(monkeypatch):
     monkeypatch.setattr(fast_lane, "run_argv",
                         lambda a, c: (_ for _ in ()).throw(
                             AssertionError("le detecteur ne doit pas tourner")))
-    monkeypatch.setattr(fast_lane, "upsert_sticky_comment",
+    monkeypatch.setattr(fast_lane, "publish_advisory_section",
                         lambda repo, pr, header, body, dry: bodies.append(body))
     rc, _, failures = fast_lane.run_effects(guard, ctx, dry_run=True)
     assert rc == 0 and not failures
-    assert len(bodies) == 3, "un sticky par detecteur, meme en abstention"
+    # #23394 : quatre detecteurs de prose partagent ce job depuis l'arrivee de
+    # `listing-coherence`. L'assertion porte sur le NOMBRE DE DETECTEURS, pas
+    # sur un 4 litteral : elle se lit contre le registre.
+    assert len(bodies) == len(guard.commenters), (
+        "un sticky par detecteur, meme en abstention")
+    assert len(bodies) == 4, "les quatre detecteurs de prose de la tranche 1b"
     for body in bodies:
         assert "abstained" in body, f"corps d'abstention attendu, vu {body[:60]!r}"
 

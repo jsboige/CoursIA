@@ -16,7 +16,7 @@ Le binding Z3.Linq traduit des requêtes LINQ C# en formules SMT — on décrit 
 
 ## Ouvrage de référence
 
-**Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)** — l'ouvrage-ancrage de la série sœur Z3-API et un manuel de référence pour cette série Z3-Linq2Z3. Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT, organisé en chapitres thématiques (théories, tactiques, optimisation, puzzles, UNSAT cores, bit-vectors, arithmétique réelle, etc.). Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`).
+**Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)** — l'ouvrage-ancrage de la série sœur Z3-API et un manuel de référence pour cette série Z3-Linq2Z3. Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT, organisé en chapitres thématiques (théories, tactiques, optimisation, puzzles, UNSAT cores, bit-vectors, arithmétique réelle, etc.). Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`).
 
 L'attribution chapitrée pour Z3-Linq2Z3 (carnets ci-dessous) cite les sections correspondantes du livre, en miroir de la table d'index chapitré publiée dans la [série sœur Z3-API](../Z3-API/README.md#ouvrage-de-référence). Les notebooks qui reprennent un exemple numéroté du livre créditent la source dans leur cellule d'introduction.
 
@@ -174,7 +174,7 @@ La série manipule un vocabulaire précis hérité de la programmation par contr
 | Besoin | Détail |
 |--------|--------|
 | **.NET 9.0 SDK** | [Download](https://dotnet.microsoft.com/download/dotnet/9.0) |
-| **.NET Interactive** | `dotnet tool install --global Microsoft.dotnet-interactive` |
+| **.NET Interactive** | `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` |
 | **Kernel Jupyter** | `.net-csharp` (installe automatiquement par .NET Interactive) |
 | **Package NuGet** | `Z3.Linq` (NB-01, 02 : charge automatiquement via `#r nuget:...`) |
 | **NB-01 à 06 — fork Z3.Linq** | Ces notebooks utilisent le fork [MyIntelligenceAgency/Z3.Linq](https://github.com/MyIntelligenceAgency/Z3.Linq) : NB-05 pour le support `int[][]` (absent du NuGet public endjin), NB-03, NB-04 et NB-06 pour la feature `CollectionHandling` (mode `Constants` ressuscité, câblée le 14/06/2026), NB-01 et NB-02 pour l'homogénéité de la série (toute la série sur la même build fork, cohérence pédagogique). Exécuter **une fois** : [`scripts/environment/z3-build-deploy.ps1`](../../../../scripts/environment/z3-build-deploy.ps1) (Windows) ou [`.sh`](../../../../scripts/environment/z3-build-deploy.sh) (Linux/macOS) — compile uniquement le wrapper (~1,5 s) et rassemble les 4 DLL dans `.deploy/`. |
@@ -297,23 +297,25 @@ La série manipule un vocabulaire précis (SMT, théorie des tableaux, standard 
 
 Issue de référence : #19278. Cette série s'ancre principalement sur un livre-ancrage pratique, partagé avec la série sœur [Z3-API](../Z3-API/README.md#ouvrages-ancrage) :
 
-- **Yurichev, D., *SAT/SMT by Example* (édition publique, 12 février 2023, 666 pages)** — déposé à `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (identité vérifiée sur page de titre, 2026-10-05). Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT.
+- **Yurichev, D., *SAT/SMT by Example* (édition publique, 12 février 2023, 666 pages)** — déposé à `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (identité vérifiée sur page de titre, 2026-10-05). Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT.
 
-**Avertissement — défaut biblio au 2026-10-05** : le PDF Yurichev sur la machine worker po-2026 a une structure interne invalide (`fitz.open()` rend 0 page extractible, idem OR94, Multiagent 2009, 5 PDFs du gisement Automata). Le livre est référencé en tant que tel (titre, auteur, année, dépot GDrive vérifié), mais les détails de chapitre ou d'exemple spécifique ne sont pas ancrés firsthand tant qu'une copie lisible n'est pas réacquise. Issue de suivi à ouvrir par le mainteneur (hors périmètre worker — c'est un geste bibliothèque, pas un geste de code).
+**Défaut biblio — levé le 04/11/2026.** Le 05/10/2026, la copie du PDF Yurichev sur le siège worker po-2026 était illisible (`fitz.open()` rendait 0 page extractible, idem OR94, Multiagent 2009, 5 PDFs du gisement Automata) : le livre était alors référencé sans ancrage de section, et un issue de suivi devait être ouverte par le mainteneur. Le défaut était **propre à ce siège** : depuis un poste où le gisement `G:` est monté et où PyMuPDF est disponible, la même copie s'ouvre normalement et a été lue. Les sections et les folios du mapping ci-dessous sont ancrés firsthand sur cette lecture ; aucune réacquisition de la copie n'est nécessaire.
 
-### Mapping carnet ↔ livre (mapping de l'issue #19278, à confirmer par lecture effective du PDF)
+### Mapping carnet ↔ livre (mapping de l'issue #19278, confirmé par lecture effective du PDF)
 
-| Thème du livre | Notebook porteur | Vérification |
-|----------------|------------------|--------------|
-| Solver API, theories, modèles | série Z3-Linq2Z3 entière | OK (la série entière relève du livre ; pas d'inventaire chapitre-par-chapitre) |
-| Array theory, Nested arrays | `04_Array_Theory`, `05_Nested_Arrays_2D` | à_confirmer (PDF corrompu worker) |
-| Cryptarithmetic | `13_Cryptarithmetic_SMT` | à_confirmer |
-| MaxSAT / Optimize | `14_Optimize_MaxSAT` | à_confirmer |
-| Bit-vectors, overflow | `15_BitVectors_Overflow` | à_confirmer |
-| UNSAT cores | `17_UnsatCores` | à_confirmer |
-| Einstein's riddle & puzzles | `18_Einsteins_Riddle`, `02_Sudoku_Theorem_vs_Array` | à_confirmer |
-| Real arithmetic | `16_RealArithmetic` | à_confirmer |
-| Expression rewriting (extension du DSL) | `20_Theorem_Rewriters` | à_confirmer |
+| Thème du livre | Notebook porteur | Section Yurichev (folio imprimé) | Vérification |
+|----------------|------------------|-----------------------------|--------------|
+| Solver API, theories, modèles | série Z3-Linq2Z3 entière | Ch. 1 Introduction (p. 11), Ch. 2 Basics (p. 14) | OK (la série entière relève du livre ; pas d'inventaire chapitre-par-chapitre) |
+| Array theory, Nested arrays | `04_Array_Theory`, `05_Nested_Arrays_2D` | Ch. 8 §8.1 Sudoku (p. 205) + §8.1.2 Simple sudoku in SMT using functions and array (p. 212), Ch. 12 Latin squares (p. 346) + §12.4 Magic/Latin square of Knut Vik design (p. 361) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Cryptarithmetic | `13_Cryptarithmetic_SMT` | Ch. 8 §8.10 Alphametics (p. 276) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| MaxSAT / Optimize | `14_Optimize_MaxSAT` | Ch. 14 MaxSAT/MaxSMT (p. 383), Ch. 10 Knapsack problems (p. 332) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Bit-vectors, overflow | `15_BitVectors_Overflow` | Ch. 5 §5.1 Integer overflow (p. 132) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| UNSAT cores | `17_UnsatCores` | Ch. 3 §3.13.2 Unsat core (p. 90) + §3.13.3 Stress test (p. 92) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Einstein's riddle & puzzles | `18_Einsteins_Riddle`, `02_Sudoku_Theorem_vs_Array` | Ch. 8 §8.2 Zebra puzzle (p. 232) + §8.1 Sudoku (p. 205) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Real arithmetic | `16_RealArithmetic` | Ch. 4 Proofs (p. 106) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Expression rewriting (extension du DSL) | `20_Theorem_Rewriters` | Ch. 4 §4.5 Simplifying long and messy expressions using Z3 (p. 113) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+
+**Portée du mapping.** Il relie chaque carnet à la section de l'ouvrage qui traite le même sujet — il n'affirme pas que le carnet reprend l'**instance** de l'ouvrage. Le lien ainsi établi se distingue par sa **nature** : la section **portée** par le carnet, que le carnet met en œuvre, ou la section **voisine de thème**, que le carnet ne met pas en œuvre mais dont il traite le sujet. Sur les trois carnets dont l'instance a été confrontée ligne à ligne : `13_Cryptarithmetic_SMT` reprend bien l'alphamétique du livre (§8.10, p. 276 — `SEND + MORE = MONEY`, mêmes lettres et même équation) ; `02_Sudoku_Theorem_vs_Array` et `18_Einsteins_Riddle` en reprennent le **cadre d'encodage** (§8.1.2, p. 212 ; §8.2, p. 232), mais résolvent des instances qui leur sont propres — la grille du livre (§8.1, p. 205) est le « world's hardest sudoku » à 23 indices, et le puzzle du livre a pour réponse que le Japonais possède le zèbre.
 
 ## FAQ / Troubleshooting
 

@@ -1,6 +1,8 @@
-# Pli 2.0 — Lake d'enveloppe OcclusionTriad : verdict `INSUFFICISANT_BLOQUANT`
+# Pli 2.0 — Lake d'enveloppe OcclusionTriad : verdict `INSUFFISANT_BLOQUANT` (caduc — rouvert borné le 2026-11-08, §8)
 
 > **Etat mesure au 2026-10-29** : la **prémisse de ce verdict est falsifiée par la dérive amont** — les deux imports fantômes (`TriadConservation`, `RoPECoherence`) ont disparu du fichier amont, qui compile intégralement (build SUCCESS, 0 sorry, 0 `sorryAx`, 0 `native_decide`, 67 théorèmes sur le profil axiomatique Mathlib standard) dans une enveloppe minimale. C'est le cas de figure que l'option (d) ci-dessous prévoyait (« Si upstream répond, Pli 2 peut être ré-ouvert »). Le verdict ci-dessous reste celui de sa date (2026-10-22) sur la tête qu'il a mesurée ; la décision de rouvrir Pli 2 appartient au coordinateur. Mesure complète : [`concern-2026-10-29-build-verification.md`](concern-2026-10-29-build-verification.md).
+
+> **Arbitrage du 2026-11-08** : la prémisse étant tombée, le coordinateur a tranché (commentaire c.6725327653 sur #21310) — l'**option (d) du §3 est accordée**, le verdict `INSUFFISANT_BLOQUANT` rendu le 2026-10-22 est **caduc**, le Pli 2 est **rouvert borné** et **Lean 2.1 est livré** par la PR #23302 (mergée le 2026-10-31), qui porte le journal de build complet ([`build-evidence-2026-10-31/`](build-evidence-2026-10-31/)). Les sections §1-§7 restent celles de leur date, mesurées sur la tête amont qu'elles ont mesurée ; le §9 (provenance de la lecture) est inchangé. Détail et portée de la réouverture : §8.
 
 > **Statut** : investigation first-hand c.487, Pli 2.0 CLOSE.
 > **Date** : 2026-10-18 (verdict révisé le 2026-10-22).
@@ -32,7 +34,7 @@ Le verdict Pli 1.2 de po-2027 (`INSUFFICISANT`) est **confirmé et sa cause est 
 ### 1.2 Clone du fichier source et provenance
 Le fichier amont `formalization/OcclusionTriad.lean` est cloné via API GitHub dans `DarkSnailLake/DarkSnail/OcclusionTriad.lean` (arborescence standard Lake : `DarkSnail/OcclusionTriad.lean`).
 
-Provenance du contenu lu : l'identité de blob (`git hash-object` sur la copie locale = blob amont au commit lu) prouve que la copie examinée est **exactement** la version upstream de ce commit, et non une reconstruction. Le détail figure au §8.
+Provenance du contenu lu : l'identité de blob (`git hash-object` sur la copie locale = blob amont au commit lu) prouve que la copie examinée est **exactement** la version upstream de ce commit, et non une reconstruction. Le détail figure au §9.
 
 ### 1.3 Ce qui est livré, ce qui ne l'est pas
 **Livré** : ce document de verdict, seul.
@@ -141,6 +143,7 @@ Contrairement à l'hypothèse initiale (manque de lakefile), le problème n'est 
 
 - **Pli 1** : GLOBAL CLOSE (4/4 sub-grains).
 - **Pli 2** : `INSUFFICISANT_BLOQUANT` confirmé first-hand c.487.
+- *Mise à jour 2026-11-08* : verdict **caduc** — prémisse tombée le 2026-10-29, **Lean 2.1 livré** par #23302, Pli 2 rouvert borné (§8).
 - **Pli 3** (PostTraining) : **indépendant** de Pli 2. Actionnable dès qu'un grain H_R (Clef, jevlike, laya) est mesurable sur le banc `jabr/classifier-benchmark` (#17883).
 - **Pli 4** (Pédagogie) : dépend de Pli 3 (au moins une mesure honnête).
 
@@ -158,10 +161,29 @@ L'EPIC n'est **pas terminée** par l'échec de Pli 2. Pli 3 (et indirectement Pl
 - **Court terme** : PR DEEP/lean portant ce document ; l'arbitrage option (c) est rendu (§4).
 - **Moyen terme** : Pli 2 arrêté, basculer les ressources sur Pli 3 (PostTraining), spécifiquement la mesure de **Cloudflare Clef** sur `jabr/classifier-benchmark` (#17883, #327 benchmark dans le dépôt).
 - **Action user** : **aucune attendue**. L'option (d) — écrire sur le dépôt amont sous notre identité — resterait subordonnée à un accord explicite du user ; elle n'est pas engagée et ne l'est pas dans ce cycle.
+- *Mise à jour 2026-11-08* : la réouverture arbitrée (§8) supersède le pivot `so(M)` ci-dessus pour la branche Lean DarkSnail ; upstream a publié de lui-même, sans sollicitation d'aucune sorte (le §7 est resté respecté), donc **aucune action user n'a été requise**. Les Plis 2.2-2.4 restent non déployés tant que les issues ouvertes ≥ 400 (critère de reprise : passer sous 400, ou décision user) ; le déploiement de Pli 3 est arbitré « pas maintenant », sans critère de reprise fixé pour lui.
 
 ---
 
-## 8. Provenance de la lecture
+## 8. Réouverture bornée du Pli 2 (2026-11-08)
+
+**La prémisse du verdict est tombée.** Le verdict de 2026-10-22 reposait sur deux imports fantômes (`Formalization.Analysis.TriadConservation`, `Formalization.Analysis.RoPECoherence`, modules jamais publiés upstream). Le 2026-10-29, la dérive amont a retiré ces deux imports du fichier : `formalization/OcclusionTriad.lean` compile dès lors intégralement. Mesure initiale : [`concern-2026-10-29-build-verification.md`](concern-2026-10-29-build-verification.md).
+
+**Lean 2.1 est livré.** Le sub-grain Lean 2.1 de l'EPIC #21310 — cloner la totalité d'`OcclusionTriad.lean` et de ses dépendances, `lake build` témoin, mesure des axiomes sur tous les théorèmes-têtes, journal cité — est tenu par la PR #23302, **mergée le 2026-10-31T18:10:48Z**, qui committe le journal complet dans [`build-evidence-2026-10-31/`](build-evidence-2026-10-31/) :
+
+- **build** : SUCCESS, 3007 jobs, cibles explicites — `lake-build-output.txt` ;
+- **axiomes** : 67 requêtes `#print axioms` sur les théorèmes-têtes, 62 « depends on axioms » + 5 « does not depend on any axioms » ; profil axiomatique Mathlib standard (`propext`, `Quot.sound`, `Classical.choice`) ; **0 `sorryAx`, 0 `native_decide`, aucune ligne d'erreur** — `Axioms.query`, `lake-axioms-output.txt`, décomptes recalculés dans `coherence.txt` ;
+- **rejeu par un tiers** : environnement épinglé par `lean-toolchain`, `lake-manifest.json` (révision Mathlib résolue), `sources.sha256` (empreintes et blobs des deux sources réellement compilées), `versions.txt`.
+
+Le code amont n'est pas livré ici : ce répertoire ne porte que la requête, la réponse de Lean, la sortie de build et l'épinglage.
+
+**Arbitrage coordinateur** (commentaire c.6725327653, 2026-11-08) : l'**option (d) du §3 est accordée** — c'est le cas de figure qu'elle prévoyait (« Si upstream répond, Pli 2 peut être ré-ouvert »), et upstream a répondu de lui-même, sans sollicitation. Le verdict `INSUFFISANT_BLOQUANT` rendu le 2026-10-22 est **caduc** ; le gel du Pli 2 est levé.
+
+**Portée — dépliage borné.** Les Plis **2.2 à 2.4** — dont 2.2, le lake d'enveloppe in-tree par dépendance — ne sont **pas** déployés, et aucune sous-issue ne leur est créée, tant que le dépôt porte **≥ 400 issues ouvertes** (547 au jour de l'arbitrage). **Critère de reprise** : le compte d'issues ouvertes passe sous 400, ou décision user. Le déploiement de **Pli 3** est arbitré « pas maintenant » ; l'arbitrage ne fixe de critère de reprise que pour les plis 2.2 à 2.4.
+
+---
+
+## 9. Provenance de la lecture
 
 | Élément | Valeur |
 |---|---|

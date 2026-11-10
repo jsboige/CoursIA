@@ -570,3 +570,99 @@ def test_une_comparaison_suspendue_retient_meme_sur_un_verdict_avance(
                                        "ML-7-Recommendation.ipynb")]
     out = cb.creation_gate(pool, catalog=catalog, state=None)
     assert out, "une comparaison suspendue doit retenir le carnet"
+
+
+# --- registre des renommages (#24887) ----------------------------------------
+#
+# Un grain qui cite le nom d'un carnet RENOMME cite un carnet qui existe :
+# le prendre pour une creation de carnet neuf ecarte un grain de reparation
+# du tapis. Mesure : le renommage `ML-7-Recommendation-Python` ->
+# `ML-07-Recommendation-Python` (2026-10-10, `docs/reference/rename-ledger.tsv`).
+
+_LEDGER = (
+    "ancien\tnouveau\tdate\tlane\n"
+    "MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation-Python.ipynb\t"
+    "MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb\t"
+    "2026-10-10\tmyia-po-2023:CoursIA-2\n"
+    "MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation.ipynb\t"
+    "MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation.ipynb\t"
+    "2026-10-10\tmyia-po-2023:CoursIA-2\n"
+)
+
+_CARNETS_RENOMMES = [
+    "MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb",
+]
+
+
+def _depot_avec_registre(tmp_path, contenu=_LEDGER):
+    """Un depot minimal : le registre des renommages et rien d'autre."""
+    ledger = tmp_path / "docs" / "reference" / "rename-ledger.tsv"
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    ledger.write_text(contenu, encoding="utf-8")
+    return tmp_path
+
+
+def test_un_nom_renomme_ne_vient_pas_carnet_neuf(monkeypatch, tmp_path):
+    """CONTROLE POSITIF : le nom cite a change, le carnet existe.
+
+    Sans cette resolution, la sonde compte une creation de carnet neuf la
+    ou il n'y a qu'un carnet renomme : le tapis ecarte a tort un grain qui
+    livre un carnet deja livre.
+    """
+    root = _depot_avec_registre(tmp_path)
+    catalog = cb.NotebookCatalog(_CARNETS_RENOMMES, root=str(root))
+    cite = "MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation-Python.ipynb"
+    assert cb.absent_notebooks(cite, catalog) == []
+    verdict, _preuve = cb.classify_delivery(
+        {"title": "Add(ml): carnet ML-07 -- recommandation",
+         "body": f"le carnet {cite}"}, catalog)
+    assert verdict == cb.DELIVERY_EXISTING
+
+    # CONTROLE DE CAUSE : la resolution du registre est ce qui change le
+    # verdict. Sans elle, le meme nom redevient absent — ce n'est donc pas
+    # un autre changement qui produit l'effet mesure.
+    monkeypatch.setattr(cb, "_rename_ledger", lambda root: ())
+    assert cb.absent_notebooks(cite, catalog) == [cite]
+
+
+def test_un_nom_qui_n_a_jamais_existe_reste_absent(tmp_path):
+    """CONTROLE NEGATIF : la resolution ne pardonne rien.
+
+    Un carnet qui n'a jamais existe reste un carnet neuf : le registre ne
+    peut pas inventer un carnet.
+    """
+    root = _depot_avec_registre(tmp_path)
+    catalog = cb.NotebookCatalog(_CARNETS_RENOMMES, root=str(root))
+    cite = "MyIA.AI.Notebooks/ML/ML.Net/ML-99-Carnet-Inexistant.ipynb"
+    assert cb.absent_notebooks(cite, catalog) == [cite]
+    verdict, _preuve = cb.classify_delivery(
+        {"title": "Add(ml): carnet ML-99", "body": f"le carnet {cite}"},
+        catalog)
+    assert verdict == cb.DELIVERY_NEW
+
+
+def test_sans_registre_le_comportement_est_inchange(tmp_path):
+    """DEGRADATION : un depot sans registre ne resout rien.
+
+    Aucune resolution n'est inventee, et le classement garde le
+    comportement d'avant : le nom cite reste absent du catalogue.
+    """
+    catalog = cb.NotebookCatalog(_CARNETS_RENOMMES, root=str(tmp_path))
+    cite = "MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation-Python.ipynb"
+    assert cb.absent_notebooks(cite, catalog) == [cite]
+
+
+def test_une_chaine_de_renommages_est_suivie(tmp_path):
+    """Une chaine : A -> B -> C. Le carnet existe sous C : il existe."""
+    root = _depot_avec_registre(tmp_path, contenu=(
+        "ancien\tnouveau\tdate\tlane\n"
+        "MyIA.AI.Notebooks/ML/ML.Net/ML-6-Ancien.ipynb\t"
+        "MyIA.AI.Notebooks/ML/ML.Net/ML-7-Intermediaire.ipynb\t"
+        "2026-09-01\tmyia-po-2023:CoursIA-2\n"
+        "MyIA.AI.Notebooks/ML/ML.Net/ML-7-Intermediaire.ipynb\t"
+        "MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb\t"
+        "2026-10-10\tmyia-po-2023:CoursIA-2\n"
+    ))
+    catalog = cb.NotebookCatalog(_CARNETS_RENOMMES, root=str(root))
+    cite = "MyIA.AI.Notebooks/ML/ML.Net/ML-6-Ancien.ipynb"
+    assert cb.absent_notebooks(cite, catalog) == []

@@ -2,14 +2,14 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory-SocialChoice
-pedagogical_count: 15
-breakdown: SocialChoice=15
-maturity: BETA=12, ALPHA=3
+pedagogical_count: 16
+breakdown: SocialChoice=16
+maturity: BETA=13, ALPHA=3
 -->
 
 La théorie du choix social étudie comment agréger des préférences individuelles en une décision collective. Ses résultats les plus célèbres sont des **théorèmes d'impossibilité** : le théorème d'Arrow (1951) montre qu'aucune règle de vote ne peut satisfaire simultanément des axiomes "raisonnables" (Pareto, IIA, non-dictature) dès que 3 alternatives ou plus sont en jeu ; le théorème de Sen (1970) démontre un conflit fondamental entre liberté individuelle et efficacité collective.
 
-Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats sous huit angles complémentaires : la simulation Python des axiomes, la formalisation en Lean 4 (preuve formelle), les méthodes de vote concrète, l'encodage SAT/Z3 pour la vérification mécanique, la manipulation stratégique comme témoin (Gibbard-Satterthwaite), l'agrégation coopérative par la décomposition de Möbius — dividendes de Harsanyi, poids contre pouvoir (SC-06) — et les élections de comité par approbation, où le core existe toujours (quotas Hare/Droop, certificats de paiement, SC-07), et le mariage stable par acceptation différée — couplage parfait, man-optimal (Gale-Shapley, SC-08).
+Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats sous huit angles complémentaires : la simulation Python des axiomes, la formalisation en Lean 4 (preuve formelle), les méthodes de vote concrète, l'encodage SAT/Z3 pour la vérification mécanique, la manipulation stratégique comme témoin (Gibbard-Satterthwaite), l'agrégation coopérative par la décomposition de Möbius — dividendes de Harsanyi, poids contre pouvoir (SC-06), le treillis des coalitions côté Lean (SC-06b) — et les élections de comité par approbation, où le core existe toujours (quotas Hare/Droop, certificats de paiement, SC-07), et le mariage stable par acceptation différée — couplage parfait, man-optimal (Gale-Shapley, SC-08).
 
 **À qui s'adresse cette série** : étudiants en économie, informatique, sciences politiques et mathématiques appliquées. Les notebooks 01, 03, 06 et 07 ne nécessitent que Python (le 06 se contente de la bibliothèque standard). Les notebooks 02 (Lean) et 04 (SAT/Z3) requièrent des installations supplémentaires décrites dans le [README parent](../README.md). Aucun prérequis en théorie du choix social : les concepts sont introduits progressivement.
 
@@ -37,6 +37,7 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | SC-04 (C#) | [04-Computational-Aggregation-SAT-Z3-Csharp](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) | **Jumeau C#** — parité .NET du SC-04 (agrégation SAT/Z3) implémenté from-scratch en C# (.NET Interactive) (See #4956) | 45 min | PARITÉ |
 | SC-05 | [05-Gibbard-Satterthwaite](05-Gibbard-Satterthwaite.ipynb) | Gibbard-Satterthwaite sans mystère : la manipulation comme témoin (ex-GT-22, re-slot #12375) | 30 min | COMPLET |
 | SC-06 | [06-Mobius-Aggregation-Pouvoir-Manipulation](06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Möbius sur le treillis des coalitions : dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée (See #12204) | 40 min | COMPLET |
+| SC-06b | [06b-Mobius-Coalitions-Lean-Python](06b-Mobius-Coalitions-Lean-Python.ipynb) | Décomposition de Möbius sur le treillis des coalitions, dividendes d'interaction (ex-GT-15d, re-slot #20316) | 40 min | COMPLET |
 | SC-07 | [07-Committees-Core](07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas Hare/Droop, certificats de paiement et règle de l'entropie harmonique (arXiv 2609.11912, See #16848) | 40 min | COMPLET |
 | SC-08 | [02-Stable-Marriage-Gale-Shapley](02-Stable-Marriage-Gale-Shapley.ipynb) | Mariage stable : algorithme de Gale-Shapley, jumeau Python du lake Lean `game_theory_lean/StableMarriage/` (aucun `sorry`) — couplage parfait, stabilité, man-optimalité vérifiée empiriquement par énumération exhaustive (See #19681) | 35 min | COMPLET |
 | SC-08 (C#) | [02-Stable-Marriage-Gale-Shapley-Csharp](02-Stable-Marriage-Gale-Shapley-Csharp.ipynb) | **Jumeau C#** — parité .NET du SC-08 (mariage stable / Gale-Shapley) implémenté from-scratch en C# (.NET Interactive) (See #19681) | 35 min | PARITÉ |
@@ -217,7 +218,7 @@ Le projet `social_choice_lean_peters/` (au sein de cette série depuis #4362 ; D
 | Tideman, "Independence of Clones as a Criterion for Voting Rules" (1987) | Ranked Pairs (SC-08) |
 | Caragiannis, Hemaspaandra & Hemaspaandra, "Dodgson's Rule and Young's Rule" (2016) | NP-dureté de la détermination du gagnant Dodgson (SC-08, Handbook ch. 5 §5.3) |
 
-> L'ouvrage d'ancrage est archivé dans le gisement bibliographique du cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf` — le chemin est cité, le fichier n'est jamais copié dans le dépôt public.
+> L'ouvrage d'ancrage est archivé dans le gisement bibliographique du cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Social Choice, Voting and Welfare\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf` — le chemin est cité, le fichier n'est jamais copié dans le dépôt public.
 
 ## Conclusion / Prochaines étapes
 
