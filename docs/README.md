@@ -193,6 +193,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/junctions-scan-po-2027.md](lean/junctions-scan-po-2027.md) | Junctions Mathlib — scan po-2027 |
 | [lean/junctions-apply-po-2027-c1731.md](lean/junctions-apply-po-2027-c1731.md) | Apply V5 Mathlib NTFS junctions po-2027 (c.1731) — donneur knot_lean, 7 PERIMEE re-pointées vers db584cd6, anti-régression `distinct_code_sorry` 12→12 |
 | [lean/junctions-apply-po-2028-c4362.md](lean/junctions-apply-po-2028-c4362.md) | Apply Mathlib WSL po-2028 (2026-10-31) — trois checkouts `db584cd6` remplacés par des symlinks vers le magasin `perc19494`, rollback en poubelle, et la mesure qui corrige le surcompte « 8 physiques » du bloc précédent. See #4362 |
+| [lean/junctions-verify-po-2027-c4362.md](lean/junctions-verify-po-2027-c4362.md) | Vérification build du groupe de jonctions `db584cd6` (po-2027, runs 1-7) — diagnostic ressources (palier LAKE_JOBS 20→1), KNOTS OOM même à un worker, suite #21319. See #4362 |
 | [lean/knot-4.33-investigation.md](lean/knot-4.33-investigation.md) | Lean 4 — knot_lean 4.33.0 bloquée par synthèse Decidable |
 | [lean/l750-pivot-scope-discipline.md](lean/l750-pivot-scope-discipline.md) | L750 ★★ — Pivot Lean specialist, discipline de scope, remédiation OOM |
 | [lean/life-components-schema.md](lean/life-components-schema.md) | Schéma de motifs et de réactions de Game of Life — tranches 1-4 de #15635 |
