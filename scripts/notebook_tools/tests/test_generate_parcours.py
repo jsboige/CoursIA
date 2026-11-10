@@ -753,7 +753,7 @@ class TestRechercheManifest:
     (f) la masse propre reste dominante face aux parcours existants (pli 1 :
         les parcours se croisent sans se dupliquer).
     """
-    manifest_path = gp.REPO_ROOT / "docs" / "curriculum" / "recherche.json"
+    manifest_path = gp.REPO_ROOT / "docs" / "curriculum" / "recherche-vertical.json"
 
     def _manifest(self):
         return json.loads(self.manifest_path.read_text(encoding="utf-8"))
@@ -848,7 +848,7 @@ class TestRechercheManifest:
         manifest = self._manifest()
         catalog = _catalog_with_pending_renames(manifest)
         committed = json.loads(
-            (gp.REPO_ROOT / "docs" / "curriculum" / "recherche.compiled.json")
+            (gp.REPO_ROOT / "docs" / "curriculum" / "recherche-vertical.compiled.json")
             .read_text(encoding="utf-8"))
         generated = self._compiled(manifest, catalog)
 
@@ -862,7 +862,7 @@ class TestRechercheManifest:
         assert selection(committed) == selection(generated), (
             "le compiled.json commite ne correspond pas a la selection du "
             "manifeste : regenerer avec `python scripts/notebook_tools/"
-            "generate_parcours.py --manifest docs/curriculum/recherche.json` "
+            "generate_parcours.py --manifest docs/curriculum/recherche-vertical.json` "
             "suivi de TOUTES les `--branch` et `--accretion` du manifeste"
         )
 
