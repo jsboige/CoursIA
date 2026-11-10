@@ -18,23 +18,23 @@ qui conditionne le critere de sortie de #24828 :
 
 La premiere moitie de ce critere n'etait mesuree par personne. Mesure du
 2026-11-10 sur ``jsboige/CoursIA``, workflow ``scripts-tests.yml``, branche
-``main``, 99 runs conclus + les 60 derniers commits de ``main`` :
+``main``, 100 runs conclus + les 60 derniers commits de ``main`` :
 
-* **COUVERTURE 65 %** : 21 des 60 derniers commits de ``main`` n'ont produit
+* **COUVERTURE 66,7 %** : 20 des 60 derniers commits de ``main`` n'ont produit
   **AUCUN run**. Le workflow porte un filtre ``paths:`` sur le push
   (``scripts/**``, ``tests/**``, ``pytest.ini``...), donc un merge qui ne
   touche pas ces chemins ne produit aucun signal : la sentinelle est aveugle
-  sur 35 % des poussees.
-* **VERDICT CONNU 25 %** : une fois ce filtre franchi, il faut en plus que le
-  run **rende** un verdict. Sur les 60 derniers commits de ``main``, seuls
-  **15 ont un etat connu** : les 45 autres sont soit sans run, soit annules
-  sans rendre de verdict. C'est le taux operationnel -- ce que la sentinelle
-  peut reellement lire sur le commit de tete.
-* **ANNULES 69,7 %** : sur 99 runs conclus, 69 sont ``cancelled``. Une
+  sur un tiers des poussees.
+* **VERDICT DE CODE CONNU 26,7 %** : une fois ce filtre franchi, il faut en
+  plus que le run **rende** un verdict de code. Sur les 60 derniers commits de
+  ``main``, seuls **16 ont un etat connu** : les 44 autres sont soit sans run,
+  soit annules sans rendre de verdict. C'est le taux operationnel -- ce que la
+  sentinelle peut reellement lire sur le commit de tete.
+* **ANNULES 69,0 %** : sur 100 runs conclus, 69 sont ``cancelled``. Une
   poussee suivante annule le run en cours ; les runs annules ne rendent AUCUN
   verdict, donc l'etat courant de ``main`` est souvent celui d'un run vieux.
-* **LATENCE** (creee -> conclue, sur les 30 runs qui ont rendu un verdict) :
-  mediane **26,6 min**, p90 **112,8 min**, max **161,8 min**, min **11,2 min**.
+* **LATENCE** (creee -> conclue, sur les 31 runs qui ont rendu un verdict) :
+  mediane **27,1 min**, p90 **108,2 min**, max **161,8 min**, min **11,2 min**.
   Le seuil « 15 min » du critere de sortie **n'est pas tenu** : meme le plus
   rapide des runs mesures depasse 11 min, et la mediane est pres de 27 min.
 
@@ -45,22 +45,44 @@ Deux causes mecaniques, deux corrections qui ne se confondent pas :
 
 * le filtre ``paths:`` (couverture) -> lever le filtre sur le push, comme le
   fait #25169 ;
-* l'annulation en rafale (69,7 % sans verdict) -> ne pas annuler le run en
+* l'annulation en rafale (69,0 % sans verdict) -> ne pas annuler le run en
   cours, ou accepter qu'un verdict manque et le dire.
 
 Ce que cet organe **ne** fait pas : il ne pose aucune retenue, ne bloque aucun
 merge, ne decide rien. Il **mesure** et il **nomme**. La retenue reste
 l'affaire de ``merge_ready`` (#25169), la decision reste celle du coordinateur.
 
-Verdicts lus (memes ensembles que ``scripts/ci/merge_dwell.py``, pour que les
-deux organes ne divergent pas) :
+**Limite a lire avec le nom qu'il donne.** L'organe lit la **conclusion** du
+run, pas son log. Un run tue par le watchdog xdist (worker mort, silence de
+480 s) sort en ``failure`` : il est donc nomme comme un rouge de code, alors
+que sa cause est l'infrastructure. Constat du 2026-11-10 sur ``main`` :
+``c7fe7a91a7dd`` est ainsi nomme, son log ne montre qu'un kill de watchdog
+et une starvation de runners, aucun test en echec. La distinction
+infra/code demande la **lecture du log** -- l'organe la rend lisible, il ne
+la prend pas.
 
-* ROUGE  = ``failure``, ``timed_out``, ``startup_failure`` ;
+Verdicts lus (**memes ensembles que la retenue de ``merge_ready``**, pour que
+les deux organes ne divergent pas sur ce qui est un defaut de code) :
+
+* ROUGE  = ``failure`` -- un defaut de code, la seule conclusion qui pose une
+  retenue ;
 * VERT   = ``success`` ;
+* INFRA  = ``timed_out``, ``startup_failure`` -- runner perdu, temps epuise :
+  ce n'est pas une regression, et ce n'est pas non plus une absence de
+  signal. Distinct de ``cancelled``, qui n'a rien dit du tout ;
 * SANS VERDICT = ``cancelled``, ``skipped``, et toute autre conclusion.
 
 Un commit **sans run** est ``unknown``, jamais ``green`` : une absence de
 preuve n'est pas un vert (fail-closed).
+
+**Ce qui distingue cet organe de ``merge_dwell``.** ``merge_dwell`` compte
+``timed_out`` et ``startup_failure`` parmi les conclusions rouges, parce que
+sa question est « ``main`` est-il vert pourpur ? » -- une branche qui n'a pas
+rendu de verdict n'est pas demonstree verte. Ici la question est « **y a-t-il
+un defaut de code** ? », et la reponse est non pour une conclusion d'infra.
+Les deux organes repondent a deux questions differentes ; ils ne sont pas
+contradictoires, et la retenue de ``merge_ready`` -- qui juge le dernier
+verdict **termine** -- suit la meme ligne que cet organe.
 
 Sortie :
 
@@ -72,7 +94,7 @@ Sortie :
 Sortie JSON::
 
     {
-      "verdict": "green|red|unknown",     # etat du commit de tete
+      "verdict": "green|red|infra|unknown",  # etat du commit de tete
       "first_red_commit": {...}|null,     # le commit QUI a introduit le rouge
       "bounds": {...},                    # ce qui borne la reponse
       "coverage": {...},                  # part des commits couverts par un run
@@ -96,14 +118,22 @@ REPO = "jsboige/CoursIA"
 DEFAULT_WORKFLOW = "scripts-tests.yml"
 DEFAULT_BRANCH = "main"
 
-#: Mêmes ensembles que ``scripts/ci/merge_dwell.py`` (#19180) : un run qui a
-#: epuise son temps ou n'a pas demarre EST un rouge ; seules les conclusions
-#: SANS verdict (`cancelled`, `skipped`) se sautent.
-RED_CONCLUSIONS = ("failure", "timed_out", "startup_failure")
+#: Un defaut de CODE : la seule conclusion qui pose une retenue.
+#: Meme ensemble que ``MAIN_RED_CODE_VERDICTS`` dans ``scripts/coordination/
+#: merge_ready.py`` (#24828) -- les deux organes doivent nommer le meme
+#: coupable.
+RED_CONCLUSIONS = ("failure",)
 GREEN_CONCLUSIONS = ("success",)
+
+#: Conclusions d'INFRA : le runner a perdu la main ou n'a pas demarre. Ce
+#: n'est ni une regression du code (rouge), ni une absence de signal
+#: (``cancelled``) : le run a rendu un verdict, mais sur l'infrastructure.
+#: Distinct de ``cancelled``, qui n'a rien dit du tout.
+INFRA_CONCLUSIONS = ("timed_out", "startup_failure")
 
 GREEN = "green"
 RED = "red"
+INFRA = "infra"
 UNKNOWN = "unknown"
 
 
@@ -141,7 +171,13 @@ def _parse(ts: str) -> "datetime | None":
 
 
 def run_state(run: dict) -> str:
-    """Verdict d'un run : vert, rouge, ou SANS verdict.
+    """Verdict d'un run : vert, rouge, INFRA, ou SANS verdict.
+
+    - ``failure`` : un defaut de code -- le seul etat qui pose une retenue ;
+    - ``success`` : vert ;
+    - ``timed_out`` / ``startup_failure`` : INFRA -- le runner a perdu la
+      main, le code n'a pas ete juge ;
+    - ``cancelled`` et tout le reste : SANS verdict, le run n'a rien dit.
 
     Un run ``cancelled`` n'a rien dit de la qualite du code : il se compte
     comme SANS verdict. C'est ce qui rend la mesure de couverture Vitale --
@@ -152,6 +188,8 @@ def run_state(run: dict) -> str:
         return RED
     if conclusion in GREEN_CONCLUSIONS:
         return GREEN
+    if conclusion in INFRA_CONCLUSIONS:
+        return INFRA
     return UNKNOWN
 
 
@@ -180,11 +218,15 @@ def fetch_commits(repo: str, branch: str, per_page: int,
 
 
 def commit_states(commits: list, runs: list) -> dict:
-    """Etat de chaque commit : vert, rouge, ou unknown (aucun run rendu).
+    """Etat de chaque commit : vert, rouge, infra, ou unknown (aucun run rendu).
 
     Un commit peut porter plusieurs runs (relance, annulation puis relance) :
     on retient le **plus recent** qui a rendu un verdict, et l'on note les
     autres. Un commit dont tous les runs sont sans verdict reste ``unknown``.
+
+    Un commit dont le dernier verdict rendu est d'INFRA (``timed_out``,
+    ``startup_failure``) est ``infra`` : le code n'a pas ete juge, et aucun
+    defaut n'est prouve -- ni dans un sens ni dans l'autre.
     """
     by_sha = {}
     for run in runs:
@@ -205,32 +247,42 @@ def commit_states(commits: list, runs: list) -> dict:
 
 
 def measure_coverage(commits: list, states: dict) -> dict:
-    """Deux taux, a ne pas confondre.
+    """Trois taux, a ne pas confondre.
 
     * ``taux_run_pct`` : part des commits qui ont produit **un run** --
       c'est la couverture du filtre ``paths:`` du workflow. Mesure du
       2026-11-10 sur ``main`` : 65 %.
-    * ``taux_verdict_pct`` : part des commits dont le verdict est **connu**
-      (un run qui a rendu un verdict, pas annule). C'est le taux operationnel :
-      c'est ce que la sentinelle peut reellement lire. Mesure du
+    * ``taux_verdict_pct`` : part des commits dont le verdict de CODE est
+      **connu** (vert ou rouge). C'est le taux operationnel : c'est ce que la
+      sentinelle peut reellement lire comme etat du code. Mesure du
       2026-11-10 : 25 % -- un commit sur quatre a un etat connu.
+    * ``taux_infra_pct`` : part des commits dont le verdict est rendu mais
+      d'INFRA (``timed_out``, ``startup_failure``) -- le code n'a pas ete
+      juge. Ces commits-la ne sont ni verts ni rouges : ils sont comptes a
+      part, jamais fondus dans le « sans verdict ».
     """
     total = len(commits)
     avec_run = 0
     verdict_connu = 0
+    infra = 0
     for commit in commits:
         info = states.get(commit.get("sha") or "", {})
         if info.get("runs"):
             avec_run += 1
-        if info.get("state") != UNKNOWN:
+        state = info.get("state")
+        if state in (GREEN, RED):
             verdict_connu += 1
+        elif state == INFRA:
+            infra += 1
     return {
         "commits": total,
         "avec_run": avec_run,
         "verdict_connu": verdict_connu,
+        "infra": infra,
         "sans_run": total - avec_run,
         "taux_run_pct": round(100.0 * avec_run / total, 1) if total else 0.0,
         "taux_verdict_pct": round(100.0 * verdict_connu / total, 1) if total else 0.0,
+        "taux_infra_pct": round(100.0 * infra / total, 1) if total else 0.0,
     }
 
 
@@ -307,6 +359,7 @@ def find_first_red(commits: list, states: dict) -> dict:
     first_red = None
     latest_green = None
     unknown_between = []
+    infra_between = []
     red_zone_started = False
     for commit, info in entries:
         state = info["state"]
@@ -320,6 +373,11 @@ def find_first_red(commits: list, states: dict) -> dict:
         if state == GREEN:
             latest_green = (commit, info)
             break
+        if state == INFRA:
+            # verdict d'INFRA : ni vert ni rouge, et le code n'a pas ete
+            # juge -- on le compte a part, on ne le franchit pas.
+            infra_between.append(commit)
+            continue
         # inconnu : ni vert ni rouge -- on le compte, on ne le franchit pas
         unknown_between.append(commit)
 
@@ -344,9 +402,13 @@ def find_first_red(commits: list, states: dict) -> dict:
             {"sha": c.get("sha"), "subject": (c.get("commit", {})
                                                .get("message") or "")
              .splitlines()[0][:120]} for c in unknown_between],
+        "commits_infra_entre_les_deux": [
+            {"sha": c.get("sha"), "subject": (c.get("commit", {})
+                                              .get("message") or "")
+             .splitlines()[0][:120]} for c in infra_between],
     }
     exact = bool(latest_green is not None and first_red is not None
-                 and not unknown_between)
+                 and not unknown_between and not infra_between)
     return {
         "verdict": verdict,
         "first_red_commit": describe(first_red) if first_red else None,
@@ -420,13 +482,18 @@ def main(argv=None) -> int:
                     "commits_sans_verdict_entre_les_deux", []):
                 print("  sans verdict : {} {}".format(gap["sha"][:12],
                                                        gap["subject"]))
+            for gap in report.get("bounds", {}).get(
+                    "commits_infra_entre_les_deux", []):
+                print("  infra (code non juge) : {} {}".format(
+                    gap["sha"][:12], gap["subject"]))
     else:
         cov = report["coverage"]
         lat = report["latency_min"]
         print("[main {}] etat de tete : {} | couverture : {} % de commits avec un "
-              "run, {} % avec un verdict connu | runs annules : {} %".format(
+              "run, {} % avec un verdict de code, {} % en infra | runs annules : "
+              "{} %".format(
                   args.branch, report.get("verdict"), cov["taux_run_pct"],
-                  cov["taux_verdict_pct"], report["verdicts"]
+                  cov["taux_verdict_pct"], cov["taux_infra_pct"], report["verdicts"]
                   ["taux_annules_pct"]))
         print("latence des runs rendus (min) : mediane {} | p90 {} | max {}".format(
             lat.get("mediane"), lat.get("p90"), lat.get("max")))

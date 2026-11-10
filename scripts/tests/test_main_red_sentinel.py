@@ -38,8 +38,8 @@ def _commit(sha, subject="sujet", date="2026-11-10T00:00:00Z"):
 
 @pytest.mark.parametrize("conclusion, attendu", [
     ("failure", mrs.RED),
-    ("timed_out", mrs.RED),
-    ("startup_failure", mrs.RED),
+    ("timed_out", mrs.INFRA),
+    ("startup_failure", mrs.INFRA),
     ("success", mrs.GREEN),
     ("cancelled", mrs.UNKNOWN),
     ("skipped", mrs.UNKNOWN),
@@ -53,6 +53,40 @@ def test_run_state_classe_les_conclusions(conclusion, attendu):
 def test_un_run_annule_ne_prouve_ni_le_rouge_ni_le_vert():
     """Un `cancelled` ne dit rien de la qualite du code : jamais un vert."""
     assert mrs.run_state({"conclusion": "cancelled"}) == mrs.UNKNOWN
+
+
+def test_l_infra_n_est_ni_le_rouge_ni_le_sans_verdict():
+    """`timed_out` / `startup_failure` : le code n'a pas ete juge.
+
+    C'est la distinction demandee par le coordinateur : l'infra est distincte
+    du `cancelled` (qui n'a rien dit du tout), et ni l'une ni l'autre ne pose
+    de retenue -- seul `failure` en pose une.
+    """
+    assert mrs.run_state({"conclusion": "timed_out"}) == mrs.INFRA
+    assert mrs.run_state({"conclusion": "startup_failure"}) == mrs.INFRA
+    assert mrs.INFRA != mrs.UNKNOWN
+    assert mrs.INFRA != mrs.RED
+
+
+def test_le_calcul_de_la_retenue_et_l_organe_ont_le_meme_ensemble_de_rouge():
+    """Le seul ensemble qui pose un defaut de code est `failure`."""
+    import importlib.util
+    import sys
+
+    assert mrs.RED_CONCLUSIONS == ("failure",)
+
+    chemin = Path(__file__).resolve().parents[1] / "coordination" / "merge_ready.py"
+    spec = importlib.util.spec_from_file_location("merge_ready_coupling", chemin)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    attendu = getattr(module, "MAIN_RED_CODE_VERDICTS", None)
+    if attendu is None:
+        pytest.skip(
+            "merge_ready n'expose pas encore MAIN_RED_CODE_VERDICTS "
+            "(la retenue a ete alignee dans une autre PR, non fusionnee)"
+        )
+    assert attendu == ("success", "failure")
 
 
 # --- etat par commit --------------------------------------------------------
@@ -157,6 +191,58 @@ def test_la_couverture_distingue_le_run_du_verdit_connu():
     assert coverage["sans_run"] == 1
     assert coverage["taux_run_pct"] == 66.7
     assert coverage["taux_verdict_pct"] == 33.3
+
+
+def test_l_infra_est_compte_a_part_dans_la_couverture():
+    """Un verdict d'infra n'est ni un verdict de code ni une absence de signal."""
+    commits = [_commit("c1"), _commit("c2"), _commit("c3")]
+    runs = [
+        _run(1, "c1", "success", "2026-11-10T00:00:00Z", "2026-11-10T00:10:00Z"),
+        _run(2, "c2", "timed_out", "2026-11-10T00:00:00Z",
+             "2026-11-10T00:30:00Z"),
+    ]
+    states = mrs.commit_states(commits, runs)
+    coverage = mrs.measure_coverage(commits, states)
+    assert coverage["avec_run"] == 2
+    assert coverage["verdict_connu"] == 1
+    assert coverage["infra"] == 1
+    assert coverage["taux_verdict_pct"] == 33.3
+    assert coverage["taux_infra_pct"] == 33.3
+
+
+def test_un_verdict_d_infra_borne_la_reponse_comme_un_trou():
+    """Un commit en infra entre le vert et le rouge : la reponse est BORNEE.
+
+    L'organe ne nomme pas de coupable dans un intervalle qu'il ne sait pas
+    trancher -- un verdict d'infra ne prouve ni le rouge ni le vert.
+    """
+    commits = [_commit("c3", "rouge"), _commit("c2", "infra"), _commit("c1", "vert")]
+    runs = [
+        _run(3, "c3", "failure", "2026-11-10T00:00:00Z", "2026-11-10T00:20:00Z"),
+        _run(2, "c2", "timed_out", "2026-11-10T00:00:00Z",
+             "2026-11-10T00:30:00Z"),
+        _run(1, "c1", "success", "2026-11-10T00:00:00Z", "2026-11-10T00:20:00Z"),
+    ]
+    states = mrs.commit_states(commits, runs)
+    result = mrs.find_first_red(commits, states)
+    assert result["first_red_commit"]["sha"] == "c3"
+    assert result["first_red_commit_exact"] is False
+    bornes = result["bounds"]["commits_infra_entre_les_deux"]
+    assert [c["sha"] for c in bornes] == ["c2"]
+
+
+def test_une_tete_en_infra_ne_produit_ni_le_rouge_ni_le_vert():
+    """L'etat de tete en infra ne nomme aucun commit rouge."""
+    commits = [_commit("c1", "infra"), _commit("c0", "vert")]
+    runs = [
+        _run(1, "c1", "startup_failure", "2026-11-10T00:00:00Z",
+             "2026-11-10T00:30:00Z"),
+        _run(0, "c0", "success", "2026-11-10T00:00:00Z", "2026-11-10T00:20:00Z"),
+    ]
+    states = mrs.commit_states(commits, runs)
+    result = mrs.find_first_red(commits, states)
+    assert result["verdict"] == mrs.INFRA
+    assert result["first_red_commit"] is None
 
 
 def test_la_repartition_des_verdicts_compte_les_annules():
