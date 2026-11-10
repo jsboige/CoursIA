@@ -23,8 +23,10 @@ Execution ::
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -212,3 +214,42 @@ def test_le_controle_de_trace_reporte_une_divergence(monkeypatch):
     resultat = lp._compare_shadow({"role": "ref"}, {"role": "ctl"})
     assert resultat["divergence"] == ["trace journaliere"]
     assert resultat["ecart_max"] == 1.0
+
+
+@pytest.mark.parametrize("ref_present,ctl_present", [(False, True), (True, False),
+                                                      (True, True), (False, False)])
+def test_control_choisit_la_mesure_sans_masquer_une_trace_absente(
+        monkeypatch, capsys, tmp_path, ref_present, ctl_present):
+    """Le controle public refuse une trace manquante et conserve les deux voies valides."""
+    lp = _charger_league_protocol()
+    monthly_calls = []
+
+    def chart(project, backtest, name):
+        monthly_calls.append((backtest, name))
+        return {"role": backtest}
+
+    monkeypatch.setattr(lp, "_acces_qc", lambda: (None, chart, None, None, None))
+    monkeypatch.setattr(lp, "_read_stats", lambda project, backtest: {
+        "statistics": {key: "identique" for key in lp.STAT_KEYS}})
+    present = {"ref": ref_present, "ctl": ctl_present}
+    monkeypatch.setattr(lp, "_chart_or_none", lambda project, backtest, name:
+                        {"role": backtest} if present[backtest] else None)
+    monkeypatch.setattr(lp, "_compare_shadow", lambda ref, ctl:
+                        {"compared": "shadow", "divergence": []})
+    monkeypatch.setattr(lp, "_compare_monthly", lambda ref, ctl:
+                        {"compared": "Monthly", "divergence": []})
+    out = tmp_path / "controle.json"
+    rc = lp.cmd_control(SimpleNamespace(project=1, ref="ref", ctl="ctl", out=str(out)))
+    result = json.loads(capsys.readouterr().out)
+    assert json.loads(out.read_text(encoding="utf-8")) == result
+    if ref_present != ctl_present:
+        missing = "reference" if not ref_present else "controle"
+        assert rc == 1
+        assert result["verdict"] == "REFUS"
+        assert result["refus"] == f"trace journaliere absente du cote {missing}"
+        assert monthly_calls == []
+    else:
+        assert rc == 0
+        assert result["verdict"] == "OK"
+        assert result["compared"] == ("shadow" if ref_present else "Monthly")
+        assert len(monthly_calls) == (0 if ref_present else 2)
