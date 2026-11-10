@@ -32,10 +32,11 @@ Tables, diagnostics and traces: [evaluation README](../TrendWeatherPointInTime/R
 | T70 / AW30 | 1.140 | 25.9% | 26.6% | 0.740 | 0.140 | 55.2% |
 | **T75 / AW25 (default)** | **1.148** | **27.1%** | **27.6%** | **0.769** | **0.148** | **55.7%** |
 | T80 / AW20 | 1.156 | 28.4% | 28.7% | 0.798 | 0.155 | 56.1% |
-| SPY held (control) | 0.537 | 13.4% | 33.5% | 0.994 | 0.147 | 2.5% |
+| SPY held (control, same window 2015-01-01 → 2025-12-31) | 0.537 | 13.4% | 33.5% | 0.994 | 0.147 | 2.5% |
 
 - **The default is unchanged.** The backtest without a parameter returns the 27 statistics of the T75 backtest. It also reproduces the 2026-10-26 measure (section "Shared module non-regression" below) and the #19393 one.
 - **The original docstring holds, within a small margin.** Commit `fa122ae7e` (2026-03-09) announced the same max drawdown within 0.1 point, a Sharpe higher by 0.007 to 0.010 and a CAGR higher by 0.3 to 0.4 point. Its code set no end date, so the backtest ran up to its run date. This difference of window is the likely cause of the gap; no replay has checked it.
+- **These figures were first published without a traced backtest.** Before the #19393 measure and this sweep, this README treated the docstring's Sharpe of 1.155 as a claim that nothing in the repository could reproduce (drainage #9434). The backtest identifiers of the sweep are recorded in PR #25541.
 - **The sweep is monotonic.** Each 5-point step toward the trend pocket adds about 0.009 of Sharpe, 1.1 point of max drawdown and 0.029 of beta. The range holds no optimum: T75 is a risk choice. The original docstring justified it by a beta that would exceed 0.80 beyond it; the measure does not confirm this, the beta stays below 0.80 up to T80 (0.798).
 - **At T75, the annual volatility matches SPY held** (0.148 against 0.147). At equal volatility, the composite returns 27.1% a year against 13.4%, for a max drawdown of 27.6% against 33.5%.
 - **The #19393 bias is untouched.** The list of 15 stocks was picked in 2026, and the sweep does not correct this look-ahead. The verdict against SPY held and 60/40 stays `NO BEATS`.

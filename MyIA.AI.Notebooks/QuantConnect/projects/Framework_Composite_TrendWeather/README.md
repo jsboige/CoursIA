@@ -31,10 +31,11 @@ Tableaux, diagnostics et traces : [README de l'évaluation](../TrendWeatherPoint
 | T70 / AW30 | 1,140 | 25,9 % | 26,6 % | 0,740 | 0,140 | 55,2 % |
 | **T75 / AW25 (défaut)** | **1,148** | **27,1 %** | **27,6 %** | **0,769** | **0,148** | **55,7 %** |
 | T80 / AW20 | 1,156 | 28,4 % | 28,7 % | 0,798 | 0,155 | 56,1 % |
-| SPY détenu (témoin) | 0,537 | 13,4 % | 33,5 % | 0,994 | 0,147 | 2,5 % |
+| SPY détenu (témoin, même fenêtre 2015-01-01 → 2025-12-31) | 0,537 | 13,4 % | 33,5 % | 0,994 | 0,147 | 2,5 % |
 
 - **Le défaut est inchangé.** Le backtest sans paramètre rend les 27 statistiques du backtest T75. Il reproduit aussi la mesure du 2026-10-26 (section « Non-régression » plus bas) et celle de #19393.
 - **La docstring d'origine se confirme à la marge.** Le commit `fa122ae7e` (2026-03-09) annonçait la même pire baisse à 0,1 point près, un Sharpe plus haut de 0,007 à 0,010 et un CAGR plus haut de 0,3 à 0,4 point. Son code ne fixait pas de date de fin : le backtest courait jusqu'à sa date d'exécution. Cette différence de fenêtre est la cause probable de l'écart ; aucun rejeu ne l'a vérifiée.
+- **Ces chiffres ont d'abord été publiés sans backtest tracé.** Avant la mesure de #19393 et ce balayage, ce README tenait le Sharpe 1,155 de la docstring pour une affirmation que rien ne permettait de reproduire dans le dépôt (drainage #9434). Les identifiants de backtest du balayage sont consignés dans la PR #25541.
 - **Le balayage est monotone.** Chaque pas de 5 points vers la poche tendance ajoute environ 0,009 de Sharpe, 1,1 point de pire baisse et 0,029 de bêta. La plage ne contient pas d'optimum : T75 est un choix de risque. La docstring d'origine le justifiait par un bêta qui dépasserait 0,80 au-delà ; la mesure ne le confirme pas, le bêta reste sous 0,80 jusqu'à T80 (0,798).
 - **À T75, la volatilité annuelle égale celle de SPY détenu** (0,148 contre 0,147). À volatilité égale, la composite rend 27,1 % par an contre 13,4 %, pour une pire baisse de 27,6 % contre 33,5 %.
 - **Le biais de #19393 reste entier.** La liste des 15 titres a été choisie en 2026, et le balayage ne corrige pas cette lecture du futur. Le verdict contre SPY détenu et le 60/40 reste `NO BEATS`.
