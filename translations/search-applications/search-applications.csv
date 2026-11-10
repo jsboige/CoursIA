@@ -43340,22 +43340,22 @@ var fitness = new EdgeFitness(originalImage);
 // Test d'un chromosome
 var chromosome = new EdgeChromosome(20);
 Console.WriteLine($""Score de fitness : {fitness.Evaluate(chromosome)}"");",,,,,,,,24ae46e391a1c3e8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,e94eab45,markdown,fr,3cbbeff52c94fc7c,"### Interpretation : Test de la Fonction de Fitness
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,e94eab45,markdown,fr,687f1f0b4f52719f,"### Interpretation : Test de la Fonction de Fitness
 
-**Sortie obtenue** : Le chromosome aleatoire obtient un score de fitness de 0,0012851653654710595 sur l'execution affichee ci-dessus, evaluant sa qualite par rapport au filtre Sobel de reference. Cette valeur est **aleatoire** -- le chromosome initial est tire au hasard -- et les executions successives de ce carnet donnent des scores d'ordres de grandeur tres differents (0,0628 sur une autre execution) : c'est l'ordre de grandeur qui est pedagogiquement parlant, pas la valeur exacte.
+**Sortie obtenue** : Le chromosome aleatoire obtient un score de fitness faible sur l'execution affichee ci-dessus, evaluant sa qualite par rapport au filtre Sobel de reference. Cette valeur est **aleatoire** -- le chromosome initial est tire au hasard -- et les executions successives de ce carnet donnent des scores d'ordres de grandeur tres differents (de l'ordre de 10^-4 a quelques 10^-1 selon l'execution) : c'est l'ordre de grandeur qui est pedagogiquement parlant, pas la valeur exacte.
 
 | Aspect | Valeur observee | Signification |
 |--------|----------------|---------------|
-| Score de fitness | ~0,0013 (0,00129 sur l'execution de reference ; de l'ordre de 10^-4 a 10^-1 selon l'execution) | Chromosome aleatoire, correlation très faible avec Sobel |
+| Score de fitness | Faible et aleatoire (de l'ordre de 10^-4 a quelques 10^-1 selon l'execution) | Chromosome aleatoire, correlation très faible avec Sobel |
 | Penalisation appliquee | Oui | Evite les filtres uniformes (Log10 de la somme) |
 
 **Points cles** :
-1. **Score initial faible** : Un chromosome aleatoire obtient ici un score faible et aleatoire (0,00129 sur l'execution de reference, mais de l'ordre de 10^-4 a 10^-1 selon l'execution), ce qui est normal car ses coefficients ne sont pas optimises pour la detection de bords.
+1. **Score initial faible** : Un chromosome aleatoire obtient ici un score faible et aleatoire (de l'ordre de 10^-4 a quelques 10^-1 selon l'execution), ce qui est normal car ses coefficients ne sont pas optimises pour la detection de bords.
 2. **Rôle de la penalisation** : La fonction de fitness divise le score de correlation par un facteur dependant de la somme des coefficients du filtre, evitant ainsi la solution triviale d'un filtre uniforme.
 3. **Base de comparaison** : Ce score initial servira de reference pour evaluer l'amelioration apportee par l'algorithme génétique au fil des generations.
 4. **Variabilite** : Chaque exécution produit un score différent du fait de la generation aleatoire des chromosomes, ce qui demontre la stochasticite du processus.
 
-> **Note technique** : La fonction de fitness calcule `maxVal / Log10(|somme des coefficients|+1)` (avec penalty=1 si la somme est quasi nulle). Ce n'est pas une correlation brute bornee a 1,0 : le score peut depasser 1,0 quand la somme du filtre est faible. Le score observe (faible : de l'ordre de 10^-4 a 10^-1 selon l'execution) pour un chromosome aleatoire confirme que l'evolution génétique est necessaire pour obtenir un filtre performant.",,,,,,,,3cbbeff52c94fc7c,,,,,,,,,,,,,,,
+> **Note technique** : La fonction de fitness calcule `maxVal / Log10(|somme des coefficients|+1)` (avec penalty=1 si la somme est quasi nulle). Ce n'est pas une correlation brute bornee a 1,0 : le score peut depasser 1,0 quand la somme du filtre est faible. Le score observe (faible : de l'ordre de 10^-4 a quelques 10^-1 selon l'execution) pour un chromosome aleatoire confirme que l'evolution génétique est necessaire pour obtenir un filtre performant.",,,,,,,,687f1f0b4f52719f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,6001b472,markdown,fr,d853e22821dc9f67,"## Configuration de l'Algorithme Génétique
 
 L'algorithme génétique est configuré à l'aide de plusieurs éléments clés :
@@ -43450,14 +43450,14 @@ ga.GenerationRan += (sender, e) =>
 Console.WriteLine(""Lancement de l'algorithme genetique..."");
 ga.Start();
 Console.WriteLine($""Meilleure solution trouvee avec un score de {ga.BestChromosome.Fitness}."");",,,,,,,,42e78eb5cc6a4960,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,72599e46,markdown,fr,fb83fbc6bf494de5,"### Interpretation : Résultats de l'Algorithme Génétique
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,72599e46,markdown,fr,67697e13fd28a926,"### Interpretation : Résultats de l'Algorithme Génétique
 
 **Sortie obtenue** : L'algorithme génétique a evolue sur plusieurs generations, affichant periodiquement (toutes les 10 generations) les images filtrees par le meilleur chromosome. Le score de fitness final indique la qualite de la detection de bords par rapport au filtre Sobel de reference.
 
 | Aspect | Valeur observee | Signification |
 |--------|----------------|---------------|
-| Score de fitness initial | ~0,0013 (chromosome aleatoire) / ~0,78 (generation 1) | Part d'un score faible, puis grimpe des la 1re generation |
-| Score de fitness final | ~2,36 (generation 100) | Chromosome converge vers un detecteur de bords efficace |
+| Score de fitness initial | Faible (chromosome aleatoire) / nettement plus eleve des la generation 1 | Part d'un score faible, puis grimpe des la 1re generation |
+| Score de fitness final | De l'ordre de 2 a 3 en fin d'evolution (generation 100) | Chromosome converge vers un detecteur de bords efficace |
 | Vitesse de convergence | Variable | Depend de la population, du crossover et de la mutation |
 | Qualite visuelle du filtre | Amelioree progressivement | Les bords deviennent plus nets au fil des generations |
 
@@ -43466,9 +43466,9 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,72
 2. **Impact des opérateurs génétiques** : L'EliteSelection preserve les meilleurs individus, tandis que l'UniformCrossover et la ReverseSequenceMutation maintiennent la diversite.
 3. **Correlation avec Sobel** : Un score eleve indique que le filtre evolue produit des résultats similaires au filtre Sobel (reference en detection de bords).
 4. **Penalisation des filtres uniformes** : La fonction de fitness evite la solution triviale d'un filtre uniforme (tous les coefficients egaux) qui ne detecterait aucun bord.
-5. **Variabilite des valeurs** : la population et le chromosome initial sont tires au hasard, donc les scores affiches changent d'une execution a l'autre (sur l'execution affichee, la generation 1 vaut ~0,78 et la generation 100 ~2,36 ; une autre execution donne ~2,47 a la generation 100). Ce qui est **stable**, c'est la forme de la courbe : la selection elite conserve le meilleur individu, donc la suite des scores ""Meilleur score"" est non decroissante (verifie sur les 100 generations) et plafonne ici a ~2,36 a partir de la generation 71.
+5. **Variabilite des valeurs** : la population et le chromosome initial sont tires au hasard, donc les scores affiches changent d'une execution a l'autre (la generation 1 et le score final different d'une execution a l'autre, de l'ordre de 2 a 3 en fin d'evolution). Ce qui est **stable**, c'est la forme de la courbe : la selection elite conserve le meilleur individu, donc la suite des scores ""Meilleur score"" est non decroissante (verifie sur les 100 generations) puis plafonne en cours d'evolution.
 
-> **Note technique** : La fonction de fitness utilise une correlation normalisee (TemplateMatchingType.CcorrNormed) pour comparer les images. Cette méthode est robuste aux variations d'intensite globale mais peut etre sensible au bruit. Une amelioration possible serait d'ajouter une penalite pour la complexite du filtre (nombre de coefficients non nuls) pour privilegier les solutions simples.",,,,,,,,fb83fbc6bf494de5,,,,,,,,,,,,,,,
+> **Note technique** : La fonction de fitness utilise une correlation normalisee (TemplateMatchingType.CcorrNormed) pour comparer les images. Cette méthode est robuste aux variations d'intensite globale mais peut etre sensible au bruit. Une amelioration possible serait d'ajouter une penalite pour la complexite du filtre (nombre de coefficients non nuls) pour privilegier les solutions simples.",,,,,,,,67697e13fd28a926,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,611e87c7,markdown,fr,48449dd8ad0d2c50,"## Exercices
 
 ### Exercice 1 : Opérateur de Croisement par Point Unique
