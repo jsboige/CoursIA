@@ -34,9 +34,11 @@ schéma) · PR #23101 (document de l'étape 3, source des mesures rapportées su
 téléchargés à une empreinte SHA-256 épinglée puis compilés tels quels sous C99, pilotés par un driver
 qui n'écrit **aucune** formule physique. Sur une tranche plate ($\alpha = 1$, $\beta = 0$, $c = 1$) :
 conservation exacte de la masse à $10^{-15}$, préservation exacte de l'état propre $D_y = \pm cB_z$
-($\max\lvert D_y - cB_z\rvert = 0$), vitesse de propagation mesurée à `1.000000000000` aux cinq
-résolutions et dans les deux sens, ordre de convergence 1 (ordres locaux 0,745 → 0,948, pente ajustée
-0,861), et diffusion numérique visible comme la chute de $\max D_y$ de 1 à 0,659 à $N = 64$. Une
+($\max\lvert D_y - cB_z\rvert = 0$), vitesse de propagation mesurée à `+1.000000000000` pour l'onde
+droite aux cinq résolutions, et à `-1.000000000000` pour l'onde gauche aux deux résolutions testées
+($N = 128$ et $N = 512$) — même valeur absolue, signes opposés. L'ordre de convergence est 1 (ordres
+locaux 0,745 → 0,948, pente ajustée 0,861), et la diffusion numérique est visible comme la chute de
+$\max D_y$ de 1 à 0,659 à $N = 64$. Une
 seconde mesure relie le schéma à la preuve : les vitesses de la famille Lax-Friedrichs valent
 exactement $\pm(\alpha c + \lvert\beta_x\rvert)$, ce qui explique mécaniquement la diffusion observée.
 La Partie 4 sépare par écrit ce qui est **mesuré ici**, **rapporté** de l'inventaire, et **hors de
