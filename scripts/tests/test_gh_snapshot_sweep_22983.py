@@ -832,15 +832,16 @@ def test_le_stamp_extreme_ferme_le_balayage_mais_laisse_la_fenetre_servable(
        relue une par une, et son stamp est rafraichi.
 
     Apres cette lecture, `serves()` est VRAI pour la fenetre entiere :
-    l'ecart de balayage ne l'a pas condamnee. Ce qui refuse la fenetre,
-    c'est la voie STRICT du tapis, qui lit l'instantane **sans rafraichir**
-    -- temoin jumeau dans `test_pick_idle_grain_belt.py`
-    (`test_le_refus_strict_est_par_fenetre_et_non_par_numero`).
+    l'ecart de balayage ne l'a pas condamnee. Ce qui refuse un numero, c'est
+    la voie STRICT du tapis, qui lit l'instantane **sans rafraichir** --
+    temoin jumeau dans `test_pick_idle_grain_belt.py`
+    (`test_le_refus_strict_est_par_numero_et_non_par_fenetre`).
 
     Sans ce temoin, les deux portes se confondent : un run ou 11 numeros
-    sur 70 sont perimes et ou les 70 sont refuses se lit comme « la porte
-    du balayage a refuse la fenetre ». Elle ne l'a pas refusee : elle a
-    refuse le balayage, et c'est la STRICT qui a refuse la fenetre.
+    sur 70 sont perimes se lit comme « la porte du balayage a refuse la
+    fenetre ». Elle ne l'a pas refusee : elle a refuse le balayage, et
+    c'est la STRICT qui refuse, numero par numero, ceux dont l'instantane
+    ne prouve rien.
     """
     captures = []
 
