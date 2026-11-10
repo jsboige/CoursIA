@@ -7352,6 +7352,158 @@ def test_implicit_positive_control_14259(monkeypatch, capsys):
     assert data["implicit_occupation"][0]["number"] == 14293
 
 
+def _local_pr_history(tmp_path: Path, *, own_files: int = 0) -> tuple[str, list[str]]:
+    """Build real Git history: stale base, main update, then stacked PR head."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=repo, check=True, capture_output=True,
+            text=True, encoding="utf-8", errors="replace",
+        ).stdout.strip()
+
+    git("init", "-b", "main")
+    git("config", "user.name", "Local test")
+    git("config", "user.email", "test@example.invalid")
+    (repo / "base.txt").write_text("base\n", encoding="utf-8")
+    git("add", "base.txt")
+    git("commit", "-m", "base")
+    stale = git("rev-parse", "HEAD")
+    git("branch", "stale", stale)
+
+    carried = repo / "inherited"
+    carried.mkdir()
+    for index in range(105):
+        (carried / f"main-{index:03}.txt").write_text("main\n", encoding="utf-8")
+    git("add", "inherited")
+    git("commit", "-m", "main update with more than 100 files")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+
+    git("checkout", "-b", "pr", "stale")
+    git("merge", "--no-edit", "main")
+    # A no-tree-change commit models an open stacked PR whose only changed
+    # paths against its stale base are the files it inherited from main.
+    git("commit", "--allow-empty", "-m", "stacked PR metadata commit")
+    if own_files:
+        own = repo / "owned"
+        own.mkdir()
+        for index in range(own_files):
+            (own / f"pr-{index:03}.txt").write_text("PR work\n", encoding="utf-8")
+        git("add", "owned")
+        git("commit", "-m", "PR work")
+    return git("rev-parse", "HEAD"), [f"owned/pr-{i:03}.txt" for i in range(own_files)]
+
+
+def test_implicit_ignores_only_inherited_main_files_from_real_history(
+        tmp_path, monkeypatch):
+    head, _ = _local_pr_history(tmp_path)
+    monkeypatch.chdir(tmp_path / "repo")
+    pr = dict(_PR_14293, number=24482, headRefOid=head,
+              files=[{"path": f"inherited/main-{i:03}.txt"} for i in range(100)])
+
+    against_stale_base = subprocess.run(
+        ["git", "diff", "--name-only", "stale", head], check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    ).stdout.splitlines()
+    assert len(against_stale_base) == 105
+    assert len(pr["files"]) == 100  # API preview ceiling
+    assert clc._pr_files_against_main(pr) == []
+    assert clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr]) == []
+
+
+def test_implicit_keeps_own_collision_and_processes_more_than_100_paths(
+        tmp_path, monkeypatch):
+    head, own_paths = _local_pr_history(tmp_path, own_files=105)
+    monkeypatch.chdir(tmp_path / "repo")
+    pr = dict(_PR_14293, number=24483, headRefOid=head,
+              files=[{"path": f"inherited/main-{i:03}.txt"} for i in range(100)])
+
+    assert len(pr["files"]) == 100  # le Git local restitue les 105 chemins propres
+    assert set(clc._pr_files_against_main(pr)) == set(own_paths)
+    findings = clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr])
+    assert len(findings) == 1
+    assert findings[0]["files"] == own_paths
+
+
+@pytest.mark.parametrize("resolution", ["PR merge resolution\n", "left side\n"])
+def test_implicit_keeps_content_introduced_only_by_merge_commit(
+        tmp_path, monkeypatch, resolution):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=repo, check=True, capture_output=True,
+            text=True, encoding="utf-8", errors="replace",
+        ).stdout.strip()
+
+    def merge_conflict(branch: str) -> None:
+        proc = subprocess.run(
+            ["git", "merge", "--no-commit", branch], cwd=repo,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        assert proc.returncode == 1, proc.stdout + proc.stderr
+
+    git("init", "-b", "main")
+    git("config", "user.name", "Local test")
+    git("config", "user.email", "test@example.invalid")
+    shared = repo / "shared.txt"
+    shared.write_text("base\n", encoding="utf-8")
+    git("add", "shared.txt")
+    git("commit", "-m", "base")
+    base = git("rev-parse", "HEAD")
+
+    git("checkout", "-b", "right", base)
+    shared.write_text("right side\n", encoding="utf-8")
+    git("commit", "-am", "right side")
+    right = git("rev-parse", "HEAD")
+
+    git("checkout", "main")
+    shared.write_text("left side\n", encoding="utf-8")
+    git("commit", "-am", "left side")
+    left = git("rev-parse", "HEAD")
+    merge_conflict("right")
+    shared.write_text("main resolution\n", encoding="utf-8")
+    git("add", "shared.txt")
+    git("commit", "-m", "main merge resolution")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+
+    # Both non-merge parents are already reachable from main. This PR's only
+    # own tree content is its alternative conflict resolution in the merge.
+    git("checkout", "-b", "pr", left)
+    merge_conflict(right)
+    shared.write_text(resolution, encoding="utf-8")
+    git("add", "shared.txt")
+    git("commit", "-m", "PR merge resolution")
+    head = git("rev-parse", "HEAD")
+    monkeypatch.chdir(repo)
+    pr = dict(_PR_14293, number=24484, headRefOid=head,
+              files=[{"path": "shared.txt"}])
+
+    nonmerge_paths = subprocess.run(
+        ["git", "log", "--first-parent", "--no-merges", "--format=",
+         "--name-only", "-z", f"origin/main..{head}", "--"],
+        check=True, capture_output=True,
+    ).stdout
+    assert nonmerge_paths == b""
+    assert clc._pr_files_against_main(pr) == ["shared.txt"]
+    findings = clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr])
+    assert len(findings) == 1
+    assert findings[0]["files"] == ["shared.txt"]
+
+
+def test_implicit_provenance_failure_keeps_legacy_occupation():
+    # Impossible SHA: provenance cannot be proved, so inherited-looking API
+    # paths remain a blocker instead of being released on an error.
+    pr = dict(_PR_14293, number=None, headRefOid="0" * 40,
+              files=[{"path": "inherited/main-only.md"}])
+    assert clc._pr_files_against_main(pr) is None
+    findings = clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr])
+    assert len(findings) == 1
+    assert findings[0]["files"] == ["inherited/main-only.md"]
+
+
 def test_implicit_absent_when_no_pr_references(monkeypatch, capsys):
     # Faux negatif de reference : une PR ouverte d'une autre lane qui ne
     # reference PAS l'issue ne doit PAS declencher IMPLICIT.

@@ -9531,7 +9531,7 @@ Ce notebook a couvert les **briques algorithmiques essentielles** de NetworkX :
 - **[Search-03-Informed](Search-03-Informed.ipynb)** — A\* fait main (notre implémentation pédagogique avant de passer à NetworkX)
 - **[Search-08-DancingLinks](Search-08-DancingLinks.ipynb)** — couverture exacte avec Knuth DLX (graphe biparti d'incidence)
 - **[Partie 2 : CSP](../Part2-CSP/README.md)** — les graphes sont le substrat des problèmes de routing et scheduling (OR-Tools, Choco)
-- **[Recherche opérationnelle / SmartGrid](../../CaseStudies/SmartGrid-Energy/README.md)** — optimisation de réseaux électriques (flot max, network simplex)
+- **[Recherche opérationnelle / SmartGrid](../../CaseStudies/Reseau-Electrique-Intelligent/README.md)** — optimisation de réseaux électriques (flot max, network simplex)
 
 ### Pour aller plus loin
 
@@ -20560,15 +20560,17 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,ecf
 4. **Tous les algorithmes retournent la même valeur** : l'optimisation ne change pas le résultat, seulement la vitesse
 
 > **Note technique** : La table de transposition montre 1565 hits pour 3010 misses, indiquant que ~34% des etats ont ete rencontres precedemment. Ce taux augmente avec la profondeur de recherche.",,,,,,,,359daabd8421e34c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,exercices-section,markdown,fr,7f06e2832dcadbf3,"## Exercices
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,exercices-section,markdown,fr,6803b3b355f01f8d,"## Exercices
 
-### Exercice 1 : Connect Four
+Les exercices 1 et 2 d'origine (Connect Four, ordonnancement des coups) ont été résolus : leurs solutions sont reprises ci-dessous comme **exemples guidés** (contribution de Marko075, TP, PR #25577), suivis d'exercices neufs de difficulté comparable. Les exercices 3 à 6 sont inchangés.
 
-Implementez une classe `ConnectFour` heritant de `JeuSommeNulle` pour le jeu Puissance 4 (grille 6x7, 4 alignes pour gagner).
+### Exercice 1 : Reversi compact (4x4)
 
-### Exercice 2 : Ordonnancement des coups
+Implementez une classe `ReversiCompact` heritant de `JeuSommeNulle` pour une variante 4x4 du jeu d'encadrement (captures par encadrement dans les 8 directions, victoire a la majorite).
 
-Ameliorez Alpha-Beta en ordonnant les coups par potentiel decroissant (coups au centre d'abord).
+### Exercice 2 : Fenetres d'aspiration
+
+Ameliorez Alpha-Beta en cherchant d'abord dans une fenetre etroite autour de la valeur de la profondeur precedente, puis en relançant une recherche complete seulement si la fenetre echoue.
 
 ### Exercice 3 : Recherche de Quiescence
 
@@ -20584,65 +20586,163 @@ Implementez l'algorithme Negamax, une formulation simplifiee de Minimax ou les d
 
 ### Exercice 6 : Tournoi algorithmique
 
-Créez un framework de tournoi automatique entre différents algorithmes (aleatoire, Minimax, Alpha-Beta) et analysez les résultats statistiquement.",,,,,,,,7f06e2832dcadbf3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,o8n7ldilw8,code,fr,367e749499f74900,"# Exercice 1 : Connect Four
-# Exercice: Implementez la classe ConnectFour heritant de JeuSommeNulle
+Créez un framework de tournoi automatique entre différents algorithmes (aleatoire, Minimax, Alpha-Beta) et analysez les résultats statistiquement.",,,,,,,,6803b3b355f01f8d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,o8n7ldilw8,code,fr,12bc44b177bc6581,"# Exemple guide 1 : Connect Four (contribution de Marko075, TP / PR #25577)
+# Classe ConnectFour heritant de JeuSommeNulle
 # - Grille 6 lignes x 7 colonnes
 # - 4 pions alignes (horizontal, vertical, diagonal) pour gagner
 # - Les coups se jouent en choisissant une colonne (le pion tombe)
-# Indice: utilisez une liste de listes pour la grille, verifiez les 4 directions
+
+def _calculer_fenetres(nb_col=7, nb_lig=6, k=4):
+    fenetres = []
+    for c in range(nb_col):
+        for r in range(nb_lig):
+            for dc, dr in ((1, 0), (0, 1), (1, 1), (1, -1)):
+                c_fin, r_fin = c + (k - 1) * dc, r + (k - 1) * dr
+                if 0 <= c_fin < nb_col and 0 <= r_fin < nb_lig:
+                    fenetres.append([(c + i * dc, r + i * dr) for i in range(k)])
+    return fenetres
+
+FENETRES_C4 = _calculer_fenetres()
 
 class ConnectFour(JeuSommeNulle):
-    """"""Jeu de Puissance 4.""""""
+    """"""Jeu de Puissance 4 (6 lignes x 7 colonnes). Etat = (grille, joueur).""""""
 
     def __init__(self):
-        self._etat_initial = (tuple(tuple([' ']*6) for _ in range(7)), 'X')
+        # grille[colonne][ligne], ligne 0 = bas de la colonne
+        self._etat_initial = (tuple(tuple([' '] * 6) for _ in range(7)), 'X')
 
     def etat_initial(self):
-        return None  # TODO etudiant : retourner l'etat initial (grille 6x7 vide, joueur 'X')
+        return self._etat_initial
 
     def joueur(self, etat):
-        return None  # TODO etudiant : retourner 'MAX' si X doit jouer, 'MIN' sinon
+        return 'MAX' if etat[1] == 'X' else 'MIN'
 
     def actions(self, etat):
-        return None  # TODO etudiant : retourner les colonnes (0-6) qui ne sont pas pleines
+        grille = etat[0]
+        return [c for c in range(7) if grille[c][5] == ' ']   # colonne non pleine
 
     def resultat(self, etat, action):
-        return None  # TODO etudiant : faire tomber le pion dans la colonne, retourner nouvel etat
+        grille, joueur_actuel = etat
+        colonne = list(grille[action])
+        ligne = colonne.index(' ')               # premiere case libre en partant du bas
+        colonne[ligne] = joueur_actuel
+        nouvelle_grille = grille[:action] + (tuple(colonne),) + grille[action + 1:]
+        return (nouvelle_grille, 'O' if joueur_actuel == 'X' else 'X')
+
+    def _aligne(self, grille, pion):
+        return any(all(grille[c][r] == pion for c, r in f) for f in FENETRES_C4)
 
     def est_terminal(self, etat):
-        return None  # TODO etudiant : verifier 4 alignes dans toutes les directions ou grille pleine
+        grille = etat[0]
+        if self._aligne(grille, 'X') or self._aligne(grille, 'O'):
+            return True
+        return all(grille[c][5] != ' ' for c in range(7))     # grille pleine
 
     def utilite(self, etat, joueur):
-        return None  # TODO etudiant : retourner +1 si joueur gagne, -1 si perd, 0 si nul
+        grille = etat[0]
+        for pion, gagnant in (('X', 'MAX'), ('O', 'MIN')):
+            if self._aligne(grille, pion):
+                return 1 if gagnant == joueur else -1
+        return 0
 
     def afficher(self, etat):
-        return None  # TODO etudiant : retourner une representation textuelle de la grille
+        grille = etat[0]
+        lignes = ['|' + '|'.join(grille[c][r] for c in range(7)) + '|'
+                  for r in range(5, -1, -1)]               # haut -> bas
+        return '\n' + '\n'.join(lignes) + '\n 0 1 2 3 4 5 6\n'
 
 
-# --- Test (decommentez apres avoir complete l'exercice ci-dessus) ---
-# print(""Exercice a completer - voir les indices ci-dessus"")
+# --- Test ---
+c4 = ConnectFour()
+e = c4.etat_initial()
+print(c4.afficher(e))
+print(""Joueur :"", c4.joueur(e), ""| Actions :"", c4.actions(e))
 
-print(""Exercice a completer"")",,,,,,,,367e749499f74900,,,,,,,,,,,,,,,
+# X gagne en vertical dans la colonne 0 (X,O,X,O,X,O,X)
+for coup in [0, 1, 0, 1, 0, 1, 0]:
+    e = c4.resultat(e, coup)
+print(c4.afficher(e))
+print(""Terminal :"", c4.est_terminal(e), ""| Utilite MAX :"", c4.utilite(e, 'MAX'))",,,,,,,,12bc44b177bc6581,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,5f5508cf,markdown,fr,596f4162a52f315b,***,,,,,,,,596f4162a52f315b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,0sdp0t3db7ro,code,fr,4e68b7bbcfe8213f,"# Exercice 2 : Ordonnancement des coups
-# Exercice: Modifiez alpha_beta pour ordonner les coups par potentiel
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,0sdp0t3db7ro,code,fr,42e401d8c38e82c7,"# Exemple guide 2 : ordonnancement des coups dans Alpha-Beta (contribution de Marko075, TP / PR #25577)
 # - Les coups au centre sont generalement meilleurs (colonnes 3, 2, 4, 1, 5, 0, 6)
-# - Triez les actions avant de les explorer
-# Indice: creez une fonction ordonner_actions(actions, centre=3)
+# - On trie les actions avant de les explorer pour elaguer plus tot
 
 def ordonner_actions(actions, centre=3):
-    """"""Ordonne les actions par proximite au centre.""""""
-    return None  # TODO etudiant : trier les actions par distance croissante au centre
+    """"""Ordonne les actions par proximite au centre (3, 2, 4, 1, 5, 0, 6).""""""
+    return sorted(actions, key=lambda a: abs(a - centre))
 
-def alpha_beta_ordonne(state, max_depth, alpha=float(""-inf""), beta=float(""inf""), maximizing=True):
+def evaluation_c4(etat):
+    """"""Heuristique pour Puissance 4, du point de vue de MAX, bornee dans ]-1, 1[.""""""
+    grille = etat[0]
+    score = 0
+    for f in FENETRES_C4:
+        cases = [grille[c][r] for c, r in f]
+        x, o = cases.count('X'), cases.count('O')
+        if o == 0:
+            score += x ** 2
+        if x == 0:
+            score -= o ** 2
+    # bonus pour la colonne centrale
+    score += 3 * (grille[3].count('X') - grille[3].count('O'))
+    return max(-0.99, min(0.99, score / 300.0))
+
+_noeuds_c4 = {""n"": 0}
+
+def alpha_beta_ordonne(state, max_depth, alpha=float(""-inf""), beta=float(""inf""),
+                       maximizing=True, jeu=None, ordonner=True):
     """"""
-    Alpha-Beta avec tri des mouvements pour ameliorer l'elagage.
-    Utilise une heuristique pour ordonner les coups prometteurs d'abord.
+    Alpha-Beta avec tri des coups (centre d'abord) pour ameliorer l'elagage.
+    Retourne (valeur, meilleure_action). `ordonner=False` desactive le tri (comparaison).
     """"""
-    return None  # TODO etudiant : implementer alpha_beta_ordonne
-# --- Test (decommentez apres avoir complete l'exercice ci-dessus) ---
-# print(""Exercice a completer - voir les indices ci-dessus"")",,,,,,,,4e68b7bbcfe8213f,,,,,,,,,,,,,,,
+    if jeu is None:
+        jeu = ConnectFour()
+    _noeuds_c4[""n""] += 1
+
+    if jeu.est_terminal(state):
+        return jeu.utilite(state, 'MAX'), None
+    if max_depth == 0:
+        return evaluation_c4(state), None
+
+    actions = jeu.actions(state)
+    if ordonner:
+        actions = ordonner_actions(actions)
+
+    meilleure_action = None
+    if maximizing:
+        valeur = float(""-inf"")
+        for a in actions:
+            v, _ = alpha_beta_ordonne(jeu.resultat(state, a), max_depth - 1,
+                                      alpha, beta, False, jeu, ordonner)
+            if v > valeur:
+                valeur, meilleure_action = v, a
+            alpha = max(alpha, valeur)
+            if beta <= alpha:
+                break
+        return valeur, meilleure_action
+    valeur = float(""inf"")
+    for a in actions:
+        v, _ = alpha_beta_ordonne(jeu.resultat(state, a), max_depth - 1,
+                                  alpha, beta, True, jeu, ordonner)
+        if v < valeur:
+            valeur, meilleure_action = v, a
+        beta = min(beta, valeur)
+        if beta <= alpha:
+            break
+    return valeur, meilleure_action
+
+
+# --- Test : meme valeur, moins de noeuds avec le tri ---
+c4 = ConnectFour()
+print(""Ordre des coups :"", ordonner_actions(list(range(7))))
+
+for ordonne in (False, True):
+    _noeuds_c4[""n""] = 0
+    t0 = time.time()
+    v, a = alpha_beta_ordonne(c4.etat_initial(), 5, jeu=c4, ordonner=ordonne)
+    print(f""{'Avec tri' if ordonne else 'Sans tri'} : valeur={v:.3f}, action={a}, ""
+          f""noeuds={_noeuds_c4['n']:,d}, temps={time.time() - t0:.2f}s"")",,,,,,,,42e401d8c38e82c7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,52c7cc97,markdown,fr,596f4162a52f315b,***,,,,,,,,596f4162a52f315b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,7aqlxw701c3,code,fr,d3d5e9f60cf520c6,"# Exercice 3 : Recherche de Quiescence
 # Exercice: Implementez une recherche de quiescence pour eviter l'effet d'horizon
@@ -20805,6 +20905,340 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,con
 - Korf, R.E. (1985). Depth-first Iterative-Deepening: An Optimal Admissible Tree Search. Artificial Intelligence 27(1):97-109.
 
 ",,,,,,,,65e39553162c7209,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,nc-intro,markdown,fr,a4b06de2574f0599,"### 7.1 Comptage déterministe des nœuds : la réduction EXACTE de l'élagage
+
+Le benchmark du §7 mesure le **temps** (wall-clock) — une quantité **non déterministe** (elle dépend de la machine, de la charge, du cache), ce qui obligeait l'interprétation à raisonner en fourchettes (« 20-30x », « 50-100x+ »). Mais la vraie grandeur qui caractérise l'élagage alpha-beta n'est pas le temps : c'est le **nombre de nœuds visités** dans l'arbre de jeu. Celui-ci est **déterministe** (même arbre ⟹ même compte, re-exécution identique) : il permet des réductions **exactes**, reproductibles d'une machine à l'autre.
+
+Comptons donc les appels récursifs (nœuds visités) de `minimax`, d'`alpha_beta`, et les évaluations de `AlphaBetaTransposition` (ses `misses` = nœuds réellement développés, `hits` = nœuds servis depuis le cache), sur le Tic-Tac-Toe complet depuis l'état initial.
+",,,,,,,,a4b06de2574f0599,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,nc-code,code,fr,35dc6266f78aa945,"# --- Comptage DETERMINISTE des noeuds : minimax vs alpha-beta vs +transposition ---
+# Versions instrumentees (compteur d'appels recursifs) -- n'instrumentent PAS les
+# cellules pedagogiques 9/13/19 (celles-ci restent propres pour l'enseignement).
+_compteurs = {""minimax"": 0, ""alpha_beta"": 0}
+
+def minimax_compteur(jeu, etat, joueur_max=""MAX""):
+    _compteurs[""minimax""] += 1
+    if jeu.est_terminal(etat):
+        return jeu.utilite(etat, joueur_max), None
+    actions = jeu.actions(etat)
+    if jeu.joueur(etat) == joueur_max:
+        bv, ba = float(""-inf""), None
+        for a in actions:
+            v, _ = minimax_compteur(jeu, jeu.resultat(etat, a), joueur_max)
+            if v > bv:
+                bv, ba = v, a
+        return bv, ba
+    bv, ba = float(""+inf""), None
+    for a in actions:
+        v, _ = minimax_compteur(jeu, jeu.resultat(etat, a), joueur_max)
+        if v < bv:
+            bv, ba = v, a
+    return bv, ba
+
+def alpha_beta_compteur(jeu, etat, alpha, beta, joueur_max=""MAX""):
+    _compteurs[""alpha_beta""] += 1
+    if jeu.est_terminal(etat):
+        return jeu.utilite(etat, joueur_max), None
+    actions = jeu.actions(etat)
+    if jeu.joueur(etat) == joueur_max:
+        bv, ba = float(""-inf""), None
+        for a in actions:
+            v, _ = alpha_beta_compteur(jeu, jeu.resultat(etat, a), alpha, beta, joueur_max)
+            if v > bv:
+                bv, ba = v, a
+            alpha = max(alpha, bv)
+            if beta <= alpha:
+                break
+        return bv, ba
+    bv, ba = float(""+inf""), None
+    for a in actions:
+        v, _ = alpha_beta_compteur(jeu, jeu.resultat(etat, a), alpha, beta, joueur_max)
+        if v < bv:
+            bv, ba = v, a
+        beta = min(beta, bv)
+        if beta <= alpha:
+            break
+    return bv, ba
+
+jeu = TicTacToe()
+
+v_mm, _ = minimax_compteur(jeu, jeu.etat_initial())
+n_mm = _compteurs[""minimax""]
+
+v_ab, _ = alpha_beta_compteur(jeu, jeu.etat_initial(), float(""-inf""), float(""+inf""))
+n_ab = _compteurs[""alpha_beta""]
+
+abt = AlphaBetaTransposition()
+v_tr, _ = abt.rechercher(jeu, jeu.etat_initial(), 9, float(""-inf""), float(""+inf""))
+n_dev = abt.stats[""misses""]      # noeuds reellement developpes
+n_cache = abt.stats[""hits""]      # noeuds servis depuis le cache
+
+print(f""Noeuds visites (appeles recursifs) sur le Tic-Tac-Toe complet :"")
+print(f""  Minimax                 : {n_mm:>7,d} noeuds"")
+print(f""  Alpha-Beta              : {n_ab:>7,d} noeuds   (x{n_mm / n_ab:.1f} moins que minimax)"")
+print(f""  Alpha-Beta + Transpo.   : {n_dev:>7,d} developpes + {n_cache:,d} caches  (x{n_mm / n_dev:.1f} moins que minimax)"")
+print()
+print(f""Valeur (les 3 doivent coincider) : minimax={v_mm}, alpha-beta={v_ab}, transposition={v_tr}"")
+print(f""Reproductible : re-execution -> comptes identiques (deterministe, pas de timing)."")
+",,,,,,,,35dc6266f78aa945,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,nc-interp,markdown,fr,4927bf02ffd8318b,"**Lecture — la réduction de l'élagage, mesurée EXACTEMENT.** Sur l'arbre complet du Tic-Tac-Toe (549 946 nœuds pour le minimax exhaustif), l'élagage alpha-beta n'en visite que 18 297, soit **~30× moins** — et la table de transposition ramène le compte des nœuds *réellement développés* à 3 010 (1 565 autres étant servis depuis le cache), soit **~183× moins** que le minimax pur et **~6× moins** qu'alpha-beta seul.
+
+Deux points rendent cette mesure plus probante que celle du §7 :
+
+1. **Elle est déterministe.** Les ratios 30× et 183× sont des compteurs de nœuds, pas des durées : ils sont **reproductibles à l'identique** sur toute machine (re-exécution ↔ mêmes nombres), là où les speedups temporels du §7 (27-30×, ~139×) flottent avec la charge et le matériel. Le ratio de nœuds *valide* le speedup temporel — on retrouve bien ~30× pour alpha-beta dans les deux mesures.
+2. **Elle isole le mécanisme.** Le temps mélange le coût d'un nœud (création d'état, hachage) et leur nombre ; le compte de nœuds mesure *purement* l'effet de l'élagage alpha-beta (coupe des branches β ≤ α) et de la transposition (fusion des états équivalents par hash). C'est donc la grandeur qui exprime **la capacité algorithmique** des deux optimisations, indépendamment de l'implémentation.
+
+> **Lien CS** : la borne théorique de l'élagage alpha-beta avec *ordonnancement parfait* des coups est $b^{d/2}$ nœuds (vs $b^d$ pour minimax), soit un facteur $\sqrt{b^d}$ — l'élagage « divise la profondeur effective par 2 ». Le ratio empirique ~30× observé ici est cohérent avec cette borne sur le Tic-Tac-Toe ($b \approx 7$ en moyenne, $d = 9$). La transposition ajoute un gain *orthogonal* (fusion des permutations de coups menant au même état), d'où le facteur ~6× supplémentaire.
+",,,,,,,,4927bf02ffd8318b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,sec72-prongb-header,markdown,fr,21d483bebc945ca0,"### 7.2 Quand l'élagage devient *nécessaire* : un jeu dont l'arbre minimax explose
+
+Le §7.1 a mesuré la réduction de l'élagage sur le Tic-Tac-Toe — mais celui-ci reste un jeu **trivialement petit** : son arbre complet (549 946 nœuds) se parcourt en millisecondes, et le minimax exhaustif le résout sans effort. L'élagage y est *accessoire* — on pourrait s'en passer.
+
+Pour voir **quand l'élagage alpha-beta devient indispensable**, il faut un jeu dont l'arbre minimax **explose** avec la profondeur. Prenons un *(m, n, k)-jeu* plus large : une grille $5 \times 5$ où il faut aligner 4 pions (facteur de branchement $\approx 20$, profondeur jusqu'à 25). On y relance les trois mêmes compteurs (minimax, alpha-beta, +transposition), cette fois à **profondeur limitée** — l'arbre complet étant inexplorable — et on regarde comment le nombre de nœuds **croît** d'un niveau à l'autre.",,,,,,,,21d483bebc945ca0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,sec72-prongb-code,code,fr,b87ecd1cc93bad3b,"# --- §7.2 (m,n,k)-jeu : grille 5x5, aligner 4 pions (arbre minimax EXPLOSIF) ---
+# Les compteurs du §7.1 étaient à profondeur illimitée (conçus pour le Tic-Tac-Toe
+# complet). Ici l'arbre est inexplorable : versions à PROFONDEUR LIMITÉE (coupure à
+# `prof`, heuristique neutre = utilité — le point est le COMPTE de nœuds, pas la valeur).
+
+class JeuMNK(JeuSommeNulle):
+    """"""(m,n,k)-jeu : grille m x n, aligner k pions. État = tuple hashable.""""""
+
+    def __init__(self, m=5, n=5, k=4):
+        self.m, self.n, self.k = m, n, k
+    def etat_initial(self):
+        return tuple([0] * (self.m * self.n))
+    def actions(self, etat):
+        return [i for i, v in enumerate(etat) if v == 0]
+    def resultat(self, etat, action):
+        joueur = 1 if etat.count(1) <= etat.count(2) else 2   # MAX (X) commence
+        return etat[:action] + (joueur,) + etat[action+1:]
+    def joueur(self, etat):
+        return 'MAX' if etat.count(1) <= etat.count(2) else 'MIN'
+    def _aligne(self, etat, pion):
+        m, n, k = self.m, self.n, self.k
+        for r in range(m):
+            for c in range(n):
+                if etat[r * n + c] != pion:
+                    continue
+                for dr, dc in ((0, 1), (1, 0), (1, 1), (1, -1)):
+                    rr, cc, longueur = r, c, 0
+                    while 0 <= rr < m and 0 <= cc < n and etat[rr * n + cc] == pion:
+                        longueur, rr, cc = longueur + 1, rr + dr, cc + dc
+                    if longueur >= k:
+                        return True
+        return False
+    def est_terminal(self, etat):
+        return self._aligne(etat, 1) or self._aligne(etat, 2) or 0 not in etat
+    def utilite(self, etat, joueur='MAX'):
+        gagne_max, gagne_min = self._aligne(etat, 1), self._aligne(etat, 2)
+        if joueur == 'MAX':
+            return 1 if gagne_max else (-1 if gagne_min else 0)
+        return 1 if gagne_min else (-1 if gagne_max else 0)
+    def afficher(self, etat):
+        sym = {0: '.', 1: 'X', 2: 'O'}
+        return '\n'.join(' '.join(sym[etat[r * self.n + c]] for c in range(self.n))
+                         for r in range(self.m))
+
+_cpt_prof = {""minimax"": 0, ""alpha_beta"": 0, ""transposition"": 0}
+
+def minimax_prof(jeu, etat, prof, joueur_max='MAX'):
+    _cpt_prof[""minimax""] += 1
+    if jeu.est_terminal(etat) or prof == 0:
+        return jeu.utilite(etat, joueur_max)
+    actions = jeu.actions(etat)
+    if jeu.joueur(etat) == joueur_max:
+        return max(minimax_prof(jeu, jeu.resultat(etat, a), prof - 1, joueur_max) for a in actions)
+    return min(minimax_prof(jeu, jeu.resultat(etat, a), prof - 1, joueur_max) for a in actions)
+
+def alpha_beta_prof(jeu, etat, prof, alpha, beta, joueur_max='MAX'):
+    _cpt_prof[""alpha_beta""] += 1
+    if jeu.est_terminal(etat) or prof == 0:
+        return jeu.utilite(etat, joueur_max)
+    actions = jeu.actions(etat)
+    if jeu.joueur(etat) == joueur_max:
+        v = float('-inf')
+        for a in actions:
+            v = max(v, alpha_beta_prof(jeu, jeu.resultat(etat, a), prof - 1, alpha, beta, joueur_max))
+            alpha = max(alpha, v)
+            if beta <= alpha:
+                break
+        return v
+    v = float('+inf')
+    for a in actions:
+        v = min(v, alpha_beta_prof(jeu, jeu.resultat(etat, a), prof - 1, alpha, beta, joueur_max))
+        beta = min(beta, v)
+        if beta <= alpha:
+            break
+    return v
+
+def alpha_beta_transpo_prof(jeu, etat, prof, alpha, beta, table, joueur_max='MAX'):
+    _cpt_prof[""transposition""] += 1
+    if etat in table and table[etat][1] >= prof:
+        return table[etat][0]
+    if jeu.est_terminal(etat) or prof == 0:
+        v = jeu.utilite(etat, joueur_max); table[etat] = (v, prof); return v
+    actions = jeu.actions(etat)
+    if jeu.joueur(etat) == joueur_max:
+        v = float('-inf')
+        for a in actions:
+            v = max(v, alpha_beta_transpo_prof(jeu, jeu.resultat(etat, a), prof - 1, alpha, beta, table, joueur_max))
+            alpha = max(alpha, v)
+            if beta <= alpha:
+                break
+    else:
+        v = float('+inf')
+        for a in actions:
+            v = min(v, alpha_beta_transpo_prof(jeu, jeu.resultat(etat, a), prof - 1, alpha, beta, table, joueur_max))
+            beta = min(beta, v)
+            if beta <= alpha:
+                break
+    table[etat] = (v, prof)
+    return v
+
+import time
+jeu_large = JeuMNK(5, 5, 4)
+print(""Croissance des nœuds visités — jeu (5x5, aligner 4) selon la profondeur :"")
+print(f""{'prof':>5} | {'minimax':>14} | {'alpha-beta':>12} | {'+transposition':>15} | {'gain AB':>9} | {'gain +TT':>9}"")
+print(""-"" * 86)
+for prof in [3, 4]:
+    for cle in _cpt_prof:
+        _cpt_prof[cle] = 0
+    minimax_prof(jeu_large, jeu_large.etat_initial(), prof)
+    n_mm = _cpt_prof[""minimax""]
+    alpha_beta_prof(jeu_large, jeu_large.etat_initial(), prof, float('-inf'), float('+inf'))
+    n_ab = _cpt_prof[""alpha_beta""]
+    alpha_beta_transpo_prof(jeu_large, jeu_large.etat_initial(), prof, float('-inf'), float('+inf'), {})
+    n_tt = _cpt_prof[""transposition""]
+    print(f""{prof:>5} | {n_mm:>14,d} | {n_ab:>12,d} | {n_tt:>15,d} | x{n_mm / n_ab:>7.1f} | x{n_mm / n_tt:>7.1f}"")
+
+# Profondeur 5 : le minimax explose (~6,7 millions, plusieurs minutes) — on ne lance QUE l'élagage.
+for cle in _cpt_prof:
+    _cpt_prof[cle] = 0
+alpha_beta_prof(jeu_large, jeu_large.etat_initial(), 5, float('-inf'), float('+inf'))
+n_ab5 = _cpt_prof[""alpha_beta""]
+alpha_beta_transpo_prof(jeu_large, jeu_large.etat_initial(), 5, float('-inf'), float('+inf'), {})
+n_tt5 = _cpt_prof[""transposition""]
+N_MM5_MESURE = 6_693_626   # minimax exhaustif prof=5 mesuré hors-ligne (~minutes, non relancé en direct)
+print(f""{'5':>5} | {'~' + format(N_MM5_MESURE, ',d') + ' (mesuré)':>14} | {n_ab5:>12,d} | {n_tt5:>15,d} | x{N_MM5_MESURE / n_ab5:>7.1f} | x{N_MM5_MESURE / n_tt5:>7.1f}"")
+print()
+print(""-> Le minimax est multiplié par ~22 à chaque niveau (14k -> 318k -> 6,7M) ;"")
+print(""   l'alpha-beta+transposition ne l'est que par ~3-4 (672 -> 1,5k -> 8k)."")
+print(""   L'écart EXPLOSE : c'est ici que l'élagage passe d'utile à INDISPENSABLE."")",,,,,,,,b87ecd1cc93bad3b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,sec72-prongb-interp,markdown,fr,f8fc13302fa01382,"**Lecture — la bascule de l'utile à l'indispensable.** Sur le Tic-Tac-Toe (§7.1), l'arbre complet (549 946 nœuds) se parcourt en millisecondes : l'élagage y est *appréciable* mais non *nécessaire* — le minimax exhaustif suffit. Sur le jeu $5 \times 5$ (aligner 4), la situation bascule :
+
+- **Le minimax explose.** Le nombre de nœuds est multiplié par ~22 à chaque niveau de profondeur supplémentaire (14 426 -> 318 026 -> ~6,7 millions à profondeur 5). Au-delà, il devient **inexplorable en pratique** (profondeur 6 ~ 140 millions). C'est le régime où un minimax naïf *ne termine pas*.
+- **L'élagage garde une croissance maîtrisée.** Alpha-beta (+transposition) ne multiplie ses nœuds que par ~3-4 par niveau (672 -> 1 498 -> 8 051). Le **gain relatif explose** avec la profondeur : x21 (prof 3) -> x212 (prof 4) -> x831 (prof 5). Plus le jeu est profond, plus l'élagage *détermine* la faisabilité de la recherche.
+
+C'est la vraie leçon de capacité : sur un jeu trivial, l'élagage est un confort ; sur un jeu dont l'arbre est vaste, il est la **condition même** de la recherche. Les ordinateurs battent les humains aux dames ou (presque) au Go, non pas avec du minimax exhaustif — qui y est inenvisageable — mais avec alpha-beta, des tables de transposition, et (pour le Go) MCTS (cf. Search-7).
+
+> **Lien CS.** La borne $b^{d/2}$ de l'alpha-beta avec ordonnancement parfait (vs $b^d$ pour le minimax, cf. §7.1) signifie que l'élagage « divise la profondeur effective par deux » : chaque niveau de plus coûte $\sqrt{b}$ fois plus de nœuds à l'alpha-beta, contre $b$ fois plus au minimax. Sur le $5 \times 5$ ($b \approx 20$), cela donne $\sqrt{20} \approx 4.5$ vs $20$ — soit le rapport de croissance ~3-4 (mesuré) contre ~22 (mesuré), et le gain cumulé x831 à profondeur 5. Exactement le passage de « trop grand pour minimax » à « tractable avec élagage ».",,,,,,,,f8fc13302fa01382,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,f7574762,markdown,fr,e58f84b234c30f6f,"### Exemple guidé 1 — Connect Four comme jeu à somme nulle
+
+Contribution de Marko075 (TP, PR #25577), reprise ici comme exemple guidé : l'exercice 1 d'origine demandait d'implémenter une classe `ConnectFour` héritant de `JeuSommeNulle` (grille 6x7, 4 pions alignés pour gagner, coups joués par colonne).
+
+**Ce que montre la solution** :
+- un état immuable : un tuple de 7 colonnes (6 cases chacune, la case 0 en bas de la colonne) suivi du joueur courant `'X'`/`'O'` ;
+- les 69 fenêtres de 4 cases (horizontales, verticales, deux diagonales) sont pré-calculées une seule fois : `est_terminal` et `utilite` parcourent cette liste au lieu de re-scanner la grille dans les 4 directions à chaque appel ;
+- `actions` ne retient que les colonnes non pleines et `resultat` fait tomber le pion sur la première case libre en partant du bas ;
+- le test joue une partie coup par coup et montre la victoire verticale de X dans la colonne 0.",,,,,,,,e58f84b234c30f6f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,4cac18b8,markdown,fr,2d329a4267fe0e01,"### Lecture du résultat
+
+La grille vide s'affiche avec ses 7 colonnes numérotées de 0 à 6 ; à l'état initial le joueur est `MAX` (X commence) et les 7 colonnes sont jouables (`Actions : [0, 1, 2, 3, 4, 5, 6]`). Après la séquence de coups `[0, 1, 0, 1, 0, 1, 0]` — X joue toujours la colonne 0, O toujours la colonne 1 — la grille montre 4 X empilés dans la colonne 0 face à 3 O dans la colonne 1 : `est_terminal` renvoie `True` et `utilite` vaut `1` pour MAX. Ce verdict est immédiat car la colonne 0 complète est l'une des 69 fenêtres pré-calculées : détecter la victoire ne re-scanne pas la grille.",,,,,,,,2d329a4267fe0e01,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,412c8dfd,markdown,fr,9333d90a35276694,"### Exemple guidé 2 — Ordonnancement des coups dans Alpha-Beta
+
+Contribution de Marko075 (TP, PR #25577), reprise ici comme exemple guidé : l'exercice 2 d'origine demandait d'améliorer Alpha-Beta en ordonnant les coups par potentiel décroissant (coups au centre d'abord).
+
+**Ce que montre la solution** :
+- `ordonner_actions` trie les colonnes par distance croissante au centre : `[3, 2, 4, 1, 5, 0, 6]` ;
+- `evaluation_c4`, heuristique par fenêtres (score quadratique des fenêtres exemptes du pion adverse, bonus de colonne centrale), bornée dans ]-1, 1[, permet de stopper la récursion à profondeur limitée ;
+- `alpha_beta_ordonne` conserve l'élagage Alpha-Beta mais explore d'abord les coups centraux : placés en tête, ils resserrent vite les bornes et déclenchent les coupures plus tôt ;
+- le paramètre `ordonner` et le compteur de noeuds `_noeuds_c4` permettent la comparaison directe avec et sans tri, à profondeur 5 depuis la position initiale.",,,,,,,,9333d90a35276694,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,6f97f0be,markdown,fr,343ea8711fec905c,"### Lecture du résultat
+
+L'ordre produit est bien `[3, 2, 4, 1, 5, 0, 6]` : le centre d'abord, puis les colonnes par distance croissante. À profondeur 5 depuis la position initiale, les deux recherches renvoient la même valeur (`0.040`) et la même meilleure action (`2`) : l'ordonnancement ne change pas le résultat, seulement l'ordre d'exploration — c'est l'invariant d'optimalité d'Alpha-Beta. En revanche le compteur de noeuds s'effondre de 4 115 à 743 (environ 5,5 fois moins) : explorer d'abord le coup le plus prometteur resserre les bornes alpha/beta dès les premiers fils, et les branches restantes sont coupées avant d'être développées. Le nombre de noeuds est un invariant structurel (algorithme déterministe) ; les temps mesurés (0,34 s contre 0,06 s) suivent le même rapport mais restent dépendants de la machine.",,,,,,,,343ea8711fec905c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,0b15e727,code,fr,50702431d480fd69,"# Exercice 1 : Reversi compact (4x4)
+# Exercice: Implementez la classe ReversiCompact heritant de JeuSommeNulle
+# - Grille 4x4, grille[ligne][colonne], case ' ' vide
+# - Un coup place un pion sur une case vide et retourne les pions adverses encadres
+#   dans une ligne (8 directions possibles) qui se termine par un pion ami
+# - Un coup legal doit retourner au moins un pion adverse
+# - Si le joueur courant n'a aucun coup legal mais que l'adversaire en a, il passe ;
+#   la partie s'arrete quand aucun des deux ne peut jouer
+# - A la fin, le vainqueur a la majorite des pions
+# Indice: parcourir les 8 directions depuis la case jouee et collecter les pions
+# Indice: s'inspirer de la representation immuable de ConnectFour ci-dessus
+
+class ReversiCompact(JeuSommeNulle):
+    """"""Reversi 4x4 (variante compacte du jeu d'encadrement).""""""
+
+    def __init__(self):
+        # disposition initiale : 2 X et 2 O en quinconce au centre
+        g = [[' '] * 4 for _ in range(4)]
+        g[1][1], g[1][2] = 'O', 'X'
+        g[2][1], g[2][2] = 'X', 'O'
+        self._etat_initial = (tuple(tuple(ligne) for ligne in g), 'X')
+
+    def etat_initial(self):
+        return None  # TODO etudiant : retourner l'etat initial (grille 4x4, X doit jouer)
+
+    def joueur(self, etat):
+        return None  # TODO etudiant : retourner 'MAX' si X doit jouer, 'MIN' sinon
+
+    def _pions_retournes(self, grille, ligne, colonne, pion):
+        """"""Liste des cases adverses retournees si pion est place en (ligne, colonne).""""""
+        return None  # TODO etudiant : tester les 8 directions, collecter les encadrements
+
+    def actions(self, etat):
+        return None  # TODO etudiant : cases vides qui retournent au moins un pion
+
+    def resultat(self, etat, action):
+        return None  # TODO etudiant : placer le pion, retourner les encadres, changer de joueur
+
+    def est_terminal(self, etat):
+        return None  # TODO etudiant : vrai si aucun des deux joueurs n'a de coup legal
+
+    def utilite(self, etat, joueur):
+        return None  # TODO etudiant : +1 si majorite du joueur, -1 si minorite, 0 si egalite
+
+    def afficher(self, etat):
+        return None  # TODO etudiant : representation textuelle de la grille
+
+
+# --- Test (decommentez apres avoir complete l'exercice ci-dessus) ---
+# rev = ReversiCompact()
+# e = rev.etat_initial()
+# print(rev.afficher(e))
+# print(""Joueur :"", rev.joueur(e), ""| Actions :"", rev.actions(e))
+
+print(""Exercice a completer"")",,,,,,,,50702431d480fd69,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,72f36feb,markdown,fr,596f4162a52f315b,***,,,,,,,,596f4162a52f315b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,9e3d486b,code,fr,9fd3584b39624a1c,"# Exercice 2 : Fenetres d'aspiration
+# Exercice: Ameliorez Alpha-Beta en cherchant d'abord dans une fenetre etroite
+# - Idee : la valeur a profondeur d est proche de la valeur a profondeur d-1 ;
+#   on cherche donc d'abord dans la fenetre [v - delta, v + delta]
+# - Si la valeur rendue sort de la fenetre (elle egale une borne), la recherche a
+#   echoue : il faut relancer avec une fenetre elargie, jusqu'a la fenetre complete
+# - Une fenetre qui reussit evite d'explorer les branches manifestement hors fenetre
+# Indice: utilisez alpha_beta_limite(jeu, etat, profondeur, alpha, beta) du §5
+# Indice: comptez les recherches lancees et retournez ce compteur pour verifier l'economie
+
+def recherche_aspiration(jeu, etat, profondeur, delta=0.3):
+    """"""
+    Recherche par fenetre d'aspiration.
+    Retourne (valeur, meilleure_action, recherches_lancees).
+    """"""
+    return None  # TODO etudiant : chercher a profondeur - 1 en fenetre complete,
+                 # puis tenter la fenetre [v - delta, v + delta] a profondeur,
+                 # et elargir la fenetre tant que la recherche echoue
+
+
+# --- Test (decommentez apres avoir complete l'exercice ci-dessus) ---
+# jeu_tt = TicTacToe()
+# v, a, n = recherche_aspiration(jeu_tt, jeu_tt.etat_initial(), 6)
+# print(f""Aspiration : valeur={v:.3f}, action={a}, recherches={n}"")
+
+print(""Exercice a completer"")",,,,,,,,9fd3584b39624a1c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,5e9ee26a,markdown,fr,596f4162a52f315b,***,,,,,,,,596f4162a52f315b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb,nav-header,markdown,fr,863aa57fd7644f05,"# Search-07-MCTS-And-Beyond : Monte Carlo Tree Search et Extensions
 
 **Navigation** : [<< Recherche adversariale](Search-06-AdversarialSearch.ipynb) | [Index](../README.md) | [Dancing Links >>](Search-08-DancingLinks.ipynb)
@@ -28704,233 +29138,6 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms-CSharp.ip
 **Contexte.** Le taux de mutation adaptatif (§5.2) fait décroître la mutation avec les générations : fort au début (~0.1, exploration large), faible à la fin (~0.001, raffinement local). La cellule §5.2 a défini `AdaptiveRate(gen, maxGen)` mais le `GeneticAlgorithm<T>` utilise encore un taux **fixe**.
 
 **Objectif.** Surchargez `GeneticAlgorithm<T>.Run` pour que `MutateGauss` (opérateur réel, §4) appelle `AdaptiveRate(g, generations)` à chaque génération, puis comparez la trajectoire de convergence (meilleur fitness par génération) à celle du taux fixe $0{,}01$. Hypothèse à vérifier : le taux adaptatif doit atteindre un meilleur optimum final sur Rastrigin, en explorant largement au début puis en stabilisant la population.",,,,,,,,3631fed07f7e4ca0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,nc-intro,markdown,fr,a4b06de2574f0599,"### 7.1 Comptage déterministe des nœuds : la réduction EXACTE de l'élagage
-
-Le benchmark du §7 mesure le **temps** (wall-clock) — une quantité **non déterministe** (elle dépend de la machine, de la charge, du cache), ce qui obligeait l'interprétation à raisonner en fourchettes (« 20-30x », « 50-100x+ »). Mais la vraie grandeur qui caractérise l'élagage alpha-beta n'est pas le temps : c'est le **nombre de nœuds visités** dans l'arbre de jeu. Celui-ci est **déterministe** (même arbre ⟹ même compte, re-exécution identique) : il permet des réductions **exactes**, reproductibles d'une machine à l'autre.
-
-Comptons donc les appels récursifs (nœuds visités) de `minimax`, d'`alpha_beta`, et les évaluations de `AlphaBetaTransposition` (ses `misses` = nœuds réellement développés, `hits` = nœuds servis depuis le cache), sur le Tic-Tac-Toe complet depuis l'état initial.
-",,,,,,,,a4b06de2574f0599,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,nc-code,code,fr,35dc6266f78aa945,"# --- Comptage DETERMINISTE des noeuds : minimax vs alpha-beta vs +transposition ---
-# Versions instrumentees (compteur d'appels recursifs) -- n'instrumentent PAS les
-# cellules pedagogiques 9/13/19 (celles-ci restent propres pour l'enseignement).
-_compteurs = {""minimax"": 0, ""alpha_beta"": 0}
-
-def minimax_compteur(jeu, etat, joueur_max=""MAX""):
-    _compteurs[""minimax""] += 1
-    if jeu.est_terminal(etat):
-        return jeu.utilite(etat, joueur_max), None
-    actions = jeu.actions(etat)
-    if jeu.joueur(etat) == joueur_max:
-        bv, ba = float(""-inf""), None
-        for a in actions:
-            v, _ = minimax_compteur(jeu, jeu.resultat(etat, a), joueur_max)
-            if v > bv:
-                bv, ba = v, a
-        return bv, ba
-    bv, ba = float(""+inf""), None
-    for a in actions:
-        v, _ = minimax_compteur(jeu, jeu.resultat(etat, a), joueur_max)
-        if v < bv:
-            bv, ba = v, a
-    return bv, ba
-
-def alpha_beta_compteur(jeu, etat, alpha, beta, joueur_max=""MAX""):
-    _compteurs[""alpha_beta""] += 1
-    if jeu.est_terminal(etat):
-        return jeu.utilite(etat, joueur_max), None
-    actions = jeu.actions(etat)
-    if jeu.joueur(etat) == joueur_max:
-        bv, ba = float(""-inf""), None
-        for a in actions:
-            v, _ = alpha_beta_compteur(jeu, jeu.resultat(etat, a), alpha, beta, joueur_max)
-            if v > bv:
-                bv, ba = v, a
-            alpha = max(alpha, bv)
-            if beta <= alpha:
-                break
-        return bv, ba
-    bv, ba = float(""+inf""), None
-    for a in actions:
-        v, _ = alpha_beta_compteur(jeu, jeu.resultat(etat, a), alpha, beta, joueur_max)
-        if v < bv:
-            bv, ba = v, a
-        beta = min(beta, bv)
-        if beta <= alpha:
-            break
-    return bv, ba
-
-jeu = TicTacToe()
-
-v_mm, _ = minimax_compteur(jeu, jeu.etat_initial())
-n_mm = _compteurs[""minimax""]
-
-v_ab, _ = alpha_beta_compteur(jeu, jeu.etat_initial(), float(""-inf""), float(""+inf""))
-n_ab = _compteurs[""alpha_beta""]
-
-abt = AlphaBetaTransposition()
-v_tr, _ = abt.rechercher(jeu, jeu.etat_initial(), 9, float(""-inf""), float(""+inf""))
-n_dev = abt.stats[""misses""]      # noeuds reellement developpes
-n_cache = abt.stats[""hits""]      # noeuds servis depuis le cache
-
-print(f""Noeuds visites (appeles recursifs) sur le Tic-Tac-Toe complet :"")
-print(f""  Minimax                 : {n_mm:>7,d} noeuds"")
-print(f""  Alpha-Beta              : {n_ab:>7,d} noeuds   (x{n_mm / n_ab:.1f} moins que minimax)"")
-print(f""  Alpha-Beta + Transpo.   : {n_dev:>7,d} developpes + {n_cache:,d} caches  (x{n_mm / n_dev:.1f} moins que minimax)"")
-print()
-print(f""Valeur (les 3 doivent coincider) : minimax={v_mm}, alpha-beta={v_ab}, transposition={v_tr}"")
-print(f""Reproductible : re-execution -> comptes identiques (deterministe, pas de timing)."")
-",,,,,,,,35dc6266f78aa945,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,nc-interp,markdown,fr,4927bf02ffd8318b,"**Lecture — la réduction de l'élagage, mesurée EXACTEMENT.** Sur l'arbre complet du Tic-Tac-Toe (549 946 nœuds pour le minimax exhaustif), l'élagage alpha-beta n'en visite que 18 297, soit **~30× moins** — et la table de transposition ramène le compte des nœuds *réellement développés* à 3 010 (1 565 autres étant servis depuis le cache), soit **~183× moins** que le minimax pur et **~6× moins** qu'alpha-beta seul.
-
-Deux points rendent cette mesure plus probante que celle du §7 :
-
-1. **Elle est déterministe.** Les ratios 30× et 183× sont des compteurs de nœuds, pas des durées : ils sont **reproductibles à l'identique** sur toute machine (re-exécution ↔ mêmes nombres), là où les speedups temporels du §7 (27-30×, ~139×) flottent avec la charge et le matériel. Le ratio de nœuds *valide* le speedup temporel — on retrouve bien ~30× pour alpha-beta dans les deux mesures.
-2. **Elle isole le mécanisme.** Le temps mélange le coût d'un nœud (création d'état, hachage) et leur nombre ; le compte de nœuds mesure *purement* l'effet de l'élagage alpha-beta (coupe des branches β ≤ α) et de la transposition (fusion des états équivalents par hash). C'est donc la grandeur qui exprime **la capacité algorithmique** des deux optimisations, indépendamment de l'implémentation.
-
-> **Lien CS** : la borne théorique de l'élagage alpha-beta avec *ordonnancement parfait* des coups est $b^{d/2}$ nœuds (vs $b^d$ pour minimax), soit un facteur $\sqrt{b^d}$ — l'élagage « divise la profondeur effective par 2 ». Le ratio empirique ~30× observé ici est cohérent avec cette borne sur le Tic-Tac-Toe ($b \approx 7$ en moyenne, $d = 9$). La transposition ajoute un gain *orthogonal* (fusion des permutations de coups menant au même état), d'où le facteur ~6× supplémentaire.
-",,,,,,,,4927bf02ffd8318b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,sec72-prongb-header,markdown,fr,21d483bebc945ca0,"### 7.2 Quand l'élagage devient *nécessaire* : un jeu dont l'arbre minimax explose
-
-Le §7.1 a mesuré la réduction de l'élagage sur le Tic-Tac-Toe — mais celui-ci reste un jeu **trivialement petit** : son arbre complet (549 946 nœuds) se parcourt en millisecondes, et le minimax exhaustif le résout sans effort. L'élagage y est *accessoire* — on pourrait s'en passer.
-
-Pour voir **quand l'élagage alpha-beta devient indispensable**, il faut un jeu dont l'arbre minimax **explose** avec la profondeur. Prenons un *(m, n, k)-jeu* plus large : une grille $5 \times 5$ où il faut aligner 4 pions (facteur de branchement $\approx 20$, profondeur jusqu'à 25). On y relance les trois mêmes compteurs (minimax, alpha-beta, +transposition), cette fois à **profondeur limitée** — l'arbre complet étant inexplorable — et on regarde comment le nombre de nœuds **croît** d'un niveau à l'autre.",,,,,,,,21d483bebc945ca0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,sec72-prongb-code,code,fr,b87ecd1cc93bad3b,"# --- §7.2 (m,n,k)-jeu : grille 5x5, aligner 4 pions (arbre minimax EXPLOSIF) ---
-# Les compteurs du §7.1 étaient à profondeur illimitée (conçus pour le Tic-Tac-Toe
-# complet). Ici l'arbre est inexplorable : versions à PROFONDEUR LIMITÉE (coupure à
-# `prof`, heuristique neutre = utilité — le point est le COMPTE de nœuds, pas la valeur).
-
-class JeuMNK(JeuSommeNulle):
-    """"""(m,n,k)-jeu : grille m x n, aligner k pions. État = tuple hashable.""""""
-
-    def __init__(self, m=5, n=5, k=4):
-        self.m, self.n, self.k = m, n, k
-    def etat_initial(self):
-        return tuple([0] * (self.m * self.n))
-    def actions(self, etat):
-        return [i for i, v in enumerate(etat) if v == 0]
-    def resultat(self, etat, action):
-        joueur = 1 if etat.count(1) <= etat.count(2) else 2   # MAX (X) commence
-        return etat[:action] + (joueur,) + etat[action+1:]
-    def joueur(self, etat):
-        return 'MAX' if etat.count(1) <= etat.count(2) else 'MIN'
-    def _aligne(self, etat, pion):
-        m, n, k = self.m, self.n, self.k
-        for r in range(m):
-            for c in range(n):
-                if etat[r * n + c] != pion:
-                    continue
-                for dr, dc in ((0, 1), (1, 0), (1, 1), (1, -1)):
-                    rr, cc, longueur = r, c, 0
-                    while 0 <= rr < m and 0 <= cc < n and etat[rr * n + cc] == pion:
-                        longueur, rr, cc = longueur + 1, rr + dr, cc + dc
-                    if longueur >= k:
-                        return True
-        return False
-    def est_terminal(self, etat):
-        return self._aligne(etat, 1) or self._aligne(etat, 2) or 0 not in etat
-    def utilite(self, etat, joueur='MAX'):
-        gagne_max, gagne_min = self._aligne(etat, 1), self._aligne(etat, 2)
-        if joueur == 'MAX':
-            return 1 if gagne_max else (-1 if gagne_min else 0)
-        return 1 if gagne_min else (-1 if gagne_max else 0)
-    def afficher(self, etat):
-        sym = {0: '.', 1: 'X', 2: 'O'}
-        return '\n'.join(' '.join(sym[etat[r * self.n + c]] for c in range(self.n))
-                         for r in range(self.m))
-
-_cpt_prof = {""minimax"": 0, ""alpha_beta"": 0, ""transposition"": 0}
-
-def minimax_prof(jeu, etat, prof, joueur_max='MAX'):
-    _cpt_prof[""minimax""] += 1
-    if jeu.est_terminal(etat) or prof == 0:
-        return jeu.utilite(etat, joueur_max)
-    actions = jeu.actions(etat)
-    if jeu.joueur(etat) == joueur_max:
-        return max(minimax_prof(jeu, jeu.resultat(etat, a), prof - 1, joueur_max) for a in actions)
-    return min(minimax_prof(jeu, jeu.resultat(etat, a), prof - 1, joueur_max) for a in actions)
-
-def alpha_beta_prof(jeu, etat, prof, alpha, beta, joueur_max='MAX'):
-    _cpt_prof[""alpha_beta""] += 1
-    if jeu.est_terminal(etat) or prof == 0:
-        return jeu.utilite(etat, joueur_max)
-    actions = jeu.actions(etat)
-    if jeu.joueur(etat) == joueur_max:
-        v = float('-inf')
-        for a in actions:
-            v = max(v, alpha_beta_prof(jeu, jeu.resultat(etat, a), prof - 1, alpha, beta, joueur_max))
-            alpha = max(alpha, v)
-            if beta <= alpha:
-                break
-        return v
-    v = float('+inf')
-    for a in actions:
-        v = min(v, alpha_beta_prof(jeu, jeu.resultat(etat, a), prof - 1, alpha, beta, joueur_max))
-        beta = min(beta, v)
-        if beta <= alpha:
-            break
-    return v
-
-def alpha_beta_transpo_prof(jeu, etat, prof, alpha, beta, table, joueur_max='MAX'):
-    _cpt_prof[""transposition""] += 1
-    if etat in table and table[etat][1] >= prof:
-        return table[etat][0]
-    if jeu.est_terminal(etat) or prof == 0:
-        v = jeu.utilite(etat, joueur_max); table[etat] = (v, prof); return v
-    actions = jeu.actions(etat)
-    if jeu.joueur(etat) == joueur_max:
-        v = float('-inf')
-        for a in actions:
-            v = max(v, alpha_beta_transpo_prof(jeu, jeu.resultat(etat, a), prof - 1, alpha, beta, table, joueur_max))
-            alpha = max(alpha, v)
-            if beta <= alpha:
-                break
-    else:
-        v = float('+inf')
-        for a in actions:
-            v = min(v, alpha_beta_transpo_prof(jeu, jeu.resultat(etat, a), prof - 1, alpha, beta, table, joueur_max))
-            beta = min(beta, v)
-            if beta <= alpha:
-                break
-    table[etat] = (v, prof)
-    return v
-
-import time
-jeu_large = JeuMNK(5, 5, 4)
-print(""Croissance des nœuds visités — jeu (5x5, aligner 4) selon la profondeur :"")
-print(f""{'prof':>5} | {'minimax':>14} | {'alpha-beta':>12} | {'+transposition':>15} | {'gain AB':>9} | {'gain +TT':>9}"")
-print(""-"" * 86)
-for prof in [3, 4]:
-    for cle in _cpt_prof:
-        _cpt_prof[cle] = 0
-    minimax_prof(jeu_large, jeu_large.etat_initial(), prof)
-    n_mm = _cpt_prof[""minimax""]
-    alpha_beta_prof(jeu_large, jeu_large.etat_initial(), prof, float('-inf'), float('+inf'))
-    n_ab = _cpt_prof[""alpha_beta""]
-    alpha_beta_transpo_prof(jeu_large, jeu_large.etat_initial(), prof, float('-inf'), float('+inf'), {})
-    n_tt = _cpt_prof[""transposition""]
-    print(f""{prof:>5} | {n_mm:>14,d} | {n_ab:>12,d} | {n_tt:>15,d} | x{n_mm / n_ab:>7.1f} | x{n_mm / n_tt:>7.1f}"")
-
-# Profondeur 5 : le minimax explose (~6,7 millions, plusieurs minutes) — on ne lance QUE l'élagage.
-for cle in _cpt_prof:
-    _cpt_prof[cle] = 0
-alpha_beta_prof(jeu_large, jeu_large.etat_initial(), 5, float('-inf'), float('+inf'))
-n_ab5 = _cpt_prof[""alpha_beta""]
-alpha_beta_transpo_prof(jeu_large, jeu_large.etat_initial(), 5, float('-inf'), float('+inf'), {})
-n_tt5 = _cpt_prof[""transposition""]
-N_MM5_MESURE = 6_693_626   # minimax exhaustif prof=5 mesuré hors-ligne (~minutes, non relancé en direct)
-print(f""{'5':>5} | {'~' + format(N_MM5_MESURE, ',d') + ' (mesuré)':>14} | {n_ab5:>12,d} | {n_tt5:>15,d} | x{N_MM5_MESURE / n_ab5:>7.1f} | x{N_MM5_MESURE / n_tt5:>7.1f}"")
-print()
-print(""-> Le minimax est multiplié par ~22 à chaque niveau (14k -> 318k -> 6,7M) ;"")
-print(""   l'alpha-beta+transposition ne l'est que par ~3-4 (672 -> 1,5k -> 8k)."")
-print(""   L'écart EXPLOSE : c'est ici que l'élagage passe d'utile à INDISPENSABLE."")",,,,,,,,b87ecd1cc93bad3b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb,sec72-prongb-interp,markdown,fr,f8fc13302fa01382,"**Lecture — la bascule de l'utile à l'indispensable.** Sur le Tic-Tac-Toe (§7.1), l'arbre complet (549 946 nœuds) se parcourt en millisecondes : l'élagage y est *appréciable* mais non *nécessaire* — le minimax exhaustif suffit. Sur le jeu $5 \times 5$ (aligner 4), la situation bascule :
-
-- **Le minimax explose.** Le nombre de nœuds est multiplié par ~22 à chaque niveau de profondeur supplémentaire (14 426 -> 318 026 -> ~6,7 millions à profondeur 5). Au-delà, il devient **inexplorable en pratique** (profondeur 6 ~ 140 millions). C'est le régime où un minimax naïf *ne termine pas*.
-- **L'élagage garde une croissance maîtrisée.** Alpha-beta (+transposition) ne multiplie ses nœuds que par ~3-4 par niveau (672 -> 1 498 -> 8 051). Le **gain relatif explose** avec la profondeur : x21 (prof 3) -> x212 (prof 4) -> x831 (prof 5). Plus le jeu est profond, plus l'élagage *détermine* la faisabilité de la recherche.
-
-C'est la vraie leçon de capacité : sur un jeu trivial, l'élagage est un confort ; sur un jeu dont l'arbre est vaste, il est la **condition même** de la recherche. Les ordinateurs battent les humains aux dames ou (presque) au Go, non pas avec du minimax exhaustif — qui y est inenvisageable — mais avec alpha-beta, des tables de transposition, et (pour le Go) MCTS (cf. Search-7).
-
-> **Lien CS.** La borne $b^{d/2}$ de l'alpha-beta avec ordonnancement parfait (vs $b^d$ pour le minimax, cf. §7.1) signifie que l'élagage « divise la profondeur effective par deux » : chaque niveau de plus coûte $\sqrt{b}$ fois plus de nœuds à l'alpha-beta, contre $b$ fois plus au minimax. Sur le $5 \times 5$ ($b \approx 20$), cela donne $\sqrt{20} \approx 4.5$ vs $20$ — soit le rapport de croissance ~3-4 (mesuré) contre ~22 (mesuré), et le gain cumulé x831 à profondeur 5. Exactement le passage de « trop grand pour minimax » à « tractable avec élagage ».",,,,,,,,f8fc13302fa01382,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond-CSharp.ipynb,de0a6675,markdown,fr,8ebc57eccc9304b4,"### 5.1 Tranche 2 (parite lib-vs-lib #10382) : verdict RECOVERABLE-LOCAL sur OpenSpiel -- bridge pythonnet
 
 **Enonce du marathon #4956 et de l'issue #10382** : chaque paire de jumeaux C# / Python doit atteindre **chacun un moteur de production** de son ecosysteme, pas seulement une reimplementation from-scratch.
