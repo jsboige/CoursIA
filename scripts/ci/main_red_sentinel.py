@@ -251,7 +251,7 @@ def measure_coverage(commits: list, states: dict) -> dict:
 
     * ``taux_run_pct`` : part des commits qui ont produit **un run** --
       c'est la couverture du filtre ``paths:`` du workflow. Mesure du
-      2026-11-10 sur ``main`` : 65 %.
+      2026-11-10 sur ``main`` : 66,7 % (40/60).
     * ``taux_verdict_pct`` : part des commits dont le verdict de CODE est
       **connu** (vert ou rouge). C'est le taux operationnel : c'est ce que la
       sentinelle peut reellement lire comme etat du code. Mesure du

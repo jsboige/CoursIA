@@ -305,8 +305,8 @@ def test_le_cli_sort_1_quand_le_rouge_est_prouve(monkeypatch, capsys):
                "bounds": {"dernier_commit_vert_connu": {"sha": "d0d0d0d0d0d0",
                                                        "subject": "vert"},
                           "commits_sans_verdict_entre_les_deux": []},
-               "coverage": {"taux_run_pct": 65.0, "taux_verdict_pct": 25.0,
-                              "avec_run": 39, "commits": 60},
+               "coverage": {"taux_run_pct": 66.7, "taux_verdict_pct": 26.7,
+                              "avec_run": 40, "commits": 60},
                "verdicts": {"taux_annules_pct": 69.7}, "latency_min": {}}
     monkeypatch.setattr(mrs, "sentinel_report", lambda **kw: rapport)
     rc = mrs.main(["--first-red"])
