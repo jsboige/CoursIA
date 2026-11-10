@@ -53,7 +53,7 @@ en Lean 4 :
 $ lake build MUH
 [run] lake build --no-build MUH
 [build] MUH
-✓ MUH (5 modules, 0 sorry)
+✓ MUH (0 sorry)
 ```
 
 ## Issue liée

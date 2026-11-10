@@ -10,6 +10,32 @@ C'est la raison d'être de la série : ailleurs, un résultat numérique se juge
 plausibilité ; ici, il se juge contre une référence exacte, une identité de symétrie ou
 une limite analytique.
 
+## Objectifs d'apprentissage
+
+Au terme de la série, un lecteur sait :
+
+- **juger un calcul contre une vérité indépendante** — chaque carnet fournit sa
+  référence avant de calculer (une quantité conservée, une solution exacte, une vitesse
+  de propagation connue, une expression analytique), et le résultat se mesure contre
+  elle, jamais contre une impression de vraisemblance ;
+- **dériver une quantité conservée** à partir d'une symétrie continue, puis la
+  reconnaître sur un cas où elle est établie par ailleurs ;
+- **expliquer ce qu'impose une symétrie locale** : pourquoi la dérivée cesse d'être
+  covariante quand la transformation dépend du point, ce que le champ de jauge ajoute
+  pour la rétablir, et pourquoi le tenseur de champ en est indépendant ;
+- **discrétiser une théorie de champ** sur réseau et en estimer une grandeur dans le
+  cas où une solution exacte existe, ce qui donne une cible à la comparaison ;
+- **résoudre une équation aux dérivées partielles par volumes finis** avec un solveur
+  de Riemann sur les flux, et **savoir pourquoi le cas de Burgers sert de banc
+  d'essai** : le choc y a une vitesse de propagation connue, donc un schéma qui
+  l'étale ou le décale est reconnu faux sans discussion ;
+- **calculer une intégrale définie ou impropre** par voie analytique et par voie
+  numérique, puis confronter les deux — l'écart est le résultat, pas un défaut à
+  masquer.
+
+L'objectif commun est une habitude de lecture : devant un nombre produit par un
+solveur, chercher d'abord **contre quoi** il peut être vérifié.
+
 ## Cinq sous-séries
 
 Les carnets vivent dans cinq dossiers, chacun avec son propre `README.md` qui présente

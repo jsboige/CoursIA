@@ -617,7 +617,7 @@ Ce notebook a couvert :
   (ASPIC+, DeLP)
 - **Argumentation probabiliste** : les MLN pondérent les formules ; l'argumentation probabiliste
   (NB 7b) pondère les *arguments* — deux facettes de l'incertitude → [Tweety-7b-Ranking-Probabilistic](Tweety-07b-Ranking-Probabilistic-Python.ipynb)
-- **Application au texte** : la serie [Argument_Analysis](../Argument_Analysis/) utilise Tweety comme
+- **Application au texte** : la serie [ArgumentAnalysis](../ArgumentAnalysis/) utilise Tweety comme
   backend ; les MLN y fourniraient un raisonnement plausible sur des faits extraits de texte (une
   porte d'entree « neuro-symbolique » au-dessus des LLMs)
 
@@ -1385,73 +1385,34 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,4674113b,markd
 Le 3ᵉ niveau de Pearl : *« sachant que l'herbe est mouillée, **si l'arrosage avait été désactivé**, l'herbe aurait-elle été mouillée quand même ? »*
 
 Cela requiert un **twin model** — un monde contrefactuel où l'intervention contrefactuelle est appliquée tout en conservant les observations du monde réel. Tweety l'encode via `CounterfactualStatement` + `ArgumentationBasedCounterfactualReasoner`.",,,,,,,,5868219919186024,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,f019fbe5,code,fr,649e42d8f0a6c1b6,"cf_reasoner = ArgumentationBasedCounterfactualReasoner()
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,f019fbe5,code,fr,aa57e396dab83cc6,"cf_reasoner = ArgumentationBasedCounterfactualReasoner()
 
 # CONTREFACTUEL : observe(wet=True) ; si sprinkler avait ete False, wet aurait-il eu lieu ?
+# La conclusion porte sur la COPIE contrefactuelle wet* : conclure sur le wet factuel
+# repondait True trivialement (c'est l'observation), sans tester le monde contrefactuel
+# (anomalie relevee par la contribution Lucas, TP2, PR #25530).
+wet_star = sprinkler_net.getCounterfactualCopy(wet)   # Proposition(""wet*"")
 cf = CounterfactualStatement()
 cf.addObservation(wet)                        # monde reel : on a observe wet=True
-cf.addCounterfactualIntervention(sprinkler, False)  # monde contrefactuel : sprinkler=False
-cf.setConclusion(wet)                         # question : wet dans le monde contrefactuel ?
+cf.addCounterfactualIntervention(sprinkler, False)  # monde contrefactuel : sprinkler*=False
+cf.setConclusion(wet_star)                    # question : wet* dans le monde contrefactuel ?
 result_cf = cf_reasoner.query(ckb_sp, cf)
-print(f""[CONTREFACTUEL] observe(wet=True) ; 'si sprinkler avait ete OFF, herbe mouillee ?' {result_cf}"")
-print(""  -> Oui : sous cloudy=True, rain aurait mouille l'herbe meme sans arrosage."")",,,,,,,,649e42d8f0a6c1b6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,c445074c,markdown,fr,2dfcbe142d8c561f,"**Lecture** : le contrefactuel répond `True` — sachant que l'herbe est mouillée (et donc probablement `cloudy=True`), si l'arrosage avait été coupé, il aurait **quand même plu**, et l'herbe aurait été mouillée. C'est le raisonnement contrefactuel qui sous-tend la **responsabilité causale** et l'attribution de blâme en droit ou en médecine.
+print(f""[CONTREFACTUEL] observe(wet=True) ; 'si sprinkler avait ete OFF, herbe mouillee (wet*) ?' {result_cf}"")
+print(""  -> Oui : sous cloudy=True (abduit depuis wet), rain* aurait mouille l'herbe meme sans arrosage."")",,,,,,,,aa57e396dab83cc6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,c445074c,markdown,fr,18f3ced8bfedfee4,"**Lecture** : le contrefactuel répond `True` — l'observation `wet` abduit `cloudy=True` (seul monde cohérent avec l'herbe mouillée) ; dans le monde contrefactuel où `sprinkler*=False`, il aurait **quand même plu** (`rain*` reste vrai), donc `wet*` aussi. C'est le raisonnement contrefactuel qui sous-tend la **responsabilité causale** et l'attribution de blâme en droit ou en médecine.
 
-> **Contrainte API** : `CounterfactualStatement` exige au moins une `addAssumption` par atome de fond (ici `cloudy`), faute de quoi le reasoner lève `IllegalArgumentException: There must be at least one assumption for each background atom`. Nous avons couvert les deux mondes (`cloudy` et `¬cloudy`) pour énumérer l'incertitude exogène.",,,,,,,,2dfcbe142d8c561f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,163e159e,markdown,fr,d39e58b06479f43a,"## 5. Exercices
+> **Pourquoi conclure sur `wet*` ?** La requête conclut sur la copie contrefactuelle de `wet` : conclure sur le `wet` factuel renvoyait `True` trivialement (c'est l'observation), sans rien tester du monde contrefactuel. Cette anomalie de la version initiale a été relevée par la contribution de Lucas (TP2, PR #25530) — voir l'exemple guidé 3, piège (2).
 
-Les trois exercices suivent la convention C.1 (stubs sans erreur volontaire). Complétez-les en vous inspirant des exemples ci-dessus ; le notebook doit rester exécutable de bout en bout.",,,,,,,,d39e58b06479f43a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,c697090a,markdown,fr,2f068ed1c4a7ab9a,"### Exercice 1 — Construire un SCM (éducation et revenu)
+> **Contrainte API** : `CounterfactualStatement` exige au moins une `addAssumption` par atome de fond (ici `cloudy`), faute de quoi le reasoner lève `IllegalArgumentException: There must be at least one assumption for each background atom`. Nous avons couvert les deux mondes (`cloudy` et `¬cloudy`) pour énumérer l'incertitude exogène.",,,,,,,,18f3ced8bfedfee4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,163e159e,markdown,fr,7de330c37547e6cf,"## 5. Exemples guidés et exercices
 
-Construisez un SCM modélisant : `ability` (aptitude, atome de fond) cause à la fois `education` (niveau d'études) et `income` (revenu). Autrement dit, `ability` est un **confondeur**.
+Les trois exercices de ce carnet ont été résolus par un étudiant en TP : ses solutions deviennent des **exemples guidés** (crédités ci-dessous), chacun immédiatement suivi d'un **exercice neuf** de difficulté comparable, à compléter selon la convention C.1 (stubs sans erreur volontaire — le notebook doit rester exécutable de bout en bout).",,,,,,,,7de330c37547e6cf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,c697090a,markdown,fr,fcd460b33512358c,"### Exemple guidé 1 — Construire un SCM éducation/revenu (confondeur `ability`)
 
-1. Définissez les propositions et le SCM (3 atomes).
-2. Ajoutez les équations structurelles.
-3. Vérifiez que `observe(education=True)` prédit `income=True`, mais que `do(education=True)` ne le fait plus (en booléen : `False`).",,,,,,,,2f068ed1c4a7ab9a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,d3e3fb49,code,fr,c5b6b5d81b0b4166,"# Exercice 1 : a completer
-ability   = Proposition(""ability"")
-education = Proposition(""education"")
-income    = Proposition(""income"")
+**Contribution de Lucas (TP2, PR #25530).**
 
-# TODO etudiant : construire le SCM edu_model
-#   - ability = atome de fond
-#   - education = f(ability)
-#   - income    = f(ability)   [ability est le confondeur !]
-edu_model = None  # TODO etudiant : StructuralCausalModel() ...
-
-# TODO etudiant : comparer observe(education) -> income  vs  do(education) -> income
-result_observe = None  # TODO etudiant
-result_do      = None  # TODO etudiant
-
-print(""Exercice 1 a completer"")
-print(""  (attendu : observe(education) -> income True ; do(education) -> income False)"")",,,,,,,,c5b6b5d81b0b4166,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,203f618f,markdown,fr,00661bc5af891d92,"### Exercice 2 — Prédire l'effet d'une intervention
-
-Dans le réseau Sprinkler (`sprinkler_net` déjà construit), prédisez **puis vérifiez** :
-
-1. `do(cloudy=True) → wet` ? (intervention sur la cause racine)
-2. `do(wet=True) → rain` ? (intervention sur un effet — que se passe-t-il ?)
-
-Réfléchissez au résultat attendu **avant** d'exécuter, puis confirmez avec le reasoner.",,,,,,,,00661bc5af891d92,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,f3e62799,code,fr,60b60bf005ae3f23,"# Exercice 2 : a completer
-# TODO etudiant : construire 2 InterventionalStatement et interroger ckb_sp
-# Indice : do(wet=True) sur un EFFET ne remonte pas la causalite (le graphe est oriente).
-
-ex2_a = None  # TODO etudiant : do(cloudy=True) -> wet
-ex2_b = None  # TODO etudiant : do(wet=True)    -> rain
-print(""Exercice 2 a completer"")",,,,,,,,60b60bf005ae3f23,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,f32e6729,markdown,fr,d9d66e56c1a47e45,"### Exercice 3 — Requête contrefactuelle
-
-Formulez un contrefactuel sur le réseau Sprinkler : *« sachant qu'il pleut (`rain=True`), **si `cloudy` avait été faux**, aurait-il plu quand même ? »*
-
-Construisez un `CounterfactualStatement`, ajoutez l'observation, l'intervention contrefactuelle, et la conclusion. N'oubliez pas les assumptions sur `cloudy`.",,,,,,,,d9d66e56c1a47e45,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,69fd3c7b,code,fr,10aa9948af953da2,"# Exercice 3 : a completer
-# TODO etudiant : CounterfactualStatement sur ckb_sp
-#   observe(rain=True) ; cf-intervention cloudy=False ; conclusion = rain
-cf_ex3 = None  # TODO etudiant
-print(""Exercice 3 a completer"")
-print(""  (reflechir : cloudy est la cause de rain ; si cloudy avait ete faux, rain n'aurait pas eu lieu)"")",,,,,,,,10aa9948af953da2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,62648150,markdown,fr,b3aacaadf8445c3f,"## 6. Synthèse — L'échelle de Pearl dans Tweety
+Cet exemple montre la construction complète d'un SCM à confondeur : `ability` (aptitude, atome de fond) cause à la fois `education` et `income`, sans aucune flèche directe `education → income`. Les deux premiers niveaux de l'échelle de Pearl s'y séparent : observer `education` prédit `income` (corrélation via le confondeur), mais forcer `education` ne transporte plus l'information — et un contrôle par la négation montre que `income` devient **indéterminé**, pas « faux ».",,,,,,,,fcd460b33512358c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,cb6a574f,markdown,fr,b3aacaadf8445c3f,"## 6. Synthèse — L'échelle de Pearl dans Tweety
 
 | Niveau | Question | API Tweety | Opérateur mathématique |
 |--------|----------|------------|------------------------|
@@ -1481,7 +1442,7 @@ Le moteur causal de Tweety est **qualitatif** (booléen) : il ne calcule pas de 
 ***
 
 *Notebook 11/11 de la série TweetyProject — capstone de synthèse sur le raisonnement causal.*",,,,,,,,b3aacaadf8445c3f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,773b01a6,markdown,fr,8e690100294266e9,"## 7. Aller plus loin — le même do-calculus, d'autres paradigmes
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,56ee2b24,markdown,fr,8e690100294266e9,"## 7. Aller plus loin — le même do-calculus, d'autres paradigmes
 
 Tweety traite la causalité en **logique propositionnelle** : `do(X)` y est *qualitatif* — un atome forcé, un SCM réécrit, une réponse vrai/faux. C'est idéal pour *voir* la différence entre `observe` et `do` sans se noyer dans les nombres, mais Tweety **ne chiffre pas** un effet causal (« de combien la probabilité de pluie change-t-elle ? ») ni ne lève quantitativement un paradoxe de Simpson. Les séries probabilistes du dépôt reprennent **exactement ce notebook** avec des distributions :
 
@@ -2692,7 +2653,7 @@ def find_portable_jdk():
     search_paths = [
         pathlib.Path(""jdk-17-portable""),
         pathlib.Path(""../jdk-17-portable""),
-        pathlib.Path(""../Argument_Analysis/jdk-17-portable""),
+        pathlib.Path(""../ArgumentAnalysis/jdk-17-portable""),
         pathlib.Path(""../../jdk-17-portable""),
     ]
     exe_suffix = "".exe"" if platform.system() == ""Windows"" else """"
@@ -3173,7 +3134,7 @@ if jpype.isJVMStarted():
 else:
     # Chercher JDK portable
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -3187,7 +3148,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
         
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))
@@ -5892,7 +5853,7 @@ if jpype.isJVMStarted():
     jvm_ready = True
 else:
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -5906,7 +5867,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
 
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))
@@ -8753,7 +8714,7 @@ if jpype.isJVMStarted():
     jvm_ready = True
 else:
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -8767,7 +8728,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
         
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))
@@ -10436,7 +10397,7 @@ if jpype.isJVMStarted():
     jvm_ready = True
 else:
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -10450,7 +10411,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
 
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))
@@ -12538,7 +12499,7 @@ if jpype.isJVMStarted():
     jvm_ready = True
 else:
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -12552,7 +12513,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
 
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))
@@ -15895,7 +15856,7 @@ if jpype.isJVMStarted():
     jvm_ready = True
 else:
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -15909,7 +15870,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
 
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))
@@ -16976,7 +16937,7 @@ if jpype.isJVMStarted():
     jvm_ready = True
 else:
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -16990,7 +16951,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
 
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))
@@ -18240,7 +18201,7 @@ if jpype.isJVMStarted():
     jvm_ready = True
 else:
     jdk_portable = None
-    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../Argument_Analysis/jdk-17-portable"")]:
+    for jdk_path in [pathlib.Path(""jdk-17-portable""), pathlib.Path(""../ArgumentAnalysis/jdk-17-portable"")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob(""zulu*""))
             if zulu_dirs:
@@ -18254,7 +18215,7 @@ else:
     else:
         LIB_DIR = pathlib.Path(""libs"")
         if not LIB_DIR.exists():
-            LIB_DIR = pathlib.Path(""../Argument_Analysis/libs"")
+            LIB_DIR = pathlib.Path(""../ArgumentAnalysis/libs"")
 
         if LIB_DIR.exists():
             jar_files = list(LIB_DIR.glob(""*.jar""))
@@ -22337,3 +22298,273 @@ Les deux carnets partagent le cadre théorique — axiomes de Condorcet et d'Arr
 
 Voir aussi : `Tweety-09-Preferences-CSharp.ipynb` (jumeau C#), `Tweety-07a-Extended-Frameworks-Python.ipynb` et son jumeau C#, `Tweety-07b-Ranking-Probabilistic-Python.ipynb`, `Tweety-04-Belief-Revision-Python.ipynb`, `Tweety-01-Setup-Python.ipynb` (initialisation de la JVM Tweety), `Tweety-05-Abstract-Argumentation-Python.ipynb`, `Tweety-06-Structured-Argumentation-Python.ipynb`.
 ",,,,,,,,67a8b5e5c2ed56a9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,12cccc61,code,fr,69b6f767a6c99125,"# Exemple guidé 1 (contribution Lucas, TP2) : SCM education / revenu avec le confondeur `ability`
+ability   = Proposition(""ability"")
+education = Proposition(""education"")
+income    = Proposition(""income"")
+
+# 1-2. Le SCM : ability -> education  et  ability -> income
+#      (il n'y a AUCUNE fleche education -> income : toute correlation passe par ability)
+edu_model = StructuralCausalModel()
+edu_model.addBackgroundAtom(ability)              # cause racine exogene = confondeur
+edu_model.addExplainableAtom(education, ability)  # education <=> ability
+edu_model.addExplainableAtom(income, ability)     # income    <=> ability
+print(""SCM education/revenu :"")
+print(edu_model.prettyPrint())
+
+# Base causale : une assumption par valeur de l'atome de fond -> 2 mondes possibles
+ckb_edu = CausalKnowledgeBase(edu_model)
+ckb_edu.addAssumption(ability)
+ckb_edu.addAssumption(Negation(ability))
+
+# 3a. NIVEAU 1 (association) : observe(education=True) -> income ?
+result_observe = obs_reasoner.query(ckb_edu, [education], income)
+
+# 3b. NIVEAU 2 (intervention) : do(education=True) -> income ?
+do_edu = InterventionalStatement()
+do_edu.addIntervention(education, True)   # 'education <=> ability' devient 'education <=> +'
+do_edu.setConclusion(income)
+result_do = obs_reasoner.query(ckb_edu, do_edu)
+
+# Controle : do(education) n'entraine pas non plus NON(income) -> income est INDETERMINE, pas ""faux""
+do_edu_neg = InterventionalStatement()
+do_edu_neg.addIntervention(education, True)
+do_edu_neg.setConclusion(Negation(income))
+result_do_neg = obs_reasoner.query(ckb_edu, do_edu_neg)
+
+print(f""[OBS] observe(education=True) -> income ?     {result_observe}"")
+print(f""[INT] do(education=True)      -> income ?     {result_do}"")
+print(f""[INT] do(education=True)      -> NON income ? {result_do_neg}   (ni l'un ni l'autre : indetermine)"")
+print(""\nSCM apres do(education=True) :"")
+print(edu_model.intervene(education, True).prettyPrint())
+
+# Regle F : on echoue bruyamment si le moteur ne donne pas le resultat attendu
+assert result_observe and not result_do and not result_do_neg, ""Exemple guide 1 : resultat inattendu""",,,,,,,,69b6f767a6c99125,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,4e989e0c,markdown,fr,3926accc1b7eec0d,"### Lecture du résultat
+
+Énumération des mondes possibles (un par valeur de `ability`) :
+
+| Monde | `ability` | `education` | `income` |
+|---|---|---|---|
+| W1 | ⊤ | ⊤ | ⊤ |
+| W2 | ⊥ | ⊥ | ⊥ |
+
+- `observe(education)` élimine W2 (incompatible avec `education=⊤`) → dans le seul monde restant, `income=⊤` → **True** (raisonnement *abductif* : education ⇒ ability ⇒ income).
+- `do(education)` remplace l'équation par `education <=> +` : W2 devient (`ability=⊥`, `education=⊤`, `income=⊥`). Aucune observation n'élimine plus W2, `income` varie d'un monde à l'autre → **False** (non entraîné sceptiquement). Le contrôle `do(education) → ¬income = False` montre que la réponse signifie « indéterminé », pas « le revenu baisse ».",,,,,,,,3926accc1b7eec0d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,62075566,markdown,fr,e7bd67ea6bd41cd4,"### Exercice 1 — Construire un SCM en chaîne (motivation, training, performance)
+
+Construisez un SCM de **chaîne** (médiateur), à contraster avec le confondeur de l'exemple guidé 1 : `motivation` (atome de fond) cause `training` (entraînement), qui cause `performance`.
+
+1. Définissez les propositions et le SCM (3 atomes, deux équations structurelles).
+2. Vérifiez que `observe(training=True)` prédit `performance=True` **et** que `do(training=True)` la prédit encore — la chaîne transmet la causalité, contrairement au confondeur.
+3. Le contraste amont : `observe(performance=True)` renseigne `motivation` (`True`), mais `do(performance=True)` ne le fait plus (en booléen : `False`).",,,,,,,,e7bd67ea6bd41cd4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,ee5ee09e,code,fr,616822ac0afea726,"# Exercice 1 : a completer
+motivation  = Proposition(""motivation"")
+training    = Proposition(""training"")
+performance = Proposition(""performance"")
+
+# TODO etudiant : construire le SCM chain_model
+#   - motivation = atome de fond
+#   - training    = f(motivation)
+#   - performance = f(training)   [chaine : motivation -> training -> performance]
+chain_model = None  # TODO etudiant : StructuralCausalModel() ...
+
+# TODO etudiant : base causale avec une assumption par valeur de l'atome de fond,
+# puis les 4 requetes (observe vs do, aval puis amont) :
+result_obs_training = None  # TODO etudiant : observe(training=True)  -> performance
+result_do_training  = None  # TODO etudiant : do(training=True)       -> performance
+result_obs_perf     = None  # TODO etudiant : observe(performance)    -> motivation
+result_do_perf      = None  # TODO etudiant : do(performance=True)    -> motivation
+
+# Indice : forcer un noeud de la chaine propage l'effet vers l'AVAL,
+#          mais coupe la remontee vers l'AMONT (comme do(wet) dans l'exemple guidé 2).
+
+print(""Exercice 1 a completer"")
+print(""  (attendu : observe(training)->performance True ; do(training)->performance True ;"")
+print(""             observe(performance)->motivation True ; do(performance)->motivation False)"")",,,,,,,,616822ac0afea726,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,c3437497,markdown,fr,9483511ee4956bde,"### Exemple guidé 2 — Prédire l'effet d'une intervention sur le réseau Sprinkler
+
+**Contribution de Lucas (TP2, PR #25530).**
+
+Cet exemple montre deux requêtes d'intervention sur `sprinkler_net` : (a) `do(cloudy=True) → wet`, où Tweety refuse d'intervenir sur un atome de fond — et où, pour une cause racine sans parent, `do` équivaut à `observe` (règle 2 du do-calculus, vérifiée par deux voies indépendantes) ; (b) `do(wet=True) → rain`, où forcer un **effet** laisse sa cause **indéterminée** (ni `rain` ni `¬rain` ne suivent), tandis que l'**observer** renseigne abductivement la pluie.",,,,,,,,9483511ee4956bde,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,1717e2c9,code,fr,ec58e2e4547af582,"# Exemple guidé 2 (contribution Lucas, TP2) : predire puis verifier deux interventions sur sprinkler_net
+# Predictions faites AVANT execution :
+#   (a) do(cloudy=True) -> wet  : True  (cloudy -> rain -> wet, et cloudy -> sprinkler -> wet)
+#   (b) do(wet=True)    -> rain : False (indetermine : forcer un effet ne remonte pas vers ses causes)
+from java.lang import IllegalArgumentException
+from java.util import HashSet, HashMap
+
+# ---------- (a) do(cloudy=True) -> wet ----------
+# Tentative directe : Tweety REFUSE d'intervenir sur un atome de FOND (seuls les atomes explicables
+# ont une equation a remplacer). On le montre sans casser l'execution du notebook.
+do_cloudy = InterventionalStatement()
+do_cloudy.addIntervention(cloudy, True)
+do_cloudy.setConclusion(wet)
+try:
+    obs_reasoner.query(ckb_sp, do_cloudy)
+except IllegalArgumentException as e:
+    print(""[INT] do(cloudy=True) direct -> refuse par Tweety :"", e.getMessage())
+
+# Voie 1 : cloudy n'a AUCUN parent, donc aucun chemin ""porte derobee"" (back-door) :
+#          do(cloudy) = observe(cloudy)  (regle 2 du do-calculus)
+ex2_a = obs_reasoner.query(ckb_sp, [cloudy], wet)
+
+# Voie 2 : fixer le contexte exogene -> une base causale avec la seule assumption 'cloudy'
+ckb_sp_cloudy = CausalKnowledgeBase(sprinkler_net)
+ckb_sp_cloudy.addAssumption(cloudy)
+ex2_a_bis = bool(obs_reasoner.query(ckb_sp_cloudy, wet))
+
+print(f""[INT] do(cloudy=True) (= observe, cause racine) -> wet ? {ex2_a}"")
+print(f""[INT] contexte exogene fixe a cloudy=True       -> wet ? {ex2_a_bis}\n"")
+
+# ---------- (b) do(wet=True) -> rain ----------
+do_wet = InterventionalStatement()
+do_wet.addIntervention(wet, True)      # 'wet <=> sprinkler||rain' devient 'wet <=> +'
+do_wet.setConclusion(rain2)
+ex2_b = obs_reasoner.query(ckb_sp, do_wet)
+
+do_wet_neg = InterventionalStatement()
+do_wet_neg.addIntervention(wet, True)
+do_wet_neg.setConclusion(Negation(rain2))
+ex2_b_neg = obs_reasoner.query(ckb_sp, do_wet_neg)
+
+# Contraste niveau 1 : OBSERVER l'herbe mouillee, elle, renseigne sur la pluie
+ex2_b_obs = obs_reasoner.query(ckb_sp, [wet], rain2)
+
+print(f""[INT] do(wet=True)      -> rain ?     {ex2_b}"")
+print(f""[INT] do(wet=True)      -> NON rain ? {ex2_b_neg}   (indetermine)"")
+print(f""[OBS] observe(wet=True) -> rain ?     {ex2_b_obs}   (abduction : wet => sprinkler|rain => cloudy => rain)"")
+
+# Les mondes (extensions stables) apres do(wet=True) : rain varie d'un monde a l'autre
+interv = HashMap()
+interv.put(wet, True)
+print(""      mondes apres do(wet=True) :"", obs_reasoner.getModels(ckb_sp, HashSet(), interv))
+
+assert ex2_a and ex2_a_bis and not ex2_b and not ex2_b_neg and ex2_b_obs, ""Exemple guide 2 : resultat inattendu""",,,,,,,,ec58e2e4547af582,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,706bbddc,markdown,fr,38c4315b64552f06,"### Lecture du résultat
+
+| Requête | Résultat | Pourquoi |
+|---|---|---|
+| `do(cloudy=True)` direct | `IllegalArgumentException` | Tweety n'autorise `intervene` que sur les atomes **explicables** |
+| `do(cloudy=True) → wet` (= `observe(cloudy)`) | `True` | Cause racine : pas de parent, pas de back-door, donc $P(y \mid do(x)) = P(y \mid x)$ ; puis `cloudy ⇒ rain ⇒ wet` |
+| `do(wet=True) → rain` | `False` | La chirurgie coupe `{sprinkler, rain} → wet` : `wet` ne transmet plus aucune information vers l'amont. Deux mondes subsistent (`cloudy` vrai ou faux) |
+| `observe(wet=True) → rain` | `True` | Observer un effet permet de *remonter* abductivement vers la cause commune `cloudy` |
+
+**À retenir** : une intervention se propage uniquement **vers l'aval** du graphe orienté. Forcer un effet (mouiller l'herbe au tuyau) ne dit rien de ses causes ; l'observer, si.",,,,,,,,38c4315b64552f06,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,e805c1b1,markdown,fr,4cc5e4e2f0bb17d1,"### Exercice 2 — Prédire l'effet d'une intervention (amont vs aval)
+
+Dans le même réseau Sprinkler (`sprinkler_net`, `ckb_sp` déjà construits), prédisez **puis vérifiez** :
+
+1. `do(sprinkler=True) → cloudy` ? (intervenir sur un enfant renseigne-t-il le parent ?) Comparez avec `observe(sprinkler=True) → cloudy`.
+2. `do(rain=True) → wet` ? (forcer une cause directe de `wet` propage-t-elle vers l'aval ?)
+
+Réfléchissez au résultat attendu **avant** d'exécuter, puis confirmez avec le reasoner.",,,,,,,,4cc5e4e2f0bb17d1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,479fe60f,code,fr,6b1008ccacfb6076,"# Exercice 2 : a completer
+# TODO etudiant : construire les InterventionalStatement et interroger ckb_sp
+# Indice : do(sprinkler) CASSE l'arete cloudy->sprinkler (plus de remontee vers cloudy),
+#          mais do(rain) PRESERVE l'arete rain -> wet (propagation vers l'aval).
+
+ex2a_do  = None  # TODO etudiant : do(sprinkler=True) -> cloudy
+ex2a_obs = None  # TODO etudiant : observe(sprinkler) -> cloudy
+ex2b     = None  # TODO etudiant : do(rain=True)      -> wet
+
+print(""Exercice 2 a completer"")
+print(""  (attendu : do(sprinkler)->cloudy False ; observe(sprinkler)->cloudy True ; do(rain)->wet True)"")",,,,,,,,6b1008ccacfb6076,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,61df85b0,markdown,fr,284158d16485f31b,"### Exemple guidé 3 — Requête contrefactuelle : « si `cloudy` avait été faux »
+
+**Contribution de Lucas (TP2, PR #25530).**
+
+Cet exemple montre un contrefactuel complet sur le réseau Sprinkler : *« sachant qu'il pleut, s'il n'y avait pas eu de nuages, aurait-il plu ? »* Il démonte les deux pièges de l'API : (1) on ne peut pas intervenir sur un atome de fond dans le twin model — il faut rendre `cloudy` endogène via un bruit exogène `u_cloudy`, exactement $X_i = f_i(\text{Parents}(X_i), U_i)$ du §1.1 ; (2) la conclusion doit porter sur la **copie contrefactuelle** `rain*`, pas sur le `rain` factuel trivialement vrai. Les trois étapes de Pearl (abduction → action → prédiction) se lisent dans le twin model imprimé.",,,,,,,,284158d16485f31b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,227c3617,code,fr,a3706811fc92d9f1,"# Exemple guidé 3 (contribution Lucas, TP2) : contrefactuel ""sachant qu'il pleut, si cloudy avait ete faux, aurait-il plu ?""
+#
+# Deux pieges de l'API (verifies dans le code source de Tweety 1.30) :
+#  (1) cloudy est un atome de FOND. Dans le twin model, les atomes de fond sont PARTAGES entre le
+#      monde reel et le monde contrefactuel (getCounterfactualCopy(cloudy) == cloudy) : il n'existe
+#      pas de 'cloudy*' sur lequel intervenir -> IllegalArgumentException.
+#      => On rend cloudy ENDOGENE avec un bruit exogene u_cloudy : cloudy <=> u_cloudy
+#         (c'est exactement X_i = f_i(Parents, U_i) du §1.1).
+#  (2) La conclusion doit porter sur la COPIE contrefactuelle rain*, pas sur rain : rain est
+#      observe dans le monde reel, donc 'rain' serait trivialement True.
+
+# --- Piege (1), demontre sans casser l'execution ---
+cf_naif = CounterfactualStatement()
+cf_naif.addObservation(rain2)
+cf_naif.addCounterfactualIntervention(cloudy, False)
+cf_naif.setConclusion(rain2)
+try:
+    cf_reasoner.query(ckb_sp, cf_naif)
+except IllegalArgumentException as e:
+    print(""[CF] intervention sur l'atome de fond cloudy -> refuse :"", e.getMessage(), ""\n"")
+
+# --- SCM Sprinkler avec bruit exogene explicite ---
+u_cloudy = Proposition(""u_cloudy"")
+sprinkler_net_u = StructuralCausalModel()
+sprinkler_net_u.addBackgroundAtom(u_cloudy)                     # U_cloudy : contexte exogene
+sprinkler_net_u.addExplainableAtom(cloudy, u_cloudy)            # cloudy    <=> u_cloudy
+sprinkler_net_u.addExplainableAtom(sprinkler, cloudy)           # sprinkler <=> cloudy
+sprinkler_net_u.addExplainableAtom(rain2, cloudy)               # rain      <=> cloudy
+sprinkler_net_u.addExplainableAtom(wet, F(""sprinkler || rain"")) # wet       <=> sprinkler || rain
+
+ckb_sp_u = CausalKnowledgeBase(sprinkler_net_u)
+ckb_sp_u.addAssumption(u_cloudy)              # une assumption par valeur de l'atome de fond
+ckb_sp_u.addAssumption(Negation(u_cloudy))
+
+print(""Twin model (monde reel + copies etoilees du monde contrefactuel) :"")
+print(sprinkler_net_u.getTwinModel().prettyPrint())
+
+rain_star = sprinkler_net_u.getCounterfactualCopy(rain2)   # Proposition(""rain*"")
+
+# --- Le contrefactuel ---
+cf_ex3 = CounterfactualStatement()
+cf_ex3.addObservation(rain2)                         # monde reel : on observe rain = True
+cf_ex3.addCounterfactualIntervention(cloudy, False)  # monde contrefactuel : do(cloudy* = False)
+cf_ex3.setConclusion(rain_star)                      # question : rain* ?
+result_ex3 = cf_reasoner.query(ckb_sp_u, cf_ex3)
+
+cf_ex3_neg = CounterfactualStatement()
+cf_ex3_neg.addObservation(rain2)
+cf_ex3_neg.addCounterfactualIntervention(cloudy, False)
+cf_ex3_neg.setConclusion(Negation(rain_star))
+result_ex3_neg = cf_reasoner.query(ckb_sp_u, cf_ex3_neg)
+
+# Piege (2) : conclusion sur le 'rain' FACTUEL -> vrai trivialement (c'est l'observation)
+result_piege = cf_reasoner.query(ckb_sp_u, [rain2], cf_ex3.getInterventions(), rain2)
+
+print(f""[CF] observe(rain) ; si cloudy avait ete faux -> rain* ?     {result_ex3}"")
+print(f""[CF] observe(rain) ; si cloudy avait ete faux -> NON rain* ? {result_ex3_neg}"")
+print(f""[CF] (piege) conclusion sur 'rain' factuel                -> {result_piege}  (trivial)"")
+print(""  -> Non : sans nuages, il n'aurait pas plu (rain* = False)."")
+
+assert (not result_ex3) and result_ex3_neg, ""Exemple guide 3 : resultat inattendu""",,,,,,,,a3706811fc92d9f1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,af549931,markdown,fr,9651516ce266963e,"### Lecture du résultat
+
+Les 3 étapes de Pearl (*abduction → action → prédiction*) dans le twin model :
+
+1. **Abduction** (monde réel) : `rain` observé ⇒ `cloudy` (car `rain <=> cloudy`) ⇒ `u_cloudy` (car `cloudy <=> u_cloudy`). Seule l'assumption `u_cloudy` reste cohérente.
+2. **Action** (monde contrefactuel) : `do(cloudy* = False)` remplace `cloudy* <=> u_cloudy` par `cloudy* <=> -`. Le contexte `u_cloudy` partagé reste vrai.
+3. **Prédiction** : `rain* <=> cloudy*` ⇒ `rain* = ⊥`.
+
+Résultat : `rain*` **non entraîné** (`False`) et `¬rain*` **entraîné** (`True`). *Sachant qu'il a plu, s'il n'y avait pas eu de nuages, il n'aurait pas plu* : `cloudy` est une cause **nécessaire** de `rain` dans ce modèle (« but-for cause »).
+
+> Remarque : le même piège (2) concernait l'exemple du §4.2, qui interrogeait `wet` au lieu de `wet*`. L'anomalie a été relevée par cette même contribution (TP2, PR #25530) et le §4.2 conclut désormais sur `wet*` — la réponse y reste `True`, mais elle teste désormais réellement le monde contrefactuel.",,,,,,,,9651516ce266963e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,e525cfff,markdown,fr,1be2499a3e41079c,"### Exercice 3 — Requête contrefactuelle sur le modèle éducation/revenu
+
+Sur le SCM `edu_model` de l'exemple guidé 1 (`ckb_edu` déjà construit), formulez le contrefactuel : *« sachant que le revenu est élevé (`income=True` observé), **si le niveau d'études avait été bas** (`education=False`), le revenu aurait-il été élevé quand même ? »*
+
+Construisez un `CounterfactualStatement` : observation sur `income`, intervention contrefactuelle sur `education`, conclusion sur la **copie contrefactuelle** de `income`. En contrôle, montrez que conclure sur le `income` factuel répond `True` trivialement (c'est l'observation).
+
+*Indice : `ability` est un atome de fond — partagé entre monde réel et monde contrefactuel ; l'abduction depuis `income` le fixe, et l'intervention sur `education` ne le touche pas.*",,,,,,,,1be2499a3e41079c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,e4ef7c37,code,fr,e05582c5cc583c14,"# Exercice 3 : a completer
+# TODO etudiant : contrefactuel sur ckb_edu (l'exemple guidé 1 construit ce modele)
+#   observe(income=True) ; cf-intervention education=False ; conclusion = income*
+# Indice : income_star = edu_model.getCounterfactualCopy(income)
+#          conclure sur le 'income' factuel repond True trivialement (c'est l'observation)
+
+cf_tp = None  # TODO etudiant : CounterfactualStatement ...
+
+result_tp      = None  # TODO etudiant : conclusion sur income*
+result_tp_trap = None  # TODO etudiant : controle, conclusion sur income factuel
+
+print(""Exercice 3 a completer"")
+print(""  (attendu : income* True -- ability, cause du revenu, reste ce qu'elle est ;"")
+print(""             controle factuel True, trivial)"")",,,,,,,,e05582c5cc583c14,,,,,,,,,,,,,,,

@@ -2570,7 +2570,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
     fixture_paths = [
         "MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-CSharp.ipynb",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/"
-        "Planners-5-Heuristics-Csharp.ipynb",
+        "Planners-05-Heuristics-Csharp.ipynb",
         "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed-CSharp.ipynb",
         "MyIA.AI.Notebooks/Search/Part1-Foundations/"
         "Search-05-GeneticAlgorithms-CSharp.ipynb",
@@ -2591,7 +2591,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
                 "2026-08-11T04:02:00Z"),
         comment("[CLAIMED] lane myia-po-2024:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/"
-                "Planners-5-Heuristics-Csharp.ipynb",
+                "Planners-05-Heuristics-Csharp.ipynb",
                 "2026-08-11T04:03:00Z"),
         comment("[CLAIMED] lane myia-po-2025:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/Search/Part1-Foundations/"
@@ -2980,11 +2980,143 @@ def test_paths_match_brace_in_paths_mode():
         "anywhere/search-8-mcts.yaml", ["search-{6,8,9}-*.yaml"])
 
 
+def test_scope_batch_matching_matches_path_predicate_exactly():
+    tracked = ["Root/Foo.py", "src/foo.py", "src/other.md", "foo.py"]
+    patterns = ["src/{foo,other}.*", "FOO.py"]
+    expected = {i for i, path in enumerate(tracked)
+                if clc._path_matches(path, patterns)}
+    assert clc._matching_tracked_indices(patterns, tracked) == expected
+
+
+def test_path_match_keeps_windows_case_and_separator_rules(monkeypatch):
+    import fnmatch
+    import ntpath
+
+    cases = [
+        ("DIR/Foo.PY", "dir\\foo.py", True),
+        ("DIR/Foo.PY", "*.py", True),
+        ("DIR/Sub/Foo.PY", "sub\\*.py", False),
+    ]
+    with monkeypatch.context() as patch:
+        patch.setattr(clc.os.path, "normcase", ntpath.normcase)
+        clc._compiled_path_pattern.cache_clear()
+        clc._normcase_path.cache_clear()
+        for path, pattern, expected in cases:
+            basename = path.rsplit("/", 1)[-1]
+            reference = (fnmatch.fnmatch(path, pattern)
+                         or fnmatch.fnmatch(basename, pattern))
+            assert reference is expected
+            assert clc._path_matches(path, [pattern]) is expected
+    clc._compiled_path_pattern.cache_clear()
+    clc._normcase_path.cache_clear()
+
+
 def test_paths_match_brace_no_group_is_unchanged():
     # Patterns without braces are handled exactly as before.
     assert clc._path_matches("scripts/foo.py", ["scripts/*.py"])
     assert clc._expand_brace_groups("plain.py") == ["plain.py"]
     assert clc._expand_brace_groups("a{}.lean") == ["a{}.lean"]
+
+
+def test_cached_path_match_respects_mutated_caller_patterns():
+    # The cached unit is a pair of immutable strings, not the caller's list.
+    patterns = ["*.py"]
+    assert clc._path_matches("src/example.py", patterns)
+    patterns[:] = ["*.md"]
+    assert not clc._path_matches("src/example.py", patterns)
+    patterns.append("*.py")
+    assert clc._path_matches("src/example.py", patterns)
+
+
+def test_scope_intersection_reads_mutated_tracked_files():
+    # Scope verdicts depend on the current tracked tree, so the path-pair
+    # cache must not memoize a whole intersection against a mutable list.
+    tracked = ["src/a.py", "src/b.py"]
+    assert not clc._scopes_intersect(["src/a*.py"], ["src/*b.py"], tracked)
+    tracked.append("src/ab.py")
+    assert clc._scopes_intersect(["src/a*.py"], ["src/*b.py"], tracked)
+
+
+def test_tracked_files_mutations_refresh_scope_results_and_caches():
+    tracked = clc._TrackedFiles(["src/a.py", "src/b.py"])
+    a, b = ["src/a*.py"], ["src/*b.py"]
+
+    def check(expected, intersects=None):
+        if intersects is None:
+            intersects = bool(expected)
+        assert clc._scopes_intersect(a, b, tracked) is intersects
+        assert clc._compute_scope_intersection_paths(a, b, tracked) == (expected, False)
+        assert tracked.exact_paths == {clc.os.path.normcase(p) for p in tracked}
+        assert tracked.exact_bases == {
+            clc.os.path.normcase(p.rsplit("/", 1)[-1]) for p in tracked
+        }
+        # An unchanged list reuses all three derived values.
+        assert tracked.norm_pairs is tracked.norm_pairs
+        assert tracked.exact_paths is tracked.exact_paths
+        assert tracked.exact_bases is tracked.exact_bases
+
+    check([])
+    tracked.append("src/ab.py")
+    check(["src/ab.py"])
+    tracked[2] = "src/ac.py"
+    check([])
+    tracked[1:3] = ["src/b.py", "src/ab.py", "src/aab.py"]
+    check(["src/ab.py", "src/aab.py"])
+    del tracked[2]
+    check(["src/aab.py"])
+    tracked.remove("src/aab.py")
+    check([])
+    tracked += ["src/ab.py"]
+    tracked *= 2
+    check(["src/ab.py", "src/ab.py"])
+    tracked.reverse()
+    check(["src/ab.py", "src/ab.py"])
+    tracked.sort()
+    check(["src/ab.py", "src/ab.py"])
+    tracked.pop()
+    tracked.insert(0, "src/abb.py")
+    check(["src/abb.py", "src/ab.py", "src/ab.py"])
+    tracked.clear()
+    check([])
+
+
+def test_lane_pr_reference_index_tracks_mutations_and_working_root(monkeypatch):
+    prs = [
+        {"number": 7, "body": "[CLAIMED] lane myia-a:CoursIA -- Refs #42"},
+        {"number": 8, "body": "[CLAIMED] lane myia-b:CoursIA -- Refs #43"},
+    ]
+    root = ["/repo-a"]
+    monkeypatch.setattr(clc.os, "getcwd", lambda: root[0])
+    original_extract = clc.extract_lane
+    extracted = []
+
+    def count_extract(body):
+        extracted.append(body)
+        return original_extract(body)
+
+    monkeypatch.setattr(clc, "extract_lane", count_extract)
+    assert clc._lane_open_prs_referencing(42, "myia-a:CoursIA", prs) == [7]
+    assert len(extracted) == 2
+
+    # Same-length, in-place body/lane change invalidates the index.
+    prs[0]["body"] = "[CLAIMED] lane myia-b:CoursIA -- Refs #44"
+    assert clc._lane_open_prs_referencing(42, "myia-a:CoursIA", prs) == []
+    assert clc._lane_open_prs_referencing(44, "myia-b:CoursIA", prs) == [7]
+    assert len(extracted) == 4
+
+    # Replacement, append and deletion also change the indexed verdicts.
+    prs[0] = {"number": 9, "body": "[CLAIMED] lane myia-a:CoursIA -- Refs #45"}
+    assert clc._lane_open_prs_referencing(45, "myia-a:CoursIA", prs) == [9]
+    prs.append({"number": 10, "body": "[CLAIMED] lane myia-a:CoursIA -- Refs #46"})
+    assert clc._lane_open_prs_referencing(46, "myia-a:CoursIA", prs) == [10]
+    prs.pop()
+    assert clc._lane_open_prs_referencing(46, "myia-a:CoursIA", prs) == []
+
+    # A root change invalidates the cache even when the list contents match.
+    before = len(extracted)
+    root[0] = "/repo-b"
+    assert clc._lane_open_prs_referencing(45, "myia-a:CoursIA", prs) == [9]
+    assert len(extracted) == before + len(prs)
 
 
 def test_paths_clause_brace_scope_disjoint_across_claims(capsys):
@@ -5945,7 +6077,7 @@ def test_lint_12327_run_check_11112_exact_scenario(capsys, monkeypatch):
             "MyIA.AI.Notebooks/Sudoku/SL-5-test.ipynb",
             "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-test.ipynb",
             "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-test.ipynb",
-            "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/I2_Contre-test.ipynb",
+            "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/I2_Contre-test.ipynb",
             "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama-test.ipynb",
         ],
     )
@@ -5972,7 +6104,7 @@ def test_lint_12327_run_check_11112_exact_scenario(capsys, monkeypatch):
          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7*.ipynb\n",
          "2026-08-22T14:12:00Z"),
         ("[CLAIMED] lane myia-po-2026:CoursIA-2 -- paths: "
-         "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/I2_Contre*.ipynb\n",
+         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/I2_Contre*.ipynb\n",
          "2026-08-22T14:13:00Z"),
     ]
     events = _events_for(*bodies_and_dates)
@@ -7228,7 +7360,7 @@ def _local_pr_history(tmp_path: Path, *, own_files: int = 0) -> tuple[str, list[
     def git(*args: str) -> str:
         return subprocess.run(
             ["git", *args], cwd=repo, check=True, capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
         ).stdout.strip()
 
     git("init", "-b", "main")
@@ -7272,7 +7404,7 @@ def test_implicit_ignores_only_inherited_main_files_from_real_history(
 
     against_stale_base = subprocess.run(
         ["git", "diff", "--name-only", "stale", head], check=True,
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     ).stdout.splitlines()
     assert len(against_stale_base) == 105
     assert len(pr["files"]) == 100  # API preview ceiling
@@ -7303,13 +7435,13 @@ def test_implicit_keeps_content_introduced_only_by_merge_commit(
     def git(*args: str) -> str:
         return subprocess.run(
             ["git", *args], cwd=repo, check=True, capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
         ).stdout.strip()
 
     def merge_conflict(branch: str) -> None:
         proc = subprocess.run(
             ["git", "merge", "--no-commit", branch], cwd=repo,
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
         )
         assert proc.returncode == 1, proc.stdout + proc.stderr
 
@@ -8772,3 +8904,8 @@ def test_backticked_scope_is_not_read_as_epic_wide():
     assert clc._empty_scope_in(ev.paths, tracked) == [], \
         "la portee normalisee n'est pas morte"
     assert not clc._claim_scope_effectively_epic_wide(ev)
+
+
+def test_lane_reference_index_deduplicates_repeated_issue():
+    prs = [{"number": 9, "body": "[CLAIMED] lane myia-a:CoursIA -- #45\nVoir #45"}]
+    assert clc._lane_open_prs_referencing(45, "myia-a:CoursIA", prs) == [9]

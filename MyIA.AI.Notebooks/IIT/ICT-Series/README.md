@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: IIT-ICT-Series
-pedagogical_count: 102
-breakdown: ICT-Series=102
-maturity: BETA=80, DRAFT=18, ALPHA=4
+pedagogical_count: 103
+breakdown: ICT-Series=103
+maturity: BETA=81, DRAFT=18, ALPHA=4
 -->
 
 [← IIT](../README.md) | [↑ Notebooks](../../README.md) | [→ Probas](../../Probas/README.md)
@@ -42,7 +42,7 @@ Le package `ict/` est installable (`pip install -e .` depuis `ICT-Series/`, cf. 
 
 ### Le package `ict/` — modules et tests
 
-Le package `ict/` (installable en mode editable, issue [#8076](https://github.com/jsboige/CoursIA/issues/8076)) porte les simulations et mesures de la série : chaque notebook importe ses calculs depuis un module dédié plutôt que de les redéfinir en ligne. Le package compte **98 modules Python** au premier niveau (hors `__init__.py`, plus les sous-dossiers `bridges/`, `tests/` et `results/`) ; la table suivante les couvre intégralement, par famille d'instrument :
+Le package `ict/` (installable en mode editable, issue [#8076](https://github.com/jsboige/CoursIA/issues/8076)) porte les simulations et mesures de la série : chaque notebook importe ses calculs depuis un module dédié plutôt que de les redéfinir en ligne. Le package porte ses modules Python au premier niveau (hors `__init__.py`, plus les sous-dossiers `bridges/`, `tests/` et `results/`) ; la table suivante les couvre intégralement, par famille d'instrument :
 
 | Famille | Modules | Strate |
 |---------|---------|--------|
@@ -62,10 +62,10 @@ Le package `ict/` (installable en mode editable, issue [#8076](https://github.co
 | Toolkit multi-lentilles & contrat de traces (Epics [#15475](https://github.com/jsboige/CoursIA/issues/15475) / [#15479](https://github.com/jsboige/CoursIA/issues/15479) / [#15480](https://github.com/jsboige/CoursIA/issues/15480), [#8236](https://github.com/jsboige/CoursIA/issues/8236)) | `sae_calibration`, `sae_dictionary`, `sae_scales`, `lens_endpoints`, `lens_gates`, `bench_factorise`, `slens`, `trace_contract`, `intervention_battery` (chaîne état→comportement, critère 3) | 5 |
 | Regards — composition avant/arrière (opération 12, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) | `regards` | 5 |
 
-**Deux suites de tests CI** valident le package — 122 fichiers de test au total (61 dans `tests/`, 61 dans `ict/tests/`), couvrant ensemble 96 des 98 modules :
+**Deux suites de tests CI** valident le package — une suite dans `tests/` et une suite jumelle dans `ict/tests/`, couvrant ensemble la quasi-totalité des modules :
 
-- **`tests/`** — suite principale (pytest), 61 fichiers `test_<module>.py` couvrant 57 modules. Validation des calculs et des gates falsifiables de chaque strate.
-- **`ict/tests/`** — suite interne au package (pytest, `conftest.py` + `pytest.ini` + 61 fichiers de test) : tests de cohérence transversaux et couverture des modules les plus récents (55 modules, dont 16 sont aussi couverts par `tests/`).
+- **`tests/`** — suite principale (pytest), un fichier `test_<module>.py` par module couvert. Validation des calculs et des gates falsifiables de chaque strate.
+- **`ict/tests/`** — suite interne au package (pytest, `conftest.py` + `pytest.ini` + les fichiers de test) : tests de cohérence transversaux et couverture des modules les plus récents (dont une partie est aussi couverte par `tests/`).
 
 Seuls `kuramoto_boundary` et `nerve_discriminant` n'ont pas encore de test dédié. En miroir, quelques fichiers de test ciblent des scripts ou des contrats plutôt qu'un module unique (`test_causal_hooks`, `test_sae_cross_scale`, `test_sae_traces_layout`, `test_sae_traces_guard`, `test_bridges_canonical_wiring`).
 

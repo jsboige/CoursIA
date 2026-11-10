@@ -27,7 +27,7 @@
 | Organes argumentation | `ict/argumentation.py` : `DungAF`, `grounded_labeling`, `preferred_extensions`, `belief_trajectory`, `state_signature`, `belief_transition_matrix`, `discourse_irreversibility`, `RefusDeMesure` + quatre `REFUS_CODES`, `segmenter_enonces`, `est_codable`, `verdict_canaux`. |
 | Organes de mesure | `ict/time_arrow.py` (`entropy_production`, `trajectory_asymmetry`), `ict/mdl.py` (`two_part_code`, `tpm_description_length`), `ict/compression.py` (`compressed_length`), `ict/spectral.py`. |
 | Parité Tweety | 212 cas, par `labelling_from_extension` (#23665, MERGED) ; l'organe native exige JDK 17 + JAR et **n'est pas disponible sur cette machine** — le témoin de parité est donc à router, pas à rejouer localement. |
-| Recollement lectures réelles | `SymbolicAI/Argument_Analysis/Argumentation-Obs-04-Recollement-Strate6-Python.ipynb`, exécuté, aucun `execution_count` nul. Livré par #13070 sous #13041 (issue close). |
+| Recollement lectures réelles | `SymbolicAI/ArgumentAnalysis/Argumentation-Obs-04-Recollement-Strate6-Python.ipynb`, exécuté, aucun `execution_count` nul. Livré par #13070 sous #13041 (issue close). |
 | Gating de la tranche 3 | **Levé.** Les trois issues que l'audit du 22/10 listait comme OPEN sont MERGED : #21636 (grounded contre Tweety), #21650 (codage AF des deux discours), #21663 (jonction Argumentum). |
 | Jambe C3 (#7742) | OPEN, corpus à quatre tiers défini, plan d'expérience à quatre items, trois prédictions falsifiables écrites. Bloquée non plus sur le branchement mais sur la passphrase du tier chiffré (question au registre). |
 
@@ -38,7 +38,7 @@ point où les cinq maillons sont tenus **dans le même carnet, sur le même text
 
 | # | Maillon | Ce qui est consommé | Ce que le capstone y ajoute |
 |---|---|---|---|
-| 1 | **Tronc EPITA d'analyse argumentative** | `SymbolicAI/Argument_Analysis` : Toulmin, Walton, sophismes, dialogues protocolisés, JTMS/ATMS, orchestration d'agents à plugins (#18390, OPEN). | Rien — c'est le texte d'entrée et le vocabulaire de codage. |
+| 1 | **Tronc EPITA d'analyse argumentative** | `SymbolicAI/ArgumentAnalysis` : Toulmin, Walton, sophismes, dialogues protocolisés, JTMS/ATMS, orchestration d'agents à plugins (#18390, OPEN). | Rien — c'est le texte d'entrée et le vocabulaire de codage. |
 | 2 | **AIF et sémantique de Dung** | `Argumentation-Onto-01-AIF-OWL2-Python`, `Argumentation-03-Dung-AF-Semantics-Python`, `ict.argumentation`. | L'AF est codé argument par argument **depuis le texte**, l'ordre d'arrivée étant l'ordre du texte. |
 | 3 | **Corpus Argumentum réel** | Sous-module #4960, `Argumentation-02b-Argumentum-Cards-Python`. | C'est le passage au réel que la graine n'a pas fait : les objets du corpus, pas des exemples choisis. |
 | 4 | **Lectures hétérogènes** | Les quatre lectures de #13041 (RDF, LEX, STRUCT, GRAPH) et la glue hors échantillon de `Obs-04`. | La trajectoire de croyance est lue par quatre lectures concurrentes, et la glue décide **où** elles ne s'accordent pas. |
@@ -54,7 +54,7 @@ Les cinq questions de `organ-first-implementation`, répondues une fois pour le 
 
 | # | Question | Réponse |
 |---|---|---|
-| 1 | Quelle série possède déjà la sémantique ? | `SymbolicAI/Argument_Analysis` pour le codage, les sémantiques de Dung et le recollement ; `IIT/ICT-Series/ict/` pour la trajectoire, la flèche du temps et la longueur de description. **Deux séries, aucune réimplémentation.** |
+| 1 | Quelle série possède déjà la sémantique ? | `SymbolicAI/ArgumentAnalysis` pour le codage, les sémantiques de Dung et le recollement ; `IIT/ICT-Series/ict/` pour la trajectoire, la flèche du temps et la longueur de description. **Deux séries, aucune réimplémentation.** |
 | 2 | Peut-on invoquer le module réel ? | Oui, par import direct : `ict.argumentation`, `ict.time_arrow`, `ict.mdl`, `ict.compression`, `ict.spectral`. Aucun de ces organes n'est recopié dans le carnet. |
 | 3 | Que faut-il exporter / refactorer dans la série source ? | Rien d'obligatoire. Un seul point d'interface à ajouter : une fonction d'assemblage qui rend, pour une trajectoire donnée, le triplet **(σ, K, ordre)** en un appel — aujourd'hui trois imports et trois formats de retour. Elle vit dans `ict/`, pas dans le carnet. |
 | 4 | Quel témoin négatif l'organe natif fournit-il ? | Quatre, listés en §5, dont un qui a **déjà rougi** (σ sur les graphes nuls) et un qui rougit par construction (`RefusDeMesure`). |
