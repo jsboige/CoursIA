@@ -74,6 +74,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/lean-axiom-coverage.md](reference/lean-axiom-coverage.md) | Couverture axiomes du gate proof-integrity par lake — classes dangereuses `native_decide.*`/`sorryAx`/`Classical.choice`. Câblage CI : matrice `ci_lakes.json` pour les lakes migrés (dont `knot_lean` depuis #13751), `lean-conway.yml` pour conway. Détail de référence pour §B.3 de `.claude/rules/pr-review-discipline.md`. Établi cycle c.950 (worker po-2023, lane `myia-po-2023:CoursIA-2`). See #8738 (step 3), #8752 (livraison) |
 | [reference/lean-material-map.md](reference/lean-material-map.md) | Carte du matériel Lean du dépôt, par lake — modules propres, miroirs `_en`, présence au CI, gate d'axiomes, date de naissance. Régénérée par `scripts/lean/lean_material_map.py`, `--check` rend 1 quand page et arbre divergent. See #23097 (T1, PR #23105) |
 | [reference/secrets-and-coord-detail.md](reference/secrets-and-coord-detail.md) | Secrets + coordination cross-machine |
+| [reference/gh-posting-hygiene-detail.md](reference/gh-posting-hygiene-detail.md) | Posting gh — détail : incidents de référence (sièges, OS, remédiation, le trompe-l'œil du rouge `tag_required` sur #17270/#17326) |
 | [reference/student-pr-reviews-detail.md](reference/student-pr-reviews-detail.md) | Incident, format public, workflow |
 | [reference/user-blocker-signaling-detail.md](reference/user-blocker-signaling-detail.md) | Catégories + anti-patterns signaler |
 | [reference/wsl-kernels-detail.md](reference/wsl-kernels-detail.md) | Détails WSL kernels |
@@ -193,6 +194,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/junctions-scan-po-2027.md](lean/junctions-scan-po-2027.md) | Junctions Mathlib — scan po-2027 |
 | [lean/junctions-apply-po-2027-c1731.md](lean/junctions-apply-po-2027-c1731.md) | Apply V5 Mathlib NTFS junctions po-2027 (c.1731) — donneur knot_lean, 7 PERIMEE re-pointées vers db584cd6, anti-régression `distinct_code_sorry` 12→12 |
 | [lean/junctions-apply-po-2028-c4362.md](lean/junctions-apply-po-2028-c4362.md) | Apply Mathlib WSL po-2028 (2026-10-31) — trois checkouts `db584cd6` remplacés par des symlinks vers le magasin `perc19494`, rollback en poubelle, et la mesure qui corrige le surcompte « 8 physiques » du bloc précédent. See #4362 |
+| [lean/junctions-verify-po-2027-c4362.md](lean/junctions-verify-po-2027-c4362.md) | Vérification build du groupe de jonctions `db584cd6` (po-2027, runs 1-7) — diagnostic ressources (palier LAKE_JOBS 20→1), KNOTS OOM même à un worker, suite #21319. See #4362 |
 | [lean/knot-4.33-investigation.md](lean/knot-4.33-investigation.md) | Lean 4 — knot_lean 4.33.0 bloquée par synthèse Decidable |
 | [lean/l750-pivot-scope-discipline.md](lean/l750-pivot-scope-discipline.md) | L750 ★★ — Pivot Lean specialist, discipline de scope, remédiation OOM |
 | [lean/life-components-schema.md](lean/life-components-schema.md) | Schéma de motifs et de réactions de Game of Life — tranches 1-4 de #15635 |
@@ -261,6 +263,7 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/assembly-theory-pre-enregistrement.md](ict/assembly-theory-pre-enregistrement.md) | Case 20 — l'assembly index mesuré (Sharma et al. 2023) contre la lecture « compression LZ » (Abrahão et al. 2024) : solveur exact à deux implémentations, échelle périodique certifiée `ai = log2 n`, règle de décision scellée par pentes |
 | [ict/stv-valence-symmetry-v2-pre-enregistrement.md](ict/stv-valence-symmetry-v2-pre-enregistrement.md) | Case 17bis — seconde opérationnalisation STV scellée avant le banc : observable d'entropie des classes de ratio du lock (correctif de l'aveuglement `CV` mesuré au case 17), drive découplé de la structure de verrouillage |
 | [ict/vervaeke-insight-pre-enregistrement.md](ict/vervaeke-insight-pre-enregistrement.md) | Réalisation de pertinence (Jaeger, Riedl, Djedovic, Vervaeke, Walsh 2024, *Front Psychol* 15:1362658) — protocole scellé avant codage du module : engagement adverse, heuristiques antagonistes, re-commitment ; opérationnalisation déclarée grade C, thèse de non-formalisabilité de l'article non testée |
+| [ict/solms-affect-pre-enregistrement.md](ict/solms-affect-pre-enregistrement.md) | Réalisation de pertinence — Solms & Friston 2018 (*Front Psychol* 9:2714) : l'affect comme forme élémentaire de la conscience, mécanisme homéostatique formalisé en énergie libre, localisation subcorticale ; dissociation level (affectif, subcortical) vs contents (corticaux) — protocole scellé avant écriture du banc, 5 prédictions (H1 subcortical vs null H0 readout cortical) |
 
 ## Curriculum (docs/curriculum/)
 
