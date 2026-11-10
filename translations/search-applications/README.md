@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`search-applications.csv`](search-applications.csv) | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/` | 48 (dossier plat, déplacement #19253) | 1891 (markdown + code, 20 colonnes) |
+| [`search-applications.csv`](search-applications.csv) | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/` | 51 (dossier plat, déplacement #19253) | 2117 (markdown + code, 20 colonnes) |
 
 La série couvre les trois familles de cas pratiques du cours de recherche (thématiques, le dossier étant plat) :
 
