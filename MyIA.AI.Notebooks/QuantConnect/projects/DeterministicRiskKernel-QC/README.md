@@ -157,4 +157,4 @@ Le framework reste un outil parmi d'autres, pas un passage obligé : le noyau ti
 ## Liens
 
 - Issue #24698 (étape 1 : carnet QC-Py-45 ; étape 2 : ce projet).
-- Article archivé : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\2026 - Feng Dai Pan Lau Xu Liu - Governed Self-Evolution for Autonomous Investing, Steward (arXiv 2610.30557).pdf`.
+- Article archivé : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\LLM Agents and AI-Assisted Trading\2026 - Feng Dai Pan Lau Xu Liu - Governed Self-Evolution for Autonomous Investing, Steward (arXiv 2610.30557).pdf`.
