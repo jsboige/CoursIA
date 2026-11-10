@@ -19,13 +19,13 @@ and the Epic #1452/#1453 prover-harness calibration notes (these notes
 live canonically in the FR sibling).
 -/
 
-import Conway.Life.ConeGeometry_en
+import Conway.Life.ConeGeometry
 import Conway.Life.HashlifeCorrectness
 
 namespace Conway_en
-open Conway_en
+open Conway
 namespace Life_en
-open Life_en
+open Life
 
 /-! ## Monotonicity: larger radius → larger cone
 

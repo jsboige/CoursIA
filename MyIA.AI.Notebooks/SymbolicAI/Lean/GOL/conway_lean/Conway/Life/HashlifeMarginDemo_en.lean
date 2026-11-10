@@ -22,14 +22,14 @@ issue for the design-gate context (N1 = framing, N2 = loop without re-framing,
 N3 = P5 invariant restatement).
 -/
 
-import Conway.Life.MacroCell_en
+import Conway.Life.MacroCell
 import Conway.Life.HashlifeCorrectness
 
 namespace Conway_en
-open Conway_en
+open Conway
 
 namespace Life_en
-open Life_en
+open Life
 
 /-! ## The fixed-2 cap vs the n-aware frame
 
