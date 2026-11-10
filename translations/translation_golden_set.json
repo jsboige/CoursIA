@@ -1022,8 +1022,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/Probas/Infer/scripts/README.md",
    "en": "MyIA.AI.Notebooks/Probas/Infer/scripts/README.en.md",
-   "sha1_fr": "ae5c70370fd6e906c33b53428ff801505dd128bd",
-   "sha1_en": "2274e67141e7c9aac7de19be1f2b8951db709df8"
+   "sha1_fr": "a455e4d3efcca2764a4de5b182ff91beceb4d412",
+   "sha1_en": "ab26dfd69c5181cec5dd3082fb956501647d8663"
   },
   {
    "kind": "readme",
@@ -1340,8 +1340,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/HighBookToMarketFScore-QC/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/HighBookToMarketFScore-QC/README.en.md",
-   "sha1_fr": "a21fbd00b195867609a28b90745d605823427f90",
-   "sha1_en": "a00bdb95623e464c923e158ea255b277f4a3f1c2"
+   "sha1_fr": "63b01c5ad234c353687f1a5325cb3f231cae0ff2",
+   "sha1_en": "16dd9330ff7c476d048ba6a8406b57a2e8265932"
   },
   {
    "kind": "readme",
@@ -3256,7 +3256,7 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/README.md",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/README.en.md",
-   "sha1_fr": "7a575c2c43f902f1b71a67b9353bb84ca7b35d20",
+   "sha1_fr": "9fd984f1cc4c650fb1b57c554ce4899caf1fef09",
    "sha1_en": "d9c6fafa49d0689a3736d76c3dd6e310451bae95"
   },
   {
@@ -3277,7 +3277,7 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/examples/README.md",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/examples/README.en.md",
-   "sha1_fr": "852c4e3e89a13f5597274a47acd108e166854abe",
+   "sha1_fr": "3acd41d748d8f30045e2624ec8a84861ec22a888",
    "sha1_en": "f596413fe6bd9bb1e64a61f79fc2baad6a8579c2"
   },
   {
@@ -3382,7 +3382,7 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/README.md",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/README.en.md",
-   "sha1_fr": "22729b6b98ac239fc26cca3e55b980af44289e14",
+   "sha1_fr": "ce155b7e4014293d57ea773a67d01258294d9ca2",
    "sha1_en": "8205769a7f2510153728dbb402718e6290f4adc6"
   },
   {
