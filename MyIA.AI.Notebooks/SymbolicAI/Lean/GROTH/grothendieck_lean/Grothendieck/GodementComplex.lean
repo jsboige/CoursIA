@@ -882,6 +882,44 @@ theorem godementCanonicalMap_comp_zero_zero {S : ShortComplex (X.Presheaf AddCom
   show godementMapHom S.f ≫ godementMapHom S.g = 0
   rw [← godementMapHom_comp, S.zero, godementMapHom_zero]
 
+theorem godementDChainMap_succ_left (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G)
+    (n : ℕ) :
+    (godementDChainMap F G η (n + 1)).left = (godementDChainMap F G η n).right :=
+  rfl
+
+/-- **Le maillon générique de transport de la nullité** (Partie 100) : si les
+flèches d'étages composées sont nulles au degré `n + 1`, le composé des
+flèches de conoyaux de degré `n` est nul. Le `cancel_epi` porte sur la
+projection canonique du conoyau — épi par construction, donc **sans aucune
+hypothèse** — et le calcul du milieu est la propriété de factorisation de
+`cokernel.map` (`π ≫ map = verticale droite ≫ π`), la verticale droite du
+carré de degré `n` étant la flèche d'étage de degré `n + 1`. Combiné à
+`godementCanonicalMap_succ_two` et `godementMapHom_zero`, c'est le cran
+inductif de la nullité des flèches d'étages : `P (n+1) → Q n → P (n+2)`. Le
+cran `1` (forme `μ`), lui, n'est PAS couvert : son analogue `Q_μ` se
+réduit circulairement à `P 1`, et sa sortie relève du connecteur du serpent
+de rang `0` — cible hard, hypothèse `hsep`. -/
+theorem godementCokernelMap_comp {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (n : ℕ)
+    (h : godementCanonicalMap S.X₁ S.X₂ S.f (n + 1) ≫
+      godementCanonicalMap S.X₂ S.X₃ S.g (n + 1) = 0) :
+    godementCokernelMap S.X₁ S.X₂ S.f n ≫ godementCokernelMap S.X₂ S.X₃ S.g n = 0 := by
+  refine (cancel_epi (cokernel.π (godementCanonicalD S.X₁ n))).mp ?_
+  rw [comp_zero, ← Category.assoc]
+  have e₁ : cokernel.π (godementCanonicalD S.X₁ n) ≫
+      godementCokernelMap S.X₁ S.X₂ S.f n =
+      godementCanonicalMap S.X₁ S.X₂ S.f (n + 1) ≫
+      cokernel.π (godementCanonicalD S.X₂ n) := by
+    simp only [godementCokernelMap, godementCanonicalMap, godementDChainMap_succ_left,
+      cokernel.π_desc]
+  have e₂ : cokernel.π (godementCanonicalD S.X₂ n) ≫
+      godementCokernelMap S.X₂ S.X₃ S.g n =
+      godementCanonicalMap S.X₂ S.X₃ S.g (n + 1) ≫
+      cokernel.π (godementCanonicalD S.X₃ n) := by
+    simp only [godementCokernelMap, godementCanonicalMap, godementDChainMap_succ_left,
+      cokernel.π_desc]
+  rw [e₁, Category.assoc, e₂, ← Category.assoc, h, zero_comp]
+
 /-- **Cible prover : easy — le composé des flèches d'étages d'une SES est
 nul** : pour un short complexe `S` de préfaisceaux, les flèches d'étages
 composées `godementCanonicalMap S.f n ≫ godementCanonicalMap S.g n` sont
