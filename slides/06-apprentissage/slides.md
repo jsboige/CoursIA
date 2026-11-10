@@ -73,7 +73,7 @@ Intelligence Artificielle -- VI
 
 # Agent Apprenant
 
-- **4 modules** : performance, apprentissage, critique, générateur de problemes
+- **Modules** : performance, apprentissage, critique, générateur de problemes
 - Le module d'apprentissage ameliore le composant de performance a partir du feedback du critique
 - Le générateur de problemes suggere de nouvelles expériences pour enrichir l'apprentissage
 
@@ -126,6 +126,7 @@ layout: dense
 
 
 # Principes de l’apprentissage inductif
+<div class="dense-list">
 
 - h est choisie dans un espace d’hypothèses
   - E.g. types de fonctions (polynômes)
@@ -138,11 +139,14 @@ layout: dense
 - Rasoir d’Occam
   - On choisit l’hypothèse la plus simple consistante avec les données
 
-<img src="./images/img_001.png" alt="img_001.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_002.png" alt="img_002.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_003.png" alt="img_003.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid cols3">
+<img src="./images/img_001.png" alt="img_001.png">
+<img src="./images/img_002.png" alt="img_002.png">
+<img src="./images/img_003.png" alt="img_003.png">
+</div>
 
 
+</div>
 ---
 layout: dense
 ---
@@ -270,7 +274,7 @@ layout: dense
 - Ex: 1 dé non pipé: (6/6) log2 6 = 2.58 bits
 - Distribution uniforme  plus d’information
 
-<img src="./images/img_009.png" alt="img_009.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_009.png" alt="img_009.png" class="img-fit">
 
 
 ---
@@ -450,6 +454,7 @@ layout: two-cols
 
 
 # Mesure de performance
+<div class="dense-list">
 
 
 - Comment sait-on que h ≈ f ?
@@ -482,6 +487,8 @@ layout: two-cols
 - **Sinon l’ensemble de test a « fuité »**
   - dans l’apprentissage.
 </div>
+</div>
+<!-- fermeture dense-list AVANT ::right:: : un div ouvert qui traverse le separateur de colonnes atterrit dans deux conteneurs Slidev et casse le template Vue (Element is missing end tag, build head 22472d3c1828). -->
 
 
 <p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.ipynb">2.13-Analyse-Erreurs.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9-Grokking-Generalisation.ipynb">2.9-Grokking-Generalisation.ipynb</a> (double-descente).</p>
@@ -659,6 +666,15 @@ layout: dense
 
 <!-- Bagging = echantillons paralleles, Boosting = echantillons séquentiels ponderes -->
 
+<style scoped>
+/* 22 puces + le pseudo-code ADABOOST en pleine largeur : le bloc d'algorithme
+   commencait sous le bas du canvas et se coupait en plein `for k = 1 to K`.
+   Mesure `scan_slidev_overflow --threshold 0.0005` : ink 0.0154. */
+:deep(ul) { font-size: 0.7em !important; }
+:deep(li) { margin: 0 !important; line-height: 1.12 !important; }
+img { max-height: 170px !important; }
+</style>
+
 
 ---
 layout: section
@@ -746,14 +762,27 @@ layout: two-cols
 - Apprend sur des datasets linéairement séparable
 - vs Arbre de décision: bon sur majorité, mauvais sur restaurant
 
-<img src="./images/img_025.png" alt="img_025.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_026.png" alt="img_026.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_025.png" alt="img_025.png">
+<img src="./images/img_026.png" alt="img_026.png">
+</div>
+
+<style scoped>
+/* Deux figures empilees en pleine largeur sous six puces : la seconde
+   commencait sous le bas du canvas. Mesure : ink 0.0068 (sous le seuil par
+   defaut de 0.01, parce que l'amorce visible est etroite — le seuil ne voit
+   pas un element dont seule une bande centrale depasse). Elles passent en
+   grille deux colonnes, hauteur auto (le theme impose sinon 300 px par
+   grille, dont 180 px de vide sous une rangee de 118 px). */
+:deep(.img-grid) { height: auto !important; }
+</style>
 
 
 ---
 
 
 # Réseaux feed-forward multi-couches
+<div class="dense-list">
 
 - Structure
 - couches généralement entièrement connectées
@@ -778,10 +807,13 @@ layout: two-cols
 - **Similaire à une classification**
   - par hyperplan dans l’espace cible
 
-<img src="./images/img_027.png" alt="img_027.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_028.png" alt="img_028.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_029.png" alt="img_029.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_030.png" alt="img_030.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid cols3">
+<img src="./images/img_027.png" alt="img_027.png">
+<img src="./images/img_028.png" alt="img_028.png">
+<img src="./images/img_029.png" alt="img_029.png">
+</div>
+<img src="./images/img_030.png" alt="img_030.png" class="img-fit">
+</div>
 </div>
 ---
 
@@ -819,7 +851,16 @@ layout: two-cols
 - Inverse = pavage (similaire à l’apprentissage de listes de décision)
 - Les hypothèses sont assez opaques
 
-<img src="./images/img_032.png" alt="img_032.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_032.png" alt="img_032.png" class="img-fit">
+
+<style scoped>
+/* Quinze puces puis une figure `img-fit` : la figure commencait sous le bas
+   du canvas (ink 0.0062 a seuil bas). Le plafond de `img-fit` ne suffit pas,
+   c'est le bloc de puces qui doit ceder de la place. */
+:deep(ul) { font-size: 0.74em !important; }
+:deep(li) { margin: 0 !important; line-height: 1.1 !important; }
+img { max-height: 120px !important; }
+</style>
 
 
 ---
@@ -848,14 +889,29 @@ layout: two-cols
   - le monde est hiérarchique
 - Librairies de Deep learning
 
-<img src="./images/img_033.png" alt="img_033.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_034.png" alt="img_034.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_035.jpg" alt="img_035.jpg" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_036.png" alt="img_036.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_037.png" alt="img_037.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_033.png" alt="img_033.png">
+<img src="./images/img_034.png" alt="img_034.png">
+<img src="./images/img_035.jpg" alt="img_035.jpg">
+<img src="./images/img_036.png" alt="img_036.png">
+</div>
+<img src="./images/img_037.png" alt="img_037.png" class="img-fit">
 
 <!-- Architecture NN : entrée → couches cachees (activation ReLU/sigmoid) → sortie -->
 </div>
+
+<style scoped>
+/* La diapo empilait texte + grille de 4 images + une image `img-fit` jusqu'a
+   1323 px de haut dans un canvas de 552 : les deux dernieres images tombaient
+   sous le champ. `dense-list` n'est definie nulle part dans le theme (classe
+   heritee du port Marp), donc le texte gardait sa taille par defaut. Ici :
+   texte condense, grille sur UNE rangee de 4 colonnes, image isolee bornee. */
+:deep(ul) { font-size: 0.74em; }
+:deep(li) { margin: 0; line-height: 1.14; }
+:deep(.img-grid) { height: 130px !important; grid-template-columns: repeat(4, 1fr) !important; }
+img { max-height: 130px !important; object-fit: contain; }
+img.img-fit { max-height: 60px !important; }
+</style>
 ---
 
 
@@ -878,12 +934,24 @@ layout: two-cols
 - + normalisation
 - + mise en série
 
-<img src="./images/img_038.png" alt="img_038.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_039.png" alt="img_039.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_040.png" alt="img_040.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_041.png" alt="img_041.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_038.png" alt="img_038.png">
+<img src="./images/img_039.png" alt="img_039.png">
+<img src="./images/img_040.png" alt="img_040.png">
+<img src="./images/img_041.png" alt="img_041.png">
+</div>
 
 <!-- CNN : convolution → feature maps → pooling → couches denses → classification -->
+
+<style scoped>
+/* 16 puces puis quatre images empilees en flux vertical (chacune a sa taille
+   naturelle, le `max-width` inline ne borne que la largeur) : la diapo montait
+   a 1239 px. Les images passent en grille sur une rangee, le texte se condense. */
+:deep(ul) { font-size: 0.72em; }
+:deep(li) { margin: 0; line-height: 1.12; }
+:deep(.img-grid) { height: 100px !important; grid-template-columns: repeat(4, 1fr) !important; }
+:deep(.slidev-layout) { padding-top: 24px; padding-bottom: 16px; }
+</style>
 
 
 ---
@@ -891,12 +959,24 @@ layout: two-cols
 
 # Auto-Encodeurs
 
-<img src="./images/img_042.png" alt="img_042.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_043.png" alt="img_043.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_044.png" alt="img_044.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_045.png" alt="img_045.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_046.png" alt="img_046.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_047.png" alt="img_047.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_042.png" alt="img_042.png">
+<img src="./images/img_043.png" alt="img_043.png">
+</div>
+<div class="img-grid">
+<img src="./images/img_044.png" alt="img_044.png">
+<img src="./images/img_045.png" alt="img_045.png">
+<img src="./images/img_046.png" alt="img_046.png">
+<img src="./images/img_047.png" alt="img_047.png">
+</div>
+
+<style scoped>
+/* Deux grilles empilees (2 + 4 images) sans aucun texte : le theme impose
+   300 px de haut a chaque `.img-grid:not(.absolute)` alors qu'une rangee
+   d'images en occupe 118 — la 5e image demarrait sous le canvas (ink 0.0060).
+   Hauteur auto : les deux grilles se tassent, les six images tiennent. */
+:deep(.img-grid) { height: auto !important; }
+</style>
 
 
 ---
@@ -904,7 +984,7 @@ layout: two-cols
 
 # Réseaux résiduels (ResNets)
 
-<div class="dense-list">
+<div class="dense-list xl-dense">
 
 - Problème:
 - Augmentation de la profondeur
@@ -929,12 +1009,14 @@ layout: two-cols
 - V-Nets, U-Nets++ etc.
 </div>
 
-<img src="./images/img_048.png" alt="img_048.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_049.png" alt="img_049.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_050.png" alt="img_050.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_051.png" alt="img_051.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_052.png" alt="img_052.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_053.png" alt="img_053.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid onerow">
+<img src="./images/img_048.png" alt="img_048.png">
+<img src="./images/img_049.png" alt="img_049.png">
+<img src="./images/img_050.png" alt="img_050.png">
+<img src="./images/img_051.png" alt="img_051.png">
+<img src="./images/img_052.png" alt="img_052.png">
+<img src="./images/img_053.png" alt="img_053.png">
+</div>
 
 
 ---
@@ -942,7 +1024,7 @@ layout: two-cols
 
 # Réseaux antagonistes génératifs (GANs)
 
-<div class="dense-list">
+<div class="dense-list xl-dense">
 
 - Principe
 - Apprentissage non-supervisé
@@ -964,7 +1046,7 @@ layout: two-cols
 - Nettoyage audio
 </div>
 
-<img src="./images/img_054.png" alt="img_054.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_054.png" alt="img_054.png" class="img-fit">
 
 
 ---
@@ -986,6 +1068,34 @@ layout: two-cols
 - Opérations simples
 - Passe ou pas / Ajout du signal / Activation  tanh
 - Ex. Sujet de la phrase
+</div>
+
+<div class="img-grid">
+<img src="./images/img_055.png" alt="img_055.png">
+<img src="./images/img_056.png" alt="img_056.png">
+<img src="./images/img_057.png" alt="img_057.png">
+<img src="./images/img_058.png" alt="img_058.png">
+</div>
+
+<style scoped>
+/* 24 puces puis SEPT images empilees en flux vertical : la diapo montait a
+   1794 px, soit trois canvas. `dense-list` ne condensait rien (classe heritee
+   du port Marp, definie depuis dans styles/index.css) ; les images passent en
+   grille de 4 colonnes sur deux rangees a budget fixe. */
+:deep(ul) { font-size: 0.64em; }
+:deep(li) { margin: 0; line-height: 1.08; }
+:deep(.img-grid) { height: 80px !important; grid-template-columns: repeat(4, 1fr) !important; }
+:deep(.slidev-layout) { padding-top: 22px; padding-bottom: 14px; }
+</style>
+
+
+---
+
+
+# Réseaux récurrents - portes et variantes
+
+<div class="dense-list">
+
 - Porte 1: On oublie le précédent
 - Porte 2: On MAJ le sujet courant
 - Porte 3: On le passe en sortie pour le verbe
@@ -999,13 +1109,19 @@ layout: two-cols
 - But= tirer profit du futur
 </div>
 
-<img src="./images/img_055.png" alt="img_055.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_056.png" alt="img_056.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_057.png" alt="img_057.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_058.png" alt="img_058.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_059.png" alt="img_059.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_060.png" alt="img_060.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_061.png" alt="img_061.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_059.png" alt="img_059.png">
+<img src="./images/img_060.png" alt="img_060.png">
+<img src="./images/img_061.png" alt="img_061.png">
+</div>
+
+<style scoped>
+/* Suite de la diapo precedente, scindee : 24 puces et SEPT images ne
+   tenaient pas dans un canvas de 552 px (mesure 1794 px avant correction). */
+:deep(ul) { font-size: 0.8em; }
+:deep(li) { margin: 0; line-height: 1.18; }
+:deep(.img-grid) { height: 150px !important; grid-template-columns: repeat(4, 1fr) !important; }
+</style>
 
 
 ---
@@ -1075,8 +1191,10 @@ layout: two-cols
 - Rapprochement des embeddings
 - Encodeurs réutilisables
 
-<img src="./images/img_070.png" alt="img_070.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_071.png" alt="img_071.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_070.png" alt="img_070.png">
+<img src="./images/img_071.png" alt="img_071.png">
+</div>
 
 
 ---
@@ -1084,9 +1202,11 @@ layout: two-cols
 
 # Modèles de diffusion
 
-<img src="./images/img_072.png" alt="img_072.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_073.png" alt="img_073.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_074.png" alt="img_074.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_072.png" alt="img_072.png">
+<img src="./images/img_073.png" alt="img_073.png">
+<img src="./images/img_074.png" alt="img_074.png">
+</div>
 
 
 ---
@@ -1094,7 +1214,7 @@ layout: two-cols
 
 # Graphs Neural Networks (GNNs)
 
-<div class="dense-list">
+<div class="dense-list xl-dense">
 
 - Graphes G = (V,E)
 - GNN opère sur la structure de G
@@ -1119,15 +1239,34 @@ layout: two-cols
 - tf_geometric
 </div>
 
-<img src="./images/img_075.png" alt="img_075.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_076.png" alt="img_076.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_077.png" alt="img_077.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_078.png" alt="img_078.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_079.png" alt="img_079.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_080.png" alt="img_080.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_081.png" alt="img_081.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_082.png" alt="img_082.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_083.png" alt="img_083.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid cols3">
+<img src="./images/img_075.png" alt="img_075.png">
+<img src="./images/img_076.png" alt="img_076.png">
+<img src="./images/img_077.png" alt="img_077.png">
+<img src="./images/img_078.png" alt="img_078.png">
+<img src="./images/img_079.png" alt="img_079.png">
+<img src="./images/img_080.png" alt="img_080.png">
+<img src="./images/img_081.png" alt="img_081.png">
+<img src="./images/img_082.png" alt="img_082.png">
+<img src="./images/img_083.png" alt="img_083.png">
+</div>
+
+<style scoped>
+/* La diapo empilait 21 puces et un `img-grid cols3` de 9 images sans aucun
+   budget de hauteur : la 3e rangee tombait sous le canvas et 3 des 9 images
+   etaient invisibles (mesure `scan_slidev_overflow` : ink 0.0761 dans les
+   6 dernieres rangees de pixels).
+   `grid-template-columns` / `grid-auto-rows` du theme sont inertes ici :
+   `style.css` du deck redefinit `.img-grid` en `flex-wrap`, ou l'empilement
+   est pilote par la largeur des images, pas par une grille. On force donc
+   une vraie grille 3x3 bornee a 200 px, et les images remplissent leur
+   cellule (`object-fit: contain`) au lieu de flotter a 31 % de largeur.
+   Mesure apres : ink 0.0000, 9 images sur 9 visibles, aucun contenu retire. */
+:deep(ul) { font-size: 0.56em !important; }
+:deep(li) { margin: 0 !important; line-height: 1.06 !important; }
+:deep(.img-grid) { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; grid-auto-rows: 1fr !important; height: 200px !important; }
+:deep(.img-grid img) { width: 100% !important; height: 100% !important; max-height: 100% !important; object-fit: contain !important; }
+</style>
 
 
 ---
@@ -1234,6 +1373,7 @@ layout: dense
 
 
 # K-Nearest Neighbor
+<div class="dense-list">
 
 - What if the data is noisy?
 - Generalize to k-nearest neighbor
@@ -1257,12 +1397,15 @@ layout: dense
 - Mieux: un noyau pour pondérer les poids des voisins
 -  idée reprise par les SVMs
 
-<img src="./images/img_084.png" alt="img_084.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_085.png" alt="img_085.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_084.png" alt="img_084.png">
+<img src="./images/img_085.png" alt="img_085.png">
+</div>
 
 <!-- Clustering : données brutes → k-means/DBSCAN → groupes identifies -->
 
 
+</div>
 ---
 
 
@@ -1441,6 +1584,7 @@ layout: dense
 
 
 # Apprentissage et logique
+<div class="dense-list">
 
 - Jusque là: fonction (input)  outputs
 - Exploration dans l’espace d’hypothèses
@@ -1459,15 +1603,17 @@ layout: dense
 - Ajout de conditions ou suppression de disjoints
 - Pb: vérification répétée des exemples, et espace à explorer (backtracking)
 
-<img src="./images/img_087.png" alt="img_087.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_087.png" alt="img_087.png" class="img-fit">
 
 
+</div>
 ---
 layout: dense
 ---
 
 
 # Exploration à moindre engagement
+<div class="dense-list">
 
 - Principe d’élimination  incrémental
 - On part des hypothèses h1 ∨ h2 ∨. . . ∨ hn
@@ -1488,10 +1634,13 @@ layout: dense
 - **WaitEstimate(x, 30-60) ∨ WaitEstimate(x,>60)**
   -  LongWait (x)
 
-<img src="./images/img_088.png" alt="img_088.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_089.png" alt="img_089.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_088.png" alt="img_088.png">
+<img src="./images/img_089.png" alt="img_089.png">
+</div>
 
 
+</div>
 ---
 
 
@@ -1524,6 +1673,7 @@ layout: dense
 
 
 # Apprentissage par explication (EBL)
+<div class="dense-list">
 
 - Principes
 - Hypothèse ∧ Descriptions |= Classifications, Contexte |= Hypothèse
@@ -1547,11 +1697,14 @@ layout: dense
 - EBL concerné par efficacité d’une KB = mémoisation
 - Hypothèse de stationnarité de la distribution = hypothèse PAC
 
-<img src="./images/img_090.png" alt="img_090.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_091.png" alt="img_091.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_092.png" alt="img_092.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid cols3">
+<img src="./images/img_090.png" alt="img_090.png">
+<img src="./images/img_091.png" alt="img_091.png">
+<img src="./images/img_092.png" alt="img_092.png">
+</div>
 
 
+</div>
 ---
 
 
@@ -1603,6 +1756,16 @@ layout: dense
 
 <img src="./images/img_097.png" alt="img_097.png" style="display:block; margin:10px auto; max-width:100%;">
 </div>
+
+<style scoped>
+/* La derniere puce s'ecrivait PAR-DESSUS le pied de page « Intelligence(s) »,
+   et la figure du dernier groupe `v-click` sortait du canvas. L'export rend
+   tous les clics (`?clicks=99`), donc c'est bien l'etat complet qui doit
+   tenir. Mesure : ink 0.0502 sur la bande de fond. */
+:deep(ul) { font-size: 0.8em !important; }
+:deep(li) { margin: 0 !important; line-height: 1.1 !important; }
+img { max-height: 120px !important; }
+</style>
 ---
 
 
@@ -2036,10 +2199,12 @@ layout: section
 
 # Apprentissage par renforcement
 
-<img src="./images/img_100.png" alt="img_100.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_101.png" alt="img_101.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_100.png" alt="img_100.png">
+<img src="./images/img_101.png" alt="img_101.png">
+</div>
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb">rl_1_intro_cartpole.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb">RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb</a>.</p>
 
 
 ---
@@ -2078,6 +2243,7 @@ layout: dense
 
 
 # Apprentissage des différences temporelles
+<div class="dense-list">
 
 - TDL
 - Observation des transitions  ajustement des utilités par équation de MAJ
@@ -2094,16 +2260,20 @@ layout: dense
 - Borner le nombre d’ajustements
 - Heuristique pour prioriser les ajustements :  « prioritized sweeping » / balayage hierachisé
 
-<img src="./images/img_105.png" alt="img_105.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_106.png" alt="img_106.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_105.png" alt="img_105.png">
+<img src="./images/img_106.png" alt="img_106.png">
+</div>
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_5_mdp_dp_qlearning.ipynb">rl_5_mdp_dp_qlearning.ipynb</a> (MDP, ADP, TD, Q-learning).</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb">RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb</a> (MDP, ADP, TD, Q-learning).</p>
 
 
+</div>
 ---
 
 
 # Renforcement actif
+<div class="dense-list">
 
 - Agent actif: choix de la politique
 - Cf modification ADP: Politique depuis utilités
@@ -2121,10 +2291,13 @@ layout: dense
 - Mieux: fonction d’exploration f
 - U+: estimation optimiste
 
-<img src="./images/img_107.png" alt="img_107.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_108.png" alt="img_108.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_107.png" alt="img_107.png">
+<img src="./images/img_108.png" alt="img_108.png">
+</div>
 
 
+</div>
 ---
 layout: dense
 ---
@@ -2149,11 +2322,13 @@ layout: dense
 -  débat sur l’utilité des connaissances
 -  Transition actuelle
 
-<img src="./images/img_109.png" alt="img_109.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_110.png" alt="img_110.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_111.png" alt="img_111.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_112.png" alt="img_112.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_113.png" alt="img_113.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid cols3">
+<img src="./images/img_109.png" alt="img_109.png">
+<img src="./images/img_110.png" alt="img_110.png">
+<img src="./images/img_111.png" alt="img_111.png">
+<img src="./images/img_112.png" alt="img_112.png">
+<img src="./images/img_113.png" alt="img_113.png">
+</div>
 
 
 ---
@@ -2203,10 +2378,12 @@ layout: dense
 
 # Applications
 
-<img src="./images/img_124.png" alt="img_124.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_125.png" alt="img_125.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_126.png" alt="img_126.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_127.png" alt="img_127.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_124.png" alt="img_124.png">
+<img src="./images/img_125.png" alt="img_125.png">
+<img src="./images/img_126.png" alt="img_126.png">
+<img src="./images/img_127.png" alt="img_127.png">
+</div>
 
 
 ---
@@ -2244,7 +2421,7 @@ layout: dense
 - Finit par converger
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_6_dqn_policy_gradient.ipynb">rl_6_dqn_policy_gradient.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_3_experience_replay_her.ipynb">rl_3_experience_replay_her.ipynb</a> (replay).</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-06-DQN-Policy-Gradient-Python.ipynb">RL-06-DQN-Policy-Gradient-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb">RL-03-Experience-Replay-HER-Python.ipynb</a> (replay).</p>
 
 ---
 
@@ -2264,16 +2441,18 @@ layout: dense
 - Acme
 - Stable-baseline
 
-<img src="./images/img_128.png" alt="img_128.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_129.png" alt="img_129.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_130.png" alt="img_130.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_131.png" alt="img_131.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_132.png" alt="img_132.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_133.png" alt="img_133.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_134.png" alt="img_134.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_135.png" alt="img_135.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid cols3">
+<img src="./images/img_128.png" alt="img_128.png">
+<img src="./images/img_129.png" alt="img_129.png">
+<img src="./images/img_130.png" alt="img_130.png">
+<img src="./images/img_131.png" alt="img_131.png">
+<img src="./images/img_132.png" alt="img_132.png">
+<img src="./images/img_133.png" alt="img_133.png">
+<img src="./images/img_134.png" alt="img_134.png">
+<img src="./images/img_135.png" alt="img_135.png">
+</div>
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_13_curiosity_exploration.ipynb">rl_13_curiosity_exploration.ipynb</a> (exploration et curiosité).</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-13-Curiosite-RND-Python.ipynb">RL-13-Curiosite-RND-Python.ipynb</a> (exploration et curiosité).</p>
 
 
 ---
@@ -2309,12 +2488,14 @@ layout: dense
 -  = DL utilisé pour subgame solving
 </div>
 
-<img src="./images/img_137.gif" alt="img_137.gif" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_138.png" alt="img_138.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_139.png" alt="img_139.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_140.png" alt="img_140.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid onerow">
+<img src="./images/img_137.gif" alt="img_137.gif">
+<img src="./images/img_138.png" alt="img_138.png">
+<img src="./images/img_139.png" alt="img_139.png">
+<img src="./images/img_140.png" alt="img_140.png">
+</div>
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb">rl_4_multi_armed_bandits.ipynb</a> (bandits et regret).</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb">RL-04-Bandits-Manchots-Python.ipynb</a> (bandits et regret).</p>
 
 
 ---
@@ -2390,7 +2571,7 @@ layout: dense
 <!-- RLHF : connexion directe entre RL classique (reward) et alignement des LLMs -->
 </div>
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rlpt_1_ppo_lm_rlhf.ipynb">rlpt_1_ppo_lm_rlhf.ipynb</a> (RLHF sur LLM, from scratch).</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/PostTraining/RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb">RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb</a> (RLHF sur LLM, from scratch).</p>
 ---
 
 
@@ -2431,7 +2612,7 @@ layout: dense
 
 <!-- Bradley-Terry : modèle probabiliste de préférence, base de l'InstructGPT reward model -->
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rlpt_3_reward_hacking.ipynb">rlpt_3_reward_hacking.ipynb</a> (limites du reward model).</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb">RLPT-03-Reward-Hacking-Python.ipynb</a> (limites du reward model).</p>
 
 
 ---
@@ -2454,7 +2635,7 @@ layout: dense
 <!-- PPO + KL penalty : équilibre entre optimisation des préférences et préservation des capacités du LLM -->
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_6c_ppo_from_scratch.ipynb">rl_6c_ppo_from_scratch.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rlpt_4_dpo_vs_ppo.ipynb">rlpt_4_dpo_vs_ppo.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-06c-PPO-Depuis-Zero-Python.ipynb">RL-06c-PPO-Depuis-Zero-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb">RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb</a>.</p>
 ---
 
 
@@ -2484,7 +2665,7 @@ layout: dense
 - **RLVR** (verifiable rewards) : récompenses objectives — tests unitaires, résultats mathématiques exacts — au lieu d'un reward model appris
 - Le corpus PostTraining déroule le pipeline complet : SFT, DPO, GRPO from scratch, runs multi-seed, comparatifs d'évaluation
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb">PT_04_grpo_deepseek_r1.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb">PT_05_rlvr_verifiable_rewards.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rlpt_2_grpo_minimal.ipynb">rlpt_2_grpo_minimal.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb">PT_04_grpo_deepseek_r1.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb">PT_05_rlvr_verifiable_rewards.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb">RLPT-02-GRPO-Minimal-Python.ipynb</a>.</p>
 
 ---
 layout: section
@@ -2548,3 +2729,4 @@ layout: end
 
 - Jean-Sylvain Boige
 - jsboige@myia.org
+

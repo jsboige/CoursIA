@@ -1,0 +1,146 @@
+{
+  "issue": 19113,
+  "parameters": {
+    "budget_per_line": 0.025,
+    "max_weight": 0.5,
+    "lookback": 21,
+    "band": 0.03,
+    "min_notional": 0.0,
+    "cash_reserve": 0.002,
+    "fee": 0.0005,
+    "capitals": [
+      10000.0,
+      100000.0
+    ],
+    "first_month": "2005-01",
+    "last_month": "2026-09",
+    "execution": "close of the last session of the month"
+  },
+  "data": {
+    "SPY": {
+      "file": "SPY_2003-01-01_2026-10-03.csv",
+      "sha256": "9bdab66a8e58a125036634d8862dacc0f46a2739141c530efa8ac458e389cab7"
+    },
+    "QQQ": {
+      "file": "QQQ_2003-01-01_2026-10-03.csv",
+      "sha256": "ce6185f773214d3d8166f7764dac5acf5a386d146fe40f0a079698b4338cb9e6"
+    },
+    "IEF": {
+      "file": "IEF_2003-01-01_2026-10-03.csv",
+      "sha256": "4e18ed3bb19d4e78144e44d36f0761fba7f7ffdc0eecc2861b59196d1a7b82d1"
+    },
+    "GLD": {
+      "file": "GLD_2003-01-01_2026-10-03.csv",
+      "sha256": "60b0ea99d5254933ddc891db9f139d217c143e061335dc3180aeda6dc65eba58"
+    }
+  },
+  "sessions": [
+    "2004-11-18",
+    "2026-10-02"
+  ],
+  "rebalances": 261,
+  "results": {
+    "10000": {
+      "N": {
+        "cycles": 261,
+        "stopped_cycles": 22,
+        "overdrawing_plans": 22,
+        "overdrawing_share": 0.0843,
+        "max_overdraw_pct_equity": 0.03603,
+        "binding_cycles": 0,
+        "mean_distance_binding": null,
+        "mean_distance_all": 0.03934,
+        "min_cash_after_pct": 0.0005,
+        "orders_per_year": 26.95,
+        "sharpe_rf0": 1.1561,
+        "cagr": 0.071,
+        "first_stopped": "2005-06-30"
+      },
+      "S": {
+        "cycles": 261,
+        "stopped_cycles": 0,
+        "overdrawing_plans": 22,
+        "overdrawing_share": 0.0843,
+        "max_overdraw_pct_equity": 0.06961,
+        "binding_cycles": 25,
+        "mean_distance_binding": 0.06318,
+        "mean_distance_all": 0.03601,
+        "min_cash_after_pct": 0.00201,
+        "orders_per_year": 27.65,
+        "sharpe_rf0": 1.1918,
+        "cagr": 0.0735,
+        "first_stopped": null
+      },
+      "R": {
+        "cycles": 261,
+        "stopped_cycles": 0,
+        "overdrawing_plans": 26,
+        "overdrawing_share": 0.0996,
+        "max_overdraw_pct_equity": 0.04699,
+        "binding_cycles": 28,
+        "mean_distance_binding": 0.01741,
+        "mean_distance_all": 0.03079,
+        "min_cash_after_pct": 0.00317,
+        "orders_per_year": 29.26,
+        "sharpe_rf0": 1.1771,
+        "cagr": 0.0728,
+        "first_stopped": null
+      }
+    },
+    "100000": {
+      "N": {
+        "cycles": 261,
+        "stopped_cycles": 33,
+        "overdrawing_plans": 33,
+        "overdrawing_share": 0.1264,
+        "max_overdraw_pct_equity": 0.04594,
+        "binding_cycles": 0,
+        "mean_distance_binding": null,
+        "mean_distance_all": 0.03432,
+        "min_cash_after_pct": 0.0003,
+        "orders_per_year": 26.63,
+        "sharpe_rf0": 1.1619,
+        "cagr": 0.0728,
+        "first_stopped": "2005-06-30"
+      },
+      "S": {
+        "cycles": 261,
+        "stopped_cycles": 0,
+        "overdrawing_plans": 32,
+        "overdrawing_share": 0.1226,
+        "max_overdraw_pct_equity": 0.06292,
+        "binding_cycles": 35,
+        "mean_distance_binding": 0.04968,
+        "mean_distance_all": 0.02859,
+        "min_cash_after_pct": 0.00192,
+        "orders_per_year": 27.46,
+        "sharpe_rf0": 1.1742,
+        "cagr": 0.0741,
+        "first_stopped": null
+      },
+      "R": {
+        "cycles": 261,
+        "stopped_cycles": 0,
+        "overdrawing_plans": 34,
+        "overdrawing_share": 0.1303,
+        "max_overdraw_pct_equity": 0.04885,
+        "binding_cycles": 38,
+        "mean_distance_binding": 0.00834,
+        "mean_distance_all": 0.02239,
+        "min_cash_after_pct": 0.00199,
+        "orders_per_year": 30.41,
+        "sharpe_rf0": 1.1709,
+        "cagr": 0.0736,
+        "first_stopped": null
+      }
+    }
+  },
+  "verdict": {
+    "defect": "CONFIRME",
+    "eligible": {
+      "S": true,
+      "R": true
+    },
+    "default_policy": "R"
+  }
+}

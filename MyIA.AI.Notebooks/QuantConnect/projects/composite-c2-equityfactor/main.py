@@ -1,10 +1,23 @@
 # region imports
 from AlgorithmImports import *
+import numpy as np
 from alpha_models import ValueAlpha, QualityAlpha, LowVolAlpha, MomentumFactorAlpha
 from portfolio_construction import MeanVariancePCM
 from risk_management import SectorCapRiskModel
 from execution import TWAPExecutionModel
 # endregion
+
+
+def _ratio(field):
+    """Morningstar ratio as a float, None when NaN.
+
+    Multi-period fields (roe, total_debt_equity_ratio) carry their latest
+    value in .value; plain ratios (pb_ratio, pe_ratio) are numbers. Zero is
+    kept: a debt-free company has a debt-to-equity of 0, and the alphas
+    already drop P/B, P/E and ROE at or below 0.
+    """
+    value = float(getattr(field, 'value', field))
+    return value if np.isfinite(value) else None
 
 
 class CompositeC2EquityFactor(QCAlgorithm):
@@ -36,22 +49,40 @@ class CompositeC2EquityFactor(QCAlgorithm):
             )
         )
 
-        # Alpha Models: 4-factor ensemble
-        self.set_alpha(CompositeAlphaModel(
-            ValueAlpha(),
-            QualityAlpha(),
-            LowVolAlpha(),
-            MomentumFactorAlpha()
-        ))
+        # Alpha Models: 4-factor ensemble. alphas=momentum keeps the momentum
+        # factor alone: the control of #21137.
+        # References kept for the emission counters of #21141.
+        if (self.get_parameter("alphas") or "all") == "momentum":
+            self.alpha_models = [MomentumFactorAlpha()]
+            self.set_alpha(self.alpha_models[0])
+        else:
+            self.alpha_models = [
+                ValueAlpha(owner=self),
+                QualityAlpha(owner=self),
+                LowVolAlpha(),
+                MomentumFactorAlpha()
+            ]
+            self.set_alpha(CompositeAlphaModel(*self.alpha_models))
+        # Fundamental fields read with a usable value, per field (#21141).
+        # The cache exists before the first selection: Value and Quality read
+        # it through their owner reference.
+        self.fundamental_cache = {}
+        self.fund_seen = 0
+        self.fund_nonnull = {}
 
         # PCM: Mean-Variance with sector cap
         sector_cap = float(self.get_parameter("sector_cap", 0.18))
         max_exposure = float(self.get_parameter("max_exposure", 0.65))
-        self.set_portfolio_construction(MeanVariancePCM(
+        # pcm_mode=symbol reproduces the PCM before #21137 (last insight per
+        # symbol: the momentum factor, emitted last, overwrites the others).
+        self.pcm = MeanVariancePCM(
             sector_cap=sector_cap,
             rebalance=timedelta(days=7),
-            max_exposure=max_exposure
-        ))
+            max_exposure=max_exposure,
+            by_sleeve=((self.get_parameter("pcm_mode") or "sleeve") == "sleeve"),
+            algorithm=self
+        )
+        self.set_portfolio_construction(self.pcm)
 
         # Risk: Portfolio drawdown cap + trailing stop
         trail = float(self.get_parameter("trail_stop", 0.04))
@@ -87,20 +118,26 @@ class CompositeC2EquityFactor(QCAlgorithm):
         selected = sorted_by_mcap[:25]
 
         # Cache fundamental data for alpha models
-        # (security.fundamental_data doesn't exist in LEAN)
+        # (security.fundamental_data doesn't exist in LEAN).
+        # Lean names (#21141): pb_ratio, pe_ratio, roe, total_debt_equity_ratio.
+        # The former names (price_to_book, return_on_equity...) do not exist:
+        # getattr(..., None) returned None and Value/Quality never emitted.
+        # A wrong name now raises at the first selection instead.
         self.fundamental_cache = {}
         for f in selected:
-            try:
-                vr = f.valuation_ratios
-                opr = f.operation_ratios
-                self.fundamental_cache[f.symbol] = {
-                    'price_to_book': getattr(vr, 'price_to_book', None),
-                    'price_to_earnings': getattr(vr, 'price_to_earnings', None),
-                    'return_on_equity': getattr(opr, 'return_on_equity', None),
-                    'debt_to_equity': getattr(opr, 'debt_to_equity', None),
-                }
-            except Exception:
-                pass
+            vr = f.valuation_ratios
+            opr = f.operation_ratios
+            self.fundamental_cache[f.symbol] = {
+                'price_to_book': _ratio(vr.pb_ratio),
+                'price_to_earnings': _ratio(vr.pe_ratio),
+                'return_on_equity': _ratio(opr.roe),
+                'debt_to_equity': _ratio(opr.total_debt_equity_ratio),
+            }
+        for fields in self.fundamental_cache.values():
+            self.fund_seen += 1
+            for name, value in fields.items():
+                if value is not None:
+                    self.fund_nonnull[name] = self.fund_nonnull.get(name, 0) + 1
 
         return [f.symbol for f in selected]
 
@@ -108,3 +145,24 @@ class CompositeC2EquityFactor(QCAlgorithm):
         final = self.portfolio.total_portfolio_value
         self.log(f"C4.2 EQUITY FACTOR COMPOSITE: Final=${final:,.2f}, "
                  f"Return={(final - 100000) / 100000:.2%}")
+        # Diagnostics for #21141: insights emitted per alpha (UP/total),
+        # and fundamental fields read with a value (non-null/read).
+        for alpha in self.alpha_models:
+            up, flat = alpha.emitted["up"], alpha.emitted["flat"]
+            self.set_runtime_statistic(f"Emitted {alpha.name}", f"{up}/{up + flat}")
+        for name in ('price_to_book', 'price_to_earnings', 'return_on_equity', 'debt_to_equity'):
+            self.set_runtime_statistic(
+                f"Field {name}", f"{self.fund_nonnull.get(name, 0)}/{self.fund_seen}")
+        # Calls where getattr(algorithm, 'fundamental_cache') saw nothing
+        # (missed/calls), for the alphas that read the cache (#21141).
+        for alpha in self.alpha_models:
+            probe = getattr(alpha, 'cache_probe', None)
+            if probe is not None:
+                self.set_runtime_statistic(
+                    f"Cache {alpha.name}", f"{probe['algo_missing']}/{probe['calls']}")
+        # Diagnostics for #21137: insights reaching the PCM, per alpha.
+        self.set_runtime_statistic("PCM calls", str(self.pcm.calls))
+        for source in sorted(set(self.pcm.reached) | set(self.pcm.reached_active)):
+            self.set_runtime_statistic(
+                f"PCM {source}",
+                f"{self.pcm.reached_active.get(source, 0)}/{self.pcm.reached.get(source, 0)}")

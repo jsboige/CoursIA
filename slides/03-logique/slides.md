@@ -149,6 +149,8 @@ layout: default
 - V = Visite
 - W = Wumpus
 
+<img src="./images/img_004.png" style="position:absolute; top:60px; right:20px; height:300px;" alt="Grille du Wumpus annotee avec les symboles P?, W!, A, O, L, B, V, OK" />
+
 
 ---
 layout: default
@@ -221,7 +223,7 @@ layout: default
 | Ordre superieur (HOL) | Relations, fonctions | Relations | Non |
 | Modale | + mondes possibles | Necessaire/possible | Selon variante |
 
-*Notebooks : [Tweety-02-Basic-Logics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) (propositionnelle et premier ordre) · [Tweety-3-Advanced-Logics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb) (description, modale, QBF, conditionnelle) · [Lean-01-Setup-Lean-Python](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) (ordre superieur).*
+*Notebooks : [Tweety-02-Basic-Logics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) (propositionnelle et premier ordre) · [Tweety-03-Advanced-Logics-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-CSharp.ipynb) (description, modale, QBF, conditionnelle) · [Lean-01-Setup-Lean-Python](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) (ordre superieur).*
 
 ---
 layout: section
@@ -359,7 +361,9 @@ layout: default
 ---
 
 
-# Règles d'infrence
+# Règles d'inférence
+
+<div class="dense-list">
 
 ## Modus Ponens
 
@@ -386,6 +390,7 @@ layout: default
 
 - NON(NON P) equivaut a P
 
+</div>
 
 <img src="./images/img_011.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Equivalences logiques" />
 
@@ -528,7 +533,7 @@ layout: default
 
 <img src="./images/img_016.png" style="position:absolute; top:50px; right:20px; width:320px;" alt="Algorithme DPLL" />
 
-*Notebooks : [Z3-Python-01-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb) (SAT et SMT par API) · [Tweety-3-QBF-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-QBF-Csharp.ipynb) (quantification booleenne).*
+*Notebooks : [Z3-Python-01-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb) (SAT et SMT par API) · [Tweety-03-QBF-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-QBF-CSharp.ipynb) (quantification booleenne).*
 
 ---
 layout: default
@@ -550,7 +555,7 @@ layout: default
 - Verification de protocoles
 - Model checking
 
-*Notebooks : [App-23-PRESENT-Differential-Cryptanalysis-SAT](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) (cryptanalyse ramenee a SAT) · [Z3-Python-14-BitVectors-Overflow](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb) (arithmetique machine, verification de code).*
+*Notebooks : [App-23-PRESENT-Differential-Cryptanalysis-SAT](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) (cryptanalyse ramenee a SAT) · [Z3-Python-14-BitVectors-Overflow](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb) (arithmetique machine, verification de code).*
 
 ---
 layout: default
@@ -573,7 +578,7 @@ layout: default
 
 <img src="./images/img_017.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Exploration locale pour SAT" />
 
-*Notebooks : [14_Optimize_MaxSAT](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb) (relachement vers MaxSAT) · [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) (MaxSAT et incoherence).*
+*Notebooks : [14_Optimize_MaxSAT](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb) (relachement vers MaxSAT) · [Tweety-04-Belief-Revision-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) (MaxSAT et incoherence).*
 
 ---
 layout: default
@@ -1345,7 +1350,7 @@ layout: default
 - Argumentation (raisonnement modal, mondes possibles)
 - Argumentum
 
-*Notebooks : [Tweety-3-ModalLogic-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-ModalLogic-Csharp.ipynb) (modale, SPASS-XDB) · [Tweety-3-Conditional-Logics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Conditional-Logics-Csharp.ipynb) (logiques conditionnelles).*
+*Notebooks : [Tweety-03-ModalLogic-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-ModalLogic-CSharp.ipynb) (modale, SPASS-XDB) · [Tweety-03-Conditional-Logics-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Conditional-Logics-CSharp.ipynb) (logiques conditionnelles).*
 
 ---
 layout: default
@@ -1382,7 +1387,7 @@ layout: default
   - Coherence des ensembles et forces contextuels des arguments
 - **Argumentum**
 
-*Notebooks : [Tweety-5-Abstract-Argumentation](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb) (Dung, semantiques, CF2) · [Tweety-06-Structured-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) (ASPIC+, ABA) · [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb).*
+*Notebooks : [Tweety-05-Abstract-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb) (Dung, semantiques, CF2) · [Tweety-06-Structured-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) (ASPIC+, ABA) · [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb).*
 
 ---
 layout: default
@@ -1410,7 +1415,7 @@ layout: default
 
 <img src="./images/img_023.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Argument mining structure" />
 
-*Notebooks : [Argumentation-Onto-01-AIF-OWL2-Python](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb) (ontologie AIF+) · [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb) · [Argument_Analysis_Agentic-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb) (reconstruction depuis le texte).*
+*Notebooks : [Argumentation-Onto-01-AIF-OWL2-Python](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb) (ontologie AIF+) · [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01-Toulmin-Model-Python.ipynb) · [Argument_Analysis_Agentic-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb) (reconstruction depuis le texte).*
 
 ---
 layout: default
@@ -1478,7 +1483,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Debloquer une configuration industrielle : le solveur dit UNSAT, quelle contrainte relacher ?
 - Revision des croyances : quelle croyance retirer pour rester coherent (postulats AGM)
 
-*Notebooks : [Z3-13-UnsatCores-Python](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb) (noyaux d'insatisfiabilite) · [17_UnsatCores](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) · [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) (MUS, MCS, dualite).*
+*Notebooks : [Z3-13-UnsatCores-Python](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb) (noyaux d'insatisfiabilite) · [Z3-13b-UnsatCores-MUS-Python](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb) (MUS par deletion-based) · [17_UnsatCores](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) · [Tweety-04-Belief-Revision-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) (MUS, MCS, dualite).*
 
 ---
 layout: default
@@ -1596,7 +1601,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Representation des actions et des etats
 - Raisonnement sur les plans
 
-*Notebooks : [SW-2b-Python-RDFBasics](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb) (RDF, SPARQL) · [Planners-1-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb) (planification).*
+*Notebooks : [SW-02b-RDFBasics-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02b-RDFBasics-Python.ipynb) (RDF, SPARQL) · [Planners-01-Introduction-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb) (planification).*
 
 ---
 layout: section
@@ -1622,7 +1627,7 @@ layout: default
 - Exploration de l'espace de plan en plus de l'espace d'etats
 - Sous-objectifs independants reduisent la complexite
 
-*Notebooks : [Planners-1-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb) · [Planners-3-State-Space](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb).*
+*Notebooks : [Planners-01-Introduction-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb) · [Planners-03-State-Space-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb).*
 
 ---
 layout: default
@@ -1688,7 +1693,7 @@ Action(Fly(p, from, to),
   EFFECT: NON At(p, from) ET At(p, to))
 ```
 
-*Notebooks : [Planners-2-PDDL-Basics](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb) (le domaine logistique) · [Planners-6-Domains](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb).*
+*Notebooks : [Planners-02-PDDL-Basics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb) (le domaine logistique) · [Planners-06-Domains-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb).*
 
 ---
 layout: default
@@ -1751,7 +1756,7 @@ layout: default
 
 <img src="./images/img_027.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Graphe espace etats planification" />
 
-*Notebooks : [Planners-3-State-Space](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb) · [Planners-4-Fast-Downward](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb) (planificateur progressif et regressif).*
+*Notebooks : [Planners-03-State-Space-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb) · [Planners-04-Fast-Downward-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb) (planificateur progressif et regressif).*
 
 ---
 layout: default
@@ -1776,7 +1781,7 @@ layout: default
 
 - Faits qui doivent etre vrais a un moment donne
 
-*Notebooks : [Planners-5-Heuristics](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb) (heuristiques de planification) · [Planners-5b-Lean-Relaxation](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb) (relaxation et landmarks).*
+*Notebooks : [Planners-05-Heuristics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb) (heuristiques de planification) · [Planners-05b-Lean-Relaxation-Lean](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb) (relaxation et landmarks).*
 
 ---
 layout: default
@@ -1859,7 +1864,7 @@ layout: default
 - Variables: Action unique pour chaque étape, Fluent
 - Contraintes: decrivent les effets + etat initial et but
 
-*Notebooks : [Planners-7-OR-Tools](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools.ipynb) (planification par contraintes) · [Z3-Python-08-Ordonnancement](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb) (planning vers scheduling) · [11_Job_Shop_Scheduling](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb).*
+*Notebooks : [Planners-07-OR-Tools-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb) (planification par contraintes) · [Z3-Python-08-Ordonnancement](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb) (planning vers scheduling) · [11_Job_Shop_Scheduling](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb).*
 
 ---
 layout: default
@@ -1996,7 +2001,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Primitives de bas niveau: Executable
 - Opérateurs non primitifs: Buts, actions abstraites
 
-*Notebooks : [Planners-9-HTN](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN.ipynb) (decomposition hierarchique) · [Planners-10-LLM-Planning](../../MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) (LLM et decomposition).*
+*Notebooks : [Planners-09-HTN-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb) (decomposition hierarchique) · [Planners-10-LLM-Planning-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb) (LLM et decomposition).*
 
 ---
 layout: default
@@ -2122,7 +2127,9 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 
 <img src="./images/img_042.jpg" style="position:absolute; top:60px; right:20px; width:200px;" alt="dotNetRDF" />
 
-*Notebooks : [SW-2b-Python-RDFBasics](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb) (triples et SPARQL) · [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-12-Python-GraphRAG](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb) (du graphe au RAG).*
+<img src="./images/img_041.png" style="position:absolute; bottom:14px; left:405px; width:170px;" alt="BrightstarDB, base de donnees RDF native pour la plateforme .NET" />
+
+*Notebooks : [SW-02b-RDFBasics-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02b-RDFBasics-Python.ipynb) (triples et SPARQL) · [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-12-GraphRAG-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb) (du graphe au RAG).*
 
 ---
 layout: default
@@ -2181,7 +2188,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Incoherence = un concept dont aucune instance ne peut exister
 - De l'ontologie au graphe de connaissances, puis au RAG : la chaine complete est outillee
 
-*Notebooks : [SW-13-Python-Reasoners](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb) (raisonneurs OWL) · [SW-14-Python-Coup-Ontologique](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Python-Coup-Ontologique.ipynb) · [Tweety-3-Advanced-Logics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb) (logics.dl, HermiT/Pellet).*
+*Notebooks : [SW-13-Reasoners-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb) (raisonneurs OWL) · [SW-14-Coup-Ontologique-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-Python.ipynb) · [Tweety-03-Advanced-Logics-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-CSharp.ipynb) (logics.dl, HermiT/Pellet).*
 
 ---
 layout: default
@@ -2216,7 +2223,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Hypotheses = explications raisonnables
 - Explications minimales (Ockham)
 
-*Notebooks : [Argument_Analysis_Agentic-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb) (JTMS : justification et revision) · [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) (postulats AGM).*
+*Notebooks : [Argument_Analysis_Agentic-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb) (JTMS : justification et revision) · [Tweety-04-Belief-Revision-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) (postulats AGM).*
 
 ---
 layout: default
@@ -2323,7 +2330,7 @@ graph TB
 
     B --> D[Pont : Tweety = backend Java]
     C --> D
-    D --> E[Series Argument_Analysis, GameTheory, SmartContracts]
+    D --> E[Series ArgumentAnalysis, GameTheory, SmartContracts]
 ```
 
 **Total** : ~18 heures de contenu interactif (7h Tweety + 11h Lean).
@@ -2755,7 +2762,7 @@ layout: section
 
 | Serie | Connection avec Tweety + Lean |
 |-------|--------------------------------|
-| **Argument_Analysis** | Tweety = backend Java pour l'analyse de textes argumentatifs |
+| **ArgumentAnalysis** | Tweety = backend Java pour l'analyse de textes argumentatifs |
 | **GameTheory** | Notebook 9 Tweety (vote) + `social_choice_lean/` (Arrow, Sen) |
 | **SmartContracts** | Verification Solidity (Certora, SMTChecker) — même stack SAT/SMT |
 | **ML** | TorchLean (Lean 11/11a) : verification de NN entraines |
@@ -2841,6 +2848,34 @@ jupyter notebook MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipy
 - Choisir un theoreme classique (Cauchy-Schwarz, Borda paradox)
 - Modeliser argumentativement (Tweety) **et** prouver formellement (Lean)
 - Implementer un agent dialogique qui consulte Lean
+
+---
+
+# Projets de groupe (1/2)
+
+- Moteur de recherche augmenté par le raisonnement et le langage naturel
+  - Grammaire et sémantique des contenus et des requêtes. Lucene.Net, OpenNLP, SharpRDF, FOL
+- Conception de bots de services sur réseaux sociaux
+  - Chat Bots, AIML, Reddit et agents de service, NLP, RDF, APIs
+- Conception d'un modèle d'inférence pour l'analyse de sentiment
+  - Conception d'un modèle probabiliste, Infer.Net, démarche expérimentale, Reddit
+- Création d'une plateforme sémantique LDP à partir d'un index structuré
+  - Structuration et ouverture des données = Linked Data. Lucene.Net, SharpRDF
+- Résolution de Captchas par apprentissage profond
+  - Réseau de neurones convolutif. PyTorch, TensorFlow, transfer learning
+
+---
+
+# Projets de groupe (2/2)
+
+- Entraînement de stratégies de trading algorithmiques sur crypto-monnaies
+  - Réseaux de neurones récurrents (LSTM), scikit-learn, données Binance API
+- Amélioration par l'apprentissage d'un agent joueur de Go simple
+  - Le Go et l'IA, récentes avancées (AlphaGo). PyTorch, reinforcement learning
+- Évolution de vaisseaux spatiaux par algorithmes génétiques dans le jeu de la vie
+  - Approches évolutionnistes, automates cellulaires. DEAP, Golly, Python
+- Pilotage d'un cluster de cache distribué pour le portage d'applications dans le Cloud
+  - Caches distribués, scaling, stratégies et clustering. Redis
 
 ---
 

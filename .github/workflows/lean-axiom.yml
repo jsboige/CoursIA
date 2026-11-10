@@ -21,7 +21,7 @@ name: Lean Axiom Check (reusable)
 #     proof-integrity:
 #       uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
 #       with:
-#         project-path:   MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
+#         project-path:   MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean
 #         display-name:   knot_lean
 #         target-modules: "Knots.Basic,Knots.Conway,Knots.Invariant,Knots.Reidemeister,Knots.Lidman"
 #         allow-axioms:   "propext,funext,Quot.lift,Quot.mk,Quot.sound,Classical.choice"
@@ -45,7 +45,7 @@ on:
         type: string
         required: true
       target-modules:
-        description: "Comma-separated dotted module names to check (e.g. 'Knots.Basic,Knots.Conway'). Per-module, theorem/lemma/def/axiom/instance/structure/inductive decls are enumerated from the source file. May also be '*' (issue #10889): the module list is then derived at runtime by walking every *.lean under project-path (minus .lake/, .git, node_modules, .venv, lakefile*, lean-toolchain) -- exactly what `lake build` compiles -- so the gate cannot drift out of view of newly added modules."
+        description: "Comma-separated dotted module names to check (e.g. 'Knots.Basic,Knots.Conway'). Per-module, theorem/lemma/def/axiom/instance/structure/inductive decls are enumerated from the source file. May also be '*' (issue #10889): the module list is then derived at runtime by walking every *.lean under project-path (minus .lake/, .git, node_modules, .venv, lakefile*, lean-toolchain) -- the same set `lake -R build` would elaborate, modulo the lean_lib orphan trap #19015 (a file in a non-default lib, or in no lean_lib, is never built; covered by the dedicated `lean_lib orphan check` step below)."
         type: string
         required: true
       include-i18n-siblings:
@@ -67,6 +67,40 @@ on:
           mirror of a gate that can never go red.
         type: boolean
         default: true
+      strict-orphan-check:
+        description: >-
+          Issue #19015: whether the lean_lib orphan gate runs in --strict mode.
+          Default false (advisory: orphans are reported but the job does not
+          fail). Set true ONLY for lakes that have been audited clean — a green
+          CI on a lake with an orphan says nothing about the orphan's axioms.
+          A false positive here (orphan flagged that is actually intentional)
+          is opt-out per-file via `orphan-exclude`.
+        type: boolean
+        default: false
+      orphan-exclude:
+        description: >-
+          Issue #19015: lake-relative path of a .lean file to whitelist as an
+          intentional orphan (e.g. ``GameTheory.lean`` for EPIC #4365's
+          skeleton aggregator). Comma-separated, repeatable; consumed by
+          ``scripts/lean/check_lean_orphans.py --exclude``. Ignored unless
+          ``strict-orphan-check: true``.
+        type: string
+        default: ""
+      build-threads:
+        description: >-
+          #23247: elaboration parallelism cap, applied as the `LEAN_NUM_THREADS`
+          environment variable. Empty = historical behavior, unchanged for every
+          caller that does not set it. Set "1" on a lake whose PARALLEL elaboration
+          sum exceeds the runner RAM ceiling (ubuntu-latest: 16 GB for 4 vCPU).
+          This toolchain's `lake` exposes NO -j/--jobs flag: measured, "unknown
+          short option -j" in CI run 40857014456 and "unknown long option --jobs"
+          locally -- the env var is the available lever, and its serialization
+          effect is measured in-repo (#14821, run 35175031202, lean-knot.yml:148).
+          Distinct from #9840 (a SINGLE module over the ceiling, fixed by splitting
+          it): here every module fits alone, it is the co-elaboration that kills.
+        type: string
+        required: false
+        default: ""
 
 # A reusable workflow cannot request more than its caller grants. #8951 gave the
 # callers (lean-conway.yml, lean-knot.yml) `permissions: {contents: read}`, which
@@ -109,18 +143,21 @@ jobs:
         ./elan-init -y --default-toolchain none
         echo "$HOME/.elan/bin" >> $GITHUB_PATH
 
-    - name: Cache Lake build artifacts
-      uses: actions/cache@v4
+    - name: Restore Lake build artifacts
+      id: lake-cache
+      uses: actions/cache/restore@v4
       with:
         path: ${{ inputs.project-path }}/.lake
-        # Key is IDENTICAL to lean-build's (workflows/lean-build.yml l.213 and
-        # actions/lean-build/action.yml l.141): same path, same hashed file set
+        # Key is IDENTICAL to lean-build's (workflows/lean-build.yml and
+        # actions/lean-build/action.yml, etape `Restore Lake build artifacts`): same path, same hashed file set
         # {lakefile.lean|toml, lean-toolchain}. Callers run `needs: ci`, so the
         # ci job of the SAME run has already saved this exact key — here it is
         # an exact HIT and the `lake -R build` below is a no-op trace, not a
         # rebuild. One cache entry per lake instead of two (footprint /2,
         # See #14921 option 1). Legacy `-axiom-` keys do not prefix-match the
         # new restore-keys, so they expire by LRU without ever being served.
+        # RESTORE SEUL (#19658) : le SAVE appartient au job `ci` du meme run
+        # (et, hors run, a `main` seul) -- cette jambe ne fait que consommer.
         key: lake-${{ inputs.display-name }}-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}
         restore-keys: lake-${{ inputs.display-name }}-${{ runner.os }}-
 
@@ -136,11 +173,29 @@ jobs:
       # green, and the peak is inside a SINGLE module — see the long note in
       # lean-build.yml for the measurements.
       run: |
-        df -h /mnt
-        sudo fallocate -l 32G /mnt/lean-swap
-        sudo chmod 600 /mnt/lean-swap
-        sudo mkswap /mnt/lean-swap
-        sudo swapon /mnt/lean-swap
+        df -h /mnt / || true
+        # Size the swap from the free space really left on its filesystem.
+        # /mnt sits on /dev/root on hosted runners (145G, 84G free measured
+        # 2026-11-04): a fixed 32G fallocate starved runners with less room,
+        # which died "No space left on device" a minute in. Keep 30G for the
+        # toolchain, the Mathlib cache and the build; cap the swap at 32G.
+        avail_g=$(df --output=avail -BG /mnt 2>/dev/null | tail -n 1 | tr -dc '0-9' || true)
+        if [ -z "$avail_g" ]; then
+          echo "::warning title=Lean swap skipped::df could not read the free space on /mnt"
+        else
+          swap_g=$(( avail_g - 30 ))
+          if [ "$swap_g" -gt 32 ]; then swap_g=32; fi
+          if [ "$swap_g" -lt 4 ]; then
+            echo "::warning title=Lean swap skipped::${avail_g}G free on /mnt, under 34G (4G swap + 30G build reserve)"
+          elif sudo fallocate -l "${swap_g}G" /mnt/lean-swap; then
+            sudo chmod 600 /mnt/lean-swap
+            sudo mkswap /mnt/lean-swap
+            sudo swapon /mnt/lean-swap
+          else
+            sudo rm -f /mnt/lean-swap
+            echo "::warning title=Lean swap skipped::fallocate of ${swap_g}G failed on /mnt"
+          fi
+        fi
         free -h
 
     - name: Authenticate lake's git clones
@@ -170,7 +225,12 @@ jobs:
         # 2026-06-14 pipefail invariant below are unchanged.
         (
           # On failure, surface the error lines the `tail` window loses (See #8915).
-          if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -10; then
+          # #23247 : borne de parallelisme optionnelle, posee en LEAN_NUM_THREADS.
+          # Sans l'input, THREADS_ENV est vide et la commande est byte-identique
+          # a l'historique.
+          THREADS_ENV=""
+          if [ -n "${{ inputs.build-threads }}" ]; then THREADS_ENV="LEAN_NUM_THREADS=${{ inputs.build-threads }}"; fi
+          if env $THREADS_ENV lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -10; then
             :
           else
             rc=$?
@@ -207,6 +267,52 @@ jobs:
     # root where no lake exists. `lake build` (which has a correct
     # `working-directory` and no `cd`) succeeded, so the job looked like an
     # axiom violation while it was really a "no lake here" error. See #8712.
+    - name: Run lean_lib orphan check (#19015)
+      # Issue #19015: a green ``lake -R build`` compiles only ``@[default_target]``
+      # libs. Any .lean file in a non-default lib (or in no lean_lib at all)
+      # is never elaborated -- the axiom check above then runs on a vacuous
+      # view. This step closes the gap by enumerating the union of every
+      # lean_lib's globs and reporting any file that is neither in a globs
+      # nor imported by one. Strict-mode is opt-in per lake via
+      # ``strict-orphan-check: true``; otherwise the step is advisory
+      # (``if: always()`` so it runs even on a failed axiom step, surfacing
+      # the orphan as a probable cause for the failure).
+      if: always()
+      env:
+        DISPLAY_NAME: ${{ inputs.display-name }}
+        PROJECT_PATH: ${{ inputs.project-path }}
+        STRICT: ${{ inputs.strict-orphan-check }}
+        EXCLUDE: ${{ inputs.orphan-exclude }}
+      run: |
+        set +e
+        cd "$GITHUB_WORKSPACE"
+        EXCLUDES=""
+        if [ -n "$EXCLUDE" ]; then
+          # Comma-separated list -> repeated --exclude flags.
+          IFS=',' read -ra TOKS <<< "$EXCLUDE"
+          for tok in "${TOKS[@]}"; do
+            tok_trim="$(echo "$tok" | xargs)"
+            [ -n "$tok_trim" ] && EXCLUDES="$EXCLUDES --exclude $tok_trim"
+          done
+        fi
+        if [ "$STRICT" = "true" ]; then
+          # In strict mode, propagate the script exit code (1 on orphan, 0 clean).
+          python scripts/lean/check_lean_orphans.py \
+            --project-path "$PROJECT_PATH" \
+            --lakefile "$PROJECT_PATH/lakefile.lean" \
+            --name "$DISPLAY_NAME" \
+            --strict $EXCLUDES
+        else
+          # Advisory: always exit 0 so the gate does not block on a known
+          # intentional orphan (e.g. ``GameTheory.lean`` on game_theory_lean,
+          # EPIC #4365 skeleton). The ORPHAN list still goes to the job log
+          # for review.
+          python scripts/lean/check_lean_orphans.py \
+            --project-path "$PROJECT_PATH" \
+            --lakefile "$PROJECT_PATH/lakefile.lean" \
+            --name "$DISPLAY_NAME" $EXCLUDES
+          exit 0
+        fi
     - name: Run axiom check
       env:
         MODULES: ${{ inputs.target-modules }}
@@ -236,3 +342,13 @@ jobs:
       run: |
         rm -rf .lake/packages/mathlib/.lake/build
         du -sh .lake 2>/dev/null || true
+
+    # SAVE EXPLICITE, main only (#19658). Les refs de PR restaurent mais
+    # n'ecrivent plus : une PR qui manque la cle repart du cache de main via
+    # `restore-keys` (prefixe), au lieu d'ajouter sa propre copie de ~650 Mo.
+    - name: Save Lake build artifacts (main only)
+      if: github.ref == 'refs/heads/main' && steps.lake-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ inputs.project-path }}/.lake
+        key: ${{ steps.lake-cache.outputs.cache-primary-key }}

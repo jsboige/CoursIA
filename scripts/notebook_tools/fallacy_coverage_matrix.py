@@ -1,15 +1,15 @@
 """Matrice de couverture cross-notebooks de la série FallacyDetection (#14110).
 
-Lecture seule des notebooks de la série (01/02/03 et le 04 de synthèse) pour
-produire une matrice N x M de couverture : chaque notebook occupe une ligne,
-chaque axe taxonomique une colonne.
+Lecture seule des notebooks de la série (découverte automatique par glob, pas
+de registre de noms) pour produire une matrice N x M de couverture : chaque
+notebook occupe une ligne, chaque axe taxonomique une colonne.
 
 Axes mesurés (mécaniquement, rien n'est deviné) :
 
 - ``sophismes`` : nombre d'étiquettes distinctes exposées par les inventaires
   que le notebook définit lui-même. On compte les listes littérales assignées
   à une variable dont le nom contient label/taxo/logic/mafalda/walton
-  (ex. ``LOGIC_13`` -> 13 entrées, ``mafalda_labels`` -> sa longueur encodée).
+  (ex. ``LOGIC_13`` -> 13 entrées, ``MAFALDA_L2`` -> 23 entrées).
 - ``formalismes`` : nombre de cellules code qui mentionnent à la fois les
   deux pôles formel/informel (l'axe pédagogique que la série pose en 01).
 - ``domaines`` : nombre de sources externes distinctes nommées dans le
@@ -41,12 +41,9 @@ except Exception:  # pragma: no cover - import en échec -> fallback interne
 
 SERIE = "MyIA.AI.Notebooks/GenAI/FallacyDetection"
 
-NOTEBOOKS = [
-    "01_taxonomy_intro.ipynb",
-    "02_fallacy_datasets_landscape.ipynb",
-    "03_taxonomy_coverage_gap.ipynb",
-    "04_coverage_matrix.ipynb",
-]
+# Découverte automatique : la matrice liste les notebooks du dossier de la série
+# par glob (``*.ipynb``), pas par registre de noms — un registre dur dérive dès
+# qu'un notebook est ajouté ou renommé (le 05 était absent de l'ancienne liste).
 
 # Marqueurs de la convention de la série : "### Exercice N — <titre>".
 EXERCICE_HEADERS = re.compile(r"#+\s+Exercice\s+\d+", re.IGNORECASE)
@@ -84,7 +81,7 @@ def _inventory_lengths(code: str) -> List[int]:
 
     Repère ``<nom> = ["a", "b", ...]`` où le nom contient un indice
     d'inventaire (label/taxo/logic/...). Particulièrement robuste aux
-    constantes de 03 (``LOGIC_13``, ``mafalda_labels``).
+    constantes de 03 (``LOGIC_13``, ``MAFALDA_L2``).
     """
     lengths: List[int] = []
     for match in re.finditer(r'^(\w+)\s*=\s*\[(.*?)\]', code, re.MULTILINE | re.DOTALL):
@@ -166,14 +163,17 @@ def _row(notebook_path: Path) -> Dict[str, Any]:
 
 
 def build_matrix(series_dir: Path, names: Optional[List[str]] = None) -> List[Dict[str, Any]]:
-    """Matrice N x M : une ligne par notebook de la série."""
-    rows: List[Dict[str, Any]] = []
-    for name in names or NOTEBOOKS:
-        path = series_dir / name
-        if not path.exists():
-            continue
-        rows.append(_row(path))
-    return rows
+    """Matrice N x M : une ligne par notebook de la série.
+
+    Par défaut, les notebooks sont découverts par glob ``*.ipynb`` dans
+    ``series_dir`` (triés par nom) — la liste ``names`` reste disponible
+    pour restreindre explicitement la mesure.
+    """
+    if names is None:
+        paths = sorted(series_dir.glob("*.ipynb"))
+    else:
+        paths = [series_dir / n for n in names]
+    return [_row(p) for p in paths if p.exists()]
 
 
 def markdown_table(rows: List[Dict[str, Any]]) -> str:

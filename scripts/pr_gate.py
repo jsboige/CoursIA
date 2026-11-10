@@ -631,6 +631,39 @@ def unconcluded_with_inflight_successor(
     return sorted(names)
 
 
+def pending_all_queued(
+    checks: Sequence[dict],
+    self_name: str = DEFAULT_SELF_NAME,
+    advisory_jobs: frozenset[str] = frozenset(),
+) -> bool:
+    """Whether every blocking pending constituent sits at status=queued.
+
+    #13363: under self-hosted pool saturation, a gate waiter polls constituents
+    that sit ``queued`` with no runner assigned -- the verdict cannot change
+    until a constituent STARTS, so a starved queue entry is parked, not slow.
+    True means "waiting cannot change the verdict": every unconcluded blocking
+    check is queued (none in_progress). False when no pending constituent
+    exists -- the ordinary settle path owns that case.
+
+    The iteration mirrors `classify` (dedupe_latest, self/advisory excluded,
+    conclusion-authoritative #14976) so this predicate judges the SAME entry
+    per name the wait loop judges.
+    """
+    saw_pending = False
+    for check in dedupe_latest(checks):
+        name = check.get("name") or "<unnamed>"
+        if name == self_name or name.startswith(f"{self_name} /"):
+            continue
+        if _is_advisory_name(name, advisory_jobs):
+            continue
+        if (check.get("conclusion") or "").lower():
+            continue
+        saw_pending = True
+        if (check.get("status") or "").lower() != "queued":
+            return False
+    return saw_pending
+
+
 def classify(
     checks: Sequence[dict],
     self_name: str = DEFAULT_SELF_NAME,
@@ -1291,6 +1324,34 @@ def cancel_own_run(repo: str, run_id: str) -> bool:
     return True
 
 
+def _foreign_suite_detail(response: dict, name: str) -> str | None:
+    """#21505 : message d'avertissement quand un check-run porte a la creation
+    dans une suite ETRANGERE, sinon None.
+
+    L'endpoint `POST /repos/.../check-runs` ne porte AUCUN selecteur de suite :
+    GitHub rattache le run a la suite qu'il resout pour (app, commit). Mesure
+    sur #18985 : la jambe `PR gate` a atterri dans la suite CodeQL `dynamic`
+    (run non relancable) et le rouge n'a plus pu etre remplace. Le tell est la
+    `details_url` : une suite d'Actions workflow pointe vers
+    `/actions/runs/<id>/...` ; une URL qui n'en porte PAS le segment signale
+    une suite etrangere. On la signale AU MOMENT du POST (la creation fabrique
+    la condition en silence), en nommant `check_suite.id`.
+    """
+    if not isinstance(response, dict):
+        return None
+    details_url = response.get("details_url") or ""
+    if not details_url or "/actions/runs/" in details_url:
+        return None
+    suite = response.get("check_suite") or {}
+    suite_id = suite.get("id") if isinstance(suite, dict) else None
+    return (
+        f"[pr-gate] WARN -- check-run `{name}` poste dans une suite ETRANGERE "
+        f"(details_url hors /actions/runs/) : suite id={suite_id} ; une suite "
+        f"`dynamic`/etrangere n'est pas relancable, le rouge ne sera pas "
+        f"remplace par le sweep (#21505)."
+    )
+
+
 def post_check_run(
     repo: str,
     sha: str,
@@ -1325,7 +1386,11 @@ def post_check_run(
         "output[title]": f"{name}: {title}"[:255],
         "output[summary]": message or title,
     }
-    return poster(f"repos/{repo}/check-runs", fields)
+    response = poster(f"repos/{repo}/check-runs", fields)
+    warning = _foreign_suite_detail(response, name)
+    if warning:
+        print(warning, flush=True)
+    return response
 
 
 def fetch_checks(repo: str, sha: str) -> list[dict]:
@@ -1597,6 +1662,7 @@ def wait_and_decide(
     now=time.monotonic,
     detail: "dict | None" = None,
     fetch_job=None,
+    all_queued_polls: int = 0,
 ) -> tuple[int, str]:
     """Poll until the check set is stable, then decide.
 
@@ -1619,6 +1685,17 @@ def wait_and_decide(
     can publish it in the step summary (#15693) without changing this
     function's 2-tuple return. The last classify is authoritative: the
     deadline path re-classifies into `final_*` and overwrites the entry.
+
+    `all_queued_polls` (#13363) arms the pool-saturation early exit: when
+    every pending constituent has sat at status=queued (no runner assigned)
+    for this many consecutive polls once `polls_seen >= settle_polls` (the
+    floor poll counts toward the streak), the loop returns a STARVED verdict
+    immediately instead of burning the remaining budget polling a queue that
+    cannot move. 0 (default) disables the rule -- the historical behaviour.
+    A healthy pool flips a queued job to in_progress within seconds, so the
+    streak only accumulates under real starvation. The message starts with
+    "STARVED" so `main`'s self-cancel (#13510) and the stale sweep's
+    cancelled-leg remedy apply unchanged.
     """
     deadline = now() + timeout_min * 60.0
     quiet_streak = 0
@@ -1627,6 +1704,8 @@ def wait_and_decide(
     adv_jobs = advisory_jobs or frozenset()
     timeouts = declared_timeouts or {}
     transient_reads = 0
+    polls_seen = 0
+    all_queued_streak = 0
 
     while True:
         try:
@@ -1693,6 +1772,10 @@ def wait_and_decide(
             # wait into a PASS -- the one direction rule 1 forbids.
             continue
         transient_reads = 0
+        # #13363: counts successful polls only -- a transient retry that
+        # `continue`d above never reaches here, so it cannot advance the
+        # settle floor the all-queued streak is gated on.
+        polls_seen += 1
         pending, bad, ok, advisory = classify(checks, self_name, adv_jobs)
         if detail is not None:
             detail["advisory"] = list(advisory)
@@ -1830,6 +1913,46 @@ def wait_and_decide(
                 declared_timeouts=timeouts,
             )
 
+        # #13363: pool-saturation early exit. A pending constituent at
+        # status=queued has NO runner assigned: further polling cannot change
+        # what it reports, because it has not started. When every pending
+        # constituent is queued for `all_queued_polls` consecutive polls PAST
+        # the settle_polls floor, the verdict is already decided by the queue,
+        # and burning the remaining hosted budget polling it is the waste this
+        # issue measures (waiters burning up to 45 hosted-minutes apiece under
+        # self-hosted saturation). The message deliberately starts with
+        # "STARVED" so `main`'s self-cancel (#13510) and the stale sweep's
+        # cancelled-leg remedy apply unchanged -- the same terminal state as
+        # the deadline STARVED, reached earlier. Fail-closed toward waiting: a
+        # single in_progress constituent (a runner picked the job up) resets
+        # the streak, and so does an empty pending set -- evidence older than
+        # the current poll never triggers the exit.
+        if all_queued_polls:
+            if (
+                pending
+                and polls_seen >= settle_polls
+                and pending_all_queued(checks, self_name, adv_jobs)
+            ):
+                all_queued_streak += 1
+            else:
+                all_queued_streak = 0
+            if all_queued_streak >= all_queued_polls:
+                _report_advisory(advisory)
+                print(
+                    f"[pr-gate] every pending constituent queued with no "
+                    f"runner for {all_queued_streak} poll(s) -- early "
+                    "STARVED instead of polling a parked queue (#13363)",
+                    flush=True,
+                )
+                return 1, (
+                    "STARVED -- every pending constituent is queued with "
+                    "no runner (pool saturated): "
+                    + ", ".join(pending)
+                    + " -- waiting cannot change the verdict until a "
+                    "constituent starts; the stale sweep re-drives this "
+                    "gate when runners free up (#13363)"
+                )
+
         print(
             f"[pr-gate] waiting on {len(pending)} check(s): "
             f"{', '.join(pending[:6])}{' ...' if len(pending) > 6 else ''}",
@@ -1874,6 +1997,15 @@ def verdict_body(message: str, advisory: Sequence[str] = ()) -> str:
             "(`gh run rerun <run_id> --job <job_id>`) ou laisser le "
             "balayage la reprendre -- sa cadence mesuree est de 2 h 33 "
             "a 5 h 18, pas horaire (#15197).",
+            "",
+            "Note #21300 : `gh run rerun` est INERT sur un run en "
+            "`startup_failure` (le re-run recopie la sortie de la "
+            "tentative precedente -- 9 tentatives mesurees sans "
+            "progres, #20874). Le sweep detecte maintenant ce cas et "
+            "ne rejoue plus : voir le log du sweep pour le geste "
+            "applique (`update-branch` ou signalement). Si la jambe "
+            "est muette (output vide), c'est la voie de reparation "
+            "de #15825, pas un re-run.",
         ]
     if advisory:
         lines += ["", "Advisory (not blocking):"]
@@ -1958,6 +2090,11 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument("--timeout-min", type=float, default=90.0)
     parser.add_argument("--poll-sec", type=float, default=30.0)
     parser.add_argument("--settle-polls", type=int, default=2)
+    # #13363: early STARVED when every pending constituent sits queued with no
+    # runner for this many consecutive polls (0 disables -- historical
+    # behaviour; pr-gate.yml passes an explicit value so the behavior change
+    # is visible and revertable in one place).
+    parser.add_argument("--all-queued-polls", type=int, default=0)
     # Issue #10072 -- fork PRs short-circuit to PASS. Student PRs come from a
     # fork and have no internal convention to police; `enforce_admins: true` on
     # main's required checks would otherwise deadlock their admin merge. This
@@ -2102,6 +2239,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             advisory_jobs,
             declared_timeouts,
             detail=detail,
+            all_queued_polls=args.all_queued_polls,
         )
     except GateError as exc:
         # Rule 1: an unreadable state is a failure, never a pass. Fall
@@ -2243,8 +2381,22 @@ def _maybe_post_check_run(args, code: int, message: str) -> None:
     before #10433 item-1), never a false PASS. The exit code already reflects
     the verdict; this only concerns whether the fresh verdict *surfaces* on the
     PR head.
+
+    A DWELL verdict is a merge-floor timer, not a content failure -- POSTing it
+    as ``conclusion=failure`` lands an unliftable red on the PR head (#21543):
+    the POSTed check-run sits in a foreign suite (no workflow run behind it),
+    GitHub ANDs every same-named check, and neither re-run nor PATCH can lift
+    it.  The real ``PR gate`` job leg already surfaces the DWELL message, so
+    skipping the POST loses nothing.
     """
     if not args.post_check_run:
+        return
+    if message.startswith("DWELL"):
+        print(
+            "[pr-gate] DWELL verdict -- skipping check-run POST "
+            "(a timer is not a failure; #21543)",
+            flush=True,
+        )
         return
     try:
         post_check_run(args.repo, args.sha, args.self_name, code, message)

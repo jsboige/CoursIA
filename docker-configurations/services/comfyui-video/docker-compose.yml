@@ -27,6 +27,13 @@ services:
     ports:
       - "127.0.0.1:${COMFYUI_VIDEO_PORT:-8189}:8188"
 
+    # Maintenance#303 bounds: mem_limit = memswap_limit = 12g (swap disabled),
+    # pids_limit 512. Measured 2026-11-07: 834 MiB idle / 63 PIDs; video
+    # generation peaks well above idle but stays under 12g on this host.
+    mem_limit: 12g
+    memswap_limit: 12g
+    pids_limit: 512
+
     volumes:
       - type: bind
         source: ${COMFYUI_WORKSPACE_PATH:-./workspace}
@@ -40,6 +47,14 @@ services:
       - type: bind
         source: ../../shared/outputs
         target: /workspace/ComfyUI/output
+      # Credential ComfyUI-Login stable, monte PAR FICHIER (jamais par env
+      # compose : l'interpolation mange les '$' des bcrypt). Le hash est le
+      # Bearer lui-meme ; le charger ici supprime la derive par redemarrage.
+      # Meme mecanisme que comfyui-qwen (.secrets/qwen-api-user.token).
+      - type: bind
+        source: ../../../.secrets/video-api-user.token
+        target: /workspace/ComfyUI/.secrets/video-api-user.token
+        read_only: true
       - type: bind
         source: ./entrypoint.sh
         target: /entrypoint.sh
@@ -121,6 +136,11 @@ services:
     working_dir: /app
 
     command: ["python", "comfyui_idle_monitor.py"]
+
+    # Maintenance#303 bounds (sidecar): measured 17 MiB / 2 PIDs.
+    mem_limit: 256m
+    memswap_limit: 256m
+    pids_limit: 64
 
     depends_on:
       comfyui-video:

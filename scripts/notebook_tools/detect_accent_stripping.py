@@ -277,7 +277,7 @@ ACCENT_PAIRS = {
     "regle": "règle",
     "regles": "règles",
     # Famille RL (#14139 / #14613) : formes context-free mesurees sur
-    # rl_1_intro_cartpole a la tete b4bdcf95f (167 occurrences). Les formes
+    # RL-01-Premiers-Pas-Stable-Baselines3-Python a la tete b4bdcf95f (167 occurrences). Les formes
     # AMBIGUES relevees dans le meme passage (entraine, enregistre,
     # recommande, cumule -- present/participe homographes une fois
     # desaccentues) sont EXCLUES a dessein : une table globale en
@@ -305,6 +305,60 @@ ACCENT_PAIRS = {
     "complementaires": "complémentaires",
     "reperer": "repérer",
     "entrainer": "entraîner",
+    # #21277 -- formes hors table relevees par le rollout accents (review
+    # NanoClaw de #20781, puis #20782). SEULES les formes qui ne sont pas des
+    # mots anglais valides entrent ici : ce dictionnaire sert aussi a la
+    # DETECTION, ou `representation`/`decomposition`/`precedence`/`evaluation`
+    # produiraient des faux positifs sur l'anglais (garde
+    # `test_excludes_en_valid_words`). Les quatre cognats vivent dans
+    # `restore_accents_canonical.CONTEXTUAL_PAIRS`, applique sur preuve de
+    # contexte francais seulement.
+    "entrainable": "entraînable",
+    "entrainables": "entraînables",
+    "francais": "français",
+    "francaise": "française",
+    "francaises": "françaises",
+    # #21277, deuxieme fournee : formes du residu de la serie temoin
+    # (`SymbolicAI/Planners`, 891 occurrences hors table mesurees sur `main`).
+    # MEME critere que ci-dessus, applique forme par forme sur le depot entier :
+    #   (a) la graphie desaccentuee n'est PAS un mot francais valide -- sinon la
+    #       cure fabrique un homographe (« il charge » -> « il chargé ») ;
+    #   (b) aucun usage en prose anglaise ni dans un carnet jumeau `_en`
+    #       (mesure dans le corps de la PR) ;
+    #   (c) la forme accentuee est unique (pas d'hesitation participe/present).
+    # Les formes qui echouent (a) ou (c) -- `allume`, `ajoutes`, `enfile`,
+    # `aveuglement`, `degenere`, `trouve`, `invoque`, `calcule`... -- restent
+    # HORS table : elles sont listees dans le corps de la PR, pas ajoutees.
+    # Les cognats FR/EN de meme famille (etat, cout, predicats, complexite...)
+    # vont dans `restore_accents_canonical.CONTEXTUAL_PAIRS`, pas ici.
+    "vehicules": "véhicules",
+    "encodee": "encodée",
+    "ordonnee": "ordonnée",
+    "durees": "durées",
+    "defaire": "défaire",
+    "demarrage": "démarrage",
+    "informativite": "informativité",
+    "heritent": "héritent",
+    "inadmissibilite": "inadmissibilité",
+    "sequencement": "séquencement",
+    "recursivite": "récursivité",
+    "notee": "notée",
+    "selectionnee": "sélectionnée",
+    "essayee": "essayée",
+    "specialites": "spécialités",
+    "legerete": "légèreté",
+    # #21277, troisieme fournee : forme relevee par l'audit visuel du site
+    # deploye (EPIC #10921, criterion 5) -- le titre et les intertitres de
+    # section "### Prerequis" sortaient sans accent sur le site public.
+    # MEME critere que ci-dessus, applique forme par forme sur le depot entier :
+    #   (a) la graphie desaccentuee n'est PAS un mot francais valide
+    #       ("prerequis" n'existe pas sans accent) -- pas d'homographe ;
+    #   (b) aucun usage en prose anglaise ni dans un carnet jumeau `_en` :
+    #       mesure sur `MyIA.AI.Notebooks/**` = 487 occurrences reparties sur
+    #       436 carnets FR, **0** dans un carnet `_en` ;
+    #   (c) la forme accentuee est unique ("prerequis" est invariable,
+    #       nom/adjectif ; pas d'hesitation participe/present).
+    "prerequis": "prérequis",
 }
 
 

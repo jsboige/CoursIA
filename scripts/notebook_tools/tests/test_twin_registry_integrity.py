@@ -410,19 +410,70 @@ _GRAPH_INCOMPLETE_SIGNATURES = (
 )
 
 
-def _build_blob_history(repo_root: Path) -> tuple[dict, dict]:
-    """Map ``(path_blobs, blob_paths)`` pour tous les fichiers, ancetres de HEAD.
+# Refs candidates pour la base de comparaison (#21828). La base est la
+# branche sur laquelle la PR est posee : ``merge-base(base, HEAD)``.
+_BASE_REF_CANDIDATES = ("origin/main", "origin/master", "main", "master")
 
-    Un seul appel ``git log HEAD --raw --abbrev=40`` (perf CI : ~1 appel pour
+
+def _resolve_base_commit(repo_root: Path) -> str | None:
+    """Commit de base contre lequel HEAD est compare (#21828).
+
+    Le ``merge-base`` de la branche de base et de HEAD : tout ce qui n'est pas
+    atteignable depuis ce commit est un commit **de branche**, dont les blobs
+    intermediaires disparaitront au squash-merge. Un sha atteste qui n'existe
+    que sur la branche est donc condamne par construction (#21828) -- c'est
+    exactement ce que le test doit voir **en PR**, et non apres le squash.
+
+    ``None`` = base introuvable (checkout sans ref de base) -> l'appelant
+    retombe sur le walk de HEAD entier (comportement historique) plutot que de
+    rouiller sur une base inventee.
+    """
+    import subprocess
+
+    for ref in _BASE_REF_CANDIDATES:
+        rev = subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
+            cwd=repo_root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
+        )
+        if rev.returncode != 0 or not rev.stdout.strip():
+            continue
+        mb = subprocess.run(
+            ["git", "merge-base", ref, "HEAD"],
+            cwd=repo_root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
+        )
+        if mb.returncode == 0 and mb.stdout.strip():
+            return mb.stdout.strip()
+    return None
+
+
+def _build_blob_history(repo_root: Path) -> tuple[dict, dict]:
+    """Map ``(path_blobs, blob_paths)`` : base + arbre de HEAD (#21828).
+
+    Un seul appel ``git log <base> --raw --abbrev=40`` (perf CI : ~1 appel pour
     tout le repo, lookup O(1) ensuite). #9399 volet (b) : un sha atteste qui
     n'est JAMAIS apparu comme blob du fichier = fabrication/typo/cross-file ->
     doit rougir, or ``test_audit_shas_are_git_blob_shas`` ne valide que le format.
 
-    On parcourt l'historique des ancetres de HEAD (pas ``--all``) : ``--all`` est
+    **La base, pas tout l'historique de HEAD (#21828).** Parcourir les ancetres
+    de HEAD rend le verdict *different* en PR et sur ``main`` : en PR l'historique
+    contient les commits de branche, et le squash les fait disparaitre -- le
+    meme test est vert en PR puis rouge sur ``main`` (mesure : #20262, attestation
+    ``search-02-uninformed/0014`` portant un ``csharp_sha`` qui n'existait que
+    sur la branche). L'historique est donc construit depuis la **base**
+    (``merge-base(base, HEAD)``) **plus l'arbre de HEAD** : un blob intermediaire
+    de branche n'y est pas, le blob de la tete y est (il survivra au squash).
+
+    Sur ``main``, la base est ``main`` lui-meme -> le comportement historique
+    est conserve ; une attestation faite sur une branche mergee en methode
+    ``merge`` voit ses commits, qui restent ancetres de ``main`` (#21828
+    criteres 3).
+
+    On parcourt l'historique de la base (pas ``--all``) : ``--all`` est
     non-deterministe entre un clone local (qui voit les branches distantes) et un
     checkout CI (qui ne fetch que la branche de la PR), ce qui ferait varier le
-    verdit du test. Les audits se font sur la ligne principale, donc un sha
-    d'audit valide doit etre un blob apparu dans les ancetres de HEAD.
+    verdict du test.
 
     Deux index derives du MEME flux ``--raw`` (determinisme preserve, pas de
     detection heuristique de renommage) :
@@ -435,15 +486,21 @@ def _build_blob_history(repo_root: Path) -> tuple[dict, dict]:
     """
     import subprocess
 
+    # Base de comparaison (#21828) : sans base resolue, on retombe sur le walk
+    # historique (HEAD entier) -- le comportement d'avant, permissif, plutot
+    # qu'un verdict sur une base inventee.
+    base = _resolve_base_commit(repo_root)
+    walk_ref = base or "HEAD"
+
     def _walk() -> subprocess.CompletedProcess:
         # ``-m`` : montre le diff des merge commits contre chaque parent. Sans
         # cette option, ``git log --raw`` supprime les diffs de merge -> un blob
         # nee d'une resolution de merge (header-hoist + fix runtime combines)
         # est invisible au walker alors que c'est un vrai blob git. ``-m``
-        # reste dans les ancetres de HEAD (determinisme CI/local, cf note sur
+        # reste dans les ancetres de la base (determinisme CI/local, cf note sur
         # le rejet de ``--all``) ; le parser deduplique via ``set()``.
         return subprocess.run(
-            ["git", "log", "HEAD", "-m", "--raw", "--no-renames", "--abbrev=40", "--format="],
+            ["git", "log", walk_ref, "-m", "--raw", "--no-renames", "--abbrev=40", "--format="],
             cwd=repo_root, capture_output=True, text=True, encoding="utf-8", errors="replace",
         )
 
@@ -498,7 +555,42 @@ def _build_blob_history(repo_root: Path) -> tuple[dict, dict]:
             if len(sha) == 40 and not sha.startswith("0" * 7):
                 path_blobs.setdefault(path, set()).add(sha)
                 blob_paths.setdefault(sha, set()).add(path)
+    _add_head_tree_blobs(repo_root, path_blobs, blob_paths)
     return path_blobs, blob_paths
+
+
+def _add_head_tree_blobs(repo_root: Path, path_blobs: dict, blob_paths: dict) -> None:
+    """Ajoute les blobs de l'arbre de HEAD a l'historique (#21828).
+
+    L'arbre de HEAD est ce qui **survit** au squash : le blob du carnet a la
+    tete de la branche se retrouve dans le commit de squash. Les blobs
+    intermediaires de branche, eux, n'y sont pas -- c'est exactement ce que le
+    test doit refuser.
+
+    ``git ls-tree -r -z HEAD`` : un appel, l'arbre complet. En cas d'echec, on
+    ne leve rien : l'historique reste celui de la base (verdict plus strict,
+    jamais un faux « fabricated » sur un etat de fichier absent).
+    """
+    import subprocess
+
+    proc = subprocess.run(
+        ["git", "ls-tree", "-r", "-z", "HEAD"],
+        cwd=repo_root, capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return
+    for record in proc.stdout.split("\0"):
+        if not record:
+            continue
+        meta, _, path = record.partition("\t")
+        parts = meta.split()
+        if len(parts) < 3 or parts[1] != "blob":
+            continue
+        sha = parts[2]
+        if len(sha) != 40:
+            continue
+        path_blobs.setdefault(path, set()).add(sha)
+        blob_paths.setdefault(sha, set()).add(path)
 
 
 def _declared_paths() -> set[str]:
@@ -742,7 +834,8 @@ def test_walk_en_echec_avorte_avec_verdict_infrastructure(monkeypatch):
     monkeypatch.setattr(subprocess, "run", fake_run)
     with pytest.raises(RuntimeError, match="HISTORY_WALK_INCOMPLETE"):
         _build_blob_history(Path("."))
-    assert len(calls) == 2, "1 essai + 1 retry avant l'abort"
+    log_calls = [c for c in calls if c[:2] == ["git", "log"]]
+    assert len(log_calls) == 2, "1 essai + 1 retry avant l'abort"
 
 
 @pytest.mark.parametrize(
@@ -775,7 +868,9 @@ def test_graphe_incomplet_rend_un_skip_pas_un_echec_de_fond(monkeypatch, stderr_
     monkeypatch.setattr(subprocess, "run", fake_run)
     with pytest.raises(pytest.skip.Exception, match="HISTORY_WALK_INCOMPLETE"):
         _build_blob_history(Path("."))
-    assert len(calls) == 2, "1 essai + 1 retry avant le verdict d'infrastructure"
+    assert len([c for c in calls if c[:2] == ["git", "log"]]) == 2, (
+        "1 essai + 1 retry avant le verdict d'infrastructure"
+    )
 
 
 def test_signature_inconnue_leve_toujours(monkeypatch):
@@ -806,13 +901,19 @@ def test_walk_transitoire_retraye_puis_parse(monkeypatch):
     state = {"n": 0}
 
     def fake_run(cmd, **kw):
-        state["n"] += 1
-        if state["n"] == 1:
-            return subprocess.CompletedProcess(
-                cmd, 1, stdout=_fake_raw_line("c" * 40, "d" * 40, "A/X.ipynb"),
-                stderr="fatal: transient",
-            )
-        return subprocess.CompletedProcess(cmd, 0, stdout=real_line + "\n", stderr="")
+        if cmd[:2] == ["git", "log"]:
+            state["n"] += 1
+            if state["n"] == 1:
+                return subprocess.CompletedProcess(
+                    cmd, 1, stdout=_fake_raw_line("c" * 40, "d" * 40, "A/X.ipynb"),
+                    stderr="fatal: transient",
+                )
+            return subprocess.CompletedProcess(cmd, 0, stdout=real_line + "\n", stderr="")
+        if cmd[:2] == ["git", "rev-parse"]:
+            return subprocess.CompletedProcess(cmd, 0, stdout="deadbeef\n", stderr="")
+        if cmd[:2] == ["git", "merge-base"]:
+            return subprocess.CompletedProcess(cmd, 0, stdout="deadbeef\n", stderr="")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
     path_blobs, blob_paths = _build_blob_history(Path("."))
@@ -821,6 +922,55 @@ def test_walk_transitoire_retraye_puis_parse(monkeypatch):
     assert "A/X.ipynb" not in path_blobs, (
         "la portion parcourue du walk echoue ne doit pas etre indexee"
     )
+
+
+def test_le_walk_part_de_la_base_et_l_arbre_de_head_s_y_ajoute(monkeypatch):
+    """#21828 : le walk vise la BASE, et l'arbre de HEAD complete l'historique.
+
+    Trois garanties dans un seul test unitarise (pas de git reel) :
+
+    - le ``git log`` est parametré sur la **base** resolue, pas sur ``HEAD``
+      (un blob intermediaire de branche ne doit pas entrer dans l'historique) ;
+    - le ``git ls-tree`` de HEAD **ajoute** les blobs de la tete (ceux qui
+      survivront au squash) ;
+    - une base introuvable retombe sur ``HEAD`` (comportement historique),
+      jamais sur une base inventee.
+    """
+    import subprocess
+
+    seen = {"log": [], "ls_tree": 0}
+
+    def fake_run(cmd, **kw):
+        if cmd[:2] == ["git", "rev-parse"]:
+            return subprocess.CompletedProcess(cmd, 0, stdout="deadbeef\n", stderr="")
+        if cmd[:2] == ["git", "merge-base"]:
+            return subprocess.CompletedProcess(cmd, 0, stdout="base123\n", stderr="")
+        if cmd[:2] == ["git", "log"]:
+            seen["log"].append(cmd)
+            return subprocess.CompletedProcess(
+                cmd, 0,
+                stdout=_fake_raw_line("a" * 40, "b" * 40, "P/Y.ipynb") + "\n",
+                stderr="",
+            )
+        if cmd[:2] == ["git", "ls-tree"]:
+            seen["ls_tree"] += 1
+            return subprocess.CompletedProcess(
+                cmd, 0,
+                stdout="100644 blob " + "c" * 40 + "\tP/Y.ipynb\0",
+                stderr="",
+            )
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    path_blobs, blob_paths = _build_blob_history(Path("."))
+    assert seen["log"], "le walk doit avoir ete execute"
+    assert seen["log"][0][2] == "base123", (
+        "le walk doit partir de la base, pas de HEAD : "
+        f"{seen['log'][0][2]!r}"
+    )
+    assert seen["ls_tree"] == 1, "l'arbre de HEAD doit etre lu une fois"
+    assert ("c" * 40) in blob_paths, "le blob de HEAD doit etre indexe"
+    assert ("c" * 40) in path_blobs["P/Y.ipynb"]
 
 
 # --- tests verify_recorded_sha (#9399 volet b) ------------------------------

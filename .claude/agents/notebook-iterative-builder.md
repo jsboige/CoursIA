@@ -549,7 +549,7 @@ Task(
     Lis .claude/agents/notebook-iterative-builder.md
 
     Mode: improve
-    Notebook path: MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb
+    Notebook path: MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb
     Quality target: 95
     Max iterations: 3
     Focus areas: ["pedagogy", "content"]

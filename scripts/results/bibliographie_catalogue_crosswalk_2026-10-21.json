@@ -1,0 +1,111 @@
+{
+  "mesure": "crosswalk A1 -- catalogue identifiant <-> chemin canonique du gisement",
+  "date": "2026-10-21",
+  "pr": 21688,
+  "lane": "myia-ai-01:CoursIA-2",
+  "racine_gisement": "G:\\Mon Drive\\MyIA\\IA\\Bibliographie IA",
+  "commande": "python scripts/build_bibliography_identifier_catalog.py --root \"G:\\Mon Drive\\MyIA\\IA\\Bibliographie IA\" --catalogue-entrant \"<gisement>/IDENTIFIANTS-catalogue-2026-10-20.csv\" --a1-csv \"<gisement>/arXiv-A1-resolution-2026-10-14.csv\" --a1-csv \"<gisement>/DOI-A1-resolution-2026-10-02.csv\" --a1-csv \"<gisement>/DOI-A1-resolution-complement-2026-10-14.csv\" --json <sortie> --out <sortie>",
+  "entrees": {
+    "catalogue_entrant": {
+      "fichier": "IDENTIFIANTS-catalogue-2026-10-20.csv",
+      "sha256": "7e1b89852bb65165091ee1c88644b8168fe82f87375d05a3f6e55c07b89b5dcf",
+      "lignes": 233,
+      "colonne_identifiant": "id"
+    },
+    "csvs_a1": [
+      {
+        "fichier": "arXiv-A1-resolution-2026-10-14.csv",
+        "sha256": "1ce796fd721366f9523a8611bf29bdcd591272b19aa8cf4ba1562f276bd71e0c",
+        "lignes": 147,
+        "colonne_identifiant": "id"
+      },
+      {
+        "fichier": "DOI-A1-resolution-2026-10-02.csv",
+        "sha256": "59f926c1d5b61e49629a9d3f8f0658a6166586fb35d57fe450c490800d7a1f96",
+        "lignes": 72,
+        "colonne_identifiant": "doi"
+      },
+      {
+        "fichier": "DOI-A1-resolution-complement-2026-10-14.csv",
+        "sha256": "53b76b185dce6192d784af2c8e502134a0d2b4eaf1701b55c78f871437105ce4",
+        "lignes": 13,
+        "colonne_identifiant": "doi_cite"
+      }
+    ]
+  },
+  "avant_correctif_type_id": {
+    "crosswalk": {
+      "appliques": 0,
+      "deja_presents": 44,
+      "par_type": {},
+      "sans_chemin": 175,
+      "sans_fichier": 0
+    },
+    "jointure_a1": [
+      {
+        "csv": "arXiv-A1-resolution-2026-10-14.csv",
+        "total": 147,
+        "resolus": 46,
+        "par_confiance": {
+          "elevee": 46
+        },
+        "non_resolus": 101
+      },
+      {
+        "csv": "DOI-A1-resolution-2026-10-02.csv",
+        "total": 72,
+        "resolus": 1,
+        "par_confiance": {
+          "elevee": 1
+        },
+        "non_resolus": 71
+      },
+      {
+        "csv": "G:/Mon Drive/MyIA/IA/Bibliographie IA/DOI-A1-resolution-complement-2026-10-14.csv",
+        "erreur": "colonne id/doi absente"
+      }
+    ]
+  },
+  "apres_correctif_type_id": {
+    "crosswalk": {
+      "appliques": 2,
+      "csv_sans_colonne": 0,
+      "deja_presents": 44,
+      "par_type": {
+        "doi": 2
+      },
+      "sans_chemin": 186,
+      "sans_fichier": 0
+    },
+    "jointure_a1": [
+      {
+        "csv": "arXiv-A1-resolution-2026-10-14.csv",
+        "total": 147,
+        "resolus": 46,
+        "par_confiance": {
+          "elevee": 46
+        },
+        "non_resolus": 101
+      },
+      {
+        "csv": "DOI-A1-resolution-2026-10-02.csv",
+        "total": 72,
+        "resolus": 3,
+        "par_confiance": {
+          "elevee": 3
+        },
+        "non_resolus": 69
+      },
+      {
+        "csv": "DOI-A1-resolution-complement-2026-10-14.csv",
+        "total": 13,
+        "resolus": 2,
+        "par_confiance": {
+          "elevee": 2
+        },
+        "non_resolus": 11
+      }
+    ]
+  },
+  "lecture": "Le correctif derive le type d'un identifiant de sa VALEUR (10.<registre>/<suffixe> -> doi, sinon arxiv) et non du nom de sa colonne, et elargit la liste des colonnes candidates (id, doi, doi_cite, arxiv). Avant, le CSV de resolution complement (colonne doi_cite) n'etait pas lu du tout -- aucune colonne id/doi/arxiv n'y existe -- et ses DOI n'etaient jamais lies au gisement ; apres, il est lu et 2 DOI sont appliques, ce qui fait passer la jointure du CSV DOI du 02-10 de 1/72 a 3/72."
+}

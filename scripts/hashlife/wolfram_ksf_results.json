@@ -1,0 +1,330 @@
+{
+  "results": [
+    {
+      "trajectory": "wolfram_R0_n1024_seed33",
+      "rule": 0,
+      "n_cells": 1024,
+      "W_context": 1,
+      "ksf_mean": 0.0059,
+      "ksf_min": 0,
+      "ksf_max": 6,
+      "ksf_bits_per_cell": 0.0,
+      "k_context_mean": 12.1241,
+      "n_measurements": 1023
+    },
+    {
+      "trajectory": "wolfram_R0_n1024_seed33",
+      "rule": 0,
+      "n_cells": 1024,
+      "W_context": 2,
+      "ksf_mean": 1.0,
+      "ksf_min": 1,
+      "ksf_max": 1,
+      "ksf_bits_per_cell": 0.0078,
+      "k_context_mean": 12.1301,
+      "n_measurements": 1022
+    },
+    {
+      "trajectory": "wolfram_R0_n1024_seed33",
+      "rule": 0,
+      "n_cells": 1024,
+      "W_context": 4,
+      "ksf_mean": 0.999,
+      "ksf_min": 0,
+      "ksf_max": 1,
+      "ksf_bits_per_cell": 0.0078,
+      "k_context_mean": 14.1304,
+      "n_measurements": 1020
+    },
+    {
+      "trajectory": "wolfram_R0_n1024_seed33",
+      "rule": 0,
+      "n_cells": 1024,
+      "W_context": 8,
+      "ksf_mean": 0.999,
+      "ksf_min": 0,
+      "ksf_max": 1,
+      "ksf_bits_per_cell": 0.0078,
+      "k_context_mean": 17.1309,
+      "n_measurements": 1016
+    },
+    {
+      "trajectory": "wolfram_R0_n1024_seed33",
+      "rule": 0,
+      "n_cells": 1024,
+      "W_context": 16,
+      "ksf_mean": 1.998,
+      "ksf_min": 0,
+      "ksf_max": 2,
+      "ksf_bits_per_cell": 0.0156,
+      "k_context_mean": 23.1329,
+      "n_measurements": 1008
+    },
+    {
+      "trajectory": "wolfram_R0_n1024_seed33",
+      "rule": 0,
+      "n_cells": 1024,
+      "W_context": 32,
+      "ksf_mean": 0.999,
+      "ksf_min": 0,
+      "ksf_max": 1,
+      "ksf_bits_per_cell": 0.0078,
+      "k_context_mean": 26.1452,
+      "n_measurements": 992
+    },
+    {
+      "trajectory": "wolfram_R4_n1024_seed33",
+      "rule": 4,
+      "n_cells": 1024,
+      "W_context": 1,
+      "ksf_mean": 4.1183,
+      "ksf_min": 4,
+      "ksf_max": 125,
+      "ksf_bits_per_cell": 0.0322,
+      "k_context_mean": 112.0264,
+      "n_measurements": 1023
+    },
+    {
+      "trajectory": "wolfram_R4_n1024_seed33",
+      "rule": 4,
+      "n_cells": 1024,
+      "W_context": 2,
+      "ksf_mean": 0.0029,
+      "ksf_min": 0,
+      "ksf_max": 3,
+      "ksf_bits_per_cell": 0.0,
+      "k_context_mean": 116.1448,
+      "n_measurements": 1022
+    },
+    {
+      "trajectory": "wolfram_R4_n1024_seed33",
+      "rule": 4,
+      "n_cells": 1024,
+      "W_context": 4,
+      "ksf_mean": -0.9971,
+      "ksf_min": -1,
+      "ksf_max": 2,
+      "ksf_bits_per_cell": -0.0078,
+      "k_context_mean": 120.1441,
+      "n_measurements": 1020
+    },
+    {
+      "trajectory": "wolfram_R4_n1024_seed33",
+      "rule": 4,
+      "n_cells": 1024,
+      "W_context": 8,
+      "ksf_mean": 0.002,
+      "ksf_min": 0,
+      "ksf_max": 2,
+      "ksf_bits_per_cell": 0.0,
+      "k_context_mean": 123.1467,
+      "n_measurements": 1016
+    },
+    {
+      "trajectory": "wolfram_R4_n1024_seed33",
+      "rule": 4,
+      "n_cells": 1024,
+      "W_context": 16,
+      "ksf_mean": 0.002,
+      "ksf_min": 0,
+      "ksf_max": 2,
+      "ksf_bits_per_cell": 0.0,
+      "k_context_mean": 128.1518,
+      "n_measurements": 1008
+    },
+    {
+      "trajectory": "wolfram_R4_n1024_seed33",
+      "rule": 4,
+      "n_cells": 1024,
+      "W_context": 32,
+      "ksf_mean": 0.002,
+      "ksf_min": 0,
+      "ksf_max": 2,
+      "ksf_bits_per_cell": 0.0,
+      "k_context_mean": 138.1623,
+      "n_measurements": 992
+    },
+    {
+      "trajectory": "wolfram_R30_n1024_seed33",
+      "rule": 30,
+      "n_cells": 1024,
+      "W_context": 1,
+      "ksf_mean": 128.0,
+      "ksf_min": 128,
+      "ksf_max": 128,
+      "ksf_bits_per_cell": 1.0,
+      "k_context_mean": 139.0,
+      "n_measurements": 1023
+    },
+    {
+      "trajectory": "wolfram_R30_n1024_seed33",
+      "rule": 30,
+      "n_cells": 1024,
+      "W_context": 2,
+      "ksf_mean": 128.0,
+      "ksf_min": 128,
+      "ksf_max": 128,
+      "ksf_bits_per_cell": 1.0,
+      "k_context_mean": 267.0,
+      "n_measurements": 1022
+    },
+    {
+      "trajectory": "wolfram_R30_n1024_seed33",
+      "rule": 30,
+      "n_cells": 1024,
+      "W_context": 4,
+      "ksf_mean": 128.0,
+      "ksf_min": 128,
+      "ksf_max": 128,
+      "ksf_bits_per_cell": 1.0,
+      "k_context_mean": 523.0,
+      "n_measurements": 1020
+    },
+    {
+      "trajectory": "wolfram_R30_n1024_seed33",
+      "rule": 30,
+      "n_cells": 1024,
+      "W_context": 8,
+      "ksf_mean": 128.0,
+      "ksf_min": 128,
+      "ksf_max": 128,
+      "ksf_bits_per_cell": 1.0,
+      "k_context_mean": 1035.0,
+      "n_measurements": 1016
+    },
+    {
+      "trajectory": "wolfram_R30_n1024_seed33",
+      "rule": 30,
+      "n_cells": 1024,
+      "W_context": 16,
+      "ksf_mean": 128.0,
+      "ksf_min": 128,
+      "ksf_max": 128,
+      "ksf_bits_per_cell": 1.0,
+      "k_context_mean": 2059.0,
+      "n_measurements": 1008
+    },
+    {
+      "trajectory": "wolfram_R30_n1024_seed33",
+      "rule": 30,
+      "n_cells": 1024,
+      "W_context": 32,
+      "ksf_mean": 128.0,
+      "ksf_min": 128,
+      "ksf_max": 128,
+      "ksf_bits_per_cell": 1.0,
+      "k_context_mean": 4107.0,
+      "n_measurements": 992
+    },
+    {
+      "trajectory": "wolfram_R110_n1024_seed33",
+      "rule": 110,
+      "n_cells": 1024,
+      "W_context": 1,
+      "ksf_mean": 74.4673,
+      "ksf_min": 42,
+      "ksf_max": 128,
+      "ksf_bits_per_cell": 0.5818,
+      "k_context_mean": 96.1574,
+      "n_measurements": 1023
+    },
+    {
+      "trajectory": "wolfram_R110_n1024_seed33",
+      "rule": 110,
+      "n_cells": 1024,
+      "W_context": 2,
+      "ksf_mean": 72.2182,
+      "ksf_min": 41,
+      "ksf_max": 128,
+      "ksf_bits_per_cell": 0.5642,
+      "k_context_mean": 170.6751,
+      "n_measurements": 1022
+    },
+    {
+      "trajectory": "wolfram_R110_n1024_seed33",
+      "rule": 110,
+      "n_cells": 1024,
+      "W_context": 4,
+      "ksf_mean": 68.6637,
+      "ksf_min": 42,
+      "ksf_max": 128,
+      "ksf_bits_per_cell": 0.5364,
+      "k_context_mean": 313.5853,
+      "n_measurements": 1020
+    },
+    {
+      "trajectory": "wolfram_R110_n1024_seed33",
+      "rule": 110,
+      "n_cells": 1024,
+      "W_context": 8,
+      "ksf_mean": 61.3307,
+      "ksf_min": 37,
+      "ksf_max": 128,
+      "ksf_bits_per_cell": 0.4791,
+      "k_context_mean": 579.9931,
+      "n_measurements": 1016
+    },
+    {
+      "trajectory": "wolfram_R110_n1024_seed33",
+      "rule": 110,
+      "n_cells": 1024,
+      "W_context": 16,
+      "ksf_mean": 55.4573,
+      "ksf_min": 33,
+      "ksf_max": 121,
+      "ksf_bits_per_cell": 0.4333,
+      "k_context_mean": 1048.4583,
+      "n_measurements": 1008
+    },
+    {
+      "trajectory": "wolfram_R110_n1024_seed33",
+      "rule": 110,
+      "n_cells": 1024,
+      "W_context": 32,
+      "ksf_mean": 48.1129,
+      "ksf_min": 24,
+      "ksf_max": 112,
+      "ksf_bits_per_cell": 0.3759,
+      "k_context_mean": 1921.9698,
+      "n_measurements": 992
+    }
+  ],
+  "per_class_verdicts": {
+    "KSF_R0": "CLASS-I-CONFIRMED (KSF(W=32) = 0.008 ~= landmark 0.000, delta 0.008)",
+    "KSF_R4": "CLASS-II-CONFIRMED (KSF(W=32) = 0.000 ~= landmark 0.000, delta 0.000)",
+    "KSF_R30": "CLASS-III-CONFIRMED (KSF(W=32) = 1.000 ~= landmark 0.850, delta 0.150)",
+    "KSF_R110": "CLASS-IV-CONFIRMED (KSF(W=32) = 0.376 ~= landmark 0.200, delta 0.176)"
+  },
+  "discrimination_verdict": "WOLFRAM-KSF-DISCRIMINANT (R30 KSF(W=32)=1.000 bits/cellule, R110 KSF(W=32)=0.376 bits/cellule, delta=0.624 >= 0.10)",
+  "n_cells": 1024,
+  "n_steps": 1024,
+  "seed": 33,
+  "rules": [
+    0,
+    4,
+    30,
+    110
+  ],
+  "ksf_landmarks": {
+    "0": {
+      "klass": "I",
+      "name": "uniforme",
+      "expected_ksf": 0.0
+    },
+    "4": {
+      "klass": "II",
+      "name": "periodique",
+      "expected_ksf": 0.0
+    },
+    "30": {
+      "klass": "III",
+      "name": "chaotique",
+      "expected_ksf": 0.85
+    },
+    "110": {
+      "klass": "IV",
+      "name": "Turing-complet",
+      "expected_ksf": 0.2
+    }
+  }
+}

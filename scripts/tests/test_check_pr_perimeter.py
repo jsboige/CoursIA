@@ -875,6 +875,51 @@ def test_pull_request_review_trigger_includes_edited_type():
     )
 
 
+def test_perimeter_workflow_declares_pull_request_trigger_with_edited():
+    """#21922 : CE fichier doit redeclarer `pull_request` avec `edited`.
+
+    Le levier du garde est le NOM de check-run "perimeter review guard
+    (#11268)". Seul le run de ce fichier le publie -- une re-mesure faite
+    par always-on-guards porte le nom de l'umbrella et ne supersede pas le
+    rouge de la surface review (le repli de l'agregat du PR gate est
+    latest-wins PAR NOM).
+
+    Mesure fondatrice (#21922, PR #21893) : check-run rouge a 20:50:57Z,
+    body corrige a ~21:15Z (le remede canonique d'une assertion fausse),
+    et AUCUN run de ce fichier sur cette tete -- le rouge a disparu de la
+    tete par un mecanisme non etabli (pruning de suite), donc l'etat
+    bloquant se dissolvait de facon non deterministe.
+
+    Ce test rend l'invariant executable : un futur editeur qui retoucherait
+    le bloc `on:` et supprimerait le trigger reverait le defaut sans que
+    rien ne le dise.
+    """
+    here = pathlib.Path(__file__).resolve()
+    repo_root = here.parents[2]
+    wf = repo_root / ".github" / "workflows" / "perimeter-review-guard.yml"
+    text = wf.read_text(encoding="utf-8")
+    import re
+    block = re.search(r"^on:\s*\n(?P<body>(?:  [^\n]*\n)+)", text,
+                       re.MULTILINE)
+    assert block, "could not locate `on:` block in perimeter-review-guard.yml"
+    body = block.group("body")
+    pr_block = re.search(
+        r"^  pull_request:\s*\n((?:    [^\n]*\n)+)", body, re.MULTILINE
+    )
+    assert pr_block, (
+        "perimeter-review-guard.yml ne declare plus `pull_request:` -- une "
+        "correction de body ne re-mesure plus le nom de check-run que ce "
+        "fichier publie, et le rouge de la surface review survit jusqu'au "
+        "prochain evenement de review (#21922, mesure #21893)."
+    )
+    pr_body = pr_block.group(1)
+    assert "types:" in pr_body and "edited" in pr_body, (
+        "pull_request: doit lister explicitement `edited` -- sans lui, "
+        "GitHub l'exclut du defaut et une correction de body ne declenche "
+        "rien (cf. #11635)."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Consequence model (#11648): supersession per author + blocking scope
 # ---------------------------------------------------------------------------
@@ -3814,6 +3859,46 @@ def test_pr_diff_text_fails_closed_on_other_gh_error(monkeypatch):
         cpp._pr_diff_text(101)
 
 
+# ---------------------------------------------------------------------------
+# #25085 — `gh pr diff` refuse le diff pour raison de TAILLE (HTTP 406).
+# ---------------------------------------------------------------------------
+def test_pr_diff_text_falls_back_empty_on_size_cap(monkeypatch, capsys):
+    """#25085: le plafond de TAILLE du diff (`PullRequest.diff too_large`,
+    HTTP 406) est le jumeau du plafond de NOMBRE de fichiers -- il doit etre
+    degrade de la meme facon. Le garde perdait une mesure DISPONIBLE (la liste
+    paginee des fichiers) et rendait "PERIMETRE NON MESURABLE" sur une PR
+    parfaitement mesurable. Mesure : #24992, patch de 20 988 lignes."""
+    import check_pr_perimeter as cpp
+
+    def fake_rc(args):
+        return 1, "", (
+            "gh error: could not find pull request diff: HTTP 406: "
+            "PullRequest.diff too_large "
+            "(https://api.github.com/repos/jsboige/CoursIA/pulls/24992)"
+        )
+
+    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
+    assert cpp._pr_diff_text(24992) == ""
+    err = capsys.readouterr().err
+    assert "plafond de TAILLE" in err, err
+    # l'avertissement doit dire CE QUI n'a pas ete vu (les baseline-moves),
+    # pas laisser croire que le perimetre est inconnu.
+    assert "baseline-moves" in err, err
+
+
+def test_pr_diff_text_size_cap_is_narrow(monkeypatch):
+    """Un 406 qui n'est PAS un refus de TAILLE reste fail-closed : le filet
+    reconnait des signatures precisees, il n'elargit pas a la prose."""
+    import check_pr_perimeter as cpp
+
+    def fake_rc(args):
+        return 1, "", "gh error: HTTP 406: Not Acceptable"
+
+    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
+    with pytest.raises(SystemExit):
+        cpp._pr_diff_text(101)
+
+
 # --- #16085 : cardinal anaphorique delimite + provenance relayee en SHA ------
 
 FILES_16085_A = [
@@ -4041,6 +4126,54 @@ def test_16162_scan_thread_extracts_founders_without_blocking():
 
 
 # ---------------------------------------------------------------------------
+# #25091 — le compte des deux variantes FR/EN d'un fichier n'est pas le
+# périmètre de la PR (#24566, faux positif uniquement avec --scan-thread).
+# ---------------------------------------------------------------------------
+FOUNDER_25091_LINE = (
+    "- `Lift` (2) : la formule porte `height` des deux côtés "
+    "(énoncé de théorème, anglais dans les deux fichiers)"
+)
+
+
+def test_25091_two_language_variants_are_not_a_perimeter_claim():
+    files = [{"path": f"f{i}.lean"} for i in range(5)]
+    assert check_assertion(files, FOUNDER_25091_LINE) == []
+    assert _additive_line_sum(FOUNDER_25091_LINE) == 0
+    body = FOUNDER_25091_LINE + "\n\n5 fichiers, 9+/10-, **comment-only**"
+    cands, problems = select_candidates(
+        [{"body": body, "kind": "PR body", "author": "jsboige", "source": "body"}],
+        n_files=5,
+    )
+    assert problems is None
+    assert len(cands) == 2
+    assert check_assertion(
+        files, cands[0].text, block=cands[0].block, body_hint=cands[0].body_text
+    ) == []
+
+
+def test_25091_language_context_elsewhere_does_not_mask_wrong_perimeter():
+    files = [{"path": f"f{i}.lean"} for i in range(5)]
+    assert check_assertion(
+        files, "Périmètre : 2 fichiers. Les mentions FR/EN décrivent le contenu."
+    )
+
+
+def test_25091_explicit_wrong_perimeter_stays_blocking_with_language_cue():
+    files = [{"path": f"f{i}.lean"} for i in range(5)]
+    assert check_assertion(
+        files,
+        "Périmètre : 2 fichiers seulement, anglais dans les deux fichiers.",
+    )
+
+
+def test_25091_digit_variant_count_and_existing_16162_guards():
+    files = [{"path": f"f{i}.lean"} for i in range(5)]
+    assert check_assertion(files, "Two files: the EN variant of one FR file.") == []
+    assert check_assertion(files, FOUNDER_16147_LINE) == []
+    assert check_assertion(files, FOUNDER_16157_LINE) == []
+
+
+# ---------------------------------------------------------------------------
 # #17262-classe (3e surface) — un quota d'API epuise est une NON-MESURE, pas
 # une contradiction de perimetre.
 #
@@ -4184,3 +4317,251 @@ def test_both_invoking_workflows_branch_on_rc():
             f"{name} ne distingue plus rc=1 : le message de contradiction "
             "serait rendu pour un echec de mesure (#17273)"
         )
+
+
+# --- #20086 : prose descriptive chiffree ouverte par un verbe de constatation
+
+
+def _count_exempt(line: str) -> bool:
+    m = COUNT_CLAIM.search(line)
+    assert m is not None, f"aucun COUNT_CLAIM dans la ligne sonde : {line!r}"
+    return _count_is_exempt(line, m)
+
+
+def test_issue_20086_descriptive_attestation_is_exempt():
+    """Founder #20076 (body avant correction) : le compte ouvre sur ce que
+    l'auteur a LU ou ATTESTE, pas sur le perimetre de la PR."""
+    assert _count_exempt(
+        "- `life-lean-stats` (exec 12) atteste 4 fichiers (`Life.lean` 253, "
+        "`Life_en.lean` 254, `Hashlife.lean` 700, `Hashlife_en.lean` 701)"
+    )
+    assert _count_exempt("`phase1-files-list` (exec 18) atteste ~80 fichiers `.lean`")
+
+
+def test_issue_20086_canonical_colon_declaration_still_fails():
+    """Controle positif exige par l'issue : la forme canonique de declaration
+    de perimetre -- « N fichiers : a, b, c » -- n'est ouverte par aucun verbe
+    de constatation et DOIT continuer de rougir."""
+    assert not _count_exempt(
+        "7 fichiers : a.py, b.py, c.py, d.py, e.py, f.py, g.py"
+    )
+
+
+def test_issue_20086_colon_guard_survives_a_constatation_verb():
+    """Le verbe ne blanchit pas une assertion declaree par deux-points : c'est
+    la garde qui separe l'exemption du blanc-seing."""
+    assert not _count_exempt(
+        "j'atteste 7 fichiers : a.py, b.py, c.py, d.py, e.py, f.py, g.py"
+    )
+
+
+def test_issue_20086_bare_assertion_without_verb_still_fails():
+    """Sans verbe de constatation, la phrase reste une revendication."""
+    assert not _count_exempt("Le perimetre de cette PR est de 3 fichiers uniquement.")
+
+
+def test_issue_20125_perimeter_verbs_do_not_exempt():
+    """Review #20125 : `couvre/couvrent/covers/lists` sont des verbes de
+    PERIMETRE, pas de constatation -- l'annonce de perimetre la plus courante
+    doit rester bloquante, sinon l'exemption est un blanc-seing."""
+    assert not _count_exempt("Cette PR couvre 4 fichiers.")
+    assert not _count_exempt("This PR covers 4 files.")
+
+
+def test_imperfect_count_verb_is_exempt():
+    """Founder #21154 (body avant reformulation) : un denombrement a
+    l'imparfait decrit un inventaire anterieur, pas le perimetre de la PR."""
+    assert _count_exempt(
+        "le bandeau du 02/09 comptait 11 fichiers `_REPORT/_STATUS/_AUDIT.md` "
+        "a trier"
+    )
+    assert _count_exempt("l'audit du 12/10 recensait 14 fichiers orphelins")
+    assert _count_exempt("l'ancien index listait 9 fichiers")
+
+
+def test_imperfect_count_verb_keeps_the_colon_guard():
+    """L'imparfait ne blanchit pas une declaration par deux-points."""
+    assert not _count_exempt("comptait 3 fichiers : a.py, b.py, c.py")
+
+
+def test_present_count_verb_still_fails():
+    """Le present « compte » reste une annonce de perimetre."""
+    assert not _count_exempt("Cette PR compte 3 fichiers.")
+
+
+def _body_candidates(body: str, n_files: int):
+    items = [{"kind": "body", "author": "lane", "body": body, "source": "body", "ts": ""}]
+    return select_candidates(items, n_files)[0]
+
+
+def test_issue_20086_end_to_end_founder_body_is_signal_not_blocking():
+    """Bout en bout, au niveau ou #20076 rougissait : la ligne fondatrice
+    reste EXTRAITE et CONFRONTEE (#12201 : l'exemption ne retire pas le compte
+    de la selection), mais elle ne BLOQUE plus -- c'est la propriete
+    `blocking` du candidat qui porte le verdict."""
+    body = (
+        "- `life-lean-stats` (exec 12) atteste 4 fichiers (`Life.lean` 253, "
+        "`Life_en.lean` 254, `Hashlife.lean` 700, `Hashlife_en.lean` 701)\n"
+        "- `phase1-files-list` (exec 18) atteste ~80 fichiers `.lean`\n"
+    )
+    cands = _body_candidates(body, 7)
+    assert cands, "les lignes doivent rester des candidates (extraction inchangee)"
+    assert all(not c.blocking for c in cands), [c.text for c in cands if c.blocking]
+
+
+def test_issue_20086_end_to_end_colon_declaration_still_blocks():
+    """Controle positif bout en bout : la declaration canonique de perimetre
+    reste BLOQUANTE sur la meme liste de 7 fichiers."""
+    body = "Perimetre : 4 fichiers : Life.lean, Life_en.lean, Hashlife.lean, Hashlife_en.lean\n"
+    cands = _body_candidates(body, 7)
+    assert any(c.blocking for c in cands), "la declaration canonique doit bloquer"
+
+
+# ---------------------------------------------------------------------------
+# #22341 : un diff porte par des sequences d'echappement terminal
+# ---------------------------------------------------------------------------
+
+_ESCAPE_REFUSAL = (
+    "gh error: the diff contains terminal escape sequences; "
+    "pass --allow-escape-sequences to output it anyway"
+)
+
+
+def test_escape_sequence_refusal_is_retried_over_a_renderer_free_transport(monkeypatch):
+    """`gh pr diff` refuse d'IMPRIMER un diff porte par des codes ANSI ; le
+    diff, lui, se lit. Le garde ne doit pas perdre sa mesure (#22341).
+
+    Le transport REST n'est PAS dispensé du drapeau : `gh api` refuse le
+    meme diff et honore le meme drapeau (mesure de la review Hermes). Le
+    mock reproduit ce comportement reel : sans le drapeau, l'API repond
+    rc=1 -- ce qui serait un chemin mort."""
+    perim = __import__("check_pr_perimeter")
+    calls = []
+
+    def fake_run_gh_rc(args):
+        calls.append(list(args))
+        if args[0] == "pr" and args[1] == "diff":
+            if "--allow-escape-sequences" in args:
+                return 1, "", "unknown flag: --allow-escape-sequences"
+            return 1, "", _ESCAPE_REFUSAL
+        if args[0] == "api":
+            if "--allow-escape-sequences" in args:
+                return 0, "diff --git a/x b/x\n+ok\n", ""
+            return 1, "", _ESCAPE_REFUSAL
+        return 1, "", "transport inattendu"
+
+    monkeypatch.setattr(perim, "_run_gh_rc", fake_run_gh_rc)
+    monkeypatch.setattr(
+        perim, "_run_gh", lambda args: '{"nameWithOwner": "jsboige/CoursIA"}'
+    )
+    diff = perim._pr_diff_text(22341)
+    assert diff == "diff --git a/x b/x\n+ok\n"
+    assert any(
+        c[:2] == ["pr", "diff"] and "--allow-escape-sequences" in c for c in calls
+    ), "le drapeau dedie doit etre tente"
+    api_calls = [c for c in calls if c[0] == "api"]
+    assert api_calls, "le diff REST sans rendu doit etre tente"
+    assert any(
+        "--allow-escape-sequences" in c for c in api_calls
+    ), "le transport REST doit porter le drapeau, sans lui il echoue aussi"
+
+
+def test_escape_sequence_refusal_survives_a_gh_without_the_flag(monkeypatch):
+    """Un `gh` qui ignore le drapeau bascule sur le diff REST : la mesure
+    reste COMPLETE (le contenu porte les mouvements de baseline)."""
+    perim = __import__("check_pr_perimeter")
+
+    def fake_run_gh_rc(args):
+        if args[0] == "pr" and args[1] == "diff":
+            if "--allow-escape-sequences" in args:
+                return 1, "", "unknown flag: --allow-escape-sequences"
+            return 1, "", _ESCAPE_REFUSAL
+        if args[0] == "api":
+            if "--allow-escape-sequences" in args:
+                return 0, "diff --git a/y b/y\n", ""
+            return 1, "", _ESCAPE_REFUSAL
+        return 1, "", "transport inattendu"
+
+    monkeypatch.setattr(perim, "_run_gh_rc", fake_run_gh_rc)
+    monkeypatch.setattr(
+        perim, "_run_gh", lambda args: '{"nameWithOwner": "jsboige/CoursIA"}'
+    )
+    assert perim._pr_diff_text(22341) == "diff --git a/y b/y\n"
+
+
+def test_the_rest_transport_falls_back_to_the_flagless_call_on_an_old_gh(monkeypatch):
+    """Un `gh` ancien ne connait pas le drapeau ("unknown flag") mais ne
+    refuse PAS l'API : l'appel sans drapeau est alors le transport qui
+    reussit (mesure : gh 2.83.2, rc=0, 69 672 octets, 11 ESC)."""
+    perim = __import__("check_pr_perimeter")
+    calls = []
+
+    def fake_run_gh_rc(args):
+        calls.append(list(args))
+        if args[0] == "pr" and args[1] == "diff":
+            if "--allow-escape-sequences" in args:
+                return 1, "", "unknown flag: --allow-escape-sequences"
+            return 1, "", _ESCAPE_REFUSAL
+        if args[0] == "api":
+            if "--allow-escape-sequences" in args:
+                return 1, "", "unknown flag: --allow-escape-sequences"
+            return 0, "diff --git a/z b/z\n", ""
+        return 1, "", "transport inattendu"
+
+    monkeypatch.setattr(perim, "_run_gh_rc", fake_run_gh_rc)
+    monkeypatch.setattr(
+        perim, "_run_gh", lambda args: '{"nameWithOwner": "jsboige/CoursIA"}'
+    )
+    assert perim._pr_diff_text(22341) == "diff --git a/z b/z\n"
+    api_calls = [c for c in calls if c[0] == "api"]
+    assert any("--allow-escape-sequences" in c for c in api_calls)
+    assert any("--allow-escape-sequences" not in c for c in api_calls)
+
+
+def test_the_rest_transport_without_the_flag_measures_nothing(monkeypatch):
+    """Controle NEGATIF du filet : si le transport REST perd le drapeau, il
+    echoue comme le refuse l'ecrit le reelle -- le garde ne doit alors
+    RIEN mesurer (fail-closed, rc=2), et non fabriquer une reponse
+    d'API que l'instrument reel ne rend pas (#22341, review Hermes)."""
+    perim = __import__("check_pr_perimeter")
+
+    def fake_run_gh_rc(args):
+        if args[0] == "pr" and args[1] == "diff":
+            return 1, "", _ESCAPE_REFUSAL
+        if args[0] == "api":
+            return 1, "", _ESCAPE_REFUSAL
+        return 1, "", "transport inattendu"
+
+    monkeypatch.setattr(perim, "_run_gh_rc", fake_run_gh_rc)
+    monkeypatch.setattr(
+        perim, "_run_gh", lambda args: '{"nameWithOwner": "jsboige/CoursIA"}'
+    )
+    with pytest.raises(SystemExit) as exc:
+        perim._pr_diff_text(22341)
+    assert exc.value.code == 2
+
+
+def test_an_unrelated_gh_failure_stays_fail_closed(monkeypatch):
+    """Le contrat fail-closed tient pour toute AUTRE echec : seule la
+    signature reconnue ouvre un transport de repli."""
+    perim = __import__("check_pr_perimeter")
+    monkeypatch.setattr(
+        perim, "_run_gh_rc", lambda args: (1, "", "gh error: HTTP 404: Not Found")
+    )
+    with pytest.raises(SystemExit) as exc:
+        perim._pr_diff_text(22341)
+    assert exc.value.code == 2
+
+
+def test_a_readable_diff_is_never_re_fetched(monkeypatch):
+    """Cas nominal : un `gh pr diff` qui reussit ne declenche aucun repli."""
+    perim = __import__("check_pr_perimeter")
+    calls = []
+
+    def fake_run_gh_rc(args):
+        calls.append(list(args))
+        return 0, "diff --git a/z b/z\n", ""
+
+    monkeypatch.setattr(perim, "_run_gh_rc", fake_run_gh_rc)
+    assert perim._pr_diff_text(22341) == "diff --git a/z b/z\n"
+    assert len(calls) == 1

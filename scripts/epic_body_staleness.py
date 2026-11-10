@@ -74,7 +74,20 @@ STATUS_CONTEXT_RE = re.compile(
     r"(?:^|\b)(?:statut|status|priorit[ée]|priority)\b",
     re.IGNORECASE,
 )
-ACTIVE_OVERRIDE_RE = re.compile(r"\bstatut\s+corrig[ée]\b", re.IGNORECASE)
+# A rectification header that explicitly withdraws the stale stance suppresses
+# the stance signal: the historical prose below it is preserved by design (the
+# #13906 repair pattern), so its dormant wording is no longer a live stance.
+# Markers are the phrases that pattern actually produces, measured on #1210,
+# #11690, #13902 and #13906 (2026-10-01).
+RETRACTION_MARKER_RE = re.compile(
+    r"(?:"
+    r"statut\s+corrig[ée]"  # explicit status correction (#1210)
+    r"|ne\s+d[ée]criv\w+\s+plus\s+(?:leur\s+|son\s+)?[ée]tat"  # #11690 header
+    r"|ne\s+tient\s+plus"  # #13902 measured block
+    r"|faux\s+positif\s+du\s+signal"  # #13906 measured block
+    r")",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -113,21 +126,35 @@ class MergedPullRequest:
         )
 
     def cited_issues(self) -> set[int]:
-        return {
-            int(number)
-            for number in ISSUE_REF_RE.findall(f"{self.title}\n{self.body}")
-        }
+        """Issue numbers this PR mentions in its own prose.
+
+        Quoted and code-borne references are excluded: a number wrapped in
+        inline code is this repository's own convention for "not a mention"
+        (#18203), and GitHub itself raises no "mentioned this" event for one.
+        Counting them turned a PR that only quoted an EPIC inside a template
+        literal into a recorded delivery for that EPIC (#13906).
+        """
+        prose = "\n".join(prose_lines(self.title, self.body))
+        return {int(number) for number in ISSUE_REF_RE.findall(prose)}
 
 
 @dataclass(frozen=True)
 class EpicStaleness:
-    """Triage signals for one EPIC."""
+    """Triage signals for one EPIC.
+
+    ``citation_breadth`` is the largest number of examined EPICs that any single
+    ``unrecorded_merged`` PR cites. A PR quoting many issue numbers at once (a
+    belt dump, a dispatch list) is attributed to every EPIC it names, so a
+    breadth well above 1 marks a citation-list rather than a delivery: such a
+    finding is a candidate for human review, never for a body rewrite.
+    """
 
     number: int
     title: str
     unrecorded_merged: tuple[int, ...]
     stance_contradicted: bool
     stance_pattern: str | None
+    citation_breadth: int = 0
 
 
 def is_epic(row: dict) -> bool:
@@ -141,8 +168,8 @@ def is_epic(row: dict) -> bool:
     )
 
 
-def prose_lines_for_stance(title: str, body: str) -> list[str]:
-    """Return non-quoted, non-code lines that may declare a live stance.
+def prose_lines(title: str, body: str) -> list[str]:
+    """Return non-quoted, non-code lines carrying the author's own words.
 
     Historical prose is often retained in block quotes when an EPIC is updated.
     Treating such a quotation as current recreates the exact false positive that
@@ -172,9 +199,9 @@ def prose_lines_for_stance(title: str, body: str) -> list[str]:
 
 def dormant_stance(title: str, body: str) -> str | None:
     """Return the first live dormant-stance pattern, if any."""
-    if ACTIVE_OVERRIDE_RE.search(body):
+    if RETRACTION_MARKER_RE.search(body):
         return None
-    lines = prose_lines_for_stance(title, body)
+    lines = prose_lines(title, body)
     prose = "\n".join(lines)
     for name, pattern in STRONG_DORMANT_PATTERNS:
         if pattern.search(prose):
@@ -202,6 +229,11 @@ def analyze_epics(
         for issue_number in pr.cited_issues() & cited_by_epic.keys():
             cited_by_epic[issue_number].append(pr)
 
+    breadth: dict[int, int] = {}
+    for citing_epic in cited_by_epic.values():
+        for pr in citing_epic:
+            breadth[pr.number] = breadth.get(pr.number, 0) + 1
+
     findings: list[EpicStaleness] = []
     for epic in epics:
         citing = cited_by_epic[epic.number]
@@ -223,6 +255,9 @@ def analyze_epics(
                     unrecorded_merged=unrecorded,
                     stance_contradicted=stance is not None,
                     stance_pattern=stance,
+                    citation_breadth=max(
+                        (breadth[number] for number in unrecorded), default=0
+                    ),
                 )
             )
 
@@ -398,6 +433,38 @@ def list_merged_prs(repo: str, limit: int) -> list[MergedPullRequest]:
     )[:limit]
 
 
+def _emit_utf8(text: str, indent: int | None = None) -> None:
+    """Ecrit `text` sur stdout en UTF-8, quel que soit le codepage de la console.
+
+    Les titres d'EPIC du depot portent des caracteres hors cp1252 (U+21C4 par
+    exemple). Sur une console Windows cp1252, un `json.dump(..., sys.stdout)`
+    leve alors UnicodeEncodeError et le rapport entier est perdu, y compris
+    pour les EPIC dont le titre est encodable.
+    """
+    stream = sys.stdout
+    reconfigure = getattr(stream, "reconfigure", None)
+    if reconfigure is not None:
+        try:
+            reconfigure(encoding="utf-8")
+        except (ValueError, OSError):
+            # Flux deja detache ou non reconfigurable : on tente l'ecriture,
+            # le repli ASCII ci-dessous prendra le relais si besoin.
+            pass
+    try:
+        stream.write(text)
+    except UnicodeEncodeError:
+        # Dernier recours : ne jamais perdre le rapport pour un caractere.
+        # On re-serialise en JSON ASCII plutot qu'echapper le texte deja rendu :
+        # backslashreplace produisait \U0001f9ed pour un caractere astral
+        # (emoji de titre, mesure : U+1F9ED dans le corpus du 2026-11-05), et
+        # \Uxxxxxxxx n'est PAS un echappement JSON valide (\uXXXX, 4 chiffres)
+        # -- le repli cassait lui-meme le contrat qu'il gardait.
+        stream.write(
+            json.dumps(json.loads(text), ensure_ascii=True, indent=indent)
+        )
+    stream.flush()
+
+
 def _cli(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--repo", default=None)
@@ -424,13 +491,14 @@ def _cli(argv: list[str] | None = None) -> int:
         print(f"epic_body_staleness: {exc}", file=sys.stderr)
         return 1
 
-    json.dump(
-        build_payload(epics, merged_prs),
-        sys.stdout,
+    payload = build_payload(epics, merged_prs)
+    indent = 2 if args.pretty else None
+    rendered = json.dumps(
+        payload,
         ensure_ascii=False,
-        indent=2 if args.pretty else None,
+        indent=indent,
     )
-    print()
+    _emit_utf8(rendered + "\n", indent)
     return 0
 
 

@@ -27,7 +27,8 @@ class FactorETFRotation(QCAlgorithm):
     Backtest results:
     v1.0: Sharpe 0.365, CAGR  8.7%, MaxDD 31.1% (composite, TLT+USMV)
     v2.0: Sharpe 0.471, CAGR 11.7%, MaxDD 33.7% (12m simple, USMV)
-    v3.0: Sharpe 0.540, CAGR 12.1%, MaxDD 24.2%, Net +258% (BEST)
+    v3.0: Sharpe 0.540, CAGR 12.1%, MaxDD 24.2% (run auteur, fenetre longue, table README) ;
+          Net +109% (BEST, fenetre alignee 2018-2025 du code)
 
     Factor ETFs: VLUE, MTUM, SIZE, QUAL, USMV
     Ref: Fama & French (2015), Asness et al. (2013),
@@ -73,7 +74,11 @@ class FactorETFRotation(QCAlgorithm):
         penalizes high-volatility momentum (which tends to crash harder).
         Ref: Barroso & Santa-Clara (2015), Daniel & Moskowitz (2016)
         """
-        history = self.history(symbol, self.lookback + 5, Resolution.DAILY)
+        # On the 13:00 close slice of a US half-session, a daily history request
+        # by bar count comes back about 21 bars short (measured in #20286). Ask
+        # for twice the bars and keep the most recent ones.
+        history = self.history(symbol, 2 * (self.lookback + 5), Resolution.DAILY)
+        history = history.iloc[-(self.lookback + 5):]
         if len(history) < self.lookback:
             return None
 

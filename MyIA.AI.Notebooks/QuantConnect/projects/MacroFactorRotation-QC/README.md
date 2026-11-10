@@ -17,6 +17,17 @@ une fenetre alignee. Un seul fichier `main.py`, une seule classe
 |------|-----------|-----------|
 | Baseline (defaut) | `mode=baseline` | Rotation macro multi-actifs SPY/GLD/BND/BTCUSD selon VIX, courbe 10Y-3M et fed funds, `DecisionTreeRegressor` reentraine mensuellement, 150 % d'exposition brute, BTC plafonne a 10 % (QC Strategy Library #72, logique d'origine inchangee) |
 | ASG | `mode=asg` | Sizing d'exposition SPY/BIL de l'article QC research #21132 : ASG mensuelle (croissance annuelle du CA winsorisee 1/99, ponderee par capitalisation, univers USA primaires hors Financial Services / Real Estate), regression OLS a fenetre croissante du rendement excedentaire mensuel de SPY sur l'ASG retardée d'un mois, prevision `alpha + beta*ASG`, exposition `clip(forecast/(3*variance_120m), 0, 1.5)`, reliquat en BIL |
+| Reference SPY | `mode=spy` | SPY detenu a 100 % (#21329) |
+| Reference 60/40 | `mode=6040` | SPY 60 %, BND 40 %, reequilibre au debut de chaque mois a la minute de la baseline (#21329) |
+
+Tous les modes tracent la valeur du portefeuille a l'ouverture de chaque
+seance de SPY dans le graphique `shadow` (series e0..e4, contrat #18923),
+a partir de `trading_start`. C'est la serie que lit
+`Paradox46Benchmarks/significance.py`. La baseline rend aussi une sonde
+FRED en statistiques d'execution : `FRED same-day` (reequilibrages dont la
+derniere ligne de facteurs porte la date du jour de decision), `FRED
+2018-02` / `2020-03` / `2020-04` (date, VIXCLS lue, derniere etiquette) et
+`Max gross target`. Ni la trace ni la sonde ne touchent aux decisions.
 
 Parametres optionnels communs (alignement de l'experimentation) :
 `start_date`, `end_date`, `trading_start` (format YYYYMMDD). Sans ces
@@ -114,40 +125,278 @@ Reference : baseline deployee non contrainte (projet 32730301, backtest
 CAGR 22.626 %, MaxDD 42.000 % - chiffres non comparables aux bras alignes
 (fenetre et prefixe plat differents), cites pour la tracabilite.
 
-## Verdict : INCONCLUSIVE
+## Metriques v3 : references detenues (QC Cloud, 2026-10-18, #21329)
 
-Lecture descriptive : sur la fenetre alignee 2007-2025 avec la mecanique
-exacte de l'article (variance 120 mois pleine), les deux bras sont
-statistiquement indiscernables - Sharpe 0.234 vs 0.227, CAGR 5.6 % vs
-5.8 % - et le bras ASG conserve un drawdown plus profond (47.8 % vs
-41.9 %), coherent avec son exposition SPY pouvant atteindre 150 %. Aucune
-amelioration statistiquement etablie n'est revendiquee : comparaison sur
-une seule fenetre, PSR des deux bras tres loin de tout seuil de confiance
-(0.004 % et 0.005 %), et pas de protocole multi-seed / Diebold-Mariano.
-Les deux bras sont deterministes (pas de graine a varier), le protocole
-BEATS strict ne s'applique donc pas ; le verdict honnete reste
-INCONCLUSIVE. Le resultat v1 (Sharpe ASG 0.404 vs 0.325) illustre au
-passage la sensibilite du sizing a la fenetre de variance - motivation
-supplementaire pour ne pas revendiquer d'edge sur cet echantillon.
+Protocole et predictions ecrits dans #21329 avant le premier backtest. Projet
+de mesure 38062065, compilation
+`738d6530208bae8cb5639986ebff79ad-b5d0fa28b193d474c67379fa8d9a6ca3`, memes
+parametres de fenetre que v2.
+
+| Metrique (QC, fenetre 2007-2025, prefixe plat compris) | baseline | ASG | SPY detenu | 60/40 detenu |
+|----------|----------|-----|------------|--------------|
+| Backtest | `f8a43f4a3ce3508c95c80282516b45a4` | `341ed473a48a774f2626c9603dbd01df` | `3320c0ec4afbcef9cee073efe082e8b8` | `94fb834664452cf895ba3f9b6f535978` |
+| Sharpe Ratio | 0.228 | 0.288 | 0.210 | 0.092 |
+| CAGR | 5.734 % | 5.596 % | 5.092 % | 3.320 % |
+| Max Drawdown | 41.900 % | 18.500 % | 33.600 % | 21.900 % |
+| Profit net total | 173.075 % | 166.654 % | 144.643 % | 80.082 % |
+| Ordres | 261 | 133 | 1 | 142 |
+
+Significativite : `Paradox46Benchmarks/significance.py` sur la trace `shadow`
+(1761 seances, du 2018-01-02 au 2024-12-31), taux sans risque nul, correction
+de Holm sur les six p-valeurs de chaque bras.
+
+| Comparaison | Sharpe du bras | Sharpe de la reference | Ecart | p Ledoit-Wolf | p bootstrap (unilaterale) | p de Holm (Ledoit-Wolf) |
+|-------------|------|------|------|------|------|------|
+| baseline vs SPY detenu | 0.734 | 0.761 | -0.026 | 0.906 | 0.557 | 1.000 |
+| baseline vs 60/40 | 0.734 | 0.758 | -0.024 | 0.914 | 0.548 | 1.000 |
+| ASG vs SPY detenu | 1.015 | 0.761 | +0.254 | 0.441 | 0.198 | 1.000 |
+| ASG vs 60/40 | 1.015 | 0.758 | +0.256 | 0.478 | 0.211 | 1.000 |
+
+Les intervalles de confiance a 95 % du bootstrap contiennent zero dans les
+quatre cas (ASG contre SPY : -0.34 a +0.84).
+
+**Sonde FRED : pas de lecture du futur.** Aux trois dates de controle, la
+derniere ligne de facteurs porte la cloture de la veille :
+
+| Decision | VIXCLS lu | Cloture de la veille | Cloture du jour |
+|----------|-----------|----------------------|-----------------|
+| 2018-02-01 | 13.54 | 13.54 (31/01) | 13.47 |
+| 2020-03-02 | 40.11 | 40.11 (28/02) | 33.42 |
+| 2020-04-01 | 53.54 | 53.54 (31/03) | 57.06 |
+
+L'index des lignes FRED est l'heure de fin de barre, soit le lendemain de
+l'observation : la ligne du 31/01 est datee du 01/02. Le compteur
+`FRED same-day` (44/84) compte donc ces dates de fin de barre, pas des
+lectures du jour. Il ne mesure pas une fuite, et la baseline n'est pas
+corrigee. `Max gross target` vaut 1.600, l'exposition brute cible prevue.
+
+**Derive depuis v2.** Les memes bras ne rendent plus les chiffres de v2 :
+ASG 139 ordres devenus 133, drawdown 47.8 % devenu 18.5 %, profit net
+168.841 % devenu 166.654 % ; baseline 261 ordres inchanges, profit net
+173.809 % devenu 173.075 %. Le code de `main` (sans les ajouts de #21329),
+recompile dans un projet temoin (38062287), rend exactement les chiffres
+v3 (ASG `ab2fa09d16619cc96ab7f5b0187ab793`, baseline
+`8193647b349d5663d27a58a6acffa55d`) : les ajouts ne changent aucune
+decision, la derive vient des donnees ou du moteur QC entre le 2026-09-05
+et le 2026-10-18.
+
+**Cause etablie par #21333 (journaux d'ordres + sonde 38066227).** Par bras :
+
+- **baseline : ajustement des prix.** Les 261 ordres tombent aux memes
+  minutes sur les memes symboles ; le rapport de prix v3/v2 est constant
+  par symbole (SPY 0.9975, BND 0.9965, BIL 0.9971, GLD et BTCUSD 1.0000) -
+  la signature du mode `Adjusted` apres de nouvelles distributions. Une
+  seule decision change sur 79 mois (novembre 2022), cause probable non
+  verifiee : une distribution ajoutee deplace une etiquette
+  `TOTAL_RETURN` de l'arbre.
+- **ASG : donnees fondamentales.** La decision change des le premier
+  echange (exposition 1.29 -> 1.02) et differe sur 76 mois sur 80. La
+  sonde isole un defaut de notre code - la capitalisation Morningstar est
+  vide avant mi-2009 (4.9 % de couverture en 2007), l'ASG 2007-2009 est
+  ponderee sur 94 a 178 titres - defaut corrige depuis par #21336 (section
+  v4), mais qui N'EST PAS la cause de la derive : le bras avec repli ne
+  ramene pas v2. Le champ fondamental exact qui a bouge entre septembre
+  et octobre (valeurs de `revenue_growth`, composition de l'univers,
+  capitalisations servies) n'est pas isole, et la serie v2 n'est pas
+  reconstructible : v2 n'avait trace ni l'ASG ni la couverture.
+
+**Regle de protocole qui en decoule : relancer le temoin avant de
+comparer deux mesures eloignees dans le temps.** Une mesure QC Cloud est
+un couple (code, donnees du jour) ; comparer un bras fraichement mesure a
+une reference mesuree des semaines plus tot compare aussi deux etats des
+donnees. Chaque campagne de mesure re-excute donc les quatre bras le meme
+jour, meme quand un seul a change.
+
+## Verdict v3 : baseline NO BEATS, ASG INCONCLUSIVE
+
+Regle ecrite dans #21329 : `BEATS` si l'ecart de Sharpe est positif et la
+p de Holm (Ledoit-Wolf) inferieure a 0.05 contre les deux references ;
+`NO BEATS` si le Sharpe ponctuel est inferieur a celui de SPY detenu ;
+`INCONCLUSIVE` sinon.
+
+- **baseline : NO BEATS.** Sharpe 0.734 contre 0.761 pour SPY detenu, avec
+  une exposition brute cible de 1.6. La prediction etait `INCONCLUSIVE` :
+  elle est manquee, de peu (ecart -0.026, tres loin de toute
+  significativite dans un sens comme dans l'autre).
+- **ASG : INCONCLUSIVE**, comme predit. Sharpe 1.015 contre 0.761 : le bras
+  rend en moyenne autant que SPY (ecart de moyennes, p 0.93) avec moins de
+  volatilite, mais l'ecart de Sharpe n'est significatif contre aucune des
+  deux references (p de Holm 1.000).
+
+Le verdict v2 (`INCONCLUSIVE`, bras compares entre eux seulement) est
+remplace par celui-ci. Il decrivait les deux bras comme statistiquement
+indiscernables sans l'avoir teste, et un drawdown ASG de 47.8 % que la
+mesure actuelle ne reproduit pas.
+
+## Metriques v4 : capitalisation reconstruite (QC Cloud, 2026-10-19, #21336)
+
+Correctif #21336 : repli de capitalisation `price * split_factor *
+shares_outstanding` quand `market_cap` n'est pas strictement positive
+(`asg_helpers.effective_market_cap`, branche dans `_select_assets` sans
+parametre), et garde de couverture `Cap coverage (min)` (statistique
+d'execution, statuee dans `on_end_of_algorithm`). Les quatre bras sont
+relances le meme jour (regle de protocole ci-dessus). Projet de mesure
+38062065, compilation
+`923704de16caf422f17c52c2d52a10a2-1158cb83922599abf473ad0182149513`.
+
+| Metrique (QC, fenetre 2007-2025, prefixe plat compris) | baseline | ASG | SPY detenu | 60/40 detenu |
+|----------|----------|-----|------------|--------------|
+| Backtest | `72a73b70ef0b3d3c61ec9abd36344865` | `f6212f7d87d80231609be63b7f43169c` | `d593f2c46532b7070dbbed342e703985` | `95d9a8ae84a573b6a527dbfd5f0d68be` |
+| Sharpe Ratio | 0.228 | 0.288 | 0.210 | 0.092 |
+| CAGR | 5.734 % | 5.406 % | 5.092 % | 3.320 % |
+| Max Drawdown | 41.900 % | 18.200 % | 33.600 % | 21.900 % |
+| Profit net total | 173.075 % | 158.182 % | 144.643 % | 80.082 % |
+| Ordres | 261 | 120 | 1 | 142 |
+
+Les trois bras non concernes par le correctif (baseline, SPY detenu,
+60/40) rendent exactement les chiffres v3 : le correctif ne touche que
+la coupe fondamentale du bras ASG. Le bras ASG rend exactement la
+contre-epreuve `cap_fallback=1` de #21333 (120 ordres, 158.182 %,
+drawdown 18.2 %) : le repli inconditionnel reproduit la sonde
+parametree. Garde de couverture : `Cap coverage (min)` = **94.4 %** sur
+la fenetre - le minimum tombe en 2007, ou certains titres n'ont ni
+capitalisation directe ni facteurs de repli exploitables - contre
+4.9 % de couverture sans correctif (sonde #21333).
+
+Significativite : `Paradox46Benchmarks/significance.py` sur la trace
+`shadow` (1761 seances, du 2018-01-02 au 2024-12-31), taux sans risque
+nul, correction de Holm sur les six p-valeurs de chaque bras.
+
+| Comparaison | Sharpe du bras | Sharpe de la reference | Ecart | p Ledoit-Wolf | p bootstrap (unilaterale) | p de Holm (Ledoit-Wolf) |
+|-------------|------|------|------|------|------|------|
+| baseline vs SPY detenu | 0.734 | 0.761 | -0.026 | 0.906 | 0.557 | 1.000 |
+| baseline vs 60/40 | 0.734 | 0.758 | -0.024 | 0.914 | 0.548 | 1.000 |
+| ASG vs SPY detenu | 1.053 | 0.761 | +0.293 | 0.408 | 0.183 | 1.000 |
+| ASG vs 60/40 | 1.053 | 0.758 | +0.295 | 0.440 | 0.197 | 1.000 |
+
+Les intervalles de confiance a 95 % du bootstrap contiennent zero dans
+les quatre cas (ASG contre SPY : -0.33 a +0.93).
+
+## Verdict v4 : baseline NO BEATS, ASG INCONCLUSIVE
+
+Meme regle que v3 (#21329). Le verdict ne change pas de camp ; l'estime
+ponctuelle du bras ASG se renforce : Sharpe ombre 1.015 -> 1.053, ecart
+a SPY detenu +0.254 -> +0.293, toujours loin de toute significativite
+(p de Holm 1.000). Le bras rend en moyenne autant que SPY detenu (ecart
+de moyennes journalieres -0.6 bp, p 0.977) avec moins de volatilite.
+
+Le verdict v3 reste l'histoire de la mesure du 2026-10-18 (capitalisation
+non reconstruite) ; le verdict courant est celui-ci.
+
+## Mesure sur la fenetre de l'article 18049 (QC Cloud, 2026-11-05, #24311)
+
+L'article QC research 18049 (Derek Melchin) reprend la
+decision de la baseline et publie, de janvier 2017 a septembre 2024, un
+Sharpe de 0.794 contre 0.564 pour SPY detenu. Protocole, controle de
+reproduction et predictions ecrits dans #24311 avant le premier backtest.
+Code de `main` sans modification (empreintes de `main.py` et
+`asg_helpers.py` verifiees apres envoi), projet de mesure neuf 38941913,
+compilation `afd2f686c6c21d5cdba725c4b82fde66-1158cb83922599abf473ad0182149513`.
+Parametres `start_date=20170101`, `end_date=20240930`, sans
+`trading_start`, brokerage par defaut, 100 000 USD. L'article ne publie
+pas le jour exact de debut et de fin : ces bornes sont un choix declare.
+Les trois bras tournent le meme jour.
+
+| Metrique (QC) | baseline | SPY detenu | 60/40 detenu |
+|----------|----------|------------|--------------|
+| Backtest | `97aa8e22aa5747513479c45f23894e1f` | `ef9bab9fb8528cea2f76263ef6efd234` | `436888c5847df16466153128abed07e0` |
+| Sharpe Ratio | 0.708 | 0.575 | 0.486 |
+| CAGR | 20.672 % | 14.705 % | 9.677 % |
+| Max Drawdown | 42.000 % | 33.700 % | 22.000 % |
+| Profit net total | 329.254 % | 189.677 % | 104.637 % |
+| Ordres | 291 | 1 | 160 |
+| PSR | 12.460 % | 6.269 % | 3.744 % |
+
+**Controle de reproduction : tenu.** Seuils ecrits dans #24311 : baseline
+a 0.10 ou moins de 0.794, SPY detenu a 0.05 ou moins de 0.564. Mesure :
+0.708 (ecart 0.086) et 0.575 (ecart 0.011), Sharpe calcule par QC avec
+son taux sans risque, comme dans l'article. La sonde FRED rend aux trois
+dates de controle les lectures de v3 (VIXCLS 13.54, 40.11, 53.54) ;
+`FRED same-day` 49/94, `Max gross target` 1.600.
+
+**Controle de serie : tenu.** Chaque trace `shadow` couvre 1948 seances,
+du 2017-01-03 au 2024-09-30. Les plus fortes variations tombent toutes en
+mars 2020 : baseline -13.33 % le 2020-03-13, SPY detenu -10.92 % le
+2020-03-17 et -9.55 % le 2020-03-13, 60/40 -7.82 % le 2020-03-13. La
+trace est prise a l'ouverture, donc la variation datee d'un jour porte la
+seance precedente : SPY cloture a -9.6 % le 12/03 et a -10.9 % le 16/03.
+La valeur de la baseline, reconstruite depuis son journal d'ordres (SPY,
+BND et BTCUSD detenus en mars 2020) et les clotures ajustees, suit la
+trace sur les douze seances relevees du mois, avec un decalage de 0.7 %
+a 4.4 %. La
+reconstruction est approchee : le cours de BTCUSD est pris a 00:00 UTC,
+la trace a l'ouverture de SPY. Aucun saut isole ne porte la valeur finale.
+
+Significativite : `Paradox46Benchmarks/significance.py` sur la trace
+`shadow` (1948 seances), taux sans risque nul, correction de Holm sur les
+six p-valeurs.
+
+| Comparaison | Sharpe du bras | Sharpe de la reference | Ecart | p Ledoit-Wolf | p bootstrap (unilaterale) | p de Holm (Ledoit-Wolf) |
+|-------------|------|------|------|------|------|------|
+| baseline vs SPY detenu | 0.952 | 0.835 | +0.117 | 0.599 | 0.307 | 1.000 |
+| baseline vs 60/40 | 0.952 | 0.860 | +0.092 | 0.675 | 0.348 | 1.000 |
+
+Les intervalles de confiance a 95 % du bootstrap contiennent zero dans les
+deux cas (contre SPY : -0.32 a +0.55). L'ecart de moyennes journalieres
+(+2.4 bp contre SPY, +4.6 bp contre le 60/40) a une p brute de 0.028
+contre le 60/40, et de 0.165 apres Holm.
+
+**Lecture hors protocole : l'avantage tient a 2017.** Cette lecture n'est
+pas prevue par #24311 et ne porte pas le verdict. Annee par annee sur la
+trace, la baseline rend +63 % en 2017 contre +21 % pour SPY detenu, puis
+moins que SPY en 2020 et 2021. Sans 2017 (du 2018-01-03 au
+2024-09-30), son Sharpe ombre tombe a 0.735 contre 0.757 pour SPY detenu,
+au niveau de la fenetre v3 (0.734 contre 0.761, #21329). Le resultat de
+l'article depend donc de son annee de depart. La part de BTCUSD dans
+l'annee 2017 n'est pas isolee ici.
+
+| Rendement annuel (trace) | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 | 2023 | 2024 (au 30/09) |
+|---|---|---|---|---|---|---|---|---|
+| baseline | +63 % | -5 % | +38 % | +4 % | +16 % | -10 % | +38 % | +36 % |
+| SPY detenu | +21 % | -5 % | +31 % | +18 % | +29 % | -18 % | +27 % | +21 % |
+| 60/40 detenu | +14 % | -3 % | +22 % | +15 % | +16 % | -16 % | +18 % | +15 % |
+
+## Verdict sur la fenetre de l'article : baseline INCONCLUSIVE
+
+Meme regle que v3 (#21329). L'ecart de Sharpe est positif contre les deux
+references, mais la p de Holm (Ledoit-Wolf) vaut 1.000 : ni `BEATS`, ni
+`NO BEATS` (le Sharpe ponctuel depasse celui de SPY detenu). Les deux
+predictions de #24311 sont tenues : reproduction tenue pour SPY detenu,
+et verdict `INCONCLUSIVE`. La baseline reproduit aussi le chiffre de
+l'article a 0.086 pres.
+
+L'affirmation centrale de l'article (0.794 contre 0.564) se reproduit
+donc en valeur ponctuelle, mais elle n'est pas significative sur 7.75 ans
+de seances. Elle ne tient pas non plus quand on retire l'annee 2017, et
+le drawdown maximal de la baseline (42.0 %) depasse celui de SPY detenu
+(33.7 %). Le verdict courant du projet reste celui de v4 sur sa propre
+fenetre : baseline NO BEATS.
 
 ## How to Run
 
 **Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/MacroFactorRotation-QC"`
 **QC Cloud :** copier `main.py` + `asg_helpers.py` dans un projet Py, puis
-lancer deux backtests avec les parametres `mode=baseline|asg`,
+lancer quatre backtests avec les parametres `mode=baseline|asg|spy|6040`,
 `start_date=20070101`, `end_date=20250101`, `trading_start=20180101`.
+Fenetre de l'article 18049 (#24311) : bras `baseline`, `spy` et `6040`,
+`start_date=20170101`, `end_date=20240930`, sans `trading_start`.
+**Significativite :** telecharger le graphique `shadow` de chaque backtest,
+puis, depuis `Paradox46Benchmarks/` :
+`python significance.py --strategy baseline.json --bench spy=spy.json --bench 6040=6040.json`
+(idem avec `asg.json`).
 **Tests locaux :** `python -m pytest tests/test_asg_helpers.py` depuis le
 dossier du projet.
 
 ## Files
 
-- `main.py` - strategie deux bras (baseline preservee + variante ASG)
-- `asg_helpers.py` - fonctions pures ASG (winsorisation, agregation, OLS, variance, bornes)
-- `tests/test_asg_helpers.py` - tests pytest locaux (9 tests)
+- `main.py` - strategie deux bras (baseline preservee + variante ASG), deux references detenues (SPY, 60/40), trace `shadow`, sonde FRED et garde de couverture de capitalisation (#21336)
+- `asg_helpers.py` - fonctions pures ASG (winsorisation, agregation, capitalisation effective avec repli, OLS, variance, bornes)
+- `tests/test_asg_helpers.py` - tests pytest locaux (13 tests)
 
 ## References
 
 - [QC research #21132 - Sizing Market Exposure With Aggregate Sales Growth](https://www.quantconnect.com/research/21132/sizing-market-exposure-with-aggregate-sales-growth/)
 - Garfinkel, Hribar & Hsiao (2025), Aggregate Sales Growth and Stock Market Returns, SSRN 5066654
 - [QC Strategy Library #72 - Monthly Macro Factor Cross-Asset Rotation](https://www.quantconnect.com/strategies/72)
+- [QC research #18049 - Reimagining the 60-40 Portfolio in an Era of AI and Falling Rates](https://www.quantconnect.com/research/18049/reimagining-the-60-40-portfolio-in-an-era-of-ai-and-falling-rates/) (mesure sur sa fenetre : #24311)
 - Issue #14722 (verdict CONSOLIDATION, label quantconnect-research)

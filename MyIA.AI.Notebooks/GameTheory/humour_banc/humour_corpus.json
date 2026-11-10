@@ -1,0 +1,1562 @@
+[
+ {
+  "id": "arg-7.3.2",
+  "texte": "[vie personnelle/loisirs et espace public] La dernière cigarette — baratineur: Un fumeur, contexte: Le baratineur a envie d’une cigarette, mais un bébé se trouv...",
+  "features": {
+   "laugh": true,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rire_sans_recadrage",
+  "justification": "Annotation manuelle Argumentum : catégorie vie personnelle → heuristique cell[30] donne rire_sans_recadrage",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-2.2.2",
+  "texte": "[mythologie/religions] Les portes du Paradis — baratineur: Judas, contexte: Le baratineur a vendu son ami et seigneur Jésus Christ aux R...",
+  "features": {
+   "laugh": false,
+   "reframe": true,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "recadrage_sans_rire",
+  "justification": "Annotation manuelle Argumentum : catégorie mythologie → heuristique cell[30] donne recadrage_sans_rire",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-1.2.1",
+  "texte": "[histoire/moyen-âge et temps modernes] Jeanne d’Arc — baratineur: Jeanne d’Arc, contexte: Simple paysanne, la baratineuse rencontre Charles VII, futur...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie histoire → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-3.3.2",
+  "texte": "[relation intime/romance] Mariage de pierre — baratineur: Le refus catégorique, contexte: Un couple n’est pas du tout d’accord sur l’idée du mariage....",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie relation intime → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-3.2.10",
+  "texte": "[relation intime/vie de couple] La double vie — baratineur: Le menteur opportuniste, contexte: Le baratineur prétend avoir un emploi prestigieux qui exige ...",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie relation intime → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-3.2.5",
+  "texte": "[relation intime/vie de couple] L’amoureux des bêtes — baratineur: L’ami des chats, contexte: Le baratineur et son partenaire veulent adopter un animal de...",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie relation intime → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-2.2.9",
+  "texte": "[mythologie/religions] Déjà-vu — baratineur: Sisyphe, contexte: Sisyphe est condamné à pousser éternellement une pierre pour...",
+  "features": {
+   "laugh": false,
+   "reframe": true,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "recadrage_sans_rire",
+  "justification": "Annotation manuelle Argumentum : catégorie mythologie → heuristique cell[30] donne recadrage_sans_rire",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-2.1.10",
+  "texte": "[mythologie/contes] La marche de la honte — baratineur: L’escroc, contexte: Le baratineur est un escroc qui prétend vendre des vêtements...",
+  "features": {
+   "laugh": false,
+   "reframe": true,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "recadrage_sans_rire",
+  "justification": "Annotation manuelle Argumentum : catégorie mythologie → heuristique cell[30] donne recadrage_sans_rire",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-6.3.1",
+  "texte": "[politique/campagne] Emploi fictif — baratineur: Un candidat, contexte: Le baratineur a fait rémunérer son conjoint pour un emploi f...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": true
+  },
+  "label": "offensif_compris_non_partage",
+  "justification": "Annotation manuelle Argumentum : catégorie politique → heuristique cell[30] donne offensif_compris_non_partage",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-2.1.6",
+  "texte": "[mythologie/contes] L’abominable homme des neiges — baratineur: Le Yeti, contexte: Le baratineur est une créature hirsute et terrifiante, mi-ho...",
+  "features": {
+   "laugh": false,
+   "reframe": true,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "recadrage_sans_rire",
+  "justification": "Annotation manuelle Argumentum : catégorie mythologie → heuristique cell[30] donne recadrage_sans_rire",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-7.2.2",
+  "texte": "[vie personnelle/voisins et amis] Le jardin empoisonné — baratineur: Le voisin envieux, contexte: Le baratineur est un voisin jaloux qui a secrètement empoiso...",
+  "features": {
+   "laugh": true,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rire_sans_recadrage",
+  "justification": "Annotation manuelle Argumentum : catégorie vie personnelle → heuristique cell[30] donne rire_sans_recadrage",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-4.3.7",
+  "texte": "[vie professionnelle/gestion et administration] Troisième but — baratineur: Un fan, contexte: Le baratineur veut ajouter un troisième but au milieu du ter...",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie vie professionnelle → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-1.2.3",
+  "texte": "[histoire/moyen-âge et temps modernes] Napoléon et la campagne de Russie — baratineur: Un conseiller militaire, contexte: Napoléon veut envahir la Russie....",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie histoire → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-1.2.2",
+  "texte": "[histoire/moyen-âge et temps modernes] La controverse de Valladolid — baratineur: Un esclavagiste, contexte: Dans un contexte esclavagiste, la controverse de Valladolid ...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie histoire → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-2.1.7",
+  "texte": "[mythologie/contes] La Belle au bois dormant — baratineur: La belle au bois dormant, contexte: Par un baiser, le prince vient de libérer le baratineur du s...",
+  "features": {
+   "laugh": false,
+   "reframe": true,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "recadrage_sans_rire",
+  "justification": "Annotation manuelle Argumentum : catégorie mythologie → heuristique cell[30] donne recadrage_sans_rire",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-3.2.3",
+  "texte": "[relation intime/vie de couple] Le ménage à trois — baratineur: Une personne quelconque, contexte: Le baratineur a rencontré la personne parfaite, qui a un fil...",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie relation intime → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-3.2.7",
+  "texte": "[relation intime/vie de couple] L’amour à la plage — baratineur: Le partenaire fainéant, contexte: Un couple avait prévu des vacances romantiques. L’un des deu...",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie relation intime → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-6.1.1",
+  "texte": "[politique/gouvernance] Moralisation — baratineur: Un député corrompu, contexte: Le baratineur participe à une commission chargée d’étudier u...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": true
+  },
+  "label": "offensif_compris_non_partage",
+  "justification": "Annotation manuelle Argumentum : catégorie politique → heuristique cell[30] donne offensif_compris_non_partage",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-7.3.3",
+  "texte": "[vie personnelle/loisirs et espace public] La file d’attente — baratineur: Le client impatient, contexte: Le baratineur veut acheter des canettes de bière au supermar...",
+  "features": {
+   "laugh": true,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rire_sans_recadrage",
+  "justification": "Annotation manuelle Argumentum : catégorie vie personnelle → heuristique cell[30] donne rire_sans_recadrage",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-7.1.1",
+  "texte": "[vie personnelle/famille et enfance] King size — baratineur: Le parent, contexte: Un jeune vient d’obtenir son bac avec mention « Très bien »....",
+  "features": {
+   "laugh": true,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rire_sans_recadrage",
+  "justification": "Annotation manuelle Argumentum : catégorie vie personnelle → heuristique cell[30] donne rire_sans_recadrage",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-3.1.7",
+  "texte": "[relation intime/drague et séduction] Le karaoké — baratineur: Le musicien, contexte: Le baratineur veut séduire une personne qui n’a pas l’oreill...",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie relation intime → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-7.2.9",
+  "texte": "[vie personnelle/voisins et amis] La fête inattendue — baratineur: Un voisin fêtard, contexte: Le baratineur organise une fête très bruyante en pleine nuit...",
+  "features": {
+   "laugh": true,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rire_sans_recadrage",
+  "justification": "Annotation manuelle Argumentum : catégorie vie personnelle → heuristique cell[30] donne rire_sans_recadrage",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-4.3.6",
+  "texte": "[vie professionnelle/gestion et administration] Ski extrême : le défi écureuil — baratineur: Un champion de ski, contexte: Le baratineur a développé son propre sport à ski : déguisé e...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie vie professionnelle → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-3.2.4",
+  "texte": "[relation intime/vie de couple] Bébé — baratineur: Celle ou celui qui ne veut pas d’enfant, contexte: Après une longue relation, le baratineur et son partenaire d...",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie relation intime → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-5.1.4",
+  "texte": "[pop culture/Bandes dessinées] Cape ou pas cape — baratineur: Un pro-cape, contexte: Le baratineur pense que les capes font partie intégrante du ...",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie pop culture → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-3.3.3",
+  "texte": "[relation intime/romance] Le faux héritage — baratineur: Une personne sans argent, contexte: Le baratineur a prétendu hériter d’une fortune....",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie relation intime → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-1.1.2",
+  "texte": "[histoire/antiquité] Détruire Carthage — baratineur: Caton, contexte: Dans la Rome antique, le baratineur est un sénateur....",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie histoire → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-2.3.3",
+  "texte": "[mythologie/littérature] Pays des merveilles — baratineur: Le chat du Cheshire, contexte: Le baratineur est le Chat du Cheshire, mystérieux et insaisi...",
+  "features": {
+   "laugh": false,
+   "reframe": true,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "recadrage_sans_rire",
+  "justification": "Annotation manuelle Argumentum : catégorie mythologie → heuristique cell[30] donne recadrage_sans_rire",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-7.2.6",
+  "texte": "[vie personnelle/voisins et amis] Millésime de foie gras — baratineur: Un éleveur de canard, contexte: Le baratineur produit du foie gras dans le Périgord....",
+  "features": {
+   "laugh": true,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rire_sans_recadrage",
+  "justification": "Annotation manuelle Argumentum : catégorie vie personnelle → heuristique cell[30] donne rire_sans_recadrage",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-4.1.8",
+  "texte": "[vie professionnelle/interactions professionnelles] Maladresse — baratineur: L’agent d’entretien, contexte: L’agent d’entretien a cassé le vase préféré du propriétaire,...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie vie professionnelle → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-6.3.3",
+  "texte": "[politique/campagne] Le projet Licorne — baratineur: Le candidat, contexte: Le baratineur est un candidat qui a promis de créer une rése...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": true
+  },
+  "label": "offensif_compris_non_partage",
+  "justification": "Annotation manuelle Argumentum : catégorie politique → heuristique cell[30] donne offensif_compris_non_partage",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-2.3.2",
+  "texte": "[mythologie/littérature] Côté obscur — baratineur: Le Maître des ténèbres, contexte: Le Maître des ténèbres, puissant sorcier renégat, souhaite é...",
+  "features": {
+   "laugh": false,
+   "reframe": true,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "recadrage_sans_rire",
+  "justification": "Annotation manuelle Argumentum : catégorie mythologie → heuristique cell[30] donne recadrage_sans_rire",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-7.2.7",
+  "texte": "[vie personnelle/voisins et amis] Un ami qui vous veut du bien — baratineur: Une personne quelconque, contexte: Le baratineur et son ami ont planifié leurs vacances depuis ...",
+  "features": {
+   "laugh": true,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rire_sans_recadrage",
+  "justification": "Annotation manuelle Argumentum : catégorie vie personnelle → heuristique cell[30] donne rire_sans_recadrage",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-4.1.7",
+  "texte": "[vie professionnelle/interactions professionnelles] Pizza tendance — baratineur: Le livreur de pizza, contexte: Le baratineur est un livreur de pizza qui arrive avec une he...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie vie professionnelle → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-7.2.10",
+  "texte": "[vie personnelle/voisins et amis] La haie indisciplinée — baratineur: Un voisin jardinier, contexte: Le baratineur a laissé sa haie pousser sans contrôle, au poi...",
+  "features": {
+   "laugh": true,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rire_sans_recadrage",
+  "justification": "Annotation manuelle Argumentum : catégorie vie personnelle → heuristique cell[30] donne rire_sans_recadrage",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-7.2.3",
+  "texte": "[vie personnelle/voisins et amis] Le chien dévastateur — baratineur: Le maître négligent, contexte: Le chien turbulent du baratineur s’est échappé et a ravagé l...",
+  "features": {
+   "laugh": true,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rire_sans_recadrage",
+  "justification": "Annotation manuelle Argumentum : catégorie vie personnelle → heuristique cell[30] donne rire_sans_recadrage",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-4.2.4",
+  "texte": "[vie professionnelle/relations au travail] Merci patron — baratineur: Le patron, contexte: Le baratineur a promis une belle augmentation à son meilleur...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie vie professionnelle → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-2.1.8",
+  "texte": "[mythologie/contes] Le loup et l’agneau — baratineur: Le loup, contexte: Affamé, le baratineur voit un agneau qui s’abreuve au bord d...",
+  "features": {
+   "laugh": false,
+   "reframe": true,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "recadrage_sans_rire",
+  "justification": "Annotation manuelle Argumentum : catégorie mythologie → heuristique cell[30] donne recadrage_sans_rire",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-4.1.12",
+  "texte": "[vie professionnelle/interactions professionnelles] Le babysitter et le chat chauve — baratineur: Un babysitter paniqué, contexte: Le parent retrouve son enfant paisiblement endormi, mais déc...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie vie professionnelle → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-4.1.9",
+  "texte": "[vie professionnelle/interactions professionnelles] Livraison ratée — baratineur: Livreur de pizza, contexte: Le baratineur a mangé une part de la pizza qu’il devait livr...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie vie professionnelle → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-3.3.9",
+  "texte": "[relation intime/romance] Un peu de piment — baratineur: Le partenaire aventureux, contexte: Le baratineur a acheté un sex toy osé....",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie relation intime → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-2.2.7",
+  "texte": "[mythologie/religions] Le prétendant de Pénélope — baratineur: Le prétendant, contexte: Ulysse, roi de l’île d’Ithaque, est parti à la guerre depuis...",
+  "features": {
+   "laugh": false,
+   "reframe": true,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "recadrage_sans_rire",
+  "justification": "Annotation manuelle Argumentum : catégorie mythologie → heuristique cell[30] donne recadrage_sans_rire",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-4.3.2",
+  "texte": "[vie professionnelle/gestion et administration] L’arrêt de complaisance — baratineur: Une personne quelconque, contexte: Le baratineur n’est pas malade, mais il veut partir en vacan...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie vie professionnelle → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-1.1.6",
+  "texte": "[histoire/antiquité] L’expédition de l’Atlantide — baratineur: Un mystique passionné, contexte: Le baratineur est persuadé qu’une cité mythique, disparue de...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie histoire → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-4.1.14",
+  "texte": "[vie professionnelle/interactions professionnelles] Les échecs ne paient plus — baratineur: Le prof jaloux, contexte: Le baratineur, professeur d’échecs, s’aperçoit que son élève...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie vie professionnelle → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-3.2.6",
+  "texte": "[relation intime/vie de couple] Adoption — baratineur: L’amoureux des chiens, contexte: Le baratineur a convaincu son partenaire d’adopter un chien....",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie relation intime → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-3.2.16",
+  "texte": "[relation intime/vie de couple] Le flambeur — baratineur: Un flambeur, contexte: Le baratineur a perdu sa voiture au poker....",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie relation intime → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-1.3.4",
+  "texte": "[histoire/20e et 21e siècle] Les droits de l’homme — baratineur: Le délégué d’un tout petit pays, contexte: Après les horreurs de la Seconde Guerre mondiale, les nation...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie histoire → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-5.2.3",
+  "texte": "[pop culture/cinéma & télévision] Titanic — baratineur: Un jeune homme pauvre, contexte: Le Titanic s’enfonce dans les eaux gelées de l’Atlantique No...",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie pop culture → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-3.1.5",
+  "texte": "[relation intime/drague et séduction] Le pizzaïolo — baratineur: Un pizzaïolo, contexte: Pour séduire, le baratineur a menti en s’attribuant un emplo...",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie relation intime → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-1.2.5",
+  "texte": "[histoire/moyen-âge et temps modernes] Louis XVI veut garder sa tête — baratineur: Louis XVI, contexte: Pendant la Révolution française, Louis XVI est jugé par le t...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie histoire → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-7.3.5",
+  "texte": "[vie personnelle/loisirs et espace public] Le fromage vivant — baratineur: Un invité déguisé, contexte: Le baratineur arrive déguisé en fromage à une soirée costumé...",
+  "features": {
+   "laugh": true,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rire_sans_recadrage",
+  "justification": "Annotation manuelle Argumentum : catégorie vie personnelle → heuristique cell[30] donne rire_sans_recadrage",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-2.2.11",
+  "texte": "[mythologie/religions] Le vol du feu — baratineur: Prométhée, contexte: Le baratineur est Prométhée, qui a volé le feu des dieux pou...",
+  "features": {
+   "laugh": false,
+   "reframe": true,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "recadrage_sans_rire",
+  "justification": "Annotation manuelle Argumentum : catégorie mythologie → heuristique cell[30] donne recadrage_sans_rire",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-4.3.5",
+  "texte": "[vie professionnelle/gestion et administration] Vous comprendrez... que dalle — baratineur: Le patron, contexte: Le baratineur dirige une entreprise fantasque qui prétend ré...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie vie professionnelle → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-4.1.1",
+  "texte": "[vie professionnelle/interactions professionnelles] Rouler des mécaniques — baratineur: le vendeur, contexte: Un client entre dans un magasin de voitures avec un budget m...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie vie professionnelle → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-3.3.11",
+  "texte": "[relation intime/romance] Maman ! — baratineur: Une personne quelconque, contexte: Pendant l’acte, le baratineur a appelé son partenaire par le...",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie relation intime → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-4.3.9",
+  "texte": "[vie professionnelle/gestion et administration] Piscine de gelée — baratineur: Un nageur professionnel, contexte: Le baratineur veut corser son entraînement de natation en na...",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annotation manuelle Argumentum : catégorie vie professionnelle → heuristique cell[30] donne rien",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-3.1.3",
+  "texte": "[relation intime/drague et séduction] Retrait non consenti — baratineur: Une personne quelconque, contexte: Le baratineur a retiré son préservatif pendant l’acte sans c...",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie relation intime → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-3.3.5",
+  "texte": "[relation intime/romance] Plan à trois — baratineur: Une femme, contexte: Le baratineur est la femme d’un couple. Son époux propose de...",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Annotation manuelle Argumentum : catégorie relation intime → heuristique cell[30] donne humour_reussi",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "arg-7.1.7",
+  "texte": "[vie personnelle/famille et enfance] Miaou — baratineur: Un chat, contexte: Le baratineur est un chat au régime....",
+  "features": {
+   "laugh": true,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rire_sans_recadrage",
+  "justification": "Annotation manuelle Argumentum : catégorie vie personnelle → heuristique cell[30] donne rire_sans_recadrage",
+  "source": "ArgumentumGames/Argumentum"
+ },
+ {
+  "id": "joke-p01",
+  "texte": "Un informaticien rentre dans un bar et dit : 'je voudrais une bière,",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Refrain 'je voudrais' x10 = structure répétitive absurde + callback",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p02",
+  "texte": "Pourquoi les développeurs confondent Halloween et Noël ? Parce que Oct 31 == Dec 25.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Anagramme numérique Octal/Décimal — recadrage par équivalence inattendue",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p03",
+  "texte": "Il y a 10 types de personnes au monde : ceux qui comprennent le binaire et ceux qui ne le comprennent pas.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Le '10' en base 2 = 2 en base 10 = recadrage meta + callback",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p04",
+  "texte": "Un SQL entre dans un bar, voit deux tables et leur dit : 'SELECT * FROM...'",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Personnification SQL + jeu de mots 'SELECT *'",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p05",
+  "texte": "Combien d'ingénieurs faut-il pour changer une ampoule ? Aucun, c'est un problème hardware.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Inversion responsabilité dev/hardware + callout métier",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p06",
+  "texte": "Je suis tombé amoureuse d'une fonction quadratique. Mais elle avait deux racines.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Métaphore math + double sens 'racines'/'problèmes'",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p07",
+  "texte": "Un null et un undefined entrent dans un bar. Le barman dit 'On accepte pas les non-définis ici'.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Callback JS + référence culturelle programmeurs",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p08",
+  "texte": "Je voulais te raconter une blague sur UDP... mais je sais si elle arrive.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Métaphore protocole UDP = best-effort delivery",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p09",
+  "texte": "Le père Noël a-t-il déjà eu un problème de pile ? Non, il a toujours des piles neuves.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Jeu de mots 'pile' électrique/noël + absurdité",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p10",
+  "texte": "Pourquoi le café est-il si bon au travail ? Parce qu'il est fraîchement moulu par l'échéance.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Métaphore deadline = mouture + 'fraîchement' double sens",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p11",
+  "texte": "J'ai essayé d'écrire une blague sur les coroutines, mais je n'arrive pas à la yield.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Référence yield coroutine + jeu de mots 'je n'arrive pas à'",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p12",
+  "texte": "Docker, Kubernetes, Prometheus, Grafana. On m'a dit que c'était simple, alors je stack.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Accumulation noms outils + 'stack' double sens",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p13",
+  "texte": "Mon compilateur et moi on a une relation stable : il compile, je pleure.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Métaphore relation + inversion cause-effet",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p14",
+  "texte": "J'ai un ami palindrome. On ne peut pas se différencier.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Définition palindrome appliquée à la relation + absurde",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p15",
+  "texte": "Les regex sont comme des licornes : tout le monde en parle, personne les a vues.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Métaphore mythique + référence métier",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p16",
+  "texte": "Un physicien, un biologiste et un chimiste voient 2 bâtiments. L'un entre, l'autre sort. 'Tiens, ils ont échangé.'",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Jeu de mots 'bâtiment entré/sorti' = observation absurde",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p17",
+  "texte": "Que dit un informaticien quand il s'ennuie ? 'printf(mot)\n'",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Référence C printf + absurdité minimale",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p18",
+  "texte": "Si Dieu existe, il est Objective-C : tout est message.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Paradoxe religieux + référence Apple dev",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p19",
+  "texte": "Le temps est une illusion. Le décalage horaire, doublement.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Référence Hitchhiker's Guide + jeu de mots",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p20",
+  "texte": "Un photon entre dans un bar et commande une bière. Le barman dit 'Pour vous, c'est gratuit, on vous voit pas partir'.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Physique quantique appliquée au bar + callback",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p21",
+  "texte": "J'ai une blague sur les matrices, mais c'est hors de portée du public.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Meta-blink humour + math",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p22",
+  "texte": "Un chat roux dans une salle de serveurs est dangereux : il pourrait activer l'incident majeur.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Internet cat roux = chaos + référence NOC",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p23",
+  "texte": "Pourquoi les plongeurs plongent-ils toujours en arrière et jamais en avant ? Parce que sinon ils tomberaient dans le bateau.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Logique absurde + inversion sens commun",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p24",
+  "texte": "Le HTML n'est pas un langage de programmation. Et le plus dur, c'est de le dire à mon patron.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Débat tech classique + référence hiérarchique",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p25",
+  "texte": "Si vous pensez que personne ne s'intéresse à votre vie, regardez vos logs Git.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Métaphore surveillance + callback dev",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p26",
+  "texte": "Comment debug-on un avion ? On retire les composants un par un jusqu'à ce qu'il ne plante plus.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Procédure debug absurde appliquée à l'avion",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p27",
+  "texte": "Mieux vaut avoir un git pull que deux tu l'auras.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Verbe 'avoir' double sens + référence git",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p28",
+  "texte": "Mon chat a appris Python. Maintenant il chasse les exceptions au lieu des souris.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Métaphore félin + référence Python try/except",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p29",
+  "texte": "Les submodules Git, c'est comme les voisins : mieux vaut ne pas les déranger.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Métaphore sociale + référence submodules (cf c.539 init)",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "joke-p30",
+  "texte": "Il était une fois un UTF-8 qui ne savait pas où était la fin. Il était perdu dans un BOM.",
+  "features": {
+   "laugh": true,
+   "reframe": true,
+   "uptake": true,
+   "refus": false
+  },
+  "label": "humour_reussi",
+  "justification": "Référence BOM + métaphore conte initiatique",
+  "source": "blague-manuelle"
+ },
+ {
+  "id": "neg-s01",
+  "texte": "Il pleut aujourd'hui à Paris.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Déclaration factuelle sans mécanisme humoristique",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s02",
+  "texte": "Le PIB de la France en 2025 a augmenté de 0,3%.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Statistique macro-économique, registre informatif",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s03",
+  "texte": "Les soldes d'hiver commencent le 8 janvier 2026.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annonce commerciale factuelle",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s04",
+  "texte": "Le périphérique parisien est fermé entre 22h et 6h ce soir.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Information de circulation",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s05",
+  "texte": "L'addition au restaurant était de 47 euros pour trois personnes.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Récit factuel sans punchline",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s06",
+  "texte": "Le cours de l'action a clôturé à 142,50 euros hier.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Information boursière standard",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s07",
+  "texte": "La réunion est reportée à mardi prochain à 14h.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Communication administrative neutre",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s08",
+  "texte": "Mon dentiste m'a donné rendez-vous le 15 mars.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Information personnelle sans renversement",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s09",
+  "texte": "Le livre fait 320 pages et pèse 450 grammes.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Description physique factuelle",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s10",
+  "texte": "La somme de deux et deux est quatre.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Énoncé mathématique neutre",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s11",
+  "texte": "L'avion décolle à 14h32 de la piste 27 droite.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annonce aéroport factuelle",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s12",
+  "texte": "J'ai rendez-vous avec mon médecin à 10 heures demain.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Information de planning",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s13",
+  "texte": "Le train de 8h47 est supprimé ce matin.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Information de trafic ferroviaire",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s14",
+  "texte": "La température extérieure est de 7 degrés.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Lecture thermométrique",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s15",
+  "texte": "Mon numéro de téléphone est le 01 23 45 67 89.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Énoncé de coordonnées",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s16",
+  "texte": "Le mot 'table' a cinq lettres.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Observation linguistique neutre",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s17",
+  "texte": "L'année 2026 a commencé un jeudi.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Information calendaire",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s18",
+  "texte": "Le café coûte 2 euros à la machine de l'étage.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Tarif sans contexte humoristique",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s19",
+  "texte": "Mon chat s'appelle Pixel et il est roux.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Information sur animal de compagnie",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "neg-s20",
+  "texte": "J'ai fini mon rapport à 17 heures.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rien",
+  "justification": "Annonce de fin de tâche",
+  "source": "declaration-factuelle"
+ },
+ {
+  "id": "edge-01",
+  "texte": "Mon collègue a ri tellement fort pendant la réunion qu'il a éternué.",
+  "features": {
+   "laugh": true,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rire_sans_recadrage",
+  "justification": "Rire reflexe (éternuement) sans mécanisme de recadrage partagé",
+  "source": "edge-case-curated"
+ },
+ {
+  "id": "edge-02",
+  "texte": "Elle riait nerveusement en attendant les résultats de l'analyse.",
+  "features": {
+   "laugh": true,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rire_sans_recadrage",
+  "justification": "Rire nerveux = réaction physiologique, pas partage de forme",
+  "source": "edge-case-curated"
+ },
+ {
+  "id": "edge-03",
+  "texte": "J'ai chatouillé ma cousine et elle a ri aux éclats.",
+  "features": {
+   "laugh": true,
+   "reframe": false,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "rire_sans_recadrage",
+  "justification": "Chatouille = stimulus physique direct, pas humour",
+  "source": "edge-case-curated"
+ },
+ {
+  "id": "edge-04",
+  "texte": "'I told my wife she was drawing her eyebrows too high. She seemed surprised.' (Graham Chapman)",
+  "features": {
+   "laugh": false,
+   "reframe": true,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "recadrage_sans_rire",
+  "justification": "Deadpan : le renversement est dans la chute, le ton reste neutre",
+  "source": "edge-case-curated"
+ },
+ {
+  "id": "edge-05",
+  "texte": "'I'm on a whiskey diet. I've lost three days already.' (Tommy Cooper)",
+  "features": {
+   "laugh": false,
+   "reframe": true,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "recadrage_sans_rire",
+  "justification": "Twist verbal sans rire explicite, registre sec britannique",
+  "source": "edge-case-curated"
+ },
+ {
+  "id": "edge-06",
+  "texte": "'I used to think I was indecisive. But now I'm not so sure.'",
+  "features": {
+   "laugh": false,
+   "reframe": true,
+   "uptake": false,
+   "refus": false
+  },
+  "label": "recadrage_sans_rire",
+  "justification": "Recadrage meta sans marque d'humour audible",
+  "source": "edge-case-curated"
+ },
+ {
+  "id": "edge-07",
+  "texte": "Mon oncle fait des blagues racistes à table. Tout le monde rit sauf moi.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": true
+  },
+  "label": "offensif_compris_non_partage",
+  "justification": "Humour offensant, le mécanisme est compris (certains rient) mais l'auteur refuse d'y participer",
+  "source": "edge-case-curated"
+ },
+ {
+  "id": "edge-08",
+  "texte": "'Vous les femmes, vous savez pas conduire.' J'ai entendu la blague, j'ai pas ri.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": true
+  },
+  "label": "offensif_compris_non_partage",
+  "justification": "Sexisme ordinaire ; compréhension totale, refus de participation",
+  "source": "edge-case-curated"
+ },
+ {
+  "id": "edge-09",
+  "texte": "Son copain a fait une blague sur mon poids. J'ai souri poliment.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": true
+  },
+  "label": "offensif_compris_non_partage",
+  "justification": "Politesse vs refus ; le mécanisme est reconnu mais pas repris",
+  "source": "edge-case-curated"
+ },
+ {
+  "id": "edge-10",
+  "texte": "Le chef a fait une blague blessante. Tout le service a ri par peur.",
+  "features": {
+   "laugh": false,
+   "reframe": false,
+   "uptake": false,
+   "refus": true
+  },
+  "label": "offensif_compris_non_partage",
+  "justification": "Rire de soumission (pas de partage authentique), registre professionnel",
+  "source": "edge-case-curated"
+ }
+]

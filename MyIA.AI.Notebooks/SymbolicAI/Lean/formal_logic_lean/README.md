@@ -25,7 +25,7 @@ transitive de même nom de `ProvabilityLogic`, plutôt que de cloner deux copies
 
 Le verdict du pilote #15916 est **CONSUMER_PINNÉ** : l'API upstream suffit sans
 port ni adaptation locale. La fermeture propositionnelle historique reste légère
-(17 modules, mesure du pilote #15520). Le fragment GL modal a compilé 1107 jobs ;
+(mesure du pilote #15520). Le fragment GL modal a compilé 1107 jobs ;
 le module `FormalLogic.GLBridge`, puis le lake complet avec sa fermeture
 arithmétique, ont compilé respectivement 1356 et 1361 jobs. Mesure du 2026-09-23,
 après l'ajout de `ModalBridge` et de `FairBotLoeb` : le lake complet compile
@@ -66,7 +66,7 @@ Lean 4.33.1 : six erreurs (`unsolved goals`, quatre `split` en échec, un pas de
   `or_not_valid`, le contrôle négatif satisfiable-non-valide, et
   `peirce_provable` (versant preuve, reprise de `FFL.Entailment.peirce`).
 - `FormalLogic/FolBridge.lean` — versant Lean du notebook
-  `Tweety-02d-FOL-Lab-Lean.ipynb` : la même micro-théorie du premier ordre
+  `Tweety-02d-FOL-Lab-Lean-Python.ipynb` : la même micro-théorie du premier ordre
   (quatre prédicats unaires, deux constantes). `KB ⊨ Mortel(socrate)` y devient
   un théorème de conséquence sémantique. Un contre-modèle fini à deux éléments
   montre que les deux existentiels ne fusionnent pas en un témoin unique, et que
@@ -124,5 +124,5 @@ lake build
 ```
 
 Voir aussi : `Lean-03b-Formalized-Formal-Logic-Lean-Python.ipynb` (le notebook),
-`../Tweety/Tweety-5d-Stable-Synthesis-Lean.ipynb` (le patron générateur →
+`../Tweety/Tweety-05d-Stable-Synthesis-Lean-Python.ipynb` (le patron générateur →
 certificat), `../../../docs/lean/` (pièges tactiques).

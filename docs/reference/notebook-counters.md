@@ -4,7 +4,7 @@
 **Issue** : [#9857](https://github.com/jsboige/CoursIA/issues/9857)
 **Lane** : po-2023 (CoursIA-2)
 
----
+***
 
 ## TL;DR — les trois compteurs au même SHA (`e7307a717`, 2026-08-07)
 
@@ -20,7 +20,7 @@
 > les règles d'exclusion ci-dessous (réconciliation fichier-près, qui se
 > referme exactement).
 
----
+***
 
 ## Les trois définitions, en détail
 
@@ -57,7 +57,7 @@
 
 > **Note `git ls-files`** : `git ls-files 'MyIA.AI.Notebooks/**/*.ipynb'` donne **973** (un de moins que le disque = un fichier non-tracké résiduel). La mesure « disque » de cette doc utilise le `find` brut (974), conforme à l'acceptance de #9857.
 
----
+***
 
 ## Réconciliation disque → outil (111 fichiers exclus, fichier-près)
 
@@ -106,7 +106,7 @@ Sur le worktree frais (`e7307a717`), aucun notebook ne vit sous
 trackée. Cette catégorie est **structurellement vide** sur `main` ; elle
 n'existe dans le code que comme garde-fou contre les artefacts locaux.
 
----
+***
 
 ## Vérification reproductible
 
@@ -128,7 +128,7 @@ python scripts/notebook_tools/count_notebooks_by_series.py --all | tail -3   # �
 python scripts/notebook_tools/count_notebooks_by_series.py --check           # → OK (863 == 863)
 ```
 
----
+***
 
 ## Assertion outillée — `--check` (acceptance #9857)
 
@@ -159,7 +159,7 @@ avec le script sœur [`scripts/audit/check_denominators.py --strict`](../../scri
 en défaut. `--check` est le **seuil minimal** (alerte sur l'écart de total) ;
 `check_denominators.py` est le **diagnostic** (localise les fichiers).
 
----
+***
 
 ## Source canonique pour les affirmations publiques
 
@@ -173,7 +173,7 @@ cite le marqueur `CATALOG-STATUS` (qui dérive du catalogue 863), jamais un
 compte mesuré à la main — le compte dérive avec chaque merge, le marqueur est
 régénéré.
 
----
+***
 
 ## Pourquoi catalogue et outil convergent (et quand ils divergeraient)
 
@@ -197,7 +197,7 @@ par le détecteur [`scripts/audit/check_denominators.py`](../../scripts/audit/ch
 **archivée 2026-08-08**, périmètre 2026-07-23, chiffres alors périmés — la présente doc la supersede
 pour les chiffres courants).
 
----
+***
 
 ## Périmètre GenAI — versionnés / catalogue / parcours
 
@@ -257,7 +257,7 @@ git ls-files 'MyIA.AI.Notebooks/GenAI/SemanticKernel/*.ipynb' | wc -l
 > versionné (220) ni le parcours (200). Les trous G06 / §5.1 de l'audit se
 > mesurent sur le 215.
 
----
+***
 
 ## Voir aussi
 

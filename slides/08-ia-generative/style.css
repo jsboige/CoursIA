@@ -35,11 +35,14 @@
 .genai-large-visual .genai-visual { top: 170px; height: 350px; }
 
 /* Échantillons : espaces propres aux paragraphes, inspirés des rendus PPTX 05–07.
-   Les figures restent des overlays absolus ; aucune grille de colonnes commune. */
-.genai-pyramid li:nth-child(1) { width: 100%; }
-.genai-pyramid li:nth-child(2) { width: 43%; margin-top: 38px; }
-.genai-pyramid li:nth-child(3) { width: 43%; margin-top: 22px; }
-.genai-pyramid .genai-visual { left: 465px; top: 195px; width: 465px; height: 275px; }
+   Les figures restent des overlays absolus sur les diapos NON converties ;
+   le pilote TeachingStep ci-dessous (et lui seul) quitte ce régime. */
+/* Pilote TeachingStep (#15048) — « Pyramide des méthodes d'adaptation ».
+   Les trois puces et leur figure forment UN groupe : placement et largeur
+   viennent du composant, plus aucune coordonnee absolue par diapo.
+   Seule la boite de la figure reste ici (contenu, pas position). */
+.genai-figure { width: 100%; display: flex; justify-content: center; }
+.genai-figure img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
 .genai-tokens li:nth-child(1) { width: 47%; min-height: 155px; }
 .genai-tokens li:nth-child(2) { width: 49%; min-height: 155px; }

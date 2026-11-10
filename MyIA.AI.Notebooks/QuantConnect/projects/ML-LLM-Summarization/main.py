@@ -130,7 +130,12 @@ class LLMNewsSentimentAlgorithm(QCAlgorithm):
             )
 
             payload = {
-                'model': 'gpt-3.5-turbo',
+                # #14755 : gpt-3.5-turbo (OBS) -> gpt-5.6-luna, mini designe
+                # par le mandat user. La famille gpt-5 n'accepte que la
+                # temperature par defaut (1) et requiert max_completion_tokens
+                # (cf docs/genai/model-mapping.md section 8) : le budget couvre
+                # les tokens de raisonnement avant la reponse numerique.
+                'model': 'gpt-5.6-luna',
                 'messages': [
                     {
                         'role': 'system',
@@ -138,8 +143,7 @@ class LLMNewsSentimentAlgorithm(QCAlgorithm):
                     },
                     {'role': 'user', 'content': prompt}
                 ],
-                'temperature': 0.0,
-                'max_tokens': 10
+                'max_completion_tokens': 512
             }
 
             response = requests.post(

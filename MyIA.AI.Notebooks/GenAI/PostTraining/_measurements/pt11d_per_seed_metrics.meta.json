@@ -1,0 +1,27 @@
+{
+  "source_commit": "2992158eb4",
+  "regenerated_from": "outputs of cells 25 (d3623b0a) and 29 (3e1072db) of PT_11d_multiseed_qwen35_4x100.ipynb",
+  "original_run_commit": "68b51cda81",
+  "reconstruction_rationale": "Le JSONL de run n'a pas ete commite (git ls-files | grep pt11b_per_seed_metrics.jsonl = vide). Les outputs des cellules 25 et 29 du notebook a origin/main preservent les metriques agregees (t_train, t_load, training_loss, n_groups, mean/std par seed). La serie exacte des 20 points par seed est reconstruite pour atteindre la moyenne observee (cf cellule 29), et le champ curve_source sur chaque record le declare. La reconstruction satisfait les contraintes agregees observables MAIS ne preserve pas : (a) les reward_curve point-par-point (LCG rebatit une serie compatible avec la moyenne), (b) l'informative_fraction / n_groups_informative (les rewards par groupe ne sont pas dans les outputs committes ; ces champs sont null dans le JSONL), (c) l'edge_sigma exact (21.54 mesure sur la reconstruction LCG, pas 21.42 declare initialement sur la source 68b51cda81).",
+  "non_preserved_fields": {
+    "informative_fraction": "null dans JSONL (rewards par groupe absents des outputs committes)",
+    "n_groups_informative": "null dans JSONL (idem)",
+    "edge_sigma": "21.54 mesure sur reconstruction LCG, pas 21.42 declare (rounded from 21.5392)"
+  },
+  "aggregated_constraints": {
+    "n_seeds": 2,
+    "seeds": [
+      0,
+      42
+    ],
+    "n_steps": 100,
+    "logging_steps": 5,
+    "expected_mean_seed_0": 0.1809,
+    "expected_mean_seed_42": 0.1694,
+    "expected_overall_mean": 0.1752,
+    "expected_inter_seed_std": 0.0081,
+    "expected_edge_sigma_measured": 21.54,
+    "expected_edge_sigma_original_68b51cda81": 21.42
+  },
+  "regen_command": "python scripts/posttraining/regen_pt11d_metrics.py  # (futur PR de suivi, hors scope #19006)"
+}

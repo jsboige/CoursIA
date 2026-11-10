@@ -73,6 +73,48 @@ Limites honnetes :
     Windows le kill ne vise que le processus fils direct -- suffisant pour
     les tests (enfants mono-processus), non deploye en CI (jambe ubuntu).
 
+Mode 3 -- crash de collecte xdist (#19915) : la signature
+``INTERNALERROR> KeyError: <WorkerController gwN>`` survient en phase de
+collecte, AVANT qu'aucune ligne de progression pytest (``[ NN%]``) ne soit
+emise. Le mode 1 (silence) ne peut pas la detecter -- pytest emet
+``replacing crashed worker gwN`` en continu, la sortie n'est jamais muette,
+le silence ne se produit pas. La jambe echoue normalement par
+``INTERNALERROR>`` non couvert. Mesure (2026-10-08, 7/10 des rouges Scripts
+Tests CPU) : worker gw8 le plus frequent, suivi de gw9.
+
+Le mode 3 distingue un crash de collecte d'un test qui echoue en regardant
+le marqueur ``KeyError: <WorkerController`` : des qu'on l'a vu ET qu'aucune
+ligne de progression pytest n'a ete observee, c'est un crash de
+collecte, pas un echec de test -- le run doit etre tue et signale comme
+tel, pas laisse finir pour avoir un ``exit 1`` sans diagnostic. Verdict
+distinct (``COLLECT_CRASH_EXIT = 4``) pour que le triage post-mortem
+puisse separer cette signature du silence mode 1.
+
+Ce que le verdict PRESCRIT a ete mesure, puis repris (#19915, census du
+2026-10-19, 7 jours 2026-10-12..19, 113 jobs collect-crash sur 394 jobs
+``Scripts Tests (CPU)`` rouges) :
+
+  * la mort qui precede la collision est toujours de MASSE -- 7 a 12
+    workers morts, tous au meme horodatage, jamais un seul worker. Le
+    seuil ``SYSTEMATIC_DEATH_MIN_WORKERS = 2`` separe donc la mort
+    isolee (seule classe ou un rejeu garde un sens) de la mort
+    systematique ;
+  * l'id ``gwN`` est un COMPTEUR DE VIE, pas un rang de worker : il est
+    alloue par execnet et incremente a chaque remplacement de worker
+    (``xdist/multi.py:189``). ``gw11`` n'implique donc pas 12 workers
+    concurrentS, et le budget de relance par defaut de xdist
+    (``numprocesses * 4`` = 16 pour ``-n 4``) explique la montee ;
+  * les 113 cas sont sur les 4 runners ``myia-po-2024-linux-docker-*`` et
+    ZERO sur les 14 ``myia-ai-01-wsl-*`` : la cause est cote runner
+    (caps memoire/pids de l'ephemere), pas dans le contenu de la PR.
+
+Consequence sur le verdict : prescrire « le CI doit rejouer le job » n'a
+plus de fondement dans la classe systematique -- les reproductions
+consecutives du 2026-10-18 (4/4 sur le pool docker) et du 2026-10-19 (2/2
+sur la meme PR) mesurent un rejeu qui REPRODUIT. Le verdict nomme desormais
+le runner et distingue les deux classes au lieu de prescrire un rejeu
+mesure comme nul.
+
 Usage :
 
   python scripts/ci/xdist_watchdog.py --idle-limit 480 -- pytest <paths> \\
@@ -96,10 +138,66 @@ import time
 NODE_DOWN_RE = re.compile(r"\[(gw\d+)\][^\n]*node down", re.IGNORECASE)
 REPLACING_RE = re.compile(r"replacing crashed worker (gw\d+)", re.IGNORECASE)
 
+# Mode 3 (#19915) : crash de collecte xdist. La signature
+# ``KeyError: <WorkerController gwN>`` survient dans la trace
+# ``INTERNALERROR>`` quand un worker mort perd sa reference dans le
+# scheduler du master. On capture le nom du worker, et on note la
+# collision en collision_workers pour dedoublonner (le meme worker peut
+# apparaitre plusieurs fois dans la trace).
+COLLECT_CRASH_RE = re.compile(
+    r"KeyError:\s*<WorkerController\s+(gw\d+)>", re.IGNORECASE
+)
+
 # Derniere progression pytest sous -q : "[ 57%]" en fin de ligne de points.
 PROGRESS_RE = re.compile(r"\[\s?\d+%\]")
 
 VERDICT_PREFIX = "XDIST-WATCHDOG"
+
+# Mode 3 : on declare un crash de collecte des qu'on a vu le marqueur
+# KeyError ET qu'aucune ligne de progression pytest n'a ete observee.
+# Le seuil de 1 (un seul marqueur suffit) est preferable a un seuil
+# cumulatif : le defaut est que la trace INTERNALERROR est courte --
+# parfois un seul KeyError, puis INTERNALERROR sort et pytest termine
+# sur exit 1 sans plus jamais rien emettre. Attendre un second marqueur
+# manquerait les cas ou la premiere collision est LA collision.
+COLLECT_CRASH_MIN = 1
+
+# Mode 3 : seuil de mort MASSIVE (#19915, census du 2026-10-19, lane
+# myia-ai-01:CoursIA-2, 7 jours 2026-10-12..19, 113 jobs collect-crash
+# sur 394 jobs CPU rouges).
+#
+# CE QUE LE CENSUS A MESURE, ET QUI CHANGE LA PRESCRIPTION DU VERDICT :
+#
+#   * le nombre de workers morts avant la collision est TOUJOURS compris
+#     entre 7 et 12 (46 jobs a 7, 50 a 8, 7 a 9, 4 a 10, 1 a 11, 5 a 12) ;
+#     il n'y a AUCUN cas a 1 worker mort ;
+#   * les horodatages de mort sont tous IDENTIQUES (premier = dernier
+#     "node down") : la mort est un KILL DE MASSE, pas des crashes
+#     individuels ;
+#   * le nombre de "replacing crashed worker" egale exactement le nombre
+#     de "node down" : chaque worker mort a ete remplace ;
+#   * l'id gw maximal observe est gw8 (46 jobs), gw9 (49), gw10 (8),
+#     gw11 (4), gw12 (1), gw13 (5) -- ce sont des COMPTEURS DE VIE, pas
+#     des rangs de worker : l'id est alloue par execnet (`_autoidcounter`,
+#     xdist/multi.py:189) et incremente a chaque remplacement, donc gw11
+#     n'implique pas 12 workers ;
+#   * les 113 cas sont sur les 4 runners `myia-po-2024-linux-docker-*`,
+#     ZERO sur les 14 `myia-ai-01-wsl-*` ; la cause est cote runner (caps
+#     memoire/pids de l'ephemere), pas dans le contenu de la PR.
+#
+# CONTRADICTION EXPLICITE de la prescription historique. Le verdict
+# prescrivait "le CI doit rejouer le job (defaut transient : aucun des 7
+# cas signes sur 10 rouges echantillonnes ne s'est reproduit a la 2e
+# tentative, mesure du 2026-10-08)". La mesure du 2026-10-08 est
+# DEPASSEE par les reproductions consecutives du 2026-10-18 (4/4 sur le
+# pool docker) et du 2026-10-19 (2/2 sur la meme PR) : un rejeu sur le
+# meme pool REPRODUIT. Prescrire le rejeu dans ce cas coute un cycle de
+# CI pour un resultat mesure comme nul.
+#
+# Le seuil vaut 2 : la seule classe ou un rejeu garde un sens est la mort
+# ISOLEE (un seul worker). Le corpus mesure ne contient aucun cas de
+# mort isolee -- le seuil est donc un garde-fou, pas une description.
+SYSTEMATIC_DEATH_MIN_WORKERS = 2
 
 # Prefixe qui fait du verdict une ANNOTATION du check-run, pas seulement une
 # ligne de log. C'est la seule surface par laquelle un lecteur -- humain ou
@@ -128,6 +226,12 @@ ANNOTATION_PREFIX = "##[error]"
 
 EXIT_BLOCKED = 3  # distinct des exits pytest usuels pour le triage post-mortem
 
+# Mode 3 (#19915) : distinct de EXIT_BLOCKED pour qu'un triageur puisse
+# separer les deux classes de defaut (silence mode 1 vs crash de collecte
+# mode 3) sans lire le verdict en clair. La convention est tenue par
+# `classify_job_deaths.py` : un seul code d'exit par signature.
+EXIT_COLLECT_CRASH = 4
+
 
 class _StreamState:
     """Etat partage entre le fil de lecture et la boucle de surveillance."""
@@ -142,6 +246,12 @@ class _StreamState:
         # de fin de parcours sans \n) sont le signe d'un run VIVANT -- le
         # verdict doit pouvoir les citer apres coup.
         self.byte_count = 0
+        # Mode 3 (#19915) : crash de collecte xdist. On cumule les
+        # collisions observees et la liste des workers tombes sur la
+        # signature ``KeyError: <WorkerController gwN>``. La liste
+        # collision_workers sert au verdict final.
+        self.collect_crash_count = 0
+        self.collision_workers: list[str] = []
 
     def record_bytes(self, nbytes: int) -> None:
         """Fraicheur par OCTET, pas par ligne complete (mode 2).
@@ -172,10 +282,38 @@ class _StreamState:
             m = REPLACING_RE.search(line)
             if m and m.group(1) not in self.dead_workers:
                 self.dead_workers.append(m.group(1))
+            # Mode 3 (#19915) : on note la collision ; la decision de tuer
+            # est prise dans la boucle de surveillance (apres le seuil),
+            # pas ici -- on ne decide jamais d'arreter le run depuis le fil
+            # de lecture.
+            m = COLLECT_CRASH_RE.search(line)
+            if m:
+                self.collect_crash_count += 1
+                if m.group(1) not in self.collision_workers:
+                    self.collision_workers.append(m.group(1))
 
     def idle_for(self) -> float:
         with self.lock:
             return time.monotonic() - self.last_output
+
+    def collect_crash_detected(self) -> bool:
+        """Mode 3 (#19915) : Vrai si le marqueur ``KeyError: <WorkerController``
+        a ete observe ET qu'aucune ligne de progression pytest (``[ NN%]``)
+        n'a encore ete vue.
+
+        Pourquoi la conjonction : un test qui echoue peut etre suivi d'un
+        KeyError dans la trace (rare, mais possible si le test a corrompu
+        l'etat du master). Si la progression ``[ NN%]`` est deja passee,
+        c'est un test qui a produit du resultat -- le crash n'est plus un
+        crash de collecte, c'est un crash en cours de route. Le diagnostic
+        est different (test defectueux vs collecte impossible) et le
+        verdict doit le nommer.
+        """
+        with self.lock:
+            return (
+                self.collect_crash_count >= COLLECT_CRASH_MIN
+                and self.last_progress_line is None
+            )
 
 
 # Taille d'un chunk de lecture du tube. Un seul os.read = un seul appel
@@ -288,12 +426,40 @@ def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
                 _kill_tree(proc)
                 proc.wait(timeout=30)
                 return EXIT_BLOCKED
+            # Mode 3 (#19915) : un crash de collecte detecte avant
+            # qu'aucun progres pytest ne soit emis = le run va finir sur
+            # un exit 1 ININTERPRETABLE (pas un test qui echoue, pas un
+            # blocage par silence, mais une collision interne du master
+            # xdist). On tue tout de suite, on nome la collision ; la
+            # prescription de rejeu est bornee par la classe de mort
+            # (_verdict_collect_crash) : un rejeu n'a de sens qu'en mort
+            # ISOLEE ; en mort SYSTEMATIQUE (7 a 12 workers morts avant la
+            # collision, census #19915 du 2026-10-19), un rejeu sur le meme
+            # pool REPRODUIT la signature (4/4 le 2026-10-18, 2/2 le
+            # 2026-10-19) -- signaler l'hote, ne pas rejouer sur le meme pool
+            # (issue #19915).
+            if state.collect_crash_detected():
+                _verdict_collect_crash(state, idle, started, emit)
+                _kill_tree(proc)
+                proc.wait(timeout=30)
+                return EXIT_COLLECT_CRASH
             time.sleep(0.5)
     finally:
         # Le fils est mort ou tue : le lecteur atteint l'EOF, on ne bloque pas
         # la sortie du wrapper sur un pipe theoriquement ouvert.
         reader.join(timeout=10)
 
+    # La conjonction est re-testee UNE FOIS la boucle sortie. Sans ce
+    # controle la course est ouverte : la boucle teste tous les 0,5 s et
+    # ``break`` des que le fils est mort, or sur le corpus l'ecart entre la
+    # ligne ``KeyError`` et la sortie du processus va de 0,21 a 0,75 s
+    # (12 runs mesures) -- 9 des 12 tombent SOUS le tick. Le fils sortait
+    # donc avant la premiere evaluation et le wrapper rendait le code du
+    # fils SANS verdict : exactement l'exit 1 ininterpretable que le mode 3
+    # existe pour supprimer (revue Hermes du 2026-10-08, PR #19917).
+    if state.collect_crash_detected():
+        _verdict_collect_crash(state, 0.0, started, emit)
+        return EXIT_COLLECT_CRASH
     return proc.returncode if proc.returncode is not None else EXIT_BLOCKED
 
 
@@ -317,6 +483,51 @@ def _verdict_blocked(state: _StreamState, idle: float, idle_limit: float,
          f"de processus")
 
 
+def _verdict_collect_crash(state: _StreamState, idle: float,
+                           started: float, emit=_emit) -> None:
+    """Verdict mode 3 (#19915) : crash de collecte xdist, collision
+    WorkerController perdue. Tenu a cote de ``_verdict_blocked`` parce que
+    la classe de defaut est distincte (collision interne du master, pas
+    silence de sortie) et le triage post-mortem depend du code d'exit.
+    """
+    wall = time.monotonic() - started
+    # Le runner qui porte le job : c'est le discriminant de la signature
+    # #19915 (113/113 des cas mesures sur `po-2024-linux-docker-*`, 0 sur
+    # `ai-01-wsl-*`). Le nom dans l'annotation evite au triage d'ouvrir le
+    # job pour rien -- c'est la seule surface que lisible sans le log.
+    runner = os.environ.get("RUNNER_NAME") or "(runner inconnu)"
+    dead = list(state.dead_workers)
+    collisions = (
+        ", ".join(state.collision_workers)
+        if state.collision_workers
+        else "aucun worker nomme dans la collision (signature capturee "
+        "sans match de nom -- verifier la regex)"
+    )
+    emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: COLLECT_CRASH -- "
+         f"{state.collect_crash_count} collision(s) "
+         f"``KeyError: <WorkerController>`` detectee(s) avant le premier "
+         f"progres pytest, signature #19915 (collecte xdist impossible)")
+    emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: workers en collision : "
+         f"{collisions} ; runner {runner} ; wall du wrapper {wall:.0f} s, "
+         f"{state.line_count} lignes ({state.byte_count} octets) emises au "
+         f"total, idle observe {idle:.0f} s")
+    if len(dead) >= SYSTEMATIC_DEATH_MIN_WORKERS:
+        emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: mort SYSTEMATIQUE -- "
+             f"{len(dead)} workers sont morts AVANT la collision "
+             f"({', '.join(dead)}) ; la signature n'est PAS un transient : "
+             f"un rejeu sur le meme runner la reproduit (mesure 2026-10-18 : "
+             f"4/4 sur le pool `po-2024-linux-docker-*` ; 2026-10-19 : 2/2 "
+             f"sur la meme PR ; 0 sur `ai-01-wsl-*`) ; la cause est cote "
+             f"runner (caps memoire/pids de l'ephemere), pas dans le contenu "
+             f"de la PR -- ne pas rejouer sur le meme pool")
+    else:
+        emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: arret du groupe de "
+             f"processus -- mort isolee ({len(dead)} worker mort avant la "
+             f"collision) ; aucun cas de mort isolee dans le corpus mesure "
+             f"(7 j : les 113 cas collect-crash sont des morts massives de 7 "
+             f"a 12 workers) ; un rejeu du job peut etre tente")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Execute une commande et la tue si sa sortie se tait "
@@ -336,6 +547,8 @@ def main(argv: list[str] | None = None) -> int:
 
     code = run(cmd, args.idle_limit)
     if code == EXIT_BLOCKED:
+        return 1
+    if code == EXIT_COLLECT_CRASH:
         return 1
     return code
 

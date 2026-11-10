@@ -1,0 +1,21 @@
+{
+  "state": {
+    "fallacies": [
+      {"name": "attaque personnelle", "text": "Attaque sur la personne plutot que sur l'argument"},
+      {"name": "caricature", "text": "Caricature de la position adverse pour la refuter"}
+    ],
+    "quality": [
+      {"name": "coherence", "score": "forte"}
+    ],
+    "counter_arguments": [
+      {"name": "inversion fardeau", "text": "L'auteur inverse le fardeau de la preuve"}
+    ],
+    "formal_pl": [
+      {"name": "syllogisme", "text": "Modus ponens sur les deux premises"}
+    ],
+    "formal_fol": [],
+    "dung": [
+      {"name": "extension grounded", "text": "Attaque mutuelle entre Socrate et Platon"}
+    ]
+  }
+}

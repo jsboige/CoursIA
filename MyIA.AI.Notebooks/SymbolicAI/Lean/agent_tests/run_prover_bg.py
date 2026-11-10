@@ -44,15 +44,35 @@ from __future__ import annotations
 import argparse
 import asyncio
 import faulthandler
+import io
 import os
 import sys
 import time
 from pathlib import Path
-from urllib.parse import urlparse
 
 # Dump native tracebacks on fatal signals (SIGSEGV/SIGABRT...) so a future
-# run-6-style silent death leaves a signature in the log (#6790).
-faulthandler.enable()
+# run-6-style silent death leaves a signature in the log (#6790). Sous capture
+# pytest, sys.stderr est un tampon sans fileno : enable() y leve
+# io.UnsupportedOperation et tuait l'import du lanceur (2 tests rouges sur
+# main, #24015). Un abandon silencieux y desactiverait le dump -- exactement
+# ce que #6790 avait installe. Repli sur sys.__stderr__, le stderr d'origine
+# du processus, qui porte un vrai descripteur : mesure au 01/11 (sonde
+# capture 'sys' simulee), enable(stderr sans fileno) LEVE, enable(__stderr__)
+# OK, dump ACTIF apres repli. Idee du repli : myia-po-2028:CoursIA-2 (#24023,
+# retire comme doublon).
+def _enable_faulthandler() -> None:
+    for stream in (sys.stderr, sys.__stderr__):
+        if stream is None:
+            continue
+        try:
+            faulthandler.enable(stream)
+        except (AttributeError, io.UnsupportedOperation, OSError, ValueError):
+            continue
+        else:
+            return
+
+
+_enable_faulthandler()
 
 PROVER_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROVER_DIR))
@@ -71,16 +91,27 @@ from target_guard import (  # noqa: E402
     resolve_target_line,
 )
 from prover.config import DEMOS, PROVIDERS  # noqa: E402
-from prover.p6_routing import _expected_provider  # noqa: E402
+from prover.provider_gate import (  # noqa: E402  (#18709: gate partage)
+    effective_agent_providers,
+    validate_provider_credentials,
+)
 from prover.provers import MultiAgentSorryProver  # noqa: E402
+# Cycle-29 (#1453): the run-verdict classifier lives in the inner launcher
+# (tests/test_freeze_loop_termination.py imports it from there); the root
+# launcher logs the same verdict instead of re-deriving a divergent copy.
+from prover.run_prover_bg import _derive_result_kind  # noqa: E402
 from prover.trace import TraceLogger  # noqa: E402
 from prover.lean_utils import (  # noqa: E402  (#9402: real-token counter)
     count_real_sorries,
     stub_theorem_proof,
+    sweep_execution_leftovers,
 )
 from prover.tree_lock import (  # noqa: E402
     acquire_tree_lock,
     find_lean_project_root,
+    host_id,
+    pid_alive,
+    read_lock,
     release_tree_lock,
 )
 
@@ -102,74 +133,71 @@ def _peek_sorry_count(filepath: str) -> int:
         return -1
 
 
+def _classify_result(result: dict, post_sorry, pre_sorry) -> str:
+    """Terminal verdict of a run, distinct from the process exit code.
+
+    Cycle-29 (#1453): DELEGATES to the canonical classifier
+    ``prover.run_prover_bg._derive_result_kind`` — the same contract the
+    inner launcher prints as its ``Verdict:`` line and
+    tests/test_freeze_loop_termination.py pins (no_attempt vs freeze_loop
+    vs no_progress ranking). This wrapper only adapts the launcher's sorry
+    counts: a count that is None or negative (``_peek_sorry_count``'s
+    OSError sentinel is -1) is UNKNOWN, not zero — equal sentinels are
+    passed so ``sorry_decreased`` can never fire on missing data, while
+    flag-based kinds still classify.
+    """
+    final = post_sorry if isinstance(post_sorry, int) and post_sorry >= 0 else None
+    original = pre_sorry if isinstance(pre_sorry, int) and pre_sorry >= 0 else None
+    if final is None or original is None:
+        # One side unknown: no decrease claim is possible — collapse both
+        # to the known side (0 if both unknown), else a missing post count
+        # (sentinel -1) against a real pre count would read as a decrease.
+        known = final if final is not None else original
+        final = original = known if known is not None else 0
+    return _derive_result_kind(result, final, original)
+
+
 def _effective_agent_providers(args: argparse.Namespace) -> dict:
     """Resolve the per-role provider map exactly as the prover will.
 
-    Mirrors ``MultiAgentSorryProver.__init__`` (provers.py: openrouter
-    defaults for coordinator/tactic) and p6_routing's ``_expected_provider``
-    (zai for Search/Critic) so the gate below can never drift from what
-    the workflow actually dials.
+    Thin ``args`` adapter over the shared ``prover.provider_gate``
+    implementation (#18709) — the resolution logic lives there so the inner
+    launcher (``prover/run_prover_bg.py``) gates identically instead of
+    discovering a keyless P6-pinned agent 45 min into a run. Backward-
+    compatible signature for ``tests/test_run_prover_bg_gate.py``.
     """
-    eff = {
-        "reasoning": args.provider,
-        "fast": args.local_provider,
-        "coordinator": getattr(args, "coordinator_provider", None) or "openrouter",
-        "tactic": getattr(args, "tactic_provider", None) or "openrouter",
-        "search": getattr(args, "search_provider", None)
-        or _expected_provider("SearchAgent")
-        or "local",
-        "critic": getattr(args, "critic_provider", None)
-        or _expected_provider("CriticAgent")
-        or "local",
-    }
-    if getattr(args, "director_provider", None):
-        eff["director"] = args.director_provider
-    return eff
-
-
-PROVIDER_ENV_KEYS = {
-    "zai": "ZAI_API_KEY",
-    "openrouter": "OPENROUTER_API_KEY",
-    "mistral": "MISTRAL_API_KEY",
-    "local": "LOCAL_LLM_API_KEY",
-}
+    return effective_agent_providers(
+        args.provider,
+        args.local_provider,
+        coordinator_provider=getattr(args, "coordinator_provider", None),
+        tactic_provider=getattr(args, "tactic_provider", None),
+        search_provider=getattr(args, "search_provider", None),
+        critic_provider=getattr(args, "critic_provider", None),
+        diagnosis_provider=getattr(args, "diagnosis_provider", None),
+        director_provider=getattr(args, "director_provider", None),
+    )
 
 
 def _validate_provider_credentials(eff: dict) -> list:
     """#1453 forensic (2026-09-19): fail-fast credential gate.
 
-    Founder case (measured firsthand, calibration DEMOS 45/41/52 pass 1 on a
-    keyless lane): ``--provider local`` alone leaves Coordinator/Tactic on
-    their ``openrouter`` default and Search/Critic on the p6_routing ``zai``
-    default. The run stubs the calibration target, takes the tree lock, then
-    dies 3x401 -> ``provider_outage_breaker`` without a single attempt.
-    Refusing to launch names the missing keys instead of burning a run.
-
-    Keyless by design: localhost endpoints (Ollama/vLLM). An empty base_url
-    on provider ``local`` (LOCAL_LLM_BASE_URL unset) targets the OpenAI
-    default endpoint with an empty key and is equally refused.
+    Keyless localhost endpoints pass by design; a routed provider without
+    credentials names the role + env var instead of burning a run. The
+    implementation is shared with the inner launcher via
+    ``prover.provider_gate`` (#18709).
     """
-    problems = []
-    for role, name in eff.items():
-        cfg = PROVIDERS.get(name)
-        if cfg is None:
-            problems.append(f"{role}: unknown provider '{name}'")
-            continue
-        base = (cfg.get("base_url") or "").strip()
-        key = (cfg.get("api_key") or "").strip()
-        host = urlparse(base).hostname or ""
-        if host in ("localhost", "127.0.0.1", "::1"):
-            continue
-        env = PROVIDER_ENV_KEYS.get(name, f"{name.upper()}_API_KEY")
-        if not base:
-            problems.append(
-                f"{role} -> '{name}': base_url vide ({env} / base non configurés)"
-            )
-        elif not key:
-            problems.append(
-                f"{role} -> '{name}': {env} absent/vide pour {base}"
-            )
-    return problems
+    return validate_provider_credentials(eff, PROVIDERS)
+
+
+def _parent_lock_is_valid(tree_root: Path, owner_pid: int) -> bool:
+    """Ne réutilise le lock que si son propriétaire vivant est le parent déclaré."""
+    holder = read_lock(tree_root / ".prover.lock")
+    return (
+        owner_pid == os.getppid()
+        and holder.get("pid") == owner_pid
+        and holder.get("host") == host_id()
+        and pid_alive(owner_pid)
+    )
 
 
 async def main(args: argparse.Namespace) -> int:
@@ -243,17 +271,29 @@ async def main(args: argparse.Namespace) -> int:
         tree_root = find_lean_project_root(demo["file"])
     if tree_root is None:
         tree_root = Path(os.environ["LEAN_PROJECT"])
-    lock_path, lock_msg = acquire_tree_lock(
-        tree_root, args.demo_id, force=args.force_lock
-    )
-    if lock_path is None:
-        _bg(f"LOCKED {lock_msg}")
-        return 3
-    _bg(f"TREE_LOCK {lock_path}")
+    if args.reuse_lock_pid is not None:
+        lock_path = tree_root / ".prover.lock"
+        if not _parent_lock_is_valid(tree_root, args.reuse_lock_pid):
+            _bg("LOCKED external prover lock owner validation failed")
+            return 3
+        # The parent benchmark owns this canonical lock across both arms.
+        # Its PID differs from this child, so release_tree_lock(None) below
+        # deliberately leaves the parent's lock in place.
+        _bg(f"TREE_LOCK_REUSED {lock_path} owner_pid={args.reuse_lock_pid}")
+        release_path = None
+    else:
+        lock_path, lock_msg = acquire_tree_lock(
+            tree_root, args.demo_id, force=args.force_lock
+        )
+        if lock_path is None:
+            _bg(f"LOCKED {lock_msg}")
+            return 3
+        _bg(f"TREE_LOCK {lock_path}")
+        release_path = lock_path
     try:
         return await _run_locked(args, demo, file_target)
     finally:
-        release_tree_lock(lock_path)
+        release_tree_lock(release_path)
 
 
 async def _run_locked(
@@ -300,14 +340,31 @@ async def _run_locked(
         )
 
     calibration = calibration_target is not None
+    run_result = None
     try:
-        return await _run_calibration_ready(
+        run_result = await _run_calibration_ready(
             args, demo, file_target, calibration=calibration
         )
+        return run_result
     finally:
         if calibration_target is not None:
             calibration_target[0].write_bytes(calibration_target[1])
             _bg("CALIBRATION_RESTORE approved proof restored")
+        # C4 (#1453 forensic, 2026-09-19): sweep the execution leftovers the
+        # run may leave next to its target (GoalExtract probe, sandboxes) on
+        # every exit path — under the tree lock, after the calibration
+        # restore. Sandboxes survive a failed run: crash evidence.
+        error_flag = sys.exc_info()[0] is not None or (
+            isinstance(run_result, int) and run_result != 0
+        )
+        removed = sweep_execution_leftovers(
+            file_target, keep_sandboxes=error_flag
+        )
+        if removed:
+            _bg(
+                f"LEFTOVER-SWEEP removed {len(removed)} leftover(s) next to "
+                f"{Path(file_target).name}"
+            )
 
 
 async def _run_calibration_ready(
@@ -334,6 +391,7 @@ async def _run_calibration_ready(
         tactic_provider=getattr(args, "tactic_provider", None),
         search_provider=getattr(args, "search_provider", None),
         critic_provider=getattr(args, "critic_provider", None),
+        diagnosis_provider=getattr(args, "diagnosis_provider", None),
     )
 
     t0 = time.time()
@@ -370,11 +428,17 @@ async def _run_calibration_ready(
     _bg(f"RESULT_FREEZE_LOOP {result.get('freeze_loop')} "
         f"escalations={result.get('freeze_loop_escalations')}")
     _bg(f"RESULT_SORRY_EVOLUTION {result.get('sorry_evolution')}")
+    # Cycle-29 (#1453): the single-line terminal verdict harvest scripts and
+    # the coordinator read — no_attempt (freeze with ZERO submissions: change
+    # model/provider, not iterations) is now distinguishable from freeze_loop
+    # and from no_progress without re-parsing the RESULT_* block above.
+    result_kind = _classify_result(result, post_sorry, pre_sorry)
+    _bg(f"RESULT_KIND {result_kind}")
     if result.get("skipped"):
         _bg(f"RESULT_SKIPPED reason={result.get('reason')} detail={result.get('detail')}")
 
     _bg(
-        f"FINAL ok={bool(result.get('success'))} "
+        f"FINAL ok={bool(result.get('success'))} kind={result_kind} "
         f"sorry_after={post_sorry if post_sorry is not None else 'n/a'} "
         f"elapsed={elapsed:.1f}"
     )
@@ -419,10 +483,16 @@ def parse_args() -> argparse.Namespace:
                         "(measured firsthand on demo 39, #1453).")
     p.add_argument("--critic-provider", default=None,
                    help="Provider for CriticAgent (see --search-provider).")
+    p.add_argument("--diagnosis-provider", default=None,
+                   help="Provider for DiagnosisAgent (see --search-provider). "
+                        "Only consumed when the diagnosis lane is enabled; "
+                        "the P6 pin applies otherwise (#18709).")
     p.add_argument("--force-lock", action="store_true",
                    help="Break an existing .prover.lock even if its holder "
                         "looks alive or is on a foreign host (WSL<->Windows). "
                         "Operator decision — see #6790.")
+    p.add_argument("--reuse-lock-pid", type=int, default=None,
+                   help=argparse.SUPPRESS)
     return p.parse_args()
 
 

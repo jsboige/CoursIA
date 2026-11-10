@@ -20,10 +20,10 @@ Distinction à tenir : le **fait** « 17/17, aucun défaut de PR » est un témo
 
 `scripts/check_adjoint_prevalidation.py` épingle dans le dossier des **surfaces mesurées à l'instant T**, puis refuse si elles ont bougé.
 
-Surfaces comparées — `diff-files`, `diff-additions`, `diff-deletions` :
+Surfaces comparées — `diff-files`, `diff-additions`, `diff-deletions` — plus l'empreinte `surfaces-sha256` des corps de discussion, qui atteste que les surfaces lues par B.0 n'ont pas bougé :
 
 ```python
-# l.548-550
+# validate_dossier() : surfaces comptees relevees a l'instant T
         "diff-files": snapshot["changedFiles"],
         "diff-additions": snapshot["additions"],
         "diff-deletions": snapshot["deletions"],
@@ -32,7 +32,7 @@ Surfaces comparées — `diff-files`, `diff-additions`, `diff-deletions` :
 Le refus, générique sur toute surface comptée :
 
 ```python
-# l.552-554
+# validate_dossier() : refus generique sur surface comptee
     for key, live_value in comparisons.items():
         if integers.get(key) is not None and integers[key] != live_value:
             errors.append(f"{key} is stale: dossier={integers[key]}, live={live_value}")
@@ -41,7 +41,7 @@ Le refus, générique sur toute surface comptée :
 Le refus sur la tête — la surface qui décide de tout :
 
 ```python
-# l.556-558
+# validate_dossier() : refus sur la tete
     if f.get("head") != snapshot["headRefOid"]:
         errors.append(
             f"head is stale: dossier={f.get('head', '?')}, live={snapshot['headRefOid']}"
@@ -51,7 +51,7 @@ Le refus sur la tête — la surface qui décide de tout :
 Et la surface des discussions, qui n'est pas un compte :
 
 ```python
-# l.534
+# validate_dossier() : refus sur les surfaces de discussion
             "discussion surfaces changed or were not fully attested: "
 ```
 

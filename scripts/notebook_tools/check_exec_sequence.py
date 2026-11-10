@@ -14,7 +14,7 @@ tier 1).
 
 Usage:
     python check_exec_sequence.py [path] [--tracked-only] [--json]
-                                  [--fail-on DIRTY] [--verbose]
+                                  [--check] [--fail-on DIRTY] [--verbose]
 
     path          notebook file, directory, or family root
                   (default: MyIA.AI.Notebooks)
@@ -23,12 +23,29 @@ Usage:
                   artifacts (checkpoints, audit copies) that differ per
                   machine -- see "measurement basis" below.
     --json        machine-readable output (one record per notebook)
+    --check       gate mode: exit 1 if any notebook is neither CLEAN nor
+                  covered by a declared exemption (issue #19930). The named
+                  exit-in-error mode; equivalent to failing on NONCLEAN minus
+                  the declared exemptions below.
     --fail-on VERDICT[,VERDICT...]  exit 1 if any notebook carries one of
                   these verdicts (default: never fail; tier-2 gate will
                   pass FAIL_ON here). Accepts DIRTY (= any of DUPLICATE,
                   UNORDERED, NOT_FROM_1, GAP) and NONCLEAN (= any verdict other
-                  than CLEAN).
+                  than CLEAN). Unlike --check, --fail-on does NOT honour the
+                  declared exemptions.
     --verbose     also list CLEAN notebooks
+
+Declared exemptions (issue #19930 criterion 3). A non-CLEAN verdict whose
+cause is legitimate carries a WRITTEN justification in the organ rather than
+being silently ignored:
+    qc-cloud     QuantConnect books run on QuantConnect Cloud (rule F): no
+                 local kernel, so their unexecuted cells (PARTIAL) are
+                 expected. Matched by path root, not by a dated file list.
+    pii-empty    GradeBook.ipynb carries student PII; its outputs are
+                 deliberately empty (its own first cell declares it, cf
+                 code-style). Matched by exact path.
+Only PARTIAL is exemptable: a carnet whose counters CAN be continuous is a
+defect (DIRTY) and must be re-executed, never declared away.
 
 Verdicts (per notebook):
     CLEAN        sequence is exactly 1..N
@@ -62,6 +79,36 @@ import sys
 from pathlib import Path
 
 DIRTY_VERDICTS = {"DUPLICATE", "UNORDERED", "NOT_FROM_1", "GAP"}
+
+# Declared exemptions (issue #19930, criterion 3). A notebook whose counters
+# cannot legitimately be continuous carries a WRITTEN justification here; --check
+# then reports it as exempt instead of failing on it. The rules are path-based
+# (a family root, an exact path), never a dated list of files that would rot as
+# notebooks are added or renamed.
+QC_CLOUD_ROOT = "MyIA.AI.Notebooks/QuantConnect/"
+EXEMPT_PII_PATHS = frozenset({"MyIA.AI.Notebooks/GradeBook.ipynb"})
+# Only partiality is exemptable. A carnet whose counters CAN be continuous is a
+# defect (DIRTY): it is re-executed, never declared away.
+EXEMPTABLE_VERDICTS = frozenset({"PARTIAL"})
+
+
+def exemption_reason(notebook_posix, verdict):
+    """Written justification that lifts a verdict from the --check gate, or None.
+
+    Returns a non-empty reason string only for an EXEMPTABLE verdict whose path
+    matches a declared rule; every other case returns None and stays gated."""
+    if verdict not in EXEMPTABLE_VERDICTS:
+        return None
+    if notebook_posix.startswith(QC_CLOUD_ROOT):
+        return "qc-cloud (rule F: run on QuantConnect Cloud, no local kernel)"
+    if notebook_posix in EXEMPT_PII_PATHS:
+        return "pii-empty (declared in the notebook's own first cell)"
+    return None
+
+
+def check_offenders(records):
+    """Records the --check gate fails on: non-CLEAN and not covered by a rule."""
+    return [r for r in records if r["verdict"] != "CLEAN" and not r.get("exempt")]
 
 
 def sequence_verdict(exec_counts):
@@ -113,7 +160,11 @@ def self_test():
     cycles. Assert a clean sequence stays CLEAN (negative control), every
     dirty class fires (positive control), and the #14676 option-(c) scenario
     -- a DUPLICATE-producing code cell converted to markdown leaves the
-    sequence 1..N CLEAN. Exit 0 iff every control holds."""
+    sequence 1..N CLEAN. Also exercises the #19930 declared exemptions and the
+    --check predicate: an exempt PARTIAL passes the gate, an undeclared PARTIAL
+    fails it, and a DIRTY under the QC root still fails (partiality is
+    exemptable, a real counter defect never is). Exit 0 iff every control
+    holds."""
     controls = [
         ("negative: clean 1..N stays CLEAN", [1, 2, 3], "CLEAN"),
         ("negative: single clean cell stays CLEAN", [1], "CLEAN"),
@@ -131,6 +182,55 @@ def self_test():
         if got != expected:
             failures.append((label, expected, got))
         print(f"  [{status}] {label}: {got}")
+
+    # Declared-exemption controls (issue #19930): the rule must lift an exempt
+    # PARTIAL and leave everything else gated.
+    exempt_controls = [
+        ("qc-cloud PARTIAL is exempt",
+         "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-02-Platform-Fundamentals.ipynb",
+         "PARTIAL", True),
+        ("pii-empty PARTIAL is exempt",
+         "MyIA.AI.Notebooks/GradeBook.ipynb", "PARTIAL", True),
+        ("undeclared PARTIAL is NOT exempt",
+         "MyIA.AI.Notebooks/ML/foo.ipynb", "PARTIAL", False),
+        ("CLEAN is never exempt", "MyIA.AI.Notebooks/GradeBook.ipynb", "CLEAN", False),
+    ]
+    # Review #20089 (mutation M3) : epingler « seul PARTIAL est exemptable »
+    # sur les verdicts REELS que sequence_verdict rend. Le litteral "DIRTY"
+    # n'est jamais rendu (les buckets sont DUPLICATE/UNORDERED/NOT_FROM_1/
+    # GAP) : l'ancien controle etait vrai par construction et la mutation
+    # EXEMPTABLE_VERDICTS = {"PARTIAL", "NOT_FROM_1"} restait verte.
+    qc_root_nb = ("MyIA.AI.Notebooks/QuantConnect/Python/"
+                  "QC-Py-02-Platform-Fundamentals.ipynb")
+    exempt_controls += [
+        (f"{v} under the QC root is NOT exempt", qc_root_nb, v, False)
+        for v in sorted(DIRTY_VERDICTS)
+    ]
+    for label, path, verdict, expect_exempt in exempt_controls:
+        got = bool(exemption_reason(path, verdict))
+        status = "ok" if got == expect_exempt else "FAIL"
+        if got != expect_exempt:
+            failures.append((label, expect_exempt, got))
+        print(f"  [{status}] {label}: exempt={got}")
+
+    # --check predicate controls: only non-CLEAN, non-exempt records are offenders.
+    gate_controls = [
+        ("gate passes when only CLEAN + exempt PARTIAL present",
+         [{"verdict": "CLEAN", "exempt": False},
+          {"verdict": "PARTIAL", "exempt": True}], 0),
+        ("gate fails on an undeclared PARTIAL",
+         [{"verdict": "PARTIAL", "exempt": False}], 1),
+        ("gate fails on a DIRTY even beside an exempt PARTIAL",
+         [{"verdict": "DIRTY", "exempt": False},
+          {"verdict": "PARTIAL", "exempt": True}], 1),
+    ]
+    for label, recs, expected_n in gate_controls:
+        got = len(check_offenders(recs))
+        status = "ok" if got == expected_n else "FAIL"
+        if got != expected_n:
+            failures.append((label, expected_n, got))
+        print(f"  [{status}] {label}: offenders={got}")
+
     if failures:
         print("SELF-TEST FAIL:")
         for label, expected, got in failures:
@@ -198,7 +298,8 @@ def scan(target, tracked_only, verbose):
         if tracked is not None and posix not in tracked:
             continue
         rec = {"notebook": posix, "family": family_of(path, root),
-               "verdict": "PARSE_ERROR", "sequence": [], "sequence_head": []}
+               "verdict": "PARSE_ERROR", "sequence": [], "sequence_head": [],
+               "exempt": False, "exempt_reason": None}
         try:
             nb = json.loads(path.read_text(encoding="utf-8"))
         except Exception:
@@ -208,6 +309,8 @@ def scan(target, tracked_only, verbose):
         rec["verdict"] = sequence_verdict(ec)
         rec["sequence"] = ec
         rec["sequence_head"] = ec[:12]
+        rec["exempt_reason"] = exemption_reason(posix, rec["verdict"])
+        rec["exempt"] = bool(rec["exempt_reason"])
         records.append(rec)
     return records
 
@@ -221,6 +324,9 @@ def main():
                     help="Restrict scan to git-tracked files (reference mode)")
     ap.add_argument("--json", action="store_true", dest="as_json",
                     help="One JSON record per notebook")
+    ap.add_argument("--check", action="store_true",
+                    help="Gate mode: exit 1 if any notebook is neither CLEAN "
+                         "nor covered by a declared exemption (issue #19930)")
     ap.add_argument("--fail-on", default="",
                     help="Comma-separated verdicts that make the run exit 1 "
                          "(DIRTY = DUPLICATE|UNORDERED|NOT_FROM_1|GAP)")
@@ -267,6 +373,8 @@ def main():
             "summary": {"scanned": len(records),
                         "fully_executed": clean + dirty,
                         "clean": clean, "dirty": dirty,
+                        "exempt": sum(1 for r in records if r.get("exempt")),
+                        "gate_offenders": len(check_offenders(records)),
                         "buckets": bucket_counts,
                         "other": {k: v for k, v in by_verdict.items()
                                   if k not in DIRTY_VERDICTS | {"CLEAN"}}},
@@ -285,10 +393,13 @@ def main():
     print(f"buckets (independent, sum >= dirty):")
     for b in ("DUPLICATE", "UNORDERED", "NOT_FROM_1", "GAP"):
         print(f"  {b:<12}: {bucket_counts[b]}")
+    exempt_n = sum(1 for r in records if r.get("exempt"))
     others = {k: v for k, v in by_verdict.items()
               if k not in DIRTY_VERDICTS | {"CLEAN"}}
     if others:
         print(f"excluded from coherence stats: {others}")
+    if exempt_n:
+        print(f"declared exempt (issue #19930): {exempt_n}")
     if fam_dirty:
         print("dirty by family:")
         for fam, n in sorted(fam_dirty.items(), key=lambda kv: -kv[1]):
@@ -299,7 +410,24 @@ def main():
         head = r["sequence_head"]
         seq = "[" + ", ".join("None" if e is None else str(e) for e in head) \
             + (", ..." if len(head) == 12 else "") + "]"
-        print(f"{r['verdict']:<12} {r['notebook']:<70} {seq}")
+        tag = " [exempt]" if r.get("exempt") else ""
+        print(f"{r['verdict']:<12}{tag} {r['notebook']:<70} {seq}")
+
+    if args.check:
+        offenders = check_offenders(records)
+        if offenders:
+            print(f"\nFAIL (--check): {len(offenders)} notebook(s) non-CLEAN "
+                  f"and not covered by a declared exemption:")
+            for r in offenders[:40]:
+                print(f"  {r['verdict']:<12} {r['notebook']}")
+            if len(offenders) > 40:
+                print(f"  ... and {len(offenders) - 40} more")
+            print("Admissible outcomes (issue #19930): re-execute the notebook "
+                  "on a fresh kernel (counters become real), or declare it with "
+                  "a written justification in exemption_reason().")
+            sys.exit(1)
+        print(f"\nOK (--check): no non-CLEAN notebook is left undeclared "
+              f"({exempt_n} declared exempt).")
 
     if args.fail_on:
         wanted = set()

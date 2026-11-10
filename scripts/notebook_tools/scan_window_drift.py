@@ -14,14 +14,27 @@ Quatre formes distinctes produisent le drift, et **une seule** se corrige par
 ``set_end_date`` (cf #10230) :
 
   T  ``history(sym, timedelta(...), ...)``   fenetre relative depuis NOW
-  L  ``history(sym, N, Resolution)``         N barres depuis NOW
+  L  ``history(sym, N, Resolution)``         N barres depuis ``qb.Time``
   N  ``datetime.now()`` / ``date.today()``   borne ancrée sur l'horloge
+     ``.history(period="5y")`` (yfinance)    idem, la periode finit a NOW
   S  ``set_start_date`` sans ``set_end_date`` fenetre ouverte à droite
 
 Le detecteur cherche la **forme de la borne**, jamais la presence d'un nom de
 methode : une borne litterale (``datetime(2015, 1, 1)``) passee a ``history``
 est figee meme sans ``set_end_date``. Lit les cellules **code** uniquement
 (une date en prose ne fige rien).
+
+Forme L ancree (mecanisme A de #8772) : ``qb.History(sym, N, res)`` compte ses
+N barres a rebours depuis ``qb.Time``, qui vaut la date de debut une fois
+``qb.set_start_date(2020, 1, 1)`` appele. Si un ``set_start_date`` **litteral**
+sur le **meme receiver** precede l'appel (cellule anterieure, ou plus haut dans
+la meme cellule), la fenetre finit a cette date quelle que soit la date
+d'execution : elle est figee, pas glissante (mesure : ML-DeepLearning calcule
+sur 2012-09-28 -> 2019-12-31). Le lookback est alors rapporte sous
+``anchored_lookbacks``, hors des formes de drift. Un ``set_start_date``
+non litteral (``datetime.now() - timedelta(...)``), pose apres l'appel ou sur
+un autre receiver n'ancre rien. La forme T n'est pas exemptee de la meme facon :
+aucune mesure du depot ne l'etablit.
 
 Pourquoi les snippets de reference ``class Foo(QCAlgorithm)`` sont ecartes :
 dans un ``QCAlgorithm``, ``self.History(symbol, N)`` s'ancre sur ``self.Time``,
@@ -109,6 +122,19 @@ RE_DATE_VAR_ASSIGN = re.compile(
     re.MULTILINE,
 )
 
+# ``<receiver>.set_start_date(<args>`` : receiver et reste de ligne, pour
+# l'ancrage de la forme L (mecanisme A, #8772).
+RE_SET_START_CALL = re.compile(r"(\w+)\s*\.\s*[Ss]et_?[Ss]tart_?[Dd]ate\s*\(([^\n]*)")
+# Arguments litteraux d'un set_start_date : ``2020, 1, 1`` ou ``datetime(2020, ...``.
+RE_LITERAL_START_ARGS = re.compile(
+    r"^\s*(?:\d{4}\s*,\s*\d{1,2}\s*,\s*\d{1,2}|(?:datetime|date)\s*\(\s*\d{4}\s*,)"
+)
+
+# Repli yfinance ``yf.Ticker(t).history(period="5y")`` : la periode se compte
+# depuis l'heure d'execution (mecanisme B, #8772) -> forme N. ``_history_calls``
+# ne le voit pas (receiver ``)``, et l'appel n'a pas de 2e argument positionnel).
+RE_PERIOD = re.compile(r"\.\s*history\s*\([^)]*\bperiod\s*=\s*['\"]", re.IGNORECASE)
+
 
 def _split_call_args(text: str, open_paren: int) -> tuple[list[str], int] | None:
     """Decoupe les arguments d'un appel dont la parenthese ouvrante est a
@@ -184,6 +210,24 @@ def _history_calls(source: str) -> list[dict]:
     return hits
 
 
+def _anchored_start_args(
+    code_cells: list[tuple[int, str]], cell_index: int, offset: int, receiver: str
+) -> str | None:
+    """Arguments du dernier ``<receiver>.set_start_date(...)`` execute avant
+    l'appel situe a ``offset`` dans la cellule ``cell_index`` (cellules
+    anterieures, ou plus haut dans la meme cellule). ``None`` si aucun."""
+    last: str | None = None
+    for idx, src in code_cells:
+        if idx > cell_index:
+            break
+        for m in RE_SET_START_CALL.finditer(src):
+            if idx == cell_index and m.start() >= offset:
+                continue
+            if m.group(1) == receiver:
+                last = m.group(2)
+    return last
+
+
 def _line_no(source: str, offset: int) -> int:
     """Numero de ligne (1-indexe) d'un offset dans une source multi-lignes."""
     return source.count("\n", 0, offset) + 1
@@ -206,6 +250,8 @@ def classify_notebook(path: Path) -> dict[str, Any]:
     - Formes L/T (``history(..., N/timedelta, ...)``) : le ``self.History`` d'un
       ``QCAlgorithm`` s'ancre sur l'heure COURANTE de la boucle de backtest
       (effet voulu) -> exclu via le receiver ``self``, pas via la cellule.
+    - Forme L ancree sur un ``set_start_date`` litteral du meme receiver
+      (mecanisme A, #8772) : figee, rapportee sous ``anchored_lookbacks``.
     """
     rec: dict[str, Any] = {
         "path": _rel(path),
@@ -214,6 +260,7 @@ def classify_notebook(path: Path) -> dict[str, Any]:
         "markers": [],
         "has_qc_api": False,
         "has_set_end": False,
+        "anchored_lookbacks": [],
         "error": None,
     }
     try:
@@ -288,7 +335,13 @@ def classify_notebook(path: Path) -> dict[str, Any]:
     # Formes T / L / N-arg : arguments de <receiver>.history(...), receiver != self.
     history_literal_pinned = False
     history_calls_seen = False
+    anchored: list[dict] = []
     for idx, src in code_cells:
+        for m in RE_PERIOD.finditer(src):
+            ln = _line_no(src, m.start())
+            forms.setdefault("N", []).append(
+                {"cell_index": idx, "line": ln, "snippet": _snippet_of(src, ln)}
+            )
         for call in _history_calls(src):
             history_calls_seen = True
             args = call["args"]
@@ -307,9 +360,13 @@ def classify_notebook(path: Path) -> dict[str, Any]:
                     {"cell_index": idx, "line": line, "snippet": snippet}
                 )
             elif RE_INT_ARG.match(second):
-                forms.setdefault("L", []).append(
-                    {"cell_index": idx, "line": line, "snippet": snippet, "lookback": second}
-                )
+                hit = {"cell_index": idx, "line": line, "snippet": snippet, "lookback": second}
+                start_args = _anchored_start_args(code_cells, idx, call["start"], call["receiver"])
+                if start_args is not None and RE_LITERAL_START_ARGS.match(start_args):
+                    # mecanisme A (#8772) : fenetre finie a la date de debut litterale.
+                    anchored.append(hit)
+                else:
+                    forms.setdefault("L", []).append(hit)
             elif RE_LITERAL_DATE.search(second) or second.split("[")[0].strip() in literal_date_vars:
                 # borne litterale concrete (ou variable litterale resolue) ->
                 # fenetre FIGEE, pas du drift.
@@ -318,12 +375,13 @@ def classify_notebook(path: Path) -> dict[str, Any]:
     rec["forms"] = sorted(forms.keys())
     for f in sorted(forms.keys()):
         rec["markers"].append({"form": f, "hits": forms[f]})
+    rec["anchored_lookbacks"] = anchored
 
     if forms:
         rec["verdict"] = "DRIFT"
     elif has_set_end:
         rec["verdict"] = "PINNED"
-    elif history_literal_pinned:
+    elif history_literal_pinned or anchored:
         rec["verdict"] = "PINNED"
     else:
         rec["verdict"] = "INDÉTERMINÉ"

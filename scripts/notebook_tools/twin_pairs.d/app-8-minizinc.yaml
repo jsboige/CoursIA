@@ -1,7 +1,7 @@
 - name: App-8 MiniZinc
-  family: Search/Applications
-  python: MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb
+  family: Search/Part3-Cas-pratiques
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-8-MiniZinc.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-8-MiniZinc-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = minizinc (binding Python pour MiniZinc modeling language, MIT, https://github.com/MiniZinc/libminizinc, dekker 2024) + OR-Tools CP-SAT (driver pour cross-solve depuis MiniZinc) + numpy + matplotlib (19 cellules code). C# = Google.OrTools.Sat (NuGet, C# binding OR-Tools CP-SAT 9.11) + System.* BCL, 14 cellules code. Verdict SOTA-OK (lib-vs-lib) : Python invoque minizinc (modeling language) + OR-Tools CP-SAT (solver backend) ; C# invoque Google.OrTools.Sat (C# binding du MEME engine OR-Tools CP-SAT 9.11). MiniZinc utilise OR-Tools comme solver backend par defaut, donc les deux cotes aboutissent au MEME moteur CP-SAT reel. L'asymetrie est mineure : Python passe par la couche modeling language MiniZinc (plus declarative, plus haut niveau d'abstraction), C# utilise directement le binding CP-SAT (plus proche du moteur). parity_level: semantic preserve (post-#10382 les deux cotes utilisent le MEME solver)."

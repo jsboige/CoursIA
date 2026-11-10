@@ -1,0 +1,10 @@
+date: '2026-10-24'
+by: myia-po-2024:CoursIA
+python_sha: 7b0bd9ed5fbf2f851dad536227b8ecd384c72a62
+csharp_sha: 5f56b00fe588f2600edf85b572fcd6db559d3532
+content_python_sha: c2d003f440c2cb7fd379fd919a1ac2775a616de4221e0314b10ef40773efee94
+content_csharp_sha: 8af1e62ec91fe0d3058cca37ac51ecdb89acc738328aa229cd612b3a9fe36d8e
+reason: >-
+  Attribution '## Source' Yurichev miroree des deux cotes (PR #22232, tranche #19278) : la PR
+  ajoutait la section cote Python seul, le jumeau C# la recoit a l'identique. Parite native-both
+  retablie, markdown-only, aucune cellule de code, sortie ni execution_count touchee.

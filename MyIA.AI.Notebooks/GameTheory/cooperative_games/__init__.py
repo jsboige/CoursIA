@@ -50,6 +50,7 @@ from .core import (
     core_constraints,
     core_vertices_2d,
     core_vertices_3d,
+    sample_core_3d,
     bondareva_shapley_condition
 )
 from .french_politics import (
@@ -122,6 +123,7 @@ __all__ = [
     "core_constraints",
     "core_vertices_2d",
     "core_vertices_3d",
+    "sample_core_3d",
     "bondareva_shapley_condition",
     # French politics
     "FrenchLeftCoalition2024",

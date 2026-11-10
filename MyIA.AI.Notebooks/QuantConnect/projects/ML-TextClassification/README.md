@@ -23,3 +23,4 @@ Text classification strategy using Naive Bayes on simulated news sentiment. Pred
 ## Files
 
 - main.py - Strategy (262L, MLTextClassificationAlgorithm)
+- quantbook.ipynb - QuantBook de recherche : classification de textes (NLP) appliquée au trading

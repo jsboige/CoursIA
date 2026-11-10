@@ -19,7 +19,7 @@ Le projet ComfyUI Auth a atteint un **état 100% fonctionnel** avec :
 - **Durée totale** : ~6 semaines (octobre-novembre 2025)
 - **Phases documentées** : 31 phases (00-31)
 - **Scripts consolidés** : 4 scripts maîtres dans `core/`
-- **Rapports générés** : ~50,000+ lignes de documentation
+- **Rapports générés** : documentation
 - **Taux de réussite** : 100% (génération d'images fonctionnelle)
 
 ---

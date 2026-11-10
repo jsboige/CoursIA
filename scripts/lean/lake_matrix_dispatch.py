@@ -43,6 +43,9 @@ GATE_SELF_COVER = [
     "scripts/lean/axiom_check_step.py",
     "scripts/lean/ci_lakes.json",
     "scripts/lean/lake_matrix_dispatch.py",
+    # Le lecteur de fichiers modifies EST la detection : un changement
+    # de la detection change la liste des lakes battus (#22065).
+    "scripts/lean/lean_matrix_changed_files.py",
     "scripts/ci/check_lake_matrix_paths.py",
 ]
 

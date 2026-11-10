@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-08
+
 # Périmètre PRODUCTION — dérivation mécanique v1
 
 > **Epic [#11259](https://github.com/jsboige/CoursIA/issues/11259) — tâches T1 + T1b.**
@@ -48,8 +50,8 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 | Argument Analysis | EPITA IA Symbolique | `Argumentation-01-Toulmin-Model-Python.ipynb` | 4 | |
 | Tweety | EPITA IA Symbolique | `Tweety-02-Basic-Logics-Python.ipynb` | 6 | |
 | Lean | EPITA IA Symbolique | `Lean-02-Dependent-Types-Lean.ipynb` | 2 | |
-| Semantic Web | EPITA IA Symbolique | `SW-2-CSharp-RDFBasics.ipynb` | 2 | |
-| Planners (01-02) | EPITA IA Symbolique | `Planners-1-Introduction.ipynb` | 3 | |
+| Semantic Web | EPITA IA Symbolique | `SW-02-RDFBasics-CSharp.ipynb` | 2 | |
+| Planners (01-02) | EPITA IA Symbolique | `Planners-01-Introduction-Python.ipynb` | 3 | |
 | SmartContracts (00-01) | EPITA IA Symbolique | `SC-00-Cypherpunk-Origins-Python.ipynb` | 2 | |
 
 ## Strate A — proposés pour signature (99)
@@ -162,33 +164,33 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 
 ### EPITA — IA Symbolique (19)
 
-<!-- MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis -->
+<!-- MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis -->
 
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-01-Toulmin-Model-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-00-Setup-Tweety-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05-Formal-Verification-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01-Toulmin-Model-Python.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Tweety -->
 
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Conditional-Logics-Csharp.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Dung-Csharp.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-ModalLogic-Csharp.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-QBF-Csharp.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Conditional-Logics-CSharp.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Dung-CSharp.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-ModalLogic-CSharp.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-QBF-CSharp.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Lean -->
 
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-02-Dependent-Types-Lean.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-03-Propositions-Proofs-Lean.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SemanticWeb -->
 
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2-CSharp-RDFBasics.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Planners -->
 
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SmartContracts -->
 
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb`
@@ -269,35 +271,35 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 
 ### EPITA — IA Symbolique (60)
 
-<!-- MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis -->
+<!-- MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis -->
 
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07-Orchestration-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08-Capstone-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08e-Argument-Profile-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02b-Argumentum-Cards-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05c-Formal-Richness-Matrix-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05b-Multi-Backend-Routing-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03c-Ranking-Semantics-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08c-UI-Configuration-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03b-Value-Based-AF-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07-Orchestration-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08e-Argument-Profile-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02b-Argumentum-Cards-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08b-Executor-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05c-Formal-Richness-Matrix-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05b-Multi-Backend-Routing-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Ontology_AIF.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Ontology_CrossLinks.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Ontology_Virtues.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03c-Ranking-Semantics-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08c-UI-Configuration-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03b-Value-Based-AF-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Tweety -->
 
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Aspic-Csharp.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Aspic-CSharp.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Lean -->
 
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-04-Quantifiers-Lean.ipynb`
@@ -312,30 +314,30 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Kochen-Specker.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Grothendieck-Tribute.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17b-Knots-Invariants-Companion.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-01-Sendov-Lean-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02-Tao-Lean-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SemanticWeb -->
 
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-5-CSharp-LinkedData.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-6-CSharp-RDFS.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-7-CSharp-OWL.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-8-Python-SHACL.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-Python-JSONLD.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04-SPARQL-CSharp.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-CSharp.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Planners -->
 
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SmartContracts -->
 
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-04-Functions-State-Python.ipynb`
@@ -350,7 +352,7 @@ Chaque série non recensée ci-dessus, et pourquoi (contestable sur l'Epic sans 
 |-------|----------------------------|
 | `ML/` (ML.NET) | cursus .NET non rattaché aux 4 écoles in-scope ; le ML enseigné passe par QC-Py (ECE) et GenAI (EPF) |
 | `Search/Part4-Metaheuristics/` | au-delà du programme PrCon — Part1+Part2 couvrent le cours référencé |
-| `Search/Applications/`, `Search/MetaGeneticSharp/` | applications dérivées non citées par le calendrier des cours |
+| `Search/Part3-Cas-pratiques/`, `Search/MetaGeneticSharp/` | applications dérivées non citées par le calendrier des cours |
 | `Sudoku/` | série .NET autonome, non rattachée à un cours du calendrier |
 | `Probas/` (Infer.NET) | idem — non rattachée à une des 4 écoles |
 | `GameTheory/` | les preuves Lean associées sont du code (i18n #4980), non des notebooks à signer ; les `.ipynb` ne sont pas cités nommément par le calendrier |
@@ -370,7 +372,7 @@ sur l'Epic). Comptes par catégorie :
 - `EXCL-VARIANTE` : 33
 - `SETUP` : 6
 
----
+***
 
 *Dérivé mécaniquement depuis le disque (worktree frais `origin/main`) le 2026-08-16.
 Source du calendrier : [docs/reference/teaching-context.md](../reference/teaching-context.md) — à jour 2026-08-08.

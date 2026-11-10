@@ -1,0 +1,30 @@
+{
+  "machine": "po-2024",
+  "snapshot_date": "2026-10-08",
+  "vm_total_gib_observed": 23.47,
+  "composition": {
+    "docker": {
+      "instances": 6,
+      "cap_gib": 1.5,
+      "total_gib": 9.0,
+      "source": "supervise.sh cmd_run --memory 1536m (defaut)"
+    },
+    "waiters": {
+      "instances": 12,
+      "cap_gib": 0.5,
+      "total_gib": 6.0,
+      "source": "supervise.sh cmd_waiters --memory 512m"
+    },
+    "lean": {
+      "instances": 2,
+      "cap_gib": 6.0,
+      "total_gib": 12.0,
+      "source": "supervise.sh cmd_lean --memory 6g + memory-swap=memory"
+    }
+  },
+  "composition_total_gib": 27.0,
+  "vm_total_gib": 23.47,
+  "verdict_at_snapshot": "INCOHERENT : 27.0 GiB > 23.47 GiB VM",
+  "issue": 19805,
+  "notes": "Snapshot initial issu de la mesure firsthand de l'issue #19805 (2026-10-08). Le budget memoire cumule des conteneurs runners depasse la RAM de la VM WSL (24 032 Mo = 23.47 GiB). La slice coursia-ci.slice plafonne a 16 GiB (MemoryMax) et 12 GiB (MemoryHigh), donc le garde kernel cgroup v2 tient le mur ; ce snapshot sert a l'organe assert_memory_budget pour detecter la derive avant qu'elle ne se reproduise (cf. cause racine issue #19805 : agrandissement VM 2026-09-24 revertu, declarations non revisees)."
+}

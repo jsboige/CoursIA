@@ -69,8 +69,10 @@
 #   COURSIA_RUNNER_DEVICE_WRITE_BPS     plafond d'ecriture PAR conteneur, en
 #   COURSIA_RUNNER_DEVICE_READ_BPS      octets/s (ex. 41943040 = 40 Mio/s).
 #   COURSIA_RUNNER_BLKIO_DEVICE         device porteur ; auto-detecte si vide.
-#   COURSIA_RUNNER_CPU_BUDGET           somme MAX de vCPU, toutes familles
-#                                       confondues. 0 = pas de garde.
+#   COURSIA_RUNNER_CPU_BUDGET           somme MAX de vCPU des familles
+#                                       d'EXECUTION (start, lean) -- les
+#                                       waiters, oisifs, en sont EXCLUS
+#                                       (#15574 item 3). 0 = pas de garde.
 #   COURSIA_RUNNER_BUDGET_GB            part de RAM hote que la CI s'autorise,
 #                                       toutes familles confondues. SEULE borne
 #                                       de RESSOURCE non inerte (defaut
@@ -99,7 +101,7 @@
 set -uo pipefail
 
 REPO="${COURSIA_RUNNER_REPO:-jsboige/CoursIA}"
-IMAGE="${COURSIA_RUNNER_IMAGE:-coursia-linux-runner:2.337.0}"
+IMAGE="${COURSIA_RUNNER_IMAGE:-coursia-linux-runner:2.338.0}"
 LABELS="${COURSIA_RUNNER_LABELS:-self-hosted,coursia-ephemeral,coursia-linux}"
 # #15152 : le prefixe de nom derive de la MACHINE, pas d'un hote code en dur.
 # L'ancien defaut `myia-po-2024-*` faisait enregistrer les runners de toute
@@ -145,6 +147,18 @@ PIDS="${COURSIA_RUNNER_PIDS:-384}"
 # re-telechargerait interpretes et outils via les actions setup-*. Le volume
 # nomme survit aux conteneurs ; RUNNER_TOOL_CACHE dit aux actions ou chercher.
 # Sa propriete runner:runner vient du point de montage du Dockerfile.
+#
+# GARDE COURSE PIP (#22502) : ce volume est PARTAGE par tous les slots et les
+# waiters -- son site-packages servait donc chaque job, et deux jobs
+# pip-installant en parallele y corrompaient des paquets (pygments a 0 octet
+# sous dist-info 2.21.0, ImportError aleatoires retombes sur la PR mesuree,
+# instance #22281). L'isolation vit cote CONTENEUR, pas cote volume :
+# entrypoint.sh exporte PIP_USER=1, chaque pip installe dans le site
+# utilisateur ephemere (~/.local du conteneur, detruit avec lui) et le
+# site-packages partage n'est plus jamais ecrit par un job. Les exceptions
+# (etapes a venv propre sous $RUNNER_TEMP) posent PIP_USER=0 localement dans
+# le workflow. Ne pas re-introduire d'ecriture pip dans ce volume sans
+# re-ouvrir #22502 : la course redevenait possible par construction.
 TOOLCACHE_VOLUME="${COURSIA_RUNNER_TOOLCACHE_VOLUME:-coursia-runner-toolcache}"
 TOOLCACHE_MOUNT="${COURSIA_RUNNER_TOOLCACHE_MOUNT:-/opt/hostedtoolcache}"
 
@@ -165,6 +179,53 @@ TOOLCACHE_MOUNT="${COURSIA_RUNNER_TOOLCACHE_MOUNT:-/opt/hostedtoolcache}"
 # d'ouvrir le runner aux forks.
 WORK_VOLUME_PREFIX="${COURSIA_RUNNER_WORK_VOLUME_PREFIX:-coursia-runner-work}"
 WORK_MOUNT="${COURSIA_RUNNER_WORK_MOUNT:-/home/runner/_work}"
+
+# Magasin d'objets partage (#18225) : portage de la recette
+# persist/po-2026/pool.sh au pool docker. Le miroir bare vit DANS le volume
+# toolcache (deja persistant, deja monte par tous les slots ET les waiters) :
+# les repos de slot l'empruntent par alternates, donc l'historique traverse le
+# reseau une fois pour N slots au lieu d'une fois par slot froid (5,49 Gio
+# mesures par clone froid). Le superviseur tient la moitie PRODUCTRICE
+# (bootstrap une fois, refresh incremental), l'entrypoint la moitie
+# CONSOMMATRICE (alternates + semis du _work).
+#
+# FAIL-OPEN : miroir absent + bootstrap desactive => rien ne se passe, et le
+# parc se comporte exactement comme avant cette section.
+MIRROR_ENABLE="${COURSIA_RUNNER_MIRROR:-1}"
+MIRROR_PATH="${COURSIA_RUNNER_MIRROR_PATH:-$TOOLCACHE_MOUNT/coursia-mirror.git}"
+MIRROR_REMOTE="${COURSIA_RUNNER_MIRROR_REMOTE:-https://github.com/jsboige/CoursIA.git}"
+MIRROR_HEAD="${COURSIA_RUNNER_MIRROR_HEAD:-main}"
+# Throttle du refresh. Il est tenu par un horodatage DANS le volume, pas par une
+# variable du superviseur : deux boucles (pool docker et pool lean) ou deux
+# superviseurs de la meme machine ne font alors qu'un fetch par periode, au lieu
+# d'un par boucle.
+MIRROR_REFRESH_EVERY="${COURSIA_RUNNER_MIRROR_REFRESH_EVERY:-300}"
+# Bootstrap DESACTIVE par defaut : c'est une action hors bande, lourde (copie
+# integrale de l'historique), et elle n'a de sens qu'une fois par machine. Un
+# `supervise.sh mirror bootstrap` l'explicite ; `COURSIA_RUNNER_MIRROR_BOOTSTRAP=1`
+# la laisse se faire d'elle-meme au premier tick, sous garde d'espace libre.
+MIRROR_BOOTSTRAP="${COURSIA_RUNNER_MIRROR_BOOTSTRAP:-0}"
+MIRROR_MIN_FREE_MB="${COURSIA_RUNNER_MIRROR_MIN_FREE_MB:-8192}"
+# Budget du probe (controle positif pour hotes tiers, #18225) : 300 s par
+# defaut, soit la moitie d'un `timeout-minutes: 10` -- le job garde sa marge
+# pour ses propres etapes apres le checkout.
+MIRROR_PROBE_MAX_S="${COURSIA_RUNNER_MIRROR_PROBE_MAX_S:-300}"
+# Le conteneur du miroir ne porte PAS le label coursia-ci=1 : il ne doit pas
+# entrer dans l'arithmetique memoire des slots (assert_memory_budget), qui
+# dimensionne une flotte de jobs. Il porte son propre plafond a la place.
+MIRROR_MEMORY="${COURSIA_RUNNER_MIRROR_MEMORY:-1g}"
+MIRROR_PIDS="${COURSIA_RUNNER_MIRROR_PIDS:-256}"
+
+# Garde de DEBIT git (#18225 point 3). Un transfert qui s'effondre a quelques
+# centaines d'octets par seconde ne rend pas la main : il stalle jusqu'au
+# timeout du job, et le job meurt sans qu'aucune ligne ne nomme le reseau.
+# `http.lowSpeedLimit`/`lowSpeedTime` (via GIT_*) transforment ce stall en echec
+# RAPIDE, que le retry du runner comme le fetch suivant savent traiter.
+# 1024 o/s sur 90 s : mesure du 2026-09-06, codeload servait 1 936 a 39 530 o/s,
+# donc le seuil est sous le plancher observe et ne coupe pas un debit normal.
+GIT_LOW_SPEED_LIMIT="${COURSIA_RUNNER_GIT_LOW_SPEED_LIMIT:-1024}"
+GIT_LOW_SPEED_TIME="${COURSIA_RUNNER_GIT_LOW_SPEED_TIME:-90}"
+GIT_NET_ARGS=(-e "GIT_HTTP_LOW_SPEED_LIMIT=$GIT_LOW_SPEED_LIMIT" -e "GIT_HTTP_LOW_SPEED_TIME=$GIT_LOW_SPEED_TIME")
 
 # Pool d'attente PR-gate (#13363, 2026-09-02) : le PR gate agrege jusqu'a
 # 35 min en polling, occupant un slot d'execution pendant que les jobs reels
@@ -187,6 +248,21 @@ WAITER_PIDS="${COURSIA_RUNNER_WAITER_PIDS:-128}"
 # volume _work, dont la persistance est le vecteur ferme par #14385 -- les
 # waiters n'en ont toujours aucun, et cette distinction est la garde.
 WAITER_TOOLCACHE="${COURSIA_RUNNER_WAITER_TOOLCACHE:-1}"
+# Allocation RSS d'un waiter OISIF, en Mo entiers (#22532). C'est la BASE DE
+# COMPTABILITE budgetaire de la famille waiters -- pas un cap docker : le cap
+# reste WAITER_MEMORY (regle #15202 : baisser un cap exigerait de nommer les
+# jobs mesures sous la nouvelle valeur, et un waiter EXECUTE les jobs PR-gate).
+# Symetrie memoire de #15574 item 3 (arbitrage CPU du 2026-10-01 : « le budget
+# garde la part qui calcule, pas la part qui dort ») : compter la famille a son
+# cap y inscrivait une reservation fantome. Mesure po-2024 du 2026-11-04
+# (docker stats --no-stream, 6 waiters oisifs) : 36,5 a 168,9 MiB chacun,
+# 486,5 MiB au total pour 3 072 Mo de caps -- ~2,6 Go reserves que rien
+# n'occupait. Vide = repli au cap avec AVERTISSEMENT au demarrage (meme
+# discipline que COURSIA_RUNNER_BUDGET_GB : une base non declaree n'est pas
+# auditable). La validation (entier de Mo) se fait a l'usage, dans
+# assert_memory_budget -- die n'est pas encore defini a cette hauteur du
+# fichier, et un garde ne doit pas plus mourir a moitie qu'un budget mentir.
+WAITER_RSS_MB_DECLARE="${COURSIA_RUNNER_WAITER_RSS_MB:-}"
 
 # Pool Lean specialise (#14337 tranche 1) : le cout d'un job Lean n'est pas le
 # toolchain mais MATHLIB. Image dediee (Dockerfile.lean : elan + toolchain
@@ -195,7 +271,7 @@ WAITER_TOOLCACHE="${COURSIA_RUNNER_WAITER_TOOLCACHE:-1}"
 # Le .lake chaud vit dans le volume _work PAR SLOT au prefixe dedie
 # coursia-runner-work-lean-{N} (pattern #14285) : .lake/packages et .lake/build
 # survivent aux conteneurs, lake build devient incremental.
-LEAN_IMAGE="${COURSIA_LEAN_RUNNER_IMAGE:-coursia-lean-runner:2.337.0}"
+LEAN_IMAGE="${COURSIA_LEAN_RUNNER_IMAGE:-coursia-lean-runner:2.338.0}"
 LEAN_LABELS="${COURSIA_LEAN_RUNNER_LABELS:-self-hosted,coursia-ephemeral,coursia-lean}"
 LEAN_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-${MACHINE_ID}-lean-docker}"
 LEAN_WORK_VOLUME_PREFIX="${COURSIA_LEAN_RUNNER_WORK_VOLUME_PREFIX:-coursia-runner-work-lean}"
@@ -362,6 +438,19 @@ BACKOFF_JITTER_PCT="${COURSIA_RUNNER_BACKOFF_JITTER_PCT:-25}"
 FETCH_TOKEN_STATE_FILE="$STATE_DIR/.fetch_token_state"
 mkdir -p "$STATE_DIR"
 : > "$FETCH_TOKEN_STATE_FILE"
+
+# #21527 critere 5 (voie (a)) : le registration token vaut 1 h et ne se
+# consomme pas a l'usage -- chaque demarrage de conteneur re-fetchait le
+# sien (mesure ai-01 du 26/10 : 155 appels REST/h pour le pool ; c'est la
+# consommation qui a epuise le quota de la flotte le 2026-10-20). Le cache
+# ci-dessous, partage par tous les slots et waiters via STATE_DIR (persistant
+# sur l'hote), fait tomber la consommation a <= 1 fetch par fenetre de
+# validite. Meme motif que FETCH_TOKEN_STATE_FILE : fetch_token vit dans un
+# subshell $(...), seul le fichier traverse.
+REGISTRATION_TOKEN_CACHE="${REGISTRATION_TOKEN_CACHE:-$STATE_DIR/.registration_token_cache}"
+# Marge de securite sur les 3600 s publiees par GitHub : re-fetch a 55 min
+# pour ne jamais servir un jeton expire a un demarrage de conteneur.
+REGISTRATION_TOKEN_TTL_SEC=3300
 
 # Seuil de packs du cache _work persistant (#15105). Au-dela, l'entrypoint du
 # conteneur repack le clone (gc.auto=0 pose par actions/checkout : rien
@@ -669,29 +758,264 @@ host_distress() {
   return "$HOST_VERDICT_RC"
 }
 
-# Somme, en Mo, des caps memoire des conteneurs CI DEJA en vol. On lit la
-# limite REELLEMENT APPLIQUEE par docker (HostConfig.Memory), pas une
+# Points d'acces des demons Docker qui peuvent porter des conteneurs CI sur
+# cette machine. ai-01 en fait tourner deux (Docker Desktop sur le socket par
+# defaut, docker-ce sur /var/run/docker-ce.sock, cf resolve_blkio_device et
+# #15164) : ne sonder que le endpoint de DOCKER_HOST compte une MOITIE de
+# flotte et compare ce demi-total au budget ENTIER -- c'est ainsi que la
+# machine a atteint 20480 Mo nominaux sur un budget declare de 12288 sans
+# qu'aucun garde ne rougisse. `default` designe le endpoint courant
+# (DOCKER_HOST ou socket par defaut) ; les autres entrees sont des chemins de
+# socket unix. La liste se declare sans toucher au code :
+# COURSIA_RUNNER_DOCKER_ENDPOINTS="default /var/run/docker-ce.sock"
+ci_docker_endpoints() {
+  local eps="${COURSIA_RUNNER_DOCKER_ENDPOINTS:-default /var/run/docker-ce.sock}"
+  printf '%s\n' "$eps"
+}
+
+# Somme, en Mo, des caps memoire des conteneurs CI DEJA en vol -- sur TOUS les
+# demons de ci_docker_endpoints, pas seulement celui de DOCKER_HOST (#15164).
+# On lit la limite REELLEMENT APPLIQUEE par docker (HostConfig.Memory), pas une
 # re-derivation des variables de ce script : c'est la seule facon de compter
 # une famille lancee par un AUTRE processus, avec un autre environnement --
 # soit exactement le trou que cmd_lean documente depuis toujours (« la somme
 # des caps des familles actives n'est gardee par RIEN »).
+#
+# FAIL-CLOSED, sur la bonne frontiere. L'existence d'un daemon se sonde par
+# `docker ps` : un daemon qui ne repond pas peut porter des conteneurs, et
+# compter 0 pour lui serait exactement le defaut que ce garde ferme -- on
+# refuse, et la raison part sur stderr : les appelants lisent le nombre par
+# substitution de commande, et une globale posee dans la sous-couche de $( )
+# n'atteint jamais l'appelant -- stderr, lui, traverse. Un chemin de socket
+# ABSENT n'est pas un daemon muet : c'est un daemon non installe, qui ne porte
+# rien sur cette machine -- il sort du perimetre, et le DIT sur stderr.
+#
+# Deduplication par ID de demon, AU MIEUX : DOCKER_HOST peut designer un
+# socket deja liste, et le meme daemon rendu deux fois serait compte deux
+# fois. Si l'ID ne se lit pas (info muet ou vide), on ne refuse PAS -- on
+# enumere sans dedup, ce qui ne peut que surcompter (refus conservateur),
+# jamais sous-compter.
+# Lignes d'inspection des conteneurs CI en vol, sur TOUS les demons de
+# ci_docker_endpoints, au format demande par l'appelant.
+#
+# C'est le FACTEUR COMMUN de running_ci_mb (la flotte entiere) et de
+# running_family_mb (une famille de slots). Les deux doivent voir EXACTEMENT le
+# meme perimetre -- memes demons, meme deduplication par ID de demon, meme
+# contrat fail-closed. Deux perimetres divergents feraient diverger la somme
+# en vol et la reprise d'une famille, et c'est ce desaccord qui rendait le
+# double-comptage du budget invisible (#20727).
+#
+# Le contrat fail-closed est celui de running_ci_mb, inchange : un demon muet
+# (docker ps en echec) ou un inspect muet alors que le daemon repond rend
+# rc!=0 et nomme la raison sur stderr -- compter 0 pour lui serait exactement
+# le defaut que ce garde ferme (#15164).
+ci_inspect_rows() {
+  local fmt="$1" ep d id ids rows seen=" "
+  for ep in $(ci_docker_endpoints); do
+    case "$ep" in
+      default) d="docker" ;;
+      unix://*) d="docker -H $ep" ;;
+      *) d="docker -H unix://$ep" ;;
+    esac
+    case "$ep" in
+      default|tcp://*) ;;
+      *)
+        if [ ! -e "${ep#unix://}" ]; then
+          echo "[budget] socket $ep absent -- daemon non installe, hors perimetre" >&2
+          continue
+        fi
+        ;;
+    esac
+    if ! ids="$($d ps -q --filter 'label=coursia-ci=1' 2>/dev/null)"; then
+      echo "demon Docker injoignable sur '$ep' (docker ps en echec) -- le budget n'est PAS mesurable : un daemon muet peut porter des conteneurs. Reparer le daemon, ou retirer '$ep' de COURSIA_RUNNER_DOCKER_ENDPOINTS si ce demon n'existe plus sur cette machine, puis relancer. (#15164)" >&2
+      return 1
+    fi
+    id="$($d info --format '{{.ID}}' 2>/dev/null)" || id=""
+    if [ -n "$id" ]; then
+      case "$seen" in *" $id "*) continue ;; esac
+      seen="$seen $id "
+    fi
+    [ -n "$ids" ] || continue
+    if ! rows="$($d inspect --format "$fmt" $ids 2>/dev/null)"; then
+      echo "docker inspect muet sur '$ep' alors que le daemon repond -- budget non mesurable. (#15164)" >&2
+      return 1
+    fi
+    printf '%s\n' "$rows"
+  done
+  return 0
+}
+
+# Lignes "<nom> <MemUsage>" des conteneurs waiters en vol, par endpoint de
+# ci_docker_endpoints (#22532). docker stats --no-stream est l'instrument
+# nomme par le dispatch : MemUsage est le working set (pages actives), pas le
+# cap -- c'est ce que le noyau facture reellement a la slice. Fail-closed
+# comme ci_inspect_rows : un daemon muet peut porter des waiters, compter
+# leurs caps « faute de mieux » serait reintroduire la reservation fantome.
+waiter_stats_rows() {
+  local ep d id ids out seen=" "
+  for ep in $(ci_docker_endpoints); do
+    case "$ep" in
+      default) d="docker" ;;
+      unix://*) d="docker -H $ep" ;;
+      *) d="docker -H unix://$ep" ;;
+    esac
+    case "$ep" in
+      default|tcp://*) ;;
+      *)
+        if [ ! -e "${ep#unix://}" ]; then
+          echo "[budget] socket $ep absent -- daemon non installe, hors perimetre waiters" >&2
+          continue
+        fi
+        ;;
+    esac
+    if ! ids="$($d ps -q --filter 'label=coursia-waiter=1' 2>/dev/null)"; then
+      echo "demon Docker injoignable sur '$ep' (ps waiters en echec) -- le RSS des waiters n'est pas mesurable. (#22532)" >&2
+      return 1
+    fi
+    # Deduplication par ID de demon, comme ci_inspect_rows (#15164) : le
+    # default de ci_docker_endpoints porte DEUX endpoints, et un docker-ce
+    # local peut etre le MEME daemon que le default -- sans dedup, chaque
+    # waiter serait compte deux fois dans wrss (mesure : Test 74 sous WSL,
+    # 721 Mo rendus pour 361 reels). ID illisible = enumeration sans dedup,
+    # qui ne peut que surcompter (refus conservateur).
+    id="$($d info --format '{{.ID}}' 2>/dev/null)" || id=""
+    if [ -n "$id" ]; then
+      case "$seen" in *" $id "*) continue ;; esac
+      seen="$seen $id "
+    fi
+    [ -n "$ids" ] || continue
+    if ! out="$($d stats --no-stream --format '{{.Name}} {{.MemUsage}}' $ids 2>/dev/null)"; then
+      echo "docker stats muet sur '$ep' alors que le daemon repond -- RSS des waiters non mesurable. (#22532)" >&2
+      return 1
+    fi
+    [ -n "$out" ] && printf '%s\n' "$out"
+  done
+  return 0
+}
+
 running_ci_mb() {
-  local ids
-  ids="$(docker ps -q --filter 'label=coursia-ci=1' 2>/dev/null)"
-  if [ -z "$ids" ]; then echo 0; return 0; fi
-  docker inspect --format '{{.HostConfig.Memory}}' $ids 2>/dev/null \
-    | awk '{ s += $1 } END { printf "%d", s/1048576 }'
+  local rows wrows
+  rows="$(ci_inspect_rows '{{.Name}} {{.HostConfig.Memory}}')" || return 1
+  # #22532 (dispatch c2770) : la famille waiters compte au RSS REEL, pas au
+  # cap -- symetrie memoire de #15574 item 3. Les waiters non etiquetes
+  # (generation precedente du parc, remplaces au churn en minutes) restent
+  # comptes a leur cap : transition conservatrice, jamais laxiste.
+  if ! wrows="$(waiter_stats_rows)"; then
+    echo "budget CI NON MESURABLE -- REFUS. Le RSS des waiters n'a pas pu etre mesure (raison ci-dessus) : les compter au cap reintroduirait la reservation fantome (~2,6 Go sur po-2024, #22532), les compter a zero serait pire. Reparer le daemon, puis relancer. (#22532)" >&2
+    return 1
+  fi
+  if [ -z "$wrows" ]; then
+    printf '%s\n' "$rows" | awk '{ s += $2 } END { printf "%d", (s+0)/1048576 }'
+    return 0
+  fi
+  # La jointure se fait sur le NOM (unique par daemon) : les caps des waiters
+  # sortent de la somme, leur RSS y entre. awk rend "<total> <rss> <caps> <n>"
+  # sur stdout ; le total seul repart de la fonction, le detail part sur stderr
+  # -- il traverse la substitution de commande, ou arrive l'operateur.
+  local split
+  split="$(printf '%s\n' "$rows" | CI_WAITER_ROWS="$wrows" awk '
+    function rss_mb(v) {
+      # MemUsage docker : "154.7MiB" (working set). Mo du repo = MiB.
+      if (v ~ /GiB$/) { sub(/GiB$/, "", v); return v * 1024 }
+      if (v ~ /MiB$/) { sub(/MiB$/, "", v); return v + 0 }
+      if (v ~ /KiB$/) { sub(/KiB$/, "", v); return v / 1024 }
+      if (v ~ /B$/)   { sub(/B$/,   "", v); return v / 1048576 }
+      return 0
+    }
+    BEGIN {
+      n = split(ENVIRON["CI_WAITER_ROWS"], wl, "\n")
+      for (i = 1; i <= n; i++) {
+        wn = wl[i]; sub(/ .*/, "", wn); sub(/^\//, "", wn)
+        if (wn != "") {
+          isw[wn] = 1
+          # RSS du waiter, champ 2 de la ligne stats
+          split(wl[i], f, " "); r = rss_mb(f[2]); wrss += r
+          if (r > 0 || f[2] ~ /^[0-9]/) wc++
+        }
+      }
+    }
+    {
+      nom = $1; sub(/^\//, "", nom)
+      if (isw[nom]) { wcap += $2 / 1048576; next }
+      s += $2 / 1048576
+    }
+    END { printf "%d %d %d %d", int(s + wrss + 0.999), int(wrss + 0.999), int(wcap + 0.999), wc + 0 }
+  ')" || return 1
+  # shellcheck disable=SC2086
+  set -- $split
+  [ "$#" -eq 4 ] || { echo "running_ci_mb : split inattendu '$split'" >&2; return 1; }
+  if [ "$4" -gt 0 ]; then
+    echo "[budget] waiters au RSS reel : $4 waiter(s), $2 Mo (caps non comptes au plafond : $3 Mo) -- #22532" >&2
+  fi
+  echo "$1"
+}
+
+# Nombre de slots et memoire (Mo) d'UNE famille de conteneurs CI deja en vol.
+# La famille est identifiee par le prefixe de NOM de conteneur : un slot est un
+# conteneur dont le nom est EXACTEMENT <prefixe>-<numero>. Le predicat est
+# strict -- '<prefixe>-backup', '<prefixe>-4x' ou '<prefixe>' ne sont pas des
+# slots de la famille.
+#
+# Rend "<nombre> <Mo>" sur stdout. Fail-closed comme running_ci_mb : un demon
+# muet rend rc!=0, jamais 0.
+running_family_mb() {
+  local prefix="$1" upto="${2:-0}" rows
+  [ -n "$prefix" ] || { echo "0 0"; return 0; }
+  rows="$(ci_inspect_rows '{{.Name}} {{.HostConfig.Memory}}')" || return 1
+  printf '%s\n' "$rows" | CI_FAMILY_PREFIX="$prefix" CI_FAMILY_UPTO="$upto" awk '
+    BEGIN { p = ENVIRON["CI_FAMILY_PREFIX"]; lim = ENVIRON["CI_FAMILY_UPTO"] + 0 }
+    { nom = $1; mb = $2; sub(/^\//, "", nom);
+      if (index(nom, p) == 1) {
+        # Le nom d un slot est <prefixe>-<numero> : le reste commence par le
+        # TIRET, pas par le chiffre. Un predicat sur `^[0-9]+$` ne verrait
+        # donc AUCUN slot (le reste vaut « -4 »), et la reprise serait nulle.
+        rest = substr(nom, length(p) + 1);
+        if (rest ~ /^-[0-9]+$/) {
+          # Borne haute (#21494) : cmd_start ne relance que `seq 1 n`. Un slot
+          # de numero > n n est JAMAIS repris par le demarrage en cours, et le
+          # compter ferait sous-compter le garde -- exactement pendant une
+          # reduction de slots, quand la pression memoire est deja haute.
+          # Le numero se lit APRES le tiret : `rest + 0` vaudrait -11 pour
+          # « -11 », une valeur negative toujours <= a la borne.
+          if (lim <= 0 || (substr(rest, 2) + 0) <= lim) { c++; s += mb } } } }
+    END { printf "%d %d", c + 0, (s + 0) / 1048576 }'
 }
 
 # Refuse le demarrage si la famille demandee ne tient pas dans le budget, ou si
 # l'hote est deja sous le plancher. Montre l'arithmetique dans les deux cas :
 # un refus qui ne montre pas son calcul se contourne au juge.
 assert_memory_budget() {
-  local famille="$1" n="$2" per="$3"
+  local famille="$1" n="$2" per="$3" prefix="${4:-}"
   local per_mb want_mb used_mb budget_mb rc
+  local reprise_n=0 reprise_mb=0 add_mb
   per_mb="$(mem_to_mb "$per")"
   want_mb=$(( per_mb * n ))
-  used_mb="$(running_ci_mb)"
+  # #22532 : la DEMANDE de la famille waiters se compte a l'allocation RSS
+  # declaree, pas au cap -- symetrie memoire de #15574 item 3 (le budget garde
+  # la part qui calcule, pas la part qui dort). Le cap docker ne bouge PAS
+  # (regle #15202 : le baisser exigerait de nommer les jobs mesures dessous) ;
+  # c'est la base de comptabilite qui change. En vol, running_ci_mb mesure deja
+  # ces memes waiters au RSS reel -- la demande et la somme doivent parler la
+  # meme unite, sinon add_mb ment.
+  local rss_basis_cap=""
+  if [ "$famille" = "waiters" ]; then
+    if [ -n "$WAITER_RSS_MB_DECLARE" ]; then
+      case "$WAITER_RSS_MB_DECLARE" in
+        *[!0-9]*) die "COURSIA_RUNNER_WAITER_RSS_MB doit etre un entier de Mo (lu : '$WAITER_RSS_MB_DECLARE')" ;;
+      esac
+      rss_basis_cap="$per"
+      per_mb="$WAITER_RSS_MB_DECLARE"
+      want_mb=$(( per_mb * n ))
+    else
+      echo "[budget] AVERTISSEMENT : COURSIA_RUNNER_WAITER_RSS_MB n'est declaree par aucun" >&2
+      echo "        wrapper de machine -- la demande waiters se compte au cap ($per/slot) et" >&2
+      echo "        reintroduit la reservation fantome (mesure po-2024 du 2026-11-04 : 36 a" >&2
+      echo "        169 Mo reels par waiter oisif pour 512 declares, #22532)." >&2
+    fi
+  fi
+  if ! used_mb="$(running_ci_mb)"; then
+    die "budget CI NON MESURABLE -- REFUS. La ligne ci-dessus nomme le daemon injoignable : tant qu'il ne repond pas, la somme en vol ne peut pas etre etablie, et compter 0 pour lui serait exactement le defaut que ce garde ferme. Reparer le daemon, ou ajuster COURSIA_RUNNER_DOCKER_ENDPOINTS, puis relancer. (#15164)"
+  fi
   budget_mb=$(( BUDGET_GB * 1024 ))
 
   # Un refus qui ne montre pas sa mesure se conteste au juge, puis se contourne.
@@ -719,28 +1043,94 @@ par COURSIA_RUNNER_DISTRESS_IDLE_PCT_MAX / _GAP_S / COURSIA_RUNNER_MAPPED_DROP_M
 -- en connaissance de cause, et jamais pour faire passer un demarrage."
   fi
 
-  if [ $(( used_mb + want_mb )) -gt "$budget_mb" ]; then
+  # REPRISE (#20727) : les slots de la MEME famille deja en vol ne sont pas
+  # AJOUTES a la demande -- ils en font PARTIE. Le superviseur attend que le
+  # nom du conteneur soit rendu (reclaim_container_name, #15278) avant de
+  # relancer le slot : un slot ne porte jamais deux conteneurs a la fois, donc
+  # l'empreinte de la famille reste bornee a n x per.
+  #
+  # Sans cette correction, la meme famille etait comptee DEUX fois -- une fois
+  # dans la somme en vol (running_ci_mb), une fois dans la demande. Au
+  # redemarrage du service, 3 slots orphelins de la generation precedente
+  # suffisaient a faire passer la somme au-dessus d'un budget dimensionne au
+  # plus juste : le garde REFUSAIT un demarrage qui tenait, Restart=always
+  # rejouait, et au cinquieme refus StartLimitBurst faisait tomber le POOL
+  # entier (issue #20727, mesure du 2026-10-14).
+  #
+  # La reprise est bornee a `seq 1 n` (#21494) : les slots de numero > n ne
+  # seront pas relances par CE demarrage, les reprendre ferait sous-compter le
+  # pic. Mesure du cas : redemarrage a n=10 pendant que 11..14 finissent leur
+  # job -- le pic reel reste 14 x per, la reprise vaut 10 x per.
+  #
+  # La SERIALISATION slot<->conteneur, elle, est MESUREE (Test 71, #21522) :
+  # reclaim_container_name rend le nom AVANT que le conteneur suivant soit
+  # lance (l'ordre se lit dans le code : le reclaim precede le `docker run`),
+  # et il ne retire JAMAIS un conteneur en cours -- un conteneur `running`,
+  # `paused` ou d'etat non qualifie est CONSIDERE DETENU (fail-closed), donc
+  # le nom ne peut pas etre libere avant la fin du job qu'il porte. La fenetre
+  # entre la fin du job et l'observation de la liberation vaut UN intervalle de
+  # sondage (COURSIA_RUNNER_NAME_RECLAIM_POLL_SECS) ; pendant cette fenetre,
+  # l'ancien conteneur est deja sorti, donc le pied de la famille DECROIT --
+  # il ne peut pas etre sous-compte par la somme en vol. Un slot ne porte donc
+  # jamais deux conteneurs a la fois, et l'empreinte de la famille reste
+  # bornee a n x per.
+  if [ -n "$prefix" ]; then
+    local reprise
+    if ! reprise="$(running_family_mb "$prefix" "$n")"; then
+      die "budget CI NON MESURABLE -- REFUS. Les slots de la famille '$famille' en vol n'ont pas pu etre mesures (raison ci-dessus) : compter 0 pour eux serait exactement le defaut que ce garde ferme. (#20727)"
+    fi
+    reprise_n="${reprise%% *}"
+    reprise_mb="${reprise##* }"
+    # #22532 : la reprise waiters passe sur la MEME base que la demande (RSS
+    # declaree) -- running_family_mb rend des caps, et used_mb compte deja ces
+    # waiters au RSS reel : deux bases differentes feraient mentir add_mb.
+    if [ -n "$rss_basis_cap" ]; then
+      reprise_mb=$(( reprise_n * per_mb ))
+    fi
+  fi
+  add_mb=$(( want_mb - reprise_mb ))
+  # Le repli `add_mb < 0` est DEFENSIF : il n'atteint que si la famille porte
+  # des slots de MEME NOM et de MEMOIRE HETEROGENE (mesure sur la famille ad
+  # hoc de po-2024 : des slots a 4 Gio et d'autres a 1,5 Gio sous le meme
+  # prefixe). La reprise vaut alors PLUS que la demande, et une demande nette
+  # negative ne veut pas dire « de la place en plus » : elle veut dire que
+  # l'hypothese `n x per` ne decrit pas cette famille. Le repli ne rend pas le
+  # garde laxiste : la famille reste comptee par `used_mb` (la somme en vol,
+  # qui voit les slots heterogenes a leur MEMOIRE REELLE), et le total compare
+  # au budget reste `used_mb + 0`. Les controles (8) et (8b) du Test 69
+  # verrouillent les deux moities de cette phrase (#21522).
+  [ "$add_mb" -lt 0 ] && add_mb=0
+
+  if [ $(( used_mb + add_mb )) -gt "$budget_mb" ]; then
     local reste_mb max_n
-    reste_mb=$(( budget_mb - used_mb ))
+    # Ce qui reste se lit sur la FAMILLE, reprise comprise : les slots deja en
+    # vol comptent dans la place totale de la famille, pas dans la place
+    # residuelle du hote.
+    reste_mb=$(( budget_mb - used_mb + reprise_mb ))
     max_n=$(( reste_mb / per_mb ))
     [ "$max_n" -lt 0 ] && max_n=0
     die "budget CI depasse -- REFUS.
   deja en vol ......... $used_mb Mo
-  demande ($famille) .. $n x $per = $want_mb Mo
-  total ............... $(( used_mb + want_mb )) Mo
+  demande ($famille) .. $n x ${rss_basis_cap:-$per} = $want_mb Mo${rss_basis_cap:+ (base RSS declaree $per_mb Mo/slot, cap $rss_basis_cap non compte)}
+  reprise en vol ..... $reprise_n slot(s) de cette famille = $reprise_mb Mo (reprises, pas ajoutees)
+  demande nette ...... $add_mb Mo
+  total ............... $(( used_mb + add_mb )) Mo
   budget .............. $budget_mb Mo (COURSIA_RUNNER_BUDGET_GB=$BUDGET_GB)
-Il reste de la place pour $max_n slot(s) de cette famille.
+Il reste de la place pour $max_n slot(s) de cette famille au total (reprise comprise).
 Arreter une autre famille, ou demarrer '$famille $max_n'."
   fi
 
-  echo "[budget] hote sans detresse soutenue ; CI en vol ${used_mb} Mo + ${want_mb} Mo demandes <= ${budget_mb} Mo"
+  # L'arithmetique s'affiche dans les DEUX sens : un garde qui ne montre son
+  # calcul que quand il refuse laisse le lecteur deviner pourquoi il a passe.
+  echo "[budget] hote sans detresse soutenue ; CI en vol ${used_mb} Mo + ${add_mb} Mo demandes <= ${budget_mb} Mo"
+  echo "[budget] reprise en vol ..... $reprise_n slot(s) de cette famille = $reprise_mb Mo (reprises, pas ajoutees)"
 }
 
 # Nombre de slots que le budget residuel autorise pour un cap donne. Sert au
 # mot-cle `auto` : le N cesse d'etre un chiffre choisi a la main -- c'est un
 # `8` ecrit a la main qui a sature la machine -- et se DERIVE de la mesure.
 budget_slots() {
-  local per_mb reste_mb part_mb n rc
+  local per_mb reste_mb part_mb n rc used_mb
   per_mb="$(mem_to_mb "$1")"
   # Hote en detresse OU non mesurable : `auto` rend 0. Fail-closed dans LES DEUX
   # cas -- une mesure qui echoue doit couter un refus, sinon la panne de sonde
@@ -749,7 +1139,16 @@ budget_slots() {
   host_distress; rc=$?
   [ -n "$HOST_VERDICT_OUT" ] && echo "$HOST_VERDICT_OUT" >&2
   if [ "$rc" -ne 0 ]; then echo 0; return 0; fi
-  reste_mb=$(( BUDGET_GB * 1024 - $(running_ci_mb) ))
+  # Meme fail-closed pour la somme en vol (#15164) : un daemon muet rend la
+  # mesure impossible, et `auto` rend 0 slots plutot que de dimensionner sur
+  # un demi-perimetre. Le refus explique part sur stderr ; c'est start, par
+  # assert_memory_budget, qui tue le demarrage explicite.
+  if ! used_mb="$(running_ci_mb)"; then
+    echo "[budget] auto rend 0 slot : mesure du budget impossible (raison ci-dessus) (#15164)" >&2
+    echo 0
+    return 0
+  fi
+  reste_mb=$(( BUDGET_GB * 1024 - used_mb ))
   # Part maximale qu'UNE famille peut reclamer d'un coup : la moitie du
   # residuel. Les familles coexistent par design (prefixes distincts, gardes
   # PPID aveugles l'un a l'autre) -- laisser la premiere tout prendre revient
@@ -848,7 +1247,27 @@ cycle_backoff() {
   # reste lisible sans lui.
   local hint=""
   if [ "$rc" -ne 0 ] && [ -n "$work_log" ]; then
-    hint=" -- voir $work_log"
+    # #21446 : un echec qui n'ecrit RIEN dans le log du slot ne peut pas etre
+    # explique par ce log -- le rappel « -- voir <fichier> » y renvoie vers une
+    # source muette, et le journal systeme repetait « cycle court (rc=128) »
+    # 51 fois sans jamais nommer la classe de cause. Mesure ai-01 du 19/10
+    # (slot myia-ai-01-wsl-10) : le conteneur mourait AVANT l'enregistrement
+    # du runner -- donc avant toute ligne de job -- et les mesures de sante de
+    # l entrypoint suppriment leur stderr (2>/dev/null) : zero octet dans le
+    # log, rc=128 (le fatal de git), et rien de plus.
+    # Un cycle qui n'a rien ecrit est donc DIAGNOSTIQUE : la cause est cote
+    # entrypoint, pas cote job. Le message le dit, plutot que de renvoyer vers
+    # un fichier qui ne peut rien dire.
+    local log_now=0
+    if [ -f "$work_log" ]; then
+      log_now="$(wc -c < "$work_log" 2>/dev/null | tr -d ' ' || echo 0)"
+      log_now="${log_now:-0}"
+    fi
+    if [ "$log_now" -le "$log_off" ]; then
+      hint=" -- ECHEC MUET : ce cycle n a rien ecrit dans $work_log (le conteneur n a produit aucune sortie) -- la cause est cote entrypoint du runner, pas cote job"
+    else
+      hint=" -- voir $work_log"
+    fi
   fi
   if [ "$lifetime" -lt "$HEALTHY_CYCLE_SECS" ]; then
     if [ "$worked" -eq 1 ]; then
@@ -1149,12 +1568,22 @@ family_cpus_of() {
 # Ferme le trou nomme dans cmd_lean depuis #14337 :
 #   « La somme des caps CPU des familles actives n'est gardee par RIEN --
 #     c'est l'operateur qui dimensionne. »
-# Un cap `--cpus` est PAR CONTENEUR : 12 waiters a 1 vCPU sont conformes un a
-# un et prennent 12 coeurs ensemble. Le seul endroit ou la somme existe est
-# ici, avant de lancer la famille suivante.
+# Un cap `--cpus` est PAR CONTENEUR : 8 slots a 3 vCPU et 2 lean a 6 vCPU
+# sont conformes un a un et prennent 36 coeurs ensemble. Le seul endroit ou
+# la somme existe est ici, avant de lancer la famille suivante.
 #
 # Refus, jamais avertissement : depasser le budget est exactement l'etat qui a
 # gele la machine, et un demarrage refuse se repare en une commande.
+#
+# #15574 item 3 (arbitrage coordinateur 2026-10-01) : la famille `waiters`
+# ne compte PAS dans la somme -- ni comme famille deja active, ni comme
+# demande nouvelle. Un waiter existe pour absorber l'attente du PR gate : il
+# est oisif la quasi-totalite du temps, son cap --cpus est un PLAFOND qu'il
+# n'atteint jamais, pas une reservation. Le budget garde la part qui calcule
+# (start, lean), pas la part qui dort ; compter 12 waiters a 1 vCPU y
+# inscrivait 12 vCPU fantomes et affamait les familles d'execution. Le terme
+# reste AFFICHE, marque « exclu » : ce qui sort de la somme doit se lire,
+# pas disparaitre.
 assert_cpu_budget() {
   local new_fam="$1" new_n="$2" new_cpus="$3"
   [ "${CPU_BUDGET:-0}" = "0" ] && return 0
@@ -1164,14 +1593,24 @@ assert_cpu_budget() {
     [ -z "${n:-}" ] && continue
     c="$(family_cpus_of "$pid" "$fam")"
     sub="$(awk -v a="$n" -v b="$c" 'BEGIN{printf "%.2f", a*b}')"
+    if [ "$fam" = "waiters" ]; then
+      detail="$detail
+  deja actif : $fam n=$n cpus=$c -> $sub (exclu du budget : oisif, #15574)"
+      continue
+    fi
     total="$(awk -v a="$total" -v b="$sub" 'BEGIN{printf "%.2f", a+b}')"
     detail="$detail
   deja actif : $fam n=$n cpus=$c -> $sub"
   done < <(supervisor_families)
   sub="$(awk -v a="$new_n" -v b="$new_cpus" 'BEGIN{printf "%.2f", a*b}')"
-  total="$(awk -v a="$total" -v b="$sub" 'BEGIN{printf "%.2f", a+b}')"
-  detail="$detail
+  if [ "$new_fam" = "waiters" ]; then
+    detail="$detail
+  demande    : $new_fam n=$new_n cpus=$new_cpus -> $sub (exclu du budget : oisif, #15574)"
+  else
+    total="$(awk -v a="$total" -v b="$sub" 'BEGIN{printf "%.2f", a+b}')"
+    detail="$detail
   demande    : $new_fam n=$new_n cpus=$new_cpus -> $sub"
+  fi
   if awk -v t="$total" -v b="$CPU_BUDGET" 'BEGIN{exit !(t > b)}'; then
     die "budget CPU inter-familles depasse : $total vCPU demandes pour un plafond de $CPU_BUDGET.$detail
 
@@ -1302,6 +1741,21 @@ backoff_delay() {
   printf '%s\n' "$d"
 }
 
+# Attente jusqu'a la remise a zero du quota REST (#21527). GitHub publie son
+# echeance (`/rate_limit` -> `.resources.core.reset`, epoch) et l'endpoint
+# /rate_limit ne consomme pas le quota qu'il decrit. Rend un nombre de
+# secondes borne a [floor_s, 3900] : au-dela d'une heure, mieux vaut re-tenter
+# que dormir sur une echeance absente ou corrompue.
+rate_reset_wait() {
+  local floor_s="$1" reset_epoch wait_reset
+  reset_epoch="$(awk -F= '$1=="RESET"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+  case "${reset_epoch:-}" in ''|*[!0-9]*) reset_epoch=0 ;; esac
+  wait_reset=$(( reset_epoch - $(date +%s) + 5 ))
+  [ "$wait_reset" -lt "$floor_s" ] && wait_reset="$floor_s"
+  [ "$wait_reset" -gt 3900 ] && wait_reset=3900
+  printf '%s\n' "$wait_reset"
+}
+
 # #14259 Defaut 1+3 : compte et liste les PIDs des superviseurs actifs du
 # meme `NAME_PREFIX`. La cle est `PPID==1` : un superviseur est le parent
 # direct d'un slot_loop fork (mesure : PPID 72469 = LE superviseur ;
@@ -1334,8 +1788,18 @@ any_supervisor_alive() {
   # echappe. Ici la decision est d'EFFACER une sentinelle : rater un superviseur
   # vivant ferait repartir une seconde flotte par-dessus la premiere. On exclut
   # donc seulement soi-meme et ses propres fils.
+  #
+  # #15574 item 3 -- familles d'EXECUTION seules (start, lean). Un superviseur
+  # waiters ne draine jamais de jobs : sa presence ne protege rien qu'un
+  # demarrage violerait. Mesure 2026-10-01 po-2024 : restart des deux jambes
+  # d'execution avec waiters debout -- sentinel perimee (superviseurs tues par
+  # TERM avant leur cleanup, personne pour la retirer) + les PIDs waiters
+  # vivants -> chaque jambe crash-loope sur "un superviseur est vivant" qui ne
+  # liste QUE des waiters. Pool a zero jusqu'a purge manuelle. Meme exclusion
+  # que assert_cpu_budget : la sentinelle protege la part qui calcule, pas la
+  # part qui dort.
   me="$$"
-  out="$(ps -ef 2>/dev/null | grep -E '[s]upervise\.sh (start|waiters|lean)'          | awk -v me="$me" '$2 ~ /^[0-9]+$/ && $2 != me && $3 != me {print $2}')"
+  out="$(ps -ef 2>/dev/null | grep -E '[s]upervise\.sh (start|lean)'          | awk -v me="$me" '$2 ~ /^[0-9]+$/ && $2 != me && $3 != me {print $2}')"
   printf '%s
 ' "$out"
 }
@@ -1370,18 +1834,68 @@ jobs en vol, puis relancer."
 }
 
 fetch_token() {
-  # Le registration token vaut 1 h et est jetable : un par demarrage de
-  # conteneur. C'est la raison pour laquelle la boucle vit sur l'HOTE et non
-  # dans l'image -- `gh` et ses credentials ne descendent jamais dans le
-  # conteneur.
+  # Le registration token vaut 1 h et ne se consomme pas a l'usage. Avant
+  # #21527 il etait re-demande a chaque demarrage de conteneur (155 appels
+  # REST/h sur le pool, mesure ai-01 du 26/10) : c'est la raison pour
+  # laquelle la boucle vit sur l'HOTE et non dans l'image -- `gh` et ses
+  # credentials ne descendent jamais dans le conteneur. Le jeton est desormais
+  # partage par le cache `$REGISTRATION_TOKEN_CACHE` (STATE_DIR) : un fetch
+  # par fenetre de validite, quel que soit le nombre de demarrages.
   #
   # #14259 epinglage : GH_TOKEN ambiant est honore tel quel par gh ;
   # COURSIA_RUNNER_GH_ACCOUNT (plus specifique) le surpasse en resolvant
   # le token du compte nomme. Sans epinglage, le fetch depend du compte
   # gh ACTIF -- un `gh auth switch` dans une autre session changeait
   # l'identite des registration tokens en silence (incident 2026-09-02).
+  #
+  # #21527 critere 5 (voie (a)) : consultation du cache AVANT tout -- servir
+  # un jeton encore valide ne coute AUCUN appel (pas meme `gh auth token`,
+  # qui lit le trousseau local). La cle (compte effectif + repo) fait qu'un
+  # changement d'epinglage ou de depot ne peut jamais servir le jeton d'une
+  # autre identite : la comparaison echoue et on retombe sur un fetch frais.
+  # Compte non epingle : la cle est le litteral "ambient" -- un `gh auth
+  # switch` en cours de fenetre ne change rien de fonctionnel (un
+  # registration token valide enregistre le runner quel que soit le compte
+  # admin qui l'a obtenu).
+  local cache_key="ambient"
+  [ -n "${COURSIA_RUNNER_GH_ACCOUNT:-}" ] && cache_key="$COURSIA_RUNNER_GH_ACCOUNT"
+  if [ -f "$REGISTRATION_TOKEN_CACHE" ]; then
+    local c_tok="" c_repo="" c_acct="" c_at=""
+    c_tok="$(awk -F= '$1=="TOKEN"{print $2; exit}' "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)"
+    c_repo="$(awk -F= '$1=="REPO"{print $2; exit}' "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)"
+    c_acct="$(awk -F= '$1=="ACCOUNT"{print $2; exit}' "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)"
+    c_at="$(awk -F= '$1=="FETCHED_AT"{print $2; exit}' "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)"
+    case "${c_at:-}" in ''|*[!0-9]*) c_at=0 ;; esac
+    if [ "$c_repo" = "$REPO" ] && [ "$c_acct" = "$cache_key" ] \
+       && printf '%s' "$c_tok" | grep -qxE '[A-Za-z0-9]{20,}' \
+       && [ $(( $(date +%s) - c_at )) -lt "$REGISTRATION_TOKEN_TTL_SEC" ]; then
+      printf 'HTTP=200\nERR=\nSOURCE=cache\n' > "$FETCH_TOKEN_STATE_FILE"
+      printf '%s\n' "$c_tok"
+      return 0
+    fi
+  fi
   if [ -n "${COURSIA_RUNNER_GH_ACCOUNT:-}" ]; then
-    GH_TOKEN="$(gh auth token --user "$COURSIA_RUNNER_GH_ACCOUNT")" || return 1
+    # #21527 : le compte epingle s'ecrit depuis la CONFIGURATION, jamais depuis
+    # une reponse. Un environnement corrompu a deja fourni `{` (corps JSON
+    # d'erreur) comme nom de compte, ce qui a produit un jeton illisible et un
+    # en-tete HTTP invalide. Sa forme se valide avant usage.
+    case "$COURSIA_RUNNER_GH_ACCOUNT" in
+      *[!A-Za-z0-9_-]*)
+        printf 'HTTP=AUTH\nACCOUNT=%s\nERR=forme de compte invalide\n' "$COURSIA_RUNNER_GH_ACCOUNT" > "$FETCH_TOKEN_STATE_FILE"
+        return 1
+        ;;
+    esac
+    # #15154 : un compte epingle INTRROUVABLE dans le trousseau gh est une
+    # cause structurelle -- `gh auth token --user` n'aboutira jamais par la
+    # perseverance. Avant ce changement, le `return 1` partait AVANT toute
+    # ecriture du fichier d'etat : code HTTP absent -> transitoire -> la
+    # boucle retentait indefiniment (reserve du preflight du 2026-09-27).
+    # Le marqueur HTTP=AUTH est classe terminal par les boucles, comme un
+    # 4xx, et porte le compte epingle pour le diagnostic.
+    if ! GH_TOKEN="$(gh auth token --user "$COURSIA_RUNNER_GH_ACCOUNT")"; then
+      printf 'HTTP=AUTH\nACCOUNT=%s\n' "$COURSIA_RUNNER_GH_ACCOUNT" > "$FETCH_TOKEN_STATE_FILE"
+      return 1
+    fi
     export GH_TOKEN
   fi
   # Pas de 2>/dev/null (#14259) : l'erreur REELLE de gh (403, token expire,
@@ -1399,22 +1913,311 @@ fetch_token() {
   # absolu ecrit dans l'entete), PAS dans une variable bash. Un appel
   # `token="$(fetch_token)"` execute la fonction dans un subshell -- les
   # asignations de variables y sont locales et perdues au retour. Le fichier
-  # survit au subshell. Format : "HTTP=<code>\nERR=<stderr tronque>".
-  local err="" http_code="" state_tmp=""
-  err="$(gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token 2>&1 >/dev/null)"
-  if [ -n "$err" ]; then
-    http_code="$(printf '%s\n' "$err" | grep -oE 'HTTP [0-9]+' | awk '{print $2}' | head -n1)"
-    printf 'HTTP=%s\nERR=%s\n' "${http_code:-0}" "$err" > "$FETCH_TOKEN_STATE_FILE"
-    return 1
+  # survit au subshell. Format : "HTTP=<code>\nACCOUNT=<compte resolu>"
+  # ( ACCOUNT seulement sur les echecs ) "\nERR=<stderr tronque>" ; le code
+  # special AUTH designe un compte epingle introuvable (terminal).
+  local err="" http_code="" account="" out="" reset=""
+  # #21527 : UN SEUL appel. L'ancienne version appelait l'endpoint DEUX fois --
+  # une pour capter stderr (`2>&1 >/dev/null`), une pour le jeton -- et
+  # doublait la consommation de quota REST, celui-la meme qui a arrete le pool
+  # le 2026-10-20 (5000 appels/h pour toute la flotte).
+  out="$(gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token 2>&1)"
+  # Forme d'un jeton de registration : alphanumerique, sans accolade ni saut de
+  # ligne. Un corps JSON d'erreur a deja ete lu comme nom de compte puis comme
+  # jeton (« ACCOUNT={ », puis « New-line characters are not allowed in header
+  # values ») : la forme se VALIDE ici, elle ne se suppose pas (#21527).
+  if printf '%s' "$out" | grep -qxE '[A-Za-z0-9]{20,}'; then
+    printf 'HTTP=200\nERR=\n' > "$FETCH_TOKEN_STATE_FILE"
+    # #21527 critere 5 : depot pour la fenetre de validite. Ecriture
+    # atomique (tmp + mv) : les slots fetchent en parallele, un lecteur ne
+    # doit jamais voir un fichier a demi ecrit ; le perdant d'une course
+    # ecrase simplement (deux jetons valides la meme seconde ne sont pas un
+    # defaut). Un echec d'ecriture du cache n'echoue JAMAIS le fetch -- le
+    # jeton obtenu reste bon. chmod 600 : le jeton ne depasse pas le
+    # perimetre deja prive de STATE_DIR.
+    if [ -n "$REGISTRATION_TOKEN_CACHE" ]; then
+      { printf 'ACCOUNT=%s\nREPO=%s\nTOKEN=%s\nFETCHED_AT=%s\n' \
+          "$cache_key" "${REPO:-}" "$out" "$(date +%s)" \
+          > "$REGISTRATION_TOKEN_CACHE.tmp.$$" \
+        && chmod 600 "$REGISTRATION_TOKEN_CACHE.tmp.$$" \
+        && mv -f "$REGISTRATION_TOKEN_CACHE.tmp.$$" "$REGISTRATION_TOKEN_CACHE"; } 2>/dev/null || true
+    fi
+    printf '%s\n' "$out"
+    return 0
   fi
-  printf 'HTTP=200\nERR=\n' > "$FETCH_TOKEN_STATE_FILE"
-  gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token
+  err="$out"
+  http_code="$(printf '%s\n' "$err" | grep -oE 'HTTP [0-9]+' | awk '{print $2}' | head -n1)"
+    # #15154 critere 1 : le diagnostic doit nommer le compte RESOLU, pas la
+    # variable qui le designe. Epingle -> sa valeur ; sinon le compte ambiant,
+    # demande a gh uniquement sur ce chemin d'echec (cout nul sur le chemin
+    # nominal). Un compte non resoluble (trousseau casse) reste nomme comme
+    # tel -- inventer une identite serait pire que l'absence.
+    if [ -n "${COURSIA_RUNNER_GH_ACCOUNT:-}" ]; then
+      account="$COURSIA_RUNNER_GH_ACCOUNT"
+    else
+      account="$(gh api user --jq .login 2>/dev/null || true)"
+      [ -z "$account" ] && account="compte ambiant non resoluble"
+    fi
+  # #21527 : 403/429 de QUOTA = TRANSITOIRE, et son echeance est connue. Le
+  # classer structurel faisait poser STOP_FILE au cinquieme echec et tomber le
+  # pool entier (2026-10-20, 01:26Z, 14 slots). On attend la remise a zero.
+  if [ "$http_code" = "403" ] || [ "$http_code" = "429" ]; then
+    case "$err" in
+      *[Rr]ate*limit*)
+        reset="$(gh api rate_limit --jq '.resources.core.reset' 2>/dev/null || true)"
+        printf 'HTTP=RATE\nACCOUNT=%s\nRESET=%s\nERR=%s\n' "$account" "${reset:-0}" "$err" > "$FETCH_TOKEN_STATE_FILE"
+        return 1
+        ;;
+    esac
+  fi
+  printf 'HTTP=%s\nACCOUNT=%s\nERR=%s\n' "${http_code:-0}" "$account" "$err" > "$FETCH_TOKEN_STATE_FILE"
+  return 1
 }
 
 # Parametre depuis #14337 : un slot = une boucle, mais nom/labels/image/caps
 # dependent du pool (linux genrique, lean). Les volumes toolcache/_work restent
 # la regle pour les pools D'EXECUTION (les waiters ont leur propre boucle sans
 # volume).
+# --- Magasin d'objets partage : moitie PRODUCTRICE (#18225) ------------------
+#
+# La recette vient de persist/po-2026/pool.sh, ou elle tourne sur l'hote. Ici le
+# volume est un volume docker : l'hote ne le voit pas, donc les gestes git
+# s'executent dans un conteneur jetable de la MEME image (git y est, l'uid est
+# `runner` comme les slots, et le volume toolcache lui est deja accessible en
+# ecriture). C'est la seule facon de lire et d'ecrire ce volume sans monter un
+# second chemin, qui divergerait du premier.
+#
+# DEVIATION ASSUMEE vs pool.sh : refspec BORNE a heads+tags. La recette source
+# faisait `+refs/*:refs/*`, ce qui aspire aussi refs/pull/* -- un ensemble qui
+# croit a chaque PR et ne se purge jamais vraiment. Les tetes de PR n'ont pas
+# besoin du miroir : actions/checkout les fetch lui-meme (refspec explicite), et
+# le miroir sert a ce qu'il NEGOCIE en tenant deja l'historique, pas a porter
+# les refs.
+#
+# PRUNE ET OBJETS : `--prune` ne retire que des REFS. Aucun `gc --prune` n'est
+# jamais lance sur le miroir, donc un objet reste dans ses packs meme si la ref
+# qui l'a fait entrer a disparu -- un slot qui emprunte cet objet continue de le
+# resoudre. C'est la propriete qui rend le prune sur, et elle tient a l'ABSENCE
+# de gc, pas a la prudence de l'appelant.
+mirror_one_shot() {  # $1 = bootstrap|refresh|status
+  local action="${1:-refresh}" script
+  script="$(cat <<'MIRROR_SH'
+set -u
+MIRROR="$COURSIA_RUNNER_MIRROR_PATH"
+REMOTE="$COURSIA_RUNNER_MIRROR_REMOTE"
+HEADREF="refs/heads/$COURSIA_RUNNER_MIRROR_HEAD"
+ACTION="$COURSIA_RUNNER_MIRROR_ACTION"
+EVERY="$COURSIA_RUNNER_MIRROR_REFRESH_EVERY"
+FREE_MB="$COURSIA_RUNNER_MIRROR_MIN_FREE_MB"
+PARENT="$(dirname "$MIRROR")"
+STAMP="$PARENT/.objects-mirror.stamp"
+LOCKF="$PARENT/.objects-mirror.lock"
+
+mkdir -p "$PARENT" 2>/dev/null || true
+
+now="$(date +%s)"
+last=0
+if [ -f "$STAMP" ]; then
+  last="$(stat -c %Y "$STAMP" 2>/dev/null || echo 0)"
+  case "$last" in ''|*[!0-9]*) last=0 ;; esac
+fi
+
+# THROTTLE EN PREMIER, et avant meme de regarder si le miroir existe. L'ordre
+# n'est pas cosmetique : quand le miroir est absent et le bootstrap desactive,
+# sortir avant le throttle faisait relancer un conteneur a CHAQUE tick (une
+# boucle de superviseur = un conteneur toutes les 5 min, pour rien). Un
+# `bootstrap` explicite n'est jamais throttle : c'est un geste d'operateur.
+if [ "$ACTION" = "refresh" ] && [ $(( now - last )) -lt "$EVERY" ]; then
+  exit 0
+fi
+
+# Le probe est un CONTROLE d'operateur, pas un geste du parc : sur un miroir
+# absent il doit ECHECER distinctement (rc 6) -- laisser passer ici rendrait le
+# verdict « probe OK » d'un hote non installe, exactement le faux vert que ce
+# controle existe pour empecher.
+if [ "$ACTION" = "probe" ] && [ ! -d "$MIRROR/objects" ]; then
+  echo "miroir: probe ECHEC (rc 6) -- miroir absent ($MIRROR) : bootstrap d'abord (supervise.sh mirror bootstrap)"
+  exit 6
+fi
+
+if [ ! -d "$MIRROR/objects" ]; then
+  if [ "$ACTION" = "bootstrap" ] || [ "$COURSIA_RUNNER_MIRROR_BOOTSTRAP" = "1" ]; then
+    free="$(df -Pm "$PARENT" 2>/dev/null | awk 'NR==2{print $4}')"
+    case "$free" in ''|*[!0-9]*) free=0 ;; esac
+    if [ "$free" -lt "$FREE_MB" ]; then
+      echo "miroir: bootstrap REFUSE -- ${free} Mo libres sous $PARENT < ${FREE_MB} requis (COURSIA_RUNNER_MIRROR_MIN_FREE_MB)"
+      exit 0
+    fi
+    echo "miroir: bootstrap vers $MIRROR (une seule fois par machine)"
+    t0="$(date +%s)"
+    if [ -e "$MIRROR" ]; then
+      mv "$MIRROR" "$MIRROR.incomplete-$(date -u +%Y%m%dT%H%M%SZ)" 2>/dev/null \
+        || { echo "miroir: $MIRROR existe et ne peut pas etre ecarte -- bootstrap saute"; exit 0; }
+    fi
+    if ! git init --quiet --bare "$MIRROR"; then
+      echo "miroir: init ECHOUE -- le parc reste sur son comportement d'avant #18225"
+      exit 0
+    fi
+    git --git-dir="$MIRROR" remote add origin "$REMOTE" 2>/dev/null \
+      || git --git-dir="$MIRROR" remote set-url origin "$REMOTE" 2>/dev/null
+    # gc.auto=0 (mission ai-01 26/10, #18225) : l'invariant documente plus haut
+    # (« un objet reste dans ses packs meme si la ref qui l'a fait entrer a
+    # disparu ») tient a l'ABSENCE de gc, pas a la prudence de l'appelant. Or un
+    # fetch declenche `gc --auto` par defaut -- un repack du miroir pendant qu'un
+    # slot emprunte ses objets est exactement ce que ce depot promet de ne jamais
+    # faire. Pose AVANT le premier fetch ; le refresh re-epingle la config pour
+    # les miroirs bootstrapes avant cette ligne.
+    git --git-dir="$MIRROR" config gc.auto 0
+    if git --git-dir="$MIRROR" -c gc.auto=0 fetch --prune "$REMOTE" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'; then
+      git --git-dir="$MIRROR" symbolic-ref HEAD "$HEADREF" 2>/dev/null || true
+      touch "$STAMP" 2>/dev/null || true
+      echo "miroir: bootstrap OK en $(( $(date +%s) - t0 ))s"
+    else
+      echo "miroir: bootstrap ECHOUE -- le parc reste sur son comportement d'avant #18225"
+      mv "$MIRROR" "$MIRROR.incomplete-$(date -u +%Y%m%dT%H%M%SZ)" 2>/dev/null || true
+      exit 0
+    fi
+  else
+    # L'horodatage est pose MEME ici : sans lui, une machine sans miroir
+    # relancerait un conteneur a chaque tick uniquement pour relire ce constat.
+    touch "$STAMP" 2>/dev/null || true
+    echo "miroir: absent ($MIRROR) et bootstrap desactive -- comportement d'avant #18225"
+    exit 0
+  fi
+fi
+
+# PROBE (#18225, hotes ephemeres tiers) : le controle positif demande par le
+# dispatch -- la preuve qu'un checkout a historique complet servi par le miroir
+# TIENT dans le budget d'un job a timeout court (le cas mesure sur po-2025 :
+# `fetch-depth: 0` annule a 621 s pour 10 min de `timeout-minutes`). Le probe
+# fait exactement ce que fait un slot : clone --shared (zero objet copie) puis
+# checkout de la tete. Trois verdicts, tous ecrits : la duree, la presence des
+# alternates (sinon le « vert » mesurerait un clone froid, pas le miroir), et
+# le compte d'objets LOCAUX (doit rester ~0 : tout vient de l'emprunt).
+# Codes de sortie distincts : un operateur peut gater son installation dessus.
+if [ "$ACTION" = "probe" ]; then
+  MAXS="${COURSIA_RUNNER_MIRROR_PROBE_MAX_S:-}"
+  case "$MAXS" in ''|*[!0-9]*) MAXS=300 ;; esac
+  WORK="$(mktemp -d)"
+  trap 'rm -rf "$WORK"' EXIT INT TERM
+  t0="$(date +%s)"
+  if ! git clone --quiet --shared --no-checkout "$MIRROR" "$WORK/probe" 2>"$WORK/err"; then
+    echo "miroir: probe ECHEC (rc 3) -- clone --shared impossible : $(head -n 1 "$WORK/err")"
+    exit 3
+  fi
+  if [ ! -s "$WORK/probe/.git/objects/info/alternates" ]; then
+    echo "miroir: probe ECHEC (rc 3) -- pas d'alternates : ce clone ne sert PAS du miroir"
+    exit 3
+  fi
+  if ! git -C "$WORK/probe" checkout --quiet -f "$COURSIA_RUNNER_MIRROR_HEAD" 2>"$WORK/err2" && \
+     ! git -C "$WORK/probe" checkout --quiet -f "refs/heads/$COURSIA_RUNNER_MIRROR_HEAD" 2>>"$WORK/err2"; then
+    echo "miroir: probe ECHEC (rc 4) -- checkout de $COURSIA_RUNNER_MIRROR_HEAD impossible : $(head -n 1 "$WORK/err2")"
+    exit 4
+  fi
+  probe_dt=$(( $(date +%s) - t0 ))
+  probe_files="$(git -C "$WORK/probe" ls-files 2>/dev/null | wc -l | tr -d ' ')"
+  probe_local="$(git -C "$WORK/probe" count-objects -v 2>/dev/null | awk '/^count:/{print $2}')"
+  case "$probe_local" in ''|*[!0-9]*) probe_local=0 ;; esac
+  echo "miroir: probe -- ${probe_files} fichiers, ${probe_dt}s (budget ${MAXS}s), ${probe_local} objet(s) local(aux)"
+  if [ "$probe_dt" -gt "$MAXS" ]; then
+    echo "miroir: probe ECHEC (rc 5) -- ${probe_dt}s > ${MAXS}s : un job a timeout court casserait (COURSIA_RUNNER_MIRROR_PROBE_MAX_S)"
+    exit 5
+  fi
+  echo "miroir: probe OK -- un checkout a historique complet servi par le miroir tient dans ${MAXS}s"
+  exit 0
+fi
+
+if [ "$ACTION" = "status" ]; then
+  echo "miroir: $MIRROR"
+  echo "  bare: $(git --git-dir="$MIRROR" rev-parse --is-bare-repository 2>/dev/null)"
+  echo "  refs: $(git --git-dir="$MIRROR" for-each-ref --format=x 2>/dev/null | wc -l | tr -d ' ')"
+  echo "  taille: $(du -sh "$MIRROR" 2>/dev/null | awk '{print $1}')"
+  echo "  gc.auto: $(git --git-dir="$MIRROR" config gc.auto 2>/dev/null || echo 'non positionne (refresh le posera)')"
+  echo "  dernier refresh: $([ -f "$STAMP" ] && date -Is -r "$STAMP" 2>/dev/null || echo jamais)"
+  # PAS de compte d'emprunteurs ici : ce conteneur ne monte aucun volume _work,
+  # donc il lirait zero et l'ecrirait comme un fait. Le compte se mesure depuis
+  # l'interieur d'un slot, ou par `grep -l` sur les volumes qui les portent.
+  exit 0
+fi
+
+# flock non bloquant : une refresh concurrente (autre boucle, relance
+# interactive) est SAUTEE, pas attendue. Le verrou vit dans le volume, donc il
+# est partage par tous les conteneurs de la machine -- et par l'hote si un
+# pool.sh y tourne encore sur le meme volume.
+# `flock` absent (util-linux non installe, ou hote Git Bash) : on continue SANS
+# verrou et on le dit. Le sauter serait le mauvais repli -- il transforme une
+# protection optionnelle en panne silencieuse de la fonction entiere, et c'est
+# exactement le genre de « garde » qui rend un organe muet.
+if command -v flock >/dev/null 2>&1; then
+  exec 8>"$LOCKF" || exit 0
+  flock -n 8 || exit 0
+else
+  echo "miroir: flock indisponible -- refresh sans verrou (une seule boucle attendue sur cet hote)"
+fi
+# Horodatage AVANT le fetch : une panne reseau persistante ne doit pas se
+# transformer en marteau a chaque tick (meme choix que la recette source).
+touch "$STAMP" 2>/dev/null || true
+# gc.auto=0 en `-c` ET en config re-epinglee (mission ai-01 26/10, #18225) : le
+# `-c` couvre des le PREMIER refresh post-mise a jour les miroirs bootstrapes
+# avant la ligne du bootstrap (leur config n'a pas encore la cle) ; la config
+# re-epinglee rend l'invariant durable pour tout autre appelant git du volume.
+# Raison d'etre : le fetch declenche `gc --auto` par defaut, et un repack du
+# miroir pendant qu'un job emprunte ses objets est la promesse que ce depot
+# ne doit jamais casser.
+git --git-dir="$MIRROR" config gc.auto 0 2>/dev/null || true
+if git --git-dir="$MIRROR" -c gc.auto=0 fetch --prune "$REMOTE" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' 2>&1; then
+  echo "miroir: rafraichi ($(date -Is))"
+else
+  echo "miroir: refresh echoue -- le parc continue sur l'etat precedent"
+fi
+exit 0
+MIRROR_SH
+)"
+  docker run --rm \
+    --name "coursia-runner-mirror-$$" \
+    --memory="$MIRROR_MEMORY" --pids-limit="$MIRROR_PIDS" \
+    --label coursia-ci-mirror=1 \
+    --security-opt=no-new-privileges \
+    -v "$TOOLCACHE_VOLUME":"$TOOLCACHE_MOUNT" \
+    -e RUNNER_TOOL_CACHE="$TOOLCACHE_MOUNT" \
+    -e COURSIA_RUNNER_MIRROR_PATH="$MIRROR_PATH" \
+    -e COURSIA_RUNNER_MIRROR_REMOTE="$MIRROR_REMOTE" \
+    -e COURSIA_RUNNER_MIRROR_HEAD="$MIRROR_HEAD" \
+    -e COURSIA_RUNNER_MIRROR_ACTION="$action" \
+    -e COURSIA_RUNNER_MIRROR_REFRESH_EVERY="$MIRROR_REFRESH_EVERY" \
+    -e COURSIA_RUNNER_MIRROR_MIN_FREE_MB="$MIRROR_MIN_FREE_MB" \
+    -e COURSIA_RUNNER_MIRROR_PROBE_MAX_S="$MIRROR_PROBE_MAX_S" \
+    -e COURSIA_RUNNER_MIRROR_BOOTSTRAP="$MIRROR_BOOTSTRAP" \
+    "${GIT_NET_ARGS[@]}" \
+    --entrypoint bash "$IMAGE" -c "$script" >>"$STATE_DIR/objects-mirror.log" 2>&1
+}
+
+# Attente BORNEE : un `sleep 300` rendrait un `stop` inoperant pendant cinq
+# minutes (les boucles de slot, elles, testent STOP_FILE a chaque tour). Le pas
+# est court pour que l'arret gracieux reste gracieux ET rapide.
+mirror_wait() {  # $1 = secondes a couvrir
+  local left="${1:-0}" step="${COURSIA_RUNNER_TEST_SLEEP:-5}"
+  case "$left" in ''|*[!0-9]*) left=0 ;; esac
+  case "$step" in ''|*[!0-9]*|0) step=5 ;; esac
+  while [ "$left" -gt 0 ] && [ ! -f "$STOP_FILE" ]; do
+    sleep "$step"
+    left=$(( left - step ))
+  done
+}
+
+mirror_loop() {
+  [ "$MIRROR_ENABLE" = "1" ] || { echo "[miroir] desactive (COURSIA_RUNNER_MIRROR=0)"; return 0; }
+  rotate_log "$STATE_DIR/objects-mirror.log"
+  echo "[miroir] boucle demarree : $MIRROR_PATH <- $MIRROR_REMOTE (throttle ${MIRROR_REFRESH_EVERY}s, bootstrap=$MIRROR_BOOTSTRAP)"
+  while [ ! -f "$STOP_FILE" ]; do
+    # Un echec de miroir n'est JAMAIS fatal : le parc fonctionne sans lui, et
+    # la boucle reessaie au tick suivant (le throttle s'applique quand meme).
+    mirror_one_shot refresh || true
+    mirror_wait "$MIRROR_REFRESH_EVERY"
+  done
+  echo "[miroir] arret demande, boucle terminee"
+}
+
 slot_loop() {
   local slot="$1" name="$2" labels="$3" image="$4" cpus="$5" memory="$6" pids="$7"
   local vol_prefix="${8:-$WORK_VOLUME_PREFIX}"
@@ -1439,16 +2242,34 @@ slot_loop() {
       # retry legitime. La discrimination se fait sur le code HTTP que fetch_token
       # a depose dans $FETCH_TOKEN_STATE_FILE (le fichier survit au subshell
       # d'invocation `$(fetch_token)` -- une variable bash n'aurait pas traverse).
-      local http="" terminal=0
+      # #15154 : AUTH = compte epingle introuvable dans le trousseau gh
+      # (marqueur pose par fetch_token AVANT le return) -- meme classe que
+      # 4xx : structurel, la perseverance ne le resout pas.
+      local http="" acct="" terminal=0
       if [ -f "$FETCH_TOKEN_STATE_FILE" ]; then
         http="$(awk -F= '$1=="HTTP"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+        acct="$(awk -F= '$1=="ACCOUNT"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
       fi
       : "${http:=0}"
+      : "${acct:=inconnu}"
+      local cause_diag="compte sans droit admin ?"
+      # #15154 : le diagnostic NOMME la cause structurelle d'origine (compte
+      # epingle introuvable dans le trousseau) ; #21527 y ajoute la forme
+      # invalide du jeton, autre cause du meme marqueur.
+      [ "$http" = "AUTH" ] && cause_diag="compte epingle introuvable dans le trousseau gh, ou jeton de forme invalide (cf #21527)"
       case "$http" in
+        AUTH) terminal=1 ;;
+        RATE) cause_diag="quota REST epuise -- transitoire, echeance connue" ;;
         4??) [ "$http" != "408" ] && terminal=1 ;;
       esac
+      # #21527 : un quota epuise n'est PAS structurel. On attend la remise a
+      # zero publiee par GitHub au lieu de bruler des essais et de poser
+      # STOP_FILE au cinquieme (ce qui a arrete les 14 slots le 2026-10-20).
+      if [ "$http" = "RATE" ]; then
+        wait_s="$(rate_reset_wait "$wait_s")"
+      fi
       if [ "$terminal" -eq 1 ] && [ "$fails" -ge "${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}" ]; then
-        echo "[slot $slot] ABANDON : $fails echecs consecutifs HTTP $http (compte sans droit admin ?). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin du compte sur le depot (cf #15154 / voie B)." >&2
+        echo "[slot $slot] ABANDON : $fails echecs consecutifs HTTP $http sur le compte '$acct' ($cause_diag). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin de '$acct' sur le depot (cf #15154 / voie B)." >&2
         # #15154 : prevenir les AUTRES slots -- ils reproduiraient la meme
         # erreur. Le sentinel STOP_FILE est observe par leur test de boucle
         # (`while [ ! -f "$STOP_FILE" ]`), donc ils sortent en arret gracieux
@@ -1460,11 +2281,11 @@ slot_loop() {
         die "superviseur arrete -- cause structurelle, voir message precedent"
       fi
       if [ "$terminal" -eq 1 ]; then
-        echo "[slot $slot] token indisponible HTTP $http (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
+        echo "[slot $slot] token indisponible HTTP $http sur le compte '$acct' (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
       else
         echo "[slot $slot] token indisponible HTTP $http (transitoire) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
       fi
-      sleep "$wait_s"
+      sleep "${COURSIA_RUNNER_TEST_SLEEP:-$wait_s}"
       continue
     fi
     # #15278 : reprendre le nom AVANT de mesurer le cycle -- l'attente due a un
@@ -1498,6 +2319,9 @@ slot_loop() {
       -v "${vol_prefix}-${slot}":"$WORK_MOUNT" \
       -e RUNNER_TOOL_CACHE="$TOOLCACHE_MOUNT" \
       -e RUNNER_WORK_CACHE_PACK_THRESHOLD="$CACHE_PACK_THRESHOLD" \
+      -e COURSIA_RUNNER_MIRROR_PATH="$MIRROR_PATH" \
+      -e COURSIA_RUNNER_MIRROR_REMOTE="$MIRROR_REMOTE" \
+      "${GIT_NET_ARGS[@]}" \
       -e ACTIONS_RUNNER_INPUT_TOKEN="$token" \
       -e ACTIONS_RUNNER_INPUT_URL="https://github.com/$REPO" \
       -e ACTIONS_RUNNER_INPUT_NAME="$name" \
@@ -1553,7 +2377,7 @@ cmd_start() {
   # on nomme les PIDs -- un deuxieme `start` produirait deux boucles
   # concurrantes portant des copies differentes de l'environnement
   # (incident po-2024 2026-09-02, plusieurs PRs de contenu bloquees).
-  assert_memory_budget start "$n" "$MEMORY"
+  assert_memory_budget start "$n" "$MEMORY" "$NAME_PREFIX"
   assert_ci_slice
   local existing_pids
   existing_pids="$(supervisor_pids)"
@@ -1603,6 +2427,13 @@ utiliser '$0 stop' d'abord, ou relancer sous une machine differente."
     slot_loop "$i" "${NAME_PREFIX}-${i}" "$LABELS" "$IMAGE" "$CPUS" "$MEMORY" "$PIDS" &
     echo "$!" >> "$STATE_DIR/pids"
   done
+  # Magasin d'objets partage (#18225) : UNE boucle de refresh par superviseur.
+  # Elle n'a pas besoin d'etre unique sur la machine -- le throttle et le flock
+  # vivent dans le volume, donc deux boucles (pool docker + pool lean) ne font
+  # qu'un fetch par periode. Le PID est journalise avec les autres : `stop` pose
+  # le sentinel que cette boucle observe.
+  mirror_loop &
+  echo "$!" >> "$STATE_DIR/pids"
   echo "slots lances. Arret gracieux : $0 stop"
   # #15154 : un slot qui meurt par ABANDON pose le sentinel STOP_FILE --
   # les autres slots en tiennent compte et sortent en arret gracieux a leur
@@ -1963,28 +2794,42 @@ waiter_loop() {
     if [ -z "$token" ]; then
       fails=$(( fails + 1 ))
       wait_s="$(backoff_delay "$fails")"
-      # #15154 : discrimination 4xx-terminal / 5xx-transitoire (cf slot_loop).
-      local http="" terminal=0
+      # #15154 : discrimination 4xx-terminal / 5xx-transitoire (cf slot_loop),
+      # et AUTH-terminal (compte epingle introuvable, cf fetch_token).
+      local http="" acct="" terminal=0
       if [ -f "$FETCH_TOKEN_STATE_FILE" ]; then
         http="$(awk -F= '$1=="HTTP"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+        acct="$(awk -F= '$1=="ACCOUNT"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
       fi
       : "${http:=0}"
+      : "${acct:=inconnu}"
+      local cause_diag="compte sans droit admin ?"
+      # #15154 : le diagnostic NOMME la cause structurelle d'origine (compte
+      # epingle introuvable dans le trousseau) ; #21527 y ajoute la forme
+      # invalide du jeton, autre cause du meme marqueur.
+      [ "$http" = "AUTH" ] && cause_diag="compte epingle introuvable dans le trousseau gh, ou jeton de forme invalide (cf #21527)"
       case "$http" in
+        AUTH) terminal=1 ;;
+        RATE) cause_diag="quota REST epuise -- transitoire, echeance connue" ;;
         4??) [ "$http" != "408" ] && terminal=1 ;;
       esac
+      # #21527 : cf slot_loop -- quota epuise = attente de la remise a zero.
+      if [ "$http" = "RATE" ]; then
+        wait_s="$(rate_reset_wait "$wait_s")"
+      fi
       if [ "$terminal" -eq 1 ] && [ "$fails" -ge "${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}" ]; then
-        echo "[waiter $slot] ABANDON : $fails echecs consecutifs HTTP $http (compte sans droit admin ?). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin du compte sur le depot (cf #15154 / voie B)." >&2
+        echo "[waiter $slot] ABANDON : $fails echecs consecutifs HTTP $http sur le compte '$acct' ($cause_diag). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin de '$acct' sur le depot (cf #15154 / voie B)." >&2
         # #15154 : cf slot_loop -- le sentinel coordonne l'arret de tous
         # les slots et waiters sur la meme cause structurelle.
         touch "$STOP_FILE" 2>/dev/null || true
         die "superviseur waiter arrete -- cause structurelle, voir message precedent"
       fi
       if [ "$terminal" -eq 1 ]; then
-        echo "[waiter $slot] token indisponible HTTP $http (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
+        echo "[waiter $slot] token indisponible HTTP $http sur le compte '$acct' (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
       else
         echo "[waiter $slot] token indisponible HTTP $http (transitoire) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
       fi
-      sleep "$wait_s"
+      sleep "${COURSIA_RUNNER_TEST_SLEEP:-$wait_s}"
       continue
     fi
     # #15278 : meme garde que slot_loop -- un waiter orphelin d'un restart
@@ -1993,6 +2838,10 @@ waiter_loop() {
     # backoff. `continue` sur arret demande.
     reclaim_container_name "$name" || continue
     local t0=$SECONDS
+    # Le label coursia-waiter=1 distingue la famille au budget (#22532) : le
+    # garde compte ces conteneurs au RSS reel, les autres au cap. Les waiters
+    # de la generation precedente (non etiquetes) restent comptes au cap --
+    # conservateur pendant le churn, jamais laxiste.
     rotate_log "$STATE_DIR/$name.log"
     local log_off
     log_off="$(wc -c < "$STATE_DIR/$name.log" 2>/dev/null | tr -d ' ' || echo 0)"
@@ -2002,9 +2851,11 @@ waiter_loop() {
       --cpus="$WAITER_CPUS" --memory="$WAITER_MEMORY" --pids-limit="$WAITER_PIDS" \
       "${BLKIO_ARGS[@]+"${BLKIO_ARGS[@]}"}" \
       --label coursia-ci=1 \
+      --label coursia-waiter=1 \
       ${CI_CGROUP_PARENT:+--cgroup-parent="$CI_CGROUP_PARENT"} \
       --security-opt=no-new-privileges \
       "${tc_args[@]+"${tc_args[@]}"}" \
+      "${GIT_NET_ARGS[@]}" \
       -e ACTIONS_RUNNER_INPUT_TOKEN="$token" \
       -e ACTIONS_RUNNER_INPUT_URL="https://github.com/$REPO" \
       -e ACTIONS_RUNNER_INPUT_NAME="$name" \
@@ -2052,7 +2903,7 @@ cmd_waiters() {
   assert_cgroup_budget
   assert_cpu_budget "waiters" "$n" "$WAITER_CPUS"
   compute_blkio_args
-  assert_memory_budget waiters "$n" "$WAITER_MEMORY"
+  assert_memory_budget waiters "$n" "$WAITER_MEMORY" "$WAITER_NAME_PREFIX"
   assert_ci_slice
   rm -f "$STATE_DIR/waiter-pids"
   echo "demarrage de $n waiter(s) ; labels=$WAITER_LABELS ; caps : cpus=$WAITER_CPUS memory=$WAITER_MEMORY pids=$WAITER_PIDS"
@@ -2106,7 +2957,7 @@ cmd_lean() {
   assert_cgroup_budget
   assert_cpu_budget "lean" "$n" "$LEAN_CPUS"
   compute_blkio_args
-  assert_memory_budget lean "$n" "$LEAN_MEMORY"
+  assert_memory_budget lean "$n" "$LEAN_MEMORY" "$LEAN_NAME_PREFIX"
   assert_ci_slice
   rm -f "$STATE_DIR/lean-pids"
   echo "demarrage de $n slot(s) lean ; labels=$LEAN_LABELS ; caps : cpus=$LEAN_CPUS memory=$LEAN_MEMORY pids=$LEAN_PIDS ; image=$LEAN_IMAGE ; .lake chaud=${LEAN_WORK_VOLUME_PREFIX}-{1..$n} -> $WORK_MOUNT"
@@ -2118,6 +2969,11 @@ cmd_lean() {
       "$LEAN_MEMORY_SWAP" &
     echo "$!" >> "$STATE_DIR/lean-pids"
   done
+  # Meme boucle de refresh que cmd_start (#18225) : les slots lean montent le
+  # meme volume toolcache et consomment donc le meme miroir. Le throttle dans le
+  # volume fait que les deux boucles ne se doublent pas.
+  mirror_loop &
+  echo "$!" >> "$STATE_DIR/lean-pids"
   echo "slots lean lances. Arret gracieux : $0 stop"
   wait
 }
@@ -2140,5 +2996,31 @@ case "${1:-}" in
   status)  cmd_status ;;
   peak)    cmd_peak ;;
   pin)     cmd_pin ;;
-  *) echo "usage: $0 {start [N] [--force]|waiters [N]|lean [N]|stop|status|peak|pin}"; exit 2 ;;
+  # Magasin d'objets partage (#18225). `bootstrap` est l'action HORS BANDE
+  # (copie integrale, une fois par machine) ; `refresh` et `status` sont surs a
+  # tout moment, y compris parc en marche. Le resultat part dans le journal du
+  # miroir ET sur la sortie, pour qu'un operateur n'ait pas a ouvrir un fichier.
+  mirror)  shift
+           m_act="${1:-status}"
+           case "$m_act" in
+             bootstrap|refresh|status|probe) ;;
+             *) echo "usage: $0 mirror {bootstrap|refresh|status|probe}" >&2; exit 2 ;;
+           esac
+           command -v docker >/dev/null || die "docker introuvable"
+           assert_docker_daemon
+           docker image inspect "$IMAGE" >/dev/null 2>&1 \
+             || die "image $IMAGE absente -- construire d'abord depuis l'epingle"
+           mkdir -p "$STATE_DIR"
+           if [ "$m_act" = "probe" ]; then
+             # Le probe est le seul geste dont l'echec doit ATTEINDRE
+             # l'operateur : `|| true` l'aurait transforme en faux vert.
+             mirror_one_shot probe
+             m_rc=$?
+             tail -n 20 "$STATE_DIR/objects-mirror.log" 2>/dev/null
+             exit "$m_rc"
+           fi
+           mirror_one_shot "$m_act" || true
+           tail -n 20 "$STATE_DIR/objects-mirror.log" 2>/dev/null
+           ;;
+  *) echo "usage: $0 {start [N] [--force]|waiters [N]|lean [N]|stop|status|peak|pin|mirror {bootstrap|refresh|status|probe}}"; exit 2 ;;
 esac

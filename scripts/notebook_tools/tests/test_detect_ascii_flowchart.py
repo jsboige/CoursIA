@@ -138,7 +138,7 @@ Architecture NFSP (Neural Fictitious Self-Play)
 """
 
 # Extraction EXACTE des 12 premieres lignes du diagramme de la vraie cellule
-# c15 de GameTheory-17-MultiAgent-RL.ipynb (#12324 residuel) : boites empilees
+# c15 de GameTheory-17-MultiAgent-RL-Python.ipynb (#12324 residuel) : boites empilees
 # reliees par des connecteurs verticaux MULTI-COLONNES (`|  ...  |`, `v  ...  v`)
 # -- aucune fleche `--->`. La fixture GT_17_NFSP_HORIZONTAL ci-dessus est une
 # reconstitution avec fleches horizontales : elle passait sur main alors que la
@@ -504,7 +504,7 @@ class TestUnreadableNotebookSkipped:
         files_with_findings, and is not silently dropped).
         """
         # v4 notebook valide dont on retire la cle `metadata` (== cas reel
-        # Sudoku-15-Infer-Csharp.ipynb : `ValidationError` a la lecture).
+        # Sudoku-15-Infer-CSharp.ipynb : `ValidationError` a la lecture).
         nb_bytes = nbformat.writes(nbformat.v4.new_notebook())
         bad = tmp_path / "bad.ipynb"
         no_meta = nbformat.reads(nb_bytes, as_version=4)
@@ -614,7 +614,7 @@ class TestJsonModeWarningFlood:
 #   c.475 +boxes_inline + table_row exclusion + connector pattern (--|---|):
 #                  23 findings / 18 files (substance LIVREE : 10 fichiers
 #                  supplementaires detectes dont QC-Py-01 LEAN Engine,
-#                  DecInfer-01 utility pipeline, DecInfer-07 system expert,
+#                  DecInfer-01 utility pipeline, DecInfer-06 system expert,
 #                  et 03-Claude-CLI-References comparaison avant/apres).
 # Tous les nouveaux fichiers sont des vrais positifs ou borderline pedagogique
 # (cadres Unicode de comparaison, diagrammes LEAN, pipeline Infer.NET) -- le
@@ -631,8 +631,8 @@ class TestJsonModeWarningFlood:
 # d'un caractere de direction.
 #   PR #12637 : 29 findings / 21 files, re-mesure 2026-08-24 sur le merge-ref
 #                  reconstruit (origin/main 0f4b5835fa + conversion Mermaid) :
-#                  la conversion des 3 flowcharts DecInfer-01 / DecInfer-07 /
-#                  DecPyMC-6 retire exactement 1 finding par fichier (aucun
+#                  la conversion des 3 flowcharts DecInfer-01 / DecInfer-06 /
+#                  DecPyMC-06 retire exactement 1 finding par fichier (aucun
 #                  des 3 n'etait dans les +9 du fix multi-colonnes). Le 20/15
 #                  de la branche originale etait mesure sur un main
 #                  pre-#12729 (23/18) : obsolete au moment du rebase.

@@ -78,7 +78,7 @@ Les notebooks utilisent principalement **Python 3.10+** (PyTorch, OR-Tools, PyMC
 
 ## Ponts conceptuels inter-series
 
-Au-dela des parcours lineaires, le depot tisse des liens profonds entre ses series. La cle de lecture [La mer qui monte](../grothendieckian-lens.md) developpe cette vision d'ensemble ; les ponts ci-dessous en donnent les passages les plus directs.
+Au-dela des parcours lineaires, le depot tisse des liens profonds entre ses series. La cle de lecture [La mer qui monte](../cadrage/grothendieckian-lens.md) developpe cette vision d'ensemble ; les ponts ci-dessous en donnent les passages les plus directs.
 
 ### La dualite simulation / preuve
 
@@ -90,7 +90,7 @@ Un meme concept est d'abord **illustre numeriquement** (on simule, on calcule, o
 | **Contraintes** | [CSP-1-Fundamentals](../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb) (resoudre par propagation) | [SocialChoice/04-SAT-Z3](../MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) (encoder + verifier via solveur SMT) |
 | **Incertitude** | [PyMC-01-Setup](../MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb) (echantillonnage MCMC) | [Infer-101](../MyIA.AI.Notebooks/Probas/Infer-101.ipynb) (inference exacte par message-passing) |
 | **Smart contracts** | [SC-12-Foundry-Testing](../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-12-Foundry-Testing.ipynb), [SC-13-Fuzz-Invariants](../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-13-Fuzz-Invariants.ipynb) (tester / fuzzer) | [SC-14-Formal-Verification](../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification.ipynb) (verification formelle) |
-| **Mathematiques** | [Lean-16b Game of Life](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb) (automate cellulaire) | [Lean-15 Grothendieck](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Grothendieck-Tribute.ipynb), [Lean-13 Kochen-Specker](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Kochen-Specker.ipynb), [Lean-16f Free Will](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16f-Conway-Free-Will-Theorem.ipynb) |
+| **Mathematiques** | [GOL-01 Game of Life](../MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-01-Regles-Vie-Lean.ipynb) (automate cellulaire) | [Lean-15 Grothendieck](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Grothendieck-Tribute.ipynb), [Lean-13 Kochen-Specker](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Kochen-Specker.ipynb), [Lean-16c Free Will](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb) |
 
 **Comment s'en servir** : pour *ancrer* un concept abstrait, commencez par le versant simulation (intuition, visualisation), puis passez au versant preuve (rigueur, garanties). Les series purement generatives (GenAI, QuantConnect) se situent au bout simulation ; les series Lean sont au bout preuve. Leur point de jonction est la ligne du tableau.
 
@@ -104,7 +104,7 @@ Plusieurs series du depot pratiquent le meme geste : prendre la sortie incertain
 - **SC-11** : un contrat assiste par LLM relu a l'aune de sa verification formelle.
 - **Search/CSP** : un meme Sudoku resolu par recherche, par contraintes, ou par SAT — trois representations, trois couts.
 
-Ce mouvement est developpe dans la cle de lecture [La mer qui monte](../grothendieckian-lens.md) : l'IA digne de confiance sera celle qui sait trouver le cadre ou l'affirmation devient controlable.
+Ce mouvement est developpe dans la cle de lecture [La mer qui monte](../cadrage/grothendieckian-lens.md) : l'IA digne de confiance sera celle qui sait trouver le cadre ou l'affirmation devient controlable.
 
 ### Du local au global
 
@@ -185,4 +185,4 @@ Un second fil relie les series : une regle purement locale engendre une structur
 
 ---
 
-**Navigation** : [CLAUDE.md](../CLAUDE.md) | [docs/README.md](README.md) | [Index notebooks](../MyIA.AI.Notebooks/README.md) | [La mer qui monte](../grothendieckian-lens.md)
+**Navigation** : [CLAUDE.md](../CLAUDE.md) | [docs/README.md](README.md) | [Index notebooks](../MyIA.AI.Notebooks/README.md) | [La mer qui monte](../cadrage/grothendieckian-lens.md)

@@ -1,6 +1,6 @@
 # Module 05 - Multi-tenant, API Testing & CI/CD
 
-> **Format** : Fichier TypeScript `.spec.ts` avec tests commentés. Ouvrez `05-api-multi-tenant.spec.ts` dans VS Code. Ce module utilise l'API REST (pas le navigateur) pour la plupart des tests. Configurez `OWUI_TENANT2_*` dans `.env` pour activer les tests multi-tenant.
+> **Format** : deux artefacts. Le fichier TypeScript `05-api-multi-tenant.spec.ts` (tests commentés) est le **moteur de test** ; le notebook `05-Multi-Tenant-CI-QA-OWUI.ipynb` (section ci-dessous) en est la **couche pédagogique**. Ouvrez le `.spec.ts` dans VS Code. Ce module utilise l'API REST (pas le navigateur) pour la plupart des tests. Configurez `OWUI_TENANT2_*` dans `.env` pour activer les tests multi-tenant.
 
 ## Objectifs pédagogiques
 
@@ -61,6 +61,10 @@ Chaque "tenant" est une instance indépendante d'Open WebUI :
 | KB partagées | Vérifier le partage de KBs | Comparison cross-tenant |
 | Modèles identiques | Vérifier la parité des modèles | Assertions en boucle |
 | Isolation données | Vérifier l'isolation des users | Sécurité multi-tenant |
+
+## Couche pédagogique (notebook)
+
+Le notebook [`05-Multi-Tenant-CI-QA-OWUI.ipynb`](05-Multi-Tenant-CI-QA-OWUI.ipynb) est la cinquième et dernière étape de la mission (voir le notebook chapeau [`00-Parcours-QA-OWUI.ipynb`](../00-Parcours-QA-OWUI.ipynb)). Il quitte le navigateur pour l'API REST, explique l'architecture multi-tenant (isolation et partage des données entre tenants) et ouvre sur l'industrialisation CI/CD. Il lit `05-api-multi-tenant.spec.ts`, en dresse l'inventaire (`npx playwright test --list`, sans exécution) et propose des exercices en Python : décodage du payload d'un JWT, modèles présents sur un tenant et absents de l'autre, choix entre API et navigateur. Il explique aussi comment lire un rapport où la seconde partie du module (05b) est sautée sur une instance mono-tenant.
 
 ## Commandes
 

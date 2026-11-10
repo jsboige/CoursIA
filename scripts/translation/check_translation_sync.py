@@ -30,6 +30,15 @@ Verdicts par ligne CSV (cf. #4957 §2) :
                  boucle TARGET_LANGS saute le pivot : hash_fr n'était lu par
                  personne (#17677, mesuré sur #17649 — un resync manuel aux
                  colonnes décalées passait tous les checks au vert).
+    STALE_TRAD   (#20836) la traduction <lang> est cohérente avec son notebook
+                 (hash_<lang> = hash de la cellule _<lang>) mais date d'un
+                 source antérieur : ``src_hash_<lang>`` (posé par T3 au moment
+                 de la traduction) diffère du ``src_hash`` pivot courant. La
+                 retraduction est sémantiquement requise, mais le verdict
+                 SRC_DRIFT ne le voit pas (il compare au notebook source, pas
+                 à la trace par langue). Légendaire : la traduction est
+                 techniquement IN_SYNC avec son _<lang>.ipynb mais
+                 sémantiquement obsolète par rapport au FR source actuel.
 
     Note taxonomie Argumentum (#6949) : la 5e classe COGNATE (noms propres /
     faux-amis legitiment repetes, kind == "name", informationnelle — hors
@@ -58,6 +67,7 @@ import json
 import math
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 # Doit rester coherent avec extract_cells_to_csv.py (T1) ET check_perimeter.py
@@ -183,10 +193,31 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
     anomalies: list[dict] = []
     with csv_path.open(encoding="utf-8") as f:
         reader = csv.DictReader(f)
+        rows = list(reader)
         source_cache: dict[str, dict[str, str] | None] = {}
         source_text_cache: dict[str, dict[str, str] | None] = {}
         trad_text_cache: dict[str, dict[str, str] | None] = {}
-        for row in reader:
+
+        # DUPLICATE_KEY (#21489) : la resync T1 ne rafraichit que la PREMIERE
+        # occurrence d'une cle (notebook, cell_id) -- les suivantes conservent
+        # un pivot d'une autre version de la cellule, et chaque ligne reste
+        # "valide" isolee : le doublon ne se revele que par cette passe par
+        # fichier, avant les verifications par ligne.
+        key_counts: Counter[tuple[str, str]] = Counter(
+            (row.get("notebook", ""), row.get("cell_id", ""))
+            for row in rows
+            if row.get("notebook") and row.get("cell_id")
+        )
+        for (nb_dup, cid_dup), n_dup in sorted(key_counts.items()):
+            if n_dup > 1:
+                anomalies.append(
+                    {"csv": str(csv_path), "notebook": nb_dup, "cell_id": cid_dup,
+                     "verdict": "DUPLICATE_KEY",
+                     "detail": f"{n_dup} occurrences de la cle -- la resync T1 ne rafraichit "
+                               f"que la premiere, les autres gardent un pivot perime (#21489)"}
+                )
+
+        for row in rows:
             nb_rel = row.get("notebook", "")
             cell_id = row.get("cell_id", "")
             if not nb_rel or not cell_id:
@@ -284,6 +315,28 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
                         {"csv": str(csv_path), "notebook": nb_rel, "cell_id": cell_id, "lang": lang,
                          "verdict": "TRAD_DRIFT",
                          "detail": f"traduction {lang} éditée (csv={csv_hash} <> actuel={trad_cells[cell_id]})"}
+                    )
+
+                # STALE_TRAD (#20836) : la traduction est cohérente avec son
+                # _<lang>.ipynb (hash_<lang> = hash cellule) mais date d'un
+                # ancien source. ``src_hash_<lang>`` est posé par T3 (translate_csv)
+                # au moment de la traduction ; s'il diffère du ``src_hash``
+                # pivot courant, la retraduction est sémantiquement requise.
+                # On ne signale que les lignes où ``text_<lang>`` est non vide
+                # (sinon c'est l'état pré-T3, attendu). Une ligne legacy sans
+                # ``src_hash_<lang>`` (colonne absente des anciens CSV) reste
+                # IN_SYNC — rétro-compatibilité, le fix ne réveille pas des
+                # années de stock en un cycle.
+                csv_src_hash_for_lang = row.get(f"src_hash_{lang}", "") or ""
+                if (csv_src_hash_for_lang
+                        and csv_src_hash
+                        and csv_src_hash_for_lang != csv_src_hash):
+                    anomalies.append(
+                        {"csv": str(csv_path), "notebook": nb_rel, "cell_id": cell_id, "lang": lang,
+                         "verdict": "STALE_TRAD",
+                         "detail": f"traduction {lang} date d'un source anterieur "
+                                   f"(src_hash_{lang}={csv_src_hash_for_lang} <> src_hash={csv_src_hash}) "
+                                   f"-> retraduction requise pour coherence avec le FR actuel"}
                     )
 
                 # FR_CONTAM (Argumentum 5-classes, 4e, #6949) : la traduction
@@ -528,10 +581,9 @@ def main() -> int:
     # hors trigger push, ou série non couverte par un CSV).
     if args.report_out_of_scope:
         notebooks_root = args.notebooks_root or (repo_root / "MyIA.AI.Notebooks")
-        oos = find_out_of_scope_notebooks(notebooks_root, known_notebooks)
-        # Normalisation : les chemins retournés sont relatifs à
-        # ``notebooks_root``, mais les consommateurs (dashboard, audit)
-        # s'attendent à des chemins relatifs au repo root. On préfixe.
+        # Normalisation : les chemins scannés sont relatifs à ``notebooks_root``,
+        # mais les consommateurs (dashboard, audit) s'attendent à des chemins
+        # relatifs au repo root. On préfixe.
         if notebooks_root.is_absolute():
             try:
                 rel_root = notebooks_root.relative_to(repo_root).as_posix()
@@ -539,7 +591,21 @@ def main() -> int:
                 rel_root = None
         else:
             rel_root = notebooks_root.as_posix()
-        if rel_root and rel_root not in (".", ""):
+        # Bug #4208 (mesuré 2026-10-22) : ``find_out_of_scope_notebooks``
+        # compare ses chemins (relatifs à ``notebooks_root``) contre
+        # ``known_notebooks`` (relatifs au repo root). Sans alignement, la
+        # comparaison ne matche jamais et TOUT pivot FR était rapporté
+        # MISSING_FROM_CSV — 1591/1591 sur main@5d177839f90b, chiffre
+        # structurellement inutilisable. On retire le préfixe de ``known``
+        # AVANT l'appel (le docstring de la fonction délègue déjà cette mise
+        # en correspondance au caller).
+        prefix = f"{rel_root}/" if rel_root and rel_root not in (".", "") else ""
+        known_rel = {
+            p[len(prefix):] if prefix and p.startswith(prefix) else p
+            for p in known_notebooks
+        }
+        oos = find_out_of_scope_notebooks(notebooks_root, known_rel)
+        if prefix:
             for entry in oos:
                 entry["notebook"] = f"{rel_root}/{entry['notebook']}"
         report["out_of_scope"] = oos

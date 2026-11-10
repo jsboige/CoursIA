@@ -8,6 +8,33 @@
 > `NUMBERING-DRIFT` livrée par [PR #13017](https://github.com/jsboige/CoursIA/pull/13017) (po-2023).
 > Sans inventaire, le verdict NUMBERING-DRIFT ne dispose pas d'un mapping de référence pour
 > argumenter les tranches de renommage à venir.
+>
+> **Etat mesuré au 2026-10-02** : l'arc actuariel (ex-DecPyMC-8 à 12) est descendu en sous-série dédiée
+> [`Actuariat/`](Actuariat/README.md) — régraduation T1-T5 = `Actuariat-01..05` (arbitrage #14873 G3).
+> Le présent document reste le snapshot pré-merge du HEAD `87dffc2bd9c` : ses références à
+> DecPyMC-8/9/12 décrivent l'état historique au moment de la tranche P0 et sont conservées telles quelles.
+>
+> **État mesuré au 2026-11-02** (tranche « zero-pad DecPyMC », lane `myia-ai-01:CoursIA-2`) : la série
+> Python `DecPyMC` a été **migrée en zero-pad** — `DecPyMC-1..7` → `DecPyMC-01..07`, `DecPyMC-08` inchangé
+> (le capstone actuariel portait déjà deux chiffres). Conséquence de parité : l'**asymétrie de zero-pad**
+> entre les deux jumeaux disparaît (DecInfer `01..08` et DecPyMC `01..07` partagent désormais la même
+> convention), et la paire `DT-1` (Utility-Foundations) redevient **alignée** — son `numbering_exception`
+> est supprimé du registre `twin_pairs.d`. La divergence de **slot** (DecInfer-03..08 contre DecPyMC-02..07),
+> causée par les compagnons Lean `DecInfer-02/02b` qui occupent le compteur principal, **subsiste** : elle
+> est seule à rester documentée dans les `numbering_exception` de `DT-2..DT-7`, et demeure le réalignement
+> gate sur l'arbitrage §3. Le tableau §1 et la vue d'ensemble ci-dessous **restent le snapshot P0**
+> (HEAD `87dffc2bd9c`) : ils décrivent l'état au moment de la tranche P0 et ne sont pas réécrits.
+>
+> **État mesuré au 2026-11-05** (tranche « re-flow voie (a) », lane `myia-po-2024:CoursIA`) : la divergence
+> de slot est **résolue** — les compagnons Lean deviennent des accrétions (`DecInfer-02-Lean-ExpectedUtility`
+> → `DecInfer-01b-Lean-ExpectedUtility`, `DecInfer-02b-Lean-Coherence` → `DecInfer-01c-Lean-Coherence`,
+> `DecInfer-08b-Lean-Gittins` → `DecInfer-07b-Lean-Gittins`) et le compteur principal DecInfer est re-flowé
+> (`DecInfer-03..08` → `DecInfer-02..07`) : les 6 paires communes `DT-2..DT-7` portent désormais le **même
+> identifiant** des deux côtés ; leurs `numbering_exception` sont réécrites en « décalage historique résolu
+> le 2026-11-05 » et le registre `twin_pairs.d` pointe les chemins renommés (cf §5). `DecInfer-10-Thompson-Sampling`
+> reste en place : la position de Thompson appartient à l'arbitrage (i)/(ii)/(iii) de l'EPIC — les 9 cibles
+> livrées sont invariantes sous ces trois options. Les tableaux §1/§6 et l'arbre de la vue d'ensemble
+> **restent le snapshot P0** (HEAD `87dffc2bd9c`) : ils décrivent l'état pré-re-flow et ne sont pas réécrits.
 
 ## Périmètre strict de la tranche
 
@@ -31,7 +58,7 @@ DecInfer/  (10 notebooks : 8 C#/.NET + 2 Lean 4)
         DecInfer-06  Value-Information        (decalé)   │ décalées
         DecInfer-07  Expert-Systems           (decalé)   │
         DecInfer-08  Sequential               (decalé)  ─┘
-        DecInfer-09  Lean-Gittins             (companion Lean, suffixe)
+        DecInfer-08b  Lean-Gittins             (companion Lean, suffixe)
         DecInfer-10 Thompson-Sampling        (aligné au DecPyMC-7 multi-section, extension unilatérale)
 
 DecPyMC/   (9+ notebooks : NUTS/ADVI Python)
@@ -74,7 +101,7 @@ L'EPIC #12933 a déjà diagnostiqué la cause (cf body §La cause n'est pas un m
 > `DecInfer-02-Lean-ExpectedUtility` est un companion formel légitime, mais son insertion dans
 > la séquence principale a décalé tous les concepts communs suivants.
 
-Le même mécanisme vaut pour `DecInfer-09-Lean-Gittins` (companion Lean, intercalé en N°9, suivi
+Le même mécanisme vaut pour `DecInfer-08b-Lean-Gittins` (companion Lean, intercalé en N°9, suivi
 du Thompson Sampling en N°10). Les companions Lean NE DEVRAIENT PAS décaler le compteur commun,
 mais le système de numérotation initial les a traités comme des entrées à part entière.
 
@@ -87,7 +114,7 @@ Trois voies possibles (à arbitrer en EPIC, pas dans cette tranche) :
 
 | Voie | Description | Effet sur les notebooks | Risque |
 |---|---|---|---|
-| **(a) Suffixe compagnon** (recommandée par le principle directeur) | Renommer `DecInfer-02-Lean-ExpectedUtility` → `DecInfer-01b-Lean-ExpectedUtility` (companion de #1, suffixe `b`). Idem `DecInfer-09-Lean-Gittins` → `DecInfer-08b-Lean-Gittins`. Les DecInfer-03..08 restent alignés avec DecPyMC-2..7. | 2 `git mv` + réparations de liens entrants (REVIEW, datasets, manifestes) ; pas de renommage côté PyMC. | Faible (companions explicites, déjà conventionnés `App-Nb` / `SW-Nb`). |
+| **(a) Suffixe compagnon** (recommandée par le principle directeur) | Renommer `DecInfer-02-Lean-ExpectedUtility` → `DecInfer-01b-Lean-ExpectedUtility` (companion de #1, suffixe `b`). Idem `DecInfer-09-Lean-Gittins` → `DecInfer-08b-Lean-Gittins` (G4c). Les DecInfer-03..08 restent alignés avec DecPyMC-2..7. | 2 `git mv` + réparations de liens entrants (REVIEW, datasets, manifestes) ; pas de renommage côté PyMC. | Faible (companions explicites, déjà conventionnés `App-Nb` / `SW-Nb`). |
 | **(b) Re-numérotation totale PyMC** | Renommer `DecPyMC-2..7` → `DecPyMC-3..8` pour s'aligner à DecInfer. Coûteux en références entrantes. | 6 renommages + réparations systématiques des liens Python (catalogue, baselines, tests). | Élevé (les notebooks PyMC sont les plus référencés par les notebooks Causal-Bridges et autres arcs). |
 | **(c) Slot compagnon vide PyMC** | Ajouter `DecPyMC-1b` et `DecPyMC-8b` vides (companion slot non rempli) pour préserver la parité des nombres, sans toucher au contenu PyMC. | 2 fichiers stubs vides, déclaration d'absence. | Faible techniquement, fort symboliquement (pourquoi des fichiers vides ?). |
 
@@ -97,6 +124,14 @@ po-2023, 2026-08-25). Une fois la décision rendue, cette section sera reprise d
 tranche de mapping dédiée.
 
 ## 4. Extensions unilatérales (ni décalées, ni alignées — à documenter tel quel)
+
+> **État mesuré au 2026-10-26** (tranche P0bis, lane `myia-po-2023:CoursIA`) : la branche actuarielle
+> PyMC a été **consolidée** — le dépôt porte désormais un unique `DecPyMC-08-Actuariat-Capstone.ipynb`
+> qui remplace les carnets `DecPyMC-8`, `DecPyMC-9` et `DecPyMC-12` du tableau ci-dessous (les lignes
+> restent comme état historique du snapshot P0). Le capstone reste une **extension unilatérale** :
+> sans jumeau DecInfer, hors arc commun, non enregistrée au registre twin_pairs.d (les extensions
+> unilatérales ne s'y enregistrent pas — précédent ML-6 ONNX, famille ML). Par ailleurs les
+> compagnons Lean `DecInfer-02`/`02b`/`08b` demeurent hors arc commun (cause structurelle du décalage, §2).
 
 | Extension | Justification | Jumeau attendu ? |
 |---|---|---|
@@ -109,7 +144,24 @@ tranche de mapping dédiée.
 pas de jumeau côté DecInfer et la convention autorise explicitement les extensions unilatérales
 (EPIC #12933 §Principe directeur).
 
-## 5. État du registre `twin_pairs.d/` (snapshot au HEAD)
+## 5. État du registre `twin_pairs.d/`
+
+> **État mesuré au 2026-10-26 — P0bis LIVRÉE** (tranche `#12933-P0bis-ajout-registre`, lane
+> `myia-po-2023:CoursIA`) : les **7 paires communes** sont enregistrées (`dt-1-utility-foundations.yaml`
+> à `dt-7-sequential.yaml`), chaque divergence de numéro portée par un `numbering_exception` documenté
+> (décalage de compteur des compagnons Lean + zero-pad asymétrique DecInfer `01..08` vs DecPyMC `1..7`).
+> Deux écarts avec la recommandation initiale ci-dessous, mesurés : (a) pas de fichiers `dt-ext-{8,9}`
+> — le registre n'enregistre pas les extensions unilatérales (aucun précédent, précédent inverse
+> ML-6 ONNX exclu) ; (b) la branche actuarielle s'est consolidée entre-temps en `DecPyMC-08-Capstone`
+> (§4). La garde `NUMBERING-DRIFT` couvre désormais la famille ; le **réalignement** des numéros reste
+> la tranche à venir, gatee sur l'arbitrage §3.
+>
+> **État mesuré au 2026-11-05** (tranche « re-flow voie (a) », lane `myia-po-2024:CoursIA`) : les chemins
+> `csharp:` de `dt-2..dt-7` pointent les fichiers renommés (`DecInfer-02..07`), et les six
+> `numbering_exception` sont réécrites en « décalage historique résolu le 2026-11-05 » — les numéros
+> étant alignés, plus aucune exception active ne subsiste au registre pour cette famille.
+
+### Historique — snapshot au HEAD `87dffc2bd9c` (conservé tel quel)
 
 ```
 $ ls scripts/notebook_tools/twin_pairs.d/ | grep -iE "(dt-?|dec(dt|infer|pymc))" | head
@@ -140,7 +192,7 @@ explicitement les extensions unilatérales. Chaque fichier suit le format `_sche
 | `DecInfer-06-Value-Information.ipynb` | `84dbb0657965` |
 | `DecInfer-07-Expert-Systems.ipynb` | `395123d8c37b` |
 | `DecInfer-08-Sequential.ipynb` | `17f2afe786af` |
-| `DecInfer-09-Lean-Gittins.ipynb` | `b3428a08ced3` |
+| `DecInfer-08b-Lean-Gittins.ipynb` | `b3428a08ced3` |
 | `DecInfer-10-Thompson-Sampling.ipynb` | `fc01f40aa3b8` |
 | `DecPyMC-1-Utility-Foundations.ipynb` | `ed6ab40b030f` |
 | `DecPyMC-2-Utility-Money.ipynb` | `b873c515ac49` |

@@ -60,9 +60,17 @@ from train_rl_dt import (
     DecisionTransformerModel,
     build_trajectories,
     compute_majority_class_baseline,
-    create_sequence_batches,
     evaluate_dt,
     train_dt,
+)
+from validate_xrp_dt import (
+    CAUSAL_EVAL_PROTOCOL,
+    causal_eval_series,
+    dt_causal_positions,
+    gross_returns,
+    net_returns,
+    sharpe,
+    train_rtg_per_step,
 )
 
 CRYPTO_COINS = [
@@ -136,6 +144,7 @@ def run_single_seed_coin(
     all_oos_preds = []
     all_oos_targets = []
     all_oos_strategy_returns = []
+    all_oos_gross_returns = []
     all_oos_bh_returns = []
 
     for fold_idx, (train_idx, test_idx) in enumerate(splitter.split(np.arange(len(prices)))):
@@ -188,54 +197,32 @@ def run_single_seed_coin(
             device=device,
         )
 
-        # Evaluate OOS
+        # Evaluate OOS. Input RTG fixed from the training fold: the realized
+        # test RTG sums future test rewards (#21187).
+        rtg_step = train_rtg_per_step(train_trajs)
         oos_metrics = evaluate_dt(
             result["model"], test_trajs,
             context_length=context_length,
             batch_size=batch_size,
             device=device,
+            rtg_per_step=rtg_step,
         )
 
-        # Compute strategy returns with transaction costs
-        # Get model predictions on test trajectories
+        # Strategy returns of the DT's own decisions (causal-v1, #21187): one
+        # decision per return k -> k+1, read on rows <= k-2, position +1 (buy)
+        # / -1 (sell) / 0 (hold). Until #21187 every window position was
+        # flattened into one series and paired with the first test returns.
         model = result["model"]
-        model.eval()
-        test_batches = create_sequence_batches(
-            test_trajs, context_length=context_length, batch_size=batch_size, shuffle=False,
+        positions, first_k = dt_causal_positions(
+            model, test_prices, test_features_norm, window, context_length,
+            rtg_step, batch_size=batch_size, device=device,
         )
-        all_preds_fold = []
-        with torch.no_grad():
-            for batch in test_batches:
-                states = batch["states"].to(device)
-                actions = batch["actions"].to(device)
-                rtg = batch["rtg"].to(device)
-                mask = batch["attention_mask"].to(device)
-                logits = model(states, actions, rtg, attention_mask=mask)
-                preds = logits.argmax(dim=-1)
-                mask_flat = mask.reshape(-1).bool()
-                valid_preds = preds.reshape(-1)[mask_flat].cpu().numpy()
-                all_preds_fold.append(valid_preds)
-
-        if all_preds_fold:
-            preds_array = np.concatenate(all_preds_fold)
-            # Action mapping: 0=hold, 1=buy, 2=sell
-            positions = np.zeros(len(preds_array))
-            positions[preds_array == 1] = 1.0
-            positions[preds_array == 2] = -1.0
-
-            # Compute test returns (use a subset of test prices matching trajectory length)
-            test_returns = np.diff(test_prices[:len(positions)+1]) / (test_prices[:len(positions)+1][:-1] + 1e-8)
-            min_len = min(len(positions), len(test_returns))
-            strategy_returns = test_returns[:min_len] * positions[:min_len]
-            bh_returns = test_returns[:min_len]
-
-            # Deduct transaction costs on position changes
-            pos_changes = np.abs(np.diff(positions[:min_len], prepend=0))
-            tc = pos_changes * commission
-            net_strategy_returns = strategy_returns - tc
-
-            all_oos_strategy_returns.extend(net_strategy_returns.tolist())
-            all_oos_bh_returns.extend(bh_returns.tolist())
+        dt_pos, _mom, _bh, test_returns = causal_eval_series(
+            test_prices, positions, first_k, window,
+        )
+        all_oos_strategy_returns.extend(net_returns(dt_pos, test_returns, commission).tolist())
+        all_oos_gross_returns.extend(gross_returns(dt_pos, test_returns).tolist())
+        all_oos_bh_returns.extend(test_returns.tolist())
 
         fold_results.append({
             "fold": fold_idx,
@@ -262,15 +249,13 @@ def run_single_seed_coin(
     mean_acc = float(np.mean(fold_accs))
     mean_edge = float(np.mean(fold_edges))
 
-    # Sharpe from OOS strategy returns
+    # Sharpe from OOS strategy returns (net of costs; gross for reference)
     if len(all_oos_strategy_returns) > 30:
-        strat_arr = np.array(all_oos_strategy_returns)
-        bh_arr = np.array(all_oos_bh_returns)
-        gross_sharpe = float(np.mean(strat_arr) / (np.std(strat_arr) + 1e-8) * np.sqrt(252))
-        bh_sharpe = float(np.mean(bh_arr) / (np.std(bh_arr) + 1e-8) * np.sqrt(252))
+        net_sharpe = sharpe(np.array(all_oos_strategy_returns))
+        gross_sharpe = sharpe(np.array(all_oos_gross_returns))
+        bh_sharpe = sharpe(np.array(all_oos_bh_returns))
     else:
-        gross_sharpe = 0.0
-        bh_sharpe = 0.0
+        net_sharpe = gross_sharpe = bh_sharpe = 0.0
 
     return {
         "coin": coin,
@@ -279,8 +264,10 @@ def run_single_seed_coin(
         "mean_oos_accuracy": round(mean_acc, 4),
         "mean_edge_vs_majority": round(mean_edge, 4),
         "fold_results": fold_results,
+        "net_sharpe": round(net_sharpe, 4),
         "gross_sharpe": round(gross_sharpe, 4),
         "bh_sharpe": round(bh_sharpe, 4),
+        "eval_protocol": CAUSAL_EVAL_PROTOCOL,
         "data_hash": data_hash,
     }
 
@@ -300,7 +287,9 @@ def aggregate_seeds(seed_results: list[dict]) -> dict:
         }
 
     edges = [r["mean_edge_vs_majority"] for r in valid]
-    sharpes = [r["gross_sharpe"] for r in valid]
+    # Net of costs. Until #21187 the "gross_sharpe" key already held the net
+    # Sharpe; it now holds the gross one, so the aggregate reads "net_sharpe".
+    sharpes = [r["net_sharpe"] for r in valid]
     accs = [r["mean_oos_accuracy"] for r in valid]
 
     mean_edge = float(np.mean(edges))
@@ -314,7 +303,7 @@ def aggregate_seeds(seed_results: list[dict]) -> dict:
     # DM test: compare strategy returns vs buy-and-hold
     # We collect all OOS returns across seeds and fold
     dm_result = None
-    all_strat = [r.get("gross_sharpe", 0) for r in valid]
+    all_strat = [r.get("net_sharpe", 0) for r in valid]
     all_bh = [r.get("bh_sharpe", 0) for r in valid]
 
     # Verdict logic
@@ -411,7 +400,7 @@ def main():
                 else:
                     print(f" acc={result['mean_oos_accuracy']:.4f} "
                           f"edge={result['mean_edge_vs_majority']:+.4f} "
-                          f"Sharpe={result['gross_sharpe']:.4f} "
+                          f"Sharpe net={result['net_sharpe']:.4f} "
                           f"({elapsed:.0f}s, {result['n_folds']} folds)")
 
                 coin_seed_results.append(result)

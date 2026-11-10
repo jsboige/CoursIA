@@ -16,11 +16,14 @@ Mean-reversion-en-régime-tendance par `GradientBoostingClassifier`. Utilise la 
 
 | Métrique | Valeur |
 |----------|--------|
-| Sharpe Ratio | 0.375 |
-| CAGR | 8.44% |
-| Max Drawdown | 24.4% |
+| Sharpe Ratio | 0.495 |
+| CAGR | 9.85% |
+| Max Drawdown | 20.7% |
+| Fenêtre backtest | 2018-2025 (run frais aligné #1630, voir `docs/qc/qc-strategies-status.md` l.234/l.762 ; run d'origine tr.7 2015-2024 : Sharpe 0.571) |
 | Modèle | GradientBoostingClassifier |
 | Rebalancement | Hebdomadaire |
+
+Verdict de recherche (notebook) : walk-forward multi-seed **INCONCLUSIVE** (Sharpe moyen 0.301 ± 0.808, edge non significatif) ; PSR 4.6 % sur le run cloud — edge non validée à ce jour.
 
 ## Fichiers
 

@@ -35,6 +35,24 @@ La clause `paths:` est parsée par `_extract_paths_clause` dans `scripts/check_l
 
 **Référence organe** : `scripts/check_lane_claim.py:_extract_paths_clause` + `scripts/tests/test_check_lane_claim.py::test_paths_clause_*`. **Référence diagnostic** : issue **#12052** (parenthèse + prose), #10958 (annotation tiret), #10597 (accolades), #11064 (`--paths`).
 
+### Marqueurs qui portent la clause, et le cas `[DELIVERED]` (#22445)
+
+La clause est lue sur `[CLAIMED]`, `[CLAIMED-AMEND]`, `[RELEASED]`, `[DELIVERED]` et `[OVERRIDE]`. Jusqu'au 2026-10-25, `DELIVERED` manquait à cette liste : sa clause était **acceptée sans erreur et ignorée**, le marqueur retombait en epic-wide.
+
+Conséquence mesurée (#16334, lane `myia-po-2023:CoursIA`, c.2360) : trois marqueurs de même forme bornée, un seul effet correct.
+
+| Marqueur | Clause `paths:` | `paths` dans le JSON | Effet |
+|---|---|---|---|
+| `[CLAIMED]` | oui | liste peuplée | CLEAR pour les autres lanes |
+| `[DELIVERED]` (PR ouverte) | oui | **`null`** | `epic_wide_on_umbrella: true`, umbrella relockée |
+| `[RELEASED]` | oui | liste peuplée | `epic_wide_on_umbrella: false` |
+
+Le défaut était d'autant plus trompeur que la sémantique v2 (`_resolve_delivered_v2`) **re-marque** le `[DELIVERED]` en occupation active tant que sa PR est **OPEN** ou **MERGED** : une livraison bornée devenait donc une occupation **épic-wide** — le geste prescrit par la règle produisait l'effet inverse de celui qu'il cherche. Sur la branche **CLOSED** (PR fermée sans merge), la lane est retirée de l'état et la clause reste informative, comme sur `[RELEASED]`.
+
+Contournement qui n'a plus lieu d'être : poster un `[RELEASED]` borné juste après le `[DELIVERED]`. Le correctif le rend inutile ; il reste utile à connaître pour lire un fil antérieur au 2026-10-25.
+
+Bornes du correctif : la clause **borne** le verrou, elle ne le supprime pas (un caller dont le scope intersecte la tranche livrée reste bloqué), et un glob mort sur le `[DELIVERED]` relève le claim en epic-wide par le fail-CLOSED #10958 (un claim cassé n'est pas permissif). Quatre tests épinglent ces bornes : `test_delivered_scope_clause_*` dans `scripts/tests/test_check_lane_claim.py`.
+
 ## Déviation sémantique — un glob bien formé qui ne matche aucun fichier suivi (#12740)
 
 La garantie fail-CLOSED de la ligne 28 (rule) tient pour les déviations **syntaxiques**. Elle ne tient pas pour la déviation **sémantique** — un glob syntaxiquement correct mais qui nomme un chemin inexistant (ex. `paths: scripts/notebook_tools/check_code_in_markdown.py` alors que le fichier réel est `detect_code_in_markdown_cells.py`, incident #12620 : deux lanes ont livré le même fichier réel).

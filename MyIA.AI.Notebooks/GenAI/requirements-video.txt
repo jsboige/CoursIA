@@ -3,7 +3,7 @@
 # Prerequis: requirements.txt (dependances de base)
 
 # --- Traitement video ---
-moviepy>=1.0.3               # Edition video haut niveau (trim, concat, effets)
+moviepy>=2.0,<3              # Edition video haut niveau (API 2.x : subclipped, with_effects ; moviepy impose Pillow < 12)
 ffmpeg-python>=0.2.0         # Wrapper Python pour FFmpeg
 decord>=0.6.0                # Lecture rapide de frames video
 opencv-python>=4.8.0         # Vision par ordinateur, extraction frames

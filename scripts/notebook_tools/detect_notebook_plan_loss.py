@@ -192,8 +192,15 @@ def _significant_tokens(text: str) -> set[str]:
 # l'enrichissement que l'auteur a mis dans la phrase. Le sous-groupe optionnel
 # 2 capte la queue ` : SW-3 Graph Operations` quand elle existe, et le sous-
 # groupe 1 seul rend la substance deja vue avant.
+# Lookahead `(?=\n|\*\*|\Z)` : la queue ne franchit jamais un retour ligne
+# (classe niee `[^\n]`), donc s'arreter sur TOUT `\n` -- pas seulement `\n\n`
+# -- ne change aucune queue existante ; cela capture en plus les blocs bold
+# en fin de ligne suivis d'un contenu non vide (forme « label : » + liste
+# numerotee colle, ex. `**Instructions**:\n1. ...`), invisibles avec `\n\n`
+# (#20777 : le re-rendu EN retrogradait `### Instructions` en label bold
+# suivi de sa liste, la passe 2 ne voyait plus la substance -> LOST_SECTION).
 _BOLD_INLINE_RE = re.compile(
-    r"\*\*([^*\n]+?)\*\*([^\n]*?)(?=\n\n|\*\*|\Z)",
+    r"\*\*([^*\n]+?)\*\*([^\n]*?)(?=\n|\*\*|\Z)",
     re.DOTALL,
 )
 _HEADING_LINE_RE = re.compile(r"^[ \t]*(#{1,6})\s+(.+?)\s*$", re.MULTILINE)

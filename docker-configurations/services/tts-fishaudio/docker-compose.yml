@@ -1,29 +1,69 @@
-# FishAudio S2-Pro TTS Service - BnB 4-bit NF4 quantized
+# FishAudio S2-Pro TTS Service - official snapshot, fp16 (--half) on GPU1
 # API server with CUDA support on GPU1 (RTX 3090 24GB)
 #
-# GPU: RTX 3090 (24GB) - ~5GB VRAM with BnB 4-bit quantization
+# GPU: RTX 3090 24GB - ~20GB VRAM with the official fp16 snapshot (--half)
 # Port: 8197
 # API: POST /v1/tts, GET /v1/health
 # Docs: http://localhost:8197/docs
 #
 # Notes:
-#   - Model S2-Pro BnB 4-bit (~3GB model.pth) must be in checkpoints/s2-pro-bnb4/
-#   - tokenizer.json must be present (generated from Qwen2.5 base + FishAudio special tokens)
-#   - config.json required (fish_qwen3_omni format)
+#   - Checkpoint: official HuggingFace snapshot fishaudio/s2-pro (~11GB safetensors)
+#     in checkpoints/s2-pro/ (see README setup -- snapshot_download)
+#   - The former custom image fishaudio/fish-speech:server-cuda-bnb4 (~5GB VRAM,
+#     NF4) was never published upstream and is lost; its 4-bit checkpoints in
+#     checkpoints/s2-pro-bnb4/ use a house format (mixed fp16 embeddings + packed
+#     linear layers, no separate scales) that upstream images cannot load.
+#     The official fp16 snapshot is the supported path (measured 2026-10-06:
+#     warm-up 20.33GB VRAM, 3.7 tok/s generation on a RTX 3090).
+#   - A 4-bit path that DOES work on the official image is the upstream int4
+#     weight-only route (tools/llama/quantize.py) -- see quantize_int4.py and
+#     docs/genai/tts-fishaudio-int4.md for the measured recipe. It requires:
+#       * LLAMA_CHECKPOINT_PATH=checkpoints/fs-1.2-int4-g128-<timestamp>
+#       * FISHAUDIO_SERVE_SCRIPT=serve_int4.py -- the image's int4 loader
+#         branch reads `path.name` but the API server passes the checkpoint
+#         path as a str (AttributeError); the wrapper converts it to a Path.
+#         (Relative to the image workdir /app, where the compose mounts it.)
+#       * FISHAUDIO_HALF_FLAG=  (empty) -- the int4 kernel needs the
+#         `scales_and_zeros` buffers to stay bfloat16, and `--half` casts every
+#         float buffer to float16 (measured: the kernel then returns garbage).
+#         The image's own default (no --half) is bfloat16, which is also the
+#         precision the upstream quantizer uses.
+#   - The upstream image entrypoint (run_webui.py) intercepts CLI args: the
+#     compose file pins the api_server entrypoint explicitly.
 #   - Reference voices stored in ./references/ (sample.wav + sample.lab)
 #   - S2 Pro supports 15000+ emotion tags: (whisper), (shout), (laugh)...
 #   - Use parenthesis syntax for emotions: (angry), (sad), (excited)
-#   - BnB 4-bit reduces VRAM from ~18GB to ~5GB (NF4 quantization)
-#   - Image: fishaudio/fish-speech:server-cuda-bnb4 (patched upstream + bnb4 support)
 
 services:
   tts-fishaudio:
-    image: fishaudio/fish-speech:server-cuda-bnb4
+    image: fishaudio/fish-speech:latest
     container_name: tts-fishaudio
     hostname: tts-fishaudio
+    entrypoint: ["/app/.venv/bin/python"]
+    # Commande en forme chaine (et non liste) : le drapeau de precision doit
+    # pouvoir disparaitre sans laisser un argument vide -- argparse rejecte un
+    # argument vide, et l'image n'expose pas de `--no-half` (son `--half` est
+    # un `store_true`, dont le defaut est deja bfloat16). Meme raison pour le
+    # script de lancement : par defaut celui de l'image, le wrapper int4 pour
+    # la route quantifiee (FISHAUDIO_SERVE_SCRIPT, monte en lecture seule).
+    command: >
+      ${FISHAUDIO_SERVE_SCRIPT:-tools/api_server.py}
+      --llama-checkpoint-path ${LLAMA_CHECKPOINT_PATH:-checkpoints/s2-pro}
+      --decoder-checkpoint-path ${DECODER_CHECKPOINT_PATH:-checkpoints/s2-pro/codec.pth}
+      --decoder-config-name ${DECODER_CONFIG_NAME:-modded_dac_vq}
+      --listen 0.0.0.0:8080
+      ${FISHAUDIO_HALF_FLAG---half}
 
     ports:
       - "127.0.0.1:${FISHAUDIO_PORT:-8197}:8080"
+
+    # Maintenance#303 bounds: mem_limit = memswap_limit = 16g (swap disabled),
+    # pids_limit 256. 16g covers the fp16 path (an ~11 GB safetensors that is
+    # streamed to the GPU at warm-up -- 20.33 GiB VRAM measured 2026-10-06)
+    # and is ample for the int4 wrapper route, whose resident set is ~2.8 GiB.
+    mem_limit: 16g
+    memswap_limit: 16g
+    pids_limit: 256
 
     deploy:
       resources:
@@ -40,6 +80,10 @@ services:
       - type: bind
         source: ${REFERENCES_PATH:-./references}
         target: /app/references
+      - type: bind
+        source: ${SERVE_SCRIPT_PATH:-./serve_int4.py}
+        target: /app/serve_int4.py
+        read_only: true
       - type: volume
         source: fishaudio-cache
         target: /root/.cache
@@ -56,10 +100,15 @@ services:
       - HUGGING_FACE_HUB_TOKEN=${HUGGINGFACE_TOKEN:-}
       - HF_TOKEN=${HUGGINGFACE_TOKEN:-}
 
+    # Single-worker contention: a long generation (max-text-length tokens at
+    # ~3.7 tok/s) blocks the event loop for minutes, so /v1/health can time
+    # out DURING active synthesis -- the flap is expected under load, not a
+    # crash. Do not raise --workers to fix it (one model copy per worker,
+    # measured 20.3GB VRAM each on a 24GB GPU).
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8080/v1/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8080/v1/health || exit 1"]
       interval: 60s
-      timeout: 30s
+      timeout: 60s
       retries: 5
       start_period: 600s
 
@@ -71,7 +120,7 @@ services:
     labels:
       - "com.myia.service=tts-fishaudio"
       - "com.myia.gpu=rtx-3090"
-      - "com.myia.model=fishaudio-s2-pro-bnb4"
+      - "com.myia.model=fishaudio-s2-pro"
 
   # Sidecar: Idle Monitor - Stop container after inactivity
   idle-monitor:
@@ -93,6 +142,11 @@ services:
     working_dir: /app
 
     command: ["python", "service_idle_monitor.py"]
+
+    # Maintenance#303 bounds (sidecar): tiny poller.
+    mem_limit: 256m
+    memswap_limit: 256m
+    pids_limit: 64
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro

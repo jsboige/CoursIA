@@ -17,6 +17,7 @@ Faux-negatifs mesures (l'organe DOIT les trouver) :
 - lien dans une rangee de nav sous `## Navigation` vers .ipynb absent.
 - lien avec mot `suivant` / `precedent` dans le texte vers .ipynb absent.
 """
+import subprocess
 import sys
 import textwrap
 from pathlib import Path
@@ -273,3 +274,253 @@ class TestPartitionNewByDiff:
 
     def test_load_diff_files_missing_file_fail_closed(self, tmp_path):
         assert nav_chain._load_diff_files(tmp_path / "absent.txt") == set()
+
+
+class TestDiffBaseScope:
+    """#20303 : la voie rapide n'a pas de fichier de liste. `--diff-base REF`
+    fait calculer au checker `git diff REF...HEAD`, le meme diff que le
+    `pr_files.txt` du workflow d'origine. Sans cette portee, un NEW du graphe
+    global rougissait toute PR touchant un carnet ou un README de serie."""
+
+    def test_changed_since_reads_the_base_head_range(self, monkeypatch):
+        calls = []
+
+        def fake_run(cmd, **kwargs):
+            calls.append(cmd)
+            return subprocess.CompletedProcess(
+                cmd, 0, stdout="MyIA.AI.Notebooks/A/x.ipynb\n\nscripts/y.py\n", stderr="")
+
+        monkeypatch.setattr(nav_chain.subprocess, "run", fake_run)
+        assert nav_chain._changed_since("origin/main") == {
+            "MyIA.AI.Notebooks/A/x.ipynb", "scripts/y.py"}
+        assert calls[0][-1] == "origin/main...HEAD"
+        assert "core.quotePath=false" in calls[0]
+
+    def test_changed_since_git_failure_is_fail_closed(self, monkeypatch, capsys):
+        monkeypatch.setattr(
+            nav_chain.subprocess, "run",
+            lambda cmd, **kwargs: subprocess.CompletedProcess(
+                cmd, 128, stdout="", stderr="fatal: bad revision"))
+        assert nav_chain._changed_since("origin/absent") == set()
+        assert "fail-closed" in capsys.readouterr().err
+
+    def test_diff_base_and_diff_files_are_mutually_exclusive(self):
+        with pytest.raises(SystemExit) as exc:
+            nav_chain.main(["--check", "--diff-base", "origin/main",
+                            "--diff-files", "pr_files.txt"])
+        assert exc.value.code == 2
+
+    def test_diff_base_scope_reaches_the_verdict(self, monkeypatch, capsys):
+        """Controle positif et negatif de bout en bout, par `main` sur le graphe
+        reel. Baseline vide : chaque finding du depot est NEW. Un diff qui ne
+        touche que le registre ne bloque pas ; le meme argv avec le README de la
+        serie ICT (finding present) dans le diff bloque."""
+        seen_bases = []
+
+        def diff_for(paths):
+            def _changed_since(base):
+                seen_bases.append(base)
+                return set(paths)
+            return _changed_since
+
+        monkeypatch.setattr(nav_chain, "_load_baseline", lambda: set())
+        argv = ["--check", "--diff-base", "origin/main"]
+
+        monkeypatch.setattr(nav_chain, "_changed_since",
+                            diff_for({"scripts/ci/fast_lane_registry.py"}))
+        assert nav_chain.main(argv) == 0
+
+        monkeypatch.setattr(nav_chain, "_changed_since",
+                            diff_for({"MyIA.AI.Notebooks/IIT/ICT-Series/README.md"}))
+        assert nav_chain.main(argv) == 1
+        assert seen_bases == ["origin/main", "origin/main"]
+
+
+class TestIntraSeriesEntryStatus:
+    """Option (a) de l'arbitrage #19076 (2026-10-11, c.6114582529) : le statut
+    d'entree se perd seulement par un lien entrant INTRA-serie ; une ancre
+    externe ne le vole plus. Reachability globale inchangee."""
+
+    @staticmethod
+    def _graph(tmp_path, edges):
+        """Construit (inbound, outbound, series) depuis une liste d'aretes
+        (src_name, dst_name) sur des fichiers poses sous tmp_path."""
+        files = {}
+        for a, b in edges:
+            files.setdefault(a, None)
+            files.setdefault(b, None)
+        for name in files:
+            p = tmp_path / f"{name}.ipynb"
+            p.write_text("{}", encoding="utf-8")
+            files[name] = p
+        inbound, outbound = {}, {}
+        for a, b in edges:
+            outbound.setdefault(files[a], []).append(files[b])
+            inbound.setdefault(files[b], set()).add(files[a])
+        series = {}
+        for name, p in files.items():
+            series.setdefault(p.parent, []).append(p)
+        return inbound, outbound, series
+
+    @pytest.fixture
+    def anchored(self, tmp_path, monkeypatch):
+        """Serie A (chaine A1->A2) dont A1 ancre B1 de la serie B ; B porte une
+        convention de navigation interne (cycle B2<->B3) qui n'atteint pas B1."""
+        monkeypatch.setattr(nav_chain, "REPO_ROOT", tmp_path)
+        dir_a = tmp_path / "SerieA"
+        dir_b = tmp_path / "SerieB"
+        dir_a.mkdir()
+        dir_b.mkdir()
+        a1, a2 = dir_a / "A-1.ipynb", dir_a / "A-2.ipynb"
+        b1 = dir_b / "B-1.ipynb"
+        b2, b3 = dir_b / "B-2.ipynb", dir_b / "B-3.ipynb"
+        for p in (a1, a2, b1, b2, b3):
+            p.write_text("{}", encoding="utf-8")
+        outbound = {a1: [a2, b1], b2: [b3], b3: [b2]}
+        inbound = {a2: {a1}, b1: {a1}, b3: {b2}, b2: {b3}}
+        series = {dir_a: [a1, a2], dir_b: [b1, b2, b3]}
+        return nav_chain.analyse(inbound, outbound, series), (a1, a2, b1, b2, b3)
+
+    def test_external_anchor_does_not_steal_entry(self, anchored):
+        """Controle positif (cas #20392) : B1, ancre seulement depuis A1
+        (autre serie), reste ENTREE de B -- plus de finding unreachable."""
+        report, (a1, a2, b1, b2, b3) = anchored
+        unreach = [f for f in report["findings"] if f["kind"] == "unreachable"]
+        assert unreach == []
+
+    def test_unreachable_survives_disconnected_cycles(self, tmp_path, monkeypatch):
+        """Controle negatif : une serie sans AUCUNE entree, faite de deux
+        cycles disjoints, garde des unreachable -- l'option (a) n'a pas
+        neantere le garde."""
+        monkeypatch.setattr(nav_chain, "REPO_ROOT", tmp_path)
+        d = tmp_path / "SerieC"
+        d.mkdir()
+        c1, c2, c3, c4 = (d / f"C-{i}.ipynb" for i in (1, 2, 3, 4))
+        for p in (c1, c2, c3, c4):
+            p.write_text("{}", encoding="utf-8")
+        outbound = {c1: [c2], c2: [c1], c3: [c4], c4: [c3]}
+        inbound = {c2: {c1}, c1: {c2}, c4: {c3}, c3: {c4}}
+        series = {d: [c1, c2, c3, c4]}
+        report = nav_chain.analyse(inbound, outbound, series)
+        unreach = sorted(f["notebook"] for f in report["findings"] if f["kind"] == "unreachable")
+        assert len(unreach) == 2  # le cycle non couvert par le depart le plus couvrant
+
+    def test_externally_anchored_still_reported(self, anchored):
+        """La vue informative #19099 survit : B1 liste avec sa source A1."""
+        report, (a1, a2, b1, b2, b3) = anchored
+        per_b = [s for s in report.get("series", []) if s["series"].endswith("SerieB")]
+        assert per_b, report.get("series")
+        anchors = per_b[0].get("externally_anchored", [])
+        assert any(a["notebook"].endswith("B-1.ipynb") and a["sources"] for a in anchors)
+
+
+class TestBaselineProvenance:
+    """#22121 -- un baseline sans provenance absorbe un finding NEW en silence.
+
+    Instance fondatrice : #21696 (sujet sans rapport) a reecrit le baseline
+    depuis une branche qui contenait deja Z3-19, faisant passer un finding de
+    `main` a « connu ». Rien ne distinguait cette ecriture d'une re-derivation
+    sur `main`. Les tests couvrent les trois verrous : provenance ecrite,
+    refus hors main propre, verdict de --check distinct d'un finding NEW.
+    """
+
+    @staticmethod
+    def _fake_git(monkeypatch, head, branch, origin_main, status=""):
+        def _output(*args):
+            key = " ".join(args)
+            if key == "rev-parse HEAD":
+                return head
+            if key == "rev-parse --abbrev-ref HEAD":
+                return branch
+            if key == "rev-parse origin/main":
+                return origin_main
+            if key == "status --porcelain":
+                return status
+            if key.startswith("rev-list --count"):
+                return "0" if head == origin_main else "3"
+            return None
+        monkeypatch.setattr(nav_chain, "_git_output", _output)
+
+    def test_provenance_clean_main_is_comparable(self, monkeypatch, tmp_path):
+        self._fake_git(monkeypatch, "aaa111", "main", "aaa111")
+        prov = nav_chain._git_provenance(tmp_path / "baseline.json")
+        assert prov["non_main"] is False
+        assert prov["head"] == "aaa111"
+        assert prov["instrument"] == nav_chain.INSTRUMENT_VERSION
+        assert prov["written_at"].endswith("Z")
+
+    def test_provenance_branch_is_flagged_non_main(self, monkeypatch, tmp_path):
+        """Le cas fondateur : ecriture depuis une branche de sujet."""
+        self._fake_git(monkeypatch, "bbb222", "feature/sujet-sans-rapport", "aaa111")
+        prov = nav_chain._git_provenance(tmp_path / "baseline.json")
+        assert prov["non_main"] is True
+        assert prov["branch"] == "feature/sujet-sans-rapport"
+
+    def test_provenance_ignores_the_baseline_own_modification(self, monkeypatch, tmp_path):
+        """Ecrire le baseline salit l'arbre : ce n'est pas un etat de travail."""
+        target = tmp_path / "baseline.json"
+        monkeypatch.setattr(nav_chain, "REPO_ROOT", tmp_path)
+        self._fake_git(monkeypatch, "aaa111", "main", "aaa111",
+                       status=" M scripts/tests/baseline_nb_nav_chain.json")
+        prov = nav_chain._git_provenance(tmp_path / "scripts/tests/baseline_nb_nav_chain.json")
+        assert prov["dirty"] is False
+        assert prov["non_main"] is False
+
+    def test_provenance_other_modification_is_dirty(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(nav_chain, "REPO_ROOT", tmp_path)
+        self._fake_git(monkeypatch, "aaa111", "main", "aaa111",
+                       status=" M scripts/notebook_tools/autre.py")
+        prov = nav_chain._git_provenance(tmp_path / "scripts/tests/baseline_nb_nav_chain.json")
+        assert prov["dirty"] is True
+        assert prov["non_main"] is True
+
+    def test_baseline_refuses_non_main_and_names_both_heads(self, monkeypatch):
+        prov = {"head": "bbb222", "origin_main": "aaa111", "branch": "feature/x",
+                "dirty": False, "non_main": True, "written_at": "2026-10-23T00:00:00Z"}
+        code, msg = nav_chain._baseline_refusal(prov, anyway=False)
+        assert code == 3
+        assert "bbb222" in msg and "aaa111" in msg
+
+    def test_baseline_anyway_is_permitted(self):
+        prov = {"head": "bbb222", "origin_main": "aaa111", "branch": "feature/x",
+                "dirty": False, "non_main": True, "written_at": "2026-10-23T00:00:00Z"}
+        assert nav_chain._baseline_refusal(prov, anyway=True) == (0, "")
+
+    def test_write_then_read_provenance_roundtrip(self, tmp_path):
+        """Controle positif : un baseline re-derive porte sa provenance, et les
+        findings restent lisibles par `_finding_keys`."""
+        report = {"findings": [{"kind": "independent_chain", "notebook": "A/B",
+                                "series": "A/B", "message": "m"}],
+                  "wrapped": [], "not_judged": [], "series": []}
+        prov = {"head": "aaa111", "branch": "main", "origin_main": "aaa111",
+                "dirty": False, "non_main": False, "instrument": "x",
+                "behind_origin_main": 0, "written_at": "2026-10-23T00:00:00Z"}
+        target = tmp_path / "baseline.json"
+        nav_chain._write_baseline(report, path=target, provenance=prov)
+        import json
+        data = json.loads(target.read_text(encoding="utf-8"))
+        assert data["provenance"]["non_main"] is False
+        assert data["findings"][0]["kind"] == "independent_chain"
+        assert nav_chain._finding_keys(data) == {("independent_chain", "A/B", "")}
+
+    def test_provenance_verdict_three_cases(self):
+        assert nav_chain._provenance_verdict(None)[0] == 0
+        assert "sans provenance" in nav_chain._provenance_verdict(None)[1]
+        code, msg = nav_chain._provenance_verdict({"non_main": True, "branch": "feature/x",
+                                                   "head": "bbb222", "origin_main": "aaa111",
+                                                   "dirty": False,
+                                                   "written_at": "2026-10-23T00:00:00Z"})
+        assert code == 1 and "HORS de `main`" in msg
+        assert nav_chain._provenance_verdict({"non_main": False}) == (0, "")
+
+    def test_check_reddens_on_non_main_baseline_without_any_new_finding(self, monkeypatch):
+        """Controle negatif (instance fondee) : le depot n'a AUCUN finding NEW,
+        et --check rougit quand meme -- le verdict porte sur la source du
+        baseline, pas sur un diff du depot."""
+        monkeypatch.setattr(nav_chain, "_load_baseline", lambda: set())
+        monkeypatch.setattr(nav_chain, "_finding_keys", lambda report: set())
+        monkeypatch.setattr(nav_chain, "_baseline_provenance", lambda: {
+            "non_main": True, "branch": "feature/sujet-sans-rapport",
+            "head": "bbb222", "origin_main": "aaa111", "dirty": False,
+            "written_at": "2026-10-23T00:00:00Z"})
+        assert nav_chain.main(["--check"]) == 1

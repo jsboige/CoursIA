@@ -13,7 +13,7 @@ PORTEE — ce que ce module certifie, et ce qu'il ne certifie pas
 Il couvre les formes **reellement en service** dans le depot, telles que les deux
 organes les traitent aujourd'hui :
 
-    GameTheory-04c-NashExistence-Csharp.ipynb   serie + numero + accretion + langue
+    GameTheory-04c-NashExistence-CSharp.ipynb   serie + numero + accretion + langue
     04-1-Educational-Audio-Content.ipynb        index a deux niveaux (categorie.item)
     2.3b-Naive-Bayes-Generatif.ipynb            index decimal + lettre de variante
     22_Evaluating_Generated_Text.ipynb          index nu, separateur underscore
@@ -90,11 +90,20 @@ LANG_SUFFIXES = KERNEL_LANG_SUFFIXES + ("_en", "-en", "_fr", "-fr")
 # quatre notebooks legitimes deviennent six collisions. Ce faux positif n'a PAS ete
 # trouve par les tests unitaires mais par le balayage des 1116 notebooks de `main` :
 # un jeu de cas ecrit a la main ne contient que les formes auxquelles on a pense.
-INDEX_RE = re.compile(r"^(\d+(?:[.\-]\d+)*)([a-z]?)[._\-\s]", re.I)
+#
+# Le lookahead negatif borne la lettre a ce role : une lettre SUIVIE d'un niveau
+# numerique n'est PAS une variante d'index mais la queue d'un prefixe de serie mixte
+# (chiffre + lettre). `3D-01` : le `D` est suivi de `-01`, donc `3D` est un prefixe
+# et `01` le vrai index. Sans la borne, `3D-01` et `3D-02` retombent tous deux sur la
+# cle `3d` et la comparaison ajoute/ajoute (#22059) en fait un faux positif. La borne
+# les rend `None` (hors portee) au lieu d'une collision -- un resserrement de portee,
+# pas un elargissement des prefixes. Trouve par la revue independante de #22118
+# (lane po-2025), temoin f46403eb25b (3D-01 + 3D-02 ajoutes ensemble).
+INDEX_RE = re.compile(r"^(\d+(?:[.\-]\d+)*)([a-z]?)(?![.\-]\d)[._\-\s]", re.I)
 
 # Numero d'un notebook a prefixe de serie alphabetique : `Prefixe-NN` (+ lettre
 # d'accretion). Le `(?!\d)` distingue le premier chiffre d'un numero a deux
-# chiffres (`GameTheory-26` : le `6` suit le `2`, pas de coupure) du chiffre
+# chiffres (`GameTheory-22` : le `2` suit le `2`, pas de coupure) du chiffre
 # unique (`GameTheory-3a` : le `a` suit le `3`, coupure).
 SERIES_NUM_RE = re.compile(r"^(?P<prefix>[A-Za-z][A-Za-z0-9]*)-(?P<num>\d+)(?P<accr>[a-z])?(?!\d)")
 

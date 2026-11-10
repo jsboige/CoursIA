@@ -2,7 +2,7 @@
 
 S'applique a **tous les agents** (workers po-* + coordinateur ai-01) **ET a tous les reviewers (humains ET bots** clusterManager-Myia : Hermes primaire, NanoClaw audit). Source : mandat user 2026-06-21, 3 messages — verbatim en [detail §1](../../docs/reference/sota-verdicts-detail.md). Registre = [`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) (l'EPIC #3801 est **close depuis le 2026-07-09** : elle reste la provenance doctrinale du mandat, elle n'est plus le tracker). Consolide CLAUDE.md section F (reparer, jamais contourner) + [repair-not-consecrate](../../docs/reference/regles-validation-detail.md) + l'audit a 2 axes (committed <-> achievable).
 
-**Verbatims du mandat, incidents d'axes, mesures anti-fabrication** : [docs/reference/sota-verdicts-detail.md](../../docs/reference/sota-verdicts-detail.md).
+**Grille des 6 questions, verbatims du mandat, incidents d'axes, mesures anti-fabrication** : [docs/reference/sota-verdicts-detail.md](../../docs/reference/sota-verdicts-detail.md).
 
 ## Prong A — Vrai outil SOTA, jamais workaround degrade
 
@@ -18,26 +18,17 @@ Avant de committer une sortie degradee, repondre **par ecrit (body PR)** par 1 d
 | **RECOVERABLE-USER-HAND** | Action user one-time (token, OAuth, creds paper-trading, acces modele gate, hardware) | signaler **EXPLICITEMENT dans vscode** ([user-blocker-signaling](user-blocker-signaling.md)), puis re-exec |
 | **INTRINSIC** | Aucun chemin SOTA reel (service externe mort, vraiment intractable) | documenter **HONNETEMENT** le plafond atteignable — explicite, jamais maquille en resultat SOTA |
 
-Le defaut paresseux (« ASCII art / reimplementation jouet / 'Java absent' / 'kernel not available locally' ») committe **sans avoir verifie RECOVERABLE-*** = manquement grave.
+Le defaut paresseux (« ASCII art / reimplementation jouet / 'Java absent' / 'kernel not available locally' ») committe **sans avoir verifie RECOVERABLE-*** = manquement grave. **Une issue ou un dispatch ne propose jamais « reformuler » comme alternative a une reparation RECOVERABLE-\*** : la branche bon marche est celle que la lane prendra (#21053).
 
 **Flowcharts : Mermaid est le moteur canonique.** Une architecture pipeline, un flux de données ou un organigramme dessiné en ASCII se remplace par un bloc `mermaid` (`flowchart LR`/`TD`), après vérification sémantique humaine ; `scripts/notebook_tools/detect_ascii_flowchart.py` détecte les candidats mais n'auto-convertit jamais. Les tables et grilles ASCII légitimes sont hors scope et restent des tables.
 
 ### Procedure d'etablissement INTRINSIC — checklist 6 axes obligatoire (NEW c.8243, #10459)
 
-`INTRINSIC` declare une impossibilite : il justifie une substitution durable, invisible pour les auditeurs suivants. Donc **chaque verdict `INTRINSIC` doit repondre nominativement les 6 axes** suivants, par « non applicable, parce que… » ou « oui, mais testé, résultat : ... » :
+**Condition d'entree, avant la grille** : prouver que l'outil vise n'est pas disponible, par une recherche a la source (depot, registre de paquets, page du projet), URL et date dans le body. Grille nominative, forme de reponse attendue (le « N/A » valide nomme sa preuve) et recits fondateurs (#21121 TorchLean, #10459 PythonNet) : [detail §2](../../docs/reference/sota-verdicts-detail.md).
 
-| # | Axe | Question a repondre dans le body PR |
-|---|---|---|
-| 1 | **Binding .NET / NuGet** | Un package officiel existe-t-il pour la cible ? (ex : `OR-Tools`, `Accord.NET`) |
-| 2 | **`P/Invoke`** | Une API C stable est-elle exposee par la lib ? (cf `libtesseract`, `libsodium`) |
-| 3 | **CLI `Process.Start`** | Un binaire invocable existe-t-il ? (ex : `gambit`, `minizinc`, `clingo`) |
-| 4 | **`IKVM`** (pont Java) | La lib est-elle en Java ? Si oui, est-elle deja shadee ? ([`../../docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md)) |
-| 5 | **`PythonNet`** (pont CPython) **(NEW c.8243)** | **La lib a-t-elle un binding Python ?** Si oui, le pont `.NET → CPython → pyspiel`-like est disponible via `pythonnet 3.0.5` + `Runtime.PythonDLL` — pas d'`INTRINSIC` sans l'avoir teste. |
-| 6 | **Lib differente a role equivalent** | Un autre moteur SOTA .NET tient-il le role ? (cf PyMC ↔ Infer.NET, OR-Tools ↔ choco, mealpy ↔ MetaGeneticSharp) |
+**Chaque verdict `INTRINSIC` doit repondre nominativement les 6 axes** (binding .NET/NuGet · `P/Invoke` · CLI `Process.Start` · `IKVM` · `PythonNet` · lib equivalente).
 
-**Regle d'enforcement** : un verdict `INTRINSIC` dont le body **ne repond pas nominativement les 6 axes** (y compris « axe 5 N/A parce que la cible n'a pas de binding Python, vérifié sur PyPI au commit SHA … ») est **incomplet** → **`CHANGES_REQUESTED`** ([pr-review-discipline.md](pr-review-discipline.md) §H). La taxonomie des 5 verdicts est **inchangee** : seul l'etablissement d'`INTRINSIC` se durcit.
-
-**Origine** (#10459) — 3 verdicts `INTRINSIC` convergents ayant tous saute l'axe PythonNet, deuxieme omission d'axe apres `IKVM`, axe depuis **prouve** par 5 PRs mergees : [detail §2](../../docs/reference/sota-verdicts-detail.md).
+**Regle d'enforcement** : un verdict `INTRINSIC` dont le body **ne repond pas nominativement les 6 axes** est **incomplet** → **`CHANGES_REQUESTED`** ([pr-review-discipline.md](pr-review-discipline.md) §H). La taxonomie des 5 verdicts est **inchangee** : seul l'etablissement d'`INTRINSIC` se durcit.
 
 ### Stop & Repair — JAMAIS hand-editer une sortie de cellule (mandat user 2026-06-22)
 
@@ -49,15 +40,13 @@ Autorite : [secrets-hygiene.md](secrets-hygiene.md) **regle 6**, auto-chargee el
 
 Un notebook qui demontre un **moteur / solveur / modele** (search, CSP, SMT/Z3, planners, metaheuristiques, tactiques Lean, ML, GenAI) DOIT poser un probleme assez riche pour **exercer et faire valoir la capacite distinctive du moteur** — pas un **cas degenere** ou le moteur SOTA equivaut a une baseline triviale.
 
-Cas canonique : **BFS vs A*** sur un graphe a cout uniforme (A* degenere en BFS, l'heuristique ne sert a rien) -> remplacer par un terrain **pondere** ou l'heuristique discrimine. Memes pieges : un Z3 sur une contrainte qu'un `if` resout, un planner sur un plan lineaire sans parallelisme, un metaheuristique sur une fonction convexe a optimum unique. Instance fondatrice et correctif : [detail §3](../../docs/reference/sota-verdicts-detail.md).
+Cas canonique : **BFS vs A*** sur un graphe a cout uniforme (A* degenere en BFS, l'heuristique ne sert a rien) -> remplacer par un terrain **pondere** ou l'heuristique discrimine. Memes pieges de famille, instance fondatrice et correctif : [detail §3](../../docs/reference/sota-verdicts-detail.md).
 
 Action : **complexifier le probleme existant** OU **ajouter un probleme additionnel plus riche**, de sorte que la capacite annoncee soit **visible dans la sortie**. **Modulo un temps de traitement raisonnable** : viser un probleme **discriminant mais borne**, pas un benchmark de plusieurs minutes dans un notebook pedagogique.
 
 ### Verification anti-fabrication — mesurer la discrimination AVANT de clamer « heuristique X echoue »
 
-Un enrichissement Prong-B ne se declare pas sur un **pitch plausible** : on **mesure** d'abord la discrimination firsthand (installer le solveur — regle F — et comparer resultat-heuristique vs optimum exact sur le graphe candidat). Un pitch non mesure = violation G.9 en attente d'etre livree.
-
-Anti-exemple mesure (le folklore « greedy rate Mycielski » ne reproduit pas) et faux signal de grep MiniZinc : [detail §3](../../docs/reference/sota-verdicts-detail.md).
+Un enrichissement Prong-B ne se declare pas sur un **pitch plausible** : on **mesure** d'abord la discrimination firsthand (installer le solveur — regle F — et comparer resultat-heuristique vs optimum exact). Un pitch non mesure = violation G.9 en attente d'etre livree. Recits fondateurs : [detail §3](../../docs/reference/sota-verdicts-detail.md).
 
 ## Comportement des bots reviewers (signaler + enforce)
 
@@ -74,18 +63,11 @@ Les bots **DOIVENT** poster `CHANGES_REQUESTED` quand une PR notebook (interne/c
 
 **Une entree va dans le ledger, jamais dans un commentaire d'issue.** Le ledger est
 [`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) (section
-`## Entry #NNN — <Famille> (owner <lane>, c.NNN)` par PR) ; le precedent qui fonde
-l'interdit est en [detail §4](../../docs/reference/sota-verdicts-detail.md).
-
-**Critere de fin de l'axe-2** (3 conditions mesurables), **pieges de denombrement** (grain par famille,
-deux tableaux « Cumul entries » perimes a fusionner) et commandes de mesure : [sota-verdicts-detail.md
-§4](../../docs/reference/sota-verdicts-detail.md).
+`## Entry #NNN — <Famille> (owner <lane>, c.NNN)` par PR). **Critere de fin de l'axe-2** (3 conditions mesurables), **pieges de denombrement** et commandes de mesure : [detail §4](../../docs/reference/sota-verdicts-detail.md).
 
 ## Voir aussi
 - CLAUDE.md section F — env/kernel : reparer, jamais contourner
 - [pr-review-discipline.md](pr-review-discipline.md) §H — critere bots SOTA + non-trivialite
 - [anti-regression.md](anti-regression.md) — ne pas stripper le code reel
 - [three-exercises-per-notebook.md](three-exercises-per-notebook.md) — richesse pedagogique (exercices)
-- [`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) — **le registre** axe-2 SOTA + problem-richness, par famille (30 entrees au 2026-09-03)
-- **EPIC #3801** (CLOSE) — provenance doctrinale du mandat ; **ne rien y deposer** (cf §Registre axe-2).
-- **#10459** — omission d'axe PythonNet, close par la checklist 6 axes ([detail §2](../../docs/reference/sota-verdicts-detail.md))
+- [`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) — **le registre** axe-2 SOTA + problem-richness, par famille ; EPIC #3801 (CLOSE) = provenance doctrinale, **ne rien y deposer**

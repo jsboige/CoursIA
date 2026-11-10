@@ -1,6 +1,6 @@
 #region imports
 from AlgorithmImports import *
-from datetime import datetime
+from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -11,15 +11,52 @@ from sklearn.preprocessing import StandardScaler
 # OOS 1Y Sharpe 3.39, 5Y CAGR 57.94%, 5Y Drawdown 15.20%, 76% Win Rate
 # Long-short equity with ML overlay, Hurst-style regime detection, ATR-scaled filters
 # Source: QC Strategy Library #238, cloned 2026-04-04; redeployed 2026-06-15, QC Project ID: 32921183
+#
+# Instrumentation de mesure (#19450) : parametres start/end (defauts = dates du code
+# d'origine), mode (base = regle d'origine ; top4 = controle : les 4 plus grandes
+# capitalisations a poids egaux, sans GLD, sans stop, sans ML, sans jambe courte),
+# fee_mult (1 = frais inchanges). Valeur du portefeuille a chaque cloture dans le
+# graphique "shadow" (contrat de rejeu en ombre, #18923).
+#
+# Date du VIX (#19837) : la ligne CBOE du jour D est publiee apres la cloture. Datee
+# Time = D sans heure de fin, Lean la livre a D 00:00 et une decision prise pendant la
+# seance de D lit la cloture de D. Le mode lag (defaut) la date a D + 1 ; le mode base
+# garde la lecture du jour meme du code d'origine, pour la mesure. Les compteurs
+# "VIX same day" et "Train VIX ahead" sont publies en fin de run.
+
+
+class _ScaledFeeModel(FeeModel):
+    """Frais du courtier (modele par defaut de Lean), mis a l'echelle (identite a 1.0)."""
+
+    def __init__(self, multiplier):
+        self._multiplier = multiplier
+        self._base = InteractiveBrokersFeeModel()
+
+    def get_order_fee(self, parameters):
+        fee = self._base.get_order_fee(parameters)
+        if fee is None or self._multiplier == 1.0:
+            return fee
+        amount = float(fee.value.amount) * self._multiplier
+        return OrderFee(CashAmount(amount, fee.value.currency))
 
 
 class VolatilityHarvestML_LongShort(QCAlgorithm):
 
     def Initialize(self):
-        self.SetStartDate(2015, 1, 1)
-        self.set_end_date(2024, 12, 31)
+        start = datetime.strptime(self.GetParameter("start") or "2015-01-01", "%Y-%m-%d")
+        end = datetime.strptime(self.GetParameter("end") or "2024-12-31", "%Y-%m-%d")
+        self.SetStartDate(start.year, start.month, start.day)
+        self.set_end_date(end.year, end.month, end.day)
         self.SetCash(100000)
         self.SetBrokerageModel(BrokerageName.InteractiveBrokersBrokerage, AccountType.Margin)
+
+        self.mode = self.GetParameter("mode") or "lag"
+        if self.mode not in ("base", "lag", "top4"):
+            raise ValueError(f"mode inconnu : {self.mode}")
+        self.fee_mult = float(self.GetParameter("fee_mult") or 1)
+        if self.fee_mult != 1.0:
+            self.SetSecurityInitializer(
+                lambda security: security.SetFeeModel(_ScaledFeeModel(self.fee_mult)))
 
         self.Settings.FreePortfolioValuePercentage = 0.025
 
@@ -28,6 +65,8 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
 
         self.gld = self.AddEquity("GLD", Resolution.Daily).Symbol
 
+        # Decalage de livraison du VIX, fixe avant AddData (0 = lecture du jour meme).
+        VolatilityHarvestML_LongShort.CBOE.lag_days = 0 if self.mode == "base" else 1
         self.vix = self.AddData(self.CBOE, "VIX", Resolution.Daily).Symbol
 
         self.long_gross = float(self.GetParameter("long_gross") or 0.9)
@@ -58,6 +97,9 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
 
         self._active = []
         self._entry = {}
+        # #19455 fix: pending short orders tracked so _entry is not popped
+        # while Rebalance_Short's _safe_set_holdings call has not yet filled.
+        self._short_pending = set()
 
         self.long_trail_1 = float(self.GetParameter("long_trail_1") or 0.095)
         self.long_trail_2 = float(self.GetParameter("long_trail_2") or 0.07)
@@ -71,6 +113,28 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
         self.min_training = 504
 
         self.AddUniverse(self.CoarseSelection, self.FineSelection)
+
+        # Compteurs de la date du VIX (#19837)
+        self.n_decisions = 0
+        self.n_vix_same_day = 0
+        self.n_train = 0
+        self.n_train_vix_ahead = 0
+
+        # Comptes du graphique shadow (contrat #18923)
+        self.start_value = 100000.0
+        self.closes = 0
+        self.traded = 0.0
+
+        if self.mode == "top4":
+            # Controle : les 4 plus grandes capitalisations, poids egaux, 100 %,
+            # sans GLD, sans stop, sans ML, sans jambe courte.
+            self.Schedule.On(
+                self.DateRules.MonthStart("SPY"),
+                self.TimeRules.AfterMarketOpen("SPY", 30),
+                self.Rebalance_Top4
+            )
+            self.SetWarmUp(252)
+            return
 
         self.Schedule.On(
             self.DateRules.EveryDay("SPY"),
@@ -103,6 +167,44 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
         )
 
         self.SetWarmUp(252)
+
+    def Rebalance_Top4(self):
+        if self.IsWarmingUp:
+            return
+        syms = list(self._top_set)
+        if not syms:
+            return
+        w = 1.0 / float(len(syms))
+        for sym in syms:
+            self.SetHoldings(sym, w)
+        for kvp in self.Portfolio:
+            sym = kvp.Key
+            if sym.SecurityType != SecurityType.Equity:
+                continue
+            if sym in (self.spy, self.gld) or sym in self._top_set:
+                continue
+            if kvp.Value.Invested:
+                self.Liquidate(sym)
+
+    def OnOrderEvent(self, event):
+        if event.Status in (OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED):
+            self.traded += (abs(event.FillQuantity * event.FillPrice) / self.Portfolio.TotalPortfolioValue)
+
+    def OnData(self, data):
+        if self.IsWarmingUp:
+            return
+        if not data.Bars.ContainsKey(self.spy):
+            return
+        self.Plot("shadow", f"e{self.closes % 5}", self.Portfolio.TotalPortfolioValue)
+        self.Plot("shadow", "fees", self.Portfolio.TotalFees / self.start_value)
+        self.Plot("shadow", "turnover", self.traded)
+        self.closes += 1
+
+    def OnEndOfAlgorithm(self):
+        self.SetRuntimeStatistic("Decisions", str(self.n_decisions))
+        self.SetRuntimeStatistic("VIX same day", str(self.n_vix_same_day))
+        self.SetRuntimeStatistic("Trainings", str(self.n_train))
+        self.SetRuntimeStatistic("Train VIX ahead", str(self.n_train_vix_ahead))
 
     def _safe_set_holdings(self, symbol, target_weight):
         pv = float(self.Portfolio.TotalPortfolioValue)
@@ -320,6 +422,10 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
         if len(vix_closes) < self.min_training or len(spy_closes) < self.min_training:
             return
 
+        self.n_train += 1
+        if self.LastVixDay(vix_hist) > spy_hist.loc[self.spy].index[-1].date().toordinal():
+            self.n_train_vix_ahead += 1
+
         X, y = [], []
         for i in range(200, len(spy_closes) - 21):
             feats = self.GetFeatures(vix_closes[:i], spy_closes[:i])
@@ -341,6 +447,10 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
         self.trained = True
 
     class CBOE(PythonData):
+        # Jours de decalage entre le jour de bourse d'une ligne et sa livraison (0 = code
+        # d'origine ; 1 en mode lag, fixe par Initialize avant AddData).
+        lag_days = 0
+
         def GetSource(self, config, date, isLive):
             return SubscriptionDataSource(
                 "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv",
@@ -355,8 +465,10 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
             try:
                 bar = VolatilityHarvestML_LongShort.CBOE()
                 bar.Symbol = config.Symbol
-                bar.Time = datetime.strptime(data[0], "%m/%d/%Y")
+                tradeday = datetime.strptime(data[0], "%m/%d/%Y")
+                bar.Time = tradeday + timedelta(days=VolatilityHarvestML_LongShort.CBOE.lag_days)
                 bar.Value = float(data[4])
+                bar["tradeday"] = float(tradeday.toordinal())
                 bar["close"] = float(data[4])
                 bar["open"] = float(data[1])
                 bar["high"] = float(data[2])
@@ -364,6 +476,13 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
                 return bar
             except:
                 return None
+
+    def LastVixDay(self, vix_hist):
+        # Jour de bourse de la derniere ligne VIX visible (colonne tradeday).
+        frame = vix_hist.loc[self.vix]
+        if "tradeday" in frame.columns:
+            return int(frame["tradeday"].values[-1])
+        return frame.index[-1].date().toordinal()
 
     def CheckSignal_Long(self):
         if self.IsWarmingUp:
@@ -384,6 +503,10 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
 
         if len(vix_closes) < 50 or len(spy_closes) < 200:
             return
+
+        self.n_decisions += 1
+        if self.LastVixDay(vix_hist) == self.Time.date().toordinal():
+            self.n_vix_same_day += 1
 
         current_vix = float(vix_closes[-1])
         vix_sma = float(np.mean(vix_closes[-20:]))
@@ -584,11 +707,17 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
             if holding.Invested and holding.Quantity < 0 and sym not in selected:
                 self.Liquidate(sym)
                 self._entry.pop(sym, None)
+                # #19455 note mineure Hermes: discard le pending si l'ordre
+                # n'a pas materialise entre les 2 rebalances (re-add idempotent).
+                self._short_pending.discard(sym)
 
         if selected:
             w = -abs(self.short_gross) / float(len(selected))
             for _, sym, close_now, atr20 in picked:
                 self._safe_set_holdings(sym, w)
+                # #19455 fix: stamp pending so RiskCheck_Short keeps _entry
+                # until the order materialises (QuantConnect fills at next bar close).
+                self._short_pending.add(sym)
                 if sym not in self._entry:
                     self._entry[sym] = {"entry_price": close_now, "entry_atr": atr20}
 
@@ -596,9 +725,23 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
         if self.IsWarmingUp:
             return
 
+        # #19455 fix: clear pending for symbols whose orders have filled.
+        for sym in list(self._short_pending):
+            if self.Portfolio[sym].Invested:
+                self._short_pending.discard(sym)
+
         exits = []
         for sym, info in list(self._entry.items()):
-            if not self.Securities.ContainsKey(sym) or not self.Portfolio[sym].Invested:
+            if not self.Securities.ContainsKey(sym):
+                self._entry.pop(sym, None)
+                continue
+
+            # #19455 fix: keep _entry while the short order is still pending,
+            # so the next RiskCheck (after fill) will still see the stop trigger.
+            if sym in self._short_pending:
+                continue
+
+            if not self.Portfolio[sym].Invested:
                 self._entry.pop(sym, None)
                 continue
 

@@ -9,8 +9,10 @@ Plus : tests de cohérence de dénombrement et de partage de grammaire.
 """
 import json
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 
 REPO_ROOT = subprocess.check_output(
     ["git", "rev-parse", "--show-toplevel"],
@@ -177,6 +179,240 @@ def test_kernelspec_distinct_from_lang_suffix():
     # Le self-test doit explicitement montrer ce cas.
     assert "MGS-26-Equilibrium" in r.stdout, \
         "self-test missing MGS-26-Equilibrium case"
+
+
+def _git(repo, *args):
+    """git dans un depot temporaire (cwd=repo)."""
+    return subprocess.run(["git"] + list(args), cwd=repo, capture_output=True,
+                          text=True, encoding="utf-8", errors="replace")
+
+
+def _notebook_json(kernelspec="python3"):
+    """Carnet minimal : le kernelspec est ce que l'inventaire mesure."""
+    return json.dumps({
+        "cells": [],
+        "metadata": {"kernelspec": {"name": kernelspec,
+                                    "display_name": "Python 3",
+                                    "language": "python"}},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }, ensure_ascii=False, indent=1)
+
+
+def _inventory_at(repo, ref):
+    """Lance l'instrument sur `ref`, dans le depot `repo` (cwd=repo)."""
+    r = subprocess.run(
+        [sys.executable,
+         os.path.join(REPO_ROOT, "scripts/notebook_tools/inventory_notebook_names.py"),
+         "--base", ref, "--json"],
+        cwd=repo, capture_output=True, text=True,
+        encoding="utf-8", errors="replace")
+    assert r.returncode == 0, "inventory failed on %s: %s%s" % (ref, r.stdout, r.stderr)
+    return json.loads(r.stdout)
+
+
+def _repo_two_revisions_with_a_renamed_notebook():
+    """Depot jetable : rev1 = carnet `MGS-26-Equilibrium`, rev2 = renomme.
+
+    Le nom est choisi sans index parsable (`MGS-26-...` -> idx=None, cf la
+    nomenclature du depot) : c'est le cas ou un kernelspec NON LU fait basculer
+    l'entree de `conforme` a `ambigu` (naming : base implicite non verifie).
+    """
+    repo = tempfile.mkdtemp(prefix="inv-revision-")
+    _git(repo, "init", "-q")
+    _git(repo, "config", "user.email", "test@example.invalid")
+    _git(repo, "config", "user.name", "test")
+    d = os.path.join(repo, "MyIA.AI.Notebooks", "GenAI", "Texte")
+    os.makedirs(d)
+    p1 = os.path.join(d, "MGS-26-Equilibrium.ipynb")
+    with open(p1, "w", encoding="utf-8") as f:
+        f.write(_notebook_json())
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "rev1")
+    rev1 = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    # rev2 : le carnet est renome -> son chemin disparait de l'ARBRE LOCAL.
+    os.replace(p1, os.path.join(d, "MGS-27-Equilibrium.ipynb"))
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "rev2")
+    rev2 = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    return repo, rev1, rev2
+
+
+def test_inventory_reads_content_in_the_named_revision():
+    """#23623 — la mesure est une fonction de la revision seule.
+
+    Un carnet renomme entre deux revisions : l'inventaire de rev1 doit lire
+    le kernelspec DANS rev1. Avant le correctif, le contenu etait lu dans
+    l'arbre local -> le chemin de rev1 est absent du checkout -> kernel non
+    lu -> l'entree tombait en `ambigu` au lieu de `conforme`.
+    """
+    repo, rev1, _rev2 = _repo_two_revisions_with_a_renamed_notebook()
+    try:
+        inv = _inventory_at(repo, rev1)
+        rel = "MyIA.AI.Notebooks/GenAI/Texte/MGS-26-Equilibrium.ipynb"
+        entries = {e["path"]: e for e in inv["entries"]}
+        assert rel in entries, \
+            "le carnet de rev1 doit figurer dans l'inventaire de rev1 : %s" % sorted(entries)
+        e = entries[rel]
+        assert e["kernelspec"] == "python3", \
+            "kernelspec non lu dans la revision mesuree (lu : %r) — " \
+            "le contenu est lu dans l'arbre local, pas dans la revision" % (e["kernelspec"],)
+        assert e["classification"] == "conforme", \
+            "classement attendu 'conforme', obtenu '%s' (kernel : %r)" \
+            % (e["classification"], e["kernelspec"])
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
+def test_inventory_is_identical_across_revisions_of_the_same_notebook():
+    """#23623 — renomme entre deux revisions : les deux revisions se classent
+    de facon identique (le contenu de CHAQUE revision est lu dans SA revision)."""
+    repo, rev1, rev2 = _repo_two_revisions_with_a_renamed_notebook()
+    try:
+        i1 = _inventory_at(repo, rev1)
+        i2 = _inventory_at(repo, rev2)
+        e1 = {e["path"]: e for e in i1["entries"]}
+        e2 = {e["path"]: e for e in i2["entries"]}
+        a = e1["MyIA.AI.Notebooks/GenAI/Texte/MGS-26-Equilibrium.ipynb"]
+        b = e2["MyIA.AI.Notebooks/GenAI/Texte/MGS-27-Equilibrium.ipynb"]
+        assert (a["kernelspec"], a["classification"]) == \
+               (b["kernelspec"], b["classification"]) == ("python3", "conforme"), \
+            "les deux revisions doivent classer le carnet identiquement : %r vs %r" \
+            % (a, b)
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
+def test_json_output_is_utf8_even_when_pipe_is_cp1252():
+    """#23175 -- `--json` pipe est de l'UTF-8, meme sous page cp1252.
+
+    Le registre anti-entropie consomme cet instrument via subprocess
+    (encoding="utf-8", strict). Sous Windows, un stdout pipe herite de la
+    page de code locale (cp1252) : sans reconfigure, le premier accent
+    d'un chemin casse le decodeur cote consommateur -> INSTRUMENT
+    ILLEGIBLE (mesure 2026-11-02 : byte 0xe9 en position 192169).
+
+    PYTHONIOENCODING=cp1252 force la page du pipe sur TOUTE plateforme :
+    le temoin mord partout, pas seulement sur les sieges Windows.
+    """
+    repo = tempfile.mkdtemp(prefix="inv-utf8-")
+    try:
+        _git(repo, "init", "-q")
+        _git(repo, "config", "user.email", "test@example.invalid")
+        _git(repo, "config", "user.name", "test")
+        d = os.path.join(repo, "MyIA.AI.Notebooks", "GameTheory")
+        os.makedirs(d)
+        # Nom avec accent : c'est lui qui produisait le byte cp1252 dans
+        # le JSON emis.
+        with open(os.path.join(d, "GT-01-Théorie-Python.ipynb"),
+                  "w", encoding="utf-8") as f:
+            f.write(_notebook_json())
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-qm", "accent")
+        env = dict(os.environ, PYTHONIOENCODING="cp1252")
+        # bytes bruts : on decode nous-memes, comme le consommateur strict.
+        r = subprocess.run(
+            [sys.executable,
+             os.path.join(REPO_ROOT,
+                          "scripts/notebook_tools/inventory_notebook_names.py"),
+             "--base", "HEAD", "--json"],
+            cwd=repo, capture_output=True, env=env)
+        assert r.returncode == 0, r.stderr.decode("utf-8", "replace")
+        brut = r.stdout.decode("utf-8")  # UnicodeDecodeError avant correctif
+        inv = json.loads(brut)
+        assert "é" in brut, "l'accent du chemin a disparu du JSON emis"
+        assert inv["by_classification"], "JSON sans contenu"
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
+def _load_inventory_module():
+    """Charge inventory_notebook_names.py comme module (test unitaire direct)."""
+    import importlib.util
+    script = os.path.join(REPO_ROOT,
+                          "scripts/notebook_tools/inventory_notebook_names.py")
+    spec = importlib.util.spec_from_file_location(
+        "inventory_notebook_names_under_test", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_inventory_archive_revision_no_kernelspec_is_not_broken_protocol():
+    """#23655 branche 1 : blobs lus, aucun kernelspec -> inventaire publie.
+
+    Une revision d'archives (carnets JSON sans metadata.kernelspec) doit
+    produire un inventaire avec kernel None partout et une note sur stderr —
+    pas une exception « protocole rompu ». Avant le correctif, la garde
+    comptait les kernelspec trouves au lieu des blobs lus : ce cas legitime
+    levait a tort.
+    """
+    repo = tempfile.mkdtemp(prefix="inv-archives-")
+    try:
+        _git(repo, "init", "-q")
+        _git(repo, "config", "user.email", "test@example.invalid")
+        _git(repo, "config", "user.name", "test")
+        d = os.path.join(repo, "MyIA.AI.Notebooks", "GenAI", "Texte")
+        os.makedirs(d)
+        # Archives : JSON de carnet VALIDE mais sans metadata.kernelspec.
+        with open(os.path.join(d, "MGS-26-Equilibrium.ipynb"), "w",
+                  encoding="utf-8") as f:
+            f.write(json.dumps({"cells": [], "metadata": {}, "nbformat": 4,
+                                "nbformat_minor": 5}))
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-qm", "archives")
+        r = subprocess.run(
+            [sys.executable,
+             os.path.join(REPO_ROOT,
+                          "scripts/notebook_tools/inventory_notebook_names.py"),
+             "--base", "HEAD", "--json"],
+            cwd=repo, capture_output=True, text=True,
+            encoding="utf-8", errors="replace")
+        assert r.returncode == 0, \
+            "revision d'archives ne doit pas lever : %s%s" % (r.stdout, r.stderr)
+        inv = json.loads(r.stdout)
+        entries = {e["path"]: e for e in inv["entries"]}
+        rel = "MyIA.AI.Notebooks/GenAI/Texte/MGS-26-Equilibrium.ipynb"
+        assert rel in entries, \
+            "entree absente de l'inventaire : %s" % sorted(entries)
+        assert entries[rel]["kernelspec"] is None, \
+            "kernel attendu None (archives), obtenu %r" % entries[rel]["kernelspec"]
+        assert "revision d'archives" in r.stderr, \
+            "note stderr attendue, obtenu : %r" % r.stderr
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
+def test_kernelspecs_at_zero_blob_read_still_raises():
+    """#23655 branche 2 : zero blob lu -> RuntimeError, quel que soit le motif.
+
+    Des chemins absents de la revision font repondre `<object> missing` a
+    cat-file --batch : zero blob lu. C'est l'etat que la garde doit
+    attraper (protocole rompu) — le correctif comptant les blobs lus ne
+    l'a pas affaiblie.
+    """
+    mod = _load_inventory_module()
+    repo = tempfile.mkdtemp(prefix="inv-zeroblob-")
+    old = os.getcwd()
+    try:
+        _git(repo, "init", "-q")
+        _git(repo, "config", "user.email", "test@example.invalid")
+        _git(repo, "config", "user.name", "test")
+        _git(repo, "commit", "-q", "--allow-empty", "-m", "vide")
+        # _kernelspecs_at lance git SANS cwd : il herite du processus.
+        os.chdir(repo)
+        try:
+            mod._kernelspecs_at("HEAD", ["inexistant.ipynb"])
+        except RuntimeError as e:
+            assert "protocole rompu" in str(e), \
+                "message inattendu : %s" % e
+        else:
+            raise AssertionError(
+                "zero blob lu doit lever RuntimeError (protocole rompu)")
+        finally:
+            os.chdir(old)
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
 
 
 if __name__ == "__main__":

@@ -98,6 +98,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import unicodedata
 from datetime import datetime, timezone
 
@@ -112,11 +113,45 @@ REPO = "jsboige/CoursIA"
 BOT_LOGINS = {"github-actions", "codecov", "dependabot", "copilot-pull-request-reviewer"}
 
 # Prefixes de tags utilises par les agents du cluster (protocole dashboard/PR).
+# Consommee par classify (exemption) ET can_lift (voie 3 de B.0) : la
+# constante reste stricte -- n'y ajouter que des tags de PROTOCOLE pur. Un
+# tag ici n'est pas seulement « pas un nit », il est aussi « pas une levee »
+# (can_lift l. 41xx ecarte le corps du nommage de suivi) : ce double effet
+# doit rester voulu, jamais accidentel.
 AGENT_PREFIXES = (
     "[PART-OF-EPIC", "[GRAIN", "[CLAIMED", "[DONE", "[INFO", "[DISPATCH",
     "[ACK", "[RELEASED", "[OVERRIDE", "[MERGED", "[WARN", "[ERROR", "[ASK",
     "[REPLY", "[PROPOSAL", "[BLOCKED", "[ESCALATION", "[DELIVERED",
 )
+
+# `[ACTION` et `[DIAG` (taxonomie d'emission P1 de #15511, cf COMMENT_TAG_RE
+# ci-dessous) servent la CLASSIFICATION, pas la levee. Mesure fondatrice
+# (po-2028:CoursIA, 2026-11-02 13:30Z) : sans eux, un compte-rendu CONFORME a
+# la regle sortait de l'exemption de classify (l. 44xx) et tombait dans la
+# branche CRLF/HUMAN des qu'il etait poste par un transport Windows -- le
+# compte-rendu d'une action devenait un nit bloquant la PR qu'il documente.
+# Reserve NanoClaw #24243 : les ajouter a AGENT_PREFIXES aurait un second
+# effet, invisible au diff : can_lift lit la meme constante pour ecarter les
+# narrations de protocole des levees, or un compte-rendu tague [ACTION] qui
+# NOMME une issue de suivi (« suivi ouvert : #N ») est un report delibere --
+# exactement le geste que la voie 3 de B.0 credite (collect_followup_lifts,
+# #13495/#14218 : l'auteur de la PR y est nommeur valide). L'extension vit
+# donc dans cette constante, consommee uniquement par classify ; can_lift
+# reste sur AGENT_PREFIXES.
+CLASSIFY_AGENT_PREFIXES = AGENT_PREFIXES + ("[ACTION", "[DIAG")
+
+# #15511 (P1) -- taxonomie d'emission des commentaires agent, premiere
+# ligne NON VIDE du corps : [ACTION] (le commentaire porte une action --
+# patch, rebase, rerun, fix), [DIAG] (diagnostic pur, sans action
+# attachee), [ASK] (attente d'une decision tierce). Le contrat est cote
+# EMISSION (meme parti que #14682 : elargir le filet a la prose
+# sur-accuse d'un facteur 5) : un commentaire non tague est INVISIBLE
+# pour ce detecteur -- il ne compte ni comme [DIAG] ni comme [ACTION].
+# Ces tags ne touchent NI `classify`, NI les levees : ils mesurent la
+# boucle de pompage, pas le verdict (un [DIAG] portant une reserve vivante
+# reste un nit par la voie habituelle).
+COMMENT_TAG_RE = re.compile(r"\[(ACTION|DIAG|ASK)\](?=\s|$)")
+DIAG_LOOP_LIMIT = 3  # > 3 [DIAG] consecutifs sans [ACTION] = PR bloquee
 
 # #11639 — l'arbitrage ECRIT du coordinateur. B.0 ne restreint pas l'auteur
 # d'une reponse de levée (« une reponse ecrite sur la PR qui nomme la
@@ -204,6 +239,24 @@ _ROLE_PREFIX_RE = re.compile(
     r"|CLAIMED\b|ESCALATION\b|PROPOSAL\b|GRAIN\b)"
     r"[A-Za-z][\w.\-]*\s*\]"
 )
+# #18937 — lanes d'attache des roles (coordinator-discipline R6). Le role
+# ADJOINT parle depuis la lane myia-po-2025:CoursIA-2 : sa levee signee
+# de cette lane leve sa reserve role (piste 2 de #18937).
+_ROLE_LANE_ALIASES = {
+    "ADJOINT": "myia-po-2025:CoursIA-2",
+}
+
+
+def _bracket_token(match) -> str:
+    """Token normalise d'un prefixe entre crochets : ``[ADJOINT]`` ->
+    ``ADJOINT`` ; ``[myia-po-2025:CoursIA-2 suite]`` -> premier mot en
+    majuscules. Sert a apparier role<->role et role<->lane d'attache
+    (#18937) sans dependre d'un groupe capturant des regex historiques.
+    """
+    inner = match.group(0).strip()[1:-1].strip()
+    return inner.split()[0].upper() if inner else ""
+
+
 # #14503 — reserves enoncees en PROSE ordinaire par une persona, sans aucun
 # prefixe de verdict (CONCERN_MARKERS muet). Jeu SERRE, mesure sur le corpus
 # des 200 dernieres PRs mergees (controle 3 de l'issue) : le fail-CLOSED pur
@@ -353,10 +406,26 @@ HOLD_TAGGED_HEAD = re.compile(r"^[\s*_#]*\[HOLD\b[^\]]*\]")
 # Volontairement LARGE : c'est le cote permissif du garde (il MAINTIENT le
 # blocage), donc un faux positif ici ne coute qu'une phrase de levee, tandis
 # qu'un trou coute un merge non mesure.
+# #24141 — l'alternative « avec <reserve> » ne matchait que « avec reserve » /
+# « avec reserves ». Le COMPTE, l'ARTICLE ou le DETERMINANT place ENTRE « avec »
+# et « reserve » cassait l'alternative : la review Hermes de #24117 (« Verdict :
+# APPROVE avec 1 reserve 🟡 ») n'etait pas reconnue comme une reserve VIVANTE,
+# et la PR est partie en merge le 02/11 05:07Z avec cette reserve en suspens —
+# B.0 rendait rc=0 (aucun bloquant).
+#
+# La quantite compte ici le NOMBRE de reserves : « 0 reserve » n'en est pas
+# une (meme logique que les CITERS, qui excluent « zero » et « 0 »). Les
+# nombres en toutes lettres sont pris pour ne pas laisser la meme famille de
+# trou ouvert (« avec deux reserves »).
+_APPROVE_RESERVATION_QUANTITE = (
+    r"(?:[1-9]\d*|une?|deux|trois|quatre|cinq|six|sept|huit|neuf|dix"
+    r"|quelques|plusieurs|des|les|la|ma|mon|tes|ses)"
+)
+
 _APPROVE_RESERVATION_RE = re.compile(
     r"(?i)("
     r"sous\s+r[ée]serve"
-    r"|avec\s+r[ée]serves?\b"
+    r"|avec\s+(?:" + _APPROVE_RESERVATION_QUANTITE + r"\s+)?r[ée]serves?\b"
     r"|r[ée]serve\s+(?:maintenue|subsiste|demeure|tient)"
     r"|je\s+maintiens"
     r"|je\s+conserve\s+(?:ma|mon|la)\b"
@@ -388,6 +457,22 @@ CONCERN_MARKERS = (
     "NEEDS_CHANGES", "CONCERNS",
     "SUSPECT_", "STRUCTURAL_ONLY", "SCOPE FLAG", "scope mismatch",
     "avant merge", "avant de merger", "il va falloir", "a nuancer", "à nuancer",
+    # Marqueur de position de verdict (#13083 instance 3, 2026-10-05) :
+    # AJOUTE en extension aux sous-chaines brutes « avant merge » /
+    # « before merge » ci-dessous (et non en REMPLACEMENT). Hermes a releve
+    # que le retrait de « avant merge » / « before merge » cassait 6 tests
+    # (faux negatifs de detection sur les consommateurs has_live_marker /
+    # classify / dossier ADJOINT mal-forme -- cf review clusterManager-Myia
+    # 2026-10-05T??:??:Z). Le geste annonce etait « neutraliser [BEFORE-MERGE]
+    # en position de mention » : il est realise par les 7 sous-patterns
+    # Position I/I' qui matchent desormais `\bavant(?:\s+(?:le|la|l'))?\s+merge\b`
+    # OU `\[BEFORE-MERGE\]` -- les deux continuent de fonctionner comme
+    # discriminant de mention, et les 4 faux negatifs mesures (Le scope /
+    # Il reste un point / Le point 3 / La reserve) sont restaures. Le retrait
+    # du sous-chaines brutes, lui, etait une erreur : le contrat d'emission
+    # ne bascule pas (13 PRs avec « avant merge » en prose mes. c.183, 0
+    # avec le marqueur structurel). On garde donc les deux formes.
+    "[BEFORE-MERGE]",
     # Miroir anglais de « avant merge » : fenetre 04-23..04-30 (triage po-2023,
     # #11044) — 2 faux negatifs mesures, PRs mergees sans aucune levee :
     # #594 « issues that should be addressed before merge » et #590
@@ -1009,7 +1094,16 @@ _MENTION_VERDICT_BARE = re.compile(
     r"(?i)(?:^|[\s,;:(*]|@\S+\s+[—\-]\s+)"
     r"(?:fix(?:ed|ée?e?)?|corrig\w+|suite\s+[àa]|en\s+r[ée]ponse\s+[àa]"
     r"|r[ée]ponse\s+[àa]|lev(?:e|é|ée|er|ons)\b|lift\w*|adress\w+|trait(?:e|é|er)\b|repondu\s+[àa])"
-    r"[^():\n.]{0,40}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    # #13083 instance 3 : un marqueur structurel entre crochets
+    # (`[BEFORE-MERGE]`, `[OVERRIDE] lane <lane>`, `[BLOCAGE] lane <lane>`) n'est
+    # jamais une MENTION d'un verdict — c'est l'EMISSION elle-meme. Le strip
+    # Position G ne doit pas le capturer. Garde par exclusion du caractere
+    # `[` du gap intra-phrase : la capture verdict doit etre introduite par
+    # autre chose qu'un crochet ouvrant. Un lookbehind positionne apres le
+    # groupe capture regarde le caractere apres le verdict matche, pas
+    # avant (cf test_iso deplacement_lookbehind, c.183) — l'exclusion du
+    # gap est la seule mecanique qui protege la capture.
+    r"[^():\n.\[]{0,40}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
     r"(?!\s*[—\-]\s+commit\b)")
 
 
@@ -1178,7 +1272,7 @@ _MENTION_AVANT_MERGE_QUALIFIER = re.compile(
     # un aparte benin dans une phrase precedente ne neutralise pas un nit
     # VIVANT de la phrase suivante.
     r"[^.!?\n]{0,200}?"
-    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])"
 )
 
 _MENTION_AVANT_MERGE_VERIFIED = re.compile(
@@ -1193,7 +1287,7 @@ _MENTION_AVANT_MERGE_VERIFIED = re.compile(
     r")"
     r"\s+(?:de\s+(?:mon|ma|notre|leur)\s+)?c[ôo]t[éèe]?"
     r"[^.!?\n]{0,20}?"
-    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])"
 )
 
 _MENTION_AVANT_MERGE_VERIFIED_EN = re.compile(
@@ -1202,7 +1296,7 @@ _MENTION_AVANT_MERGE_VERIFIED_EN = re.compile(
     r"\b(?:verified|check(?:ed|ée?s?)|confirm(?:ed|ée?s?))\b"
     r"(?:\s+(?:par|by|via)\s+\S+)?"
     r"[^.!?\n]{0,40}?"
-    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])"
 )
 
 _MENTION_AVANT_MERGE_PAST_PRECEDED = re.compile(
@@ -1217,7 +1311,7 @@ _MENTION_AVANT_MERGE_PAST_PRECEDED = re.compile(
     r"|confirm(?:ed)"
     r")"
     r"[\s,;:.\\-]{0,3}"
-    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])"
 )
 
 _MENTION_AVANT_MERGE_PREFLIGHT = re.compile(
@@ -1225,7 +1319,7 @@ _MENTION_AVANT_MERGE_PREFLIGHT = re.compile(
     # Preflight / pre-flight check passe
     r"(?:pre[\s-]?flight|preflight)\s+(?:check|verified|passed|ok)"
     r"[^.!?\n]{0,20}?"
-    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])"
 )
 
 _MENTION_AVANT_MERGE_B0 = re.compile(
@@ -1234,13 +1328,13 @@ _MENTION_AVANT_MERGE_B0 = re.compile(
     r"(?:issue\s+de\s+suivi\s+(?:ouverte|ouvert|opened|open)"
     r"|voie\s+B\.\d+)"
     r"[^.!?\n]{0,80}?"
-    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])"
 )
 
 _MENTION_AVANT_MERGE_BALL = re.compile(
     r"(?i)"
     # 'avant merge' suivi de '. Ball merge : <delegate>' (delegation pattern)
-    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])"
     r"[^.!?\n]{0,30}?"
     r"\.\s*Ball\s+merge\s*:"
 )
@@ -1299,7 +1393,7 @@ _MENTION_AVANT_MERGE_HEAD_NEUTRAL = re.compile(
     # titre (espaces optionnels avant, decoration markdown optionnelle,
     # puis fin de ligne / fin de body). Le lookahead plutot que `$` capture
     # correctement la fin de body sans exiger un `\n` final.
-    r"\b(?:avant(?:\s+(?:le|la|l[\\']))?|before)\s+merge\b"
+    r"(?:\b(?:avant(?:\s+(?:le|la|l[\\']))?|before)\s+merge\b|\[BEFORE-MERGE\])"
     r"(?=\s*[.*_~`:]*\s*(?:\n|\Z))"
 )
 
@@ -1397,9 +1491,10 @@ def _strip_avant_merge_mention(body: str) -> str:
         # Le token cible est le `avant [le/la/l'] merge` (non capture, neutralise integralement)
         # La longueur du token est variable (`avant merge` = 11, `avant le merge` = 14, etc.)
         body = pat.sub(
-            lambda m: re.sub(r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b",
-                             lambda mm: " " * (mm.end() - mm.start()),
-                             m.group(0)),
+            lambda m: re.sub(
+                r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])",
+                lambda mm: " " * (mm.end() - mm.start()),
+                m.group(0)),
             body,
         )
     # Phase Position I' (#13083 instance 3) : `avant [le/la/l'] merge` /
@@ -1413,7 +1508,7 @@ def _strip_avant_merge_mention(body: str) -> str:
             # Garde-fou : si la ligne de titre porte un verbe actionnel /
             # qualifieur bloquant, NE PAS neutraliser (VP).
             re.sub(
-                r"\b(?:avant(?:\s+(?:le|la|l[\\']))?|before)\s+merge\b",
+                r"(?:\b(?:avant(?:\s+(?:le|la|l[\\']))?|before)\s+merge\b|\[BEFORE-MERGE\])",
                 lambda mm: " " * (mm.end() - mm.start())
                 if not _is_action_verb_heading(m.group(0))
                 else mm.group(0),
@@ -1476,13 +1571,74 @@ _GLYPH_DETERMINER_PRECEDER_RE = re.compile(
 )
 _SEVERITY_GLYPH_CLASS_RE = re.compile(f"[{''.join(SEVERITY_GLYPHS)}]")
 
+# #22911 — Position J (D) REPRISE : le vocabulaire de reprise d'une réserve
+# (ce qu'une lane écrit en répondant point par point) n'était pas dans le set
+# de méta-noms (A). Mesuré : « **Réponse a la réserve 🟡 de la review
+# `clusterManager-Myia` du 2026-10-25T16:47:21Z** » — le préfixe porte
+# `réserve`, pas `marqueur` : rien ne neutralisait, et la réponse qui
+# DOCUMENTE la levée était classée réserve neuve (rc=1 auto-infligé).
+#
+# DEUX conditions cumulatives, et la seconde est mesurée :
+#   (1) un MARQUEUR DE RÉPONSE sur la ligne (« Réponse à », « Response to »)
+#       — c'est ce qui distingue la lane qui RÉPOND d'un reviewer qui ÉMET ;
+#   (2) un nom de reprise ADJACENT au glyphe (au plus quelques caractères de
+#       remplissage entre le nom et le glyphe).
+# La condition (1) est indispensable : sans elle, le seul nom adjacent
+# (`réserve 🟡`) éteindait des RÉSERVES RÉELLES — mesuré sur la suite de
+# l'organe, 5 fixtures rotent (réponses de reviewer « APPROVE avec 1
+# réserve 🟡 », « **Réserve 🟡 — ...** », « Je lève ma propre reserve 🟡 »).
+# Un reviewer qui émet « réserve 🟡 » et une lane qui REPOND à une réserve
+# partagent le mot ; seul le marqueur de réponse les sépare.
+_GLYPH_REPLY_MARKER_RE = re.compile(r"(?i)\b(?:r[ée]ponses?|responses?)\b")
+_GLYPH_RESPONSE_NOUN_RE = re.compile(
+    r"(?i)\b(?:r[ée]serves?|r[ée]ponses?|remarques?|observations?|points?|items?|"
+    r"responses?|concerns?)\b[\s:,'’\-]{0,12}$"
+)
+# #22911 — SURFACE CONNUE, DELIBEREMENT LAISSEE OUVERTE (review du 2026-11-02,
+# point 2) : la regle (D) neutralise un glyphe ADJACENT a un nom de reprise
+# des lors que la ligne porte un marqueur de reponse. Une reserve NEUVE
+# emise DANS une reponse (« Reponse au point 🟡 : a corriger avant merge »)
+# partage cette forme et disparait donc de l'analyse. La regle (D) ne peut
+# pas distinguer une levee d'une levee-sans-levee : le discriminant serait
+# la queue semantique de la ligne (« traitee » vs « a corriger »), ce que
+# l'organe refuse de faire (un mot de contexte ne prouve pas une
+# intention). PARADE : une reserve neuve s'emet dans un commentaire
+# DISTINCT, sans marqueur de reponse sur la ligne. La surface est
+# verrouillee par un test (`test_22911_surface_connue_reserve_neuve_dans_reponse`
+# dans
+# scripts/tests/test_check_unaddressed_nits_22911.py) pour qu'un changement
+# du comportement soit visible.
+# #22911 — Position J (E) LIBELLE EN GRAS : une étiquette de réponse point par
+# point ouvre la ligne en gras et referme son glyphe entre parenthèses —
+# « **Live-read freshness (🟡)** : ... ». Le glyphe y désigne l'item nommé,
+# il ne l'émet pas : l'émission Hermes OUVRE la ligne, elle ne se cache pas
+# dans un libellé refermé. Trois conditions cumulatives : le libellé gras
+# s'ouvre en tête de ligne, il reste ouvert, et le glyphe ferme la
+# parenthèse.
+_GLYPH_LABEL_PAREN_RE = re.compile(r"\(\s*$")
+
+
+def _is_label_paren_mention(prefix: str, body: str, m: re.Match[str]) -> bool:
+    """Le glyphe referme un libellé en gras ouvert en tête de ligne (#22911 E)."""
+    stripped = prefix.lstrip()
+    if not stripped.startswith("**"):
+        return False
+    if stripped.count("**") % 2 == 0:
+        return False
+    if not _GLYPH_LABEL_PAREN_RE.search(prefix):
+        return False
+    return body[m.end():m.end() + 1] == ")"
+
 
 def _strip_glyphe_mentions(body: str) -> str:
     """Neutralise les glyphes de sévérité en position de mention (Position J, #14277).
 
     Chaque glyphe (🟡/🔴) dont la ligne porte un méta-nom le nommant (A),
-    qui est un item d'énumération `,`/`+` (B), ou qui est immédiatement
-    précédé d'un déterminant/possessif — un référent, (C) #16688 — est
+    qui est un item d'énumération `,`/`+` (B), qui est immédiatement
+    précédé d'un déterminant/possessif — un référent, (C) #16688 — qui est
+    nommé par un mot de reprise adjacent sur une ligne qui porte un marqueur
+    de réponse — une réponse, (D) #22911 — ou qui referme un libellé en gras
+    ouvert en tête de ligne (E) #22911, est
     remplacé par une espace : c'est une mention, pas une émission. Le glyphe
     en tête de ligne (en-tête de verdict Hermes) reste vivant.
     """
@@ -1492,7 +1648,10 @@ def _strip_glyphe_mentions(body: str) -> str:
         prefix = body[line_start:m.start()]
         if (_GLYPH_META_NOUN_RE.search(prefix)
                 or _GLYPH_ENUM_PRECEDER_RE.search(prefix)
-                or _GLYPH_DETERMINER_PRECEDER_RE.search(prefix)):
+                or _GLYPH_DETERMINER_PRECEDER_RE.search(prefix)
+                or (_GLYPH_REPLY_MARKER_RE.search(prefix)
+                    and _GLYPH_RESPONSE_NOUN_RE.search(prefix))
+                or _is_label_paren_mention(prefix, body, m)):
             out[m.start()] = " "
     return "".join(out)
 
@@ -1858,7 +2017,7 @@ def _formal_concern_precedes_lift(body: str) -> bool:
 # token : COMMENT only) »), plus le verdict formel matche CONCERN_MARKERS,
 # plus le preflight rougit. Mesure : PR #13935 (GenAI tranche orphelins,
 # substance OK, 63 checks SUCCESS, scope clean) bloquee sur Hermes
-# COMMENT_WITH_CONCERNS + corps « Rien de bloquant. » — Tell NEW c.840
+# COMMENT_WITH_CONCERNS + corps « Rien de bloquant. » —
 # sustained « un detecteur qui matche des phrases doit ignorer les
 # occurrences en position de citation ou de refutation ».
 #
@@ -2941,9 +3100,18 @@ def _block_emitted(body: str) -> bool:
     m_tagged = HOLD_TAGGED_HEAD.match(head)
     if m_tagged and _hold_head_is_emission(head, m_tagged.end()):
         return True
+    # #22245 — la recherche porte sur la CASSE DE LA SOURCE, pas sur une
+    # version majusculee. `uhead = head.upper()` faisait matcher le mot
+    # ordinaire : « Cause du blocage identifiee — ... » (c.6365851694 sur
+    # #21252, un DIAGNOSTIC de la lane sur son propre rouge) etait classe
+    # BLOCK. La casse est deja le discriminant que ce module applique a HOLD
+    # (« CASSE : HOLD majuscule, la forme dans laquelle le protocole et les
+    # posts l'emettent », cf HOLD_HEAD) ; l'appliquer aussi a BLOCAGE retire
+    # la classe entiere, sans une garde de tournure de plus — la liste des
+    # tournures francaises n'est pas close (option 2 de l'issue, refusee).
     for marker in ("BLOCAGE", "BLOCK"):
         pos = 0
-        while (i := uhead.find(marker, pos)) != -1:
+        while (i := head.find(marker, pos)) != -1:
             before = head[i - 1] if i > 0 else ""
             after = head[i + len(marker)] if i + len(marker) < len(head) else ""
             if before.isalnum() or before == "_" or before == "[" or after.isalnum() or after == "_":
@@ -3308,11 +3476,262 @@ def ts(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
+# #19643 (residu) -- borne PAR APPEL sur chaque `gh` de l'organe. Mesure de
+# l'issue (commentaire 2026-10-09T09:20:40Z) : 195 appels sans borne sur 200,
+# environ 0,75 s par appel. 90 s est un choix, pas la queue mesuree : large
+# pour un `gh api --paginate` sur une PR chargee, sous le timeout des tools
+# shell des agents (~115-120 s). Une expiration remonte (TimeoutExpired),
+# jamais avalee. La borne ne couvre pas le total de la chaine B.0.
+GH_CALL_TIMEOUT_S = 90
+
+
+# #21882 (Option C) -- budget CUMULATIF de la passe nits. `GH_CALL_TIMEOUT_S`
+# borne un APPEL ; le cout mesure (issue, 2026-10-21) est la SOMME : 284
+# processus `gh` = 211 s pour 41 PRs, 101 % en sous-processus. Une borne par
+# appel ne ramene pas la chaine sous le budget. Ce budget de passe, verifie
+# avant chaque `gh_json`, rend les PRs non evaluees ABSENTES (semantique
+# #18829 : "absente = non evaluee", pas "evaluee claire") au lieu de laisser
+# le picker faire deriver la flotte entiere. C'est le filet de securite de
+# l'issue : il BORNE le pire cas (nombre de PRs croissant, reseau lent) sans
+# pretendre rendre la passe rapide -- c'est le role de l'Option A (parallelisme)
+# / B (requete GraphQL unique), differes tant que `pick_idle_grain.py` est en
+# contention 4 PRs ouvertes. Configurable (env), defaut 300 s (seuil de
+# l'issue).
+NITS_PASS_BUDGET_S = float(os.environ.get("NITS_PASS_BUDGET_S", "300"))
+# Deadline absolue (monotone) de la passe ; None tant que le premier `gh_json`
+# de la passe ne l'a pas arme. L'armement est idempotent (jamais sur-ecrit).
+_NITS_PASS_DEADLINE: float | None = None
+
+
+class NitsBudgetExhausted(Exception):
+    """#21882 (Option C) : la passe nits a depasse son budget de temps.
+
+    Le picker rend les PRs restantes ABSENTES (non evaluees, #18829) ; le
+    gate / l'audit standalone fail-closed (rc=1). Aucun verdict "evaluee
+    claire" n'est jamais fabrique a partir d'un budget depasse.
+    """
+
+
+def _nits_budget_exhausted() -> bool:
+    """Arme le budget de passe au premier `gh_json`, verifie au suivant.
+
+    Monotone et idempotent a l'armement : la premiere appel fixe la deadline a
+    `now + NITS_PASS_BUDGET_S` ; tout appel suivant rend True une fois la
+    deadline franchie.
+    """
+    global _NITS_PASS_DEADLINE
+    now = time.monotonic()
+    if _NITS_PASS_DEADLINE is None:
+        _NITS_PASS_DEADLINE = now + NITS_PASS_BUDGET_S
+        return False
+    return now > _NITS_PASS_DEADLINE
+
+
+# #17315 -- compteur REST/GraphQL de B.0.
+#
+# Le gate (`scripts/check_adjoint_prevalidation.py`) publie deja ce compteur ;
+# B.0, qui interroge le meme bucket partage de la flotte, ne le publishait pas :
+# sa consommation etait invisible. Deux corrections, pas une.
+#
+# 1. Le gate classe `pr view --json` comme du REST. C'est faux : la CLI passe
+#    par l'API GraphQL, donc par le BUCKET GRAPHIQL. Compter ces appels comme
+#    du REST sous-reportait la consommation du bucket partage -- le compte que
+#    le levier 4 doit reduire etait justement celui qui ne les voyait pas.
+#    La classification de reference est donc : `api graphql`, `pr view --json`,
+#    `pr list --json`, `issue view --json` = GraphQL ; `api repos/...` = REST.
+# 2. B.0 publie desormais son propre compte, sur stderr et dans la sortie
+#    JSON de l'audit retro.
+API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0}
+
+
+def _count_api_call(args: list[str]) -> None:
+    """Classe un appel `gh` : GraphQL (bucket partage) ou REST (bucket core).
+
+    `api graphql` est GraphQL par construction. `pr view --json`,
+    `pr list --json` et `issue view --json` le sont AUSSI : la CLI passe par
+    l'API GraphQL. Seuls les endpoints REST (`api repos/...`, `api user`, ...)
+    payent le bucket core.
+    """
+    if not args:
+        API_USAGE["rest"] += 1
+        return
+    if args[0] == "api" and len(args) >= 2 and args[1] == "graphql":
+        API_USAGE["graphql"] += 1
+        return
+    if args[0] in ("pr", "issue") and "--json" in args:
+        API_USAGE["graphql"] += 1
+        return
+    API_USAGE["rest"] += 1
+
+
 def gh_json(args: list[str]) -> object:
+    if _nits_budget_exhausted():
+        raise NitsBudgetExhausted(
+            f"budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s depasse -- "
+            "PR rendue absente (non evaluee, #18829), #21882 Option C")
+    _count_api_call(args)
     out = subprocess.run(
-        ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True
+        ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
+        timeout=GH_CALL_TIMEOUT_S,
     ).stdout
-    return json.loads(out)
+    return _project_gh_payload(args, json.loads(out))
+
+
+def _project_added_symbol_patch(patch: str) -> str:
+    """Garder exactement les lignes que #20066 lit dans un diff de commit."""
+    symbols = []
+    for line in patch.splitlines():
+        if line.startswith("+++"):
+            continue
+        if _SYM_ADDED_RE.match(line):
+            symbols.append(line)
+            if len(symbols) >= _SYMBOLS_PER_FILE_CAP:
+                break
+    return "\n".join(symbols)
+
+
+def _project_gh_payload(args: list[str], payload: object) -> object:
+    """Reduire les reponses au contrat consomme par B.0 avant leur cache.
+
+    Le tapis intercepte ``gh_json`` pour memoiser ses resultats. Les appels
+    `pr view` et REST transportaient beaucoup de champs de presentation,
+    d'identite ou de statistiques que l'organe ne lit jamais ; leur taille
+    faisait echouer le plafond de memoisation, meme si leur verdict etait
+    petit. Cette projection est donc faite dans le funnel, avant le cache.
+    Les champs qui portent une preuve B.0 (corps/date/auteur, SHA, arbres,
+    blobs) restent intacts. Le patch d'un commit ne sert qu'a extraire les
+    ``def``/``class`` ajoutes par #20066 : seuls ces ajouts, avec le meme
+    plafond, sont conserves.
+    """
+    if not isinstance(payload, (dict, list)):
+        return payload
+
+    def project_rows(value: object, fields: tuple[str, ...],
+                     nested: dict[str, tuple[str, ...]] | None = None) -> object:
+        if not isinstance(value, list):
+            return value
+        rows = []
+        for row in value:
+            if not isinstance(row, dict):
+                rows.append(row)
+                continue
+            item = {key: row[key] for key in fields if key in row}
+            for key, child_fields in (nested or {}).items():
+                child = row.get(key)
+                if isinstance(child, dict):
+                    item[key] = {name: child[name] for name in child_fields
+                                 if name in child}
+            rows.append(item)
+        return rows
+
+    if len(args) >= 2 and args[:2] == ["pr", "view"]:
+        if not isinstance(payload, dict):
+            return payload
+        projected = dict(payload)
+        projected["comments"] = project_rows(
+            payload.get("comments"), ("author", "body", "createdAt"),
+            {"author": ("login",)})
+        projected["reviews"] = project_rows(
+            payload.get("reviews"),
+            ("author", "body", "submittedAt", "state"),
+            {"author": ("login",)})
+        projected["commits"] = project_rows(
+            payload.get("commits"), ("oid", "committedDate"))
+        return projected
+
+    if len(args) < 2 or args[0] != "api":
+        return payload
+    endpoint = args[1].split("?", 1)[0].rstrip("/")
+    prefix = f"repos/{REPO}/"
+    if endpoint.startswith(prefix + "commits/"):
+        if not isinstance(payload, dict):
+            return payload
+        commit = payload.get("commit")
+        projected = {}
+        if isinstance(commit, dict):
+            message = commit.get("message")
+            projected["commit"] = {
+                "message": message.split("\n")[0] if isinstance(message, str) else message,
+                "tree": ({"sha": commit["tree"]["sha"]}
+                         if isinstance(commit.get("tree"), dict)
+                         and "sha" in commit["tree"] else commit.get("tree")),
+            }
+        files = project_rows(
+            payload.get("files"),
+            ("filename", "sha", "status", "previous_filename", "patch"))
+        if isinstance(files, list):
+            for item in files:
+                if isinstance(item, dict) and isinstance(item.get("patch"), str):
+                    item["patch"] = _project_added_symbol_patch(item["patch"])
+        projected["files"] = files
+        return projected
+
+    if endpoint.startswith(prefix + "git/trees/"):
+        if not isinstance(payload, dict):
+            return payload
+        return {
+            key: payload[key] for key in ("truncated", "tree") if key in payload
+        } | {"tree": project_rows(payload.get("tree"), ("path", "sha", "type"))}
+
+    if "/pulls/" in endpoint and endpoint.endswith("/reviews"):
+        return project_rows(payload, ("id", "user"), {"user": ("login",)})
+
+    if "/issues/" in endpoint and endpoint.endswith("/timeline"):
+        if not isinstance(payload, list):
+            return payload
+        projected = []
+        for event in payload:
+            if not isinstance(event, dict):
+                projected.append(event)
+                continue
+            row = {
+                key: event[key] for key in ("event", "actor", "dismissed_review")
+                if key in event
+            }
+            for key, child_fields in (
+                    ("actor", ("login",)),
+                    ("dismissed_review", ("review_id",))):
+                child = event.get(key)
+                if isinstance(child, dict):
+                    row[key] = {name: child[name] for name in child_fields
+                                if name in child}
+            projected.append(row)
+        return projected
+    return payload
+
+
+def _pr_commits_rest(pr: int) -> list[dict]:
+    """Commits d'une PR en REST, normalises a la forme que `analyse` attend.
+
+    #17315 : l'audit retro payait UN appel GraphQL par candidat
+    (`gh pr view --json commits`) pour une information de triage
+    (`code_pushed_after`). L'API REST rend les memes donnees pour le bucket
+    core : `sha` = `oid`, `commit.committer.date` = `committedDate`.
+
+    Equivalence verifiee sur 3 commits reels d'une PR a 3 commits, dont un
+    ou `author.date != committer.date` : les deux dates de la forme GraphQL
+    (`authoredDate`, `committedDate`) sont reproduites a l'identique.
+    """
+    raw = gh_json([
+        "api", f"repos/{REPO}/pulls/{pr}/commits", "--paginate", "--slurp",
+    ])
+    pages = raw if isinstance(raw, list) else []
+    flat: list[dict] = []
+    for page in pages:
+        if isinstance(page, list):
+            flat.extend(page)
+        elif isinstance(page, dict):
+            flat.append(page)
+    out: list[dict] = []
+    for c in flat:
+        commit = (c.get("commit") or {}) if isinstance(c, dict) else {}
+        out.append({
+            "oid": c.get("sha") or "",
+            "committedDate": (commit.get("committer") or {}).get("date"),
+            "authoredDate": (commit.get("author") or {}).get("date"),
+        })
+    return out
+
 
 
 # #14218 — la voie 3 de B.0 a besoin de 4 conditions, pas 1. Une seule
@@ -3361,6 +3780,10 @@ def _gh_fetch_issue(n: int) -> dict | None:
     if n not in _ISSUE_INFO_CACHE:
         try:
             d = gh_json(["api", "repos/" + REPO + "/issues/" + str(n)])
+        except subprocess.TimeoutExpired:
+            # #19643 (residu) : une expiration n'est pas « numero qui n'est pas
+            # une issue » -- elle ne doit pas etre mise en cache comme None.
+            raise
         except Exception:
             _ISSUE_INFO_CACHE[n] = None
             return None
@@ -3541,6 +3964,23 @@ _SHA_CITED = re.compile(r"\b[0-9a-f]{7,40}\b")
 # saute).
 _HOST_QUALIFIED = re.compile(r"\bhost\s*:?\s*$")
 
+# #19132 : un token hex immediatement qualifie comme id de CELLULE
+# (« cellule 6f32f63e », « cell_id: 6f32f63e », « la cellule `6f32f63e` »)
+# est un id `nbformat` >= 4.5 (8 hex, au moins une lettre et un chiffre),
+# pas une empreinte Git -- meme mecanique que _HOST_QUALIFIED : seul le
+# token qualifie saute, un SHA cite librement reste lu (#13639 intacte).
+# L'encage est tolere parce qu'un id de cellule s'ecrit le plus souvent
+# entre backticks ; c'est la forme la plus precise pour designer une
+# cellule, et l'organe ne doit pas apprendre a l'auteur a l'eviter.
+# `id` SEUL est deliberement absent de l'alternation (review ai-01 du
+# 2026-10-05, mesuree avec cet organe) : « corrige au commit id 1a2b3c4d »,
+# « commit-id: 1a2b3c4d », « pushed as id 0abc1234ef » sont des citations de
+# COMMIT courantes. Les laisser sauter rouvrirait exactement le trou de #13639
+# -- une levee qui cite un SHA inexistant doit tomber. Le qualifiant doit
+# nommer la CELLULE, pas un identifiant quelconque : `cellule`, `cell`,
+# `cell_id` suffisent au cas vise.
+_CELL_QUALIFIED = re.compile(r"\b(?:cellule|cell_id|cell)\b\s*:?\s*[`'«]?\s*$")
+
 
 def _cited_shas(body: str) -> set[str]:
     """SHAs cites dans un corps : 7-40 hex, avec AU MOINS une lettre ET AU
@@ -3563,6 +4003,14 @@ def _cited_shas(body: str) -> set[str]:
     pris pour la preuve citee par la levee alors que la review etait
     attachee au commit_id exact 31ac6b89 -- l'organe gardait la reserve
     ouverte sur un SHA de machine inexistant.
+
+    #19132 : le token suit immediatement un qualifiant de CELLULE
+    (`cellule`, `cell`, `cell_id`, `id`, deux-points et encage
+    optionnels) -> exclu. Sur #18893, la levee la plus precise possible
+    (« traitee dans la cellule 6f32f63e ») etait refusee : l'id nbformat
+    satisfait le motif hexa et, absent des commits, faisait tomber toute
+    la levee -- l'auteur a du repasser en prose (« la cellule d'ouverture
+    du Dojo »). Un organe ne doit pas rendre la prose moins precise.
     """
     out: set[str] = set()
     low = (body or "").lower()
@@ -3570,7 +4018,8 @@ def _cited_shas(body: str) -> set[str]:
         tok = m.group(0)
         if (any(ch in "abcdef" for ch in tok)
                 and any(ch.isdigit() for ch in tok)
-                and not _HOST_QUALIFIED.search(low[:m.start()])):
+                and not _HOST_QUALIFIED.search(low[:m.start()])
+                and not _CELL_QUALIFIED.search(low[:m.start()])):
             out.add(tok)
     return out
 
@@ -3722,8 +4171,14 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
              f.get("status") or "", f.get("previous_filename") or "")
             for f in (commit.get("files") or [])
         ]
+        # #20066 (piste 2 complete) : le patch par chemin, meme appel deja
+        # paye -- c'est la matiere premiere de la survie des symboles (les
+        # def/class des lignes AJOUTEES par le commit rembobine).
+        patches = {f.get("filename") or "": f.get("patch") or ""
+                   for f in (commit.get("files") or []) if f.get("patch")}
         if head or tree:
-            state[sha] = {"message": head or "", "tree": tree, "files": files}
+            state[sha] = {"message": head or "", "tree": tree, "files": files,
+                          "patches": patches}
     return state
 
 
@@ -3774,40 +4229,140 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
 # carte vide, arbre tronque, statut non reconnu) y retombe.
 
 
-def _rebase_preserved_by_path(rewound_files, head_blobs) -> bool:
+# #20066 -- trois etats, pas deux. « blob different » et « aucun blob
+# comparable » appellent le MEME refus, mais pas la meme lecture : le premier
+# dit que le travail a bouge, le second dit seulement que l'organe n'a pas pu
+# regarder. Les confondre fait affirmer a l'organe une comparaison qu'il n'a
+# pas faite.
+_BLOB_PRESERVED = "preserved"
+_BLOB_DIFFERS = "differs"
+_BLOB_UNCOMPARABLE = "uncomparable"
+
+
+def _rebase_blob_state(rewound_files, head_blobs) -> str:
     """#15973 : chaque chemin touche par le commit rembobine doit se
     retrouver dans la tete, byte pour byte -- modification presente au meme
     blob, deletion toujours absente, rename installe au nouveau chemin et
-    parti de l'ancien. Fail-closed sur toute donnee manquante ou statut non
-    reconnu : un organe de merge-gate ne devient jamais permissif sur un
-    doute, c'est le refus #15556 qui reste la reponse par defaut.
+    parti de l'ancien.
+
+    Rend `_BLOB_PRESERVED` (identite prouvee), `_BLOB_DIFFERS` (au moins un
+    blob compare et different) ou `_BLOB_UNCOMPARABLE` (aucun blob compare :
+    donnee absente, carte vide, liste tronquee, statut inconnu). Fail-closed
+    dans les trois cas autres que `preserved` : un organe de merge-gate ne
+    devient jamais permissif sur un doute, c'est le refus #15556 qui reste la
+    reponse par defaut. #20066 : le troisieme etat existe pour que le LIBELLE
+    du refus n'annonce jamais une mesure qui n'a pas eu lieu.
     """
     if not rewound_files or not head_blobs:
-        return False
+        return _BLOB_UNCOMPARABLE
     # L'API commits plafonne `files` a 300 entrees sans drapeau de
     # troncature : au-dela, la verification ne porterait qu'un sous-ensemble
     # -- une identite demi-prouvee est un fail-open, pas une preuve.
     if len(rewound_files) >= 300:
-        return False
+        return _BLOB_UNCOMPARABLE
     for filename, blob, status, previous in rewound_files:
         if not filename or not blob:
-            return False
+            return _BLOB_UNCOMPARABLE
         if status == "removed":
             if filename in head_blobs:
-                return False
+                return _BLOB_DIFFERS
             continue
         if status == "renamed":
             if not previous or previous in head_blobs:
-                return False
+                return _BLOB_DIFFERS
             if head_blobs.get(filename) != blob:
-                return False
+                return _BLOB_DIFFERS
             continue
         if status in ("added", "modified", "changed", "copied"):
             if head_blobs.get(filename) != blob:
-                return False
+                return _BLOB_DIFFERS
             continue
-        return False  # statut inconnu : refus conservateur
-    return True
+        return _BLOB_UNCOMPARABLE  # statut inconnu : refus conservateur
+    return _BLOB_PRESERVED
+
+
+def _rebase_preserved_by_path(rewound_files, head_blobs) -> bool:
+    """Contrat booleen de #15973, conserve : `True` seulement si l'identite
+    par chemin est PROUVEE. Les deux etats non prouvables (`differs`,
+    `uncomparable`) rendent `False`, comme avant #20066."""
+    return _rebase_blob_state(rewound_files, head_blobs) == _BLOB_PRESERVED
+
+
+# #20066 (piste 2 complete, residu nomme en c.6392789418) : quand l'identite
+# byte-par-byte echoue parce que la PR a CONTINUE de travailler les memes
+# fichiers (l'etat `differs` ordinaire d'une PR qui itere), le FOND de la
+# levee reste verifiable autrement : les SYMBOLES (def/class) introduces par
+# le commit rembobine survivent-ils a la tete ? Survie complete = la
+# substance citee par la levee est presente ; le mouvement des blobs est
+# celui du travail qui a grandi, pas celui d'une disparition. Toute donnee
+# manquante (pas de patch, fichier non-.py, blob de tete illisible, trop de
+# fichiers) reste REFUS (fail-closed, contrat de l'issue : « le meme
+# fail-closed sur donnee manquante ») ; la piste ne desserre jamais le gate
+# sur un doute, elle ne le desserre que sur une presence MESUREE.
+_SYM_ADDED_RE = re.compile(r"^\+\s*(?:async\s+)?(?:def|class)\s+([A-Za-z_]\w*)")
+_SYMBOLS_PER_FILE_CAP = 50
+_SYMBOL_FILES_CAP = 5
+
+
+def _introduced_symbols(patches: dict) -> dict[str, list[str]]:
+    """Extraire les symboles INTRODUITS par le commit rembobine, fichier
+    .py par fichier .py : les noms des def/class des lignes ajoutees du
+    patch (un `+` en premiere colonne). Les lignes de contexte et les
+    deletions ne comptent pas ; un commit qui ne touche que de la prose ou
+    des notebooks rend un dict vide -- il n'y a rien a verifier."""
+    out: dict[str, list[str]] = {}
+    for path, patch in (patches or {}).items():
+        if not path.endswith(".py") or not patch:
+            continue
+        names: list[str] = []
+        for line in patch.splitlines():
+            if line.startswith("+++"):
+                continue
+            m = _SYM_ADDED_RE.match(line)
+            if m:
+                names.append(m.group(1))
+            if len(names) >= _SYMBOLS_PER_FILE_CAP:
+                break
+        if names:
+            out[path] = names
+    return out
+
+
+def _symbols_survive_head(introduced: dict, head_blobs: dict,
+                          fetch_blob) -> dict:
+    """Verifier que chaque symbole introduit par le commit rembobine existe
+    encore dans le fichier correspondant de la tete.
+
+    `fetch_blob(blob_sha)` rend le CONTENU du blob (injected : reseau en
+    production, fontion pure dans les tests) et peut lever. Rend :
+    `{"verdict": "all_survive", "checked": n, "files": m}` quand tout
+    survit ; `{"verdict": "missing", "missing": [...], "checked": n}` quand
+    au moins un symbole (ou son fichier entier) est parti ; `{"verdict":
+    "no_data", "reason": ...}` sur blob illisible -- fail-closed, l'appelant
+    garde le refus `differs`."""
+    missing: list[str] = []
+    checked = 0
+    for path, names in introduced.items():
+        blob = (head_blobs or {}).get(path)
+        if not blob:
+            # fichier parti de la tete : ses symboles sont partis avec lui
+            missing.extend(names)
+            checked += len(names)
+            continue
+        try:
+            content = fetch_blob(blob)
+        except Exception:
+            return {"verdict": "no_data", "reason": "blob_unreadable",
+                    "path": path}
+        for name in names:
+            checked += 1
+            if not re.search(rf"(?:def|class)\s+{re.escape(name)}\b", content):
+                missing.append(name)
+    if missing:
+        return {"verdict": "missing", "missing": sorted(set(missing)),
+                "checked": checked}
+    return {"verdict": "all_survive", "checked": checked,
+            "files": len(introduced)}
 
 
 def _pr_head_oid(data: dict) -> str:
@@ -3823,6 +4378,40 @@ def _pr_head_oid(data: dict) -> str:
     return ""
 
 
+def _resolve_absent_sha_symbols(state: dict, head_blobs: dict) -> dict:
+    """#20066 (piste 2 complete) : survie des symboles, par SHA resolu.
+
+    Ne s'execute QUE pour les SHAs dont l'identite par chemin rend
+    `differs` (le cas ou l'issue mesure un mensonge du libelle) et qui ont
+    introduit des def/class dans des .py. Le contenu des blobs de tete se
+    prend a raison d'un appel par fichier touche, cappe a
+    `_SYMBOL_FILES_CAP` fichiers par SHA : au-dela, `no_data` et le refus
+    `differs` conserve. Sans reseau (audit retro, `_resolve_absent_sha_state`
+    n'a rien resolu), rend {} et l'analyse retombe sur le libelle courant."""
+    import base64
+
+    out: dict[str, dict] = {}
+    for sha, v in (state or {}).items():
+        if _rebase_blob_state(v.get("files") or [], head_blobs or {}) \
+                != _BLOB_DIFFERS:
+            continue
+        introduced = _introduced_symbols(v.get("patches") or {})
+        if not introduced:
+            continue  # rien de mesurable : le libelle differs reste le vrai
+        if len(introduced) > _SYMBOL_FILES_CAP:
+            out[sha] = {"verdict": "no_data", "reason": "too_many_files",
+                        "files": len(introduced)}
+            continue
+
+        def fetch(blob_sha: str, _repo: str = REPO) -> str:
+            obj = gh_json(["api", f"repos/{_repo}/git/blobs/{blob_sha}"])
+            return base64.b64decode(obj.get("content") or "").decode(
+                "utf-8", "replace")
+
+        out[sha] = _symbols_survive_head(introduced, head_blobs, fetch)
+    return out
+
+
 def _attach_absent_sha_context(data: dict) -> None:
     """Resolution serveur du contexte SHA, AVANT analyse (qui reste pure).
 
@@ -3830,6 +4419,8 @@ def _attach_absent_sha_context(data: dict) -> None:
     #13639), arbres des commits rembobines plus arbre de la tete (#15556),
     et blobs par chemin (#15973) -- un appel reseau par SHA, plus un pour
     la tete, plus un pour sa carte chemin->blob quand un SHA absent existe.
+    #20066 piste 2 : plus, par SHA dont l'identite rend `differs`, le
+    contenu des blobs de tete touches (cappe) pour la survie des symboles.
     """
     state = _resolve_absent_sha_state(data)
     data["_absent_sha_messages"] = {s: v["message"] for s, v in state.items()
@@ -3868,6 +4459,7 @@ def _attach_absent_sha_context(data: dict) -> None:
         except subprocess.CalledProcessError:
             head_blobs = {}
     data["_head_blobs"] = head_blobs
+    data["_absent_sha_symbols"] = _resolve_absent_sha_symbols(state, head_blobs)
 
 
 # #16780 — un corps reduit a un chemin local (l'accident `gh --body
@@ -4045,6 +4637,53 @@ def _opens_on_lift(body: str) -> bool:
     return bool(_OPENING_LIFT_RE.match(body.lstrip("\r\n \t")))
 
 
+# #19810 — discriminateur UI-web-nit : le proxy CRLF introduisait en 728146a78e
+# (#11044/#11045, ai-01, 2026-08-15) reposait sur CRLF = UI web = humain. Il
+# attrapait les VRAIS nits UI web (USER_NIT corpus, « Il reste un souci »,
+# bullet lists) mais sur-firait sur les posts CLI Windows : un commentaire
+# multi-ligne ecrit via `Path.write_text` (mode texte, `\n -> \r\n`) devenait
+# HUMAN sans aucun marqueur de reserve. Faux-positif fondateur #19704 (2026-10-08,
+# po-2026 : la lane s'est auto-bloquee au merge-gate sur son propre commentaire,
+# 0.1 h apres l'avoir poste, gap = transport CRLF seul).
+#
+# Le discriminateur preserve le signal UI web : il exige une STRUCTURE de
+# plainte (bullet-list, phrase-repere plainte EN/FR, ou phrase interrogative
+# centrée « nit/reserve »). Les posts CLI Windows — multi-lignes status,
+# chemins, SHAs, « All tests green » — n'ont aucune de ces structures et
+# retournent False, donc le CRLF proxy les laisse passer (None).
+_UI_WEB_NIT_BULLET_RE = re.compile(r"\r\n\s*(?:[-*]\s|\d+\.\s)\S")
+_UI_WEB_NIT_PHRASE_RE = re.compile(
+    r"\b(?:attention|heads[- ]?up|warning|please|merci[,\s]|"
+    r"il (?:va falloir|reste|y a|n'?y a pas)|pourrais[- ]tu|"
+    r"(?:il|y)\s+(?:a|faut)\s+|"
+    r"\bnit\b|\breserves?\b|\bsouci\b|\bprobleme\b|\bmanque\b|"
+    r"\bcass(?:e|é)\b|\bbug\b|\bwrong\b|\bbroken\b|"
+    r"ne\s+(?:pas|oublie)|avertissement|remarque|"
+    r"doit\s+(?:etre|etre|fonctionner)|faut\s+(?:pas|que))",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_ui_web_nit(body: str) -> bool:
+    """#19810 — un corps CRLF est-il une plainte UI web, ou un post Windows-CLI ?
+
+    UI web : bullet-list, phrase-repere plainte (attention/souci/nit/reserve/
+    casse/...), phrase interrogative centree. Le test USER_NIT (l.50, «
+    Attention 2 nits:\\r\\n- il va falloir splitter\\r\\n- l'attribution
+    est fausse ») couvre le 1er cas ; le test_controle_positif_vrai_nit_user_crlf
+    (#16700 l.150, « Il reste un souci :\\r\\nla cellule dit 1 722 s mais le
+    describe dit 1433.57. ») couvre le 2e.
+
+    Windows CLI : multi-lignes status (chemins absolus, SHAs 728146a78e,
+    « All tests green », « CI passing »). Aucun marqueur de plainte → False.
+    """
+    if _UI_WEB_NIT_BULLET_RE.search(body):
+        return True
+    if _UI_WEB_NIT_PHRASE_RE.search(body):
+        return True
+    return False
+
+
 def classify(author: str, body: str) -> str | None:
     """'HUMAN' (nit user, UI web) | 'BOT-CONCERN' (reviewer avec reserves) | None."""
     if author in BOT_LOGINS or not body:
@@ -4154,7 +4793,7 @@ def classify(author: str, body: str) -> str | None:
     # pour le merge-gate. Garde stricte : l'exemption ne s'applique PAS
     # aux verdiicts de blocage strict (CHANGES_REQUESTED, REQUEST_CHANGES,
     # NEEDS_CHANGES, BLOCKED, SUSPECT_*, STRUCTURAL_ONLY) — verifie par
-    # `_comment_only_prefix`. Fuite classee Tell NEW c.840 ★★★ sustained.
+    # `_comment_only_prefix`. Fuite classee ★★★ sustained.
     if (
         live_concern
         and _comment_only_prefix(body)
@@ -4170,10 +4809,19 @@ def classify(author: str, body: str) -> str | None:
         return None  # verdict humain positif (APPROVE / APPROVED / LGTM) SANS reserve vivante : equivalent state:APPROVED
     if not live_concern and has_live_marker(body, POSITIVE_MARKERS):
         return None  # approbation sans reserve vivante : la review conclut, ne reserve pas
-    if stripped.startswith(AGENT_PREFIXES):
+    if stripped.startswith(CLASSIFY_AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
         return "BOT-CONCERN" if live_concern else None
-    if "\r\n" in body:
+    # #19810 — proxy CRLF serre : un corps CRLF ne tient HUMAN que s'il porte
+    # une reserve claire (live_concern) OU une structure de plainte UI web
+    # (bullet list, phrase-repere plainte). Sans ca, c'est un artefact de
+    # transport (post CLI Windows via Path.write_text, Out-File, redirection
+    # PowerShell) et le commentaire reste muet. Cas fondateur #19704 :
+    # po-2026 s'auto-bloquait au merge-gate sur son propre commentaire, 0.1 h
+    # apres l'avoir poste, gap = CRLF seul. USER_NIT (l.50, attention+bullets)
+    # et test_controle_positif_vrai_nit_user_crlf (#16700 l.150, "souci")
+    # restent preserves (live_concern False mais _looks_like_ui_web_nit True).
+    if "\r\n" in body and (live_concern or _looks_like_ui_web_nit(body)):
         return "HUMAN"
     if live_concern:
         return "BOT-CONCERN"
@@ -4243,6 +4891,10 @@ def improper_dismissals(pr: int) -> set[str]:
     try:
         reviews = gh_json(["api", f"repos/{REPO}/pulls/{pr}/reviews", "--paginate"])
         events = gh_json(["api", f"repos/{REPO}/issues/{pr}/timeline", "--paginate"])
+    except subprocess.TimeoutExpired:
+        # #19643 (residu) : un ensemble vide lirait la reserve d'un tiers comme
+        # levee. Une expiration remonte jusqu'au verdict non-CLEAN de main().
+        raise
     except Exception:
         return set()  # timeline illisible : on retombe sur l'ancien comportement
     if not isinstance(reviews, list) or not isinstance(events, list):
@@ -4284,7 +4936,7 @@ def _names_author(body: str, author: str) -> bool:
 # #18149 -- un lift `jsboige` prefixe `[NanoClaw]` / `[Hermes]` est-il signe
 # par la lane qui porte la PR ? Detection sur deux frontieres de format canonique
 # du tag de lane : (a) `[machine:workspace]` en tete de paragraphe (format
-# `[CLAIMED]` / `[DISPATCH->inbox]`, Tell c.677-L4 body PR HORS worktree) --
+# `[CLAIMED]` / `[DISPATCH->inbox]`, body PR HORS worktree) --
 # deja porte par `_CROSS_LANE_LIFT_RE` ; (b) signature de bas de corps
 # (`-- lane <machine:workspace>` ou `lane <machine:workspace> -- ...`),
 # patron de pied de commentaire observe dans les reponses de lanes depuis
@@ -4292,12 +4944,19 @@ def _names_author(body: str, author: str) -> bool:
 # lift est signe par la lane de la PR SI ET SEULEMENT SI l'extraction lit
 # la meme chaine canonique dans les deux sources (le format `CoursIA` vs
 # `CoursIA-2` discriminne -- la lane ne peut signer QUE la sienne).
+# #15864 (mesure #14549) : un point final de phrase ne peut plus terminer le
+# token de lane -- `lane myia-po-2023:CoursIA-2.` etait capture comme une lane
+# qui ne matche rien. Les points internes survivent (hostnames). Le meme
+# fragment vit dans check_adjoint_prevalidation.LANE_TOKEN ; copie locale pour
+# ne pas coupler le gate B.0 au gate d'adjoint. Voie (a) ci-dessous hors
+# perimetre : sa lane est delimitee par des crochets, pas suivie de prose.
+_LANE_TOKEN = r"[A-Za-z0-9_.-]*[A-Za-z0-9_-]:[A-Za-z0-9_.-]*[A-Za-z0-9_-]"
 _PR_LANE_FROM_BODY_RE = re.compile(
     # `Grain: ... -- lane <machine>:<workspace>` (corps PR) ; on capture
     # la lane canonique ; un prefixe optionnel avant n'est pas admis (la
     # balise est en tete de ligne apres decoration markdown).
     r"(?m)^[#>*+\-\s]*Grain:[^\n]*?\blane\s+"
-    r"([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)")
+    r"(" + _LANE_TOKEN + r")")
 _LIFT_LANE_SIGNATURE_RE = re.compile(
     # Voie (a) -- `[machine:workspace]` en tete de paragraphe.
     r"(?m)^[#>*+\-\s]*\[\s*([A-Za-z][\w.\-]*:[A-Za-z][\w.\-]*(?:\s+[^\]]+)?)\]"
@@ -4307,8 +4966,8 @@ _LIFT_LANE_FOOTER_RE = re.compile(
     # commentaire. Deux formes observees : `-- lane myia-po-XXXX:...`
     # (declaration finale separee par `--`) et `lane myia-po-XXXX:...
     # -- ...` (dans la meme ligne que le commentaire precedent).
-    r"(?m)(?:^|\s)--\s*lane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)\s*$"
-    r"|^lane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)(?:\s*--|\s*$)")
+    r"(?m)(?:^|\s)--\s*lane\s+(" + _LANE_TOKEN + r")\.?\s*$"
+    r"|^lane\s+(" + _LANE_TOKEN + r")\.?(?:\s*--|\s*$)")
 
 
 def _lift_signed_by_pr_lane(lift_body: str, pr_body: str) -> bool:
@@ -4435,6 +5094,54 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
         return _scope_lifted_sentence(
             body, re.compile(r"(?i)\b(?:hermes|nanoclaw)\b"))
     return False
+
+
+def _diag_loop(pr_data: dict, cutoff: datetime) -> dict:
+    """#15511 (P1) : plus longue serie de [DIAG] sans [ACTION] intercale.
+
+    Mesure fondatrice : PR #14821 -- 31 commentaires / 68 101 caracteres
+    d'infra-diagnostic sur 5 jours, pour un livrable qui n'avait pas bouge
+    depuis le commit du premier jour. Le pompage se detecte a la structure,
+    pas au contenu : seul un commentaire tague [ACTION] interrompt la
+    serie ; un commentaire non tague ou tague [ASK] est TRANSPARENT
+    (« sans [ACTION] intercale » -- l'issue P1 mot pour mot). Les bots et
+    les commentaires posterieurs au cutoff sont exclus, comme partout
+    ailleurs dans l'organe.
+    """
+    tagged = []
+    for c in pr_data.get("comments") or []:
+        login = (c.get("author") or {}).get("login", "")
+        if login in BOT_LOGINS:
+            continue
+        body = (c.get("body") or "").strip()
+        when = ts(c.get("createdAt"))
+        if not body or when is None or when > cutoff:
+            continue
+        first = next((ln.strip() for ln in body.splitlines() if ln.strip()), "")
+        m = COMMENT_TAG_RE.match(first)
+        if m:
+            tagged.append((m.group(1), login, when, first))
+    best_run, best_authors, best_at, best_line = 0, "", None, ""
+    run, authors = 0, []
+    for tag, login, when, first in tagged:
+        if tag == "ACTION":
+            run, authors = 0, []
+            continue
+        if tag != "DIAG":
+            continue  # [ASK] : transparent, ni serie ni interruption
+        run += 1
+        authors.append(login)
+        if run > best_run:
+            best_run, best_authors, best_at, best_line = (
+                run, ", ".join(dict.fromkeys(authors)), when, first)
+    return {
+        "max_run": best_run,
+        "authors": best_authors,
+        "at": best_at.isoformat() if best_at else None,
+        "line": best_line,
+        "diag_count": sum(1 for t, *_ in tagged if t == "DIAG"),
+        "action_count": sum(1 for t, *_ in tagged if t == "ACTION"),
+    }
 
 
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
@@ -4586,6 +5293,33 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                 return True
             if lift_has_persona and not nit_has_persona:
                 return False  # #14850 scope : lift persona ne leve pas user
+            # Voie 1b -- lift ROLE leve la reserve du MEME role ; la
+            # lane d'attache du role leve la reserve de ce role
+            # (#18937). Cas fondateur PR #18849 : l'adjoint (lane
+            # myia-po-2025:CoursIA-2, coordinator-discipline R6) pose une
+            # reserve `[ADJOINT] CONCERNS` puis la leve lui-meme -- ses
+            # deux formes SIGNEES (`[ADJOINT] ...` et
+            # `[myia-po-2025:CoursIA-2] ...`) restaient bloquees (voie 2 :
+            # un prefixe de lane ne leve qu'une reserve de lane ; voie 3 :
+            # exclut tout lift a prefixe de role) tandis que la forme NON
+            # signee passait -- organe inverse. Un role se leve par sa
+            # signature de role ou par sa lane d'attache ; role tiers,
+            # lane tierce et reserve user voix nue restent hors scope
+            # (pas de return False ici : la chute vers les voies 2/3
+            # garde leur fail-closed).
+            lift_role_m = _ROLE_PREFIX_RE.search(stripped_lift)
+            nit_role_m = _ROLE_PREFIX_RE.search(stripped_nit)
+            if lift_role_m and nit_role_m:
+                if (_bracket_token(lift_role_m)
+                        == _bracket_token(nit_role_m)):
+                    return True  # piste 1 : role <-> role
+            if nit_role_m:
+                nit_role = _bracket_token(nit_role_m)
+                for lane_m in _CROSS_LANE_LIFT_RE.finditer(stripped_lift):
+                    if (_ROLE_LANE_ALIASES.get(nit_role, "").upper()
+                            == _bracket_token(lane_m)):
+                        return True  # piste 2 : lane d'attache du role
+            
             # Voie 2 -- lift CROSS-LANE scope aux reserves CROSS-LANE.
             # Un commentaire preface d'une lane tierce `[owner:workspace]`
             # ne leve que les reserves de CETTE lane. Si la reserve est
@@ -4848,10 +5582,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         rewound_files_map = pr_data.get("_absent_sha_files") or {}
         head_tree = pr_data.get("_head_tree")
         head_blobs = pr_data.get("_head_blobs") or {}
+        sha_symbols_map = pr_data.get("_absent_sha_symbols") or {}
         kept_lifts = []
         for (t, lifter, lift_body) in explicit_lifts:
             refused = None
             refused_known_change = False
+            refused_blob_state = None
+            refused_symbols = None
             warned = None
             artifact = None
             for sha in sorted(_cited_shas(lift_body)):
@@ -4884,11 +5621,27 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     # la tete). Fail-closed : sans donnees ou sans identite,
                     # le refus #15556 reste la reponse.
                     sha_files = rewound_files_map.get(sha) or []
-                    if _rebase_preserved_by_path(sha_files, head_blobs):
+                    blob_state = _rebase_blob_state(sha_files, head_blobs)
+                    if blob_state == _BLOB_PRESERVED:
                         if artifact is None:
                             artifact = (sha, "rebase_preserved")
                         continue
+                    # #20066 (piste 2 complete) -- l'identite byte-par-byte
+                    # a echoue parce que la PR a continue de travailler ;
+                    # avant de refuser, regarder si le FOND de la levee a
+                    # survécu : tous les symboles introduits par le commit
+                    # rembobine existent encore a la tete ? Survie complete
+                    # = artefact non bloquant (le travail cite est present) ;
+                    # symbole absent = refus, NOMME ; donnee manquante =
+                    # refus `differs` courant (fail-closed inchange).
+                    sha_symbols = sha_symbols_map.get(sha) or {}
+                    if sha_symbols.get("verdict") == "all_survive":
+                        if artifact is None:
+                            artifact = (sha, "symbols_survive")
+                        continue
                     refused = sha
+                    refused_blob_state = blob_state
+                    refused_symbols = sha_symbols or None
                     if tree and head_tree:
                         refused_known_change = True
                     break
@@ -4896,7 +5649,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             if refused:
                 voided_lifts.append(
                     {"author": lifter, "at": t.isoformat(), "sha": refused,
-                     "tree_differs": refused_known_change})
+                     "tree_differs": refused_known_change,
+                     "blob_state": refused_blob_state,
+                     "symbols": refused_symbols})
             else:
                 kept_lifts.append((t, lifter, lift_body))
                 if artifact:
@@ -5250,6 +6005,22 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     before_lc = [u for u in unevaluated if not u["after_last_commit"]]
     to_read = sorted(after_lc + before_lc[-3:], key=lambda u: u["at"] or "")
 
+    # #15511 (P1) -- boucle de diagnostic sans action : > 3 [DIAG]
+    # consecutifs sans [ACTION] intercale. Ne lit QUE les commentaires
+    # tagues (contrat d'emission) : rien ne change pour une PR dont
+    # personne n'utilise la taxonomie -- le detecteur rend max_run=0.
+    diag_loop = _diag_loop(pr_data, cutoff)
+    if diag_loop["max_run"] > DIAG_LOOP_LIMIT:
+        at_dt = ts(diag_loop["at"])
+        blocking.append({
+            "kind": "DIAG-LOOP", "author": diag_loop["authors"],
+            "src": "comment", "channel": "comment",
+            "at": diag_loop["at"] or "?",
+            "gap_hours": (round((cutoff - at_dt).total_seconds() / 3600.0, 1)
+                          if at_dt else None),
+            "excerpt": _excerpt(diag_loop["line"]),
+        })
+
     return {
         "pr": pr_data.get("number"),
         "title": (pr_data.get("title") or "")[:110],
@@ -5261,6 +6032,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         "rewind_artifacts": rewind_artifacts,
         "unevaluated": to_read,
         "unevaluated_total": len(unevaluated),
+        "diag_loop": diag_loop,
     }
 
 
@@ -5352,15 +6124,39 @@ def _print_sha_notes(result: dict) -> None:
             why = "arbre identique à la tête"
         elif a["reason"] == "rebase_preserved":
             why = "rebase sur base avancée, blobs identiques par chemin"
+        elif a["reason"] == "symbols_survive":
+            # #20066 piste 2 : le blob a bougé (la PR a continué de
+            # travailler), mais la SUBSTANCE de la levée est mesurée
+            # présente -- chaque def/class introduit par le commit cité
+            # existe encore à la tête.
+            why = ("blobs modifiés mais symboles introduits par la levée "
+                   "tous présents à la tête")
         else:
             why = "fichiers de la PR inchangés"
         print(f"  [i] levee de {a['author']} à {a['at']} cite {a['sha']} "
               f"rembobiné par un push muet ({why}) — preuve conservée, "
               f"non bloquant")
     for v in result.get("voided_lifts") or []:
-        detail = (" — l'arbre DIFFÈRE de la tête : vraie réserve à reposer"
-                  if v.get("tree_differs")
-                  else " — arbre non comparable, refus conservateur")
+        # #20066 -- `tree_differs` dit que les deux arbres sont connus et
+        # differents ; il ne dit pas qu'un BLOB a ete compare. Quand
+        # `sha_files` est vide (pas d'entree pour ce SHA), ou la carte de la
+        # tete vide, `_rebase_blob_state` rend `uncomparable` : le refus est
+        # le meme, le libelle doit dire qu'aucun blob n'a ete regarde.
+        if not v.get("tree_differs"):
+            detail = " — arbre non comparable, refus conservateur"
+        elif v.get("blob_state") == _BLOB_UNCOMPARABLE:
+            detail = (" — l'arbre DIFFÈRE de la tête : aucun blob comparable, "
+                      "refus conservateur")
+        elif (v.get("symbols") or {}).get("verdict") == "missing":
+            # #20066 piste 2 : le fond a ÉTÉ mesuré, et il manque -- c'est
+            # la seule formule qui ait le droit de parler de réserve, car
+            # elle nomme ce qui a disparu.
+            absents = ", ".join((v["symbols"].get("missing") or [])[:5])
+            detail = (f" — l'arbre DIFFÈRE de la tête : blob modifié et "
+                      f"symbole(s) introduit(s) par la levée ABSENT(s) de "
+                      f"la tête ({absents})")
+        else:
+            detail = (" — l'arbre DIFFÈRE de la tête : blob modifié depuis la levée, fond non vérifié")
         print(f"  [!] NON LEVE — levee de {v['author']} à {v['at']} : cite "
               f"{v['sha']}, absent des commits de la PR (résolu côté serveur, "
               f"mais rembobiné par un push ultérieur){detail}")
@@ -5383,13 +6179,22 @@ def analyse_pr(pr: int) -> dict:
     assemblage : ce qui diverge ici casse le merge-gate lui-meme et devient
     visible immediatement.
     """
-    data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
-    # #13639 + #15556 : resolution serveur du contexte SHA (messages,
-    # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
-    _attach_absent_sha_context(data)
-    return analyse(data, review_threads(pr), datetime.now(timezone.utc),
-                   issue_info=gh_issue_info,
-                   dismissed_improperly=improper_dismissals(pr))
+    try:
+        data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
+        # #13639 + #15556 : resolution serveur du contexte SHA (messages,
+        # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
+        _attach_absent_sha_context(data)
+        return analyse(data, review_threads(pr), datetime.now(timezone.utc),
+                       issue_info=gh_issue_info,
+                       dismissed_improperly=improper_dismissals(pr))
+    except NitsBudgetExhausted:
+        # #21882 (Option C) : budget de passe depasse. La PR est rendue ABSENTE
+        # (non evaluee, #18829) : `blocked` faux, aucun point. Le picker la lit
+        # comme absente (.get("blocking")/["blocked"] -> vide/faux) et ne la
+        # met pas dans la file de reparation. Jamais un verdict "claire".
+        return {"pr": pr, "blocked": False, "blocking": [],
+                "unevaluated": [], "unevaluated_total": 0,
+                "budget_exhausted": True}
 
 
 def _ensure_utf8_stdout() -> None:
@@ -5465,9 +6270,12 @@ def audit(limit: int, search: str | None = None) -> int:
                        issue_info=gh_issue_info)["blocked"]:
             continue
         try:
-            p["commits"] = gh_json(
-                ["pr", "view", str(p["number"]), "--repo", REPO, "--json", "commits"]
-            )["commits"]
+            # #17315 : REST, pas `gh pr view --json commits`. L'ecriture
+            # GraphQL de cet appel payait le BUCKET PARTAGE pour une
+            # information de triage ; la meme information se lit en REST
+            # (bucket core). Forme normalisee, identique a celle que
+            # `analyse` attendait.
+            p["commits"] = _pr_commits_rest(p["number"])
         except subprocess.CalledProcessError:
             p["commits"] = []
         # Ce 2e passage rend le MEME verdict `blocked` que le pre-filtre — un
@@ -5488,6 +6296,9 @@ def audit(limit: int, search: str | None = None) -> int:
         "oldest_merged": min((p["mergedAt"] for p in prs if p.get("mergedAt")), default=None),
         "newest_merged": max((p["mergedAt"] for p in prs if p.get("mergedAt")), default=None),
         "flagged": len(findings),
+        # #17315 : la consommation de l'audit, rendue visible (bucket partage
+        # GraphQL vs bucket core REST).
+        "api_usage": dict(API_USAGE),
         "findings": findings,
     }, indent=1, ensure_ascii=False))
     return 0
@@ -5508,11 +6319,36 @@ def main() -> int:
     ap.add_argument("--search", help="filtre gh (ex: 'merged:2026-07-01..2026-07-15')")
     ap.add_argument("--json", action="store_true", help="sortie machine (mode gate)")
     args = ap.parse_args()
-    if args.audit:
-        return audit(args.limit, args.search)
-    if args.pr is None:
-        ap.error("fournir un numero de PR, ou --audit")
-    return gate(args.pr, args.json)
+    try:
+        if args.audit:
+            rc = audit(args.limit, args.search)
+        elif args.pr is None:
+            ap.error("fournir un numero de PR, ou --audit")
+            return 1
+        else:
+            rc = gate(args.pr, args.json)
+        # #17315 : la consommation sort sur stderr, comme le fait le gate --
+        # un compteur publie n'est lu par personne s'il reste dans le JSON.
+        print(f"API-USAGE (#17315) : rest={API_USAGE['rest']} "
+              f"graphql={API_USAGE['graphql']}", file=sys.stderr)
+        return rc
+    except subprocess.TimeoutExpired as exc:
+        # #19643 (residu) : gh n'a pas repondu dans sa borne -- aucun verdict.
+        # Non-CLEAN (rc=1, fail-closed), jamais un rc=0 ni une trace nue.
+        # ASCII seul : stderr peut etre une console cp1252 (cf #16103).
+        print(f"NON MESURE : gh n'a pas repondu en {exc.timeout}s "
+              f"({' '.join(map(str, exc.cmd))[:120]}) -- aucun verdict, rc=1 (fail-closed)",
+              file=sys.stderr)
+        return 1
+    except NitsBudgetExhausted as exc:
+        # #21882 (Option C) : budget de passe nits depasse (gate/audit
+        # standalone). Fail-closed : rc=1, jamais un rc=0 "claire" fabrique.
+        # Borde aussi un `--audit` de grande taille (arret au budget au lieu
+        # de deriver pendant des dizaines de minutes).
+        print(f"NON MESURE : budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s "
+              f"depasse ({exc}) -- aucun verdict, rc=1 (fail-closed)",
+              file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

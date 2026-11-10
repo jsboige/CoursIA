@@ -139,6 +139,27 @@ def make_panel_did(
 # ---------------------------------------------------------------------------
 # Estimateur IV (cellule 40)
 # ---------------------------------------------------------------------------
+def _iv_sample(
+    coef_z: float, n_samp: int, seed: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Tirage i.i.d. du monde IV -- generateur unique des estimateurs de la cellule 40.
+
+    L'ordre des tirages est fige (``u``, puis ``z``, puis les deux bruits) : c'est
+    lui qui rend les distributions reproductibles au tirage pres. Le modifier
+    deplace toutes les valeurs du carnet et rompt le test byte-identique.
+
+    Return
+    ------
+    tuple (u, z, x, y), chacun de shape ``(n_samp,)``.
+    """
+    rs = np.random.RandomState(seed)
+    u = rs.normal(0, 1, n_samp)
+    z = rs.normal(0, 1, n_samp)
+    x = coef_z * z + 0.8 * u + rs.normal(0, 0.5, n_samp)
+    y = 2.0 * x + 1.0 * u + rs.normal(0, 0.7, n_samp)
+    return u, z, x, y
+
+
 def iv_replay(
     coef_z: float,
     n_samp: int = 1000,
@@ -149,8 +170,10 @@ def iv_replay(
     """Repete l'estimation 2SLS sur ``n_rep`` echantillons i.i.d.
 
     Pattern de la cellule 40 de CausalBridges-07-Quasi-Experimental.ipynb. L'instrument
-    Z a une force proportionnelle a ``coef_z`` (``coef_z=1.0`` -> F ~ 800
-    = instrument FORT ; ``coef_z=0.05`` -> F ~ 2-3 = instrument FAIBLE).
+    Z a une force proportionnelle a ``coef_z``. Le F median du premier etage, mesure
+    par ``iv_first_stage_f`` sur les 60 tirages a ``n_samp=1000``, vaut ~ 1100 pour
+    ``coef_z=1.0`` (instrument FORT) et ~ 2,4 pour ``coef_z=0.05`` (instrument FAIBLE,
+    sous le seuil Staiger-Stock de 10).
 
     Pour chaque echantillon s dans [seed0, seed0 + n_rep) :
         u_s = N(0, 1)
@@ -183,16 +206,53 @@ def iv_replay(
     """
     out = []
     for s in range(n_rep):
-        rs = np.random.RandomState(seed0 + s)
-        u = rs.normal(0, 1, n_samp)
-        z = rs.normal(0, 1, n_samp)
-        x = coef_z * z + 0.8 * u + rs.normal(0, 0.5, n_samp)
-        y = 2.0 * x + 1.0 * u + rs.normal(0, 0.7, n_samp)
+        _, z, x, y = _iv_sample(coef_z, n_samp, seed0 + s)
         Zs = np.column_stack([np.ones(n_samp), z])
         Xs = np.column_stack([np.ones(n_samp), x])
         Ps = Zs @ np.linalg.inv(Zs.T @ Zs) @ Zs.T
         beta = np.linalg.solve(Xs.T @ Ps @ Xs, Xs.T @ Ps @ y)
         out.append(beta[1])
+    return np.array(out)
+
+
+def iv_first_stage_f(
+    coef_z: float,
+    n_samp: int = 1000,
+    n_rep: int = 60,
+    seed0: int = 0,
+) -> np.ndarray:
+    """F du premier etage ``X ~ Z`` pour chacun des ``n_rep`` tirages de ``iv_replay``.
+
+    Meme generateur, memes graines : la i-ieme valeur porte sur **exactement**
+    l'echantillon qui produit le i-ieme ``tau`` de ``iv_replay``. C'est ce qui
+    permet d'annoter une figure de la distribution des ``tau`` par la force
+    reelle de l'instrument, au lieu d'un ordre de grandeur recopie a la main.
+
+    Le F est celui de la regression lineaire simple ``X ~ Z`` (une variable
+    explicative) : ``F = (R2 / 1) / ((1 - R2) / (n - 2))``, la statistique de
+    relevance de Staiger & Stock (1997).
+
+    Parametrisation
+    ---------------
+    coef_z, n_samp, n_rep, seed0
+        Identiques a ``iv_replay``.
+
+    Return
+    ------
+    np.ndarray de shape ``(n_rep,)``. Mesure a ``n_samp=1000`` sur 60 tirages :
+    median ~ 2,4 pour ``coef_z=0.05`` (FAIBLE, sous le seuil de 10) et ~ 1100
+    pour ``coef_z=1.0`` (FORT, plage 870-1330).
+    """
+    out = []
+    for s in range(n_rep):
+        _, z, x, _ = _iv_sample(coef_z, n_samp, seed0 + s)
+        Zs = np.column_stack([np.ones(n_samp), z])
+        beta = np.linalg.solve(Zs.T @ Zs, Zs.T @ x)
+        resid = x - Zs @ beta
+        ss_res = float(np.sum(resid ** 2))
+        ss_tot = float(np.sum((x - x.mean()) ** 2))
+        r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
+        out.append((r2 / 1.0) / ((1.0 - r2) / (n_samp - 2)))
     return np.array(out)
 
 

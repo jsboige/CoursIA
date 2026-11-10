@@ -261,6 +261,23 @@ def oos_direction_distribution(y: np.ndarray) -> dict:
 def sharpe_from_returns(returns: pd.Series | np.ndarray, annualize: bool = True, risk_free: float = 0.0) -> float:
     """Compute Sharpe ratio from a returns series.
 
+    Ecart de definition ecrit ici conformement a #19016 (tranche 5) : cette
+    fonction ne delegue pas encore a ``strategy_metrics.sharpe`` -- ses ecarts
+    sont documentes, l'harmonisation exigera le rejeu des resultats committes
+    de ses appelants ndarray (grain de suivi dedie) :
+
+    - **ddof depend du conteneur** : ``returns.std()`` vaut ddof=1 pour une
+      ``pd.Series`` et ddof=0 pour un ``np.ndarray`` -- le meme rendement
+      donne deux Sharpe selon le conteneur, rapport ``sqrt(n / (n - 1))``.
+      L'organe impose ddof=1 partout.
+    - **0.0 quand le Sharpe n'est pas defini** (ecart-type nul ou vide) :
+      l'organe rend inf/nan et laisse la case vide plutot qu'un 0.0 qui se
+      lirait comme un Sharpe mesure.
+    - **taux sans risque parametrable** (``daily_rf = risk_free / 252``) :
+      l'organe est taux-sans-risque-nul.
+    - annualisation **252 en dur** (seances boursieres), comme l'organe par
+      defaut.
+
     Parameters
     ----------
     returns : pd.Series

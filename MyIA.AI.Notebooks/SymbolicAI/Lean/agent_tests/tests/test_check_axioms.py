@@ -9,7 +9,7 @@ Covers the two correctness gates of ``pr-review-discipline.md`` §B.3:
   the prover default ``fail_on_sorry=False`` preserves historical behaviour
   (Level 2 tracks sorry textually, so Level 3 stays green).
 
-No real Lean build is required: ``subprocess.run``, the lake resolver and the
+No real Lean build is required: the organ boundary ``_organ_run`` and the
 declaration enumerator are mocked so the gate logic is exercised deterministically.
 
 Run from ``agent_tests/``::
@@ -49,13 +49,6 @@ def _axiom_line(name: str, axioms: list) -> str:
     """
     inner = ", ".join(axioms) if axioms else ""
     return f"{Q}{name}{Q} depends on axioms: [{inner}]"
-
-
-class _FakeCompletedProcess:
-    def __init__(self, stdout: str = "", stderr: str = "", returncode: int = 0):
-        self.stdout = stdout
-        self.stderr = stderr
-        self.returncode = returncode
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -361,16 +354,18 @@ def test_extract_axioms_ignores_non_axiom_lines():
 
 
 # ──────────────────────────────────────────────────────────────────────────
-# check_axioms gate logic (subprocess mocked)
+# check_axioms gate logic (organ boundary mocked)
 # ──────────────────────────────────────────────────────────────────────────
 
 def _check_with_output(decls, fake_stdout, *, fail_on_sorry=False, project_dir=".",
                         returncode=0, whitelist=None):
     verifier = LeanVerifier(project_dir)
+    # Since #15666 lean_server spawns nothing itself: every lake call goes
+    # through ``_organ_run`` (contract ``(rc, out, err)``), which replaced
+    # ``_resolve_lake_command`` + ``subprocess.run``. Mock that boundary.
     with patch.object(lean_server, "_enumerate_module_declarations", return_value=decls), \
-            patch.object(lean_server, "_resolve_lake_command", return_value=(["lean"], {})), \
-            patch.object(lean_server.subprocess, "run",
-                         return_value=_FakeCompletedProcess(fake_stdout, returncode=returncode)):
+            patch.object(lean_server, "_organ_run",
+                         return_value=(returncode, fake_stdout, "")):
         return verifier.check_axioms("Knots.Basic", fail_on_sorry=fail_on_sorry,
                                      whitelist=whitelist)
 
@@ -407,6 +402,82 @@ def test_forbidden_axiom_fails_both_paths():
     assert r_prover["success"] is False
     assert r_gate["success"] is False
     assert r_gate["forbidden"] == ["of_eq_true"]
+
+
+def test_normalize_axiom_name_strips_trailing_decoration():
+    """#21947: the comparable form of an anchor name.
+
+    Lean may append a diagnostic decoration (U+2020 dagger) to a declaration
+    name; the extractor already drops a trailing dot. Both belong to the
+    decoration, not to the anchor.
+    """
+    assert lean_server.normalize_axiom_name("Foo.ax_1_1✝") == "Foo.ax_1_1"
+    assert lean_server.normalize_axiom_name("Foo.ax_1_1.") == "Foo.ax_1_1"
+    assert lean_server.normalize_axiom_name("  Foo.ax_1_1  ") == "Foo.ax_1_1"
+    assert lean_server.normalize_axiom_name("Foo.ax_1_1") == "Foo.ax_1_1"
+
+
+def test_allow_listed_anchor_with_diagnostic_glyph_passes():
+    """#21947, CONTROLE POSITIF : l'ancre listee reste acceptee.
+
+    ``#print axioms`` reports some ``native_decide`` anchors with a trailing
+    U+2020 dagger (``...native_decide.ax_1_1✝``) while the allow-list spells
+    the anchor without it. The gate must compare the ANCHOR: before the fix
+    the exact comparison reported an already-recounted anchor as forbidden.
+    """
+    anchor = "Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1"
+    out = _axiom_line("Conway.Life.p4_base_exhaustive.t1", [f"{anchor}✝"])
+    r = _check_with_output(
+        ["Conway.Life.p4_base_exhaustive.t1"], out, fail_on_sorry=True,
+        whitelist=[anchor],
+    )
+    assert r["success"] is True
+    assert r["forbidden"] == []
+
+
+def test_unknown_anchor_with_diagnostic_glyph_stays_forbidden():
+    """#21947, CONTROLE NEGATIF : une ancre inconnue reste refusee.
+
+    La normalisation porte sur la COMPARAISON, pas sur la liste : un
+    ``native_decide`` qui n'est pas dans l'allow-list doit toujours faire
+    rougir le gate, glyphe ou pas.
+    """
+    anchor = "Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1"
+    out = _axiom_line("Conway.Life.p4_base_exhaustive.t1", [f"{anchor}✝"])
+    r = _check_with_output(
+        ["Conway.Life.p4_base_exhaustive.t1"], out, fail_on_sorry=True,
+        whitelist=["Conway.Life.p4_base_exhaustive._native.native_decide.ax_2_2"],
+    )
+    assert r["success"] is False
+    assert r["forbidden"] == [f"{anchor}✝"]
+
+
+def test_question_mark_is_part_of_the_name_not_a_decoration():
+    """#21955 (dossier adjoint) : ``?`` est un caractere legal d'identifiant
+    Lean (il vit dans ``_LEAN_ID``), pas une decoration.
+
+    Contre-exemple mesure sur Lean 4.35 : un axiome distinct dont le nom
+    finit par ``?``. Avec le jeu preserve ``[\\w.'!]`` la normalisation
+    stripped le ``?`` et fusionnait l'axiome avec un nom allow-liste
+    DIFFERENT -- un faux PASS. L'ancre dague reste depouillee (temoin du
+    dossier), l'ancre en ``?`` ne l'est plus.
+    """
+    assert lean_server.normalize_axiom_name("Foo.allowed?") == "Foo.allowed?"
+    assert lean_server.normalize_axiom_name("Foo.allowed!") == "Foo.allowed!"
+    # temoin dagger du dossier : toujours depouille
+    assert lean_server.normalize_axiom_name("Foo.ax_1_1✝") == "Foo.ax_1_1"
+
+
+def test_question_mark_axiom_does_not_fuse_with_a_different_allow_listed_name():
+    """#21955, CONTROLE NEGATIF : ``Foo.allowed?`` non liste doit rester
+    interdit meme si ``Foo.allowed`` (nom distinct) est allow-liste."""
+    out = _axiom_line("Mod.t1", ["Foo.allowed?"])
+    r = _check_with_output(
+        ["Mod.t1"], out, fail_on_sorry=True,
+        whitelist=["Foo.allowed"],
+    )
+    assert r["success"] is False
+    assert r["forbidden"] == ["Foo.allowed?"]
 
 
 def test_no_declarations_ci_gate_fails_loud(tmp_path):

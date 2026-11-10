@@ -527,3 +527,147 @@ def test_basin_return_at_scale_contract_with_mock():
     assert 0.0 <= p <= 1.0
     # p doit etre un float (pas un ndarray).
     assert isinstance(p, float)
+
+
+# --------------------------------------------------------------------------- #
+#  Issue #20320 : renforcement des effectifs (return_trials) + bootstrap        #
+# --------------------------------------------------------------------------- #
+
+
+def test_basin_return_return_trials_contract_with_mock():
+    """``return_trials=True`` expose les essais sans casser le contrat scalaire.
+
+    Le dict detaille ``probability``, ``n_trials``, ``n_successes``,
+    ``success_flags`` et ``n_distinct_masks`` (cle : contenu des masques).
+    Avec une fabrique qui rend TOUJOURS le meme masque, ``n_distinct_masks``
+    vaut 1 alors que ``n_trials`` = 3 : le compteur temoigne des essais
+    redondants (dynamique deterministe -> trajectoires identiques, zero
+    information nouvelle).
+    """
+    n = 8
+    U_ref = _rng_for(41).random((n, n))
+    V_ref = _rng_for(42).random((n, n))
+    fixed_mask = np.zeros((n, n), dtype=bool)
+    fixed_mask[2:5, 2:5] = True
+    mask_factory = lambda rng_: fixed_mask
+
+    model = _MockModel(V_ref, full_steps=10)
+    target = float(np.var(V_ref))
+
+    res = MA.basin_return_at_scale(
+        model=model, U_ref=U_ref, V_ref=V_ref,
+        make_mask=mask_factory, block=2, steps=10,
+        target_structure=target, tol=0.3,
+        n_trials=3, rng=_rng_for(43), return_trials=True,
+    )
+    assert isinstance(res, dict)
+    assert set(res.keys()) >= {
+        "probability", "n_trials", "n_successes",
+        "success_flags", "n_distinct_masks",
+    }
+    assert res["n_trials"] == 3
+    assert len(res["success_flags"]) == 3
+    assert all(isinstance(f, bool) for f in res["success_flags"])
+    assert res["n_successes"] == sum(res["success_flags"])
+    assert np.isclose(res["probability"], res["n_successes"] / 3.0)
+    # Fabrique constante : 3 essais, 1 seul masque distinct (redondance vue).
+    assert res["n_distinct_masks"] == 1
+
+    # Le contrat scalaire par defaut est PRESERVE (meme graine -> meme valeur).
+    p_scalar = MA.basin_return_at_scale(
+        model=model, U_ref=U_ref, V_ref=V_ref,
+        make_mask=mask_factory, block=2, steps=10,
+        target_structure=target, tol=0.3,
+        n_trials=3, rng=_rng_for(43),
+    )
+    assert isinstance(p_scalar, float)
+    assert np.isclose(p_scalar, res["probability"])
+
+
+def test_basin_return_distinct_masks_counted_when_varied():
+    """Fabrique variee (masques differents a chaque appel) -> ``n_distinct_masks``
+    egale ``n_trials`` : le compteur mesure bien le contenu, pas les appels."""
+    n = 8
+    U_ref = _rng_for(44).random((n, n))
+    V_ref = _rng_for(45).random((n, n))
+    varied = [
+        A.disk_mask(n, cx=2.0, cy=2.0, radius=2.0),
+        A.disk_mask(n, cx=6.0, cy=2.0, radius=2.0),
+        A.disk_mask(n, cx=4.0, cy=5.0, radius=2.0),
+    ]
+    it = iter(varied)
+    mask_factory = lambda rng_: next(it)
+
+    model = _MockModel(V_ref, full_steps=10)
+    res = MA.basin_return_at_scale(
+        model=model, U_ref=U_ref, V_ref=V_ref,
+        make_mask=mask_factory, block=2, steps=10,
+        target_structure=float(np.var(V_ref)), tol=0.3,
+        n_trials=3, rng=_rng_for(46), return_trials=True,
+    )
+    assert res["n_trials"] == 3
+    assert res["n_distinct_masks"] == 3
+
+
+def test_bootstrap_corr_ci_perfect_correlation_covers_observed():
+    """Correlation parfaite : l'IC contient ``r_obs``, bornes ordonnees, et la
+    fraction utilisable est elevee (points distincts -> variance quasi jamais
+    nulle sur un tirage)."""
+    rng = _rng_for(47)
+    x = np.linspace(0.0, 1.0, 6)
+    y = 2.0 * x + 1.0
+    res = MA.bootstrap_corr_ci(x.tolist(), y.tolist(), n_boot=800, rng=rng)
+    assert res["r_obs"] is not None and np.isclose(res["r_obs"], 1.0)
+    assert res["lo"] <= res["r_obs"] <= res["hi"]
+    assert res["lo"] <= res["hi"]
+    assert res["n_points"] == 6
+    assert res["n_boot"] == 800
+    assert res["n_usable"] <= res["n_boot"]
+    assert res["usable_fraction"] > 0.95
+    assert -1.0 <= res["lo"] <= 1.0 and -1.0 <= res["hi"] <= 1.0
+
+
+def test_bootstrap_corr_ci_deterministic_with_seed():
+    """Meme graine -> meme dict exact (bornes et comptes identiques)."""
+    x = [0.10, 0.40, 0.35, 0.80, 0.95]
+    y = [0.20, 0.50, 0.30, 0.70, 0.85]
+    a = MA.bootstrap_corr_ci(x, y, n_boot=400, rng=_rng_for(53))
+    b = MA.bootstrap_corr_ci(x, y, n_boot=400, rng=_rng_for(53))
+    assert a == b
+
+
+def test_bootstrap_corr_ci_undefined_observed_returns_none_bounds():
+    """Variance nulle observee (un axe constant) -> ``r_obs``/``lo``/``hi`` a
+    ``None`` et ``usable_fraction`` = 0 : jamais de nombre fabrique."""
+    res = MA.bootstrap_corr_ci(
+        [1.0, 1.0, 1.0, 1.0], [1.0, 2.0, 3.0, 4.0],
+        n_boot=200, rng=_rng_for(59),
+    )
+    assert res["r_obs"] is None
+    assert res["lo"] is None and res["hi"] is None
+    assert res["n_usable"] == 0
+    assert res["usable_fraction"] == 0.0
+    assert res["n_points"] == 4
+
+
+def test_bootstrap_corr_ci_counts_unusable_resamples():
+    """``n = 2`` : chaque tirage a une probabilite 1/2 d'etre uniforme
+    (indices [0,0] ou [1,1]) -> variance nulle, correlation indefinie. Ces
+    tirages sont COMPTES inutilisables, pas jetes en silence : la fraction
+    utilisable doit etre proche de 1/2, et les tirages valides (paires
+    conservees, pente positive) donnent exactement ``r = +1``.
+    """
+    rng = _rng_for(61)
+    res = MA.bootstrap_corr_ci([0.0, 1.0], [0.0, 1.0], n_boot=2000, rng=rng)
+    assert res["n_points"] == 2
+    assert 0.2 < res["usable_fraction"] < 0.8
+    assert res["n_usable"] == int(round(res["usable_fraction"] * res["n_boot"]))
+    assert np.isclose(res["lo"], 1.0) and np.isclose(res["hi"], 1.0)
+
+
+def test_bootstrap_corr_ci_rejects_bad_params():
+    """Parametres invalides -> ``ValueError`` explicite (style du module)."""
+    with pytest.raises(ValueError, match="n_boot"):
+        MA.bootstrap_corr_ci([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], n_boot=0)
+    with pytest.raises(ValueError, match="ci"):
+        MA.bootstrap_corr_ci([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], ci=1.5)

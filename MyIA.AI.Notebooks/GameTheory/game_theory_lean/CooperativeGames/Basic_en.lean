@@ -20,6 +20,13 @@
   Source EN verbatim : c097d66cb (= 2d16a7b28^, parent du commit pilote
   FR-first Option A c.210 = `aaaf0c52a`). Resolution #4980 (2026-07-04) :
   supersede de l'Option A FR-only in-place.
+
+  Reference: L.S. Shapley, "A Value for N-Person Games" (1953); the
+  canonical textbook of the cluster (Maschler, Solan & Zamir, "Game
+  Theory", Cambridge UP, 2013 -- ch. 15 *The Shapley Value* and
+  ch. 17 *The Core*; **anchorages to be confirmed** against the book,
+  the PDF not being available on this machine) is the textbook-anchor
+  for reading the definitions and theorems of this lake.
 -/
 
 
@@ -31,7 +38,7 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Tactic
 import Mathlib.Analysis.Convex.Cone.Dual
 import Mathlib.Analysis.InnerProductSpace.PiL2
-import CooperativeGames.ConeKernel
+import CooperativeGames.ConeKernel_en
 
 /-! ## Basic Types -/
 
@@ -224,13 +231,13 @@ theorem bondareva_shapley_forward :
 /-! ## Cone-separation bridge (Bondareva-Farkas witness decoding)
 
 These lemmas connect the `TUGame.Balanced` hypothesis to the TUGame-free cone
-machinery in `CooperativeGames.ConeKernel` (`BondarevaCone.augCone` and the
+machinery in `CooperativeGames.ConeKernel_en` (`BondarevaCone_en.augCone` and the
 `hyperplane_separation_point` separator from
 `Mathlib.Analysis.Convex.Cone.Dual`). They form the front half of the
 Bondareva-Shapley backward witness construction: from `hb : G.Balanced` we obtain
 a separating functional, then decode it into a pre-imputation. -/
 
-open BondarevaCone
+open BondarevaCone_en
 
 /-- From `hb : G.Balanced` and `t > 0`, the balanced-unit test point
     `balancedUnit (G.v univ + t)` lies outside `augCone G.v`. Membership would

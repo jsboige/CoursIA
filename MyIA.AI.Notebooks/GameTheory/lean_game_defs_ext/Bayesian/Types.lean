@@ -18,7 +18,7 @@
   ce qui est exactement ce que signifie l'indépendance vis-à-vis de la
   normalisation.
 
-  Basé sur GameTheory-11-BayesianGames.ipynb. Voir #2610 (phase 1 :
+  Basé sur GameTheory-11-BayesianGames-Python.ipynb. Voir #2610 (phase 1 :
   jeux bayésiens — le rapport de recherche recommande les types finis d'abord).
 -/
 

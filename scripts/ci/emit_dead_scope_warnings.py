@@ -111,18 +111,34 @@ def _extract_paths_in_body(body: str) -> list[str]:
     Mirrors the comma-split of `_split_paths_brace_aware` without the brace
     handling (PR bodies rarely carry brace groups). Each match is stripped
     and returned as a flat list. Empty when no `paths:` clause is present.
+
+    #23720 -- each token is NORMALIZED like the claim side does
+    (`_normalize_path_token`): a path wrapped in backticks or quotes denotes
+    the same file as the bare path. Without this mirror, a correctly-scoped
+    claim would be reported HERE as a dead glob -- a false positive created
+    by the organ's own normalization. The helper is imported from
+    `check_lane_claim` (no duplicated rule); if that import fails, the tokens
+    are left as they are -- the advisory degrades to its previous behaviour
+    instead of dropping the check.
     """
+    import sys as _sys
+    _sys.path.insert(0, str(_SCRIPTS_DIR))
+    try:
+        from check_lane_claim import _normalize_path_token  # type: ignore
+    except Exception:
+        def _normalize_path_token(tok: str) -> str:  # type: ignore
+            return tok.strip()
     out: list[str] = []
     for m in _PATHS_INLINE_RE.finditer(body or ""):
         raw = m.group(1).strip()
         for token in raw.split(","):
-            token = token.strip()
+            token = _normalize_path_token(token)
             if token and token not in out:
                 out.append(token)
     for m in _PATHS_LINE_RE.finditer(body or ""):
         raw = m.group(1).strip()
         for token in raw.split(","):
-            token = token.strip()
+            token = _normalize_path_token(token)
             if token and token not in out:
                 out.append(token)
     return out

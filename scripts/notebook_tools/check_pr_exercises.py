@@ -23,16 +23,37 @@ script reinvented the rules, the label and the canonical tool would disagree.
 Scope: only ``*.ipynb`` MODIFIED by the PR (issue #8814 acceptance 1) -- not
 a repo-wide scan on every push. The caller passes the changed paths.
 
+#18740 — Extension credited examples
+-------------------------------
+In addition to the exercise count, this script now also reports the loss of
+**credited examples** (exemple guides portant une attribution ``#NNNN``)
+between the base and the head of the PR. The detector lives in
+``check_credited_examples.py`` (acceptance #18740); this script merely calls
+it for each modified notebook and surfaces the loss in the payload under the
+key ``credited_examples_lost``. The dedicated ``exemples-loss:`` exemption
+marker (analogue of plan-loss: from #14532) is honored if a ``--pr-body-file``
+is passed.
+
+Le câblage CI existe (``exercises-advisory.yml`` : ``--base`` + body +
+label ``credited-examples-lost``) mais est **présent, dormant sous les
+déclencheurs actuels** : le workflow ne tourne que sur ``schedule`` et
+``workflow_dispatch`` (tranche 1 de #12817), qui n'ouvrent pas de contexte
+PR -- la branche crédités est donc toujours sautée et le label ne peut pas
+être posé. Faire tirer ce câblage est suivi par #19101. Ce script expose le
+verdict regardless (logs + ``--json``) pour les passes locales.
+
 Usage:
     python check_pr_exercises.py --paths a.ipynb b.ipynb
     python check_pr_exercises.py --paths a.ipynb --json
     git diff --name-only BASE HEAD -- '*.ipynb' | python check_pr_exercises.py --stdin
+    python check_pr_exercises.py --paths a.ipynb --base origin/main --head HEAD --pr-body-file body.md
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -48,6 +69,20 @@ from count_exercises import (  # noqa: E402
     classify_notebook,
     count_exercises_in_notebook,
 )
+
+# #18740 — extension credited examples (consumes the sibling module).
+try:
+    from check_credited_examples import (  # noqa: E402
+        _read_git_blob,
+        _read_nb,
+        count_credited_examples,
+        diff_examples,
+        _exemption_markers,
+        _norm_title,
+    )
+    _HAS_CREDITED = True
+except ImportError:  # pragma: no cover -- safety: missing sibling must not crash
+    _HAS_CREDITED = False
 
 LABEL_NAME = "exercises-below-threshold"
 # A SECOND, distinct label for notebooks the checker could NOT READ (issue #8819).
@@ -68,6 +103,16 @@ class NotebookVerdict:
     count: int
     status: str  # 'sub_threshold' | 'ok' | 'out_of_corpus' | 'parse_error'
     detail: str = ""
+    # #18740 — credited examples loss (None si pas vérifié : base/head absents).
+    credited_lost: int = 0
+    credited_lost_unexempted: int = 0
+    credited_lost_titles: list[str] = field(default_factory=list)
+    # #18761 — visible status of the credited-diff computation. 'ok' if the diff
+    # was computed; 'skipped' if no base_ref; 'error: <type>' if it failed.
+    # The advisory workflow reads this to decide whether to pose the
+    # 'credited-examples-lost' label (only when status == 'ok' AND
+    # credited_lost_unexempted > 0).
+    credited_diff_status: str = "skipped"
 
 
 @dataclass
@@ -78,6 +123,9 @@ class CheckResult:
     ok: list[NotebookVerdict] = field(default_factory=list)
     out_of_corpus: list[NotebookVerdict] = field(default_factory=list)
     parse_errors: list[NotebookVerdict] = field(default_factory=list)
+    # #18740 — credited examples perdues, agregees.
+    credited_lost_total: int = 0
+    credited_lost_unexempted_total: int = 0
 
     def as_payload(self) -> dict:
         """Machine-readable payload for the workflow to decide the labels.
@@ -88,15 +136,37 @@ class CheckResult:
         "measured, below threshold" (below_threshold) and one for "could not
         measure" (unparseable). The workflow raises each when its count is > 0,
         and crucially never claims "all conform" while ``unverified > 0``.
+
+        #18761: the ``credited_diff_statuses`` field exposes per-notebook the
+        status of the credited-diff computation. The advisory NEVER poses the
+        ``credited-examples-lost`` label when ANY notebook reports a non-OK
+        status (i.e. ``error: ...``); it reports a "diff-error" advisory
+        instead, so a broken diff doesn't masquerade as "0 verified".
         """
         n_sub = len(self.sub_threshold)
         n_parse = len(self.parse_errors)
         n_ok = len(self.ok)
         n_out = len(self.out_of_corpus)
+        # #18761 — agrège les statuts du credited-diff sur l'ensemble des
+        # notebooks in-corpus. Une seule erreur bloque la pose du label
+        # credited-examples-lost.
+        diff_statuses = [
+            v.credited_diff_status
+            for v in (self.sub_threshold + self.ok + self.parse_errors)
+        ]
+        diff_errors = [s for s in diff_statuses if s.startswith("error:")]
         return {
             "labels": {
                 "below_threshold": {"name": LABEL_NAME, "count": n_sub},
                 "unparseable": {"name": LABEL_UNPARSEABLE, "count": n_parse},
+                # #18740 / #18761 -- label pose ONLY si tous les credited-diff
+                # ont reussi (pas d'error: dans diff_statuses) ET count > 0.
+                "credited_examples_lost": {
+                    "name": "credited-examples-lost",
+                    "count": self.credited_lost_unexempted_total
+                    if not diff_errors else 0,
+                    "blocked_by_errors": len(diff_errors),
+                },
             },
             "summary": {
                 # unverified FIRST (issue #8819 criterion 4): a glance at the
@@ -112,15 +182,31 @@ class CheckResult:
                 "below_threshold": n_sub,
                 "sub_threshold": n_sub,  # kept alias for readability
                 "parse_errors": n_parse,
+                # #18740
+                "credited_lost_total": self.credited_lost_total,
+                "credited_lost_unexempted": self.credited_lost_unexempted_total,
+                # #18761
+                "credited_diff_errors": len(diff_errors),
             },
             "sub_threshold": [asdict(v) for v in self.sub_threshold],
             "ok": [asdict(v) for v in self.ok],
             "out_of_corpus": [asdict(v) for v in self.out_of_corpus],
             "parse_errors": [asdict(v) for v in self.parse_errors],
+            # #18761 -- detail de chaque credited-diff pour le log.
+            "credited_diff_per_notebook": [
+                {"path": v.path, "status": v.credited_diff_status}
+                for v in (self.sub_threshold + self.ok + self.parse_errors)
+            ],
         }
 
 
-def check_notebooks(paths: list[Path]) -> CheckResult:
+def check_notebooks(
+    paths: list[Path],
+    base_ref: str = "",
+    head_ref: str = "",
+    pr_body: str = "",
+    base_path_of: dict[str, str] | None = None,
+) -> CheckResult:
     """Classify + count each path, bucketing by advisory status.
 
     A notebook is ``sub_threshold`` only when it is IN the pedagogical corpus
@@ -128,8 +214,26 @@ def check_notebooks(paths: list[Path]) -> CheckResult:
     threshold. A setup notebook (threshold 0), a Lean notebook (threshold 2),
     or an out-of-corpus artifact is never sub-threshold -- the rule exempts
     them, and this function consumes that exemption rather than overriding it.
+
+    #18740 -- if ``base_ref`` is provided, this additionally diffs the credited
+    examples between the base and the head, honoring the ``exemples-loss:``
+    exemption markers from ``pr_body``. The default (``base_ref=""``) skips
+    this check (preserves backward compatibility for callers that don't pass
+    a base ref).
+
+    #19251 -- ``base_path_of`` maps a ``path`` to the location it had at the
+    base, for a notebook the PR **renamed**: the credited diff then reads
+    ``base:previousFilename`` against ``head:path`` instead of the same path on
+    both sides (which would find nothing at the base and read as a full loss).
+    Absent from the map, ``path`` is used for both sides -- the pre-rename case.
     """
     result = CheckResult()
+    # Pré-calcul des exemptions une seule fois (cf. #18740).
+    exemption_index: set[tuple] = set()
+    if pr_body and _HAS_CREDITED:
+        for ex in _exemption_markers(pr_body):
+            exemption_index.add((ex["notebook"], _norm_title(ex["title"])))
+
     for path in paths:
         kind, threshold = classify_notebook(path)
         if threshold is None:
@@ -142,7 +246,27 @@ def check_notebooks(paths: list[Path]) -> CheckResult:
             )
             continue
 
-        cnt = count_exercises_in_notebook(path)
+        # #19215 (review 5411248369) : le comptage doit porter sur la MEME
+        # revision que le diff credite, pas sur l'arbre du jour. Un carnet
+        # MODIFIE par une PR puis RENOMME (ou supprime) par une PR suivante
+        # est absent de l'arbre : `count_exercises_in_notebook` levait un
+        # FileNotFoundError qui emportait tout le balayage -- les autres PR
+        # de la fenetre n'etaient pas mesurees. Le blob de tete, lui, existe
+        # par construction pour un chemin MODIFIED.
+        #
+        # La classification, elle, reste sur `path` : `classify_notebook` lit
+        # les regles de REPERTOIRE (`IIT/`, `groupe-`, `_`) et le fichier
+        # temporaire du blob ne les porte pas -- classify sur le blob
+        # reclasserait le carnet en `archive`/`tooling` sur son seul prefixe.
+        count_path = path
+        if head_ref and _HAS_CREDITED:
+            try:
+                count_path = _read_git_blob(head_ref, str(path).replace("\\", "/"))
+            except (subprocess.CalledProcessError, OSError):
+                # Blob absent de la tete : on garde l'arbre du jour. Si lui
+                # aussi manque, l'echec est nomme par l'appelant (sweep).
+                count_path = path
+        cnt = count_exercises_in_notebook(count_path)
         if cnt.parse_error is not None:
             result.parse_errors.append(
                 NotebookVerdict(
@@ -156,6 +280,50 @@ def check_notebooks(paths: list[Path]) -> CheckResult:
             path=str(path), kind=kind, threshold=threshold, count=cnt.count,
             status="ok" if cnt.count >= threshold else "sub_threshold",
         )
+
+        # #18740 -- credited examples loss.
+        if base_ref and _HAS_CREDITED:
+            try:
+                # HEAD : fichier de travail par défaut, ou ref git explicite.
+                if head_ref:
+                    head_blob = _read_git_blob(head_ref, str(path).replace("\\", "/"))
+                    head_examples = count_credited_examples(_read_nb(head_blob))
+                else:
+                    head_examples = count_credited_examples(_read_nb(path))
+                # #19251 -- un carnet RENOMME par la PR n'existe pas au meme
+                # chemin dans la base : sans la correspondance, `base:path`
+                # rendrait un blob absent et le diff lirait une perte totale.
+                # La carte est clee en POSIX (le chemin GraphQL) : on normalise
+                # la cle du `Path` avant de la consulter, sinon sous Windows
+                # (`str(path)` rend des `\`) la correspondance raterait en
+                # silence et le renommage redeviendrait non mesure.
+                posix_path = str(path).replace("\\", "/")
+                base_side = (base_path_of or {}).get(posix_path, posix_path)
+                base_path = _read_git_blob(base_ref, base_side)
+                base_examples = count_credited_examples(_read_nb(base_path))
+                diff = diff_examples(base_examples, head_examples)
+                nb_name = path.name
+                lost_unexempted = []
+                for ex in diff["lost"]:
+                    if (nb_name, _norm_title(ex["title"])) in exemption_index:
+                        continue
+                    lost_unexempted.append(ex)
+                verdict.credited_lost = len(diff["lost"])
+                verdict.credited_lost_unexempted = len(lost_unexempted)
+                verdict.credited_lost_titles = [e["title"] for e in lost_unexempted]
+                verdict.credited_diff_status = "ok"
+                result.credited_lost_total += len(diff["lost"])
+                result.credited_lost_unexempted_total += len(lost_unexempted)
+            except Exception as exc:  # pragma: no cover -- git blob may fail
+                # #18761 -- surface the error visibly: status='error: <type>'
+                # is the only field the advisory workflow relies on to NOT
+                # pose the label. detail carries the message for the log.
+                err_type = type(exc).__name__
+                verdict.credited_diff_status = f"error: {err_type}"
+                verdict.detail = (
+                    verdict.detail + f" | credited-diff error: {err_type}: {exc}"
+                ).strip(" |")
+
         if cnt.count < threshold:
             result.sub_threshold.append(verdict)
         else:
@@ -178,6 +346,8 @@ def _render_text(result: CheckResult) -> str:
         f"Out of corpus       : {s['out_of_corpus']}",
         f"Below threshold     : {s['below_threshold']}",
         f"Unverified (parse)  : {s['unverified']}",
+        f"#18740 credited lost: {s['credited_lost_total']} "
+        f"(unexempted: {s['credited_lost_unexempted']})",
     ]
     if result.sub_threshold:
         lines.append(
@@ -197,6 +367,18 @@ def _render_text(result: CheckResult) -> str:
         )
         for v in result.parse_errors:
             lines.append(f"  {v.path}: {v.detail[:120]}")
+    # #18740 — credited examples lost.
+    credited_losers = [
+        v for v in (*result.sub_threshold, *result.ok)
+        if v.credited_lost_unexempted > 0
+    ]
+    if credited_losers:
+        lines.append(
+            f"\n--- Credited examples lost (label: credited-examples-lost) ---"
+        )
+        for v in credited_losers:
+            for title in v.credited_lost_titles:
+                lines.append(f"  {v.path}: {title}")
     # Criterion 2: assert only what was measured. A parse error means we did
     # NOT measure that notebook, so "all meet threshold" would be a false claim.
     if s["unverified"] > 0:
@@ -256,9 +438,28 @@ def main(argv: list[str] | None = None) -> int:
         "--json", dest="json_out", action="store_true",
         help="Emit machine-readable JSON (the workflow parses this for the label).",
     )
+    # #18740 -- paramètres du diff credited examples.
+    parser.add_argument(
+        "--base", default="",
+        help="Ref git de la base (defaut vide = skip credited-diff).",
+    )
+    parser.add_argument(
+        "--head", default="",
+        help="Ref git de la tête (informative ; le script lit le fichier de travail).",
+    )
+    parser.add_argument(
+        "--pr-body-file", default="",
+        help="Chemin vers le body PR (pour lire les exemptions exemples-loss:).",
+    )
     args = parser.parse_args(argv)
 
     paths = _collect_paths(args.paths, args.stdin)
+    pr_body = ""
+    if args.pr_body_file:
+        try:
+            pr_body = Path(args.pr_body_file).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            pr_body = ""
     if not paths:
         msg = "No modified notebooks in corpus to check."
         if args.json_out:
@@ -269,7 +470,9 @@ def main(argv: list[str] | None = None) -> int:
             print(msg)
         return 0
 
-    result = check_notebooks(paths)
+    result = check_notebooks(
+        paths, base_ref=args.base, head_ref=args.head, pr_body=pr_body,
+    )
     if args.json_out:
         print(json.dumps(result.as_payload(), indent=2, ensure_ascii=False))
     else:

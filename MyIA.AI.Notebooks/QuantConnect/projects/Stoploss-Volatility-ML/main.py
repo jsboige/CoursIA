@@ -16,6 +16,14 @@ class StoplossVolatilityMLAlgorithm(QCAlgorithm):
     weekly low return of KO, placing a stop-market order below the
     predicted low price.
 
+    Reference mode (06/08/01, parameter mode='fixed'): buys 100% of KO
+    at the weekly entry and places a stop-market order at
+    round(price * stop_loss_percent, 2), the book's fixed-percentage
+    benchmark. It is the reference the learned stop is judged against;
+    the default behaviour (mode='ml') is unchanged. Book delta: the
+    benchmark liquidates at the next week's open, this project keeps
+    its week-end liquidation so the comparison isolates the stop.
+
     Cloud adaptation: CBOE VIX data is not available on QC Cloud,
     so SPY realized volatility is used as a proxy for market-wide
     implied volatility. The original book code uses CBOE directly
@@ -42,6 +50,12 @@ class StoplossVolatilityMLAlgorithm(QCAlgorithm):
 
         self._stop_loss_buffer = float(self.get_parameter(
             'stop_loss_buffer', 0.01
+        ))
+
+        # 06/08/01 reference mode: 'ml' (default, unchanged) or 'fixed'.
+        self._mode = self.get_parameter('mode', 'ml')
+        self._stop_loss_percent = float(self.get_parameter(
+            'stop_loss_percent', 0.99
         ))
 
         self._factor_rows = []
@@ -170,6 +184,18 @@ class StoplossVolatilityMLAlgorithm(QCAlgorithm):
         return X, y
 
     def _enter(self):
+        # 06/08/01 reference: fixed-percentage stop, no learning. The
+        # book places it at round(price * stop_loss_percent, 2) on the
+        # weekly entry; the published parameter value is 0.95.
+        if self._mode == 'fixed':
+            quantity = self.calculate_order_quantity(self._symbol, 1)
+            self.market_order(self._symbol, quantity)
+            self.stop_market_order(
+                self._symbol, -quantity,
+                round(self._security.price * self._stop_loss_percent, 2)
+            )
+            return
+
         X, y = self._get_training_data()
         if X is None:
             return

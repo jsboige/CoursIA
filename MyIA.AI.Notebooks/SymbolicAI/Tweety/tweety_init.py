@@ -89,7 +89,7 @@ def _detect_tools():
 def _find_jdk_portable():
     """Recherche le JDK portable dans l'arborescence."""
     for jdk_path in [pathlib.Path("jdk-17-portable"),
-                     pathlib.Path("../Argument_Analysis/jdk-17-portable")]:
+                     pathlib.Path("../ArgumentAnalysis/jdk-17-portable")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob("zulu*"))
             if zulu_dirs:
@@ -98,9 +98,16 @@ def _find_jdk_portable():
 
 
 def _find_libs_dir():
-    """Recherche le dossier libs contenant les JARs Tweety."""
+    """Recherche le dossier libs contenant les JARs Tweety.
+
+    Le repli `../ArgumentAnalysis/libs` est retire : l'arbitrage #23109 a
+    supprime ce dossier, et il ne portait de toute facon aucun JAR (mesure a la
+    base 7e1b735ab : six `native/*`, zero `*.jar`), donc il ne pouvait jamais
+    servir. Le second candidat est ancre sur __file__ : sous forme relative au
+    repertoire courant, il ne trouvait le dossier que depuis `SymbolicAI/Tweety`.
+    """
     for lib_path in [pathlib.Path("libs"),
-                     pathlib.Path("../Argument_Analysis/libs")]:
+                     pathlib.Path(__file__).resolve().parent / "libs"]:
         if lib_path.exists():
             return lib_path
     return None
@@ -156,10 +163,18 @@ def init_tweety(verbose=True):
             print("ERREUR: Aucun JAR trouve dans libs/")
         return False
 
-    # Recherche des bibliothèques natives (DLL/SO pour SAT solvers)
+    # Recherche des bibliothèques natives (DLL/SO pour SAT solvers).
+    # Ordre : libs/native de la série Tweety, puis le dossier natif partagé de
+    # SymbolicAI, canonique depuis l'arbitrage #23109 (les deux copies étaient
+    # byte-identiques). Le repli est ancré sur __file__ et non sur le répertoire
+    # courant : lancé depuis un sous-dossier, un chemin relatif tombait sur
+    # l'ancien emplacement, désormais supprimé, et l'absence de natives ne se
+    # voit qu'à l'appel du solveur — silencieusement. L'ancien emplacement sous
+    # ArgumentAnalysis a disparu avec #23109 ; le garder ne protégerait aucun
+    # clone, il ferait seulement croire la resolution possible.
     native_libs_dir = lib_dir / "native"
     if not native_libs_dir.exists():
-        native_libs_dir = pathlib.Path("../Argument_Analysis/libs/native")
+        native_libs_dir = pathlib.Path(__file__).resolve().parent.parent / "libs" / "native"
 
     # IMPORTANT: Mettre le dossier native EN PREMIER dans le classpath
     # Cela permet à getResource() de trouver les DLL dans le dossier

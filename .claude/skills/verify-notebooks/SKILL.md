@@ -11,7 +11,7 @@ Verify and test Jupyter notebooks in the CoursIA repository.
 
 ## Arguments
 
-- `target`: Notebook path, family name (`Sudoku`, `Search`, `SymbolicAI`, `Argument_Analysis`, `GenAI`, `ML`, `Probas`, `IIT`, `Tweety`, `Lean`, `GameTheory`), or `all`
+- `target`: Notebook path, family name (`Sudoku`, `Search`, `SymbolicAI`, `ArgumentAnalysis`, `GenAI`, `ML`, `Probas`, `IIT`, `Tweety`, `Lean`, `GameTheory`), or `all`
 - `--quick`: Structure validation only, no execution
 - `--fix`: Attempt automatic fixes (max 3 attempts per cell)
 - `--python-only` / `--dotnet-only`: Filter by kernel type
@@ -33,7 +33,7 @@ Verify and test Jupyter notebooks in the CoursIA repository.
 
 | Family | Path | Kernel | Notes |
 |--------|------|--------|-------|
-| Sudoku | Sudoku/ | .NET C# | `#!import`, cell-by-cell only |
+| Sudoku | Sudoku/ | Mixed | C# (`#!import`, cell-by-cell only) + Python, one twin per notebook |
 | Search | Search/ | Mixed | GeneticSharp=C#, PyGad=Python |
 | SymbolicAI | SymbolicAI/ | Mixed | Tweety=Python+JPype |
 | GenAI | GenAI/ | Python | API keys required, use `/validate-genai` first |

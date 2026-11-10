@@ -262,10 +262,10 @@ pattern sibling canonique.
 
 ### 7. `conway_lean` — EXCELLENT (82 % nominal, pédagogique 100 %) (gros volume) ↻08-28
 
-**Chemin** : `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/`
+**Chemin** : `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/`
 
 **39 fichiers FR canoniques**, **32 fichiers EN siblings** (↻08-28).
-~1894 lignes FR canonique (le plus gros contributeur de lignes FR du repo). Lake
+Le plus gros contributeur de lignes FR du repo. Lake
 = **cœur PEDA Conway** (Life + Doomsday + FRACTRAN + Look-and-Say + Nim + Angel +
 **Hashlife**).
 
@@ -292,7 +292,7 @@ L'état « PARTIEL 60 % » du 07-15 (3 siblings + 15 markers inline) est **super
 
 ### 9. `grothendieck_lean` — EXCELLENT (98 %) ↻08-28
 
-**Chemin** : `MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/`
+**Chemin** : `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/`
 
 **60 fichiers FR canoniques**, **59 fichiers EN siblings** (↻08-28 — l'expansion de
 l'hommage Grothendieck a plus que doublé le lake depuis le 14/07, et la bilinguisation

@@ -1,10 +1,14 @@
 # Sous-modules — détail : état vérifié, incidents et mesures datées
 
-Détail déporté de [`.claude/rules/submodule-maintenance.md`](../../.claude/rules/submodule-maintenance.md), qui porte les règles HARD 1 à 6. Ce fichier porte ce qui **date** : la table de statut de gate, les mesures horodatées, les faux positifs mesurés et les incidents fondateurs. La règle référence ce fichier ; elle ne le duplique pas.
+Détail déporté de [`.claude/rules/submodule-maintenance.md`](../../.claude/rules/submodule-maintenance.md), qui porte les règles HARD 1 à 7. Ce fichier porte ce qui **date** : la matrice des cinq états de gate, la table de statut, les mesures horodatées, les faux positifs mesurés et les incidents fondateurs. La règle référence ce fichier ; elle ne le duplique pas.
 
 Motif du déport (`harness-hygiene`, 3 tiers) : le harnais est auto-chargé à **chaque requête** de **chaque session**, sur les cinq machines. Une table de SHA et de dates de vérification y coûte des tokens en permanence pour une information qui se relit ponctuellement, avant une PR de bump.
 
----
+**Mandat fondateur (user, 2026-09-02, verbatim)** — la règle cite la source, le verbatim vit ici :
+
+> « Ca sera une bonne chose de ne pas laisser nos sous-modules sans maintenance, si j'ai souhaité les définir comme sous-modules de CoursIA, c'est pour qu'ils puissent évoluer avec nous et **chacun d'eux a un rôle dans le dépôt principal qui n'est plus à démontrer**. »
+
+***
 
 ## 1. Périmètre — pourquoi la liste se lit dans `.gitmodules`
 
@@ -18,7 +22,7 @@ Motif du déport (`harness-hygiene`, 3 tiers) : le harnais est auto-chargé à *
 
 Le critère qui a tranché : un sous-module est un dépôt **qu'on fait vivre**. Une dépendance de build qu'on subit se clone, elle ne se déclare pas — quantité de composants clonent leurs dépendances sans que le dépôt parent s'en encombre.
 
----
+***
 
 ## 2. Faux positif permanent `HEAD` vs branche déclarée (#14872)
 
@@ -38,7 +42,7 @@ Le gitlink est **exactement sur sa branche déclarée**. C'est l'état *nominal*
 
 `refs/heads/` est explicite pour ne jamais résoudre un tag homonyme. Un `ls-remote` muet (ref injoignable, 403 d'org, réseau) s'affiche `INJOIGNABLE`, jamais comme une égalité — même leçon que le `403` de la mesure de gate ci-dessous.
 
----
+***
 
 ## 3. Précondition de jeton pour la mesure de gate (mesurée le 2026-09-05)
 
@@ -54,7 +58,11 @@ Jamais par `gh auth switch`, qui mute un état **global au process `gh`** (cf. r
 
 **Un `403` est une question, pas une absence mesurée** : ne jamais en conclure « 0 workflow ». C'est exactement la ligne fausse que la table ci-dessous existe pour empêcher.
 
----
+### Les permissions de merge diffèrent par dépôt (incident R5, mesuré 2026-09-05)
+
+`myia-ai-01` a `MergePullRequest` sur `jsboige/CoursIA`, **mais pas** sur `jsboige/MetaGeneticSharp` ni sur `MyIntelligenceAgency/*` — un merge tenté sous ce compte y rend `GraphQL: myia-ai-01 does not have the correct permissions`. La conséquence opérationnelle (portée par la règle HARD 5) : sur ces dépôts, le jeton `jsboige` s'épingle **par commande** (`GH_TOKEN=$(gh auth token --user jsboige --hostname github.com) gh pr merge …`), jamais par `gh auth switch`.
+
+***
 
 ## 4. Table de statut de gate par sous-module
 
@@ -65,7 +73,7 @@ Jamais par `gh auth switch`, qui mute un état **global au process `gh`** (cf. r
 | `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | **Câblé, déclenché, rouge récent** — 1 workflow `dotnet-ci`, 8 runs totaux ; run #7 ubuntu+windows SUCCESS sur PR avant merge ; run `34208179870` post-merge sur `main` SHA `dbcd40473e0fad04505b362276e8d3acf6982926` : ubuntu SUCCESS 2026-09-08T09:07:35Z, **windows FAILURE** 2026-09-08T09:08:40Z | non-vert (job Windows) | **OUI** | c.1003 (#15190, post-DM ai-01 2026-09-08T15:21Z — état corrigé post-`CHANGES_REQUESTED`) |
 | `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq` | **Câblé, déclenché, vert récent** — `build` (push) success 2026-09-23T11:27Z sur `main` SHA `237b05ebd7dc`, et checks `build / Test` verts sur les PRs #29 et #31 | vert | **NON** | 2026-09-23, PR de suivi R7 |
 | `MyIA.AI.Notebooks/SymbolicAI/SMT/Automata` | **Absent** — 0 workflow, 0 run | — | OUI | #14566 (#14558, c.14463) |
-| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` | **Câblé, déclenché, vert récent** — 5 workflows / 5 actifs, 4479 runs totaux, `Build` success 2026-09-07T04:08:13Z sur `master` SHA `bab289c05bb6` ; master HEAD courant `f5acc7bedd05`, build re-déclenché 2026-09-07T09:21:11Z | vert | **NON** | #15007 (c.956, 2026-09-07) |
+| `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum` | **Câblé, déclenché, vert récent** — 5 workflows / 5 actifs, 4479 runs totaux, `Build` success 2026-09-07T04:08:13Z sur `master` SHA `bab289c05bb6` ; master HEAD courant `f5acc7bedd05`, build re-déclenché 2026-09-07T09:21:11Z | vert | **NON** | #15007 (c.956, 2026-09-07) |
 | `MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet` | **Câblé, déclenché, rouge récent** — 18 workflows, 17 actifs, 553 runs totaux, dernier `Python Integration Tests` failure 2026-09-07T01:29:00Z sur `main` | non-vert | OUI (jusqu'à un run vert) | #15007 (c.956, 2026-09-07) |
 
 ### Le cas `MetaGeneticSharp` — câblé depuis c.990, toujours rouge
@@ -86,10 +94,30 @@ Le run post-merge sur `main` reste **FAILURE côté Windows**, sans message d'er
 - Une PR de bump qui cite un **run vert sur la branche par défaut** du submod **satisfait** A2 : la substitution R3 **cesse** de s'appliquer à ce sous-module, et les bumps suivants peuvent omettre les deux vérifications.
 - Le passage d'« aucun workflow » à « workflow acquis » est un **commit sur le submod** (câblage `.github/workflows/dotnet-ci.yml`), suivi d'une **mise à jour de la table ci-dessus** dans une PR sur CoursIA-2.
 
----
+### L'organe `submodule_watch.py` — incident fondateur (R6, 19/10)
+
+Les deux mesures de la Règle 6 vivaient en prose, et aucune ne listait les PRs : `MetaGeneticSharp`#62 et `Automata`#10, propres et fusionnables, ont attendu trois jours (19/10). Le premier passage de `scripts/coordination/submodule_watch.py` en a relevé onze — c'est cet écart qui a promu la mesure d'organe au rang de Phase 2 obligatoire de `/coordinate`.
+
+***
+
+## 5. Matrice des cinq états de gate (R3)
+
+La substitution R3 s'applique **par défaut**, et ne cesse qu'à l'état 3 :
+
+| # | État | Substitution R3 |
+|---|---|---|
+| 1 | **Absent** — aucun workflow, aucun run | active |
+| 2 | **Câblé, jamais déclenché sur la pile en cours** — le trigger ne couvre pas les PRs visées | active ; c'est le **déclencheur** qui doit être qualifié, pas seulement le câblage |
+| 3 | **Câblé, déclenché, vert récent** sur la branche par défaut | **cesse** — A2 est acquis |
+| 4 | **Drift / perte de gate** — un état 3 qui perd son workflow | redevient active |
+| 5 | **Câblé, déclenché, rouge récent** — le gate existe et tire, mais hors-main ou en régression | active jusqu'au retour au vert |
+
+Le passage d'un état à l'autre est un **geste tracké** : PR dédiée sur le dépôt submod (câblage ou re-câblage), mise à jour de la table d'état au §4 ci-dessus, et revue coord pour valider la bascule.
+
+***
 
 ## Voir aussi
 
-- [`.claude/rules/submodule-maintenance.md`](../../.claude/rules/submodule-maintenance.md) — les règles HARD 1 à 6
+- [`.claude/rules/submodule-maintenance.md`](../../.claude/rules/submodule-maintenance.md) — les règles HARD 1 à 7
 - [`.claude/rules/harness-hygiene.md`](../../.claude/rules/harness-hygiene.md) — les 3 tiers, motif de ce déport
 - **Epic #1206** — piste Z3.Linq : fork endjin + port + PRs upstream (issue `endjin/Z3.Linq#29` = pivot de provenance)

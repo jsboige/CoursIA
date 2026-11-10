@@ -19,6 +19,7 @@ Run: python -m pytest scripts/tests/test_pr_gate.py
 """
 import itertools
 import sys
+import types
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -579,6 +580,110 @@ def test_wait_loop_times_out_into_a_starved_failure():
     assert "timed out" in msg and "Slow CI" in msg
 
 
+# --- #13363 -- pool-saturation early STARVED (all-queued constituents) -------
+#
+# The defect: under self-hosted pool saturation the gate waiter polls
+# constituents that sit `queued` with NO runner assigned -- the verdict cannot
+# change until a constituent STARTS, so the waiter burns its full hosted budget
+# polling a parked queue. The fix: when every pending constituent is queued
+# for `all_queued_polls` consecutive polls PAST the settle_polls floor, the
+# loop returns a STARVED verdict immediately. The message keeps the STARVED
+# prefix so main()'s self-cancel (#13510) and the stale sweep's cancelled-leg
+# remedy apply unchanged.
+
+
+def test_pending_all_queued_predicate():
+    """The predicate judges the SAME entries classify judges: self and advisory
+    excluded, conclusion-authoritative, False when nothing is pending."""
+    all_queued = [
+        run("ci / Lean CI (grothendieck_lean)", None, status="queued", rid=1),
+        run("CodeQL", "success", rid=2),
+        run("guard-advisory / Probe", None, status="queued", rid=3),
+    ]
+    assert pr_gate.pending_all_queued(
+        all_queued, "PR gate", frozenset({"guard-advisory / Probe"})
+    ) is True
+    # One runner picked a job up: waiting CAN change the verdict.
+    mixed = [
+        run("ci / Lean CI (grothendieck_lean)", None, status="queued", rid=4),
+        run("proof-integrity / Proof integrity", None, status="in_progress", rid=5),
+    ]
+    assert pr_gate.pending_all_queued(mixed) is False
+    # Nothing pending: the ordinary settle path owns this case.
+    settled = [run("CodeQL", "success", rid=6)]
+    assert pr_gate.pending_all_queued(settled) is False
+
+
+def test_all_queued_streak_fires_early_starved():
+    """Positive: an all-queued wait set exits at settle_polls + all_queued_polls
+    polls -- not at the deadline -- with the self-cancel STARVED marker."""
+    polls = []
+
+    def fetch(_repo, _sha):
+        polls.append(1)
+        return [
+            run("ci / Lean CI (grothendieck_lean)", None, status="queued", rid=1),
+            run("proof-integrity / Proof integrity", None, status="queued", rid=2),
+        ]
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=10, poll_sec=0,
+        settle_polls=2, all_queued_polls=3,
+        sleep=lambda _s: None, fetch=fetch, now=_clock(),
+    )
+    assert code == 1, "rule 1: starvation never passes"
+    assert msg.startswith("STARVED"), "must inherit the self-cancel path (#13510)"
+    assert "no runner" in msg and "Lean CI" in msg
+    assert "timed out" not in msg, "this is the early exit, not the deadline"
+    # Poll 1 sits below the settle_polls=2 floor (grace for check-runs to
+    # surface); polls 2-4 build the 3-streak -- the floor poll counts toward
+    # it, since a surfaced all-queued pending set is already evidence. Exit at
+    # poll 4, deadline at 60.
+    assert len(polls) == 4, "the settle floor must gate the streak"
+
+
+def test_all_queued_streak_reset_by_in_progress_constituent():
+    """Fail-closed toward waiting: a single constituent flipping to
+    in_progress resets the streak -- the verdict CAN now change by waiting."""
+    polls = []
+
+    def fetch(_repo, _sha):
+        polls.append(1)
+        if len(polls) <= 2:
+            return [run("Lean CI", None, status="queued")]
+        return [run("Lean CI", None, status="in_progress")]
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=10, poll_sec=0,
+        settle_polls=2, all_queued_polls=3,
+        sleep=lambda _s: None, fetch=fetch, now=_clock(),
+    )
+    assert code == 1
+    assert "timed out" in msg, "without the reset this exits early at poll 5"
+    assert "no runner" not in msg, "the early exit must not fire post-reset"
+
+
+def test_all_queued_early_exit_disabled_by_default():
+    """all_queued_polls=0 keeps the historical behaviour: an all-queued wait
+    set polls to the deadline and verdicts the #13510 timeout STARVED."""
+    polls = []
+
+    def fetch(_repo, _sha):
+        polls.append(1)
+        return [run("Lean CI", None, status="queued")]
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=10, poll_sec=0,
+        settle_polls=2,  # all_queued_polls defaults to 0 (disabled)
+        sleep=lambda _s: None, fetch=fetch, now=_clock(),
+    )
+    assert code == 1
+    assert msg.startswith("STARVED") and "timed out" in msg
+    assert "no runner" not in msg
+    # 60 loop polls to the deadline + 1 re-read on the deadline path (#11751).
+    assert len(polls) == 61, "legacy budget consumed to the deadline"
+
+
 # --- #13510 -- starvation renders CANCELLED, not FAILURE ---------------------
 #
 # The defect: a starved gate (deadline fired, constituents still pending,
@@ -1123,6 +1228,43 @@ def test_catalog_drift_job_name_carries_the_advisory_marker():
     assert not pr_gate.is_advisory("Notebook catalog drift (read-only)", wf_name)
 
 
+def test_translation_drift_job_name_carries_the_advisory_marker():
+    """Meme defaut que #15998, sur le job translation-drift.
+
+    Le workflow `translation-drift.yml` annonce « non-blocking, read-only »
+    depuis son en-tete (#4957), et son job se nommait « Translation drift
+    (read-only) » -- sans le marqueur. `pr_gate.py` classant par NOM
+    (`ADVISORY_MARKER`, regle 6), un echec d'infrastructure de ce job comptait
+    comme un check REQUIS : le gate rougissait alors que le job lui-meme
+    n'avait rien signale. Mesure sur #22216 le 2026-10-26 : « PR gate: FAIL
+    -- failing checks: Translation drift (read-only) (failure) », sur un job
+    mort au checkout (fetch promisor), tous les autres checks verts.
+
+    Le correctif est le marqueur dans le NOM du job -- comme pour catalog-drift
+    (#15998) -- et non une entree de registre : pr_gate.py lit le nom du
+    check-run emis, pas l'en-tete du workflow.
+    """
+    if pr_gate.yaml is None:  # pragma: no cover - PyYAML is a CI dependency
+        pytest.skip("PyYAML unavailable: cannot read the workflow")
+    wf_path = Path(pr_gate.DEFAULT_WORKFLOWS_DIR) / "translation-drift.yml"
+    data = pr_gate.yaml.safe_load(wf_path.read_text(encoding="utf-8"))
+    job_names = pr_gate._workflow_job_names(data)
+    assert job_names, "translation-drift.yml must declare at least one job"
+    for name in job_names:
+        assert pr_gate.is_advisory(name), (
+            "the translation-drift job name must carry the `advisory` marker "
+            "(#15998): pr_gate.py reads the check-run name, not the header "
+            "comment, so dropping the marker silently re-arms a hard gate "
+            "against every PR whose merge ref triggers the read-only check"
+        )
+    # The defect the marker fixes must stay measurable: with the workflow name
+    # as it stands, the historical spelling is still classified BLOCKING. If
+    # this ever flips, the workflow name has absorbed the marker and the
+    # job-name invariant above stopped being the load-bearing surface.
+    wf_name = data.get("name") or ""
+    assert not pr_gate.is_advisory("Translation drift (read-only)", wf_name)
+
+
 def test_non_advisory_failure_still_blocks():
     """Guard against the fix becoming a blanket amnesty."""
     checks = [
@@ -1385,6 +1527,42 @@ def test_post_check_run_payload_on_fail():
 
     pr_gate.post_check_run("o/r", "abc1234", "PR gate", 1, "FAIL -- Lean CI", poster=fake_poster)
     assert captured["fields"]["conclusion"] == "failure"
+
+
+def test_post_check_run_warns_on_foreign_suite(capsys):
+    """#21505 : une `details_url` qui ne pointe PAS vers `/actions/runs/`
+    signifie une suite ETRANGERE (run non relancable, classe #18985) :
+    `post_check_run` emet un avertissement qui NOMME la suite (`check_suite.id`)."""
+    def foreign_poster(_path, _fields):
+        return {
+            "id": 111294508181,
+            "name": "PR gate",
+            "details_url": "https://github.com/o/r/runs/37144908600",
+            "check_suite": {"id": 100614928346},
+        }
+
+    pr_gate.post_check_run("o/r", "abc1234", "PR gate", 1, "FAIL",
+                           poster=foreign_poster)
+    out = capsys.readouterr().out
+    assert "suite ETRANGERE" in out
+    assert "100614928346" in out
+
+
+def test_post_check_run_no_warning_in_actions_suite(capsys):
+    """#21505 controle : une `details_url` NORMALE (porte `/actions/runs/`)
+    ne declenche AUCUN avertissement -- la suite d'origine est relancable."""
+    def actions_poster(_path, _fields):
+        return {
+            "id": 42,
+            "name": "PR gate",
+            "details_url": "https://github.com/o/r/actions/runs/999/job/1",
+            "check_suite": {"id": 555},
+        }
+
+    pr_gate.post_check_run("o/r", "abc1234", "PR gate", 0, "PASS",
+                           poster=actions_poster)
+    out = capsys.readouterr().out
+    assert "suite ETRANGERE" not in out
 
 
 def test_main_posts_on_pass_when_flag_set(monkeypatch):
@@ -2167,6 +2345,39 @@ def test_post_check_run_mode_keeps_its_own_contract(monkeypatch):
         ["--repo", "o/r", "--sha", "deadbeef", "--post-check-run"]
     )
     assert code == 1
+
+
+def test_post_check_run_skipped_on_dwell_verdict(monkeypatch):
+    """#21543 -- a DWELL verdict is a merge-floor timer, not a content failure.
+
+    POSTing it as ``conclusion=failure`` lands an unliftable red on the PR
+    head (foreign suite, no run behind it, GitHub ANDs same-named checks).
+    The harness must skip the POST entirely when the verdict starts with
+    ``DWELL``."""
+    posted = []
+    monkeypatch.setattr(
+        pr_gate, "post_check_run",
+        lambda *a, **k: posted.append((a, k)),
+    )
+    args = types.SimpleNamespace(
+        post_check_run=True, repo="o/r", sha="deadbeef", self_name="PR gate",
+    )
+    pr_gate._maybe_post_check_run(args, 1, "DWELL -- plancher 120 min, reste 18 min")
+    assert posted == [], "DWELL verdict must never be POSTed as a check-run"
+
+
+def test_post_check_run_still_posts_on_real_failure(monkeypatch):
+    """#21543 regression guard, other side: a real FAIL verdict still POSTs."""
+    posted = []
+    monkeypatch.setattr(
+        pr_gate, "post_check_run",
+        lambda *a, **k: posted.append((a, k)),
+    )
+    args = types.SimpleNamespace(
+        post_check_run=True, repo="o/r", sha="deadbeef", self_name="PR gate",
+    )
+    pr_gate._maybe_post_check_run(args, 1, "FAIL -- failing checks: Lean CI")
+    assert len(posted) == 1, "a real FAIL verdict must still be POSTed"
 
 
 def test_the_two_surfaces_render_the_same_text(tmp_path, monkeypatch):

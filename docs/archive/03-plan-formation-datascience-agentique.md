@@ -39,7 +39,7 @@ Le coeur du parcours. On apprend a generer et manipuler du contenu avec des mode
 
 **Fil rouge** : creer un generateur de contenu visuel pour l'education (diagrammes scientifiques, illustrations pedagogiques, motifs decoratifs).
 
-Emplacement : `MyIA.AI.Notebooks/GenAI/Image/` (19 notebooks, ~8h)
+Emplacement : `MyIA.AI.Notebooks/GenAI/Image/` (~8h)
 
 ### 2b. Speech, Voix et Musique
 
@@ -47,7 +47,7 @@ Emplacement : `MyIA.AI.Notebooks/GenAI/Image/` (19 notebooks, ~8h)
 
 **Fil rouge** : produire un podcast automatique avec voix synthetique personnalisee et fond musical genere.
 
-Emplacement : `MyIA.AI.Notebooks/GenAI/Audio/` (21 notebooks, ~16h)
+Emplacement : `MyIA.AI.Notebooks/GenAI/Audio/` (~16h)
 
 ### 2c. Video
 
@@ -55,13 +55,13 @@ Emplacement : `MyIA.AI.Notebooks/GenAI/Audio/` (21 notebooks, ~16h)
 
 **Fil rouge** : creer une video pedagogique automatisee depuis un script texte.
 
-Emplacement : `MyIA.AI.Notebooks/GenAI/Video/` (16 notebooks, ~14h)
+Emplacement : `MyIA.AI.Notebooks/GenAI/Video/` (~14h)
 
 ### 2d. LLMs et Generation de Texte
 
 **Ce qu'on apprend** : maitriser les APIs OpenAI (prompt engineering, structured outputs, function calling, RAG, code interpreter). Les notebooks avances couvrent les modeles de raisonnement et les patterns de production.
 
-Emplacement : `MyIA.AI.Notebooks/GenAI/Texte/` (10 notebooks, ~10h)
+Emplacement : `MyIA.AI.Notebooks/GenAI/Texte/` (~10h)
 
 ### Infrastructure Docker
 
@@ -77,7 +77,7 @@ Ce module introduit le "vibe coding" : le developpement logiciel assiste par des
 
 **Fil rouge** : creer un agent autonome capable d'analyser un jeu de donnees, generer un rapport visuel, et le deployer en production.
 
-Emplacement : `MyIA.AI.Notebooks/GenAI/Vibe-Coding/` (Claude Code : 5 modules, Roo Code : 5 modules + ateliers, ~30h)
+Emplacement : `MyIA.AI.Notebooks/GenAI/Vibe-Coding/` (Claude Code, Roo Code + ateliers, ~30h)
 
 ---
 
@@ -87,7 +87,7 @@ Semantic Kernel est le SDK Microsoft pour integrer des LLMs dans des application
 
 **Ce qu'on apprend** : construire des architectures agentiques robustes avec orchestration de plugins, gestion de contexte, et integration multi-modale.
 
-Emplacement : `MyIA.AI.Notebooks/GenAI/SemanticKernel/` (20 notebooks, ~20h)
+Emplacement : `MyIA.AI.Notebooks/GenAI/SemanticKernel/` (~20h)
 
 ---
 
@@ -107,7 +107,7 @@ Emplacement : `MyIA.AI.Notebooks/QuantConnect/` (50+ strategies, pipeline ML dan
 
 Les agents IA doivent etre testes rigoureusement. Ce module couvre Playwright pour les tests de bout en bout sur des applications GenAI reelles (Open WebUI).
 
-Emplacement : `MyIA.AI.Notebooks/GenAI/Playwright-OWUI/` (5 modules, 30+ tests)
+Emplacement : `MyIA.AI.Notebooks/GenAI/Playwright-OWUI/` (30+ tests)
 
 ---
 

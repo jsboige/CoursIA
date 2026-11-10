@@ -1,10 +1,10 @@
 ---
-paths: "{COURSE_CATALOG.generated.*,**/README*.md,.github/workflows/catalog-*.yml,.github/workflows/translation-sync.yml,scripts/**/catalog*}"
+paths: "{COURSE_CATALOG.generated.*,_quarto.yml,**/README*.md,.github/workflows/catalog-*.yml,.github/workflows/translation-sync.yml,.github/workflows/quarto-render-list-freshness.yml,scripts/**/catalog*,scripts/regen_quarto_render.py}"
 ---
 
 # Catalogue & hygiène PR — le catalogue appartient à l'automatisation
 
-S'applique à **tous les agents du cluster CoursIA** (workers `po-*` + coordinateur `ai-01`) qui ouvrent des PR. Source : mandat user 2026-06-06 (« régler définitivement le pb du catalogue et faire faire aux agents workers le travail t'économisant le tien »). Codifie la leçon `stale-catalog-silent-revert` (incidents #2376 / #2383 / #2385). **Détecté par CI** : `catalog-drift.yml` (check `Notebook catalog drift (read-only)`, non-bloquant) signale toute PR touchant le catalogue ; la régénération est portée par `catalog-cron.yml` (PR permanente). Le garde bloquant `catalog-pr-guard.yml` a été retiré (#11012) : entité fantôme, 0 run `pull_request` sur ~925 runs `push` en échec. See #2632.
+S'applique à **tous les agents du cluster CoursIA** (workers `po-*` + coordinateur `ai-01`) qui ouvrent des PR. Source : mandat user 2026-06-06 (« régler définitivement le pb du catalogue et faire faire aux agents workers le travail t'économisant le tien »). Codifie la leçon `stale-catalog-silent-revert` (incidents #2376 / #2383 / #2385). **Détecté par CI** : `catalog-drift.yml` (check `Notebook catalog drift (read-only, advisory)`, non-bloquant) signale toute PR touchant le catalogue ; la régénération est portée par `catalog-cron.yml` (PR permanente). Le garde bloquant `catalog-pr-guard.yml` a été retiré (#11012) : entité fantôme, 0 run `pull_request` sur ~925 runs `push` en échec. See #2632.
 
 ## Règle HARD 1 — NE JAMAIS régénérer le catalogue sur une branche feature
 
@@ -64,6 +64,23 @@ Une PR = **un** sujet vérifiable (cf G.4 / one-subject-per-PR). Pas de composit
 - **`See #X` / `refs #X`** pour une **contribution partielle** à une epic (l'epic reste ouverte). Ne PAS utiliser `Closes` sur une sous-tâche d'epic.
 
 Cette discipline est ce qui fait **baisser le compte d'issues** sans intervention manuelle du coordinateur : une PR qui clôt vraiment une issue le déclare, les epics au long cours restent `See`.
+
+## Règle HARD 5 — `_quarto.yml` (render list) : artefact généré, résolution de conflit = version main
+
+**Issu de #19895 (arbitration #19901)** : la liste `project.render` de `_quarto.yml` est un **artefact généré** au même titre que `COURSE_CATALOG.generated.*` — son contenu est dérivé de l'arbre git, sa dérive est silencieuse, et le conflit de merge est garanti à chaque PR notebook tant que la liste n'est pas régénérée au bon moment. Mêmes acteur et cadence :
+
+- **Qui régénère** : `catalog-cron.yml` (job `regen`) appelle `python scripts/regen_quarto_render.py` après le regen du catalogue, sur la même branche longue `chore/catalog-refresh-pending`. La livraison passe par la PR permanente #20776 et suit.
+- **Qui détecte** : `.github/workflows/quarto-render-list-freshness.yml` (ADVISORY par arbitration #19901 — un check bloquant forcerait chaque PR notebook à committer un regen, ce qui recrée le conflit que la garde veut éteindre).
+- **Ce que la lane NE fait PAS** : ne **jamais** régénérer `_quarto.yml` à la main sur une PR de contenu. Si la branche a malgré tout du churn `_quarto.yml` :
+
+  ```bash
+  git checkout origin/main -- _quarto.yml
+  ```
+
+  …puis laisser le cron du jour (03:37 UTC) rafraîchir. C'est exactement la même discipline que pour `COURSE_CATALOG.generated.*` (Règle HARD 1).
+
+- **Résolution de conflit sur `_quarto.yml`** : **prendre la version de `main`**, pas la régénérer. La branche n'a rien à y ajouter : ce qu'elle a pu écrire (par accident) est dérive, pas livrable. La CI régénérera sur main au prochain passage du cron. C'est la résolution prévue par l'arbitration #19901 ; un reviewer qui voit une PR avec un regen `_quarto.yml` **dans le diff** doit demander la suppression du regen et le rebase, pas merger avec.
+- **Indicateur lisible** : sur rouge `--check`, le script (depuis #19895 c.1659) **nomme** les entrées ajoutées et retirées avec leur section (`landing` / `readmes` / `docs` / `notebooks`), pas un simple « stale ». La résolution n'a plus à deviner d'où vient la dérive.
 
 ## Voir aussi
 

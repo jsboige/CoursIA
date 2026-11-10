@@ -35,7 +35,7 @@ facteur est `±t^k` dans `ℤ[t, t⁻¹]` — le `−1` provient du kink négati
 | 2b — partition | #15600 | po-2027 | `arcPartition_classes` (vraie partition, classes disjointes sans doublon) + `arcPartition_countP_label` + `alexanderRow_sum_zero` (somme de ligne inconditionnelle) |
 
 **Preuves existantes sur 4_1** : `alexander_figureEight_signed` (l. 1099) +
-`alexander_figureEight_signed_mirror` (l. 1112) — environ 7 lignes `simp + ring`
+`alexander_figureEight_signed_mirror` (l. 1112) — `simp + ring`
 chacune. La stratégie de preuve pour l'invariance est **de même nature** :
 calculer explicitement la matrice, manipuler, simplifier par `ring`.
 
@@ -118,8 +118,7 @@ identique.
 
 **C'est le théorème demandant le plus de manipulation matricielle.** Pas de
 trivialité R3 : il faut calculer explicitement le déterminant d'une matrice
-`n × n` dans la base augmentée `n+2 × n+2`. Probablement une trentaine de
-lignes de preuve.
+`n × n` dans la base augmentée `n+2 × n+2`.
 
 ### 4.3. R1 connecté (`Reidemeister1Connected`) — kink ⟨a, n+1, n+2, n+2⟩
 
@@ -170,7 +169,7 @@ theorem alexanderSigned_invariant_under_R1 {d₁ d₂ : KnotDiagram}
 ## 5. Pourquoi ce grain est multi-cycle
 
 **Complexité de la preuve R1 connecté** :
-- Calcul matriciel explicite (15-20 lignes de manipulation) ;
+- Calcul matriciel explicite ;
 - Argument sur le déterminant le long de la colonne non partagée `n+2`
   (label doublé interne au kink — besoin d'un lemme d'algèbre linéaire sur
   les déterminants sous transformations élémentaires) ;
@@ -214,9 +213,9 @@ OOM-killé produit 0 olean et n'est pas réutilisable. »
 | Cycle | Livrable |
 |---|---|
 | c.652 (courant) | **Cadrage stratégique** (ce document) + claim posé + DM ai-01 pour demande cross-lane po-2026 WSL. **Pas de code** (`sorry` non résolu interdit, [anti-régression](../../../.claude/rules/anti-regression.md)). |
-| c.653+ | (à planifier après décision ai-01 sur env WSL partagé) Preuve R3 triviale (~10 lignes) + théorèmes principaux R1, R2 déclarés dans Reidemeister.lean avec preuves à compléter. |
-| (multi-cycle) | Preuve R1 connecté complète avec manipulation matricielle (~30-50 lignes). |
-| (multi-cycle) | Preuve R2 complète avec rang inchangé (~30-50 lignes). |
+| c.653+ | (à planifier après décision ai-01 sur env WSL partagé) Preuve R3 triviale + théorèmes principaux R1, R2 déclarés dans Reidemeister.lean avec preuves à compléter. |
+| (multi-cycle) | Preuve R1 connecté complète avec manipulation matricielle. |
+| (multi-cycle) | Preuve R2 complète avec rang inchangé. |
 | Final | `lake build Knots.Reidemeister` SUCCESS, 0 `sorry` ajouté, axiomes existants préservés, sibling pair FR+EN aligné. |
 
 ## 8. Conformité tells c.652

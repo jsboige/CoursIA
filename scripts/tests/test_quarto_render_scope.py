@@ -16,9 +16,12 @@ scope), and ``restrict_yaml`` is asserted to preserve the project's other keys
 and the whole tail of the file byte-for-byte.
 
 Tests are CPU-only: no ``git``, no subprocess -- ``decide`` and
-``restrict_yaml`` are pure and the changed-file rows are hand-built. One
-exception, and it is deliberate: ``test_every_glob_in_the_real_render_list_is
-_representable`` reads the repo's own ``_quarto.yml``. A fixture cannot catch
+``restrict_yaml`` are pure and the changed-file rows are hand-built. Two
+exceptions, both deliberate: ``test_every_glob_in_the_real_render_list_is
+_representable`` reads the repo's own ``_quarto.yml``, and
+``test_changed_files_deepens_a_shallow_checkout_and_retries`` drives real git
+in a throwaway repo -- the shallow-crash it guards against is plumbing, and a
+mock would test the mock. A fixture cannot catch
 someone adding an entry this module's glob translator would silently
 under-match, and under-matching is the failure mode above.
 """
@@ -410,3 +413,91 @@ def test_14431_shape_scopes_to_the_moved_documents():
     assert mode == "scoped"
     assert files == ["MyIA.AI.Notebooks/Search/Search-02c.ipynb",
                      "MyIA.AI.Notebooks/Search/Search-3.ipynb"]
+
+
+def test_changed_files_deepens_a_shallow_checkout_and_retries(tmp_path, monkeypatch):
+    """Real-git exception to the CPU-only rule (module docstring): the guarded
+    failure is git plumbing -- a mock would test the mock. Positive control
+    built from the #20220 incident shape: depth-1 clone, base far behind head,
+    diff exits 128, deepen + retry recovers the rows."""
+    import subprocess as sp
+
+    src = tmp_path / "src"
+    src.mkdir()
+    gitcfg = ["-c", "user.email=t@example.com", "-c", "user.name=t"]
+
+    def git(*args, cwd):
+        sp.run(["git", *gitcfg, *args], cwd=cwd, check=True,
+               capture_output=True, text=True)
+
+    git("init", "-q", "-b", "main", cwd=src)
+    for i in range(5):
+        (src / ("f%d.txt" % i)).write_text(str(i), encoding="utf-8")
+        git("add", "-A", cwd=src)
+        git("commit", "-qm", ("c%d" % i), cwd=src)
+
+    def rev(spec):
+        return sp.run(["git", "rev-parse", spec], cwd=src, check=True,
+                      capture_output=True, text=True).stdout.strip()
+
+    base, head = rev("HEAD~4"), rev("HEAD")
+
+    clone = tmp_path / "clone"
+    # as_uri() forces the fetch-pack transport: a plain local-path clone
+    # hardlinks the whole object store and silently ignores --depth, which
+    # would defeat the premise this test builds.
+    sp.run(["git", "clone", "-q", "--depth", "1", src.as_uri(), str(clone)],
+           check=True, capture_output=True, text=True)
+
+    # Guard the premise: at depth 1 the four intermediate commits are absent
+    # and the three-dot diff really does exit 128 ("Could not read <sha>").
+    with pytest.raises(sp.CalledProcessError):
+        sp.run(["git", "diff", "--name-status", "--find-renames",
+                "%s...%s" % (base, head)],
+               cwd=clone, capture_output=True, text=True, check=True)
+
+    monkeypatch.setattr(qrs, "REPO_ROOT", clone)
+    rows = qrs.changed_files(base, head)
+    assert ("A", "f4.txt") in rows
+    assert ("A", "f0.txt") not in rows  # base side stays outside the diff
+
+
+def test_changed_files_reports_gits_stderr_on_a_real_failure(tmp_path, monkeypatch):
+    """A red that cannot say WHY is a defect of its own (#24506).
+
+    On the measured failure the CI log showed only
+    `returned non-zero exit status 128` -- git's `fatal:` line never reached
+    it, so the job could not be diagnosed from its own output. The raised
+    error must carry that line, and the deepen leg's own message with it.
+    """
+    import subprocess as sp
+
+    src = tmp_path / "src"
+    src.mkdir()
+    gitcfg = ["-c", "user.email=t@example.com", "-c", "user.name=t"]
+
+    def git(*args, cwd):
+        sp.run(["git", *gitcfg, *args], cwd=cwd, check=True,
+               capture_output=True, text=True)
+
+    git("init", "-q", "-b", "main", cwd=src)
+    (src / "f.txt").write_text("x", encoding="utf-8")
+    git("add", "-A", cwd=src)
+    git("commit", "-qm", "c0", cwd=src)
+    git("remote", "add", "origin", src.as_uri(), cwd=src)
+    head = sp.run(["git", "rev-parse", "HEAD"], cwd=src, check=True,
+                  capture_output=True, text=True).stdout.strip()
+
+    monkeypatch.setattr(qrs, "REPO_ROOT", src)
+
+    # An absent base is a real, non-shallowness 128: the same shape the job hit.
+    with pytest.raises(RuntimeError) as err:
+        qrs.changed_files("0" * 40, head)
+
+    msg = str(err.value)
+    assert "exit 128" in msg, msg
+    assert "--- git stderr ---" in msg, msg
+    assert "fatal:" in msg, msg                      # git's own words, not a repr
+    assert "--- git fetch --deepen=400 origin ---" in msg, msg
+    # The original error stays reachable for anyone who needs the process args.
+    assert isinstance(err.value.__cause__, sp.CalledProcessError)

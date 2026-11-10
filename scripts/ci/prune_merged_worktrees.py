@@ -45,9 +45,12 @@ Ce script est cet organe.
 
 Critères de retrait (cf issue #14195 acceptance) :
 
-1. **Worktree avec commits non poussés** (`git rev-list --count @{u}..HEAD > 0`) :
-   REFUSE, jamais d'exception. Aucune branche n'est mergee alors qu'elle a
-   du travail non publie.
+1. **Worktree avec commits non poussés** (avance vs le ref distant homonyme
+   `refs/remotes/origin/<branche>`, repli `@{u}` hors `*/main` -- #20009) :
+   REFUSE. Exception : si HEAD est un ancêtre de `origin/main`, l'avance est
+   un artefact de bookkeeping (branche soeur en `@{u}`, aucun commit propre)
+   et le flot normal tranche. Aucune branche n'est mergee alors qu'elle a du
+   travail non publie.
 2. **Worktree avec une PR OPEN** : REFUSE. Le retrait casserait l'iteration
    en cours.
 3. **Worktree avec une PR MERGED ou CLOSED (non-merged)** : REMOVE.
@@ -68,17 +71,61 @@ Critères de retrait (cf issue #14195 acceptance) :
    classification/execution. Les fichiers SOURCE untracked non toleres
    et les tracked modifies refusent en amont
    (`reason=uncommitted_source_changes`).
-6. **Worktree avec submodules initialisés** : REFUSE
+6. **Worktree que git refusera à cause des sous-modules** : REFUSE
    (`reason=contains_submodules`). `git worktree remove` refuse
    structurellement ces worktrees ("working trees containing submodules
    cannot be moved or removed") : le prononcer REFUSE evite un FAILED a
-   chaque passe --apply. Les gitignorés **non-cache** (`.env` laissé, ...)
+   chaque passe --apply. Deux états comptent, et le second est invisible
+   dans `git submodule status` : le sous-module **initialisé** (peuplé, ou
+   `git submodule status` le montre sans préfixe '-') et le sous-module
+   **enregistré mais désinitialisé** (son gitdir reste dans
+   `<gitdir-du-worktree>/modules/` après un `git submodule deinit --all`).
+   Mesuré sur #21710 : le second état manquait au prédicat, et 18
+   worktrees étaient annoncés REMOVE au dry-run puis refusés à l'apply.
+   Les gitignorés **non-cache** (`.env` laissé, ...)
    sont signalés (`ignored=...`) sans bloquer le retrait.
+7. **Fenetre « agent vivant » sur content_on_main (#18494)** : le retrait
+   par contenu deja integre (`HEAD` ancetre de `origin/main`, predicat 5
+   de l'issue #17771) est un critere de CONTENU, pas d'ACTIVITE. Un agent
+   vivant en phase de lecture (worktree propre, branche sans commit propre,
+   avant sa premiere edition) y est indiscernable d'un worktree abandonne.
+   Un marqueur d'activite recent -- mtime de `.lane-owner`, a defaut mtime
+   du dossier -- plus jeune que la fenetre (`--activity-window-h`, defaut
+   6 h) fait REFUSER le retrait (`reason=recent_activity:<age>h`). Des que
+   le marqueur depasse la fenetre, le worktree redevient retirable : le
+   refus protege la phase de travail, il ne conserve rien indefiniment.
+8. **Contenu deja integre par PATCH-ID (#20067)** : la garde de contenu a
+   deux jambes, et elles ne sont pas equivalentes. La jambe **ascendance**
+   (predicat 5) exige que `HEAD` soit ancetre de `origin/main` ; la jambe
+   **patch-id** (`git cherry origin/main HEAD`) compare les patchs et voit
+   le cas que la premiere rate *par construction* : un **squash-merge**
+   dont la **branche distante a ete supprimee**. La tete n'est alors
+   atteignable depuis aucun ref, donc la resolution de PR rend `None` et
+   l'ascendance est fausse -- alors que le contenu, lui, est bien sur
+   `main`. Meme fenetre « agent vivant » qu'au point 7, meme forme
+   fail-closed : `minus > 0` (il y a un commit a comparer) **et**
+   `plus == 0` (aucun patch hors amont -- un seul `+` disqualifie), et une
+   lecture git en echec refuse. Le champ `content_on_main_by`
+   (`"ancestor"` / `"patch_id"` / `"branch_patch_id"`) porte la jambe dans
+   le rapport, pour qu'un squash-merge ne se lise pas comme une ascendance.
+   La jambe patch-id ne voit qu'un squash **d'un seul commit** (le
+   patch-id se calcule sur le diff d'un commit, reserve Hermes 09/10) ;
+   le cas **multi-commit** releve de la jambe elargie
+   `content_delivered_by_branch_patch_id`, qui fabrique le commit que le
+   squash aurait produit (`git commit-tree HEAD^{tree} -p <merge-base>`)
+   et le donne a `git cherry` -- patch-id du patch de branche entiere,
+   calcule par la machinerie git, sans scan `git log -p`. Elle n'est
+   tentee que quand la jambe per-commit ne tranche pas deja.
 
-Ancre PR : `gh pr list --state all --search "head:<branch>"` (autoritative,
-cf matrice a 4 ancres de `.claude/rules/git-workflow.md` §orphan-branch-scan).
+Ancre PR : REST `pulls?state=all&head=<owner>:<branche>` (seau `core`), avec
+repli `gh pr list --state all --search "head:<branch>"` (GraphQL) pour les
+branches de fork -- cf #23636 pour la mesure qui a fait basculer l'ancre
+sur le seau `core`. Ancre autoritative, cf matrice a 4 ancres de
+`.claude/rules/git-workflow.md` §orphan-branch-scan.
 Ni `--is-ancestor` seul ni `commits/<oid>/pulls` ne suffisent : le premier
-rate les squash-merges, le second a des faux negatifs mesures.
+rate les squash-merges, le second a des faux negatifs mesures. C'est
+exactement ce trou que la seconde jambe du point 8 ferme, par le contenu
+plutot que par un ref.
 
 ## Observabilite des refus (#3895, roo-extensions)
 
@@ -185,19 +232,31 @@ Exit codes:
       `--ignored=matching`)
 - [x] Registre `blocking_untracked` (untracked non-ignores NON toleres)
       expose sur chaque verdict pour la decision humaine
+
+## Acceptance criteria (depuis #20067, jambe patch-id du contenu sur main)
+
+- [x] `git cherry` comme second temoin de contenu, fail-closed
+      (`minus > 0` **et** `plus == 0`, lecture en echec -> REFUSE)
+- [x] Meme fenetre « agent vivant » que le predicat d'ascendance (#18494)
+- [x] Jambe exposee dans le rapport (`content_on_main(ancestor|patch_id|branch_patch_id)`)
+- [x] Mesure avant cablage sur ferme reelle : 31 refuses de la classe,
+      6 franchissables, 25 restes refuses (2026-10-09, po-2025)
 """
 from __future__ import annotations
 
 import argparse
+import csv
 import dataclasses
 import hashlib
 import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import traceback
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -278,10 +337,32 @@ class WorktreeStatus:
     # Champ #17771 (additif) : REMOVE motive par contenu deja integre a
     # main (tete ancetre de origin/main), sans PR rattachable.
     content_on_main: bool = False
+    # Champ #20067 (additif) : *quelle jambe* a etabli `content_on_main`.
+    # "ancestor" = le predicat 5 (#17771, ascendance) ; "patch_id" = le
+    # predicat 6 (#20067, `git cherry` per-commit) ; "branch_patch_id" =
+    # la jambe elargie (squash multi-commit, reserve Hermes 09/10). Trois
+    # preuves differentes, et le rapport doit dire laquelle a tire -- un
+    # squash-merge n'est pas une ascendance, et confondre les deux rend
+    # la classe `no_pr_match` indiscernable d'une garde qui n'aurait rien
+    # franchi.
+    content_on_main_by: Optional[str] = None
     # Champ #3895 (additif) : lane proprietaire lue dans le marqueur
     # `.lane-owner` a la racine du worktree (None si absent). Attribue les
     # refus pour le rapport -- jamais une autorite de decision.
     lane_owner: Optional[str] = None
+    # Champs v1.3 (protocole Maintenance #113, dae338b, arbitrage 19/10) :
+    # verrou `git worktree lock`. `locked_reason` = raison brute lue au
+    # porcelain (None = pas de verrou, "" = verrou sans raison) ;
+    # `lock_class` = "agent" (forme PURE `claude agent agent-<hex> (pid N)`)
+    # ou "optout" (raison libre, honoree indefiniment) ou "unclassified"
+    # (verrou nu sans raison : REFUSE, F2 de la revue #21503) ; `lock_pid` =
+    # pid capture pour un lock d'agent. `dead_lock_unlocked` porte la
+    # decision v1.3 : lock d'agent a pid MORT sur un worktree REMOVE-ready --
+    # l'apply execute `git worktree unlock` puis `remove` (jamais -f -f).
+    locked_reason: Optional[str] = None
+    lock_class: Optional[str] = None
+    lock_pid: Optional[int] = None
+    dead_lock_unlocked: bool = False
 
     def to_dict(self) -> dict:
         return dataclasses.asdict(self)
@@ -299,16 +380,171 @@ def run_git(cwd: str, *args: str, check: bool = True) -> subprocess.CompletedPro
     )
 
 
+def _ancestor_repo_root(start: Path) -> str | None:
+    """Plus proche ancetre de `start` qui ressemble a un depot git.
+
+    Rend None si aucun ancetre ne porte `.gitmodules` ni `.git/` (le
+    repertoire est hors de tout depot). Pur filesystem : aucun appel git,
+    donc utilisable sans cout dans les resolutions chaudes.
+    """
+    p = start.resolve()
+    while p != p.parent:
+        if (p / ".gitmodules").is_file() or (p / ".git").exists():
+            return str(p)
+        p = p.parent
+    return None
+
+
+# Cible explicite posee par main() depuis --path (Maintenance#64, contrat
+# #18219 : le cwd de l'ANALYSE redirige le scan). None = pas de cible.
+_SCAN_ROOT_OVERRIDE: str | None = None
+
+
+def current_repo_root() -> str:
+    """Racine du repo VISE PAR LE SCAN, en trois priorites (Maintenance#64).
+
+    1. `--path` : la cible explicite de l'analyse, posee par main(). C'est
+       le contrat documente de --path depuis #18219 (« le cwd de l'analyse
+       redirige le scan ») -- contrat que la resolution par `__file__` seule
+       ne tenait pas : un wrapper multi-fermes invoquant une seule copie du
+       script scannait N fois sa ferme d'origine.
+    2. le repo contenant le cwd du processus, s'il existe (invocation
+       `cd <ferme> ; python <script>`, l'autre style du wrapper fleet).
+       Non memoise : depend du cwd courant.
+    3. le repo hebergeant ce script (tache planifiee #14473 : cwd System32
+       hors de tout repo ; #17904). Cache au premier appel.
+
+    L'ordre restaure la visée multi-fermes (priorites 1-2) SANS regresser
+    la robustesse schtasks (priorite 3) : un cwd hors repo tombe toujours
+    sur le repo du script.
+    """
+    if _SCAN_ROOT_OVERRIDE is not None:
+        return _SCAN_ROOT_OVERRIDE
+    cwd_root = _ancestor_repo_root(Path.cwd())
+    if cwd_root is not None:
+        return cwd_root
+    cache_attr = "_coursia_root_cache"
+    cached = getattr(current_repo_root, cache_attr, None)
+    if cached is not None:
+        return cached
+    script_root = _ancestor_repo_root(Path(__file__).resolve().parent)
+    root = script_root if script_root is not None else os.getcwd()
+    setattr(current_repo_root, cache_attr, root)
+    return root
+
+
+def _repo_root_for_worktree(wt_path: str) -> str:
+    """Racine du repo hebergeant le worktree `wt_path`.
+
+    `git worktree remove <wt_path>` opere sur le repo qui contient ce
+    worktree -- pas forcement le repo de ce script. Avant ce helper,
+    `apply_removal` passait `current_repo_root()` systematiquement, ce
+    qui marchait pour les worktrees du repo CoursIA (relatifs, sous
+    `..`) mais cassait les tests hermetiques qui creent un repo
+    ephemere dans `/tmp/pytest-...` et y ajoutent un worktree : `git
+    -C <CoursIA-root> worktree remove /tmp/.../wt-feature` repond
+    `is not a working tree` parce que ce chemin n'est pas un worktree
+    du repo CoursIA.
+
+    Resolution : `git rev-parse --path-format=absolute --git-common-dir`
+    sur `wt_path` rend le common-dir (le `.git` du depot HOTE, pas du
+    worktree). Son parent est la racine du depot hebergeur -- invariant
+    qu'aucune marche d'ancetre sur `.git` ne peut garantir (un worktree
+    lie porte lui-meme un fichier `.git`/gitdir-pointeur, premier match
+    dans la marche, et le helper rendait alors le worktree lui-meme :
+    `git -C <wt> worktree remove <wt>` -> Permission denied sur Windows
+    parce que git tente de supprimer le cwd de la sous-commande).
+
+    Repli : si la commande echoue ou si `wt_path` n'est pas un worktree,
+    `current_repo_root()`. Pour les chemins relatifs (cas System32 du
+    cron #14473 ou chemin nu passe par l'appelant), le worktree est
+    forcement sous le repo hebergeur -- `current_repo_root()` suffit.
+    """
+    p = Path(wt_path)
+    if not p.is_absolute():
+        return current_repo_root()
+    p = p.resolve()
+    # Interroger git sur le worktree : --git-common-dir remonte au
+    # `.git` du depot HOTE, distinct du `.git` du worktree (pointeur).
+    proc = run_git(str(p), "rev-parse", "--path-format=absolute",
+                   "--git-common-dir", check=False)
+    if proc.returncode == 0:
+        common = Path(proc.stdout.strip())
+        if common.is_absolute():
+            return str(common.parent)
+    return current_repo_root()
+
+
+GH_TIMEOUT_SECONDS = 30
+
+
 def run_gh(*args: str, check: bool = True) -> subprocess.CompletedProcess:
-    """Lance une commande gh avec capture stricte. cwd = CWD courant."""
-    return subprocess.run(
-        ["gh", *args],
-        capture_output=True,
-        text=True,
-        check=check,
-        encoding="utf-8",
-        errors="replace",
-    )
+    """Lance une commande gh avec capture stricte. cwd = CWD courant.
+
+    #21753 : borne a GH_TIMEOUT_SECONDS. Un gh muet (quota epuise au point
+    de ne plus repondre, reseau mort, binaires bloques) devenait une passe
+    interminable et silencieuse -- mesure 21/10 : `--apply` pendu ~2 h, 0
+    octet de sortie. Un timeout devient un echec DETECTE (rc=124, stderr
+    explicite), jamais une attente infinie : l'appelant tranche.
+    """
+    try:
+        return subprocess.run(
+            ["gh", *args],
+            capture_output=True,
+            text=True,
+            check=check,
+            encoding="utf-8",
+            errors="replace",
+            timeout=GH_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        # CompletedProcess manuel : on ne veut PAS lever (check n'a plus de
+        # sens sur un timeout), on veut un echec nomme que les appelants
+        # check=False traduisent deja en degradation / RuntimeError.
+        return subprocess.CompletedProcess(
+            args=list(args),
+            returncode=124,
+            stdout="",
+            stderr=(
+                f"gh timeout after {GH_TIMEOUT_SECONDS}s: gh "
+                + " ".join(str(a) for a in args)
+            ),
+        )
+
+
+def probe_gh_availability() -> Optional[str]:
+    """Sonde d'identite gh locale (#21753). Rend None si gh est pret.
+
+    `gh auth token` est purement local (lecture de hosts.yml) : pas de
+    reseau, pas de quota, ~50 ms. Rend une RAISON lisible sinon. Le stdout
+    de la sonde est un JETON : il est jete sans jamais etre affiche ni
+    logge -- le detail ne vient que du stderr (derniere ligne, 120 chars).
+    """
+    try:
+        proc = subprocess.run(
+            ["gh", "auth", "token"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=GH_TIMEOUT_SECONDS,
+        )
+    except FileNotFoundError:
+        return "gh introuvable sur ce siege"
+    except subprocess.TimeoutExpired:
+        return f"gh auth token muet apres {GH_TIMEOUT_SECONDS}s"
+    except OSError as e:
+        return f"gh auth token injoignable ({e.__class__.__name__})"
+    if proc.returncode != 0:
+        stderr_lines = (proc.stderr or "").strip().splitlines()
+        detail = (
+            stderr_lines[-1][:120] if stderr_lines
+            else f"rc={proc.returncode}"
+        )
+        return f"gh auth token rc={proc.returncode} ({detail})"
+    if not (proc.stdout or "").strip():
+        return "gh auth token vide (aucun jeton actif)"
+    return None
 
 
 def is_untracked_artifact(path: str) -> bool:
@@ -386,12 +622,15 @@ def parse_porcelain(stdout: str) -> dict:
 def worktree_has_initialized_submodules(wt_path: str) -> bool:
     """True si le worktree contient un submodule initialise (#14509).
 
-    `git worktree remove` refuse structurellement les worktrees a
-    submodules initialises ("working trees containing submodules cannot be
-    moved or removed"). Detecte via `git submodule status` : une entree
-    non vide qui ne commence pas par '-' denote un submodule dont le .git
-    embarque existe (initialise, eventuellement a un sha different de
-    l'index, marque '+').
+    Detecte via `git submodule status` : une entree non vide qui ne commence
+    pas par '-' denote un submodule dont le .git embarque existe (initialise,
+    eventuellement a un sha different de l'index, marque '+').
+
+    Predicat INCOMPLET pour la question "git retirera-t-il ce worktree ?" :
+    un sous-module peut etre ENREGISTRE dans le worktree tout en etant
+    affiche '-' par `git submodule status` (voir
+    `worktree_has_registered_submodules`). L'union des deux etats est
+    `worktree_blocks_removal_for_submodules`.
     """
     proc = run_git(wt_path, "submodule", "status", check=False)
     if proc.returncode != 0:
@@ -399,10 +638,347 @@ def worktree_has_initialized_submodules(wt_path: str) -> bool:
         # ne REFUSE pas sur un etat qu'on ne peut pas lire ; le pire cas
         # est un FAILED git, etat d'avant-fix non regresse.
         return False
-    return any(
-        line.strip() and not line.startswith("-")
-        for line in proc.stdout.splitlines()
+    return has_initialized_submodule(proc.stdout)
+
+
+def worktree_has_registered_submodules(wt_path: str) -> bool:
+    """True si des sous-modules sont ENREGISTRES dans ce worktree (#21710).
+
+    `git worktree remove` refuse un worktree des que son repertoire admin
+    porte un `modules/` : le gitdir du sous-module enregistre dans CE
+    worktree. L'etat PERSISTE apres un `git submodule deinit --all` -- le
+    deinit vide la copie de travail et desenregistre le sous-module, mais
+    laisse le gitdir enregistre -- et il ne se voit PAS dans
+    `git submodule status`, qui signale alors le sous-module par une ligne
+    prefixee par '-' ("non initialise").
+
+    C'est l'etat que le seul predicat `git submodule status` manquait, et
+    l'origine mesuree de la divergence dry-run/apply de #21710 : 18
+    worktrees annonces REMOVE au dry-run, refuses a l'apply par
+    "fatal: working trees containing submodules cannot be moved or removed".
+
+    Protocole de mesure (git 2.50.1, etats controles sur un depot jetable,
+    sous-module local ; chaque etat = un worktree distinct) :
+
+    | etat du worktree                            | `git worktree remove` |
+    |---------------------------------------------|-----------------------|
+    | `modules/` absent (jamais initialise)       | accepte               |
+    | `modules/` present                          | refuse                |
+    | apres `deinit --all` (`status` = '-')        | refuse                |
+    | apres `git rm --cached <gitlink>`            | refuse                |
+    | apres deplacement de `modules/`              | accepte               |
+
+    Le discriminant est le repertoire `modules/` du worktree -- ni l'index
+    (le gitlink retire ne change rien) ni le statut affiche.
+    """
+    proc = run_git(wt_path, "rev-parse", "--absolute-git-dir", check=False)
+    if proc.returncode != 0:
+        # Worktree illisible : pas de preuve, on ne REFUSE pas sur un etat
+        # qu'on ne peut pas lire.
+        return False
+    git_dir = proc.stdout.strip()
+    if not git_dir:
+        return False
+    return (Path(git_dir) / "modules").is_dir()
+
+
+def worktree_blocks_removal_for_submodules(wt_path: str) -> bool:
+    """True si `git worktree remove` REFUSERA ce worktree (sous-modules).
+
+    Union des deux etats que git refuse, que `git submodule status` ne
+    confond pas :
+
+    - sous-module initialise (popule) : `git submodule status` le montre
+      sans prefixe '-' ;
+    - sous-module ENREGISTRE mais deinitialise : `git submodule status` le
+      montre avec un prefixe '-', mais le gitdir reste enregistre dans le
+      repertoire admin du worktree -- et git refuse quand meme le retrait.
+
+    Le predicat doit couvrir les DEUX : annoncer REMOVE ce que git refuse
+    produit un FAILED a chaque passe --apply et un rapport qui ment sur ce
+    qui a quitte le disque (#14619 point 4, #21710).
+    """
+    return (worktree_has_initialized_submodules(wt_path)
+            or worktree_has_registered_submodules(wt_path))
+
+
+# ----------------------------------------------------------------------------
+# Decontamination par quarantaine (#21743)
+# ----------------------------------------------------------------------------
+# `git worktree remove` refuse structurellement un worktree dont le gitdir
+# porte `modules/` (le gitdir du sous-module enregistre DANS ce worktree).
+# La voie simple -- `git worktree remove --force` -- est interdite par
+# #14619 point 4 : le gitdir d'un sous-module de worktree lie n'a pas
+# `objects/info/alternates`, donc supprimer l'admin dir detruit des objets
+# git uniques.
+#
+# La voie decontamination : DEPLACER `<gitdir-du-worktree>/modules/` vers un
+# repertoire de quarantaine (deplacement, pas suppression). Le garde de git
+# est leve, et les objets sont preserves a l'emplacement de quarantaine.
+#
+# Quatre conditions (issues #21743) :
+#   1. PREUVE de preservation : apres le deplacement, les objets du
+#      sous-module sont encore lisibles. La mesure de depart est « pas
+#      d'objects/info/alternates » : la quarantaine est VERIFIEE, pas
+#      supposee suffisante.
+#   2. PERIMETRE : uniquement sur un worktree classe REMOVE (PR MERGED ou
+#      CLOSED), jamais sur un worktree vivant.
+#   3. EMPLACEMENT : hors du depot et hors du worktree retire.
+#   4. OPT-IN : un drapeau dedie -- jamais un effet de bord du `--apply`.
+
+#: Marqueur ecrit dans la racine de quarantaine : une purge refuse une
+#: racine qui ne le porte pas (une racine pas a nous n'est pas a purger).
+QUARANTINE_MARKER = ".prune-quarantine"
+
+
+def default_quarantine_root() -> Path:
+    """Racine de quarantaine par defaut : hors du depot, hors du worktree.
+
+    `%LOCALAPPDATA%/CoursIA/prune_quarantine` -- le meme emplacement que le
+    journal de `merge_ready` et la tache de purge des worktrees, donc hors
+    des arbres de travail (les worktrees vivent dans `D:/`).
+    """
+    base = os.environ.get("LOCALAPPDATA")
+    if base:
+        return Path(base) / "CoursIA" / "prune_quarantine"
+    return Path.home() / ".local" / "share" / "CoursIA" / "prune_quarantine"
+
+
+def worktree_gitdir(wt_path: str) -> Optional[Path]:
+    """Le gitdir administratif d'un worktree, ou None s'il est illisible."""
+    proc = run_git(wt_path, "rev-parse", "--absolute-git-dir", check=False)
+    if proc.returncode != 0:
+        return None
+    out = proc.stdout.strip()
+    return Path(out) if out else None
+
+
+def quarantine_root_refusal(root: Path, repo_root: Optional[str],
+                            wt_path: Optional[str] = None) -> Optional[str]:
+    """Motif de refus de la racine de quarantaine, ou None si elle convient.
+
+    Fail-closed : une racine qui vit DANS le depot hebergeur ou DANS le
+    worktree retire rangerait les modules dans un arbre qu'on supprime --
+    la decontamination perdrait les objets qu'elle pretend preserver.
+    """
+    try:
+        resolved = root.resolve()
+    except OSError as exc:
+        return f"quarantine-root-unreadable:{exc}"
+    for label, other in (("repo", repo_root), ("worktree", wt_path)):
+        if not other:
+            continue
+        try:
+            other_resolved = Path(other).resolve()
+        except OSError:
+            continue
+        if resolved == other_resolved or other_resolved in resolved.parents:
+            return f"quarantine-root-inside-{label}"
+    return None
+
+
+def _submodule_gitdirs(modules_dir: Path) -> list[Path]:
+    """Les gitdirs de sous-modules contenus dans `modules/`."""
+    if not modules_dir.is_dir():
+        return []
+    return sorted(p for p in modules_dir.iterdir() if p.is_dir())
+
+
+def _gitdir_is_readable(gitdir: Path) -> tuple[bool, str]:
+    """Le depot de/gitdir est-il lisible, et porte-t-il des objets ?
+
+    `count-objects -v` ouvre le magasin d'objets : c'est la lecture la plus
+    directe de « les objets sont encore lisibles ». Un magasin vide (0
+    objet) n'est pas une preservation : la deplacement aurait vide la
+    copie, c'est exactement ce qu'on cherche a empecher.
+    """
+    if not (gitdir / "objects").is_dir():
+        return False, "objects-absent"
+    # Un gitdir qui EMPRUNTE ses objets (alternates) ne survit pas a un
+    # deplacement : sa chaine de resolution pointe ailleurs. On refuse.
+    if (gitdir / "objects" / "info" / "alternates").exists():
+        return False, "objects-alternates"
+    proc = subprocess.run(
+        ["git", "--git-dir", str(gitdir), "count-objects", "-v"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
+    if proc.returncode != 0:
+        return False, f"count-objects-rc{proc.returncode}"
+    in_pack = 0
+    loose = 0
+    for line in proc.stdout.splitlines():
+        if line.startswith("in-pack:"):
+            in_pack = int(line.split(":", 1)[1].strip() or 0)
+        elif line.startswith("count:"):
+            loose = int(line.split(":", 1)[1].strip() or 0)
+    if in_pack + loose == 0:
+        return False, "objects-empty"
+    return True, ""
+
+
+def _restore_modules_from_quarantine(
+    dest_root: Path,
+    modules_dir: Path,
+) -> tuple[bool, str]:
+    """Remet le `modules/` deplace a sa place, apres un refus post-deplacement.
+
+    Un refus qui laisse le `modules/` en quarantaine casse la chaine de
+    surete : une passe suivante, meme SANS le drapeau, ne verrait plus le
+    garde `contains_submodules` (le gitdir n'a plus de `modules/`),
+    retirerait le worktree -- et `--purge-quarantine` detruirait alors les
+    seuls objets restants. Le refus doit rendre le depot dans l'etat ou
+    la passe l'a trouve. Retourne (ok, message).
+    """
+    dest_modules = dest_root / "modules"
+    if not dest_modules.is_dir():
+        return False, "restore-source-absent"
+    if modules_dir.exists():
+        return False, "restore-target-exists"
+    try:
+        shutil.move(str(dest_modules), str(modules_dir))
+    except (OSError, shutil.Error) as exc:
+        return False, f"restore-move-failed:{exc}"
+    # Deplacement inverse VERIFIE : le repertoire est de retour et rien ne
+    # reste cote quarantaine.
+    if not modules_dir.is_dir() or dest_modules.exists():
+        return False, "restore-unverified"
+    try:
+        dest_root.rmdir()
+    except OSError:
+        pass  # la racine porte le marqueur ; le reste eventuel se purge par la voie nommee
+    return True, ""
+
+
+def quarantine_worktree_modules(
+    wt_path: str,
+    quarantine_root: Path,
+    dest_name: str,
+    repo_root: Optional[str] = None,
+) -> tuple[bool, str, Optional[dict]]:
+    """Deplace `<gitdir-du-worktree>/modules/` vers la quarantaine.
+
+    Retourne (ok, message, infos). Les infos portent le chemin de
+    quarantaine et la preuve de preservation par sous-module. En cas
+    d'echec, AUCUN retrait ne doit suivre : l'appelant traite l'echec
+    comme un refus de retrait. Un echec POST-deplacement (modules vide,
+    preuve non tenue) RESTAURE le modules/ au worktree -- un refus laisse
+    le depot dans l'etat ou la passe l'a trouve ; seul un echec de cette
+    restauration (`quarantine-restore-failed`, etat incoherent) est une
+    panne pour l'appelant.
+    """
+    gitdir = worktree_gitdir(wt_path)
+    if gitdir is None:
+        return False, "gitdir-unreadable", None
+    modules_dir = gitdir / "modules"
+    if not modules_dir.is_dir():
+        # Rien a decontaminer : le worktree n'a pas de sous-module
+        # enregistre. Rien de deplace.
+        return True, "", {"quarantine": None, "modules": [], "preserved": True}
+
+    refusal = quarantine_root_refusal(quarantine_root, repo_root, wt_path)
+    if refusal is not None:
+        return False, refusal, None
+
+    dest_root = quarantine_root / dest_name
+    try:
+        quarantine_root.mkdir(parents=True, exist_ok=True)
+        marker = quarantine_root / QUARANTINE_MARKER
+        if not marker.exists():
+            marker.write_text(
+                "racine de quarantaine du pruneur de worktrees\n",
+                encoding="utf-8",
+            )
+        if dest_root.exists():
+            return False, "quarantine-destination-exists", None
+        dest_root.mkdir(parents=True)
+    except OSError as exc:
+        return False, f"quarantine-create-failed:{exc}", None
+
+    # Deplacement (pas de copie, pas de suppression) : c'est ce qui leve le
+    # garde de git ET preserve les objets.
+    dest_modules = dest_root / "modules"
+    try:
+        shutil.move(str(modules_dir), str(dest_modules))
+    except (OSError, shutil.Error) as exc:
+        # Un deplacement echoue peut laisser une copie partielle en
+        # quarantaine : si le modules/ source n'est plus la, on rend ce qui
+        # a bouge avant de refuser.
+        if dest_modules.is_dir() and not modules_dir.exists():
+            restored, r_why = _restore_modules_from_quarantine(
+                dest_root, modules_dir)
+            if not restored:
+                return False, f"quarantine-restore-failed:{r_why}", None
+        return False, f"quarantine-move-failed:{exc}", None
+
+    # Preuve de preservation, sous-module par sous-module.
+    moved = _submodule_gitdirs(dest_modules)
+    if not moved:
+        # Le modules/ etait vide : rien a preserver, on le signale plutot
+        # que de pretendre avoir preserve des objets. Le deplacement est
+        # ANNULE : un refus laisse le depot dans l'etat ou la passe l'a trouve.
+        restored, r_why = _restore_modules_from_quarantine(
+            dest_root, modules_dir)
+        if not restored:
+            return False, f"quarantine-restore-failed:{r_why}", None
+        return False, "quarantine-empty-modules", {
+            "quarantine": None, "modules": [], "preserved": False,
+            "restored": True,
+        }
+    proofs: list[dict] = []
+    for sub in moved:
+        ok, why = _gitdir_is_readable(sub)
+        proofs.append({"gitdir": str(sub), "readable": ok, "reason": why})
+        if not ok:
+            # Preuve non tenue : le retrait n'aura pas lieu ET le modules/
+            # retourne au worktree (sinon une passe ulterieure sans le
+            # drapeau retirerait le worktree puis la purge perdrait les objets).
+            restored, r_why = _restore_modules_from_quarantine(
+                dest_root, modules_dir)
+            if not restored:
+                return False, f"quarantine-restore-failed:{r_why}", None
+            return False, f"quarantine-unreadable:{why}", {
+                "quarantine": None,
+                "modules": proofs,
+                "preserved": False,
+                "restored": True,
+            }
+    return True, "", {
+        "quarantine": str(dest_root),
+        "modules": proofs,
+        "preserved": True,
+    }
+
+
+def purge_quarantine(root: Path) -> tuple[bool, str, Optional[dict]]:
+    """Purge explicite de la quarantaine (voie nommee, issue #21743).
+
+    Fail-closed : une racine qui ne porte pas le marqueur n'est pas purgee
+    -- on ne supprime jamais un repertoire qu'on n'a pas cree.
+    """
+    if not root.exists():
+        return True, "", {"root": str(root), "removed": [], "bytes": 0}
+    if not (root / QUARANTINE_MARKER).exists():
+        return False, f"quarantine-root-not-ours:{root}", None
+    removed: list[str] = []
+    total = 0
+    try:
+        for child in sorted(root.iterdir()):
+            if child.name == QUARANTINE_MARKER:
+                continue
+            size = sum(
+                f.stat().st_size for f in child.rglob("*") if f.is_file()
+            )
+            total += size
+            removed.append(str(child))
+            if child.is_dir():
+                shutil.rmtree(child)
+            else:
+                child.unlink()
+    except OSError as exc:
+        return False, f"quarantine-purge-failed:{exc}", {
+            "root": str(root), "removed": removed, "bytes": total,
+        }
+    return True, "", {"root": str(root), "removed": removed, "bytes": total}
 
 
 def is_source_dirty(path: str) -> bool:
@@ -433,6 +1009,216 @@ def read_lane_owner(wt_path: str) -> Optional[str]:
         if stripped:
             return stripped[:64]
     return None
+
+
+def recent_activity_age_hours(wt_path: str,
+                              now: Optional[float] = None) -> float:
+    """Age en heures du marqueur d'activite le plus recent du worktree.
+
+    #18494 : un worktree sans commit propre peut etre celui d'un agent
+    VIVANT en phase de lecture (spawn lance, pas encore sa premiere
+    edition). Deux marqueurs, du plus fiable au moins fiable :
+
+    - mtime de `.lane-owner`, pose par le spawn a la creation ;
+    - a defaut, mtime du dossier du worktree lui-meme (les agents
+      ecrivent tot : `.ipynb`, caches -- en phase de lecture seule, seule
+      la creation du worktree marque le dossier).
+
+    Retourne l'age du plus recent des deux. Chemin illisible : +inf (aucune
+    activite prouvable, le worktree n'est pas protege par cette garde).
+    """
+    now = time.time() if now is None else now
+    candidates: list = []
+    lane_owner = Path(wt_path) / ".lane-owner"
+    try:
+        if lane_owner.exists():
+            candidates.append(lane_owner.stat().st_mtime)
+    except OSError:
+        pass
+    try:
+        candidates.append(Path(wt_path).stat().st_mtime)
+    except OSError:
+        pass
+    if not candidates:
+        return float("inf")
+    return (now - max(candidates)) / 3600.0
+
+
+# --- Protocole v1.3 : verrous `git worktree lock` (Maintenance #113, dae338b) ---
+#
+# Deux classes de verrous, discriminees par la FORME de la raison lue au
+# porcelain (`locked <raison>`) :
+#
+# - **lock d'agent** : raison de la forme `claude agent agent-<hex> (pid N)`.
+#   Pose par le harnais d'un agent dont la session est morte ; le pid N est
+#   celui du processclaude au moment du lock. Si ce pid a disparu ET que le
+#   worktree est REMOVE-ready par tous les autres criteres, le verrou est un
+#   cadenas sur une porte ouverte : l'apply execute `git worktree unlock`
+#   puis `git worktree remove` -- JAMAIS `remove -f -f` (contourner le
+#   verrou par la force est interdit par le protocole ; on l'annule
+#   nommement apres avoir prouve la mort du pid).
+# - **opt-out de lane** : toute autre raison (libre). Verrouillage humain
+#   ou inter-lane, honore INDEFINIMENT : jamais deverrouille, et la
+#   presence seule du verrou fait REFUSER le retrait.
+#
+# Fail-safe dans les deux sens : une raison incomprise est un opt-out (on
+# ne deverrouille jamais ce qu'on n'a pas classifie), et un pid
+# indeterminable est un pid vivant (on ne deverrouille jamais sur une
+# mesure impossible).
+
+AGENT_LOCK_RE = re.compile(r"claude agent \S+ \(pid (\d+)\)")
+
+
+def classify_worktree_lock(reason: Optional[str]) -> tuple[Optional[str], Optional[int]]:
+    """Classe la raison d'un verrou porcelain en (classe, pid).
+
+    Retourne ("agent", pid) pour un lock d'agent reconnu a sa **forme
+    pure** (`fullmatch` : `claude agent <nom> (pid N)` et rien d'autre),
+    ("optout", None) pour toute autre raison non vide, et
+    ("unclassified", None) pour un verrou REEL dont la raison est vide ou
+    blanche (`git worktree lock` sans `--reason` : l'invocation par
+    defaut). (None, None) uniquement quand il n'y a pas de verrou du tout
+    (raison None).
+
+    Deux fail-safes distincts, tous deux mesures en revue (F1/F2, Hermes
+    du 2026-10-20 sur #21503) :
+
+    - **F1 -- forme pure exigee** : `search()` laissait passer une raison
+      humaine qui *cite* la forme agent, par exemple
+      `'claude agent agent-7f3a11 (pid 999999) -- NE PAS TOUCHER'`
+      (`git worktree lock --reason` ecrase la raison precedente, donc
+      completer une raison d'agent est le geste naturel d'un humain qui
+      garde la tracabilite du pid). Un tel lock etait classe `agent` et
+      pouvait etre deverrouille : une garde humaine honoree comme un
+      cadavre. `fullmatch` rend `optout` des qu'autre chose entoure la
+      forme -- incompris = opt-out, jamais deverrouille.
+    - **F2 -- verrou nu non confondu avec l'absence de verrou** : rendre
+      `(None, None)` pour une raison vide faisait sortir la politique en
+      REMOVE, puis `git worktree remove` echouait (`fatal: cannot remove a
+      locked working tree`) -- exactement la classe de mensonge corrigee
+      en #14693. Une raison vide est une raison qu'on ne comprend pas,
+      pas une absence de verrou.
+    """
+    if reason is None:
+        return (None, None)
+    stripped = reason.strip()
+    if not stripped:
+        return ("unclassified", None)
+    m = AGENT_LOCK_RE.fullmatch(stripped)
+    if m:
+        return ("agent", int(m.group(1)))
+    return ("optout", None)
+
+
+def _on_windows() -> bool:
+    """True sous Windows.
+
+    Une indirection de module plutot qu'un test `os.name` ecrit au point
+    d'appel : patcher `os.name` est une mutation *globale au process*. Tant
+    qu'elle est active sur un hote POSIX, tout `Path(...)` leve
+    `NotImplementedError: cannot instantiate 'WindowsPath'` -- y compris celui
+    que pytest appelle pour formater le rapport d'un test en echec. Le worker
+    xdist meurt alors sur un rapport qu'il ne sait pas ecrire, et l'echec reel
+    n'est jamais montre (#23353, ou ce patch a coute le diagnostic entier).
+    Les tests patchent cette fonction, pas la plateforme.
+    """
+    return os.name == "nt"
+
+
+def pid_is_alive(pid: int) -> bool:
+    """Le pid est-il vivant ? Fail-safe : indeterminable = vivant.
+
+    Sous Windows, `tasklist /FI "PID eq N" /FO CSV /NH` rend une ligne par
+    processus trouve ; un pid mort rend la banniere "INFO: no tasks".
+    La reponse se lit par COLONNE (`"Image","PID","Session","#","Mem"`), en
+    comparant le champ PID : un test de sous-chaine sur le CSV entier lit
+    vivant un pid qui n'apparait que dans une AUTRE colonne (une memoire en
+    K, un numero de session), donc sur la ligne d'un autre processus. Sous
+    POSIX, `os.kill(pid, 0)` leve ProcessLookupError
+    si mort. PermissionError (processus d'un autre utilisateur sous POSIX) et
+    tout echec d'execution comptent VIVANT : mieux vaut un worktree
+    verrouille un cycle de trop qu'un deverrouillage sur une mesure
+    impossible.
+    """
+    if _on_windows():
+        try:
+            out = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=10,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return True
+        if out.returncode != 0:
+            return True
+        wanted = str(pid)
+        for row in csv.reader(out.stdout.splitlines()):
+            if len(row) > 1 and row[1].strip() == wanted:
+                return True
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return True
+    return True
+
+
+def enforce_lock_policy(status: "WorktreeStatus", locked_reason: Optional[str]) -> "WorktreeStatus":
+    """Applique la politique v1.3 sur un statut diagnostique.
+
+    Renseigne d'abord les champs de visibilite (locked_reason, lock_class,
+    lock_pid) sur TOUT statut verrouille -- un REFUSE pour lock porte sa
+    raison dans le rapport. Puis, decision :
+
+    - pas de verrou : statut intact, rien a faire ;
+    - decision != REMOVE : decision inchangee (un verrou ne cree jamais un
+      REMOVE ; il n'ajoute qu'un REFUSE sur un statut qui aurait ete
+      retirable) ;
+    - opt-out : REFUSE "lane_optout_lock", honore indefiniment ;
+    - verrou non classifie (raison vide) : REFUSE "unclassified_lock" --
+      `git worktree lock` sans `--reason` est l'invocation par defaut, et
+      une raison vide est une raison qu'on ne comprend pas (F2 de la revue
+      #21503) ;
+    - agent + pid vivant : REFUSE "live_agent_lock:<pid>" ;
+    - agent + pid mort : le statut reste REMOVE et porte
+      dead_lock_unlocked=True -- l'apply deverrouillera puis retirera.
+
+    Le champ `refusal_reason` n'est ecrase que si le statut n'en portait
+    pas deja un : un worktree sale ET verrouille refuse sur sa premiere
+    cause, le lock est cite dans les champs de visibilite.
+    """
+    status.locked_reason = locked_reason
+    if locked_reason is None:
+        return status
+    status.lock_class, status.lock_pid = classify_worktree_lock(locked_reason)
+    if status.decision != "REMOVE":
+        return status
+    if status.lock_class == "unclassified":
+        status.decision = "REFUSE"
+        if not status.refusal_reason:
+            status.refusal_reason = "unclassified_lock"
+        return status
+    if status.lock_class == "optout":
+        status.decision = "REFUSE"
+        if not status.refusal_reason:
+            status.refusal_reason = "lane_optout_lock"
+        return status
+    # lock_class == "agent" (classify ne rend "agent" que pour une raison matchee)
+    if pid_is_alive(status.lock_pid):
+        status.decision = "REFUSE"
+        if not status.refusal_reason:
+            status.refusal_reason = f"live_agent_lock:{status.lock_pid}"
+        return status
+    status.dead_lock_unlocked = True
+    return status
 
 
 def same_worktree_path(a: str, b: str) -> bool:
@@ -517,6 +1303,123 @@ def _is_dead_registration(wt_path: str, parsed: dict) -> bool:
     return (len(deleted) / tracked_total) >= DEAD_TREE_RATIO
 
 
+# ---------------------------------------------------------------------------
+# #23330 : le tip distant d'une branche, pour ne pas confondre
+# « ref de tracking locale perimee » et « travail non pousse ».
+# ---------------------------------------------------------------------------
+
+# Memo de passe : une branche = au plus un appel API, quel que soit le
+# nombre de worktrees qui la portent. Vide a chaque passe (reset par
+# `reset_remote_tip_memo`, appele avec `reset_pr_resolution`).
+_REMOTE_TIP_MEMO: dict = {}
+
+REMOTE_TIP_STATS = {
+    "calls": 0,
+    "ok": 0,
+    "absent": 0,
+    "unknown": 0,
+    "cleared_equal": 0,
+    "cleared_ancestor": 0,
+}
+
+
+def reset_remote_tip_memo() -> None:
+    """Tests / nouvelle passe : le memo et les compteurs repartent a zero."""
+    _REMOTE_TIP_MEMO.clear()
+    for key in REMOTE_TIP_STATS:
+        REMOTE_TIP_STATS[key] = 0
+
+
+def _remote_branch_tip(branch: str) -> tuple:
+    """Tip distant de `refs/heads/<branche>` -> (etat, sha).
+
+    Etat :
+      "ok"      -- le distant porte la branche, `sha` est son tip ;
+      "absent"  -- le distant ne porte PAS cette branche (404) ;
+      "unknown" -- indeterminable (reseau, quota, reponse illisible).
+
+    La distinction "absent" / "unknown" porte tout le fail-CLOSED de
+    #23330 : une branche absente du distant est un fait mesurable dont on
+    peut tirer un decompte vrai, une API muette ne prouve rien.
+
+    Voie REST `repos/{owner}/{repo}/branches/<branche>` : c'est le canal
+    deja utilise par l'organe (`_rest_pr_rows_for_branch`), donc aucun
+    second canal reseau n'est introduit -- `ls-remote` reste absent du
+    fichier, comme le demande l'acceptance de #23330.
+    """
+    if branch in _REMOTE_TIP_MEMO:
+        return _REMOTE_TIP_MEMO[branch]
+    from urllib.parse import quote
+
+    REMOTE_TIP_STATS["calls"] += 1
+    endpoint = f"repos/{{owner}}/{{repo}}/branches/{quote(branch, safe='')}"
+    proc = run_gh("api", endpoint, "--jq", ".commit.sha", check=False)
+    if proc.returncode == 0:
+        sha = proc.stdout.strip()
+        result = ("ok", sha) if sha else ("unknown", None)
+    elif "404" in (proc.stderr or "") or "Not Found" in (proc.stderr or ""):
+        # La branche n'existe pas cote distant : fait mesure, pas panne.
+        result = ("absent", None)
+    else:
+        result = ("unknown", None)
+    REMOTE_TIP_STATS[result[0]] += 1
+    _REMOTE_TIP_MEMO[branch] = result
+    return result
+
+
+def _unpushed_vs_remote(wt_path: str, branch: str, head_sha: str,
+                        local_ahead: int) -> int:
+    """Vrai compte de commits non pousses, mesure contre le DISTANT.
+
+    Remplace le decompte contre une ref de tracking locale perimee
+    (#23330 : 16 worktrees sur 18 refuses a tort avec ce motif, dont
+    `unpushed_commits:349` pour un HEAD identique au tip distant).
+
+    Fail-CLOSED : toute incertitude rend le compte local, donc le refus
+    (on ne retire jamais sur une premisse qu'on n'a pas mesuree).
+    """
+    if get_pr_resolution().unavailable_reason is not None:
+        # #21753 mode degrade : aucun etage gh n'est tente par l'organe,
+        # celui-ci compris -- le refus local reste, il n'est pas mesure.
+        return local_ahead
+    state, tip = _remote_branch_tip(branch)
+    if state == "unknown":
+        return local_ahead
+    if state == "absent":
+        # Aucune branche distante ne porte ce nom. Le distant ne peut donc
+        # pas disculper le local : fail-CLOSED, exactement comme une API
+        # muette (#23330, « si tip est absent -> on conserve le refus »).
+        # Ne PAS substituer un decompte `--not --remotes=origin` : il
+        # abaisserait le compte et leverait un refus que le distant n'a
+        # pas autorise a lever (temoin #20009 `fix/artifact`).
+        return local_ahead
+    # state == "ok"
+    if tip == head_sha:
+        REMOTE_TIP_STATS["cleared_equal"] += 1
+        return 0
+    verified = run_git(
+        wt_path, "rev-parse", "--verify", f"{tip}^{{commit}}", check=False
+    )
+    if verified.returncode == 0:
+        ahead_proc = run_git(
+            wt_path, "rev-list", "--count", f"{tip}..HEAD", check=False
+        )
+        if ahead_proc.returncode == 0:
+            try:
+                count = int(ahead_proc.stdout.strip())
+            except ValueError:
+                return local_ahead
+            if count == 0:
+                # HEAD est ancetre du tip distant : le distant porte le local.
+                REMOTE_TIP_STATS["cleared_ancestor"] += 1
+            return count
+        return local_ahead
+    # Le tip distant n'est pas dans la base locale : on ne peut pas
+    # compter contre lui, donc on ne peut pas non plus disculper le
+    # local. Fail-CLOSED sur le compte local.
+    return local_ahead
+
+
 def get_worktree_info(wt_path: str, current_path: str) -> dict:
     """Recupere branch + ahead count + dirty status d'un worktree."""
     # Branche (peut etre None si HEAD detaché)
@@ -524,30 +1427,61 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
     branch_raw = branch_proc.stdout.strip()
     branch = None if branch_raw in ("HEAD", "") else branch_raw
 
-    # Ahead count : commits non pousses vs @{u}. Si @{u} n'est pas
-    # configure (branche feature sans `set-upstream-to`, frequente avec
-    # `git worktree add -b`), @{u} retombe sur origin/main ce qui compare
-    # la branche feature a main -- un faux positif massif. On verifie
-    # d'abord la resolution explicite : si l'upstream specifique est la
-    # branche elle-meme, on compte les commits en avance. Sinon (upstream
-    # = main), on considere 0 unpushed et on laisse le verdict PR trancher.
+    # Ahead count : commits non pousses. L'instrument #20009 : quand le ref
+    # distant homonyme refs/remotes/origin/<branche> existe localement, c'est
+    # LUI qui porte le bookkeeping de la branche. @{u} peut pointer une
+    # branche soeur (base d'une pile au moment de la creation du worktree) ;
+    # `@{u}..HEAD` mesure alors l'ecart a une branche tierce, pas du travail
+    # non pousse (mesure po-2024 : 5 worktrees refuses unpushed_commits:210
+    # avec 0 commit propre et SHA identique au ref distant homonyme).
+    # Repli @{u} historique quand le homonyme est absent : si l'upstream
+    # retombe sur origin/main (branche feature sans `set-upstream-to`),
+    # comparer la branche feature a main serait un faux positif massif --
+    # on considere 0 unpushed et on laisse le verdict PR trancher. Un ref
+    # homonyme stale en retard sur-counte (echec vers le refus), jamais
+    # l'inverse.
     ahead_count = 0
     if branch:
-        upstream_proc = run_git(
-            wt_path, "rev-parse", "--abbrev-ref",
-            f"{branch}@{{u}}", check=False,
+        base_ref = None
+        homonym_proc = run_git(
+            wt_path, "rev-parse", "--verify",
+            f"refs/remotes/origin/{branch}", check=False,
         )
-        if upstream_proc.returncode == 0:
-            upstream = upstream_proc.stdout.strip()
-            if upstream and not upstream.endswith("/main"):
-                ahead_proc = run_git(
-                    wt_path, "rev-list", "--count", "@{u}..HEAD", check=False
-                )
-                if ahead_proc.returncode == 0:
-                    try:
-                        ahead_count = int(ahead_proc.stdout.strip())
-                    except ValueError:
-                        ahead_count = 0
+        if homonym_proc.returncode == 0:
+            base_ref = f"refs/remotes/origin/{branch}"
+        else:
+            upstream_proc = run_git(
+                wt_path, "rev-parse", "--abbrev-ref",
+                f"{branch}@{{u}}", check=False,
+            )
+            if upstream_proc.returncode == 0:
+                upstream = upstream_proc.stdout.strip()
+                if upstream and not upstream.endswith("/main"):
+                    base_ref = "@{u}"
+        if base_ref:
+            ahead_proc = run_git(
+                wt_path, "rev-list", "--count", f"{base_ref}..HEAD", check=False
+            )
+            if ahead_proc.returncode == 0:
+                try:
+                    ahead_count = int(ahead_proc.stdout.strip())
+                except ValueError:
+                    ahead_count = 0
+
+    # #23330 : le decompte ci-dessus mesure l'ecart a une ref de tracking
+    # LOCALE, qui peut etre en retard sur le distant (branche poussee sans
+    # fetch depuis : 16 worktrees refuses a tort sur 18 mesures, dont
+    # `unpushed_commits:349` pour un HEAD identique au tip distant). Un
+    # motif faux n'est pas seulement bruyant : il fait croire a du travail
+    # a sauver, et il fait sous-livrer l'organe. Des qu'un refus se
+    # dessine, on CONFRONTE le HEAD au tip distant avant de le retenir.
+    if branch and ahead_count > 0:
+        head_proc = run_git(wt_path, "rev-parse", "HEAD", check=False)
+        head_sha = head_proc.stdout.strip() if head_proc.returncode == 0 else ""
+        if head_sha:
+            ahead_count = _unpushed_vs_remote(
+                wt_path, branch, head_sha, ahead_count
+            )
 
     # Untracked / gitignores / tracked-modifies : une seule passe, avec
     # --ignored=matching pour signaler les gitignores non-cache (#14509).
@@ -571,10 +1505,13 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
     # Sous-modules : `git worktree remove` les refuse categoriquement
     # ("working trees containing submodules cannot be moved or removed"),
     # meme avec --force sur certains etats. #14619 : l'organe ne doit pas
-    # annoncer REMOVE ce que git interdit par construction. Seuls les
-    # sous-modules INITIALISÉS comptent (cf has_initialized_submodule).
-    subm_proc = run_git(wt_path, "submodule", "status", check=False)
-    has_submodules = has_initialized_submodule(subm_proc.stdout)
+    # annoncer REMOVE ce que git interdit par construction. Le predicat
+    # couvre les DEUX etats que git refuse : le sous-module initialise
+    # (popule) ET le sous-module ENREGISTRE mais deinitialise -- ce dernier
+    # etant invisible dans `git submodule status` (ligne prefixee par '-'),
+    # et a l'origine de la divergence dry-run/apply mesuree sur #21710
+    # (18 worktrees annonces REMOVE, refuses a l'apply).
+    has_submodules = worktree_blocks_removal_for_submodules(wt_path)
 
     # Enregistrement mort (#14195) : le checkout a disparu du disque alors
     # que `.git/worktrees/<nom>` subsiste. Cas mesure le 2026-09-05 : 26
@@ -631,10 +1568,14 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
 #    n'est jamais un verdict -- les branches absentes retombent sur
 #    l'ancre. Une ERREUR gh au lot degrade aussi vers l'ancre : une
 #    optimisation ne doit pas refuser des retraits legitimes ;
-# 3. l'ancre historique `--state all --search "head:<branche>"` :
-#    AUTHORITATIVE par decision ecrite (.claude/rules/git-workflow.md) --
-#    inchangee. La remplacer par commits/<oid>/pulls (faux negatifs
-#    mesures sur PRs OPEN) serait une regression, pas une optimisation.
+# 3. l'ancre : REST `pulls?state=all&head=<owner>:<branche>` (seau `core`),
+#    repli `gh pr list --state all --search "head:<branche>"` (GraphQL)
+#    pour les branches de fork -- #23636 : le seau `graphql` sature sous
+#    le compte partage et l'ancre GraphQL seule avortait toute la passe.
+#    Elle reste AUTHORITATIVE par decision ecrite
+#    (.claude/rules/git-workflow.md). La remplacer par commits/<oid>/pulls
+#    (faux negatifs mesures sur PRs OPEN) serait une regression, pas une
+#    optimisation.
 
 PR_VERDICT_CACHE_VERSION = 1
 PR_LISTING_WINDOW = 1000
@@ -642,7 +1583,7 @@ PR_LISTING_WINDOW = 1000
 
 def _pr_cache_path() -> Path:
     """Un fichier de verdicts par depot (cle = sha1 du remote origin)."""
-    proc = run_git(".", "remote", "get-url", "origin", check=False)
+    proc = run_git(current_repo_root(), "remote", "get-url", "origin", check=False)
     url = proc.stdout.strip() if proc.returncode == 0 else "unknown-repo"
     key = hashlib.sha1(url.encode("utf-8")).hexdigest()[:12]
     return Path.home() / ".cache" / "coursia" / "prune_pr_verdicts" / f"{key}.json"
@@ -658,6 +1599,10 @@ class PrResolution:
         self._entries: dict = {}
         self._cache_dirty = False
         self._index: Optional[dict] = None
+        # #21753 : pose par main() quand la sonde d'identite gh echoue.
+        # Non-None => mode degrade : le cache disque (git-independant)
+        # repond encore, tout etage gh est saute.
+        self.unavailable_reason: Optional[str] = None
         self.stats = {
             "cache_hits": 0,
             "listing_calls": 0,
@@ -765,6 +1710,11 @@ class PrResolution:
         if cached is not None:
             self.stats["cache_hits"] += 1
             return cached
+        if self.unavailable_reason is not None:
+            # #21753 mode degrade : aucun etage gh n'est tente. Le cache
+            # disque reste lu (il ne depend pas de gh), le reste rend
+            # None -- le fail-CLOSED downstream produit no_gh_unverifiable.
+            return None
         index = self._build_index()
         if branch in index:
             row = index[branch]
@@ -795,13 +1745,140 @@ def reset_pr_resolution() -> None:
     _RESOLUTION = None
 
 
+def _rest_pr_rows_for_branch(branch: str) -> Optional[list]:
+    """Lignes REST `pulls?state=all&head=<owner>:<branche>` (seau `core`).
+
+    Le filtre `head` porte sur le proprietaire du head : une branche dont
+    le head vit dans un fork (head repo != repo courant) n'est donc PAS
+    trouvee par cette voie -- c'est le role du repli GraphQL plus bas.
+
+    Le nom de branche est encode (le `/` des noms de branche devient
+    `%2F`) : un `head=` mal encode rend un resultat VIDE, c'est-a-dire un
+    faux negatif silencieux.
+
+    Le DEUXIEME separateur est encode aussi (`:` -> `%3A`), et c'est
+    mesure, pas precaution (#23642, revue Hermes) : `gh api` expanse les
+    jetons `owner`, `repo` et `branch` quand ils suivent un `:` litteral
+    dans l'endpoint, et il CONSOMME le `:` au passage. Un nom de branche
+    qui commence par `owner`, `repo` ou `branch` (cas `branch-x`) voyait
+    donc son nom remplace par la branche locale -- et le `:` de
+    `head=<owner>:<branche>` disparaitre, ce qui fait IGNORER le filtre
+    `head=` par l'API : la reponse devenait alors les 5 PRs les plus
+    recentes du depot, sans rapport avec la branche demandee. Encode en
+    `%3A`, plus aucun `:` litteral ne suit le nom : le jeton survit et
+    le filtre `head=` est respecte (mesure : 0 ligne pour une branche
+    inexistante, 1 ligne pour la branche reelle).
+
+    La selection par branche est refaite COTE CODE apres le fetch
+    (`_rest_row_to_pr_row`) : le filtre de l'API ne doit pas etre la
+    SEULE barriere, un `head=` mal transmis doit rendre un resultat
+    VIDE, jamais la PR d'une autre branche.
+
+    `commits/<oid>/pulls` reste interdit (faux negatifs mesures, cf
+    orphan-branch-scan dans .claude/rules/git-workflow.md).
+    """
+    from urllib.parse import quote
+
+    endpoint = (
+        "repos/{owner}/{repo}/pulls"
+        f"?state=all&head={{owner}}%3A{quote(branch, safe='')}&per_page=5"
+    )
+    proc = run_gh("api", endpoint, check=False)
+    if proc.returncode != 0:
+        return None
+    try:
+        payload = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, list):
+        return None
+    return payload
+
+
+def _rest_row_to_pr_row(row: dict, branch: str) -> Optional[dict]:
+    """Mappe une entree REST `pulls` vers la forme interne des lignes.
+
+    L'organe consomme `state` en "OPEN" / "MERGED" / "CLOSED" ; REST rend
+    "open" / "closed", et ne distingue une PR fusionnee que par
+    `merged_at` non nul.
+
+    Deux barrieres COTE CODE, mesurees (#23642) :
+
+    1. `head.ref` doit EQUALER la branche demandee. Le filtre `head=` de
+       l'API n'est pas une barriere suffisante : une requete dont le
+       separateur `:` a ete consomme rend les 5 PRs les plus recentes du
+       depot, et l'ancre pouvait alors retenir la PR d'une AUTRE
+       branche. Une ligne qui ne porte pas la branche demandee est
+       ecartee -- une reponse non filtrée doit rendre un resultat VIDE,
+       jamais un verdict faux.
+    2. le `head.repo` doit etre le depot de la PR (`base.repo`). La voie
+       REST ne sert que les branches dont le head vit dans le depot
+       courant ; une branche de fork est le ressort du repli GraphQL
+       plus bas. Un `head.repo` absent (fork supprime) ne permet pas de
+       conclure : la ligne est alors acceptee sur le seul critere de la
+       branche.
+    """
+    head = row.get("head") or {}
+    ref = head.get("ref")
+    number = row.get("number")
+    if not ref or number is None:
+        return None
+    if ref != branch:
+        return None
+    head_repo = ((head.get("repo") or {}).get("full_name"))
+    base_repo = (((row.get("base") or {}).get("repo") or {}).get("full_name"))
+    if head_repo and base_repo and head_repo != base_repo:
+        return None
+    state = row.get("state")
+    if state == "open":
+        state = "OPEN"
+    elif state == "closed":
+        state = "MERGED" if row.get("merged_at") else "CLOSED"
+    else:
+        return None
+    return {
+        "number": number,
+        "state": state,
+        "url": row.get("html_url"),
+        "headRefName": ref,
+        "headRefOid": head.get("sha"),
+    }
+
+
 def anchor_search_pr_for_branch(branch: str) -> Optional[dict]:
     """Cherche la PR dont le headRefName = branch.
 
-    Ancre autoritative : `gh pr list --state all --search "head:<branch>"`.
-    Pas de REST `commits/<oid>/pulls` (faux negatifs mesures, cf
-    orphan-branch-scan dans .claude/rules/git-workflow.md).
+    Ancre a deux voies (#23636) :
+
+    1. REST `pulls?state=all&head=<owner>:<branche>` -- seau `core`
+       (5 000/h) ; c'est la voie qui reste saine quand le seau
+       `graphql` est epuise ;
+    2. repli `gh pr list --state all --search "head:<branch>"` (GraphQL),
+       reserve aux branches de fork : leur head appartient a un autre
+       proprietaire, donc hors du filtre `head=` de la voie 1.
+
+    Mesure 2026-10-31 (lane myia-po-2028:CoursIA-2, 03hZ, compte `jsboige`
+    partage) : `gh pr list --state all --search` rendait "GraphQL: API
+    rate limit already exceeded" alors que le meme appel REST rendait la
+    PR attendue, sur la meme branche, a la meme seconde. L'ancre levait
+    alors ("gh pr list failed") et **avortait toute la passe** (rc=2,
+    aucun rapport ecrit) des la premiere branche hors fenetre du lot.
+
+    Aucun des deux echecs ne leve plus : un verdict inconcluant retombe
+    sur le contrat fail-CLOSED du script (worktree refuse, jamais retire
+    sans preuve). `commits/<oid>/pulls` reste interdit (faux negatifs
+    mesures, cf orphan-branch-scan dans .claude/rules/git-workflow.md).
     """
+    payload = _rest_pr_rows_for_branch(branch)
+    if payload:
+        rows = [r for r in (_rest_row_to_pr_row(x, branch) for x in payload) if r]
+        if rows:
+            # Plusieurs PRs ont partage le meme nom de branche (close +
+            # reopen) : on garde la plus recente (numero max), meme choix
+            # que le rows[0] de l'ancre GraphQL (date desc).
+            rows.sort(key=lambda r: r["number"], reverse=True)
+            return rows[0]
+    # Repli GraphQL : branche de fork, ou REST muet.
     proc = run_gh(
         "pr", "list",
         "--state", "all",
@@ -811,12 +1888,27 @@ def anchor_search_pr_for_branch(branch: str) -> Optional[dict]:
         check=False,
     )
     if proc.returncode != 0:
-        # gh erreur : on ne sait pas decider, REFUSE sec
-        raise RuntimeError(f"gh pr list failed: {proc.stderr.strip()}")
+        # Ancre GraphQL indisponible (quota GraphQL epuise) : on ne sait
+        # pas decider -> on rend l'inconcluant, on n'avorte pas la passe.
+        print(
+            f"[prune] ancre GraphQL indisponible pour {branch} : "
+            f"{proc.stderr.strip()} -- verdict inconcluant (refus)",
+            file=sys.stderr,
+        )
+        return None
     try:
         rows = json.loads(proc.stdout)
-    except json.JSONDecodeError as e:
-        raise RuntimeError(f"gh pr list returned non-JSON: {e}") from e
+    except json.JSONDecodeError:
+        return None
+    if not rows:
+        return None
+    # Meme barriere que la voie REST : la ligne retenue doit porter la
+    # branche demandee. `gh pr list --search "head:<branche>"` fait un
+    # matching PREFIXE sur le nom de branche : `head:feature/x` rend aussi
+    # `feature/x-2` et `feature/xy`. Sans cette confrontation, l'ancre
+    # pouvait rendre la PR d'une branche voisine -- et le script retirait
+    # alors un worktree actif en le croyant fusionne (#23642).
+    rows = [r for r in rows if r.get("headRefName") == branch]
     if not rows:
         return None
     # Si plusieurs PRs ont partage le meme nom de branche (improbable mais
@@ -829,11 +1921,12 @@ def lookup_pr_for_branch(branch: str,
                          head_sha: Optional[str] = None) -> Optional[dict]:
     """Resolution PR d'une branche via la couche a trois etages (#15369).
 
-    L'ancre `--state all --search head:<branche>` reste la source
-    autoritative ; les etages cache disque et lot unique ne font que
-    l'EVITER quand le verdict est deja etabli (MERGED garde par oid) ou
-    disponible dans la fenetre du lot. Une absence ou un echec des etages
-    d'economie retombe TOUJOURS sur l'ancre.
+    L'ancre (REST `pulls?head=` puis repli GraphQL `--search
+    head:<branche>`, cf #23636) reste la source autoritative ; les etages
+    cache disque et lot unique ne font que l'EVITER quand le verdict est
+    deja etabli (MERGED garde par oid) ou disponible dans la fenetre du
+    lot. Une absence ou un echec des etages d'economie retombe TOUJOURS
+    sur l'ancre.
     """
     return get_pr_resolution().resolve(branch, head_sha)
 
@@ -853,6 +1946,102 @@ def head_is_ancestor_of_main(wt_path: str) -> bool:
         wt_path, "merge-base", "--is-ancestor", "HEAD", MAIN_REF, check=False
     )
     return proc.returncode == 0
+
+
+def content_delivered_by_patch_id(wt_path: str) -> Optional[tuple]:
+    """Teste le contenu livre par **patch-id**, pas par ascendance (#20067).
+
+    ``git cherry <main> HEAD`` compare chaque commit propre du worktree a
+    l'amont par *patch-id* : ``-`` = le patch est deja en amont, ``+`` = il
+    ne l'est pas. C'est la voie qui voit un **squash-merge d'un seul
+    commit** suivi de la suppression de la branche -- cas ou plus aucun
+    ref distant ne porte la tete, donc ou le predicat d'ascendance
+    (#17771) refuse *par construction*, quelle que soit la realite du
+    contenu. **Limite mesuree (reserve Hermes 09/10)** : le patch-id se
+    calcule sur le diff d'*un* commit, donc un squash de branche a N
+    commits produit un patch qui n'egale celui d'aucun commit d'origine --
+    cette jambe rend alors ``plus == N`` et ne tire pas. Ce cas
+    multi-commit releve de la jambe elargie
+    ``content_delivered_by_branch_patch_id``, tentee juste apres.
+
+    Mesure du 2026-10-09 sur la ferme po-2025 (133 worktrees enregistres,
+    31 refuses en ``no_pr_match``/``detached_no_match``) : **6 franchissent**
+    (``minus>0, plus==0``) et **25 restent refuses** (un seul ``+``
+    disqualifie). La classe est donc franchissable *et* la garde reste
+    fail-closed.
+
+    Retourne ``(minus, plus)``, ou None si git echoue : l'appelant REFUSE
+    alors (echec de lecture = jamais un feu vert).
+    """
+    proc = run_git(wt_path, "cherry", MAIN_REF, "HEAD", check=False)
+    if proc.returncode != 0:
+        return None
+    minus = plus = 0
+    for line in proc.stdout.splitlines():
+        if line.startswith("-"):
+            minus += 1
+        elif line.startswith("+"):
+            plus += 1
+    return minus, plus
+
+
+def content_delivered_by_branch_patch_id(wt_path: str) -> Optional[tuple]:
+    """Voit le squash-merge **multi-commit** (#20067, reserve Hermes 09/10).
+
+    ``content_delivered_by_patch_id`` compare le patch-id d'**un** commit a
+    l'amont. Une branche a N commits squashee sur ``main`` produit un commit
+    dont le patch est la **concatenation** des N diffs, donc un patch-id qui
+    n'egale celui d'aucun commit d'origine : ``git cherry`` rend alors
+    ``plus == N`` et refuse un contenu pourtant livre -- le defaut meme que
+    #20067 vise. Mesure de la reserve (Hermes, 09/10, depots jetables git
+    2.43) : branche a 1 commit -> ``minus=1 plus=0`` (franchit) ; branche a
+    2 commits -> ``minus=0 plus=2`` (refuse). Les 6 franchissements de la
+    mesure du 09/10 sont **tous** ``minus=1 plus=0`` -- aucun multi-commit.
+
+    Plutot que de recalculer a la main le patch-id du diff de branche puis
+    de parcourir les patchs de ``main`` (``git log -p`` sur des centaines de
+    commits, capturee en memoire, pour un resultat identique), on **fabrique
+    le commit que le squash aurait produit** -- arbre de ``HEAD``, parent =
+    merge-base -- et on le donne a la meme machinerie ``git cherry``. Son
+    patch-id est exactement celui du patch de branche, et c'est git qui
+    compare, avec son propre index de patch-ids.
+
+    Le commit synthetique est **detache** (aucun ref ne le porte) : il est
+    collecte par le prochain ``git gc``. Aucune ecriture sur les refs, sur
+    l'index ou sur le worktree.
+
+    Cout : trois commandes triviales (``rev-parse``, ``merge-base``,
+    ``commit-tree``) plus le meme ``git cherry`` que la jambe precedente.
+    L'appelant ne la tente **que** lorsque la jambe per-commit n'a pas
+    tranche, donc ce cout ne s'ajoute pas au chemin ou elle decide deja.
+
+    Retourne ``(minus, plus)``, ou None si git echoue : l'appelant REFUSE
+    alors (echec de lecture = jamais un feu vert).
+    """
+    tree = run_git(wt_path, "rev-parse", "HEAD^{tree}", check=False)
+    if tree.returncode != 0 or not tree.stdout.strip():
+        return None
+    base = run_git(wt_path, "merge-base", MAIN_REF, "HEAD", check=False)
+    if base.returncode != 0 or not base.stdout.strip():
+        return None
+    synth = run_git(
+        wt_path, "commit-tree", tree.stdout.strip(),
+        "-p", base.stdout.strip(), "-m", "squash-probe (#20067)",
+        check=False,
+    )
+    if synth.returncode != 0 or not synth.stdout.strip():
+        return None
+    proc = run_git(wt_path, "cherry", MAIN_REF, synth.stdout.strip(),
+                   check=False)
+    if proc.returncode != 0:
+        return None
+    minus = plus = 0
+    for line in proc.stdout.splitlines():
+        if line.startswith("-"):
+            minus += 1
+        elif line.startswith("+"):
+            plus += 1
+    return minus, plus
 
 
 def detached_head_is_on_main(wt_path: str) -> bool:
@@ -1010,12 +2199,31 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
 
 
 def diagnose_worktree(wt_path: str, current_path: str,
-                      head_sha: Optional[str] = None) -> WorktreeStatus:
+                      head_sha: Optional[str] = None,
+                      activity_window_h: float = 6.0,
+                      gh_unavailable_reason: Optional[str] = None,
+                      quarantine_submodules: bool = False) -> WorktreeStatus:
     """Diagnostic complet d'un worktree.
 
     `head_sha` (fourni par `list_worktrees`, porcelain) sert uniquement a
     la garde oid du cache de verdicts MERGED (#15369) : sans lui, l'etage
     cache est saute, jamais consulte a l'aveugle.
+
+    `activity_window_h` : fenetre de la garde « agent vivant » (#18494),
+    appliquee au retrait par contenu deja integre (predicat content_on_main).
+
+    `quarantine_submodules` (#21743) : opt-in. En mode quarantaine, le
+    refus `contains_submodules` n'est pas prononce -- le worktree peut etre
+    decontamine a l'apply (le `modules/` de son gitdir est deplace en
+    quarantaine, ce qui leve le garde de git sans `--force` et sans perte
+    d'objets). Le defaut (False) garde le comportement mesure.
+
+    `gh_unavailable_reason` (#21753) : raison de degradation posee par
+    main() quand la sonde d'identite gh echoue. Non-None => aucun appel gh
+    n'est tente depuis ce diagnostic : la resolution PR rend None (le
+    singleton court-circuite aussi), les predicats git-only (ascendance,
+    patch-id) decident seuls, et le refus conservateur terminal se nomme
+    `no_gh_unverifiable` -- jamais confondu avec « pas de PR ».
     """
     info = get_worktree_info(wt_path, current_path)
 
@@ -1064,9 +2272,18 @@ def diagnose_worktree(wt_path: str, current_path: str,
 
     # Sous-modules : git interdit le retrait par construction -> REFUSE sans
     # meme annoncer REMOVE (#14619 point 4).
-    if info.get("has_submodules"):
+    #
+    # #21743 : en mode QUARANTAINE (opt-in, `--quarantine-submodules`), ce
+    # refus n'est pas prononce : le worktree peut etre decontamine (le
+    # `modules/` de son gitdir est deplace en quarantaine, ce qui leve le
+    # garde de git SANS `--force` et SANS perte d'objets). Les autres
+    # predicats continuent de decider : seuls les worktrees MERGED/CLOSED
+    # qui passent tous les autres gardes finiront RETIRES, apres
+    # decontamination.
+    if info.get("has_submodules") and not quarantine_submodules:
         return WorktreeStatus(
             path=wt_path,
+            has_submodules=True,
             branch=info["branch"],
             is_current=False,
             pr_state=None,
@@ -1080,8 +2297,18 @@ def diagnose_worktree(wt_path: str, current_path: str,
             lane_owner=info.get("lane_owner"),
         )
 
-    # Predicat 1 : commits non poussés -> REFUSE inconditionnel
-    if info["branch"] and info["ahead_count"] > 0:
+    # Predicat 1 : commits non poussés -> REFUSE, sauf artefact de
+    # bookkeeping #20009 : HEAD ancetre de origin/main = aucun commit
+    # propre ici, l'« avance » mesure alors l'ecart a un ref tiers
+    # (branche soeur @{u} ou homonyme absent), pas du travail non pousse.
+    # On laisse le flot trancher (verdict PR, puis predicat content_on_main
+    # et sa fenetre d'activite #18494). Fail-CLOSED : ancetre
+    # indeterminable -> refus conserve.
+    if (
+        info["branch"]
+        and info["ahead_count"] > 0
+        and not head_is_ancestor_of_main(wt_path)
+    ):
         return WorktreeStatus(
             path=wt_path,
             branch=info["branch"],
@@ -1176,17 +2403,21 @@ def diagnose_worktree(wt_path: str, current_path: str,
         )
 
     # Resolution PR
+    # #21753 : en mode degrade, aucune recherche n'est tentée -- le
+    # singleton court-circuite aussi (main() lui a pose la raison), ce
+    # garde evite l'appel depuis tout diagnose direct.
     pr = None
     if info["branch"]:
-        pr = lookup_pr_for_branch(info["branch"], head_sha=head_sha)
-        if pr is None:
-            # #17771 predicat 1 : la branche locale porte un nom different
-            # de la tete de PR. On resout la PR par la branche distante qui
-            # porte exactement HEAD (upstream explicite, puis tip exact
-            # origin/*). Pas de PR de ce cote non plus -> on continue.
-            remote_head = remote_head_for_head(wt_path, info["branch"], head_sha)
-            if remote_head:
-                pr = lookup_pr_for_branch(remote_head, head_sha=head_sha)
+        if gh_unavailable_reason is None:
+            pr = lookup_pr_for_branch(info["branch"], head_sha=head_sha)
+            if pr is None:
+                # #17771 predicat 1 : la branche locale porte un nom different
+                # de la tete de PR. On resout la PR par la branche distante qui
+                # porte exactement HEAD (upstream explicite, puis tip exact
+                # origin/*). Pas de PR de ce cote non plus -> on continue.
+                remote_head = remote_head_for_head(wt_path, info["branch"], head_sha)
+                if remote_head:
+                    pr = lookup_pr_for_branch(remote_head, head_sha=head_sha)
     elif detached_head_is_on_main(wt_path):
         # Extraction de main (demeure d'organe, lecture de review) : aucune
         # PR ne la porte, le critere « PR MERGED » ne s'y applique pas.
@@ -1208,7 +2439,13 @@ def diagnose_worktree(wt_path: str, current_path: str,
             lane_owner=info.get("lane_owner"),
         )
     else:
-        pr = lookup_pr_for_detached_head(wt_path)
+        # #21753 : en mode degrade, la resolution par sujet de HEAD est
+        # gh par construction (voie 1 = pr view, voie 2 = pr list) -- on
+        # ne la tente meme pas.
+        if gh_unavailable_reason is None:
+            pr = lookup_pr_for_detached_head(wt_path)
+        else:
+            pr = None
 
     pr_state = pr.get("state") if pr else None
     pr_number = pr.get("number") if pr else None
@@ -1258,12 +2495,43 @@ def diagnose_worktree(wt_path: str, current_path: str,
     # rattachable (ni par nom local, ni par tete distante), mais HEAD est
     # un ancetre de origin/main : chaque commit du worktree est deja sur
     # main. Les gardes en amont garantissent deja les deux autres
-    # conditions de l'issue -- 0 commit non pousse (sinon
-    # ``unpushed_commits`` serait sorti) et aucune edition source non
+    # conditions de l'issue -- 0 commit propre non publie (le predicat 1,
+    # ou sa garde ancestor-of-main #20009 quand l'avance est un artefact
+    # @{u}) et aucune edition source non
     # committee ni untracked non tolere (sinon ``uncommitted_source_changes``
     # / ``untolerated_untracked`` seraient sortis). Le worktree ne porte
     # plus rien que main ne contienne deja.
+    #
+    # #18494 -- la fenetre « agent vivant ». `content_on_main` est un
+    # critere de CONTENU, pas d'ACTIVITE : un agent vivant traverse
+    # necessairement un etat « worktree propre + branche sans commit
+    # propre » (sa phase de lecture, avant la premiere edition), et un
+    # `--apply` dans cette fenetre detruit son plan de travail en cours.
+    # Un marqueur d'activite recent (`.lane-owner` ou mtime du dossier)
+    # fait donc REFUSER le retrait ; passe la fenetre, plus rien ne le
+    # protege -- le refus couvre la phase de travail, pas la conservation.
     if info["branch"] and head_is_ancestor_of_main(wt_path):
+        age_h = recent_activity_age_hours(wt_path)
+        if age_h < activity_window_h:
+            return WorktreeStatus(
+                path=wt_path,
+                branch=info["branch"],
+                is_current=False,
+                pr_state=None,
+                pr_number=None,
+                pr_url=None,
+                ahead_count=info["ahead_count"],
+                has_source_dirty=info["has_source_dirty"],
+                untracked_paths=info["untracked"],
+                decision="REFUSE",
+                refusal_reason=f"recent_activity:{age_h:.1f}h",
+                has_submodules=info["has_submodules"],
+                blocking_untracked=info.get("blocking_untracked", []),
+                ignored_extra=info.get("ignored_extra", []),
+                lane_owner=info.get("lane_owner"),
+                content_on_main=True,
+                content_on_main_by="ancestor",
+            )
         return WorktreeStatus(
             path=wt_path,
             branch=info["branch"],
@@ -1281,10 +2549,94 @@ def diagnose_worktree(wt_path: str, current_path: str,
             ignored_extra=info.get("ignored_extra", []),
             lane_owner=info.get("lane_owner"),
             content_on_main=True,
+            content_on_main_by="ancestor",
         )
+
+    # Predicat 6 (#20067) : contenu deja integre a main **par patch-id**.
+    # Le predicat 5 teste l'ascendance ; il est structurellement aveugle au
+    # squash-merge suivi de la suppression de la branche -- la tete n'est
+    # alors atteignable depuis aucun ref distant, donc sa jambe
+    # « tete atteignable » est fausse par construction, quelle que soit la
+    # realite du contenu. `git cherry` compare les *patch-id*, ce qui voit
+    # ce cas.
+    #
+    # Fail-CLOSED, et c'est le point : `minus > 0` garantit qu'il y a un
+    # commit a comparer (un worktree vide n'ouvre pas le retrait), et
+    # `plus == 0` exige que **tous** les patchs soient en amont -- un seul
+    # `+` disqualifie. Mesure du 2026-10-09 : 6 franchissent sur 31 refuses
+    # de la classe, 25 restent refuses.
+    #
+    # Meme fenetre « agent vivant » que le predicat 5 (#18494) : le critere
+    # est un critere de CONTENU, pas d'ACTIVITE, et un agent vivant
+    # traverse necessairement l'etat « worktree propre, branche sans commit
+    # propre ». Comme le predicat 5, ce predicat est **branche-only** : un
+    # HEAD detache releve de `detached_head_is_on_main` (#17684).
+    if info["branch"]:
+        leg = None
+        cherry = content_delivered_by_patch_id(wt_path)
+        if cherry is not None and cherry[0] > 0 and cherry[1] == 0:
+            leg = "patch_id"
+        else:
+            # Jambe elargie (#20067, reserve Hermes du 09/10) : la precedente
+            # ne voit qu'un squash a **un seul** commit, et rend `plus == N`
+            # sur une branche a N commits squashee. Elle n'est tentee que
+            # lorsqu'il reste quelque chose a trancher, donc son cout ne
+            # s'ajoute pas au chemin ou la jambe per-commit decide deja.
+            branch_cherry = content_delivered_by_branch_patch_id(wt_path)
+            if (branch_cherry is not None
+                    and branch_cherry[0] > 0 and branch_cherry[1] == 0):
+                leg = "branch_patch_id"
+        if leg is not None:
+            age_h = recent_activity_age_hours(wt_path)
+            if age_h < activity_window_h:
+                return WorktreeStatus(
+                    path=wt_path,
+                    branch=info["branch"],
+                    is_current=False,
+                    pr_state=None,
+                    pr_number=None,
+                    pr_url=None,
+                    ahead_count=info["ahead_count"],
+                    has_source_dirty=info["has_source_dirty"],
+                    untracked_paths=info["untracked"],
+                    decision="REFUSE",
+                    refusal_reason=f"recent_activity:{age_h:.1f}h",
+                    has_submodules=info["has_submodules"],
+                    blocking_untracked=info.get("blocking_untracked", []),
+                    ignored_extra=info.get("ignored_extra", []),
+                    lane_owner=info.get("lane_owner"),
+                    content_on_main=True,
+                    content_on_main_by=leg,
+                )
+            return WorktreeStatus(
+                path=wt_path,
+                branch=info["branch"],
+                is_current=False,
+                pr_state=None,
+                pr_number=None,
+                pr_url=None,
+                ahead_count=info["ahead_count"],
+                has_source_dirty=info["has_source_dirty"],
+                untracked_paths=info["untracked"],
+                decision="REMOVE",
+                refusal_reason=None,
+                has_submodules=info["has_submodules"],
+                blocking_untracked=info.get("blocking_untracked", []),
+                ignored_extra=info.get("ignored_extra", []),
+                lane_owner=info.get("lane_owner"),
+                content_on_main=True,
+                content_on_main_by=leg,
+            )
 
     # Pas de PR trouvee : HEAD detaché sans correspondance, ou branche
     # non pushée qu'on ne peut pas relier. REFUSE conservatrice.
+    # #21753 : en mode degrade, ce refus ne dit pas « pas de PR » (non
+    # mesure) mais « non verifiable faute de gh » -- la classe
+    # no_gh_unverifiable est aggree comme les autres au breakdown.
+    if gh_unavailable_reason is not None:
+        final_reason = "no_gh_unverifiable"
+    else:
+        final_reason = "no_pr_match" if info["branch"] else "detached_no_match"
     return WorktreeStatus(
         path=wt_path,
         branch=info["branch"],
@@ -1296,7 +2648,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
         has_source_dirty=info["has_source_dirty"],
         untracked_paths=info["untracked"],
         decision="REFUSE",
-        refusal_reason="no_pr_match" if info["branch"] else "detached_no_match",
+        refusal_reason=final_reason,
         has_submodules=info["has_submodules"],
         blocking_untracked=info.get("blocking_untracked", []),
         ignored_extra=info.get("ignored_extra", []),
@@ -1305,8 +2657,13 @@ def diagnose_worktree(wt_path: str, current_path: str,
 
 
 def list_worktrees() -> list[dict]:
-    """Retourne les worktrees sous forme [{path, head_sha}, ...]."""
-    proc = run_git(".", "worktree", "list", "--porcelain", check=False)
+    """Retourne les worktrees sous forme [{path, head_sha, locked_reason?}, ...].
+
+    v1.3 : la ligne porcelain `locked <raison>` est captee telle quelle dans
+    `locked_reason` (chaine vide pour un verrou sans raison). La
+    classification agent/opt-out se fait dans `enforce_lock_policy`, pas ici.
+    """
+    proc = run_git(current_repo_root(), "worktree", "list", "--porcelain", check=False)
     if proc.returncode != 0:
         raise RuntimeError(f"git worktree list failed: {proc.stderr.strip()}")
     out: list[dict] = []
@@ -1320,9 +2677,47 @@ def list_worktrees() -> list[dict]:
             cur["head_sha"] = line[len("HEAD "):].strip()
         elif line.startswith("branch "):
             cur["branch"] = line[len("branch "):].strip()
+        elif line.startswith("locked"):
+            cur["locked_reason"] = line[len("locked"):].strip()
     if cur:
         out.append(cur)
     return out
+
+
+def is_link_like(p: Path) -> bool:
+    """True pour un lien symbolique ET pour une jonction Windows (#20007).
+
+    `Path.is_symlink()` ne reconnaît que les liens de type *name surrogate* :
+    une jonction NTFS (reparse point `IO_REPARSE_TAG_MOUNT_POINT`, le geste
+    courant pour partager un `node_modules` ou un cache entre worktrees) rend
+    **False** sur les trois voies (`is_symlink`, `os.path.islink`,
+    `S_ISLNK(st_mode)`) alors qu'elle porte bien
+    `FILE_ATTRIBUTE_REPARSE_POINT`. Mesuré sur une jonction `mklink /J` :
+    `st_file_attributes == 0x410` (reparse point + directory).
+
+    Conséquence de l'aveuglement : la cible tombait dans la branche
+    `is_dir()`, où `shutil.rmtree` lève « Cannot call rmtree on a symbolic
+    link » — un `OSError` avalé par `ignore_errors=True`. L'artefact n'était
+    donc ni retiré ni listé, et le `git worktree remove` qui suit échouait
+    sur l'untracked restant : le rapport annonçait REMOVE pour un `--apply`
+    qui ne pouvait pas aboutir (#14619, même classe que l'incident jonctions
+    po-2023 c.525).
+
+    `os.unlink` retire une jonction sans suivre sa cible (mesuré : la cible
+    et son contenu survivent), donc le geste de la branche lien convient aux
+    deux formes — seul le prédicat devait changer.
+
+    Le repli `False` couvre les plateformes sans `st_file_attributes`
+    (POSIX) et un `lstat` impossible : on retombe alors sur le comportement
+    d'avant, jamais sur une suppression.
+    """
+    if p.is_symlink():
+        return True
+    try:
+        attrs = os.lstat(p).st_file_attributes
+    except (OSError, AttributeError):
+        return False
+    return bool(attrs & stat.FILE_ATTRIBUTE_REPARSE_POINT)
 
 
 def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
@@ -1338,6 +2733,8 @@ def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
     - seuls les chemins untracked qui matchent la liste tolérée sont visés ;
     - chaque cible doit résoudre DANS le worktree (défense en profondeur
       contre une entrée porcelain inattendue) ;
+    - les liens symboliques ET les jonctions Windows partent par `unlink`,
+      jamais par `rmtree`, qui lève sur les deux (`is_link_like`, #20007) ;
     - jamais de `--force` : le retrait reste `git worktree remove` nu. Si un
       résidu hors liste survient entre le diagnostic et l'apply, git refuse
       et le statut FAILED rend la cause (fail-closed).
@@ -1357,9 +2754,10 @@ def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
                 continue
         except OSError:
             continue
-        if target.is_symlink():
-            # rmtree sur un lien symbolique leve OSError ; unlink est le
-            # geste correct et ne touche pas la cible.
+        if is_link_like(target):
+            # rmtree sur un lien symbolique -- ou sur une jonction Windows --
+            # leve OSError ; unlink est le geste correct et ne touche pas la
+            # cible (cf is_link_like, #20007).
             try:
                 target.unlink()
                 removed.append(rel)
@@ -1387,12 +2785,33 @@ def apply_removal(wt: WorktreeStatus) -> tuple[bool, str]:
     ne peut pas executer. Pour tout autre worktree, l'absence de `--force`
     reste le garde-fou : c'est git qui refuse en dernier ressort si la
     classification s'est trompee.
+
+    Effet de bord assume d'un `unlock` reussi suivi d'un `remove` echoue :
+    le worktree survit deverrouille jusqu'au balayage suivant. On ne le
+    re-verrouille pas, parce que le verrou qu'on vient de lever appartenait
+    a un agent au pid MORT (`dead_lock_unlocked` n'est jamais vrai
+    autrement) -- aucun processus vivant ne perd sa protection -- et parce
+    que l'etat laisse est exactement l'entree du retrait legitime : la
+    classification suivante le relit REMOVE-ready deverrouille et rejoue le
+    `remove`. Re-verrouiller ajouterait un second geste dont l'echec
+    laisserait de toute facon le meme etat final.
     """
+    if wt.dead_lock_unlocked:
+        # v1.3 : lock d'agent a pid mort sur un worktree REMOVE-ready. Le
+        # protocole exige l'unlock NOMME -- jamais `remove -f -f` pour
+        # forcer le passage. Un unlock qui echoue arrete AVANT le remove :
+        # git refuserait de toute facon, autant le dire avec son stderr.
+        unlock = run_git(
+            _repo_root_for_worktree(wt.path),
+            "worktree", "unlock", wt.path, check=False,
+        )
+        if unlock.returncode != 0:
+            return False, unlock.stderr.strip()
     args = ["worktree", "remove"]
     if wt.dead_registration:
         args.append("--force")
     args.append(wt.path)
-    proc = run_git(".", *args, check=False)
+    proc = run_git(_repo_root_for_worktree(wt.path), *args, check=False)
     if proc.returncode == 0:
         return True, ""
     return False, proc.stderr.strip()
@@ -1402,6 +2821,7 @@ def render_text(
     statuses: list[WorktreeStatus],
     dry_run: bool,
     apply_results: Optional[list[dict]] = None,
+    gh_unavailable_reason: Optional[str] = None,
 ) -> str:
     """Rendu texte canonique (lisible humain) (#14476).
 
@@ -1411,6 +2831,10 @@ def render_text(
     Si `git worktree remove` a echoue (worktree sale par exemple), on
     imprime `FAILED` avec le stderr -- c'est lisible, factuel, et JAMAIS
     mensonger sur ce qui a effectivement quitte le disque.
+
+    `gh_unavailable_reason` (#21753) : quand la sonde d'identite gh a
+    echoue, la premiere ligne est une banniere explicite -- une passe
+    degradee ne doit JAMAIS se lire comme un constat de PRs ouvertes.
     """
     # Indexation par path pour une reconciliation O(1)
     applied_by_path = {}
@@ -1419,6 +2843,16 @@ def render_text(
             applied_by_path[r["path"]] = r
 
     lines: list[str] = []
+    if gh_unavailable_reason is not None:
+        degraded_n = sum(
+            1 for s in statuses
+            if s.refusal_reason == "no_gh_unverifiable"
+        )
+        lines.append(
+            f"gh unavailable on this seat — PR lookups skipped, "
+            f"{degraded_n} worktrees in degraded mode "
+            f"({gh_unavailable_reason})"
+        )
     counts = {"REMOVE": 0, "REFUSE": 0, "SKIP_CURRENT": 0, "FAILED": 0}
     for s in statuses:
         counts[s.decision] = counts.get(s.decision, 0) + 1
@@ -1437,11 +2871,22 @@ def render_text(
                 if s.pr_state and s.pr_number else ""
             )
             if not pr_part and s.content_on_main:
-                pr_part = "content_on_main"
+                # #20067 : dire *quelle jambe* a franchi la garde. Les deux
+                # preuves ne sont pas equivalentes -- une ascendance et un
+                # patch-id sont deux faits distincts, et un lecteur qui les
+                # confond lit un squash-merge comme une ascendance.
+                leg = s.content_on_main_by or "?"
+                pr_part = f"content_on_main({leg})"
+            # v1.3 : suffixe de visibilite quand le retrait passera par un
+            # deverrouillage (lock d'agent a pid mort).
+            lock_part = (
+                f"  dead_lock_unlocked(pid={s.lock_pid})"
+                if s.dead_lock_unlocked else ""
+            )
             if dry_run:
                 lines.append(
                     f"WOULD REMOVE {s.path}  {branch_part}  {pr_part}"
-                    f"{ignored_part}".rstrip()
+                    f"{ignored_part}{lock_part}".rstrip()
                 )
             else:
                 # Mode --apply : vraie realite du disque.
@@ -1449,7 +2894,7 @@ def render_text(
                 if result is None or result.get("applied"):
                     lines.append(
                         f"REMOVED     {s.path}  {branch_part}  {pr_part}"
-                        f"{ignored_part}".rstrip()
+                        f"{ignored_part}{lock_part}".rstrip()
                     )
                 else:
                     # `git worktree remove` a echoue : on dit FAILED + cause.
@@ -1571,7 +3016,10 @@ def main() -> int:
     p.add_argument(
         "--path",
         default=None,
-        help="Cwd pour `git worktree list`. Default = CWD.",
+        help="Cible de l'analyse : cwd ET racine du scan (`git worktree "
+             "list` + cle de cache). Doit vivre dans un depot git "
+             "(Maintenance#64, multi-fermes). Default = CWD s'il est "
+             "dans un repo, sinon le repo de ce script.",
     )
     p.add_argument(
         "--warn-threshold",
@@ -1582,7 +3030,71 @@ def main() -> int:
              "sur le dashboard workspace si refused > N (#3895). Desactive "
              "par defaut ; la tache planifiee passe 20.",
     )
+    p.add_argument(
+        "--activity-window-h",
+        type=float,
+        default=6.0,
+        metavar="H",
+        help="Fenetre « agent vivant » (#18494) : un worktree sans commit "
+             "propre dont un marqueur d'activite (.lane-owner, a defaut "
+             "mtime du dossier) est plus jeune que H heures est REFUSE "
+             "(reason=recent_activity:<age>h) au lieu d'etre retire par "
+             "content_on_main. Defaut 6.0.",
+    )
+    p.add_argument(
+        "--quarantine-submodules",
+        action="store_true",
+        help="Decontamination par quarantaine (#21743) : un worktree "
+             "MERGED a sous-modules peut etre retire SANS `--force` -- le "
+             "`modules/` de son gitdir est deplace en quarantaine (les "
+             "objets sont preserves, la preuve est faite au moment du "
+             "deplacement). Opt-in : sans ce drapeau, le comportement "
+             "mesure (REFUSE contains_submodules) est inchange.",
+    )
+    p.add_argument(
+        "--quarantine-root",
+        default=None,
+        metavar="PATH",
+        help="Racine de la quarantaine (#21743). Defaut = "
+             "%%LOCALAPPDATA%%/CoursIA/prune_quarantine. Doit etre hors du "
+             "depot et hors du worktree retire ; l'organe refuse sinon.",
+    )
+    p.add_argument(
+        "--purge-quarantine",
+        action="store_true",
+        help="Purge la quarantaine et sort (#21743). Voie NOMMEE : une "
+             "racine qui ne porte pas le marqueur de l'organe n'est pas "
+             "purgee.",
+    )
     args = p.parse_args()
+
+    # #21743 : la decontamination par quarantaine est OPT-IN (un drapeau
+    # dedie), jamais un effet de bord du `--apply`.
+    quarantine_root = Path(args.quarantine_root) if args.quarantine_root \
+        else default_quarantine_root()
+
+    if args.purge_quarantine:
+        # Voie de purge NOMMEE : la quarantaine doit pouvoir etre liberee,
+        # sinon elle deplace le probleme de disque au lieu de le traiter.
+        ok, msg, info = purge_quarantine(quarantine_root)
+        if args.json:
+            print(json.dumps({
+                "purge_quarantine": {
+                    "root": str(quarantine_root),
+                    "ok": ok,
+                    "message": msg,
+                    **(info or {}),
+                },
+            }, ensure_ascii=False))
+        else:
+            if ok:
+                print(f"quarantine purgee : {quarantine_root} "
+                      f"({len((info or {}).get('removed', []))} entree(s), "
+                      f"{(info or {}).get('bytes', 0)} octets)")
+            else:
+                print(f"ERROR: purge de la quarantaine refusee : {msg}",
+                      file=sys.stderr)
+        return 0 if ok else 1
 
     cwd = args.path or "."
 
@@ -1594,19 +3106,43 @@ def main() -> int:
     except OSError:
         current_path = cwd
 
-    # `--path` est le cwd de l'ANALYSE, pas un filtre -- contrat porte par
-    # l'en-tete (`--path /c/dev/CoursIA-X`) et par le help ci-dessus. Or les
-    # trois appels `run_git(".")` (worktree list, cle de cache par remote
-    # origin, worktree remove) resolvent `.` contre le cwd REEEL du processus.
-    # Sans ce chdir, l'organe lance depuis un autre dossier -- le cas de la
-    # tache planifiee, dont le cwd est System32 -- sort en rc=2 sur
-    # `fatal: not a git repository` et ne purge jamais rien (#17904).
+    # `--path` est le cwd de l'ANALYSE ET la cible du scan -- contrat porte
+    # par l'en-tete et le help. Les appels `run_git(...)` resolvent leur
+    # cible en PREMIER argument, pas via le cwd reel du processus : depuis
+    # un autre dossier -- le cas de la tache planifiee (#14473), dont le
+    # cwd est System32 -- il fallait que les sites ne s'appuient pas sur
+    # `"."`. Resolution adoptee (Maintenance#64) :
+    #   - `run_git(current_repo_root(), ...)` pour `worktree list` et la
+    #     cle de cache (`remote get-url origin`) : priorite 1 la cible
+    #     explicite du `--path` (posee ci-dessous), priorite 2 le repo du
+    #     cwd, priorite 3 le repo de CE script ;
+    #   - `run_git(_repo_root_for_worktree(wt.path), ...)` pour
+    #     `worktree remove` : le depot HEBERGEUR du worktree, pas forcement
+    #     le meme (les tests hermetiques vivent dans des repo e phemeres
+    #     crees par pytest, distincts de CoursIA).
+    # Le garde `os.chdir(current_path)` est conserve pour les appels
+    # `run_gh` et la comparaison `is_current` (cwd reel vs `--path`).
     if args.path:
         try:
             os.chdir(current_path)
         except OSError as e:
             print(f"ERROR: --path inutilisable ({args.path}): {e}", file=sys.stderr)
             return 2
+        # Maintenance#64 : un --path hors de tout depot git doit echouer
+        # TOUT DE SUITE et bruyamment -- le repli silencieux sur le repo de
+        # ce script faisait scannera le wrapper fleet N fois sa ferme
+        # d'origine en croyant couvrir les autres.
+        path_root = _ancestor_repo_root(Path(current_path))
+        if path_root is None:
+            print(
+                f"ERROR: --path hors de tout depot git ({args.path}) -- "
+                f"la cible du scan serait retombee sur le repo de ce "
+                f"script (Maintenance#64)",
+                file=sys.stderr,
+            )
+            return 2
+        global _SCAN_ROOT_OVERRIDE
+        _SCAN_ROOT_OVERRIDE = path_root
 
     try:
         worktrees = list_worktrees()
@@ -1614,12 +3150,30 @@ def main() -> int:
         print(f"ERROR: {e}", file=sys.stderr)
         return 2
 
+    # #21753 : sonde d'identite gh AVANT toute resolution PR. Locale et
+    # gratuite (~50 ms, pas de quota). Echec => mode degrade declare :
+    # banniere en tete du rapport, `degraded: true` dans le JSON, refus
+    # terminaux nommes no_gh_unverifiable -- la passe ne se tait jamais.
+    gh_unavailable_reason = probe_gh_availability()
+    if gh_unavailable_reason is not None:
+        get_pr_resolution().unavailable_reason = gh_unavailable_reason
+
+    # #23330 : une passe = un memo neuf, pour que les compteurs du rapport
+    # decrivent CETTE passe et pas la somme des appels du process.
+    reset_remote_tip_memo()
+
     statuses: list[WorktreeStatus] = []
     for wt in worktrees:
         try:
             statuses.append(
-                diagnose_worktree(
-                    wt["path"], current_path, head_sha=wt.get("head_sha")
+                enforce_lock_policy(
+                    diagnose_worktree(
+                        wt["path"], current_path, head_sha=wt.get("head_sha"),
+                        activity_window_h=args.activity_window_h,
+                        gh_unavailable_reason=gh_unavailable_reason,
+                        quarantine_submodules=args.quarantine_submodules,
+                    ),
+                    wt.get("locked_reason"),
                 )
             )
         except RuntimeError as e:
@@ -1634,6 +3188,7 @@ def main() -> int:
     apply_results: list[dict] = []
     refused_count = 0
     removal_count = 0
+    quarantine_refused_count = 0
     error_count = 0
     if args.apply:
         for s in statuses:
@@ -1644,6 +3199,41 @@ def main() -> int:
             # #14619 : nettoyer exactement les artefacts tolérés AVANT le
             # retrait sans force, sinon git refuse sur tout untracked.
             cleaned = clean_tolerated_artifacts(s)
+            # #21743 : decontamination AVANT le retrait. Le `modules/` du
+            # gitdir de ce worktree est DEPLACE en quarantaine : le garde
+            # de git est leve sans `--force`, et les objets du sous-module
+            # sont preserves (la preuve est faite au moment du
+            # deplacement). Si la decontamination echoue, le retrait n'a
+            # PAS lieu -- on ne retire jamais un worktree dont les objets
+            # seraient perdus.
+            quarantine_info = None
+            if s.has_submodules:
+                dest_name = f"{time.strftime('%Y%m%dT%H%M%S')}-{os.getpid()}-" \
+                            f"{Path(s.path).name}"
+                q_ok, q_msg, quarantine_info = quarantine_worktree_modules(
+                    s.path, quarantine_root, dest_name,
+                    repo_root=_repo_root_for_worktree(s.path),
+                )
+                if not q_ok:
+                    apply_results.append({
+                        "path": s.path,
+                        "branch": s.branch,
+                        "pr_number": s.pr_number,
+                        "applied": False,
+                        "stderr": f"quarantine-refused:{q_msg}",
+                        "cleaned_artifacts": cleaned,
+                        "quarantine": quarantine_info or {"error": q_msg},
+                    })
+                    # Un refus de quarantaine (modules/ rendu au worktree,
+                    # retrait annule) est une DECISION de l'organe : exit 0,
+                    # avec son decompte -- pas une panne. Seul l'echec de la
+                    # restauration, qui laisse un etat incoherent (objets
+                    # en quarantaine, worktree non decontamine), sort en 2.
+                    if q_msg.startswith("quarantine-restore-failed"):
+                        error_count += 1
+                    else:
+                        quarantine_refused_count += 1
+                    continue
             ok, stderr = apply_removal(s)
             apply_results.append({
                 "path": s.path,
@@ -1652,6 +3242,7 @@ def main() -> int:
                 "applied": ok,
                 "stderr": stderr,
                 "cleaned_artifacts": cleaned,
+                "quarantine": quarantine_info,
             })
             if ok:
                 removal_count += 1
@@ -1664,6 +3255,13 @@ def main() -> int:
     if args.json:
         out = {
             "scanned": len(statuses),
+            # #127 : un organe qui n'a diagnostique AUCUN worktree (scanned=0)
+            # n'atteste PAS une ferme propre -- il est MUET. Le flag rend un
+            # silence (`scanned=0`, stdout vide, rc=0) discriminable d'une passe
+            # propre ; avant, les deux signatures etaient identiques (classe
+            # #86, 8 nuits sur ai-01). Pure observabilite : aucune decision de
+            # retrait n'est modifiee, l'ancre `--search head:<b>` est intacte.
+            "mute": len(statuses) == 0,
             "removable": sum(1 for s in statuses if s.decision == "REMOVE"),
             "refused": refused_count,
             "refusal_reasons": refusal_reason_breakdown(statuses),
@@ -1672,22 +3270,49 @@ def main() -> int:
                 1 for s in statuses if s.decision == "SKIP_CURRENT"
             ),
             "dry_run": not args.apply,
+            "degraded": gh_unavailable_reason is not None,
+            "gh_unavailable_reason": gh_unavailable_reason,
             "api_stats": get_pr_resolution().stats,
+            # #23330 : budget et effet de la confrontation au tip distant.
+            # Toujours present (un champ absent se lirait "non mesure").
+            "remote_tip_stats": dict(REMOTE_TIP_STATS),
+            # v1.3 : chemins des worktrees REMOVE-ready dont le lock
+            # d'agent a ete reconnu mort (l'apply les deverrouille puis
+            # les retire). Toujours present, vide si rien -- un champ
+            # absent se lirait "non mesure".
+            "dead_lock_unlocked": [
+                s.path for s in statuses if s.dead_lock_unlocked
+            ],
             "statuses": [s.to_dict() for s in statuses],
         }
         if args.apply:
             out["apply_results"] = apply_results
             out["applied"] = removal_count
             out["apply_errors"] = error_count
+            out["apply_quarantine_refusals"] = quarantine_refused_count
         print(json.dumps(out, indent=2, ensure_ascii=False))
     else:
         # Texte
         if args.apply:
-            print(render_text(statuses, dry_run=False, apply_results=apply_results))
+            print(render_text(statuses, dry_run=False,
+                              apply_results=apply_results,
+                              gh_unavailable_reason=gh_unavailable_reason))
             print()
-            print(f"applied={removal_count}  errors={error_count}")
+            print(f"applied={removal_count}  errors={error_count}"
+                  f"  quarantine_refusals={quarantine_refused_count}")
         else:
-            print(render_text(statuses, dry_run=True))
+            print(render_text(statuses, dry_run=True,
+                              gh_unavailable_reason=gh_unavailable_reason))
+        # #127 : symetrie du signal MUTE en mode texte. Un appelant qui ne lit
+        # que stdout doit voir la meme information que le champ JSON `mute` et
+        # que la ligne `MUTE:` sur stderr ; sans cette ligne, un passage
+        # `scanned=0` rend un stdout blanc, indiscernable d'une passe propre
+        # (reserve Hermes sur #22440, complement symetrique du flag JSON).
+        if len(statuses) == 0:
+            print(
+                "scanned=0  (aucun worktree diagnostique -- passage muet, "
+                "pas propre ; voir aussi MUTE sur stderr, #127)"
+            )
         # Budget API de la passe (#15369) : la mesure est un livrable, pas
         # un side-effect silencieux.
         st = get_pr_resolution().stats
@@ -1695,6 +3320,29 @@ def main() -> int:
             f"api: cache={st['cache_hits']} lot={st['listing_calls']}"
             f" hits_lot={st['listing_hits']} ancre={st['anchor_calls']}"
             f" degrade={st['listing_degraded']}"
+        )
+        # #23330 : ce que la confrontation au tip distant a change, pour
+        # que la mesure soit lisible sans relire les refus un par un.
+        rt = REMOTE_TIP_STATS
+        if rt["calls"]:
+            print(
+                f"tip distant: appels={rt['calls']} ok={rt['ok']}"
+                f" absent={rt['absent']} indetermine={rt['unknown']}"
+                f" leves_egalite={rt['cleared_equal']}"
+                f" leves_ancetre={rt['cleared_ancestor']}"
+            )
+
+    # #127 : un organe muet (scanned=0) n'est PAS une attestation de ferme
+    # propre. Averti sur stderr -- le journal de la tache planifiee fusionne
+    # les deux flux, et en --json le stdout doit rester pur pour json.loads.
+    # Le champ JSON `mute` (ci-dessus) porte la meme information aux lecteurs
+    # structurels ; aucun des deux ne modifie une decision de retrait.
+    if len(statuses) == 0:
+        print(
+            "MUTE: aucun worktree diagnostique (scanned=0) -- ce rapport "
+            "n'atteste pas une ferme propre ; le passage est silencieux, "
+            "pas propre (#127).",
+            file=sys.stderr,
         )
 
     # Seuil d'alerte (#3895) : stderr, jamais stdout -- en --json le stdout

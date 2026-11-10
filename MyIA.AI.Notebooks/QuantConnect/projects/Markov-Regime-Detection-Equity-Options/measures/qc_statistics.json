@@ -1,0 +1,68 @@
+{
+ "projectId": 37338046,
+ "backtests": {
+  "book-window-2019-2024": {
+   "backtestId": "fd8918f977e618fa6da152edea61acca",
+   "parameterSet": [],
+   "statistics": {
+    "Sharpe Ratio": "-2.188",
+    "Compounding Annual Return": "-6.808%",
+    "Drawdown": "33.100%",
+    "Net Profit": "-29.698%",
+    "Total Orders": "430",
+    "Total Fees": "$430.00",
+    "Portfolio Turnover": "0.77%",
+    "Probabilistic Sharpe Ratio": "0.000%"
+   },
+   "runtimeStatistics": {
+    "Assignments": "0",
+    "Empty chains": "0",
+    "Equity": "$70,302.50",
+    "Fees": "-$430.00",
+    "Fit failures": "0",
+    "Holdings": "$6,053.50",
+    "Long straddles": "54",
+    "Net Profit": "$-28,048.00",
+    "Probabilistic Sharpe Ratio": "0.000%",
+    "Regime flips": "107",
+    "Return": "-29.70 %",
+    "Short straddles": "54",
+    "Unrealized": "$-1,801.00",
+    "Volume": "$1,196,636.00"
+   }
+  },
+  "oos-2024-2026": {
+   "backtestId": "4e420797069bd1907f60180c3bb05d5e",
+   "parameterSet": {
+    "start_year": 2024,
+    "end_year": 2026
+   },
+   "statistics": {
+    "Sharpe Ratio": "-1.85",
+    "Compounding Annual Return": "-2.475%",
+    "Drawdown": "7.500%",
+    "Net Profit": "-4.895%",
+    "Total Orders": "90",
+    "Total Fees": "$90.00",
+    "Portfolio Turnover": "0.46%",
+    "Probabilistic Sharpe Ratio": "0.000%"
+   },
+   "runtimeStatistics": {
+    "Assignments": "0",
+    "Empty chains": "0",
+    "Equity": "$95,105.00",
+    "Fees": "-$90.00",
+    "Fit failures": "0",
+    "Holdings": "$6,662.00",
+    "Long straddles": "11",
+    "Net Profit": "$-6,177.00",
+    "Probabilistic Sharpe Ratio": "0.000%",
+    "Regime flips": "22",
+    "Return": "-4.90 %",
+    "Short straddles": "12",
+    "Unrealized": "$1,235.00",
+    "Volume": "$327,635.00"
+   }
+  }
+ }
+}

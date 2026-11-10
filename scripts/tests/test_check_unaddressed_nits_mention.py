@@ -390,7 +390,7 @@ FIXTURE_13496_APPROVE = (
     "depuis mon CHANGES_REQUESTED sur `ae88aefc`). Le one-liner demande est "
     "pose exactement, et je tiens la promesse de ma review : avec le garde, "
     "je repasse en APPROVE.\n\n"
-    "Security scan : 0 match sur le delta. Ball merge : Emerjesse."
+    "Security scan : 0 match sur le delta. Ball merge : Jean-Sylvain."
 )
 
 # #13027, review APPROVED du 2026-08-29T20:59:35Z. Meme classe, autre forme :
@@ -449,6 +449,13 @@ def test_13559_approve_a_corriger_avant_bloque_toujours():
     """Controle negatif — une consigne imperative avant merge reserve."""
     body = ("**[Hermes]** APPROVE. Le typo du docstring est a corriger avant "
             "merge, CONCERNS mineur.")
+    assert len(_blocking(body)) == 1
+
+
+def test_13559_approve_a_corriger_avant_bloque_toujours_bracketed():
+    """Variante de couverture : la meme reserve portee par le marqueur canonique [BEFORE-MERGE]."""
+    body = ("**[Hermes]** APPROVE sous reserve de la correction du typo "
+            "du docstring [BEFORE-MERGE], CONCERNS mineur.")
     assert len(_blocking(body)) == 1
 
 

@@ -1,0 +1,173 @@
+name: CodeQL
+
+# CodeQL en *advanced setup* (issue #22548, audit CI #22461 levier 2,
+# decision du mainteneur Q142 = c). Ce fichier REMPLACE le default setup
+# dynamique de GitHub, qui lancait 4 analyses (`actions`, `csharp`,
+# `javascript-typescript`, `python`) a CHAQUE tete de PR, y compris sur les PRs
+# de carnet ou de doc : 78 runs `pull_request` en 24 h, ~312 jobs, ~14 min/run
+# github-hosted (mesure 2026-09-05, docs/ci/slow-lane.md tranche 2), ~25 % du
+# calcul CI, et le premier consommateur du plafond heberge.
+#
+# Ce qui change par rapport au default setup :
+#   - `pull_request` est filtre par `paths` sur le code REELLEMENT analyse :
+#     une PR de carnet (*.ipynb), de markdown ou de Lean ne lance plus AUCUNE
+#     analyse (4 jobs -> 0, l'attendu chiffre du body de #22548) ;
+#   - la matrice d'une PR est DERIVEE des langages dont un fichier a change,
+#     au lieu d'etre toujours x4 (job `changes`) ;
+#   - `push: main` et un `schedule` hebdomadaire restent le filet : ce que le
+#     default setup faisait sur chaque tete de PR est fait une fois par
+#     semaine sur `main` et a chaque merge.
+#
+# Fidelite d'analyse, a dire plutot qu'a supposer : `csharp` tourne en
+# `build-mode: none` (aucun build). Les traces du depot (slow-lane.yml,
+# tranche 2 de #12856) disent que le default setup, lui, CONSTRUISAIT le C#
+# (autobuild, ~6 min 34 s sur #14746) — le `none` n'est donc pas un portage
+# iso-cout, c'est un arbitrage de cout assume. Si la qualite des alertes C#
+# baisse, la bascule est d'une ligne : donner `build_mode: autobuild` a
+# l'entree `csharp` de la matrice et relancer.
+#
+# ORDRE DE BASCULE (ai-01) — tant que le default setup est actif, l'upload
+# SARIF de ce workflow est REFUSE par GitHub (« CodeQL analyses from advanced
+# configurations cannot be processed when the default setup is enabled »,
+# constate sur le run 33970230585) : c'est le verrou fail-closed attendu, il
+# ne se contourne pas. (1) cette PR prete et relue ; (2) ai-01 desactive le
+# default setup ; (3) on rejoue ce run, qui doit passer ; (4) merge. La
+# fenetre sans analyse dure de (2) a (4).
+#
+# Le nom du workflow reste `CodeQL` : `evict-orphan-caches.yml` s'abonne a ses
+# fins par `workflow_run: workflows: [CodeQL]`, et cette adresse par nom, qui
+# ne resolvait rien tant que le run etait dynamique (question ouverte #18309),
+# resout desormais puisqu'il s'agit d'un workflow du depot.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Hebdomadaire, minute hors :00 (convention anti-stampede). Mardi, comme la
+    # jambe CodeQL de slow-lane.yml que ce fichier remplace.
+    - cron: "23 2 * * 2"
+  pull_request:
+    paths:
+      # Surface reellement analysee. Jamais *.ipynb, *.md, *.lean : c'est
+      # exactement ce que le default setup analysait pour rien.
+      - "**/*.py"
+      - "**/*.cs"
+      - "**/*.csproj"
+      - "**/*.sln"
+      - "**/*.cshtml"
+      - "**/*.razor"
+      - "**/*.js"
+      - "**/*.mjs"
+      - "**/*.cjs"
+      - "**/*.jsx"
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.mts"
+      - "**/*.cts"
+      - ".github/workflows/**"
+      - ".github/actions/**"
+
+permissions:
+  contents: read
+
+# Groupe par ref ; annulation sur PR seulement. Jamais `true` en dur : sur
+# `push: main` une annulation en cascade detruit la verification du merge
+# precedent (#13488 / #13372, garde scripts/ci/check_concurrency_conj.py).
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    name: CodeQL changed languages
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read   # repli : liste des fichiers de la PR par l'API
+    outputs:
+      languages: ${{ steps.derive.outputs.languages }}
+    steps:
+      # Profondeur 2, pas 0 : sur `pull_request`, actions/checkout place le
+      # commit de fusion `refs/pull/N/merge`, donc `HEAD` et `HEAD^1` sont tous
+      # deux presents et `git diff HEAD^1 HEAD` rend les fichiers de la PR sans
+      # reseau ni quota. Un `fetch-depth: 0` rapatrierait 2,1 Go a chaque PR de
+      # code — exactement la depense que #22461 veut reduire.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      # Matrice derivee, jamais ecrite a la main : une PR qui ne touche que du
+      # Python ne paie pas trois analyses de plus. FAIL-OPEN assume (contrat
+      # du script) — toute incertitude rend les 4 langages. Se tromper dans ce
+      # sens coute du calcul, se tromper dans l'autre laisse du code non
+      # analyse.
+      - name: Derive the language matrix
+        id: derive
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # Source primaire, locale. Mesure du 2026-10-25 (PR #22553) : l'API
+          # seule rendait `403 API rate limit exceeded for installation` — le
+          # quota de l'installation est partage par la flotte, donc une source
+          # primaire qui depend du trafic des autres lanes retombait sur la
+          # matrice complete. `HEAD^1` ne resout que sur un evenement
+          # `pull_request` ; ailleurs le script rend la matrice complete sans
+          # lire de diff.
+          GIT_BASE: HEAD^1
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/ci/codeql_changed_languages.py --event "$EVENT_NAME"
+
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read          # requis par l'analyse du langage `actions`
+      security-events: write # requis par l'upload SARIF
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.changes.outputs.languages) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Deux formes d'init, parce que `build-mode` n'a de sens que pour les
+      # langages compiles : `none` sur un langage interprete est au mieux
+      # inutile, au pire refuse par l'action.
+      - name: Init CodeQL (compiled, no build)
+        if: matrix.build_mode == 'none'
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - name: Init CodeQL (interpreted)
+        if: matrix.build_mode != 'none'
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Analyze
+        id: analyze
+        uses: github/codeql-action/analyze@v4
+
+      # Verdict publie, repris de la jambe CodeQL de slow-lane.yml (#12856
+      # tranche 2) que ce fichier remplace : un run muet se lit comme un run
+      # vert.
+      - name: Publish verdict
+        if: always()
+        env:
+          ANALYZE_OUTCOME: ${{ steps.analyze.outcome }}
+          LANGUAGE: ${{ matrix.language }}
+        run: |
+          if [ "${ANALYZE_OUTCOME}" = "success" ]; then
+            echo "::notice title=CodeQL (${LANGUAGE}) (PASS)::Analyse ${LANGUAGE} terminee."
+          else
+            echo "::error title=CodeQL (${LANGUAGE}) (rouge)::Analyse ${LANGUAGE} echouee (outcome=${ANALYZE_OUTCOME})."
+          fi

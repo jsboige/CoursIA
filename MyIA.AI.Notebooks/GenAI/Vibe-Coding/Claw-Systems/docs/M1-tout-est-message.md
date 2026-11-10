@@ -50,7 +50,7 @@ Avant qu'un message n'atteigne une base, NanoClaw doit décider **quel agent** d
 
 | Entité | Rôle |
 |--------|------|
-| **users** (`<canal>:<handle>`) | Une identité de plateforme, ex. `telegram:emerjesse`. |
+| **users** (`<canal>:<handle>`) | Une identité de plateforme, ex. `telegram:jean-sylvain`. |
 | **messaging_groups** | Un salon/canal sur **une** plateforme (un chat Telegram, un canal Slack…). |
 | **agent_groups** | Un agent logique : son workspace, sa mémoire, son `CLAUDE.md`, sa personnalité, sa configuration de conteneur. |
 | **sessions** | L'intersection `agent_group × messaging_group × thread` → **un conteneur dédié**. |

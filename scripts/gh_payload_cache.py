@@ -6,6 +6,40 @@ and keep all domain derivation outside this module. Entries live outside the
 repository, are written atomically, and may be served stale only when a fresh
 fetch fails. Every read returns an explicit status so stale data cannot look
 fresh.
+
+# Choix de non-objectif : pas d'ecriture PAR TRANCHE (#19643, acceptance 3)
+# ----------------------------------------------------------------------
+# A chaque run, on appelle `fetch()` UNE fois et on ecrit le resultat entier
+# en un seul coup (cf. `get_or_fetch` -> `_write` -> `os.replace`). Une
+# ecriture par tranche (N fenetres sauvegardees au fur et a mesure) n'est
+# PAS implementée. Trois raisons :
+#
+# 1. **Coût d'une tranche perdu** : si on ecrit la fenetre 1, qu'on fetch la
+#    fenetre 2 et qu'on timeout, on garde la fenetre 1 (gain : ~38 s au
+#    prochain cold-start) mais on s'expose a servir un corpus INCOMPLET
+#    comme s'il etait complet. L'over-load est d'envoyer en file un
+#    verdict faux sur N PRs au lieu d'un verdict explicite « tirage NON
+#    mesure » (#17038). Le cout reel d'un diagnostique faux a 200 PRs
+#    (incident fondateur #17315) depasse largement le gain de 38 s.
+#
+# 2. **Le verdict est explicite sans ecriture partielle** : `get_or_fetch`
+#    rend deja `stale` (cache + fetch failed) ou `bypass` (mode=off). Le
+#    caller de `pick_idle_grain` recoit donc un verdict OBSERVABLE, pas
+#    un payload complet silencieusement casse. Une ecriture par tranche
+#    ajouterait un TROISIEME etat (tranche partielle + verdict complet)
+#    que rien ne sait distinguer aujourd'hui.
+#
+# 3. **Le cold-start n'est pas le bottleneck operationnel** : la mesure
+#    c.470 montre que la fenetre 30 j prend 38 s a froid ; le belt
+#    complet (deux fenetres) prend 123 s, depassant le timeout des
+#    tools shell (~115-120 s). Le bon levier est `timeout=` sur
+#    `run_gh` (fait, c.470 : `RUN_GH_TIMEOUT_S = 60.0`) pour que le
+#    `TimeoutExpired` remonte en verdict explicite, pas le cold-start
+#    qu'on essayerait de couper en tranches.
+#
+# Si un caller a un use-case OU la perte de 38 s est inacceptable ET le
+# risque de verdict faux est acceptable, le pattern est documenté ici :
+# ecrire une clef par fenetre, et laisser le caller agreger.
 """
 
 from __future__ import annotations

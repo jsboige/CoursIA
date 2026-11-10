@@ -2,7 +2,7 @@
 
 > **Source canonique** : *Inoculation Prompting* (Anthropic), arXiv **2511.18397v1** — `<https://arxiv.org/abs/2511.18397>` (HTML vérifié : `arxiv.org/html/2511.18397v1` + miroir `ar5iv.labs.arxiv.org/html/2511.18397`).
 >
-> **Cible locale** : `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL.ipynb` (capstone final strate 5, pont vers `GenAI/PostTraining/`). Issue de suivi : **#5105**.
+> **Cible locale** : `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL-Python.ipynb` (capstone final strate 5, pont vers `GenAI/PostTraining/`). Issue de suivi : **#5105**.
 >
 > **Objet** : mise en correspondance **ligne à ligne** des conditions expérimentales de la publication avec notre protocole, sur six axes. Chaque ligne porte (a) une **citation de la publication** (section ou figure, verbatim) et (b) un **pointeur `fichier:cellule`** de notre côté. Là où notre protocole diverge d'une **précondition** du phénomène, c'est noté explicitement : c'est l'amorce du diagnostic, pas sa conclusion (la distillation doit pouvoir **contredire** les intuitions de départ si la publication dit autre chose).
 

@@ -1,0 +1,807 @@
+#!/usr/bin/env python3
+"""Tests unitaires de `scripts/ci/check_issue_concerns.py` (#20183).
+
+L'organe recense les Concerns du mainteneur restes sans reponse dans les fils
+d'issues. Toute la logique de decision est pure (elle prend une liste de
+`Comment` et rend un `IssueReport`) : c'est elle que ces tests exercent, hors
+reseau. Seules `list_issue_numbers` et `fetch_comments` parlent a GitHub.
+
+Les cas sont calques sur les fils de controle mesures le 2026-10-10 :
+
+  - #19898 — deux Concerns user (08/10 10:11Z, 21:00Z), deux gestes de lane
+    (`[CLAIMED]`, `[VERIFICATION]`) intercalaires, reponse ai-01 du 09/10 22:37Z.
+    A l'etat du 08/10 : NON REPONDUS + `gesture-after`. A l'etat courant :
+    REPONDUS.
+  - #17889 — « Concern pris en compte — oui, les transcripts portent plus… »
+    est un ACK de lane : il ne compte PAS comme Concern neuf, mais il REPOND
+    (2410 caracteres de fond).
+  - #16757 — « **Concern pris (ai-01).** » : decore de markdown, il doit etre
+    reconnu comme ACK et non comme Concern.
+  - #18601 — la reponse ne dit jamais « Concern » ; elle cite l'horodatage du
+    Concern (« question du 15:30Z »). Exiger le mot fabriquerait un faux « sans
+    reponse ».
+
+Couvre aussi le plancher fail-closed : un acquittement nu ne repond pas, et un
+fil qui ne porte que des gestes laisse le Concern NON REPONDU.
+
+Classe ``user-remark`` (#20185, classe 2) : sous le login partage, l'auteur ne
+separe pas un post de lane d'une remarque du mainteneur — c'est la FORME du corps
+qui tranche (six signatures mesurees, ``lane_signature``). Une reponse non signee
+sans reponse reste ouverte ; un post de lane signe n'est jamais un candidat ; une
+citation forte (horodatage) referme ; le mot « Concern » ne referme pas une
+remarque ; un geste de lane apres la remarque leve ``gesture-after``.
+
+Le module est charge par chemin (`importlib`) : `scripts/ci/` n'est pas un
+paquet importable, et deux organes peuvent partager un nom de module.
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import sys
+import unittest
+from pathlib import Path
+
+_HERE = Path(__file__).resolve()
+_SPEC = importlib.util.spec_from_file_location(
+    "check_issue_concerns", _HERE.parent.parent / "ci" / "check_issue_concerns.py"
+)
+assert _SPEC and _SPEC.loader
+mod = importlib.util.module_from_spec(_SPEC)
+sys.modules[_SPEC.name] = mod
+_SPEC.loader.exec_module(mod)
+
+Comment = mod.Comment
+
+
+def c(cid: int, created_at: str, body: str, author: str = "jsboige") -> Comment:
+    return Comment(id=cid, author=author, created_at=created_at, body=body)
+
+
+CLAIM = "[CLAIMED] lane myia-po-2024:CoursIA-2 -- pli 1 (cartography verification, c.125)"
+VERIF = "[VERIFICATION] pli 1 — verification firsthand par git grep sur main (c.125)"
+CONCERN_1 = (
+    "Concern: Puisque ca n'a pas ete cite, ca meriterait quand meme d'inclure "
+    "l'annonce officielle qui vient avec ce depot."
+)
+CONCERN_2 = (
+    "Concern: Il me semble qu'il y a des resultats tout a fait interessant en "
+    "complexite algorithmique qui n'ont pas ete releves ici."
+)
+REPLY_19898 = (
+    "**Reponse ai-01 a tes deux Concerns (08/10, 10:11Z et 21:00Z).** Elle "
+    "arrive avec plus d'une journee de retard, et c'est un manquement."
+)
+#: #2159 — le Concern du 2026-10-18T22:26Z et la reponse de lane du
+#: 2026-10-19T03:56Z qui le cite (faux NON REPONDU mesure avant le correctif).
+CONCERN_2159 = (
+    "Concern: Alors qu'on continue empiler des modules dans le cadre de cet "
+    "Epic, est-ce qu'il ne serait pas temps de faire une pause pour voir ou "
+    "en est la toute derniere version de Mathlib sur le sujet ?"
+)
+REPLY_2159 = (
+    "[INFO] Reponse au Concern du 2026-10-18T22:26Z — releve mesure "
+    "Mathlib-vs-lac + projets externes — Grain: DEEP/research-code — lane "
+    "myia-po-2025:CoursIA\n\nAucun fichier edite, aucun module ajoute."
+)
+
+
+class ClassifyTests(unittest.TestCase):
+    def test_user_concern(self):
+        self.assertEqual(mod.classify(c(1, "2026-10-08T10:11:27Z", CONCERN_1)), "concern")
+
+    def test_lane_ack_is_not_a_concern(self):
+        body = "Concern pris en compte — oui, les transcripts portent plus que la premiere vague."
+        self.assertEqual(mod.classify(c(2, "2026-09-26T15:51:15Z", body)), "ack")
+
+    def test_markdown_decorated_ack_is_not_a_concern(self):
+        # #16757 : « **Concern pris (ai-01).** » — la decoration de tete est
+        # neutralisee avant le match.
+        self.assertEqual(mod.classify(c(3, "2026-09-18T22:21:56Z", "**Concern pris (ai-01).** Oui.")), "ack")
+
+    def test_ack_from_a_non_user_login_is_not_a_concern(self):
+        # Le compte ai-01 est distinct de jsboige : hors de la classe concern.
+        got = mod.classify(c(4, "2026-09-18T22:21:56Z", "**Concern pris (ai-01).**", author="myia-ai-01"))
+        self.assertNotEqual(got, "concern")
+
+    def test_ack_routes_the_same_under_every_lane_login(self):
+        # #20186 : un accuse de reception de lane se juge par sa FORME, pas par le
+        # compte qui le porte. Hors de jsboige il tombait dans « other », le seul
+        # seau sans plancher de substance.
+        for login in ("jsboige", "myia-ai-01", "myia-po-2026", "clusterManager-Myia"):
+            self.assertEqual(
+                mod.classify(c(20, "2026-09-18T22:21:56Z", "Concern pris en compte.", author=login)),
+                "ack",
+                f"l'ACK doit se router pareil sous {login}",
+            )
+
+    def test_non_lane_login_is_not_presumed_a_lane(self):
+        # Le routage ne s'elargit pas a tout le monde : un compte hors flotte garde
+        # le seau « other » — et c'est « proves » qui l'empeche de refermer.
+        self.assertEqual(
+            mod.classify(c(21, "2026-09-18T22:21:56Z", "Concern pris en compte.", author="un-contributeur")),
+            "other",
+        )
+
+    def test_lane_gestures(self):
+        self.assertEqual(mod.classify(c(5, "2026-10-08T11:56:59Z", CLAIM)), "gesture")
+        self.assertEqual(mod.classify(c(6, "2026-10-08T11:57:25Z", VERIF)), "gesture")
+        self.assertEqual(
+            mod.classify(c(7, "2026-10-09T23:06:46Z", "[LIVRAISON] Pli 1 — lecture du depot")),
+            "gesture",
+        )
+
+    def test_plain_comment_is_other(self):
+        self.assertEqual(mod.classify(c(8, "2026-10-07T16:36:24Z", "Elements de mesure sur la livraison en double.")), "other")
+
+
+class CitesTests(unittest.TestCase):
+    def test_word_concern(self):
+        self.assertTrue(mod.cites(c(1, "2026-10-08T10:11:27Z", CONCERN_1), c(9, "2026-10-09T22:37:10Z", REPLY_19898)))
+
+    def test_timestamp_citation_without_the_word(self):
+        # #18601 : la reponse cite « question du 15:30Z », jamais le mot.
+        concern = c(10, "2026-10-07T15:30:59Z", "Concern: Livraison en double et 2 nits de ma part.")
+        reply = c(11, "2026-10-07T16:36:24Z", "Elements de mesure sur la livraison en double (question du 15:30Z), pour que l'arbitrage soit court.")
+        self.assertTrue(mod.cites(concern, reply))
+
+    def test_quote_citation(self):
+        concern = c(12, "2026-10-01T10:00:00Z", "Concern: le kernel drift sur trois notebooks de la serie GenAI Image.")
+        reply = c(13, "2026-10-02T10:00:00Z", "Sur le point remonte : le kernel drift sur trois notebooks de la serie GenAI Image est corrige.")
+        self.assertTrue(mod.cites(concern, reply))
+
+    def test_unrelated_reply_does_not_cite(self):
+        concern = c(14, "2026-10-01T10:00:00Z", CONCERN_2)
+        reply = c(15, "2026-10-02T10:00:00Z", "J'ai pousse la branche et lance les tests.")
+        self.assertFalse(mod.cites(concern, reply))
+
+    def test_hhmm_token(self):
+        # Forme non interpolante (garde #17276) : assertEqual ferait sortir la valeur.
+        self.assertTrue(
+            mod.hhmm_token("2026-10-07T15:30:59Z") == "15:30Z",
+            "hhmm_token doit extraire HH:MM depuis l'ISO",
+        )
+
+    def test_hhmm_token_yields_empty_on_a_foreign_format(self):
+        # #20186 : une milliseconde, un offset ou un null ne doivent pas tuer le run
+        # sur les 580 issues pour une donnee non essentielle.
+        # Forme non interpolante (garde #17276, meme classe que le test ci-dessus) :
+        # assertEqual ferait sortir la valeur dans les logs CI.
+        for bad in ("2026-10-07T15:30:59.000Z", "2026-10-07T15:30:59+00:00", "", None):
+            self.assertTrue(
+                mod.hhmm_token(bad) == "",
+                "hhmm_token doit rendre une chaine vide sur un format non-Z",
+            )
+
+
+class CiteStrengthTests(unittest.TestCase):
+    """#20186 : les trois formes de citation ne se valent pas."""
+
+    def test_timestamp_is_strong(self):
+        concern = c(30, "2026-10-07T15:30:59Z", "Concern: Livraison en double et 2 nits de ma part.")
+        reply = c(31, "2026-10-07T16:36:24Z", "Elements de mesure (question du 15:30Z), pour que l'arbitrage soit court.")
+        self.assertEqual(mod.cite_strength(concern, reply), mod.CITE_STRONG)
+
+    def test_quoted_text_is_strong(self):
+        concern = c(32, "2026-10-01T10:00:00Z", "Concern: le kernel drift sur trois notebooks de la serie GenAI Image.")
+        reply = c(33, "2026-10-02T10:00:00Z", "Sur le point remonte : le kernel drift sur trois notebooks de la serie GenAI Image est corrige.")
+        self.assertEqual(mod.cite_strength(concern, reply), mod.CITE_STRONG)
+
+    def test_the_word_alone_is_weak(self):
+        concern = c(34, "2026-10-01T10:00:00Z", CONCERN_2)
+        reply = c(35, "2026-10-02T10:00:00Z", "Merci, je note ce Concern pour la prochaine passe.")
+        self.assertEqual(mod.cite_strength(concern, reply), mod.CITE_WEAK)
+
+    def test_no_form_at_all_is_none(self):
+        concern = c(36, "2026-10-01T10:00:00Z", CONCERN_2)
+        reply = c(37, "2026-10-02T10:00:00Z", "J'ai pousse la branche et lance les tests.")
+        self.assertEqual(mod.cite_strength(concern, reply), mod.CITE_NONE)
+
+    def test_a_foreign_date_does_not_forge_a_strong_citation(self):
+        # Un jeton vide ne doit pas matcher toute reponse : `"" in text` est vrai.
+        concern = c(40, "pas-une-date", CONCERN_2)
+        reply = c(41, "2026-10-02T10:00:00Z", "J'ai pousse la branche et lance les tests.")
+        self.assertEqual(mod.cite_strength(concern, reply), mod.CITE_NONE)
+
+    def test_cites_remains_the_weak_predicate(self):
+        concern = c(38, "2026-10-01T10:00:00Z", CONCERN_2)
+        reply = c(39, "2026-10-02T10:00:00Z", "Merci, je note ce Concern pour la prochaine passe.")
+        self.assertTrue(mod.cites(concern, reply))
+
+
+class ProvesTests(unittest.TestCase):
+    """#20186 : ce qui REFERME un Concern."""
+
+    def test_strong_citation_closes_whatever_the_kind(self):
+        concern = c(50, "2026-10-07T15:30:59Z", "Concern: Livraison en double.")
+        reply = c(51, "2026-10-07T16:36:24Z", "Voir la question du 15:30Z, c'est traite.")
+        for kind in ("other", "ack"):
+            self.assertTrue(mod.proves(concern, reply, kind))
+
+    def test_the_word_alone_closes_only_a_substantive_ack(self):
+        concern = c(52, "2026-10-01T10:00:00Z", CONCERN_2)
+        reply = c(53, "2026-10-02T10:00:00Z", "Je note ce Concern pour la prochaine passe.")
+        self.assertTrue(mod.proves(concern, reply, "ack"))
+        self.assertFalse(mod.proves(concern, reply, "other"))
+
+    def test_nothing_closes_on_no_citation(self):
+        concern = c(54, "2026-10-01T10:00:00Z", CONCERN_2)
+        reply = c(55, "2026-10-02T10:00:00Z", "J'ai pousse la branche.")
+        for kind in ("other", "ack"):
+            self.assertFalse(mod.proves(concern, reply, kind))
+
+
+class ResponseCandidateTests(unittest.TestCase):
+    def test_bare_ack_is_not_a_response(self):
+        self.assertFalse(mod.is_response_candidate("ack", c(16, "2026-10-01T10:00:00Z", "Concern pris.")))
+
+    def test_substantive_ack_is_a_response(self):
+        body = "Concern pris en compte — " + ("voici la carte de ce qui se distille. " * 8)
+        self.assertTrue(mod.is_response_candidate("ack", c(17, "2026-10-01T10:00:00Z", body)))
+
+    def test_gesture_is_not_a_response(self):
+        self.assertFalse(mod.is_response_candidate("gesture", c(18, "2026-10-01T10:00:00Z", CLAIM)))
+
+    def test_gesture_without_the_concern_is_never_a_candidate(self):
+        """Le comportement historique est conserve quand le Concern n'est pas fourni."""
+        self.assertFalse(
+            mod.is_response_candidate("gesture", c(18, "2026-10-01T10:00:00Z", CLAIM))
+        )
+
+    def test_gesture_that_cites_the_concern_strongly_is_a_response(self):
+        """#2159 : un geste de lane qui cite l'horodatage du Concern y repond."""
+        concern = c(30, "2026-10-18T22:26:03Z", CONCERN_2159)
+        reply = c(31, "2026-10-19T03:56:43Z", REPLY_2159)
+        self.assertEqual(mod.classify(reply), "gesture")
+        self.assertTrue(mod.cites_concern(concern, reply))
+        self.assertTrue(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_lane_signature_contract_requires_utc_minute(self):
+        """Le format observé des lanes inclut heure et minute UTC (#2159)."""
+        concern = c(30, "2026-10-18T22:26:03Z", CONCERN_2159)
+        dated_reply = c(
+            31,
+            "2026-10-19T03:56:43Z",
+            "[INFO] Reponse au Concern du 2026-10-18T22:26Z — releve mesure.",
+        )
+        date_only_reply = c(
+            32,
+            "2026-10-19T03:56:43Z",
+            "[INFO] Reponse au Concern du 2026-10-18 — releve mesure.",
+        )
+
+        self.assertTrue(mod.cites_concern(concern, dated_reply))
+        self.assertFalse(mod.cites_concern(concern, date_only_reply))
+
+    def test_gesture_that_does_not_cite_the_concern_stays_excluded(self):
+        concern = c(32, "2026-10-18T22:26:03Z", CONCERN_2159)
+        reply = c(33, "2026-10-19T03:56:43Z", "[INFO] Releve mesure — aucun fichier edite.")
+        self.assertEqual(mod.classify(reply), "gesture")
+        self.assertFalse(mod.cites_concern(concern, reply))
+        self.assertFalse(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_incidental_short_window_is_not_a_citation(self):
+        """Une fenetre courte partagee par coincidence ne referme rien.
+
+        Mesure sur 624 issues : la fenetre de 40 caracteres attrapait des
+        fragments sans lien (« 46`, `37642385421`, `37642397358` » — une suite
+        de numeros de PR). Le geste n'est candidat que par horodatage ou par
+        extrait long.
+        """
+        concern = c(
+            34,
+            "2026-10-20T16:08:51Z",
+            "Diagnostic — la derive portee par une classe « scheduled-orphan », "
+            "mesuree sur 4 snapshots. Les ids 37642385421 et 37642397358 "
+            "portent la derive.",
+        )
+        reply = c(
+            35,
+            "2026-10-22T16:57:47Z",
+            "[INFO] candidate-delivered — deja livre par PR #21634. "
+            "Voir 46`, `37642385421`, `37642397358`, `3764.",
+        )
+        self.assertFalse(mod.cites_concern(concern, reply))
+        self.assertFalse(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_long_quote_is_a_citation(self):
+        """Un extrait long du texte du Concern reste une citation."""
+        body = (
+            "Diagnostic — la derive portee par une classe « scheduled-orphan », "
+            "mesuree sur 4 snapshots. Les ids 37642385421 et 37642397358 "
+            "portent la derive."
+        )
+        concern = c(36, "2026-10-20T16:08:51Z", body)
+        reply = c(
+            37,
+            "2026-10-22T16:57:47Z",
+            "[INFO] Reponse au diagnostic : « " + body + " » — traite par PR #21634.",
+        )
+        self.assertTrue(mod.cites_concern(concern, reply))
+        self.assertTrue(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_long_quote_keeps_gesture_candidate_without_minute_signature(self):
+        """#24672 : l'extrait fort garde la voie ouverte sans HH:MMZ."""
+        body = (
+            "Le diagnostic mesure une derive persistante dans les quatre snapshots "
+            "et montre que les identifiants de suivi ne suffisent pas a expliquer "
+            "le changement observe dans les resultats."
+        )
+        concern = c(38, "2026-10-18T22:26:03Z", body)
+        signature = "[INFO] Reponse au Concern du 2026-10-18 — "
+
+        # L'absence de minutes ne neutralise pas une citation assez longue.
+        quoted_80 = c(39, "2026-10-19T03:56:43Z", signature + body[20:100])
+        self.assertNotIn("22:26Z", quoted_80.body)
+        self.assertTrue(mod.cites_concern(concern, quoted_80))
+        self.assertTrue(mod.is_response_candidate("gesture", quoted_80, concern))
+
+        # La date seule n'est pas une citation forte, et 40–79 caractères
+        # restent sous le seuil mesuré.
+        for length in (40, 79):
+            with self.subTest(length=length):
+                short_quote = c(
+                    40 + length,
+                    "2026-10-19T03:56:43Z",
+                    signature + body[:length],
+                )
+                self.assertFalse(mod.cites_concern(concern, short_quote))
+                self.assertFalse(
+                    mod.is_response_candidate("gesture", short_quote, concern)
+                )
+
+    def test_quote_strength_keeps_the_80_character_boundary(self):
+        concern = c(38, "2026-10-01T10:00:00Z", "x" * 80)
+        short_quote = c(39, "2026-10-02T10:00:00Z", "[INFO] " + "x" * 79)
+        boundary_quote = c(40, "2026-10-02T10:00:00Z", "[INFO] " + "x" * 80)
+
+        self.assertFalse(mod.cites_concern(concern, short_quote))
+        self.assertTrue(mod.cites_concern(concern, boundary_quote))
+
+    def test_ordinary_comment_is_a_response_candidate(self):
+        self.assertTrue(mod.is_response_candidate("other", c(19, "2026-10-01T10:00:00Z", "Voici l'arbitrage.")))
+
+
+class AnalyseTests(unittest.TestCase):
+    def test_founding_shape_19898_open_state(self):
+        """Etat du 08/10 : deux Concerns, deux gestes, aucune reponse."""
+        comments = [
+            c(6057598699, "2026-10-08T10:11:27Z", CONCERN_1),
+            c(6059329048, "2026-10-08T11:56:59Z", CLAIM),
+            c(6059336062, "2026-10-08T11:57:25Z", VERIF),
+            c(6068963568, "2026-10-08T21:00:39Z", CONCERN_2),
+        ]
+        report = mod.analyse_comments(19898, comments)
+        self.assertEqual(len(report.concerns), 2)
+        self.assertEqual([f.status for f in report.concerns], ["NON REPONDU", "NON REPONDU"])
+        self.assertTrue(report.gesture_after)
+        self.assertEqual(len(report.unresolved), 2)
+
+    def test_founding_shape_19898_answered_state(self):
+        """Etat courant : la reponse ai-01 du 09/10 22:37Z cite les deux."""
+        comments = [
+            c(6057598699, "2026-10-08T10:11:27Z", CONCERN_1),
+            c(6059329048, "2026-10-08T11:56:59Z", CLAIM),
+            c(6059336062, "2026-10-08T11:57:25Z", VERIF),
+            c(6068963568, "2026-10-08T21:00:39Z", CONCERN_2),
+            c(6090422607, "2026-10-09T22:37:10Z", REPLY_19898, author="myia-ai-01"),
+            c(6090780198, "2026-10-09T23:06:46Z", "[LIVRAISON] Pli 1 — lecture du depot"),
+        ]
+        report = mod.analyse_comments(19898, comments)
+        self.assertEqual([f.status for f in report.concerns], ["REPONDU", "REPONDU"])
+        self.assertEqual([f.proof for f in report.concerns], [6090422607, 6090422607])
+        self.assertEqual(report.unresolved, [])
+        # Le geste reste visible comme drapeau aggravant.
+        self.assertTrue(report.gesture_after)
+
+    def test_fp_ack_17889_counts_one_concern_and_is_answered(self):
+        comments = [
+            c(5845689098, "2026-09-26T11:00:41Z", "## Mission livree : transcriptions + plan de distillation"),
+            c(
+                5846009215,
+                "2026-09-26T11:47:30Z",
+                "Concern: Merci pour ce premier jet, mais il me semble qu'il y a un peu plus a distiller des transcripts.",
+            ),
+            c(
+                5847630219,
+                "2026-09-26T15:51:15Z",
+                "Concern pris en compte — oui, les transcripts portent plus que la premiere vague. "
+                "Voici la carte de ce qui se distille et ou. " * 20,
+            ),
+        ]
+        report = mod.analyse_comments(17889, comments)
+        self.assertEqual(len(report.concerns), 1, "l'ACK de lane ne doit pas compter comme un Concern neuf")
+        self.assertEqual(report.concerns[0].status, "REPONDU")
+
+    def test_fp_response_18601_answered_without_the_word(self):
+        comments = [
+            c(6041148439, "2026-10-07T15:30:59Z", "Concern: Livraison en double et 2 nits de ma part."),
+            c(
+                6042352101,
+                "2026-10-07T16:36:24Z",
+                "Elements de mesure sur la livraison en double (question du 15:30Z), pour que l'arbitrage soit court.",
+            ),
+        ]
+        report = mod.analyse_comments(18601, comments)
+        self.assertEqual(len(report.concerns), 1)
+        self.assertEqual(report.concerns[0].status, "REPONDU")
+
+    def test_bare_ack_leaves_the_concern_open(self):
+        """Fail-closed : un acquittement nu ne referme rien."""
+        comments = [
+            c(1, "2026-10-01T10:00:00Z", CONCERN_1),
+            c(2, "2026-10-01T11:00:00Z", "Concern pris."),
+        ]
+        report = mod.analyse_comments(42, comments)
+        self.assertEqual(report.concerns[0].status, "NON REPONDU")
+
+    def test_the_2159_shape_is_answered(self):
+        """#2159 : le geste de lane qui cite le Concern le referme."""
+        comments = [
+            c(6255920966, "2026-10-18T22:26:03Z", CONCERN_2159),
+            c(6259310809, "2026-10-19T03:56:43Z", REPLY_2159),
+        ]
+        report = mod.analyse_comments(2159, comments)
+        self.assertEqual(len(report.concerns), 1)
+        self.assertEqual(report.concerns[0].status, "REPONDU")
+        self.assertEqual(report.concerns[0].proof, 6259310809)
+        # Le geste qui referme n'aggrave pas : le drapeau vise les gestes
+        # poses apres le Concern et qui n'y repondent pas.
+        self.assertFalse(report.concerns[0].gesture_after)
+        self.assertFalse(report.gesture_after)
+
+    def test_the_2159_shape_control_without_citation(self):
+        """Controle : sans citation, le meme geste ne referme rien."""
+        comments = [
+            c(6255920966, "2026-10-18T22:26:03Z", CONCERN_2159),
+            c(
+                6259310809,
+                "2026-10-19T03:56:43Z",
+                "[INFO] Releve mesure — aucun fichier edite.",
+            ),
+        ]
+        report = mod.analyse_comments(2159, comments)
+        self.assertEqual(report.concerns[0].status, "NON REPONDU")
+        self.assertTrue(report.concerns[0].gesture_after)
+
+    def test_unrelated_later_comment_is_manual_review(self):
+        comments = [
+            c(1, "2026-10-01T10:00:00Z", CONCERN_1),
+            c(2, "2026-10-01T11:00:00Z", "Pousse la branche, les tests passent."),
+        ]
+        # Classe 1 seule : le second commentaire est lui-meme un candidat de la
+        # classe 2 (post non signe du compte partage) — hors scope de ce test.
+        report = mod.analyse_comments(43, comments, classes=("user-concern",))
+        self.assertEqual(report.concerns[0].status, "MANUAL_REVIEW")
+        self.assertEqual(len(report.unresolved), 1, "fail-closed : MANUAL_REVIEW reste dans la liste")
+
+    def test_bare_lane_ack_under_another_login_does_not_close(self):
+        """#20186 : le seau « other » n'est pas un passe-droit."""
+        comments = [
+            c(1, "2026-10-01T10:00:00Z", CONCERN_1),
+            c(2, "2026-10-01T11:00:00Z", "Concern pris en compte (myia-ai-01).", author="myia-ai-01"),
+        ]
+        report = mod.analyse_comments(70, comments)
+        self.assertNotEqual(report.concerns[0].status, "REPONDU")
+        self.assertEqual(len(report.unresolved), 1, "fail-closed : le Concern reste liste")
+
+    def test_word_only_long_comment_stays_manual_review(self):
+        """Le mot seul ne referme pas, meme long, hors acquittement de lane."""
+        comments = [
+            c(1, "2026-10-01T10:00:00Z", CONCERN_1),
+            c(
+                2,
+                "2026-10-01T11:00:00Z",
+                "Point de situation : le Concern evoque la semaine derniere reste dans ma pile, "
+                "je n'ai pas encore eu le temps de regarder le depot annonce. " * 3,
+            ),
+        ]
+        report = mod.analyse_comments(71, comments, classes=("user-concern",))
+        self.assertEqual(report.concerns[0].status, "MANUAL_REVIEW")
+        self.assertEqual(len(report.unresolved), 1)
+
+    def test_substantive_lane_ack_under_another_login_still_closes(self):
+        """La doctrine de #17889 survit au changement de login."""
+        comments = [
+            c(1, "2026-10-01T10:00:00Z", CONCERN_1),
+            c(
+                2,
+                "2026-10-01T11:00:00Z",
+                "Concern pris en compte — voici la carte de ce qui se distille. " * 6,
+                author="myia-ai-01",
+            ),
+        ]
+        report = mod.analyse_comments(72, comments)
+        self.assertEqual(report.concerns[0].status, "REPONDU")
+        self.assertEqual(report.concerns[0].proof, 2)
+
+    def test_no_concern_no_report(self):
+        comments = [c(1, "2026-10-01T10:00:00Z", CLAIM), c(2, "2026-10-01T11:00:00Z", "ok")]
+        self.assertEqual(mod.analyse_comments(44, comments).concerns, [])
+
+    def test_excerpt_is_bounded(self):
+        report = mod.analyse_comments(45, [c(1, "2026-10-01T10:00:00Z", CONCERN_1 * 20)])
+        self.assertLessEqual(len(report.concerns[0].excerpt), 200)
+
+
+class LaneSignatureTests(unittest.TestCase):
+    """Classe 2 : les signatures mesurees qui ecartent un post de lane."""
+
+    def test_lane_near_seat(self):
+        self.assertEqual(
+            mod.lane_signature("[CLAIMED] lane myia-po-2024:CoursIA-2 — reprise du pli"),
+            "lane-near-seat",
+        )
+
+    def test_seat_token_even_backticked(self):
+        # Un jeton de siege encage reste une signature : c'est la lane qui
+        # l'ecrit, l'encagement ne change pas l'auteur.
+        self.assertEqual(
+            mod.lane_signature("Rapport de `myia-po-2024:CoursIA-2`, pousse ce matin."),
+            "seat-token",
+        )
+
+    def test_grain_tag(self):
+        self.assertEqual(
+            mod.lane_signature("Grain: LIGHT/guard — passe de garde"), "grain-tag"
+        )
+
+    def test_cycle_watermark(self):
+        self.assertEqual(
+            mod.lane_signature("Point de situation (c.278)."), "cycle-watermark"
+        )
+
+    def test_cycle_watermark_bounded_does_not_eat_a_comment_id(self):
+        # #21621 : un id de commentaire n'est pas un numero de cycle. Le motif
+        # borne a quatre chiffres prend c.2199 (controle positif) et laisse
+        # c.6280946388 a la classe user-remark (controle negatif) — sinon une
+        # remarque du mainteneur qui cite un id est ecartee en silence.
+        self.assertEqual(
+            mod.lane_signature("Point de situation (c.2199)."), "cycle-watermark"
+        )
+        self.assertEqual(
+            mod.lane_signature("Voir la remarque c.6280946388 sur ce point."), ""
+        )
+
+    def test_head_tag_after_decoration(self):
+        self.assertEqual(
+            mod.lane_signature("**[LIVRAISON] Pli 1 — lecture du depot**"), "head-tag"
+        )
+
+    def test_maintainer_voice_is_unsigned(self):
+        self.assertEqual(
+            mod.lane_signature(
+                "Reponse ecrite qui tranche : option 1 — garder l'indice tel quel. "
+                "La valeur 8 n'est pas un spoiler : c'est un parametre de l'experience."
+            ),
+            "",
+        )
+
+
+class RemarkActTests(unittest.TestCase):
+    """L'intention declaree est enregistree, pas filtrante."""
+
+    def test_question(self):
+        self.assertEqual(mod.remark_act("Est-ce qu'on garde l'indice ?"), mod.ACT_QUESTION)
+
+    def test_directive(self):
+        self.assertEqual(
+            mod.remark_act("Decision : on reste sur l'option 1."), mod.ACT_DIRECTIVE
+        )
+
+    def test_statement(self):
+        self.assertEqual(
+            mod.remark_act("Le rendu est propre sur cette serie."), mod.ACT_STATEMENT
+        )
+
+
+class RemarkAnalysisTests(unittest.TestCase):
+    """Classe 2 : la machinerie de reponse s'applique telle quelle aux remarques."""
+
+    REMARK = (
+        "Reponse ecrite qui tranche : option 1 — garder l'indice tel quel. "
+        "La valeur 8 n'est pas un spoiler : c'est un parametre de l'experience."
+    )
+
+    def test_maintainer_remark_without_answer_is_open(self):
+        report = mod.analyse_comments(
+            21092,
+            [c(6233713025, "2026-10-17T12:09:20Z", self.REMARK)],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        finding = report.remarks[0]
+        self.assertEqual(finding.status, "NON REPONDU")
+        self.assertEqual(finding.act, mod.ACT_DIRECTIVE)
+        self.assertEqual(finding.slug, "user-remark")
+
+    def test_lane_signed_comment_is_never_a_remark(self):
+        # Aucun de ces corps n'est un geste (le seau les garderait sinon hors
+        # classe par le genre) : c'est bien ``lane_signature`` qui les ecarte.
+        for body in (
+            "Point de situation (c.278), cote myia-po-2024:CoursIA-2 : le pli avance.",
+            "Point de situation (c.278) : rien de neuf sur cette serie.",
+            "Grain: LIGHT/guard -- passe de garde sur les liens.",
+        ):
+            report = mod.analyse_comments(
+                7, [c(2, "2026-10-18T01:25:00Z", body)], classes=("user-remark",)
+            )
+            self.assertEqual(report.remarks, [], f"corps signe retenu : {body[:60]}")
+
+    def test_head_tag_is_routed_to_manual_review_not_excluded(self):
+        # #21621 : « [NanoClaw] a raison… » est une vraie remarque du
+        # mainteneur ; le tag entre crochets, sans autre signature de lane, est
+        # ambigu — il est route vers MANUAL_REVIEW au lieu d'etre ecarte.
+        report = mod.analyse_comments(
+            11,
+            [c(20, "2026-10-18T09:00:00Z", "[NanoClaw] a raison de pousser ce point.")],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "MANUAL_REVIEW")
+        self.assertEqual(report.excluded, {})
+
+    def test_excluded_comments_are_counted_by_signature(self):
+        # #21621 : l'ecart cesse d'etre silencieux — il est compte et publie,
+        # en texte comme en JSON, pour que le total ne passe pas pour exhaustif.
+        report = mod.analyse_comments(
+            12,
+            [
+                c(30, "2026-10-18T09:00:00Z", "Point de situation (c.278)."),
+                c(31, "2026-10-18T10:00:00Z", self.REMARK),
+            ],
+            classes=("user-remark",),
+        )
+        self.assertEqual(report.excluded, {"cycle-watermark": 1})
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(
+            report.as_dict()["excluded_by_signature"], {"cycle-watermark": 1}
+        )
+
+    def test_remark_closed_by_a_strong_citation(self):
+        report = mod.analyse_comments(
+            8,
+            [
+                c(10, "2026-10-17T12:09:20Z", self.REMARK),
+                c(
+                    11,
+                    "2026-10-17T13:00:00Z",
+                    "Sur ta reponse du 12:09Z : option 1 retenue, je la mets en oeuvre.",
+                ),
+            ],
+            classes=("user-remark",),
+        )
+        self.assertEqual(report.remarks[0].status, "REPONDU")
+        self.assertEqual(report.remarks[0].proof, 11)
+
+    def test_remark_with_unrelated_later_comment_is_manual_review(self):
+        report = mod.analyse_comments(
+            9,
+            [
+                c(10, "2026-10-17T12:09:20Z", self.REMARK),
+                c(11, "2026-10-17T13:00:00Z", "J'ai pousse la branche, les tests passent."),
+            ],
+            classes=("user-remark",),
+        )
+        statuses = [r.status for r in report.remarks]
+        # Le second commentaire est lui-meme un candidat (meme forme, compte
+        # partage) : le plancher sur-signale au lieu de filtrer — assume (#20185).
+        self.assertEqual(statuses, ["MANUAL_REVIEW", "NON REPONDU"])
+
+    def test_the_word_concern_does_not_close_a_remark(self):
+        report = mod.analyse_comments(
+            10,
+            [
+                c(10, "2026-10-17T12:09:20Z", self.REMARK),
+                c(11, "2026-10-17T13:00:00Z", "Ce Concern est note pour la prochaine passe."),
+            ],
+            classes=("user-remark",),
+        )
+        self.assertNotEqual(report.remarks[0].status, "REPONDU")
+
+    def test_a_foreign_login_is_not_a_maintainer_remark(self):
+        report = mod.analyse_comments(
+            5,
+            [c(1, "2026-10-17T12:09:20Z", self.REMARK, author="un-contributeur")],
+            classes=("user-remark",),
+        )
+        self.assertEqual(report.remarks, [])
+
+    def test_lane_gesture_after_a_remark_is_the_aggravating_flag(self):
+        report = mod.analyse_comments(
+            6,
+            [
+                c(1, "2026-10-17T12:09:20Z", self.REMARK),
+                c(2, "2026-10-18T01:25:00Z", CLAIM),
+            ],
+            classes=("user-remark",),
+        )
+        self.assertEqual(report.remarks[0].status, "NON REPONDU")
+        self.assertTrue(report.remarks[0].gesture_after)
+        self.assertTrue(report.gesture_after)
+
+    def test_class_scoping_keeps_the_classes_independent(self):
+        comments = [
+            c(1, "2026-10-01T10:00:00Z", CONCERN_1),
+            c(2, "2026-10-01T11:00:00Z", "Le rendu est propre."),
+        ]
+        only_concerns = mod.analyse_comments(3, comments, classes=("user-concern",))
+        only_remarks = mod.analyse_comments(3, comments, classes=("user-remark",))
+        self.assertEqual(len(only_concerns.concerns), 1)
+        self.assertEqual(only_concerns.remarks, [])
+        self.assertEqual(only_remarks.concerns, [])
+        self.assertEqual(len(only_remarks.remarks), 1)
+        self.assertEqual(only_remarks.remarks[0].status, "NON REPONDU")
+
+
+class RenderTests(unittest.TestCase):
+    def test_clean_thread(self):
+        text = mod.render_text([], "2026-09-25", "open", 581)
+        self.assertIn("Aucun", text)
+        self.assertIn("581", text)
+
+    def test_gesture_after_issue_is_listed_first(self):
+        plain = mod.analyse_comments(10, [c(1, "2026-10-05T10:00:00Z", CONCERN_1)])
+        flagged = mod.analyse_comments(
+            11, [c(2, "2026-10-01T10:00:00Z", CONCERN_2), c(3, "2026-10-02T10:00:00Z", CLAIM)]
+        )
+        text = mod.render_text([plain, flagged], "2026-09-25", "open", 2)
+        self.assertLess(text.index("#11"), text.index("#10"))
+        self.assertIn("gesture-after", text)
+
+    def test_remark_renders_with_its_act(self):
+        report = mod.analyse_comments(
+            12,
+            [c(1, "2026-10-17T12:09:20Z", "Decision : on garde l'option 1.")],
+            classes=("user-remark",),
+        )
+        text = mod.render_text([report], "2026-09-25", "open", 1)
+        self.assertIn("[directive]", text)
+        self.assertIn("remarque(s)", text)
+
+    def test_exclusions_are_published_in_the_text_output(self):
+        # #21621 : le nombre d'ecartes par signature figure dans la sortie.
+        report = mod.analyse_comments(
+            13,
+            [
+                c(40, "2026-10-18T09:00:00Z", "Point de situation (c.278)."),
+                c(41, "2026-10-18T10:00:00Z", "Le rendu est propre."),
+            ],
+            classes=("user-remark",),
+        )
+        text = mod.render_text([report], "2026-09-25", "open", 1)
+        self.assertIn("1 commentaire(s) ecarte(s) par signature de lane", text)
+        self.assertIn("cycle-watermark 1", text)
+
+
+class Utf8OutputTests(unittest.TestCase):
+    def test_emoji_excerpt_survives_a_cp1252_stdout(self):
+        # Mesure 2026-10-30 : un emoji dans un extrait de commentaire crashait
+        # le print sur un stdout redirige en page de codes ANSI (cp1252,
+        # UnicodeEncodeError apres lecture de 686 issues) -- exactement le
+        # canal de la ligne [CONCERNS] de la restitution coordinateur (#20183).
+        import io as _io
+
+        emoji_concern = "Concern: le rendu casse \U0001f680 partout"
+        original = sys.stdout
+        original_fetch = mod.fetch_comments
+        raw = _io.BytesIO()
+        sys.stdout = _io.TextIOWrapper(raw, encoding="cp1252")
+        try:
+            mod.fetch_comments = lambda number: [
+                c(60, "2026-10-19T09:00:00Z", emoji_concern)
+            ]
+            rc = mod.main(["--issues", "15"])
+            sys.stdout.flush()
+            payload = raw.getvalue()
+        finally:
+            sys.stdout = original
+            mod.fetch_comments = original_fetch
+        self.assertEqual(rc, 0)
+        out = payload.decode("utf-8")
+        self.assertIn("non resolu", out)
+        self.assertIn("\U0001f680", out)
+
+
+if __name__ == "__main__":
+    unittest.main()

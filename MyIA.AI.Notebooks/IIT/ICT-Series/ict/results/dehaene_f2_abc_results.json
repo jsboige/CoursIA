@@ -1,0 +1,76 @@
+{
+ "case": "F2_dehaene_abc",
+ "substrate": "agents synthétiques (store étendu 5 variables + self-model ridge)",
+ "seed_bases": [
+  0,
+  1,
+  7,
+  42
+ ],
+ "T": 8000,
+ "d": 8,
+ "n_shuffles": 50,
+ "scores_by_seed": [
+  {
+   "seed": 0,
+   "A": 0.23078828365020576,
+   "B": 0.14508822861695986,
+   "C": 0.0,
+   "p_A": 0.0,
+   "p_B": 0.0,
+   "p_C": 0.44,
+   "store_share_A": 0.33688733617103483
+  },
+  {
+   "seed": 1,
+   "A": 0.2578782864875532,
+   "B": 0.08946421936533282,
+   "C": 0.0,
+   "p_A": 0.0,
+   "p_B": 0.0,
+   "p_C": 0.62,
+   "store_share_A": 0.41938759514843554
+  },
+  {
+   "seed": 7,
+   "A": 0.9106613548392223,
+   "B": 0.04227700817312477,
+   "C": 0.0,
+   "p_A": 0.0,
+   "p_B": 0.0,
+   "p_C": 0.54,
+   "store_share_A": 0.46234110274767226
+  },
+  {
+   "seed": 42,
+   "A": 0.13484412562055176,
+   "B": 0.10133235153132675,
+   "C": 0.0,
+   "p_A": 0.0,
+   "p_B": 0.0,
+   "p_C": 0.46,
+   "store_share_A": 0.48006267224079896
+  }
+ ],
+ "mean_A": 0.38354301264938323,
+ "std_A": 0.307746045350417,
+ "mean_B": 0.09454045192168604,
+ "std_B": 0.03660069438742902,
+ "mean_C": 0.0,
+ "std_C": 0.0,
+ "delta": 0.2890025607276972,
+ "seeds_positive_delta": 4,
+ "verdict": "F2_CONFIRMED_EXTENDED_REQUIRED",
+ "kill_details": [
+  "score_A moyen = +0.384 (graines ['+0.231', '+0.258', '+0.911', '+0.135'])",
+  "score_B moyen = +0.095 (graines ['+0.145', '+0.089', '+0.042', '+0.101'])",
+  "delta = score_A - score_B = +0.289 ; 2*sigma_B = 0.073"
+ ],
+ "sanity_C_near_zero": true,
+ "limits": [
+  "Substrat SYNTHÉTIQUE : la conclusion porte sur ce modèle, pas sur un LLM",
+  "Régime B est une LÉSION (store vidé partout), pas un aveuglement du self-model",
+  "Régime C réutilise les trajectoires A : seule la branche self-model est ablatée",
+  "Témoins nuls par permutation d'étiquettes, n=50 par régime et par graine"
+ ]
+}

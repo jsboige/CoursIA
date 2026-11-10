@@ -25,22 +25,69 @@ class Colors:
     BOLD = '\033[1m'
 
 
+# Le nom de DISTRIBUTION n'est pas le nom de MODULE (#21614, defaut 4) :
+# `python-dotenv` s'importe sous `dotenv`. La transformation automatique
+# `-` -> `_` produisait `python_dotenv`, un module qui n'existe pas : le
+# check concluait "Non installe" pour un paquet present et importable --
+# un faux negatif qui retirait une composante sur deux, sur chaque poste.
+PKG_IMPORTS = {
+    "python-dotenv": "dotenv",
+    "openai": "openai",
+    "anthropic": "anthropic",
+    "ipykernel": "ipykernel",
+}
+
+
 def print_section(title):
-    print(f"\n{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.BLUE}{title:^60}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.END}\n")
+    print(_safe(f"\n{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.END}"))
+    print(_safe(f"{Colors.BOLD}{Colors.BLUE}{title:^60}{Colors.END}"))
+    print(_safe(f"{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.END}\n"))
 
 
 def print_ok(msg):
-    print(f"{Colors.GREEN}✓{Colors.END} {msg}")
+    print(_safe(f"{Colors.GREEN}✓{Colors.END} {msg}"))
 
 
 def print_error(msg):
-    print(f"{Colors.RED}✗{Colors.END} {msg}")
+    print(_safe(f"{Colors.RED}✗{Colors.END} {msg}"))
 
 
 def print_warning(msg):
-    print(f"{Colors.YELLOW}⚠{Colors.END} {msg}")
+    print(_safe(f"{Colors.YELLOW}⚠{Colors.END} {msg}"))
+
+
+# Encodage console (#21614, defaut 1)
+# -------------------------------------
+# Le validateur imprime des glyphes Unicode (✓ ✗ ⚠ ═) et des tirets
+# cadratins ; sur une console Windows cp1252 (sortie redirigee, code page
+# par defaut) `print` leve UnicodeEncodeError et le validateur MEURT a la
+# premiere ligne de resultat -- il ne rend jamais son verdict, ce qui est
+# precisement ce qu'on lui demande.
+#
+# On garde l'encodage de la console : un `reconfigure(encoding="utf-8")`
+# y ecrirait des octets UTF-8 dans un consommateur cp1252, donc du
+# mojibake partout. On remplace ce qui ne passe pas, et on met stdout en
+# `errors="replace"` pour qu'aucune autre chaine ne puisse tuer le verdict.
+def _safe(text: str) -> str:
+    """Return `text` encodable par la sortie courante, sans jamais lever."""
+    encoding = getattr(sys.stdout, "encoding", None) or "ascii"
+    try:
+        text.encode(encoding)
+        return text
+    except (UnicodeEncodeError, LookupError):
+        return text.encode(encoding, errors="replace").decode(encoding, errors="replace")
+
+
+def _configure_stdout() -> None:
+    """Rend stdout et stderr tolerants aux caracteres non encodables."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(errors="replace")
+        except (ValueError, OSError):
+            pass
 
 
 def check_python():
@@ -100,7 +147,7 @@ def check_command(cmd, name, version_flag="--version"):
 def check_python_package(pkg_name, import_name=None):
     """Verifie si un package Python est installe"""
     if import_name is None:
-        import_name = pkg_name.replace("-", "_")
+        import_name = PKG_IMPORTS.get(pkg_name, pkg_name.replace("-", "_"))
 
     try:
         mod = __import__(import_name)
@@ -137,20 +184,29 @@ def _load_inspect_kernel_wrapper():
 
     Returns None if the shared helper cannot be located (graceful degradation).
     """
+    return _load_kernel_helper("inspect_kernel_wrapper")
+
+
+def _load_kernel_helper(name):
+    """Import one helper from the canonical scripts/lean/lean_kernel_check.py.
+
+    Returns None if the shared helper cannot be located (graceful degradation).
+    """
     here = Path(__file__).resolve()
     for parent in here.parents:
         candidate = parent / "scripts" / "lean" / "lean_kernel_check.py"
         if candidate.exists():
             sys.path.insert(0, str(candidate.parent))
             try:
-                from lean_kernel_check import inspect_kernel_wrapper
-                return inspect_kernel_wrapper
+                module = __import__("lean_kernel_check")
+                return getattr(module, name)
             except Exception:
                 return None
     return None
 
 
 _inspect_kernel_wrapper = _load_inspect_kernel_wrapper()
+_kernel_drives_wsl = _load_kernel_helper("kernel_drives_wsl")
 
 
 def check_kernel_wrapper(kernel_name="lean4-wsl"):
@@ -210,6 +266,37 @@ def check_lean_runner():
         return False
 
 
+def check_lean_toolchain():
+    """Composants Lean 4, selon le cote ou la chaine est reellement installee.
+
+    Sur un poste installe en WSL -- le kernel ``lean4-wsl`` est enregistre
+    cote Windows mais appelle ``wsl.exe`` -- la chaine elan/lean/lake vit
+    dans la distro. Compter les binaires Windows comme des composants
+    MANQUANTS produisait un verdict incoherent avec ce que le setup
+    installe (issue #21614, defaut 2 : « 3/13 » sur un poste sain).
+
+    Trois cas, dans cet ordre :
+
+    1. la chaine Windows est complete -> 3 composants, comme avant ;
+    2. la chaine Windows est absente mais le poste est un poste WSL -> la
+       chaine est validee par le mode ``--wsl`` ; elle n'est donc pas un
+       composant manquant de cette section (verdict explicite) ;
+    3. sinon -> les 3 composants Windows sont Manquants (verdict honnete).
+    """
+    present = [shutil.which(cmd) for cmd in ("elan", "lean", "lake")]
+    if all(present):
+        return [check_command("elan", "elan"),
+                check_command("lean", "Lean 4"),
+                check_command("lake", "Lake")]
+    if _kernel_drives_wsl is not None and _kernel_drives_wsl("lean4-wsl"):
+        print_ok("Chaine Lean 4 : poste installe en WSL (kernel lean4-wsl -> wsl.exe) "
+                 "-- validee cote WSL par le mode --wsl, hors perimetre de cette section")
+        return []
+    return [check_command("elan", "elan"),
+            check_command("lean", "Lean 4"),
+            check_command("lake", "Lake")]
+
+
 def validate_windows():
     """Validation pour environnement Windows"""
     print_section("VALIDATION ENVIRONNEMENT WINDOWS")
@@ -218,9 +305,7 @@ def validate_windows():
 
     # Composants de base
     checks.append(check_python())
-    checks.append(check_command("elan", "elan"))
-    checks.append(check_command("lean", "Lean 4"))
-    checks.append(check_command("lake", "Lake"))
+    checks.extend(check_lean_toolchain())
 
     # Packages Python
     checks.append(check_python_package("lean4-jupyter", "lean4_jupyter"))
@@ -280,10 +365,10 @@ def validate_wsl():
     # Packages dans venv
     venv_python = venv_path / "bin" / "python3"
     if venv_python.exists():
-        for pkg in ["python-dotenv", "openai", "anthropic", "ipykernel"]:
+        for pkg in PKG_IMPORTS:
             try:
                 result = subprocess.run(
-                    [str(venv_python), "-c", f"import {pkg.replace('-', '_')}"],
+                    [str(venv_python), "-c", f"import {PKG_IMPORTS[pkg]}"],
                     capture_output=True,
                     timeout=5
                 )
@@ -314,6 +399,10 @@ def validate_wsl():
 
 
 def main():
+    # Verdict lisible meme sur une console cp1252 (#21614, defaut 1) :
+    # configure AVANT tout print.
+    _configure_stdout()
+
     parser = argparse.ArgumentParser(description="Valide l'environnement Lean")
     parser.add_argument("--wsl", action="store_true", help="Valider dans WSL")
     args = parser.parse_args()

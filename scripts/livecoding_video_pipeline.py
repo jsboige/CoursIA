@@ -1,23 +1,28 @@
 """V0 narrow du pipeline livecoding-video (issue #15604, homage a une voix tierce).
 
-**Scope** (V0 c.573 + etape 2 c.1215 + etape 4 c.580) :
+**Scope** (V0 c.573 + etape 2 c.1215 + etape 4 c.580 + etapes 3/6) :
 Etape 1 (composition Strudel multi-pistes) livree en V0. Etape 4
 (capture navigateur) livree ensuite : le REPL strudel.cc est pilote
 par Playwright headed — pattern injecte par hash d'URL, visuals
 declares dans le code (``.pianoroll()`` / ``.scope()``), audio exporte
 par le moteur offline NATIF du REPL (Export to WAV, aucune
 instrumentation WebAudio, aucun routage systeme VB-Cable), video
-capturee par ``canvas.captureStream`` + MediaRecorder, mux ffmpeg.
+capturee par ``record_video`` du contexte Playwright (page ENTIERE :
+editeur de code + canvas, defaut depuis le fix critere 5a) ou, en
+option ``--capture-mode canvas``, par ``canvas.captureStream`` +
+MediaRecorder (canvas seul, comportement historique), mux ffmpeg.
 Etape 2 (narration poetique timestampee) livree : segments
 ``{start_s, end_s, text, intensity}`` generes par moteur template
 deterministe (defaut, offline) ou moteur LLM optionnel (client
 OpenAI-compat via ``OPENAI_API_KEY``), valides par
 :func:`validate_narration` (garde anti-nomination d'artiste incluse —
 ce n'est PAS un detecteur de verbatim, cf la limitation documentee
-sur :func:`validate_narration`). Les etapes
-restantes (3 TTS, 5 visualizer custom, 6 mixage ffmpeg complet)
-restent documentation-ONLY (pas de pipeline
-squelette qui pretend faire ce qu'il ne fait pas).
+sur :func:`validate_narration`). Etape 3 (TTS expressif via le
+gateway tts-multi) et etape 6 (mixage ffmpeg loudnorm + fade-out
+coordonne) livrees ; seule l'etape 5 (visualizer custom) reste
+differee en V1. Les etapes non demandees restent marquees
+'deferred' en sortie (pas de pipeline squelette qui pretend faire ce
+qu'il ne fait pas).
 
 **Etats cles** (cf issue #15604 et c.446 demucs Phase A deferree) :
 - Composition Strudel via template parametrable (PAS de LLM libre en
@@ -30,15 +35,21 @@ squelette qui pretend faire ce qu'il ne fait pas).
 - Etape 2 narration timestampee : LIVREE (c.1215) — moteur template
   deterministe par defaut + moteur LLM optionnel, sortie JSON segments
   (unite d'entree de l'etape 3 TTS et des sous-titres de l'etape 6).
-- Etape 3 TTS Kokoro/FishAudio : `scripts/audiobook_pipeline.py`
-  deja disponible, integration differee a un cycle c.574+.
+- Etape 3 TTS expressif : LIVREE — gateway tts-multi (port 8196), moteurs
+  kokoro (latence min, deploye) et tada (expressivite max, verdict
+  benchmark #17244 — requiert le service tts-tada du compose), 3 paliers
+  de speed derives de l'intensite du segment (parametre mesure EFFECTIF
+  sur kokoro le 2026-10-03 : 308 444 octets a speed 0.8 contre 218 444
+  a speed 1.2 sur le meme texte).
 - Etape 4 capture Playwright sur `https://strudel.cc/` : LIVREE (c.580).
   Le risque « routage audio Windows (VB-Cable/BlackHole)» est leve par
   design : l'audio vient de l'export offline NATIF du REPL (rendu
   OfflineAudioContext cote strudel.cc), pas d'une capture systeme.
 - Etape 5 visualizer custom : V1 only.
-- Etape 6 mixage ffmpeg : `scripts/audiobook_pipeline.py` a deja
-  l'integration loudnorm -14 LUFS + fade-out.
+- Etape 6 mixage ffmpeg : LIVREE — chaque segment TTS retarde a son
+  start_s (adelay), superpose au WAV navigateur (amix normalize=0),
+  loudnorm -14 LUFS / TP -1.5 (plafond anti-clipping), fade-out video +
+  audio coordonnes sur les 3 dernieres secondes.
 
 **Voie 3 B.0** : voie du retrait consenti d'une voix tierce tenue
 (bibliography-hygiene §2, audit-cross-source-distillation §3.1,
@@ -55,6 +66,7 @@ import math
 import os
 import re
 import sys
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -183,6 +195,69 @@ def compose_strudel(
     lines.append(fade_marker)
 
     return "\n".join(lines)
+
+
+def compose_progressive_states(
+    style_name: str,
+    duration_seconds: int = 180,
+    voices: int = 4,
+    visuals: bool = False,
+) -> List[str]:
+    """Etats cumulatifs du script, pour une capture « code en cours d'evolution ».
+
+    Critere 5a de #15604 : la video doit montrer **au moins trois etats
+    visibles distincts** du code Strudel. La capture page entiere livree par
+    #21045 rend le code visible mais **statique** ; cette fonction fournit
+    la matiere de la progression.
+
+    Chaque etat est un script Strudel **complet et executable** : en-tete,
+    ``setcps``, puis une voix de plus que le precedent. La progression est
+    donc celle d'un livecoder qui empile des pistes, pas un texte tronque
+    qui ne compilerait pas.
+
+    Le **dernier** etat est byte-identique a ``compose_strudel(...)`` : la
+    progression converge vers le script canonique, elle ne le remplace pas
+    (garde anti-derive : ``test_dernier_etat_egale_compose_strudel``).
+
+    Raises :
+    - ValueError si le style est inconnu, si les parametres sont hors range,
+      ou si ``voices < 3`` (moins de trois voix ne peut pas produire les
+      trois etats distincts qu'exige le critere).
+    """
+    if style_name not in STYLES:
+        raise ValueError(
+            f"style {style_name!r} inconnu ; styles disponibles : {sorted(STYLES.keys())}"
+        )
+    if not 60 <= duration_seconds <= 600:
+        raise ValueError(
+            f"duration_seconds doit etre dans [60, 600], recu {duration_seconds}"
+        )
+    if not 3 <= voices <= 4:
+        raise ValueError(
+            "progressive : voices doit etre dans [3, 4] — le critere 5a exige "
+            f"au moins trois etats visibles distincts, recu {voices}"
+        )
+
+    style = STYLES[style_name]
+    cps = style.bpm / 60.0 / 2.0
+    patterns = [style.pattern_kick, style.pattern_bass, style.pattern_lead, style.pattern_pad][:voices]
+    visuals_by_voice = {1: ".scope()", 2: ".pianoroll()"}
+    header = f"// Livecoding video — style={style.name} BPM={style.bpm} duration={duration_seconds}s"
+    # Meme litteral que compose_strudel : l'egalite du dernier etat est
+    # verifiee par un test, c'est elle qui garde les deux definitions alignees.
+    fade_cycles = 8
+    fade_marker = f"// fade-out coordonne sur les {fade_cycles} derniers cycles : premultiplier chaque voix par gain(1 - cycles_left/{fade_cycles})"
+
+    states: List[str] = []
+    for k in range(1, len(patterns) + 1):
+        lines = [header, f"setcps({cps:.4f})"]
+        for i, pat in enumerate(patterns[:k]):
+            suffix = visuals_by_voice.get(i, "") if visuals else ""
+            lines.append(f"$: {pat}{suffix}")
+        if k == len(patterns):
+            lines.append(fade_marker)
+        states.append("\n".join(lines))
+    return states
 
 
 # --- Etape 2 : narration poetique timestampee (c.1215) -----------------------
@@ -588,7 +663,8 @@ def compose_narration_llm(
     echoue explicitement, elle n'est jamais rafistolee.
     """
     client = llm_client if llm_client is not None else _build_llm_client()
-    model = llm_model or os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    # #14755 : gpt-4o-mini (OBS 2024) -> gpt-5.6-luna (mini du mapping)
+    model = llm_model or os.environ.get("OPENAI_MODEL", "gpt-5.6-luna")
     plan = NARRATION_PLANS[style_name]
     span = min(plan.span_fraction * duration_seconds, plan.span_max_s)
     window_start = plan.start_offset_s
@@ -759,15 +835,20 @@ def run_pipeline(
     playwright_url: str = "https://strudel.cc/",
     ffmpeg_loudnorm_lufs: float = -14.0,
     capture: bool = False,
-    capture_seconds: int = 30,
+    capture_seconds: Optional[int] = None,
     headless: bool = False,
+    capture_mode: str = "page",
     narration_engine: str = "template",
     narration_json_path: Optional[str] = None,
+    tts_engine: Optional[str] = None,
+    tts_gateway: Optional[str] = None,
+    tts_out_dir: Optional[str] = None,
 ) -> Dict[str, object]:
     """Orchestrateur : compose le script Strudel, genere la narration
-    timestampee (etape 2) et documente les autres etapes.
+    timestampee (etape 2), la synthetise en WAV expressifs (etape 3) et
+    mixe le mp4 final (etape 6 quand capture + TTS sont demandes).
 
-    Retourne un dict avec une cle par etape ; les etapes non livrees
+    Retourne un dict avec une cle par etape ; les etapes non demandees
     portent la valeur 'deferred...'. C'est un contrat HONNETE (Tell
     c.1102) : pas de pipeline squelette qui pretend faire ce qu'il ne
     fait pas.
@@ -776,19 +857,29 @@ def run_pipeline(
     - style_name : style musical (cf :func:`compose_strudel`).
     - duration_seconds : duree cible en secondes.
     - output_path : chemin du fichier .mp4 final (sans --capture, ce
-      chemin n'est PAS cree : l'integrateur ffmpeg est deferred).
-    - tts_voice : voix TTS Kokoro/FishAudio (optionnel, deferred).
-    - playwright_url : URL du navigateur Strudel (deferred).
-    - ffmpeg_loudnorm_lufs : cible loudness (deferred).
+      chemin n'est PAS cree : le mux ffmpeg n'a pas de video a mixer).
+    - tts_voice : voix TTS (defaut = voix du moteur, cf TTS_ENGINES).
+    - playwright_url : URL du navigateur Strudel (etape 4).
+    - ffmpeg_loudnorm_lufs : cible loudness du mix final (etape 6).
     - narration_engine : moteur de l'etape 2 ('template' deterministe
       par defaut, ou 'llm' — cf :func:`compose_narration`).
     - narration_json_path : si fourni, ecrit les segments valides dans
       ce fichier JSON (entree reelle de l'etape 3 TTS).
+    - tts_engine : moteur de l'etape 3 ('kokoro' | 'tada', cf
+      :func:`synthesize_narration_tts`) ; None = etape differee.
+    - tts_gateway : URL du gateway tts-multi (defaut : variable
+      TTS_GATEWAY_URL puis http://localhost:8196).
+    - tts_out_dir : dossier des WAV de segments (defaut : <output>/tts).
 
     Retourne : dict avec cles 'strudel_script', 'narration' (liste de
     dicts segments), 'tts', 'browser_capture', 'visualizer',
     'final_mix', 'verdict'.
     """
+    # Defaut coherent : sans --capture-seconds explicite, la capture suit
+    # --duration (mesure c.1528 : le defaut fige 30 tronquait une demo
+    # de 180 s a 30,9 s avec 4/11 segments mixes).
+    capture_seconds = _resolve_capture_seconds(capture_seconds, duration_seconds)
+
     strudel = compose_strudel(
         style_name=style_name,
         duration_seconds=duration_seconds,
@@ -808,35 +899,103 @@ def run_pipeline(
             narration_to_json(narration_segments), encoding="utf-8"
         )
 
+    tts_tracks: List[Dict[str, object]] = []
+    tts: object = "deferred"
+    if tts_engine is not None:
+        tts_out = Path(tts_out_dir) if tts_out_dir else Path(output_path).parent / "tts"
+        tts_tracks = synthesize_narration_tts(
+            narration_segments,
+            engine=tts_engine,
+            voice=tts_voice,
+            out_dir=tts_out,
+            gateway=tts_gateway,
+        )
+        speeds = sorted({str(t["speed"]) for t in tts_tracks})
+        tts = (
+            f"LIVREE : {len(tts_tracks)} segments WAV (moteur {tts_engine}, "
+            f"voix {tts_voice or TTS_ENGINES[tts_engine][1]}, speeds {speeds})"
+        )
+
     browser_capture: object = f"deferred ({playwright_url})"
     final_mix: object = f"deferred ({output_path}, loudnorm {ffmpeg_loudnorm_lufs} LUFS)"
     if capture:
+        import subprocess
+
         capture_result = capture_repl_session(
             pattern=strudel,
             output_dir=Path(output_path).parent,
             capture_seconds=capture_seconds,
             cycles=cycles_for_duration(style_cps(style_name), capture_seconds) + 1,
             headless=headless,
+            capture_mode=capture_mode,
         )
         browser_capture = (
             f"LIVREE : {capture_result['final_mp4']} "
             f"({capture_result['mp4_bytes']} octets, video webm "
             f"{capture_result['video_bytes']} + wav {capture_result['wav_bytes']})"
         )
-        final_mix = f"PoC mux ffmpeg LIVRE : {capture_result['final_mp4']} (loudnorm complet = etape 6)"
+        if tts_tracks:
+            # Etape 6 : mix final (wav navigateur + voix TTS retardees,
+            # loudnorm + fade-out coordonne) — remplace le mux PoC.
+            video_webm = Path(str(capture_result["video_webm"]))
+            audio_wav = Path(str(capture_result["audio_wav"]))
+            trim_start = capture_result.get("trim_start")
+            try:
+                duration_v = probe_duration_ffprobe(video_webm)
+                duration_src = "video"
+            except RuntimeError:
+                # webm MediaRecorder sans duree de conteneur ni de flux
+                # (mesure 2026-10-03) : le WAV navigateur, PCM, expose
+                # toujours la duree — meme fenetre de capture.
+                duration_v = probe_duration_ffprobe(audio_wav)
+                duration_src = "wav navigateur (webm sans Cues)"
+            if trim_start is not None:
+                # Mode page : la webm brute inclut le preambule (chargement,
+                # play, warmup) — la fenetre utile commence a trim_start — ET
+                # la queue d'export (clics menu/export apres l'attente) : la
+                # fenetre se borne a capture_seconds par definition.
+                duration_v = max(0.0, duration_v - float(trim_start))
+                duration_v = min(duration_v, float(capture_seconds))
+                duration_src = f"video (webm page entiere, -ss {float(trim_start):.1f} s, fenetre {duration_v:.0f} s)"
+            audible = [
+                t for t in tts_tracks if float(t["start_s"]) < duration_v - 1.0
+            ]
+            mix_cmd = mix_final_ffmpeg(
+                video_webm, audio_wav, audible, Path(output_path),
+                loudnorm_lufs=ffmpeg_loudnorm_lufs,
+                duration_override=duration_v,
+                video_trim_start=float(trim_start) if trim_start is not None else None,
+            )
+            proc = subprocess.run(
+                mix_cmd, capture_output=True, text=True,
+                encoding="utf-8", errors="replace")
+            if proc.returncode != 0:
+                raise RuntimeError(
+                    f"ffmpeg a echoue ({proc.returncode}) : {proc.stderr[-800:]}")
+            final_mix = (
+                f"LIVREE : {output_path} "
+                f"({Path(output_path).stat().st_size} octets, loudnorm "
+                f"{ffmpeg_loudnorm_lufs} LUFS + TP -1.5, {len(audible)}/"
+                f"{len(tts_tracks)} segments TTS mixes sur {duration_v:.1f} s "
+                f"[duree : {duration_src}], fade-out coordonne video+audio)"
+            )
+        else:
+            final_mix = f"PoC mux ffmpeg LIVRE : {capture_result['final_mp4']} (etape 6 = capture + TTS ensemble)"
 
     return {
         "strudel_script": strudel,
         "narration": [asdict(s) for s in narration_segments],
-        "tts": "deferred" if tts_voice is None else f"requested={tts_voice}",
+        "tts": tts if tts_engine is not None else ("deferred" if tts_voice is None else f"requested={tts_voice} (moteur absent)"),
         "browser_capture": browser_capture,
         "visualizer": "deferred (V1 only — capture Strudel inclut scope/pianoroll)",
         "final_mix": final_mix,
         "verdict": (
             "Etape 1 (composition) + etape 2 (narration timestampee, "
-            f"moteur {narration_engine}) + etape 4 (capture navigateur : "
-            "export WAV offline natif + MediaRecorder + mux ffmpeg) livrees ; "
-            "etapes 3/5/6 deferred avec claim explicite par phase."
+            f"moteur {narration_engine})"
+            + (f" + etape 3 (TTS {tts_engine}, 3 paliers de speed)" if tts_engine else " ; etape 3 (TTS) deferred")
+            + (" + etape 4 (capture navigateur)" if capture else " ; etape 4 (capture) deferred")
+            + (" + etape 6 (mix final loudnorm/fade)" if capture and tts_engine else " ; etape 6 (mix final) deferred")
+            + " ; etape 5 (visualizer custom) = V1 only."
         ),
     }
 
@@ -878,6 +1037,159 @@ _CANVAS_CHECKSUM_JS = """
 }
 """
 
+# --- Critere 2 (#15604) : l'audio est REELLEMENT produit ---------------------
+#
+# Le critere demande une assertion sur le contexte Web Audio, pas une
+# deduction. Un WAV exporte prouve un rendu OFFLINE (OfflineAudioContext),
+# pas que le moteur a joue en direct : un pattern correct exporte un WAV
+# parfaitement valide alors que le lecteur live est reste muet.
+#
+# Deux mesures, prises DANS la page :
+# - l'horloge du contexte LIVE avance entre deux lectures : un contexte
+#   suspendu ou jamais demarre ne bouge pas, quel que soit le pattern ;
+# - le niveau RMS de la sortie, quand on a pu s'y brancher — le script
+#   d'init detourne `connect(destination)` vers un AnalyserNode, faute de
+#   quoi un contexte running mais muet passerait pour un succes.
+#
+# Le script d'init doit etre pose AVANT la navigation : les constructeurs
+# AudioContext sont captures au chargement de la page strudel.
+
+AUDIO_RMS_FLOOR = 1e-4         # -80 dBFS : au-dessus du bruit numerique
+AUDIO_CLOCK_ADVANCE_S = 0.05   # avance minimale de l'horloge pendant la sonde
+AUDIO_PROBE_WINDOW_MS = 250    # fenetre de mesure de l'horloge et du niveau
+
+AUDIO_PROBE_INIT_JS = """
+(() => {
+  if (window.__coursiaAudioProbe) return;
+  const probe = { contexts: [], taps: 0, patched: false };
+  window.__coursiaAudioProbe = probe;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  const wrapCtor = (Orig) => new Proxy(Orig, {
+    construct(target, args) {
+      const ctx = Reflect.construct(target, args, target);
+      probe.contexts.push({ ctx: ctx, analyser: null });
+      return ctx;
+    },
+  });
+  window.AudioContext = wrapCtor(AC);
+  if (window.webkitAudioContext) window.webkitAudioContext = window.AudioContext;
+  if (typeof AudioNode === 'undefined') return;
+  const origConnect = AudioNode.prototype.connect;
+  AudioNode.prototype.connect = function (dest) {
+    const res = origConnect.apply(this, arguments);
+    try {
+      if (dest && dest instanceof AudioDestinationNode) {
+        const rec = probe.contexts.find((r) => r.ctx === dest.context);
+        if (rec) {
+          if (!rec.analyser) {
+            rec.analyser = rec.ctx.createAnalyser();
+            rec.analyser.fftSize = 2048;
+          }
+          origConnect.call(this, rec.analyser);
+          rec.tap = true;
+          probe.taps += 1;
+        }
+      }
+    } catch (e) { /* niveau = mesure best-effort, jamais un motif d'echec */ }
+    return res;
+  };
+  probe.patched = true;
+})();
+"""
+
+AUDIO_PROBE_JS = """
+async (windowMs) => {
+  const state = window.__coursiaAudioProbe;
+  if (!state) return { hasProbe: false, patched: false, contexts: [], taps: 0 };
+  const recs = state.contexts || [];
+  const before = recs.map((r) => r.ctx.currentTime);
+  await new Promise((res) => setTimeout(res, windowMs));
+  const out = [];
+  for (let i = 0; i < recs.length; i++) {
+    const ctx = recs[i].ctx;
+    let rms = null;
+    if (recs[i].analyser) {
+      const buf = new Float32Array(recs[i].analyser.fftSize);
+      recs[i].analyser.getFloatTimeDomainData(buf);
+      let acc = 0;
+      for (let k = 0; k < buf.length; k++) acc += buf[k] * buf[k];
+      rms = Math.sqrt(acc / buf.length);
+    }
+    out.push({
+      state: ctx.state,
+      sampleRate: ctx.sampleRate,
+      clockAdvance: Math.max(0, ctx.currentTime - before[i]),
+      rms: rms,
+      tapped: !!recs[i].analyser,
+    });
+  }
+  return { hasProbe: true, patched: !!state.patched, contexts: out, taps: state.taps || 0 };
+}
+"""
+
+
+def audio_verdict(probe: Optional[Dict[str, object]]) -> Tuple[bool, str]:
+    """Juge une sonde Web Audio et rend ``(produit, motif)``.
+
+    Le motif accompagne TOUJOURS le verdict : un « non » sans sa cause
+    mesurable ne se diagnostique pas, et un « oui » muet ne prouve rien.
+    Les cas de refus, dans l'ordre ou ils se tranchent :
+
+    - sonde absente (script d'init non pose, page rechargee hors du
+      contexte Playwright) — rien n'a ete mesure, ce n'est pas un succes ;
+    - aucun ``AudioContext`` cree — le pattern n'a jamais demarre ;
+    - aucun contexte a l'etat ``running`` — play non effectif, ou contexte
+      suspendu faute de user gesture ;
+    - horloge figee — le contexte tourne mais le moteur ne produit rien ;
+    - niveau mesure et quasi nul — le graphe tourne a vide.
+    """
+    if not isinstance(probe, dict) or not probe.get("hasProbe"):
+        return False, (
+            "sonde Web Audio absente de la page -- script d'init non pose ou "
+            "page rechargee hors du contexte Playwright : rien n'a ete mesure"
+        )
+    contexts = probe.get("contexts") or []
+    if not contexts:
+        return False, (
+            "aucun AudioContext cree dans la page -- le pattern n'a jamais "
+            "demarre (play non clique, ou page qui n'a pas charge le REPL)"
+        )
+    running = [c for c in contexts if c.get("state") == "running"]
+    if not running:
+        states = ", ".join(sorted({str(c.get("state")) for c in contexts}))
+        return False, (
+            f"aucun AudioContext a l'etat 'running' ({states}) -- clic play non "
+            "effectif ou contexte suspendu faute de user gesture"
+        )
+    advance = max(float(c.get("clockAdvance") or 0.0) for c in running)
+    if advance < AUDIO_CLOCK_ADVANCE_S:
+        return False, (
+            f"horloge audio figee ({advance:.3f} s d'avance sur "
+            f"{AUDIO_PROBE_WINDOW_MS} ms) -- contexte running mais moteur arrete"
+        )
+    levels = [
+        float(c["rms"]) for c in running if isinstance(c.get("rms"), (int, float))
+    ]
+    if levels:
+        level = max(levels)
+        if level < AUDIO_RMS_FLOOR:
+            return False, (
+                f"sortie audio quasi silencieuse (RMS {level:.2e} < "
+                f"{AUDIO_RMS_FLOOR:.0e} sur {len(levels)} contexte(s) branche(s)) "
+                "-- horloge en marche, aucun signal"
+            )
+        return True, (
+            f"audio produit : {len(running)} contexte(s) running, horloge "
+            f"+{advance:.3f} s, RMS {level:.4f}"
+        )
+    return True, (
+        f"audio produit : {len(running)} contexte(s) running, horloge "
+        f"+{advance:.3f} s (niveau non mesure : aucun noeud branche sur la "
+        "destination, la mesure porte sur l'horloge seule)"
+    )
+
+
 # Recorder in-page : captureStream(30) sur le canvas REPL + MediaRecorder vp9,
 # retourne le webm en base64. Le canvas doit ETRE anime (visuals declares) —
 # captureStream n'emets aucune frame sur un canvas immobile (mesure c.580 :
@@ -907,21 +1219,317 @@ async (durationMs) => {
 """
 
 
-def mux_ffmpeg(video_webm: Path, audio_wav: Path, out_mp4: Path) -> List[str]:
+def mux_ffmpeg(
+    video_webm: Path,
+    audio_wav: Path,
+    out_mp4: Path,
+    trim_start: Optional[float] = None,
+    trim_duration: Optional[float] = None,
+) -> List[str]:
     """Construit la commande de mux ffmpeg video+audio -> mp4 (H.264/AAC).
 
     ``-shortest`` aligne la duree sur la piste la plus courte : la capture
     video (reelle) et le WAV exporte (cycles arrondis) different de <1 cycle.
+
+    ``trim_start``/``trim_duration`` (secondes) decoupent la FENETRE VIDEO
+    dans la capture brute — requis en mode ``page`` : ``record_video`` filme
+    toute la duree de vie du contexte (chargement, clic play, warmup, export
+    WAV inclus) alors que le livrable ne couvre que les ``capture_seconds``
+    posterieurs au warmup. ``-ss`` avant le premier ``-i`` (fast seek sur la
+    piste video seule), ``-t`` borne la duree de la sortie (les deux pistes).
+    L'audio, lui, demarre a 0 (export offline du pattern depuis son debut) —
+    meme semantique temporelle que le recorder in-page historique.
     """
-    return [
-        "ffmpeg", "-y",
-        "-i", str(video_webm),
-        "-i", str(audio_wav),
+    cmd = ["ffmpeg", "-y"]
+    if trim_start is not None:
+        cmd += ["-ss", f"{trim_start:.3f}"]
+    cmd += ["-i", str(video_webm), "-i", str(audio_wav)]
+    if trim_duration is not None:
+        cmd += ["-t", f"{trim_duration:.3f}"]
+    cmd += [
         "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k",
         "-shortest",
         str(out_mp4),
     ]
+    return cmd
+
+
+# --- Etape 3 : TTS expressif via le gateway tts-multi (#15604) ----------------
+
+TTS_GATEWAY_DEFAULT = "http://localhost:8196"
+# (chemin, voix par defaut). Verdict benchmark #17244 : tada = expressivite
+# maximale sans clonage (prosodie + emotion HumeAI), kokoro = latence minimale.
+# Deploiement mesure sur po-2023 (2026-10-03) : kokoro sain, tada ABSENT du
+# `docker ps` (gateway 503 "Name or service not known") — le service tts-tada
+# existe dans le compose (build torch cu126 + modele 3B, volume tada-cache
+# inexistant ici) mais n'y est pas lance.
+TTS_ENGINES: Dict[str, Tuple[str, str]] = {
+    "kokoro": ("/v1/audio/speech", "af_sky"),
+    "tada": ("/tada/v1/audio/speech", "default"),
+}
+
+
+def _load_env_files(repo_root: Path) -> None:
+    """Charge les paires KEY=VALUE des .env locaux (sans dependance dotenv).
+
+    Ordre de resolution (le premier gagne, os.environ n'est JAMAIS ecrase) :
+    ``MyIA.AI.Notebooks/GenAI/.env`` puis
+    ``docker-configurations/services/tts-multi/.env`` — la cle du gateway
+    vit dans ce dernier (mesure 2026-10-03 : speech endpoints 401 sans
+    Bearer, 200 avec).
+    """
+    for name in (
+        "MyIA.AI.Notebooks/GenAI/.env",
+        "docker-configurations/services/tts-multi/.env",
+    ):
+        path = repo_root / name
+        if not path.is_file():
+            continue
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key = key.strip()
+            if key and key not in os.environ:
+                os.environ[key] = value.strip().strip('"').strip("'")
+
+
+def tts_speed_for_intensity(intensity: float) -> float:
+    """Mappe l'intensite [0, 1] sur 3 paliers de speed (critere 3 : au
+    moins 3 variations pitch/intensity/pace).
+
+    Parametre mesure EFFECTIF sur kokoro (2026-10-03, meme texte) :
+    speed 0.8 -> 308 444 octets, speed 1.2 -> 218 444 octets — la duree
+    audio varie inversement au speed, le gateway ne l'ignore pas.
+    """
+    if intensity < 0.34:
+        return 0.85  # pose
+    if intensity < 0.67:
+        return 1.0  # neutre
+    return 1.15  # elance
+
+
+def synthesize_narration_tts(
+    segments: List[NarrationSegment],
+    engine: str = "kokoro",
+    voice: Optional[str] = None,
+    out_dir: Path = Path("out/tts"),
+    gateway: Optional[str] = None,
+    timeout_s: float = 120.0,
+) -> List[Dict[str, object]]:
+    """Etape 3 : synthetise chaque segment en WAV via le gateway tts-multi.
+
+    Appel OpenAI-compatible (pattern du benchmark #17244, mesure live
+    2026-10-03) : POST ``{gateway}{path}`` avec ``{"model", "input",
+    "voice", "speed"}`` et Bearer ``TTS_GATEWAY_API_KEY`` quand la cle
+    est resolue. Reponse attendue : RIFF/WAVE (verifie par sniff
+    d'en-tete — pas d'extension aveugle).
+
+    Retourne un dict par segment ``{index, start_s, end_s, intensity,
+    speed, wav, bytes}`` et ecrit ``out_dir/segment_NNN.wav``. Echec =
+    RuntimeError explicite avec verdict RECOVERABLE-LOCAL quand le
+    gateway nomme le remede (regle F : reparer, jamais contourner).
+    """
+    import urllib.error
+    import urllib.request
+
+    if engine not in TTS_ENGINES:
+        raise RuntimeError(
+            f"moteur TTS inconnu : {engine} (choix : {sorted(TTS_ENGINES)})")
+    path, default_voice = TTS_ENGINES[engine]
+    voice = voice or default_voice
+
+    _load_env_files(Path(__file__).resolve().parents[1])
+    gateway = gateway or os.environ.get("TTS_GATEWAY_URL", TTS_GATEWAY_DEFAULT)
+    api_key = os.environ.get("TTS_GATEWAY_API_KEY", "")
+
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    tracks: List[Dict[str, object]] = []
+    for idx, seg in enumerate(segments):
+        speed = tts_speed_for_intensity(seg.intensity)
+        payload = json.dumps({
+            "model": engine,
+            "input": seg.text,
+            "voice": voice,
+            "speed": speed,
+        }).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        request = urllib.request.Request(
+            f"{gateway}{path}", data=payload, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(request, timeout=timeout_s) as resp:
+                data = resp.read()
+        except urllib.error.HTTPError as exc:
+            hint = ""
+            if exc.code == 503:
+                hint = (
+                    f" — gateway 503 : le backend '{engine}' n'est pas deploye "
+                    "(RECOVERABLE-LOCAL : docker compose up -d tts-tada dans "
+                    "docker-configurations/services/tts-multi/)")
+            raise RuntimeError(
+                f"gateway TTS HTTP {exc.code} sur le segment #{idx}{hint}"
+            ) from exc
+        except urllib.error.URLError as exc:
+            raise RuntimeError(
+                f"gateway TTS injoignable ({gateway}) : {exc.reason} "
+                "(RECOVERABLE-LOCAL : docker compose up -d dans "
+                "docker-configurations/services/tts-multi/)") from exc
+        if not (data[:4] == b"RIFF" and data[8:12] == b"WAVE"):
+            raise RuntimeError(
+                f"segment #{idx} : reponse inattendue (pas un RIFF/WAV — "
+                f"{len(data)} octets commencant par {data[:8]!r})")
+        wav_path = out_dir / f"segment_{idx:03d}.wav"
+        wav_path.write_bytes(data)
+        tracks.append({
+            "index": idx,
+            "start_s": seg.start_s,
+            "end_s": seg.end_s,
+            "intensity": seg.intensity,
+            "speed": speed,
+            "wav": str(wav_path),
+            "bytes": len(data),
+        })
+    return tracks
+
+
+def probe_duration_ffprobe(media: Path) -> float:
+    """Duree (secondes) d'un media via ffprobe.
+
+    Essaie la duree du conteneur (``format=duration``) puis celle du
+    flux (``stream=duration``) : les webm produits par MediaRecorder
+    (etape 4) n'exposent souvent AUCUNE duree de conteneur — fichier
+    finalise sans Cues, mesure sur la demo du 2026-10-03 : N/A sur les
+    deux entrees pour capture.webm, 90.85 s pour le WAV navigateur.
+    Echec explicite si aucune source n'expose de duree.
+    """
+    import subprocess
+
+    for entries in ("format=duration", "stream=duration"):
+        proc = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", entries,
+             "-of", "csv=p=0", str(media)],
+            capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"ffprobe a echoue sur {media} : {proc.stderr[-400:]}")
+        value = proc.stdout.strip().splitlines()[0].strip() if proc.stdout.strip() else ""
+        if value and value != "N/A":
+            return float(value)
+    raise RuntimeError(
+        f"{media} n'expose aucune duree (format et stream = N/A — "
+        "conteneur MediaRecorder sans Cues : utiliser le WAV navigateur "
+        "comme reference de duree)")
+
+
+def mix_final_ffmpeg(
+    video_webm: Path,
+    browser_wav: Path,
+    tts_tracks: List[Dict[str, object]],
+    out_mp4: Path,
+    loudnorm_lufs: float = -14.0,
+    fade_out_s: float = 3.0,
+    duration_override: Optional[float] = None,
+    video_trim_start: Optional[float] = None,
+) -> List[str]:
+    """Etape 6 : commande de mixage final ffmpeg (critere 4 : -14 LUFS
+    sans clipping ; fade-out coordonne musique + video).
+
+    Lit la duree video (ffprobe) sauf ``duration_override`` fourni —
+    les webm MediaRecorder n'exposent aucune duree (mesure 2026-10-03),
+    le caller retombe alors sur la duree du WAV navigateur. Retarde
+    chaque segment TTS a son ``start_s`` (``adelay ... all=1``),
+    superpose au WAV navigateur via ``amix ... normalize=0``, enchaine
+    ``loudnorm`` (I=lufs, TP=-1.5 — plafond de true peak anti-clipping)
+    puis ``afade`` sortant, et fade video synchronise sur ``[0:v]``.
+    Retourne la commande complete (testable en unitaire sans
+    l'executer).
+
+    ``video_trim_start`` (mode page, fix critere 5a) : la webm
+    ``record_video`` filme TOUT le contexte (chargement + play + warmup
+    + capture + export) — ``-ss`` avant l'input video extrait la fenetre
+    utile, et ``duration`` (donc le fade) se mesure sur la FENETRE, pas
+    sur la webm brute. Le caller retranche trim_start du probe.
+    """
+    duration = (
+        duration_override if duration_override is not None
+        else probe_duration_ffprobe(video_webm)
+    )
+    fade_start = max(0.0, duration - fade_out_s)
+
+    cmd: List[str] = ["ffmpeg", "-y"]
+    if video_trim_start is not None:
+        cmd += ["-ss", f"{video_trim_start:.3f}"]
+    cmd += [
+        "-i", str(video_webm),
+        "-i", str(browser_wav),
+    ]
+    for track in tts_tracks:
+        cmd += ["-i", str(track["wav"])]
+
+    filters = [f"[0:v]fade=t=out:st={fade_start:.3f}:d={fade_out_s}[vout]"]
+    mix_labels = ["[1:a]"]
+    for k, track in enumerate(tts_tracks):
+        delay_ms = int(round(float(track["start_s"]) * 1000))
+        filters.append(f"[{2 + k}:a]adelay={delay_ms}:all=1[t{k}]")
+        mix_labels.append(f"[t{k}]")
+    filters.append(
+        "".join(mix_labels)
+        + f"amix=inputs={len(mix_labels)}:duration=longest:normalize=0,"
+        + f"loudnorm=I={loudnorm_lufs}:TP=-1.5:LRA=11,"
+        + f"afade=t=out:st={fade_start:.3f}:d={fade_out_s}[aout]")
+
+    cmd += [
+        "-filter_complex", ";".join(filters),
+        "-map", "[vout]", "-map", "[aout]",
+        "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k",
+        "-t", f"{duration:.3f}",
+        "-movflags", "+faststart",
+        str(out_mp4),
+    ]
+    return cmd
+
+
+def _resolve_capture_seconds(
+    capture_seconds: Optional[int], duration_seconds: int
+) -> int:
+    """Defaut coherent de la duree de capture (etape 4, #15604).
+
+    Sans valeur explicite, la capture suit ``duration_seconds`` : le
+    defaut fige 30 tronquait silencieusement une demo de 180 s a
+    30,9 s (mesure c.1528, 4/11 segments mixes). Une valeur explicite
+    (capture plus courte que la musique) reste respectee.
+    """
+    if capture_seconds is not None:
+        return capture_seconds
+    return duration_seconds
+
+
+def _click_play(page: object, url: str, attempts: int = 3) -> None:
+    """Clic play robuste : re-navigation entre tentatives (etape 4).
+
+    Mesure c.1528 : le clic play echoue par timeout ~1 run sur 3
+    (``Locator.click: Timeout 10000ms``) — etat de page variable au
+    chargement du hash strudel. Un re-chargement de l'URL de partage
+    recharge le REPL avec le pattern et suffit a retablir le clic.
+    La derniere tentative echouee remonte telle quelle (echec explicite,
+    pas de fallback silencieux). Orchestration pure : le verdict de
+    capture reste porte par le checksum canvas en aval.
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            page.get_by_role("button", name="play").first.click(timeout=10_000)
+            return
+        except Exception:
+            if attempt == attempts:
+                raise
+            page.goto(url)
+            page.wait_for_timeout(5000)
 
 
 def capture_repl_session(
@@ -931,6 +1539,7 @@ def capture_repl_session(
     cycles: Optional[int] = None,
     headless: bool = False,
     warmup_seconds: float = 5.0,
+    capture_mode: str = "page",
 ) -> Dict[str, object]:
     """Pilote le REPL strudel.cc et capture la session (etape 4, #15604).
 
@@ -939,16 +1548,38 @@ def capture_repl_session(
     2. clic ``play`` (geste trusted, headed requis : un clic JS n'est pas
        un user gesture et l'AudioContext live reste suspendu) ;
     3. les visuals declares (``.pianoroll()``/``.scope()`` dans le code)
-       animent le canvas — gate par checksum avant l'enregistrement ;
-    4. ``canvas.captureStream`` + MediaRecorder -> webm base64 ;
+       animent le canvas — gate par checksum avant l'enregistrement ; et
+       l'``AudioContext`` live tourne reellement (critere 2) : horloge qui
+       avance + niveau RMS mesure, ``RuntimeError`` sinon ;
+    4. capture video : ``capture_mode="page"`` (DEFAUT, fix critere 5a) —
+       ``record_video`` du contexte Playwright filme la page ENTIERE
+       (editeur de code a gauche + canvas a droite, disposition native du
+       REPL) pendant toute la session, la fenetre utile est extraite au
+       mux par ``-ss``/``-t`` mesures a l'horloge du process ; ou
+       ``capture_mode="canvas"`` — recorder in-page historique
+       (``canvas.captureStream`` + MediaRecorder, canvas seul) ;
     5. menu ``export`` -> ``Export to WAV`` : rendu offline NATIF du
        moteur strudel (aucun routage audio systeme), download capture ;
     6. ffmpeg mux -> mp4 (H.264/AAC).
 
+    Le mode ``page`` existe parce que le critere 5a de #15604 exige « le
+    code Strudel » visible dans la video : le canvas seul (mode historique)
+    ne montre QUE la visualisation — constat etabli par lecture visuelle
+    indirecte corroborée mecaniquement (c.6203472737 : 0 % de tons moyens
+    = aucun texte rendu, 7/7 frames sans caractere lisible).
+
     Retourne un dict : ``video_webm``, ``audio_wav``, ``final_mp4``,
-    ``video_bytes``, ``wav_bytes``, ``mp4_bytes``, ``cycles``.
+    ``video_bytes``, ``wav_bytes``, ``mp4_bytes``, ``cycles``,
+    ``capture_mode``, ``audio_probe`` (mesure brute du contexte Web Audio),
+    ``audio_reason`` (motif du verdict, lisible dans les logs de session).
     """
     import base64
+
+    # Garde AVANT l'import playwright : le contrat "echec explicite sans
+    # navigateur" doit aussi tenir sur une machine sans playwright installe
+    # (CI) -- sinon la garde meurt en ModuleNotFoundError avant de tirer.
+    if capture_mode not in ("page", "canvas"):
+        raise ValueError(f"capture_mode inconnu : {capture_mode!r} (page|canvas)")
 
     from playwright.sync_api import sync_playwright
 
@@ -957,14 +1588,34 @@ def capture_repl_session(
     audio_wav = output_dir / "capture.wav"
     final_mp4 = output_dir / "capture_final.mp4"
     url = build_repl_url(pattern)
+    trim_start: Optional[float] = None
+    audio_probe: Dict[str, object] = {}
+    audio_reason = ""
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=headless)
-        page = browser.new_page(viewport={"width": 1280, "height": 1024})
+        if capture_mode == "page":
+            # record_video filme la page entiere DES la premiere navigation :
+            # l'origine de la piste video est la creation du contexte.
+            context = browser.new_context(
+                viewport={"width": 1280, "height": 1024},
+                record_video_dir=str(output_dir),
+                record_video_size={"width": 1280, "height": 1024},
+            )
+            page = context.new_page()
+            video = page.video
+            t_video_zero = time.monotonic()
+        else:
+            context = None
+            page = browser.new_page(viewport={"width": 1280, "height": 1024})
+            video = None
+        # Sonde audio : posee AVANT la navigation, les constructeurs
+        # AudioContext sont captures au chargement de la page strudel.
+        page.add_init_script(AUDIO_PROBE_INIT_JS)
         try:
             page.goto(url)
             page.wait_for_timeout(5000)
-            page.get_by_role("button", name="play").first.click(timeout=10_000)
+            _click_play(page, url)
             page.wait_for_timeout(int(warmup_seconds * 1000))
 
             h1 = page.evaluate(_CANVAS_CHECKSUM_JS)
@@ -976,8 +1627,26 @@ def capture_repl_session(
                     "pattern (compose_strudel(visuals=True)) ou play non effectif"
                 )
 
-            rec = page.evaluate(_RECORDER_JS, int(capture_seconds * 1000))
-            video_webm.write_bytes(base64.b64decode(rec["b64"]))
+            # Critere 2 (#15604) : l'audio est REELLEMENT produit. Le WAV
+            # exporte plus bas ne prouve RIEN sur ce point -- il vient d'un
+            # rendu offline du moteur et sort identique meme si la lecture
+            # live est muette. La mesure porte donc sur le contexte live.
+            audio_probe = page.evaluate(AUDIO_PROBE_JS, AUDIO_PROBE_WINDOW_MS)
+            audio_ok, audio_reason = audio_verdict(audio_probe)
+            if not audio_ok:
+                raise RuntimeError(
+                    f"audio non produit apres play (critere 2, #15604) : "
+                    f"{audio_reason} — sonde : {audio_probe}"
+                )
+
+            if capture_mode == "page":
+                # Fenetre utile : capture_seconds a partir de maintenant ;
+                # l'attente est consommee ici (la video tourne deja).
+                trim_start = time.monotonic() - t_video_zero
+                page.wait_for_timeout(int(capture_seconds * 1000))
+            else:
+                rec = page.evaluate(_RECORDER_JS, int(capture_seconds * 1000))
+                video_webm.write_bytes(base64.b64decode(rec["b64"]))
 
             # Export WAV natif : le bouton play est devenu '...' (lecture en
             # cours) ; l'export stoppe la lecture lui-meme (cyclist stop).
@@ -993,12 +1662,31 @@ def capture_repl_session(
             with page.expect_download(timeout=300_000) as download_info:
                 page.get_by_role("button", name="Export to WAV").click()
             download_info.value.save_as(str(audio_wav))
+
+            if capture_mode == "page":
+                # La webm n'est finalisee qu'a la fermeture du contexte ;
+                # on la recupere puis la deplace sous son nom canonique.
+                assert video is not None
+                recorded = Path(video.path())
+                context.close()
+                if not recorded.is_file() or recorded.stat().st_size < 10_000:
+                    raise RuntimeError(
+                        "record_video: webm absente ou < 10 Ko — la capture "
+                        "page entiere n'a pas produit de piste exploitable"
+                    )
+                recorded.replace(video_webm)
         finally:
             browser.close()
 
     import subprocess
 
-    cmd = mux_ffmpeg(video_webm, audio_wav, final_mp4)
+    cmd = mux_ffmpeg(
+        video_webm,
+        audio_wav,
+        final_mp4,
+        trim_start=trim_start,
+        trim_duration=float(capture_seconds) if trim_start is not None else None,
+    )
     proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if proc.returncode != 0:
         raise RuntimeError(f"ffmpeg a echoue ({proc.returncode}) : {proc.stderr[-800:]}")
@@ -1011,6 +1699,305 @@ def capture_repl_session(
         "wav_bytes": audio_wav.stat().st_size,
         "mp4_bytes": final_mp4.stat().st_size,
         "cycles": cycles,
+        "capture_mode": capture_mode,
+        "trim_start": trim_start,
+        "audio_probe": audio_probe,
+        "audio_reason": audio_reason,
+    }
+
+
+# --- Etape 4bis : capture a code evolutif (critere 5a, #15604) --------------
+#
+# Mesures fondatrices (2026-10-25, sondes playwright sur strudel.cc) :
+# - changer le seul FRAGMENT d'URL ne recharge pas le REPL (navigation
+#   same-document) : `page.goto(url_k)` laisse l'editeur sur l'etat 0.
+#   `page.reload()` apres le goto recharge bien le pattern de l'etat k.
+# - `keyboard.insert_text` remplace exactement le contenu de CodeMirror
+#   (contrairement a `type`, qui declenche l'auto-fermeture des parentheses) ;
+#   `Control+Enter` reevalue et le canvas repart (checksums differents).
+
+_EDITOR_READ_JS = """
+() => {
+  const cm = document.querySelector('.cm-content');
+  return cm ? cm.innerText : null;
+}
+"""
+
+
+def _set_editor_code(page: object, code: str) -> None:
+    """Ecrit ``code`` dans l'editeur CodeMirror du REPL (focus + select-all + insert).
+
+    ``insert_text`` laisse le curseur en fin de document : CodeMirror defile
+    alors horizontalement et la capture montre le code coupe a gauche (mesure
+    po-2028 du 2026-10-25 sur le meme site). ``Control+Home`` ramene le curseur
+    au debut pour que chaque etat soit filme depuis sa premiere ligne/colonne.
+    """
+    page.click(".cm-content")
+    page.keyboard.press("Control+a")
+    page.keyboard.insert_text(code)
+    page.keyboard.press("Control+Home")
+
+
+def _export_wav(page: object, out_wav: Path, cycles: Optional[int]) -> None:
+    """Menu ``export`` -> ``Export to WAV`` : rendu offline natif du moteur."""
+    if page.get_by_role("button", name="Close Menu").count() == 0:
+        page.get_by_role("button", name="menu", exact=True).click(timeout=10_000)
+        page.wait_for_timeout(600)
+    page.get_by_role("button", name="export", exact=True).click(timeout=10_000)
+    page.wait_for_timeout(600)
+    if cycles is not None:
+        page.get_by_role("spinbutton").nth(1).fill(str(cycles))
+    with page.expect_download(timeout=300_000) as download_info:
+        page.get_by_role("button", name="Export to WAV").click()
+    download_info.value.save_as(str(out_wav))
+
+
+def concat_wavs(wavs: List[Path], out_wav: Path) -> List[str]:
+    """Commande ffmpeg de concatenation des pistes d'etats (concat demuxer).
+
+    Les WAV viennent tous du meme rendu offline (meme frequence, meme
+    format) : la concatenation est exacte, sans recouvrement ni fondu.
+    """
+    if len(wavs) < 2:
+        raise ValueError(f"concat_wavs demande au moins 2 pistes, recu {len(wavs)}")
+    list_file = out_wav.with_suffix(".txt")
+    lignes = ["file '%s'" % str(Path(w).resolve()).replace("\\", "/") for w in wavs]
+    list_file.write_text("\n".join(lignes) + "\n", encoding="utf-8")
+    return [
+        "ffmpeg", "-y",
+        "-f", "concat", "-safe", "0", "-i", str(list_file),
+        "-c:a", "pcm_s16le", str(out_wav),
+    ]
+
+
+def render_progressive_audio(
+    states: List[str],
+    output_dir: Path,
+    state_seconds: int,
+    cps: float,
+    headless: bool = False,
+    warmup_seconds: float = 5.0,
+    repl_base: str = "https://strudel.cc/",
+) -> List[Path]:
+    """Rend le WAV de **chaque** etat, pour que l'audio evolue comme le code.
+
+    Necessaire a l'honnetete de la piste : ``Export to WAV`` rend le pattern
+    **courant** en offline. Un seul export en fin de session porterait le
+    pattern complet alors que la video montre des etats partiels — l'audio
+    contrarierait l'image, ce qui est precisement le mensonge que 5a doit
+    eviter.
+    """
+    if len(states) < 3:
+        raise ValueError(f"render_progressive_audio demande >= 3 etats, recu {len(states)}")
+
+    from playwright.sync_api import sync_playwright
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    cycles = cycles_for_duration(cps, state_seconds)
+    wavs: List[Path] = []
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=headless)
+        page = browser.new_page(viewport={"width": 1280, "height": 1024})
+        try:
+            for i, code in enumerate(states):
+                url = build_repl_url(code, repl_base)
+                page.goto(url)
+                # Le fragment seul ne recharge pas le REPL (mesure) : sans ce
+                # reload, tous les exports porteraient le pattern de l'etat 0.
+                page.reload()
+                page.wait_for_timeout(int(warmup_seconds * 1000))
+                _click_play(page, url)
+                page.wait_for_timeout(1500)
+                out = output_dir / f"state_{i:02d}.wav"
+                _export_wav(page, out, cycles)
+                if not out.is_file() or out.stat().st_size < 1_000:
+                    raise RuntimeError(
+                        f"export WAV de l'etat {i} absent ou vide ({out}) — "
+                        "le rendu offline n'a pas abouti"
+                    )
+                wavs.append(out)
+        finally:
+            browser.close()
+    return wavs
+
+
+def capture_progressive_video(
+    states: List[str],
+    output_dir: Path,
+    state_seconds: int,
+    headless: bool = False,
+    warmup_seconds: float = 5.0,
+    repl_base: str = "https://strudel.cc/",
+) -> Dict[str, object]:
+    """Filme la page REPL pendant que le code passe par chaque etat.
+
+    Le code est **saisi dans l'editeur** a chaque transition (et non
+    recharge par navigation) : la page reste vivante, le canvas continue de
+    tourner, et le geste filmé est celui d'un livecoder (saisie puis
+    ``Control+Enter``).
+
+    Retourne ``video_webm``, ``trim_start``, ``editor_states`` (texte lu
+    dans l'editeur a chaque etat) et ``distinct_states``. Un verdict
+    inférieur a trois etats distincts **leve** : c'est le critere 5a, pas
+    une metrique consultative.
+    """
+    if len(states) < 3:
+        raise ValueError(f"capture_progressive_video demande >= 3 etats, recu {len(states)}")
+
+    from playwright.sync_api import sync_playwright
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    video_webm = output_dir / "progressive.webm"
+    editor_states: List[str] = []
+    trim_start: Optional[float] = None
+
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=headless)
+        context = browser.new_context(
+            viewport={"width": 1280, "height": 1024},
+            record_video_dir=str(output_dir),
+            record_video_size={"width": 1280, "height": 1024},
+        )
+        page = context.new_page()
+        video = page.video
+        t_video_zero = time.monotonic()
+        try:
+            url0 = build_repl_url(states[0], repl_base)
+            page.goto(url0)
+            page.wait_for_timeout(int(warmup_seconds * 1000))
+            _click_play(page, url0)
+            page.wait_for_timeout(int(warmup_seconds * 1000))
+            trim_start = time.monotonic() - t_video_zero
+
+            for i, code in enumerate(states):
+                if i > 0:
+                    _set_editor_code(page, code)
+                    page.keyboard.press("Control+Enter")
+                    page.wait_for_timeout(1_200)
+                texte = page.evaluate(_EDITOR_READ_JS)
+                editor_states.append("" if texte is None else str(texte))
+                if i == len(states) - 1:
+                    # Garde canvas sur le dernier etat : lui seul porte les
+                    # visuals (premieres voix sans .scope()/.pianoroll()).
+                    h1 = page.evaluate(_CANVAS_CHECKSUM_JS)
+                    page.wait_for_timeout(2_000)
+                    h2 = page.evaluate(_CANVAS_CHECKSUM_JS)
+                    if h1 == h2:
+                        raise RuntimeError(
+                            "canvas REPL immobile sur l'etat final — visuals "
+                            "absents (compose_progressive_states(visuals=True) ?)"
+                        )
+                page.wait_for_timeout(int(state_seconds * 1000))
+
+            distinct = len(dict.fromkeys(editor_states))
+            if distinct < 3:
+                raise RuntimeError(
+                    f"critere 5a non tenu : {distinct} etat(s) distinct(s) dans "
+                    f"l'editeur, 3 exiges ({editor_states!r})"
+                )
+
+            assert video is not None
+            recorded = Path(video.path())
+            context.close()
+            if not recorded.is_file() or recorded.stat().st_size < 10_000:
+                raise RuntimeError(
+                    "record_video: webm absente ou < 10 Ko — la capture page "
+                    "entiere n'a pas produit de piste exploitable"
+                )
+            recorded.replace(video_webm)
+        finally:
+            browser.close()
+
+    return {
+        "video_webm": str(video_webm),
+        "trim_start": trim_start,
+        "editor_states": editor_states,
+        "distinct_states": len(dict.fromkeys(editor_states)),
+    }
+
+
+def capture_progressive_session(
+    style_name: str,
+    duration_seconds: int,
+    voices: int = 4,
+    visuals: bool = True,
+    output_dir: Optional[Path] = None,
+    headless: bool = False,
+    repl_base: str = "https://strudel.cc/",
+) -> Dict[str, object]:
+    """Capture complete a code evolutif : video + audio par etat + mux.
+
+    Deux passes distinctes, volontairement :
+
+    1. **video** — une seule session filmee, le code est saisi dans
+       l'editeur et reevalue a chaque etat (aucune navigation pendant la
+       prise, donc aucun flash de rechargement a l'image) ;
+    2. **audio** — un rendu offline par etat, concatenes : la bande sonore
+       contient exactement la progression que l'image montre.
+
+    Le mux final decoupe la fenetre video utile par ``-ss``/``-t`` mesures a
+    l'horloge du process (etape 4 de #15604), puis assemble en H.264/AAC.
+    """
+    states = compose_progressive_states(
+        style_name=style_name,
+        duration_seconds=duration_seconds,
+        voices=voices,
+        visuals=visuals,
+    )
+    if len(states) < 3:
+        raise ValueError(f"capture_progressive_session demande >= 3 etats, recu {len(states)}")
+    if not visuals:
+        raise ValueError(
+            "progressive : visuals=True requis — sans visuals le canvas REPL "
+            "reste noir et la garde d'animation ne peut pas distinguer une "
+            "capture vivante d'une capture morte"
+        )
+    if output_dir is None:
+        output_dir = Path("out") / "progressive"
+    output_dir = Path(output_dir)
+
+    import subprocess
+
+    cps = STYLES[style_name].bpm / 60.0 / 2.0
+    state_seconds = max(4, duration_seconds // len(states))
+
+    wavs = render_progressive_audio(
+        states, output_dir, state_seconds, cps, headless=headless, repl_base=repl_base
+    )
+    audio_wav = output_dir / "progressive.wav"
+    cmd_concat = concat_wavs(wavs, audio_wav)
+    proc = subprocess.run(cmd_concat, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if proc.returncode != 0:
+        raise RuntimeError(f"ffmpeg concat a echoue ({proc.returncode}) : {proc.stderr[-800:]}")
+
+    video = capture_progressive_video(
+        states, output_dir, state_seconds, headless=headless, repl_base=repl_base
+    )
+
+    final_mp4 = output_dir / "progressive_final.mp4"
+    trim_start = video["trim_start"]
+    cmd_mux = mux_ffmpeg(
+        Path(str(video["video_webm"])),
+        audio_wav,
+        final_mp4,
+        trim_start=float(trim_start) if trim_start is not None else None,
+        trim_duration=float(state_seconds * len(states)),
+    )
+    proc = subprocess.run(cmd_mux, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if proc.returncode != 0:
+        raise RuntimeError(f"ffmpeg mux a echoue ({proc.returncode}) : {proc.stderr[-800:]}")
+
+    return {
+        "final_mp4": str(final_mp4),
+        "mp4_bytes": final_mp4.stat().st_size,
+        "audio_wav": str(audio_wav),
+        "wav_bytes": audio_wav.stat().st_size,
+        "states": states,
+        "n_states": len(states),
+        "state_seconds": state_seconds,
+        "cycles_per_state": cycles_for_duration(cps, state_seconds),
+        "editor_states": video["editor_states"],
+        "distinct_states": video["distinct_states"],
     }
 
 
@@ -1021,9 +2008,11 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="livecoding_video_pipeline",
         description="Pipeline livecoding-video (#15604). Compose un "
-        "script Strudel multi-pistes par template (etape 1) et la "
-        "narration poetique timestampee (etape 2) ; les etapes 3/5/6 "
-        "restent deferred.",
+        "script Strudel multi-pistes par template (etape 1), la "
+        "narration poetique timestampee (etape 2), la synthese TTS "
+        "expressive via le gateway tts-multi (etape 3, --tts-engine), "
+        "la capture navigateur (etape 4, --capture) et le mixage final "
+        "loudnorm + fade-out coordonne (etape 6, capture + TTS).",
     )
     parser.add_argument(
         "--style",
@@ -1049,27 +2038,65 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         help="chemin du fichier .mp4 final (deferred, default: out/livecoding_V0.mp4)",
     )
     parser.add_argument(
+        "--tts-engine",
+        choices=sorted(TTS_ENGINES.keys()),
+        default=None,
+        help="etape 3 : moteur TTS via le gateway tts-multi (kokoro = "
+             "latence min, deploye ; tada = expressivite max, verdict "
+             "#17244, requiert le service tts-tada) — absent = etape deferee",
+    )
+    parser.add_argument(
         "--tts-voice",
         default=None,
-        help="voix TTS Kokoro/FishAudio (optionnel, deferred en V0)",
+        help="voix TTS (defaut : voix du moteur — af_sky pour kokoro, "
+             "default pour tada)",
+    )
+    parser.add_argument(
+        "--tts-gateway",
+        default=None,
+        help="URL du gateway tts-multi (defaut : $TTS_GATEWAY_URL puis "
+             "http://localhost:8196)",
+    )
+    parser.add_argument(
+        "--tts-out-dir",
+        default=None,
+        help="dossier des WAV de segments TTS (defaut : <output>/tts)",
     )
     parser.add_argument(
         "--capture",
         action="store_true",
-        help="etape 4 : piloter strudel.cc (Playwright headed), capturer le "
-             "canvas (MediaRecorder) + exporter le WAV natif, mux ffmpeg",
+        help="etape 4 : piloter strudel.cc (Playwright), capturer la video "
+             "(cf --capture-mode) + exporter le WAV natif, mux ffmpeg",
     )
     parser.add_argument(
         "--capture-seconds",
         type=int,
-        default=30,
-        help="duree de capture video en secondes (default: 30)",
+        default=None,
+        help="duree de capture video en secondes (default: suit --duration "
+             "— le defaut fige 30 tronquait la demo, mesure c.1528)",
+    )
+    parser.add_argument(
+        "--capture-mode",
+        choices=("page", "canvas"),
+        default="page",
+        help="etape 4 : 'page' filme la page REPL ENTIERE via record_video "
+             "(editeur de code + canvas — defaut, fix critere 5a #15604) ; "
+             "'canvas' = recorder in-page historique (canvas seul)",
+    )
+    parser.add_argument(
+        "--progressive",
+        action="store_true",
+        help="etape 4bis (critere 5a #15604) : capturer le code EN COURS "
+             "D'EVOLUTION — le script passe par une voix de plus a chaque "
+             "etat (>=3 etats visibles distincts), l'audio est rendu par "
+             "etat puis concatene. Requiert --capture et --voices >= 3.",
     )
     parser.add_argument(
         "--headless",
         action="store_true",
-        help="lancer Chromium headless (DECONSEILLE : le canvas REPL ne "
-             "s'anime pas sans fenetre compositée — mesure c.580)",
+        help="lancer Chromium headless (mesure c.1528 : capture 180 s "
+             "verifiee headless, le checksum canvas en aval reste le "
+             "garde contre un canvas immobile — cf mesure c.580 anterieure)",
     )
     parser.add_argument(
         "--narration-engine",
@@ -1090,6 +2117,49 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 
 def main(argv: Optional[List[str]] = None) -> int:
     args = _build_arg_parser().parse_args(argv)
+
+    # Etape 4bis : capture a code evolutif (critere 5a, #15604). Mode
+    # separe du pipeline narration/TTS : il produit la video de
+    # demonstration du critere, pas un episode narre.
+    if args.progressive:
+        if not args.capture:
+            print(
+                "ERREUR : --progressive requiert --capture (etape 4 activee)",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            result_progressif = capture_progressive_session(
+                style_name=args.style,
+                duration_seconds=args.duration,
+                voices=args.voices,
+                headless=args.headless,
+            )
+        except (RuntimeError, ValueError) as exc:
+            print(f"ERREUR : {exc}", file=sys.stderr)
+            return 2
+        print("=== Capture a code evolutif (critere 5a, #15604) ===")
+        print(f"  etats          : {result_progressif['n_states']} "
+              f"({result_progressif['distinct_states']} distincts dans l'editeur)")
+        print(f"  duree par etat : {result_progressif['state_seconds']} s "
+              f"({result_progressif['cycles_per_state']} cycles)")
+        print(f"  video          : {result_progressif['final_mp4']} "
+              f"({result_progressif['mp4_bytes']} octets)")
+        print(f"  audio          : {result_progressif['audio_wav']} "
+              f"({result_progressif['wav_bytes']} octets)")
+        print()
+        print("--- etats successifs du script ---")
+        for i, script in enumerate(result_progressif["states"]):
+            print(f"[etat {i}] {len(script)} caracteres, "
+                  f"{script.count(chr(10)) + 1} lignes")
+        verdict_5a = (
+            "TENU" if result_progressif["distinct_states"] >= 3 else "NON TENU"
+        )
+        print(f"\n=== Verdict critere 5a : {verdict_5a} "
+              f"({result_progressif['distinct_states']}/3 etats distincts mesures "
+              f"dans l'editeur) ===")
+        return 0
+
     try:
         result = run_pipeline(
             style_name=args.style,
@@ -1099,8 +2169,12 @@ def main(argv: Optional[List[str]] = None) -> int:
             capture=args.capture,
             capture_seconds=args.capture_seconds,
             headless=args.headless,
+            capture_mode=args.capture_mode,
             narration_engine=args.narration_engine,
             narration_json_path=args.narration_json,
+            tts_engine=args.tts_engine,
+            tts_gateway=args.tts_gateway,
+            tts_out_dir=args.tts_out_dir,
         )
     except RuntimeError as exc:
         # Echec explicite (ex. moteur llm sans cle) — pas de fallback

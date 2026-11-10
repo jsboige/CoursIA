@@ -28,17 +28,23 @@ concurrency:
 jobs:
   large-blob-advisory:
     name: Large blob advisory (>= 10 MiB)
-    # Routage #14283 tranche 4 (ai-01 2026-09-02) : balayage cron pur-Python.
-    # Declencheur `schedule` uniquement -- il ne tourne que sur la branche par
-    # defaut, donc aucun code de fork ne peut l'atteindre et aucune garde
-    # same-repo n'est requise (cf en-tete de check_self_hosted_runner_policy.py).
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    # Q35 etape 2 (#17397) : balayage cron nocturne pur-Python (git diff +
+    # git cat-file), aucun secret ni toolchain locale. Declencheur `schedule`
+    # uniquement -- aucun code de fork ne peut l'atteindre. Routage #14283
+    # inverse, retour sur ubuntu-latest et sortie de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # #23349 : borne explicite. Mesure du 2026-11-09 sur les 3 derniers runs
+    # verts de ce job : max 0.20 min. Marge x2 -- le defaut d'Actions est
+    # 6 h, et un job fige tient son slot tout ce temps.
+    timeout-minutes: 10
     steps:
       - name: Checkout PR (full history for blob diff)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       - name: Scan added blobs above threshold
         env:

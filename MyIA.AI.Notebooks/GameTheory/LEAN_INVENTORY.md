@@ -7,19 +7,32 @@ module-set réel du disque (issue #13138). Ligne `conway_cgt_lean` re-synchronis
 (bande 4.33, PR #18298). Comptes `sorry` mesurés avec l'instrument canonique
 `scripts/lean/count_code_sorry.py --json` (champ `distinct_code_sorry`), jamais `grep -c sorry`.
 
+**Ré-derivation mécanique du 2026-10-29 (issue #21765).** La carte s'était arrêtée au 2026-08-26 :
+les `lean_lib` déclarées depuis — `Abstraction`, `ProgramGames`, `StackelbergBilevel` et les six
+`Approval*` de `social_choice_lean_peters` — n'y étaient jamais entrées : **9 bibliothèques** et
+leurs fichiers de preuve restaient invisibles pour qui lisait la carte. Les périmètres ci-dessous sont dès
+lors re-dérivés des lakefiles par `scripts/lean/check_lean_inventory.py`, qui échoue dès qu'une
+bibliothèque déclarée n'est plus nommée par la carte (contrôle CI :
+`scripts/lean/tests/test_check_lean_inventory.py`).
+
+**Ré-derivation du 2026-11-05 (issue #21765).** Le contrôle CI ci-dessus échouait sur `main`
+depuis le 2026-11-04 : la 9ᵉ `lean_lib` du package `game_theory_lean`, `CongestionGames` (grain
+#24423), n'était pas nommée par la carte. La ligne ci-dessous est re-derivée du lakefile, comme
+les précédentes — le contrôle est le même, et il est vert.
+
 ## Résumé
 
 **Lakes actifs (8)** :
 
 | Répertoire | Toolchain | sorry (production) | Modules | Statut |
 |-----------|-----------|--------------------|---------|--------|
-| `game_theory_lean` | v4.33.0 | 1 (stretch Folk, #4880) | StableMarriage + CooperativeGames + SocialChoice + RepeatedGames + Swaps (49 `.lean` FR+EN) | COMPLET (EPIC #4365) |
+| `game_theory_lean` | v4.33.0 | 1 (stretch Folk, #4880) | StableMarriage + CooperativeGames + SocialChoice + RepeatedGames + Swaps + Abstraction + ProgramGames + StackelbergBilevel + CongestionGames (66 `.lean` FR+EN) | COMPLET (EPIC #4365) |
 | `lean_game_defs` | v4.33.0 | 0 | 12 (6 FR + 6 `_en`) | COMPLET (defs partagés) |
 | `lean_game_defs_ext` | v4.33.0 | 0 | Bayesian/* 24 (12 FR + 12 `_en`) + 2 umbrellas | COMPLET |
 | `minimax_lean` | v4.33.0 | 0 | ZeroSum + Concavity + SionApplication (+ `_en`) | COMPLET |
 | `assignment_lean` | v4.33.0 | 0 | Definitions / Duality / KuhnMunkres / Optimality (+ `_en`) | COMPLET (#12598) |
 | `asymmetric_information_lean` | v4.33.0 | 0 | Lemons / Signaling / Screening / MiyazakiWilson / BayesianLink (+ `_en`) | COMPLET (Epic #12844) |
-| `social_choice_lean_peters` | v4.32.1 | 0 | PetersTour (+ `_en`) | Référence seule |
+| `SocialChoice/social_choice_lean_peters` | v4.32.1 | 0 | PetersTour (+ `_en`) + ApprovalDefs/Core/Pareto/Quota/Consensus/Payment (14 `.lean` FR+EN) | Tour de référence + core d'approbation (#17988) |
 | `conway_cgt_lean` | v4.31.0-rc2 | 0 | CGTTour (+ `_en`) | Tour de référence |
 
 **Tombstones (absorbés, EPIC #4365)** :
@@ -27,12 +40,12 @@ module-set réel du disque (issue #13138). Ligne `conway_cgt_lean` re-synchronis
 | Répertoire | Devenir |
 |-----------|---------|
 | ~~`cooperative_games_lean`~~ | **Supprimé** (rm #6587) → [`game_theory_lean/CooperativeGames/`](game_theory_lean/CooperativeGames/) |
-| ~~`social_choice_lean`~~ | Absorbé (#6058, 2026-07-11) → [`game_theory_lean/SocialChoice/`](game_theory_lean/SocialChoice/) — ne subsistent que 4 markdown tombstone |
-| ~~`repeated_games_lean`~~ | Absorbé (#6146) → [`game_theory_lean/RepeatedGames/`](game_theory_lean/RepeatedGames/) — coquille archive conservée (lakefile neutralisé, 0 module) |
+| ~~`social_choice_lean`~~ | Absorbé (#6058, 2026-07-11) → [`game_theory_lean/SocialChoice/`](game_theory_lean/SocialChoice/) — ne subsistent que 3 markdown tombstone |
+| ~~`repeated_games_lean`~~ | Absorbé (#6146) → [`game_theory_lean/RepeatedGames/`](game_theory_lean/RepeatedGames/) — coquille retirée du disque (#4362) |
 
 Note : `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) est un exemple pédagogique, pas du code de production. `asymmetric_information_lean` porte 2 *naive* sorry (prose/docstrings) pour 0 vrai sorry de code.
 
-**Série hommage Conway déplacée** : `conway_lean/` (hommage Conway — Doomsday, FRACTRAN, Look-and-Say, Nim, Angel) a été déplacé vers [`SymbolicAI/Lean/conway_lean/`](../SymbolicAI/Lean/conway_lean/) car il formalise des résultats Conway moins connus (pas du contenu game-théorique en soi). Les cibles de calibration du prover définies dans `agent_tests/prover/config.py` suivent le nouveau chemin.
+**Série hommage Conway déplacée** : `conway_lean/` (hommage Conway — Doomsday, FRACTRAN, Look-and-Say, Nim, Angel) a été déplacé vers [`SymbolicAI/Lean/GOL/conway_lean/`](../SymbolicAI/Lean/GOL/conway_lean/) car il formalise des résultats Conway moins connus (pas du contenu game-théorique en soi). Les cibles de calibration du prover définies dans `agent_tests/prover/config.py` suivent le nouveau chemin.
 
 **Calibration déplacée** : `calibration_lean/` a été déplacé vers [`SymbolicAI/Lean/calibration_lean/`](../SymbolicAI/Lean/calibration_lean/) (issue #1764) car c'est un composant de harnais prover, pas du contenu game-théorique.
 
@@ -47,7 +60,18 @@ Note : `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) est un exemp
 (rm #6587), `social_choice_lean/` (#6058), `repeated_games_lean/` (#6146). Le lake porte
 également `Swaps` (grain #12222, compagnon du notebook GameTheory-03a).
 
-**Objectif** : formaliser le curriculum GameTheory — jeux coopératifs (Shapley, cœur), mariage stable de Gale-Shapley, choix social (Arrow, Sen, électeur médian), jeux répétés (théorème folk), chemins d'échange sur jeux ordinaux 2×2.
+Le lake a encore gagné trois `lean_lib` après la réconciliation du 2026-08-26, restées hors carte
+jusqu'à la re-derivation du 2026-10-29 (#21765) : `Abstraction` (grain #12204, opération 2),
+`ProgramGames` (grain #15176, EPIC #15062 « Math for AI Safety ») et `StackelbergBilevel`
+(grain #21221). Les trois sont `@[default_target]` : `lake build` les compile.
+
+Une quatrième `lean_lib` est venue après cette re-derivation : `CongestionGames` (grain #24423,
+9ᵉ cohorte du package, critère 4 de #21927, le 2026-11-04) — la borne élémentaire 2× du prix de
+l'anarchie pour l'équilibre minimisant le potentiel de Rosenthal. Elle est `@[default_target]`
+comme les trois autres, et n'était pas nommée par la carte : le contrôle CI `check_lean_inventory`
+échouait depuis son merge (voir la re-derivation du 2026-11-05, en tête de document).
+
+**Objectif** : formaliser le curriculum GameTheory — jeux coopératifs (Shapley, cœur), mariage stable de Gale-Shapley, choix social (Arrow, Sen, électeur médian), jeux répétés (théorème folk), chemins d'échange sur jeux ordinaux 2×2, dette d'exploitabilité et abstraction, équilibre en programmes borné, jeu de Stackelberg.
 
 **Toolchain** : v4.33.0 | **Dépendances** : Mathlib4
 
@@ -55,9 +79,13 @@ Note : `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) est un exemp
 |--------------|-------|---------|
 | `StableMarriage/` (5 FR + 5 `_en`) | 0 | algorithme GS, terminaison, stabilité, `exists_isManOptimal`, `woman_pessimal`, treillis de Knuth + réfutations d'anciens énoncés faux |
 | `CooperativeGames/` (3 FR + 3 `_en`) | 0 | jeux à transferts (TU), Core, `bondareva_shapley : Core.Nonempty ↔ Balanced`, valeur de Shapley (décomposition de Möbius), machinerie de séparation par cônes |
-| `SocialChoice/` (9 FR + 8 `_en`) | 0 | Arrow (Geanakoplos 2005), paradoxe libéral de Sen, électeur médian / Split Cycle / clones, véracité Vickrey, AMD, cœur `PrefOrder`/`Profile`/SWF |
+| `SocialChoice/` (8 FR + 7 `_en` + 1 smoke) | 0 | Arrow (Geanakoplos 2005), paradoxe libéral de Sen, électeur médian / Split Cycle / clones, véracité Vickrey, AMD, cœur `PrefOrder`/`Profile`/SWF |
 | `RepeatedGames/` (4 FR + 4 `_en`) | 1 (stretch) | `grim_trigger_sustains_iff` (théorème-phare, 0 sorry) ; `folk_theorem_discounted` / `folk_theorem_boundary` portent 1 sorry stretch (#4880) |
 | `Swaps/` (FR-only) | 0 | `Table`, générateurs adjacents, certificat de chemin, `distance_dilemme_chicken` |
+| `Abstraction/` (1 FR, sans jumeau `_en`) | 0 | dette d'exploitabilité d'un duel 2×2 à coefficients entiers (`dette`, `encadrement`, `dette_nonneg`, `selle_dette_nulle`) ; contre-exemple certifié `raffinement_aggrave_la_dette` — raffiner une abstraction peut aggraver la dette retransportée (grain #12204) |
+| `ProgramGames/` (3 FR + 3 `_en`) | 0 | équilibre en programmes borné (Barasz et al. 2014, arXiv:1401.5577 ; Critch 2016, arXiv:1602.04184) : noyau L1 `outcome_probeBot_probeBot` / `programNash_probeBot_probeBot` / `probeBot_unexploitable_in_family` / `probeBot_exploited_by_exploiterBot` ; agents à budget explicite (`Bounded.lean`) ; FairBot par le théorème de Löb (`FairBot.lean`, `fairBot_fairBot_cooperation`) (grain #15176) |
+| `StackelbergBilevel/` (1 FR, sans jumeau `_en`) | 0 | duopole de Stackelberg en rationnels (demande linéaire, coûts marginaux constants) : réaction de Cournot et point fixe (`cournot_reaction_fixed_point`), forme close du suiveur (`stackelberg_follower_eq_reaction`), avantage du premier entrant (`first_mover_advantage_at_default`) (grain #21221) |
+| `CongestionGames/` (1 FR, sans jumeau `_en`) | 0 | prix de l'anarchie des jeux de congestion atomiques à coûts linéaires, sur `Nat` sans fraction : potentiel de Rosenthal sous forme doublée `Phi' = sum_e a_e x_e (x_e + 1)`, identité d'exactitude (`potential_exchange`), minimiseur du potentiel qui est équilibre de Nash (`minPotential_isNash`), borne `cost_minPotential_le_two` (l'équilibre potentiel-minimal coûte au plus 2× l'optimum social) + deux témoins `decide` (`w2Good`/`w2Bad`, `w3Bad`) (grain #24423) |
 
 **Compilation** : `lake build` — SUCCESS. CI : `lean-ci-matrix.yml` (clé `gametheory`, qui couvre aussi `SocialChoice/`).
 
@@ -66,6 +94,8 @@ Note : `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) est un exemp
 - `no_cross_match_is_false` / `doctor_optimal_eq_top_is_false` — réfutations vérifiées au kernel d'anciens énoncés faux
 - `bondareva_shapley` (`Core.Nonempty ↔ Balanced`) — prouvé intégralement, aucun axiome ajouté (tranches compactes + Weierstrass, #3954)
 - `grim_trigger_sustains_iff` — FORMAL-CERTIFIED, 0 sorry
+- `raffinement_aggrave_la_dette` / `programNash_probeBot_probeBot` / `stackelberg_follower_eq_reaction` — théorèmes-phare des trois libs ajoutées après le 2026-08-26 (`Abstraction`, `ProgramGames`, `StackelbergBilevel`), tous 0 sorry (`distinct_code_sorry = 0` par module, instrument canonique)
+- `cost_minPotential_le_two` — théorème-phare de `CongestionGames` (grain #24423) : l'équilibre qui minimise le potentiel de Rosenthal coûte au plus deux fois l'optimum social, en entier sur `Nat` ; 0 sorry (`distinct_code_sorry = 0` par module, instrument canonique)
 
 ---
 
@@ -93,7 +123,7 @@ MechanismDesign, SortedListCounting) ont été absorbés byte-identique dans
 [`game_theory_lean/SocialChoice/`](game_theory_lean/SocialChoice/) (FR canonique + miroirs
 `_en.lean` Pattern A #4980). **Ce répertoire n'est plus un lake** — la coquille technique
 (`lakefile.lean`, `lean-toolchain`, `lake-manifest.json`) a été retirée ; ne subsistent que
-4 markdown (`README`, `STATUS`, `NOTICE`, `LEAN_PREREQUISITES`) conservés comme tombstone.
+3 markdown (`README`, `STATUS`, `LEAN_PREREQUISITES`) conservés comme tombstone.
 
 **Statut (historique, préservé dans le home canonique)** : COMPLET, 0 sorry — impossibilité
 d'Arrow (Geanakoplos 2005), paradoxe libéral de Sen, électeur médian / Split Cycle / clones,
@@ -102,19 +132,25 @@ véracité Vickrey + contre-exemple au premier prix (#1469). Build repris par
 
 ---
 
-### 4. social_choice_lean_peters
+### 4. social_choice_lean_peters (sous `SocialChoice/` depuis #4362)
 
 **Objectif** : projet de référence important DominikPeters/SocialChoiceLean comme dépendance Lake.
 
-**Toolchain** : v4.32.1 (pin effectif ; **hors cible du parc** depuis #14773 — dependance amont `SocialChoiceLean` incompatible 4.33, cf. `social_choice_lean_peters/README.md §Statut`) | **Dépendances** : Mathlib4 (`520045ab`), SocialChoiceLean `94a4c650` (revs effectives du `lake-manifest.json`)
+**Toolchain** : v4.32.1 (pin effectif ; **hors cible du parc** depuis #14773 — dependance amont `SocialChoiceLean` incompatible 4.33, cf. `SocialChoice/social_choice_lean_peters/README.md §Statut`) | **Dépendances** : Mathlib4 (`520045ab`), SocialChoiceLean `94a4c650` (revs effectives du `lake-manifest.json`)
 
 | Fichier | sorry | Description |
 |------|-------|-------------|
 | `PetersTour.lean` + `PetersTour_en.lean` | 0 | Tour curaté des résultats formalisés de Peters (i18n #4980) |
+| `ApprovalDefs.lean` + `_en` | 0 | socle de définitions du core d'approbation (Becker-Greger-Peters 2026, arXiv 2609.11912) : `ApprovalBallot`, `ApprovalProfile`, `Committee`, `Happiness`, `PaymentFunction` (plan #17988, tranche 1) |
+| `ApprovalCore.lean` + `_en` | 0 | définition standard du core en élection de comité (coalition non vide) et lemmes d'identité `StrictlyImproves` / `InCore` (tranche 2) |
+| `ApprovalPareto.lean` + `_en` | 0 | condition nécessaire — appartenir au core implique ne pas être dominé au sens de Pareto (tranche 3) |
+| `ApprovalQuota.lean` + `_en` | 0 | quotas Hare `n/k` et Droop `n/(k+1)`, seuil de coalition `IsQuotaLarge` (forme stricte exposée à part, `droopThreshold`) |
+| `ApprovalConsensus.lean` + `_en` | 0 | non-vacuité du core sur une famille de profils de consensus (`inCore_of_ballots_subset`) |
+| `ApprovalPayment.lean` + `_en` | 0 | système de paiement conforme à la définition 3.2 du papier, et sens « certificat ⟹ core » du théorème 3.3 (`not_blocksCore_of_paymentCertificate`) |
 
-**Compilation** : `lake build` — SUCCESS | **Référence seule, pas une cible de preuve**
+**Compilation** : `lake build` — SUCCESS | **Tour de référence + cible de preuve** (core d'approbation, plan #17988)
 
-**Contenu** : importe la bibliothèque de Peters (Gibbard-Satterthwaite, Duggan-Schwartz, 4 impossibilités de Condorcet, 15+ règles de vote avec vérification d'axiomes). Lake de support du notebook compagnon du tour SocialChoiceLean (prévu, pas encore créé).
+**Contenu** : importe la bibliothèque de Peters (Gibbard-Satterthwaite, Duggan-Schwartz, 4 impossibilités de Condorcet, 15+ règles de vote avec vérification d'axiomes). Depuis le plan #17988, le lake porte aussi **six bibliothèques de preuve** (`ApprovalDefs`, `ApprovalCore`, `ApprovalPareto`, `ApprovalQuota`, `ApprovalConsensus`, `ApprovalPayment`) qui formalisent le core d'approbation de Becker-Greger-Peters 2026 — elles restaient hors carte jusqu'à la re-derivation du 2026-10-29 (#21765). Lake de support du notebook compagnon du tour SocialChoiceLean (prévu, pas encore créé).
 
 **Relation avec `social_choice_lean` (absorbé)** : complémentaire, pas un doublon. Notre cadre historique utilisait un `PrefOrder` custom (nos preuves, désormais dans `game_theory_lean/SocialChoice/`) ; ce lake expose le `LinearOrder` de Peters (référence externe). Les deux sont conservés par complétude pédagogique.
 
@@ -127,7 +163,7 @@ modules sources (`Stage`, `Discounting`, `GrimTrigger`, `Folk`) ont été absorb
 byte-identique dans [`game_theory_lean/RepeatedGames/`](game_theory_lean/RepeatedGames/).
 Ce répertoire est conservé comme **coquille archive** : `package`, `require mathlib`,
 manifest et documentation restent présents, mais la `lean_lib` est neutralisée dans le
-`lakefile.lean` (ses globs matchaient 0 fichier depuis le déménagement). Certification et
+`lakefile.lean` (ses globs ne matchaient plus aucun fichier depuis le déménagement). Certification et
 build repris par `game_theory_lean` (`.github/workflows/lean-ci-matrix.yml`, clé `gametheory`).
 
 **Statut (historique, préservé dans le home canonique)** : `grim_trigger_sustains_iff`
@@ -177,7 +213,9 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 
 ### 8. lean_game_defs_ext
 
-**Objectif** : jeux bayésiens & design de mécanismes — véracité Vickrey, équilibre bayésien de Nash, enchères, réputation, jeu fictif, regret. Extension de `lean_game_defs` (définitions partagées), sans Mathlib.
+**Objectif** : jeux bayésiens & design de mécanismes — véracité Vickrey, équilibre bayésien de Nash, enchères, réputation, jeu fictif, regret. Extension thématique de `lean_game_defs`, sans dépendance de lake (l'ext vendore ses propres définitions), sans Mathlib.
+
+**Séparation par design + condition de réveil** : la base (définitions introductives) et l'ext (preuve, vendore ses propres defs) restent **tenus séparés par design** ; leur seul nom commun, `externalRegret` (signatures distinctes Float/Int), est une **collision dormante** (aucun consommateur n'importe les deux). **Le premier carnet ou lake qui importera les deux lakes renomme d'abord `externalRegret` côté ext (`bayesianExternalRegret`)** — décision ai-01 2026-11-02 (c2756, mesure 0/242 Bayesian + 1/39 Regret, i.e. symboles de l'ext déjà présents dans la base : 0 sur 242 Bayesian, 1 sur 39 Regret — le seul `externalRegret`).
 
 **Toolchain** : v4.33.0 | **Dépendances** : Lean core (sans Mathlib)
 
@@ -217,7 +255,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 
 ### 10. assignment_lean
 
-**Objectif** : squelette de correction de l'algorithme d'affectation de Kuhn-Munkres (hongrois) — lake compagnon du notebook GameTheory-23-Munkres-Assignment, hommage à James R. Munkres (1930-2026). Issue #12598 (1/3). Le primal (matrice de coûts, couplage parfait, valeur), le dual (potentiels, faisabilité, **dualité faible**), le certificat d'optimalité à écart nul, et les invariants structurels de l'algorithme (graphe d'égalité, **invariant de sortie**, **le serrage hongrois préserve la faisabilité duale**). Terminaison et complexité O(n³) volontairement hors scope.
+**Objectif** : squelette de correction de l'algorithme d'affectation de Kuhn-Munkres (hongrois) — lake compagnon du notebook Coalitions-04-Munkres-Affectation-Python, hommage à James R. Munkres (1930-2026). Issue #12598 (1/3). Le primal (matrice de coûts, couplage parfait, valeur), le dual (potentiels, faisabilité, **dualité faible**), le certificat d'optimalité à écart nul, et les invariants structurels de l'algorithme (graphe d'égalité, **invariant de sortie**, **le serrage hongrois préserve la faisabilité duale**). Terminaison et complexité O(n³) volontairement hors scope.
 
 **Toolchain** : v4.33.0 | **Dépendances** : Mathlib4
 
@@ -262,6 +300,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 | Priorité | Cible | Rép. | sorry | Faisabilité |
 |----------|--------|-----|-------|-------------|
 | P3 | `folk_theorem_discounted` / `folk_theorem_boundary` (stretch toléré) | `game_theory_lean/RepeatedGames/Folk.lean` (+ `_en`) | 1 stretch (#4880) | Faible — direction authentiquement difficile (`… = u_col`), grim couvre déjà le critère de fermeture |
+| P2 | non-vacuité du core d'approbation (BGP 2026, arXiv 2609.11912) | `SocialChoice/social_choice_lean_peters/ApprovalBGP2026.lean` (à créer) | 0 (fichier absent du lake) | Moyenne — les six tranches livrées (`ApprovalDefs` → `ApprovalPayment`) couvrent définitions, core, Pareto, quotas, non-vacuité sur profils de consensus et paiement ; la branche « caractérisation par systèmes de paiement » (théorème 3.3) est amorcée par `not_blocksCore_of_paymentCertificate` |
 
 > **Note (correction G.9, 2026-08-26) :** l'ancienne ligne P1 « Basic.lean L309 hCore / Very Low
 > (Hahn-Banach) » était stale (#3954 l'a close) ; l'ancien compte « 3 (Lattice) » pour
@@ -274,18 +313,18 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 
 | Projet | Décision | Justification |
 |---------|----------|-----------|
-| game_theory_lean | COMPLET | 1 sorry (stretch Folk, toléré #4880). StableMarriage : anciens énoncés faux réfutés, `exists_isManOptimal` honnête prouvé ; Lattice fermé. A absorbé `stable_marriage_lean/` + `cooperative_games_lean/` + `social_choice_lean/` + `repeated_games_lean/` (EPIC #4365). |
+| game_theory_lean | COMPLET | 1 sorry (stretch Folk, toléré #4880). StableMarriage : anciens énoncés faux réfutés, `exists_isManOptimal` honnête prouvé ; Lattice fermé. A absorbé `stable_marriage_lean/` + `cooperative_games_lean/` + `social_choice_lean/` + `repeated_games_lean/` (EPIC #4365) ; porte en outre `Abstraction`, `ProgramGames`, `StackelbergBilevel` et `CongestionGames` (0 sorry chacune). |
 | ~~cooperative_games_lean~~ | **Supprimé** (rm #6587) | Absorbé byte-identique dans `game_theory_lean/CooperativeGames/`. |
-| ~~social_choice_lean~~ | **Absorbé** (#6058) | 7 modules → `game_theory_lean/SocialChoice/` ; docs tombstone uniquement. |
-| ~~repeated_games_lean~~ | **Absorbé** (#6146) | 4 modules → `game_theory_lean/RepeatedGames/` ; coquille archive. |
+| ~~social_choice_lean~~ | **Absorbé** (#6058) | → `game_theory_lean/SocialChoice/` ; docs tombstone uniquement. |
+| ~~repeated_games_lean~~ | **Absorbé** (#6146) | → `game_theory_lean/RepeatedGames/` ; coquille retirée du disque (#4362). |
 | lean_game_defs / _ext | COMPLET | 0 sorry, sans Mathlib. |
 | minimax_lean | COMPLET | 0 sorry ; application de Sion prouvée. |
 | assignment_lean | COMPLET | 0 sorry (#12598). |
 | asymmetric_information_lean | COMPLET | 0 code sorry (Epic #12844). |
-| social_choice_lean_peters | N/A | Référence seule (Peters `94a4c650`, Mathlib `520045ab`, v4.32.1). |
+| SocialChoice/social_choice_lean_peters | EN COURS | 0 sorry. Tour de Peters (référence, `94a4c650`, Mathlib `520045ab`, v4.32.1) **plus** six libs de preuve du core d'approbation BGP 2026 (`Approval*`, plan #17988) — ces dernières sont une cible de preuve, pas seulement une référence ; le théorème de non-vacuité du core reste à livrer (cf. §Cibles de preuve restantes). |
 | conway_cgt_lean | N/A | Tour de référence (v4.31.0-rc2, suit l'amont). |
 
-Les cibles de calibration Conway (Doomsday / FRACTRAN / Look-and-Say / Nim / Angel) vivent dans `SymbolicAI/Lean/conway_lean/` et sont toujours consommées par `agent_tests/prover/config.py` (co-évolution du harnais prover #1453).
+Les cibles de calibration Conway (Doomsday / FRACTRAN / Look-and-Say / Nim / Angel) vivent dans `SymbolicAI/Lean/GOL/conway_lean/` et sont toujours consommées par `agent_tests/prover/config.py` (co-évolution du harnais prover #1453).
 
 ---
 

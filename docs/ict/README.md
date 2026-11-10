@@ -55,7 +55,21 @@ du cadrage rendu à sa place.
 | Document | Rôle |
 |----------|------|
 | [`feuille-de-route-notebooks.md`](feuille-de-route-notebooks.md) | Inventaire notebook par notebook : sujet, strate (axe vertical), état de livraison, issues de rattachement et slots réservés. |
-| [`extensions-2026-07.md`](extensions-2026-07.md) | Les quatre fronts ouverts par le cadrage stratégique de 2026-07 (fin de la réversibilisation, canonicité des scalaires, secret/identité, discours) et la décision de numérotation par suffixe `b` ([#7260](https://github.com/jsboige/CoursIA/issues/7260)). |
+| [`2026-07-23-ict-extensions-quatre-fronts.md`](../transients/2026-07-23-ict-extensions-quatre-fronts.md) | Les quatre fronts ouverts par le cadrage stratégique de 2026-07 (fin de la réversibilisation, canonicité des scalaires, secret/identité, discours) et la décision de numérotation par suffixe `b` ([#7260](https://github.com/jsboige/CoursIA/issues/7260)) — déporté figé vers la lane transiente |
+
+### Consolidation par paliers de la série de carnets
+
+Le réagencement du corpus ICT en sous-séries est servi par paliers successifs
+([#20298](https://github.com/jsboige/CoursIA/issues/20298)). Chaque note de
+palier porte le plateau mesuré, l'argument pédagogique du déplacement et les
+liens de navigation rétablis après la descente d'un niveau.
+
+| Document | Rôle |
+|----------|------|
+| [`palier14-ict19-note-de-conception.md`](palier14-ict19-note-de-conception.md) | Palier 14 « Enjeu » : déplacement de `ICT-19` et `ICT-19b` vers la sous-série `ICT-19/`, périmètre choisi contre les paliers 11-13, et réparation des liens entrants comme sortants. |
+| [`palier15-ict20-note-de-conception.md`](palier15-ict20-note-de-conception.md) | Palier 15 « Lentilles et représentations » : les 27 carnets du palier en 4 tranches (T1 substrat livrée, T2 observateur, T3 lentilles — attend #24452, T4 inoculation), argument de chaîne de lecture, et l'addendum T1 (ré-exécution ICT-22, `_quarto.yml`, liens croisés hors série). Issue [#20298](https://github.com/jsboige/CoursIA/issues/20298). |
+| [`queue-hors-strates-note-de-conception.md`](queue-hors-strates-note-de-conception.md) | Note de conception de la **queue « hors strates »** de la série ICT : destination de chacun des 8 carnets hors strates (40a/40b/47/47b/48-Onset/48-Wolfram/49/50) et clôture des trois options ouvertes (47b, 40b, 48-Onset). Note seule, mouvement différé. Issue [#20298](https://github.com/jsboige/CoursIA/issues/20298). |
+| [`banc-strate7-note-de-conception.md`](banc-strate7-note-de-conception.md) | Note de conception du **banc unique de la strate 7** (capstone, tête du palier) : les six proxys d'`ict/free_coordinates.py` employés comme lentille sur les mécanismes inter-séries qui changent l'espace des actions, chacun appelé par son organe natif et classé latent / nouveau / décoratif. Issue [#23778](https://github.com/jsboige/CoursIA/issues/23778). |
 
 ## Parcours suggéré
 
@@ -67,9 +81,9 @@ du cadrage rendu à sa place.
 
 Les documents ci-dessus sont au **grade C-documentaire** : ils *cadrent* et *cartographient*, ils ne calculent pas. Le pendant **exécutable** de cette mécanique vit dans la série **IIT** ([`MyIA.AI.Notebooks/IIT/`](../../MyIA.AI.Notebooks/IIT/)), où les instruments dont parlent les fils se calculent réellement avec PyPhi :
 
-- [`IIT-01-IntroToPyPhi.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) — le socle mécanique : Φ (petite *phi*) sur un réseau *toy*, mécanisme d'information minimale irréductible (MIP), cause-effect structure. Le Φ dont parle le [5ᵉ fil (dissolution des scalaires)](dissolution-scalaires.md) s'y calcule.
-- [`IIT-02-AdvancedTopics.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb) — partitionnement (MIP/SIA), répertoires cause-effet d'un mécanisme, concepts (MICE/CES). La gymnastique qui rend la [matrice des dissociations](dissociations-matrix.md) lisible.
-- [`IIT-03-CoarseGrainingMacroPhi.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb) — coarse-graining et survie de Φ au changement de résolution. **Le cas le plus net** : la mécanique de changement d'échelle dont relèvent directement la [dissolution des scalaires](dissolution-scalaires.md) et la [cartographie en tresse](tresse-cartographie.md).
+- [`IIT-01-IntroToPyPhi-Python.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb) — le socle mécanique : Φ (petite *phi*) sur un réseau *toy*, mécanisme d'information minimale irréductible (MIP), cause-effect structure. Le Φ dont parle le [5ᵉ fil (dissolution des scalaires)](dissolution-scalaires.md) s'y calcule.
+- [`IIT-02-AdvancedTopics-Python.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb) — partitionnement (MIP/SIA), répertoires cause-effet d'un mécanisme, concepts (MICE/CES). La gymnastique qui rend la [matrice des dissociations](dissociations-matrix.md) lisible.
+- [`IIT-03-CoarseGrainingMacroPhi-Python.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb) — coarse-graining et survie de Φ au changement de résolution. **Le cas le plus net** : la mécanique de changement d'échelle dont relèvent directement la [dissolution des scalaires](dissolution-scalaires.md) et la [cartographie en tresse](tresse-cartographie.md).
 
 Entrer par **IIT-3** quand on vient du 5ᵉ fil ; par **IIT-1 / IIT-2** quand on cherche l'instrument avant la carte.
 

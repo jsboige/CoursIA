@@ -14,7 +14,10 @@ mergees en 3 semaines au 2026-08-04, dont une (#9153) dont le titre avoue
 Le tri est celui de l'issue : **calcule = legitime, prose = interdit**.
 
   - Une cellule *code* qui compte et affiche est la bonne facon de porter un
-    chiffre : il se recalcule a chaque execution. On ne la regarde pas.
+    chiffre : il se recalcule a chaque execution. On ne la regarde pas --
+    ni ses sorties, ni son code source (docstrings et commentaires compris :
+    « forward 1 ligne » decrit un appel, « negligeables sur 1 ligne » une
+    empreinte memoire ; aucun des deux n'est une mesure figee, #22564 D3).
   - Une cellule *markdown* qui affirme « (140 lignes) » fige une mesure que
     rien ne remesure. Elle derive des qu'un tiers touche au fichier cite --
     y compris pour une raison sans rapport (sur game_theory_lean, 4 des 6
@@ -78,6 +81,17 @@ La classe par defaut reste ``artifact`` : le contrat CI
 exact. Les classes #9434 s'auditent en opt-in, pour poser le before/after d'un
 drainage par classe.
 
+Certaines occurrences sont des faux positifs de SENS, pas des mesures d'etat :
+« 36 cellules vivantes » d'un canon du Jeu de la Vie compte des cellules de
+l'automate, et « 248 818 lignes » d'un depot externe pine mesure un run, pas un
+compteur du depot. Les supprimer n'aurait pas de sens, et les laisser flaguer
+fait re-trancher le meme arbitrage a chaque tranche. Elles sont couvertes par
+une allowlist ``(fichier, motif)`` -- ``ARTIFACT_EXEMPTIONS`` -- ou chaque
+entree porte son motif ECRIT, et dont le motif ne couvre que son propre span
+sur la ligne. Une entree qui ne couvre plus rien est signalee
+``[ALLOWLIST-PERIMEE]`` en ``--all`` : une exemption se perime en silence si
+rien ne la relit (#23111).
+
 Usage
 -----
     # CI sur une PR : ne juge que les lignes AJOUTEES (classe artifact, defaut)
@@ -108,6 +122,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 # ----------------------------------------------------------------------------
 # Classe « artifact » (#9377) -- compteurs d'artefacts du depot
@@ -127,6 +142,367 @@ ARTIFACT_NOUNS = r"(?:lignes?|lines?|cellules?|cells?|notebooks?|modules?|fichie
 COUNT_RE = re.compile(
     r"(?<![\w.#])~?\*{0,2}\d{1,6}\*{0,2}\s+" + ARTIFACT_NOUNS + r"(?![\w-])",
     re.IGNORECASE,
+)
+
+# ----------------------------------------------------------------------------
+# Allowlist MOTIVEE de la classe « artifact » (#23111)
+# ----------------------------------------------------------------------------
+# Un compte peut etre un faux positif de SENS et non une mesure d'etat : « 36
+# cellules vivantes » d'un canon du Jeu de la Vie compte les cellules de
+# l'automate, pas celles d'un carnet ; « 248 818 lignes » d'un depot externe
+# pine mesure un run, il ne derive pas avec CE depot. Supprimer le nombre
+# n'aurait alors aucun sens -- il faudrait reecrire le propos -- et le laisser
+# flaguer fait re-trancher le meme arbitrage a chaque tranche.
+#
+# Trois proprietes rendent l'exemption auditable plutot que commode :
+#
+# 1. Elle est un TRIO (chemin exact, motif de ligne, raison ECRITE). Pas de
+#    glob : une exemption large se perime en silence.
+# 2. Le motif ne couvre que les compteurs dont le span tombe DANS un de ses
+#    matches. Un « 87 cellules » sur la meme ligne reste flague, et un compte
+#    de cellules de carnet ajoute ailleurs dans le meme fichier aussi.
+# 3. Le motif est ETROIT : il nomme le contexte, pas seulement le nombre. S'il
+#    cesse de matcher apres une reecriture, l'occurrence est re-signalee et un
+#    humain re-tranche -- le sens contraire (motif large qui avale en silence
+#    un vrai compteur ajoute plus tard) est le seul vrai danger.
+#
+# L'allowlist est relue a chaque ``--all`` : ce qu'elle couvre est restitue,
+# et une entree qui ne couvre plus rien est nommee PERIMEE.
+
+
+class ArtifactExemption(NamedTuple):
+    """Une exemption motivee de la classe ``artifact``."""
+
+    path: str                  # chemin relatif POSIX exact, jamais un glob
+    motif: re.Pattern[str]     # motif de LIGNE ; couvre les compteurs dans son span
+    raison: str                # pourquoi ce nombre n'est pas un etat du depot
+
+
+ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
+        motif=re.compile(r"Gosper Glider Gun \(36 cellules vivantes"),
+        raison=(
+            "« 36 cellules » = cellules VIVANTES du canon de Gosper dans le Jeu "
+            "de la Vie, pas des cellules de carnet. Le nombre est une propriete "
+            "du motif (il definit le canon), il ne derive pas avec le depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
+        motif=re.compile(r"Pulsar \(48 cellules\)"),
+        raison=(
+            "« 48 cellules » = periode-3 Pulsar du Jeu de la Vie, cite comme cas "
+            "a la limite de native_decide ; ce sont des cellules de l'automate."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.en.md",
+        motif=re.compile(r"Pulsar \(48 cells\)"),
+        raison=(
+            "Sibling anglais du README precedent : meme Pulsar, memes cellules de "
+            "l'automate. Une paire FR/EN se traite ensemble, sinon le drainage "
+            "rouvre le meme arbitrage sur l'autre langue."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/README.md",
+        motif=re.compile(r"248 818 lignes compil"),
+        raison=(
+            "Mesure d'un run de reproduction sur le depot externe pine "
+            "plby/HopfProblem : ce ne sont pas les lignes de CE depot, et le "
+            "nombre decrit le resultat du run (248 818 lignes compilees en "
+            "1154 s), pas un etat de CoursIA qui derive a chaque ajout."
+        ),
+    ),
+    # Mesures de la page DarkSnail (EPIC #21310, PR #23302) : toutes decrivent
+    # le depot externe sneed-and-feed/projectdarksnail tel que fige a la tete
+    # 043c9d26 du 2026-10-29 (blobs cites dans la page de mesure). Ces nombres
+    # ne derivent pas avec CoursIA -- upstream peut bouger, la tete mesuree
+    # reste celle de son blob. Meme classe que l'entree HopfProblem ci-dessus.
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(
+            r"Taille d'`OcclusionTriad\.lean` \| 510 lignes \(blob `72b0b676`\) \| \*\*999 lignes\*\*"
+        ),
+        raison=(
+            "Tailles du fichier OcclusionTriad.lean du depot externe "
+            "projectdarksnail aux deux tetes mesurees (18/10 et 29/10), blobs "
+            "cites sur la ligne : la derive constatee EST le propos de la page."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(
+            r"BlockBridge\.lean` \| inexistant \| \*\*nouveau, 289 lignes\*\*"
+        ),
+        raison=(
+            "Taille du nouveau fichier BlockBridge.lean du depot externe "
+            "projectdarksnail a la tete 043c9d26 : pas une ligne de CE depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(
+            r"lake exe cache get` \(rc=0, 8 690 fichiers déjà en cache\)"
+        ),
+        raison=(
+            "Compte du cache Mathlib local au moment du run de build (WSL, "
+            "environnement jete) : resultat d'un run, pas un etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"41 357 lignes Python au même commit"),
+        raison=(
+            "Inventaire structurel du code Python du depot externe "
+            "projectdarksnail au commit fige 043c9d26 : mesure de clone "
+            "externe, ne derive pas avec CoursIA."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"5 fichiers de tests \(`test_darksnail\.py`"),
+        raison=(
+            "Denombrement des fichiers de tests du depot externe "
+            "projectdarksnail (noms cites sur la ligne) au commit fige : "
+            "mesure de clone externe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"OcclusionTriad\.lean` \| 999 lignes, blob"),
+        raison=(
+            "Table de provenance : taille du fichier amont au blob SHA cite "
+            "sur la meme ligne -- le blob fige le nombre, pas le depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"BlockBridge\.lean` \| 289 lignes, blob"),
+        raison=(
+            "Table de provenance : taille du fichier amont au blob SHA cite "
+            "sur la meme ligne -- le blob fige le nombre, pas le depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/README.md",
+        motif=re.compile(r"inventaire Python \(41 357 lignes\)"),
+        raison=(
+            "Index README de la page de mesure DarkSnail : meme inventaire du "
+            "clone externe fige a 043c9d26 (exemption detaillee ci-dessus), "
+            "resume en une ligne d'index."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/README.md",
+        motif=re.compile(r"la v1 du gun, 36 cellules fausses"),
+        raison=(
+            "« 36 cellules » = population d'une transcription FABRIQUEE du canon "
+            "de Gosper, citee comme temoin d'echec du self-check d'identite. Le "
+            "nombre appartient au recit de l'incident (la v1 fausse), pas a un "
+            "etat du depot : il ne derive pas avec CoursIA, il ne doit pas etre "
+            "mis a jour."
+        ),
+    ),
+    # Journaux de session du guide enricher (PR #25008) : les compteurs « N
+    # cells / N notebooks » de la section « Successful Enrichment Sessions »
+    # datent chaque evenement (2026-02 a 2026-06) et l'en-tete du fichier les
+    # declare « conserves comme provenance historique ». Denombrements FIGES
+    # d'un recit au passe (doctrine du header de cet organe : « un decompte
+    # fige dans un recit au passe est une preuve, et se garde »). Ils
+    # apparaissent en lignes ajoutees uniquement par la renormalisation EOL
+    # du renommage T4 (#25008) -- leur valeur ne derive pas avec le depot.
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(r"QC-Py-24-Autoencoders-Anomaly \(11 cells added"),
+        raison=(
+            "Journal de session du 2026-02-15 : decompte figure des cellules "
+            "ajoutees ce jour-la a QC-Py-24. Provenance historique declaree "
+            "en en-tete du fichier, pas un compteur d'etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(r"insertion strategy flawless \(11 cells, no errors\)"),
+        raison=(
+            "Journal de session (2026-02-15, QC-Py-24 et QC-Py-23) : le "
+            "« no errors » chiffre le bilan d'une session passee, identique "
+            "au decompte de son en-tete date. Recit au passe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(r"QC-Py-23-Attention-Transformers \(11 cells added"),
+        raison=(
+            "Journal de session du 2026-02-15 : decompte figure des cellules "
+            "ajoutees ce jour-la a QC-Py-23. Provenance historique, meme "
+            "classe que l'entree QC-Py-24 ci-dessus."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"DataScienceWithAgents Labs \(3 notebooks, 11 cells added\)"
+        ),
+        raison=(
+            "Journal de session du 2026-02-07 : bilan figure d'une session "
+            "passee (le journal local est cite hors depot sur la ligne). Ne "
+            "derive pas avec l'etat courant de la serie."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(r"Sudoku-10-ORTools \(anciennement.*4 cells added"),
+        raison=(
+            "Journal de session du 2026-02-16 : decompte figure des cellules "
+            "ajoutees ce jour-la, nom d'avant la renumerotation #5081 cite "
+            "sur la ligne. Fait passe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"notebook métaheuristiques \(anciennement.*3 cells added"
+        ),
+        raison=(
+            "Journal de session du 2026-02-16 : meme classe que l'entree "
+            "Sudoku-10-ORTools ci-dessus -- bilan date d'une session passee."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"Video GPU Notebooks Pedagogical Enhancement \(6 notebooks\)"
+        ),
+        raison=(
+            "Journal de session du 2026-02-19 : les 6 carnets de la session "
+            "sont nommes sur les lignes suivantes. Denombrement figure d'un "
+            "evenement passe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"GameTheory Series Header Standardization \(12 notebooks reviewed"
+        ),
+        raison=(
+            "Journal de session du 2026-03-16 : bilan figure d'une passe de "
+            "standardisation passee ; l'etat courant de la serie est porte "
+            "par le catalogue genere, pas par ce recit."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"DataScienceWithAgents Exercise Stubs \(8 notebooks, 17 exercise pairs"
+        ),
+        raison=(
+            "Journal de session du 2026-06-03 : bilan figure des stubs "
+            "ajoutes ce jour-la (See #2161 cite sur la ligne). Fait passe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"Lean-11-TorchLean Pedagogical Enhancement \(4 cells added"
+        ),
+        raison=(
+            "Journal de session du 2026-03-03 : decompte figure des cellules "
+            "ajoutees ce jour-la a Lean-11. Provenance historique."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(r"insertion strategy flawless \(4 cells, no errors\)"),
+        raison=(
+            "Journal de session (2026-03-03, Lean-11) : bilan chiffre d'une "
+            "session passee, meme classe que l'entree « 11 cells » ci-dessus."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GameTheory/assets/readme/MANIFEST.md",
+        motif=re.compile(r"4 cellules 2×2"),
+        raison=(
+            "« 4 cellules 2×2 » = les quatre cases de la MATRICE DE GAINS "
+            "dessinee dans la figure (Cooperer/Defaire x Cooperer/Defaire), pas "
+            "des cellules de carnet. Le nombre decrit l'image ; il est fige par "
+            "le SHA de l'asset cite sur la meme entree, pas par l'etat du depot "
+            "(meme classe que les « 36 cellules vivantes » du canon de Gosper)."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GameTheory/SocialChoice/assets/readme/MANIFEST.md",
+        motif=re.compile(r"\*\*9 cellules totales\*\*"),
+        raison=(
+            "« 9 cellules totales » = la grille 3 panneaux x 3 barres de la "
+            "figure du theoreme d'Arrow (Borda / Pluralite / Dictature x Pareto "
+            "/ IIA / Non-dictature), pas des cellules de carnet. Le nombre est "
+            "une propriete de l'image, fige par le SHA de l'asset."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GameTheory/SocialChoice/assets/readme/MANIFEST.md",
+        motif=re.compile(r"3 lignes de convergence"),
+        raison=(
+            "« 3 lignes de convergence » = les trois courbes tracees dans la "
+            "figure du modele de Downs (parti de gauche, parti de droite, "
+            "electeur median), pas des lignes de fichier. Description d'une "
+            "image figee par son SHA, pas une mesure du depot."
+        ),
+    ),
+    # Manifeste de preservation des branches (issue #14238, PR #25120) : la
+    # section « Tranche 4 » (v5, 2026-11-07) du README accumule les instantanes
+    # par version (v2 a v5). Chaque compte de lignes y est un fait FIGE de la
+    # curation de cette version -- la preuve du geste, re-mesurable a la
+    # commande de la section « Verification » -- et non un etat du depot qui
+    # deriverait a chaque ajout. Les supprimer reecrirait la preuve (angle-mort
+    # du guard).
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"13 187\*\* lignes"),
+        raison=(
+            "« 13 187 lignes » = total du manifeste a la date de la v5 "
+            "(tranche 4, 2026-11-07) : fait fige de la curation, jamais un "
+            "etat du depot resynchronise a chaque version."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"2 930 lignes"),
+        raison=(
+            "« 2 930 lignes nouvelles » = lignes greffees au manifeste par la "
+            "tranche 4 (2026-11-07) : le delta fige entre la v4 et la v5, "
+            "pas un compteur qui deriverait a chaque ajout ulterieur."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"13 187 lignes"),
+        raison=(
+            "« 13 187 lignes » = taille du .tsv.gz a la v5 (2026-11-07), "
+            "reformulee dans l'en-tete de format : mesure figee au snapshot, "
+            "re-mesurable a la commande de la section Verification."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"2 927 lignes"),
+        raison=(
+            "« 2 927 lignes » = lignes du fichier de selection selected_*.tsv "
+            "liste dans le journal de tranche : fait fige de la tranche 4 "
+            "(2026-11-07), piece de restauration, pas un etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"Refus motives \(9 lignes\)"),
+        raison=(
+            "« 9 lignes » = refus motives du fichier refused_*.tsv liste dans "
+            "le journal de tranche : le compte fige des refus du geste de la "
+            "tranche 4 (2026-11-07), pas un compteur du depot."
+        ),
+    ),
 )
 
 # ----------------------------------------------------------------------------
@@ -358,7 +734,24 @@ def _notebook_is_seeded(nb_path: Path) -> bool:
     return False
 
 
-def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple[str, str, str]]:
+def _exempt_spans(path: str, line: str) -> list[tuple[int, int]]:
+    """Spans de la ligne couverts par une exemption motivee propre a ce fichier.
+
+    Le span est ce qui rend l'exemption BORNEE : elle ne protege pas le
+    fichier, elle protege une portion de ligne. Un compteur voisin -- meme
+    ligne, meme nom d'artefact -- reste flague.
+    """
+    spans: list[tuple[int, int]] = []
+    for exemption in ARTIFACT_EXEMPTIONS:
+        if exemption.path != path:
+            continue
+        spans.extend(m.span() for m in exemption.motif.finditer(line))
+    return spans
+
+
+def _findings_in_text(
+    text: str, location: str, classes: set[str], path: str | None = None
+) -> list[tuple[str, str, str]]:
     """Rend [(location, classe, snippet)] pour les classes demandees.
 
     La ligne est l'unite de co-occurrence pour stochastic (mot-clef + nombre sur
@@ -366,7 +759,12 @@ def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple
     La ligne est aussi l'unite d'exemption pacing (cf STUDENT_PACING_RE) : un
     « (Duree) (estimée) : X minutes » est TN pedagogique, jamais un compteur
     machine ; la ligne entiere est exoneree de la classe ``machine``.
+
+    ``path`` (defaut : la partie fichier de ``location``, qui porte un suffixe
+    `` MD[<i>]`` pour une cellule de carnet) selectionne les exemptions motivees
+    de la classe ``artifact`` (cf ARTIFACT_EXEMPTIONS).
     """
+    target = location.split(" MD[")[0] if path is None else path
     out: list[tuple[str, str, str]] = []
     for line in text.splitlines():
         if any(m in line for m in GENERATED_MARKERS):
@@ -377,7 +775,10 @@ def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple
         # actives : un « ~50 minutes » colle a un artefact (lignes) reste flag.
         is_pacing = STUDENT_PACING_RE.search(line) is not None
         if "artifact" in classes:
+            exempt = _exempt_spans(target, line)
             for m in COUNT_RE.finditer(line):
+                if any(start <= m.start() and m.end() <= end for start, end in exempt):
+                    continue
                 out.append((location, "artifact", m.group(0).strip()))
         if "machine" in classes and not is_pacing:
             for m in MACHINE_RE.finditer(line):
@@ -394,13 +795,38 @@ def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple
     return out
 
 
-def scan_all(root: Path, classes: set[str]) -> list[tuple[str, str, str]]:
+# Racine du depot PORTANT cet organe : les exemptions de ``ARTIFACT_EXEMPTIONS``
+# sont ecrites depuis cette racine-la, pas depuis le perimetre scanne (#24587).
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _scan_rel(path: Path, root: Path, repo_root: Path | None) -> str:
+    """Chemin rendu par le scan : relatif au DEPOT quand il y est rattachable.
+
+    Les exemptions declarees par ``ArtifactExemption.path`` sont ecrites depuis la
+    racine du depot. Sous ``--root <sous-arbre>``, un chemin relatif a la racine
+    *scannee* n'apparie donc plus aucune entree : l'exemption vivante ne
+    s'appliquait plus, et le compteur pourtant arbitre etait re-signale (#24587).
+    Le chemin rendu est donc celui du depot, et le chemin relatif au scan ne sert
+    que de repli pour un arbre qui n'appartient pas au depot (fixture, copie).
+    """
+    if repo_root is not None and repo_root != root:
+        try:
+            return path.resolve().relative_to(repo_root).as_posix()
+        except (OSError, ValueError):
+            pass
+    return path.relative_to(root).as_posix()
+
+
+def scan_all(
+    root: Path, classes: set[str], repo_root: Path | None = None
+) -> list[tuple[str, str, str]]:
     findings: list[tuple[str, str, str]] = []
 
     for nb in root.rglob("*.ipynb"):
         if _skipped(nb):
             continue
-        rel = nb.relative_to(root).as_posix()
+        rel = _scan_rel(nb, root, repo_root)
         # stochastic : un carnet seme est reproductible -> on ne signale pas
         # cette classe pour lui (les autres classes restent actives).
         eff_classes = set(classes)
@@ -412,7 +838,7 @@ def scan_all(root: Path, classes: set[str]) -> list[tuple[str, str, str]]:
     for md in root.rglob("*.md"):
         if _skipped(md):
             continue
-        rel = md.relative_to(root).as_posix()
+        rel = _scan_rel(md, root, repo_root)
         try:
             text = md.read_text(encoding="utf-8")
         except OSError:
@@ -439,20 +865,40 @@ def scan_all(root: Path, classes: set[str]) -> list[tuple[str, str, str]]:
 # propre ligne, l'ouvrir ferait avaler tout le reste du fichier.
 OUTPUTS_OPEN_RE = re.compile(r'^(\s*)"outputs"\s*:\s*\[\s*$')
 
+# Un bloc "source" ouvre sur sa propre ligne : `"source": [` (un tableau vide
+# ou mono-ligne ne colle pas au motif et n'ouvre rien, comme `"outputs": []`).
+SOURCE_OPEN_RE = re.compile(r'^(\s*)"source"\s*:\s*\[\s*$')
+
+# Type de la cellule courante : le "source" d'une cellule code est du code
+# (region non-prose), celui d'une cellule markdown est LA prose visee.
+CELL_TYPE_RE = re.compile(r'^\s*"cell_type"\s*:\s*"(\w+)"')
+
 # En-tete de hunk : `@@ -<a>[,<b>] +<c>[,<d>] @@`. Seul <c> (numero de depart dans
 # le fichier NOUVEAU) nous interesse -- c'est lui qui ancre la numerotation.
 HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 
 
-def _ipynb_output_lines(rel: str) -> set[int]:
-    """Lignes (1-based) situees dans un bloc `outputs` d'un notebook.
+def _ipynb_non_prose_lines(rel: str) -> set[int]:
+    """Lignes (1-based) situees dans une region NON-PROSE d'un notebook.
 
-    La prose d'une cellule et une charge utile de sortie se ressemblent ligne a
-    ligne : toutes deux sont des chaines nues (`    "print(...)\\n",` contre
-    `      "  Angel.lean   65 lignes\\n",`). Le champ `"source"` et le champ
-    `"outputs"` sont en revanche a la MEME profondeur, et le bloc se referme sur
-    une ligne dont l'indentation est celle de la cle. C'est cette carte qui les
-    separe -- le filtre ligne-a-ligne de `scan_diff` ne peut pas le faire seul.
+    Deux regions :
+
+    - le bloc ``outputs`` d'une cellule : la prose d'une cellule et une charge
+      utile de sortie se ressemblent ligne a ligne (toutes deux sont des
+      chaines nues, `    "print(...)\\n",` contre `      "  Angel.lean   65
+      lignes\\n",`), et seul le bloc les separe ;
+    - le bloc ``source`` d'une cellule **code** (#22564 D3) : docstrings et
+      commentaires compris. « Une cellule code qui compte et affiche ... On
+      ne la regarde pas » (en-tete) : un commentaire Python qui decrit un
+      appel (« forward 1 ligne ») ou une empreinte memoire (« negligeables
+      sur 1 ligne ») est de la prose technique legitime, pas une mesure
+      figee en markdown. Le ``source`` d'une cellule markdown reste LA prose
+      visee et n'entre pas dans la carte.
+
+    Les champs `"source"` et `"outputs"` sont a la MEME profondeur, et chaque
+    bloc se referme sur une ligne dont l'indentation est celle de la cle.
+    C'est cette carte qui separe les regions -- le filtre ligne-a-ligne de
+    `scan_diff` ne peut pas le faire seul (il ignore ``cell_type``).
     """
     try:
         text = Path(rel).read_text(encoding="utf-8", errors="replace")
@@ -460,12 +906,22 @@ def _ipynb_output_lines(rel: str) -> set[int]:
         return set()
     inside: set[int] = set()
     base: int | None = None
+    cell_type: str | None = None
     for num, raw in enumerate(text.splitlines(), start=1):
         indent = len(raw) - len(raw.lstrip(" "))
         if base is None:
-            match = OUTPUTS_OPEN_RE.match(raw)
+            match = CELL_TYPE_RE.match(raw)
             if match:
-                base = len(match.group(1))
+                cell_type = match.group(1)
+            outputs_match = OUTPUTS_OPEN_RE.match(raw)
+            if outputs_match:
+                base = len(outputs_match.group(1))
+                continue
+            if cell_type == "code":
+                source_match = SOURCE_OPEN_RE.match(raw)
+                if source_match:
+                    base = len(source_match.group(1))
+                    continue
             continue
         if indent == base and raw.strip().startswith("]"):
             base = None
@@ -474,21 +930,43 @@ def _ipynb_output_lines(rel: str) -> set[int]:
     return inside
 
 
+class DiffUnreadable(RuntimeError):
+    """git diff n'a pas produit de diff exploitable (rc != 0, binaire absent, timeout).
+
+    Un organe injoignable n'est pas une ardoise propre (#20194) : jamais de
+    ``[OK]`` sur un diff non mesure.
+    """
+
+
 def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
-    """Ne juge que les lignes AJOUTEES : le stock existant ne fait pas echouer."""
+    """Ne juge que les lignes AJOUTEES : le stock existant ne fait pas echouer.
+
+    ``--ignore-cr-at-eol`` (#25090) : un diff EOL-pur (renormalisation
+    CRLF -> LF d'un fichier existant) reecrit chaque ligne du fichier, et
+    git les rend toutes comme ajoutees -- le garde jugerait alors des
+    compteurs PRE-EXISTANTS comme s'ils venaient d'etre ecrits. Le drapeau
+    rend le diff neutre en contenu invisible, ce qu'il est.
+
+    Leve :class:`DiffUnreadable` quand git ne resout pas la plage -- l'echec
+    d'infrastructure ne se confond pas avec un diff propre.
+    """
     try:
-        diff = subprocess.run(
-            ["git", "diff", "--unified=0", diff_range],
+        proc = subprocess.run(
+            ["git", "diff", "--unified=0", "--ignore-cr-at-eol", diff_range],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=180, check=False,
-        ).stdout
+        )
     except (OSError, subprocess.SubprocessError) as exc:
-        print(f"[ERREUR] git diff a echoue : {exc}", file=sys.stderr)
-        return []
+        raise DiffUnreadable(f"git diff a echoue : {exc}") from exc
+    if proc.returncode != 0:
+        detail = (proc.stderr or "").strip().splitlines()
+        hint = detail[-1] if detail else "sortie d'erreur vide"
+        raise DiffUnreadable(f"git diff rc={proc.returncode} : {hint}")
+    diff = proc.stdout
 
     findings: list[tuple[str, str, str]] = []
     generated_cache: dict[str, bool] = {}
-    output_lines_cache: dict[str, set[int]] = {}
+    non_prose_cache: dict[str, set[int]] = {}
 
     def _is_generated_file(rel: str) -> bool:
         if rel not in generated_cache:
@@ -499,10 +977,10 @@ def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
                 generated_cache[rel] = False
         return generated_cache[rel]
 
-    def _in_outputs(rel: str, ln: int) -> bool:
-        if rel not in output_lines_cache:
-            output_lines_cache[rel] = _ipynb_output_lines(rel)
-        return ln in output_lines_cache[rel]
+    def _is_non_prose(rel: str, ln: int) -> bool:
+        if rel not in non_prose_cache:
+            non_prose_cache[rel] = _ipynb_non_prose_lines(rel)
+        return ln in non_prose_cache[rel]
 
     # Pour le mode diff, la verification seed par carnet est couteuse et le
     # contrat CI ne demande que la classe artifact par defaut : on applique le
@@ -531,13 +1009,15 @@ def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
             continue
         if current.endswith(".md") and _is_generated_file(current):
             continue
-        # La charge utile d'une SORTIE de cellule ressemble a s'y meprendre a de
-        # la prose (`"      \"  Angel.lean   65 lignes\\n\","`) : elle est
-        # pourtant le compte-rendu d'une cellule *code* qui compte et affiche,
-        # que la doctrine de l'en-tete declare legitime ("On ne la regarde
-        # pas."). Le filtre ligne-a-ligne ne peut pas l'attribuer a un type de
-        # cellule ; la carte par fichier, si.
-        if current.endswith(".ipynb") and _in_outputs(current, new_ln):
+        # La charge utile d'une SORTIE et le SOURCE d'une cellule CODE
+        # ressemblent a s'y meprendre a de la prose (`"      \"  Angel.lean
+        # 65 lignes\\n\","` comme `"""... forward 1 ligne."""`) : le premier
+        # est le compte-rendu d'une cellule *code* qui compte et affiche, le
+        # second est du code -- docstrings et commentaires compris --, et la
+        # doctrine de l'en-tete declare les deux legitimes ("On ne la regarde
+        # pas."). Le filtre ligne-a-ligne ne peut pas les attribuer a un type
+        # de cellule ; la carte par fichier, si.
+        if current.endswith(".ipynb") and _is_non_prose(current, new_ln):
             continue
         # Dans un .ipynb, seule une valeur de "source" est de la prose. Les
         # champs de metadonnees (`"notes": "... 14/14 cells executed."`, ecrit
@@ -629,6 +1109,85 @@ def _emit_legacy(findings: list[tuple[str, str, str]], strict: bool) -> int:
     return 1 if strict else 0
 
 
+def _exemption_audit(
+    root: Path, repo_root: Path | None = None
+) -> tuple[list[tuple[ArtifactExemption, int]], list[ArtifactExemption]]:
+    """Rend (exemptions vivantes avec le nombre de compteurs couverts, perimees).
+
+    « Vivante » veut dire : le motif matche encore ET il couvre au moins un
+    compteur que COUNT_RE aurait flague. Un motif qui matche sans couvrir de
+    compteur ne protege rien non plus : il est perime au meme titre.
+
+    ``root`` est le perimetre SCANNE, pas forcement le depot. Sous
+    ``--root <sous-arbre>``, ``root / exemption.path`` ne designe aucun fichier
+    de l'allowlist (les chemins sont ecrits depuis la racine du depot) : les 12
+    entrees se lisaient perimees, avec pour consigne de les retirer -- 100 % de
+    faux positifs (#24587). Une declaration se juge donc contre le fichier
+    qu'elle NOMME : ``root`` d'abord (depot entier, arbre de test), puis
+    ``repo_root`` quand le scan est borne. Un fichier introuvable dans les deux
+    reste perime : c'est la seule peremption que cet audit puisse conclure.
+    """
+    live: list[tuple[ArtifactExemption, int]] = []
+    stale: list[ArtifactExemption] = []
+    bases = [root] if repo_root in (None, root) else [root, repo_root]
+    for exemption in ARTIFACT_EXEMPTIONS:
+        text: str | None = None
+        for base in bases:
+            try:
+                text = (base / exemption.path).read_text(encoding="utf-8")
+            except OSError:
+                continue
+            break
+        if text is None:
+            stale.append(exemption)
+            continue
+        covered = 0
+        for line in text.splitlines():
+            spans = [m.span() for m in exemption.motif.finditer(line)]
+            if not spans:
+                continue
+            covered += sum(
+                1
+                for m in COUNT_RE.finditer(line)
+                if any(start <= m.start() and m.end() <= end for start, end in spans)
+            )
+        if covered:
+            live.append((exemption, covered))
+        else:
+            stale.append(exemption)
+    return live, stale
+
+
+def _report_exemptions(root: Path, repo_root: Path | None = None) -> None:
+    """Restitue l'allowlist en ``--all`` : ce qu'elle couvre, et ce qui est mort.
+
+    Jamais un echec : le stock ne fait rougir aucune PR (#17636). Ce qui est
+    rendu visible, c'est la DECISION -- et son eventuelle peremption, qui sans
+    cette ligne se lirait comme une exemption encore vivante. La peremption se
+    juge contre le fichier nomme, jamais contre le perimetre scanne (#24587).
+    """
+    if not ARTIFACT_EXEMPTIONS:
+        return
+    live, stale = _exemption_audit(root, repo_root)
+    if live:
+        total = sum(n for _exemption, n in live)
+        print(
+            f"\n[ALLOWLIST] {len(live)} exemption(s) motivee(s) de la classe artifact, "
+            f"{total} compteur(s) couvert(s) :"
+        )
+        for exemption, covered in live:
+            print(f"  {exemption.path}  ({covered})  {exemption.motif.pattern}")
+            print(f"    pourquoi : {exemption.raison}")
+    if stale:
+        print(
+            f"\n[ALLOWLIST-PERIMEE] {len(stale)} entree(s) ne couvre(nt) plus aucun "
+            f"compteur -- retirer l'entree : une decision morte se lit comme une "
+            f"decision vivante."
+        )
+        for exemption in stale:
+            print(f"  {exemption.path}  {exemption.motif.pattern}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     g = ap.add_mutually_exclusive_group(required=True)
@@ -647,16 +1206,33 @@ def main() -> int:
     args = ap.parse_args()
 
     classes, structural_only = _resolve_classes(args.klass)
+    scan_root = Path(args.root).resolve()
 
     if args.all:
-        findings = scan_all(Path(args.root).resolve(), classes)
+        findings = scan_all(scan_root, classes, repo_root=_REPO_ROOT)
     else:
-        findings = scan_diff(args.diff, classes)
+        try:
+            findings = scan_diff(args.diff, classes)
+        except DiffUnreadable as exc:
+            # #20194 : le check-run CI doit distinguer « diff propre » (rc=0,
+            # [OK]) de « diff non mesurable » -- jamais le meme verdict.
+            print(f"[NON-MESURABLE] {exc}", file=sys.stderr)
+            print("[NON-MESURABLE] diff non mesurable : aucune conclusion de "
+                  "proprete n'est valable (#20194).")
+            return 2
 
     # Format legacy exact pour la classe artifact seule (contrat CI : --diff sans --class).
     if args.klass == "artifact":
-        return _emit_legacy(findings, args.strict)
-    return _emit_grouped(findings, args.strict, structural_only)
+        rc = _emit_legacy(findings, args.strict)
+    else:
+        rc = _emit_grouped(findings, args.strict, structural_only)
+
+    # L'allowlist ne se relit qu'en inventaire : en mode --diff, un fichier non
+    # touche par la PR n'est pas "perime", il est simplement hors champ.
+    if args.all and "artifact" in classes:
+        _report_exemptions(scan_root, repo_root=_REPO_ROOT)
+
+    return rc
 
 
 if __name__ == "__main__":

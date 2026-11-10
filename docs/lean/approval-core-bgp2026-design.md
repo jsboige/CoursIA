@@ -7,14 +7,21 @@
 ## 1. Contexte et motivation
 
 L'issue #17988 demande de formaliser, dans le sous-projet Lake
-`social_choice_lean_peters/`, la **preuve que le core d'approbation est non-vide**
+`SocialChoice/social_choice_lean_peters/`, la **preuve que le core d'approbation est non-vide**
 pour toute élection de comité par approbation et tout profil de ballots.
 
 Le résultat principal est dû à **Becker, Greger et Peters (2026)**, arXiv
-`2609.11912`. Dominik Peters — auteur de `SocialChoiceLean` — est co-auteur
+`2609.11912` (p. 1 : les trois auteurs et le résumé — « we settle the main
+open question in the theory of approval-based multi-winner elections: we show
+that there always exists a committee in the core »). Dominik Peters — auteur de
+`SocialChoiceLean` — est co-auteur
 du papier, ce qui rend la cohérence interne particulièrement naturelle : le
 résultat viendrait s'inscrire au-dessus de son propre dépôt upstream comme
 extension au-dessus de `SocialChoice.*`.
+
+**Source archivée.** Le PDF de référence est déposé au gisement partagé
+depuis le **2026-10-20** (20 pages) ; les renvois « p. N » de ce document
+pointent dans ce PDF archivé.
 
 L'option A du périmètre — un carnet Jupyter `07-Committees-Core.ipynb` (PR
 `#16896`) — est déjà livrée. L'option B (cette PR) complète le volet
@@ -26,7 +33,7 @@ formel et ferme `#16848` une fois Tranche 3 livrée.
 |---|---|---|
 | Dernier commit upstream `DominikPeters/SocialChoiceLean` | `94a4c650b6` (2026-07-21) | `gh api repos/DominikPeters/SocialChoiceLean/commits` |
 | Présence d'une formalisation « approval core » en amont | absente | `grep -rli 'approval'` sur le dépôt local `_peters/` ne renvoie aucun fichier (limite `SocialChoice/Committees/Approval/` non versionné localement) |
-| Type d'attache au dépôt CoursIA | **dossier versionné ordinaire** (PAS un submodule git) | `git ls-files MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/` ne renvoie que des fichiers plats ; `.gitmodules` ne contient pas ce chemin |
+| Type d'attache au dépôt CoursIA | **dossier versionné ordinaire** (PAS un submodule git) | `git ls-files MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/` ne renvoie que des fichiers plats ; `.gitmodules` ne contient pas ce chemin |
 | Sous-projet Lake | `package «social_choice_peters»` ; `lean_lib PetersTour` avec globs `PetersTour, PetersTour_en` (i18n #4980) | `lakefile.lean` |
 
 Le corps de l'issue #17988 dit « submodule épinglé `94a4c650` » — c'est un
@@ -41,7 +48,7 @@ Trois tranches, chacune livrée en PR séparée et mergeable indépendamment.
 
 ### Tranche 1 — Socle de définitions
 
-Deux fichiers siblings, dans `social_choice_lean_peters/Committees/Approval/` :
+Deux fichiers siblings, dans `SocialChoice/social_choice_lean_peters/Committees/Approval/` :
 
 - `Defs.lean` (FR) — namespace `ApprovalDefs`
 - `Defs_en.lean` (EN) — namespace `ApprovalDefs_en`
@@ -93,8 +100,8 @@ et commentaires `-- ...` diffèrent (convention i18n Pattern A, validé par
 
 Un fichier `Core.lean` + `Core_en.lean`. La définition du core
 **standard** en committee voting (cf. Peters, Equality of
-opportunity, handbook 2024, et reprise dans le papier BGP 2026) ne
-fait **pas** intervenir de paiements dans la condition de blocage :
+opportunity, handbook 2024, et reprise dans le papier BGP 2026, p. 3-4)
+ne fait **pas** intervenir de paiements dans la condition de blocage :
 la définition est :
 
 > Un comité `S` est dans le **core** ssi il n'existe **aucune coalition
@@ -102,10 +109,12 @@ la définition est :
 > **chaque membre** de `T` préfère **strictement** `S'` à `S`.
 
 Les paiements dans la **preuve** de BGP 2026 sont une composante de
-**l'objectif** (`HarmonicEntropy`), pas de la définition du core.
-L'algorithme de la preuve optimise l'objectif sur (comité, paiements) ;
-tout optimum local est dans le core. C'est précisément ce que l'abstract
-du papier (#2609.11912) formule :
+**l'objectif** (`HarmonicEntropy`, § 4-5, p. 6-10), pas de la définition
+du core. L'algorithme de la preuve optimise l'objectif sur (comité,
+paiements) ; tout optimum local est dans le core. Le papier prouve
+l'optimum local de l'objectif pour la propriété **core+** (p. 4 et p. 16),
+plus forte que le core — core+ implique core, et le core est donc atteint
+au sens de l'abstract (p. 1) :
 
 > *« All local optima of this objective function lie in the core, which
 > implies that a core committee can be found in polynomial time. »*
@@ -243,8 +252,8 @@ def InCore {V A : Type} [Fintype V] [Fintype A]
 **Réserve 2 — Portée du `zero_sum`.** La `PaymentFunction` est conservée
 en Tranche 1 uniquement comme **composante de l'objectif** (pour
 `HarmonicEntropy`), pas comme **condition de blocage** du core. Le core
-standard (définition Peters, handbook 2024, reprise BGP 2026) ne fait pas
-intervenir de paiements. La structure `PaymentFunction` (avec son champ
+standard (définition Peters, handbook 2024, reprise BGP 2026 p. 3-4) ne
+fait pas intervenir de paiements. La structure `PaymentFunction` (avec son champ
 `zero_sum : (∑ v, payments v) = 0`) est définie sur **V entier**, et
 l'optimisation `HarmonicEntropy` prend en entrée un couple
 `(comité, paiement)` dont le second est libre à somme nulle globale. La
@@ -261,8 +270,9 @@ La définition du core retenue est la définition **standard** :
 Les paiements sont une composante de **l'objectif de la preuve**
 (`HarmonicEntropy`), pas de la définition. La preuve BGP 2026 montre que
 tout optimum local de cet objectif (sur l'espace Comité × Paiement)
-appartient au core. C'est précisément la formulation de l'abstract
-arXiv `2609.11912` :
+appartient au core. Le papier prouve `core+` (p. 4, Théorème 6.1 p. 15,
+maximum local de V p. 16), plus fort que le core. C'est précisément la
+formulation de l'abstract arXiv `2609.11912` (p. 1) :
 
 > *« All local optima of this objective function lie in the core, which
 > implies that a core committee can be found in polynomial time. »*
@@ -274,6 +284,21 @@ La variante « strict mieux ou égal ET payé > 0 » du sketch initial a été
 (`1f903a859f` et suivants) du document, avant la rédaction de toute
 ligne de `Core.lean` en Tranche 2.
 
+## 7ter. Renvois page du PDF archivé
+
+Chaque phrase de ce document qui attribue quelque chose au papier porte son
+renvoi de page. Table de correspondance :
+
+| Page | Contenu |
+|---|---|
+| p. 1 | Auteurs (Becker, Greger, Peters), arXiv `2609.11912`, résumé : existence d'un comité dans le core ; « All local optima of this objective function lie in the core, which implies that a core committee can be found in polynomial time » |
+| p. 3-4 | § 3 « The core and core+ » : définition du core par la coalition bloquante ; Déf. 3.1, `core+` (relâchement fractionnaire, plus fort que le core) |
+| p. 6 | § 4 « Harmonic entropy » : l'objectif, optimisation sur l'espace comités × systèmes de paiement |
+| p. 8 | Déf. 4.3 : formule de l'entropie harmonique |
+| p. 10 | § 5 : la règle de vote, objectif `V` sur (comité, paiements) |
+| p. 15-16 | Théorème 6.1 : existence d'un comité `core+` ; tout maximum local de `V` est `core+` |
+| p. 18 | Théorème 7.1 : un comité `core+` se calcule en temps polynomial |
+
 ## 8. Liens
 
 - Issue : https://github.com/jsboige/CoursIA/issues/17988
@@ -284,5 +309,6 @@ ligne de `Core.lean` en Tranche 2.
 - Convention i18n : [code-style.md §Lean i18n](../../.claude/rules/code-style.md#lean-i18n),
   [docs/lean/i18n-sibling-patterns.md](i18n-sibling-patterns.md)
 - Anti-régression Lean : [anti-regression.md](../../.claude/rules/anti-regression.md)
-- Petersen Tour existant : `social_choice_lean_peters/PetersTour.lean` + `_en.lean`
+- Petersen Tour existant : `SocialChoice/social_choice_lean_peters/PetersTour.lean` + `_en.lean`
 - Submodule upstream : `DominikPeters/SocialChoiceLean` rev `94a4c650b6`
+- PDF archivé : `GameTheory/2026 - Becker Greger Peters - committee elections approval core (arXiv 2609.11912).pdf`, gisement partagé, déposé le 2026-10-20 (20 pages)

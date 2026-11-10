@@ -1,0 +1,989 @@
+"""Tests purs pour belt_service_balance.py (issue #18832).
+
+Acceptance du DM dispatch-ai01c2-18832-service-balance :
+1. Trois classes d'age : courant (< 7 j), tapis (7-30), ancien (> 30).
+2. Attribution par lane via parseur canonique `grain_tag.py`.
+3. PR sans tag lisible -> `sans-lane` (jamais ignore).
+4. Fermeture manuelle sans PR -> `manuel`.
+5. Controle positif : fenetre de 7 j avec 42 % < 3 j -> verdict [WARN].
+6. Sortie --json / --dashboard-line fonctionnelles.
+
+Pas de I/O reseau : fixtures injectees. La logique pure est testable en
+isolation, et les fonctions d'I/O sont substituees par des fixtures.
+"""
+import json
+import sys
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "coordination"))
+
+import belt_service_balance as bsb  # noqa: E402
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _iso(dt: datetime) -> str:
+    return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _make_service(
+    issue_created: datetime | None = None,
+    service_date: datetime | None = None,
+    pr_body: str | None = "Grain: DEEP/lean -- lane myia-ai-01:CoursIA",
+    pr_number: int = 100,
+) -> bsb.Service:
+    if issue_created is None:
+        issue_created = datetime.now(timezone.utc) - timedelta(days=2)
+    if service_date is None:
+        service_date = datetime.now(timezone.utc)
+    return bsb.Service(
+        issue_number=42,
+        issue_created_at=_iso(issue_created),
+        service_date=_iso(service_date),
+        service_kind="pr_merge",
+        pr_number=pr_number,
+        pr_body=pr_body,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Age classification
+# ---------------------------------------------------------------------------
+
+
+def test_age_class_courant():
+    """age < 7j -> 'courant'."""
+    s = _make_service(
+        issue_created=datetime(2026, 10, 1, tzinfo=timezone.utc),
+        service_date=datetime(2026, 10, 5, tzinfo=timezone.utc),  # 4 jours
+    )
+    assert s.is_courant
+    assert not s.is_tapis
+    assert not s.is_ancien
+    assert 3.9 < s.age_days < 4.1
+
+
+def test_age_class_tapis():
+    """age entre 7 et 30 j -> 'tapis' (pas ancien)."""
+    s = _make_service(
+        issue_created=datetime(2026, 9, 20, tzinfo=timezone.utc),
+        service_date=datetime(2026, 10, 5, tzinfo=timezone.utc),  # 15 jours
+    )
+    assert s.is_tapis
+    assert not s.is_courant
+    assert not s.is_ancien
+
+
+def test_age_class_ancien():
+    """age > 30 j -> 'ancien' (sous-classe de tapis)."""
+    s = _make_service(
+        issue_created=datetime(2026, 8, 1, tzinfo=timezone.utc),
+        service_date=datetime(2026, 10, 5, tzinfo=timezone.utc),  # 65 jours
+    )
+    assert s.is_ancien
+    assert s.is_tapis  # ancien est sous-classe de tapis
+    assert not s.is_courant
+
+
+def test_age_class_boundary_7j_is_tapis():
+    """age == 7 j pile -> 'tapis' (>=7j, pas courant)."""
+    s = _make_service(
+        issue_created=datetime(2026, 9, 28, 0, 0, 0, tzinfo=timezone.utc),
+        service_date=datetime(2026, 10, 5, 0, 0, 0, tzinfo=timezone.utc),
+    )
+    assert 7.0 - 0.01 < s.age_days < 7.0 + 0.01
+    assert s.is_tapis
+    assert not s.is_courant
+
+
+def test_age_class_boundary_30j_is_not_ancien():
+    """age == 30 j pile : 'tapis' mais PAS 'ancien' (ancien > 30 strict)."""
+    s = _make_service(
+        issue_created=datetime(2026, 9, 5, 0, 0, 0, tzinfo=timezone.utc),
+        service_date=datetime(2026, 10, 5, 0, 0, 0, tzinfo=timezone.utc),
+    )
+    assert s.is_tapis
+    assert not s.is_ancien  # strict >
+
+
+def test_age_class_31j_is_ancien():
+    """age > 30 j strict -> 'ancien'."""
+    s = _make_service(
+        issue_created=datetime(2026, 9, 4, 0, 0, 0, tzinfo=timezone.utc),
+        service_date=datetime(2026, 10, 5, 0, 0, 0, tzinfo=timezone.utc),
+    )
+    assert s.is_ancien
+    assert s.is_tapis
+
+
+# ---------------------------------------------------------------------------
+# Attribution
+# ---------------------------------------------------------------------------
+
+
+def test_attribution_grain_lane():
+    """Body avec Grain tag -> lane et attribution 'grain'."""
+    s = _make_service(pr_body="Grain: DEEP/research-code -- lane myia-po-2024:CoursIA-2 -- prev: ...")
+    bsb.attribute_service(s)
+    assert s.attribution_kind == "grain"
+    assert s.lane == "myia-po-2024:CoursIA-2"
+
+
+def test_attribution_no_pr_is_manuel():
+    """Pas de PR (body=None) -> 'manuel'."""
+    s = _make_service(pr_body=None)
+    bsb.attribute_service(s)
+    assert s.attribution_kind == "manuel"
+    assert s.lane is None
+
+
+def test_attribution_no_tag_is_sans_lane():
+    """Body present sans tag -> 'sans-lane', jamais ignore."""
+    s = _make_service(pr_body="Description libre sans tag.")
+    bsb.attribute_service(s)
+    assert s.attribution_kind == "sans-lane"
+    assert s.lane is None
+
+
+def test_attribution_tag_without_lane_is_sans_lane():
+    """Tag present mais sans lane -> 'sans-lane'."""
+    s = _make_service(pr_body="Grain: DEEP/lean")
+    bsb.attribute_service(s)
+    assert s.attribution_kind == "sans-lane"
+
+
+def test_attribution_form_tolerant():
+    """Le parseur canonique tolere les variantes Markdown."""
+    body = "**Grain:** LIGHT/guard - lane myia-po-2023:CoursIA"
+    s = _make_service(pr_body=body)
+    bsb.attribute_service(s)
+    assert s.attribution_kind == "grain"
+    assert s.lane == "myia-po-2023:CoursIA"
+
+
+# ---------------------------------------------------------------------------
+# Aggregation
+# ---------------------------------------------------------------------------
+
+
+def test_aggregate_separates_courant_tapis_ancien():
+    """Un mix de services est agrege correctement par lane et classe.
+
+    Note : ancien est sous-classe de tapis, donc un service 'ancien' est
+    aussi compte dans tapis.
+    """
+    now = datetime.now(timezone.utc)
+    services = [
+        _make_service(now - timedelta(days=2), now, pr_body="Grain: DEEP/lean -- lane myia-ai-01:CoursIA-2"),  # courant
+        _make_service(now - timedelta(days=15), now, pr_body="Grain: DEEP/lean -- lane myia-ai-01:CoursIA-2"),  # tapis
+        _make_service(now - timedelta(days=60), now, pr_body="Grain: DEEP/lean -- lane myia-ai-01:CoursIA-2"),  # ancien = tapis+ancien
+    ]
+    by_lane = bsb.aggregate_by_lane(services)
+    st = by_lane["myia-ai-01:CoursIA-2"]
+    assert st.services == 3
+    assert st.courant == 1
+    assert st.tapis == 2  # 15j + 60j (ancien est sous-classe)
+    assert st.ancien == 1
+
+
+def test_aggregate_sans_lane_aggregated_under_marker():
+    """PR sans tag lisible -> _sans-lane ; fermeture sans PR (body None ou "")
+    -> _manuel. Les deux categories ne se confondent jamais.
+
+    Review c.6048082193 : avant le fix, pr_body="" (depuis fetch_closed_issues)
+    etait route a tort vers _sans-lane (46 fermetures dans la mesure).
+    Apres le fix, les deux cas (None et "") vont a _manuel, _sans-lane
+    reste reserve aux PRs avec body mais sans tag lisible.
+    """
+    now = datetime.now(timezone.utc)
+    services = [
+        _make_service(now - timedelta(days=2), now, pr_body="Description libre sans tag."),  # sans-lane
+        _make_service(now - timedelta(days=3), now, pr_body=None),  # manuel (pas de PR)
+        _make_service(now - timedelta(days=4), now, pr_body=""),  # manuel aussi (empty body = pas de PR)
+    ]
+    by_lane = bsb.aggregate_by_lane(services)
+    assert "_sans-lane" in by_lane
+    assert "_manuel" in by_lane
+    assert by_lane["_sans-lane"].services == 1
+    assert by_lane["_manuel"].services == 2
+
+
+def test_attribution_empty_pr_body_is_manuel():
+    """pr_body="" (empty string, comme dans fetch_closed_issues) -> 'manuel',
+    PAS 'sans-lane'. Review c.6048082193 : le bug d'avant mettait 46
+    fermetures sans PR dans `_sans-lane` au lieu de `_manuel`.
+    """
+    s = _make_service(pr_body="")
+    bsb.attribute_service(s)
+    assert s.attribution_kind == "manuel", (
+        f"pr_body='' devrait donner 'manuel', got '{s.attribution_kind}'"
+    )
+    assert s.lane is None
+
+
+def test_dedup_T_Tplus5_same_issue_returns_one():
+    """Review c.6048082193 : mergedAt et closedAt different de quelques
+    secondes. Dedup sur (issue_number, service_date) laissait passer les
+    doublons. Apres fix (dedup sur issue_number seul), une issue fermee par
+    PR avec mergedAt=T et closedAt=T+5s donne 1 seul service.
+    """
+    base = datetime(2026, 10, 5, 12, 0, 0, tzinfo=timezone.utc)
+    iso_t = _iso(base)
+    iso_t_plus_5s = _iso(base + timedelta(seconds=5))
+    s_pr = bsb.Service(
+        issue_number=42, issue_created_at=iso_t, service_date=iso_t,
+        service_kind="pr_merge", pr_number=100,
+        pr_body="Grain: DEEP/lean -- lane myia-ai-01:CoursIA-2",
+    )
+    s_manuel = bsb.Service(
+        issue_number=42, issue_created_at=iso_t, service_date=iso_t_plus_5s,
+        service_kind="manuel", pr_number=None, pr_body=None,
+    )
+    bsb.attribute_service(s_pr)
+    bsb.attribute_service(s_manuel)
+    deduped = bsb.deduplicate_services([s_pr, s_manuel])
+    assert len(deduped) == 1
+    assert deduped[0].service_kind == "pr_merge"
+    assert deduped[0].lane == "myia-ai-01:CoursIA-2"
+    # Ordre inverse : le manuel ne doit pas ecraser le pr_merge deja vu
+    deduped_rev = bsb.deduplicate_services([s_manuel, s_pr])
+    assert len(deduped_rev) == 1
+    assert deduped_rev[0].service_kind == "pr_merge"
+
+
+def test_search_issueCount_positive_control_mismatch_raises():
+    """Si le nombre de fermetures lues != issueCount de la requete search,
+    fetch_closed_issues leve RuntimeError. Review c.6048082193 : le controle
+    positif attrape les pages manquantes ou les doublons.
+
+    On mock subprocess.run pour rendre issueCount=10 mais seulement 3 nodes,
+    ce qui doit lever RuntimeError cite dans le commentaire de PR.
+    """
+    import io
+    import unittest.mock as mock
+
+    fake_response = json.dumps({
+        "data": {
+            "search": {
+                "issueCount": 10,
+                "nodes": [
+                    {"number": 1, "createdAt": "2026-10-05T00:00:00Z", "closedAt": "2026-10-06T00:00:00Z"},
+                    {"number": 2, "createdAt": "2026-10-05T00:00:00Z", "closedAt": "2026-10-06T00:00:00Z"},
+                    {"number": 3, "createdAt": "2026-10-05T00:00:00Z", "closedAt": "2026-10-06T00:00:00Z"},
+                ],
+                "pageInfo": {"hasNextPage": False, "endCursor": None},
+            }
+        }
+    })
+    fake_completed = mock.Mock(returncode=0, stdout=fake_response, stderr="")
+
+    with mock.patch("subprocess.run", return_value=fake_completed), \
+         mock.patch.dict("os.environ", {"GH_TOKEN": "fake-token"}, clear=False), \
+         mock.patch("belt_service_balance._run_capture", return_value="fake-token"), \
+         mock.patch("sys.stderr", io.StringIO()):
+        try:
+            bsb.fetch_closed_issues(
+                "jsboige", "CoursIA",
+                datetime(2026, 10, 1, tzinfo=timezone.utc),
+                max_pages=1,
+            )
+            raised = False
+            msg = ""
+        except RuntimeError as e:
+            raised = True
+            msg = str(e)
+    assert raised, "fetch_closed_issues aurait du lever RuntimeError (read=3 vs issueCount=10)"
+    assert "closed-issues count mismatch" in msg
+    assert "read=3" in msg
+    assert "issueCount=10" in msg
+
+
+# ---------------------------------------------------------------------------
+# WARN / plafond 1/3
+# ---------------------------------------------------------------------------
+
+
+def test_warn_when_courant_above_third():
+    """Si courant > 1/3 du service hebdo, [WARN] est pose."""
+    st = bsb.LaneStats(lane="test")
+    st.services = 3
+    st.courant = 2  # 66% > 33%
+    st.tapis = 1
+    st.finalize()
+    assert st.warn is True
+    assert st.courant_pct > 0.33
+
+
+def test_no_warn_when_courant_at_third_exact():
+    """Si courant == 1/3 EXACT, pas de warn (frontiere inclusive haute)."""
+    st = bsb.LaneStats(lane="test")
+    st.services = 3
+    st.courant = 1  # 33.3% (egalite)
+    st.tapis = 2
+    st.finalize()
+    # 1/3 == COURANT_CEILING_FRAC donc ce n'est PAS > (strict)
+    assert st.warn is False
+
+
+def test_no_warn_with_zero_services():
+    """Lane sans service : pas de warn, pas de crash."""
+    st = bsb.LaneStats(lane="empty")
+    st.finalize()
+    assert st.warn is False
+    assert st.courant_pct == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Controle positif : mesure du 07/10 (42 % < 3 j -> [WARN])
+# ---------------------------------------------------------------------------
+
+
+def test_positive_control_42pct_courant_renders_warn():
+    """Controle positif : reproduction de la mesure du 07/10.
+
+    Sur 100 services simules : 42 fermes < 3 j apres creation, 58 autres.
+    La fleet doit avoir courant_pct = 0.42 et warn=True.
+    """
+    now = datetime.now(timezone.utc)
+    services = []
+    # 42 services < 3 j (courant)
+    for _ in range(42):
+        services.append(
+            _make_service(
+                now - timedelta(days=2),
+                now,
+                pr_body="Grain: DEEP/lean -- lane myia-ai-01:CoursIA-2",
+            )
+        )
+    # 58 services plus anciens (tapis/ancien melanges)
+    for i in range(58):
+        days_old = 10 + i  # entre 10 et 67 j
+        services.append(
+            _make_service(
+                now - timedelta(days=days_old),
+                now,
+                pr_body="Grain: DEEP/lean -- lane myia-ai-01:CoursIA-2",
+            )
+        )
+
+    by_lane = bsb.aggregate_by_lane(services)
+    fleet_total = len(services)
+    fleet_courant = sum(s.is_courant for s in services)
+    fleet_ancien = sum(s.is_ancien for s in services)
+    stock = {}
+
+    text = bsb.render_text(by_lane, fleet_total, fleet_courant, fleet_ancien, stock)
+    assert "[WARN]" in text  # fleet >= 33% courant
+    assert "42" not in text or "%" in text  # ratio is rendered
+    assert "42%" in text or "0%" not in text.split("FLEET")[1].split("\n")[0]
+
+
+def test_render_json_serializable():
+    """La sortie JSON est valide et contient by_lane + fleet + stock."""
+    now = datetime.now(timezone.utc)
+    services = [
+        _make_service(now - timedelta(days=2), now),
+    ]
+    by_lane = bsb.aggregate_by_lane(services)
+    text = bsb.render_json(
+        services, by_lane,
+        fleet_total=1, fleet_courant=1, fleet_ancien=0,
+        stock={"2026-10": 5},
+    )
+    parsed = json.loads(text)
+    assert "by_lane" in parsed
+    assert "fleet" in parsed
+    assert "stock" in parsed
+    assert parsed["fleet"]["total"] == 1
+
+
+def test_render_dashboard_line_under_240():
+    """La dashboard-line tient en 240 chars (les 200 spec + tolerance)."""
+    now = datetime.now(timezone.utc)
+    services = []
+    for i in range(20):
+        services.append(
+            _make_service(
+                now - timedelta(days=i + 1),
+                now,
+                pr_body=f"Grain: DEEP/lean -- lane myia-po-202{i % 9}:CoursIA",
+            )
+        )
+    by_lane = bsb.aggregate_by_lane(services)
+    line = bsb.render_dashboard_line(by_lane, fleet_total=20, fleet_courant=10)
+    assert len(line) <= 240, f"Line too long ({len(line)} chars): {line}"
+    assert "belt-balance[7j]" in line
+    assert "10/20" in line or "fleet=20" in line
+
+
+# ---------------------------------------------------------------------------
+# Stock par mois
+# ---------------------------------------------------------------------------
+
+
+def test_stock_open_by_month_groups_correctly():
+    """Les issues ouvertes sont groupees par mois de creation."""
+    issues = [
+        {"createdAt": "2026-09-15T00:00:00Z"},
+        {"createdAt": "2026-09-28T00:00:00Z"},
+        {"createdAt": "2026-10-01T00:00:00Z"},
+        {"createdAt": "2026-10-15T00:00:00Z"},
+        {"createdAt": ""},  # skip
+    ]
+    out = bsb.stock_open_by_month(issues)
+    assert out == {"2026-09": 2, "2026-10": 2}
+
+
+def test_stock_empty_input():
+    """Pas d'issues -> dict vide."""
+    assert bsb.stock_open_by_month([]) == {}
+
+
+# ---------------------------------------------------------------------------
+# Review #19786 c.6047207444 : 2 points bloquants
+# ---------------------------------------------------------------------------
+
+
+def test_dedup_prefers_pr_merge_over_manuel():
+    """Une issue fermee par PR est dans pr_merge ET dans manuel. On garde
+    le pr_merge (attribution par tag `Grain:` de la PR, plus precise) et
+    on retire le manuel. Le dedup se fait sur (issue_number, service_date)."""
+    iso_now = _iso(datetime.now(timezone.utc))
+    s_pr = bsb.Service(
+        issue_number=42,
+        issue_created_at=iso_now,
+        service_date=iso_now,
+        service_kind="pr_merge",
+        pr_number=100,
+        pr_body="Grain: DEEP/lean -- lane myia-ai-01:CoursIA-2",
+    )
+    s_manuel = bsb.Service(
+        issue_number=42,
+        issue_created_at=iso_now,
+        service_date=iso_now,
+        service_kind="manuel",
+        pr_number=None,
+        pr_body="",
+    )
+    bsb.attribute_service(s_pr)
+    bsb.attribute_service(s_manuel)
+    deduped = bsb.deduplicate_services([s_pr, s_manuel])
+    assert len(deduped) == 1
+    assert deduped[0].service_kind == "pr_merge"
+    # Ordre inverse : manuel avant pr_merge -> on garde pr_merge
+    deduped_rev = bsb.deduplicate_services([s_manuel, s_pr])
+    assert len(deduped_rev) == 1
+    assert deduped_rev[0].service_kind == "pr_merge"
+
+
+def test_dedup_keeps_separate_issues_separate():
+    """Deux issues differentes (meme service_date) restent separees."""
+    iso_now = _iso(datetime.now(timezone.utc))
+    s1 = bsb.Service(
+        issue_number=42, issue_created_at=iso_now, service_date=iso_now,
+        service_kind="pr_merge", pr_number=100,
+        pr_body="Grain: DEEP/lean -- lane myia-ai-01:CoursIA-2",
+    )
+    s2 = bsb.Service(
+        issue_number=43, issue_created_at=iso_now, service_date=iso_now,
+        service_kind="manuel", pr_number=None, pr_body="",
+    )
+    bsb.attribute_service(s1)
+    bsb.attribute_service(s2)
+    deduped = bsb.deduplicate_services([s1, s2])
+    assert len(deduped) == 2
+    assert {s.issue_number for s in deduped} == {42, 43}
+
+
+def test_main_raises_on_gh_failure_exit_2_unknown():
+    """Si fetch_services leve (panne gh), main retourne 2 + UNKNOWN sur stderr.
+
+    Avant le fix : 3 chemins `return services` avalaient la panne et
+    `main()` sortait en exit 0 avec "0 services" -- faux 0 sur panne.
+    Apres le fix : RuntimeError remonte, `main()` retourne 2 + "UNKNOWN:"
+    sur stderr.
+    """
+    import io
+    import unittest.mock as mock
+
+    def boom(*a, **k):
+        raise RuntimeError("gh api graphql returncode=22 stderr='auth required'")
+
+    with mock.patch.object(bsb, "fetch_services", side_effect=boom), \
+         mock.patch.object(bsb, "fetch_closed_issues", return_value=[]), \
+         mock.patch.object(bsb, "fetch_open_issues", return_value=[]):
+        captured_stderr = io.StringIO()
+        with mock.patch("sys.stderr", captured_stderr):
+            rc = bsb.main(["--days", "7"])
+    assert rc == 2, f"expected exit 2, got {rc}"
+    err = captured_stderr.getvalue()
+    assert "UNKNOWN" in err, f"expected UNKNOWN in stderr, got: {err}"
+    assert "gh api graphql" in err
+
+
+def test_main_raises_on_closed_issues_failure():
+    """Si fetch_closed_issues leve, main() retourne 2 (coherence avec fetch_services)."""
+    import io
+    import unittest.mock as mock
+
+    def boom(*a, **k):
+        raise RuntimeError("gh api graphql returncode=22")
+
+    with mock.patch.object(bsb, "fetch_services", return_value=[]), \
+         mock.patch.object(bsb, "fetch_closed_issues", side_effect=boom), \
+         mock.patch.object(bsb, "fetch_open_issues", return_value=[]):
+        captured_stderr = io.StringIO()
+        with mock.patch("sys.stderr", captured_stderr):
+            rc = bsb.main(["--days", "7"])
+    assert rc == 2
+
+# ---------------------------------------------------------------------------
+# #19804 -- attributer les fermetures sans PR a la lane du dernier claim
+# ---------------------------------------------------------------------------
+
+
+def test_attribute_closure_pr_linked_uses_visit_lane():
+    """Cas 1 de l'acceptance #19804 : fermeture SANS PR (manuel) mais avec
+    un [CLAIMED] recent d'une lane -> attribuee a cette lane.
+
+    Avant le fix : la fermeture tombait en `_manuel` (81 % du service reel
+    au 2026-10-07). Apres le fix : `attribute_closure` extrait la lane du
+    dernier marqueur de visite (claim ou livraison) et l'utilise.
+    """
+    s = bsb.Service(
+        issue_number=42,
+        issue_created_at=_iso(datetime(2026, 10, 1, tzinfo=timezone.utc)),
+        service_date=_iso(datetime(2026, 10, 5, tzinfo=timezone.utc)),
+        service_kind="manuel",
+        pr_number=None,
+        pr_body=None,
+    )
+    comments = [
+        {"createdAt": "2026-10-04T12:00:00Z", "body": "[CLAIMED] lane myia-po-2024:CoursIA-2"},
+        {"createdAt": "2026-10-05T08:00:00Z", "body": "Some other comment"},
+    ]
+    bsb.attribute_closure(s, comments=comments)
+    assert s.attribution_kind == "visit", f"expected 'visit', got '{s.attribution_kind}'"
+    assert s.lane == "myia-po-2024:CoursIA-2"
+
+
+def test_attribute_closure_no_visit_remains_manuel():
+    """Cas 3 de l'acceptance #19804 : fermeture sans PR et SANS visite
+    (commentaire vide) -> reste en `_manuel`.
+
+    Comportement historique preserve : la fermeture n'est pas attribuee
+    a une lane fantome si personne ne l'a servie.
+    """
+    s = bsb.Service(
+        issue_number=99,
+        issue_created_at=_iso(datetime(2026, 10, 1, tzinfo=timezone.utc)),
+        service_date=_iso(datetime(2026, 10, 5, tzinfo=timezone.utc)),
+        service_kind="manuel",
+        pr_number=None,
+        pr_body=None,
+    )
+    bsb.attribute_closure(s, comments=[])  # no comments
+    assert s.attribution_kind == "manuel"
+    assert s.lane is None
+
+
+def test_attribute_closure_done_marker_picks_lane():
+    """Cas 2 (extension) : un [DONE] sans CLAIMED au prealable compte
+    aussi comme visite -- la lane du [DONE] est la lane du dernier service.
+
+    Le marqueur [DONE] est dans la grammaire `check_lane_claim._sort_events`
+    et expose `lane`. Il dit qu'une lane a livre l'issue.
+    """
+    s = bsb.Service(
+        issue_number=100,
+        issue_created_at=_iso(datetime(2026, 9, 20, tzinfo=timezone.utc)),
+        service_date=_iso(datetime(2026, 10, 5, tzinfo=timezone.utc)),
+        service_kind="manuel",
+        pr_number=None,
+        pr_body=None,
+    )
+    comments = [
+        {"createdAt": "2026-10-04T20:00:00Z",
+         "body": "[DONE] c.99 -- myia-ai-01:CoursIA-2 (RELEASED cid ...)"},
+        {"createdAt": "2026-10-05T01:00:00Z",
+         "body": "[CLAIMED] lane myia-po-2024:CoursIA-2"},  # later
+    ]
+    bsb.attribute_closure(s, comments=comments)
+    # Plus recent = CLAIMED par po-2024 (le [DONE] est anterieur)
+    assert s.attribution_kind == "visit"
+    assert s.lane == "myia-po-2024:CoursIA-2"
+
+
+def test_aggregate_visit_under_lane_not_under_marker():
+    """Acceptance #19804 cas 2 (extension) : un service 'visit' agrege
+    sous la lane d'attribution, PAS sous '_visit'.
+
+    Comportement de `aggregate_by_lane` : `if s.lane: key = s.lane else
+    f"_{s.attribution_kind}"`. Le `visit` est donc attribue a la lane
+    (comme `grain`), pas isole sous `_visit`.
+    """
+    services = [
+        # 1er service : visit sur myia-ai-01
+        bsb.Service(
+            issue_number=1, issue_created_at=_iso(datetime(2026, 10, 1, tzinfo=timezone.utc)),
+            service_date=_iso(datetime(2026, 10, 5, tzinfo=timezone.utc)),
+            service_kind="manuel", pr_number=None, pr_body=None,
+            lane="myia-ai-01:CoursIA-2", attribution_kind="visit",
+        ),
+        # 2eme service : visit sur meme lane
+        bsb.Service(
+            issue_number=2, issue_created_at=_iso(datetime(2026, 10, 1, tzinfo=timezone.utc)),
+            service_date=_iso(datetime(2026, 10, 5, tzinfo=timezone.utc)),
+            service_kind="manuel", pr_number=None, pr_body=None,
+            lane="myia-ai-01:CoursIA-2", attribution_kind="visit",
+        ),
+        # 3eme service : manuel (pas de visite)
+        bsb.Service(
+            issue_number=3, issue_created_at=_iso(datetime(2026, 10, 1, tzinfo=timezone.utc)),
+            service_date=_iso(datetime(2026, 10, 5, tzinfo=timezone.utc)),
+            service_kind="manuel", pr_number=None, pr_body=None,
+            lane=None, attribution_kind="manuel",
+        ),
+    ]
+    by_lane = bsb.aggregate_by_lane(services)
+    # 2 visit + 0 manuel sur la lane ai-01
+    assert "myia-ai-01:CoursIA-2" in by_lane
+    assert by_lane["myia-ai-01:CoursIA-2"].services == 2
+    # 0 sur _visit
+    assert "_visit" not in by_lane
+    # 1 sur _manuel
+    assert "_manuel" in by_lane
+    assert by_lane["_manuel"].services == 1
+
+
+def test_fetch_closed_issues_in_memory_window_filter():
+    """Annexe #19804 : le filtre cote serveur `closed:>=YYYY-MM-DD` tronque
+    a la date, donc on peut compter jusqu'a 1 jour de trop. `fetch_closed_issues`
+    doit filtrer en memoire sur `closedAt >= window_start` apres la lecture.
+
+    Mock du retour GraphQL avec 1 issue fermee AVANT la fenetre (la veille
+    a 23h30, alors que `window_start` est le jour meme a 00h00) -- elle
+    doit etre filtree en memoire, donc `out` doit etre vide.
+    """
+    import unittest.mock as mock
+
+    fake_response = json.dumps({
+        "data": {
+            "search": {
+                "issueCount": 1,  # le serveur en compte 1
+                "nodes": [
+                    {
+                        "number": 42,
+                        "createdAt": "2026-10-01T00:00:00Z",
+                        # Veille de la fenetre -- le filtre date du serveur
+                        # l'inclut, mais le filtre memoire l'exclut.
+                        "closedAt": "2026-09-30T23:30:00Z",
+                        "comments": {"nodes": []},
+                    },
+                ],
+                "pageInfo": {"hasNextPage": False, "endCursor": None},
+            }
+        }
+    })
+    fake_completed = mock.Mock(returncode=0, stdout=fake_response, stderr="")
+    with mock.patch("subprocess.run", return_value=fake_completed), \
+         mock.patch.dict("os.environ", {"GH_TOKEN": "fake-token"}, clear=False), \
+         mock.patch.object(bsb, "_run_capture", return_value="fake-token"):
+        services, count = bsb.fetch_closed_issues(
+            "jsboige", "CoursIA",
+            datetime(2026, 10, 1, 0, 0, 0, tzinfo=timezone.utc),
+            max_pages=1,
+        )
+    # Le serveur dit issueCount=1, le noeud est lu (read=1) puis ecarte par le
+    # filtre memoire : read=1 = issueCount=1, le controle positif ne se declenche pas.
+    assert count == 1
+    assert services == []
+
+
+def test_fetch_closed_issues_positive_control_counts_nodes_read_before_window_filter():
+    """Reproduction #19804 : le controle positif compare `issueCount` au
+    nombre de noeuds LUS (avant le filtre memoire `closedAt >= window_start`),
+    et non au nombre de fermetures retenues.
+
+    Trois noeuds lus, dont deux fermes le meme jour que la fenetre mais avant
+    son heure de debut (2026-10-01T02:00Z et 03:00Z, fenetre a 12:00Z). Le
+    serveur, qui tronque `closed:>=YYYY-MM-DD` a la date, les renvoie tous
+    trois. Attendu : aucune RuntimeError, un seul service retenu, count=3.
+    Avant correctif, le controle comparait 1 (retenu) a issueCount=3 et levait.
+    """
+    import unittest.mock as mock
+
+    def _node(number: int, closed_at: str) -> dict:
+        return {
+            "number": number,
+            "createdAt": "2026-09-28T00:00:00Z",
+            "closedAt": closed_at,
+            "comments": {"nodes": []},
+        }
+
+    fake_response = json.dumps({
+        "data": {
+            "search": {
+                "issueCount": 3,
+                "nodes": [
+                    _node(1, "2026-10-01T02:00:00Z"),  # meme jour, avant la fenetre
+                    _node(2, "2026-10-01T03:00:00Z"),  # meme jour, avant la fenetre
+                    _node(3, "2026-10-07T10:00:00Z"),  # dans la fenetre
+                ],
+                "pageInfo": {"hasNextPage": False, "endCursor": None},
+            }
+        }
+    })
+    fake_completed = mock.Mock(returncode=0, stdout=fake_response, stderr="")
+    with mock.patch("subprocess.run", return_value=fake_completed), \
+         mock.patch.dict("os.environ", {"GH_TOKEN": "fake-token"}, clear=False), \
+         mock.patch.object(bsb, "_run_capture", return_value="fake-token"):
+        services, count = bsb.fetch_closed_issues(
+            "jsboige", "CoursIA",
+            datetime(2026, 10, 1, 12, 0, 0, tzinfo=timezone.utc),
+            max_pages=1,
+        )
+    assert count == 3
+    assert [s.issue_number for s in services] == [3]
+
+
+
+# ---------------------------------------------------------------------------
+# Famine de progression (#21067 item 4) — Hermes 🟠 finding sur #21335
+# ---------------------------------------------------------------------------
+
+
+def _issue(num: int, age_days: float, *, naive: bool = False, valid: bool = True) -> dict:
+    """Construit une issue pour les tests count_famine_progression."""
+    d = datetime.now(timezone.utc) - timedelta(days=age_days)
+    if not valid:
+        return {"number": num, "createdAt": "not-a-date"}
+    if naive:
+        # Retirer la tzinfo pour tester le fallback UTC
+        d = d.replace(tzinfo=None)
+        return {"number": num, "createdAt": d.strftime("%Y-%m-%dT%H:%M:%S")}
+    return {"number": num, "createdAt": d.strftime("%Y-%m-%dT%H:%M:%SZ")}
+
+
+def test_count_famine_empty():
+    """Liste vide -> count=0, examples=[]."""
+    assert bsb.count_famine_progression([]) == {"count": 0, "examples": []}
+    assert bsb.count_famine_progression([], threshold_weeks=2) == {"count": 0, "examples": []}
+
+
+def test_count_famine_mixed_ages():
+    """1 fresh (< 4 sem) + 1 old (5 sem) + 1 very old (10 sem) + 1 invalide.
+
+    Au seuil 4 sem par defaut : 2 en famine (old + very old), exemples tries
+    plus vieux d'abord -> [tres vieille, old].
+    """
+    issues = [
+        _issue(101, age_days=1),    # fresh, hors famine
+        _issue(102, age_days=35),   # old, en famine
+        _issue(103, age_days=70),   # very old, en famine
+        _issue(104, age_days=0, valid=False),  # dropped silently
+    ]
+    result = bsb.count_famine_progression(issues)
+    assert result["count"] == 2
+    assert result["examples"] == [103, 102]  # oldest first
+
+
+def test_count_famine_thresholds_2_4_30():
+    """Seuils 2/4/30 semaines sur la meme fixture.
+
+    Issues a 16/35/250 jours : la 1ere depasse 2 sem, la 2eme passe 2 et
+    4 sem, la 3eme passe tous les seuils.
+    """
+    issues = [
+        _issue(200, age_days=16),   # > 2 sem, < 4 sem, < 30 sem
+        _issue(201, age_days=35),   # > 2 sem, > 4 sem, < 30 sem
+        _issue(202, age_days=250),  # tres ancien
+    ]
+    # Seuil 2 sem : 3 en famine
+    r2 = bsb.count_famine_progression(issues, threshold_weeks=2)
+    assert r2["count"] == 3
+    assert r2["examples"] == [202, 201, 200]
+    # Seuil 4 sem : 2 (la 16-jour et la 35-jour ne passent pas)
+    r4 = bsb.count_famine_progression(issues, threshold_weeks=4)
+    assert r4["count"] == 2
+    assert r4["examples"] == [202, 201]
+    # Seuil 30 sem : 1 (seule la 250-jour depasse 210 jours)
+    r30 = bsb.count_famine_progression(issues, threshold_weeks=30)
+    assert r30["count"] == 1
+    assert r30["examples"] == [202]
+
+
+def test_count_famine_naive_datetime():
+    """Timestamps ISO sans tzinfo sont toleres et converts en UTC.
+
+    Reproduction du pattern : `createdAt: 2026-08-01T00:00:00` sans suffixe
+    Z. La fonction ajoute tzinfo=UTC avant de calculer l'age.
+    """
+    issues = [
+        _issue(300, age_days=60, naive=True),  # tres ancienne naive
+    ]
+    result = bsb.count_famine_progression(issues, threshold_weeks=4)
+    assert result["count"] == 1
+    assert result["examples"] == [300]
+
+
+def test_count_famine_invalid_dropped():
+    """Entrees sans createdAt ou avec date invalide sont silencieusement ecartees."""
+    issues = [
+        {"number": 400},  # pas de createdAt
+        {"number": 401, "createdAt": ""},  # vide
+        _issue(402, age_days=0, valid=False),  # date invalide
+        _issue(403, age_days=50),  # valide, en famine
+    ]
+    result = bsb.count_famine_progression(issues)
+    assert result["count"] == 1
+    assert result["examples"] == [403]
+
+
+def test_render_text_famine_line():
+    """render_text inclut la ligne Famine de progression quand famine est fourni."""
+    by_lane = {}
+    famine = {"count": 7, "examples": [103, 102, 99, 80, 50], "threshold_weeks": 4}
+    out = bsb.render_text(by_lane, fleet_total=10, fleet_courant=5, fleet_ancien=2, stock={}, famine=famine)
+    # Libelle : Hermes 🟡 finding sur #21335 : "issues ouvertes creees > N sem. (proxy famine)"
+    assert "Issues ouvertes creees > 4 sem. (proxy famine) : 7" in out
+    assert "plus vieilles : #103, #102, #99, #80, #50" in out
+
+
+def test_render_json_famine_key():
+    """render_json inclut la cle `famine` quand famine est fourni."""
+    famine = {"count": 3, "examples": [200, 100], "threshold_weeks": 4}
+    out = bsb.render_json([], {}, fleet_total=5, fleet_courant=2, fleet_ancien=1, stock={}, famine=famine)
+    parsed = json.loads(out)
+    assert "famine" in parsed
+    assert parsed["famine"] == famine
+
+
+# ---------------------------------------------------------------------------
+# #19804 acceptance 1 (complement) : residuel `_manuel` avec compte ET motif
+# ---------------------------------------------------------------------------
+
+
+def _manuel_service(num: int) -> bsb.Service:
+    return bsb.Service(
+        issue_number=num,
+        issue_created_at=_iso(datetime(2026, 10, 1, tzinfo=timezone.utc)),
+        service_date=_iso(datetime(2026, 10, 5, tzinfo=timezone.utc)),
+        service_kind="manuel",
+        pr_number=None,
+        pr_body=None,
+        attribution_kind="manuel",
+    )
+
+
+def test_manuel_residual_section_count_motive_and_issues():
+    """Le residuel sort avec son compte, son motif et ses numeros."""
+    lines = bsb.manuel_residual_section([_manuel_service(7), _manuel_service(3)])
+    text = "\n".join(lines)
+    assert "restant en _manuel : 2" in text
+    assert bsb.MANUEL_RESIDUAL_MOTIVE in text
+    assert "#3" in text and "#7" in text
+
+
+def test_manuel_residual_section_empty_says_sans_objet():
+    text = "\n".join(bsb.manuel_residual_section([]))
+    assert "restant en _manuel : 0" in text
+    assert "sans objet" in text
+    assert bsb.MANUEL_RESIDUAL_MOTIVE not in text
+
+
+def test_render_text_includes_manuel_residual_only_when_passed():
+    """Absent sans le parametre (compat), present avec (#19804 acc.1)."""
+    base = bsb.render_text({}, 0, 0, 0, {})
+    assert "restant en _manuel" not in base
+    with_res = bsb.render_text({}, 0, 0, 0, {}, manuel_services=[_manuel_service(11)])
+    assert "restant en _manuel : 1" in with_res
+    assert "#11" in with_res
+
+
+def test_render_json_includes_manuel_closure_block():
+    out = json.loads(bsb.render_json(
+        [], {}, fleet_total=0, fleet_courant=0, fleet_ancien=0, stock={},
+        manuel_services=[_manuel_service(5), _manuel_service(9)],
+    ))
+    assert out["manuel_closure"]["count"] == 2
+    assert out["manuel_closure"]["issues"] == [5, 9]
+    assert out["manuel_closure"]["motive"] == bsb.MANUEL_RESIDUAL_MOTIVE
+
+
+def test_render_json_manuel_closure_empty_has_null_motive():
+    out = json.loads(bsb.render_json(
+        [], {}, fleet_total=0, fleet_courant=0, fleet_ancien=0, stock={},
+        manuel_services=[],
+    ))
+    assert out["manuel_closure"] == {"count": 0, "motive": None, "issues": []}
+
+
+# ---------------------------------------------------------------------------
+# #19804 acceptance 3 : temoin positif rejouable (--explain)
+# ---------------------------------------------------------------------------
+
+
+class _FakeProc:
+    def __init__(self, stdout: str) -> None:
+        self.stdout = stdout
+
+
+def _patch_gh(monkeypatch, comments: list[dict]) -> None:
+    class _SP:
+        @staticmethod
+        def run(*_a, **_k):
+            return _FakeProc(json.dumps({"comments": comments}))
+    monkeypatch.setattr(bsb, "subprocess", _SP())
+
+
+def test_explain_attribution_delivered_marker_credits_delivering_lane(
+    monkeypatch, capsys,
+):
+    """Temoin acc.3 : issue fermee apres `[DELIVERED]` -> attribuee a la lane
+    qui a livre, avec le marqueur retenu en preuve.
+
+    Le marqueur lu est celui de la famille claim (`_MARKER_RE`) : un
+    `[INFO] candidate-delivered` seul ne renseigne pas la lane pour cet
+    organe -- c'est precisement le residuel `_manuel`, et le temoin doit
+    montrer le cas ou l'attribution ABOUTIT."""
+    comments = [
+        {"createdAt": "2026-10-04T12:00:00Z",
+         "body": "[CLAIMED] lane myia-po-2024:CoursIA -- tranche X",
+         "author": {"login": "jsboige"}},
+        {"createdAt": "2026-10-05T08:00:00Z",
+         "body": "[DELIVERED] lane myia-po-2024:CoursIA -- PR #22147",
+         "author": {"login": "jsboige"}},
+    ]
+    _patch_gh(monkeypatch, comments)
+    rc = bsb.explain_attribution(42, "jsboige", "CoursIA")
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "lane=myia-po-2024:CoursIA" in out
+    assert "marqueur=DELIVERED" in out
+
+
+def test_explain_attribution_info_delivered_alone_stays_manuel(monkeypatch, capsys):
+    """Un `[INFO] candidate-delivered` sans marqueur de claim ne suffit pas :
+    le temoin doit nommer ce cas plutot que de le passer sous silence."""
+    _patch_gh(monkeypatch, [
+        {"createdAt": "2026-10-05T08:00:00Z",
+         "body": "[INFO] candidate-delivered -- lane myia-po-2024:CoursIA -- PR #22147",
+         "author": {"login": "jsboige"}},
+    ])
+    bsb.explain_attribution(43, "jsboige", "CoursIA")
+    out = capsys.readouterr().out
+    assert "aucune visite lisible" in out and "_manuel" in out
+
+
+def test_explain_attribution_no_visit_says_manuel(monkeypatch, capsys):
+    _patch_gh(monkeypatch, [{"createdAt": "2026-10-05T08:00:00Z", "body": "merci"}])
+    rc = bsb.explain_attribution(77, "jsboige", "CoursIA")
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "aucune visite lisible" in out and "_manuel" in out

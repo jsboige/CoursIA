@@ -1,7 +1,7 @@
 - name: "Tweety-3 Advanced-Logics"
   family: Tweety/IKVM-JPype
-  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics.ipynb
-  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Lib-vs-lib meme moteur Java TweetyProject (logiques conditionnelle, modale, QBF) : C# branche IKVM 8.14.0 + tweety-advanced-logics.dll (tracked) + 8 refs `org.tweetyproject.logics.cl.reasoner` etc. actifs (3 cellules avec using explicite, classes instantiatees). Python branche JPype + `from org.tweetyproject.logics.cl.reasoner import SimpleCReasoner` + meme classe Java `SimpleCReasoner` invoquee. Verifie firsthand (c.227, 2026-08-12, po-2023:CoursIA-2) : les deux cotes appellent le meme solveur TweetyProject (Thimm 2012), pont IKVM-bytecode .NET vs JPype-JVM-runtime. Meme dynamique que tweety-2 et c.220 #10544 dialogues."

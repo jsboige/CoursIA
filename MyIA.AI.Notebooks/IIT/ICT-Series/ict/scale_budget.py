@@ -1,6 +1,6 @@
 """Plan d'echelle du protocole Geometry of Truth v2 (#16760, arbitrage ai-01 13:48Z + amendement 13:53Z).
 
-Le Concern user du 2026-09-25 reprochait au notebook ICT-44 un protocole
+Le Concern user du 2026-09-25 reprochait au notebook ICT-22c un protocole
 delibrement sous-regime (1.5B). Le protocole v2 monte l'echelle
 SYSTEMATIQUEMENT jusqu'a 70B (amendement user relaye par ai-01 13:53Z --
 ce n'est plus une option soumise a arbitrage) :

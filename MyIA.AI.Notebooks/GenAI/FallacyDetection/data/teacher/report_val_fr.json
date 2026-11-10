@@ -1,0 +1,94 @@
+{
+  "model": "qwen3.6-35b-a3b",
+  "hub_url": "http://192.168.0.47:5002/v1/chat/completions",
+  "split": "val",
+  "lang": "fr",
+  "seed": 0,
+  "votes": 3,
+  "distractors": 5,
+  "max_tokens": 300,
+  "min_tokens": 25,
+  "retries": 2,
+  "checkpoint": "val_fr.jsonl",
+  "seconds": 805.1,
+  "n_pairs": 280,
+  "n_empty": 0,
+  "n_regenerated": 1,
+  "mean_completion_tokens": 69.2,
+  "example_overlap": 0,
+  "roundtrip_measured": 280,
+  "roundtrip_hits": 243,
+  "roundtrip_rate": 0.8679,
+  "by_family": {
+    "Abus de langage": {
+      "n": 21,
+      "hit": 17,
+      "measured": 21
+    },
+    "Argument pertinent": {
+      "n": 21,
+      "hit": 20,
+      "measured": 21
+    },
+    "Erreur de raisonnement": {
+      "n": 20,
+      "hit": 19,
+      "measured": 20
+    },
+    "Erreur mathématique": {
+      "n": 20,
+      "hit": 18,
+      "measured": 20
+    },
+    "Honnêteté intellectuelle": {
+      "n": 20,
+      "hit": 18,
+      "measured": 20
+    },
+    "Influence": {
+      "n": 20,
+      "hit": 19,
+      "measured": 20
+    },
+    "Inférence maîtrisée": {
+      "n": 20,
+      "hit": 15,
+      "measured": 20
+    },
+    "Insuffisance": {
+      "n": 20,
+      "hit": 18,
+      "measured": 20
+    },
+    "Justesse lexicale": {
+      "n": 18,
+      "hit": 14,
+      "measured": 18
+    },
+    "Obstruction": {
+      "n": 20,
+      "hit": 19,
+      "measured": 20
+    },
+    "Présentation intègre": {
+      "n": 20,
+      "hit": 14,
+      "measured": 20
+    },
+    "Sens quantitatif": {
+      "n": 20,
+      "hit": 14,
+      "measured": 20
+    },
+    "Tricherie": {
+      "n": 20,
+      "hit": 20,
+      "measured": 20
+    },
+    "Échange enrichissant": {
+      "n": 20,
+      "hit": 18,
+      "measured": 20
+    }
+  }
+}

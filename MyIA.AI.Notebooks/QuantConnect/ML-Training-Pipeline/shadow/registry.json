@@ -1,0 +1,132 @@
+{
+  "candidates": [
+    {
+      "id": "mhm676",
+      "kind": "qc",
+      "sha": "bb7d7b61c5a48158d314693253c33b94a300cd35",
+      "frozen_on": "2026-10-05",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/MultiHorizonMomentum676:37379584",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
+      "fingerprint": "a8f44f3e52fc28d2"
+    },
+    {
+      "id": "fs774",
+      "kind": "qc",
+      "sha": "f2027d3287e332d129b1f7cee1901a4e7fcdb43f",
+      "frozen_on": "2026-10-04",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/FourSleeve774:37416444",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
+      "fingerprint": "f7e4c1dd6503c96c"
+    },
+    {
+      "id": "splits-lo",
+      "kind": "qc",
+      "sha": "1fef19f77483a5fb0dab02681aeda7b6d9ed1a4c",
+      "frozen_on": "2026-10-05",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/SplitEventsLongOnly:37416446",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
+      "fingerprint": "274d0d5ff3b896e4"
+    },
+    {
+      "id": "ivol-U",
+      "kind": "local",
+      "sha": "a92539de9b41bff5cf5963c12e5c062d044c425a",
+      "frozen_on": "2026-10-06",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/shadow_inverse_vol.py:inverse_vol",
+      "params": {
+        "convention": "U",
+        "target": 0.025
+      },
+      "fee_model": "5 bps de la valeur échangée",
+      "fingerprint": "1695ce6178614958"
+    },
+    {
+      "id": "ivol-F",
+      "kind": "local",
+      "sha": "a92539de9b41bff5cf5963c12e5c062d044c425a",
+      "frozen_on": "2026-10-06",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/shadow_inverse_vol.py:inverse_vol",
+      "params": {
+        "convention": "F",
+        "target": 0.025
+      },
+      "fee_model": "5 bps de la valeur échangée",
+      "fingerprint": "9d89e167d99f26b1"
+    },
+    {
+      "id": "lsh-lag",
+      "kind": "qc",
+      "sha": "fd068a90ff9117e0b42634d6137c951690d23645",
+      "frozen_on": "2026-10-09",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/LongShortHarvest-QC:37601753",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
+      "fingerprint": "4f0abfd3e363e6de"
+    },
+    {
+      "id": "tw-pit",
+      "kind": "qc",
+      "sha": "793d624e6ed49eac9d9d2f39223580027f9693db",
+      "frozen_on": "2026-10-06",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/TrendWeatherPointInTime:37601754",
+      "params": {
+        "universe": "pit"
+      },
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
+      "fingerprint": "b7d1c0c9e85fb76b"
+    },
+    {
+      "id": "levetf-base",
+      "kind": "qc",
+      "sha": "f1a93779396b77398ed23ad8a02678acd786adfd",
+      "frozen_on": "2026-10-10",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/LeveragedETFMomentum-QC:37796612",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
+      "fingerprint": "29901378fae71c8c"
+    },
+    {
+      "id": "btc-voltarget-base",
+      "kind": "qc",
+      "sha": "4d26b3a6129b1245095e45c1f448a59c34a51b36",
+      "frozen_on": "2026-10-17",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/BTC-VolTarget-QC:37950433",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier (Bitfinex crypto, IBKR equity)",
+      "fingerprint": "653384a26fcaf8d3"
+    },
+    {
+      "id": "levetf-postfix",
+      "kind": "qc",
+      "sha": "51f26ad1bcbf9bcc325ca86a92fbc83662a3bfeb",
+      "frozen_on": "2026-10-27",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/LeveragedETFMomentum-QC:38509957",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
+      "fingerprint": "eb4d52901ef24b9d"
+    },
+    {
+      "id": "drk-kernel",
+      "kind": "qc",
+      "sha": "d212d6befd4c1cbf3271f599734f3191387523e2",
+      "frozen_on": "2026-11-08",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/DeterministicRiskKernel-QC:38955440",
+      "params": {},
+      "fee_model": "5 points de base par côté (ProportionalFeeModel)",
+      "fingerprint": "5f68bbeec3403e15"
+    },
+    {
+      "id": "halloween",
+      "kind": "qc",
+      "sha": "a03f54d1077214af6d212a55c687336866cbdb26",
+      "frozen_on": "2026-11-08",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/HalloweenIndicator-QC:38763075",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier (IBKR Margin)",
+      "fingerprint": "fe065b8d6de5b9a8"
+    }
+  ]
+}

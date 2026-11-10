@@ -110,6 +110,182 @@ class SimpleLSTM(nn.Module):
         return out.unsqueeze(1)  # (batch, 1, 1)
 
 
+# ----------------------------------------------------------------
+# fix=on (#23563) : classement BTC/ETH de research.ipynb.
+# Les classes RankSeriesDecomposition, RankDLinear, RankLSTM et les deux
+# fonctions de variables reprennent research.ipynb (cellules 8 et 12) :
+# copie pedagogique declaree, le carnet reste la reference.
+# ----------------------------------------------------------------
+
+RANK_N_FEATURES = 26  # 11 BTC + 11 ETH + 4 croisees
+
+
+class RankSeriesDecomposition(nn.Module):
+    """Decomposition tendance/saison de research.ipynb (DLinear, AAAI 2023)."""
+
+    def __init__(self, kernel_size=25):
+        super().__init__()
+        self.moving_avg = nn.AvgPool1d(kernel_size=kernel_size, stride=1,
+                                       padding=kernel_size // 2)
+
+    def forward(self, x):
+        trend = self.moving_avg(x.transpose(1, 2)).transpose(1, 2)
+        trend = trend[:, :x.shape[1], :]
+        seasonal = x - trend
+        return seasonal, trend
+
+
+class RankDLinear(nn.Module):
+    """DLinear shared-channel de research.ipynb : un logit par sequence (batch, 1)."""
+
+    def __init__(self, seq_len=60, pred_len=1):
+        super().__init__()
+        self.decomposition = RankSeriesDecomposition(kernel_size=25)
+        self.linear_seasonal = nn.Linear(seq_len, pred_len)
+        self.linear_trend = nn.Linear(seq_len, pred_len)
+
+    def forward(self, x):
+        seasonal, trend = self.decomposition(x)
+        seasonal_agg = seasonal.mean(dim=2)   # (batch, seq_len)
+        trend_agg = trend.mean(dim=2)
+        return self.linear_seasonal(seasonal_agg) + self.linear_trend(trend_agg)
+
+
+class RankLSTM(nn.Module):
+    """LSTM de research.ipynb : un logit par sequence (batch, 1)."""
+
+    def __init__(self, input_size=RANK_N_FEATURES, hidden_size=64, num_layers=2):
+        super().__init__()
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_size, 1)
+
+    def forward(self, x):
+        out, _ = self.lstm(x)
+        return self.fc(out[:, -1, :])
+
+
+def rank_asset_features(close, high, low):
+    """11 variables techniques par ligne (research.ipynb, cellule 8) ; NaN avant la ligne 50."""
+    n = len(close)
+    features = np.full((n, 11), np.nan)
+    for i in range(50, n):
+        c = close[:i + 1]
+        h = high[:i + 1]
+        l = low[:i + 1]
+        ret_5d = c[-1] / c[-6] - 1
+        ret_10d = c[-1] / c[-11] - 1
+        ret_20d = c[-1] / c[-21] - 1
+        rets = np.diff(c[-21:]) / c[-21:-1]
+        vol20 = np.std(rets)
+        delta = np.diff(c[-15:])
+        gain = np.where(delta > 0, delta, 0)
+        loss = np.where(delta < 0, -delta, 0)
+        avg_gain = np.mean(gain[-14:])
+        avg_loss = np.mean(loss[-14:]) + 1e-10
+        rsi = 100 - 100 / (1 + avg_gain / avg_loss)
+        rsi_norm = (rsi - 50) / 50
+        sma20 = np.mean(c[-20:])
+        sma50 = np.mean(c[-50:])
+        ma_ratio = sma20 / sma50 if sma50 > 0 else 1
+        h20 = np.max(h[-20:])
+        l20 = np.min(l[-20:])
+        pos_range = (c[-1] - l20) / (h20 - l20 + 1e-10)
+        dist_high = (h20 - c[-1]) / (c[-1] + 1e-10)
+        dist_low = (c[-1] - l20) / (c[-1] + 1e-10)
+        tr = np.maximum(h[-14:] - l[-14:],
+                        np.maximum(np.abs(h[-14:] - c[-15:-1]),
+                                   np.abs(l[-14:] - c[-15:-1])))
+        atr = np.mean(tr) / (c[-1] + 1e-10)
+        bb_mean = np.mean(c[-20:])
+        bb_std = np.std(c[-20:]) + 1e-10
+        bb_pos = (c[-1] - bb_mean + 2 * bb_std) / (4 * bb_std)
+        features[i] = [ret_5d, ret_10d, ret_20d, vol20, rsi_norm, ma_ratio,
+                       pos_range, dist_high, dist_low, atr, bb_pos]
+    return features
+
+
+def rank_cross_features(btc_close, eth_close):
+    """4 variables croisees BTC/ETH par ligne (research.ipynb, cellule 8)."""
+    n = len(btc_close)
+    cross = np.full((n, 4), np.nan)
+    for i in range(50, n):
+        bc = btc_close[:i + 1]
+        ec = eth_close[:i + 1]
+        ratio = bc[-1] / (ec[-1] + 1e-10)
+        rel_mom5 = (bc[-1] / bc[-6] - 1) - (ec[-1] / ec[-6] - 1)
+        rel_mom20 = (bc[-1] / bc[-21] - 1) - (ec[-1] / ec[-21] - 1)
+        ret_b = np.diff(bc[-21:]) / bc[-21:-1]
+        ret_e = np.diff(ec[-21:]) / ec[-21:-1]
+        corr = np.corrcoef(ret_b, ret_e)[0, 1]
+        cross[i] = [np.log(ratio + 1e-10), rel_mom5, rel_mom20, corr]
+    return cross
+
+
+def rank_features(bc, bh, bl, ec, eh, el):
+    """Matrice (n, 26) : BTC(11) + ETH(11) + croisees(4), dans l'ordre du carnet."""
+    return np.concatenate([rank_asset_features(bc, bh, bl),
+                           rank_asset_features(ec, eh, el),
+                           rank_cross_features(bc, ec)], axis=1)
+
+
+def rank_dataset(features, btc_close, eth_close, seq_len):
+    """Sequences et cibles alignees sur J+1 (#23563).
+
+    La sequence k se termine a la ligne t = ends[k] (cloture t incluse) ; sa
+    cible vaut 1 si le rendement de BTC de t a t+1 depasse celui d'ETH.
+    Seules les lignes t <= n-2 ont une cible connue.
+    """
+    n = len(btc_close)
+    btc_ret = btc_close[1:] / btc_close[:-1] - 1   # btc_ret[t] : de t a t+1
+    eth_ret = eth_close[1:] / eth_close[:-1] - 1
+    ends = [t for t in range(seq_len - 1, n - 1)
+            if not np.isnan(features[t - seq_len + 1:t + 1]).any()]
+    y = np.array([1.0 if btc_ret[t] > eth_ret[t] else 0.0 for t in ends], dtype=np.float32)
+    return ends, y
+
+
+def rank_fit(features, btc_close, eth_close, seq_len, model_type, seed,
+             epochs=20, batch_size=128, lr=0.001):
+    """Entraine le modele du carnet (BCEWithLogitsLoss, Adam) ; rend (modele, moyenne, ecart-type, n)."""
+    ends, y = rank_dataset(features, btc_close, eth_close, seq_len)
+    if len(ends) < 2 * seq_len:
+        raise ValueError(f"{len(ends)} sequences seulement")
+    rows = sorted({r for t in ends for r in range(t - seq_len + 1, t + 1)})
+    mean = features[rows].mean(axis=0)
+    std = features[rows].std(axis=0)
+    std[std == 0] = 1.0
+    z = (features - mean) / std
+    X = np.stack([z[t - seq_len + 1:t + 1] for t in ends]).astype(np.float32)
+
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    model = RankDLinear(seq_len) if model_type == "dlinear" else RankLSTM(RANK_N_FEATURES)
+    criterion = nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    dataset = torch.utils.data.TensorDataset(torch.from_numpy(X), torch.from_numpy(y).unsqueeze(1))
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    model.train()
+    for _ in range(epochs):
+        for bx, by in loader:
+            optimizer.zero_grad()
+            loss = criterion(model(bx), by)
+            loss.backward()
+            optimizer.step()
+    model.eval()
+    return model, mean, std, len(ends)
+
+
+def rank_prob_btc(model, mean, std, features, seq_len):
+    """Probabilite que BTC batte ETH de t a t+1, t = derniere ligne de `features`."""
+    window = features[-seq_len:]
+    if len(window) < seq_len or np.isnan(window).any():
+        return None
+    x = torch.from_numpy(((window - mean) / std).astype(np.float32)).unsqueeze(0)
+    with torch.no_grad():
+        logit = model(x).item()
+    return 1.0 / (1.0 + np.exp(-logit))
+
+
 class CryptoLSTMPredictionAlgorithm(QCAlgorithm):
     """
     Crypto Prediction with Deep Learning (DLinear + LSTM comparison).
@@ -122,6 +298,9 @@ class CryptoLSTMPredictionAlgorithm(QCAlgorithm):
     - Position sizing basé sur la confiance de la prédiction
 
     Basé sur: QC-Py-22 (Deep Learning for Time Series)
+
+    Depuis #23563 : fix=on (par défaut) exécute le classement BTC/ETH de research.ipynb
+    (InitializeRanking et suivantes) ; fix=off rejoue le code d'origine décrit ci-dessus.
     """
 
     # Paramètres du modèle
@@ -166,7 +345,172 @@ class CryptoLSTMPredictionAlgorithm(QCAlgorithm):
     SCALER_KEY = "crypto_dl_scaler.pkl"
     METADATA_KEY = "crypto_dl_metadata.json"
 
+    # fix=on (#23563) : classement BTC/ETH de research.ipynb
+    RANK_EPOCHS = 20        # research.ipynb, cellule 3
+    RANK_BATCH = 128        # research.ipynb, cellule 3
+    RANK_WEIGHT = 0.98      # part investie : marge pour les frais d'un compte cash
+    RANK_HISTORY_BARS = 130 # 50 lignes de chauffe + 60 de sequence + marge
+
     def Initialize(self):
+        """Aiguillage (#23563) : fix=off rejoue le code d'origine, fix=on le classement BTC/ETH."""
+        self.fix = (self.GetParameter("fix") or "on").lower()
+        if self.fix == "off":
+            self.InitializeLegacy()
+        else:
+            self.InitializeRanking()
+
+    def _date_param(self, name, default):
+        value = self.GetParameter(name)
+        return datetime.strptime(value, "%Y-%m-%d") if value else default
+
+    def InitializeRanking(self):
+        """fix=on : modes strategy, btc, eth, 5050 ; parametres seed et model."""
+        self.mode = (self.GetParameter("mode") or "strategy").lower()
+        self.model_type = (self.GetParameter("model") or "dlinear").lower()
+        self.seed = int(self.GetParameter("seed") or 0)
+        start = self._date_param("start_date", self.BACKTEST_START)
+        end = self._date_param("end_date", self.BACKTEST_END)
+        self.SetStartDate(start.year, start.month, start.day)
+        self.SetEndDate(end.year, end.month, end.day)
+        self.SetAccountCurrency("USDT")
+        self.SetCash(self.STARTING_CASH)
+        self.SetBrokerageModel(BrokerageName.Binance, AccountType.Cash)
+
+        self.btc = self.AddCrypto("BTCUSDT", Resolution.Daily, Market.Binance).Symbol
+        self.eth = self.AddCrypto("ETHUSDT", Resolution.Daily, Market.Binance).Symbol
+        self.symbol = self.btc
+        self.SetBenchmark(self.btc)
+        if self.mode == "strategy" and not TORCH_AVAILABLE:
+            raise Exception("PyTorch required")
+
+        # Pas d'Object Store : ses cles sont partagees entre tous les projets,
+        # et un modele charge d'un autre run aurait vu le futur.
+        self.rank_model = None
+        self.rank_mean = None
+        self.rank_std = None
+        self.rank_last_train = None
+        self.ref_month = None
+        self.counts = {"trainings": 0, "train_failures": 0, "train_samples": 0,
+                       "predictions": 0, "days_btc": 0, "days_eth": 0,
+                       "switches": 0, "history_gaps": 0, "missing_bars": 0,
+                       "invalid_orders": 0}
+        # Pas de tache planifiee : la decision part de OnData, a l'arrivee de la barre de t.
+
+    def OnData(self, data):
+        """fix=on : decision et ordres a l'arrivee des barres journalieres de t (00:00 UTC).
+
+        Un ordre envoye ici est rempli a l'instant, au cours de t : la position encaisse le
+        rendement de t a t+1, celui que le modele predit. Envoye depuis une tache planifiee,
+        il n'etait rempli qu'a la barre suivante, au cours de t+1, et l'achat etait controle
+        avant que la vente soit creditee (deuxieme passage de #23563).
+        """
+        if self.fix == "off":
+            return
+        has_btc = data.Bars.ContainsKey(self.btc)
+        has_eth = data.Bars.ContainsKey(self.eth)
+        if not (has_btc and has_eth):
+            if has_btc or has_eth:
+                self.counts["missing_bars"] += 1
+            return
+        self.RankRebalance()
+
+    def OnOrderEvent(self, order_event):
+        if self.fix != "off" and order_event.Status == OrderStatus.Invalid:
+            self.counts["invalid_orders"] += 1
+
+    def RankHistory(self, start=None, bars=None):
+        """Historique journalier BTC et ETH sur les dates communes ; None si indisponible."""
+        if start is not None:
+            hist = self.History([self.btc, self.eth], start, self.Time, Resolution.Daily)
+        else:
+            hist = self.History([self.btc, self.eth], bars, Resolution.Daily)
+        if hist is None or hist.empty:
+            return None
+        try:
+            b = hist.loc[self.btc]
+            e = hist.loc[self.eth]
+        except KeyError:
+            return None
+        common = b.index.intersection(e.index)
+        b = b.loc[common]
+        e = e.loc[common]
+        return (b['close'].values, b['high'].values, b['low'].values,
+                e['close'].values, e['high'].values, e['low'].values, common)
+
+    def RankTrain(self):
+        """Entraine en fenetre croissante, de TRAIN_START a la derniere cloture connue."""
+        try:
+            data = self.RankHistory(start=self.TRAIN_START)
+            if data is None:
+                raise ValueError("historique indisponible")
+            bc, bh, bl, ec, eh, el, common = data
+            gaps = int(np.sum(np.diff(common.values).astype('timedelta64[D]').astype(int) > 1))
+            self.counts["history_gaps"] = max(self.counts["history_gaps"], gaps)
+            features = rank_features(bc, bh, bl, ec, eh, el)
+            model, mean, std, n = rank_fit(features, bc, ec, self.SEQ_LEN, self.model_type,
+                                           self.seed, self.RANK_EPOCHS, self.RANK_BATCH)
+        except Exception as e:
+            self.counts["train_failures"] += 1
+            self.Debug(f"Rank training failed at {self.Time}: {e}")
+            return
+        # Le modele n'est remplace qu'apres un entrainement complet.
+        self.rank_model, self.rank_mean, self.rank_std = model, mean, std
+        self.rank_last_train = self.Time
+        self.counts["trainings"] += 1
+        self.counts["train_samples"] = n
+
+    def RankRebalance(self):
+        """Chaque jour : long BTC si P(BTC bat ETH de t a t+1) > 0,5, long ETH sinon."""
+        self.Plot("shadow", "value", self.Portfolio.TotalPortfolioValue)
+        if self.mode != "strategy":
+            self.ReferenceRebalance()
+            return
+        if self.rank_model is None or (self.Time - self.rank_last_train).days >= self.RETRAIN_DAYS:
+            self.RankTrain()
+        if self.rank_model is None:
+            return
+        data = self.RankHistory(bars=self.RANK_HISTORY_BARS)
+        if data is None:
+            return
+        bc, bh, bl, ec, eh, el, _ = data
+        prob = rank_prob_btc(self.rank_model, self.rank_mean, self.rank_std,
+                             rank_features(bc, bh, bl, ec, eh, el), self.SEQ_LEN)
+        if prob is None:
+            return
+        self.counts["predictions"] += 1
+        target, other = (self.btc, self.eth) if prob > 0.5 else (self.eth, self.btc)
+        self.counts["days_btc" if target == self.btc else "days_eth"] += 1
+        if self.Portfolio[target].Invested and not self.Portfolio[other].Invested:
+            return
+        self.counts["switches"] += 1
+        # Une seule cible, ventes d'abord (liquidateExistingHoldings).
+        self.SetHoldings([PortfolioTarget(target, self.RANK_WEIGHT)], True)
+
+    def ReferenceRebalance(self):
+        """References : btc et eth detenus, 5050 reequilibre chaque mois."""
+        if self.mode == "btc":
+            if not self.Portfolio[self.btc].Invested:
+                self.SetHoldings(self.btc, self.RANK_WEIGHT)
+        elif self.mode == "eth":
+            if not self.Portfolio[self.eth].Invested:
+                self.SetHoldings(self.eth, self.RANK_WEIGHT)
+        elif self.mode == "5050":
+            month = (self.Time.year, self.Time.month)
+            if month != self.ref_month:
+                self.ref_month = month
+                self.SetHoldings([PortfolioTarget(self.btc, self.RANK_WEIGHT / 2),
+                                  PortfolioTarget(self.eth, self.RANK_WEIGHT / 2)])
+        else:
+            raise ValueError(f"mode inconnu : {self.mode}")
+
+    def OnEndOfAlgorithm(self):
+        if self.fix == "off":
+            return
+        for key, value in self.counts.items():
+            self.SetRuntimeStatistic(key, str(value))
+
+    def InitializeLegacy(self):
+        """Code d'origine (fix=off), inchange : temoin des quatre verrous de #23563."""
         # Configuration backtest
         self.SetStartDate(self.BACKTEST_START.year, self.BACKTEST_START.month, self.BACKTEST_START.day)
         self.SetEndDate(self.BACKTEST_END.year, self.BACKTEST_END.month, self.BACKTEST_END.day)

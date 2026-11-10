@@ -206,8 +206,30 @@ def test_banner_guard_after_fix13372_is_clean(tmp_path: Path):
     )
 
 
-def test_quarto_pages_deploy_allowlist_is_respected(tmp_path: Path):
-    """quarto-pages-deploy is allowlisted (deploy supersedes prior)."""
+def test_22088_le_workflow_reel_n_est_plus_en_conjonction():
+    """#22088 : le workflow REEL porte l'expression, donc le garde ne le
+    signale plus -- et sans passer par l'allowlist.
+
+    Ce test lit le fichier du depot (pas une fixture) : c'est la seule forme
+    qui attrape une reversion dans le vrai workflow.
+    """
+    real = Path(__file__).resolve().parents[2] / ".github" / "workflows"
+    text = (real / "quarto-pages-deploy.yml").read_text(encoding="utf-8")
+    assert "cancel-in-progress: ${{ github.event_name != 'push' }}" in text, (
+        "la voie push sur main doit se serialiser (#22088)"
+    )
+    assert "cancel-in-progress: true" not in text
+    names = [o["file"] for o in offenders(workflows_dir=str(real))]
+    assert "quarto-pages-deploy.yml" not in names, (
+        f"le garde signale encore le workflow corrige ; offenders={names}."
+    )
+
+
+def test_22088_une_reversion_en_litteral_true_est_detectee(tmp_path: Path):
+    """Le detecteur de regression qui remplace l'allowlist : si le workflow
+    revient a `cancel-in-progress: true` sur push main, le garde doit
+    rougir. Sans ce test, la suppression de l'allowlist ne prouverait rien.
+    """
     body = textwrap.dedent("""\
         name: pages-deploy
         on:
@@ -225,8 +247,8 @@ def test_quarto_pages_deploy_allowlist_is_respected(tmp_path: Path):
     _write_workflow(tmp_path, "quarto-pages-deploy.yml", body)
     offs = offenders(workflows_dir=str(tmp_path / ".github" / "workflows"))
     names = [o["file"] for o in offs]
-    assert "quarto-pages-deploy.yml" not in names, (
-        f"quarto-pages-deploy (allowlisted) flagged; offenders={names}."
+    assert "quarto-pages-deploy.yml" in names, (
+        "une reversion en `cancel-in-progress: true` doit etre signalee"
     )
 
 
@@ -255,13 +277,28 @@ def test_workflow_without_push_main_is_clean(tmp_path: Path):
 
 
 def test_allowlist_is_by_name_no_glob():
-    """Allowlist must be exact file names -- no glob, no partial match."""
-    assert "quarto-pages-deploy.yml" in ALLOWLIST
-    # No glob / wildcard characters.
+    """Allowlist must be exact file names -- no glob, no partial match.
+
+    #22088 : l'allowlist est VIDE. Le seul nom qu'elle portait
+    (`quarto-pages-deploy.yml`) est corrige a la source, et l'y laisser
+    aurait rendu le garde aveugle a une reversion.
+    """
+    assert ALLOWLIST == {}, (
+        f"l'allowlist doit rester vide ; contenu={sorted(ALLOWLIST)}"
+    )
     for name in ALLOWLIST:
         assert "*" not in name
         assert "?" not in name
         assert "[" not in name
+
+
+def test_22088_le_garde_reel_ne_signale_aucun_workflow_du_depot():
+    """Controle de bout en bout sur le depot REEL : apres #22088, plus aucun
+    workflow ne porte la conjonction. Un rouge ici nomme le fichier a
+    corriger, sans allowlist pour le masquer."""
+    from check_concurrency_conj import DEFAULT_WORKFLOWS_DIR
+    names = [o["file"] for o in offenders(workflows_dir=DEFAULT_WORKFLOWS_DIR)]
+    assert names == [], f"workflows en conjonction : {names}"
 
 
 def test_non_allowlisted_with_conjunction_is_offender(tmp_path: Path):

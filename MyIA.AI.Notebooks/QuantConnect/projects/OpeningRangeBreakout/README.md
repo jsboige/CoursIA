@@ -74,7 +74,8 @@ win rate 50 %, frais $1 726 (IBKR, inclus).
 |---------|---------|--------|--------|------|-------|-----|--------|-------|---------|
 | Dev (papier) | 2016-2019 | 5 min / 1000 | 0.167 | +4.10 % | 7.90 % | 2.11 % | 48 364 | $31 997 | NO BEATS (frais) |
 | OOS | 2020-2023 | 5 min / 1000 | −0.467 | −5.23 % | 24.60 % | 0.02 % | 49 444 | $32 354 | NO BEATS |
-| Communauté | 2016-2023 | 1 min / 2000 | *(en cours — run `3bf7776f…`, lancé 2026-09-20 12:02 UTC, params confirmés : « ~2000 symbols » au terminal)* | | | | | | |
+| Communauté | 2016 → ~2019-03 (40 % de la fenêtre) | 1 min / 2000 | — | +6.8 % | — | 9.1 % | — | $29 060 | arrêté par QC Cloud |
+| Sensibilité | 2016 → ~2019-12 (50 % de la fenêtre) | 1 min / 1000 | — | −4.9 % | — | 0.001 % | — | $35 335 | arrêté par QC Cloud |
 
 Lecture fenêtre pleine (DEV + OOS) : l'edge de l'article **ne survit pas**. Sur DEV,
 le net reste positif (+17.4 % sur 4 ans) mais les frais IBKR avalent ~32 % du capital
@@ -82,8 +83,54 @@ initial ($31 997 sur $100 000, turnover ~103 %/an) et le Sharpe tombe à 0.167 �
 là où le T1 2016 isolé affichait 2.098 : cette fenêtre courte était une fenêtre
 faste, pas une preuve. Sur OOS 2020-2023, la dégradation devient franche : net
 −19.3 %, drawdown 24.6 %, PSR 0.02 %, rolling Sharpe 12 mois négatif sur presque
-toute la fenêtre. Le garde-fou #4 (verdict IGNORE avec preuve) est armé sauf
-revirement complet de la variante communauté — en cours.
+toute la fenêtre.
+
+### Variante communautaire : mesure partielle (garde-fou 3)
+
+Les deux runs à range d'une minute, lancés sur la fenêtre pleine 2016-2023 les 20 et
+21 septembre 2026, se sont arrêtés en `Runtime Error` sur les limites de temps de
+QC Cloud. Les deux journaux répètent l'avertissement d'un pas de temps qui dépasse
+3 minutes. Le second porte explicitement l'arrêt au plafond de 720 minutes au total ;
+le premier a tourné aussi longtemps (11 h 58 de nœud). Le premier run (univers de
+2000) s'est arrêté à 40 % de la fenêtre, le second à 50 %. Ce second run tournait sur un univers de
+1000 et non de 2000 (paramètres relus le 2026-10-06) : c'est le range d'une minute
+sur l'univers de l'article.
+
+QC conserve les statistiques au moment de l'arrêt (capital, frais, PSR), mais pas
+de courbe de capital lisible : le graphique reste en chargement. Les dates d'arrêt
+sont déduites de la fraction exécutée. Ce sont des valeurs approchées.
+
+| Variante | Portion exécutée | Rendement | CAGR | Frais | PSR à l'arrêt | Variante papier aux mêmes dates |
+|----------|------------------|----------:|-----:|------:|--------------:|--------------------------------:|
+| 1 min / 2000 | 2016-01 → ~2019-03 | +23.5 % | +6.8 % | $29 060 | 9.1 % | +10.1 % (CAGR +3.0 %) |
+| 1 min / 1000 | 2016-01 → ~2019-12 | −18.2 % | −4.9 % | $35 335 | 0.001 % | +17.4 % (CAGR +4.1 %) |
+
+Lecture :
+
+- Sur la seule période de développement, la variante communautaire fait mieux que
+  la variante papier, mais seulement avec l'univers de 2000 titres. Avec l'univers de
+  l'article, le range d'une minute perd 18 % là où celui de cinq minutes gagne 17 %.
+  Le signe du résultat dépend donc de la taille de l'univers : c'est le signal de
+  sur-spécification que l'issue relevait déjà.
+- La PSR à l'arrêt reste faible (9.1 %) et les frais y absorbent encore près de 30 %
+  du capital de départ en un peu plus de trois ans.
+- La variante papier était elle aussi positive sur 2016-2019 avant de perdre 19 %
+  sur 2020-2023. Un résultat positif limité à la période de développement ne dit
+  donc rien de la tenue hors échantillon.
+- La période hors échantillon de la variante communautaire n'est pas mesurée.
+  Au rythme observé, 2020-2023 dépasserait à lui seul le plafond de 720 minutes : il
+  faudrait le découper en tranches et occuper plus de douze heures de nœud de backtest.
+
+## Verdict (garde-fou 4) : IGNORE avec preuve
+
+L'edge ne survit pas aux frais sur la fenêtre pleine avec les paramètres de l'article
+(capital final 0.947 fois le capital de départ sur 2016-2023, en chaînant DEV et OOS).
+La variante communautaire ne renverse pas ce constat. Sa seule portion favorable est
+en développement, elle change de signe avec la taille de l'univers, et elle ne tient
+pas dans les limites d'exécution de QC Cloud. La piste famille « momentum intraday »
+se referme. Le projet reste dans le dépôt comme exemple pédagogique de portage. Il
+montre la course scan/consolidateur ci-dessus, et un résultat d'une seule année qui
+ne survit ni à la fenêtre pleine ni aux frais.
 
 ## Références
 

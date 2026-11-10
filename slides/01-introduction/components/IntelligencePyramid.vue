@@ -1,7 +1,7 @@
 <script setup>
-import imgProcedurale from '../images/img_022.jpg'
-import imgExploratoire from '../images/img_024.jpg'
-import imgProbabiliste from '../images/img_023.png'
+import imgProcedurale from '/images/img_022.jpg'
+import imgExploratoire from '/images/img_024.jpg'
+import imgProbabiliste from '/images/img_023.png'
 </script>
 
 <template>

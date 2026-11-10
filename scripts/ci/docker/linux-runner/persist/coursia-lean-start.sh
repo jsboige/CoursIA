@@ -36,6 +36,16 @@ set -uo pipefail
 # 2026-09-09 que ce fichier existe pour fermer (#16578).
 MASTER_ENV="${COURSIA_MASTER_ENV:-/mnt/d/Dev/CoursIA/.secrets/master.env}"
 REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/Dev/CoursIA}"
+# Le superviseur est lance par un CHEMIN ABSOLU, jamais relatif. Le
+# predicat per-checkout (#21527) reconnait un superviseur par la forme
+# "$REPO_DIR/scripts/ci/docker/linux-runner/supervise.sh <mode>" de sa
+# cmdline : un argv relatif (`./scripts/...`) porte un chemin qui ne
+# contient pas REPO_DIR, donc le predicat ne voit pas le superviseur
+# qu'il a lui-meme lance -- faux negatif, et purge a tort de la
+# sentinelle alors que le superviseur est vivant. Un argv relatif est de
+# plus indiscernable entre deux checkouts, ce que le predicat refuse par
+# construction : le chemin absolu est la seule forme admise.
+SUPERVISE="$REPO_DIR/scripts/ci/docker/linux-runner/supervise.sh"
 ARG="${1:-2}"
 
 [ -r "$MASTER_ENV" ] || { echo "master.env illisible : $MASTER_ENV" >&2; exit 1; }
@@ -52,23 +62,88 @@ export COURSIA_LEAN_RUNNER_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-myia-
 export COURSIA_RUNNER_STATE_DIR="${COURSIA_RUNNER_STATE_DIR:-/var/lib/coursia-lean}"
 mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 
-# MEME BUDGET QUE LES DEUX AUTRES JAMBES DE CETTE MACHINE -- 42 Go depuis
-# l'agrandissement VM du 2026-09-21 (24 032 -> 40 110 Mo, arbitrage user,
-# mission ai-01 msg-20260921T203652-qxg3en). Cette jambe est celle qui a rendu
-# l'ecart visible : ses 2 slots a 6 Go demandent 12 288 Mo, et le garde les
-# refusait tant que les 18 432 Mo des deux autres familles etaient en vol
-# (18 432 + 12 288 > 12 288) -- sous l'ancien budget 12 Go, les slots lean ne
-# DEMARRAIENT JAMAIS. Le refus etait correct ; ce qui manquait etait un budget
-# couvrant la composition complete (8x1536 + 12x1536 + 2x6144 = 43 008 Mo).
+# MEME BUDGET QUE LES DEUX AUTRES JAMBES DE CETTE MACHINE -- 21 Go depuis le
+# 2026-10-12, arbitrage c2153 d'ai-01 (le J+7 du 2026-10-08 avait pose 15 pour
+# 4x1536 + 6x512 + 1x6144 = 15 360 Mo de caps ; #20174 du 2026-10-10 a
+# reetiquete 4 slots persist, la composition vive est revenuee a
+# 8x1536 + 6x512 + 1x6144 = 21 504 Mo sans que le budget suive -- detail
+# complet en tete de coursia-runner-start.sh).
+#
+# CETTE JAMBE EST CELLE QUI REND LE BUDGET VISIBLE, et c'est pour ca qu'elle
+# doit le declarer : son slot a 6 Go demande 6 144 Mo a lui seul. Sous
+# un budget trop court, le garde refuse son demarrage -- ce qui est CORRECT,
+# et c'est l'incident fondateur ecrit ici : sous l'ancien budget 12 Go, les
+# slots lean ne demarraient JAMAIS tant que les autres familles etaient en vol.
+# Un budget qui ne couvre pas la composition complete ne protege rien : il
+# empeche une jambe entiere de tourner.
+#
+# L'AMENDEMENT J+7 DESCEND CETTE JAMBE DE 2 A 1 SLOT (verdict
+# characterize_runner_variance.py --days 7 du 2026-10-08 : 5 runners docker
+# sur 6 au-dessus du seuil p90/mediane 5x -- ratios 9,3 / 5,1 / 14,5 / 4,0 /
+# 23,3 / 15,4) : la regle #15574 item 3 tranche le passage CPU 24 -> 18, le
+# right-sizing etant ce slot unique (cap unitaire 6 Go / 6 vCPU INCHANGE --
+# on reduit un nombre de slots, jamais un cap). Le volume chaud
+# coursia-runner-work-lean-2 reste en place, non supprime : remettre le
+# second slot est un `ExecStart ... 2` + restart, pas une reconstruction.
+#
 # Les trois jambes doivent annoncer le meme nombre : assert_memory_budget
 # somme les familles entre elles, une divergence refuserait des slots sans
-# nommer sa cause.
-export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-42}"
+# nommer sa cause. Sous 15 Go avec 4 slots persist revenus (#20174), la somme
+# des caps vivants (21 504 Mo) depassait le budget declare : le garde
+# refusait TOUT demarrage -- la famine CI du 2026-10-12.
+export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-21}"
+
+# AUCUN SWAP POUR LA JAMBE LEAN (2026-10-08) -- memory-swap = memory.
+# Le defaut de supervise.sh est `LEAN_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY_SWAP:-12g}"`,
+# soit 6 Go de RAM PLUS 6 Go de swap par slot. On l'aligne ici sur LEAN_MEMORY :
+# le conteneur dispose de 6 Go en tout, et d'aucune page sur disque.
+#
+# POURQUOI CE CHOIX, ALORS QUE LE COMMENTAIRE DE supervise.sh DIT LE CONTRAIRE.
+# Le bloc LEAN de supervise.sh argumente que le swap n'est pas un dogme mais un
+# curseur : « supprimer le swap ne retire pas le pic de Hashlife, il transforme
+# un build qui deborde en un exit 137 ». C'est exact, et c'est le but recherche
+# ici. Le swap d'une VM WSL est un FICHIER SUR LE DISQUE WINDOWS : chaque page
+# poussee la retarde DriveFS, puis `G:`, puis RooSync -- la chaine qui a gele
+# ai-01 quatre fois et qui a fait ecrire 104 GiB en 11 h a cette machine le
+# 2026-10-08. Un build Lean qui deborde doit mourir (exit 137, echec local,
+# retryable, un job perdu) plutot que d'emporter la coordination de la flotte.
+#
+# CONSEQUENCE NOMMEE : le build Hashlife de conway_lean depassait 16 Go a
+# froid ; a 6 Go sans swap il ne passera PAS. La reponse est de router ce lake
+# vers un runner hosted (32 Go de fallocate swap, lean-axiom.yml) -- exactement
+# la conclusion que le commentaire de supervise.sh tire deja, et non de
+# remonter le swap de cette machine.
+# La valeur est ecrite ici pour ce qu'elle EST, pas referencee par le nom
+# qu'elle porte dans supervise.sh : `LEAN_MEMORY` est une constante de
+# supervise.sh, elle n'existe pas dans ce wrapper -- et ce fichier tourne sous
+# `set -u`, donc `$LEAN_MEMORY` y serait une erreur de variable non definie,
+# pas un defaut silencieux. La coherence avec le cap est gardee en lisant la
+# MEME variable d'environnement que supervise.sh (COURSIA_LEAN_RUNNER_MEMORY),
+# avec le meme defaut 6g : memory-swap = memory, y compris si le cap est
+# surcharge un jour.
+export COURSIA_LEAN_RUNNER_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY:-6g}"
+
+# BUDGET CPU INTER-FAMILLES (#15574 item 3, arbitrage coordinateur du
+# 2026-10-01, comment 5933689033) -- MEME NOMBRE que coursia-runner-start.sh.
+# assert_cpu_budget somme les familles d'EXECUTION (start + lean ; les
+# waiters, oisifs, en sont excludes) et refuse le demarrage au depassement.
+# Valeur 18 depuis l'amendement J+7 du 2026-10-08 : docker 4x3 + lean 1x6 =
+# 18. C'etait 24 avec 2 slots lean (4x3 + 2x6), 30 avec 6 slots docker ;
+# le budget a suivi la composition, il ne l'a pas precedee. Le garde est
+# inerte a 0 ou absent (etat anterieur de la machine).
+export COURSIA_RUNNER_CPU_BUDGET="${COURSIA_RUNNER_CPU_BUDGET:-18}"
+
+# PARENT CGROUP -- meme valeur que coursia-runner-start.sh, meme raison : les
+# trois familles doivent entrer dans la MEME slice pour que ses limites
+# s'appliquent a leur somme. C'est la jambe lean qui rendait l'absence
+# de mur visible (12 288 Mo de caps pour ses 2 slots d'alors, contre une VM
+# de 24 032) ; elle est desormais sous MemorySwapMax=0 comme le reste de la CI.
+export COURSIA_RUNNER_CGROUP_PARENT="coursia-ci.slice"
 
 cd "$REPO_DIR" || exit 1
 
 if [ "$ARG" = "stop" ]; then
-  exec ./scripts/ci/docker/linux-runner/supervise.sh stop
+  exec "$SUPERVISE" stop
 fi
 # --- PURGE SENTINELLE PERIMEE (#15163) -----------------------------
 # Meme bloc que coursia-waiters-start.sh, avec le predicat PAR-JAMBE que
@@ -76,8 +151,33 @@ fi
 # propre predicat ») : `supervise\.sh lean`. Un predicat global ferait
 # que chaque jambe refuserait de purger SA sentinelle tant qu'une AUTRE
 # tourne -- un verrou par jambe garde par un test global ne garde rien.
+#
+# ET PER-CHECKOUT, PAS PER-MACHINE (#21527) : `pgrep -f 'supervise\.sh lean'`
+# reconnait un superviseur de n'importe quel checkout, qui bloque alors le
+# purge d'UNE sentinelle qui ne lui appartient pas. Le predicat par-checkout
+# ne voit que le superviseur de CE depot, dans le mode `lean`.
 if [ -e "$COURSIA_RUNNER_STATE_DIR/stop" ]; then
-  if pgrep -f 'supervise\.sh lean' >/dev/null 2>&1; then
+  # Predicat PER-CHECKOUT (#21527) : le superviseur d'un AUTRE checkout
+  # (orphelin de test d'un autre worktree) ne doit pas bloquer le purge
+  # de CETTE sentinelle -- il bloquait le service en failed, pool a zero.
+  #
+  # L'organe est lu par `bash`, pas execute : son bit executable est 100644
+  # dans l'index, donc le noyau ne le rend pas executable sur un checkout
+  # Linux natif ; un exec refuse rendrait le predicat FAUX -- il repondrait
+  # « aucun superviseur vivant » et purgerait a tort.
+  #
+  # Repli CONSERVATEUR : si l'organe n'est pas lisible (depot perime sur la
+  # machine, ou wrapper deploye avant la mise a jour du checkout), on
+  # retombe sur le predicat per-machine : le repli peut REFUSER un purge
+  # a tort, jamais PURGER a tort.
+  HELPER="$REPO_DIR/scripts/ci/docker/linux-runner/persist/supervisor_live_for.sh"
+  SUPERVISOR_ALIVE=0
+  if [ -r "$HELPER" ]; then
+    if bash "$HELPER" "$REPO_DIR" lean >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  else
+    if pgrep -f 'supervise\.sh lean' >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  fi
+  if [ "$SUPERVISOR_ALIVE" -eq 1 ]; then
     echo "sentinelle presente ET superviseur vivant -- arret en cours, on n'interfere pas" >&2
     exit 1
   fi
@@ -94,4 +194,4 @@ if [ -f "$COURSIA_RUNNER_STATE_DIR/lean-pids" ]; then
     rm -f "$COURSIA_RUNNER_STATE_DIR/lean-pids"
   fi
 fi
-exec ./scripts/ci/docker/linux-runner/supervise.sh lean "$ARG"
+exec "$SUPERVISE" lean "$ARG"

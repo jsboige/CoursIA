@@ -140,6 +140,55 @@ _LAKE_FRAGMENT = re.compile(
 _BARE_LAKE_TOKEN = {"lake", "lake.exe"}
 
 
+def _lake_holder_names(tree: ast.AST) -> set[str]:
+    """Noms lies a un executable ``lake``, resolu une fois puis reutilise.
+
+    Deux voies, toutes deux mesurees : ``shutil.which("lake")`` (la sonde de
+    toolchain) et un appel a un helper dont le NOM porte ``lake``
+    (``lake = _find_lake()``). Cette seconde voie est celle reellement ecrite
+    dans ``lean_notebook_utils.py``.
+
+    Pourquoi ce detecteur existe (mesure du 2026-10-09, #15666 case 1) : les
+    formes 1 et 2 ne lisent que des **litteraux**, donc les deux voies natives
+    de ``lean_notebook_utils.py`` (``[lake] + args.split()`` L239,
+    ``[lake, "env", "lean", str(tmp_path)]`` L291) etaient **invisibles** --
+    le garde y voyait 1 invocation directe sur 3. Un motif de detection se
+    valide par ses **faux negatifs** : celui-la rendait un chiffre plus petit
+    et plus propre, jamais une erreur, et le cliquet n'aurait pas vu une
+    migration partielle laissant une voie native derriere elle.
+    """
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        value = None
+        targets: list[ast.expr] = []
+        if isinstance(node, ast.Assign):
+            value, targets = node.value, list(node.targets)
+        elif isinstance(node, ast.AnnAssign) and node.value is not None:
+            value, targets = node.value, [node.target]
+        if value is None:
+            continue
+        hit = False
+        if isinstance(value, ast.Call):
+            fn = value.func
+            fname = (fn.attr if isinstance(fn, ast.Attribute)
+                     else fn.id if isinstance(fn, ast.Name) else "")
+            if fname == "which":
+                hit = any(
+                    isinstance(a, ast.Constant) and isinstance(a.value, str)
+                    and a.value in _BARE_LAKE_TOKEN
+                    for a in value.args
+                )
+            elif "lake" in fname.lower():
+                hit = True
+        elif (isinstance(value, ast.Constant)
+                and isinstance(value.value, str)
+                and value.value in _BARE_LAKE_TOKEN):
+            hit = True
+        if hit:
+            names.update(t.id for t in targets if isinstance(t, ast.Name))
+    return names
+
+
 def _concat_constants(node: ast.expr, depth: int = 0) -> str:
     """Parties litterales d'une concatenation (additions de chaines)."""
     if depth > 6:
@@ -225,6 +274,77 @@ def _argparse_payload_list_ids(tree: ast.AST) -> set[int]:
     return ids
 
 
+def _confined_sink_names(tree: ast.AST) -> set[str]:
+    """Noms des fonctions LOCALES qui atteignent l'organe par appel.
+
+    Une fonction qui construit le chemin de l'organe (Constant finissant
+    par ``lean_exec.py``, meme marqueur que ``_organ_driver``) -- ou qui
+    appelle une fonction locale qui le fait (fermeture par point fixe,
+    ex. ``_organ_run`` -> ``_find_lean_exec``) -- confie ses commandes au
+    budget commun : les listes qu'on lui passe sont des PAYLOADS decrivant
+    ce que l'organe lancera, pas des argv executes ici.
+
+    Le marqueur est la Constant, jamais le nom de fonction : definir une
+    fausse fonction ``_organ_run`` sans referencer l'organe n'exonere rien.
+    """
+    funcs: dict[str, set[str]] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        calls: set[str] = set()
+        refs_organ = False
+        for sub in ast.walk(node):
+            if (isinstance(sub, ast.Constant) and isinstance(sub.value, str)
+                    and sub.value.endswith("lean_exec.py")):
+                refs_organ = True
+            elif isinstance(sub, ast.Call) and isinstance(sub.func, ast.Name):
+                calls.add(sub.func.id)
+        if refs_organ:
+            calls.add("*organ*")  # sentinelle : atteint l'organe directement
+        funcs[node.name] = calls
+
+    sinks: set[str] = set()
+    changed = True
+    while changed and len(sinks) < len(funcs) + 1:
+        changed = False
+        for name, calls in funcs.items():
+            if name in sinks:
+                continue
+            if "*organ*" in calls or (calls & sinks):
+                sinks.add(name)
+                changed = True
+    sinks.discard("*organ*")
+    return sinks
+
+
+def _confined_payload_list_ids(tree: ast.AST,
+                               sink_names: set[str]) -> set[int]:
+    """Ids des List/Tuple passes a un sink confiné (payload pour l'organe).
+
+    Couvre l'argument direct (``_organ_run(proj, ["lake", "build"])``) et la
+    tete de concatenation (``_organ_run(proj, ["lake"] + args.split())``) :
+    dans les deux cas le jeton ``lake`` decrit la commande que L'ORGANE
+    lancera, pas un processus spawn par ce fichier.
+    """
+    if not sink_names:
+        return set()
+    ids: set[int] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = (node.func.id if isinstance(node.func, ast.Name) else "")
+        if name not in sink_names:
+            continue
+        for arg in list(node.args) + [kw.value for kw in node.keywords]:
+            targets = [arg]
+            if isinstance(arg, ast.BinOp) and isinstance(arg.op, ast.Add):
+                targets = [arg.left, arg.right]
+            for t in targets:
+                if isinstance(t, (ast.List, ast.Tuple)):
+                    ids.add(id(t))
+    return ids
+
+
 def scan_file(path: Path) -> list[tuple[int, str, str]]:
     """Retourne [(ligne, forme, extrait)] des invocations directes du fichier."""
     try:
@@ -233,9 +353,12 @@ def scan_file(path: Path) -> list[tuple[int, str, str]]:
         return []
     findings: list[tuple[int, str, str]] = []
     non_command_ids = _non_command_list_ids(tree)
+    holder_names = _lake_holder_names(tree)
     exempt_ids = non_command_ids
     if _organ_driver(tree):
         exempt_ids |= _argparse_payload_list_ids(tree)
+        exempt_ids |= _confined_payload_list_ids(
+            tree, _confined_sink_names(tree))
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and _launch_like(node.func):
             constants: list[str] = []
@@ -264,6 +387,15 @@ def scan_file(path: Path) -> list[tuple[int, str, str]]:
                     findings.append((node.lineno, "jeton lake",
                                      f"[{elt.value}, ...]"))
                     break
+            else:
+                # Forme 2bis : meme commande, executable tenu dans une
+                # VARIABLE resolue une fois (cf `_lake_holder_names`). Seule
+                # la tete de liste compte -- c'est la position de commande,
+                # comme pour la forme 2 dont elle est le pendant.
+                if (node.elts and isinstance(node.elts[0], ast.Name)
+                        and node.elts[0].id in holder_names):
+                    findings.append((node.lineno, "jeton lake (variable)",
+                                     f"[{node.elts[0].id}, ...]"))
             continue
         if (isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div)
                 and isinstance(node.right, ast.Constant)

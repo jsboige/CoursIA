@@ -1,7 +1,7 @@
 # Framework_Composite_TrendWeather
 
 **Classe d'actifs :** Actions US (ETF + actions)
-**Cloud project ID :** Aucun (local uniquement)
+**Cloud project ID :** 38458884 (espace de backtest du cours, mesures du 2026-11-09)
 
 > 🇬🇧 **English version** : voir [`README.en.md`](README.en.md) (golden set préservé).
 > 🇫🇷 **Version FR golden set** : [`README.fr.md`](README.fr.md) (préserve l'original FR avant bascule c.1284).
@@ -10,60 +10,91 @@
 
 Composite framework combinant TrendStocks (75 %) avec AllWeather (25 %) via l'Algorithm Framework de QuantConnect. La composante tendance utilise SMA200+EMA20/EMA50 sur 15 large-caps (AAPL/MSFT/GOOGL/AMZN/NVDA/JPM/V/MA/UNH/JNJ/XOM/CVX/HD/PG/KO), AllWeather apporte la diversification statique (SPY 30 % / IEF 30 % / GLD 30 % / XLP 10 %).
 
-## Mesures vérifiées (multi-source)
+## Mesure QC Cloud (#19393, 2026-10-06)
 
-> **Note honnête (#1621, drainage #9434)** : le dossier Framework_Composite_TrendWeather souffrait d'une **misattribution méthodologique « sweep comment »** : le README présentait « Sharpe 1.155, CAGR 27.4 %, MaxDD 27.7 % » comme « Métriques de backtest » alors que ces chiffres sont tirés du **bloc commentaire de `main.py:8-13`** (`Allocation sweep results (2015-2026)` v1.3/v1.4b/v1.4c/v1.4d/v1.4e — un sweep d'allocation **sans backtest tracé**) **et NON d'une exécution persistante** dans le dépôt : **pas de `lean-workspace/`, pas de `create_backtest` artifact**, pas de JSON output cloud. La stratégie a été ajoutée dans le commit `fa122ae7e` (2026-03-09, jsboige + Claude Opus) qui déclarait « Iterated from v1.0 (Sharpe 0.622) to v1.5 (Sharpe 1.155) » — la valeur 1.155 est donc plausiblement issue d'un backtest cloud **one-shot** au moment du commit initial, **non préservé** dans le dépôt. Le `quantbook.ipynb` (recherche locale Docker + yfinance) utilise un **défaut 50/50 différent** et **avertit explicitement** (cf. `iter4_research.py:176` : « Simulation Sharpe is typically 2-3x cloud Sharpe »). Les tableaux ci-dessous citent chaque source avec sa traçabilité explicite + un **drapeau SUSPECT overfit « sweep-comment »**.
+L'évaluation [#19393](https://github.com/jsboige/CoursIA/issues/19393) a rejoué ce code dans le projet [`TrendWeatherPointInTime`](../TrendWeatherPointInTime/), qui reprend le signal et la construction ; avec `universe=fixed`, c'est la règle de ce dossier.
 
-| Source | Sharpe | CAGR | MaxDD | Allocation | Période | Méthodologie |
-|--------|--------|------|-------|-----------|---------|--------------|
-| **`main.py:8-13` sweep comment** (claim original commit `fa122ae7e`) | **1.155** | **27.4 %** | **27.7 %** | T75 / AW25 (v1.4d selected) | **2015-2026** | Allocation sweep interne (5 tranches T60→T80), **pas de backtest tracé dans le dépôt** |
-| `iter4_research.py` yfinance local | n/a (script) | n/a | n/a | grid 5×5×3 | 2014-2026 | yfinance local, **AVERTIT** « Simulation Sharpe typically 2-3× cloud Sharpe » |
-| `quantbook.ipynb` cell 12 (research default 50/50) | **0.680** | **10.88 %** | **-23.53 %** | T50 / AW50 (default research) | 2015-2026 | Lean CLI Docker research, **défaut 50/50 ≠ main.py T75/AW25** |
-| `quantbook.ipynb` cell 8 (allocation sweep) | 0.382 → 0.738 | 7.22 % → 14.02 % | -33.72 % → -17.29 % | grid T0/T10/.../T100 (PAS de T75) | 2015-2026 | Lean CLI Docker, **T75 absente du grid (jumps T70→T80)** |
-| `quantbook.ipynb` cell 9 (stop-loss sweep) | **0.684 → 2.124** ⚠️ | 10.93 % → 21.29 % | -23.53 % → -4.86 % | T50/AW50 + stop-loss | 2015-2026 | Lean CLI Docker, **Stop 5 % Sharpe 2.124 = SUSPECT overfit structurel** |
-| `quantbook.ipynb` cell 11 (rebalance freq sweep) | 0.626 → 1.070 | 9.92 % → 16.13 % | -23.53 % → -23.94 % | T50/AW50 weekly/bi-weekly/monthly | 2015-2026 | Lean CLI Docker, **monthly > weekly par 35-40 % Sharpe** |
-| `quantbook.ipynb` cell 12 (T×freq grid) | 0.544 → 1.161 | 8.90 % → 17.83 % | -27.88 % → -22.00 % | T30→T60 × W/2W/M | 2015-2026 | Lean CLI Docker, **T60/Monthly Sharpe 1.161 ≈ main.py T75** |
-| **Production cloud backtest (one-shot, fa122ae7e)** | **1.155** | **27.4 %** | **27.7 %** | T75 / AW25 (v1.4d) | 2015-2026 | **NON PERSISTÉ dans le dépôt** — claim original du commit initial |
+- **Le chiffre publié se reproduit sur sa fenêtre.** Sur 2015-01-01 → 2025-12-31, QC Cloud rend Sharpe 1,15, CAGR 27,1 % et pire baisse 27,6 %. La PSR est de 55,7 %, et non de 77,9 % comme dans le registre comparatif. L'hypothèse d'un Sharpe effectif de 0,6 à 0,9, que ce README avançait auparavant, est réfutée.
+- **Le défaut est la liste.** Les 15 titres ont été choisis en 2026. Remplacés chaque mois par les 15 plus grandes capitalisations connues à cette date, la règle perd 0,18 de Sharpe sur 2018-01-01 → 2026-09-25 (1,05 contre 1,22, séries du rejeu en ombre, taux sans risque nul). NVDA, présent dans la liste dès 2018, porte 49 % du résultat des positions fermées de la poche tendance.
+- **Verdict préinscrit : `NO BEATS`.** Contre SPY détenu et le 60/40, les différences de Sharpe sont positives mais non significatives (p Holm 0,31), et négatives sur 2024 → 2026-09.
 
-**Lecture honnête — SUSPECT « SWEEP-COMMENT MISATTRIBUTION » (c.1284-L1 ★★)** : un Sharpe de **1.155** revendiqué sur 11 ans (2015-2026) avec **allocation T75/AW25**, cité depuis un **bloc commentaire dans `main.py:8-13`** (`Allocation sweep results`) **sans backtest cloud traçable dans le dépôt**, est exposé à **3 sources méthodologiques de surestimation** distinctes des library clones (c.1281-L2/82-L2/83-L2) :
+Tableaux, diagnostics et traces : [README de l'évaluation](../TrendWeatherPointInTime/README.md#résultats).
 
-1. **Sweep-comment overfitting structurel** : le `main.py:8-13` docstring cite 5 tranches (T60/T65/T70/**T75**/T80) qui varient **monotonement** (Sharpe 1.130→1.141→1.149→**1.155**→1.163, CAGR 23.8 %→25.0 %→26.2 %→**27.4 %**→28.7 %, MaxDD 24.5 %→25.6 %→26.6 %→**27.7 %**→28.7 %) — **+0.033 Sharpe entre T70 et T75 sur 11 ans = 0.003/an, dans le bruit statistique**. Le choix « T75/AW25 selected » est un **milieu de grid monotone** (pas un optimum discriminant), avec un commentaire « best risk/return balance before beta exceeds 0.80 and MaxDD approaches 29 % » qui n'est étayé par aucune mesure de beta dans le dépôt. La grille est **régulière** (T60→T65→T70→T75→T80, step 5), **pas discriminante**.
+## Balayage de l'allocation (#25533, 2026-11-09)
 
-2. **`quantbook.ipynb` 50/50 ≠ `main.py` T75/AW25** : la recherche locale du dépôt utilise un **défaut 50/50** (cf. `quantbook.ipynb:11-12` : « TrendStocks (50 %) + AllWeather (50 %) ») **différent du T75/AW25 production**. La grille d'allocation `quantbook.ipynb` cell 8 montre **T70/T30 = Sharpe 0.728** et **T80/T20 = Sharpe 0.737** — donc **interpolation vers T75 ≈ Sharpe 0.732**, **pas 1.155**. L'écart **1.155 - 0.732 = +0.42** ne s'explique pas par le seul changement d'allocation ; il vient probablement de **différences méthodologiques substantielles** (frais Interactive Brokers dans `main.py:45` `INTERACTIVE_BROKERS_BROKERAGE` vs simulation 0 frais dans `quantbook.ipynb:155-160`, périmètre univers TrendStocks `main.py:36-50` 15 noms vs 15 noms identiques OK, **MAIS** momentum-weighted `main.py:36-37` `TrendStocksAlpha` vs equal-weight dans `quantbook.ipynb:131-148`, **ET** période warmup + rééquilibrage mensuel 31j dans `main.py:54` vs weekly default dans `quantbook.ipynb` cell 11 sweep). Sans **rétro-engineering complet**, l'écart reste non-attribué.
+`main.py` lit la part de la poche tendance dans le paramètre QC `trend_alloc` (défaut 0,75) ; la poche AllWeather prend le reste. Le balayage T60 → T80 de la docstring a été rejoué sur QC Cloud, dans l'espace de backtest du cours, sur 2015-01-01 → 2025-12-31. Le témoin est SPY détenu, avec la même fenêtre, le même courtier et le même capital de départ (projet QC 39161857).
 
-3. **`iter4_research.py` AVERTIT 2-3× overstate** : le script de recherche locale affiche explicitement (ligne 176) « Simulation Sharpe is typically 2-3× cloud Sharpe ». Donc la **simulated Sharpe 0.732 (cell 8, T70)** pourrait masquer une **cloud Sharpe ≈ 0.24-0.37**, **pas 1.155**. Inversement, le **cloud Sharpe 1.155** pourrait correspondre à une **simulation ≈ 2.3-3.5** (jamais observée dans le grid du quantbook, où max = 2.124 sur Stop 5 % — mais ce 2.124 est lui-même SUSPECT). **L'écart entre 1.155 (production) et 0.732 (local sim 50/50) reste non-résolu**.
+| Allocation | Sharpe | CAGR | Pire baisse | Bêta | Volatilité annuelle | PSR |
+|---|---|---|---|---|---|---|
+| T60 / AW40 | 1,120 | 23,4 % | 24,5 % | 0,683 | 0,127 | 53,5 % |
+| T65 / AW35 | 1,131 | 24,7 % | 25,6 % | 0,711 | 0,134 | 54,5 % |
+| T70 / AW30 | 1,140 | 25,9 % | 26,6 % | 0,740 | 0,140 | 55,2 % |
+| **T75 / AW25 (défaut)** | **1,148** | **27,1 %** | **27,6 %** | **0,769** | **0,148** | **55,7 %** |
+| T80 / AW20 | 1,156 | 28,4 % | 28,7 % | 0,798 | 0,155 | 56,1 % |
+| SPY détenu (témoin, même fenêtre 2015-01-01 → 2025-12-31) | 0,537 | 13,4 % | 33,5 % | 0,994 | 0,147 | 2,5 % |
 
-**Cumul des 3 effets** : le Sharpe 1.155 / CAGR 27.4 % / MaxDD 27.7 % cité en README pourrait masquer un Sharpe réel **0.6-0.9** sur la même stratégie avec (a) IBKR fees réels + dividendes + slippage quantifiés, (b) window OOS fixée a priori (pas sweep a posteriori), (c) périmètre TrendStocks élargi ou restreint documenté. C'est **PAS** un signal de déploiement live sans **rétro-engineering méthodologique complet** ou **backtest QC Cloud frais** avec output JSON préservé.
+- **Le défaut est inchangé.** Le backtest sans paramètre rend les 27 statistiques du backtest T75. Il reproduit aussi la mesure du 2026-10-26 (section « Non-régression » plus bas) et celle de #19393.
+- **La docstring d'origine se confirme à la marge.** Le commit `fa122ae7e` (2026-03-09) annonçait la même pire baisse à 0,1 point près, un Sharpe plus haut de 0,007 à 0,010 et un CAGR plus haut de 0,3 à 0,4 point. Son code ne fixait pas de date de fin : le backtest courait jusqu'à sa date d'exécution. Cette différence de fenêtre est la cause probable de l'écart ; aucun rejeu ne l'a vérifiée.
+- **Ces chiffres ont d'abord été publiés sans backtest tracé.** Avant la mesure de #19393 et ce balayage, ce README tenait le Sharpe 1,155 de la docstring pour une affirmation que rien ne permettait de reproduire dans le dépôt (drainage #9434). Les identifiants de backtest du balayage sont consignés dans la PR #25541.
+- **Le balayage est monotone.** Chaque pas de 5 points vers la poche tendance ajoute environ 0,009 de Sharpe, 1,1 point de pire baisse et 0,029 de bêta. La plage ne contient pas d'optimum : T75 est un choix de risque. La docstring d'origine le justifiait par un bêta qui dépasserait 0,80 au-delà ; la mesure ne le confirme pas, le bêta reste sous 0,80 jusqu'à T80 (0,798).
+- **À T75, la volatilité annuelle égale celle de SPY détenu** (0,148 contre 0,147). À volatilité égale, la composite rend 27,1 % par an contre 13,4 %, pour une pire baisse de 27,6 % contre 33,5 %.
+- **Le biais de #19393 reste entier.** La liste des 15 titres a été choisie en 2026, et le balayage ne corrige pas cette lecture du futur. Le verdict contre SPY détenu et le 60/40 reste `NO BEATS`.
 
-Cf. **c.1281-L3 / c.1282-L3 / c.1283-L3 ★★** (library clones) : le pattern « misattribution » s'applique ici avec un **3ᵉ archétype** : library clones (claim OOS 1Y sans repro locale, c.1281/82/83) + **sweep-comment (c.1284) = bloc commentaire `main.py:N` cité comme « backtest metrics » sans backtest traçable**. La mécanique constante reste : **provenance explicite + SUSPECT pedagogy warning obligatoire**.
+## Recherche locale (construction différente)
 
-**Vérification de la provenance** : le commit `fa122ae7e` (2026-03-09, jsboige + Claude Opus) déclare « Iterated from v1.0 (Sharpe 0.622) to v1.5 (Sharpe 1.155) » dans son message — **le 1.155 est donc un claim d'auteur de commit, non une mesure reproductible** depuis le dépôt. **Pas de tag QC Cloud Project ID**, **pas de `lean-workspace/`, pas de backtest JSON préservé**. Pour reproduire, il faudrait **re-créer un projet QC Cloud, copier `main.py + alpha_models.py + portfolio_construction.py`, et exécuter `lean backtest` ou `create_compile` + `create_backtest`** — opération **hors scope** cette PR (PR markdown-only).
+`quantbook.ipynb` (Lean CLI Docker) et `iter4_research.py` (yfinance) explorent une autre construction que `main.py` : défaut 50/50, poids égaux entre titres haussiers dans `build_composite_weights` (`In [4]`) au lieu de la pondération par le momentum 3 mois de `TrendStocksAlpha`, rééquilibrage hebdomadaire par défaut au lieu de 31 jours, et pas de frais à la §3. Leurs chiffres ne se comparent pas au tableau précédent.
 
-**Reproductibilité** : la sweep-comment claim est **non reproductible** depuis le dépôt actuel (pas d'artifacts). Les recherches locales **sont reproductibles** : `python iter4_research.py` (yfinance local, 2-3× overstate) ou `jupyter nbconvert --execute quantbook.ipynb` (Lean CLI Docker, défaut 50/50). Le tableau ci-dessus cite **les deux sources** pour transparence.
+| Source | Sharpe | CAGR | Pire baisse | Allocation | Période et remarque |
+|--------|--------|------|-------|-----------|---------|
+| `iter4_research.py` (yfinance) | n/a (script) | n/a | n/a | grille 5×5×3 | 2014-2026 ; le script avertit lui-même (ligne 176) : « Simulation Sharpe is typically 2-3x cloud Sharpe » |
+| `quantbook.ipynb` `In [5]`, §3 (défaut 50/50) | 0.680 | 10.88 % | -23.53 % | T50 / AW50 | 2015-2026 |
+| `quantbook.ipynb` `In [8]`, §4 (balayage d'allocation) | 0.382 → 0.738 | 7.22 % → 14.02 % | -33.72 % → -17.29 % | T0/T10/.../T100, sans T75 | 2015-2026 |
+| `quantbook.ipynb` `In [9]`, §5 (balayage de stop-loss) | 0.684 → 2.124 ⚠️ | 10.93 % → 21.29 % | -23.53 % → -4.86 % | T50/AW50 + stop-loss | 2015-2026 ; le stop à 5 % (2.124) est suspect de surajustement |
+| `quantbook.ipynb` `In [11]`, §8 (fréquence de rééquilibrage) | 0.619 → 1.070 | 9.92 % → 16.13 % | -23.53 % → -23.94 % | T50/AW50, hebdomadaire / bimensuel / mensuel | 2015-2026 |
+| `quantbook.ipynb` `In [12]`, §8 (allocation × fréquence, frais de 5 pb) | 0.544 → 1.239 | 8.90 % → 19.60 % | -27.88 % → -19.43 % | T30→T70 × W/2W/M | 2015-2026 ; le mensuel l'emporte à chaque allocation |
+
+Dans `In [11]`, la même stratégie rééquilibrée chaque mois ou chaque semaine donne un Sharpe de 1.064 ou de 0.674, frais de 5 pb compris : un rééquilibrage moins fréquent réduit la rotation et laisse courir les tendances. `main.py` rééquilibre tous les 31 jours.
 
 ## Comment exécuter
 
 **Lean CLI (recherche locale, défaut 50/50) :** `lean research "MyIA.AI.Notebooks/QuantConnect/projects/Framework_Composite_TrendWeather" --notebook quantbook.ipynb`
-**Lean CLI (backtest, défaut 50/50) :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Framework_Composite_TrendWeather"`
-**Lean CLI (backtest production T75/AW25) :** identique, `main.py` fixe `alpha_allocations={"TrendStocks": 0.75, "AllWeather": 0.25}` ligne 53. **Mais attendre une variation ~±30-50 % sur Sharpe** vs le 1.155 docstring à cause de (a) `INTERACTIVE_BROKERS_BROKERAGE` ligne 45 vs 0 frais dans recherche, (b) périmètre univers TrendStocks `main.py:36-50` (15 noms) vs 15 noms identiques OK, (c) momentum-weighted TrendStocks vs equal-weight, (d) mensuel 31j vs weekly par défaut.
-**QC Cloud :** non déployé. Copier `main.py + alpha_models.py + portfolio_construction.py` dans un nouveau projet QC Cloud pour exécuter et préserver les outputs dans `lean-workspace/<project>/backtests/<timestamp>/`. **Recommandation anti-SUSPECT** : **re-exécuter** le backtest cloud avec le T75/AW25 exact, **préserver le JSON output** dans le worktree, et **comparer** au 1.155 docstring — l'écart attendu (cf. `iter4_research.py:176` 2-3× overstate) devrait ramener le Sharpe à ~0.4-0.6 dans le pire cas (surestimation locale) ou confirmer le 1.155 (backtest one-shot originel correct).
-
-**Note variations Docker Lean** : `quantbook.ipynb` cell 12 montre que la même stratégie exécutée en **monthly vs weekly** donne Sharpe **1.064** vs **0.674** (cell 11) — c'est l'effet « less-frequent-rebalance » qui réduit le turnover et préserve les trends. Le `main.py` ligne 54 utilise `rebalance=timedelta(days=31)` (monthly) — donc **dans la même veine que les 1.064**, **pas 0.674**.
+**Lean CLI (backtest de `main.py`) :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Framework_Composite_TrendWeather"` exécute la composite en T75/AW25 ; `--parameter trend_alloc 0.6` fait varier la part de la poche tendance. Le défaut 50/50 n'existe que dans le quantbook.
+**QC Cloud :** projet 38458884 de l'espace de backtest du cours, avec la bibliothèque `SharedPCM` attachée (geste « Add Library », cf README de `SharedPCM`). Ailleurs : créer un projet, y attacher `SharedPCM`, copier `main.py` et `alpha_models.py`. Le paramètre `trend_alloc` se règle à chaque backtest (paramètres du projet, ou argument `parameters` de l'API).
 
 ## Fichiers
 
-- `main.py` — Stratégie composite v1.5 production (T75/AW25, monthly rebalance, IBKR fees). **Contient le sweep comment `Allocation sweep results (2015-2026)` lignes 8-13, source du 1.155/27.4 %/27.7 %** ⚠️
+- `main.py` — Stratégie composite v1.5 (T75/AW25 par défaut, part de la poche tendance réglable par le paramètre `trend_alloc`, rééquilibrage tous les 31 jours, frais IBKR). Sa docstring de classe porte le balayage mesuré le 2026-11-09.
 - `alpha_models.py` — TrendStocksAlpha (momentum-weighted) + AllWeatherAlpha (static)
-- `portfolio_construction.py` — MultiStrategyPCM (allocation dict + rebalance interval)
+- `SharedPCM/pouches_pcm.py` (bibliothèque de projet QC) — `MultiStrategyPouchesPCM`, PCM par poches canonique importé par `main.py` (extraction #19821 brique 1)
 - `iter4_research.py` — Recherche yfinance locale (avertit 2-3× overstate cloud Sharpe, ligne 176)
 - `quantbook.ipynb` — Recherche Lean CLI Docker : 50/50 default + sweeps (allocation, stop-loss, rebalance freq, T×freq) avec outputs préservés
 
+## Non-régression du module partagé (#20188)
+
+Depuis #21134, `main.py` importe `MultiStrategyPouchesPCM` de `SharedPCM/pouches_pcm.py` au lieu de la copie locale `portfolio_construction.py`. Deux backtests QC Cloud du 2026-10-26, aux paramètres par défaut et sur la fenêtre 2015-01-01 → 2025-12-31, vérifient que ce changement ne modifie aucun ordre :
+
+- **A** : le code de `main` au commit `54f9b9eec1`, avec le module partagé ;
+- **B** : les mêmes `main.py` et `alpha_models.py`, avec l'ancienne copie `portfolio_construction.py` prise au commit qui précède la migration (`777f502a2a^`). Les deux arguments que l'ancienne copie ne connaît pas (`additive=True`, `algorithm=self`) sont retirés de l'appel. Les deux tranches n'ont aucun titre en commun : `additive=True` ne doit donc rien changer, et c'est ce que la mesure vérifie.
+
+A et B portent la même instrumentation, qui ne passe aucun ordre. Elle relève la valeur du portefeuille chaque jour à minuit, période de chauffe comprise (270 séances). En fin de backtest, elle calcule une empreinte SHA-256 par année des ordres (identifiant, date, titre, quantité, statut, prix) et des valeurs relevées.
+
+| | A (module partagé) | B (ancienne copie) |
+|---|---|---|
+| Ordres | 2 094 | 2 094 |
+| Valeurs relevées | 4 410 | 4 410 |
+| Dernière valeur relevée | 1 408 249,00 | 1 408 249,00 |
+| Sharpe (QC) | 1,148 | 1,148 |
+| CAGR | 27,121 % | 27,121 % |
+| Pire baisse | 27,6 % | 27,6 % |
+
+Les empreintes annuelles sont égales : 12 sur 12 pour les ordres, 13 sur 13 pour les valeurs. Les 27 statistiques de QC sont égales, rotation comprise. La migration ne change donc pas le comportement du projet. Traces hors dépôt : `QC-traces/20188-nr/`.
+
 ## Références
 
-- Commit `fa122ae7e` (2026-03-09, jsboige + Claude Opus) — ajout initial de la stratégie, message déclare « Iterated from v1.0 (Sharpe 0.622) to v1.5 (Sharpe 1.155) » — **source originelle du 1.155**, **pas d'artifacts préservés**.
-- `main.py:8-13` docstring — `Allocation sweep results (2015-2026)` block, **source du claim sweep-comment c.1284-L1**.
+- Commit `fa122ae7e` (2026-03-09, jsboige + Claude Opus) — ajout initial de la stratégie ; son message déclare « Iterated from v1.0 (Sharpe 0.622) to v1.5 (Sharpe 1.155) ». Son balayage, sans date de fin, est rejoué par #25533.
+- Docstring de `FrameworkCompositeStrategy` (`main.py`) — balayage T60 → T80 mesuré sur QC Cloud le 2026-11-09, avec le témoin SPY détenu.
+- [#19393](https://github.com/jsboige/CoursIA/issues/19393) — évaluation à liste datée ([`TrendWeatherPointInTime`](../TrendWeatherPointInTime/)), verdict `NO BEATS`.
 - `iter4_research.py:176` — avertissement explicite « Simulation Sharpe typically 2-3× cloud Sharpe ».
-- `quantbook.ipynb` cells 5/8/9/11/12 — sweeps allocation/stop-loss/rebalance/T×freq avec outputs préservés.
-- c.1281-L3 / c.1282-L3 / c.1283-L3 ★★ — pattern méta misattribution 6 sœurs (5 library clones + 1 sweep-comment c.1284)
-- #1621 (drainage epic — prose réelle mesurée vs stale dans le repo)
-- #9434 (drainage umbrella — multi-PR cleanup des README stale)
+- `quantbook.ipynb` cellules `In [5]`, `In [8]`, `In [9]`, `In [11]` et `In [12]` — simulation 50/50 puis balayages d'allocation, de stop-loss, de fréquence et d'allocation × fréquence, avec sorties préservées.
+- #1621 (EPIC de drainage — prose mesurée contre prose périmée dans le dépôt)
+- #9434 (umbrella de drainage — nettoyage multi-PR des README périmés)

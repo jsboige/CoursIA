@@ -1,0 +1,66 @@
+NOTICE — CoursIA `data/academic/LOGIC/` (espace négatif : RIEN n'est committé ici)
+==============================================================================
+
+Ce répertoire ne contient AUCUN fichier du corpus LOGIC — volontairement, et
+ce NOTICE documente pourquoi ainsi que la voie conforme pour le consommer
+(tranche C de l'issue #17578, EPIC #10355 — critère 2 de c.6073752732).
+
+Corpus           : LOGIC (Jin et al. 2022, « Logical Fallacy Detection »,
+                   arXiv:2202.13758)
+Dépôt source     : https://github.com/causalNLP/logical-fallacy
+Commit épinglé   : 2a3d09708122c0994279df034d867b80950700ea (HEAD amont à
+                   l'épinglage, 2026-10-10)
+
+Pourquoi aucune copie verbatim
+------------------------------
+
+Mesuré firsthand le 2026-10-10 par la lane po-2025 (converge avec la mesure
+po-2026 du 2026-10-09, c.6073752732) :
+
+  - champ `license` de l'API GitHub : **null** ;
+  - aucun fichier `LICENSE` dans l'arbre du commit épinglé ;
+  - aucune mention de licence dans le README (2 855 octets).
+
+Les mentions « MIT © 2022 Zhijing Jin » trouvées en ligne sont des
+attestations TIERS (repo aval `lfx`), invérifiables contre le dépôt source :
+elles ne fondent pas un droit de redistribution. CoursIA étant un dépôt
+public, committer le corpus verbatim exigerait des droits établis, pas
+supposés — la copie reste donc hors dépôt.
+
+**Interdit de fait** : ne JAMAIS committer les CSV LOGIC dans ce dépôt tant
+que la licence n'est pas éclaircie à la source (au besoin : issue upstream
+demandant l'éclaircissement aux auteurs, puis re-mesure).
+
+Voie conforme — fetch déterministe épinglé (critère 2, voie (b))
+----------------------------------------------------------------
+
+Les consommateurs (alignement taxonomique, constructeurs) téléchargent à
+l'exécution depuis
+
+  https://raw.githubusercontent.com/causalNLP/logical-fallacy/<commit>/data/<fichier>
+
+avec `<commit>` = le commit épinglé ci-dessus, puis VÉRIFIENT l'empreinte du
+fichier téléchargé contre `manifest.json` (SHA-256) avant toute consommation.
+Le manifeste porte, pour chacun des 12 fichiers de `data/` au commit épinglé :
+blob SHA1 (haché sans filtre de conversion), SHA-256, taille — les deux
+premiers égaux à l'arbre amont au moment de l'épinglage.
+
+Alternative : lecture via chemin hors-dépôt (GDrive privé, comme les
+pipelines de notation), la voie (a) du critère 2.
+
+Particularité d'empreinte
+-------------------------
+
+Deux fichiers amont contiennent des CRLF dans leur blob stocké
+(`edu_test.csv` : 2, `mappings.csv` : 14) ; les dix autres sont en LF purs.
+Un `git hash-object` sous `core.autocrlf=true` NORMALISE silencieusement ces
+CRLF et rend un SHA différent de l'amont — les empreintes du manifeste sont
+calculées en mode brut (`--no-filters`). Toute re-vérification locale doit
+faire de même.
+
+Resynchronisation
+-----------------
+
+Re-mesurer le HEAD amont, re-télécharger, re-empendre en mode brut, puis
+mettre à jour le commit épinglé et les empreintes dans `manifest.json`. Les
+fichiers téléchargés ne se committent toujours pas.

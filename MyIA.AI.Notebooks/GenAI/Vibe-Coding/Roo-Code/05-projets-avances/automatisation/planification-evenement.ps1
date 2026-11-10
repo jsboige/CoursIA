@@ -428,7 +428,7 @@ Prérequis: Connaissance des normes du secteur
         
         # Écriture du fichier agenda
         $agendaPath = Join-Path $OutputPath "03-Programme\agenda.md"
-        $agendaContent | Out-File -FilePath $agendaPath -Encoding utf8
+        [System.IO.File]::WriteAllText($agendaPath, ($agendaContent + "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
         
         Write-Log -Message "Agenda généré: $agendaPath" -Level "Info"
         return $agendaPath
@@ -506,7 +506,7 @@ Nombre de participants estimé: $ParticipantsCount
         
         # Écriture du fichier de liste des participants
         $participantsPath = Join-Path $OutputPath "06-Participants\liste-participants.md"
-        $participantsContent | Out-File -FilePath $participantsPath -Encoding utf8
+        [System.IO.File]::WriteAllText($participantsPath, ($participantsContent + "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
         
         Write-Log -Message "Liste des participants générée: $participantsPath" -Level "Info"
         return $participantsPath
@@ -633,7 +633,7 @@ Budget total: $BudgetTotal €
         
         # Écriture du fichier budget
         $budgetPath = Join-Path $OutputPath "05-Budget\budget-previsionnel.md"
-        $budgetContent | Out-File -FilePath $budgetPath -Encoding utf8
+        [System.IO.File]::WriteAllText($budgetPath, ($budgetContent + "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
         
         Write-Log -Message "Budget prévisionnel généré: $budgetPath" -Level "Info"
         return $budgetPath
@@ -757,7 +757,7 @@ Mise à jour: $(Get-Date -Format "dd/MM/yyyy HH:mm")
         
         # Écriture du fichier de tableau de bord
         $dashboardPath = Join-Path $OutputPath "tableau-de-bord.md"
-        $dashboardContent | Out-File -FilePath $dashboardPath -Encoding utf8
+        [System.IO.File]::WriteAllText($dashboardPath, ($dashboardContent + "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
         
         Write-Log -Message "Tableau de bord généré: $dashboardPath" -Level "Info"
         return $dashboardPath
@@ -824,7 +824,7 @@ END:VCALENDAR
         
         # Écriture du fichier ICS
         $icsPath = Join-Path $OutputPath "04-Communication\evenement.ics"
-        $icsContent | Out-File -FilePath $icsPath -Encoding utf8
+        [System.IO.File]::WriteAllText($icsPath, ($icsContent + "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
         
         Write-Log -Message "Fichier calendrier ICS généré: $icsPath" -Level "Info"
         return $icsPath
@@ -908,7 +908,7 @@ $EventName
         
         # Écriture du fichier modèle d'email
         $emailPath = Join-Path $OutputPath "04-Communication\modele-invitation.md"
-        $emailContent | Out-File -FilePath $emailPath -Encoding utf8
+        [System.IO.File]::WriteAllText($emailPath, ($emailContent + "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
         
         Write-Log -Message "Modèle d'email d'invitation généré: $emailPath" -Level "Info"
         return $emailPath
@@ -1003,7 +1003,7 @@ $(($FolderStructure | ForEach-Object { "- $_ " }) -join "`n")
 *Généré automatiquement par le script de planification d'événement le $(Get-Date -Format "dd/MM/yyyy")*
 "@
         
-        $readmeContent | Out-File -FilePath $readmePath -Encoding utf8
+        [System.IO.File]::WriteAllText($readmePath, ($readmeContent + "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
         Write-Log -Message "Fichier README généré: $readmePath" -Level "Info"
         
         # Notification de fin
