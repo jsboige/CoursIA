@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-03
+> REFERENCE — vivante — dernière révision 2026-11-10
 
 # Modèles de décision — relevé et shortlist (issue #18204, Pli 1)
 
