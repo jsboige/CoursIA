@@ -42,13 +42,13 @@ compatibility); only the module docstrings and this header block differ
 between the two files.
 -/
 
-import Knots.Basic
-import Knots.Reidemeister
-import Knots.ReidemeisterCombinatorial
+import Knots.Basic_en
+import Knots.Reidemeister_en
+import Knots.ReidemeisterCombinatorial_en
 
-namespace Knots.Bounded
+namespace Knots_en.Bounded
 
-open Knots.Combinatorial
+open Knots_en.Combinatorial
 
 /-! ## 1. Label bound
 
@@ -189,4 +189,4 @@ theorem demo_verifier_sound :
         numEdges := 6 } :=
   verifyMoves_sound 1 _ _ verifyMoves_one_r1_witness
 
-end Knots.Bounded
+end Knots_en.Bounded

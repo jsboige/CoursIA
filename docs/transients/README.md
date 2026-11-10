@@ -74,6 +74,33 @@ L'organe vérifie les **trois sens** du contrat :
 - **hors de la lane** — aucun fichier de `docs/` (hors `docs/archive/` et cette lane) ne porte l'en-tête `> RAPPORT —` en tête de document : un transient égaré dans l'arbre pérenne est exactement la dérive que cette lane existe pour rendre visible ;
 - **entrée d'archive** (avec `--base <ref>`) — aucune **création** de rapport daté sous `docs/archive/` dans le diff `<ref>...HEAD` : les reclasses (renames) restent permises, les créations portant la signature transiente sont signalées. Un échec du `git diff` sous-jacent est lui-même un finding (`GIT_DIFF_FAILED`), jamais un acquittement silencieux.
 
+## Sens perenne
+
+Le miroir : les documents de **référence vivante** de `docs/` (hors cette lane, hors `docs/archive/`, hors artefacts générés) portent l'en-tête
+
+```
+> REFERENCE — vivante — dernière révision <date>
+```
+
+et cette date est **lue dans l'historique git** (`git log -1 --format=%cs` du fichier), jamais recopiée : un en-tête dont la date ne concorde plus avec la dernière révision est périmé (le document a évolué sans que l'en-tête ne soit rafraîchi) ou fabriqué.
+
+L'organe `scripts/check_docs_reference_lane.py` vérifie **deux sens**, dans **deux modes** :
+
+- **couverture** (les deux modes) — un **plancher monotone** : le nombre de documents perennes balisés ne descend pas sous `--baseline` (vague initiale = 9, `docs/notebook-metadata/`). La couverture ne se **déclare** pas : elle se mesure, et ne fait que croître ; le plancher est relevé au fil des vagues ;
+- **intégrité** (mode PR seulement) — pour les documents *modifiés par la PR*, la date de l'en-tête doit concorder avec le dernier commit **propre au fichier** sur la branche ; un écart est un finding (`STALE_DATE`), un `git log`/`git diff` en échec est un finding (`GIT_LOG_FAILED` / `GIT_DIFF_FAILED`), jamais un acquittement silencieux.
+
+**Pourquoi deux modes.** Le merge de ce dépôt est un **squash** : son commit porte la date du merge en `%cs` (mesuré sur #22216 : dernier commit de branche 05:57Z, squash 10:32Z), et le commit intermédiaire de la branche — le seul qui portait la vraie date de révision — est effacé. Une comparaison de dates sur **tout l'arbre** (le mode unique d'origine) rougirait donc `main` et chaque PR à chaque merge franchissant un jour UTC : un défaut de convention transformé en rouge permanent. Le mode **arbre** (défaut, sans `--base`) ne vérifie que ce qui **survit** au squash — le marqueur et le plancher — ; le mode **PR** (`--base <ref>`, exécuté depuis le checkout de la tête de la branche, jamais du merge ref) vérifie les dates, mais **uniquement** pour les docs du diff `<ref>...HEAD` : c'est le seul endroit où `git log -1` lit encore une date de contenu, et un doc pérenne périmé qui n'est pas touché par la PR n'est pas le signal de cette PR.
+
+```bash
+python scripts/check_docs_reference_lane.py                          # mode arbre : marqueur + plancher
+python scripts/check_docs_reference_lane.py --base origin/main       # mode PR : dates des docs modifiés
+python scripts/check_docs_reference_lane.py --json                   # verdict machine
+python scripts/check_docs_reference_lane.py --baseline 9             # plancher explicite
+python -m pytest scripts/tests/test_check_docs_reference_lane.py -q
+```
+
+La lane perenne se **peuple par vagues** : chaque tranche balise un ensemble cohérent de références et relève le plancher. Garde CI : `docs-reference-guard` (miroir de `docs-transients-guard`), exécutée en **mode PR** depuis la tête de la branche (`ref: …head.sha`, `fetch-depth: 0`, `filter: blob:none` — les deux lectures de l'organe ne consomment que commits et arbres, mesure 2026-10-27 : 9/9 dates identiques sur un clone blobless).
+
 ## État
 
 Lane ouverte le 2026-09-29, **vide à dessein**. Le premier peuplement vient de la re-vérification des fichiers listés par #14623, qui a mesuré que la majorité d'entre eux ne sont **pas** des transients — références citées par le harnais, artefact régénéré par la CI, fichier sous PR ouverte — et ne se déplacent donc pas ici.

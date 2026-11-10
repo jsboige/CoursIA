@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-25
+
 # EDITORIAL_REVIEW_CARD — Template de revue éditoriale
 
 **Statut** : template canonique (c.764)

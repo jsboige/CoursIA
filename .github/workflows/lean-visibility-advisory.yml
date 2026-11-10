@@ -50,6 +50,10 @@ jobs:
     # (runs-on STATIQUE = auditable). Les PRs de fork sautent le job --
     # pr_gate.py compte `skipped` comme OK.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # #23349 : borne explicite. Mesure du 2026-11-09 sur les 15 derniers
+    # runs verts : max 9.8 min (run 42533389364). Le defaut d'Actions
+    # est 6 h, et un job fige tient son slot tout ce temps.
+    timeout-minutes: 20
     if: github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
@@ -59,6 +63,7 @@ jobs:
           # Le mode --pr-base fait un diff 3-points base...HEAD : il faut
           # l'historique.
           fetch-depth: 0
+          filter: blob:none
 
       - name: Set up Python
         uses: actions/setup-python@v5

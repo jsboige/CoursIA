@@ -118,10 +118,10 @@ L'audit du 2026-05-09 a révélé un pattern systemique : 988 notebooks repo, do
 **Plan de remediation 4 phases** :
 
 - **P0** : gel des "vagues de fix C.x / cosmetique / enrichissement" sur tous les agents jusqu'a inventaire complet
-- **P1** (48h) : forensique massif sur HEAD courant → `STABLE_SNAPSHOT.md` (matrice 988 notebooks : `ALL_NULL` / `ALL_EXEC` / `PARTIAL` + errors_count + LAST_REAL_EXEC)
+- **P1** (48h) : forensique massif sur HEAD courant → `docs/reference/STABLE_SNAPSHOT.md` (matrice notebooks : `ALL_NULL` / `ALL_EXEC` / `PARTIAL` + errors_count + LAST_REAL_EXEC)
 - **P2** (1 semaine) : pour chaque NEVER_EXECUTED → soit slot agent dedie executant pour de vrai, soit archive avec mention pedagogique explicite "non exécutable en l'etat"
 - **P3** (2 semaines) : workflow GitHub Actions `notebook-execution-required.yml` qui execute via Papermill toute notebook touchee dans une PR. Failure → merge bloque. Runner = Docker compose (.NET + Python + Lean + WSL bypass)
-- **P4** (continu) : `STABLE_SNAPSHOT.md` regenere mensuel, gravant `sha + date + matrice exec_status` → point de reference factuel quand quelqu'un dit "X est valide"
+- **P4** (continu) : `docs/reference/STABLE_SNAPSHOT.md` regenere mensuel, gravant `sha + date + matrice exec_status` → point de reference factuel quand quelqu'un dit "X est valide"
 
 Cf [docs/archive/STABLE_SNAPSHOT.md](../archive/STABLE_SNAPSHOT.md).
 

@@ -41,6 +41,7 @@ import Knots.Basic_en
 import Knots.Invariant_en
 import Knots.Conway_en
 import Knots.ReidemeisterMoves_en
+import Knots.ReidemeisterAny_en
 
 /-
   English mirror of `Lidman.lean` (FR canonical). Convention EPIC #4980
@@ -1135,7 +1136,7 @@ kink or bigon that invalidates the hypothesis at the next link — the result
 therefore bears on the *route* taken, not on the existence of a witness. The §4
 diagnosis (certificate inexpressible under the current connected Reidemeister
 machine) and the #18611 provenance measurement (reachable-state search: excursions
-≤ +2 crossings, diagrams ≤ 13 crossings, 138,623 states from the 67 n-changed
+≤ +2 crossings, diagrams ≤ 13 crossings, 138 623 states from the 67 n-changed
 starts — `unknotDiagram` never reached, the 11 original crossings present in
 every reached state) point the same way, but remain a **finite** measurement: what the
 kernel proves here is only the conditioned version.
@@ -1188,5 +1189,62 @@ theorem no_fourDistinct_certificate_unknots_11n102 (indices : List Nat)
   refine movesConnects_not_unknot_of_allFourDistinct ?_ h hall
   rw [foldl_changeCrossingAt_crossings_length]
   decide
+
+/-! ## 6. `_any` corollary — the motif-free route is closed (#22359)
+
+Application of the conditional floor of the extended language (section 27 of
+`ReidemeisterAny_en.lean`) to the 11n102 witness: the eleven crossings are
+four-distinct (section 5), which is strictly stronger than the
+`noTerminalMotif` invariant of the `_any` chain — no terminal kink, no
+terminal bigon pair. The corollary `movesConnectsAny_not_zero_of_noTerminalMotif`
+then closes every `movesConnectsAny` route whose sources maintain the
+invariant: it cannot reach the trivial diagram (zero crossings).
+
+**Exact scope, no overstatement** — the same as theorem 5: the route that
+**maintains** the hypothesis step by step is closed, not the existence of an
+unknotting witness. The per-link hypothesis in fact forbids every R1/R2 step
+(an up step creates its motif on the target, which is the next link's
+source; a down step requires its motif on its own source), so the covered
+route is de facto an R3-only route — and R3 preserves the count. -/
+
+/-- Four-distinctness of the last crossing forbids the terminal kink:
+    `e3 ≠ e4` is the last of the six inequalities. -/
+theorem allFourDistinct_last_not_kink {d : KnotDiagram}
+    (hall : allFourDistinct d) :
+    ∀ K, d.crossings.getLast? = some K → K.e3 ≠ K.e4 := by
+  intro K hK
+  exact (hall K (List.mem_of_getLast? hK)).2.2.2.2.2
+
+/-- Four-distinctness forbids the terminal bigon pair: the last crossing
+    carries `e2 ≠ e3`, the bigon silhouette requires `e2 = e3`. The other
+    conditions of the pair play no role. -/
+theorem allFourDistinct_not_bigon {d : KnotDiagram}
+    (hall : allFourDistinct d) :
+    ¬ ∃ K₁ K₂, d.crossings.dropLast.getLast? = some K₁ ∧
+        d.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1 := by
+  rintro ⟨K₁, K₂, _, h2, hK₂, _, _⟩
+  exact (hall K₂ (List.mem_of_getLast? h2)).2.2.2.1 hK₂
+
+/-- The 11n102 witness is free of terminal motifs: its crossings are
+    four-distinct (section 5), strictly stronger. -/
+theorem knot_11n102_noTerminalMotif :
+    AnyMoves.noTerminalMotif knot_11n102_diagram := by
+  unfold AnyMoves.noTerminalMotif
+  exact ⟨allFourDistinct_last_not_kink knot_11n102_allFourDistinct,
+    allFourDistinct_not_bigon knot_11n102_allFourDistinct⟩
+
+/-- **`_any` version of the conditional floor theorem.** No certificate of
+    the extended language whose sources remain free of terminal motifs
+    connects 11n102 to the trivial diagram. The departure length (eleven, by
+    `decide` on the literal) bounds the arrival length (zero):
+    contradiction. -/
+theorem no_noTerminalMotif_certificate_unknots_11n102
+    {ms : List AnyMoves.AnyMove}
+    (h : AnyMoves.movesConnectsAny ms knot_11n102_diagram unknotDiagram)
+    (hall : ∀ m ∈ ms, AnyMoves.noTerminalMotif m.source) :
+    False :=
+  AnyMoves.movesConnectsAny_not_zero_of_noTerminalMotif
+    (by unfold knot_11n102_diagram; decide) rfl h hall
 
 end Knots_en

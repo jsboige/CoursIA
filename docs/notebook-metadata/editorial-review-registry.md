@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-25
+
 # Registre des revues éditoriales — `editorial_reviewed_by`
 
 **Statut** : pilote fondateur (c.764, phase 2 issue #8051 critère #4)

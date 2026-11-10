@@ -687,6 +687,11 @@ Théorème d'impossibilité d'Arrow :
 Toute fonction de bien-être social sur au moins 3 alternatives qui satisfait
 le Pareto faible et l'indépendance des alternatives non pertinentes doit
 être une dictature.
+
+Preuve alternative déclarée : `lean_game_defs/SocialChoice.lean` (maison
+canonique de l'énoncé, cœur Lean seul) l'établit sous forme négative
+(`¬ NonDictatorial swf`), par propagation de la décisivité et bornée à
+`Fin nI` / `Fin nA`.
 -/
 theorem arrow (f : SWF ι σ) (X : Finset σ)
     (hwp : weak_pareto f X) (hind : ind_of_irr_alts f X) (hX : 3 ≤ X.card) :

@@ -64,6 +64,14 @@ name: PR gate stale-verdict sweep
 # that is the common case, since CodeQL is also the slowest. A schedule is
 # the only observer that does not depend on being triggerable.
 #
+# Update 2026-10-25 (#22548): CodeQL is a repository workflow now -- advanced
+# setup, `.github/workflows/codeql.yml` -- so the measurement above ("CodeQL:
+# 0") is historical and the name DOES resolve. The design is unchanged on
+# purpose: this sweep is schedule-only and keys on open-PR state, which is what
+# makes it independent of any trigger; an event path on `CodeQL` would add one
+# run per analysis for no verdict gain (the analysis completing is not what
+# re-lays a stale `PR gate`).
+#
 # pr-gate.yml's own `workflow_dispatch` leg cannot serve either: it runs on
 # the default branch, so `github.event.pull_request.head.sha || github.sha`
 # resolves to the default-branch commit, and its check-run lands there --
@@ -369,6 +377,29 @@ jobs:
           # et on publie les deux. Les valeurs de repli sont posees AVANT
           # l'appel : le step tourne sous `set -u`, une variable non initialisee
           # tuerait la branche avant son message.
+          # #22512 -- nettoyer les temporaires du passage avant de quitter le
+          # step : sur un runner ephemere la machine disparait avec eux, mais
+          # les runners persistants (#22418) accumuleraient ces fichiers a
+          # chaque passe. `${VAR:-}` : les affectations vivent dans des
+          # branches distinctes sous `set -u`, et `rm -f ''` echouerait dans
+          # un trap EXIT au point de changer le code de sortie du step.
+          # WF_ERR (#22285) est couvert par le meme geste, au point de la
+          # resolution du conflit de merge.
+          #
+          # Le trap est installe AVANT le premier `mktemp` -- correctif de la
+          # review 5697606524. Pose apres, il ne couvrait pas la branche du
+          # listing en echec : celle-ci rend `exit 1` des la ligne suivante,
+          # donc `$LIST_ERR` et `/tmp/openprs.txt` fuyaient a chaque listing
+          # rate. Le nettoyage doit couvrir precisement le chemin qui
+          # n'atteint jamais la fin du step.
+          #
+          # Les trois `mktemp` alloues plus bas dans CE step (`WFNAME_ERR`,
+          # `QUEUE_ERR`, `CAND_ERR`) entrent dans le meme nettoyage : ils
+          # naissaient hors de toute couverture, donc un echec survenu entre
+          # leur allocation et la fin du step les laissait derriere lui --
+          # exactement le defaut que la review reprochait a `LIST_ERR`.
+          # Tous les chemins fixes du step sont deja nommes ci-dessous.
+          trap 'rm -f "${LIST_ERR:-}" "${OMIT_ERR:-}" "${WF_ERR:-}" "${WFNAME_ERR:-}" "${QUEUE_ERR:-}" "${CAND_ERR:-}" /tmp/openprs.txt /tmp/runs.jsonl /tmp/mute.txt /tmp/wfnames.json /tmp/candidates.txt' EXIT
           LIST_ERR=$(mktemp)
           LIST_CODE='aucun code HTTP'
           LIST_DETAIL='aucun message de gh'
@@ -397,6 +428,17 @@ jobs:
           OMIT_SHA='aucun'
           OMIT_CODE='aucun code HTTP'
           OMIT_DETAIL='aucun message de gh'
+          # #22215 -- WFMAP subissait le defaut que #22277 reparait sur le
+          # listing : un echec d'appel laissait `2>/dev/null` jeter le stderr,
+          # la carte retombait vide, et le pliage perdait sa clef workflow_id
+          # SANS AUCUN signal -- indistinguable d'un SHA sans runs. Meme
+          # contrat que OMIT : compter, garder la DERNIERE defaillance, et le
+          # resume apres la boucle nomme l'endpoint et le code.
+          WF_ERR=$(mktemp)
+          WFMAP_FAIL=0
+          WFMAP_SHA='aucun'
+          WFMAP_CODE='aucun code HTTP'
+          WFMAP_DETAIL='aucun message de gh'
           while read -r NUM SHA FORK MSTATE; do
             [ -z "${NUM:-}" ] && continue
             LISTED=$((LISTED+1))
@@ -418,7 +460,7 @@ jobs:
               OMITTED=$((OMITTED+1))
               OMIT_SHA=$SHA
               OMIT_CODE=$(grep -oE 'HTTP [0-9]+' "$OMIT_ERR" | tail -1 || true); [ -n "$OMIT_CODE" ] || OMIT_CODE='aucun code HTTP'
-              OMIT_DETAIL=$(tr '\n' ' ' < "$OMIT_ERR" | cut -c1-200); [ -n "$OMIT_DETAIL" ] || OMIT_DETAIL='aucun message de gh'
+              OMIT_DETAIL=$(tr '\n' ' ' < "$OMIT_ERR" | cut -c1-300); [ -n "$OMIT_DETAIL" ] || OMIT_DETAIL='aucun message de gh'
               continue
             fi
             INSPECTED=$((INSPECTED+1))
@@ -463,7 +505,13 @@ jobs:
               # (2) les tests utilisent un champ separe `run_conclusions`
               # pour exprimer le verdict par run, ce qui laisse `workflows`
               # -- la clef de pliage -- inchange.
-              WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:{wf:.workflow_id, c:.conclusion}}] | from_entries' 2>/dev/null) || WFMAP=''
+              WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:{wf:.workflow_id, c:.conclusion}}] | from_entries' 2>"$WF_ERR") || {
+                WFMAP=''
+                WFMAP_FAIL=$((WFMAP_FAIL+1))
+                WFMAP_SHA=$SHA
+                WFMAP_CODE=$(grep -oE 'HTTP [0-9]+' "$WF_ERR" | tail -1 || true); [ -n "$WFMAP_CODE" ] || WFMAP_CODE='aucun code HTTP'
+                WFMAP_DETAIL=$(tr '\n' ' ' < "$WF_ERR" | cut -c1-300); [ -n "$WFMAP_DETAIL" ] || WFMAP_DETAIL='aucun message de gh'
+              }
             else
               WFMAP=''
             fi
@@ -471,6 +519,13 @@ jobs:
             printf '{"number":%s,"sha":"%s","fork":%s,"merge_state":"%s","checks":%s,"workflows":%s}\n' "$NUM" "$SHA" "${FORK:-false}" "${MSTATE:-}" "$BODY" "$WFMAP" >> /tmp/runs.jsonl
           done < /tmp/openprs.txt
           echo "[stale-sweep] open PRs listed=$LISTED inspected=$INSPECTED omitted=$OMITTED"
+          # #22215 -- resume WFMAP : la carte vide n'est pas une panne du sweep
+          # (le pliage replie par run_id), mais c'est un signal de sante de
+          # l'endpoint, et il etait jete. Le repli detail= et code= est nomme,
+          # pas devine.
+          if [ "$WFMAP_FAIL" -gt 0 ]; then
+            echo "::warning::[stale-sweep] WFMAP empty: $WFMAP_FAIL calls failed -- last endpoint=GET repos/$REPO/actions/runs?head_sha=$WFMAP_SHA&per_page=100 code=$WFMAP_CODE detail=$WFMAP_DETAIL (fold falls back to run_id, the narrower historical behavior)"
+          fi
           # #17566 -- garde NO-OP : si on a LISTED > 0 PRs et que TOUTES les
           # inspections REST ont echoue, le run ne peut pas conclure success --
           # sinon le `pr-gate-sweep-health-advisory` voit un run vert a vide et
@@ -509,9 +564,22 @@ jobs:
           # le marqueur -- pour un appel. Echec de l'appel -> carte vide -> le
           # 2e argument retombe sur "" : le comportement anterieur (plus
           # etroit), jamais plus permissif.
-          gh api "repos/$REPO/actions/workflows?per_page=100" \
-            --jq '[.workflows[] | {key:(.id|tostring), value:.name}] | from_entries' \
-            > /tmp/wfnames.json 2>/dev/null || echo '{}' > /tmp/wfnames.json
+          # #22215 -- l'echec de cet appel UNIQUE n'etait pas muet en
+          # consequence (repli carte vide = exemption retrecie au nom du check
+          # seul) mais muet en CAUSE : le stderr etait jete, code et message
+          # perdus. Capture + avertissement nomme, replis poses avant l'appel
+          # (`set -u`).
+          WFNAME_ERR=$(mktemp)
+          WFNAME_CODE='aucun code HTTP'
+          WFNAME_DETAIL='aucun message de gh'
+          if ! gh api "repos/$REPO/actions/workflows?per_page=100" \
+               --jq '[.workflows[] | {key:(.id|tostring), value:.name}] | from_entries' \
+               > /tmp/wfnames.json 2>"$WFNAME_ERR"; then
+            WFNAME_CODE=$(grep -oE 'HTTP [0-9]+' "$WFNAME_ERR" | tail -1 || true); [ -n "$WFNAME_CODE" ] || WFNAME_CODE='aucun code HTTP'
+            WFNAME_DETAIL=$(tr '\n' ' ' < "$WFNAME_ERR" | cut -c1-300); [ -n "$WFNAME_DETAIL" ] || WFNAME_DETAIL='aucun message de gh'
+            echo "::warning::[stale-sweep] wfnames empty: endpoint=GET repos/$REPO/actions/workflows?per_page=100 code=$WFNAME_CODE detail=$WFNAME_DETAIL -- advisory exemption falls back to check-name only (the narrower historical behavior)"
+            echo '{}' > /tmp/wfnames.json
+          fi
 
           python3 - <<'PY' > /tmp/candidates.txt
           import json, os, re, sys
@@ -1049,6 +1117,11 @@ jobs:
               echo "[stale-sweep] mute cap reached ($MAX_MUTE) -- the rest next sweep"
               break
             fi
+            # silence justifie #22215 : l'echec de cet appel n'est PAS muet en
+            # aval -- LINE vide a des sorties nommees (titre de defaut #15825
+            # en mode reel, « log du run illisible -- leg mute gardee » en
+            # garde ci-dessous) ; extraire le stderr n'y ajouterait rien, le
+            # geste est le meme (garder la leg pour le prochain sweep).
             LINE=$(gh run view "$RUN_ID" --repo "$REPO" --log 2>/dev/null \
                      | grep '\[pr-gate\]' | tail -1 | sed 's/.*\[pr-gate\] //') || true
             if [ -z "${LINE:-}" ] && [ "${DRY_RUN:-false}" != "true" ]; then
@@ -1091,11 +1164,24 @@ jobs:
           # et ne justifie pas une nouvelle tete. Un echec de l'appel laisse la
           # variable vide -> le verdict retombe sur l'age SEUL (jamais plus
           # permissif que le comportement anterieur).
+          # #22278 -- le stderr etait jete : un appel casse rendait la
+          # profondeur vide sans que rien ne le dise. Meme idiome que
+          # CAND_ERR ci-dessous : capturer, puis nommer.
+          QUEUE_ERR=$(mktemp)
           QUEUE_DEPTH=$(gh api "repos/$REPO/actions/runs?per_page=1&status=queued" \
-            --jq '.total_count' 2>/dev/null) || QUEUE_DEPTH=""
+            --jq '.total_count' 2>"$QUEUE_ERR") || QUEUE_DEPTH=""
+          if [ -s "$QUEUE_ERR" ]; then
+            echo "::warning::profondeur de file illisible ($(head -1 "$QUEUE_ERR")) -- le verdict retombe sur l'age seul"
+          fi
 
           m=0
           i=0
+          # #22215 -- le message de report du RUN etait nomme mais ampute : le
+          # code HTTP restait dans un stderr jete, donc « transient » etait une
+          # supposition, pas une mesure. Capture + extraction, repli pose
+          # avant la boucle (`set -u`).
+          CAND_ERR=$(mktemp)
+          CAND_CODE='aucun code HTTP'
           # #19050 -- refus STRUCTURELS de relance (run termine, non
           # relancable) : comptes a part des `served`, parce qu'ils ne sont
           # PAS repares et qu'un rouge compte comme repare est un mensonge.
@@ -1149,7 +1235,9 @@ jobs:
             # runs in `default setup` and is NOT addressable as a `workflow_run`
             # trigger, so an event-driven rescuer cannot fire when CodeQL is the
             # last check to settle -- the common case under saturation, since it
-            # is also the slowest.
+            # is also the slowest. (Historical since #22548: CodeQL is a repo
+            # workflow under advanced setup and is addressable now; the chosen
+            # mechanism still does not depend on any trigger.)
             #
             # No loop risk: this sweep has no `workflow_run` trigger of its own
             # (`schedule` / manual `workflow_dispatch` only), so a re-run cannot
@@ -1162,8 +1250,11 @@ jobs:
             # sweep no-oped. Falling through to RUN_ID-empty would mislabel
             # the case "NO workflow run", so skip the candidate honestly.
             RUN=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&event=pull_request&per_page=100" \
-                    --jq '[.workflow_runs[] | select(.name == "PR gate")] | sort_by(.created_at) | last' 2>/dev/null) \
-              || { echo "[stale-sweep] #$NUM ($SHA): actions/runs API call failed (transient) -- deferring candidate to next sweep"; continue; }
+                    --jq '[.workflow_runs[] | select(.name == "PR gate")] | sort_by(.created_at) | last' 2>"$CAND_ERR") \
+              || { CAND_CODE=$(grep -oE 'HTTP [0-9]+' "$CAND_ERR" | tail -1 || true); [ -n "$CAND_CODE" ] || CAND_CODE='aucun code HTTP'; echo "[stale-sweep] #$NUM ($SHA): actions/runs API call failed (transient, endpoint=GET repos/$REPO/actions/runs?head_sha=$SHA&event=pull_request&per_page=100 code=$CAND_CODE) -- deferring candidate to next sweep"; continue; }
+            # silence justifie #22215 : jq local sur des donnees deja en memoire
+            # (RUN, fetch reussi ci-dessus) -- un echec ou un vide rend RUN_ID
+            # vide, et la sortie nommee juste en dessous prend le relais.
             RUN_ID=$(printf '%s' "${RUN:-}" | jq -r '.id // empty' 2>/dev/null)
 
             if [ -z "${RUN_ID:-}" ]; then
@@ -1197,6 +1288,9 @@ jobs:
               # depot ne consigne pas pour la cause #17680 (une correspondance
               # de texte serait devinee, donc fausse un jour sans prevenir).
               if ! gh run rerun "$RUN_ID" --repo "$REPO"; then
+                # silence justifie #22215 : jq local sur RUN (deja en memoire,
+                # fetch reussi plus haut) -- un vide tombe dans la branche
+                # structurelle nommee ci-dessous, aucun signal n'est perdu.
                 RUN_STATUS=$(printf '%s' "${RUN:-}" | jq -r '.status // empty' 2>/dev/null)
                 if [ "${RUN_STATUS:-}" = "completed" ]; then
                   # Un run TERMINE qui refuse la relance ne l'accordera jamais :
@@ -1373,19 +1467,25 @@ jobs:
           TIM_ERR=$(mktemp)
           TIM_CODE='aucun code HTTP'
           TIM_DETAIL='aucun message de gh'
+          # #22512 -- meme contrat que le bloc de balayage : TIM_ERR ne doit
+          # pas survivre au step sur un runner persistant (#22418).
+          trap 'rm -f "${TIM_ERR:-}"' EXIT
           RUN=$(gh api "repos/$REPO/actions/runs/$RUN_ID" 2>"$TIM_ERR") || {
             TIM_CODE=$(grep -oE 'HTTP [0-9]+' "$TIM_ERR" | tail -1 || true); [ -n "$TIM_CODE" ] || TIM_CODE='aucun code HTTP'
-            TIM_DETAIL=$(tr '\n' ' ' < "$TIM_ERR" | cut -c1-200); [ -n "$TIM_DETAIL" ] || TIM_DETAIL='aucun message de gh'
+            TIM_DETAIL=$(tr '\n' ' ' < "$TIM_ERR" | cut -c1-300); [ -n "$TIM_DETAIL" ] || TIM_DETAIL='aucun message de gh'
             echo "::warning::stale-sweep timing unavailable: endpoint=GET repos/$REPO/actions/runs/$RUN_ID code=$TIM_CODE detail=$TIM_DETAIL"
             exit 0
           }
           # The endpoint defaults to filter=latest. Keep it that way: filter=all
           # includes prior attempts after a re-run and makes the current job name
           # ambiguous, exactly when this workflow is measuring repeated service.
+          # #22278 -- l'avertissement nomme l'appel REEL : `&per_page=100` fait
+          # partie de l'URL interpellee, un lecteur qui la recopie pour rejouer
+          # l'echec doit obtenir le meme appel, pas un autre.
           JOBS=$(gh api "repos/$REPO/actions/runs/$RUN_ID/jobs?filter=latest&per_page=100" 2>"$TIM_ERR") || {
             TIM_CODE=$(grep -oE 'HTTP [0-9]+' "$TIM_ERR" | tail -1 || true); [ -n "$TIM_CODE" ] || TIM_CODE='aucun code HTTP'
-            TIM_DETAIL=$(tr '\n' ' ' < "$TIM_ERR" | cut -c1-200); [ -n "$TIM_DETAIL" ] || TIM_DETAIL='aucun message de gh'
-            echo "::warning::stale-sweep timing unavailable: endpoint=GET repos/$REPO/actions/runs/$RUN_ID/jobs?filter=latest code=$TIM_CODE detail=$TIM_DETAIL"
+            TIM_DETAIL=$(tr '\n' ' ' < "$TIM_ERR" | cut -c1-300); [ -n "$TIM_DETAIL" ] || TIM_DETAIL='aucun message de gh'
+            echo "::warning::stale-sweep timing unavailable: endpoint=GET repos/$REPO/actions/runs/$RUN_ID/jobs?filter=latest&per_page=100 code=$TIM_CODE detail=$TIM_DETAIL"
             exit 0
           }
 

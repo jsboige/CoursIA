@@ -68,17 +68,60 @@ def _run_module(*args: str) -> subprocess.CompletedProcess:
     )
 
 
-def test_pr_added_files_param_accepts_default_none() -> None:
-    """``pr_added_files=None`` doit conserver le comportement historique."""
+SYNTHETIC_README = "MyIA.AI.Notebooks/GameTheory/README.md"
+
+
+def _synthetic_audit(tmp_path: Path, monkeypatch) -> object:
+    """Charge le module sur un depot synthetique a backlog CONNU.
+
+    Depuis #22448 (decodage du percent-encoding des hrefs), le depot reel ne
+    porte plus aucune violation brute : les temoins qui exigeaient
+    ``len(violations) > 0`` mesuraient l'etat de l'arbre vivant, pas le
+    contrat. On fabrique donc les violations en memoire, ce qui est plus
+    fort : le temoin ne peut plus s'eteindre par un simple nettoyage de
+    README. Quatre liens, dont un seul par classe :
+
+      - un ``.ipynb`` existant          -> aucune violation ;
+      - un ``.ipynb`` dont le nom est percent-encode et qui EXISTE
+        (``Cr%C3%A9ateur%20de%20mail.ipynb`` -> ``Créateur de mail.ipynb``)
+        -> aucune violation (c'est le correctif #22448 lui-meme) ;
+      - un ``.ipynb`` absent            -> ``BROKEN`` ;
+      - un ``.html`` absent             -> ``HTML_404``.
+    """
+    series = tmp_path / "MyIA.AI.Notebooks" / "GameTheory"
+    series.mkdir(parents=True)
+    (series / "GameTheory-01-PrisonersDilemma-Python.ipynb").write_text("{}", encoding="utf-8")
+    (series / "Créateur de mail.ipynb").write_text("{}", encoding="utf-8")
+    (series / "README.md").write_text(
+        "[ok](GameTheory-01-PrisonersDilemma-Python.ipynb)\n"
+        "[encode](Cr%C3%A9ateur%20de%20mail.ipynb)\n"
+        "[mort](Carnet-Absent-Python.ipynb)\n"
+        "[render-mort](Carnet-Absent.html)\n",
+        encoding="utf-8",
+    )
     mod = _load_rgqr()
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(mod, "git_tracked_readmes", lambda: [SYNTHETIC_README])
+    return mod
+
+
+def test_pr_added_files_param_accepts_default_none(tmp_path: Path, monkeypatch) -> None:
+    """``pr_added_files=None`` doit conserver le comportement historique."""
+    mod = _synthetic_audit(tmp_path, monkeypatch)
     v_none = mod.readme_link_violations()
     v_explicit = mod.readme_link_violations(pr_added_files=None)
     # Meme nombre de violations, meme signature
-    assert len(v_none) == len(v_explicit)
-    assert len(v_none) > 0, "temoin casse : pas de violations brutes en repo"
+    assert v_none == v_explicit
+    # Le backlog synthetique porte exactement les deux classes bloqueuses,
+    # et le lien percent-encode EXISTANT n'en produit aucune.
+    assert sorted(cls for _, cls, _ in v_none) == ["BROKEN", "HTML_404"], v_none
+    assert "Cr%C3%A9ateur%20de%20mail.ipynb" not in {href for _, _, href in v_none}, (
+        "le percent-encoding doit etre decode avant resolution (#22448) : "
+        "un href encode vers un fichier existant n'est pas BROKEN"
+    )
 
 
-def test_pr_added_files_is_inert_on_violations() -> None:
+def test_pr_added_files_is_inert_on_violations(tmp_path: Path, monkeypatch) -> None:
     """Depuis #18911, ``pr_added_files`` n'affecte plus l'ensemble des violations.
 
     L'exemption fondee #19631 (#19368) etait specifique a la classe RETIREE
@@ -88,15 +131,15 @@ def test_pr_added_files_is_inert_on_violations() -> None:
     accepte pour le contrat CLI/dumper, mais il est INERTE -- c'est le temoin
     qui remplace l'ancien « au moins 1 disparition ».
     """
-    mod = _load_rgqr()
+    mod = _synthetic_audit(tmp_path, monkeypatch)
     before = mod.readme_link_violations()
     after = mod.readme_link_violations(pr_added_files={CB01})
     assert before == after, (
         "pr_added_files est cense etre INERTE sur l'ensemble des violations "
         "depuis #18911 (l'exemption #19631 visait la classe retiree STALE_LINK)"
     )
-    # Temoin negatif : on mesure bien un ensemble non vide.
-    assert len(before) > 0
+    # Temoin negatif : on mesure bien un ensemble non vide, construit ici.
+    assert len(before) == 2, before
 
 
 def test_cli_pr_added_files_loads_list(tmp_path: Path) -> None:

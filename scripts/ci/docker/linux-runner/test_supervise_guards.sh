@@ -144,12 +144,14 @@ if [ "\$1" = "info" ]; then
   esac
   exit 0
 fi
-# Caps memoire des conteneurs (#15164) : une ligne par ID demande, valeur en
-# octets pilotable par STUB_MEM_BYTES. Defaut 0 -- les autres probes inspect
+# Caps memoire des conteneurs (#15164) : une ligne par ID demande, rendue au
+# format du VRAI docker inspect pour le format deux champs des consommateurs
+# (running_ci_mb #22532, running_family_mb #21494) : "<nom> <octets>", valeur
+# pilotable par STUB_MEM_BYTES. Defaut 0 -- les autres probes inspect
 # (State.Status & co) gardent le silence d'avant.
 if [ "\$1" = "inspect" ]; then
   case "\$*" in
-    *HostConfig.Memory*) shift 3; for _id in "\$@"; do echo "\${STUB_MEM_BYTES:-0}"; done ;;
+    *HostConfig.Memory*) shift 3; for _id in "\$@"; do echo "\$_id \${STUB_MEM_BYTES:-0}"; done ;;
   esac
   exit 0
 fi
@@ -3415,6 +3417,12 @@ STUB
   export STUB_RATE_RESET=$(( $(date +%s) + 180 ))
   . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1
   FETCH_TOKEN_STATE_FILE="$TEST_DIR/state-70/token_state"; mkdir -p "$TEST_DIR/state-70"
+  # #21527 critere 5 : le source ci-dessus a evalue STATE_DIR depuis
+  # l'ENVIRONNEMENT de la machine -- le cache de jeton pointerait donc vers le
+  # STATE_DIR REEL du poste, dont un jeton encore frais ferait reussir le
+  # fetch SANS toucher gh : le test de quota perdrait son sujet. On l'isole
+  # comme le fichier d'etat.
+  REGISTRATION_TOKEN_CACHE="$TEST_DIR/state-70/rt_cache"
   # Sentinelle du TEST, pas celle de l'instance : `supervise.sh` en definit une
   # a la source, et une sentinelle reelle presente sur l'hote ferait echouer
   # l'assertion sans qu'aucun quota n'ait ete touche.
@@ -3445,7 +3453,7 @@ STUB
   export STUB_STOP_FILE="$STOP_FILE"; rm -f "$STOP_FILE"
   reset_epoch="$(awk -F= '$1=="RESET"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
   printf 'HTTP=RATE\nACCOUNT=tester\nRESET=%s\nERR=gh: API rate limit exceeded (HTTP 403)\n' "${reset_epoch:-0}" > "$FETCH_TOKEN_STATE_FILE"
-  out="$( (timeout 30 env GH_TOKEN=dummy FETCH_TOKEN_STATE_FILE="$FETCH_TOKEN_STATE_FILE" bash -c '. "$0" status >/dev/null 2>&1; slot_loop 99 gh-quota-test d d 4096m "" 4096' "$SCRIPT_DIR/supervise.sh") 2>&1 )"; rc=$?
+  out="$( (timeout 30 env GH_TOKEN=dummy FETCH_TOKEN_STATE_FILE="$FETCH_TOKEN_STATE_FILE" REGISTRATION_TOKEN_CACHE="$REGISTRATION_TOKEN_CACHE" bash -c '. "$0" status >/dev/null 2>&1; slot_loop 99 gh-quota-test d d 4096m "" 4096' "$SCRIPT_DIR/supervise.sh") 2>&1 )"; rc=$?
   if [ "$rc" = "124" ] && [ ! -f "$STOP_FILE" ] \
      && printf '%s' "$out" | grep -q "HTTP RATE" \
      && ! printf '%s' "$out" | grep -q "ABANDON"; then
@@ -3994,6 +4002,301 @@ STUB
     ok "plafond memoire pose sur le conteneur du miroir"
   else
     ko "aucun plafond memoire sur le conteneur du miroir (un clone integral sans borne)"
+  fi
+  # gc.auto=0 (mission ai-01 26/10, #18225) : le script MIRROR_SH voyage DANS
+  # l'argv (`-c "$script"`), donc le verifier ici couvre ce qui atteint
+  # REELLEMENT le conteneur, bootstrap et refresh d'un seul tenant -- un grep
+  # du source ne prouverait pas que le script epingle est celui qui tourne.
+  # Comptes attendus : 2x `config gc.auto 0` (epingle au bootstrap +
+  # re-epingle par le refresh, pour les miroirs bootstrapes avant la ligne) et
+  # 2x `-c gc.auto=0` (les DEUX fetch --prune). NB : la moitie CONSOMMATRICE
+  # de la meme mission (GIT_ALTERNATE_OBJECT_DIRECTORIES posee avec miroir,
+  # absente sinon) est comportementale et vit dans test_entrypoint_mirror.sh
+  # Test 8 -- la variable est exportee par le PROCESSUS entrypoint, elle n'a
+  # sa place dans AUCUN argv observe par cette suite.
+  n_cfg="$(printf '%s\n' "$argv" | grep -c -- 'config gc.auto 0')"
+  if [ "$n_cfg" = "2" ]; then
+    ok "gc.auto epingle au bootstrap ET re-epingle par le refresh"
+  else
+    ko "attendu 2 'config gc.auto 0' dans le script du conteneur, obtenu $n_cfg"
+  fi
+  n_fetch="$(printf '%s\n' "$argv" | grep -o -- '-c gc.auto=0' | wc -l | tr -d ' ')"
+  if [ "$n_fetch" = "2" ]; then
+    ok "gc.auto=0 en -c sur les DEUX fetch --prune (bootstrap + refresh)"
+  else
+    ko "attendu 2 '-c gc.auto=0' (bootstrap + refresh), obtenu $n_fetch"
+  fi
+)
+echo ""
+
+# --- Test 73 : cache partage du registration token (#21527, critere 5, voie (a))
+# Mesure ai-01 du 26/10 : un fetch par demarrage de conteneur = 155 appels
+# REST/h pour le pool -- la consommation meme qui a epuise le quota de la
+# flotte le 2026-10-20. Le jeton vaut 1 h : le re-servir depuis STATE_DIR
+# fait tomber la consommation a <= 1 fetch par fenetre. Quatre comportements
+# eprouves, chacun par un appel DIRECT a fetch_token (pas de superviseur) :
+#   (1) cache frais, cle identique  -> servi SANS aucun appel gh
+#   (2) cache perime (TTL ecoule)   -> re-fetch, cache re-ecrit
+#   (3) cle differente (compte epingle change) -> re-fetch, jamais l'ancien
+#   (4) cache corrompu (forme invalide) -> miss silencieuse, re-fetch
+echo "Test 73 : le registration token se partage entre demarrages (#21527)"
+(
+  mkdir -p "$TEST_DIR/bin73" "$TEST_DIR/state-73"
+  cat > "$TEST_DIR/bin73/gh" <<'STUB'
+#!/usr/bin/env bash
+# Tout appel gh est journalise : un cache frais doit servir SANS passer ici.
+echo "$*" >> "$GH_CALLS_LOG"
+if printf '%s' "$*" | grep -q 'registration-token'; then
+  printf 'FRESHSTUBTOKEN0123456789XY\n'
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin73/gh"
+  export PATH="$TEST_DIR/bin73:$PATH"
+  # COURSIA_RUNNER_REPO (pas REPO) : le source reassigne REPO depuis cette
+  # variable -- l'export direct de REPO serait ecrase a la ligne 103.
+  export COURSIA_RUNNER_REPO="test/test"
+  export GH_CALLS_LOG="$TEST_DIR/gh73.calls"
+  . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1
+  # Isolation au meme titre que FETCH_TOKEN_STATE_FILE : le source a evalue
+  # STATE_DIR depuis l'environnement de la machine.
+  FETCH_TOKEN_STATE_FILE="$TEST_DIR/state-73/token_state"
+  REGISTRATION_TOKEN_CACHE="$TEST_DIR/state-73/rt_cache"
+
+  # (1) cache frais, cle identique -> servi, ZERO appel gh
+  printf 'ACCOUNT=ambient\nREPO=test/test\nTOKEN=CACHEDTOKEN0123456789AB\nFETCHED_AT=%s\n' \
+    "$(date +%s)" > "$REGISTRATION_TOKEN_CACHE"
+  : > "$GH_CALLS_LOG"
+  out="$( (GH_TOKEN=dummy fetch_token) 2>/dev/null )"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "CACHEDTOKEN0123456789AB" ] && [ ! -s "$GH_CALLS_LOG" ]; then
+    ok "cache frais : jeton servi sans AUCUN appel gh"
+  else
+    ko "cache frais : rc=$rc out='$out' appels='$(cat "$GH_CALLS_LOG")'"
+  fi
+  if grep -q '^SOURCE=cache$' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null; then
+    ok "etat du fetch marque SOURCE=cache (diagnostic lisible hors subshell)"
+  else
+    ko "SOURCE=cache absent de l'etat : $(cat "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+  fi
+
+  # (2) cache perime (TTL de 3300 s ecoule) -> re-fetch + re-ecriture
+  printf 'ACCOUNT=ambient\nREPO=test/test\nTOKEN=CACHEDTOKEN0123456789AB\nFETCHED_AT=%s\n' \
+    "$(( $(date +%s) - 4000 ))" > "$REGISTRATION_TOKEN_CACHE"
+  : > "$GH_CALLS_LOG"
+  out="$( (GH_TOKEN=dummy fetch_token) 2>/dev/null )"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "FRESHSTUBTOKEN0123456789XY" ] \
+     && grep -q 'registration-token' "$GH_CALLS_LOG" \
+     && grep -q '^TOKEN=FRESHSTUBTOKEN0123456789XY$' "$REGISTRATION_TOKEN_CACHE"; then
+    ok "cache perime : re-fetch effectue et cache re-ecrit"
+  else
+    ko "cache perime : rc=$rc out='$out' cache='$(tr '\n' ';' < "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)'"
+  fi
+
+  # (3) cle differente (compte epingle change) -> l'ancien jeton n'est pas servi
+  printf 'ACCOUNT=autre-compte\nREPO=test/test\nTOKEN=OLDACCOUNTTOKEN012345Z\nFETCHED_AT=%s\n' \
+    "$(date +%s)" > "$REGISTRATION_TOKEN_CACHE"
+  : > "$GH_CALLS_LOG"
+  out="$( (COURSIA_RUNNER_GH_ACCOUNT=encore-autre fetch_token) 2>/dev/null )"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "FRESHSTUBTOKEN0123456789XY" ] \
+     && grep -q '^ACCOUNT=encore-autre$' "$REGISTRATION_TOKEN_CACHE"; then
+    ok "changement de compte epingle : re-fetch, jamais le jeton de l'ancienne cle"
+  else
+    ko "cle differente : rc=$rc out='$out' cache='$(tr '\n' ';' < "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)'"
+  fi
+
+  # (4) cache corrompu (corps JSON comme TOKEN) -> miss, re-fetch, reparation
+  printf 'ACCOUNT=ambient\nREPO=test/test\nTOKEN={"token":"x"}\nFETCHED_AT=%s\n' \
+    "$(date +%s)" > "$REGISTRATION_TOKEN_CACHE"
+  : > "$GH_CALLS_LOG"
+  out="$( (GH_TOKEN=dummy fetch_token) 2>/dev/null )"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "FRESHSTUBTOKEN0123456789XY" ] \
+     && grep -q '^TOKEN=FRESHSTUBTOKEN0123456789XY$' "$REGISTRATION_TOKEN_CACHE"; then
+    ok "cache corrompu : miss silencieuse, re-fetch, cache repare"
+  else
+    ko "cache corrompu : rc=$rc out='$out' cache='$(tr '\n' ';' < "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)'"
+  fi
+
+  # Depot propre : permissions privees, aucun tmp residuel de l'ecriture atomique
+  mode="$(stat -c %a "$REGISTRATION_TOKEN_CACHE" 2>/dev/null || echo '?')"
+  if [ "$mode" = "600" ]; then
+    ok "cache depose en mode 600 (le jeton ne depasse pas STATE_DIR)"
+  else
+    ko "mode du cache = '$mode', attendu 600"
+  fi
+  if ! ls "$TEST_DIR/state-73"/rt_cache.tmp.* >/dev/null 2>&1; then
+    ok "aucun fichier .tmp residuel de l'ecriture atomique"
+  else
+    ko "tmp residuels : $(ls "$TEST_DIR/state-73"/rt_cache.tmp.* 2>/dev/null)"
+  fi
+)
+echo ""
+
+# --- Test 74 : #22532 -- les waiters comptent au RSS REEL, pas au cap ------
+#
+# Mesure fondatrice (po-2024, 2026-11-04, docker stats --no-stream) : 6 waiters
+# oisifs a 36-169 MiB reels pour 512 Mo de caps comptes -- ~2,6 Go de
+# reservation fantome dans la somme en vol, et l'incoherence 23 552 > 21 504
+# qui refusait tout redemarrage de service (#20727). Trois morceaux :
+#   (a) running_ci_mb joint les waiters par leur LABEL (coursia-waiter=1) et
+#       remplace leur cap par leur RSS mesure ;
+#   (b) la demande waiters se compte a l'allocation RSS declaree
+#       (COURSIA_RUNNER_WAITER_RSS_MB), pas au cap -- avec AVERTISSEMENT en
+#       son absence, jamais un silence ;
+#   (c) les waiters NON etiquetes (generation precedente, remplaces au churn)
+#       restent comptes au cap : transition conservatrice.
+# Fail-closed en plus : un docker stats muet refusе la mesure, jamais zero.
+echo "Test 74 : budget memoire -- waiters au RSS reel, demande a l'allocation declaree (#22532)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT STUB_DOCKER_ID_ALT STUB_MEM_BYTES COURSIA_RUNNER_DOCKER_ENDPOINTS
+  mkdir -p "$TEST_DIR/bin74"
+  cat > "$TEST_DIR/bin74/docker" <<'STUB'
+#!/usr/bin/env bash
+# Stub dedie #22532 : `ps` distingue les DEUX filtres de label (waiter/ci),
+# `inspect` rend "nom octets" (STUB_CI_ROWS, comme le stub 69), `stats` rend
+# le MemUsage des waiters (STUB_WAITER_STATS). STUB_WAITER_STATS_MUTE=1 fait
+# echouer stats : daemon present mais sonde muette.
+if [ "$1" = "-H" ]; then shift 2; fi
+if [ "$1" = "ps" ]; then
+  case "$*" in
+    *'label=coursia-waiter=1'*)
+      [ -n "$STUB_WAITER_IDS" ] && printf '%s\n' $STUB_WAITER_IDS
+      exit 0 ;;
+    *'label=coursia-ci=1'*) printf '%s\n' $STUB_CI_IDS; exit 0 ;;
+  esac
+  exit 0
+fi
+if [ "$1" = "info" ]; then echo "stub-daemon-74"; exit 0; fi
+if [ "$1" = "inspect" ]; then
+  fmt="$3"; shift 3
+  for id in "$@"; do
+    row="$(printf '%s\n' "$STUB_CI_ROWS" | awk -v i="$id" '$1 == i { print; exit }')"
+    [ -n "$row" ] || continue
+    name="$(printf '%s' "$row" | awk '{ print $2 }')"
+    bytes="$(printf '%s' "$row" | awk '{ print $3 }')"
+    case "$fmt" in
+      *'{{.Name}}'*) printf '%s %s\n' "$name" "$bytes" ;;
+      *HostConfig.Memory*) echo "$bytes" ;;
+      *) echo "" ;;
+    esac
+  done
+  exit 0
+fi
+if [ "$1" = "stats" ]; then
+  [ "${STUB_WAITER_STATS_MUTE:-0}" = "1" ] && exit 1
+  [ -n "$STUB_WAITER_STATS" ] && printf '%s\n' "$STUB_WAITER_STATS"
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin74/docker"
+  export PATH="$TEST_DIR/bin74:$PATH"
+  # Deux endpoints, MEME daemon (rendu identique par le stub `info`) : le
+  # default de ci_docker_endpoints liste /var/run/docker-ce.sock, qui existe
+  # ou non selon l'hote -- le parc epingle un socket cree pour rendre la
+  # deduplication par ID de daemon deterministe dans TOUT environnement.
+  # Sans elle, chaque waiter compte deux fois (mesure sous WSL : 721 Mo
+  # rendus pour 361 reels).
+  : > "$TEST_DIR/ce74.sock"
+  export COURSIA_RUNNER_DOCKER_ENDPOINTS="default $TEST_DIR/ce74.sock"
+  # Parc : 2 slots d'execution a 2048 Mo + 3 waiters ETIQUETES a 512 Mo de cap
+  # (RSS reels : 154.7 + 36.47 + 168.9 = 360.07 Mo). Les stubs precedents ne
+  # repondent PAS au filtre waiter -- ils tombent sur `exit 0` vide, chemin
+  # par lequel les tests 62-65/69 restent au comportement d'avant.
+  export STUB_CI_IDS="c1 c2 w1 w2 w3"
+  export STUB_CI_ROWS="c1 /test-74-exec-1 2147483648
+c2 /test-74-exec-2 2147483648
+w1 /myia-74-waiter-1 536870912
+w2 /myia-74-waiter-2 536870912
+w3 /myia-74-waiter-3 536870912"
+  export STUB_WAITER_IDS="w1 w2 w3"
+  export STUB_WAITER_STATS="myia-74-waiter-1 154.7MiB / 512MiB
+myia-74-waiter-2 36.47MiB / 512MiB
+myia-74-waiter-3 168.9MiB / 512MiB"
+  . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1
+
+  # (1) LA SOMME : caps des waiters sortent, leur RSS entre. 2048 x 2 + 361
+  # (RSS arrondi au Mo superieur) = 4457 -- contre 5632 si les caps restaient.
+  out="$(running_ci_mb 2>"$TEST_DIR/t74.err")"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "4457" ] \
+     && grep -q "waiters au RSS reel : 3 waiter(s), 361 Mo (caps non comptes au plafond : 1536 Mo)" "$TEST_DIR/t74.err"; then
+    ok "somme : les 3 waiters etiquetes comptent 361 Mo de RSS, pas 1536 de caps"
+  else
+    ko "somme attendue 4457 avec detail RSS, rc=$rc out='$out' err='$(cat "$TEST_DIR/t74.err")'"
+  fi
+
+  # (2) LA DEMANDE a l'allocation declaree PASSE la ou le cap refuserait.
+  # Budget 5120 Mo. Base declaree 192 Mo/slot : reprise 3 x 192 = 576,
+  # demande nette 6 x 192 - 576 = 576, total 4457 + 576 = 5033 <= 5120.
+  # Base cap : total 4457 + 1536 = 5993 > 5120 -- c'est le controle (3).
+  out="$( ( export COURSIA_RUNNER_BUDGET_GB=5 COURSIA_RUNNER_WAITER_RSS_MB=192; \
+            . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1; \
+            assert_memory_budget waiters 6 512m myia-74-waiter) 2>&1 )"; rc=$?
+  if [ "$rc" = "0" ] \
+     && echo "$out" | grep -q "CI en vol 4457 Mo + 576 Mo demandes <= 5120 Mo" \
+     && echo "$out" | grep -q "reprise en vol ..... 3 slot(s) de cette famille = 576 Mo"; then
+    ok "demande waiters a 192 Mo/slot declare : 5033 Mo passent sous 5120 (le cap echouerait)"
+  else
+    ko "la base RSS declaree devrait passer : rc=$rc out='$out'"
+  fi
+
+  # (3) SANS declaration : AVERTISSEMENT + repli au cap, qui REFUSE ici --
+  # controle discriminant du (2) : le cap ne tient pas dans le meme budget.
+  out="$( ( export COURSIA_RUNNER_BUDGET_GB=5; unset COURSIA_RUNNER_WAITER_RSS_MB; \
+            . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1; \
+            assert_memory_budget waiters 6 512m myia-74-waiter) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] \
+     && echo "$out" | grep -q "budget CI depasse" \
+     && echo "$out" | grep -q "6 x 512m = 3072 Mo" \
+     && echo "$out" | grep -q "AVERTISSEMENT : COURSIA_RUNNER_WAITER_RSS_MB"; then
+    ok "sans declaration : avertissement + base cap, et le refus que la base RSS evitait"
+  else
+    ko "sans declaration : avertissement et refus attendus, rc=$rc out='$out'"
+  fi
+
+  # (4) FAIL-CLOSED : docker stats muet (daemon vivant) -> REFUS, jamais zero.
+  # Compter 0 Mo de RSS reintroduirait la reservation fantome par l'autre bout.
+  out="$(STUB_WAITER_STATS_MUTE=1 running_ci_mb 2>"$TEST_DIR/t74d.err")"; rc=$?
+  if [ "$rc" != "0" ] && grep -q "budget CI NON MESURABLE" "$TEST_DIR/t74d.err" \
+     && grep -q "RSS des waiters n'a pas pu etre mesure" "$TEST_DIR/t74d.err"; then
+    ok "docker stats muet : refus nomme, pas un RSS fabrique a zero"
+  else
+    ko "un stats muet devrait refuser, rc=$rc err='$(cat "$TEST_DIR/t74d.err" 2>/dev/null)'"
+  fi
+
+  # (5) WAITERS NON ETIQUETES (generation precedente) : comptes AU CAP.
+  # Le label n'existe qu'a partir de #22532 ; les waiters du parc qui tournent
+  # encore sans lui restent au comportement d'avant -- transition conservatrice.
+  out="$(STUB_WAITER_IDS="" running_ci_mb 2>"$TEST_DIR/t74e.err")"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "5632" ] \
+     && ! grep -q "waiters au RSS reel" "$TEST_DIR/t74e.err"; then
+    ok "waiters non etiquetes : 5632 Mo au cap, sans ligne RSS (transition conservatrice)"
+  else
+    ko "sans etiquettes, somme au cap 5632 attendue, rc=$rc out='$out'"
+  fi
+
+  # (6) VALEUR INVALIDE : refus immediat, pas de repli silencieux au cap.
+  out="$( ( export COURSIA_RUNNER_WAITER_RSS_MB=abc; \
+            . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1; \
+            assert_memory_budget waiters 6 512m myia-74-waiter) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] && echo "$out" | grep -q "doit etre un entier de Mo (lu : 'abc')"; then
+    ok "COURSIA_RUNNER_WAITER_RSS_MB=abc : refus nomme"
+  else
+    ko "une valeur invalide devrait refuser, rc=$rc out='$out'"
+  fi
+
+  # (7) LE LABEL DU RUN : le docker run des waiters porte coursia-waiter=1 --
+  # sans lui, la jointure du (1) ne verra JAMAIS les waiters de la generation
+  # courante. Verification au source (le stub 34 montre que piloter le run
+  # complet des waiters serait un harnais disproportionne pour une ligne).
+  lbl="$(grep -n -- '--label coursia-waiter=1' "$SCRIPT_DIR/supervise.sh" | head -1 | cut -d: -f1)"
+  prev="$(( lbl - 1 ))"
+  if [ -n "$lbl" ] && [ "$prev" -gt 0 ] \
+     && sed -n "${prev}p" "$SCRIPT_DIR/supervise.sh" | grep -q -- '--label coursia-ci=1'; then
+    ok "le docker run des waiters porte les DEUX labels (ci + waiter) sur lignes adjacentes"
+  else
+    ko "label coursia-waiter=1 absent ou isole du label ci dans supervise.sh (lbl='$lbl')"
   fi
 )
 echo ""

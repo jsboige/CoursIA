@@ -46,7 +46,7 @@ Pas de `record`, pas de `Formatter.Register`. Suffisant quand la cellule est aut
 
 | Forme | Notebook | Cellule | Preuve |
 |---|---|---|---|
-| **A** (`record PlotSvg`) | `MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb` | `[21]` (barres horizontales, entropie par mot) ; infra réutilisée en `[33]` | `execution_count: 11`, sortie `text/html` commençant par `<svg viewBox="0 0 720 460"` |
+| **A** (`record PlotSvg`) | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-7-Wordle-CSharp.ipynb` | `[21]` (barres horizontales, entropie par mot) ; infra réutilisée en `[33]` | `execution_count: 11`, sortie `text/html` commençant par `<svg viewBox="0 0 720 460"` |
 | **B** (`display(HTML(...))`) | `MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb` | `[8]` (barre horizontale signée, split couleur `>=0` / `<0`) | `execution_count: 5`, sortie `text/html` commençant par `<div><svg viewBox='0 0 720 374'` |
 
 Les deux pointeurs sont **résolus firsthand** (index de cellule, `execution_count`, premiers octets de la sortie committée) et non recopiés d'un body de PR. C'est le minimum exigible d'une « référence canonique » : cf l'incident qui a produit cette section, [§Provenance](#provenance-de-cette-correction).
@@ -107,9 +107,9 @@ Le pointeur `MGS-10 cell[8]`, lui, est devenu **exact** entre-temps, mais par ac
 
 | État | Notebooks |
 |---|---|
-| **Converti** (SVG inline, plus de CDN dans la source) | `App-7b-Wordle-CSharp`, `MGS-10-CenterBias` |
+| **Converti** (SVG inline, plus de CDN dans la source) | `App-7-Wordle-CSharp`, `MGS-10-CenterBias` |
 | **Partiel** (SVG inline **et** cellules CDN résiduelles) | `GameTheory-03-Topology2x2-CSharp`, `Infer-17-Kalman-Filter`, `Sudoku-18-Comparison-CSharp` |
-| **Non converti** (CDN seul → blanc en statique) | `Infer-11-Topic-Models`, `Infer-12-Modeles-Hierarchiques`, `DecInfer-06-Value-Information`, `DecInfer-07-Expert-Systems`, `DecInfer-08-Sequential` |
+| **Non converti** (CDN seul → blanc en statique) | `Infer-11-Topic-Models`, `Infer-12-Modeles-Hierarchiques`, `DecInfer-05-Value-Information`, `DecInfer-06-Expert-Systems`, `DecInfer-07-Sequential` |
 
 Mesure reproductible : source de cellule de code contenant `PlotSvg` / `cdn.plot.ly` / `PlotlyHtml`, sur `git ls-files "*.ipynb"`. Les « non converti » + « partiel » sont le reste du rollout #6927 sous l'EPIC #3801.
 

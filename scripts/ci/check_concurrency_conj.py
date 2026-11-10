@@ -44,8 +44,9 @@ that makes the gate rough on every new file is the whole value of the organ
 to keep it that way: `quarto-pages-deploy.yml` was allowlisted because "the
 new deploy must win" -- true of the result, false of the cost. On a merge
 burst every push killed the previous build, GitHub counts a `cancelled` leg
-as a failure, and 19 of the last 40 commits of `main` showed a red cross
-with no failing test. The workflow now carries
+as a failure, and a large share of the last 40 commits of `main` showed a
+red cross with no failing test (compte date et mesure : #22164). The
+workflow now carries
 `cancel-in-progress: ${{ github.event_name != 'push' }}` (push serialises,
 PR still cancels), so the conjunction is gone -- and an allowlist entry
 would have made this guard blind to a revert.
@@ -80,8 +81,9 @@ ALLOWLIST: dict[str, str] = {
     # Vide depuis #22088 : l'entree `quarto-pages-deploy.yml` y figurait au
     # motif que « le nouveau deploiement doit gagner ». C'etait vrai du
     # RESULTAT, faux du COUT -- chaque push annulait le build precedent, et
-    # GitHub compte une annulation comme un echec : 19 commits de main sur 40
-    # portaient une croix rouge sans aucun test en echec.
+    # GitHub compte une annulation comme un echec : une part importante des
+    # 40 derniers commits de main portait une croix rouge sans aucun test en
+    # echec (compte date et mesure : issue #22164).
     #
     # Le workflow porte desormais `cancel-in-progress: ${{ github.event_name
     # != 'push' }}` : la voie push ne s'annule plus (serialisation), la voie

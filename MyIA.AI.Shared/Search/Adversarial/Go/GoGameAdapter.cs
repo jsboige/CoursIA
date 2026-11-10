@@ -70,16 +70,18 @@ public sealed class GoGameAdapter : IGame<GoGame, GoPoint, GoColor>
     /// <inheritdoc />
     /// <remarks>
     /// Ordre d'exploration : balayage ligne par ligne (Y croissant, X croissant),
-    /// passe en dernier. L'ordre est significatif pour l'elagage -- c'est un
-    /// parametre du moteur, pas un detail. Le passe est toujours legal tant que la
-    /// partie n'est pas finie : sans lui, un plateau sans coup avantageux ne
-    /// pourrait jamais se terminer.
+    /// abandon avant passe, passe en dernier. L'ordre est significatif pour
+    /// l'elagage -- c'est un parametre du moteur, pas un detail. Le passe est
+    /// toujours legal tant que la partie n'est pas finie : sans lui, un plateau
+    /// sans coup avantageux ne pourrait jamais se terminer. L'abandon l'est
+    /// aussi : c'est l'action de derniere renonciation, dominee par toute
+    /// continuation qui perd par moins que le score maximal.
     /// </remarks>
     public IReadOnlyList<GoPoint> Actions(GoGame state)
     {
         ArgumentNullException.ThrowIfNull(state);
 
-        List<GoPoint> actions = new(state.Size * state.Size + 1);
+        List<GoPoint> actions = new(state.Size * state.Size + 2);
         if (state.IsOver)
         {
             return actions;
@@ -97,6 +99,7 @@ public sealed class GoGameAdapter : IGame<GoGame, GoPoint, GoColor>
             }
         }
 
+        actions.Add(GoPoint.Resign);
         actions.Add(GoPoint.Pass);
         return actions;
     }
@@ -125,18 +128,27 @@ public sealed class GoGameAdapter : IGame<GoGame, GoPoint, GoColor>
     /// Score de territoire (a la chinoise, komi compris) de la tranche 2, en
     /// points de partie -- pas dans [0, 1] : le patrimoine normalisait via CNTK,
     /// hors perimetre. Antisymetrique par construction, l'hypothese somme nulle
-    /// du contrat est tenue. Le vide n'est pas un joueur : il echoue.
+    /// du contrat est tenue. Le vide n'est pas un joueur : il echoue. Sur une
+    /// partie terminee par abandon, le vainqueur par renonciation lit
+    /// <see cref="MaxUtility"/> et le perdant <see cref="MinUtility"/> : le
+    /// score du plateau n'est plus le critere de victoire, et l'antisymetrie
+    /// reste exacte.
     /// </remarks>
     public double Utility(GoGame state, GoColor player)
     {
         ArgumentNullException.ThrowIfNull(state);
-        return player switch
+        if (player == GoColor.Empty)
         {
-            GoColor.Black => state.AreaScore(),
-            GoColor.White => -state.AreaScore(),
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(player), player, "Le vide n'est pas un joueur."),
-        };
+            throw new ArgumentOutOfRangeException(
+                nameof(player), player, "Le vide n'est pas un joueur.");
+        }
+
+        if (state.ResignedBy is GoColor resigned)
+        {
+            return player == resigned ? MinUtility : MaxUtility;
+        }
+
+        return player == GoColor.Black ? state.AreaScore() : -state.AreaScore();
     }
 
     /// <summary>

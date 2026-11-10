@@ -5,7 +5,7 @@ namespace MyIA.Trading.Backtester
 {
     /// <summary>
     /// Substitut local de l'extension Accord.Math Shuffle (package Accord remplace par ML.NET,
-    /// docs/reference/backtester-e2-cadrage.md). Meme contrat : melange Fisher-Yates d'une liste
+    /// docs/transients/2026-08-23-backtester-e2-cadrage.md). Meme contrat : melange Fisher-Yates d'une liste
     /// en place. Le random statique partagé reproduit le comportement de l'extension Accord
     /// (graine interne, non injectable) — les sites d'appel du fork restent inchangés.
     /// </summary>

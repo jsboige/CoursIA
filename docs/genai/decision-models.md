@@ -1,6 +1,8 @@
+> REFERENCE — vivante — dernière révision 2026-11-03
+
 # Modèles de décision — relevé et shortlist (issue #18204, Pli 1)
 
-> **Statut** : Pli 1/4 de #18204. **Cadrage et relevé** uniquement. Aucune substitution de notebook dans cette PR. La **vérification locale** (rejouer 2-3 tranches de benchmarks) est **mesurée pour la liste courte `0.8b`** : pic VRAM 1,47 Go, ~0,23 s/item (po-2028, PR #21921 — script `scripts/genai-stack/decision_local_check.py`, agrégat `scripts/results/decision_local_2026-10-22.json`). L'exigence d'un GPU 24 Go est donc **réfutée pour `0.8b`** ; l'obstacle réel est la **non-publication des charges utiles** (`decision-index-suite-0.3` -> 401), pas la carte. Le besoin 24 Go **reste non réfuté pour `4b`** (non mesuré).
+> **Statut** : Pli 1/4 de #18204. **Cadrage et relevé** uniquement. Aucune substitution de notebook dans cette PR. La **vérification locale** (rejouer 2-3 tranches de benchmarks) est **mesurée pour la liste courte `0.8b`** : pic VRAM 1,47 Gio, ~0,23 s/item (po-2028, PR #21921 — script `scripts/genai-stack/decision_local_check.py`, agrégat `scripts/results/decision_local_2026-10-22.json`). L'exigence d'un GPU 24 Go est donc **réfutée pour `0.8b`** ; l'obstacle réel est la **non-publication des charges utiles** (`decision-index-suite-0.3` -> 401), pas la carte. Le besoin 24 Go est **réfuté aussi pour `4b`** : les deux checkpoints `jiwo-4b` (v1, v2) sont servis sur GPU avec un pic VRAM de **8,02 Gio** sur une carte de 23,99 Gio (RTX 4090, mesure du 2026-10-30) — la borne servie déduite est une carte 16 Go (8,02 Gio mesurés < 16 Go) ([`decision-models-4b-local-verification.md`](decision-models-4b-local-verification.md)).
 >
 > **Date du relevé** : 2026-10-03. **Source primaire** : Hugging Face, espace `multimodalart/jev-decision-index`, édition `0.2.1` du 2026-09-28 (`data/index.json`, 70 implémentations sur ~120 000 requêtes, 38 benchmarks statiques).
 
@@ -102,12 +104,82 @@ Les variantes à meilleur score de leur palier (`ezjev 4B s2` 46,95, `Bespoke Ni
 
 ### 0.5 Ce qui reste non vérifié
 
-La **mesure locale** (§5 ci-dessous) : rejouer 2-3 tranches de benchmarks chez nous. Elle demande une carte 24 Go et sort de cette mise à jour ; le verdict `RECOVERABLE-MACHINE` de §5.2 est inchangé. La qualité de présentation (§3) reste relevée au Pli 2.
+La **mesure locale** (§5 ci-dessous) : rejouer 2-3 tranches de benchmarks chez nous. Elle demande une carte 24 Go **pour les modèles 26 B de la shortlist** (borne conservatrice) et sort de cette mise à jour — la tranche `4b` y étant désormais mesurée, elle réfute cette borne pour son palier (8,02 Gio, borne 16 Go, [`decision-models-4b-local-verification.md`](decision-models-4b-local-verification.md)) ; le verdict `RECOVERABLE-MACHINE` de §5.2 tient. La qualité de présentation (§3) reste relevée au Pli 2.
 
 Deux limites propres aux colonnes ajoutées par cette mise à jour (déjà nommées par la review NanoClaw du 10/10, points 3 et 5) :
 
 1. **Poids ouverts = attestation de l'index, pas un accès vérifié.** La colonne est dérivée de `weights_repo`/`weights_note`/`model_url` sans consulter `gated` ni le code HTTP : `Jet v6.2` y est attesté alors que le dépôt rend `HTTP 401` à la sonde publique, et `Surogate Rune` est `gated: auto`. « Ouvert » se lit « référencé par l'index », jamais « accès public vérifié ».
 2. **Voie de service = heuristique, non mesurée.** `llama.cpp`/`vLLM` sont proposés d'après la taille servie et le tag GGUF ; aucune tentative de service, aucune mesure de disponibilité n'a été faite. Un `HTTP 401` ou un `gated` n'établit pas l'impossibilité de servir sous autorisation — l'unicité de la voie relève du plausible.
+
+## 0bis. Mise à jour mesurée au 2026-11-03 — édition 0.4.1 (247 implémentations)
+
+> **Ce que les sections ci-dessous disent** : sections 1 à 8 = relevé du 2026-10-03 sur `0.2.1` ; section 0 = mise à jour du 2026-10-10 sur `0.3.1` (115 implémentations).
+> **Ce qui est mesuré ici** : l'index est passé à **Decision Index `0.4.1`** (base `release-v2.1`), **247 implémentations**, `generated_utc` **2026-10-29T14:04:16Z** (suite : 110 201 requêtes, 42 benchmarks, 5 catégories). Fichier téléchargé, classé et sondé par l'outil livré en section 0 (`decision_index_report.py --licenses --top 4`) ; les licences ci-dessous viennent de ses requêtes API Hugging Face, recoupées par des sondes manuelles concordantes sur 7 dépôts.
+> **Que recouvre « suite »** : le compte de requêtes est le `headline` que l'édition déclare pour sa propre suite d'évaluation — champ `suite` de `data/index.json`, repris tel quel par l'outil — ce n'est pas un décompte nôtre. L'édition `0.2.1` déclarait ~120 000 requêtes pour une autre suite : ces comptes sont des **métadonnées d'édition**, sans lien monotone avec les implémentations (70 → 247) ni les benchmarks (38 → 42) — la lecture « plus de modèles ⇒ plus de requêtes » ne tient pas.
+
+**Provenance du fichier relevé** — `data/index.json`, **3 359 745 octets**,
+`sha256` **`bdfdd5ff3e7700f66e27b4d31274830d8136344d732487a00f74af5c936c72e2`**,
+`generated_utc` `2026-10-29T14:04:16Z`. L'avertissement de la section 0 tient : espace **roulant**, ces valeurs datent le relevé.
+
+### 0bis.1 Classement par palier (0.4.1), licences sondées
+
+#### Palier <=1B
+
+| Modèle | Taille servie | `balanced_skill` | Dépôt des poids | Base | Licence |
+|---|---:|---:|---|---|---|
+| GLiClass v4 edge (0.4B) | 0.44 B | 31.21 | knowledgator/gliclass-v4-edge | microsoft/deberta-v3-large | apache-2.0 |
+| OneJev1.6-0.8B | 0.85 B | 29.58 | OmniJev/OneJev1.6-0.8B | Qwen/Qwen3.5-0.8B | apache-2.0 |
+| crystal-0.8b | 0.85 B | 29.37 | Kyunghwan-kim/crystal-0.8b | Qwen/Qwen3.5-0.8B | **cc-by-nc-4.0** |
+| vLLM-SR vela3-fast (0.4B) | 0.38 B | 29.27 | vllm-sr/vela3-fast | dmis-lab/UltraBERT-380M | apache-2.0 |
+
+L'entrée « Jev 1.13 » (59.22) qui domine ce palier dans l'index brut est un `kind: hosted API` — **aucun poids publié**, non servable en local ; l'outil la filtre du classement self-hosted, ce relevé l'écarte aussi.
+
+#### Palier 2-4B
+
+| Modèle | Taille servie | `balanced_skill` | Dépôt des poids | Base | Licence |
+|---|---:|---:|---|---|---|
+| KnowLine 4B Gen5.5 | 4.66 B | 55.99 | PelaAI/KnowLine-4B-Gen5.5 | Qwen/Qwen3.5-4B | apache-2.0 |
+| StartLux-Decision v1.1 4B | 4.66 B | 54.80 | startlux-models/StartLux-Decision-v1.1-4B-Instant | Qwen/Qwen3.5-4B | **cc-by-nc-4.0** |
+| Perplexity Decider Flash v1.2 (4B) | 4.54 B | 54.29 | perplexity-ai/pplx-decider-flash-v1.2 | Qwen/Qwen3.5-4B | apache-2.0 |
+| Jeffan-4B-2010 | 4.21 B | 52.21 | tattrongvu/Jeffan-4B-2010 | Qwen/Qwen3.5-4B | apache-2.0 |
+
+#### Palier 9-12B
+
+| Modèle | Taille servie | `balanced_skill` | Dépôt des poids | Base | Licence |
+|---|---:|---:|---|---|---|
+| baselabs elephant-1 (9B) | 9.41 B | 60.26 | baselabs/elephant-1 | Qwen/Qwen3.5-9B | **mit** |
+| KnowLine 9B Gen1 | 9.65 B | 58.44 | PelaAI/KnowLine-9B-Gen1 | Qwen/Qwen3.5-9B | apache-2.0 |
+| StartLux-Decision v1.1 9B | 9.65 B | 58.07 | startlux-models/StartLux-Decision-v1.1-9B-Instant | Qwen/Qwen3.5-9B | **cc-by-nc-4.0** |
+| vLLM-SR d3-flash (9B) | 8.39 B | 54.27 | vllm-sr/d3-flash | Qwen/Qwen3.5-9B | apache-2.0 |
+
+#### Palier 26-35B
+
+| Modèle | Taille servie | `balanced_skill` | Dépôt des poids | Base | Licence |
+|---|---:|---:|---|---|---|
+| KnowLine 31B Gen1 | 31.27 B | 71.86 | PelaAI/KnowLine-31B-Gen1 | google/gemma-4-31B-it | apache-2.0 |
+| Fastino GLiDE 1.2 | 27.80 B | 71.52 | fastino/GLiDE | Qwen/Qwen3.8-27B | **other** |
+| Sieve 31B v3 | 31.27 B | 71.10 | sthanika-ai/Sieve-31B-v3 | google/gemma-4-31B-it | apache-2.0 |
+| Turion Jev 31B | 31.27 B | 70.47 | turion-ai/turion-jev-31b | google/gemma-4-31B-it | apache-2.0 |
+
+`vLLM-SR d3-ultra (27B)` (70.18, apache-2.0, checkpoint serveur épinglé dans le meta de l'index) arrive juste derrière : cinq entrées dépassent 70 dans cette édition, aucune ne dépassait 63 en `0.3.1`.
+
+### 0bis.2 Ce que l'édition change
+
+- **Nouveau top absolu** : `KnowLine 31B Gen1` 71,86 — LoRA sur `gemma-4-31B-it` (apache-2.0 dépôt **et** base), adaptateur et base à assembler. La tête `0.3.1` `Perplexity Decider v1.1` (62,75) est remplacée dans l'index par **`Decider v1.2 (27B)`** : 67,98.
+- **`laya` 9,21** (6,0 en `0.2.1` ; 4,43 en `0.3.1`) : la lecture de §2.1 — encodeurs en bas du classement — tient ; l'oscillation 4,43 → 9,21 sans changement de modèle confirme que **les scores ne se comparent pas d'une édition à l'autre sans précaution**.
+- **Les licences NC reviennent sur des têtes de palier** (`StartLux` 2-4B et 9-12B, `crystal` <=1B) ; chaque palier garde pourtant une tête permissive (apache-2.0 ou MIT) — la contrainte §0.3 « NC vient des fine-tunes, jamais des bases » reste vraie.
+- Les colonnes « Poids ouverts » et « Voie de service » gardent les limites §0.5 (attestation de l'index ; heuristique non mesurée). Les **conclusions de servabilité mesurées** (0.8b : 1,47 Gio ; 4b : 8,02 Gio, borne 16 Go) sont inchangées — la carte n'est pas l'obstacle.
+
+### 0bis.3 Shortlistoire révisée (têtes permissives par palier)
+
+| # | Palier | Modèle | Score | Licence | Voie |
+|---:|---|---|---:|---|---|
+| 1 | 26-35B | **KnowLine 31B Gen1** (LoRA, à assembler) — repli : `vLLM-SR d3-ultra` (checkpoint épinglé) | 71.86 / 70.18 | apache-2.0 | vLLM (quantifié 4 bits) — **heuristique** §0.5 |
+| 2 | 9-12B | **baselabs elephant-1** | 60.26 | **mit** | vLLM — **heuristique** §0.5 |
+| 3 | 2-4B | **KnowLine 4B Gen5.5** — repli : `Jeffan-4B-2010` | 55.99 / 52.21 | apache-2.0 | vLLM — **heuristique** pour ce modèle ; palier borné par la mesure `jiwo-4b` (8,02 Gio, borne 16 Go) |
+| 4 | <=1B | **OneJev1.6-0.8B** | 29.58 | apache-2.0 | vLLM (BF16, **mesuré** : 1,47 Gio) |
+
+Statut par ligne : **mesuré** = servabilité mesurée chez nous sur ce modèle ; **heuristique** = voie déduite de la taille servie et du tag GGUF (§0.5), jamais servie ici. Aucune tête des paliers 26-35B et 9-12B n'est mesurée ; le repli `d3-ultra` (checkpoint serveur épinglé dans le meta de l'index) est la ligne la mieux ancrée du palier 1 — sans être servi chez nous non plus.
 
 ## 1. Périmètre de mesure
 
@@ -210,7 +282,7 @@ L'index utilise « un GPU par run » sur 38 benchmarks statiques. Sur une carte 
 
 ### 5.2 Verdict SOTA
 
-`RECOVERABLE-MACHINE` (routage vers po-2023 ou po-2024 GPU 24+ Go). Aucun `INTRINSIC` : l'outil existe et est invocable, il manque le matériel.
+`RECOVERABLE-MACHINE` (routage vers po-2023 ou po-2024 GPU 24+ Go **pour les 26 B de la shortlist** ; la tranche `4b` tient sur 16 Go, mesurée 8,02 Gio — [`decision-models-4b-local-verification.md`](decision-models-4b-local-verification.md)). Aucun `INTRINSIC` : l'outil existe et est invocable, il manque le matériel.
 
 ### 5.3 Scripts à fournir au Pli 2
 

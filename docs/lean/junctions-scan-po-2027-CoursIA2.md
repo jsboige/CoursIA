@@ -173,7 +173,7 @@ Prochaine etape conditionnelle :
 
 ## Verifications
 
-- **Mode Scan execute** : `pwsh scripts/lean/setup_shared_mathlib.ps1 -Mode Scan` rendu verbatim dans `c1205_scan_po-2027-coursia2.out`.
+- **Mode Scan execute** : `pwsh scripts/lean/setup_shared_mathlib.ps1 -Mode Scan` rendu verbatim dans `docs/transients/2026-09-18-c1205-scan-po-2027-coursia2.out`.
 - **Discrimination manifest-identity** : **8 groupes distincts** (dont 2 MUTUALISABLES et 6 isoles) sur 28 lacs — corrigé c.629, le rapport initial c.1205 annonçait 7.
 - **3 checkouts presents identifies** : search_lean (6.9 Go, physique), mimo_lean (6.63 Go, physique), kelly_lean (deja jonctionne v4.32.1).
 - **2 checkouts physiques = 13.53 Go** recuperables par Apply (search_lean candidat jonction simple ; mimo_lean necessite investigation `slt 0b1020a4`).

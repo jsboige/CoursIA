@@ -1,0 +1,95 @@
+{
+  "gate": 24,
+  "issue": "ICT-24 phase 2 (See #20324, PR #21900)",
+  "provenance": {
+    "committed_traces": "MyIA.AI.Notebooks/IIT/ICT-Series/traces/ (extracteur d epoque, pre-#19967)",
+    "rerun_traces": "hors depot (.tmp/gate24_rerun, GPU 2, meme extracteur corrige #19967, memes clamp_ids)",
+    "aggregate_of": "mesure gate24 (panel fixe/par bras, k_state=16, n_shuffles=10, window=12, seed=indice dans SETS) rejouee sur les traces ; visibilite du clamp par scripts/verify_clamp_traces.py (ICT-Series/scripts/)"
+  },
+  "clamp_ids": {
+    "ws": [
+      5437,
+      63815,
+      49750,
+      56487,
+      19350,
+      42410,
+      6784
+    ],
+    "rp": [
+      2653,
+      16970,
+      25250,
+      27565,
+      49677,
+      55345,
+      58349
+    ]
+  },
+  "panel_fixe": {
+    "intact": {
+      "mean": -0.45784417851425463,
+      "n_events": 36,
+      "n_credited": 7,
+      "n_states": 200
+    },
+    "ws_clamp": {
+      "mean": -0.4682328964101261,
+      "n_events": 76,
+      "n_credited": 10,
+      "n_states": 76
+    },
+    "rp_clamp": {
+      "mean": 0.11981219823304164,
+      "n_events": 34,
+      "n_credited": 6,
+      "n_states": 196
+    }
+  },
+  "panel_par_bras": {
+    "intact": {
+      "mean": -0.45784417851425463,
+      "n_events": 36,
+      "n_credited": 7,
+      "n_states": 200
+    },
+    "ws_clamp": {
+      "mean": 0.1985020318790247,
+      "n_events": 65,
+      "n_credited": 7,
+      "n_states": 137
+    },
+    "rp_clamp": {
+      "mean": 0.11981219823304164,
+      "n_events": 34,
+      "n_credited": 6,
+      "n_states": 196
+    }
+  },
+  "clamp_visibility": {
+    "committed": {
+      "rp_clamp": {
+        "differing": 7400,
+        "total": 272599,
+        "status": "ok"
+      },
+      "ws_clamp": {
+        "differing": 236485,
+        "total": 272599,
+        "status": "ok"
+      }
+    },
+    "rerun": {
+      "rp_clamp": {
+        "differing": 178227,
+        "total": 272599,
+        "status": "ok"
+      },
+      "ws_clamp": {
+        "differing": 239879,
+        "total": 272599,
+        "status": "ok"
+      }
+    }
+  }
+}

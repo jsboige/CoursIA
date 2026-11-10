@@ -27,7 +27,7 @@
     by construction (no division is taken), so an impossible signal produces
     neither `NaN` nor an exception.
 
-  What is proved in this module (two tranches of #22374):
+  What is proved in this module (successive tranches of #22374):
 
   - `valueNoisyNoInfo_le_valueNoisySignal` — the raw value of a decision
     maker who observes the signal dominates that of an uninformed maker,
@@ -46,9 +46,22 @@
     instance of strictly negative value exists (see the section "Sign of
     the values").
 
-  What remains for later tranches, and is **not** claimed here: independent
-  case with zero EVSI, bridge to the deterministic `Signal`, exact adapter
-  to the JSON instances of the `voi` bench, re-executed companion notebook.
+  - `valueNoisySignal_eq_valueNoisyNoInfo_of_factored` — Evans criterion:
+    on a **factored** joint table (state and realization independent), raw
+    EVSI is **exactly** zero, with no rounding argument anywhere;
+  - `evsiRaw` / `evsiNet` — the raw value is nonnegative by dominance; the
+    **net** value (raw minus the cost of observation) is not: the noisy
+    umbrella has a raw gain of 4 and a strictly negative net value as soon
+    as the cost exceeds 4;
+  - `valueNoisyNoInfo_ofSignal`, `valueNoisySignal_ofSignal`,
+    `valueNoisyPerfect_ofSignal` — the **bridge** to the deterministic
+    signals of `Information.lean`: on the class of tables carried by the
+    graph of a `Signal`, the three values coincide exactly. Two semantics
+    that coincide on their intersection cannot diverge silently.
+
+  What remains for later tranches, and is **not** claimed here: exact
+  adapter to the JSON instances of the `voi` bench, cross-engine
+  comparison, re-executed companion notebook.
 
   See #22374 (extension of Bayesian phase 4 of #2610).
 -/
@@ -57,7 +70,15 @@ import Bayesian.Information
 
 /-- Finite single-decision-maker decision problem, with a noisy signal
     described by a table of joint weights state × realization. Payoffs are
-    integers and weights natural: values are exact, without division. -/
+    integers and weights natural: values are exact, without division.
+
+    **Dimension convention.** `nS` is a **count** of states; `nA` and `nX`
+    are **maximum indices**: `nA = 1` means two actions (`Fin (nA + 1)`),
+    `nX = 1` means two realizations. The asymmetry is deliberate -- it
+    guarantees that `maxFin` is non-vacuous over the actions -- but it is a
+    writing trap: writing `nX := 2` while meaning "two realizations" gives
+    **three**, and nothing in the module objects, since a three-column table
+    is accepted as well. -/
 structure NoisyProblem where
   /-- Number of states of the world. -/
   nS : Nat
@@ -401,6 +422,277 @@ theorem noisyUmbrella_chain :
   · exact valueNoisyNoInfo_le_valueNoisySignal noisyUmbrella
   · exact valueNoisySignal_le_valueNoisyPerfect noisyUmbrella
 
+/-! ## Independence: raw EVSI is exactly zero
+
+A **factored** joint table — every cell is the product of a state weight and
+a realization weight — describes a signal that teaches nothing: state and
+realization are independent. This is the Evans criterion, and it must land
+**exactly** on zero, not "zero up to rounding".
+
+The proof assumes no normalization. The common factor `Q = Σ_x q x` leaves
+every maximum (`maxFin_mul_left`) and every sum (`sumFin_mul_left`), and
+both sides reduce to the same product `Q * M`.
+-/
+
+/-- A constant factor on the right leaves the sum. -/
+theorem sumFin_mul_right {n : Nat} (f : Fin n → Int) (c : Int) :
+    sumFin n (fun i => f i * c) = sumFin n f * c := by
+  rw [sumFin_congr (fun i => Int.mul_comm (f i) c), sumFin_mul_left, Int.mul_comm]
+
+/-- Swap the first two factors of a triple product, without global
+    commutativity: `(a * b) * c = b * (a * c)`. -/
+theorem mul_mul_rotate (a b c : Int) : (a * b) * c = b * (a * c) := by
+  calc (a * b) * c = (b * a) * c := by rw [Int.mul_comm a b]
+    _ = b * (a * c) := Int.mul_assoc b a c
+
+/-- For a nonnegative factor the maximum factors out:
+    `max_a (c * f a) = c * max_a f a`. Nonnegativity is necessary: a
+    negative factor reverses the order and the maximum would become a
+    minimum. -/
+theorem maxFin_mul_left {n : Nat} (c : Int) (hc : 0 ≤ c) (f : Fin (n + 1) → Int) :
+    maxFin n (fun a => c * f a) = c * maxFin n f := by
+  apply Int.le_antisymm
+  · exact maxFin_le (fun a => Int.mul_le_mul_of_nonneg_left (le_maxFin f a) hc)
+  · calc c * maxFin n f = c * f (argmaxFin n f) := by rw [argmaxFin_spec f]
+      _ ≤ maxFin n (fun a => c * f a) := le_maxFin (fun a => c * f a) _
+
+/-- The joint table factors into a state weight and a realization weight: the
+    exact form of independence between state and signal. Stated in `Int`
+    because that is the scale on which this module compares its values, which
+    removes any conversion from the proofs that use it. -/
+def Factored (D : NoisyProblem) (w : Fin D.nS → Nat) (q : Fin (D.nX + 1) → Nat) :
+    Prop :=
+  ∀ (s : Fin D.nS) (x : Fin (D.nX + 1)), (D.p s x : Int) = (w s : Int) * (q x : Int)
+
+/-- Under factorization, the marginal weight of a state is its own weight
+    times the total mass of the signal. -/
+theorem priorMass_of_factored (D : NoisyProblem) (w : Fin D.nS → Nat)
+    (q : Fin (D.nX + 1) → Nat) (h : Factored D w q) (s : Fin D.nS) :
+    priorMass D s = (w s : Int) * sumFin (D.nX + 1) (fun x => (q x : Int)) := by
+  unfold priorMass
+  rw [sumFin_congr (fun x => h s x)]
+  exact sumFin_mul_left _ _
+
+/-- **Value of the uninformed decision maker under independence**: the signal
+    mass multiplies the value of the problem on the state weights alone. -/
+theorem valueNoisyNoInfo_of_factored (D : NoisyProblem) (w : Fin D.nS → Nat)
+    (q : Fin (D.nX + 1) → Nat) (h : Factored D w q) :
+    valueNoisyNoInfo D =
+      sumFin (D.nX + 1) (fun x => (q x : Int)) *
+        maxFin D.nA (fun a => sumFin D.nS (fun s => (w s : Int) * D.u s a)) := by
+  have hQ : 0 ≤ sumFin (D.nX + 1) (fun x => (q x : Int)) :=
+    sumFin_nonneg (fun x => Int.natCast_nonneg (q x))
+  have hinner : ∀ a : Fin (D.nA + 1),
+      sumFin D.nS (fun s => priorMass D s * D.u s a) =
+      sumFin (D.nX + 1) (fun x => (q x : Int)) *
+        sumFin D.nS (fun s => (w s : Int) * D.u s a) := by
+    intro a
+    have hpt : ∀ s : Fin D.nS,
+        priorMass D s * D.u s a =
+        sumFin (D.nX + 1) (fun x => (q x : Int)) * ((w s : Int) * D.u s a) := by
+      intro s
+      rw [priorMass_of_factored D w q h s, mul_mul_rotate]
+    rw [sumFin_congr hpt]
+    exact sumFin_mul_left _ _
+  unfold valueNoisyNoInfo
+  rw [show (fun a => sumFin D.nS (fun s => priorMass D s * D.u s a)) =
+      (fun a => sumFin (D.nX + 1) (fun x => (q x : Int)) *
+        sumFin D.nS (fun s => (w s : Int) * D.u s a)) from funext hinner]
+  exact maxFin_mul_left _ hQ _
+
+/-- **Value of the informed decision maker under independence**: it factors
+    the same way, realization by realization. -/
+theorem valueNoisySignal_of_factored (D : NoisyProblem) (w : Fin D.nS → Nat)
+    (q : Fin (D.nX + 1) → Nat) (h : Factored D w q) :
+    valueNoisySignal D =
+      sumFin (D.nX + 1) (fun x => (q x : Int)) *
+        maxFin D.nA (fun a => sumFin D.nS (fun s => (w s : Int) * D.u s a)) := by
+  have hinner : ∀ (x : Fin (D.nX + 1)) (a : Fin (D.nA + 1)),
+      sumFin D.nS (fun s => jointPayoff D s x a) =
+      (q x : Int) * sumFin D.nS (fun s => (w s : Int) * D.u s a) := by
+    intro x a
+    have hpt : ∀ s : Fin D.nS,
+        jointPayoff D s x a = (q x : Int) * ((w s : Int) * D.u s a) := by
+      intro s
+      unfold jointPayoff
+      rw [h s x, mul_mul_rotate]
+    rw [sumFin_congr hpt]
+    exact sumFin_mul_left _ _
+  unfold valueNoisySignal
+  rw [sumFin_congr (fun x => congrArg (maxFin D.nA) (funext (hinner x)))]
+  rw [sumFin_congr (fun x => maxFin_mul_left _ (Int.natCast_nonneg (q x)) _)]
+  exact sumFin_mul_right _ _
+
+/-- **Evans criterion for this representation**: on a factored joint table,
+    the value with signal equals exactly the value without signal. The zero
+    is structural; it comes from no tolerance. -/
+theorem valueNoisySignal_eq_valueNoisyNoInfo_of_factored (D : NoisyProblem)
+    (w : Fin D.nS → Nat) (q : Fin (D.nX + 1) → Nat) (h : Factored D w q) :
+    valueNoisySignal D = valueNoisyNoInfo D := by
+  rw [valueNoisySignal_of_factored D w q h, valueNoisyNoInfo_of_factored D w q h]
+
+/-! ## Raw value and net value
+
+The raw value is nonnegative by `valueNoisyNoInfo_le_valueNoisySignal`. The
+**net** value subtracts the cost of observation: nothing constrains its sign,
+and the noisy umbrella instance shows it — raw gain 4, cost 5, strictly
+negative net.
+-/
+
+/-- Raw expected value of information (raw EVSI): gap between the value with
+    signal and the value without signal, in the raw units of the table. -/
+def evsiRaw (D : NoisyProblem) : Int := valueNoisySignal D - valueNoisyNoInfo D
+
+/-- **Net** value of information: the raw value minus the cost `c` of
+    observation, expressed in the same units. -/
+def evsiNet (D : NoisyProblem) (c : Int) : Int := evsiRaw D - c
+
+/-- Raw EVSI is nonnegative: this is exactly the dominance of the signal. -/
+theorem evsiRaw_nonneg (D : NoisyProblem) : 0 ≤ evsiRaw D := by
+  unfold evsiRaw
+  have := valueNoisyNoInfo_le_valueNoisySignal D
+  omega
+
+/-- The raw gain of the noisy umbrella is 4 (12 - 8). -/
+theorem noisyUmbrella_evsiRaw : evsiRaw noisyUmbrella = 4 := by decide
+
+/-- A cost of 5 makes the net value strictly negative: the sign of the raw
+    value says nothing about the sign of the net value. -/
+theorem noisyUmbrella_evsiNet_negative : evsiNet noisyUmbrella 5 < 0 := by decide
+
+/-- The same signal stays profitable at cost 3: the boundary is indeed the
+    cost, not a threshold hidden in the representation. -/
+theorem noisyUmbrella_evsiNet_positive : 0 < evsiNet noisyUmbrella 3 := by decide
+
+/-! ## Independent instance checked at the kernel
+
+The umbrella with a bulletin **independent** of the state: both realizations
+fall with the same weight whatever the state, so the decision maker learns
+nothing.
+-/
+
+/-- Umbrella with an independent bulletin: `p s x = 2` for every cell, i.e.
+    the factorization `w ≡ 2`, `q ≡ 1`. -/
+def independentUmbrella : NoisyProblem where
+  nS := 2
+  nA := 1
+  nX := 1
+  p := fun _ _ => 2
+  u := fun s a =>
+    if s.val = 0 then (if a.val = 0 then 2 else -3)
+    else (if a.val = 0 then 0 else 3)
+
+/-- The table of the independent umbrella is indeed factored. -/
+theorem independentUmbrella_factored :
+    Factored independentUmbrella (fun _ => 2) (fun _ => 1) := by
+  intro s x
+  rfl
+
+/-- **Exact zero, by the theorem**: raw EVSI vanishes because the table is
+    factored, without ever evaluating the instance. -/
+theorem independentUmbrella_evsiRaw :
+    evsiRaw independentUmbrella = 0 := by
+  unfold evsiRaw
+  rw [valueNoisySignal_eq_valueNoisyNoInfo_of_factored _ _ _
+    independentUmbrella_factored]
+  omega
+
+/-- **The same zero, by evaluation**: a second instrument, independent of the
+    first, returns the same result. A disagreement between the two would
+    signal an error in one of them, never a rounding artefact. -/
+theorem independentUmbrella_evsiRaw_decide :
+    evsiRaw independentUmbrella = 0 := by decide
+
+/-! ## Bridge to deterministic signals
+
+A deterministic signal `σ : Signal D m` partitions the states. Its joint
+table has support exactly on the graph of `σ`: the cell `(s, x)` carries a
+weight only if `σ s = x`.
+
+The bridge below establishes that the three values of the noisy module
+coincide with those of `Information.lean` on this class. This is not an
+approximate translation: it is the same value, three times, which forbids
+the two semantics from diverging silently.
+-/
+
+/-- Joint table induced by a deterministic signal: support on the graph of
+    `σ`, weight `w s` on that graph and zero everywhere else. -/
+def ofSignal {m : Nat} (D : DecisionProblem) (σ : Signal D m) : NoisyProblem where
+  nS := D.nS
+  nA := D.nA
+  nX := m
+  p := fun s x => if σ s = x then D.w s else 0
+  u := D.u
+
+/-- The marginal of the induced table gives back exactly the prior of the
+    deterministic problem: the bridge distorts no weight. -/
+theorem priorMass_ofSignal {m : Nat} (D : DecisionProblem) (σ : Signal D m)
+    (s : Fin D.nS) : priorMass (ofSignal D σ) s = (D.w s : Int) := by
+  unfold priorMass
+  show sumFin (m + 1) (fun x => (((ofSignal D σ).p s x : Nat) : Int)) = (D.w s : Int)
+  have h : ∀ x : Fin (m + 1),
+      (((ofSignal D σ).p s x : Nat) : Int) =
+      (if σ s = x then (D.w s : Int) else 0) := by
+    intro x
+    by_cases hc : σ s = x <;> simp [ofSignal, hc]
+  rw [sumFin_congr h]
+  exact sumFin_single (σ s) (fun _ => (D.w s : Int))
+
+/-- **Bridge, uninformed value**: the signal-less decision maker of the noisy
+    module is worth exactly that of the deterministic module. -/
+theorem valueNoisyNoInfo_ofSignal {m : Nat} (D : DecisionProblem) (σ : Signal D m) :
+    valueNoisyNoInfo (ofSignal D σ) = valueNoInfo D := by
+  unfold valueNoisyNoInfo valueNoInfo
+  refine congrArg (maxFin D.nA) (funext (fun a => ?_))
+  refine sumFin_congr (fun s => ?_)
+  rw [priorMass_ofSignal D σ s]
+  rfl
+
+/-- **Bridge, informed value**: the decision maker who observes the signal is
+    worth exactly `valueSignal` of the deterministic module. -/
+theorem valueNoisySignal_ofSignal {m : Nat} (D : DecisionProblem) (σ : Signal D m) :
+    valueNoisySignal (ofSignal D σ) = valueSignal D σ := by
+  unfold valueNoisySignal valueSignal
+  dsimp only [ofSignal]
+  refine sumFin_congr (fun x => congrArg (maxFin D.nA) (funext (fun a => ?_)))
+  refine sumFin_congr (fun s => ?_)
+  dsimp only [jointPayoff, wu]
+  by_cases hc : σ s = x
+  · subst hc
+    rw [if_pos rfl, if_pos rfl]
+  · rw [if_neg hc, if_neg hc]
+    exact Int.zero_mul (D.u s a)
+
+/-- **Bridge, perfect value**: perfect information coincides as well. -/
+theorem valueNoisyPerfect_ofSignal {m : Nat} (D : DecisionProblem) (σ : Signal D m) :
+    valueNoisyPerfect (ofSignal D σ) = valuePerfect D := by
+  unfold valueNoisyPerfect valuePerfect
+  refine sumFin_congr (fun s => congrArg (maxFin D.nA) (funext (fun a => ?_)))
+  rw [priorMass_ofSignal D σ s]
+  rfl
+
+/-- **End-to-end check on the deterministic umbrella**: the signal that
+    reveals the state yields 5 under the noisy semantics, exactly the perfect
+    value computed by `Information.lean`. -/
+theorem umbrella_ofSignal_perfect :
+    valueNoisySignal (ofSignal umbrella (m := 1) (fun s => s)) = 5 := by decide
+
+/-- **Bridge, uninformative signal**: the constant signal with a single
+    realization teaches nothing, and its raw EVSI is exactly zero — a
+    consequence of the bridge and of `valueSignal_const`, with no separate
+    computation. -/
+theorem evsiRaw_ofSignal_const (D : DecisionProblem) :
+    evsiRaw (ofSignal (m := 0) D (fun _ => (0 : Fin 1))) = 0 := by
+  unfold evsiRaw
+  have h1 : valueNoisySignal (ofSignal (m := 0) D (fun _ => (0 : Fin 1))) =
+      valueSignal D (fun _ => (0 : Fin 1)) :=
+    valueNoisySignal_ofSignal D (fun _ => (0 : Fin 1))
+  have h2 : valueNoisyNoInfo (ofSignal (m := 0) D (fun _ => (0 : Fin 1))) =
+      valueNoInfo D :=
+    valueNoisyNoInfo_ofSignal D (fun _ => (0 : Fin 1))
+  rw [h1, h2, valueSignal_const]
+  omega
+
 /-! ## Axiom anchors
 
 The axioms of the module's theorems, printed by `lake build`: the claim
@@ -426,4 +718,24 @@ replayable by the next reader, instead of living only in a PR body. -/
 #print axioms valueNoisyPerfect_nonneg
 #print axioms noisyUmbrella_valueNoisyPerfect
 #print axioms noisyUmbrella_chain
+#print axioms sumFin_mul_right
+#print axioms mul_mul_rotate
+#print axioms maxFin_mul_left
+#print axioms priorMass_of_factored
+#print axioms valueNoisyNoInfo_of_factored
+#print axioms valueNoisySignal_of_factored
+#print axioms valueNoisySignal_eq_valueNoisyNoInfo_of_factored
+#print axioms evsiRaw_nonneg
+#print axioms noisyUmbrella_evsiRaw
+#print axioms noisyUmbrella_evsiNet_negative
+#print axioms noisyUmbrella_evsiNet_positive
+#print axioms independentUmbrella_factored
+#print axioms independentUmbrella_evsiRaw
+#print axioms independentUmbrella_evsiRaw_decide
+#print axioms priorMass_ofSignal
+#print axioms valueNoisyNoInfo_ofSignal
+#print axioms valueNoisySignal_ofSignal
+#print axioms valueNoisyPerfect_ofSignal
+#print axioms umbrella_ofSignal_perfect
+#print axioms evsiRaw_ofSignal_const
 

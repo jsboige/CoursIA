@@ -165,7 +165,7 @@ Cette section donne un **lien direct vers le README de chaque série** depuis `d
 
 Les liens sont relatifs à la racine du dépôt (depuis `docs/`, remonter d'un niveau : `../`).
 
-> **Caveat** : la ligne **Search — Applications / CSP** pointe `../MyIA.AI.Notebooks/Search/Applications/README.md` (README parent) — `Search/Applications/CSP/README.md` n'existe pas comme fichier indépendant (vérifié 2026-09-26). Le détecteur considère `Applications/CSP` comme racine de série `independent_chain` ; un README dédié serait une PR séparée, hors du périmètre de ce grain.
+> **Caveat** : la ligne **Search — Applications / CSP** pointe `../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/README.md` (README parent) — l'arborescence historique `Search/Applications/CSP/` n'avait pas de README indépendant (vérifié 2026-09-26), et elle est depuis aplatie dans `Search/Part3-Cas-pratiques/` (#19253, tranche 2). Le détecteur considérait `Applications/CSP` comme racine de série `independent_chain` ; un README dédié resterait une PR séparée, hors du périmètre de ce grain.
 
 | Série | Domaine | Point d'entrée |
 |-------|---------|----------------|
@@ -174,7 +174,7 @@ Les liens sont relatifs à la racine du dépôt (depuis `docs/`, remonter d'un n
 | **ML — ML.NET (C#)** | machine learning .NET (régression, classification, recommandation) | [`../MyIA.AI.Notebooks/ML/ML.Net/README.md`](../MyIA.AI.Notebooks/ML/ML.Net/README.md) |
 | **Probas — Infer.NET** | programmation probabiliste bayésienne en C# | [`../MyIA.AI.Notebooks/Probas/Infer/README.md`](../MyIA.AI.Notebooks/Probas/Infer/README.md) |
 | **RL — Reinforcement Learning** | apprentissage par renforcement, PPO, bandits | [`../MyIA.AI.Notebooks/RL/README.md`](../MyIA.AI.Notebooks/RL/README.md) |
-| **Search — Applications / CSP** | satisfaction de contraintes (N-Queens, Sudoku, planning) | [`../MyIA.AI.Notebooks/Search/Applications/README.md`](../MyIA.AI.Notebooks/Search/Applications/README.md) |
+| **Search — Applications / CSP** | satisfaction de contraintes (N-Queens, Sudoku, planning) | [`../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/README.md`](../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/README.md) |
 | **Search — Partie 1 — Fondations** | algorithmes de recherche (BFS, DFS, A*, métaheuristiques) | [`../MyIA.AI.Notebooks/Search/Part1-Foundations/README.md`](../MyIA.AI.Notebooks/Search/Part1-Foundations/README.md) |
 | **SymbolicAI — Lean** | vérification formelle Lean 4, prouveurs interactifs | [`../MyIA.AI.Notebooks/SymbolicAI/Lean/README.md`](../MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) |
 | **SymbolicAI — Planners / 02-Classical** | planification classique PDDL, Fast Downward | [`../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/README.md`](../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/README.md) |

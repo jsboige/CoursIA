@@ -3,7 +3,7 @@
 Case F2 (Dehaene, Global Neuronal Workspace) — test direct issu de #19343,
 mesuré le 2026-10-08 sur les graines pré-enregistrées {0, 1, 7, 42}
 (dissociations-matrix.md, ligne F2 ; carnet
-``ICT-Dissociation-DehaeneF2-SelfReport.ipynb``) :
+``ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb``) :
 
   1. (appariement) Deux agents d'une même paire partagent leur **spectre**
      (mêmes valeurs propres) et different par leur base propre — condition de

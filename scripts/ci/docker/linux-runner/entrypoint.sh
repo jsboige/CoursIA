@@ -65,6 +65,34 @@ runner_require_externals() {
 
 export ACTIONS_RUNNER_INPUT_WORK=/home/runner/_work
 
+# --- Isolation des installs pip par job (#22502) ------------------------------
+# TEST-ENTRYPOINT-PIP-USER-START
+# Le volume toolcache est PARTAGE par tous les slots d'execution et les
+# waiters (TOOLCACHE_VOLUME dans supervise.sh) : son site-packages sert chaque
+# job. Deux jobs qui pip-installent en parallele y corrompent des paquets
+# tiers (mesure #22502 : pygments/formatters/terminal.py a 0 octet sous une
+# dist-info qui annonce 2.21.0, des dizaines d'autres .py vides dans narwhals
+# ou authlib, et l'etat du fichier BASCULE entre deux lectures pendant qu'un
+# job vit -- un ecrivain concurrent, pas une corruption figee ; le rouge
+# retombe ensuite sur la PR mesuree, #22281 en est l'instance exacte).
+#
+# Le conteneur est ephemere (un par job) : diriger pip vers le site
+# UTILISATEUR (~/.local, couche inscriptible du conteneur, detruite avec lui)
+# supprime la course par construction, sans renoncer au cache d'interpreteurs
+# du toolcache -- setup-python y lit toujours (#15091, ~300 jobs/jour).
+# Effet de bord assume : les paquets pip ne persistent plus d'un job a
+# l'autre ; cette persistance etait precisement le vecteur de collision.
+# Les installs editables restent supportees sous --user (PEP 660, pip >= 21.3,
+# verifie localement sur pip 25 : slow-lane.yml `pip install -e .`).
+# Les etapes qui creent LEUR PROPRE venv sous $RUNNER_TEMP sont deja isolees
+# et posent PIP_USER=0 localement : pip refuse un --user dans un venv
+# (ict-tests.yml, ict-tests-profile.yml).
+export PIP_USER=1
+# Les scripts console installes en site utilisateur (~/.local/bin) doivent
+# rester appelables par nom dans les etapes de job.
+export PATH="${HOME:-/home/runner}/.local/bin:$PATH"
+# TEST-ENTRYPOINT-PIP-USER-END
+
 # --- Desarmement de l'etat sparse-checkout residuel (slot poisoning) ---------
 # Le volume _work est persistant PAR SLOT (#14285/#14288) et le conteneur est
 # recree a chaque job : ce bloc est donc un hook job-started, sans plomberie.
@@ -360,6 +388,22 @@ if mirror_present; then
     [ -e "$gitdir" ] || continue
     mirror_ensure_alternates "${gitdir%/.git}"
   done
+  # Alternates par l'ENVIRONNEMENT, pas seulement par le fichier (mission ai-01
+  # 26/10, #18225) : le fichier objects/info/alternates pose ci-dessus ne survit
+  # pas au reclone/nettoyage du repo de job par actions/checkout -- mesure :
+  # fichier efface sans env => `fatal: bad object HEAD`. L'env est lue par TOUT
+  # git fils du processus runner (jobs compris), remplace le fichier disparu
+  # (mesure : log resolve, fichier efface + env posee), et couvre aussi le repo
+  # FRAIS d'un slot froid que le semis n'a pas encore touche. La sonde
+  # mirror_present est OBLIGATOIRE : un chemin d'alternates absent n'est PAS
+  # ignore silencieusement -- chaque operation git rend
+  # `unable to normalize alternate object path` puis `fatal: bad object HEAD`
+  # (mesure) -- donc sans elle, un hote sans miroir casserait tout le parc au
+  # lieu de lui etre transparent. Fail-open conserve : miroir absent => pas
+  # d'export, comportement d'avant #18225.
+  GIT_ALTERNATE_OBJECT_DIRECTORIES="$MIRROR_PATH/objects${GIT_ALTERNATE_OBJECT_DIRECTORIES:+:$GIT_ALTERNATE_OBJECT_DIRECTORIES}"
+  export GIT_ALTERNATE_OBJECT_DIRECTORIES
+  echo "entrypoint: GIT_ALTERNATE_OBJECT_DIRECTORIES=$MIRROR_PATH/objects exporte au processus runner"
   mirror_seed_work
 else
   # Miroir absent : retirer les lignes qui le designent (slot seme avant sa

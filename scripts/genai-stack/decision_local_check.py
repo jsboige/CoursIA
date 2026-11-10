@@ -43,16 +43,28 @@ Utilisation
         --model "eljiwo/jiwo-4b@v2#cpu:100" \
         --json scripts/results/decision_local_<date>.json
 
-Syntaxe d'un modele : `depot[@revision][#device][:limite_par_jeu_de_donnees]`.
+Syntaxe d'un modele : `depot[@revision][#device][/index][:limite_par_jeu_de_donnees]`.
 `v1` et `v2` sont des **tags** du depot (mesure : `list_repo_refs`, 2026-10-21) ;
 `main` porte le meme contenu que le tag `v2`. La limite est le nombre d'items
 par jeu de donnees pour ce modele (une limite plus petite sert les modeles trop
 lourds pour la carte) ; le classement est calcule sur le sous-ensemble commun a
 tous les modeles.
 
+**Le collon qui suit un device est toujours une limite, jamais un index.** Un
+index de carte s'ecrit `#device/index` (`#cuda/0` = carte 0). La limite vaut au
+moins 1 : une limite nulle produirait un agregat « vert » sans aucun item (#23616).
+
 Un checkpoint deja telecharge peut etre servi sans requete au hub :
 `--local depot@revision=chemin`. L'identite publiee reste celle du depot, seule
 la source des poids change.
+
+Codes de sortie
+----------------
+- `0` : mesure faite ;
+- `2` : usage invalide (spec de modele illisible, dependance manquante, jeu
+  inconnu) ;
+- `3` : **mesure vide** — un modele n'a evalue aucun item, donc aucun agregat
+  n'est ecrit : mesurer zero item n'est pas mesurer.
 """
 
 from __future__ import annotations
@@ -258,17 +270,54 @@ def agrege(lignes: list[dict[str, Any]]) -> dict[str, Any]:
 
 # ---- evaluation d'un modele ------------------------------------------------------
 
+class SpecModeleInvalide(ValueError):
+    """Spec de modele illisible : la mesure ne peut pas etre lancee."""
+
+
+class MesureVide(RuntimeError):
+    """Une mesure sans item : ce n'est pas une mesure."""
+
+
 def parse_modele(spec: str, device_defaut: str, limite_defaut: int) -> dict[str, Any]:
-    """Parse `depot[@revision][#device][:limite]`."""
+    """Parse `depot[@revision][#device][/index][:limite]`.
+
+    Le collon qui suit un device est **toujours** la limite, jamais un index de
+    carte : `#cuda:0` se lit « device cuda, limite 0 », et une limite nulle est
+    refusee (#23616) — sans ce refus, l'organe ecrivait un agregat « vert » qui
+    ne mesurait aucun item. Un index de carte s'ecrit `#device/index` (`#cuda/0`).
+    """
     reste = spec
     limite = limite_defaut
     if ":" in reste:
         reste, _, texte = reste.rpartition(":")
-        limite = int(texte)
+        try:
+            limite = int(texte)
+        except ValueError:
+            raise SpecModeleInvalide(
+                f"limite illisible dans {spec!r} : {texte!r} n'est pas un entier "
+                f"(la limite est le nombre d'items par jeu de donnees)") from None
+        if limite < 1:
+            raise SpecModeleInvalide(
+                f"limite {limite} dans {spec!r} : une mesure doit porter au moins un item "
+                f"par jeu de donnees. Si ce nombre designait un index de carte, ecrivez "
+                f"'#device/index' (exemple '#cuda/0') : le collon qui suit le device est "
+                f"toujours lu comme une limite")
     device = device_defaut
     if "#" in reste:
         reste, _, texte = reste.partition("#")
-        device = texte
+        nom_device, separateur, index = texte.partition("/")
+        if separateur:
+            if not nom_device or not index.isdigit():
+                raise SpecModeleInvalide(
+                    f"index de device illisible dans {spec!r} : {texte!r} "
+                    f"(forme attendue : '#device/index', exemple '#cuda/0')")
+            device = f"{nom_device}:{int(index)}"
+        elif not texte:
+            raise SpecModeleInvalide(
+                f"device vide dans {spec!r} (forme attendue : '#device', "
+                f"ou '#device/index' pour un index de carte)")
+        else:
+            device = texte
     revision = None
     if "@" in reste:
         reste, _, texte = reste.partition("@")
@@ -355,6 +404,21 @@ def evalue_modele(modele: dict[str, Any], tranches: dict[str, list[dict[str, Any
         "global": agrege(lignes),
         "items": lignes,
     }
+
+
+def verifie_mesure(modele: dict[str, Any], resultat: dict[str, Any]) -> None:
+    """Refuse une mesure vide : un agregat sans item n'est pas un resultat.
+
+    Un run qui n'a evalue aucun item produit un agregat **bien forme** : il porte
+    meme le temps de chargement et le pic de VRAM, qui sont reels, mais aucune
+    metrique (exactitude, ECE, Brier). Ecrit comme un resultat, il passe pour une
+    mesure ; c'est le piege ferme en #23616.
+    """
+    items = int(resultat.get("global", {}).get("items", 0))
+    if items == 0:
+        raise MesureVide(
+            f"modele {modele['id']} : aucun item evalue "
+            f"(limite {modele['limite']} item(s) par jeu de donnees)")
 
 
 # ---- classement -------------------------------------------------------------------
@@ -510,6 +574,21 @@ def main(argv: list[str] | None = None) -> int:
     if not args.model:
         parseur.error("au moins un --model est requis")
 
+    if args.limit < 1:
+        parseur.error(f"--limit doit valoir au moins 1 item par jeu de donnees "
+                      f"(recu {args.limit})")
+
+    # La spec des modeles est validee **avant** tout travail : une spec illisible
+    # ne doit pas coute le chargement des jeux de donnees (#23616).
+    modeles: list[dict[str, Any]] = []
+    for spec in args.model:
+        try:
+            modeles.append(parse_modele(spec, args.device, args.limit))
+        except SpecModeleInvalide as problem:
+            parseur.error(str(problem))
+    for modele in modeles:
+        modele["chemin_local"] = locaux.get(modele["id"])
+
     try:
         import jiwo
         import torch
@@ -526,17 +605,25 @@ def main(argv: list[str] | None = None) -> int:
 
     tranches: dict[str, list[dict[str, Any]]] = {}
     for nom in noms:
-        tranches[nom] = load_items(nom, args.limit, args.seed)
-        print(f"tranche {nom} : {len(tranches[nom])} items")
+        tranche = load_items(nom, args.limit, args.seed)
+        if not tranche:
+            print(f"tranche {nom} : vide — aucun item a evaluer", file=sys.stderr)
+            return 3
+        tranches[nom] = tranche
+        print(f"tranche {nom} : {len(tranche)} items")
 
-    modeles = [parse_modele(spec, args.device, args.limit) for spec in args.model]
-    for modele in modeles:
-        modele["chemin_local"] = locaux.get(modele["id"])
     resultats: dict[str, dict[str, Any]] = {}
     lignes_par_modele: dict[str, list[dict[str, Any]]] = {}
     for modele in modeles:
         print(f"\n== {modele['id']} (device {modele['device']}, limite {modele['limite']}/jeu)")
         resultat = evalue_modele(modele, tranches, args.max_length)
+        try:
+            verifie_mesure(modele, resultat)
+        except MesureVide as problem:
+            print(f"mesure refusee : {problem}", file=sys.stderr)
+            print("aucun agregat n'est ecrit : une mesure sans item n'est pas une mesure.",
+                  file=sys.stderr)
+            return 3
         resultats[modele["id"]] = resultat
         lignes_par_modele[modele["id"]] = resultat["items"]
         print(f"   exactitude globale : {resultat['global'].get('exactitude', 0):.4f} "

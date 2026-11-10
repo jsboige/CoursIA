@@ -40,6 +40,7 @@ sympy>=1.12
 # SAT/SMT Solvers (SocialChoice/04, GameTheory-1 setup check)
 python-sat>=0.1.8             # PySAT — SAT solving (Glucose3, Minisat22, Cadical103)
 z3-solver>=4.13               # Microsoft Z3 SMT solver
+ortools>=9.11                 # OR-Tools CP-SAT — synthese globale DSIC-IR (amd_synthesis.py, #22381)
 
 # Utilities
 python-dotenv>=1.0.0

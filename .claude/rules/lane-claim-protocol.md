@@ -38,6 +38,8 @@ Quatre règles la rendent matchable — toute déviation = scope mort = epic-wid
 | Accolades | `paths: search-{6,8,9}-*.yaml` (fnmatch n'a pas `{a,b}`) | accolade non fermée |
 | `--paths` CLI | `gh issue comment N --body-file body.md --paths g1 --paths g2` | `--paths ` seul avec valeur vide |
 
+**Marqueurs qui portent la clause** : `[CLAIMED]`, `[CLAIMED-AMEND]`, `[RELEASED]`, `[DELIVERED]`, `[OVERRIDE]`. Sur `[DELIVERED]`, la clause compte : tant que la PR est **ouverte ou mergée**, le marqueur redevient une occupation bornée à ce périmètre (sémantique v2) ; sans clause, il relocke l'issue entière en epic-wide. Livrer une tranche avec `paths:` ne referme donc pas l'umbrella aux autres lanes (#22445).
+
 **Détails, table étendue, déviations sémantiques (#12740), références organe** : [docs/reference/lane-claim-detail.md](../../docs/reference/lane-claim-detail.md#forme-canonique-de-la-clause-paths-10597-10958-11064-12052).
 
 ## Voir aussi

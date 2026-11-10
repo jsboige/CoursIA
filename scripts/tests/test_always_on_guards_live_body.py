@@ -28,12 +28,20 @@ REPO_ROOT = os.path.abspath(
 WORKFLOW = os.path.join(
     REPO_ROOT, ".github", "workflows", "always-on-guards.yml"
 )
-
-# Sites ecrivant le litteral canonique dans always-on-guards.yml (job unique
-# `always-on-guards`, 20 etapes, consommateurs aux indices 5-7 et 9-14).
-# Valeur IDENTIQUE a la base de #15697 : c'est l'invariant que le corps
-# revendique (« point unique de changement, les sites sont inchanges »).
+# #22331 -- les cinq organes de BODY ont quitte ce workflow pour le script
+# partage `always_on_body_organs.sh`, appele par `always-on-guards-body.yml`.
+# L'invariant du corps de #15697 n'est donc plus « neuf sites dans CE
+# fichier » mais « neuf sites dans l'ensemble des porteurs » : quatre restent
+# dans le workflow de contenu, cinq vivent desormais dans le script. Le pin
+# reste EXACT a neuf, et la repartition est pinnee a part pour qu'une
+# consolidation ulterieure (ou une duplication revenue) se voie.
+BODY_ORGANS_SCRIPT = os.path.join(
+    REPO_ROOT, "scripts", "ci", "always_on_body_organs.sh"
+)
 PR_BODY_WRITE_SITES = 9
+# 4 sites dans `always-on-guards.yml`, 5 dans le script partage (mesure #22331).
+PR_BODY_WRITE_SITES_WORKFLOW = 4
+PR_BODY_WRITE_SITES_SCRIPT = 5
 
 
 def _doc():
@@ -89,12 +97,27 @@ def test_consumer_sites_unchanged():
     """Les organes restent inchanges : NEUF sites ecrivent /tmp/pr_body.txt
     depuis ``${PR_BODY:-}`` -- le point unique de changement tient. Le pin
     est EXACT, pas un plancher : c'est l'invariant que le corps revendique,
-    et un ``>= N`` laisserait passer la suppression de sites consommateurs."""
+    et un ``>= N`` laisserait passer la suppression de sites consommateurs.
+
+    #22331 -- le pin porte sur les PORTEURS, plus sur le seul workflow de
+    contenu : le split a deplace cinq des neuf sites dans
+    ``scripts/ci/always_on_body_organs.sh`` (appele une fois par
+    ``always-on-guards-body.yml``). Compter le seul workflow de contenu
+    ferait passer une LIVRAISON pour une perte (4 constate contre 9 pinne) ;
+    compter l'ensemble garde le sens de l'invariant et voit, lui, une vraie
+    suppression. La repartition est pinnee separement : une consolidation
+    (5 -> 1 site mutualise) est un changement d'architecture qui doit se
+    discuter, pas passer en silence.
+    """
     run_all = "\n".join(
         str(s.get("run", "")) for s in _steps(_doc())
     )
     literal = 'printf \'%s\' "${PR_BODY:-}" > /tmp/pr_body.txt'
-    assert run_all.count(literal) == PR_BODY_WRITE_SITES
+    with open(BODY_ORGANS_SCRIPT, encoding="utf-8") as f:
+        script = f.read()
+    assert run_all.count(literal) == PR_BODY_WRITE_SITES_WORKFLOW
+    assert script.count(literal) == PR_BODY_WRITE_SITES_SCRIPT
+    assert run_all.count(literal) + script.count(literal) == PR_BODY_WRITE_SITES
 
 
 FAKE_GH = textwrap.dedent(

@@ -1,14 +1,14 @@
 ---
 title: "Notebooks"
-subtitle: "12 séries pédagogiques niveau 1"
-description: "Liste des 11 séries niveau 1 du dépôt CoursIA — Search, Sudoku, ML, RL, GameTheory, GenAI, Probas, SymbolicAI, QuantConnect, CaseStudies, IIT. SemanticKernel et FallacyDetection sont des sous-séries de GenAI (couvertes par le README GenAI)."
+subtitle: "Séries pédagogiques niveau 1"
+description: "Liste des séries niveau 1 du dépôt CoursIA — Search, Sudoku, ML, RL, GameTheory, GenAI, Probas, SymbolicAI, QuantConnect, CaseStudies, IIT. SemanticKernel et FallacyDetection sont des sous-séries de GenAI (couvertes par le README GenAI)."
 ---
 
 # Séries de notebooks
 
 Chaque série est un dossier thématique sous `MyIA.AI.Notebooks/`. Chaque série a son propre README avec table des matières, prérequis, et durée estimée.
 
-**Vous débutez ?** Suivez l'un des [quatre parcours d'apprentissage](../parcours.qmd) — chaque série ci-dessous indique son parcours et son niveau.
+**Vous débutez ?** Suivez l'un des [parcours d'apprentissage](../parcours.qmd) — chaque série ci-dessous indique son parcours et son niveau.
 
 ## Vue d'ensemble
 

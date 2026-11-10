@@ -7,11 +7,11 @@
 | Série source | `MyIA.AI.Notebooks/Probas/Infer/` (Infer.NET probabilistic programming, .NET Interactive) |
 | Notebooks source | **19** (post-renum narratif #5637 c.377 — cycle 5/7/9/11/14) |
 | Cellules extraites | **902** (code + markdown, nbformat canonique) |
-| Taille CSV | ~844 KB (16 073 lignes CSV = header + 902 × 18 colonnes hash + texte) |
+| Taille CSV | proportionnelle au nombre de cellules extraites — le fichier lui-même fait foi |
 | Langue pivot | **fr** (PIVOT_LANG = "fr", cf #1650 Phase 0.5 / #4980 Lean i18n) |
 | Langues cibles | **en, es, ar, fa, zh, ru, pt** (7 langues vivantes côté Argumentum) |
 | Date seed | 2026-07-09 |
-| Source seed | PR #5385 (Argument_Analysis) + PR #5799 (resync T1) + PR THIS (Phase 2 rollout) |
+| Source seed | PR #5385 (ArgumentAnalysis) + PR #5799 (resync T1) + PR THIS (Phase 2 rollout) |
 
 ## Workflow T0→T3
 
@@ -48,8 +48,8 @@ Anomalies attendues (T3 non livré) :
 
 - EPIC parent **#4957** (CSV-by-series + CI drift-flag + resync manuelle Argumentum)
 - Phase 0.5 **#1650** (Argumentum connecteur + moteur de traduction)
-- Substance owner-lane **#5637** (renum narratif, source des 19 notebooks)
-- Voisin seed **translations/symbolicai/** (Argument_Analysis, PR THIS série 1 Phase 2)
+- Substance owner-lane **#5637** (renum narratif sur la série source)
+- Voisin seed **translations/symbolicai/** (ArgumentAnalysis, PR THIS série 1 Phase 2)
 
 ## Conformité règles
 
@@ -57,5 +57,5 @@ Anomalies attendues (T3 non livré) :
 - **catalog-pr-hygiene R1** : catalogue intact (CSV vit hors catalogue, sous `translations/`).
 - **L335 anti-monoculture** : substance neuve Phase 2 (Probas/Infer), pas re-sweep monotone.
 - **L143 SAFE cross-owner** : Probas/Infer = owner po-2025 (renum c.377 owner-lane + multiple cycles Probas).
-- **L289 anti-doublon** : 1 série = 1 PR de seed, PR Phase 2 distincte des PRs Argument_Analysis (#5385 + #5799).
+- **L289 anti-doublon** : 1 série = 1 PR de seed, PR Phase 2 distincte des PRs ArgumentAnalysis (#5385 + #5799).
 - **Stop & Repair** : pas de hand-edit de cellule, pas de scrub de sortie — le CSV est un artefact dérivé déterministe.

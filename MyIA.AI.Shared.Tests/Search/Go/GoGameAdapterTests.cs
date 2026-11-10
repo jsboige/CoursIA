@@ -66,7 +66,7 @@ public sealed class GoGameAdapterTests
     }
 
     [Fact]
-    public void EtatInitial_EstVideNoirAuTrait_EtOffreToutLePlateauPlusLePasse()
+    public void EtatInitial_EstVideNoirAuTrait_EtOffreToutLePlateauPlusAbandonEtPasse()
     {
         GoGameAdapter adapter = Adapter();
 
@@ -75,7 +75,8 @@ public sealed class GoGameAdapterTests
         Assert.Equal(5, initial.Size);
         Assert.Equal(0.5, initial.Komi);
         Assert.Equal(GoColor.Black, adapter.Player(initial));
-        Assert.Equal(26, adapter.Actions(initial).Count);
+        Assert.Equal(27, adapter.Actions(initial).Count);
+        Assert.Equal(GoPoint.Resign, adapter.Actions(initial)[^2]);
         Assert.Equal(GoPoint.Pass, adapter.Actions(initial)[^1]);
         Assert.False(adapter.IsTerminal(initial));
     }

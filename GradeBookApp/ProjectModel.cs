@@ -127,13 +127,18 @@ namespace GradeBookApp
 
                 foreach(var eval in groupEval.Evaluations.OrderBy(e => e.Date))
                 {
-                    var evaluatorEmail = eval.Email ?? $"{eval.Nom}{eval.Prénom}";
+                    // Clé de la règle 5 : adresse normalisée (espaces de bord retirés,
+                    // casse ignorée par le HashSet), ou Nom + Prénom si l'adresse est
+                    // absente ou vide — comme la branche de repli de gradebook.py (#24276).
+                    var evaluatorKey = (string.IsNullOrWhiteSpace(eval.Email)
+                        ? $"{eval.Nom}{eval.Prénom}"
+                        : eval.Email).Trim();
                     
                     if (groupEval.GroupMembers.Any(s => IsMatch(s, eval)))
                     {
                         RejectedEvaluations.Add(new RejectedEvaluation(eval, "Auto-évaluation."));
                     }
-                    else if (!seenEvaluatorsForGroup.Add(evaluatorEmail))
+                    else if (!seenEvaluatorsForGroup.Add(evaluatorKey))
                     {
                         RejectedEvaluations.Add(new RejectedEvaluation(eval, "Évaluation double."));
                     }

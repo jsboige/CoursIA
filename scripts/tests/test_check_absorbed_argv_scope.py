@@ -26,7 +26,7 @@ if str(CI_DIR) not in sys.path:
     sys.path.insert(0, str(CI_DIR))
 
 import check_absorbed_argv_scope as cas  # noqa: E402
-from fast_lane_registry import Guard  # noqa: E402
+from fast_lane_registry import Commenter, Guard  # noqa: E402
 
 
 # --- jetons de bornage d'un argv -------------------------------------------
@@ -183,6 +183,95 @@ def test_garde_delta_est_borne_meme_sans_jeton(monkeypatch):
     )
     problems, _skipped, _stats, _evidence = cas.findings("origin/main")
     assert problems == []
+
+
+# --- gardes a `commenters` (#22244) ----------------------------------------
+#
+# Un garde a commentaires a un `argv` de garde VIDE : c'est le moteur qui
+# execute les detecteurs (`fast_lane.run_effects`). Ne lire que `guard.argv`
+# rendait trois absorptions faussement perdues. Le bornage existe pourtant,
+# a deux endroits reels : l'argv du commenter, et la selection de chemins de
+# `commenter_paths()`.
+
+def _garde_commenter(commenters, **kwargs):
+    return Guard(
+        name="g-commenter",
+        argv=[],
+        source="g.yml",
+        paths=["a.py"],
+        absorbed=True,
+        commenters=list(commenters),
+        **kwargs,
+    )
+
+
+def _commenter(argv=(), paths=()):
+    return Commenter(
+        header=" (test)",
+        argv=list(argv) or ["python", "detect.py"],
+        body=lambda rc, payload, ctx: "",
+        paths=list(paths),
+    )
+
+
+def test_commenter_argv_porte_le_bornage(monkeypatch):
+    """Le commenter porte `--base` : la portee du workflow est preservee."""
+    _simuler(
+        monkeypatch,
+        [_garde_commenter([_commenter(argv=["python", "d.py", "--base"])])],
+        source=_source_borne(),
+    )
+    problems, _skipped, _stats, evidence = cas.findings("origin/main")
+    assert problems == []
+    assert evidence[0]["commenter_scope_tokens"] == ["--base"]
+    assert evidence[0]["commenter_selects_paths"] is False
+
+
+def test_commenter_qui_selectionne_les_chemins_est_borne(monkeypatch):
+    """Aucun jeton, mais `paths` : `commenter_paths()` ne transmet que le diff.
+
+    C'est la troisieme forme de I1 : le detecteur recoit
+    `git diff --name-only --diff-filter=MR <merge-base> HEAD -- <motifs>`,
+    donc son verdict est borne a la PR par construction.
+    """
+    _simuler(
+        monkeypatch,
+        [_garde_commenter([_commenter(paths=["MyIA.AI.Notebooks/**/*.ipynb"])])],
+        source=_source_borne(),
+    )
+    problems, _skipped, _stats, evidence = cas.findings("origin/main")
+    assert problems == []
+    assert evidence[0]["commenter_scope_tokens"] == []
+    assert evidence[0]["commenter_selects_paths"] is True
+
+
+def test_commenter_sans_borne_reste_un_finding(monkeypatch):
+    """Le garde generique n'est pas offert aux commenters : ni jeton ni chemins.
+
+    Sans cette borne negative, la troisieme forme de I1 blanchirait n'importe
+    quel garde a commentaires -- exactement ce que l'organe doit empecher.
+    """
+    _simuler(
+        monkeypatch,
+        [_garde_commenter([_commenter()])],
+        source=_source_borne(),
+    )
+    problems, _skipped, _stats, _evidence = cas.findings("origin/main")
+    assert problems, "un commenter sans jeton ni chemins doit rester un finding"
+    assert "portee a ete perdue" in problems[0]
+    assert "commenters" in problems[0]
+
+
+def test_commenter_scope_compte_une_seule_fois_par_jeton():
+    """Deux commenters portant le meme jeton ne le declarent pas deux fois."""
+    guard = _garde_commenter([
+        _commenter(argv=["python", "a.py", "--diff"]),
+        _commenter(argv=["python", "b.py", "--diff"]),
+    ])
+    tokens, selects = cas.commenter_scope(guard)
+    assert tokens == ["--diff"]
+    assert selects is False
+
 
 
 def test_source_illisible_est_un_finding(monkeypatch):

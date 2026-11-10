@@ -66,8 +66,11 @@ control — the arc control is what distinguishes. -/
 theorem conway_wf : conwayKnotDiagram.wf = true := by
   decide
 
-/-- Control: the arc partition of the corrected code — stated in §4
-(`conway_arcPartition`), after `arcPartition` is defined. -/
+/-- Control: the arc partition of the corrected code — 11 arcs covering the 22
+edges, the non-degeneracy condition of the Alexander minor (the previous
+disconnected code produced an isolated arc {21, 22} absorbed by the eliminated
+column of the designated minor), stated in §4 (`conway_arcPartition`), after
+`arcPartition` is defined. -/
 
 def conwayKnot : Knot where
   diagram := conwayKnotDiagram
@@ -105,7 +108,8 @@ def kinoshitaTerasakaDiagram : KnotDiagram where
 theorem kinoshitaTerasaka_wf : kinoshitaTerasakaDiagram.wf = true := by
   decide
 
-/-- Control: arc partition of the corrected KT code — stated in §4
+/-- Control: arc partition of the corrected KT code — 11 arcs, the same structure
+as Conway at crossings 1-5 (shared arcs), divergent beyond. Stated in §4
 (`kinoshitaTerasaka_arcPartition`). -/
 
 def kinoshitaTerasakaKnot : Knot where
@@ -125,10 +129,12 @@ Prior measurement (faithful Python probe, controlled against the proven
 values −t⁶/t⁵ of 11n34/11n42): among the 96 well-formed non-trivial
 mutants of the construction (4 rotations × 24 re-attachments), **exactly
 one** carries a trivial minor — this one, with designated value t⁵. The
-mutant is NOT the 11n42 census code (measured: no (ρ, perm, σ) superposes
-the two lists): it is a second drawing of the same isotopy type, the
-isotopy equality remaining a documented gap (the PL topology of the
-regluing is not formalized, cf. `Knots.Mutation`).
+mutant is not the 11n42 census code in the strict sense of the lists (no
+(ρ, perm, boundary-σ) combination superposes them, link-4 measurement),
+but link 5 (`Knots.Conway_en`, `conwayMutant_redraws_kinoshitaTerasaka`)
+establishes that it is a **redraw** of it: same crossings, another list
+order and other label names. The isotopy gap remains documented (the PL
+topology of the regluing is not formalized, cf. `Knots.Mutation_en`).
 -/
 
 /-- Sphere-mutant diagram of the Conway knot: crossings 1-5 (outside the

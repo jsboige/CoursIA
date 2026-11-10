@@ -94,9 +94,15 @@ la bande des poids), l'unicité du tri (`sortedLe_perm_eq`), la commutation
 `huffman_expand` (marier d'abord coûte le trie réduit plus la masse), et le
 théorème capital `huffman_optimal` : le trie de Huffman coûte moins que tout
 arbre des mêmes feuilles — ancre 14 du carnet 02, désormais un minimum
-prouvé. -/
+prouvé ; `SymbolCodec` — le codec étiqueté (#22377, part of #18706) :
+l'alphabet entre dans l'arbre (`LTree n`), parcours aligné mot/étiquette
+(`pairs`), fonctions d'oubli vers `CodeTree` et `WTree` avec conservation des
+mots, des profondeurs par symbole et du poids, unicité des étiquettes
+(`Nodup`, `pairs_snd_inj`), et le round-trip étiqueté `decodeL_encode` —
+encoder un message de symboles puis le relire rend le message, le décodage
+restant celui du pli 2 appelé tel quel. -/
 @[default_target]
 lean_lib «PrefixCodes» where
   -- Module plat (fichiers racine, aucune arborescence `PrefixCodes/`) :
   -- pas de `.submodules`, cf la note `MathUniverse` de `learning_theory_lean`.
-  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement, `Expansion, `Feuilles, `Soeurs, `Descente, `DeuxMinima, `HuffmanOptimal]
+  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement, `Expansion, `Feuilles, `Soeurs, `Descente, `DeuxMinima, `HuffmanOptimal, `SymbolCodec, `SymbolCodec_en]

@@ -21,7 +21,9 @@ from audit_consolidation_orphans import (  # noqa: E402
     attachment_proofs,
     audit,
     classify_axes,
+    fetch_state,
     load_input,
+    load_pool,
     main,
     mention_lines,
     render_markdown,
@@ -305,3 +307,64 @@ def test_render_markdown_shows_attached_specific_counter():
     ]
     md = render_markdown(audit(issues, CHAPERONES_STATE))
     assert "rattachées (parent spécifique) : 1" in md
+
+
+# --- pool cap / truncation provenance (reserve written in the Epic body) --
+# L'Epic #16473 note que l'organe s'arrêtait à --limit 400 quand le dépôt
+# portait 599 issues ouvertes, donc son verdict « orphelin » était un minorant
+# SILENCIEUX. gh sert les plus récentes d'abord : un plafond saturé cache les
+# plus anciennes, exactement le stock que l'audit existe pour voir.
+
+
+def _patch_gh(monkeypatch, issues):
+    import audit_consolidation_orphans as organ
+
+    def fake(repo, args):
+        if args[:2] == ["issue", "list"]:
+            return issues
+        return {"body": "", "comments": []}
+
+    monkeypatch.setattr(organ, "_gh_json", fake)
+
+
+def test_fetch_state_flags_saturated_cap(monkeypatch):
+    _patch_gh(monkeypatch, [_issue(n) for n in range(1, 5)])
+    state = fetch_state("jsboige/CoursIA", 4, False)
+    assert state["pool"] == {"count": 4, "limit": 4, "truncated": True}
+
+
+def test_fetch_state_pool_complete_below_cap(monkeypatch):
+    _patch_gh(monkeypatch, [_issue(n) for n in range(1, 5)])
+    state = fetch_state("jsboige/CoursIA", 5, False)
+    assert state["pool"]["count"] == 4
+    assert state["pool"]["truncated"] is False
+
+
+def test_render_markdown_warns_when_pool_truncated():
+    report = audit([_issue(7700, body="x")], CHAPERONES_STATE,
+                   pool={"count": 400, "limit": 400, "truncated": True})
+    md = render_markdown(report)
+    assert "Scan TRONQUÉ" in md and "minorant" in md
+
+
+def test_render_markdown_states_complete_pool():
+    report = audit([_issue(7700, body="x")], CHAPERONES_STATE,
+                   pool={"count": 3, "limit": 1000, "truncated": False})
+    md = render_markdown(report)
+    assert "scan est complet" in md
+    assert "TRONQUÉ" not in md
+
+
+def test_audit_omits_pool_when_unknown():
+    # Une capture hors-ligne antérieure au bloc `pool` ne doit jamais être
+    # rendue comme un scan complet : elle n'en sait rien.
+    report = audit([_issue(7700, body="x")], CHAPERONES_STATE)
+    assert "pool" not in report
+    md = render_markdown(report)
+    assert "TRONQUÉ" not in md and "scan est complet" not in md
+
+
+def test_load_pool_absent_is_empty(tmp_path):
+    path = tmp_path / "s.json"
+    path.write_text(json.dumps({"issues": []}), encoding="utf-8")
+    assert load_pool(str(path)) == {}

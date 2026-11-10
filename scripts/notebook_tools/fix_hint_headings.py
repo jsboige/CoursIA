@@ -21,6 +21,15 @@ rend en ``<code>``, taille du corps de texte. C'est la forme deja employee par
 les cellules saines du corpus, pas une invention de ce script.
 
     - # Indice : X      ->      - `# Indice` : X
+    # Indice : X        ->      `# Indice` : X
+
+Deux formes sont couvertes : le titre **imbrique** dans une puce ou une citation
+(``- # Indice``), et le titre **nu** hors de tout conteneur (``# Indice``). Pour
+la forme nue, deux conditions separent un commentaire d'exercice recopie d'une
+vraie section : le **deux-points** (marqueur + corps), et le **niveau h1**. Le
+niveau est indispensable -- mesure du 2026-10-25 : sur 142 candidats nus, les 20
+de niveau h2-h4 sont tous de vraies sections (``### Solution : Plugins``,
+``## Step 1: Load USDCAD Price Data``), et les backticker casserait le rendu.
 
 **Invariant de round-trip** : le script n'INSERE que des backticks. Aucun
 caractere n'est supprime ni reordonne ; le contenu prive de backticks est
@@ -35,6 +44,10 @@ section legitimes -- ``### Indices`` dans ``QC-Py-02-Platform-Fundamentals``
 est une vraie section (Principe / Objectif / Indices), pas un commentaire fuite.
 Reparer les deux avec le meme geste casserait le second cas.
 
+Il ne touche pas non plus un titre de marqueur **de niveau h2-h4**
+(``### Solution : ...``, ``### Note : ...``) : a ce niveau le marqueur introduit
+une section, pas une ligne d'indice.
+
 Usage
 -----
     python scripts/notebook_tools/fix_hint_headings.py --scan  <notebook|dir>
@@ -48,6 +61,11 @@ import re
 import sys
 from pathlib import Path
 
+# L'oracle de fence du detecteur -- meme fichier de regles, une seule definition
+# (cf. scan_cell). Importe sans repli : mieux vaut ne pas reparer que reparer
+# avec un oracle devine.
+from detect_markdown_rendering import _inside_fence_lines
+
 # Un titre ATX imbrique dans une puce ou une citation : "- # X", "* ## X",
 # "1. # X", "> # X". Le groupe 1 est le conteneur, 2 les diese, 3 le texte.
 CONTAINER_HEADING = re.compile(r"^(\s{0,3}(?:[-*+]\s+|\d+[.)]\s+|>\s+)+)(#{1,6})\s+(.+?)\s*$")
@@ -60,12 +78,52 @@ MARKER = re.compile(
     re.IGNORECASE,
 )
 
+# Un titre de marqueur NU, hors de tout conteneur (#22477) : la ligne commence
+# directement par les dieses. Deux conditions, et la seconde a ete mesuree.
+#
+# 1. Le **deux-points** separe ``# Indice : X`` (marqueur + corps) de
+#    ``### Indices`` -- la section legitime de ``QC-Py-02-Platform-Fundamentals``
+#    (Principe / Objectif / Indices) que ce script ne touche pas.
+#
+# 2. Le **niveau h1 seulement**. Le deux-points seul ne suffit pas : mesure du
+#    2026-10-25 sur 1648 carnets, 142 titres de marqueur nus candidats, dont 20
+#    de niveau h2-h4 -- et ces 20 sont TOUS de vraies sections
+#    (``#### Etape 1 : creer un fichier Lean`` dans ``Lean-01-Setup-Lean``,
+#    ``### Solution : Plugins`` dans ``Lean-09-SK-Multi-Agents``, ``### Solution :
+#    Shrinkage (Ledoit-Wolf)`` dans ``QC-Py-21``, ``## Step 1: Load USDCAD Price
+#    Data`` dans le quantbook ``research.ipynb``, ``### Note : mode batch`` dans
+#    ``fort-boyard-python`` et son sibling ``_en``). Les backticker transformerait
+#    un titre de section en ligne de code : une regression de rendu, pas une
+#    reparation. Les 122 restants sont tous de niveau h1 et forment des blocs
+#    consecutifs d'indices/etapes dans une cellule d'exercice -- la signature
+#    exacte du commentaire Python recopie (defaut #22446).
+NAKED_MARKER_HEADING = re.compile(r"^(#\s+)(.+?)(\s*):(.*)$")
+
+
+def _fix_naked(line: str) -> str | None:
+    """Titre de marqueur nu : ``# Indice : X`` -> ``` `# Indice` : X ```.
+
+    Seul le marqueur recoit des backticks ; le corps de la ligne est rendu tel
+    quel (invariant de round-trip : retirer les backticks redonne la ligne
+    d'origine a l'identique).
+    """
+    m = NAKED_MARKER_HEADING.match(line)
+    if not m:
+        return None
+    open_hashes, head, before_colon, rest = m.groups()
+    if head.startswith("`"):
+        return None
+    if not MARKER.match(head):
+        return None
+    return "`" + open_hashes + head + "`" + before_colon + ":" + rest
+
+
 
 def _fix_line(line: str) -> str | None:
     """Rend la ligne reparee, ou None si la ligne n'est pas concernee."""
     m = CONTAINER_HEADING.match(line)
     if not m:
-        return None
+        return _fix_naked(line)
     container, hashes, text = m.group(1), m.group(2), m.group(3)
     # Deja protege ? (" - `# Indice` : ..." ne matche pas CONTAINER_HEADING,
     # mais on reste defensif si le texte contient deja des backticks en tete.)
@@ -88,8 +146,25 @@ def _strip_backticks(s: str) -> str:
 
 
 def scan_cell(src: str) -> list[tuple[int, str, str]]:
+    """Lignes de la cellule a reparer, hors blocs de code.
+
+    **Fence-aware (#23306)** : un ``# Etape 1 : ...`` dans un bloc ``` est un
+    commentaire Python, pas un titre mal rendu. Le fixer ne le voyait pas et le
+    reecrivait (``--apply`` sur le corpus : 130 commentaires de code dans 15
+    carnets transformes en prose backtickee). Le predicat de fence est celui du
+    detecteur -- une seule definition, importee : deux oracles qui divergent
+    feraient ecrire au fixer ce qu'aucune regle ne signale.
+
+    L'import est en tete de module et sans repli : si l'oracle de fence est
+    indisponible, le fixer ne doit pas tourner du tout. Un repli silencieux
+    rendrait exactement le defaut qu'on corrige.
+    """
+    lines = src.split("\n")
+    fenced = _inside_fence_lines(lines)
     out = []
-    for i, line in enumerate(src.split("\n")):
+    for i, line in enumerate(lines):
+        if i in fenced:
+            continue
         fixed = _fix_line(line)
         if fixed is not None:
             out.append((i, line, fixed))
@@ -130,7 +205,14 @@ def process(path: Path, apply: bool) -> tuple[int, list[str]]:
                 cell["source"] = [l + "\n" for l in parts[:-1]] + [parts[-1]]
             changed = True
     if apply and changed:
-        path.write_text(json.dumps(nb, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        # ``newline="\\n"`` n'est pas cosmetique : sans lui, ``write_text`` traduit
+        # chaque ``\n`` en ``os.linesep`` et reecrit TOUT le fichier en CRLF sur
+        # Windows (mesure du 2026-10-25 : 1955 lignes remplacees pour 4 lignes
+        # reparees). Le depot est en LF ; un diff de 2000 lignes noierait le fix
+        # et le fichier partirait en CRLF. Avec cette option le rendu
+        # ``json.dumps(indent=1)`` est byte-identique a la forme du corpus.
+        path.write_text(json.dumps(nb, ensure_ascii=False, indent=1) + "\n",
+                        encoding="utf-8", newline="\n")
     return n, report
 
 
@@ -141,6 +223,45 @@ _CTRL_SECTION = "### Indices"
 assert _fix_line(_CTRL_BAD) == "- `# Indice` : calculez X", "CONTROLE: aveugle au connu-mauvais"
 assert _fix_line(_CTRL_OK) is None, "CONTROLE: tire sur la forme deja saine"
 assert _fix_line(_CTRL_SECTION) is None, "CONTROLE: tire sur un titre de section legitime"
+
+# #22477 : le meme marqueur, ecrit NU (hors conteneur). Le niveau h1 est requis
+# (cf. le commentaire de NAKED_MARKER_HEADING) : les controles ci-dessous
+# pinnent les deux bords -- ce qui doit tomber, et ce qu'une regle trop large
+# casserait.
+_CTRL_NAKED_BAD = "# Indice : calculez X"
+_CTRL_NAKED_STEP = "# Etape 1 : ouvrir le fichier"
+_CTRL_NAKED_SECTION = "# Introduction : vue d'ensemble du probleme"
+# Les 20 sections legitimes mesurees au niveau h2-h4 : elles doivent rester des
+# titres. Ce sont les faux positifs qu'une regle « deux-points seul » produirait.
+_CTRL_LEGIT_SECTIONS = (
+    "#### Etape 1 : creer un fichier Lean",
+    "### Solution : Plugins",
+    "### Solution : Shrinkage (Ledoit-Wolf)",
+    "## Step 1: Load USDCAD Price Data",
+    "### Note : mode batch",
+    "### Note: batch mode",
+)
+assert _fix_line(_CTRL_NAKED_BAD) == "`# Indice` : calculez X", "CONTROLE: aveugle au marqueur NU"
+assert _fix_line(_CTRL_NAKED_STEP) == "`# Etape 1` : ouvrir le fichier", "CONTROLE: nu, marqueur numerote"
+assert _fix_line("`# Indice` : calculez X") is None, "CONTROLE: nu deja protege"
+# Un titre NU non-marqueur garde son role de section : le deux-points seul ne
+# suffit pas, il faut AUSSI que le segment soit un marqueur d'exercice.
+assert _fix_line(_CTRL_NAKED_SECTION) is None, "CONTROLE: tire sur une section nue non-marqueur"
+for _s in _CTRL_LEGIT_SECTIONS:
+    assert _fix_line(_s) is None, "CONTROLE: backticke une section legitime h2-h4 : %r" % _s
+
+# #23306 : la garde de fence. Un marqueur dans un bloc de code est un
+# commentaire Python ; sans ces controles, `--apply` reecrit 130 commentaires de
+# code du corpus en prose backtickee. Le dernier controle est le faux negatif de
+# la garde : la prose qui SUIT un bloc ferme doit redevenir visible.
+assert scan_cell("```python\n# Etape 1 : ouvrir le fichier\n```") == [], \
+    "CONTROLE: backticke un commentaire Python dans une fence"
+assert scan_cell("```\n# Indice : calculez X") == [], \
+    "CONTROLE: fence non fermee (court jusqu'a la fin du document)"
+assert scan_cell("~~~\n# Indice : calculez X\n~~~") == [], \
+    "CONTROLE: fence tilde"
+assert len(scan_cell("```python\nx = 1\n```\n\n# Indice : calculez X")) == 1, \
+    "CONTROLE: la garde de fence avale la prose qui suit un bloc ferme"
 
 
 def main() -> int:

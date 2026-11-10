@@ -155,12 +155,38 @@ def test_json_shape_preserved() -> None:
         assert v0["class"] in {"HTML_404", "BROKEN"}
 
 
-def test_dump_exits_zero_even_with_violations() -> None:
-    # L'audit BRUT rend 2432 violations au 2026-10-03 ; argv ne doit PAS
-    # en faire un rouge (sinon la phase 1 du fast-lane s'arreterait avant
-    # d'avoir capture le JSON pour le comparator). Seul delta_argv tranche.
-    payload = _run_dump()
-    assert payload["n_violations"] > 0, "temoin casse : la branche ne contient pas le backlog attendu"
+def test_dump_exits_zero_even_with_violations(monkeypatch: pytest.MonkeyPatch,
+                                              capsys: pytest.CaptureFixture[str]) -> None:
+    """Le wrapper ne rougit PAS sur presence de violations (seul delta tranche).
+
+    Historiquement ce temoin lisait le backlog brut du depot (2432 violations
+    au 2026-10-03). Depuis #22448 (decodage du percent-encoding) ce backlog
+    est a ZERO sur main : le temoin mesurait l'etat de l'arbre, pas le
+    contrat, et s'eteignait tout seul. On injecte donc un scan a violations
+    par monkeypatch, ce qui prouve la propriete a tout moment : rc du wrapper
+    = 0, JSON porte les violations, `scan_ok` reste vrai (sinon la phase 1 du
+    fast-lane s'arreterait avant d'avoir capture le JSON du comparator).
+    """
+    import scripts.notebook_tools.dump_readme_link_violations as mod
+
+    fake = subprocess.CompletedProcess(
+        args=["python", "scripts/regen_quarto_render.py", "--check-readme-links"],
+        returncode=1,
+        stdout="README-link audit: 402 rendered-subtree READMEs, 2 violation(s), 0 unrendered\n",
+        stderr=(
+            "::error::HTML_404 MyIA.AI.Notebooks/GameTheory/README.md -> Carnet-Absent.html\n"
+            "::error::BROKEN MyIA.AI.Notebooks/GameTheory/README.md -> Carnet-Absent.ipynb\n"
+        ),
+    )
+    monkeypatch.setattr(mod.subprocess, "run", lambda *a, **kw: fake)
+    rc = mod.main()
+    captured = capsys.readouterr()
+    assert rc == 0, "argv ne doit PAS rougir sur des violations : le comparateur tranche"
+    payload = json.loads(captured.out)
+    assert payload["scan_ok"] is True
+    assert payload["n_violations"] == 2
+    assert payload["n_readmes"] == 402
+    assert {v["class"] for v in payload["violations"]} == {"HTML_404", "BROKEN"}
 
 
 def test_diff_passes_when_no_new_violation(tmp_path: Path) -> None:
@@ -362,16 +388,27 @@ def test_diff_refuses_pairing_when_base_readme_still_exists(tmp_path: Path) -> N
     """Temoin negatif (depot reel) : le README de base EXISTE encore au cwd
     => pas d'appariement, meme avec preuve de renommage ailleurs.
 
-    Re-key d'une violation reelle (son chemin existe au REPO_ROOT par
-    construction) vers un chemin invente : la disparition n'est pas prouvee,
-    la violation re-keyee reste une NOUVELLE (exit 1). C'est ce temoin qui
-    empeche l'appariement de blanchir un simple copier-coller de lien casse
-    vers un nouveau fichier.
+    Re-key d'une violation dont le README de base EXISTE reellement sur le
+    disque (chemin verifie ci-dessous) vers un chemin invente : la
+    disparition n'est pas prouvee, la violation re-keyee reste une NOUVELLE
+    (exit 1). C'est ce temoin qui empeche l'appariement de blanchir un simple
+    copier-coller de lien casse vers un nouveau fichier.
+
+    La violation est fabriquee, plus lue dans le backlog brut : depuis #22448
+    (decodage du percent-encoding) `main` n'en porte plus aucune, et un temoin
+    qui exige un backlog vivant s'eteint au premier nettoyage de README. Ce
+    qui compte ici n'est pas l'origine de la violation mais le fait que son
+    README de base soit PRESENT sur le disque.
     """
-    payload = _run_dump()
-    real = next(v for v in payload["violations"])
-    base = {"violations": [real], "n_violations": 1}
-    rekeyed = dict(real)
+    real_readme = "MyIA.AI.Notebooks/GameTheory/README.md"
+    assert (REPO_ROOT / real_readme).is_file(), (
+        f"temoin : {real_readme} doit exister au cwd pour que la disparition "
+        "du README de base ne soit pas prouvee"
+    )
+    base = {"violations": [
+        {"class": "HTML_404", "readme": real_readme, "href": "zz-invented.html"}
+    ], "n_violations": 1}
+    rekeyed = dict(base["violations"][0])
     rekeyed["readme"] = "zz-invented-dir/README.md"
     head = {"violations": [rekeyed], "n_violations": 1}
     proc = _run_diff(base, head, tmp_path)

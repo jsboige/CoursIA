@@ -118,3 +118,8 @@ Lecture honnête des limites :
 - Génération HF transformers (pas vLLM, indisponible sous Windows) —
   ~75 s/step (2B) et ~55 s/step (0.8B) sur RTX 3090, budget total ~11 h GPU
   pour la matrice.
+
+## Voir aussi
+
+- Reprise à l'échelle >= 8-9B (#15293) : bras Qwen3-8B et smoke Qwen3-14B —
+  dossier `P15293_GRPO_8B_14B.md`.
