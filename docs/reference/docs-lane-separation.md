@@ -27,19 +27,12 @@ Principe porteur : **intouchés ≠ morts** — une référence stable ne bouge 
 construction, sa stabilité n'est pas une dérive. Le tri rend visible ce qui, dans
 l'arbre pérenne, a fini son office de vivant, sans suppression ni déplacement aveugle.
 
-## État de la resorption — queue de distillation
+## Application mesurée
 
-La passe du 2026-11-02 (56 intouchés sur 316 pérennes) a classé l'arbre et listé
-**11 documents datés à distiller** dans les vagues suivantes :
-`reference/adk-migration-2-eval` · `reference/backtester-e2-cadrage` ·
-`reference/backtester-e2-svm-kernel` · `reference/ci-aggregator-rollout` ·
-`reference/dotnet-restore-rfc-17361` · `reference/probas-history` ·
-`reference/review-coverage-threshold` · `ml/bdh-evaluation` ·
-`lean/life-sat-cost-frontier` · `lean/cluster-junctions-c857` ·
-`ci/po2024-topology-baseline`.
-
-Application mesurée de la méthode — classements complets et preuves des 56 intouchés :
-[2026-11-02-tri-perennel-stale-56](../transients/2026-11-02-tri-perennel-stale-56.md).
+La passe du 2026-11-02 a classé 56 documents pérennes intouchés depuis 5+ semaines.
+Les classements et les preuves de cette application sont conservés dans le rapport
+transient [2026-11-02-tri-perennel-stale-56](../transients/2026-11-02-tri-perennel-stale-56.md) ;
+l'état des vagues ultérieures se suit dans l'issue #14623.
 
 ## Vérification
 
@@ -51,4 +44,4 @@ python scripts/check_docs_transients_lane.py --distillation   # chaque rapport d
 
 - [README de la lane transiente](../transients/README.md) — convention complète (nom, en-tête, destinations, distillation)
 - [scripts-reference.md](scripts-reference.md) — organes `check_docs_transients_lane.py` / `check_docs_reference_lane.py`
-- Issue [#14623](../../issues/14623) — le design des deux lanes
+- Issue [#14623](https://github.com/jsboige/CoursIA/issues/14623) — le design des deux lanes
