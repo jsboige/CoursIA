@@ -189,6 +189,11 @@ class ScriptedRunner:
         check_runs: str | None = None,
         main_check_runs: str | None = None,
         main_sha: str = "a" * 40,
+        # #24828 : historique de main lu par la sentinelle (SHA du plus
+        # recent au plus ancien) et check-runs par SHA. Le defaut : un seul
+        # commit (la tete), avec le jeu de checks nominal.
+        main_history: list[str] | None = None,
+        main_checks_by_sha: dict[str, str] | None = None,
     ):
         self.combined_rc = combined_rc
         self.combined_stdout = combined_stdout
@@ -199,6 +204,8 @@ class ScriptedRunner:
              "output": {"summary": "21 000 passed"}}
         ])
         self.main_sha = main_sha
+        self.main_history = list(main_history) if main_history is not None else [main_sha]
+        self.main_checks_by_sha = main_checks_by_sha or {}
         self.token = token
         self.token_rc = token_rc
         self.prs = list(prs)
@@ -279,10 +286,17 @@ class ScriptedRunner:
             return mr.RunResult(self.merge_rc, "", "merge refused")
         if c[:2] == ["gh", "api"] and "/commits/main" in c[2]:
             return mr.RunResult(0, self.main_sha + "\n", "")
-        if c[:2] == ["gh", "api"] and f"/commits/{self.main_sha}/check-runs" in c[2]:
-            return mr.RunResult(0, "\n".join(
-                json.dumps(row) for row in json.loads(self.main_check_runs)
-            ), "")
+        if c[:2] == ["gh", "api"] and "/commits?sha=" in c[2]:
+            # Historique de main lu par la sentinelle (le plus recent d'abord).
+            return mr.RunResult(0, "\n".join(self.main_history) + "\n", "")
+        if c[:2] == ["gh", "api"] and "/check-runs" in c[2]:
+            sha = c[2].split("/commits/", 1)[1].split("/", 1)[0]
+            if sha == self.main_sha or sha in self.main_history:
+                payload = self.main_checks_by_sha.get(sha, self.main_check_runs)
+                return mr.RunResult(0, "\n".join(
+                    json.dumps(row) for row in json.loads(payload)
+                ), "")
+            return mr.RunResult(0, self.check_runs, "")
         if c[:2] == ["gh", "api"] and "/check-runs" in c[2]:
             # #25059 : etape 6 bis. La branche est AVANT celle des commits :
             # l'URL des check-runs porte `/commits/` et serait capturee par
@@ -1008,7 +1022,7 @@ def test_main_rouge_pose_hold_nommee_et_bloque_tout_merge(tmp_path):
     subprocess.run(["git", "commit", "-m", "commit rouge simule"], cwd=disposable, check=True, capture_output=True)
     main_sha = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=disposable, check=True,
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     ).stdout.strip()
     journal = tmp_path / "journal.jsonl"
     hold = tmp_path / "hold.txt"
@@ -1047,6 +1061,152 @@ def test_main_check_absent_fail_closed(tmp_path):
     assert rc == 2
     assert lines == []
     assert not any("gh pr merge" in cmd for cmd in runner.flat())
+
+
+# --- remontee dans l'historique de main (revue ai-01 du 2026-11-10) ---------
+# Points 1 et 2 : on juge le dernier commit qui porte un VERDICT TERMINE,
+# et seul `failure` pose la retenue.
+
+
+def _scripts_check(conclusion, status="completed", summary="21 000 passed", started="2026-11-10T10:00:00Z"):
+    return json.dumps([
+        {"name": "Scripts Tests (CPU)", "conclusion": conclusion, "status": status,
+         "started_at": started, "output": {"summary": summary}}
+    ])
+
+
+def test_sentinelle_juge_le_commit_derriere_une_tete_en_cours(tmp_path):
+    """Point 1 : un check EN COURS n'est pas un refus de demarrer.
+
+    On remonte l'historique et on juge le premier verdict TERMINE trouve.
+    """
+    tete = "1" * 40
+    ancien = "2" * 40
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check(None, status="in_progress", summary=""),
+            ancien: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+            ),
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    journal = tmp_path / "journal.jsonl"
+    rc = mr.run(
+        ["--journal", str(journal), "--hold-file", str(hold), "--apply"], runner=runner
+    )
+    assert rc == 0
+    # La retenue nomme le commit JUGUE, pas la tete.
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={ancien}" in contenu
+    assert f"sha={tete}" not in contenu
+    assert "test=scripts/tests/test_x.py::test_y" in contenu
+
+
+def test_sentinelle_cancelled_remonte_au_commit_precedent(tmp_path):
+    """Point 2 : `cancelled` est de l'INFRA, pas un verdict de code."""
+    tete = "3" * 40
+    ancien = "4" * 40
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("cancelled", summary=""),
+            ancien: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+            ),
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={ancien}" in contenu
+    assert f"sha={tete}" not in contenu
+
+
+def test_sentinelle_timed_out_remonte_au_commit_precedent(tmp_path):
+    """Point 2 : `timed_out` est de l'INFRA ; le verdict vert precedent gagne."""
+    tete = "5" * 40
+    ancien = "6" * 40
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("timed_out", summary=""),
+            ancien: _scripts_check("success"),
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    # Aucun verdict de code rouge : la sentinelle n'ecrit aucune retenue.
+    contenu = hold.read_text(encoding="utf-8") if hold.exists() else ""
+    assert "main-red-sentinel" not in contenu
+
+
+def test_sentinelle_sans_verdict_termine_fail_closed_borne(tmp_path, capsys):
+    """Point 3 : fail-closed AVEC la borne nommee (N ecrit)."""
+    history = [f"{i:040x}" for i in range(1, mr.MAIN_RED_HISTORY_LIMIT + 1)]
+    runner = ScriptedRunner(
+        main_sha=history[0],
+        main_history=history,
+        main_checks_by_sha={
+            sha: _scripts_check(None, status="in_progress", summary="")
+            for sha in history
+        },
+    )
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(tmp_path / "h.txt"), "--apply"],
+        runner=runner,
+    )
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "fail-closed" in err
+    assert str(mr.MAIN_RED_HISTORY_LIMIT) in err
+
+
+def test_clear_main_red_hold_ne_retire_que_la_ligne_de_la_sentinelle(tmp_path):
+    """Point 3 : la voie manuelle ne touche PAS les retenues du coordinateur."""
+    hold = tmp_path / "hold.txt"
+    hold.write_text(
+        "16808 attente utilisateur\n"
+        "0 main-red-sentinel sha=deadbeef check=Scripts Tests (CPU) "
+        "conclusion=failure test=scripts/tests/test_x.py::test_y\n",
+        encoding="utf-8",
+    )
+    assert mr.clear_main_red_hold(hold) is True
+    assert hold.read_text(encoding="utf-8") == "16808 attente utilisateur\n"
+    # Idempotent : une seconde passe ne trouve plus rien a retirer.
+    assert mr.clear_main_red_hold(hold) is False
+
+
+def test_cli_clear_main_red_hold_nappelle_pas_gh(tmp_path):
+    """La voie manuelle sort avant tout appel GitHub."""
+    hold = tmp_path / "hold.txt"
+    hold.write_text(
+        "16808 attente utilisateur\n"
+        "0 main-red-sentinel sha=deadbeef check=Scripts Tests (CPU) "
+        "conclusion=failure test=scripts/tests/test_x.py::test_y\n",
+        encoding="utf-8",
+    )
+    runner = ScriptedRunner()
+    rc = mr.run(
+        ["--clear-main-red-hold", "--hold-file", str(hold)], runner=runner
+    )
+    assert rc == 0
+    assert hold.read_text(encoding="utf-8") == "16808 attente utilisateur\n"
+    assert runner.flat() == []
 
 
 # --- disposition de review classee a la tete evaluee (point 1 de #17672) ---------
