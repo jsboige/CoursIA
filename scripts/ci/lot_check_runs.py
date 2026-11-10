@@ -158,9 +158,16 @@ def construire_payloads(
     silencieusement.
     """
     tronque = pool_tronque(plan.get("pool_inspecte"), plan.get("limit"))
-    statuts = {
-        int(pr.get("number")): pr for pr in (resultats.get("prs") or []) if pr.get("number")
-    }
+    # Le numero est lu comme une **presence**, pas comme une verite : un
+    # filtre de verite (`if pr.get("number")`) ecarterait silencieusement
+    # toute PR dont le numero vaut 0, et son resultat deviendrait « absent du
+    # resultat » -- un verdict neutre sur une mesure reellement faite.
+    statuts: dict[int, dict[str, Any]] = {}
+    for pr in resultats.get("prs") or []:
+        numero = pr.get("number")
+        if numero is None:
+            continue
+        statuts[int(numero)] = pr
     integration = resultats.get("integration") or {}
     arbre = integration.get("arbre") or {}
     bissection = integration.get("bissection") or {}

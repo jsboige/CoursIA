@@ -177,6 +177,17 @@ def test_une_pr_absente_du_resultat_n_est_pas_rouge():
     assert payloads[0]["conclusion"] == "neutral"
 
 
+def test_un_numero_present_meme_sil_faux_est_retrouve():
+    # Le numero est lu comme une presence, pas comme une verite : filtre de
+    # verite -> resultat ecarte -> verdict neutre sur une mesure faite.
+    payloads = lot_check_runs.construire_payloads(
+        _plan([_entree(0)]),
+        {"prs": [{"number": 0, "statut": "vert", "duree_s": 1.0}]},
+    )
+    assert payloads[0]["conclusion"] == "success"
+    assert payloads[0]["statut"] == "vert"
+
+
 def test_le_corps_de_l_api_porte_le_verdict_et_la_sortie():
     entry = lot_check_runs.construire_payloads(
         _plan([_entree(6)]),
