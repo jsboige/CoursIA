@@ -80,5 +80,5 @@ Le sujet détaillé (énoncé complet, données, critères) est dans [subject.md
 ## Études de cas associées
 
 - [Diagnostic-Medical](../Diagnostic-Medical/README.md) — CC1 : règles cliniques + A* + génétique + Z3
-- [Oncology-Planning](../Oncology-Planning/README.md) — CC2 : ontologie OWL + contraintes + bayésien
+- [Planification-Oncologie](../Planification-Oncologie/README.md) — CC2 : ontologie OWL + contraintes + bayésien
 - [README CaseStudies](../README.md) — principe d'intégration multi-paradigmes de la série
