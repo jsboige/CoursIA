@@ -56,6 +56,13 @@
 > **pas reproduit** (le +27,5 % devient +2,3 % en 9→11), la dispersion inter-passes y
 > reste grande et les deltas fins du banc y restent **non concluants**. Les valeurs de ce
 > tableau restent celles de la session du 02/10.
+>
+> **Banc 3 re-mesuré le 11/10** (session **4 runtimes** × 5 passes entrelacées sur
+> `myia-ai-01`, net8.0 y entrant pour la première fois) : les valeurs de ce tableau
+> **restent celles de la session du 02/10** — la session du 11/10 est re-contextualisée
+> dans la section « Session du 2026-11-10 sur `myia-ai-01` ». Elle **confirme** le
+> rattrapage 9→10 sur le pipeline symbolique (−26,8 %, intervalles disjoints) et
+> n'établit **aucun** écart 10→11 sur les six axes du banc.
 
 ## Banc 4 — semantic-fleet (unités : us)
 
@@ -211,7 +218,7 @@ python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/GenAI/
 | Rule parsing multilingue (Argumentum) | (String.Split via agrégats, hors ratios article) | −13,2 % / −15,7 % — **non séparables** (contrôle du 29/10) | +3,7 % / +25 % — **non établis** (contrôle du 29/10) | **le gain 11 sur le parsing n'est pas établi** : aucune paire de runtimes ne se sépare sur les deux axes de parsing, l'amplitude intra-runtime (jusqu'à ×2,5 pour un même runtime) domine l'écart inter-runtime ; le 9→10 de la variante 50 règles a été **contrôlé** (29/10, sur une autre machine — voir « Contrôle du banc 5 ») et **n'est pas établi** |
 | Collections/LINQ (MGS) | FindAll 0,30 · SequenceEqual ×7,7 | ~0 à +17 % (GC-sensible) | −6 à −26 % | **non couvert** (nos bancs n'exercent pas ces API précises) ; côté 11 : nul/inconclusif |
 | Charge native-dominée (Z3.Linq) | (rien de spécifique promis) | −0,3 à −6,7 % | −5 à −10 % | **rattrapage 10 réel (marshaling), gain 11 nul** |
-| Allocation-heavy pipeline (Automata) | (Stores covariants 0,56 etc.) | +4,1 % / INCONCLUSIF EvilRegex — **signal +27,5 % non reproduit le 20/10** (re-mesure : +2,3 % 9→11, dispersion inter-passes 47–69 %) | −10,9 % | **rattrapage 10 réel ; 11 non prouvé sur cette charge** (allocs identiques au Ko près — cohérent : nos pipelines allouent par design, pas par défaut runtime) |
+| Allocation-heavy pipeline (Automata) | (Stores covariants 0,56 etc.) | +4,1 % / INCONCLUSIF EvilRegex — **signal +27,5 % non reproduit le 20/10** (re-mesure : +2,3 % 9→11, dispersion inter-passes 47–69 %) — **le 11/10 n'établit aucun écart 10→11 sur les six axes du banc** (session 4 runtimes × 5 passes, 0 paire séparable) | −10,9 % — **établi le 11/10** (−26,8 % en session 4 runtimes, intervalles disjoints sur `Pipeline_ConvertDeterminizeMinimize`) | **rattrapage 10 réel ; 11 non prouvé sur cette charge** (allocs identiques au Ko près — cohérent : nos pipelines allouent par design, pas par défaut runtime) — **l'axe allocation est le seul concluant de la session du 11/10, et il est négatif** (amplitude ≤ 0,92 % sur les charges en Mo) |
 | Kernel notebooks | — | — | — | **le canon 1.0.712001 exige déjà ≥ .NET 10** : le dépôt ne peut pas rester « runtime 9 » pour les carnets même sans migration |
 
 ## Synthèse pour la décision P2 (LTS vs GA, escalade user)
@@ -230,7 +237,7 @@ python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/GenAI/
 4. Conditions : RC1, machine partagée avec CI — les deltas < ±10 % sur ces bancs ne sont pas
    séparables du bruit ; à re-mesurer fenêtre calme avant toute décision définitive.
 
-## Re-mesure du banc 3 — fenêtre du 20/10 (myia-po-2023)
+## Re-mesure du banc 3 — fenêtres du 20/10 (myia-po-2023), du 29/10 et du 11/10 (myia-ai-01:CoursIA-2)
 
 Objet : le drapeau **INCONCLUSIF** posé le 02/10 sur `Pipeline_EvilRegex` (banc 3) — « StdDev
 in-passe ≈ mean (1738 de médiane sur 2685 de moyenne en net11) : à re-mesurer fenêtre CI
@@ -340,6 +347,153 @@ CI auto-hébergés — **charge processeur 91 % à 18:05Z, 62 % à 18:15Z, 76 % 
 
 Les trois drapeaux INCONCLUSIF **restent donc posés** : cette tentative n'apporte pas de verdict, elle apporte la
 preuve que la condition manquante (une fenêtre calme) n'est pas accessible depuis ce poste.
+
+### Session du 2026-11-10 sur `myia-ai-01` — quatre runtimes, cinq passes entrelacées
+
+Quatrième session du banc 3 (après le 02/10, le 20/10 et le 29/10), et
+**première session à quatre runtimes** : net8.0 y entre pour la première fois,
+et les **deux** classes de banc du sous-module sont mesurées — dont
+`AutomatonOpsBench`, qui n'avait jamais été comparé entre runtimes. Objet :
+trancher l'axe « rattrapage 9→10 / gain 10→11 » du banc 3 avec un critère de
+séparabilité explicite, et publier les baselines net10 / net11 qui manquaient au
+dépôt amont du sous-module.
+
+#### Protocole
+
+| Paramètre | Valeur |
+|---|---|
+| Machine | `myia-ai-01` — i9-14900KF 3,20 GHz, 32 cœurs logiques / 24 physiques, Windows 11 Pro (10.0.26300.9711) |
+| Runtimes | .NET **8.0.33** · **9.0.22** · **10.0.14** · **11.0.0** (rc.3.26522.148) |
+| Preuve du runtime effectif | en-tête `[Host] : .NET X.Y.Z (...)` de chaque rapport BDN, relevé sur les 20 runs |
+| Config BDN | 0.15.8, `InProcessEmitToolchain`, ShortRun 5 warmup / 15 itérations / 1 invocation / unroll 1, `ServerGarbageCollection = false` |
+| Passes | **5** passes complètes, ordre **interlacé** (net8 → net9 → net10 → net11 dans chaque passe), **médiane des 5 moyennes** par cellule |
+| Build | un build Release **par TFM** (le `<TargetFrameworks>` du banc ne liste que `net8.0;net9.0` : édition temporaire d'une ligne, restaurée après mesure) |
+| Artefact mesuré | sous-module `Automata` au gitlink épinglé `e6193d9b0988b7cf9d8023bd3a8291baca4b73f4` — **identique** au commit mesuré (`git ls-tree origin/main`) |
+| Bancs | `AutomatonOpsBench` (déterminisation, minimisation Hopcroft, équivalence) **et** `RegexPipelineBenchmarks` (pipeline symbolique, matching SRE, regex piégée) |
+
+Deux écarts de protocole, assumés : (a) contrairement aux sessions du 20/10 et
+du 29/10, qui rejouaient un **build unique** `net9.0` via
+`dotnet exec --fx-version`, chaque runtime a ici **son** build — c'est le
+protocole des baselines amont, qui évite l'artefact du roll-forward, au prix
+d'une variante de compilateur par TFM ; (b) `AutomatonOpsBench` n'avait jamais
+été comparé entre runtimes. **Ces valeurs ne sont comparables à aucune session
+antérieure**, seulement à elles-mêmes.
+
+#### Mesures (médiane des 5 moyennes)
+
+| Benchmark | net8.0 | net9.0 | net10.0 | net11.0 (rc.3) | 8→9 | 9→10 | 10→11 | Allocated (8 / 9 / 10 / 11) |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| Benchmark | net8.0 | net9.0 | net10.0 | net11.0 (rc.3) | 8→9 | 9→10 | 10→11 | Allocated (8 / 9 / 10 / 11) |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| `Determinize_NFA_L15` (ms) | 12.77 | 13.62 | 14.26 | 11.81 | +6.7 % | +4.7 % | -17.2 % | 11.42 MB / 11.42 MB / 11.42 MB / 11.41 MB |
+| `Determinize_plus_MinimizeHopcroft_L15` (ms) | 50.85 | 40.29 | 44.33 | 54.18 | -20.8 % | +10.0 % | +22.2 % | 26.05 MB / 26.06 MB / 26.06 MB / 26.06 MB |
+| `IsEquivalent_DFA_Twins_L15` (ms) | 15.58 | 13.24 | 13.86 | 15.45 | -15.0 % | +4.7 % | +11.5 % | 24.08 MB / 24.08 MB / 24.07 MB / 23.86 MB |
+| `Matching_DotNetDelegate` (µs) | 616.0 | 536.0 | 705.0 | 562.0 | -13.0 % | +31.5 % | -20.4 % | 219.99 KB / 222.77 KB / 223.48 KB / 223.63 KB |
+| `Pipeline_ConvertDeterminizeMinimize` (µs) | 1792.0 | 1730.0 | 1267.0 | 1383.0 | -3.4 % | -26.8 % | +9.1 % | 2709.13 KB / 2712.74 KB / 2705.76 KB / 2704.8 KB |
+| `Pipeline_EvilRegex` (µs) | 1328.0 | 1145.0 | 959.0 | 994.0 | -13.8 % | -16.2 % | +3.7 % | 2125.73 KB / 2129.95 KB / 2124.28 KB / 2124.66 KB |
+
+**Critère de séparabilité** : deux runtimes sont séparables sur un axe si
+l'intervalle [min, max] des 5 moyennes de passes de l'un **et** de l'autre
+**ne se recouvrent pas**. 18 paires testées (6 benchmarks × 3 paires
+consécutives), **3 séparables** :
+
+| Benchmark | Paire | Écart | Intervalles | Statut |
+|---|---|---:|---|---|
+| `Pipeline_ConvertDeterminizeMinimize` | net9 → net10 | **−26,8 %** | [1645..1864] vs [876..1509] µs | **établi** |
+| `Determinize_plus_MinimizeHopcroft_L15` | net8 → net9 | **−20,8 %** | [46.43..57.04] vs [38.85..42.08] ms | **établi** |
+| `Determinize_plus_MinimizeHopcroft_L15` | net9 → net10 | +10,0 % | [38.85..42.08] vs [43.65..51.61] ms | **non compté** — à la limite exacte du seuil de ±10 % de ce document |
+
+#### Lecture (six points, sans arrondi favorable)
+
+1. **Le rattrapage 9→10 est confirmé, et son amplitude dépasse celle du
+   02/10.** `Pipeline_ConvertDeterminizeMinimize` : **−26,8 %** en 9→10
+   (intervalles disjoints), contre −10,9 % au 02/10 sur la même charge et dans
+   le même sens. C'est le seul écart franchement établi de la session, et il
+   porte sur la charge la plus allouante du banc — l'axe que le digest Toub
+   vise.
+2. **net9 bat net8 sur la minimisation Hopcroft (−20,8 %)** : donnée **nouvelle**
+   — net8 n'avait jamais été comparé à net9 sur ce banc.
+3. **Aucune paire n'est séparable en 10→11, sur aucun des six axes.** Les
+   intervalles de .NET 11 et de .NET 10 se recouvrent partout, y compris sur le
+   pipeline symbolique où le gain net10 avait été établi. **Aucun gain .NET 11
+   n'est établi sur le banc 3** — et aucun écart négatif net ne l'est non plus :
+   le résultat est « rien de séparable », pas « .NET 11 est plus lent ».
+4. **Les allocations ne bougent pas** : amplitude maximale de 0,92 % sur les
+   charges en Mo, 1,65 % sur la plus petite charge (le matching délégué). C'est
+   le **seul axe concluant** de la session — et il conclut à l'absence de gain
+   d'allocation attribuable au runtime, .NET 10 comme .NET 11. Cohérent avec le
+   reste du document : nos pipelines allouent par design, pas par défaut
+   runtime.
+5. **La fenêtre n'est toujours pas calme, et c'est mesuré** : CPU 66 % à 93 %
+   sur 20 échantillons (un échantillon isolé à 11 %), 1081 à 1098 processus
+   resident dont 104 `dotnet`/`node`/`Runner`. Le poste `myia-ai-01` héberge le
+   vLLM de la flotte et les runners CI auto-hébergés. La session **confirme** le
+   constat du 29/10 sur ce siège : ce poste n'est pas une fenêtre calme. La
+   comparaison intra-session en est d'autant moins affectée que tous les
+   runtimes ont subi la même charge — c'est la limite assumée d'une session
+   unique.
+6. **Cinq passes suffisent à rendre séparables des écarts réels, mais pas à en
+   exclure d'autres** : un intervalle de cinq points est large ; une session
+   plus longue resserrerait les intervalles et pourrait rendre séparables des
+   paires aujourd'hui dans le bruit. Le sens des conclusions (9→10 établi sur le
+   pipeline, 10→11 non séparable sur les six axes) est robuste à ce degré de
+   précision, mais **une amplification d'axe reste possible**.
+
+#### Ce que cette session règle, et ce qu'elle ne règle pas
+
+| Point | État après le 11/10 |
+|---|---|
+| `Pipeline_ConvertDeterminizeMinimize`, 9→10 | **établi** (−26,8 %, intervalles disjoints) — le « rattrapage 10 » du banc 3 est confirmé sur cet axe, dans le même sens et avec une amplitude supérieure à celle du 02/10 |
+| `Pipeline_ConvertDeterminizeMinimize`, 10→11 | **non séparé** — aucun gain .NET 11 établi |
+| Les six axes du banc 3, 10→11 | **aucun séparable** — le gain .NET 11 n'est pas établi sur ce banc, et le « signal +27,5 % » du 02/10 sur `Pipeline_EvilRegex` ne réapparaît pas une seconde fois (ici +3,7 % en 10→11) |
+| Axe allocation | **concluant, et négatif** — aucun gain d'allocation attribuable au runtime, .NET 10 comme .NET 11 |
+| net8 hors des comparaisons antérieures | **entré dans la comparaison** pour la première fois : le banc 3 se lit désormais de net8 à net11 dans une même session |
+| Comparabilité avec les sessions du 02/10, du 20/10 et du 29/10 | **aucune** — poste différent, versions patch différentes, build par TFM au lieu d'un build roulé en avant : cette session est une **quatrième session autonome** |
+| La fenêtre calme sur ce siège | **toujours non obtenable** — fait mesuré (point 5) |
+
+#### Provenance
+
+Baselines publiées dans le dépôt amont du sous-module (`MyIntelligenceAgency/Automata`) :
+PR **#19** (`bench/net10-net11-baselines-4runtimes`) —
+`benchmarks/BASELINE-net10.0.md`, `benchmarks/BASELINE-net11.0.md` et
+`benchmarks/COMPARISON-net8-net11-2026-11-10.md` (comparaison des quatre
+runtimes, matrice des 5 passes, profil de charge d'hôte). **Aucun code de
+production modifié** ; `Automata.Benchmarks.csproj` inchangé (l'édition de
+`<TargetFrameworks>` était locale et a été restaurée avant livraison). Les 20
+rapports BDN (5 passes × 4 runtimes) sont reproductibles par les commandes de la
+section « Protocole ».
+
+#### Mesures brutes, cellule par cellule
+
+Chaque runtime a été exécuté 5 fois ; l'intervalle [min, max] ci-dessous est
+celui qui sert de critère de séparabilité.
+
+| Benchmark | Runtime | min | max | médiane |
+|---|---|---:|---:|---:|
+| `Determinize_NFA_L15` | net8.0 | 12.01 | 15.82 | 12.77 |
+| `Determinize_NFA_L15` | net9.0 | 12.19 | 15.74 | 13.62 |
+| `Determinize_NFA_L15` | net10.0 | 11.68 | 16.41 | 14.26 |
+| `Determinize_NFA_L15` | net11.0 | 10.72 | 12.16 | 11.81 |
+| `Determinize_plus_MinimizeHopcroft_L15` | net8.0 | 46.43 | 57.04 | 50.85 |
+| `Determinize_plus_MinimizeHopcroft_L15` | net9.0 | 38.85 | 42.08 | 40.29 |
+| `Determinize_plus_MinimizeHopcroft_L15` | net10.0 | 43.65 | 51.61 | 44.33 |
+| `Determinize_plus_MinimizeHopcroft_L15` | net11.0 | 39.98 | 65.88 | 54.18 |
+| `IsEquivalent_DFA_Twins_L15` | net8.0 | 13.15 | 20.73 | 15.58 |
+| `IsEquivalent_DFA_Twins_L15` | net9.0 | 12.38 | 16.12 | 13.24 |
+| `IsEquivalent_DFA_Twins_L15` | net10.0 | 12.76 | 18.59 | 13.86 |
+| `IsEquivalent_DFA_Twins_L15` | net11.0 | 11.93 | 23.20 | 15.45 |
+| `Matching_DotNetDelegate` | net8.0 | 603.0 | 723.0 | 616.0 |
+| `Matching_DotNetDelegate` | net9.0 | 439.0 | 677.0 | 536.0 |
+| `Matching_DotNetDelegate` | net10.0 | 521.0 | 795.0 | 705.0 |
+| `Matching_DotNetDelegate` | net11.0 | 481.0 | 732.0 | 562.0 |
+| `Pipeline_ConvertDeterminizeMinimize` | net8.0 | 1629.0 | 2245.0 | 1792.0 |
+| `Pipeline_ConvertDeterminizeMinimize` | net9.0 | 1645.0 | 1864.0 | 1730.0 |
+| `Pipeline_ConvertDeterminizeMinimize` | net10.0 | 876.0 | 1509.0 | 1267.0 |
+| `Pipeline_ConvertDeterminizeMinimize` | net11.0 | 1240.0 | 1530.0 | 1383.0 |
+| `Pipeline_EvilRegex` | net8.0 | 1147.0 | 1521.0 | 1328.0 |
+| `Pipeline_EvilRegex` | net9.0 | 1048.0 | 1316.0 | 1145.0 |
+| `Pipeline_EvilRegex` | net10.0 | 871.0 | 1144.0 | 959.0 |
+| `Pipeline_EvilRegex` | net11.0 | 888.0 | 1117.0 | 994.0 |
 
 ### Le protocole du banc, seconde cause — et elle est plus fondamentale que la fenêtre
 
