@@ -27,7 +27,10 @@ Le paramètre `mode` choisit la variante, avec les mêmes noms que la table `VAR
 | `exposure90` | 9 % | non | non | non |
 | `kernel_nocb` | 9 % | oui | oui | non |
 | `kernel` (défaut) | 9 % | oui | oui | oui |
+| `kernel_sized` | 0,5 % du capital par ligne ÷ distance au stop (2 ATR), exposition plafonnée à 90 % | oui | oui | oui |
 | `spy` | SPY acheté une fois et conservé | — | — | — |
+
+Le mode `kernel_sized` implémente la règle de dimensionnement de Steward (point 2 de #25532) : la quantité de chaque ligne est fixée pour **risquer 0,5 % du capital** si son stop (2 ATR sous l'entrée) se déclenche, puis l'exposition totale est plafonnée à 90 %. Les autres modes gardent un poids fixe par ligne.
 
 Le paramètre `stop_handling` choisit le traitement du stop quand un rebalancement redimensionne une ligne déjà détenue :
 
@@ -138,6 +141,33 @@ Le premier contrôle vérifie la règle d'exécution du papier : chaque stop s'e
 En mode `keep`, l'algorithme compte aussi les redimensionnements de stop : 4365 stops gardés (noyau sans coupe-circuit) et 4307 (noyau complet), sans aucune mise à jour refusée par LEAN. Le repli prévu dans `main.py`, qui annule et repose le stop si la mise à jour échoue, n'a donc jamais servi.
 
 Contrôle de série, avant toute lecture : la plus forte variation journalière de chaque trace a été relevée. −8,0 % le 2020-03-10 (sans noyau), −7,2 % le même jour (exposition 90 %), +4,5 % le 2025-04-10 (les deux variantes à noyau, dans l'un et l'autre mode), −11,0 % le 2020-03-17 pour SPY, soit la clôture du 16 mars. Toutes correspondent à des séances connues, sans date en double dans les traces (2911 points pour chacune des traces `keep`).
+
+### Dénominateur des séances vues par `on_data` (suivi #25532)
+
+Deux statistiques d'exécution ont été ajoutées pour lever la réserve du README de #25499 : `Dates vues par on_data` (dates distinctes traitées par `on_data`, période de mise en route exclue) et `Seances a plat` (séances où aucune position de l'univers n'est détenue).
+
+Sur les deux fenêtres du protocole #25499, le nombre de dates vues par `on_data` est **strictement égal** au nombre de dates négociables que QC rapporte pour le même backtest (`tradeableDates`) : 1761 = 1761 (2018-01-01 → 2025-01-01) et 4780 = 4780 (2007-01-01 → 2026-01-01). Il n'y a donc **aucun écart** entre la cadence de `on_data` et le calendrier boursier.
+
+La figure « 1789 / 5003 séances vues par `on_data` » du README de #25499 sur-compte d'environ 1,6 % (28 / 78 dates) par rapport aux dates négociables 1761 / 4925 de ces fenêtres. Ce sur-compte est **proportionnel à la longueur de la fenêtre** (1,59 % dans les deux cas) : c'est la signature d'un comptage dont la longueur dépasse le calendrier de ~1,6 % — typiquement une inclusion de la période de mise en route (warm-up) ou des dates frontalières — et non une propriété du calendrier boursier ni de la cadence de `on_data`. Le dénominateur correct des parts de séances à plat est le nombre de dates négociables.
+
+### Suivi #25532 — dimensionnement à risque et dénominateur
+
+Six backtests (mode × fenêtre), mode `recreate`, frais 5 bps, départ 100 000 USD, espace QC 38955440, exécutés le 2026-11-09. Le Sharpe affiché est le Sharpe QC (taux sans risque inclus).
+
+| Variante | Fenêtre | CAGR | Sharpe (QC) | Drawdown max | Ordres | Séances à plat |
+|---|---|---|---|---|---|---|
+| `kernel` | 2018-2025 | +6,16 % | 0,24 | −15,7 % | 6 821 | 3 / 1761 |
+| `kernel` | 2007-2026 | +6,54 % | 0,34 | −28,8 % | 19 411 | 6 / 4780 |
+| `kernel_sized` | 2018-2025 | +5,48 % | 0,18 | −15,2 % | 7 547 | 3 / 1761 |
+| `kernel_sized` | 2007-2026 | +6,85 % | 0,37 | −23,2 % | 20 620 | 6 / 4780 |
+| `spy` (témoin) | 2018-2025 | +13,66 % | 0,50 | −33,8 % | 1 | 0 / 1761 |
+| `spy` (témoin) | 2007-2026 | +10,65 % | 0,41 | −55,4 % | 1 | 0 / 4780 |
+
+Lecture :
+
+- le dimensionnement à risque (`kernel_sized`) n'améliore le noyau que sur la fenêtre longue : sur 2007-2026, Sharpe 0,37 contre 0,34, CAGR +6,85 % contre +6,54 %, drawdown −23,2 % contre −28,8 % ; sur 2018-2025 il est légèrement en retrait (CAGR +5,48 % contre +6,16 %) à drawdown comparable. La fenêtre longue inclut 2008-09, où le dimensionnement ATR (positions plus petites quand la volatilité est élevée) protège le drawdown ;
+- le témoin `spy` (buy-and-hold) a le CAGR et le Sharpe les plus élevés mais de loin le drawdown le plus fort (−33,8 % / −55,4 %) : c'est la référence **sans** gestion du risque ;
+- le noyau standalone est investi à ~90 % en permanence : 3 à 6 séances à plat sur 1761 / 4780, toutes avant le premier rebalancement hebdomadaire. La « part des séances à plat » est donc quasi nulle ici — elle est le fait du wrapper Cloud-VolTargeting de #25499, pas du noyau.
 
 ## Pourquoi des ordres stop et pas un `RiskManagementModel`
 
