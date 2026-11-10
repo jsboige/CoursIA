@@ -176,10 +176,10 @@ families:
     strategy: papermill
     timeout: 300
     subfamilies:
-      Diagnostic-Medical-Python:
+      Diagnostic-Medical:
         kernel: python3
         strategy: papermill
-      Planification-Oncologie-Python:
+      Planification-Oncologie:
         kernel: python3
         strategy: papermill
     acceptance:
