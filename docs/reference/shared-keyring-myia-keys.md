@@ -163,45 +163,26 @@ L'organe du trousseau réutilise cette mesure pour `get` au lieu d'en tenir une 
 générale reste : **un test d'ignorance lancé dans ce clone mesure ce clone, pas le dépôt** — et une
 énumération est par construction aveugle au fichier qu'on ajoutera demain.
 
-## Quand le coffre semble absent — mesurer la synchronisation avant de conclure
+## Quand le coffre semble absent — chercher l'arbre Drive fourché avant de conclure
 
-Le diagnostic du 2026-11-09 illustre deux pièges distincts : **un `ABSENT` est un défaut, pas un
-succès de mesure**, et **l'absence au chemin attendu ne prouve pas la perte du coffre**.
+Deux pièges mesurés les 2026-11-09/10 : un `coffre : ABSENT` est un **défaut compté** —
+`cmd_doctor()` rend `EXIT_DEFECT` (1), jamais un feu vert — et une absence au chemin attendu
+ne prouve pas la perte du coffre.
 
-`cmd_doctor()` incrémente `defects` quand `path.is_file()` est faux ; toute valeur non nulle rend
-`EXIT_DEFECT`, soit **1**. Un `coffre : ABSENT` suivi de `rc=0` n'est donc pas un état prévu par
-l'organe : relire la sortie et sa commande avant d'en tirer une conclusion. `EXIT_UNKNOWN` (2)
-signale une autre situation — la mesure n'a pas pu être faite — et n'est pas un feu vert non plus.
+Le Drive partagé peut porter un **arbre jumeau fourché** (`Synchronisation (1)\` à côté de
+`Synchronisation\`) : le coffre vivait dans le jumeau figé au 29/10 pendant que l'arbre par
+défaut ne le portait plus. Avant de conclure « absent » :
+`ls "G:/Mon Drive/" | grep -i "Synchronisation ("`, puis comparer les copies des deux arbres
+(taille, SHA-256). `vault_candidates()` énumère ces jumeaux et `doctor` les signale par
+`CONFLIT` dès que plusieurs copies existent — arrêt **avant toute écriture**, même à contenu
+identique (mesure po-2023 du 2026-11-10 : `coffre : OK` + `CONFLIT 2 copies visibles`,
+rc=1). La **résolution du fork appartient à roo-extensions**, signalée sur le dashboard
+global — pas à un geste local de consolidation ou de suppression.
 
-### Chercher l'arbre Drive fourché, pas seulement le chemin par défaut
-
-Le Drive porte deux racines `.shared-state` : `Synchronisation\` et `Synchronisation (1)\`.
-`vault_candidates()` les énumère et `vault_path()` choisit la première copie existante ; la copie
-vivante peut donc être dans l'arbre jumeau. `doctor` signale plusieurs copies par `CONFLIT` : c'est
-un motif d'arrêt **avant toute écriture**, même si leur contenu est ensuite mesuré identique.
-
-Mesure sur po-2023, 2026-11-10T00:57:11Z, après synchronisation : les deux fichiers
-`MyIA-Keys.kdbx` existent, font **7 127 octets**, portent le même `LastWriteUtc` et le **même
-SHA-256**. Le `doctor` relancé dans le même état rend :
-
-```text
-coffre    : OK  G:\Mon Drive\Synchronisation\RooSync\.shared-state\MyIA-Keys.kdbx  (7127 octets)
-coffre    : CONFLIT  2 copies visibles -- comparer leurs empreintes AVANT toute ecriture
-1 defaut(s).
-```
-
-Le code de retour mesuré est **1**, causé ici par le seul `CONFLIT` structurel — pas par une
-absence. Cette égalité de contenu résout la question « une copie a-t-elle divergé ? », pas la
-duplication des arbres : **aucune écriture au coffre tant que l'écrivain désigné n'a pas arbitré
-leur consolidation**. Aucune copie, suppression ou reconstruction locale ne se fait depuis cette
-seule observation.
-
-Si `doctor` rend réellement `ABSENT` : laisser Drive synchroniser, relancer `doctor`, puis comparer
-les copies des deux arbres par taille et SHA-256. Un `UNKNOWN` de la phase 4
-(`render_envs.py --check` coffre ↔ `master.env`) ne couvre pas l'état du coffre. La phase 6
+On ne **reconstruit jamais** le coffre depuis un seul `master.env` : ce serait fabriquer une
+source unique de substitution. Laisser Drive synchroniser, relancer `doctor` ; la phase 6
 (retrait des `master.env` et `.env` rendus) reste bloquée tant qu'un coffre vivant n'est pas
-mesuré. L'empreinte de la passphrase et sa présence DPAPI survivent à la synchronisation du
-fichier ; elles ne prouvent pas à elles seules que le coffre est disponible.
+mesuré.
 
 ## Voir aussi
 
