@@ -178,6 +178,73 @@ dotnet interactive jupyter install
 
 Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` confirmee, `#!import` minimal OK (`FORTY_TWO=42`), AutoML 0.22.3 OK (RSquared 0,996). **Epilogue (02/10/2026, #18766)** : le depin a eu lieu — le canon fleet passe a `1.0.712001`, exactement le build sur lequel po-2024 tournait lors de cette divergence. La divergence est fermee par montee du canon (po-2024 etait « en avance »), la reparation historique ci-dessus reste documentee pour la methode (uninstall + install pinne quand `dotnet tool update` refuse le downgrade). Mesures de conformite flotte : matrice tenue a jour dans [Conformite flotte au canon](#conformite-flotte-au-canon--matrice-machine-x-version) (au 2026-10-09 : `po-2023`/`po-2024`/`po-2025`/`po-2026`/`po-2027` conformes par mesure — `po-2027` l'a ete apres reparation, sa mesure ayant d'abord trouve l'ancien canon installe ; `ai-01` canon teste en isole mais outil global encore sur l'ancien pin. **Mise a jour 2026-10-19** : `ai-01` est desormais mesuree elle aussi — l'outil **global** porte le canon et l'execution reelle d'un carnet .NET via le kernelspec global passe : la derniere ligne non mesuree de la matrice est close).
 
+## Relevé (python, numpy) par kernelspec — le nom ne dénote pas l'environnement (#24883)
+
+**Pourquoi cette table existe.** Un nom de kernelspec ne dénote pas un environnement : deux sièges peuvent déclarer le même nom pour des tuples `(python, numpy)` différents, et un même environnement peut répondre à plusieurs noms (mesuré dans les deux sens ci-dessous). Une consigne de re-exécution nomme donc toujours un **tuple mesuré et publié**, jamais un label seul — c'est le critère de fermeture de #24883 (suite de #23997, qui couvre les pointeurs morts sous `%TEMP%`, une classe distincte).
+
+**Sonde (aucune valeur déclarée, tout est mesuré au lancement)** : pour chaque kernelspec de `jupyter kernelspec list --json`, lire `argv[0]` du `kernel.json`, puis exécuter cet exécutable :
+
+```bash
+<argv0> -c "import sys; print(sys.version.split()[0]); import numpy; print(numpy.__version__)"
+```
+
+### MYIA-PO-2023 (mesuré 2026-11-08T20:19Z — rangée d'origine : #24883, commentaire `6726598127`)
+
+| Kernelspec | Python | numpy | Executable |
+|---|---|---|---|
+| `.net-csharp` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet) | - | `dotnet` |
+| `acestep` | 3.10.20 | 2.2.6 | `C:\Users\jsboi\.conda\envs\acestep\python.exe` |
+| `acestep-venv` | 3.11.15 | 2.4.4 | `D:\envs\acestep-venv\Scripts\python.exe` |
+| `argu-reexec-310` | 3.10.18 | 1.26.0 | `C:\Users\jsboi\.conda\envs\mcp-jupyter-py310\python.exe` |
+| `arviz11-py312` | 3.12.10 | 2.5.3 | `D:\Dev\venvs\arviz11-py312\Scripts\python.exe` |
+| `bonsai-gpu` | 3.11.15 | 2.4.4 | `C:\Users\jsboi\.conda\envs\bonsai\python.exe` |
+| `chc-py312` | 3.12.10 | 2.5.3 | `C:\Users\jsboi\.venvs\chc-py312\Scripts\python.exe` |
+| `cogvideox` | 3.13.3 | 2.4.4 | `C:\Tools\venv-cogvideox\Scripts\python.exe` |
+| `coursia-gpu-tests` | 3.11.15 | 2.4.6 | `C:\Users\jsboi\.conda\envs\coursia-gpu-tests\python.exe` |
+| `coursia-ml-training` | 3.11.16 | 2.4.6 | `C:\Users\jsboi\.conda\envs\coursia-ml-training\python.exe` |
+| `coursia-py313-argu` | 3.13.16 | 2.5.2 | `C:\Users\jsboi\.conda\envs\coursia-canonical\python.exe` |
+| `dia-tts` | 3.10.20 | 2.2.6 | `C:\Users\jsboi\.conda\envs\dia-tts\python.exe` |
+| `gametheory-wsl` / `python3-wsl` / `lean4-wsl` | non-Python (wsl) | - | `wsl` |
+| `gsplat310` | 3.10.22 | 2.2.6 | `C:\Users\jsboi\.conda\envs\gsplat310\python.exe` |
+| `mcp-jupyter-py310` | 3.10.18 | 1.26.0 | `C:\Users\jsboi\.conda\envs\mcp-jupyter-py310\python.exe` |
+| `py313-clean` | 3.13.3 | 2.3.5 | `D:\Dev\venvs\py313-clean\Scripts\python.exe` |
+| `pyphi` | 3.9.25 | 1.26.4 | `C:\Users\jsboi\.conda\envs\pyphi\python.exe` |
+| `python3` | 3.13.16 | 2.5.2 | `C:\Users\jsboi\.conda\envs\coursia-canonical\python.exe` |
+| `python3-lean` | 3.13.3 | 2.3.5 | `C:\Python313\python.exe` |
+| `sheetsage2-gpu` | 3.13.3 | 2.5.3 | `D:\Dev\venvs\sheetsage2\Scripts\python.exe` |
+| `smartcontracts` | 3.13.3 | 2.3.5 | `C:\Python313\python.exe` |
+| `trl-probe` | 3.13.3 | 2.5.3 | `D:\Dev\venvs\trl-probe\Scripts\python.exe` |
+
+**Canon de re-exécution po-2023** : `python3` → **(3.13.16, numpy 2.5.2)**, conda `coursia-canonical`. Quatre specs de la classe #23997 (`cleanenv-k`, `py3137`, `coursia-venv-21078`, `qdrant120`) ont été **retirées** au passage du relevé (pointeurs morts sous `%TEMP%`, 0 consommateur sur `main`, `kernel.json` sauvegardés avant retrait).
+
+### MYIA-PO-2028 (mesuré 2026-11-05T21:50Z — rangée d'origine : #24883, commentaires `6670474664` et `6670983139` pour la réparation `py311-po2028`)
+
+| Kernelspec | Python | numpy | Executable |
+|---|---|---|---|
+| `.net-csharp` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet-interactive) | - | dotnet-interactive |
+| `coursia-canonical` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter/python.exe` |
+| `coursia-ml-training` | 3.12.15 | 2.5.4 | `C:/Users/jsboi/miniconda3/envs/coursia-ml-training/python.exe` |
+| `coursia-ml-training-py310` | 3.10.22 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/coursia-ml-training-py310/python.exe` |
+| `coursia-pymc` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter/python.exe` |
+| `lean4-wsl` / `lean4-wsl-perc` / `python3-wsl` | non-Python (wsl) | - | wsl |
+| `py311-po2028` | 3.11.17 | 2.4.6 | `C:\Users\jsboi\.venvs\py311-po2028\Scripts\python.exe` — **réparé le 05/11** (venv reconstruit hors `%TEMP%`, règle F ; tuple d'origine : venv cassé sous `%TEMP%`, numpy AttributeError) |
+| `pymc-528` | 3.12.16 | 2.4.6 | `C:/Users/jsboi/miniconda3/envs/pymc528/python.exe` |
+| `pyphi` / `pyphi-iit` | 3.9.23 | 1.23.5 | `C:/Users/jsboi/miniconda3/envs/pyphi/python.exe` |
+| `python3` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter/python.exe` |
+| `python3-lean` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter-py313/python.exe` |
+
+**Canon de re-exécution po-2028** : `python3` → **(3.13.16, numpy 2.2.6)**, env `mcp-jupyter`.
+
+### Ce que les deux rangées mesurées établissent
+
+1. **Même nom, même Python, numpy différent** : `python3` → numpy **2.5.2** (po-2023) contre **2.2.6** (po-2028). Le cas fondateur de #24883 en version mineure — une re-exécution « python3 » produit des sorties non interchangeables dès que le carnet dépend de numpy.
+2. **Plusieurs noms, un seul environnement** (dual du cas fondateur) : po-2028 `python3` == `coursia-canonical` == `coursia-pymc` (même exécutable) ; po-2023 `python3` == `coursia-py313-argu`, `python3-lean` == `smartcontracts`, `argu-reexec-310` == `mcp-jupyter-py310`. Dans les deux sens, le nom ne dénote pas l'artefact.
+3. **`coursia-ml-training` lui-même diverge** : (3.11.16, 2.4.6) sur po-2023, (3.12.15, 2.5.4) sur po-2028 — le nom le plus « canonique » du dépôt n'est pas plus dénotatif que les autres.
+
+### Sièges restants
+
+Non mesurés à la date de cette section : `ai-01`, `po-2024`, `po-2025`, `po-2026`, `po-2027`. La même sonde (ci-dessus) y produit la rangée manquante ; chaque rangée publiée cite sa date de mesure et son commentaire d'origine sur #24883.
+
 ## Python 3.10+ (notebooks Python)
 
 Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/SemanticWeb/` (Python).
