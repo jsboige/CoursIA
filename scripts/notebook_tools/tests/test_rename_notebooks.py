@@ -1326,9 +1326,9 @@ class Test19157IdempotenceEtNoyauEnTete(unittest.TestCase):
 
     def test_1b_idempotence_hors_grammaire(self):
         """Le retour anticipe (nom hors grammaire de serie) empilait lui aussi :
-        `Diagnostic-Medical` -> `-Python` -> `-Python-Python`."""
+        `Diagnostic-Medical-Python` -> `-Python` -> `-Python-Python`."""
         for nom, noyau, cible in (
-            ("Diagnostic-Medical.ipynb", "python", "Diagnostic-Medical-Python.ipynb"),
+            ("Diagnostic-Medical-Python.ipynb", "python", "Diagnostic-Medical-Python.ipynb"),
             ("Diagnostic-Medical-Python.ipynb", "python", "Diagnostic-Medical-Python.ipynb"),
             ("SmartGrid-Energy-Lean.ipynb", "lean", "SmartGrid-Energy-Lean.ipynb"),
         ):

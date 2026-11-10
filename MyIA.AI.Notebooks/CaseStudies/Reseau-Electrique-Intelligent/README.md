@@ -42,9 +42,9 @@ contraintes dures, et absence de solution unique en multi-objectif (compromis de
 ```
 Reseau-Electrique-Intelligent/
 ├── student/
-│   └── SmartGrid-Energie.ipynb    # Template étudiant (stubs à compléter)
+│   └── Reseau-Electrique-Intelligent-Python.ipynb    # Template étudiant (stubs à compléter)
 ├── solution/
-│   └── SmartGrid-Energie.ipynb    # Solution de référence (exécutée, sorties incluses)
+│   └── Reseau-Electrique-Intelligent-Python.ipynb    # Solution de référence (exécutée, sorties incluses)
 ├── subject.md                    # Sujet complet : énoncé, barème, exercices
 └── README.md                     # Ce fichier
 ```
@@ -72,13 +72,13 @@ quand l'incertitude renouvelable est divisée ou multipliée par 2), et **équit
 
 ```bash
 pip install -r ../requirements.txt   # ortools>=9.8, numpy (kernel Python 3)
-jupyter lab student/SmartGrid-Energie.ipynb
+jupyter lab student/Reseau-Electrique-Intelligent-Python.ipynb
 ```
 
 Le sujet détaillé (énoncé complet, données, critères) est dans [subject.md](subject.md).
 
 ## Études de cas associées
 
-- [Diagnostic-Medical](../Diagnostic-Medical/README.md) — CC1 : règles cliniques + A* + génétique + Z3
-- [Planification-Oncologie](../Planification-Oncologie/README.md) — CC2 : ontologie OWL + contraintes + bayésien
+- [Diagnostic-Medical-Python](../Diagnostic-Medical/README.md) — CC1 : règles cliniques + A* + génétique + Z3
+- [Planification-Oncologie-Python](../Planification-Oncologie/README.md) — CC2 : ontologie OWL + contraintes + bayésien
 - [README CaseStudies](../README.md) — principe d'intégration multi-paradigmes de la série

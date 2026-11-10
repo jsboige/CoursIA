@@ -1196,7 +1196,7 @@ class TestLegendEquation:
     """
 
     def test_perfectly_coherent_legend(self):
-        """Founding case verbatim: Diagnostic-Medical md[14]
+        """Founding case verbatim: Diagnostic-Medical-Python md[14]
         cites '1.0 = parfaitement cohérente, 0.0 = hors-sujet'.
         The 1.0 sits within ~20 chars of '='.
         """
@@ -1227,7 +1227,7 @@ class TestThresholdExpression:
     """
 
     def test_confiance_ge_08(self):
-        """Founding case verbatim: Diagnostic-Medical md[14]
+        """Founding case verbatim: Diagnostic-Medical-Python md[14]
         cites 'confiance >= 0.8'. The 0.8 sits adjacent to '>='.
         """
         src = "...confiance >= 0.8 ..."
@@ -1637,7 +1637,7 @@ class TestFoundingFixtures:
         )
 
     def test_diagnostic_medical_legend_clean(self, tmp_path):
-        """Founding case 3a: Diagnostic-Medical md[14] '1.0 = parfaitement
+        """Founding case 3a: Diagnostic-Medical-Python md[14] '1.0 = parfaitement
         cohérente' -- axis legend.
         """
         cells = [
@@ -1654,7 +1654,7 @@ class TestFoundingFixtures:
         )
 
     def test_diagnostic_medical_threshold_clean(self, tmp_path):
-        """Founding case 3b: Diagnostic-Medical md[14] 'confiance >= 0.8'
+        """Founding case 3b: Diagnostic-Medical-Python md[14] 'confiance >= 0.8'
         -- decision threshold.
         """
         cells = [

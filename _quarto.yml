@@ -887,12 +887,12 @@ project:
     # Liste explicite — globs non etendus en Quarto 1.7.
     # Execution desactivee + echo: true au niveau racine (_quarto.yml).
     # Sous-arbres rendus : MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/Complexity/, MyIA.AI.Notebooks/Compression/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/, MyIA.AI.Notebooks/GenAI/3D/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/HumorDetection/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/Security/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/NLP/, MyIA.AI.Notebooks/Physique/, MyIA.AI.Notebooks/Physique/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/QuantConnect/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/, MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/.
-    - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb"
-    - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb"
-    - "MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Planification-Oncologie.ipynb"
-    - "MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Planification-Oncologie.ipynb"
-    - "MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/solution/SmartGrid-Energie.ipynb"
-    - "MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/student/SmartGrid-Energie.ipynb"
+    - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb"
+    - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical-Python.ipynb"
+    - "MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Planification-Oncologie-Python.ipynb"
+    - "MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Planification-Oncologie-Python.ipynb"
+    - "MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/solution/Reseau-Electrique-Intelligent-Python.ipynb"
+    - "MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/student/Reseau-Electrique-Intelligent-Python.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-02b-SAT-PhaseTransition-Python.ipynb"

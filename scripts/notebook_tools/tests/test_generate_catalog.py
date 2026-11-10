@@ -501,12 +501,12 @@ class TestAnalyzeNotebookSerieClassification:
     def test_diagnostic_medical_sibling_keeps_its_own_sous_serie(
         self, tmp_path, monkeypatch
     ):
-        """Sibling leaf dirs (Diagnostic-Medical vs SmartGrid-Energy) must
+        """Sibling leaf dirs (Diagnostic-Medical-Python vs SmartGrid-Energy) must
         not collide on sous_serie — each one keeps its own."""
         monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
         nb_dm = self._write_notebook(
             tmp_path,
-            "CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb",
+            "CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb",
         )
         nb_sg = self._write_notebook(
             tmp_path,
@@ -515,7 +515,7 @@ class TestAnalyzeNotebookSerieClassification:
         entry_dm = analyze_notebook(nb_dm, pedagogical=True, git_meta={})
         entry_sg = analyze_notebook(nb_sg, pedagogical=True, git_meta={})
         assert entry_dm["serie"] == entry_sg["serie"] == "CaseStudies"
-        assert entry_dm["sous_serie"] == "Diagnostic-Medical"
+        assert entry_dm["sous_serie"] == "Diagnostic-Medical-Python"
         assert entry_sg["sous_serie"] == "SmartGrid-Energy"
         assert entry_dm["sous_serie"] != entry_sg["sous_serie"]
 

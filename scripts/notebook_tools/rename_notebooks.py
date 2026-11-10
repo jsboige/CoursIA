@@ -265,7 +265,7 @@ def canonical_target(filename: str, kernel_suffix: str) -> str:
         # Nom hors grammaire de serie (index nu, prefixe absent) : on se borne
         # a apposer le suffixe de noyau, acte minimal sans risque -- mais en
         # retirant d'abord un suffixe DEJA present, sinon la cible en empile un
-        # second a chaque passage (`Diagnostic-Medical` -> `-Python-Python`,
+        # second a chaque passage (`Diagnostic-Medical-Python` -> `-Python-Python`,
         # mesure #19157 : 2824 cas d'idempotence sur l'arbre).
         stem = _strip_final_kernel(stem)
         return f"{stem}-{_cap(kernel_suffix)}.ipynb"
