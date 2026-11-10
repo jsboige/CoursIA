@@ -397,7 +397,7 @@ Et après le notebook ? Le répertoire `cross-series/` rassemble ce qui ne tient
 
 **[`socle-metadata-driven`](MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb) -- ce que toutes les familles .NET partagent** -- Là où `matching-cv` *combine* des séries, ce notebook C# expose ce qu'elles ont en *commun* : la bibliothèque [`MyIA.AI.Shared`](MyIA.AI.Shared/), qui factorise trois besoins qu'autrement chaque série réécrirait -- découverte de types par décoration (des attributs suffisent, aucun enregistrement explicite), sérialisation JSON/XML aller-retour d'un graphe d'entités, et surtout la règle métier *low-code* : un prédicat qui arrive sous forme de chaîne -- d'un fichier, d'un CSV, d'un utilisateur non-développeur -- compilé une fois puis appliqué à N instances. C'est la différence entre coder N branches conditionnelles et piloter la logique par les données.
 
-**`i18n` -- traduire une collection sans la casser** -- Un pilote du mécanisme de traduction appliqué à la documentation : un README découpé en segments repérés par clé stable, colonne source française remplie, colonne cible vide, et le rendu qui reconstruit le document à l'identique. C'est le pendant markdown du corpus `translations/` (33 CSV, 24 470 cellules de notebooks) ; l'un et l'autre attendent le même feu vert éditorial avant de lancer les huit langues. Le mécanisme, lui, est déjà là et vérifiable -- ce qui manque est une décision, pas une technique.
+**`i18n` -- traduire une collection sans la casser** -- Un pilote du mécanisme de traduction appliqué à la documentation : un README découpé en segments repérés par clé stable, colonne source française remplie, colonne cible vide, et le rendu qui reconstruit le document à l'identique. C'est le pendant markdown du corpus `translations/` ; l'un et l'autre attendent le même feu vert éditorial avant de lancer les huit langues. Le mécanisme, lui, est déjà là et vérifiable -- ce qui manque est une décision, pas une technique.
 
 [README détaillé](MyIA.AI.Notebooks/cross-series/README.md)
 
@@ -511,7 +511,7 @@ s'installent directement via leur `requirements.txt`.
 
 | Série | Notebook de mise en route | Préparation dédiée |
 |-------|---------------------------|--------------------|
-| GenAI | `GenAI/00-GenAI-Environment/` (6 notebooks : environment, services Docker, endpoints API, validation, test ComfyUI local, déploiement Docker local) | `requirements.txt` (+ `-audio` / `-video`) ; `00-GenAI-Environment/validate_auth.py` |
+| GenAI | `GenAI/00-GenAI-Environment/` (notebooks : environment, services Docker, endpoints API, validation, test ComfyUI local, déploiement Docker local) | `requirements.txt` (+ `-audio` / `-video`) ; `00-GenAI-Environment/validate_auth.py` |
 | GameTheory | `GameTheory/GameTheory-01-Setup-Python.ipynb` | `GameTheory/scripts/setup_wsl_openspiel.sh`, `GameTheory/scripts/setup_wsl_lean4.sh`, `GameTheory/scripts/setup_lean4_kernel.ps1` |
 | Sudoku | `Sudoku/Sudoku-00-Environment-CSharp.ipynb` | kernel .NET Interactive |
 | Probas | `Probas/Infer/Infer-01-Setup.ipynb`, `Probas/PyMC/PyMC-01-Setup.ipynb` | `Probas/Infer/scripts/setup_environment.ps1` |
