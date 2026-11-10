@@ -145,7 +145,7 @@ Chaque série se présente en trois temps : ce qu'elle apprend, son **parcours l
 
 ### SemanticWeb — le web de données
 
-- **Parcours léger** — SW-1 à SW-12 : RDF, opérations sur les graphes, SPARQL, données liées, RDFS, OWL, puis SHACL, JSON-LD, RDF-Star, graphes de connaissances et GraphRAG. Les paliers 1 à 7 sont en C# (dotNetRDF) ; les lettres `b` de 2b à 7b en sont les **jumeaux Python** (rdflib, owlready2). Un lecteur Python-only prend donc SW-2b à SW-7b, puis SW-8 et la suite. Cette série est la seule de la famille où la lettre désigne un jumeau et non un approfondissement : la normalisation (#16231) résorbera l'exception.
+- **Parcours léger** — SW-1 à SW-12 : RDF, opérations sur les graphes, SPARQL, données liées, RDFS, OWL, puis SHACL, JSON-LD, RDF-Star, graphes de connaissances et GraphRAG. Les paliers 1 à 7 sont en C# (dotNetRDF) ; leurs **jumeaux Python** (rdflib, owlready2) sont les notebooks SW-02-Python à SW-07-Python. Un lecteur Python-only prend donc cette plage, puis SW-8 et la suite. Cette série était la seule de la famille où une lettre désignait un jumeau et non un approfondissement — exception résorbée par la normalisation (#16231).
 - **Pour approfondir** — SW-13 (comparatif de raisonneurs), SW-14 et SW-15 (le coup ontologique, la greffe argumentative AIF/Dung), SW-16 (ontologies porteuses de preuve).
 - [README de la série SemanticWeb](SemanticWeb/README.md)
 

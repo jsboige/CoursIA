@@ -85,14 +85,14 @@ Cas limite documenté : la quasi-paire `13b`↔`13c` ci-dessus — **deux célib
 
 > Alignées le 2026-11-08 (issue #25325, lane `myia-po-2023:CoursIA`) : les 6 compagnon-b `SW-0Nb` ont pris le numéro de leur jumeau C# avec suffixe kernel explicite (`SW-02b-RDFBasics-Python` → `SW-02-RDFBasics-Python`, etc.) — doctrine #12933, même concept ⇒ même numéro.
 
-Convention locale : suffixe kernel en **position médiane** (`SW-N-CSharp-X` / `SW-Nb-Python-X`).
+Convention locale : suffixe kernel en **position finale** pour les fondations (`SW-0N-<Titre>-CSharp` / `SW-0N-<Titre>-Python`, alignement #25325) ; exception SW-11, suffixe en position médiane (`SW-11-CSharp/Python-KnowledgeGraphs`).
 
 | Paire | Verdict |
 |---|---|
 | `SW-02-RDFBasics-CSharp` ↔ `SW-02-RDFBasics-Python` | alignée |
-| `SW-03-GraphOperations-CSharp` ↔ `SW-3b-Python-…` | compagnon-b |
+| `SW-03-GraphOperations-CSharp` ↔ `SW-03-GraphOperations-Python` | compagnon-b |
 | `SW-04-SPARQL-CSharp` ↔ `SW-04-SPARQL-Python` | alignée |
-| `SW-05-LinkedData-CSharp` ↔ `SW-5b-Python-…` | compagnon-b |
+| `SW-05-LinkedData-CSharp` ↔ `SW-05-LinkedData-Python` | compagnon-b |
 | `SW-06-RDFS-CSharp` ↔ `SW-06-RDFS-Python` | alignée |
 | `SW-07-OWL-CSharp` ↔ `SW-07-OWL-Python` | alignée |
 | `SW-08-SHACL-CSharp` ↔ `SW-08-SHACL-Python` | alignée |

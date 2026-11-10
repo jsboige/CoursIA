@@ -38,7 +38,7 @@ layout: section
 
 ## Prerequis
 
-- C# .NET Interactive (series SW-1 a SW-7) · Python 3.10+ (series SW-2b, SW-4b, SW-5b, SW-7b, SW-8+)
+- C# .NET Interactive (series SW-1 a SW-7) · Python 3.10+ (series SW-02-Python, SW-04-Python, SW-05-Python, SW-07-Python, SW-8+)
 - Connaissances de base en logique et en bases de données relationnelles
 
 ## Duree totale estimee
@@ -114,7 +114,7 @@ graph.Assert(turing, name, nameVal);
 
 ---
 
-# SW-2b — RDF Fondamentaux (Python)
+# SW-02 — RDF Fondamentaux (Python)
 
 ## rdflib : l'equivalent Python de dotNetRDF
 
@@ -612,12 +612,12 @@ layout: section
 | Notebook | Thème | Langage | Duree |
 |---------|-------|---------|-------|
 | SW-1 | Setup, pile technologique | C# | 20 min |
-| SW-2 / SW-2b | RDF : triplets, serialisation | C# / Python | 45+40 min |
+| SW-2 / SW-02-Python | RDF : triplets, serialisation | C# / Python | 45+40 min |
 | SW-3 | Opérations graphes, TripleStore | C# | 50 min |
-| SW-4 / SW-4b | SPARQL : requêtes, agregats | C# / Python | 45+30 min |
-| SW-5 / SW-5b | Linked Data, DBpedia, Wikidata | C# / Python | 50+35 min |
+| SW-4 / SW-04-Python | SPARQL : requêtes, agregats | C# / Python | 45+30 min |
+| SW-5 / SW-05-Python | Linked Data, DBpedia, Wikidata | C# / Python | 50+35 min |
 | SW-6 | RDFS : schema, inference | C# | 45 min |
-| SW-7 / SW-7b | OWL 2 : ontologies, profils | C# / Python | 55+45 min |
+| SW-7 / SW-07-Python | OWL 2 : ontologies, profils | C# / Python | 55+45 min |
 | SW-8 | SHACL : validation | Python | 40 min |
 | SW-9 | JSON-LD : contextes, framing | Python | 40 min |
 | SW-10 | RDF-Star : meta-assertions | Python | 45 min |
