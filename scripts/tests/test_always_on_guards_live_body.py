@@ -166,6 +166,24 @@ def _bash_exe():
     pytest.skip("Git Bash introuvable -- le bash System32 (WSL) ne lit pas les chemins Windows")
 
 
+def _posix_path(*leading):
+    """PATH en entrees POSIX ':'-separees, pour un enfant bash.
+
+    bash (Git Bash / runner Linux) n'accepte ni les separateurs Windows ni
+    un PATH mixte : un PATH ':'-separe d'entrees ';'-separees est re-parse
+    par MSYS et le repertoire du gh factice se perd -- le gh REEL repond
+    alors (mesure : le test a lu le vrai corps de #15587 au lieu du
+    fixture). On convertit donc TOUT le PATH en entrees POSIX
+    ':'-separees, les repertoires du fake gh en tete.
+    """
+    entries = [
+        p.replace("\\", "/")
+        for p in os.environ.get("PATH", "").split(os.pathsep)
+        if p
+    ]
+    return ":".join([str(p).replace("\\", "/") for p in leading] + entries)
+
+
 def _run_bootstrap(tmp_path, fake_body, fail=False):
     """Extrait le bloc `run:` du bootstrap et l'execute avec le gh factice."""
     boot = _bootstrap(_steps(_doc()))
@@ -187,19 +205,7 @@ def _run_bootstrap(tmp_path, fake_body, fail=False):
     )
     if fail:
         env["GH_FAKE_FAIL"] = "1"
-    # bash (Git Bash / runner Linux) n'accepte ni les separateurs Windows ni
-    # un PATH mixte : un PATH ':'-sepague d'entrees ';'-separees est
-    # re-parse par MSYS et le bin/ du gh factice se perd -- le gh REEL
-    # repond alors (mesure : le test a lu le vrai corps de #15587 au lieu
-    # du fixture). On convertit TOUT le PATH en entrees POSIX ':'-separees.
-    path_entries = [
-        p.replace("\\", "/")
-        for p in os.environ.get("PATH", "").split(os.pathsep)
-        if p
-    ]
-    env["PATH"] = ":".join(
-        [str(bindir).replace("\\", "/")] + path_entries
-    )
+    env["PATH"] = _posix_path(bindir)
     out = subprocess.run(
         [_bash_exe(), str(script).replace("\\", "/")],
         capture_output=True, text=True, encoding="utf-8", env=env,
@@ -282,7 +288,7 @@ def test_bootstraps_use_successful_empty_body(
     gh.write_text(FAKE_GH, encoding="utf-8")
     gh.chmod(gh.stat().st_mode | stat.S_IEXEC)
     output = tmp_path / "output"
-    env = dict(os.environ, PATH=str(tmp_path) + os.pathsep + os.environ["PATH"],
+    env = dict(os.environ, PATH=_posix_path(tmp_path),
                GH_REPO="jsboige/CoursIA", PR_NUMBER="1",
                PAYLOAD_BODY="Grain: PAYLOAD/photographie", GH_FAKE_BODY=live,
                GH_FAKE_FAIL="1" if fail else "0")
