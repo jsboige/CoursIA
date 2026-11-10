@@ -122,10 +122,10 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 15 | [App-16 : Générateur de Mots Croises (CSP)](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-16-Crossword-CSP.ipynb) | BETA | Oui |
 | 16 | [App-17 : Vehicle Routing Problem (VRP)](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17-VRP-Logistics.ipynb) | BETA | Oui |
 | 17 | [App-17-CSharp : Vehicle Routing Problem (VRP) — Twin C#…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17-VRP-Logistics-CSharp.ipynb) | BETA | Oui |
-| 18 | [App-17-Python : Vehicle Routing Problem (VRP) — Twin Python…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17-VRP-Logistics-Python.ipynb) | BETA | Oui |
+| 18 | [App-17-Python : Vehicle Routing Problem (VRP) — Twin Python…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17-VRP-Logistics-Metaheuristiques-Python.ipynb) | BETA | Oui |
 | 19 | [App-18: Optimisation d'Hyperparametres - Approches…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning.ipynb) | BETA | Oui |
 | 20 | [App-18-CSharp : Optimisation d'Hyperparametres - Jumeau C#](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning-CSharp.ipynb) | BETA | Oui |
-| 21 | [App-18-Python : Optimisation d'Hyperparamètres (Python —…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning-Python.ipynb) | BETA | Oui |
+| 21 | [App-18-Python : Optimisation d'Hyperparamètres (Python —…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning-FromScratch-Python.ipynb) | BETA | Oui |
 | 22 | [App-18c — Rustuna vs Optuna : mesurer un portage Rust…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb) | BETA | Oui |
 | 23 | [App-19 (C#) — Génération procédurale par Wave Function…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb) | BETA | Oui |
 | 24 | [App-19 — Génération procédurale de niveaux via WFC +…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb) | BETA | Oui |

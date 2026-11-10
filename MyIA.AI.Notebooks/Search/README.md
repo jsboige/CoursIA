@@ -168,10 +168,10 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 | 6 | [App-13-TSP-Metaheuristics-CSharp](Part3-Cas-pratiques/App-13-TSP-Metaheuristics-CSharp.ipynb) | ~45 min | **Jumeau C#** — SA, GA, ACO from-scratch sur le même TSP, parité #4956 | Jumeau .NET |
 | 7 | [App-17-VRP-Logistics](Part3-Cas-pratiques/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet étudiant |
 | 8 | [App-17-VRP-Logistics-CSharp](Part3-Cas-pratiques/App-17-VRP-Logistics-CSharp.ipynb) | ~55 min | **Jumeau C#** — VRP métaheuristiques .NET, parité #4956 | Jumeau .NET |
-| 8b | [App-17-VRP-Logistics-Python](Part3-Cas-pratiques/App-17-VRP-Logistics-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
+| 8b | [App-17-VRP-Logistics-Metaheuristiques-Python](Part3-Cas-pratiques/App-17-VRP-Logistics-Metaheuristiques-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
 | 9 | [App-18-HyperparameterTuning](Part3-Cas-pratiques/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
 | 10 | [App-18-HyperparameterTuning-CSharp](Part3-Cas-pratiques/App-18-HyperparameterTuning-CSharp.ipynb) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
-| 11 | [App-18-HyperparameterTuning-Python](Part3-Cas-pratiques/App-18-HyperparameterTuning-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
+| 11 | [App-18-HyperparameterTuning-FromScratch-Python](Part3-Cas-pratiques/App-18-HyperparameterTuning-FromScratch-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
 | 12 | [App-22-AlgorithmSelection-Python](Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux, 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité + Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
 
 ### Applications de recherche informée mono-agent (`Applications/Informed/`)
