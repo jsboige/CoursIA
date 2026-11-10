@@ -30,7 +30,7 @@ Liste des items déjà reclassés par le protocole [.claude/rules/audit-reassess
 - M-20 SK-01-Intro (9/9 exec 0 err)
 - M-34 Video/01-3-Qwen-VL (9/10 exec 7 outputs)
 - M-40 IIT-Intro_to_PyPhi (11/11 exec 10 outputs 0 err)
-- M-68 App-9b-EdgeDetection-CSharp (11/11 exec 11 outputs 0 err)
+- M-68 App-9-EdgeDetection-CSharp (11/11 exec 11 outputs 0 err)
 - SC-22 Solana-Anchor (6/6 exec 0 err — print-based demos are only viable approach for Solana/Rust in Python kernel)
 - SC-11 LLM-Assisted (15/15 exec 0 err — exercise stubs correctly have empty outputs)
 
