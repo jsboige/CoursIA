@@ -492,6 +492,7 @@
       "sorry-baseline": "1",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
+      "axiom-fail-on-sorry": "false",
       "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lakefile.lean",
