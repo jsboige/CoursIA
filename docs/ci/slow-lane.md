@@ -383,6 +383,14 @@ L'**écriture** passe par l'organe natif `scripts/ci/fast_lane.py`
 sur une tête de PR, avec le même `gh api --input -`. Ce module ne fait que
 décrire le verdict du lot.
 
+**Un check-run par tête, et un seul.** Deux publications de même nom sur la
+**même** tête ne s'empilent pas : la seconde **remplace** la première
+(mesuré au témoin : deux publications sur une même tête → un seul check-run
+survivant, celui de la dernière). Deux têtes distinctes portent chacune leur
+check-run (mesuré : un `success` sur la tête du témoin et un `neutral` sur
+la tête précédente coexistent). Un lot rejoué sur la même tête met donc son
+verdict à jour, au lieu d'empiler des verdicts contradictoires sur la PR.
+
 ### La porte du lot : l'APPROVE du coordinateur à la tête exacte
 
 Une PR n'occupe un créneau que si elle porte l'**APPROVE du coordinateur**
