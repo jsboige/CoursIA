@@ -303,7 +303,7 @@ def test_partition_neutralite_lignes_non_pytest() -> None:
 #
 # Le guard ne compare que les testpaths DECLARES : un dossier de tests present
 # dans le depot mais absent de pytest.ini lui est invisible, et il reste vert
-# dessus (cas mesure : SymbolicAI/Argument_Analysis, 174 tests non collectes).
+# dessus (cas mesure : SymbolicAI/ArgumentAnalysis, 174 tests non collectes).
 # `--inventory` part du depot au lieu de la declaration.
 
 
@@ -519,3 +519,180 @@ def test_missing_pytest_pin_is_detected(tmp_path: Path) -> None:
     problems = check_namespace_option(tmp_path)
     assert len(problems) == 1
     assert "pytest>=8" in problems[0]
+
+
+# --- #25366 T0 : basenames dupliqués + convergence CI -> testpaths ----------
+#
+# Cinquième sens : deux répertoires de tests découverts qui portent le même
+# basename de module obligent tout le dépôt à `--import-mode importlib`
+# (le workflow le documente comme load-bearing à cause de ces doublons).
+# Sixième sens : une cible-dossier CI absente des testpaths est invisible
+# d'un `pytest` racine — l'inverse du sens historique. T0 rend ces deux
+# mesures possibles et strict par défaut sous `--inventory` ; T1/T2 trient
+# la dette, T4 câble les sens dans la garde CI.
+
+
+def test_duplicate_basenames_detecte_la_collision(tmp_path: Path) -> None:
+    """Deux suites découvertes portant le même module sont signalées."""
+    from check_testpaths_coverage import duplicate_basenames
+
+    _make_suite(tmp_path, "scripts/alpha/tests")
+    _make_suite(tmp_path, "scripts/beta/tests")
+
+    assert duplicate_basenames(tmp_path) == {
+        "test_x.py": ["scripts/alpha/tests", "scripts/beta/tests"]
+    }
+
+
+def test_duplicate_basenames_compte_les_modules_dappui(tmp_path: Path) -> None:
+    """Un module d'appui non-test compte autant : c'est lui aussi un nom de
+    module top-level en collision (cas mesuré : `scan_slidev_composition`,
+    cité sans préfixe test_ par le commentaire du run partagé)."""
+    from check_testpaths_coverage import duplicate_basenames
+
+    _make_suite(tmp_path, "scripts/alpha/tests")
+    _make_suite(tmp_path, "scripts/beta/tests")
+    # Des noms de test distincts : seule la collision helpers.py doit sortir.
+    (tmp_path / "scripts/alpha/tests/test_x.py").unlink()
+    (tmp_path / "scripts/beta/tests/test_x.py").unlink()
+    (tmp_path / "scripts/alpha/tests/test_a.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts/beta/tests/test_b.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts/alpha/tests/helpers.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts/beta/tests/helpers.py").write_text("", encoding="utf-8")
+
+    assert duplicate_basenames(tmp_path) == {
+        "helpers.py": ["scripts/alpha/tests", "scripts/beta/tests"]
+    }
+
+
+def test_duplicate_basenames_exempte_init_et_conftest(tmp_path: Path) -> None:
+    """`__init__.py` (marqueur de paquet) et `conftest.py` (spécial-casé par
+    pytest) ne créent pas de collision — critère 3 de #25366 les excepte."""
+    from check_testpaths_coverage import duplicate_basenames
+
+    _make_suite(tmp_path, "scripts/alpha/tests")
+    _make_suite(tmp_path, "scripts/beta/tests")
+    (tmp_path / "scripts/alpha/tests/test_x.py").unlink()
+    (tmp_path / "scripts/beta/tests/test_x.py").unlink()
+    (tmp_path / "scripts/alpha/tests/test_a.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts/beta/tests/test_b.py").write_text("", encoding="utf-8")
+    for rel in ("scripts/alpha/tests", "scripts/beta/tests"):
+        for name in ("__init__.py", "conftest.py"):
+            (tmp_path / rel / name).write_text("", encoding="utf-8")
+
+    assert duplicate_basenames(tmp_path) == {}
+
+
+def test_duplicate_basenames_ne_compte_que_les_enfants_directs(
+    tmp_path: Path,
+) -> None:
+    """Un fichier dans un sous-dossier non découvert ne collisionne pas au
+    niveau du parent : seuls les enfants directs des répertoires découverts
+    entrent en collision comme modules top-level."""
+    from check_testpaths_coverage import duplicate_basenames
+
+    _make_suite(tmp_path, "scripts/alpha/tests")
+    _make_suite(tmp_path, "scripts/beta/tests")
+    (tmp_path / "scripts/alpha/tests/test_x.py").unlink()
+    (tmp_path / "scripts/alpha/tests/test_a.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts/alpha/tests/unit").mkdir()
+    (tmp_path / "scripts/alpha/tests/unit/test_b.py").write_text("", encoding="utf-8")
+
+    assert duplicate_basenames(tmp_path) == {}
+
+
+def test_duplicate_basenames_plafond_sur_main_actuel() -> None:
+    """Contrôle positif sur le dépôt réel : le sens voit la dette connue.
+
+    36 basenames mesurés le 2026-11-09 (#25366), dont un triple. Le plafond
+    est un cliquet inversé : il rougit sur un doublon NOUVEAU, verdit quand
+    T2 en supprime — jamais l'inverse.
+    """
+    from check_testpaths_coverage import duplicate_basenames
+
+    dupes = duplicate_basenames(REPO_ROOT)
+    assert len(dupes) <= 36, f"dette de doublons en hausse : {len(dupes)} > 36"
+    assert "test_scan_slidev_composition.py" in dupes
+    assert len(dupes["test_scan_slidev_composition.py"]) == 3
+
+
+def test_discover_test_dirs_voit_la_racine_tests(tmp_path: Path) -> None:
+    """#25366 T0 : `tests/` à la racine du dépôt fait partie de l'inventaire."""
+    from check_testpaths_coverage import discover_test_dirs
+
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_r.py").write_text("", encoding="utf-8")
+    _make_suite(tmp_path, "scripts/alpha/tests")
+
+    assert discover_test_dirs(tmp_path) == ["scripts/alpha/tests", "tests"]
+
+
+def test_coverage_without_testpaths_rougit_sur_la_racine_tests() -> None:
+    """Contrôle positif sur le dépôt réel : `tests` (racine) est joué par le
+    run partagé de la CI mais absent des testpaths — critère 1 de #25366,
+    le trou le plus étroit. Ce test rougira en vertu une fois T1 tranché."""
+    from check_testpaths_coverage import coverage_without_testpaths
+
+    testpaths = load_testpaths(REPO_ROOT / "pytest.ini")
+    excluded = load_ci_excluded(REPO_ROOT)
+
+    assert coverage_without_testpaths(testpaths, excluded) == ["tests"]
+
+
+def test_coverage_without_testpaths_vert_quand_declare(tmp_path: Path) -> None:
+    """Une cible-dossier dans les testpaths ne sort pas ; une cible-fichier
+    n'est pas concernée ; une exclusion écrite compte comme triée."""
+    from check_testpaths_coverage import coverage_without_testpaths
+
+    coverage = {
+        "w.yml": ["scripts/alpha/tests", "Sudoku/tests/test_dlx.py"]
+    }
+
+    assert coverage_without_testpaths(["scripts/alpha/tests"], {}, coverage) == []
+    assert coverage_without_testpaths(["scripts/other/tests"], {}, coverage) == [
+        "scripts/alpha/tests"
+    ]
+    assert (
+        coverage_without_testpaths(
+            [], {"scripts/alpha/tests": "motif ecrit"}, coverage
+        )
+        == []
+    )
+
+
+def test_cli_inventory_est_strict_par_defaut(tmp_path: Path) -> None:
+    """#25366 T0 : sans drapeau, --inventory marque les trous FAIL ; avec
+    --advisory, il les marque INFO (le downgrade se voit dans la sortie)."""
+    import subprocess
+
+    _make_suite(tmp_path, "scripts/beta/tests")
+    (tmp_path / "pytest.ini").write_text(
+        "[pytest]\ntestpaths =\n    scripts/alpha/tests\n", encoding="utf-8"
+    )
+
+    def _run(*flags: str) -> str:
+        proc = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scripts/check_testpaths_coverage.py"),
+             "--repo-root", str(tmp_path), "--inventory", *flags],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        return proc.stdout
+
+    assert "FAIL scripts/beta/tests" in _run()
+    assert "INFO scripts/beta/tests" in _run("--advisory")
+
+
+def test_cli_inventory_advisory_est_vert_sur_main() -> None:
+    """Sur le dépôt réel, la dette connue (25 répertoires, 36 basenames,
+    `tests` racine) listée en advisory ne fait pas échouer : c'est le mode
+    mesure de T1/T2, exit 0 garanti."""
+    import subprocess
+
+    proc = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts/check_testpaths_coverage.py"),
+         "--repo-root", str(REPO_ROOT), "--inventory", "--advisory"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode == 0, proc.stdout
+    assert "INFO tests" in proc.stdout
+    assert "FAIL" not in proc.stdout

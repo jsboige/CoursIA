@@ -256,6 +256,23 @@ class ResponseCandidateTests(unittest.TestCase):
         self.assertTrue(mod.cites_concern(concern, reply))
         self.assertTrue(mod.is_response_candidate("gesture", reply, concern))
 
+    def test_lane_signature_contract_requires_utc_minute(self):
+        """Le format observé des lanes inclut heure et minute UTC (#2159)."""
+        concern = c(30, "2026-10-18T22:26:03Z", CONCERN_2159)
+        dated_reply = c(
+            31,
+            "2026-10-19T03:56:43Z",
+            "[INFO] Reponse au Concern du 2026-10-18T22:26Z — releve mesure.",
+        )
+        date_only_reply = c(
+            32,
+            "2026-10-19T03:56:43Z",
+            "[INFO] Reponse au Concern du 2026-10-18 — releve mesure.",
+        )
+
+        self.assertTrue(mod.cites_concern(concern, dated_reply))
+        self.assertFalse(mod.cites_concern(concern, date_only_reply))
+
     def test_gesture_that_does_not_cite_the_concern_stays_excluded(self):
         concern = c(32, "2026-10-18T22:26:03Z", CONCERN_2159)
         reply = c(33, "2026-10-19T03:56:43Z", "[INFO] Releve mesure — aucun fichier edite.")
@@ -332,6 +349,14 @@ class ResponseCandidateTests(unittest.TestCase):
                 self.assertFalse(
                     mod.is_response_candidate("gesture", short_quote, concern)
                 )
+
+    def test_quote_strength_keeps_the_80_character_boundary(self):
+        concern = c(38, "2026-10-01T10:00:00Z", "x" * 80)
+        short_quote = c(39, "2026-10-02T10:00:00Z", "[INFO] " + "x" * 79)
+        boundary_quote = c(40, "2026-10-02T10:00:00Z", "[INFO] " + "x" * 80)
+
+        self.assertFalse(mod.cites_concern(concern, short_quote))
+        self.assertTrue(mod.cites_concern(concern, boundary_quote))
 
     def test_ordinary_comment_is_a_response_candidate(self):
         self.assertTrue(mod.is_response_candidate("other", c(19, "2026-10-01T10:00:00Z", "Voici l'arbitrage.")))

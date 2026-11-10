@@ -11,6 +11,18 @@ sous runtime 8.15.0 (types exposés et instanciables). Toutes les recettes cible
 `net8.0`. Chaque runtime compilé (`org.tweetyproject.tweety-<module>.dll`) est placé
 **à côté du notebook** qui le charge.
 
+Les six scripts `rebuild-*.sh` partagent [`resolve_java_home.sh`](resolve_java_home.sh) : ils utilisent
+un `JAVA_HOME` explicite, ou recherchent `javac` sur `PATH` si la variable est absente. Un `JAVA_HOME`
+défini mais invalide (par exemple une JRE sans compilateur) arrête la recette avec un diagnostic ; il
+n'est pas remplacé silencieusement par un autre JDK. Le chemin du JDK peut contenir des espaces et
+les liens symboliques de `javac` ou de `JAVA_HOME` sont résolus avant de calculer sa racine.
+
+Le contrat du résolveur se vérifie sans lancer les téléchargements ou compilations des recettes :
+
+```bash
+bash test_resolve_java_home.sh
+```
+
 ## Fichiers — cluster `pl` (notebook [`../Tweety-02-Basic-Logics-CSharp.ipynb`](../Tweety-02-Basic-Logics-CSharp.ipynb))
 
 | Fichier | Rôle | Committé ? |
