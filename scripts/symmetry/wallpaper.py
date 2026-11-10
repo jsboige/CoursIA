@@ -1005,6 +1005,12 @@ def render_svg(
     Chaque element du groupe est ``(A, t_A + lambda)`` avec ``lambda`` dans le
     reseau de translation : le rendu couvre ainsi **tous** les elements dont la
     translation tombe dans la fenetre, pas un echantillon.
+
+    La geometrie est calculee en coordonnees cartesiennes, puis **mise a
+    l'echelle et centree** dans la toile : le ``viewBox`` vaut ``size`` pixels
+    alors que les coordonnees du motif sont de l'ordre de l'unite, si bien
+    qu'un rendu non normalise serait un point invisible dans un coin.
+    L'axe vertical est inverse (SVG croît vers le bas, la carte vers le haut).
     """
     lattice_basis = translation_lattice(group)
     representatives = _representatives(group)
@@ -1012,12 +1018,6 @@ def render_svg(
 
     motif = ((F(1, 5), F(1, 4)), (F(3, 5), F(2, 5)), (F(1, 4), F(3, 4)))
     dot = (F(7, 10), F(7, 10))
-
-    def to_cartesian(point: Vector) -> tuple[float, float]:
-        return (
-            float(point[0]) * e1[0] + float(point[1]) * e2[0],
-            float(point[0]) * e1[1] + float(point[1]) * e2[1],
-        )
 
     def affine_to_cartesian(matrix: Matrix, translation: Vector):
         # M = [[e1 e2]] ; la transformation cartesienne vaut M A M^-1.
@@ -1031,11 +1031,8 @@ def render_svg(
         )
         return linear, offset
 
-    parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {size} {size}" width="{size}" height="{size}">',
-        f'<rect width="{size}" height="{size}" fill="{background}"/>',
-        f'<g fill="none" stroke="{color}" stroke-width="1.1" stroke-linejoin="round">',
-    ]
+    polygones: list[list[tuple[float, float]]] = []
+    pastilles: list[tuple[float, float]] = []
     half = cells // 2
     for matrix, element in sorted(
         representatives.items(), key=lambda item: str(item[0])
@@ -1058,16 +1055,57 @@ def render_svg(
                             py + float(shift[0]) * e1[1] + float(shift[1]) * e2[1],
                         )
                     )
-                polygon = " ".join(f"{x:.3f},{y:.3f}" for (x, y) in points)
-                parts.append(f'<polygon points="{polygon}"/>')
+                polygones.append(points)
                 dx, dy = float(dot[0]), float(dot[1])
                 cx = linear[0][0] * dx + linear[0][1] * dy + offset[0]
                 cy = linear[1][0] * dx + linear[1][1] * dy + offset[1]
                 cx += float(shift[0]) * e1[0] + float(shift[1]) * e2[0]
                 cy += float(shift[0]) * e1[1] + float(shift[1]) * e2[1]
-                parts.append(
-                    f'<circle cx="{cx:.3f}" cy="{cy:.3f}" r="2.4" fill="{color}" stroke="none"/>'
-                )
+                pastilles.append((cx, cy))
+
+    # Mise a l'echelle : le motif est exprime en unites du reseau, la toile
+    # en pixels. Sans cette normalisation, les coordonnees tombent dans un
+    # carre de quelques unites pres de l'origine et le rendu est invisible.
+    toutes_x = [p[0] for poly in polygones for p in poly] + [c[0] for c in pastilles]
+    toutes_y = [p[1] for poly in polygones for p in poly] + [c[1] for c in pastilles]
+    if not toutes_x:
+        return (
+            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {size} {size}" '
+            f'width="{size}" height="{size}">'
+            f'<rect width="{size}" height="{size}" fill="{background}"/>'
+            f"</svg>"
+        )
+    xmin, xmax = min(toutes_x), max(toutes_x)
+    ymin, ymax = min(toutes_y), max(toutes_y)
+    largeur = max(xmax - xmin, 1e-9)
+    hauteur = max(ymax - ymin, 1e-9)
+    marge = size * 0.06
+    echelle = (size - 2 * marge) / max(largeur, hauteur)
+    centre_x = (xmin + xmax) / 2
+    centre_y = (ymin + ymax) / 2
+
+    def vers_canvas(point: tuple[float, float]) -> tuple[float, float]:
+        return (
+            size / 2 + (point[0] - centre_x) * echelle,
+            size / 2 - (point[1] - centre_y) * echelle,
+        )
+
+    rayon = max(1.0, size * 0.008)
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {size} {size}" width="{size}" height="{size}">',
+        f'<rect width="{size}" height="{size}" fill="{background}"/>',
+        f'<g fill="none" stroke="{color}" stroke-width="1.1" stroke-linejoin="round">',
+    ]
+    for points in polygones:
+        polygon = " ".join(
+            f"{x:.3f},{y:.3f}" for (x, y) in (vers_canvas(p) for p in points)
+        )
+        parts.append(f'<polygon points="{polygon}"/>')
+    for centre in pastilles:
+        cx, cy = vers_canvas(centre)
+        parts.append(
+            f'<circle cx="{cx:.3f}" cy="{cy:.3f}" r="{rayon:.3f}" fill="{color}" stroke="none"/>'
+        )
     parts.append("</g>")
     parts.append("</svg>")
     return "\n".join(parts)

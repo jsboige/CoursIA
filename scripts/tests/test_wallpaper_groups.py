@@ -33,6 +33,7 @@ qualitative (« the centres of rotation are not located on the glide
 reflection axes »...).
 """
 
+import re
 from fractions import Fraction
 
 import pytest
@@ -380,6 +381,34 @@ def test_le_rendu_svg_produit_un_svg(group):
     assert svg.startswith("<svg")
     assert svg.count("<polygon") > 0
     assert svg.rstrip().endswith("</svg>")
+
+
+@pytest.mark.parametrize("group", W.GROUPS, ids=lambda group: group.symbol)
+def test_le_rendu_svg_remplit_la_toile(group):
+    """Le rendu doit etre visible : la geometrie tient dans la toile.
+
+    Regression : les coordonnees du motif sont exprimees en unites du reseau
+    (de l'ordre de 1) alors que le ``viewBox`` vaut ``size`` pixels. Sans
+    normalisation, toutes les coordonnees tombaient dans un carre de quelques
+    unites pres de l'origine : le SVG etait valide mais le motif etait un
+    point invisible dans un coin de la toile.
+    """
+    size = 240
+    svg = W.render_svg(group, cells=2, size=size)
+    couples = []
+    for points in re.findall(r'points="([^"]+)"', svg):
+        for couple in points.split():
+            x, y = couple.split(",")
+            couples.append((float(x), float(y)))
+    for x, y in re.findall(r'<circle cx="(-?[\d.]+)" cy="(-?[\d.]+)"', svg):
+        couples.append((float(x), float(y)))
+    assert couples, group.symbol
+    for x, y in couples:
+        assert 0.0 <= x <= size, (group.symbol, x)
+        assert 0.0 <= y <= size, (group.symbol, y)
+    largeur = max(x for x, _ in couples) - min(x for x, _ in couples)
+    hauteur = max(y for _, y in couples) - min(y for _, y in couples)
+    assert max(largeur, hauteur) >= 0.5 * size, (group.symbol, largeur, hauteur)
 
 
 def test_le_moteur_affine_est_exact_et_inversible():
