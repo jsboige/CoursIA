@@ -50,13 +50,13 @@ the supercell scale.
   byte-identical between the two files.
 -/
 
-import Conway.Life_en
-import Conway.Life.MacroCell_en
+import Conway.Life
+import Conway.Life.MacroCell
 
 namespace Conway_en
-open Conway_en
+open Conway
 namespace Life_en
-open Life_en
+open Life
 open MacroCell
 
 /-! ## Grid layer — positioned witnesses + sanity (decide)

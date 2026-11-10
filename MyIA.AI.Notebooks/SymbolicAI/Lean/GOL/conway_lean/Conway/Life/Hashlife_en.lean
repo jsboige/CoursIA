@@ -61,13 +61,13 @@ correctness theorem is left as a future direction).
   signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
-import Conway.Life_en
-import Conway.Life.MacroCell_en
+import Conway.Life
+import Conway.Life.MacroCell
 
 namespace Conway_en
-open Conway_en
+open Conway
 namespace Life_en
-open Life_en
+open Life
 
 open MacroCell
 

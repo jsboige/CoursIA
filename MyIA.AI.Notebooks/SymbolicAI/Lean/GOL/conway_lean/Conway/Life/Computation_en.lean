@@ -18,9 +18,9 @@ Design choices:
 This module is fully proven (no gaps).
 -/
 
-import Conway.Life_en
-import Conway.Life.MacroCell_en
-import Conway.Life.Hashlife_en
+import Conway.Life
+import Conway.Life.MacroCell
+import Conway.Life.Hashlife
 
 
 /-
@@ -32,9 +32,9 @@ import Conway.Life.Hashlife_en
 -/
 
 namespace Conway_en
-open Conway_en
+open Conway
 namespace Life_en
-open Life_en
+open Life
 
 /-! ## Section 1: Hashlife/Reference consistency
 
