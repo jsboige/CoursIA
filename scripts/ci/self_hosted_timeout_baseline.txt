@@ -30,18 +30,13 @@
 # lean-formal-logic.yml:target-coverage : le workflow n'existe plus. Le mode
 # --show-stale-baseline du verificateur aide a reperer ces entrees mortes sans
 # modifier la baseline ni changer le cliquet bloquant.
-grain-orphans-sweep.yml:sweep
-lane-claim-epic-wide-advisory.yml:sweep
-lean-visibility-advisory.yml:lean-visibility-advisory
-live-read-freshness.yml:freshness
-machine-dep-timing-advisory.yml:machine-dep-timing
-machine-dep-timing-inventory.yml:inventory
-markdown-claims-output-advisory.yml:claims-output-advisory
-markdown-deaccent-advisory.yml:markdown-deaccent-advisory
-markdown-table-guard.yml:md-table-syntax-advisory
-md-content-loss-gate.yml:md-content-loss
-mermaid-fill-color-advisory.yml:mermaid-fill-color-advisory
-notebook-output-collapse-ratchet.yml:ratchet
+#
+# 2026-11-09 (#23349, tranche 3) : retirees les douze cles dont le job porte
+# desormais une borne -- grain-orphans-sweep, lane-claim-epic-wide-advisory,
+# lean-visibility-advisory, live-read-freshness, machine-dep-timing-advisory,
+# machine-dep-timing-inventory, markdown-claims-output-advisory,
+# markdown-deaccent-advisory, markdown-table-guard, md-content-loss-gate,
+# mermaid-fill-color-advisory, notebook-output-collapse-ratchet.
 notebook-output-flood-ratchet.yml:ratchet
 repeated-prose-advisory.yml:repeated-prose-advisory
 split-reading-advisory.yml:split-reading-advisory
