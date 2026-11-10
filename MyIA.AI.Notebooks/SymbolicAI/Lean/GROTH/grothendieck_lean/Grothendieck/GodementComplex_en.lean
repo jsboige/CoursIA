@@ -231,9 +231,9 @@ variable {X : TopCat.{u}}
 -- and rank 0 iterates it into the stage SES of step `n + 1` — the stage
 -- arrow `godementCanonicalMap (n + 2)` being `godementMapHom (cokernel.map …)`
 -- by `godementDChainMap_succ_right` (an `rfl`). Posed as a maquette with
--- documented prover targets (`godementCanonicalMap_comp_zero`, easy;
--- `shortExact_godementCanonicalObj`, hard); sorry-baseline of the lake: 0
--- before this tranche.
+-- documented prover targets (`godementCanonicalMap_comp_zero`, easy — PROVED
+-- in the follow-up tranche below; `shortExact_godementCanonicalObj`, hard —
+-- the only remaining `sorry` of the module).
 --
 -- **Follow-up tranche**: the degree-0 case of the easy target is PROVED
 -- (`godementCanonicalMap_comp_zero_zero` — `C⁰` of a null composite via
@@ -249,14 +249,27 @@ variable {X : TopCat.{u}}
 -- transport squares `e₁ e₂` being `cokernel.π_desc` at the
 -- definitionally-unfolded successor arrow (`godementDChainMap_succ_left`:
 -- the right vertical of the degree-`n` square IS the left vertical — i.e.
--- the stage arrow — of the degree-`n + 1` one). The induction now runs
+-- the stage arrow — of the degree-`n + 1` one). The induction runs
 -- `P (n+1) → Q n → P (n+2)` for every `n ≥ 0` without any hypothesis,
--- covering all degrees ≥ 2. **Remaining open: only the rank-1 base case
--- (shape `μ`)** — its analogue `Q_μ` reduces circularly to `P 1`; its exit
--- is the rank-0 snake connector: `Mono (toGodement S.X₃)` (separatedness of
--- the right term) ⇒ `ker μ_{X₃} = 0` ⇒ `δ₀ = 0` ⇒ SES of `coker μ` exact ⇒
--- `c₁μ ≫ c₂μ = 0` — precisely the hard target (`SnakeInput` + `hres`). The
--- hypothesis-free statement of the easy target is thus confirmed at every
--- degree except the seeding one, where the separatedness ladder enters.
+-- covering all degrees ≥ 2.
+--
+-- **The rank-1 base case is CLOSED, also hypothesis-free — and it does NOT
+-- go through the snake.** `P 1` reduces (`godementCanonicalMap_one` on both
+-- factors, then `← godementMapHom_comp`) to the nullity of the composite of
+-- the two unit-cokernel arrows `c₁μ ≫ c₂μ`, and that nullity is
+-- **computational** (`godementCokernelMap_comp_rank_one`): the canonical
+-- projection of the unit cokernel transports each cokernel arrow into the
+-- right vertical of the unit square (`cokernel.π_desc`), giving
+-- `π₁ ≫ c₁μ ≫ c₂μ = C⁰(S.f) ≫ C⁰(S.g) ≫ π₃ = C⁰(S.f ≫ S.g) ≫ π₃ = C⁰ 0 ≫ π₃ = 0`
+-- by `godementMapHom_comp`, `S.zero` and `godementMapHom_zero`; `cancel_epi`
+-- on the projection (an epimorphism by construction) concludes. The full
+-- induction `n = 0 | 1 | m + 2` (`godementCanonicalMap_comp_zero`) then
+-- closes the easy target at **every degree**, with no hypothesis at all.
+-- Discarded routes, for the record: (a) `cokernel.map_zero` read backwards
+-- (domain-side vs codomain-side vertical) — a wrong route, not a missing
+-- hypothesis; (b) deriving rank 1 from the rank-0 snake connector
+-- (`L₃_exact` of `SnakeInput`) — needless: the snake remains the organ of
+-- the **hard** target (mono/epi of the stages and annihilation of the
+-- connector `δ` by `hsep`/`hres`), not of the nullity of the composite.
 
 end Grothendieck_en

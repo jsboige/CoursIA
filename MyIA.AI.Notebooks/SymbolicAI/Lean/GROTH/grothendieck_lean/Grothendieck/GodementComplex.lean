@@ -863,8 +863,15 @@ d'étages des crans `n` et `n + 1`, connecteur `S.δ` tué par
 `cancel_epi` le long de `im d^{n-1}`, puis `L₃_exact` referme la SES des
 conoyaux et le rang 0 l'itère en SES des étages `n + 1` — la flèche
 d'étage `godementCanonicalMap (n + 2)` étant `godementMapHom (cokernel.map …)`
-par `godementDChainMap_succ_right` (un `rfl`). Maquette posée ici en cibles
-prover ; sorry-baseline du lake : 0 avant cette PR.
+par `godementDChainMap_succ_right` (un `rfl`). La **cible easy** de cette
+maquette — `godementCanonicalMap_comp_zero`, le champ `zero` des SES
+d'étages — est **prouvée à tout degré, sans aucune hypothèse** : cran `0` par
+`godementMapHom_comp`, maillon générique `P (n+1) → Q n → P (n+2)` par
+`cancel_epi` sur `cokernel.π` (`godementCokernelMap_comp`), et rang `1`
+(forme `μ`) par la même mécanique sur les flèches de conoyaux des unités
+(`godementCokernelMap_comp_rank_one`), **sans passer par le serpent** — le
+serpent reste l'organe de la seule cible **hard**, dont le `sorry` est
+désormais l'unique du module ; `sorry-baseline` du lake : 0 → 1 dans cette PR.
 -/
 
 /-- **Le degré 0 de la nullité des flèches d'étages** (Partie 100, cran
@@ -895,10 +902,12 @@ hypothèse** — et le calcul du milieu est la propriété de factorisation de
 `cokernel.map` (`π ≫ map = verticale droite ≫ π`), la verticale droite du
 carré de degré `n` étant la flèche d'étage de degré `n + 1`. Combiné à
 `godementCanonicalMap_succ_two` et `godementMapHom_zero`, c'est le cran
-inductif de la nullité des flèches d'étages : `P (n+1) → Q n → P (n+2)`. Le
-cran `1` (forme `μ`), lui, n'est PAS couvert : son analogue `Q_μ` se
-réduit circulairement à `P 1`, et sa sortie relève du connecteur du serpent
-de rang `0` — cible hard, hypothèse `hsep`. -/
+inductif de la nullité des flèches d'étages : `P (n+1) → Q n → P (n+2)`,
+pour tout `n ≥ 0` — donc tous les crans `≥ 2` une fois `P 1` acquis. Le
+cran `1` (forme `μ`) n'est PAS une instance de ce maillon (son analogue
+`Q_μ` se réduit circulairement à `P 1`) : il est fermé à part, **sans
+hypothèse**, par `godementCokernelMap_comp_rank_one` — le serpent de rang
+`0` reste réservé à la cible hard (`hsep` sur le connecteur `δ`). -/
 theorem godementCokernelMap_comp {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
     (n : ℕ)
     (h : godementCanonicalMap S.X₁ S.X₂ S.f (n + 1) ≫
@@ -920,6 +929,53 @@ theorem godementCokernelMap_comp {S : ShortComplex (X.Presheaf AddCommGrpCat.{u}
       cokernel.π_desc]
   rw [e₁, Category.assoc, e₂, ← Category.assoc, h, zero_comp]
 
+/-- **Le maillon de base du rang 1** (Partie 100) : le composé des deux
+flèches de conoyaux des **unités** est nul, **sans aucune hypothèse** — ni
+lemme du serpent, ni séparabilité. La preuve est calculatoire : la projection
+canonique du conoyau de l'unité transporte chaque flèche de conoyaux en la
+verticale droite du carré d'unité (`cokernel.π_desc`), d'où
+`π₁ ≫ c₁μ ≫ c₂μ = C⁰(S.f) ≫ C⁰(S.g) ≫ π₃ = C⁰(S.f ≫ S.g) ≫ π₃ = C⁰ 0 ≫ π₃ = 0`
+par `godementMapHom_comp`, `S.zero` et `godementMapHom_zero` ; la projection
+étant un épi, `cancel_epi` conclut. C'est la pièce qui manquait au plancher de
+l'induction `P (n+1) → Q n → P (n+2)` : le cran `1` ne relève donc **pas** du
+connecteur du serpent de rang 0 — celui-ci reste l'organe de la cible hard
+(mono/épi des étages et annihilation du connecteur par `hsep`/`hres`). -/
+theorem godementCokernelMap_comp_rank_one
+    {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})} :
+    cokernel.map (toGodement S.X₁) (toGodement S.X₂) S.f (godementMapHom S.f)
+        (toGodement_naturality S.f) ≫
+      cokernel.map (toGodement S.X₂) (toGodement S.X₃) S.g (godementMapHom S.g)
+        (toGodement_naturality S.g) = 0 := by
+  refine (cancel_epi (cokernel.π (toGodement S.X₁))).mp ?_
+  rw [comp_zero, ← Category.assoc]
+  have e₁ : cokernel.π (toGodement S.X₁) ≫
+      cokernel.map (toGodement S.X₁) (toGodement S.X₂) S.f (godementMapHom S.f)
+        (toGodement_naturality S.f) =
+      godementMapHom S.f ≫ cokernel.π (toGodement S.X₂) := by
+    simp only [cokernel.map, cokernel.π_desc]
+  have e₂ : cokernel.π (toGodement S.X₂) ≫
+      cokernel.map (toGodement S.X₂) (toGodement S.X₃) S.g (godementMapHom S.g)
+        (toGodement_naturality S.g) =
+      godementMapHom S.g ≫ cokernel.π (toGodement S.X₃) := by
+    simp only [cokernel.map, cokernel.π_desc]
+  rw [e₁, Category.assoc, e₂, ← Category.assoc, ← godementMapHom_comp, S.zero,
+    godementMapHom_zero, zero_comp]
+
+/-- **Le rang 1 de la cible facile** : le composé des flèches d'étages au
+degré `1`. Par `godementCanonicalMap_one` aux deux facteurs il ne dépend que
+des deux flèches de conoyaux des unités, et `← godementMapHom_comp` le ramène
+au maillon de base `godementCokernelMap_comp_rank_one`, dont la nullité donne
+`C⁰ 0 = 0`. Aucune hypothèse n'entre ici : le rang `1` est fermé. -/
+theorem godementCanonicalMap_comp_zero_one
+    {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})} :
+    godementCanonicalMap S.X₁ S.X₂ S.f 1 ≫ godementCanonicalMap S.X₂ S.X₃ S.g 1 = 0 := by
+  rw [godementCanonicalMap_one, godementCanonicalMap_one]
+  show godementMapHom (cokernel.map (toGodement S.X₁) (toGodement S.X₂) S.f
+        (godementMapHom S.f) (toGodement_naturality S.f)) ≫
+      godementMapHom (cokernel.map (toGodement S.X₂) (toGodement S.X₃) S.g
+        (godementMapHom S.g) (toGodement_naturality S.g)) = 0
+  rw [← godementMapHom_comp, godementCokernelMap_comp_rank_one, godementMapHom_zero]
+
 /-- **Cible prover : easy — le composé des flèches d'étages d'une SES est
 nul** : pour un short complexe `S` de préfaisceaux, les flèches d'étages
 composées `godementCanonicalMap S.f n ≫ godementCanonicalMap S.g n` sont
@@ -929,28 +985,36 @@ nulles à tout degré — le champ `zero` des SES d'étages de la Partie 100.
 SANS hypothèse (`godementCokernelMap_comp`, par `cancel_epi` sur la
 projection `cokernel.π` — épi par construction — et transport par
 `cokernel.π_desc` le long des carrés `e₁`/`e₂`), de sorte que
-`P (n+1) → Q n → P (n+2)` couvre tous les crans `≥ 2`. Reste UNIQUEMENT le
-cran de base `1` (forme `μ`) : `P 1` se réduit, par `godementCanonicalMap_one`
-et `← godementMapHom_comp`, à la nullité du composé des flèches de conoyaux
-`c₁μ ≫ c₂μ` des verticales `μ = toGodement` — et cette nullité est
-l'exactitude au milieu de la suite longue du **serpent de rang 0**
-(`L₃_exact` de `SnakeInput`), que le lemme du serpent fournit
-INCONDITIONNELLEMENT (le diagramme : `L₁ = S` la SES de départ, `L₂` la SES
-Godement de rang 0 `shortExact_map_godementFunctor`, verticales `μ` ; le
-connecteur `δ` n'a besoin d'être tué — par `hsep` — que pour la cible hard,
-pas pour la nullité du composé). Ce qui a été tenté : la route initiale
-« `cokernel.map` d'un morphisme nul est nul » (`cokernel.map_zero` lu à
-l'envers, verticale domaine vs codomaine) est RÉSORBÉE — c'était la
-mauvaise route, pas une hypothèse manquante ; la route courante est la
-pose d'une instance `SnakeInput (X.Presheaf AddCommGrpCat)` sur le
-diagramme ci-dessus (les (co)kernels degreewise de `ShortComplex C` en
-font une catégorie abélienne où `h₀`/`h₃` se lisent sur les fork/cofork
-degreewise) puis l'extraction de `L₃.zero`. L'énoncé sans hypothèse est
-donc attendu VRAI en entier, sans contre-exemple à chercher. -/
+`P (n+1) → Q n → P (n+2)` couvre tous les crans `≥ 2`. Le cran de base `1`
+(forme `μ`) est fermé lui aussi, indépendamment : `P 1` se réduit, par
+`godementCanonicalMap_one` et `← godementMapHom_comp`, à la nullité du
+composé des flèches de conoyaux `c₁μ ≫ c₂μ` des verticales `μ = toGodement`,
+laquelle est **calculatoire** (`godementCokernelMap_comp_rank_one`) — la
+projection du conoyau de l'unité transporte les deux flèches en `C⁰(S.f)`,
+`C⁰(S.g)`, et `godementMapHom_comp` / `S.zero` / `godementMapHom_zero`
+annulent le composé. La conclusion `n = 0 | 1 | m + 2` ferme l'énoncé à tout
+degré. Ce qui a été tenté puis écarté : (a) « `cokernel.map` d'un morphisme
+nul est nul » (`cokernel.map_zero` lu à l'envers, verticale domaine vs
+codomaine) — RÉSORBÉ, c'était la mauvaise route, pas une hypothèse
+manquante ; (b) sortir le cran `1` par le **serpent de rang 0** (`L₃_exact`
+de `SnakeInput`) — inutile : le serpent reste l'organe de la cible **hard**
+(mono/épi des étages et annihilation du connecteur `δ` par `hsep`/`hres`),
+pas celui de la nullité du composé. -/
 theorem godementCanonicalMap_comp_zero {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
     (n : ℕ) :
     godementCanonicalMap S.X₁ S.X₂ S.f n ≫ godementCanonicalMap S.X₂ S.X₃ S.g n = 0 := by
-  sorry
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+    match n with
+    | 0 => exact godementCanonicalMap_comp_zero_zero
+    | 1 => exact godementCanonicalMap_comp_zero_one
+    | m + 2 =>
+      rw [godementCanonicalMap_succ_two, godementCanonicalMap_succ_two]
+      show godementMapHom (godementCokernelMap S.X₁ S.X₂ S.f m) ≫
+          godementMapHom (godementCokernelMap S.X₂ S.X₃ S.g m) = 0
+      rw [← godementMapHom_comp,
+        godementCokernelMap_comp m (ih (m + 1) (Nat.lt_succ_self (m + 1))),
+        godementMapHom_zero]
 
 /-- **Cible prover : hard — la SES des étages à tout degré, par récursion**
 (P99 rang `n + 1`). Pour une SES `S` de préfaisceaux dont le terme droit est

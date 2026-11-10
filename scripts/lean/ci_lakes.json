@@ -489,7 +489,7 @@
       "lake": "grothendieck",
       "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean",
       "display-name": "grothendieck_lean",
-      "sorry-baseline": "0",
+      "sorry-baseline": "1",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
       "paths": [
