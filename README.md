@@ -442,11 +442,12 @@ CoursIA/
   translations/                Corpus de traduction des notebooks (inventaire et statut dans son README)
   slides/                      Présentations pédagogiques
   docker-configurations/       Infrastructure Docker GPU
-  dotnet/GradeBookApp/                Notation étudiants (pipelines et données privés sur GDrive)
-  dotnet/GradeBookApp.Tests/          Tests du moteur de notation
-  dotnet/MyIA.AI.Shared/              Bibliothèque C# partagée
-  dotnet/MyIA.AI.Shared.Tests/        Tests de la bibliothèque partagée
-  dotnet/MyIA.Trading.Converter/      Conversion de formats de données de trading
+  dotnet/                      Projets .NET (moteur de notation, bibliothèque partagée, trading)
+    GradeBookApp/              Notation étudiants (pipelines et données privés sur GDrive)
+    GradeBookApp.Tests/        Tests du moteur de notation
+    MyIA.AI.Shared/            Bibliothèque C# partagée
+    MyIA.AI.Shared.Tests/      Tests de la bibliothèque partagée
+    MyIA.Trading.Converter/    Conversion de formats de données de trading
   THIRD_PARTY_NOTICES.md       Attributions des sources et composants tiers
 ```
 
