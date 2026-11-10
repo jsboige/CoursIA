@@ -10414,9 +10414,9 @@ DFS suit la **branche la plus a gauche** jusqu'a une feuille puis remonte. Sur B
 
 **Avantage clé de DFS** : empreinte mémoire bien moindre (la pile ne contient que le chemin courant + quelques freres). Sur un arbre très profond et peu large ou la solution est sur la première branche explorée, DFS peut etre **strictement meilleur que BFS** -- c'est ce que montre l'**Exemple guide 2** plus bas.
 ",,,,,,,,2fa59ad7f0300800,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,ff134544,markdown,fr,4029f47b67d0b765,"### Exemple guide : DFS avec limite de profondeur (rendu TP PR #22681)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,ff134544,markdown,fr,7021b985c51edb40,"### Exemple guide : DFS avec limite de profondeur (rendu TP PR #22681)
 
-**Crédit** : rendu de TP intégré ici en exemple guidé — PR #22681 (une soumission identique du même groupe est arrivée en #22676). L'énoncé d'origine reste conservé ci-dessous.
+**Crédit** : rendu de TP intégré ici en exemple guidé — PR #22681 (des soumissions identiques du même groupe — Caroline et Juliana — sont aussi arrivées en #22676 et #25531). L'énoncé d'origine reste conservé ci-dessous.
 
 
 **Enonce** : implementez `DfsLimited(problem, maxDepth)` -- un DFS qui s'arrete des qu'un noeud atteint la profondeur `maxDepth` (sans l'expanser). C'est la brique elementaire d'IDDFS (section 5).
@@ -10428,7 +10428,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,ff1
 4. Pour distinguer *solution trouvee* de *solution inexistante*, vous pouvez retourner `(SearchResult? result, bool cutoffOccurred)`.
 
 **Test attendu** : sur `Bordeaux -> Strasbourg`, `DfsLimited(..., maxDepth=2)` doit retourner une solution (2 sauts suffisent), tandis que `maxDepth=1` doit retourner une coupure.
-",,,,,,,,4029f47b67d0b765,,,,,,,,,,,,,,,
+",,,,,,,,7021b985c51edb40,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,3f9fac8d,code,fr,1503ed15d11893c9,"#nullable enable
 
 // DFS avec limite de profondeur. Une meilleure profondeur connue par état permet
@@ -10549,9 +10549,9 @@ Sur Bordeaux -> Strasbourg, UCS confirme le chemin de BFS : **Bordeaux -> Paris 
 
 **Coût temps/espace** : UCS exploré les noeuds par ordre de coût croissant. Sur un graphe ou toutes les arêtes valent 1 (cas BFS), UCS degeneré en BFS. Sur un graphe fortement pondéré, UCS exploré typiquement beaucoup plus de noeuds que BFS pour le même problème, car il doit explorer tous les chemins partiels dont le coût est inférieur au coût optimal.
 ",,,,,,,,0b76fe61288bd407,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,62213596,markdown,fr,11dcd33bad669251,"### Exemple guide : écart de coût BFS vs UCS — Montpellier -> Lyon (rendu TP PR #22681)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,62213596,markdown,fr,75385afdf15a49ca,"### Exemple guide : écart de coût BFS vs UCS — Montpellier -> Lyon (rendu TP PR #22681)
 
-**Crédit** : rendu de TP intégré ici en exemple guidé — PR #22681 (une soumission identique du même groupe est arrivée en #22676). L'énoncé d'origine reste conservé ci-dessous.
+**Crédit** : rendu de TP intégré ici en exemple guidé — PR #22681 (des soumissions identiques du même groupe — Caroline et Juliana — sont aussi arrivées en #22676 et #25531). L'énoncé d'origine reste conservé ci-dessous.
 
 **Enonce** : choisissez un trajet ou BFS et UCS donnent **un coût différent**. Le candidat naturel est **Montpellier -> Lyon** : deux chemins en 2 sauts existent, avec des coûts très différents selon les arêtes empruntées.
 
@@ -10559,7 +10559,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,622
 1. `var problem6 = new GraphProblem(""Montpellier"", ""Lyon"", franceGraph);`
 2. Lancez `BFS(problem6)` et `UCS(problem6)` puis comparez `result.Cost`.
 3. Affichez les deux chemins et expliquez pourquoi UCS est strictement meilleur (ou pas).
-",,,,,,,,11dcd33bad669251,,,,,,,,,,,,,,,
+",,,,,,,,75385afdf15a49ca,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,6f60e28f,code,fr,e34aa7346bf99885,"// Exercice 2 : comparer BFS et UCS sur Montpellier -> Lyon.
 var problemMontpellierLyon = new GraphProblem(""Montpellier"", ""Lyon"", franceGraph);
 var bfsMontpellierLyon = BFS(problemMontpellierLyon);
@@ -10723,9 +10723,9 @@ foreach (var row in rows)
     Console.WriteLine($""{row.algo,-12} {row.complete,-12} {row.optimal,-15} {row.time,-22} {row.space,-18} {row.front,-10}"");
 Console.WriteLine(""\n* Optimal uniquement si tous les couts d'action sont identiques."");
 ",,,,,,,,f50312d04b47888a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,7bdc029c,markdown,fr,dfed8f38e69468e1,"### Exemple guide : comparaison expérimentale des quatre algorithmes — Grenoble -> Lille (rendu TP PR #22681)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,7bdc029c,markdown,fr,7d0c07bdbdc66b8d,"### Exemple guide : comparaison expérimentale des quatre algorithmes — Grenoble -> Lille (rendu TP PR #22681)
 
-**Crédit** : rendu de TP intégré ici en exemple guidé — PR #22681 (une soumission identique du même groupe est arrivée en #22676). L'énoncé d'origine reste conservé ci-dessous.
+**Crédit** : rendu de TP intégré ici en exemple guidé — PR #22681 (des soumissions identiques du même groupe — Caroline et Juliana — sont aussi arrivées en #22676 et #25531). L'énoncé d'origine reste conservé ci-dessous.
 
 **Enonce** : choisissez un trajet **non couvert** par les 5 cas ci-dessus (par exemple **Grenoble -> Lille** ou **Montpellier -> Rennes**) et executez les quatre algorithmes. Construisez un tableau comparatif.
 
@@ -10733,7 +10733,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,7bd
 1. `var problemC = new GraphProblem(depart, arrivee, franceGraph);`
 2. `BFS(problemC)` / `DFS(problemC)` / `UCS(problemC)` / `IDDFS(problemC, maxDepth: 15)`.
 3. Affichez pour chacun : chemin, coût, noeuds explorés, noeuds générés, temps.
-",,,,,,,,dfed8f38e69468e1,,,,,,,,,,,,,,,
+",,,,,,,,7d0c07bdbdc66b8d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb,19b46fd7,code,fr,2b68e09768b16b23,"// Exercice 3 : comparer les quatre algorithmes sur Grenoble -> Lille.
 var problemGrenobleLille = new GraphProblem(""Grenoble"", ""Lille"", franceGraph);
 var resultBfsGrenobleLille = BFS(problemGrenobleLille);

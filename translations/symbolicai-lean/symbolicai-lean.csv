@@ -14531,7 +14531,7 @@ mathematique précis, elle est ""libre"".
 
 Le reste du notebook deroule cet argument rigoureusement, puis l'adosse au port Lean 4.
 ",,,,,,,,06a8dd5492a59111,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,f431bbb3,code,fr,d62a143634713580,"import subprocess
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,f431bbb3,code,fr,95a6437e0c5103b6,"import subprocess
 from pathlib import Path
 from lean_notebook_utils import (
     find_lean_project, get_lean_project_path,
@@ -14539,8 +14539,8 @@ from lean_notebook_utils import (
 )
 
 # Cross-platform: native path on Linux/macOS, WSL path on Windows
-LEAN_PROJECT = get_lean_project_path(""conway_lean"")
-WIN_LEAN_PROJECT = find_lean_project(""conway_lean"")
+LEAN_PROJECT = get_lean_project_path(""GOL/conway_lean"")
+WIN_LEAN_PROJECT = find_lean_project(""GOL/conway_lean"")
 WSL_LEAN_PROJECT = LEAN_PROJECT  # Already WSL-formatted on Windows
 
 assert (WIN_LEAN_PROJECT / ""lakefile.lean"").exists(), ""conway_lean/lakefile.lean introuvable""
@@ -14553,7 +14553,7 @@ print(""  modules cibles    : Conway.KochenSpecker, Conway.FreeWillTheorem"")
 plat = ""native"" if is_native_platform() else ""WSL""
 print(f""  plateforme        : {plat}"")
 print(""Setup OK : projet conway_lean accessible"")
-",,,,,,,,d62a143634713580,,,,,,,,,,,,,,,
+",,,,,,,,95a6437e0c5103b6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,a37ddb64,markdown,fr,612ddeb27d0bb9c1,"<a id=""2""></a>
 ## 2. Les Trois Axiomes : SPIN, TWIN, MIN
 
@@ -14607,17 +14607,22 @@ print(""Aucune reponse deterministe ne peut respecter SPIN sur les 18 vecteurs :
 print(""c'est precisement le contenu de `fwt_single_particle` (reduction a Kochen-Specker)."")
 print(""La preuve formelle exhaustive (2^18) est dans Lean-13 ; ici on illustre le cadrage SPIN."")
 ",,,,,,,,2f0d54970d229697,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,d743b8cd,markdown,fr,e84118722551bdfd,"### Interpretation : 0 coloration valide sur 200 000 echantillons
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,d743b8cd,markdown,fr,ca2edee8e5238ca4,"### Interpretation : 0 coloration valide sur 200 000 echantillons
 
 Le résultat **0 valide / 200 000** confirme experimentalement le théorème KS. Parmi les $2^{18} = 262\,144$ colorations candidates possibles, **aucune** ne satisfait la contrainte : chaque vecteur apparait dans exactement un contexte colore. L'impossibilite n'est pas une question de probabilite -- elle est **structurelle**.
 
 | Paramètre | Valeur | Signification |
 |-----------|--------|---------------|
-| Echantillons | 200 000 | Couvre ~76% de l'espace $2^{18}$ |
+| Echantillons | 200 000 | Tirages **avec remise** : ~53 % de réponses distinctes |
 | Colorations valides | 0 | Aucune ne satisfait SPIN |
 | Espace total | 262 144 | $2^{18}$ reponses déterministes |
 
-> **Note technique** : la preuve formelle exhaustive (2^18) est dans Lean-13. L'echantillonnage ici est une illustration pedagogique du cadrage SPIN.",,,,,,,,e84118722551bdfd,,,,,,,,,,,,,,,
+L'echantillonnage tire chaque reponse **avec remise** : sur 200 000 tirages, le nombre de
+reponses *distinctes* attendu est $2^{18}\,(1 - e^{-200000/2^{18}}) \approx 139\,900$, soit
+~53 % de l'espace -- et non ~76 % ($200000/2^{18}$), qui compterait chaque tirage repete
+comme une couverture nouvelle.
+
+> **Note technique** : la preuve formelle exhaustive (2^18) est dans Lean-13. L'echantillonnage ici est une illustration pedagogique du cadrage SPIN.",,,,,,,,ca2edee8e5238ca4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,a63a9455,markdown,fr,57dcd2d36658dc03,"### 2.2 TWIN -- la correlation des jumelles
 
 **Enonce physique.** On prepare deux particules de spin 1 dans un état **intrique** (singulet),
@@ -14725,16 +14730,59 @@ La trace illustre le raisonnement par l'absurde : si les reponses sont fonction 
 | KS | Aucune coloration valide n'existe | Contradiction |
 
 > **Note technique** : le théorème est **conditionnel**. Si l'un des trois axiomes est relaxe, la contradiction disparait.",,,,,,,,416df5bac8468fdd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,38a4cd76,markdown,fr,56a16dec43de83a5,"### Exercice 2 : formaliser la contrainte MIN
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,38a4cd76,markdown,fr,2b6eb3b31ca32d70,"### Exemple guide : formaliser la contrainte MIN (rendu TP PR #25531)
 
-**Objectif.** Ecrire une fonction Python qui vérifie que la reponse d'Alice ne depend pas de la direction choisie par Bob, en iterant sur les paires `(direction_alice, direction_bob)`. Montrer que toute violation de MIN implique une correlation interdite par SPIN.
+**Crédit** : rendu de TP intégré ici en exemple guidé — PR #25531 (Caroline et Juliana, TP 2). L'énoncé d'origine reste conservé ci-dessous.
 
-- *Indice* : simuler les reponses pour différentes paires de directions ; vérifier que la reponse d'Alice pour la direction `d_a` est la même quel que soit le choix `d_b` de Bob.
-- *Étape 1* : définir une fonction `check_min(alice_func, bob_func, directions)` qui itere sur les paires de directions.
-- *Étape 2* : pour chaque `(d_a, d_b)`, vérifier que `alice_func(d_a)` ne varie pas quand `d_b` change.
-- *Étape 3* : si MIN est viole, montrer que cela produit une correlation contredisant SPIN.",,,,,,,,56a16dec43de83a5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,cbdc5959,code,fr,2a9cc2798f374fc2,"print(""Exercice a completer"")
-min_satisfied = None  # TODO étudiant : vérifier la contrainte MIN sur les reponses simulees",,,,,,,,2a9cc2798f374fc2,,,,,,,,,,,,,,,
+**Enonce** : écrire une fonction Python qui vérifie que la reponse d'Alice ne depend pas de la direction choisie par Bob, en iterant sur les paires `(direction_alice, direction_bob)`. Montrer que toute violation de MIN implique une correlation interdite par SPIN.
+
+**Indices** :
+1. Simuler les reponses pour différentes paires de directions ; vérifier que la reponse d'Alice pour la direction `d_a` est la même quel que soit le choix `d_b` de Bob.
+2. Définir une fonction `check_min(alice_func, bob_func, directions)` qui itere sur les paires de directions.
+3. Pour chaque `(d_a, d_b)`, vérifier que `alice_func(d_a)` ne varie pas quand `d_b` change.
+4. Si MIN est viole, montrer que cela produit une correlation contredisant SPIN.
+
+**Ce que montre l'exemple** : deux modèles simulés — un modèle où chacun ne regarde que sa propre direction (MIN respectée, test passé) et un modèle où la réponse d'Alice « sent » le choix de Bob (MIN violée, contre-exemple exhibé avec les valeurs exactes).
+",,,,,,,,2b6eb3b31ca32d70,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,cbdc5959,code,fr,6894e58b6a2b428a,"# Exemple guide : verifier la contrainte MIN sur des modeles simules (rendu TP PR #25531).
+# Exercice 2 :
+directions = range(18)  # les 18 directions de mesure
+
+def check_min(alice_func, bob_func, directions):
+    """"""Renvoie (True, None) si MIN est respectée, sinon (False, contre-exemple).""""""
+    for d_a in directions:
+        reference = alice_func(d_a, 0)               # réponse d'Alice quand Bob choisit 0
+        for d_b in directions:
+            if alice_func(d_a, d_b) != reference:    # la réponse change selon Bob
+                return False, (""Alice"", d_a, d_b)
+    for d_b in directions:
+        reference = bob_func(d_b, 0)                 # même test côté Bob
+        for d_a in directions:
+            if bob_func(d_b, d_a) != reference:
+                return False, (""Bob"", d_b, d_a)
+    return True, None
+
+# Modèle qui respecte MIN : chacun répond selon sa direction seulement
+alice_ok = lambda d_a, d_b: d_a % 2
+bob_ok   = lambda d_b, d_a: d_b % 2
+# Modèle qui viole MIN : Alice ""sent"" le choix de Bob
+alice_bad = lambda d_a, d_b: (d_a + d_b) % 2
+
+min_satisfied, _ = check_min(alice_ok, bob_ok, directions)
+print(""Modèle ok  :"", min_satisfied)                       # True
+
+ok, (qui, d, d_autre) = check_min(alice_bad, bob_ok, directions)
+print(""Modèle bad :"", ok)                                  # False
+print(f""{qui}, direction {d} : répond {alice_bad(d, 0)} si l'autre choisit 0, ""
+      f""mais {alice_bad(d, d_autre)} s'il choisit {d_autre}"")
+
+# Interprétation :
+# - Si la réponse d'Alice dépend du choix de Bob, sa valeur pour une direction n'est plus
+#   un nombre fixe : on ne peut plus associer une valeur 0/1 à chaque vecteur,
+#   donc il n'y a pas de coloration, et l'argument SPIN + KS ne s'applique plus.
+# - Physiquement, cela voudrait dire que le choix de Bob agit instantanément sur Alice
+#   (signal plus rapide que la lumière), ce que MIN interdit.
+",,,,,,,,6894e58b6a2b428a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,d65382cb,markdown,fr,ff96ac11428a2c87,"<a id=""4""></a>
 ## 4. Le Port Lean 4 : Adossement au Code Réel
 
@@ -14804,7 +14852,7 @@ print(f""Exit code : {rc}  (0 = SUCCESS)"")
 if rc == -1:
     print(f""TimeoutExpired apres {build_timeout_s}s (cache Mathlib non prechauffe)."")
 ",,,,,,,,ead5767d54c3c692,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,147992b2,markdown,fr,9b34c2c5532e19c7,"### Interpretation : les deux piliers sont prouves
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,147992b2,markdown,fr,5a191dfcede68410,"### Interpretation : les deux piliers sont prouves
 
 | Vérification | Résultat attendu | Signification |
 |--------------|------------------|---------------|
@@ -14813,9 +14861,19 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,147992
 | `lake build` exit code | 0 | Les deux modules compilent réellement |
 
 Le théorème de libre arbitre est donc **formellement prouvé** en Lean 4, et non simplement
-esquisse. Precisions sur le compteur brut : l'unique occurrence du mot `sorry` dans `KochenSpecker.lean` est un **commentaire** (ligne 107 : « Tous les `sorry` ont ete elimines », Epic #1453), pas une tactique -- le compteur de la cellule precedente compte la prose. Au niveau des tactiques, les deux modules sont a zero `sorry`, ce que confirme le `lake build` ci-dessus. La preuve tient en deux reductions -- c'est l'""elegance Conway"" :
-un enonce spectaculaire qui se ramene a un argument combinatoire de parite.
-",,,,,,,,9b34c2c5532e19c7,,,,,,,,,,,,,,,
+esquisse. Precisions sur le compteur brut : l'unique occurrence du mot `sorry` dans
+`KochenSpecker.lean` est un **commentaire** (ligne 107 : « Tous les `sorry` ont ete elimines »,
+Epic #1453), pas une tactique -- le compteur de la cellule precedente compte la prose. Au
+niveau des tactiques, les deux modules sont a zero `sorry`.
+
+Deux sources attestent la compilation, et elles se lisent differemment. La **CI du lake**
+(job `lean-conway` : `lake build` + `proof-integrity` sur `Conway.KochenSpecker` et
+`Conway.FreeWillTheorem`, `fail-on-sorry: true`) verifie les deux modules a chaque PR qui
+touche le lake. La cellule `lake build` ci-dessus, elle, depend de l'etat de l'environnement
+local : un code de retour **-2** signifie que l'organe d'execution a refuse le lancement
+(cache lake present sans epingle de backend) -- ce n'est ni un echec de compilation, ni une
+preuve de reussite. La preuve tient en deux reductions -- c'est l'""elegance Conway"" :
+un enonce spectaculaire qui se ramene a un argument combinatoire de parite.",,,,,,,,5a191dfcede68410,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,5b3e61d5,markdown,fr,17657851b7408eb1,"<a id=""5""></a>
 ## 5. La Chaîne de Reduction Formelle
 
@@ -14850,20 +14908,43 @@ La chaîne de reduction tient en deux tactiques `exact` Lean, alors que l'argume
 | `fwt_single_particle` -> `kochen_specker` | `exact kochen_specker` | 2 |
 
 Le théorème spectaculaire est donc un **corollaire direct** de Kochen-Specker, formalise en deux reductions.",,,,,,,,ef002dc124a6cbc5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,673668e2,markdown,fr,5fac41de7a05e20b,"### Exercice 3 : decrire la structure de la preuve Lean
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,673668e2,markdown,fr,0e92353ed294f841,"### Exemple guide : decrire la structure de la preuve Lean (rendu TP PR #25531)
 
-**Objectif.** En vous basant sur le source affiche dans la section 4 (cellule `d194d5fe`), decrire en francais la structure de la preuve `free_will_theorem`. Identifier chaque tactique utilisee et son rôle. Completer le tableau ci-dessous.
+**Crédit** : rendu de TP intégré ici en exemple guidé — PR #25531 (Caroline et Juliana, TP 2). L'énoncé d'origine reste conservé ci-dessous.
 
-- *Indice* : regarder les tactiques `exact`, `apply`, `intro`, `cases`, `have` dans le source Lean affiche en section 4.
-- *Étape 1* : relever chaque tactique dans le bloc `theorem free_will_theorem`.
-- *Étape 2* : pour chaque tactique, decrire son rôle dans le raisonnement.
-- *Étape 3* : completer le dictionnaire `proof_analysis` avec la correspondance tactique -> rôle.",,,,,,,,5fac41de7a05e20b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,133a17b2,code,fr,83b5bec7e4cf5d21,"print(""Exercice a completer"")
-# TODO étudiant : completer le tableau d'analyse de la preuve
-# | Tactique | Role dans la preuve | Ligne approx. |
-# |----------|---------------------|---------------|
-# | ...      | ...                 | ...           |
-proof_analysis = None  # TODO étudiant : dictionnaire tactique -> role",,,,,,,,83b5bec7e4cf5d21,,,,,,,,,,,,,,,
+**Enonce** : en vous basant sur le source affiche dans la section 4, decrire en francais la structure de la preuve `free_will_theorem`. Identifier chaque tactique utilisee et son rôle. Completer le tableau ci-dessous.
+
+**Indices** :
+1. Regarder les tactiques `exact`, `apply`, `intro`, `cases`, `have` dans le source Lean affiche en section 4.
+2. Relever chaque tactique dans le bloc `theorem free_will_theorem`.
+3. Pour chaque tactique, décrire son rôle dans le raisonnement.
+4. Compléter le dictionnaire `proof_analysis` avec la correspondance tactique -> rôle.
+
+**Ce que montre l'exemple** : la preuve `free_will_theorem` tient en trois tactiques — une contradiction construite pas à pas, chaque ligne du tableau pointant la ligne exacte du source (`FreeWillTheorem.lean`).
+",,,,,,,,0e92353ed294f841,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,133a17b2,code,fr,f2d278aaae8fead8,"# Exemple guide : tableau d'analyse de la preuve free_will_theorem (rendu TP PR #25531).
+proof_analysis = {
+    ""rintro ⟨f, hfwt⟩"": (
+        ""Preuve par l'absurde : on suppose qu'il existe une f et on récupère ""
+        ""hfwt, la preuve que f satisfait les axiomes (SPIN et TWIN)."",
+        193,
+    ),
+    ""have hspin_alice := hfwt.spin .alice"": (
+        ""On extrait des axiomes uniquement SPIN appliqué à Alice : ""
+        ""f(·, alice) est une réponse déterministe qui satisfait SPIN."",
+        196,
+    ),
+    ""exact fwt_single_particle ⟨(f · .alice), hspin_alice⟩"": (
+        ""On applique le théorème à une particule (¬∃ f, SatisfiesSPIN f) à ce ""
+        ""témoin : contradiction, donc le but est démontré."",
+        197,
+    ),
+}
+
+print(f""{'Tactique':<55} | Ligne | Rôle"")
+for tactique, (role, ligne) in proof_analysis.items():
+    print(f""{tactique:<55} | L{ligne:<4} | {role}"")
+",,,,,,,,f2d278aaae8fead8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,6e917195,markdown,fr,fcf63343e7c55033,"<a id=""7""></a>
 ## 7. Extensibilite : Vers d'Autres Résultats de Conway
 
@@ -14879,7 +14960,7 @@ Pistes d'extension naturelles a partir du FWT :
   `contextMembers` par les 18 vecteurs réels + preuve d'orthogonalite (actuellement implicite).
 - **Autres théorèmes de contextualite** : Peres-33, carré magique de Mermin-Peres.
 ",,,,,,,,fcf63343e7c55033,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,0435f581,code,fr,b43538aaed86a7b1,"# Registre extensible des résultats Conway et de leur statut de port Lean.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,0435f581,code,fr,d4c190bbfa8eae97,"# Registre extensible des résultats Conway et de leur statut de port Lean.
 # (Verifie dynamiquement la presence des modules + leur compte de sorry.)
 conway_results = [
     # (nom affiche, module .lean ou None, statut conceptuel)
@@ -14887,6 +14968,7 @@ conway_results = [
     (""Free Will Theorem"",           ""Conway/FreeWillTheorem.lean"", ""PROUVE""),
     (""CHSH deterministe (|score| = 2)"", ""Conway/CHSH.lean"",            ""PROUVE""),
     (""CHSH randomise (|E| <= 2)"",       ""Conway/CHSHRandomized.lean"",   ""PROUVE""),
+    (""Tsirelson quantique (2*sqrt(2))"", ""Conway/CHSHQuantum.lean"",      ""PROUVE""),
     (""Game of Life (B3/S23)"",       ""Conway/Life.lean"",            ""PROUVE""),
     (""Strong FWT (MIN, 2009)"",      None,                          ""PISTE""),
     (""Coordonnees R^4 explicites"",  None,                          ""PISTE""),
@@ -14906,21 +14988,26 @@ for name, module, statut in conway_results:
         mod_disp, sorry_disp = ""(a creer)"", ""-""
     print(f""{name:<32} | {mod_disp:<28} | {statut:<8} | {sorry_disp}"")
 print()
-print(""Pour etendre : ajouter une entree ci-dessus + le module .lean dans conway_lean/Conway/."")
-",,,,,,,,b43538aaed86a7b1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,22716a60,markdown,fr,0c128d2c5aa4e0e8,"### Interpretation : état du port Conway
+print(""Pour etendre : ajouter une entree ci-dessus + le module .lean dans conway_lean/Conway/."")",,,,,,,,d4c190bbfa8eae97,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,22716a60,markdown,fr,f5c285333cc69716,"### Interpretation : état du port Conway
 
-Sur les 5 résultats Conway du registre, 3 sont **PROUVES** en Lean (KS-101, SPIN, Twin) et 2 sont en **PISTE** (Strong FWT, coordonnees R^4). Le théorème du libre arbitre (Conway-Kochen 2006/2009) est le résultat central du port -- sa preuve complète est un jalon formel pour la communaute.
+Sur les 8 résultats Conway du registre, 6 sont **PROUVES** en Lean (le noyau Kochen-Specker, la
+reduction FWT, les trois tranches CHSH et le Game of Life) et 2 sont en **PISTE** (Strong FWT,
+coordonnees R^4). Le théorème du libre arbitre (Conway-Kochen 2006/2009) est le résultat central
+du port -- sa preuve complète est un jalon formel pour la communaute.
 
 | Résultat | Statut | Commentaire |
 |----------|--------|-------------|
 | Kochen-Specker (Cabello 18) | PROUVÉ | Noyau combinatoire |
 | Free Will Theorem | PROUVÉ | Reduction FWT -> KS |
+| CHSH déterministe (\|score\| = 2) | PROUVÉ | Enumeration noyau des 16 profils |
+| CHSH randomisé (\|E\| ≤ 2) | PROUVÉ | Convexite des strategies locales |
+| Tsirelson quantique (2√2) | PROUVÉ | Import Mathlib + ecarts locaux ; saturation ouverte |
 | Game of Life (B3/S23) | PROUVÉ | Règles d'evolution |
 | Strong FWT (MIN, 2009) | PISTE | Module a créer |
 | Coordonnees R^4 explicites | PISTE | Vecteurs réels + orthogonalite |
 
-> **Note technique** : le workspace `conway_lean` est extensible par design. Ajouter un résultat = créer le module `.lean` + ajouter une entrée au registre.",,,,,,,,0c128d2c5aa4e0e8,,,,,,,,,,,,,,,
+> **Note technique** : le workspace `conway_lean` est extensible par design. Ajouter un résultat = créer le module `.lean` + ajouter une entrée au registre.",,,,,,,,f5c285333cc69716,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,6243c2f7,markdown,fr,f7b137bedb7a0a15,"<a id=""8""></a>
 ## 8. Exercices
 
@@ -14998,29 +15085,56 @@ extension_note = (
     ""predeterminees consistante.""
 )
 ",,,,,,,,2f54352e9a93a1b0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,600ee74d,markdown,fr,deb08cf25b5040e0,"***
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,600ee74d,markdown,fr,b994af3ab6fe5f87,"***
 
-### Exercice (a completer) : aucune coloration déterministe ne satisfait SPIN
+### Exemple guide : aucune coloration déterministe ne satisfait SPIN (rendu TP PR #25531)
 
-En vous appuyant sur l'exemple guide `response_is_spin` ci-dessus, montrez (par recherche
+**Crédit** : rendu de TP intégré ici en exemple guidé — PR #25531 (Caroline et Juliana, TP 2). L'énoncé d'origine reste conservé ci-dessous.
+
+**Enonce** : en vous appuyant sur l'exemple guide `response_is_spin` ci-dessus, montrez (par recherche
 exhaustive ou par un argument de parite) qu'il n'existe **aucune** reponse déterministe de
 18 bits validant SPIN sur l'ensemble des contextes. C'est exactement le contenu du théorème
 de Kochen-Specker (1967) : l'impossibilite d'une assignation de valeurs predeterminees
 consistante.
 
-- *Indice* : il y a `2**18 = 262144` reponses possibles ; une recherche par force brute est faisable.
-- *Étape 1* : enumerer les reponses candidates avec `itertools.product([0, 1], repeat=18)`.
-- *Étape 2* : compter combien satisfont `response_is_spin` ; conclure que ce nombre vaut 0.
-",,,,,,,,deb08cf25b5040e0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,b099af93,code,fr,5269c732d79a7749,"# Exercice : aucune coloration deterministe ne satisfait SPIN (théorème de Kochen-Specker)
-# TODO étudiant :
-#   Etape 1 : parcourir itertools.product([0, 1], repeat=18)
-#   Etape 2 : compter les reponses r telles que response_is_spin(list(r)) est True
-#   Etape 3 : vérifier que ce compte vaut 0 et l'interpreter (Kochen-Specker)
+**Indices** :
+1. Il y a `2**18 = 262144` reponses possibles ; une recherche par force brute est faisable.
+2. Enumerer les reponses candidates avec `itertools.product([0, 1], repeat=18)`.
+3. Compter combien satisfont `response_is_spin` ; conclure que ce nombre vaut 0.
 
-print(""Exercice a completer"")
-",,,,,,,,5269c732d79a7749,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,ff3a8ee8,markdown,fr,fd928c4b0e861658,"## Resume
+**Ce que montre l'exemple** : la solution des étudiantes double l'argument — un argument de parité instantané (chaque vecteur appartient à exactement 2 contextes, et il y a 9 contextes : un nombre impair de « 1 » comptés contexte par contexte ne peut pas être un compte doublement pair) puis l'énumération exhaustive des 262 144 réponses, qui confirme le zéro.
+",,,,,,,,b994af3ab6fe5f87,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,b099af93,code,fr,f4b8a8a61b9d69a0,"# Exemple guide : Kochen-Specker par argument de parite puis force brute (rendu TP PR #25531).
+from itertools import product
+
+def response_is_spin(response):
+    for ctx in contexts:
+        if sum(response[i] for i in ctx) != 1:
+            return False
+    return True
+
+# Méthode 1 : argument de parité (instantané, aucune énumération)
+# SPIN => exactement un ""1"" par contexte, donc 9 ""1"" comptés contexte par contexte (impair).
+# Mais chaque vecteur est dans exactement 2 contextes : chaque ""1"" est compté 2 fois,
+# donc le total doit être pair. Impair ≠ pair : contradiction.
+chaque_vecteur_2_fois = all(sum(i in ctx for ctx in contexts) == 2 for i in range(18))
+print(""Chaque vecteur est dans 2 contextes :"", chaque_vecteur_2_fois)   # True
+print(""Contextes :"", len(contexts), ""(impair) → total pair impossible"")  # 9
+
+# Méthode 2 : force brute sur les 2**18 = 262 144 réponses
+# (response_is_spin s'arrête dès qu'un contexte est faux, ce qui garde le calcul rapide)
+nb_valides = 0
+for r in product([0, 1], repeat=18):
+    if response_is_spin(list(r)):
+        nb_valides += 1
+print(""Réponses respectant SPIN :"", nb_valides)                         # 0 (≈ 0,2 s)
+
+# Interprétation :
+# - 0 réponse valide sur 262 144 : aucune assignation déterministe 0/1 n'existe.
+# - C'est le théorème de Kochen-Specker. La parité l'explique : 9 est impair, 2 × (nombre de 1) est pair.
+# - Avec TWIN (Alice et Bob ont la même réponse), le déterminisme est donc impossible.
+",,,,,,,,f4b8a8a61b9d69a0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,ff3a8ee8,markdown,fr,7cc6e09b31307729,"## Resume
 
 ### Concepts cles
 
@@ -15039,6 +15153,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,ff3a8e
 | `FreeWillTheorem.lean` | Reduction FWT -> KS (SPIN + TWIN + MIN structurel) |
 | `CHSH.lean` | Frontiere CHSH deterministe (\|score\| = 2 exactement) |
 | `CHSHRandomized.lean` | Frontiere CHSH randomisee (\|E[score]\| <= 2 par convexite) |
+| `CHSHQuantum.lean` | Borne de Tsirelson 2√2 (import Mathlib + ecarts locaux ; saturation ouverte) |
 
 Chaîne de reduction : `free_will_theorem` -> `fwt_single_particle` -> `kochen_specker` (3 maillons).
 
@@ -15063,8 +15178,231 @@ libre arbitre humain ou la conscience.
 
 ***
 
-**Navigation** : [<< Lean-16b FRACTRAN](Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb) | [Index](README.md) | [Lean-17a Noeuds >>](KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb)
-",,,,,,,,fd928c4b0e861658,,,,,,,,,,,,,,,
+**Navigation** : [<< Lean-16b FRACTRAN](Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb) | [Index](README.md) | [Lean-17a Noeuds >>](KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb)",,,,,,,,7cc6e09b31307729,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-intro,markdown,fr,c8b56ba9e7b65a89,"<a id=""6""></a>
+## 6. La Non-Localite Quantitative : la Frontiere CHSH
+
+Le théorème du libre arbitre s'appuie sur la **non-localite quantique** : la correlation des
+particules jumelles (TWIN) ne s'explique par aucune fonction de reponse locale. Sa forme
+quantitative canonique est l'inégalité **CHSH** (Clauser, Horne, Shimony, Holt, 1969) : dans tout
+modele local classique, le score de correlation est borne par 2 en valeur absolue -- alors que la
+mecanique quantique atteint 2*sqrt(2)* (borne de Tsirelson).
+
+Les trois tranches CHSH sont compilees par le lac ; cette section rejoue l'enumeration de la
+frontiere en Python, puis inventorie les declarations réelles du source Lean.
+
+Le lac `conway_lean` prouve les deux moities classiques de cette frontiere, puis la franchit :
+
+- `Conway/CHSH.lean` (epic #13106, tranche deterministe) : toute strategie locale **deterministe**
+  a un score de valeur absolue **exactement 2** -- `Conway.CHSH.classical_abs_score`, démontre par
+  enumeration noyau (decide) des 16 assignations, avec sa forme usuelle `classical_bound` ;
+- `Conway/CHSHRandomized.lean` (tranche randomisee) : la frontiere tient pour les strategies
+  **randomisees** -- toute combinaison convexe de profils garde un score espere borne par 2
+  (`Conway.CHSHRandomized.randomized_bound`) ;
+- `Conway/CHSHQuantum.lean` (tranche quantique) : la borne de Tsirelson $2\sqrt{2}$ est
+  formalisee -- `Conway.CHSHQuantum.tsirelson_bound` importe le théorème de Mathlib
+  (`Mathlib.Algebra.Star.CHSH.tsirelson_inequality`, preuve noyau par somme de carrés) sous les
+  hypothèses exactes d'algèbre étoilée ordonnée, et le module prouve localement la reecriture
+  $\sqrt{2}^3 = 2\sqrt{2}$ (`sqrt_two_cubed`) et l'ecart $2 < 2\sqrt{2}$
+  (`classical_quantum_gap`).
+
+Ce qui reste ouvert est desormais plus fin que « la formaliser demande des observables
+hermitiennes et une norme d'operateur » : la borne importee est un **majorant unilateral**, et
+le module ne construit pas l'etat quantique qui la sature -- pas de matrices de Pauli, pas
+d'interpretation probabiliste complete, pas de borne bilaterale en norme d'operateur. Ces
+limites sont declarees dans l'en-tete du module, et le registre de la section suivante en garde
+la trace.",,,,,,,,c8b56ba9e7b65a89,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-code-enum,code,fr,117d5825da420b2c,"# Miroir numérique de l'enumeration Lean : les 16 profils deterministes.
+from itertools import product
+
+def outcome_value(o):
+    # Miroir python de Conway.CHSH.Outcome.value : negative = -1, positive = +1.
+    return -1 if o == ""N"" else +1
+
+def score_chsh(a0, a1, b0, b1):
+    # Miroir python de Conway.CHSH.score : a0*b0 + a0*b1 + a1*b0 - a1*b1.
+    return a0 * b0 + a0 * b1 + a1 * b0 - a1 * b1
+
+rows = []
+for a0, a1, b0, b1 in product((""N"", ""P""), repeat=4):
+    s = score_chsh(outcome_value(a0), outcome_value(a1),
+                   outcome_value(b0), outcome_value(b1))
+    rows.append((f""{a0}{a1}{b0}{b1}"", s))
+
+print(""16 profils deterministes (a0 a1 b0 b1) :"")
+for prof, s in rows:
+    print(f""  {prof}  score = {s:+d}"")
+abs_scores = sorted({abs(s) for _, s in rows})
+print(f""\nValeurs de |score| observees : {abs_scores}"")
+print(f""Max |score| = {max(abs_scores)}  (frontiere classique deterministe)"")",,,,,,,,117d5825da420b2c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-interp-det,markdown,fr,04ba37e270dcd94b,"### Interpretation : |score| = 2 partout, et Lean le prouve
+
+L'enumeration python confirme ce que `Conway.CHSH.classical_abs_score` démontre dans le noyau
+Lean : **les 16 strategies deterministes ont toutes un score de valeur absolue exactement 2** --
+la frontiere n'est pas une borne atteinte par certaines strategies, c'est la valeur **commune a
+toutes**. Le theorem `classical_bound` en est la forme usuelle (|score| <= 2), et
+`score_factorization` explique **pourquoi** : le score se reecrit
+`a0*(b0+b1) + a1*(b0-b1)`, et pour des reponses binaires (+-1), `b0+b1` et `b0-b1` ne peuvent pas
+etre non nuls tous les deux -- un seul des deux termes contribue, de valeur absolue 2.",,,,,,,,04ba37e270dcd94b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-code-inv,code,fr,56a287339fccba36,"# Inventaire des declarations RÉELLES des trois modules CHSH (source de verite, pas une paraphrase).
+decl_prefixes = (""abbrev "", ""def "", ""theorem "", ""lemma "", ""structure "", ""inductive "")
+
+for fname in [""CHSH.lean"", ""CHSHRandomized.lean"", ""CHSHQuantum.lean""]:
+    fpath = WIN_LEAN_PROJECT / ""Conway"" / fname
+    src_lines = fpath.read_text(encoding=""utf-8"").splitlines()
+    n_sorry = sum(1 for l in src_lines if ""sorry"" in l)
+    print(f""{fname} : {len(src_lines)} lignes, {n_sorry} occurrence(s) de 'sorry'"")
+    for i, ln in enumerate(src_lines, 1):
+        if ln.startswith(decl_prefixes):
+            print(f""  L{i:>3}: {ln.strip()[:100]}"")
+    print()
+print(""0 occurrence en TACTIQUE = la frontiere est complete (deterministe, randomisee ET quantique)."")
+print(""Une occurrence isolee dans l'en-tete du module compte la PROSE, pas une tactique :"")
+print(""c'est le piege du compteur brut, tranche par count_code_sorry.py (mode real)."")",,,,,,,,56a287339fccba36,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-interp-rand,markdown,fr,1889ab61ee0af540,"### Interpretation : la randomite partagee ne brise pas la frontiere
+
+`Conway.CHSHRandomized.randomized_bound` etend le resultat aux strategies **randomisees** : une
+strategie est une famille de poids rationnels sur les 16 profils (le type `Strategy`), son score
+espere `expectedScore` est la combinaison convexe des scores deterministes. La preuve combine
+l'inegalite triangulaire (valeur absolue d'une somme <= somme des valeurs absolues) avec le fait
+que chaque profil porte \|score\| = 2 (`Profile.abs_score`) : la convexite des poids
+(`h_nonneg`, `h_total`) ramene le tout a une somme de poids fois 2, donc \|E[score]\| <= 2.
+
+C'est exactement la structure qui rend le theoreme du libre arbitre **conditionnel** : aucune
+theorie locale -- meme randomisee, meme avec randomite partagee -- ne reproduit la correlation
+quantique 2*sqrt(2)*. La frontiere ne peut etre franchie qu'en sortant du modele local (reponses
+quantiques), ce que FWT capture par ses axiomes SPIN + TWIN + MIN.",,,,,,,,1889ab61ee0af540,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-exo,markdown,fr,1e8295b5fd5cf0c8,"### Exemple guide : une strategie randomisee sur la frontiere (rendu TP PR #25531)
+
+**Crédit** : rendu de TP intégré ici en exemple guidé — PR #25531 (Caroline et Juliana, TP 2). L'énoncé d'origine reste conservé ci-dessous.
+
+**Enonce** : construisez en python une strategie randomisee (poids sur les 16 profils, somme = 1) dont le
+score espere atteint la frontière |E[score]| = 2, puis vérifiez sur quelques exemples que melanger
+deux profils de scores opposes rapproche E[score] de 0. Indice : tout profil deterministe convient
+pour la frontière -- la subtilité est le miroir exact d'`expectedScore`.
+
+**Ce que montre l'exemple** : le miroir exact d'`expectedScore` en arithmétique exacte (`Fraction`) — un profil seul atteint la frontière E = 2, et le mélange du profil +2 avec le profil -2 ramène linéairement l'espérance vers 0 (poids 3/4 → E = 1, poids 1/2 → E = 0), sans jamais sortir de la frontière.
+",,,,,,,,1e8295b5fd5cf0c8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-code-stub,code,fr,9144c018f7f03537,"# Exemple guide : miroir exact d'expectedScore en arithmetique exacte (rendu TP PR #25531).
+from itertools import product
+from fractions import Fraction
+
+def outcome_value(o):
+    return -1 if o == ""N"" else +1
+
+def score_chsh(a0, a1, b0, b1):
+    return a0*b0 + a0*b1 + a1*b0 - a1*b1
+
+profiles = ["""".join(p) for p in product(""NP"", repeat=4)]
+score = {p: score_chsh(*(outcome_value(c) for c in p)) for p in profiles}
+
+def expected_score(strategy):
+    """"""Score espéré d'une stratégie randomisée : moyenne pondérée des profils.""""""
+    assert sum(strategy.values()) == 1, ""les poids doivent sommer à 1""
+    assert all(w >= 0 for w in strategy.values())
+    return sum(w * score[p] for p, w in strategy.items())
+
+# Partie A : un seul profil (poids 1) -> sur la frontière |E| = 2
+print(""A :"", expected_score({""PPPP"": Fraction(1)}))
+
+# Partie B : mélanger deux profils de scores opposés
+pos = next(p for p in profiles if score[p] == +2)
+neg = next(p for p in profiles if score[p] == -2)
+print(""profil +2 :"", pos, ""| profil -2 :"", neg)
+for w in [Fraction(1), Fraction(3, 4), Fraction(1, 2)]:
+    E = expected_score({pos: w, neg: 1 - w})
+    print(f""poids {w} sur {pos}, {1-w} sur {neg} -> E = {E}, |E| <= 2 : {abs(E) <= 2}"")
+",,,,,,,,9144c018f7f03537,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,0a8549cf,markdown,fr,e50c410695d37b7a,"### Lecture du résultat
+
+Le modèle où chacun ne regarde que sa propre direction passe le test (`Modèle ok : True`). Le modèle où la réponse d'Alice dépend du choix de Bob échoue (`Modèle bad : False`) et le contre-exemple est explicite : direction 0, Alice répond 0 si Bob choisit 0 mais 1 s'il choisit 1. Sa « valeur » pour la direction 0 n'est plus un nombre fixe — plus de coloration 0/1 des vecteurs, donc l'argument SPIN + Kochen-Specker ne s'applique plus ; et physiquement, le choix de Bob agirait instantanément sur Alice, un signal plus rapide que la lumière.
+",,,,,,,,e50c410695d37b7a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,3167b619,markdown,fr,e1afbf01bc012b30,"### Exercice 2 (nouveau) : formaliser la contrainte TWIN
+
+**Objectif.** Écrire une fonction Python qui vérifie la corrélation TWIN : lorsque Alice et Bob
+mesurent la *même* direction, leurs réponses coïncident. En itérant sur les directions, montrer
+qu'un modèle qui viole TWIN ne peut pas être représenté par une seule fonction partagée.
+
+- *Indice* : pour chaque direction `d`, comparer `alice_func(d, d)` et `bob_func(d, d)`.
+- *Étape 1* : définir `check_twin(alice_func, bob_func, directions)` qui itère sur les directions.
+- *Étape 2* : construire un modèle qui respecte TWIN et un modèle qui le viole.
+- *Étape 3* : exhiber le contre-exemple et interpréter — pourquoi TWIN est-elle essentielle pour que l'argument du théorème porte sur les *deux* particules ?
+",,,,,,,,e1afbf01bc012b30,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,addb6233,code,fr,9f98049d29a765e6,"print(""Exercice a completer"")
+twin_satisfied = None  # TODO etudiant : verifier la correlation TWIN sur les directions
+
+# TODO etudiant : Etape 1 -- definir check_twin(alice_func, bob_func, directions)
+# TODO etudiant : Etape 2 -- un modele qui respecte TWIN, un modele qui le viole
+# TODO etudiant : Etape 3 -- exhiber le contre-exemple et interpreter
+",,,,,,,,9f98049d29a765e6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,e650c153,markdown,fr,c1d02798564cd51b,"### Lecture du résultat
+
+Le tableau relève les trois tactiques de `theorem free_will_theorem` (aux lignes L193-L197 de `FreeWillTheorem.lean`) : `rintro` ouvre la contradiction en détruisant l'existencielle, `have` isole l'instance SPIN côté Alice, et `exact` conclut en invoquant `fwt_single_particle` — la preuve à une particule — sur le témoin construit. Trois lignes suffisent : tout le travail est déjà dans les théorèmes en aval, c'est la chaîne de réduction tracée en section 5.
+",,,,,,,,c1d02798564cd51b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,7ad49e8a,markdown,fr,7c7d12170862a575,"### Exercice 3 (nouveau) : décrire la preuve `fwt_single_particle`
+
+**Objectif.** En vous basant sur le source affiché dans la section 4, décrire en français la
+structure de la preuve `fwt_single_particle` — l'étape 1 du théorème, la réduction à
+Kochen-Specker. Identifier chaque tactique utilisée et son rôle, puis compléter le tableau.
+
+- *Indice* : la preuve tient en deux tactiques ; regarder ce que fait le témoin `⟨f 0, hspin 0⟩` (pourquoi instancier à `0` suffit).
+- *Étape 1* : relever chaque tactique dans le bloc `theorem fwt_single_particle`.
+- *Étape 2* : pour chaque tactique, décrire son rôle dans le raisonnement.
+- *Étape 3* : compléter le dictionnaire `proof_analysis_single` avec la correspondance tactique -> rôle.
+",,,,,,,,7c7d12170862a575,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,246c98b9,code,fr,3f0b0251b95427f6,"print(""Exercice a completer"")
+# TODO etudiant : completer le tableau d'analyse de la preuve fwt_single_particle
+# | Tactique | Role dans la preuve | Ligne approx. |
+# |----------|---------------------|---------------|
+# | ...      | ...                 | ...           |
+proof_analysis_single = None  # TODO etudiant : dictionnaire tactique -> (role, ligne)
+",,,,,,,,3f0b0251b95427f6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,43caf6d4,markdown,fr,a2e839948d06609c,"### Lecture du résultat
+
+La sortie montre `A : 2` : un profil déterministe seul (PPPP, poids 1) atteint déjà la frontière |E| = 2. Ensuite, le mélange du profil +2 (NNNN) avec le profil -2 (NNPN) fait descendre l'espérance exactement linéairement : poids 3/4 → E = 1, poids 1/2 → E = 0 — l'arithmétique `Fraction` donne des valeurs exactes, sans erreur de flottant. À chaque étape |E| <= 2 : la randomisation déplace l'espérance *à l'intérieur* de la frontière, elle ne la franchit jamais — exactement ce que prouve `Conway.CHSHRandomized.randomized_bound`.
+",,,,,,,,a2e839948d06609c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,ca16f91f,markdown,fr,29886158a9eea5fe,"### Exercice 4 (nouveau) : le miroir expérimental de `randomized_bound`
+
+**Objectif.** Vérifier expérimentalement que *toute* stratégie randomisée reste dans la frontière
+|E[score]| <= 2, comme le prouve formellement `Conway.CHSHRandomized.randomized_bound`.
+Échantillonnez des stratégies aléatoires (poids positifs de somme 1 sur les 16 profils) et
+vérifiez qu'aucune ne dépasse 2 en valeur absolue.
+
+- *Indice* : tirer des poids positifs uniformément, puis les normaliser par leur somme.
+- *Étape 1* : construire une centaine de stratégies randomisées valides par échantillonnage.
+- *Étape 2* : calculer leur score espéré avec le miroir d'`expected_score` ci-dessus.
+- *Étape 3* : constater |E| <= 2 dans tous les cas et relier l'observation à la convexité (combinaison convexe de valeurs toutes en ±2).
+",,,,,,,,29886158a9eea5fe,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,d6d8827a,code,fr,5ad4463d31d94b72,"print(""Exercice a completer"")
+max_abs_E = None  # TODO etudiant : max de |E[score]| observe sur les strategies echantillonnees
+
+# TODO etudiant : Etape 1 -- echantillonner des strategies (poids > 0, somme = 1) sur les 16 profils
+# TODO etudiant : Etape 2 -- calculer E[score] de chacune avec le miroir d'expected_score
+# TODO etudiant : Etape 3 -- verifier |E| <= 2 partout et interpreter (convexite des ±2)
+",,,,,,,,5ad4463d31d94b72,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,c898c606,markdown,fr,70c24337e8728a79,"### Lecture du résultat
+
+La sortie confirme les deux volets : chaque vecteur apparaît dans exactement 2 contextes (`True`) et les 9 contextes rendent le total des « 1 » à la fois impair (un par contexte) et pair (chaque « 1 » compté deux fois) — contradiction. L'énumération exhaustive des 262 144 réponses rend le même verdict : `Réponses respectant SPIN : 0`. C'est le théorème de Kochen-Specker : aucune assignation déterministe de valeurs ne satisfait SPIN, et avec TWIN le déterminisme des deux particules tombe avec celui d'une seule.
+",,,,,,,,70c24337e8728a79,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,cc23e264,markdown,fr,47c2acb6a6f1c891,"### Exercice (nouveau) : relâcher un seul contexte
+
+En retirant **un seul** des 9 contextes de la liste `contexts`, l'argument de parité ne
+s'applique plus. Enumerez les réponses déterministes qui satisfont SPIN sur les 8 contextes
+restants : combien en existe-t-il ? Comparez avec le cas des 9 contextes (aucune) et
+expliquez le rôle de l'imparité dans le théorème.
+
+- *Indice* : `sub_contexts = contexts[:-1]` puis réutiliser la même énumération exhaustive.
+- *Étape 1* : construire la liste des 8 contextes.
+- *Étape 2* : compter les réponses valides pour cette sous-liste.
+- *Étape 3* : interpréter — pourquoi la contradiction de parité disparaît-elle ?
+",,,,,,,,47c2acb6a6f1c891,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,a1961454,code,fr,74900c0b1a03b97d,"print(""Exercice a completer"")
+nb_valides_8 = None  # TODO etudiant : compter les colorations valides sur 8 contextes
+
+# TODO etudiant : Etape 1 -- liste des 8 contextes (retirer le dernier de `contexts`)
+# TODO etudiant : Etape 2 -- enumerer et compter les reponses valides sur ces 8 contextes
+# TODO etudiant : Etape 3 -- interpreter par rapport a la parite (9 contextes = impair)
+",,,,,,,,74900c0b1a03b97d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,ed9b9067,markdown,fr,7f50a97095d9bda6,"# Lean 17a — Conway, les Nœuds et la Preuve de Piccirillo
 
 **Série** : SymbolicAI / Lean — Knots Theory (**17a**)
@@ -34906,95 +35244,6 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb,e16
 
 Les deux `#print axioms` renvoient `'doubler_step_3' does not depend on any axioms` : zéro axiome, zéro `sorry`. Autrement dit, ces énoncés ne reposent que sur l'évaluation du noyau — la preuve `by decide` *est* un calcul vérifié terme à terme. C'est le même standard de transparence que pour le Game of Life (GOL-03, section 9) : le lecteur peut auditer ce qui est prouvé, et la section suivante dira honnêtement ce qui ne l'est **pas** — la Turing-complétude de FRACTRAN est un résultat mathématique classique, pas un théorème de ce notebook.",,,,,,,,d66f75e0c0edd10a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb,e16-attendus,markdown,fr,26691664aa501b9a,"**Attendus et anti-pièges (exercices 1 à 3).** *Exercice 1* : le `#eval` doit renvoyer `[1, 3, 9, 27]` — la fraction unique est $3/1$, et le piège est d'écrire $(9, 3)$ : équivalente mathématiquement, elle donnerait le même résultat ici, mais la convention du générateur de nombres premiers de Conway (section 5) exige de raisonner en fractions *réduites*. *Exercice 2* : `doubler_step_5` par `decide` — si `decide` dépasse le budget, `native_decide` est l'aveu que l'évaluation littérale coûte, pas une tricherie. *Exercice 3* : `stepsToHalt halver 8 10` doit renvoyer `3` — piège du décompte : `8 → 4 → 2 → 1` comporte trois *transitions*, mais si vous comptez les éléments de la trajectoire `[8, 4, 2, 1]` vous obtiendrez 4 ; récursivez sur le carburant en décrémentant à chaque `some`, et testez aussi `stepsToHalt doubler 1 10` : attendu `10` (le carburant, car `doubler` ne s'arrête jamais).",,,,,,,,26691664aa501b9a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-intro,markdown,fr,c11ffe4a0cd4e941,"<a id=""6""></a>
-## 6. La Non-Localite Quantitative : la Frontiere CHSH
-
-Le théorème du libre arbitre s'appuie sur la **non-localite quantique** : la correlation des
-particules jumelles (TWIN) ne s'explique par aucune fonction de reponse locale. Sa forme
-quantitative canonique est l'inégalité **CHSH** (Clauser, Horne, Shimony, Holt, 1969) : dans tout
-modele local classique, le score de correlation est borne par 2 en valeur absolue -- alors que la
-mecanique quantique atteint 2*sqrt(2)* (borne de Tsirelson).
-
-Les deux modules sont compiles par le lac ; cette section rejoue l'enumeration de la
-frontiere en Python, puis inventorie les declarations réelles du source Lean.
-
-Le lac `conway_lean` prouve les deux moities classiques de cette frontiere :
-
-- `Conway/CHSH.lean` (epic #13106, tranche deterministe) : toute strategie locale **deterministe**
-  a un score de valeur absolue **exactement 2** -- `Conway.CHSH.classical_abs_score`, démontre par
-  enumeration noyau (decide) des 16 assignations, avec sa forme usuelle `classical_bound` ;
-- `Conway/CHSHRandomized.lean` (tranche randomisee) : la frontiere tient pour les strategies
-  **randomisees** -- toute combinaison convexe de profils garde un score espere borne par 2
-  (`Conway.CHSHRandomized.randomized_bound`).
-
-La borne quantique de Tsirelson reste volontairement ouverte : la formaliser demande des
-observables hermitiennes et une norme d'operateur, au-dela du noyau combinatoire de ce pilote
-(piste reprise au registre de la section suivante).",,,,,,,,c11ffe4a0cd4e941,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-code-enum,code,fr,117d5825da420b2c,"# Miroir numérique de l'enumeration Lean : les 16 profils deterministes.
-from itertools import product
-
-def outcome_value(o):
-    # Miroir python de Conway.CHSH.Outcome.value : negative = -1, positive = +1.
-    return -1 if o == ""N"" else +1
-
-def score_chsh(a0, a1, b0, b1):
-    # Miroir python de Conway.CHSH.score : a0*b0 + a0*b1 + a1*b0 - a1*b1.
-    return a0 * b0 + a0 * b1 + a1 * b0 - a1 * b1
-
-rows = []
-for a0, a1, b0, b1 in product((""N"", ""P""), repeat=4):
-    s = score_chsh(outcome_value(a0), outcome_value(a1),
-                   outcome_value(b0), outcome_value(b1))
-    rows.append((f""{a0}{a1}{b0}{b1}"", s))
-
-print(""16 profils deterministes (a0 a1 b0 b1) :"")
-for prof, s in rows:
-    print(f""  {prof}  score = {s:+d}"")
-abs_scores = sorted({abs(s) for _, s in rows})
-print(f""\nValeurs de |score| observees : {abs_scores}"")
-print(f""Max |score| = {max(abs_scores)}  (frontiere classique deterministe)"")",,,,,,,,117d5825da420b2c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-interp-det,markdown,fr,04ba37e270dcd94b,"### Interpretation : |score| = 2 partout, et Lean le prouve
-
-L'enumeration python confirme ce que `Conway.CHSH.classical_abs_score` démontre dans le noyau
-Lean : **les 16 strategies deterministes ont toutes un score de valeur absolue exactement 2** --
-la frontiere n'est pas une borne atteinte par certaines strategies, c'est la valeur **commune a
-toutes**. Le theorem `classical_bound` en est la forme usuelle (|score| <= 2), et
-`score_factorization` explique **pourquoi** : le score se reecrit
-`a0*(b0+b1) + a1*(b0-b1)`, et pour des reponses binaires (+-1), `b0+b1` et `b0-b1` ne peuvent pas
-etre non nuls tous les deux -- un seul des deux termes contribue, de valeur absolue 2.",,,,,,,,04ba37e270dcd94b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-code-inv,code,fr,86e8f87e0d754eb9,"# Inventaire des declarations RÉELLES des deux modules CHSH (source de verite, pas une paraphrase).
-decl_prefixes = (""abbrev "", ""def "", ""theorem "", ""lemma "", ""structure "", ""inductive "")
-
-for fname in [""CHSH.lean"", ""CHSHRandomized.lean""]:
-    fpath = WIN_LEAN_PROJECT / ""Conway"" / fname
-    src_lines = fpath.read_text(encoding=""utf-8"").splitlines()
-    n_sorry = sum(1 for l in src_lines if ""sorry"" in l)
-    print(f""{fname} : {len(src_lines)} lignes, {n_sorry} occurrence(s) de 'sorry'"")
-    for i, ln in enumerate(src_lines, 1):
-        if ln.startswith(decl_prefixes):
-            print(f""  L{i:>3}: {ln.strip()[:100]}"")
-    print()
-print(""0 occurrence = la frontiere CHSH est formellement complete (deterministe ET randomisee)."")",,,,,,,,86e8f87e0d754eb9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-interp-rand,markdown,fr,1889ab61ee0af540,"### Interpretation : la randomite partagee ne brise pas la frontiere
-
-`Conway.CHSHRandomized.randomized_bound` etend le resultat aux strategies **randomisees** : une
-strategie est une famille de poids rationnels sur les 16 profils (le type `Strategy`), son score
-espere `expectedScore` est la combinaison convexe des scores deterministes. La preuve combine
-l'inegalite triangulaire (valeur absolue d'une somme <= somme des valeurs absolues) avec le fait
-que chaque profil porte \|score\| = 2 (`Profile.abs_score`) : la convexite des poids
-(`h_nonneg`, `h_total`) ramene le tout a une somme de poids fois 2, donc \|E[score]\| <= 2.
-
-C'est exactement la structure qui rend le theoreme du libre arbitre **conditionnel** : aucune
-theorie locale -- meme randomisee, meme avec randomite partagee -- ne reproduit la correlation
-quantique 2*sqrt(2)*. La frontiere ne peut etre franchie qu'en sortant du modele local (reponses
-quantiques), ce que FWT capture par ses axiomes SPIN + TWIN + MIN.",,,,,,,,1889ab61ee0af540,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-exo,markdown,fr,ab662a328edeca86,"### Exercice 4 : une strategie randomisee sur la frontiere
-
-Construisez en python une strategie randomisee (poids sur les 16 profils, somme = 1) dont le
-score espere atteint la frontiere |E[score]| = 2, puis verifiez sur quelques exemples que melanger
-deux profils de scores opposes rapproche E[score] de 0. Indice : tout profil deterministe convient
-pour la frontiere -- la subtilite est le miroir exact d'`expectedScore`.",,,,,,,,ab662a328edeca86,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-code-stub,code,fr,9fb1e9bc5de41fcb,"print(""Exercice a completer"")",,,,,,,,9fb1e9bc5de41fcb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,07bf3a5c,markdown,fr,55506b61bd2c0e85,"## Annexe A — La complétion adique : approcher un anneau local par ses troncatures
 
 Le problème inverse de Galois vit dans les **extensions locales** : pour comprendre un groupe de Galois global, on le regarde une prime à la fois, dans la complétion. Le module `Galois.AdicCompletionLocalRing` (portage pédagogique du dépôt `anthropics/fermats-last-theorem`, commit `aa2d8b34`, Apache-2.0) pose la première couche de cette arithmétique locale : **la complétion adique d'un anneau local `A` par son idéal maximal**.
