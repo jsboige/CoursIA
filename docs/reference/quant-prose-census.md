@@ -109,8 +109,8 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 |---|---|
 | `MyIA.AI.Notebooks\CaseStudies\Diagnostic-Medical\solution\Diagnostic-Medical.ipynb` | 6 |
 | `MyIA.AI.Notebooks\CaseStudies\Diagnostic-Medical\student\Diagnostic-Medical.ipynb` | 6 |
-| `MyIA.AI.Notebooks\CaseStudies\SmartGrid-Energie\solution\SmartGrid-Energie.ipynb` | 4 |
-| `MyIA.AI.Notebooks\CaseStudies\SmartGrid-Energie\student\SmartGrid-Energie.ipynb` | 3 |
+| `MyIA.AI.Notebooks\CaseStudies\SmartGrid-Energy\solution\SmartGrid-Energy.ipynb` | 4 |
+| `MyIA.AI.Notebooks\CaseStudies\SmartGrid-Energy\student\SmartGrid-Energy.ipynb` | 3 |
 | `MyIA.AI.Notebooks\GradeBook.ipynb` | 1 |
 
 ### Probas (drainable total = 459)

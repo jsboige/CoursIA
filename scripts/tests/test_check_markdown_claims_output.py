@@ -1159,7 +1159,7 @@ class TestImperativeListValue:
     """
 
     def test_remplacez_with_comma_before(self):
-        """Founding case verbatim: SmartGrid-Energie md[13]
+        """Founding case verbatim: SmartGrid-Energy md[13]
         cites 'remplacez renewable_forecast_std par 0.5, 1.0, 2.0'.
         The 1.0 is preceded by a comma (within 30 chars).
         """
@@ -1620,7 +1620,7 @@ class TestFoundingFixtures:
         )
 
     def test_smartgrid_imperative_list_clean(self, tmp_path):
-        """Founding case 2: SmartGrid-Energie md[13] 'par 0.5, 1.0, 2.0' --
+        """Founding case 2: SmartGrid-Energy md[13] 'par 0.5, 1.0, 2.0' --
         exercise parameter list, not measurements.
         """
         cells = [

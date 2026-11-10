@@ -159,9 +159,20 @@ def _cap(suffix: str) -> str:
 # ---------------------------------------------------------------------------
 
 def repo_root() -> Path:
-    # The script location identifies its own checkout. Resolving git from an
-    # inherited cwd silently targets the caller's clone when invoked by absolute
-    # path, including from an isolated worktree.
+    """Use a repository cwd, otherwise the checkout containing this script.
+
+    An absolute invocation from an unrelated cwd must still target its own
+    worktree. A cwd inside a temporary test repository, however, is the
+    explicit repository context used by the test suite and callers.
+    """
+    cwd = Path.cwd().resolve()
+    result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=cwd, capture_output=True, text=True, encoding="utf-8",
+        errors="replace",
+    )
+    if result.returncode == 0:
+        return Path(result.stdout.strip()).resolve()
     return Path(__file__).resolve().parents[2]
 
 

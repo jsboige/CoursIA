@@ -21,7 +21,7 @@ Vérification cell-by-cell (manuelle) pour distinguer MISPLACED vs LEGIT :
 
 | # | Notebook | cell | verdict | raison |
 |---|---|---|---|---|
-| 1 | SmartGrid-Energie.ipynb | cell[22] | LEGIT | closing_interp_immediately_after_last_code |
+| 1 | SmartGrid-Energy.ipynb | cell[22] | LEGIT | closing_interp_immediately_after_last_code |
 | 2 | 01-SemanticKernel-Intro.ipynb | cell[27] | LEGIT | closing_interp_immediately_after_last_code |
 | 3 | 02-SemanticKernel-Advanced.ipynb | cell[34] | **MISPLACED** (déjà fixé c.239) | orphan semantic, should follow cell[31] Multi-Result |
 | 4 | 03-SemanticKernel-Agents.ipynb | cell[21] | LEGIT | closing_interp_immediately_after_last_code |
@@ -77,9 +77,9 @@ Voir aussi : [rapport c.237 original](2026-08-13-10678-interp-positioning-audit.
 
 ## Orphelins détectés
 
-### `SmartGrid-Energie.ipynb` cell[22]
+### `SmartGrid-Energy.ipynb` cell[22]
 
-- **Chemin** : `MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energie.ipynb`
+- **Chemin** : `MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb`
 - **idx** : 22 / 24 total cells
 - **prev_code_idx** : 21 (seul code avant l'interp)
 - **is_last_cell** : False

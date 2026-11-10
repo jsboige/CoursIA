@@ -444,15 +444,15 @@ class TestAnalyzeNotebookSerieClassification:
     """Regression tests for #4910.
 
     Issue: catalog-cron marker for CaseStudies/README.md was stale
-    (pedagogical_count: 4) because the scanner seemed to miss SmartGrid-Energie
+    (pedagogical_count: 4) because the scanner seemed to miss SmartGrid-Energy
     notebooks. Diagnosis: the scanner IS correct (it rglobs all *.ipynb),
-    but the README feuille for SmartGrid-Energie was missing at the time of
+    but the README feuille for SmartGrid-Energy was missing at the time of
     the last cron run. Once the leaf README is in place (PR #4915), the cron
     picks up the entries at the next 03:37 UTC run and updates the marker.
 
     These tests lock down the classification behavior so that:
     - CaseStudies/SmartGrid-Energy/solution/foo.ipynb -> serie=CaseStudies,
-      sous_serie=SmartGrid-Energie (the exact pattern from #4910)
+      sous_serie=SmartGrid-Energy (the exact pattern from #4910)
     - A leaf dir with no README still gets picked up correctly
     - The two-level structure (solution/ + student/) inside the leaf dir
       does NOT change the serie/sous_serie derivation
@@ -471,18 +471,18 @@ class TestAnalyzeNotebookSerieClassification:
 
     def test_smartgrid_solution_classified_case_studies(self, tmp_path, monkeypatch):
         """#4910: CaseStudies/SmartGrid-Energy/solution/*.ipynb ->
-        serie=CaseStudies, sous_serie=SmartGrid-Energie."""
+        serie=CaseStudies, sous_serie=SmartGrid-Energy."""
         monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
         nb_path = self._write_notebook(
             tmp_path,
-            "CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energie.ipynb",
+            "CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb",
         )
         entry = analyze_notebook(nb_path, pedagogical=True, git_meta={})
         assert entry is not None
         assert entry["serie"] == "CaseStudies"
-        assert entry["sous_serie"] == "SmartGrid-Energie"
+        assert entry["sous_serie"] == "SmartGrid-Energy"
         assert entry["path"] == (
-            "CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energie.ipynb"
+            "CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb"
         )
 
     def test_smartgrid_student_classified_case_studies(self, tmp_path, monkeypatch):
@@ -491,17 +491,17 @@ class TestAnalyzeNotebookSerieClassification:
         monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
         nb_path = self._write_notebook(
             tmp_path,
-            "CaseStudies/SmartGrid-Energy/student/SmartGrid-Energie.ipynb",
+            "CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb",
         )
         entry = analyze_notebook(nb_path, pedagogical=True, git_meta={})
         assert entry is not None
         assert entry["serie"] == "CaseStudies"
-        assert entry["sous_serie"] == "SmartGrid-Energie"
+        assert entry["sous_serie"] == "SmartGrid-Energy"
 
     def test_diagnostic_medical_sibling_keeps_its_own_sous_serie(
         self, tmp_path, monkeypatch
     ):
-        """Sibling leaf dirs (Diagnostic-Medical vs SmartGrid-Energie) must
+        """Sibling leaf dirs (Diagnostic-Medical vs SmartGrid-Energy) must
         not collide on sous_serie — each one keeps its own."""
         monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
         nb_dm = self._write_notebook(
@@ -510,13 +510,13 @@ class TestAnalyzeNotebookSerieClassification:
         )
         nb_sg = self._write_notebook(
             tmp_path,
-            "CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energie.ipynb",
+            "CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb",
         )
         entry_dm = analyze_notebook(nb_dm, pedagogical=True, git_meta={})
         entry_sg = analyze_notebook(nb_sg, pedagogical=True, git_meta={})
         assert entry_dm["serie"] == entry_sg["serie"] == "CaseStudies"
         assert entry_dm["sous_serie"] == "Diagnostic-Medical"
-        assert entry_sg["sous_serie"] == "SmartGrid-Energie"
+        assert entry_sg["sous_serie"] == "SmartGrid-Energy"
         assert entry_dm["sous_serie"] != entry_sg["sous_serie"]
 
     def test_solution_student_dirs_below_leaf_do_not_become_sous_serie(
@@ -536,9 +536,9 @@ class TestAnalyzeNotebookSerieClassification:
         )
         entry_sol = analyze_notebook(nb_sol, pedagogical=True, git_meta={})
         entry_std = analyze_notebook(nb_std, pedagogical=True, git_meta={})
-        # Both under SmartGrid-Energie (parts[1]), NOT solution/student
-        assert entry_sol["sous_serie"] == "SmartGrid-Energie"
-        assert entry_std["sous_serie"] == "SmartGrid-Energie"
+        # Both under SmartGrid-Energy (parts[1]), NOT solution/student
+        assert entry_sol["sous_serie"] == "SmartGrid-Energy"
+        assert entry_std["sous_serie"] == "SmartGrid-Energy"
         # The path is preserved verbatim
         assert "solution" in entry_sol["path"]
         assert "student" in entry_std["path"]
