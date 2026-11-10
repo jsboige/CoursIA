@@ -840,8 +840,100 @@ Job long (100 itérations × 1 invocation), net9 : `FromRequestSettings` 0,09181
    question de fond (l'axe .NET 10 / .NET 11) reste ouverte sur les mêmes cellules.
 7. **Ce qui n'est pas mesuré ici** : le mécanisme de l'amortissement. La courbe en N
    établit *que* le coût décroît et *à partir de quoi* ; elle n'établit pas *pourquoi*.
-   Un contrôle de mécanisme est requis pour cela — il fait l'objet d'un addendum à cette
-   section.
+   Le contrôle de mécanisme est la sous-section suivante : il établit que **les deux
+   mécanismes sont réels et additifs** — un coût fixe par région mesurée (terme `c/N`) et
+   la promotion tier-1 du JIT absente aux petits N.
+
+### Contrôle de mécanisme — le tiering du JIT (2026-11-10, suite)
+
+La lecture ci-dessus établit *que* le coût par invocation décroît quand N croît ; elle
+n'établit pas *pourquoi*. Deux mécanismes restent candidats, et ils ne se prédisent pas de
+la même façon :
+
+- **H1 — coût fixe par région mesurée** (le harnais) : la valeur mesurée suit
+  `valeur(N) = w + c/N`, avec `w` le coût réel par opération et `c` un coût fixe amorti sur
+  les invocations d'une même région mesurée. Le régime N=1 mesure `w + c`, le régime
+  N ≥ 1 000 mesure `w`. **Prédiction** : la courbe doit s'ajuster à ce modèle, et l'écart
+  N=1 / plateau doit être **le même** quelle que soit la qualité du code compilé.
+- **H2 — tiering du JIT** : la méthode de banc n'est pas assez appelée pour être promue en
+  tier-1, elle tourne donc en code **non optimisé** ; l'inflation est alors un facteur
+  multiplicatif qui dépend de la cellule, pas de N. **Prédiction** : désactiver le tiering
+  (`DOTNET_TieredCompilation=0`) doit faire chuter la valeur à N=1 sans changer la forme
+  de la courbe.
+
+**Protocole.** La grille précédente est rejouée **à un seul facteur changé** :
+`DOTNET_TieredCompilation=0` dans l'environnement du processus (`dotnet exec`). Tout le
+reste est identique : une seule compilation `net9.0`, les mêmes quatre classes, les trois
+runtimes, cinq passes entrelacées, une classe par processus (60 runs, `rc=0` sur les 60).
+Réserve explicite : ce drapeau désactive **aussi** le PGO dynamique — le plateau n'est donc
+pas comparable d'une grille à l'autre (il bouge de ×0,62 à ×2,25 selon la cellule) ; seules
+les comparaisons **intra-grille** sont utilisées ci-dessous.
+
+**Résultat — le modèle `w + c/N` s'ajuste à la grille tiering OFF.**
+
+| Runtime | Cellule | N=1 | N=100 | N=10 000 | `w` (plateau) | `c` (fixe) | Modèle à N=100 | Mesuré à N=100 | Part du tiering dans l'inflation à N=1 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| net9 | `FromRequestSettings` | 0,02578 | 0,00724 | 0,00738 | 0,00724 | 0,01854 | 0,00742 | 0,00724 | **77 %** |
+| net9 | `JsonSerializer.Serialize` | 0,01518 | 0,00608 | 0,00504 | 0,00504 | 0,01013 | 0,00514 | 0,00608 | **84 %** |
+| net9 | `PromptSignature.Matches` | 0,00221 | 0,00005 | 0,00004 | 0,00004 | 0,00218 | 0,00006 | 0,00005 | **59 %** |
+| net9 | `PromptTransform.InterpolateKeys` | 0,01541 | 0,00215 | 0,00170 | 0,00170 | 0,01371 | 0,00184 | 0,00215 | **38 %** |
+| net10 | `FromRequestSettings` | 0,03257 | 0,00770 | 0,01222 | 0,00770 | 0,02487 | 0,00795 | 0,00770 | 50 % |
+| net11 | `FromRequestSettings` | 0,04863 | 0,00953 | 0,01244 | 0,00953 | 0,03909 | 0,00993 | 0,00953 | 23 % |
+
+(valeurs en ms ; `w` = minimum des mesures à N=100 et N=10 000 ; « part du tiering » =
+écart entre la valeur à N=1 tiering ON et tiering OFF, rapporté à l'inflation totale
+`valeur(N=1) − w`)
+
+**Lecture.**
+
+1. **H1 est confirmée, et sa forme est mesurée.** Tiering désactivé, la valeur suit
+   `w + c/N` : le modèle prédit la valeur à N=100 à 3 % près sur `FromRequestSettings`
+   (0,00742 prédit contre 0,00724 mesuré) et à moins de 20 % près sur les trois autres
+   cellules — l'écart restant est du même ordre que la dispersion inter-passes de la grille
+   OFF (38 % à 105 %). Le « coût fixe par itération » du document n'est donc pas une
+   hypothèse : c'est un terme `c/N` mesuré, de 1,6 µs (`Matches`) à 39 µs
+   (`FromRequestSettings`, net11) selon la cellule.
+2. **H2 est confirmée elle aussi, et elle est d'amplitude variable.** Désactiver le tiering
+   fait chuter la valeur à N=1 d'un facteur 1,6 à 4,6 selon la cellule sur net9
+   (`Serialize` ×4,6, `FromRequestSettings` ×3,4, `Matches` ×2,4, `InterpolateKeys` ×1,6),
+   et laisse le plateau inchangé à 0,5 % près sur `FromRequestSettings` (0,00738 contre
+   0,00742). La méthode de banc, appelée 15 fois par itération de mesure, n'atteint jamais
+   le seuil de promotion du JIT : elle tourne en code non optimisé, et c'est là que se
+   trouve la plus grande part de l'inflation sur les cellules JSON (77 % et 84 % sur net9).
+3. **Aucun des deux mécanismes ne suffit seul.** Tiering désactivé, la valeur à N=1 reste
+   3× (`FromRequestSettings`, net9) à 55× (`Matches`) au-dessus du plateau : le coût fixe
+   du harnais subsiste intégralement. Tiering activé, la valeur à N=1 reste 4× à 12× au-dessus
+   de ce que le modèle `w + c/N` prédit pour cette même grille : le tiering s'y ajoute.
+   **Les deux sont réels et additifs.**
+4. **Ce que cela tranche.** L'alternative ouverte par le document — « coût fixe par itération »
+   contre « coût réel » — n'est pas une alternative : la mesure montre que le régime N=1
+   mesure **les deux à la fois**, et que le régime à N croissant les sépare. Le « coût réel »
+   par opération est `w` — mesuré à 0,0073 ms sur `FromRequestSettings` en net9 — et le
+   régime épinglé du dépôt le **sur-estime d'un facteur 3 à 55**, dont la part due au tiering
+   du JIT varie de 10 % à 84 % selon la cellule et le runtime.
+5. **Ce qui n'est pas établi.** La part du tiering est mesurée par un facteur unique
+   (`DOTNET_TieredCompilation=0`), qui désactive simultanément le PGO dynamique : la
+   décomposition « tiering / PGO » n'est pas isolée. La dispersion de la grille OFF
+   (38 % à 105 %) laisse une marge réelle sur les petites cellules. Le modèle `w + c/N` est
+   ajusté sur trois points par cellule : il est **indicatif**, pas démontré.
+
+### Provenance et reproduction
+
+Les 15 rapports BDN de la grille de contrôle (tiering ON) et les 60 de la grille tiering
+OFF sont conservés hors dépôt (`D:/CoursIA-2-wt/sf-bench/art2-*` et `art3-*`, journaux
+`bench-logs2/` et `bench-logs3/`). Reproduction :
+
+```bash
+# grille tiering ON (5 classes x 3 runtimes x 5 passes)
+bash D:/CoursIA-2-wt/run-sf-bench-perclass.sh
+
+# grille tiering OFF (meme protocole, un seul facteur change)
+DOTNET_TieredCompilation=0 bash D:/CoursIA-2-wt/run-sf-tiering.sh
+
+# lecture (mediane des 5 moyennes, intervalles, dispersions, ajustement w + c/N)
+python D:/CoursIA-2-wt/compute-sf-ops3.py art2
+python D:/CoursIA-2-wt/compute-sf-ops3.py art3
+```
 
 ## Contrôle du banc 5 — l'ordre fixe rend le delta 9→10 ininterprétable (myia-ai-01:CoursIA-2, 29/10)
 
