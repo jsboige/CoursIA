@@ -60,9 +60,15 @@
 > **Banc 3 re-mesuré le 11/10** (session **4 runtimes** × 5 passes entrelacées sur
 > `myia-ai-01`, net8.0 y entrant pour la première fois) : les valeurs de ce tableau
 > **restent celles de la session du 02/10** — la session du 11/10 est re-contextualisée
-> dans la section « Session du 2026-11-10 sur `myia-ai-01` ». Elle **confirme** le
-> rattrapage 9→10 sur le pipeline symbolique (−26,8 %, intervalles disjoints) et
-> n'établit **aucun** écart 10→11 sur les six axes du banc.
+> dans la section « Session du 2026-11-10 sur `myia-ai-01` ». Elle n'établit **aucun**
+> écart 10→11 sur les six axes du banc.
+>
+> **Contrôle croisé du 11/10, le même jour** (une seule compilation, trois runtimes) : la
+> session du 11/10 comparait **quatre compilations**, une par TFM, là où le protocole de
+> référence tient la compilation constante. Rejoué en compilation constante, **aucune des
+> 18 paires n'est séparable** et le « rattrapage 9→10 » de −26,8 % **n'est pas établi**
+> (−14,0 %, intervalles qui se recouvrent). Les verdicts de la session du 11/10 sont
+> donc **retirés** : voir « Contrôle croisé du 2026-11-10 ».
 
 ## Banc 4 — semantic-fleet (unités : us)
 
@@ -218,7 +224,7 @@ python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/GenAI/
 | Rule parsing multilingue (Argumentum) | (String.Split via agrégats, hors ratios article) | −13,2 % / −15,7 % — **non séparables** (contrôle du 29/10) | +3,7 % / +25 % — **non établis** (contrôle du 29/10) | **le gain 11 sur le parsing n'est pas établi** : aucune paire de runtimes ne se sépare sur les deux axes de parsing, l'amplitude intra-runtime (jusqu'à ×2,5 pour un même runtime) domine l'écart inter-runtime ; le 9→10 de la variante 50 règles a été **contrôlé** (29/10, sur une autre machine — voir « Contrôle du banc 5 ») et **n'est pas établi** |
 | Collections/LINQ (MGS) | FindAll 0,30 · SequenceEqual ×7,7 | ~0 à +17 % (GC-sensible) | −6 à −26 % | **non couvert** (nos bancs n'exercent pas ces API précises) ; côté 11 : nul/inconclusif |
 | Charge native-dominée (Z3.Linq) | (rien de spécifique promis) | −0,3 à −6,7 % | −5 à −10 % | **rattrapage 10 réel (marshaling), gain 11 nul** |
-| Allocation-heavy pipeline (Automata) | (Stores covariants 0,56 etc.) | +4,1 % / INCONCLUSIF EvilRegex — **signal +27,5 % non reproduit le 20/10** (re-mesure : +2,3 % 9→11, dispersion inter-passes 47–69 %) — **le 11/10 n'établit aucun écart 10→11 sur les six axes du banc** (session 4 runtimes × 5 passes, 0 paire séparable) | −10,9 % — **établi le 11/10** (−26,8 % en session 4 runtimes, intervalles disjoints sur `Pipeline_ConvertDeterminizeMinimize`) | **rattrapage 10 réel ; 11 non prouvé sur cette charge** (allocs identiques au Ko près — cohérent : nos pipelines allouent par design, pas par défaut runtime) — **l'axe allocation est le seul concluant de la session du 11/10, et il est négatif** (amplitude ≤ 0,92 % sur les charges en Mo) |
+| Allocation-heavy pipeline (Automata) | (Stores covariants 0,56 etc.) | +4,1 % / INCONCLUSIF EvilRegex — **signal +27,5 % non reproduit le 20/10** (re-mesure : +2,3 % 9→11, dispersion inter-passes 47–69 %) — **le 11/10 n'établit aucun écart 10→11 sur les six axes du banc** (session 4 runtimes × 5 passes, 0 paire séparable) | −10,9 % — **établi le 02/10, NON CONFIRMÉ le 11/10** : la session 4 runtimes du 11/10 donnait −26,8 % (intervalles disjoints), mais le **contrôle croisé du 11/10 en compilation constante ne reproduit pas le verdict** (−14,0 %, intervalles qui se recouvrent) — l'écart établi était donc au moins partiellement un effet de compilation | **rattrapage 10 réel ; 11 non prouvé sur cette charge** (allocs identiques au Ko près — cohérent : nos pipelines allouent par design, pas par défaut runtime) — **l'axe allocation est le seul concluant de la session du 11/10, et il est négatif** (amplitude ≤ 0,92 % sur les charges en Mo) |
 | Kernel notebooks | — | — | — | **le canon 1.0.712001 exige déjà ≥ .NET 10** : le dépôt ne peut pas rester « runtime 9 » pour les carnets même sans migration |
 
 ## Synthèse pour la décision P2 (LTS vs GA, escalade user)
@@ -237,7 +243,7 @@ python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/GenAI/
 4. Conditions : RC1, machine partagée avec CI — les deltas < ±10 % sur ces bancs ne sont pas
    séparables du bruit ; à re-mesurer fenêtre calme avant toute décision définitive.
 
-## Re-mesure du banc 3 — fenêtres du 20/10 (myia-po-2023), du 29/10 et du 11/10 (myia-ai-01:CoursIA-2)
+## Re-mesure du banc 3 — fenêtres du 20/10 (myia-po-2023), du 29/10, du 11/10 et contrôle croisé du 11/10 (myia-ai-01:CoursIA-2)
 
 Objet : le drapeau **INCONCLUSIF** posé le 02/10 sur `Pipeline_EvilRegex` (banc 3) — « StdDev
 in-passe ≈ mean (1738 de médiane sur 2685 de moyenne en net11) : à re-mesurer fenêtre CI
@@ -411,6 +417,10 @@ consécutives), **3 séparables** :
    le même sens. C'est le seul écart franchement établi de la session, et il
    porte sur la charge la plus allouante du banc — l'axe que le digest Toub
    vise.
+   **Verdict retiré le même jour** : le contrôle croisé (« Contrôle croisé du
+   2026-11-10 ») rejoue le banc en compilation constante et ne retrouve pas cet
+   écart (−14,0 %, intervalles qui se recouvrent). Le point est conservé ici
+   comme le constat de la session, pas comme un verdict du document.
 2. **net9 bat net8 sur la minimisation Hopcroft (−20,8 %)** : donnée **nouvelle**
    — net8 n'avait jamais été comparé à net9 sur ce banc.
 3. **Aucune paire n'est séparable en 10→11, sur aucun des six axes.** Les
@@ -435,15 +445,16 @@ consécutives), **3 séparables** :
 6. **Cinq passes suffisent à rendre séparables des écarts réels, mais pas à en
    exclure d'autres** : un intervalle de cinq points est large ; une session
    plus longue resserrerait les intervalles et pourrait rendre séparables des
-   paires aujourd'hui dans le bruit. Le sens des conclusions (9→10 établi sur le
-   pipeline, 10→11 non séparable sur les six axes) est robuste à ce degré de
-   précision, mais **une amplification d'axe reste possible**.
+   paires aujourd'hui dans le bruit. Le sens des conclusions de la session
+   (10→11 non séparable sur les six axes) est robuste à ce degré de précision,
+   mais **une amplification d'axe reste possible** — et le contrôle croisé du
+   11/10 montre que le 9→10, lui, ne survit pas au protocole de référence.
 
 #### Ce que cette session règle, et ce qu'elle ne règle pas
 
 | Point | État après le 11/10 |
 |---|---|
-| `Pipeline_ConvertDeterminizeMinimize`, 9→10 | **établi** (−26,8 %, intervalles disjoints) — le « rattrapage 10 » du banc 3 est confirmé sur cet axe, dans le même sens et avec une amplitude supérieure à celle du 02/10 |
+| `Pipeline_ConvertDeterminizeMinimize`, 9→10 | **établi dans cette session** (−26,8 %, intervalles disjoints) — **verdict retiré le jour même par le contrôle croisé** : en compilation constante, l'écart n'est plus que de −14,0 % et les intervalles se recouvrent. Le « rattrapage 10 » du banc 3 **n'est pas établi** sous le protocole de référence |
 | `Pipeline_ConvertDeterminizeMinimize`, 10→11 | **non séparé** — aucun gain .NET 11 établi |
 | Les six axes du banc 3, 10→11 | **aucun séparable** — le gain .NET 11 n'est pas établi sur ce banc, et le « signal +27,5 % » du 02/10 sur `Pipeline_EvilRegex` ne réapparaît pas une seconde fois (ici +3,7 % en 10→11) |
 | Axe allocation | **concluant, et négatif** — aucun gain d'allocation attribuable au runtime, .NET 10 comme .NET 11 |
@@ -494,6 +505,94 @@ celui qui sert de critère de séparabilité.
 | `Pipeline_EvilRegex` | net9.0 | 1048.0 | 1316.0 | 1145.0 |
 | `Pipeline_EvilRegex` | net10.0 | 871.0 | 1144.0 | 959.0 |
 | `Pipeline_EvilRegex` | net11.0 | 888.0 | 1117.0 | 994.0 |
+
+### Contrôle croisé du 2026-11-10 — une seule compilation, trois runtimes
+
+**Objet.** La session du 11/10 comparait **quatre compilations**, une par TFM
+(`net8.0`, `net9.0`, `net10.0`, `net11.0`). Le protocole de référence de ce
+document (« build unique … jamais reconstruit entre les runtimes ») tient au
+contraire la **compilation constante** et ne fait varier que le runtime : une
+comparaison par TFM melange donc l'effet runtime à l'effet compilation. Ce
+contrôle rejoue le banc 3 dans le protocole de référence, pour séparer les deux
+effets et dire ce qui survit.
+
+#### Protocole
+
+| Paramètre | Valeur |
+|---|---|
+| Compilation | **une seule**, `net9.0`, Release — SHA-256 `150be1f2546eb8e5be4401d83b9860490ede13280230be256d35b535db8b34ee` ; le **même fichier** est exécuté sous les trois runtimes |
+| Runtimes | net9.0.22 · net10.0.14 · net11.0.0-rc.3.26522.148, sélectionnés par `dotnet exec --fx-version <version exacte>` |
+| Preuve du runtime | en-tête `// Runtime=.NET X.Y.Z (build, …)` de chaque journal BDN, relevé sur les 15 journaux : une seule version par runtime, sur les 5 passes |
+| Config BDN | 0.15.8, `InProcessEmitToolchain`, `ShortRun` 5 warmup / 15 itérations / 1 invocation / unroll 1 — identique à la session du 11/10 |
+| Passes | **5** passes, ordre **interlacé** (net9 → net10 → net11), **médiane des 5 moyennes** |
+| Critère | inchangé : deux runtimes sont séparables si leurs intervalles [min, max] des 5 moyennes ne se recouvrent pas |
+| Charge d'hôte | CPU 52 % à 91 % sur 15 échantillons, 1079 à 1099 processus resident (session du 11/10 : 66–93 %, 1081–1098) |
+
+#### Mesures (médiane des 5 moyennes ; intervalle [min, max] des 5 passes ; unités : us)
+
+| Benchmark | net9.0.22 | net10.0.14 | net11.0 (rc.3) | 9→10 | 10→11 | 9→11 |
+|---|---|---|---|---:|---:|---:|
+| `Determinize_NFA_L15` | 12 510 [11 080 ; 17 500] | 14 830 [14 060 ; 17 660] | 11 530 [10 610 ; 14 120] | +18,5 % | −22,3 % | −7,8 % |
+| `Determinize_plus_MinimizeHopcroft_L15` | 47 600 [35 810 ; 54 140] | 40 870 [33 960 ; 48 530] | 48 570 [36 760 ; 57 920] | −14,1 % | +18,8 % | +2,0 % |
+| `IsEquivalent_DFA_Twins_L15` | 14 440 [13 420 ; 16 390] | 17 010 [14 810 ; 17 970] | 12 930 [12 270 ; 19 630] | +17,8 % | −24,0 % | −10,5 % |
+| `Matching_DotNetDelegate` | 419 [281 ; 702] | 603 [438 ; 753] | 542 [349 ; 718] | +43,9 % | −10,2 % | +29,2 % |
+| `Pipeline_ConvertDeterminizeMinimize` | 1 467 [1 061 ; 1 787] | 1 261 [870 ; 1 795] | 1 229 [985 ; 1 403] | **−14,0 %** | −2,6 % | −16,2 % |
+| `Pipeline_EvilRegex` | 954 [945 ; 1 249] | 842 [735 ; 1 068] | 1 016 [711 ; 1 084] | −11,7 % | +20,7 % | +6,6 % |
+
+**Aucune des 18 paires testées n'est séparable** : tous les intervalles se
+recouvrent. Les allocations restent alignées entre runtimes : 2 712,74 KB
+(net9), 2 706,04 KB (net10), 2 705,13 KB (net11) sur
+`Pipeline_ConvertDeterminizeMinimize`, soit un écart de 0,25 % et 0,28 %.
+
+#### Lecture (six points, sans arrondi favorable)
+
+1. **Le verdict « établi » sur l'axe 9→10 est retiré.** En compilation
+   constante, l'écart tombe de −26,8 % à −14,0 % et les intervalles se
+   recouvrent ([1 061 ; 1 787] contre [870 ; 1 795]). Le « rattrapage .NET 10 »
+   du banc 3 **n'est pas établi** sous le protocole de référence : l'amplitude
+   publiée était donc, au moins pour partie, un effet de compilation.
+2. **Le gain .NET 11 reste non établi**, et cette fois par une seconde voie. La
+   session du 11/10 l'établissait par l'absence de paire séparable en 10→11 ;
+   le contrôle retrouve ce verdict à l'identique, et referme les deux axes
+   que la session laissait ouverts (9→10 et 8→9).
+3. **L'axe allocation reste le seul axe concluant, et il reste négatif.** Aucun
+   gain d'allocation attribuable au runtime n'est établi, .NET 10 comme .NET 11,
+   et l'écart entre runtimes (≤ 0,28 % sur le pipeline) est plus faible que
+   celui mesuré dans la session du 11/10 (≤ 0,92 %).
+4. **Ce contrôle ne teste pas net8.** Une comparaison inter-runtime suppose la
+   même IL ; net8 n'y entre pas. Le verdict « net9 bat net8 de 20,8 % » de la
+   session du 11/10 **reste donc non vérifié** — ni infirmé, ni confirmé.
+5. **Les dispersions du contrôle sont au moins aussi larges** que celles de la
+   session du 11/10 (jusqu'à 85,8 % contre 47–69 %) : la charge d'hôte, comparable
+   dans les deux sessions, n'a pas été plus favorable. Un verdict qui ne survit
+   qu'à un tirage favorable n'est pas un verdict établi — c'est le sens du
+   critère retenu.
+6. **Ce contrôle établit un point négatif, pas une cause.** Il dit qu'aucun
+   écart inter-runtime n'est établi en compilation constante ; il ne dit pas
+   pourquoi la dispersion est si large. La fenêtre calme reste non obtenue sur
+   ce siège, et le « Protocole du banc, seconde cause » plus bas reste la
+   question ouverte.
+
+#### Ce que ce contrôle change dans le document
+
+Les lignes de renvoi du tableau de synthèse du banc 3, la ligne de verdict par
+axe et le tableau « ce que cette session règle » sont **corrigées** : le 9→10
+n'est plus « établi », il est « non établi en compilation constante ». La
+session du 11/10 reste publiée comme session — ses valeurs sont réelles et
+reproductibles, avec le protocole qu'elle a suivi (compilations par TFM) — et le
+contrôle en montre la limite.
+
+#### Provenance et reproduction
+
+Les 15 rapports BDN du contrôle sont conservés hors dépôt. Reproduction (une
+compilation, trois runtimes, 5 passes entrelacées) :
+
+```bash
+dotnet build src/Automata.Benchmarks -c Release -f net9.0
+dotnet exec --fx-version 9.0.22                 bin/Release/net9.0/Automata.Benchmarks.dll --filter '*'
+dotnet exec --fx-version 10.0.14                bin/Release/net9.0/Automata.Benchmarks.dll --filter '*'
+dotnet exec --fx-version 11.0.0-rc.3.26522.148  bin/Release/net9.0/Automata.Benchmarks.dll --filter '*'
+```
 
 ### Le protocole du banc, seconde cause — et elle est plus fondamentale que la fenêtre
 
