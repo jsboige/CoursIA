@@ -2,7 +2,7 @@
 
 Plan : « CI à deux étages » (gardes et tests cibles à chaque push, suite lourde en lot quotidien sur l'arbre fusionné). Ce document est le livrable de la **phase P0** : quels workflows se déclenchent à chaque push de PR, combien ils coûtent, et lesquels sont lourds au sens du plan.
 
-Mesure du **2026-11-09T19:06:30Z**. Tous les chiffres proviennent de `scripts/ci/measure_ci_two_tier.py` ; la commande de reproduction est en section 6.
+Mesure du **2026-11-09T19:06:30Z** (census et durées de run) et du **2026-11-10T02:18:27Z** (séparation **file / exécution**, mesurée par job — section 3.4). Tous les chiffres proviennent de `scripts/ci/measure_ci_two_tier.py` ; la commande de reproduction est en section 6.
 
 Ce document **ne décide rien**. La bascule des gates (phase P4) appartient au coordinateur, avec sign-off du mainteneur ; ce document lui fournit l'inventaire sur lequel la décision s'appuie.
 
@@ -145,7 +145,7 @@ Sur les 71 workflows déclenchés sur `pull_request`, **51** ont au moins un run
 
 ### 3.1 Les workflows lourds
 
-| Workflow | Jobs | Runs PR | Médiane (min) | p90 (min) | Max (min) | Signaux |
+| Workflow | Jobs | Runs PR | Médiane run (min) | p90 run (min) | Max run (min) | Signaux |
 |---|---:|---:|---:|---:|---:|---|
 | `notebook-outputs-required.yml` | 2 | 26 | 1.9 | 112.2 | 145.2 | durée mesurée, papermill |
 | `validation-matrix.yml` | 1 | 26 | 1.9 | 105.3 | 131.4 | durée mesurée, papermill, réseau |
@@ -196,7 +196,7 @@ Workflows à signaux déclarés, sans run `pull_request` terminés sur la fenêt
 
 ### 3.2 Les workflows légers
 
-| Workflow | Jobs | Runs PR | Médiane (min) | p90 (min) |
+| Workflow | Jobs | Runs PR | Médiane run (min) | p90 run (min) |
 |---|---:|---:|---:|---:|
 | `local-path-waiver-guard.yml` | 1 | 29 | 0.4 | 3.5 |
 | `twin-attestation-name-guard.yml` | 1 | 16 | 0.6 | 3.7 |
@@ -227,13 +227,74 @@ Workflows à signaux déclarés, sans run `pull_request` terminés sur la fenêt
 - **La fenetre est courte et elle est annoncée.** L'API Actions plafonne la pagination a 1000 résultats filtrés (au-dela, la page revient vide) : la fenetre réellement couverte est donc la plus récente, **2026-11-09T15:31:14Z -> 2026-11-09T19:02:13Z** (1000 runs `pull_request`). Les effectifs sont des effectifs de cette fenetre, pas des effectifs de la semaine ; l'intervalle est écrit dans le JSON (`window_covered`), il n'est jamais supposé.
 - **Le balayage est global, pas par workflow.** Les runs sont lus une fois pour tout le dépôt, puis regroupés par workflow : un workflow peu sollicite n'a que quelques runs dans la fenetre, et sa médiane porte sur ces quelques runs.
 - **La durée d'un workflow est celle de son job le plus lent**, pas la somme des jobs. Un workflow a cinq jobs parallèles ne coûte pas cinq fois plus.
-- **Le checkout domine** le temps de ces jobs (89 a 99 % sur les gardes légères, mesure déjà portee par `scripts/ci/fast_lane_registry.py`). Une médiane elevee sur un garde leger est un probleme de **checkout**, pas de logique de garde - c'est précisément ce que la phase P1 (checkout) doit escamoter.
+- **La durée d'un run est la somme de deux choses distinctes.** `updated_at - run_started_at` mesure le temps écoulé entre le démarrage du run et sa fin : cela inclut l'**attente dans la file des runners** autant que l'exécution. Une durée de run n'est donc pas une mesure de coût de garde, et elle ne dit rien du checkout. C'est pourquoi les tableaux 3.1 et 3.2 nomment leurs colonnes « run », et pourquoi la section 3.4 sépare les deux postes.
+
+### 3.4 La file et l'exécution, mesurées par job
+
+La durée d'un run confond deux postes qu'il faut distinguer : le temps **passé en file** avant que le runner ne prenne le job, et le temps **d'exécution** du job lui-même.
+
+- attente = `started_at - created_at` (le job attend un runner) ;
+- exécution = `completed_at - started_at` (le job tourne) ;
+- la part du **checkout** dans l'exécution est celle de l'organe natif `scripts/ci/measure_checkout_p90.py` (#25519), réutilisé tel quel : la définition de « durée de checkout » reste la sienne.
+
+**Échantillonnage** (écrit dans le JSON, `jobs_measure.sampling`) : **60 runs terminés** de la fenêtre **2026-11-09T23:55:29Z -> 2026-11-10T02:15:20Z**, au plus **3 runs par workflow** (les plus récents terminés), plafond global 60 — **30 workflows**, **79 jobs**, aucun job sans fin. Seuls des runs `completed` sont retenus : un run en cours n'a pas de `completed_at` et biaiserait la mesure.
+
+| Workflow | Jobs | Attente méd. | Attente p90 | Exécution méd. | Exécution p90 | Checkout p90 | part checkout / exécution | part attente / total |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `local-path-waiver-guard.yml` | 3 | 2.73 | 3.39 | 0.12 | 0.13 | 0.03 | 0.23 | 0.96 |
+| `always-on-metadata-guards.yml` | 3 | 2.43 | 3.85 | 0.23 | 0.47 | 0.1 | 0.21 | 0.89 |
+| `notebook-plan-loss-gate.yml` | 3 | 3.3 | 3.47 | 0.97 | 1.13 | - | - | 0.75 |
+| `notebook-link-render-check.yml` | 2 | 1.88 | 3.2 | 1.03 | 1.05 | 0.95 | 0.91 | 0.75 |
+| `perimeter-review-guard.yml` | 12 | 0 | 1.25 | 0 | 0.45 | 0.08 | 0.18 | 0.73 |
+| `secret-scan.yml` | 4 | 1.23 | 3.74 | 1.12 | 1.36 | 0.9 | 0.66 | 0.73 |
+| `paragraph-length-advisory.yml` | 3 | 2.05 | 2.97 | 1.18 | 1.18 | - | - | 0.72 |
+| `notebook-papermill-ratchet.yml` | 2 | 2.52 | 2.8 | 1.12 | 1.16 | 0.95 | 0.82 | 0.71 |
+| `translation-drift.yml` | 2 | 1.66 | 2.93 | 1.26 | 1.28 | - | - | 0.7 |
+| `quarto-render-list-freshness.yml` | 2 | 1.53 | 2.71 | 1.17 | 1.21 | - | - | 0.69 |
+| `notebook-exec-sequence-ratchet.yml` | 3 | 0.33 | 2.6 | 1.08 | 1.19 | 1.02 | 0.86 | 0.69 |
+| `notebook-validation.yml` | 2 | 1.46 | 2.24 | 1.4 | 1.47 | 1.06 | 0.72 | 0.6 |
+| `pedagogy-density-advisory.yml` | 2 | 0.9 | 1.62 | 1.07 | 1.07 | - | - | 0.6 |
+| `notebook-cell-source-parses.yml` | 2 | 1.48 | 2.07 | 1.27 | 1.44 | 1.32 | 0.92 | 0.59 |
+| `always-on-commenters.yml` | 3 | 1.17 | 1.73 | 1.33 | 1.39 | 1.1 | 0.79 | 0.55 |
+| `always-on-guards-body.yml` | 3 | 0.42 | 1.78 | 1.58 | 1.7 | 1.06 | 0.62 | 0.51 |
+| `always-on-guards.yml` | 2 | 2.07 | 2.48 | 2.39 | 2.48 | 0.92 | 0.37 | 0.5 |
+| `solution-leak-guard.yml` | 1 | 1.07 | 1.07 | 1.08 | 1.08 | 0.9 | 0.83 | 0.5 |
+| `notebook-math-render.yml` | 2 | 0.99 | 1.19 | 1.26 | 1.37 | 1.11 | 0.81 | 0.47 |
+| `cycle-time-guard.yml` | 2 | 0.48 | 0.82 | 1.02 | 1.07 | 0.99 | 0.93 | 0.43 |
+| `quarto-pages-deploy.yml` | 5 | 0 | 1.46 | 0 | 2.09 | - | - | 0.41 |
+| `lean-i18n-drift.yml` | 1 | 0.48 | 0.48 | 0.98 | 0.98 | 0.88 | 0.9 | 0.33 |
+| `docs-reference-guard.yml` | 2 | 0.32 | 0.53 | 1.08 | 1.15 | 1.08 | 0.94 | 0.32 |
+| `lean-derived-pages-gate.yml` | 1 | 0.5 | 0.5 | 1.53 | 1.53 | - | - | 0.25 |
+| `catalog-drift.yml` | 2 | 0.73 | 1.19 | 2.77 | 3.73 | - | - | 0.24 |
+| `arxiv-attributions-guard.yml` | 1 | 0.22 | 0.22 | 1.02 | 1.02 | - | - | 0.18 |
+| `lean-visibility-advisory.yml` | 1 | 0.05 | 0.05 | 0.65 | 0.65 | - | - | 0.07 |
+| `validation-matrix.yml` | 2 | 0.06 | 0.07 | 1.5 | 2.38 | 2.09 | 0.88 | 0.03 |
+| `notebook-outputs-required.yml` | 4 | 0.05 | 0.06 | 0.35 | 2.74 | 2.56 | 0.93 | 0.02 |
+| `source-output-ratchet.yml` | 2 | 0.05 | 0.06 | 2.02 | 3.4 | - | - | 0.02 |
+
+**Ce que dit cette mesure** (médiane sur les 30 workflows) :
+
+| Poste | p90 médian | part médiane |
+|---|---:|---:|
+| Attente (file) | **1.68 min** (max 3.85) | **0.53** du total du job |
+| Exécution | **1.20 min** (max 3.73) | 0.47 du total du job |
+| Checkout, **à l'intérieur** de l'exécution | - | **0.82** de l'exécution p90 |
+
+Deux lectures, et elles ne disent pas la même chose :
+
+- **Le checkout domine l'exécution** : à l'intérieur du temps où le job tourne, le checkout est **82 %** du p90 (médiane sur les workflows où l'étape est reconnue). La phase P1 attaque donc un poste **réel**.
+- **Mais la file domine le total** : le temps passé en attente d'un runner représente **53 %** du p90 total du job (médiane), contre 47 % pour l'exécution. Ramener le checkout à zéro ne ferait tomber que la moitié de l'étage 1 — **l'autre moitié est de la contention de runners**.
+
+C'est le renversement que la mesure impose : le p90 « lourd » d'un garde n'est pas un garde lent, c'est un job qui a attendu. L'attente n'est d'ailleurs pas proportionnelle au nombre de jobs du workflow : `perimeter-review-guard.yml` déclenche **12** jobs pour un p90 d'attente de 1,25 min, tandis que `local-path-waiver-guard.yml` déclenche **1** job et attend **3,39 min**. Ce que la mesure établit, c'est que l'attente existe, qu'elle n'est pas imputable au travail du garde, et qu'elle est du même ordre de grandeur que l'exécution.
+
+**Ce que cette mesure ne voit pas.** L'attente du **run** lui-même — le temps entre la création du run et le démarrage de ses jobs — n'est pas dans la file du job : elle précède la création des jobs. Elle reste lisible dans la durée de run des tableaux 3.1 et 3.2, qui est donc conservée telle quelle, mais elle n'est pas décomposée ici. La file et l'exécution mesurées ici sont les deux postes **intra-job**.
 
 ## 4. Lecture pour les phases suivantes
 
-Ce que l'inventaire établit, et ce qu'il n'établit pas :
+Ce que l'inventaire établit, et ce qu'il n'établit pas. **L'ordre des phases se déduit de la mesure 3.4, il n'est plus supposé** :
 
-- **P1 (checkout)** est confirmée comme le premier levier : le p90 des jobs leger est domine par le checkout, pas par le travail du garde. La mesure « avant / après » du p90 de checkout se fait sur les workflows du tableau du plan.
+- **Le premier levier est le nombre de jobs déclenchés par push** (P2 et P3), pas le checkout. La file d'attente des runners représente **53 %** du p90 total d'un job (médiane sur 30 workflows), contre 47 % pour l'exécution : réduire le nombre de jobs déclenchés attaque le poste dominant. C'est ce que P2 (déclasser la suite de scripts en étage 2) et P3 (mutualiser les gardes dans le lot quotidien) font.
+- **P1 (checkout) reste un levier réel, mais de second rang.** À l'intérieur de l'exécution, le checkout en est **82 %** du p90 : l'escamoter ne fait tomber que la moitié de l'étage 1. La mesure « avant / après » du p90 de checkout se fait sur les workflows du tableau du plan, **en regard de la part d'attente** — sans quoi une baisse du checkout se lit à tort comme une baisse du coût total.
 - **P2 (tests cibles)** porte sur la suite de scripts : c'est un workflow unique et lourd ; le déclasser en étage 2 est le gain le plus direct du plan.
 - **P3 (lot quotidien)** doit émettre, sur chaque tête du lot, un check-run **du même nom** que celui du push, sinon le gate ne voit rien. Le point est pose en section 1.
 - **P4 (bascule)** n'est pas décidee par ce document.
@@ -247,8 +308,12 @@ Ce que l'inventaire établit, et ce qu'il n'établit pas :
 ## 6. Reproduction
 
 ```bash
-python scripts/ci/measure_ci_two_tier.py --hours 24 --out .tmp/ci_two_tier_inventory.json
+python scripts/ci/measure_ci_two_tier.py --hours 24 \
+    --jobs-par-workflow 3 --jobs-plafond 60 \
+    --out .tmp/ci_two_tier_inventory.json
 ```
 
 Le script balaye les runs `pull_request` du dépôt par pages de 100 (balayage global : les runs sont lus une fois, puis regroupés par workflow), lit le census des workflows dans les fichiers locaux, et écrit les durées **et** la liste des jobs déclenchés sur `pull_request`. Il ne modifie rien dans le dépôt et n'écrit aucun secret.
+
+La phase `jobs_measure` descend ensuite au niveau du job (`/actions/runs/{id}/jobs`) sur un échantillon **borné et écrit** : au plus `--jobs-par-workflow` runs **terminés** par workflow (les plus récents de la fenêtre), plafond global `--jobs-plafond`. Elle sépare l'**attente** (`started_at - created_at`) de l'**exécution** (`completed_at - started_at`) et reprend la part du checkout de l'organe natif `scripts/ci/measure_checkout_p90.py`. `--sans-jobs` se limite au census.
 

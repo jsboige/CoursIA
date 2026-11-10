@@ -8,7 +8,12 @@ Produit, en un seul passage :
 2. la **mesure de cout** des runs `pull_request` : duree (`updated_at -
    run_started_at`), mediane, p90, max et repartition des conclusions, par
    workflow ;
-3. la liste des **constituants du PR gate** : les jobs declenches sur
+3. la **mesure par job** de la **file** et de l'**execution**, separees :
+   attente = `started_at - created_at`, execution = `completed_at -
+   started_at`, par workflow, sur un echantillonnage **borne et ecrit** -- la
+   duree du run melange les deux, et c'est ce melange qui faisait porter au
+   checkout un poste qui lui est etranger ;
+4. la liste des **constituants du PR gate** : les jobs declenches sur
    `pull_request`, classes bloquant ou advisory avec la fonction du gate
    lui-meme (`pr_gate.is_advisory`) -- jamais avec une liste recopiee a la main.
 
@@ -48,7 +53,19 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 WF_DIR = REPO_ROOT / ".github" / "workflows"
 
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "ci"))
 import pr_gate as gate  # noqa: E402
+
+# L'organe natif de la mesure de l'etape de checkout (#25519) est
+# `scripts/ci/measure_checkout_p90.py` : il descend deja au niveau du job et
+# de l'etape. Cette mesure de la **file** ne reimplemente pas son calcul de
+# checkout -- elle **reutilise** ses fonctions pures, pour qu'un seul organe
+# possede la definition de « duree de checkout ».
+from measure_checkout_p90 import (  # noqa: E402
+    CHECKOUT_NAMES,
+    HEAL_NAMES,
+    step_minutes,
+)
 
 # Signaux qui rendent un workflow « lourd » sans passer par la mesure : les
 # phases P1/P2/P3 du plan s'appuient dessus.
@@ -78,14 +95,23 @@ def token() -> str:
     return out.stdout.strip()
 
 
-TOK = token()
+# Le jeton est lu **au premier appel**, pas a l'import : le module reste
+# importable (et testable) sans `gh` dans le PATH.
+_TOK: str | None = None
+
+
+def jeton() -> str:
+    global _TOK
+    if _TOK is None:
+        _TOK = token()
+    return _TOK
 
 
 def api(path: str, tries: int = 4):
     req = urllib.request.Request(
         f"https://api.github.com{path}",
         headers={
-            "Authorization": f"Bearer {TOK}",
+            "Authorization": f"Bearer {jeton()}",
             "Accept": "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",
             # GitHub rejette les requetes sans User-Agent (403 "forbidden by
@@ -224,6 +250,153 @@ def sweep_runs(created_since: str, max_pages: int) -> tuple[list[dict], dict]:
     return runs, covered
 
 
+def _bucket_jobs() -> dict:
+    return {
+        "jobs": 0,
+        "jobs_sans_checkout": 0,
+        "jobs_sans_fin": 0,
+        "file": [],
+        "exec": [],
+        "checkout": [],
+        "heal": [],
+    }
+
+
+def _med(values: list[float]) -> float | None:
+    return round(statistics.median(values), 2) if values else None
+
+
+def _p90(values: list[float]) -> float | None:
+    return round(pct(values, 0.9), 2) if values else None
+
+
+def selectionner_runs(runs: list[dict], par_workflow: int, plafond: int) -> list[dict]:
+    """Echantillonnage **borne et deterministe** des runs inspectes au niveau du job.
+
+    Seuls les runs **termines** (`status == "completed"`) sont eligible : un
+    run encore en cours n'a pas de `completed_at`, et le retenir biaiserait la
+    mesure (son attente serait courte parce qu'il vient de demarrer, et son
+    execution serait absente).
+
+    Pour chaque workflow, les `par_workflow` runs termines les plus recents de
+    la fenetre ; puis un plafond global, les plus recents d'abord. L'echantillon
+    retenu est ecrit dans le JSON (`jobs_sampling`) : la mesure ne repose pas
+    sur un echantillonnage implicite.
+    """
+    par_path: dict[str, list[dict]] = {}
+    for run in sorted(runs, key=lambda r: r.get("created_at") or "", reverse=True):
+        if run.get("status") != "completed":
+            continue
+        par_path.setdefault(run.get("path") or "?", []).append(run)
+    retenus: list[dict] = []
+    for liste in par_path.values():
+        retenus.extend(liste[:par_workflow])
+    retenus.sort(key=lambda r: r.get("created_at") or "", reverse=True)
+    return retenus[:plafond]
+
+
+def mesurer_jobs(runs: list[dict], par_workflow: int, plafond: int) -> tuple[dict, dict]:
+    """Mesure, par job : l'**attente** (file) et l'**execution**, separement.
+
+    - attente  = `started_at - created_at` : le temps passe en file, avant que
+      le runner ne prenne le job ;
+    - execution = `completed_at - started_at` : le temps ou le job tourne.
+
+    Ces deux postes etaient melanges dans la duree du run (`updated_at -
+    run_started_at`), qui les confondait : un garde de douze secondes qui
+    attend 87 minutes un runner y lisait « 87 minutes de garde ».
+
+    La part du checkout dans l'execution est reprise de l'organe natif
+    (`measure_checkout_p90.step_minutes`) : la definition de « duree de
+    checkout » reste la sienne.
+    """
+    retenus = selectionner_runs(runs, par_workflow, plafond)
+    buckets: dict[str, dict] = {}
+    runs_sans_jobs = 0
+    for run in retenus:
+        path = run.get("path") or "?"
+        try:
+            jobs = api(
+                f"/repos/{REPO}/actions/runs/{run['id']}/jobs?per_page=100"
+            ).get("jobs", [])
+        except Exception:  # noqa: BLE001 -- une page de jobs illisible ne doit
+            # pas faire tomber la mesure entiere ; le run compte pour rien.
+            runs_sans_jobs += 1
+            continue
+        bucket = buckets.setdefault(path, _bucket_jobs())
+        for job in jobs:
+            bucket["jobs"] += 1
+            created = job.get("created_at")
+            started = job.get("started_at")
+            completed = job.get("completed_at")
+            if created and started:
+                wait = (parse_ts(started) - parse_ts(created)).total_seconds() / 60
+                if wait >= 0:
+                    bucket["file"].append(wait)
+            if started and completed:
+                exe = (parse_ts(completed) - parse_ts(started)).total_seconds() / 60
+                if exe >= 0:
+                    bucket["exec"].append(exe)
+            elif not completed:
+                # Job encore en cours : il n'a pas d'execution mesurable.
+                # Il est compte a part, pour que la lecture ne prenne pas
+                # silence pour une mesure complete.
+                bucket["jobs_sans_fin"] += 1
+            steps = job.get("steps") or []
+            found = step_minutes(steps, CHECKOUT_NAMES)
+            heal = step_minutes(steps, HEAL_NAMES)
+            if found is None:
+                bucket["jobs_sans_checkout"] += 1
+            else:
+                bucket["checkout"].append(found)
+            if heal is not None:
+                bucket["heal"].append(heal)
+
+    rows: list[dict] = []
+    for path, bucket in buckets.items():
+        file_p90 = _p90(bucket["file"])
+        exec_p90 = _p90(bucket["exec"])
+        checkout_p90 = _p90(bucket["checkout"])
+        total_p90 = (
+            round(file_p90 + exec_p90, 2)
+            if file_p90 is not None and exec_p90 is not None
+            else None
+        )
+        rows.append({
+            "path": path,
+            "jobs": bucket["jobs"],
+            "jobs_sans_etape_checkout": bucket["jobs_sans_checkout"],
+            "jobs_sans_fin": bucket["jobs_sans_fin"],
+            "attente_med_min": _med(bucket["file"]),
+            "attente_p90_min": file_p90,
+            "exec_med_min": _med(bucket["exec"]),
+            "exec_p90_min": exec_p90,
+            "checkout_med_min": _med(bucket["checkout"]),
+            "checkout_p90_min": checkout_p90,
+            "heal_med_min": _med(bucket["heal"]),
+            # La part du checkout dans l'execution : le poste que P1 attaque.
+            "part_checkout_dans_exec_p90": (
+                round(checkout_p90 / exec_p90, 3)
+                if checkout_p90 and exec_p90 else None
+            ),
+            # La part de la file dans le total du job : le poste que la mesure
+            # d'avant melangeait avec l'execution.
+            "part_attente_dans_total_p90": (
+                round(file_p90 / total_p90, 3)
+                if file_p90 is not None and total_p90 else None
+            ),
+        })
+    rows.sort(key=lambda r: -(r["attente_p90_min"] or 0))
+    couverture = {
+        "runs_inspectes": len(retenus),
+        "runs_sans_jobs_lisibles": runs_sans_jobs,
+        "runs_par_workflow_max": par_workflow,
+        "plafond_global": plafond,
+        "workflows_avec_jobs": len(rows),
+    }
+    return {"rows": rows}, couverture
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="")
@@ -232,6 +405,13 @@ def main() -> int:
                          "couverte est plus courte : l'API plafonne a 1000 runs "
                          "filtres)")
     ap.add_argument("--max-pages", type=int, default=MAX_RUNS // PAGE)
+    ap.add_argument("--jobs-par-workflow", type=int, default=3,
+                    help="runs inspectes au niveau du job, par workflow "
+                         "(les plus recents de la fenetre)")
+    ap.add_argument("--jobs-plafond", type=int, default=60,
+                    help="plafond global de runs dont les jobs sont lus")
+    ap.add_argument("--sans-jobs", action="store_true",
+                    help="ne pas descendre au niveau du job (census seul)")
     args = ap.parse_args()
 
     since = datetime.now(timezone.utc) - timedelta(hours=args.hours)
@@ -299,8 +479,30 @@ def main() -> int:
         entry["max"] = round(max(durs), 1) if durs else None
         entry["heavy_measured"] = bool(
             durs and (entry["median"] > 5 or entry["p90"] > 15))
+        # Renommes sans changer la valeur : la duree du RUN melange l'attente
+        # de runner et l'execution de tous ses jobs -- elle n'est pas une
+        # mesure de cout de garde. La separation file / execution est portee
+        # par la phase `jobs_measure`.
+        entry["duree_run_med_min"] = entry.pop("median")
+        entry["duree_run_p90_min"] = entry.pop("p90")
+        entry["duree_run_max_min"] = entry.pop("max")
 
-    print("[3/3] ecriture", file=sys.stderr, flush=True)
+    jobs_measure: dict = {"rows": [], "sampling": {}}
+    if not args.sans_jobs:
+        print("[3/4] mesure par job : file et execution separees",
+              file=sys.stderr, flush=True)
+        mesure, couverture = mesurer_jobs(
+            runs, args.jobs_par_workflow, args.jobs_plafond
+        )
+        jobs_measure = {"rows": mesure["rows"], "sampling": couverture}
+        print(f"      {couverture['runs_inspectes']} runs, "
+              f"{couverture['workflows_avec_jobs']} workflows mesures",
+              file=sys.stderr, flush=True)
+    else:
+        print("[3/4] mesure par job : sautee (--sans-jobs)",
+              file=sys.stderr, flush=True)
+
+    print("[4/4] ecriture", file=sys.stderr, flush=True)
     jobs_total = sum(len(r.get("jobs_detail", [])) for r in rows if r["pr"])
     jobs_blocking = sum(
         1 for r in rows if r["pr"] for j in r.get("jobs_detail", []) if not j["advisory"]
@@ -318,6 +520,7 @@ def main() -> int:
             "jobs_blocking": jobs_blocking,
             "jobs_advisory": jobs_total - jobs_blocking,
         },
+        "jobs_measure": jobs_measure,
         "rows": rows,
     }
     text = json.dumps(payload, ensure_ascii=False, indent=1)

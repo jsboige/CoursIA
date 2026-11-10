@@ -238,6 +238,20 @@ except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import gh_identity
 
+# #24461 -- grammaire de l'etat de livraison, source UNIQUE partagee avec le
+# poseur de label (`scripts/candidate_delivered.py`). Module SANS dependance :
+# il n'importe que `released_covers` (present dans le checkout reduit du cron)
+# et, pour le dossier de cloture, `check_closure_dossier` (absent de ce
+# checkout, et c'est pourquoi le labeler lit les marqueurs avec
+# `dossier=False` -- le balayage local et le balayage CI doivent se
+# comporter pareil). L'import est ici, AVANT les alias de grammaire qui le
+# referencent.
+try:
+    import delivery_grammar
+except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import delivery_grammar  # type: ignore[no-redef]
+
 # Geste 5 #18203 : journal des tirages, module separe par construction
 # (scripts/coordination/tirage_journal.py, merge #19945). Import best-effort :
 # un environnement sans le module tire SANS journal plutot que de refuser --
@@ -327,19 +341,14 @@ REPO = "jsboige/CoursIA"
 # d'un ack coordinateur, etc.), que le filtre recent ne voit pas par
 # construction. Relevable par `_DELIVERED_MARKER_REVOKED_RE` comme les autres
 # formes : un [NOT-DELIVERED] posterieur remet l'issue sur le tapis.
-_DELIVERED_MARKER_RE = re.compile(
-    r"(?:"
-    r"^\s*(?:#{1,6}\s*)?\[DELIVERED\]\s+lane\b"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered(?![-_\w])"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
-    r"verification first-hand)[^\n]*\bcandidate-delivered(?![-_\w])"
-    r")",
-    re.IGNORECASE | re.MULTILINE,
-)
+# #24461 -- la grammaire des marqueurs vit dans `scripts/delivery_grammar.py`,
+# module SANS dependance, importe ici ET par le poseur de label
+# (`scripts/candidate_delivered.py`) : une seule definition, deux organes,
+# aucune derive possible. Les trois noms ci-dessous restent ceux que les
+# tests et les appelants existants lisent -- ce sont des ALIAS, pas des
+# copies. Les commentaires qui suivent decrivent la grammaire ; ils sont
+# restes ici, et leur source est desormais le module.
+_DELIVERED_MARKER_RE = delivery_grammar.DELIVERED_MARKER_RE
 
 # Retractation du marqueur (mesure du 12/10 : sur 80 issues marquees livrees,
 # 20 l'etaient partiellement). Le marqueur etait PERMANENT par accident
@@ -354,14 +363,10 @@ _DELIVERED_MARKER_RE = re.compile(
 # devant `-revoked`. Le regex de livraison n'est donc pas elargi, et le sens
 # est porte par l'ORDRE : une retractation defait les marqueurs posterieurs
 # a elle, un marqueur repose apres elle rearme (cf `_delivered_state`).
-_DELIVERED_MARKER_REVOKED_RE = re.compile(
-    r"(?:"
-    r"^\s*(?:#{1,6}\s*)?\[NOT-DELIVERED\]"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered-revoked"
-    r")",
-    re.IGNORECASE | re.MULTILINE,
-)
+# #24461 -- alias vers la grammaire unique (`scripts/delivery_grammar.py`) ;
+# les commentaires qui suivent decrivent cette grammaire, dont la source est
+# desormais ce module.
+_DELIVERED_MARKER_REVOKED_RE = delivery_grammar.DELIVERED_MARKER_REVOKED_RE
 
 # Le marqueur de CONTENEUR : une issue (ou une umbrella) dont le dernier
 # commentaire dit « le CONTENEUR est livre ». C'est la seule forme qui
@@ -373,17 +378,10 @@ _DELIVERED_MARKER_REVOKED_RE = re.compile(
 # de `_DELIVERED_MARKER_RE` (memes regex, meme lookahead anti-`-revoked` /
 # `-partial`) ; la forme `[DELIVERED] lane` en est VOLONTAIREMENT absente :
 # sur une umbrella, elle est une livraison de sous-grain, pas une fermeture.
-_CONTAINER_DELIVERY_MARKER_RE = re.compile(
-    r"(?:"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered(?![-_\w])"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
-    r"verification first-hand)[^\n]*\bcandidate-delivered(?![-_\w])"
-    r")",
-    re.IGNORECASE | re.MULTILINE,
-)
+# #24461 -- alias vers la grammaire unique (`scripts/delivery_grammar.py`) ;
+# les commentaires qui suivent decrivent cette grammaire, dont la source est
+# desormais ce module.
+_CONTAINER_DELIVERY_MARKER_RE = delivery_grammar.CONTAINER_DELIVERY_MARKER_RE
 
 # --- Dossier de cloture : un signal de livraison TERMINAL --------------------
 #
@@ -691,26 +689,19 @@ def _delivered_state(comment_bodies: list[str]) -> bool:
     ne reordonne rien). Aucun tri n'est donc fait ici -- en ajouter un ferait
     dependre le sens d'un champ que le transport REST ne porte pas.
     """
-    delivered = False
-    for body in comment_bodies:
-        if _DELIVERED_MARKER_REVOKED_RE.search(body or ""):
-            delivered = False
-        elif _DELIVERED_MARKER_RE.search(body or ""):
-            delivered = True
-        elif _closure_dossier_verdict(body or "") == "CLOSE":
-            # Dossier de cloture CLOSE : l'issue est RESOLUE au sens du
-            # depot. C'est un evenement d'arming comme les autres -- une
-            # retractation posterieure le desarme, un marqueur plus recent le
-            # rearme -- mais il n'EXPIRE PAS (la terminalite est portee par
-            # `_delivery_event_from_comments`, qui rend `stamp=None`).
-            delivered = True
-        elif _released_covers_acceptance(body or ""):
-            # #20351 : `[RELEASED]` + « acceptance deja couverte » est une
-            # livraison au sens du tapis. Reste un EVENEMENT comme les autres :
-            # une retractation posterieure la desarme, un marqueur plus
-            # recent la rearme.
-            delivered = True
-    return delivered
+    # #24461 -- la machine d'etat elle-meme vit dans
+    # `scripts/delivery_grammar.py`, lue par le poseur de label
+    # (`scripts/candidate_delivered.py`) comme par le tapis. Deux organes,
+    # une grammaire : c'est la condition pour que le LABEL arme par
+    # l'attestation et l'ECART lu par le tapis disent la MEME chose.
+    #
+    # Les quatre formes d'arming sont celles du module : le marqueur
+    # `[INFO] candidate-delivered` et ses variantes, la cloture explicite
+    # `[DELIVERED] lane`, le dossier `[CLOSURE PREFLIGHT]` de verdict CLOSE
+    # (terminal : il n'EXPIRE PAS -- la terminalite est portee par
+    # `_delivery_event_from_comments`, qui rend `stamp=None`), et
+    # `[RELEASED] ... acceptance deja couverte` (#20351).
+    return delivery_grammar.delivered_state(comment_bodies)
 
 
 def _has_delivered_marker(issue_number: int) -> bool | None:
@@ -1671,6 +1662,13 @@ def apply_delivered_urn_gate(lane, urns_arg, urns_default, selected_urns):
 # sonde que sur les candidats TIRES -- jamais un balayage du pool. La meme
 # borne que `recent_delivery`.
 DELIVERED_LABEL = "candidate-delivered"
+# Cause nommee de l'exclusion par LABEL (#24461). Elle commence par
+# "LIVRAISON :" pour etre rendue par `print_delivered_signal_report`, qui
+# distingue le filtre recent (hors budget) du signal de livraison.
+_DELIVERED_LABEL_CAUSE = (
+    "LIVRAISON : label `candidate-delivered` pose -- issue reservee au "
+    "coordinateur/adjoint (urne `delivered`, #15069) ; exclusion lue dans le "
+    "payload du pool, sans sonde par issue (#24461).")
 DELIVERED_COMMENT_MARKER = "[INFO] candidate-delivered"
 # Plafond dur de sondes par tirage : la boucle de remplacement d'une urne peut
 # en theorie la parcourir entiere, et une urne de 167 grains ne doit pas
@@ -2676,6 +2674,21 @@ _BELT_SNAPSHOT: dict | None = None
 _BELT_PRIMED_WINDOW: set[int] = set()
 
 
+def _delivery_motif(issue_number: int) -> str | None:
+    """Le MOTIF d'ecartement d'une issue livree, nomme (decision #24461, point 4).
+
+    Lecture par l'instantane local (`_snapshot_comments`) : **ZERO requete**.
+    En l'absence d'instantane (hors tapis), la fonction rend `None` et
+    l'appelant garde sa cause generique -- fail-OPEN, jamais un motif
+    fabrique.
+    """
+    comments = _snapshot_comments(issue_number)
+    if comments is None:
+        return None
+    bodies = [c.get("body") or "" for c in comments if isinstance(c, dict)]
+    return delivery_grammar.delivery_motif(bodies)
+
+
 def _belt_snapshot_prime(repo: str, numbers: list[int],
                          seed: dict | None = None) -> None:
     """Rafraichit UNE FOIS l'instantane pour les candidats tires (#22630, #22983).
@@ -2998,10 +3011,15 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     # qui recopie la ligne canonique ne clot rien (mesure : revue Hermes
     # du 2026-11-03 sur #24523).
     body_plain = _strip_code(body)
-    return bool(_RECENT_DELIVERY_MARKER_RE.search(body_plain)
-                or _DELIVERED_MARKER_RE.search(body_plain)
-                or _closure_dossier_verdict(body) == "CLOSE"
-                or _closure_announced_close(body))
+    # #24461 (c) point 3 : une livraison de TRANCHE (`paths:` sur la ligne
+    # du marqueur) ne livre pas l'issue -- elle ne l'arme ni ne la desarme.
+    tranche = delivery_grammar.is_tranche_only(body_plain)
+    return bool(
+        _closure_dossier_verdict(body) in ("CLOSE", "KEEP")
+        or _closure_announced_close(body)
+        or (not tranche and (
+            _RECENT_DELIVERY_MARKER_RE.search(body_plain)
+            or _DELIVERED_MARKER_RE.search(body_plain))))
 
 
 def _issue_is_frozen(issue_body: str | None,
@@ -3372,22 +3390,37 @@ def _delivery_event_from_comments(
             # expire, dossier CLOSE du 02/11 invisible).
             state, stamp = True, None
             closed = True
-        elif (_DELIVERED_MARKER_RE.search(body)
-              or _released_covers_acceptance(body)):
+        elif _closure_dossier_verdict(body) == "KEEP":
+            # Dossier `[CLOSURE PREFLIGHT]` VIVANT (verdict KEEP) : la
+            # cloture est EN COURS, l'issue n'est pas un grain de
+            # production (decision #24461 (c), point 2). Expirable comme un
+            # marqueur de livraison (48 h, #22500).
             state, stamp = True, created
-        elif _RECENT_DELIVERY_MARKER_RE.search(body):
+        elif (delivery_grammar.delivery_marker_is_epic_wide(body)
+              or _released_covers_acceptance(body)):
+            # #24461 (c) point 3 : une livraison de TRANCHE (`paths:` sur la
+            # ligne du marqueur) ne livre pas l'issue -- elle ne l'arme ni ne
+            # la desarme.
+            state, stamp = True, created
+        elif (_RECENT_DELIVERY_MARKER_RE.search(body)
+              and not delivery_grammar.is_tranche_marker(body)):
             # `[FROZEN]` et consorts : le filtre recent les voit, la sonde
             # pleine non. L'HEURE compte quand meme pour la regle des 48 h.
+            # Une livraison de TRANCHE n'est pas un evenement de cloture :
+            # elle ne pose ni l'etat ni l'heure (decision #24461 (c)).
             stamp = created
     last = comments[-1]
     last_body = last.get("body") if isinstance(last, dict) else ""
     if not isinstance(last_body, str):
         last_body = ""
-    recent = bool(_RECENT_DELIVERY_MARKER_RE.search(last_body)
-                  or _DELIVERED_MARKER_RE.search(last_body)
-                  or closed
-                  or _closure_dossier_verdict(last_body) == "CLOSE"
-                  or _closure_announced_close(last_body))
+    tranche = delivery_grammar.is_tranche_only(last_body)
+    recent = bool(
+        closed
+        or _closure_dossier_verdict(last_body) in ("CLOSE", "KEEP")
+        or _closure_announced_close(last_body)
+        or (not tranche and (
+            _RECENT_DELIVERY_MARKER_RE.search(last_body)
+            or _DELIVERED_MARKER_RE.search(last_body))))
     if closed and state:
         # La terminalite PRIME sur l'heure : un dossier CLOSE n'expire pas,
         # meme si un marqueur plus recent a reecrit `stamp`.
@@ -3707,8 +3740,14 @@ def revoked_after_merge_signal(issue_number: int, lane: str | None = None,
             return None
     if not isinstance(comments, list):
         return None
-    # Le repli REST ne rend que des CORPS, sans horodatage : il ne permet pas
-    # la comparaison a l'instant de fusion, donc il ne revoque pas. Le
+    # Le repli passe par `gh issue view --json comments`, qui rend bien
+    # `createdAt` (mesure du 2026-11-04 : `gh issue view 24482 --json
+    # comments` -- les cles du commentaire sont `author`, `body`,
+    # `createdAt`, `id`, ...). Une revision (Hermes, 2026-11-03) decrivait
+    # ici un transport qui n'en rendait pas -- c'etait la PHRASE qui etait
+    # erronee, pas le code, et le test « sans horodatage » prouve que
+    # l'absence de `createdAt` DISABLE la revocation. Un commentaire sans
+    # `createdAt` ne revoque donc rien : le
     # desaccord est assume et documente plutot que comble par une supposition.
     newest_revocation = None
     for comment in comments:
@@ -5813,17 +5852,24 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                         # Cout : 1 requete, hors budget, fail-OPEN sur
                         # lecture en echec (l'appelant enchaine sur la
                         # sonde pleine dans ce cas).
+                        # #24461 (c) point 4 -- le MOTIF d'ecartement est
+                        # NOMME : la cause rendue dit POURQUOI l'issue a
+                        # ete ecartee, pour que l'urne de l'adjoint
+                        # l'instruise sans re-deriver la grammaire. Lecture
+                        # par l'instantane local : ZERO requete.
+                        motif = _delivery_motif(c["number"])
                         recent = has_recent_delivery_marker(c["number"])
                         if recent is True:
                             state["recent_filtered"] = state.get(
                                 "recent_filtered", 0) + 1
-                            conflicts.append((c, "LIVRAISON (recent) : "
+                            conflicts.append((c, "LIVRAISON (recent) : " + (
+                                motif or
                                 "marqueur de cloture sur le dernier "
                                 "commentaire ([DELIVERED] / [FROZEN] "
                                 "/ [INFO] candidate-delivered), ou GEL "
                                 "de l'item (body ou fil)."
                                 " Candidat remplace dans "
-                                "la meme urne, hors budget de sonde."))
+                                "la meme urne, hors budget de sonde.")))
                             continue
                         # Le label est teste A COUT NUL et vaut meme quand le
                         # plafond de sondes est epuise ; seule la sonde de
@@ -5834,6 +5880,7 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                             _counted_merged_pr_probe, _counted_revocation_probe)
                         if reason is not None:
                             conflicts.append((c, "LIVRAISON : " + reason + (
+                                (" -- motif : " + motif) if motif else "") + (
                                 " Candidat remplace dans la meme urne.")))
                             continue
                         # #16589 : la sonde de PR couvrante vient APRES le
@@ -7687,7 +7734,12 @@ def unaddressed_review_points_detail(numbers: list[int]) -> dict[int, dict]:
             authors = sorted({str(e.get("author") or "?")
                               for e in info["blocking"] if isinstance(e, dict)})
             out[n] = {"count": len(info["blocking"]), "authors": authors,
-                      "verdict": None, "verdict_surface": None}
+                      "verdict": None, "verdict_surface": None,
+                      # #25522 : la date de la DERNIERE reserve. C'est elle
+                      # qui rend la classe `coordinateur` decidable -- une
+                      # declaration `[ASK]` ne repond que si elle est
+                      # posterieure a la reserve.
+                      "last_reserve_at": _last_blocking_at(info["blocking"])}
             numbers_with_points.append(n)
             if "verdict" not in info:
                 # Une evaluation B.0 deja persistee a moins de 15 min, mais
@@ -7699,7 +7751,8 @@ def unaddressed_review_points_detail(numbers: list[int]) -> dict[int, dict]:
                 out[n]["verdict_surface"] = info.get("verdict_surface")
         elif not info["blocked"]:
             out[n] = {"count": 0, "authors": [],
-                      "verdict": None, "verdict_surface": None}
+                      "verdict": None, "verdict_surface": None,
+                      "last_reserve_at": None}
     if voice_numbers:
         try:
             sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
@@ -7936,6 +7989,570 @@ def lane_open_prs(lane: str, prs: list[dict]) -> list[dict]:
     return out
 
 
+# --- #25522 : classer les PRs rouges par QUI PEUT AGIR ------------------------
+#
+# Le garde rouge renvoyait la lane sur des PRs qu'elle ne peut pas
+# debloquer. Sous le nom « file de reparation », trois familles se
+# melangeaient : des levees de reserve que seul `myia-ai-01` peut faire
+# (B.0 : sous le login partage, seul le coordinateur leve par une phrase),
+# des gels du coordinateur, et des etats d'infra (jambe CANCELLED, file
+# saturee). La lane rejouait ces PRs a chaque cycle, rien ne bougeait, et le
+# plancher G-VAR-1 n'etait pas tenu (9 cycles d'affilee, mesures sur
+# po-2023 le 09/11 ; po-2028 a tire 6 fois sans rien retenir).
+#
+# Quatre classes, une seule arme la file :
+#
+#   * `lane`         -- la lane peut reparer : vrai rouge (FAILURE / ERROR /
+#                        ACTION_REQUIRED), conflit, reserve sans reponse ;
+#   * `coordinateur` -- le seul blocage restant est une levee, une re-review ou
+#                        un merge de `myia-ai-01` ; la lane l'a DECLARE par une
+#                        ligne `[ASK]` posee APRES la derniere reserve. Sans
+#                        cette ligne, la PR reste `lane` (fail-closed) ;
+#   * `gel`          -- la PR porte un `[FROZEN]` d'une lane habilitee ;
+#   * `infra`        -- jambe CANCELLED dont une tentative plus recente est en
+#                        file, constituant COUPE, rouge vert sur `main`, file
+#                        saturee : le geste est un rejeu, pas une correction de
+#                        diff.
+#
+# Seule la classe `lane` arme `nits`, `aged`, `count` et la file de
+# reparation. Les trois autres sont RENDUES (texte + JSON) dans une liste
+# « en attente d'autrui » : elles sont dites, elles ne bloquent pas.
+
+RED_CLASS_LANE = "lane"
+RED_CLASS_COORDINATEUR = "coordinateur"
+RED_CLASS_GEL = "gel"
+RED_CLASS_INFRA = "infra"
+
+#: Les trois classes qui n'attendent PAS la lane : elles sont rendues, pas
+#: opposees. L'ordre est celui de l'affichage.
+RED_CLASSES_OTHERS = (RED_CLASS_COORDINATEUR, RED_CLASS_GEL, RED_CLASS_INFRA)
+
+#: Autorites habilitees a poser un gel de PR. La forme canonique du marqueur
+#: est `[FROZEN] <motif court> -- <autorite>` (#24516) : l'autorite y est
+#: courte (`ai-01`) ou complete (`lane myia-ai-01:CoursIA`). Le login GitHub
+#: etant partage, l'autorite ne se lit JAMAIS dans l'auteur du commentaire :
+#: elle se lit dans le marqueur (cf `unfrozen_allowed`).
+FROZEN_AUTHORITY_SHORT = frozenset({"ai-01", "po-2025"})
+
+#: Une declaration `[ASK]` de la lane. La ligne qui porte le marqueur doit
+#: declarer la lane (`lane <machine:workspace>`) : sous le login partage,
+#: l'auteur du commentaire ne prouve rien, et la declaration d'une autre lane
+#: ne doit pas lever une reserve qui nous concerne.
+_ASK_HEADER_RE = re.compile(r"^\s*(?:#{1,6}\s*)?\[ASK\](?=\s|:|$)")
+
+#: Lecteurs de fil de PR en parallele (une requete REST par PR).
+RED_COMMENT_WORKERS = 6
+
+#: Cause que la LANE peut lever seule, en agissant sur son diff.
+#:
+#: #25522 : le "vert sur main" est un VRAI rouge (FAILURE) sur un check de la
+#: PR -- le geste est un rejeu de la jambe, que la lane peut faire seule
+#: (cf `test_check_vert_sur_main_devient_infra_rejeu`, #17154 : la PR reste
+#: dans la file, avec sa cause). La classe `infra` de #25522 ne couvre que
+#: les deux etats explicitement nommes par le body de l'issue (jambe
+#: CANCELLED deja rejouee, `file_saturation`).
+_LANE_CAUSE_MARKERS = (
+    "check requis en echec",     # FAILURE / ERROR / ACTION_REQUIRED
+    "conflits avec main",       # conflit de merge
+    "collision d'ordinal",
+    "infra d'execution (vert sur main)",  # rouge reel, geste = rejeu
+    "COUPE(S)",                 # agregat rouge par constituants coupes
+)
+
+#: Cause INFRA : le geste est un rejeu deja engage ou une attente de file,
+#: jamais une correction de diff. Les deux etats nommes par #25522.
+_INFRA_CAUSE_MARKERS = (
+    "file_saturation",
+    "file-saturation",
+)
+
+#: Cause de RESERVE : une levee, une re-review ou un merge -- le geste est
+#: une phrase, pas un SHA (B.0).
+_RESERVE_CAUSE_MARKERS = (
+    "point(s) de review non leve(s)",
+    "reserve(s) de :",
+    "CHANGES_REQUESTED non leve",
+    "verdict de corps non leve",
+)
+
+
+def _parse_ts(value) -> dt.datetime | None:
+    """Un horodatage ISO-8601 -> datetime timezone-aware, ou None si illisible.
+
+    Les deux formes qui coexistent dans la flotte sont acceptees : le
+    `createdAt` de GitHub (`2026-11-07T12:00:00Z`) et l'`isoformat()` de
+    l'organe B.0 (`2026-11-07T12:00:00+00:00`). Une date absente ou
+    illisible rend None -- jamais une date par defaut : une comparaison de
+    dates ne doit pas se faire sur une valeur inventee.
+    """
+    if not value or not isinstance(value, str):
+        return None
+    text = value.strip()
+    if not text or text == "?":
+        return None
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = dt.datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=dt.timezone.utc)
+    return parsed
+
+
+def _first_nonempty_line(text: str) -> str:
+    """La premiere ligne non vide d'un texte ("" si le texte est vide)."""
+    for line in (text or "").splitlines():
+        if line.strip():
+            return line
+    return ""
+
+
+def _last_blocking_at(blocking: list) -> str | None:
+    """L'horodatage de la DERNIERE reserve non levee, ou None.
+
+    Les entrees de l'organe B.0 portent `at` (# `check_unaddressed_nits`) ;
+    certaines n'ont pas de date lisible (`"?"`) : elles sont ignorees, et une
+    PR dont aucune reserve n'est datee ne peut pas etre declaree « en attente
+    » (fail-closed).
+    """
+    best = None
+    for entry in blocking or []:
+        if not isinstance(entry, dict):
+            continue
+        parsed = _parse_ts(entry.get("at"))
+        if parsed is None:
+            continue
+        if best is None or parsed > best:
+            best = parsed
+    return best.isoformat() if best else None
+
+
+def _frozen_authority(text: str) -> str | None:
+    """L'autorite d'un marqueur `[FROZEN]`, ou None si elle n'est pas lisible.
+
+    Deux formes acceptees : le tag de lane complet
+    (`-- lane myia-ai-01:CoursIA`) et la forme courte du coordinateur
+    (`-- ai-01`). Toute autre autorite -- une lane tierce, un tiers
+    quelconque -- rend None : le gel n'est alors pas un gel du
+    coordinateur, et la PR n'est pas classer `gel`.
+    """
+    lane = _declared_lane(text)
+    if lane and lane in FROZEN_UNFROZEN_LANES:
+        return lane
+    match = re.search(r"--\s*([A-Za-z0-9_.-]+)", text or "")
+    if match and match.group(1).lower() in FROZEN_AUTHORITY_SHORT:
+        return match.group(1).lower()
+    return None
+
+
+def _frozen_lines(text: str) -> list[str]:
+    """Les lignes d'un texte qui portent un en-tete `[FROZEN]`."""
+    if not isinstance(text, str) or not text:
+        return []
+    return [line for line in _strip_code(text).splitlines()
+            if _FROZEN_HEADER_RE.search(line)]
+
+
+def _gel_authority(body: str | None, comments: list[dict] | None) -> str | None:
+    """L'autorite du gel qui FAIT FOI, ou None (aucun gel).
+
+    Meme lecture que `_issue_is_frozen`, avec UNE exigence de plus : le gel
+    doit etre pose par une lane HABILITEE. Le login GitHub est partage,
+    donc l'auteur du commentaire ne prouve rien : l'autorite se lit dans
+    le marqueur.
+
+    **Le fil se lit dans l'ordre** (regle B) : un `[FROZEN]` pose en
+    commentaire est FERME par un `[UNFROZEN]` d'une lane habilitee pose
+    plus tard -- le dernier etat gagne. Sans cette lecture, une PR
+    degelee qui porte un vrai `FAILURE` quittait la file de sa lane
+    pour toujours (fail-open a rebours du contrat fail-closed).
+
+    Un gel pose dans le **body** reste soumis a la regle A : seul le
+    retrait de la ligne le leve, pas un `[UNFROZEN]`.
+
+    Fail-closed : un `[FROZEN]` d'une lane tierce ne cree pas de gel, et
+    n'en leve pas un -- le veto du coordinateur ne se fait pas voler par
+    un tiers.
+    """
+    # Regle A : le body d'abord. Un gel de body prime sur le fil, et le
+    # fil ne le leve pas.
+    for line in _frozen_lines(body or ""):
+        authority = _frozen_authority(line)
+        if authority:
+            return authority
+
+    # Regle B : le fil se lit dans l'ordre.
+    state: str | None = None
+    for comment in comments or []:
+        if not isinstance(comment, dict):
+            continue
+        text = comment.get("body") or ""
+        if not isinstance(text, str) or not text:
+            continue
+        # Le code **documente** un marqueur, il ne le pose pas.
+        text = _strip_code(text)
+        if _UNFROZEN_HEADER_RE.search(text):
+            # Seul un degel d'une lane HABILITEE ferme un gel : un
+            # `[UNFROZEN]` sans lane declaree, ou d'une lane tierce, ne
+            # leve rien.
+            if unfrozen_allowed(_declared_lane(text)):
+                state = None
+            continue
+        for line in _frozen_lines(text):
+            authority = _frozen_authority(line)
+            if authority:
+                state = authority
+            # Un gel d'autorite tierce ne cree pas de gel et n'en leve
+            # pas un : l'etat reste ce qu'il etait.
+    return state
+
+
+def _red_pr_comments(number: int) -> list[dict]:
+    """Le fil de CONVERSATION d'une PR : ``[{created_at, body}]``.
+
+    Lecture REST (`gh api`) -- le meme bucket que
+    `_issue_comment_bodies_rest`, donc le meme cout, et l independence du
+    bucket GraphQL que `gh pr view` consomme. Le corps est lu avec `@jq
+    @json` : un corps multi-lignes ne peut pas casser le decoupage ligne a
+    ligne, une ligne JSON par commentaire.
+
+    Une lecture qui echoue rend une liste VIDE : la classification tombe
+    alors sur `lane` (fail-closed), jamais sur `gel` ni `coordinateur`.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "api", "--paginate", "--jq",
+             ".[] | [.created_at, .body] | @json",
+             f"repos/{REPO}/issues/{number}/comments"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=_clamp_timeout(20),
+        ).stdout
+    except Exception:  # noqa: BLE001 - lecture best-effort, jamais bloquante
+        return []
+    comments: list[dict] = []
+    for line in (out or "").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            created_at, body = json.loads(line)
+        except Exception:  # noqa: BLE001 - ligne illisible = commentaire ignore
+            continue
+        comments.append({"created_at": created_at or "", "body": body or ""})
+    return comments
+
+
+def _red_pr_comments_many(numbers: list[int]) -> dict[int, list[dict]]:
+    """Le fil de plusieurs PRs, lu en parallele (fan-out borne)."""
+    numbers = list(numbers)
+    if not numbers:
+        return {}
+    if len(numbers) <= 1 or RED_COMMENT_WORKERS <= 1:
+        return {n: _red_pr_comments(n) for n in numbers}
+    out: dict[int, list[dict]] = {}
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=min(RED_COMMENT_WORKERS, len(numbers))) as pool:
+        for number, comments in zip(numbers, pool.map(_red_pr_comments, numbers)):
+            out[number] = comments
+    return out
+
+
+def _ask_declaration(lane: str, comments: list[dict],
+                     last_reserve_at: str | None) -> str | None:
+    """Une declaration `[ASK]` de la lane, posee APRES la derniere reserve.
+
+    Renvoie l'horodatage de la declaration, ou None.
+
+    Trois conditions, toutes exigees :
+    - une ligne du commentaire porte le marqueur `[ASK]` ;
+    - cette ligne declare la lane (`lane <machine:workspace>`) : le login
+      GitHub est partage, donc l'auteur du commentaire ne prouve rien, et la
+      declaration d'une autre lane ne doit pas lever une reserve qui nous
+      concerne ;
+    - la declaration est POSTERIEURE a la derniere reserve : une declaration
+      posee avant une reserve ne repond pas a cette reserve.
+
+    Une declaration dont la date de reserve est illisible n'est PAS acceptee :
+    sans temoin de l'ordre, on ne peut pas affirmer que la declaration
+    repond a la reserve (fail-closed).
+    """
+    reserve_at = _parse_ts(last_reserve_at)
+    if reserve_at is None:
+        return None
+    for comment in comments or []:
+        body = comment.get("body") or ""
+        if not isinstance(body, str) or not body:
+            continue
+        for line in body.splitlines():
+            if not _ASK_HEADER_RE.search(line):
+                continue
+            if _declared_lane(line) != lane:
+                continue
+            when = _parse_ts(comment.get("created_at"))
+            if when is None or when <= reserve_at:
+                continue
+            return comment.get("created_at")
+    return None
+
+
+def _cancelled_with_newer_attempt(state: dict | None) -> set[str]:
+    """Les checks CANCELLED dont une tentative plus recente est en vol.
+
+    Le geste est alors un rejeu deja engage par l'infra : la lane qui
+    rejouerait la jambe empilerait un run de plus. C'est la classe `infra`
+    de #25522.
+
+    Sans temoin d'une tentative plus recente, une jambe CANCELLED reste un
+    travail de la lane (rejouer la jambe soi-meme apres l'echeance du
+    plancher) : le classeur ne l'invente pas.
+    """
+    if not state:
+        return set()
+    commits = state.get("commits", {}).get("nodes") or []
+    rollup = (commits[0]["commit"].get("statusCheckRollup")
+              if commits else None) or {}
+    contexts = drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or [])
+    cut: list[tuple[str, dt.datetime | None]] = []
+    for ctx in contexts:
+        name = ctx.get("name") or ctx.get("context") or "?"
+        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+        if verdict not in CHECK_CUT or not ctx.get("isRequired"):
+            continue
+        stamp = (ctx.get("completedAt") or ctx.get("startedAt")
+                 or ctx.get("createdAt"))
+        cut.append((name, _parse_ts(stamp)))
+    if not cut:
+        return set()
+    inflight = []
+    for ctx in contexts:
+        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+        if verdict not in CHECK_IN_FLIGHT:
+            continue
+        parsed = _parse_ts(ctx.get("startedAt") or ctx.get("createdAt"))
+        if parsed is not None:
+            inflight.append(parsed)
+    if not inflight:
+        return set()
+    newest = max(inflight)
+    return {name for name, when in cut if when is None or newest > when}
+
+
+def _red_cause_class(cause: str, cut_names: set[str]) -> str:
+    """La classe d'une cause : `lane`, `infra`, `reserve` ou `neutre`.
+
+    Les marqueurs sont lus dans l'ordre : une cause de verification de code
+    prime sur une cause de file, et une reserve prime sur l'infra (une PR
+    qui porte les deux doit etre repondue par la lane, pas rejouee).
+    """
+    for marker in _LANE_CAUSE_MARKERS:
+        if marker in cause:
+            return "lane"
+    for marker in _RESERVE_CAUSE_MARKERS:
+        if marker in cause:
+            return "reserve"
+    for marker in _INFRA_CAUSE_MARKERS:
+        if marker in cause:
+            return "infra"
+    if cause.startswith("check requis non conclu"):
+        # Une jambe CANCELLED dont une tentative plus recente est en file ou
+        # en cours : le rejeu est deja engage, la lane ne doit pas empiler un
+        # run de plus. Sans temoin, la jambe reste un travail de la lane.
+        name = cause.split(":", 1)[-1].split("(")[0].strip()
+        if name in cut_names:
+            return "infra"
+        return "lane"
+    return "neutre"
+
+
+def classify_red_pr(*, lane: str, body: str, causes: list[str], nits: dict,
+                     comments: list[dict], state: dict | None = None) -> dict:
+    """Classe une PR rouge par QUI PEUT AGIR (#25522).
+
+    Rend ``{"class": ..., "reason": ...}``. Le defaut est `lane` : une
+    classe non etablie ne doit jamais sortir la PR de la file de la lane
+    (fail-closed).
+    """
+    # 1. GEL : un veto du coordinateur l'emporte sur tout -- la PR n'est pas
+    #    un travail de la lane, elle attend une decision. Le fil se lit
+    #    DANS L'ORDRE : un degel habilite ferme le gel qu'il suit.
+    authority = _gel_authority(body, comments)
+    if authority:
+        return {"class": RED_CLASS_GEL, "reason": f"gel pose par {authority}"}
+
+    cut_names = _cancelled_with_newer_attempt(state)
+    kinds = [_red_cause_class(c, cut_names) for c in causes]
+    lane_causes = [c for c, k in zip(causes, kinds) if k == "lane"]
+    reserve_causes = [c for c, k in zip(causes, kinds) if k == "reserve"]
+    infra_causes = [c for c, k in zip(causes, kinds) if k == "infra"]
+
+    # 2. Un vrai rouge, un conflit : la lane repara, et c'est prioritaire.
+    if lane_causes:
+        return {"class": RED_CLASS_LANE, "reason": lane_causes[0][:180]}
+
+    # 3. Une reserve, et rien d'autre : le geste est une levee. Elle
+    #    appartient a `myia-ai-01` si la lane l'a DECLAREE par un `[ASK]`
+    #    pose apres la derniere reserve ; sinon la lane doit repondre.
+    if reserve_causes and not infra_causes:
+        declared = _ask_declaration(lane, comments, nits.get("last_reserve_at"))
+        if declared:
+            return {"class": RED_CLASS_COORDINATEUR,
+                    "reason": (f"reserve tierce declaree en attente de "
+                               f"ai-01 (ASK du {declared})")}
+        return {"class": RED_CLASS_LANE, "reason": reserve_causes[0][:180]}
+
+    # 4. Infra seule : le geste est un rejeu, la lane n'a rien a corriger.
+    if infra_causes and not reserve_causes:
+        return {"class": RED_CLASS_INFRA, "reason": infra_causes[0][:180]}
+
+    # 5. Melange (reserve + infra) ou cause inconnue : fail-closed, la PR
+    #    reste dans la file de la lane.
+    return {"class": RED_CLASS_LANE,
+            "reason": (causes[0][:180] if causes else "cause non lisible")}
+
+
+def classify_red_prs(lane: str, prs: list[dict], red_entries: list[dict],
+                     nits_by_pr: dict[int, dict],
+                     states: dict[int, dict] | None = None) -> dict[int, dict]:
+    """Classe chaque PR rouge de la lane par QUI PEUT AGIR (#25522).
+
+    Le fil de chaque PR (une requete REST) n'est lu que pour les PRs
+    reellement rouges : c'est la que se trouvent le marqueur `[FROZEN]` et
+    la declaration `[ASK]`.
+    """
+    states = states or {}
+    by_number = {pr["number"]: pr for pr in prs}
+    numbers = [entry["number"] for entry in red_entries]
+    comments_by_pr = _red_pr_comments_many(numbers)
+    classes: dict[int, dict] = {}
+    for entry in red_entries:
+        number = entry["number"]
+        pr = by_number.get(number) or {}
+        verdict = classify_red_pr(
+            lane=lane,
+            body=pr.get("body") or "",
+            causes=entry.get("causes") or [],
+            nits=nits_by_pr.get(number) or {},
+            comments=comments_by_pr.get(number) or [],
+            state=states.get(number),
+        )
+        verdict["number"] = number
+        verdict["title"] = entry.get("title")
+        verdict["age_hours"] = entry.get("age_hours")
+        classes[number] = verdict
+    return classes
+
+
+def print_waiting_others(backlog: dict) -> None:
+    """Les PRs rouges qui n'attendent PAS la lane (#25522).
+
+    Elles sont DITES -- la lane les recopie dans son [DONE] -- mais elles ne
+    retiennent pas le tapis : un gel du coordinateur, une levee en attente
+    d'ai-01, ou une jambe d'infra a rejouer ne sont pas des travaux de la
+    lane.
+    """
+    items = backlog.get("waiting_others") or []
+    if not items:
+        return
+    print("EN ATTENTE D'AUTRUI -- rendues, elles ne retiennent pas le tapis :")
+    for item in sorted(items, key=lambda i: (i.get("class") or "",
+                                             -(i.get("age_hours") or 0))):
+        print(f"  #{item['number']}  [{item.get('class')}]  ouverte depuis "
+              f"{item.get('age_hours')} h  -- {str(item.get('title') or '')[:56]}")
+        print(f"       {item.get('reason')}")
+    print()
+
+
+def _git_read(cwd: str, *args: str) -> str | None:
+    """Une lecture `git` locale (lecture seule), ou None si elle echoue.
+
+    Lecture seule par construction : aucune des commandes appelees ici
+    n'ecrit dans le depot ni dans l'index.
+
+    Point de couture explicite : les suites de tests qui interdisent tout
+    `subprocess` neutralisent CE point (`monkeypatch.setattr(pig, "_git_read",
+    ...)`) au lieu de subir l'appel reel. La sentinelle `forbid_shell_escape`
+    leve une `BaseException`, que `except Exception` ne rattrape pas : sans
+    ce point de couture, la lecture de perimetrie du picker ferait echouer
+    une dizaine de tests qui n'ont rien a voir avec elle.
+    """
+    try:
+        proc = subprocess.run(["git", "-C", cwd, *args],
+                              capture_output=True, text=True,
+                              encoding="utf-8", check=True,
+                              timeout=_clamp_timeout(15))
+    except Exception:  # noqa: BLE001 - lecture best-effort
+        return None
+    value = (proc.stdout or "").strip()
+    return value or None
+
+
+def picker_stale_state(script_path: "pathlib.Path | None" = None) -> dict:
+    """Le picker local differe-t-il d'`origin/main` ? (#25522)
+
+    LECTURE LOCALE, sans reseau : le blob du fichier local contre le blob du
+    meme chemin a `origin/main`. C'est la mesure demandee par l'issue --
+    « lecture locale, sans reseau en plus du `fetch` deja fait ».
+
+    Mesure fondatrice (issue #25522, 09/11) : `main` local fige a 15:48Z,
+    correctif du mur de boucle (#25456) sur `main` depuis 16:16Z, et des
+    tirages de 19:12Z et 19:41Z rendus avec l'ancien contrat -- 0 retenu,
+    70 witheld, sans que rien ne signale que le picker etait perime.
+
+    Renvoie ``{"stale": bool, "local": sha, "origin_main": sha,
+    "local_head": sha, "origin_main_head": sha, "reason": str}``. Les deux
+    SHA sont ceux du FICHIER (blob) : ce sont eux qui different quand le
+    contrat a change. Les SHA de commit sont rendus a cote, pour situer le
+    checkout.
+    """
+    out = {"stale": False, "local": None, "origin_main": None,
+           "local_head": None, "origin_main_head": None, "reason": ""}
+    script = pathlib.Path(script_path) if script_path else pathlib.Path(__file__).resolve()
+    script = script.resolve()
+
+    def _git(*args: str) -> str | None:
+        return _git_read(str(script.parent), *args)
+
+    root = _git("rev-parse", "--show-toplevel")
+    if not root:
+        out["reason"] = "hors depot git"
+        return out
+    try:
+        rel = script.relative_to(pathlib.Path(root)).as_posix()
+    except ValueError:
+        rel = "scripts/pick_idle_grain.py"
+    out["local_head"] = _git("rev-parse", "HEAD")
+    out["origin_main_head"] = _git("rev-parse", "origin/main")
+    out["local"] = _git("hash-object", "--", str(script))
+    out["origin_main"] = _git("rev-parse", f"origin/main:{rel}")
+    if not out["origin_main"]:
+        out["reason"] = "origin/main illisible (ref absente ?)"
+        return out
+    if not out["local"]:
+        out["reason"] = "hash-object local illisible"
+        return out
+    out["stale"] = out["local"] != out["origin_main"]
+    if out["stale"]:
+        out["reason"] = ("le picker local differe d'origin/main -- le "
+                         "tirage tourne avec un contrat perime")
+    return out
+
+
+def stale_picker_payload(state: dict) -> dict:
+    """Le bloc JSON du perimetre du picker (#25522).
+
+    `stale_picker` est un **booleen** -- « le picker local differe-t-il
+    d'`origin/main` ? » -- et les deux SHA (blob local, blob a
+    `origin/main`) viennent A COTE, dans `stale_picker_detail`. Les mettre
+    dans la meme valeur rendrait le test d'acceptation（「vrai sur un
+    checkout qui differe, faux sinon」）illisible : un dict n'est jamais
+    « vrai » ou « faux ».
+    """
+    return {"stale_picker": bool((state or {}).get("stale")),
+            "stale_picker_detail": state or {}}
+
+
 def red_backlog(lane: str, threshold_hours: float,
                 count_threshold: int = RED_COUNT_DEFAULT,
                 saturation_hours: float | None = None,
@@ -7992,6 +8609,10 @@ def red_backlog(lane: str, threshold_hours: float,
         sat_threshold = saturation_hours if saturation_hours is not None else threshold_hours
         return {"unavailable": f"{type(exc).__name__}", "red": [],
                 "triggers": [], "unattributed_blocked": [],
+                # #25522 : meme contrat de rendu quand la mesure est
+                # indisponible -- une liste vide, jamais une cle absente.
+                "red_classes": {}, "waiting_others": [],
+                "red_count": 0, "red_all_count": 0,
                 "nits_unavailable": None, "base_inherited": [],
                 "infra_rerun": [], "base_undecided": [],
                 "base_unresolved": [], "dwell_waiting": [],
@@ -8159,6 +8780,22 @@ def red_backlog(lane: str, threshold_hours: float,
                         "is_adjacency": is_adj})
     red.sort(key=lambda r: -r["age_hours"])
 
+    # #25522 : classement par QUI PEUT AGIR. Seule la classe `lane` arme la
+    # file de reparation (`nits`, `aged`, `count`) ; les trois autres classes
+    # sont RENDUES -- elles sont dites, elles ne bloquent pas le tapis.
+    red_all = list(red)
+    red_classes = classify_red_prs(lane, mine, red_all, nits_by_pr, states)
+    red = [r for r in red_all
+           if red_classes.get(r["number"], {}).get("class") == RED_CLASS_LANE]
+    waiting_others = [
+        {"number": r["number"], "title": r["title"],
+         "age_hours": r["age_hours"],
+         "class": red_classes[r["number"]]["class"],
+         "reason": red_classes[r["number"]]["reason"],
+         "causes": r["causes"]}
+        for r in red_all
+        if red_classes.get(r["number"], {}).get("class") != RED_CLASS_LANE]
+
     # #15910 : un agregateur tranche par DWELL n'est PAS « non resolu ». Sans ce
     # retrait, `impute_base_reds` (qui a lu l'annotation AVANT la boucle) le
     # classe dans `base_unresolved` et la sortie annonce « organe non lisible --
@@ -8214,10 +8851,17 @@ def red_backlog(lane: str, threshold_hours: float,
     # la file WIP dit POURQUOI chaque PR attend quand la cause est connue,
     # sans payer un etat GraphQL supplementaire pour les PRs vertes.
     wip_prs = lane_open_prs(lane, prs)
-    causes_by_number = {r["number"]: r["causes"] for r in red}
+    causes_by_number = {r["number"]: r["causes"] for r in red_all}
     for entry in wip_prs:
         entry["causes"] = causes_by_number.get(entry["number"], [])
     return {"red": red, "aged": aged, "triggers": triggers,
+            # #25522 : le classement complet (les quatre classes) et la liste
+            # « en attente d'autrui ». Les deux sont rendus dans le JSON
+            # (`red_backlog`) et la liste est imprimee dans la sortie texte.
+            "red_classes": {str(n): v for n, v in red_classes.items()},
+            "waiting_others": waiting_others,
+            "red_count": len(red),
+            "red_all_count": len(red_all),
             "red_hours": threshold_hours, "red_count_threshold": count_threshold,
             "saturation_hours": sat_threshold,
             "unattributed_blocked": unattributed,
@@ -9572,6 +10216,7 @@ def belt_filter(
     urns: set[str] | None = None,
     epic_load: dict[int, int] | None = None,
     drops: list[tuple[dict, str]] | None = None,
+    label_drops: list[tuple[dict, str]] | None = None,
     notes: list[str] | None = None,
 ) -> list[dict]:
     """Filtre le pool admissible pour le mode --belt.
@@ -9610,6 +10255,26 @@ def belt_filter(
         if n in excluded_issues_set:
             return False
         labels = set(item.get("labels") or [])
+        # #24461 -- le LABEL `candidate-delivered` est DEJA dans le payload du
+        # pool (une seule requete `gh issue list --json labels` pour tout le
+        # pool) : l'exclure ici ne coute AUCUNE sonde par issue, la ou la
+        # sonde de livraison en coute une et sature -- et quand le budget ou
+        # le mur de temps est atteint, elle rend fail-OPEN et l'issue est
+        # servie comme un grain neuf (mesure #24461 : 37 des 120 grains
+        # servis portaient un marqueur vivant).
+        #
+        # L'exclusion vise les lanes HORS `DELIVERED_URN_LANES` (#15069) :
+        # l'urne `delivered` -- et la lecture du label -- sont reservees au
+        # coordinateur et a l'adjoint, qui decident de la fermeture.
+        # `--include-delivered` reste l'echappatoire NOMMEE (son help dit
+        # « typiquement pour une lane habilitee a fermer ») : il leve
+        # l'exclusion comme il leve les exclusions par sonde.
+        if (DELIVERED_LABEL in labels
+                and not delivered_urn_allowed(getattr(args, "lane", None))
+                and not getattr(args, "include_delivered", False)):
+            if label_drops is not None:
+                label_drops.append((item, _DELIVERED_LABEL_CAUSE))
+            return False
         if required_labels_set and not required_labels_set.issubset(labels):
             return False
         if excluded_labels_set and excluded_labels_set.intersection(labels):
@@ -10714,6 +11379,9 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
         for cause in item["causes"]:
             print(f"       {cause}")
     print()
+    # #25522 : les PRs rouges qui n'attendent PAS la lane. Elles sont dites
+    # (la lane les recopie dans son [DONE]) et ne retiennent pas le tapis.
+    print_waiting_others(backlog)
     if red and all(r.get("is_adjacency") for r in red):
         # #13967 : quand la cause du rouge est `adjacency` (G-VAR-3, mesure
         # du 2026-09-01 = 13 PRs / 25 rouges mesurables = premiere cause de
@@ -11841,11 +12509,35 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         # tapis sans service appellerait `check_claims` indefiniment.
         # `max_iters` est calcule plus haut (#22983 : la fenetre de priming
         # doit couvrir celle que la boucle parcours).
+        #
+        # #25522 point 4 -- la fenetre S'ETEND par tranches (70 -> 140 ->
+        # 210...) quand la boucle ne retient RIEN et qu'il reste du temps
+        # sous le mur. Mesure fondatrice du 09/11 : la boucle s'achevait sur
+        # 0 retenu et 70 positions parcourues, sans que rien ne dise si le
+        # pool portait encore des grains servables plus loin. L'extension est
+        # bornee par le MUR (au-dela, plus aucune sonde n'est emise) et par
+        # la TAILLE du pool -- elle ne sert jamais un candidat que la lane
+        # n'aurait pas pu voir sans elle.
+        window = max_iters
+        tranche = max_iters if max_iters > 0 else 1
+        positions = 0
+        state["service_window"] = window
+        state["service_window_extended"] = False
         for i, it in enumerate(belt_pool):
-            if i >= max_iters:
-                break
+            if i >= window:
+                if (not belt_picks and not expired()
+                        and window < len(belt_pool)):
+                    next_window = min(window + tranche, len(belt_pool))
+                    if next_window <= window:
+                        break
+                    window = next_window
+                    state["service_window"] = window
+                    state["service_window_extended"] = True
+                else:
+                    break
             if len(belt_picks) >= args.grains:
                 break
+            positions += 1
             n = it["number"]
             if n in belt_claims:
                 code, human = belt_claims[n]
@@ -12041,6 +12733,12 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                         state.setdefault("marker_unread", []).append(n)
                 if recent_flag is True and not marker_expired:
                     state["recent_filtered"] += 1
+                    # #24461 (c) point 4 -- le MOTIF d'ecartement est
+                    # NOMME : la cause rendue dit POURQUOI l'issue a ete
+                    # ecartee, pour que l'urne de l'adjoint l'instruise
+                    # sans re-deriver la grammaire. Lecture par l'instantane
+                    # local : ZERO requete.
+                    motif = _delivery_motif(n)
                     belt_withheld.append(
                         (it,
                          ("LIVRAISON (dossier de cloture CLOSE) : le dossier "
@@ -12051,9 +12749,15 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                           "sonde." if terminal_closure else
                           "LIVRAISON (recent) : marqueur de cloture sur le "
                           "dernier commentaire ([DELIVERED] / "
-                          "[FROZEN] / [INFO] candidate-delivered). "
-                          "Candidat remplace hors budget de sonde.")))
+                          "[FROZEN] / [INFO] candidate-delivered)."
+                          + ((" " + delivery_grammar.MOTIF_SUFFIX + motif)
+                             if motif else "")
+                          + " Candidat remplace hors budget de sonde.")))
                     continue
+                # Le motif est calcule UNE FOIS par candidat, avant les deux
+                # sites d'ecartement : il est lu dans l'instantane local
+                # (ZERO requete) et sert a nommer la cause.
+                motif = _delivery_motif(n)
                 reason = delivered_signal_reason(
                     it, args.lane, counted_probe, state["failures"],
                     counted_merged_pr_probe, counted_revocation_probe,
@@ -12062,6 +12766,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 if reason is not None:
                     belt_withheld.append(
                         (it, "LIVRAISON : " + reason
+                         + ((" " + delivery_grammar.MOTIF_SUFFIX + motif)
+                            if motif else "")
                          + " Candidat remplace dans la meme urne."))
                     continue
                 # #16589/#21757 : la sonde de PR couvrante vient APRES le filtre
@@ -12154,6 +12860,17 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                       "emise -- candidat ecarte, pas servi"))
                 continue
             belt_picks.append(it)
+        # #25522 point 4 : la sortie doit dire CE QUE la boucle a couvert,
+        # pas seulement ce qu'elle a rendu. Deux nombres : les positions
+        # parcourues (la fenetre reellement vue) et les livraisons en
+        # attente (les candidats ecartees par le filtre de livraison --
+        # un travail deja rendu ou en cours, que l'urne `delivered` sert).
+        # Sans eux, « 0 retenu » est muet : la lane ne peut pas distinguer
+        # « le pool est vide » de « les 70 positions vues etaient toutes
+        # livrees ».
+        state["service_positions"] = positions
+        state["pending_deliveries"] = sum(
+            1 for _, cause in belt_withheld if cause.startswith("LIVRAISON"))
         return belt_picks, belt_withheld, state
 
 
@@ -12248,6 +12965,19 @@ def main(argv: list[str] | None = None) -> int:
     except gh_identity.GhIdentityError as exc:
         warn_gh_identity = True
         print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
+    # #25522 : le picker dit qu'il est PERIME. La mesure est LOCALE (deux
+    # blob SHA) et ne coute aucun reseau ; l'avertissement sort sur stderr,
+    # parce que le stdout porte le document JSON et un en-tete de sortie
+    # teste par ailleurs.
+    stale_picker = picker_stale_state()
+    if stale_picker.get("stale"):
+        print("[PICKER PERIME] le picker local differe d'origin/main "
+              f"(blob local {(stale_picker.get('local') or '')[:12]} vs "
+              f"origin/main {(stale_picker.get('origin_main') or '')[:12]}) "
+              "-- le tirage tourne avec un contrat perime. Corriger par "
+              "`git fetch origin && git merge --ff-only origin/main` dans le "
+              "checkout de la lane, puis rejouer le tirage.",
+              file=sys.stderr)
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lane", default=None,
@@ -12833,7 +13563,8 @@ def main(argv: list[str] | None = None) -> int:
                               "assignment": assignment or "drainer-son-wip",
                               "grain": grain,
                               "red_hours": args.red_hours,
-                              "lane_record": lane_record, **backlog},
+                              "lane_record": lane_record,
+                              **stale_picker_payload(stale_picker), **backlog},
                              ensure_ascii=False, indent=2))
             return 0
         else:
@@ -12859,6 +13590,12 @@ def main(argv: list[str] | None = None) -> int:
         # rappel rouge/wip deja imprime. La sortie reste sans aucun vide.
     if not args.json:
         print_nits_gap(backlog)
+        if not red_hit:
+            # #25522 : la liste « en attente d'autrui » doit etre lue meme
+            # quand le garde rouge ne declenche rien : c'est elle qui dit a la
+            # lane ce qu'elle ne doit pas rejouer. Quand le garde declenche,
+            # `print_red_assignment` l'a deja rendue.
+            print_waiting_others(backlog)
         print_base_inherited(backlog)
         print_infra_rerun(backlog)
         print_dwell_waiting(backlog)
@@ -13134,9 +13871,18 @@ def main(argv: list[str] | None = None) -> int:
                         f"{sum(_epic_load.values())} livraison(s) en vol "
                         f"sur {len(_epic_load)} EPIC(s) "
                         f"(ouvertes + mergees)")
+        # #24461 -- les issues porteuses du LABEL `candidate-delivered` sont
+        # exclues du tapis des lanes hors `DELIVERED_URN_LANES` A LA LECTURE
+        # DE LA LISTE (le label est dans le payload du pool) : aucune sonde
+        # par issue n'est depensee, et l'exclusion ne peut pas s'eteindre sur
+        # un budget de sondes-epuise. Le compte est RAPPORTE : une exclusion
+        # invisible est un silence, et un silence se lit comme une absence.
+        _label_drops: list[tuple[dict, str]] = []
         belt_pool = belt_filter(admitted, args, urns=selected_urns,
                                 epic_load=_epic_load,
-                                drops=_epic_drops, notes=_epic_notes)
+                                drops=_epic_drops,
+                                label_drops=_label_drops,
+                                notes=_epic_notes)
         for _note in _epic_notes:
             _belt_phase(_note)
         # #24373 -- parcage des EPICs Origami dont le pli suivant n'est pas
@@ -13186,6 +13932,14 @@ def main(argv: list[str] | None = None) -> int:
                                     for it, cause in _epic_drops[:6])
                         + (f" (+{len(_epic_drops) - 6})"
                            if len(_epic_drops) > 6 else ""))
+        if _label_drops:
+            _belt_phase("label `candidate-delivered` : "
+                        f"{len(_label_drops)} issue(s) exclue(s) a la lecture "
+                        "de la liste, sans sonde (#24461) : "
+                        + ", ".join(f"#{it['number']}"
+                                    for it, _ in _label_drops[:6])
+                        + (f" (+{len(_label_drops) - 6})"
+                           if len(_label_drops) > 6 else ""))
         # Verification des claims tenes par une autre lane : on regarde
         # plus large que `args.grains` pour tolerer un remplacement si
         # la tete de file est tenue. Cout borne : au plus `grains + 4`
@@ -13485,6 +14239,22 @@ def main(argv: list[str] | None = None) -> int:
                   f"pool trie par derniere visite, la plus ancienne en tite.")
             print(f"   file complete : {len(belt_pool)} issues ; "
                   f"picks : {len(belt_picks)}.")
+            # #25522 point 4 : la fenetre de service et les livraisons en
+            # attente sont NOMMEES. « 0 retenu » doit dire ce que la boucle
+            # a couvert, sinon la lane ne peut pas distinguer un pool vide
+            # d'une fenetre de positions toutes livrees.
+            _svc_positions = belt_pick_state.get("service_positions")
+            if _svc_positions is not None:
+                _svc_extended = (" (fenetre ETENDUE -- rien n'etait retenu "
+                                 "et il restait du temps sous le mur)"
+                                 if belt_pick_state.get("service_window_extended")
+                                 else "")
+                print(f"   fenetre de service : {_svc_positions} "
+                      f"position(s) parcourue(s), fenetre "
+                      f"{belt_pick_state.get('service_window')}"
+                      f"{_svc_extended} ; "
+                      f"{belt_pick_state.get('pending_deliveries', 0)} "
+                      f"livraison(s) en attente.")
             if belt_dropped_validate:
                 # #20923 : la lane lit des « PRs inexistantes » alors que
                 # le pool vient de `gh issue list` et ses numeros sont
@@ -13792,6 +14562,20 @@ def main(argv: list[str] | None = None) -> int:
                     "unread": sorted(set(belt_pick_state.get(
                         "frozen_unread") or [])),
                 },
+                # #25522 point 4 : ce que la boucle de service a COUVERT.
+                # Sans ces nombres, « 0 retenu » est muet : la lane ne peut
+                # pas distinguer « le pool est vide » de « les positions
+                # vues etaient toutes livrees ». `extended` dit si la
+                # fenetre a ete elargie (elle ne l'est que si rien n'etait
+                # retenu ET qu'il restait du temps sous le mur).
+                "service_window": {
+                    "positions": belt_pick_state.get("service_positions"),
+                    "window": belt_pick_state.get("service_window"),
+                    "extended": bool(belt_pick_state.get(
+                        "service_window_extended")),
+                    "pending_deliveries": belt_pick_state.get(
+                        "pending_deliveries", 0),
+                },
                 # Volet bulk GraphQL (#19643, ai-01 review 5568273366) :
                 # `fallback_count` est le nombre de numeros absents de
                 # la map bulk et qui ont du recourir a la sonde unitaire
@@ -13824,6 +14608,27 @@ def main(argv: list[str] | None = None) -> int:
                 out_belt["repair"] = repair_payload
             else:
                 out_belt["repair"] = None
+            # #24461 (c) point 4 -- ce que le tapis ecarte ne disparait
+            # pas : la liste des issues ecartees pour CHACUN des deux motifs
+            # est nommee, separement, dans la sortie JSON.
+            _motif_withheld = [
+                {"number": it["number"], "cause": c or "",
+                 "classe": delivery_grammar.motif_class(c or "")}
+                for it, c in belt_withheld
+            ]
+            out_belt["delivery_motifs"] = {
+                "epic_wide": sorted({w["number"] for w in _motif_withheld
+                                     if w["classe"] == "epic_wide"}),
+                "living_dossier": sorted({w["number"] for w in _motif_withheld
+                                          if w["classe"] == "living_dossier"}),
+                # La classe est lue dans le MOTIF, pas dans toute la cause :
+                # une cause « dossier CLOSE » porte aussi la chaine
+                # `CLOSURE PREFLIGHT`, et une sous-chaine la classait a tort
+                # comme « dossier vivant ».
+                "unclassified": sorted({w["number"] for w in _motif_withheld
+                                        if w["classe"] is None
+                                        and w["cause"].startswith("LIVRAISON")}),
+            }
             print(json.dumps(out_belt, ensure_ascii=False, indent=2))
         else:
             # Sortie texte : un tableau compact, aligne sur la volee
@@ -14100,6 +14905,9 @@ def main(argv: list[str] | None = None) -> int:
                                      or [])),
             },
             "red_backlog": backlog,
+            # #25522 : le picker dit qu'il est perime (booleen), et porte
+            # les deux SHA (blob local vs blob a `origin/main`) a cote.
+            **stale_picker_payload(stale_picker),
             "substance_drought": drought,
             "lane_record": lane_record,
             "cache": cache_status,
