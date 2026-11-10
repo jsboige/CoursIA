@@ -36,6 +36,11 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.parse import quote
 
+if __package__:
+    from .curriculum_qualification import load_manifest, qualification_for
+else:
+    from curriculum_qualification import load_manifest, qualification_for
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
@@ -1277,7 +1282,10 @@ def aggregate_maturity(
     return "DRAFT"
 
 
-def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = None) -> dict | None:
+def analyze_notebook(
+    nb_path: Path, pedagogical: bool, git_meta: dict | None = None,
+    qualification_manifest: dict | None = None,
+) -> dict | None:
     """Analyze a single notebook and return its catalog entry."""
     try:
         notebook = json.loads(nb_path.read_text(encoding="utf-8"))
@@ -1321,6 +1329,9 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
 
     rel_str = str(rel).replace("\\", "/")
     gm = (git_meta or {}).get(rel_str, {})
+    qualification = qualification_for(
+        qualification_manifest or {}, f"{NOTEBOOKS_DIR.name}/{rel_str}"
+    )
 
     # Maturity 3-axes (cf docs/PARCOURS.md, issue #8051) :
     #   1. editorial    = prose pedagogique (DRAFT/ALPHA/BETA/FINAL)
@@ -1374,6 +1385,10 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
         "sous_serie_levels": sous_serie_levels,
         "kernel": kernel,
         "status": status,
+        # Axes déclarés indépendants du statut historique basé sur le chemin.
+        "difficulte": qualification["difficulte"] if qualification else None,
+        "recherche": qualification["recherche"] if qualification else None,
+        "qualification_justification": qualification["justification"] if qualification else None,
         # Jugement editorial curé (registre, #15080 critere 4) : a quoi SERT le
         # notebook pour un etudiant. Independant de `status` par construction --
         # un corrige resolu est READY et inutilisable comme sujet ; un enonce
@@ -1945,6 +1960,11 @@ def scan_all_notebooks(
     scripts/notebook_tools/README.md (section Catalogue).
     """
     tracked = _git_tracked_files() if git_tracked_only else None
+    try:
+        qualification_manifest = load_manifest(REPO_ROOT / "docs/curriculum/qualification/manifest.json")
+    except FileNotFoundError:
+        # Un ancien checkout peut ne pas encore porter le manifeste.
+        qualification_manifest = {}
     entries = []
     dirs = sorted(NOTEBOOKS_DIR.iterdir()) if not series_filter else [
         NOTEBOOKS_DIR / series_filter
@@ -1988,7 +2008,10 @@ def scan_all_notebooks(
                 )
                 _count(f"pedagogical:{motif}", nb_path)
                 continue
-            entry = analyze_notebook(nb_path, pedagogical, git_meta=git_meta)
+            entry = analyze_notebook(
+                nb_path, pedagogical, git_meta=git_meta,
+                qualification_manifest=qualification_manifest,
+            )
             if entry:
                 entries.append(entry)
             else:
@@ -2180,10 +2203,10 @@ def generate_markdown_report(entries: list[dict], repo_root: Path | None = None)
             lines.append(f"#### {bucket_name} ({len(bucket_items)})")
             lines.append("")
             lines.append(
-                "| # | Notebook | Title | Kernel | Status | Maturity | Duration | Owner |"
+                "| # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |"
             )
             lines.append(
-                "|---|----------|-------|--------|--------|----------|----------|-------|"
+                "|---|----------|-------|--------|--------|----------|------------|----------|----------|-------|"
             )
             for i, e in enumerate(bucket_items, 1):
                 basename = Path(e["path"]).name if e.get("path") else ""
@@ -2216,7 +2239,10 @@ def generate_markdown_report(entries: list[dict], repo_root: Path | None = None)
                 )
                 lines.append(
                     f"| {i} | {notebook_cell} | {title} | {kernel} "
-                    f"| {status_cell} | {maturity_cell} | {duration_cell} | {owner_cell} |"
+                    f"| {status_cell} | {maturity_cell} | "
+                    f"{_md_escape_cell(str(e.get('difficulte') or '—'))} | "
+                    f"{_md_escape_cell(str(e.get('recherche') or '—'))} | "
+                    f"{duration_cell} | {owner_cell} |"
                 )
             lines.append("")
 
