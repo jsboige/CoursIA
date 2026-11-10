@@ -17,8 +17,8 @@ Source : incidents 2026-05-07 (faux claim "MultiAgentSorryProver doesn't exist" 
    **Les 3 organes de vérification** (au moins un doit montrer que la situation a changé pour que le grain soit « pas ce que son body dit ») :
 
    1. **L'artefact** sur `main` courant — `git log -- <fichier>` + lecture du fichier (`Read` direct, pas un résumé).
-   2. **Le plateau** — `gh pr list --state all --search "head:<branch>"` + `gh pr list --state open --json files` sur le **chemin** visé.
+   2. **Le plateau** — `gh api "repos/jsboige/CoursIA/pulls?state=all&head=jsboige:<branch>"` + `gh pr list --state open --json files` sur le chemin visé.
    3. **Le commentaire de fermeture / décision** — `gh issue view N --comments` pour les commentaires après le dernier commit de référence du body.
 
-   Le verdict (4 cases), les anti-patterns et le test de détection systématique vivent dans [docs/reference/picker-delaisse-detail.md](../../docs/reference/picker-delaisse-detail.md) — **cette règle ne detaille pas**, elle pose le **geste obligatoire** : vérifier avant de conclure.
+   Le verdict (4 cases), les anti-patterns et le test de détection systématique vivent dans le [détail déporté](../../docs/reference/picker-delaisse-detail.md) — **cette règle ne detaille pas**, elle pose le **geste obligatoire** : vérifier avant de conclure.
 

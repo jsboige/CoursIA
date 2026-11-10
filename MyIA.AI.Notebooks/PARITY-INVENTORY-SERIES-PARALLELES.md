@@ -7,6 +7,8 @@
 >
 > Part of #12933. Périmètre : familles **sans fichier d'inventaire** — Search (Part1/Part2/Part3), Sudoku, GameTheory (racine + SocialChoice), SemanticWeb, Planners = **109 paires**. Probas Infer⇄PyMC et DecisionTheory ont leurs inventaires propres (§7).
 
+> **Actualisation** : la paire Safe Subgame Solving est désormais enregistrée et ses deux variantes portent `13b`. Le tableau ci-dessous conserve la mesure historique.
+
 ## 1. Table de verdicts par famille
 
 Vocabulaire aligné sur l'EPIC : `alignée` (même numéro complet et titre base, seuls les suffixes kernels varient) · `compagnon-b` (la seule différence d'identifiant est un `b`/`c` porté par un seul côté — forme documentée légitime par `_schema.yaml` `numbering_exception`, mais **décalée au sens strict de la doctrine**) · `décalée-numéro` (numéros divergents autrement) · `décalée-titre` (même numéro, titres base différents) · `extension unilatérale` (célibataires, §4). `fausse paire` : aucune détectée dans le périmètre.

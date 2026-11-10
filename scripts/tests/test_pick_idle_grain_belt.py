@@ -4109,10 +4109,9 @@ def test_belt_json_withheld_complete_reflects_probe_ceilings(
     assert payload["delivered_signal"]["withheld_complete"] is True
 
 
-def test_le_refus_strict_est_par_fenetre_et_non_par_numero(monkeypatch, capsys):
-    """#22983 : le fail-CLOSED STRICT refuse la FENETRE entiere des qu'UN
-    seul numero est perime -- le refus n'est pas proportionnel au nombre
-    de numeros perimes.
+def test_le_refus_strict_est_par_numero_et_non_par_fenetre(monkeypatch, capsys):
+    """#22983 (v3) : le fail-CLOSED STRICT refuse le NUMERO perime, pas la
+    FENETRE entiere.
 
     Mesure fondatrice (09/11, run c3010 de cette lane, sur `main` a jour) :
     le tapis a rendu sur stderr
@@ -4125,14 +4124,17 @@ def test_le_refus_strict_est_par_fenetre_et_non_par_numero(monkeypatch, capsys):
 
     Onze numeros perimes sur 70 -- et **les 59 autres ont ete refuses
     eux aussi** : « 0 retenu(s), 70 witheld », « picks : 0 ». Le message ne
-    nomme que les 11, mais le refus porte sur la fenetre entiere.
+    nomme que les 11, mais le refus portait sur la fenetre entiere.
 
-    La lecture du code nomme la mecanique, et ce temoin la PROVE :
-    `gh_snapshot.serves()` est une validite **par issue** (une issue
-    perimee rend le predicat faux), mais l'appelant l'applique a la
-    fenetre entiere : un seul numero perime fait echouer `serves()` pour
-    les 70, et la voie STRICT rend alors `BLOCKED` pour les 70 -- aucun
-    grain servi, le tapis fail-CLOSED.
+    La lecture du code nomme la mecanique : `gh_snapshot.serves()` est une
+    validite **par issue** (un stamp frais par issue, ET les commentaires
+    de cette issue), mais l'appelant l'appliquait a la fenetre entiere --
+    un seul numero perime faisait echouer `serves()` pour les 70, et la
+    voie STRICT rendait alors `BLOCKED` pour les 70 : aucun grain servi,
+    le tapis fail-CLOSED sur une fenetre dont 59 numeros etait lisibles.
+
+    Ce temoin est le temoin INVERSE : les deux numeros frais sont
+    **servis**, et le numero perime est refuse **avec son motif**.
 
     Ce que ce temoin NE dit pas : que la porte
     `MAX_SWEEP_LOOKBACK_SECONDS` serait en cause. Elle ecarte le
@@ -4145,6 +4147,11 @@ def test_le_refus_strict_est_par_fenetre_et_non_par_numero(monkeypatch, capsys):
     # le teardown le restaure (monkeypatch restaure la valeur qu'il a
     # relevee, pas celle que le code a ensuite ecrite).
     monkeypatch.setattr(clc, "_SNAPSHOT", None)
+    # La jambe IMPLICIT (#14300) partirait sur `gh pr list` : elle est
+    # neutralisee ici -- ce temoin mesure le refus STRICT, pas les PRs
+    # ouvertes qui referencent l'issue.
+    monkeypatch.setattr(clc, "_find_open_prs_referencing_issue",
+                        lambda number, my_lane, prs=None, threshold=None: [])
 
     snapshot = _mini_snapshot([11, 12, 13])
     # 12 est perime (2 h > le TTL de 30 min) ; 11 et 13 sont frais.
@@ -4155,17 +4162,23 @@ def test_le_refus_strict_est_par_fenetre_et_non_par_numero(monkeypatch, capsys):
                                 strict_snapshot=True)
 
     err = capsys.readouterr().err
-    assert "[22983] voie en processus indisponible" in err, (
+    assert "[22983] refus STRICT par numero" in err, (
         f"le refus doit NOMMER sa cause sur stderr (got: {err!r})")
     perimes = re.search(r"perimes: ([^)]*)", err)
     assert perimes is not None, f"la cause doit nommer les perimes ({err!r})"
     assert perimes.group(1).strip() == "12", (
         f"seul le numero perime doit etre nomme ({perimes.group(1)!r})")
 
-    # Le refus porte sur la FENETRE : les deux numeros frais sont refuses
-    # eux aussi. C'est ce qui produit « 0 retenu(s), 70 witheld ».
-    for numero in (11, 12, 13):
+    # Les deux numeros frais sont SERVIS : le refus ne les concerne pas.
+    for numero in (11, 13):
         code, _human = verdicts[numero]
-        assert code == pig.CLAIM_CODE_BLOCKED, (
-            f"le numero {numero} devrait etre refuse avec la fenetre "
-            f"(verdict: {verdicts[numero]!r})")
+        assert code in (pig.CLAIM_CODE_FREE, pig.CLAIM_CODE_FREE_STALE), (
+            f"le numero frais {numero} doit etre servi (verdict: "
+            f"{verdicts[numero]!r})")
+
+    # Le numero perime est refuse, ET son refus porte son MOTIF : un refus
+    # muet serait indistinguable d'une panne de fenetre.
+    code, human = verdicts[12]
+    assert code == pig.CLAIM_CODE_BLOCKED, verdicts[12]
+    assert "perime" in human, f"le refus doit porter son motif ({human!r})"
+    assert "#12" in human, f"le motif doit nommer le numero ({human!r})"
