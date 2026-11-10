@@ -1,6 +1,6 @@
 # CSV de synchro traduction — série ML/ML.Net
 
-**Statut** : Phase 2 rollout (Epic #4957 / #1650). 3ᵉ série couverte par l'infrastructure i18n, après `SymbolicAI/Argument_Analysis/` (PR #5799) et `Probas/Infer/` (PR #5801).
+**Statut** : Phase 2 rollout (Epic #4957 / #1650). 3ᵉ série couverte par l'infrastructure i18n, après `SymbolicAI/ArgumentAnalysis/` (PR #5799) et `Probas/Infer/` (PR #5801).
 
 ## Couvert
 
@@ -41,7 +41,7 @@ Sortie = JSON `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYN
 
 - Issue #4957 — design infrastructure synchronisation traduction
 - Epic #1650 — traduction multilingue du dépôt
-- `translations/symbolicai/README.md` — 1ère série (Argument_Analysis)
+- `translations/symbolicai/README.md` — 1ère série (ArgumentAnalysis)
 - `translations/probas-infer/README.md` — 2ᵉ série (Probas/Infer)
 - `scripts/translation/README.md` — scripts T1+T2
 - `.github/workflows/translation-drift.yml` — CI non-bloquante

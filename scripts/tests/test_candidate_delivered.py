@@ -299,6 +299,27 @@ def test_one_closing_marker_among_partials_is_a_delivery():
     assert verdict == "candidate"
 
 
+def test_citation_de_cloture_ne_transforme_pas_une_tranche_en_livraison():
+    """Un close cite en code ne prend pas le dessus sur un vrai See/Part of."""
+    issue = _issue(title="x", number=1, comments=[])
+    for body in (
+        "See #1\n\nLa forme `Closes #1` est un exemple de syntaxe.",
+        "Part of #1\n\n```text\nCloses #1\n```",
+        "Refs #1\n\n``Closes #1``",
+    ):
+        refs = [{"pr_number": 10, "merged_at": "2026-08-11T10:00:00Z",
+                 "body": body}]
+        verdict, _ = classify(issue, refs)
+        assert verdict == "partial", (body, verdict)
+
+
+def test_cloture_d_un_autre_numero_ne_promeut_pas_la_tranche():
+    issue = _issue(title="x", number=1, comments=[])
+    refs = [{"pr_number": 10, "merged_at": "2026-08-11T10:00:00Z",
+             "body": "Part of #1\nCloses #99"}]
+    assert classify(issue, refs)[0] == "partial"
+
+
 def test_marker_requires_word_adjacency():
     # A word between the marker and the number is prose, not the prescribed
     # form. ("Please see #1" DOES match: it contains the literal `see #1` --

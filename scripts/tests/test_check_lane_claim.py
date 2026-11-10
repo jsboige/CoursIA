@@ -2570,7 +2570,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
     fixture_paths = [
         "MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-CSharp.ipynb",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/"
-        "Planners-5-Heuristics-Csharp.ipynb",
+        "Planners-05-Heuristics-Csharp.ipynb",
         "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed-CSharp.ipynb",
         "MyIA.AI.Notebooks/Search/Part1-Foundations/"
         "Search-05-GeneticAlgorithms-CSharp.ipynb",
@@ -2591,7 +2591,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
                 "2026-08-11T04:02:00Z"),
         comment("[CLAIMED] lane myia-po-2024:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/"
-                "Planners-5-Heuristics-Csharp.ipynb",
+                "Planners-05-Heuristics-Csharp.ipynb",
                 "2026-08-11T04:03:00Z"),
         comment("[CLAIMED] lane myia-po-2025:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/Search/Part1-Foundations/"
@@ -5945,7 +5945,7 @@ def test_lint_12327_run_check_11112_exact_scenario(capsys, monkeypatch):
             "MyIA.AI.Notebooks/Sudoku/SL-5-test.ipynb",
             "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-test.ipynb",
             "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-test.ipynb",
-            "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/I2_Contre-test.ipynb",
+            "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/I2_Contre-test.ipynb",
             "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama-test.ipynb",
         ],
     )
@@ -5972,7 +5972,7 @@ def test_lint_12327_run_check_11112_exact_scenario(capsys, monkeypatch):
          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7*.ipynb\n",
          "2026-08-22T14:12:00Z"),
         ("[CLAIMED] lane myia-po-2026:CoursIA-2 -- paths: "
-         "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/I2_Contre*.ipynb\n",
+         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/I2_Contre*.ipynb\n",
          "2026-08-22T14:13:00Z"),
     ]
     events = _events_for(*bodies_and_dates)

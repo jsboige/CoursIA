@@ -17421,7 +17421,7 @@ Pour ces fonctionnalites, il faut passer a **OWL** (notebook suivant).
 ***
 
 **Navigation** :  [<< 5-LinkedData](SW-05-LinkedData-CSharp.ipynb) | [Index](README.md) | [7-OWL >>](SW-07-OWL-CSharp.ipynb)",,,,,,,,3cb2363015f609e1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,header-navigation,markdown,fr,7690e8d9e9cb8380,"# SW-07b-OWL-Python
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,header-navigation,markdown,fr,42a5529d1a63d43a,"# SW-07b-OWL-Python
 
 **Navigation** : [Index](README.md) | [<< SW-7 C#](SW-07-OWL-CSharp.ipynb) | [SW-8 SHACL >>](SW-08-SHACL-Python.ipynb)
 
@@ -17444,12 +17444,22 @@ A la fin de ce notebook, vous saurez :
 
 ### Duree estimee : 30 minutes
 
-> **Note** : OWLReady2 inclut le raisonneur HermiT (Java) pour le raisonnement OWL 2 DL complet.",,,,,,,,7690e8d9e9cb8380,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-1-title,markdown,fr,61bd2478bbb4961d,"***
+> **Note** : OWLReady2 inclut le raisonneur HermiT (Java) pour le raisonnement OWL 2 DL complet.
+
+
+### Raisonnement
+
+Au-delà de la syntaxe, ce notebook montre le **raisonnement** : un raisonneur (HermiT) déduit de nouveaux faits — ici le type de chaque individu — à partir des restrictions déclarées. C'est la différence essentielle avec une simple base de triples, où rien n'est inféré.
+",,,,,,,,42a5529d1a63d43a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-1-title,markdown,fr,14bed3fdcdba9357,"***
 
 ## 1. Installation et Imports
 
-**OWLReady2** est la bibliotheque de reference pour manipuler des ontologies OWL en Python.",,,,,,,,61bd2478bbb4961d,,,,,,,,,,,,,,,
+**OWLReady2** est la bibliotheque de reference pour manipuler des ontologies OWL en Python.
+
+
+OWLReady2 est pré-provisionné dans l'environnement `coursia-py313` (voir `SemanticWeb/requirements.txt`) : la première cellule ne fait que le charger. Si l'import échouait, chaque cellule suivante basculerait sur un message de repli grâce au drapeau `OWLREADY2_AVAILABLE`.
+",,,,,,,,14bed3fdcdba9357,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,install-packages,code,fr,1b5d68b004ff2546,"# Dependances pre-provisionnees (owlready2) : voir SemanticWeb/requirements.txt ; imports dans les cellules suivantes.
 ",,,,,,,,1b5d68b004ff2546,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,zyf8e47gkb,markdown,fr,f6321903cdfa6dd7,Importation de la bibliotheque OWLReady2 pour la manipulation d'ontologies OWL.,,,,,,,,f6321903cdfa6dd7,,,,,,,,,,,,,,,
@@ -17465,11 +17475,17 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,imports-owlread
 except ImportError:
     OWLREADY2_AVAILABLE = False
     print(""OWLReady2 non disponible. Installez avec : pip install owlready2"")",,,,,,,,7c821b88c5a75c97,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-2-title,markdown,fr,0ba684335258ebae,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-2-title,markdown,fr,794805b17501bcbf,"**Lecture de la sortie.** Une seule ligne : `OWLReady2 importe.` — l'import a réussi, `OWLREADY2_AVAILABLE` vaut `True`, et toutes les cellules suivantes exécuteront leur branche principale. La mémoire JVM du raisonneur a été fixée à 1000 Mo (`owlready2.reasoning.JAVA_MEMORY = 1000`) avant l'import.
+
+***
 
 ## 2. Créer une Ontologie Simple
 
-Commencons par créer une ontologie pour une famille de personnes, avec des classes et des proprietes.",,,,,,,,0ba684335258ebae,,,,,,,,,,,,,,,
+Commencons par créer une ontologie pour une famille de personnes, avec des classes et des proprietes.
+
+
+La définition d'une ontologie se fait **dans le code Python**, pas dans un fichier externe : `get_ontology(""http://example.org/family.owl#"")` crée l'ontologie, et le bloc `with onto:` déclare classes et propriétés dans son espace de noms.
+",,,,,,,,794805b17501bcbf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,create-ontology,code,fr,8dbfb83ccbe7bb78,"if OWLREADY2_AVAILABLE:
     # Create a new ontology
     onto = get_ontology(""http://example.org/family.owl#"")
@@ -17516,7 +17532,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,create-ontology
     print(f""  age (DataProperty, integer)"")
 else:
     print(""OWLReady2 non disponible : creation d'ontologie ignoree."")",,,,,,,,8dbfb83ccbe7bb78,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,create-ontology-interpretation,markdown,fr,8f091e80d021f02c,"### Interpretation : Creation d'ontologie
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,create-ontology-interpretation,markdown,fr,d43078ac48d7cc7e,"### Interpretation : Creation d'ontologie
 
 **Syntaxe OWLReady2** :
 - `Thing` est la classe racine OWL (equivalent de `owl:Thing`)
@@ -17530,12 +17546,20 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,create-ontology
 | `ObjectProperty` | `a owl:ObjectProperty` | `new OntologyObjectProperty(""has_child"")` |
 | `DataProperty` | `a owl:DatatypeProperty` | `new OntologyDataProperty(""age"")` |
 | `domain = [Person]` | `rdfs:domain :Person` | `.Domain = personClass` |
-| `range = [Person]` | `rdfs:range :Person` | `.Range = personClass` |",,,,,,,,8f091e80d021f02c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-3-title,markdown,fr,2a150ae8587a2f77,"***
+| `range = [Person]` | `rdfs:range :Person` | `.Range = personClass` |
+
+
+Notez le changement de niveau d'abstraction : OWLReady2 manipule des **classes et propriétés nommées**, là où dotNetRDF manipule des nœuds et des arêtes explicites — la sémantique OWL sous-jacente reste la même.
+",,,,,,,,d43078ac48d7cc7e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-3-title,markdown,fr,002cb73224de6201,"***
 
 ## 3. Créer des Individus et Assertions
 
-Ajoutons des individus (instances) a notre ontologie.",,,,,,,,2a150ae8587a2f77,,,,,,,,,,,,,,,
+Ajoutons des individus (instances) a notre ontologie.
+
+
+Un individu est une instance de classe munie de valeurs de propriétés : `Man(""John"", has_name=""John Smith"", age=45)`. Les propriétés inverses (`has_child` / `has_parent`) sont déclarées une seule fois et maintenues automatiquement par OWLReady2.
+",,,,,,,,002cb73224de6201,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,create-individuals,code,fr,8e61c631634c9c5a,"if OWLREADY2_AVAILABLE:
     # Create individuals
     john = Man(""John"", has_name=""John Smith"", age=45)
@@ -17559,7 +17583,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,create-individu
     print(f""  {alice.name} -> has_parent -> {[p.name for p in alice.has_parent]}"")
 else:
     print(""OWLReady2 non disponible : creation d'individus ignoree."")",,,,,,,,8e61c631634c9c5a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,individuals-interpretation,markdown,fr,ccfa95313ba2c870,"### Interpretation : Individus
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,individuals-interpretation,markdown,fr,1eaa115c29a200b4,"### Interpretation : Individus
 
 OWLReady2 utilise une syntaxe Python intuitive :
 - `Man(""John"", ...)` créé un individu de la classe `Man` avec l'IRI `#John`
@@ -17570,12 +17594,20 @@ OWLReady2 utilise une syntaxe Python intuitive :
 |-----------|-----------|-------------|
 | Créer individu | `john = Man(""John"")` | `:John a :Man .` |
 | Assert propriete | `john.has_child.append(alice)` | `:John :has_child :Alice .` |
-| Propriete data | `john.has_name = ""John""` | `:John :has_name ""John"" .` |",,,,,,,,ccfa95313ba2c870,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-4-title,markdown,fr,1d326b8f18d74872,"***
+| Propriete data | `john.has_name = ""John""` | `:John :has_name ""John"" .` |
+
+
+La maintenance des propriétés inverses est automatique : déclarer `has_child.inverse_property = has_parent` suffit, aucune assertion séparée n'est nécessaire pour `has_parent`.
+",,,,,,,,1eaa115c29a200b4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-4-title,markdown,fr,6cf5b1b86aa03ce3,"***
 
 ## 4. Restrictions OWL
 
-OWL permet d'exprimer des restrictions sur les classes. Creons une nouvelle ontologie avec des restrictions.",,,,,,,,1d326b8f18d74872,,,,,,,,,,,,,,,
+OWL permet d'exprimer des restrictions sur les classes. Creons une nouvelle ontologie avec des restrictions.
+
+
+Une **restriction** définit une classe par une condition logique : ici `Manager` = `Person & manages.some(Department)`, à lire « une personne qui manage au moins un département ». C'est `equivalent_to` qui exprime cette définition nécessaire et suffisante.
+",,,,,,,,6cf5b1b86aa03ce3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,restrictions,code,fr,1ad87d8236c98329,"if OWLREADY2_AVAILABLE:
     # Create a new ontology with restrictions
     onto2 = get_ontology(""http://example.org/company.owl#"")
@@ -17612,7 +17644,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,restrictions,co
     print(f""  Person & manages.some(Department) = Person AND (exists manages . Department)"")
 else:
     print(""OWLReady2 non disponible : restrictions ignorees."")",,,,,,,,1ad87d8236c98329,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,restrictions-interpretation,markdown,fr,4bf26416a296f020,"### Interpretation : Restrictions OWL
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,restrictions-interpretation,markdown,fr,4f1610d00dfc0f1d,"### Interpretation : Restrictions OWL
 
 | Restriction OWLReady2 | OWL (Manchester) | Turtle | Signification |
 |----------------------|-------------------|--------|---------------|
@@ -17622,20 +17654,28 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,restrictions-in
 | `manages.min(1)` | `manages min 1` | `owl:minCardinality` | ≥ 1 |
 | `manages.exactly(1)` | `manages exactly 1` | `owl:cardinality` | = 1 |
 
-Equivalent dotNetRDF : Restrictions avec `OntologyClass` et expressions OWL.",,,,,,,,4bf26416a296f020,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-5-title,markdown,fr,11d4af3cda08322d,"***
+Equivalent dotNetRDF : Restrictions avec `OntologyClass` et expressions OWL.
+
+
+La restriction `some` est **existentielle** (∃) : elle n'exige qu'au moins une valeur. Les variantes `only` (∀), `min`, `max` et `exactly` complètent le tableau et seront mises en pratique dans les exercices.
+",,,,,,,,4f1610d00dfc0f1d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-5-title,markdown,fr,3445d9a0fd4f7a29,"***
 
 ## 5. Raisonnement avec HermiT
 
-OWLReady2 inclut le raisonneur HermiT qui peut deduire de nouvelles connaissances a partir de l'ontologie.",,,,,,,,11d4af3cda08322d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,reasoning,code,fr,7031c5a164e116b2,"if OWLREADY2_AVAILABLE:
+OWLReady2 inclut le raisonneur HermiT qui peut deduire de nouvelles connaissances a partir de l'ontologie.
+
+
+Le raisonnement consiste à **classifier** : déduire le type de chaque individu à partir des restrictions déclarées. HermiT (Java, OWL 2 DL complet) est embarqué par OWLReady2 ; `sync_reasoner()` peuple les types inférés, lisibles via `.is_a`.
+",,,,,,,,3445d9a0fd4f7a29,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,reasoning,code,fr,ceadaf1d5280eed9,"if OWLREADY2_AVAILABLE:
     # Create individuals and run reasoning
     import subprocess
 
     # Check if Java is available for HermiT reasoner
     java_available = False
     try:
-        result = subprocess.run([""java"", ""-version""], capture_output=True, text=True)
+        result = subprocess.run([""java"", ""-version""], capture_output=True, text=True, encoding=""utf-8"", errors=""replace"")
         java_available = result.returncode == 0
     except FileNotFoundError:
         pass
@@ -17683,8 +17723,8 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,reasoning,code,
         print(""  Alice -> Employee (car works_in SOME Department)"")
         print(""  Charlie -> Employee + Manager (car works_in ET manages)"")
 else:
-    print(""OWLReady2 non disponible : raisonnement ignore."")",,,,,,,,7031c5a164e116b2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,reasoning-interpretation,markdown,fr,191ac65bb1531d4a,"### Interpretation : Raisonnement
+    print(""OWLReady2 non disponible : raisonnement ignore."")",,,,,,,,ceadaf1d5280eed9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,reasoning-interpretation,markdown,fr,b1f8ce157a0d7249,"### Interpretation : Raisonnement
 
 Le raisonneur HermiT a deduit :
 - Bob est Employee : il travaille dans un departement (IT)
@@ -17697,12 +17737,20 @@ Le raisonneur HermiT a deduit :
 | Types inférés | `.is_a` (mis a jour) | `GetTypes()` (inclus inférés) |
 | Raisonneur | HermiT (OWL 2 DL complet) | RDFS + OWL 2 RL limite |
 
-> **Note** : HermiT est un raisonneur OWL 2 DL complet, beaucoup plus puissant que le raisonneur RDFS de base de dotNetRDF.",,,,,,,,191ac65bb1531d4a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-6-title,markdown,fr,1874d9c872ef5a24,"***
+> **Note** : HermiT est un raisonneur OWL 2 DL complet, beaucoup plus puissant que le raisonneur RDFS de base de dotNetRDF.
+
+
+Le reclassement est une **conséquence logique** des définitions : `Employee = Person & works_in.some(Department)`, donc tout individu possédant un `works_in` est `Employee` — le raisonneur n'ajoute aucune règle ad hoc.
+",,,,,,,,b1f8ce157a0d7249,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-6-title,markdown,fr,3b9343a4c819ff91,"***
 
 ## 6. Charger une Ontologie Existante
 
-OWLReady2 peut charger des ontologies depuis des fichiers ou des URLs.",,,,,,,,1874d9c872ef5a24,,,,,,,,,,,,,,,
+OWLReady2 peut charger des ontologies depuis des fichiers ou des URLs.
+
+
+Contrairement à dotNetRDF, qui charge des graphes de triples, OWLReady2 charge une ontologie entière et reconstruit classes, propriétés et individus en objets Python manipulables directement.
+",,,,,,,,3b9343a4c819ff91,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,load-ontology,code,fr,d61674b2c38694f8,"if OWLREADY2_AVAILABLE:
     # Load the university ontology (if available)
     import os
@@ -17733,11 +17781,17 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,load-ontology,c
             print(f""  {cls.name}"")
 else:
     print(""OWLReady2 non disponible : chargement d'ontologie ignore."")",,,,,,,,d61674b2c38694f8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-7-title,markdown,fr,77421dc68e7e6325,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-7-title,markdown,fr,5d6bdcc358ed3d68,"**Lecture de la sortie.** Le fichier `data/university.owl` a été trouvé et chargé : la sortie annonce `Ontologie chargee : http://example.org/university#`, `Classes : 6`, `Individuals : 6`, puis liste six classes (`Student`, `Course`, `Professor`, `Person`, `Department`, `GraduateStudent`). Le chargement d'une ontologie externe par chemin de fichier est donc opérationnel.
+
+***
 
 ## 7. Exporter une Ontologie
 
-OWLReady2 peut exporter les ontologies dans différents formats.",,,,,,,,77421dc68e7e6325,,,,,,,,,,,,,,,
+OWLReady2 peut exporter les ontologies dans différents formats.
+
+
+L'export produit des fichiers dans des formats standards (RDF/XML, Turtle/N-Triples) relisibles par n'importe quel outil du web sémantique — c'est le pont vers dotNetRDF et les autres notebooks de la série.
+",,,,,,,,5d6bdcc358ed3d68,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,export-ontology,code,fr,91d317a858188691,"if OWLREADY2_AVAILABLE:
     # Export ontology to RDF/XML
     onto2.save(file=""data/temp_company.owl"", format=""rdfxml"")
@@ -17758,12 +17812,18 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,export-ontology
             print(line.rstrip())
 else:
     print(""OWLReady2 non disponible : export ignore."")",,,,,,,,91d317a858188691,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-8-title,markdown,fr,0a6a8eda466b4056,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,section-8-title,markdown,fr,c7800a8087b438d0,"**Lecture de la sortie.** Les deux exports réussissent (`data/temp_company.owl` en RDF/XML, `data/temp_company.ttl` en N-Triples), et l'aperçu montre la restriction `manages.some(Department)` sérialisée en nœud blank : `_:2` est de type `<http://www.w3.org/2002/07/owl#Restriction>` avec `<http://www.w3.org/2002/07/owl#onProperty>` = `<http://example.org/company.owl#manages>` et `<http://www.w3.org/2002/07/owl#someValuesFrom>` = `<http://example.org/company.owl#Department>`, et la classe `Manager` en est l'`<http://www.w3.org/2002/07/owl#intersectionOf>` avec `Person`.
+
+***
 
 ## 8. Tableau de Correspondance dotNetRDF / OWLReady2
 
-Ce tableau recapitule les equivalences pour la manipulation d'ontologies.",,,,,,,,0a6a8eda466b4056,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,comparison-table,markdown,fr,5a9acf04577d60d1,"| Opération | dotNetRDF (C#) | OWLReady2 (Python) |
+Ce tableau recapitule les equivalences pour la manipulation d'ontologies.
+
+
+Ce tableau sert de feuille de route : chaque concept OWL manipulé en Python y est mis en regard de son équivalent dotNetRDF (C#, notebook SW-7).
+",,,,,,,,c7800a8087b438d0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,comparison-table,markdown,fr,195d315e206917aa,"| Opération | dotNetRDF (C#) | OWLReady2 (Python) |
 |-----------|---------------|---------------------|
 | **Créer ontologie** | `new OntologyGraph()` | `get_ontology(""uri#"")` |
 | **Créer classe** | `new OntologyClass(""Person"")` | `class Person(Thing): pass` |
@@ -17787,20 +17847,32 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,comparison-tabl
 | **Raisonneur** | RDFS + OWL RL | HermiT (OWL 2 DL complet) |
 | **Performance** | Rapide pour gros graphes | Optimise pour ontologies |
 
-> **Choix** : Utilisez dotNetRDF pour des graphes RDF generiques, OWLReady2 pour des ontologies OWL avec raisonnement complexe.",,,,,,,,5a9acf04577d60d1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,exercises-title,markdown,fr,231fbcc9e32eb111,"***
+> **Choix** : Utilisez dotNetRDF pour des graphes RDF generiques, OWLReady2 pour des ontologies OWL avec raisonnement complexe.
+
+
+Comment lire ce tableau : chaque ligne part d'un besoin (créer, affirmer, restreindre) et donne la recette dans les deux mondes ; en Python, tout se déclare comme des classes Python.
+",,,,,,,,195d315e206917aa,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,exercises-title,markdown,fr,4f361897ef711f47,"***
 
 ## Exemples guides (issus de contributions etudiantes)
 
-Les exercices ci-dessous ont ete resolus et valides a partir de contributions etudiantes ; ils sont conserves comme **exemples guides** d'utilisation d'OWL et du raisonneur HermiT. De **nouveaux exercices** a completer sont proposes a la fin du notebook.",,,,,,,,231fbcc9e32eb111,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,exercise-1-intro,markdown,fr,d0ab2847d6ddfe96,"### Exemple guide 1 : Famille avec restrictions
+Les exercices ci-dessous ont ete resolus et valides a partir de contributions etudiantes ; ils sont conserves comme **exemples guides** d'utilisation d'OWL et du raisonneur HermiT. De **nouveaux exercices** a completer sont proposes a la fin du notebook.
+
+
+Chaque exemple guide est accompagné de son ontologie et du résultat attendu ; les exercices 1 à 6 en fin de notebook vous demandent ensuite de reproduire ce geste sur de nouveaux domaines.
+",,,,,,,,4f361897ef711f47,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,exercise-1-intro,markdown,fr,0a2bf6a5f8a9d006,"### Exemple guide 1 : Famille avec restrictions
 
 Ontologie de famille :
 - Classes : `Person`, `Parent`, `Child`
 - Propriete : `has_child` (inverse : `has_parent`)
 - Restrictions : `Parent` = Person qui `has_child` SOME Person ; `Child` = Person qui `has_parent` SOME Person
 
-**Résultat** : après `sync_reasoner`, HermiT reclasse Pierre et Marie en `Parent`, et Lucie en `Child`.",,,,,,,,d0ab2847d6ddfe96,,,,,,,,,,,,,,,
+**Résultat** : après `sync_reasoner`, HermiT reclasse Pierre et Marie en `Parent`, et Lucie en `Child`.
+
+
+Le point clé à observer dans la sortie : ce n'est pas le code qui classe, c'est le raisonneur — aucun individu n'est déclaré `Parent` ou `Child` directement.
+",,,,,,,,0a2bf6a5f8a9d006,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,exercise-1-code,code,fr,eec13233c923fc0f,"if OWLREADY2_AVAILABLE:
     # Exemple guide 1 : famille avec restrictions OWL
     # Parent et Child sont definis par equivalent_to ; HermiT reclasse les individus
@@ -17853,14 +17925,18 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,exercise-1-code
     print(f""Lucie  : {[c.name for c in lucie.is_a]}"")
 else:
     print(""OWLReady2 non disponible : exemple guide 1 ignore."")",,,,,,,,eec13233c923fc0f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,exercise-2-intro,markdown,fr,6196278b25b1c3b5,"### Exemple guide 2 : Graphe de connaissances de films
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,exercise-2-intro,markdown,fr,ca30bb452a97cfb8,"### Exemple guide 2 : Graphe de connaissances de films
 
 Ontologie de films :
 - Classes : `Movie`, `Person` (acteur/realisateur), `Genre`
 - Proprietes : `has_actor`, `has_director`, `has_genre`
 - Restriction : `ActionMovie` = Movie qui `has_genre` SOME Action
 
-**Résultat** : après raisonnement, `DarkKnight` est classe `ActionMovie`.",,,,,,,,6196278b25b1c3b5,,,,,,,,,,,,,,,
+**Résultat** : après raisonnement, `DarkKnight` est classe `ActionMovie`.
+
+
+Le point clé : `ActionMovie` n'est jamais déclarée pour `DarkKnight`, elle est **déduite** de son genre par le raisonneur.
+",,,,,,,,ca30bb452a97cfb8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,exercise-2-code,code,fr,76ed013f2b49273f,"if OWLREADY2_AVAILABLE:
     # Exemple guide 2 : ontologie de films
     # ActionMovie = Movie & has_genre.some(Action) ; HermiT classe DarkKnight
@@ -17953,7 +18029,7 @@ Ce sidetrack a presente la manipulation d'ontologies OWL en Python avec **OWLRea
 ---
 
 **Retour au sommaire** : [Index SemanticWeb](README.md)",,,,,,,,713ee0d23f03973c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,5045fbe7,markdown,fr,ee9154a601b3cc79,"## Resume et perspectives
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,5045fbe7,markdown,fr,02d360a682ae65f5,"## Resume et perspectives
 
 Ce sidetrack a presente la manipulation d'ontologies OWL en Python avec OWLReady2, en mettant en lumiere la différence de philosophie avec dotNetRDF. Alors que dotNetRDF travaille au niveau des triples (bas niveau), OWLReady2 offre une API orientee classes (haut niveau) ou les ontologies sont définies comme des classes Python heritant de `Thing`, les proprietes comme des sous-classes d'`ObjectProperty` ou `DataProperty`, et les restrictions OWL s'expriment naturellement (`manages.some(Department)` pour `someValuesFrom`).
 
@@ -17980,8 +18056,8 @@ Dans le notebook suivant (**SW-08-SHACL-Python**), nous aborderons la validation
 ***
 
 **Retour au sommaire** : [Index SemanticWeb](README.md)
-",,,,,,,,ee9154a601b3cc79,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,3b081608,markdown,fr,20045b58b464bef8,"***
+",,,,,,,,02d360a682ae65f5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,3b081608,markdown,fr,27dc7ca620b94b1c,"***
 
 ## Exemple guide de synthese : Ontologie avec raisonnement
 
@@ -17989,7 +18065,11 @@ Ontologie d'ecosysteme construite avec `owlready2`, raisonnee avec HermiT.
 
 - 3 classes avec hiérarchie : `Animal`, `Mammifere`, `Carnivore`
 - 1 restriction : `Carnivore` = Animal qui `has_prey` SOME Animal
-- Instances dont le type est derive par inference (Renard, Loup -> Carnivore)",,,,,,,,20045b58b464bef8,,,,,,,,,,,,,,,
+- Instances dont le type est derive par inference (Renard, Loup -> Carnivore)
+
+
+Observez que `Carnivore` n'apparaît dans aucune assertion d'individu : cette classe est entièrement dérivée par le raisonneur.
+",,,,,,,,27dc7ca620b94b1c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,89008950,code,fr,f26b3c981b7d4b44,"if OWLREADY2_AVAILABLE:
     # Exemple guide de synthese : ontologie d'ecosystemes avec raisonnement
     # Carnivore = Animal & has_prey.some(Animal) ; HermiT classe Renard et Loup
@@ -18043,7 +18123,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,89008950,code,f
     print(""Ontologie exportee : data/temp_ecosystem.owl"")
 else:
     print(""OWLReady2 non disponible : exemple de synthese ignore."")",,,,,,,,f26b3c981b7d4b44,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,b4046c95,markdown,fr,f24b63c4820f2dbd,"### Exemple guide 3 : Ontologie de LLM
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,b4046c95,markdown,fr,7cc8ad108c837c33,"### Exemple guide 3 : Ontologie de LLM
 
 Ontologie de modèles d'intelligence artificielle :
 - Classes : `AIModel`, `LLM`, `Organization`, `Benchmark`, `Capability` (avec sous-classes `ImageUnderstanding`, `CodeGeneration`, `Reasoning`)
@@ -18052,7 +18132,11 @@ Ontologie de modèles d'intelligence artificielle :
 
 **Résultat** : après raisonnement, HermiT classe Claude comme ReasoningLLM + CodingLLM + MultimodalLLM, GPT4 comme CodingLLM + MultimodalLLM, Gemini comme ReasoningLLM + MultimodalLLM, et Llama comme CodingLLM.
 
-> Contribue par louisparmentiermichelet-hue (PR #1932, cohorte 2026)",,,,,,,,f24b63c4820f2dbd,,,,,,,,,,,,,,,
+> Contribue par louisparmentiermichelet-hue (PR #1932, cohorte 2026)
+
+
+Ici, quatre classes définies par restrictions sont inférées pour quatre modèles à partir de leurs seules capacités déclarées.
+",,,,,,,,7cc8ad108c837c33,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,ad1cbb21,code,fr,0f57edccce29afbe,"if OWLREADY2_AVAILABLE:
     # Exemple guide 3 : ontologie de LLM avec raisonnement
     # Contribue par louisparmentiermichelet-hue (PR #1932, cohorte 2026)
@@ -18183,17 +18267,59 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,115f4e6c,code,f
 
 print(""Exercice a completer"")
 ",,,,,,,,85c4abde026a968c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,f322477f,markdown,fr,314b53624f7d0835,"### Exercice 2 : Classes disjointes
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,f322477f,markdown,fr,3a0e8d03070338c8,"### Exemple guidé 4 — Classes disjointes (crédité #25502 — jay07-beep)
 
-Dans une ontologie d'animaux, declarez que `Herbivore` et `Carnivore` sont **disjointes** (`AllDisjoint`). Créez un individu, puis observez le comportement du raisonneur (il ne doit pas inferer qu'un même individu est a la fois Herbivore et Carnivore).
+> Résolution originale : **jay07-beep**, rendu de TP
+> [#25502](https://github.com/jsboige/CoursIA/pull/25502). Reprise telle quelle ;
+> seule la mise en forme de l'énoncé est harmonisée avec les sections voisines.
 
-**Indice** : utilisez `AllDisjoint([Herbivore, Carnivore])` a l'interieur du bloc `with onto:`.",,,,,,,,314b53624f7d0835,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,c8c823ed,code,fr,edd12a8a9a757b77,"# Exercice 2 : classes disjointes (AllDisjoint)
-# TODO etudiant : declarer Herbivore et Carnivore disjointes via AllDisjoint([...])
-# Indice : a placer dans le bloc with onto: , puis creer un individu et raisonner
+Dans une ontologie d'animaux, `Herbivore` et `Carnivore` sont déclarées **disjointes** (`AllDisjoint`) : aucun individu ne peut appartenir aux deux classes. Un individu est créé, puis le comportement du raisonneur est observé dans trois situations — un individu typé dans une seule des deux classes, le même individu typé dans les deux, puis le retour à la première situation.
 
-print(""Exercice a completer"")
-",,,,,,,,edd12a8a9a757b77,,,,,,,,,,,,,,,
+L'axiome se pose à l'intérieur du bloc `with onto:` par `AllDisjoint([Herbivore, Carnivore])`. L'ontologie vit dans son propre `World()`, si bien que ce test ne se mélange pas avec les ontologies des sections précédentes.",,,,,,,,3a0e8d03070338c8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,c8c823ed,code,fr,3f1fe3109e10ce7d,"# Exercice 2 — EX-1152 : classes disjointes
+from owlready2 import (
+    AllDisjoint, OwlReadyInconsistentOntologyError, Thing, World, sync_reasoner
+)
+
+# Un monde séparé pour ne pas mélanger ce test avec les autres ontologies du TP.
+monde_animaux = World()
+onto_animaux = monde_animaux.get_ontology(""http://example.org/ex1152/animaux.owl#"")
+
+with onto_animaux:
+    class Animal(Thing):
+        pass
+
+    class Herbivore(Animal):
+        pass
+
+    class Carnivore(Animal):
+        pass
+
+    # L'intersection des deux classes doit être vide.
+    AllDisjoint([Herbivore, Carnivore])
+    lapin_ex1152 = Herbivore(""Biscotte"")
+
+# Cas cohérent : Biscotte est herbivore. HermiT ne le classe pas comme carnivore.
+sync_reasoner(monde_animaux, debug=0)
+types_biscotte = [classe.name for classe in lapin_ex1152.is_a]
+print(f""Cas cohérent — Biscotte : {types_biscotte}"")
+assert Herbivore in lapin_ex1152.is_a and Carnivore not in lapin_ex1152.INDIRECT_is_a
+
+# Cas contradictoire : on déclare le même individu dans les deux classes.
+lapin_ex1152.is_a.append(Carnivore)
+try:
+    sync_reasoner(monde_animaux, debug=0)
+except OwlReadyInconsistentOntologyError:
+    print(""Cas contradictoire — HermiT détecte une ontologie incohérente."")
+else:
+    raise AssertionError(""HermiT aurait dû détecter la contradiction."")
+finally:
+    # On retire l'affirmation ajoutée pour le test.
+    lapin_ex1152.is_a.remove(Carnivore)
+
+sync_reasoner(monde_animaux, debug=0)
+print(""Après retrait du type Carnivore — l'ontologie est de nouveau cohérente."")
+",,,,,,,,3f1fe3109e10ce7d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,a8786019,markdown,fr,14d2c0e489019ca6,"### Exercice 3 : Restrictions de cardinalite (`min`, `exactly`)
 
 Modelisez la classe `BigFamily` = Person qui `has_child` **au moins 3** Person. Créez ensuite la classe `Couple` = Person qui `has_partner` **exactement 1** Person.
@@ -18235,11 +18361,15 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,ae732ead,code,f
 # Indice : chaine Finger -> Hand -> Arm -> Body ; sync_reasoner ; verifier Finger.is_part_of inclut Body
 
 print(""Exercice a completer"")",,,,,,,,c922162d90047473,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,b4f1d994,markdown,fr,ae8744a547472952,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,b4f1d994,markdown,fr,5439d4ef3cc9b35d,"***
 
 ## Exercices
 
-A votre tour. Completez les exercices ci-dessous (les solutions ne sont pas fournies). Le notebook doit pouvoir s'executer de bout en bout même si les exercices ne sont pas encore completes.",,,,,,,,ae8744a547472952,,,,,,,,,,,,,,,
+A votre tour. Completez les exercices ci-dessous (les solutions ne sont pas fournies). Le notebook doit pouvoir s'executer de bout en bout même si les exercices ne sont pas encore completes.
+
+
+Chaque exercice part d'un stub : le code affiché est un point de départ à compléter, pas une solution.
+",,,,,,,,5439d4ef3cc9b35d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,16e42815,markdown,fr,27c9000f46003c72,"### Exercice 6 : Ontologie de domaine libre
 
 Choisissez un domaine de votre choix (musique, sport, cuisine, etc.) et créez une ontologie OWL complete :
@@ -18259,11 +18389,15 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,e21176a9,code,f
 
 result = None  # TODO etudiant : remplacer par votre ontologie
 print(""Exercice a completer : ontologie de domaine libre"")",,,,,,,,bdcdab9e4a9abda9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,7d2980d2,markdown,fr,778a911050f98120,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,7d2980d2,markdown,fr,8aa76893eda8bd85,"## Conclusion
 
 Ce sidetrack a presente la manipulation d'ontologies OWL en Python avec OWLReady2, en mettant en lumiere son approche orientee classes (haut niveau) par rapport a l'approche triple-based de dotNetRDF. Vous avez appris a définir des classes, proprietes et restrictions OWL directement en syntaxe Python, a créer des individus et assertions, et a exploiter le raisonneur HermiT pour deduire automatiquement de nouvelles connaissances (classification en Employee/Manager, Parent/Child, Carnivore).
 
-Les points cles a retenir sont la puissance du raisonnement OWL 2 DL via `sync_reasoner()` qui reclassifie les individus selon leurs proprietes, les restrictions `equivalent_to` avec `.some()` et `.only()` pour définir des classes par leur comportement, et l'export multi-format (RDF/XML, Turtle) pour l'integration dans d'autres outils. Ces competences preparent a la validation de données avec SHACL et a la construction de graphes de connaissances.",,,,,,,,778a911050f98120,,,,,,,,,,,,,,,
+Les points cles a retenir sont la puissance du raisonnement OWL 2 DL via `sync_reasoner()` qui reclassifie les individus selon leurs proprietes, les restrictions `equivalent_to` avec `.some()` et `.only()` pour définir des classes par leur comportement, et l'export multi-format (RDF/XML, Turtle) pour l'integration dans d'autres outils. Ces competences preparent a la validation de données avec SHACL et a la construction de graphes de connaissances.
+
+
+**Compétence visée.** Passer d'une ontologie décrite en français (classes, propriétés, restrictions) à une ontologie OWL exécutable en Python, puis lire les inférences du raisonneur : c'est le cœur du web sémantique computationnel.
+",,,,,,,,8aa76893eda8bd85,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,129fd325,markdown,fr,9b40f75b5e4aee40,"# SW-7-OWL
 
 **Navigation** : [<< 6-RDFS](SW-06-RDFS-CSharp.ipynb) | [Index](README.md) | [8-SHACL C# >>](SW-08-SHACL-CSharp.ipynb)
@@ -29091,3 +29225,49 @@ La sortie montre les deux formes du meme document -- compacte en entree, etendue
 - **La forme etendue en sortie re-liste tout** : `""@id"": ""https://example.org/conf/symbolicai2026""` avec `http://schema.org/endDate` typé `schema:Date` (`""2026-06-17""`) -- et le lieu devenu blank node `_:N0e240f...` en reference inline. La comparaison compact/etendu sur CE document concret donne la paire de formes la plus didactique du notebook : deux ecritures, un graphe.
 
 Ce dernier exemple guide boucle la serie des patrons : `@id` nomme, blank node pour l'emboite, multi-value pour les collections, types hierarchiques pour la precision -- tous les arbitrages de modelisation de la journee, dans un seul document.",,,,,,,,ae28ef7a489f938a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,lecture-guide1-famille,markdown,fr,b19eb9e23f038975,"**Lecture de la sortie.** Avant raisonnement, les trois individus sont de simples `['Person']` ; après `sync_reasoner`, la sortie affiche `Pierre : ['Parent']`, `Marie  : ['Parent']` et `Lucie  : ['Child']` — HermiT a reclassé chaque individu d'après les seules restrictions `equivalent_to` de l'ontologie.
+",,,,,,,,b19eb9e23f038975,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,lecture-guide2-films,markdown,fr,f2d4fc9b8b03f6b5,"**Lecture de la sortie.** Après raisonnement, la sortie affiche `DarkKnight   : ['ActionMovie']` tandis qu'`Interstellar : ['Movie']` est inchangé : seul le film dont le genre est `Action` satisfait la restriction `ActionMovie = Movie & has_genre.some(Action)`.
+",,,,,,,,f2d4fc9b8b03f6b5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,lecture-synthese-ecosysteme,markdown,fr,9598bf1a0e181623,"**Lecture de la sortie.** Lapin et Souris restent `['Mammifere']`, mais la sortie affiche `Renard : ['Mammifere', 'Carnivore']` et `Loup : ['Mammifere', 'Carnivore']` : la restriction `Carnivore = Animal & has_prey.some(Animal)` ne classe que les individus qui ont au moins une proie.
+",,,,,,,,9598bf1a0e181623,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,lecture-guide3-llm,markdown,fr,4e64baf4f1c569fe,"**Lecture de la sortie.** Après raisonnement, la sortie affiche `Claude     types : ['MultimodalLLM', 'CodingLLM', 'ReasoningLLM']`, `GPT4       types : ['MultimodalLLM', 'CodingLLM']`, `Gemini     types : ['MultimodalLLM', 'ReasoningLLM']` et `Llama      types : ['CodingLLM']` : chaque modèle hérite exactement des classes définies correspondant à ses capacités déclarées.
+",,,,,,,,4e64baf4f1c569fe,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,96fc143d,markdown,fr,612d1ec7bd60e8bc,"**Interprétation — EX-1152.** `AllDisjoint([Herbivore, Carnivore])` signifie
+qu'aucun individu ne peut appartenir aux deux classes à la fois.
+
+- **Cas cohérent :** Biscotte est déclaré herbivore. Après raisonnement,
+  il reste classé comme herbivore, sans être classé comme carnivore.
+- **Cas contradictoire :** on déclare aussi Biscotte carnivore. Les deux
+  affirmations violent l'axiome de disjonction. HermiT signale alors que
+  l'ontologie est incohérente. Après retrait du type `Carnivore`,
+  l'ontologie redevient cohérente.
+
+La règle ne dit pas que chaque animal doit appartenir à l'une de ces deux
+classes. Si on sait seulement qu'un individu est un `Animal`, on ne peut pas
+en déduire son régime alimentaire.",,,,,,,,612d1ec7bd60e8bc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,7cc449db,markdown,fr,4cc2579a6cb0da71,"### Exercice 7 : Partition — disjonction et couverture
+
+L'Exemple guidé 4 s'arrête sur une limite : la disjonction interdit d'être dans deux classes à la fois, mais n'oblige à être dans aucune. Une **partition** exige les deux : des classes deux à deux disjointes, **et** une classe mère couverte par leur union.
+
+Dans un `World()` séparé, déclarez `Animal` et trois sous-classes `Herbivore`, `Carnivore` et `Omnivore`, puis :
+
+1. Rendez les trois sous-classes deux à deux disjointes.
+2. Déclarez la **couverture** : tout `Animal` est herbivore, carnivore ou omnivore.
+3. Créez `Rex`, un `Animal` dont on sait seulement qu'il n'est **ni** herbivore **ni** omnivore. Lancez le raisonneur et affichez ses classes : qu'a-t-il déduit ?
+4. Créez `Noisette`, un `Animal` sans autre information. Que déduit le raisonneur cette fois, et pourquoi ?
+5. Typez un même individu à la fois `Herbivore` et `Omnivore`, et vérifiez que HermiT signale une ontologie incohérente.
+
+**Question** : quel axiome, la disjonction ou la couverture, permet la déduction sur `Rex` ? Retirez-le et relancez pour vérifier votre réponse.
+
+**Indice** : la couverture s'écrit `Animal.equivalent_to.append(Herbivore | Carnivore | Omnivore)`, et un type négatif `rex.is_a.append(Not(Herbivore))`. L'incohérence se capture avec `OwlReadyInconsistentOntologyError`, comme dans l'Exemple guidé 4.",,,,,,,,4cc2579a6cb0da71,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,3f2552a8,code,fr,2309ce171b797223,"# Exercice 7 : partition = disjonction + couverture
+# TODO etudiant : dans un World() separe, declarer Animal et ses trois sous-classes
+# Herbivore, Carnivore, Omnivore, deux a deux disjointes (AllDisjoint)
+# TODO etudiant : declarer la couverture Animal = Herbivore | Carnivore | Omnivore
+# Indice : Rex = Animal + Not(Herbivore) + Not(Omnivore) ; Noisette = Animal seul ;
+# sync_reasoner, puis afficher les classes de chacun ; tester l'incoherence
+# d'un individu a la fois Herbivore et Omnivore
+
+result = None  # TODO etudiant : remplacer par votre ontologie
+print(""Exercice a completer : partition disjonction + couverture"")",,,,,,,,2309ce171b797223,,,,,,,,,,,,,,,

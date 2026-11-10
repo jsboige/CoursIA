@@ -45,7 +45,7 @@ def _replay_input():
             "last_child_stamp": None,
         })
     nums = [item["number"] for item in pool]
-    return {
+    return pig.seal_belt_replay_input({
         "schema": pig.BELT_REPLAY_SCHEMA,
         "repo": pig.REPO,
         "draw_at": AS_OF,
@@ -70,7 +70,7 @@ def _replay_input():
         "closed_error": None,
         "open_count": 20,
         "seed_source": "myia-ai-01:CoursIA-2|2026-11-08T10|0",
-    }
+    })
 
 
 def test_rejeu_cli_reutilise_le_classement_sans_aucun_transport(monkeypatch,
@@ -198,6 +198,9 @@ def test_snapshot_capture_apres_horloge_tirage_garde_le_meme_ordre():
     assert claim_moment > refreshed_moment
     assert captured_at > claim_moment
     replay = pig.replay_belt_weights(prepared, captured_iso, head=10)
+    # `base` a ete modifie apres la fabrication de la fixture : il faut le
+    # re-sceler, comme le ferait un producteur qui reecrit son export.
+    base = pig.seal_belt_replay_input(base)
     original_order = pig.replay_belt_weights(base, captured_iso, head=10)["picks"]
     assert replay["picks"] == original_order
 
@@ -263,3 +266,52 @@ def test_export_refuse_une_destination_dans_le_depot(tmp_path):
     repo_path = Path(pig.__file__).resolve().parents[1]
     with pytest.raises(pig.BeltReplayError, match="interdit dans le depot"):
         pig.write_belt_replay_input(repo_path / "replay.json", _replay_input())
+
+
+# --- #25082 : l'empreinte qui scelle l'export -------------------------------
+# Ces quatre attaques sont celles mesurees par la revue Hermes 5830473523 :
+# le validateur ne verifiait que la coherence interne, et les quatre pasaient.
+@pytest.mark.parametrize("mutation", [
+    lambda data: data.update(seed_source="myia-ai-01:CoursIA-2|2026-11-08T10|999"),
+    lambda data: data["pool"][0].update(title="Issue 0 -- traffichee"),
+    lambda data: data.update(merged_prs=[{"number": 1, "title": "fabrique"}]),
+    lambda data: data.update(open_count=9999),
+])
+def test_empreinte_refuse_les_quatre_attaques_avant_tirage(monkeypatch, mutation):
+    payload = _replay_input()
+    mutation(payload)
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("le tirage a commence avant validation complete")
+
+    monkeypatch.setattr(pig, "apply_belt_weights", forbidden)
+    with pytest.raises(pig.BeltReplayError, match="empreinte de l'export invalide"):
+        pig.replay_belt_weights(payload, AS_OF, head=10)
+
+
+def test_rejeu_refuse_un_export_sans_empreinte(monkeypatch):
+    payload = _replay_input()
+    payload.pop("fingerprint")
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("le tirage a commence avant validation complete")
+
+    monkeypatch.setattr(pig, "apply_belt_weights", forbidden)
+    with pytest.raises(pig.BeltReplayError, match="empreinte de l'export absente"):
+        pig.replay_belt_weights(payload, AS_OF, head=10)
+
+
+def test_empreinte_stable_et_sensible_a_un_octet():
+    payload = _replay_input()
+    digest = pig.belt_replay_fingerprint(payload)
+    assert digest == pig.belt_replay_fingerprint(payload)
+    assert digest.startswith(pig.BELT_REPLAY_FINGERPRINT_SCOPE + ":")
+    altered = dict(payload)
+    altered["seed_source"] = payload["seed_source"] + " "
+    assert pig.belt_replay_fingerprint(altered) != digest
+
+
+def test_le_rejeu_rend_l_empreinte_de_l_export_consomme():
+    payload = _replay_input()
+    replay = pig.replay_belt_weights(payload, AS_OF, head=5)
+    assert replay["fingerprint"] == payload["fingerprint"]
