@@ -17438,9 +17438,9 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,interp-co
 | problème combinatoire structure, cycles a eviter | Tabu Search |
 | Parallelisme facile requis | Random-Restart Hill Climbing |
 | très grand espace, population de solutions | Algorithmes génétiques (voir Search-5) |",,,,,,,,99c1cbefa056f786,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,section-6-exercises,markdown,fr,4aa6e6d523572541,"***
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,section-6-exercises,markdown,fr,922c2a28578e8187,"***
 
-## 6. Exemple guidé et exercices",,,,,,,,4aa6e6d523572541,,,,,,,,,,,,,,,
+## 6. Exemples guidés et exercices",,,,,,,,922c2a28578e8187,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,exercise-1,code,fr,0aeea987130afc26,"# Exercice 1 : Random-Restart Hill Climbing
 import time
 import statistics
@@ -17481,62 +17481,275 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,2a520a9a,
 
 Le Random-Restart Hill Climbing trouve une solution au 8-Reines dans tous les runs (0 conflit), là où le hill climbing seul reste souvent bloqué dans un optimum local.
 Il faut en moyenne entre 5,5 et 6 redémarrages pour trouver une solution. Cela correspond à la théorie : une tentative de hill climbing réussit environ 14 % du temps.",,,,,,,,5c780799b4779349,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,exercise-2-intro,markdown,fr,88df71c9889a325f,"### Exercice 2 : Experimenter les programmes de refroidissement SA
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,exercise-2-intro,markdown,fr,f3805783091172fd,"### Exemple guidé 2 — Comparaison des paramètres de refroidissement SA (crédité #25628 — TONGTONG0113 (groupe 1))
 
-**Enonce** : Comparez trois valeurs de $\alpha$ (0.99, 0.995, 0.999) pour le refroidissement exponentiel de SA sur le 20-Reines. Pour chaque valeur, lancez 20 essais et mesurez :
-- Le taux de succes
-- Le nombre moyen de conflits finaux
-- Le temps moyen
+> Résolution originale : **TONGTONG0113** (groupe 1), PR étudiante
+> [#25628](https://github.com/jsboige/CoursIA/pull/25628). Code de l'étudiant conservé ;
+> seuls les marqueurs d'exercice restés en fin de cellule sont retirés.
 
-**Question** : quel est le meilleur compromis vitesse/qualite ?",,,,,,,,88df71c9889a325f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,exercise-2,code,fr,495f83d2fd017b37,"# Exercice 2 : Comparaison des parametres de refroidissement
+Le refroidissement exponentiel de `sa_nqueens` est piloté par un seul paramètre :
+plus `alpha` est proche de 1, plus la température décroît lentement. Cette
+résolution mesure l'effet de trois valeurs sur le 20-Reines.
 
-# TODO etudiant : utiliser sa_nqueens(20, alpha=...) dans une boucle
-# pour chaque valeur de alpha dans [0.99, 0.995, 0.999]
-# Pour chaque alpha, lancer 20 essais et collecter :
-#   - taux de succes
-#   - nombre moyen de conflits finaux
-#   - temps moyen
+**Ce que fait la résolution** :
+1. Pour chaque `alpha` parmi 0.99, 0.995 et 0.999, lancer 20 essais de `sa_nqueens(20, alpha=...)`
+2. Compter le taux de succès (essais à zéro conflit)
+3. Mesurer le nombre moyen de conflits finaux et le temps moyen
+4. Réunir les trois profils dans un tableau
 
-print(""Exercice a completer"")",,,,,,,,495f83d2fd017b37,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,94e39a3b,markdown,fr,88180607dbc7d9a8,"(Exercice non complete) - la comparaison des paramètres de refroidissement n'a pas ete executee (squelette). Une fois complete, l'etudiant doit comparer plusieurs valeurs de $\alpha$ (par exemple 0.99, 0.995, 0.999) sur plusieurs essais et identifier le meilleur compromis qualite / vitesse observe.
-",,,,,,,,88180607dbc7d9a8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,exercise-3-intro,markdown,fr,0a57b7a86fbc4729,"### Exercice 3 : Memoire a long terme pour Tabu Search
+**Question posée** : quel est le meilleur compromis vitesse/qualité ?",,,,,,,,f3805783091172fd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,exercise-2,code,fr,f11047e92e9a4587,"# Exemple guidé 2 : Comparaison des paramètres de refroidissement
 
-**Exercice** : Ajoutez une **memoire a long terme** (frequency-based) au Tabu Search pour N-Reines. L'idee est de compter combien de fois chaque mouvement $(col, row)$ a ete effectue, et de **penaliser** les mouvements trop frequents pour forcer la diversification.
+import time
+import pandas as pd
 
-Modification du score d'un mouvement :
-$$\text{score}(col, row) = \text{conflits}(col, row) + \lambda \cdot \text{frequence}(col, row)$$
+# initialisation des paramètres
+alphas = [0.99, 0.995, 0.999]
+n_trials = 20
+n = 20 #20-reine problèmes
+results = []
 
-ou $\lambda$ est un coefficient de penalite (ex: 0.5).
+# Pour chaque valeur de alpha, mesurer succes, conflits finaux et temps
+for alpha in alphas:
+    successes = 0
+    total_conflicts = 0
+    total_time = 0
 
-**Question** : la memoire a long terme ameliore-t-elle le taux de succes sur le 20-Reines ?",,,,,,,,0a57b7a86fbc4729,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,exercise-3,code,fr,5655255097d13a26,"# Exercice 3 : Tabu Search avec memoire a long terme
+    for _ in range(n_trials):
+        # lancer minuteur
+        start_time = time.perf_counter()
 
-# Indice : reprendre tabu_search_nqueens et ajouter un dictionnaire
-# frequency = {} pour compter les occurrences de chaque mouvement
-# Penalite : score(col, row) = conflits(col, row) + lambda * frequence(col, row)
+        # Simulated Annealing
+        queens, conflicts, history, iterations = sa_nqueens(
+            n,
+            alpha=alpha
+        )
+
+        # arreter minuteur
+        elapsed_time = time.perf_counter() - start_time
+
+        # Update statistics
+        if conflicts == 0:
+            successes += 1
+
+        total_conflicts += conflicts
+        total_time += elapsed_time
+
+    # Calculate averages
+    success_rate = successes / n_trials * 100
+    avg_conflicts = total_conflicts / n_trials
+    avg_time_ms = total_time / n_trials * 1000 #fois 1000 car 1s=1000ms
+
+    results.append({
+        ""Alpha"": alpha,
+        ""Successes"": f""{successes}/{n_trials}"",
+        ""Success rate (%)"": round(success_rate, 2),
+        ""Average conflicts"": round(avg_conflicts, 2),
+        ""Average time (ms)"": round(avg_time_ms, 2)
+    })
+
+results_df = pd.DataFrame(results)
+
+display(results_df)",,,,,,,,f11047e92e9a4587,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,94e39a3b,markdown,fr,9b3f8af0c5aa6bad,"### Lecture du résultat : quel α pour le 20-Reines ?
+
+Sur 20 essais par valeur, les succès reculent quand `alpha` se rapproche de 1 :
+`0.99` réussit 11/20 essais, `0.995` en réussit 6/20 et `0.999` seulement 5/20 ;
+les conflits moyens finaux suivent la même pente (0.45, 0.70, 0.75). Le temps
+moyen par essai, lui, augmente quand `alpha` croît.
+
+**Lecture** : avec un `alpha` proche de 1, la température reste élevée
+longtemps, l'algorithme accepte longtemps des mouvements dégradants et le budget
+d'itérations se referme avant d'avoir suffisamment exploité les bonnes zones
+trouvées. Sur cette instance et ce budget, `alpha = 0.99` est le meilleur
+compromis observé ; refroidir plus lentement ne se paie que si l'on augmente le
+budget d'itérations en conséquence.",,,,,,,,9b3f8af0c5aa6bad,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,exercise-3-intro,markdown,fr,9176af4262d19381,"### Exemple guidé 3 — Mémoire à long terme pour Tabu Search (crédité #25628 — TONGTONG0113 (groupe 1))
+
+> Résolution originale : **TONGTONG0113** (groupe 1), PR étudiante
+> [#25628](https://github.com/jsboige/CoursIA/pull/25628). Code de l'étudiant conservé ;
+> seuls les marqueurs d'exercice restés en fin de cellule sont retirés.
+
+La recherche tabou de la section 4 ne retient que les mouvements récents : la
+liste tabou empêche de revenir en arrière, mais rien n'empêche de tourner en
+rond entre plusieurs zones de l'espace de recherche. La **mémoire à long terme**
+rajoute un second filet : compter combien de fois chaque mouvement a été joué
+et pénaliser les plus fréquents.
+
+**Ce que fait la résolution** :
+1. Conserver une fréquence `frequency[(col, row)]` par mouvement joué
+2. Choisir le mouvement qui minimise
+   `score(col, row) = conflits(col, row) + penalty * frequence(col, row)`
+3. Garder la liste tabou et son critère d'aspiration (un mouvement tabou reste
+   autorisé s'il bat le meilleur résultat global)
+4. S'arrêter dès qu'un état à zéro conflit est atteint
+
+**Question posée** : sur le 20-Reines, la diversification obtenue par la
+pénalité de fréquence aide-t-elle à converger vers une solution sans conflit ?",,,,,,,,9176af4262d19381,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,exercise-3,code,fr,22eb052d16d2293a,"# Exemple guidé 3 : Tabu Search avec mémoire à long terme
+
+import random
+
+def count_conflicts_nqueens(queens):
+    """"""
+    Calcule le nombre total de conflits entre les reines.
+    Deux reines sont en conflit si elles sont sur :
+    - la même ligne
+    - la même diagonale
+    """"""
+    n = len(queens)
+    conflicts = 0
+
+    for col1 in range(n):
+        for col2 in range(col1 + 1, n):
+
+            row1 = queens[col1]
+            row2 = queens[col2]
+
+            # Même ligne ou même diagonale
+            if row1 == row2 or abs(row1 - row2) == abs(col1 - col2):
+                conflicts += 1
+
+    return conflicts
+
 
 def tabu_search_long_memory(n, tabu_tenure=7, max_iter=1000, penalty=0.5):
     """"""
-    Tabu search avec memoire a long terme.
-    Conserve les N meilleures solutions rencontrees et utilise cette information
-    pour guider la recherche (intensification vs diversification).
+    Tabu Search avec memoire a long terme (frequency-based).
 
-    Retourne : (queens, conflits_final, historique_conflits, iterations)
+    La frequence de chaque mouvement (col, row) est memorisee.
+    Les mouvements frequents recoivent une penalite supplementaire.
+
+    score(col, row) = conflits + penalty * frequence(col, row)
+
+    Retourne :
+    (queens, conflits_final, historique_conflits, iterations)
     """"""
-    # TODO etudiant : reprendre tabu_search_nqueens et ajouter une penalite
-    # basee sur la frequence de chaque mouvement (col, row)
-    return None  # TODO etudiant
+
+    # 1. Initialisation aleatoire
+    queens = [random.randint(0, n - 1) for _ in range(n)]
+
+    current_conflicts = count_conflicts_nqueens(queens)
+
+    # Meilleure solution trouvee
+    best_queens = queens.copy()
+    best_conflicts = current_conflicts
+
+    # 2. Memoire a court terme : liste/tabou des mouvements interdits
+    tabu_list = {}
+
+    # 3. Memoire a long terme : frequence des mouvements
+    frequency = {}
+
+    # Historique des conflits
+    history = [current_conflicts]
+
+    iterations = 0
+
+    # 4. Boucle principale
+    for iteration in range(max_iter):
+
+        best_move = None
+        best_move_score = float(""inf"")
+        best_candidate = None
+        best_candidate_conflicts = float(""inf"")
+
+        # 5. Explorer tous les mouvements possibles
+        for col in range(n):
+            old_row = queens[col]
+
+            for row in range(n):
+
+                # Ne pas considerer la position actuelle
+                if row == old_row:
+                    continue
+
+                # Creer une solution candidate
+                candidate = queens.copy()
+                candidate[col] = row
+
+                # Nombre de conflits apres le mouvement
+                conflicts = count_conflicts_nqueens(candidate)
+
+                # Verifier si le mouvement est tabou
+                is_tabu = tabu_list.get((col, row), -1) > iteration
+
+                # Critere d'aspiration :
+                # autoriser un mouvement tabou s'il ameliore
+                # la meilleure solution globale
+                if is_tabu and conflicts >= best_conflicts:
+                    continue
+
+                # Frequence du mouvement
+                freq = frequency.get((col, row), 0)
+
+                # Score avec penalite de frequence
+                score = conflicts + penalty * freq
+
+                # Choisir le mouvement avec le meilleur score
+                if score < best_move_score:
+                    best_move_score = score
+                    best_move = (col, row)
+                    best_candidate = candidate
+                    best_candidate_conflicts = conflicts
+
+        # Aucun mouvement admissible
+        if best_move is None:
+            break
+
+        # 6. Executer le mouvement choisi
+        col, row = best_move
+        old_row = queens[col]
+
+        queens = best_candidate
+        current_conflicts = best_candidate_conflicts
+
+        # 7. Mettre a jour la memoire a long terme
+        frequency[(col, row)] = frequency.get((col, row), 0) + 1
+
+        # 8. Mettre le mouvement inverse dans la liste tabou
+        tabu_list[(col, old_row)] = iteration + tabu_tenure
+
+        # 9. Mettre a jour la meilleure solution
+        if current_conflicts < best_conflicts:
+            best_conflicts = current_conflicts
+            best_queens = queens.copy()
+
+        # Enregistrer le meilleur nombre de conflits trouve
+        history.append(best_conflicts)
+
+        iterations = iteration + 1
+
+        # Solution parfaite : aucune reine en conflit
+        if best_conflicts == 0:
+            break
+
+    return best_queens, best_conflicts, history, iterations
 
 
-# --- Test (decommentez apres avoir complete l'exercice) ---
-# q, c, hist, iters = tabu_search_long_memory(20, penalty=0.5)
-# print(f""Conflits finaux: {c}, Iterations: {iters}"")
+# --- Test ---
+q, c, hist, iters = tabu_search_long_memory(20, penalty=0.5)
 
-print(""Exercice a completer"")",,,,,,,,5655255097d13a26,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,abeca9d3,markdown,fr,5451f7aeff3e5845,"(Exercice non complete) - la variante Tabu Search avec memoire a long terme etant un squelette, la comparaison « 16 contre 56 itérations » n'a pas ete mesuree. Une fois complete, l'etudiant doit verifier si la penalite de frequence reduit les cycles de recherche (meilleure diversification) et comparer le nombre d'itérations par rapport a la version classique, sur plusieurs essais pour confirmer l'effet.
-",,,,,,,,5451f7aeff3e5845,,,,,,,,,,,,,,,
+print(""Solution :"", q)
+print(f""Conflits finaux : {c}"")
+print(f""Iterations : {iters}"")
+
+if c == 0:
+    print(""Solution trouvee : 20 reines sans conflit !"")
+else:
+    print(""Aucune solution parfaite trouvee pendant cette execution."")",,,,,,,,22eb052d16d2293a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,abeca9d3,markdown,fr,7760d36cf7d1ce7e,"### Lecture du résultat : mémoire à long terme sur le 20-Reines
+
+L'exécution part d'un état aléatoire et atteint une solution à **0 conflit en
+15 itérations**. La pénalité de fréquence ne remplace pas la liste tabou : elle
+dévie le choix vers les mouvements moins joués quand plusieurs déplacements ont
+un coût proche, ce qui pousse la recherche à visiter de nouvelles régions plutôt
+que d'osciller entre quelques configurations.
+
+Cette sortie reste **une exécution unique** : elle montre que la stratégie peut
+converger sur cette instance, pas qu'elle améliore le taux de succès par rapport
+au Tabu Search sans mémoire longue — c'est précisément ce que l'exercice 3
+ci-dessous demande de mesurer.",,,,,,,,7760d36cf7d1ce7e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,2a8af4c1,markdown,fr,b8e6dc28b667ae70,"### Exercice 4 : Stochastic Hill Climbing et comparaison avec le steepest-ascent
 
 **Enonce** : Implementez une variante **stochastic hill climbing** pour les N-Reines. Contrairement au steepest-ascent qui choisit toujours le meilleur voisin, le stochastic hill climbing :
@@ -43075,7 +43288,7 @@ public class WaterJugs : SearchProblem {
 // Console.WriteLine($""Cruches de 2 et 4 litres, cible 3 : {(chemin24 == null ? ""aucune solution"" : chemin24.Count + "" actions"")}"");
 
 Console.WriteLine(""Exercice a completer"");",,,,,,,,d4b85d91b136ec41,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,997b5bb3,markdown,fr,2e41b1d47ea3f28a,"### Exemple guidé 1 — Random-Restart Hill Climbing pour 8-Reines (crédité #25344 — Shinigamy12)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,997b5bb3,markdown,fr,a1040d02857c6626,"### Exemple guidé 1 — Random-Restart Hill Climbing pour 8-Reines (crédité #25344 — Shinigamy12 ; #25628 — TONGTONG0113 (groupe 1))
 
 > Résolution originale : **Shinigamy12**, PR étudiante
 > [#25344](https://github.com/jsboige/CoursIA/pull/25344). Reprise telle quelle ;
@@ -43094,7 +43307,7 @@ en section 2 et appliqué ici aux N-Reines.
 4. Compter le nombre total de redémarrages et le temps total
 
 **Question posée** : combien de redémarrages faut-il en moyenne pour trouver une
-solution ? La mesure porte sur une série d'exécutions complètes.",,,,,,,,2e41b1d47ea3f28a,,,,,,,,,,,,,,,
+solution ? La mesure porte sur une série d'exécutions complètes.",,,,,,,,a1040d02857c6626,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,2b08e5e8,markdown,fr,aa01cf0b95609c1b,"### Exercice 5 : Le coût du redémarrage quand la taille du problème croît
 
 **Enoncé** : l'exemple guidé 1 mesure le nombre moyen de redémarrages pour le 8-Reines. Que devient ce coût quand la taille du problème change ? Pour `n` parmi 6, 8, 10 et 12 :
@@ -43163,3 +43376,84 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Select
 df_1337 = None  # TODO etudiant
 
 print(""Exercice a completer : stabilite du classement, graine 1337 vs 42"")",,,,,,,,b3d4c9dd44a67459,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,cfdded84,markdown,fr,70ccaa6d1715414e,"### Exercice 2 : Refroidissement logarithmique pour SA sur le 20-Reines
+
+**Énoncé** : `sa_nqueens` ne propose qu'un refroidissement exponentiel
+(`T <- alpha * T`). Implémentez une variante `sa_nqueens_log(n, T_start=4.0, max_iter=5000)`
+qui suit un **refroidissement logarithmique** :
+
+$$T_k = \frac{T_{\text{start}}}{\log(1 + k)}$$
+
+1. Conservez le même voisinage et le même critère d'acceptation de Metropolis
+   que `sa_nqueens` ; seule la décroissance de la température change.
+2. Lancez 20 essais sur le 20-Reines avec `sa_nqueens_log(20)` et 20 essais avec
+   `sa_nqueens(20, alpha=0.995)`.
+3. Rassemblez dans un tableau, pour chaque programme de refroidissement : le
+   taux de succès, le nombre moyen de conflits finaux et le nombre moyen
+   d'itérations consommées.
+
+**Question** : à budget d'itérations égal, le refroidissement logarithmique
+reste-t-il compétitif avec le meilleur refroidissement exponentiel de l'exemple
+guidé 2 ? Expliquez pourquoi à partir de la vitesse à laquelle chaque programme
+fait décroître la température.
+
+**Indice** : calculez la température à quelques instants représentatifs
+(`k = 1`, puis `k = 100`, `k = 1000`) pour les deux programmes avant de lancer
+les essais — la différence de vitesse de refroidissement explique l'essentiel
+du comportement observé.",,,,,,,,70ccaa6d1715414e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,4c8e4839,code,fr,70eee48ea86fe4ca,"# Exercice 2 : Refroidissement logarithmique pour SA sur le 20-Reines
+
+def sa_nqueens_log(n, T_start=4.0, max_iter=5000):
+    """"""Simulated Annealing avec refroidissement logarithmique pour N-Reines.
+
+    Retourne : (queens, conflits_final, historique_conflits, iterations)
+    """"""
+    # TODO etudiant : reprendre la boucle de sa_nqueens en remplacant
+    # la decroissance exponentielle par T = T_start / math.log(1 + t)
+    # Indice : le voisinage et le critere d'acceptation restent inchanges
+    return None  # TODO etudiant
+
+# TODO etudiant : comparer sa_nqueens_log(20) et sa_nqueens(20, alpha=0.995)
+# sur 20 essais chacune (taux de succes, conflits moyens, iterations moyennes)
+print(""Exercice a completer"")",,,,,,,,70eee48ea86fe4ca,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,942baa12,markdown,fr,72ba09396a5b055b,"### Exercice 3 : Mémoire à long terme pour Tabu Search sur le TSP
+
+**Énoncé** : l'exemple guidé 3 ajoute une mémoire de fréquences au Tabu Search
+des N-Reines. Transposez ce mécanisme au TSP à 6 villes de la section 3, où
+`dist_matrix`, `tsp_distance` et le voisinage 2-opt sont déjà définis.
+
+1. Implémentez `tabu_search_tsp(dist_matrix, max_iter=200, tabu_tenure=5, penalty=0.1)`
+   : partez d'une permutation aléatoire des villes et explorez, à chaque
+   itération, le voisinage 2-opt complet (toutes les paires `i < j`).
+2. Marquez tabou le mouvement joué pendant `tabu_tenure` itérations et gardez un
+   critère d'aspiration : un mouvement tabou reste autorisé s'il bat le meilleur
+   coût global trouvé.
+3. Ajoutez la mémoire à long terme : `score(i, j) = distance(voisin) + penalty * frequence[(i, j)]`.
+4. Lancez 5 essais et affichez le meilleur coût par essai, puis comparez le
+   résultat au circuit trouvé par le recuit simulé de la section 3.
+
+**Question** : sur un si petit problème, la pénalité de fréquence change-t-elle
+le circuit final ou seulement le nombre d'itérations nécessaires pour l'atteindre ?
+
+**Indice** : `tsp_2opt_neighbor` tire une paire `(i, j)` au hasard ; ici il faut
+énumérer toutes les paires et inverser le segment entre elles pour retenir le
+meilleur score. Attention : la pénalité s'applique au **score de sélection**, la
+valeur à mémoriser comme coût de la solution reste la distance du circuit.",,,,,,,,72ba09396a5b055b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,f8eca84f,code,fr,73e73e9e35ccccdb,"# Exercice 3 : Tabu Search avec mémoire à long terme sur le TSP
+
+def tabu_search_tsp(dist_matrix, max_iter=200, tabu_tenure=5, penalty=0.1):
+    """"""Tabu Search avec mémoire de fréquences pour le TSP (2-opt).
+
+    Retourne : (meilleur_tour, meilleur_cout, historique_couts, iterations)
+    """"""
+    n = len(dist_matrix)
+
+    # TODO etudiant : construire un tour initial aleatoire (permutation)
+    # TODO etudiant : a chaque iteration, enumerer les voisins 2-opt
+    # Indice : score = tsp_distance(voisin, dist_matrix) + penalty * frequency[(i, j)]
+    # Indice : un mouvement tabou reste autorise s'il bat le meilleur cout global
+    return None  # TODO etudiant
+
+# TODO etudiant : lancer 5 essais et afficher le meilleur cout par essai
+# puis comparer au circuit obtenu par sa_tsp dans la section 3
+print(""Exercice a completer"")",,,,,,,,73e73e9e35ccccdb,,,,,,,,,,,,,,,
