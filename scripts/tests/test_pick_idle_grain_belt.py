@@ -679,6 +679,15 @@ def _patch_belt_network(monkeypatch, prs, red_state):
     # rafraichir, et l'ecriture du cache reste desactivee sous pytest
     # (`_PASS_SNAPSHOT`).
     monkeypatch.setattr(pig, "_belt_snapshot_prime", lambda repo, numbers: None)
+    # #25522 : le classement des PRs rouges lit le FIL de chaque PR (une
+    # requete REST par PR) -- une surface reseau de plus, de la meme famille :
+    # elle est stubee ici, sinon le garde `_no_real_gh` leve (il refuse tout
+    # `gh`, et son exception n'est pas un `Exception` : elle se propage).
+    monkeypatch.setattr(pig, "_red_pr_comments", lambda n: [])
+    # #25522 : la lecture de perimetrie du picker (`git rev-parse`,
+    # `git hash-object`) passe par ce point de couture. On le neutralise :
+    # le test ne mesure pas le perimetre, et le `git` reel n'apporte rien ici.
+    monkeypatch.setattr(pig, "_git_read", lambda *a, **k: None)
 
 
 def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
@@ -719,6 +728,34 @@ def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
     assert payload["repair"]["grain"]["number"] == 18844
     # La fenetre de livraisons en mode belt fait 90 j, pas 14 j.
     assert payload["last_delivery_window_days"] == 90
+
+
+def test_belt_json_names_the_service_window_and_the_pending_deliveries(monkeypatch, capsys):
+    """#25522 point 4 : la sortie nomme ce que la boucle a COUVERT.
+
+    « 0 retenu » ne doit pas etre muet : la lane doit pouvoir distinguer
+    « le pool est vide » de « les positions vues etaient toutes livrees ».
+    Les trois nombres sont dans le JSON (positions parcourues, fenetre,
+    livraisons en attente).
+    """
+    red = _state_red()
+    prs = [{
+        "number": 18844,
+        "title": "PR rouge de la lane",
+        "body": "Grain: MED/guard -- lane myia-po-2024:CoursIA-2",
+        "createdAt": "2026-09-30T12:00:00Z",
+        "isDraft": False,
+    }]
+    _patch_belt_network(monkeypatch, prs, red)
+
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    svc = payload["service_window"]
+    assert svc["positions"] == 0        # pool vide dans ce test
+    assert svc["extended"] is False
+    assert svc["pending_deliveries"] == 0
 
 
 def test_belt_json_repair_key_absent_when_no_red(monkeypatch, capsys):

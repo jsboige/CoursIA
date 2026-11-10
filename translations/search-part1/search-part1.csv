@@ -23990,6 +23990,189 @@ L'implementation DLX surpasse l'Algorithme X naif dès que l'arbre de recherche 
 La couverture exacte modelise naturellement le **Sudoku** (chaque cellule, ligne, colonne, bloc = colonne de contrainte) et le **pavage de polyominos** (pentominoes 6x10). Attention : **N-Queens n'est PAS un problème de couverture exacte**.
 
 **Suite** : [Search-9 - Programmation lineaire](Search-09-LinearProgramming.ipynb) | [Retour au sommaire](../README.md)",,,,,,,,224c6728cbdbb432,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,247a2c4c,code,fr,a43f7541abe6b599,"# Benchmark discriminant : pentominoes (la ou le DLX prend son avantage)
+
+# Les instances triviales precedentes (triominos, carres) ne sollicitent pas
+# reellement la recherche : le cout fixe de construction de la structure DLX
+# (liste doublement chainee + heuristique MRV) depasse celui d'un backtracking
+# quasi immediat. Pour reveler l'avantage du DLX, il faut un probleme dont
+# l'arbre de recherche est assez vaste pour que la selection de colonne MRV et
+# les operations cover/uncover en O(1) comptent reellement. Les pentominoes
+# (formes de 5 carres, nombreuses positions possibles par piece) sont ce cas.
+
+# Sous-ensemble de pentominoes (F asymetrique, desormais distinct de X)
+pento_pavage = {
+    'F': pentominos['F'],
+    'L': pentominos['L'],
+    'P': pentominos['P'],
+    'Y': pentominos['Y'],
+}
+
+print(""Benchmark : pavage par pentominoes (min de 3 executions)"")
+print(""="" * 64)
+
+instances = [
+    (4, 5, ""4x5 (F,L,P,Y)""),
+    (5, 4, ""5x4 (F,L,P,Y)""),
+]
+
+pento_res = []
+for width, height, name in instances:
+    mat, _ = build_tiling_matrix(width, height, pento_pavage)
+    # DLX - meilleur de 3 runs
+    t_dlx = None
+    for _ in range(3):
+        s = time.perf_counter(); solve_tiling_dlx(width, height, pento_pavage); e = time.perf_counter()
+        t_dlx = (e - s) * 1000 if t_dlx is None else min(t_dlx, (e - s) * 1000)
+    # Backtracking - meilleur de 3 runs
+    t_bt = None
+    for _ in range(3):
+        s = time.perf_counter(); solve_tiling_backtrack(width, height, pento_pavage); e = time.perf_counter()
+        t_bt = (e - s) * 1000 if t_bt is None else min(t_bt, (e - s) * 1000)
+    ratio = t_dlx / t_bt
+    winner = ""DLX"" if t_dlx < t_bt else ""Backtrack""
+    sol = solve_tiling_dlx(width, height, pento_pavage)
+    used = sorted(set(p['name'] for p in sol[0]))
+    pento_res.append((name, mat.shape, t_dlx, t_bt, ratio, winner, used))
+    print(f""{name:18} matrice {mat.shape[0]}x{mat.shape[1]:3} | ""
+          f""DLX {t_dlx:7.2f} ms | Backtrack {t_bt:8.2f} ms | ""
+          f""ratio {ratio:5.2f} | {winner} gagne"")
+    print(f""                    pieces utilisees : {used}"")
+
+# Visualisation
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 4.5))
+labels = [r[0] for r in pento_res]
+dlx_v = [r[2] for r in pento_res]
+bt_v = [r[3] for r in pento_res]
+xpos = np.arange(len(labels)); w = 0.35
+ax1.bar(xpos - w/2, dlx_v, w, label='DLX', color='#4CAF50', alpha=0.8)
+ax1.bar(xpos + w/2, bt_v, w, label='Backtracking', color='#FF6B6B', alpha=0.8)
+ax1.set_xticks(xpos); ax1.set_xticklabels(labels, rotation=10, ha='right')
+ax1.set_ylabel('Temps (ms)'); ax1.set_title('Temps de resolution (pentominoes)')
+ax1.legend(); ax1.grid(axis='y', alpha=0.3)
+
+ratios_v = [r[4] for r in pento_res]
+ax2.bar(labels, ratios_v, color=['#4CAF50' if r < 1 else '#FF6B6B' for r in ratios_v],
+        alpha=0.7, edgecolor='black')
+ax2.axhline(1, color='black', linestyle='--', linewidth=1, alpha=0.5)
+ax2.set_ylabel('Ratio DLX / Backtrack'); ax2.set_title('Avantage du DLX (< 1 = DLX gagne)')
+for i, rv in enumerate(ratios_v):
+    ax2.text(i, rv + 0.02, f'{rv:.2f}', ha='center', fontsize=10)
+plt.tight_layout(); plt.show()
+
+print()
+# Le facteur d'acceleration est DERIVE de la mesure affichee juste au-dessus :
+# un multiplicateur ecrit en dur decrirait un run qui n'est plus celui-la.
+facteurs = [r[3] / r[2] for r in pento_res if r[2] > 0]
+facteur_moyen = sum(facteurs) / len(facteurs)
+print(f""Constat : sur les pentominoes, le DLX est en moyenne environ {facteur_moyen:.1f}x"")
+print(""plus rapide que le backtracking (ratio DLX / Backtrack < 1 sur les deux instances)."")
+print(""Contrairement aux instances triviales, l'arbre de recherche est assez vaste pour que"")
+print(""l'heuristique MRV (case la plus contrainte d'abord) et les operations cover/uncover"")
+print(""en O(1) dominent le cout fixe de construction."")
+",,,,,,,,a43f7541abe6b599,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,ddbb0237,markdown,fr,df4b25c3d62ddf59,"### Benchmark discriminant : pentominoes
+
+Le benchmark ci-dessus resout un pavage par pentominoes (sous-ensemble F, L, P, Y) sur une grille 4x5 et 5x4 avec les deux methodes. C'est ici - et non sur les instances triviales - que l'avantage du DLX devient visible : le rapport DLX / Backtrack passe sous 1 (DLX plus rapide), la ou il restait superieur a 1 sur les triominos et les carres.",,,,,,,,df4b25c3d62ddf59,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,f44a301c,markdown,fr,1d20c175c446b509,"### Lecture du résultat
+
+Sur `matrix_test`, la fonction rend la colonne **0** : cinq colonnes sont ex aequo à deux 1 (les colonnes 0, 1, 2, 4 et 5) et `np.argmin` garde la première rencontrée. Ce sont bien des colonnes serrées, qui ne laissent que deux candidats chacune. Sur la seconde matrice, la colonne 1 ne contient aucun 1 : le test `np.any(col_sums == 0)` rend `-1` **avant** tout choix — c'est ce signal qui permet à l'algorithme X d'abandonner immédiatement une branche sans issue, au lieu d'explorer toutes les lignes pour rien.",,,,,,,,1d20c175c446b509,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,b02146d9,markdown,fr,f3646c180a6c0046,"### Exercice 1 : Mesurer l'effet du choix de colonne sur l'arbre de recherche
+
+L'Exemple guidé 2 choisit la colonne la plus contrainte, en promettant que cela « réduit l'arbre de recherche ». Vérifiez-le : implémentez `count_explored_nodes(matrix, use_mrv)` qui résout une instance de couverture exacte **en comptant les noeuds explorés** jusqu'à la première solution, où le choix de colonne dépend du drapeau :
+
+1. `use_mrv=True` : la colonne choisie est celle avec le **moins** de 1 (heuristique MRV)
+2. `use_mrv=False` : la colonne choisie est celle avec le **plus** de 1 (l'anti-heuristique)
+
+**Indices** :
+- Reprenez la structure récursive de `algorithm_x_simple` ci-dessus : le squelette ne change pas, seule la ligne du choix de colonne devient `np.argmin(...)` ou `np.argmax(...)`
+- Comptez avec une liste mutable `[0]`, incrémentée à chaque appel de la fonction interne (une branche qui échoue sur une colonne vide compte aussi pour un noeud exploré)
+- Testez sur `matrix_test` : MRV doit explorer **moins** de noeuds que l'anti-heuristique pour atteindre {S2, S4, S6}
+
+**Pourquoi c'est important** : le nombre de noeuds explorés est exactement ce que la section 8 mesurera en millisecondes entre DLX et le backtracking — l'heuristique est la première moitié de l'écart, Dancing Links la seconde.",,,,,,,,f3646c180a6c0046,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,7606e81a,code,fr,fbc976fd16c68527,"def count_explored_nodes(matrix: np.ndarray, use_mrv: bool = True) -> int:
+    """"""Resout une couverture exacte en comptant les noeuds explores.
+
+    Args:
+        matrix: Matrice binaire de shape (n_rows, n_cols)
+        use_mrv: True pour choisir la colonne la plus contrainte (argmin),
+                 False pour la moins contrainte (argmax)
+
+    Returns:
+        Nombre de noeuds explores avant d'atteindre la premiere solution
+    """"""
+    # TODO etudiant : adapter algorithm_x_simple en instrumentant le comptage
+    # Etape 1 : fonction recursive avec un compteur mutable compte = [0]
+    # Etape 2 : choix de colonne par np.argmin (MRV) ou np.argmax (anti-heuristique)
+    # Etape 3 : colonne sans 1 -> branche en echec, compter le noeud puis remonter
+    # Indice : renvoyer compte[0] une fois la premiere solution atteinte
+    return 0  # TODO etudiant : remplacer par le vrai comptage de noeuds
+
+print(""Exercice a completer : effet du choix de colonne sur le nombre de noeuds explores"")",,,,,,,,fbc976fd16c68527,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,8d7009e5,markdown,fr,93917714979727e1,"### Lecture du résultat
+
+La solution {S2, S4, S6} rend `True` : chaque élément de l'univers est couvert exactement une fois. Les deux autres essais rendent `False`, pour des raisons symétriques : sans S6, les éléments 2 et 7 restent à 0 — c'est une **sous-couverture** ; avec S1 en plus, l'élément 1 est couvert deux fois, par S1 et S2 — c'est une **sur-couverture**. Le prédicat unique `np.all(coverage == 1)` rejette les deux défauts à la fois : chaque colonne doit valoir exactement 1, ni 0 ni 2.",,,,,,,,93917714979727e1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,565073e3,markdown,fr,e8e9a064936094d1,"### Exercice 2 : Verifier qu'une selection partielle reste extensible
+
+Une solution de couverture exacte se construit ligne par ligne : pendant la recherche, la sélection en cours n'est pas encore une couverture exacte, mais elle ne doit **jamais sur-couvrir** une colonne — aucune ligne future ne peut réparer un doublon, la branche est morte. Implémentez `is_partial_cover(matrix, selected_rows)` qui vérifie cet invariant :
+
+1. Sélectionne les lignes déjà choisies
+2. Somme les colonnes de la sélection
+3. Rend `True` si aucune colonne n'atteint 2 ou plus (les colonnes à 0 sont permises : la sélection n'est pas finie)
+
+**Indices** :
+- Même squelette que le vérificateur de l'Exemple guidé 3 : `matrix[selected_rows]` puis `np.sum(axis=0)`
+- Seul le prédicat change : des sommes `<= 1` au lieu de `== 1`
+- Sur `matrix_test`, tout préfixe de [1, 3, 5] doit rendre `True`, et [0, 1] doit rendre `False` (S1 et S2 couvrent toutes deux l'élément 1)
+
+**Pourquoi c'est important** : c'est exactement l'invariant que les opérations `cover`/`uncover` de la section 3 maintiennent mécaniquement — sur-couvrir une colonne rendrait le backtrack incohérent.",,,,,,,,e8e9a064936094d1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,65c0adae,code,fr,9ab6027662da2432,"def is_partial_cover(matrix: np.ndarray, selected_rows: List[int]) -> bool:
+    """"""Verifie qu'une selection partielle ne sur-couvre aucune colonne.
+
+    Args:
+        matrix: Matrice binaire (numpy array) de shape (n_rows, n_cols)
+        selected_rows: Indices des lignes deja selectionnees
+
+    Returns:
+        True si aucune colonne n'est couverte deux fois ou plus, False sinon
+    """"""
+    # TODO etudiant : implementer la verification d'extensibilite
+    # Etape 1 : extraire les lignes deja selectionnees
+    # Etape 2 : sommer les colonnes
+    # Etape 3 : verifier qu'aucune somme ne depasse 1
+    return False  # TODO etudiant : remplacer par la verification
+
+print(""Exercice a completer : selection partielle sans sur-couverture"")",,,,,,,,9ab6027662da2432,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,89c15378,markdown,fr,ac936e2173cb17b3,"### Lecture du résultat
+
+`matrix_test` n'admet qu'**une** couverture exacte — cohérent avec la section 4, qui trouvait {S2, S4, S6} : si l'instance avait eu une seconde solution, `solve_dlx` l'aurait simplement ignorée. L'instance 3x2 en admet **deux** : soit les deux lignes unité S1 et S2, chacune couvrant une colonne, soit la ligne S3 seule, qui couvre les deux colonnes d'un coup. L'identité 4x4 en admet **une** : chaque colonne ne contient qu'un seul 1, les quatre lignes sont donc toutes obligatoires. C'est le même squelette de récursion que `search` — seul le traitement de la feuille change, un compteur incrémenté au lieu d'un retour immédiat.",,,,,,,,ac936e2173cb17b3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,4573069c,markdown,fr,acaf903c1abedafc,"### Exercice 3 : Enumerer toutes les solutions, pas seulement les compter
+
+L'Exemple guidé 4 compte les solutions sans les mémoriser. Allez au bout : implémentez `find_all_solutions(matrix)` qui rend la **liste des solutions**, chaque solution étant la liste des indices de lignes — `[[1, 3, 5]]` pour `matrix_test`, et les deux solutions `[0, 1]` et `[2]` pour l'instance 3x2 de l'Exemple guidé 4.
+
+**Indices** :
+- Même récursion que `count_all_solutions` : à la feuille (`header.R == header`), au lieu d'incrémenter un compteur, ajoutez une **copie** de la solution partielle à la liste des solutions (`solution.copy()`, sinon toutes les entrées finissent identiques)
+- Les noeuds de la structure portent leur ligne d'origine : `node.row_index`, comme dans `solve_dlx` (section 4)
+- Construisez la structure avec `build_dlx_structure_with_indices(matrix)` ; vérifiez chaque solution rendue avec `is_exact_cover` (Exemple guidé 3)
+
+**Pourquoi c'est important** : énumérer au lieu de compter, c'est ce que réclame l'Exercice 4 (afficher la première solution d'un pavage parmi plusieurs) — et vérifier chaque solution avec `is_exact_cover` boucle le circuit complet choix → exécution → vérification.",,,,,,,,acaf903c1abedafc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,cf84ffd8,code,fr,600bcca8a50bd02a,"def find_all_solutions(matrix: np.ndarray) -> List[List[int]]:
+    """"""Enumere toutes les solutions d'un probleme de couverture exacte.
+
+    Args:
+        matrix: Matrice binaire (lignes = sous-ensembles, colonnes = elements)
+
+    Returns:
+        Liste des solutions, chaque solution etant la liste des indices de lignes
+    """"""
+    # TODO etudiant : enumerer les solutions au lieu de les compter
+    # Etape 1 : construire la structure avec build_dlx_structure_with_indices
+    # Etape 2 : a la feuille, ajouter solution.copy() a la liste des solutions
+    # Etape 3 : reprendre cover/uncover de count_all_solutions sans s'arreter a la premiere
+    # Indice : node.row_index donne l'indice de ligne d'un noeud solution
+    return []  # TODO etudiant : remplacer par la vraie enumeration
+
+print(""Exercice a completer : enumeration de toutes les solutions"")",,,,,,,,600bcca8a50bd02a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming-CSharp.ipynb,s9c01,markdown,fr,3a5ab85612b1db22,"# Search-09 : Programmation Linéaire et Simplexe (C# / .NET)
 
 **Navigation** : [<< Search-8 Dancing Links](Search-08-DancingLinks-CSharp.ipynb) | [Index](../README.md) | [Search-10 SymbolicAutomata >>](Search-10-SymbolicAutomata-CSharp.ipynb)
@@ -28798,90 +28981,6 @@ Resultat : MCTS evalue la position comme gagnante (valeur positive) mais ne parv
 **Le remede -- injecter de la connaissance dans le rollout.** C'est l'objet de l'Exercice 2 qui suit (« Rollout intelligent ») : remplacer le choix purement aleatoire par un rollout **guide par une heuristique**. Des que le rollout devient informatif, le coup gagnant se detache et MCTS retrouve la capacite de jouer la strategie mod-4 de facon fiable.
 
 > **Lecon generale.** MCTS combine deux choses : une *evaluation* (la valeur estimee) et une *selection* (le coup joue). Avec des rollouts aleatoires, l'evaluation reste grossièrement juste (Nim(15) = gagnant) mais la selection patit du bruit. C'est l'intuition fondatrice d'**AlphaGo** : remplacer le rollout aleatoire par des reseaux (policy + valeur) appris, pour offrir a MCTS un signal de qualite sur les jeux ou le hasard reste aveugle (le Go, et plus largement les jeux a structure globale opaque au coup-par-coup comme Nim).",,,,,,,,6da208fa901ce364,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,247a2c4c,code,fr,a43f7541abe6b599,"# Benchmark discriminant : pentominoes (la ou le DLX prend son avantage)
-
-# Les instances triviales precedentes (triominos, carres) ne sollicitent pas
-# reellement la recherche : le cout fixe de construction de la structure DLX
-# (liste doublement chainee + heuristique MRV) depasse celui d'un backtracking
-# quasi immediat. Pour reveler l'avantage du DLX, il faut un probleme dont
-# l'arbre de recherche est assez vaste pour que la selection de colonne MRV et
-# les operations cover/uncover en O(1) comptent reellement. Les pentominoes
-# (formes de 5 carres, nombreuses positions possibles par piece) sont ce cas.
-
-# Sous-ensemble de pentominoes (F asymetrique, desormais distinct de X)
-pento_pavage = {
-    'F': pentominos['F'],
-    'L': pentominos['L'],
-    'P': pentominos['P'],
-    'Y': pentominos['Y'],
-}
-
-print(""Benchmark : pavage par pentominoes (min de 3 executions)"")
-print(""="" * 64)
-
-instances = [
-    (4, 5, ""4x5 (F,L,P,Y)""),
-    (5, 4, ""5x4 (F,L,P,Y)""),
-]
-
-pento_res = []
-for width, height, name in instances:
-    mat, _ = build_tiling_matrix(width, height, pento_pavage)
-    # DLX - meilleur de 3 runs
-    t_dlx = None
-    for _ in range(3):
-        s = time.perf_counter(); solve_tiling_dlx(width, height, pento_pavage); e = time.perf_counter()
-        t_dlx = (e - s) * 1000 if t_dlx is None else min(t_dlx, (e - s) * 1000)
-    # Backtracking - meilleur de 3 runs
-    t_bt = None
-    for _ in range(3):
-        s = time.perf_counter(); solve_tiling_backtrack(width, height, pento_pavage); e = time.perf_counter()
-        t_bt = (e - s) * 1000 if t_bt is None else min(t_bt, (e - s) * 1000)
-    ratio = t_dlx / t_bt
-    winner = ""DLX"" if t_dlx < t_bt else ""Backtrack""
-    sol = solve_tiling_dlx(width, height, pento_pavage)
-    used = sorted(set(p['name'] for p in sol[0]))
-    pento_res.append((name, mat.shape, t_dlx, t_bt, ratio, winner, used))
-    print(f""{name:18} matrice {mat.shape[0]}x{mat.shape[1]:3} | ""
-          f""DLX {t_dlx:7.2f} ms | Backtrack {t_bt:8.2f} ms | ""
-          f""ratio {ratio:5.2f} | {winner} gagne"")
-    print(f""                    pieces utilisees : {used}"")
-
-# Visualisation
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 4.5))
-labels = [r[0] for r in pento_res]
-dlx_v = [r[2] for r in pento_res]
-bt_v = [r[3] for r in pento_res]
-xpos = np.arange(len(labels)); w = 0.35
-ax1.bar(xpos - w/2, dlx_v, w, label='DLX', color='#4CAF50', alpha=0.8)
-ax1.bar(xpos + w/2, bt_v, w, label='Backtracking', color='#FF6B6B', alpha=0.8)
-ax1.set_xticks(xpos); ax1.set_xticklabels(labels, rotation=10, ha='right')
-ax1.set_ylabel('Temps (ms)'); ax1.set_title('Temps de resolution (pentominoes)')
-ax1.legend(); ax1.grid(axis='y', alpha=0.3)
-
-ratios_v = [r[4] for r in pento_res]
-ax2.bar(labels, ratios_v, color=['#4CAF50' if r < 1 else '#FF6B6B' for r in ratios_v],
-        alpha=0.7, edgecolor='black')
-ax2.axhline(1, color='black', linestyle='--', linewidth=1, alpha=0.5)
-ax2.set_ylabel('Ratio DLX / Backtrack'); ax2.set_title('Avantage du DLX (< 1 = DLX gagne)')
-for i, rv in enumerate(ratios_v):
-    ax2.text(i, rv + 0.02, f'{rv:.2f}', ha='center', fontsize=10)
-plt.tight_layout(); plt.show()
-
-print()
-# Le facteur d'acceleration est DERIVE de la mesure affichee juste au-dessus :
-# un multiplicateur ecrit en dur decrirait un run qui n'est plus celui-la.
-facteurs = [r[3] / r[2] for r in pento_res if r[2] > 0]
-facteur_moyen = sum(facteurs) / len(facteurs)
-print(f""Constat : sur les pentominoes, le DLX est en moyenne environ {facteur_moyen:.1f}x"")
-print(""plus rapide que le backtracking (ratio DLX / Backtrack < 1 sur les deux instances)."")
-print(""Contrairement aux instances triviales, l'arbre de recherche est assez vaste pour que"")
-print(""l'heuristique MRV (case la plus contrainte d'abord) et les operations cover/uncover"")
-print(""en O(1) dominent le cout fixe de construction."")
-",,,,,,,,a43f7541abe6b599,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,ddbb0237,markdown,fr,df4b25c3d62ddf59,"### Benchmark discriminant : pentominoes
-
-Le benchmark ci-dessus resout un pavage par pentominoes (sous-ensemble F, L, P, Y) sur une grille 4x5 et 5x4 avec les deux methodes. C'est ici - et non sur les instances triviales - que l'avantage du DLX devient visible : le rapport DLX / Backtrack passe sous 1 (DLX plus rapide), la ou il restait superieur a 1 sur les triominos et les carres.",,,,,,,,df4b25c3d62ddf59,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming-CSharp.ipynb,melange-industriel-enonce,markdown,fr,172da5176e4c6be9,"### Exercice : Problème de mélange industriel
 
 **Énoncé** : une raffinerie produit de l'essence en mélangeant 3 crudes (C1, C2, C3) aux caractéristiques différentes. L'objectif est de minimiser le coût tout en respectant les spécifications du produit final.
@@ -37928,14 +38027,14 @@ for paradigm, solver_fn in SOLVERS:
 print()
 print(f""\nBenchmark termine en {time.perf_counter() - t_global:.1f}s, {len(results)} mesures."")
 ",,,,,,,,1e4eea33d4436537,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,interp-bench-run,markdown,fr,d0068a21351f0340,"### Lecture — 210 mesures en 752,9 s : ce que le log brut revele avant toute agregation
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,interp-bench-run,markdown,fr,fe3a746a4dbecc7c,"### Lecture — 210 mesures en 620,5 s : ce que le log brut revele avant toute agregation
 
 210 = **7 solveurs x 30 instances** (les 6 paradigmes de la section 4 comptent le backtracking deux fois : naive et MRV). Trois signaux sautent du log AVANT meme la section 6 :
 
-- **Les echecs du naif sont des coupes budget** : sur medium_hard, cinq lignes rendent `nodes=2000001` — le plafond de la section 2, pas un temps arbitraire. L'echec est donc defini par le protocole, pas par un crash.
+- **Les echecs du naif sont des coupes budget** : sur medium_hard, six lignes rendent `nodes=2000001` — le plafond de la section 2, pas un temps arbitraire. L'echec est donc defini par le protocole, pas par un crash.
 - **GA echoue 30/30** en brulant exactement `400200` evaluations chaque fois (200 individus x 2001 generations) — l'echec est systematique, pas un coup de malchance.
 - **Le recuit ne reussit que 6/10 en easy et 0/20 au-dela** (300001 = MAX_ITERATIONS atteint) : la demo de la section 4.6 (une seule grille) enjambait la variance inter-instances — c'est le benchmark complet, pas la demo, qui fonde le verdict.
-- Noter enfin la dispersion du naif : 445 a 703 681 noeuds SUR easy seul — la difficulte observable varie plus ENTRE instances d'une classe qu'entre classes.",,,,,,,,d0068a21351f0340,,,,,,,,,,,,,,,
+- Noter enfin la dispersion du naif : 330 a 703 681 noeuds SUR easy seul — la difficulte observable varie plus ENTRE instances d'une classe qu'entre classes.",,,,,,,,fe3a746a4dbecc7c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,bfcc5c8a,markdown,fr,db3e4fc5550f2baf,## 6. Analyse des résultats,,,,,,,,db3e4fc5550f2baf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,d2ad2bfc,markdown,fr,227b9460cbc32c88,### 6.1 Taux de succès par paradigme et difficulté,,,,,,,,227b9460cbc32c88,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,704f5154,code,fr,6dcbc750d770e1b6,"df = pd.DataFrame([m.to_row() for m in results])
@@ -38084,13 +38183,13 @@ print(""3. Sur 'diabolical' : backtracking_naif atteint souvent le budget 2M noe
 print(""   DLX tient encore grace a la propagation exacte-cover ; CP-SAT et Z3"")
 print(""   dependent de la structure ; GA et SA peinent a converger en 5s."")
 ",,,,,,,,67364b12b1ddc718,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,interp-verdict,markdown,fr,6523198a333a2d4f,"### Lecture — easy : Dancing Links gagne, et le naif bat MRV
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,interp-verdict,markdown,fr,22c66ba06fec67cb,"### Lecture — easy : Dancing Links gagne, et le naif bat MRV
 
-Le podium easy (temps median parmi les reussites) : **dancing_links 4,16 ms < backtracking_naive 12,29 ms < backtracking_mrv 18,18 ms < cp_sat 25,97 ms** (10/10 reussites pour les quatre).
+Le podium easy (temps median parmi les reussites) : **dancing_links 2,41 ms < backtracking_naive 7,56 ms < backtracking_mrv 12,55 ms < cp_sat 15,61 ms** (10/10 reussites pour les quatre).
 
-- **DLX confirme a l'echelle** le facteur ~450 vu en demo — le median etend la lecon au-dela d'une grille chanceuse.
+- **DLX confirme a l'echelle** l'ecart vu en demo (quelques millisecondes par grille) — le median etend la lecon au-dela d'une grille chanceuse.
 - **Le naif DEVANT MRV** est le resultat le plus instructif : choisir la case la plus contrainte reduit les noeuds (visible dans le log : 254 contre 2 576 sur easy_0) mais paie un cout par noeud (re-scan des contraintes) qui n'est pas amorti sur des grilles faciles. Sur medium_hard, le log montre l'inverse — MRV resout 7/10 quand le naif n'en resout que 4/10 (six coupes budget). Le classement S'INVERSE avec la difficulte : c'est le No Free Lunch en acte, pas en theorie.
-- **cp_sat a 25,97 ms malgre branches=0** : le cout fixe de modelisation (construire les 81 variables et les 27 AllDifferent) plafonne son plancher temporel — imbattable en robustesse, jamais le plus rapide sur easy.",,,,,,,,6523198a333a2d4f,,,,,,,,,,,,,,,
+- **cp_sat a 15,61 ms malgre branches=0** : le cout fixe de modelisation (construire les 81 variables et les 27 AllDifferent) plafonne son plancher temporel — imbattable en robustesse, jamais le plus rapide sur easy.",,,,,,,,22c66ba06fec67cb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,c89a4fc2,markdown,fr,f5b13afa6783e664,## 7. Discussion : No Free Lunch en pratique,,,,,,,,f5b13afa6783e664,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,f6f13a90,markdown,fr,8247eebcad69dc54,"### 7.1 Aucun algorithme ne domine tous les autres
 
@@ -38562,16 +38661,84 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Select
 - Tranche 3/3 (Wordle — élimination bayésienne / entropie / CSP) : à venir, même protocole.
 ",,,,,,,,721ef75cb3843d45,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,36eb0d8b,markdown,fr,b43505fb4056e37a,## Exercices,,,,,,,,b43505fb4056e37a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,b3b46f2f,markdown,fr,4019848d804b19fe,"### Exercice 1 : Mesurer l'effet du timeout sur la sélection
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,b3b46f2f,markdown,fr,4fe07791c02e33e8,"### Exemple guidé 1 — L'effet du budget temps sur la sélection (crédité #25579 — janok181)
 
-**Énoncé** : Ré-exécutez le benchmark avec un timeout de **0.5 seconde** par appel (au lieu de 5s). Quel paradigme sort gagnant sur 'diabolical' ? Est-ce toujours CP-SAT ?
+> Résolution originale : **janok181**, PR étudiante
+> [#25579](https://github.com/jsboige/CoursIA/pull/25579). Reprise telle quelle ;
+> seule la mise en forme est harmonisée avec les sections voisines.
 
-**Indice** : à 0.5s, les solveurs exacts qui n'ont pas terminé sont comptés en échec. Les métaheuristiques (GA, SA) peuvent tenir plus longtemps (avec qualité dégradée).",,,,,,,,4019848d804b19fe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,cd68bb5f,code,fr,c7245a035b5a3869,"# Exercice a completer : relancer le benchmark avec timeout=0.5s
-# Comparer les resultats (pareto, succes par difficulte) avec timeout=5.0
+La section 6 compare les sept solveurs sous un budget généreux de 5 secondes par appel. Mais un budget réel est rarement généreux : un solveur embarqué, un service avec garantie de latence, un batch nocturne — chacun impose sa propre limite. La question de la sélection devient alors : **le classement survit-il à la division du budget par dix ?**
 
-print(""Exercice a completer : relancer SOLVERS avec run_one(..., timeout_s=0.5)."")
-",,,,,,,,c7245a035b5a3869,,,,,,,,,,,,,,,
+**Ce que fait la résolution** :
+1. Relancer le benchmark complet (7 solveurs × 30 instances) avec `timeout_s=0.5`
+2. Conserver les résultats à 5 s de la section 5.2 et juxtaposer les taux de succès aux deux budgets
+3. Classer les solveurs sur 'diabolical' (taux de succès décroissant, puis temps moyen croissant) à 5 s puis à 0,5 s
+4. Visualiser l'effet du budget sur le taux de succès global et sur 'diabolical'
+
+**Question posée** : à 0,5 s par appel, quel paradigme sort gagnant sur 'diabolical' ? Le classement de la section 6.6 survit-il, et que devient Z3, parfait à 5 s ?",,,,,,,,4fe07791c02e33e8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,cd68bb5f,code,fr,40b155d450c1774a,"# Exercice 1 : effet du timeout (5 s -> 0.5 s) sur la selection
+TIMEOUT_COURT = 0.5
+
+# On garde les resultats a 5 s calcules en section 5.2
+df_5s = df.copy()
+
+# Meme benchmark, meme protocole, seul le budget change
+results_05: list[Metrics] = []
+t0 = time.perf_counter()
+for paradigm, solver_fn in SOLVERS:
+    for instance_id, difficulty, grid in instances:
+        results_05.append(run_one(paradigm, solver_fn, instance_id, difficulty, grid,
+                                  timeout_s=TIMEOUT_COURT))
+print(f""Benchmark a {TIMEOUT_COURT}s termine en {time.perf_counter() - t0:.1f}s, ""
+      f""{len(results_05)} mesures.\n"")
+df_05 = pd.DataFrame([m.to_row() for m in results_05])
+
+ordre = [""easy"", ""medium_hard"", ""diabolical""]
+def taux_succes(d):
+    return d.groupby([""paradigm"", ""difficulty""])[""success""].mean().unstack()[ordre]
+
+# Tableau comparatif : taux de succes a 5 s et a 0.5 s, cote a cote
+comparaison = pd.concat({""5s"": taux_succes(df_5s), ""0.5s"": taux_succes(df_05)}, axis=1)
+print(""Taux de succes par paradigme et difficulte (5 s vs 0.5 s) :"")
+print(comparaison.round(2))
+
+# Gagnant sur 'diabolical' : meilleur taux de succes, puis temps moyen le plus court
+def classement_diabolical(d):
+    sub = d[d[""difficulty""] == ""diabolical""]
+    return (sub.groupby(""paradigm"")
+               .agg(succes=(""success"", ""mean""), temps_moyen_s=(""time_seconds"", ""mean""))
+               .sort_values([""succes"", ""temps_moyen_s""], ascending=[False, True]))
+
+for label, d in [(""5 s"", df_5s), (""0.5 s"", df_05)]:
+    cl = classement_diabolical(d)
+    print(f""\nClassement 'diabolical' avec timeout {label} :"")
+    print(cl.round(4))
+    print(f""-> Gagnant : {cl.index[0]}"")
+
+# Graphique : taux de succes global par paradigme, 5 s vs 0.5 s
+glob = pd.DataFrame({
+    ""timeout 5 s"":   df_5s.groupby(""paradigm"")[""success""].mean(),
+    ""timeout 0.5 s"": df_05.groupby(""paradigm"")[""success""].mean(),
+}).sort_values(""timeout 5 s"", ascending=False)
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+glob.plot.bar(ax=axes[0], color=[""#4C72B0"", ""#DD8452""])
+axes[0].set_title(""Taux de succes global (30 grilles)"")
+axes[0].set_ylabel(""Taux de succes"")
+axes[0].set_ylim(0, 1.05)
+axes[0].tick_params(axis=""x"", rotation=30)
+
+diab = pd.DataFrame({
+    ""timeout 5 s"":   taux_succes(df_5s)[""diabolical""],
+    ""timeout 0.5 s"": taux_succes(df_05)[""diabolical""],
+}).reindex(glob.index)
+diab.plot.bar(ax=axes[1], color=[""#4C72B0"", ""#DD8452""])
+axes[1].set_title(""Taux de succes sur 'diabolical' (10 grilles)"")
+axes[1].set_ylim(0, 1.05)
+axes[1].tick_params(axis=""x"", rotation=30)
+plt.tight_layout()
+plt.show()
+",,,,,,,,40b155d450c1774a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,a9be735c,markdown,fr,2c4f915951ab2246,"### Exercice 2 : Implémenter un sélecteur PASE
 
 **Énoncé** : Implémentez un petit sélecteur d'algorithmes basé sur les features d'instance :
@@ -42566,102 +42733,47 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,3870ce3b,
 resultats_par_taille = None  # TODO etudiant
 
 print(""Exercice 5 a completer"")",,,,,,,,5067c6dd461dafce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,f44a301c,markdown,fr,1d20c175c446b509,"### Lecture du résultat
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,489d238f,markdown,fr,dde16e3bbbad7899,"### Lecture du résultat : le budget déplace la sélection
 
-Sur `matrix_test`, la fonction rend la colonne **0** : cinq colonnes sont ex aequo à deux 1 (les colonnes 0, 1, 2, 4 et 5) et `np.argmin` garde la première rencontrée. Ce sont bien des colonnes serrées, qui ne laissent que deux candidats chacune. Sur la seconde matrice, la colonne 1 ne contient aucun 1 : le test `np.any(col_sums == 0)` rend `-1` **avant** tout choix — c'est ce signal qui permet à l'algorithme X d'abandonner immédiatement une branche sans issue, au lieu d'explorer toutes les lignes pour rien.",,,,,,,,1d20c175c446b509,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,b02146d9,markdown,fr,f3646c180a6c0046,"### Exercice 1 : Mesurer l'effet du choix de colonne sur l'arbre de recherche
+**Ce qui change en passant de 5 s à 0,5 s** (taux de succès medium_hard / diabolical, mesurés dans la sortie ci-dessus) :
 
-L'Exemple guidé 2 choisit la colonne la plus contrainte, en promettant que cela « réduit l'arbre de recherche ». Vérifiez-le : implémentez `count_explored_nodes(matrix, use_mrv)` qui résout une instance de couverture exacte **en comptant les noeuds explorés** jusqu'à la première solution, où le choix de colonne dépend du drapeau :
+| Paradigme | 5 s | 0,5 s | Verdict |
+|---|---|---|---|
+| Dancing Links | 100 % / 100 % | 100 % / 100 % | intact (~4 ms par grille) |
+| CP-SAT | 100 % / 100 % | 100 % / 100 % | intact (~17 ms par grille) |
+| Backtracking MRV | 70 % / 100 % | 50 % / 90 % | recule |
+| Z3 (SMT) | 100 % / 100 % | 60 % / 100 % | **recule nettement** sur medium_hard |
+| Backtracking naïf | 40 % / 80 % | 20 % / 50 % | recule |
+| Recuit simulé | 0 % / 0 % | 0 % / 0 % | inchangé (déjà en échec ; easy recule de 60 % à 30 %) |
+| Génétique | 0 % / 0 % | 0 % / 0 % | inchangé (déjà en échec) |
 
-1. `use_mrv=True` : la colonne choisie est celle avec le **moins** de 1 (heuristique MRV)
-2. `use_mrv=False` : la colonne choisie est celle avec le **plus** de 1 (l'anti-heuristique)
+**Gagnant sur 'diabolical'** : **Dancing Links** dans les deux cas, avec 100 % de succès et le temps le plus court. CP-SAT arrive deuxième, lui aussi à 100 %. La réponse à la question de l'énoncé est donc : non, CP-SAT n'est pas le gagnant. Il est le seul solveur généraliste à rester à 100 % partout, mais l'algorithme spécialisé (DLX) reste environ 5 fois plus rapide. Z3 reste à 100 % sur 'diabolical' à 0,5 s, mais il plonge de 100 % à 60 % sur medium_hard : la marge que 5 s lui offrait a disparu.
 
-**Indices** :
-- Reprenez la structure récursive de `algorithm_x_simple` ci-dessus : le squelette ne change pas, seule la ligne du choix de colonne devient `np.argmin(...)` ou `np.argmax(...)`
-- Comptez avec une liste mutable `[0]`, incrémentée à chaque appel de la fonction interne (une branche qui échoue sur une colonne vide compte aussi pour un noeud exploré)
-- Testez sur `matrix_test` : MRV doit explorer **moins** de noeuds que l'anti-heuristique pour atteindre {S2, S4, S6}
+**Ce que ça montre** :
+- **Le classement dépend du budget.** À 5 s, quatre solveurs sont ex aequo à 100 % sur 'diabolical'. À 0,5 s, ils ne sont plus que trois — et sur medium_hard, Z3 tombe de 100 % à 60 %. C'est le principe *No Free Lunch* appliqué au temps : le « meilleur » algorithme n'existe que pour un budget donné.
+- **Le budget révèle les marges.** Un solveur qui réussit en 0,3 s « en moyenne » échoue dès que la limite passe sous sa queue de distribution. La moyenne ne suffit pas, il faut regarder les pires instances : sur medium_hard, Z3 dépasse 0,5 s sur quatre grilles sur dix, et chacune devient un échec.
+- **Les métaheuristiques n'en profitent pas ici.** Contrairement à l'indice de l'énoncé, GA et recuit ne « tiennent » pas mieux : sur le Sudoku, qui a une seule solution exacte, une solution presque bonne compte comme un échec. Le recuit perd même la moitié de ses réussites sur 'easy' (60 % à 30 %).
 
-**Pourquoi c'est important** : le nombre de noeuds explorés est exactement ce que la section 8 mesurera en millisecondes entre DLX et le backtracking — l'heuristique est la première moitié de l'écart, Dancing Links la seconde.",,,,,,,,f3646c180a6c0046,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,7606e81a,code,fr,fbc976fd16c68527,"def count_explored_nodes(matrix: np.ndarray, use_mrv: bool = True) -> int:
-    """"""Resout une couverture exacte en comptant les noeuds explores.
+**Limite de la mesure** : ces taux dépendent de la machine et de sa charge — c'est précisément le sujet de l'exercice. Sur la course d'origine de janok181 (autre machine), Z3 s'effondrait plus fortement encore : 10 % sur medium_hard et 80 % sur 'diabolical' à 0,5 s, contre 60 % et 100 % ici. Les solveurs proches de la limite des 0,5 s (Z3, backtracking) peuvent donc changer sensiblement d'une exécution à l'autre ; les conclusions sur DLX et CP-SAT, très loin de la limite, restent solides.",,,,,,,,dde16e3bbbad7899,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,e613b2d9,markdown,fr,5592d2ed5fc84b0e,"### Exercice 1 : La stabilité du classement quand l'échantillon change
 
-    Args:
-        matrix: Matrice binaire de shape (n_rows, n_cols)
-        use_mrv: True pour choisir la colonne la plus contrainte (argmin),
-                 False pour la moins contrainte (argmax)
+**Énoncé** : le classement de la section 6 repose sur 30 grilles tirées avec la graine 42. Le gagnant survivrait-il à un autre tirage ? Re-tirez 10 grilles par difficulté avec une **graine différente** (par exemple 1337) et relancez les 7 solveurs avec `run_one(..., timeout_s=5.0)` :
+1. Affichez le taux de succès par (paradigme, difficulté) sur le nouvel échantillon, comme en section 6.1 ;
+2. Recalculez le classement 'diabolical' (taux de succès décroissant, puis temps moyen croissant) et comparez-le aux classements à 5 s de l'exemple guidé 1 ;
+3. Mesurez, pour chaque paradigme, l'écart de taux de succès global entre la graine 42 et la graine 1337.
 
-    Returns:
-        Nombre de noeuds explores avant d'atteindre la premiere solution
-    """"""
-    # TODO etudiant : adapter algorithm_x_simple en instrumentant le comptage
-    # Etape 1 : fonction recursive avec un compteur mutable compte = [0]
-    # Etape 2 : choix de colonne par np.argmin (MRV) ou np.argmax (anti-heuristique)
-    # Etape 3 : colonne sans 1 -> branche en echec, compter le noeud puis remonter
-    # Indice : renvoyer compte[0] une fois la premiere solution atteinte
-    return 0  # TODO etudiant : remplacer par le vrai comptage de noeuds
+**Question** : le gagnant change-t-il d'un échantillon à l'autre ? Quels paradigmes ont le classement le plus sensible au tirage, et pourquoi (10 grilles par difficulté seulement, queue de distribution des temps) ?
 
-print(""Exercice a completer : effet du choix de colonne sur le nombre de noeuds explores"")",,,,,,,,fbc976fd16c68527,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,8d7009e5,markdown,fr,93917714979727e1,"### Lecture du résultat
+**Indice** : le tirage de la section 3.2 utilise `random.Random(42)` puis `.sample(puzzles, 10)`. Refaites le même geste avec `random.Random(1337)` ; le `df` de la section 5.2 contient déjà toutes les mesures de la graine 42.",,,,,,,,5592d2ed5fc84b0e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,c84af228,code,fr,b3d4c9dd44a67459,"# Exercice a completer : stabilite du classement sous re-echantillonnage
+# Etape 1 : re-tirer 10 grilles par difficulte avec random.Random(1337)
+#           (meme pattern que la section 3.2 : load_puzzles + .sample(puzzles, 10))
+# Etape 2 : relancer les 7 solveurs avec run_one(..., timeout_s=5.0)
+# Etape 3 : taux de succes par (paradigm, difficulty) puis classement 'diabolical',
+#           comme dans l'exemple guide 1, et ecarts avec le df de la section 5.2
+# Indice : construire instances_1337 puis df_1337 ; l'ecart global par paradigme
+#           se lit en soustrayant les deux moyennes de la colonne 'success'
 
-La solution {S2, S4, S6} rend `True` : chaque élément de l'univers est couvert exactement une fois. Les deux autres essais rendent `False`, pour des raisons symétriques : sans S6, les éléments 2 et 7 restent à 0 — c'est une **sous-couverture** ; avec S1 en plus, l'élément 1 est couvert deux fois, par S1 et S2 — c'est une **sur-couverture**. Le prédicat unique `np.all(coverage == 1)` rejette les deux défauts à la fois : chaque colonne doit valoir exactement 1, ni 0 ni 2.",,,,,,,,93917714979727e1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,565073e3,markdown,fr,e8e9a064936094d1,"### Exercice 2 : Verifier qu'une selection partielle reste extensible
+df_1337 = None  # TODO etudiant
 
-Une solution de couverture exacte se construit ligne par ligne : pendant la recherche, la sélection en cours n'est pas encore une couverture exacte, mais elle ne doit **jamais sur-couvrir** une colonne — aucune ligne future ne peut réparer un doublon, la branche est morte. Implémentez `is_partial_cover(matrix, selected_rows)` qui vérifie cet invariant :
-
-1. Sélectionne les lignes déjà choisies
-2. Somme les colonnes de la sélection
-3. Rend `True` si aucune colonne n'atteint 2 ou plus (les colonnes à 0 sont permises : la sélection n'est pas finie)
-
-**Indices** :
-- Même squelette que le vérificateur de l'Exemple guidé 3 : `matrix[selected_rows]` puis `np.sum(axis=0)`
-- Seul le prédicat change : des sommes `<= 1` au lieu de `== 1`
-- Sur `matrix_test`, tout préfixe de [1, 3, 5] doit rendre `True`, et [0, 1] doit rendre `False` (S1 et S2 couvrent toutes deux l'élément 1)
-
-**Pourquoi c'est important** : c'est exactement l'invariant que les opérations `cover`/`uncover` de la section 3 maintiennent mécaniquement — sur-couvrir une colonne rendrait le backtrack incohérent.",,,,,,,,e8e9a064936094d1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,65c0adae,code,fr,9ab6027662da2432,"def is_partial_cover(matrix: np.ndarray, selected_rows: List[int]) -> bool:
-    """"""Verifie qu'une selection partielle ne sur-couvre aucune colonne.
-
-    Args:
-        matrix: Matrice binaire (numpy array) de shape (n_rows, n_cols)
-        selected_rows: Indices des lignes deja selectionnees
-
-    Returns:
-        True si aucune colonne n'est couverte deux fois ou plus, False sinon
-    """"""
-    # TODO etudiant : implementer la verification d'extensibilite
-    # Etape 1 : extraire les lignes deja selectionnees
-    # Etape 2 : sommer les colonnes
-    # Etape 3 : verifier qu'aucune somme ne depasse 1
-    return False  # TODO etudiant : remplacer par la verification
-
-print(""Exercice a completer : selection partielle sans sur-couverture"")",,,,,,,,9ab6027662da2432,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,89c15378,markdown,fr,ac936e2173cb17b3,"### Lecture du résultat
-
-`matrix_test` n'admet qu'**une** couverture exacte — cohérent avec la section 4, qui trouvait {S2, S4, S6} : si l'instance avait eu une seconde solution, `solve_dlx` l'aurait simplement ignorée. L'instance 3x2 en admet **deux** : soit les deux lignes unité S1 et S2, chacune couvrant une colonne, soit la ligne S3 seule, qui couvre les deux colonnes d'un coup. L'identité 4x4 en admet **une** : chaque colonne ne contient qu'un seul 1, les quatre lignes sont donc toutes obligatoires. C'est le même squelette de récursion que `search` — seul le traitement de la feuille change, un compteur incrémenté au lieu d'un retour immédiat.",,,,,,,,ac936e2173cb17b3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,4573069c,markdown,fr,acaf903c1abedafc,"### Exercice 3 : Enumerer toutes les solutions, pas seulement les compter
-
-L'Exemple guidé 4 compte les solutions sans les mémoriser. Allez au bout : implémentez `find_all_solutions(matrix)` qui rend la **liste des solutions**, chaque solution étant la liste des indices de lignes — `[[1, 3, 5]]` pour `matrix_test`, et les deux solutions `[0, 1]` et `[2]` pour l'instance 3x2 de l'Exemple guidé 4.
-
-**Indices** :
-- Même récursion que `count_all_solutions` : à la feuille (`header.R == header`), au lieu d'incrémenter un compteur, ajoutez une **copie** de la solution partielle à la liste des solutions (`solution.copy()`, sinon toutes les entrées finissent identiques)
-- Les noeuds de la structure portent leur ligne d'origine : `node.row_index`, comme dans `solve_dlx` (section 4)
-- Construisez la structure avec `build_dlx_structure_with_indices(matrix)` ; vérifiez chaque solution rendue avec `is_exact_cover` (Exemple guidé 3)
-
-**Pourquoi c'est important** : énumérer au lieu de compter, c'est ce que réclame l'Exercice 4 (afficher la première solution d'un pavage parmi plusieurs) — et vérifier chaque solution avec `is_exact_cover` boucle le circuit complet choix → exécution → vérification.",,,,,,,,acaf903c1abedafc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb,cf84ffd8,code,fr,600bcca8a50bd02a,"def find_all_solutions(matrix: np.ndarray) -> List[List[int]]:
-    """"""Enumere toutes les solutions d'un probleme de couverture exacte.
-
-    Args:
-        matrix: Matrice binaire (lignes = sous-ensembles, colonnes = elements)
-
-    Returns:
-        Liste des solutions, chaque solution etant la liste des indices de lignes
-    """"""
-    # TODO etudiant : enumerer les solutions au lieu de les compter
-    # Etape 1 : construire la structure avec build_dlx_structure_with_indices
-    # Etape 2 : a la feuille, ajouter solution.copy() a la liste des solutions
-    # Etape 3 : reprendre cover/uncover de count_all_solutions sans s'arreter a la premiere
-    # Indice : node.row_index donne l'indice de ligne d'un noeud solution
-    return []  # TODO etudiant : remplacer par la vraie enumeration
-
-print(""Exercice a completer : enumeration de toutes les solutions"")",,,,,,,,600bcca8a50bd02a,,,,,,,,,,,,,,,
+print(""Exercice a completer : stabilite du classement, graine 1337 vs 42"")",,,,,,,,b3d4c9dd44a67459,,,,,,,,,,,,,,,
