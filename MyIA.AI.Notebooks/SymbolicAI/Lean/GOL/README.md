@@ -5,7 +5,8 @@ dans la filière « automates cellulaires et calcul » de l'EPIC #1647 (hommages
 Elle regroupe les carnets qui étaient numérotés `Lean-16b` à `Lean-16j` avant la
 réorganisation #20204, puis les deux carnets Life de la série GameTheory (`20d`, `20e` —
 Loi II et perplexité structurelle), en une marche d'escalier autonome entre `Lean-16a` (l'homme
-et l'œuvre) et les ponts vers FRACTRAN, le libre arbitre et la théorie des nœuds.
+et l'œuvre) et les ponts vers le libre arbitre et la théorie des nœuds ; FRACTRAN,
+l'autre invention computationnelle de Conway, clôt la marche en GOL-10.
 
 **Le geste de la sous-série** : faire gravir au Jeu de la Vie « l'échelle des
 témoins » — de la règle elle-même jusqu'à la correction d'un algorithme Hashlife
@@ -26,10 +27,11 @@ prouvée en Lean — en gardant chaque barreau exécutable : un carnet, un moteu
 | GOL-08 | [GOL-08-Loi-II-Translateur-Life](GOL-08-Loi-II-Translateur-Life.ipynb) | La Loi II sur substrat Life : synthèse d'un translateur, certificat d'impossibilité scopé | `python3` |
 | GOL-08b | [GOL-08b-Certificat-Translateur-Lean](GOL-08b-Certificat-Translateur-Lean.ipynb) | Le variant `-b` annoncé par GOL-08 : témoin, impossibilité et frontière de famille en théorèmes du lake (`Conway.Life.Translateur`) | `lean4-wsl` |
 | GOL-09 | [GOL-09-Perplexite-Structurelle-Hashlife](GOL-09-Perplexite-Structurelle-Hashlife.ipynb) | Capstone perplexité T12 : la taille comprimée des trajectoires et le coût en temps (exposant α HashLife) comme mesures | `python3` |
+| GOL-10 | [GOL-10-Fractran](GOL-10-Fractran.ipynb) | FRACTRAN en Python : registres premiers, Fibonacci, Collatz, compilation de machines de Minsky — compagnon exécutable de Lean-16b | `python3` |
 
 Les voisins hors sous-série : [Lean-16a](../Lean-16a-Conway-Man-and-Work.ipynb)
 (l'homme et l'œuvre, en amont), [Lean-16b](../Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb)
-(FRACTRAN) et [Lean-16c](../Lean-16c-Conway-Free-Will-Theorem.ipynb) (libre arbitre),
+(FRACTRAN sur kernel Lean natif, dont GOL-10 est le compagnon Python) et [Lean-16c](../Lean-16c-Conway-Free-Will-Theorem.ipynb) (libre arbitre),
 puis [Lean-17](../Lean-17-Conway-Bridge-to-Knots-Python.ipynb) (pont vers les nœuds).
 Côté GameTheory, la série GT-20 (chemin minimal) précède GOL-08 :
 [GameTheory-20](../../../GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb).
