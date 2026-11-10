@@ -108,6 +108,7 @@ if str(CI_DIR) not in sys.path:
 
 import pool_review_verdicts as pool  # noqa: E402
 import guard_test_root as guard  # noqa: E402
+import lot_check_runs  # noqa: E402
 
 DEFAULT_REPO = "jsboige/CoursIA"
 
@@ -1203,6 +1204,20 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--publish-check-runs",
+        action="store_true",
+        help=(
+            "publier un check-run advisory sur chaque tete du lot deja joue "
+            "(tranche 2 de P3). Le check-run ne bloque aucun merge : son nom "
+            "porte le marqueur `advisory` que le PR gate route hors porte."
+        ),
+    )
+    parser.add_argument(
+        "--details-url",
+        default=None,
+        help="lien du run porte dans le check-run (publication)",
+    )
+    parser.add_argument(
         "--bisect-target",
         nargs="+",
         default=None,
@@ -1230,6 +1245,49 @@ def main(argv: list[str] | None = None) -> int:
             sys.exit(BISECT_SKIP)
         code = bisect_run(tree, targets)
         sys.exit(code)
+
+    if args.publish_check_runs:
+        # Tranche 2 de P3 : le lot **publie** son verdict sur chaque tete.
+        # La publication est separee de l'execution (elle se fait sur le
+        # resultat deja produit) : un echec de publication ne doit jamais
+        # faire perdre la mesure du lot.
+        if args.plan is None or args.results is None:
+            print(
+                "--publish-check-runs exige --plan et --results",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            plan = json.loads(args.plan.read_text(encoding="utf-8"))
+            resultats = json.loads(args.results.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            print(f"plan ou resultat illisible : {exc}", file=sys.stderr)
+            return 2
+        payloads = lot_check_runs.construire_payloads(plan, resultats)
+        journal = lot_check_runs.publier(
+            args.repo,
+            payloads,
+            dry_run=args.dry_run,
+            details_url=args.details_url,
+        )
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "check_run_name": lot_check_runs.CHECK_RUN_NAME,
+                        "pool_tronque": lot_check_runs.pool_tronque(
+                            plan.get("pool_inspecte"), plan.get("limit")
+                        ),
+                        "journal": journal,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+        else:
+            for ligne in journal:
+                print(f"#{ligne.get('pr')} : {ligne.get('statut')} — {ligne.get('motif')}")
+        return 0
 
     if args.run:
         plan: dict[str, Any]
@@ -1322,6 +1380,14 @@ def main(argv: list[str] | None = None) -> int:
         "selectionnees": selected,
         "exclues": excluded,
         "pool_inspecte": len(entries) if args.pr is None else 1,
+        # Le plafond de lecture et le **droit** de troncature voyagent avec le
+        # plan : la tranche 2 (check-run) doit pouvoir dire « la population
+        # a ete tronquee » dans le resume, et le dire sur la PR, pas seulement
+        # dans le rapport du run (demande du coordinateur, 10/11 02:04Z).
+        "limit": args.limit,
+        "pool_tronque": lot_check_runs.pool_tronque(
+            len(entries) if args.pr is None else 1, args.limit
+        ),
     }
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
