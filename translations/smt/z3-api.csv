@@ -1909,7 +1909,9 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,a304cd8b,mark
 2. `SolverFor('QF_BV')` est adapte aux problemes de vecteurs de bits.
 3. `set_option('timeout', ms)` permet de limiter le temps de calcul global.
 4. Le gain de performance depend du problème ; sur de petites instances, la différence est souvent negligeable.",,,,,,,,08eda7ec8d6808e4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,d935da62,markdown,fr,f70f6810ce615a58,"## Exercice 1 : Composer un pipeline de tactiques
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,d935da62,markdown,fr,df5428d6df7dcb91,"## Exemple guidé 1 — Composer un pipeline de tactiques (crédité #25642 — groupe 3 MIS : Alizée, Clémence et Pauline)
+
+> Résolution originale : **groupe 3** (TP2, MIS, EPF), PR étudiante [#25642](https://github.com/jsboige/CoursIA/pull/25642). Code repris tel quel.
 
 ### Enonce
 
@@ -1925,27 +1927,49 @@ Créez un pipeline de tactiques `Then(simplify, solve-eqs)` et appliquez-le a un
 - Créez un `Goal()`, ajoutez les 4 contraintes.
 - Construisez `Then(Tactic('simplify'), Tactic('solve-eqs'))` et appliquez-le au goal.
 - Utilisez `len(result)` pour le nombre de sous-but et `result[i].size()` pour le nombre de contraintes.
-- Pour obtenir les valeurs, ajoutez les contraintes originales a un `Solver` et appelez `check()` puis `model()`.",,,,,,,,f70f6810ce615a58,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,d679f119,code,fr,20fb9f30d0164470,"# EXERCICE 1 : Pipeline de tactiques.
+- Pour obtenir les valeurs, ajoutez les contraintes originales a un `Solver` et appelez `check()` puis `model()`.",,,,,,,,df5428d6df7dcb91,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,d679f119,code,fr,0c0fdf1bc21b3626,"# EXEMPLE GUIDE 1 : Pipeline de tactiques (resolution groupe 3 MIS, TP2, #25642).
+
+from z3 import *
 
 def pipeline_tactiques() -> dict:
-    """"""Applique Then(simplify, solve-eqs) et retourne le resultat.
+    # Etape 1 : variables
+    a, b, c = Ints('a b c')
 
-    Retourne : {'a': val, 'b': val, 'c': val, 'nb_contraintes_final': int}
+    # Etape 2 : goal avec les 4 contraintes de l'énoncé
+    contraintes = [a == b + 1, c == a * 2, b > 5, c < 20]
+    goal = Goal()
+    goal.add(*contraintes)
 
-    # Indice : creez un Goal, ajoutez les 4 contraintes, appliquez le pipeline.
-    # Etape 1 : declarer a, b, c comme Int
-    # Etape 2 : creer le Goal et ajouter les contraintes
-    # Etape 3 : construire Then(Tactic('simplify'), Tactic('solve-eqs'))
-    # Etape 4 : utiliser len(result) et result[0].size() pour le nombre de contraintes
-    # Etape 5 : ajouter les contraintes a un Solver pour obtenir les valeurs
-    """"""
-    # TODO etudiant : implémentez le pipeline
-    return None  # TODO etudiant : remplacer par le résultat
+    # Etape 3 : pipeline simplify puis solve-eqs
+    tactic = Then(Tactic('simplify'), Tactic('solve-eqs'))
+    result = tactic(goal)
+
+    # Etape 4 : affichage des sous-buts
+    print(""Nombre de sous-buts :"", len(result))
+    for i in range(len(result)):
+        print(f""Sous-but {i} ({result[i].size()} contraintes) :"", result[i])
+
+    nb_contraintes_final = result[0].size()
+
+    # Etape 5 : résolution avec les contraintes ORIGINALES
+    solver = Solver()
+    solver.add(*contraintes)
+
+    if solver.check() == sat:
+        m = solver.model()
+        a_val, b_val, c_val = m[a].as_long(), m[b].as_long(), m[c].as_long()
+    else:
+        a_val = b_val = c_val = None
+
+    return {'a': a_val, 'b': b_val, 'c': c_val,
+            'nb_contraintes_final': nb_contraintes_final}
 
 resultat = pipeline_tactiques()
-print(""Resultat du pipeline :"", resultat)",,,,,,,,20fb9f30d0164470,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,27d2e260,markdown,fr,dc4d6203b70ab26c,"## Exercice 2 : Clef cryptographique avec BitVec
+print(""Resultat du pipeline :"", resultat)",,,,,,,,0c0fdf1bc21b3626,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,27d2e260,markdown,fr,b4cc9d85b9f529dc,"## Exemple guidé 2 — Clef cryptographique avec BitVec (crédité #25642 — groupe 3 MIS : Alizée, Clémence et Pauline)
+
+> Résolution originale : **groupe 3** (TP2, MIS, EPF), PR étudiante [#25642](https://github.com/jsboige/CoursIA/pull/25642). Code repris tel quel.
 
 ### Enonce
 
@@ -1956,26 +1980,37 @@ Trouvez la clef `k` (8 bits) telle que `message ^ k == 0xA5` et `message` soit u
 > **Indices :**
 - Un multiple de 4 en binaire se termine par `00` (les 2 bits de poids faible sont nuls).
 - Contrainte : `(message & BitVecVal(3, 8)) == BitVecVal(0, 8)`.
-- Le chiffrement XOR est reversible : `message = 0xA5 ^ k`.",,,,,,,,dc4d6203b70ab26c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,e6f8fc07,code,fr,ed72429af06d271d,"# EXERCICE 2 : Trouver la clef XOR.
+- Le chiffrement XOR est reversible : `message = 0xA5 ^ k`.",,,,,,,,b4cc9d85b9f529dc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,e6f8fc07,code,fr,6835a9585b984eec,"# EXEMPLE GUIDE 2 : Trouver la clef XOR (resolution groupe 3 MIS, TP2, #25642).
 
 def trouver_clef_xor() -> dict:
-    """"""Trouve la clef k telle que message ^ k == 0xA5 et message est multiple de 4.
+    # Etape 1 : clef sur 8 bits
+    k = BitVec('k', 8)
 
-    Retourne : {'clef': int, 'message': int}
+    # Etape 2 : message reconstruit grâce à la réversibilité du XOR
+    message = BitVecVal(0xA5, 8) ^ k
 
-    # Indice : k = BitVec('k', 8), message = 0xA5 ^ k.
-    # Etape 1 : declarer k (BitVec 8 bits)
-    # Etape 2 : message = BitVecVal(0xA5, 8) ^ k
-    # Etape 3 : ajouter la contrainte (message & 3) == 0
-    # Etape 4 : resoudre et extraire k et message
-    """"""
-    # TODO etudiant : implémentez la recherche de clef
-    return None  # TODO etudiant : remplacer par le résultat
+    # Etape 3 : message multiple de 4 (les 2 bits de poids faible sont nuls)
+    solver = Solver()
+    solver.add((message & BitVecVal(3, 8)) == BitVecVal(0, 8))
+
+    # Etape 4 : résolution et extraction
+    if solver.check() == sat:
+        m = solver.model()
+        clef = m[k].as_long()
+        msg = m.eval(message).as_long()
+        return {'clef': clef, 'message': msg}
+    return None
 
 clef = trouver_clef_xor()
-print(""Clef trouvee :"", clef)",,,,,,,,ed72429af06d271d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,0aa5c18a,markdown,fr,6723bc284a185f7c,"## Exercice 3 : Verifier une mise a jour de tableau
+print(""Clef trouvee :"", clef)
+
+# Vérification
+print(f""{clef['message']} ^ {clef['clef']} = {clef['message'] ^ clef['clef']:#x}"")
+print(""Multiple de 4 :"", clef['message'] % 4 == 0)",,,,,,,,6835a9585b984eec,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,0aa5c18a,markdown,fr,2f8aa598c8301b4b,"## Exemple guidé 3 — Verifier une mise a jour de tableau (crédité #25642 — groupe 3 MIS : Alizée, Clémence et Pauline)
+
+> Résolution originale : **groupe 3** (TP2, MIS, EPF), PR étudiante [#25642](https://github.com/jsboige/CoursIA/pull/25642). Code repris tel quel.
 
 ### Enonce
 
@@ -1990,26 +2025,30 @@ Verifiez cette propriete en tentant de trouver un contre-exemple (le solveur doi
 - Créez deux tableaux : `seq1 = Store(Store(a, i, v1), j, v2)` et `seq2 = Store(Store(a, j, v2), i, v1)`.
 - Ajoutez la contrainte `i != j`.
 - Ajoutez `Select(seq1, k) != Select(seq2, k)` pour un index `k` quelconque.
-- Si `unsat`, la propriete est prouvee.",,,,,,,,6723bc284a185f7c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,2b4b4d43,code,fr,d98e505cc05a179c,"# EXERCICE 3 : Commutativite des Store sur des index differents.
+- Si `unsat`, la propriete est prouvee.",,,,,,,,2f8aa598c8301b4b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,2b4b4d43,code,fr,c79ed1564b1d3cc2,"# EXEMPLE GUIDE 3 : Commutativite des Store sur des index differents (resolution groupe 3 MIS, TP2, #25642).
 
 def verifier_commutativite_store() -> str:
-    """"""Prouve que Store(a, i, v1) puis Store(..., j, v2) commute si i != j.
+    # Etape 1 : tableau d'entiers indexé par des entiers, et variables
+    a = Array('a', IntSort(), IntSort())
+    i, j, v1, v2, k = Ints('i j v1 v2 k')
 
-    Retourne : 'prouve' si unsat, 'non_prouve' sinon.
+    # Etapes 2 et 3 : les deux ordres de mise à jour
+    seq1 = Store(Store(a, i, v1), j, v2)
+    seq2 = Store(Store(a, j, v2), i, v1)
 
-    # Indice : creez a, i, j, v1, v2, k comme variables.
-    # Etape 1 : declarer a = Array('a', IntSort(), IntSort()) et i, j, v1, v2, k comme Int
-    # Etape 2 : seq1 = Store(Store(a, i, v1), j, v2)
-    # Etape 3 : seq2 = Store(Store(a, j, v2), i, v1)
-    # Etape 4 : ajouter i != j et Select(seq1, k) != Select(seq2, k)
-    # Etape 5 : si unsat -> 'prouve'
-    """"""
-    # TODO etudiant : implémentez la vérification
-    return None  # TODO etudiant : remplacer par 'prouve' ou 'non_prouve'
+    # Etape 4 : on cherche un contre-exemple
+    solver = Solver()
+    solver.add(i != j)
+    solver.add(Select(seq1, k) != Select(seq2, k))
+
+    # Etape 5 : unsat = aucun contre-exemple = propriété prouvée
+    if solver.check() == unsat:
+        return 'prouve'
+    return 'non_prouve'
 
 resultat = verifier_commutativite_store()
-print(""Commutativite des Store :"", resultat)",,,,,,,,d98e505cc05a179c,,,,,,,,,,,,,,,
+print(""Commutativite des Store :"", resultat)",,,,,,,,c79ed1564b1d3cc2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,9f2dfa5a,markdown,fr,862401b6f913a233,"## Recapitulatif
 
 Ce notebook a explore les mécanismes avances de Z3 au-dela du solveur de base :
@@ -11452,3 +11491,127 @@ def generer_mot_de_passe(longueur_min: int, longueur_max: int) -> str:
 
 for bornes in [(8, 12), (3, 3), (1, 2)]:
     print(f""Bornes {bornes} :"", generer_mot_de_passe(*bornes))",,,,,,,,59cc71f5e12e9a5c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,aab47564,markdown,fr,5e667ee3d46cb23a,"## Exemples guidés et exercices
+
+Trois exercices pour vous approprier le matériel. Les stubs s'exécutent tels quels (ils rendent `None`) : complétez-les, puis relancez la cellule.
+
+Les trois premiers énoncés ont été résolus par un rendu de TP (PR étudiante #25642) : chaque résolution est conservée comme **exemple guidé crédité**, suivie d'un exercice neuf sur le même sujet.",,,,,,,,5e667ee3d46cb23a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,6b315c50,markdown,fr,d634c62bb135e1fd,"### Lecture du résultat
+
+Le pipeline rend **1 sous-but** de **2 contraintes**, `[Not(a <= 6), Not(a >= 10)]` : `solve-eqs` a substitué `b` et `c` (leurs équations disparaissent du goal), et les inégalités `b > 5` et `c < 20` se réexpriment en bornes sur `a` seul. La résolution avec un `Solver` sur les contraintes **originales** donne `{'a': 7, 'b': 6, 'c': 14, 'nb_contraintes_final': 2}` : on vérifie au passage `7 = 6 + 1`, `14 = 7 * 2`, `6 > 5` et `14 < 20`. Le sous-but simplifié sert à diagnostiquer le système ; les valeurs viennent du solveur complet.",,,,,,,,d634c62bb135e1fd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,37317d1d,markdown,fr,12817f131595b53c,"## Exercice 1 : Ce que solve-eqs élimine vraiment
+
+### Enonce
+
+On dispose du système de contraintes suivant :
+- `x == 2`
+- `y == x + 3`
+- `z > y`
+- `z < 12`
+- `w == x * y`
+
+Écrivez `analyser_pipeline()` qui applique le même pipeline `Then(simplify, solve-eqs)` a un `Goal` contenant ces contraintes, et renvoie `{'nb_sous_buts': int, 'nb_contraintes': int, 'variables_restantes': list}` — la liste étant **triée** et contenant les noms des variables qui apparaissent encore dans le(s) sous-but(s). Quelles variables le pipeline a-t-il fait disparaître, et pourquoi celles-là ?
+
+> **Indices :**
+- `result[0][p]` donne la contrainte `p` du premier sous-but ; `result[0].size()` en donne le nombre.
+- `z3util.get_vars(expr)` renvoie la liste des variables d'une expression Z3 ; il traverse le `Not(...)` sans souci.
+- Une équation `v == terme` ne peut être éliminée que si `v` n'apparaît pas dans `terme`.",,,,,,,,12817f131595b53c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,8e8b4656,code,fr,f9603bb1e7c52ed2,"# EXERCICE 1 : Ce que solve-eqs elimine vraiment.
+
+def analyser_pipeline() -> dict:
+    """"""Applique Then(simplify, solve-eqs) et analyse ce qui subsiste dans le sous-but.
+
+    Retourne : {'nb_sous_buts': int, 'nb_contraintes': int, 'variables_restantes': list triee}
+
+    # Indice : creez un Goal avec les 5 contraintes, appliquez le pipeline, inspectez le sous-but.
+    # Etape 1 : declarer x, y, z, w comme Int
+    # Etape 2 : creer le Goal et ajouter les 5 contraintes de l'enonce
+    # Etape 3 : appliquer Then(Tactic('simplify'), Tactic('solve-eqs')) et compter sous-buts et contraintes
+    # Etape 4 : collecter les variables restantes avec z3util.get_vars sur chaque contrainte du sous-but
+    """"""
+    # TODO etudiant : implémentez l'analyse du pipeline
+    return None  # TODO etudiant : remplacer par le résultat
+
+resultat = analyser_pipeline()
+print(""Analyse du pipeline :"", resultat)
+
+# Tests attendus (decommentez apres implementation) :
+# assert resultat['nb_sous_buts'] == 1
+# assert resultat['nb_contraintes'] == 2
+# assert resultat['variables_restantes'] == ['z']",,,,,,,,f9603bb1e7c52ed2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,52f68027,markdown,fr,6bc6e156ea0aebbe,"### Lecture du résultat
+
+Le solveur rend `{'clef': 1, 'message': 164}` : la vérification confirme `164 ^ 1 = 0xa5` et `Multiple de 4 : True`. La contrainte `(message & 3) == 0` force les deux bits de poids faible de `k` — `0xA5` se terminant par `01`, la clef doit se terminer par `01` pour que le message se termine par `00`. La clef rendue n'est donc **pas unique** : Z3 s'arrête au premier modèle, et la cellule suivante demande justement de les compter.",,,,,,,,6bc6e156ea0aebbe,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,2576b9be,markdown,fr,e471b1c37f2a84d8,"## Exercice 2 : Compter les clefs candidates
+
+### Enonce
+
+Un message de 8 bits a ete chiffre par XOR avec une clef `k`. Le message chiffre est `0xB7`. Cette fois, l'analyste sait deux choses du message clair : il est un **multiple de 4** (valeur entiere non signee) et sa valeur non signee est **strictement inferieure a 128**.
+
+Écrivez `compter_clefs_possibles()` qui renvoie le **nombre** de clefs `k` (8 bits) compatibles avec ces deux indices. Verifiez votre reponse par une enumeration directe en Python (une boucle sur les 256 valeurs de `k`).
+
+> **Indices :**
+- La modelisation reste `message = BitVecVal(0xB7, 8) ^ k` ; les contraintes sont `(message & 3) == 0` et `ULT(message, BitVecVal(128, 8))`.
+- Pour compter avec Z3 : resoudre, lire `m[k]`, ajouter `solver.add(k != m[k])` pour bloquer le modele trouve, et recommencer jusqu'a `unsat`.
+- `0xB7` s'ecrit `10110111` : deux bits de `k` sont imposes par le multiple de 4, un par la borne a 128 — combien de bits restent libres ?",,,,,,,,e471b1c37f2a84d8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,e49f7563,code,fr,da585a8707e6ff86,"# EXERCICE 2 : Compter les clefs candidates.
+
+def compter_clefs_possibles() -> int:
+    """"""Compte les clefs k (8 bits) telles que message = 0xB7 ^ k soit multiple de 4 et < 128.
+
+    Retourne : int (le nombre de clefs compatibles)
+
+    # Indice : bloquez chaque modele trouve par solver.add(k != m[k]) jusqu'a unsat.
+    # Etape 1 : declarer k = BitVec('k', 8) et message = BitVecVal(0xB7, 8) ^ k
+    # Etape 2 : ajouter (message & 3) == 0 puis ULT(message, BitVecVal(128, 8))
+    # Etape 3 : boucler check() -> modele -> bloquer, en comptant les modeles
+    # Etape 4 : verifier par une enumeration directe sur les 256 valeurs de k
+    """"""
+    # TODO etudiant : implémentez le comptage
+    return None  # TODO etudiant : remplacer par le nombre de clefs
+
+nombre = compter_clefs_possibles()
+print(""Clefs possibles :"", nombre)
+
+# Tests attendus (decommentez apres implementation) :
+# enumeration = sum(1 for k in range(256) if ((0xB7 ^ k) & 3) == 0 and (0xB7 ^ k) < 128)
+# print(""Enumeration directe :"", enumeration)
+# assert nombre == enumeration",,,,,,,,da585a8707e6ff86,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,3ddade60,markdown,fr,2cd2e2c48f9d4a5a,"### Lecture du résultat
+
+Le solveur répond `prouve` : la requête de contre-exemple (`i != j` et `Select(seq1, k) != Select(seq2, k)`) est `unsat`, donc aucun modèle ne distingue les deux ordres d'écriture. En lecture, les deux séquences rendent bien la même valeur partout : en `k == i`, `seq1` rend `v1` (l'écriture en `j` ne touche pas `i`) et `seq2` rend aussi `v1` (dernière écriture en `i`) ; en `k == j`, les deux rendent `v2` ; partout ailleurs, `a[k]`. La commutativité tient **exactement parce que** `i != j` — l'exercice suivant fait tomber cette hypothèse.",,,,,,,,2cd2e2c48f9d4a5a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,aed9bbed,markdown,fr,13957f30fb9e7e75,"## Exercice 3 : Faire tomber l'hypothese `i != j`
+
+### Enonce
+
+La preuve precedente repose entierement sur l'hypothese `i != j`. Supprimez-la : la propriete « l'ordre des deux `Store` n'a pas d'importance » est-elle encore vraie quand `i` et `j` peuvent etre egaux ?
+
+Écrivez `tester_sans_inegalite()` qui cherche un contre-exemple **sans** la contrainte `i != j` (meme construction de `seq1` et `seq2`, meme requete `Select(seq1, k) != Select(seq2, k)`). Si le solveur repond `sat`, lisez le modele et renvoyez `{'statut': 'sat', 'i_egale_j': bool, 'v1': int, 'v2': int}` ; sinon renvoyez `{'statut': 'unsat'}`. Que remarque-t-on sur `i` et `j`, et sur `v1` et `v2`, dans le contre-exemple ?
+
+> **Indices :**
+- C'est le squelette de l'exemple guide 3, moins une contrainte.
+- `m[i].as_long()` et `m[j].as_long()` lisent les valeurs du modele.
+- Pour que les deux ordres different en `k == i == j`, la seconde ecriture doit ecraser la premiere avec une valeur differente.",,,,,,,,13957f30fb9e7e75,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,18aa2b0d,code,fr,301b56a93cfe9a5d,"# EXERCICE 3 : Faire tomber l'hypothese i != j.
+
+def tester_sans_inegalite() -> dict:
+    """"""Cherche un contre-exemple a la commutativite des Store SANS la contrainte i != j.
+
+    Retourne : {'statut': 'sat', 'i_egale_j': bool, 'v1': int, 'v2': int} ou {'statut': 'unsat'}
+
+    # Indice : reprenez la construction de l'exemple guide 3 et omettez la contrainte i != j.
+    # Etape 1 : declarer a = Array('a', IntSort(), IntSort()) et i, j, v1, v2, k comme Int
+    # Etape 2 : construire seq1 = Store(Store(a, i, v1), j, v2) et seq2 = Store(Store(a, j, v2), i, v1)
+    # Etape 3 : ajouter uniquement Select(seq1, k) != Select(seq2, k)
+    # Etape 4 : si sat, lire m[i], m[j], m[v1], m[v2] et remplir le dictionnaire
+    """"""
+    # TODO etudiant : implémentez la recherche de contre-exemple
+    return None  # TODO etudiant : remplacer par le résultat
+
+resultat = tester_sans_inegalite()
+print(""Sans l'inegalite i != j :"", resultat)
+
+# Tests attendus (decommentez apres implementation) :
+# assert resultat['statut'] == 'sat'
+# assert resultat['i_egale_j'] is True
+# assert resultat['v1'] != resultat['v2']",,,,,,,,301b56a93cfe9a5d,,,,,,,,,,,,,,,
