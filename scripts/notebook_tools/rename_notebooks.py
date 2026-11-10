@@ -146,8 +146,8 @@ FIXTURES_DECLARED: tuple[str, ...] = (
     # a la main (4329707b92), la declaration evite le troisieme.
     "docs/reference/quant-prose-census.md",
     # Attestation de parite historique (#25461) : l'entree known_differences
-    # documente le renvoi tel qu'il s'appelait alors ; on y ajoute une entree
-    # datee, on ne reecrit pas la precedente.
+    # documente le renvoi tel qu'il s'appelait alors -- elle reste telle
+    # quelle (le renvoi pointe le README du dossier, pas le carnet).
     "scripts/notebook_tools/twin_pairs.d/search-02b-networkx.yaml",
 )
 
@@ -265,7 +265,7 @@ def canonical_target(filename: str, kernel_suffix: str) -> str:
         # Nom hors grammaire de serie (index nu, prefixe absent) : on se borne
         # a apposer le suffixe de noyau, acte minimal sans risque -- mais en
         # retirant d'abord un suffixe DEJA present, sinon la cible en empile un
-        # second a chaque passage (`Diagnostic-Medical-Python` -> `-Python-Python`,
+        # second a chaque passage (`Diagnostic-Medical` -> `-Python-Python`,
         # mesure #19157 : 2824 cas d'idempotence sur l'arbre).
         stem = _strip_final_kernel(stem)
         return f"{stem}-{_cap(kernel_suffix)}.ipynb"
