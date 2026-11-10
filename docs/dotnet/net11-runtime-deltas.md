@@ -617,3 +617,144 @@ $env:DOTNET_ROLL_FORWARD="Major"; $env:DOTNET_MULTILEVEL_LOOKUP="0"
 
 Voir aussi : [#18770] (bancs, baselines absolues) · [#18769] (sélection carnets) ·
 [#18766] (canon kernel) · EPIC [#18695].
+
+## Contrôle du banc 1 (MetaGeneticSharp) — le régime `InvocationCount(1)` mesure un mélange, et le classement des runtimes en dépend (myia-ai-01:CoursIA-2, 10/11)
+
+### Pourquoi ce contrôle
+
+La section « Le régime à N croissant » établit que, sur le banc `prompt-settings` du
+banc 4, le régime épinglé `InvocationCount(1)` **sur-estime** le coût par opération d'un
+facteur **×3 à ×55**. Deux causes y sont invoquées : un coût fixe de la région mesurée
+amortissable en `c/N`, et le *tiering* du JIT.
+
+Ce contrôle demande si ce facteur **se généralise** aux bancs dont le coût par appel
+est de l'ordre de la **milliseconde** — donc au banc 1 (MetaGeneticSharp), dont les
+appels coûtent 2 à 8,5 ms (10 000 à 50 000 évaluations de fitness), soit mille fois
+plus que ceux du banc 4.
+
+### Protocole
+
+Une compilation unique, **une classe de banc par processus BDN**, 3 passes entrelacées
+par configuration, comparaisons **appariées par passe** (les deux members d'une paire
+sont mesurés à quelques secondes d'intervalle). Runtimes .NET 9.0.22, 10.0.14 et
+11.0.0-rc.3.26522.148 via `dotnet exec --fx-version` ; BDN 0.15.8 ; hôte Windows 11 Pro
+**partagé, charge processeur 62 % à 86 % pendant la session** (mesurée) — d'où le choix
+des rapports appariés et de la médiane, et l'impossibilité d'utiliser les valeurs
+absolues comme référence.
+
+Trois grilles : (A) `DOTNET_TieredCompilation=1` contre `=0` sur les trois runtimes ;
+(B) une échelle de comptage `InvocationCount = N` pour N = 1 / 8 / 64, sur les quatre
+charges du banc de référence ; (C) cinq désactivations partielles du tiering pour
+tenter d'isoler le mécanisme.
+
+### Résultat 1 — le facteur ×3 à ×55 ne se généralise pas
+
+Coût **par appel** (médiane de 3 passes, en ms), échelle N :
+
+| Charge | N = 1 | N = 8 | N = 64 |
+| --- | ---: | ---: | ---: |
+| `RandomSearch_Ackley2D_10k` | 2,030 | 1,892 | **0,845** |
+| `RandomSearch_Sphere10D_50k` | 16,696 | 9,185 | **10,218** |
+| `CenterBias_Ackley_5k` | 1,798 | 1,635 | **1,485** |
+| `CenterBias_Suite4_5k` | 8,683 | 6,735 | **6,691** |
+
+À partir de N = 8, le coût par appel **ne bouge plus** : il n'y a **pas** de coût fixe de
+région mesurée à amortir sur ce banc. Le rapport N = 1 / N = 64 vaut **×1,21 à ×2,40**
+selon la charge — **très loin** du ×3 à ×55.
+
+### Résultat 2 — de quoi le surcoût est fait
+
+Ce n'est pas un coût de harnais : c'est du **code non optimisé**. Le **profil par
+itération** (lignes `WorkloadResult` du journal BDN — absentes du rapport final) montre
+une **marche**, le passage du tier0 au tier1, **à l'intérieur** de la fenêtre mesurée :
+
+```text
+itération  1..9 :  27,3  29,4  28,9  26,5  27,8  30,4  22,6   9,4   9,1
+itération 10..15:   8,9   8,8   9,1   9,1   9,2   7,6
+```
+
+La marche est **reproductible** (itérations 8, 7 et 8 sur les trois passes) et les
+moyennes de passe s'étalent de 14,578 à 17,614 ms (**21 %**) alors que la charge est
+déterministe (seed 7). La variabilité ne vient donc pas de la charge mais de la
+**position de la marche** : la moyenne du régime N = 1 est un **mélange**, pas un coût.
+
+Corollaire pour la campagne : **une baseline mesurée en `InvocationCount(1)` n'est pas
+un coût établi**, et l'écart au coût établi dépend de la durée de la charge — donc de
+la charge elle-même.
+
+### Résultat 3 — le classement des runtimes s'inverse
+
+Charge `RandomSearch_Ackley2D_10k`, .NET 9 / 10 / 11, médiane de 3 passes (ms) :
+
+| Runtime | `default` (régime des baselines) | `off` (tiering désactivé) | `off` / `default` |
+| --- | ---: | ---: | ---: |
+| .NET 9.0.22 | 1,982 | 1,305 | 0,658 |
+| .NET 10.0.14 | 1,956 | **1,052** | 0,538 |
+| .NET 11.0.0-rc.3 | 2,261 | 1,185 | **0,524** |
+
+Dans le régime `default` — celui des baselines publiées — **.NET 11 est le plus lent**
+des trois. Dans le régime `off`, **.NET 11 est plus rapide que .NET 9** (1,185 contre
+1,305, soit 9 %).
+
+L'inversion tient sur les **rapports appariés par passe** : 9 paires sur 9 sont
+inférieures à 1, de 0,47 à 0,74, sur les trois runtimes.
+
+La part de tiering **diffère selon le runtime** (×0,52 pour .NET 11 contre ×0,66 pour
+.NET 9) : c'est le runtime le plus récent dont la mesure est la plus contaminée.
+
+### Ce que ce contrôle règle, et ce qu'il ne règle pas
+
+**Il règle :**
+
+1. Le facteur ×3 à ×55 du banc `prompt-settings` **ne se généralise pas** aux bancs de
+   coût milliseconde : ici ×1,21 à ×2,40 (N = 1 / N = 64) ou ×1,10 à ×1,52
+   (`default` / `off`).
+2. Le surcoût du régime épinglé n'est **pas** un coût de harnais amortissable : c'est
+   la part de **tier0** restant dans la fenêtre mesurée, et elle se lit **dans le
+   profil par itération**, pas dans le rapport BDN.
+3. Sur la charge la plus courte du banc 1, **le classement des runtimes dépend du
+   régime de tiering**. Toute conclusion de la campagne appuyée sur l'ordre 9 → 10 → 11
+   de cette charge doit donc être formulée avec cette réserve.
+
+**Il ne règle pas :**
+
+1. **Le mécanisme exact.** Cinq désactivations partielles (seuil de promotion à 10 et
+   à 0, délai de comptage à 0, PGO dynamique coupé, et leurs combinaisons) ne
+   reproduisent **pas** l'accélération de la configuration « tiering entièrement
+   désactivé ». Ce qui reste ouvert.
+2. **Le prédicteur du rapport entre charges** : ×2,40 pour `Ackley2D` contre ×1,21 pour
+   `CenterBias_Ackley`, deux charges de durée quasi identique (2,0 et 1,8 ms par
+   itération).
+3. **La généralisation aux autres bancs.** L'inversion du classement (résultat 3) est
+   démontrée sur **une charge sur quatre** : `CenterBias_Ackley` garde le même ordre
+   dans les deux régimes, `CenterBias_Suite4` ne montre aucun effet, et
+   `Sphere10D_50k` est dominé par le bruit (dispersion jusqu'à 87 %, moyenne bimodale
+   du fait de la marche). Le banc 4 (`semantic-fleet`, coûts en µs) **n'a pas été
+   recontrôlé** dans ce protocole.
+4. **La comparabilité avec les tableaux de ce document.** Les mesures ci-dessus sont
+   du 10/11, sur un hôte partagé, en BDN 0.15.8 ; les tableaux « Banc 1 » et « Banc 4 »
+   sont du 02/10, sur un portable, en BDN 0.14.0. **Les valeurs absolues ne sont pas
+   comparables** — seuls les rapports intra-session le sont.
+
+### Portée pour la campagne
+
+- Les **valeurs absolues** des baselines `InvocationCount(1)` du dépôt contiennent une
+  part de tier0 **non quantifiée et dépendante de la charge**. Toute baseline qui
+  sert de point de comparaison devrait porter cette réserve.
+- Les **deltas inter-runtimes** mesurés sur ces bancs héritent d'une part de tiering
+  **qui diffère d'un runtime à l'autre** (ici ×0,52 à ×0,66). Un delta peut donc être
+  un artefact de régime plutôt qu'un gain de runtime.
+- Le **profil par itération** (journal BDN) est le seul artefact qui rende le mélange
+  visible : le rapport final ne le montre pas. C'est le premier reflexive à prendre
+  pour un banc qui doit trancher un delta < 20 %.
+
+### Origine et reproduction
+
+- PR amont : `jsboige/MetaGeneticSharp#74` — instrument d'échelle, note de mesure
+  complète et **vérificateur indépendant** (il re-derive chaque chiffre cité depuis
+  les artefacts BDN et le confronte à la prose ; 63/63 concordants). Il a attrapé une
+  erreur réelle pendant la rédaction (un tableau de rapports appariés calculé en
+  appariant deux séries **triées** au lieu des paires réelles).
+- Artefacts bruts (journaux BDN, rapports CSV et HTML) : **hors dépôt**, volumineux ;
+  le protocole et le vérificateur les régénèrent.
+
