@@ -447,6 +447,41 @@ theorem godementCanonicalD_map (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ 
       godementCanonicalD F n ≫ godementCanonicalMap F G η (n + 1) :=
   (godementDChainMap F G η n).w
 
+/-- **La flèche de conoyaux portée par le carré de degré `n`** (Partie 100) :
+la flèche `coker dⁿ_F ⟶ coker dⁿ_G` induite par le carré commutatif du
+morphisme de flèches de degré `n` — verticales `f n` (gauche) et `f (n + 1)`
+(droite), commutation `(godementDChainMap F G η n).w`. C'est le maillon par
+lequel la nullité des flèches d'étages doit se transporter de degré en
+degré. -/
+noncomputable def godementCokernelMap (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G)
+    (n : ℕ) : cokernel (godementCanonicalD F n) ⟶ cokernel (godementCanonicalD G n) :=
+  cokernel.map (godementCanonicalD F n) (godementCanonicalD G n)
+    (godementDChainMap F G η n).left (godementDChainMap F G η n).right
+    (godementDChainMap F G η n).w.symm
+
+/-- **Récursion à deux temps, temps long** : la flèche de degré `n + 2` est
+le `godementMapHom` de la flèche de conoyaux de degré `n` — la verticale
+droite du carré de degré `n + 1` est `C⁰` de la flèche de conoyaux de degré
+`n`, et la flèche de degré `n + 2` est cette verticale droite. Lecture `rfl`
+de `godementDChainMap_succ_right` composée à la définition de
+`godementCanonicalMap`. -/
+theorem godementCanonicalMap_succ_two (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G)
+    (n : ℕ) :
+    godementCanonicalMap F G η (n + 2) =
+      godementMapHom (godementCokernelMap F G η n) :=
+  rfl
+
+/-- **Récursion à deux temps, temps court** : la flèche de degré `1` est le
+`godementMapHom` de la flèche de conoyaux de l'unité — le cran `0` de la
+récursion de `godementDChainMap` porte la forme `μ` (l'unité, différentielle
+de degré « -1 »), pas encore la forme `dⁿ`. Lecture `rfl` de
+`godementDChainMap_zero_right`. -/
+theorem godementCanonicalMap_one (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G) :
+    godementCanonicalMap F G η 1 =
+      godementMapHom (cokernel.map (toGodement F) (toGodement G) η (godementMapHom η)
+        (toGodement_naturality η)) :=
+  rfl
+
 /-- **La fonctorialité en `F` du complexe canonique** : un morphisme de
 préfaisceaux `η : F ⟶ G` induit un morphisme de complexes de cochaînes
 `godementCanonicalComplex F ⟶ godementCanonicalComplex G` — flèche de degré
@@ -832,18 +867,42 @@ par `godementDChainMap_succ_right` (un `rfl`). Maquette posée ici en cibles
 prover ; sorry-baseline du lake : 0 avant cette PR.
 -/
 
+/-- **Le degré 0 de la nullité des flèches d'étages** (Partie 100, cran
+d'amorçage, PROUVÉ) : `C⁰` d'un composé nul est nul — la fonctorialité de
+`godementMapHom` (P96) transporte le champ `zero` du short complexe `S` au
+degré `0`. -/
+theorem godementCanonicalMap_comp_zero_zero {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})} :
+    godementCanonicalMap S.X₁ S.X₂ S.f 0 ≫ godementCanonicalMap S.X₂ S.X₃ S.g 0 = 0 := by
+  rw [godementCanonicalMap_zero, godementCanonicalMap_zero]
+  -- Le `show` ré-élabore le but avec les types canoniques propres
+  -- (`godementPresheaf ⟶ godementPresheaf`) : le `rw` ci-dessus transporte le
+  -- terme mais laisse au `CategoryStruct.comp` ses arguments implicites
+  -- `godementCanonicalObj · 0`, et le `← godementMapHom_comp` ne peut pas
+  -- unifier ses metavariables sur un composant mal typé syntaxiquement.
+  show godementMapHom S.f ≫ godementMapHom S.g = 0
+  rw [← godementMapHom_comp, S.zero, godementMapHom_zero]
+
 /-- **Cible prover : easy — le composé des flèches d'étages d'une SES est
 nul** : pour un short complexe `S` de préfaisceaux, les flèches d'étages
 composées `godementCanonicalMap S.f n ≫ godementCanonicalMap S.g n` sont
 nulles à tout degré — le champ `zero` des SES d'étages de la Partie 100.
-Récursion à deux temps sur `godementDChainMap` : la flèche gauche du cran
-`n + 1` est la flèche droite du cran `n`, elle-même un `godementMapHom`
-d'un `cokernel.map` — la nullité se transporte par fonctorialité du conoyau
-(`cokernel.map` d'un morphisme nul est nul) et `godementMapHom_zero`
-(Partie 86). Ce qui a été tenté : récursion directe sur `n` — bloque au
-cran `n + 1` car le morphisme `cokernel.map` n'y est pas syntaxiquement
-`0`, il faut le factoriser par la fonctorialité avant d'appliquer
-`godementMapHom_zero`. -/
+Le cran `0` est prouvé (`godementCanonicalMap_comp_zero_zero`). Ce qui a
+été tenté et le diagnostic précis du cran successeur : la récursion à deux
+temps (`godementCanonicalMap_one` : forme `μ` au degré 1 ;
+`godementCanonicalMap_succ_two` : forme `dⁿ` aux degrés ≥ 2) réduit le cran
+successeur à la nullité du composé des flèches de conoyaux
+`godementCokernelMap S.f n ≫ godementCokernelMap S.g n`, et la stratégie
+initiale « `cokernel.map` d'un morphisme nul est nul » lit le lemme Mathlib
+`cokernel.map_zero` à l'envers : il annule la flèche de conoyau dont la
+verticale **codomaine** est nulle, alors que l'hypothèse de récurrence
+(`f n ≫ g n = 0`) fournit la verticale **domaine** — et l'annulation par
+verticale domaine est fausse en général (contre-exemple générique :
+`f = 0`, verticale codomaine factorisée non nulle). La nullité du composé
+de conoyaux est une question réelle, cousine de l'annulation du connecteur
+de la cible hard : elle pourrait exiger les mêmes hypothèses
+(`hsep`/`hres`) ou un argument tige par tige, et l'énoncé sans hypothèse
+est possiblement trop fort — à trancher par le prover, d'abord en
+cherchant un contre-exemple (espace à deux points). -/
 theorem godementCanonicalMap_comp_zero {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
     (n : ℕ) :
     godementCanonicalMap S.X₁ S.X₂ S.f n ≫ godementCanonicalMap S.X₂ S.X₃ S.g n = 0 := by

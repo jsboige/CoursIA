@@ -234,5 +234,20 @@ variable {X : TopCat.{u}}
 -- documented prover targets (`godementCanonicalMap_comp_zero`, easy;
 -- `shortExact_godementCanonicalObj`, hard); sorry-baseline of the lake: 0
 -- before this tranche.
+--
+-- **Follow-up tranche**: the degree-0 case of the easy target is PROVED
+-- (`godementCanonicalMap_comp_zero_zero` — `C⁰` of a null composite via
+-- `godementMapHom_comp`); the two-time recursion is named
+-- (`godementCanonicalMap_one`, shape `μ` at degree 1;
+-- `godementCanonicalMap_succ_two`, shape `dⁿ` at degrees ≥ 2; carrier
+-- `godementCokernelMap`); and the successor step is precisely diagnosed:
+-- Mathlib's `cokernel.map_zero` kills the **codomain-side** vertical of the
+-- cokernel square, while the induction hypothesis (`f n ≫ g n = 0`)
+-- supplies the **domain-side** one — and killing by domain-side vertical is
+-- false in general (generic counterexample: `f = 0`, codomain vertical
+-- factoring non-trivially). The nullity of the cokernel-arrow composite is
+-- a real question, kin to the hard target's connector; the hypothesis-free
+-- statement may be too strong — the prover decides, counterexample first
+-- (two-point space).
 
 end Grothendieck_en
