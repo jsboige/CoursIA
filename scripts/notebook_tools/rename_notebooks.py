@@ -141,6 +141,14 @@ FIXTURES_DECLARED: tuple[str, ...] = (
     # Citations d'incidents fondateurs epinglees a des SHA (#15209, #15862,
     # #16097...) : le nom cite est celui d'alors.
     ".claude/rules/pr-review-discipline.md",
+    # Recensement date (Date run 2026-08-08) : les chemins y sont les
+    # identifiants d'epoque du scan -- un second passage Q171 les a restaures
+    # a la main (4329707b92), la declaration evite le troisieme.
+    "docs/reference/quant-prose-census.md",
+    # Attestation de parite historique (#25461) : l'entree known_differences
+    # documente le renvoi tel qu'il s'appelait alors ; on y ajoute une entree
+    # datee, on ne reecrit pas la precedente.
+    "scripts/notebook_tools/twin_pairs.d/search-02b-networkx.yaml",
 )
 
 STEM_RE = re.compile(r"^(?P<prefix>[A-Za-z][A-Za-z0-9]*)-(?P<num>\d+)(?P<accr>[a-z]?)(?P<sep>[-_])(?P<title>.+)$")
