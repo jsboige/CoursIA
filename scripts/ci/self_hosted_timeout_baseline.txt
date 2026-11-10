@@ -1,4 +1,16 @@
 # Jobs auto-heberges sans `timeout-minutes` au niveau du job (#22954).
+#
+# 2026-11-09 (#23349, tranche 2) : retirees les 28 cles dont la duree etait
+# MESURABLE -- `gh api repos/<repo>/actions/runs/<id>/jobs`, par job et non par
+# run (la file d'attente d'un run n'est pas la duree du travail). Valeur posee =
+# max(10, 2 x duree max observee sur les derniers runs verts), plafonnee au
+# multiple de 5 et citee dans un commentaire du job.
+# Deconfliction : les 12 cles de la tranche 3 (#25364, PR ouverte avant celle-ci)
+# ne sont PAS retirees ici -- deux PRs de la meme lane qui bornent les memes jobs
+# posent deux fois la cle dans le YAML. Les 17 cles restantes ci-dessous sont
+# donc : 12 portees par #25364, et 5 sans aucun run observable (workflow dormant
+# ou nom affiche porte une expression) -- les borner serait poser une valeur sans
+# mesure, ce que #23349 refuse explicitement.
 # Cle = `workflow.yml:job`, jamais `workflow:ligne` : une cle ancree
 # sur une ligne perime des qu'on insere au-dessus, et un garde qui
 # rougit sur un site inchange finit desactive.
@@ -25,36 +37,8 @@
 # machine-dep-timing-inventory, markdown-claims-output-advisory,
 # markdown-deaccent-advisory, markdown-table-guard, md-content-loss-gate,
 # mermaid-fill-color-advisory, notebook-output-collapse-ratchet.
-bare-cross-dir-load-gate.yml:bare-cross-dir-load
-base-not-main-advisory.yml:signal
-candidate-delivered-advisory.yml:sweep
-catalog-cron.yml:regen
-check-resync-only.yml:resync-only-advisory
-cjk-residue-advisory.yml:cjk-residue-advisory
-consecutive-code-cells-advisory.yml:consecutive-code-cells-advisory
-degenerate-figure-gate.yml:degenerate-figure
-detect-dup-selftest.yml:self-test
-docs-link-check.yml:check-links
-dotnet-nuget-block-advisory.yml:dotnet-nuget-block-advisory
-epic-charter-advisory.yml:charter
-epic-neglect-sweep.yml:sweep
-exercises-advisory.yml:exercises-advisory
-fabricated-output-gate.yml:fabricated-output
-notebook-output-failure-ratchet.yml:ratchet
 notebook-output-flood-ratchet.yml:ratchet
-orphan-branch-scan.yml:sweep
-outputs-text-fragmentation-advisory.yml:outputs-text-fragmentation-advisory
-pedagogy-density-advisory.yml:pedagogy-density-advisory
-pr-gate-rerun.yml:resolve
-qc-research-monitor.yml:monitor
-regression-guard.yml:guard
 repeated-prose-advisory.yml:repeated-prose-advisory
-repo-size-advisory.yml:large-blob-advisory
-review-coverage-advisory.yml:sweep
-source-output-ratchet.yml:ratchet
 split-reading-advisory.yml:split-reading-advisory
-stale-base-warning.yml:check-base-age
 translation-hot-drift-advisory.yml:advisory
-twin-parity-cron.yml:twin-parity-cron
-twin-parity-drift-audit.yml:drift-audit
 variation-light-genre.yml:check-light-genre-signals

@@ -24,7 +24,6 @@ from check_i18n_siblings import (  # noqa: E402
     imports_fr_sibling,
     is_half_done,
     is_repo_boilerplate,
-    lake_targets,
     main,
     normalize_body,
     split_decls,
@@ -168,7 +167,10 @@ def test_fr_import_advisory_is_opt_in_and_non_gating(tmp_path, capsys):
     lake = tmp_path / "fixture_lean"
     module = lake / "Alpha" / "Hybrid_en.lean"
     module.parent.mkdir(parents=True)
-    (lake / "lakefile.toml").write_text('name = "fixture"\n', encoding="utf-8")
+    (lake / "lakefile.toml").write_text(
+        'name = "fixture"\n[[lean_lib]]\nname = "Alpha"\nglobs = ["Alpha.*"]\n',
+        encoding="utf-8",
+    )
     (module.parent / "Base.lean").write_text("namespace Alpha.Base\ndef x := 1\n")
     (module.parent / "Base_en.lean").write_text("namespace Alpha.Base_en\ndef x := 1\n")
     (module.parent / "Hybrid.lean").write_text(
@@ -468,40 +470,6 @@ def test_real_conway_pairs_are_byte_identical():
 
 
 # --- Orphan-trap guard (#6749): an `_en` mirror `lake build` never compiles ---
-
-
-def test_lake_targets_toml_roots(tmp_path):
-    """`.toml` `roots = [...]` → exact names; a `"Foo.*"` entry → glob prefix."""
-    lf = tmp_path / "lakefile.toml"
-    lf.write_text(
-        '# comment with roots = ["ignored"] in prose\n'
-        '[[lean_lib]]\nname = "L"\n'
-        'roots = [\n  "Basic", "Nash",\n  "Nash_en",\n]\n'
-        'globs = ["Extra.*"]\n',
-        encoding="utf-8",
-    )
-    exact, globs = lake_targets(lf)
-    assert exact == {"Basic", "Nash", "Nash_en"}
-    assert globs == {"Extra"}
-
-
-def test_lake_targets_lean_globs(tmp_path):
-    """`.lean` backtick tokens: bare → exact, `.*` / `.submodules` → glob-prefix;
-    doc-comment example globs are stripped and must not leak into the sets."""
-    lf = tmp_path / "lakefile.lean"
-    lf.write_text(
-        "import Lake\nopen Lake DSL\n"
-        "-- doc: `globs := #[`Ghost, `Ghost_en]` appears only in prose\n"
-        "lean_lib «Foo» where\n"
-        "  globs := #[.submodules `Foo, `Foo_en]\n"
-        "lean_lib «Bar» where\n"
-        "  globs := #[`Bar.*]\n",
-        encoding="utf-8",
-    )
-    exact, globs = lake_targets(lf)
-    assert "Foo_en" in exact and "Foo" in exact and "Bar" in exact
-    assert "Foo" in globs and "Bar" in globs
-    assert "Ghost" not in exact and "Ghost_en" not in exact  # comment stripped
 
 
 def test_check_en_built_flags_orphan_toml(tmp_path):
