@@ -17738,7 +17738,7 @@ if c == 0:
     print(""Solution trouvee : 20 reines sans conflit !"")
 else:
     print(""Aucune solution parfaite trouvee pendant cette execution."")",,,,,,,,22eb052d16d2293a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,abeca9d3,markdown,fr,7760d36cf7d1ce7e,"### Lecture du résultat : mémoire à long terme sur le 20-Reines
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,abeca9d3,markdown,fr,8bd986ee7bbe7667,"### Lecture du résultat : mémoire à long terme sur le 20-Reines
 
 L'exécution part d'un état aléatoire et atteint une solution à **0 conflit en
 15 itérations**. La pénalité de fréquence ne remplace pas la liste tabou : elle
@@ -17748,8 +17748,11 @@ que d'osciller entre quelques configurations.
 
 Cette sortie reste **une exécution unique** : elle montre que la stratégie peut
 converger sur cette instance, pas qu'elle améliore le taux de succès par rapport
-au Tabu Search sans mémoire longue — c'est précisément ce que l'exercice 3
-ci-dessous demande de mesurer.",,,,,,,,7760d36cf7d1ce7e,,,,,,,,,,,,,,,
+au Tabu Search sans mémoire longue. Pour le savoir, il faudrait répéter l'essai
+avec et sans pénalité et comparer les taux de succès. L'exercice 3 ci-dessous
+transpose le mécanisme au TSP de la section 3, où la question devient : la
+pénalité change-t-elle le circuit final, ou seulement le nombre d'itérations
+nécessaires pour l'atteindre ?",,,,,,,,8bd986ee7bbe7667,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb,2a8af4c1,markdown,fr,b8e6dc28b667ae70,"### Exercice 4 : Stochastic Hill Climbing et comparaison avec le steepest-ascent
 
 **Enonce** : Implementez une variante **stochastic hill climbing** pour les N-Reines. Contrairement au steepest-ascent qui choisit toujours le meilleur voisin, le stochastic hill climbing :
