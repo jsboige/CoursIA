@@ -32581,7 +32581,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-26-Munkres-Tribute.ipynb,6ce2107f,markdow
 
 C'est le troisième volet d'une série hommage : **1/3** l'algorithme de Kuhn-Munkres
 ([lake `assignment_lean` + GT-27](https://github.com/jsboige/CoursIA/issues/12598)), **2/3** le
-voice leading musical ([Lean — non : notebook appli VoiceLeading](../../Search/Applications/CSP/App-21-VoiceLeading-Python.ipynb),
+voice leading musical ([Lean — non : notebook appli VoiceLeading](../../Search/Applications/CSP/App-21-VoiceLeading.ipynb),
 [issue](https://github.com/jsboige/CoursIA/issues/12599)), **3/3** ce Tribute topologique.
 L'ordre est celui des vies de Munkres : l'algoriste (avec Kuhn), le musicien, le topologue.",,,,,,,,3d373e987389a47e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-26-Munkres-Tribute.ipynb,57e9675c,markdown,fr,90f4e31327ffe1be,"## Introduction : pourquoi Munkres dans une série Lean ?
@@ -32821,7 +32821,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-26-Munkres-Tribute.ipynb,1753dad9,markdow
 - **Les deux autres visages de Munkres** : le volet 1/3 de cette série hommage — l'algorithme de
   Kuhn-Munkres pour l'affectation ([issue #12598](https://github.com/jsboige/CoursIA/issues/12598),
   lake `assignment_lean`) — et le volet 2/3, le musicien
-  ([voice leading par affectation](../../Search/Applications/CSP/App-21-VoiceLeading-Python.ipynb),
+  ([voice leading par affectation](../../Search/Applications/CSP/App-21-VoiceLeading.ipynb),
   [issue #12599](https://github.com/jsboige/CoursIA/issues/12599)).
 - **Terry Tao et la théorie analytique des nombres** ([Lean-6 §6.1](Lean-06-Mathlib-Essentials-Lean.ipynb)) :
   l'autre encart culturel « mathématicien dans Mathlib » de la série, pour comparer les styles
