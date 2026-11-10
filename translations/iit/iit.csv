@@ -30857,9 +30857,9 @@ Le mode factored-geometry etudie l'**organisation geometrique** des facteurs ; i
 - #15478 (issue grain) ; Part of #15475 (Epic toolkit multi-instrument) ; Depends on #15476 (contrat de trace v1) ; complements #15477 (F-Lens belief-state).
 ",,,,,,,,b374f2393d2da4bd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,4e2c7895,markdown,fr,9736bd7c4d73b8d4,"## Sources et substance (reventilation c.1119)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,4e2c7895,markdown,fr,af5cff1a85e7f1be,"## Sources et substance
 
-**Papier fondateur** : Shai et al., *Transformers Learn Factored Representations* ([arXiv:2602.02385](https://arxiv.org/abs/2602.02385)). PDF en biblio canonique : `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\2026 - Shai et al - Transformers Learn Factored Representations.pdf`.
+**Papier fondateur** : Shai et al., *Transformers Learn Factored Representations* ([arXiv:2602.02385](https://arxiv.org/abs/2602.02385)). PDF en biblio canonique : `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\Interpretability, Evaluation and Reproducibility\2026 - Shai et al - Transformers Learn Factored Representations.pdf`.
 
 **Dépôts de référence** (non copiés, réimplémentation from-scratch conforme au mandat Epic #15475) :
 
@@ -30869,7 +30869,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,4e2c
 **Référençage ICt-37 sibling** : ICT-37 (mode belief-state, PR #15662) traite l'autre moitié du papier — la **décodabilité linéaire** du belief state. Le présent ICT-36 traite la **factorisation géométrique** des sous-espaces. Les deux notebooks sont complémentaires et **non interchangeables** : voir la cellule « Distinction belief vs factorisation » plus bas.
 
 **Pas de licence détectée** sur les deux dépôts Astera (cf. preflight Epic #15475) : la substance LIVRÉE est donc une **réimplémentation from-scratch** des méthodes publiées, sans copie de code. Le test `H.1 — Pondération et centrage explicites et testés` honore cette contrainte.
-",,,,,,,,9736bd7c4d73b8d4,,,,,,,,,,,,,,,
+",,,,,,,,af5cff1a85e7f1be,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,f8d07025,code,fr,327b494f46539dc0,"# Parametres du notebook
 nb_name = ""ICT-36-FLens-FactoredGeometry-Python""
 N_SEEDS = 5  # multi-seed : au moins 4 seeds requis (cf .claude/rules/pr-review-discipline.md, critere C)
@@ -31123,12 +31123,14 @@ for noise_var, per_seed in results_noise_sweep.items():
               f""{r['max_pair_overlap']:>7.4f} {r['null_q95_overlap']:>7.4f} ""
               f""{'YES' if r['separates_from_null'] else 'no':>5}"")
 ",,,,,,,,9dc85d58662ecc17,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,6aa7226d,code,fr,fa5e05e2ece5464a,"# Protocole freeze-and-vary : on gele UN facteur et on varie l'AUTRE
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,6aa7226d,code,fr,6a650685cc9952b5,"# Protocole freeze-and-vary : on gele UN facteur et on varie l'AUTRE
 # (cle d'isolement de la contribution factorielle, cf. arXiv:2602.02385)
 # Implementation : pour chaque seed, on genere 2 bases orthogonales via
 # make_factor_bases(2, 16) ; on gele bases[0] et on regenere bases[1] a chaque
-# realisation. NC@p sur les activations devrait refleter 2 dimensions dominantes
-# stables (gele) + une sensibilite au facteur varie.
+# realisation. NC@p sur les activations ne peut pas approcher le NOMBRE de
+# facteurs (2) : chaque facteur porte dim_per_factor = 8 dimensions ; la
+# lecture se fait entre la dimension du sous-espace gele (8, plancher) et la
+# dimension ambiante (16), l'excedent captant l'etalement du facteur varie.
 # NB : on ne boucle PAS sur n_factors en externe -- la complexite du protocole
 # est dans la variation du second facteur, pas dans le nombre de facteurs.
 
@@ -31169,8 +31171,8 @@ print(""=== Freeze-and-vary : stabilite du sous-espace gele + sensibilite au var
 print(f""  frozen NC@95 = {freeze_vary_results['frozen_nc95_mean']:.3f} +/- {freeze_vary_results['frozen_nc95_std']:.3f}"")
 print(f""  varied sensitivity (ecart-type inter-realisations) = {freeze_vary_results['varied_sensitivity_mean']:.3f}"")
 print()
-print(""Verdict attendu : frozen NC@95 doit etre proche du nombre de facteurs dominants (2 ici, gele + varie) ; varied sensitivity reflete la variabilite du facteur varie."")
-",,,,,,,,fa5e05e2ece5464a,,,,,,,,,,,,,,,
+print(""Verdict attendu : NC@95 n'approche pas le NOMBRE de facteurs (2) -- chaque facteur porte dim_per_factor = 8 dimensions ; la lecture se fait entre la dimension du sous-espace gele (8, plancher structurel) et la dimension ambiante (16) : l'excedent capte l'etalement du facteur varie et le bruit. Varied sensitivity reflete la variabilite inter-realisations du facteur varie."")
+",,,,,,,,6a650685cc9952b5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,3a5fca3a,markdown,fr,c84065b084a20dd0,"## Verdict multi-seed et hypothese falsifiable
 
 Les hypotheses du grain #15478 — H1 a H3 a la livraison initiale (#15514), H4 ajoutee
@@ -31431,7 +31433,7 @@ print()
 print(""Interpretation : diagonale = 1.0 (auto-overlap), hors-diagonale proche de 0 = orthogonalite,"")
 print(""proche de 1.0 = sous-espaces superposes. Verifier aussi la stabilite multi-seed."")
 ",,,,,,,,b859aae2dc3fa8f8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,923aad70,markdown,fr,811c8223ac7e0907,"## Limites et bilan honnete
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,923aad70,markdown,fr,b1e9f3208bb9a5c9,"## Limites et bilan honnete
 
 - **H3 (sensibilite au bruit) INCONCLUSIVE par construction du generateur** : `synthesize_activations` utilise les memes bases orthogonales pour tous les niveaux de bruit ; le bruit est additif sur les activations, pas sur les directions factorielles elles-memes. L'overlap entre sous-espaces factoriels reste donc 0.0 par construction, independamment du bruit. Pour tester H3, il faudrait introduire le bruit **dans les bases** (rotation aleatoire des sous-espaces) -- un chantier a part.
 - **H2 (additivite jointe) INCONCLUSIVE avec gap median 9 dim** : la dimension jointe (231) est legerement inferieure a la somme des dimensions factorielles (240). Le gap est petit (< 4% de la dimension jointe) et stable sur 5 seeds ; il reflete probablement la perte de variance au centrage pondere. Une investigation plus poussee (NC@80/90 vs NC@95) est en dehors du scope de ce grain.
@@ -31452,9 +31454,14 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,923a
   (le temoin = initialisations non entrainees, le modele entraine etant a seed fixe) ;
   la matrice COMPLETE data-seed x weight-init-seed sur activations entrainees reste
   ouverte (suivi #15478).
+- **Dependance d'environnement de la suite de tests** : `ict/tests/test_extracts_tiers.py`
+  importe `cryptography` (via `ict/extracts_tiers.py`) ; sans ce paquet, la suite
+  `ict/tests` echoue a la **collecte** — l'arret porte sur l'import du module de test,
+  pas sur une assertion. Installation dans l'environnement d'execution :
+  `pip install cryptography`.
 - **Pas de code non licencie** : primitives reimplementees depuis arXiv:2602.02385 et nos propres contrats ; aucun copier-coller des depots `factored-reps`, `simplexity`, `strange-loop` ou `pytorch-AI-interpretability-transformer_ZM` (sans licence detectee au preflight #15475).
 - **Verdict scientifique** : H1 SUPPORTED (5/5 seeds), H2 INCONCLUSIVE (gap 9 dim), H3 INCONCLUSIVE (generateur limite), H4 SUPPORTED (croisement a k_cross = 8 comme pre-enregistre). Le notebook delivre des primitives testees et un verdict falsifiable ; le passage aux activations reelles via #15476 est une etape distincte.
-",,,,,,,,811c8223ac7e0907,,,,,,,,,,,,,,,
+",,,,,,,,b1e9f3208bb9a5c9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,7b920933,markdown,fr,6f0a6932e5217a08,"## Migration future vers le contrat de trace v1 (#15476)
 
 Quand #15476 sera livre, le consommateur de ce notebook deviendra :
@@ -32125,7 +32132,7 @@ Les runs sont reproductibles par une commande unique — `python scripts/slens_p
 de la matrice. Les npz bruts restent **locaux** : l'artefact committé est la matrice agrégée, qui porte la
 spécification complète de chaque run (banc, régime, graine, étape) et la commande de régénération —
 un run est donc reconstructible, mais la preuve committée reste l'agrégat, pas le tenseur brut.",,,,,,,,866c95d48b6b8cf9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-38-SLens-SelfLocation-Python.ipynb,d2b40163,markdown,fr,f6d53411a4ca6d27,"## Voisins et positionnement
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-38-SLens-SelfLocation-Python.ipynb,d2b40163,markdown,fr,11e5024e69082ac4,"## Voisins et positionnement
 
 Le S-Lens n'invente ni la notion de *belief state*, ni celle de géométrie du simplexe : il les
 importe d'un programme publié et les instrumente. Dire lequel, et ce qui nous en sépare, fait partie
@@ -32135,9 +32142,9 @@ du livrable — un instrument qui ne se situe pas ne dit pas ce qu'il ajoute.
 bibliothèque canonique — les PDF restent au gisement partagé, aucun n'est committé ici) :
 
 - Shai et al., *Transformers Represent Belief State Geometry in their Residual Stream*
-  ([arXiv:2405.15943](https://arxiv.org/abs/2405.15943)) : `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\2024 - Shai et al - Transformers Represent Belief State Geometry in their Residual Stream.pdf`. C'est le théorème que ce notebook instruit — la **décodabilité linéaire** du belief state.
+  ([arXiv:2405.15943](https://arxiv.org/abs/2405.15943)) : `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\Interpretability, Evaluation and Reproducibility\2024 - Shai et al - Transformers Represent Belief State Geometry in their Residual Stream.pdf`. C'est le théorème que ce notebook instruit — la **décodabilité linéaire** du belief state.
 - Shai et al., *Transformers Learn Factored Representations*
-  ([arXiv:2602.02385](https://arxiv.org/abs/2602.02385)) : `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\2026 - Shai et al - Transformers Learn Factored Representations.pdf`. L'autre moitié du programme, traitée par ICT-36 et ICT-37.
+  ([arXiv:2602.02385](https://arxiv.org/abs/2602.02385)) : `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\Interpretability, Evaluation and Reproducibility\2026 - Shai et al - Transformers Learn Factored Representations.pdf`. L'autre moitié du programme, traitée par ICT-36 et ICT-37.
 
 **Dépôts de référence** — un mot par voisin, et ce qui diffère :
 
@@ -32180,7 +32187,7 @@ linéairement**. Même question, deux étages.
 **Pourquoi ça compte ici.** `ict/slens.py` déclare une **porte de promotion** : `slens` n'entre pas
 dans l'énumération `INSTRUMENTS` du contrat de trace v1, et une promotion au contrat public exige un
 positionnement écrit. Cette cellule est cet écrit — pas une décoration d'ouverture.
-",,,,,,,,f6d53411a4ca6d27,,,,,,,,,,,,,,,
+",,,,,,,,11e5024e69082ac4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-38-SLens-SelfLocation-Python.ipynb,canon-ict-root,code,fr,74a7173355b5413a,"# Racine canonique de la serie : remonte les parents depuis le dossier du
 # notebook jusqu'au package ict/, puis en derive les dossiers de donnees.
 # La serie reste executable depuis sa racine comme depuis le dossier d'une
@@ -42352,11 +42359,11 @@ Le verdict INTRINSIC @0.5B (« out of reach at 0.5B », confirmé ai-01) est dé
 bonne calibration **et** confirmé sur deux machines (4060 Laptop cap 80, RTX 4090 cap 1024). La
 comparaison N/I causale exige le modèle 2B — c'est l'objet du run suivant (#10380).
 ",,,,,,,,20e5ee56dfca5548,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,0c8911a9,markdown,fr,e371591c08d61a16,"## Boucle fermee — modele entraine, plancher de Bayes et temoin non entraine (suivi du 15/09)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,0c8911a9,markdown,fr,47bc6221e08aa200,"## Boucle fermee — modele entraine, plancher de Bayes et temoin non entraine
 
 Les exemples guides ci-dessus mesurent la geometrie sur des activations **simulees** (`synthesize_activations`), ou la factorisation est posee par construction — donc retrouvee — et sur un temoin nul de sous-espaces **aleatoires**, qui ignore le biais inductif de l'architecture.
 
-Le coordinateur a releve les deux manques le 2026-09-15, apres lecture du protocole du depot de reference : aucun des deux ne repond a l'objection « **un modele non entraine a peut-etre deja des sous-espaces separes** ».
+La lecture du protocole du depot de reference releve les deux manques : aucun des deux ne repond a l'objection « **un modele non entraine a peut-etre deja des sous-espaces separes** ».
 
 Cette section ferme la boucle :
 
@@ -42365,7 +42372,7 @@ Cette section ferme la boucle :
 3. un **temoin nul par initialisations non entrainees de la meme architecture**, rapporte en percentiles 5/50/95.
 
 Les trois lectures sont rapportees **a cote, jamais fusionnees** : qualite des sondes (decodabilite tenue hors echantillon), recouvrement spectral des sous-espaces de **coefficients** de ces sondes, et dimension additive. Le materiel vit dans `ict/factor_geometry_trained.py`, teste par `ict/tests/test_factor_geometry_trained.py`.
-",,,,,,,,e371591c08d61a16,,,,,,,,,,,,,,,
+",,,,,,,,47bc6221e08aa200,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,9787e2c5,code,fr,4a06ddeef959c9a2,"# Pre-enregistrement : cette cellule FIXE les predictions AVANT toute mesure.
 # Protocole du commentaire du coordinateur du 2026-09-15.
 PREDICTIONS = {
@@ -42440,16 +42447,46 @@ for _k in (""probe_r2_a"", ""probe_r2_b"", ""dim_a"", ""dim_b"", ""dim_union"",
 MESURE = {""plancher"": plancher, ""uniforme"": uniforme, ""modele"": rapport, ""temoin"": temoin,
           ""best_val_nll"": res[""best_val_nll""], ""best_step"": res[""best_step""]}
 ",,,,,,,,840ec7a0e37f4ded,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,d10afc51,markdown,fr,a29962aee0305f98,"## Regimes generatifs : bruit du canal, structure conditionnelle (#20071)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,d10afc51,markdown,fr,84bd659a19ba62e9,"## Régimes génératifs : bruit du canal, structure conditionnelle (#20071)
 
-La boucle fermee ci-dessus mesure un banc ou les deux facteurs sont **independants et lisibles**. Les deux criteres restants du suivi #15478 portent sur le **processus generatif lui-meme**, pas sur les activations :
+La boucle fermée ci-dessus mesure un banc où les deux facteurs sont **indépendants et lisibles**. Les deux critères restants du suivi #15478 portent sur le **processus génératif lui-même**, pas sur les activations :
 
-1. **Bruit sur le canal generatif.** L'objection « le bruit additif sur les activations ne dit rien du processus » se retourne : ici le bruit porte sur les **emissions du banc** (matrice `E` pour le facteur Moore, tenseur d'aretes `W` pour le Mealy), **transitions intactes**. Chaque ligne d'emission est meprisee vers l'uniforme d'un facteur `gamma` : a `gamma = 1` les emissions sont muettes sur l'etat cache et le plancher de Bayes vaut **exactement** l'entropie uniforme. Le critere exige **un entrainement complet par niveau de bruit**, contre le **meme temoin d'initialisations non entraines rejoue a chaque niveau** — un temoin mesure a un seul niveau ne borne rien.
-2. **Structure generative conditionnelle.** Le **token du facteur parent** selectionne la **variante d'emission du facteur enfant** (`E_v = E + kappa * roll(Delta, v)`, rotations cycliques d'une perturbation a lignes de somme nulle), a **marginales appariees exactement** : les `q` rotations s'annulent, la marginal de l'enfant — meme prise conditionnellement au token parent — est identique a celle du banc independant. Toute la dependance vit dans la loi **jointe**. La question falsifiable : la geometrie lue sur le modele entraine differe-t-elle du banc independant **a marginales egales** ?
+1. **Bruit sur le canal génératif.** L'objection « le bruit additif sur les activations ne dit rien du processus » se retourne : ici le bruit porte sur les **émissions du banc** (matrice `E` pour le facteur Moore, tenseur d'arêtes `W` pour le Mealy), **transitions intactes**. Chaque ligne d'émission est méprisée vers l'uniforme d'un facteur `gamma` : à `gamma = 1` les émissions sont muettes sur l'état caché et le plancher de Bayes vaut **exactement** l'entropie uniforme. Le critère exige **un entraînement complet par niveau de bruit**, contre le **même témoin d'initialisations non entraînés rejoué à chaque niveau** — un témoin mesuré à un seul niveau ne borne rien.
+2. **Structure générative conditionnelle.** Le **token du facteur parent** sélectionne la **variante d'émission du facteur enfant** (`E_v = E + kappa * roll(Delta, v)`, rotations cycliques d'une perturbation à lignes de somme nulle), à **marginales appariées exactement** : les `q` rotations s'annulent, la marginal de l'enfant — même prise conditionnellement au token parent — est identique à celle du banc indépendant. Toute la dépendance vit dans la loi **jointe**. La question falsifiable : la géométrie lue sur le modèle entraîné diffère-t-elle du banc indépendant **à marginales égales** ?
 
-Les constructions vivent dans `ict/bench_factorise.py` (`NoisedChannel`, `ConditionalBench`, `conditional_child_floor`), testees par `ict/tests/test_bench_regimes_generatifs.py` — dont la contre-verification des filtres par **enumeration brute des chemins d'etats** (filtre par prefixe : le chemin complet donnerait le lisse, une quantite differente).",,,,,,,,a29962aee0305f98,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,cb755652,code,fr,b680f7d6084c98af,"# Pre-enregistrement (meme protocole que la cellule PREDICTIONS de la boucle
-# fermee) : ces predictions sont FIXEES avant toute mesure des deux regimes.
+Les constructions vivent dans `ict/bench_factorise.py` (`NoisedChannel`, `ConditionalBench`, `ConditionalStateBench`, `conditional_child_floor`), testées par `ict/tests/test_bench_regimes_generatifs.py` — dont la contre-vérification des filtres par **énumération brute des chemins d'états** (filtre par préfixe : le chemin complet donnerait le lisse, une quantité différente).
+
+### Les deux premières passes, et un artefact committé
+
+La cellule suivante pré-enregistre la **première passe** (5 niveaux, 400 pas, une graine modèle). Ses deux lectures ont montré que le protocole ne pouvait pas trancher les falsifiables, et chacune pour une raison mécanique :
+
+- **régime 1** : la géométrie n'était rendue qu'aux niveaux où le gate passe — or le critère se joue précisément là où le modèle n'apprend plus rien, c'est-à-dire là où un modèle à la perte plate doit se confondre avec les initialisations non entraînées ;
+- **régime 2** : l'`additivity_gap` est un **entier au rang près** ; sur `Mess3 x Mess3` le témoin rend la même valeur aux six initialisations, donc une bande de largeur **nulle**, qui ne peut discriminer aucun modèle.
+
+La **seconde passe** corrige les deux : 7 niveaux, 1200 pas, témoin rejoué à **chaque** niveau, lecture rendue à **tous** les niveaux, 3 graines modèle, et une métrique **continue** (`overlap_energy`, ajoutée au rapport par ce suivi). Son protocole est figé dans le docstring de `ict/factor_geometry_regimes.py` **avant** son exécution ; la campagne y est livrée comme **artefact committé** (`ict/results/ict36_regime*.json`, pattern du banc ICT-25) et les deux cellules de code ci-dessous **lisent l'artefact** — elles ne rejouent pas ~45 min de CPU. Régénération : `python -m ict.factor_geometry_regimes --steps 1200`.
+
+### Troisième passe : deux critères rendus décidables
+
+Les deux passes ci-dessus ont produit des lectures **honnêtes mais muettes**, chacune pour une raison mécanique distincte. Les trois obstacles que la troisième passe lève sont nommés ci-dessous, avec leur mesure.
+
+- **La métrique nommée par l'issue n'est pas invariante.** `overlap_coef_max` est le maximum des **éléments** de `Ba^T Bb` : deux bases du même plan donnent 1,000 puis 0,707 après une rotation, sans que la géométrie du sous-espace bouge. Une courbe qui bouge sous l'effet d'un choix de base ne peut pas trancher un critère. La troisième passe ajoute `overlap_principal_max` — le plus grand **singulier** de `Ba^T Bb`, c'est-à-dire le cosinus principal maximal — qui est invariant, et rend l'issue des **trois** métriques (`overlap_coef_max`, `overlap_principal_max`, `overlap_energy`) dans l'artefact : `retour_durable` (avec le seuil nommé), `jamais_sorti` ou `indécidable`. Les deux lectures peuvent désaccorder ; le désaccord est affiché plutôt que masqué par un choix silencieux.
+- **Le contrôle « indépendant » ne l'était pas.** Deux générateurs de **même classe effective** tirés avec la **même graine** partagent leur trajectoire d'états cachés : mesure sur `Mess3 x Mess3` (60 000 pas), l'information mutuelle entre les deux observations vaut **0,677 nats** à graine identique, contre **0,0001** à graines distinctes, et 0,000002 pour `Mess3 x RRXOR` à graine identique (cette dernière classe consomme le flux d'uniformes autrement). Les campagnes précédentes samplaient les deux facteurs avec `seed_a = seed_b = data_seed` : le contrôle était donc le banc **le plus entrelacé** des deux, et l'écart observé était l'**inverse** de la sémantique voulue. Désormais les graines sont distinctes, le banc **refuse** ce cas pathologique, et l'indépendance du contrôle est **mesurée et publiée** dans l'artefact (`independance_facteurs`).
+- **Une cible dégénérée et une bande de largeur nulle se lisaient comme des mesures.** À `gamma = 1` (canal muet) la cible est constante au bit près (amplitude 2,8e-17 à 5,6e-17) : les résidus d'arrondi suffisaient à faire sortir une direction d'une SVD, d'où un R^2 **fabriqué** de 0,747 et un rang lu de 1. Un plancher de variance de cible rend désormais le rang nul et la métrique `nan` (le JSON porte `null`). De même, l'`additivity_gap` est un **entier au rang près** : sa bande de témoin est `[0 ; 0]`, de largeur nulle, et une valeur qui y entre n'y entre que par égalité. La position d'une métrique contre une telle bande est rendue `n/a` — une bande qui ne discrimine rien ne se dit pas « dans la bande » — et le critère 2 compare **malgré** la bande dégénérée, puisque c'est le **signe** du gap qui est demandé.
+
+### Troisième régime : une structure conditionnelle NÉCESSAIRE
+
+Les deux premiers régimes mesuraient un banc où la dépendance **n'est pas nécessaire** : dans le banc à variante d'émission, la part de variance de la cible expliquée par le token du parent vaut **-0,0002**, donc un modèle qui **ignore** la dépendance est aussi bon sur la cible. Un `additivity_gap` nul y est la **bonne réponse de ce banc** : c'est le banc qui manquait, pas la métrique, et aucun budget d'entraînement n'y changerait quoi que ce soit.
+
+Le troisième régime (`ConditionalStateBench`) pose l'état caché de l'enfant comme une **rotation du token observé** du parent : `s_enfant[t] = (token[t] + decalage) mod q`. La rotation est une bijection, donc les marginales de l'enfant restent appariées au contrôle (écart théorique **0,0**, empirique 0,0034 à 20 000 pas), et la lecture de l'enfant n'a plus d'autre route que la direction du parent — R^2(token -> cible) = **+1,0000**, information mutuelle(token ; état) = **log 3 = 1,0986 nats**, le plafond. Le critère 2 devient enfin testable : sur un modèle qui encode la dépendance, les sous-espaces de lecture des deux facteurs se recouvrent, et l'écart d'additivité devient **négatif**.
+
+Les quatre artefacts de la troisième passe (`ict36_regime1_sweep_bruit_canal.json`, `ict36_regime2_conditionnel.json`, `ict36_regime2b_necessite.json`, `ict36_regime2b_conditionnel_etat.json`) sont lus par les cellules qui suivent ; ils portent les issues des deux critères, **calculées par le code** et non lues à l'oeil.
+",,,,,,,,84bd659a19ba62e9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,cb755652,code,fr,92c210fca5e5f3d7,"# Pre-enregistrement de la PREMIERE passe (5 niveaux, 400 pas, une graine modele),
+# conserve comme trace : ces predictions sont FIXEES avant toute mesure des deux
+# regimes et n'ont PAS etre reecrites apres coup. Le protocole de la SECONDE passe
+# (7 niveaux, 1200 pas, 3 graines, lecture rendue a tous les niveaux, temoin par
+# niveau) est fige, lui, dans le docstring de ict/factor_geometry_regimes.py AVANT
+# l'execution de la campagne -- c'est l'objet de l'artefact lu plus bas.
 PREDICTIONS_REGIMES = {
     ""bruit_canal"": (
         ""le plancher de Bayes joint se releve de facon monotone avec gamma, jusqu'a ""
@@ -42473,128 +42510,174 @@ PREDICTIONS_REGIMES = {
     ),
 }
 for _k, _v in PREDICTIONS_REGIMES.items():
-    print(f""  [pre-enregistre] {_k} : {_v}"")",,,,,,,,b680f7d6084c98af,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,27694c13,code,fr,fa140292e48af0a7,"# Regime 1 : bruit sur le canal generatif — un entrainement complet PAR NIVEAU,
-# le temoin rejoue a CHAQUE niveau (critere #20071). Cout borne (~4 min CPU) :
-# 5 entrainements de 400 pas + temoins.
-# Nit #20165 : le plancher est imprime a 5 decimales -- ln(3)+ln(2) = 1.79176 a
-# gamma = 1, une precision a 4 decimales ne permettait pas de lire l'identite
-# analytique revendiquee par la prose.
-import torch as _torch
+    print(f""  [pre-enregistre] {_k} : {_v}"")",,,,,,,,92c210fca5e5f3d7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,27694c13,code,fr,96c06ed959b59187,"# Regime 1 -- TROISIEME passe, lecture de l'artefact (protocole v2, #20071) :
+# 7 niveaux, 1200 pas, temoin rejoue a CHAQUE niveau, et lecture geometrique
+# rendue a TOUS les niveaux -- gate reussi ou echoue. C'est la difference
+# decisive avec la premiere passe : le critere falsifiable se joue la ou le
+# modele n'apprend plus rien. La campagne vit dans ict/factor_geometry_regimes.py
+# (testee), livree en artefact commite -- cette cellule LIT, elle ne rejoue pas
+# ~45 min de CPU (pattern artefacts-commits du banc ICT-25).
+# Regeneration : python -m ict.factor_geometry_regimes --steps 1200
+# Nit Hermes #21652 (2026-10-21) : la colonne `dims` est IMPRIMEE, pas seulement
+# collectee dans LIGNES_V2 -- la lecture du regime 1 cite `(2, 4, 6)` et
+# `(1, 1, 2)`, et le lecteur du carnet doit pouvoir l'ancre au tableau, sans
+# ouvrir l'artefact JSON.
+# Troisieme passe : un niveau DEGENERE (canal muet a gamma = 1, cible constante
+# au bit pres) rend un rang nul et des metriques non definies -- l'artefact
+# JSON les porte donc comme `null` (le JSON strict refuse NaN). Elles se
+# RAPPORTENT (`n/a`), elles ne se lisent pas comme des nombres, et surtout elles
+# ne font pas tomber la cellule.
+import json
 
-LEN_R, N_TRAIN_R, N_VAL_R = 100, 300, 40
-GAMMA_GRID = (0.0, 0.25, 0.5, 0.75, 1.0)
-UNIFORME_JOINT = float(np.log(3.0) + np.log(2.0))
-lignes_bruit = []
-for g in GAMMA_GRID:
-    bench_g = banc.FactoredBench(banc.NoisedChannel(banc.Mess3Canonical(), g),
-                                 banc.NoisedChannel(banc.RRXOR(), g))
-    ech_g = bench_g.sample(LEN_R * (N_TRAIN_R + N_VAL_R) + LEN_R, seed_a=1, seed_b=1)
-    xj = np.stack([ech_g[""obs_a""], ech_g[""obs_b""]], axis=1).astype(np.int64)
-    pl_a = fgt.bayes_floor(bench_g.factor_a, ech_g[""obs_a""][: LEN_R * N_TRAIN_R])
-    pl_b = fgt.bayes_floor(bench_g.factor_b, ech_g[""obs_b""][: LEN_R * N_TRAIN_R])
-    xtr = _torch.from_numpy(xj[: N_TRAIN_R * LEN_R].reshape(N_TRAIN_R, LEN_R, 2))
-    xva = _torch.from_numpy(
-        xj[N_TRAIN_R * LEN_R : (N_TRAIN_R + N_VAL_R) * LEN_R].reshape(N_VAL_R, LEN_R, 2)
-    )
-    modele_g = fgt.FactoredRNN(seed=0)
-    res_g = fgt.train_model(modele_g, xtr, xva, steps=400, eval_every=50)
-    gate = res_g[""best_val_nll""] < UNIFORME_JOINT
-    ligne = {""gamma"": g, ""plancher"": pl_a + pl_b, ""best_val_nll"": res_g[""best_val_nll""],
-             ""gate"": gate, ""rapport"": None, ""temoin"": None}
-    if gate:
-        actifs_g = fgt.collect_activations(modele_g, xtr)
-        bel_a_g = bench_g.factor_a.beliefs(ech_g[""obs_a""][: LEN_R * N_TRAIN_R])
-        bel_b_g = bench_g.factor_b.beliefs(ech_g[""obs_b""][: LEN_R * N_TRAIN_R])
-        ligne[""rapport""] = fgt.factor_geometry_report(actifs_g, bel_a_g, bel_b_g)
-        ligne[""temoin""] = fgt.untrained_null(
-            lambda sd: fgt.FactoredRNN(seed=sd), xtr, bel_a_g, bel_b_g, n_init=6)
-        r, tm = ligne[""rapport""], ligne[""temoin""]
-        to = tm[""overlap_coef_max""]
-        print(f""gamma={g:.2f}  plancher={pl_a + pl_b:.5f}  val={res_g['best_val_nll']:.4f}  ""
-              f""gate=PASS  r2a={r['probe_r2_a']:.3f} r2b={r['probe_r2_b']:.3f}  ""
-              f""ovl={r['overlap_coef_max']:.3f} [bande {to['p05']:.3f}-{to['p95']:.3f}]  ""
-              f""dim=({r['dim_a']},{r['dim_b']},{r['dim_union']})  gap={r['additivity_gap']:+.2f}"")
-    else:
-        print(f""gamma={g:.2f}  plancher={pl_a + pl_b:.5f}  val={res_g['best_val_nll']:.4f}  ""
-              f""gate=ECHEC  lecture NON rendue (pre-enregistre)"")
-    lignes_bruit.append(ligne)
-MESURE_BRUIT_CANAL = lignes_bruit",,,,,,,,fa140292e48af0a7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,7c72a21e,markdown,fr,5fd73e3c383d967b,"### Lecture du regime 1 (bruit du canal)
+from ict.factor_geometry_regimes import format_ou_na, position_contre_bande
 
-Le tableau dit quatre choses, dans l'ordre du pre-enregistrement :
+ART1 = ICT_ROOT / ""ict"" / ""results"" / ""ict36_regime1_sweep_bruit_canal.json""
+art1 = json.loads(ART1.read_text(encoding=""utf-8""))
+p1 = art1[""protocole""]
 
-- le **plancher de Bayes se releve** avec `gamma`, monotone (1.54484 -> 1.75613 -> 1.78900 -> 1.79173 -> 1.79176), et vaut `ln(3)+ln(2)` a `gamma = 1` : les cinq decimales affichees suffisent a lire l'identite, `ln(3)+ln(2) = 1.79176` — signature d'un canal rendu muet, la dynamique latente est intacte (`T` inchangee au bit pres, verifiee par les tests), mais plus rien ne la lit ;
-- le **gate decroit avec le bruit** : PASS a `gamma` = 0, 0.25, 0.5, ECHEC a 0.75 et 1. Aux niveaux passants, les dimensions restent **stables** (2, 4, 6 aux trois niveaux) pendant que `r2_b` s'effondre (0.896 -> 0.098 -> 0.035) : la structure des etats caches ne bouge pas, seule leur **lisibilite** meurt — le facteur Mealy (RRXOR), plus fragile, perd sa sonde avant le Moore ;
-- la courbe **`overlap_coef_max` ne rentre jamais dans la bande du temoin** aux niveaux ou le gate passe — et elle en sort des **deux cotes** : sous la bande a `gamma` = 0 (0.164 pour [0.274, 0.373]) et a 0.5 (0.221 pour [0.285, 0.351]), **au-dessus** a 0.25 (0.410 pour [0.313, 0.360]). Le critere falsifiable tranchait entre « retombe dans la bande au-dela d'un seuil » et « n'en sort jamais » : la mesure dit **ni l'un ni l'autre** — la bande bouge avec `gamma` (comme pre-enregistre) et la courbe entramee reste discernable de la bande a chaque niveau lisible, mais dans les deux directions. La lecture la plus prudente : ce qui survit au bruit n'est pas une separation propre mais un noyau dont le recouvrement depasse le temoin des que la sonde B decroche (gamma = 0.25) ;
-- a `gamma` >= 0.75 le gate echoue : **aucune lecture geometrique n'est rendue**, conformement au pre-enregistrement — le critere exigeait l'entrainement complet par niveau, pas la reussite a chaque niveau. Le temoin rejoue a chaque niveau borne chaque ligne par la bande du **meme** niveau : une metrique n'est lisible que hors de la bande de son propre gamma.",,,,,,,,5fd73e3c383d967b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,e3fba6ab,code,fr,b2bb23d24a7c5d4d,"# Regime 2 : structure generative conditionnelle — le token du parent selectionne
-# la variante d'emission de l'enfant, a marginales appariees EXACTEMENT.
-# Controle : le banc INDEPENDANT Mess3 x Mess3, memes alphabets, memes seeds.
-kappa = 0.2
-bench_cond = banc.ConditionalBench(banc.Mess3Canonical(), banc.Mess3Canonical(), kappa=kappa)
-bench_ind = banc.FactoredBench(banc.Mess3Canonical(), banc.Mess3Canonical())
-n_total = LEN_R * (N_TRAIN_R + N_VAL_R) + LEN_R
-ech_c = bench_cond.sample(n_total, seed_parent=1, seed_child=1)
-ech_i = bench_ind.sample(n_total, seed_a=1, seed_b=1)
 
-# preuve d'appariement, sur l'echantillon lui-meme
-print(f""marginal enfant reconstruite == E (exact) : ""
-      f""{np.allclose(bench_cond.marginal_child(), banc.Mess3Canonical().emission_matrix())}"")
-enfant = banc.Mess3Canonical()
-t_e, pi_e = enfant.transition_matrix(), enfant.stationary()
-variants = bench_cond.emission_variants()
-e_marg = enfant.emission_matrix()
-pl_genie = banc.conditional_child_floor(ech_c[""obs_b""], ech_c[""obs_a""], t_e, variants, pi_e, burn=32)
-pl_aveugle = banc.conditional_child_floor(ech_c[""obs_b""], ech_c[""obs_a""], t_e,
-                                          (e_marg, e_marg, e_marg), pi_e, burn=32)
-plancher_a_cond = fgt.bayes_floor(bench_cond.parent, ech_c[""obs_a""][: LEN_R * N_TRAIN_R])
-print(f""plancher enfant GENIE (variante observee) : {pl_genie:.4f} nats"")
-print(f""plancher enfant AVEUGLE (marginal E)      : {pl_aveugle:.4f} nats"")
-print(f""prime d'information conditionnelle        : {pl_aveugle - pl_genie:.4f} nats"")
+def _bande(b):
+    """"""La bande p05-p95 d'une metrique, ou `degeneree` si elle ne dit rien.""""""
+    if not b.get(""n""):
+        return ""degeneree""
+    return f""{format_ou_na(b['p05'])}-{format_ou_na(b['p95'])}""
 
-UNIFORME_COND = float(2.0 * np.log(3.0))
-resultats_cond = {}
-for nom, ech_x, bels in (
-    (""conditionnel"", ech_c, bench_cond.beliefs(ech_c[""obs_a""], ech_c[""obs_b""])),
-    (""independant"", ech_i, bench_ind.beliefs(ech_i[""obs_a""], ech_i[""obs_b""])),
-):
-    xj = np.stack([ech_x[""obs_a""], ech_x[""obs_b""]], axis=1).astype(np.int64)
-    xtr = _torch.from_numpy(xj[: N_TRAIN_R * LEN_R].reshape(N_TRAIN_R, LEN_R, 2))
-    xva = _torch.from_numpy(
-        xj[N_TRAIN_R * LEN_R : (N_TRAIN_R + N_VAL_R) * LEN_R].reshape(N_VAL_R, LEN_R, 2)
-    )
-    modele_x = fgt.FactoredRNN(n_a=3, n_b=3, seed=0)
-    res_x = fgt.train_model(modele_x, xtr, xva, steps=400, eval_every=50)
-    gate = res_x[""best_val_nll""] < UNIFORME_COND
-    entree = {""best_val_nll"": res_x[""best_val_nll""], ""gate"": gate,
-              ""rapport"": None, ""temoin"": None}
-    if gate:
-        actifs_x = fgt.collect_activations(modele_x, xtr)
-        # beliefs calcules sur l'echantillon complet (n_total), activations sur
-        # la seule tranche d'entrainement : trancher les cibles a la meme longueur
-        n_tranche = N_TRAIN_R * LEN_R
-        entree[""rapport""] = fgt.factor_geometry_report(
-            actifs_x, bels[""belief_a""][:n_tranche], bels[""belief_b""][:n_tranche])
-        entree[""temoin""] = fgt.untrained_null(
-            lambda sd: fgt.FactoredRNN(n_a=3, n_b=3, seed=sd), xtr,
-            bels[""belief_a""][:n_tranche], bels[""belief_b""][:n_tranche], n_init=6)
-        r = entree[""rapport""]
-        tg = entree[""temoin""][""additivity_gap""]
-        print(f""{nom:12s} val={res_x['best_val_nll']:.4f} gate=PASS  ""
-              f""r2a={r['probe_r2_a']:.3f} r2b={r['probe_r2_b']:.3f}  ""
-              f""dim=({r['dim_a']},{r['dim_b']},{r['dim_union']})  ""
-              f""gap={r['additivity_gap']:+.3f} [bande {tg['p05']:+.3f} a {tg['p95']:+.3f}]"")
-    else:
-        print(f""{nom:12s} val={res_x['best_val_nll']:.4f} gate=ECHEC  lecture NON rendue"")
-    resultats_cond[nom] = entree
-MESURE_CONDITIONNEL = {""genie"": pl_genie, ""aveugle"": pl_aveugle, ""plancher_a"": plancher_a_cond,
-                       ""resultats"": resultats_cond}",,,,,,,,b2bb23d24a7c5d4d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,6b48b6aa,markdown,fr,a32aaa589d1d48b7,"### Lecture du regime 2 (structure conditionnelle)
 
-- l'**appariement est exact** : la marginal de l'enfant reconstruite par melange des variantes egale `E` au bit pres (imprime `True`), et meme la loi de l'enfant prise conditionnellement au token parent reste la marginal (chacune des trois lois conditionnelles est uniforme — teste). La dependance ne vit NI dans la marginal, NI dans l'instantane : elle vit dans la loi **jointe**, et la **prime d'information conditionnelle est mesuree** : 0.0902 nats entre le filtre genere (variante observee, 0.9902) et le filtre aveugle (marginal, 1.0805) — a marginales identiques, connaitre le token parent vaut 0.09 nats par symbole ;
-- la **perte jointe du banc conditionnel bat celle du controle independant** : 2.1334 contre 2.1696, sous l'uniforme 2 ln 3 = 2.1972 dans les deux cas. A marginales identiques par construction, cet ecart ne peut venir que de la loi jointe — le modele capture **une part de la prime** au niveau de la perte. La sandwich genere/aveugle reste celle du pre-enregistrement pour le CANAL enfant seul ; la perte jointe imprimee ne se decompose pas par canal, la decomposition n'est donc pas revendiquee ici ;
-- le **critere geometrique n'est pas mesurable sur ce banc, et il n'est donc ni confirme ni infirme** (correction #20165) : le temoin non entraine rend la **meme valeur aux six initialisations non entrainees**, soit une dispersion inter-initialisations de **zero** — la bande de temoin est donc de **largeur nulle** (`additivity_gap` du conditionnel = +0.000, bande [+0.000, +0.000] ; controle independant = -2.000, bande [-2.000, -2.000]). Une bande de variance nulle ne discrimine aucun modele : y « tomber » est une tautologie, pas une mesure, et le carnet ne revendique plus ce bras comme rendu. Le discriminant attendu par le suivi (#20071 : gap strictement negatif **hors** bande si le modele encode la dependance) reste donc **ouvert**. L'axe du meme banc qui porte une dispersion, et avec lui le critere falsifiable, est `overlap_coef_max` (au regime 1 : 0.164, hors de sa bande [0.274, 0.373] a gamma = 0). Le controle revele au passage un effet de plancher de la metrique sur ce banc : deux canaux au meme alphabet, et tout modele — entraine ou non — represente les deux facteurs dans un meme plan (union = 2), d'ou un gap de -2 « structurel ». La lecture honnete : a 400 pas et kappa = 0.2, le modele exploite la dependance en **perte** mais pas encore assez pour que la sonde de rang la distingue de l'architecture non entrainee. La question du budget (pas d'entrainement, kappa) ou d'une metrique moins saturée que le rang reste ouverte.",,,,,,,,a32aaa589d1d48b7,,,,,,,,,,,,,,,
+print(f""protocole v2 : {p1['steps']} pas, L={p1['length']}, {p1['n_train']} sequences ""
+      f""d'entrainement / {p1['n_val']} de validation, temoin sur {p1['n_init']} initialisations"")
+print()
+print(f""{'gamma':>5}  {'plancher':>9}  {'val':>8}  {'gate':>5}  {'r2_a':>5} {'r2_b':>5}  ""
+      f""{'ovl':>5} {'bande ovl':>13}  {'position':>11}  {'energie':>7} {'bande E':>13}  ""
+      f""{'dims':>12}"")
+LIGNES_V2 = []
+for l in art1[""niveaux""]:
+    r, t = l[""rapport""], l[""temoin""]
+    pos = position_contre_bande(r[""overlap_coef_max""], t[""overlap_coef_max""])
+    pos_e = position_contre_bande(r[""overlap_energy""], t[""overlap_energy""])
+    dims = f""({r['dim_a']:.0f},{r['dim_b']:.0f},{r['dim_union']:.0f})""
+    print(f""{l['gamma']:5.2f}  {l['plancher_joint']:9.5f}  {l['best_val_nll']:8.4f}  ""
+          f""{'PASS' if l['gate'] else 'ECHEC':>5}  {format_ou_na(r['probe_r2_a'], '{:5.3f}')} ""
+          f""{format_ou_na(r['probe_r2_b'], '{:5.3f}')}  ""
+          f""{format_ou_na(r['overlap_coef_max'], '{:5.3f}')} [{_bande(t['overlap_coef_max']):>13}]  ""
+          f""{pos:>11}  {format_ou_na(r['overlap_energy'], '{:7.3f}')} ""
+          f""[{_bande(t['overlap_energy']):>13}]  {dims:>12}"")
+    LIGNES_V2.append({""gamma"": l[""gamma""], ""gate"": l[""gate""], ""pos_ovl"": pos,
+                      ""pos_energie"": pos_e,
+                      ""dims"": (r[""dim_a""], r[""dim_b""], r[""dim_union""]),
+                      ""plancher"": l[""plancher_joint""], ""val"": l[""best_val_nll""]})
+
+# --- verdict du falsifiable, CALCULE sur l'artefact (pas lu a l'oeil) ---
+planchers_v2 = [x[""plancher""] for x in LIGNES_V2]
+monotone = all(b >= a - 1e-9 for a, b in zip(planchers_v2, planchers_v2[1:]))
+positions = [x[""pos_ovl""] for x in LIGNES_V2]
+hors = sum(1 for x in positions if x not in (""dans_bande"", ""n/a""))
+print()
+print(f""plancher monotone en gamma : {monotone} -- gamma=1 mesure {planchers_v2[-1]:.5f} ""
+      f""contre ln(3)+ln(2) = {float(np.log(3.0) + np.log(2.0)):.5f}"")
+print(f""positions de overlap_coef_max contre la bande de SON niveau : {positions}"")
+print(f""-> {hors} niveaux sur {len(positions)} HORS bande ; lecture rendue aux ""
+      f""{len(LIGNES_V2)} niveaux dont {sum(1 for x in LIGNES_V2 if not x['gate'])} a gate ECHEC"")
+
+# --- les TROIS verdicts du critere 1, calcules par le module ------------------
+# L'issue nomme `overlap_coef_max`, qui n'est PAS invariante par rotation des
+# bases : une courbe qui bouge sous l'effet d'un choix de base ne peut pas
+# trancher un critere. Les trois metriques sont donc verifiees, et leur
+# eventuel desaccord est affiche au lieu d'etre masque par un choix silencieux.
+print()
+print(""verdicts du critere 1, calcules dans l'artefact :"")
+for nom, v in art1.get(""verdicts"", {}).items():
+    seuil = v.get(""seuil"")
+    print(f""  {nom:22s} : {v['issue']}""
+          + (f""  (seuil gamma = {seuil})"" if seuil is not None else """"))
+MESURE_BRUIT_CANAL_V2 = LIGNES_V2
+",,,,,,,,96c06ed959b59187,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,7c72a21e,markdown,fr,ee59a8c1022eaab6,"### Lecture du régime 1 (bruit du canal) — troisième passe
+
+Le protocole est celui de la seconde passe (1200 pas, témoin rejoué à chaque niveau, lecture rendue aux sept niveaux, gate réussi ou échoué) ; la troisième passe change ce qui est **rendu**, pas ce qui est mesuré. Le niveau muet `gamma = 1` est désormais rapporté comme **dégénéré** : cible constante au bit près, plancher de variance de cible, rang nul (dims `(0, 0, 0)`), métriques `n/a` — la fausse remontée de `r2_b` à 0.743 sur cible constante, que la seconde passe rapportait déjà avec suspicion, est fermée par construction. Et l'issue des **trois** métriques est **calculée par le module** et lue telle quelle.
+
+- le **plancher de Bayes se relève** avec `gamma`, de 1.54484 à 1.79176 = `ln(3) + ln(2)` exactement : la dynamique latente est intacte, le canal est muet — le pré-enregistrement est vérifié sur ce point (l'unique écart à la monotonie, 1.79177 -> 1.79176 au dernier pas, est un effet de taille d'échantillon déjà rapporté par la seconde passe) ;
+- `r2_b` s'effondre dès `gamma = 0.25` (0.896 -> 0.090) : le canal enfant devient illisible au sens de la prédiction de sa cible, alors que `r2_a` tient (0.803 à 0.872 sur tous les niveaux lisibles). La remontée à 0.520 à `gamma = 0.9` est rapportée sans être interprétée ;
+- les **verdicts du critère 1, calculés dans l'artefact** : `overlap_coef_max` — la métrique nommée par l'issue — rend **`retour_durable`, seuil `gamma* = 0.65`** : la courbe sort de la bande à un seul niveau (`gamma = 0.50` : 0.397 contre `[0.285, 0.351]`) et n'en ressort plus au-delà de 0.65 (`gamma = 0.65` : 0.280 dans `[0.235, 0.354]` ; `gamma = 0.90` : 0.340 dans `[0.293, 0.415]`). Le niveau `gamma = 0.75` (0.269 contre `[0.275, 0.359]`) est **marginalement sous** sa bande, mais le seuil ne repose pas sur lui : 0.65 et 0.90 sont **dans** leur bande. Le niveau `gamma = 1` est **dégénéré** : il ne compte ni comme sortie ni comme retour, et il n'empêche donc pas le verdict. Les deux métriques qui ne bougent pas sous une rotation des bases rendent **`jamais_sorti`** : `overlap_principal_max` et `overlap_energy` restent sous ou dans la bande de leur témoin à tous les niveaux lisibles.
+
+**Ce que le verdict permet de conclure, et ce qu'il ne permet pas.** Les **deux branches** du falsifiable sont désormais observées, mais sur **deux lectures différentes de la même géométrie**. La branche « n'en sort jamais » est établie sur les deux métriques invariantes : à aucun niveau de bruit le recouvrement des sous-espaces de lecture du modèle entraîné ne s'est séparé par le haut de la bande des initialisations non entraînées — même là où le modèle apprend encore (`r2_a` > 0.8 jusqu'à `gamma = 0.9`). La branche « retombe dans la bande au-delà d'un seuil » est établie sur la métrique nommée par l'issue, avec le seuil nommé (`gamma* = 0.65`). Le désaccord entre métriques est un résultat : il est affiché, pas masqué — et il se lit. La courbe n'est pas monotone : le modèle entraîné est **sous** la bande de son témoin aux deux premiers niveaux (0.164 contre `[0.274, 0.373]`, puis 0.190 contre `[0.313, 0.360]`), ce qui dit qu'il est plus factorisé que des initialisations non entraînées ; l'écart de `gamma = 0.50` le ramène au-dessus, et il **disparaît dès que la métrique est invariante** — une grandeur qui s'évanouit sous rotation des bases ne peut pas être la signature d'un processus génératif. Ce que cela **ne** permet pas de dire : (i) que le modèle n'apprend rien — il lit le facteur Moore jusqu'au bout ; (ii) que l'écart de `gamma = 0.50` est un effet du bruit sur la géométrie, puisque les deux métriques invariantes ne le voient pas.
+",,,,,,,,ee59a8c1022eaab6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,e3fba6ab,code,fr,e899cd5cd16a3c7b,"# Regime 2 -- TROISIEME passe, lecture de l'artefact : banc CONDITIONNEL (variante
+# d'emission) contre controle INDEPENDANT a marginales appariees, 3 graines modele,
+# 1200 pas, kappa pousse vers sa borne de stochasticite. Deux metriques de
+# recouvrement sont lues contre leur temoin du MEME banc :
+#   - additivity_gap, ENTIER au rang pres (sature sur ces bancs) ;
+#   - overlap_energy, CONTINUE (bande de temoin de largeur non nulle).
+# Troisieme passe : le controle est desormais **mesure** independant (les
+# facteurs sont tires avec des graines DISTINCTES -- meme classe effective +
+# meme graine = trajectoire d'etats cachees partagee, 0,677 nats mesures), la
+# metrique d'overlap **invariante** `overlap_principal_max` s'y ajoute, et le
+# VERDICT du critere 2 est calcule par le module et lu tel quel.
+import json
+
+from ict.factor_geometry_regimes import format_ou_na, position_contre_bande
+
+art2 = json.loads((ICT_ROOT / ""ict"" / ""results"" / ""ict36_regime2_conditionnel.json"")
+                  .read_text(encoding=""utf-8""))
+pl = art2[""planchers""]
+ap = art2[""appariement""]
+ind = art2.get(""independance_facteurs"", {})
+print(f""kappa={art2['kappa']}  {art2['steps']} pas  graines modele={art2['model_seeds']}  ""
+      f""temoin={art2['n_init']} initialisations"")
+print(f""appariement des marginales : matrices exactes = {ap['matrices_exact']} ""
+      f""(ecart empirique max {ap['ecart_empirique_max']:.4f})"")
+print(f""independance MESUREE des facteurs : conditionnel {ind.get('conditionnel', float('nan')):.6f} nats / ""
+      f""independant {ind.get('independant', float('nan')):.6f} nats"")
+print(f""planchers enfant : genie {pl['genie']:.4f} / aveugle {pl['aveugle']:.4f} ""
+      f""-> prime conditionnelle {pl['prime_conditionnelle']:+.4f} nats"")
+print(f""plancher parent {pl['parent']:.4f}  |  uniforme joint {pl['uniforme_joint']:.4f} (= 2 ln 3)"")
+print()
+for nom in (""conditionnel"", ""independant""):
+    bloc = art2[""resultats""][nom]
+    tg, te = bloc[""temoin""][""additivity_gap""], bloc[""temoin""][""overlap_energy""]
+    print(f""[{nom}]  bande temoin : gap [{format_ou_na(tg['p05'], '{:+.3f}')}, {format_ou_na(tg['p95'], '{:+.3f}')}] ""
+          f""(largeur {format_ou_na((tg['p95'] - tg['p05']) if tg.get('n') else None, '{:.3f}')})  ""
+          f""energie [{format_ou_na(te['p05'])}, {format_ou_na(te['p95'])}]"")
+    for seed, res in bloc[""par_seed""].items():
+        r = res[""rapport""]
+        pg = position_contre_bande(r[""additivity_gap""], tg)
+        pe = position_contre_bande(r[""overlap_energy""], te)
+        print(f""  seed {seed}: val={res['best_val_nll']:.4f} gate={'PASS' if res['gate'] else 'ECHEC'}  ""
+              f""gap={format_ou_na(r['additivity_gap'], '{:+.3f}')} [{pg}]  ""
+              f""energie={format_ou_na(r['overlap_energy'], '{:.3f}')} [{pe}]  ""
+              f""ovl_coef={format_ou_na(r['overlap_coef_max'])}  ""
+              f""ovl_principal={format_ou_na(r.get('overlap_principal_max'))}  ""
+              f""dims=({r['dim_a']:.0f},{r['dim_b']:.0f},{r['dim_union']:.0f})"")
+    print()
+ENERGIES_COND = [bloc_par[""rapport""][""overlap_energy""]
+                 for bloc_par in art2[""resultats""][""conditionnel""][""par_seed""].values()]
+ENERGIES_INDEP = [bloc_par[""rapport""][""overlap_energy""]
+                  for bloc_par in art2[""resultats""][""independant""][""par_seed""].values()]
+print(f""separation des energies : conditionnel [{min(ENERGIES_COND):.3f}, {max(ENERGIES_COND):.3f}] ""
+      f""vs independant [{min(ENERGIES_INDEP):.3f}, {max(ENERGIES_INDEP):.3f}] ""
+      f""-- recouvrement des intervalles : {max(ENERGIES_COND) >= min(ENERGIES_INDEP)}"")
+
+# --- VERDICT du critere 2, CALCULE par le module (pas lu a l'oeil) -----------
+v2 = art2.get(""verdict_critere_2"")
+if v2:
+    print()
+    print(f""verdict du critere 2 (calcule) -- marginales appariees : {v2['marginales_appariees']}"")
+    for nom, b in v2[""bras""].items():
+        print(f""  {nom:14s} : {'SATISFAIT' if b['satisfait'] else 'non satisfait'}  ""
+              f""(gap negatif : {b['gap_negatif']}, hors bande : {b['hors_bande']}, ""
+              f""gaps : {[g['additivity_gap'] for g in b['gaps']]})"")
+MESURE_CONDITIONNEL_V2 = {""energies_cond"": ENERGIES_COND, ""energies_indep"": ENERGIES_INDEP}
+",,,,,,,,e899cd5cd16a3c7b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,6b48b6aa,markdown,fr,cd806828ff0b80d8,"### Lecture du régime 2 (structure conditionnelle) -- troisième passe
+
+La troisième passe ne change pas le banc ; elle change le **contrôle**. Les passes précédentes samplaient les deux facteurs avec la même graine : deux générateurs de même classe effective à graine identique partagent leur trajectoire d'états cachés, et le « contrôle indépendant » était en réalité le banc le plus entrelacé des deux (0.677 nats d'information mutuelle mesurés, contre ~0.0002 à graines distinctes). Désormais les graines sont distinctes et l'indépendance du contrôle est **mesurée dans l'artefact** : `independance_facteurs` rend 0.000172 nats (banc conditionnel) et 0.000153 nats (contrôle indépendant).
+
+- l'**appariement reste exact** (matrices exactes, écart empirique maximal 0.0029 sur l'échantillon) et la **prime d'information conditionnelle est mesurée** : +0.1690 nats entre le filtre génie (0.9281) et le filtre aveugle (1.0971). À marginales identiques, connaître le token parent vaut ~0.17 nats par symbole du canal enfant ;
+- en **perte, l'avantage de la seconde passe a disparu** : le conditionnel rend 2.1878 / 2.1925 / 2.1873 et le contrôle indépendant 2.1897 / 2.1900 / 2.1881 -- une graine sur trois rend le conditionnel au-dessus du contrôle. La séparation « stable aux trois graines » (~0.017 nats) de la seconde passe était un artefact du contrôle entrelacé : elle est **retirée**, et c'est exactement ce que la mesure d'indépendance imposait ;
+- l'**`overlap_energy` ne sépare plus les bancs** : conditionnel `[0.027, 0.078]` contre indépendant `[0.012, 0.090]`, les intervalles se recouvrent. La séparation sans recouvrement de la seconde passe était le même artefact ;
+- l'**`additivity_gap` reste saturé** à +0.000 aux trois graines, dans une bande de témoin de largeur nulle. Le verdict du critère 2 est calculé par le module et rendu tel quel : **non satisfait** dans les deux bras (gap jamais négatif, jamais hors bande).
+
+**Ce que cela tranche, et ce que cela ne tranche pas.** Le contrôle étant désormais mesuré indépendant, la lecture honnête est : **aucun instrument de ce banc ne sépare le modèle entraîné sur la loi jointe du contrôle à marginales égales** -- ni en perte, ni par le recouvrement des sous-espaces de lecture. La dépendance existe pourtant (prime génie +0.169 nats), mais elle est invisible pour ces instruments sur un alphabet commun ; le critère 2 reste ouvert sur ce banc, et la question est dévolue au régime suivant, où la dépendance est cette fois **nécessaire** à la cible. Ce que le résultat ne permet pas de dire : que le modèle « a appris » ou « n'a pas appris » la loi jointe -- sur trois graines, la perte du conditionnel se confond avec celle du contrôle, l'échantillon ne distingue pas.",,,,,,,,cd806828ff0b80d8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46-Strate7-FreeCoordinates-Python.ipynb,9ef19224,markdown,fr,ac99efa541aedf44,"## 8. Mécanismes concurrents : deux règles d'admission se disputent la même extension
 
 Jusqu'ici, le banc n'avait **qu'une** règle d'admission — le quorum : le choix entre extensions concurrentes était tranché *par construction*, il n'y avait personne pour contester ([#20773](https://github.com/jsboige/CoursIA/issues/20773)). On ajoute une seconde règle, volontairement disjointe : l'**ancienneté**, où seul le soutien d'un agent désigné compte. Les deux règles lisent les **mêmes votes** et rendent des verdicts différents — la candidature *litigieuse* est celle où elles divergent, et c'est exactement là que la politique de composition (`and` : les deux doivent admettre, `or` : une suffit) change le jeu public.
@@ -42961,3 +43044,74 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-22-LLMSubstrat-P
 ",,,,,,,,0a243a97c6000663,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-22-LLMSubstrat-Python.ipynb,d3c3c7e6,markdown,fr,12790f53950bcdde,"**Lecture de la trajectoire S4.** Sur le jeu `code_python` (variante trained) : 656 tokens réduits à **7 états distincts** parmi 16 possibles ($2^K$ avec $K = 4$, bit-packing des features binarisées) -- les états observés sont $[0, 1, 2, 3, 8, 10, 11]$. Le réglage est le compromis voulu : une trajectoire figée (1 état) n'aurait rien à mesurer, une trajectoire saturée (16 états) serait du bruit de détail -- 7 états sur 656 pas, c'est assez de structure pour que les gains (émergence causale, surprise, compression) aient une signature temporelle, assez de compression pour que cette signature soit interprétable.
 ",,,,,,,,12790f53950bcdde,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,300b24ad,code,fr,7ed7790534d7a5ab,"# Regime 2b -- TROISIEME passe : la structure conditionnelle rendue NECESSAIRE.
+# La campagne lit deux artefacts :
+#   - ict36_regime2b_necessite.json : la mesure CPU de necessite (aucun
+#     entrainement) : le token du parent explique-t-il la CIBLE ?
+#   - ict36_regime2b_conditionnel_etat.json : l'entrainement du modele sur le
+#     banc ou l'etat cache de l'enfant est une ROTATION du token observe,
+#     contre un controle independant aux MEMES marginales.
+import json
+
+from ict.factor_geometry_regimes import format_ou_na, position_contre_bande
+
+art_nec = json.loads((ICT_ROOT / ""ict"" / ""results"" / ""ict36_regime2b_necessite.json"")
+                     .read_text(encoding=""utf-8""))
+art2b = json.loads((ICT_ROOT / ""ict"" / ""results"" / ""ict36_regime2b_conditionnel_etat.json"")
+                    .read_text(encoding=""utf-8""))
+
+print(""=== 1. NECESSITE : le token du parent explique-t-il la cible ? ==="")
+print(f""n = {art_nec['n']} pas, graine de donnees {art_nec['data_seed']}, ""
+      f""decalage {art_nec['shift']}"")
+print(f""{'regime':18s} {'R2(token->cible)':>16s} {'var(cible)':>12s} ""
+      f""{'I(tok;cible)':>13s} {'I(tok;obs)':>12s}"")
+for nom, m in art_nec[""mesures""].items():
+    print(f""{nom:18s} {m['r2_token_belief_b']:+16.4f} {m['variance_belief_b']:12.6f} ""
+          f""{m['prime_belief']:+13.4f} {m['prime_observation']:+12.4f}"")
+ap = art_nec[""appariement""]
+print(f""appariement des marginales : exact = {ap['marginales_exactes']}  ""
+      f""ecart theorique max {ap['ecart_theorique_max']:.2e}  ""
+      f""ecart empirique max {ap['ecart_empirique_max']:.4f}"")
+
+print()
+print(""=== 2. ENTRAINEMENT : le gap sort-il de la bande du temoin ? ==="")
+print(f""decalage = {art2b['shift']}  {art2b['steps']} pas  graines modele = {art2b['model_seeds']}  ""
+      f""temoin = {art2b['n_init']} initialisations"")
+ind = art2b[""independance_facteurs""]
+print(f""independance MESUREE des facteurs : conditionnel {ind['conditionnel_etat']:.6f} nats / ""
+      f""independant {ind['independant']:.6f} nats"")
+for nom, ent in art2b[""resultats""].items():
+    tg, te = ent[""temoin""][""additivity_gap""], ent[""temoin""][""overlap_energy""]
+    print(f""[{nom}]  bande gap [{format_ou_na(tg['p05'], '{:+.3f}')}, {format_ou_na(tg['p95'], '{:+.3f}')}]  ""
+          f""energie [{format_ou_na(te['p05'])}, {format_ou_na(te['p95'])}]  ""
+          f""R2(token->cible) = {ent['necessite']['r2_token_belief_b']:+.4f}"")
+    for seed, res in ent[""par_seed""].items():
+        r = res[""rapport""]
+        # Le critere 2 demande le SIGNE du gap : la bande du temoin est de
+        # largeur nulle (entier au rang pres), elle ne peut donc etre franchie
+        # que par le signe -- d'ou `comparer_bande_degeneree=True`.
+        pg = position_contre_bande(r[""additivity_gap""], tg, comparer_bande_degeneree=True)
+        pe = position_contre_bande(r[""overlap_energy""], te)
+        print(f""  seed {seed}: val={res['best_val_nll']:.4f} gate={'PASS' if res['gate'] else 'ECHEC'}  ""
+              f""gap={format_ou_na(r['additivity_gap'], '{:+.3f}')} [{pg}]  ""
+              f""energie={format_ou_na(r['overlap_energy'], '{:.3f}')} [{pe}]  ""
+              f""ovl_principal={format_ou_na(r.get('overlap_principal_max'))}  ""
+              f""dims=({r['dim_a']:.0f},{r['dim_b']:.0f},{r['dim_union']:.0f})"")
+
+print()
+print(""=== 3. VERDICT du critere 2 (calcule dans l'artefact, pas lu a l'oeil) ==="")
+v2 = art2b[""verdict_critere_2""]
+print(f""marginales appariees : {v2['marginales_appariees']}"")
+for nom, b in v2[""bras""].items():
+    print(f""  {nom:18s} : {'SATISFAIT' if b['satisfait'] else 'non satisfait'}  ""
+          f""(gap negatif : {b['gap_negatif']}, hors bande : {b['hors_bande']}, ""
+          f""gaps : {[g['additivity_gap'] for g in b['gaps']]})"")
+MESURE_ETAT_COUPLE_V3 = v2
+",,,,,,,,7ed7790534d7a5ab,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb,a1b2c3d4,markdown,fr,c74dc740f51fc5bb,"### Lecture du régime 2b (dépendance rendue nécessaire) -- troisième passe
+
+- la **nécessité est mesurée avant tout entraînement** : sur le banc à état couplé, `R^2(token -> cible) = +1.0000` et l'information mutuelle `I(token ; belief) = 1.0986 nats` -- le plafond `log 3`. La cible de l'enfant n'a pas d'autre route que le token observé du parent. Sur les bancs où la dépendance n'est pas nécessaire, la même mesure rend ~0 : variante d'émission `R^2 = -0.0002`, contrôle indépendant `R^2 = -0.0114`. Les marginales restent appariées (écart théorique 0.0, empirique 0.0052 à 20 000 pas) ;
+- l'**entraînement** passe le gate aux trois graines, et les pertes se serrent contre le contrôle : 2.1909 / 2.1905 / 2.1898 contre 2.1897 / 2.1900 / 2.1881, toutes sous l'uniforme joint 2 ln 3 = 2.1972 ;
+- **le verdict du critère 2 est rendu par le code, et il est négatif** : gap `+0.000` aux trois graines dans le bras « état couplé », gap jamais négatif, jamais hors bande -- **non satisfait**, témoin à `+0.000` sur ses six initialisations.
+
+**Le résultat est rapporté tel quel, comme le pré-enregistrement le prévoyait.** Le protocole avait fixé d'avance ce cas : « si le gap reste nul dans le bras état couplé, le résultat est rapporté tel quel ». Le gap est resté nul : sur un banc où la dépendance est pourtant **nécessaire** (`R^2 = 1`) et où le modèle apprend (gate PASS aux trois graines), l'`additivity_gap` -- entier au rang près -- ne quitte pas zéro. Ce que cela établit : l'instrument décompte des **unités de rang**, et ce banc n'en met pas en jeu ; la signature géométrique recherchée (recouvrement accru des sous-espaces de lecture, donc gap négatif) n'est pas détectable par cette métrique ici, quel que soit le budget d'entraînement. Ce que cela n'établit pas : que la signature n'existe pas. La métrique continue `overlap_energy` rend 0.034 / 0.052 / 0.078 contre une bande de témoin `[0.071, 0.156]` -- deux graines sur trois **sous** la bande, un recouvrement plus petit que celui des initialisations non entraînées, donc un signe cohérent mais **inverse** de celui que le critère demandait (il demandait plus de recouvrement, pas moins). L'issue honnête du suivi #20071 sur ce point : l'`additivity_gap` n'est pas l'instrument de ce phénomène, et le critère 2 reste ouvert dans les deux sens.",,,,,,,,c74dc740f51fc5bb,,,,,,,,,,,,,,,
