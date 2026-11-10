@@ -320,6 +320,36 @@ class ResponseCandidateTests(unittest.TestCase):
         self.assertTrue(mod.cites_concern(concern, reply))
         self.assertTrue(mod.is_response_candidate("gesture", reply, concern))
 
+    def test_long_quote_keeps_gesture_candidate_without_minute_signature(self):
+        """#24672 : l'extrait fort garde la voie ouverte sans HH:MMZ."""
+        body = (
+            "Le diagnostic mesure une derive persistante dans les quatre snapshots "
+            "et montre que les identifiants de suivi ne suffisent pas a expliquer "
+            "le changement observe dans les resultats."
+        )
+        concern = c(38, "2026-10-18T22:26:03Z", body)
+        signature = "[INFO] Reponse au Concern du 2026-10-18 — "
+
+        # L'absence de minutes ne neutralise pas une citation assez longue.
+        quoted_80 = c(39, "2026-10-19T03:56:43Z", signature + body[20:100])
+        self.assertNotIn("22:26Z", quoted_80.body)
+        self.assertTrue(mod.cites_concern(concern, quoted_80))
+        self.assertTrue(mod.is_response_candidate("gesture", quoted_80, concern))
+
+        # La date seule n'est pas une citation forte, et 40–79 caractères
+        # restent sous le seuil mesuré.
+        for length in (40, 79):
+            with self.subTest(length=length):
+                short_quote = c(
+                    40 + length,
+                    "2026-10-19T03:56:43Z",
+                    signature + body[:length],
+                )
+                self.assertFalse(mod.cites_concern(concern, short_quote))
+                self.assertFalse(
+                    mod.is_response_candidate("gesture", short_quote, concern)
+                )
+
     def test_quote_strength_keeps_the_80_character_boundary(self):
         concern = c(38, "2026-10-01T10:00:00Z", "x" * 80)
         short_quote = c(39, "2026-10-02T10:00:00Z", "[INFO] " + "x" * 79)
