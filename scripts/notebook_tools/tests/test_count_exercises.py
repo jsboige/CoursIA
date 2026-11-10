@@ -205,7 +205,7 @@ class TestCodeCellOnlyExercise:
         i PRECEDES its own descriptive markdown header at cell i+1. Both
         reference the same exercise number, so they are ONE exercise -- not
         two. This is the forward-only-dedup blind-spot documented in #5179
-        (genuine case: Oncology-Planning reported 6 exercises for 3 real ones).
+        (genuine case: Planification-Oncologie reported 6 exercises for 3 real ones).
         """
         nb = _write_nb(
             tmp_path / "backward.ipynb",

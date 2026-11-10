@@ -42,9 +42,9 @@ contraintes dures, et absence de solution unique en multi-objectif (compromis de
 ```
 Reseau-Electrique-Intelligent/
 ├── student/
-│   └── SmartGrid-Energy.ipynb    # Template étudiant (stubs à compléter)
+│   └── SmartGrid-Energie.ipynb    # Template étudiant (stubs à compléter)
 ├── solution/
-│   └── SmartGrid-Energy.ipynb    # Solution de référence (exécutée, sorties incluses)
+│   └── SmartGrid-Energie.ipynb    # Solution de référence (exécutée, sorties incluses)
 ├── subject.md                    # Sujet complet : énoncé, barème, exercices
 └── README.md                     # Ce fichier
 ```
@@ -72,7 +72,7 @@ quand l'incertitude renouvelable est divisée ou multipliée par 2), et **équit
 
 ```bash
 pip install -r ../requirements.txt   # ortools>=9.8, numpy (kernel Python 3)
-jupyter lab student/SmartGrid-Energy.ipynb
+jupyter lab student/SmartGrid-Energie.ipynb
 ```
 
 Le sujet détaillé (énoncé complet, données, critères) est dans [subject.md](subject.md).

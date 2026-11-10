@@ -91,7 +91,7 @@ Sur 590 PRs échantillonnées (490 ipynb + 100 non-ipynb), 75 % portent un tag `
 | 10218 | `notebook-python` | GenAI/SemanticKernel | fix(genai,#10097): add blank lines before 5 glued GFM tables in SK-Advanced |
 | 10217 | `notebook` | GenAI/Audio | fix(genai,#10097): repair 9 NO_BLANK_BEFORE GFM table defects |
 | 9326 | NONE | RL/rl_3_experience_replay_dqn | fix(rl): clear setext_oversized in rl_3_experience_replay_dqn cell#34 |
-| 9285 | NONE | CaseStudies/Oncology-Planning | fix(markdown-rendering): clear setext_oversized in Oncology-Planning student cell |
+| 9285 | NONE | CaseStudies/Planification-Oncologie | fix(markdown-rendering): clear setext_oversized in Planification-Oncologie student cell |
 | 9229 | NONE | SymbolicAI/SMT | feat(cost,#8056): SMT Z3-Python family cost-metadata (4 notebooks) |
 | 9228 | NONE | Probas/Pyro_RSA_Hyperbole | feat(cost,#8056): Probas Pyro RSA notebook cost-metadata |
 | 9227 | NONE | Sudoku/Sudoku-14-BDD-Python | feat(cost,#8056): Sudoku Python BDD/inference family cost-metadata |
