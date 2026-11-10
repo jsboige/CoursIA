@@ -174,7 +174,7 @@ La série manipule un vocabulaire précis hérité de la programmation par contr
 | Besoin | Détail |
 |--------|--------|
 | **.NET 9.0 SDK** | [Download](https://dotnet.microsoft.com/download/dotnet/9.0) |
-| **.NET Interactive** | `dotnet tool install --global Microsoft.dotnet-interactive` |
+| **.NET Interactive** | `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` |
 | **Kernel Jupyter** | `.net-csharp` (installe automatiquement par .NET Interactive) |
 | **Package NuGet** | `Z3.Linq` (NB-01, 02 : charge automatiquement via `#r nuget:...`) |
 | **NB-01 à 06 — fork Z3.Linq** | Ces notebooks utilisent le fork [MyIntelligenceAgency/Z3.Linq](https://github.com/MyIntelligenceAgency/Z3.Linq) : NB-05 pour le support `int[][]` (absent du NuGet public endjin), NB-03, NB-04 et NB-06 pour la feature `CollectionHandling` (mode `Constants` ressuscité, câblée le 14/06/2026), NB-01 et NB-02 pour l'homogénéité de la série (toute la série sur la même build fork, cohérence pédagogique). Exécuter **une fois** : [`scripts/environment/z3-build-deploy.ps1`](../../../../scripts/environment/z3-build-deploy.ps1) (Windows) ou [`.sh`](../../../../scripts/environment/z3-build-deploy.sh) (Linux/macOS) — compile uniquement le wrapper (~1,5 s) et rassemble les 4 DLL dans `.deploy/`. |
