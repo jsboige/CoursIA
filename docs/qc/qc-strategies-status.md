@@ -482,6 +482,21 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-SVM` | 29434752 | `0869fab4...` | v3-no-regime-biweekly-2015 | 2026-03-28 |
 | `EMA-Cross-Alpha` | 28885488 | `633779d0...` | Baseline 2018-2025 #1630 | 2026-05-31 |
 
+#### Mesure au protocole commun de la ligue — `LowBeta-Industries-QC`, bras `bab` (2026-11-09)
+
+> **Scope** : le protocole commun de la ligue (#19821) mesure un bras de stratégie sur des **rendements journaliers appariés**, contre **deux** références (SPY et une référence tenue 60/40 : SPY 60 % / IEF 40 %), avec trois tests (Ledoit-Wolf, bootstrap stationnaire, Newey-West) et la correction de Holm. Le banc `LowBeta-Industries-QC` (#17500) mesurait jusqu'ici le même bras `bab` sur des rendements **mensuels** ; la ligue change la puissance des tests. Quatre exécutions QC Cloud (projet 36854709, fenêtre 2010-01-02 → 2026-08-31, même compte / capital / frais) : `R` (code d'origine, référence du contrôle d'innocuité), `C` (`bab`, code instrumenté), `M` (`spy`), `N` (`6040`). Les tests ne sont pas réimplémentés : l'organe de la ligue (`Paradox46Benchmarks/significance.py`) est appelé tel quel.
+
+| Fenêtre | Sharpe `bab` | Sharpe SPY | Δ | p de Holm (LW) | Sharpe `6040` | Δ | p de Holm (LW) | Verdict |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| w1 (2010-01 → 2024-12) | 0,040 | 0,838 | −0,798 | 0,057 | 0,979 | −0,938 | 0,030 | **NO BEATS** |
+| w2 (2025-01 → 2026-08) | 0,428 | 1,100 | −0,672 | 1,000 | 1,221 | −0,792 | 1,000 | **NO BEATS** |
+
+Le verdict est `NO BEATS` et non `INCONCLUSIVE` : la règle exige un écart de Sharpe **positif**, et l'infériorité du bras est établie — sur w1, l'écart contre la référence 60/40 est significatif (p de Holm = 0,030). Sur w2 (20 mois), l'écart n'est pas significatif (p = 1,000) : fenêtre trop courte pour conclure.
+
+**Contrôle d'innocuité `R` vs `C`** : 12 statistiques sur 12 identiques (Sharpe −0,376 ; CAGR 0,311 % ; drawdown 16,600 % ; frais 250 384,28 $ ; 93 987 ordres ; capital final 10 531 699,52 $) et série mensuelle `ret` identique sur ses 199 points. L'instrumentation (trace journalière) est une écriture pure. *Anomalie d'exposition, sans effet sur le verdict* : le graphique `Monthly` de l'exécution instrumentée du bras `bab` n'expose que `ret`, là où la référence expose `ret`, `spy`, `netexp` et `gross` (les deux autres bras exposent les quatre) ; le code trace ces quatre séries inconditionnellement, la perte est côté stockage de graphique et n'a pas été identifiée. Le verdict lit la trace journalière, complète et à calendriers vérifiés sur les trois bras mesurés.
+
+Valeurs complètes (écart-type, z, bootstrap, Newey-West, p brutes et p de Holm) : `MyIA.AI.Notebooks/QuantConnect/projects/LowBeta-Industries-QC/measures/league/verdict.json` ; contrôle : `…/measures/league/control_R_vs_C.json`.
+
 ## Résultats (0 BROKEN + 1 Edge + 3 Needs-improvement)
 
 | Stratégie | Sharpe | CAGR | MaxDD | PSR | Verdict |

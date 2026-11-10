@@ -462,6 +462,11 @@ jobs:
         working-directory: MyIA.AI.Notebooks/IIT/ICT-Series
         env:
           ICT_VENV: ${{ runner.temp }}/ict-venv
+          # #22502 : l'entrypoint exporte PIP_USER=1 (isolation du toolcache
+          # partage) ; pip refuse un --user DANS un venv. Ce venv $RUNNER_TEMP
+          # est deja isole et detruit avec le job : retour au comportement
+          # nominal du venv pour ses installs.
+          PIP_USER: "0"
         run: |
           python -m venv "$ICT_VENV"
           # shellcheck disable=SC1091
