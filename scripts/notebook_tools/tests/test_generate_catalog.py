@@ -2325,15 +2325,17 @@ class TestGenerateMarkdownReport:
         entries = [_catalog_entry(rel), _catalog_entry(amp_rel)]
         report = generate_markdown_report(entries, repo_root=tmp_path)
         # href = repo-root-relative (MyIA.AI.Notebooks/ prefix), percent-encoded
+        # Links point to the Quarto-rendered .html page, not the raw .ipynb
+        # (#25055).
         assert (
             "](MyIA.AI.Notebooks/Search/Part1-Foundations/"
-            "Nb%20%C3%A9t%C3%A9%20%28fr%29.ipynb)" in report
+            "Nb%20%C3%A9t%C3%A9%20%28fr%29.html)" in report
         )
         # Display keeps the accent, URL does not
         assert "[Nb été (fr).ipynb](" in report
         # '&' stays LITERAL: Quarto does not decode %26 (#15490) -- encoding it
         # broke the real ML.Net Data&Features links at render time.
-        assert "](MyIA.AI.Notebooks/ML/ML.Net/Data&Features.ipynb)" in report
+        assert "](MyIA.AI.Notebooks/ML/ML.Net/Data&Features.html)" in report
         assert "%26" not in report
 
     def test_cell_escaping_pipes_backticks_brackets(self, tmp_path):

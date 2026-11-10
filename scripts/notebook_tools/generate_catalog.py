@@ -2195,8 +2195,16 @@ def generate_markdown_report(entries: list[dict], repo_root: Path | None = None)
                 )
                 target = root / rel_link if rel_link else None
                 if target is not None and target.exists():
+                    # Quarto renders each .ipynb to a .html page: the catalog
+                    # link must point to the rendered page, not the raw file
+                    # (#25055 -- 44 links 404'd, 1 served raw JSON).
+                    href = _md_href(
+                        rel_link.replace(".ipynb", ".html")
+                        if rel_link.endswith(".ipynb")
+                        else rel_link
+                    )
                     notebook_cell = (
-                        f"[{_md_escape_cell(basename)}]({_md_href(rel_link)})"
+                        f"[{_md_escape_cell(basename)}]({href})"
                     )
                 else:
                     # Missing target: a link would 404 the rendered page --
