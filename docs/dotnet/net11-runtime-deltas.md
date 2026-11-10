@@ -731,6 +731,118 @@ pas allocation.
 | `PromptTransform.InterpolateKeys` : drapeau INCONCLUSIF du 02/10 | **maintenu, confirmé sur seconde machine** — dispersion inter-passes ≥ deltas sur les trois runtimes, aucun gain mesuré |
 | Lignes JSON (Serialize / round-trip) | **reproduites en signe et amplitude** sur i7-11800H à patchs plus récents — le rattrapage 9→10 porte l'essentiel, allocations identiques au Ko près |
 | `RandomSearch_Sphere10D_50k` (MGS) | **non re-mesuré par cette session** — la session à 5 passes (#23326) l'a mesuré (9→11 à −0.5 % pour une dispersion de 28 à 38 %) et le laisse **non concluant** ; le banc reste donc ouvert |
+## Le régime à N croissant — le test nommé « non fait », mesuré (2026-11-10, `myia-ai-01:CoursIA-2`)
+
+La section ci-dessus (« Le protocole du banc, seconde cause ») énonce deux choses : le pin
+`.WithInvocationCount(1).WithUnrollFactor(1)` est en place dans le fichier de banc du
+sous-module, et le test qui départagerait « coût fixe par itération » de « coût réel » —
+`OperationsPerInvoke` croissant sur le même appel — **n'est pas fait**. Les deux affirmations
+ont été confrontées à l'amont le 2026-11-10 : la première est **périmée**, la seconde a été
+**faite entre-temps**, et le test a été rejoué ici pour fixer l'échelle et le mécanisme.
+
+### Ce que l'amont a fait entre-temps — le pin a été supersédé
+
+| Fait | Source | Date |
+|---|---|---|
+| Le pin `WithInvocationCount(1)` est **retiré** ; l'invocation count redevient automatique, `IterationTime(100 ms)` est ajouté, `UnrollFactor(1)` est **conservé** | PR amont **#108** (`d53f533`), fusionnée dans `stable-from-v0343` | 2026-10-29T21:15Z |
+| Quatre bancs « per-op » sont ajoutés : `OperationsPerInvoke` (1 000 / 10 000) sur **arguments tournants consommés** | PR amont **#108** | 2026-10-29T21:15Z |
+| `benchmarks/BASELINE-net9.0.md` est **régénérée** sous l'instrument corrigé ; elle publie la réponse : « le coût/op de référence est celui des lignes per-op, **stable de N=1 à N=10 000** », et le pin sur-estimait le coût/op d'un **×11 à ×152** selon le chemin | PR amont **#109** (`6e642ae`) | 2026-10-31T16:57Z |
+
+Le **gitlink épinglé** dans CoursIA suit `stable-from-v0343` (`.gitmodules`) et pointe
+`e675df9`, tête de cette branche — il **contient** donc `d53f533` et l'instrument corrigé
+(vérifié : `git ls-tree origin/main …/semantic-fleet` → `e675df9` ;
+`git merge-base --is-ancestor d53f533 origin/stable-from-v0343` → vrai).
+
+Mais les sessions de ce document ont mesuré **autre chose** : la session du 30/10
+(`myia-po-2024`) et celle du 11/10 (`myia-ai-01`) ont cloning
+`feature/benchmarkdotnet-baseline` @ `6f965904854b` — branche **qui n'est pas un descendant
+de `d53f533`** (`git merge-base --is-ancestor` → faux), où le fichier de banc **porte encore**
+le pin (lignes 135-136 : `.WithInvocationCount(1)` / `.WithUnrollFactor(1)`).
+
+Conséquence, à lire telle quelle : **l'artefact mesuré par les sessions de ce document n'est
+pas l'artefact épinglé.** L'état décrit par la section « seconde cause » (le pin en place)
+n'existe plus dans le sous-module épinglé — il existe encore dans la branche employée par
+les sessions. La phrase « le correctif … relève de la coordination `ai-01` et n'est pas ouvert
+par cette PR » ne reste donc vraie que pour **la moitié `MetaGeneticSharp`** : son
+`OptimizerBenchmarks.cs` épingle lui aussi `InvocationCount(1)`, et n'a pas été repris par
+l'amont.
+
+### Le test, cette fois, mesuré sur ce siège
+
+Protocole — **une seule compilation** (`net9.0`) du fichier de banc `6f96590`, trois runtimes
+joués par `dotnet exec --fx-version`, **cinq passes entrelacées**, et une innovation de
+protocole par rapport aux sessions précédentes : **une classe de banc par processus BDN**
+(les sessions antérieures jouaient les cinq classes dans le même processus).
+
+| Paramètre | Valeur |
+|---|---|
+| Artefact | `feature/benchmarkdotnet-baseline` @ `6f965904854b` (le même fichier de banc que les sessions du 30/10 et du 11/10) |
+| Instrumentation | copie **verbatim** du `Setup` et des quatre méthodes de `PromptSettingsBenchmarks`, plus une échelle de comptage |
+| Régimes | `InvocationCount` = 1 / 100 / 10 000 (ShortRun, 5 warmup / 15 itérations / unroll 1), et un job long (10 warmup / 100 itérations / 1 invocation) |
+| Runtimes | net9.0.22 · net10.0.14 · net11.0.0 (rc.3.26522.148) — en-tête `// Runtime=` relevé sur les 60 journaux |
+| Config BDN | **0.14.0** (version du `csproj` de cette branche), `InProcessEmitToolchain` |
+| Passes | 5, entrelacées, **médiane des 5 moyennes** par (classe × runtime × cellule) |
+| Charge d'hôte | relevée avant chaque run : 63 % à 88 % de CPU, 1 065 à 1 073 processus resident |
+
+**Mesures — coût par invocation, en ms (médiane des 5 moyennes)**
+
+| Runtime | Cellule | N = 1 | N = 100 | N = 10 000 | Ratio N=10 000 / N=1 |
+|---|---|---:|---:|---:|---:|
+| net9 | `FromRequestSettings` (round-trip) | 0,08816 | 0,03537 | 0,00742 | 0,084 |
+| net9 | `JsonSerializer.Serialize` (persistance) | 0,07019 | 0,02911 | 0,00314 | 0,045 |
+| net9 | `PromptSignature.Matches` | 0,00533 | 0,00011 | 0,00009 | 0,017 |
+| net9 | `PromptTransform.InterpolateKeys` | 0,02395 | 0,00484 | 0,00219 | 0,091 |
+| net10 | `FromRequestSettings` | 0,05732 | 0,01788 | 0,00740 | 0,129 |
+| net10 | `JsonSerializer.Serialize` | 0,03113 | 0,01348 | 0,00415 | 0,133 |
+| net10 | `PromptSignature.Matches` | 0,00310 | 0,00012 | 0,00008 | 0,026 |
+| net10 | `PromptTransform.InterpolateKeys` | 0,01851 | 0,00374 | 0,00208 | 0,112 |
+| net11 | `FromRequestSettings` | 0,06026 | 0,01296 | 0,00758 | 0,126 |
+| net11 | `JsonSerializer.Serialize` | 0,04222 | 0,01201 | 0,00333 | 0,079 |
+| net11 | `PromptSignature.Matches` | 0,00339 | 0,00011 | 0,00009 | 0,025 |
+| net11 | `PromptTransform.InterpolateKeys` | 0,02910 | 0,00262 | 0,00244 | 0,084 |
+
+Job long (100 itérations × 1 invocation), net9 : `FromRequestSettings` 0,09181 ·
+`JsonSerializer.Serialize` 0,06467 · `PromptSignature.Matches` 0,00286 ·
+`PromptTransform.InterpolateKeys` 0,01460 ms.
+
+### Lecture (sept points, sans arrondi favorable)
+
+1. **Le coût par invocation décroît quand N croît, sur les trois runtimes et sur les quatre
+   cellules.** Le rapport N=10 000 / N=1 tombe entre 0,017 et 0,133 : le régime N=1 ne
+   mesure **pas** la même chose que le régime N=10 000. C'est la réponse à la question que la
+   section « seconde cause » laissait ouverte : **le coût mesuré à N=1 n'est pas le coût réel
+   par opération.**
+2. **Le job long ne converge pas vers le plateau.** À 110 appels au total (10 warmup + 100
+   itérations × 1 invocation), le job long mesure `FromRequestSettings` à 0,09181 ms sur
+   net9 — c'est-à-dire **au niveau du régime N=1** (0,08816), et non du plateau (0,00742).
+   L'amortissement est donc lié au **nombre d'invocations dans une même région mesurée**, pas
+   au nombre total d'appels : c'est le côté « **coût fixe par itération** » de l'alternative.
+3. **Le facteur d'inflation se retrouve indépendamment de l'amont.** Rapport N=1 / N=10 000
+   mesuré ici : ×11,9 (`FromRequestSettings`), ×22,4 (`Serialize`), ×59 (`Matches`), ×10,9
+   (`InterpolateKeys`). Facteurs publiés par l'amont (baseline régénérée #109) : ×14-×15,
+   ×22-×23, ×144-×152, ×11-×13. Trois des quatre cellules coïncident à ±15 % près ; le quatrième
+   (`Matches`, ×59 contre ×144-×152) est du même ordre de grandeur, la cellule étant la moins
+   stable. La mesure de l'amont et celle-ci se corroborent.
+4. **Une classe de banc par processus supprime une contamination intra-processus.** Dans la
+   grille où les cinq classes jouaient le même processus, la classe du dépôt et sa copie
+   verbatim divergeaient de 1,2 à 3×. En processus séparés, elles concordent : sur net9,
+   `FromRequestSettings` vaut 0,10209 ms pour la classe du dépôt et 0,08816 ms pour la copie —
+   un écart de 14 %, **à l'intérieur** de la dispersion inter-passes (43 % à 72 %). L'écart
+   inexpliqué constaté plus tôt était donc un **artefact de protocole** (cinq classes dans un
+   même processus), non une différence entre les deux fichiers.
+5. **Sous le pin, deux cellules paraissent séparables entre net9 et net11** —
+   `FromRequestSettings` −43,4 % et `JsonSerializer.Serialize` −48,7 %, intervalles disjoints
+   au sens du critère du document. Ces valeurs appartiennent au **régime gonflé** (point 1) et
+   s'accompagnent d'une dispersion de 43 % à 82 % : elles **ne constituent pas** un verdict
+   par opération. Elles disent que le protocole épinglé amplifie aussi les écarts.
+6. **La correction amont ne change pas ce qui est établi.** Les deux drapeaux INCONCLUSIF du
+   banc 4 restent posés ; aucun gain inter-runtime n'est établi par cette session ; la
+   question de fond (l'axe .NET 10 / .NET 11) reste ouverte sur les mêmes cellules.
+7. **Ce qui n'est pas mesuré ici** : le mécanisme de l'amortissement. La courbe en N
+   établit *que* le coût décroît et *à partir de quoi* ; elle n'établit pas *pourquoi*.
+   Un contrôle de mécanisme est requis pour cela — il fait l'objet d'un addendum à cette
+   section.
+
 ## Contrôle du banc 5 — l'ordre fixe rend le delta 9→10 ininterprétable (myia-ai-01:CoursIA-2, 29/10)
 
 Objet : les **deux** drapeaux que ce document pose sur le banc 5 et laisse ouverts depuis le
