@@ -46,14 +46,14 @@
             "exercices": 3,
             "cellules_code": 14,
             "cellules_md": 33,
-            "prose_chars": 20662,
-            "densite": 1475,
+            "prose_chars": 20671,
+            "densite": 1476,
             "densite_plancher": 1200,
             "kernel": "Python 3 (coursia-ml-training)",
             "exigences": {
               "api": false,
-              "cloud": false,
               "gpu": false,
+              "cloud": false,
               "wsl": false
             }
           }
@@ -72,14 +72,14 @@
             "exercices": 3,
             "cellules_code": 12,
             "cellules_md": 33,
-            "prose_chars": 22401,
-            "densite": 1866,
+            "prose_chars": 22374,
+            "densite": 1864,
             "densite_plancher": 1200,
             "kernel": "coursia-ml-training",
             "exigences": {
               "api": false,
-              "cloud": false,
               "gpu": false,
+              "cloud": false,
               "wsl": false
             }
           }
@@ -306,14 +306,14 @@
             "exercices": 3,
             "cellules_code": 11,
             "cellules_md": 16,
-            "prose_chars": 27501,
-            "densite": 2500,
+            "prose_chars": 27667,
+            "densite": 2515,
             "densite_plancher": 1200,
             "kernel": "Python3",
             "exigences": {
               "api": false,
-              "cloud": false,
               "gpu": false,
+              "cloud": false,
               "wsl": false
             }
           }
