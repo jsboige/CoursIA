@@ -501,4 +501,126 @@ theorem godementCanonicalComplexMap_id (F : X.Presheaf AddCommGrpCat.{u}) :
   rw [godementCanonicalComplexMap_f, godementCanonicalMap_id, HomologicalComplex.id_f]
   rfl
 
+/-!
+### Partie 98 — l'exactitude de `C⁰` : épi, exactitude, courte exactitude en chaque ouvert
+
+La Partie 86 avait refermé la face mono (`godementMapHom_mono` +
+`godementFunctor_preservesMonomorphisms`) ; la Partie 93 avait établi le
+transport pour le foncteur tige. Cette Partie referme les faces restantes
+pour `C⁰` lui-même : un épi reste un épi, une suite exacte reste exacte, une
+suite exacte courte reste courte exacte — **évaluée en chaque ouvert `U`**,
+qui est la forme consommée par la tranche 2 (SES degreewise des complexes
+canoniques) et la Partie 99 (suite exacte longue).
+
+La preuve est le **relèvement point par point dans les tiges** : une section de
+Godement est une famille de germes, chaque propriété se teste composante par
+composante — surjectivité via `epi_stalkFunctor_map_of_epi` (P93, adjonction
+tige ⊣ gratte-ciel), exactitude via `stalkFunctor_map_exact` (P93). Rien ici
+ne dépend de la faisceification abélienne : tout est déjà vrai au niveau des
+préfaisceaux de sections discontinues. Au passage, l'instance
+`godementFunctor_preservesZeroMorphisms` débloque `ShortComplex.map
+godementFunctor` (tranche 2).
+
+La **frontière nommée** reste la SES degreewise des complexes canoniques
+eux-mêmes (`ShortExact` de complexes, pas de préfaisceaux en un ouvert) : elle
+exige le relèvement flasque (`epi_of_shortExact_of_isFlasqueSieves`, Partie 94)
+ou l'échelle de séparabilité — c'est la tranche 2, pour la Partie 99.
+-/
+
+/-- `C⁰` envoie le morphisme nul sur le morphisme nul : point par point, le
+foncteur tige est additif (instance `Presheaf.stalkFunctor.Additive`). -/
+theorem godementHomApp_zero_mor {F G : X.Presheaf AddCommGrpCat.{u}}
+    (U : Opens X) (s : godementSection F U) :
+    godementHomApp (0 : F ⟶ G) U s = 0 := by
+  funext x
+  change (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map (0 : F ⟶ G)
+      (s x) = (0 : godementSection G U) x
+  rw [CategoryTheory.Functor.map_zero]
+  rfl
+
+/-- **`C⁰` préserve les morphismes nuls** — le prérequis pour que
+`ShortComplex.map godementFunctor` ait un sens (tranche 2). -/
+theorem godementMapHom_zero {F G : X.Presheaf AddCommGrpCat.{u}} :
+    godementMapHom (0 : F ⟶ G) = 0 := by
+  ext U s
+  funext x
+  exact congrFun (godementHomApp_zero_mor U s) x
+
+instance godementFunctor_preservesZeroMorphisms :
+    (godementFunctor (X := X)).PreservesZeroMorphisms where
+  map_zero _ _ := godementMapHom_zero
+
+/-- **Surjectivité point par point** : si `φ` est épi, l'action de `C⁰φ` sur les
+sections est surjective en chaque ouvert — chaque composante est surjective sur
+la tige (`epi_stalkFunctor_map_of_epi`, P93), et une préimage par composante
+est une section de Godement : c'est exactement la liberté du produit. -/
+theorem godementHomApp_surjective_of_epi {F G : X.Presheaf AddCommGrpCat.{u}}
+    (φ : F ⟶ G) [Epi φ] (U : Opens X) :
+    Function.Surjective (godementHomApp φ U) := by
+  intro t
+  choose s hs using fun x : U =>
+    ((AddCommGrpCat.epi_iff_surjective
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map φ)).mp
+      (epi_stalkFunctor_map_of_epi φ (x : X))) (t x)
+  exact ⟨s, funext hs⟩
+
+/-- **`C⁰` préserve les épimorphismes** : composante par composante dans les
+ouverts, via `NatTrans.epi_iff_epi_app`. -/
+theorem epi_godementMapHom_of_epi {F G : X.Presheaf AddCommGrpCat.{u}}
+    (φ : F ⟶ G) [Epi φ] : Epi (godementMapHom φ) :=
+  (NatTrans.epi_iff_epi_app _).mpr fun U =>
+    (AddCommGrpCat.epi_iff_surjective _).mpr
+      (godementHomApp_surjective_of_epi φ U.unop)
+
+/-- Le composant en un ouvert de `C⁰(S.f) ≫ C⁰(S.g)` est nul : fonctorialité +
+nullité de `S.f ≫ S.g`. -/
+theorem comp_app_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (U : Opens X) :
+    (godementMapHom S.f).app (op U) ≫ (godementMapHom S.g).app (op U) = 0 := by
+  rw [← NatTrans.comp_app, ← godementMapHom_comp, S.zero, godementMapHom_zero]
+  simp
+
+/-- **Exactitude de `C⁰` en chaque ouvert, forme elementwise** : si `F₁ → F₂ → F₃`
+est exacte, toute section de Godement de `F₂` annulée par `C⁰g` se relève en une
+section de Godement de `F₁` — germe par germe, via `stalkFunctor_map_exact`
+(P93) et un choix de préimages composante par composante. -/
+theorem exact_godementHomApp {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.Exact) (U : Opens X) (y : godementSection S.X₂ U)
+    (hy : godementHomApp S.g U y = 0) :
+    ∃ x : godementSection S.X₁ U, godementHomApp S.f U x = y := by
+  have hyx : ∀ x : U, (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.g
+      (y x) = 0 := fun x => congrFun hy x
+  choose t ht using fun x : U =>
+    ((S.map (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X))).ab_exact_iff).mp
+      (stalkFunctor_map_exact hS (x : X)) (y x) (hyx x)
+  exact ⟨t, funext ht⟩
+
+/-- **L'exactitude se transporte en chaque ouvert** : si `F₁ → F₂ → F₃` est
+exacte, la suite de groupes abéliens `C⁰F₁(U) → C⁰F₂(U) → C⁰F₃(U)` est exacte.
+C'est la forme évaluée que consomment la tranche 2 (SES degreewise) et la
+Partie 99 (LES). -/
+theorem exact_app_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.Exact) (U : Opens X) :
+    (ShortComplex.mk ((godementMapHom S.f).app (op U)) ((godementMapHom S.g).app (op U))
+      (comp_app_godementMapHom U)).Exact := by
+  refine (ShortComplex.ab_exact_iff _).mpr ?_
+  intro y hy
+  exact exact_godementHomApp hS U y hy
+
+/-- **La suite exacte courte reste courte exacte en chaque ouvert** : `C⁰`
+préserve les courtes exactes, évalué en chaque ouvert — le mono vient de la
+Partie 86 (`godementMapHom_mono`), l'épi et l'exactitude de cette Partie.
+Tranche 1 de la brique 3 de la Partie 95 — la tranche 2 (SES degreewise des
+complexes canoniques, qui exige le relèvement flasque) et la Partie 99
+(assemblage de la LES) la consommeront. -/
+theorem shortExact_app_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.ShortExact) (U : Opens X) :
+    (ShortComplex.mk ((godementMapHom S.f).app (op U)) ((godementMapHom S.g).app (op U))
+      (comp_app_godementMapHom U)).ShortExact := by
+  have : Mono S.f := hS.mono_f
+  have : Epi S.g := hS.epi_g
+  exact ShortComplex.ShortExact.mk' (exact_app_godementMapHom hS.exact U)
+    ((NatTrans.mono_iff_mono_app _).mp (godementMapHom_mono S.f) (op U))
+    ((NatTrans.epi_iff_epi_app _).mp (epi_godementMapHom_of_epi S.g) (op U))
+
 end Grothendieck

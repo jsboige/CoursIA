@@ -33,8 +33,10 @@ Three facts, in the narrative order:
    morphism of the germs.
 
 What is acquired is what is proved: an endofunctor, and a natural unit. The
-lake claims nothing more — in particular, the preservation of monomorphisms by
-`C⁰` is **not** established here.
+preservation of monomorphisms by `C⁰` is established in Part 86
+(`Grothendieck.GodementMono`); that of epimorphisms and exactness at every
+open in Part 98 (`Grothendieck.GodementComplex`): the pointwise lifting
+through stalks.
 
 i18n convention (EPIC #4980 ratified 2026-07-04): `_en` suffix on the
 namespace (`Grothendieck.GodementFunctor_en`), mirror imports, translated
