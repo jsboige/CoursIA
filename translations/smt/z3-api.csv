@@ -11539,9 +11539,9 @@ print(""Analyse du pipeline :"", resultat)
 # assert resultat['nb_sous_buts'] == 1
 # assert resultat['nb_contraintes'] == 2
 # assert resultat['variables_restantes'] == ['z']",,,,,,,,f9603bb1e7c52ed2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,52f68027,markdown,fr,6bc6e156ea0aebbe,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,52f68027,markdown,fr,a777aa04c3a73431,"### Lecture du résultat
 
-Le solveur rend `{'clef': 1, 'message': 164}` : la vérification confirme `164 ^ 1 = 0xa5` et `Multiple de 4 : True`. La contrainte `(message & 3) == 0` force les deux bits de poids faible de `k` — `0xA5` se terminant par `01`, la clef doit se terminer par `01` pour que le message se termine par `00`. La clef rendue n'est donc **pas unique** : Z3 s'arrête au premier modèle, et la cellule suivante demande justement de les compter.",,,,,,,,6bc6e156ea0aebbe,,,,,,,,,,,,,,,
+Le solveur rend `{'clef': 1, 'message': 164}` : la vérification confirme `164 ^ 1 = 0xa5` et `Multiple de 4 : True`. La contrainte `(message & 3) == 0` force les deux bits de poids faible de `k` — `0xA5` se terminant par `01`, la clef doit se terminer par `01` pour que le message se termine par `00`. La clef rendue n'est donc **pas unique** : Z3 s'arrête au premier modèle, et l'exercice suivant demande justement de les compter.",,,,,,,,a777aa04c3a73431,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb,2576b9be,markdown,fr,e471b1c37f2a84d8,"## Exercice 2 : Compter les clefs candidates
 
 ### Enonce
