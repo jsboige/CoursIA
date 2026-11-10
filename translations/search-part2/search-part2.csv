@@ -19637,15 +19637,7 @@ instances solubles -- les seules ou « resoudre » veut dire quelque chose -- l'
 > faut faire varier `n_agents`, `density`, et tracer messages et taux de succes en fonction de ces
 > parametres (voir l'exemple guide suivant).
 ",,,,,,,,a2a6e92ed618fdcb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,fd2c2032,markdown,fr,032e25d1e90cd443,"## 7. Exemple guide
-
-Les exercices suivants reutilisent les classes `ABTAgent`, `ABTSystem`, `AWCAgent` et `PrivacyPreservingAgent` définies plus haut et les appliquent a des scénarios classiques : N-reines distribuees, comparaison ABT/AWC, negociation sous préférences secretes et mesure de la fuite d'information.
-
-### Exemple guide 1 : N-reines distribuees
-
-Chaque agent contrôle **une colonne** de l'echiquier ; son domaine est `[0, n-1]` (la ligne de sa reine). La contrainte binaire : deux colonnes ne doivent partager ni ligne ni diagonale.
-",,,,,,,,032e25d1e90cd443,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,1j33o30supz,code,fr,52fae853741f9460,"# Exemple resolu : N-reines distribuees avec ABT
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,a9560c90,code,fr,52fae853741f9460,"# Exemple resolu : N-reines distribuees avec ABT
 
 
 def nqueens_constraint(col1, row1, col2, row2):
@@ -19704,21 +19696,7 @@ if sol_q and verify_nqueens(sol_q):
     print(""\nPlateau :"")
     print(render_board(sol_q))
 ",,,,,,,,52fae853741f9460,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,4fa4608f,markdown,fr,aa1ca25fc616fcae,"### Exercice 1b : Coloration de graphe distribuee avec 5 couleurs
-
-**Enonce** : Utilisez `ABTSystem` pour resoudre un problème de coloration
-de graphe avec **5 noeuds** et **5 couleurs**.
-
-Graphe (topologie différente de l'exemple) :
-- Aretes : 0-1, 0-2, 1-3, 2-3, 3-4
-- Domaine : {R, G, B, Y, P} (Rouge, Vert, Bleu, Jaune, Violet)
-
-**Consignes** :
-1. Inspirez-vous de l'exemple de coloration 4-noeuds de l'exemple ci-dessus
-2. Verifiez que la solution est valide (pas de conflit sur les aretes)
-3. Affichez le nombre total de messages echanges
-",,,,,,,,aa1ca25fc616fcae,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,5afc844f,code,fr,0b690b62b3d3c408,"# Exercice 1b : Coloration de graphe distribuee avec 5 couleurs
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,62c027e8,code,fr,0b690b62b3d3c408,"# Exercice 1b : Coloration de graphe distribuee avec 5 couleurs
 
 # Exercice: definissez le graphe et le domaine
 # graph_edges_5 = [(0, 1), (0, 2), (1, 3), (2, 3), (3, 4)]
@@ -19730,11 +19708,11 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,5afc844f,code,fr,0b69
 # Votre code ici
 print(""Exercice a completer"")
 ",,,,,,,,0b690b62b3d3c408,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,md-ex2-intro,markdown,fr,6f923143f8c26bcb,"### Exemple guide 2 : Comparaison ABT vs AWC
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,ab01b036,markdown,fr,6f923143f8c26bcb,"### Exemple guide 2 : Comparaison ABT vs AWC
 
 Generez des instances aléatoires de coloration de graphe avec **densite variable** (fraction d'aretes presentes) et comparez les metriques ABT vs AWC : nombre total de messages, nogoods echanges, taux de solutions trouvees. L'implementation AWC du notebook augmente la priorite d'un agent qui accumule les conflits ; on s'attend a un avantage sur les instances denses.
 ",,,,,,,,6f923143f8c26bcb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,e8orxwoue1v,code,fr,16de8270c996879b,"# Exemple resolu : Comparaison ABT vs AWC sur coloration aleatoire
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,033166e2,code,fr,16de8270c996879b,"# Exemple resolu : Comparaison ABT vs AWC sur coloration aleatoire
 
 
 def _random_coloring_problem(n_agents: int, domain_size: int, density: float, rng: random.Random):
@@ -19804,22 +19782,7 @@ for r in results:
           f""{r['abt_msgs']:>9.1f} {r['awc_msgs']:>9.1f} ""
           f""{r['abt_nogoods']:>8.1f} {r['awc_nogoods']:>8.1f}"")
 ",,,,,,,,16de8270c996879b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,f44a1165,markdown,fr,11ceb20bdbf2d6a3,"### Exercice 2b : Impact de la densite de contraintes sur ABT
-
-**Enonce** : Etudiez l'impact de la **densite de contraintes** sur les performances
-d'ABT. Faites varier la densite et mesurez le nombre de messages.
-
-Paramètres :
-- N agents fixe a 6, domaine fixe a 3 couleurs
-- Densites a tester : 0.2, 0.4, 0.6, 0.8
-- 10 instances par densite (moyenne)
-
-**Consignes** :
-1. Utilisez la fonction `_random_coloring_problem` de l'exemple
-2. Tracez un graphique : densite (x) vs nombre de messages (y)
-3. Analysez : a quelle densite ABT commence-t-il a peiner ?
-",,,,,,,,11ceb20bdbf2d6a3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,bf001a5a,code,fr,79f4bd807deba91c,"# Exercice 2b : Impact de la densite de contraintes sur ABT
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,4e07b2c6,code,fr,79f4bd807deba91c,"# Exercice 2b : Impact de la densite de contraintes sur ABT
 
 # Exercice: bouclez sur les densites [0.2, 0.4, 0.6, 0.8]
 # Exercice: pour chaque densite, genereez 10 instances et mesurez les messages
@@ -19828,13 +19791,13 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,bf001a5a,code,fr,79f4
 # Votre code ici
 print(""Exercice a completer"")
 ",,,,,,,,79f4bd807deba91c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,md-ex3-intro,markdown,fr,3d953229e2c968d5,"### Exemple guide 3 : Negociation multi-agent
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,c5130b42,markdown,fr,3d953229e2c968d5,"### Exemple guide 3 : Negociation multi-agent
 
 4 agents se disputent 5 ressources (creneaux horaires). Chaque agent a une **préférence secrete** (ordre sur les ressources). Contrainte dure : `AllDifferent` -- chaque agent recoit une ressource distincte. Objectif : mesurer l'**utilite sociale** (somme des préférences) de la solution sans que les agents ne revelent leur classement a autrui.
 
 Le truc : on fait du `PrivacyPreservingAgent` + ordre d'essai des valeurs dicte par les préférences (les agents commencent par essayer leur ressource preferee). Les préférences restent locales a chaque agent.
 ",,,,,,,,3d953229e2c968d5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,m1s5bmbfn4o,code,fr,f6140280236d912a,"# Exemple resolu : Negociation multi-agent avec preferences secretes
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,3e2a5231,code,fr,f6140280236d912a,"# Exemple resolu : Negociation multi-agent avec preferences secretes
 
 
 class NegotiationAgent(PrivacyPreservingAgent):
@@ -19924,22 +19887,7 @@ if result['status'] == 'OK':
         u = result['utilities'][agent_id]
         print(f""  Agent {agent_id} -> {slot:8s}  (utilite privee = {u})"")
 ",,,,,,,,f6140280236d912a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,d7dab799,markdown,fr,79dc064ab1f59bc0,"### Exercice 3b : Allocation de tâches avec préférences privees
-
-**Enonce** : 5 agents doivent se repartir 8 tâches. Chaque agent a des
-**préférences secretes** (score de préférence pour chaque tâche).
-
-Contraintes :
-- Chaque tâche est assignee a exactement un agent
-- Chaque agent a au maximum 2 tâches
-- Les préférences ne sont jamais revelees en clair
-
-**Consignes** :
-1. Inspirez-vous de `NegotiationAgent` de l'exemple
-2. Utilisez `PrivacyPreservingAgent` comme classe de base
-3. Affichez l'allocation finale et le score de satisfaction total
-",,,,,,,,79dc064ab1f59bc0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,d5cae7ea,code,fr,337c2ea87402668e,"# Exercice 3b : Allocation de taches avec preferences privees
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,2c475492,code,fr,337c2ea87402668e,"# Exercice 3b : Allocation de taches avec preferences privees
 
 # Exercice: definissez 5 agents et 8 taches
 # TASKS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8']
@@ -19951,7 +19899,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,d5cae7ea,code,fr,337c
 # Votre code ici
 print(""Exercice a completer"")
 ",,,,,,,,337c2ea87402668e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,md-ex4-intro,markdown,fr,d8df772f505d2d04,"### Exemple guide 4 : Analyse de la fuite d'information
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,c1c4df9f,markdown,fr,d8df772f505d2d04,"### Exemple guide 4 : Analyse de la fuite d'information
 
 Dans ABT, chaque message `ok?` **revele la valeur** de l'expediteur a son destinataire. On mesure la fuite par :
 
@@ -19961,7 +19909,7 @@ Le variant `MinimalDisclosureAgent` ci-dessous ne transmet la valeur qu'aux agen
 
 On compare les deux stratégies en comptant `messages_sent` par agent.
 ",,,,,,,,d8df772f505d2d04,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,t88fv0pcs1,code,fr,9f83cfd970dc39c1,"# Exemple resolu : Mesure de la fuite d'information (ABT vs MinimalDisclosure)
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,917abcb1,code,fr,9f83cfd970dc39c1,"# Exemple resolu : Mesure de la fuite d'information (ABT vs MinimalDisclosure)
 
 
 class MinimalDisclosureAgent(ABTAgent):
@@ -20038,26 +19986,7 @@ print(f""\nMoyenne fuite ABT standard   : {avg_std:.1f} revelations"")
 print(f""Moyenne fuite disclosure min : {avg_min:.1f} revelations"")
 print(f""Reduction moyenne : {1 - avg_min/avg_std:.0%}"")
 ",,,,,,,,9f83cfd970dc39c1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,e666761d,markdown,fr,e61b3fbc8238bc78,"### Exercice 4b : Étude comparative de la vie privee dans DisCSP
-
-**Enonce** : Comparez 3 niveaux de protection de la vie privee sur un
-problème de planification distribuee :
-
-1. **ABT standard** : aucune protection (baseline)
-2. **Partial Disclosure** : les agents ne revelent que les conflits
-3. **Minimal Disclosure** : les agents ne revelent que si une contrainte est violee
-
-Mesurez pour chaque approche :
-- Nombre de messages echanges
-- Quantite d'information revelee (nombre de valeurs exposees)
-- Temps de convergence
-
-**Consignes** :
-1. Utilisez `MinimalDisclosureAgent` de l'exemple comme reference
-2. Créez une variante `PartialDisclosureAgent` (entre ABT et MinimalDisclosure)
-3. Tracez un graphique comparatif des 3 approches
-",,,,,,,,e61b3fbc8238bc78,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,950c3f32,code,fr,924d6fad133d844f,"# Exercice 4b : Etude comparative de la vie privee dans DisCSP
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,81d0e9ee,code,fr,924d6fad133d844f,"# Exercice 4b : Etude comparative de la vie privee dans DisCSP
 
 # Exercice: creez la classe PartialDisclosureAgent
 # Indice : entre ABTAgent (tout revele) et MinimalDisclosureAgent (rien ne revele)
@@ -20068,7 +19997,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,950c3f32,code,fr,924d
 # Votre code ici
 print(""Exercice a completer"")
 ",,,,,,,,924d6fad133d844f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,ed14da1e,markdown,fr,1164e4ca0ee90c9c,"## References
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,389ab12f,markdown,fr,1164e4ca0ee90c9c,"## References
 
 ### Papiers fondateurs
 
@@ -20093,7 +20022,7 @@ Le DisCSP est la version distribuee du CSP classique : ces references situent le
 - Private DisCSP (Silaghi et al., 2007)
 - Distributed Breakout Algorithm (Yokoo & Hirayama, 1996)
 - DisCSP avec incertitude (besoins de probabilites)",,,,,,,,1164e4ca0ee90c9c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,29ee3cf6,code,fr,85edd2a2991c8452,"# Cellule finale - Resume du notebook
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,e87280fa,code,fr,85edd2a2991c8452,"# Cellule finale - Resume du notebook
 print(""=== Resume CSP-9-Distributed: CSP Distribues ==="")
 print("""")
 print(""Concepts couverts:"")
@@ -20109,7 +20038,7 @@ print(""Prochaines etapes:"")
 print(""- Explorer Distributed Breakout pour l'optimisation"")
 print(""- Combiner avec des techniques de ML pour l'apprentissage de contraintes"")
 print(""- Appliquer aux smart grids et reseaux peer-to-peer"")",,,,,,,,85edd2a2991c8452,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,dd2989fc,markdown,fr,5043daf7f031f9bb,"## Synthese et bonnes pratiques
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,bf924282,markdown,fr,5043daf7f031f9bb,"## Synthese et bonnes pratiques
 
 ### Quand utiliser DisCSP ?
 
@@ -20128,7 +20057,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,dd2989fc,markdown,fr,
 3. **Privacy-preserving** est crucial pour les applications reelles
 4. **Communication asynchrone** = robustesse mais complexite accrue
 5. **Nogoods** = apprentissage distribue, mais attention a l'explosion",,,,,,,,5043daf7f031f9bb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,cb1d0b0c,markdown,fr,4d5f7aaa0efcdf83,"## Conclusion
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,721025c0,markdown,fr,4d5f7aaa0efcdf83,"## Conclusion
 
 Ce notebook a presente les **contraintes distribuees (DisCSP)**, ou plusieurs agents cooperent sans qu'aucun ne connaisse le problème global.
 
@@ -22945,3 +22874,212 @@ résume : les deux approches sont consistentes avec les contraintes.
 1. Un STP consistant admet un intervalle de solutions : les contraintes bornent les horaires, elles ne les fixent pas
 2. CP-SAT s'arrête sur une solution réalisable calée sur les bornes inférieures ; Floyd-Warshall rend les bornes supérieures
 3. Croiser deux solveurs indépendants sur le même problème est un contrôle de cohérence : même faisabilité, horaires différents",,,,,,,,3e638754a72b3cfe,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,6eff4d0b,markdown,fr,35f0814c7b55977c,"## 7. Exemples guidés et exercices
+
+Les exemples guidés et exercices suivants réutilisent les classes `ABTAgent`, `ABTSystem`,
+`AWCAgent` et `PrivacyPreservingAgent` définies plus haut et les appliquent a des scénarios
+classiques : N-reines distribuees, comparaison ABT/AWC, negociation sous préférences secretes,
+mesure de la fuite d'information — puis, sur les mêmes moteurs, quatre contributions
+d'étudiant (créditées #25535) : coloration a 5 couleurs, densité de contraintes sur ABT,
+allocation de tâches a préférences privées et étude comparée de trois niveaux de vie privée.
+Chaque exemple guidé est suivi d'un exercice neuf a compléter, sans corrigé.",,,,,,,,35f0814c7b55977c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,5dee5712,markdown,fr,44aa1522371270d5,"### Exemple guidé 5 — Coloration de graphe distribuée à 5 couleurs (crédité #25535 — TristanBrouille)
+
+> Contribution de **Tristan Dhersin** (TP1, PR étudiante
+> [#25535](https://github.com/jsboige/CoursIA/pull/25535)) — résolution reprise telle quelle.
+
+**Ce que montre l'exemple** : le graphe a 5 noeuds (aretes 0-1, 0-2, 1-3, 2-3, 3-4) est colorié
+par ABT avec 5 couleurs. La contrainte binaire n'exige l'inégalité que sur les aretes du graphe ;
+la solution est vérifiée arete par arete, et les compteurs du système disent ce qu'ABT a
+dépensé : 17 messages `ok?`, aucun nogood — l'instance est peu contrainte, la première valeur
+cohérente suffit.",,,,,,,,44aa1522371270d5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,4afd11e0,markdown,fr,9e93740e4f2fedd6,"### Lecture du résultat : une instance peu contrainte se résout sans conflit
+
+La solution `{0: 'R', 1: 'G', 2: 'G', 3: 'B', 4: 'R'}` passe la vérification arete par arete
+(5/5 OK) en n'utilisant que **3 couleurs sur 5** : les noeuds 0 et 4, non voisins, partagent le
+rouge. Côté protocole : **17 messages, tous des `ok?`, 0 nogood** — le graphe est peu dense,
+chaque agent trouve une valeur cohérente au premier essai et personne n'a besoin de remettre en
+cause l'assignation d'un voisin. A comparer avec l'exercice 1c juste après, où la même mécanique
+sur un cycle impair a 2 couleurs force ABT a *prouver* l'échec.",,,,,,,,9e93740e4f2fedd6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,bbdd4fe4,markdown,fr,69aeaf295bba6abf,"### Exercice 1c : Le cycle impair — quand ABT doit prouver l'échec
+
+**Enoncé** : Coloriez le **cycle C5** (5 agents en anneau, aretes 0-1, 1-2, 2-3, 3-4, 4-0)
+avec **2 couleurs**, puis avec **3 couleurs**.
+
+Consignes :
+1. Construisez les agents avec la même contrainte d'inégalité sur les aretes du cycle
+2. A 2 couleurs : quelle est la solution ? Combien de nogoods ABT échange-t-il avant de
+   rendre `None` ?
+3. A 3 couleurs : vérifiez la solution arete par arete ; comptez messages et nogoods
+4. Comparez les deux profils d'exécution
+
+**Question** : pourquoi le cycle impair n'admet-il aucune 2-coloration, et comment le nombre
+de nogoods traduit-il cette impossibilité ?",,,,,,,,69aeaf295bba6abf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,86bbeda6,code,fr,9d325142cb72c07e,"# Exercice 1c : coloration du cycle C5 avec 2 puis 3 couleurs -- ABT doit prouver l'echec.
+# Etape 1 : definir les aretes du cycle C5 et la contrainte d'inegalite sur ces aretes.
+# Etape 2 : 2 couleurs ['R', 'G'] : lancer ABTSystem, relever la solution, les messages,
+#           les nogoods. Indice : la solution attendue est None (cycle impair).
+# Etape 3 : 3 couleurs : relancer, verifier la solution arete par arete.
+# Etape 4 : comparer les deux profils (messages, nogoods).
+# Question : pourquoi le cycle impair n'admet aucune 2-coloration ?
+
+# TODO etudiant : ecrire les etapes 1 a 4.
+solution_c5_2c = None  # TODO etudiant : solution C5 a 2 couleurs (attendu : None)
+solution_c5_3c = None  # TODO etudiant : solution C5 a 3 couleurs, verifiee arete par arete
+print(""Exercice a completer"")",,,,,,,,9d325142cb72c07e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,654b1441,markdown,fr,2b6d274e9d078c4e,"### Exemple guidé 6 — Impact de la densité de contraintes sur ABT (crédité #25535 — TristanBrouille)
+
+> Contribution de **Tristan Dhersin** (TP1, PR étudiante
+> [#25535](https://github.com/jsboige/CoursIA/pull/25535)) — résolution reprise telle quelle.
+
+**Ce que montre l'exemple** : pour chaque densité de 0.2 a 0.8, 10 instances aléatoires de
+coloration (6 agents, 3 couleurs) sont résolues par ABT — et le verdict d'ABT est confronté a
+une énumération brute de la satisfiabilité. La moyenne des messages se décompose en instances
+SAT et UNSAT : c'est la révélation du tableau, car a densité 0.6 la moyenne (226 messages) est
+gonflée par les quelques instances impossibles (1010 messages chacune) qu'ABT doit prouver
+négatives, pendant que les instances satisfiables n'en coûtent que 30.",,,,,,,,2b6d274e9d078c4e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,21837d36,markdown,fr,0e6fa3e6415d479f,"### Lecture du résultat : le seuil de satisfiabilité vu par les messages
+
+Trois chiffres racontent la transition. Le **taux de succès** chute de 100 % (densités 0.2 et
+0.4) a **80 %** (0.6) puis **10 %** (0.8) : avec 6 agents et 3 couleurs, le seuil de
+satisfiabilité est franchi autour de 0.6. Les **moyennes SAT** restent sages (19, 28, 30 puis
+90 messages) : une instance satisfiable reste bon marché a toutes densités. Les **moyennes
+UNSAT** explosent (1010 messages a 0.6, 660 a 0.8, avec 50 puis 152 nogoods) : prouver
+qu'aucune solution n'existe coûte a ABT un ordre de grandeur de plus qu'en trouver une — et
+l'assertion du code, qui confronte chaque verdict d'ABT a l'énumération exhaustive sur les 40
+instances, garantit que ces chiffres sont bien ceux d'ABT, pas ceux d'un bug.",,,,,,,,0e6fa3e6415d479f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,85cc60c9,markdown,fr,fb0f1c20fe813640,"### Exercice 2c : Le nombre de couleurs comme levier — la transition a densité fixée
+
+**Enoncé** : La densité est fixée a **0.5** ; faites varier le **nombre de couleurs**
+$k \in \{2, 3, 4, 5\}$ et mesurez ce que ABT dépense.
+
+Paramètres :
+- 6 agents, densité 0.5, 10 instances par valeur de $k$
+- Pour chaque $k$ : taux de réussite, messages moyens, nogoods moyens
+
+Consignes :
+1. Réutilisez `_random_coloring_problem` et le schéma d'agents de l'exemple guidé 6
+2. Vérifiez chaque verdict d'ABT contre une énumération exhaustive de la satisfiabilité
+   (indice : `itertools.product`)
+3. Tracez messages et nogoods en fonction de $k$
+
+**Question** : ou se situe le $k$ critique, et pourquoi les messages chutent-ils une fois la
+transition passée ?",,,,,,,,fb0f1c20fe813640,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,62110eab,code,fr,d77448e21b201752,"# Exercice 2c : transition en nombre de couleurs k = 2..5, densite fixee a 0.5.
+# Etape 1 : pour chaque k dans [2, 3, 4, 5], generer 10 instances (6 agents, densite 0.5)
+#           avec _random_coloring_problem et un rng reproductible.
+# Etape 2 : resoudre chaque instance par ABT ; verifier le verdict (solution ou None)
+#           contre une enumeration exhaustive des coloriages possibles.
+#           Indice : itertools.product(range(k), repeat=n_agents).
+# Etape 3 : collecter taux de reussite, messages moyens, nogoods moyens par k.
+# Etape 4 : tracer messages et nogoods en fonction de k.
+# Question : ou est le k critique, et pourquoi les messages chutent apres ?
+
+# TODO etudiant : ecrire les etapes 1 a 4.
+transition_k = None  # TODO etudiant : plus petit k ou toutes les instances sont satisfiables
+print(""Exercice a completer"")",,,,,,,,d77448e21b201752,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,05c26569,markdown,fr,3a05ee6432849dbb,"### Exemple guidé 7 — Allocation de tâches à préférences privées (crédité #25535 — TristanBrouille)
+
+> Contribution de **Tristan Dhersin** (TP1, PR étudiante
+> [#25535](https://github.com/jsboige/CoursIA/pull/25535)) — résolution reprise telle quelle.
+
+**Ce que montre l'exemple** : 5 agents se répartissent 8 tâches, capacité 2 par agent. Chaque
+agent occupe deux *emplacements*, un `PrivacyPreservingAgent` dont le domaine est les 8 tâches
+plus `AUCUNE` ; les préférences (un score secret par tâche) ne quittent jamais l'agent — elles
+ordonnent seulement l'essai des valeurs. L'allocation est vérifiée mécaniquement (toutes les
+tâches attribuées une fois, capacités respectées) et confrontée a l'optimum centralisé calculé
+par énumération : 54 contre 58, soit 93 %. La variante finale (emplacements attribués non
+équitablement) montre le prix du cadrage : le pire agent tombe de 8 a 0.",,,,,,,,3a05ee6432849dbb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,e6f604ca,markdown,fr,3fbdff6944000f24,"### Lecture du résultat : 93 % de l'optimum sans jamais révéler un score
+
+L'allocation satisfait toutes les contraintes dures — 8 tâches attribuées chacune une fois, au
+plus 2 par agent — pour une satisfaction totale de **54 contre un optimum centralisé de 58** :
+l'ordre d'essai dicté par les préférences privées approche l'optimum sans jamais le publier, et
+le rapport de confidentialité reste vide (`agents_with_access: []`). Coût du protocole : 65
+messages, aucun nogood. La dernière ligne dit l'importance du cadrage : avec des emplacements
+non équitables, le même protocole laisse un agent a **0** tâche quand le pire agent du cadrage
+équitable en garde pour 8 — la répartition des emplacements, décidée avant toute négociation,
+pèse plus lourd que la négociation elle-même.",,,,,,,,3fbdff6944000f24,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,4c70abda,markdown,fr,fdfa821d63f50673,"### Exercice 3c : Tâches incompatibles — une contrainte dure de plus
+
+**Enoncé** : 3 agents (capacité 2 chacun) se répartissent **6 tâches**, mais deux paires sont
+**incompatibles** : $(T1, T2)$ et $(T3, T4)$ ne peuvent pas atterrir chez le même agent.
+
+Consignes :
+1. Modélisez chaque agent par deux emplacements (comme a l'exemple guidé 7) ; la contrainte
+   entre deux emplacements du même agent interdit une paire incompatible, entre tous les
+   emplacements elle impose des tâches distinctes (`AUCUNE` exceptée)
+2. Résolvez avec des `PrivacyPreservingAgent` a préférences privées (scores 1-6 tirés au
+   hasard, graine fixée)
+3. Vérifiez mécaniquement : toutes les tâches attribuées, capacités, incompatibilités
+4. Comparez la satisfaction totale a l'optimum centralisé (énumération des affectations)
+
+**Question** : la solution distribuée garde-t-elle le même ratio a l'optimum qu'a l'exemple
+guidé 7 ? Qu'est-ce qui l'en écarte ?",,,,,,,,fdfa821d63f50673,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,6791776b,code,fr,935cfde29810cdab,"# Exercice 3c : allocation de 6 taches a 3 agents (capacite 2) avec paires incompatibles.
+# Etape 1 : definir TASKS = T1..T6, INCOMPATIBLES = {(T1,T2), (T3,T4)}, 6 emplacements
+#           (2 par agent), et la contrainte : taches distinctes partout, paire incompatible
+#           interdite entre deux emplacements du meme agent.
+# Etape 2 : resoudre avec PrivacyPreservingAgent, l'ordre d'essai dicte par des scores
+#           prives (graine fixee pour reproductibilite). Indice : exemple guide 7.
+# Etape 3 : verifier mecaniquement AllDifferent + capacites + incompatibilites.
+# Etape 4 : comparer la satisfaction totale a l'optimum centralise par enumeration.
+# Question : le ratio a l'optimum tient-il encore ?
+
+# TODO etudiant : ecrire les etapes 1 a 4.
+allocation_3c = None  # TODO etudiant : allocation verifiee {agent: [taches]}
+ratio_3c = None  # TODO etudiant : satisfaction totale / optimum centralise
+print(""Exercice a completer"")",,,,,,,,935cfde29810cdab,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,ac9a20a4,markdown,fr,bfb8a23472a35141,"### Exemple guidé 8 — Trois niveaux de vie privée comparés (crédité #25535 — TristanBrouille)
+
+> Contribution de **Tristan Dhersin** (TP1, PR étudiante
+> [#25535](https://github.com/jsboige/CoursIA/pull/25535)) — résolution reprise telle quelle.
+
+**Ce que montre l'exemple** : entre `ABTAgent` (tout révèle) et `MinimalDisclosureAgent` (ne
+révèle qu'aux voisins de contrainte), la résolution construit `PartialDisclosureAgent`, qui ne
+révèle qu'a sa zone a deux sauts (voisins et voisins de voisins). Un système a file journalisée
+enregistre chaque message livré, et une mesure de révélation compte les valeurs exposées et les
+paires (expéditeur, destinataire) qui ont appris quelque chose. Le problème support — 10
+réunions, 4 créneaux, 14 personnes — est résolu trois fois par les trois approches sur les
+mêmes instances, chaque verdict étant confronté a un test de faisabilité par retour arrière.",,,,,,,,bfb8a23472a35141,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,8c81e09e,markdown,fr,bf31bed538f7ac28,"### Lecture du résultat : la vie privée se paie en nogoods sur les instances impossibles
+
+Sur les 18 plannings réalisables, la hiérarchie est nette : **Minimal** divise les messages par
+4 (25.8 contre 101.7 pour ABT) et les valeurs exposées par 4.4 (29.6 contre 131.4) ; **Partial**
+tient le milieu (73.3 messages, 103 valeurs, et 23 paires instruites sur les 45 possibles — la
+moitié). Mais le tableau du bas, qui inclut les 2 plannings impossibles, retourne le paysage :
+les messages convergent (591.5, 566.0, 523.2) et les valeurs exposées s'égalisent (1123.6,
+1169.2, 1081.5) — la preuve d'échec exige des nogoods qui transportent les assignations. La vie
+privée se paie alors en nogoods (99.5, 124.5, 145.8), et seule la mesure des **paires**
+$(i \to j)$ ayant appris conserve l'écart (45.0, 24.8, 13.9) : moins de destinataires
+apprennent, même quand autant de valeurs circulent.",,,,,,,,bf31bed538f7ac28,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,20d358a4,markdown,fr,f8f56c545a1fcbd8,"### Exercice 4c : La densité du graphe mange-t-elle le compromis ?
+
+**Enoncé** : La comparaison a trois approches de l'exemple guidé 8 est faite sur un problème de
+réunions. Faites varier la **densité du graphe de contraintes** ($0.2, 0.4, 0.6, 0.8$) et
+observez le compromis vie privée / messages des trois approches (`ABTAgent`,
+`PartialDisclosureAgent`, `MinimalDisclosureAgent`).
+
+Consignes :
+1. Réutilisez `_random_coloring_problem` (6 agents, 3 couleurs) et les trois classes d'agent ;
+   `PartialDisclosureAgent` exige d'appeler `set_two_hop` sur chaque agent
+2. Mesurez par densité et par approche : messages, valeurs exposées, paires ayant appris
+   (la file journalisée de l'exemple guidé 8)
+3. Vérifiez chaque verdict contre un test de satisfiabilité
+4. Tracez les trois courbes de valeurs exposées en fonction de la densité
+
+**Question** : a quelle densité `PartialDisclosureAgent` ne gagne-t-il presque plus rien sur
+`ABTAgent`, et pourquoi ?",,,,,,,,f8f56c545a1fcbd8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,842d5d2f,code,fr,e2e618ba055cb131,"# Exercice 4c : compromis vie privee / messages des 3 approches en fonction de la densite.
+# Etape 1 : pour chaque densite dans [0.2, 0.4, 0.6, 0.8], generer 10 instances de
+#           coloration (6 agents, 3 couleurs) avec _random_coloring_problem.
+# Etape 2 : resoudre chaque instance avec ABTAgent, PartialDisclosureAgent (penser a
+#           set_two_hop) et MinimalDisclosureAgent, via le systeme a file journalisee.
+# Etape 3 : collecter messages, valeurs exposees, paires ayant appris (mesurer_revelations).
+# Etape 4 : verifier chaque verdict contre un test de satisfiabilite ; tracer les courbes
+#           de valeurs exposees en fonction de la densite.
+# Question : a quelle densite Partial ne gagne-t-il presque plus rien sur ABT ?
+
+# TODO etudiant : ecrire les etapes 1 a 4.
+densite_bascule_4c = None  # TODO etudiant : densite ou Partial ne gagne presque plus rien
+print(""Exercice a completer"")",,,,,,,,e2e618ba055cb131,,,,,,,,,,,,,,,
