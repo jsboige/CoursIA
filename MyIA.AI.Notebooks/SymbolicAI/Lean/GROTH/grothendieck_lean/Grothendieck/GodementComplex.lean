@@ -924,23 +924,29 @@ theorem godementCokernelMap_comp {S : ShortComplex (X.Presheaf AddCommGrpCat.{u}
 nul** : pour un short complexe `S` de préfaisceaux, les flèches d'étages
 composées `godementCanonicalMap S.f n ≫ godementCanonicalMap S.g n` sont
 nulles à tout degré — le champ `zero` des SES d'étages de la Partie 100.
-Le cran `0` est prouvé (`godementCanonicalMap_comp_zero_zero`). Ce qui a
-été tenté et le diagnostic précis du cran successeur : la récursion à deux
-temps (`godementCanonicalMap_one` : forme `μ` au degré 1 ;
-`godementCanonicalMap_succ_two` : forme `dⁿ` aux degrés ≥ 2) réduit le cran
-successeur à la nullité du composé des flèches de conoyaux
-`godementCokernelMap S.f n ≫ godementCokernelMap S.g n`, et la stratégie
-initiale « `cokernel.map` d'un morphisme nul est nul » lit le lemme Mathlib
-`cokernel.map_zero` à l'envers : il annule la flèche de conoyau dont la
-verticale **codomaine** est nulle, alors que l'hypothèse de récurrence
-(`f n ≫ g n = 0`) fournit la verticale **domaine** — et l'annulation par
-verticale domaine est fausse en général (contre-exemple générique :
-`f = 0`, verticale codomaine factorisée non nulle). La nullité du composé
-de conoyaux est une question réelle, cousine de l'annulation du connecteur
-de la cible hard : elle pourrait exiger les mêmes hypothèses
-(`hsep`/`hres`) ou un argument tige par tige, et l'énoncé sans hypothèse
-est possiblement trop fort — à trancher par le prover, d'abord en
-cherchant un contre-exemple (espace à deux points). -/
+État de la récursion à deux temps : le cran `0` est prouvé
+(`godementCanonicalMap_comp_zero_zero`) ; le maillon générique est prouvé
+SANS hypothèse (`godementCokernelMap_comp`, par `cancel_epi` sur la
+projection `cokernel.π` — épi par construction — et transport par
+`cokernel.π_desc` le long des carrés `e₁`/`e₂`), de sorte que
+`P (n+1) → Q n → P (n+2)` couvre tous les crans `≥ 2`. Reste UNIQUEMENT le
+cran de base `1` (forme `μ`) : `P 1` se réduit, par `godementCanonicalMap_one`
+et `← godementMapHom_comp`, à la nullité du composé des flèches de conoyaux
+`c₁μ ≫ c₂μ` des verticales `μ = toGodement` — et cette nullité est
+l'exactitude au milieu de la suite longue du **serpent de rang 0**
+(`L₃_exact` de `SnakeInput`), que le lemme du serpent fournit
+INCONDITIONNELLEMENT (le diagramme : `L₁ = S` la SES de départ, `L₂` la SES
+Godement de rang 0 `shortExact_map_godementFunctor`, verticales `μ` ; le
+connecteur `δ` n'a besoin d'être tué — par `hsep` — que pour la cible hard,
+pas pour la nullité du composé). Ce qui a été tenté : la route initiale
+« `cokernel.map` d'un morphisme nul est nul » (`cokernel.map_zero` lu à
+l'envers, verticale domaine vs codomaine) est RÉSORBÉE — c'était la
+mauvaise route, pas une hypothèse manquante ; la route courante est la
+pose d'une instance `SnakeInput (X.Presheaf AddCommGrpCat)` sur le
+diagramme ci-dessus (les (co)kernels degreewise de `ShortComplex C` en
+font une catégorie abélienne où `h₀`/`h₃` se lisent sur les fork/cofork
+degreewise) puis l'extraction de `L₃.zero`. L'énoncé sans hypothèse est
+donc attendu VRAI en entier, sans contre-exemple à chercher. -/
 theorem godementCanonicalMap_comp_zero {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
     (n : ℕ) :
     godementCanonicalMap S.X₁ S.X₂ S.f n ≫ godementCanonicalMap S.X₂ S.X₃ S.g n = 0 := by
