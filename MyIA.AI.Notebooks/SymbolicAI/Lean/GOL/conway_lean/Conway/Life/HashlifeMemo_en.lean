@@ -51,14 +51,14 @@ million, within `native_decide` budget.
   signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
-import Conway.Life.MacroCell_en
-import Conway.Life.Hashlife_en
+import Conway.Life.MacroCell
+import Conway.Life.Hashlife
 import Std.Data.HashMap
 
 namespace Conway_en
-open Conway_en
+open Conway
 namespace Life_en
-open Life_en
+open Life
 
 open MacroCell
 
@@ -72,8 +72,8 @@ which induces the `BEq` in scope) get equal hashes by construction, so
 def MacroCell.contentHash : MacroCell → UInt64
   | .leaf b => if b then 1 else 0
   | .node nw ne sw se =>
-    mixHash 2 (mixHash (mixHash nw.contentHash ne.contentHash)
-                       (mixHash sw.contentHash se.contentHash))
+    mixHash 2 (mixHash (mixHash (MacroCell.contentHash nw) (MacroCell.contentHash ne))
+                       (mixHash (MacroCell.contentHash sw) (MacroCell.contentHash se)))
 
 instance : Hashable MacroCell := ⟨MacroCell.contentHash⟩
 
