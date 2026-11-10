@@ -58,6 +58,7 @@ Les 6 FAILED (game_theory, learning_theory, GOL/conway, GROTH/grothendieck, KNOT
 ### Run 5 (`LAKE_JOBS=4`) — 21/26
 
 - **game_theory_lean repassé VERT** (échec au run 4) : l'échec n'est pas déterministe par membre — le niveau de parallélisme y est pour quelque chose.
+- **Fraîcheur (2026-11-10)** : « vert » ci-dessus = build **à travers la jonction, au head de ce run** (reconfirmé aux runs 6 et 7) ; ce n'est pas un état permanent du lake. À un autre head, la review de #25591 (03:24Z) documente le lake game_theory **rouge** (`Bounded_en.lean: unknown namespace 'RepeatedGames'`, suffixage i18n EN) — l'état courant du lake se re-vérifiera après les suffixages #23906 en vol.
 - 5 ré-échecs, erreur exacte capturée cette fois : **`error: Lean exited with code 4294967295`** (crash lean.exe, code -1) — signature différente du run 4 (lecture mmap), même famille d'épuisement de ressources. learning_theory, GOL/conway et GROTH échouent sur **tous** leurs modules (échec d'import massif) ; KNOTS/knot sur **deux cibles seulement** (`Knots.AlexanderTrivial` + jumeau `_en`, à 699 s chacun) ; Tweety/argumentation sur 6 (`Fundamental*`, `Grounded*`, `Synthesis*`, à 102 s). Les compteurs `[3032/3054]` / `[8717/8719]` sont les **tailles des closures Mathlib importées**, pas des rebuilds.
 - **Drift de manifeste éliminé** : `lake-manifest.json` mesurés rouges comme verts — mathlib `db584cd6` + toolchain `v4.33.0` partout ; lake ne re-build pas Mathlib à travers la jonction.
 
