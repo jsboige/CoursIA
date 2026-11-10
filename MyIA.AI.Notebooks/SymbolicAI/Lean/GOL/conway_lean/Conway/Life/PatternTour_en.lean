@@ -25,6 +25,7 @@ comments differ; statements, tactics and proofs are byte-identical across the tw
 -/
 
 import Conway.Life_en
+import Conway.Life.Hashlife_en
 import Conway.Life.Oscillators_en
 import Conway.Life.Spaceships_en
 import Conway.Life.RLE_en
