@@ -240,14 +240,23 @@ variable {X : TopCat.{u}}
 -- `godementMapHom_comp`); the two-time recursion is named
 -- (`godementCanonicalMap_one`, shape `μ` at degree 1;
 -- `godementCanonicalMap_succ_two`, shape `dⁿ` at degrees ≥ 2; carrier
--- `godementCokernelMap`); and the successor step is precisely diagnosed:
--- Mathlib's `cokernel.map_zero` kills the **codomain-side** vertical of the
--- cokernel square, while the induction hypothesis (`f n ≫ g n = 0`)
--- supplies the **domain-side** one — and killing by domain-side vertical is
--- false in general (generic counterexample: `f = 0`, codomain vertical
--- factoring non-trivially). The nullity of the cokernel-arrow composite is
--- a real question, kin to the hard target's connector; the hypothesis-free
--- statement may be too strong — the prover decides, counterexample first
--- (two-point space).
+-- `godementCokernelMap`); and the **generic successor link is PROVED,
+-- hypothesis-free** (`godementCokernelMap_comp`): the earlier diagnosis
+-- (domain-side vs codomain-side verticals, `cokernel.map_zero` route) is
+-- RESORBED — killing by domain-side vertical was the wrong route, not a
+-- missing hypothesis. The working route is `cancel_epi` along `cokernel.π`
+-- (an epimorphism by construction of the cokernel, no assumption), the two
+-- transport squares `e₁ e₂` being `cokernel.π_desc` at the
+-- definitionally-unfolded successor arrow (`godementDChainMap_succ_left`:
+-- the right vertical of the degree-`n` square IS the left vertical — i.e.
+-- the stage arrow — of the degree-`n + 1` one). The induction now runs
+-- `P (n+1) → Q n → P (n+2)` for every `n ≥ 0` without any hypothesis,
+-- covering all degrees ≥ 2. **Remaining open: only the rank-1 base case
+-- (shape `μ`)** — its analogue `Q_μ` reduces circularly to `P 1`; its exit
+-- is the rank-0 snake connector: `Mono (toGodement S.X₃)` (separatedness of
+-- the right term) ⇒ `ker μ_{X₃} = 0` ⇒ `δ₀ = 0` ⇒ SES of `coker μ` exact ⇒
+-- `c₁μ ≫ c₂μ = 0` — precisely the hard target (`SnakeInput` + `hres`). The
+-- hypothesis-free statement of the easy target is thus confirmed at every
+-- degree except the seeding one, where the separatedness ladder enters.
 
 end Grothendieck_en
