@@ -857,3 +857,75 @@ class Test21277SecondFournee:
         res = rac.cure_notebook(p, write=True)
         assert "problemes" in res.get("contextual_uncured", {})
         assert "problemes" not in res.get("hors_table", {})
+
+
+# ---------------------------------------------------------------------------
+# 7. #21277 (suite) : masque de citation -- une citation n'est curee que sur sa
+#    PROPRE preuve FR ; une citation anglaise dans une cellule francaise traverse
+#    la cure intacte (FP fondeur : Riemann200/13-bernoulli, `element` -> `element`).
+# ---------------------------------------------------------------------------
+class Test21277CitationMask:
+    def test_english_blockquote_in_french_cell_not_cured(self, tmp_path):
+        # Cellule FR (>=2 marqueurs) qui CITE une phrase anglaise en blockquote.
+        # Avant le fix : `element` etait "corrigee" en `element` par heritance du
+        # contexte FR de la cellule. Maintenant : la citation anglaise est retournee
+        # telle quelle, la prose FR avoisinante reste curee.
+        nb = _nb([("markdown",
+                   "Le memoire de 1859 pose un modele celebre :\n"
+                   "> the element of the group is the identity\n"
+                   "Le modele reste la reference.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        # la citation anglaise est intacte (element non accentue)
+        assert "the element of the group is the identity" in src
+        assert "élément" not in src
+        # la prose FR avoisinante, elle, est curee (memoire n'est pas dans la
+        # table canonique : seul modele -> modele est attendu ici)
+        assert "modèle" in src
+
+    def test_french_blockquote_still_cured(self, tmp_path):
+        # Controle positif : une citation FRANCAISE en blockquote reste curee.
+        nb = _nb([("markdown",
+                   "La citation est centrale :\n"
+                   "> « le modele de la selection est central »\n"
+                   "Elle reste la reference.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        assert "modèle" in src
+        assert "sélection" in src
+
+    def test_inline_double_quotes_language_aware(self, tmp_path):
+        # Une ligne FR cite en double-quotes : la citation FR est curee, la
+        # citation anglaise est masquee (element non accentue).
+        nb = _nb([("markdown",
+                   'En francais on note "le modele de base", mais on cite '
+                   '"the element of the group" sans le changer.')])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        assert "modèle" in src
+        assert "the element of the group" in src
+        assert "élément" not in src
+
+    def test_english_blockquote_list_source_not_cured(self, tmp_path):
+        # Meme garde sur la branche LIST nbformat (chunks) : la citation anglaise
+        # en blockquote reste intacte, la prose FR des autres chunks est curee.
+        nb = {"cells": [
+            {"cell_type": "markdown",
+             "source": ["Le memoire pose :\n",
+                         "> the element of the group\n",
+                         "Le modele reste central.\n"],
+             "metadata": {}},
+        ], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = "".join(json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"])
+        assert "the element of the group" in src
+        assert "élément" not in src
+        assert "modèle" in src

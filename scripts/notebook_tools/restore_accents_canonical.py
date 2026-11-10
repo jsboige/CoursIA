@@ -98,6 +98,16 @@ _LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
 # beneficie aussi, uniformement.
 _INLINE_SPAN_RE = re.compile(r"`[^`\n]*`")
 _BARE_URL_RE = re.compile(r"\bhttps?://\S+")
+# #21277 (suite) : une CITATION -- blockquote `>` ou guillemets «...» / "..." --
+# n'est curee que si elle porte sa PROPRE preuve de contexte francais. Sans cette
+# garde, une citation anglaise dans une cellule francaise herite du contexte FR de
+# la cellule (`cell_fr`, ≥2 marqueurs sur la cellule entiere) et y est "corrigee" :
+# `element` -> `element` (signal c.6757419949, Riemann200/13-bernoulli cellule 15).
+# La preuve se mesure sur le TEXTE DE LA CITATION, jamais sur la cellule : une
+# phrase anglaise n'y porte aucun mot-outil FR, donc elle traverse la cure intacte.
+_BLOCKQUOTE_RE = re.compile(r"^\s{0,3}>\s?(.*)$")
+# guillemets : francais «...» et doubles "..." (les deux sont des citations)
+_INLINE_QUOTE_RE = re.compile(r"«[^»\n]*»|\"[^\"]*\"")
 
 # #17222 : un libelle de lien qui NOMME le fichier cible porte le meme defaut
 # qu'une cible accentuee (#7135/#7145) -- l'accentuer le decouple du fichier
@@ -134,6 +144,10 @@ def _cure_line(line: str, fr_context: bool = False) -> tuple[str, int]:
     une puce `- Representation : PDDL 2.1+` n'a aucun mot-outil et serait sinon
     laissee non curee dans une cellule francaise.
 
+    #21277 (suite) : les citations (blockquote `>`, guillemets «...» / "..."
+    inline) sont curees sur leur PROPRE preuve FR ; une citation anglaise
+    traverse la cure intacte, meme dans une cellule francaise.
+
     Retourne (ligne_curee, n_cures).
     """
     # 1. extraire + masquer les zones non-prose. Chaque span protege est remplace
@@ -145,6 +159,28 @@ def _cure_line(line: str, fr_context: bool = False) -> tuple[str, int]:
     def _mask(m):
         masked_spans.append(m.group(0))
         return "\x00MS{}\x00".format(len(masked_spans) - 1)
+
+    # 1bis. #21277 (suite) : les citations. Un blockquote `>` n'est cure que sur
+    # sa PROPRE preuve FR ; un blockquote anglais (aucun mot-outil FR dans son
+    # texte) est retourne tel quel -- c'est le FP fondeur (Riemann200/13-bernoulli
+    # cellule 15, signal c.6757419949 : `element` -> `element` dans une citation
+    # anglaise d'une cellule francaise).
+    bq = _BLOCKQUOTE_RE.match(line)
+    if bq:
+        if not _fr_markers(bq.group(1).lower()):
+            return line, 0  # citation anglaise : non curee, masquee en bloc
+        fr_context = True  # citation francaise : curee sur sa propre preuve
+    # guillemets inline «...» / "..." : masques s'ils ne portent PAS de preuve
+    # FR, et UNIQUEMENT dans un contexte deja francais (fr_context) -- sinon une
+    # chaine d'affichage "..." (frontmatter title/info, curee par construction)
+    # serait masquee a tort.
+    if fr_context:
+        def _mask_quote(m):
+            if _fr_markers(m.group(0).lower()):
+                return m.group(0)  # citation FR : reste curee
+            masked_spans.append(m.group(0))
+            return "\x00MS{}\x00".format(len(masked_spans) - 1)
+        line = _INLINE_QUOTE_RE.sub(_mask_quote, line)
 
     def _mask_filename_label(m):
         label, target = m.group(1), m.group(2)
