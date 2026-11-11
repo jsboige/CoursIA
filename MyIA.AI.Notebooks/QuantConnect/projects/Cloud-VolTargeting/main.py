@@ -3,6 +3,16 @@
 
 from AlgorithmImports import *
 
+# Noyau de risque deterministe (#24698) : (plafond d'exposition, stop ATR, coupe-circuit).
+# Meme noyau que DeterministicRiskKernel-QC : 90 % investi au plus, sans levier ; stop a
+# 2 ATR(14) sous le prix de l'ordre ; liquidation apres une seance a -3 % ou pire.
+KERNEL_MODES = {"off": (False, False, False), "cap90": (True, False, False),
+                "kernel_nocb": (True, True, False), "kernel": (True, True, True)}
+KERNEL_EXPOSURE_CAP = 0.90
+KERNEL_STOP_ATR = 2.0
+KERNEL_CB_THRESHOLD = -0.03
+
+
 class VolTargetingAlgorithm(QCAlgorithm):
     """
     Volatility Targeting Strategy with three variants:
@@ -73,6 +83,48 @@ class VolTargetingAlgorithm(QCAlgorithm):
             self.rebalance
         )
 
+        # Noyau de risque deterministe (#24698, Steward arXiv 2610.30557), v1 seulement.
+        # kernel = off (defaut, code ci-dessus inchange) | cap90 | kernel_nocb | kernel.
+        self.kernel = self.get_parameter("kernel", "off")
+        if self.kernel not in KERNEL_MODES:
+            raise ValueError(f"unknown kernel {self.kernel}")
+        if self.kernel != "off" and self.version != "1":
+            raise ValueError("kernel applies to version 1 only")
+        self.use_cap, self.use_stop, self.use_cb = KERNEL_MODES[self.kernel]
+        if self.use_cap:
+            self.max_allocation = min(self.max_allocation, KERNEL_EXPOSURE_CAP)
+        self.k_stop_ticket = None
+        self.k_stop_level = None
+        self.k_stopped = False       # stop touche : hors marche jusqu'au mois suivant
+        self.k_allocation = None     # allocation du mois, pour la re-entree
+        self.k_cb_pending = False
+        self.k_reentry = False
+        self.k_prev_value = None
+        self.k_stops = 0
+        self.k_cuts = 0
+        self.k_invalid = 0
+        self.k_exposure_max = 0.0
+        self.k_sessions = 0
+        self.k_flat_sessions = 0     # seances closes sans position
+        # reentry = month (defaut : une ligne stoppee attend le rebalancement mensuel)
+        # | week (variante diagnostique : elle revient au debut de la semaine suivante).
+        self.k_reentry_rule = self.get_parameter("reentry", "month")
+        if self.k_reentry_rule not in ("month", "week"):
+            raise ValueError(f"unknown reentry {self.k_reentry_rule}")
+        if self.k_reentry_rule == "week" and not self.use_stop:
+            raise ValueError("reentry=week needs a kernel mode with the stop")
+        if self.use_stop:
+            self.k_atr = self.atr(self.symbol("SPY"), 14, MovingAverageType.SIMPLE,
+                                  Resolution.DAILY)
+        if self.use_cb:
+            self.schedule.on(self.date_rules.every_day("SPY"),
+                             self.time_rules.after_market_open("SPY", 30),
+                             self._kernel_daily)
+        if self.k_reentry_rule == "week":
+            self.schedule.on(self.date_rules.week_start("SPY"),
+                             self.time_rules.after_market_open("SPY", 30),
+                             self._kernel_weekly)
+
     def rebalance(self):
         # Garde de prix (#21585) : aucun ordre ne part tant qu'un titre n'a pas de
         # prix. Le warm-up seede les titres ; cette garde rend le mode d'echec
@@ -119,6 +171,15 @@ class VolTargetingAlgorithm(QCAlgorithm):
             allocation = max(self.min_allocation, min(allocation, self.max_allocation))
 
         self.debug(f"v1 - Realized vol: {realized_vol:.4f}, Target allocation: {allocation:.2f}")
+        if self.use_stop or self.use_cb:
+            self.k_stopped = False
+            self.k_allocation = allocation
+            if self.k_cb_pending or self.k_reentry:
+                # Liquidation du coupe-circuit en cours : la re-entree part a l'ouverture
+                # suivante, avec l'allocation de ce mois.
+                return
+            self._kernel_enter(allocation)
+            return
         self.set_holdings(spy, allocation)
 
     def rebalance_v2(self):
@@ -222,6 +283,122 @@ class VolTargetingAlgorithm(QCAlgorithm):
             self.plot("coursia-18921-equity", f"e{self.bars_seen % 5}",
                       self.portfolio.total_portfolio_value)
             self.bars_seen += 1
+        if self.kernel != "off" and not self.is_warming_up:
+            self._kernel_close()
+
+    # --- Noyau de risque deterministe (#24698) -------------------------------
+
+    def _kernel_close(self):
+        """Cloture de la seance : exposition relevee, puis coupe-circuit a -3 %."""
+        spy = self.symbol("SPY")
+        value = self.portfolio.total_portfolio_value
+        held = abs(self.portfolio[spy].holdings_value)
+        self.k_exposure_max = max(self.k_exposure_max, held / value)
+        self.k_sessions += 1
+        if held == 0:
+            self.k_flat_sessions += 1
+        if (self.use_cb and held > 0 and not self.k_cb_pending
+                and self.k_prev_value is not None
+                and value / self.k_prev_value - 1 <= KERNEL_CB_THRESHOLD):
+            # En donnees journalieres la cloture n'est connue qu'apres coup : la
+            # liquidation part a l'ouverture suivante, la re-entree a celle d'apres.
+            self._kernel_cancel_stop()
+            self.market_on_open_order(spy, -self.portfolio[spy].quantity, tag="coupe-circuit")
+            self.k_cb_pending = True
+            self.k_cuts += 1
+        self.k_prev_value = value
+
+    def _kernel_daily(self):
+        if self.is_warming_up:
+            return
+        if self.k_cb_pending:
+            self.k_cb_pending = False
+            self.k_reentry = True
+            return
+        if self.k_reentry:
+            self.k_reentry = False
+            if self.k_allocation is not None and not self.k_stopped:
+                self._kernel_enter(self.k_allocation)
+
+    def _kernel_weekly(self):
+        """Variante diagnostique : une ligne stoppee revient en debut de semaine,
+        avec l'allocation du mois en cours."""
+        if self.is_warming_up or not self.k_stopped:
+            return
+        if self.k_cb_pending or self.k_reentry or self.k_allocation is None:
+            return
+        self.k_stopped = False
+        self._kernel_enter(self.k_allocation)
+
+    def _kernel_enter(self, allocation):
+        """Ordre deterministe : chaque ordre du mois porte son stop a 2 ATR(14)."""
+        spy = self.symbol("SPY")
+        if self.use_stop:
+            self._kernel_cancel_stop()
+            self.k_stop_level = (self.securities[spy].price
+                                 - KERNEL_STOP_ATR * self.k_atr.current.value)
+        self.set_holdings(spy, allocation, tag="rebalancement")
+        self._kernel_place_stop()
+
+    def _kernel_live_stop(self):
+        ticket = self.k_stop_ticket
+        if ticket is None or ticket.status in (OrderStatus.FILLED, OrderStatus.CANCELED,
+                                               OrderStatus.INVALID):
+            return None
+        return ticket
+
+    def _kernel_place_stop(self):
+        if not self.use_stop or self.k_stop_level is None:
+            return
+        spy = self.symbol("SPY")
+        quantity = self.portfolio[spy].quantity
+        if quantity <= 0:
+            return
+        ticket = self._kernel_live_stop()
+        if ticket is not None:
+            if ticket.quantity != -quantity:
+                fields = UpdateOrderFields()
+                fields.quantity = -quantity
+                ticket.update(fields)
+            return
+        self.k_stop_ticket = self.stop_market_order(spy, -quantity, self.k_stop_level,
+                                                    tag="stop")
+
+    def _kernel_cancel_stop(self):
+        ticket = self._kernel_live_stop()
+        if ticket is not None:
+            ticket.cancel()
+        self.k_stop_ticket = None
+
+    def on_order_event(self, order_event):
+        if self.kernel == "off":
+            return
+        if order_event.status == OrderStatus.INVALID:
+            self.k_invalid += 1
+            return
+        if order_event.status != OrderStatus.FILLED:
+            return
+        order = self.transactions.get_order_by_id(order_event.order_id)
+        if order.type == OrderType.STOP_MARKET:
+            # Stop touche : la ligne reste hors marche jusqu'au rebalancement suivant.
+            self.k_stop_ticket = None
+            self.k_stopped = True
+            self.k_stops += 1
+            return
+        if order.tag == "rebalancement":
+            self._kernel_place_stop()
+
+    def on_end_of_algorithm(self):
+        if self.kernel == "off":
+            return
+        self.set_runtime_statistic("Noyau", self.kernel)
+        self.set_runtime_statistic("Stops", str(self.k_stops))
+        self.set_runtime_statistic("Coupures", str(self.k_cuts))
+        self.set_runtime_statistic("Ordres invalides", str(self.k_invalid))
+        self.set_runtime_statistic("Exposition max", f"{self.k_exposure_max:.4f}")
+        self.set_runtime_statistic("Re-entree", self.k_reentry_rule)
+        self.set_runtime_statistic("Seances a plat",
+                                   f"{self.k_flat_sessions}/{self.k_sessions}")
 
     def _forecast_vol(self, ticker):
         """Vol forecast for this month's rebalance; fails loudly if missing."""
