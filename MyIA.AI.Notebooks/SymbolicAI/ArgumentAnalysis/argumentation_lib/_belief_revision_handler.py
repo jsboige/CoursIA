@@ -35,6 +35,20 @@
 # MERGED, C186c #5242 MERGED, C186d #5251 OPEN MERGEABLE). No upstream
 # commits on belief_revision_handler.py between a8025f60 and HEAD (verified
 # via `git log a8025f60..HEAD -- belief_revision_handler.py` = 0 commits).
+#
+# DECLARED LOCAL DEVIATION (NOT-VERBATIM, 2026-11-11, issue #23163 -- signal
+# c.6784603097): the upstream verbatim copy declares
+# ``REVISION_METHODS = {"dalal", "levi"}`` but NEVER consults it in
+# ``revise()`` -- an unknown method string was silently routed through the
+# Levi pattern and echoed verbatim in the ``method`` key of the result dict
+# (committed notebook output, ``Argumentation-06c`` cell [7]). This copy adds
+# a validation of ``method`` against ``REVISION_METHODS`` at the very top of
+# ``revise()``, BEFORE the try block: an out-of-set value raises
+# ``ValueError`` naming the accepted methods, without touching the JVM.
+# Everything else is byte-identical to the upstream source (SHA1 above).
+# Declared in ``argumentation_lib/NOTICE-EPITA`` (Adaptations locales
+# declarees), same mechanism as ``_adf_handler.py`` (2026-10-29).
+# Contract test: ``tests/test_belief_revision_handler.py`` (JVM-free).
 """Handler for Belief Revision via TweetyProject.
 
 Implements AGM-style belief revision operators:
@@ -118,11 +132,24 @@ class BeliefRevisionHandler:
         Args:
             belief_set: List of PL formula strings (current beliefs).
             new_belief: Formula to incorporate.
-            method: Revision method ("dalal", "levi").
+            method: Revision method -- must be one of ``REVISION_METHODS``
+                (``"dalal"``, ``"levi"``); anything else raises ``ValueError``
+                (declared local deviation, see module header).
 
         Returns:
             Dict with revised belief set and statistics.
         """
+        # Declared local deviation (NOT-VERBATIM, 2026-11-11, issue #23163):
+        # upstream never consulted REVISION_METHODS here -- an unknown method
+        # was silently routed through the Levi pattern and echoed verbatim in
+        # the result. Validate BEFORE the try block: the refusal raises
+        # without touching the JVM (JVM-free contract test pins this).
+        if method not in self.REVISION_METHODS:
+            raise ValueError(
+                f"Unknown revision method {method!r}: expected one of "
+                f"{sorted(self.REVISION_METHODS)} (BeliefRevisionHandler."
+                f"REVISION_METHODS)"
+            )
         try:
             bs = self._parse_belief_set(belief_set)
             parser = self.PlParser()

@@ -4301,6 +4301,106 @@ myia-74-waiter-3 168.9MiB / 512MiB"
 )
 echo ""
 
+# --- Test 75 : un harnais interrompu ne laisse aucun processus (#21527) -----
+# Critere 4 de #21527. Mesure du 2026-10-20 : des restes de CE fichier (6 a 11 h,
+# parent /init, enfants relances en boucle) bloquaient le redemarrage du pool --
+# la sentinelle perimee n'etait jamais purgee, l'unite restait en failed, le
+# pool a zero. Le correctif est le `trap cleanup_launched EXIT INT TERM` du haut
+# de ce fichier. Ce test le MESURE au lieu de le lire.
+#
+# La sonde est une SECONDE instance de ce fichier dans son propre groupe de
+# processus (`set -m`, sans dependance a `setsid`), et le signal part au PARENT
+# SEUL. Envoyer TERM au groupe ne
+# prouverait rien : le signal atteindrait les enfants directement et le test
+# passerait meme sans trap. Sans le trap, les enfants survivent au parent et
+# sont reparentes a /init -- exactement la pathologie mesuree.
+echo "Test 75 : interruption du harnais -- aucun processus survivant (#21527)"
+(
+  # Membres vivants d'un groupe de processus, lus dans /proc. Pas de `pgrep` :
+  # la suite ne doit pas dependre d'un utilitaire absent d'un runner minimal, et
+  # `ps` est deja detourne par des stubs dans d'autres tests.
+  group_members() {
+    local want="$1" f line rest pid
+    local -a fields
+    for f in /proc/[0-9]*/stat; do
+      [ -r "$f" ] || continue
+      line=""
+      read -r line < "$f" 2>/dev/null
+      [ -n "$line" ] || continue
+      rest="${line##*)}"          # apres le dernier ')': state ppid pgrp session
+      fields=($rest)
+      [ "${fields[2]:-}" = "$want" ] || continue
+      [ "${fields[0]:-}" = "Z" ] && continue   # un zombie ne tourne plus
+      pid="${f#/proc/}"; echo "${pid%/stat}"
+    done
+  }
+
+  # La sonde relance CE fichier : sans ce garde, Test 75 s'y rejouerait a
+  # l'infini. Ce n'est pas une assertion, donc ni PASS ni FAIL.
+  if [ "${COURSIA_RUNNER_TEST75_PROBE:-0}" = "1" ]; then
+    echo "  SKIP: instance sonde de Test 75 (pas de recursion)"
+  elif [ ! -d /proc ]; then
+    ko "critere 4 non mesurable ici : /proc absent"
+  else
+    PROBE_ROOT="$TEST_DIR/interrupt-75"; mkdir -p "$PROBE_ROOT"
+    cat > "$PROBE_ROOT/run.sh" <<'PROBE'
+#!/usr/bin/env bash
+printf '%s\n' "$$" > "$PROBE_PID_FILE"
+exec bash "$PROBE_SUITE"
+PROBE
+    export PROBE_PID_FILE="$PROBE_ROOT/probe.pid"
+    export PROBE_SUITE="$SCRIPT_DIR/test_supervise_guards.sh"
+    export COURSIA_RUNNER_TEST75_PROBE=1
+    # `set -m` : controle de tache, donc un GROUPE DE PROCESSUS propre pour la
+    # sonde, sans `setsid` (absent d'un Git Bash MSYS, et la suite doit rester
+    # lancable sur les deux). Mesure : le fils recoit pgrp == son propre pid.
+    ( set -m; bash "$PROBE_ROOT/run.sh" >"$PROBE_ROOT/out.log" 2>&1 & )
+    probe_pid=""
+    for _ in $(seq 1 200); do
+      [ -s "$PROBE_ROOT/probe.pid" ] && { probe_pid="$(cat "$PROBE_ROOT/probe.pid")"; break; }
+      sleep 0.1
+    done
+    case "$probe_pid" in ''|*[!0-9]*) probe_pid="" ;; esac
+    # Anti-vacuite : l'interruption doit avoir un OBJET. Une sonde qui meurt
+    # avant d'avoir lance un seul enfant passerait le test sans rien mesurer --
+    # zero membre avant le signal n'est pas « aucun survivant », c'est un test
+    # qui n'a pas eu lieu.
+    members=0
+    if [ -n "$probe_pid" ]; then
+      for _ in $(seq 1 400); do
+        members=$(group_members "$probe_pid" | wc -l)
+        [ "$members" -ge 2 ] && break
+        sleep 0.1
+      done
+    fi
+    if [ -z "$probe_pid" ] || [ "$members" -lt 2 ]; then
+      ko "sonde jamais enfantee (pid='$probe_pid', membres=$members) : rien a mesurer"
+    else
+      # TERM au PARENT SEUL : seul le trap peut propager au groupe.
+      kill -TERM "$probe_pid" 2>/dev/null || true
+      survivors=1
+      for _ in $(seq 1 150); do
+        survivors=$(group_members "$probe_pid" | wc -l)
+        [ "$survivors" -eq 0 ] && break
+        sleep 0.1
+      done
+      if [ "$survivors" -eq 0 ]; then
+        ok "TERM au parent seul : le groupe entier est parti ($members processus au depart)"
+      else
+        ko "survivants apres TERM au parent : $(group_members "$probe_pid" | tr '\n' ' ')"
+      fi
+    fi
+    # Nettoyage inconditionnel : ni la sonde, ni son repertoire de travail ne
+    # doivent rester derriere un test rouge -- ce serait le defaut mesure.
+    if [ -n "$probe_pid" ]; then
+      kill -KILL -- "-$probe_pid" 2>/dev/null || true
+      rm -rf "/tmp/supervise-test-$probe_pid"
+    fi
+    rm -rf "$PROBE_ROOT"
+  fi
+)
+echo ""
+
 # --- Verdict agrege ---------------------------------------------------------
 # `|| echo 0` serait un piege ici, et il l'a ete : `grep -c` IMPRIME "0" avant
 # de sortir 1 quand il ne trouve rien, donc le repli SUFFIXE un second zero au

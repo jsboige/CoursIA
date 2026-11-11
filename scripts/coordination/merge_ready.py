@@ -1796,9 +1796,18 @@ def evaluate_pr(
         if pstate != "MERGED":
             return skip(f"stacked-on-main:{parent}:{pstate}",
                         stack_state, stack_inc)
+    # Prelecture REST bon marche : ne pas payer les tests d'arbre fusionne
+    # pour une PR que l'etape 6 refuserait. L'etape 6 reste la garde finale
+    # contre une evolution de l'etat ou de la tete pendant ces tests.
+    pre_state, pre_live_head = mergeable_state_and_head(runner, pr, gh_env)
+    if pre_state not in ("clean", "unstable"):
+        return skip(f"mergeable-state:{pre_state or 'absent'}",
+                    stack_state, stack_inc)
+    if pre_live_head != view_head:
+        return skip("head-moved", stack_state, stack_inc)
     # 5quinquies. tests d'integrite sur l'arbre fusionne main + tete. Place
-    # apres tous les controles bon marche (il coute ~1 min) et avant le REST,
-    # qui reste le dernier pour garder la fenetre de course courte.
+    # apres tous les autres controles bon marche (il coute ~1 min) et avant le
+    # REST final, qui reste le dernier pour garder la fenetre de course courte.
     reason = combined_tree_reason(runner, pr, view_head, gh_env)
     if reason is not None:
         return skip(reason, stack_state, stack_inc)
