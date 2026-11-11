@@ -266,7 +266,9 @@ Mesure du 2026-11-03 sur **2 075 PRs** : 8 commentaires et reviews en moyenne po
 
 **Mesure de rechute (2026-11-11, campagne #19297).** En 24 h, 43 PRs « blocs de fin canoniques » et une trentaine d'issues de tranche neuves, d'un à trois carnets chacune. Part5-Frontières a reçu une issue par carnet. Le compteur d'issues ouvertes est monté pendant que la flotte cherchait à le faire baisser. Remède appliqué le jour même : bloc d'état et forme de livraison écrits en tête du body de #19297.
 
-**Bloc d'état daté.** La commande de mesure du bloc est celle de l'organe de la série, par exemple `scripts/notebook_tools/check_series_finish.py --series <S> --json`. `scripts/epic_body_staleness.py` repère les Epics dont le body ignore des livraisons mergées : 44 au 2026-11-11, #19297 comprise.
+**Forme de la fournée écrite dans le body.** Elle fixe la taille d'une PR, le claim posé sur l'issue elle-même avec une clause `paths:`, et la fin des issues de tranche : les PRs suivantes renvoient à l'issue de série ou de famille au lieu d'en ouvrir une par carnet.
+
+**Bloc d'état daté.** La lane qui livre une fournée met à jour sa ligne du bloc. La commande de mesure du bloc est celle de l'organe de la série, par exemple `scripts/notebook_tools/check_series_finish.py --series <S> --json`. `scripts/epic_body_staleness.py` repère les Epics dont le body ignore des livraisons mergées : 44 au 2026-11-11, #19297 comprise.
 
 ### L60 — pourquoi la whitelist des axiomes interdit les wildcards
 
