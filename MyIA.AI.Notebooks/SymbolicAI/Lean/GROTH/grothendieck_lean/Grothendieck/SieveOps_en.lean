@@ -4,9 +4,9 @@ Alexandre Grothendieck (1928-2014).
 
 Phase 4 extension (#2159, Epic #1646).
 
-Part 6 (SieveLattice.lean) established pullback identities. Part 7
-(SheafBasics.lean) connected sheaves with the lattice of topologies.
-Mathlib already provides Sieve.pullback_inter (pullback preserves ⊓).
+Part 6 (`SieveLattice.lean`) established the pullback identities. Part 7
+(`SheafBasics.lean`) connected the sheaves with the lattice of topologies.
+Mathlib already provides `Sieve.pullback_inter` (pullback preserves ⊓).
 
 This module adds pedagogical wrappers and observations:
 
@@ -19,6 +19,17 @@ These facts are exercises in reading the Grothendieck topology axioms
 through the lens of order theory.
 
 Epic #1646, Phase 4 (#2159). All `sorry`s eliminated at creation.
+
+### i18n — convention #4980 ratified 2026-07-04
+
+This module is paired with its French canonical counterpart in the sibling
+file `SieveOps.lean` (sibling pair model, see PR #6154 for the pilot on
+`Utility.lean`). Theorem statements, lemma names, Lean tactics and Mathlib
+references stay in English (Mathlib 4, standard tactic DSL). Only the
+**docstrings `/-- ... -/`** and **comments `-- ...`** differ between the
+two files. Anti-§D byte-identity guaranteed: the namespace body is
+preserved bit-for-bit (statements and proofs byte-identical between
+`SieveOps.lean` and `SieveOps_en.lean`).
 -/
 
 import Mathlib.CategoryTheory.Sites.Grothendieck
