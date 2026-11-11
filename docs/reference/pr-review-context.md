@@ -140,6 +140,17 @@ Table de vérité mesurée le 2026-09-21 sur l'organe lui-même (`classify(autho
 
 **Deux pièges adjacents.** (1) Ne pas compter sur le token de blocage **nu** : c'est un faux négatif **choisi**, pas un filet — il tient à un contrat explicite de l'organe. (2) Ne pas confondre **disponible** et **honnête** : la voie de levée « issue de suivi » n'a de sens que s'il reste un **résidu** à tracer ; ouvrir une issue creuse pour éteindre une réserve morte est une falsification, pas une levée.
 
+**Marqueurs de prose de B.0 : même précaution, avec une limite mesurée.** `classify()` cherche aussi les marqueurs de prose de `CONCERN_MARKERS` (par exemple `avant merge`), indépendamment du préfixe `[ACTION]`. Le 2026-11-08, avec `[ACTION]` en première ligne non vide et un auteur de lane non-bot, les quatre suffixes suivants ont été rejoués sur l'organe courant et rendent respectivement `BOT-CONCERN`, `None`, `None`, `BOT-CONCERN` :
+
+| Forme | Corps passé à `classify()` | Verdict |
+|---|---|---|
+| Nu | `... un merge avant merge sans review` | `BOT-CONCERN` |
+| Backticks | ``... un `avant merge` sans review`` | `None` |
+| Guillemets typographiques | `... un « avant merge » sans review` | `None` |
+| Bloc de citation | `... > aucun nit non leve ne survit a un avant merge` | `BOT-CONCERN` |
+
+Pour citer un marqueur de prose sans le réémettre, encager **le marqueur lui-même** avec les backticks ou les guillemets typographiques mesurés ci-dessus. La syntaxe markdown de citation `>` ne le neutralise pas : l'organe retire les plages citées reconnues par `_strip_quoted`, pas les lignes de citation markdown. Cette mesure ne justifie aucune extension de `CONCERN_MARKERS` ni aucun changement du classifieur ; le contrat reste côté émission.
+
 **Contrôle positif de la recommandation (4/4).** Les formes conseillées ci-dessus ne sont pas seulement réputées muettes, elles le sont mesurément : la phrase même que citait la piste correspondante (« Réponse à ta réserve du head … : les deux blockers sont traités ») rend `None`, la variante à token encagé rend `None`, et la position de mention (`suite à ton verdict <token>` **sans** deux-points) rend `None`. Le contrôle **négatif** tient aussi : une réponse qui **réitère** la réserve (`Re: … le <token> tient`) rend `BOT-CONCERN` — la forme sûre ne rend donc pas l'organe aveugle à une réserve réaffirmée, ce qui est précisément le risque qui écartait l'élargissement aux formes d'adresse.
 
 **Mécanique — trois couches, dans cet ordre.** Une forme répondue traverse trois filtres avant que `classify()` ne rende un verdict ; savoir lequel traite quoi évite de « corriger » la mauvaise couche :
