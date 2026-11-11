@@ -95,7 +95,7 @@ pip install torch --index-url https://download.pytorch.org/whl/cpu
 # (#2872), so without arch here those 9 tests are missing-dep failures.
 # Pulls statsmodels/patsy — still CPU-light.
 pip install arch
-# rapidfuzz + unidecode + openpyxl: GradeBookApp/gradebook.py imports
+# rapidfuzz + unidecode + openpyxl: dotnet/GradeBookApp/gradebook.py imports
 # all three at module top level, so test_fuzzy_match_group.py needs
 # them at collection time (famille 5 de #14615). The test guards with
 # importorskip, but wiring it into this run means running it for real.

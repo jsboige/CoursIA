@@ -1,0 +1,53 @@
+name: Notebook Cell ID Ratchet
+
+on:
+  pull_request:
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/check_cell_id_invalid_ratchet.py'
+      - 'scripts/notebook_tools/fix_cell_ids.py'
+      - 'scripts/notebook_tools/tests/test_cell_id_schema.py'
+      - '.github/workflows/notebook-cell-id-ratchet.yml'
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: 'Ref de base pour le ratchet (défaut origin/main)'
+        required: false
+        default: 'origin/main'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notebook-cell-id-ratchet-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ratchet:
+    name: Cell ID ratchet (base vs PR)
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install test dependency
+        run: python -m pip install --quiet pytest
+
+      - name: Unit tests
+        run: python -m pytest scripts/notebook_tools/tests/test_cell_id_schema.py -q
+
+      - name: Ratchet check
+        env:
+          BASE_REF: ${{ github.event.inputs.base_ref }}
+          PR_BASE: ${{ github.base_ref }}
+        run: |
+          BASE="${BASE_REF:-origin/${PR_BASE:-main}}"
+          python scripts/notebook_tools/check_cell_id_invalid_ratchet.py "$BASE"
