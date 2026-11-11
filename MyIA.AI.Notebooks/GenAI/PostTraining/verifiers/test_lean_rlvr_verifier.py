@@ -18,6 +18,7 @@ import shutil
 
 import pytest
 
+from verifiers import lean_rlvr_verifier as verifier_module
 from verifiers.lean_rlvr_verifier import LeanRLVRVerifier, RLVRResult
 
 # Skip global si elan/lake absent du runner (on n'invente pas un faux moteur).
@@ -241,22 +242,53 @@ def test_organ_timeout_maps_to_timeout_flag(monkeypatch, tmp_path):
 
 
 def _fake_lean(tmp_path, monkeypatch, version="4.35.0"):
-    """Installe un lean factice local, sans dépendance à elan ni au réseau."""
+    """Installe un lean factice local, sans dépendance à elan ni au réseau.
+
+    ``ELAN_HOME`` est pointé vers un répertoire vide : elan y(logne) ses
+    toolchains, et le proxy elan du poste ne peut donc pas écraser le faux
+    binaire (il échouerait au lieu de répondre).
+
+    Windows : ``CreateProcess`` ne résout que ``.exe`` et cherche dans le
+    PATH du **processus parent** — un script ne peut pas y être déclenché.
+    On interpose donc la mesure elle-même ; la reconstruction du tag est
+    couverte par les tests de l'organe (``scripts/lean/tests``), et la mesure
+    complète est exercée par la CI Linux.
+    """
     import os
 
     bindir = tmp_path / "bin"
     bindir.mkdir()
-    lean = bindir / "lean"
-    lean.write_text(f'#!/bin/sh\necho "Lean (version {version}, fake)"\n', encoding="utf-8")
-    lean.chmod(0o755)
-    monkeypatch.setenv("PATH", str(bindir))
+    if os.name == "nt":
+        monkeypatch.setattr(
+            "verifiers.lean_rlvr_verifier._installed_toolchain",
+            lambda: f"leanprover/lean4:v{version}",
+        )
+    else:
+        lean = bindir / "lean"
+        lean.write_text(f'#!/bin/sh\necho "Lean (version {version}, fake)"\n', encoding="utf-8")
+        lean.chmod(0o755)
+        monkeypatch.setenv("PATH", str(bindir))
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("ELAN_HOME", str(tmp_path / "elan"))
+    (tmp_path / "elan" / "bin").mkdir(parents=True)
     (tmp_path / "home" / ".elan" / "bin").mkdir(parents=True)
-    return os.fspath(lean)
+    return os.fspath(bindir)
 
 
 def _no_warmup(monkeypatch):
     monkeypatch.setattr(LeanRLVRVerifier, "_warmup", lambda self: None)
+
+
+def _empty_inventory(monkeypatch):
+    """Declaration vide : ni pin d'hote, ni pin de flotte (isole un palier)."""
+    organ = verifier_module._get_lean_toolchain()
+    monkeypatch.setattr(organ, "load_inventory", lambda *args, **kwargs: {})
+
+
+def _host(monkeypatch, name):
+    """Force le nom d'hote, cle de la declaration par environnement."""
+    organ = verifier_module._get_lean_toolchain()
+    monkeypatch.setattr(organ, "current_host", lambda: name)
 
 
 def test_toolchain_environment_pin_is_exact_and_logged(monkeypatch, tmp_path, caplog):
@@ -307,6 +339,8 @@ def test_resolved_default_is_logged_but_not_written_to_managed_skeleton(
     _no_warmup(monkeypatch)
     monkeypatch.delenv("ELAN_TOOLCHAIN", raising=False)
     monkeypatch.setattr("verifiers.lean_rlvr_verifier.Path.home", lambda: tmp_path)
+    # Declaration absente : on isole le palier « defaut elan », non fige.
+    _empty_inventory(monkeypatch)
     managed = tmp_path / ".cache" / "rlvr-lean"
 
     with caplog.at_level(logging.INFO):
@@ -319,17 +353,61 @@ def test_resolved_default_is_logged_but_not_written_to_managed_skeleton(
     assert "toolchain=leanprover/lean4:v4.35.0 pin=default_resolu" in caplog.text
 
 
-def test_unmeasurable_default_warns_before_legacy_fallback(monkeypatch, tmp_path, caplog):
+def test_unmeasurable_default_warns_before_the_last_resort(monkeypatch, tmp_path, caplog):
     import logging
 
     _no_warmup(monkeypatch)
     monkeypatch.delenv("ELAN_TOOLCHAIN", raising=False)
     monkeypatch.setattr("verifiers.lean_rlvr_verifier._installed_toolchain", lambda: None)
     monkeypatch.setattr("verifiers.lean_rlvr_verifier.Path.home", lambda: tmp_path)
+    _empty_inventory(monkeypatch)
 
     with caplog.at_level(logging.WARNING):
         verifier = LeanRLVRVerifier()
 
-    assert verifier.toolchain == "leanprover/lean4:v4.27.0"
+    # Le repli est un tag PRESENT dans le parc : l'ancien v4.27.0 (absent de
+    # tout poste mesure) ne peut plus etre atteint.
+    assert verifier.toolchain == "leanprover/lean4:v4.33.0"
     assert verifier.pin_source == "fallback_averti"
     assert "téléchargement elan peut être requis" in caplog.text
+
+
+def test_declared_environment_pin_wins_over_the_resolved_default(
+    monkeypatch, tmp_path, caplog
+):
+    """Le pin DECLARE par le poste prime sur son defaut elan mesure.
+
+    C'est le correctif de la derive inter-postes : sans declaration, chaque
+    poste epinglait son propre defaut elan (v4.11.0 sur ai-01 mesure le
+    2026-11-10, v4.35.0 sur po-2027 mesure le 2026-11-04).
+    """
+    import logging
+
+    _fake_lean(tmp_path, monkeypatch, version="4.11.0")
+    _no_warmup(monkeypatch)
+    monkeypatch.delenv("ELAN_TOOLCHAIN", raising=False)
+    monkeypatch.setattr("verifiers.lean_rlvr_verifier.Path.home", lambda: tmp_path)
+    _host(monkeypatch, "myia-ai-01")
+    managed = tmp_path / ".cache" / "rlvr-lean"
+
+    with caplog.at_level(logging.INFO):
+        verifier = LeanRLVRVerifier()
+
+    assert verifier.pin_source == "declaration"
+    assert verifier.toolchain == "leanprover/lean4:v4.33.0"
+    assert (managed / "lean-toolchain").read_text() == "leanprover/lean4:v4.33.0\n"
+    assert "toolchain=leanprover/lean4:v4.33.0 pin=declaration" in caplog.text
+
+
+def test_fleet_pin_applies_to_a_host_that_declares_nothing(monkeypatch, tmp_path):
+    """Un poste sans declaration suit le pin de flotte : la derive cesse."""
+    _fake_lean(tmp_path, monkeypatch, version="4.11.0")
+    _no_warmup(monkeypatch)
+    monkeypatch.delenv("ELAN_TOOLCHAIN", raising=False)
+    monkeypatch.setattr("verifiers.lean_rlvr_verifier.Path.home", lambda: tmp_path)
+    _host(monkeypatch, "poste-sans-declaration")
+
+    verifier = LeanRLVRVerifier()
+
+    assert verifier.pin_source == "declaration_flotte"
+    assert verifier.toolchain == "leanprover/lean4:v4.33.0"
