@@ -1,16 +1,14 @@
-"""Tests du fixer deterministe des ids de cellules (#25136).
-
-Le controle central : le fixer ne change QUE les identifiants — ni source,
-ni sorties, ni execution_count, ni aucune autre cle.
-"""
+"""Tests du fixer d'ids déterministe et byte-preserving (#25136)."""
 
 import json
+import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from fix_cell_ids import classify, process_file  # noqa: E402
+import fix_cell_ids as fixer  # noqa: E402
+from check_cell_id_invalid_ratchet import invalid_count  # noqa: E402
 
 
 def make_nb():
@@ -28,41 +26,56 @@ def make_nb():
     }
 
 
-def test_classify_compte_les_quatre_classes():
-    nb = make_nb()
-    classes = [c for _, c, _ in classify(nb["cells"])]
-    assert classes == ["empty", "absent", "pattern", "duplicate"]
-    assert classify([{"cell_type": "code", "id": "valide", "metadata": {}, "source": [], "outputs": []}]) == []
-
-
-def test_apply_ne_change_que_les_ids(tmp_path):
-    p = tmp_path / "nb.ipynb"
+def test_repair_changes_only_ids_and_preserves_valid_id(monkeypatch):
+    monkeypatch.setattr(fixer, "_external_references", lambda *_: [])
     original = make_nb()
-    p.write_text(json.dumps(original, indent=1) + "\n", encoding="utf-8")
+    raw = json.dumps(original, indent=1) + "\n"
+    assert invalid_count(raw) == 4
 
-    report = process_file(p, apply=True)
-    assert report["before"] == 4 and report["after"] == 0
-
-    fixed = json.loads(p.read_text(encoding="utf-8"))
-    strip = lambda nb: [  # noqa: E731
-        {k: v for k, v in c.items() if k != "id"} for c in nb["cells"]
+    fixed = fixer.repair_text(raw, Path("nb.ipynb"))
+    assert fixer.repair_text(fixed, Path("nb.ipynb")) == fixed
+    assert invalid_count(fixed) == 0
+    parsed = json.loads(fixed)
+    strip_ids = lambda nb: [  # noqa: E731
+        {key: value for key, value in cell.items() if key != "id"}
+        for cell in nb["cells"]
     ]
-    assert strip(fixed) == strip(original)  # rien d'autre que les ids n a change
-    assert fixed["metadata"] == original["metadata"]
+    assert strip_ids(parsed) == strip_ids(original)
+    assert parsed["metadata"] == original["metadata"]
 
-    ids = [c["id"] for c in fixed["cells"]]
-    assert ids[0] == "ok1"  # id valide jamais modifie
-    assert ids[3] != "bad.id!" and ids[4] != "ok1"  # hors-motif et doublon re-ids
-    import re
+    ids = [cell["id"] for cell in parsed["cells"]]
+    assert ids[0] == "ok1"
+    assert ids[3] != "bad.id!" and ids[4] != "ok1"
+    assert all(re.fullmatch(r"[A-Za-z0-9_-]{1,64}", value) for value in ids)
+    assert len(set(ids)) == len(ids)
 
-    assert all(re.match(r"^[a-zA-Z0-9_-]{1,64}$", i) for i in ids)
-    assert len(set(ids)) == len(ids)  # unicite
+    # Le formatage JSON hors des lignes d'id reste byte-identique, y compris
+    # les sorties, execution_count, metadata et source.
+    before_non_id = [line for line in raw.splitlines() if '"id":' not in line]
+    after_non_id = [line for line in fixed.splitlines() if '"id":' not in line]
+    assert after_non_id == before_non_id
 
 
-def test_check_sans_apply_necrit_rien(tmp_path):
-    p = tmp_path / "nb.ipynb"
-    before = json.dumps(make_nb(), indent=1) + "\n"
-    p.write_text(before, encoding="utf-8")
-    report = process_file(p, apply=False)
-    assert report["before"] == 4 and report["after"] is None
-    assert p.read_text(encoding="utf-8") == before
+def test_repair_text_is_read_only_and_does_not_write_its_input(tmp_path, monkeypatch):
+    monkeypatch.setattr(fixer, "_external_references", lambda *_: [])
+    path = tmp_path / "nb.ipynb"
+    original = json.dumps(make_nb(), indent=1) + "\n"
+    path.write_text(original, encoding="utf-8")
+
+    repaired = fixer.repair_text(original, path)
+
+    assert repaired != original
+    assert path.read_text(encoding="utf-8") == original
+
+
+def test_existing_invalid_id_with_external_reference_is_refused(monkeypatch):
+    monkeypatch.setattr(
+        fixer, "_external_references", lambda *_: ["translations.csv:1:bad.id!"]
+    )
+    raw = json.dumps(make_nb(), indent=1) + "\n"
+    try:
+        fixer.repair_text(raw, Path("nb.ipynb"))
+    except ValueError as exc:
+        assert "référencé hors du carnet" in str(exc)
+    else:
+        raise AssertionError("une référence externe doit empêcher le renommage")
