@@ -58072,14 +58072,14 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-20-ML-Regression-Prediction.ipynb,df
 | **Profil unique : volatilité ≈ 1,47 %, rendement 5 j ≈ +0,24 %** | Le groupe couvre les 662 jours du train sans sous-structure économique détectable — cohérent avec une simulation à volatilité stationnaire |
 
 **Ce que changerait un vrai marché** : des données réelles alternent des régimes de volatilité (calme, agité, crise) — le nuage de features y devient multimodal, et OPTICS y découvre plusieurs groupes **et** du bruit. Les journées classées `-1` y seraient celles qu'aucun régime identifié n'explique : une entrée utile pour une stratégie à filtrage de régime, et une mise en garde contre l'usage naïf d'un k-means qui répartirait ces journées au hasard entre groupes. Sur données réelles, `min_samples` redevient le vrai sujet : il arbitre la frontière entre « groupe peu dense » et « bruit ».",,,,,,,,7d62a9dfea865b16,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-20-ML-Regression-Prediction.ipynb,fde4e10b,markdown,fr,e5a9161c58bae9c4,"## Partie 9 : L'ancrage canonique — linéaire, arbres, réseau, mesurés
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-20-ML-Regression-Prediction.ipynb,fde4e10b,markdown,fr,eb5281b1d4e109c6,"## Partie 9 : L'ancrage canonique — linéaire, arbres, réseau, mesurés
 
 Les Parties 2, 3 et 4 de ce carnet comparent déjà les familles de modèles : Ridge et Lasso pour le linéaire, Random Forest et Gradient Boosting pour les arbres, SVR pour le noyau. Cette comparaison a une faiblesse que la littérature académique a nommée et corrigée : **elle ne dispose d'aucun instrument pour distinguer un écart réel d'une fluctuation d'échantillonnage**. Un seul découpage, une seule graine, et l'on conclut sur l'ordre des modèles. Sur des données financières — où le signal utile représente souvent moins de 1 % de la variance — cet ordre est instable.
 
 La référence canonique de cette question est **Gu, Kelly & Xiu, « Empirical Asset Pricing via Machine Learning », *Review of Financial Studies* 33(5), 2020, pp. 2223–2274**. Sur un panel de quelque 30 000 actions américaines et ~94 caractéristiques, les auteurs comparent les mêmes familles et concluent que les **arbres et les réseaux de neurones** dominent, « parfois en doublant les stratégies de régression de la littérature », et tracent ce gain aux **interactions non linéaires entre prédicteurs** que les méthodes linéaires ne captent pas.
 
 > Copie archivée et vérifiée (version publiée, filigrane `RFS-OP-REVF200009`) :
-> `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\2020 - Gu Kelly Xiu - Empirical Asset Pricing via Machine Learning (RFS 33-5, pp 2223-2274).pdf`
+> `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\Asset Pricing, Factors and Anomalies\2020 - Gu Kelly Xiu - Empirical Asset Pricing via Machine Learning (RFS 33-5, pp 2223-2274).pdf`
 
 ### Ce que cette partie réplique — et ce qu'elle ne réplique pas
 
@@ -58091,7 +58091,7 @@ La référence canonique de cette question est **Gu, Kelly & Xiu, « Empirical A
 | **Non répliqué** | Toute **estimation** de la prime de risque ML sur le marché réel. Le DGP de contrôle positif est **synthétique par construction** : il mesure l'appareil, pas le marché. |
 
 Cette distinction n'est pas une précaution de forme. Sans elle, un carnet pédagogique laisserait croire qu'il a retrouvé le résultat de l'article, alors qu'il a seulement vérifié que l'instrument sait le retrouver **quand le signal est là** — ce qui est déjà l'essentiel de ce qu'un étudiant doit savoir faire.
-",,,,,,,,e5a9161c58bae9c4,,,,,,,,,,,,,,,
+",,,,,,,,eb5281b1d4e109c6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-20-ML-Regression-Prediction.ipynb,d718e2cd,markdown,fr,8555314dd35404f6,"### L'organe de mesure : Diebold-Mariano, importé et non réécrit
 
 Le test de Diebold-Mariano compare la **précision prédictive** de deux modèles. Il porte sur la série des **différences de perte**, pas sur les niveaux : c'est ce qui le rend robuste au fait que tous les modèles se trompent dans le même sens. Sa variance est estimée par **Newey-West** (HAC), parce que des erreurs de prévision à 5 jours sont autocorrélées par construction ; la correction **Harvey-Leybourne-Newbold** (1997) traite le biais de petit échantillon.
