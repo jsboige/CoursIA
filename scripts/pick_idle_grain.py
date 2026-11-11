@@ -12689,8 +12689,10 @@ def belt_probe_budget(belt_check_window: int) -> int:
     defaut), toute tete portant plus de huit candidats deja livres faisait
     rendre ``DELIVERED_SIGNAL_UNPROBED`` au-dela, et le tapis les servait
     comme des grains neufs : mesure firsthand, huit candidats d'un seul
-    tirage, tous deja livres. Le plafond remonte, la doctrine ne change pas --
-    l'epuisement reste fail-OPEN et rapporte (``budget_hit``).
+    tirage, tous deja livres. Le plafond remonte (c2817) et le fail-OPEN du
+    plafond est abroge : un candidat non lu est ecarte « a sonder », il
+    n'est plus servi. Le plafond reste un plafond de cout -- il ne change
+    pas le nombre de lectures autorisees.
     """
     return belt_check_window * 3 + 12
 
@@ -15345,6 +15347,19 @@ def main(argv: list[str] | None = None) -> int:
                       f"atteint avant la lecture de livraison : {numbers}.")
                 print("   Aucun de ces candidats ne porte d'ordre de claim : "
                       "les sonder avant de les servir (c2817).")
+                if not belt_picks:
+                    # Le mandat du 11/11 (11:45Z) : « le tapis doit servir
+                    # toutes les issues, repare ce qui doit etre repare ».
+                    # Le plafond vide la fenetre lue : le tapis ne rend
+                    # alors AUCUN grain -- il ne le doit pas (un grain non
+                    # lu = un claim sur un travail deja livre), mais il doit
+                    # DIRE comment rouvrir la fenetre.
+                    print("   AUCUN GRAIN SERVI : le plafond de sondes a "
+                          "vide la fenetre lue.")
+                    print("   Pour elargir la fenetre lue, relancer avec un "
+                          "quota plus grand")
+                    print("   (--grains N : la fenetre vaut max(N + 4, 8) et "
+                          "le plafond 3 x fenetre + 12).")
             if belt_time_budget_hit[0]:
                 print("   Mur de temps du tapis atteint (#21436, #22983) : la")
                 print("   boucle a cesse de sonder a l'echeance, et les sondes")
