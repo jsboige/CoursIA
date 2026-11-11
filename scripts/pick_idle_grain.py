@@ -405,10 +405,7 @@ _CONTAINER_DELIVERY_MARKER_RE = delivery_grammar.CONTAINER_DELIVERY_MARKER_RE
 # juste apres le dossier : elle est reconnue aussi, sinon le DERNIER
 # commentaire du fil redevenirait le seul point lu et le dossier serait
 # invisible.
-_CLOSURE_ANNOUNCEMENT_RE = re.compile(
-    r"^\s*(?:#{1,6}\s*)?Fermeture sur dossier\b[^\n]*?\bverdict\s+CLOSE\b",
-    re.IGNORECASE | re.MULTILINE,
-)
+_CLOSURE_ANNOUNCEMENT_RE = delivery_grammar.CLOSURE_ANNOUNCEMENT_RE
 
 
 def _closure_dossier_verdict(body: str) -> str | None:
@@ -1823,42 +1820,7 @@ def unfrozen_allowed(lane: str | None) -> bool:
 #: marqueurs, pour exactement cette raison. Mesure : revue Hermes du
 #: 2026-11-03 sur #24523 (angle mort de documentation signale, non
 #: bloquant).
-_FENCE_OPEN_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
-_INLINE_CODE_RE = re.compile(r"`{1,3}[^`\n]+`{1,3}")
-
-
-def _strip_code(text: str) -> str:
-    """Retire les blocs de code (fences) et les code-spans inline.
-
-    Le contenu retire est remplace par des lignes vides : la structure de
-    lignes est conservee (le debut de ligne reste le debut de ligne), ce
-    qui laisse le test des marqueurs **strictement** plus strict, jamais
-    plus laxiste.
-    """
-    if not text:
-        return text
-    out: list[str] = []
-    fence_char: str | None = None
-    fence_len = 0
-    for line in text.splitlines():
-        match = _FENCE_OPEN_RE.match(line)
-        if fence_char is None:
-            if match:
-                marker = match.group(1)
-                fence_char = marker[0]
-                fence_len = len(marker)
-                out.append("")
-                continue
-            out.append(line)
-        else:
-            # La fence se ferme sur un marqueur du MEME caractere, au moins
-            # aussi long que celui d'ouverture (CommonMark).
-            if match and match.group(1)[0] == fence_char and len(match.group(1)) >= fence_len:
-                fence_char = None
-                fence_len = 0
-            out.append("")
-    stripped = "\n".join(out)
-    return _INLINE_CODE_RE.sub(" ", stripped)
+_strip_code = delivery_grammar.strip_code
 
 # #21436 (suite de #22057) -- le mur de temps du tapis n'etait verifie
 # qu'ENTRE deux sondes : une sonde DEMARREE juste avant l'echeance consommait encore tout
@@ -2896,25 +2858,20 @@ def belt_snapshot_prime_inert(repo: str, numbers: list[int]) -> None:
 
 
 def has_recent_delivery_marker(issue_number: int) -> bool | None:
-    """Le DERNIER commentaire PORTEUR D'ETAT porte-t-il un marqueur de cloture ?
+    """L'historique porte-t-il encore un marqueur de cloture ?
 
-    La lecture ne porte pas sur `comments[-1]` brut mais sur le dernier
-    commentaire qui porte un etat (`_last_state_comment`) : un `[RELEASED]`
-    de queue dont le corps ne porte aucun marqueur d'etat est saute, parce
-    qu'il MASQUERAIT le `[DELIVERED]` qu'il suit (#24590). Le contrat ecrit
-    suit donc le code.
+    Le fil se reduit chronologiquement : un commentaire neutre ou un
+    `[RELEASED]` de barriere ne desarme pas une livraison ; seule une
+    retractation explicite le fait.
 
     TRI-ETAT (cf. `has_delivered_signal`) :
     - ``True``  : l'item est **GEL** (regle A : le BODY porte la ligne
       `[FROZEN] ...` ; regle B : un en-tete `[FROZEN]` dans le FIL), ou le
-      dernier commentaire a un en-tete `[DELIVERED]` ou `[FROZEN]`, ou porte
-      un marqueur de livraison
+      fil porte encore un marqueur de livraison
       ``[INFO] candidate-delivered`` (grammaire `_DELIVERED_MARKER_RE`).
       Le candidat doit etre ecarte SANS
       appeler la sonde pleine -- c'est le filtre bon marche de #19768 ;
-    - ``False`` : aucun marqueur de cloture dans le dernier commentaire
-      porteur d'etat -- les `[RELEASED]` de queue sans marqueur d'etat ne
-      sont pas lus (`_last_state_comment`).
+    - ``False`` : aucun marqueur de cloture vivant dans le fil.
       L'appelant peut proceder a la sonde pleine. C'est le cas d'un
       en-tete `[RELEASED]` : une main rendue sur une barriere reelle
       laisse l'item SERVABLE (#21721), et une main rendue parce que le
@@ -2985,41 +2942,15 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     if _issue_is_frozen(body_of_issue, comments) is not None:
         return True
 
-    last = _last_state_comment(comments)
-    body = last.get("body") or ""
-    if not isinstance(body, str):
-        body = ""
-    if not body:
+    bodies = [(c.get("body") or "") if isinstance(c, dict) else ""
+              for c in comments]
+    if not delivery_grammar.recent_delivery_state(bodies):
         return False
-    # #24250 -- une decision de cloture REPRISE par une reouverture du user
-    # n'ecarte plus rien. La lecture du timeline n'est faite que dans ce cas
-    # (le dossier est rare) : un marqueur ordinaire ne coute rien de plus.
-    if (_closure_dossier_verdict(body) == "CLOSE"
-            or _closure_announced_close(body)):
-        if _delivery_voided_by_reopen(issue_number, [last]):
+    if any(_closure_dossier_verdict(_strip_code(body)) == "CLOSE"
+           or _closure_announced_close(_strip_code(body)) for body in bodies):
+        if _delivery_voided_by_reopen(issue_number, comments):
             return False
-    # Deux grammaires, un seul verdict : les en-tetes de cloture ci-dessus,
-    # PLUS le marqueur de livraison `[INFO] candidate-delivered` (mesure
-    # 2026-10-17 : une issue rendue au coordinateur par ce marqueur et
-    # repostee ainsi en DERNIER commentaire restait servie en boucle par le
-    # tapis -- la sonde de tete ne l'atteignait pas, le budget de la sonde
-    # pleine non plus). Grammaire reutilisee de la sonde pleine
-    # (`_DELIVERED_MARKER_RE`, lookahead anti-`-revoked`/`-partial`) : tout
-    # ce que ce filtre attrape, la sonde pleine l'aurait ecarte aussi -- il
-    # n'introduit aucun verdict nouveau, il avance le meme.
-    # Le code **documente** un marqueur, il ne le **pose** pas : une fence
-    # qui recopie la ligne canonique ne clot rien (mesure : revue Hermes
-    # du 2026-11-03 sur #24523).
-    body_plain = _strip_code(body)
-    # #24461 (c) point 3 : une livraison de TRANCHE (`paths:` sur la ligne
-    # du marqueur) ne livre pas l'issue -- elle ne l'arme ni ne la desarme.
-    tranche = delivery_grammar.is_tranche_only(body_plain)
-    return bool(
-        _closure_dossier_verdict(body) in ("CLOSE", "KEEP")
-        or _closure_announced_close(body)
-        or (not tranche and (
-            _RECENT_DELIVERY_MARKER_RE.search(body_plain)
-            or _DELIVERED_MARKER_RE.search(body_plain))))
+    return True
 
 
 def _issue_is_frozen(issue_body: str | None,
@@ -3243,13 +3174,13 @@ def _last_comment_body(issue_number: int) -> str | None:
 
 
 def has_recent_container_delivery_marker(issue_number: int) -> bool | None:
-    """Le DERNIER commentaire dit-il que le CONTENEUR est livre ?
+    """Le fil atteste-t-il encore que le CONTENEUR est livre ?
 
     TRI-ETAT :
-    - ``True``  : le dernier commentaire porte le marqueur de conteneur
+    - ``True``  : le fil porte encore le marqueur de conteneur
       `[INFO] candidate-delivered` (les trois formes de
       `_CONTAINER_DELIVERY_MARKER_RE`) ;
-    - ``False`` : aucun marqueur de conteneur (ou une retraction
+    - ``False`` : aucun marqueur de conteneur vivant (ou une retraction
       `[NOT-DELIVERED]` / `[INFO] candidate-delivered-revoked` ;
     - ``None``  : lecture en echec -- fail-OPEN, l'appelant le dit.
 
@@ -3272,16 +3203,12 @@ def has_recent_container_delivery_marker(issue_number: int) -> bool | None:
     Cout : **1 requete** `gh issue view --json comments`, comme le filtre
     recent -- et HORS budget de sonde.
     """
-    body = _last_comment_body(issue_number)
-    if body is None:
+    comments, _ = _issue_comments(issue_number)
+    if comments is None:
         return None
-    if not body:
-        return False
-    # Une retraction posteriore annule le marqueur : l'ordre est porte par
-    # le texte (cf `_delivered_state`).
-    if _DELIVERED_MARKER_REVOKED_RE.search(body):
-        return False
-    return bool(_CONTAINER_DELIVERY_MARKER_RE.search(body))
+    return delivery_grammar.container_delivery_state([
+        (c.get("body") or "") if isinstance(c, dict) else "" for c in comments
+    ])
 
 
 # #22500 point 1 -- l'HEURE du dernier evenement de cloture.
@@ -3377,11 +3304,12 @@ def _delivery_event_from_comments(
         body = c.get("body") or ""
         if not isinstance(body, str):
             continue
+        body_plain = _strip_code(body)
         created = c.get("createdAt")
-        if _DELIVERED_MARKER_REVOKED_RE.search(body):
+        if _DELIVERED_MARKER_REVOKED_RE.search(body_plain):
             state, stamp = False, None
             closed = False
-        elif _closure_dossier_verdict(body) == "CLOSE":
+        elif _closure_dossier_verdict(body_plain) == "CLOSE":
             # Dossier de cloture CLOSE : signal TERMINAL. `stamp` reste
             # `None` -> `_visit_age_hours(None)` rend `None` -> la regle des
             # 48 h (#22500) ne peut pas l'expirer, et la consolidation
@@ -3409,18 +3337,9 @@ def _delivery_event_from_comments(
             # Une livraison de TRANCHE n'est pas un evenement de cloture :
             # elle ne pose ni l'etat ni l'heure (decision #24461 (c)).
             stamp = created
-    last = comments[-1]
-    last_body = last.get("body") if isinstance(last, dict) else ""
-    if not isinstance(last_body, str):
-        last_body = ""
-    tranche = delivery_grammar.is_tranche_only(last_body)
-    recent = bool(
-        closed
-        or _closure_dossier_verdict(last_body) in ("CLOSE", "KEEP")
-        or _closure_announced_close(last_body)
-        or (not tranche and (
-            _RECENT_DELIVERY_MARKER_RE.search(last_body)
-            or _DELIVERED_MARKER_RE.search(last_body))))
+    recent = delivery_grammar.recent_delivery_state([
+        (c.get("body") or "") if isinstance(c, dict) else "" for c in comments
+    ])
     if closed and state:
         # La terminalite PRIME sur l'heure : un dossier CLOSE n'expire pas,
         # meme si un marqueur plus recent a reecrit `stamp`.
@@ -13388,8 +13307,19 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                     # journee, alors que son dossier CLOSE datait du 02/11.
                     terminal_closure = bool(delivered_flag and stamp is None)
                     age_h = _visit_age_hours(stamp, NOW)
+                    # #25159 (reserve coordinateur 12:25Z) : un `[DELIVERED]`
+                    # SANS lane ne pose pas `delivered_flag` mais pose bien
+                    # `recent_flag` et `stamp`. Exiger `delivered_flag` pour
+                    # expirer le laissait vivre indefiniment : `recent_flag`
+                    # l'ecartait de l'urne des grains a chaque tirage, et sans
+                    # etat il n'entrait pas non plus dans l'urne des livrees --
+                    # l'issue sortait des DEUX urnes pour toujours. Le marqueur
+                    # expire des que l'evenement est RECENT et porte une heure
+                    # (une cloture terminale rend `stamp=None` : elle reste
+                    # inexpirable, c'est le contrat #19253).
                     marker_expired = bool(
-                        delivered_flag
+                        (delivered_flag or recent_flag)
+                        and stamp is not None
                         and age_h is not None
                         and age_h >= CONSOLIDATION_LAG_H)
                 else:
@@ -13558,6 +13488,16 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         # sinon le mur pose pour le reste du process -- et c'est precisement le
         # cas in-process que les tests exercent (#23340 point 2).
         _BELT_DEADLINE[0] = _previous_belt_deadline
+
+
+def _belt_delivery_status(item: dict) -> str:
+    """Statut court affiche sur chaque ligne servie par le tapis."""
+    klass = item.get("klass", "grain")
+    if klass == "delivered":
+        return "livre"
+    if klass == "grain":
+        return "libre"
+    return "servable"
 
 
 def creation_budget_gate(pool: list[dict]) -> dict[int, str]:
@@ -15298,7 +15238,10 @@ def main(argv: list[str] | None = None) -> int:
                     "dropped": [{"number": n, "reason": c}
                                 for n, c in belt_dropped_validate],
                 },
-                "picks": belt_picks,
+                "picks": [
+                    {**it, "delivery_status": _belt_delivery_status(it)}
+                    for it in belt_picks
+                ],
                 # #25082 point C -- l'etat de la resolution de zone, sur le
                 # tirage lui-meme. `measured: false` se distingue de
                 # `resolved: 0` : le premier dit « l'organe amont n'a pas
@@ -15501,12 +15444,13 @@ def main(argv: list[str] | None = None) -> int:
             # Sortie texte : un tableau compact, aligne sur la volee
             # ponderee. Meme format de colonnes : urn, age, inact, vus,
             # genre, p, titre.
-            header = (f"{'urne':<10} {'age':>4} {'inact':>5} {'vus':>4} "
-                      f"{'genre':<14} {'p':>5}  titre")
+            header = (f"{'urne':<10} {'statut':<9} {'age':>4} {'inact':>5} "
+                      f"{'vus':>4} {'genre':<14} {'p':>5}  titre")
             print(header)
             print("-" * len(header))
             for it in belt_picks:
                 urn = it.get("klass", "grain")
+                delivery_status = _belt_delivery_status(it)
                 age = int(it.get("age", 0))
                 inact = int(it.get("idle", 0))
                 vus = visits.get(it["number"], 0)
@@ -15517,7 +15461,8 @@ def main(argv: list[str] | None = None) -> int:
                 # sous-issue) : c'est elle que la file remonte en tete.
                 marker = "[NEVER] " if stamp is None else ""
                 title = it.get("title", "")[:60]
-                print(f"{urn:<10} {age:>4}j {inact:>5}j {vus:>4} "
+                print(f"{urn:<10} {delivery_status:<9} {age:>4}j "
+                      f"{inact:>5}j {vus:>4} "
                       f"{genre:<14} {'-':>5}  {marker}{title}")
             print()
             print("Belt : pool trie par date de derniere visite -- merge, "
