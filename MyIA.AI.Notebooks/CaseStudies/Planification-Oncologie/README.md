@@ -27,9 +27,9 @@ Planification-Oncologie/
 ├── README.md                           # Ce fichier
 ├── subject.md                          # Sujet complet
 ├── student/
-│   └── Oncology-Planning.ipynb         # Notebook à compléter
+│   └── Planification-Oncologie-Python.ipynb         # Notebook à compléter
 ├── solution/
-│   └── Oncology-Planning.ipynb         # Solution de référence
+│   └── Planification-Oncologie-Python.ipynb         # Solution de référence
 └── data/
     └── patients_oncology.csv           # Données patients
 ```
