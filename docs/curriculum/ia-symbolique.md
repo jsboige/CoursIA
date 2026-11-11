@@ -375,7 +375,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 26 | [SC-22-Solana-Anchor-Python - Solana avec Anchor](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-22-Solana-Anchor-Python.ipynb) | BETA | Oui |
 | 27 | [SC-23-Cross-Chain-Python - Interoperabilite Cross-Chain](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-23-Cross-Chain-Python.ipynb) | BETA | Oui |
 | 28 | [SC-24 : Deploiement sur Testnets](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-24-Testnet-Deploy-Python.ipynb) | BETA | Oui |
-| 29 | [SC-25 : Deploiement Mainnet (L2)](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-25-Mainnet-Deploy-Python.ipynb) | BETA | Oui |
+| 29 | [SC-25 : Deploiement Mainnet (L2)](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-25-Mainnet-Deploy-Python.ipynb) | BETA | Non |
 | 30 | [SC-26 : Projet Final - DApp Complete](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-26-Final-Project-Python.ipynb) | BETA | Oui |
 | 31 | [SC-27 : Dette d'irréversibilité — la boucle de…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-27-Dette-Irreversibilite-Python.ipynb) | BETA | Oui |
 
