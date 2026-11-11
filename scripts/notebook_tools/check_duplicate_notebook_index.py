@@ -54,7 +54,7 @@ lecteur d'index sait LIRE. Or `index_key` n'accepte que les noms dont l'index OU
 le nom. Mesure du 2026-09-13 sur `origin/main`, 1266 notebooks :
 
     223 lisibles par ce garde (17,6 %)      3.1-Retropropagation, 04-1-Educational
-    641 a prefixe de serie, HORS portee     GameTheory-04c-NashExistence, SW-8-Python-SHACL
+    641 a prefixe de serie, HORS portee     GameTheory-04c-NashExistence, SW-08-SHACL-Python
     402 sans index du tout, HORS portee     README-notes, MGS-26-Equilibrium
 
 Autrement dit le garde ne couvre PAS la convention majoritaire du depot, celle que
@@ -68,8 +68,8 @@ Elargir `index_key` a la forme prefixee a ete mesure puis ECARTE (#16040 point 2
 sur les 641 noms hors portee, un lecteur prefixe revelerait 16 groupes preexistants
 dont l'essentiel sont des faux positifs des classes que ce garde a DEJA apprises --
 categories a deux niveaux (`Tweety-3-advanced-logics` / `-dung` : le `3` est une
-categorie), paires de langue ecrites au MILIEU du nom (`SW-8-CSharp-SHACL` contre
-`SW-8-Python-SHACL`, que `strip_lang` ne voit pas puisqu'il ne retire qu'un suffixe
+categorie), paires de langue ecrites au MILIEU du nom (`SW-08-SHACL-CSharp` contre
+`SW-08-SHACL-Python`, que `strip_lang` ne voit pas puisqu'il ne retire qu'un suffixe
 TERMINAL), artefacts `-output` et decoupages `-part2`. Elargir le filet demanderait
 d'abord d'apprendre ces classes au nouveau lecteur ; le faire au passage aurait
 transforme un garde a portee connue en garde bruyant a portee inconnue. Les cas qui
@@ -231,7 +231,7 @@ def perimeter(files):
     dire est le livrable (cf. #16040 point 1), pas elargir a l'aveugle (point 2 :
     un elargissement revelerait 16 groupes preexistants dont l'essentiel sont des
     faux positifs des classes DEJA connues -- categories a deux niveaux, paires de
-    langue ecrites au MILIEU du nom (`SW-8-CSharp-SHACL`), artefacts `-output`).
+    langue ecrites au MILIEU du nom (`SW-08-SHACL-CSharp`), artefacts `-output`).
     """
     readable = prefix = 0
     for p in files:
@@ -346,7 +346,7 @@ _PERIMETER_CASES = [
     ("POSITIF    la convention majoritaire compte bien comme HORS portee",
      ["g/GameTheory-04c-NashExistence.ipynb",
       "g/GameTheory-06f-Bounded-Agents.ipynb",
-      "G/SW-8-Python-SHACL.ipynb"], (0, 3, 0)),
+      "G/SW-08-SHACL-Python.ipynb"], (0, 3, 0)),
     ("FRONTIERE  prefixe alphabetique et index nu s'excluent (^\\d vs ^[A-Za-z])",
      ["g/MGS-26-Equilibrium.ipynb", "m/22_Evaluating_Generated_Text.ipynb"],
      (1, 1, 0)),

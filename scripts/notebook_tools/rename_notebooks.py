@@ -141,6 +141,14 @@ FIXTURES_DECLARED: tuple[str, ...] = (
     # Citations d'incidents fondateurs epinglees a des SHA (#15209, #15862,
     # #16097...) : le nom cite est celui d'alors.
     ".claude/rules/pr-review-discipline.md",
+    # Recensement date (Date run 2026-08-08) : les chemins y sont les
+    # identifiants d'epoque du scan -- un second passage Q171 les a restaures
+    # a la main (4329707b92), la declaration evite le troisieme.
+    "docs/reference/quant-prose-census.md",
+    # Attestation de parite historique (#25461) : l'entree known_differences
+    # documente le renvoi tel qu'il s'appelait alors -- elle reste telle
+    # quelle (le renvoi pointe le README du dossier, pas le carnet).
+    "scripts/notebook_tools/twin_pairs.d/search-02b-networkx.yaml",
 )
 
 STEM_RE = re.compile(r"^(?P<prefix>[A-Za-z][A-Za-z0-9]*)-(?P<num>\d+)(?P<accr>[a-z]?)(?P<sep>[-_])(?P<title>.+)$")
@@ -159,14 +167,20 @@ def _cap(suffix: str) -> str:
 # ---------------------------------------------------------------------------
 
 def repo_root() -> Path:
-    try:
-        r = subprocess.run(["git", "rev-parse", "--show-toplevel"],
-                           capture_output=True, text=True, encoding="utf-8",
-                           errors="replace")
-        if r.returncode == 0:
-            return Path(r.stdout.strip())
-    except OSError:
-        pass
+    """Use a repository cwd, otherwise the checkout containing this script.
+
+    An absolute invocation from an unrelated cwd must still target its own
+    worktree. A cwd inside a temporary test repository, however, is the
+    explicit repository context used by the test suite and callers.
+    """
+    cwd = Path.cwd().resolve()
+    result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=cwd, capture_output=True, text=True, encoding="utf-8",
+        errors="replace",
+    )
+    if result.returncode == 0:
+        return Path(result.stdout.strip()).resolve()
     return Path(__file__).resolve().parents[2]
 
 

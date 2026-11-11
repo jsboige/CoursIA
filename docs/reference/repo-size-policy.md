@@ -45,7 +45,7 @@ fonctionnel à `git-sizer` pour le classement par blob, sans dépendance Go). To
 | Taille | Blob | Statut | Décision |
 |--------|------|--------|----------|
 | 63 MB | `Sudoku/IKVM.Java.dll` | vendored (pont Java IKVM pour Sudoku/Tweety, #4667) | acquis — vendored légitime |
-| 53 MB | `Argument_Analysis/libs/org.tweetyproject.tweety-full-1.28-…jar` | vendored (Tweety) | acquis — vendored légitime |
+| 53 MB | `ArgumentAnalysis/libs/org.tweetyproject.tweety-full-1.28-…jar` | vendored (Tweety) | acquis — vendored légitime |
 | 29 MB | `QuantConnect/ML-Training-Pipeline/checkpoints/lstm/…/model.pt` | **supprimé** (history-only, désormais gitignoré) | incident passé — §4 empêche la récurrence |
 | 25 MB | `ML/ML.Net/taxi-fare.csv` | dataset pédagogique | candidat LFS futur (§5) |
 | 21 MB | `GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb` (+ ×N révisions) | notebook + outputs (audio base64) | acquis — poids légitime C.2 |

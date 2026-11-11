@@ -112,7 +112,7 @@ PROFILES = {
         "network": False,
         "notes": "LSTM (hidden=32 deployable ~4.8K params, BEATS 52/84 p=0.019 ; hidden>=128 overfitte). torch CUDA, petit modèle. Lit scripts/results/m15_lstm_rv_h32/. Laptop GPU 8 Go suffit.",
     },
-    "c875_hmm_alpha_dm_research": {
+    "hmm_alpha_dm_research": {
         "kernel": "python3", "validator": "papermill",
         "cpu_min": 2, "network": False,
         "notes": "HMM alpha (research c.875) ; hmmlearn. CPU pur, 4 cellules.",

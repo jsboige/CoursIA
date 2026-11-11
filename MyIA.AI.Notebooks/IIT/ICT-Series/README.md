@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: IIT-ICT-Series
-pedagogical_count: 102
-breakdown: ICT-Series=102
-maturity: BETA=80, DRAFT=18, ALPHA=4
+pedagogical_count: 103
+breakdown: ICT-Series=103
+maturity: BETA=82, DRAFT=17, ALPHA=4
 -->
 
 [← IIT](../README.md) | [↑ Notebooks](../../README.md) | [→ Probas](../../Probas/README.md)
@@ -23,26 +23,31 @@ Chaque figure est **intégrée in-situ** dans la strate et au notebook qu'elle d
 
 ## Prérequis & environnement
 
-ICT partage l'environnement Python de la série IIT (PyPhi 1.2.0, Python 3.9). Le setup et les dépendances sont mutualisés au niveau du répertoire parent :
+Le package `ict/` expose **deux voies d'installation** selon ce qu'on en fait (issue [#8076](https://github.com/jsboige/CoursIA/issues/8076), split d'extra [#25381](https://github.com/jsboige/CoursIA/issues/25381)) :
 
 ```bash
-# Depuis MyIA.AI.Notebooks/IIT/
-powershell -File scripts/setup_pyphi_env.ps1     # conda env pyphi + kernel
-pip install -r requirements.txt                  # dépendances ICT (pyphi, numpy, scipy, matplotlib…)
+# Voie 1 -- consommateurs hors série (carnets GenAI/ML/SymbolicAI, scripts/hashlife) :
+# cœur léger (numpy/scipy/matplotlib/pandas/cryptography), tout Python >= 3.9,
+# SANS PyPhi -- le package n'en dépend pas (aucun module ict/ ne l'importe).
+# Depuis la racine du clone :
+pip install -e MyIA.AI.Notebooks/IIT/ICT-Series
 
-# Recommandé : installer le package `ict/` en mode editable (issue #8076).
-# Rend `from ict import …` résolvable depuis n'importe quel cwd, sans dépendre
-# du répertoire ICT-Series/. Extras : [llm] (torch/transformers, GPU),
-# [extras] (pandas, sympy), [dev] (pytest).
-# Depuis MyIA.AI.Notebooks/IIT/ICT-Series/  (dans l'env pyphi activé) :
-pip install -e .                                 # cœur ; ou pip install -e .[dev,llm]
+# Voie 2 -- série ICT complète (strates Φ : IIT-1/2/3, ICT-36c/d) :
+# environnement historique épingle Python 3.9 + numpy<2 + pyphi 1.2.0.
+# Depuis MyIA.AI.Notebooks/IIT/ :
+powershell -File scripts/setup_pyphi_env.ps1     # conda env pyphi + kernel
+pip install -r requirements.txt                  # dépendances ICT (pyphi, numpy<2, antropy…)
+# puis, depuis MyIA.AI.Notebooks/IIT/ICT-Series/ (dans l'env pyphi activé) :
+pip install -e ".[iit]"                          # cœur + strates Φ ; ou .[iit,dev,llm]
 ```
 
-Le package `ict/` est installable (`pip install -e .` depuis `ICT-Series/`, cf. `pyproject.toml`) : une fois installé, `from ict import …` résout depuis n'importe quel `cwd`. En l'absence d'install editable, l'ancien contrat reste valable : chaque notebook insère le dossier courant dans `sys.path`, il faut alors lancer les notebooks **depuis `ICT-Series/`** (cwd) pour que les imports résolvent.
+Extras : `[iit]` (pyphi/numpy<2/antropy, **Python < 3.10 uniquement**), `[llm]` (torch/transformers, GPU), `[extras]` (sympy), `[dev]` (pytest). Le cœur couvre déjà numpy/scipy/matplotlib/**pandas**/cryptography.
+
+Une fois installé (voie 1 ou 2), `from ict import …` résout depuis n'importe quel `cwd` — c'est le **contrat d'import des consommateurs hors série**. En l'absence d'installation, le repli historique reste valable pour les carnets de la série elle-même : lancer les notebooks **depuis `ICT-Series/`** (cwd) pour que les imports résolvent.
 
 ### Le package `ict/` — modules et tests
 
-Le package `ict/` (installable en mode editable, issue [#8076](https://github.com/jsboige/CoursIA/issues/8076)) porte les simulations et mesures de la série : chaque notebook importe ses calculs depuis un module dédié plutôt que de les redéfinir en ligne. Le package compte **98 modules Python** au premier niveau (hors `__init__.py`, plus les sous-dossiers `bridges/`, `tests/` et `results/`) ; la table suivante les couvre intégralement, par famille d'instrument :
+Le package `ict/` (installable en mode editable, issue [#8076](https://github.com/jsboige/CoursIA/issues/8076)) porte les simulations et mesures de la série : chaque notebook importe ses calculs depuis un module dédié plutôt que de les redéfinir en ligne. Le package porte ses modules Python au premier niveau (hors `__init__.py`, plus les sous-dossiers `bridges/`, `tests/` et `results/`) ; la table suivante les couvre intégralement, par famille d'instrument :
 
 | Famille | Modules | Strate |
 |---------|---------|--------|
@@ -62,10 +67,10 @@ Le package `ict/` (installable en mode editable, issue [#8076](https://github.co
 | Toolkit multi-lentilles & contrat de traces (Epics [#15475](https://github.com/jsboige/CoursIA/issues/15475) / [#15479](https://github.com/jsboige/CoursIA/issues/15479) / [#15480](https://github.com/jsboige/CoursIA/issues/15480), [#8236](https://github.com/jsboige/CoursIA/issues/8236)) | `sae_calibration`, `sae_dictionary`, `sae_scales`, `lens_endpoints`, `lens_gates`, `bench_factorise`, `slens`, `trace_contract`, `intervention_battery` (chaîne état→comportement, critère 3) | 5 |
 | Regards — composition avant/arrière (opération 12, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) | `regards` | 5 |
 
-**Deux suites de tests CI** valident le package — 122 fichiers de test au total (61 dans `tests/`, 61 dans `ict/tests/`), couvrant ensemble 96 des 98 modules :
+**Deux suites de tests CI** valident le package — une suite dans `tests/` et une suite jumelle dans `ict/tests/`, couvrant ensemble la quasi-totalité des modules :
 
-- **`tests/`** — suite principale (pytest), 61 fichiers `test_<module>.py` couvrant 57 modules. Validation des calculs et des gates falsifiables de chaque strate.
-- **`ict/tests/`** — suite interne au package (pytest, `conftest.py` + `pytest.ini` + 61 fichiers de test) : tests de cohérence transversaux et couverture des modules les plus récents (55 modules, dont 16 sont aussi couverts par `tests/`).
+- **`tests/`** — suite principale (pytest), un fichier `test_<module>.py` par module couvert. Validation des calculs et des gates falsifiables de chaque strate.
+- **`ict/tests/`** — suite interne au package (pytest, `conftest.py` + `pytest.ini` + les fichiers de test) : tests de cohérence transversaux et couverture des modules les plus récents (dont une partie est aussi couverte par `tests/`).
 
 Seuls `kuramoto_boundary` et `nerve_discriminant` n'ont pas encore de test dédié. En miroir, quelques fichiers de test ciblent des scripts ou des contrats plutôt qu'un module unique (`test_causal_hooks`, `test_sae_cross_scale`, `test_sae_traces_layout`, `test_sae_traces_guard`, `test_bridges_canonical_wiring`).
 
@@ -82,10 +87,11 @@ Les **traces pré-extraites** (fixtures `.npz` dans `traces/`) supportent les no
 
 Quand un palier de consolidation regroupe plusieurs carnets autour d'un même sujet, ils descendent dans une **sous-série**, et cette sous-série porte un nom. La convention est `ICT-<NN>-<Sujet>/` : `<NN>` est le numéro que porte **aujourd'hui** le carnet de tête dans la série principale — celui que le lecteur voit sur la marche de l'escalier — et `<Sujet>` reprend le sujet de ce carnet de tête, sans le suffixe `-Python`. Un numéro nu n'est pas un nom de répertoire : il sert d'index dans un ledger progressif, jamais de substitut au sujet qu'on redescend ([#22949](https://github.com/jsboige/CoursIA/issues/22949)). Toute sous-série future naît nommée.
 
-Chaque marche ci-dessous descend vers le carnet de tête de sa sous-série ; en retour, la convention est que chaque sous-série remonte vers cette page depuis son dernier carnet. Les quatre la tiennent : 12e, 14b, 19b et 15l.
+Chaque marche ci-dessous descend vers le carnet de tête de sa sous-série ; en retour, la convention est que chaque sous-série remonte vers cette page depuis son dernier carnet. Les cinq la tiennent : 04, 12e, 14b, 19b et 15l.
 
 | Sous-série | Ce qu'on y redescend | Carnets |
 |---|---|---|
+| [`ICT-02-SelfSortingMorphogenesis/`](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) | Le tri auto-organisé comme morphogenèse — la grille qui se trie elle-même et ses compétences émergentes (robustesse aux cellules défectueuses, délai de gratification, auto-réparation), puis les tableaux chimériques à agrégation « kin » | ICT-02, 03, 04 |
 | [`ICT-12-ValenceFieldsAndAnimats/`](ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb) | Champs de valence et animats — les rôles de la scène actantielle de Thom cessent d'être des correspondances nommées et deviennent des grandeurs mesurées, puis apprises, incarnées, inhibées, et enfin valorisées par l'information | ICT-12, 12b, 12c, 12d, 12e |
 | [`ICT-14-FreeEnergySurprise/`](ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb) | Énergie libre, surprise et inférence active — la jambe représentationnelle de la strate 4, de la surprise passive au contrôle actif par l'*expected free energy* | ICT-14, 14b |
 | [`ICT-15-IntegratedComplexity/`](ICT-15-IntegratedComplexity/ICT-15-IntegratedComplexity-Python.ipynb) | La convergence Φ/F/K sur le banc cross-substrat, puis ses obstructions : sensibilité, méta-proxy, cochaîne de Čech, nerf simplicial, recollement des macrocells | ICT-15, puis 15b à 15l |
@@ -106,7 +112,7 @@ Chaque marche ci-dessous descend vers le carnet de tête de sa sous-série ; en 
 
 | Document | Contenu |
 |----------|---------|
-| [ICT-02-SelfSortingMorphogenesis-Python](ICT-02-SelfSortingMorphogenesis-Python.ipynb) | Le tri auto-organisé comme morphogenèse : trajectoire dans le morphospace, robustesse aux cellules défectueuses, délai de gratification, auto-réparation, impasses chimériques |
+| [ICT-02-SelfSortingMorphogenesis-Python](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) | Le tri auto-organisé comme morphogenèse : trajectoire dans le morphospace, robustesse aux cellules défectueuses, délai de gratification, auto-réparation, impasses chimériques |
 
 ![Métriques d'auto-réparation : gauche « Inversions (désordre global) » 60→0 en ~220 pas, droite « Sortedness vs erreur de monotonie » (sortedness 0.5→1.0 croissante, erreur locale qui décroît)](assets/readme/ict2-selfsorting.png)
 
@@ -114,8 +120,8 @@ Chaque marche ci-dessous descend vers le carnet de tête de sa sous-série ; en 
 
 | Document | Contenu |
 |----------|---------|
-| [ICT-03-RobustnessDelayedGratification-Python](ICT-03-RobustnessDelayedGratification-Python.ipynb) | Robustesse & délai de gratification, étude quantitative : dégradation gracieuse face aux cellules défectueuses, distributions de récupération, comptage du délai de gratification |
-| [ICT-04-ChimericArraysKinAggregation-Python](ICT-04-ChimericArraysKinAggregation-Python.ipynb) | Tableaux chimériques & agrégation émergente : réparation bidirectionnelle (guérit l'impasse d'ICT-2) puis affinité « kin », mesurée honnêtement (sans degrés de liberté, pas d'agrégation) |
+| [ICT-03-RobustnessDelayedGratification-Python](ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb) | Robustesse & délai de gratification, étude quantitative : dégradation gracieuse face aux cellules défectueuses, distributions de récupération, comptage du délai de gratification |
+| [ICT-04-ChimericArraysKinAggregation-Python](ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb) | Tableaux chimériques & agrégation émergente : réparation bidirectionnelle (guérit l'impasse d'ICT-2) puis affinité « kin », mesurée honnêtement (sans degrés de liberté, pas d'agrégation) |
 | [ICT-05-CausalEmergence-Python](ICT-05-CausalEmergence-Python.ipynb) | Émergence causale : $\Phi$ et information effective aux échelles micro/macro, recherche systématique du coarse-graining (vrai `pyphi.macro`), émergence discriminante (Jansma & Hoel, 2025) |
 | [ICT-06-SortingToTPM-CausalEmergence-Python](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | Pont tri → TPM : chaîne de Markov estimée depuis les trajectoires de tri d'ICT-2, puis émergence causale multi-échelles avec l'outillage *Causal Emergence 2.0* (Hoel, 2025) au-delà de la borne de taille de PyPhi |
 | [ICT-07-ScaleFreeSignatures-Python](ICT-07-ScaleFreeSignatures-Python.ipynb) | Signatures scale-free & criticalité : détecter une loi de puissance *sans se faire avoir* (MLE de Hill, choix de $x_{\min}$, KS, à la Clauset et al.) ; étalon critique (branchement, exposant $3/2$) vs tri qui *paraît* sans échelle mais possède une taille caractéristique |
@@ -275,6 +281,7 @@ Les grains de **distillation externe** (veille → notebook) s'ajoutent aux stra
 | [ICT-48-WolframClasses-ThermoSignature-Python](ICT-48-WolframClasses-ThermoSignature-Python.ipynb) | **Les 4 classes de Wolfram devant six instruments — chacun en reconstruit une coupe différente** *(origami Wolfram pli 2, CPU, consomme l'organe [`ict.wolfram_step`](ict/wolfram_step.py) livré par [#19793](https://github.com/jsboige/CoursIA/pull/19793) et `ict.time_arrow` de la strate 5 — aucune réimplémentation locale des automates)* : la **densité** sépare I/II du reste mais **confond III et IV** (règle 30 : 0,4988 ; règle 110 : 0,5733 ; aucune période) et **rate la règle 4**, typée II mais mesurée I (II plate à 0,0625, le motif se déplace à nombre de 1 constant) ; les **deux pistes de l'énoncé** sont mesurées **et réfutées** — composantes connexes : les 1 percolent (règle 30 : 12 composantes dont une seule persistante d'aire 6 353 ; règle 110 : 2 dont une de 7 323, sur l'ensemble de la fenêtre), translation diagonale $d = 1$ : 0,2462 contre 0,4019 (1,63×) mais **0,9950 pour la règle 250**, un décalage pur sans structure, donc le proxy mesure le déplacement et non le glider ; c'est le **déterminisme de blocs** ($w = 8$) qui tranche III vs IV — **0,0000 contre 0,4560**, la frontière étant une reconstructibilité locale, corroborée faiblement par l'information mutuelle (1,3× à $d = 1$, 1,9× à $d = 2$) et contredite par Lempel-Ziv (1133 pour la classe III, 922 pour la IV : il ordonne par imprévisibilité brute) ; enfin la **signature thermodynamique** reproduit l'ordre attendu **à ses paramètres** ($\sigma$ = 0,0592 pour R30 contre 0,0259 pour R110 en 6 quantiles) mais **n'est pas un classificateur** — sur 12 tirages (grilles 16 à 128, graines 1/33/99) son coefficient de variation vaut 1,19 (R30) et 1,51 (R110) en 6 quantiles (0,59 et 1,13 à 11 niveaux), et la règle 250 démontre que $\sigma = 0$ coexiste avec une irréversibilité maximale (distance à l'inverse 4,98853) : $\sigma$ mesure la dissipation d'une séquence, pas la flèche du temps *(GPU-free)* | [#19796](https://github.com/jsboige/CoursIA/issues/19796) |
 | [ICT-49-MachinesDeGoedel-Python](ICT-49-MachinesDeGoedel-Python.ipynb) | **Machines de Gödel — l'auto-amélioration optimale rejouée sur un jouet exécutable** *(distillation externe de Schmidhuber 2006, arXiv cs/0309048, CPU, déterminisme complet, compagnon de l'organe [`ict.goedel_machine`](ict/goedel_machine.py) livré ici)* : le théorème cible (éq. 2 : ne basculer que si `u[s(t1)|switch] > u[s(t1)|keep]` est **prouvé**) opérationnalisé en machine-jouet à encodage comma-code (Kraft = 1 − 2⁻⁷), BIOPS à dynamique de phases exacte par mémoïsation, 9 331 techniques énumérées exhaustivement. Les claims du papier confrontées à la mesure, gate par gate : **G1** (levier du §4.4) — feu en phase 27, marge prouvée 14 = gain réalisé 14 ; **G2** (FAQ 7) — le réécrivain d'utilité **bogus ne feutre jamais** (0 feu sur tout l'espace : il ne peut prouver son théorème cible que sous l'ancienne utilité, invisible pour SETSW/CHECK) ; **G3** (Th. 5.1) — l'écart de phases mesure exactement le Δ de coût de code (8 = 8, prédiction 1/P(w)), le rapport de travaux restant sous la borne par saturation straight-line (nuance honnête documentée) ; **G4** (Th. 4.1) — le feu est l'argmax des candidats et **aucun second switch n'est prouvable** (égalité dans le monde continuation) ; **OOPS** (§5.2) — la technique gelée testée en tête à demi-budget feutre en phase 7 sur le monde B (marge 13) sans re-recherche ; mesure clé : **5 symboles / 21 bits produisent une preuve de 50 applications de règles** — le coût de découverte et le coût de preuve vivent dans deux devises différentes. 3 exercices, 9 gates vertes dans `ict/tests/test_goedel_machine.py` | [#16775](https://github.com/jsboige/CoursIA/issues/16775) |
 | [ICT-50-WolframRule30Aleatoire-Rule110Universelle-Python](ICT-50-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb) | **La règle 30 comme générateur d'aléa, la règle 110 et son universalité — une thèse empirique et un théorème** *(origami Wolfram pli 2, CPU, consomme l'organe [`ict.wolfram_step`](ict/wolfram_step.py) livré par [#19793](https://github.com/jsboige/CoursIA/pull/19793) — aucune réimplémentation locale de l'automate, seuls les instruments de mesure sont écrits ici)* : le carnet sépare ce qui se **mesure** de ce qui se **cite**. **Mesuré** — protocole de la section 11 de Wolfram (registre circulaire, graine à un seul site non nul, un site échantillonné par pas) ; périodes exactes à `N` = 17 (10 846, soit six tours de registre dans un échantillon de 64k), 23 (38 249), et au-delà de 300 000 pas pour 29/37/49, ce qui **chiffre** la mise en garde de la Table 10.1 (« seulement quand la période est comparable à la longueur échantillonnée » : rien à 1,7 tour, tout à 6 tours) ; test A de l'Annexe A (fréquence des 256 octets) contrôle positif sur tirages synthétiques puis règle 30 conforme à `N` ≥ 29, témoins CA60/LFSR-29/LCG rejetés (`4,9e-219` / `2,8e-50` / `4,9e-31`) et LFSR-17 **échappant aux deux tests** — d'où la nécessité des sept procédures ; test C (blocs distincts) qui discrimine un sous-ensemble **différent** du test A ; complexité linéaire de Berlekamp-Massey comme discriminant **de nature** (LFSR 17 et 29 contre `L/2` = 2049 pour la règle 30, 1674 pour la règle 110) ; ether de la règle 110 invariant par `(dt = 7, dx = 0)` et `(dt = 14, dx = 0)` avec contrôle négatif muet sur la règle 30 — et **aucune** invariance purement spatiale trouvée, la fenêtre contenant un défaut, désaccord avec la période 14 de la littérature **gardé et discuté** plutôt que lissé. **Non reproduit et dit comme tel** — les valeurs exactes de la Table 10.1 (site échantillonné, position de la graine et ordre des bits absents du texte). **Cité, non testé** — l'universalité de la règle 110 (théorème, Cook 2004 : systèmes de tags cycliques §2.2, systèmes de gliders §2.3, indécidabilité héritée) et sa réception (Gray 2003 : le générateur de Mathematica, « the proof just barely works », l'accord de non-divulgation et l'action juridique). Tableau de synthèse à quatre statuts, 3 exercices | [#22178](https://github.com/jsboige/CoursIA/issues/22178) |
+| [ICT-51-CombinateursSKI-TagDePost-Python](ICT-51-CombinateursSKI-TagDePost-Python.ipynb) | **Les combinateurs S/K/I, ou la représentation ultime du calcul — et le problème de tag de Post comme borne d'irréductibilité** *(origami Wolfram pli 4, CPU, consomme l'organe [`ict.combinators`](ict/combinators.py) livré par la même PR — aucune réimplémentation locale du moteur, seuls les instruments de présentation sont écrits ici ; suite directe du pli 2 : ICT-49 Gödel → ICT-50 règle 110 → ICT-51 la base universelle la plus simple)* : le carnet tient ensemble des théorèmes **exécutés** et des problèmes **ouverts**, chacun avec son statut dit. **Exécuté** — la dérivation `S K K x → x` (le combinateur I est un théorème de deux pas, pas un primitif) ; la sensibilité à la stratégie sur `K I Ω` (ordre normal : `I` en 1 pas ; ordre applicatif : divergence — la paresse est une différence sémantique, pas une optimisation) ; l'auto-repli de `Ω = S I I (S I I)` ; l'abstraction de bracket pure (sans les optimisations de Curry : `church(n)` coûte `16n + 3` nœuds, le prix mesuré de l'élimination des variables) ; l'arithmétique de Church calculée pour de vrai (`2+3 = 5`, `2×3 = 6`, `2^3 = 8`, round-trip 0..7). **Témoin empirique, non preuve** — la confluence de Church-Rosser : 30 ordres de réduction aléatoires (graine 42) depuis `church(5) f x` convergent vers l'unique forme normale `f (f (f (f (f x))))`, à nombre de pas constant (42) — la preuve formelle est le grain B de l'EPIC (organe Lean, relations de Mathlib à nommer). **Ouvert, mesuré** — le système de tag de Post (1921 : `0→00`, `1→1101`, suppression de 3 en tête) : arrêt immédiat, cycles (la graine de 12 éléments de l'essai Wolfram et une graine de 6 rejoignent le même attracteur), croissance jusqu'à 208 éléments avant cycle — jamais tranché ; le bloc `1111` inatteignable (aucune suite de `00` et `1101` ne le produit) ; à `r = 1` les états visités sont exactement des préfixes des mots de Thue-Morse et de Fibonacci (substitution sans connexion causale — la frontière du problème ouvert passe entre `r = 1` et `r = 2`). **Réception critique au même rang que les thèses** — Curry/Hindley/Seldin 1972, Hindley & Seldin 1980/2008, Cardone & Hindley 2006/2009, Bimbó 2009 (SEP), Klop et al. 1993, relevées dans la bibliographie archivée de Wolfram (arXiv 2106.11729, 200+ entrées) ; le S Combinator Challenge ($20 000, 2021 — S seul est-il universel ?) comme point de friction entre la thèse wolframienne du minimum absolu et la tradition Curry-Hindley du formalisme commode. Tableau de synthèse à trois statuts, 3 exercices | [#25061](https://github.com/jsboige/CoursIA/issues/25061) |
 
 ![Spatial Computing — stencil et expression](assets/readme/ict40-spatialcomputing.png)
 

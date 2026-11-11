@@ -46,7 +46,11 @@ jobs:
     timeout-minutes: 20
 
     steps:
+    # #22468 tranche 2 : fetch-depth 2 rend HEAD^1 (base du commit de fusion
+    # d'une PR) resolvable, pour le diff local primaire de la portee.
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -58,9 +62,34 @@ jobs:
         python -m pip install --upgrade pip
         pip install nbformat
 
+    # #22468 tranche 2 : la portee est calculee par l'organe
+    # scripts/ci/changed_notebooks.py — carnets MODIFIES sur PR/push (mesure
+    # de l'issue : 3 175 minutes-slot / 48 h a parcourir 1 750 carnets pour
+    # valider ceux de la PR), pleine arbre sur workflow_dispatch (le
+    # declencheur manuel existe PRECISEMENT pour revalider l'arbre final
+    # d'un batch, #13861), fail-OPEN vers la pleine arbre avec raison
+    # nommee. Lecteurs herites de l'organe #22548 (codeql_changed_languages).
+    - name: Compute notebook scope
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        python scripts/ci/changed_notebooks.py \
+          --event "${{ github.event_name }}" \
+          --repo "${{ github.repository }}" \
+          --pr "${{ github.event.pull_request.number || 0 }}" \
+          --token "$GH_TOKEN" > scope.json
+
     - name: Validate notebook structure
       run: |
         echo "Validating notebook JSON structure and nbformat..."
+        SCOPE_MODE=$(python -c "import json; print(json.load(open('scope.json'))['mode'])")
+        if [ "$SCOPE_MODE" = "restricted" ]; then
+          python -c "import json; [print(p) for p in json.load(open('scope.json'))['notebooks']]" > nb_list.txt
+          echo "Scope: RESTRICTED to modified notebooks (see Compute notebook scope)."
+        else
+          echo "Scope: FULL tree (see Compute notebook scope reason)."
+          find . -name "*.ipynb" -not -path "*/.*" -not -path "*/.ipynb_checkpoints/*" | sed 's|^\./||' > nb_list.txt
+        fi
         ERRORS=0
         NB_COUNT=0
         while IFS= read -r nb; do
@@ -83,16 +112,17 @@ jobs:
             print(f'FAIL {path}: {e}')
             sys.exit(1)
         " || ERRORS=$((ERRORS + 1))
-        done < <(find . -name "*.ipynb" -not -path "*/\.*" -not -path "*/.ipynb_checkpoints/*")
+        done < nb_list.txt
 
-        # The workflow only triggers on PRs/pushes touching *.ipynb, so the tree
-        # always holds 1200+ notebooks. A zero here means the workspace itself
-        # is broken (incomplete checkout on the self-hosted ephemeral runner —
-        # observed 2026-09-05, run 33979473831: only 7366/9060 files written,
-        # every .ipynb missing, both downstream steps validating empty air)
-        # and this loop would otherwise report a false "all validated" green.
+        # Zero-guard (#14799), lu selon le mode (#22468 tranche 2) : en FULL,
+        # l'arbre doit tenir 1200+ carnets — un zero signale un checkout
+        # incomplet (observed 2026-09-05, run 33979473831 : only 7366/9060
+        # files written, every .ipynb missing). En RESTRICTED, l'organe
+        # garantit >= 1 carnet (une portee restreinte vide retombe sur la
+        # pleine arbre) — un zero ne peut etre qu'un defaut de l'organe ou de
+        # sa consommation : il echoue bruyamment aussi, jamais en vert muet.
         if [ $NB_COUNT -eq 0 ]; then
-          echo "::error::find located ZERO notebooks in the workspace — checkout incomplete? (expected 1200+ .ipynb) (#14799)"
+          echo "::error::ZERO notebooks to validate in $SCOPE_MODE mode — checkout incomplete (full: expected 1200+ .ipynb, #14799) or scope organ defect (restricted: empty list must have fallen back to full)"
           exit 1
         fi
 
