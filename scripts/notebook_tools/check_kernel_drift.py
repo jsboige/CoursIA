@@ -948,6 +948,12 @@ _ENV_WALK_LEVELS = 3
 
 _REQUIRES_PYTHON_RE = re.compile(r"""requires-python\s*=\s*["']([^"']+)["']""")
 _NUMPY_PIN_RE = re.compile(r"numpy\s*([<>=!~][0-9A-Za-z.,<>=!~*]*)")
+# #25381 : table d'env de serie, prefereree aux champs project generiques
+# quand elle existe (le plancher d'installation du coeur n'est pas l'env
+# dans lequel re-executer les notebooks de la serie).
+_SERIES_PIN_TABLE_RE = re.compile(
+    r"\[tool\.coursia\.pinned_env\](.*?)(?=\n\[|\Z)", re.S)
+_SERIES_NUMPY_RE = re.compile(r"""numpy\s*=\s*["']([^"']+)["']""")
 
 
 def _git_show_head(rel, root):
@@ -1099,7 +1105,19 @@ def canonical_env_hint(nb_path, root=".", base_language_version=None):
             hint = {"artifact": rel.as_posix()}
             if from_object_store:
                 hint["from_object_store"] = True
-            requires_python = _REQUIRES_PYTHON_RE.search(text)
+            # #25381 : un package peut avoir un PLANCHER D'INSTALLATION
+            # (project.requires-python -- coeur leger, consommateurs hors
+            # serie) ET un ENV DE SERIE plus strict, porte par un extra et
+            # declare dans [tool.coursia.pinned_env]. Pour les notebooks
+            # DE la serie, l'env a nommer est celui de la serie, pas le
+            # plancher : la table, quand elle existe, prime sur les champs
+            # project generiques.
+            series_block_m = _SERIES_PIN_TABLE_RE.search(text)
+            series_block = series_block_m.group(1) if series_block_m else ""
+            requires_python = (
+                _REQUIRES_PYTHON_RE.search(series_block)
+                if series_block else None
+            ) or _REQUIRES_PYTHON_RE.search(text)
             if requires_python:
                 spec = requires_python.group(1)
                 hint["requires_python"] = spec
@@ -1116,7 +1134,10 @@ def canonical_env_hint(nb_path, root=".", base_language_version=None):
                             f"there would be a major.minor DOWNGRADE, which "
                             f"this gate refuses -- the pinned environment is "
                             f"not a followable remedy for this notebook")
-            numpy_pin = _NUMPY_PIN_RE.search(text)
+            numpy_pin = (
+                _SERIES_NUMPY_RE.search(series_block)
+                if series_block else None
+            ) or _NUMPY_PIN_RE.search(text)
             if numpy_pin:
                 hint["numpy_pin"] = f"numpy{numpy_pin.group(1)}"
             return hint
