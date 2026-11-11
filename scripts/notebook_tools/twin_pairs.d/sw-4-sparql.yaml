@@ -1,6 +1,6 @@
 - name: "SW-4 SPARQL"
   family: SemanticWeb/dotNetRDF-rdflib
-  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04b-SPARQL-Python.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04-SPARQL-Python.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04-SPARQL-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK

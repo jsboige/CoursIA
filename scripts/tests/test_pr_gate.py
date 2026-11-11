@@ -1429,6 +1429,23 @@ def test_derive_always_on_reads_real_workflows_and_excludes_self():
     assert "Gitleaks secret scanner" in jobs
 
 
+def test_pr_gate_waits_on_the_named_perimeter_owner():
+    """The dedicated perimeter check remains a blocking PR-gate constituent."""
+    owner = "perimeter review guard (#11268)"
+    jobs = pr_gate.derive_always_on_jobs()
+    assert owner in jobs, "PR gate canary no longer sees the perimeter owner"
+
+    pending, bad, _ok, advisory = pr_gate.classify(
+        [run(owner, None, status="in_progress")], "PR gate"
+    )
+    assert pending == [f"{owner} [in_progress/none]"]
+    assert bad == [] and advisory == []
+
+    _pending, bad, _ok, advisory = pr_gate.classify([run(owner, "failure")], "PR gate")
+    assert bad == [f"{owner} (failure)"]
+    assert advisory == []
+
+
 def test_fork_short_circuit_skips_the_canary(monkeypatch):
     """Acceptance criterion 4: a fork PR never reaches the canary.
 

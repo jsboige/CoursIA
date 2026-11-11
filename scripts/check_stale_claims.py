@@ -11,7 +11,10 @@ Pourquoi ADVISORY : comme #11435 (check_markdown_claims_output.py), la
 prose pédagogique cite légitimement des nombres de domaine. On borne
 donc le signal : seules les cellules dont l'en-tête annonce une
 interprétation/lecture/résultat sont scannées, et seuls les nombres
-portant un marqueur de claim (≈ ~ ≥ ≤ > < %) sont considérés. Le verdict
+portant un marqueur de claim (≈ ~ ≥ ≤ > < %) sont considérés. Deux
+bornes supplémentaires (#25616) : une claim explicitement approximative
+(~, ≈, « environ ») peut être l'arrondi d'un output exact, et une
+citation entre guillemets n'est pas une mesure locale. Le verdict
 est un rapport JSON + rc=1, jamais un blocage seul.
 
 Sortie : rc=0 propre, rc=1 au moins un finding, rc=2 erreur d'usage.
@@ -36,6 +39,11 @@ NUM_RE = re.compile(r"\d+(?:[.,]\d+)?")
 CLAIM_MARKER_BEFORE_RE = re.compile(r"[≈~≥≤><%]\s*$")
 CLAIM_MARKER_AFTER_RE = re.compile(r"^\s*[≈~≥≤><%]")
 
+# #25616 : marqueur d'approximation. Il ouvre aussi le statut de claim
+# (« environ 0,5 » n'a ni ~ ni %) et autorise la tolerance d'arrondi.
+APPROX_MARKER_BEFORE_RE = re.compile(r"(?i)(?:[~≈]\s*|environ\s+)$")
+APPROX_MARKER_AFTER_RE = re.compile(r"^\s*[~≈]")
+
 YEAR_RE = re.compile(r"(19|20)\d\d")
 DURATION_RE = re.compile(r"(?i)~?\s*\d+(?:[.,]\d+)?\s*(min|ms|s\b|h\b|heure)")
 VERSION_RE = re.compile(r"v\d+(?:\.\d+)+", re.IGNORECASE)
@@ -47,6 +55,10 @@ ORDINAL_RE = re.compile(r"^\d+[.)]")
 FENCE_RE = re.compile(r"```.*?```|`[^`]*`", re.DOTALL)
 LINK_RE = re.compile(r"\[[^\]]*\]\([^)]*\)|https?://\S+")
 MATH_RE = re.compile(r"\$[^$]*\$")
+
+# #25616 : une citation (« ... », "..." ou “...”) rapporte la valeur d'un
+# tiers, ce n'est pas une mesure que le carnet doit produire localement.
+QUOTE_RE = re.compile(r"«[^»]*»|\"[^\"]*\"|“[^”]*”")
 
 # Constantes statistiques de convention (p, alpha, |r|, confiance) : la
 # mesure FP du 29/09 (#18354) montre qu'elles dominent le bruit -- ce ne
@@ -119,14 +131,14 @@ def _notebook_output_numbers(nb: dict) -> set[str]:
     return nums
 
 
-def _claim_numbers(src_stripped: str) -> list[tuple[str, str]]:
-    """(nombre, ligne) pour chaque nombre à marqueur de claim, hors gardes.
+def _claim_numbers(src_stripped: str) -> list[tuple[str, str, bool]]:
+    """(nombre, ligne, approximatif) pour chaque claim, hors gardes.
 
     Les gardes durée/dimension sont PAR SPAN (un « 6x6 » ailleurs dans la
     ligne ne doit pas masquer un « ≈ 12 » légitime à signaler — mesuré sur
     App-4b c.15, la garde par ligne avalait le finding canonique).
     """
-    findings: list[tuple[str, str]] = []
+    findings: list[tuple[str, str, bool]] = []
     for line in src_stripped.splitlines():
         norm = _unaccent(line)
         guard_spans: list[tuple[int, int]] = [
@@ -164,9 +176,13 @@ def _claim_numbers(src_stripped: str) -> list[tuple[str, str]]:
             marked = CLAIM_MARKER_BEFORE_RE.search(
                 before[-4:]
             ) or CLAIM_MARKER_AFTER_RE.match(after[:4])
-            if not marked:
+            approx = bool(
+                APPROX_MARKER_BEFORE_RE.search(before[-12:])
+                or APPROX_MARKER_AFTER_RE.match(after[:4])
+            )
+            if not marked and not approx:
                 continue
-            findings.append((tok, line.strip()))
+            findings.append((tok, line.strip(), approx))
     return findings
 
 
@@ -174,6 +190,35 @@ def _ungroup(token: str) -> str:
     """« 4 683 » -> « 4683 » : compare un opérande de prose groupée au
     jeton plat qu'imprime une sortie."""
     return token.replace(" ", "").replace(" ", "").replace("\xa0", "").replace(",", ".")
+
+
+def _rounding_supported(tok: str, out_nums: set[str]) -> bool:
+    """#25616 : une claim approximative peut être l'arrondi d'un output.
+
+    « ~0,83 » est couvert par un output « 0.8325 » : arrondi au même
+    nombre de décimales, l'output dit bien ce que la prose affirme. La
+    tolérance est limitée à une demi-unité du dernier chiffre affiché —
+    « ~0,84 » face à 0.8325 reste un finding, et le contrôle négatif
+    canonique « ≈ 12 » face à 11 n'est pas atteint (écart 1 > 0,5).
+    """
+    try:
+        value = float(tok.replace(",", "."))
+    except ValueError:
+        return False
+    if not math.isfinite(value):
+        return False
+    decimals = len(tok.split(",")[1]) if "," in tok else (
+        len(tok.split(".")[1]) if "." in tok else 0
+    )
+    tolerance = 0.5 * 10**-decimals + 1e-9
+    for out_tok in out_nums:
+        try:
+            out_value = float(out_tok)
+        except ValueError:
+            continue
+        if math.isfinite(out_value) and abs(out_value - value) <= tolerance:
+            return True
+    return False
 
 
 def _derived_or_complement_supported(tok: str, stripped: str, out_nums: set[str]) -> bool:
@@ -259,9 +304,13 @@ def scan_notebook(path: Path) -> list[dict]:
         head = src.splitlines()[0] if src.splitlines() else ""
         if not INTERPRETATION_HEADING_RE.match(_unaccent(head)):
             continue
-        stripped = MATH_RE.sub(" ", FENCE_RE.sub(" ", LINK_RE.sub(" ", src)))
-        for tok, line in _claim_numbers(stripped):
+        stripped = QUOTE_RE.sub(
+            " ", MATH_RE.sub(" ", FENCE_RE.sub(" ", LINK_RE.sub(" ", src)))
+        )
+        for tok, line, approx in _claim_numbers(stripped):
             if _normalize_num(tok) & out_nums:
+                continue
+            if approx and _rounding_supported(tok, out_nums):
                 continue
             if _derived_or_complement_supported(tok, stripped, out_nums):
                 continue
