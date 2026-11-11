@@ -1,5 +1,7 @@
 # Secrets hygiene & coordinator discipline — detail
 
+> REFERENCE — vivante — dernière révision 2026-10-30
+
 
 
 Detail des deux regles HARD :

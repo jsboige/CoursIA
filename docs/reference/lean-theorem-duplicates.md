@@ -1,5 +1,7 @@
 # Theoremes en double entre lacs Lean
 
+> REFERENCE — vivante — dernière révision 2026-11-05
+
 Page regeneree par `scripts/lean/lean_theorem_duplicates.py` (`--write` pour la reecrire, `--check` pour verifier qu'elle suit l'arbre). Ne pas l'editer a la main.
 
 ## Theoremes en double entre lacs

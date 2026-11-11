@@ -1,5 +1,7 @@
 # PR Review Discipline — Contexte, incident, anti-patterns
 
+> REFERENCE — vivante — dernière révision 2026-11-06
+
 Document de référence détaillant les seuils auto-loaded de [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md).
 
 ## Contexte (incident 2026-05-08)

@@ -1,5 +1,7 @@
 # SOTA — détail : mandat verbatim, incidents d'axes, mesures anti-fabrication
 
+> REFERENCE — vivante — dernière révision 2026-11-09
+
 Détail durable de [`.claude/rules/sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) (harness-hygiene tier 2). La règle porte les tables opératoires (5 verdicts, interdit, enforcement) et l'exigence nominative des 6 axes ; ce fichier porte la **grille des 6 questions (§2)**, les verbatims, les incidents fondateurs et les mesures qui les justifient.
 
 Registre des audits par famille : [`docs/ledgers/3801-sota-axe2.md`](../ledgers/3801-sota-axe2.md).

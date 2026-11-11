@@ -1,5 +1,7 @@
 # Template de Pull Request - TP Search
 
+> REFERENCE — vivante — dernière révision 2026-10-10
+
 Instructions pour les etudiants lors des seances de TP.
 
 ***

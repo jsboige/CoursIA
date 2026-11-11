@@ -1,5 +1,7 @@
 # Lean axiom coverage — proof-integrity gate triage (per #8738 step 3)
 
+> REFERENCE — vivante — dernière révision 2026-11-08
+
 **Issue de référence** : [#8738](https://github.com/jsboige/CoursIA/issues/8738) (proof-integrity gate multiline parse, parser fix livré via PR #8740 c.947 MERGED 2026-07-28).
 **Cycle-id de production** : c.948 (worker po-2023, lane `myia-po-2023:CoursIA-2`).
 **Mesure** : `git grep -E` sur le commit `35e1258df` (origin/main HEAD), 2026-07-29.

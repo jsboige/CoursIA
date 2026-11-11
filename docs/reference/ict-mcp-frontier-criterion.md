@@ -1,5 +1,7 @@
 # Critère de frontière — utilitaire de série ou exposition MCP
 
+> REFERENCE — vivante — dernière révision 2026-11-09
+
 Provenance : issue #19379 (axe 3 du tracker de distillation #16457), arbitrage ai-01 du 2026-11-09 — formulation fusionnée des quatre livraisons du fil (A, B, synthèse c336, C), chaque divergence tranchée par un contre-exemple mesuré du dépôt.
 
 ## La question

@@ -1,5 +1,7 @@
 # Git workflow — détail : verbatim force-push, incidents, rationale
 
+> REFERENCE — vivante — dernière révision 2026-11-10
+
 Détail durable de [`.claude/rules/git-workflow.md`](../../.claude/rules/git-workflow.md) (harness-hygiene tier 2). La règle porte le périmètre opératoire ; ce fichier porte les verbatims et les incidents qui le fondent.
 
 ## 1. Force-push — décision user 2026-08-08 (verbatim)

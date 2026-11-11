@@ -1,5 +1,7 @@
 # Coordination proactive — detail
 
+> REFERENCE — vivante — dernière révision 2026-11-06
+
 Detail de [.claude/rules/proactive-coordination.md](../../.claude/rules/proactive-coordination.md). Voir aussi [subagents-reference.md](subagents-reference.md), [scripts-reference.md](scripts-reference.md).
 
 ## Plancher durci — « plusieurs grains dont un DEEP de CONTENU » (mandat user 2026-09-12, #15793)

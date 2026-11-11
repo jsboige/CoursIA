@@ -1,5 +1,7 @@
 # Procédures récurrentes — CoursIA
 
+> REFERENCE — vivante — dernière révision 2026-10-26
+
 Détail des workflows référencés dans [CLAUDE.md](../../CLAUDE.md) section "PROCEDURES RECURRENTES".
 
 ## Workflow PR

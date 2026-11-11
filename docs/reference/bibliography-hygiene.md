@@ -1,5 +1,7 @@
 # Bibliographie IA partagée
 
+> REFERENCE — vivante — dernière révision 2026-11-10
+
 ## Source canonique
 
 Le gisement documentaire partagé du cluster est :

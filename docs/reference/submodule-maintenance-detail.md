@@ -1,5 +1,7 @@
 # Sous-modules — détail : état vérifié, incidents et mesures datées
 
+> REFERENCE — vivante — dernière révision 2026-11-09
+
 Détail déporté de [`.claude/rules/submodule-maintenance.md`](../../.claude/rules/submodule-maintenance.md), qui porte les règles HARD 1 à 7. Ce fichier porte ce qui **date** : la matrice des cinq états de gate, la table de statut, les mesures horodatées, les faux positifs mesurés et les incidents fondateurs. La règle référence ce fichier ; elle ne le duplique pas.
 
 Motif du déport (`harness-hygiene`, 3 tiers) : le harnais est auto-chargé à **chaque requête** de **chaque session**, sur les cinq machines. Une table de SHA et de dates de vérification y coûte des tokens en permanence pour une information qui se relit ponctuellement, avant une PR de bump.

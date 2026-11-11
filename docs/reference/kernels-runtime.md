@@ -1,5 +1,7 @@
 # Kernels & Runtime — Cluster CoursIA
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Document de référence détaillant l'inventaire kernels obligatoire sur toute machine du cluster (cf CLAUDE.md règle H.2).
 
 **Regle user 2026-05-07** : toute machine du cluster (ai-01, po-2023, po-2024, po-2025, po-2026, po-2027, po-2028) doit pouvoir executer n'importe quel notebook du depot. Reparation env > contournement (regle F, cf [env-python-reparation.md](env-python-reparation.md)).

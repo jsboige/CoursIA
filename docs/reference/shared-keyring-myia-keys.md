@@ -1,5 +1,7 @@
 # Trousseau partagé `MyIA-Keys` — organe d'accès, bootstrap par machine, empreinte de preuve
 
+> REFERENCE — vivante — dernière révision 2026-11-10
+
 Détail durable de l'organe `scripts/secrets/agent_keyring.py`. La règle qui le gouverne reste
 [.claude/rules/secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) — ce fichier ne pose
 aucune prescription nouvelle, il documente un outil et l'état vérifié de son déploiement.
