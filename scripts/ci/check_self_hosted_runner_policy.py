@@ -2055,10 +2055,19 @@ def main(argv: list[str] | None = None) -> int:
         help="workflow directory (used by tests and offline audits)",
     )
     parser.add_argument(
+        # #23349 (tranche finale, 2026-11-11) : la dette historique des 63 jobs
+        # statiques est eteinte -- la baseline est vide et son fichier supprime.
+        # Le cliquet devient le DEFAUT du CLI ; ``--no-check-timeouts`` est la
+        # sortie explicite (les tests single-purpose l'utilisent). Le cote API
+        # (``scan_workflows``) reste opt-in : les appels directs gardent leur
+        # signature et les invariants eprouves un a un.
         "--check-timeouts",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        default=True,
         help="engage the #22954 ratchet: every job that can reach a "
-             "self-hosted runner must carry a job-level timeout-minutes",
+             "self-hosted runner must carry a job-level timeout-minutes "
+             "(default since #23349 extinguished the named debt; "
+             "--no-check-timeouts opts out)",
     )
     parser.add_argument(
         "--baseline",

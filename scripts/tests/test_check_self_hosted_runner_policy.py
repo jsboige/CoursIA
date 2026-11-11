@@ -1293,7 +1293,12 @@ def test_json_output_names_violations_and_denominators(tmp_path, capsys):
             steps:
               - run: echo unsafe
         """)
-    rc = policy.main(["--json", "--workflows-dir", str(tmp_path)])
+    # --no-check-timeouts (#23349) : ce test eprouve la DENOMINATION des
+    # violations d'isolation, pas le cliquet des bornes (depuis la tranche
+    # finale, le cliquet est le defaut du CLI -- sans l'opt-out, le job
+    # synthetique sans timeout-minutes ajouterait MISSING_TIMEOUT a l'ensemble).
+    rc = policy.main(["--json", "--no-check-timeouts",
+                      "--workflows-dir", str(tmp_path)])
     payload = json.loads(capsys.readouterr().out)
     assert rc == policy.EXIT_VIOLATION
     assert payload["workflows_scanned"] == 1
@@ -1608,13 +1613,14 @@ def test_23349_stale_timeout_baseline_diagnostic_is_read_only(tmp_path, capsys):
 
 
 def test_22954_ratchet_is_opt_in_so_synthetic_workflows_stay_single_purpose(tmp_path):
-    """#22954 : sans le drapeau, le cliquet ne parle pas.
+    """#22954 : sans le drapeau, le cliquet ne parle pas (cote API).
 
     Les tests de ce fichier construisent des workflows synthetiques pour
     eprouver UN invariant a la fois (garde meme-depot, jeu de labels, ...). Le
-    cliquet est donc opt-in cote API, et engage cote garde bloquant : c'est
-    `scripts/ci/fast_lane_registry.py` qui passe le drapeau, et le test suivant
-    l'y verifie.
+    cliquet reste donc opt-in cote API (``scan_workflows``). Depuis la tranche
+    finale de #23349, il est en revanche le DEFAUT du CLI (et le garde
+    bloquant n'a plus de drapeau a passer) : le test suivant verifie ce defaut
+    au lieu de l'argv.
     """
     _hybrid_workflow(tmp_path)
     result = policy.scan_workflows(tmp_path)
@@ -1623,21 +1629,29 @@ def test_22954_ratchet_is_opt_in_so_synthetic_workflows_stay_single_purpose(tmp_
 
 
 def test_22954_repository_passes_the_ratchet_with_zero_new_jobs():
-    """#22954 : `main` passe le cliquet -- 0 nouveau, la dette en baseline."""
+    """#22954/#23349 : `main` passe le cliquet -- 0 nouveau, 0 en baseline.
+
+    Depuis la tranche finale de #23349, la baseline est eteinte (fichier
+    supprime, `load_baseline` rend l'ensemble vide) : le ratchet est passe
+    sans tolerance nommee.
+    """
     result = policy.scan_workflows(check_timeouts=True)
     assert result.broken == []
     assert [v for v in result.violations if v.code == "MISSING_TIMEOUT"] == []
     assert result.timeouts_checked is True
+    assert result.timeout_baselined == 0
     assert policy.main(["--check", "--check-timeouts"]) == policy.EXIT_OK
 
 
-def test_22954_fast_lane_entry_actually_enforces_the_ratchet():
-    """#22954 : le garde BLOQUANT passe le drapeau, et surveille sa baseline.
+def test_22954_fast_lane_entry_actually_enforces_the_ratchet(tmp_path):
+    """#22954/#23349 : le garde BLOQUANT engage le cliquet, devenu defaut.
 
-    Un cliquet opt-in ne vaut que si l'appel bloquant passe le drapeau. Ce test
-    est le garde du garde : retirer `--check-timeouts` de l'entree fast-lane, ou
-    oublier la baseline dans ses `paths`, rougit ici au lieu de desactiver le
-    cliquet en silence.
+    Un cliquet ne vaut que si l'appel bloquant l'engage. Depuis la tranche
+    finale de #23349, le cliquet est le DEFAUT du CLI du garde : l'entree
+    fast-lane n'a plus de drapeau a porter, et la seule sortie serait
+    ``--no-check-timeouts`` -- visible dans ce test (egalite stricte de
+    l'argv) ET controle positif : le CLI sans aucun drapeau rougit bien sur
+    un job auto-heberge sans borne.
     """
     import fast_lane_registry as registry
 
@@ -1656,15 +1670,31 @@ def test_22954_fast_lane_entry_actually_enforces_the_ratchet():
         f"trouve {len(entries)}"
     )
     entry = entries[0]
-    assert "--check-timeouts" in entry.argv, (
-        "l'entree fast-lane doit passer --check-timeouts : sans le drapeau, "
-        "MISSING_TIMEOUT n'est jamais evalue (#22954)"
+    assert entry.argv == [
+        "python",
+        "scripts/ci/check_self_hosted_runner_policy.py",
+        "--check",
+    ], (
+        "l'entree fast-lane appelle le garde sans opt-out : le seul retrait du "
+        "cliquet serait un --no-check-timeouts explicite dans cet argv (#23349)"
     )
     assert entry.blocking is True
-    assert "scripts/ci/self_hosted_timeout_baseline.txt" in entry.paths, (
-        "la baseline doit etre dans les paths du garde : sinon une PR qui la "
-        "reecrit ne relance pas le cliquet (#22954)"
+
+    # Controle positif du defaut : sans AUCUN drapeau, le CLI engage le
+    # cliquet -- la forme hybride sans borne (allowlistee par ailleurs, sa
+    # seule violation possible est MISSING_TIMEOUT) rougit, et l'opt-out
+    # l'eteint. Baseline explicite absente : le test ne depend pas de l'etat
+    # du checkout.
+    _hybrid_workflow(tmp_path)
+    absent = str(tmp_path / "absent.txt")
+    assert policy.main(["--check", "--workflows-dir", str(tmp_path),
+                        "--baseline", absent]) == policy.EXIT_VIOLATION, (
+        "le cliquet doit etre le defaut du CLI depuis #23349 : sans drapeau, "
+        "un job sans borne doit rougir"
     )
+    assert policy.main(["--check", "--no-check-timeouts",
+                        "--workflows-dir", str(tmp_path),
+                        "--baseline", absent]) == policy.EXIT_OK
 
 
 # #13960 : garde anti-regression sur les doublons de def dans ce fichier.
