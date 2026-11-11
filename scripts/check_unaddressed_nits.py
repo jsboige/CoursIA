@@ -3602,6 +3602,23 @@ def _project_gh_payload(args: list[str], payload: object) -> object:
     blobs) restent intacts. Le patch d'un commit ne sert qu'a extraire les
     ``def``/``class`` ajoutes par #20066 : seuls ces ajouts, avec le meme
     plafond, sont conserves.
+
+    #22757 piste 1, verification a la source : les ``files`` de
+    ``commits/<sha>`` NE PEUVENT PAS etre droppes -- le verdict B.0 en
+    depend. ``_resolve_absent_sha_state`` lit ``filename``/``sha``/
+    ``status``/``previous_filename`` (#15973 : identite de blobs par chemin
+    qui distingue un rebase preserve d'un rembobinage destructeur) et le
+    ``patch`` (#20066 : symboles ajoutes par le commit rembobine). La
+    projection garde donc le contrat MINIMAL (ces cinq champs, patch reduit
+    aux lignes ajoutees), pas une suppression.
+
+    #22757, transporteurs restants projetes ici : ``pulls/{n}/commits``
+    (pages ``--paginate --slurp`` d'objets commit complets dont
+    ``_pr_commits_rest`` ne lit que ``sha`` et deux dates -- une PR a ~35
+    commits depassait le plafond et etait relue a chaque passe) et
+    ``issues/{n}`` (``_gh_fetch_issue`` ne lit que le discriminant
+    ``pull_request`` #13725 et les quatre champs d'``IssueInfo`` ; le corps
+    reste INTACT car la voie 3 le lit #14218).
     """
     if not isinstance(payload, (dict, list)):
         return payload
@@ -3676,6 +3693,32 @@ def _project_gh_payload(args: list[str], payload: object) -> object:
     if "/pulls/" in endpoint and endpoint.endswith("/reviews"):
         return project_rows(payload, ("id", "user"), {"user": ("login",)})
 
+    if "/pulls/" in endpoint and endpoint.endswith("/commits"):
+        # #17315/#22757 : `--paginate --slurp` rend des pages d'objets
+        # commit complets (~2 Ko chacun : identite, verification, parents)
+        # dont `_pr_commits_rest` ne lit que `sha` et les deux dates.
+        def project_commit_page(page: object) -> object:
+            if not isinstance(page, list):
+                return page
+            rows = []
+            for c in page:
+                if not isinstance(c, dict):
+                    rows.append(c)
+                    continue
+                commit = c.get("commit") or {}
+                rows.append({
+                    "sha": c.get("sha"),
+                    "commit": {
+                        "author": {"date": (commit.get("author") or {}).get("date")},
+                        "committer": {"date": (commit.get("committer") or {}).get("date")},
+                    },
+                })
+            return rows
+
+        if isinstance(payload, list):  # slurp : une liste de pages
+            return [project_commit_page(p) for p in payload]
+        return project_commit_page(payload)
+
     if "/issues/" in endpoint and endpoint.endswith("/timeline"):
         if not isinstance(payload, list):
             return payload
@@ -3696,6 +3739,22 @@ def _project_gh_payload(args: list[str], payload: object) -> object:
                     row[key] = {name: child[name] for name in child_fields
                                 if name in child}
             projected.append(row)
+        return projected
+
+    # `issues/{n}` strict (pas /timeline ni /comments) : #13725/#14218/#22757.
+    tail = (endpoint[len(prefix + "issues/"):]
+            if endpoint.startswith(prefix + "issues/") else "")
+    if tail.isdigit():
+        if not isinstance(payload, dict):
+            return payload
+        projected = {key: payload[key] for key in
+                     ("state", "created_at", "title", "body") if key in payload}
+        pr_key = payload.get("pull_request")
+        if isinstance(pr_key, dict):
+            # Discriminant PR-vs-issue : seule la PRESENCE compte (#13725).
+            projected["pull_request"] = {"url": pr_key.get("url")}
+        elif "pull_request" in payload:
+            projected["pull_request"] = pr_key
         return projected
     return payload
 

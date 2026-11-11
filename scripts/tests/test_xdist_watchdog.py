@@ -33,11 +33,16 @@ testable sans reproduire la mort d'un vrai worker).
 
 from __future__ import annotations
 
+import os
 import re
+import signal
 import subprocess
 import sys
 import textwrap
+import time
 from pathlib import Path
+
+import pytest
 
 CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 sys.path.insert(0, str(CI_DIR))
@@ -579,3 +584,72 @@ def test_le_mode_1_garde_son_verdict_propre():
     assert "BLOQUE" in verdict
     assert "SYSTEMATIQUE" not in verdict
 
+
+@pytest.mark.skipif(sys.platform != "linux", reason="lecture des etats /proc Linux")
+def test_sigterm_arrete_le_groupe_et_le_wrapper(tmp_path):
+    pidfile = tmp_path / "pids"
+    child = textwrap.dedent("""
+        import os, subprocess, sys, time
+        grandchild = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+        with open(sys.argv[1], "w") as f:
+            f.write(f"{os.getpid()} {grandchild.pid}")
+        time.sleep(60)
+    """)
+    wrapper = subprocess.Popen(
+        [sys.executable, str(CI_DIR / "xdist_watchdog.py"), "--idle-limit",
+         "30", "--", sys.executable, "-c", child, str(pidfile)],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    pids = []
+    try:
+        deadline = time.monotonic() + 5
+        while not pidfile.exists() or not pidfile.read_text():
+            assert wrapper.poll() is None
+            assert time.monotonic() < deadline
+            time.sleep(0.02)
+        pids = [int(pid) for pid in pidfile.read_text().split()]
+        wrapper.send_signal(signal.SIGTERM)
+        assert wrapper.wait(timeout=5) == -signal.SIGTERM
+        deadline = time.monotonic() + 5
+        while True:
+            # Un zombie a deja cesse de s'executer, meme s'il attend init.
+            alive = []
+            for pid in pids:
+                try:
+                    state = Path(f"/proc/{pid}/stat").read_text().split(") ", 1)[1][0]
+                    if state != "Z":
+                        alive.append(pid)
+                except FileNotFoundError:
+                    pass
+            if not alive:
+                break
+            assert time.monotonic() < deadline, f"processus encore actifs : {alive}"
+            time.sleep(0.02)
+    finally:
+        if wrapper.poll() is None:
+            wrapper.kill()
+            wrapper.wait()
+        if pids:
+            try:
+                os.killpg(pids[0], signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="signaux POSIX")
+def test_sigint_conserve_le_comportement_du_wrapper():
+    wrapper = subprocess.Popen(
+        [sys.executable, str(CI_DIR / "xdist_watchdog.py"), "--idle-limit",
+         "30", "--", sys.executable, "-u", "-c",
+         "import time; print('pret', flush=True); time.sleep(0.5)"],
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+    )
+    try:
+        assert wrapper.stdout.readline().strip() == "pret"
+        wrapper.send_signal(signal.SIGINT)
+        assert wrapper.wait(timeout=5) == -signal.SIGINT
+    finally:
+        if wrapper.poll() is None:
+            wrapper.kill()
+            wrapper.wait()
+        wrapper.stdout.close()
