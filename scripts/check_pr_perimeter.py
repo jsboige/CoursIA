@@ -468,7 +468,19 @@ _BOTH_FILE_VARIANTS = re.compile(
 )
 
 
-def _count_is_language_variant_reference(line: str, m: re.Match) -> bool:
+def _files_contain_fr_en_pair(files: list[dict]) -> bool:
+    """True when the changed-file list contains a canonical/`_en` pair."""
+    paths = {str(item.get("path", "")) for item in files}
+    for path in paths:
+        stem, dot, suffix = path.rpartition(".")
+        if dot and stem.endswith("_en") and f"{stem[:-3]}.{suffix}" in paths:
+            return True
+    return False
+
+
+def _count_is_language_variant_reference(
+    line: str, m: re.Match, files: list[dict] | None = None
+) -> bool:
     """#25091: skip a count that describes FR/EN variants of one file.
 
     The language cue must be local to the count and tied either to an explicit
@@ -484,6 +496,8 @@ def _count_is_language_variant_reference(line: str, m: re.Match) -> bool:
     context_start = max(start, m.start() - 120)
     context_end = min(end, m.end() + 120)
     context = line[context_start:context_end]
+    if files is not None and not _files_contain_fr_en_pair(files):
+        return False
     if _has_strong_scope(context.lower()):
         return False
     if not _LANGUAGE_VARIANT_CUE.search(context):
@@ -494,12 +508,14 @@ def _count_is_language_variant_reference(line: str, m: re.Match) -> bool:
     )
 
 
-def _word_form_is_language_variant_reference(line: str) -> bool:
+def _word_form_is_language_variant_reference(
+    line: str, files: list[dict] | None = None
+) -> bool:
     """Word-form counterpart of the #25091 per-occurrence digit filter."""
     low = line.lower()
     return any(
         (m := trig.search(low)) is not None
-        and _count_is_language_variant_reference(line, m)
+        and _count_is_language_variant_reference(line, m, files)
         for _word, _n, trig in WORD_FORM_TRIGGERS
     )
 
@@ -649,7 +665,10 @@ def check_assertion(
     # by a name range, is reported speech, not a claim at all.
     scan_target = _fence_mask(assertion)
     word_count = None if guard_self else _word_form_count(scan_target)
-    if word_count is not None and _word_form_is_language_variant_reference(scan_target):
+    if (
+        word_count is not None
+        and _word_form_is_language_variant_reference(scan_target, files)
+    ):
         word_count = None
     count_claim = None
     if not guard_self:
@@ -663,7 +682,7 @@ def check_assertion(
                 and not _count_is_out_of_scope_annotation(scan_target, mm)
                 and not _count_is_negated(scan_target, mm)
                 and not _count_is_other_pr(scan_target, mm)
-                and not _count_is_language_variant_reference(scan_target, mm)
+                and not _count_is_language_variant_reference(scan_target, mm, files)
             ),
             None,
         )
@@ -702,12 +721,12 @@ def check_assertion(
             # sideways ("_additive_line_sum est line-scope, la somme additive
             # meurt au retour a la ligne", founder #13736). Per-count filters
             # stay per-LINE (each line is classified on its own surface).
-            additive = _additive_line_sum(scan_target)
+            additive = _additive_line_sum(scan_target, files)
             if additive != len(files) and block:
                 # the block already contains the candidate line -- replace,
                 # never add (no double count).
                 additive = sum(
-                    _additive_line_sum(ln)
+                    _additive_line_sum(ln, files)
                     for ln in _fence_mask(block).splitlines()
                     if ln.strip()
                 )
@@ -770,9 +789,9 @@ def check_assertion(
     non_claim_count = any(
         _count_is_negated(scan_target, mm)
         or _count_is_other_pr(scan_target, mm)
-        or _count_is_language_variant_reference(scan_target, mm)
+        or _count_is_language_variant_reference(scan_target, mm, files)
         for mm in COUNT_CLAIM.finditer(scan_target)
-    ) or _word_form_is_language_variant_reference(scan_target)
+    ) or _word_form_is_language_variant_reference(scan_target, files)
     if (
         not count_claim and word_count is None and not exclusive
         and not guard_self and not non_claim_count
@@ -1477,7 +1496,7 @@ def _word_form_is_other_pr(line: str) -> bool:
     return False
 
 
-def _additive_line_sum(line: str) -> int:
+def _additive_line_sum(line: str, files: list[dict] | None = None) -> int:
     """#12103: sum of the line's COUNT_CLAIM values that survive the per-count
     filters. An additive enumeration -- "1 fichier modifie, 1 fichier ajoute" --
     declares N + M files; the guard must confront the SUM, not the first
@@ -1501,12 +1520,12 @@ def _additive_line_sum(line: str) -> int:
         and not _count_is_out_of_scope_annotation(line, m)
         and not _count_is_negated(line, m)
         and not _count_is_other_pr(line, m)
-        and not _count_is_language_variant_reference(line, m)
+        and not _count_is_language_variant_reference(line, m, files)
     )
     low = line.lower()
     for _word, n, trig in WORD_FORM_TRIGGERS:
         m = trig.search(low)
-        if m and not _count_is_language_variant_reference(line, m):
+        if m and not _count_is_language_variant_reference(line, m, files):
             return total + n
     return total
 

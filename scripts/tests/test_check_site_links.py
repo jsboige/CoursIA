@@ -185,3 +185,89 @@ def test_main_exit_codes(monkeypatch) -> None:
 
     monkeypatch.setattr(mod, "fetch_text", boom)
     assert mod.main(["--base-url", BASE]) == 2
+
+
+def test_raw_ipynb_detected_without_http_probe(monkeypatch) -> None:
+    """Positive control (#25055): an internal .ipynb href fails the pass
+    even when the probe would return 200 (the JSON-source case)."""
+    mod = _load()
+    html = ('<a href="MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/'
+            'SL-11-Capstone-NeuroSymbolic.ipynb">capstone</a>'
+            '<a href="ok.html">ok</a>')
+    monkeypatch.setattr(mod, "fetch_text", lambda url, timeout=None: html)
+    # Surtout : la sonde repond 200 PARTOUT -- le defaut est structurel,
+    # pas de statut.
+    monkeypatch.setattr(mod, "probe_status", lambda url, timeout=None: 200)
+    result = mod.run_check(BASE, ("/",))
+    assert result.broken == []
+    assert result.raw_ipynb == [{
+        "href": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
+                "SL-11-Capstone-NeuroSymbolic.ipynb",
+        "source_page": BASE + "/",
+    }]
+    assert mod.main(["--base-url", BASE, "--page", "/"]) == 1
+
+
+def test_raw_ipynb_dedup_and_external_ignored(monkeypatch) -> None:
+    """Duplicate hrefs collapse to one entry; external .ipynb links ignored."""
+    mod = _load()
+    href = "Notebooks/Dup.ipynb"
+    html = (f'<a href="{href}">a</a><a href="{href}">b</a>'
+            '<a href="https://else.where/x.ipynb">ext</a>')
+    monkeypatch.setattr(mod, "fetch_text", lambda url, timeout=None: html)
+    monkeypatch.setattr(mod, "probe_status", lambda url, timeout=None: 200)
+    result = mod.run_check(BASE, ("/",))
+    assert len(result.raw_ipynb) == 1
+    assert result.raw_ipynb[0]["href"] == href
+
+
+def test_raw_ipynb_names_page_in_text_report(monkeypatch, capsys) -> None:
+    """The text report names the href and its source page (RAW-IPYNB)."""
+    mod = _load()
+    monkeypatch.setattr(mod, "fetch_text",
+                        lambda url, timeout=None: '<a href="nb.ipynb">x</a>')
+    monkeypatch.setattr(mod, "probe_status", lambda url, timeout=None: 200)
+    assert mod.main(["--base-url", BASE, "--page", "/"]) == 1
+    text = capsys.readouterr().out
+    assert "RAW-IPYNB nb.ipynb" in text
+    assert f"(source: {BASE}/)" in text
+
+
+def test_json_report_carries_raw_ipynb(monkeypatch, capsys) -> None:
+    """The JSON report carries the raw_ipynb entries for automation."""
+    import json as jsonlib
+
+    mod = _load()
+    monkeypatch.setattr(mod, "fetch_text",
+                        lambda url, timeout=None: '<a href="nb.ipynb">x</a>')
+    monkeypatch.setattr(mod, "probe_status", lambda url, timeout=None: 200)
+    assert mod.main(["--base-url", BASE, "--page", "/",
+                     "--json"]) == 1
+    report = jsonlib.loads(capsys.readouterr().out)
+    assert report["raw_ipynb"][0]["href"] == "nb.ipynb"
+
+
+def test_default_pages_include_catalog() -> None:
+    """The catalog page is part of the default coverage (#25055)."""
+    mod = _load()
+    assert any("COURSE_CATALOG" in page for page in mod.DEFAULT_PAGES)
+
+
+def test_concurrent_probes_cover_all_links(monkeypatch) -> None:
+    """Parallel probing keeps every candidate's verdict (no link skipped)."""
+    mod = _load()
+    html = "".join(f'<a href="p{i}.html">x</a>' for i in range(30))
+    monkeypatch.setattr(mod, "fetch_text", lambda url, timeout=None: html)
+
+    def flaky(url, timeout=None):
+        # Un tiers des sondes echouent reseau : l'ecart doit rester
+        # instrument, et les 2/3 restants doivent porter leur verdict.
+        if url.endswith(("p3.html", "p9.html", "p17.html")):
+            raise OSError("connection reset")
+        return 200
+
+    monkeypatch.setattr(mod, "probe_status", flaky)
+    result = mod.run_check(BASE, ("/",), max_links=30)
+    assert result.checked == 27
+    assert result.ok == 27
+    assert len(result.instrument_errors) == 3

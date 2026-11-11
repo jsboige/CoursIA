@@ -320,6 +320,36 @@ class ResponseCandidateTests(unittest.TestCase):
         self.assertTrue(mod.cites_concern(concern, reply))
         self.assertTrue(mod.is_response_candidate("gesture", reply, concern))
 
+    def test_long_quote_keeps_gesture_candidate_without_minute_signature(self):
+        """#24672 : l'extrait fort garde la voie ouverte sans HH:MMZ."""
+        body = (
+            "Le diagnostic mesure une derive persistante dans les quatre snapshots "
+            "et montre que les identifiants de suivi ne suffisent pas a expliquer "
+            "le changement observe dans les resultats."
+        )
+        concern = c(38, "2026-10-18T22:26:03Z", body)
+        signature = "[INFO] Reponse au Concern du 2026-10-18 — "
+
+        # L'absence de minutes ne neutralise pas une citation assez longue.
+        quoted_80 = c(39, "2026-10-19T03:56:43Z", signature + body[20:100])
+        self.assertNotIn("22:26Z", quoted_80.body)
+        self.assertTrue(mod.cites_concern(concern, quoted_80))
+        self.assertTrue(mod.is_response_candidate("gesture", quoted_80, concern))
+
+        # La date seule n'est pas une citation forte, et 40–79 caractères
+        # restent sous le seuil mesuré.
+        for length in (40, 79):
+            with self.subTest(length=length):
+                short_quote = c(
+                    40 + length,
+                    "2026-10-19T03:56:43Z",
+                    signature + body[:length],
+                )
+                self.assertFalse(mod.cites_concern(concern, short_quote))
+                self.assertFalse(
+                    mod.is_response_candidate("gesture", short_quote, concern)
+                )
+
     def test_quote_strength_keeps_the_80_character_boundary(self):
         concern = c(38, "2026-10-01T10:00:00Z", "x" * 80)
         short_quote = c(39, "2026-10-02T10:00:00Z", "[INFO] " + "x" * 79)
@@ -771,6 +801,156 @@ class Utf8OutputTests(unittest.TestCase):
         out = payload.decode("utf-8")
         self.assertIn("non resolu", out)
         self.assertIn("\U0001f680", out)
+
+
+RESERVE_HERMES = (
+    "[Hermes] COMMENT_WITH_CONCERNS : le claim « multi-seed » n'est tenu que "
+    "sur 2 graines — le body annonce 4 graines distinctes."
+)
+LIFT_WITH_TIMESTAMP = (
+    "[OVERRIDE] lane myia-ai-01 : je leve la reserve d'Hermes du 14:05Z — "
+    "les 4 graines sont livrees au commit 83ac846."
+)
+
+
+class ReserveMarkerTests(unittest.TestCase):
+    """Classe reviewer-reserve : position d'emission, grammaire restreinte."""
+
+    def test_verdict_prefix_posed_is_detected(self):
+        self.assertEqual(
+            mod.reserve_marker(RESERVE_HERMES), "COMMENT_WITH_CONCERNS"
+        )
+
+    def test_severity_glyph_posed_is_detected(self):
+        self.assertEqual(mod.reserve_marker("🟡 le gap 2 n'est pas couvert"), "🟡")
+
+    def test_decoration_before_marker_still_poses(self):
+        # Le gras de tete est neutralise, comme ``classify`` : l'emission
+        # degradee reste une emission.
+        self.assertIsNotNone(mod.reserve_marker("**CHANGES_REQUESTED** — scope"))
+
+    def test_marker_cited_mid_body_is_not_posed(self):
+        # #13030 : la mention du verdict (une reponse qui le reprend) n'est
+        # pas une reserve neuve.
+        body = "Reponse : ta reserve COMMENT_WITH_CONCERNS est traitee au commit."
+        self.assertIsNone(mod.reserve_marker(body))
+
+    def test_bare_concerns_word_is_not_a_reserve(self):
+        # Vocabulaire de la campagne elle-meme (« la liste [CONCERNS] postee
+        # par le coordinateur ») : la sous-chaine nue est exclue du cote issues.
+        self.assertIsNone(
+            mod.reserve_marker("La liste [CONCERNS] postee par le coordinateur.")
+        )
+
+    def test_prose_marker_is_not_a_reserve_on_issues(self):
+        # « avant merge » etc. sont des marqueurs PR-contextuels (B.0) ; sur
+        # les issues, la prose de lane en est saturee — exclus de cette classe.
+        self.assertIsNone(
+            mod.reserve_marker("Il reste un point a regler avant merge.")
+        )
+
+
+class ReserveAnalysisTests(unittest.TestCase):
+    """Classe reviewer-reserve : statut tri-eti et drapeau gesture-after."""
+
+    def test_reserve_without_answer_is_open(self):
+        report = mod.analyse_comments(
+            9,
+            [c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)],
+            classes=("reviewer-reserve",),
+        )
+        self.assertEqual(len(report.reserves), 1)
+        finding = report.reserves[0]
+        self.assertEqual(finding.status, "NON REPONDU")
+        self.assertEqual(finding.marker, "COMMENT_WITH_CONCERNS")
+        self.assertEqual(finding.slug, "reviewer-reserve")
+        self.assertFalse(finding.gesture_after)
+
+    def test_reserve_detectable_regardless_of_author(self):
+        # La classe cible la reserve POSEE, pas un auteur : un bot reviewer
+        # (clusterManager-Myia) ou un siege de lane portent la meme forme.
+        for author in ("clusterManager-Myia", "myia-po-2025"):
+            report = mod.analyse_comments(
+                9,
+                [c(52, "2026-11-05T14:05:12Z", RESERVE_HERMES, author=author)],
+                classes=("reviewer-reserve",),
+            )
+            self.assertEqual(len(report.reserves), 1, f"auteur : {author}")
+
+    def test_lift_citing_timestamp_refermes(self):
+        # Convention mesuree des levees : « [OVERRIDE] ... reserve ... du
+        # 14:05Z » porte l'horodatage — citation forte, la reserve est REPONDU.
+        report = mod.analyse_comments(
+            9,
+            [
+                c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES),
+                c(53, "2026-11-06T09:00:00Z", LIFT_WITH_TIMESTAMP),
+            ],
+            classes=("reviewer-reserve",),
+        )
+        self.assertEqual(len(report.reserves), 1)
+        self.assertEqual(report.reserves[0].status, "REPONDU")
+        self.assertEqual(report.reserves[0].proof, 53)
+
+    def test_plain_reply_without_citation_is_manual_review(self):
+        # Fail-closed : une reponse qui ne cite ni l'heure ni le texte laisse
+        # la reserve en MANUAL_REVIEW, pas en REPONDU.
+        report = mod.analyse_comments(
+            9,
+            [
+                c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES),
+                c(54, "2026-11-06T09:00:00Z", "Vu, on regarde la question."),
+            ],
+            classes=("reviewer-reserve",),
+        )
+        self.assertEqual(report.reserves[0].status, "MANUAL_REVIEW")
+
+    def test_claim_after_reserve_raises_gesture_after(self):
+        # Le geste de lane qui ne referme pas aggrave : drapeau pose, la
+        # reserve reste ouverte.
+        report = mod.analyse_comments(
+            9,
+            [
+                c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES),
+                c(55, "2026-11-05T15:00:00Z", CLAIM),
+            ],
+            classes=("reviewer-reserve",),
+        )
+        self.assertEqual(len(report.reserves), 1)
+        self.assertTrue(report.reserves[0].gesture_after)
+        self.assertTrue(report.gesture_after)
+        self.assertIn(report.reserves[0], report.unresolved)
+
+    def test_classes_scoping_leaves_reserves_out(self):
+        # Les tests scoping : sans la classe demandee, aucune reserve rendue.
+        report = mod.analyse_comments(
+            9,
+            [c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)],
+            classes=("user-concern",),
+        )
+        self.assertEqual(report.reserves, [])
+        self.assertEqual(report.unresolved, [])
+
+    def test_report_dict_carries_reserves(self):
+        report = mod.analyse_comments(
+            9,
+            [c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)],
+            classes=("reviewer-reserve",),
+        )
+        payload = report.as_dict()
+        self.assertIn("reserves", payload)
+        self.assertEqual(payload["reserves"][0]["marker"], "COMMENT_WITH_CONCERNS")
+        self.assertEqual(payload["reserves"][0]["status"], "NON REPONDU")
+
+    def test_render_counts_reserves_and_labels_marker(self):
+        report = mod.analyse_comments(
+            9,
+            [c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)],
+            classes=("reviewer-reserve",),
+        )
+        text = mod.render_text([report], "2026-09-25", "open", 1)
+        self.assertIn("1 reserve(s) de relecteur", text)
+        self.assertIn("[reserve COMMENT_WITH_CONCERNS]", text)
 
 
 if __name__ == "__main__":

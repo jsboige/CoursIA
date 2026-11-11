@@ -3623,46 +3623,24 @@ def anchor_is_citation(text: str, issue_number: int) -> bool:
     return False
 
 
-def merged_pr_signal(issue_number: int, lane: str | None = None):
-    """Une PR MERGEE citant `#N` est-elle dans la fenetre de 90 jours ?
+def _newest_merged_citation(prs, issue_number: int,
+                            now: dt.datetime) -> str | bool:
+    """Post-filtre commun aux deux voies de ``merged_pr_signal`` (#24823).
 
-    TRI-ETAT, meme doctrine que ``has_delivered_signal`` et
-    ``open_cover_signal`` :
-    - ``str`` : au moins une PR MERGED cite `#N`, `mergedAt` est dans les
-      90 derniers jours (jour UTC), et la valeur rendue est ce `mergedAt`
-      ISO-8601 le plus recent. La DATE est rendue, pas un simple `True`,
-      parce que la surface « PR MERGEE » n'est pas terminale : un
-      `[NOT-DELIVERED]` poste APRES cette fusion la revoque (#22987), et
-      cette comparaison a besoin de l'instant de fusion ;
-    - ``False`` : aucune PR MERGED ne cite `#N`, OU toutes les PRs
-      MERGEes qui la citent datent de plus de 90 jours ;
-    - ``None`` : la requete a echoue (reseau, 403, payload illisible) --
-      l'appelant doit tirer quand meme EN LE DISANT.
+    La MEME ancre ``#N\\b`` (#17760, #24418 : la citation est exigeante sur
+    la forme) et la MEME fenetre de 90 jours pour la voie serveur (payload
+    plafonne a 20 resultats par le ``--search``) et pour l'index local
+    precharge : la boucle de decision est ecrite une fois, aucune
+    divergence de semantique n'est possible entre les deux voies.
 
-    Le `--search "N in:title,body"` est un filtre serveur (GitHub ne peut
-    pas tenir la borne de 90 jours cote serveur) ; le post-filtre temporel
-    se fait ici, sur le payload limite a 20 resultats. Meme doctrine
-    d'ancre `#N\\b` que ``open_cover_signal`` (post-filtre, #17760) pour
-    eviter les collisions de sous-chaine (ex. #11703 vs #1170391).
+    L'absence de cle ``state`` est toleree (l'index local est telecharge
+    par ``--state merged`` sans demander le champ) ; un ``state`` explicite
+    autre que ``MERGED`` est ecarte, comme le faisait la voie serveur.
     """
-    try:
-        out = subprocess.run(
-            ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
-             "--limit", "20", "--search", f"{issue_number} in:title,body",
-             "--json", "number,state,mergedAt,title,body"],
-            capture_output=True, text=True, encoding="utf-8", check=True,
-            timeout=30,
-        ).stdout
-        prs = json.loads(out)
-    except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
-        return None
-    if not isinstance(prs, list):
-        return None
-    now = dt.datetime.now(dt.timezone.utc)
     window = dt.timedelta(days=MERGED_PR_WINDOW_DAYS)
     newest = None
     for pr in prs:
-        if pr.get("state") != "MERGED":
+        if pr.get("state") not in (None, "MERGED"):
             continue
         # #24418 : `anchor.search` retenait une enumeration de prose comme
         # une livraison. La citation est desormais exigeante sur la forme.
@@ -3684,6 +3662,102 @@ def merged_pr_signal(issue_number: int, lane: str | None = None):
     if newest is None:
         return False
     return newest[1]
+
+
+def merged_pr_signal(issue_number: int, lane: str | None = None,
+                     index: list | None = None):
+    """Une PR MERGEE citant `#N` est-elle dans la fenetre de 90 jours ?
+
+    TRI-ETAT, meme doctrine que ``has_delivered_signal`` et
+    ``open_cover_signal`` :
+    - ``str`` : au moins une PR MERGED cite `#N`, `mergedAt` est dans les
+      90 derniers jours (jour UTC), et la valeur rendue est ce `mergedAt`
+      ISO-8601 le plus recent. La DATE est rendue, pas un simple `True`,
+      parce que la surface « PR MERGEE » n'est pas terminale : un
+      `[NOT-DELIVERED]` poste APRES cette fusion la revoque (#22987), et
+      cette comparaison a besoin de l'instant de fusion ;
+    - ``False`` : aucune PR MERGED ne cite `#N`, OU toutes les PRs
+      MERGEes qui la citent datent de plus de 90 jours ;
+    - ``None`` : la requete a echoue (reseau, 403, payload illisible) --
+      l'appelant doit tirer quand meme EN LE DISANT.
+
+    Deux voies (#24823), meme verdict :
+    - ``index=None`` (defaut) : recherche serveur PAR NUMERO, voie
+      historique. Le `--search "N in:title,body"` est un filtre serveur
+      (GitHub ne peut pas tenir la borne de 90 jours cote serveur) ; le
+      post-filtre temporel se fait ici, sur le payload limite a 20
+      resultats. Meme doctrine d'ancre `#N\\b` que
+      ``open_cover_signal`` (post-filtre, #17760) pour eviter les
+      collisions de sous-chaine (ex. #11703 vs #1170391).
+    - ``index=[...]`` : index local des PRs mergees precharge en phase
+      reseau (``merged_prs_index``) -- la reponse est LOCALE et
+      concluante (``str`` | ``False``), jamais ``None`` : le corpus est
+      la. L'index couvre TOUTE la fenetre sans la limite de 20 du
+      ``--search`` serveur : la voie locale est au moins aussi complete.
+    """
+    now = dt.datetime.now(dt.timezone.utc)
+    if index is not None:
+        return _newest_merged_citation(index, issue_number, now)
+    try:
+        out = subprocess.run(
+            ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
+             "--limit", "20", "--search", f"{issue_number} in:title,body",
+             "--json", "number,state,mergedAt,title,body"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=30,
+        ).stdout
+        prs = json.loads(out)
+    except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
+        return None
+    if not isinstance(prs, list):
+        return None
+    return _newest_merged_citation(prs, issue_number, now)
+
+
+def merged_prs_index(cache: PayloadCache | None = None,
+                     cache_mode: str = "off",
+                     cache_status: dict[str, dict[str, Any]] | None = None,
+                     ) -> list[dict] | None:
+    """Precharge l'index local des PRs MERGEEs sur la fenetre de la sonde.
+
+    #24823 : la sonde par candidat « une PR MERGEE cite-t-elle #N ? » etait
+    une recherche serveur PAR NUMERO dans la boucle de tirage -- 41 appels
+    `gh pr list --search` mesures sur un tirage de 50 grains. La question se
+    repond desormais localement : ce helper precharge le corpus des PRs
+    mergees de la fenetre, et ``merged_pr_signal(..., index=...)`` y lit la
+    reponse pour CHAQUE numero sans un seul appel reseau.
+
+    La voie du prechargement est ``fetch_merged`` (meme corpus que la mesure
+    de livraison du tapis, au-dessus du site d'appel : filtre serveur
+    `merged:>=` -- le tri de `gh pr list` etant par CREATION, un filtre
+    client laisserait tomber les PRs creees avant la coupe, faux silencieux
+    mesure #19209 -- cache PAR TRANCHE #19236). Partager cette voie veut
+    dire qu'a chaud l'index ne coute AUCUN appel de plus : la tranche vive
+    vient du cache que ``delivery_prs`` vient deja de payer.
+
+    Rend ``None`` quand la passe groupee echoue : l'appelant garde alors
+    la sonde reseau par numero (voie historique) et le dit -- un index
+    absent ne se lit JAMAIS comme « aucune PR mergee ».
+    """
+    try:
+        prs, fetch_err = fetch_merged(
+            MERGED_PR_WINDOW_DAYS,
+            now=NOW,
+            cache=cache,
+            cache_mode=cache_mode,
+            cache_status=cache_status,
+            cache_ttl_seconds=SERIES_CACHE_TTL_SECONDS,
+        )
+        # Un echec de fetch rend un corpus vide AVEC erreur (`fetch_merged`
+        # attrape deja les exceptions). L'index indisponible se declenche
+        # sur l'ERREUR, jamais sur un corpus vide (qui est une reponse
+        # legitime du serveur -- le depot peut n'avoir rien merge).
+        if fetch_err or not isinstance(prs, list):
+            return None
+        return prs
+    except Exception:  # noqa: BLE001 - prechargement best-effort, echec DIT
+        return None
+    return prs if isinstance(prs, list) else None
 
 
 def revocation_probe_inert(issue_number: int, lane: str | None = None,
@@ -5277,6 +5351,12 @@ def _claims_in_process(
     instantane illisible, exception) ; l'appelant tranche alors. Chaque
     sortie None NOMME sa cause sur stderr (prefixe ``[22983]``) : un refus
     fail-CLOSED intermittent doit etre diagnosticable, pas devine.
+
+    #22983 (v3) -- en mode STRICT, le refus est **par numero** : les
+    numeros que l'instantane sert sont servis, et les autres rendent
+    `BLOCKED` avec leur MOTIF (absent / perime / payload absent). Le
+    refus reste fail-CLOSED, mais il ne condamne plus les numeros que
+    l'instantane prouve.
     """
     if not numbers:
         return {}
@@ -5289,6 +5369,11 @@ def _claims_in_process(
             f"({type(exc).__name__}: {exc})")
     import contextlib
     import io
+    # #22983 (v3) -- le refus STRICT est PAR NUMERO (voir la branche
+    # STRICT plus bas). Hors STRICT, l'instantane est rafraichi : il sert
+    # la fenetre entiere, et aucun refus nominatif n'a de motif a porter.
+    _refuses: dict[int, str] = {}
+    _servables = list(numbers)
     try:
         if local_only:
             # #22983 -- mode STRICT : l'instantane est lu TEL QUEL. Le
@@ -5299,54 +5384,107 @@ def _claims_in_process(
             snapshot = (globals().get("_BELT_SNAPSHOT")
                         or gh_snapshot.load_snapshot(REPO))
             clc.set_snapshot(snapshot)
-            if not gh_snapshot.serves(snapshot, [int(n) for n in numbers]):
-                # #22983 -- la cause se NOMME : manquant (jamais lu) et
-                # perime (stamp plus vieux que le TTL) ne se soignent pas
-                # de la meme facon, et `serves()` ne rend qu'un booleen.
-                stamps = ((snapshot.get("meta") or {})
-                          .get("comment_stamps") or {})
-                _manque, _perime = [], []
-                for n in numbers:
-                    stamp = stamps.get(str(n))
-                    if not isinstance(stamp, (int, float)):
-                        _manque.append(str(n))
-                    elif (time.time() - stamp) > gh_snapshot.DEFAULT_TTL_SECONDS:
-                        _perime.append(str(n))
-                # #22983 (v2) -- manquant/perime est un SYMPTOME : quand le
-                # fetch de la phase reseau a echoue sur quota REST, c'est la
-                # CAUSE, et elle ne se soigne pas comme un TTL (recycler les
-                # stamps peres ne repand pas un quota). Les echecs sont deja
-                # nommes dans l'instantane (``meta.fetch_failures``) -- on
-                # les releve au lieu de les reinventer. Borne a 1 h pour ne
-                # pas citer un exhaust ancien comme cause du refus present.
-                _fails = ((snapshot.get("meta") or {})
-                          .get("fetch_failures") or {})
-                _quota = sorted(
-                    k for k, v in _fails.items()
-                    if isinstance(v, dict)
-                    and "rate limit" in str(v.get("error") or "").lower()
-                    and isinstance(v.get("at"), (int, float))
-                    and (time.time() - v["at"]) < 3600.0)
-                _quota_note = (f" ; echecs quota REST < 1 h : {len(_quota)}"
-                               + (f" (ex : {', '.join('#' + k for k in _quota[:3])})"
-                                  if _quota else ""))
+            # #22983 (v3) -- le refus STRICT est PAR NUMERO, pas par
+            # fenetre.
+            #
+            # La validite de l'instantane est une propriete PAR ISSUE
+            # (`serves()` : un stamp frais par issue, ET les commentaires
+            # de cette issue) ; l'appliquer a la fenetre entiere faisait
+            # qu'UN seul numero perime refusait TOUS les autres. Mesure
+            # du 09/11 (run c3010 de cette lane, sur `main` a jour) : 11
+            # numeros perimes sur 70, et « 0 retenu(s), 70 witheld » --
+            # le tapis servait ZERO grain pour une fenetre dont 59
+            # numeros etait lisibles.
+            #
+            # On interroge donc `serves()` NUMERO PAR NUMERO -- le
+            # predicat canonique, avec son propre contrat -- plutot que de
+            # reputer sa validite dans le tapis : le contrat de
+            # l'instantane reste porte par un seul code. Le refus reste
+            # fail-CLOSED, mais il devient PROPRE : un numero dont
+            # l'instantane ne prouve rien est refuse avec son MOTIF, et
+            # les autres sont servis.
+            _ttl = getattr(gh_snapshot, "DEFAULT_TTL_SECONDS", 1800)
+            stamps = ((snapshot.get("meta") or {})
+                      .get("comment_stamps") or {})
+            comments = (snapshot.get("comments") or {})
+            _manque, _perime, _autres = [], [], []
+            _refuses: dict[int, str] = {}
+            _servables = []
+            for n in numbers:
+                key = str(n)
+                if gh_snapshot.serves(snapshot, [int(n)]):
+                    _servables.append(n)
+                    continue
+                stamp = stamps.get(key)
+                if not isinstance(stamp, (int, float)):
+                    _manque.append(key)
+                    cause = "absent de l'instantane (jamais lu)"
+                elif (time.time() - stamp) > _ttl:
+                    _perime.append(key)
+                    cause = (f"perime (stamp plus vieux que le TTL de "
+                             f"{int(_ttl)} s)")
+                elif key not in comments:
+                    _autres.append(key)
+                    cause = "commentaires absents de l'instantane"
+                else:
+                    _autres.append(key)
+                    cause = "non servi par l'instantane"
+                _refuses[int(key)] = f"instantane STRICT : numero #{key} {cause}"
+            # #22983 (v2) -- manquant/perime est un SYMPTOME : quand le
+            # fetch de la phase reseau a echoue sur quota REST, c'est la
+            # CAUSE, et elle ne se soigne pas comme un TTL (recycler les
+            # stamps peres ne repand pas un quota). Les echecs sont deja
+            # nommes dans l'instantane (``meta.fetch_failures``) -- on
+            # les releve au lieu de les reinventer. Borne a 1 h pour ne
+            # pas citer un exhaust ancien comme cause du refus present.
+            _fails = ((snapshot.get("meta") or {})
+                      .get("fetch_failures") or {})
+            _quota = sorted(
+                k for k, v in _fails.items()
+                if isinstance(v, dict)
+                and "rate limit" in str(v.get("error") or "").lower()
+                and isinstance(v.get("at"), (int, float))
+                and (time.time() - v["at"]) < 3600.0)
+            _quota_note = (f" ; echecs quota REST < 1 h : {len(_quota)}"
+                           + (f" (ex : {', '.join('#' + k for k in _quota[:3])})"
+                              if _quota else ""))
+            # `serves` garantit les commentaires ; le LECTEUR a besoin du
+            # PAYLOAD. Un payload absent le ferait retomber sur
+            # `gh issue view` -- un appel reseau pendant le tirage.
+            _absents = [str(n) for n in _servables
+                        if clc._snapshot_issue_payload(str(n)) is None]
+            for key in _absents:
+                _refuses[int(key)] = (
+                    f"instantane STRICT : numero #{key} : payload absent de "
+                    f"l'instantane")
+                _servables.remove(int(key))
+            if not _servables:
+                # RIEN de servable : la fenetre entiere est refusee, et le
+                # contrat fail-CLOSED d'avant est conserve tel quel (None
+                # => l'appelant rend le verdict opaque de panne de
+                # fenetre). Le refus par numero ne concerne que le MIXTE.
                 return _claims_none(
                     f"instantane STRICT ne sert pas les numeros "
                     f"(manquants: {', '.join(_manque) or '-'} ; "
                     f"perimes: {', '.join(_perime) or '-'})"
                     + _quota_note)
-            # `serves` garantit les commentaires ; le LECTEUR a besoin du
-            # PAYLOAD. Un payload absent le ferait retomber sur
-            # `gh issue view` -- un appel reseau pendant le tirage.
-            _absents = [str(n) for n in numbers
-                        if clc._snapshot_issue_payload(str(n)) is None]
-            if _absents:
-                return _claims_none(
-                    f"payload absent de l'instantane STRICT : "
-                    f"{', '.join(_absents)}")
+            if _refuses:
+                for _num in list(_refuses):
+                    _refuses[_num] += _quota_note
+                _autres_note = (f" ; autres: {', '.join(_autres)}"
+                                if _autres else "")
+                print(f"[22983] refus STRICT par numero "
+                      f"(manquants: {', '.join(_manque) or '-'} ; "
+                      f"perimes: {', '.join(_perime) or '-'})"
+                      f"{_autres_note}{_quota_note}",
+                      file=sys.stderr, flush=True)
         else:
             snapshot = gh_snapshot.refresh(REPO, issue_numbers=list(numbers))
             clc.set_snapshot(snapshot)
+            # Hors STRICT : l'instantane vient d'etre rafraichi, il sert
+            # la fenetre entiere ; aucun refus nominatif n'a de motif a
+            # porter.
+            _servables = list(numbers)
         if open_prs_cache:
             # Le LECTEUR lit le cache des PRs ouvertes au moment de son
             # import ; on le pose dans l'environnement ET dans le module
@@ -5355,33 +5493,40 @@ def _claims_in_process(
             os.environ["CHECK_LANE_CLAIM_OPEN_PRS_JSON"] = open_prs_cache
             if getattr(clc, "_OPEN_PRS_CACHE_PATH", None) != open_prs_cache:
                 clc._OPEN_PRS_CACHE_PATH = open_prs_cache
-        if len(numbers) > 1:
+        if len(_servables) > 1:
             payload = clc.check_issues_batch(
-                [str(n) for n in numbers], lane,
+                [str(n) for n in _servables], lane,
                 stale_threshold=48.0, from_json=None, my_paths=None,
             )
-            return {n: _summarize_claim_from_batch(payload, n)
-                    for n in numbers}
-        # Un seul numero : la CLI mono-issue passe par `_run_check` et rend
-        # un JSON de synthese suivi de la phrase-verdict. On reproduit
-        # EXACTEMENT cette voie, et on relit la sortie avec le meme
-        # reducteur.
-        n = numbers[0]
-        buf_out = io.StringIO()
-        buf_err = io.StringIO()
-        with contextlib.redirect_stdout(buf_out), \
-                contextlib.redirect_stderr(buf_err):
-            # #22983 -- l'instantane sert le payload quand il le peut ;
-            # sinon on retombe sur la lecture reseau (meme contrat que le
-            # mode batch de `check_issues_batch`).
-            issue_payload = clc._snapshot_issue_payload(str(n))
-            if issue_payload is None:
-                issue_payload = clc._gh_issue_comments(str(n))
-            rc = clc._run_check(
-                issue_payload, lane, stale_threshold=48.0,
-                my_paths=None, check_open_pr_paths=True,
-            )
-        return {n: _summarize_claim(buf_out.getvalue(), rc)}
+            verdicts = {n: _summarize_claim_from_batch(payload, n)
+                        for n in _servables}
+        else:
+            # Un seul numero : la CLI mono-issue passe par `_run_check` et
+            # rend un JSON de synthese suivi de la phrase-verdict. On
+            # reproduit EXACTEMENT cette voie, et on relit la sortie avec
+            # le meme reducteur.
+            n = _servables[0]
+            buf_out = io.StringIO()
+            buf_err = io.StringIO()
+            with contextlib.redirect_stdout(buf_out), \
+                    contextlib.redirect_stderr(buf_err):
+                # #22983 -- l'instantane sert le payload quand il le peut ;
+                # sinon on retombe sur la lecture reseau (meme contrat que
+                # le mode batch de `check_issues_batch`).
+                issue_payload = clc._snapshot_issue_payload(str(n))
+                if issue_payload is None:
+                    issue_payload = clc._gh_issue_comments(str(n))
+                rc = clc._run_check(
+                    issue_payload, lane, stale_threshold=48.0,
+                    my_paths=None, check_open_pr_paths=True,
+                )
+            verdicts = {n: _summarize_claim(buf_out.getvalue(), rc)}
+        # Les refus nominatifs s'ajoutent aux verdicts servis : un numero
+        # refuse l'est avec son MOTIF, jamais avec le verdict opaque d'une
+        # panne de fenetre.
+        for _num, _motif in _refuses.items():
+            verdicts[int(_num)] = (CLAIM_CODE_BLOCKED, _motif)
+        return verdicts
     except Exception as exc:  # noqa: BLE001 - l'appelant tranche (fail-CLOSED)
         return _claims_none(
             f"exception dans la voie en processus "
@@ -5412,9 +5557,13 @@ def check_claims(numbers: list[int], lane: str, *,
 
     - **STRICT** (le tapis) : l'instantane est lu TEL QUEL -- il ne se
       rafraichit pas ici (le rafraichissement est la phase reseau, qui
-      precede le tirage). S'il ne peut pas servir la fenetre, le tapis ne
-      complete PAS a la volee : tous les numeros rendent `BLOCKED`, donc
-      AUCUN grain n'est servi, et l'appelant le dit ;
+      precede le tirage). Le tapis ne complete PAS a la volee : un numero
+      que l'instantane ne prouve pas rend `BLOCKED`, **avec son motif**
+      (absent / perime / payload absent), et les numeros que
+      l'instantane sert sont servis normalement. Le refus est donc **par
+      numero**, pas par fenetre (#22983 v3 : la validite de l'instantane
+      est une propriete par issue ; l'appliquer a la fenetre entiere
+      faisait qu'un numero perime refusait tous les autres) ;
     - **hors STRICT** (tirage pondere, board) : l'instantane est lu, ou
       rafraichi quand il ne peut pas servir. Une indisponibilite rend
       `ERROR` -- jamais `FREE`.
@@ -7734,7 +7883,12 @@ def unaddressed_review_points_detail(numbers: list[int]) -> dict[int, dict]:
             authors = sorted({str(e.get("author") or "?")
                               for e in info["blocking"] if isinstance(e, dict)})
             out[n] = {"count": len(info["blocking"]), "authors": authors,
-                      "verdict": None, "verdict_surface": None}
+                      "verdict": None, "verdict_surface": None,
+                      # #25522 : la date de la DERNIERE reserve. C'est elle
+                      # qui rend la classe `coordinateur` decidable -- une
+                      # declaration `[ASK]` ne repond que si elle est
+                      # posterieure a la reserve.
+                      "last_reserve_at": _last_blocking_at(info["blocking"])}
             numbers_with_points.append(n)
             if "verdict" not in info:
                 # Une evaluation B.0 deja persistee a moins de 15 min, mais
@@ -7746,7 +7900,8 @@ def unaddressed_review_points_detail(numbers: list[int]) -> dict[int, dict]:
                 out[n]["verdict_surface"] = info.get("verdict_surface")
         elif not info["blocked"]:
             out[n] = {"count": 0, "authors": [],
-                      "verdict": None, "verdict_surface": None}
+                      "verdict": None, "verdict_surface": None,
+                      "last_reserve_at": None}
     if voice_numbers:
         try:
             sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
@@ -7983,6 +8138,570 @@ def lane_open_prs(lane: str, prs: list[dict]) -> list[dict]:
     return out
 
 
+# --- #25522 : classer les PRs rouges par QUI PEUT AGIR ------------------------
+#
+# Le garde rouge renvoyait la lane sur des PRs qu'elle ne peut pas
+# debloquer. Sous le nom « file de reparation », trois familles se
+# melangeaient : des levees de reserve que seul `myia-ai-01` peut faire
+# (B.0 : sous le login partage, seul le coordinateur leve par une phrase),
+# des gels du coordinateur, et des etats d'infra (jambe CANCELLED, file
+# saturee). La lane rejouait ces PRs a chaque cycle, rien ne bougeait, et le
+# plancher G-VAR-1 n'etait pas tenu (9 cycles d'affilee, mesures sur
+# po-2023 le 09/11 ; po-2028 a tire 6 fois sans rien retenir).
+#
+# Quatre classes, une seule arme la file :
+#
+#   * `lane`         -- la lane peut reparer : vrai rouge (FAILURE / ERROR /
+#                        ACTION_REQUIRED), conflit, reserve sans reponse ;
+#   * `coordinateur` -- le seul blocage restant est une levee, une re-review ou
+#                        un merge de `myia-ai-01` ; la lane l'a DECLARE par une
+#                        ligne `[ASK]` posee APRES la derniere reserve. Sans
+#                        cette ligne, la PR reste `lane` (fail-closed) ;
+#   * `gel`          -- la PR porte un `[FROZEN]` d'une lane habilitee ;
+#   * `infra`        -- jambe CANCELLED dont une tentative plus recente est en
+#                        file, constituant COUPE, rouge vert sur `main`, file
+#                        saturee : le geste est un rejeu, pas une correction de
+#                        diff.
+#
+# Seule la classe `lane` arme `nits`, `aged`, `count` et la file de
+# reparation. Les trois autres sont RENDUES (texte + JSON) dans une liste
+# « en attente d'autrui » : elles sont dites, elles ne bloquent pas.
+
+RED_CLASS_LANE = "lane"
+RED_CLASS_COORDINATEUR = "coordinateur"
+RED_CLASS_GEL = "gel"
+RED_CLASS_INFRA = "infra"
+
+#: Les trois classes qui n'attendent PAS la lane : elles sont rendues, pas
+#: opposees. L'ordre est celui de l'affichage.
+RED_CLASSES_OTHERS = (RED_CLASS_COORDINATEUR, RED_CLASS_GEL, RED_CLASS_INFRA)
+
+#: Autorites habilitees a poser un gel de PR. La forme canonique du marqueur
+#: est `[FROZEN] <motif court> -- <autorite>` (#24516) : l'autorite y est
+#: courte (`ai-01`) ou complete (`lane myia-ai-01:CoursIA`). Le login GitHub
+#: etant partage, l'autorite ne se lit JAMAIS dans l'auteur du commentaire :
+#: elle se lit dans le marqueur (cf `unfrozen_allowed`).
+FROZEN_AUTHORITY_SHORT = frozenset({"ai-01", "po-2025"})
+
+#: Une declaration `[ASK]` de la lane. La ligne qui porte le marqueur doit
+#: declarer la lane (`lane <machine:workspace>`) : sous le login partage,
+#: l'auteur du commentaire ne prouve rien, et la declaration d'une autre lane
+#: ne doit pas lever une reserve qui nous concerne.
+_ASK_HEADER_RE = re.compile(r"^\s*(?:#{1,6}\s*)?\[ASK\](?=\s|:|$)")
+
+#: Lecteurs de fil de PR en parallele (une requete REST par PR).
+RED_COMMENT_WORKERS = 6
+
+#: Cause que la LANE peut lever seule, en agissant sur son diff.
+#:
+#: #25522 : le "vert sur main" est un VRAI rouge (FAILURE) sur un check de la
+#: PR -- le geste est un rejeu de la jambe, que la lane peut faire seule
+#: (cf `test_check_vert_sur_main_devient_infra_rejeu`, #17154 : la PR reste
+#: dans la file, avec sa cause). La classe `infra` de #25522 ne couvre que
+#: les deux etats explicitement nommes par le body de l'issue (jambe
+#: CANCELLED deja rejouee, `file_saturation`).
+_LANE_CAUSE_MARKERS = (
+    "check requis en echec",     # FAILURE / ERROR / ACTION_REQUIRED
+    "conflits avec main",       # conflit de merge
+    "collision d'ordinal",
+    "infra d'execution (vert sur main)",  # rouge reel, geste = rejeu
+    "COUPE(S)",                 # agregat rouge par constituants coupes
+)
+
+#: Cause INFRA : le geste est un rejeu deja engage ou une attente de file,
+#: jamais une correction de diff. Les deux etats nommes par #25522.
+_INFRA_CAUSE_MARKERS = (
+    "file_saturation",
+    "file-saturation",
+)
+
+#: Cause de RESERVE : une levee, une re-review ou un merge -- le geste est
+#: une phrase, pas un SHA (B.0).
+_RESERVE_CAUSE_MARKERS = (
+    "point(s) de review non leve(s)",
+    "reserve(s) de :",
+    "CHANGES_REQUESTED non leve",
+    "verdict de corps non leve",
+)
+
+
+def _parse_ts(value) -> dt.datetime | None:
+    """Un horodatage ISO-8601 -> datetime timezone-aware, ou None si illisible.
+
+    Les deux formes qui coexistent dans la flotte sont acceptees : le
+    `createdAt` de GitHub (`2026-11-07T12:00:00Z`) et l'`isoformat()` de
+    l'organe B.0 (`2026-11-07T12:00:00+00:00`). Une date absente ou
+    illisible rend None -- jamais une date par defaut : une comparaison de
+    dates ne doit pas se faire sur une valeur inventee.
+    """
+    if not value or not isinstance(value, str):
+        return None
+    text = value.strip()
+    if not text or text == "?":
+        return None
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = dt.datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=dt.timezone.utc)
+    return parsed
+
+
+def _first_nonempty_line(text: str) -> str:
+    """La premiere ligne non vide d'un texte ("" si le texte est vide)."""
+    for line in (text or "").splitlines():
+        if line.strip():
+            return line
+    return ""
+
+
+def _last_blocking_at(blocking: list) -> str | None:
+    """L'horodatage de la DERNIERE reserve non levee, ou None.
+
+    Les entrees de l'organe B.0 portent `at` (# `check_unaddressed_nits`) ;
+    certaines n'ont pas de date lisible (`"?"`) : elles sont ignorees, et une
+    PR dont aucune reserve n'est datee ne peut pas etre declaree « en attente
+    » (fail-closed).
+    """
+    best = None
+    for entry in blocking or []:
+        if not isinstance(entry, dict):
+            continue
+        parsed = _parse_ts(entry.get("at"))
+        if parsed is None:
+            continue
+        if best is None or parsed > best:
+            best = parsed
+    return best.isoformat() if best else None
+
+
+def _frozen_authority(text: str) -> str | None:
+    """L'autorite d'un marqueur `[FROZEN]`, ou None si elle n'est pas lisible.
+
+    Deux formes acceptees : le tag de lane complet
+    (`-- lane myia-ai-01:CoursIA`) et la forme courte du coordinateur
+    (`-- ai-01`). Toute autre autorite -- une lane tierce, un tiers
+    quelconque -- rend None : le gel n'est alors pas un gel du
+    coordinateur, et la PR n'est pas classer `gel`.
+    """
+    lane = _declared_lane(text)
+    if lane and lane in FROZEN_UNFROZEN_LANES:
+        return lane
+    match = re.search(r"--\s*([A-Za-z0-9_.-]+)", text or "")
+    if match and match.group(1).lower() in FROZEN_AUTHORITY_SHORT:
+        return match.group(1).lower()
+    return None
+
+
+def _frozen_lines(text: str) -> list[str]:
+    """Les lignes d'un texte qui portent un en-tete `[FROZEN]`."""
+    if not isinstance(text, str) or not text:
+        return []
+    return [line for line in _strip_code(text).splitlines()
+            if _FROZEN_HEADER_RE.search(line)]
+
+
+def _gel_authority(body: str | None, comments: list[dict] | None) -> str | None:
+    """L'autorite du gel qui FAIT FOI, ou None (aucun gel).
+
+    Meme lecture que `_issue_is_frozen`, avec UNE exigence de plus : le gel
+    doit etre pose par une lane HABILITEE. Le login GitHub est partage,
+    donc l'auteur du commentaire ne prouve rien : l'autorite se lit dans
+    le marqueur.
+
+    **Le fil se lit dans l'ordre** (regle B) : un `[FROZEN]` pose en
+    commentaire est FERME par un `[UNFROZEN]` d'une lane habilitee pose
+    plus tard -- le dernier etat gagne. Sans cette lecture, une PR
+    degelee qui porte un vrai `FAILURE` quittait la file de sa lane
+    pour toujours (fail-open a rebours du contrat fail-closed).
+
+    Un gel pose dans le **body** reste soumis a la regle A : seul le
+    retrait de la ligne le leve, pas un `[UNFROZEN]`.
+
+    Fail-closed : un `[FROZEN]` d'une lane tierce ne cree pas de gel, et
+    n'en leve pas un -- le veto du coordinateur ne se fait pas voler par
+    un tiers.
+    """
+    # Regle A : le body d'abord. Un gel de body prime sur le fil, et le
+    # fil ne le leve pas.
+    for line in _frozen_lines(body or ""):
+        authority = _frozen_authority(line)
+        if authority:
+            return authority
+
+    # Regle B : le fil se lit dans l'ordre.
+    state: str | None = None
+    for comment in comments or []:
+        if not isinstance(comment, dict):
+            continue
+        text = comment.get("body") or ""
+        if not isinstance(text, str) or not text:
+            continue
+        # Le code **documente** un marqueur, il ne le pose pas.
+        text = _strip_code(text)
+        if _UNFROZEN_HEADER_RE.search(text):
+            # Seul un degel d'une lane HABILITEE ferme un gel : un
+            # `[UNFROZEN]` sans lane declaree, ou d'une lane tierce, ne
+            # leve rien.
+            if unfrozen_allowed(_declared_lane(text)):
+                state = None
+            continue
+        for line in _frozen_lines(text):
+            authority = _frozen_authority(line)
+            if authority:
+                state = authority
+            # Un gel d'autorite tierce ne cree pas de gel et n'en leve
+            # pas un : l'etat reste ce qu'il etait.
+    return state
+
+
+def _red_pr_comments(number: int) -> list[dict]:
+    """Le fil de CONVERSATION d'une PR : ``[{created_at, body}]``.
+
+    Lecture REST (`gh api`) -- le meme bucket que
+    `_issue_comment_bodies_rest`, donc le meme cout, et l independence du
+    bucket GraphQL que `gh pr view` consomme. Le corps est lu avec `@jq
+    @json` : un corps multi-lignes ne peut pas casser le decoupage ligne a
+    ligne, une ligne JSON par commentaire.
+
+    Une lecture qui echoue rend une liste VIDE : la classification tombe
+    alors sur `lane` (fail-closed), jamais sur `gel` ni `coordinateur`.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "api", "--paginate", "--jq",
+             ".[] | [.created_at, .body] | @json",
+             f"repos/{REPO}/issues/{number}/comments"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=_clamp_timeout(20),
+        ).stdout
+    except Exception:  # noqa: BLE001 - lecture best-effort, jamais bloquante
+        return []
+    comments: list[dict] = []
+    for line in (out or "").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            created_at, body = json.loads(line)
+        except Exception:  # noqa: BLE001 - ligne illisible = commentaire ignore
+            continue
+        comments.append({"created_at": created_at or "", "body": body or ""})
+    return comments
+
+
+def _red_pr_comments_many(numbers: list[int]) -> dict[int, list[dict]]:
+    """Le fil de plusieurs PRs, lu en parallele (fan-out borne)."""
+    numbers = list(numbers)
+    if not numbers:
+        return {}
+    if len(numbers) <= 1 or RED_COMMENT_WORKERS <= 1:
+        return {n: _red_pr_comments(n) for n in numbers}
+    out: dict[int, list[dict]] = {}
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=min(RED_COMMENT_WORKERS, len(numbers))) as pool:
+        for number, comments in zip(numbers, pool.map(_red_pr_comments, numbers)):
+            out[number] = comments
+    return out
+
+
+def _ask_declaration(lane: str, comments: list[dict],
+                     last_reserve_at: str | None) -> str | None:
+    """Une declaration `[ASK]` de la lane, posee APRES la derniere reserve.
+
+    Renvoie l'horodatage de la declaration, ou None.
+
+    Trois conditions, toutes exigees :
+    - une ligne du commentaire porte le marqueur `[ASK]` ;
+    - cette ligne declare la lane (`lane <machine:workspace>`) : le login
+      GitHub est partage, donc l'auteur du commentaire ne prouve rien, et la
+      declaration d'une autre lane ne doit pas lever une reserve qui nous
+      concerne ;
+    - la declaration est POSTERIEURE a la derniere reserve : une declaration
+      posee avant une reserve ne repond pas a cette reserve.
+
+    Une declaration dont la date de reserve est illisible n'est PAS acceptee :
+    sans temoin de l'ordre, on ne peut pas affirmer que la declaration
+    repond a la reserve (fail-closed).
+    """
+    reserve_at = _parse_ts(last_reserve_at)
+    if reserve_at is None:
+        return None
+    for comment in comments or []:
+        body = comment.get("body") or ""
+        if not isinstance(body, str) or not body:
+            continue
+        for line in body.splitlines():
+            if not _ASK_HEADER_RE.search(line):
+                continue
+            if _declared_lane(line) != lane:
+                continue
+            when = _parse_ts(comment.get("created_at"))
+            if when is None or when <= reserve_at:
+                continue
+            return comment.get("created_at")
+    return None
+
+
+def _cancelled_with_newer_attempt(state: dict | None) -> set[str]:
+    """Les checks CANCELLED dont une tentative plus recente est en vol.
+
+    Le geste est alors un rejeu deja engage par l'infra : la lane qui
+    rejouerait la jambe empilerait un run de plus. C'est la classe `infra`
+    de #25522.
+
+    Sans temoin d'une tentative plus recente, une jambe CANCELLED reste un
+    travail de la lane (rejouer la jambe soi-meme apres l'echeance du
+    plancher) : le classeur ne l'invente pas.
+    """
+    if not state:
+        return set()
+    commits = state.get("commits", {}).get("nodes") or []
+    rollup = (commits[0]["commit"].get("statusCheckRollup")
+              if commits else None) or {}
+    contexts = drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or [])
+    cut: list[tuple[str, dt.datetime | None]] = []
+    for ctx in contexts:
+        name = ctx.get("name") or ctx.get("context") or "?"
+        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+        if verdict not in CHECK_CUT or not ctx.get("isRequired"):
+            continue
+        stamp = (ctx.get("completedAt") or ctx.get("startedAt")
+                 or ctx.get("createdAt"))
+        cut.append((name, _parse_ts(stamp)))
+    if not cut:
+        return set()
+    inflight = []
+    for ctx in contexts:
+        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+        if verdict not in CHECK_IN_FLIGHT:
+            continue
+        parsed = _parse_ts(ctx.get("startedAt") or ctx.get("createdAt"))
+        if parsed is not None:
+            inflight.append(parsed)
+    if not inflight:
+        return set()
+    newest = max(inflight)
+    return {name for name, when in cut if when is None or newest > when}
+
+
+def _red_cause_class(cause: str, cut_names: set[str]) -> str:
+    """La classe d'une cause : `lane`, `infra`, `reserve` ou `neutre`.
+
+    Les marqueurs sont lus dans l'ordre : une cause de verification de code
+    prime sur une cause de file, et une reserve prime sur l'infra (une PR
+    qui porte les deux doit etre repondue par la lane, pas rejouee).
+    """
+    for marker in _LANE_CAUSE_MARKERS:
+        if marker in cause:
+            return "lane"
+    for marker in _RESERVE_CAUSE_MARKERS:
+        if marker in cause:
+            return "reserve"
+    for marker in _INFRA_CAUSE_MARKERS:
+        if marker in cause:
+            return "infra"
+    if cause.startswith("check requis non conclu"):
+        # Une jambe CANCELLED dont une tentative plus recente est en file ou
+        # en cours : le rejeu est deja engage, la lane ne doit pas empiler un
+        # run de plus. Sans temoin, la jambe reste un travail de la lane.
+        name = cause.split(":", 1)[-1].split("(")[0].strip()
+        if name in cut_names:
+            return "infra"
+        return "lane"
+    return "neutre"
+
+
+def classify_red_pr(*, lane: str, body: str, causes: list[str], nits: dict,
+                     comments: list[dict], state: dict | None = None) -> dict:
+    """Classe une PR rouge par QUI PEUT AGIR (#25522).
+
+    Rend ``{"class": ..., "reason": ...}``. Le defaut est `lane` : une
+    classe non etablie ne doit jamais sortir la PR de la file de la lane
+    (fail-closed).
+    """
+    # 1. GEL : un veto du coordinateur l'emporte sur tout -- la PR n'est pas
+    #    un travail de la lane, elle attend une decision. Le fil se lit
+    #    DANS L'ORDRE : un degel habilite ferme le gel qu'il suit.
+    authority = _gel_authority(body, comments)
+    if authority:
+        return {"class": RED_CLASS_GEL, "reason": f"gel pose par {authority}"}
+
+    cut_names = _cancelled_with_newer_attempt(state)
+    kinds = [_red_cause_class(c, cut_names) for c in causes]
+    lane_causes = [c for c, k in zip(causes, kinds) if k == "lane"]
+    reserve_causes = [c for c, k in zip(causes, kinds) if k == "reserve"]
+    infra_causes = [c for c, k in zip(causes, kinds) if k == "infra"]
+
+    # 2. Un vrai rouge, un conflit : la lane repara, et c'est prioritaire.
+    if lane_causes:
+        return {"class": RED_CLASS_LANE, "reason": lane_causes[0][:180]}
+
+    # 3. Une reserve, et rien d'autre : le geste est une levee. Elle
+    #    appartient a `myia-ai-01` si la lane l'a DECLAREE par un `[ASK]`
+    #    pose apres la derniere reserve ; sinon la lane doit repondre.
+    if reserve_causes and not infra_causes:
+        declared = _ask_declaration(lane, comments, nits.get("last_reserve_at"))
+        if declared:
+            return {"class": RED_CLASS_COORDINATEUR,
+                    "reason": (f"reserve tierce declaree en attente de "
+                               f"ai-01 (ASK du {declared})")}
+        return {"class": RED_CLASS_LANE, "reason": reserve_causes[0][:180]}
+
+    # 4. Infra seule : le geste est un rejeu, la lane n'a rien a corriger.
+    if infra_causes and not reserve_causes:
+        return {"class": RED_CLASS_INFRA, "reason": infra_causes[0][:180]}
+
+    # 5. Melange (reserve + infra) ou cause inconnue : fail-closed, la PR
+    #    reste dans la file de la lane.
+    return {"class": RED_CLASS_LANE,
+            "reason": (causes[0][:180] if causes else "cause non lisible")}
+
+
+def classify_red_prs(lane: str, prs: list[dict], red_entries: list[dict],
+                     nits_by_pr: dict[int, dict],
+                     states: dict[int, dict] | None = None) -> dict[int, dict]:
+    """Classe chaque PR rouge de la lane par QUI PEUT AGIR (#25522).
+
+    Le fil de chaque PR (une requete REST) n'est lu que pour les PRs
+    reellement rouges : c'est la que se trouvent le marqueur `[FROZEN]` et
+    la declaration `[ASK]`.
+    """
+    states = states or {}
+    by_number = {pr["number"]: pr for pr in prs}
+    numbers = [entry["number"] for entry in red_entries]
+    comments_by_pr = _red_pr_comments_many(numbers)
+    classes: dict[int, dict] = {}
+    for entry in red_entries:
+        number = entry["number"]
+        pr = by_number.get(number) or {}
+        verdict = classify_red_pr(
+            lane=lane,
+            body=pr.get("body") or "",
+            causes=entry.get("causes") or [],
+            nits=nits_by_pr.get(number) or {},
+            comments=comments_by_pr.get(number) or [],
+            state=states.get(number),
+        )
+        verdict["number"] = number
+        verdict["title"] = entry.get("title")
+        verdict["age_hours"] = entry.get("age_hours")
+        classes[number] = verdict
+    return classes
+
+
+def print_waiting_others(backlog: dict) -> None:
+    """Les PRs rouges qui n'attendent PAS la lane (#25522).
+
+    Elles sont DITES -- la lane les recopie dans son [DONE] -- mais elles ne
+    retiennent pas le tapis : un gel du coordinateur, une levee en attente
+    d'ai-01, ou une jambe d'infra a rejouer ne sont pas des travaux de la
+    lane.
+    """
+    items = backlog.get("waiting_others") or []
+    if not items:
+        return
+    print("EN ATTENTE D'AUTRUI -- rendues, elles ne retiennent pas le tapis :")
+    for item in sorted(items, key=lambda i: (i.get("class") or "",
+                                             -(i.get("age_hours") or 0))):
+        print(f"  #{item['number']}  [{item.get('class')}]  ouverte depuis "
+              f"{item.get('age_hours')} h  -- {str(item.get('title') or '')[:56]}")
+        print(f"       {item.get('reason')}")
+    print()
+
+
+def _git_read(cwd: str, *args: str) -> str | None:
+    """Une lecture `git` locale (lecture seule), ou None si elle echoue.
+
+    Lecture seule par construction : aucune des commandes appelees ici
+    n'ecrit dans le depot ni dans l'index.
+
+    Point de couture explicite : les suites de tests qui interdisent tout
+    `subprocess` neutralisent CE point (`monkeypatch.setattr(pig, "_git_read",
+    ...)`) au lieu de subir l'appel reel. La sentinelle `forbid_shell_escape`
+    leve une `BaseException`, que `except Exception` ne rattrape pas : sans
+    ce point de couture, la lecture de perimetrie du picker ferait echouer
+    une dizaine de tests qui n'ont rien a voir avec elle.
+    """
+    try:
+        proc = subprocess.run(["git", "-C", cwd, *args],
+                              capture_output=True, text=True,
+                              encoding="utf-8", check=True,
+                              timeout=_clamp_timeout(15))
+    except Exception:  # noqa: BLE001 - lecture best-effort
+        return None
+    value = (proc.stdout or "").strip()
+    return value or None
+
+
+def picker_stale_state(script_path: "pathlib.Path | None" = None) -> dict:
+    """Le picker local differe-t-il d'`origin/main` ? (#25522)
+
+    LECTURE LOCALE, sans reseau : le blob du fichier local contre le blob du
+    meme chemin a `origin/main`. C'est la mesure demandee par l'issue --
+    « lecture locale, sans reseau en plus du `fetch` deja fait ».
+
+    Mesure fondatrice (issue #25522, 09/11) : `main` local fige a 15:48Z,
+    correctif du mur de boucle (#25456) sur `main` depuis 16:16Z, et des
+    tirages de 19:12Z et 19:41Z rendus avec l'ancien contrat -- 0 retenu,
+    70 witheld, sans que rien ne signale que le picker etait perime.
+
+    Renvoie ``{"stale": bool, "local": sha, "origin_main": sha,
+    "local_head": sha, "origin_main_head": sha, "reason": str}``. Les deux
+    SHA sont ceux du FICHIER (blob) : ce sont eux qui different quand le
+    contrat a change. Les SHA de commit sont rendus a cote, pour situer le
+    checkout.
+    """
+    out = {"stale": False, "local": None, "origin_main": None,
+           "local_head": None, "origin_main_head": None, "reason": ""}
+    script = pathlib.Path(script_path) if script_path else pathlib.Path(__file__).resolve()
+    script = script.resolve()
+
+    def _git(*args: str) -> str | None:
+        return _git_read(str(script.parent), *args)
+
+    root = _git("rev-parse", "--show-toplevel")
+    if not root:
+        out["reason"] = "hors depot git"
+        return out
+    try:
+        rel = script.relative_to(pathlib.Path(root)).as_posix()
+    except ValueError:
+        rel = "scripts/pick_idle_grain.py"
+    out["local_head"] = _git("rev-parse", "HEAD")
+    out["origin_main_head"] = _git("rev-parse", "origin/main")
+    out["local"] = _git("hash-object", "--", str(script))
+    out["origin_main"] = _git("rev-parse", f"origin/main:{rel}")
+    if not out["origin_main"]:
+        out["reason"] = "origin/main illisible (ref absente ?)"
+        return out
+    if not out["local"]:
+        out["reason"] = "hash-object local illisible"
+        return out
+    out["stale"] = out["local"] != out["origin_main"]
+    if out["stale"]:
+        out["reason"] = ("le picker local differe d'origin/main -- le "
+                         "tirage tourne avec un contrat perime")
+    return out
+
+
+def stale_picker_payload(state: dict) -> dict:
+    """Le bloc JSON du perimetre du picker (#25522).
+
+    `stale_picker` est un **booleen** -- « le picker local differe-t-il
+    d'`origin/main` ? » -- et les deux SHA (blob local, blob a
+    `origin/main`) viennent A COTE, dans `stale_picker_detail`. Les mettre
+    dans la meme valeur rendrait le test d'acceptation（「vrai sur un
+    checkout qui differe, faux sinon」）illisible : un dict n'est jamais
+    « vrai » ou « faux ».
+    """
+    return {"stale_picker": bool((state or {}).get("stale")),
+            "stale_picker_detail": state or {}}
+
+
 def red_backlog(lane: str, threshold_hours: float,
                 count_threshold: int = RED_COUNT_DEFAULT,
                 saturation_hours: float | None = None,
@@ -8039,6 +8758,10 @@ def red_backlog(lane: str, threshold_hours: float,
         sat_threshold = saturation_hours if saturation_hours is not None else threshold_hours
         return {"unavailable": f"{type(exc).__name__}", "red": [],
                 "triggers": [], "unattributed_blocked": [],
+                # #25522 : meme contrat de rendu quand la mesure est
+                # indisponible -- une liste vide, jamais une cle absente.
+                "red_classes": {}, "waiting_others": [],
+                "red_count": 0, "red_all_count": 0,
                 "nits_unavailable": None, "base_inherited": [],
                 "infra_rerun": [], "base_undecided": [],
                 "base_unresolved": [], "dwell_waiting": [],
@@ -8206,6 +8929,22 @@ def red_backlog(lane: str, threshold_hours: float,
                         "is_adjacency": is_adj})
     red.sort(key=lambda r: -r["age_hours"])
 
+    # #25522 : classement par QUI PEUT AGIR. Seule la classe `lane` arme la
+    # file de reparation (`nits`, `aged`, `count`) ; les trois autres classes
+    # sont RENDUES -- elles sont dites, elles ne bloquent pas le tapis.
+    red_all = list(red)
+    red_classes = classify_red_prs(lane, mine, red_all, nits_by_pr, states)
+    red = [r for r in red_all
+           if red_classes.get(r["number"], {}).get("class") == RED_CLASS_LANE]
+    waiting_others = [
+        {"number": r["number"], "title": r["title"],
+         "age_hours": r["age_hours"],
+         "class": red_classes[r["number"]]["class"],
+         "reason": red_classes[r["number"]]["reason"],
+         "causes": r["causes"]}
+        for r in red_all
+        if red_classes.get(r["number"], {}).get("class") != RED_CLASS_LANE]
+
     # #15910 : un agregateur tranche par DWELL n'est PAS « non resolu ». Sans ce
     # retrait, `impute_base_reds` (qui a lu l'annotation AVANT la boucle) le
     # classe dans `base_unresolved` et la sortie annonce « organe non lisible --
@@ -8261,10 +9000,17 @@ def red_backlog(lane: str, threshold_hours: float,
     # la file WIP dit POURQUOI chaque PR attend quand la cause est connue,
     # sans payer un etat GraphQL supplementaire pour les PRs vertes.
     wip_prs = lane_open_prs(lane, prs)
-    causes_by_number = {r["number"]: r["causes"] for r in red}
+    causes_by_number = {r["number"]: r["causes"] for r in red_all}
     for entry in wip_prs:
         entry["causes"] = causes_by_number.get(entry["number"], [])
     return {"red": red, "aged": aged, "triggers": triggers,
+            # #25522 : le classement complet (les quatre classes) et la liste
+            # « en attente d'autrui ». Les deux sont rendus dans le JSON
+            # (`red_backlog`) et la liste est imprimee dans la sortie texte.
+            "red_classes": {str(n): v for n, v in red_classes.items()},
+            "waiting_others": waiting_others,
+            "red_count": len(red),
+            "red_all_count": len(red_all),
             "red_hours": threshold_hours, "red_count_threshold": count_threshold,
             "saturation_hours": sat_threshold,
             "unattributed_blocked": unattributed,
@@ -10135,6 +10881,316 @@ def apply_belt_weights(pool: list[dict], *, rng: random.Random,
     }
 
 
+BELT_REPLAY_SCHEMA = "coursia-belt-replay-input-v1"
+BELT_REPLAY_MAX_AGE_SECONDS = 1800
+BELT_REPLAY_MIN_FAMILY_RATIO = 0.80
+
+
+class BeltReplayError(ValueError):
+    """L'instantane ne contient pas les donnees necessaires au rejeu."""
+
+
+#: Perimetre de l'empreinte qui scelle un export de rejeu. Le mot du scope
+#: entre dans le digest : un export d'une autre version du contrat ne peut pas
+#: passer pour celui-ci.
+BELT_REPLAY_FINGERPRINT_SCOPE = "belt-replay-export/v1"
+
+
+def belt_replay_fingerprint(payload: dict) -> str:
+    """Empreinte sha256 du contenu canonique d'un export de rejeu.
+
+    **Ce qu'elle prouve** : que le fichier n'a pas ete modifie entre son
+    ecriture et sa relecture (integrite). Les quatre attaques mesurees par la
+    revue Hermes 5830473523 -- `seed_source` trafique, titre de pool edite,
+    corpus `merged_prs` fabrique, `open_count` gonfle -- modifient le contenu
+    de l'export et echouent donc sur cette empreinte.
+
+    **Ce qu'elle ne prouve pas** : l'authenticite face a un forger qui
+    recalcule l'empreinte apres avoir bidouille le contenu. Une empreinte
+    auto-portee scelle l'integrite, pas l'origine ; l'authenticite exigerait une
+    cle de signature ou un temoin externe (un tiers qui consigne le digest).
+    Ce qui est mesurable ici -- et qui est mesure -- c'est l'integrite.
+    """
+    body = {key: value for key, value in payload.items()
+            if key != "fingerprint"}
+    canonical = json.dumps(body, sort_keys=True, ensure_ascii=False,
+                           separators=(",", ":"))
+    digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return f"{BELT_REPLAY_FINGERPRINT_SCOPE}:{digest}"
+
+
+def seal_belt_replay_input(payload: dict) -> dict:
+    """Pose l'empreinte d'un export de rejeu (copie, entree non modifiee)."""
+    sealed = copy.deepcopy(payload)
+    sealed["fingerprint"] = {
+        "algorithm": "sha256",
+        "scope": BELT_REPLAY_FINGERPRINT_SCOPE,
+        "digest": belt_replay_fingerprint(sealed),
+    }
+    return sealed
+
+
+def validate_belt_replay_input(payload: dict, replay_at: str) -> dict:
+    """Valide toutes les preuves d'entree avant de consommer la moindre graine.
+
+    Le fichier est un export du tapis live. Sa provenance de transport reste
+    celle de ``coordination.gh_snapshot`` ; les verdicts claims et les familles
+    sont les donnees preparees par le producteur, pas des conclusions recalculees
+    depuis le tail de commentaires d'une issue.
+    """
+    if not isinstance(payload, dict) or payload.get("schema") != BELT_REPLAY_SCHEMA:
+        raise BeltReplayError("schema de rejeu absent ou inconnu")
+    source = payload.get("source")
+    if not isinstance(source, dict):
+        raise BeltReplayError("provenance d'instantane malformee")
+    if not isinstance(replay_at, str):
+        raise BeltReplayError("date de capture invalide")
+    try:
+        moment = dt.datetime.fromisoformat(replay_at.replace("Z", "+00:00"))
+        exported = dt.datetime.fromisoformat(
+            str(source["computed_at"]).replace("Z", "+00:00"))
+        refreshed = dt.datetime.fromisoformat(
+            str(source["gh_snapshot_refreshed_at"]).replace(
+                "Z", "+00:00"))
+        draw_at = dt.datetime.fromisoformat(
+            str(payload["draw_at"]).replace("Z", "+00:00"))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise BeltReplayError("date ou provenance d'instantane illisible") from exc
+    if (moment.tzinfo is None or exported.tzinfo is None
+            or refreshed.tzinfo is None or draw_at.tzinfo is None
+            or moment.utcoffset() != dt.timedelta(0)
+            or exported.utcoffset() != dt.timedelta(0)
+            or refreshed.utcoffset() != dt.timedelta(0)
+            or draw_at.utcoffset() != dt.timedelta(0)):
+        raise BeltReplayError("les dates du rejeu doivent etre en UTC")
+    if moment != exported:
+        raise BeltReplayError("--belt-replay-at doit etre la date exacte de l'export")
+    if draw_at > moment:
+        raise BeltReplayError("horloge du tirage posterieure a la capture")
+    if payload.get("repo") != REPO or source.get("repo") != REPO:
+        raise BeltReplayError("depot de l'export different du depot courant")
+    if source.get("gh_snapshot_version") != 1:
+        raise BeltReplayError("version gh_snapshot absente ou incompatible")
+    if source.get("transport") != \
+            "scripts/coordination/gh_snapshot.py":
+        raise BeltReplayError("transport source absent ou incompatible")
+    age = (moment - refreshed).total_seconds()
+    if age < 0 or age > BELT_REPLAY_MAX_AGE_SECONDS:
+        raise BeltReplayError("instantane gh_snapshot perime a la date du rejeu")
+
+    pool = payload.get("pool")
+    if not isinstance(pool, list) or not pool:
+        raise BeltReplayError("pool exporte absent ou vide")
+    numbers = [it.get("number") for it in pool if isinstance(it, dict)]
+    if len(numbers) != len(pool) or any(not isinstance(n, int) for n in numbers):
+        raise BeltReplayError("pool exporte malforme")
+    if len(set(numbers)) != len(numbers):
+        raise BeltReplayError("numero duplique dans le pool")
+    for item in pool:
+        if (not isinstance(item.get("title"), str)
+                or not isinstance(item.get("labels"), list)
+                or not isinstance(item.get("klass"), str)
+                or item.get("family") is not None
+                and not isinstance(item.get("family"), str)):
+            raise BeltReplayError("champs de candidat incomplets")
+
+    signal = payload.get("family_signal")
+    if not isinstance(signal, dict) or signal.get("measured") is not True:
+        raise BeltReplayError("mesure de familles absente")
+    resolved = sum(1 for it in pool if it.get("family"))
+    ratio = resolved / len(pool)
+    if signal.get("total") != len(pool) or signal.get("resolved") != resolved:
+        raise BeltReplayError("mesure de familles incoherente avec le pool")
+    if signal.get("ratio") != round(resolved / len(pool), 3):
+        raise BeltReplayError("ratio de familles incoherent avec le pool")
+    if ratio < BELT_REPLAY_MIN_FAMILY_RATIO:
+        raise BeltReplayError(
+            f"couverture des familles insuffisante pour le rejeu ({ratio:.1%})")
+
+    window = payload.get("claim_window")
+    claim_payloads = payload.get("claim_payloads")
+    stamps = source.get("claim_comment_stamps")
+    if (not isinstance(window, list) or not window
+            or not isinstance(claim_payloads, dict)):
+        raise BeltReplayError("fenetre ou payloads de claims absents")
+    if len(set(window)) != len(window) or set(window) != set(numbers):
+        raise BeltReplayError("fenetre de claims incoherente avec le pool")
+    claim_keys = {str(n) for n in numbers}
+    if set(claim_payloads) != claim_keys:
+        raise BeltReplayError("payload de commentaire manquant ou hors pool")
+    if not isinstance(stamps, dict) or set(stamps) != claim_keys:
+        raise BeltReplayError("horodatage de commentaire manquant pour un claim")
+    for key in claim_keys:
+        stamp = stamps.get(key)
+        if (isinstance(stamp, bool) or not isinstance(stamp, (int, float))
+                or not math.isfinite(float(stamp))):
+            raise BeltReplayError(f"horodatage de claim invalide pour #{key}")
+        stamp_age = moment.timestamp() - float(stamp)
+        if stamp_age < 0 or stamp_age > BELT_REPLAY_MAX_AGE_SECONDS:
+            raise BeltReplayError(f"claim perime pour #{key}")
+        comments = claim_payloads.get(key)
+        if not isinstance(comments, list):
+            raise BeltReplayError(f"payload de commentaires invalide pour #{key}")
+        if any(not isinstance(comment, dict)
+               or not isinstance(comment.get("body"), str)
+               or not isinstance(comment.get("createdAt"), str)
+               for comment in comments):
+            raise BeltReplayError(f"commentaire incomplet pour #{key}")
+
+    if not isinstance(payload.get("series"), dict):
+        raise BeltReplayError("donnees de series absentes")
+    if not isinstance(payload.get("issue_to_family"), dict):
+        raise BeltReplayError("correspondance issue-famille absente")
+    try:
+        for key in payload["issue_to_family"]:
+            int(key)
+    except (TypeError, ValueError) as exc:
+        raise BeltReplayError("cle issue-famille invalide") from exc
+    if not isinstance(payload.get("merged_prs"), list):
+        raise BeltReplayError("corpus de PR fusionnees absent")
+    if not isinstance(payload.get("closed_issues"), list):
+        raise BeltReplayError("corpus d'issues fermees absent")
+    if not isinstance(payload.get("closed_error"), (str, type(None))):
+        raise BeltReplayError("etat du corpus de fermetures invalide")
+    if not isinstance(payload.get("seed_source"), str) or not payload["seed_source"]:
+        raise BeltReplayError("graine de production absente")
+    if (isinstance(payload.get("open_count"), bool)
+            or not isinstance(payload.get("open_count"), int)
+            or payload["open_count"] < len(pool)):
+        raise BeltReplayError("taille du pool ouvert invalide")
+    if (any(not isinstance(item, dict) for item in payload["merged_prs"])
+            or any(not isinstance(item, dict) for item in payload["closed_issues"])):
+        raise BeltReplayError("corpus bandit malforme")
+    # #25082 (revue Hermes 5830473523) : le validateur ne verifiait que la
+    # COHERENCE interne, pas l'INTEGRITE du fichier -- un export bidouille
+    # passait. L'empreinte scelle le contenu : elle est verifiee en DERNIER,
+    # pour que chaque message de refus specifique reste prioritaire, et avant
+    # toute consommation du tirage.
+    fingerprint = payload.get("fingerprint")
+    if not isinstance(fingerprint, dict):
+        raise BeltReplayError("empreinte de l'export absente : rejeu refuse")
+    if (fingerprint.get("algorithm") != "sha256"
+            or fingerprint.get("scope") != BELT_REPLAY_FINGERPRINT_SCOPE
+            or fingerprint.get("digest") != belt_replay_fingerprint(payload)):
+        raise BeltReplayError(
+            "empreinte de l'export invalide : le contenu de l'export a ete modifie")
+    return {"moment": draw_at, "capture_at": moment, "pool": pool, "ratio": ratio,
+            "claim_window": window, "claim_payloads": claim_payloads}
+
+
+def replay_belt_weights(payload: dict, replay_at: str, *, head: int = 50) -> dict:
+    """Rejoue le classement avec la fonction de poids appelee en production."""
+    validated = validate_belt_replay_input(payload, replay_at)
+    seed = int(hashlib.sha256(payload["seed_source"].encode()).hexdigest()[:16], 16)
+    pool = copy.deepcopy(validated["pool"])
+    signal = apply_belt_weights(
+        pool, rng=random.Random(seed), merged_prs=payload["merged_prs"],
+        closed_issues=payload["closed_issues"],
+        closed_error=payload["closed_error"],
+        open_count=int(payload["open_count"]), series=payload["series"],
+        issue_to_family={int(k): v for k, v in payload["issue_to_family"].items()},
+        zones=payload["series"], now=validated["moment"], head=head,
+    )
+    return {
+        "mode": "simulation-rejeu-ordre",
+        "service_effectif": False,
+        "limite": "simulation du classement; aucun grain n'est claim ou servi",
+        "source": copy.deepcopy(payload["source"]),
+        "replay_at": replay_at,
+        "seed_source": payload["seed_source"],
+        "family_coverage": {
+            "resolved": signal["scored"] - sum(
+                1 for it in pool if not it.get("family")),
+            "total": signal["scored"],
+            "ratio": round(validated["ratio"], 3),
+        },
+        "claim_payloads": len(validated["claim_payloads"]),
+        "fingerprint": copy.deepcopy(payload.get("fingerprint")),
+        "weighted_head": signal["weighted_head"],
+        "picks": [{"number": it["number"], "title": it["title"],
+                   "klass": it["klass"], "family": it.get("family"),
+                   "belt_score_class": it.get("belt_score_class")}
+                  for it in pool[:head]],
+        "bandit_measured": signal["measured"],
+        "bandit_error": signal["error"],
+    }
+
+
+def write_belt_replay_input(path: str | pathlib.Path, payload: dict) -> pathlib.Path:
+    """Ecrit hors depot un export prepare par le tapis live."""
+    target = pathlib.Path(path).expanduser().resolve()
+    repo_root = pathlib.Path(__file__).resolve().parents[1]
+    if target == repo_root or repo_root in target.parents:
+        raise BeltReplayError("export de rejeu interdit dans le depot Git")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+                      encoding="utf-8")
+    return target
+
+
+def build_belt_replay_input(*, pool: list[dict], family_signal: dict,
+                            series: dict, issue_to_family: dict,
+                            merged_prs: list[dict], closed_issues: list[dict],
+                            closed_error: str | None, open_count: int,
+                            seed_source: str, snapshot: dict,
+                            computed_at: dt.datetime,
+                            captured_at: dt.datetime | None = None) -> dict:
+    """Prepare un export à partir de l'instantané canonique déjà chargé."""
+    gh_snapshot = _gh_snapshot_module()
+    numbers = [int(item["number"]) for item in pool]
+    if not gh_snapshot.serves(snapshot, numbers):
+        raise BeltReplayError(
+            "gh_snapshot ne sert pas des commentaires frais pour tout le pool")
+    meta = snapshot.get("meta") or {}
+    comments = snapshot.get("comments") or {}
+    stamps = meta.get("comment_stamps") or {}
+    claim_payloads = {}
+    for number in numbers:
+        key = str(number)
+        payload = comments.get(key, comments.get(number))
+        if not isinstance(payload, list):
+            raise BeltReplayError(f"commentaires canoniques absents pour #{number}")
+        claim_payloads[key] = payload
+    computed_iso = computed_at.astimezone(dt.timezone.utc).isoformat().replace(
+        "+00:00", "Z")
+    capture_iso = ((captured_at or dt.datetime.now(dt.timezone.utc))
+                   .astimezone(dt.timezone.utc)
+                   .isoformat(timespec="microseconds")
+                   .replace("+00:00", "Z"))
+    replay_input = {
+        "schema": BELT_REPLAY_SCHEMA,
+        "repo": REPO,
+        "draw_at": computed_iso,
+        "source": {
+            "transport": "scripts/coordination/gh_snapshot.py",
+            "repo": meta.get("repo"),
+            "gh_snapshot_version": meta.get("version"),
+            "gh_snapshot_refreshed_at": meta.get("refreshed_at"),
+            "computed_at": capture_iso,
+            "claim_comment_stamps": {
+                str(n): stamps.get(str(n), stamps.get(n)) for n in numbers
+            },
+        },
+        "pool": copy.deepcopy(pool),
+        "claim_window": numbers,
+        "claim_payloads": claim_payloads,
+        "family_signal": copy.deepcopy(family_signal),
+        "series": copy.deepcopy(series),
+        "issue_to_family": {str(k): v for k, v in issue_to_family.items()},
+        "merged_prs": copy.deepcopy(merged_prs),
+        "closed_issues": copy.deepcopy(closed_issues),
+        "closed_error": closed_error,
+        "open_count": int(open_count),
+        "seed_source": seed_source,
+    }
+    # L'export est scelle par une empreinte sha256 de son contenu canonique
+    # (revue Hermes 5830473523) : le rejeu refuse un fichier modifie, et refuse
+    # un export sans empreinte (fail-CLOSED, pas d'export ancien non scelle).
+    replay_input = seal_belt_replay_input(replay_input)
+    validate_belt_replay_input(replay_input, capture_iso)
+    return replay_input
+
+
 def draw_belt(
     admitted: list[dict],
     args,
@@ -10782,6 +11838,9 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
         for cause in item["causes"]:
             print(f"       {cause}")
     print()
+    # #25522 : les PRs rouges qui n'attendent PAS la lane. Elles sont dites
+    # (la lane les recopie dans son [DONE]) et ne retiennent pas le tapis.
+    print_waiting_others(backlog)
     if red and all(r.get("is_adjacency") for r in red):
         # #13967 : quand la cause du rouge est `adjacency` (G-VAR-3, mesure
         # du 2026-09-01 = 13 PRs / 25 rouges mesurables = premiere cause de
@@ -11909,11 +12968,35 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         # tapis sans service appellerait `check_claims` indefiniment.
         # `max_iters` est calcule plus haut (#22983 : la fenetre de priming
         # doit couvrir celle que la boucle parcours).
+        #
+        # #25522 point 4 -- la fenetre S'ETEND par tranches (70 -> 140 ->
+        # 210...) quand la boucle ne retient RIEN et qu'il reste du temps
+        # sous le mur. Mesure fondatrice du 09/11 : la boucle s'achevait sur
+        # 0 retenu et 70 positions parcourues, sans que rien ne dise si le
+        # pool portait encore des grains servables plus loin. L'extension est
+        # bornee par le MUR (au-dela, plus aucune sonde n'est emise) et par
+        # la TAILLE du pool -- elle ne sert jamais un candidat que la lane
+        # n'aurait pas pu voir sans elle.
+        window = max_iters
+        tranche = max_iters if max_iters > 0 else 1
+        positions = 0
+        state["service_window"] = window
+        state["service_window_extended"] = False
         for i, it in enumerate(belt_pool):
-            if i >= max_iters:
-                break
+            if i >= window:
+                if (not belt_picks and not expired()
+                        and window < len(belt_pool)):
+                    next_window = min(window + tranche, len(belt_pool))
+                    if next_window <= window:
+                        break
+                    window = next_window
+                    state["service_window"] = window
+                    state["service_window_extended"] = True
+                else:
+                    break
             if len(belt_picks) >= args.grains:
                 break
+            positions += 1
             n = it["number"]
             if n in belt_claims:
                 code, human = belt_claims[n]
@@ -12236,6 +13319,17 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                       "emise -- candidat ecarte, pas servi"))
                 continue
             belt_picks.append(it)
+        # #25522 point 4 : la sortie doit dire CE QUE la boucle a couvert,
+        # pas seulement ce qu'elle a rendu. Deux nombres : les positions
+        # parcourues (la fenetre reellement vue) et les livraisons en
+        # attente (les candidats ecartees par le filtre de livraison --
+        # un travail deja rendu ou en cours, que l'urne `delivered` sert).
+        # Sans eux, « 0 retenu » est muet : la lane ne peut pas distinguer
+        # « le pool est vide » de « les 70 positions vues etaient toutes
+        # livrees ».
+        state["service_positions"] = positions
+        state["pending_deliveries"] = sum(
+            1 for _, cause in belt_withheld if cause.startswith("LIVRAISON"))
         return belt_picks, belt_withheld, state
 
 
@@ -12314,22 +13408,25 @@ def main(argv: list[str] | None = None) -> int:
     for _stream in (sys.stdout, sys.stderr):
         if hasattr(_stream, "reconfigure"):
             _stream.reconfigure(encoding="utf-8", errors="replace")
-    # #17418 Phase A : epingle le jeton machine AVANT tout appel gh — les
-    # enfants (check_lane_claim, nits...) heritent via os.environ propage par
-    # _utf8_child_env(). Warn-fort + poursuite : le FAIL bruyant est porte
-    # par gh_identity --whoami et detect_shared_login.py (transition B/C).
-    # #20923 : on capture aussi l'evenement dans un flag de portee main(),
-    # parce que la defense en profondeur (validate_picks_live) doit savoir
-    # si elle sert un environnement WARN ou un environnement nominal. En
-    # WARN, le picker continue sous le compte actif (cf #17418) et le pool
-    # est plus sujet a presenter des candidats obsoletes : la validation
-    # live s'impose. En nominal, elle reste opt-in via --belt-validate.
     warn_gh_identity: bool = False
-    try:
-        gh_identity.pin_gh_token()
-    except gh_identity.GhIdentityError as exc:
-        warn_gh_identity = True
-        print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
+    # #25522 : le picker dit qu'il est PERIME. La mesure est LOCALE (deux
+    # blob SHA) et ne coute aucun reseau ; l'avertissement sort sur stderr,
+    # parce que le stdout porte le document JSON et un en-tete de sortie
+    # teste par ailleurs.
+    # #25082 (cette branche) : le `pin_gh_token()` reste plus bas, APRES le
+    # parse d'arguments et apres le retour du mode rejeu -- le mode rejeu
+    # n'epingle jamais de jeton (revue Hermes 5830473523). On ne remonte donc
+    # pas l'appel de main ici : la resolution garde l'avertissement de
+    # perimetrisation (nouveau sur main) et preserve l'ordre de la branche.
+    stale_picker = picker_stale_state()
+    if stale_picker.get("stale"):
+        print("[PICKER PERIME] le picker local differe d'origin/main "
+              f"(blob local {(stale_picker.get('local') or '')[:12]} vs "
+              f"origin/main {(stale_picker.get('origin_main') or '')[:12]}) "
+              "-- le tirage tourne avec un contrat perime. Corriger par "
+              "`git fetch origin && git merge --ff-only origin/main` dans le "
+              "checkout de la lane, puis rejouer le tirage.",
+              file=sys.stderr)
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lane", default=None,
@@ -12397,6 +13494,16 @@ def main(argv: list[str] | None = None) -> int:
                          "numero. Pas de ponderation, pas d'urne. Les gardes "
                          "(rouge, WIP, secheresse) restent en tete et rende la "
                          "file comme rappel, jamais comme motif de vide.")
+    ap.add_argument("--belt-replay-export", default=None, metavar="PATH",
+                    help="#25082 : exporter hors depot les entrees preparees "
+                         "par un tapis live pour un rejeu deterministe. Requiert "
+                         "--belt ; ne valide pas un service effectif.")
+    ap.add_argument("--belt-replay-input", default=None, metavar="PATH",
+                    help="#25082 : simuler le classement depuis un export "
+                         "prepare ; aucun appel GitHub ni claim n'est emis.")
+    ap.add_argument("--belt-replay-at", default=None, metavar="ISO-UTC",
+                    help="#25082 : date exacte de l'export a rejouer. Requise "
+                         "avec --belt-replay-input.")
     ap.add_argument("--report", action="store_true",
                     help="avec --belt : affiche deux nombres - ecart maximal (en "
                          "jours) depuis la derniere visite sur les issues "
@@ -12567,8 +13674,42 @@ def main(argv: list[str] | None = None) -> int:
         ap.error("--wip-reason n'a de sens qu'avec --ignore-wip")
     if args.wip_cap < 0:
         ap.error("--wip-cap doit etre positif ou nul (0 desactive le garde)")
-    if not args.lane and not args.orphans_report and args.admissible is None:
+    if not args.lane and not args.orphans_report and args.admissible is None \
+            and not args.belt_replay_input:
         ap.error("--lane est requis (--orphans-report et --admissible s'en dispensent)")
+    if args.belt_replay_input:
+        if not args.belt_replay_at:
+            ap.error("--belt-replay-input exige --belt-replay-at")
+        if args.belt_replay_export:
+            ap.error("--belt-replay-input et --belt-replay-export sont exclusifs")
+        try:
+            raw = pathlib.Path(args.belt_replay_input).read_text(encoding="utf-8")
+            payload = json.loads(raw)
+            result = replay_belt_weights(payload, args.belt_replay_at,
+                                         head=args.grains)
+        except (OSError, json.JSONDecodeError, BeltReplayError) as exc:
+            print(json.dumps({"mode": "simulation-rejeu-ordre",
+                              "error": str(exc), "draw": "aucun"},
+                             ensure_ascii=False, indent=2))
+            return 2
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0
+    if args.belt_replay_at:
+        ap.error("--belt-replay-at ne s'utilise qu'avec --belt-replay-input")
+    if args.belt_replay_export and not args.belt:
+        ap.error("--belt-replay-export requiert --belt")
+    # #17418 Phase A : epingle le jeton machine AVANT tout appel gh — les
+    # enfants (check_lane_claim, nits...) heritent via os.environ propage par
+    # _utf8_child_env(). Warn-fort + poursuite : le FAIL bruyant est porte
+    # par gh_identity --whoami et detect_shared_login.py (transition B/C).
+    # #20923 : on capture aussi l'evenement dans un flag de portee main(),
+    # parce que la defense en profondeur (validate_picks_live) doit savoir
+    # si elle sert un environnement WARN ou un environnement nominal.
+    try:
+        gh_identity.pin_gh_token()
+    except gh_identity.GhIdentityError as exc:
+        warn_gh_identity = True
+        print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     if args.report and not args.belt:
         ap.error("--report n'a de sens qu'avec --belt (mode rapport du tapis roulant)")
     # #20053 : les deux modes du tableau partage portent sur la TETE DU TAPIS.
@@ -12915,7 +14056,8 @@ def main(argv: list[str] | None = None) -> int:
                               "assignment": assignment or "drainer-son-wip",
                               "grain": grain,
                               "red_hours": args.red_hours,
-                              "lane_record": lane_record, **backlog},
+                              "lane_record": lane_record,
+                              **stale_picker_payload(stale_picker), **backlog},
                              ensure_ascii=False, indent=2))
             return 0
         else:
@@ -12941,6 +14083,12 @@ def main(argv: list[str] | None = None) -> int:
         # rappel rouge/wip deja imprime. La sortie reste sans aucun vide.
     if not args.json:
         print_nits_gap(backlog)
+        if not red_hit:
+            # #25522 : la liste « en attente d'autrui » doit etre lue meme
+            # quand le garde rouge ne declenche rien : c'est elle qui dit a la
+            # lane ce qu'elle ne doit pas rejouer. Quand le garde declenche,
+            # `print_red_assignment` l'a deja rendue.
+            print_waiting_others(backlog)
         print_base_inherited(backlog)
         print_infra_rerun(backlog)
         print_dwell_waiting(backlog)
@@ -13032,6 +14180,42 @@ def main(argv: list[str] | None = None) -> int:
                              args.delivery_boost_max)
         for num, item in delivery_sig["items"].items()
     }
+
+    # #24823 -- index local des PRs MERGEEs pour la sonde par candidat du
+    # tapis : la question « une PR MERGEE cite-t-elle #N ? » etait une
+    # recherche serveur PAR NUMERO dans la boucle (41 appels mesures sur
+    # un tirage de 50 grains). Le meme materiaux se precharge ici en une
+    # PASSE GROUPEE par tranches -- la meme voie que `delivery_prs` au-
+    # dessus -- et la boucle repond ensuite localement (fail-CLOSED
+    # preserve : l'echec de la passe laisse la sonde sur sa voie reseau
+    # historique, il ne se lit jamais comme « aucune PR mergee »).
+    # Commutateur pytest identique aux sondes ci-dessus : un test qui
+    # veut la voie locale injecte sa sonde explicitement, le CLI n'y
+    # construit pas d'index (la passe groupee est un appel gh reel).
+    belt_merged_pr_probe = merged_pr_signal
+    merged_prs_local = None
+    if args.belt and not (
+            "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None):
+        merged_prs_local = merged_prs_index(
+            cache=payload_cache,
+            cache_mode=effective_cache_mode,
+            cache_status=cache_status,
+        )  # slice_stats: fetch_merged l'enrichit via son propre compteur
+        if merged_prs_local is not None:
+            # Capture par defaut : la sonde transporte l'index, la boucle
+            # ne le connait pas -- meme signature qu'avant, aucun autre
+            # site d'appel ne change.
+            belt_merged_pr_probe = (
+                lambda issue_number, lane=None, _idx=merged_prs_local:
+                    merged_pr_signal(issue_number, lane, index=_idx)
+            )
+            print(f"(index local des PRs mergees : {len(merged_prs_local)} "
+                  f"PRs sur {MERGED_PR_WINDOW_DAYS} j -- la sonde par "
+                  f"candidat ne sort plus sur le reseau, #24823)")
+        else:
+            print("(index local des PRs mergees INDISPONIBLE (echec de la "
+                  "passe groupee) -- repli sur la sonde reseau par numero, "
+                  "#24823)", file=sys.stderr)
 
     # Geste 3 #18203 : `idle_since_delivery` pour TOUT le pool, pas seulement
     # les umbrellas. `measure_delivery` ne couvre que les umbrellas et ignore
@@ -13399,6 +14583,9 @@ def main(argv: list[str] | None = None) -> int:
                 settle_belt_head(belt_pool, belt_check_window, latest_claim_stamp,
                                  max_probes=belt_check_window * 3 + 12)
                 _belt_phase("settle_belt_head fait: chemin unitaire (bulk absent)")
+        # Exporte une copie AVANT la repondersion : le rejeu doit pouvoir
+        # rappeler exactement la fonction de production, avec la meme graine.
+        belt_replay_pool = copy.deepcopy(belt_pool)
         # #25082 A + B -- la REPONDERION du tapis : recompense de fermeture
         # par bras (bandit de Thompson) et prior de consolidation.
         # Des POIDS SEULEMENT (decision user du 12/10) : l'ordre de service
@@ -13406,10 +14593,15 @@ def main(argv: list[str] | None = None) -> int:
         # Le corpus des PRs mergees est celui du DEJA mesure (fenetre de
         # livraison) : la recompense lit la meme fenetre, sans appel reseau
         # supplementaire ; seule la lecture des issues fermees en ajoute un.
+        closed_issues, closed_error = fetch_closed_issues(
+            BANDIT_WINDOW_DAYS, now=NOW)
+        seed_source, belt_rng = run_rng(args, NOW)
         belt_weight_signal = apply_belt_weights(
             belt_pool,
-            rng=run_rng(args, NOW)[1],
+            rng=belt_rng,
             merged_prs=delivery_prs,
+            closed_issues=closed_issues,
+            closed_error=closed_error,
             open_count=len(pool),
             series=series,
             issue_to_family=issue_to_family,
@@ -13467,6 +14659,30 @@ def main(argv: list[str] | None = None) -> int:
         belt_claims = check_claims(belt_check_nums, args.lane,
                                     strict_snapshot=True)
         _belt_phase(f"claims faits: {len(belt_claims)} verdicts")
+        if args.belt_replay_export:
+            try:
+                gh_snapshot = _gh_snapshot_module()
+                source_snapshot = gh_snapshot.load_snapshot(REPO)
+                replay_input = build_belt_replay_input(
+                    pool=belt_replay_pool,
+                    family_signal=belt_family_signal,
+                    series=series,
+                    issue_to_family=issue_to_family,
+                    merged_prs=delivery_prs,
+                    closed_issues=closed_issues,
+                    closed_error=closed_error,
+                    open_count=len(pool),
+                    seed_source=seed_source,
+                    snapshot=source_snapshot,
+                    computed_at=NOW,
+                )
+                path = write_belt_replay_input(args.belt_replay_export,
+                                               replay_input)
+                print(f"(entrees de rejeu #25082 exportees hors depot : {path})",
+                      file=sys.stderr)
+            except (BeltReplayError, OSError) as exc:
+                print(f"(export de rejeu #25082 non produit : {exc})",
+                      file=sys.stderr)
         if belt_claims and all(
                 code == CLAIM_CODE_BLOCKED
                 and human == CLAIM_HUMAN_SNAPSHOT_ABSENT
@@ -13512,7 +14728,7 @@ def main(argv: list[str] | None = None) -> int:
                                         belt_probe_budget(belt_check_window),
                                         delivered_probe=has_delivered_signal,
                                         cover_probe=cover_probe,
-                                        merged_pr_probe=merged_pr_signal,
+                                        merged_pr_probe=belt_merged_pr_probe,
                                         revocation_probe=(
                                             revoked_after_merge_signal),
                                         recent_marker_probe=(
@@ -13584,6 +14800,22 @@ def main(argv: list[str] | None = None) -> int:
                   f"pool trie par derniere visite, la plus ancienne en tite.")
             print(f"   file complete : {len(belt_pool)} issues ; "
                   f"picks : {len(belt_picks)}.")
+            # #25522 point 4 : la fenetre de service et les livraisons en
+            # attente sont NOMMEES. « 0 retenu » doit dire ce que la boucle
+            # a couvert, sinon la lane ne peut pas distinguer un pool vide
+            # d'une fenetre de positions toutes livrees.
+            _svc_positions = belt_pick_state.get("service_positions")
+            if _svc_positions is not None:
+                _svc_extended = (" (fenetre ETENDUE -- rien n'etait retenu "
+                                 "et il restait du temps sous le mur)"
+                                 if belt_pick_state.get("service_window_extended")
+                                 else "")
+                print(f"   fenetre de service : {_svc_positions} "
+                      f"position(s) parcourue(s), fenetre "
+                      f"{belt_pick_state.get('service_window')}"
+                      f"{_svc_extended} ; "
+                      f"{belt_pick_state.get('pending_deliveries', 0)} "
+                      f"livraison(s) en attente.")
             if belt_dropped_validate:
                 # #20923 : la lane lit des « PRs inexistantes » alors que
                 # le pool vient de `gh issue list` et ses numeros sont
@@ -13890,6 +15122,20 @@ def main(argv: list[str] | None = None) -> int:
                     "filtered": belt_pick_state.get("frozen_filtered", 0),
                     "unread": sorted(set(belt_pick_state.get(
                         "frozen_unread") or [])),
+                },
+                # #25522 point 4 : ce que la boucle de service a COUVERT.
+                # Sans ces nombres, « 0 retenu » est muet : la lane ne peut
+                # pas distinguer « le pool est vide » de « les positions
+                # vues etaient toutes livrees ». `extended` dit si la
+                # fenetre a ete elargie (elle ne l'est que si rien n'etait
+                # retenu ET qu'il restait du temps sous le mur).
+                "service_window": {
+                    "positions": belt_pick_state.get("service_positions"),
+                    "window": belt_pick_state.get("service_window"),
+                    "extended": bool(belt_pick_state.get(
+                        "service_window_extended")),
+                    "pending_deliveries": belt_pick_state.get(
+                        "pending_deliveries", 0),
                 },
                 # Volet bulk GraphQL (#19643, ai-01 review 5568273366) :
                 # `fallback_count` est le nombre de numeros absents de
@@ -14220,6 +15466,9 @@ def main(argv: list[str] | None = None) -> int:
                                      or [])),
             },
             "red_backlog": backlog,
+            # #25522 : le picker dit qu'il est perime (booleen), et porte
+            # les deux SHA (blob local vs blob a `origin/main`) a cote.
+            **stale_picker_payload(stale_picker),
             "substance_drought": drought,
             "lane_record": lane_record,
             "cache": cache_status,

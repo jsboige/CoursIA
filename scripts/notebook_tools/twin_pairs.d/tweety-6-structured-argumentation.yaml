@@ -54,3 +54,4 @@
       deux attaques entre d et !d, extension fondée b, c et b,c => a.
       Le C# garde les quatre autres formalismes conceptuels et renvoie au
       Python pour leur exécution. Aucune nouvelle exécution n'est revendiquée.
+    - "PR #25662 (2026-11-10, myia-ai-01:CoursIA-2) : re-audit firsthand de la paire apres l'ajout des barres de navigation de la famille Tweety. Cote C# : une barre de navigation ajoutee en cellule 0 ; cote Python : intact. Drift parite-preservant : l'axe semantique (IKVM vs JPype sur le meme moteur Java) est inchange -- aucune cellule de code touchee, aucune re-execution due (C.2/C.3) -- et les deux cotes se designent mutuellement. Attestation `0016-2026-11-10-myia-ai-01-CoursIA-2.yaml`."
