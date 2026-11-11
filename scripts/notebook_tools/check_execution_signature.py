@@ -48,7 +48,7 @@ from execution_signature import (  # noqa: E402
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-NOTEBOOK_GLOBS = ("MyIA.AI.Notebooks", "GradeBookApp")
+NOTEBOOK_GLOBS = ("MyIA.AI.Notebooks", "dotnet/GradeBookApp")
 
 
 def iter_repo_notebooks(root: Path) -> list[Path]:

@@ -3,7 +3,7 @@ name: dotnet-ArgumentAnalysis
 # Tranche 1 de #14696 (orphelins .sln signales par ai-01 msg-20260905T014247) :
 # le trio ArgumentAnalysis — CoursIA.GSheetSync, CoursIA.OwlAdapter,
 # CoursIA.DatasetUpdater.Prompts + leurs 3 projets de tests xunit — est
-# exclu du glob parent depuis #5167, absent de MyIA.CoursIA.sln, et n'a
+# exclu du glob parent depuis #5167, absent de dotnet/MyIA.CoursIA.sln, et n'a
 # donc JAMAIS eu de CI. Cette PR les ajoute a la solution (entrees
 # minimales, +36 lignes) et les cable en workflow dedie.
 #
@@ -32,13 +32,13 @@ on:
     paths:
       - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/**'
       - '.github/workflows/dotnet-ArgumentAnalysis.yml'
-      - 'MyIA.CoursIA.sln'
+      - 'dotnet/MyIA.CoursIA.sln'
   pull_request:
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/**'
       - '.github/workflows/dotnet-ArgumentAnalysis.yml'
-      - 'MyIA.CoursIA.sln'
+      - 'dotnet/MyIA.CoursIA.sln'
   workflow_dispatch:
 
 permissions:
