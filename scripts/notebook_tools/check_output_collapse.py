@@ -520,6 +520,10 @@ def history(since, until, notebook=None, cwd=None, limit=None):
     for i, c in enumerate(commits):
         diff_out = _git("diff-tree", "--no-commit-id", "--name-only", "-r",
                         c["sha"], cwd=cwd)
+        if diff_out is None:
+            raise RuntimeError(
+                f"Impossible de lire les chemins modifiés du commit {c['sha']} (git diff-tree)."
+            )
         if not diff_out:
             continue
         paths = [p.replace(BS, "/") for p in diff_out.splitlines()
