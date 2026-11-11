@@ -79,7 +79,12 @@ class FactorETFRotation(QCAlgorithm):
         self.entry_prices = {}
 
         self.set_benchmark("SPY")
-        self.set_warm_up(self.lookback + 30, Resolution.DAILY)
+        # Strategy mode warms up its SMA200 + momentum lookback; the reference
+        # modes (spy/6040) carry no indicators and trade from their first
+        # month-start, so they set no warm-up. A 282-day warm-up would swallow
+        # a short out-of-sample window and drop every month-start order.
+        if self.mode == "strategy":
+            self.set_warm_up(self.lookback + 30, Resolution.DAILY)
 
         # Reference modes (spy / 6040) rebalance monthly via the schedule; the
         # strategy mode keeps its own monthly guard in on_data.
