@@ -20,7 +20,7 @@ Tout commentaire agent **de diagnostic** sur une PR porte, en **première ligne 
 
 ### Répondre à une réserve — la forme sûre (HARD, #17071)
 
-Une réponse d'auteur qui **cite** le token de verdict le redevient elle-même (régime absorbant) : la PR reste bloquée **à fond réparé**. La forme sûre : **encager le token lui-même** (backticks, `« »`, apostrophes, bloc de code) ou le nommer en position de **mention** (`suite à ta réserve`, `verdict X` sans deux-points) — jamais le gras (forme d'**émission**), jamais le token nu (muet par résidu assumé, pas par filet), et encager un mot **voisin** ne protège rien. Table de vérité mesurée, mécanique trois couches et instances fondatrices : [pr-review-context.md](../../docs/reference/pr-review-context.md).
+Une réponse d'auteur qui **cite** le token de verdict ou un marqueur de prose reconnu par `CONCERN_MARKERS` (p. ex. `avant merge`) peut elle-même devenir une réserve B.0 : la PR reste bloquée **à fond réparé**. Pour le marqueur de prose, encager **ce marqueur lui-même** avec des backticks ou `« »` (formes mesurées) le neutralise ; un bloc de citation `>` ne le protège pas. Pour le token de verdict, la forme sûre reste de l'encager (backticks, `« »`, apostrophes, bloc de code) ou de le nommer en position de **mention** (`suite à ta réserve`, `verdict X` sans deux-points) — jamais le gras (forme d'**émission**), jamais le token nu (muet par résidu assumé, pas par filet), et encager un mot **voisin** ne protège rien. Table de vérité mesurée, mécanique trois couches et instances fondatrices : [pr-review-context.md](../../docs/reference/pr-review-context.md).
 
 ## Lecture de l'état des checks — à la source, dans les DEUX sens (HARD, #16765)
 
