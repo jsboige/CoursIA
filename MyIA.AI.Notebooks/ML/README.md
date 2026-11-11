@@ -272,9 +272,7 @@ Une courte fenêtre aide à examiner une agrégation ; elle ne suffit pas à ét
 
 Le parcours [Google ADK](DataScienceWithAgents/07-Agent-Orchestration/README.md) rend explicites les rôles de planification, de code, d'exécution et de vérification. Le [Lab 11](DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) étudie la boucle planificateur–codeur ; les approfondissements du Lab 12 examinent notamment plans, outils, évaluations et persistance de session. La séparation des rôles permet de localiser un échec : plan inadéquat, code invalide, mauvais résultat ou vérification insuffisante.
 
-Le [Lab 9](DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) introduit les outils de calcul sur les ventes. Le carnet actuel fournit notamment un classement textuel calculé par un outil Pandas. L'illustration ci-dessous est une figure archivée sur ce jeu de ventes ; elle n'est plus une sortie produite par la version actuelle du carnet.
-
-[![Illustration archivée du revenu par produit sur le jeu de ventes du parcours agents](assets/readme/lab9-adk.png)](DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations/Lab9-First-ADK-Agent.ipynb)
+Le [Lab 9](DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) introduit les outils de calcul sur les ventes et fournit notamment un classement textuel calculé par un outil Pandas.
 
 Pour comparer deux workflows, conserver la tâche, les données et les critères, puis examiner les appels d'outils et leurs résultats. Une ablation — retirer un outil ou une étape de vérification — aide à comprendre ce qui contribue au résultat. Les expériences de mémoire distinguent la persistance au sein d'une session de l'isolation entre sessions. Les prolongements Kaggle et BigQuery ajoutent leurs propres données, accès et conditions d'exécution.
 
@@ -337,6 +335,16 @@ Si un import manque, vérifier le noyau Jupyter avant d'installer à nouveau le 
 
 Pour les agents, la configuration est propre au fournisseur et au lab. L'exemple `.env.example` lié ci-dessus se trouve dans `07-Agent-Orchestration`, pas à la racine ML. Les appels externes, accès Kaggle et projets BigQuery demandent les identifiants correspondants. Les sorties conservées dans les carnets permettent la lecture, mais ne garantissent pas la disponibilité future d'un service.
 
+### Dépannage
+
+| Problème | Vérification ou correction |
+|---|---|
+| Noyau C# absent | Installer l'outil avec `dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001`, puis exécuter `dotnet interactive jupyter install` et `jupyter kernelspec list`. S'il est déjà installé, utiliser `dotnet tool update -g` avec la même version. Voir les [instructions des noyaux](../../docs/reference/kernels-runtime.md). |
+| Import Python absent | Vérifier le noyau actif et installer les dépendances du parcours dans son environnement. |
+| Clé OpenAI absente | Pour les labs concernés, renseigner `OPENAI_API_KEY` dans le fichier `.env` lu par le carnet ; ne pas committer la clé. |
+| `google.adk` absent | Installer les [dépendances ADK](DataScienceWithAgents/07-Agent-Orchestration/requirements.txt) dans l'environnement du noyau avec `python -m pip install -r MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt` depuis la racine du dépôt. |
+| CSV introuvable | Vérifier le répertoire de travail et le chemin attendu par le carnet. |
+
 ## Pour aller plus loin — Recherche
 
 ### Généralisation : relier la mesure aux hypothèses
@@ -350,6 +358,16 @@ Le carnet [2.9 — Grokking et généralisation](DataScienceWithAgents/02-ML-Cou
 ### Formalisations Lean
 
 Le projet [learning_theory_lean](learning_theory_lean/README.md) accompagne ces questions avec des définitions et énoncés formels. Le carnet [2.8b — PAC en Lean](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) permet de lire les signatures et hypothèses des résultats ; [2.8d — Novikoff](DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) accompagne la borne de convergence ; [2.9f — Théorie effective du grokking](DataScienceWithAgents/02-ML-Cours/2.9f-Grokking-Theorie-Effective-Lean.ipynb) prolonge le fil théorique.
+
+Le compagnon [SL-1b — apprentissage logique en Lean](../SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb) explore aussi les bornes PAC et le perceptron. Les projets voisins offrent des rapprochements thématiques, à lire avec leurs hypothèses propres :
+
+| Notion abordée en ML | Formalisation voisine |
+|---|---|
+| Décision sous incertitude et apprentissage | [decision_theory_lean](../Probas/DecisionTheory/decision_theory_lean/) |
+| Allocation et croissance | [kelly_lean](../QuantConnect/kelly_lean/) |
+| Vote et attribution | [Choix social](../GameTheory/game_theory_lean/SocialChoice/) et [jeux coopératifs](../GameTheory/game_theory_lean/CooperativeGames/) |
+| Recherche de chemin et heuristiques | [search_lean](../Search/search_lean/) |
+| Argumentation | [argumentation_lean](../SymbolicAI/Tweety/argumentation_lean/) |
 
 Le statut des modules, leurs toolchains et leurs points d'entrée sont rassemblés dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md). Lire les hypothèses et dépendances d'un théorème permet de préciser ce qu'il certifie. Une preuve sur un modèle mathématique ne valide pas à elle seule les données, l'implémentation ou le résultat expérimental d'un autre carnet. Les exercices formels restent des activités à compléter lorsque le carnet les présente ainsi.
 
