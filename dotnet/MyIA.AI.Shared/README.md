@@ -124,14 +124,14 @@ abandonné : le namespace n'existe pas sur net9 et la méthode était inatteigna
 ## Build & tests
 
 ```bash
-dotnet build MyIA.AI.Shared/MyIA.AI.Shared.sln -c Release
-dotnet test MyIA.AI.Shared/MyIA.AI.Shared.sln -c Release
+dotnet build dotnet/MyIA.AI.Shared/MyIA.AI.Shared.sln -c Release
+dotnet test dotnet/MyIA.AI.Shared/MyIA.AI.Shared.sln -c Release
 ```
 
-Solution `MyIA.AI.Shared/MyIA.AI.Shared.sln` (socle-only : lib + tests, logée dans
+Solution `dotnet/MyIA.AI.Shared/MyIA.AI.Shared.sln` (socle-only : lib + tests, logée dans
 le socle depuis #13751 fenêtre 2) pour un build/test isolé,
-sans tirer `MyIA.AI.Notebooks`. La solution racine `MyIA.CoursIA.sln` référence déjà
-le projet lib.
+sans tirer `MyIA.AI.Notebooks`. La solution du socle .NET `dotnet/MyIA.CoursIA.sln`
+référence déjà le projet lib.
 
 ## A1+ — Hiérarchie de providers : 3 stratégies de découverte (#7265)
 
@@ -174,7 +174,7 @@ reflected["Payment"]; simple["Payment"]; auto["Payment"];
 
 Pipeline A1→A2 absorbé par 4 PRs mergées le 2026-07-21, dans cet ordre. Chaque PR
 a livré ses primitives + sa batterie de tests xUnit ; **48/48 tests PASS** sur la
-solution `MyIA.AI.Shared/MyIA.AI.Shared.sln` (couvrant les 4 tranches). Cette section sert
+solution `dotnet/MyIA.AI.Shared/MyIA.AI.Shared.sln` (couvrant les 4 tranches). Cette section sert
 d'**index de traçabilité** pour quiconque navigue vers le socle depuis #7265
 ou la pépite dispatch #8031 (déjà livrée avant sa création, voir note).
 
@@ -185,8 +185,8 @@ ou la pépite dispatch #8031 (déjà livrée avant sa création, voir note).
 | **A2** JSON | [#7661](https://github.com/jsboige/CoursIA/pull/7661) | 2026-07-21 | 2 (`MetadataContractResolver`, `MetadataJsonSerializer`) | 9 |
 | **A2+** XML | [#7677](https://github.com/jsboige/CoursIA/pull/7677) | 2026-07-21 | 3 (`XmlAwareContractResolver`, `NodeSurrogate`, `MetadataXmlSerializer`) | 9 |
 
-Vérification locale : `dotnet build MyIA.AI.Shared/MyIA.AI.Shared.sln -c Release` (0 warning,
-0 error) + `dotnet test MyIA.AI.Shared/MyIA.AI.Shared.sln -c Release --no-build` (48/48 PASS).
+Vérification locale : `dotnet build dotnet/MyIA.AI.Shared/MyIA.AI.Shared.sln -c Release` (0 warning,
+0 error) + `dotnet test dotnet/MyIA.AI.Shared/MyIA.AI.Shared.sln -c Release --no-build` (48/48 PASS).
 
 > **Note** : la pépite dispatch **#8031** (« A1 socle + tests xUnit ») a été
 > ouverte le 2026-07-22T20:13Z — **6h après** que les 4 PRs ci-dessus aient été
@@ -229,10 +229,10 @@ son domaine au lieu de conclure hors de lui : sur clauses définies il est compl
 (verdict `Yes`/`No` prouvés), et une clause sans littéral positif (contrainte) ou à
 plusieurs positifs fait lever la procédure.
 
-Vérification locale du 2026-11-01 : `dotnet test MyIA.AI.Shared.Tests` —
+Vérification locale du 2026-11-01 : `dotnet test dotnet/MyIA.AI.Shared.Tests` —
 **436/436 PASS** sur la suite complète, dont 39 témoins pour cette tranche.
 
-Vérification locale du 2026-11-06 : `dotnet test MyIA.AI.Shared.Tests` —
+Vérification locale du 2026-11-06 : `dotnet test dotnet/MyIA.AI.Shared.Tests` —
 **487/487 PASS** sur la suite complète, dont 30 témoins `PlInferenceTests`
 (10 pour `PLFCEntails`).
 
@@ -276,7 +276,7 @@ atomes (seuil recalibré : 2^24 affectations ≈ 40 s au plafond).
 Le chaînage arrière garde une garde anti-cycles (buts sols) + borne de
 profondeur : une KB cyclique termine par un échec.
 
-Vérification locale du 2026-11-02 : `dotnet test MyIA.AI.Shared.Tests` —
+Vérification locale du 2026-11-02 : `dotnet test dotnet/MyIA.AI.Shared.Tests` —
 **477/477 PASS** sur la suite complète, dont 36 témoins pour cette tranche.
 
 ## Tranches suivantes (hors cette ancre)

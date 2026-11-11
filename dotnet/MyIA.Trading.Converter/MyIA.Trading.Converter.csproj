@@ -4,7 +4,7 @@
        MyIABacktesting_integration, sha 612dddf9). Convertit Trade CSV/JSON/BIN/JS
        (legacy Apex) vers format dossier Lean (Data/<mkt>/<sym>/<res>/*.zip) avec
        compression 7z. Code source verbatim du fork public (https://github.com/MyIntelligenceAgency/Lean),
-       adapte a .NET 9.0 (convention repo CoursIA, cf GradeBookApp/MyIA.AI.Notebooks/MyIA.AI.Shared).
+       adapte a .NET 9.0 (convention repo CoursIA, cf dotnet/GradeBookApp, MyIA.AI.Notebooks, dotnet/MyIA.AI.Shared).
 
        Differences vs upstream :
        - TargetFramework : net6.0 -> net9.0

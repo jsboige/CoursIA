@@ -159,7 +159,7 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # GradeBookApp : dir entier (famille 5 de #14615) — 15 tests
         # (test_fuzzy_match_group.py seul), deps rapidfuzz/unidecode/openpyxl
         # ajoutées au pip install du job, zéro PII (journal auto-créé).
-        "GradeBookApp",
+        "dotnet/GradeBookApp",
         # SymbolicAI/ArgumentAnalysis : dir entier (issue #17248) — 174 tests
         # sur 5 fichiers, 0,5-0,9 s, stdlib + effets de bord mockes (aucun
         # reseau). La suite EXISTAIT deja mais n'etait collectee par AUCUNE CI :
@@ -388,8 +388,9 @@ def extract_run_targets(text: str) -> set[str]:
     pas couvert en exécution.
 
     Retourne les tokens qui ressemblent à un chemin relatif (contient `/`,
-    finit en `.py`, ou token nu sans slash ni caractère shell, ex.
-    `GradeBookApp`). Chaque bloc `run: |` est traité comme un step
+    finit en `.py`, ou token nu sans slash ni caractère shell — ex.
+    historique `GradeBookApp`, devenu `dotnet/GradeBookApp` au move de la
+    famille A #13751). Chaque bloc `run: |` est traité comme un step
     indépendant (fermeture par indentation stricte).
     """
     covered, _floors = _partition_run_blocks(text)
@@ -400,8 +401,9 @@ def _maybe_target(token: str, targets: set[str]) -> None:
     """Ajoute le token s'il ressemble à un chemin relatif.
 
     Chemin = contient un `/`, finit en `.py`, OU est un token nu sans slash
-    ni caractère shell (cas des répertoires racine du dépôt, ex. GradeBookApp
-    — famille 5 de #14615). Les flags (préfixe `-`) et variables (`$`) ne
+    ni caractère shell (cas des répertoires racine du dépôt — ex. historique
+    GradeBookApp, famille 5 de #14615, devenu dotnet/GradeBookApp au move
+    #13751). Les flags (préfixe `-`) et variables (`$`) ne
     sont jamais des cibles.
     """
     if token in ("\\",) or token.startswith("-") or "$" in token:
@@ -490,7 +492,7 @@ def is_covered(testpath: str, covered_dirs: list[str]) -> bool:
 # (constat mesuré sur SymbolicAI/ArgumentAnalysis, 174 tests non collectés —
 # cf. le commentaire de WORKFLOW_COVERAGE). L'inventaire ferme ce côté-là :
 # il part du dépôt, pas de la déclaration.
-INVENTORY_ROOTS = ("MyIA.AI.Notebooks", "scripts", "GradeBookApp", "tests")
+INVENTORY_ROOTS = ("MyIA.AI.Notebooks", "scripts", "dotnet/GradeBookApp", "tests")
 
 
 TEST_DIR_NAMES = {"tests", "test"}
