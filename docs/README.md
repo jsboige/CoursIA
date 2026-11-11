@@ -359,7 +359,6 @@ Preuves visuelles attachées à un chantier : elles ne vivent pas dans `transien
 | [captures/24171/README.md](captures/24171/README.md) | Premier relevé de rendu du lot L2 sous forme **opposable** (#24171, EPIC #11508) — le relevé est archivé comme artefact versionné (hash de chaque image mesurée, empreinte de la machine) et non comme un compteur rejoué ; mesure du deck `06-apprentissage` (124 diapositives rendues) et **deux contraintes d'export mesurées** que la documentation du dépôt ne portait pas (`--range` obligatoire, `--output` effacé à chaque invocation) |
 | [captures/24171-point3/README.md](captures/24171-point3/README.md) | Relevé de composition **après correction** du deck `06-apprentissage` (point 3 de #24171) — 7 diapositives corrigées, 0 élément hors canvas sur 124, marges sous canvas mesurées, et le résidu à douze diapositives que la compression ne peut plus lever |
 
-
 ## Audit sémantique cross-famille (docs/audit/)
 
 Cadrage **méthodologique** de l'audit sémantique (grade B-méthodologique, EPIC #4208 + #8052). Les **comptes-rendus** de cycle et les **findings** ne vivent pas ici : dashboard RooSync pour l'éphémère, issue GitHub pour l'actionnable (règle HARD [audit-cross-source-distillation.md](../.claude/rules/audit-cross-source-distillation.md)).
