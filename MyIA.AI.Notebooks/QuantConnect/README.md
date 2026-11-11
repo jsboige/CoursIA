@@ -270,7 +270,7 @@ python -m ipykernel install --user --name=quantconnect --display-name "Python (Q
 
 ## Résumé de la Progression
 
-**Total du parcours principal** : la séquence QC-Py-01 à QC-Py-28 ; les approfondissements 12b et 23b ajoutent respectivement 60 min et 90 min au palier 12 et au palier 23 (~34 heures de contenu au total) ; **plus les compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, **15** Cloud strategies QC-Py-Cloud-01..09, training QC-Py-30..32, foundation models QC-Py-23c, dataset workflow), plus la recherche standalone (`research_*.ipynb`, détaillée dans [research/README.md](research/README.md)).
+**Parcours principal** : la séquence QC-Py-01 à QC-Py-28 ; les approfondissements 12b et 23b ajoutent respectivement 60 min et 90 min aux paliers 12 et 23. Les compléments comprennent le RL avancé QC-Py-33..35, le paper trading QC-Py-40..41, les notebooks QC-Py-Cloud, le training QC-Py-30..32, les foundation models QC-Py-23c et le dataset workflow, ainsi que la recherche standalone (voir [research/README.md](research/README.md)). Pour les compteurs à jour des cours et des stratégies, consulter le [catalogue généré](../../COURSE_CATALOG.generated.md).
 
 **Répartition cours linéaire (Phases 1-8)** :
 - **Partie non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h
