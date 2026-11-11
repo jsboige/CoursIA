@@ -1,6 +1,6 @@
 # Slide Analyzer — observabilité sk-agent (prompts canoniques + grille comparative Marp vs PPTX)
 
-> REFERENCE — vivante — dernière révision 2026-10-24
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 > **Origine** : fichier `.claude/agent-memory/slide-analyzer/MEMORY.md` (relocalisé en c.1301+210 dans le cadre de l'EPIC #9535, item 7 — agent-memory relocalisation en doc pérenne). Le contenu est conservé tel quel (anti-régression : cf triage jsboigeEpita, durable vs scratch) ; seul un sommaire FR est ajouté.
 >

@@ -1,6 +1,6 @@
 # Regles vigilance G.1-G.9 — anti-complaisance (detail)
 
-> REFERENCE — vivante — dernière révision 2026-11-09
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Résumé opérationnel : CLAUDE.md section G.
 

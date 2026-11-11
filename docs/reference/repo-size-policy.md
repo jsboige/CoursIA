@@ -1,6 +1,6 @@
 # Politique de taille du dépôt — CoursIA
 
-> REFERENCE — vivante — dernière révision 2026-11-09
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 > Le dépôt pèse ~1,2 GiB de pack pour un projet pédagogique. Ce document explique
 > **pourquoi** ce poids est le prix d'une décision délibérée, **ce qui est acquis** (et ne

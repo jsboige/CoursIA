@@ -1,6 +1,6 @@
 # Bibliographie IA partagée
 
-> REFERENCE — vivante — dernière révision 2026-11-10
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 ## Source canonique
 

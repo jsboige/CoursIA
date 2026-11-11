@@ -1,6 +1,6 @@
 # Explorer une longue conversation / un export ChatGPT via Playwright (lecture par tranches)
 
-> REFERENCE — vivante — dernière révision 2026-07-21
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 **Problème.** Une conversation ChatGPT stratégique longue (audit, discussion vocale transcrite) fait souvent
 plusieurs dizaines de milliers de tokens. Un `browser_snapshot` unique, un `Read` du HTML exporté, ou un

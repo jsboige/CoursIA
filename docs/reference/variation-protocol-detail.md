@@ -1,6 +1,6 @@
 # Protocole de variation — détail, justifications mesurées, incidents fondateurs
 
-> REFERENCE — vivante — dernière révision 2026-11-06
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Détail déporté de [`.claude/rules/variation-protocol.md`](../../.claude/rules/variation-protocol.md) (harness-hygiene : la règle reste succincte et auto-chargée, le détail vit ici et se lit à la demande).
 

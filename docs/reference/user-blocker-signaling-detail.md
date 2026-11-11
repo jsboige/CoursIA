@@ -1,6 +1,6 @@
 # User-blocker signaling — détail
 
-> REFERENCE — vivante — dernière révision 2026-09-16
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Détail de [.claude/rules/user-blocker-signaling.md](../../.claude/rules/user-blocker-signaling.md). Voir aussi [coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) et [proactive-coordination.md](../../.claude/rules/proactive-coordination.md).
 

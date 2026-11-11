@@ -1,6 +1,6 @@
 # Doctrine des lakes Lean — le site suit le consommateur
 
-> REFERENCE — vivante — dernière révision 2026-11-02
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 **Statut** : validée par le user le 2026-11-02, en réponse au plan de consolidation du coordinateur (EPIC #4362, issue pilote #24183). Verbatim : « a) Je valide b) OK poure redescendre c) On le garde avec la notice qui doit exister, et on documente la comparaison des preuves comme tu as proposé ».
 

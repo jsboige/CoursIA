@@ -1,6 +1,6 @@
 # Posting gh — incidents de référence
 
-> REFERENCE — vivante — dernière révision 2026-11-10
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Détail déporté de [.claude/rules/gh-posting-hygiene.md](../../.claude/rules/gh-posting-hygiene.md).
 La règle garde la prescription (formes sûres + garde post-POST) ; ce fichier porte le

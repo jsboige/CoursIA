@@ -1,6 +1,6 @@
 # Renumerotation de notebooks — corpus des precedents
 
-> REFERENCE — vivante — dernière révision 2026-09-05
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Detail de [`.claude/rules/notebook-accretion-numbering.md`](../../.claude/rules/notebook-accretion-numbering.md). La regle porte le geste ; ce fichier porte les precedents qui l'ont produite, mesures le 2026-09-04.
 

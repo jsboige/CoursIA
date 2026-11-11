@@ -1,6 +1,6 @@
 # Valeurs quantitatives en prose de notebook — détail de la règle C.5
 
-> REFERENCE — vivante — dernière révision 2026-10-19
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Détail déporté de [`.claude/rules/notebook-conventions.md`](../../.claude/rules/notebook-conventions.md) §C.5, qui garde la règle et la table de classification. Ce fichier porte les arbitrages et les cas-limites — utiles quand on tranche une PR, inutiles à charger à chaque session.
 

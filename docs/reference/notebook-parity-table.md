@@ -1,6 +1,6 @@
 # Table de parité cross-série — notebooks Python ⇄ .NET
 
-> REFERENCE — vivante — dernière révision 2026-10-10
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 > **Statut (2026-07-20)** : document de **cartographie** créé le 2026-07-03 (PR po-2023 C202) en
 > contribution à l'EPIC **#4956** « Parité .NET ⇄ Python des séries de notebooks »

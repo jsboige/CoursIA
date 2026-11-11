@@ -1,6 +1,6 @@
 # Règle de niveau de série — quand un dossier mérite d'exister
 
-> REFERENCE — vivante — dernière révision 2026-11-10
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 **S'applique à** : toute création, suppression ou renommage d'un dossier porteur de carnets sous `MyIA.AI.Notebooks/`.
 **Origine** : issue #24197 (« Curriculum : consistance et clarté des séries », mandat direct du mainteneur du 2026-11-02), sections B et C. Son livrable 2 demande « une règle de niveau, courte et citable, pour B et pour C ».

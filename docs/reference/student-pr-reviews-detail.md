@@ -1,6 +1,6 @@
 # Reviews PR etudiantes — detail
 
-> REFERENCE — vivante — dernière révision 2026-06-23
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Detail de [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-reviews.md). Voir aussi [exercise-example-labeling.md](../../.claude/rules/exercise-example-labeling.md), [pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md).
 

@@ -1,6 +1,6 @@
 # Quand la vérification est verte et le système est cassé
 
-> REFERENCE — vivante — dernière révision 2026-10-10
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Étude de cas — huit incidents datés, un seul motif.
 

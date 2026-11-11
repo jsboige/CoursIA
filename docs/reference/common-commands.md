@@ -1,6 +1,6 @@
 # Common Commands - CoursIA
 
-> REFERENCE — vivante — dernière révision 2026-08-13
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 ## Environment Setup
 

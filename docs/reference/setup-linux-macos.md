@@ -1,6 +1,6 @@
 # Setup macOS / Linux — équivalents cross-OS du cluster CoursIA
 
-> REFERENCE — vivante — dernière révision 2026-11-09
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Le dépôt CoursIA a été développé sous Windows (WSL pour Lean/GameTheory). Un contributeur macOS ou Linux peut exécuter la majorité des notebooks sans modification — les kernels .NET Interactive, Python et Lean 4 sont cross-OS. Ce document donne les **équivalents Mac/Linux** des instructions d'installation Windows (`winget`/`choco`/`Set-ExecutionPolicy`) référencées dans [kernels-runtime.md](kernels-runtime.md), [env-python-reparation.md](env-python-reparation.md) et les READMEs de séries.
 

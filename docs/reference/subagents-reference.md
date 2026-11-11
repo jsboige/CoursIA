@@ -1,6 +1,6 @@
 # Sous-agents spécialistes — référence + mandat d'usage side-tracks
 
-> REFERENCE — vivante — dernière révision 2026-10-28
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Les sous-agents définis dans [.claude/agents/](../../.claude/agents/) sont des **spécialistes** invoquables via l'outil `Agent` (`subagent_type: "<nom>"`). Plusieurs sont **orientés side-tracks long-cours** : ils peuvent être lancés en **asynchrone** (`run_in_background: true`) pour faire avancer une Epic side-track pendant que le worker interactif tient sa track principale sur wakeup horaire.
 

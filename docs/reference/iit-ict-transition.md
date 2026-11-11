@@ -1,6 +1,6 @@
 # IIT → ICT — note de transition
 
-> REFERENCE — vivante — dernière révision 2026-10-23
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 > Note de transition durable de la série [`MyIA.AI.Notebooks/IIT/ICT-Series/`](../../MyIA.AI.Notebooks/IIT/ICT-Series/) (Epic [#4588](https://github.com/jsboige/CoursIA/issues/4588), plan de partition [#5081](https://github.com/jsboige/CoursIA/issues/5081)) — pivot narratif et architectural IIT → ICT. Posée initialement au cycle c.478 (po-2025 : `myia-po-2025:CoursIA-2`), tenue à jour au fil des livraisons.
 

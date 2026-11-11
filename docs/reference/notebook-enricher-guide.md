@@ -1,6 +1,6 @@
 # Guide d'enrichissement des notebooks — méthodologie & vocabulaire par domaine
 
-> REFERENCE — vivante — dernière révision 2026-11-08
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 
 

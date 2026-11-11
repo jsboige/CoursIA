@@ -1,6 +1,6 @@
 # Règles validation H.1-H.7 — pas de complaisance sur notebooks (detail)
 
-> REFERENCE — vivante — dernière révision 2026-11-02
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Résumé opérationnel : CLAUDE.md section H.
 

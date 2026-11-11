@@ -1,6 +1,6 @@
 # Lane claim protocol — détail (référencé depuis `.claude/rules/lane-claim-protocol.md`)
 
-> REFERENCE — vivante — dernière révision 2026-10-28
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Documentation détaillée du protocole de claim cross-lane. Le **règle succincte** vit dans [`.claude/rules/lane-claim-protocol.md`](../../.claude/rules/lane-claim-protocol.md) ; ce fichier porte le **contexte, les incidents, les déviations sémantiques et le tie-break**.
 

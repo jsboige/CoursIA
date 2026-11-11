@@ -1,6 +1,6 @@
 # WSL Kernels — Diagnostic et workarounds
 
-> REFERENCE — vivante — dernière révision 2026-10-24
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Document de référence détaillant les règles auto-loaded de [.claude/rules/wsl-kernels.md](../../.claude/rules/wsl-kernels.md).
 

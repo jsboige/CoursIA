@@ -1,6 +1,6 @@
 # Environnement Python — REPARER, ne JAMAIS contourner (detail)
 
-> REFERENCE — vivante — dernière révision 2026-10-10
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Resume operationnel : CLAUDE.md section F.
 

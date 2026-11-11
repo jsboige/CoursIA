@@ -1,6 +1,6 @@
 # Cluster CoursIA — machines, lanes, capacités
 
-> REFERENCE — vivante — dernière révision 2026-11-02
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Référence durable sur la structure du cluster qui porte les grains CoursIA : les machines, les lanes et leurs rôles, les GPU, et les barrières de capacité qui contraignent un dispatch. Les **règles de coordination** vivent dans [CLAUDE.md](../../CLAUDE.md) §A et dans [tricephale-circulation.md](tricephale-circulation.md) ; le **calendrier d'enseignement** dans [teaching-context.md](teaching-context.md).
 

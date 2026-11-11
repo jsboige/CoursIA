@@ -1,6 +1,6 @@
 # Finition de série : critères de sortie
 
-> REFERENCE — vivante — dernière révision 2026-11-03
+> REFERENCE — vivante — dernière révision 2026-11-11
 
 Régime validé par le mainteneur le 2026-10-05 (issue de suivi #19297). Une série passe en **finition** quand on cesse d'y ajouter des carnets pour la rendre lisible de bout en bout. Elle en sort quand les critères ci-dessous sont remplis.
 
