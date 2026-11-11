@@ -159,6 +159,12 @@ DELIVERED_LANE_MARKER_RE = re.compile(
 
 PATHS_CLAUSE_RE = re.compile(r"\bpaths\s*:", re.IGNORECASE)
 
+# Compatibilite du filtre rapide avec les en-tetes sans lane.
+_RECENT_DELIVERED_RE = re.compile(
+    r"^\s*(?:#{1,6}\s*)?\[DELIVERED\](?=\s|:|$)", re.MULTILINE)
+_TRANCHE_DELIVERED_RE = re.compile(
+    _RECENT_DELIVERED_RE.pattern, re.MULTILINE | re.IGNORECASE)
+
 # --- Les trois etats d'un fil --------------------------------------------------
 
 ATTESTED = "attested"   # le fil porte une attestation VIVANTE
@@ -267,7 +273,7 @@ def is_tranche_marker(body: str) -> bool:
         return False
     seen = False
     for line in body.splitlines():
-        if DELIVERED_LANE_MARKER_RE.match(line):
+        if _TRANCHE_DELIVERED_RE.match(line):
             seen = True
             if not PATHS_CLAUSE_RE.search(line):
                 return False
@@ -403,7 +409,7 @@ def delivery_state(bodies: list[str], *, lane_marker: bool = True,
     """
     state = NONE
     for body in bodies or []:
-        text = body or ""
+        text = strip_code(body or "")
         if DELIVERED_MARKER_REVOKED_RE.search(text):
             state = REVOKED
         elif DELIVERED_MARKER_RE.search(text):
@@ -454,3 +460,70 @@ def attestation_state(bodies: list[str], *, dossier: bool = True) -> str:
     Rend `"attested"`, `"revoked"` ou `"none"`.
     """
     return delivery_state(bodies, lane_marker=False, dossier=dossier)
+
+
+_FENCE_OPEN_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+_INLINE_CODE_RE = re.compile(r"`{1,3}[^`\n]+`{1,3}")
+
+
+def strip_code(text: str) -> str:
+    """Retire les blocs de code (fences) et les code-spans inline.
+
+    Le contenu retire est remplace par des lignes vides : la structure de
+    lignes est conservee (le debut de ligne reste le debut de ligne), ce
+    qui laisse le test des marqueurs **strictement** plus strict, jamais
+    plus laxiste.
+    """
+    if not text:
+        return text
+    out: list[str] = []
+    fence_char: str | None = None
+    fence_len = 0
+    for line in text.splitlines():
+        match = _FENCE_OPEN_RE.match(line)
+        if fence_char is None:
+            if match:
+                marker = match.group(1)
+                fence_char = marker[0]
+                fence_len = len(marker)
+                out.append("")
+                continue
+            out.append(line)
+        else:
+            # La fence se ferme sur un marqueur du MEME caractere, au moins
+            # aussi long que celui d'ouverture (CommonMark).
+            if match and match.group(1)[0] == fence_char and len(match.group(1)) >= fence_len:
+                fence_char = None
+                fence_len = 0
+            out.append("")
+    stripped = "\n".join(out)
+    return _INLINE_CODE_RE.sub(" ", stripped)
+
+
+CLOSURE_ANNOUNCEMENT_RE = re.compile(
+    r"^\s*(?:#{1,6}\s*)?Fermeture sur dossier\b[^\n]*?\bverdict\s+CLOSE\b",
+    re.IGNORECASE | re.MULTILINE)
+
+def recent_delivery_state(bodies: list[str]) -> bool:
+    """Etat chronologique du filtre rapide, hors gel traite par le picker."""
+    state = False
+    for body in bodies or []:
+        text = strip_code(body or "")
+        if DELIVERED_MARKER_REVOKED_RE.search(text):
+            state = False
+        elif (delivered_state([text]) or CLOSURE_ANNOUNCEMENT_RE.search(text)
+              or (_RECENT_DELIVERED_RE.search(text)
+                  and not is_tranche_marker(text))):
+            state = True
+    return state
+
+def container_delivery_state(bodies: list[str]) -> bool:
+    """Etat chronologique des seules attestations de conteneur."""
+    state = False
+    for body in bodies or []:
+        text = strip_code(body or "")
+        if DELIVERED_MARKER_REVOKED_RE.search(text):
+            state = False
+        elif CONTAINER_DELIVERY_MARKER_RE.search(text):
+            state = True
+    return state
