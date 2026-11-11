@@ -27,6 +27,16 @@ modifiée sans re-déclaration. Le manifeste
 (`scripts/quantconnect/pcm_single_source.json`) porte la source canonique,
 les copies déclarées et la raison de chaque déclaration.
 
+**Ce qu'elle refuse aussi (invariant du défaut).** Le défaut `additive` du
+canonique doit rester `False` : un consommateur qui omet le paramètre
+hériterait sinon d'un mode qu'il n'a pas demandé — et, avec le défaut `True`
+d'avant, `additive=True` sans `algorithm` était un `ValueError` chez un
+consommateur qui ne l'aurait pas vu venir. Aucun consommateur ne doit
+instancier le canonique sans passer `additive` explicitement : il hériterait
+du défaut, et son comportement changerait si le défaut change. Les deux
+contrôles sont syntaxiques (AST) : le défaut est lu dans la signature, la
+présence du mot-clé dans l'appel.
+
 **Contrôle positif.** Une copie volontairement modifiée fait rougir la
 garde : c'est le cas `DECLARATION_STALE` du corps de tests
 (`scripts/quantconnect/tests/test_check_pcm_single_source.py`), qui crée un
@@ -105,6 +115,8 @@ CODES = {
     "DECLARATION_STALE": "Une copie declaree a ete modifiee sans re-declaration.",
     "DECLARED_COPY_MISSING": "Une copie declaree n'existe plus : declaration a retirer.",
     "CLASS_MISMATCH": "Les classes declarees ne correspondent pas au contenu du fichier.",
+    "CANONICAL_DEFAULT_UNSAFE": "Le defaut `additive` du canonique n'est pas `False` : un consommateur qui omet le parametre herite d'un mode qu'il n'a pas demande.",
+    "CONSUMER_IMPLICIT_DEFAULT": "Un consommateur instancie le canonique sans passer `additive` : il herite du defaut, son comportement changerait si le defaut change.",
 }
 
 
@@ -258,6 +270,89 @@ def scan_notebook_copies(root: Path) -> list[str]:
     return hits
 
 
+def canonical_additive_default(path: Path) -> tuple[str, object]:
+    """Etat du parametre `additive` du canonique.
+
+    Retourne (etat, valeur) :
+      ("default", True/False) — le parametre a un defaut booleen litteral ;
+      ("default", None)       — le defaut n'est pas une constante booleenne ;
+      ("required", None)      — le parametre est exige, sans defaut ;
+      ("absent", None)        — le parametre n'existe pas, ou le fichier ne
+                                 se parse pas (les deux font echouer la
+                                 garde : fail-CLOSED).
+    """
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, SyntaxError, ValueError):
+        return ("absent", None)
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.ClassDef) and node.name == CANONICAL_CLASS):
+            continue
+        for sub in node.body:
+            if isinstance(sub, ast.FunctionDef) and sub.name == "__init__":
+                args = sub.args
+                index = None
+                for position, arg in enumerate(args.args):
+                    if arg.arg == "additive":
+                        index = position
+                        break
+                if index is None:
+                    return ("absent", None)
+                first_default = len(args.args) - len(args.defaults)
+                if index < first_default:
+                    return ("required", None)
+                default = args.defaults[index - first_default]
+                if isinstance(default, ast.Constant) and isinstance(default.value, bool):
+                    return ("default", default.value)
+                return ("default", None)
+    return ("absent", None)
+
+
+def scan_implicit_consumers(root: Path, canonical_rel: str) -> list[dict]:
+    """Consommateurs qui instancient le canonique SANS passer `additive`.
+
+    Un consommateur qui n'ecrit pas le parametre herite du defaut du
+    canonique : si le defaut change, son comportement change aussi, et
+    personne ne le voit. C'est l'invariant que #20188 veut tenir (« chaque
+    projet garde son comportement actuel »).
+
+    Bornes assumees : un appel qui passe `**kwargs` n'est pas compte (le
+    parametre peut y etre fourni) ; un appel dont le symbole est aliase
+    n'est pas vu non plus — l'angle mort du nom de symbole, le meme que
+    celui de la famille de classes.
+    """
+    base = root / SCAN_SUBTREE
+    hits: list[dict] = []
+    if not base.is_dir():
+        return hits
+    for path in sorted(base.rglob("*.py")):
+        rel = path.relative_to(root).as_posix()
+        if rel == canonical_rel:
+            continue
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
+        except (OSError, SyntaxError, ValueError):
+            continue
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if isinstance(func, ast.Name):
+                name = func.id
+            elif isinstance(func, ast.Attribute):
+                name = func.attr
+            else:
+                continue
+            if name != CANONICAL_CLASS:
+                continue
+            if any(keyword.arg is None for keyword in node.keywords):
+                continue  # **kwargs : le parametre peut etre fourni ailleurs
+            if any(keyword.arg == "additive" for keyword in node.keywords):
+                continue
+            hits.append({"path": rel, "line": node.lineno})
+    return hits
+
+
 def analyse(root: Path, manifest_path: Path) -> dict:
     findings = []
     # Empreintes pleines (declaree + actuelle) : la « cle » qui permet de
@@ -400,6 +495,39 @@ def analyse(root: Path, manifest_path: Path) -> dict:
                 "code": "UNDECLARED_COPY",
                 "path": rel,
                 "detail": detail,
+            }
+        )
+
+    # 4. Le defaut du canonique est sur (`additive=False`) et aucun
+    #    consommateur n'en herite : changer le defaut ne peut alors changer
+    #    le comportement d'aucun projet qui ne l'a pas demande.
+    if canonical_path and canonical_path.is_file():
+        state, value = canonical_additive_default(canonical_path)
+        if not (state == "default" and value is False):
+            detail = {
+                "required": "parametre `additive` exige, sans defaut "
+                "(attendu `additive=False`)",
+                "absent": "parametre `additive` absent du canonique "
+                "(attendu `additive=False`)",
+            }.get(
+                state,
+                "defaut `additive` = %s (attendu `additive=False`)" % value,
+            )
+            findings.append(
+                {
+                    "code": "CANONICAL_DEFAULT_UNSAFE",
+                    "path": canonical_rel,
+                    "detail": detail,
+                }
+            )
+    for hit in scan_implicit_consumers(root, canonical_rel):
+        findings.append(
+            {
+                "code": "CONSUMER_IMPLICIT_DEFAULT",
+                "path": hit["path"],
+                "detail": "instancie %s sans passer `additive` (ligne %d) : "
+                "il herite du defaut, son comportement suivrait un changement "
+                "de defaut" % (CANONICAL_CLASS, hit["line"]),
             }
         )
 

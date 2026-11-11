@@ -29,7 +29,7 @@ CANONICAL_SRC = """from AlgorithmImports import *
 class MultiStrategyPouchesPCM(PortfolioConstructionModel):
     \"\"\"Canonique de test.\"\"\"
 
-    def __init__(self, additive=True, algorithm=None):
+    def __init__(self, additive=False, algorithm=None):
         super().__init__()
         self.additive = additive
         self._algorithm = algorithm
@@ -45,6 +45,36 @@ class MultiStrategyPCM(PortfolioConstructionModel):
         super().__init__()
         self.additive = additive
         self._algorithm = algorithm
+"""
+
+# Un consommateur qui passe `additive` explicitement : il pinne son mode, le
+# defaut du canonique ne l'atteint pas.
+CONSUMER_EXPLICIT_SRC = """from AlgorithmImports import *
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
+
+
+class DemoComposite(QCAlgorithm):
+    \"\"\"Consommateur qui pinne son mode.\"\"\"
+
+    def initialize(self):
+        self.set_portfolio_construction(MultiStrategyPouchesPCM(
+            alpha_allocations={"Demo": 1.0},
+            additive=False,
+        ))
+"""
+
+# Le meme consommateur, sans `additive` : il herite du defaut du canonique.
+CONSUMER_IMPLICIT_SRC = """from AlgorithmImports import *
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
+
+
+class DemoComposite(QCAlgorithm):
+    \"\"\"Consommateur qui herite du defaut.\"\"\"
+
+    def initialize(self):
+        self.set_portfolio_construction(MultiStrategyPouchesPCM(
+            alpha_allocations={"Demo": 1.0},
+        ))
 """
 
 
@@ -116,6 +146,45 @@ def test_copie_non_decleree_fait_rougir(tmp_path):
     report = analyse(root, manifest)
     assert report["verdict"] == "FAIL", report
     assert "UNDECLARED_COPY" in _codes(report)
+
+
+# --- Invariant du defaut `additive` (#20188) ----------------------------
+#
+# Le defaut du canonique doit rester `False` : un consommateur qui omet le
+# parametre ne doit pas heriter d'un mode qu'il n'a pas demande. Et aucun
+# consommateur ne doit pas instancier le canonique sans ecrire `additive` :
+# il heriterait du defaut, et son comportement changerait si le defaut change.
+
+
+def test_canonique_defaut_additive_non_sur_fait_rougir(tmp_path):
+    """CONTROLE POSITIF : un defaut `additive=True` sur le canonique fait rougir."""
+    root, manifest = _tree(tmp_path)
+    unsafe = CANONICAL_SRC.replace("additive=False", "additive=True")
+    _write(root, CANONICAL_REL, unsafe)
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    data["canonical"]["sha256"] = _digest(unsafe)
+    manifest.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    report = analyse(root, manifest)
+    assert report["verdict"] == "FAIL", report
+    assert "CANONICAL_DEFAULT_UNSAFE" in _codes(report)
+
+
+def test_consommateur_sans_additive_fait_rougir(tmp_path):
+    """CONTROLE POSITIF : un consommateur qui n'ecrit pas `additive` est signale."""
+    root, manifest = _tree(tmp_path)
+    _write(root, f"{QC_ROOT}/projects/DemoComposite/main.py", CONSUMER_IMPLICIT_SRC)
+    report = analyse(root, manifest)
+    assert report["verdict"] == "FAIL", report
+    assert "CONSUMER_IMPLICIT_DEFAULT" in _codes(report)
+
+
+def test_consommateur_avec_additive_passe(tmp_path):
+    """Un consommateur qui pinne son mode ne fait pas rougir la garde."""
+    root, manifest = _tree(tmp_path)
+    _write(root, f"{QC_ROOT}/projects/DemoComposite/main.py", CONSUMER_EXPLICIT_SRC)
+    report = analyse(root, manifest)
+    assert report["verdict"] == "OK", report
+    assert "CONSUMER_IMPLICIT_DEFAULT" not in _codes(report)
 
 
 def test_canonique_modifie_fait_rougir(tmp_path):
