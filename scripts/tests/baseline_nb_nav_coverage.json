@@ -80,8 +80,8 @@
     "IIT/ICT-Series": [
       "IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb",
       "IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb",
-      "IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb",
-      "IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb",
+      "IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb",
+      "IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb",
       "IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb",
       "IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb",
       "IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb",
@@ -231,9 +231,7 @@
       "Search/Part3-Cas-pratiques/App-8-MiniZinc-CSharp.ipynb"
     ],
     "Search/Part4-Metaheuristics/MGS-vs-mealpy": [
-      "Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-22-MGS-vs-Mealpy.ipynb",
-      "Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-29-GA-vs-Mealpy.ipynb",
-      "Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-30-ScatterSearch-Decomposition.ipynb"
+      "Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-22-MGS-vs-Mealpy.ipynb"
     ],
     "Sudoku": [
       "Sudoku/Sudoku-14-BDD-Python.ipynb"

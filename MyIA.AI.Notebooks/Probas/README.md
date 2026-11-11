@@ -7,7 +7,7 @@ pagetitle: "Probas - Programmation Probabiliste"
 <!-- CATALOG-STATUS
 series: Probas
 pedagogical_count: 93
-breakdown: DecisionTheory=38, Infer=21, PyMC=20, Applications=11, root=3
+breakdown: DecisionTheory=38, Infer=21, PyMC=20, Applications=12, Fondations=2
 maturity: BETA=87, ALPHA=5, DRAFT=1
 -->
 
@@ -416,7 +416,7 @@ La causalité est traitée à **quatre endroits** du dépôt, chacun avec son mo
 | [Tweety-11-Causal-Python](../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) | Tweety (.NET, logique) | modèle causal structurel, opérateur `do`, contrefactuels |
 | [Infer-05-Causal-Inference](Infer/Infer-05-Causal-Inference.ipynb) | Infer.NET (message passing) | backdoor, front-door, paradoxe de Simpson, médiation |
 | [PyMC-05-Causal-Inference](PyMC/PyMC-05-Causal-Inference.ipynb) | PyMC (MCMC) | backdoor, front-door, contrefactuel bayésien |
-| [ICT-5](../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb) · [ICT-6](../IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | PyPhi (CE 2.0) | émergence causale, information effective de Hoel |
+| [ICT-5](../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) · [ICT-6](../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | PyPhi (CE 2.0) | émergence causale, information effective de Hoel |
 
 Ce que le pont ajoute par rapport aux quatre notebooks pris isolément :
 
